@@ -9,6 +9,7 @@ using System.Security.Cryptography.Tests;
 using System.Text;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
+using Xunit.Sdk;
 
 namespace System.Security.Cryptography.EcDsa.Tests
 {
@@ -167,10 +168,10 @@ namespace System.Security.Cryptography.EcDsa.Tests
         protected abstract byte[] SignData(ECDsa ecdsa, byte[] data, int offset, int count, HashAlgorithmName hashAlgorithm);
 
         protected virtual byte[] SignHash(ECDsa ecdsa, byte[] hash, int offset, int count) =>
-            throw new SkipTestException("SignHash not implemented.");
+            throw SkipException.ForSkip("SignHash not implemented.");
 
         protected virtual bool VerifyHash(ECDsa ecdsa, byte[] hash, int offset, int count, byte[] signature) =>
-            throw new SkipTestException("VerifyHash not implemented.");
+            throw SkipException.ForSkip("VerifyHash not implemented.");
 
         public static IEnumerable<object[]> RealImplementations() =>
             new[] {
@@ -235,7 +236,7 @@ namespace System.Security.Cryptography.EcDsa.Tests
                 () => VerifyData(ecdsa, data, sig, HashAlgorithmName.SHA256));
         }
 
-        [ConditionalTheory]
+        [Theory]
         [MemberData(nameof(RealImplementations))]
         public void SignHash_Roundtrip(ECDsa ecdsa)
         {
@@ -245,7 +246,7 @@ namespace System.Security.Cryptography.EcDsa.Tests
             Assert.True(VerifyHash(ecdsa, hash, 0, hash.Length, signature), nameof(VerifyHash));
         }
 
-        [ConditionalTheory]
+        [Theory]
         [MemberData(nameof(RealImplementations))]
         public void SignHash_TamperedSignature(ECDsa ecdsa)
         {
@@ -257,7 +258,7 @@ namespace System.Security.Cryptography.EcDsa.Tests
             Assert.False(VerifyHash(ecdsa, hash, 0, hash.Length, signature), nameof(VerifyHash));
         }
 
-        [ConditionalTheory]
+        [Theory]
         [MemberData(nameof(RealImplementations))]
         public void SignHash_DifferentHashes(ECDsa ecdsa)
         {

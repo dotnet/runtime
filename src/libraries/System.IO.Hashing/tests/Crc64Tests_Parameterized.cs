@@ -6,71 +6,89 @@ using Xunit;
 
 namespace System.IO.Hashing.Tests
 {
-    public abstract class Crc64Tests_Parameterized<T> : NonCryptoHashTestDriver
-        where T : Crc64DriverBase, new()
+    public abstract class Crc64Tests_Parameterized : NonCryptoHashTestDriver
     {
-        private static readonly Crc64DriverBase s_driver = new T();
-        private protected static readonly Crc64ParameterSet s_parameterSet = s_driver.ParameterSet;
+        private protected readonly Crc64DriverBase _driver;
+        private protected readonly Crc64ParameterSet s_parameterSet;
 
-        public Crc64Tests_Parameterized()
-            : base(TestCaseBase.FromHexString(s_driver.EmptyOutput))
+        protected Crc64Tests_Parameterized(Crc64DriverBase driver)
+            : base(TestCaseBase.FromHexString(driver.EmptyOutput))
         {
+            _driver = driver;
+            s_parameterSet = driver.ParameterSet;
         }
 
-        public static IEnumerable<object[]> TestCases
+        protected override NonCryptographicHashAlgorithm CreateInstance() => new Crc64(s_parameterSet);
+        protected override NonCryptographicHashAlgorithm Clone(NonCryptographicHashAlgorithm instance) => ((Crc64)instance).Clone();
+
+        protected override byte[] StaticOneShot(byte[] source) => Crc64.Hash(s_parameterSet, source);
+
+        protected override byte[] StaticOneShot(ReadOnlySpan<byte> source) => Crc64.Hash(s_parameterSet, source);
+
+        protected override int StaticOneShot(ReadOnlySpan<byte> source, Span<byte> destination) =>
+            Crc64.Hash(s_parameterSet, source, destination);
+
+        protected override bool TryStaticOneShot(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten) =>
+            Crc64.TryHash(s_parameterSet, source, destination, out bytesWritten);
+
+        // MemberData requires static members, but per-subclass test data depends on the driver.
+        // Each concrete subclass shadows TestCases with its own static property that calls
+        // GenerateTestCases with the appropriate driver. This placeholder satisfies the
+        // compiler for nameof(TestCases) on the base class theories.
+        public static IEnumerable<object[]> TestCases => Array.Empty<object[]>();
+
+        protected static IEnumerable<object[]> GenerateTestCases(Crc64DriverBase driver)
         {
-            get
+            Crc64ParameterSet parameterSet = driver.ParameterSet;
+            object[] arr = new object[1];
+            string residue = driver.Residue;
+
+            foreach ((string Name, object Input) testCase in TestCaseDefinitions)
             {
-                object[] arr = new object[1];
-                string residue = s_driver.Residue;
-
-                foreach ((string Name, object Input) testCase in TestCaseDefinitions)
+                string outputHex = testCase.Name switch
                 {
-                    string outputHex = testCase.Name switch
-                    {
-                        "Empty" => s_driver.EmptyOutput,
-                        _ => s_driver.GetExpectedOutput(testCase.Name),
-                    };
+                    "Empty" => driver.EmptyOutput,
+                    _ => driver.GetExpectedOutput(testCase.Name),
+                };
 
-                    if (outputHex != null)
-                    {
-                        string inputHex;
+                if (outputHex != null)
+                {
+                    string inputHex;
 
-                        if (testCase.Input is byte[] array)
-                        {
-                            arr[0] = new TestCase(testCase.Name, array, outputHex);
-                            inputHex = TestCaseBase.ToHexString(array);
-                        }
-                        else
-                        {
-                            inputHex = (string)testCase.Input;
-                            arr[0] = new TestCase(testCase.Name, inputHex, outputHex);
-                        }
-                        
+                    if (testCase.Input is byte[] array)
+                    {
+                        arr[0] = new TestCase(testCase.Name, array, outputHex);
+                        inputHex = TestCaseBase.ToHexString(array);
+                    }
+                    else
+                    {
+                        inputHex = (string)testCase.Input;
+                        arr[0] = new TestCase(testCase.Name, inputHex, outputHex);
+                    }
+
+                    yield return arr;
+
+                    // If, in the future, refIn!=refOut is supported, then the residue and inverse residue test cases
+                    // would need to be skipped, as they are only valid when refIn==refOut.
+                    {
+                        arr[0] = new TestCase(testCase.Name + " Residue", inputHex + outputHex, residue);
                         yield return arr;
 
-                        // If, in the future, refIn!=refOut is supported, then the residue and inverse residue test cases
-                        // would need to be skipped, as they are only valid when refIn==refOut.
+                        if (parameterSet.FinalXorValue == ulong.MaxValue)
                         {
-                            arr[0] = new TestCase(testCase.Name + " Residue", inputHex + outputHex, residue);
-                            yield return arr;
+                            byte[] outputBytes = TestCaseBase.FromHexString(outputHex);
 
-                            if (s_parameterSet.FinalXorValue == ulong.MaxValue)
+                            for (int i = 0; i < outputBytes.Length; i++)
                             {
-                                byte[] outputBytes = TestCaseBase.FromHexString(outputHex);
-
-                                for (int i = 0; i < outputBytes.Length; i++)
-                                {
-                                    outputBytes[i] ^= 0xFF;
-                                }
-
-                                arr[0] = new TestCase(
-                                    testCase.Name + " Inverse Residue",
-                                    inputHex + TestCaseBase.ToHexString(outputBytes),
-                                    "FFFFFFFFFFFFFFFF");
-
-                                yield return arr;
+                                outputBytes[i] ^= 0xFF;
                             }
+
+                            arr[0] = new TestCase(
+                                testCase.Name + " Inverse Residue",
+                                inputHex + TestCaseBase.ToHexString(outputBytes),
+                                "FFFFFFFFFFFFFFFF");
+
+                            yield return arr;
                         }
                     }
                 }
@@ -111,19 +129,6 @@ namespace System.IO.Hashing.Tests
                      "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer ac urna vitae nibh sagittis porttitor et vel ante. Ut molestie sit amet velit ac mattis. Sed ullamcorper nunc non neque imperdiet, vehicula bibendum sapien efficitur. Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia curae; Suspendisse potenti. Duis sem dui, malesuada non pharetra at, feugiat id mi. Nulla facilisi. Fusce a scelerisque magna. Ut leo justo, auctor quis nisi et, sollicitudin pretium odio. Sed eu nibh mollis, pretium lectus nec, posuere nulla. Morbi ac euismod purus. Morbi rhoncus leo est, at volutpat nunc pretium in. Aliquam erat volutpat. Curabitur eu lacus mollis, varius lectus ut, tincidunt eros. Nullam a velit hendrerit, euismod magna id, fringilla sem. Phasellus scelerisque hendrerit est, vel imperdiet enim auctor a. Aenean vel ultricies nunc. Suspendisse ac tincidunt urna. Nulla tempor dolor ut ligula accumsan, tempus auctor massa gravida. Aenean non odio et augue pellena."u8.ToArray()
                 ),
             };
-
-        protected override NonCryptographicHashAlgorithm CreateInstance() => new Crc64(s_parameterSet);
-        protected override NonCryptographicHashAlgorithm Clone(NonCryptographicHashAlgorithm instance) => ((Crc64)instance).Clone();
-
-        protected override byte[] StaticOneShot(byte[] source) => Crc64.Hash(s_parameterSet, source);
-
-        protected override byte[] StaticOneShot(ReadOnlySpan<byte> source) => Crc64.Hash(s_parameterSet, source);
-
-        protected override int StaticOneShot(ReadOnlySpan<byte> source, Span<byte> destination) =>
-            Crc64.Hash(s_parameterSet, source, destination);
-
-        protected override bool TryStaticOneShot(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten) =>
-            Crc64.TryHash(s_parameterSet, source, destination, out bytesWritten);
 
         [Theory]
         [MemberData(nameof(TestCases))]

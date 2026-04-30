@@ -1614,10 +1614,11 @@ namespace System.Tests
             yield return new object[] { "", new Rune('m'), 0, int.MaxValue, StringComparison.OrdinalIgnoreCase, null, -1 };
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsIcuGlobalization))]
+        [Theory]
         [MemberData(nameof(IndexOf_Rune_StringComparison_TestData))]
         public static void IndexOf_Rune_StringComparison(string source, Rune target, int startIndex, int count, StringComparison stringComparison, string? cultureName, int expected)
         {
+            Assert.SkipUnless(PlatformDetection.IsIcuGlobalization, "Requires IsIcuGlobalization");
             using (new ThreadCultureChange(cultureName))
             {
                 if (count == int.MaxValue)
@@ -1655,10 +1656,11 @@ namespace System.Tests
             yield return new object[] { "Hello\uD801\uDC00", "\uD801\uDC00", StringComparison.Ordinal, 5};
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsIcuGlobalization))]
+        [Theory]
         [MemberData(nameof(IndexOf_String_StringComparison_TestData))]
         public static void IndexOf_Ordinal_Misc(string source, string target, StringComparison stringComparison, int expected)
         {
+            Assert.SkipUnless(PlatformDetection.IsIcuGlobalization, "Requires IsIcuGlobalization");
             Assert.Equal(expected, source.IndexOf(target, stringComparison));
         }
 
@@ -1730,10 +1732,11 @@ namespace System.Tests
             yield return new object[] { "HELLO\uD801\uDC00", new Rune('\uD801', '\uDC28'), 6, 4, StringComparison.OrdinalIgnoreCase, 5 };
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsIcuGlobalization))]
+        [Theory]
         [MemberData(nameof(LastIndexOf_Rune_StringComparison_TestData))]
         public static void LastIndexOf_Rune_StringComparison(string source, Rune target, int startIndex, int count, StringComparison stringComparison, int expected)
         {
+            Assert.SkipUnless(PlatformDetection.IsIcuGlobalization, "Requires IsIcuGlobalization");
             if (startIndex == int.MaxValue)
             {
                 startIndex = source.Length - 1;
@@ -1777,10 +1780,11 @@ namespace System.Tests
             yield return new object[] { "\uD801\uDC00Hello", "\uD801\uDC00", 6, StringComparison.Ordinal, 0};
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsIcuGlobalization))]
+        [Theory]
         [MemberData(nameof(LastIndexOf_String_StringComparison_TestData))]
         public static void LastIndexOf_Ordinal_Misc(string source, string target, int startIndex, StringComparison stringComparison, int expected)
         {
+            Assert.SkipUnless(PlatformDetection.IsIcuGlobalization, "Requires IsIcuGlobalization");
             Assert.Equal(expected, source.LastIndexOf(target, startIndex, stringComparison));
         }
 
@@ -1798,10 +1802,11 @@ namespace System.Tests
             yield return new object[] { "\u0200\u0202", "\u0200\u0202A", StringComparison.OrdinalIgnoreCase, false};
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsIcuGlobalization))]
+        [Theory]
         [MemberData(nameof(Ordinal_String_StringComparison_TestData))]
         public static void Compare_Ordinal_Misc(string source, string target, StringComparison stringComparison, bool expected)
         {
+            Assert.SkipUnless(PlatformDetection.IsIcuGlobalization, "Requires IsIcuGlobalization");
             Assert.Equal(expected, string.Compare(source, target, stringComparison) == 0);
             Assert.Equal(expected, string.GetHashCode(source, stringComparison) == string.GetHashCode(target, stringComparison));
         }
@@ -1820,10 +1825,11 @@ namespace System.Tests
             yield return new object[] { "\u0200\u0202AAA", "\u0200\u0202A", StringComparison.OrdinalIgnoreCase, true};
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsIcuGlobalization))]
+        [Theory]
         [MemberData(nameof(StartsWith_String_StringComparison_TestData))]
         public static void StartsWith_Ordinal_Misc(string source, string target, StringComparison stringComparison, bool expected)
         {
+            Assert.SkipUnless(PlatformDetection.IsIcuGlobalization, "Requires IsIcuGlobalization");
             Assert.Equal(expected, source.StartsWith(target, stringComparison));
         }
 
@@ -1841,10 +1847,11 @@ namespace System.Tests
             yield return new object[] { "AAA\u0200\u0202A", "\u0200\u0202A", StringComparison.OrdinalIgnoreCase, true};
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsIcuGlobalization))]
+        [Theory]
         [MemberData(nameof(EndsWith_String_StringComparison_TestData))]
         public static void EndsWith_Ordinal_Misc(string source, string target, StringComparison stringComparison, bool expected)
         {
+            Assert.SkipUnless(PlatformDetection.IsIcuGlobalization, "Requires IsIcuGlobalization");
             Assert.Equal(expected, source.EndsWith(target, stringComparison));
         }
 

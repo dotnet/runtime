@@ -19,7 +19,14 @@
     <Compile Include="XunitTestCase.cs" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="xunit.extensibility.execution" Version="$(XUnitVersion)" />
-    <PackageReference Include="xunit.assert" Version="$(XUnitVersion)" />
+    <PackageReference Include="xunit.v3.extensibility.core" Version="$(XUnitV3Version)" />
+    <!--
+      ModuleCore targets netstandard2.0 and compiles against xunit.v3.assert.
+      The PrivateAssets="all" prevents the xunit.v3.assert dependency from flowing
+      to consuming .NETCoreApp test projects (where it would conflict with
+      Microsoft.DotNet.XUnitAssert, which also defines Xunit.Assert).
+      Consuming test projects must add xunit.v3.assert as a runtime-only dependency.
+    -->
+    <PackageReference Include="xunit.v3.assert" Version="$(XUnitV3Version)" PrivateAssets="all" Publish="true" />
   </ItemGroup>
 </Project>

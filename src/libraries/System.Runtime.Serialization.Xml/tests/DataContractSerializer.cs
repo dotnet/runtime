@@ -1220,6 +1220,7 @@ public static partial class DataContractSerializerTests
     // loaded in the default ALC, which causes problems for this test.
     [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst, "AssemblyDependencyResolver not supported on Browser/iOS/tvOS/MacCatalyst")]
     [ActiveIssue("https://github.com/dotnet/runtime/issues/34072", TestRuntimes.Mono)]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/0000")] // xunit3 in-process execution holds references preventing collectible ALC GC
     public static void DCS_CollectionTypeInCollectibleALC()
     {
         ExecuteAndUnload("SerializableAssembly.dll", "SerializationTypes.SimpleType", makeCollection: true, out var weakRef);

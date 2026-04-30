@@ -9,8 +9,6 @@ using System.Xml.XPath;
 using System.Xml.Xsl;
 using XmlCoreTest.Common;
 using Xunit;
-using Xunit.Abstractions;
-
 namespace System.Xml.XslCompiledTransformApiTests
 {
     public enum OutputType
@@ -37,7 +35,6 @@ namespace System.Xml.XslCompiledTransformApiTests
     // Base class for test cases
     //
     ////////////////////////////////////////////////////////////////
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
     public class XsltApiTestCaseBase2
     {
         // Generic data for all derived test cases
@@ -69,6 +66,7 @@ namespace System.Xml.XslCompiledTransformApiTests
         private ITestOutputHelper _output;
         public XsltApiTestCaseBase2(ITestOutputHelper output)
         {
+            Assert.SkipUnless(PlatformDetection.IsReflectionEmitSupported, "ConditionalClass: PlatformDetection.IsReflectionEmitSupported");
             AppContext.SetSwitch("TestSwitch.LocalAppContext.DisableCaching", true);
             _output = output;
             this.Init(null);

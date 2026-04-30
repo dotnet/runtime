@@ -6,21 +6,25 @@ using Xunit;
 
 namespace System.Security.Cryptography.Tests
 {
-    [ConditionalClass(typeof(MLKemNotSupportedTests), nameof(MLKemNotSupportedTests.IsNotSupported))]
-    public static class MLKemNotSupportedTests
+    public class MLKemNotSupportedTests
     {
+        public MLKemNotSupportedTests()
+        {
+            Assert.SkipUnless(MLKemNotSupportedTests.IsNotSupported, "ConditionalClass: MLKemNotSupportedTests.IsNotSupported");
+        }
+
         public static bool IsNotSupported => !MLKem.IsSupported;
 
         [Theory]
         [MemberData(nameof(MLKemTestData.MLKemAlgorithms), MemberType = typeof(MLKemTestData))]
-        public static void Generate_NotSupported(MLKemAlgorithm algorithm)
+        public void Generate_NotSupported(MLKemAlgorithm algorithm)
         {
             Assert.Throws<PlatformNotSupportedException>(() => MLKem.GenerateKey(algorithm));
         }
 
         [Theory]
         [MemberData(nameof(MLKemTestData.MLKemAlgorithms), MemberType = typeof(MLKemTestData))]
-        public static void ImportPrivateSeed_NotSupported(MLKemAlgorithm algorithm)
+        public void ImportPrivateSeed_NotSupported(MLKemAlgorithm algorithm)
         {
             Assert.Throws<PlatformNotSupportedException>(() =>
                 MLKem.ImportPrivateSeed(algorithm, new byte[algorithm.PrivateSeedSizeInBytes]));
@@ -30,7 +34,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public static void ImportSubjectPublicKeyInfo_NotSupported()
+        public void ImportSubjectPublicKeyInfo_NotSupported()
         {
             Assert.Throws<PlatformNotSupportedException>(() =>
                 MLKem.ImportSubjectPublicKeyInfo(MLKemTestData.IetfMlKem512Spki));
@@ -41,7 +45,7 @@ namespace System.Security.Cryptography.Tests
 
         [Theory]
         [MemberData(nameof(MLKemTestData.MLKemAlgorithms), MemberType = typeof(MLKemTestData))]
-        public static void ImportEncapsulationKey_NotSupported(MLKemAlgorithm algorithm)
+        public void ImportEncapsulationKey_NotSupported(MLKemAlgorithm algorithm)
         {
             Assert.Throws<PlatformNotSupportedException>(() => MLKem.ImportEncapsulationKey(
                 algorithm,
@@ -54,7 +58,7 @@ namespace System.Security.Cryptography.Tests
 
         [Theory]
         [MemberData(nameof(MLKemTestData.MLKemAlgorithms), MemberType = typeof(MLKemTestData))]
-        public static void ImportDecapsulationKey_NotSupported(MLKemAlgorithm algorithm)
+        public void ImportDecapsulationKey_NotSupported(MLKemAlgorithm algorithm)
         {
             Assert.Throws<PlatformNotSupportedException>(() => MLKem.ImportDecapsulationKey(
                 algorithm,
@@ -66,7 +70,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public static void ImportPkcs8PrivateKey_NotSupported()
+        public void ImportPkcs8PrivateKey_NotSupported()
         {
             Assert.Throws<PlatformNotSupportedException>(() => MLKem.ImportPkcs8PrivateKey(
                 MLKemTestData.IetfMlKem512PrivateKeySeed));
@@ -76,7 +80,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public static void ImportEncryptedPkcs8PrivateKey_NotSupported()
+        public void ImportEncryptedPkcs8PrivateKey_NotSupported()
         {
             Assert.Throws<PlatformNotSupportedException>(() => MLKem.ImportEncryptedPkcs8PrivateKey(
                 MLKemTestData.EncryptedPrivateKeyPassword, MLKemTestData.IetfMlKem512EncryptedPrivateKeySeed));
@@ -89,7 +93,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public static void ImportFromPem_NotSupported()
+        public void ImportFromPem_NotSupported()
         {
             string pem = """
             -----BEGIN THING-----

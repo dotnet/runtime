@@ -9,7 +9,6 @@ using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Testing;
-using Microsoft.DotNet.XUnitExtensions.Attributes;
 using Microsoft.Interop;
 using Microsoft.Interop.UnitTests;
 using Xunit;
@@ -873,7 +872,7 @@ namespace ComInterfaceGenerator.Unit.Tests
             string code = $$"""
                 using System.Runtime.InteropServices;
                 using System.Runtime.InteropServices.Marshalling;
-                
+
                 [GeneratedComInterface(ExceptionToUnmanagedMarshaller = typeof(string[]))]
                 [Guid("9D3FD745-3C90-4C10-B140-FAFB01E3541D")]
                 public partial interface {|#0:I|}

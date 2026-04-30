@@ -72,59 +72,59 @@ public class ArraySinglePrimitiveRecordTests : ReadTests
         Assert.Throws<SerializationException>(() => NrbfDecoder.Decode(stream));
     }
 
-    [ConditionalTheory]
+    [Theory]
     [MemberData(nameof(GetCanReadArrayOfAnySizeArgs))]
     public void CanReadArrayOfAnySize_Bool(int size, bool canSeek) => Test<bool>(size, canSeek);
 
-    [ConditionalTheory]
+    [Theory]
     [MemberData(nameof(GetCanReadArrayOfAnySizeArgs))]
     public void CanReadArrayOfAnySize_Byte(int size, bool canSeek) => Test<byte>(size, canSeek);
 
-    [ConditionalTheory]
+    [Theory]
     [MemberData(nameof(GetCanReadArrayOfAnySizeArgs))]
     public void CanReadArrayOfAnySize_SByte(int size, bool canSeek) => Test<sbyte>(size, canSeek);
 
-    [ConditionalTheory]
+    [Theory]
     [MemberData(nameof(GetCanReadArrayOfAnySizeArgs))]
     public void CanReadArrayOfAnySize_Char(int size, bool canSeek) => Test<char>(size, canSeek);
 
-    [ConditionalTheory]
+    [Theory]
     [MemberData(nameof(GetCanReadArrayOfAnySizeArgs))]
     public void CanReadArrayOfAnySize_Int16(int size, bool canSeek) => Test<short>(size, canSeek);
 
-    [ConditionalTheory]
+    [Theory]
     [MemberData(nameof(GetCanReadArrayOfAnySizeArgs))]
     public void CanReadArrayOfAnySize_UInt16(int size, bool canSeek) => Test<ushort>(size, canSeek);
 
-    [ConditionalTheory]
+    [Theory]
     [MemberData(nameof(GetCanReadArrayOfAnySizeArgs))]
     public void CanReadArrayOfAnySize_Int32(int size, bool canSeek) => Test<int>(size, canSeek);
 
-    [ConditionalTheory]
+    [Theory]
     [MemberData(nameof(GetCanReadArrayOfAnySizeArgs))]
     public void CanReadArrayOfAnySize_UInt32(int size, bool canSeek) => Test<uint>(size, canSeek);
 
-    [ConditionalTheory]
+    [Theory]
     [MemberData(nameof(GetCanReadArrayOfAnySizeArgs))]
     public void CanReadArrayOfAnySize_Int64(int size, bool canSeek) => Test<long>(size, canSeek);
 
-    [ConditionalTheory]
+    [Theory]
     [MemberData(nameof(GetCanReadArrayOfAnySizeArgs))]
     public void CanReadArrayOfAnySize_UInt64(int size, bool canSeek) => Test<ulong>(size, canSeek);
 
-    [ConditionalTheory]
+    [Theory]
     [MemberData(nameof(GetCanReadArrayOfAnySizeArgs))]
     public void CanReadArrayOfAnySize_Single(int size, bool canSeek) => Test<float>(size, canSeek);
 
-    [ConditionalTheory]
+    [Theory]
     [MemberData(nameof(GetCanReadArrayOfAnySizeArgs))]
     public void CanReadArrayOfAnySize_Double(int size, bool canSeek) => Test<double>(size, canSeek);
 
-    [ConditionalTheory]
+    [Theory]
     [MemberData(nameof(GetCanReadArrayOfAnySizeArgs))]
     public void CanReadArrayOfAnySize_TimeSpan(int size, bool canSeek) => Test<TimeSpan>(size, canSeek);
 
-    [ConditionalTheory]
+    [Theory]
     [MemberData(nameof(GetCanReadArrayOfAnySizeArgs))]
     public void CanReadArrayOfAnySize_DateTime(int size, bool canSeek) => Test<DateTime>(size, canSeek);
 
@@ -155,10 +155,7 @@ public class ArraySinglePrimitiveRecordTests : ReadTests
 
     private void TestSZArrayOfIComparable<T>(T[] input, int size, bool canSeek) where T : IComparable
     {
-        if (!IsPatched)
-        {
-            throw new SkipTestException("Current machine has not been patched with the most recent BinaryFormatter fix.");
-        }
+        Assert.SkipUnless(IsPatched, "Current machine has not been patched with the most recent BinaryFormatter fix.");
 
         // Arrays of abstractions that store primitive values (example: new IComparable[1] { int.MaxValue })
         // are represented by BinaryFormatter with a single SystemClassWithMembersAndTypesRecord

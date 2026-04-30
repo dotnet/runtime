@@ -6,6 +6,7 @@ using System.Linq;
 
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
+using Xunit.Sdk;
 
 namespace System.Collections.Tests
 {
@@ -60,7 +61,7 @@ namespace System.Collections.Tests
         #region Constructor_IEnumerable
 
         [Theory]
-        [MemberData(nameof(EnumerableTestData))]
+        [MemberData(nameof(EnumerableTestData), MemberType = typeof(TestBase))]
         public void Queue_Generic_Constructor_IEnumerable(EnumerableType enumerableType, int setLength, int enumerableLength, int numberOfMatchingElements, int numberOfDuplicateElements)
         {
             _ = setLength;
@@ -81,7 +82,7 @@ namespace System.Collections.Tests
         #region Constructor_Capacity
 
         [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
+        [MemberData(nameof(ValidCollectionSizes), MemberType = typeof(TestBase))]
         public void Queue_Generic_Constructor_int(int count)
         {
             Queue<T> queue = new Queue<T>(count);
@@ -111,7 +112,7 @@ namespace System.Collections.Tests
         #region Dequeue
 
         [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
+        [MemberData(nameof(ValidCollectionSizes), MemberType = typeof(TestBase))]
         public void Queue_Generic_Dequeue_AllElements(int count)
         {
             Queue<T> queue = GenericQueueFactory(count);
@@ -167,7 +168,7 @@ namespace System.Collections.Tests
         #region ToArray
 
         [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
+        [MemberData(nameof(ValidCollectionSizes), MemberType = typeof(TestBase))]
         public void Queue_Generic_ToArray(int count)
         {
             Queue<T> queue = GenericQueueFactory(count);
@@ -175,7 +176,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
+        [MemberData(nameof(ValidCollectionSizes), MemberType = typeof(TestBase))]
         public void Queue_Generic_ToArray_NonWrappedQueue(int count)
         {
             Queue<T> collection = new Queue<T>(count + 1);
@@ -189,7 +190,7 @@ namespace System.Collections.Tests
         #region Peek
 
         [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
+        [MemberData(nameof(ValidCollectionSizes), MemberType = typeof(TestBase))]
         public void Queue_Generic_Peek_AllElements(int count)
         {
             Queue<T> queue = GenericQueueFactory(count);
@@ -240,7 +241,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
+        [MemberData(nameof(ValidCollectionSizes), MemberType = typeof(TestBase))]
         public void Queue_Generic_TrimExcess_OnValidQueueThatHasntBeenRemovedFrom(int count)
         {
             Queue<T> queue = GenericQueueFactory(count);
@@ -248,7 +249,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
+        [MemberData(nameof(ValidCollectionSizes), MemberType = typeof(TestBase))]
         public void Queue_Generic_TrimExcess_Repeatedly(int count)
         {
             Queue<T> queue = GenericQueueFactory(count);
@@ -260,7 +261,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
+        [MemberData(nameof(ValidCollectionSizes), MemberType = typeof(TestBase))]
         public void Queue_Generic_TrimExcess_AfterRemovingOneElement(int count)
         {
             if (count > 0)
@@ -277,7 +278,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
+        [MemberData(nameof(ValidCollectionSizes), MemberType = typeof(TestBase))]
         public void Queue_Generic_TrimExcess_AfterClearingAndAddingSomeElementsBack(int count)
         {
             if (count > 0)
@@ -295,7 +296,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
+        [MemberData(nameof(ValidCollectionSizes), MemberType = typeof(TestBase))]
         public void Queue_Generic_TrimExcess_AfterClearingAndAddingAllElementsBack(int count)
         {
             if (count > 0)
@@ -315,7 +316,7 @@ namespace System.Collections.Tests
         #endregion
 
         [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
+        [MemberData(nameof(ValidCollectionSizes), MemberType = typeof(TestBase))]
         public void Queue_Generic_TryDequeue_AllElements(int count)
         {
             Queue<T> queue = GenericQueueFactory(count);
@@ -340,7 +341,7 @@ namespace System.Collections.Tests
             catch (OutOfMemoryException)
             {
                 // just skip when ctor throws OOM
-                throw new SkipTestException("Unable to allocate 2GB of memory");
+                throw SkipException.ForSkip("Unable to allocate 2GB of memory");
             }
 
             // once the internal index is moved (via enqueue/dequeue operations), enumerating
@@ -385,7 +386,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
+        [MemberData(nameof(ValidCollectionSizes), MemberType = typeof(TestBase))]
         public void Queue_Generic_TryPeek_AllElements(int count)
         {
             Queue<T> queue = GenericQueueFactory(count);
@@ -409,7 +410,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
+        [MemberData(nameof(ValidCollectionSizes), MemberType = typeof(TestBase))]
         public void Queue_Generic_EnsureCapacity_RequestingLargerCapacity_DoesInvalidateEnumeration(int count)
         {
             Queue<T> queue = GenericQueueFactory(count);
@@ -435,14 +436,8 @@ namespace System.Collections.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException>("capacity", () => queue.EnsureCapacity(-1));
         }
 
-        public static IEnumerable<object[]> Queue_Generic_EnsureCapacity_LargeCapacityRequested_Throws_MemberData()
-        {
-            yield return new object[] { Array.MaxLength + 1 };
-            yield return new object[] { int.MaxValue };
-        }
-
         [Theory]
-        [MemberData(nameof(Queue_Generic_EnsureCapacity_LargeCapacityRequested_Throws_MemberData))]
+        [MemberData(nameof(CollectionTestData.Queue_Generic_EnsureCapacity_LargeCapacityRequested_Throws_MemberData), MemberType = typeof(CollectionTestData))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/51411", TestRuntimes.Mono)]
         public void Queue_Generic_EnsureCapacity_LargeCapacityRequested_Throws(int requestedCapacity)
         {
@@ -463,7 +458,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
+        [MemberData(nameof(ValidCollectionSizes), MemberType = typeof(TestBase))]
         public void Queue_Generic_EnsureCapacity_RequestedCapacitySmallerThanOrEqualToCount_CapacityUnchanged(int count)
         {
             Queue<T> queue = GenericQueueFactory(count);
@@ -488,7 +483,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
+        [MemberData(nameof(ValidCollectionSizes), MemberType = typeof(TestBase))]
         public void Queue_Generic_EnsureCapacity_RequestingLargerCapacity_DoesNotImpactQueueContent(int count)
         {
             Queue<T> queue = GenericQueueFactory(count);

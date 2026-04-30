@@ -8,9 +8,13 @@ using Xunit;
 
 namespace System.DirectoryServices.Protocols.Tests
 {
-    [ConditionalClass(typeof(DirectoryServicesTestHelpers), nameof(DirectoryServicesTestHelpers.IsWindowsOrLibLdapIsInstalled))]
     public class VlvResponseControlTests
     {
+
+        public VlvResponseControlTests()
+        {
+            Assert.SkipUnless(DirectoryServicesTestHelpers.IsWindowsOrLibLdapIsInstalled, "ConditionalClass: DirectoryServicesTestHelpers.IsWindowsOrLibLdapIsInstalled");
+        }
         private const string ControlOid = "2.16.840.1.113730.3.4.10";
 
         private static MethodInfo s_transformControlsMethod = typeof(DirectoryControl)
@@ -305,6 +309,7 @@ namespace System.DirectoryServices.Protocols.Tests
             => VerifyResponseControl(value, targetPosition, contentCount, result, contextId);
 
         [Theory]
+        [SkipOnCoreClr("netfx-only test")]
         [MemberData(nameof(NonconformantControlValues))]
         public void NonconformantResponseControlParsedSuccessfully(byte[] value, int targetPosition, int contentCount, ResultCode result, byte[] contextId)
             => VerifyResponseControl(value, targetPosition, contentCount, result, contextId);

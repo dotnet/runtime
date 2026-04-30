@@ -7,15 +7,20 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
-using Xunit.Abstractions;
-
 namespace System.Net.WebSockets.Client.Tests
 {
-
-    [ConditionalClass(typeof(ClientWebSocketTestBase), nameof(WebSocketsSupported))]
     [SkipOnPlatform(TestPlatforms.Browser, "System.Net.Sockets are not supported on browser")]
     public abstract class CloseTest_LoopbackBase(ITestOutputHelper output) : CloseTestBase(output)
     {
+
+        public CloseTest_LoopbackBase() : this(null!)
+
+        {
+
+            Assert.SkipUnless(ClientWebSocketTestBase.WebSocketsSupported, "ConditionalClass: ClientWebSocketTestBase.WebSocketsSupported");
+
+        }
+
         #region Common (Echo Server) tests
 
         [Theory, MemberData(nameof(UseSslAndBoolean))]

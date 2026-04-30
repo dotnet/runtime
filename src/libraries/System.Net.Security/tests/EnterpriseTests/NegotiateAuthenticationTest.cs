@@ -13,9 +13,13 @@ using Xunit;
 
 namespace System.Net.Security.Enterprise.Tests
 {
-    [ConditionalClass(typeof(EnterpriseTestConfiguration), nameof(EnterpriseTestConfiguration.Enabled))]
     public class NegotiateAuthenticationTest
     {
+        public NegotiateAuthenticationTest()
+        {
+            Assert.SkipUnless(EnterpriseTestConfiguration.Enabled, "ConditionalClass: EnterpriseTestConfiguration.Enabled");
+        }
+
         static NegotiateAuthenticationTest()
         {
             // Obtain a Kerberos TGT so that DefaultNetworkCredentials tests can work.
@@ -73,7 +77,7 @@ namespace System.Net.Security.Enterprise.Tests
             Assert.Equal("Negotiate", client.Package);
         }
 
-        [ConditionalTheory]
+        [Theory]
         [InlineData("HOST/localhost")]
         [InlineData("HOST/linuxclient.linux.contoso.com")]
         public void ClientAuthentication_DefaultCredentials_Succeeds(string targetName)

@@ -21,6 +21,7 @@ namespace System.Text.Json.Serialization.Tests
             SupportsJsonPathOnSerialize = supportsJsonPathOnSerialize;
         }
 
+#if !SINGLE_FILE_TEST_RUNNER
         [Theory]
         [MemberData(nameof(GetUnsupportedValues))]
         public async Task DeserializeUnsupportedType<T>(ValueWrapper<T> wrapper)
@@ -119,6 +120,7 @@ namespace System.Text.Json.Serialization.Tests
             exAsStr = ex.ToString();
             Assert.Contains(fullName, exAsStr);
         }
+#endif
 
         public static IEnumerable<object[]> GetUnsupportedValues()
         {

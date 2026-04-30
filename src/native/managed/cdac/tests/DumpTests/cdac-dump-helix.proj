@@ -5,7 +5,7 @@
 
     This project defines a Helix work item that:
       1. Runs pre-built R2R debuggee apps to produce crash dumps on Helix hardware
-      2. Runs the cDAC dump tests against those dumps using xunit.console.dll
+      2. Runs the cDAC dump tests (self-hosted xunit v3 runner)
          (unless DumpOnly=true, in which case dumps are tarred and uploaded)
 
     Each debuggee may run multiple times — once per DumpType × R2RMode combination.
@@ -204,9 +204,9 @@
     <!-- Test mode only: run xunit, capture exit code, propagate after archive. -->
     <ItemGroup Condition="'$(DumpOnly)' != 'true'">
       <_HelixCommandLines Condition="'$(TargetOS)' == 'windows'"
-          Include="%25HELIX_CORRELATION_PAYLOAD%25\dotnet.exe exec --runtimeconfig %25HELIX_WORKITEM_PAYLOAD%25\tests\Microsoft.Diagnostics.DataContractReader.DumpTests.runtimeconfig.json --depsfile %25HELIX_WORKITEM_PAYLOAD%25\tests\Microsoft.Diagnostics.DataContractReader.DumpTests.deps.json %25HELIX_WORKITEM_PAYLOAD%25\tests\xunit.console.dll %25HELIX_WORKITEM_PAYLOAD%25\tests\Microsoft.Diagnostics.DataContractReader.DumpTests.dll -xml testResults.xml -nologo" />
+          Include="%25HELIX_CORRELATION_PAYLOAD%25\dotnet.exe exec --runtimeconfig %25HELIX_WORKITEM_PAYLOAD%25\tests\Microsoft.Diagnostics.DataContractReader.DumpTests.runtimeconfig.json --depsfile %25HELIX_WORKITEM_PAYLOAD%25\tests\Microsoft.Diagnostics.DataContractReader.DumpTests.deps.json %25HELIX_WORKITEM_PAYLOAD%25\tests\Microsoft.Diagnostics.DataContractReader.DumpTests.dll --report-xunit-xml --report-xunit-xml-filename testResults.xml --results-directory %25HELIX_WORKITEM_UPLOAD_ROOT%25 --auto-reporters off" />
       <_HelixCommandLines Condition="'$(TargetOS)' != 'windows'"
-          Include="$HELIX_CORRELATION_PAYLOAD/dotnet exec --runtimeconfig $HELIX_WORKITEM_PAYLOAD/tests/Microsoft.Diagnostics.DataContractReader.DumpTests.runtimeconfig.json --depsfile $HELIX_WORKITEM_PAYLOAD/tests/Microsoft.Diagnostics.DataContractReader.DumpTests.deps.json $HELIX_WORKITEM_PAYLOAD/tests/xunit.console.dll $HELIX_WORKITEM_PAYLOAD/tests/Microsoft.Diagnostics.DataContractReader.DumpTests.dll -xml testResults.xml -nologo" />
+          Include="$HELIX_CORRELATION_PAYLOAD/dotnet exec --runtimeconfig $HELIX_WORKITEM_PAYLOAD/tests/Microsoft.Diagnostics.DataContractReader.DumpTests.runtimeconfig.json --depsfile $HELIX_WORKITEM_PAYLOAD/tests/Microsoft.Diagnostics.DataContractReader.DumpTests.deps.json $HELIX_WORKITEM_PAYLOAD/tests/Microsoft.Diagnostics.DataContractReader.DumpTests.dll --report-xunit-xml --report-xunit-xml-filename testResults.xml --results-directory $HELIX_WORKITEM_UPLOAD_ROOT --auto-reporters off" />
 
       <!-- Store test exit code before archiving (archive always succeeds and would overwrite it). -->
       <_HelixCommandLines Condition="'$(TargetOS)' == 'windows'"

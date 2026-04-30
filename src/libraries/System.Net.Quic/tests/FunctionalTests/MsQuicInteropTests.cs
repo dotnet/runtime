@@ -9,7 +9,6 @@ using System.Runtime.InteropServices;
 using System.Reflection;
 using System.Linq;
 using Xunit;
-using Xunit.Abstractions;
 
 using Microsoft.Quic;
 

@@ -153,10 +153,7 @@ namespace System.Security.Cryptography.Tests
         [InlineData("System.Security.Cryptography.DSA", typeof(DSA))]
         public static void NamedAsymmetricAlgorithmCreate_DSA(string identifier, Type baseType)
         {
-            if (!PlatformSupport.IsDSASupported)
-            {
-                throw new SkipTestException("Platform does not support DSA.");
-            }
+            Assert.SkipUnless(PlatformSupport.IsDSASupported, "Platform does not support DSA.");
 
             using (AsymmetricAlgorithm created = AsymmetricAlgorithm.Create(identifier))
             {

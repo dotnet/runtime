@@ -4,15 +4,43 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Threading.Tasks;
 using XmlCoreTest.Common;
-using Xunit.Abstractions;
+using Xunit;
 using Xunit.Sdk;
+using Xunit.v3;
 
 namespace System.Xml.XmlWriterApiTests
 {
-    // Based on https://github.com/xunit/xunit/blob/bccfcccf26b2c63c90573fe1a17e6572882ef39c/src/xunit.core/Sdk/InlineDataDiscoverer.cs
-    public class XmlWriterInlineDataDiscoverer : IDataDiscoverer
+    // Based on https://github.com/xunit/xunit/blob/bccfcccf26b2c63c90573fe1a17e6572882ef39c/src/xunit.core/InlineDataAttribute.cs
+    [AttributeUsage(AttributeTargets.Method, AllowMultiple = true)]
+    public sealed class XmlWriterInlineDataAttribute : DataAttribute
     {
+        private readonly object[] _data;
+        WriterType _writerTypeFlags;
+
+        public XmlWriterInlineDataAttribute(params object[] data)
+        {
+            _data = data;
+            _writerTypeFlags = WriterType.All;
+        }
+
+        public XmlWriterInlineDataAttribute(WriterType writerTypeFlag, params object[] data)
+        {
+            _data = data;
+            _writerTypeFlags = writerTypeFlag;
+        }
+
+        public override ValueTask<IReadOnlyCollection<ITheoryDataRow>> GetData(MethodInfo testMethod, DisposalTracker disposalTracker)
+        {
+            var testCases = new List<ITheoryDataRow>();
+            foreach (object[] testCase in GenerateTestCases(_writerTypeFlags, _data))
+            {
+                testCases.Add(new TheoryDataRow(testCase));
+            }
+            return new ValueTask<IReadOnlyCollection<ITheoryDataRow>>(testCases);
+        }
+
         public static IEnumerable<object[]> GenerateTestCases(WriterType writerTypeFlags, object[] args)
         {
             bool noAsyncFlag = writerTypeFlags.HasFlag(WriterType.NoAsync);
@@ -34,14 +62,6 @@ namespace System.Xml.XmlWriterApiTests
                 if (asyncFlag)
                     yield return Prepend(args, new XmlWriterUtils(writerType, async: true)).ToArray();
             }
-        }
-
-        private static object[] Prepend(object[] arr, object o)
-        {
-            List<object> list = new List<object>();
-            list.Add(o);
-            list.AddRange(arr);
-            return list.ToArray();
         }
 
         private static IEnumerable<WriterType> GetWriterTypes(WriterType writerTypeFlags)
@@ -68,55 +88,17 @@ namespace System.Xml.XmlWriterApiTests
                 yield return WriterType.WrappedWriter;
         }
 
-        public virtual IEnumerable<object[]> GetData(IAttributeInfo dataAttribute, IMethodInfo testMethod)
+        private static object[] Prepend(object[] arr, object o)
         {
-            object[] constructorArgs = dataAttribute.GetConstructorArguments().ToArray();
-
-            if (constructorArgs.Length == 1)
-            {
-                object[] args = ((IEnumerable<object>)constructorArgs[0] ?? new object[] { null }).ToArray();
-                return GenerateTestCases(WriterType.All, args);
-            }
-
-            if (constructorArgs.Length == 2)
-            {
-                WriterType writerTypeFlags = (WriterType)constructorArgs[0];
-                object[] args = ((IEnumerable<object>)constructorArgs[1] ?? new object[] { null }).ToArray();
-                return GenerateTestCases(writerTypeFlags, args);
-            }
-
-            throw new Exception("Invalid args");
+            List<object> list = new List<object>();
+            list.Add(o);
+            list.AddRange(arr);
+            return list.ToArray();
         }
 
-        public virtual bool SupportsDiscoveryEnumeration(IAttributeInfo dataAttribute, IMethodInfo testMethod)
+        public override bool SupportsDiscoveryEnumeration()
         {
             return true;
-        }
-    }
-
-    // Based on https://github.com/xunit/xunit/blob/bccfcccf26b2c63c90573fe1a17e6572882ef39c/src/xunit.core/InlineDataAttribute.cs
-    [DataDiscoverer("System.Xml.XmlWriterApiTests.XmlWriterInlineDataDiscoverer", "System.Private.Xml.Tests")]
-    [AttributeUsage(AttributeTargets.Method, AllowMultiple = true)]
-    public sealed class XmlWriterInlineDataAttribute : DataAttribute
-    {
-        private readonly object[] _data;
-        WriterType _writerTypeFlags;
-
-        public XmlWriterInlineDataAttribute(params object[] data)
-        {
-            _data = data;
-            _writerTypeFlags = WriterType.All;
-        }
-
-        public XmlWriterInlineDataAttribute(WriterType writerTypeFlag, params object[] data)
-        {
-            _data = data;
-            _writerTypeFlags = writerTypeFlag;
-        }
-
-        public override IEnumerable<object[]> GetData(MethodInfo testMethod)
-        {
-            return XmlWriterInlineDataDiscoverer.GenerateTestCases(_writerTypeFlags, _data);
         }
     }
 }

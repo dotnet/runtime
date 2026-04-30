@@ -17,7 +17,7 @@ public class ThreadDumpTests : DumpTestBase
 
     protected override string DebuggeeName => "BasicThreads";
 
-    [ConditionalTheory]
+    [Theory]
     [MemberData(nameof(TestConfigurations))]
     public void ThreadStoreData_HasExpectedThreadCount(TestConfiguration config)
     {
@@ -31,7 +31,7 @@ public class ThreadDumpTests : DumpTestBase
             $"Expected at least {SpawnedThreadCount + 1} threads, got {storeData.ThreadCount}");
     }
 
-    [ConditionalTheory]
+    [Theory]
     [MemberData(nameof(TestConfigurations))]
     public void EnumerateThreads_CanWalkThreadList(TestConfiguration config)
     {
@@ -55,7 +55,7 @@ public class ThreadDumpTests : DumpTestBase
         Assert.Equal(storeData.ThreadCount, count);
     }
 
-    [ConditionalTheory]
+    [Theory]
     [MemberData(nameof(TestConfigurations))]
     public void ThreadStoreData_HasFinalizerThread(TestConfiguration config)
     {
@@ -66,7 +66,7 @@ public class ThreadDumpTests : DumpTestBase
         Assert.NotEqual(TargetPointer.Null, storeData.FinalizerThread);
     }
 
-    [ConditionalTheory]
+    [Theory]
     [MemberData(nameof(TestConfigurations))]
     public void ThreadStoreData_HasGCThread(TestConfiguration config)
     {
@@ -79,7 +79,7 @@ public class ThreadDumpTests : DumpTestBase
         _ = storeData.GCThread;
     }
 
-    [ConditionalTheory]
+    [Theory]
     [MemberData(nameof(TestConfigurations))]
     public void Threads_HaveValidIds(TestConfiguration config)
     {
@@ -98,7 +98,7 @@ public class ThreadDumpTests : DumpTestBase
         }
     }
 
-    [ConditionalTheory]
+    [Theory]
     [MemberData(nameof(TestConfigurations))]
     public void ThreadCounts_AreNonNegative(TestConfiguration config)
     {
@@ -112,7 +112,7 @@ public class ThreadDumpTests : DumpTestBase
         Assert.True(counts.DeadThreadCount >= 0, $"DeadThreadCount should be non-negative, got {counts.DeadThreadCount}");
     }
 
-    [ConditionalTheory]
+    [Theory]
     [MemberData(nameof(TestConfigurations))]
     public void GetThreadAllocContext_CanReadForAllThreads(TestConfiguration config)
     {

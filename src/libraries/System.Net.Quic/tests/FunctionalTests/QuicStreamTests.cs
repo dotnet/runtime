@@ -8,16 +8,17 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace System.Net.Quic.Tests
 {
     [Collection(nameof(QuicTestCollection))]
-    [ConditionalClass(typeof(QuicTestBase), nameof(QuicTestBase.IsSupported), nameof(QuicTestBase.IsNotArm32CoreClrStressTest))]
     public sealed class QuicStreamTests : QuicTestBase
     {
         private static byte[] s_data = "Hello world!"u8.ToArray();
-        public QuicStreamTests(ITestOutputHelper output) : base(output) { }
+        public QuicStreamTests(ITestOutputHelper output) : base(output) {
+            Assert.SkipUnless(QuicTestBase.IsSupported, "ConditionalClass: QuicTestBase.IsSupported");
+            Assert.SkipUnless(QuicTestBase.IsNotArm32CoreClrStressTest, "ConditionalClass: QuicTestBase.IsNotArm32CoreClrStressTest");
+        }
 
         [Fact]
         public async Task BasicTest()

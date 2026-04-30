@@ -7,7 +7,7 @@ namespace System.Data.Odbc.Tests
 {
     public class CommandBuilderTests : IntegrationTestBase
     {
-        [ConditionalFact]
+        [Fact]
         public void QuoteIdentifier_UseConnection()
         {
             var commandBuilder = new OdbcCommandBuilder();
@@ -36,7 +36,7 @@ namespace System.Data.Odbc.Tests
             Assert.Throws<InvalidOperationException>(() => commandBuilder.UnquoteIdentifier("Test"));
         }
 
-        [ConditionalFact]
+        [Fact]
         public void QuoteIdentifier_CustomPrefixSuffix()
         {
             var commandBuilder = new OdbcCommandBuilder();

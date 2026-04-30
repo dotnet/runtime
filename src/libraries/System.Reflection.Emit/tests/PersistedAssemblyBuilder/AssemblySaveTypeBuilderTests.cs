@@ -14,9 +14,13 @@ using Xunit;
 
 namespace System.Reflection.Emit.Tests
 {
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
     public class AssemblySaveTypeBuilderTests
     {
+        public AssemblySaveTypeBuilderTests()
+        {
+            Assert.SkipUnless(PlatformDetection.HasAssemblyFiles, "ConditionalClass: PlatformDetection.HasAssemblyFiles");
+        }
+
         private static readonly AssemblyName s_assemblyName = new AssemblyName("MyDynamicAssembly")
         {
             Version = new Version("1.2.3.4"),

@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using Xunit;
 
 namespace System.IO.Hashing.Tests
@@ -29,8 +30,12 @@ namespace System.IO.Hashing.Tests
             };
     }
 
-    public class Crc64Tests_ParameterSet_Nvme : Crc64Tests_Parameterized<Crc64NvmeDriver>
+    public class Crc64Tests_ParameterSet_Nvme : Crc64Tests_Parameterized
     {
+        public Crc64Tests_ParameterSet_Nvme() : base(new Crc64NvmeDriver()) { }
+
+        public new static IEnumerable<object[]> TestCases => GenerateTestCases(new Crc64NvmeDriver());
+
         [Fact]
         public void StaticProperty_IsSingleton()
         {

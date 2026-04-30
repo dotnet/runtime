@@ -14,11 +14,8 @@ using System.Text;
 using System.Threading;
 using System.Xml;
 using Xunit;
-using Xunit.Abstractions;
-
 namespace SampleSynthesisTests
 {
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoNorServerCore))] // No SAPI on Nano or Server Core
     [SkipOnMono("No SAPI on Mono")]
     public class SynthesizeRecognizeTests : FileCleanupTestBase
     {
@@ -31,6 +28,7 @@ namespace SampleSynthesisTests
 
         public SynthesizeRecognizeTests(ITestOutputHelper output)
         {
+            Assert.SkipUnless(PlatformDetection.IsNotWindowsNanoNorServerCore, "ConditionalClass: PlatformDetection.IsNotWindowsNanoNorServerCore");
             _output = output;
         }
 

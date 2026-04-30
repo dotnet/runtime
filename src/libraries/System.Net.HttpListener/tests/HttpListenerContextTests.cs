@@ -15,7 +15,6 @@ namespace System.Net.Tests
 {
     [SkipOnCoreClr("System.Net.Tests may timeout in stress configurations", ~RuntimeConfiguration.Release)]
     [ActiveIssue("https://github.com/dotnet/runtime/issues/2391", TestRuntimes.Mono)]
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))] // httpsys component missing in Nano.
     public class HttpListenerContextTests : IDisposable
     {
         private HttpListenerFactory Factory { get; }
@@ -23,6 +22,7 @@ namespace System.Net.Tests
 
         public HttpListenerContextTests()
         {
+            Assert.SkipUnless(PlatformDetection.IsNotWindowsNanoServer, "ConditionalClass: PlatformDetection.IsNotWindowsNanoServer");
             Factory = new HttpListenerFactory();
             Socket = new ClientWebSocket();
         }

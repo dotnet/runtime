@@ -8,9 +8,14 @@ namespace System.IO.Tests
     // Need to reuse the same virtual drive for all the test methods.
     // Creating and disposing one virtual drive per class achieves this.
     [PlatformSpecific(TestPlatforms.Windows)]
-    [ConditionalClass(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks), nameof(MountHelper.IsSubstAvailable))]
     public class VirtualDrive_SymbolicLinks : BaseSymbolicLinks
     {
+        public VirtualDrive_SymbolicLinks()
+        {
+            Assert.SkipUnless(MountHelper.CanCreateSymbolicLinks, "ConditionalClass: MountHelper.CanCreateSymbolicLinks");
+            Assert.SkipUnless(MountHelper.IsSubstAvailable, "ConditionalClass: MountHelper.IsSubstAvailable");
+        }
+
         private VirtualDriveHelper VirtualDrive { get; } = new VirtualDriveHelper();
 
         protected override void Dispose(bool disposing)

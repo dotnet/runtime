@@ -11,7 +11,7 @@ using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
-using Xunit.Abstractions;
+using Xunit.Sdk;
 
 namespace System.Net.Http.Functional.Tests
 {
@@ -77,12 +77,13 @@ namespace System.Net.Http.Functional.Tests
             return CreateHttpClient(handler);
         }
 
-        [ConditionalTheory]
+        [Theory]
         [InlineData(1, true)]
         [InlineData(2, true)]
         [InlineData(3, false)]
         public async Task Manual_CertificateOnlySentWhenValid_Success(int certIndex, bool serverExpectsClientCertificate)
         {
+
             var options = new LoopbackServer.Options { UseSsl = true };
 
             X509Certificate2 GetClientCertificate(int certIndex) => certIndex switch

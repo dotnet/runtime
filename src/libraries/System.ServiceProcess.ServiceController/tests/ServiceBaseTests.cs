@@ -153,10 +153,7 @@ namespace System.ServiceProcess.Tests
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPrivilegedProcess))]
         public void TestOnExecuteCustomCommand()
         {
-            if (PlatformDetection.IsWindowsServerCore)
-            {
-                throw new SkipTestException("Skip on Windows Server Core"); // https://github.com/dotnet/runtime/issues/43207
-            }
+            Assert.SkipWhen(PlatformDetection.IsWindowsServerCore, "Skip on Windows Server Core");
 
             ServiceController controller = ConnectToServer();
 

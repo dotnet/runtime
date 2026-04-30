@@ -28,12 +28,16 @@ using Xunit;
 namespace System.Security.Cryptography.Tests
 {
     // PKCS1MaskGenerationMethod is annotated as RequiresUnreferencedCode
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBuiltWithAggressiveTrimming))]
     [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
     public class PKCS1MaskGenerationMethodTest
     {
+        public PKCS1MaskGenerationMethodTest()
+        {
+            Assert.SkipUnless(PlatformDetection.IsNotBuiltWithAggressiveTrimming, "ConditionalClass: PlatformDetection.IsNotBuiltWithAggressiveTrimming");
+        }
+
         [Fact]
-        public static void PropertyTest()
+        public void PropertyTest()
         {
             PKCS1MaskGenerationMethod pkcs1 = new PKCS1MaskGenerationMethod();
             Assert.Equal("SHA1", pkcs1.HashName);
@@ -46,7 +50,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public static void EmptyMaskTest()
+        public void EmptyMaskTest()
         {
             PKCS1MaskGenerationMethod pkcs1 = new PKCS1MaskGenerationMethod();
             byte[] random = { 0x01 };
@@ -55,14 +59,14 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public static void NullSeedTest()
+        public void NullSeedTest()
         {
             PKCS1MaskGenerationMethod pkcs1 = new PKCS1MaskGenerationMethod();
             Assert.Throws<NullReferenceException>(() => pkcs1.GenerateMask(null, 10));
         }
 
         [Fact]
-        public static void NegativeReturnParameterTest()
+        public void NegativeReturnParameterTest()
         {
             PKCS1MaskGenerationMethod pkcs1 = new PKCS1MaskGenerationMethod();
             byte[] random = { 0x01 };
@@ -72,7 +76,7 @@ namespace System.Security.Cryptography.Tests
         [Theory]
         [InlineData("DoesntExist")]
         [InlineData("RSA")]
-        public static void GenerateMask_InvalidHashName_Throws(string hashName)
+        public void GenerateMask_InvalidHashName_Throws(string hashName)
         {
             PKCS1MaskGenerationMethod pkcs1 = new PKCS1MaskGenerationMethod();
             pkcs1.HashName = hashName;
@@ -80,7 +84,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public static void GenerateMaskTest_SHA1()
+        public void GenerateMaskTest_SHA1()
         {
             PKCS1MaskGenerationMethod pkcs1 = new PKCS1MaskGenerationMethod();
 
@@ -118,7 +122,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public static void GenerateMaskTest_MD5()
+        public void GenerateMaskTest_MD5()
         {
             PKCS1MaskGenerationMethod pkcs1 = new PKCS1MaskGenerationMethod();
             pkcs1.HashName = "MD5";

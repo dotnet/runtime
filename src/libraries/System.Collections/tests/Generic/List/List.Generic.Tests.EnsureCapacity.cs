@@ -12,7 +12,7 @@ namespace System.Collections.Tests
     public abstract partial class List_Generic_Tests<T> : IList_Generic_Tests<T>
     {
         [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
+        [MemberData(nameof(ValidCollectionSizes), MemberType = typeof(TestBase))]
         public void EnsureCapacity_RequestingLargerCapacity_DoesNotInvalidateEnumeration(int count)
         {
             List<T> list = GenericListFactory(count);
@@ -40,14 +40,8 @@ namespace System.Collections.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException>("capacity", () => list.EnsureCapacity(-1));
         }
 
-        public static IEnumerable<object[]> EnsureCapacity_LargeCapacity_Throws_MemberData()
-        {
-            yield return new object[] { 5, Array.MaxLength + 1 };
-            yield return new object[] { 1, int.MaxValue };
-        }
-
         [Theory]
-        [MemberData(nameof(EnsureCapacity_LargeCapacity_Throws_MemberData))]
+        [MemberData(nameof(CollectionTestData.EnsureCapacity_LargeCapacity_Throws_MemberData), MemberType = typeof(CollectionTestData))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/51411", TestRuntimes.Mono)]
         public void EnsureCapacity_LargeCapacity_Throws(int count, int requestCapacity)
         {
@@ -69,7 +63,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
+        [MemberData(nameof(ValidCollectionSizes), MemberType = typeof(TestBase))]
         public void EnsureCapacity_RequestedCapacitySmallerThanOrEqualToCount_CapacityUnchanged(int count)
         {
             List<T> list = GenericListFactory(count);
@@ -97,7 +91,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
+        [MemberData(nameof(ValidCollectionSizes), MemberType = typeof(TestBase))]
         public void EnsureCapacity_RequestingLargerCapacity_DoesNotImpactListContent(int count)
         {
             List<T> list = GenericListFactory(count);

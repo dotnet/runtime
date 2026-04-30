@@ -37,7 +37,7 @@ public class StackWalkDumpTests : DumpTestBase
         Assert.True(frameList.Count > 0, "Expected at least one stack frame on the crashing thread");
     }
 
-    [ConditionalTheory]
+    [Theory]
     [MemberData(nameof(TestConfigurations))]
     [SkipOnVersion("net10.0", "InlinedCallFrame.Datum was added after net10.0")]
     public void StackWalk_HasMultipleFrames(TestConfiguration config)
@@ -57,7 +57,7 @@ public class StackWalkDumpTests : DumpTestBase
             $"Expected multiple stack frames from the crashing thread, got {frameList.Count}");
     }
 
-    [ConditionalTheory]
+    [Theory]
     [MemberData(nameof(TestConfigurations))]
     [SkipOnVersion("net10.0", "InlinedCallFrame.Datum was added after net10.0")]
     public void StackWalk_ManagedFramesHaveValidMethodDescs(TestConfiguration config)
@@ -82,7 +82,7 @@ public class StackWalkDumpTests : DumpTestBase
         }
     }
 
-    [ConditionalTheory]
+    [Theory]
     [MemberData(nameof(TestConfigurations))]
     [SkipOnVersion("net10.0", "InlinedCallFrame.Datum was added after net10.0")]
     public void StackWalk_FramesHaveRawContext(TestConfiguration config)

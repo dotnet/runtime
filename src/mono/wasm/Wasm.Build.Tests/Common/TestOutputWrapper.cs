@@ -3,8 +3,7 @@
 
 using System;
 using System.Text;
-using Xunit.Abstractions;
-
+using Xunit;
 #nullable enable
 
 namespace Wasm.Build.Tests;
@@ -12,6 +11,24 @@ namespace Wasm.Build.Tests;
 public class TestOutputWrapper(ITestOutputHelper baseOutput) : ITestOutputHelper
 {
     private readonly StringBuilder _outputBuffer = new StringBuilder();
+
+    public string Output => _outputBuffer.ToString();
+
+    public void Write(string message)
+    {
+        baseOutput.Write(message);
+        _outputBuffer.Append(message);
+        if (EnvironmentVariables.ShowBuildOutput)
+            Console.Write(message);
+    }
+
+    public void Write(string format, params object[] args)
+    {
+        baseOutput.Write(format, args);
+        _outputBuffer.AppendFormat(format, args);
+        if (EnvironmentVariables.ShowBuildOutput)
+            Console.Write(format, args);
+    }
 
     public void WriteLine(string message)
     {

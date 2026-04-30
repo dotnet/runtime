@@ -8,7 +8,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace System.Net.Http.Functional.Tests
 {
@@ -170,7 +169,7 @@ namespace System.Net.Http.Functional.Tests
                     await TestHelper.WhenAllCompletedOrAnyFailed(getResponseTask, serverTask);
 
                     using (HttpResponseMessage response = await getResponseTask)
-                    {                        
+                    {
                         if (IsWinHttpHandler)
                         {
                             Assert.Equal(0, response.Version.Major);
@@ -398,7 +397,7 @@ namespace System.Net.Http.Functional.Tests
             {
                 return;
             }
-            
+
             var rand = new Random(42);
             byte[] expectedData = new byte[100_000];
             rand.NextBytes(expectedData);

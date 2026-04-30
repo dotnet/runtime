@@ -18,7 +18,7 @@ public class RuntimeTypeSystemDumpTests : DumpTestBase
 {
     protected override string DebuggeeName => "TypeHierarchy";
 
-    [ConditionalTheory]
+    [Theory]
     [MemberData(nameof(TestConfigurations))]
     [SkipOnVersion("net10.0", "Assembly type does not include IsDynamic/IsLoaded fields in .NET 10")]
     public void RuntimeTypeSystem_CanGetMethodTableFromModule(TestConfiguration config)
@@ -35,7 +35,7 @@ public class RuntimeTypeSystemDumpTests : DumpTestBase
         Assert.NotEqual(TargetPointer.Null, modulePtr);
     }
 
-    [ConditionalTheory]
+    [Theory]
     [MemberData(nameof(TestConfigurations))]
     public void RuntimeTypeSystem_ObjectMethodTableIsValid(TestConfiguration config)
     {
@@ -51,7 +51,7 @@ public class RuntimeTypeSystemDumpTests : DumpTestBase
         Assert.False(rts.IsFreeObjectMethodTable(handle));
     }
 
-    [ConditionalTheory]
+    [Theory]
     [MemberData(nameof(TestConfigurations))]
     public void RuntimeTypeSystem_FreeObjectMethodTableIsValid(TestConfiguration config)
     {
@@ -67,7 +67,7 @@ public class RuntimeTypeSystemDumpTests : DumpTestBase
         Assert.True(rts.IsFreeObjectMethodTable(handle));
     }
 
-    [ConditionalTheory]
+    [Theory]
     [MemberData(nameof(TestConfigurations))]
     public void RuntimeTypeSystem_StringMethodTableIsString(TestConfiguration config)
     {
@@ -83,7 +83,7 @@ public class RuntimeTypeSystemDumpTests : DumpTestBase
         Assert.True(rts.IsString(handle));
     }
 
-    [ConditionalTheory]
+    [Theory]
     [MemberData(nameof(TestConfigurations))]
     public void RuntimeTypeSystem_ObjectMethodTableHasParent(TestConfiguration config)
     {
@@ -99,7 +99,7 @@ public class RuntimeTypeSystemDumpTests : DumpTestBase
         Assert.Equal(TargetPointer.Null, parent);
     }
 
-    [ConditionalTheory]
+    [Theory]
     [MemberData(nameof(TestConfigurations))]
     public void RuntimeTypeSystem_StringHasObjectParent(TestConfiguration config)
     {
@@ -118,7 +118,7 @@ public class RuntimeTypeSystemDumpTests : DumpTestBase
         Assert.Equal(objectMT, parent);
     }
 
-    [ConditionalTheory]
+    [Theory]
     [MemberData(nameof(TestConfigurations))]
     public void RuntimeTypeSystem_ObjectMethodTableHasReasonableBaseSize(TestConfiguration config)
     {
@@ -134,7 +134,7 @@ public class RuntimeTypeSystemDumpTests : DumpTestBase
             $"Expected System.Object base size between 1 and 1024, got {baseSize}");
     }
 
-    [ConditionalTheory]
+    [Theory]
     [MemberData(nameof(TestConfigurations))]
     public void RuntimeTypeSystem_StringHasNonZeroComponentSize(TestConfiguration config)
     {
@@ -150,7 +150,7 @@ public class RuntimeTypeSystemDumpTests : DumpTestBase
         Assert.Equal(2u, componentSize);
     }
 
-    [ConditionalTheory]
+    [Theory]
     [MemberData(nameof(TestConfigurations))]
     public void RuntimeTypeSystem_ObjectMethodTableContainsNoGCPointers(TestConfiguration config)
     {
@@ -165,7 +165,7 @@ public class RuntimeTypeSystemDumpTests : DumpTestBase
         Assert.False(rts.ContainsGCPointers(handle));
     }
 
-    [ConditionalTheory]
+    [Theory]
     [MemberData(nameof(TestConfigurations))]
     public void RuntimeTypeSystem_ObjectMethodTableHasValidToken(TestConfiguration config)
     {
@@ -181,7 +181,7 @@ public class RuntimeTypeSystemDumpTests : DumpTestBase
         Assert.Equal(0x02000000u, token & 0xFF000000u);
     }
 
-    [ConditionalTheory]
+    [Theory]
     [MemberData(nameof(TestConfigurations))]
     public void RuntimeTypeSystem_ObjectMethodTableHasMethods(TestConfiguration config)
     {
@@ -197,7 +197,7 @@ public class RuntimeTypeSystemDumpTests : DumpTestBase
         Assert.True(numMethods >= 4, $"Expected System.Object to have at least 4 methods, got {numMethods}");
     }
 
-    [ConditionalTheory]
+    [Theory]
     [MemberData(nameof(TestConfigurations))]
     public void RuntimeTypeSystem_StringIsNotGenericTypeDefinition(TestConfiguration config)
     {
@@ -211,7 +211,7 @@ public class RuntimeTypeSystemDumpTests : DumpTestBase
         Assert.False(rts.IsGenericTypeDefinition(handle));
     }
 
-    [ConditionalTheory]
+    [Theory]
     [MemberData(nameof(TestConfigurations))]
     public void RuntimeTypeSystem_StringCorElementTypeIsClass(TestConfiguration config)
     {
@@ -228,7 +228,7 @@ public class RuntimeTypeSystemDumpTests : DumpTestBase
         Assert.Equal(CorElementType.Class, corType);
     }
 
-    [ConditionalTheory]
+    [Theory]
     [MemberData(nameof(TestConfigurations))]
     public void RuntimeTypeSystem_ObjectMethodTableHasIntroducedMethods(TestConfiguration config)
     {
@@ -254,7 +254,7 @@ public class RuntimeTypeSystemDumpTests : DumpTestBase
         }
     }
 
-    [ConditionalTheory]
+    [Theory]
     [MemberData(nameof(TestConfigurations))]
     public void RuntimeTypeSystem_ObjectMethodTableHasLoadedModule(TestConfiguration config)
     {
@@ -274,7 +274,7 @@ public class RuntimeTypeSystemDumpTests : DumpTestBase
         Assert.True(isLoaded, "System.Object's module should have loaded image contents");
     }
 
-    [ConditionalTheory]
+    [Theory]
     [MemberData(nameof(TestConfigurations))]
     public void RuntimeTypeSystem_StringMethodTableHasLoadedModule(TestConfiguration config)
     {

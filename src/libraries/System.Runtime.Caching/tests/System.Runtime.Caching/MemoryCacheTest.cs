@@ -43,8 +43,6 @@ using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using System.Runtime.Versioning;
 using Xunit;
-using Xunit.Abstractions;
-
 namespace MonoTests.System.Runtime.Caching
 {
     public class MemoryCacheTest

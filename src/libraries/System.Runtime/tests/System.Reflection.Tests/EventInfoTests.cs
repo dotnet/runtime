@@ -208,7 +208,7 @@ namespace System.Reflection.Tests
         }
 
 #pragma warning disable 0067
-        protected class BaseClass
+        public class BaseClass
         {
             private event EventHandler PrivateEvent;
             public event EventHandler PublicEvent;
@@ -219,14 +219,14 @@ namespace System.Reflection.Tests
             public event EventHandler PublicEvent3;
         }
 
-        protected class SubClass : BaseClass
+        public class SubClass : BaseClass
         {
             public new event EventHandler PublicEvent;
             public event EventHandler EventPublicNew;
         }
-        protected class SubClassA : BaseClass { }
-        protected class SubClassB : BaseClass { }
-        protected class SubClassC : BaseClass { }
+        public class SubClassA : BaseClass { }
+        public class SubClassB : BaseClass { }
+        public class SubClassC : BaseClass { }
 #pragma warning restore 0067
     }
 }

@@ -14,19 +14,19 @@ namespace System.IO.Tests
         // In .NET Framework we ignore "not found" errors, which leaves the attributes
         // state as invalid (0xFFFFFFFF), which makes all flags true.
 
-        [Theory, MemberData(nameof(TrailingCharacters))]
+        [Theory, MemberData(nameof(TrailingCharacters), MemberType = typeof(FileSystemTest))]
         public void GetAttributes_MissingFile(char trailingChar)
         {
             Assert.Equal((FileAttributes)(-1), GetAttributes(GetTestFilePath() + trailingChar));
         }
 
-        [Theory, MemberData(nameof(TrailingCharacters))]
+        [Theory, MemberData(nameof(TrailingCharacters), MemberType = typeof(FileSystemTest))]
         public void GetAttributes_MissingDirectory(char trailingChar)
         {
             Assert.Equal((FileAttributes)(-1), GetAttributes(Path.Combine(GetTestFilePath(), "file" + trailingChar)));
         }
 
-        [Theory, MemberData(nameof(TrailingCharacters))]
+        [Theory, MemberData(nameof(TrailingCharacters), MemberType = typeof(FileSystemTest))]
         public void GetAttributes_CreateAfter(char trailingChar)
         {
             string path = GetTestFilePath();
@@ -38,7 +38,7 @@ namespace System.IO.Tests
             Assert.NotEqual((FileAttributes)(-1), info.Attributes);
         }
 
-        [Theory, MemberData(nameof(TrailingCharacters))]
+        [Theory, MemberData(nameof(TrailingCharacters), MemberType = typeof(FileSystemTest))]
         public void GetAttributes_DeleteAfter(char trailingChar)
         {
             string path = CreateItem();

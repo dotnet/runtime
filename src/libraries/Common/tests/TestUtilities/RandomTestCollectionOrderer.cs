@@ -4,7 +4,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using Xunit;
-using Xunit.Abstractions;
+using Xunit.v3;
 using Xunit.Sdk;
 
 namespace TestUtilities;
@@ -22,6 +22,12 @@ public class RandomTestCollectionOrderer : ITestCollectionOrderer
 
     public IEnumerable<ITestCollection> OrderTestCollections(IEnumerable<ITestCollection> testCollections)
         => RandomTestCaseOrderer.TryRandomize(testCollections.ToList(), _diagnosticMessageSink, out List<ITestCollection>? randomizedTests)
+                    ? randomizedTests
+                    : testCollections;
+
+    public IReadOnlyCollection<TTestCollection> OrderTestCollections<TTestCollection>(IReadOnlyCollection<TTestCollection> testCollections)
+		where TTestCollection : ITestCollection
+        => RandomTestCaseOrderer.TryRandomize<TTestCollection>(testCollections.ToList(), _diagnosticMessageSink, out List<TTestCollection>? randomizedTests)
                     ? randomizedTests
                     : testCollections;
 }

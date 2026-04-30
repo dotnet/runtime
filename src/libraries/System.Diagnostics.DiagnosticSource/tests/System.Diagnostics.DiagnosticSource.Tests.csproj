@@ -5,6 +5,7 @@
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <NoWarn>NU1511</NoWarn>
     <EventSourceSupport Condition="'$(TestNativeAot)' == 'true'">true</EventSourceSupport>
+    <RootNamespace>System.Diagnostics.Tests</RootNamespace>
     <!-- https://github.com/dotnet/runtime/issues/126862 -->
     <EnableTrimAnalyzer>false</EnableTrimAnalyzer>
     <EnableAotAnalyzer>false</EnableAotAnalyzer>

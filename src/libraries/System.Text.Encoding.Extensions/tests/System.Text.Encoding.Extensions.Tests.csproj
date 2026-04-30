@@ -2,6 +2,7 @@
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <RootNamespace>System.Text.Tests</RootNamespace>
     <TestRuntime>true</TestRuntime>
   </PropertyGroup>
   <ItemGroup>

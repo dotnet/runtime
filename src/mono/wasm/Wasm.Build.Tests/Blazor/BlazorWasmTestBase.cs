@@ -11,7 +11,6 @@ using System.Threading.Tasks;
 using Microsoft.Playwright;
 using Wasm.Build.Tests.Blazor;
 using Xunit;
-using Xunit.Abstractions;
 using Xunit.Sdk;
 
 namespace Wasm.Build.Tests;

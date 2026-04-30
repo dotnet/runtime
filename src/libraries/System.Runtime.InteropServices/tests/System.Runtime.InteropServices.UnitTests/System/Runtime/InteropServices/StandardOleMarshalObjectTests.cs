@@ -5,11 +5,11 @@ using Xunit;
 
 namespace System.Runtime.InteropServices.Tests
 {
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltInComEnabled))]
     public class StandardOleMarshalObjectTests
     {
         private static readonly Guid IID_IDispatch = new Guid("00020400-0000-0000-C000-000000000046");
-        [Fact]
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltInComEnabled))]
         public void CanGetIDispatchOfDerivedObject()
         {
             IntPtr disp = Marshal.GetIDispatchForObject(new DerivedObject());
@@ -17,7 +17,7 @@ namespace System.Runtime.InteropServices.Tests
             Marshal.Release(disp);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltInComEnabled))]
         public void CanQueryInterfaceForIDispatchOfDerivedObject()
         {
             IntPtr unk = Marshal.GetIUnknownForObject(new DerivedObject());

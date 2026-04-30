@@ -1,6 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetFrameworkCurrent)</TargetFrameworks>
+    <!-- Avoid namespace conflict between generated SelfRegisteredExtensions.cs and the Microsoft.Win32.Registry type -->
+    <RootNamespace>Microsoft.Win32.RegistryAccessControlTests</RootNamespace>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="RegistryAclExtensionsTests.cs" />

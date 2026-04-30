@@ -99,7 +99,7 @@ namespace System.Collections.Tests
         #region Item Getter
 
         [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
+        [MemberData(nameof(ValidCollectionSizes), MemberType = typeof(TestBase))]
         public void IList_Generic_ItemGet_NegativeIndex_ThrowsException(int count)
         {
             IList<T> list = GenericIListFactory(count);
@@ -115,7 +115,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
+        [MemberData(nameof(ValidCollectionSizes), MemberType = typeof(TestBase))]
         public void IList_Generic_ItemGet_IndexGreaterThanListCount_ThrowsException(int count)
         {
             IList<T> list = GenericIListFactory(count);
@@ -131,7 +131,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
+        [MemberData(nameof(ValidCollectionSizes), MemberType = typeof(TestBase))]
         public void IList_Generic_ItemGet_ValidGetWithinListBounds(int count)
         {
             IList<T> list = GenericIListFactory(count);
@@ -152,7 +152,7 @@ namespace System.Collections.Tests
         #region Item Setter
 
         [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
+        [MemberData(nameof(ValidCollectionSizes), MemberType = typeof(TestBase))]
         public void IList_Generic_ItemSet_NegativeIndex_ThrowsException(int count)
         {
             if (!IsReadOnly)
@@ -166,7 +166,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
+        [MemberData(nameof(ValidCollectionSizes), MemberType = typeof(TestBase))]
         public void IList_Generic_ItemSet_IndexGreaterThanListCount_ThrowsException(int count)
         {
             if (!IsReadOnly)
@@ -180,7 +180,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
+        [MemberData(nameof(ValidCollectionSizes), MemberType = typeof(TestBase))]
         public void IList_Generic_ItemSet_OnReadOnlyList(int count)
         {
             if (IsReadOnly && count > 0)
@@ -193,7 +193,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
+        [MemberData(nameof(ValidCollectionSizes), MemberType = typeof(TestBase))]
         public void IList_Generic_ItemSet_FirstItemToNonDefaultValue(int count)
         {
             if (count > 0 && !IsReadOnly)
@@ -206,7 +206,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
+        [MemberData(nameof(ValidCollectionSizes), MemberType = typeof(TestBase))]
         public void IList_Generic_ItemSet_FirstItemToDefaultValue(int count)
         {
             if (count > 0 && !IsReadOnly)
@@ -226,7 +226,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
+        [MemberData(nameof(ValidCollectionSizes), MemberType = typeof(TestBase))]
         public void IList_Generic_ItemSet_LastItemToNonDefaultValue(int count)
         {
             if (count > 0 && !IsReadOnly)
@@ -240,7 +240,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
+        [MemberData(nameof(ValidCollectionSizes), MemberType = typeof(TestBase))]
         public void IList_Generic_ItemSet_LastItemToDefaultValue(int count)
         {
             if (count > 0 && !IsReadOnly && DefaultValueAllowed)
@@ -261,7 +261,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
+        [MemberData(nameof(ValidCollectionSizes), MemberType = typeof(TestBase))]
         public void IList_Generic_ItemSet_DuplicateValues(int count)
         {
             if (count >= 2 && !IsReadOnly && DuplicateValuesAllowed)
@@ -276,7 +276,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
+        [MemberData(nameof(ValidCollectionSizes), MemberType = typeof(TestBase))]
         public void IList_Generic_ItemSet_InvalidValue(int count)
         {
             if (count > 0&& !IsReadOnly)
@@ -294,7 +294,7 @@ namespace System.Collections.Tests
         #region IndexOf
 
         [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
+        [MemberData(nameof(ValidCollectionSizes), MemberType = typeof(TestBase))]
         public void IList_Generic_IndexOf_DefaultValueNotContainedInList(int count)
         {
             if (DefaultValueAllowed)
@@ -317,7 +317,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
+        [MemberData(nameof(ValidCollectionSizes), MemberType = typeof(TestBase))]
         public void IList_Generic_IndexOf_DefaultValueContainedInList(int count)
         {
             if (count > 0 && DefaultValueAllowed)
@@ -335,7 +335,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
+        [MemberData(nameof(ValidCollectionSizes), MemberType = typeof(TestBase))]
         public void IList_Generic_IndexOf_ValidValueNotContainedInList(int count)
         {
             IList<T> list = GenericIListFactory(count);
@@ -347,7 +347,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
+        [MemberData(nameof(ValidCollectionSizes), MemberType = typeof(TestBase))]
         public void IList_Generic_IndexOf_ValueInCollectionMultipleTimes(int count)
         {
             if (count > 0 && !IsReadOnly && DuplicateValuesAllowed)
@@ -362,7 +362,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
+        [MemberData(nameof(ValidCollectionSizes), MemberType = typeof(TestBase))]
         public void IList_Generic_IndexOf_EachValueNoDuplicates(int count)
         {
             // Assumes no duplicate elements contained in the list returned by GenericIListFactory
@@ -374,7 +374,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
+        [MemberData(nameof(ValidCollectionSizes), MemberType = typeof(TestBase))]
         public void IList_Generic_IndexOf_InvalidValue(int count)
         {
             if (!IsReadOnly)
@@ -388,7 +388,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
+        [MemberData(nameof(ValidCollectionSizes), MemberType = typeof(TestBase))]
         public void IList_Generic_IndexOf_ReturnsFirstMatchingValue(int count)
         {
             if (!IsReadOnly && !AddRemoveClear_ThrowsNotSupported && DuplicateValuesAllowed)
@@ -409,7 +409,7 @@ namespace System.Collections.Tests
         #region Insert
 
         [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
+        [MemberData(nameof(ValidCollectionSizes), MemberType = typeof(TestBase))]
         public void IList_Generic_Insert_NegativeIndex_ThrowsArgumentOutOfRangeException(int count)
         {
             if (!IsReadOnly && !AddRemoveClear_ThrowsNotSupported)
@@ -423,7 +423,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
+        [MemberData(nameof(ValidCollectionSizes), MemberType = typeof(TestBase))]
         public void IList_Generic_Insert_IndexGreaterThanListCount_Appends(int count)
         {
             if (!IsReadOnly && !AddRemoveClear_ThrowsNotSupported)
@@ -437,7 +437,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
+        [MemberData(nameof(ValidCollectionSizes), MemberType = typeof(TestBase))]
         public void IList_Generic_Insert_ToReadOnlyList(int count)
         {
             if (IsReadOnly || AddRemoveClear_ThrowsNotSupported)
@@ -449,7 +449,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
+        [MemberData(nameof(ValidCollectionSizes), MemberType = typeof(TestBase))]
         public void IList_Generic_Insert_FirstItemToNonDefaultValue(int count)
         {
             if (!IsReadOnly && !AddRemoveClear_ThrowsNotSupported)
@@ -463,7 +463,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
+        [MemberData(nameof(ValidCollectionSizes), MemberType = typeof(TestBase))]
         public void IList_Generic_Insert_FirstItemToDefaultValue(int count)
         {
             if (!IsReadOnly && !AddRemoveClear_ThrowsNotSupported && DefaultValueAllowed)
@@ -477,7 +477,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
+        [MemberData(nameof(ValidCollectionSizes), MemberType = typeof(TestBase))]
         public void IList_Generic_Insert_LastItemToNonDefaultValue(int count)
         {
             if (!IsReadOnly && !AddRemoveClear_ThrowsNotSupported)
@@ -492,7 +492,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
+        [MemberData(nameof(ValidCollectionSizes), MemberType = typeof(TestBase))]
         public void IList_Generic_Insert_LastItemToDefaultValue(int count)
         {
             if (!IsReadOnly && !AddRemoveClear_ThrowsNotSupported && DefaultValueAllowed)
@@ -507,7 +507,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
+        [MemberData(nameof(ValidCollectionSizes), MemberType = typeof(TestBase))]
         public void IList_Generic_Insert_DuplicateValues(int count)
         {
             if (!IsReadOnly && !AddRemoveClear_ThrowsNotSupported && DuplicateValuesAllowed)
@@ -530,7 +530,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
+        [MemberData(nameof(ValidCollectionSizes), MemberType = typeof(TestBase))]
         public void IList_Generic_Insert_InvalidValue(int count)
         {
             if (!IsReadOnly && !AddRemoveClear_ThrowsNotSupported)
@@ -548,7 +548,7 @@ namespace System.Collections.Tests
         #region RemoveAt
 
         [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
+        [MemberData(nameof(ValidCollectionSizes), MemberType = typeof(TestBase))]
         public void IList_Generic_RemoveAt_NegativeIndex_ThrowsArgumentOutOfRangeException(int count)
         {
             if (!IsReadOnly && !AddRemoveClear_ThrowsNotSupported)
@@ -562,7 +562,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
+        [MemberData(nameof(ValidCollectionSizes), MemberType = typeof(TestBase))]
         public void IList_Generic_RemoveAt_IndexGreaterThanListCount_ThrowsArgumentOutOfRangeException(int count)
         {
             if (!IsReadOnly && !AddRemoveClear_ThrowsNotSupported)
@@ -576,7 +576,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
+        [MemberData(nameof(ValidCollectionSizes), MemberType = typeof(TestBase))]
         public void IList_Generic_RemoveAt_OnReadOnlyList(int count)
         {
             if (IsReadOnly || AddRemoveClear_ThrowsNotSupported)
@@ -588,7 +588,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
+        [MemberData(nameof(ValidCollectionSizes), MemberType = typeof(TestBase))]
         public void IList_Generic_RemoveAt_AllValidIndices(int count)
         {
             if (!IsReadOnly && !AddRemoveClear_ThrowsNotSupported)
@@ -604,7 +604,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
+        [MemberData(nameof(ValidCollectionSizes), MemberType = typeof(TestBase))]
         public void IList_Generic_RemoveAt_ZeroMultipleTimes(int count)
         {
             if (!IsReadOnly && !AddRemoveClear_ThrowsNotSupported)
@@ -624,7 +624,7 @@ namespace System.Collections.Tests
 
         // Test Enumerator.Current at end after new elements was added
         [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
+        [MemberData(nameof(ValidCollectionSizes), MemberType = typeof(TestBase))]
         public void IList_Generic_CurrentAtEnd_AfterAdd(int count)
         {
             if (!IsReadOnly && !AddRemoveClear_ThrowsNotSupported)

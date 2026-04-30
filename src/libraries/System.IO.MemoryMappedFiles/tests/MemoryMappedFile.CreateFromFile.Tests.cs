@@ -1111,17 +1111,14 @@ namespace System.IO.MemoryMappedFiles.Tests
         /// <summary>
         /// Test that we can map special character devices on Unix using FileStream.
         /// </summary>
-        [ConditionalTheory]
+        [Theory]
         [InlineData(MemoryMappedFileAccess.Read)]
         [InlineData(MemoryMappedFileAccess.ReadWrite)]
         [PlatformSpecific(TestPlatforms.AnyUnix)]
         public void OpenCharacterDeviceAsStream(MemoryMappedFileAccess access)
         {
             const string device = "/dev/zero";
-            if (!File.Exists(device))
-            {
-                throw new SkipTestException($"'{device}' is not available.");
-            }
+            Assert.SkipUnless(File.Exists(device), $"'{device}' is not available.");
 
             long viewCapacity = 0xFF;
 
@@ -1141,17 +1138,14 @@ namespace System.IO.MemoryMappedFiles.Tests
         /// <summary>
         /// Test that we can map special character devices on Unix using file name.
         /// </summary>
-        [ConditionalTheory]
+        [Theory]
         [InlineData(MemoryMappedFileAccess.Read)]
         [InlineData(MemoryMappedFileAccess.ReadWrite)]
         [PlatformSpecific(TestPlatforms.AnyUnix)]
         public void OpenCharacterDeviceAsFile(MemoryMappedFileAccess access)
         {
             const string device = "/dev/zero";
-            if (!File.Exists(device))
-            {
-                throw new SkipTestException($"'{device}' is not available.");
-            }
+            Assert.SkipUnless(File.Exists(device), $"'{device}' is not available.");
 
             long viewCapacity = 0xFF;
 

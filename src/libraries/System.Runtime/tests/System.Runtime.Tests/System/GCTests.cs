@@ -458,11 +458,12 @@ namespace System.Tests
             }
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsPreciseGcSupported))]
+        [Theory]
         [InlineData(GCLargeObjectHeapCompactionMode.CompactOnce)]
         [InlineData(GCLargeObjectHeapCompactionMode.Default)]
         public static void LargeObjectHeapCompactionModeRoundTrips(GCLargeObjectHeapCompactionMode value)
         {
+            Assert.SkipUnless(PlatformDetection.IsPreciseGcSupported, "Requires IsPreciseGcSupported");
             GCLargeObjectHeapCompactionMode orig = GCSettings.LargeObjectHeapCompactionMode;
             try
             {
@@ -566,7 +567,7 @@ namespace System.Tests
             Assert.Throws<ArgumentOutOfRangeException>(() => GC.WaitForFullGCComplete(-2));
         }
 
-        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [Theory]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/73167", TestRuntimes.Mono)]
         [InlineData(true, -1)]
         [InlineData(false, -1)]
@@ -579,6 +580,7 @@ namespace System.Tests
         [OuterLoop]
         public static void GCNotificationTests(bool approach, int timeout)
         {
+            Assert.SkipUnless(RemoteExecutor.IsSupported, "Requires IsSupported");
             RemoteInvokeOptions options = new RemoteInvokeOptions();
             options.TimeOut = TimeoutMilliseconds;
             RemoteExecutor.Invoke((approachString, timeoutString) =>
@@ -774,13 +776,14 @@ namespace System.Tests
             }, options).Dispose();
         }
 
-        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [Theory]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/73167", TestRuntimes.Mono)]
         [OuterLoop]
         [InlineData(0)]
         [InlineData(-1)]
         public static void TryStartNoGCRegion_TotalSizeOutOfRange(long size)
         {
+            Assert.SkipUnless(RemoteExecutor.IsSupported, "Requires IsSupported");
             RemoteInvokeOptions options = new RemoteInvokeOptions();
             options.TimeOut = TimeoutMilliseconds;
             RemoteExecutor.Invoke(sizeString =>
@@ -789,7 +792,7 @@ namespace System.Tests
             }, size.ToString(), options).Dispose();
         }
 
-        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [Theory]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/73167", TestRuntimes.Mono)]
         [OuterLoop]
         [InlineData(0)]                   // invalid because lohSize ==
@@ -797,6 +800,7 @@ namespace System.Tests
         [InlineData(1152921504606846976)] // invalid because lohSize > totalSize
         public static void TryStartNoGCRegion_LOHSizeInvalid(long size)
         {
+            Assert.SkipUnless(RemoteExecutor.IsSupported, "Requires IsSupported");
             RemoteInvokeOptions options = new RemoteInvokeOptions();
             options.TimeOut = TimeoutMilliseconds;
             RemoteExecutor.Invoke(sizeString =>

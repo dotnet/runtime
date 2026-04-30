@@ -161,16 +161,16 @@ namespace System.Reflection.Tests
         }
 
         [Theory]
-        [InlineData(nameof(PropertyInfoMembers.PublicGetIntProperty))]
-        [InlineData(nameof(PropertyInfoMembers.PublicGetPublicSetStringProperty))]
-        [InlineData(nameof(PropertyInfoMembers.PublicGetDoubleProperty))]
-        [InlineData(nameof(PropertyInfoMembers.PublicGetFloatProperty))]
-        [InlineData(nameof(PropertyInfoMembers.PublicGetEnumProperty))]
+        [InlineData(nameof(PropertyInfoMembers.PublicGetIntProperty), true)]
+        [InlineData(nameof(PropertyInfoMembers.PublicGetPublicSetStringProperty), true)]
+        [InlineData(nameof(PropertyInfoMembers.PublicGetDoubleProperty), true)]
+        [InlineData(nameof(PropertyInfoMembers.PublicGetFloatProperty), true)]
+        [InlineData(nameof(PropertyInfoMembers.PublicGetEnumProperty), true)]
         [InlineData("PrivateGetPrivateSetIntProperty", false)]
-        [InlineData(nameof(PropertyInfoMembers.PublicGetPrivateSetProperty))]
-        [InlineData(nameof(PropertyInfoMembers.PrivateGetPublicSetProperty))]
-        [InlineData(nameof(PropertyInfoMembers.PrivateGetPublicInitProperty))]
-        public static void GetPublicProperties(string name, bool isPublic = true)
+        [InlineData(nameof(PropertyInfoMembers.PublicGetPrivateSetProperty), true)]
+        [InlineData(nameof(PropertyInfoMembers.PrivateGetPublicSetProperty), true)]
+        [InlineData(nameof(PropertyInfoMembers.PrivateGetPublicInitProperty), true)]
+        public static void GetPublicProperties(string name, bool isPublic)
         {
             PropertyInfo property = typeof(PropertyInfoMembers).GetTypeInfo().GetProperty(name, BindingFlags.Public | BindingFlags.Instance);
             if (isPublic)

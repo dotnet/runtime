@@ -5,6 +5,8 @@
     <TargetFramework>$(NetCoreAppCurrent)-windows</TargetFramework>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TestRuntime>true</TestRuntime>
+    <!-- Avoid namespace conflict between generated SelfRegisteredExtensions.cs and the System.Threading.ThreadPool type -->
+    <RootNamespace>System.Threading.ThreadPoolTests</RootNamespace>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="..\ThreadPoolTests.cs" />

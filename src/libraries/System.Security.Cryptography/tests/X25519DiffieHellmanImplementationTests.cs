@@ -5,9 +5,13 @@ using Xunit;
 
 namespace System.Security.Cryptography.Tests
 {
-    [ConditionalClass(typeof(X25519DiffieHellman), nameof(X25519DiffieHellman.IsSupported))]
     public sealed class X25519DiffieHellmanImplementationTests : X25519DiffieHellmanBaseTests
     {
+        public X25519DiffieHellmanImplementationTests()
+        {
+            Assert.SkipUnless(X25519DiffieHellman.IsSupported, "ConditionalClass: X25519DiffieHellman.IsSupported");
+        }
+
         public override X25519DiffieHellman GenerateKey() => X25519DiffieHellman.GenerateKey();
 
         public override X25519DiffieHellman ImportPrivateKey(ReadOnlySpan<byte> source) =>
@@ -17,10 +21,15 @@ namespace System.Security.Cryptography.Tests
             X25519DiffieHellman.ImportPublicKey(source);
     }
 
-    public static class X25519DiffieHellmanImplementationSupportedTests
+    public class X25519DiffieHellmanImplementationSupportedTests
     {
+        public X25519DiffieHellmanImplementationSupportedTests()
+        {
+            Assert.SkipUnless(X25519DiffieHellman.IsSupported, "ConditionalClass: X25519DiffieHellman.IsSupported");
+        }
+
         [Fact]
-        public static void IsSupported_AgreesWithPlatform()
+        public void IsSupported_AgreesWithPlatform()
         {
             bool expectedSupported =
                 PlatformDetection.IsWindows10OrLater ||

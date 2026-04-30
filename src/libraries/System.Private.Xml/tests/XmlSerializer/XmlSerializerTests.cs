@@ -23,10 +23,14 @@ using Xunit;
 
 #if !ReflectionOnly && !XMLSERIALIZERGENERATORTESTS
 // Many test failures due to trimming and MakeGeneric. XmlSerializer is not currently supported with NativeAOT.
-[ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBuiltWithAggressiveTrimming))]
 #endif
-public static partial class XmlSerializerTests
+public partial class XmlSerializerTests
 {
+    public XmlSerializerTests()
+    {
+        Assert.SkipUnless(PlatformDetection.IsNotBuiltWithAggressiveTrimming, "ConditionalClass: PlatformDetection.IsNotBuiltWithAggressiveTrimming");
+    }
+
 #if ReflectionOnly || XMLSERIALIZERGENERATORTESTS
     private static readonly string SerializationModeSetterName = "set_Mode";
 
@@ -46,7 +50,7 @@ public static partial class XmlSerializerTests
     public static bool DefaultValueAttributeIsSupported => AppContext.TryGetSwitch("System.ComponentModel.DefaultValueAttribute.IsSupported", out bool isEnabled) ? isEnabled : true;
 
     [Fact]
-    public static void Xml_TypeWithDateTimePropertyAsXmlTime()
+    public void Xml_TypeWithDateTimePropertyAsXmlTime()
     {
         DateTime localTime = new DateTime(549269870000L, DateTimeKind.Local);
         TypeWithDateTimePropertyAsXmlTime localTimeObject = new TypeWithDateTimePropertyAsXmlTime()
@@ -74,7 +78,7 @@ public static partial class XmlSerializerTests
     }
 
     [Fact]
-    public static void Xml_NamespaceTypeNameClashTest()
+    public void Xml_NamespaceTypeNameClashTest()
     {
         var serializer = new XmlSerializer(typeof(NamespaceTypeNameClashContainer));
 
@@ -112,7 +116,7 @@ public static partial class XmlSerializerTests
     }
 
     [Fact]
-    public static void Xml_ArrayAsGetSet()
+    public void Xml_ArrayAsGetSet()
     {
         TypeWithGetSetArrayMembers x = new TypeWithGetSetArrayMembers
         {
@@ -183,7 +187,7 @@ public static partial class XmlSerializerTests
     }
 
     [Fact]
-    public static void Xml_ArrayAsGetOnly()
+    public void Xml_ArrayAsGetOnly()
     {
         TypeWithGetOnlyArrayProperties x = new TypeWithGetOnlyArrayProperties();
         x.P1[0] = new SimpleType { P1 = "ab", P2 = 1 };
@@ -199,7 +203,7 @@ public static partial class XmlSerializerTests
     }
 
     [Fact]
-    public static void Xml_ArraylikeMembers()
+    public void Xml_ArraylikeMembers()
     {
         var assertEqual = (TypeWithArraylikeMembers a, TypeWithArraylikeMembers b) => {
             Assert.Equal(a.IntAField, b.IntAField);
@@ -243,7 +247,7 @@ public static partial class XmlSerializerTests
     }
 
     [Fact]
-    public static void Xml_ListRoot()
+    public void Xml_ListRoot()
     {
         MyList x = new MyList("a1", "a2");
         MyList y = SerializeAndDeserialize<MyList>(x,
@@ -265,7 +269,7 @@ public static partial class XmlSerializerTests
     // horizon that it's not worth the trouble.
 #if !XMLSERIALIZERGENERATORTESTS
     [Fact]
-    public static void Xml_ReadOnlyCollection()
+    public void Xml_ReadOnlyCollection()
     {
         ReadOnlyCollection<string> roc = new ReadOnlyCollection<string>(new string[] { "one", "two" });
 
@@ -286,7 +290,7 @@ public static partial class XmlSerializerTests
 
     [Theory]
     [MemberData(nameof(Xml_ImmutableCollections_MemberData))]
-    public static void Xml_ImmutableCollections(Type type, object collection, Type createException, Type addException, string expectedXml, string exMsg = null)
+    public void Xml_ImmutableCollections(Type type, object collection, Type createException, Type addException, string expectedXml, string exMsg = null)
     {
         XmlSerializer serializer;
 
@@ -357,7 +361,7 @@ public static partial class XmlSerializerTests
 #endif  // !XMLSERIALIZERGENERATORTESTS
 
     [Fact]
-    public static void Xml_EnumAsRoot()
+    public void Xml_EnumAsRoot()
     {
         Assert.Equal(MyEnum.Two, SerializeAndDeserialize<MyEnum>(MyEnum.Two,
 @"<?xml version=""1.0""?>
@@ -386,7 +390,7 @@ public static partial class XmlSerializerTests
     }
 
     [Fact]
-    public static void Xml_EnumAsMember()
+    public void Xml_EnumAsMember()
     {
         TypeWithEnumMembers x = new TypeWithEnumMembers { F1 = MyEnum.Three, P1 = MyEnum.Two };
         TypeWithEnumMembers y = SerializeAndDeserialize<TypeWithEnumMembers>(x,
@@ -403,7 +407,7 @@ public static partial class XmlSerializerTests
 
 #if !XMLSERIALIZERGENERATORTESTS
     [Fact]
-    public static void Xml_EnumAsObject()
+    public void Xml_EnumAsObject()
     {
         object o = MyEnum.Three;
         object o2 = SerializeAndDeserialize<object>(o,
@@ -415,7 +419,7 @@ public static partial class XmlSerializerTests
 #endif
 
     [Fact]
-    public static void Xml_DCClassWithEnumAndStruct()
+    public void Xml_DCClassWithEnumAndStruct()
     {
         DCClassWithEnumAndStruct value = new DCClassWithEnumAndStruct(true);
         DCClassWithEnumAndStruct actual = SerializeAndDeserialize<DCClassWithEnumAndStruct>(value,
@@ -432,7 +436,7 @@ public static partial class XmlSerializerTests
     }
 
     [Fact]
-    public static void Xml_BuiltInTypes()
+    public void Xml_BuiltInTypes()
     {
         BuiltInTypes x = new BuiltInTypes
         {
@@ -449,7 +453,7 @@ public static partial class XmlSerializerTests
     }
 
     [Fact]
-    public static void Xml_TypesWithArrayOfOtherTypes()
+    public void Xml_TypesWithArrayOfOtherTypes()
     {
         SerializeAndDeserialize<TypeHasArrayOfASerializedAsB>(new TypeHasArrayOfASerializedAsB(true),
 @"<?xml version=""1.0""?>
@@ -466,7 +470,7 @@ public static partial class XmlSerializerTests
     }
 
     [Fact]
-    public static void Xml_TypeNamesWithSpecialCharacters()
+    public void Xml_TypeNamesWithSpecialCharacters()
     {
         SerializeAndDeserialize<__TypeNameWithSpecialCharacters\u6F22\u00F1>(
             new __TypeNameWithSpecialCharacters\u6F22\u00F1() { PropertyNameWithSpecialCharacters\u6F22\u00F1 = "Test" },
@@ -474,7 +478,7 @@ public static partial class XmlSerializerTests
     }
 
     [Fact]
-    public static void Xml_KnownTypesThroughConstructor()
+    public void Xml_KnownTypesThroughConstructor()
     {
         KnownTypesThroughConstructor value = new KnownTypesThroughConstructor() { EnumValue = MyEnum.One, SimpleTypeValue = new SimpleKnownTypeValue() { StrProperty = "PropertyValue" } };
         KnownTypesThroughConstructor actual = SerializeAndDeserialize<KnownTypesThroughConstructor>(value,
@@ -492,7 +496,7 @@ public static partial class XmlSerializerTests
     }
 
     [Fact]
-    public static void Xml_BaseClassAndDerivedClassWithSameProperty()
+    public void Xml_BaseClassAndDerivedClassWithSameProperty()
     {
         DerivedClassWithSameProperty value = new DerivedClassWithSameProperty() { DateTimeProperty = new DateTime(100), IntProperty = 5, StringProperty = "TestString", ListProperty = new List<string>() };
         value.ListProperty.AddRange(new string[] { "one", "two", "three" });
@@ -542,7 +546,7 @@ public static partial class XmlSerializerTests
     }
 
     [Fact]
-    public static void Xml_EnumFlags()
+    public void Xml_EnumFlags()
     {
         EnumFlags value1 = EnumFlags.One | EnumFlags.Four;
         var value2 = SerializeAndDeserialize<EnumFlags>(value1,
@@ -552,7 +556,7 @@ public static partial class XmlSerializerTests
     }
 
     [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
-    public static void Xml_SerializeClassThatImplementsInterface()
+    public void Xml_SerializeClassThatImplementsInterface()
     {
         ClassImplementsInterface value = new ClassImplementsInterface() { ClassID = "ClassID", DisplayName = "DisplayName", Id = "Id", IsLoaded = true };
         ClassImplementsInterface actual = SerializeAndDeserialize<ClassImplementsInterface>(value,
@@ -571,7 +575,7 @@ public static partial class XmlSerializerTests
     }
 
     [Fact]
-    public static void Xml_XmlAttributesTest()
+    public void Xml_XmlAttributesTest()
     {
         var value = new XmlSerializerAttributes();
         var actual = SerializeAndDeserialize(value,
@@ -601,7 +605,7 @@ public static partial class XmlSerializerTests
     }
 
     [Fact]
-    public static void Xml_XmlAnyAttributeTest()
+    public void Xml_XmlAnyAttributeTest()
     {
         var serializer = new XmlSerializer(typeof(TypeWithAnyAttribute));
         string format = WithXmlHeader(@"<TypeWithAnyAttribute xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema"" GroupType = '{0}' IntProperty = '{1}' GroupBase = '{2}'><Name>{3}</Name></TypeWithAnyAttribute>");
@@ -626,7 +630,7 @@ public static partial class XmlSerializerTests
     }
 
     [Fact]
-    public static void Xml_Struct()
+    public void Xml_Struct()
     {
         var value = new WithStruct { Some = new SomeStruct { A = 1, B = 2 } };
         var result = SerializeAndDeserialize(value,
@@ -644,7 +648,7 @@ public static partial class XmlSerializerTests
     }
 
     [Fact]
-    public static void Xml_Enums()
+    public void Xml_Enums()
     {
         var item = new WithEnums() { Int = IntEnum.Option1, Short = ShortEnum.Option2 };
         var actual = SerializeAndDeserialize(item,
@@ -658,7 +662,7 @@ public static partial class XmlSerializerTests
     }
 
     [Fact]
-    public static void Xml_Nullables()
+    public void Xml_Nullables()
     {
         var item = new WithNullables() { Optional = IntEnum.Option1, OptionalInt = 42, Struct1 = new SomeStruct { A = 1, B = 2 } };
         var actual = SerializeAndDeserialize(item,
@@ -684,7 +688,7 @@ public static partial class XmlSerializerTests
     }
 
     [Fact]
-    public static void Xml_DerivedClasses()
+    public void Xml_DerivedClasses()
     {
         var dClass = new SimpleDerivedClass() { AttributeString = "derivedClassTest", DateTimeValue = DateTime.Parse("Dec 31, 1999"), BoolValue = true };
 
@@ -703,7 +707,7 @@ public static partial class XmlSerializerTests
     }
 
     [Fact]
-    public static void Xml_ClassImplementingIXmlSerializable()
+    public void Xml_ClassImplementingIXmlSerializable()
     {
         var value = new ClassImplementingIXmlSerializable() { StringValue = "Hello world" };
         var actual = SerializeAndDeserialize<ClassImplementingIXmlSerializable>(value,
@@ -716,7 +720,7 @@ public static partial class XmlSerializerTests
     }
 
     [Fact]
-    public static void Xml_StructImplementingIXmlSerializableWithoutParameterlessConstructor()
+    public void Xml_StructImplementingIXmlSerializableWithoutParameterlessConstructor()
     {
         StructImplementingIXmlSerializableWithoutParameterlessConstructor value = new()
         {
@@ -735,7 +739,7 @@ public static partial class XmlSerializerTests
     }
 
     [Fact]
-    public static void Xml_StructImplementingIXmlSerializableWithParameterlessConstructor()
+    public void Xml_StructImplementingIXmlSerializableWithParameterlessConstructor()
     {
         StructImplementingIXmlSerializableWithParameterlessConstructor value = new()
         {
@@ -754,7 +758,7 @@ public static partial class XmlSerializerTests
     }
 
     [Fact]
-    public static void Xml_TypeWithFieldNameEndBySpecified()
+    public void Xml_TypeWithFieldNameEndBySpecified()
     {
         var value = new TypeWithPropertyNameSpecified() { MyField = "MyField", MyFieldIgnored = 99, MyFieldSpecified = true, MyFieldIgnoredSpecified = false };
         var actual = SerializeAndDeserialize<TypeWithPropertyNameSpecified>(value,
@@ -764,7 +768,7 @@ public static partial class XmlSerializerTests
     }
 
     [Fact]
-    public static void XML_TypeWithXmlSchemaFormAttribute()
+    public void XML_TypeWithXmlSchemaFormAttribute()
     {
         var value = new TypeWithXmlSchemaFormAttribute() { NoneSchemaFormListProperty = new List<string> { "abc" }, QualifiedSchemaFormListProperty = new List<bool> { true }, UnqualifiedSchemaFormListProperty = new List<int> { 1 } };
         var actual = SerializeAndDeserialize<TypeWithXmlSchemaFormAttribute>(value,
@@ -779,7 +783,7 @@ public static partial class XmlSerializerTests
     }
 
     [Fact]
-    public static void XML_TypeWithTypeNameInXmlTypeAttribute()
+    public void XML_TypeWithTypeNameInXmlTypeAttribute()
     {
         var value = new TypeWithTypeNameInXmlTypeAttribute();
 
@@ -788,7 +792,7 @@ public static partial class XmlSerializerTests
     }
 
     [Fact]
-    public static void XML_TypeWithXmlTextAttributeOnArray()
+    public void XML_TypeWithXmlTextAttributeOnArray()
     {
         var original = new TypeWithXmlTextAttributeOnArray() { Text = new string[] { "val1", "val2" } };
 
@@ -801,7 +805,7 @@ public static partial class XmlSerializerTests
     }
 
     [Fact]
-    public static void Xml_TypeWithSchemaFormInXmlAttribute()
+    public void Xml_TypeWithSchemaFormInXmlAttribute()
     {
         var value = new TypeWithSchemaFormInXmlAttribute() { TestProperty = "hello" };
         var actual = SerializeAndDeserialize<TypeWithSchemaFormInXmlAttribute>(value,
@@ -811,7 +815,7 @@ public static partial class XmlSerializerTests
 
 
     [Fact]
-    public static void Xml_TypeWithXmlElementProperty()
+    public void Xml_TypeWithXmlElementProperty()
     {
         XmlDocument xDoc = new XmlDocument();
         xDoc.LoadXml(@"<html></html>");
@@ -830,7 +834,7 @@ public static partial class XmlSerializerTests
     }
 
     [Fact]
-    public static void Xml_TypeWithXmlDocumentProperty()
+    public void Xml_TypeWithXmlDocumentProperty()
     {
         XmlDocument xmlDoc = new XmlDocument();
         xmlDoc.LoadXml(@"<html><head>Head content</head><body><h1>Heading1</h1><div>Text in body</div></body></html>");
@@ -843,7 +847,7 @@ public static partial class XmlSerializerTests
     }
 
     [Fact]
-    public static void Xml_TypeWithNonPublicDefaultConstructor()
+    public void Xml_TypeWithNonPublicDefaultConstructor()
     {
         System.Reflection.TypeInfo ti = System.Reflection.IntrospectionExtensions.GetTypeInfo(typeof(TypeWithNonPublicDefaultConstructor));
         TypeWithNonPublicDefaultConstructor value = null;
@@ -870,7 +874,7 @@ public static partial class XmlSerializerTests
     }
 
     [Fact]
-    public static void Xml_TestIgnoreWhitespaceForDeserialization()
+    public void Xml_TestIgnoreWhitespaceForDeserialization()
     {
         string xml = WithXmlHeader(@"<ServerSettings>
   <DS2Root>
@@ -888,7 +892,7 @@ public static partial class XmlSerializerTests
 
 
     [Fact]
-    public static void Xml_TypeWithBinaryProperty()
+    public void Xml_TypeWithBinaryProperty()
     {
         var obj = new TypeWithBinaryProperty();
         var str = "The quick brown fox jumps over the lazy dog.";
@@ -901,7 +905,7 @@ public static partial class XmlSerializerTests
     }
 
     [Fact]
-    public static void Xml_DifferentSerializeDeserializeOverloads()
+    public void Xml_DifferentSerializeDeserializeOverloads()
     {
         var expected = new SimpleType() { P1 = "p1 value", P2 = 123 };
         var serializer = new XmlSerializer(typeof(SimpleType));
@@ -951,7 +955,7 @@ public static partial class XmlSerializerTests
     }
 
     [Fact]
-    public static void Xml_TypeWithTimeSpanProperty()
+    public void Xml_TypeWithTimeSpanProperty()
     {
         var obj = new TypeWithTimeSpanProperty { TimeSpanProperty = TimeSpan.FromMilliseconds(1) };
         var deserializedObj = SerializeAndDeserialize(obj, WithXmlHeader(@"<TypeWithTimeSpanProperty xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema"">
@@ -961,7 +965,7 @@ public static partial class XmlSerializerTests
     }
 
     [ConditionalFact(typeof(XmlSerializerTests), nameof(DefaultValueAttributeIsSupported))]
-    public static void Xml_TypeWithDefaultTimeSpanProperty()
+    public void Xml_TypeWithDefaultTimeSpanProperty()
     {
         var obj = new TypeWithDefaultTimeSpanProperty { TimeSpanProperty2 = new TimeSpan(0, 1, 0) };
         var deserializedObj = SerializeAndDeserialize(obj, WithXmlHeader(@"<TypeWithDefaultTimeSpanProperty xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema""><TimeSpanProperty2>PT1M</TimeSpanProperty2></TypeWithDefaultTimeSpanProperty>"));
@@ -971,7 +975,7 @@ public static partial class XmlSerializerTests
     }
 
     [Fact]
-    public static void Xml_DeserializeTypeWithEmptyTimeSpanProperty()
+    public void Xml_DeserializeTypeWithEmptyTimeSpanProperty()
     {
         string xml =
             @"<?xml version=""1.0""?>
@@ -989,7 +993,7 @@ public static partial class XmlSerializerTests
     }
 
     [Fact]
-    public static void Xml_DeserializeEmptyTimeSpanType()
+    public void Xml_DeserializeEmptyTimeSpanType()
     {
         string xml =
     @"<?xml version=""1.0""?>
@@ -1004,7 +1008,7 @@ public static partial class XmlSerializerTests
     }
 
     [ConditionalFact(typeof(XmlSerializerTests), nameof(DefaultValueAttributeIsSupported))]
-    public static void Xml_TypeWithDateTimeOffsetProperty()
+    public void Xml_TypeWithDateTimeOffsetProperty()
     {
         var now = new DateTimeOffset(DateTime.Now);
         var defDTO = default(DateTimeOffset);
@@ -1029,7 +1033,7 @@ public static partial class XmlSerializerTests
     }
 
     [ConditionalFact(typeof(XmlSerializerTests), nameof(DefaultValueAttributeIsSupported))]
-    public static void Xml_DeserializeTypeWithEmptyDateTimeOffsetProperties()
+    public void Xml_DeserializeTypeWithEmptyDateTimeOffsetProperties()
     {
         //var def = DateTimeOffset.Parse("3/17/1977 5:00:01 PM -05:00");  //  "1977-03-17T17:00:01-05:00"
         var defDTO = default(DateTimeOffset);
@@ -1055,7 +1059,7 @@ public static partial class XmlSerializerTests
     }
 
     [Fact]
-    public static void Xml_DeserializeDateTimeOffsetType()
+    public void Xml_DeserializeDateTimeOffsetType()
     {
         var now = new DateTimeOffset(DateTime.Now);
         string xml = $@"<?xml version=""1.0""?><dateTimeOffset>{now:o}</dateTimeOffset>";
@@ -1069,7 +1073,7 @@ public static partial class XmlSerializerTests
     }
 
     [Fact]
-    public static void Xml_DeserializeEmptyDateTimeOffsetType()
+    public void Xml_DeserializeEmptyDateTimeOffsetType()
     {
         string xml = @"<?xml version=""1.0""?><dateTimeOffset />";
         XmlSerializer serializer = new XmlSerializer(typeof(DateTimeOffset));
@@ -1085,7 +1089,7 @@ public static partial class XmlSerializerTests
     [InlineData("0001-01-01")]
     [InlineData("2002-06-17")]
     [InlineData("2345-12-1")]
-    public static void Xml_DateOnlyAsRoot(string dateString)
+    public void Xml_DateOnlyAsRoot(string dateString)
     {
         var doObj = DateOnly.Parse(dateString);
         var result = SerializeAndDeserialize<DateOnly>(doObj, WithXmlHeader($"""
@@ -1101,7 +1105,7 @@ public static partial class XmlSerializerTests
     [InlineData("1917-12-6")]           // Halifax
     [InlineData("1937-5-06")]           // Hindenburg
     [InlineData("98-01-01")]            // Rose Bowl
-    public static void Xml_DateOnlyParseErrors(string badDateString)
+    public void Xml_DateOnlyParseErrors(string badDateString)
     {
         var badXml = WithXmlHeader($"""
             <dateOnly>{badDateString}</dateOnly>
@@ -1113,7 +1117,7 @@ public static partial class XmlSerializerTests
     [InlineData("20:17:40")]  // The Eagle has landed
     [InlineData("10:35 AM")]  // First in flight
     [InlineData("10:45 PM")]  // Tear down this wall
-    public static void Xml_TimeOnlyAsRoot(string timeString)
+    public void Xml_TimeOnlyAsRoot(string timeString)
     {
         var toObj = TimeOnly.Parse(timeString);
         var result = SerializeAndDeserialize<TimeOnly>(toObj, WithXmlHeader($"""
@@ -1127,7 +1131,7 @@ public static partial class XmlSerializerTests
     [InlineData("02:38:23.40Z", true, "02:38:23.4")]        // My heart will go on
     [InlineData("7:48:07", false)]        // Will live in infamy
     [InlineData("08:32 AM", false)]       // Helen errupts
-    public static void Xml_TimeOnlyParseErrors(string timeString, bool succeedsWithCompat, string expected = "")
+    public void Xml_TimeOnlyParseErrors(string timeString, bool succeedsWithCompat, string expected = "")
     {
         // Try straight up
         var xml = WithXmlHeader($"<timeOnly>{timeString}</timeOnly>");
@@ -1174,7 +1178,7 @@ public static partial class XmlSerializerTests
     }
 
     [ConditionalFact(typeof(XmlSerializerTests), nameof(DefaultValueAttributeIsSupported))]
-    public static void Xml_TypeWithDateOnlyAndTimeOnly()
+    public void Xml_TypeWithDateOnlyAndTimeOnly()
     {
         var doSerializer = new XmlSerializer(typeof(TypeWithDateAndTimeOnlyProperties), new XmlRootAttribute("DateAndTime"));
         DateOnly defaultDateOnly = DateOnly.Parse(TypeWithDateAndTimeOnlyProperties.DefaultDateString);
@@ -1234,7 +1238,7 @@ public static partial class XmlSerializerTests
     }
 
     [Fact]
-    public static void Xml_XsdDate_With_DateOnly_And_DateTime()
+    public void Xml_XsdDate_With_DateOnly_And_DateTime()
     {
         var doSerializer = new XmlSerializer(typeof(DateOnlyWrapper), new XmlRootAttribute("DateAndTimeTest"));
         var dtdSerializer = new XmlSerializer(typeof(DateTimeDateWrapper), new XmlRootAttribute("DateAndTimeTest"));
@@ -1299,7 +1303,7 @@ public static partial class XmlSerializerTests
     [InlineData("12:34:56.789", DateTimeKind.Unspecified)]      // Obviously fake
     [InlineData("02:38:23.40"/*Z*/, DateTimeKind.Utc)]          // My heart will go on
     [InlineData("08:32:00"/*-07:00*/, DateTimeKind.Local)]      // Helen errupts
-    public static void Xml_XsdTime_With_TimeOnly_And_DateTime(string dateTimeString, DateTimeKind kind)
+    public void Xml_XsdTime_With_TimeOnly_And_DateTime(string dateTimeString, DateTimeKind kind)
     {
         var toSerializer = new XmlSerializer(typeof(TimeOnlyWrapper), new XmlRootAttribute("DateAndTimeTest"));
         var toaxtSerializer = new XmlSerializer(typeof(TimeOnlyAsXsdTimeWrapper), new XmlRootAttribute("DateAndTimeTest"));
@@ -1342,7 +1346,7 @@ public static partial class XmlSerializerTests
     }
 
     [Fact]
-    public static void Xml_TypeWithByteProperty()
+    public void Xml_TypeWithByteProperty()
     {
         var obj = new TypeWithByteProperty() { ByteProperty = 123 };
         var deserializedObj = SerializeAndDeserialize(obj,
@@ -1353,7 +1357,7 @@ WithXmlHeader(@"<TypeWithByteProperty xmlns:xsi=""http://www.w3.org/2001/XMLSche
     }
 
     [Fact]
-    public static void Xml_DeserializeOutOfRangeByteProperty()
+    public void Xml_DeserializeOutOfRangeByteProperty()
     {
         //Deserialize an instance with out-of-range value for the byte property, expecting exception from deserialization process
         var serializer = new XmlSerializer(typeof(TypeWithByteProperty));
@@ -1371,7 +1375,7 @@ WithXmlHeader(@"<TypeWithByteProperty xmlns:xsi=""http://www.w3.org/2001/XMLSche
     }
 
     [Fact]
-    public static void Xml_XmlAttributes_RemoveXmlElementAttribute()
+    public void Xml_XmlAttributes_RemoveXmlElementAttribute()
     {
         XmlAttributes attrs = new XmlAttributes();
 
@@ -1384,13 +1388,13 @@ WithXmlHeader(@"<TypeWithByteProperty xmlns:xsi=""http://www.w3.org/2001/XMLSche
     }
 
     [Fact]
-    public static void Xml_XmlAttributes_CtorWithNullArgument()
+    public void Xml_XmlAttributes_CtorWithNullArgument()
     {
         Assert.Throws<ArgumentNullException>(() => new XmlAttributes(default(ICustomAttributeProvider)));
     }
 
     [Fact]
-    public static void Xml_ArrayOfXmlNodeProperty()
+    public void Xml_ArrayOfXmlNodeProperty()
     {
         var obj = new TypeWithXmlNodeArrayProperty()
         {
@@ -1402,7 +1406,7 @@ WithXmlHeader(@"<TypeWithByteProperty xmlns:xsi=""http://www.w3.org/2001/XMLSche
     }
 
     [Fact]
-    public static void Xml_TypeWithTwoDimensionalArrayProperty2()
+    public void Xml_TypeWithTwoDimensionalArrayProperty2()
     {
         SimpleType[][] simpleType2D = GetObjectwith2DArrayOfSimpleType();
 
@@ -1433,7 +1437,7 @@ WithXmlHeader(@"<TypeWithByteProperty xmlns:xsi=""http://www.w3.org/2001/XMLSche
     }
 
     [Fact]
-    public static void Xml_TypeWithByteArrayAsXmlText()
+    public void Xml_TypeWithByteArrayAsXmlText()
     {
         var value = new TypeWithByteArrayAsXmlText() { Value = new byte[] { 1, 2, 3 } };
         var actual = SerializeAndDeserialize(value, WithXmlHeader("<TypeWithByteArrayAsXmlText xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\">AQID</TypeWithByteArrayAsXmlText>"));
@@ -1445,7 +1449,7 @@ WithXmlHeader(@"<TypeWithByteProperty xmlns:xsi=""http://www.w3.org/2001/XMLSche
     }
 
     [Fact]
-    public static void Xml_SimpleType()
+    public void Xml_SimpleType()
     {
         var obj = new SimpleType { P1 = "foo", P2 = 1 };
         var deserializedObj = SerializeAndDeserialize(obj,
@@ -1459,7 +1463,7 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
     }
 
     [Fact]
-    public static void Xml_SerializedFormat()
+    public void Xml_SerializedFormat()
     {
         var obj = new SimpleType { P1 = "foo", P2 = 1 };
         XmlSerializer serializer = new XmlSerializer(typeof(SimpleType));
@@ -1484,7 +1488,7 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
     }
 
     [Fact]
-    public static void Xml_BaseClassAndDerivedClass2WithSameProperty()
+    public void Xml_BaseClassAndDerivedClass2WithSameProperty()
     {
         var value = new DerivedClassWithSameProperty2() { DateTimeProperty = new DateTime(100, DateTimeKind.Utc), IntProperty = 5, StringProperty = "TestString", ListProperty = new List<string>() };
         value.ListProperty.AddRange(new string[] { "one", "two", "three" });
@@ -1556,7 +1560,7 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
     }
 
     [Fact]
-    public static void Xml_TypeWithPropertiesHavingDefaultValue_DefaultValue()
+    public void Xml_TypeWithPropertiesHavingDefaultValue_DefaultValue()
     {
         var value = new TypeWithPropertiesHavingDefaultValue()
         {
@@ -1576,7 +1580,7 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
     }
 
     [Fact]
-    public static void Xml_TypeWithStringPropertyWithDefaultValue_NonDefaultValue()
+    public void Xml_TypeWithStringPropertyWithDefaultValue_NonDefaultValue()
     {
         var value = new TypeWithPropertiesHavingDefaultValue()
         {
@@ -1593,7 +1597,7 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
     }
 
     [Fact]
-    public static void Xml_TypeWithEnumPropertyHavingDefaultValue()
+    public void Xml_TypeWithEnumPropertyHavingDefaultValue()
     {
         var value = new TypeWithEnumPropertyHavingDefaultValue() { EnumProperty = IntEnum.Option0 };
         var actual = SerializeAndDeserialize(value,
@@ -1614,7 +1618,7 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
     }
 
     [Fact]
-    public static void Xml_TypeWithEnumFlagPropertyHavingDefaultValue()
+    public void Xml_TypeWithEnumFlagPropertyHavingDefaultValue()
     {
         var value = new TypeWithEnumFlagPropertyHavingDefaultValue() { EnumProperty = EnumFlags.Two | EnumFlags.Three };
         var actual = SerializeAndDeserialize(value,
@@ -1633,7 +1637,7 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
     }
 
     [Fact]
-    public static void Xml_Soap_TypeWithEnumFlagPropertyHavingDefaultValue()
+    public void Xml_Soap_TypeWithEnumFlagPropertyHavingDefaultValue()
     {
         var mapping = new SoapReflectionImporter().ImportTypeMapping(typeof(TypeWithEnumFlagPropertyHavingDefaultValue));
         var serializer = new XmlSerializer(mapping);
@@ -1659,7 +1663,7 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
     }
 
     [Fact]
-    public static void Xml_TypeWithXmlQualifiedName()
+    public void Xml_TypeWithXmlQualifiedName()
     {
         var value = new TypeWithXmlQualifiedName()
         {
@@ -1673,7 +1677,7 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
     }
 
     [Fact]
-    public static void Xml_Soap_TypeWithXmlQualifiedName()
+    public void Xml_Soap_TypeWithXmlQualifiedName()
     {
         var mapping = new SoapReflectionImporter().ImportTypeMapping(typeof(TypeWithXmlQualifiedName));
         var serializer = new XmlSerializer(mapping);
@@ -1693,7 +1697,7 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
     }
 
     [Fact]
-    public static void Xml_TypeWithShouldSerializeMethod_WithDefaultValue()
+    public void Xml_TypeWithShouldSerializeMethod_WithDefaultValue()
     {
         var value = new TypeWithShouldSerializeMethod();
 
@@ -1704,7 +1708,7 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
     }
 
     [Fact]
-    public static void Xml_TypeWithShouldSerializeMethod_WithNonDefaultValue()
+    public void Xml_TypeWithShouldSerializeMethod_WithNonDefaultValue()
     {
         var value = new TypeWithShouldSerializeMethod() { Foo = "SomeValue" };
 
@@ -1715,7 +1719,7 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
     }
 
     [Fact]
-    public static void Xml_InheritedShouldSerializeMethod_WithDefaultValue()
+    public void Xml_InheritedShouldSerializeMethod_WithDefaultValue()
     {
         var value = new DerivedTypeWithInheritedShouldSerialize();
 
@@ -1727,7 +1731,7 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
     }
 
     [Fact]
-    public static void Xml_InheritedShouldSerializeMethod_WithNonDefaultValue()
+    public void Xml_InheritedShouldSerializeMethod_WithNonDefaultValue()
     {
         var value = new DerivedTypeWithInheritedShouldSerialize() { Foo = "SomeValue", Bar = "SomeBar" };
 
@@ -1739,7 +1743,7 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
     }
 
     [Fact]
-    public static void Xml_FieldBackedSpecifiedMember_SetOnDeserialize()
+    public void Xml_FieldBackedSpecifiedMember_SetOnDeserialize()
     {
         var value = new TypeWithFieldBackedSpecifiedMember() { Foo = "SomeValue", FooSpecified = true };
 
@@ -1751,7 +1755,7 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
     }
 
     [Fact]
-    public static void Xml_KnownTypesThroughConstructorWithArrayProperties()
+    public void Xml_KnownTypesThroughConstructorWithArrayProperties()
     {
         int[] intArray = new int[] { 1, 2, 3 };
         string[] stringArray = new string[] { "a", "b" };
@@ -1776,7 +1780,7 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
     }
 
     [Fact]
-    public static void Xml_KnownTypesThroughConstructorWithEnumFlags()
+    public void Xml_KnownTypesThroughConstructorWithEnumFlags()
     {
         var enumFlags = EnumFlags.One | EnumFlags.Four;
         var value = new KnownTypesThroughConstructorWithValue() { Value = enumFlags };
@@ -1790,7 +1794,7 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
     }
 
     [Fact]
-    public static void Xml_KnownTypesThroughConstructorWithEnumFlagsXmlQualifiedName()
+    public void Xml_KnownTypesThroughConstructorWithEnumFlagsXmlQualifiedName()
     {
         var value = new KnownTypesThroughConstructorWithValue() { Value = new XmlQualifiedName("foo") };
         var actual = SerializeAndDeserialize(value,
@@ -1803,7 +1807,7 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
     }
 
     [Fact]
-    public static void Xml_TypeWithTypesHavingCustomFormatter()
+    public void Xml_TypeWithTypesHavingCustomFormatter()
     {
         var str = "The quick brown fox jumps over the lazy dog.";
         var value = new TypeWithTypesHavingCustomFormatter()
@@ -1839,7 +1843,7 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
     }
 
     [Fact]
-    public static void Xml_TypeWithArrayPropertyHavingChoice()
+    public void Xml_TypeWithArrayPropertyHavingChoice()
     {
         object[] choices = new object[] { "Food", 5 };
 
@@ -1864,7 +1868,7 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
     }
 
     [Fact]
-    public static void Xml_TypeWithArrayPropertyHavingComplexChoice()
+    public void Xml_TypeWithArrayPropertyHavingComplexChoice()
     {
         object[] choices = new object[] { new ComplexChoiceB { Name = "Beef" }, 5 };
 
@@ -1882,7 +1886,7 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
     }
 
     [Fact]
-    public static void XML_TypeWithTypeNameInXmlTypeAttribute_WithValue()
+    public void XML_TypeWithTypeNameInXmlTypeAttribute_WithValue()
     {
         var value = new TypeWithTypeNameInXmlTypeAttribute() { XmlAttributeForm = "SomeValue" };
 
@@ -1915,7 +1919,7 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
     //}
 
     [Fact]
-    public static void XmlSerializerFactoryTest()
+    public void XmlSerializerFactoryTest()
     {
         string baseline = "<?xml version=\"1.0\"?>\r\n<Dog xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\">\r\n  <Age>5</Age>\r\n  <Name>Bear</Name>\r\n  <Breed>GermanShepherd</Breed>\r\n</Dog>";
         var xsf = new XmlSerializerFactory();
@@ -1928,7 +1932,7 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
     }
 
     [Fact]
-    public static void XmlUnknownElementAndEventHandlerTest()
+    public void XmlUnknownElementAndEventHandlerTest()
     {
         List<string> grouplists = new List<string>();
         int count = 0;
@@ -1957,7 +1961,7 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
     }
 
     [Fact]
-    public static void XmlUnknownNodeAndEventHandlerTest()
+    public void XmlUnknownNodeAndEventHandlerTest()
     {
         List<string> grouplists = new List<string>();
         int count = 0;
@@ -1992,7 +1996,7 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
     }
 
     [Fact]
-    public static void XmlUnknownAttributeAndEventHandlerTest()
+    public void XmlUnknownAttributeAndEventHandlerTest()
     {
         List<string> grouplists = new List<string>();
         int count = 0;
@@ -2018,7 +2022,7 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
     }
 
     [Fact]
-    public static void XmlDeserializationEventsTest()
+    public void XmlDeserializationEventsTest()
     {
         List<string> grouplists = new List<string>();
         int count = 0;
@@ -2055,7 +2059,7 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
     }
 
     [Fact]
-    public static void XmlSerializerImplementationTest()
+    public void XmlSerializerImplementationTest()
     {
         Employee emp = new Employee() { EmployeeName = "Allice" };
         SerializeIm sm = new SerializeIm();
@@ -2065,7 +2069,7 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
     }
 
     [Fact]
-    public static void Xml_HiddenDerivedFieldTest()
+    public void Xml_HiddenDerivedFieldTest()
     {
         var value = new DerivedClass { value = "on derived" };
         var actual = SerializeAndDeserialize<BaseClass>(value,
@@ -2082,7 +2086,7 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
     }
 
     [Fact]
-    public static void Xml_XmlIncludedTypesInCollection()
+    public void Xml_XmlIncludedTypesInCollection()
     {
         var value = new MyList() {
             new BaseClass() { Value = "base class" },
@@ -2109,7 +2113,7 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
     }
 
     [Fact]
-    public static void Xml_XmlIncludedTypesInCollectionSingle()
+    public void Xml_XmlIncludedTypesInCollectionSingle()
     {
         var value = new MyList() {
             new DerivedClass() { Value = "derived class" }
@@ -2130,7 +2134,7 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
     }
 
     [Fact]
-    public static void Xml_NullRefInXmlSerializerCtorTest()
+    public void Xml_NullRefInXmlSerializerCtorTest()
     {
         string defaultNamespace = "http://www.contoso.com";
         var value = PurchaseOrder.CreateInstance();
@@ -2208,7 +2212,7 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
     }
 
     [Fact]
-    public static void Xml_AliasedPropertyTest()
+    public void Xml_AliasedPropertyTest()
     {
         var inputList = new List<string> { "item0", "item1", "item2", "item3", "item4" };
         var value = new AliasedTestType { Aliased = inputList };
@@ -2235,7 +2239,7 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
     }
 
     [Fact]
-    public static void Xml_DeserializeHiddenMembersTest()
+    public void Xml_DeserializeHiddenMembersTest()
     {
         var xmlSerializer = new XmlSerializer(typeof(DerivedClass1));
         string inputXml = "<DerivedClass1><Prop>2012-07-07T00:18:29.7538612Z</Prop></DerivedClass1>";
@@ -2251,7 +2255,7 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
     }
 
     [Fact]
-    public static void Xml_SerializeClassNestedInStaticClassTest()
+    public void Xml_SerializeClassNestedInStaticClassTest()
     {
         var value = new Outer.Person()
         {
@@ -2275,7 +2279,7 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
     }
 
     [Fact]
-    public static void Xml_XSCoverTest()
+    public void Xml_XSCoverTest()
     {
         var band = new Orchestra();
         var brass = new Brass()
@@ -2403,7 +2407,7 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
     }
 
     [Fact]
-    public static void Xml_TypeWithMyCollectionField()
+    public void Xml_TypeWithMyCollectionField()
     {
         var value = new TypeWithMyCollectionField();
         value.Collection = new MyCollection<string>() { "s1", "s2" };
@@ -2414,7 +2418,7 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
     }
 
     [Fact]
-    public static void Xml_Soap_TypeWithMyCollectionField()
+    public void Xml_Soap_TypeWithMyCollectionField()
     {
         XmlTypeMapping myTypeMapping = new SoapReflectionImporter().ImportTypeMapping(typeof(TypeWithMyCollectionField));
         var serializer = new XmlSerializer(myTypeMapping);
@@ -2427,7 +2431,7 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
     }
 
     [Fact]
-    public static void Xml_DefaultValueAttributeSetToNaNTest()
+    public void Xml_DefaultValueAttributeSetToNaNTest()
     {
         var value = new DefaultValuesSetToNaN();
         var actual = SerializeAndDeserialize(value,
@@ -2443,7 +2447,7 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
     }
 
     [Fact]
-    public static void Xml_DefaultValueAttributeSetToPositiveInfinityTest()
+    public void Xml_DefaultValueAttributeSetToPositiveInfinityTest()
     {
         var value = new DefaultValuesSetToPositiveInfinity();
         var actual = SerializeAndDeserialize(value,
@@ -2459,7 +2463,7 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
     }
 
     [Fact]
-    public static void Xml_DefaultValueAttributeSetToNegativeInfinityTest()
+    public void Xml_DefaultValueAttributeSetToNegativeInfinityTest()
     {
         var value = new DefaultValuesSetToNegativeInfinity();
         var actual = SerializeAndDeserialize(value,
@@ -2475,7 +2479,7 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
     }
 
     [Fact]
-    public static void SerializeWithDefaultValueSetToPositiveInfinityTest()
+    public void SerializeWithDefaultValueSetToPositiveInfinityTest()
     {
         var value = new DefaultValuesSetToPositiveInfinity();
         value.DoubleField = double.PositiveInfinity;
@@ -2490,7 +2494,7 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
     }
 
     [Fact]
-    public static void SerializeWithDefaultValueSetToNegativeInfinityTest()
+    public void SerializeWithDefaultValueSetToNegativeInfinityTest()
     {
         var value = new DefaultValuesSetToNegativeInfinity();
         value.DoubleField = double.NegativeInfinity;
@@ -2505,7 +2509,7 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
     }
 
     [Fact]
-    public static void DeserializeIDREFSIntoStringTest()
+    public void DeserializeIDREFSIntoStringTest()
     {
         string xmlstring = WithXmlHeader(@"<Document xmlns = ""http://example.com"" id = ""ID1"" refs=""ID1 ID2 ID3"" ></Document>");
         Stream ms = GenerateStreamFromString(xmlstring);
@@ -2545,7 +2549,7 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
     }
 
     [Fact]
-    public static void Xml_TypeWithMismatchBetweenAttributeAndPropertyType()
+    public void Xml_TypeWithMismatchBetweenAttributeAndPropertyType()
     {
         var value = new TypeWithMismatchBetweenAttributeAndPropertyType();
         var actual = SerializeAndDeserialize(value,
@@ -2554,7 +2558,7 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
     }
 
     [Fact]
-    public static void Xml_XsdValidationAndDeserialization()
+    public void Xml_XsdValidationAndDeserialization()
     {
         var xsdstring = WithXmlHeader(@"<xs:schema attributeFormDefault='unqualified' elementFormDefault='unqualified' xmlns:xs='http://www.w3.org/2001/XMLSchema'>
   <xs:element name='RootClass'>
@@ -2623,7 +2627,7 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
     }
 
     [Fact]
-    public static void Xml_TypeWithSpecialCharacterInStringMember()
+    public void Xml_TypeWithSpecialCharacterInStringMember()
     {
         TypeA x = new TypeA() { Name = "Lily&Lucy" };
         TypeA y = SerializeAndDeserialize<TypeA>(x,
@@ -2644,7 +2648,7 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
     [ActiveIssue("https://github.com/dotnet/runtime/issues/34072", TestRuntimes.Mono)]
     [ActiveIssue("https://github.com/dotnet/runtime/issues/95928", typeof(PlatformDetection), nameof(PlatformDetection.IsReadyToRunCompiled))]
     [ActiveIssue("https://github.com/dotnet/runtime/issues/124344", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile), nameof(PlatformDetection.IsCoreCLR))]
-    public static void Xml_TypeInCollectibleALC()
+    public void Xml_TypeInCollectibleALC()
     {
         ExecuteAndUnload("SerializableAssembly.dll", "SerializationTypes.SimpleType", out var weakRef);
 
@@ -2657,7 +2661,7 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
     }
 
     [Fact]
-    public static void ValidateXElement()
+    public void ValidateXElement()
     {
         XElement xe = new XElement("Root");
         XElementWrapper wrapper = new XElementWrapper() { Value = xe };
@@ -2671,7 +2675,7 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
     }
 
     [Fact]
-    public static void ValidateXElementStruct()
+    public void ValidateXElementStruct()
     {
 
         XElement ele = new XElement("Test");
@@ -2686,7 +2690,7 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
     }
 
     [Fact]
-    public static void ValidateXElementArray()
+    public void ValidateXElementArray()
     {
         XElementArrayWrapper xarray = new XElementArrayWrapper
         {
@@ -2703,7 +2707,7 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
 
 #if !XMLSERIALIZERGENERATORTESTS
     [Fact]
-    public static void ObsoleteAttribute_DoesNotAffectSerialization()
+    public void ObsoleteAttribute_DoesNotAffectSerialization()
     {
         // Test that properties marked with [Obsolete(IsError=false)] are still serialized (not ignored like [XmlIgnore])
         var testObject = new TypeWithObsoleteProperty
@@ -2733,7 +2737,7 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
     }
 
     [Fact]
-    public static void ObsoleteAttribute_IsError_ThrowsException()
+    public void ObsoleteAttribute_IsError_ThrowsException()
     {
         // Test that properties marked with [Obsolete(IsError=true)] throw an exception during serializer creation
         var testObject = new TypeWithObsoleteErrorProperty
@@ -2757,7 +2761,7 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
     }
 
     [Fact]
-    public static void ObsoleteAttribute_WithAppContextSwitch_IgnoresObsoleteMembers()
+    public void ObsoleteAttribute_WithAppContextSwitch_IgnoresObsoleteMembers()
     {
         // Enable compat switch
         using (var compatSwitch = new XmlSerializerAppContextSwitchScope("Switch.System.Xml.IgnoreObsoleteMembers", true))

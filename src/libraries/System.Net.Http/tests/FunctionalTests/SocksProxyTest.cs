@@ -7,7 +7,6 @@ using System.Net.Test.Common;
 using System.Threading.Tasks;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace System.Net.Http.Functional.Tests
 {
@@ -26,7 +25,7 @@ namespace System.Net.Http.Functional.Tests
             from host in Hosts(scheme)
             select new object[] { scheme, useSsl, useAuth, host };
 
-        [ConditionalTheory]
+        [Theory]
         [MemberData(nameof(TestLoopbackAsync_MemberData))]
         public async Task TestLoopbackAsync(string scheme, bool useSsl, bool useAuth, string host)
         {

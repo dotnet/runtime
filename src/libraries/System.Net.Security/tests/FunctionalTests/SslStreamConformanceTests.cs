@@ -7,7 +7,6 @@ using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
 using Xunit;
-using Xunit.Abstractions;
 using Microsoft.DotNet.XUnitExtensions;
 
 namespace System.Net.Security.Tests
@@ -47,7 +46,7 @@ namespace System.Net.Security.Tests
             return new StreamPair(ssl1, ssl2);
         }
 
-        [ConditionalTheory]
+        [Theory]
         [InlineData(ReadWriteMode.SyncArray)]
         [InlineData(ReadWriteMode.SyncSpan)]
         [InlineData(ReadWriteMode.AsyncArray)]
@@ -56,10 +55,7 @@ namespace System.Net.Security.Tests
         [InlineData(ReadWriteMode.AsyncAPM)]
         public override Task ZeroByteRead_PerformsZeroByteReadOnUnderlyingStreamWhenDataNeeded(ReadWriteMode mode)
         {
-            if (PlatformDetection.IsNetworkFrameworkEnabled())
-            {
-                throw new SkipTestException("NetworkFramework works in Async and does not issue zero-byte reads to underlying stream.");
-            }
+            Assert.SkipWhen(PlatformDetection.IsNetworkFrameworkEnabled(), "NetworkFramework works in Async and does not issue zero-byte reads to underlying stream.");
 
             return base.ZeroByteRead_PerformsZeroByteReadOnUnderlyingStreamWhenDataNeeded(mode);
         }
@@ -78,24 +74,33 @@ namespace System.Net.Security.Tests
         protected override Task<StreamPair> CreateConnectedStreamsAsync() =>
             CreateWrappedConnectedStreamsAsync(TestHelper.GetConnectedTcpStreams());
     }
-
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.SupportsTls11))]
     public sealed class SslStreamTls11NetworkConformanceTests : SslStreamDefaultNetworkConformanceTests
     {
+
+        public SslStreamTls11NetworkConformanceTests()
+        {
+            Assert.SkipUnless(PlatformDetection.SupportsTls11, "ConditionalClass: PlatformDetection.SupportsTls11");
+        }
 #pragma warning disable SYSLIB0039 // TLS 1.0 and 1.1 are obsolete
         protected override SslProtocols GetSslProtocols() => SslProtocols.Tls11;
 #pragma warning restore SYSLIB0039
     }
-
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.SupportsTls12))]
     public sealed class SslStreamTls12NetworkConformanceTests : SslStreamDefaultNetworkConformanceTests
     {
+
+        public SslStreamTls12NetworkConformanceTests()
+        {
+            Assert.SkipUnless(PlatformDetection.SupportsTls12, "ConditionalClass: PlatformDetection.SupportsTls12");
+        }
         protected override SslProtocols GetSslProtocols() => SslProtocols.Tls12;
     }
-
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.SupportsTls13))]
     public sealed class SslStreamTls13NetworkConformanceTests : SslStreamDefaultNetworkConformanceTests
     {
+
+        public SslStreamTls13NetworkConformanceTests()
+        {
+            Assert.SkipUnless(PlatformDetection.SupportsTls13, "ConditionalClass: PlatformDetection.SupportsTls13");
+        }
         protected override SslProtocols GetSslProtocols() => SslProtocols.Tls13;
     }
 }

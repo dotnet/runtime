@@ -18,6 +18,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         {
         }
 
+#if !SINGLE_FILE_TEST_RUNNER
         [Theory]
         [MemberData(nameof(GetUnspeakableTypes))]
         public async Task CanSerializeUnspeakableRootTypes<T>(Envelope<T> envelope, string expectedJson, bool isBaseTypeDeserializable)
@@ -85,6 +86,7 @@ namespace System.Text.Json.SourceGeneration.Tests
             string json = await Serializer.SerializeWrapper(boxedEnvelope, UnspeakableTypeContext.Default.Options);
             Assert.Equal(expectedCollectionJson, json);
         }
+#endif
 
         [Fact]
         public async Task TypeWithDiamondAmbiguityThrowsNotSupportedException()

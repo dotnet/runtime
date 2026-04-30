@@ -46,10 +46,17 @@ namespace System.Security.Cryptography.Cose.Tests
                 CoseSign1Message.SignEmbedded(content, signer, associatedData);
         }
     }
-
-    [ConditionalClass(typeof(MLDsa), nameof(MLDsa.IsSupported))]
     public class CoseSign1MessageTests_Sign_MLDsa : CoseSign1MessageTests_Sign<MLDsa>
     {
+
+        public CoseSign1MessageTests_Sign_MLDsa()
+
+        {
+
+            Assert.SkipUnless(MLDsa.IsSupported, "ConditionalClass: MLDsa.IsSupported");
+
+        }
+
         internal override bool SupportsHashAlgorithm => false;
         internal override List<CoseAlgorithm> CoseAlgorithms => new() { CoseAlgorithm.MLDsa44, CoseAlgorithm.MLDsa65, CoseAlgorithm.MLDsa87 };
 

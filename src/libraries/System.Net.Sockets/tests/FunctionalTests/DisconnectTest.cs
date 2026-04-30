@@ -5,8 +5,6 @@ using System.Net.Test.Common;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
-using Xunit.Abstractions;
-
 namespace System.Net.Sockets.Tests
 {
     public abstract class Disconnect<T> : SocketTestHelperBase<T> where T : SocketHelperBase, new()
@@ -155,23 +153,23 @@ namespace System.Net.Sockets.Tests
             }
         }
     }
-
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public sealed class Disconnect_Sync : Disconnect<SocketHelperArraySync>
     {
-        public Disconnect_Sync(ITestOutputHelper output) : base(output) { }
+        public Disconnect_Sync(ITestOutputHelper output) : base(output) {
+            Assert.SkipUnless(PlatformDetection.IsMultithreadingSupported, "ConditionalClass: PlatformDetection.IsMultithreadingSupported");
+        }
     }
-
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public sealed class Disconnect_SyncForceNonBlocking : Disconnect<SocketHelperSyncForceNonBlocking>
     {
-        public Disconnect_SyncForceNonBlocking(ITestOutputHelper output) : base(output) { }
+        public Disconnect_SyncForceNonBlocking(ITestOutputHelper output) : base(output) {
+            Assert.SkipUnless(PlatformDetection.IsMultithreadingSupported, "ConditionalClass: PlatformDetection.IsMultithreadingSupported");
+        }
     }
-
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public sealed class Disconnect_Apm : Disconnect<SocketHelperApm>
     {
-        public Disconnect_Apm(ITestOutputHelper output) : base(output) { }
+        public Disconnect_Apm(ITestOutputHelper output) : base(output) {
+            Assert.SkipUnless(PlatformDetection.IsMultithreadingSupported, "ConditionalClass: PlatformDetection.IsMultithreadingSupported");
+        }
 
         [Fact]
         public void EndDisconnect_InvalidArguments_Throws()

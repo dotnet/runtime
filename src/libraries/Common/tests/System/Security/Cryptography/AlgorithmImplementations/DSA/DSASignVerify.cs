@@ -7,9 +7,13 @@ using Xunit;
 
 namespace System.Security.Cryptography.Dsa.Tests
 {
-    [ConditionalClass(typeof(PlatformSupport), nameof(PlatformSupport.IsDSASupported))]
     public sealed class DSASignVerify_Array : DSASignVerify
     {
+        public DSASignVerify_Array()
+        {
+            Assert.SkipUnless(PlatformSupport.IsDSASupported, "ConditionalClass: PlatformSupport.IsDSASupported");
+        }
+
         public override byte[] SignData(DSA dsa, byte[] data, HashAlgorithmName hashAlgorithm) =>
             dsa.SignData(data, hashAlgorithm);
         public override bool VerifyData(DSA dsa, byte[] data, byte[] signature, HashAlgorithmName hashAlgorithm) =>
@@ -53,10 +57,17 @@ namespace System.Security.Cryptography.Dsa.Tests
             }
         }
     }
-
-    [ConditionalClass(typeof(PlatformSupport), nameof(PlatformSupport.IsDSASupported))]
     public sealed class DSASignVerify_Stream : DSASignVerify
     {
+
+        public DSASignVerify_Stream()
+
+        {
+
+            Assert.SkipUnless(PlatformSupport.IsDSASupported, "ConditionalClass: PlatformSupport.IsDSASupported");
+
+        }
+
         public override byte[] SignData(DSA dsa, byte[] data, HashAlgorithmName hashAlgorithm) =>
             dsa.SignData(new MemoryStream(data), hashAlgorithm);
         public override bool VerifyData(DSA dsa, byte[] data, byte[] signature, HashAlgorithmName hashAlgorithm) =>
@@ -76,9 +87,13 @@ namespace System.Security.Cryptography.Dsa.Tests
     }
 
 #if NET
-    [ConditionalClass(typeof(PlatformSupport), nameof(PlatformSupport.IsDSASupported))]
     public sealed class DSASignVerify_Span : DSASignVerify
     {
+        public DSASignVerify_Span()
+        {
+            Assert.SkipUnless(PlatformSupport.IsDSASupported, "ConditionalClass: PlatformSupport.IsDSASupported");
+        }
+
         public override byte[] SignData(DSA dsa, byte[] data, HashAlgorithmName hashAlgorithm) =>
             TryWithOutputArray(dest => dsa.TrySignData(data, dest, hashAlgorithm, out int bytesWritten) ? (true, bytesWritten) : (false, 0));
 
@@ -109,9 +124,13 @@ namespace System.Security.Cryptography.Dsa.Tests
         }
     }
 #endif
-    [ConditionalClass(typeof(PlatformSupport), nameof(PlatformSupport.IsDSASupported))]
     public abstract partial class DSASignVerify
     {
+        public DSASignVerify()
+        {
+            Assert.SkipUnless(PlatformSupport.IsDSASupported, "ConditionalClass: PlatformSupport.IsDSASupported");
+        }
+
         public abstract byte[] SignData(DSA dsa, byte[] data, HashAlgorithmName hashAlgorithm);
         public abstract bool VerifyData(DSA dsa, byte[] data, byte[] signature, HashAlgorithmName hashAlgorithm);
 

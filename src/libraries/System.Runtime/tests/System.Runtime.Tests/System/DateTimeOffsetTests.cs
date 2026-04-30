@@ -781,10 +781,11 @@ namespace System.Tests
             yield return new object[] { new DateTimeOffset(2019, 11, 3, 1, 0, 0, new TimeSpan(-8, 0, 0)) };
         }
 
-        [ConditionalTheory(typeof(DateTimeOffsetTests), nameof(IsPacificTime))]
+        [Theory]
         [MemberData(nameof(ToLocalTime_Ambiguous_TestData))]
         public static void ToLocalTime_Ambiguous(DateTimeOffset dateTimeOffset)
         {
+            Assert.SkipUnless(IsPacificTime(), "Requires IsPacificTime");
             Assert.True(dateTimeOffset.EqualsExact(dateTimeOffset.ToLocalTime()));
         }
 
@@ -1465,10 +1466,11 @@ namespace System.Tests
             yield return new object[] { new DateTimeOffset(636572516255571994, TimeSpan.FromHours(-5)), "Y", new CultureInfo("da-DK"), "marts 2018" };
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
+        [Theory]
         [MemberData(nameof(ToString_WithCulture_MatchesExpected_MemberData))]
         public static void ToString_WithCulture_MatchesExpected(DateTimeOffset dateTimeOffset, string format, CultureInfo culture, string expected)
         {
+            Assert.SkipUnless(PlatformDetection.IsNotInvariantGlobalization, "Requires IsNotInvariantGlobalization");
             Assert.Equal(expected, dateTimeOffset.ToString(format, culture));
         }
 
@@ -1596,11 +1598,12 @@ namespace System.Tests
             }
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
+        [Theory]
         [MemberData(nameof(ToString_MatchesExpected_MemberData))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/60562", TestPlatforms.Android | TestPlatforms.LinuxBionic)]
         public static void TryFormat_MatchesExpected(DateTimeOffset dateTimeOffset, string format, IFormatProvider provider, string expected)
         {
+            Assert.SkipUnless(PlatformDetection.IsNotInvariantGlobalization, "Requires IsNotInvariantGlobalization");
             // UTF16
             {
                 var destination = new char[expected.Length];

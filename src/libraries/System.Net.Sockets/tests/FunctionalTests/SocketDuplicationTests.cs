@@ -11,8 +11,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
-using Xunit.Abstractions;
-
 namespace System.Net.Sockets.Tests
 {
     // Test cases for DuplicateAndClose, Socket(socketInformation), Socket.UseOnlyOverlappedIO,
@@ -386,15 +384,21 @@ namespace System.Net.Sockets.Tests
                 }
             }
         }
-
-        [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public class Synchronous : PolymorphicTests<SocketHelperArraySync>
         {
-        }
 
-        [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
+            public Synchronous()
+            {
+                Assert.SkipUnless(PlatformDetection.IsMultithreadingSupported, "ConditionalClass: PlatformDetection.IsMultithreadingSupported");
+            }
+        }
         public class Apm : PolymorphicTests<SocketHelperApm>
         {
+
+            public Apm()
+            {
+                Assert.SkipUnless(PlatformDetection.IsMultithreadingSupported, "ConditionalClass: PlatformDetection.IsMultithreadingSupported");
+            }
         }
 
         public class TaskBased : PolymorphicTests<SocketHelperTask>

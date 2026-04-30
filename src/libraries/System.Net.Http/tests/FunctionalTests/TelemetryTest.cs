@@ -13,7 +13,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
-using Xunit.Abstractions;
+
 
 namespace System.Net.Http.Functional.Tests
 {
@@ -1172,11 +1172,11 @@ namespace System.Net.Http.Functional.Tests
         protected override Version UseVersion => HttpVersion.Version20;
         public TelemetryTest_Http20(ITestOutputHelper output) : base(output) { }
     }
-
-    [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsHttp3Supported))]
     public sealed class TelemetryTest_Http30 : TelemetryTest
     {
         protected override Version UseVersion => HttpVersion.Version30;
-        public TelemetryTest_Http30(ITestOutputHelper output) : base(output) { }
+        public TelemetryTest_Http30(ITestOutputHelper output) : base(output) {
+            Assert.SkipUnless(HttpClientHandlerTestBase.IsHttp3Supported, "ConditionalClass: HttpClientHandlerTestBase.IsHttp3Supported");
+        }
     }
 }

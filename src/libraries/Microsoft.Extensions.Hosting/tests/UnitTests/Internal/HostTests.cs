@@ -1382,16 +1382,21 @@ namespace Microsoft.Extensions.Hosting.Internal
             });
         }
 
+        public static TheoryData<BackgroundServiceExceptionBehavior, string[]> BackgroundServiceExceptionLoggedData => new()
+        {
+            { BackgroundServiceExceptionBehavior.Ignore, new[] { "BackgroundService failed" } },
+            { BackgroundServiceExceptionBehavior.StopHost, new[] { "BackgroundService failed", "The HostOptions.BackgroundServiceExceptionBehavior is configured to StopHost" } },
+        };
+
         /// <summary>
         /// Tests when a BackgroundService throws an exception asynchronously
         /// (after an await), the exception gets logged correctly.
         /// </summary>
         [Theory]
-        [InlineData(BackgroundServiceExceptionBehavior.Ignore, "BackgroundService failed")]
-        [InlineData(BackgroundServiceExceptionBehavior.StopHost, "BackgroundService failed", "The HostOptions.BackgroundServiceExceptionBehavior is configured to StopHost")]
+        [MemberData(nameof(BackgroundServiceExceptionLoggedData))]
         public async Task BackgroundServiceAsyncExceptionGetsLogged(
             BackgroundServiceExceptionBehavior testBehavior,
-            params string[] expectedExceptionMessages)
+            string[] expectedExceptionMessages)
         {
             TestLoggerProvider logger = new TestLoggerProvider();
             var backgroundDelayTaskSource = new TaskCompletionSource<bool>();

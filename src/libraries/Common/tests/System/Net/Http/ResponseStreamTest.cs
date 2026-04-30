@@ -9,7 +9,7 @@ using System.Threading;
 using System.Threading.Tasks;
 
 using Xunit;
-using Xunit.Abstractions;
+
 
 namespace System.Net.Http.Functional.Tests
 {
@@ -647,7 +647,7 @@ namespace System.Net.Http.Functional.Tests
                     HttpIOException exception = await Assert.ThrowsAsync<HttpIOException>(() => ReadAsStreamHelper(uri));
                     Assert.Equal(HttpRequestError.ResponseEnded, exception.HttpRequestError);
                 }
-                
+
             });
         }
 

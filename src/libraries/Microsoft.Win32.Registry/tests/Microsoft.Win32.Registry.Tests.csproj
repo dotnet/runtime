@@ -3,6 +3,7 @@
     <DefineConstants>$(DefineConstants);REGISTRY_ASSEMBLY</DefineConstants>
     <TargetFramework>$(NetCoreAppCurrent)-windows</TargetFramework>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <RootNamespace>Microsoft.Win32.RegistryTests</RootNamespace>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(CommonPath)DisableRuntimeMarshalling.cs"

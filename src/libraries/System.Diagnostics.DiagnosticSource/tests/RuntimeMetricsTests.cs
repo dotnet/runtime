@@ -7,8 +7,6 @@ using System.Linq;
 using System.Runtime;
 using System.Threading;
 using Xunit;
-using Xunit.Abstractions;
-
 namespace System.Diagnostics.Metrics.Tests
 {
     public class RuntimeMetricsTests(ITestOutputHelper output)

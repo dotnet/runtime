@@ -10,7 +10,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
-using Xunit.Abstractions;
+
 
 namespace System.Net.Http.Functional.Tests
 {
@@ -20,7 +20,6 @@ namespace System.Net.Http.Functional.Tests
     using HttpClientHandler = System.Net.Http.WinHttpClientHandler;
 #endif
 
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsBrowserDomSupportedOrNotBrowser))]
     public sealed class HttpClientHandler_RemoteServerTest : HttpClientHandlerTestBase
     {
         private const string ExpectedContent = "Test content";
@@ -57,6 +56,7 @@ namespace System.Net.Http.Functional.Tests
 
         public HttpClientHandler_RemoteServerTest(ITestOutputHelper output) : base(output)
         {
+            Assert.SkipUnless(PlatformDetection.IsBrowserDomSupportedOrNotBrowser, "ConditionalClass: PlatformDetection.IsBrowserDomSupportedOrNotBrowser");
         }
 
         [OuterLoop("Uses external servers")]

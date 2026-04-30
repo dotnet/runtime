@@ -49,10 +49,17 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Assert.Equal<T>(value, res);
         }
     }
-
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMultithreadingSupported))]
     public class JSExportTest : JSInteropTestBase, IAsyncLifetime
     {
+
+        public JSExportTest()
+
+        {
+
+            Assert.SkipUnless(PlatformDetection.IsNotMultithreadingSupported, "ConditionalClass: PlatformDetection.IsNotMultithreadingSupported");
+
+        }
+
         [Theory]
         [MemberData(nameof(MarshalBooleanCases))]
         public void JsExportBoolean(bool value)

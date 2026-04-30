@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 using Microsoft.DotNet.XUnitExtensions;
 using Microsoft.Win32.SafeHandles;
 using Xunit;
+using Xunit.Sdk;
 
 namespace System.IO.Tests
 {
@@ -164,7 +165,7 @@ namespace System.IO.Tests
             }
             catch (IOException)
             {
-                throw new SkipTestException("Not enough disk space.");
+                throw SkipException.ForSkip("Not enough disk space.");
             }
 
             using (sfh)
@@ -189,7 +190,7 @@ namespace System.IO.Tests
                     }
                     catch (OutOfMemoryException)
                     {
-                        throw new SkipTestException("Not enough memory.");
+                        throw SkipException.ForSkip("Not enough memory.");
                     }
 
                     await Verify(asyncMethod, FileSize, sfh, writeBuffer, writeBuffers, readBuffers);

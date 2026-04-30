@@ -6,6 +6,7 @@ using System.Globalization;
 using System.Text;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
+using Xunit.Sdk;
 
 namespace System.Data.SqlTypes.Tests
 {
@@ -57,7 +58,7 @@ namespace System.Data.SqlTypes.Tests
             if (PlatformDetection.IsIcuGlobalization && cultureName == "ja-JP" && localeId == 0x0411)
             {
                 // TODO: Remove this once: https://github.com/dotnet/runtime/issues/18912 is fixed on ICU.
-                throw new SkipTestException($"PlatformDetection.IsIcuGlobalization and cultureName == ja-JP");
+                throw SkipException.ForSkip($"PlatformDetection.IsIcuGlobalization and cultureName == ja-JP");
             }
 
             var culture = new CultureInfo(cultureName);

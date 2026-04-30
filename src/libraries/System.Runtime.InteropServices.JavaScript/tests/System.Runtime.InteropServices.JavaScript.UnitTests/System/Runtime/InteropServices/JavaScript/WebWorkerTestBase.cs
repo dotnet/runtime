@@ -17,7 +17,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
 
         public static bool _isWarmupDone;
 
-        public async Task InitializeAsync()
+        public async ValueTask InitializeAsync()
         {
             if (_isWarmupDone)
             {
@@ -27,7 +27,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             _isWarmupDone = true;
         }
 
-        public Task DisposeAsync() => Task.CompletedTask;
+        public ValueTask DisposeAsync() => ValueTask.CompletedTask;
 
         protected CancellationTokenSource CreateTestCaseTimeoutSource([CallerMemberName] string memberName = "")
         {

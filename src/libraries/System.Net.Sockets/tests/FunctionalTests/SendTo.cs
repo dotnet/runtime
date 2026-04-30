@@ -8,8 +8,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
-using Xunit.Abstractions;
-
+using Xunit.Sdk;
 namespace System.Net.Sockets.Tests
 {
     public abstract class SendTo<T> : SocketTestHelperBase<T> where T : SocketHelperBase, new()
@@ -94,7 +93,7 @@ namespace System.Net.Sockets.Tests
             Assert.NotNull(socket.LocalEndPoint);
         }
 
-        [ConditionalFact]
+        [Fact]
         [SkipOnPlatform(TestPlatforms.FreeBSD, "FreeBSD allows sendto() to broadcast")]
         public async Task Datagram_UDP_AccessDenied_Throws_DoesNotBind()
         {
@@ -106,7 +105,7 @@ namespace System.Net.Sockets.Tests
             if (e.SocketErrorCode == SocketError.HostUnreachable && PlatformDetection.IsApplePlatform)
             {
                 // https://github.com/dotnet/runtime/issues/114450
-                throw new SkipTestException("HostUnreachable indicates missing local network permission; this test might pass or fail depending on the environment. Please verify manually.");
+                throw SkipException.ForSkip("HostUnreachable indicates missing local network permission; this test might pass or fail depending on the environment. Please verify manually.");
             }
 
             Assert.Equal(SocketError.AccessDenied, e.SocketErrorCode);
@@ -122,35 +121,35 @@ namespace System.Net.Sockets.Tests
             await Assert.ThrowsAsync<ObjectDisposedException>(() => SendToAsync(socket, new byte[1], GetGetDummyTestEndpoint()));
         }
     }
-
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public sealed class SendTo_SyncSpan : SendTo<SocketHelperSpanSync>
     {
-        public SendTo_SyncSpan(ITestOutputHelper output) : base(output) { }
+        public SendTo_SyncSpan(ITestOutputHelper output) : base(output) {
+            Assert.SkipUnless(PlatformDetection.IsMultithreadingSupported, "ConditionalClass: PlatformDetection.IsMultithreadingSupported");
+        }
     }
-
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public sealed class SendTo_SyncSpanForceNonBlocking : SendTo<SocketHelperSpanSyncForceNonBlocking>
     {
-        public SendTo_SyncSpanForceNonBlocking(ITestOutputHelper output) : base(output) { }
+        public SendTo_SyncSpanForceNonBlocking(ITestOutputHelper output) : base(output) {
+            Assert.SkipUnless(PlatformDetection.IsMultithreadingSupported, "ConditionalClass: PlatformDetection.IsMultithreadingSupported");
+        }
     }
-
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public sealed class SendTo_ArraySync : SendTo<SocketHelperArraySync>
     {
-        public SendTo_ArraySync(ITestOutputHelper output) : base(output) { }
+        public SendTo_ArraySync(ITestOutputHelper output) : base(output) {
+            Assert.SkipUnless(PlatformDetection.IsMultithreadingSupported, "ConditionalClass: PlatformDetection.IsMultithreadingSupported");
+        }
     }
-
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public sealed class SendTo_SyncForceNonBlocking : SendTo<SocketHelperSyncForceNonBlocking>
     {
-        public SendTo_SyncForceNonBlocking(ITestOutputHelper output) : base(output) {}
+        public SendTo_SyncForceNonBlocking(ITestOutputHelper output) : base(output) {
+            Assert.SkipUnless(PlatformDetection.IsMultithreadingSupported, "ConditionalClass: PlatformDetection.IsMultithreadingSupported");
+        }
     }
-
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public sealed class SendTo_Apm : SendTo<SocketHelperApm>
     {
-        public SendTo_Apm(ITestOutputHelper output) : base(output) {}
+        public SendTo_Apm(ITestOutputHelper output) : base(output) {
+            Assert.SkipUnless(PlatformDetection.IsMultithreadingSupported, "ConditionalClass: PlatformDetection.IsMultithreadingSupported");
+        }
 
         [Fact]
         public void EndSendTo_NullAsyncResult_Throws_ArgumentNullException()

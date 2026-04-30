@@ -14,7 +14,6 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Text;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace System.Text.Json.SourceGeneration.UnitTests
 {
@@ -317,7 +316,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                 }
 
                 namespace HelloWorld
-                {                
+                {
                     public class Location
                     {
                         public int Id { get; set; }
@@ -342,7 +341,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                 using System.Text.Json.Serialization;
 
                 namespace HelloWorld
-                {                
+                {
                     public class Location
                     {
                         public int Id { get; init; }
@@ -372,7 +371,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                     using System.Text.Json.Serialization;
 
                     namespace HelloWorld
-                    { 
+                    {
                         public class MyClass
                         {
                             public MyClass(int value)
@@ -458,7 +457,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                 using System.Text.Json.Serialization;
 
                 namespace HelloWorld
-                {                
+                {
                     public record Location
                     (
                         int Id,
@@ -488,7 +487,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                 using System.Text.Json.Serialization;
 
                 namespace HelloWorld
-                {                
+                {
                     public class Location
                     {
                         [JsonInclude]
@@ -659,7 +658,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
 
                     [JsonConverter(typeof(JsonStringEnumConverter))]
                     public enum Enum1 { A, B, C };
-                    
+
                     public enum Enum2 { A, B, C };
                 }
                 """;
@@ -791,7 +790,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                 using System.Text.Json.Serialization;
 
                 namespace HelloWorld
-                {                
+                {
                     public class ClassWithPublicCtor
                     {
                         [JsonConstructor]

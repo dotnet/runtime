@@ -5,6 +5,7 @@ using System.Reflection;
 using System.Threading.Tasks;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
+using Xunit.Sdk;
 
 namespace System.IO.Compression.Tests;
 
@@ -143,7 +144,7 @@ public class zip_LargeFiles : ZipFileTestBase
         }
         catch (OutOfMemoryException)
         {
-            throw new SkipTestException("Insufficient memory to run test");
+            throw SkipException.ForSkip("Insufficient memory to run test");
         }
 
         string zipArchivePath = Path.Combine(Path.GetTempPath(), "largeFileAtLargeOffset.zip");

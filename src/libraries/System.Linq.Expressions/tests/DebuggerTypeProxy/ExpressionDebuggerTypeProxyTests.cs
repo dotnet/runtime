@@ -50,7 +50,7 @@ namespace System.Linq.Expressions.Tests
             Assert.Throws<NotSupportedException>(() => collection.Remove(default(T)));
         }
 
-        [ConditionalTheory]
+        [Theory]
         [MemberData(nameof(BinaryExpressionProxy))]
         [MemberData(nameof(BlockExpressionProxy))]
         [MemberData(nameof(CatchBlockProxy))]
@@ -81,10 +81,7 @@ namespace System.Linq.Expressions.Tests
         {
             Type type = obj.GetType();
             Type viewType = GetDebugViewType(type);
-            if (viewType == null)
-            {
-                throw new SkipTestException($"Didn't find DebuggerTypeProxyAttribute on {type}.");
-            }
+            Assert.SkipWhen(viewType == null, $"Didn't find DebuggerTypeProxyAttribute on {type}.");
             object view = viewType.GetConstructors().Single().Invoke(new[] {obj});
             IEnumerable<PropertyInfo> properties =
                 type.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.FlattenHierarchy)
@@ -163,15 +160,12 @@ namespace System.Linq.Expressions.Tests
             }
         }
 
-        [ConditionalTheory, MemberData(nameof(OnePerType))]
+        [Theory, MemberData(nameof(OnePerType))]
         public void ThrowOnNullToCtor(object sourceObject)
         {
             Type type = sourceObject.GetType();
             Type viewType = GetDebugViewType(type);
-            if (viewType == null)
-            {
-                throw new SkipTestException($"Didn't find DebuggerTypeProxyAttribute on {type}.");
-            }
+            Assert.SkipWhen(viewType == null, $"Didn't find DebuggerTypeProxyAttribute on {type}.");
             ConstructorInfo ctor = viewType.GetConstructors().Single();
             TargetInvocationException tie = Assert.Throws<TargetInvocationException>(() => ctor.Invoke(new object[] { null }));
             ArgumentNullException ane = (ArgumentNullException)tie.InnerException;

@@ -16,6 +16,7 @@ using System.Threading.Tasks;
 using Microsoft.DotNet.XUnitExtensions;
 using Newtonsoft.Json;
 using Xunit;
+using Xunit.Sdk;
 
 namespace System.Text.Json.Tests
 {
@@ -969,7 +970,7 @@ namespace System.Text.Json.Tests
             }
             catch (OutOfMemoryException)
             {
-                throw new SkipTestException("Out of memory allocating large objects");
+                throw SkipException.ForSkip("Out of memory allocating large objects");
             }
         }
 
@@ -3471,7 +3472,7 @@ namespace System.Text.Json.Tests
             }
             catch (OutOfMemoryException)
             {
-                throw new SkipTestException("Out of memory allocating large objects");
+                throw SkipException.ForSkip("Out of memory allocating large objects");
             }
         }
 
@@ -3512,7 +3513,7 @@ namespace System.Text.Json.Tests
             }
             catch (OutOfMemoryException)
             {
-                throw new SkipTestException("Out of memory allocating large objects");
+                throw SkipException.ForSkip("Out of memory allocating large objects");
             }
         }
 
@@ -3586,7 +3587,7 @@ namespace System.Text.Json.Tests
             }
             catch (OutOfMemoryException)
             {
-                throw new SkipTestException("Out of memory allocating large objects");
+                throw SkipException.ForSkip("Out of memory allocating large objects");
             }
         }
 
@@ -3647,7 +3648,7 @@ namespace System.Text.Json.Tests
             }
             catch (OutOfMemoryException)
             {
-                throw new SkipTestException("Out of memory allocating large objects");
+                throw SkipException.ForSkip("Out of memory allocating large objects");
             }
         }
 
@@ -6544,7 +6545,7 @@ namespace System.Text.Json.Tests
             }
             catch (OutOfMemoryException)
             {
-                throw new SkipTestException("Out of memory allocating large objects");
+                throw SkipException.ForSkip("Out of memory allocating large objects");
             }
         }
 
@@ -6574,7 +6575,7 @@ namespace System.Text.Json.Tests
             }
             catch (OutOfMemoryException)
             {
-                throw new SkipTestException("Out of memory allocating large objects");
+                throw SkipException.ForSkip("Out of memory allocating large objects");
             }
         }
 
@@ -6602,7 +6603,7 @@ namespace System.Text.Json.Tests
             }
             catch (OutOfMemoryException)
             {
-                throw new SkipTestException("Out of memory allocating large objects");
+                throw SkipException.ForSkip("Out of memory allocating large objects");
             }
         }
 
@@ -7042,7 +7043,7 @@ namespace System.Text.Json.Tests
             }
             catch (OutOfMemoryException)
             {
-                throw new SkipTestException("Out of memory allocating large objects");
+                throw SkipException.ForSkip("Out of memory allocating large objects");
             }
         }
 

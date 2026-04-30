@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections.Generic;
 using System.Threading;
 using Microsoft.Win32.SafeHandles;
 using Xunit;
@@ -13,16 +12,6 @@ namespace System.IO.Tests
         protected abstract T MethodUnderTest(SafeFileHandle handle, byte[] bytes, long fileOffset);
 
         protected virtual bool UsesOffsets => true;
-
-        public static IEnumerable<object[]> GetSyncAsyncOptions()
-        {
-            yield return new object[] { FileOptions.None };
-
-            if (PlatformDetection.IsAsyncFileIOSupported)
-            {
-                yield return new object[] { FileOptions.Asynchronous };
-            }
-        }
 
         [Fact]
         public void ThrowsArgumentNullExceptionForNullHandle()
@@ -48,7 +37,7 @@ namespace System.IO.Tests
         }
 
         [Theory]
-        [MemberData(nameof(GetSyncAsyncOptions))]
+        [MemberData(nameof(GetSyncAsyncOptions), MemberType = typeof(FileSystemTest))]
         public void ThrowsArgumentOutOfRangeExceptionForNegativeFileOffset(FileOptions options)
         {
             if (UsesOffsets)

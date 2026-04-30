@@ -11,7 +11,7 @@ using System.Security.Authentication;
 using System.Threading.Tasks;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
-using Xunit.Abstractions;
+
 
 namespace System.Net.Http.Functional.Tests
 {
@@ -34,24 +34,29 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [Theory]
-        [InlineData(SslProtocols.None)]
 #pragma warning disable SYSLIB0039 // TLS 1.0 and 1.1 are obsolete
-        [InlineData(SslProtocols.Tls)]
-        [InlineData(SslProtocols.Tls11)]
-        [InlineData(SslProtocols.Tls12)]
-        [InlineData(SslProtocols.Tls | SslProtocols.Tls11)]
-        [InlineData(SslProtocols.Tls11 | SslProtocols.Tls12)]
-        [InlineData(SslProtocols.Tls | SslProtocols.Tls12)]
-        [InlineData(SslProtocols.Tls | SslProtocols.Tls11 | SslProtocols.Tls12)]
+        public static TheoryData<SslProtocols> SetGetProtocols_RoundtripsData => new()
+        {
+            SslProtocols.None,
+            SslProtocols.Tls,
+            SslProtocols.Tls11,
+            SslProtocols.Tls12,
+            SslProtocols.Tls | SslProtocols.Tls11,
+            SslProtocols.Tls11 | SslProtocols.Tls12,
+            SslProtocols.Tls | SslProtocols.Tls12,
+            SslProtocols.Tls | SslProtocols.Tls11 | SslProtocols.Tls12,
 #if !NETFRAMEWORK
-        [InlineData(SslProtocols.Tls13)]
-        [InlineData(SslProtocols.Tls11 | SslProtocols.Tls13)]
-        [InlineData(SslProtocols.Tls12 | SslProtocols.Tls13)]
-        [InlineData(SslProtocols.Tls | SslProtocols.Tls13)]
-        [InlineData(SslProtocols.Tls | SslProtocols.Tls11 | SslProtocols.Tls12 | SslProtocols.Tls13)]
+            SslProtocols.Tls13,
+            SslProtocols.Tls11 | SslProtocols.Tls13,
+            SslProtocols.Tls12 | SslProtocols.Tls13,
+            SslProtocols.Tls | SslProtocols.Tls13,
+            SslProtocols.Tls | SslProtocols.Tls11 | SslProtocols.Tls12 | SslProtocols.Tls13,
 #endif
+        };
 #pragma warning restore SYSLIB0039
+
+        [Theory]
+        [MemberData(nameof(SetGetProtocols_RoundtripsData))]
         public void SetGetProtocols_Roundtrips(SslProtocols protocols)
         {
             using (HttpClientHandler handler = CreateHttpClientHandler())
@@ -260,17 +265,22 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [Theory]
 #pragma warning disable 0618 // SSL2/3 are deprecated
-        [InlineData(SslProtocols.Ssl2, SslProtocols.Tls12)]
-        [InlineData(SslProtocols.Ssl3, SslProtocols.Tls12)]
-#pragma warning restore 0618
 #pragma warning disable SYSLIB0039 // TLS 1.0 and 1.1 are obsolete
-        [InlineData(SslProtocols.Tls11, SslProtocols.Tls)]
-        [InlineData(SslProtocols.Tls11 | SslProtocols.Tls12, SslProtocols.Tls)] // Skip this on WinHttpHandler.
-        [InlineData(SslProtocols.Tls12, SslProtocols.Tls11)]
-        [InlineData(SslProtocols.Tls, SslProtocols.Tls12)]
+        public static TheoryData<SslProtocols, SslProtocols> SslMismatchData => new()
+        {
+            { SslProtocols.Ssl2, SslProtocols.Tls12 },
+            { SslProtocols.Ssl3, SslProtocols.Tls12 },
+            { SslProtocols.Tls11, SslProtocols.Tls },
+            { SslProtocols.Tls11 | SslProtocols.Tls12, SslProtocols.Tls }, // Skip this on WinHttpHandler.
+            { SslProtocols.Tls12, SslProtocols.Tls11 },
+            { SslProtocols.Tls, SslProtocols.Tls12 },
+        };
 #pragma warning restore SYSLIB0039
+#pragma warning restore 0618
+
+        [Theory]
+        [MemberData(nameof(SslMismatchData))]
         public async Task GetAsync_AllowedClientSslVersionDiffersFromServer_ThrowsException(
             SslProtocols allowedClientProtocols, SslProtocols acceptedServerProtocols)
         {

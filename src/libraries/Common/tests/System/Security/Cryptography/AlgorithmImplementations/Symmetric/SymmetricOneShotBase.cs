@@ -419,15 +419,12 @@ namespace System.Security.Cryptography.Tests
             Assert.Empty(missingMethods);
         }
 
-        [ConditionalFact]
+        [Fact]
         public void DecryptOneShot_Cfb8_ToleratesExtraPadding()
         {
             using (SymmetricAlgorithm alg = CreateAlgorithm())
             {
-                if (alg is RC2)
-                {
-                    throw new SkipTestException("RC2 does not support CFB.");
-                }
+                Assert.SkipWhen(alg is RC2, "RC2 does not support CFB.");
 
                 alg.Key = Key;
 
@@ -498,7 +495,7 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [ConditionalTheory]
+        [Theory]
         [InlineData(PaddingMode.PKCS7, 0)]
         [InlineData(PaddingMode.ANSIX923, 0)]
         [InlineData(PaddingMode.ISO10126, 0)]
@@ -509,10 +506,7 @@ namespace System.Security.Cryptography.Tests
         {
             using (SymmetricAlgorithm alg = CreateAlgorithm())
             {
-                if (alg is RC2)
-                {
-                    throw new SkipTestException("RC2 does not support CFB.");
-                }
+                Assert.SkipWhen(alg is RC2, "RC2 does not support CFB.");
 
                 alg.Key = Key;
                 int size = ciphertextSize > 0 ? ciphertextSize : alg.BlockSize / 8;
@@ -553,7 +547,7 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [ConditionalTheory]
+        [Theory]
         [InlineData(PaddingMode.PKCS7)]
         [InlineData(PaddingMode.ANSIX923)]
         [InlineData(PaddingMode.ISO10126)]
@@ -561,10 +555,7 @@ namespace System.Security.Cryptography.Tests
         {
             using (SymmetricAlgorithm alg = CreateAlgorithm())
             {
-                if (alg is RC2)
-                {
-                    throw new SkipTestException("RC2 does not support CFB.");
-                }
+                Assert.SkipWhen(alg is RC2, "RC2 does not support CFB.");
 
                 alg.Key = Key;
                 int size = 2048;

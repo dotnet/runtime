@@ -7,22 +7,28 @@ using System.Threading;
 using System.Threading.Tasks;
 
 using Xunit;
-using Xunit.Abstractions;
-
+using Xunit.Sdk;
 namespace System.Net.WebSockets.Client.Tests
 {
-
-    [ConditionalClass(typeof(ClientWebSocketTestBase), nameof(WebSocketsSupported))]
     [SkipOnPlatform(TestPlatforms.Browser, "System.Net.Sockets are not supported on browser")]
     public abstract class SendReceiveTest_LoopbackBase(ITestOutputHelper output) : SendReceiveTestBase(output)
     {
+
+        public SendReceiveTest_LoopbackBase() : this(null!)
+
+        {
+
+            Assert.SkipUnless(ClientWebSocketTestBase.WebSocketsSupported, "ConditionalClass: ClientWebSocketTestBase.WebSocketsSupported");
+
+        }
+
         #region Common (Echo Server) tests
 
         [Theory, MemberData(nameof(UseSslAndSendReceiveType))]
         public Task SendReceive_PartialMessageDueToSmallReceiveBuffer_Success(bool useSsl, SendReceiveType type) => RunEchoAsync(
             server => RunSendReceive(RunClient_SendReceive_PartialMessageDueToSmallReceiveBuffer_Success, server, type), useSsl);
 
-        [ConditionalTheory, MemberData(nameof(UseSslAndSendReceiveType))] // Uses SkipTestException
+        [Theory, MemberData(nameof(UseSslAndSendReceiveType))] // Uses SkipException
         public Task SendReceive_PartialMessageBeforeCompleteMessageArrives_Success(bool useSsl, SendReceiveType type) => RunEchoAsync(
             server => RunSendReceive(RunClient_SendReceive_PartialMessageBeforeCompleteMessageArrives_Success, server, type), useSsl);
 
@@ -42,7 +48,7 @@ namespace System.Net.WebSockets.Client.Tests
         public Task SendAsync_SendZeroLengthPayloadAsEndOfMessage_Success(bool useSsl, SendReceiveType type) => RunEchoAsync(
             server => RunSendReceive(RunClient_SendAsync_SendZeroLengthPayloadAsEndOfMessage_Success, server, type), useSsl);
 
-        [ConditionalTheory, MemberData(nameof(UseSslAndSendReceiveType))] // Uses SkipTestException
+        [Theory, MemberData(nameof(UseSslAndSendReceiveType))] // Uses SkipException
         public Task SendReceive_VaryingLengthBuffers_Success(bool useSsl, SendReceiveType type) => RunEchoAsync(
             server => RunSendReceive(RunClient_SendReceive_VaryingLengthBuffers_Success, server, type), useSsl);
 

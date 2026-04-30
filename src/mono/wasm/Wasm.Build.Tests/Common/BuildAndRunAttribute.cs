@@ -5,7 +5,10 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Threading.Tasks;
+using Xunit;
 using Xunit.Sdk;
+using Xunit.v3;
 
 #nullable enable
 
@@ -13,32 +16,38 @@ namespace Wasm.Build.Tests
 {
     /// <summary>
     /// Example usage:
-    ///     [BuildAndRun(aot: true, parameters: new object[] { arg1, arg2 })]
-    ///     public void Test(ProjectInfo, arg1, arg2, RunHost, id)
+    ///     [BuildAndRun(aot: true)]
+    ///     public void Test(ProjectInfo, RunHost, id)
     /// </summary>
-    [DataDiscoverer("Xunit.Sdk.DataDiscoverer", "xunit.core")]
     [AttributeUsage(AttributeTargets.Method, AllowMultiple = true, Inherited = true)]
     public class BuildAndRunAttribute : DataAttribute
     {
-        private readonly IEnumerable<object?[]> _data;
-
+        private readonly List<ITheoryDataRow> _data;
 
 #if TARGET_WASI
-        // remove when wasi is refectored and use Configuration
+        // remove when wasi is refactored and use Configuration
         public BuildAndRunAttribute(bool aot=false, string? config=null, params object?[] parameters)
         {
             _data = BuildTestBase.ConfigWithAOTData(aot, config)
                     .Multiply(parameters)
-                    .UnwrapItemsAsArrays().ToList();
+                    .UnwrapItemsAsArrays()
+                    .Select(row => (ITheoryDataRow)new TheoryDataRow(row))
+                    .ToList();
         }
 #else
         public BuildAndRunAttribute(bool aot=false, Configuration config=Configuration.Undefined, params object?[] parameters)
         {
             _data = BuildTestBase.ConfigWithAOTData(aot, config)
                     .Multiply(parameters)
-                    .UnwrapItemsAsArrays().ToList();
+                    .UnwrapItemsAsArrays()
+                    .Select(row => (ITheoryDataRow)new TheoryDataRow(row))
+                    .ToList();
         }
 #endif
-        public override IEnumerable<object?[]> GetData(MethodInfo testMethod) => _data;
+
+        public override ValueTask<IReadOnlyCollection<ITheoryDataRow>> GetData(MethodInfo testMethod, DisposalTracker disposalTracker)
+            => new(_data);
+
+        public override bool SupportsDiscoveryEnumeration() => true;
     }
 }

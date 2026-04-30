@@ -16,7 +16,6 @@ using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace System.Net.Http.Functional.Tests
 {
@@ -369,13 +368,10 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [OuterLoop("Uses external server.")]
-        [ConditionalFact]
+        [Fact]
         public async Task ExternalServer_DurationMetrics_Recorded()
         {
-            if (UseVersion == HttpVersion.Version30)
-            {
-                throw new SkipTestException("No remote HTTP/3 server available for testing.");
-            }
+            Assert.SkipWhen(UseVersion == HttpVersion.Version30, "No remote HTTP/3 server available for testing.");
 
             using InstrumentRecorder<double> requestDurationRecorder = SetupInstrumentRecorder<double>(InstrumentNames.RequestDuration);
             using InstrumentRecorder<double> connectionDurationRecorder = SetupInstrumentRecorder<double>(InstrumentNames.ConnectionDuration);
@@ -925,10 +921,7 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(true)]
         public Task UseIPAddressInTargetUri_NoProxy_RecordsHostHeaderAsServerAddress(bool useTls)
         {
-            if (UseVersion == HttpVersion30 && !useTls)
-            {
-                throw new SkipTestException("No insecure connections with HTTP/3.");
-            }
+            Assert.SkipWhen(UseVersion == HttpVersion30 && !useTls, "No insecure connections with HTTP/3.");
 
             return LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
             {
@@ -1251,13 +1244,12 @@ namespace System.Net.Http.Functional.Tests
             }
         }
     }
-
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMobile))]
     public class HttpMetricsTest_Http11_Async_HttpMessageInvoker : HttpMetricsTest_Http11_Async
     {
         protected override bool TestHttpMessageInvoker => true;
         public HttpMetricsTest_Http11_Async_HttpMessageInvoker(ITestOutputHelper output) : base(output)
         {
+            Assert.SkipUnless(PlatformDetection.IsNotMobile, "ConditionalClass: PlatformDetection.IsNotMobile");
         }
 
         [Fact]
@@ -1350,23 +1342,21 @@ namespace System.Net.Http.Functional.Tests
             }, options: new GenericLoopbackOptions { ListenBacklog = 2 });
         }
     }
-
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMobile))]
     public class HttpMetricsTest_Http11_Sync : HttpMetricsTest_Http11
     {
         protected override bool TestAsync => false;
         public HttpMetricsTest_Http11_Sync(ITestOutputHelper output) : base(output)
         {
+            Assert.SkipUnless(PlatformDetection.IsNotMobile, "ConditionalClass: PlatformDetection.IsNotMobile");
         }
     }
-
-    [ConditionalClass(typeof(HttpMetricsTest_Http20), nameof(IsEnabled))]
     public class HttpMetricsTest_Http20 : HttpMetricsTest
     {
         public static bool IsEnabled = PlatformDetection.IsNotMobile && PlatformDetection.SupportsAlpn;
         protected override Version UseVersion => HttpVersion.Version20;
         public HttpMetricsTest_Http20(ITestOutputHelper output) : base(output)
         {
+            Assert.SkipUnless(HttpMetricsTest_Http20.IsEnabled, "ConditionalClass: HttpMetricsTest_Http20.IsEnabled");
         }
 
         [ConditionalFact(typeof(HttpMetricsTest_Http20), nameof(SupportsSeparateHttpSpansForRedirects))]
@@ -1437,13 +1427,12 @@ namespace System.Net.Http.Functional.Tests
         {
         }
     }
-
-    [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsHttp3Supported))]
     public class HttpMetricsTest_Http30 : HttpMetricsTest
     {
         protected override Version UseVersion => HttpVersion.Version30;
         public HttpMetricsTest_Http30(ITestOutputHelper output) : base(output)
         {
+            Assert.SkipUnless(HttpClientHandlerTestBase.IsHttp3Supported, "ConditionalClass: HttpClientHandlerTestBase.IsHttp3Supported");
         }
 
         [Fact]

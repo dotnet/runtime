@@ -17,17 +17,17 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
-using Xunit.Abstractions;
+
 
 namespace System.Net.Http.Functional.Tests
 {
-    [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsHttp3Supported))]
     public sealed class HttpClientHandlerTest_Http3 : HttpClientHandlerTestBase
     {
         protected override Version UseVersion => HttpVersion.Version30;
 
         public HttpClientHandlerTest_Http3(ITestOutputHelper output) : base(output)
         {
+            Assert.SkipUnless(HttpClientHandlerTestBase.IsHttp3Supported, "ConditionalClass: HttpClientHandlerTestBase.IsHttp3Supported");
         }
 
         private async Task AssertProtocolErrorAsync(long errorCode, Func<Task> task)

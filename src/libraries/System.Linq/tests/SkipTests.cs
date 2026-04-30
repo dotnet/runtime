@@ -4,8 +4,6 @@
 using System.Collections.Generic;
 using System.Reflection;
 using Xunit;
-using Xunit.Abstractions;
-
 namespace System.Linq.Tests
 {
     public class SkipTests : EnumerableTests

@@ -8,8 +8,6 @@ using System.Xml.Tests;
 using System.Xml.XPath;
 using System.Xml.Xsl;
 using Xunit;
-using Xunit.Abstractions;
-
 namespace System.Xml.XslCompiledTransformApiTests
 {
     /***********************************************************/
@@ -17,12 +15,12 @@ namespace System.Xml.XslCompiledTransformApiTests
     /***********************************************************/
 
     //[TestCase(Name = "XsltArgumentList - GetParam", Desc = "Get Param Test Cases")]
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
     public class CArgIntegrity : XsltApiTestCaseBase2
     {
         private ITestOutputHelper _output;
         public CArgIntegrity(ITestOutputHelper output) : base(output)
         {
+            Assert.SkipUnless(PlatformDetection.IsReflectionEmitSupported, "ConditionalClass: PlatformDetection.IsReflectionEmitSupported");
             _output = output;
         }
 

@@ -4,7 +4,6 @@
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
-using Xunit.Abstractions;
 using Xunit.Sdk;
 
 namespace System.Net.Sockets.Tests
@@ -59,7 +58,7 @@ namespace System.Net.Sockets.Tests
             else
             {
                 await AssertThrowsSynchronously<ArgumentNullException>(() => ReceiveFromAsync(socket, new byte[1], null));
-            }   
+            }
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
@@ -190,10 +189,7 @@ namespace System.Net.Sockets.Tests
             IPAddress address = ipv4 ? IPAddress.Loopback : IPAddress.IPv6Loopback;
             using Socket receiver = new Socket(SocketType.Dgram, ProtocolType.Udp);
             using Socket sender = new Socket(SocketType.Dgram, ProtocolType.Udp);
-            if (receiver.DualMode != true || sender.DualMode != true)
-            {
-                throw SkipException.ForSkip("DualMode not available");
-            }
+            Assert.SkipWhen(receiver.DualMode != true || sender.DualMode != true, "DualMode not available");
 
             ConfigureNonBlocking(sender);
             ConfigureNonBlocking(receiver);
@@ -420,23 +416,23 @@ namespace System.Net.Sockets.Tests
             Assert.Equal(1, r.ReceivedBytes);
         }
     }
-
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public sealed class ReceiveFrom_Sync : ReceiveFrom<SocketHelperArraySync>
     {
-        public ReceiveFrom_Sync(ITestOutputHelper output) : base(output) { }
+        public ReceiveFrom_Sync(ITestOutputHelper output) : base(output) {
+            Assert.SkipUnless(PlatformDetection.IsMultithreadingSupported, "ConditionalClass: PlatformDetection.IsMultithreadingSupported");
+        }
     }
-
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public sealed class ReceiveFrom_SyncForceNonBlocking : ReceiveFrom<SocketHelperSyncForceNonBlocking>
     {
-        public ReceiveFrom_SyncForceNonBlocking(ITestOutputHelper output) : base(output) { }
+        public ReceiveFrom_SyncForceNonBlocking(ITestOutputHelper output) : base(output) {
+            Assert.SkipUnless(PlatformDetection.IsMultithreadingSupported, "ConditionalClass: PlatformDetection.IsMultithreadingSupported");
+        }
     }
-
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public sealed class ReceiveFrom_Apm : ReceiveFrom<SocketHelperApm>
     {
-        public ReceiveFrom_Apm(ITestOutputHelper output) : base(output) { }
+        public ReceiveFrom_Apm(ITestOutputHelper output) : base(output) {
+            Assert.SkipUnless(PlatformDetection.IsMultithreadingSupported, "ConditionalClass: PlatformDetection.IsMultithreadingSupported");
+        }
 
         [Fact]
         public void EndReceiveFrom_NullAsyncResult_Throws_ArgumentNullException()
@@ -545,17 +541,17 @@ namespace System.Net.Sockets.Tests
             Assert.Throws<ArgumentNullException>(() => socket.ReceiveFromAsync(null));
         }
     }
-
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public sealed class ReceiveFrom_SpanSync : ReceiveFrom<SocketHelperSpanSync>
     {
-        public ReceiveFrom_SpanSync(ITestOutputHelper output) : base(output) { }
+        public ReceiveFrom_SpanSync(ITestOutputHelper output) : base(output) {
+            Assert.SkipUnless(PlatformDetection.IsMultithreadingSupported, "ConditionalClass: PlatformDetection.IsMultithreadingSupported");
+        }
     }
-
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public sealed class ReceiveFrom_SpanSyncForceNonBlocking : ReceiveFrom<SocketHelperSpanSyncForceNonBlocking>
     {
-        public ReceiveFrom_SpanSyncForceNonBlocking(ITestOutputHelper output) : base(output) { }
+        public ReceiveFrom_SpanSyncForceNonBlocking(ITestOutputHelper output) : base(output) {
+            Assert.SkipUnless(PlatformDetection.IsMultithreadingSupported, "ConditionalClass: PlatformDetection.IsMultithreadingSupported");
+        }
     }
 
     public sealed class ReceiveFrom_MemoryArrayTask : ReceiveFrom<SocketHelperMemoryArrayTask>

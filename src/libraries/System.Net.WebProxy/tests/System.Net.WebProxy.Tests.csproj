@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <RootNamespace>System.Net.Tests</RootNamespace>
     <!-- https://github.com/dotnet/runtime/issues/126862 -->
     <EnableAotAnalyzer>false</EnableAotAnalyzer>
   </PropertyGroup>

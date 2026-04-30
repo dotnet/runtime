@@ -15,7 +15,7 @@ public class EcmaMetadataDumpTests : DumpTestBase
 {
     protected override string DebuggeeName => "MultiModule";
 
-    [ConditionalTheory]
+    [Theory]
     [MemberData(nameof(TestConfigurations))]
     [SkipOnVersion("net10.0", "Assembly type does not include IsDynamic/IsLoaded fields in .NET 10")]
     public void EcmaMetadata_RootModuleHasMetadataAddress(TestConfiguration config)
@@ -32,7 +32,7 @@ public class EcmaMetadataDumpTests : DumpTestBase
         Assert.True(metadataSpan.Size > 0, "Expected metadata size > 0");
     }
 
-    [ConditionalTheory]
+    [Theory]
     [MemberData(nameof(TestConfigurations))]
     [SkipOnVersion("net10.0", "Assembly type does not include IsDynamic/IsLoaded fields in .NET 10")]
     public void EcmaMetadata_CanGetMetadataReader(TestConfiguration config)
@@ -48,7 +48,7 @@ public class EcmaMetadataDumpTests : DumpTestBase
         Assert.NotNull(reader);
     }
 
-    [ConditionalTheory]
+    [Theory]
     [MemberData(nameof(TestConfigurations))]
     [SkipOnVersion("net10.0", "Assembly type does not include IsDynamic/IsLoaded fields in .NET 10")]
     public void EcmaMetadata_MetadataReaderHasTypeDefs(TestConfiguration config)

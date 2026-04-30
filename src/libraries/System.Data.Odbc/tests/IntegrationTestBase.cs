@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Microsoft.DotNet.XUnitExtensions;
+using Xunit.Sdk;
 
 namespace System.Data.Odbc.Tests
 {
@@ -20,11 +21,11 @@ namespace System.Data.Odbc.Tests
             }
             catch (OdbcException e) when (e.ErrorCode == unchecked((int)0x80131937)) // Data source name not found and no default driver specified
             {
-                throw new SkipTestException(e.Message);
+                throw SkipException.ForSkip(e.Message);
             }
             catch (DllNotFoundException e)
             {
-                throw new SkipTestException(e.Message);
+                throw SkipException.ForSkip(e.Message);
             }
 
             transaction = connection.BeginTransaction();

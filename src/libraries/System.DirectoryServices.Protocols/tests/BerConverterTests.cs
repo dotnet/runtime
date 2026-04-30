@@ -8,9 +8,13 @@ using Xunit;
 
 namespace System.DirectoryServices.Protocols.Tests
 {
-    [ConditionalClass(typeof(DirectoryServicesTestHelpers), nameof(DirectoryServicesTestHelpers.IsWindowsOrLibLdapIsInstalled))]
     public class BerConverterTests
     {
+
+        public BerConverterTests()
+        {
+            Assert.SkipUnless(DirectoryServicesTestHelpers.IsWindowsOrLibLdapIsInstalled, "ConditionalClass: DirectoryServicesTestHelpers.IsWindowsOrLibLdapIsInstalled");
+        }
         public static IEnumerable<object[]> Encode_TestData()
         {
             yield return new object[] { "", null, new byte[0] };
@@ -225,7 +229,7 @@ namespace System.DirectoryServices.Protocols.Tests
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
                 yield return new object[] { "aaa", new byte[] { 48, 132, 0, 0, 0, 6, 1, 1, 255, 1, 1, 0 } };
-            } 
+            }
             yield return new object[] { "iii", new byte[] { 48, 132, 0, 0, 0, 6, 1, 1, 255, 1, 1, 0 } };
             yield return new object[] { "eee", new byte[] { 48, 132, 0, 0, 0, 6, 1, 1, 255, 1, 1, 0 } };
             yield return new object[] { "bbb", new byte[] { 48, 132, 0, 0, 0, 6, 1, 1, 255, 1, 1, 0 } };
@@ -252,6 +256,7 @@ namespace System.DirectoryServices.Protocols.Tests
         }
 
         [Theory]
+        [SkipOnCoreClr("netfx-only test")]
         [MemberData(nameof(Manual_Wrapping_Required_Data))]
         public void Must_Manually_Wrap_Several_OctetStrings_In_Sequence(string format, object[] values)
         {

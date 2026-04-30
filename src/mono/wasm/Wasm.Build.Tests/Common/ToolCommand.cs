@@ -5,8 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading.Tasks;
-using Xunit.Abstractions;
-
+using Xunit;
 #nullable enable
 
 namespace Wasm.Build.Tests

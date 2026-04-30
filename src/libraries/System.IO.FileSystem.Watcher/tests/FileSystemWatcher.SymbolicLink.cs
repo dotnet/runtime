@@ -7,9 +7,13 @@ using Xunit.Sdk;
 
 namespace System.IO.Tests
 {
-    [ConditionalClass(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks))]
     public class SymbolicLink_Changed_Tests : FileSystemWatcherTest
     {
+        public SymbolicLink_Changed_Tests()
+        {
+            Assert.SkipUnless(MountHelper.CanCreateSymbolicLinks, "ConditionalClass: MountHelper.CanCreateSymbolicLinks");
+        }
+
         private string CreateSymbolicLinkToTarget(string targetPath, bool isDirectory, string linkPath = null)
         {
             linkPath ??= GetRandomLinkPath();

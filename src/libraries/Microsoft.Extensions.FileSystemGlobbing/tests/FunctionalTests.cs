@@ -9,6 +9,7 @@ using Microsoft.DotNet.XUnitExtensions;
 using Microsoft.Extensions.FileSystemGlobbing.Abstractions;
 using Microsoft.Extensions.FileSystemGlobbing.Tests.TestUtility;
 using Xunit;
+using Xunit.Sdk;
 
 namespace Microsoft.Extensions.FileSystemGlobbing.Tests
 {
@@ -869,7 +870,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Tests
             }
         }
 
-        [ConditionalFact]
+        [Fact]
         public void VerifyFiles_ParentRedundantSegment_HasMatches()
         {
             string file = "sdk/9.0.100-preview.4.24207.1/.version";
@@ -882,14 +883,14 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Tests
             }
         }
 
-        [ConditionalFact]
+        [Fact]
         public void VerifyFiles_ParentRedundantSegment_CurrentDirectory_HasMatches()
         {
             string cwd = Environment.CurrentDirectory;
             string cwdFolderName = new DirectoryInfo(cwd).Name;
             if (cwd == cwdFolderName) // cwd is root, we can't do ../C:/
             {
-                throw new SkipTestException($"CurrentDirectory {cwd} is the root directory.");
+                throw SkipException.ForSkip($"CurrentDirectory {cwd} is the root directory.");
             }
 
             string file = "sdk/9.0.100-preview.4.24207.1/.version";

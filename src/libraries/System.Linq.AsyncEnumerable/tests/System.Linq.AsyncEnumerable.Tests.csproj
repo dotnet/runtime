@@ -3,6 +3,7 @@
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkCurrent)</TargetFrameworks>
     <NoWarn>$(NoWarn);CS1998</NoWarn>
+    <RootNamespace>System.Linq.Tests</RootNamespace>
   </PropertyGroup>
 
   <ItemGroup>

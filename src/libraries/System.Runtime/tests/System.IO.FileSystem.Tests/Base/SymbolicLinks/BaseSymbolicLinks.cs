@@ -8,11 +8,11 @@ using Xunit;
 namespace System.IO.Tests
 {
     // Contains helper methods that are shared by all symbolic link test classes.
-    [ConditionalClass(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks))]
     public abstract partial class BaseSymbolicLinks : FileSystemTest
     {
         public BaseSymbolicLinks()
         {
+            Assert.SkipUnless(MountHelper.CanCreateSymbolicLinks, "ConditionalClass: MountHelper.CanCreateSymbolicLinks");
             Assert.True(MountHelper.CanCreateSymbolicLinks);
         }
 

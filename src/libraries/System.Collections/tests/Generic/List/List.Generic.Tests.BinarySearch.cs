@@ -13,7 +13,7 @@ namespace System.Collections.Tests
     public abstract partial class List_Generic_Tests<T> : IList_Generic_Tests<T>
     {
         [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
+        [MemberData(nameof(ValidCollectionSizes), MemberType = typeof(TestBase))]
         public void BinarySearch_ForEveryItemWithoutDuplicates(int count)
         {
             List<T> list = GenericListFactory(count);
@@ -32,7 +32,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
+        [MemberData(nameof(ValidCollectionSizes), MemberType = typeof(TestBase))]
         public void BinarySearch_ForEveryItemWithDuplicates(int count)
         {
             if (count > 0)
@@ -52,7 +52,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
+        [MemberData(nameof(ValidCollectionSizes), MemberType = typeof(TestBase))]
         public void BinarySearch_Validations(int count)
         {
             List<T> list = GenericListFactory(count);

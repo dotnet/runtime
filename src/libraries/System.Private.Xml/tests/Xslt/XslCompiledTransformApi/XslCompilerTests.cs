@@ -9,9 +9,13 @@ using Xunit;
 
 namespace System.Xml.XslCompiledTransformApiTests
 {
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
     public class XslCompilerTests
     {
+        public XslCompilerTests()
+        {
+            Assert.SkipUnless(PlatformDetection.IsReflectionEmitSupported, "ConditionalClass: PlatformDetection.IsReflectionEmitSupported");
+        }
+
         [Fact]
         public void ValueOfInDebugMode()
         {

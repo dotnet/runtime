@@ -10,7 +10,6 @@ using System.Threading.Tasks;
 using Microsoft.NET.Sdk.WebAssembly;
 using Microsoft.Playwright;
 using Xunit;
-using Xunit.Abstractions;
 using Xunit.Sdk;
 
 #nullable enable

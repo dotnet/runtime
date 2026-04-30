@@ -1,0 +1,21 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>$(NetCoreAppMinimum)</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="AttributeStubs.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- ActiveIssueAttribute extends BeforeAfterTestAttribute so it can
+         evaluate conditions at runtime and skip tests that are known to fail
+         on NativeAOT. -->
+    <PackageReference Include="xunit.v3.extensibility.core.aot" Version="$(XUnitV3Version)" />
+    <PackageReference Include="xunit.v3.assert.aot" Version="$(XUnitV3Version)" />
+  </ItemGroup>
+
+</Project>

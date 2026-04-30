@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetFrameworkCurrent)</TargetFrameworks>
+    <RootNamespace>System.ServiceProcess.Tests</RootNamespace>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="ServiceBaseTests.cs" />

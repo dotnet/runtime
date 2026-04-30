@@ -8,11 +8,11 @@ using Xunit;
 namespace System.IO.Tests
 {
     // Contains test methods that can be used for FileInfo or File.
-    [ConditionalClass(typeof(MountHelper), nameof(MountHelper.CanCreateHardLinks))]
     public abstract class BaseHardLinks_FileSystem : FileSystemTest
     {
         public BaseHardLinks_FileSystem()
         {
+            Assert.SkipUnless(MountHelper.CanCreateHardLinks, "ConditionalClass: MountHelper.CanCreateHardLinks");
             Assert.True(MountHelper.CanCreateHardLinks);
         }
 

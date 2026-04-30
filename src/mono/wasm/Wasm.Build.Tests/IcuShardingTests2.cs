@@ -6,7 +6,6 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Xunit;
-using Xunit.Abstractions;
 using Xunit.Sdk;
 using System.Collections.Generic;
 
@@ -37,7 +36,7 @@ public class IcuShardingTests2 : IcuTestsBase
     }
 
     [Theory]
-    [MemberData(nameof(IcuExpectedAndMissingShardFromRuntimePackTestData), parameters: new object[] { Configuration.Release })]
+    [MemberData(nameof(IcuExpectedAndMissingShardFromRuntimePackTestData), new object[] { Configuration.Release })]
     [TestCategory("native")]
     public async Task DefaultAvailableIcuShardsFromRuntimePack(Configuration config, bool aot, string shardName, string testedLocales) =>
         await TestIcuShards(config, Template.WasmBrowser, aot, shardName, testedLocales, GlobalizationMode.Custom);

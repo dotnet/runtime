@@ -7,9 +7,13 @@ using Xunit;
 
 namespace System.DirectoryServices.Protocols.Tests
 {
-    [ConditionalClass(typeof(DirectoryServicesTestHelpers), nameof(DirectoryServicesTestHelpers.IsWindowsOrLibLdapIsInstalled))]
     public class ExtendedDNControlTests
     {
+
+        public ExtendedDNControlTests()
+        {
+            Assert.SkipUnless(DirectoryServicesTestHelpers.IsWindowsOrLibLdapIsInstalled, "ConditionalClass: DirectoryServicesTestHelpers.IsWindowsOrLibLdapIsInstalled");
+        }
         [Fact]
         public void Ctor_Default()
         {

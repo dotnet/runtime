@@ -11,9 +11,13 @@ using Xunit;
 
 namespace System.Net.Sockets.Tests
 {
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public class ArgumentValidation
     {
+
+        public ArgumentValidation()
+        {
+            Assert.SkipUnless(PlatformDetection.IsMultithreadingSupported, "ConditionalClass: PlatformDetection.IsMultithreadingSupported");
+        }
         // This type is used to test Socket.Select's argument validation.
         private sealed class LargeList : IList
         {
@@ -693,7 +697,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [ConditionalTheory]
+        [Theory]
         [PlatformSpecific(TestPlatforms.AnyUnix)]  // API throws PNSE on Unix
         [InlineData(0)]
         [InlineData(1)]
@@ -701,10 +705,7 @@ namespace System.Net.Sockets.Tests
         {
             using (Socket client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
             {
-                if (PlatformDetection.IsQemuLinux && invalidatingAction == 1)
-                {
-                    throw new SkipTestException("Skip on Qemu due to [ActiveIssue(https://github.com/dotnet/runtime/issues/104542)]");
-                }
+                Assert.SkipWhen(PlatformDetection.IsQemuLinux && invalidatingAction == 1, "Skip on Qemu due to [ActiveIssue(https://github.com/dotnet/runtime/issues/104542)]");
 
                 switch (invalidatingAction)
                 {
@@ -729,7 +730,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [ConditionalTheory]
+        [Theory]
         [PlatformSpecific(TestPlatforms.AnyUnix)]  // API throws PNSE on Unix
         [InlineData(0)]
         [InlineData(1)]
@@ -739,10 +740,7 @@ namespace System.Net.Sockets.Tests
 
             using (Socket client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
             {
-                if (PlatformDetection.IsQemuLinux && invalidatingAction == 1)
-                {
-                    throw new SkipTestException("Skip on Qemu due to [ActiveIssue(https://github.com/dotnet/runtime/issues/104542)]");
-                }
+                Assert.SkipWhen(PlatformDetection.IsQemuLinux && invalidatingAction == 1, "Skip on Qemu due to [ActiveIssue(https://github.com/dotnet/runtime/issues/104542)]");
 
                 switch (invalidatingAction)
                 {

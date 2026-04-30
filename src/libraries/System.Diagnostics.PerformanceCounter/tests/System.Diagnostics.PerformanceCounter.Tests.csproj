@@ -2,6 +2,8 @@
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetFrameworkCurrent)</TargetFrameworks>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
+    <!-- Avoid namespace conflict between generated SelfRegisteredExtensions.cs and the System.Diagnostics.PerformanceCounter type -->
+    <RootNamespace>System.Diagnostics.Tests</RootNamespace>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="CounterCreationDataCollectionTests.cs" />

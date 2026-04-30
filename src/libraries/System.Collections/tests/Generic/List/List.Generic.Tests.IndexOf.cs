@@ -15,58 +15,25 @@ namespace System.Collections.Tests
         #region Helpers
 
         public delegate int IndexOfDelegate(List<T> list, T value);
-        public enum IndexOfMethod
-        {
-            IndexOf_T,
-            IndexOf_T_int,
-            IndexOf_T_int_int,
-            LastIndexOf_T,
-            LastIndexOf_T_int,
-            LastIndexOf_T_int_int,
-        };
 
-        private IndexOfDelegate IndexOfDelegateFromType(IndexOfMethod methodType)
+        private IndexOfDelegate IndexOfDelegateFromType(CollectionTestData.IndexOfMethod methodType)
         {
             switch (methodType)
             {
-                case (IndexOfMethod.IndexOf_T):
+                case (CollectionTestData.IndexOfMethod.IndexOf_T):
                     return ((List<T> list, T value) => { return list.IndexOf(value); });
-                case (IndexOfMethod.IndexOf_T_int):
+                case (CollectionTestData.IndexOfMethod.IndexOf_T_int):
                     return ((List<T> list, T value) => { return list.IndexOf(value, 0); });
-                case (IndexOfMethod.IndexOf_T_int_int):
+                case (CollectionTestData.IndexOfMethod.IndexOf_T_int_int):
                     return ((List<T> list, T value) => { return list.IndexOf(value, 0, list.Count); });
-                case (IndexOfMethod.LastIndexOf_T):
+                case (CollectionTestData.IndexOfMethod.LastIndexOf_T):
                     return ((List<T> list, T value) => { return list.LastIndexOf(value); });
-                case (IndexOfMethod.LastIndexOf_T_int):
+                case (CollectionTestData.IndexOfMethod.LastIndexOf_T_int):
                     return ((List<T> list, T value) => { return list.LastIndexOf(value, list.Count - 1); });
-                case (IndexOfMethod.LastIndexOf_T_int_int):
+                case (CollectionTestData.IndexOfMethod.LastIndexOf_T_int_int):
                     return ((List<T> list, T value) => { return list.LastIndexOf(value, list.Count - 1, list.Count); });
                 default:
                     throw new Exception("Invalid IndexOfMethod");
-            }
-        }
-
-        /// <summary>
-        /// MemberData for a Theory to test the IndexOf methods for List. To avoid high code reuse of tests for the 6 IndexOf
-        /// methods in List, delegates are used to cover the basic behavioral cases shared by all IndexOf methods. A bool
-        /// is used to specify the ordering (front-to-back or back-to-front (e.g. LastIndexOf)) that the IndexOf method
-        /// searches in.
-        /// </summary>
-        public static IEnumerable<object[]> IndexOfTestData()
-        {
-            foreach (object[] sizes in ValidCollectionSizes())
-            {
-                int count = (int)sizes[0];
-                yield return new object[] { IndexOfMethod.IndexOf_T, count, true };
-                yield return new object[] { IndexOfMethod.LastIndexOf_T, count, false };
-
-                if (count > 0) // 0 is an invalid index for IndexOf when the count is 0.
-                {
-                    yield return new object[] { IndexOfMethod.IndexOf_T_int, count, true };
-                    yield return new object[] { IndexOfMethod.LastIndexOf_T_int, count, false };
-                    yield return new object[] { IndexOfMethod.IndexOf_T_int_int, count, true };
-                    yield return new object[] { IndexOfMethod.LastIndexOf_T_int_int, count, false };
-                }
             }
         }
 
@@ -75,8 +42,8 @@ namespace System.Collections.Tests
         #region IndexOf
 
         [Theory]
-        [MemberData(nameof(IndexOfTestData))]
-        public void IndexOf_NoDuplicates(IndexOfMethod indexOfMethod, int count, bool frontToBackOrder)
+        [MemberData(nameof(CollectionTestData.IndexOfTestData), MemberType = typeof(CollectionTestData))]
+        public void IndexOf_NoDuplicates(CollectionTestData.IndexOfMethod indexOfMethod, int count, bool frontToBackOrder)
         {
             _ = frontToBackOrder;
             List<T> list = GenericListFactory(count);
@@ -90,8 +57,8 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData(nameof(IndexOfTestData))]
-        public void IndexOf_NonExistingValues(IndexOfMethod indexOfMethod, int count, bool frontToBackOrder)
+        [MemberData(nameof(CollectionTestData.IndexOfTestData), MemberType = typeof(CollectionTestData))]
+        public void IndexOf_NonExistingValues(CollectionTestData.IndexOfMethod indexOfMethod, int count, bool frontToBackOrder)
         {
             _ = frontToBackOrder;
             List<T> list = GenericListFactory(count);
@@ -105,8 +72,8 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData(nameof(IndexOfTestData))]
-        public void IndexOf_DefaultValue(IndexOfMethod indexOfMethod, int count, bool frontToBackOrder)
+        [MemberData(nameof(CollectionTestData.IndexOfTestData), MemberType = typeof(CollectionTestData))]
+        public void IndexOf_DefaultValue(CollectionTestData.IndexOfMethod indexOfMethod, int count, bool frontToBackOrder)
         {
             _ = frontToBackOrder;
             T defaultValue = default;
@@ -119,8 +86,8 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData(nameof(IndexOfTestData))]
-        public void IndexOf_OrderIsCorrect(IndexOfMethod indexOfMethod, int count, bool frontToBackOrder)
+        [MemberData(nameof(CollectionTestData.IndexOfTestData), MemberType = typeof(CollectionTestData))]
+        public void IndexOf_OrderIsCorrect(CollectionTestData.IndexOfMethod indexOfMethod, int count, bool frontToBackOrder)
         {
             List<T> list = GenericListFactory(count);
             List<T> withoutDuplicates = list.ToList();
@@ -137,7 +104,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
+        [MemberData(nameof(ValidCollectionSizes), MemberType = typeof(TestBase))]
         public void IndexOf_int_OrderIsCorrectWithManyDuplicates(int count)
         {
             List<T> list = GenericListFactory(count);
@@ -158,7 +125,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
+        [MemberData(nameof(ValidCollectionSizes), MemberType = typeof(TestBase))]
         public void LastIndexOf_int_OrderIsCorrectWithManyDuplicates(int count)
         {
             List<T> list = GenericListFactory(count);
@@ -179,7 +146,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
+        [MemberData(nameof(ValidCollectionSizes), MemberType = typeof(TestBase))]
         public void IndexOf_int_OutOfRangeExceptions(int count)
         {
             List<T> list = GenericListFactory(count);
@@ -191,7 +158,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
+        [MemberData(nameof(ValidCollectionSizes), MemberType = typeof(TestBase))]
         public void IndexOf_int_int_OutOfRangeExceptions(int count)
         {
             List<T> list = GenericListFactory(count);
@@ -206,7 +173,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
+        [MemberData(nameof(ValidCollectionSizes), MemberType = typeof(TestBase))]
         public void LastIndexOf_int_OutOfRangeExceptions(int count)
         {
             List<T> list = GenericListFactory(count);
@@ -219,7 +186,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
+        [MemberData(nameof(ValidCollectionSizes), MemberType = typeof(TestBase))]
         public void LastIndexOf_int_int_OutOfRangeExceptions(int count)
         {
             List<T> list = GenericListFactory(count);

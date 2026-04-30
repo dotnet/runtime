@@ -10,29 +10,40 @@ using KeyBlobMagicNumber = Interop.BCrypt.KeyBlobMagicNumber;
 
 namespace System.Security.Cryptography.Tests
 {
-    [ConditionalClass(typeof(MLKem), nameof(MLKem.IsSupported))]
     [PlatformSpecific(TestPlatforms.Windows)]
     public sealed class MLKemCngPlaintextExportableTests : MLKemCngTests
     {
+        public MLKemCngPlaintextExportableTests()
+        {
+            Assert.SkipUnless(MLKem.IsSupported, "ConditionalClass: MLKem.IsSupported");
+        }
+
         protected override CngExportPolicies ExportPolicies => CngExportPolicies.AllowExport | CngExportPolicies.AllowPlaintextExport;
     }
 
     // ML-KEM as of Windows build 27881 does not have PKCS#8 exports, so we cannot implement encrypted exports.
     [ActiveIssue("https://github.com/dotnet/runtime/issues/116304")]
-    [ConditionalClass(typeof(MLKem), nameof(MLKem.IsSupported))]
     [PlatformSpecific(TestPlatforms.Windows)]
     public sealed class MLKemCngExportableTests : MLKemCngTests
     {
+        public MLKemCngExportableTests()
+        {
+            Assert.SkipUnless(MLKem.IsSupported, "ConditionalClass: MLKem.IsSupported");
+        }
+
         protected override CngExportPolicies ExportPolicies => CngExportPolicies.AllowExport;
     }
-
-    [ConditionalClass(typeof(MLKem), nameof(MLKem.IsSupported))]
     [PlatformSpecific(TestPlatforms.Windows)]
-    public static class MLKemCngNonExportableTests
+    public class MLKemCngNonExportableTests
     {
+        public MLKemCngNonExportableTests()
+        {
+            Assert.SkipUnless(MLKem.IsSupported, "ConditionalClass: MLKem.IsSupported");
+        }
+
         [Theory]
         [MemberData(nameof(MLKemTestData.MLKemAlgorithms), MemberType = typeof(MLKemTestData))]
-        public static void MLKemCng_NonExportable_ExportPrivateSeedThrows(MLKemAlgorithm algorithm)
+        public void MLKemCng_NonExportable_ExportPrivateSeedThrows(MLKemAlgorithm algorithm)
         {
             using CngKey key = MLKemCngTests.GenerateCngKey(algorithm, CngExportPolicies.None);
             using MLKemCng kem = new MLKemCng(key);
@@ -41,7 +52,7 @@ namespace System.Security.Cryptography.Tests
 
         [Theory]
         [MemberData(nameof(MLKemTestData.MLKemAlgorithms), MemberType = typeof(MLKemTestData))]
-        public static void MLKemCng_NonExportable_ExportDecapsulationKeyThrows(MLKemAlgorithm algorithm)
+        public void MLKemCng_NonExportable_ExportDecapsulationKeyThrows(MLKemAlgorithm algorithm)
         {
             using CngKey key = MLKemCngTests.GenerateCngKey(algorithm, CngExportPolicies.None);
             using MLKemCng kem = new MLKemCng(key);
@@ -49,7 +60,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public static void MLKemCng_NonExportable_ExportEncapsulationKeyAlwaysWorks()
+        public void MLKemCng_NonExportable_ExportEncapsulationKeyAlwaysWorks()
         {
             using CngKey key = MLKemCngTests.ImportPrivateSeed(
                 MLKemAlgorithm.MLKem512,
@@ -61,19 +72,22 @@ namespace System.Security.Cryptography.Tests
             AssertExtensions.SequenceEqual(MLKemTestData.MLKem512EncapsulationKey, exportedKey);
         }
     }
-
-    [ConditionalClass(typeof(MLKem), nameof(MLKem.IsSupported))]
     [PlatformSpecific(TestPlatforms.Windows)]
-    public static class MLKemCngContractTests
+    public class MLKemCngContractTests
     {
+        public MLKemCngContractTests()
+        {
+            Assert.SkipUnless(MLKem.IsSupported, "ConditionalClass: MLKem.IsSupported");
+        }
+
         [Fact]
-        public static void MLKemCng_Ctor_ArgValidation()
+        public void MLKemCng_Ctor_ArgValidation()
         {
             AssertExtensions.Throws<ArgumentNullException>("key", static () => new MLKemCng(null));
         }
 
         [Fact]
-        public static void MLKemCng_Ctor_KeyWrongAlgorithm()
+        public void MLKemCng_Ctor_KeyWrongAlgorithm()
         {
             using CngKey rsaKey = CngKey.Create(CngAlgorithm.Rsa, keyName: null);
             AssertExtensions.Throws<ArgumentException>("key", () => new MLKemCng(rsaKey));
@@ -81,7 +95,7 @@ namespace System.Security.Cryptography.Tests
 
         [Theory]
         [MemberData(nameof(MLKemTestData.MLKemAlgorithms), MemberType = typeof(MLKemTestData))]
-        public static void MLKemCng_GetKey(MLKemAlgorithm algorithm)
+        public void MLKemCng_GetKey(MLKemAlgorithm algorithm)
         {
             using CngKey key = MLKemCngTests.GenerateCngKey(
                 algorithm,

@@ -13,7 +13,7 @@ namespace System.Collections.Tests
     public abstract partial class IDictionary_Generic_Tests<TKey, TValue> : ICollection_Generic_Tests<KeyValuePair<TKey, TValue>>
     {
         [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
+        [MemberData(nameof(ValidCollectionSizes), MemberType = typeof(TestBase))]
         public void KeyValuePair_Deconstruct(int size)
         {
             IDictionary<TKey, TValue> dictionary = GenericIDictionaryFactory(size);

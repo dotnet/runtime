@@ -8,8 +8,6 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Xunit;
-using Xunit.Abstractions;
-
 #nullable enable
 
 namespace Wasm.Build.Tests
@@ -112,7 +110,7 @@ namespace Wasm.Build.Tests
         }
 
         [Theory]
-        [BuildAndRun(parameters: new object[] { new object[] {
+        [BuildAndRun(aot: false, config: Configuration.Undefined, new object[] { new object[] {
                 "with-hyphen",
                 "with#hash-and-hyphen",
                 "with.per.iod",

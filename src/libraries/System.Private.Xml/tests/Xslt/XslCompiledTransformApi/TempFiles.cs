@@ -4,12 +4,9 @@
 using System.IO;
 using System.Xml.Xsl;
 using Xunit;
-using Xunit.Abstractions;
-
 namespace System.Xml.XslCompiledTransformApiTests
 {
     //[TestCase(Name = "TemporaryFiles", Desc = "This testcase tests the Temporary Files property on XslCompiledTransform")]
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
     public class TempFiles : XsltApiTestCaseBase2
     {
         private XslCompiledTransform _xsl = null;
@@ -17,6 +14,7 @@ namespace System.Xml.XslCompiledTransformApiTests
         private ITestOutputHelper _output;
         public TempFiles(ITestOutputHelper output) : base(output)
         {
+            Assert.SkipUnless(PlatformDetection.IsReflectionEmitSupported, "ConditionalClass: PlatformDetection.IsReflectionEmitSupported");
             _output = output;
         }
 

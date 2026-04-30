@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
+
 namespace System.IO.Hashing.Tests
 {
     public class Crc32CksumDriver : Crc32DriverBase
@@ -106,8 +108,24 @@ namespace System.IO.Hashing.Tests
             };
     }
 
-    public class Crc32Tests_ParameterSet_Custom_Cksum : Crc32Tests_Parameterized<Crc32CksumDriver>;
-    public class Crc32Tests_ParameterSet_Custom_CDRomEdc : Crc32Tests_Parameterized<Crc32CDRomEdcDriver>;
-    public class Crc32Tests_ParameterSet_Custom_Mef : Crc32Tests_Parameterized<Crc32MefDriver>;
-    public class Crc32Tests_ParameterSet_Custom_HD16Forward : Crc32Tests_Parameterized<Crc32HD16ForwardDriver>;
+    public class Crc32Tests_ParameterSet_Custom_Cksum : Crc32Tests_Parameterized
+    {
+        public Crc32Tests_ParameterSet_Custom_Cksum() : base(new Crc32CksumDriver()) { }
+        public new static IEnumerable<object[]> TestCases => GenerateTestCases(new Crc32CksumDriver());
+    }
+    public class Crc32Tests_ParameterSet_Custom_CDRomEdc : Crc32Tests_Parameterized
+    {
+        public Crc32Tests_ParameterSet_Custom_CDRomEdc() : base(new Crc32CDRomEdcDriver()) { }
+        public new static IEnumerable<object[]> TestCases => GenerateTestCases(new Crc32CDRomEdcDriver());
+    }
+    public class Crc32Tests_ParameterSet_Custom_Mef : Crc32Tests_Parameterized
+    {
+        public Crc32Tests_ParameterSet_Custom_Mef() : base(new Crc32MefDriver()) { }
+        public new static IEnumerable<object[]> TestCases => GenerateTestCases(new Crc32MefDriver());
+    }
+    public class Crc32Tests_ParameterSet_Custom_HD16Forward : Crc32Tests_Parameterized
+    {
+        public Crc32Tests_ParameterSet_Custom_HD16Forward() : base(new Crc32HD16ForwardDriver()) { }
+        public new static IEnumerable<object[]> TestCases => GenerateTestCases(new Crc32HD16ForwardDriver());
+    }
 }

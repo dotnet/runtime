@@ -14,7 +14,6 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace System.Net.Http.Functional.Tests
 {
@@ -81,7 +80,7 @@ namespace System.Net.Http.Functional.Tests
         [Theory]
         [MemberData(nameof(ZeroByteRead_IssuesZeroByteReadOnUnderlyingStream_MemberData))]
         [SkipOnPlatform(TestPlatforms.Browser, "ConnectCallback is not supported on Browser")]
-        public async Task ZeroByteRead_IssuesZeroByteReadOnUnderlyingStream(StreamConformanceTests.ReadWriteMode readMode, bool useSsl)
+        public async Task ZeroByteRead_IssuesZeroByteReadOnUnderlyingStream(System.IO.Tests.StreamConformanceTests.ReadWriteMode readMode, bool useSsl)
         {
             (Stream httpConnection, Stream server) = ConnectedStreams.CreateBidirectional(4096, int.MaxValue);
             try
@@ -172,27 +171,27 @@ namespace System.Net.Http.Functional.Tests
 
         protected override Version UseVersion => HttpVersion.Version11;
     }
-
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.SupportsAlpn))]
     public sealed class Http2ResponseStreamZeroByteReadTest : ResponseStreamZeroByteReadTestBase
     {
-        public Http2ResponseStreamZeroByteReadTest(ITestOutputHelper output) : base(output) { }
+        public Http2ResponseStreamZeroByteReadTest(ITestOutputHelper output) : base(output) {
+            Assert.SkipUnless(PlatformDetection.SupportsAlpn, "ConditionalClass: PlatformDetection.SupportsAlpn");
+        }
 
         protected override Version UseVersion => HttpVersion.Version20;
     }
-
-    [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsHttp3Supported))]
     public sealed class Http3ResponseStreamZeroByteReadTest : ResponseStreamZeroByteReadTestBase
     {
-        public Http3ResponseStreamZeroByteReadTest(ITestOutputHelper output) : base(output) { }
+        public Http3ResponseStreamZeroByteReadTest(ITestOutputHelper output) : base(output) {
+            Assert.SkipUnless(HttpClientHandlerTestBase.IsHttp3Supported, "ConditionalClass: HttpClientHandlerTestBase.IsHttp3Supported");
+        }
 
         protected override Version UseVersion => HttpVersion.Version30;
     }
-
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
     public abstract class ResponseStreamZeroByteReadTestBase : HttpClientHandlerTestBase
     {
-        public ResponseStreamZeroByteReadTestBase(ITestOutputHelper output) : base(output) { }
+        public ResponseStreamZeroByteReadTestBase(ITestOutputHelper output) : base(output) {
+            Assert.SkipUnless(PlatformDetection.IsNotBrowser, "ConditionalClass: PlatformDetection.IsNotBrowser");
+        }
 
         [Theory]
         [InlineData(true)]
@@ -274,11 +273,11 @@ namespace System.Net.Http.Functional.Tests
             }
         }
     }
-
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.SupportsAlpn))]
     public sealed class Http2ConnectionZeroByteReadTest : HttpClientHandlerTestBase
     {
-        public Http2ConnectionZeroByteReadTest(ITestOutputHelper output) : base(output) { }
+        public Http2ConnectionZeroByteReadTest(ITestOutputHelper output) : base(output) {
+            Assert.SkipUnless(PlatformDetection.SupportsAlpn, "ConditionalClass: PlatformDetection.SupportsAlpn");
+        }
 
         protected override Version UseVersion => HttpVersion.Version20;
 

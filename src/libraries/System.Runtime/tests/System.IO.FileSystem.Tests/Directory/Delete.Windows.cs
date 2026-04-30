@@ -64,7 +64,7 @@ namespace System.IO.Tests
             Assert.True(Directory.Exists(target), "target should still exist after deleting junction");
         }
 
-        [ConditionalFact(nameof(IsPrivilegedAndNtfs))]
+        [ConditionalFact(typeof(Directory_Delete_str_bool), nameof(IsPrivilegedAndNtfs))]
         [PlatformSpecific(TestPlatforms.Windows)]
         public void Delete_VolumeMountPoint()
         {

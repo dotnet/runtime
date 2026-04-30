@@ -5,7 +5,11 @@
     <Nullable>enable</Nullable>
     <IsTestProject>true</IsTestProject>
     <JsonSerializerIsReflectionEnabledByDefault>false</JsonSerializerIsReflectionEnabledByDefault>
-    <NoWarn>$(NoWarn);xUnit1004</NoWarn>
+    <TestRunnerName>XUnitV3</TestRunnerName>
+    <OutputType>Exe</OutputType>
+    <!-- CS0618: ConditionalTheory(params string[]) is obsolete in xunit v3 extensions.
+         Suppress until all call sites are migrated to the (Type, string[]) overload. -->
+    <NoWarn>$(NoWarn);CS0618;xUnit1004</NoWarn>
   </PropertyGroup>
 
   <Import Project="..\..\..\subproject.props" />
@@ -39,8 +43,7 @@
   <ItemGroup>
     <PackageReference Include="coverlet.collector" Version="$(CoverletCollectorVersion)" />
     <PackageReference Include="Microsoft.Diagnostics.Runtime" Version="$(MicrosoftDiagnosticsRuntimeVersion)" />
-    <PackageReference Include="Microsoft.DotNet.XUnitExtensions" Version="$(MicrosoftDotNetXUnitExtensionsVersion)" />
-    <PackageReference Include="Microsoft.DotNet.XUnitConsoleRunner" Version="$(MicrosoftDotNetXUnitConsoleRunnerVersion)" />
+    <PackageReference Include="Microsoft.DotNet.XUnitV3Extensions" Version="$(MicrosoftDotNetXUnitExtensionsVersion)" />
   </ItemGroup>
 
   <!--
@@ -49,7 +52,7 @@
 
     The layout is:
       $(HelixPayloadDir)/
-        tests/                    — test DLLs + xunit.console.dll + deps
+        tests/                    — test DLLs + deps (self-hosted xunit v3 runner)
         debuggees/{name}/         — built debuggee binaries
         debuggee-metadata.props   — auto-generated _Debuggee items with all metadata
 
@@ -69,11 +72,7 @@
     </ItemGroup>
     <Copy SourceFiles="@(_TestOutput)" DestinationFolder="$(_HelixTestsDir)%(RecursiveDir)" />
 
-    <!-- Copy xunit console runner files to tests directory -->
-    <ItemGroup>
-      <_XunitConsoleFiles Include="$([System.IO.Path]::GetDirectoryName('$(XunitConsoleNetCoreAppPath)'))\*" />
-    </ItemGroup>
-    <Copy SourceFiles="@(_XunitConsoleFiles)" DestinationFolder="$(_HelixTestsDir)" SkipUnchangedFiles="true" />
+    <!-- xunit v3: test DLL is self-hosted (OutputType=Exe), no separate console runner needed -->
 
     <!-- Copy each debuggee's build output (skipped for x-plat test-only mode) -->
     <MSBuild Projects="$(MSBuildProjectFile)"

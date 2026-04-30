@@ -9,7 +9,6 @@ using System.Security.Cryptography.X509Certificates.Tests.CertificateCreation;
 using System.Threading;
 using Test.Cryptography;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace System.Security.Cryptography.X509Certificates.Tests
 {
@@ -466,7 +465,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/26213")]
-        [ConditionalFact]
+        [Fact]
         [OuterLoop("May require using the network, to download CRLs and intermediates", ~TestPlatforms.Browser)]
         public void TestVerify()
         {

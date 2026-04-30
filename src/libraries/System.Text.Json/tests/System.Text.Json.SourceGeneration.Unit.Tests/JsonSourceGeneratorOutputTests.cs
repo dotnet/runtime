@@ -8,7 +8,6 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Text;
 using SourceGenerators.Tests;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace System.Text.Json.SourceGeneration.UnitTests
 {
@@ -37,9 +36,15 @@ namespace System.Text.Json.SourceGeneration.UnitTests
     [ActiveIssue("https://github.com/dotnet/runtime/issues/58226", TestPlatforms.Browser)]
     [SkipOnCoreClr("https://github.com/dotnet/runtime/issues/71962", ~RuntimeConfiguration.Release)]
     [SkipOnMono("https://github.com/dotnet/runtime/issues/92467")]
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotX86Process))]
-    public class SourceGeneratedOutputTests(ITestOutputHelper logger)
+    public class SourceGeneratedOutputTests
     {
+        private readonly ITestOutputHelper logger;
+
+        public SourceGeneratedOutputTests(ITestOutputHelper logger)
+        {
+            Assert.SkipUnless(PlatformDetection.IsNotX86Process, "ConditionalClass: PlatformDetection.IsNotX86Process");
+            this.logger = logger;
+        }
         [Fact]
         public void SimplePoco()
         {

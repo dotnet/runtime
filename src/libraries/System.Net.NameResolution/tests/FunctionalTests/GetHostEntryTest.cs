@@ -282,8 +282,7 @@ namespace System.Net.NameResolution.Tests
         [InlineData(2)]
         public async Task DnsGetHostEntry_LoopbackIP_MatchesGetHostEntryLoopbackString(int mode)
         {
-            if (OperatingSystem.IsWasi() && mode == 2)
-                throw new SkipTestException("mode 2 is not supported on WASI");
+            Assert.SkipWhen(OperatingSystem.IsWasi() && mode == 2, "mode 2 is not supported on WASI");
 
             IPAddress address = IPAddress.Loopback;
 

@@ -11,9 +11,13 @@ using Xunit;
 
 namespace System.Reflection.Emit.Tests
 {
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
     public class PortablePdbStandalonePdbTest
     {
+        public PortablePdbStandalonePdbTest()
+        {
+            Assert.SkipUnless(PlatformDetection.IsNotBrowser, "ConditionalClass: PlatformDetection.IsNotBrowser");
+        }
+
         [Fact]
         public void CreateStandalonePDBAndVerifyTest()
         {

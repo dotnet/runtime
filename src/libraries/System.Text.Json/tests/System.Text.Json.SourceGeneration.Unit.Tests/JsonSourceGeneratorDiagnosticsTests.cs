@@ -13,9 +13,13 @@ namespace System.Text.Json.SourceGeneration.UnitTests
     [ActiveIssue("https://github.com/dotnet/runtime/issues/58226", TestPlatforms.Browser)]
     [SkipOnCoreClr("https://github.com/dotnet/runtime/issues/71962", ~RuntimeConfiguration.Release)]
     [SkipOnMono("https://github.com/dotnet/runtime/issues/92467")]
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotX86Process))] // https://github.com/dotnet/runtime/issues/71962
     public class JsonSourceGeneratorDiagnosticsTests
     {
+        public JsonSourceGeneratorDiagnosticsTests()
+        {
+            Assert.SkipUnless(PlatformDetection.IsNotX86Process, "ConditionalClass: PlatformDetection.IsNotX86Process");
+        }
+
         /// <summary>
         /// https://github.com/dotnet/runtime/issues/61379
         /// </summary>
@@ -199,7 +203,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
 
                 public class Program
                 {
-                    public static void Main()
+                    public void Main()
                     {
                         Console.WriteLine("Hello World");
                     }
@@ -215,7 +219,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
 
                 public class Program
                 {
-                    public static void Main()
+                    public void Main()
                     {
                         JsonSerializer.Serialize("Hello World");
                     }

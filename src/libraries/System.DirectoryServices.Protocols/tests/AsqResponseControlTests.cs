@@ -7,9 +7,13 @@ using Xunit;
 
 namespace System.DirectoryServices.Protocols.Tests
 {
-    [ConditionalClass(typeof(DirectoryServicesTestHelpers), nameof(DirectoryServicesTestHelpers.IsWindowsOrLibLdapIsInstalled))]
     public class AsqResponseControlTests
     {
+
+        public AsqResponseControlTests()
+        {
+            Assert.SkipUnless(DirectoryServicesTestHelpers.IsWindowsOrLibLdapIsInstalled, "ConditionalClass: DirectoryServicesTestHelpers.IsWindowsOrLibLdapIsInstalled");
+        }
         private const string ControlOid = "1.2.840.113556.1.4.1504";
 
         private static MethodInfo s_transformControlsMethod = typeof(DirectoryControl)
@@ -159,11 +163,13 @@ namespace System.DirectoryServices.Protocols.Tests
         }
 
         [Theory]
+        [SkipOnCoreClr("netfx-only test")]
         [MemberData(nameof(ConformantControlValues))]
         public void ConformantResponseControlParsedSuccessfully(byte[] value, ResultCode expectedResultCode)
             => VerifyResponseControl(value, expectedResultCode);
 
         [Theory]
+        [SkipOnCoreClr("netfx-only test")]
         [MemberData(nameof(NonconformantControlValues))]
         public void NonconformantResponseControlParsedSuccessfully(byte[] value, ResultCode expectedResultCode)
             => VerifyResponseControl(value, expectedResultCode);

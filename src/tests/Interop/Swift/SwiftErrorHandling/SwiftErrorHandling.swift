@@ -4,13 +4,13 @@
 import Foundation
 
 public enum MyError: Error {
-    case runtimeError(message: String)
+    case runtimeError(message: NSString)
 }
 
-var errorMessage: String = ""
+var errorMessage: NSString = ""
 
 public func setMyErrorMessage(message: UnsafePointer<unichar>, length: Int32) {
-    errorMessage = NSString(characters: message, length: Int(length)) as String
+    errorMessage = NSString(characters: message, length: Int(length))
 }
 
 public func conditionallyThrowError(willThrow: Int32) throws -> Int32 {
@@ -25,14 +25,12 @@ public func getMyErrorMessage(from error: Error, messageLength: inout Int32) -> 
     if let myError = error as? MyError {
         switch myError {
         case .runtimeError(let message):
-            let nsMessage = message as NSString
-            let buffer = UnsafeMutableBufferPointer<unichar>.allocate(capacity: nsMessage.length)
-            nsMessage.getCharacters(buffer.baseAddress!, range: NSRange(location: 0, length: nsMessage.length))
-            messageLength = Int32(nsMessage.length)
+            let buffer = UnsafeMutableBufferPointer<unichar>.allocate(capacity: message.length)
+            message.getCharacters(buffer.baseAddress!, range: NSRange(location: 0, length: message.length))
+            messageLength = Int32(message.length)
             return UnsafePointer(buffer.baseAddress!)
         }
     }
-    messageLength = 0
     return nil
 }
 

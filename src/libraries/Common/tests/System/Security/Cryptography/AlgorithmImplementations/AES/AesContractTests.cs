@@ -162,7 +162,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
             }
         }
 
-        [ConditionalTheory]
+        [Theory]
         [InlineData(64, false)]        // smaller than default BlockSize
         [InlineData(129, false)]       // larger than default BlockSize
         // Skip on .NET Framework because change is not ported https://github.com/dotnet/runtime/issues/21236
@@ -172,8 +172,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
             if (skipOnNetfx && PlatformDetection.IsNetFramework)
                 return;
 
-            if (PlatformDetection.IstvOS && invalidIvSize == 536870928)
-                throw new SkipTestException($"https://github.com/dotnet/runtime/issues/76728 This test case flakily crashes tvOS arm64");
+            Assert.SkipWhen(PlatformDetection.IstvOS && invalidIvSize == 536870928, $"https://github.com/dotnet/runtime/issues/76728 This test case flakily crashes tvOS arm64");
 
             using (Aes aes = AesFactory.Create())
             {

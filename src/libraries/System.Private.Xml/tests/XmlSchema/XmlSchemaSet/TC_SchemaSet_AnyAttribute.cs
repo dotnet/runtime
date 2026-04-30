@@ -5,8 +5,6 @@ using System.IO;
 using System.Linq;
 using System.Xml.Schema;
 using Xunit;
-using Xunit.Abstractions;
-
 namespace System.Xml.XmlSchemaTests
 {
     public class TC_SchemaSet_AnyAttribute : TC_SchemaSetBase

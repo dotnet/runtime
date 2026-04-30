@@ -16,10 +16,11 @@ namespace System.Tests
         /// and confirming it is different (modulo possible values of int).
         /// If the legacy hash codes are being returned, it will not be different.
         /// </summary>
-        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [Theory]
         [MemberData(nameof(GetHashCode_TestData))]
         public void GetHashCodeWithStringComparer_UseSameStringInTwoProcesses_ReturnsDifferentHashCodes(int getHashCodeIndex)
         {
+            Assert.SkipUnless(RemoteExecutor.IsSupported, "Requires IsSupported");
             Func<string, string, int> method = (parentHash, i) => int.Parse(parentHash) != s_GetHashCodes[int.Parse(i)]() ? RemoteExecutor.SuccessExitCode : -1;
             int parentHashCode = s_GetHashCodes[getHashCodeIndex]();
             int exitCode, retry = 0;

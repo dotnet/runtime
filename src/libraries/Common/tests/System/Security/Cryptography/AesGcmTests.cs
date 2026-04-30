@@ -8,14 +8,18 @@ using Xunit;
 
 namespace System.Security.Cryptography.Tests
 {
-    [ConditionalClass(typeof(AesGcm), nameof(AesGcm.IsSupported))]
     public class AesGcmTests : CommonAEADTests
     {
+        public AesGcmTests()
+        {
+            Assert.SkipUnless(AesGcm.IsSupported, "ConditionalClass: AesGcm.IsSupported");
+        }
+
         private const int CryptoKitSupportedTagSizeInBytes = 16;
 
         [Theory]
         [MemberData(nameof(EncryptTamperAADDecryptTestInputs))]
-        public static void EncryptTamperAADDecrypt(int dataLength, int additionalDataLength)
+        public void EncryptTamperAADDecrypt(int dataLength, int additionalDataLength)
         {
             byte[] additionalData = new byte[additionalDataLength];
             FillRandom(additionalData);
@@ -47,7 +51,7 @@ namespace System.Security.Cryptography.Tests
         [InlineData(17)]
         [InlineData(29)]
         [InlineData(33)]
-        public static void InvalidKeyLength(int keyLength)
+        public void InvalidKeyLength(int keyLength)
         {
             byte[] key = new byte[keyLength];
 #if NET
@@ -62,7 +66,7 @@ namespace System.Security.Cryptography.Tests
 
         [Theory]
         [MemberData(nameof(GetInvalidNonceSizes))]
-        public static void InvalidNonceSize(int nonceSize)
+        public void InvalidNonceSize(int nonceSize)
         {
             int dataLength = 30;
             byte[] plaintext = Enumerable.Range(1, dataLength).Select((x) => (byte)x).ToArray();
@@ -81,7 +85,7 @@ namespace System.Security.Cryptography.Tests
 
         [Theory]
         [MemberData(nameof(GetValidNonceSizes))]
-        public static void ValidNonceSize(int nonceSize)
+        public void ValidNonceSize(int nonceSize)
         {
             const int dataLength = 35;
             byte[] plaintext = Enumerable.Range(1, dataLength).Select((x) => (byte)x).ToArray();
@@ -105,7 +109,7 @@ namespace System.Security.Cryptography.Tests
 #if NET
         [Theory]
         [MemberData(nameof(GetInvalidTagSizes))]
-        public static void InvalidTagSizeForUnspecifiedRequiredTag(int tagSize)
+        public void InvalidTagSizeForUnspecifiedRequiredTag(int tagSize)
         {
             int dataLength = 30;
             byte[] plaintext = Enumerable.Range(1, dataLength).Select((x) => (byte)x).ToArray();
@@ -128,7 +132,7 @@ namespace System.Security.Cryptography.Tests
 
         [Theory]
         [MemberData(nameof(GetInvalidTagSizes))]
-        public static void InvalidTagSizeForRequiredTag(int tagSize)
+        public void InvalidTagSizeForRequiredTag(int tagSize)
         {
             byte[] key = new byte[32];
             Assert.Throws<ArgumentException>("tagSizeInBytes", () => new AesGcm(key, tagSize));
@@ -137,7 +141,7 @@ namespace System.Security.Cryptography.Tests
 
         [Theory]
         [MemberData(nameof(GetValidTagSizes))]
-        public static void ValidTagSize(int tagSize)
+        public void ValidTagSize(int tagSize)
         {
             const int dataLength = 35;
             byte[] plaintext = Enumerable.Range(1, dataLength).Select((x) => (byte)x).ToArray();
@@ -163,7 +167,7 @@ namespace System.Security.Cryptography.Tests
         [InlineData(13)]
         [InlineData(14)]
         [InlineData(15)]
-        public static void TagSizeDoesNotMatchConstructorRequirement(int wrongTagSize)
+        public void TagSizeDoesNotMatchConstructorRequirement(int wrongTagSize)
         {
             byte[] key = new byte[16];
             byte[] nonce = new byte[12];
@@ -190,7 +194,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public static void TwoEncryptionsAndDecryptionsUsingOneInstance()
+        public void TwoEncryptionsAndDecryptionsUsingOneInstance()
         {
             byte[] key = "d5a194ed90cfe08abecd4691997ceb2c".HexToByteArray();
             byte[] originalData1 = Enumerable.Range(1, 15).Select((x) => (byte)x).ToArray();
@@ -240,7 +244,7 @@ namespace System.Security.Cryptography.Tests
 
         [Theory]
         [MemberData(nameof(PlaintextAndCiphertextSizeDifferTestInputs))]
-        public static void PlaintextAndCiphertextSizeDiffer(int ptLen, int ctLen)
+        public void PlaintextAndCiphertextSizeDiffer(int ptLen, int ctLen)
         {
             byte[] key = new byte[16];
             byte[] nonce = new byte[12];
@@ -256,7 +260,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public static void NullKey()
+        public void NullKey()
         {
 #if NET
 #pragma warning disable SYSLIB0053
@@ -267,7 +271,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public static void EncryptDecryptNullNonce()
+        public void EncryptDecryptNullNonce()
         {
             byte[] key = "d5a194ed90cfe08abecd4691997ceb2c".HexToByteArray();
             byte[] plaintext = new byte[0];
@@ -282,7 +286,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public static void EncryptDecryptNullPlaintext()
+        public void EncryptDecryptNullPlaintext()
         {
             byte[] key = "d5a194ed90cfe08abecd4691997ceb2c".HexToByteArray();
             byte[] nonce = new byte[12];
@@ -297,7 +301,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public static void EncryptDecryptNullCiphertext()
+        public void EncryptDecryptNullCiphertext()
         {
             byte[] key = "d5a194ed90cfe08abecd4691997ceb2c".HexToByteArray();
             byte[] nonce = new byte[12];
@@ -312,7 +316,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public static void EncryptDecryptNullTag()
+        public void EncryptDecryptNullTag()
         {
             byte[] key = "d5a194ed90cfe08abecd4691997ceb2c".HexToByteArray();
             byte[] nonce = new byte[12];
@@ -327,7 +331,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public static void InplaceEncryptDecrypt()
+        public void InplaceEncryptDecrypt()
         {
             byte[] key = "d5a194ed90cfe08abecd4691997ceb2c".HexToByteArray();
             byte[] nonce = new byte[12];
@@ -347,7 +351,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public static void InplaceEncryptTamperTagDecrypt()
+        public void InplaceEncryptTamperTagDecrypt()
         {
             byte[] key = "d5a194ed90cfe08abecd4691997ceb2c".HexToByteArray();
             byte[] nonce = new byte[12];
@@ -372,7 +376,7 @@ namespace System.Security.Cryptography.Tests
 #if NET
         [Theory]
         [MemberData(nameof(GetNistGcmTestCases))]
-        public static void AesGcmNistTestsUnspecifiedTagSize(AEADTest testCase)
+        public void AesGcmNistTestsUnspecifiedTagSize(AEADTest testCase)
         {
 #pragma warning disable SYSLIB0053
             using (var aesGcm = new AesGcm(testCase.Key))
@@ -409,7 +413,7 @@ namespace System.Security.Cryptography.Tests
 
         [Theory]
         [MemberData(nameof(GetNistGcmTestCases))]
-        public static void AesGcmNistTestsSpecifiedTagSize(AEADTest testCase)
+        public void AesGcmNistTestsSpecifiedTagSize(AEADTest testCase)
         {
             if ((PlatformDetection.IsOSX || PlatformDetection.UsesMobileAppleCrypto) && testCase.Tag.Length != CryptoKitSupportedTagSizeInBytes)
             {
@@ -435,7 +439,7 @@ namespace System.Security.Cryptography.Tests
 
         [Theory]
         [MemberData(nameof(GetNistGcmTestCases))]
-        public static void AesGcmNistTestsTamperTag(AEADTest testCase)
+        public void AesGcmNistTestsTamperTag(AEADTest testCase)
         {
             if ((PlatformDetection.IsOSX || PlatformDetection.UsesMobileAppleCrypto) && testCase.Tag.Length != CryptoKitSupportedTagSizeInBytes)
             {
@@ -462,7 +466,7 @@ namespace System.Security.Cryptography.Tests
 
         [Theory]
         [MemberData(nameof(GetNistGcmTestCasesWithNonEmptyPT))]
-        public static void AesGcmNistTestsTamperCiphertext(AEADTest testCase)
+        public void AesGcmNistTestsTamperCiphertext(AEADTest testCase)
         {
             if ((PlatformDetection.IsOSX || PlatformDetection.UsesMobileAppleCrypto) && testCase.Tag.Length != CryptoKitSupportedTagSizeInBytes)
             {
@@ -489,7 +493,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public static void UseAfterDispose()
+        public void UseAfterDispose()
         {
             byte[] key = new byte[16];
             byte[] nonce = new byte[12];
@@ -993,7 +997,7 @@ namespace System.Security.Cryptography.Tests
         public static bool RuntimeSaysIsNotSupported => !AesGcm.IsSupported;
 
         [ConditionalFact(typeof(AesGcmIsSupportedTests), nameof(RuntimeSaysIsNotSupported))]
-        public static void CtorThrowsPNSEIfNotSupported()
+        public void CtorThrowsPNSEIfNotSupported()
         {
             byte[] key;
 #if NET
@@ -1019,7 +1023,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public static void CheckIsSupported()
+        public void CheckIsSupported()
         {
             bool expectedIsSupported = !PlatformDetection.IsBrowser;
 

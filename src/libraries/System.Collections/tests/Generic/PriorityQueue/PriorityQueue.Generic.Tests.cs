@@ -71,7 +71,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
+        [MemberData(nameof(ValidCollectionSizes), MemberType = typeof(TestBase))]
         public void PriorityQueue_EmptyCollection_UnorderedItemsIsEmpty(int initialCapacity)
         {
             var queue = new PriorityQueue<TElement, TPriority>(initialCapacity);
@@ -95,7 +95,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
+        [MemberData(nameof(ValidCollectionSizes), MemberType = typeof(TestBase))]
         public void PriorityQueue_CapacityConstructor_ComparerShouldEqualDefaultComparer(int initialCapacity)
         {
             var queue = new PriorityQueue<TElement, TPriority>(initialCapacity);
@@ -104,7 +104,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
+        [MemberData(nameof(ValidCollectionSizes), MemberType = typeof(TestBase))]
         public void PriorityQueue_EnumerableConstructor_ShouldContainAllElements(int count)
         {
             (TElement, TPriority)[] itemsToEnqueue = CreateItems(count).ToArray();
@@ -118,7 +118,7 @@ namespace System.Collections.Tests
         #region Enqueue, Dequeue, Peek, EnqueueDequeue, DequeueEnqueue, Remove
 
         [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
+        [MemberData(nameof(ValidCollectionSizes), MemberType = typeof(TestBase))]
         public void PriorityQueue_Enqueue_IEnumerable(int count)
         {
             (TElement, TPriority)[] itemsToEnqueue = CreateItems(count).ToArray();
@@ -133,7 +133,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData(nameof(ValidPositiveCollectionSizes))]
+        [MemberData(nameof(ValidPositiveCollectionSizes), MemberType = typeof(TestBase))]
         public void PriorityQueue_Peek_ShouldReturnMinimalElement(int count)
         {
             IReadOnlyCollection<(TElement, TPriority)> itemsToEnqueue = CreateItems(count).ToArray();
@@ -191,7 +191,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
+        [MemberData(nameof(ValidCollectionSizes), MemberType = typeof(TestBase))]
         public void PriorityQueue_EnqueueRange_IEnumerable(int count)
         {
             (TElement, TPriority)[] itemsToEnqueue = CreateItems(count).ToArray();
@@ -230,7 +230,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
+        [MemberData(nameof(ValidCollectionSizes), MemberType = typeof(TestBase))]
         public void PriorityQueue_EnqueueDequeue(int count)
         {
             (TElement Element, TPriority Priority)[] itemsToEnqueue = CreateItems(2 * count).ToArray();
@@ -247,7 +247,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
+        [MemberData(nameof(ValidCollectionSizes), MemberType = typeof(TestBase))]
         public void PriorityQueue_DequeueEnqueue(int count)
         {
             (TElement Element, TPriority Priority)[] itemsToEnqueue = CreateItems(count * 2).ToArray();
@@ -269,7 +269,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
+        [MemberData(nameof(ValidCollectionSizes), MemberType = typeof(TestBase))]
         public void PriorityQueue_Remove_AllElements(int count)
         {
             bool result;
@@ -302,7 +302,7 @@ namespace System.Collections.Tests
         #region Clear
 
         [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
+        [MemberData(nameof(ValidCollectionSizes), MemberType = typeof(TestBase))]
         public void PriorityQueue_Clear(int count)
         {
             PriorityQueue<TElement, TPriority> queue = CreatePriorityQueue(initialCapacity: 0, count, out _);
@@ -319,7 +319,7 @@ namespace System.Collections.Tests
         #region Enumeration
 
         [Theory]
-        [MemberData(nameof(ValidPositiveCollectionSizes))]
+        [MemberData(nameof(ValidPositiveCollectionSizes), MemberType = typeof(TestBase))]
         public void PriorityQueue_Enumeration_OrderingIsConsistent(int count)
         {
             PriorityQueue<TElement, TPriority> queue = CreatePriorityQueue(initialCapacity: 0, count, out _);

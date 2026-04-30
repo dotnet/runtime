@@ -71,7 +71,7 @@ namespace System.Collections.Tests
         #region ICollection_Generic
 
         [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
+        [MemberData(nameof(ValidCollectionSizes), MemberType = typeof(TestBase))]
         public void ICollection_Generic_Add_ReturnValue(int count)
         {
             if (!IsReadOnly)
@@ -90,7 +90,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
+        [MemberData(nameof(ValidCollectionSizes), MemberType = typeof(TestBase))]
         public void ICollection_Generic_Add_DuplicateValue_DoesNothing(int count)
         {
             if (!IsReadOnly)
@@ -298,7 +298,7 @@ namespace System.Collections.Tests
         #region Set Function tests
 
         [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
+        [MemberData(nameof(ValidCollectionSizes), MemberType = typeof(TestBase))]
         public void ISet_Generic_NullEnumerableArgument(int count)
         {
             ISet<T> set = GenericISetFactory(count);
@@ -325,11 +325,8 @@ namespace System.Collections.Tests
             }
         }
 
-        public static IEnumerable<object[]> SetTestData() =>
-            new[] { EnumerableType.HashSet, EnumerableType.List }.SelectMany(GetEnumerableTestData);
-
         [Theory]
-        [MemberData(nameof(EnumerableTestData))]
+        [MemberData(nameof(EnumerableTestData), MemberType = typeof(TestBase))]
         public void ISet_Generic_ExceptWith(EnumerableType enumerableType, int setLength, int enumerableLength, int numberOfMatchingElements, int numberOfDuplicateElements)
         {
             if (!IsReadOnly)
@@ -341,7 +338,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData(nameof(EnumerableTestData))]
+        [MemberData(nameof(EnumerableTestData), MemberType = typeof(TestBase))]
         public void ISet_Generic_IntersectWith(EnumerableType enumerableType, int setLength, int enumerableLength, int numberOfMatchingElements, int numberOfDuplicateElements)
         {
             if (!IsReadOnly)
@@ -353,7 +350,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData(nameof(SetTestData))]
+        [MemberData(nameof(SetTestData), MemberType = typeof(TestBase))]
         public void ISet_Generic_IsProperSubsetOf(EnumerableType enumerableType, int setLength, int enumerableLength, int numberOfMatchingElements, int numberOfDuplicateElements)
         {
             ISet<T> set = GenericISetFactory(setLength);
@@ -362,7 +359,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData(nameof(SetTestData))]
+        [MemberData(nameof(SetTestData), MemberType = typeof(TestBase))]
         public void ISet_Generic_IsProperSupersetOf(EnumerableType enumerableType, int setLength, int enumerableLength, int numberOfMatchingElements, int numberOfDuplicateElements)
         {
             ISet<T> set = GenericISetFactory(setLength);
@@ -371,7 +368,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData(nameof(SetTestData))]
+        [MemberData(nameof(SetTestData), MemberType = typeof(TestBase))]
         public void ISet_Generic_IsSubsetOf(EnumerableType enumerableType, int setLength, int enumerableLength, int numberOfMatchingElements, int numberOfDuplicateElements)
         {
             ISet<T> set = GenericISetFactory(setLength);
@@ -380,7 +377,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData(nameof(SetTestData))]
+        [MemberData(nameof(SetTestData), MemberType = typeof(TestBase))]
         public void ISet_Generic_IsSupersetOf(EnumerableType enumerableType, int setLength, int enumerableLength, int numberOfMatchingElements, int numberOfDuplicateElements)
         {
             ISet<T> set = GenericISetFactory(setLength);
@@ -389,7 +386,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData(nameof(SetTestData))]
+        [MemberData(nameof(SetTestData), MemberType = typeof(TestBase))]
         public void ISet_Generic_Overlaps(EnumerableType enumerableType, int setLength, int enumerableLength, int numberOfMatchingElements, int numberOfDuplicateElements)
         {
             ISet<T> set = GenericISetFactory(setLength);
@@ -398,7 +395,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData(nameof(SetTestData))]
+        [MemberData(nameof(SetTestData), MemberType = typeof(TestBase))]
         public void ISet_Generic_SetEquals(EnumerableType enumerableType, int setLength, int enumerableLength, int numberOfMatchingElements, int numberOfDuplicateElements)
         {
             ISet<T> set = GenericISetFactory(setLength);
@@ -407,7 +404,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData(nameof(EnumerableTestData))]
+        [MemberData(nameof(EnumerableTestData), MemberType = typeof(TestBase))]
         public void ISet_Generic_SymmetricExceptWith(EnumerableType enumerableType, int setLength, int enumerableLength, int numberOfMatchingElements, int numberOfDuplicateElements)
         {
             if (!IsReadOnly)
@@ -419,7 +416,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData(nameof(EnumerableTestData))]
+        [MemberData(nameof(EnumerableTestData), MemberType = typeof(TestBase))]
         public void ISet_Generic_UnionWith(EnumerableType enumerableType, int setLength, int enumerableLength, int numberOfMatchingElements, int numberOfDuplicateElements)
         {
             if (!IsReadOnly)
@@ -435,7 +432,7 @@ namespace System.Collections.Tests
         #region Set Function tests on itself
 
         [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
+        [MemberData(nameof(ValidCollectionSizes), MemberType = typeof(TestBase))]
         public void ISet_Generic_ExceptWith_Itself(int setLength)
         {
             if (!IsReadOnly)
@@ -446,7 +443,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
+        [MemberData(nameof(ValidCollectionSizes), MemberType = typeof(TestBase))]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Framework throws InvalidOperationException")]
         public void ISet_Generic_IntersectWith_Itself(int setLength)
         {
@@ -458,7 +455,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
+        [MemberData(nameof(ValidCollectionSizes), MemberType = typeof(TestBase))]
         public void ISet_Generic_IsProperSubsetOf_Itself(int setLength)
         {
             ISet<T> set = GenericISetFactory(setLength);
@@ -466,7 +463,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
+        [MemberData(nameof(ValidCollectionSizes), MemberType = typeof(TestBase))]
         public void ISet_Generic_IsProperSupersetOf_Itself(int setLength)
         {
             ISet<T> set = GenericISetFactory(setLength);
@@ -474,7 +471,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
+        [MemberData(nameof(ValidCollectionSizes), MemberType = typeof(TestBase))]
         public void ISet_Generic_IsSubsetOf_Itself(int setLength)
         {
             ISet<T> set = GenericISetFactory(setLength);
@@ -482,7 +479,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
+        [MemberData(nameof(ValidCollectionSizes), MemberType = typeof(TestBase))]
         public void ISet_Generic_IsSupersetOf_Itself(int setLength)
         {
             ISet<T> set = GenericISetFactory(setLength);
@@ -490,7 +487,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
+        [MemberData(nameof(ValidCollectionSizes), MemberType = typeof(TestBase))]
         public void ISet_Generic_Overlaps_Itself(int setLength)
         {
             ISet<T> set = GenericISetFactory(setLength);
@@ -498,7 +495,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
+        [MemberData(nameof(ValidCollectionSizes), MemberType = typeof(TestBase))]
         public void ISet_Generic_SetEquals_Itself(int setLength)
         {
             ISet<T> set = GenericISetFactory(setLength);
@@ -506,7 +503,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
+        [MemberData(nameof(ValidCollectionSizes), MemberType = typeof(TestBase))]
         public void ISet_Generic_SymmetricExceptWith_Itself(int setLength)
         {
             if (!IsReadOnly)
@@ -517,7 +514,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
+        [MemberData(nameof(ValidCollectionSizes), MemberType = typeof(TestBase))]
         public void ISet_Generic_UnionWith_Itself(int setLength)
         {
             if (!IsReadOnly)
@@ -638,7 +635,7 @@ namespace System.Collections.Tests
         #region Other misc ISet test Scenarios
 
         [Theory]
-        [MemberData(nameof(EnumerableTestData))]
+        [MemberData(nameof(EnumerableTestData), MemberType = typeof(TestBase))]
         public void ISet_Generic_SymmetricExceptWith_AfterRemovingElements(EnumerableType enumerableType, int setLength, int enumerableLength, int numberOfMatchingElements, int numberOfDuplicateElements)
         {
             if (!IsReadOnly)

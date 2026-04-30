@@ -16,7 +16,7 @@ public class LoaderDumpTests : DumpTestBase
 {
     protected override string DebuggeeName => "MultiModule";
 
-    [ConditionalTheory]
+    [Theory]
     [MemberData(nameof(TestConfigurations))]
     public void Loader_CanGetRootAssembly(TestConfiguration config)
     {
@@ -28,7 +28,7 @@ public class LoaderDumpTests : DumpTestBase
         Assert.NotEqual(TargetPointer.Null, rootAssembly);
     }
 
-    [ConditionalTheory]
+    [Theory]
     [MemberData(nameof(TestConfigurations))]
     [SkipOnVersion("net10.0", "Assembly type does not include IsDynamic/IsLoaded fields in .NET 10")]
     public void Loader_RootAssemblyHasModule(TestConfiguration config)
@@ -42,7 +42,7 @@ public class LoaderDumpTests : DumpTestBase
         Assert.NotEqual(TargetPointer.Null, modulePtr);
     }
 
-    [ConditionalTheory]
+    [Theory]
     [MemberData(nameof(TestConfigurations))]
     [SkipOnVersion("net10.0", "Assembly type does not include IsDynamic/IsLoaded fields in .NET 10")]
     public void Loader_CanGetModulePath(TestConfiguration config)
@@ -57,7 +57,7 @@ public class LoaderDumpTests : DumpTestBase
         Assert.NotEmpty(path);
     }
 
-    [ConditionalTheory]
+    [Theory]
     [MemberData(nameof(TestConfigurations))]
     public void Loader_AppDomainHasFriendlyName(TestConfiguration config)
     {
@@ -68,7 +68,7 @@ public class LoaderDumpTests : DumpTestBase
         Assert.NotEmpty(name);
     }
 
-    [ConditionalTheory]
+    [Theory]
     [MemberData(nameof(TestConfigurations))]
     public void Loader_GlobalLoaderAllocatorIsValid(TestConfiguration config)
     {
@@ -78,7 +78,7 @@ public class LoaderDumpTests : DumpTestBase
         Assert.NotEqual(TargetPointer.Null, globalLA);
     }
 
-    [ConditionalTheory]
+    [Theory]
     [MemberData(nameof(TestConfigurations))]
     [SkipOnVersion("net10.0", "Assembly type does not include IsDynamic/IsLoaded fields in .NET 10")]
     public void Loader_RootModuleHasFileName(TestConfiguration config)
@@ -94,7 +94,7 @@ public class LoaderDumpTests : DumpTestBase
         Assert.Contains("MultiModule", fileName);
     }
 
-    [ConditionalTheory]
+    [Theory]
     [MemberData(nameof(TestConfigurations))]
     [SkipOnVersion("net10.0", "Assembly type does not include IsDynamic/IsLoaded fields in .NET 10")]
     public void Loader_RootModuleIsNotDynamic(TestConfiguration config)
@@ -107,7 +107,7 @@ public class LoaderDumpTests : DumpTestBase
         Assert.False(loader.IsDynamic(moduleHandle));
     }
 
-    [ConditionalTheory]
+    [Theory]
     [MemberData(nameof(TestConfigurations))]
     [SkipOnVersion("net10.0", "Assembly type does not include IsDynamic/IsLoaded fields in .NET 10")]
     public void Loader_RootModuleHasLoaderAllocator(TestConfiguration config)
@@ -121,7 +121,7 @@ public class LoaderDumpTests : DumpTestBase
         Assert.NotEqual(TargetPointer.Null, la);
     }
 
-    [ConditionalTheory]
+    [Theory]
     [MemberData(nameof(TestConfigurations))]
     [SkipOnVersion("net10.0", "Assembly type does not include IsDynamic/IsLoaded fields in .NET 10")]
     public void Loader_RootModuleHasILBase(TestConfiguration config)

@@ -127,7 +127,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public static void UseAfterDispose()
+        public void UseAfterDispose()
         {
             MLDsa mldsa = MLDsa.GenerateKey(MLDsaAlgorithm.MLDsa44);
             mldsa.Dispose();
@@ -178,7 +178,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public static void ImportPkcs8_BerEncoding()
+        public void ImportPkcs8_BerEncoding()
         {
             // Seed is DER encoded, so create a BER encoding from it by making it use indefinite length encoding.
             byte[] seedPkcs8 = MLDsaTestsData.IetfMLDsa44.Pkcs8PrivateKey_Seed;

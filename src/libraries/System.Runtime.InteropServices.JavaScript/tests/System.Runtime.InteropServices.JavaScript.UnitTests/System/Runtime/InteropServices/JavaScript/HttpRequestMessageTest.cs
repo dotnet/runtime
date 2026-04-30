@@ -10,7 +10,6 @@ using System.Runtime.InteropServices.JavaScript.Tests;
 using System.Threading.Tasks;
 
 using Xunit;
-using Xunit.Abstractions;
 
 namespace System.Runtime.InteropServices.JavaScript.Http.Tests
 {

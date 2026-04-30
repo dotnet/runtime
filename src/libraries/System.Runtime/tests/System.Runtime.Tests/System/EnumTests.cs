@@ -453,10 +453,11 @@ namespace System.Tests
             yield return new object[] { (char)4, null };
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported), nameof(PlatformDetection.IsRareEnumsSupported))]
+        [Theory]
         [MemberData(nameof(GetName_CharEnum_TestData))]
         public void GetName_InvokeCharEnum_ReturnsExpected(object value, string expected)
         {
+            Assert.SkipUnless(PlatformDetection.IsReflectionEmitSupported && PlatformDetection.IsRareEnumsSupported, "Requires IsReflectionEmitSupported and IsRareEnumsSupported");
             TestGetName(s_charEnumType, value, expected);
         }
 
@@ -693,10 +694,11 @@ namespace System.Tests
             yield return new object[] { (char)99, false };
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported), nameof(PlatformDetection.IsRareEnumsSupported))]
+        [Theory]
         [MemberData(nameof(IsDefined_CharEnum_TestData))]
         public void IsDefined_InvokeCharEnum_ReturnsExpected(object value, bool expected)
         {
+            Assert.SkipUnless(PlatformDetection.IsReflectionEmitSupported && PlatformDetection.IsRareEnumsSupported, "Requires IsReflectionEmitSupported and IsRareEnumsSupported");
             Assert.Equal(expected, Enum.IsDefined(s_charEnumType, value));
         }
 
@@ -2347,10 +2349,11 @@ namespace System.Tests
             yield return new object[] { Enum.ToObject(s_doubleEnumType, 2) };
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported), nameof(PlatformDetection.IsRareEnumsSupported))]
+        [Theory]
         [MemberData(nameof(UnsupportedEnum_TestData))]
         public static void ToString_UnsupportedEnumType_ThrowsArgumentException(Enum e)
         {
+            Assert.SkipUnless(PlatformDetection.IsReflectionEmitSupported && PlatformDetection.IsRareEnumsSupported, "Requires IsReflectionEmitSupported and IsRareEnumsSupported");
             Exception formatXException = Assert.ThrowsAny<Exception>(() => e.ToString("X"));
             string formatXExceptionName = formatXException.GetType().Name;
             Assert.True(formatXExceptionName == nameof(InvalidOperationException) || formatXExceptionName == "ContractException");

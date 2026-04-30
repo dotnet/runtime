@@ -7,7 +7,7 @@ using System.Security.Authentication;
 using System.Threading.Tasks;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
-using Xunit.Abstractions;
+
 
 namespace System.Net.Http.Functional.Tests
 {
@@ -33,19 +33,24 @@ namespace System.Net.Http.Functional.Tests
         }
 #endif
 
-        [Theory]
-        [InlineData(SslProtocols.Tls12, false)] // try various protocols to ensure we correctly set versions even when accepting all certs
-        [InlineData(SslProtocols.Tls12, true)]
 #pragma warning disable SYSLIB0039 // TLS 1.0 and 1.1 are obsolete
-        [InlineData(SslProtocols.Tls12 | SslProtocols.Tls11 | SslProtocols.Tls, false)]
-        [InlineData(SslProtocols.Tls12 | SslProtocols.Tls11 | SslProtocols.Tls, true)]
+        public static TheoryData<SslProtocols, bool> SetDelegate_ConnectionSucceedsData => new()
+        {
+            { SslProtocols.Tls12, false },
+            { SslProtocols.Tls12, true },
+            { SslProtocols.Tls12 | SslProtocols.Tls11 | SslProtocols.Tls, false },
+            { SslProtocols.Tls12 | SslProtocols.Tls11 | SslProtocols.Tls, true },
 #if !NETFRAMEWORK
-        [InlineData(SslProtocols.Tls13 | SslProtocols.Tls12 | SslProtocols.Tls11 | SslProtocols.Tls, false)]
-        [InlineData(SslProtocols.Tls13 | SslProtocols.Tls12 | SslProtocols.Tls11 | SslProtocols.Tls, true)]
+            { SslProtocols.Tls13 | SslProtocols.Tls12 | SslProtocols.Tls11 | SslProtocols.Tls, false },
+            { SslProtocols.Tls13 | SslProtocols.Tls12 | SslProtocols.Tls11 | SslProtocols.Tls, true },
 #endif
+            { SslProtocols.None, false },
+            { SslProtocols.None, true },
+        };
 #pragma warning restore SYSLIB0039
-        [InlineData(SslProtocols.None, false)]
-        [InlineData(SslProtocols.None, true)]
+
+        [Theory]
+        [MemberData(nameof(SetDelegate_ConnectionSucceedsData))]
         public async Task SetDelegate_ConnectionSucceeds(SslProtocols acceptedProtocol, bool requestOnlyThisProtocol)
         {
 #pragma warning disable SYSLIB0039 // TLS 1.0 and 1.1 are obsolete

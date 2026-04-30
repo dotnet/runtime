@@ -11,8 +11,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
-using Xunit.Abstractions;
-
 namespace System.Net.Security.Tests
 {
     [PlatformSpecific(TestPlatforms.Windows)] // NegotiateStream client needs explicit credentials or SPNs on unix.
@@ -193,10 +191,7 @@ namespace System.Net.Security.Tests
         {
             string targetName = "testTargetName";
 
-            if (PlatformDetection.IsWindowsServer2025)
-            {
-                throw new SkipTestException("Empty credentials not supported on Server 2025");
-            }
+            Assert.SkipWhen(PlatformDetection.IsWindowsServer2025, "Empty credentials not supported on Server 2025");
 
             // Ensure there is no confusion between DefaultCredentials / DefaultNetworkCredentials and a
             // NetworkCredential object with empty user, password and domain.

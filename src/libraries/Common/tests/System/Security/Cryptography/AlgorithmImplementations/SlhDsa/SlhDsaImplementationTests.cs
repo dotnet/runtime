@@ -10,19 +10,23 @@ using Xunit;
 
 namespace System.Security.Cryptography.SLHDsa.Tests
 {
-    [ConditionalClass(typeof(SlhDsa), nameof(SlhDsa.IsSupported))]
     public sealed class SlhDsaImplementationTests : SlhDsaTests
     {
+        public SlhDsaImplementationTests()
+        {
+            Assert.SkipUnless(SlhDsa.IsSupported, "ConditionalClass: SlhDsa.IsSupported");
+        }
+
         [Theory]
         [MemberData(nameof(SlhDsaTestData.AlgorithmsData), MemberType = typeof(SlhDsaTestData))]
-        public static void SlhDsaIsOnlyPublicAncestor_GenerateKey(SlhDsaAlgorithm algorithm)
+        public void SlhDsaIsOnlyPublicAncestor_GenerateKey(SlhDsaAlgorithm algorithm)
         {
             AssertSlhDsaIsOnlyPublicAncestor(() => SlhDsa.GenerateKey(algorithm));
         }
 
         [Theory]
         [MemberData(nameof(SlhDsaTestData.GeneratedKeyInfosData), MemberType = typeof(SlhDsaTestData))]
-        public static void SlhDsaIsOnlyPublicAncestor_Import(SlhDsaTestData.SlhDsaGeneratedKeyInfo info)
+        public void SlhDsaIsOnlyPublicAncestor_Import(SlhDsaTestData.SlhDsaGeneratedKeyInfo info)
         {
             // Tests ImportPublicKey, ImportSPKI, ImportPem (with PUBLIC KEY)
             SlhDsaTestHelpers.AssertImportPublicKey(
@@ -308,7 +312,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
         #region IETF samples
 
         [Fact]
-        public static void ImportPkcs8PrivateKeyIetf()
+        public void ImportPkcs8PrivateKeyIetf()
         {
             using SlhDsa slhDsa = SlhDsa.ImportPkcs8PrivateKey(SlhDsaTestData.IetfSlhDsaSha2_128sPrivateKeyPkcs8);
             Assert.Equal(SlhDsaAlgorithm.SlhDsaSha2_128s, slhDsa.Algorithm);
@@ -318,7 +322,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
         }
 
         [Fact]
-        public static void ImportPkcs8PublicKeyIetf()
+        public void ImportPkcs8PublicKeyIetf()
         {
             using SlhDsa slhDsa = SlhDsa.ImportSubjectPublicKeyInfo(SlhDsaTestData.IetfSlhDsaSha2_128sPublicKeyPkcs8);
             Assert.Equal(SlhDsaAlgorithm.SlhDsaSha2_128s, slhDsa.Algorithm);
@@ -328,7 +332,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
         }
 
         [Fact]
-        public static void ImportPemPrivateKeyIetf()
+        public void ImportPemPrivateKeyIetf()
         {
             string pem = PemEncoding.WriteString("PRIVATE KEY", SlhDsaTestData.IetfSlhDsaSha2_128sPrivateKeyPkcs8);
             using SlhDsa slhDsa = SlhDsa.ImportFromPem(pem);
@@ -339,7 +343,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
         }
 
         [Fact]
-        public static void ImportPemPublicKeyIetf()
+        public void ImportPemPublicKeyIetf()
         {
             string pem = PemEncoding.WriteString("PUBLIC KEY", SlhDsaTestData.IetfSlhDsaSha2_128sPublicKeyPkcs8);
             using SlhDsa slhDsa = SlhDsa.ImportFromPem(pem);
@@ -397,7 +401,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
         #endregion NIST test vectors
 
         [Fact]
-        public static void ImportPkcs8_BerEncoding()
+        public void ImportPkcs8_BerEncoding()
         {
             // Private key is DER encoded, so create a BER encoding from it by making it use indefinite length encoding.
             byte[] privateKeyPkcs8 = SlhDsaTestData.IetfSlhDsaSha2_128sPrivateKeyPkcs8;

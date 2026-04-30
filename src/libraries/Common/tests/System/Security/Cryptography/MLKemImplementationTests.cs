@@ -7,9 +7,13 @@ using Xunit;
 
 namespace System.Security.Cryptography.Tests
 {
-    [ConditionalClass(typeof(MLKem), nameof(MLKem.IsSupported))]
     public class MLKemImplementationTests : MLKemBaseTests
     {
+        public MLKemImplementationTests()
+        {
+            Assert.SkipUnless(MLKem.IsSupported, "ConditionalClass: MLKem.IsSupported");
+        }
+
         public override MLKem GenerateKey(MLKemAlgorithm algorithm)
         {
             return MLKem.GenerateKey(algorithm);
@@ -31,12 +35,9 @@ namespace System.Security.Cryptography.Tests
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public static void IsSupported_InitializesCrypto()
+        public void IsSupported_InitializesCrypto()
         {
-            if (!MLKem.IsSupported)
-            {
-                throw new SkipTestException("Algorithm is not supported on current platform.");
-            }
+            Assert.SkipUnless(MLKem.IsSupported, "Algorithm is not supported on current platform.");
 
             // This ensures that ML-KEM is the first cryptographic algorithm touched in the process, which kicks off
             // the initialization of the crypto layer on some platforms. Running in a remote executor ensures no other
@@ -48,7 +49,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public static void IsSupported_AgreesWithPlatform()
+        public void IsSupported_AgreesWithPlatform()
         {
             Assert.Equal(PlatformSupportsMLKem(), MLKem.IsSupported);
         }

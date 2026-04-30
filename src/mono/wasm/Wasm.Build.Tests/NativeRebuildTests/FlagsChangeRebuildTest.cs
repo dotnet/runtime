@@ -7,8 +7,6 @@ using System.Linq;
 using System.Threading.Tasks;
 using Wasm.Build.Tests;
 using Xunit;
-using Xunit.Abstractions;
-
 #nullable enable
 
 namespace Wasm.Build.NativeRebuild.Tests
@@ -29,8 +27,8 @@ namespace Wasm.Build.NativeRebuild.Tests
             ).UnwrapItemsAsArrays();
 
         [Theory]
-        [MemberData(nameof(FlagsChangesForNativeRelinkingData), parameters: /*aot*/ false)]
-        [MemberData(nameof(FlagsChangesForNativeRelinkingData), parameters: /*aot*/ true)]
+        [MemberData(nameof(FlagsChangesForNativeRelinkingData), /*aot*/ false)]
+        [MemberData(nameof(FlagsChangesForNativeRelinkingData), /*aot*/ true)]
         public async Task ExtraEmccFlagsSetButNoRealChange(Configuration config, bool aot, string extraCFlags, string extraLDFlags)
         {
             ProjectInfo info = CopyTestAsset(config, aot, TestAsset.WasmBasicTestApp, "rebuild_flags");

@@ -14,10 +14,17 @@ using System.Text;
 using System.Text.RegularExpressions;
 
 namespace BinaryFormatTests.FormatterTests;
-
-[ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsBinaryFormatterSupported))]
 public partial class BinaryFormatterTests
 {
+
+    public BinaryFormatterTests()
+
+    {
+
+        Assert.SkipUnless(PlatformDetection.IsBinaryFormatterSupported, "ConditionalClass: PlatformDetection.IsBinaryFormatterSupported");
+
+    }
+
     [Theory]
     [MemberData(nameof(SerializableObjects_MemberData))]
     public void ValidateAgainstBlobs(object obj, TypeSerializableValue[] blobs)

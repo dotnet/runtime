@@ -1,0 +1,113 @@
+<!-- Licensed to the .NET Foundation under one or more agreements. The .NET Foundation licenses this file to you under the MIT license. -->
+<!--
+  Repo-local override for the Arcade SDK XUnitV3 test runner targets.
+
+  The Arcade SDK passes 'report-xunit' and 'report-xunit-filename' (with
+  the double-dash prefix) on the MTP runner command line, but xUnit v3
+  4.0.0-pre.81 renamed those options to 'report-xunit-xml' and
+  'report-xunit-xml-filename'.  This file imports the Arcade originals and
+  then redefines the RunTests target with the corrected option names.
+
+  Remove this override once the Arcade SDK is updated.
+-->
+<Project>
+
+  <!-- Import the Arcade SDK XUnitV3 targets (package refs, settings, runner). -->
+  <Import Project="$(NuGetPackageRoot)microsoft.dotnet.arcade.sdk/$(MicrosoftDotNetArcadeSdkVersion)/tools/XUnitV3/XUnitV3.targets" />
+
+  <!--
+    Redefine RunTests with corrected MTP CLI option names.
+    Because this target is defined after the Arcade import, MSBuild uses this
+    definition (last-writer-wins).
+  -->
+  <Target Name="RunTests"
+          Outputs="%(TestToRun.ResultsStdOutPath)"
+          Condition="'@(TestToRun)' != ''">
+    <Telemetry EventName="NETCORE_ENGINEERING_TELEMETRY" EventData="Category=Test" />
+
+    <PropertyGroup Condition="'$(UseMicrosoftTestingPlatformRunner)' == 'true'">
+      <_TestResultDirectory>$([System.IO.Path]::GetDirectoryName('%(TestToRun.ResultsTrxPath)'))</_TestResultDirectory>
+      <_TestResultTrxFileName>$([System.IO.Path]::GetFileName('%(TestToRun.ResultsTrxPath)'))</_TestResultTrxFileName>
+      <_TestResultXmlFileName>$([System.IO.Path]::GetFileName('%(TestToRun.ResultsXmlPath)'))</_TestResultXmlFileName>
+      <_TestResultHtmlFileName>$([System.IO.Path]::GetFileName('%(TestToRun.ResultsHtmlPath)'))</_TestResultHtmlFileName>
+    </PropertyGroup>
+
+    <PropertyGroup>
+      <_TestEnvironment>%(TestToRun.EnvironmentDisplay)</_TestEnvironment>
+      <_TestAssembly>%(TestToRun.Identity)</_TestAssembly>
+      <_TestRuntime>%(TestToRun.TestRuntime)</_TestRuntime>
+      <_TestTimeout>%(TestToRun.TestTimeout)</_TestTimeout>
+      <_TestRunnerAdditionalArguments>%(TestToRun.TestRunnerAdditionalArguments)</_TestRunnerAdditionalArguments>
+
+      <_TestRunner>%(TestToRun.RunCommand)</_TestRunner>
+      <_TestRunnerArgs Condition="'$(UseMicrosoftTestingPlatformRunner)' != 'true'">%(TestToRun.RunArguments) $(_TestRunnerAdditionalArguments) -xml "%(TestToRun.ResultsXmlPath)" -html "%(TestToRun.ResultsHtmlPath)" -trx "%(TestToRun.ResultsTrxPath)"</_TestRunnerArgs>
+      <!-- Fixed: report-xunit-xml instead of report-xunit, report-xunit-xml-filename instead of report-xunit-filename (all with double-dash prefix) -->
+      <_TestRunnerArgs Condition="'$(UseMicrosoftTestingPlatformRunner)' == 'true'">%(TestToRun.RunArguments) $(_TestRunnerAdditionalArguments) --results-directory "$(_TestResultDirectory)" --report-xunit-xml --report-xunit-xml-filename "$(_TestResultXmlFileName)" --report-xunit-html --report-xunit-html-filename "$(_TestResultHtmlFileName)" --report-trx --report-trx-filename "$(_TestResultTrxFileName)"</_TestRunnerArgs>
+
+      <TestDotNetRoot Condition="'$(TestDotNetRoot)' == ''">$(DotNetRoot)</TestDotNetRoot>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'$(_TestRuntime)' == 'Core'">
+      <_TestRunnerArgs Condition="'$(UseMicrosoftTestingPlatformRunner)' != 'true'">$(_TestRunnerArgs) -noAutoReporters</_TestRunnerArgs>
+      <_TestRunnerArgs Condition="'$(UseMicrosoftTestingPlatformRunner)' == 'true'">$(_TestRunnerArgs) --auto-reporters off</_TestRunnerArgs>
+    </PropertyGroup>
+
+    <PropertyGroup>
+      <_TestRunnerCommand>"$(_TestRunner)" $(_TestRunnerArgs)</_TestRunnerCommand>
+
+      <!--
+        Redirect std output of the runner.
+        Note that xUnit outputs failure info to both STDOUT (stack trace, message) and STDERR (failed test name)
+      -->
+      <_TestRunnerCommand Condition="'$(TestCaptureOutput)' != 'false'">$(_TestRunnerCommand) >> "%(TestToRun.ResultsStdOutPath)" 2>&amp;1</_TestRunnerCommand>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <_OutputFiles Include="%(TestToRun.ResultsXmlPath)" />
+      <_OutputFiles Include="%(TestToRun.ResultsHtmlPath)" />
+      <_OutputFiles Include="%(TestToRun.ResultsStdOutPath)" />
+    </ItemGroup>
+
+    <MakeDir Directories="@(_OutputFiles->'%(RootDir)%(Directory)')"/>
+    <Delete Files="@(_OutputFiles)" />
+
+    <Message Text="Running tests: $(_TestAssembly) [$(_TestEnvironment)]" Importance="high"/>
+
+    <!--
+      Add command line to the log.
+    -->
+    <Exec Command="echo === COMMAND LINE === > %(TestToRun.ResultsStdOutPath)
+                   echo $(_TestRunnerCommand) >> %(TestToRun.ResultsStdOutPath)" />
+
+    <Exec Command='$(_TestRunnerCommand)'
+          LogStandardErrorAsError="false"
+          WorkingDirectory="$(_TargetDir)"
+          IgnoreExitCode="true"
+          Timeout="$(_TestTimeout)"
+          EnvironmentVariables="DOTNET_ROOT=$(TestDotNetRoot);DOTNET_ROOT_X86=$(TestDotNetRoot)x86"
+          ContinueOnError="WarnAndContinue">
+      <Output TaskParameter="ExitCode" PropertyName="_TestErrorCode" />
+    </Exec>
+
+    <!--
+      Report test status.
+    -->
+    <Message Text="Tests succeeded: $(_TestAssembly) [$(_TestEnvironment)]" Condition="'$(_TestErrorCode)' == '0'" Importance="high" />
+
+    <PropertyGroup>
+      <_ResultsFileToDisplay>%(TestToRun.ResultsHtmlPath)</_ResultsFileToDisplay>
+      <_ResultsFileToDisplay Condition="!Exists('$(_ResultsFileToDisplay)')">%(TestToRun.ResultsStdOutPath)</_ResultsFileToDisplay>
+    </PropertyGroup>
+
+    <!--
+      Ideally we would set ContinueOnError="ErrorAndContinue" so that when a test fails in multi-targeted test project
+      we'll still run tests for all target frameworks. ErrorAndContinue doesn't work well on Linux though: https://github.com/Microsoft/msbuild/issues/3961.
+    -->
+    <Error Text="Tests failed: $(_ResultsFileToDisplay) [$(_TestEnvironment)]" Condition="'$(_TestErrorCode)' != '0' and '$(_ErrorOnTestFailure)' != 'false'" File="XUnit" />
+
+    <ItemGroup>
+      <FileWrites Include="@(_OutputFiles)"/>
+    </ItemGroup>
+  </Target>
+
+</Project>

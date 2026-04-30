@@ -14,6 +14,7 @@ namespace System.Text.Json.Serialization.Tests
 {
     public abstract partial class CollectionTests
     {
+#if !SINGLE_FILE_TEST_RUNNER
         [Theory]
         [MemberData(nameof(GetAsyncEnumerableSources))]
         public async Task WriteRootLevelAsyncEnumerable<TElement>(IEnumerable<TElement> source, int delayInterval, int bufferSize)
@@ -36,7 +37,9 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(1, asyncEnumerable.TotalCreatedEnumerators);
             Assert.Equal(1, asyncEnumerable.TotalDisposedEnumerators);
         }
+#endif
 
+#if !SINGLE_FILE_TEST_RUNNER
         [Theory]
         [MemberData(nameof(GetAsyncEnumerableSources))]
         public async Task WriteNestedAsyncEnumerable<TElement>(IEnumerable<TElement> source, int delayInterval, int bufferSize)
@@ -59,7 +62,9 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(1, asyncEnumerable.TotalCreatedEnumerators);
             Assert.Equal(1, asyncEnumerable.TotalDisposedEnumerators);
         }
+#endif
 
+#if !SINGLE_FILE_TEST_RUNNER
         [Theory]
         [MemberData(nameof(GetAsyncEnumerableSources))]
         public async Task WriteNestedAsyncEnumerable_Nullable<TElement>(IEnumerable<TElement> source, int delayInterval, int bufferSize)
@@ -85,9 +90,9 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(1, asyncEnumerable.TotalCreatedEnumerators);
             Assert.Equal(1, asyncEnumerable.TotalDisposedEnumerators);
         }
+#endif
 
-        [Fact]
-        public async Task WriteAsyncEnumerable_CancellationToken_IsPassedToAsyncEnumerator()
+        [Fact]        public async Task WriteAsyncEnumerable_CancellationToken_IsPassedToAsyncEnumerator()
         {
             // Regression test for https://github.com/dotnet/runtime/issues/79556
             using var utf8Stream = new Utf8MemoryStream(ignoreCancellationTokenOnWriteAsync: true);
@@ -156,6 +161,7 @@ namespace System.Text.Json.Serialization.Tests
             public IAsyncEnumerable<TElement> Data2 { get; set; }
         }
 
+#if !SINGLE_FILE_TEST_RUNNER
         [Theory]
         [MemberData(nameof(GetAsyncEnumerableSources))]
         public async Task WriteSequentialNestedAsyncEnumerables<TElement>(IEnumerable<TElement> source, int delayInterval, int bufferSize)
@@ -208,6 +214,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(OuterEnumerableCount, innerAsyncEnumerable.TotalCreatedEnumerators);
             Assert.Equal(OuterEnumerableCount, innerAsyncEnumerable.TotalDisposedEnumerators);
         }
+#endif
 
         [Fact]
         public void WriteRootLevelAsyncEnumerableSync_ThrowsNotSupportedException()

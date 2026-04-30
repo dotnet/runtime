@@ -24,14 +24,12 @@ namespace System.IO.Tests
 
         private static void CheckHighTemporalResolution()
         {
-            if (!HighTemporalResolution)
-                throw new SkipTestException(nameof(HighTemporalResolution));
+            Assert.SkipUnless(HighTemporalResolution, nameof(HighTemporalResolution));
         }
 
         private static void CheckLowTemporalResolution()
         {
-            if (!LowTemporalResolution)
-                throw new SkipTestException(nameof(LowTemporalResolution));
+            Assert.SkipUnless(LowTemporalResolution, nameof(LowTemporalResolution));
         }
 
         protected abstract bool CanBeReadOnly { get; }
@@ -245,7 +243,7 @@ namespace System.IO.Tests
             ValidateSetTimes(item, beforeTime, afterTime);
         }
 
-        [ConditionalFact] // OSX HFS driver format and Browser platform do not support millisec granularity
+        [Fact] // OSX HFS driver format and Browser platform do not support millisec granularity
         public void TimesIncludeMillisecondPart()
         {
             CheckHighTemporalResolution();
@@ -278,7 +276,7 @@ namespace System.IO.Tests
             });
         }
 
-        [ConditionalFact]
+        [Fact]
         public void TimesIncludeMillisecondPart_LowTempRes()
         {
             CheckLowTemporalResolution();

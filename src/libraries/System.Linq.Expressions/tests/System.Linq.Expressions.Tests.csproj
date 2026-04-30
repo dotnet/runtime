@@ -8,10 +8,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <RdXmlFile Include="default.rd.xml" />
-  </ItemGroup>
-
-  <ItemGroup>
     <AssembliesBeingTested Include="Microsoft.CSharp" />
   </ItemGroup>
   <ItemGroup>
@@ -247,7 +243,6 @@
     <Compile Include="Dynamic\ExpandoObjectProxyTests.cs" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="xunit.extensibility.execution" Version="$(XUnitVersion)" />
     <ProjectReference Include="..\src\System.Linq.Expressions.csproj" SkipUseReferenceAssembly="true" />
   </ItemGroup>
 </Project>

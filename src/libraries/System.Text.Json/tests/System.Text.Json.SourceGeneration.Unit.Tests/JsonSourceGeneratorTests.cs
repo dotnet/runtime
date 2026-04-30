@@ -6,16 +6,21 @@ using System.Tests;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace System.Text.Json.SourceGeneration.UnitTests
 {
     [ActiveIssue("https://github.com/dotnet/runtime/issues/58226", TestPlatforms.Browser)]
     [SkipOnCoreClr("https://github.com/dotnet/runtime/issues/71962", ~RuntimeConfiguration.Release)]
     [SkipOnMono("https://github.com/dotnet/runtime/issues/92467")]
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotX86Process))] // https://github.com/dotnet/runtime/issues/71962
-    public class GeneratorTests(ITestOutputHelper logger)
+    public class GeneratorTests
     {
+        private readonly ITestOutputHelper logger;
+
+        public GeneratorTests(ITestOutputHelper logger)
+        {
+            Assert.SkipUnless(PlatformDetection.IsNotX86Process, "ConditionalClass: PlatformDetection.IsNotX86Process");
+            this.logger = logger;
+        }
         [Fact]
         public void TypeDiscoveryPrimitivePOCO()
         {
@@ -249,7 +254,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                 using System.Collections.Generic;
                 using System.Text.Json.Serialization;
                 using ReferencedAssembly;
-    
+
                 namespace HelloWorld
                 {
                     [JsonSerializable(typeof(HelloWorld.WeatherForecastWithPOCOs))]
@@ -581,19 +586,19 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             // Regression test for https://github.com/dotnet/runtime/issues/103515
             string source = """
                 using System.Text.Json.Serialization;
-                
+
                 namespace Test
                 {
                     public class Foo
                     {
                         public override bool Equals(object obj) => false;
-                
+
                         public static bool operator ==(Foo left, Foo right) => false;
                         public static bool operator !=(Foo left, Foo right) => false;
-                    
+
                         public static bool operator ==(Foo left, string right) => false;
                         public static bool operator !=(Foo left, string right) => false;
-                    
+
                         public override int GetHashCode() => 1;
                     }
 

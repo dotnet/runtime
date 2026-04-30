@@ -28,6 +28,16 @@ namespace System.IO.Tests
         public static TheoryData<string> ControlWhiteSpace = IOInputs.GetControlWhiteSpace().ToTheoryData();
         public static TheoryData<string> NonControlWhiteSpace = IOInputs.GetNonControlWhiteSpace().ToTheoryData();
 
+        public static IEnumerable<object[]> GetSyncAsyncOptions()
+        {
+            yield return new object[] { FileOptions.None };
+
+            if (PlatformDetection.IsAsyncFileIOSupported)
+            {
+                yield return new object[] { FileOptions.Asynchronous };
+            }
+        }
+
         public static TheoryData<string> TrailingSeparators
         {
             get

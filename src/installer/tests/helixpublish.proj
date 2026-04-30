@@ -48,14 +48,13 @@
     </MSBuild>
 
     <PropertyGroup>
-      <_TestExePath>$([System.IO.Path]::GetFileNameWithoutExtension($(_TargetPath)))$(ExeSuffix)</_TestExePath>
+      <_TestDllPath>$([System.IO.Path]::GetFileName($(_TargetPath)))</_TestDllPath>
     </PropertyGroup>
 
     <ItemGroup>
       <HostTestProject>
-        <Command Condition="'$(TargetOS)' == 'windows'">$(_TestExePath) $(TestRunnerAdditionalArguments) --report-trx --results-directory .</Command>
-        <Command Condition="'$(TargetOS)' != 'windows'">./$(_TestExePath) $(TestRunnerAdditionalArguments) --report-trx --results-directory .</Command>
-        <PreCommands Condition="'$(TargetOS)' != 'windows'">chmod +x $(_TestExePath)</PreCommands>
+        <Command Condition="'$(TargetOS)' == 'windows'">dotnet exec $(_TestDllPath) $(TestRunnerAdditionalArguments) --report-trx --results-directory .</Command>
+        <Command Condition="'$(TargetOS)' != 'windows'">dotnet exec $(_TestDllPath) $(TestRunnerAdditionalArguments) --report-trx --results-directory .</Command>
         <PayloadDirectory>$(_PayloadDirectory)</PayloadDirectory>
       </HostTestProject>
     </ItemGroup>

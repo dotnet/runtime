@@ -6,7 +6,6 @@ using System.IO;
 using System.Collections.Generic;
 using Microsoft.NET.Sdk.WebAssembly;
 using Xunit;
-using Xunit.Abstractions;
 using Xunit.Sdk;
 using System.Linq;
 

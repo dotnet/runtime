@@ -9,9 +9,6 @@ using System.Xml;
 using System.Xml.Schema;
 using System.Xml.Serialization;
 using Xunit;
-using Xunit.Abstractions;
-
-
 namespace System.Runtime.Serialization.Xml.XsdDataContractExporterTests
 {
     public class SurrogateTests

@@ -8,14 +8,15 @@ using System.Net.Test.Common;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
-using Xunit.Abstractions;
+
 
 namespace System.Net.Http.Functional.Tests
 {
-    [ConditionalClass(typeof(SocketsHttpHandler), nameof(SocketsHttpHandler.IsSupported))]
     public sealed class SocketsHttpHandler_Http2ExtendedConnect_Test : HttpClientHandlerTestBase
     {
-        public SocketsHttpHandler_Http2ExtendedConnect_Test(ITestOutputHelper output) : base(output) { }
+        public SocketsHttpHandler_Http2ExtendedConnect_Test(ITestOutputHelper output) : base(output) {
+            Assert.SkipUnless(SocketsHttpHandler.IsSupported, "ConditionalClass: SocketsHttpHandler.IsSupported");
+        }
 
         protected override Version UseVersion => HttpVersion.Version20;
 

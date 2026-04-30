@@ -11,9 +11,13 @@ using Xunit;
 
 namespace System.Reflection.Emit.Tests
 {
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
     public class AssemblySaveCustomAttributeTests
     {
+        public AssemblySaveCustomAttributeTests()
+        {
+            Assert.SkipUnless(PlatformDetection.HasAssemblyFiles, "ConditionalClass: PlatformDetection.HasAssemblyFiles");
+        }
+
         private List<CustomAttributeBuilder> _attributes = new List<CustomAttributeBuilder>
         {
             new CustomAttributeBuilder(s_comVisiblePair.con, s_comVisiblePair.args),

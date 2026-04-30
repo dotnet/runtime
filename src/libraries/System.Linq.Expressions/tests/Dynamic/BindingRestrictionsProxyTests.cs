@@ -66,13 +66,10 @@ namespace System.Dynamic.Tests
         private static BindingRestrictionsProxyProxy GetDebugViewObject(object obj)
             => new BindingRestrictionsProxyProxy(BindingRestrictionsProxyCtor.Invoke(new[] {obj}));
 
-        [ConditionalFact]
+        [Fact]
         public void EmptyRestiction()
         {
-            if (BindingRestrictionsDebugViewType == null)
-            {
-                throw new SkipTestException("Didn't find DebuggerTypeProxyAttribute on BindingRestrictions.");
-            }
+            Assert.SkipWhen(BindingRestrictionsDebugViewType == null, "Didn't find DebuggerTypeProxyAttribute on BindingRestrictions.");
             BindingRestrictions empty = BindingRestrictions.Empty;
             BindingRestrictionsProxyProxy view = GetDebugViewObject(empty);
             Assert.True(view.IsEmpty);
@@ -83,13 +80,10 @@ namespace System.Dynamic.Tests
             Assert.Equal(empty.ToExpression().ToString(), view.ToString());
         }
 
-        [ConditionalFact]
+        [Fact]
         public void CustomRestriction()
         {
-            if (BindingRestrictionsDebugViewType == null)
-            {
-                throw new SkipTestException("Didn't find DebuggerTypeProxyAttribute on BindingRestrictions.");
-            }
+            Assert.SkipWhen(BindingRestrictionsDebugViewType == null, "Didn't find DebuggerTypeProxyAttribute on BindingRestrictions.");
             ConstantExpression exp = Expression.Constant(false);
             BindingRestrictions custom = BindingRestrictions.GetExpressionRestriction(exp);
             BindingRestrictionsProxyProxy view = GetDebugViewObject(custom);
@@ -102,7 +96,7 @@ namespace System.Dynamic.Tests
             Assert.Equal(exp.ToString(), view.ToString());
         }
 
-        [ConditionalFact]
+        [Fact]
         public void MergedRestrictionsProperties()
         {
             var exps = new Expression[]
@@ -120,10 +114,7 @@ namespace System.Dynamic.Tests
                 br = br.Merge(res);
             }
 
-            if (BindingRestrictionsDebugViewType == null)
-            {
-                throw new SkipTestException("Didn't find DebuggerTypeProxyAttribute on BindingRestrictions.");
-            }
+            Assert.SkipWhen(BindingRestrictionsDebugViewType == null, "Didn't find DebuggerTypeProxyAttribute on BindingRestrictions.");
 
             BindingRestrictionsProxyProxy view = GetDebugViewObject(br);
             Assert.False(view.IsEmpty);
@@ -137,7 +128,7 @@ namespace System.Dynamic.Tests
             Assert.True(viewedRestrictions.All(r => restrictions.Contains(r)));
         }
 
-        [ConditionalFact]
+        [Fact]
         public void MergedRestrictionsExpressions()
         {
             var exps = new Expression[]
@@ -152,10 +143,7 @@ namespace System.Dynamic.Tests
                 br = br.Merge(BindingRestrictions.GetExpressionRestriction(exp));
             }
 
-            if (BindingRestrictionsDebugViewType == null)
-            {
-                throw new SkipTestException("Didn't find DebuggerTypeProxyAttribute on BindingRestrictions.");
-            }
+            Assert.SkipWhen(BindingRestrictionsDebugViewType == null, "Didn't find DebuggerTypeProxyAttribute on BindingRestrictions.");
 
             BindingRestrictionsProxyProxy view = GetDebugViewObject(br);
 
@@ -194,13 +182,10 @@ namespace System.Dynamic.Tests
             Assert.True(notAndAlso.All(ex => exps.Contains(ex)));
         }
 
-        [ConditionalFact]
+        [Fact]
         public void ThrowOnNullToCtor()
         {
-            if (BindingRestrictionsDebugViewType == null)
-            {
-                throw new SkipTestException("Didn't find DebuggerTypeProxyAttribute on BindingRestrictions.");
-            }
+            Assert.SkipWhen(BindingRestrictionsDebugViewType == null, "Didn't find DebuggerTypeProxyAttribute on BindingRestrictions.");
             TargetInvocationException tie = Assert.Throws<TargetInvocationException>(() => BindingRestrictionsProxyCtor.Invoke(new object[] {null}));
             ArgumentNullException ane = (ArgumentNullException)tie.InnerException;
             Assert.Equal("node", ane.ParamName);

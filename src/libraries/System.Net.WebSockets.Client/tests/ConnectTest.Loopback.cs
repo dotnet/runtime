@@ -7,14 +7,17 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
-using Xunit.Abstractions;
-
+using Xunit.Sdk;
 namespace System.Net.WebSockets.Client.Tests
 {
-    [ConditionalClass(typeof(ClientWebSocketTestBase), nameof(WebSocketsSupported))]
     [SkipOnPlatform(TestPlatforms.Browser, "System.Net.Sockets are not supported on browser")]
     public abstract class ConnectTest_LoopbackBase(ITestOutputHelper output) : ConnectTestBase(output)
     {
+        public ConnectTest_LoopbackBase() : this(null!)
+        {
+            Assert.SkipUnless(ClientWebSocketTestBase.WebSocketsSupported, "ConditionalClass: ClientWebSocketTestBase.WebSocketsSupported");
+        }
+
         #region Common (Echo Server) tests
 
         [Theory, MemberData(nameof(UseSsl))]
@@ -41,7 +44,7 @@ namespace System.Net.WebSockets.Client.Tests
         public Task ConnectAsync_PassMultipleSubProtocols_ServerRequires_ConnectionUsesAgreedSubProtocol(bool useSsl) => RunEchoAsync(
             RunClient_ConnectAsync_PassMultipleSubProtocols_ServerRequires_ConnectionUsesAgreedSubProtocol, useSsl);
 
-        [ConditionalTheory] // Uses SkipTestException
+        [Theory] // Uses SkipException
         [MemberData(nameof(UseSsl))]
         public Task ConnectAndCloseAsync_UseProxyServer_ExpectedClosedState(bool useSsl) => RunEchoAsync(
             RunClient_ConnectAndCloseAsync_UseProxyServer_ExpectedClosedState, useSsl);
@@ -53,14 +56,11 @@ namespace System.Net.WebSockets.Client.Tests
     {
         #region HTTP/1.1-only loopback tests
 
-        [ConditionalTheory] // Uses SkipTestException
+        [Theory] // Uses SkipException
         [MemberData(nameof(UseSsl))]
         public async Task ConnectAsync_Http11WithRequestVersionOrHigher_Loopback_DowngradeSuccess(bool useSsl)
         {
-            if (UseSharedHandler)
-            {
-                throw new SkipTestException("HTTP/2 is not supported with SharedHandler");
-            }
+            Assert.SkipWhen(UseSharedHandler, "HTTP/2 is not supported with SharedHandler");
 
             await LoopbackServer.CreateServerAsync(async (server, url) =>
                 {

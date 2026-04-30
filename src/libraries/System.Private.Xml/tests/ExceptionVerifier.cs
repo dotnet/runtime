@@ -8,7 +8,7 @@ using System.Linq;
 using System.Reflection;
 using System.Resources;
 using System.Text.RegularExpressions;
-using Xunit.Abstractions;
+using Xunit;
 
 namespace System.Xml.Tests
 {

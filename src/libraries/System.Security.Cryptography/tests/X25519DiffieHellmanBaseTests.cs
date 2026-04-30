@@ -153,7 +153,7 @@ namespace System.Security.Cryptography.Tests
             AssertExtensions.SequenceEqual(vector.SharedSecret, secretBuffer);
         }
 
-        [ConditionalFact(nameof(IsNotStrictKeyValidatingPlatform))]
+        [ConditionalFact(typeof(X25519DiffieHellmanBaseTests), nameof(IsNotStrictKeyValidatingPlatform))]
         public void DeriveRawSecretAgreement_ZeroSharedSecret_Throws()
         {
             // Wycheproof tcId 64: peer public key is a low-order point on Curve25519.

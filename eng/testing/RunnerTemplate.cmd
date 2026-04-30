@@ -44,6 +44,8 @@ set EXECUTION_DIR=%~dp0
 :: Assume failure
 set HAS_TEST_RESULTS=0
 
+set DOTNET_ROOT=%RUNTIME_PATH%
+
 :: Support for SuperPMI collection
 REM SuperPMI collection
 if not defined spmi_enable_collection goto :skip_spmi_enable_collection

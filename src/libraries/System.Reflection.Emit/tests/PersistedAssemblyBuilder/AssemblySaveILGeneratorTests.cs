@@ -11,9 +11,13 @@ using Xunit;
 
 namespace System.Reflection.Emit.Tests
 {
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
     public class AssemblySaveILGeneratorTests
     {
+        public AssemblySaveILGeneratorTests()
+        {
+            Assert.SkipUnless(PlatformDetection.HasAssemblyFiles, "ConditionalClass: PlatformDetection.HasAssemblyFiles");
+        }
+
         [Fact]
         public void MethodWithEmptyBody()
         {
@@ -801,7 +805,7 @@ public class MyType<T>
 {
     public T Field;
 
-    public static void GM<U>(U P_0)
+    public void GM<U>(U P_0)
     {
         MyType<U> myType = new MyType<U>();
         myType.Field = P_0;
@@ -811,7 +815,7 @@ public class MyType<T>
 
 internal class Dummy
 {
-    public static void Main()
+    public void Main()
     {
         MyType<string>.GM("HelloWorld");
     }

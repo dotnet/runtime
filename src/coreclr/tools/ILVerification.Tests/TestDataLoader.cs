@@ -13,8 +13,7 @@ using ILVerify;
 using Internal.TypeSystem.Ecma;
 using System.Text.Json;
 using Xunit;
-using Xunit.Abstractions;
-
+using Xunit.Sdk;
 namespace ILVerification.Tests
 {
     /// <summary>

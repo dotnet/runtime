@@ -9,9 +9,13 @@ using Xunit;
 
 namespace System.Net.Sockets.Tests
 {
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public class SelectAndPollTests
     {
+
+        public SelectAndPollTests()
+        {
+            Assert.SkipUnless(PlatformDetection.IsMultithreadingSupported, "ConditionalClass: PlatformDetection.IsMultithreadingSupported");
+        }
         private const int SelectTimeout = 100;
         private const int SelectSuccessTimeoutMicroseconds = 5*1000*1000; // 5 seconds
 

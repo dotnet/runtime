@@ -150,35 +150,8 @@ namespace Microsoft.Extensions.Logging.Console.Test
         }
 
         [Theory]
-        // supported
-        [InlineData("\e[77mInfo", "Info")]
-        [InlineData("\e[77m\e[1m\e[2m\e[0mInfo\e[1m", "Info")]
-        [InlineData("\e[7mInfo", "Info")]
-        [InlineData("\e[40m\e[1m\e[33mwarn\e[39m\e[22m\e[49m:", "warn", ":")]
-        // unsupported: skips
-        [InlineData("Info\e[77m:", "Info", ":")]
-        [InlineData("Info\e[7m:", "Info", ":")]
-        // treats as content
-        [InlineData("\e", "\e")]
-        [InlineData("\e ", "\e ")]
-        [InlineData("\em", "\em")]
-        [InlineData("\e m", "\e m")]
-        [InlineData("\exym", "\exym")]
-        [InlineData("\e[", "\e[")]
-        [InlineData("\e[m", "\e[m")]
-        [InlineData("\e[ ", "\e[ ")]
-        [InlineData("\e[ m", "\e[ m")]
-        [InlineData("\e[xym", "\e[xym")]
-        [InlineData("\e[7777m", "\e[7777m")]
-        [InlineData("\e\e\e", "\e\e\e")]
-        [InlineData("Message\e\e\e", "Message\e\e\e")]
-        [InlineData("\e\eMessage\e", "\e\eMessage\e")]
-        [InlineData("\e\e\eMessage", "\e\e\eMessage")]
-        [InlineData("Message\e ", "Message\e ")]
-        [InlineData("\emMessage", "\emMessage")]
-        [InlineData("\e[77m\e m\e[40m", "\e m")]
-        [InlineData("\e mMessage\exym", "\e mMessage\exym")]
-        public void Parse_ValidSupportedOrUnsupportedCodesInMessage_MessageParsedSuccessfully(string messageWithUnsupportedCode, params string[] output)
+        [MemberData(nameof(ValidSupportedOrUnsupportedCodesInMessage_Data))]
+        public void Parse_ValidSupportedOrUnsupportedCodesInMessage_MessageParsedSuccessfully(string messageWithUnsupportedCode, string[] output)
         {
             // Arrange
             var message = messageWithUnsupportedCode;
@@ -205,6 +178,38 @@ namespace Microsoft.Extensions.Logging.Console.Test
         public void NullDelegate_Throws()
         {
             Assert.Throws<ArgumentNullException>(() => new AnsiParser(null));
+        }
+
+        public static IEnumerable<object[]> ValidSupportedOrUnsupportedCodesInMessage_Data()
+        {
+            // supported
+            yield return new object[] { "\e[77mInfo", new[] { "Info" } };
+            yield return new object[] { "\e[77m\e[1m\e[2m\e[0mInfo\e[1m", new[] { "Info" } };
+            yield return new object[] { "\e[7mInfo", new[] { "Info" } };
+            yield return new object[] { "\e[40m\e[1m\e[33mwarn\e[39m\e[22m\e[49m:", new[] { "warn", ":" } };
+            // unsupported: skips
+            yield return new object[] { "Info\e[77m:", new[] { "Info", ":" } };
+            yield return new object[] { "Info\e[7m:", new[] { "Info", ":" } };
+            // treats as content
+            yield return new object[] { "\e", new[] { "\e" } };
+            yield return new object[] { "\e ", new[] { "\e " } };
+            yield return new object[] { "\em", new[] { "\em" } };
+            yield return new object[] { "\e m", new[] { "\e m" } };
+            yield return new object[] { "\exym", new[] { "\exym" } };
+            yield return new object[] { "\e[", new[] { "\e[" } };
+            yield return new object[] { "\e[m", new[] { "\e[m" } };
+            yield return new object[] { "\e[ ", new[] { "\e[ " } };
+            yield return new object[] { "\e[ m", new[] { "\e[ m" } };
+            yield return new object[] { "\e[xym", new[] { "\e[xym" } };
+            yield return new object[] { "\e[7777m", new[] { "\e[7777m" } };
+            yield return new object[] { "\e\e\e", new[] { "\e\e\e" } };
+            yield return new object[] { "Message\e\e\e", new[] { "Message\e\e\e" } };
+            yield return new object[] { "\e\eMessage\e", new[] { "\e\eMessage\e" } };
+            yield return new object[] { "\e\e\eMessage", new[] { "\e\e\eMessage" } };
+            yield return new object[] { "Message\e ", new[] { "Message\e " } };
+            yield return new object[] { "\emMessage", new[] { "\emMessage" } };
+            yield return new object[] { "\e[77m\e m\e[40m", new[] { "\e m" } };
+            yield return new object[] { "\e mMessage\exym", new[] { "\e mMessage\exym" } };
         }
 
         public static TheoryData<ConsoleColor, ConsoleColor> Colors

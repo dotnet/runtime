@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using Test.Cryptography;
 using Xunit;
+using Xunit.Sdk;
 using Microsoft.DotNet.XUnitExtensions;
 using TempFileHolder = System.Security.Cryptography.X509Certificates.Tests.TempFileHolder;
 
@@ -383,7 +384,7 @@ namespace System.Security.Cryptography.Tests
             {
                 //[ActiveIssue("https://github.com/dotnet/runtime/issues/104080")]
                 //[ActiveIssue("https://github.com/tpm2-software/tpm2-openssl/issues/115")]
-                throw new SkipTestException("Salt Length is ignored by tpm2 provider and differs from .NET defaults");
+                throw SkipException.ForSkip("Salt Length is ignored by tpm2 provider and differs from .NET defaults");
             }
 
             using SafeEvpPKeyHandle priKeyHandle = SafeEvpPKeyHandle.OpenKeyFromProvider(OpenSslNamedKeysHelpers.Tpm2ProviderName, OpenSslNamedKeysHelpers.TpmRsaKeyHandleUri);

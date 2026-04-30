@@ -66,6 +66,7 @@ public class WasmTestRunner : WasmApplicationEntryPoint
             switch (option)
             {
                 case "-notrait":
+                case "-trait-":
                     excludedTraits.Add(args[i + 1]);
                     i++;
                     break;

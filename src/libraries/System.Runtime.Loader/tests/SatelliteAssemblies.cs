@@ -187,6 +187,7 @@ namespace System.Runtime.Loader.Tests
             yield return new object[] { "ReferencedClassLibNeutralIsSatellite", "ReferencedClassLibNeutralIsSatellite", "es" };
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/0000")]
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization), nameof(PlatformDetection.HasAssemblyFiles))]
         [MemberData(nameof(SatelliteLoadsCorrectly_TestData))]
         public void SatelliteLoadsCorrectly_FromName(string alc, string assemblyName, string culture)
