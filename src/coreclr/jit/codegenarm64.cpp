@@ -2393,8 +2393,9 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
                     emitAttr       emitSize = (opt == INS_OPTS_SCALABLE_D) ? EA_8BYTE : EA_4BYTE;
 
                     auto loadConstantHelper = [&](uint64_t constValue) -> regNumber {
-                        // Get a temp integer register to compute long address.
-                        regNumber addrReg = internalRegisters.GetSingle(tree);
+                        // Get a temp integer register to compute long address. Use Extract so multiple calls
+                        // (index + step) get distinct temps when LSRA reserved more than one.
+                        regNumber addrReg = internalRegisters.Extract(tree, RBM_ALLINT);
 
                         // Store the index to memory
                         UNATIVE_OFFSET cnum =
