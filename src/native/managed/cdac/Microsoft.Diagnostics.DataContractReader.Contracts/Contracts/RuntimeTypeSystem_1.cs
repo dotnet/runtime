@@ -564,6 +564,81 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
     public bool IsContinuation(TypeHandle typeHandle) => typeHandle.IsMethodTable()
         && _continuationMethodTablePointer != TargetPointer.Null
         && _methodTables[typeHandle.Address].ParentMethodTable == _continuationMethodTablePointer;
+
+    IEnumerable<(uint Offset, uint Size)> IRuntimeTypeSystem.GetGCDescSeries(TypeHandle typeHandle, uint numComponents)
+    {
+        if (!typeHandle.IsMethodTable())
+            yield break;
+
+        if (!ContainsGCPointers(typeHandle))
+            yield break;
+
+        uint baseSize = GetBaseSize(typeHandle);
+        uint componentSize = GetComponentSize(typeHandle);
+        uint objectSize = baseSize + numComponents * componentSize;
+
+        ulong mtAddress = typeHandle.Address;
+        ulong pointerSize = (ulong)_target.PointerSize;
+
+        // Sign-extend NumSeries from native pointer width.
+        long numSeries = _target.PointerSize == sizeof(uint)
+            ? (long)(int)_target.ReadPointer(mtAddress - pointerSize).Value
+            : (long)_target.ReadPointer(mtAddress - pointerSize).Value;
+        if (numSeries == 0)
+            yield break;
+
+        if (numSeries > 0)
+        {
+            // Regular series: iterate from highest (closest to MT) to lowest.
+            for (ulong i = 0; i < (ulong)numSeries; i++)
+            {
+                ulong seriesBase = mtAddress - (3 + 2 * i) * pointerSize;
+                ulong rawSeriesSize = _target.ReadPointer(seriesBase).Value;
+                ulong seriesOffset = _target.ReadPointer(seriesBase + pointerSize).Value;
+                yield return ((uint)seriesOffset, (uint)(rawSeriesSize + objectSize));
+            }
+        }
+        else
+        {
+            long absNumSeries = -numSeries;
+            ulong startOffset = _target.ReadPointer(mtAddress - 2 * pointerSize).Value;
+
+            var seriesItems = new (uint Nptrs, uint Skip)[absNumSeries];
+            for (long i = 0; i < absNumSeries; i++)
+            {
+                ulong itemAddress = mtAddress - (3 + (ulong)i) * pointerSize;
+
+                // Read val_serie_item fields individually for endianness safety.
+                uint nptrs, skip;
+                if (_target.PointerSize == sizeof(uint))
+                {
+                    nptrs = _target.Read<ushort>(itemAddress);
+                    skip = _target.Read<ushort>(itemAddress + sizeof(ushort));
+                }
+                else
+                {
+                    nptrs = _target.Read<uint>(itemAddress);
+                    skip = _target.Read<uint>(itemAddress + sizeof(uint));
+                }
+
+                seriesItems[i] = (nptrs, skip);
+            }
+
+            ulong currentOffset = startOffset;
+            for (int i = 0; i < numComponents; i++)
+            {
+                for (long j = 0; j < absNumSeries; j++)
+                {
+                    if (currentOffset > objectSize - pointerSize)
+                        yield break;
+                    uint runBytes = seriesItems[j].Nptrs * (uint)pointerSize;
+                    yield return ((uint)currentOffset, runBytes);
+                    currentOffset += runBytes + seriesItems[j].Skip;
+                }
+            }
+        }
+    }
+
     public bool IsDynamicStatics(TypeHandle typeHandle) => !typeHandle.IsMethodTable() ? false : _methodTables[typeHandle.Address].Flags.IsDynamicStatics;
     public ushort GetNumInterfaces(TypeHandle typeHandle) => !typeHandle.IsMethodTable() ? (ushort)0 : _methodTables[typeHandle.Address].NumInterfaces;
 

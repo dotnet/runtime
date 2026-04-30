@@ -297,7 +297,7 @@ GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* binOp)
     ContainCheckBinary(binOp);
 
 #ifdef TARGET_AMD64
-    if (JitConfig.EnableApxConditionalChaining())
+    if (m_compiler->canUseApxEvexEncoding() && JitConfig.EnableApxConditionalChaining())
     {
         if (binOp->OperIs(GT_AND, GT_OR))
         {
@@ -1140,8 +1140,6 @@ void Lowering::LowerCast(GenTree* tree)
                         // This creates the equivalent of the following C# code:
                         //   var wrapVal = Sse.SubtractScalar(srcVec, ovfFloatingValue);
 
-                        NamedIntrinsic subtractIntrinsic = NI_X86Base_SubtractScalar;
-
                         // We're going to use ovfFloatingValue twice, so replace the constant with a lclVar.
                         castRange.InsertAtEnd(ovfFloatingValue);
 
@@ -1173,7 +1171,7 @@ void Lowering::LowerCast(GenTree* tree)
                         }
 
                         GenTree* wrapVal = m_compiler->gtNewSimdHWIntrinsicNode(TYP_SIMD16, floorVal, ovfFloatingValue,
-                                                                                subtractIntrinsic, srcType, 16);
+                                                                                NI_X86Base_SubtractScalar, srcType, 16);
                         castRange.InsertAtEnd(wrapVal);
 
                         ovfFloatingValue = m_compiler->gtClone(ovfFloatingValue);
@@ -10516,6 +10514,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                         case NI_AVX512_Shuffle:
                         case NI_AVX512_SumAbsoluteDifferencesInBlock32:
                         case NI_AVX512_CompareMask:
+                        case NI_AVX512_CompareScalarMask:
                         case NI_AES_CarrylessMultiply:
                         case NI_AES_V256_CarrylessMultiply:
                         case NI_AES_V512_CarrylessMultiply:
