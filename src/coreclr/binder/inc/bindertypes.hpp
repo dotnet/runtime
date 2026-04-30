@@ -28,13 +28,6 @@ namespace BINDER_SPACE
     class BindResult;
 };
 
-typedef enum __AssemblyContentType
-{
-    AssemblyContentType_Default	        = 0,
-    AssemblyContentType_WindowsRuntime  = 0x1,
-    AssemblyContentType_Invalid	        = 0xffffffff,
-} AssemblyContentType;
-
 typedef enum __ASM_DISPLAY_FLAGS
 {
     ASM_DISPLAYF_VERSION                = 0x1,
@@ -82,7 +75,6 @@ struct AssemblyNameData
     DWORD RevisionNumber;
 
     PEKIND ProcessorArchitecture;
-    AssemblyContentType ContentType;
 
     DWORD IdentityFlags;
 };

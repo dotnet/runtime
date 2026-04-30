@@ -113,8 +113,7 @@ namespace BINDER_SPACE
             SetIsRetargetable(TRUE);
         }
 
-        // Validate ContentType. Only the default content type is supported;
-        // m_kContentType is already initialized to AssemblyContentType_Default.
+        // Validate ContentType. Only the default content type is supported.
         if (!IsAfContentType_Default(dwRefOrDefFlags))
         {
             IF_FAIL_GO(FUSION_E_INVALID_NAME);
@@ -176,7 +175,6 @@ namespace BINDER_SPACE
         }
 
         m_kProcessorArchitecture = data.ProcessorArchitecture;
-        m_kContentType = data.ContentType;
 
         SetHave(flags);
 
@@ -227,10 +225,6 @@ namespace BINDER_SPACE
         if ((dwIncludeFlags & INCLUDE_RETARGETABLE) == 0)
         {
             dwUseIdentityFlags &= ~AssemblyIdentity::IDENTITY_FLAG_RETARGETABLE;
-        }
-        if ((dwIncludeFlags & INCLUDE_CONTENT_TYPE) == 0)
-        {
-            dwUseIdentityFlags &= ~AssemblyIdentity::IDENTITY_FLAG_CONTENT_TYPE;
         }
         if ((dwIncludeFlags & INCLUDE_PUBLIC_KEY_TOKEN) == 0)
         {
@@ -351,10 +345,6 @@ namespace BINDER_SPACE
         if ((dwIncludeFlags & INCLUDE_RETARGETABLE) == 0)
         {
             dwUseIdentityFlags &= ~AssemblyIdentity::IDENTITY_FLAG_RETARGETABLE;
-        }
-        if ((dwIncludeFlags & INCLUDE_CONTENT_TYPE) == 0)
-        {
-            dwUseIdentityFlags &= ~AssemblyIdentity::IDENTITY_FLAG_CONTENT_TYPE;
         }
 
         TextualIdentityParser::ToString(this, dwUseIdentityFlags, displayName);
