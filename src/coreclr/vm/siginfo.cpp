@@ -1093,6 +1093,363 @@ static uint32_t NormalizeFnPtrCallingConvention(uint32_t callConv)
     return callConv;
 }
 
+bool TargetTypeForAccessCheck::IsNull() const
+{
+    return _typeHandle.IsNull();
+}
+
+bool TargetTypeForAccessCheck::IsNested() const
+{
+    WRAPPER_NO_CONTRACT;
+    return _typeHandle.GetMethodTable()->GetClass()->IsNested();
+}
+
+DWORD TargetTypeForAccessCheck::GetProtection() const
+{
+    WRAPPER_NO_CONTRACT;
+    return _typeHandle.GetMethodTable()->GetClass()->GetProtection();
+}
+
+Instantiation TargetTypeForAccessCheck::GetPreloadedInstantiationForAccessCheck() const
+{
+    LIMITED_METHOD_CONTRACT;
+    if (InstantiationForAccessCheck != nullptr)
+    {
+        return Instantiation();
+    }
+    else
+    {
+        return _typeHandle.GetInstantiation();
+    }
+}
+
+TypeHandle TargetTypeForAccessCheck::GetTypeHandleForThrow() const
+{
+    LIMITED_METHOD_CONTRACT;
+    if (InstantiationForAccessCheck != nullptr)
+    {
+        return InstantiationForAccessCheck->GetSig().GetTypeHandleThrowing(InstantiationForAccessCheck->GetModule(), InstantiationForAccessCheck->GetTypeContext());
+    }
+    else
+    {
+        return _typeHandle;
+    }
+}
+
+TargetTypeForAccessCheck TargetTypeForAccessCheck::GetEnclosingType() const
+{
+    return TargetTypeForAccessCheck(_typeHandle.GetMethodTable()->LoadEnclosingMethodTable());
+}
+
+bool TargetTypeForAccessCheck::CanAccessTypeInstantiation( // True if access is legal, false otherwise.
+    AccessCheckContext* pContext,
+    const AccessCheckOptions & accessCheckOptions) const
+{
+    LIMITED_METHOD_CONTRACT;
+    if (InstantiationForAccessCheck != nullptr)
+    {
+        SigPointer sig = InstantiationForAccessCheck->GetSig();
+
+        BYTE etype;
+        IfFailThrow(sig.GetByte(&etype));
+
+        // Load the generic type instantiation
+        THROW_BAD_FORMAT_MAYBE(etype == (BYTE)ELEMENT_TYPE_GENERICINST, 0, InstantiationForAccessCheck->GetModule());
+        IfFailThrow(sig.SkipExactlyOne());
+        return ClassLoader::CanAccessInstantiationBySignature(pContext, sig, InstantiationForAccessCheck->GetModule(), accessCheckOptions);
+    }
+    else
+    {
+        // check that the current class has access
+        // to all of the instantiating classes.
+        Instantiation inst = _typeHandle.GetInstantiation();
+        return ClassLoader::CanAccessInstantiation(pContext, inst, accessCheckOptions);
+    }
+
+    return true;
+}
+
+bool TargetTypeForAccessCheck::IsInterface() const
+{
+    return _typeHandle.IsInterface();
+}
+bool TargetTypeForAccessCheck::HasSameTypeDefAs(MethodTable *pMT) const
+{
+    LIMITED_METHOD_CONTRACT;
+    return _typeHandle.GetMethodTable()->HasSameTypeDefAs(pMT);
+}
+bool TargetTypeForAccessCheck::HasSameTypeDefAs(const MethodTable::InterfaceMapIterator &it) const
+{
+    return it.HasSameTypeDefAs(_typeHandle.GetMethodTable());
+}
+Module* TargetTypeForAccessCheck::GetModule() const
+{
+    LIMITED_METHOD_CONTRACT;
+    if (HasTypeParam() && InstantiationForAccessCheck != nullptr)
+    {
+        // If this is an array, we may have an TypeHandle like SomeType[] for the TypeHandle, but the logical type is actually.. !0[], and we should be using the Module of the type parameter AKA the signature module.
+        TargetTypeForAccessCheck typeParam = GetTypeParam();
+        while (typeParam.HasTypeParam())
+        {
+            typeParam = typeParam.GetTypeParam();
+        }
+        if (typeParam.IsNull())
+        {
+            return InstantiationForAccessCheck->GetModule();
+        }
+        return typeParam._typeHandle.GetModule();
+    }
+    return _typeHandle.GetModule();
+}
+
+Assembly* TargetTypeForAccessCheck::GetAssembly() const
+{
+    WRAPPER_NO_CONTRACT;
+    return GetModule()->GetAssembly();
+}
+
+bool TargetTypeForAccessCheck::HasTypeParam() const
+{
+    if (InstantiationForAccessCheck != nullptr)
+    {
+        SigPointer sig = InstantiationForAccessCheck->GetSig();
+
+        CorElementType etype;
+        IfFailThrow(sig.GetElemType(&etype));
+        switch (etype)
+        {
+            case ELEMENT_TYPE_ARRAY:
+            case ELEMENT_TYPE_SZARRAY:
+            case ELEMENT_TYPE_PTR:
+            case ELEMENT_TYPE_BYREF:
+                return true;
+            default:
+                return false;
+        }
+    }
+    else
+    {
+        return _typeHandle.HasTypeParam();
+    }
+}
+
+TargetTypeForAccessCheck TargetTypeForAccessCheck::GetTypeParam() const
+{
+    _ASSERTE(HasTypeParam());
+    if (InstantiationForAccessCheck != nullptr)
+    {
+        _ASSERTE(_typeHandle.HasTypeParam());
+        SigPointer sig = InstantiationForAccessCheck->GetSig();
+
+        CorElementType etype;
+        IfFailThrow(sig.GetElemType(&etype));
+
+        // Check to see if the next elem type is var/mvar/fnptr. These types disable further type checking.
+        SigPointer sigNextElemType = sig;
+        IfFailThrow(sig.GetElemType(&etype));
+        switch (etype)
+        {
+            case ELEMENT_TYPE_MVAR:
+            case ELEMENT_TYPE_VAR:
+            case ELEMENT_TYPE_FNPTR:
+                return TargetTypeForAccessCheck();
+            default:
+                TargetInstantiationForAccessCheck newInstantiationForAccessCheck(sig, InstantiationForAccessCheck->GetTypeContext(), InstantiationForAccessCheck->GetModule());
+                return TargetTypeForAccessCheck(_typeHandle.GetTypeParam(), newInstantiationForAccessCheck);
+        }
+    }
+    else
+    {
+        return TargetTypeForAccessCheck(_typeHandle.GetTypeParam());
+    }
+}
+
+MethodDesc* TargetMethodForAccessCheck::GetMethodDescForThrow() const
+{
+    LIMITED_METHOD_CONTRACT;
+
+    if (InstantiationForAccessCheck != nullptr)
+    {
+        uint32_t nGenericMethodArgs = 0;
+        CQuickBytes qbGenericMethodArgs;
+        TypeHandle *genericMethodArgs = NULL;
+
+        SigPointer sp = InstantiationForAccessCheck->GetSig();
+
+        BYTE etype;
+        IfFailThrow(sp.GetByte(&etype));
+        IfFailThrow(sp.GetData(&nGenericMethodArgs));
+
+        DWORD cbAllocSize = 0;
+        if (!ClrSafeInt<DWORD>::multiply(nGenericMethodArgs, sizeof(TypeHandle), cbAllocSize))
+        {
+            COMPlusThrowHR(COR_E_OVERFLOW);
+        }
+
+        genericMethodArgs = reinterpret_cast<TypeHandle *>(qbGenericMethodArgs.AllocThrows(cbAllocSize));
+
+        for (uint32_t i = 0; i < nGenericMethodArgs; i++)
+        {
+            genericMethodArgs[i] = sp.GetTypeHandleThrowing(InstantiationForAccessCheck->GetModule(), InstantiationForAccessCheck->GetTypeContext());
+            _ASSERTE (!genericMethodArgs[i].IsNull());
+            IfFailThrow(sp.SkipExactlyOne());
+        }
+
+        return MethodDesc::FindOrCreateAssociatedMethodDesc(pTargetMethodUninstantiated, CalleeTypeForAccessCheck->GetTypeHandleForThrow().GetMethodTable(), FALSE, Instantiation(genericMethodArgs, nGenericMethodArgs), FALSE);
+    }
+    else if (CalleeTypeForAccessCheck != nullptr)
+    {
+        return MethodDesc::FindOrCreateAssociatedMethodDesc(pTargetMethodUninstantiated, CalleeTypeForAccessCheck->GetTypeHandleForThrow().GetMethodTable(), FALSE, Instantiation(), TRUE);
+    }
+    else
+    {
+        return pTargetMethodUninstantiated;
+    }
+}
+
+bool TargetMethodForAccessCheck::CanAccessMethodInstantiation( // True if access is legal, false otherwise.
+    AccessCheckContext* pContext,
+    const AccessCheckOptions & accessCheckOptions) const
+{
+    if (InstantiationForAccessCheck != nullptr)
+    {
+        SigPointer sig = InstantiationForAccessCheck->GetSig();
+
+        BYTE etype;
+        IfFailThrow(sig.GetByte(&etype));
+        return ClassLoader::CanAccessInstantiationBySignature(pContext, sig, InstantiationForAccessCheck->GetModule(), accessCheckOptions);
+    }
+    else
+    {
+        // check that the current class has access
+        // to all of the instantiating classes.
+        Instantiation inst = pTargetMethodUninstantiated->GetMethodInstantiation();
+        return ClassLoader::CanAccessInstantiation(pContext, inst, accessCheckOptions);
+    }
+
+    return true;
+}
+
+
+// Method: TypeHandle SigPointer::GetTypeHandleThrowing()
+// pZapSigContext is only set when decoding zapsigs
+//
+bool SigPointer::AccessCheckType(
+                Module *pModule,
+                AccessCheckContext* pContext,
+                const AccessCheckOptions & accessCheckOptions
+    ) const
+{
+    STANDARD_VM_CONTRACT;
+
+    TypeHandle thToCheck;
+    SigPointer     psig = *this;
+    CorElementType typ = ELEMENT_TYPE_END;
+    IfFailThrowBF(psig.GetElemType(&typ), BFA_BAD_SIGNATURE, pModule);
+
+    if ((typ < ELEMENT_TYPE_MAX) &&
+        (CorTypeInfo::IsPrimitiveType_NoThrow(typ)
+        || (typ == ELEMENT_TYPE_STRING)
+        || (typ == ELEMENT_TYPE_OBJECT)
+        || (typ == ELEMENT_TYPE_TYPEDBYREF)
+        || (typ == ELEMENT_TYPE_VAR)
+        || (typ == ELEMENT_TYPE_MVAR)
+        || (typ == ELEMENT_TYPE_FNPTR)))
+    {
+        return true;
+    }
+    else
+    {
+        ClassLoader::NotFoundAction  notFoundAction;
+        CorInternalStates            tdTypes;
+
+        switch((DWORD)typ) {
+
+        case ELEMENT_TYPE_GENERICINST:
+        {
+            CorElementType typ = ELEMENT_TYPE_END;
+            IfFailThrowBF(psig.PeekElemType(&typ), BFA_BAD_SIGNATURE, pModule);
+            if (typ != ELEMENT_TYPE_CLASS && typ != ELEMENT_TYPE_VALUETYPE)
+            {
+                IfFailThrowBF(E_FAIL, BFA_BAD_SIGNATURE, pModule);
+            }
+            if (!psig.AccessCheckType(pModule, pContext, accessCheckOptions))
+            {
+                return false;
+            }
+            IfFailThrow(psig.SkipExactlyOne());
+            
+            // The number of type parameters follows
+            uint32_t ntypars = 0;
+            IfFailThrowBF(psig.GetData(&ntypars), BFA_BAD_SIGNATURE, pModule);
+
+            for (uint32_t i = 0; i < ntypars; i++)
+            {
+                if (!psig.AccessCheckType(pModule, pContext, accessCheckOptions))
+                {
+                    return false;
+                }
+                IfFailThrow(psig.SkipExactlyOne());
+            }
+            return true;
+        }
+
+        case ELEMENT_TYPE_CLASS:
+            // intentional fallthru to ELEMENT_TYPE_VALUETYPE
+        case ELEMENT_TYPE_VALUETYPE:
+        {
+            mdTypeRef typeToken = 0;
+
+            IfFailThrowBF(psig.GetToken(&typeToken), BFA_BAD_SIGNATURE, pModule);
+
+            if ((TypeFromToken(typeToken) != mdtTypeRef) && (TypeFromToken(typeToken) != mdtTypeDef))
+                THROW_BAD_FORMAT(BFA_UNEXPECTED_TOKEN_AFTER_CLASSVALTYPE, pModule);
+
+            if (IsNilToken(typeToken))
+                THROW_BAD_FORMAT(BFA_UNEXPECTED_TOKEN_AFTER_CLASSVALTYPE, pModule);
+
+            thToCheck = ClassLoader::LoadTypeDefThrowing(pModule, typeToken, ClassLoader::ThrowIfNotFound, ClassLoader::PermitUninstDefOrRef);
+            break;
+        }
+
+        case ELEMENT_TYPE_SZARRAY:
+        case ELEMENT_TYPE_ARRAY:
+        case ELEMENT_TYPE_BYREF:
+        case ELEMENT_TYPE_PTR:
+        {
+            // Access checks don't care about the constructed types, they only care about the named types.
+            // Unusually for sig parsing, since we only need the initial part of the ELEMENT_TYPE_ARRAY, we don't need
+            // to handle the actual array layout.
+            return psig.AccessCheckType(pModule, pContext, accessCheckOptions);
+        }
+
+        case ELEMENT_TYPE_INTERNAL :
+            {
+#ifndef DACCESS_COMPILE
+                if (pModule->IsSigInIL(m_ptr))
+                    THROW_BAD_FORMAT(BFA_BAD_SIGNATURE, pModule);
+#endif
+                CorSigUncompressPointer(psig.GetPtr(), (void**)&thToCheck);
+                break;
+            }
+            default:
+                THROW_BAD_FORMAT(BFA_BAD_COMPLUS_SIG, pModule);
+        }
+    }
+
+    MethodTable* pMT = thToCheck.GetMethodTableOfRootTypeParam();
+
+    // Either a TypeVarTypeDesc or a FnPtrTypeDesc. No access check needed.
+    if (pMT == NULL)
+        return true;
+
+    return ClassLoader::CanAccessClass(
+            pContext,
+            TargetTypeForAccessCheck(pMT),
+            thToCheck.GetAssembly(),
+            accessCheckOptions);
+}
+
 // Method: TypeHandle SigPointer::GetTypeHandleThrowing()
 // pZapSigContext is only set when decoding zapsigs
 //

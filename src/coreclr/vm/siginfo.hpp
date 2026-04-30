@@ -257,6 +257,12 @@ public:
                                          HandleRecursiveGenericsForFieldLayoutLoad *pRecursiveFieldGenericHandling = NULL
                                          ) const;
 
+        // Execute access checks for Method Instantiation siganatures. Used to avoid materializing methods we don't need to materialize.
+        bool AccessCheckType(
+                        Module* pModule,
+                        AccessCheckContext* pContext,
+                        const AccessCheckOptions & accessCheckOptions
+            ) const;
 public:
         //------------------------------------------------------------------------
         // Tests if the element type is a System.String. Accepts
@@ -1176,6 +1182,139 @@ private:
 };
 
 #endif // FEATURE_TYPEEQUIVALENCE && !DACCESS_COMPILE
+class TargetInstantiationForAccessCheck
+{
+public:
+    TargetInstantiationForAccessCheck()
+        : TypeContext(nullptr), _module(nullptr)
+    {}
+
+    TargetInstantiationForAccessCheck(const SigPointer &sig, const SigTypeContext *typeContext, Module *pModule)
+        : Sig(sig), TypeContext(typeContext), _module(pModule)
+    {
+    }
+
+private:
+    SigPointer Sig;
+    const SigTypeContext* TypeContext;
+    Module* _module;
+
+public:
+    SigPointer GetSig() const
+    {
+        LIMITED_METHOD_CONTRACT;
+        return Sig;
+    }
+
+    const SigTypeContext* GetTypeContext() const
+    {
+        LIMITED_METHOD_CONTRACT;
+        return TypeContext;
+    }
+
+    Module* GetModule() const
+    {
+        LIMITED_METHOD_CONTRACT;
+        return _module;
+    }
+};
+
+class TargetTypeForAccessCheck
+{
+public:
+    TargetTypeForAccessCheck()
+        : _typeHandle(), InstantiationForAccessCheck(nullptr)
+    {}
+
+    TargetTypeForAccessCheck(TypeHandle typeHandle)
+        : _typeHandle(typeHandle), InstantiationForAccessCheck(nullptr)
+    {
+    }
+
+    TargetTypeForAccessCheck(TypeHandle typeHandle, TargetInstantiationForAccessCheck* instantiationForAccessCheck)
+        : _typeHandle(typeHandle), InstantiationForAccessCheck(instantiationForAccessCheck)
+    {
+    }
+
+    TargetTypeForAccessCheck(TypeHandle typeHandle, const TargetInstantiationForAccessCheck& instantiationForAccessCheck)
+        : _typeHandle(typeHandle), InstantiationForAccessCheck(&InstantiationForAccessCheckLocalCopy), InstantiationForAccessCheckLocalCopy(instantiationForAccessCheck)
+    {
+    }
+
+private:
+    TypeHandle _typeHandle;
+    TargetInstantiationForAccessCheck *InstantiationForAccessCheck;
+    TargetInstantiationForAccessCheck InstantiationForAccessCheckLocalCopy;
+public:
+
+    bool IsNull() const;
+    bool IsNested() const;
+    DWORD GetProtection() const;
+    Instantiation GetPreloadedInstantiationForAccessCheck() const;
+    TypeHandle GetTypeHandleForThrow() const;
+    TargetTypeForAccessCheck GetEnclosingType() const;
+    bool CanAccessTypeInstantiation( // True if access is legal, false otherwise.
+        AccessCheckContext* pContext,
+        const AccessCheckOptions & accessCheckOptions) const;
+    bool IsInterface() const;
+    bool HasSameTypeDefAs(MethodTable *pMT) const;
+    bool HasSameTypeDefAs(const MethodTable::InterfaceMapIterator &it) const;
+    Module* GetModule() const;
+    Assembly* GetAssembly() const;
+    bool HasTypeParam() const;
+    TargetTypeForAccessCheck GetTypeParam() const;
+    bool IsGenericVariable() const
+    {
+        if (InstantiationForAccessCheck != nullptr)
+        {
+            SigPointer sigptr = InstantiationForAccessCheck->GetSig();
+            CorElementType elemType;
+            IfFailThrow(sigptr.GetElemType(&elemType));
+            // typeHnd can be a variable type
+            return (elemType == ELEMENT_TYPE_VAR || elemType == ELEMENT_TYPE_MVAR);
+        }
+        else
+        {
+            return _typeHandle.IsGenericVariable();
+        }
+    }
+};
+
+class TargetMethodForAccessCheck
+{
+public:
+    TargetMethodForAccessCheck(MethodDesc* pTargetMethodUninstantiated, TargetInstantiationForAccessCheck* instantiationForAccessCheck, TargetTypeForAccessCheck* calleeTypeForAccessCheck)
+        : pTargetMethodUninstantiated(pTargetMethodUninstantiated), InstantiationForAccessCheck(instantiationForAccessCheck), CalleeTypeForAccessCheck(calleeTypeForAccessCheck)
+    {
+        _ASSERTE(pTargetMethodUninstantiated != nullptr);
+        _ASSERTE(instantiationForAccessCheck != nullptr);
+        _ASSERTE(calleeTypeForAccessCheck != nullptr);
+    }
+
+    TargetMethodForAccessCheck(MethodDesc* pTargetMethodUninstantiated, TargetTypeForAccessCheck* calleeTypeForAccessCheck)
+        : pTargetMethodUninstantiated(pTargetMethodUninstantiated), InstantiationForAccessCheck(nullptr), CalleeTypeForAccessCheck(calleeTypeForAccessCheck)
+    {
+        _ASSERTE(pTargetMethodUninstantiated != nullptr);
+        _ASSERTE(calleeTypeForAccessCheck != nullptr);
+    }
+
+    TargetMethodForAccessCheck(MethodDesc* pTargetMethodDesc)
+        : pTargetMethodUninstantiated(pTargetMethodDesc), InstantiationForAccessCheck(nullptr), CalleeTypeForAccessCheck(nullptr)
+    {
+        _ASSERTE(pTargetMethodDesc != nullptr);
+    }
+
+private:
+    MethodDesc* pTargetMethodUninstantiated;
+    TargetInstantiationForAccessCheck *InstantiationForAccessCheck;
+    TargetTypeForAccessCheck *CalleeTypeForAccessCheck;
+public:
+
+    MethodDesc* GetMethodDescForThrow() const;
+    bool CanAccessMethodInstantiation( // True if access is legal, false otherwise.
+        AccessCheckContext* pContext,
+        const AccessCheckOptions & accessCheckOptions) const;
+};
 
 // fResolved is TRUE when one of the tokens is a resolved TypeRef. This is used to restrict
 // type equivalence checks for value types.

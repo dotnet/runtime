@@ -83,13 +83,14 @@ static BOOL CheckCAVisibilityFromDecoratedType(MethodTable* pCAMT, MethodDesc* p
     }
 
     AccessCheckContext accessContext(NULL, pDecoratedMT, pDecoratedModule->GetAssembly());
+    TargetTypeForAccessCheck typeForAccessCheck(pCAMT);
 
     return ClassLoader::CanAccess(
         &accessContext,
-        pCAMT,
+        typeForAccessCheck,
         pCAMT->GetAssembly(),
         dwAttr,
-        pCACtor,
+        NULL,
         *AccessCheckOptions::s_pNormalAccessChecks);
 }
 

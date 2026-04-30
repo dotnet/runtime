@@ -3727,7 +3727,7 @@ void AccessCheckOptions::Startup()
                                     AccessCheckOptions::kNormalAccessibilityChecks,
                                     NULL,
                                     FALSE,
-                                    (MethodTable *)NULL);
+                                    (TargetTypeForAccessCheck *)NULL);
 }
 
 //******************************************************************************
@@ -3741,7 +3741,7 @@ AccessCheckOptions::AccessCheckOptions(
     Initialize(
         templateOptions.m_accessCheckType,
         throwIfTargetIsInaccessible,
-        templateOptions.m_pTargetMT,
+        templateOptions.m_pTargetType,
         templateOptions.m_pTargetMethod,
         templateOptions.m_pTargetField);
 }
@@ -3751,7 +3751,7 @@ AccessCheckOptions::AccessCheckOptions(
 // It returns TRUE if the target can be accessed.
 // Otherwise, it either returns FALSE or throws an exception, depending on the value of throwIfTargetIsInaccessible.
 
-BOOL AccessCheckOptions::DemandMemberAccess(AccessCheckContext *pContext, MethodTable * pTargetMT, BOOL visibilityCheck) const
+BOOL AccessCheckOptions::DemandMemberAccess(AccessCheckContext *pContext, const TargetTypeForAccessCheck& pTargetMT, BOOL visibilityCheck) const
 {
     CONTRACTL
     {
@@ -3767,34 +3767,20 @@ BOOL AccessCheckOptions::DemandMemberAccess(AccessCheckContext *pContext, Method
 
     BOOL canAccessTarget = FALSE;
 
-    // In CoreCLR kRestrictedMemberAccess means that one can access private/internal
+    // In CoreCLR kNormalAccessNoTransparency and kRestrictedMemberAccessNoTransparency means that one can access private/internal
     // classes/members in app code.
-    if (m_accessCheckType != kMemberAccess && pTargetMT)
-    {
-        // We allow all transparency checks to succeed in LCG methods and reflection invocation.
-        if (m_accessCheckType == kNormalAccessNoTransparency || m_accessCheckType == kRestrictedMemberAccessNoTransparency)
-            return TRUE;
-    }
-
-    // No Access
-    if (m_fThrowIfTargetIsInaccessible)
-    {
-        ThrowAccessException(pContext, pTargetMT, NULL);
-    }
-
-
-    return canAccessTarget;
+    return TRUE;
 }
 
 //******************************************************************************
-// pFailureMT - the MethodTable that we were trying to access. It can be null
-//              if the failure is not because of a specific type. This will be a
-//              a component of the instantiation of m_pTargetMT/m_pTargetMethod/m_pTargetField.
+// pFailureType - the TargetTypeForAccessCheck that we were trying to access. It can be null
+//                if the failure is not because of a specific type. This will be a
+//                a component of the instantiation of m_pTargetMT/m_pTargetMethod/m_pTargetField.
 
 void AccessCheckOptions::ThrowAccessException(
     AccessCheckContext* pContext,
-    MethodTable*        pFailureMT,             /* = NULL  */
-    Exception*          pInnerException         /* = NULL  */) const
+    const TargetTypeForAccessCheck * pFailureType /*= NULL*/,
+    Exception*          pInnerException /*= NULL*/) const
 {
     CONTRACTL
     {
@@ -3811,15 +3797,18 @@ void AccessCheckOptions::ThrowAccessException(
 
     MethodDesc* pCallerMD = pContext->GetCallerMethod();
 
-    if (m_pTargetMT != NULL)
+    if (m_pTargetType != NULL)
     {
         // If we know the specific type that caused the failure, display it.
         // Else display the whole type that we are trying to access.
-        MethodTable * pMT = (pFailureMT != NULL) ? pFailureMT : m_pTargetMT;
+        const TargetTypeForAccessCheck * pType = (pFailureType != NULL) ? pFailureType : m_pTargetType;
+        MethodTable * pMT = pType->GetTypeHandleForThrow().GetMethodTable();
         ThrowTypeAccessException(pContext, pMT, 0, pInnerException);
     }
     else if (m_pTargetMethod != NULL)
     {
+        MethodDesc *pTargetMethod = m_pTargetMethod->GetMethodDescForThrow();
+
         // If the caller and target method are non-null and the same, then this means that we're checking to see
         // if the method has access to itself in order to validate that it has access to its parameter types,
         // containing type, and return type.  In this case, throw a more informative TypeAccessException to
@@ -3827,13 +3816,13 @@ void AccessCheckOptions::ThrowAccessException(
         // parameter types", rather than "this method doesn't have access to itself").
         // We only want to do this if we know the exact type that caused the problem, otherwise fall back to
         // throwing the standard MethodAccessException.
-        if (pCallerMD != NULL && m_pTargetMethod == pCallerMD && pFailureMT != NULL)
+        if (pCallerMD != NULL && pTargetMethod == pCallerMD && pFailureType != NULL)
         {
-            ThrowTypeAccessException(pContext, pFailureMT, 0, pInnerException);
+            ThrowTypeAccessException(pContext, pFailureType->GetTypeHandleForThrow().GetMethodTable(), 0, pInnerException);
         }
         else
         {
-            ThrowMethodAccessException(pContext, m_pTargetMethod, 0, pInnerException);
+            ThrowMethodAccessException(pContext, pTargetMethod, 0, pInnerException);
         }
     }
     else
@@ -3846,7 +3835,7 @@ void AccessCheckOptions::ThrowAccessException(
 //******************************************************************************
 // This will do a security demand if appropriate.
 // If access is not possible, this will either throw an exception or return FALSE
-BOOL AccessCheckOptions::DemandMemberAccessOrFail(AccessCheckContext *pContext, MethodTable * pTargetMT, BOOL visibilityCheck) const
+BOOL AccessCheckOptions::DemandMemberAccessOrFail(AccessCheckContext *pContext, const TargetTypeForAccessCheck& targetType, BOOL visibilityCheck) const
 {
     CONTRACTL
     {
@@ -3858,20 +3847,20 @@ BOOL AccessCheckOptions::DemandMemberAccessOrFail(AccessCheckContext *pContext, 
 
     if (DoNormalAccessibilityChecks())
     {
-        if (pContext->GetCallerAssembly()->IgnoresAccessChecksTo(pTargetMT->GetAssembly()))
+        if (pContext->GetCallerAssembly()->IgnoresAccessChecksTo(targetType.GetAssembly()))
         {
             return TRUE;
         }
 
         if (m_fThrowIfTargetIsInaccessible)
         {
-            ThrowAccessException(pContext, pTargetMT);
+            ThrowAccessException(pContext, &targetType);
         }
 
         return FALSE;
     }
 
-    return DemandMemberAccess(pContext, pTargetMT, visibilityCheck);
+    return DemandMemberAccess(pContext, targetType, visibilityCheck);
 }
 
 //******************************************************************************
@@ -4095,13 +4084,62 @@ static BOOL AssemblyOrFriendAccessAllowed(Assembly       *pAccessingAssembly,
     }
 }
 
+BOOL ClassLoader::CanAccessInstantiation(
+    AccessCheckContext*     pContext,
+    Instantiation           inst,
+    const AccessCheckOptions & accessCheckOptions)
+{
+    for (DWORD i = 0; i < inst.GetNumArgs(); i++)
+    {
+        TypeHandle th = inst[i];
+
+        MethodTable* pMT = th.GetMethodTableOfRootTypeParam();
+
+        // Either a TypeVarTypeDesc or a FnPtrTypeDesc. No access check needed.
+        if (pMT == NULL)
+            continue;
+
+        if (!ClassLoader::CanAccessClass(
+                pContext,
+                TargetTypeForAccessCheck(pMT),
+                th.GetAssembly(),
+                accessCheckOptions))
+        {
+            return FALSE;
+        }
+    }
+    return TRUE;
+}
+
+BOOL ClassLoader::CanAccessInstantiationBySignature(
+    AccessCheckContext*     pContext,
+    SigPointer              sig,
+    Module*                 module,
+    const AccessCheckOptions & accessCheckOptions)
+{
+    uint32_t nGenericTypeArgs;
+
+    IfFailThrow(sig.GetData(&nGenericTypeArgs));
+
+    for (uint32_t i = 0; i < nGenericTypeArgs; i++)
+    {
+        if (!sig.AccessCheckType(module, pContext, accessCheckOptions))
+        {
+            return FALSE;
+        }
+        IfFailThrow(sig.SkipExactlyOne());
+    }
+
+    return TRUE;
+}
+
 //******************************************************************************
 // This function determines whether a target class is accessible from
 //  some given class.
 /* static */
 BOOL ClassLoader::CanAccessMethodInstantiation( // True if access is legal, false otherwise.
     AccessCheckContext* pContext,
-    MethodDesc*         pOptionalTargetMethod,  // The desired method; if NULL, return TRUE (or)
+    const TargetMethodForAccessCheck* pOptionalTargetMethod, // The desired method; if NULL, return TRUE (or)
     const AccessCheckOptions & accessCheckOptions)
 {
     CONTRACTL
@@ -4119,33 +4157,7 @@ BOOL ClassLoader::CanAccessMethodInstantiation( // True if access is legal, fals
     if (!pOptionalTargetMethod)
         return TRUE;
 
-    // Is the desired target an instantiated generic method?
-    if (pOptionalTargetMethod->HasMethodInstantiation())
-    {   // check that the current class has access
-        // to all of the instantiating classes.
-        Instantiation inst = pOptionalTargetMethod->GetMethodInstantiation();
-        for (DWORD i = 0; i < inst.GetNumArgs(); i++)
-        {
-            TypeHandle th = inst[i];
-
-            MethodTable* pMT = th.GetMethodTableOfRootTypeParam();
-
-            // Either a TypeVarTypeDesc or a FnPtrTypeDesc. No access check needed.
-            if (pMT == NULL)
-                continue;
-
-            if (!CanAccessClass(
-                    pContext,
-                    pMT,
-                    th.GetAssembly(),
-                    accessCheckOptions))
-            {
-                return FALSE;
-            }
-        }
-        //  If we are here, the current class has access to all of the target's instantiating args,
-    }
-    return TRUE;
+    return pOptionalTargetMethod->CanAccessMethodInstantiation(pContext, accessCheckOptions);
 }
 
 //******************************************************************************
@@ -4160,7 +4172,7 @@ BOOL ClassLoader::CanAccessMethodInstantiation( // True if access is legal, fals
 /* static */
 BOOL ClassLoader::CanAccessClass(                   // True if access is legal, false otherwise.
     AccessCheckContext* pContext,                   // The caller context
-    MethodTable*        pTargetClass,               // The desired target class.
+    const TargetTypeForAccessCheck& pTargetClass,               // The desired target class.
     Assembly*           pTargetAssembly,            // Assembly containing the target class.
     const AccessCheckOptions & accessCheckOptions)// = TRUE
 {
@@ -4182,39 +4194,18 @@ BOOL ClassLoader::CanAccessClass(                   // True if access is legal, 
 
     // Step 2: Recursively call CanAccessClass on the generic type arguments
     // Is the desired target a generic instantiation?
-    if (pTargetClass->HasInstantiation())
-    {   // Yes, so before going any further, check that the current class has access
-        //  to all of the instantiating classes.
-        Instantiation inst = pTargetClass->GetInstantiation();
-        for (DWORD i = 0; i < inst.GetNumArgs(); i++)
-        {
-            TypeHandle th = inst[i];
-
-            MethodTable* pMT = th.GetMethodTableOfRootTypeParam();
-
-            // Either a TypeVarTypeDesc or a FnPtrTypeDesc. No access check needed.
-            if (pMT == NULL)
-                continue;
-
-            if (!CanAccessClass(
-                    pContext,
-                    pMT,
-                    th.GetAssembly(),
-                    accessCheckOptions))
-            {
-                // no need to call accessCheckOptions.DemandMemberAccessOrFail here because the base case in
-                // CanAccessClass does that already
-                return FALSE;
-            }
-        }
-        // If we are here, the current class has access to all of the desired target's instantiating args.
-        //  Now, check whether the current class has access to the desired target itself.
+    if (!pTargetClass.CanAccessTypeInstantiation(pContext, accessCheckOptions))
+    {
+        return FALSE;
     }
 
+    // If we are here, the current class has access to all of the desired target's instantiating args.
+    //  Now, check whether the current class has access to the desired target itself.
+
     // Step 3: Visibility Check
-    if (!pTargetClass->GetClass()->IsNested())
+    if (!pTargetClass.IsNested())
     {   // a non-nested class can be either all public or accessible only from its own assembly (and friends).
-        if (IsTdPublic(pTargetClass->GetClass()->GetProtection()))
+        if (IsTdPublic(pTargetClass.GetProtection()))
         {
             return TRUE;
         }
@@ -4239,7 +4230,7 @@ BOOL ClassLoader::CanAccessClass(                   // True if access is legal, 
     //  to corresponding method access flags. We need to make a note if friend access was allowed to the
     //  type being checked since we're not passing it directly to the recurisve call to CanAccess, and
     //  instead are just passing in the dwProtectionFlags.
-    DWORD dwProtection = pTargetClass->GetClass()->GetProtection();
+    DWORD dwProtection = pTargetClass.GetProtection();
 
     switch(dwProtection) {
         case tdNestedPublic:
@@ -4274,7 +4265,7 @@ BOOL ClassLoader::CanAccessClass(                   // True if access is legal, 
             break;
 
         default:
-            THROW_BAD_FORMAT_MAYBE(!"Unexpected class visibility flag value", BFA_BAD_VISIBILITY, pTargetClass);
+            THROW_BAD_FORMAT_MAYBE(!"Unexpected class visibility flag value", BFA_BAD_VISIBILITY, pTargetClass.GetTypeHandleForThrow().GetMethodTable());
     }
 
     // The desired target class is nested, so translate the class access request into
@@ -4284,7 +4275,7 @@ BOOL ClassLoader::CanAccessClass(                   // True if access is legal, 
     // We've already done transparency check above. No need to do it again.
     return ClassLoader::CanAccess(
         pContext,
-        GetEnclosingMethodTable(pTargetClass),
+        pTargetClass.GetEnclosingType(),
         pTargetAssembly,
         dwProtection,
         NULL,
@@ -4299,10 +4290,10 @@ BOOL ClassLoader::CanAccessClass(                   // True if access is legal, 
 /* static */
 BOOL ClassLoader::CanAccess(                            // TRUE if access is allowed, FALSE otherwise.
     AccessCheckContext* pContext,                       // The caller context
-    MethodTable*        pTargetMT,                      // The class containing the desired target member.
+    const TargetTypeForAccessCheck& pTargetType,       // The class containing the desired target member.
     Assembly*           pTargetAssembly,                // Assembly containing that class.
     DWORD               dwMemberAccess,                 // Member access flags of the desired target member (as method bits).
-    MethodDesc*         pOptionalTargetMethod,          // The target method; NULL if the target is a not a method or
+    const TargetMethodForAccessCheck* pOptionalTargetMethod,  // The target method; NULL if the target is a not a method or
                                                         // there is no need to check the method's instantiation.
     const AccessCheckOptions & accessCheckOptions)      // = s_NormalAccessChecks
 {
@@ -4319,7 +4310,7 @@ BOOL ClassLoader::CanAccess(                            // TRUE if access is all
     AccessCheckOptions accessCheckOptionsNoThrow(accessCheckOptions, FALSE);
 
     if (!CheckAccessMember(pContext,
-                           pTargetMT,
+                           pTargetType,
                            pTargetAssembly,
                            dwMemberAccess,
                            pOptionalTargetMethod,
@@ -4351,7 +4342,7 @@ BOOL ClassLoader::CanAccess(                            // TRUE if access is all
             // to refer to the enclosing type.
             canAccess = ClassLoader::CanAccess(
                                  &accessContext,
-                                 pTargetMT,
+                                 pTargetType,
                                  pTargetAssembly,
                                  dwMemberAccess,
                                  pOptionalTargetMethod,
@@ -4379,11 +4370,11 @@ BOOL ClassLoader::CanAccess(                            // TRUE if access is all
 /* static */
 BOOL ClassLoader::CheckAccessMember(                // TRUE if access is allowed, false otherwise.
     AccessCheckContext*     pContext,
-    MethodTable*            pTargetMT,              // The class containing the desired target member.
+    const TargetTypeForAccessCheck& pTargetType,   // The class containing the desired target member.
     Assembly*               pTargetAssembly,        // Assembly containing that class.
     DWORD                   dwMemberAccess,         // Member access flags of the desired target member (as method bits).
-    MethodDesc*             pOptionalTargetMethod,  // The target method; NULL if the target is a not a method or
-                                                    // there is no need to check the method's instantiation.
+    const TargetMethodForAccessCheck* pOptionalTargetMethod, // The target method; NULL if the target is a not a method or
+                                                        // there is no need to check the method's instantiation.
     const AccessCheckOptions & accessCheckOptions
     )
 {
@@ -4401,7 +4392,7 @@ BOOL ClassLoader::CheckAccessMember(                // TRUE if access is allowed
     // check if have access to pTargetClass itself from the current point before worry about
     // having access to the member within the class
     if (!CanAccessClass(pContext,
-                        pTargetMT,
+                        pTargetType,
                         pTargetAssembly,
                         accessCheckOptions))
     {
@@ -4419,7 +4410,7 @@ BOOL ClassLoader::CheckAccessMember(                // TRUE if access is allowed
     }
 
     // Perform transparency checks
-    // We don't need to do transparency check against pTargetMT here because
+    // We don't need to do transparency check against pTargetType here because
     // it was already done in CanAccessClass above.
 
     if (IsMdPublic(dwMemberAccess))
@@ -4431,28 +4422,17 @@ BOOL ClassLoader::CheckAccessMember(                // TRUE if access is allowed
 
     if (IsMdPrivateScope(dwMemberAccess))
     {
-        if (pCurrentMT != NULL && pCurrentMT->GetModule() == pTargetMT->GetModule())
+        if (pCurrentMT != NULL && pCurrentMT->GetModule() == pTargetType.GetModule())
         {
             return TRUE;
         }
         else
         {
-            return accessCheckOptions.DemandMemberAccessOrFail(pContext, pTargetMT, TRUE /*visibilityCheck*/);
+            return accessCheckOptions.DemandMemberAccessOrFail(pContext, pTargetType, TRUE /*visibilityCheck*/);
         }
     }
 
-
-#ifdef _DEBUG
-    if (pTargetMT == NULL &&
-        (IsMdFamORAssem(dwMemberAccess) ||
-         IsMdFamANDAssem(dwMemberAccess) ||
-         IsMdFamily(dwMemberAccess))) {
-        THROW_BAD_FORMAT_MAYBE(!"Family flag is not allowed on global functions", BFA_FAMILY_ON_GLOBAL, pTargetMT);
-    }
-#endif
-
-    if (pTargetMT == NULL ||
-        IsMdAssem(dwMemberAccess) ||
+    if (IsMdAssem(dwMemberAccess) ||
         IsMdFamORAssem(dwMemberAccess) ||
         IsMdFamANDAssem(dwMemberAccess))
     {
@@ -4471,7 +4451,7 @@ BOOL ClassLoader::CheckAccessMember(                // TRUE if access is allowed
         const BOOL fAssemblyOrFriendAccessAllowed = AssemblyOrFriendAccessAllowed(pCurrentAssembly,
                                                                                   pTargetAssembly);
 
-        if ((pTargetMT == NULL || IsMdAssem(dwMemberAccess) || IsMdFamORAssem(dwMemberAccess)) &&
+        if ((IsMdAssem(dwMemberAccess) || IsMdFamORAssem(dwMemberAccess)) &&
             fAssemblyOrFriendAccessAllowed)
         {
             return TRUE;
@@ -4479,7 +4459,7 @@ BOOL ClassLoader::CheckAccessMember(                // TRUE if access is allowed
         else if (IsMdFamANDAssem(dwMemberAccess) &&
                  !fAssemblyOrFriendAccessAllowed)
         {
-            return accessCheckOptions.DemandMemberAccessOrFail(pContext, pTargetMT, TRUE /*visibilityCheck*/);
+            return accessCheckOptions.DemandMemberAccessOrFail(pContext, pTargetType, TRUE /*visibilityCheck*/);
         }
     }
 
@@ -4487,19 +4467,19 @@ BOOL ClassLoader::CheckAccessMember(                // TRUE if access is allowed
     while(pCurrentMT != NULL)
     {
         //@GENERICSVER:
-        if (pTargetMT->HasSameTypeDefAs(pCurrentMT))
+        if (pTargetType.HasSameTypeDefAs(pCurrentMT))
             return TRUE;
 
         if (IsMdPrivate(dwMemberAccess))
         {
             if (!pCurrentMT->GetClass()->IsNested())
             {
-                return accessCheckOptions.DemandMemberAccessOrFail(pContext, pTargetMT, TRUE /*visibilityCheck*/);
+                return accessCheckOptions.DemandMemberAccessOrFail(pContext, pTargetType, TRUE /*visibilityCheck*/);
             }
         }
         else if (IsMdFamORAssem(dwMemberAccess) || IsMdFamily(dwMemberAccess) || IsMdFamANDAssem(dwMemberAccess))
         {
-            if (CanAccessFamily(pCurrentMT, pTargetMT))
+            if (CanAccessFamily(pCurrentMT, pTargetType))
             {
                 return TRUE;
             }
@@ -4508,7 +4488,7 @@ BOOL ClassLoader::CheckAccessMember(                // TRUE if access is allowed
         pCurrentMT = GetEnclosingMethodTable(pCurrentMT);
     }
 
-    return accessCheckOptions.DemandMemberAccessOrFail(pContext, pTargetMT, TRUE /*visibilityCheck*/);
+    return accessCheckOptions.DemandMemberAccessOrFail(pContext, pTargetType, TRUE /*visibilityCheck*/);
 }
 
 // The family check is actually in two parts (Partition I, 8.5.3.2).  The first part:
@@ -4567,7 +4547,7 @@ BOOL ClassLoader::CheckAccessMember(                // TRUE if access is allowed
 /* static */
 BOOL ClassLoader::CanAccessFamily(
                                  MethodTable *pCurrentClass,
-                                 MethodTable *pTargetClass)
+                                 const TargetTypeForAccessCheck& pTargetType)
 {
     CONTRACTL
     {
@@ -4575,14 +4555,12 @@ BOOL ClassLoader::CanAccessFamily(
         GC_TRIGGERS;
         INJECT_FAULT(COMPlusThrowOM(););
         MODE_ANY;
-        PRECONDITION(CheckPointer(pTargetClass));
     }
     CONTRACTL_END
 
     _ASSERTE(pCurrentClass);
-    _ASSERTE(pTargetClass);
 
-    BOOL bIsInterface = pTargetClass->IsInterface();
+    BOOL bIsInterface = pTargetType.IsInterface();
 
     //Look to see if Current is a child of the Target.
     while (pCurrentClass) {
@@ -4593,7 +4571,7 @@ BOOL ClassLoader::CanAccessFamily(
             while (it.Next())
             {
                 // We only loosely check if they are of the same generic type
-                if (it.HasSameTypeDefAs(pTargetClass))
+                if (pTargetType.HasSameTypeDefAs(it))
                     return TRUE;
             }
         }
@@ -4605,7 +4583,7 @@ BOOL ClassLoader::CanAccessFamily(
                 //This is correct.  csc is incredibly lax about generics.  Essentially if you are a subclass of
                 //any type of generic it lets you access it.  Since the standard is totally unclear, mirror that
                 //behavior here.
-                if (pCurInstance->HasSameTypeDefAs(pTargetClass)) {
+                if (pTargetType.HasSameTypeDefAs(pCurInstance)) {
                     return TRUE;
                 }
 
