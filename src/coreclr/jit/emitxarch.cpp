@@ -985,8 +985,8 @@ inline bool emitter::IsCFCMOV(instruction ins)
 //    ins - The instruction to check.
 //
 // Returns:
-//    `insCC` representing the condition code for a ccmp / cfcmov instruction.
-//    ccmpx / cfcmovx instructions share the same instruction encoding unlike
+//    `insCC` representing the condition code for a ccmp / ctest instruction.
+//    ccmpcc / ctestcc instructions share the same instruction encoding unlike
 //    other x86 status bit instructions and instead have a CC coded into
 //    the EVEX prefix.
 //
@@ -14785,8 +14785,7 @@ BYTE* emitter::emitOutputAM(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
 
                 if (IsCFCMOV(ins))
                 {
-                    // XArch-APX-TODO: JIT does not emit sub-32b CMOV, whether to use 16b operands in CFCMOV is to be
-                    // determined.
+                    // The opcode for CFCMOV does not follow the rule of "|= 0x01" to handle 16b/32b/64b operands.
                     break;
                 }
                 FALLTHROUGH;

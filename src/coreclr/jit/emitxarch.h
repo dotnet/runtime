@@ -1106,7 +1106,7 @@ void emitIns_C_R(instruction ins, emitAttr attr, CORINFO_FIELD_HANDLE fldHnd, re
 
 void emitIns_C_I(instruction          ins,
                  emitAttr             attr,
-                 CORINFO_FIELD_HANDLE fdlHnd,
+                 CORINFO_FIELD_HANDLE fldHnd,
                  int                  offs,
                  int                  val,
                  insOpts              instOptions = INS_OPTS_NONE);

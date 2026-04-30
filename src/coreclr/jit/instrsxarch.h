@@ -1217,7 +1217,7 @@ INST3(setge_apx,        "setzuge",          IUM_WR, SSEDBLMAP(4, 0x4D),  BAD_COD
 INST3(setle_apx,        "setzule",          IUM_WR, SSEDBLMAP(4, 0x4E),  BAD_CODE, BAD_CODE,                             1C,                2X,         INS_TT_NONE,    Reads_OF | Reads_SF | Reads_ZF)
 INST3(setg_apx,         "setzug",           IUM_WR, SSEDBLMAP(4, 0x4F),  BAD_CODE, BAD_CODE,                             1C,                2X,         INS_TT_NONE,    Reads_OF | Reads_SF | Reads_ZF)
 #define LAST_APX_INSTRUCTION INS_setg_apx
-#endif
+#endif // TARGET_AMD64
 
 // Scalar instructions in SSE4.2
 INST3(crc32,            "crc32",            IUM_RW, BAD_CODE,     BAD_CODE,     PSSE38(0xF2, 0xF0),                      3C,                1C,         INS_TT_NONE,    INS_FLAGS_None)
