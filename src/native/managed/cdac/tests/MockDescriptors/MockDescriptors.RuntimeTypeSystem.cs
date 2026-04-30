@@ -458,7 +458,7 @@ internal partial class MockDescriptors
         /// <param name="series">
         /// GC descriptor series ordered from highest to lowest
         /// (matching <c>CGCDesc::GetHighestSeries</c> down to <c>GetLowestSeries</c>).
-        /// Each entry is <c>(SeriesSize, SeriesOffset)</c> – the raw field values stored in the
+        /// Each entry is <c>(Size, Offset)</c> – the raw field values stored in the
         /// <c>CGCDescSeries</c> struct (i.e. <c>seriessize</c> already has <c>BaseSize</c> subtracted).
         /// </param>
         /// <returns>
@@ -466,7 +466,7 @@ internal partial class MockDescriptors
         /// The caller is responsible for setting additional method table flags (e.g.
         /// <c>ContainsGCPointers = 0x01000000</c>) and linking to an EEClass.
         /// </returns>
-        internal MockMethodTable AddMethodTableWithGCDesc(string name, uint baseSize, (ulong SeriesSize, ulong SeriesOffset)[] series)
+        internal MockMethodTable AddMethodTableWithGCDesc(string name, uint baseSize, (ulong Size, ulong Offset)[] series)
         {
             int pointerSize = Builder.TargetTestHelpers.PointerSize;
 
@@ -487,8 +487,8 @@ internal partial class MockDescriptors
             for (int i = 0; i < series.Length; i++)
             {
                 int seriesBase = (series.Length - 1 - i) * 2 * pointerSize;
-                Builder.TargetTestHelpers.WritePointer(fragment.Data.AsSpan(seriesBase, pointerSize), series[i].SeriesSize);
-                Builder.TargetTestHelpers.WritePointer(fragment.Data.AsSpan(seriesBase + pointerSize, pointerSize), series[i].SeriesOffset);
+                Builder.TargetTestHelpers.WritePointer(fragment.Data.AsSpan(seriesBase, pointerSize), series[i].Size);
+                Builder.TargetTestHelpers.WritePointer(fragment.Data.AsSpan(seriesBase + pointerSize, pointerSize), series[i].Offset);
             }
 
             // Write NumSeries immediately before the MT

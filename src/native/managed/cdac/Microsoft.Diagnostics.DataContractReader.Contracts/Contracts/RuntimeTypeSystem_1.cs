@@ -565,7 +565,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         && _continuationMethodTablePointer != TargetPointer.Null
         && _methodTables[typeHandle.Address].ParentMethodTable == _continuationMethodTablePointer;
 
-    IEnumerable<(uint SeriesOffset, uint SeriesSize)> IRuntimeTypeSystem.GetGCDescSeries(TypeHandle typeHandle, uint numComponents)
+    IEnumerable<(uint Offset, uint Size)> IRuntimeTypeSystem.GetGCDescSeries(TypeHandle typeHandle, uint numComponents)
     {
         if (!typeHandle.IsMethodTable())
             yield break;
@@ -625,13 +625,15 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
             }
 
             ulong currentOffset = startOffset;
-            while (currentOffset <= objectSize - pointerSize)
+            for (int i = 0; i < numComponents; i++)
             {
-                for (long i = 0; i < absNumSeries; i++)
+                for (long j = 0; j < absNumSeries; j++)
                 {
-                    uint runBytes = seriesItems[i].Nptrs * (uint)pointerSize;
+                    if (currentOffset > objectSize - pointerSize)
+                        yield break;
+                    uint runBytes = seriesItems[j].Nptrs * (uint)pointerSize;
                     yield return ((uint)currentOffset, runBytes);
-                    currentOffset += runBytes + seriesItems[i].Skip;
+                    currentOffset += runBytes + seriesItems[j].Skip;
                 }
             }
         }

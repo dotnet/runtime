@@ -742,10 +742,10 @@ public class MethodTableTests
         Contracts.TypeHandle typeHandle = contract.GetTypeHandle(mtPtr);
         Assert.True(contract.ContainsGCPointers(typeHandle));
 
-        (uint SeriesOffset, uint SeriesSize)[] series = contract.GetGCDescSeries(typeHandle).ToArray();
+        (uint Offset, uint Size)[] series = contract.GetGCDescSeries(typeHandle).ToArray();
         Assert.Single(series);
-        Assert.Equal(expectedSeriesOffset, series[0].SeriesOffset);
-        Assert.Equal(expectedSeriesSize, series[0].SeriesSize);
+        Assert.Equal(expectedSeriesOffset, series[0].Offset);
+        Assert.Equal(expectedSeriesSize, series[0].Size);
     }
 
     [Theory]
@@ -753,7 +753,7 @@ public class MethodTableTests
     public void GetGCDescSeriesReturnsMultipleSeriesInOrder(MockTarget.Architecture arch)
     {
         TargetPointer mtPtr = default;
-        (uint SeriesOffset, uint SeriesSize)[] expectedSeries = [];
+        (uint Offset, uint Size)[] expectedSeries = [];
 
         TestPlaceholderTarget target = CreateTarget(
             arch,
@@ -796,12 +796,12 @@ public class MethodTableTests
         IRuntimeTypeSystem contract = target.Contracts.RuntimeTypeSystem;
         Contracts.TypeHandle typeHandle = contract.GetTypeHandle(mtPtr);
 
-        (uint SeriesOffset, uint SeriesSize)[] series = contract.GetGCDescSeries(typeHandle).ToArray();
+        (uint Offset, uint Size)[] series = contract.GetGCDescSeries(typeHandle).ToArray();
         Assert.Equal(expectedSeries.Length, series.Length);
         for (int i = 0; i < expectedSeries.Length; i++)
         {
-            Assert.Equal(expectedSeries[i].SeriesOffset, series[i].SeriesOffset);
-            Assert.Equal(expectedSeries[i].SeriesSize, series[i].SeriesSize);
+            Assert.Equal(expectedSeries[i].Offset, series[i].Offset);
+            Assert.Equal(expectedSeries[i].Size, series[i].Size);
         }
     }
 
@@ -848,10 +848,10 @@ public class MethodTableTests
         Contracts.TypeHandle typeHandle = contract.GetTypeHandle(mtPtr);
         Assert.True(contract.ContainsGCPointers(typeHandle));
 
-        (uint SeriesOffset, uint SeriesSize)[] series = contract.GetGCDescSeries(typeHandle).ToArray();
+        (uint Offset, uint Size)[] series = contract.GetGCDescSeries(typeHandle).ToArray();
         Assert.Single(series);
-        Assert.Equal(expectedOffset, series[0].SeriesOffset);
-        Assert.Equal(expectedSize, series[0].SeriesSize);
+        Assert.Equal(expectedOffset, series[0].Offset);
+        Assert.Equal(expectedSize, series[0].Size);
     }
 
     [Theory]
@@ -861,7 +861,7 @@ public class MethodTableTests
         // Two val_serie_items: [2 ptrs, skip 8 bytes] [1 ptr, skip 0 bytes]
         // This models a value type like struct { ref a; ref b; int pad1; int pad2; ref c; }
         TargetPointer mtPtr = default;
-        (uint SeriesOffset, uint SeriesSize)[] expectedSeries = [];
+        (uint Offset, uint Size)[] expectedSeries = [];
 
         TestPlaceholderTarget target = CreateTarget(
             arch,
@@ -898,12 +898,12 @@ public class MethodTableTests
         IRuntimeTypeSystem contract = target.Contracts.RuntimeTypeSystem;
         Contracts.TypeHandle typeHandle = contract.GetTypeHandle(mtPtr);
 
-        (uint SeriesOffset, uint SeriesSize)[] series = contract.GetGCDescSeries(typeHandle).ToArray();
+        (uint Offset, uint Size)[] series = contract.GetGCDescSeries(typeHandle).ToArray();
         Assert.Equal(expectedSeries.Length, series.Length);
         for (int i = 0; i < expectedSeries.Length; i++)
         {
-            Assert.Equal(expectedSeries[i].SeriesOffset, series[i].SeriesOffset);
-            Assert.Equal(expectedSeries[i].SeriesSize, series[i].SeriesSize);
+            Assert.Equal(expectedSeries[i].Offset, series[i].Offset);
+            Assert.Equal(expectedSeries[i].Size, series[i].Size);
         }
     }
 
@@ -958,20 +958,20 @@ public class MethodTableTests
         IRuntimeTypeSystem contract = target.Contracts.RuntimeTypeSystem;
         Contracts.TypeHandle typeHandle = contract.GetTypeHandle(mtPtr);
         Assert.True(contract.ContainsGCPointers(typeHandle));
-        uint pointerSz = (uint)arch.PointerSize;
+        uint pointerSz = (uint)target.PointerSize;
 
         // With 0 components, series size = rawSeriesSize + baseSize = pointerSize (one element worth)
-        (uint SeriesOffset, uint SeriesSize)[] series0 = contract.GetGCDescSeries(typeHandle, 0).ToArray();
+        (uint Offset, uint Size)[] series0 = contract.GetGCDescSeries(typeHandle, 0).ToArray();
         Assert.Single(series0);
-        Assert.Equal(expectedSeriesOffset, series0[0].SeriesOffset);
-        Assert.Equal(pointerSz, series0[0].SeriesSize);
+        Assert.Equal(expectedSeriesOffset, series0[0].Offset);
+        Assert.Equal(pointerSz, series0[0].Size);
 
         // With 3 components, objectSize = baseSize + 3*pointerSize, so series size = pointerSize - baseSize + objectSize = 4*pointerSize
         uint numComponents = 3;
-        (uint SeriesOffset, uint SeriesSize)[] series3 = contract.GetGCDescSeries(typeHandle, numComponents).ToArray();
+        (uint Offset, uint Size)[] series3 = contract.GetGCDescSeries(typeHandle, numComponents).ToArray();
         Assert.Single(series3);
-        Assert.Equal(expectedSeriesOffset, series3[0].SeriesOffset);
-        Assert.Equal((numComponents + 1) * pointerSz, series3[0].SeriesSize);
+        Assert.Equal(expectedSeriesOffset, series3[0].Offset);
+        Assert.Equal((numComponents + 1) * pointerSz, series3[0].Size);
     }
 
     [Theory]
@@ -1016,26 +1016,25 @@ public class MethodTableTests
         IRuntimeTypeSystem contract = target.Contracts.RuntimeTypeSystem;
         Contracts.TypeHandle typeHandle = contract.GetTypeHandle(mtPtr);
         Assert.True(contract.ContainsGCPointers(typeHandle));
-        uint pointerSz = (uint)arch.PointerSize;
-        uint elemSize = 2u * pointerSz;
-        uint startOff = (uint)arch.ObjectHeaderSize + 2u * pointerSz;
+        uint elemSize = 2 * (uint)target.PointerSize;
+        uint startOff = 3u * (uint)target.PointerSize;
 
         // With 0 components, objectSize = baseSize. The while loop may execute 0 or 1 times
         // depending on whether startOffset <= baseSize - pointerSize.
         // baseSize = ObjHeaderSize + 2*ptr, startOffset = ObjHeaderSize + 2*ptr.
         // objectSize - pointerSize = baseSize - pointerSize = ObjHeaderSize + pointerSize.
         // startOffset (ObjHeaderSize + 2*ptr) > ObjHeaderSize + ptr, so: 0 iterations.
-        (uint SeriesOffset, uint SeriesSize)[] series0 = contract.GetGCDescSeries(typeHandle, 0).ToArray();
+        (uint Offset, uint Size)[] series0 = contract.GetGCDescSeries(typeHandle, 0).ToArray();
         Assert.Empty(series0);
 
         // With 2 components, objectSize = baseSize + 2 * elemSize = baseSize + 4*ptr.
         // The loop should produce 2 runs (one per element), each at the ref field of that element.
         uint numComponents = 2;
-        (uint SeriesOffset, uint SeriesSize)[] series2 = contract.GetGCDescSeries(typeHandle, numComponents).ToArray();
+        (uint Offset, uint Size)[] series2 = contract.GetGCDescSeries(typeHandle, numComponents).ToArray();
         Assert.Equal(2, series2.Length);
-        Assert.Equal(startOff, series2[0].SeriesOffset);
-        Assert.Equal(pointerSz, series2[0].SeriesSize);
-        Assert.Equal(startOff + elemSize, series2[1].SeriesOffset);
-        Assert.Equal(pointerSz, series2[1].SeriesSize);
+        Assert.Equal(startOff, series2[0].Offset);
+        Assert.Equal((uint)target.PointerSize, series2[0].Size);
+        Assert.Equal(startOff + elemSize, series2[1].Offset);
+        Assert.Equal((uint)target.PointerSize, series2[1].Size);
     }
 }
