@@ -685,6 +685,12 @@ GenTree* Lowering::LowerNode(GenTree* node)
             LowerReturnSuspend(node);
             break;
 
+        case GT_PATCHPOINT:
+        case GT_PATCHPOINT_FORCED:
+            // This will generate a call in codegen
+            RequireOutgoingArgSpace(node, MIN_ARG_AREA_FOR_CALL);
+            break;
+
         case GT_NONLOCAL_JMP:
             ContainCheckNonLocalJmp(node->AsUnOp());
             break;
@@ -3021,6 +3027,15 @@ GenTree* Lowering::LowerCall(GenTree* node)
             RequireOutgoingArgSpace(call, call->gtArgs.OutgoingArgsStackSize());
         }
     }
+
+#ifdef TARGET_WASM
+    // For any type of managed call, if we have portable entry points enabled, we need to lower
+    // the call according to the portable entrypoint abi
+    if (!call->IsUnmanaged() && m_compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PORTABLE_ENTRY_POINTS))
+    {
+        LowerPEPCall(call);
+    }
+#endif // TARGET_WASM
 
     if (varTypeIsStruct(call))
     {
@@ -9931,6 +9946,12 @@ void Lowering::ContainCheckNode(GenTree* node)
             ContainCheckHWIntrinsic(node->AsHWIntrinsic());
             break;
 #endif // FEATURE_HW_INTRINSICS
+
+        case GT_PATCHPOINT:
+        case GT_PATCHPOINT_FORCED:
+            // No containment for patchpoint nodes
+            break;
+
         case GT_NONLOCAL_JMP:
             ContainCheckNonLocalJmp(node->AsUnOp());
             break;

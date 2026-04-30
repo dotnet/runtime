@@ -1631,7 +1631,7 @@ public:
     PCODE GetCodeForInterpreterOrJitted()
     {
         WRAPPER_NO_CONTRACT;
-        return GetInterpreterCodeFromInterpreterPrecodeIfPresent(GetNativeCode());
+        return GetInterpreterCodeFromEntryPointIfPresent(GetNativeCode());
     }
 
     // Returns GetNativeCode() if it exists, but also checks to see if there

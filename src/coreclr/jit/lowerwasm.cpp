@@ -41,6 +41,71 @@ bool Lowering::IsCallTargetInRange(void* addr)
     return true;
 }
 
+//---------------------------------------------------------------------------------------------
+// LowerPEPCall: Lower a call node dispatched through a PortableEntryPoint (PEP)
+//
+// Given a call node with gtControlExpr representing a call target which is the address of a portable entrypoint,
+// this function lowers the call to appropriately dispatch through the portable entrypoint using the Portable
+// entrypoint calling convention.
+// To do this, it:
+//      1. Introduces a new local variable to hold the PEP address
+//      2. Adds a new well-known argument to the call passing this local
+//      3. Rewrites the control expression to indirect through the new local, since for PEP's, the actual call target
+//         must be loaded from the portable entry point address.
+//
+// Arguments:
+//    call         -  The call node to lower. It is expected that the call node has gtControlExpr set to the original
+//                      call target and that the call does not have a PEP arg already.
+//
+// Return Value:
+//    None. The call node is modified in place.
+//
+void Lowering::LowerPEPCall(GenTreeCall* call)
+{
+    JITDUMP("Begin lowering PEP call\n");
+    DISPTREERANGE(BlockRange(), call);
+
+    // PEP call must always have a control expression
+    assert(call->gtControlExpr != nullptr);
+    LIR::Use callTargetUse(BlockRange(), &call->gtControlExpr, call);
+
+    JITDUMP("Creating new local variable for PEP");
+    unsigned int   callTargetLclNum    = callTargetUse.ReplaceWithLclVar(m_compiler);
+    GenTreeLclVar* callTargetLclForArg = m_compiler->gtNewLclvNode(callTargetLclNum, TYP_I_IMPL);
+    DISPTREE(call);
+
+    JITDUMP("Add new arg to call arg list corresponding to PEP target");
+    NewCallArg pepTargetArg =
+        NewCallArg::Primitive(callTargetLclForArg).WellKnown(WellKnownArg::WasmPortableEntryPoint);
+    CallArg* pepArg = call->gtArgs.PushBack(m_compiler, pepTargetArg);
+
+    pepArg->SetEarlyNode(nullptr);
+    pepArg->SetLateNode(callTargetLclForArg);
+    call->gtArgs.PushLateBack(pepArg);
+
+    // Set up ABI information for this arg; PEP's should be passed as the last param to a wasm function
+    unsigned  pepIndex = call->gtArgs.CountArgs() - 1;
+    regNumber pepReg   = MakeWasmReg(pepIndex, WasmValueType::I);
+    pepArg->AbiInfo =
+        ABIPassingInformation::FromSegmentByValue(m_compiler,
+                                                  ABIPassingSegment::InRegister(pepReg, 0, TARGET_POINTER_SIZE));
+    BlockRange().InsertBefore(call, callTargetLclForArg);
+
+    // Lower the new PEP arg now that the call abi info is updated and lcl var is inserted
+    LowerArg(call, pepArg);
+    DISPTREE(call);
+
+    JITDUMP("Rewrite PEP call's control expression to indirect through the new local variable\n");
+    // Rewrite the call's control expression to have an additional load from the PEP local
+    GenTree* controlExpr = call->gtControlExpr;
+    GenTree* target      = Ind(controlExpr);
+    BlockRange().InsertAfter(controlExpr, target);
+    call->gtControlExpr = target;
+
+    JITDUMP("Finished lowering PEP call\n");
+    DISPTREERANGE(BlockRange(), call);
+}
+
 //------------------------------------------------------------------------
 // IsContainableImmed: Is an immediate encodable in-place?
 //
@@ -531,7 +596,7 @@ void Lowering::AfterLowerBlocks()
         ArrayStack<GenTree**> m_stack;
         unsigned              m_minimumTempLclNum;
         Temporary*            m_availableTemps[TYP_COUNT] = {};
-        Temporary*            m_unusedTempNodes           = nullptr;
+        Temporary*            m_inUseTemps[TYP_COUNT]     = {};
         bool                  m_anyChanges                = false;
 
     public:
@@ -552,12 +617,14 @@ void Lowering::AfterLowerBlocks()
             {
                 assert(IsDataFlowRoot(node));
                 node = StackifyTree(node);
+                // We don't track liveness of temporaries more precisely since introducing earlier uses
+                // may interfere with later (by that point already inserted and stackified) stores.
+                ReleaseTemporaries();
             }
             m_lower->m_block = nullptr;
 
             JITDUMP(FMT_BB ": %s\n", block->bbNum,
                     m_anyChanges ? "stackified with some changes" : "already in WASM value stack order");
-            assert((m_unusedTempNodes == nullptr) && "Some temporaries were not released");
         }
 
         GenTree* StackifyTree(GenTree* root)
@@ -567,7 +634,6 @@ void Lowering::AfterLowerBlocks()
             // Simple greedy algorithm working backwards. The invariant is that the stack top must be placed right next
             // to (in normal linear order - before) the node we last stackified.
             m_stack.Push(&root);
-            ReleaseTemporariesDefinedBy(root);
 
             GenTree* lastStackified = root->gtNext;
             while (m_stack.Height() != initialDepth)
@@ -690,47 +756,46 @@ void Lowering::AfterLowerBlocks()
             if (local != nullptr)
             {
                 lclNum = local->LclNum;
-                Append(&m_unusedTempNodes, local); // Free the node for later recycling.
                 assert(m_compiler->lvaGetDesc(lclNum)->TypeGet() == genActualType(type));
             }
             else
             {
-                lclNum            = m_compiler->lvaGrabTemp(true DEBUGARG("Stackifier temporary"));
+                lclNum = m_compiler->lvaGrabTemp(true DEBUGARG("Stackifier temporary"));
+                assert(lclNum >= m_minimumTempLclNum);
                 LclVarDsc* varDsc = m_compiler->lvaGetDesc(lclNum);
                 varDsc->lvType    = genActualType(type);
-                assert(lclNum >= m_minimumTempLclNum);
+
+                // Allocate a new temporary to describe this local
+                local         = new (m_compiler, CMK_Lower) Temporary();
+                local->LclNum = lclNum;
             }
+            Append(&m_inUseTemps[genActualType(type)], local);
+
             JITDUMP("Temporary V%02u is now in use\n", lclNum);
             return lclNum;
         }
 
-        void ReleaseTemporariesDefinedBy(GenTree* node)
+        void ReleaseTemporaries()
         {
-            // We rely in this function on the lifetime of temporaries beginning (recall this is backwards traversal)
-            // at exactly "node"'s position, and not shrinking or extending after this call. This is currently true
-            // because we never move dataflow roots, and we only begin processing them after all subsequent nodes
-            // have already been stackified and thus won't move either.
-            assert(IsDataFlowRoot(node));
-            if (!node->OperIs(GT_STORE_LCL_VAR))
+            if (m_minimumTempLclNum == m_compiler->lvaCount)
             {
+                // No temporaries were created
                 return;
             }
+            assert(m_minimumTempLclNum < m_compiler->lvaCount);
 
-            unsigned lclNum = node->AsLclVar()->GetLclNum();
-            if (lclNum < m_minimumTempLclNum)
+            JITDUMP("Releasing stackifier temporaries:\n");
+            // Reclaim all in-use temporaries
+            for (int i = 0; i < TYP_COUNT; i++)
             {
-                return;
+                while (m_inUseTemps[i] != nullptr)
+                {
+                    Temporary* temp = Remove(&m_inUseTemps[i]);
+                    assert(temp->LclNum >= m_minimumTempLclNum);
+                    Append(&m_availableTemps[i], temp);
+                    JITDUMP("Temporary V%02u is now available\n", temp->LclNum);
+                }
             }
-
-            Temporary* local = Remove(&m_unusedTempNodes); // See if we have any free nodes in the pool.
-            if (local == nullptr)
-            {
-                local = new (m_compiler, CMK_Lower) Temporary();
-            }
-            local->LclNum = lclNum;
-
-            JITDUMP("Temporary V%02u is now free and can be re-used\n", lclNum);
-            Append(&m_availableTemps[genActualType(node->TypeGet())], local);
         }
 
         Temporary* Remove(Temporary** pTemps)
