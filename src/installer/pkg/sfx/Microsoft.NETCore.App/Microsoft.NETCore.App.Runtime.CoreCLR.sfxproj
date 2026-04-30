@@ -48,16 +48,16 @@
   <Target Name="ResolveReadyToRunCompilers" DependsOnTargets="ResolveRuntimeFilesFromLocalBuild">
     <PropertyGroup>
       <Crossgen2Path>$([MSBuild]::NormalizePath('$(Crossgen2InBuildDir)', 'crossgen2$(ExeSuffix)'))</Crossgen2Path>
-      <_Crossgen2TargetOS>$(TargetOS)</_Crossgen2TargetOS>
-      <_Crossgen2TargetOS Condition="'$(TargetOS)' == 'android'">linux</_Crossgen2TargetOS>
-      <_Crossgen2TargetArchitecture>$(TargetArchitecture)</_Crossgen2TargetArchitecture>
-      <_Crossgen2TargetArchitecture Condition="('$(TargetOS)' == 'android' or '$(TargetsLinuxBionic)' == 'true') and '$(TargetArchitecture)' == 'arm'">armel</_Crossgen2TargetArchitecture>
+      <_CrossGenTargetOS Condition="'$(TargetOS)' != 'android'">$(TargetOS)</_CrossGenTargetOS>
+      <_CrossGenTargetOS Condition="'$(TargetOS)' == 'android'">linux</_CrossGenTargetOS>
+      <_CrossGenTargetArch>$(TargetArchitecture)</_CrossGenTargetArch>
+      <_CrossGenTargetArch Condition="'$(TargetOS)' == 'android' and '$(TargetArchitecture)' == 'arm'">armel</_CrossGenTargetArch>
     </PropertyGroup>
 
     <ItemGroup>
       <Crossgen2Tool Include="$(Crossgen2Path)"
-                     TargetArch="$(_Crossgen2TargetArchitecture)"
-                     TargetOS="$(_Crossgen2TargetOS)"
+                     TargetArch="$(_CrossGenTargetArch)"
+                     TargetOS="$(_CrossGenTargetOS)"
                      PerfmapFormatVersion="$(PublishReadyToRunPerfmapFormatVersion)"/>
     </ItemGroup>
 
