@@ -10,6 +10,8 @@ using System.Text;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 
+using DependencyNode = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>;
+
 namespace ILCompiler.DependencyAnalysis
 {
     /// <summary>
@@ -71,9 +73,15 @@ namespace ILCompiler.DependencyAnalysis
             {
                 decodedValue = customAttribute.DecodeValue(new CustomAttributeTypeProvider(_module));
             }
-            catch (Exception)
+            catch (TypeSystemException)
             {
-                // If decoding fails (bad metadata, unresolvable types, etc.), skip blob analysis.
+                // Attribute ctor doesn't resolve, typeof() refers to something that can't be loaded,
+                // attribute refers to a non-existing field, etc.
+                yield break;
+            }
+            catch (BadImageFormatException)
+            {
+                // System.Reflection.Metadata throws BadImageFormatException if the blob is malformed.
                 yield break;
             }
 
@@ -89,26 +97,20 @@ namespace ILCompiler.DependencyAnalysis
                     yield return entry;
             }
 
+            // Resolve the constructor once for all named arguments
+            MethodDesc constructor = _module.GetMethod(
+                _module.MetadataReader.GetCustomAttribute(Handle).Constructor);
+
             foreach (CustomAttributeNamedArgument<TypeDesc> namedArg in value.NamedArguments)
             {
-                // Report the type that declares the field/property
-                // (The constructor's declaring type was already reported above.)
-                if (namedArg.Kind == CustomAttributeNamedArgumentKind.Property)
+                if (constructor is not null)
                 {
-                    // We need the setter of the property to be kept
-                    MethodDesc constructor = _module.GetMethod(
-                        _module.MetadataReader.GetCustomAttribute(Handle).Constructor);
-                    if (constructor is not null)
+                    if (namedArg.Kind == CustomAttributeNamedArgumentKind.Property)
                     {
                         foreach (var entry in GetDependenciesFromPropertySetter(factory, constructor.OwningType, namedArg.Name))
                             yield return entry;
                     }
-                }
-                else if (namedArg.Kind == CustomAttributeNamedArgumentKind.Field)
-                {
-                    MethodDesc constructor = _module.GetMethod(
-                        _module.MetadataReader.GetCustomAttribute(Handle).Constructor);
-                    if (constructor is not null)
+                    else if (namedArg.Kind == CustomAttributeNamedArgumentKind.Field)
                     {
                         foreach (var entry in GetDependenciesFromField(factory, constructor.OwningType, namedArg.Name))
                             yield return entry;
@@ -127,7 +129,7 @@ namespace ILCompiler.DependencyAnalysis
 
             // Report the type itself (e.g. enum types that need to be kept for boxing)
             object reflectedType = factory.ReflectedType(type);
-            if (reflectedType is DependencyAnalysisFramework.DependencyNodeCore<NodeFactory> typeNode)
+            if (reflectedType is DependencyNode typeNode)
                 yield return new DependencyListEntry(typeNode, "Custom attribute blob");
 
             if (type.UnderlyingType.IsPrimitive || type.IsString || value is null)
@@ -155,7 +157,7 @@ namespace ILCompiler.DependencyAnalysis
             if (value is TypeDesc typeofType)
             {
                 object reflectedTypeofType = factory.ReflectedType(typeofType);
-                if (reflectedTypeofType is DependencyAnalysisFramework.DependencyNodeCore<NodeFactory> typeofNode)
+                if (reflectedTypeofType is DependencyNode typeofNode)
                     yield return new DependencyListEntry(typeofNode, "Custom attribute blob");
             }
         }
@@ -177,7 +179,7 @@ namespace ILCompiler.DependencyAnalysis
                     if (!accessors.Setter.IsNil)
                     {
                         object reflectedMethod = factory.ReflectedMethod(ecmaType.Module.GetMethod(accessors.Setter));
-                        if (reflectedMethod is DependencyAnalysisFramework.DependencyNodeCore<NodeFactory> methodNode)
+                        if (reflectedMethod is DependencyNode methodNode)
                             yield return new DependencyListEntry(methodNode, "Custom attribute blob");
                     }
 
@@ -200,7 +202,7 @@ namespace ILCompiler.DependencyAnalysis
             if (field is not null)
             {
                 object reflectedField = factory.ReflectedField(field);
-                if (reflectedField is DependencyAnalysisFramework.DependencyNodeCore<NodeFactory> fieldNode)
+                if (reflectedField is DependencyNode fieldNode)
                     yield return new DependencyListEntry(fieldNode, "Custom attribute blob");
 
                 yield break;
@@ -241,7 +243,11 @@ namespace ILCompiler.DependencyAnalysis
             {
                 decodedValue = customAttribute.DecodeValue(new CustomAttributeTypeProvider(_module));
             }
-            catch (Exception)
+            catch (TypeSystemException)
+            {
+                return originalBlob;
+            }
+            catch (BadImageFormatException)
             {
                 return originalBlob;
             }
@@ -321,7 +327,7 @@ namespace ILCompiler.DependencyAnalysis
             {
                 constructor = _module.GetMethod(customAttribute.Constructor);
             }
-            catch (Exception)
+            catch (TypeSystemException)
             {
                 return _module.MetadataReader.GetBlobBytes(customAttribute.Value);
             }
@@ -331,7 +337,7 @@ namespace ILCompiler.DependencyAnalysis
             for (int i = 0; i < decodedValue.FixedArguments.Length; i++)
             {
                 TypeDesc paramType = constructorSig[i];
-                WriteArgumentValue(blobBuilder, paramType, decodedValue.FixedArguments[i].Type, decodedValue.FixedArguments[i].Value, formatter, isFixedArg: true);
+                WriteArgumentValue(blobBuilder, paramType, decodedValue.FixedArguments[i].Type, decodedValue.FixedArguments[i].Value, formatter);
             }
 
             // NumNamed
@@ -344,19 +350,19 @@ namespace ILCompiler.DependencyAnalysis
                 blobBuilder.WriteByte(namedArg.Kind == CustomAttributeNamedArgumentKind.Field ? (byte)0x53 : (byte)0x54);
 
                 // Field/property type
-                WriteFieldOrPropType(blobBuilder, namedArg.Type);
+                WriteFieldOrPropType(blobBuilder, namedArg.Type, formatter);
 
                 // Name as SerString
                 WriteSerString(blobBuilder, namedArg.Name);
 
                 // Value
-                WriteArgumentValue(blobBuilder, namedArg.Type, namedArg.Type, namedArg.Value, formatter, isFixedArg: false);
+                WriteArgumentValue(blobBuilder, namedArg.Type, namedArg.Type, namedArg.Value, formatter);
             }
 
             return blobBuilder.ToArray();
         }
 
-        private void WriteFieldOrPropType(BlobBuilder builder, TypeDesc type)
+        private static void WriteFieldOrPropType(BlobBuilder builder, TypeDesc type, CustomAttributeTypeNameFormatter formatter)
         {
             if (type is null)
                 return;
@@ -365,7 +371,6 @@ namespace ILCompiler.DependencyAnalysis
             if (type.IsEnum)
             {
                 builder.WriteByte(0x55); // ELEMENT_TYPE_ENUM
-                var formatter = new CustomAttributeTypeNameFormatter();
                 WriteSerString(builder, formatter.FormatName(type, true));
                 return;
             }
@@ -373,7 +378,7 @@ namespace ILCompiler.DependencyAnalysis
             if (type.IsSzArray)
             {
                 builder.WriteByte(0x1D); // ELEMENT_TYPE_SZARRAY
-                WriteFieldOrPropType(builder, ((ArrayType)type).ElementType);
+                WriteFieldOrPropType(builder, ((ArrayType)type).ElementType, formatter);
                 return;
             }
 
@@ -408,19 +413,13 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        private void WriteArgumentValue(BlobBuilder builder, TypeDesc declaredType, TypeDesc actualType, object value, CustomAttributeTypeNameFormatter formatter, bool isFixedArg)
+        private void WriteArgumentValue(BlobBuilder builder, TypeDesc declaredType, TypeDesc actualType, object value, CustomAttributeTypeNameFormatter formatter)
         {
             if (declaredType is null)
                 return;
 
             // Boxed (object-typed) arguments: write field/prop type tag then the value
-            if (declaredType.IsObject && !isFixedArg)
-            {
-                WriteBoxedArgumentValue(builder, actualType, value, formatter);
-                return;
-            }
-
-            if (declaredType.IsObject && isFixedArg)
+            if (declaredType.IsObject)
             {
                 WriteBoxedArgumentValue(builder, actualType, value, formatter);
                 return;
@@ -495,7 +494,7 @@ namespace ILCompiler.DependencyAnalysis
                     TypeDesc elementType = ((ArrayType)declaredType).ElementType;
                     foreach (CustomAttributeTypedArgument<TypeDesc> element in arrayElements)
                     {
-                        WriteArgumentValue(builder, elementType, element.Type, element.Value, formatter, isFixedArg: true);
+                        WriteArgumentValue(builder, elementType, element.Type, element.Value, formatter);
                     }
                 }
                 else
@@ -516,8 +515,8 @@ namespace ILCompiler.DependencyAnalysis
                 return;
             }
 
-            WriteFieldOrPropType(builder, actualType);
-            WriteArgumentValue(builder, actualType, actualType, value, formatter, isFixedArg: true);
+            WriteFieldOrPropType(builder, actualType, formatter);
+            WriteArgumentValue(builder, actualType, actualType, value, formatter);
         }
 
         private static void WritePrimitiveValue(BlobBuilder builder, TypeDesc type, object value)
