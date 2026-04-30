@@ -10503,10 +10503,10 @@ inline bool GenTree::IsIntegralConstAbsPow2() const
     {
         if (TypeIs(TYP_INT))
         {
-            return isPow2Abs(static_cast<int32_t>(AsIntConCommon()->IconValue()));
+            return isAbsPow2(static_cast<int32_t>(AsIntConCommon()->IconValue()));
         }
 
-        return isPow2Abs(AsIntConCommon()->LngValue());
+        return isAbsPow2(AsIntConCommon()->LngValue());
     }
 
     return false;

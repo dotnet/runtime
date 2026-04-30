@@ -69,19 +69,10 @@ inline bool isPow2(T i)
 
 // return true if abs(arg) is a power of 2
 template <typename T>
-inline bool isPow2Abs(T i)
+inline bool isAbsPow2(T i)
 {
-    if (i < 0)
-    {
-        i = -i;
-        if (i < 0)
-        {
-            // true for min value
-            return true;
-        }
-    }
-
-    return isPow2(i);
+    static_assert(std::numeric_limits<T>::is_signed);
+    return (i == std::numeric_limits<T>::min()) || isPow2(abs(i));
 }
 
 template <typename T>
