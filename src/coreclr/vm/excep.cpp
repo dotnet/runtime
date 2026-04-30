@@ -6429,7 +6429,7 @@ bool GetPacSignInfo(PTR_CONTEXT pContextToCheck, EECodeInfo *pCodeInfo, TADDR re
     for (ULONG_PTR unwindOpPtr = UnwindCodePtr; unwindOpPtr < UnwindCodesEndPtr;)
     {
         BYTE curCode = *(BYTE*)unwindOpPtr;
-        if ((curCode & 0xFE) == 0xE4)   // end, end_c
+        if (curCode == 0xE4)   // end
         {
             break;
         }
@@ -6449,7 +6449,7 @@ bool GetPacSignInfo(PTR_CONTEXT pContextToCheck, EECodeInfo *pCodeInfo, TADDR re
     for (ULONG_PTR unwindOpPtr = UnwindCodePtr; unwindOpPtr < UnwindCodesEndPtr;)
     {
         BYTE curCode = *(BYTE*)unwindOpPtr;
-        if ((curCode & 0xFE) == 0xE4)   // end, end_c
+        if (curCode == 0xE4)   // end
         {
             break;
         }
@@ -6595,6 +6595,11 @@ bool GetPacSignInfo(PTR_CONTEXT pContextToCheck, EECodeInfo *pCodeInfo, TADDR re
         }
 
         if (CurCode == 0xE3) // nop
+        {
+            continue;
+        }
+
+        if (CurCode == 0xE5) // end_c
         {
             continue;
         }

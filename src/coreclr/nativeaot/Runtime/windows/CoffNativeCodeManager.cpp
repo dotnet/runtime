@@ -839,7 +839,7 @@ static bool HasPacInUnwindInfo(PTR_VOID pUnwindDataBlob, size_t unwindDataBlobSi
     while (UnwindCodePtr < UnwindCodesEndPtr)
     {
         uint8_t CurCode = *UnwindCodePtr;
-        if ((CurCode & 0xfe) == 0xe4)   // The last unwind code
+        if (CurCode == 0xe4)   // The last unwind code
         {
             break;
         }
