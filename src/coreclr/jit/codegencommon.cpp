@@ -2542,14 +2542,6 @@ void CodeGen::genReportEH()
     if (m_compiler->opts.dspEHTable)
     {
         printf("*************** EH table for %s\n", m_compiler->info.compFullName);
-    }
-#endif // DEBUG
-
-    unsigned XTnum;
-
-#ifdef DEBUG
-    if (m_compiler->opts.dspEHTable)
-    {
         printf("%d EH table entries\n", m_compiler->compHndBBtabCount);
     }
 #endif // DEBUG
@@ -2560,10 +2552,30 @@ void CodeGen::genReportEH()
 
     EHClauseInfo* clauses = new (m_compiler, CMK_Codegen) EHClauseInfo[m_compiler->compHndBBtabCount];
 
+    INDEBUG(unsigned lastFuncletIndex = 0);
+
     // Set up EH clause table, but don't report anything to the VM, yet.
-    XTnum = 0;
-    for (EHblkDsc* const HBtab : EHClauses(m_compiler))
+    //
+    for (unsigned int i = 0; i < m_compiler->compHndBBtabCount; i++)
     {
+        unsigned const  XTNum = m_compiler->compEHorderTab[i];
+        EHblkDsc* const HBtab = &m_compiler->compHndBBtab[XTNum];
+
+#ifdef DEBUG
+        // We should be seeing funclet numbers increase predictably
+        // as we go through the EH table in VM order.
+        //
+        if (HBtab->HasFilter())
+        {
+            assert(HBtab->ebdFuncIndex == (lastFuncletIndex + 2));
+        }
+        else
+        {
+            assert(HBtab->ebdFuncIndex == (lastFuncletIndex + 1));
+        }
+        lastFuncletIndex = HBtab->ebdFuncIndex;
+#endif
+
         UNATIVE_OFFSET tryBeg, tryEnd, hndBeg, hndEnd, hndTyp;
 
         tryBeg = m_compiler->ehCodeOffset(HBtab->ebdTryBeg);
@@ -2593,7 +2605,7 @@ void CodeGen::genReportEH()
         clause.TryLength     = tryEnd;
         clause.HandlerOffset = hndBeg;
         clause.HandlerLength = hndEnd;
-        clauses[XTnum++]     = {clause, HBtab};
+        clauses[i]           = {clause, HBtab};
     }
 
     genReportEHClauses(clauses);
@@ -2605,34 +2617,18 @@ void CodeGen::genReportEH()
 // genReportEH: create and report EH info to the VM
 //
 // Arguments:
-//    clauses -- eh clause data to report
+//    clauses -- eh clause data to fill in and report
 //
 void CodeGen::genReportEHClauses(EHClauseInfo* clauses)
 {
-    // The JIT's ordering of EH clauses does not guarantee that clauses covering the same try region are contiguous.
-    // We need this property to hold true so the CORINFO_EH_CLAUSE_SAMETRY flag is accurate.
-    jitstd::sort(clauses, clauses + m_compiler->compHndBBtabCount,
-                 [this](const EHClauseInfo& left, const EHClauseInfo& right) {
-        const unsigned short leftTryIndex  = left.HBtab->ebdTryBeg->bbTryIndex;
-        const unsigned short rightTryIndex = right.HBtab->ebdTryBeg->bbTryIndex;
-
-        if (leftTryIndex == rightTryIndex)
-        {
-            // We have two clauses mapped to the same try region.
-            // Make sure we report the clause with the smaller index first.
-            const ptrdiff_t leftIndex  = left.HBtab - this->m_compiler->compHndBBtab;
-            const ptrdiff_t rightIndex = right.HBtab - this->m_compiler->compHndBBtab;
-            return leftIndex < rightIndex;
-        }
-
-        return leftTryIndex < rightTryIndex;
-    });
-
-    unsigned XTnum;
-
-    // Now, report EH clauses to the VM in order of increasing try region index.
-    for (XTnum = 0; XTnum < m_compiler->compHndBBtabCount; XTnum++)
+    // Now, report EH clauses to the VM in the proper order.
+    // It may differ from the order in the EH table.
+    //
+    // We computed this order in fgCreateFunclets.
+    //
+    for (unsigned i = 0; i < m_compiler->compHndBBtabCount; i++)
     {
+        unsigned           XTnum  = m_compiler->compEHorderTab[i];
         CORINFO_EH_CLAUSE& clause = clauses[XTnum].clause;
         EHblkDsc* const    HBtab  = clauses[XTnum].HBtab;
 
@@ -2655,8 +2651,6 @@ void CodeGen::genReportEHClauses(EHClauseInfo* clauses)
 
         m_compiler->eeSetEHinfo(XTnum, &clause);
     }
-
-    assert(XTnum == m_compiler->compHndBBtabCount);
 }
 
 #ifndef TARGET_WASM

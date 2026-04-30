@@ -9459,9 +9459,10 @@ public:
     }
 
     // Things that MAY belong either in CodeGen or CodeGenContext
-    FuncInfoDsc*   compFuncInfos;
-    unsigned short compCurrFuncIdx;
-    unsigned short compFuncInfoCount;
+    FuncInfoDsc*    compFuncInfos;
+    unsigned short  compCurrFuncIdx;
+    unsigned short  compFuncInfoCount;
+    unsigned short* compEHorderTab;
 
     unsigned short compFuncCount()
     {
