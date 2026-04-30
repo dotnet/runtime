@@ -22,6 +22,7 @@ public enum DataType
     /* VM Data Types */
 
     ObjectHandle,
+    JITNotification,
     CodePointer,
     Thread,
     ThreadStore,
@@ -77,6 +78,7 @@ public enum DataType
     StressMsg,
     StressMsgHeader,
     Object,
+    ContinuationObject,
     NativeObjectWrapperObject,
     ManagedObjectWrapperHolderObject,
     ManagedObjectWrapperLayout,

@@ -105,7 +105,7 @@ public abstract class DumpTestBase : IDisposable
             throw new SkipTestException($"No {config.R2RMode} dump for {debuggeeName}: {dumpPath}");
         }
 
-        _host = ClrMdDumpHost.Open(dumpPath);
+        _host = ClrMdDumpHost.Open(dumpPath, GetSymbolPaths(debuggeeName, versionDir));
         ulong contractDescriptor = _host.FindContractDescriptorAddress();
 
         bool created = ContractDescriptorTarget.TryCreate(
@@ -113,6 +113,7 @@ public abstract class DumpTestBase : IDisposable
             _host.ReadFromTarget,
             writeToTarget: static (_, _) => -1,
             _host.GetThreadContext,
+            allocVirtual: static (ulong _, out ulong _) => throw new NotImplementedException("Dump tests do not provide AllocVirtual"),
             [Contracts.CoreCLRContracts.Register],
             out _target);
 
@@ -231,6 +232,30 @@ public abstract class DumpTestBase : IDisposable
         }
 
         return false;
+    }
+
+    /// <summary>
+    /// Collects local symbol paths for ClrMD to resolve modules in the dump.
+    /// Checks <c>symbols/</c> directories in the helix payload (Helix and xplat dumps)
+    /// </summary>
+    private static List<string> GetSymbolPaths(string debuggeeName, string versionDir)
+    {
+        List<string> paths = [];
+
+        // Symbols directory in the dump tree (populated by Helix commands before tarring)
+        string symbolsDir = Path.Combine(versionDir, "symbols");
+        if (Directory.Exists(symbolsDir))
+        {
+            string runtimeSymbols = Path.Combine(symbolsDir, "runtime");
+            if (Directory.Exists(runtimeSymbols))
+                paths.Add(runtimeSymbols);
+
+            string debuggeeSymbols = Path.Combine(symbolsDir, "debuggees", debuggeeName);
+            if (Directory.Exists(debuggeeSymbols))
+                paths.Add(debuggeeSymbols);
+        }
+
+        return paths;
     }
 
     private static string? FindRepoRoot()

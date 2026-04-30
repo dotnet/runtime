@@ -121,6 +121,12 @@ public interface IRuntimeTypeSystem : IContract
     bool RequiresAlign8(TypeHandle typeHandle) => throw new NotImplementedException();
     // True if the MethodTable represents a continuation type used by the async continuation feature
     bool IsContinuation(TypeHandle typeHandle) => throw new NotImplementedException();
+    /// <summary>
+    /// Enumerates GC pointer runs from the CGCDesc stored before the method table.
+    /// Returns (offset, size) pairs normalized to actual byte lengths.
+    /// See RuntimeTypeSystem.md for the full GCDesc format documentation.
+    /// </summary>
+    IEnumerable<(uint Offset, uint Size)> GetGCDescSeries(TypeHandle typeHandle, uint numComponents = 0) => throw new NotImplementedException();
     bool IsDynamicStatics(TypeHandle typeHandle) => throw new NotImplementedException();
     ushort GetNumInterfaces(TypeHandle typeHandle) => throw new NotImplementedException();
 
