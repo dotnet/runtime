@@ -53,8 +53,7 @@
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(TestSingleFile)' == 'true' and '$(TargetsAppleMobile)' != 'true'">
-    <!-- Skipped on Apple mobile: AppleTestRunner doesn't consume -xml and xharness
-         doesn't reliably forward args past the separator. -->
+    <!-- Pass the results file -->
     <RunScriptCommand>$(RunScriptCommand) -xml $(TestResultsName)</RunScriptCommand>
   </PropertyGroup>
 
