@@ -4496,6 +4496,11 @@ struct AsyncCallInfo
     // Tail awaits do not generate suspension points and the JIT instead
     // directly returns the callee's continuation to the caller.
     bool IsTailAwait = false;
+
+    bool NeedsToSaveAndRestoreExecutionContext() const
+    {
+        return true;
+    }
 };
 
 // Return type descriptor of a GT_CALL node.
@@ -5766,7 +5771,7 @@ struct GenTreeCall final : public GenTree
             return WellKnownArg::VirtualStubCell;
         }
 
-#if defined(TARGET_ARMARCH) || defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64) || defined(TARGET_WASM)
+#if defined(TARGET_ARMARCH) || defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
         // For ARM architectures, we always use an indirection cell for R2R calls.
         if (IsR2RRelativeIndir() && !IsDelegateInvoke())
         {

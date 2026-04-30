@@ -766,7 +766,6 @@ static void InterpBreakpoint(const int32_t *ip, const InterpMethodContextFrame *
         exceptionRecord.ExceptionCode = STATUS_BREAKPOINT;
         exceptionRecord.ExceptionAddress = (PVOID)ip;
 
-        // Construct a CONTEXT for the debugger
         CONTEXT ctx;
         memset(&ctx, 0, sizeof(CONTEXT));
 
@@ -789,10 +788,41 @@ static void InterpBreakpoint(const int32_t *ip, const InterpMethodContextFrame *
             STATUS_BREAKPOINT,
             pThread))
         {
+            InterpThreadContext *pThreadContext = pThread->GetInterpThreadContext();
+
+            const int32_t *savedBypassAddress = pThreadContext->m_bypassAddress;
+            int32_t savedBypassOpcode = pThreadContext->m_bypassOpcode;
+
+            // Clear the bypass before dispatching pending evals
+            pThreadContext->m_bypassAddress = NULL;
+            pThreadContext->m_bypassOpcode = 0;
+
+            pThread->SetFilterContext(&ctx);
+            EX_TRY
+            {
+                g_pDebugInterface->ProcessAnyPendingEvals(pThread);
+            }
+            EX_CATCH
+            {
+                pThread->SetFilterContext(NULL);
+                pThreadContext->m_bypassAddress = savedBypassAddress;
+                pThreadContext->m_bypassOpcode = savedBypassOpcode;
+                EX_RETHROW;
+            }
+            EX_END_CATCH
+            pThread->SetFilterContext(NULL);
+
+            // The debugger may have moved execution via SetIP. If so, drop the bypass
+            // (it was set up for the original IP) and resume at the new context via
+            // ResumeAfterCatchException.
             if ((GetIP(&ctx) != (PCODE)ip) || (GetSP(&ctx) != (DWORD64)pFrame))
             {
                 ThrowResumeAfterCatchException(GetSP(&ctx), GetIP(&ctx));
             }
+
+            // No SetIP change — restore the bypass so the original opcode runs once.
+            pThreadContext->m_bypassAddress = savedBypassAddress;
+            pThreadContext->m_bypassOpcode = savedBypassOpcode;
         }
     }
 }

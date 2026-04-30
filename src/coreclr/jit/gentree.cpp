@@ -6508,7 +6508,38 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                     {
                         var_types dstType = tree->AsCast()->CastToType();
 
-                        if (varTypeIsLong(dstType))
+                        if (compOpportunisticallyDependsOn(InstructionSet_AVX10v2))
+                        {
+#if defined(TARGET_X86)
+                            if (varTypeIsLong(dstType))
+                            {
+                                // unsigned: vcvttp*2uqqs xmm0, xmm0
+                                //           vmovq        [mem], xmm0
+                                //
+                                // signed:   vcvttp*2qqs  xmm0, xmm0
+                                //           vmovq        [mem], xmm0
+
+                                costEx = 4 + FLT_IND_COST_EX; // 4 + FLT_IND_COST_EX
+                                costSz = 6 + 6;               // 12
+
+                                if (op1Type == TYP_FLOAT)
+                                {
+                                    // vector widening float->long instructions take 1 extra cycle
+                                    // compared to same-size conversion
+                                    costEx += 1;
+                                }
+                            }
+                            else
+#endif
+                            {
+                                // unsigned: vcvtts*2usis eax, xmm0
+                                // signed:   vcvtts*2sis  eax, xmm0
+
+                                costEx = 7;
+                                costSz = 6;
+                            }
+                        }
+                        else if (varTypeIsLong(dstType))
                         {
 #if defined(TARGET_AMD64)
                             if (varTypeIsUnsigned(dstType))
@@ -6556,24 +6587,59 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                                 costSz = 5 + 4 + 10 + 5 + 8 + 4;                    // 36
                             }
 #else
-                            // unsigned: ...
-                            //           call CORINFO_HELP_DBL2ULNG
-                            //
-                            // signed:   ...
-                            //           call CORINFO_HELP_DBL2ULNG
-
-                            costEx = 5 + (3 * IND_COST_EX); // CALL
-                            costSz = 5;                     // 5
-
-                            level++;
-
-                            if (op1Type == TYP_FLOAT)
+                            if (compOpportunisticallyDependsOn(InstructionSet_AVX512))
                             {
-                                // vcvtss2sd xmm0, xmm0, xmm0
-                                // ...
+                                if (varTypeIsUnsigned(dstType))
+                                {
+                                    // vxorps       xmm1, xmm1, xmm1
+                                    // vmaxs*       xmm0, xmm0, xmm1
+                                    // vcvttp*2uqq  xmm0, xmm0
+                                    // vmovq        [mem], xmm0
 
-                                costEx += 4; // 4 + CALL
-                                costSz += 4; // 9
+                                    costEx = 1 + 4 + 4 + FLT_IND_COST_EX; // 9 + FLT_IND_COST_EX
+                                    costSz = 4 + 4 + 6 + 6;               // 20
+                                }
+                                else
+                                {
+                                    // vcmpords*    k1, xmm0, xmm0
+                                    // vcmpge_oqs*  k2, xmm0, qword ptr [@RWD00]
+                                    // vcvttp*2qq   xmm0 {k1}{z}, xmm0
+                                    // vpblendmq    xmm0 {k2}, xmm0, qword ptr [@RWD08] {1to2}
+                                    // vmovq        [mem], xmm0
+
+                                    costEx = 4 + (4 + FLT_IND_COST_EX) + 4 + (1 + FLT_IND_COST_EX) +
+                                             FLT_IND_COST_EX;     // 13 + (3 * FLT_IND_COST_EX)
+                                    costSz = 7 + 11 + 6 + 10 + 6; // 40
+                                }
+
+                                if (op1Type == TYP_FLOAT)
+                                {
+                                    // vector widening float->long instructions take 1 extra cycle
+                                    // compared to same-size conversion
+                                    costEx += 1;
+                                }
+                            }
+                            else
+                            {
+                                // unsigned: ...
+                                //           call CORINFO_HELP_DBL2ULNG
+                                //
+                                // signed:   ...
+                                //           call CORINFO_HELP_DBL2ULNG
+
+                                costEx = 5 + (3 * IND_COST_EX); // CALL
+                                costSz = 5;                     // 5
+
+                                level++;
+
+                                if (op1Type == TYP_FLOAT)
+                                {
+                                    // vcvtss2sd xmm0, xmm0, xmm0
+                                    // ...
+
+                                    costEx += 4; // 4 + CALL
+                                    costSz += 4; // 9
+                                }
                             }
 #endif
                         }
@@ -8089,6 +8155,7 @@ bool GenTree::TryGetUse(GenTree* operand, GenTree*** pUse)
         case GT_RETURN:
         case GT_RETFILT:
         case GT_RETURN_SUSPEND:
+        case GT_PATCHPOINT_FORCED:
         case GT_NONLOCAL_JMP:
         case GT_BSWAP:
         case GT_BSWAP16:
@@ -8361,6 +8428,8 @@ bool GenTree::OperRequiresCallFlag(Compiler* comp) const
         case GT_KEEPALIVE:
         case GT_ASYNC_CONTINUATION:
         case GT_RETURN_SUSPEND:
+        case GT_PATCHPOINT:
+        case GT_PATCHPOINT_FORCED:
         case GT_NONLOCAL_JMP:
             return true;
 
@@ -8705,6 +8774,8 @@ bool GenTree::OperRequiresGlobRefFlag(Compiler* comp) const
         case GT_KEEPALIVE:
         case GT_ASYNC_CONTINUATION:
         case GT_RETURN_SUSPEND:
+        case GT_PATCHPOINT:
+        case GT_PATCHPOINT_FORCED:
         case GT_NONLOCAL_JMP:
         case GT_SWIFT_ERROR:
         case GT_GCPOLL:
@@ -8771,6 +8842,8 @@ bool GenTree::OperSupportsOrderingSideEffect() const
         case GT_CATCH_ARG:
         case GT_ASYNC_CONTINUATION:
         case GT_RETURN_SUSPEND:
+        case GT_PATCHPOINT:
+        case GT_PATCHPOINT_FORCED:
         case GT_NONLOCAL_JMP:
         case GT_SWIFT_ERROR:
             return true;
@@ -11799,6 +11872,7 @@ GenTreeUseEdgeIterator::GenTreeUseEdgeIterator(GenTree* node)
         case GT_INC_SATURATE:
         case GT_RETURNTRAP:
         case GT_RETURN_SUSPEND:
+        case GT_PATCHPOINT_FORCED:
         case GT_NONLOCAL_JMP:
             m_edge = &m_node->AsUnOp()->gtOp1;
             assert(*m_edge != nullptr);
@@ -23311,8 +23385,8 @@ GenTree* Compiler::gtNewSimdCvtNode(
         // mask1 contains the output either 0xFFFFFFFF or 0.
         // FixupVal zeros out any NaN values in the input by ANDing input with mask1.
         GenTree* op1Clone1 = fgMakeMultiUse(&op1);
-        GenTree* mask1     = gtNewSimdIsNaNNode(type, op1, simdSourceBaseType, simdSize);
-        fixupVal           = gtNewSimdBinOpNode(GT_AND_NOT, type, op1Clone1, mask1, simdSourceBaseType, simdSize);
+        GenTree* mask1     = gtNewSimdIsNaNNode(type, op1Clone1, simdSourceBaseType, simdSize);
+        fixupVal           = gtNewSimdBinOpNode(GT_AND_NOT, type, op1, mask1, simdSourceBaseType, simdSize);
     }
 
     if (varTypeIsSigned(simdTargetBaseType))
@@ -35261,8 +35335,8 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
                     break;
                 }
 
-                bool maskIsZero    = false;
-                bool maskIsAllOnes = false;
+                bool maskIsZero       = false;
+                bool maskIsAllBitsSet = false;
 
                 if (op3->IsCnsMsk())
                 {
@@ -35273,7 +35347,7 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
                         GenTreeMskCon* mask      = op3->AsMskCon();
                         uint32_t       elemCount = simdSize / genTypeSize(simdBaseType);
 
-                        maskIsAllOnes = mask->gtSimdMaskVal.GetRawBits() == simdmask_t::GetBitMask(elemCount);
+                        maskIsAllBitsSet = mask->gtSimdMaskVal.GetRawBits() == simdmask_t::GetBitMask(elemCount);
                     }
                 }
                 else
@@ -35284,11 +35358,11 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
 
                     if (!maskIsZero)
                     {
-                        maskIsAllOnes = op3->IsVectorAllBitsSet();
+                        maskIsAllBitsSet = op3->IsVectorAllBitsSet();
                     }
                 }
 
-                if (maskIsAllOnes)
+                if (maskIsAllBitsSet)
                 {
                     if ((op1->gtFlags & GTF_SIDE_EFFECT) != 0)
                     {
