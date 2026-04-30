@@ -6,9 +6,8 @@ pr:
   paths:
     include:
     - eng/pipelines/coreclr/hardware-intrinsics-arm64.yml
-    - src/coreclr/jit/emitarm64.cpp
-    - src/coreclr/jit/emitarm64sve.cpp
-    - src/coreclr/jit/hwintrinsicarm64.cpp
+    - eng/pipelines/coreclr/templates/jit-hwintrin-common.yml
+    - src/coreclr/jit/*arm64*
 
 variables:
   - template: /eng/pipelines/common/variables.yml
