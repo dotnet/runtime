@@ -1589,8 +1589,7 @@ namespace System.Numerics.Tensors.Tests
 
                 Assert.Equal(max, Max(x));
 
-                // TODO: Put a variant of this back once we have IndexOf routines
-                // Assert.Equal(SingleToUInt32(x[IndexOfMax(x)]), SingleToUInt32(Max(x)));
+                Assert.Equal(x[IndexOfMax(x)], Max(x));
             });
         }
 
@@ -1611,8 +1610,7 @@ namespace System.Numerics.Tensors.Tests
 
                     Assert.Equal(max, Max(x));
 
-                    // TODO: Put a variant of this back once we have IndexOf routines
-                    // Assert.Equal(SingleToUInt32(x[IndexOfMax(x)]), SingleToUInt32(Max(x)));
+                    Assert.Equal(x[IndexOfMax(x)], Max(x));
                 }, x);
             });
         }
@@ -1774,8 +1772,7 @@ namespace System.Numerics.Tensors.Tests
 
                 Assert.Equal(maxMagnitude, MaxMagnitude(x));
 
-                // TODO: Put a variant of this back once we have IndexOf routines
-                // Assert.Equal(SingleToUInt32(x[IndexOfMaxMagnitude(x)]), SingleToUInt32(MaxMagnitude(x)));
+                Assert.Equal(x[IndexOfMaxMagnitude(x)], MaxMagnitude(x));
             });
         }
 
@@ -1796,8 +1793,7 @@ namespace System.Numerics.Tensors.Tests
 
                     Assert.Equal(maxMagnitude, MaxMagnitude(x));
 
-                    // TODO: Put a variant of this back once we have IndexOf routines
-                    // Assert.Equal(SingleToUInt32(x[IndexOfMaxMagnitude(x)]), SingleToUInt32(MaxMagnitude(x)));
+                    Assert.Equal(x[IndexOfMaxMagnitude(x)], MaxMagnitude(x));
                 }, x);
             });
         }
@@ -1963,8 +1959,7 @@ namespace System.Numerics.Tensors.Tests
 
                 Assert.Equal(min, Min(x));
 
-                // TODO: Put a variant of this back once we have IndexOf routines
-                // Assert.Equal(SingleToUInt32(x[IndexOfMin(x)]), SingleToUInt32(Min(x)));
+                Assert.Equal(x[IndexOfMin(x)], Min(x));
             });
         }
 
@@ -1985,8 +1980,7 @@ namespace System.Numerics.Tensors.Tests
 
                     Assert.Equal(min, Min(x));
 
-                    // TODO: Put a variant of this back once we have IndexOf routines
-                    // Assert.Equal(SingleToUInt32(x[IndexOfMin(x)]), SingleToUInt32(Min(x)));
+                    Assert.Equal(x[IndexOfMin(x)], Min(x));
                 }, x);
             });
         }
@@ -2148,8 +2142,7 @@ namespace System.Numerics.Tensors.Tests
 
                 Assert.Equal(minMagnitude, MinMagnitude(x));
 
-                // TODO: Put a variant of this back once we have IndexOf routines
-                // Assert.Equal(SingleToUInt32(x[IndexOfMinMagnitude(x)]), SingleToUInt32(MinMagnitude(x)));
+                Assert.Equal(x[IndexOfMinMagnitude(x)], MinMagnitude(x));
             });
         }
 
@@ -2170,8 +2163,7 @@ namespace System.Numerics.Tensors.Tests
 
                     Assert.Equal(minMagnitude, MinMagnitude(x));
 
-                    // TODO: Put a variant of this back once we have IndexOf routines
-                    // Assert.Equal(SingleToUInt32(x[IndexOfMinMagnitude(x)]), SingleToUInt32(MinMagnitude(x)));
+                    Assert.Equal(x[IndexOfMinMagnitude(x)], MinMagnitude(x));
                 }, x);
             });
         }
