@@ -63,6 +63,10 @@ namespace System.Formats.Tar
             _header = new TarHeader(format, compatibleEntryType, other._header);
         }
 
+        // Match the limits used by ResolveLinkTarget(returnFinalTarget: true)
+        // See ResolveLinkTarget in File.cs for comment
+        private static int s_maxFollowedLinks = OperatingSystem.IsWindows() ? 63 : 40;
+
         /// <summary>
         /// The checksum of all the fields in this entry. The value is non-zero either when the entry is read from an existing archive, or after the entry is written to a new archive.
         /// </summary>
@@ -401,6 +405,12 @@ namespace System.Formats.Tar
             // Normalize file path (resolves .. and . but not symlinks)
             string normalizedFile = Path.GetFullPath(fileDestinationPath);
 
+            // Ensure normalizedFile starts with resolvedDest before slicing
+            if (!normalizedFile.StartsWith(destPrefix, pathComparison))
+            {
+                return true;
+            }
+
             // Walk relative components, resolving symlinks at each step
             string relative = normalizedFile.Substring(resolvedDest.Length)
                 .TrimStart(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
@@ -437,13 +447,21 @@ namespace System.Formats.Tar
 
         private static string? ResolveSymlink(string path)
         {
-            FileSystemInfo? target = new FileInfo(path).ResolveLinkTarget(returnFinalTarget: false);
-
-            if (target is null)
+            string current = path;
+            int remaining = s_maxFollowedLinks;
+            while (remaining-- > 0)
             {
-                return Path.GetFullPath(path);
+                FileSystemInfo? target = new FileInfo(current).ResolveLinkTarget(returnFinalTarget: false);
+
+                if (target is null)
+                {
+                    break;
+                }
+
+                current = target.FullName;
             }
-            return Path.GetFullPath(target.FullName);
+
+            return Path.GetFullPath(current);
         }
 
         // Resolves the full path of the specified path, resolving symlinks at each step.
