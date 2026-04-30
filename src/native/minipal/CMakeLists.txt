@@ -18,8 +18,9 @@ set(SOURCES
 
 # ospagesize is provided inline in the header on Windows and WASM; the .c file
 # only contains the POSIX implementation. Including it on those platforms would
-# produce an empty translation unit (which some toolchains warn/error on).
-if(NOT WIN32 AND NOT CLR_CMAKE_TARGET_ARCH_WASM)
+# produce a redefinition error (mono builds for wasi/browser set HOST_WASM but
+# not CLR_CMAKE_TARGET_ARCH_WASM, so check both).
+if(NOT WIN32 AND NOT CLR_CMAKE_TARGET_ARCH_WASM AND NOT HOST_WASM)
     list(APPEND SOURCES ospagesize.c)
 endif()
 
