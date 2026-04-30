@@ -573,7 +573,6 @@ Contracts used:
         // NumSeries == 0 → empty.
 
         // NumSeries > 0: Regular series.
-        // Used for normal objects and reference-type arrays (e.g. object[]).
         // Memory layout (each slot is pointer-sized, growing away from MT):
         //
         //   MT - (2*N+1)*ptrSize : series[N-1].seriessize
@@ -591,7 +590,6 @@ Contracts used:
         // For arrays objectSize > baseSize, extending the single series across all elements.
 
         // NumSeries < 0: Value-class (repeating) series.
-        // Used for arrays of value types containing GC references.
         // |NumSeries| val_serie_items describe pointer runs within one array element.
         // Memory layout:
         //
