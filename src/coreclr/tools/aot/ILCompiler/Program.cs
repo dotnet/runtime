@@ -129,30 +129,7 @@ namespace ILCompiler
                     genericCycleDepthCutoff: Get(_command.MaxGenericCycleDepth),
                     genericCycleBreadthCutoff: Get(_command.MaxGenericCycleBreadth));
 
-            //
-            // TODO: To support our pre-compiled test tree, allow input files that aren't managed assemblies since
-            // some tests contain a mixture of both managed and native binaries.
-            //
-            // See: https://github.com/dotnet/corert/issues/2785
-            //
-            // When we undo this hack, replace the foreach with
-            //  typeSystemContext.InputFilePaths = _command.Result.GetValueForArgument(inputFilePaths);
-            //
-            Dictionary<string, string> inputFilePaths = new Dictionary<string, string>();
-            foreach (var inputFile in _command.Result.GetValue(_command.InputFilePaths))
-            {
-                try
-                {
-                    var module = typeSystemContext.GetModuleFromPath(inputFile.Value);
-                    inputFilePaths.Add(inputFile.Key, inputFile.Value);
-                }
-                catch (TypeSystemException.BadImageFormatException)
-                {
-                    // Keep calm and carry on.
-                }
-            }
-
-            typeSystemContext.InputFilePaths = inputFilePaths;
+            typeSystemContext.InputFilePaths = _command.Result.GetValue(_command.InputFilePaths);
             typeSystemContext.ReferenceFilePaths = Get(_command.ReferenceFiles);
             if (!typeSystemContext.InputFilePaths.ContainsKey(systemModuleName)
                 && !typeSystemContext.ReferenceFilePaths.ContainsKey(systemModuleName))
