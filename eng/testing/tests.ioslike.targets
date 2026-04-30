@@ -26,9 +26,6 @@
        AppleAppBuilder-generated objc main (e.g. mono_ios_set_summary). -->
   <ItemGroup Condition="'$(UseNativeAOTRuntime)' == 'true' and '$(IncludesTestRunner)' != 'false'">
     <DirectPInvoke Include="__Internal" />
-    <!-- Root xunit assemblies so ILC keeps TraitDiscoverer/DataDiscoverer types that
-         xunit2 resolves via Type.GetType from attribute strings. Without these,
-         xunit-excludes.txt category filters silently no-op. -->
     <TrimmerRootAssembly Include="Microsoft.DotNet.XUnitExtensions" />
     <TrimmerRootAssembly Include="xunit.core" />
     <TrimmerRootDescriptor Include="$(MSBuildThisFileDirectory)ILLink.Descriptor.xunit.xml" />
@@ -223,7 +220,6 @@
       <IncludesTestRunner Condition="'$(IncludesTestRunner)' == ''">true</IncludesTestRunner>
       <Optimized Condition="'$(Configuration)' == 'Release'">true</Optimized>
       <MainLibraryFileName Condition="'$(MainLibraryFileName)' == '' and '$(IncludesTestRunner)' == 'true' and '$(UseNativeAOTRuntime)' != 'true'">AppleTestRunner.dll</MainLibraryFileName>
-      <!-- AppleAppBuilder rejects MainLibraryFileName with Runtime=NativeAOT. -->
       <MainLibraryFileName Condition="'$(UseNativeAOTRuntime)' == 'true' and '$(IncludesTestRunner)' != 'false'"></MainLibraryFileName>
 
       <AppleBuildDir>$(PublishDir)</AppleBuildDir>

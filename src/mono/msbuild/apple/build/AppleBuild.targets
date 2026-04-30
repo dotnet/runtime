@@ -21,8 +21,6 @@
 
   <Import Condition="Exists('$(ILCompilerTargetsPath)') and '$(UseNativeAOTRuntime)' == 'true'"
           Project="$(ILCompilerTargetsPath)" />
-  <!-- ILLink targets are imported transitively by the SDK once ILC sets PublishTrimmed=true.
-       Importing them here too triggers MSB4011 double-import. -->
 
   <Target Name="_CleanPublish"
           BeforeTargets="Build">
