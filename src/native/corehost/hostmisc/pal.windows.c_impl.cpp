@@ -7,6 +7,7 @@
 
 #include "pal.h"
 #include "trace.h"
+#include "utils.h"
 
 #include <cassert>
 #include <cstdlib>
@@ -42,7 +43,13 @@ extern "C" bool pal_file_exists(const pal_char_t* path)
 
 extern "C" bool pal_directory_exists(const pal_char_t* path)
 {
-    return pal::directory_exists(pal::string_t(path));
+    // Use GetFileAttributesW directly to check for a directory,
+    // consistent with pal::is_directory() and the Unix implementation
+    // (which uses stat + S_ISDIR). pal::directory_exists() cannot be
+    // used here because it is an alias for file_exists(), which returns
+    // true for regular files as well as directories.
+    DWORD attributes = ::GetFileAttributesW(path);
+    return attributes != INVALID_FILE_ATTRIBUTES && (attributes & FILE_ATTRIBUTE_DIRECTORY);
 }
 
 extern "C" bool pal_is_path_fully_qualified(const pal_char_t* path)
@@ -107,10 +114,7 @@ extern "C" bool pal_get_default_installation_dir(pal_char_t* recv, size_t recv_l
 
 extern "C" const pal_char_t* pal_get_dotnet_self_registered_config_location(pal_char_t* buf, size_t buf_len)
 {
-    // On Windows, the installation location is stored in the registry under:
-    // HKLM\SOFTWARE\dotnet\Setup\InstalledVersions\<arch>\InstallLocation
-    // Use HKCU as fallback. Return a descriptive string for error messages.
-    pal_str_printf(buf, buf_len, _X("HKLM\\SOFTWARE\\dotnet\\Setup\\InstalledVersions\\%s\\InstallLocation"),
-        _STRINGIFY(CURRENT_ARCH_NAME));
+    pal::string_t config_loc = pal::get_dotnet_self_registered_config_location(get_current_arch());
+    pal_str_printf(buf, buf_len, _X("%s"), config_loc.c_str());
     return buf;
 }
