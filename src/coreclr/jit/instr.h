@@ -441,6 +441,15 @@ enum insScalableOpts : unsigned
     INS_SCALABLE_OPTS_IMM_FIRST,           // Variants with an immediate and a register, where the immediate comes first
 };
 
+// Some SVE RMW instructions require a mov/movprfx instruction to setup the destination
+// register, using this option to specify which variant of mov/movprfx to use.
+enum insSveMovOpts : unsigned
+{
+    INS_SVE_MOV_OPTS_UNPRED,  // <Zd>, <Zn>
+    INS_SVE_MOV_OPTS_ZEROING, // <Zd>.<T>, <Pg>/Z, <Zn>.<T>
+    INS_SVE_MOV_OPTS_MERGING, // <Zd>.<T>, <Pg>/M, <Zn>.<T>
+};
+
 // Maps directly to the pattern used in SVE instructions such as cntb.
 enum insSvePattern : unsigned
 {
@@ -566,7 +575,9 @@ enum insOpts : unsigned
 
 enum insBarrier : unsigned
 {
-    INS_BARRIER_FULL  =  0x33,
+    INS_BARRIER_FULL       = 0x33, // fence rw, rw
+    INS_BARRIER_LOAD_ONLY  = 0x23, // fence r, rw
+    INS_BARRIER_STORE_ONLY = 0x31, // fence rw, w
 };
 #elif defined(TARGET_WASM)
 enum insOpts : unsigned

@@ -615,7 +615,7 @@ bool Compiler::fgIsThrow(GenTree* tree)
         return false;
     }
     GenTreeCall* call = tree->AsCall();
-    if (call->IsHelperCall() && s_helperCallProperties.AlwaysThrow(eeGetHelperNum(call->gtCallMethHnd)))
+    if (call->IsHelperCall() && s_helperCallProperties.AlwaysThrow(call->GetHelperNum()))
     {
         assert(call->IsNoReturn());
         noway_assert(call->gtFlags & GTF_EXCEPT);
@@ -1049,7 +1049,7 @@ GenTree* Compiler::fgOptimizeDelegateConstructor(GenTreeCall*            call,
         fptrValTree->gtFptrDelegateTarget = true;
         targetMethodHnd                   = fptrValTree->gtFptrMethod;
     }
-    else if (oper == GT_CALL && targetMethod->AsCall()->gtCallMethHnd == eeFindHelper(CORINFO_HELP_VIRTUAL_FUNC_PTR))
+    else if (oper == GT_CALL && targetMethod->AsCall()->IsHelperCall(CORINFO_HELP_VIRTUAL_FUNC_PTR))
     {
         assert(targetMethod->AsCall()->gtArgs.CountArgs() == 3);
         GenTree* handleNode = targetMethod->AsCall()->gtArgs.GetArgByIndex(2)->GetNode();
@@ -1339,12 +1339,8 @@ bool Compiler::fgCastRequiresHelper(var_types fromType, var_types toType, bool o
     }
 
 #if defined(TARGET_X86) || defined(TARGET_ARM)
-    if (varTypeIsFloating(fromType) && varTypeIsLong(toType))
-    {
-        return true;
-    }
-
-    if (varTypeIsLong(fromType) && varTypeIsFloating(toType))
+    if ((varTypeIsLong(fromType) && varTypeIsFloating(toType)) ||
+        (varTypeIsFloating(fromType) && varTypeIsLong(toType)))
     {
 #if defined(TARGET_X86)
         return !compOpportunisticallyDependsOn(InstructionSet_AVX512);
@@ -3613,14 +3609,6 @@ void Compiler::fgCreateThrowHelperBlock(AddCodeDsc* add)
     unsigned tryIndex = add->acdTryIndex;
     unsigned hndIndex = add->acdHndIndex;
 
-#if defined(TARGET_WASM)
-    // For wasm we put throw helpers in the main method region, or in a non-try
-    // region of a handler.
-    //
-    assert(add->acdKeyDsg != AcdKeyDesignator::KD_TRY);
-    tryIndex = 0;
-#endif
-
     BasicBlock* const newBlk = fgNewBBinRegion(jumpKinds[add->acdKind], tryIndex, hndIndex,
                                                /* nearBlk */ nullptr, putInFilter,
                                                /* runRarely */ true, /* insertAtEnd */ true);
@@ -3849,20 +3837,6 @@ unsigned Compiler::bbThrowIndex(BasicBlock* blk, AcdKeyDesignator* dsg)
 
     assert(inTry || inHnd);
 
-#if defined(TARGET_WASM)
-    // The current plan for Wasm: method regions or funclets with
-    // trys will have a single Wasm try handle all
-    // resumption from catches via virtual IPs.
-    //
-    // So we do not need to consider the nesting of the throw
-    // in try regions, just in handlers.
-    //
-    if (!inHnd)
-    {
-        *dsg = AcdKeyDesignator::KD_NONE;
-        return 0;
-    }
-#else
     if (inTry && (!inHnd || (tryIndex < hndIndex)))
     {
         // The most enclosing region is a try body, use it
@@ -3870,7 +3844,6 @@ unsigned Compiler::bbThrowIndex(BasicBlock* blk, AcdKeyDesignator* dsg)
         *dsg = AcdKeyDesignator::KD_TRY;
         return tryIndex;
     }
-#endif // !defined(TARGET_WASM)
 
     // The most enclosing region is a handler which will be a funclet
     // Now we have to figure out if blk is in the filter or handler

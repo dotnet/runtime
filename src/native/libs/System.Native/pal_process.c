@@ -3,6 +3,7 @@
 
 #include "pal_config.h"
 #include "pal_process.h"
+#include "pal_signal.h"
 #include "pal_io.h"
 #include "pal_utilities.h"
 
@@ -338,9 +339,10 @@ int32_t SystemNative_ForkAndExecProcess(const char* filename,
                                       int32_t stdoutFd,
                                       int32_t stderrFd,
                                       int32_t* inheritedFds,
-                                      int32_t inheritedFdCount)
+                                      int32_t inheritedFdCount,
+                                      int32_t startDetached)
 {
-#if HAVE_FORK || defined(TARGET_OSX)
+#if HAVE_FORK || defined(TARGET_OSX) || defined(TARGET_MACCATALYST)
     assert(NULL != filename && NULL != argv && NULL != envp && NULL != childPid &&
             (groupsLength == 0 || groups != NULL) && "null argument.");
 
@@ -357,9 +359,27 @@ int32_t SystemNative_ForkAndExecProcess(const char* filename,
     }
 #endif
 
-#if defined(TARGET_OSX)
-    // Use posix_spawn on macOS when credentials don't need to be set,
-    // since macOS does not support setuid/setgid with posix_spawn.
+#if defined(TARGET_OSX) || defined(TARGET_MACCATALYST)
+#if !HAVE_FORK
+    // On MacCatalyst, fork(2) exists in the SDK but is blocked by the kernel at runtime (EPERM).
+    // setuid/setgid-based credential changes require fork.
+    if (setCredentials)
+    {
+        errno = ENOTSUP;
+        return -1;
+    }
+#endif
+
+#if !HAVE_POSIX_SPAWN_FILE_ACTIONS_ADDCHDIR_NP
+    // posix_spawn_file_actions_addchdir_np is not available on all Apple platforms (e.g. MacCatalyst).
+    if (cwd != NULL)
+    {
+        errno = ENOTSUP;
+        return -1;
+    }
+#endif
+    // Use posix_spawn on macOS/MacCatalyst when credentials don't need to be set,
+    // since posix_spawn does not support setuid/setgid.
     if (!setCredentials)
     {
         pid_t spawnedPid;
@@ -416,6 +436,12 @@ int32_t SystemNative_ForkAndExecProcess(const char* filename,
             flags |= POSIX_SPAWN_CLOEXEC_DEFAULT;
         }
 
+        // When startDetached is set, create a new session so the child is detached from the parent.
+        if (startDetached)
+        {
+            flags |= POSIX_SPAWN_SETSID;
+        }
+
         if ((result = posix_spawnattr_setflags(&attr, flags)) != 0
             || (result = posix_spawnattr_setsigdefault(&attr, &sigdefault_set)) != 0
             || (result = posix_spawnattr_setsigmask(&attr, &current_mask)) != 0 // Set the child's signal mask to match the parent's current mask
@@ -431,7 +457,10 @@ int32_t SystemNative_ForkAndExecProcess(const char* filename,
         if ((stdinFd != -1 && (result = posix_spawn_file_actions_adddup2(&file_actions, stdinFd, STDIN_FILENO)) != 0)
             || (stdoutFd != -1 && (result = posix_spawn_file_actions_adddup2(&file_actions, stdoutFd, STDOUT_FILENO)) != 0)
             || (stderrFd != -1 && (result = posix_spawn_file_actions_adddup2(&file_actions, stderrFd, STDERR_FILENO)) != 0)
-            || (cwd != NULL && (result = posix_spawn_file_actions_addchdir_np(&file_actions, cwd)) != 0)) // Change working directory if specified
+#if HAVE_POSIX_SPAWN_FILE_ACTIONS_ADDCHDIR_NP
+            || (cwd != NULL && (result = posix_spawn_file_actions_addchdir_np(&file_actions, cwd)) != 0) // Change working directory if specified
+#endif
+            )
         {
             int saved_errno = result;
             posix_spawn_file_actions_destroy(&file_actions);
@@ -608,6 +637,13 @@ int32_t SystemNative_ForkAndExecProcess(const char* filename,
             ExitChild(waitForChildToExecPipe[WRITE_END_OF_PIPE], errno);
         }
 
+        // Start the child in a new session when startDetached is set, making it independent
+        // of the parent's process group and terminal.
+        if (startDetached && setsid() == -1)
+        {
+            ExitChild(waitForChildToExecPipe[WRITE_END_OF_PIPE], errno);
+        }
+
         if (setCredentials)
         {
             if (SetGroups(groups, groupsLength, getGroupsBuffer) == -1 ||
@@ -715,6 +751,7 @@ done:;
     (void)stderrFd;
     (void)inheritedFds;
     (void)inheritedFdCount;
+    (void)startDetached;
     return -1;
 #endif
 }
@@ -747,6 +784,9 @@ static int32_t ConvertRLimitResourcesPalToPlatform(RLimitResources value)
 #elif defined(RLIMIT_VMEM)
         case PAL_RLIMIT_RSS:
             return RLIMIT_VMEM;
+#else
+        case PAL_RLIMIT_RSS:
+            break;
 #endif
 #ifdef RLIMIT_MEMLOCK
         case PAL_RLIMIT_MEMLOCK:
@@ -754,17 +794,19 @@ static int32_t ConvertRLimitResourcesPalToPlatform(RLimitResources value)
 #elif defined(RLIMIT_VMEM)
         case PAL_RLIMIT_MEMLOCK:
             return RLIMIT_VMEM;
+#else
+        case PAL_RLIMIT_MEMLOCK:
+            break;
 #endif
 #ifdef RLIMIT_NPROC
         case PAL_RLIMIT_NPROC:
             return RLIMIT_NPROC;
+#else
+        case PAL_RLIMIT_NPROC:
+            break;
 #endif
         case PAL_RLIMIT_NOFILE:
             return RLIMIT_NOFILE;
-#if !defined(RLIMIT_RSS) || !(defined(RLIMIT_MEMLOCK) || defined(RLIMIT_VMEM)) || !defined(RLIMIT_NPROC)
-        default:
-            break;
-#endif
     }
 
     assert_msg(false, "Unknown RLIMIT value", (int)value);
@@ -893,10 +935,13 @@ int32_t SystemNative_WaitIdAnyExitedNoHangNoWait(void)
     return result;
 }
 
-int32_t SystemNative_WaitPidExitedNoHang(int32_t pid, int32_t* exitCode)
+int32_t SystemNative_WaitPidExitedNoHang(int32_t pid, int32_t* exitCode, int32_t* terminatingSignal)
 {
     assert(exitCode != NULL);
+    assert(terminatingSignal != NULL);
 
+    *exitCode = 0;
+    *terminatingSignal = 0;
     int32_t result;
     int status;
     while (CheckInterrupted(result = waitpid(pid, &status, WNOHANG)));
@@ -906,11 +951,16 @@ int32_t SystemNative_WaitPidExitedNoHang(int32_t pid, int32_t* exitCode)
         {
             // the child terminated normally.
             *exitCode = WEXITSTATUS(status);
+            *terminatingSignal = 0;
         }
         else if (WIFSIGNALED(status))
         {
             // child process was terminated by a signal.
-            *exitCode = 128 + WTERMSIG(status);
+            int sig = WTERMSIG(status);
+            *exitCode = 128 + sig;
+            PosixSignal posixSignal = PosixSignalInvalid;
+            TryConvertSignalCodeToPosixSignal(sig, &posixSignal);
+            *terminatingSignal = (int32_t)posixSignal;
         }
         else
         {

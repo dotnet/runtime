@@ -113,8 +113,11 @@ public class Test_GetTotalAllocatedBytes
         {
             object lck = new object();
 
+            // 1000 quickly created threads can be too many for a 32-bit environment, so reduce on 32-bit.
+            int threadCount = IntPtr.Size == 4 ? 100 : 1000;
+
             tsk = Task.Run(() => {
-                for (int i = 0; i < 1000; i++)
+                for (int i = 0; i < threadCount; i++)
                 {
                     Thread thd = new Thread(() => {
                         lock (lck)
@@ -180,7 +183,6 @@ public class Test_GetTotalAllocatedBytes
     }
 
     [ActiveIssue("needs triage", TestRuntimes.Mono)]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/121482", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsArm))]
     [SkipOnCoreClr("This test is not compatible with GC stress.", RuntimeTestModes.AnyGCStress)]
     [ConditionalFact(typeof(Test_GetTotalAllocatedBytes), nameof(IsNotHeapVerifyOnArmArchitecture), nameof(IsMultithreadingSupported))]
     public static void TestEntryPoint() 

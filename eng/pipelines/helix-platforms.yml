@@ -288,9 +288,9 @@ variables:
   - name: helix_android_ubuntu_latest
     value: Ubuntu.2204.Amd64.Android.29.Open
 
-  # Oldest: API 21
+  # Oldest: API 24
   - name: helix_android_ubuntu_oldest
-    value: Ubuntu.2204.Amd64.Android.21.Open
+    value: Ubuntu.2204.Amd64.Android.24.Open
 
   # ===========================================
   # Common Aliases (default to latest)

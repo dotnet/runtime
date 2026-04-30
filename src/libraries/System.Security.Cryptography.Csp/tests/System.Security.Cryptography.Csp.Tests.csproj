@@ -5,6 +5,9 @@
     <NoWarn>$(NoWarn);SYSLIB0021</NoWarn>
     <!-- These APIs are not trim safe but IlcTrimMetadata happens to make the tests using them work -->
     <IlcTrimMetadata>false</IlcTrimMetadata>
+    <!-- https://github.com/dotnet/runtime/issues/126862 -->
+    <EnableTrimAnalyzer>false</EnableTrimAnalyzer>
+    <EnableAotAnalyzer>false</EnableAotAnalyzer>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="CreateTransformCompat.cs" />

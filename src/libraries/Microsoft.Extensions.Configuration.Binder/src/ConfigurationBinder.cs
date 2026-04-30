@@ -245,6 +245,11 @@ namespace Microsoft.Extensions.Configuration
 
             foreach (PropertyInfo property in modelProperties)
             {
+                if (IsIgnoredProperty(property))
+                {
+                    continue;
+                }
+
                 if (constructorParameters is null || !constructorParameters.Any(p => p.Name == property.Name))
                 {
                     BindProperty(property, instance, configuration, options);
@@ -622,6 +627,11 @@ namespace Microsoft.Extensions.Configuration
             HashSet<string> propertyNames = new(StringComparer.OrdinalIgnoreCase);
             foreach (PropertyInfo prop in properties)
             {
+                if (IsIgnoredProperty(prop))
+                {
+                    continue;
+                }
+
                 propertyNames.Add(prop.Name);
             }
 
@@ -1161,6 +1171,8 @@ namespace Microsoft.Extensions.Configuration
 
             return propertyBindingPoint.Value;
         }
+
+        private static bool IsIgnoredProperty(PropertyInfo property) => property.IsDefined(typeof(ConfigurationIgnoreAttribute));
 
         private static string GetPropertyName(PropertyInfo property)
         {

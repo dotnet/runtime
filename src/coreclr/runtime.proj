@@ -24,7 +24,7 @@
       <_CoreClrBuildArg Include="@(_CMakeArgs->'-cmakeargs &quot;%(Identity)&quot;')" />
       <_CoreClrBuildArg Condition="'$(TargetArchitecture)' != ''" Include="-$(TargetArchitecture)" />
       <_CoreClrBuildArg Include="-$(Configuration.ToLower())" />
-      <_CoreClrBuildArg Include="$(Compiler)" />
+      <_CoreClrBuildArg Include="$(CppCompilerAndLinker)" />
       <_CoreClrBuildArg Condition="'$(ConfigureOnly)' == 'true'" Include="-configureonly" />
       <_CoreClrBuildArg Condition="'$(ContinuousIntegrationBuild)' == 'true'" Include="-ci" />
       <_CoreClrBuildArg Condition="'$(CrossBuild)' == 'true'" Include="-cross" />
