@@ -917,6 +917,8 @@ struct X86GcInfoEncoding {
 
 #define TargetGcInfoEncoding Wasm32GcInfoEncoding
 
+// TODO-WASM: Investigate normalizing stack slots to save space based on wasm stack alignment
+
 struct Wasm32GcInfoEncoding {
     static const uint32_t NUM_NORM_CODE_OFFSETS_PER_CHUNK = (64);
     static const uint32_t NUM_NORM_CODE_OFFSETS_PER_CHUNK_LOG2 = (6);
