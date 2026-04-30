@@ -474,7 +474,7 @@ void HijackFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats
      pRD->IsCallerContextValid = FALSE;
      pRD->IsCallerSPValid      = FALSE;
 
-     pRD->pCurrentContext->Pc = m_ReturnAddress;
+     pRD->pCurrentContext->Pc = GetReturnAddress();
      size_t s = sizeof(struct HijackArgs);
      _ASSERTE(s%8 == 0); // HijackArgs contains register values and hence will be a multiple of 8
      // stack must be multiple of 16. So if s is not multiple of 16 then there must be padding of 8 bytes

@@ -4795,9 +4795,30 @@ StackWalkAction SWCB_GetExecutionState(CrawlFrame *pCF, VOID *pData)
     return action;
 }
 
-HijackFrame::HijackFrame(LPVOID returnAddress, Thread *thread, HijackArgs *args)
+PCODE HijackFrame::GetReturnAddress_Impl()
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+
+#if defined(TARGET_ARM64) && !defined(DACCESS_COMPILE)
+    if ((CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_JitPacEnabled) == 1) && (m_SpForPacSign != 0))
+    {
+        return (PCODE)PacAuthPtr((void*)m_ReturnAddress, (void*)m_SpForPacSign);
+    }
+#endif
+
+    return (PCODE)m_ReturnAddress;
+}
+
+HijackFrame::HijackFrame(LPVOID returnAddress, Thread *thread, HijackArgs *args
+#if defined(TARGET_ARM64)
+    , LPVOID spForPacSign
+#endif
+    )
            : Frame(FrameIdentifier::HijackFrame),
              m_ReturnAddress((TADDR)returnAddress),
+#if defined(TARGET_ARM64)
+             m_SpForPacSign((TADDR)spForPacSign),
+#endif
              m_Thread(thread),
              m_Args(args)
 {
@@ -4828,24 +4849,18 @@ void STDCALL OnHijackWorker(HijackArgs * pArgs)
 
     thread->ResetThreadState(Thread::TS_Hijacked);
 
-    // Keep the actual resume address in the saved LR slot. HijackFrame needs a
-    // canonical managed PC for stackwalk/GC, but OnHijackTripThread will later
-    // return via the saved LR in HijackArgs.
+    // Keep the actual resume address in the saved LR slot. HijackFrame
+    // authenticates the return address on demand for stackwalk/GC, but
+    // OnHijackTripThread will later return via the saved LR in HijackArgs.
     pArgs->ReturnAddress = (size_t)thread->m_pvHJRetAddr;
-
-#if defined(TARGET_ARM64)
-    void* hijackFrameReturnAddress = thread->m_pvHJRetAddr;
-    if (thread->m_pSpForPacSign != nullptr)
-    {
-        hijackFrameReturnAddress = PacAuthPtr(hijackFrameReturnAddress, thread->m_pSpForPacSign);
-    }
-#else
-    void* hijackFrameReturnAddress = thread->m_pvHJRetAddr;
-#endif // TARGET_ARM64
 
     // Build a frame so that stack crawling can proceed from here back to where
     // we will resume execution.
-    HijackFrame frame(hijackFrameReturnAddress, thread, pArgs);
+    HijackFrame frame(thread->m_pvHJRetAddr, thread, pArgs
+#if defined(TARGET_ARM64)
+        , thread->m_pSpForPacSign
+#endif
+        );
 
 #ifdef _DEBUG
     BOOL GCOnTransition = FALSE;
