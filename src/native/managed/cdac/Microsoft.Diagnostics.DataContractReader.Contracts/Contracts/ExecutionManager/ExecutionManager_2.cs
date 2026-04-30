@@ -34,6 +34,6 @@ public sealed class ExecutionManager_2 : IExecutionManager
     public List<ExceptionClauseInfo> GetExceptionClauses(CodeBlockHandle codeInfoHandle) => _executionManagerCore.GetExceptionClauses(codeInfoHandle);
     public JitManagerInfo GetEEJitManagerInfo() => _executionManagerCore.GetEEJitManagerInfo();
     public IEnumerable<ICodeHeapInfo> GetCodeHeapInfos() => _executionManagerCore.GetCodeHeapInfos();
-    public StubKind GetStubKind(TargetCodePointer entryPoint) => _executionManagerCore.GetStubKind(entryPoint);
+    public CodeKind GetCodeKind(TargetCodePointer entryPoint) => _executionManagerCore.GetCodeKind(entryPoint);
     public void Flush() => _executionManagerCore.Flush();
 }

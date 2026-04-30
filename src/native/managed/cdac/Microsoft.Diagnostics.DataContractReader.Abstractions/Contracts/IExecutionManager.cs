@@ -42,7 +42,7 @@ public struct JitManagerInfo
     public TargetPointer HeapListAddress;
 }
 
-public enum StubKind : uint
+public enum CodeKind : uint
 {
     Unknown = 0,
     JumpStub = 1,
@@ -55,6 +55,8 @@ public enum StubKind : uint
     CallCountingStub = 9,
     StubLinkStub = 10,
     MethodCallThunk = 11,
+    Jitted = 12,
+    ReadyToRun = 13
 }
 
 public interface ICodeHeapInfo
@@ -118,7 +120,7 @@ public interface IExecutionManager : IContract
     IEnumerable<ICodeHeapInfo> GetCodeHeapInfos() => throw new NotImplementedException();
     // Classify a code address as a known stub kind (precode, jump stub, VSD stub, etc.)
     // or as managed code. Returns Unknown if the address is not recognized.
-    StubKind GetStubKind(TargetCodePointer jittedCodeAddress) => throw new NotImplementedException();
+    CodeKind GetCodeKind(TargetCodePointer jittedCodeAddress) => throw new NotImplementedException();
 }
 
 public readonly struct ExecutionManager : IExecutionManager

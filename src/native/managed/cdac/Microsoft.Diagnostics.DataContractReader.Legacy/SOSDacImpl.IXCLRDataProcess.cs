@@ -118,8 +118,8 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
             string? resultName = null;
 
             // Try stub classification
-            StubKind stubKind = eman.GetStubKind(codeAddr);
-            resultName = GetStubName(stubKind);
+            CodeKind codeKind = eman.GetCodeKind(codeAddr);
+            resultName = GetStubName(codeKind);
 
             // try aux symbols
             if (resultName is null && _target.Contracts.AuxiliarySymbols.TryGetAuxiliarySymbolName(address.ToTargetPointer(_target), out string? auxSymbolName))
@@ -182,11 +182,11 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
         return hr;
     }
 
-    private static string? GetStubName(Contracts.StubKind stubKind)
+    private static string? GetStubName(Contracts.CodeKind codeKind)
     {
-        if (stubKind == Contracts.StubKind.Unknown)
+        if (codeKind == Contracts.CodeKind.Unknown || codeKind == Contracts.CodeKind.Jitted || codeKind == Contracts.CodeKind.ReadyToRun)
             return null;
-        return stubKind.ToString();
+        return codeKind.ToString();
     }
 
     int IXCLRDataProcess.StartEnumAppDomains(ulong* handle)

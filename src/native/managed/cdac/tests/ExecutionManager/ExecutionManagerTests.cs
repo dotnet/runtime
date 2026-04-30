@@ -663,7 +663,7 @@ public class ExecutionManagerTests
     {
         IExecutionManager em = CreateExecutionManagerContract(version, arch);
 
-        Assert.Equal(StubKind.Unknown, em.GetStubKind(new TargetCodePointer(0x00aa_9000)));
+        Assert.Equal(CodeKind.Unknown, em.GetCodeKind(new TargetCodePointer(0x00aa_9000)));
     }
 
     [Theory]
@@ -685,8 +685,8 @@ public class ExecutionManagerTests
                 _ = emBuilder.AddRangeSectionFragment(jittedCode, rangeSection.Address);
             });
 
-        StubKind kind = em.GetStubKind(new TargetCodePointer(codeRangeStart + 0x100));
-        Assert.Equal(StubKind.Prestub, kind);
+        CodeKind kind = em.GetCodeKind(new TargetCodePointer(codeRangeStart + 0x100));
+        Assert.Equal(CodeKind.Prestub, kind);
     }
 
     [Theory]
@@ -716,8 +716,8 @@ public class ExecutionManagerTests
                 _ = emBuilder.AddRangeSectionFragment(jittedCode, rangeSection.Address);
             });
 
-        StubKind kind = em.GetStubKind(new TargetCodePointer(stubCodeAddress));
-        Assert.Equal(StubKind.JumpStub, kind);
+        CodeKind kind = em.GetCodeKind(new TargetCodePointer(stubCodeAddress));
+        Assert.Equal(CodeKind.JumpStub, kind);
     }
 
     [Theory]
@@ -747,8 +747,8 @@ public class ExecutionManagerTests
                 _ = emBuilder.AddRangeSectionFragment(jittedCode, rangeSection.Address);
             });
 
-        StubKind kind = em.GetStubKind(new TargetCodePointer(methodStart));
-        Assert.Equal(StubKind.Unknown, kind);
+        CodeKind kind = em.GetCodeKind(new TargetCodePointer(methodStart));
+        Assert.Equal(CodeKind.Unknown, kind);
     }
 
     [Theory]
@@ -777,8 +777,8 @@ public class ExecutionManagerTests
                 _ = emBuilder.AddRangeSectionFragment(jittedCode, rangeSection.Address);
             });
 
-        StubKind kind = em.GetStubKind(new TargetCodePointer(codeRangeStart + thunkRva + 0x10));
-        Assert.Equal(StubKind.MethodCallThunk, kind);
+        CodeKind kind = em.GetCodeKind(new TargetCodePointer(codeRangeStart + thunkRva + 0x10));
+        Assert.Equal(CodeKind.MethodCallThunk, kind);
     }
 
     [Theory]
@@ -807,8 +807,8 @@ public class ExecutionManagerTests
                 _ = emBuilder.AddRangeSectionFragment(jittedCode, rangeSection.Address);
             });
 
-        StubKind kind = em.GetStubKind(new TargetCodePointer(codeRangeStart + thunkRva + thunkSize + 0x10));
-        Assert.Equal(StubKind.Unknown, kind);
+        CodeKind kind = em.GetCodeKind(new TargetCodePointer(codeRangeStart + thunkRva + thunkSize + 0x10));
+        Assert.Equal(CodeKind.Unknown, kind);
     }
 
     public static IEnumerable<object[]> StdArchAllVersions()

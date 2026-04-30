@@ -99,7 +99,7 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
         public abstract TargetPointer GetDebugInfo(RangeSection rangeSection, TargetCodePointer jittedCodeAddress, out bool hasFlagByte);
         public abstract void GetGCInfo(RangeSection rangeSection, TargetCodePointer jittedCodeAddress, out TargetPointer gcInfo, out uint gcVersion);
         public abstract void GetExceptionClauses(RangeSection rangeSection, CodeBlockHandle codeInfoHandle, out TargetPointer startAddr, out TargetPointer endAddr);
-        public abstract StubKind GetStubCodeBlockKind(RangeSection rangeSection, TargetCodePointer jittedCodeAddress);
+        public abstract CodeKind GetStubCodeBlockKind(RangeSection rangeSection, TargetCodePointer jittedCodeAddress);
     }
 
     private sealed class RangeSection
@@ -541,13 +541,25 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
         return exceptionClauses;
     }
 
-    public StubKind GetStubKind(TargetCodePointer jittedCodeAddress)
+    public CodeKind GetCodeKind(TargetCodePointer jittedCodeAddress)
     {
         RangeSection range = RangeSection.Find(_target, _topRangeSectionMap, _rangeSectionMapLookup, jittedCodeAddress);
         if (range.Data == null)
-            return StubKind.Unknown;
+            return CodeKind.Unknown;
 
         JitManager jitManager = GetJitManager(range.Data);
-        return jitManager.GetStubCodeBlockKind(range, jittedCodeAddress);
+        CodeKind stubKind = jitManager.GetStubCodeBlockKind(range, jittedCodeAddress);
+        if (stubKind != CodeKind.Unknown)
+        {
+            return stubKind;
+        }
+        if (((IExecutionManager)this).GetCodeBlockHandle(jittedCodeAddress) != null)
+        {
+            if (jitManager == _eeJitManager)
+                return CodeKind.Jitted;
+            else if (jitManager == _r2rJitManager)
+                return CodeKind.ReadyToRun;
+        }
+        return CodeKind.Unknown;
     }
 }
