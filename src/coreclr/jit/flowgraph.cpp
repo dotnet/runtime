@@ -3173,9 +3173,7 @@ PhaseStatus Compiler::fgCreateFunclets()
 
         // We want to have the funclet order match the order of emission of EH clauses to the runtime.
         // This is not the same as the order of entries as the EH table. So build a mapping from
-        // So, build a mapping from emission order to table order.
-        //
-        // (todo: persist this and reuse in emission)
+        // So, build mappings from vm order to table order and vice-versa.
         //
         vmClauseOrderToEHTabOrder = new (this, CMK_BasicBlock) unsigned short[compHndBBtabCount];
         ehTabOrderToVMClauseOrder = new (this, CMK_BasicBlock) unsigned short[compHndBBtabCount];
@@ -3198,7 +3196,7 @@ PhaseStatus Compiler::fgCreateFunclets()
             if (leftTryIndex == rightTryIndex)
             {
                 // We have two clauses mapped to the same try region.
-                // Make sure we report the clause with the smaller index first.
+                // Make sure we order the clause with the smaller index first.
                 return leftIndex < rightIndex;
             }
 
@@ -3227,6 +3225,7 @@ PhaseStatus Compiler::fgCreateFunclets()
         }
 
         // Fill in the inverse mapping.
+        //
         for (unsigned i = 0; i < compHndBBtabCount; i++)
         {
             ehTabOrderToVMClauseOrder[vmClauseOrderToEHTabOrder[i]] = (unsigned short)i;
