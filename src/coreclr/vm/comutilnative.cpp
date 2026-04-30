@@ -1555,7 +1555,7 @@ extern "C" void QCALLTYPE Environment_FailFast(QCall::StackCrawlMarkHandle mark,
     // stash the user-provided exception object. this will be used as
     // the inner exception object to the FatalExecutionEngineException.
     if (exception.Get() != NULL)
-        pThread->SetLastThrownObject(exception.Get());
+        pThread->SafeSetLastThrownObject(exception.Get());
 
     EEPolicy::HandleFatalError(COR_E_FAILFAST, findCallerData.retAddress, message, NULL, errorSource, argExceptionString);
 

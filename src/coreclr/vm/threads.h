@@ -1470,8 +1470,6 @@ public:
     }
 
 
-    void SyncManagedExceptionState(bool fIsDebuggerThread);
-
     //---------------------------------------------------------------
     // Per-thread information used by handler
     //---------------------------------------------------------------
@@ -2613,10 +2611,26 @@ private:
     friend class EEDbgInterfaceImpl;
 
 private:
-    // Stores the most recently thrown exception. We need to have a handle in case a GC occurs before
-    // we catch so we don't lose the object. Having a static allows others to catch outside of CLR w/o leaking
-    // a handler and allows rethrow outside of CLR too.
-    // Differs from m_pThrowable in that it doesn't stack on nested exceptions.
+    // m_LastThrownObjectHandle (LTO) holds the most recently thrown exception as
+    // an OBJECTHANDLE. It serves two purposes:
+    //
+    // 1. Bridging: When a managed exception propagates through native frames via
+    //    SEH (RaiseTheExceptionInternalOnly -> ProcessCLRException), LTO carries
+    //    the exception object across the gap where no ExInfo exists yet.
+    //
+    // 2. Post-ExInfo access: After an ExInfo is popped (e.g. in EX_CATCH blocks),
+    //    LTO is the only way to retrieve the exception object. This is used by
+    //    CLRLastThrownObjectException::CreateThrowable and other EX_CATCH consumers.
+    //
+    // LTO is NOT kept in sync with ExInfo::m_exception during active exception
+    // dispatch. While an ExInfo is alive, m_exception is the source of truth -
+    // use GetThrowable() or GetThrowableAsPseudoHandle() to read it. LTO is set
+    // lazily by PopExInfos just before each ExInfo is destroyed, and by
+    // RaiseTheExceptionInternalOnly before the ExInfo is created.
+    //
+    // LTO may be stale during active dispatch. Readers that need the current
+    // exception should call GetThrowable() first and fall back to LastThrownObject()
+    // only when GetThrowable() returns NULL.
     OBJECTHANDLE m_LastThrownObjectHandle;      // Unsafe to use directly.  Use accessors instead.
 
     // Indicates that the throwable in m_lastThrownObjectHandle should be treated as
@@ -2625,6 +2639,8 @@ private:
     BOOL m_ltoIsUnhandled;
 
     friend void DECLSPEC_NORETURN EEPolicy::HandleFatalStackOverflow(EXCEPTION_POINTERS *pExceptionInfo, BOOL fSkipDebugger);
+
+    void SetLastThrownObject(OBJECTREF throwable, BOOL isUnhandled = FALSE);
 
 public:
 
@@ -2653,9 +2669,8 @@ public:
         return m_LastThrownObjectHandle;
     }
 
-    void SetLastThrownObject(OBJECTREF throwable, BOOL isUnhandled = FALSE);
     void SetSOForLastThrownObject();
-    OBJECTREF SafeSetLastThrownObject(OBJECTREF throwable);
+    OBJECTREF SafeSetLastThrownObject(OBJECTREF throwable, BOOL isUnhandled = FALSE);
 
     // Inidcates that the last thrown object is now treated as unhandled
     void MarkLastThrownObjectUnhandled()
@@ -2670,10 +2685,6 @@ public:
         LIMITED_METHOD_DAC_CONTRACT;
         return m_ltoIsUnhandled;
     }
-
-    void SafeUpdateLastThrownObject(void);
-    OBJECTREF SafeSetThrowables(OBJECTREF pThrowable,
-                                BOOL isUnhandled = FALSE);
 
     bool IsLastThrownObjectStackOverflowException()
     {

@@ -3189,9 +3189,6 @@ void CallCatchFunclet(OBJECTREF throwable, BYTE* pHandlerIP, REGDISPLAY* pvRegDi
         pThread->SafeSetLastThrownObject(NULL);
     }
 
-    // Sync managed exception state, for the managed thread, based upon any active exception tracker
-    pThread->SyncManagedExceptionState(false);
-
     ExInfo::UpdateNonvolatileRegisters(pvRegDisplay->pCurrentContext, pvRegDisplay, FALSE);
     if (pHandlerIP != NULL)
     {
@@ -3596,7 +3593,6 @@ static void NotifyExceptionPassStarted(StackFrameIterator *pThis, Thread *pThrea
     if (pExInfo->m_passNumber == 1)
     {
         GCX_COOP();
-        pThread->SafeSetThrowables(pExInfo->m_exception);
         FirstChanceExceptionNotification();
         EEToProfilerExceptionInterfaceWrapper::ExceptionThrown(pThread);
     }

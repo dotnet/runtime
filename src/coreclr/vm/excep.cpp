@@ -3995,22 +3995,6 @@ LONG InternalUnhandledExceptionFilter_Worker(
             LOG((LF_EH, LL_INFO100, "InternalUnhandledExceptionFilter_Worker: Not collecting bucket information as thread object does not exist\n"));
         }
 
-        // AppDomain.UnhandledException event could have thrown an exception that would have gone unhandled in managed code.
-        // The runtime swallows all such exceptions. Hence, if we are not using LastThrownObject and the current LastThrownObject
-        // is not the same as the one in active exception tracker (if available), then update the last thrown object.
-        if ((pParam->pThread != NULL) && (!useLastThrownObject))
-        {
-            GCX_COOP_NO_DTOR();
-
-            OBJECTREF oThrowable = pParam->pThread->GetThrowable();
-            if ((oThrowable != NULL) && (pParam->pThread->LastThrownObject() != oThrowable))
-            {
-                pParam->pThread->SafeSetLastThrownObject(oThrowable);
-                LOG((LF_EH, LL_INFO100, "InternalUnhandledExceptionFilter_Worker: Resetting the LastThrownObject as it appears to have changed.\n"));
-            }
-
-            GCX_COOP_NO_DTOR_END();
-        }
 
         // Launch Watson and see if we want to debug the process
         //

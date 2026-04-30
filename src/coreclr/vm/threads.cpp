@@ -2271,7 +2271,7 @@ Thread::~Thread()
     if (!IsAtProcessExit())
     {
         // Destroy any handles that we're using to hold onto exception objects
-        SafeSetThrowables(NULL);
+        SafeSetLastThrownObject(NULL);
 
         DestroyShortWeakHandle(m_ExposedObject);
         DestroyStrongHandle(m_StrongHndToExposedObject);
@@ -2635,7 +2635,7 @@ void Thread::OnThreadTerminate(BOOL holdingLock)
         GCX_COOP();
 
         // Destroy the LastThrown handle (and anything that violates the above assert).
-        SafeSetThrowables(NULL);
+        SafeSetLastThrownObject(NULL);
 
         // Free loader allocator structures related to this thread
         FreeLoaderAllocatorHandlesForTLSData(this);
@@ -3190,7 +3190,7 @@ void Thread::SetSOForLastThrownObject()
 // the handle for the throwable, and setting the last thrown object to the preallocated out of memory exception
 // instead.
 //
-OBJECTREF Thread::SafeSetLastThrownObject(OBJECTREF throwable)
+OBJECTREF Thread::SafeSetLastThrownObject(OBJECTREF throwable, BOOL isUnhandled)
 {
     CONTRACTL
     {
@@ -3205,86 +3205,18 @@ OBJECTREF Thread::SafeSetLastThrownObject(OBJECTREF throwable)
 
     EX_TRY
     {
-        // Try to set the throwable.
-        SetLastThrownObject(throwable);
+        SetLastThrownObject(throwable, isUnhandled);
     }
     EX_CATCH
     {
         // If it didn't work, then set the last thrown object to the preallocated OOM exception, and return that
         // object instead of the original throwable.
         ret = CLRException::GetPreallocatedOutOfMemoryException();
-        SetLastThrownObject(ret);
-    }
-    EX_END_CATCH
-
-    return ret;
-}
-
-//
-// This is a nice wrapper for updating the last thrown object handle, which catches any exceptions caused by not
-// being able to create the handle for the throwable, and falls back to the preallocated out of memory exception
-// for the last thrown object instead. The throwable itself is stored directly in ExInfo::m_exception by managed
-// EH code, so this helper only updates the last thrown object state.
-//
-OBJECTREF Thread::SafeSetThrowables(OBJECTREF throwable,
-                                    BOOL isUnhandled)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        if (throwable == NULL) MODE_ANY; else MODE_COOPERATIVE;
-    }
-    CONTRACTL_END;
-
-    // We return the original throwable if nothing goes wrong.
-    OBJECTREF ret = throwable;
-
-    EX_TRY
-    {
-        // The exception object is stored directly in ExInfo::m_exception by managed EH code,
-        // so we only need to update the last thrown object handle here.
-        if (LastThrownObject() != throwable)
-        {
-            SetLastThrownObject(throwable);
-        }
-
-        if (isUnhandled)
-        {
-            MarkLastThrownObjectUnhandled();
-        }
-    }
-    EX_CATCH
-    {
-        // If we can't create a handle, set the last thrown object to the preallocated OOM exception.
-        ret = CLRException::GetPreallocatedOutOfMemoryException();
-
         SetLastThrownObject(ret, isUnhandled);
     }
     EX_END_CATCH
 
-
     return ret;
-}
-
-// This method will sync the managed exception state to be in sync with the topmost active exception
-// for a given thread
-void Thread::SyncManagedExceptionState(bool fIsDebuggerThread)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    {
-        GCX_COOP();
-
-        // Syncup the LastThrownObject on the managed thread
-        SafeUpdateLastThrownObject();
-    }
 }
 
 void Thread::SetLastThrownObjectHandle(OBJECTHANDLE h)
@@ -3304,37 +3236,6 @@ void Thread::SetLastThrownObjectHandle(OBJECTHANDLE h)
     }
 
     m_LastThrownObjectHandle = h;
-}
-
-//
-// Create a duplicate handle of the current throwable and set the last thrown object to that. This ensures that the
-// last thrown object and the current throwable have handles that are in the same app domain.
-//
-void Thread::SafeUpdateLastThrownObject(void)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_COOPERATIVE;
-    }
-    CONTRACTL_END;
-
-    OBJECTREF throwable = GetExceptionState()->GetThrowable();
-
-    if (throwable != NULL)
-    {
-        EX_TRY
-        {
-            SetLastThrownObject(throwable);
-        }
-        EX_CATCH
-        {
-            // If we can't create a handle, set the last thrown object to the preallocated OOM exception.
-            SafeSetThrowables(CLRException::GetPreallocatedOutOfMemoryException());
-        }
-        EX_END_CATCH
-    }
 }
 
 // Background threads must be counted, because the EE should shut down when the

@@ -131,6 +131,14 @@ void ExInfo::PopExInfos(Thread *pThread, void *targetSp)
         }
 #endif // DEBUGGING_SUPPORTED
 
+        // Set LTO from the exception being destroyed so that post-ExInfo consumers
+        // (EX_CATCH via CLRLastThrownObjectException, ProcessCLRException bridging)
+        // can find the exception object after the ExInfo is gone.
+        if (pExInfo->m_exception != NULL)
+        {
+            pThread->SafeSetLastThrownObject(pExInfo->m_exception);
+        }
+
         pExInfo->ReleaseResources();
         pExInfo = (PTR_ExInfo)pExInfo->m_pPrevNestedInfo;
     }
