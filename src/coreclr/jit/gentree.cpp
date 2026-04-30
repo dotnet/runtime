@@ -3339,12 +3339,23 @@ AGAIN:
 #if defined(TARGET_ARM64)
                     case TYP_SIMD:
                     {
-                        add = genTreeHashAdd(ulo32(add), vecCon->gtSimdScalableVal.gtSimdScalableKind);
-                        add = genTreeHashAdd(ulo32(add), vecCon->gtSimdScalableVal.gtSimdScalableBaseType);
-                        add = genTreeHashAdd(ulo32(add), ulo32(vecCon->gtSimdScalableVal.gtSimdScalableIndex));
-                        add = genTreeHashAdd(ulo32(add), uhi32(vecCon->gtSimdScalableVal.gtSimdScalableIndex));
-                        add = genTreeHashAdd(ulo32(add), ulo32(vecCon->gtSimdScalableVal.gtSimdScalableStep));
-                        add = genTreeHashAdd(ulo32(add), uhi32(vecCon->gtSimdScalableVal.gtSimdScalableStep));
+                        simdscalable_t simdVal = vecCon->gtSimdScalableVal;
+
+                        // Canonicalize zeros so hash aligns with equality, which treats all-zero encodings as equal.
+                        if (simdVal.IsZero())
+                        {
+                            simdVal.gtSimdScalableBaseType = TYP_BYTE;
+                            simdVal.gtSimdScalableKind     = SimdScalableRepeated;
+                            simdVal.gtSimdScalableIndex    = 0;
+                            simdVal.gtSimdScalableStep     = 0;
+                        }
+
+                        add = genTreeHashAdd(ulo32(add), simdVal.gtSimdScalableKind);
+                        add = genTreeHashAdd(ulo32(add), simdVal.gtSimdScalableBaseType);
+                        add = genTreeHashAdd(ulo32(add), simdVal.gtSimdScalableIndexU32[0]);
+                        add = genTreeHashAdd(ulo32(add), simdVal.gtSimdScalableIndexU32[1]);
+                        add = genTreeHashAdd(ulo32(add), simdVal.gtSimdScalableStepU32[0]);
+                        add = genTreeHashAdd(ulo32(add), simdVal.gtSimdScalableStepU32[1]);
                         break;
                     }
 #endif // TARGET_ARM64

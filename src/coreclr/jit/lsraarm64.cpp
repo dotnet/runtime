@@ -774,8 +774,9 @@ int LinearScan::BuildNode(GenTree* tree)
                         }
                         else
                         {
-                            canEncodeScalar = emitter::emitIns_valid_imm_for_mov(
-                                vecCon->gtSimdScalableVal.gtSimdScalableIndex, emitActualTypeSize(baseType));
+                            canEncodeScalar =
+                                emitter::emitIns_valid_imm_for_mov(vecCon->gtSimdScalableVal.gtSimdScalableIndex,
+                                                                   emitActualTypeSize(baseType));
                         }
                         if (!canEncodeScalar)
                         {

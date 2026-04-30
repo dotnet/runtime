@@ -1937,6 +1937,14 @@ private:
         {
             unsigned hash = 0;
 
+            if (val.IsZero())
+            {
+                // Canonicalize zero so all encodings hash the same.
+                hash = static_cast<unsigned>(hash ^ TYP_BYTE);
+                hash = static_cast<unsigned>(hash ^ SimdScalableRepeated);
+                return hash;
+            }
+
             hash = static_cast<unsigned>(hash ^ val.gtSimdScalableBaseType);
             hash = static_cast<unsigned>(hash ^ val.gtSimdScalableKind);
             hash = static_cast<unsigned>(hash ^ val.gtSimdScalableIndexU32[0]);
