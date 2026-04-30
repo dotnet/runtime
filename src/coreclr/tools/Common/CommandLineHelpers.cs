@@ -73,8 +73,7 @@ namespace System.CommandLine
 
             return token.ToLowerInvariant() switch
             {
-                "linux" => TargetOS.Linux,
-                "android" => TargetOS.Android,
+                "linux" or "android" => TargetOS.Linux,
                 "win" or "windows" => TargetOS.Windows,
                 "osx" => TargetOS.OSX,
                 "freebsd" => TargetOS.FreeBSD,
@@ -121,14 +120,9 @@ namespace System.CommandLine
             }
         }
 
-        public static TargetOS GetEffectiveTargetOS(TargetOS targetOS)
+        public static TargetAbi GetTargetAbi(TargetArchitecture targetArchitecture, bool isArmel, bool isAndroid)
         {
-            return targetOS == TargetOS.Android ? TargetOS.Linux : targetOS;
-        }
-
-        public static TargetAbi GetTargetAbi(TargetOS targetOS, TargetArchitecture targetArchitecture, bool isArmel)
-        {
-            if (isArmel || (targetOS == TargetOS.Android && targetArchitecture == TargetArchitecture.ARM))
+            if (isArmel || (isAndroid && targetArchitecture == TargetArchitecture.ARM))
             {
                 return TargetAbi.NativeAotArmel;
             }

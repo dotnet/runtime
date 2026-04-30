@@ -163,7 +163,7 @@ namespace ILCompiler
         public Option<TargetArchitecture> TargetArchitecture { get; } =
             new("--targetarch") { CustomParser = MakeTargetArchitecture, DefaultValueFactory = MakeTargetArchitecture, Description = "Target architecture for cross compilation", HelpName = "arg" };
         public Option<TargetOS> TargetOS { get; } =
-            new("--targetos") { CustomParser = result => Helpers.GetTargetOS(result.Tokens.Count > 0 ? result.Tokens[0].Value : null), DefaultValueFactory = result => Helpers.GetTargetOS(result.Tokens.Count > 0 ? result.Tokens[0].Value : null), Description = "Target OS for cross compilation", HelpName = "arg" };
+            new("--targetos") { CustomParser = MakeTargetOS, DefaultValueFactory = MakeTargetOS, Description = "Target OS for cross compilation", HelpName = "arg" };
         public Option<string> JitPath { get; } =
             new("--jitpath") { Description = "Path to JIT compiler library" };
         public Option<string> SingleMethodTypeName { get; } =
@@ -188,6 +188,7 @@ namespace ILCompiler
         public OptimizationMode OptimizationMode { get; private set; }
         public ParseResult Result;
         public static bool IsArmel { get; private set; }
+        public static bool IsAndroid { get; private set; }
 
         public ILCompilerRootCommand(string[] args) : base(".NET Native IL Compiler")
         {
@@ -405,6 +406,13 @@ namespace ILCompiler
             }
 
             return Helpers.GetTargetArchitecture(firstToken);
+        }
+
+        private static TargetOS MakeTargetOS(ArgumentResult result)
+        {
+            string firstToken = result.Tokens.Count > 0 ? result.Tokens[0].Value : null;
+            IsAndroid = firstToken != null && firstToken.Equals("android", StringComparison.OrdinalIgnoreCase);
+            return Helpers.GetTargetOS(firstToken);
         }
 
         private static int MakeParallelism(ArgumentResult result)

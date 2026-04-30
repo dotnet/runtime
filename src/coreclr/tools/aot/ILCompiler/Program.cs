@@ -106,8 +106,7 @@ namespace ILCompiler
 
             TargetArchitecture targetArchitecture = Get(_command.TargetArchitecture);
             TargetOS targetOS = Get(_command.TargetOS);
-            TargetAbi targetAbi = Helpers.GetTargetAbi(targetOS, targetArchitecture, ILCompilerRootCommand.IsArmel);
-            targetOS = Helpers.GetEffectiveTargetOS(targetOS);
+            TargetAbi targetAbi = Helpers.GetTargetAbi(targetArchitecture, ILCompilerRootCommand.IsArmel, ILCompilerRootCommand.IsAndroid);
             InstructionSetSupport instructionSetSupport = Helpers.ConfigureInstructionSetSupport(Get(_command.InstructionSet), Get(_command.MaxVectorTBitWidth), isVectorTOptimistic, targetArchitecture, targetOS,
                 "Unrecognized instruction set {0}", "Unsupported combination of instruction sets: {0}/{1}", logger,
                 allowOptimistic: _command.OptimizationMode != OptimizationMode.PreferSize,

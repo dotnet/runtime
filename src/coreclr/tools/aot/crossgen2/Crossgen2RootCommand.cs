@@ -95,7 +95,7 @@ namespace ILCompiler
         public Option<int> GenericCycleBreadthCutoff { get; } =
             new("--maxgenericcyclebreadth") { DefaultValueFactory = _ => ReadyToRunCompilerContext.DefaultGenericCycleBreadthCutoff, Description = SR.GenericCycleBreadthCutoff };
         public Option<TargetOS> TargetOS { get; } =
-            new("--targetos") { CustomParser = result => Helpers.GetTargetOS(result.Tokens.Count > 0 ? result.Tokens[0].Value : null), DefaultValueFactory = result => Helpers.GetTargetOS(result.Tokens.Count > 0 ? result.Tokens[0].Value : null), Description = SR.TargetOSOption, HelpName = "arg" };
+            new("--targetos") { CustomParser = MakeTargetOS, DefaultValueFactory = MakeTargetOS, Description = SR.TargetOSOption, HelpName = "arg" };
         public Option<string> JitPath { get; } =
             new("--jitpath") { Description = SR.JitPathOption };
         public Option<bool> PrintReproInstructions { get; } =
@@ -161,6 +161,7 @@ namespace ILCompiler
         public ParseResult Result { get; private set; }
 
         public static bool IsArmel { get; private set; }
+        public static bool IsAndroid { get; private set; }
 
         public Crossgen2RootCommand(string[] args) : base(SR.Crossgen2BannerText)
         {
@@ -369,6 +370,13 @@ namespace ILCompiler
             }
 
             return Helpers.GetTargetArchitecture(firstToken);
+        }
+
+        private static TargetOS MakeTargetOS(ArgumentResult result)
+        {
+            string firstToken = result.Tokens.Count > 0 ? result.Tokens[0].Value : null;
+            IsAndroid = firstToken != null && firstToken.Equals("android", StringComparison.OrdinalIgnoreCase);
+            return Helpers.GetTargetOS(firstToken);
         }
 
         private static int MakeParallelism(ArgumentResult result)

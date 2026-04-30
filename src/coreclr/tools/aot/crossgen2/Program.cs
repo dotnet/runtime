@@ -85,8 +85,7 @@ namespace ILCompiler
 
             TargetArchitecture targetArchitecture = Get(_command.TargetArchitecture);
             TargetOS targetOS = Get(_command.TargetOS);
-            TargetAbi targetAbi = Helpers.GetTargetAbi(targetOS, targetArchitecture, Crossgen2RootCommand.IsArmel);
-            targetOS = Helpers.GetEffectiveTargetOS(targetOS);
+            TargetAbi targetAbi = Helpers.GetTargetAbi(targetArchitecture, Crossgen2RootCommand.IsArmel, Crossgen2RootCommand.IsAndroid);
             bool allowOptimistic = _command.OptimizationMode != OptimizationMode.PreferSize;
 
             if (targetOS is TargetOS.iOS or TargetOS.tvOS or TargetOS.iOSSimulator or TargetOS.tvOSSimulator or TargetOS.MacCatalyst or TargetOS.Browser)
