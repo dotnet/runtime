@@ -2455,8 +2455,6 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
                             // Clear the entire target register
                             emit->emitInsSve_R_I(INS_sve_dup, EA_SCALABLE, targetReg, 0, opt);
 
-                            regNumber indexReg = loadConstantHelper(simdVal.gtSimdScalableIndex);
-
                             // Use NEON instructions to load the constant (to avoid using predicates)
 
                             if (varTypeIsIntegral(simdVal.gtSimdScalableBaseType) &&
