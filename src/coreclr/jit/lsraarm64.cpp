@@ -749,18 +749,41 @@ int LinearScan::BuildNode(GenTree* tree)
             {
                 // Directly encode constant to instructions.
             }
-            if (tree->TypeIs(TYP_SIMD))
+            else if (vecCon->TypeIs(TYP_SIMD))
             {
                 // If the constant doesn't fit into the instructions, then temps will be required
                 switch (vecCon->gtSimdScalableVal.gtSimdScalableKind)
                 {
                     case SimdScalableRepeated:
-                        if (!emitter::isValidSimm<8>(vecCon->gtSimdScalableVal.gtSimdScalableIndex) &&
-                            !emitter::isValidSimm_MultipleOf<8, 256>(vecCon->gtSimdScalableVal.gtSimdScalableIndex))
+                    {
+                        bool      canEncodeScalar = false;
+                        var_types baseType        = vecCon->gtSimdScalableVal.gtSimdScalableBaseType;
+                        if (varTypeIsFloating(baseType))
+                        {
+                            if (baseType == TYP_FLOAT)
+                            {
+                                canEncodeScalar = emitter::emitIns_valid_imm_for_fmov(
+                                    *reinterpret_cast<const float*>(&vecCon->gtSimdScalableVal.gtSimdScalableIndex));
+                            }
+                            else
+                            {
+                                assert(baseType == TYP_DOUBLE);
+                                canEncodeScalar = emitter::emitIns_valid_imm_for_fmov(
+                                    *reinterpret_cast<const double*>(&vecCon->gtSimdScalableVal.gtSimdScalableIndex));
+                            }
+                        }
+                        else
+                        {
+                            canEncodeScalar = emitter::emitIns_valid_imm_for_mov(
+                                vecCon->gtSimdScalableVal.gtSimdScalableIndex, emitActualTypeSize(baseType));
+                        }
+                        if (!canEncodeScalar)
                         {
                             buildInternalIntRegisterDefForNode(tree);
+                            buildInternalRegisterUses();
                         }
                         break;
+                    }
 
                     case SimdScalableSequence:
                         if (!emitter::isValidSimm<5>(vecCon->gtSimdScalableVal.gtSimdScalableIndex))
