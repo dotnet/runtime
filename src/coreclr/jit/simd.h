@@ -2167,7 +2167,7 @@ struct simdscalable_t
 
     static simdscalable_t AllBitsSet()
     {
-        simdscalable_t result;
+        simdscalable_t result = {};
 
         result.gtSimdScalableBaseType = TYP_BYTE;
         result.gtSimdScalableKind     = SimdScalableRepeated;
@@ -2209,10 +2209,10 @@ struct simdmaskscalable_t
 
     static simdmaskscalable_t AllBitsSet()
     {
-        simdmaskscalable_t result;
+        simdmaskscalable_t result = {};
 
         result.gtSimdMaskScalableBaseType = TYP_BYTE;
-        result.gtSimdMaskScalableIndex    = 0xff;
+        result.gtSimdMaskScalableIndex    = 1;
 
         return result;
     }

@@ -848,8 +848,14 @@ void Compiler::impMarkContiguousSIMDFieldStores(Statement* stmt)
 
 bool simdscalable_t::IsAllBitsSet() const
 {
-    return (gtSimdScalableKind == SimdScalableRepeated) &&
-           (gtSimdScalableIndex == (uint64_t)((1 << genTypeSize(gtSimdScalableBaseType)) - 1));
+    if (gtSimdScalableKind != SimdScalableRepeated)
+    {
+        return false;
+    }
+    const unsigned elementBitSize = genTypeSize(gtSimdScalableBaseType) * 8;
+    const uint64_t allBitsSetMask =
+        (elementBitSize == 64) ? UINT64_MAX : (((uint64_t)1 << elementBitSize) - 1);
+    return gtSimdScalableIndex == allBitsSetMask;
 }
 
 bool simdmaskscalable_t::IsAllBitsSet(var_types simdBaseType) const
@@ -885,7 +891,7 @@ bool EvaluateSimdCvtScalableVectorToMask(var_types baseType, simdmaskscalable_t*
 
 bool EvaluateSimdCvtScalableMaskToVector(var_types baseType, simdscalable_t* vecCon, simdmaskscalable_t maskCon)
 {
-    // All zero can always be converted to a mask, regardless of types
+    // All zero can always be converted to a vector, regardless of types
     if (maskCon.IsZero())
     {
         vecCon->gtSimdScalableBaseType = baseType;
@@ -896,7 +902,7 @@ bool EvaluateSimdCvtScalableMaskToVector(var_types baseType, simdscalable_t* vec
 
     // size of the basetype must match
     // TODO: We could work around this for masks?
-    if (genTypeSize(baseType) != genTypeSize(vecCon->gtSimdScalableBaseType))
+    if (genTypeSize(baseType) != genTypeSize(maskCon.gtSimdMaskScalableBaseType))
     {
         return false;
     }
