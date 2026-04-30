@@ -1939,8 +1939,10 @@ private:
 
             hash = static_cast<unsigned>(hash ^ val.gtSimdScalableBaseType);
             hash = static_cast<unsigned>(hash ^ val.gtSimdScalableKind);
-            hash = static_cast<unsigned>(hash ^ val.gtSimdScalableIndex);
-            hash = static_cast<unsigned>(hash ^ val.gtSimdScalableStep);
+            hash = static_cast<unsigned>(hash ^ ulo32(val.gtSimdScalableIndex));
+            hash = static_cast<unsigned>(hash ^ uhi32(val.gtSimdScalableIndex));
+            hash = static_cast<unsigned>(hash ^ ulo32(val.gtSimdScalableStep));
+            hash = static_cast<unsigned>(hash ^ uhi32(val.gtSimdScalableStep));
 
             return hash;
         }
@@ -1969,7 +1971,8 @@ private:
             unsigned hash = 0;
 
             hash = static_cast<unsigned>(hash ^ val.gtSimdMaskScalableBaseType);
-            hash = static_cast<unsigned>(hash ^ val.gtSimdMaskScalableIndex);
+            hash = static_cast<unsigned>(hash ^ ulo32(val.gtSimdMaskScalableIndex));
+            hash = static_cast<unsigned>(hash ^ uhi32(val.gtSimdMaskScalableIndex));
 
             return hash;
         }
