@@ -719,7 +719,7 @@ namespace System.Formats.Tar
 
         private void ValidateSize()
         {
-            if ((uint)_size > (uint)Array.MaxLength)
+            if ((uint)_size > (uint)MaxMetadataBlockSize)
             {
                 ThrowSizeFieldTooLarge();
             }
