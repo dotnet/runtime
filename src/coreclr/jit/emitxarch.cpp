@@ -946,32 +946,36 @@ inline bool emitter::IsApxConditionalInstruction(instruction ins)
 {
 #ifdef TARGET_AMD64
     return (IsCCMP(ins) || IsCFCMOV(ins) || IsCTEST(ins));
-#endif
+#else
     return false;
+#endif
 }
 
 inline bool emitter::IsCCMP(instruction ins)
 {
 #ifdef TARGET_AMD64
     return (ins >= FIRST_CCMP_INSTRUCTION && ins <= LAST_CCMP_INSTRUCTION);
-#endif
+#else
     return false;
+#endif
 }
 
 inline bool emitter::IsCTEST(instruction ins)
 {
 #ifdef TARGET_AMD64
     return (ins >= FIRST_CTEST_INSTRUCTION && ins <= LAST_CTEST_INSTRUCTION);
-#endif
+#else   
     return false;
+#endif
 }
 
 inline bool emitter::IsCFCMOV(instruction ins)
 {
 #ifdef TARGET_AMD64
     return (ins >= FIRST_CFCMOV_INSTRUCTION && ins <= LAST_CFCMOV_INSTRUCTION);
-#endif
+#else   
     return false;
+#endif
 }
 
 //------------------------------------------------------------------------
@@ -988,72 +992,56 @@ inline bool emitter::IsCFCMOV(instruction ins)
 //
 inline insCC emitter::GetCCFromIns(instruction ins)
 {
-    assert(IsApxConditionalInstruction(ins));
+    assert(IsCTEST(ins) || IsCCMP(ins));
     switch (ins)
     {
 #ifdef TARGET_AMD64
         case INS_ccmpo:
-        case INS_cfcmovo:
         case INS_ctesto:
             return INS_CC_O;
         case INS_ccmpno:
-        case INS_cfcmovno:
         case INS_ctestno:
             return INS_CC_NO;
         case INS_ccmpb:
-        case INS_cfcmovb:
         case INS_ctestb:
             return INS_CC_B;
         case INS_ccmpae:
-        case INS_cfcmovae:
         case INS_ctestae:
             return INS_CC_AE;
         case INS_ccmpe:
-        case INS_cfcmove:
         case INS_cteste:
             return INS_CC_E;
         case INS_ccmpne:
-        case INS_cfcmovne:
         case INS_ctestne:
             return INS_CC_NE;
         case INS_ccmpbe:
-        case INS_cfcmovbe:
         case INS_ctestbe:
             return INS_CC_BE;
         case INS_ccmpa:
-        case INS_cfcmova:
         case INS_ctesta:
             return INS_CC_A;
         case INS_ccmps:
-        case INS_cfcmovs:
         case INS_ctests:
             return INS_CC_S;
         case INS_ccmpns:
-        case INS_cfcmovns:
         case INS_ctestns:
             return INS_CC_NS;
         case INS_ccmpt:
-        case INS_cfcmovp:
         case INS_ctestt:
             return INS_CC_TRUE;
         case INS_ccmpf:
-        case INS_cfcmovnp:
         case INS_ctestf:
             return INS_CC_FALSE;
         case INS_ccmpl:
-        case INS_cfcmovl:
         case INS_ctestl:
             return INS_CC_L;
         case INS_ccmpge:
-        case INS_cfcmovge:
         case INS_ctestge:
             return INS_CC_GE;
         case INS_ccmple:
-        case INS_cfcmovle:
         case INS_ctestle:
             return INS_CC_LE;
         case INS_ccmpg:
-        case INS_cfcmovg:
         case INS_ctestg:
             return INS_CC_G;
 #endif
@@ -8353,9 +8341,6 @@ void emitter::emitIns_R_R_AR(
     assert(IsSimdInstruction(ins) || IsApxExtendedEvexInstruction(ins));
     assert(IsThreeOperandAVXInstruction(ins) || IsApxExtendedEvexInstruction(ins));
 
-    // Checking EVEX.ND and NDD compatibility together in case the ND slot is overridden by other features.
-    bool useNDD = ((instOptions & INS_OPTS_EVEX_nd_MASK) != 0) && IsApxNddEncodableInstruction(ins);
-
     instrDesc* id = emitNewInstrAmd(attr, offs);
 
     id->idIns(ins);
@@ -14800,7 +14785,7 @@ BYTE* emitter::emitOutputAM(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
 
                 if (IsCFCMOV(ins))
                 {
-                    // XArch-APX-TODO: JIT does not emitt sub-32b CMOV, whether to use 16b operands in CFCMOV is to be
+                    // XArch-APX-TODO: JIT does not emit sub-32b CMOV, whether to use 16b operands in CFCMOV is to be
                     // determined.
                     break;
                 }
