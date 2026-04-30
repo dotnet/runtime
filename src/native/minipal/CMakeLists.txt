@@ -6,6 +6,7 @@ set(SOURCES
     memorybarrierprocesswide.c
     mutex.c
     guid.c
+    process.c
     random.c
     debugger.c
     strings.c

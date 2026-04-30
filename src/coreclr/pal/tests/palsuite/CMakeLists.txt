@@ -363,8 +363,6 @@ add_executable_clr(paltests
   samples/test2/test.cpp
   threading/CreateProcessW/test1/childProcess.cpp
   threading/CreateProcessW/test1/parentProcess.cpp
-  threading/CreateProcessW/test2/childprocess.cpp
-  threading/CreateProcessW/test2/parentprocess.cpp
   threading/CreateSemaphoreW_ReleaseSemaphore/test1/CreateSemaphore.cpp
   threading/CreateSemaphoreW_ReleaseSemaphore/test2/CreateSemaphore.cpp
   threading/CreateSemaphoreW_ReleaseSemaphore/test3/createsemaphore.cpp

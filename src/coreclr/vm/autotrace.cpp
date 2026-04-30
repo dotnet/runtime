@@ -24,6 +24,7 @@
 #ifdef TARGET_UNIX
 #include "pal.h"
 #endif // TARGET_UNIX
+#include <minipal/process.h>
 
 HANDLE auto_trace_event;
 static size_t g_n_tracers = 1;
@@ -76,29 +77,7 @@ void auto_trace_init()
 
 void auto_trace_launch_internal()
 {
-    DWORD currentProcessId = GetCurrentProcessId();
-    STARTUPINFO si;
-    ZeroMemory(&si, sizeof(si));
-    si.cb = sizeof(STARTUPINFO);
-#ifndef TARGET_UNIX
-    si.dwFlags = STARTF_USESHOWWINDOW;
-    si.wShowWindow = SW_HIDE;
-#endif
-
-    PROCESS_INFORMATION result;
-
-    BOOL code = CreateProcessW(
-        /* lpApplicationName    = */ nullptr,
-        /* lpCommandLine        = */ command,
-        /* lpCommandLine        = */ nullptr,
-        /* lpThreadAttributes   = */ nullptr,
-        /* bInheritHandles      = */ false,
-        /* dwCreationFlags      = */ CREATE_NEW_CONSOLE,
-        /* lpEnvironment        = */ nullptr,
-        /* lpCurrentDirectory   = */ nullptr,
-        /* lpStartupInfo        = */ &si,
-        /* lpProcessInformation = */ &result
-    );
+    minipal_create_process_w((const CHAR16_T*)command, nullptr, false, nullptr);
 }
 
 void auto_trace_launch()
