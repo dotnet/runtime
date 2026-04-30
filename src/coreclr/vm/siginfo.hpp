@@ -1234,14 +1234,61 @@ public:
     TargetTypeForAccessCheck(TypeHandle typeHandle, TargetInstantiationForAccessCheck* instantiationForAccessCheck)
         : _typeHandle(typeHandle), InstantiationForAccessCheck(instantiationForAccessCheck)
     {
+        ConvertSigToTypeHandleForSpecialCases();
     }
 
     TargetTypeForAccessCheck(TypeHandle typeHandle, const TargetInstantiationForAccessCheck& instantiationForAccessCheck)
         : _typeHandle(typeHandle), InstantiationForAccessCheck(&InstantiationForAccessCheckLocalCopy), InstantiationForAccessCheckLocalCopy(instantiationForAccessCheck)
     {
+        ConvertSigToTypeHandleForSpecialCases();
+    }
+
+    TargetTypeForAccessCheck(const TargetTypeForAccessCheck& other)
+        : _typeHandle(other._typeHandle), InstantiationForAccessCheck(other.InstantiationForAccessCheck)
+    {
+        if (other.InstantiationForAccessCheck != nullptr && other.InstantiationForAccessCheck == &other.InstantiationForAccessCheckLocalCopy)
+        {
+            InstantiationForAccessCheck = &InstantiationForAccessCheckLocalCopy;
+            InstantiationForAccessCheckLocalCopy = *other.InstantiationForAccessCheck;
+        }
+    }
+
+    TargetTypeForAccessCheck& operator=(const TargetTypeForAccessCheck& other)
+    {
+        if (this != &other)
+        {
+            _typeHandle = other._typeHandle;
+            InstantiationForAccessCheck = other.InstantiationForAccessCheck;
+            if (other.InstantiationForAccessCheck != nullptr && other.InstantiationForAccessCheck == &other.InstantiationForAccessCheckLocalCopy)
+            {
+                InstantiationForAccessCheck = &InstantiationForAccessCheckLocalCopy;
+                InstantiationForAccessCheckLocalCopy = *other.InstantiationForAccessCheck;
+            }
+        }
+        return *this;
     }
 
 private:
+    // To make the HasTypeParam/GetTypeParam logic work better, if we have a sig which may have an meaningfully different type (VAR/MVAR case) or the sig is not encoded in a standard manner (ELEMENT_TYPE_INTERNAL) then we do a real load
+    void ConvertSigToTypeHandleForSpecialCases()
+    {
+        if (InstantiationForAccessCheck != nullptr)
+        {
+            SigPointer sig = InstantiationForAccessCheck->GetSig();
+            CorElementType elemType;
+            IfFailThrow(sig.GetElemType(&elemType));
+            if (elemType == ELEMENT_TYPE_FNPTR || elemType == ELEMENT_TYPE_VAR || elemType == ELEMENT_TYPE_MVAR || elemType == ELEMENT_TYPE_INTERNAL)
+            {
+                _typeHandle = GetTypeHandleForThrow();
+                InstantiationForAccessCheck = NULL;
+            }
+            else
+            {
+                // Leave as is. The api surface on the type will work correctly.
+            }
+        }
+    }
+
     TypeHandle _typeHandle;
     TargetInstantiationForAccessCheck *InstantiationForAccessCheck;
     TargetInstantiationForAccessCheck InstantiationForAccessCheckLocalCopy;
@@ -1250,7 +1297,6 @@ public:
     bool IsNull() const;
     bool IsNested() const;
     DWORD GetProtection() const;
-    Instantiation GetPreloadedInstantiationForAccessCheck() const;
     TypeHandle GetTypeHandleForThrow() const;
     TargetTypeForAccessCheck GetEnclosingType() const;
     bool CanAccessTypeInstantiation( // True if access is legal, false otherwise.
@@ -1267,11 +1313,9 @@ public:
     {
         if (InstantiationForAccessCheck != nullptr)
         {
-            SigPointer sigptr = InstantiationForAccessCheck->GetSig();
-            CorElementType elemType;
-            IfFailThrow(sigptr.GetElemType(&elemType));
-            // typeHnd can be a variable type
-            return (elemType == ELEMENT_TYPE_VAR || elemType == ELEMENT_TYPE_MVAR);
+            // Because we resolve generic variables their exact target during construction
+            // this will always return false.
+            return false;
         }
         else
         {

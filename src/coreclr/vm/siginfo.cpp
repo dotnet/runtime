@@ -1110,19 +1110,6 @@ DWORD TargetTypeForAccessCheck::GetProtection() const
     return _typeHandle.GetMethodTable()->GetClass()->GetProtection();
 }
 
-Instantiation TargetTypeForAccessCheck::GetPreloadedInstantiationForAccessCheck() const
-{
-    LIMITED_METHOD_CONTRACT;
-    if (InstantiationForAccessCheck != nullptr)
-    {
-        return Instantiation();
-    }
-    else
-    {
-        return _typeHandle.GetInstantiation();
-    }
-}
-
 TypeHandle TargetTypeForAccessCheck::GetTypeHandleForThrow() const
 {
     LIMITED_METHOD_CONTRACT;
@@ -1150,13 +1137,16 @@ bool TargetTypeForAccessCheck::CanAccessTypeInstantiation( // True if access is 
     {
         SigPointer sig = InstantiationForAccessCheck->GetSig();
 
-        BYTE etype;
-        IfFailThrow(sig.GetByte(&etype));
+        CorElementType etype;
+        IfFailThrow(sig.GetElemType(&etype));
 
-        // Load the generic type instantiation
-        THROW_BAD_FORMAT_MAYBE(etype == (BYTE)ELEMENT_TYPE_GENERICINST, 0, InstantiationForAccessCheck->GetModule());
-        IfFailThrow(sig.SkipExactlyOne());
-        return ClassLoader::CanAccessInstantiationBySignature(pContext, sig, InstantiationForAccessCheck->GetModule(), accessCheckOptions);
+        if (etype == ELEMENT_TYPE_GENERICINST)
+        {
+            // Load the generic type instantiation
+            THROW_BAD_FORMAT_MAYBE(etype == ELEMENT_TYPE_GENERICINST, 0, InstantiationForAccessCheck->GetModule());
+            IfFailThrow(sig.SkipExactlyOne());
+            return ClassLoader::CanAccessInstantiationBySignature(pContext, sig, InstantiationForAccessCheck->GetModule(), accessCheckOptions);
+        }
     }
     else
     {
@@ -1244,19 +1234,8 @@ TargetTypeForAccessCheck TargetTypeForAccessCheck::GetTypeParam() const
         CorElementType etype;
         IfFailThrow(sig.GetElemType(&etype));
 
-        // Check to see if the next elem type is var/mvar/fnptr. These types disable further type checking.
-        SigPointer sigNextElemType = sig;
-        IfFailThrow(sig.GetElemType(&etype));
-        switch (etype)
-        {
-            case ELEMENT_TYPE_MVAR:
-            case ELEMENT_TYPE_VAR:
-            case ELEMENT_TYPE_FNPTR:
-                return TargetTypeForAccessCheck();
-            default:
-                TargetInstantiationForAccessCheck newInstantiationForAccessCheck(sig, InstantiationForAccessCheck->GetTypeContext(), InstantiationForAccessCheck->GetModule());
-                return TargetTypeForAccessCheck(_typeHandle.GetTypeParam(), newInstantiationForAccessCheck);
-        }
+        TargetInstantiationForAccessCheck newInstantiationForAccessCheck(sig, InstantiationForAccessCheck->GetTypeContext(), InstantiationForAccessCheck->GetModule());
+        return TargetTypeForAccessCheck(_typeHandle.GetTypeParam(), newInstantiationForAccessCheck);
     }
     else
     {
@@ -1331,9 +1310,6 @@ bool TargetMethodForAccessCheck::CanAccessMethodInstantiation( // True if access
 }
 
 
-// Method: TypeHandle SigPointer::GetTypeHandleThrowing()
-// pZapSigContext is only set when decoding zapsigs
-//
 bool SigPointer::AccessCheckType(
                 Module *pModule,
                 AccessCheckContext* pContext,
