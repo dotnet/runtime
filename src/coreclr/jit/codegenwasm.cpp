@@ -2302,7 +2302,7 @@ void CodeGen::genCodeForLclVar(GenTreeLclVar* tree)
     else
     {
         assert(genIsValidReg(varDsc->GetRegNum()));
-        var_types type         = varDsc->GetRegisterType();
+        var_types type         = varDsc->GetRegisterType(tree);
         unsigned  wasmLclIndex = WasmRegToIndex(varDsc->GetRegNum());
         GetEmitter()->emitIns_I(INS_local_get, emitTypeSize(type), wasmLclIndex);
         // In this case, the resulting tree type may be different from the local var type where the value originates,
