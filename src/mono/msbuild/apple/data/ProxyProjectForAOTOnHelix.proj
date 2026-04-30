@@ -51,23 +51,24 @@
   <Import Project="$(MSBuildThisFileDirectory)$(MSBuildThisFileName).props" />
 
   <!-- Pre-built NativeAOT static library from the host publish step. -->
-  <PropertyGroup Condition="'$(UseNativeAOTRuntime)' == 'true' and '$(_UseNativeAOTLibraryModeBundling)' != 'true' and '$(IncludesTestRunner)' != 'false'">
-    <_PrebuiltNativeAOTLib>$(OriginalPublishDir)lib$(AssemblyName).a</_PrebuiltNativeAOTLib>
+  <PropertyGroup>
+    <_NativeAotLibraryTestOnHelix Condition="'$(UseNativeAOTRuntime)' == 'true' and '$(_UseNativeAOTLibraryModeBundling)' != 'true' and '$(IncludesTestRunner)' != 'false'">true</_NativeAotLibraryTestOnHelix>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(UseNativeAOTRuntime)' == 'true' and '$(_UseNativeAOTLibraryModeBundling)' != 'true' and '$(IncludesTestRunner)' != 'false'">
-    <_AotCompileTargetName>_NoOpNativeAotCompileOnHelix</_AotCompileTargetName>
+  <PropertyGroup Condition="'$(_NativeAotLibraryTestOnHelix)' == 'true'">
+    <_PrebuiltNativeAOTLib>$(OriginalPublishDir)lib$(AssemblyName).a</_PrebuiltNativeAOTLib>
+    <_AotCompileTargetName>_StageNativeAotLinkInputsOnHelix</_AotCompileTargetName>
     <SkipIlcCompile>true</SkipIlcCompile>
   </PropertyGroup>
 
-  <ItemGroup Condition="'$(UseNativeAOTRuntime)' == 'true' and '$(IncludesTestRunner)' != 'false'">
+  <ItemGroup Condition="'$(_NativeAotLibraryTestOnHelix)' == 'true'">
     <DirectPInvoke Include="__Internal" />
   </ItemGroup>
 
   <Target Name="BundleTestAppleApp" DependsOnTargets="AppleBuild" />
 
-  <Target Name="_NoOpNativeAotCompileOnHelix"
-          Condition="'$(UseNativeAOTRuntime)' == 'true' and '$(_UseNativeAOTLibraryModeBundling)' != 'true' and '$(IncludesTestRunner)' != 'false'">
+  <Target Name="_StageNativeAotLinkInputsOnHelix"
+          Condition="'$(_NativeAotLibraryTestOnHelix)' == 'true'">
     <Error Condition="!Exists('$(_PrebuiltNativeAOTLib)')"
            Text="Expected pre-built NativeAOT static library '$(_PrebuiltNativeAOTLib)' produced by the host publish step, but it was not found." />
 
@@ -96,15 +97,14 @@
 
     <PropertyGroup>
       <Optimized Condition="'$(Configuration)' == 'Release'">true</Optimized>
-      <MainLibraryFileName Condition="'$(MainLibraryFileName)' == '' and '$(IncludesTestRunner)' == 'true' and '$(UseNativeAOTRuntime)' != 'true'">AppleTestRunner.dll</MainLibraryFileName>
-      <MainLibraryFileName Condition="'$(UseNativeAOTRuntime)' == 'true' and '$(IncludesTestRunner)' != 'false'"></MainLibraryFileName>
+      <MainLibraryFileName Condition="'$(MainLibraryFileName)' == '' and '$(IncludesTestRunner)' == 'true' and '$(_NativeAotLibraryTestOnHelix)' != 'true'">AppleTestRunner.dll</MainLibraryFileName>
+      <MainLibraryFileName Condition="'$(_NativeAotLibraryTestOnHelix)' == 'true'"></MainLibraryFileName>
 
       <AppleBuildDir>$(OriginalPublishDir)</AppleBuildDir>
       <AppleBundleDir>$(TestRootDir)AppBundle\</AppleBundleDir>
     </PropertyGroup>
 
-
-    <ItemGroup Condition="'$(UseNativeAOTRuntime)' != 'true' or '$(IncludesTestRunner)' == 'false'">
+    <ItemGroup Condition="'$(_NativeAotLibraryTestOnHelix)' != 'true'">
       <!-- Figure out if we can support JustInterp mode -->
       <AppleAssembliesToBundle Include="$(OriginalPublishDir)\*.dll" Exclude="$(OriginalPublishDir)\*.resources.dll" />
 
@@ -126,7 +126,7 @@
       <DiagnosticPorts>127.0.0.1:9000,nosuspend,listen</DiagnosticPorts>
     </PropertyGroup>
 
-    <ItemGroup Condition="'$(UseNativeAOTRuntime)' == 'true' and '$(IncludesTestRunner)' == 'true'">
+    <ItemGroup Condition="'$(_NativeAotLibraryTestOnHelix)' == 'true'">
       <IntermediateAssembly Remove="@(IntermediateAssembly)" />
       <IntermediateAssembly Include="$(OriginalPublishDir)$(AssemblyName).dll" />
     </ItemGroup>
