@@ -10,11 +10,11 @@ namespace Microsoft.Diagnostics.DataContractReader.DumpTests;
 
 /// <summary>
 /// Dump-based integration tests for DacDbiImpl loader, assembly, and module methods.
-/// Uses the MultiModule debuggee (full dump), which loads assemblies from multiple ALCs.
+/// Uses the StackRefs debuggee (full dump), which loads assemblies from multiple ALCs.
 /// </summary>
 public class DacDbiLoaderDumpTests : DumpTestBase
 {
-    protected override string DebuggeeName => "MultiModule";
+    protected override string DebuggeeName => "StackRefs";
     private DacDbiImpl CreateDacDbi() => new DacDbiImpl(Target, legacyObj: null);
 
     private IEnumerable<ModuleHandle> GetAllModules()
