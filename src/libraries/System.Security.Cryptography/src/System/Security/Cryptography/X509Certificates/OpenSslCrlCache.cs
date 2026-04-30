@@ -489,7 +489,7 @@ namespace System.Security.Cryptography.X509Certificates
             // native memory, so keep the cache small.
             private const int MaxItems = 30;
 
-            private readonly Lock _lock = new();
+            private readonly object _lock = new();
 
             private int _count = -1;
             private Node? _head;
