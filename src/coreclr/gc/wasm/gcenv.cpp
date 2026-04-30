@@ -230,7 +230,7 @@ void* GCToOSInterface::VirtualReserveAndCommitLargePages(size_t size, uint16_t n
 
 bool GCToOSInterface::VirtualCommit(void* address, size_t size, uint16_t node)
 {
-    // The GC skips this for heap memory when use_large_pages_p is true (which
+    // The GC skips this for heap memory when never_decommit_p is true (which
     // it always is on WASM). This is still called for bookkeeping memory.
     // Memory is always zero here: either from VirtualReserveInner (initial
     // allocation) or from VirtualDecommit (which zeroes on decommit).
@@ -242,7 +242,7 @@ bool GCToOSInterface::VirtualCommit(void* address, size_t size, uint16_t node)
 
 bool GCToOSInterface::VirtualDecommit(void* address, size_t size)
 {
-    // The GC skips this for heap memory when use_large_pages_p is true (which
+    // The GC skips this for heap memory when never_decommit_p is true (which
     // it always is on WASM). This is still called for bookkeeping memory.
     // On WASM, we cannot return memory to the OS or change page protection.
     // Zero the range so it is clean for any future VirtualCommit (which is a no-op).

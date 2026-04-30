@@ -925,11 +925,10 @@ HRESULT gc_heap::initialize_gc (size_t soh_segment_size,
         return E_OUTOFMEMORY;
     if (use_large_pages_p)
     {
-#if !defined(HOST_64BIT) && !defined(HOST_WASM)
+#ifndef HOST_64BIT
         // Large pages are not supported on 32bit
-        // except WASM, which uses the large-pages code path to skip decommit
         assert (false);
-#endif //!HOST_64BIT && !HOST_WASM
+#endif //!HOST_64BIT
 
         if (!large_pages_emulation_mode_p)
         {
@@ -1297,13 +1296,14 @@ bool gc_heap::compute_hard_limit()
     int64_t large_pages_config = GCConfig::GetGCLargePages();
     use_large_pages_p = (large_pages_config != 0);
     large_pages_emulation_mode_p = (large_pages_config == 2);
-#elif defined(HOST_WASM)
-    // On WASM, reserve == commit (posix_memalign allocates real memory) and there is
-    // no way to decommit. Enabling the large-pages path makes the GC skip VirtualDecommit.
-    // Emulation mode tells the GC that memory is not pre-committed via OS large pages.
-    use_large_pages_p = true;
-    large_pages_emulation_mode_p = true;
 #endif //HOST_64BIT
+
+#ifdef HOST_WASM
+    // On WASM, reserve == commit (posix_memalign allocates real memory) and there is
+    // no way to give memory back to the engine. Tell the GC to treat decommit as a no-op
+    // and to never rely on memory shrinking back to the OS.
+    never_decommit_p = true;
+#endif //HOST_WASM
 
     if (heap_hard_limit_oh[soh] || heap_hard_limit_oh[loh] || heap_hard_limit_oh[poh])
     {
