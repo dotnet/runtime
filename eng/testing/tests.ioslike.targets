@@ -141,13 +141,6 @@
     <Copy SourceFiles="@(BundleFiles)"         DestinationFolder="$(BundleDir)%(TargetDir)" />
     <Copy SourceFiles="@(ExtraFiles)"          DestinationFolder="$(BundleDir)\%(TargetDir)" />
 
-    <Copy Condition="'$(UseNativeAOTRuntime)' == 'true' and '$(IncludesTestRunner)' != 'false'"
-          SourceFiles="$(MSBuildThisFileDirectory)default.rd.xml"
-          DestinationFiles="$(BundleDir)publish/common.rd.xml" />
-    <Copy Condition="'$(UseNativeAOTRuntime)' == 'true' and '$(IncludesTestRunner)' != 'false' and '@(RdXmlFile)' != ''"
-          SourceFiles="@(RdXmlFile)"
-          DestinationFolder="$(BundleDir)publish" />
-
     <!-- Only publish artifacts minus runtime pack assets (move to dotnet build later as opposed to publish)-->
     <ItemGroup Condition="'$(UsePortableRuntimePack)' == 'true'">
       <_PublishBundleFiles Include="@(BundleFiles->'$(AppBundlePath)/%(FileName)%(Extension)')" />

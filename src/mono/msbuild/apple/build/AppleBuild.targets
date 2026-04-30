@@ -285,7 +285,7 @@
   </Target>
 
   <Target Name="_AppleNativeAotCompile"
-          DependsOnTargets="SetupProperties;ComputeIlcCompileInputs;$(_AppleNativeAotCompileDependsOn);$(_IlcLibraryBuildDependsOn);_PublishNativeBinary" />
+          DependsOnTargets="SetupProperties;ComputeIlcCompileInputs;IlcCompile;$(_IlcLibraryBuildDependsOn);_PublishNativeBinary" />
 
   <!-- Copy the NativeAOT-produced native binary to the publish directory for library mode builds. -->
   <Target Name="_PublishNativeBinary"

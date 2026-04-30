@@ -36,8 +36,6 @@
     <_AotCompileTargetName Condition="'$(UseNativeAOTRuntime)' == 'true'">_AppleNativeAotCompile</_AotCompileTargetName>
     <_AotCompileTargetName Condition="'$(UseNativeAOTRuntime)' != 'true'">_AppleAotCompile</_AotCompileTargetName>
     <IlcCompileDependsOn>ComputeIlcCompileInputs;SetupOSSpecificProps;PrepareForILLink</IlcCompileDependsOn>
-    <_AppleNativeAotCompileDependsOn Condition="'$(SkipIlcCompile)' != 'true'">IlcCompile</_AppleNativeAotCompileDependsOn>
-    <_AppleNativeAotCompileDependsOn Condition="'$(SkipIlcCompile)' == 'true'">SetupOSSpecificProps</_AppleNativeAotCompileDependsOn>
     <_ReadRuntimeComponentsManifestTargetName Condition="'$(UseNativeAOTRuntime)' != 'true' and '$(UseMonoRuntime)' != 'false'">_MonoReadAvailableComponentsManifest</_ReadRuntimeComponentsManifestTargetName>
 
     <AppleBuildAfterThisTarget Condition="'$(AppleBuildAfterThisTarget)' == ''">Publish</AppleBuildAfterThisTarget>
