@@ -3434,7 +3434,6 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
     unsigned  srcAddrIndexScale = 1;
     int       srcOffset         = 0;
     GenTree*  src               = node->Data();
-    bool      srcIsRegArg       = false;
 
     assert(src->isContained());
 
@@ -3442,11 +3441,6 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
     {
         srcLclNum = src->AsLclVarCommon()->GetLclNum();
         srcOffset = src->AsLclVarCommon()->GetLclOffs();
-
-        if (src->OperIs(GT_LCL_VAR))
-        {
-            srcIsRegArg = m_compiler->lvaGetDesc(srcLclNum)->lvIsMultiRegArg;
-        }
     }
     else
     {
@@ -3492,7 +3486,7 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
     // Get the largest SIMD register available if the size is large enough
     unsigned regSize = m_compiler->roundDownSIMDSize(size);
 
-    if ((size >= regSize) && (regSize > 0) && !srcIsRegArg)
+    if ((size >= regSize) && (regSize > 0))
     {
         regNumber tempReg = internalRegisters.GetSingle(node, RBM_ALLFLOAT);
 

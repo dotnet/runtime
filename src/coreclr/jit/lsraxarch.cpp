@@ -1495,15 +1495,7 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
                 unsigned regSize   = m_compiler->roundDownSIMDSize(size);
                 unsigned remainder = size;
 
-                bool srcIsRegArg = false;
-
-                if (src->OperIs(GT_LCL_VAR))
-                {
-                    unsigned srcLclNum = src->AsLclVar()->GetLclNum();
-                    srcIsRegArg        = m_compiler->lvaGetDesc(srcLclNum)->lvIsMultiRegArg;
-                }
-
-                if ((size >= regSize) && (regSize > 0) && !srcIsRegArg)
+                if ((size >= regSize) && (regSize > 0))
                 {
                     // We need a float temporary if we're doing SIMD operations
 
@@ -1513,8 +1505,7 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
                     remainder %= regSize;
                 }
 
-                if (srcIsRegArg ||
-                    ((remainder > 0) && ((regSize == 0) || (isPow2(remainder) && (remainder <= REGSIZE_BYTES)))))
+                if ((remainder > 0) && ((regSize == 0) || (isPow2(remainder) && (remainder <= REGSIZE_BYTES))))
                 {
                     // We need an int temporary if we're not doing SIMD operations
                     // or if are but the remainder is a power of 2 and less than the

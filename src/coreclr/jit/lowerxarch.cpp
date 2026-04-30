@@ -467,27 +467,18 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
         assert(src->OperIs(GT_IND, GT_LCL_VAR, GT_LCL_FLD));
         src->SetContained();
 
-        bool isMultiRegArgCopy = false;
-
         if (src->OperIs(GT_LCL_VAR))
         {
             // TODO-1stClassStructs: for now we can't work with STORE_BLOCK source in register.
             const unsigned srcLclNum = src->AsLclVar()->GetLclNum();
             m_compiler->lvaSetVarDoNotEnregister(srcLclNum DEBUGARG(DoNotEnregisterReason::StoreBlkSrc));
-            isMultiRegArgCopy = m_compiler->lvaGetDesc(srcLclNum)->lvIsMultiRegArg;
         }
 
-        ClassLayout* layout     = blkNode->GetLayout();
-        bool         doCpObj    = layout->HasGCPtr();
-        bool         isNotHeap  = blkNode->IsAddressNotOnHeap(m_compiler);
-        bool         canUseSimd = !doCpObj || isNotHeap;
-
-        if (isMultiRegArgCopy)
-        {
-            canUseSimd = false;
-        }
-
-        unsigned copyBlockUnrollLimit = m_compiler->getUnrollThreshold(Compiler::UnrollKind::Memcpy, canUseSimd);
+        ClassLayout* layout               = blkNode->GetLayout();
+        bool         doCpObj              = layout->HasGCPtr();
+        bool         isNotHeap            = blkNode->IsAddressNotOnHeap(m_compiler);
+        bool         canUseSimd           = !doCpObj || isNotHeap;
+        unsigned     copyBlockUnrollLimit = m_compiler->getUnrollThreshold(Compiler::UnrollKind::Memcpy, canUseSimd);
 
 #ifndef JIT32_GCENCODER
         if (doCpObj && (size <= copyBlockUnrollLimit))
