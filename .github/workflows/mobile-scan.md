@@ -70,6 +70,7 @@ concurrency:
 tools:
   github:
     toolsets: [pull_requests, repos, issues, search]
+    min-integrity: approved
   edit:
   bash: ["dotnet", "git", "find", "ls", "cat", "grep", "head", "tail", "wc", "curl", "jq", "tee", "sed", "awk", "tr", "cut", "sort", "uniq", "xargs", "echo", "date", "mkdir", "test", "env", "basename", "dirname", "bash", "sh", "chmod"]
 
@@ -84,7 +85,6 @@ safe-outputs:
     protected-files: blocked
     allowed-files:
       - "src/libraries/**/tests/**"
-      - "src/libraries/**/*.csproj"
       - "src/libraries/Common/tests/**"
     labels: [agentic-workflows]
   create-issue:
@@ -110,9 +110,8 @@ Scan the latest completed build of the `runtime-extra-platforms` pipeline (AzDO 
 
 For each failed mobile work item in the latest completed build:
 
-- **Per-test platform incompatibility** → open a draft PR. Use a per-test attribute change: `[SkipOnPlatform(...)]`, a narrowed `[ConditionalFact]` predicate built from existing `PlatformDetection.*` helpers, or `[ActiveIssue("https://github.com/dotnet/runtime/issues/<n>", TestPlatforms.<plat>)]` referencing an **existing** issue. Touch only files matching the `allowed-files` policy (`src/libraries/**/tests/**` and matching `.csproj`).
-- **Anything else** — product regression, native crash, multi-assembly cluster, infra requiring an owner — file a tracking issue. The issue is the deliverable; do not paper over a product bug with `SkipOnPlatform`.
-- **Pure dead-letter / queue exhaustion** — drop. No PR, no issue.
+- **Per-test platform incompatibility** → open a draft PR. Use a per-test attribute change: `[SkipOnPlatform(...)]`, a narrowed `[ConditionalFact]` predicate built from existing `PlatformDetection.*` helpers, or `[ActiveIssue("https://github.com/dotnet/runtime/issues/<n>", TestPlatforms.<plat>)]` referencing an **existing** issue. Touch only files matching the `allowed-files` policy (`src/libraries/**/tests/**`, including test `.csproj`).
+- **Anything else** — product regression, native crash, multi-assembly cluster, infrastructure (including queue exhaustion / dead-letter / device-lost) — file a tracking issue. The issue is the deliverable; do not paper over a product bug with `SkipOnPlatform`. Group all dead-letter / queue exhaustion / device-lost failures from one run into a single infrastructure issue. Before filing, `search_issues` for an open issue with the matching `area-Infrastructure` + `os-*` label and update its description in place rather than creating a duplicate.
 
 Do not emit `noop`. Either a PR or an issue must come out of every actionable failure.
 
@@ -158,4 +157,4 @@ These look like permission errors but are physical:
 
 ## Submit
 
-Search existing issues and PRs (`search_issues`, `search_pull_requests`) before creating anything new — never duplicate. If an issue already tracks the failure, **prefer opening a PR that references it via `[ActiveIssue("https://github.com/dotnet/runtime/issues/<n>")]`** rather than filing another issue.
+Search existing issues and PRs (`search_issues`, `search_pull_requests`) before creating anything new — never duplicate. When using `search_pull_requests`, filter to `is:merged OR review:approved` so the integrity filter does not silently drop low-trust results. If an issue already tracks the failure, **prefer opening a PR that references it via `[ActiveIssue("https://github.com/dotnet/runtime/issues/<n>")]`** rather than filing another issue. If `search_issues` returns no matches and you suspect the integrity filter dropped them, proceed to file the issue — duplicates here are recoverable, missing infrastructure tracking is not.
