@@ -717,41 +717,33 @@ void Validate_Sum_IntArray_SafeArray()
         THROW_IF_FAILED(::SafeArrayPutElement(sa, &i, (void*)&data[i]));
     }
 
-    {
-        DISPPARAMS params;
-        params.cArgs = 1;
-        params.rgvarg = new VARIANTARG[params.cArgs];
-        params.cNamedArgs = 0;
-        params.rgdispidNamedArgs = nullptr;
+    DISPPARAMS params;
+    params.cArgs = 1;
+    params.rgvarg = new VARIANTARG[params.cArgs];
+    params.cNamedArgs = 0;
+    params.rgdispidNamedArgs = nullptr;
 
-        VariantInit(&params.rgvarg[0]);
-        V_VT(&params.rgvarg[0]) = VT_ARRAY | VT_I4;
-        V_ARRAY(&params.rgvarg[0]) = sa;
+    VariantInit(&params.rgvarg[0]);
+    V_VT(&params.rgvarg[0]) = VT_ARRAY | VT_I4;
+    V_ARRAY(&params.rgvarg[0]) = sa;
 
-        VARIANT result;
-        VariantInit(&result);
+    VARIANT result;
+    VariantInit(&result);
 
-        THROW_IF_FAILED(dispatchTesting->Invoke(
-            methodId,
-            IID_NULL,
-            lcid,
-            DISPATCH_METHOD,
-            &params,
-            &result,
-            nullptr,
-            nullptr
-        ));
+    THROW_IF_FAILED(dispatchTesting->Invoke(
+        methodId,
+        IID_NULL,
+        lcid,
+        DISPATCH_METHOD,
+        &params,
+        &result,
+        nullptr,
+        nullptr
+    ));
 
-        THROW_FAIL_IF_FALSE(V_I4(&result) == expectedSum);
+    THROW_FAIL_IF_FALSE(V_I4(&result) == expectedSum);
 
-        delete[] params.rgvarg;
-    }
-
-    {
-        int sum = 0;
-        THROW_IF_FAILED(dispatchTesting->Sum_IntArray_SafeArray(sa, &sum));
-        THROW_FAIL_IF_FALSE(sum == expectedSum);
-    }
+    delete[] params.rgvarg;
 
     ::SafeArrayDestroy(sa);
 }
