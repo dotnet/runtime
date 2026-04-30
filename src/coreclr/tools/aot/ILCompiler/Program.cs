@@ -129,7 +129,7 @@ namespace ILCompiler
                     genericCycleDepthCutoff: Get(_command.MaxGenericCycleDepth),
                     genericCycleBreadthCutoff: Get(_command.MaxGenericCycleBreadth));
 
-            typeSystemContext.InputFilePaths = _command.Result.GetValue(_command.InputFilePaths);
+            typeSystemContext.InputFilePaths = Get(_command.InputFilePaths);
             typeSystemContext.ReferenceFilePaths = Get(_command.ReferenceFiles);
             if (!typeSystemContext.InputFilePaths.ContainsKey(systemModuleName)
                 && !typeSystemContext.ReferenceFilePaths.ContainsKey(systemModuleName))
