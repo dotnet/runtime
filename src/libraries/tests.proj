@@ -654,13 +654,6 @@
   <ItemGroup Condition="'$(TargetsAppleMobile)' == 'true' and '$(RuntimeFlavor)' == 'CoreCLR' and '$(UseNativeAOTRuntime)' != 'true'">
     <SmokeTestProject Include="$(RepoRoot)\src\tests\FunctionalTests\iOS\Simulator\CoreCLR\*.Test.csproj"/>
 
-    <!-- https://github.com/dotnet/runtime/issues/124344 -->
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Composition\tests\System.Composition.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Private.Xml\tests\System.Private.Xml.Tests.csproj" />
-
-    <!-- https://github.com/dotnet/runtime/issues/124344 -->
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.Serialization.Xml\tests\System.Runtime.Serialization.Xml.Tests.csproj" />
-
     <!-- Timeouts -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Collections.Concurrent\tests\System.Collections.Concurrent.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.HttpListener\tests\System.Net.HttpListener.Tests.csproj" />
