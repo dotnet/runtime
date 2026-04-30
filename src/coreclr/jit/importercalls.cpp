@@ -7744,16 +7744,13 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
                 uint32_t               exactMethodAttrs = info.compCompHnd->getMethodAttribs(exactMethod);
                 assert(!dvInfo.instParamLookup.lookupKind.needsRuntimeLookup);
 
-                const bool needsMethodContext =
-                    ((size_t)exactContext & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_METHOD;
                 const bool needsInstParam = (dvInfo.instParamLookup.constLookup.accessType != IAT_VALUE) ||
                                             (dvInfo.instParamLookup.constLookup.handle != nullptr);
-                CORINFO_METHOD_HANDLE instantiatingStub = NO_METHOD_HANDLE;
+                const CORINFO_LOOKUP* instParamLookup = nullptr;
                 if (needsInstParam)
                 {
-                    assert(needsMethodContext);
-                    instantiatingStub = (CORINFO_METHOD_HANDLE)((size_t)exactContext & ~CORINFO_CONTEXTFLAGS_MASK);
-                    assert(instantiatingStub != NO_METHOD_HANDLE);
+                    assert(((size_t)exactContext & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_METHOD);
+                    instParamLookup = &dvInfo.instParamLookup;
                 }
 
                 // NOTE: This is currently used only with NativeAOT. In theory, we could also check if we
@@ -7769,8 +7766,7 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
                 }
 
                 addGuardedDevirtualizationCandidate(call, exactMethod, exactCls, exactContext, exactMethodAttrs,
-                                                    clsAttrs, likelyHood, needsMethodContext, instantiatingStub,
-                                                    baseMethod, originalContext);
+                                                    clsAttrs, likelyHood, instParamLookup, baseMethod, originalContext);
             }
 
             if (call->GetInlineCandidatesCount() == numExactClasses)
@@ -7793,11 +7789,11 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
     // Iterate over the guesses
     for (int candidateId = 0; candidateId < candidatesCount; candidateId++)
     {
-        CORINFO_CLASS_HANDLE  likelyClass        = likelyClasses[candidateId];
-        CORINFO_METHOD_HANDLE likelyMethod       = likelyMethods[candidateId];
-        unsigned              likelihood         = likelihoods[candidateId];
-        bool                  needsMethodContext = false;
-        CORINFO_METHOD_HANDLE instantiatingStub  = NO_METHOD_HANDLE;
+        CORINFO_CLASS_HANDLE  likelyClass  = likelyClasses[candidateId];
+        CORINFO_METHOD_HANDLE likelyMethod = likelyMethods[candidateId];
+        unsigned              likelihood   = likelihoods[candidateId];
+        CORINFO_LOOKUP        instParamLookup{};
+        const CORINFO_LOOKUP* pInstParamLookup = nullptr;
 
         CORINFO_CONTEXT_HANDLE likelyContext = originalContext;
 
@@ -7844,14 +7840,13 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
             likelyMethod  = dvInfo.devirtualizedMethod;
             assert(!dvInfo.instParamLookup.lookupKind.needsRuntimeLookup);
 
-            needsMethodContext = ((size_t)likelyContext & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_METHOD;
             const bool needsInstParam = (dvInfo.instParamLookup.constLookup.accessType != IAT_VALUE) ||
                                         (dvInfo.instParamLookup.constLookup.handle != nullptr);
             if (needsInstParam)
             {
-                assert(needsMethodContext);
-                instantiatingStub = (CORINFO_METHOD_HANDLE)((size_t)likelyContext & ~CORINFO_CONTEXTFLAGS_MASK);
-                assert(instantiatingStub != NO_METHOD_HANDLE);
+                assert(((size_t)likelyContext & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_METHOD);
+                instParamLookup  = dvInfo.instParamLookup;
+                pInstParamLookup = &instParamLookup;
             }
         }
         else
@@ -7927,8 +7922,8 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
         // Add this as a potential candidate.
         //
         addGuardedDevirtualizationCandidate(call, likelyMethod, likelyClass, likelyContext, likelyMethodAttribs,
-                                            likelyClassAttribs, likelihood, needsMethodContext, instantiatingStub,
-                                            baseMethod, originalContext);
+                                            likelyClassAttribs, likelihood, pInstParamLookup, baseMethod,
+                                            originalContext);
     }
 }
 
@@ -7953,8 +7948,7 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
 //    methodAttr - attributes of the method
 //    classAttr - attributes of the class
 //    likelihood - odds that this class is the class seen at runtime
-//    needsMethodContext - devirtualized method's exact context is a method context
-//    instantiatingStub - instantiating stub to pass as an instantiation argument, if one is needed
+//    instParamLookup - lookup for the instantiation argument, or nullptr if none is needed
 //    originalMethodHandle - method handle of base method (before devirt)
 //    originalContextHandle - context for the original call
 //
@@ -7965,8 +7959,7 @@ void Compiler::addGuardedDevirtualizationCandidate(GenTreeCall*           call,
                                                    unsigned               methodAttr,
                                                    unsigned               classAttr,
                                                    unsigned               likelihood,
-                                                   bool                   needsMethodContext,
-                                                   CORINFO_METHOD_HANDLE  instantiatingStub,
+                                                   const CORINFO_LOOKUP*  instParamLookup,
                                                    CORINFO_METHOD_HANDLE  originalMethodHandle,
                                                    CORINFO_CONTEXT_HANDLE originalContextHandle)
 {
@@ -8021,14 +8014,14 @@ void Compiler::addGuardedDevirtualizationCandidate(GenTreeCall*           call,
 
     // We're all set, proceed with candidate creation.
     //
-    if (needsMethodContext)
-    {
-        assert(((size_t)contextHandle & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_METHOD);
-    }
+    const bool needsMethodContext = ((size_t)contextHandle & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_METHOD;
 
-    if (instantiatingStub != NO_METHOD_HANDLE)
+    CORINFO_METHOD_HANDLE instantiatingStub = NO_METHOD_HANDLE;
+    if (instParamLookup != nullptr)
     {
         assert(needsMethodContext);
+        instantiatingStub = (CORINFO_METHOD_HANDLE)((size_t)contextHandle & ~CORINFO_CONTEXTFLAGS_MASK);
+        assert(instantiatingStub != NO_METHOD_HANDLE);
     }
 
     JITDUMP("Marking call [%06u] as guarded devirtualization candidate; will guess for %s %s\n", dspTreeID(call),
