@@ -8,7 +8,7 @@
 #include <minipal/utf8.h>
 #include <minipal/strings.h>
 
-#ifdef _WIN32
+#ifdef TARGET_WINDOWS
 
 #include <windows.h>
 
@@ -158,7 +158,35 @@ bool minipal_create_process_w(
     return true;
 }
 
-#else // !_WIN32
+#elif defined(TARGET_WASM)
+
+// wasm does not support process creation.
+bool minipal_create_process(
+    const char* command_line,
+    const char* working_dir,
+    bool inherit_handles,
+    minipal_process_info* out_info)
+{
+    (void)command_line; (void)working_dir; (void)inherit_handles; (void)out_info;
+    return false;
+}
+
+void minipal_close_process_handle(intptr_t handle)
+{
+    (void)handle;
+}
+
+bool minipal_create_process_w(
+    const CHAR16_T* command_line,
+    const CHAR16_T* working_dir,
+    bool inherit_handles,
+    minipal_process_info* out_info)
+{
+    (void)command_line; (void)working_dir; (void)inherit_handles; (void)out_info;
+    return false;
+}
+
+#else
 
 #include <errno.h>
 #include <fcntl.h>
@@ -373,4 +401,4 @@ bool minipal_create_process_w(
     return ok;
 }
 
-#endif // !_WIN32
+#endif
