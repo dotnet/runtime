@@ -40,7 +40,7 @@ namespace System.Threading.Tasks.Tests
         // RuntimeFeature.ThrowIfMultithreadingIsNotSupported(), so gate the tests on both
         // runtime async support and threading support.
         public static bool IsRuntimeAsyncAndThreadingSupported =>
-            PlatformDetection.IsRuntimeAsyncSupported && PlatformDetection.IsThreadingSupported;
+            PlatformDetection.IsRuntimeAsyncSupported && PlatformDetection.IsMultithreadingSupported;
 
         private const string AsyncProfilerEventSourceName = "System.Runtime.CompilerServices.AsyncProfilerEventSource";
         private const int AsyncEventsId = 1;

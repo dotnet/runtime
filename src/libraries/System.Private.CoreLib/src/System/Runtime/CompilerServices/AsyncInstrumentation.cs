@@ -10,7 +10,7 @@ namespace System.Runtime.CompilerServices
 {
     internal static class AsyncInstrumentation
     {
-        public static bool IsSupported => Debugger.IsSupported && EventSource.IsSupported;
+        public static bool IsSupported => Debugger.IsSupported || EventSource.IsSupported;
 
         [Flags]
         public enum Flags : uint
