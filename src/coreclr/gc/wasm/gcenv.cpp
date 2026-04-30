@@ -343,13 +343,11 @@ size_t GCToOSInterface::GetVirtualMemoryMaxAddress()
     return GetTotalPhysicalMemory();
 }
 
-size_t GetRestrictedPhysicalMemoryLimit()
+static size_t GetRestrictedPhysicalMemoryLimit()
 {
-    // WASM linear memory has a hard ceiling set in the .wasm file, enforced by the engine.
-    // This is semantically equivalent to a container memory limit (cgroups on Linux).
-    // Returning the total memory here makes is_restricted_physical_mem = true, which
-    // enables the GC to auto-set heap_hard_limit proportional to available memory.
-    return GetTotalPhysicalMemory();
+    // No restricted-memory mode on WASM. The linear memory ceiling enforced by the
+    // engine is the only hard cap; we don't auto-derive a GC heap_hard_limit from it.
+    return 0;
 }
 
 bool GetPhysicalMemoryUsed(size_t* val)

@@ -352,7 +352,6 @@ HRESULT GCHeap::Initialize()
 #ifdef HOST_64BIT
             large_seg_size = gc_heap::use_large_pages_p ? gc_heap::soh_segment_size : gc_heap::soh_segment_size * 2;
 #else //HOST_64BIT
-            // Large pages not supported on 32-bit.
             assert (!gc_heap::use_large_pages_p);
             large_seg_size = gc_heap::soh_segment_size;
 #endif //HOST_64BIT

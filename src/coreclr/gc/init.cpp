@@ -930,20 +930,17 @@ HRESULT gc_heap::initialize_gc (size_t soh_segment_size,
         assert (false);
 #endif //!HOST_64BIT
 
-        if (!large_pages_emulation_mode_p)
+        if (heap_hard_limit_oh[soh])
         {
-            if (heap_hard_limit_oh[soh])
-            {
-                heap_hard_limit_oh[soh] = soh_segment_size * number_of_heaps;
-                heap_hard_limit_oh[loh] = loh_segment_size * number_of_heaps;
-                heap_hard_limit_oh[poh] = poh_segment_size * number_of_heaps;
-                heap_hard_limit = heap_hard_limit_oh[soh] + heap_hard_limit_oh[loh] + heap_hard_limit_oh[poh];
-            }
-            else
-            {
-                assert (heap_hard_limit);
-                heap_hard_limit = (soh_segment_size + loh_segment_size + poh_segment_size) * number_of_heaps;
-            }
+            heap_hard_limit_oh[soh] = soh_segment_size * number_of_heaps;
+            heap_hard_limit_oh[loh] = loh_segment_size * number_of_heaps;
+            heap_hard_limit_oh[poh] = poh_segment_size * number_of_heaps;
+            heap_hard_limit = heap_hard_limit_oh[soh] + heap_hard_limit_oh[loh] + heap_hard_limit_oh[poh];
+        }
+        else
+        {
+            assert (heap_hard_limit);
+            heap_hard_limit = (soh_segment_size + loh_segment_size + poh_segment_size) * number_of_heaps;
         }
     }
 #endif //USE_REGIONS
@@ -1391,11 +1388,9 @@ bool gc_heap::compute_hard_limit()
 
 bool gc_heap::compute_memory_settings(bool is_initialization, uint32_t& nhp, uint32_t nhp_from_config, size_t& seg_size_from_config, size_t new_current_total_committed)
 {
-#if defined(HOST_64BIT) || defined(HOST_WASM)
+#ifdef HOST_64BIT
     // If the hard limit is specified, the user is saying even if the process is already
     // running in a container, use this limit for the GC heap.
-    // On WASM, the linear memory has a hard ceiling set in the .wasm file, enforced by
-    // the engine — semantically equivalent to a container memory limit.
     if (!hard_limit_config_p)
     {
         if (is_restricted_physical_mem)
@@ -1412,7 +1407,7 @@ bool gc_heap::compute_memory_settings(bool is_initialization, uint32_t& nhp, uin
             }
         }
     }
-#endif //HOST_64BIT || HOST_WASM
+#endif //HOST_64BIT
 
     if (heap_hard_limit && (heap_hard_limit < new_current_total_committed))
     {
@@ -1456,17 +1451,6 @@ bool gc_heap::compute_memory_settings(bool is_initialization, uint32_t& nhp, uin
             //   0 <= soh_segment_size <= 1Gb
             size_t limit_to_check = (heap_hard_limit_oh[soh] ? heap_hard_limit_oh[soh] : heap_hard_limit);
             soh_segment_size = max (adjust_segment_size_hard_limit (limit_to_check, nhp), seg_size_from_config);
-#ifdef HOST_WASM
-            // On WASM, VirtualReserve allocates real memory (no virtual memory).
-            // Cap segment size so all 3 initial segments (SOH + LOH + POH) fit within
-            // the hard limit with room to grow. On 32-bit without per-OH limits,
-            // LOH and POH segments equal soh_segment_size, so total = 3 * soh.
-            {
-                size_t max_seg = round_down_power2 (heap_hard_limit / (3 * 2 * nhp));
-                max_seg = max (max_seg, (size_t)(1024 * 1024));
-                soh_segment_size = min (soh_segment_size, max_seg);
-            }
-#endif //HOST_WASM
         }
         else
         {
