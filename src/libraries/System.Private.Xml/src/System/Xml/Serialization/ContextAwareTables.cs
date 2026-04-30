@@ -32,7 +32,10 @@ namespace System.Xml.Serialization
                 return ret;
 
             // Not found. Do the slower work of creating the value in the correct collection.
-            AssemblyLoadContext? alc = AssemblyLoadContext.GetLoadContext(t.Assembly);
+            // Use GetEffectiveLoadContext to also consider the current contextual ALC as a fallback,
+            // so that collectible ALCs creating serializers for types in the default ALC
+            // (e.g., List<CollectibleType>) are routed to the collectible table.
+            AssemblyLoadContext? alc = TempAssembly.GetEffectiveLoadContext(t);
 
             // Null and non-collectible load contexts use the default table
             if (alc == null || !alc.IsCollectible)

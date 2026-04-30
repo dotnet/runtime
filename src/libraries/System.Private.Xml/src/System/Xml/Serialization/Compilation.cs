@@ -445,7 +445,17 @@ namespace System.Xml.Serialization
             TypeScope[] scopes = new TypeScope[scopeTable.Keys.Count];
             scopeTable.Keys.CopyTo(scopes, 0);
 
-            using (AssemblyLoadContext.EnterContextualReflection(mainAssembly))
+            // Determine the effective ALC for generating the serializer assembly.
+            // For collectible types whose root assembly is in the default ALC (e.g., List<Bar> where Bar is
+            // collectible), use the outer contextual ALC so the generated assembly is placed in the
+            // collectible ALC and can be unloaded when the ALC is collected.
+            var mainAssemblyAlc = mainAssembly != null ? AssemblyLoadContext.GetLoadContext(mainAssembly) : null;
+            if ((mainAssemblyAlc == null || mainAssemblyAlc == AssemblyLoadContext.Default) && mainType?.IsCollectible == true)
+                mainAssemblyAlc = AssemblyLoadContext.CurrentContextualReflectionContext ?? mainAssemblyAlc;
+
+            using (mainAssemblyAlc != null ?
+                   mainAssemblyAlc.EnterContextualReflection() :
+                   AssemblyLoadContext.EnterContextualReflection(mainAssembly))
             {
                 // Before generating any IL, check each mapping and supported type to make sure
                 // they are compatible with the current ALC
@@ -597,10 +607,34 @@ namespace System.Xml.Serialization
             if (typeALC == null || !typeALC.IsCollectible)
                 return;
 
-            // Collectible types should be in the same collectible context
-            var baseALC = AssemblyLoadContext.GetLoadContext(assembly) ?? AssemblyLoadContext.CurrentContextualReflectionContext;
+            // Collectible types should be in the same collectible context.
+            // When the reference assembly is in the default ALC, fall back to the
+            // current contextual reflection context (e.g., set via EnterContextualReflection).
+            var assemblyAlc = AssemblyLoadContext.GetLoadContext(assembly);
+            var baseALC = (assemblyAlc == null || assemblyAlc == AssemblyLoadContext.Default)
+                ? (AssemblyLoadContext.CurrentContextualReflectionContext ?? assemblyAlc)
+                : assemblyAlc;
             if (typeALC != baseALC)
                 throw new InvalidOperationException(SR.Format(SR.XmlTypeInBadLoadContext, t.FullName));
+        }
+
+        /// <summary>
+        /// Gets the effective <see cref="AssemblyLoadContext"/> for caching decisions related to the given type.
+        /// Falls back to <see cref="AssemblyLoadContext.CurrentContextualReflectionContext"/> when the type's
+        /// own assembly is in the default ALC, to handle the case where a collectible ALC creates a serializer
+        /// for a type whose assembly is the default ALC (e.g., <c>List&lt;CollectibleType&gt;</c>).
+        /// </summary>
+        internal static AssemblyLoadContext? GetEffectiveLoadContext(Type t)
+        {
+            var alc = AssemblyLoadContext.GetLoadContext(t.Assembly);
+            if (alc != null && alc != AssemblyLoadContext.Default)
+                return alc;
+
+            var currentAlc = AssemblyLoadContext.CurrentContextualReflectionContext;
+            if (currentAlc != null && currentAlc != AssemblyLoadContext.Default)
+                return currentAlc;
+
+            return alc;
         }
 
         [RequiresUnreferencedCode("calls Contract")]
@@ -690,6 +724,9 @@ namespace System.Xml.Serialization
     internal sealed class TempAssemblyCache
     {
         private readonly ConditionalWeakTable<Assembly, Dictionary<TempAssemblyCacheKey, TempAssembly>> _collectibleCaches = new ConditionalWeakTable<Assembly, Dictionary<TempAssemblyCacheKey, TempAssembly>>();
+        // For collectible types whose assembly is in the default ALC (e.g., List<Bar> where Bar is collectible),
+        // key by the type itself so the entry is released when the collectible type is GC'd.
+        private readonly ConditionalWeakTable<Type, Dictionary<TempAssemblyCacheKey, TempAssembly>> _collectibleTypeCaches = new ConditionalWeakTable<Type, Dictionary<TempAssemblyCacheKey, TempAssembly>>();
         private Dictionary<TempAssemblyCacheKey, TempAssembly> _fastCache = new Dictionary<TempAssemblyCacheKey, TempAssembly>();
 
         internal TempAssembly? this[string? ns, Type t]
@@ -703,7 +740,14 @@ namespace System.Xml.Serialization
                     return tempAssembly;
 
                 if (_collectibleCaches.TryGetValue(t.Assembly, out var cCache))
-                    cCache.TryGetValue(key, out tempAssembly);
+                {
+                    if (cCache.TryGetValue(key, out tempAssembly))
+                        return tempAssembly;
+                }
+
+                // For collectible types whose assembly is in the default ALC, also check type-keyed cache.
+                if (t.IsCollectible && _collectibleTypeCaches.TryGetValue(t, out var tCache))
+                    tCache.TryGetValue(key, out tempAssembly);
 
                 return tempAssembly;
             }
@@ -728,6 +772,17 @@ namespace System.Xml.Serialization
                         : new Dictionary<TempAssemblyCacheKey, TempAssembly>();
                     cache[key] = assembly;
                     _collectibleCaches.AddOrUpdate(t.Assembly, cache);
+                }
+                else if (t.IsCollectible)
+                {
+                    // Type is collectible (e.g., generic with a collectible type argument) but its assembly
+                    // is in the default ALC. Use the type itself as the weak key so the cache entry is
+                    // released when the collectible type is GC'd during ALC unload.
+                    cache = _collectibleTypeCaches.TryGetValue(t, out var c)  // Clone or create
+                        ? new Dictionary<TempAssemblyCacheKey, TempAssembly>(c)
+                        : new Dictionary<TempAssemblyCacheKey, TempAssembly>();
+                    cache[key] = assembly;
+                    _collectibleTypeCaches.AddOrUpdate(t, cache);
                 }
                 else
                 {

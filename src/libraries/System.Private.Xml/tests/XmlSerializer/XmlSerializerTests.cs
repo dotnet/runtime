@@ -2656,6 +2656,47 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
         Assert.True(!weakRef.IsAlive);
     }
 
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
+#if XMLSERIALIZERGENERATORTESTS
+    [SkipOnPlatform(TestPlatforms.Browser, "AssemblyDependencyResolver not supported in wasm")]
+#endif
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/34072", TestRuntimes.Mono)]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/95928", typeof(PlatformDetection), nameof(PlatformDetection.IsReadyToRunCompiled))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/124344", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile), nameof(PlatformDetection.IsCoreCLR))]
+    public static void Xml_SerializerCreatedInCollectibleALC_ForOwnType()
+    {
+        // Serializer created from within a collectible ALC for that ALC's own type.
+        ExecuteAndUnloadInContext("SerializableAssembly.dll", "SerializationTypes.SimpleType", useListWrapper: false, out var weakRef);
+
+        for (int i = 0; weakRef.IsAlive && i < 10; i++)
+        {
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+        }
+        Assert.True(!weakRef.IsAlive);
+    }
+
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
+#if XMLSERIALIZERGENERATORTESTS
+    [SkipOnPlatform(TestPlatforms.Browser, "AssemblyDependencyResolver not supported in wasm")]
+#endif
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/34072", TestRuntimes.Mono)]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/95928", typeof(PlatformDetection), nameof(PlatformDetection.IsReadyToRunCompiled))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/124344", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile), nameof(PlatformDetection.IsCoreCLR))]
+    public static void Xml_SerializerCreatedInCollectibleALC_ForListOfOwnType()
+    {
+        // Serializer created from within a collectible ALC for List<OwnType>, where List<> is in the
+        // default ALC and OwnType is in the collectible ALC.
+        ExecuteAndUnloadInContext("SerializableAssembly.dll", "SerializationTypes.SimpleType", useListWrapper: true, out var weakRef);
+
+        for (int i = 0; weakRef.IsAlive && i < 10; i++)
+        {
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+        }
+        Assert.True(!weakRef.IsAlive);
+    }
+
     [Fact]
     public static void ValidateXElement()
     {
@@ -2828,6 +2869,44 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
         var rtobj = SerializeAndDeserialize(obj, null, () => serializer, true);
         Assert.NotNull(rtobj);
         Assert.True(rtobj.Equals(obj));
+
+        alc.Unload();
+    }
+
+    /// <summary>
+    /// Simulates the scenario where a serializer is created from within a collectible ALC
+    /// by entering the ALC's contextual reflection context before creating the serializer.
+    /// </summary>
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static void ExecuteAndUnloadInContext(string assemblyfile, string typename, bool useListWrapper, out WeakReference wref)
+    {
+        var fullPath = Path.GetFullPath(assemblyfile);
+        var alc = new TestAssemblyLoadContext("XmlSerializerTests", true, fullPath);
+        wref = new WeakReference(alc);
+
+        var asm = alc.LoadFromAssemblyPath(fullPath);
+
+        var type = asm.GetType(typename);
+        Assert.Equal(AssemblyLoadContext.GetLoadContext(type.Assembly), alc);
+        Assert.NotEqual(alc, AssemblyLoadContext.Default);
+
+        // For the List<OwnType> case, the root type's assembly is the default ALC (CoreLib),
+        // but the type argument is from the collectible ALC.
+        Type serializeType = useListWrapper ? typeof(List<>).MakeGenericType(type) : type;
+
+        // Enter the collectible ALC's context, simulating "created from within the collectible ALC".
+        using (alc.EnterContextualReflection())
+        {
+            XmlSerializer serializer = new XmlSerializer(serializeType);
+
+            // Verify round-trip works
+            object instance = useListWrapper
+                ? Activator.CreateInstance(serializeType)!
+                : Activator.CreateInstance(type)!;
+
+            var rtobj = SerializeAndDeserialize(instance, null, () => serializer, true);
+            Assert.NotNull(rtobj);
+        }
 
         alc.Unload();
     }
