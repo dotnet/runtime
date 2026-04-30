@@ -488,13 +488,6 @@ namespace System.IO.Compression
                 inputOffset += bytesToProcess;
                 inputCount -= bytesToProcess;
             }
-
-            // Buffer any remaining bytes
-            if (inputCount > 0)
-            {
-                buffer.Slice(inputOffset, inputCount).CopyTo(_partialBlock.AsSpan(_partialBlockBytes));
-                _partialBlockBytes += inputCount;
-            }
         }
 
         private void ThrowIfNotWritable()
@@ -562,11 +555,9 @@ namespace System.IO.Compression
                 }
             }
 
-            // Process full blocks
-            while (inputCount >= BlockSize)
+            while (inputCount > 0)
             {
                 int bytesToProcess = Math.Min(inputCount, workBuffer.Length);
-                bytesToProcess = (bytesToProcess / BlockSize) * BlockSize;
 
                 buffer.Slice(inputOffset, bytesToProcess).CopyTo(workBuffer);
                 ProcessBlock(workBuffer.AsSpan(0, bytesToProcess));
@@ -574,13 +565,6 @@ namespace System.IO.Compression
 
                 inputOffset += bytesToProcess;
                 inputCount -= bytesToProcess;
-            }
-
-            // Buffer any remaining bytes
-            if (inputCount > 0)
-            {
-                buffer.Slice(inputOffset, inputCount).CopyTo(_partialBlock.AsMemory(_partialBlockBytes));
-                _partialBlockBytes += inputCount;
             }
         }
 
@@ -616,8 +600,6 @@ namespace System.IO.Compression
                 return;
             }
 
-            _disposed = true;
-
             if (disposing)
             {
                 try
@@ -644,6 +626,7 @@ namespace System.IO.Compression
                 }
                 finally
                 {
+                    _disposed = true;
                     _aes.Dispose();
                     _hmac?.Dispose();
 
