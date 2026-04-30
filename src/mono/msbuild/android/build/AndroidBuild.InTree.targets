@@ -28,12 +28,16 @@
   <Target Name="ResolveReadyToRunCompilers" Condition="'$(PublishReadyToRun)' == true" DependsOnTargets="ResolveRuntimeFilesFromLocalBuild">
     <PropertyGroup>
       <Crossgen2Path>$([MSBuild]::NormalizePath('$(Crossgen2InBuildDir)', 'crossgen2$(ExeSuffix)'))</Crossgen2Path>
+      <_Crossgen2TargetOS>$(TargetOS)</_Crossgen2TargetOS>
+      <_Crossgen2TargetOS Condition="'$(TargetOS)' == 'android'">linux</_Crossgen2TargetOS>
+      <_Crossgen2TargetArchitecture>$(TargetArchitecture)</_Crossgen2TargetArchitecture>
+      <_Crossgen2TargetArchitecture Condition="('$(TargetOS)' == 'android' or '$(TargetsLinuxBionic)' == 'true') and '$(TargetArchitecture)' == 'arm'">armel</_Crossgen2TargetArchitecture>
     </PropertyGroup>
 
     <ItemGroup>
       <Crossgen2Tool Include="$(Crossgen2Path)"
-                     TargetArch="$(TargetArchitecture)"
-                     TargetOS="$(TargetOS)"
+                     TargetArch="$(_Crossgen2TargetArchitecture)"
+                     TargetOS="$(_Crossgen2TargetOS)"
                      PerfmapFormatVersion="$(PublishReadyToRunPerfmapFormatVersion)"/>
     </ItemGroup>
   </Target>

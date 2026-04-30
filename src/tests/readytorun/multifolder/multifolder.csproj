@@ -13,6 +13,10 @@
 
     <!-- This is an explicit crossgen test -->
     <CrossGenTest>false</CrossGenTest>
+    <_Crossgen2TargetOS>$(TargetOS)</_Crossgen2TargetOS>
+    <_Crossgen2TargetOS Condition="'$(TargetOS)' == 'android'">linux</_Crossgen2TargetOS>
+    <_Crossgen2TargetArchitecture>$(TargetArchitecture)</_Crossgen2TargetArchitecture>
+    <_Crossgen2TargetArchitecture Condition="('$(TargetOS)' == 'android' or '$(TargetsLinuxBionic)' == 'true') and '$(TargetArchitecture)' == 'arm'">armel</_Crossgen2TargetArchitecture>
   </PropertyGroup>
 
   <ItemGroup>
@@ -48,8 +52,8 @@ $(CLRTestBatchPreCommands)
     echo -r:%21CORE_ROOT%21\netstandard.dll>>%__ResponseFile%
     echo -o:%scriptPath%\multifolder-composite.dll>>%__ResponseFile%
     echo --crp:%scriptPath%\..>>%__ResponseFile%
-    echo --targetarch:$(TargetArchitecture)>>%__ResponseFile%
-    echo --targetos:$(TargetOS)>>%__ResponseFile%
+    echo --targetarch:$(_Crossgen2TargetArchitecture)>>%__ResponseFile%
+    echo --targetos:$(_Crossgen2TargetOS)>>%__ResponseFile%
     echo %scriptPath%\multifolder.dll>>%__ResponseFile%
     echo %scriptPath%\FolderA.dll>>%__ResponseFile%
     echo %scriptPath%\FolderB.dll>>%__ResponseFile%
@@ -93,8 +97,8 @@ $(CLRTestBashPreCommands)
     echo -r:$CORE_ROOT/netstandard.dll>>$__ResponseFile
     echo -o:$__OutputDir/multifolder-composite.dll>>$__ResponseFile
     echo --crp:$__OutputDir/..>>$__ResponseFile
-    echo --targetarch:$(TargetArchitecture)>>$__ResponseFile
-    echo --targetos:$(TargetOS)>>$__ResponseFile
+    echo --targetarch:$(_Crossgen2TargetArchitecture)>>$__ResponseFile
+    echo --targetos:$(_Crossgen2TargetOS)>>$__ResponseFile
     echo $__OutputDir/multifolder.dll>>$__ResponseFile
     echo $__OutputDir/FolderA.dll>>$__ResponseFile
     echo $__OutputDir/FolderB.dll>>$__ResponseFile

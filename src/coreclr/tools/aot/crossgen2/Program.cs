@@ -85,16 +85,6 @@ namespace ILCompiler
 
             TargetArchitecture targetArchitecture = Get(_command.TargetArchitecture);
             TargetOS targetOS = Get(_command.TargetOS);
-            TargetAbi targetAbi = Crossgen2RootCommand.IsArmel ? TargetAbi.NativeAotArmel : TargetAbi.NativeAot;
-
-            if (targetOS == TargetOS.Android)
-            {
-                // android-arm maps to Android's armeabi-v7a ABI, which uses softfp call boundaries.
-                // The rest of Crossgen2's Android behavior matches Linux/Bionic.
-                targetOS = TargetOS.Linux;
-                targetAbi = targetArchitecture == TargetArchitecture.ARM ? TargetAbi.NativeAotArmel : TargetAbi.NativeAot;
-            }
-
             bool allowOptimistic = _command.OptimizationMode != OptimizationMode.PreferSize;
 
             if (targetOS is TargetOS.iOS or TargetOS.tvOS or TargetOS.iOSSimulator or TargetOS.tvOSSimulator or TargetOS.MacCatalyst or TargetOS.Browser)
@@ -110,7 +100,7 @@ namespace ILCompiler
                 allowOptimistic: allowOptimistic,
                 isReadyToRun: true);
             SharedGenericsMode genericsMode = SharedGenericsMode.CanonicalReferenceTypes;
-            var targetDetails = new TargetDetails(targetArchitecture, targetOS, targetAbi, instructionSetSupport.GetVectorTSimdVector());
+            var targetDetails = new TargetDetails(targetArchitecture, targetOS, Crossgen2RootCommand.IsArmel ? TargetAbi.NativeAotArmel : TargetAbi.NativeAot, instructionSetSupport.GetVectorTSimdVector());
 
             ConfigureImageBase(targetDetails);
 

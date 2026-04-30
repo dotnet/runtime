@@ -84,7 +84,6 @@ namespace System.CommandLine
                 "tvos" => TargetOS.tvOS,
                 "browser" => TargetOS.Browser,
                 "wasi" => TargetOS.Wasi,
-                "android" => TargetOS.Android,
                 _ => throw new CommandLineException($"Target OS '{token}' is not supported")
             };
         }

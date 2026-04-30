@@ -24,8 +24,7 @@ namespace Internal.TypeSystem
         NetBSD,
         SunOS,
         Browser,
-        Wasi,
-        Android
+        Wasi
     }
 
     public enum TargetAbi
