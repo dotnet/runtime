@@ -964,7 +964,7 @@ inline bool emitter::IsCTEST(instruction ins)
 {
 #ifdef TARGET_AMD64
     return (ins >= FIRST_CTEST_INSTRUCTION && ins <= LAST_CTEST_INSTRUCTION);
-#else   
+#else
     return false;
 #endif
 }
@@ -973,7 +973,7 @@ inline bool emitter::IsCFCMOV(instruction ins)
 {
 #ifdef TARGET_AMD64
     return (ins >= FIRST_CFCMOV_INSTRUCTION && ins <= LAST_CFCMOV_INSTRUCTION);
-#else   
+#else
     return false;
 #endif
 }
