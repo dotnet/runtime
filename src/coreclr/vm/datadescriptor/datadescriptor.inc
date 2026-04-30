@@ -986,7 +986,7 @@ CDAC_TYPE_END(FuncEvalFrame)
 CDAC_TYPE_BEGIN(DebuggerEval)
 CDAC_TYPE_SIZE(sizeof(DebuggerEval))
 CDAC_TYPE_FIELD(DebuggerEval, EXTERN_TYPE(Context), TargetContext, offsetof(DebuggerEval, m_context))
-CDAC_TYPE_FIELD(DebuggerEval, T_BOOL, EvalDuringException, offsetof(DebuggerEval, m_evalDuringException))
+CDAC_TYPE_FIELD(DebuggerEval, T_BOOL, EvalUsesHijack, offsetof(DebuggerEval, m_evalUsesHijack))
 CDAC_TYPE_END(DebuggerEval)
 #endif // DEBUGGING_SUPPORTED
 

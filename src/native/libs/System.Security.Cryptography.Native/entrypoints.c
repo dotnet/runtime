@@ -427,6 +427,7 @@ static const Entry s_cryptoNative[] =
     DllImportEntry(CryptoNative_X25519GenerateKey)
     DllImportEntry(CryptoNative_X25519ImportPrivateKey)
     DllImportEntry(CryptoNative_X25519ImportPublicKey)
+    DllImportEntry(CryptoNative_X25519IsValidHandle)
     DllImportEntry(CryptoNative_X509DecodeOcspToExpiration)
     DllImportEntry(CryptoNative_X509Duplicate)
     DllImportEntry(CryptoNative_SslGet0AlpnSelected)
