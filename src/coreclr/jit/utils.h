@@ -67,6 +67,23 @@ inline bool isPow2(T i)
     return (i > 0 && ((i - 1) & i) == 0);
 }
 
+// return true if abs(arg) is a power of 2
+template <typename T>
+inline bool isPow2Abs(T i)
+{
+    if (i < 0)
+    {
+        i = -i;
+        if (i < 0)
+        {
+            // true for min value
+            return true;
+        }
+    }
+
+    return isPow2(i);
+}
+
 template <typename T>
 constexpr bool AreContiguous(T val1, T val2)
 {
