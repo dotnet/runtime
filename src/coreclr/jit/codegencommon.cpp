@@ -854,7 +854,7 @@ bool CodeGen::genIsSameLocalVar(GenTree* op1, GenTree* op2)
 // inline
 void CodeGenInterface::genUpdateRegLife(const LclVarDsc* varDsc, bool isBorn, bool isDying DEBUGARG(GenTree* tree))
 {
-#if EMIT_GENERATE_GCINFO && !defined(TARGET_WASM)
+#if EMIT_GENERATE_GCINFO && HAS_FIXED_REGISTER_SET
     // The regset being updated here is only needed for codegen-level GCness tracking,
     // and Wasm does not have registers
     regMaskTP regMask = genGetRegMask(varDsc);
@@ -886,7 +886,7 @@ void CodeGenInterface::genUpdateRegLife(const LclVarDsc* varDsc, bool isBorn, bo
         assert(varDsc->IsAlwaysAliveInMemory() || ((regSet.GetMaskVars() & regMask) == 0));
         regSet.AddMaskVars(regMask);
     }
-#endif // EMIT_GENERATE_GCINFO && !TARGET_WASM
+#endif // EMIT_GENERATE_GCINFO && HAS_FIXED_REGISTER_SET
 }
 
 #ifndef TARGET_WASM
@@ -7208,12 +7208,12 @@ void CodeGen::genReturn(GenTree* treeNode)
         }
     }
 
-#if EMIT_GENERATE_GCINFO && !defined(TARGET_WASM)
+#if EMIT_GENERATE_GCINFO && HAS_FIXED_REGISTER_SET
     if (treeNode->OperIs(GT_RETURN, GT_SWIFT_ERROR_RET))
     {
         genMarkReturnGCInfo();
     }
-#endif // EMIT_GENERATE_GCINFO && !defined(TARGET_WASM)
+#endif // EMIT_GENERATE_GCINFO && HAS_FIXED_REGISTER_SET
 
 #ifdef PROFILING_SUPPORTED
 
