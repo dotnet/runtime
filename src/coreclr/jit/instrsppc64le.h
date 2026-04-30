@@ -67,6 +67,27 @@ INST(blt,         "blt",          0,      B_FORM,       0x41800000)
 INST(bge,         "bge",          0,      B_FORM,       0x40800000)
 INST(bgt,         "bgt",          0,      B_FORM,       0x41810000)
 INST(ble,         "ble",          0,      B_FORM,       0x40810000)
+
+// Floating-point arithmetic instructions
+INST(fadds,       "fadds",        0,      A_FORM,       0xEC00002A)  // Floating Add Single
+INST(fadd,        "fadd",         0,      A_FORM,       0xFC00002A)  // Floating Add Double
+INST(fsubs,       "fsubs",        0,      A_FORM,       0xEC000028)  // Floating Subtract Single
+INST(fsub,        "fsub",         0,      A_FORM,       0xFC000028)  // Floating Subtract Double
+INST(fmuls,       "fmuls",        0,      A_FORM,       0xEC000032)  // Floating Multiply Single
+INST(fmul,        "fmul",         0,      A_FORM,       0xFC000032)  // Floating Multiply Double
+INST(fdivs,       "fdivs",        0,      A_FORM,       0xEC000024)  // Floating Divide Single
+INST(fdiv,        "fdiv",         0,      A_FORM,       0xFC000024)  // Floating Divide Double
+
+// Integer arithmetic instructions
+INST(add,         "add",          0,      XO_FORM,      0x7C000214)  // Add
+INST(subf,        "subf",         0,      XO_FORM,      0x7C000050)  // Subtract From
+INST(mulld,       "mulld",        0,      XO_FORM,      0x7C0001D2)  // Multiply Low Doubleword
+INST(mullw,       "mullw",        0,      XO_FORM,      0x7C0001D6)  // Multiply Low Word
+INST(divd,        "divd",         0,      XO_FORM,      0x7C0003D2)  // Divide Doubleword
+INST(divdu,       "divdu",        0,      XO_FORM,      0x7C000392)  // Divide Doubleword Unsigned
+INST(divw,        "divw",         0,      XO_FORM,      0x7C0003D6)  // Divide Word
+INST(divwu,       "divwu",        0,      XO_FORM,      0x7C000396)  // Divide Word Unsigned
+
 // clang-format on
 /*****************************************************************************/
 #undef INST

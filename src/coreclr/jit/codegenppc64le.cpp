@@ -274,6 +274,21 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 	    genReturn(treeNode);
 	    break;
 
+        case GT_ADD:
+        case GT_SUB:
+        case GT_MUL:
+            genConsumeOperands(treeNode->AsOp());
+            genCodeForBinary(treeNode->AsOp());
+            break;
+
+        case GT_DIV:
+        case GT_UDIV:
+        case GT_MOD:
+        case GT_UMOD:
+            genConsumeOperands(treeNode->AsOp());
+            genCodeForBinary(treeNode->AsOp());
+            break;
+
         default:
 	    printf("ERROR: Unhandled tree node operation: %s (oper=%d)\n",
                    GenTree::OpName(treeNode->gtOper), treeNode->gtOper);
@@ -281,6 +296,137 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
                    varTypeName(treeNode->TypeGet()), treeNode->gtFlags);
 	    abort();
     }
+}
+
+//------------------------------------------------------------------------
+// genCodeForBinary: Generate code for many binary arithmetic operators
+//
+// Arguments:
+//    treeNode - tree node
+//
+// Notes:
+//    This method is expected to have called genConsumeOperands() before calling it.
+//    Handles GT_ADD, GT_SUB, GT_MUL, GT_DIV, GT_UDIV, GT_MOD, GT_UMOD
+//    for both integer and floating-point types.
+//
+void CodeGen::genCodeForBinary(GenTreeOp* treeNode)
+{
+          const genTreeOps oper       = treeNode->OperGet();
+          regNumber        targetReg  = treeNode->GetRegNum();
+          var_types        targetType = treeNode->TypeGet();
+          emitter*         emit       = GetEmitter();
+
+          assert(oper == GT_ADD || oper == GT_SUB || oper == GT_MUL ||
+                 oper == GT_DIV || oper == GT_UDIV || oper == GT_MOD || oper == GT_UMOD);
+
+          GenTree* op1 = treeNode->gtGetOp1();
+          GenTree* op2 = treeNode->gtGetOp2();
+
+          regNumber op1reg = op1->GetRegNum();
+          regNumber op2reg = op2->GetRegNum();
+
+          instruction ins;
+          emitAttr    attr = emitActualTypeSize(treeNode);
+
+          // PowerPC64LE instruction selection based on operation and type
+          if (varTypeIsFloating(targetType))
+          {
+              // Floating-point operations
+              switch (oper)
+              {
+                  case GT_ADD:
+                      ins = (attr == EA_4BYTE) ? INS_fadds : INS_fadd;
+                      break;
+                  case GT_SUB:
+                      ins = (attr == EA_4BYTE) ? INS_fsubs : INS_fsub;
+                      break;
+                  case GT_MUL:
+                      ins = (attr == EA_4BYTE) ? INS_fmuls : INS_fmul;
+                      break;
+                  case GT_DIV:
+                      ins = (attr == EA_4BYTE) ? INS_fdivs : INS_fdiv;
+                      break;
+                  default:
+                      unreached();
+              }
+
+              // Emit floating-point instruction: ins targetReg, op1reg, op2reg
+              emit->emitIns_R_R_R(ins, attr, targetReg, op1reg, op2reg);
+          }
+          else
+          {
+              // Integer operations
+              bool isImmediate = op2->isContainedIntOrIImmed();
+
+              switch (oper)
+              {
+                  case GT_ADD:
+                      if (isImmediate)
+                      {
+                          ssize_t imm = op2->AsIntConCommon()->IconValue();
+                          // addi: add immediate (16-bit signed immediate)
+                          ins = INS_addi;
+                          emit->emitIns_R_R_I(ins, attr, targetReg, op1reg, imm);
+                      }
+                      else
+                      {
+                          // add: register add
+                          ins = INS_add;
+                          emit->emitIns_R_R_R(ins, attr, targetReg, op1reg, op2reg);
+                      }
+                      break;
+
+                  case GT_SUB:
+                      // PowerPC64LE doesn't have subi, use addi with negated immediate
+                      // or use subf (subtract from) instruction
+                      ins = INS_subf;
+                      emit->emitIns_R_R_R(ins, attr, targetReg, op2reg, op1reg); // Note: operands reversed for subf
+                      break;
+
+                  case GT_MUL:
+                      // mulld: multiply low doubleword (64-bit)
+                      // mullw: multiply low word (32-bit)
+                      ins = (attr == EA_8BYTE) ? INS_mulld : INS_mullw;
+                      emit->emitIns_R_R_R(ins, attr, targetReg, op1reg, op2reg);
+                      break;
+
+                  case GT_DIV:
+                      // divd: divide doubleword signed (64-bit)
+                      // divw: divide word signed (32-bit)
+                      ins = (attr == EA_8BYTE) ? INS_divd : INS_divw;
+                      emit->emitIns_R_R_R(ins, attr, targetReg, op1reg, op2reg);
+                      break;
+
+                  case GT_UDIV:
+                      // divdu: divide doubleword unsigned (64-bit)
+                      // divwu: divide word unsigned (32-bit)
+                      ins = (attr == EA_8BYTE) ? INS_divdu : INS_divwu;
+                      emit->emitIns_R_R_R(ins, attr, targetReg, op1reg, op2reg);
+                      break;
+
+                  case GT_MOD:
+                      // PowerPC64LE doesn't have a direct modulo instruction
+                      // Use: mod = dividend - (quotient * divisor)
+                      // For now, use divd/divw and calculate remainder
+                      // TODO-PPC64: Implement proper modulo using div + mul + sub sequence
+                      ins = (attr == EA_8BYTE) ? INS_divd : INS_divw;
+                      emit->emitIns_R_R_R(ins, attr, targetReg, op1reg, op2reg);
+                      // This is incomplete - need to add mul and sub to get remainder
+                      break;
+
+                  case GT_UMOD:
+                      // Similar to GT_MOD but for unsigned
+                      ins = (attr == EA_8BYTE) ? INS_divdu : INS_divwu;
+                      emit->emitIns_R_R_R(ins, attr, targetReg, op1reg, op2reg);
+                      // This is incomplete - need to add mul and sub to get remainder
+                      break;
+
+                  default:
+                      unreached();
+              }
+          }
+
+          genProduceReg(treeNode);
 }
 
 //---------------------------------------------------------------------

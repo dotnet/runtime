@@ -72,6 +72,28 @@
 #define ppc_stdu(c,S,ds,A) ppc_emit32 (c, (62 << 26) | ((S) << 21) | ((A) << 16) | ((uint32_t)(ds) & 0xfffc) | 1)
 #define ppc_stfd(c,S,d,a)  ppc_emit32 (c, (54 << 26) | ((S) << 21) | ((a) << 16) | (uint16_t)(d))
 
+// Floating-point arithmetic instructions (A-form)
+// Format: opcode(6) | fD(5) | fA(5) | fB(5) | 0(5) | XO(5) | Rc(1)
+#define ppc_fadds(c,D,A,B) ppc_emit32 (c, (59 << 26) | ((D) << 21) | ((A) << 16) | ((B) << 11) | (21 << 1) | 0)
+#define ppc_fadd(c,D,A,B)  ppc_emit32 (c, (63 << 26) | ((D) << 21) | ((A) << 16) | ((B) << 11) | (21 << 1) | 0)
+#define ppc_fsubs(c,D,A,B) ppc_emit32 (c, (59 << 26) | ((D) << 21) | ((A) << 16) | ((B) << 11) | (20 << 1) | 0)
+#define ppc_fsub(c,D,A,B)  ppc_emit32 (c, (63 << 26) | ((D) << 21) | ((A) << 16) | ((B) << 11) | (20 << 1) | 0)
+#define ppc_fmuls(c,D,A,C) ppc_emit32 (c, (59 << 26) | ((D) << 21) | ((A) << 16) | ((C) << 6) | (25 << 1) | 0)
+#define ppc_fmul(c,D,A,C)  ppc_emit32 (c, (63 << 26) | ((D) << 21) | ((A) << 16) | ((C) << 6) | (25 << 1) | 0)
+#define ppc_fdivs(c,D,A,B) ppc_emit32 (c, (59 << 26) | ((D) << 21) | ((A) << 16) | ((B) << 11) | (18 << 1) | 0)
+#define ppc_fdiv(c,D,A,B)  ppc_emit32 (c, (63 << 26) | ((D) << 21) | ((A) << 16) | ((B) << 11) | (18 << 1) | 0)
+
+// Integer arithmetic instructions (XO-form)
+// Format: opcode(6) | rD(5) | rA(5) | rB(5) | OE(1) | XO(9) | Rc(1)
+#define ppc_add(c,D,A,B)   ppc_emit32 (c, (31 << 26) | ((D) << 21) | ((A) << 16) | ((B) << 11) | (0 << 10) | (266 << 1) | 0) 
+#define ppc_subf(c,D,A,B)  ppc_emit32 (c, (31 << 26) | ((D) << 21) | ((A) << 16) | ((B) << 11) | (0 << 10) | (40 << 1) | 0)  
+#define ppc_mulld(c,D,A,B) ppc_emit32 (c, (31 << 26) | ((D) << 21) | ((A) << 16) | ((B) << 11) | (0 << 10) | (233 << 1) | 0)
+#define ppc_mullw(c,D,A,B) ppc_emit32 (c, (31 << 26) | ((D) << 21) | ((A) << 16) | ((B) << 11) | (0 << 10) | (235 << 1) | 0) 
+#define ppc_divd(c,D,A,B)  ppc_emit32 (c, (31 << 26) | ((D) << 21) | ((A) << 16) | ((B) << 11) | (0 << 10) | (489 << 1) | 0) 
+#define ppc_divdu(c,D,A,B) ppc_emit32 (c, (31 << 26) | ((D) << 21) | ((A) << 16) | ((B) << 11) | (0 << 10) | (457 << 1) | 0) 
+#define ppc_divw(c,D,A,B)  ppc_emit32 (c, (31 << 26) | ((D) << 21) | ((A) << 16) | ((B) << 11) | (0 << 10) | (491 << 1) | 0) 
+#define ppc_divwu(c,D,A,B) ppc_emit32 (c, (31 << 26) | ((D) << 21) | ((A) << 16) | ((B) << 11) | (0 << 10) | (459 << 1) | 0) 
+
 // Trap instruction
 #define ppc_trap(c)        ppc_emit32 (c, 0x7FE00008)
 
@@ -233,6 +255,13 @@ void emitIns_R_R_I(instruction ins,
                    regNumber   reg1,
                    regNumber   reg2,
                    ssize_t     imm,
+                   insOpts     opt = INS_OPTS_NONE);
+
+void emitIns_R_R_R(instruction ins,
+                   emitAttr    attr,
+                   regNumber   reg1,
+                   regNumber   reg2,
+                   regNumber   reg3,
                    insOpts     opt = INS_OPTS_NONE);
 
 bool emitIns_valid_imm_for_li(ssize_t imm);

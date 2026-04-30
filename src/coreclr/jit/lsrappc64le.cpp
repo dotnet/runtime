@@ -420,6 +420,59 @@ int LinearScan::BuildNode(GenTree* tree)
 	    srcCount = 0;
 	    BuildDef(tree);
 	    break;
+              case GT_ADD:
+              case GT_SUB:
+                  if (varTypeIsFloating(tree->TypeGet()))
+                  {
+                      // Overflow operations aren't supported on float/double types.
+                      assert(!tree->gtOverflow());
+
+                      // No implicit conversions at this stage as the expectation is that
+                      // everything is made explicit by adding casts.
+                      assert(tree->gtGetOp1()->TypeGet() == tree->gtGetOp2()->TypeGet());
+                  }
+                  else if (tree->gtOverflow())
+                  {
+                      // Need a register different from target reg to check for overflow.
+                     buildInternalIntRegisterDefForNode(tree);
+                     setInternalRegsDelayFree = true;
+                  }
+                  FALLTHROUGH;
+
+              case GT_AND:
+              case GT_OR:
+              case GT_XOR:
+              case GT_LSH:
+              case GT_RSH:
+              case GT_RSZ:
+              case GT_ROR:
+                  srcCount = BuildBinaryUses(tree->AsOp());
+                  buildInternalRegisterUses();
+                  assert(dstCount == 1);
+                  BuildDef(tree);
+                  break;
+
+              case GT_MUL:
+                  if (tree->gtOverflow())
+                  {
+                      // Need a register different from target reg to check for overflow.
+                      buildInternalIntRegisterDefForNode(tree);
+                      setInternalRegsDelayFree = true;
+                  }
+                  FALLTHROUGH;
+
+              case GT_DIV:
+              case GT_UDIV:
+              case GT_MOD:
+              case GT_UMOD:
+              case GT_MULHI:
+              {
+                  srcCount = BuildBinaryUses(tree->AsOp());
+                  buildInternalRegisterUses();
+                  assert(dstCount == 1);
+                  BuildDef(tree);
+              }
+              break;
 
 	default:
 	{

@@ -856,6 +856,71 @@ void emitter::emitIns_R_R_I(instruction ins,
 
 }
 
+/*****************************************************************************
+ *
+ *  Add an instruction referencing three registers (R1 = R2 op R3)
+ *  Used for arithmetic and floating-point operations
+ */
+
+void emitter::emitIns_R_R_R(instruction ins,
+                            emitAttr    attr,
+                            regNumber   reg1,
+                            regNumber   reg2,
+                            regNumber   reg3,
+                            insOpts     opt /* = INS_OPTS_NONE */)
+{
+    emitAttr size = EA_SIZE(attr);
+
+    // Validate instruction and register types
+    switch (ins)
+    {
+        // Floating-point arithmetic instructions (A-form)
+        case INS_fadds:
+        case INS_fadd:
+        case INS_fsubs:
+        case INS_fsub:
+        case INS_fmuls:
+        case INS_fmul:
+        case INS_fdivs:
+        case INS_fdiv:
+            assert(isFloatReg(reg1));
+            assert(isFloatReg(reg2));
+            assert(isFloatReg(reg3));
+            assert(size == EA_4BYTE || size == EA_8BYTE);
+            break;
+
+        // Integer arithmetic instructions (XO-form)
+        case INS_add:
+        case INS_subf:
+        case INS_mulld:
+        case INS_mullw:
+        case INS_divd:
+        case INS_divdu:
+        case INS_divw:
+        case INS_divwu:
+            assert(isGeneralRegister(reg1));
+            assert(isGeneralRegister(reg2));
+            assert(isGeneralRegister(reg3));
+            assert(size == EA_4BYTE || size == EA_8BYTE);
+            break;
+
+        default:
+            NYI("emitIns_R_R_R - unsupported instruction");
+            return;
+    }
+
+    // Create instruction descriptor
+    instrDesc* id = emitNewInstr(attr);
+
+    id->idIns(ins);
+    id->idReg1(reg1);
+    id->idReg2(reg2);
+    id->idReg3(reg3);
+    id->idInsOpt(opt);
+
+    appendToCurIG(id);
+}
+
 void emitter::emitIns_R_AR(instruction ins, emitAttr attr, regNumber ireg, regNumber reg, int offs)
 {
     //TODO POWERPC64 vikas
@@ -1294,7 +1359,87 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                ppc_bc (dstRW, PPC_BR_FALSE, PPC_BR_GT, offset);
            }
            break;
-    
+       // Floating-point arithmetic instructions
+       case INS_fadds:
+           // fadds fD, fA, fB - Floating Add Single
+           ppc_fadds (dstRW, id->idReg1(), id->idReg2(), id->idReg3());
+           break;
+
+       case INS_fadd:
+           // fadd fD, fA, fB - Floating Add Double
+           ppc_fadd (dstRW, id->idReg1(), id->idReg2(), id->idReg3());
+           break;
+
+       case INS_fsubs:
+           // fsubs fD, fA, fB - Floating Subtract Single
+           ppc_fsubs (dstRW, id->idReg1(), id->idReg2(), id->idReg3());
+           break;
+
+       case INS_fsub:
+           // fsub fD, fA, fB - Floating Subtract Double
+           ppc_fsub (dstRW, id->idReg1(), id->idReg2(), id->idReg3());
+           break;
+
+       case INS_fmuls:
+           // fmuls fD, fA, fC - Floating Multiply Single
+           ppc_fmuls (dstRW, id->idReg1(), id->idReg2(), id->idReg3());
+           break;
+
+       case INS_fmul:
+           // fmul fD, fA, fC - Floating Multiply Double
+           ppc_fmul (dstRW, id->idReg1(), id->idReg2(), id->idReg3());
+           break;
+
+       case INS_fdivs:
+           // fdivs fD, fA, fB - Floating Divide Single
+           ppc_fdivs (dstRW, id->idReg1(), id->idReg2(), id->idReg3());
+           break;
+
+       case INS_fdiv:
+           // fdiv fD, fA, fB - Floating Divide Double
+           ppc_fdiv (dstRW, id->idReg1(), id->idReg2(), id->idReg3());
+           break;
+
+       // Integer arithmetic instructions
+       case INS_add:
+           // add rD, rA, rB - Add
+           ppc_add (dstRW, id->idReg1(), id->idReg2(), id->idReg3());
+           break;
+
+       case INS_subf:
+           // subf rD, rA, rB - Subtract From (rD = rB - rA)
+           ppc_subf (dstRW, id->idReg1(), id->idReg2(), id->idReg3());
+           break;
+
+       case INS_mulld:
+           // mulld rD, rA, rB - Multiply Low Doubleword
+           ppc_mulld (dstRW, id->idReg1(), id->idReg2(), id->idReg3());
+           break;
+
+       case INS_mullw:
+           // mullw rD, rA, rB - Multiply Low Word
+           ppc_mullw (dstRW, id->idReg1(), id->idReg2(), id->idReg3());
+           break;
+
+       case INS_divd:
+           // divd rD, rA, rB - Divide Doubleword
+           ppc_divd (dstRW, id->idReg1(), id->idReg2(), id->idReg3());
+           break;
+
+       case INS_divdu:
+           // divdu rD, rA, rB - Divide Doubleword Unsigned
+           ppc_divdu (dstRW, id->idReg1(), id->idReg2(), id->idReg3());
+           break;
+
+       case INS_divw:
+           // divw rD, rA, rB - Divide Word
+           ppc_divw (dstRW, id->idReg1(), id->idReg2(), id->idReg3());
+           break;
+
+       case INS_divwu:
+           // divwu rD, rA, rB - Divide Word Unsigned
+           ppc_divwu (dstRW, id->idReg1(), id->idReg2(), id->idReg3());
+           break;
        default:
            _ASSERTE(!"NYI");
     }

@@ -49,9 +49,103 @@ bool Lowering::IsCallTargetInRange(void* addr)
 //    True if the immediate can be folded into an instruction,
 //    for example small enough and non-relocatable.
 //
+// Notes:
+//    PowerPC64LE instruction formats support various immediate sizes:
+//    - D-form: 16-bit signed immediate (addi, ori, andi, etc.)
+//    - DS-form: 14-bit signed immediate, 4-byte aligned (ld, std)
+//    - Some instructions support 12-bit unsigned immediates
 bool Lowering::IsContainableImmed(GenTree* parentNode, GenTree* childNode) const
 {
-    _ASSERTE(!"NYI");
+    //_ASSERTE(!"NYI");
+    // Floating-point operations don't support immediate operands in PowerPC64LE
+    if (varTypeIsFloating(parentNode->TypeGet()))
+    {
+        return false;
+    }
+
+    // Make sure we have an actual immediate constant
+    if (!childNode->IsCnsIntOrI())
+    {
+        return false;
+    }
+
+    // Check if the immediate needs relocation - if so, it cannot be contained
+    if (childNode->AsIntCon()->ImmedValNeedsReloc(comp))
+    {
+        return false;
+    }
+
+    // Get the immediate value
+    target_ssize_t immVal = (target_ssize_t)childNode->AsIntCon()->gtIconVal;
+
+    // Helper lambda to check if value fits in signed 16-bit immediate (D-form)
+    auto isValidSimm16 = [](target_ssize_t val) -> bool {
+        return (val >= -32768) && (val <= 32767);
+    };
+
+    // Helper lambda to check if value fits in unsigned 16-bit immediate
+    auto isValidUimm16 = [](target_ssize_t val) -> bool {
+        return (val >= 0) && (val <= 65535);
+    };
+
+    // Helper lambda to check if value fits in signed 12-bit immediate
+    auto isValidSimm12 = [](target_ssize_t val) -> bool {
+        return (val >= -2048) && (val <= 2047);
+    };
+
+    // Check based on parent operation
+    switch (parentNode->OperGet())
+    {
+        case GT_ADD:
+        case GT_SUB:
+            // addi/addis support 16-bit signed immediate
+            // subi is encoded as addi with negated immediate
+            return isValidSimm16(immVal);
+
+        case GT_EQ:
+        case GT_NE:
+        case GT_LT:
+        case GT_LE:
+        case GT_GE:
+        case GT_GT:
+        case GT_CMP:
+        case GT_BOUNDS_CHECK:
+            // cmpi/cmpli support 16-bit signed immediate
+            return isValidSimm16(immVal);
+
+        case GT_AND:
+        case GT_OR:
+        case GT_XOR:
+            // andi., andis., ori, oris, xori, xoris support 16-bit unsigned immediate
+            return isValidUimm16(immVal);
+
+        case GT_JCMP:
+            // Jump compare typically compares with zero
+            return (immVal == 0);
+
+        case GT_STORE_LCL_FLD:
+        case GT_STORE_LCL_VAR:
+            // Allow zero immediate for stores (can use zero register)
+            if (immVal == 0)
+            {
+                return true;
+            }
+            break;
+
+        case GT_CMPXCHG:
+        case GT_LOCKADD:
+        case GT_XORR:
+        case GT_XAND:
+        case GT_XADD:
+            // Atomic operations typically don't support immediate operands
+            // They require the value to be in a register
+            return false;
+
+        default:
+            break;
+    }
+
+    return false;
 }
 
 #if 0
@@ -114,9 +208,23 @@ GenTree* Lowering::LowerStoreIndir(GenTreeStoreInd* node)
 // Return Value:
 //    The next node to lower.
 //
+// Notes:
+//    PowerPC64 multiply instructions:
+//    - mulld: Multiply Low Doubleword (64-bit result from 64-bit operands)
+//    - mullw: Multiply Low Word (32-bit result from 32-bit operands)
+//    - mulhd: Multiply High Doubleword (high 64 bits of 128-bit result)
+//    - mulhw: Multiply High Word (high 32 bits of 64-bit result)
+//    - mulhdu: Multiply High Doubleword Unsigned
+//    - mulhwu: Multiply High Word Unsigned
 GenTree* Lowering::LowerMul(GenTreeOp* mul)
 {
-    _ASSERTE(!"NYI");
+    assert(mul->OperIsMul());
+    
+    // PowerPC64 supports direct register-to-register multiply operations
+    // No special transformations needed, just perform containment checks
+    ContainCheckMul(mul);
+    
+    return mul->gtNext;
 }
 
 //------------------------------------------------------------------------
@@ -130,7 +238,16 @@ GenTree* Lowering::LowerMul(GenTreeOp* mul)
 //
 GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* binOp)
 {
-    _ASSERTE(!"NYI");
+    assert(binOp->OperIsBinary());
+    
+    // PowerPC64 arithmetic instructions support:
+    // - Register-to-register operations (R = R op R)
+    // - Some immediate forms for certain operations
+    
+    // Perform containment analysis for the binary operation
+    ContainCheckBinary(binOp);
+    
+    return binOp->gtNext;
 }
 
 //------------------------------------------------------------------------
@@ -389,7 +506,32 @@ void Lowering::ContainCheckIndir(GenTreeIndir* indirNode)
 //
 void Lowering::ContainCheckBinary(GenTreeOp* node)
 {
-    _ASSERTE(!"NYI");
+    //_ASSERTE(!"NYI");
+    GenTree* op1 = node->gtGetOp1();
+    GenTree* op2 = node->gtGetOp2();
+
+    // PowerPC64LE binary instructions typically support immediate operands
+    // in the second operand position (e.g., addi, ori, andi, etc.)
+    // Check if op2 can be contained as an immediate
+
+    if (CheckImmedAndMakeContained(node, op2))
+    {
+        return;
+    }
+
+    // For commutative operations, we can also try to contain op1
+    // and swap the operands if successful
+
+    if (node->OperIsCommutative() && CheckImmedAndMakeContained(node, op1))
+    {
+        MakeSrcContained(node, op1);
+        std::swap(node->gtOp1, node->gtOp2);
+        return;
+    }
+
+    // PowerPC64LE doesn't have complex addressing modes like x86,
+    // so we don't need to check for containable memory operands here.
+    // Memory operands are handled separately in load/store lowering.
 }
 
 //------------------------------------------------------------------------
@@ -400,7 +542,7 @@ void Lowering::ContainCheckBinary(GenTreeOp* node)
 //
 void Lowering::ContainCheckMul(GenTreeOp* node)
 {
-    _ASSERTE(!"NYI");
+    ContainCheckBinary(node);
 }
 
 //------------------------------------------------------------------------
@@ -411,8 +553,9 @@ void Lowering::ContainCheckMul(GenTreeOp* node)
 //
 void Lowering::ContainCheckDivOrMod(GenTreeOp* node)
 {
-    _ASSERTE(!"NYI");
-    // ARM doesn't have a div instruction with an immediate operand
+    // _ASSERTE(!"NYI");
+    // Need to check if ppc64le support div with immediate
+    assert(node->OperIs(GT_MOD, GT_UMOD, GT_DIV, GT_UDIV));
 }
 
 //------------------------------------------------------------------------
