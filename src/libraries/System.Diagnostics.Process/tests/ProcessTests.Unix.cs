@@ -173,7 +173,12 @@ namespace System.Diagnostics.Tests
             File.WriteAllText(filename, $"#!/bin/sh\nsleep 600\n"); // sleep 10 min.
             File.SetUnixFileMode(filename, ExecutablePermissions);
 
-            var psi = new ProcessStartInfo { FileName = filename, RedirectStandardOutput = true, RedirectStandardError = true };
+            using SafeFileHandle nullHandle = File.OpenNullHandle();
+            ProcessStartInfo psi = new(filename)
+            {
+                StandardOutputHandle = nullHandle,
+                StandardErrorHandle= nullHandle
+            };
             using (var process = Process.Start(psi))
             {
                 try

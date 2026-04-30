@@ -2499,7 +2499,7 @@ namespace System.Diagnostics.Tests
             string sleepCommandPathFileName = Path.Combine(TestDirectory, LongProcessName);
             File.Copy(sleepPath, sleepCommandPathFileName);
 
-            var psi = new ProcessStartInfo(sleepCommandPathFileName, "600")
+            ProcessStartInfo psi = new(sleepCommandPathFileName, "600")
             {
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
