@@ -2238,7 +2238,6 @@ public:
     PTR_InterpMethodContextFrame GetTopInterpMethodContextFrame();
 
     void SetContextToInterpMethodContextFrame(T_CONTEXT * pContext);
-    static PTR_InterpreterFrame TryGetOwningFrameFromContext(T_CONTEXT * pContext);
 
 #if defined(HOST_AMD64) && defined(HOST_WINDOWS)
     void SetInterpExecMethodSSP(TADDR ssp)

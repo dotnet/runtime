@@ -818,18 +818,6 @@ StackWalkAction Thread::StackWalkFramesEx(
 #endif
         SET_THREAD_TYPE_STACKWALKER(this);
 
-#ifdef FEATURE_INTERPRETER
-        // Advance pStartFrame past the owning InterpreterFrame when the CONTEXT
-        // references interpreted code, unless the caller already starts past it.
-        PTR_InterpreterFrame pOwningInterpFrame =
-            InterpreterFrame::TryGetOwningFrameFromContext(pRD->pCurrentContext);
-        if (pOwningInterpFrame != NULL &&
-            (pStartFrame == NULL || dac_cast<TADDR>(pStartFrame) <= dac_cast<TADDR>(pOwningInterpFrame)))
-        {
-            pStartFrame = pOwningInterpFrame->PtrNextFrame();
-        }
-#endif // FEATURE_INTERPRETER
-
         StackFrameIterator iter;
         if (iter.Init(this, pStartFrame, pRD, flags) == TRUE)
         {
@@ -1100,13 +1088,25 @@ BOOL StackFrameIterator::Init(Thread *    pThread,
     // process the REGDISPLAY and stop at the first frame
     ProcessIp(GetControlPC(m_crawl.pRD));
 #ifdef FEATURE_INTERPRETER
-    // Callers must advance pStartFrame past the owning InterpreterFrame
-    // when the CONTEXT references interpreted code.
     if (m_crawl.codeInfo.IsInterpretedCode())
     {
-        PTR_InterpreterFrame pOwning = InterpreterFrame::TryGetOwningFrameFromContext(m_crawl.pRD->pCurrentContext);
+        // CONTEXT is in interpreted code; the first-arg register holds the owning
+        // InterpreterFrame. Skip past it so we don't re-enter its frame chain.
+        PTR_InterpreterFrame pOwning =
+            dac_cast<PTR_InterpreterFrame>((TADDR)GetFirstArgReg(m_crawl.pRD->pCurrentContext));
         _ASSERTE(pOwning != NULL);
-        _ASSERTE(m_crawl.pFrame != dac_cast<PTR_Frame>(pOwning));
+        _ASSERTE(pOwning->GetFrameIdentifier() == FrameIdentifier::InterpreterFrame);
+
+        if (pFrame == NULL)
+        {
+            m_crawl.pFrame = pOwning->PtrNextFrame();
+        }
+        else
+        {
+            // Explicit pFrame must already be past the owner (callee Frames have
+            // lower addresses than their callers).
+            _ASSERTE(dac_cast<TADDR>(m_crawl.pFrame) > dac_cast<TADDR>(pOwning));
+        }
     }
 #endif // FEATURE_INTERPRETER
     if (m_crawl.isFrameless && !!(m_crawl.pRD->pCurrentContext->ContextFlags & CONTEXT_EXCEPTION_ACTIVE))
@@ -1185,10 +1185,12 @@ BOOL StackFrameIterator::ResetRegDisp(PREGDISPLAY pRegDisp,
 #ifdef FEATURE_INTERPRETER
     if (m_crawl.codeInfo.IsInterpretedCode())
     {
-        // Advance past the owning InterpreterFrame so we don't re-enter its
-        // InterpMethodContextFrame chain via the explicit Frame link.
-        PTR_InterpreterFrame pOwningInterpFrame = InterpreterFrame::TryGetOwningFrameFromContext(m_crawl.pRD->pCurrentContext);
+        // CONTEXT is in interpreted code; advance past the owning InterpreterFrame
+        // (in the first-arg register) so we don't re-enter its frame chain.
+        PTR_InterpreterFrame pOwningInterpFrame =
+            dac_cast<PTR_InterpreterFrame>((TADDR)GetFirstArgReg(m_crawl.pRD->pCurrentContext));
         _ASSERTE(pOwningInterpFrame != NULL);
+        _ASSERTE(pOwningInterpFrame->GetFrameIdentifier() == FrameIdentifier::InterpreterFrame);
         m_crawl.pFrame = pOwningInterpFrame->PtrNextFrame();
     }
     else

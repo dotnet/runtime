@@ -489,16 +489,7 @@ ClrDataStackWalk::Init(void)
         iterFlags |= FUNCTIONSONLY;
     }
 
-    PTR_Frame pStartFrame = NULL;
-#ifdef FEATURE_INTERPRETER
-    PTR_InterpreterFrame pOwningInterpFrame =InterpreterFrame::TryGetOwningFrameFromContext(m_regDisp.pCurrentContext);
-    if (pOwningInterpFrame != NULL)
-    {
-        pStartFrame = pOwningInterpFrame->PtrNextFrame();
-    }
-#endif // FEATURE_INTERPRETER
-
-    m_frameIter.Init(m_thread, pStartFrame, &m_regDisp, iterFlags);
+    m_frameIter.Init(m_thread, NULL, &m_regDisp, iterFlags);
     if (m_frameIter.GetFrameState() == StackFrameIterator::SFITER_UNINITIALIZED)
     {
         return E_FAIL;
