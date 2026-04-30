@@ -44,14 +44,24 @@ namespace System.Numerics.Tensors
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static bool Compare(T x, T y)
             {
-                T xMag = T.Abs(x), yMag = T.Abs(y);
-                if (xMag == yMag)
+                // Don't use T.Abs since it can throw OverflowException.
+                T result = T.MinMagnitude(x, y);
+                if (result == x)
                 {
-                    return T.IsNegative(x) && T.IsPositive(y);
+                    if (result == y)
+                    {
+                        // x and y are equal in magnitude
+                        return T.IsNegative(x) && T.IsPositive(y);
+                    }
+                    else
+                    {
+                        // x == result && y != result means x has lesser magnitude than y.
+                        return true;
+                    }
                 }
                 else
                 {
-                    return xMag < yMag;
+                    return false;
                 }
             }
 
@@ -63,6 +73,15 @@ namespace System.Numerics.Tensors
                 {
                     Vector128<T> equalResult = IsNegative(x) & IsPositive(y);
                     return Vector128.LessThan(xMag, yMag) | (Vector128.Equals(xMag, yMag) & equalResult);
+                }
+                else if (typeof(T) == typeof(sbyte)
+                    || typeof(T) == typeof(short)
+                    || typeof(T) == typeof(int)
+                    || typeof(T) == typeof(long)
+                    || typeof(T) == typeof(nint))
+                {
+                    // Consider overflows (when IsNegative(Abs(x))) from Abs(MinValue) which implies maximum magnitude.
+                    return Vector128.AndNot(Vector128.LessThan(xMag, yMag) | IsNegative(yMag), IsNegative(xMag));
                 }
                 else
                 {
@@ -79,6 +98,15 @@ namespace System.Numerics.Tensors
                     Vector256<T> equalResult = IsNegative(x) & IsPositive(y);
                     return Vector256.LessThan(xMag, yMag) | (Vector256.Equals(xMag, yMag) & equalResult);
                 }
+                else if (typeof(T) == typeof(sbyte)
+                    || typeof(T) == typeof(short)
+                    || typeof(T) == typeof(int)
+                    || typeof(T) == typeof(long)
+                    || typeof(T) == typeof(nint))
+                {
+                    // Consider overflows (when IsNegative(Abs(x))) from Abs(MinValue) which implies maximum magnitude.
+                    return Vector256.AndNot(Vector256.LessThan(xMag, yMag) | IsNegative(yMag), IsNegative(xMag));
+                }
                 else
                 {
                     return Vector256.LessThan(xMag, yMag);
@@ -93,6 +121,15 @@ namespace System.Numerics.Tensors
                 {
                     Vector512<T> equalResult = IsNegative(x) & IsPositive(y);
                     return Vector512.LessThan(xMag, yMag) | (Vector512.Equals(xMag, yMag) & equalResult);
+                }
+                else if (typeof(T) == typeof(sbyte)
+                    || typeof(T) == typeof(short)
+                    || typeof(T) == typeof(int)
+                    || typeof(T) == typeof(long)
+                    || typeof(T) == typeof(nint))
+                {
+                    // Consider overflows (when IsNegative(Abs(x))) from Abs(MinValue) which implies maximum magnitude.
+                    return Vector512.AndNot(Vector512.LessThan(xMag, yMag) | IsNegative(yMag), IsNegative(xMag));
                 }
                 else
                 {
