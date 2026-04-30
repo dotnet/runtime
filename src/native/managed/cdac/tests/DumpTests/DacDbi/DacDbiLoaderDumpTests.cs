@@ -10,7 +10,7 @@ namespace Microsoft.Diagnostics.DataContractReader.DumpTests;
 
 /// <summary>
 /// Dump-based integration tests for DacDbiImpl loader, assembly, and module methods.
-/// Uses the StackRefs debuggee (full dump), which loads assemblies from multiple ALCs.
+/// Uses the StackRefs debuggee (full dump).
 /// </summary>
 public class DacDbiLoaderDumpTests : DumpTestBase
 {
@@ -154,6 +154,7 @@ public class DacDbiLoaderDumpTests : DumpTestBase
             int hr = dbi.GetModuleSimpleName(moduleAddr.Value, holder.Ptr);
             Assert.Equal(System.HResults.S_OK, hr);
             Assert.False(string.IsNullOrEmpty(holder.Value), "Module simple name should not be empty");
+            Assert.Equal(loader.GetSimpleName(module), holder.Value);
 
             testedAtLeastOne = true;
         }

@@ -122,11 +122,25 @@ public unsafe class LoaderTests
             moduleAddr = loader.AddModule(simpleName: expected).Address;
         });
 
+        Contracts.ModuleHandle handle = contract.GetModuleHandleFromModulePtr(moduleAddr);
+        string actual = contract.GetSimpleName(handle);
+        Assert.Equal(expected, actual);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetSimpleName_NullSimpleName(MockTarget.Architecture arch)
+    {
+        TargetPointer moduleAddr = TargetPointer.Null;
+
+        ILoader contract = CreateLoaderContract(arch, loader =>
         {
-            Contracts.ModuleHandle handle = contract.GetModuleHandleFromModulePtr(moduleAddr);
-            string actual = contract.GetSimpleName(handle);
-            Assert.Equal(expected, actual);
-        }
+            moduleAddr = loader.AddModule().Address;
+        });
+
+        Contracts.ModuleHandle handle = contract.GetModuleHandleFromModulePtr(moduleAddr);
+        string actual = contract.GetSimpleName(handle);
+        Assert.Equal(string.Empty, actual);
     }
 
     [Theory]
