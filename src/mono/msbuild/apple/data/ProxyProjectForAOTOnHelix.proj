@@ -57,9 +57,8 @@
 
   <PropertyGroup Condition="'$(_NativeAotLibraryTestOnHelix)' == 'true'">
     <_PrebuiltNativeAOTLib>$(OriginalPublishDir)lib$(AssemblyName).a</_PrebuiltNativeAOTLib>
-    <_AotCompileTargetName>_StageNativeAotLinkInputsOnHelix</_AotCompileTargetName>
     <SkipIlcCompile>true</SkipIlcCompile>
-    <AppleBuildDependsOn>$(AppleBuildDependsOn.Replace('_AppleNativeAotCompile', '_StageNativeAotLinkInputsOnHelix'))</AppleBuildDependsOn>
+    <AppleBuildDependsOn>PrepareForAppleBuild;_PublishRuntimePack;_PrepareForAppleBuildAppOnHelix;_RunR2RCompilationOnHelix;_InitializeCommonProperties;_BeforeAppleBuild;_AppleResolveReferences;_StageNativeAotLinkInputsOnHelix;_AppleGenerateAppBundle;_AfterAppleBuild;_AfterAppleBuildOnHelix</AppleBuildDependsOn>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(_NativeAotLibraryTestOnHelix)' == 'true'">
