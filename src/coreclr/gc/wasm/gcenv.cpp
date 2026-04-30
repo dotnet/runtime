@@ -358,7 +358,7 @@ static bool GetPhysicalMemoryUsed(size_t* val)
     // size_t (UINT32_MAX) by one. No engine actually permits allocating the full
     // 4GiB, but compute in uint64_t and clamp to be safe.
     uint64_t bytesUsed = static_cast<uint64_t>(__builtin_wasm_memory_size(0)) * WasmPageSize;
-    *val = (bytesUsed > SIZE_MAX) ? GetTotalPhysicalMemory() : static_cast<size_t>(bytesUsed);
+    *val = (bytesUsed > SIZE_MAX) ? SIZE_MAX : static_cast<size_t>(bytesUsed);
     return true;
 }
 
