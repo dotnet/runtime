@@ -1441,7 +1441,6 @@ public:
         return m_ExceptionState.GetThrowable();
     }
 
-    // An unmanaged thread can check if a managed thread is processing an exception
     BOOL HasException()
     {
         LIMITED_METHOD_CONTRACT;
