@@ -4795,20 +4795,6 @@ StackWalkAction SWCB_GetExecutionState(CrawlFrame *pCF, VOID *pData)
     return action;
 }
 
-PCODE HijackFrame::GetReturnAddress_Impl()
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-
-#if defined(TARGET_ARM64) && !defined(DACCESS_COMPILE)
-    if ((CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_JitPacEnabled) == 1) && (m_SpForPacSign != 0))
-    {
-        return (PCODE)PacAuthPtr((void*)m_ReturnAddress, (void*)m_SpForPacSign);
-    }
-#endif
-
-    return (PCODE)m_ReturnAddress;
-}
-
 HijackFrame::HijackFrame(LPVOID returnAddress, Thread *thread, HijackArgs *args
 #if defined(TARGET_ARM64)
     , LPVOID spForPacSign

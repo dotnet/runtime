@@ -45,6 +45,10 @@ class ComCallMethodDesc;
 
 extern PCODE GetPreStubEntryPoint();
 
+#ifndef DACCESS_COMPILE
+extern "C" void* PacAuthPtr(void* ptr, void* sp);
+#endif
+
 #define STACK_ALIGN_SIZE                        16
 
 #define JUMP_ALLOCATE_SIZE                      16  // # bytes to allocate for a jump instruction
