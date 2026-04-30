@@ -1090,8 +1090,8 @@ BOOL StackFrameIterator::Init(Thread *    pThread,
 #ifdef FEATURE_INTERPRETER
     if (m_crawl.codeInfo.IsInterpretedCode())
     {
-        // CONTEXT is in interpreted code; the first-arg register holds the owning
-        // InterpreterFrame. Skip past it so we don't re-enter its frame chain.
+        // CONTEXT is in interpreted code where the first-arg register holds the owning InterpreterFrame.
+        // Skip past it so we don't re-enter its frame chain.
         PTR_InterpreterFrame pOwning =
             dac_cast<PTR_InterpreterFrame>((TADDR)GetFirstArgReg(m_crawl.pRD->pCurrentContext));
         _ASSERTE(pOwning != NULL);
