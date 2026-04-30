@@ -177,6 +177,10 @@ CDAC_TYPE_FIELD(String, T_POINTER, m_FirstChar, cdac_data<StringObject>::m_First
 CDAC_TYPE_FIELD(String, T_UINT32, m_StringLength, cdac_data<StringObject>::m_StringLength)
 CDAC_TYPE_END(String)
 
+CDAC_TYPE_BEGIN(ContinuationObject)
+CDAC_TYPE_SIZE(sizeof(ContinuationObject))
+CDAC_TYPE_END(ContinuationObject)
+
 CDAC_TYPE_BEGIN(Array)
 CDAC_TYPE_SIZE(sizeof(ArrayBase))
 CDAC_TYPE_FIELD(Array, T_UINT32, m_NumComponents, cdac_data<ArrayBase>::m_NumComponents)
