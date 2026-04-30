@@ -293,13 +293,6 @@ namespace BINDER_SPACE
             dwHash = _rotl(dwHash, 4);
         }
 
-        if (AssemblyIdentity::Have(dwUseIdentityFlags,
-                                   AssemblyIdentity::IDENTITY_FLAG_CONTENT_TYPE))
-        {
-            dwHash ^= static_cast<DWORD>(GetContentType());
-            dwHash = _rotl(dwHash, 4);
-        }
-
         return static_cast<ULONG>(dwHash);
     }
 
@@ -308,13 +301,7 @@ namespace BINDER_SPACE
     {
         BOOL fEquals = FALSE;
 
-        if (GetContentType() == AssemblyContentType_WindowsRuntime)
-        {   // Assembly is meaningless for WinRT, all assemblies form one joint type namespace
-            return (GetContentType() == pAssemblyName->GetContentType());
-        }
-
-        if (GetSimpleName().EqualsCaseInsensitive(pAssemblyName->GetSimpleName()) &&
-            (GetContentType() == pAssemblyName->GetContentType()))
+        if (GetSimpleName().EqualsCaseInsensitive(pAssemblyName->GetSimpleName()))
         {
             fEquals = TRUE;
 

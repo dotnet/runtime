@@ -70,11 +70,6 @@ void AssemblyName::SetArchitecture(PEKIND kArchitecture)
     }
 }
 
-AssemblyContentType AssemblyName::GetContentType()
-{
-    return m_kContentType;
-}
-
 BOOL AssemblyName::GetIsRetargetable()
 {
     return m_dwIdentityFlags & AssemblyIdentity::IDENTITY_FLAG_RETARGETABLE;
