@@ -3221,7 +3221,7 @@ void ProfilePolicy::DetermineProfitability(CORINFO_METHOD_INFO* methodInfo)
     JITLOG_THIS(m_RootCompiler,
                 (LL_INFO100000, "Inline %s profitable: benefit=%g (perCall=%g, local=%g, global=%g, size=%g)\n",
                  shouldInline ? "is" : "is not", benefit, perCallBenefit, localBenefit, globalImportance,
-                 (double)m_PerCallInstructionEstimate / SIZE_SCALE));
+                 (double)m_ModelCodeSizeEstimate / SIZE_SCALE));
 
     if (!shouldInline)
     {

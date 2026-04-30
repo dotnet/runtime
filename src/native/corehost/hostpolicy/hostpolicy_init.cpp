@@ -23,7 +23,7 @@ bool hostpolicy_init_t::init(const host_interface_t* input, hostpolicy_init_t* i
         return false;
     }
 
-    trace::verbose(_X("Reading from host interface version: [0x%04zx:%zd] to initialize policy version: [0x%04x:%zu]"), input->version_hi, input->version_lo, HOST_INTERFACE_LAYOUT_VERSION_HI, (size_t)HOST_INTERFACE_LAYOUT_VERSION_LO);
+    trace::verbose(_X("Reading from host interface version: [0x%04zx:%zu] to initialize policy version: [0x%04x:%zu]"), input->version_hi, input->version_lo, HOST_INTERFACE_LAYOUT_VERSION_HI, (size_t)HOST_INTERFACE_LAYOUT_VERSION_LO);
 
     // This check is to ensure is an old hostfxr can still load new hostpolicy.
     // We should not read garbage due to potentially shorter struct size
@@ -46,7 +46,7 @@ bool hostpolicy_init_t::init(const host_interface_t* input, hostpolicy_init_t* i
     }
     else
     {
-        trace::error(_X("The size of the data layout used to initialize %s is %zd; expected at least %zu"), LIBHOSTPOLICY_NAME, input->version_lo,
+        trace::error(_X("The size of the data layout used to initialize %s is %zu; expected at least %zu"), LIBHOSTPOLICY_NAME, input->version_lo,
             (size_t)(offsetof(host_interface_t, host_mode) + sizeof(input->host_mode)));
     }
 
