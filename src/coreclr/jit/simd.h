@@ -2136,6 +2136,7 @@ struct simdscalable_t
     union
     {
         uint8_t  gtSimdScalableIndexU8[8];
+        uint32_t gtSimdScalableIndexU32[2];
         float    gtSimdScalableIndexF32[2];
         double   gtSimdScalableIndexF64[1];
         uint64_t gtSimdScalableIndex;
@@ -2143,6 +2144,7 @@ struct simdscalable_t
     union
     {
         uint8_t  gtSimdScalableStepU8[8];
+        uint32_t gtSimdScalableStepU32[2];
         float    gtSimdScalableStepF32[2];
         double   gtSimdScalableStepF64[1];
         uint64_t gtSimdScalableStep;
