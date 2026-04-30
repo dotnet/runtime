@@ -810,7 +810,7 @@ public class MethodTableTests
     public void GetGCDescSeriesReturnsSingleValueClassSeries(MockTarget.Architecture arch)
     {
         // A negative NumSeries indicates a value-class (repeating) series layout.
-        // For one val_serie_item with nptrs=1, skip=0, the API should return a single run.
+        // This models a 1-element array of struct { ref field; }: one val_serie_item with nptrs=1, skip=0.
         TargetPointer mtPtr = default;
         uint expectedOffset = 0;
         uint expectedSize = 0;
@@ -823,9 +823,10 @@ public class MethodTableTests
                 uint pointerSize = (uint)helpers.PointerSize;
 
                 // Array of structs each containing one GC ref.
-                // startoffset points past the array header to the first element's ref field.
-                uint startOffset = helpers.ObjHeaderSize + 2u * pointerSize; // past ObjHeader + MT* + length
-                uint baseSize = helpers.ObjHeaderSize + 3u * pointerSize;
+                // startoffset is relative to the object pointer (MT* slot), past MT* + length.
+                uint startOffset = 2u * pointerSize; // past MT* + length
+                uint componentSize = pointerSize;    // element is struct { ref field; }
+                uint baseSize = helpers.ObjHeaderSize + 2u * pointerSize; // ObjHeader + MT* + length
 
                 MockEEClass eeClass = rtsBuilder.AddEEClass("ValueClassArray_1ref");
                 MockMethodTable mt = rtsBuilder.AddMethodTableWithValueClassGCDesc(
@@ -833,7 +834,11 @@ public class MethodTableTests
                     baseSize,
                     startOffset,
                     [(1, 0)]); // nptrs=1, skip=0
-                mt.MTFlags |= 0x01000000u; // ContainsGCPointers
+                // Set array flags with componentSize so GetComponentSize returns the element size.
+                mt.MTFlags = (uint)(MethodTableFlags_1.WFLAGS_HIGH.HasComponentSize
+                    | MethodTableFlags_1.WFLAGS_HIGH.Category_Array)
+                    | componentSize
+                    | 0x01000000u; // ContainsGCPointers
                 mt.ParentMethodTable = rtsBuilder.SystemObjectMethodTable.Address;
                 mt.NumVirtuals = 3;
                 eeClass.MethodTable = mt.Address;
@@ -848,7 +853,8 @@ public class MethodTableTests
         Contracts.TypeHandle typeHandle = contract.GetTypeHandle(mtPtr);
         Assert.True(contract.ContainsGCPointers(typeHandle));
 
-        (uint Offset, uint Size)[] series = contract.GetGCDescSeries(typeHandle).ToArray();
+        // Pass numComponents=1 because value-class GCDesc iterates one element per component.
+        (uint Offset, uint Size)[] series = contract.GetGCDescSeries(typeHandle, 1).ToArray();
         Assert.Single(series);
         Assert.Equal(expectedOffset, series[0].Offset);
         Assert.Equal(expectedSize, series[0].Size);
@@ -858,8 +864,8 @@ public class MethodTableTests
     [ClassData(typeof(MockTarget.StdArch))]
     public void GetGCDescSeriesReturnsMultipleValueClassSeries(MockTarget.Architecture arch)
     {
-        // Two val_serie_items: [2 ptrs, skip 8 bytes] [1 ptr, skip 0 bytes]
-        // This models a value type like struct { ref a; ref b; int pad1; int pad2; ref c; }
+        // Two val_serie_items: [2 ptrs, skip 2*ptrSize] [1 ptr, skip 0 bytes]
+        // This models a 1-element array of struct { ref a; ref b; int pad1; int pad2; ref c; }
         TargetPointer mtPtr = default;
         (uint Offset, uint Size)[] expectedSeries = [];
 
@@ -870,10 +876,13 @@ public class MethodTableTests
                 TargetTestHelpers helpers = rtsBuilder.Builder.TargetTestHelpers;
                 uint pointerSize = (uint)helpers.PointerSize;
 
-                uint startOffset = helpers.ObjHeaderSize + 2u * pointerSize;
-                uint baseSize = helpers.ObjHeaderSize + 3u * pointerSize;
+                // startoffset is relative to the object pointer (MT* slot), past MT* + length.
+                uint startOffset = 2u * pointerSize; // past MT* + length
+                uint baseSize = helpers.ObjHeaderSize + 2u * pointerSize; // ObjHeader + MT* + length
 
                 uint skip = 2u * pointerSize; // two pointer-sized non-ref fields between runs
+                // Element layout: [ref a (ptr)][ref b (ptr)][pad1 (ptr)][pad2 (ptr)][ref c (ptr)] = 5 * pointerSize
+                uint componentSize = (2u + 2u + 1u) * pointerSize;
 
                 MockEEClass eeClass = rtsBuilder.AddEEClass("ValueClassArray_2runs");
                 MockMethodTable mt = rtsBuilder.AddMethodTableWithValueClassGCDesc(
@@ -881,7 +890,11 @@ public class MethodTableTests
                     baseSize,
                     startOffset,
                     [(2, skip), (1, 0)]); // first: 2 ptrs then skip, second: 1 ptr no skip
-                mt.MTFlags |= 0x01000000u; // ContainsGCPointers
+                // Set array flags with componentSize so GetComponentSize returns the element size.
+                mt.MTFlags = (uint)(MethodTableFlags_1.WFLAGS_HIGH.HasComponentSize
+                    | MethodTableFlags_1.WFLAGS_HIGH.Category_Array)
+                    | componentSize
+                    | 0x01000000u; // ContainsGCPointers
                 mt.ParentMethodTable = rtsBuilder.SystemObjectMethodTable.Address;
                 mt.NumVirtuals = 3;
                 eeClass.MethodTable = mt.Address;
@@ -898,7 +911,8 @@ public class MethodTableTests
         IRuntimeTypeSystem contract = target.Contracts.RuntimeTypeSystem;
         Contracts.TypeHandle typeHandle = contract.GetTypeHandle(mtPtr);
 
-        (uint Offset, uint Size)[] series = contract.GetGCDescSeries(typeHandle).ToArray();
+        // Pass numComponents=1 because value-class GCDesc iterates one element per component.
+        (uint Offset, uint Size)[] series = contract.GetGCDescSeries(typeHandle, 1).ToArray();
         Assert.Equal(expectedSeries.Length, series.Length);
         for (int i = 0; i < expectedSeries.Length; i++)
         {
@@ -1019,11 +1033,7 @@ public class MethodTableTests
         uint elemSize = 2 * (uint)target.PointerSize;
         uint startOff = 3u * (uint)target.PointerSize;
 
-        // With 0 components, objectSize = baseSize. The while loop may execute 0 or 1 times
-        // depending on whether startOffset <= baseSize - pointerSize.
-        // baseSize = ObjHeaderSize + 2*ptr, startOffset = ObjHeaderSize + 2*ptr.
-        // objectSize - pointerSize = baseSize - pointerSize = ObjHeaderSize + pointerSize.
-        // startOffset (ObjHeaderSize + 2*ptr) > ObjHeaderSize + ptr, so: 0 iterations.
+        // With 0 components, the for loop runs 0 times so the result is always empty.
         (uint Offset, uint Size)[] series0 = contract.GetGCDescSeries(typeHandle, 0).ToArray();
         Assert.Empty(series0);
 
