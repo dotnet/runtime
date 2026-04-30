@@ -178,9 +178,9 @@ void WasmRegAlloc::IdentifyCandidates()
         // spilling them to the stack before calls.
         // TODO-WASM: Add support for spilling GC refs in order to relax this second restriction.
         if (varDsc->lvLiveInOutOfHndlr ||
-            // We can't apply this to parameters without causing errors in regalloc around temporaries not being consumed
-            (varTypeIsGC(varDsc->lvType) && !varDsc->lvIsParam)
-        )
+            // We can't apply this to parameters without causing errors in regalloc around temporaries not being
+            // consumed
+            (varTypeIsGC(varDsc->lvType) && !varDsc->lvIsParam))
         {
             m_compiler->lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::LiveInOutOfHandler));
             varIsRegCandidate = false;

@@ -415,7 +415,6 @@ bool RegAllocImpl::isRegCandidate(LclVarDsc* varDsc)
         return false;
     }
 
-
     if (varDsc->lvDoNotEnregister)
     {
         return false;
