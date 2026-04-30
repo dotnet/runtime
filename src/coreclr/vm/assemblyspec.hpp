@@ -220,25 +220,6 @@ class AssemblySpec  : public BaseAssemblySpec
         return m_pAppDomain;
     }
 
-    inline HRESULT SetContentType(AssemblyContentType type)
-    {
-        LIMITED_METHOD_CONTRACT;
-        if (type == AssemblyContentType_Default)
-        {
-            m_dwFlags = (m_dwFlags & ~afContentType_Mask) | afContentType_Default;
-            return S_OK;
-        }
-        else if (type == AssemblyContentType_WindowsRuntime)
-        {
-            // WinRT assemblies are not supported as direct references.
-            return COR_E_PLATFORMNOTSUPPORTED;
-        }
-        else
-        {
-            _ASSERTE(!"Unexpected content type.");
-            return E_UNEXPECTED;
-        }
-    }
 };
 
 #define INITIAL_ASM_SPEC_HASH_SIZE 7

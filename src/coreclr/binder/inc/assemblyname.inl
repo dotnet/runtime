@@ -75,20 +75,6 @@ AssemblyContentType AssemblyName::GetContentType()
     return m_kContentType;
 }
 
-void AssemblyName::SetContentType(AssemblyContentType kContentType)
-{
-    m_kContentType = kContentType;
-
-    if (kContentType != AssemblyContentType_Default)
-    {
-        SetHave(AssemblyIdentity::IDENTITY_FLAG_CONTENT_TYPE);
-    }
-    else
-    {
-        SetClear(AssemblyIdentity::IDENTITY_FLAG_CONTENT_TYPE);
-    }
-}
-
 BOOL AssemblyName::GetIsRetargetable()
 {
     return m_dwIdentityFlags & AssemblyIdentity::IDENTITY_FLAG_RETARGETABLE;

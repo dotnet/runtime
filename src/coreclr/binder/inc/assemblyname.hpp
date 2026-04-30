@@ -59,7 +59,6 @@ namespace BINDER_SPACE
         inline PEKIND GetArchitecture();
         inline void SetArchitecture(PEKIND kArchitecture);
         inline AssemblyContentType GetContentType();
-        inline void SetContentType(AssemblyContentType kContentType);
         inline BOOL GetIsRetargetable();
         inline void SetIsRetargetable(BOOL fIsRetargetable);
         inline BOOL GetIsDefinition();

@@ -113,12 +113,9 @@ namespace BINDER_SPACE
             SetIsRetargetable(TRUE);
         }
 
-        // Set ContentType
-        if (IsAfContentType_Default(dwRefOrDefFlags))
-        {
-            SetContentType(AssemblyContentType_Default);
-        }
-        else
+        // Validate ContentType. Only the default content type is supported;
+        // m_kContentType is already initialized to AssemblyContentType_Default.
+        if (!IsAfContentType_Default(dwRefOrDefFlags))
         {
             IF_FAIL_GO(FUSION_E_INVALID_NAME);
         }
