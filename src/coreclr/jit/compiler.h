@@ -6777,16 +6777,9 @@ private:
     hashBv*               fgAvailableOutgoingArgTemps;
     ArrayStack<unsigned>* fgUsedSharedTemps = nullptr;
 
-    void fgSetRngChkTarget(GenTree* tree, bool delay = true);
-
-    BasicBlock* fgSetRngChkTargetInner(SpecialCodeKind kind, bool delay);
-
-#if REARRANGE_ADDS
     void fgMoveOpsLeft(GenTree* tree);
-#endif
 
     bool fgIsCommaThrow(GenTree* tree, bool forFolding = false);
-
     bool fgIsThrow(GenTree* tree);
 
 public:
@@ -6903,14 +6896,18 @@ public:
     GenTree* fgMorphCopyBlock(GenTree* tree);
 private:
     GenTree* fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optAssertionPropDone = nullptr);
-    bool fgTryReplaceStructLocalWithFields(GenTree** use);
     GenTree* fgMorphFinalizeIndir(GenTreeIndir* indir);
+
     GenTree* fgOptimizeCast(GenTreeCast* cast);
     GenTree* fgOptimizeCastOnStore(GenTree* store);
     GenTree* fgOptimizeBitCast(GenTreeUnOp* bitCast);
-    GenTree* fgOptimizeEqualityComparisonWithConst(GenTreeOp* cmp);
-    GenTree* fgOptimizeRelationalComparisonWithConst(GenTreeOp* cmp);
-    GenTree* fgOptimizeRelationalComparisonWithFullRangeConst(GenTreeOp* cmp);
+
+    GenTree* fgOptimizeCmp(GenTreeOp* cmp);
+    GenTree* fgOptimizeCmpWithCasts(GenTreeOp* cmp);
+    GenTree* fgOptimizeCmpEqNeWithConst(GenTreeOp* cmp);
+    GenTree* fgOptimizeCmpLtLeGeGtWithConst(GenTreeOp* cmp);
+    GenTree* fgOptimizeCmpLtLeGeGtFullRangeConst(GenTreeOp* cmp);
+
 #if defined(FEATURE_HW_INTRINSICS)
     GenTree* fgMorphHWIntrinsic(GenTreeHWIntrinsic* tree);
     GenTree* fgMorphHWIntrinsicRequired(GenTreeHWIntrinsic* tree);
@@ -6918,13 +6915,15 @@ private:
     GenTree* fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node);
     GenTree* fgOptimizeHWIntrinsicAssociative(GenTreeHWIntrinsic* node);
 #endif // FEATURE_HW_INTRINSICS
+
     GenTree* fgOptimizeCommutativeArithmetic(GenTreeOp* tree);
-    GenTree* fgOptimizeRelationalComparisonWithCasts(GenTreeOp* cmp);
     GenTree* fgOptimizeAddition(GenTreeOp* add);
     GenTree* fgOptimizeMultiply(GenTreeOp* mul);
     GenTree* fgOptimizeBitwiseAnd(GenTreeOp* andOp);
     GenTree* fgOptimizeBitwiseXor(GenTreeOp* xorOp);
-    GenTree* fgPropagateCommaThrow(GenTree* parent, GenTreeOp* commaThrow, GenTreeFlags precedingSideEffects);
+    GenTree* fgMorphReduceAddOps(GenTree* tree);
+    GenTreeOp* fgMorphCommutative(GenTreeOp* tree);
+        
     GenTree* fgMorphRetInd(GenTreeOp* tree);
     GenTree* fgMorphModToZero(GenTreeOp* tree);
     GenTree* fgMorphModToSubMulDiv(GenTreeOp* tree);
@@ -6932,10 +6931,9 @@ private:
     GenTree* fgMorphSmpOpOptional(GenTreeOp* tree, bool* optAssertionPropDone);
     GenTree* fgMorphConst(GenTree* tree);
 
-    GenTreeOp* fgMorphCommutative(GenTreeOp* tree);
-
-    GenTree* fgMorphReduceAddOps(GenTree* tree);
-
+    GenTree* fgPropagateCommaThrow(GenTree* parent, GenTreeOp* commaThrow, GenTreeFlags precedingSideEffects);
+    
+    bool fgTryReplaceStructLocalWithFields(GenTree** use);
 public:
     GenTree* fgMorphTree(GenTree* tree, MorphAddrContext* mac = nullptr);
 

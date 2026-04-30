@@ -497,7 +497,6 @@ public:
 
 #define DUMP_GC_TABLES   DEBUG
 #define VERIFY_GC_TABLES 0
-#define REARRANGE_ADDS   1
 
 #define FUNC_INFO_LOGGING                                                                                              \
     1 // Support dumping function info to a file. In retail, only NYIs, with no function name,

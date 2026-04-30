@@ -5289,10 +5289,6 @@ void Compiler::AddModifiedElemTypeAllContainingLoops(FlowGraphNaturalLoop* loop,
 //
 GenTree* Compiler::optRemoveRangeCheck(GenTreeBoundsChk* check, GenTree* comma, Statement* stmt)
 {
-#if !REARRANGE_ADDS
-    noway_assert(!"can't remove range checks without REARRANGE_ADDS right now");
-#endif
-
     noway_assert(stmt != nullptr);
     noway_assert((comma != nullptr && comma->OperIs(GT_COMMA) && comma->gtGetOp1() == check) ||
                  (check != nullptr && check->OperIs(GT_BOUNDS_CHECK) && comma == nullptr));
