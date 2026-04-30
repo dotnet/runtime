@@ -2745,12 +2745,6 @@ void gc_heap::background_promote_callback (Object** ppObject, ScanContext* sc,
 
     uint8_t* o = (uint8_t*)*ppObject;
 
-#ifdef DEBUG_DestroyedHandleValue
-    // we can race with destroy handle during concurrent scan
-    if (o == (uint8_t*)DEBUG_DestroyedHandleValue)
-        return;
-#endif //DEBUG_DestroyedHandleValue
-
     if (!is_in_find_object_range (o))
     {
 #ifdef _DEBUG
