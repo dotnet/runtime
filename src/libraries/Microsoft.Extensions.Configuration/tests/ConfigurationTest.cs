@@ -603,17 +603,19 @@ namespace Microsoft.Extensions.Configuration.Test
         }
 
         [Fact]
-        public void ReferenceResolutionIsEnabledByDefault()
+        public void ReferenceResolutionIsDisabledByDefault()
         {
+            // Sources default to ReferenceMode.Read, which leaves their own ref(...)/format(...)
+            // values verbatim. The engine attaches only when at least one source is set to Scan.
             var config = new ConfigurationBuilder()
                 .AddInMemoryCollection(new Dictionary<string, string>
                 {
                     ["BaseUrl"] = "https://example.com",
-                    ["ServiceUrl"] = "format(ref(BaseUrl)/api)",
+                    ["ServiceUrl"] = "format({BaseUrl}/api)",
                 })
                 .Build();
 
-            Assert.Equal("https://example.com/api", config["ServiceUrl"]);
+            Assert.Equal("format({BaseUrl}/api)", config["ServiceUrl"]);
         }
 
         [Fact]
@@ -624,7 +626,7 @@ namespace Microsoft.Extensions.Configuration.Test
                 InitialData = new Dictionary<string, string>
                 {
                     ["BaseUrl"] = "https://example.com",
-                    ["ServiceUrl"] = "format(ref(BaseUrl)/api)",
+                    ["ServiceUrl"] = "format({BaseUrl}/api)",
                 },
             };
 
@@ -633,7 +635,7 @@ namespace Microsoft.Extensions.Configuration.Test
                 .SetReferenceMode(memSource, ReferenceMode.Read)
                 .Build();
 
-            Assert.Equal("format(ref(BaseUrl)/api)", config["ServiceUrl"]);
+            Assert.Equal("format({BaseUrl}/api)", config["ServiceUrl"]);
         }
 
         [Fact]
@@ -643,7 +645,7 @@ namespace Microsoft.Extensions.Configuration.Test
                 .AddInMemoryCollection(new Dictionary<string, string>
                 {
                     ["BaseUrl"] = "https://example.com",
-                    ["ServiceUrl"] = "format(ref(BaseUrl)/api)",
+                    ["ServiceUrl"] = "format({BaseUrl}/api)",
                 })
                 .EnableReferenceResolution()
                 .Build();
@@ -658,7 +660,7 @@ namespace Microsoft.Extensions.Configuration.Test
                 .AddInMemoryCollection(new Dictionary<string, string>
                 {
                     ["Environment"] = "development",
-                    ["ServiceUrl"] = "format(https://ref(Environment).example.com)",
+                    ["ServiceUrl"] = "format(https://{Environment}.example.com)",
                 })
                 .AddInMemoryCollection(new Dictionary<string, string>
                 {
@@ -676,7 +678,7 @@ namespace Microsoft.Extensions.Configuration.Test
             var config = new ConfigurationBuilder()
                 .AddInMemoryCollection(new Dictionary<string, string>
                 {
-                    ["ServiceUrl"] = "format(https://ref(Host).example.com)",
+                    ["ServiceUrl"] = "format(https://{Host}.example.com)",
                 })
                 .EnableReferenceResolution()
                 .Build();
@@ -685,14 +687,15 @@ namespace Microsoft.Extensions.Configuration.Test
         }
 
         [Theory]
-        // A single brace inside a template is a literal brace; only ref(...) inside format(...) is a placeholder.
-        [InlineData("format({Host})", "{Host}")]
-        [InlineData("format(prefix-{Host}-suffix)", "prefix-{Host}-suffix")]
-        [InlineData("format({A}-ref(Host)-{B})", "{A}-my-host-{B}")]
+        // Inside format(...), `{{` and `}}` are composite-format-style escapes for literal `{` and `}`.
+        // A single `{...}` is a placeholder.
+        [InlineData("format({{Host}})", "{Host}")]
+        [InlineData("format(prefix-{{Host}}-suffix)", "prefix-{Host}-suffix")]
+        [InlineData("format({{A}}-{Host}-{{B}})", "{A}-my-host-{B}")]
         // A `$` outside a placeholder is just a literal.
-        [InlineData("format($ref(Host))", "$my-host")]
-        [InlineData("format(It costs $ref(Host))", "It costs $my-host")]
-        [InlineData("format({})", "{}")]
+        [InlineData("format($ref(Host))", "$ref(Host)")]
+        [InlineData("format(It costs ${Host})", "It costs $my-host")]
+        [InlineData("format({{}})", "{}")]
         public void EnableReferenceResolutionTreatsEscapeBlockAsLiteral(string raw, string expected)
         {
             var config = new ConfigurationBuilder()
@@ -791,7 +794,7 @@ namespace Microsoft.Extensions.Configuration.Test
                     ["Defaults:Service:Host"] = "primary.example.com",
                     ["Defaults:Service:Port"] = "5432",
                     ["Services:Primary"] = "ref(Defaults:Service)",
-                    ["ConnectionString"] = "format(ref(Services:Primary:Host):ref(Services:Primary:Port))",
+                    ["ConnectionString"] = "format({Services:Primary:Host}:{Services:Primary:Port})",
                 })
                 .EnableReferenceResolution()
                 .Build();
@@ -813,7 +816,7 @@ namespace Microsoft.Extensions.Configuration.Test
                 .AddInMemoryCollection(new Dictionary<string, string>
                 {
                     ["Services:Primary"] = "ref(Defaults:Service)",
-                    ["ConnectionString"] = "format(host=ref(Services:Primary:Host))",
+                    ["ConnectionString"] = "format(host={Services:Primary:Host})",
                 })
                 .EnableReferenceResolution()
                 .Build();
@@ -904,7 +907,7 @@ namespace Microsoft.Extensions.Configuration.Test
                 .AddInMemoryCollection(new Dictionary<string, string>
                 {
                     ["Defaults:Feature:Enabled"] = "true",
-                    ["Feature"] = "format(prefix-ref(Defaults:Feature))",
+                    ["Feature"] = "format(prefix-{Defaults:Feature})",
                 })
                 .EnableReferenceResolution()
                 .Build();
@@ -920,7 +923,7 @@ namespace Microsoft.Extensions.Configuration.Test
             var config = new ConfigurationBuilder()
                 .AddInMemoryCollection(new Dictionary<string, string>
                 {
-                    ["ServiceUrl"] = "format(https://ref(Host?)fallback)",
+                    ["ServiceUrl"] = "format(https://{Host??}fallback)",
                 })
                 .EnableReferenceResolution()
                 .AddInMemoryCollection(new Dictionary<string, string>
@@ -942,13 +945,13 @@ namespace Microsoft.Extensions.Configuration.Test
                 .AddInMemoryCollection(new Dictionary<string, string>
                 {
                     ["name"] = "Alice",
-                    ["greeting"] = "format(Hello ref(name))",
+                    ["greeting"] = "format(Hello {name})",
                 })
                 .EnableReferenceResolution()
                 .AddInMemoryCollection(new Dictionary<string, string>
                 {
                     ["name"] = "Bob",
-                    ["farewell"] = "format(Bye ref(name))",
+                    ["farewell"] = "format(Bye {name})",
                 })
                 .EnableReferenceResolution()
                 .Build();
@@ -964,7 +967,7 @@ namespace Microsoft.Extensions.Configuration.Test
             var config = new ConfigurationBuilder()
                 .AddInMemoryCollection(new Dictionary<string, string>
                 {
-                    ["Template"] = "format({hidden})",
+                    ["Template"] = "format({{hidden}})",
                     ["hidden"] = "secret",
                 })
                 .EnableReferenceResolution()
@@ -979,7 +982,7 @@ namespace Microsoft.Extensions.Configuration.Test
             var config = new ConfigurationBuilder()
                 .AddInMemoryCollection(new Dictionary<string, string>
                 {
-                    ["ServiceUrl"] = "format(https://hostref(Suffix?))",
+                    ["ServiceUrl"] = "format(https://host{Suffix??})",
                 })
                 .EnableReferenceResolution()
                 .Build();
@@ -1031,7 +1034,7 @@ namespace Microsoft.Extensions.Configuration.Test
             var config = new ConfigurationBuilder()
                 .AddInMemoryCollection(new Dictionary<string, string>
                 {
-                    ["Value"] = "ref(A?B?C?)",
+                    ["Value"] = "ref(A?B?C??)",
                 })
                 .EnableReferenceResolution()
                 .Build();
@@ -1046,7 +1049,7 @@ namespace Microsoft.Extensions.Configuration.Test
                 .AddInMemoryCollection(new Dictionary<string, string>
                 {
                     ["Primary"] = "hit",
-                    ["Value"] = "ref(Missing?Primary?)",
+                    ["Value"] = "ref(Missing?Primary??)",
                 })
                 .EnableReferenceResolution()
                 .Build();
@@ -1058,9 +1061,9 @@ namespace Microsoft.Extensions.Configuration.Test
         [InlineData("ref()")]
         [InlineData("ref( )")]
         [InlineData("ref(?A)")]
-        [InlineData("ref(A??)")]
-        [InlineData("ref(A?'lit'?)")]
-        [InlineData("ref(A?'lit'?B)")]
+        [InlineData("ref(??)")]
+        [InlineData("ref(A?)")]
+        [InlineData("ref(A?B?)")]
         public void EnableReferenceResolutionMalformedExpressionThrows(string raw)
         {
             var config = new ConfigurationBuilder()
@@ -1075,12 +1078,12 @@ namespace Microsoft.Extensions.Configuration.Test
         }
 
         [Fact]
-        public void EnableReferenceResolutionBareTrailingQuestionYieldsEmpty()
+        public void EnableReferenceResolutionEmptyDefaultYieldsEmpty()
         {
             var config = new ConfigurationBuilder()
                 .AddInMemoryCollection(new Dictionary<string, string>
                 {
-                    ["Value"] = "ref(?)",
+                    ["Value"] = "ref(NonExistent??)",
                 })
                 .EnableReferenceResolution()
                 .Build();
@@ -1089,30 +1092,13 @@ namespace Microsoft.Extensions.Configuration.Test
         }
 
         [Theory]
-        [InlineData("\\ref(X)", "ref(X)")]
-        [InlineData("\\format(text)", "format(text)")]
-        public void EnableReferenceResolutionTopLevelBackslashEscapesVerbAsLiteral(string raw, string expected)
-        {
-            var config = new ConfigurationBuilder()
-                .AddInMemoryCollection(new Dictionary<string, string>
-                {
-                    ["X"] = "should-not-resolve",
-                    ["Value"] = raw,
-                })
-                .EnableReferenceResolution()
-                .Build();
-
-            Assert.Equal(expected, config["Value"]);
-        }
-
-        [Theory]
-        [InlineData("ref(weird\\?key)", "weird?key")]
-        [InlineData("ref(has\\(paren)", "has(paren")]
-        [InlineData("ref(comma\\,sep)", "comma,sep")]
-        [InlineData("ref(white\\ space)", "white space")]
-        [InlineData("ref(it\\'s)", "it's")]
-        [InlineData("ref(say \\\"hi\\\")", "say \"hi\"")]
-        public void EnableReferenceResolutionBackslashEscapedPathReferencesLiteralKey(string raw, string literalKey)
+        [InlineData("ref('weird?key')", "weird?key")]
+        [InlineData("ref('has(paren')", "has(paren")]
+        [InlineData("ref('has)paren')", "has)paren")]
+        [InlineData("ref(\"weird:key\")", "weird:key")]
+        [InlineData("ref('it''s')", "it's")]
+        [InlineData("ref(\"say \"\"hi\"\"\")", "say \"hi\"")]
+        public void EnableReferenceResolutionQuotedMemberReferencesLiteralKey(string raw, string literalKey)
         {
             var config = new ConfigurationBuilder()
                 .AddInMemoryCollection(new Dictionary<string, string>
@@ -1127,28 +1113,53 @@ namespace Microsoft.Extensions.Configuration.Test
         }
 
         [Fact]
-        public void EnableReferenceResolutionBackslashEscapedSegmentInsidePathResolves()
+        public void EnableReferenceResolutionQuotedMemberInChainPicksFallback()
         {
             var config = new ConfigurationBuilder()
                 .AddInMemoryCollection(new Dictionary<string, string>
                 {
-                    ["Section:weird?sub:Leaf"] = "hit",
-                    ["Value"] = "ref(Section:weird\\?sub:Leaf)",
+                    ["odd:key"] = "fallback",
+                    ["Value"] = "ref(NotPresent?\"odd:key\")",
                 })
                 .EnableReferenceResolution()
                 .Build();
 
-            Assert.Equal("hit", config["Value"]);
+            Assert.Equal("fallback", config["Value"]);
+        }
+
+        [Theory]
+        [InlineData("format(  hello  )", "hello")]
+        [InlineData("format(\"  hello  \")", "  hello  ")]
+        [InlineData("format('  hello  ')", "  hello  ")]
+        [InlineData("format()", "")]
+        [InlineData("format(   )", "")]
+        [InlineData("format('')", "")]
+        [InlineData("format(  {Key}  )", "value")]
+        [InlineData("format('  {Key}  ')", "  value  ")]
+        [InlineData("format('it''s')", "it's")]
+        [InlineData("format('has)paren')", "has)paren")]
+        public void EnableReferenceResolutionFormatBodyTrimOrQuote(string raw, string expected)
+        {
+            var config = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string>
+                {
+                    ["Key"] = "value",
+                    ["Value"] = raw,
+                })
+                .EnableReferenceResolution()
+                .Build();
+
+            Assert.Equal(expected, config["Value"]);
         }
 
         [Fact]
-        public void EnableReferenceResolutionBackslashEscapedKeyInFormatPlaceholderResolves()
+        public void EnableReferenceResolutionQuotedKeyInFormatPlaceholderResolves()
         {
             var config = new ConfigurationBuilder()
                 .AddInMemoryCollection(new Dictionary<string, string>
                 {
                     ["odd?key"] = "value",
-                    ["Greeting"] = "format(Hello, ref(odd\\?key)!)",
+                    ["Greeting"] = "format(Hello, {'odd?key'}!)",
                 })
                 .EnableReferenceResolution()
                 .Build();
@@ -1157,31 +1168,17 @@ namespace Microsoft.Extensions.Configuration.Test
         }
 
         [Theory]
-        [InlineData("ref(\"unterminated)")]
-        [InlineData("ref('unterminated)")]
-        [InlineData("ref(\"mixed')")]
-        public void EnableReferenceResolutionUnterminatedQuoteThrows(string raw)
-        {
-            var config = new ConfigurationBuilder()
-                .AddInMemoryCollection(new Dictionary<string, string>
-                {
-                    ["Value"] = raw,
-                })
-                .EnableReferenceResolution()
-                .Build();
-
-            Assert.Throws<FormatException>(() => _ = config["Value"]);
-        }
-
-        [Theory]
-        [InlineData("ref(Missing?\"quoted default\")", "quoted default")]
-        [InlineData("ref(Missing?'quoted default')", "quoted default")]
-        [InlineData("ref(Missing?\"has}brace\")", "has}brace")]
-        [InlineData("ref(Missing?\"  spaced  \")", "  spaced  ")]
-        [InlineData("ref(Missing?'it''s')", "it's")]
-        // removed: mixed quote/path default no longer supported
-        [InlineData("ref(Missing?\"\")", "")]
-        public void EnableReferenceResolutionQuotedLiteralTail(string raw, string expected)
+        [InlineData("ref(Missing??quoted default)", "quoted default")]
+        [InlineData("ref(Missing??has}}brace)", "has}brace")]
+        [InlineData("ref(Missing??  spaced  )", "spaced")]
+        [InlineData("ref(Missing??\"  spaced  \")", "  spaced  ")]
+        [InlineData("ref(Missing??'  spaced  ')", "  spaced  ")]
+        [InlineData("ref(Missing??'it''s')", "it's")]
+        [InlineData("ref(Missing??\"plain\")", "plain")]
+        [InlineData("ref(Missing??'has)paren')", "has)paren")]
+        [InlineData("ref(Missing??)", "")]
+        [InlineData("ref(Missing??'')", "")]
+        public void EnableReferenceResolutionDefaultLiteralTail(string raw, string expected)
         {
             var config = new ConfigurationBuilder()
                 .AddInMemoryCollection(new Dictionary<string, string>
@@ -1195,31 +1192,19 @@ namespace Microsoft.Extensions.Configuration.Test
         }
 
         [Fact]
-        public void EnableReferenceResolutionQuotedLiteralTailInFmtPlaceholderAllowsBrace()
+        public void EnableReferenceResolutionDefaultTailWithBraceInsideFmtPlaceholder()
         {
             var config = new ConfigurationBuilder()
                 .AddInMemoryCollection(new Dictionary<string, string>
                 {
-                    ["Template"] = "format(prefix-ref(Missing?\"has}brace\")-suffix)",
+                    // Inside a {…} placeholder of an outer format(…), the chain's '??' switches
+                    // its remainder into template-mode where '}}' is the escape for literal '}'.
+                    ["Template"] = "format(prefix-{Missing??has}}brace}-suffix)",
                 })
                 .EnableReferenceResolution()
                 .Build();
 
             Assert.Equal("prefix-has}brace-suffix", config["Template"]);
-        }
-
-        [Fact]
-        public void EnableReferenceResolutionUnterminatedQuoteInLiteralTailThrows()
-        {
-            var config = new ConfigurationBuilder()
-                .AddInMemoryCollection(new Dictionary<string, string>
-                {
-                    ["Value"] = "ref(A?\"unterminated)",
-                })
-                .EnableReferenceResolution()
-                .Build();
-
-            Assert.Throws<FormatException>(() => _ = config["Value"]);
         }
 
         [Fact]
@@ -1229,7 +1214,7 @@ namespace Microsoft.Extensions.Configuration.Test
                 .AddInMemoryCollection(new Dictionary<string, string>
                 {
                     ["Host"] = "example.com",
-                    ["Value"] = "ref(Missing?format(ref(Host)/path))",
+                    ["Value"] = "ref(Missing??{Host}/path)",
                 })
                 .EnableReferenceResolution()
                 .Build();
@@ -1244,7 +1229,7 @@ namespace Microsoft.Extensions.Configuration.Test
                 .AddInMemoryCollection(new Dictionary<string, string>
                 {
                     ["Backup"] = "bee",
-                    ["Value"] = "ref(Missing?format(ref(Unknown?Backup?'fallback')-end))",
+                    ["Value"] = "ref(Missing??{Unknown?Backup??fallback}-end)",
                 })
                 .EnableReferenceResolution()
                 .Build();
@@ -1258,7 +1243,7 @@ namespace Microsoft.Extensions.Configuration.Test
             var config = new ConfigurationBuilder()
                 .AddInMemoryCollection(new Dictionary<string, string>
                 {
-                    ["Value"] = "ref(Missing?format(ref(Unknown?AlsoUnknown?'inner')-end))",
+                    ["Value"] = "ref(Missing??{Unknown?AlsoUnknown??inner}-end)",
                 })
                 .EnableReferenceResolution()
                 .Build();
@@ -1273,7 +1258,7 @@ namespace Microsoft.Extensions.Configuration.Test
                 .AddInMemoryCollection(new Dictionary<string, string>
                 {
                     ["B"] = "bee",
-                    ["Value"] = "format(prefix-ref(A?format(ref(B)))-suffix)",
+                    ["Value"] = "format(prefix-{A??{B}}-suffix)",
                 })
                 .EnableReferenceResolution()
                 .Build();
@@ -1288,7 +1273,8 @@ namespace Microsoft.Extensions.Configuration.Test
                 .AddInMemoryCollection(new Dictionary<string, string>
                 {
                     ["Host"] = "should-not-appear",
-                    ["Value"] = "ref(Missing?\"{Host}\")",
+                    // Default template with `{{` `}}` brace-doublings emits literal `{Host}`.
+                    ["Value"] = "ref(Missing??{{Host}})",
                 })
                 .EnableReferenceResolution()
                 .Build();
@@ -1303,7 +1289,7 @@ namespace Microsoft.Extensions.Configuration.Test
                 .AddInMemoryCollection(new Dictionary<string, string>
                 {
                     ["Services:Billing:Host"] = "billing.example.com",
-                    ["Services:Billing:Url"] = "format(https://ref(..:Host)/api)",
+                    ["Services:Billing:Url"] = "format(https://{..:Host}/api)",
                 })
                 .EnableReferenceResolution()
                 .Build();
@@ -1373,7 +1359,7 @@ namespace Microsoft.Extensions.Configuration.Test
             var config = new ConfigurationBuilder()
                 .AddInMemoryCollection(new Dictionary<string, string>
                 {
-                    ["TopLevel"] = "format(prefix-ref(..:..:Nothing?)-suffix)",
+                    ["TopLevel"] = "format(prefix-{..:..:Nothing??}-suffix)",
                 })
                 .EnableReferenceResolution()
                 .Build();

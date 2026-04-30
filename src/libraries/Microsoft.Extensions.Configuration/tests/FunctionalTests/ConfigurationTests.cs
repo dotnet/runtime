@@ -1035,9 +1035,9 @@ IniKey1=IniValue2");
   ""Services"": {
     ""Primary"": ""ref(Defaults:Service)""
   },
-  ""ConnectionString"": ""format(ref(Services:Primary:Protocol)://ref(User)@ref(Services:Primary:Host):ref(Services:Primary:Port)/ref(Database?Defaults:Database))"",
+  ""ConnectionString"": ""format({Services:Primary:Protocol}://{User}@{Services:Primary:Host}:{Services:Primary:Port}/{Database?Defaults:Database})"",
   ""Tracing"": {
-    ""Collector"": ""ref(Tracing:Endpoint?)""
+    ""Collector"": ""ref(Tracing:Endpoint??)""
   },
   ""Defaults"": {
     ""Database"": ""appdb""
@@ -1084,7 +1084,7 @@ Port = 6543");
             // default-value token — the single ConnectionString pulls from three providers at once.
             Assert.Equal("tcp://admin@primary.example.com:6543/appdb", config["ConnectionString"]);
 
-            // Optional ref(Tracing:Endpoint?) resolves to an empty string because the key is missing.
+            // Optional ref(Tracing:Endpoint??) resolves to an empty string because the key is missing.
             Assert.Equal(string.Empty, config["Tracing:Collector"]);
 
             // A gated value whose key cannot be resolved and has no default throws.

@@ -162,6 +162,12 @@
   <data name="ReferenceResolution_DefaultMustBeLast" xml:space="preserve">
     <value>A reference expression at position '{0}' has a path member after a literal or format default. Literal and format defaults must be the last member of the chain.</value>
   </data>
+  <data name="ReferenceResolution_UnterminatedQuote" xml:space="preserve">
+    <value>A quoted member starting at position '{0}' is not terminated. Use a matching '\'' or '"' (doubled inside to escape).</value>
+  </data>
+  <data name="ReferenceResolution_TrailingContentAfterQuotedDefault" xml:space="preserve">
+    <value>Unexpected content at position '{0}' after a quoted body. The closing quote must be followed only by the surrounding ')' (optionally preceded by whitespace).</value>
+  </data>
   <data name="ReferenceResolution_SectionInFormat" xml:space="preserve">
     <value>The reference '{0}' inside a format(...) template at '{1}' resolves to a section. Sections are only allowed as a top-level ref(...) value.</value>
   </data>

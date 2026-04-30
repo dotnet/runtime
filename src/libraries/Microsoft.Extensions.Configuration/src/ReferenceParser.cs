@@ -10,54 +10,53 @@ namespace Microsoft.Extensions.Configuration
     // Value syntax:
     //   ref(<chain>)         — reference; may resolve to a section.
     //   format(<template>)   — string template.
-    //   \ref(...) | \format(...)   — literal text; the leading backslash is stripped.
     //   any other value      — verbatim literal.
     //
-    // chain (inside ref(...)):
-    //   member ('?' member)* '?'?
-    //   member := path | quoted-literal | format-call
-    //   - quoted-literal and format-call are valid only as the LAST member.
-    //   - A trailing bare '?' (after the last path member, no trailing literal/format)
-    //     means "missing chain → empty string".
-    //   - A chain ending with a literal/format member cannot also end with a bare '?'
-    //     (parse error: redundant default).
+    // chain (inside ref(...) and inside `{...}` placeholders):
+    //   member ('?' member)* ('??' default)?
+    //   - '?' separates member lookups (left-to-right; first existing wins).
+    //   - '??' (double question mark) introduces a single trailing default. The default body
+    //     uses template grammar (literal text + `{<chain>}` placeholders + `{{`/`}}` brace
+    //     escapes). A '??' with no body means empty-string default.
+    //   - At least one member is required before '??'.
     //   - An empty chain (`ref()`) is a parse error.
-    //   - A chain consisting only of a trailing '?' (`ref(?)`) means empty-string fallback.
+    //   - A bare trailing single '?' (no second '?') is a parse error: use '??' for empty default.
     //
-    // path:
-    //   Bare key. Use ':' (or '.') to separate segments. Use '..' segments
-    //   to walk up from the value's own section. Reserved characters
-    //   (`?`, `(`, `)`, `'`, `"`, `,`, ` `, `\`) inside a key must be backslash-escaped.
-    //   `\` followed by any character emits that character verbatim into the key.
+    // member:
+    //   - Unquoted: a path. Use ':' (or '.') to separate segments. Use '..' segments to walk
+    //     up from the value's own section. Reserved characters (`?`, `(`, `)`, `'`, `"`,
+    //     `{`, `}`, whitespace) cannot appear in an unquoted path — use a quoted member to
+    //     embed them. Surrounding whitespace is trimmed.
+    //   - Quoted: `'…'` or `"…"`. The body is a single literal key — no ':' splitting. The
+    //     same quote char doubled inside the body escapes itself (e.g. `'it''s'` → `it's`).
     //
-    // quoted-literal:
-    //   '...' or "...". Doubled-quote escapes (e.g. 'it''s'). Always succeeds as a
-    //   chain default.
+    // default (after '??'):
+    //   - Unquoted: leading and trailing whitespace are trimmed; the trimmed body is parsed
+    //     as a template.
+    //   - Quoted: `'…'` or `"…"`. The body is preserved verbatim (whitespace included);
+    //     doubled-quote inside escapes itself; the body is then parsed as a template.
     //
-    // format-call (inside chain):
-    //   format(<template>). Always succeeds as a chain default.
+    // template (inside format(...) and after '??' inside a chain):
+    //   Verbatim text with embedded {<chain>} placeholders.
+    //   - `{{` emits a literal `{`; `}}` emits a literal `}` (composite-format-style doubling).
+    //   - A single `{` opens a placeholder; the matching `}` closes it. The content is a
+    //     chain (same grammar as inside ref(...)). Embedded placeholders MUST resolve to a
+    //     scalar value; resolving to a section throws at resolution time.
+    //   - All other characters are verbatim.
     //
-    // template (inside format(...)):
-    //   Verbatim text with embedded ref(...) placeholders.
-    //   - `\ref(` emits literal `ref(`.
-    //   - `\\` emits literal `\`.
-    //   - `\` followed by any other character emits that backslash and the next
-    //     character verbatim.
-    //   - All other characters (including parens, quotes, the bare keyword `format(`)
-    //     are verbatim.
-    //   - Embedded ref(...) placeholders MUST resolve to a scalar value;
-    //     resolving to a section throws at resolution time.
+    // format(...) body wrapping:
+    //   - Unquoted: leading and trailing whitespace are trimmed before template parsing.
+    //   - Quoted: `'…'` or `"…"`. The body is preserved verbatim (whitespace included);
+    //     doubled-quote inside escapes itself; the body is then parsed as a template.
     //
     // Sections:
     //   At the top level, ref(<chain>) may resolve to a section (alias). Sections
     //   are always strict — earlier-provider keys are not merged under the alias path.
-    //   Embedded ref(...) inside format(...) MUST resolve to a scalar value.
+    //   Embedded `{...}` placeholders inside format(...) MUST resolve to a scalar value.
     internal static class ReferenceParser
     {
         private const string RefOpen = "ref(";
         private const string FormatOpen = "format(";
-        private const string EscapedRefOpen = "\\ref(";
-        private const string EscapedFormatOpen = "\\format(";
 
         internal static bool ContainsReference(string? value)
         {
@@ -67,30 +66,12 @@ namespace Microsoft.Extensions.Configuration
             }
 
             return StartsWith(value, RefOpen)
-                || StartsWith(value, FormatOpen)
-                || StartsWith(value, EscapedRefOpen)
-                || StartsWith(value, EscapedFormatOpen);
+                || StartsWith(value, FormatOpen);
         }
 
         internal static ValueToken Parse(string value)
         {
             ArgumentNullException.ThrowIfNull(value);
-
-            // Top-level escape: \ref(...) and \format(...) → literal text with the leading
-            // backslash stripped. Validate the parens balance and consume the entire value;
-            // if not, throw to surface the typo rather than silently leaving a half-formed
-            // escape verbatim.
-            if (StartsWith(value, EscapedRefOpen))
-            {
-                ValidateBalancedToEnd(value, openParenIndex: 4, tokenStart: 0);
-                return ValueToken.Literal(value.Substring(1));
-            }
-
-            if (StartsWith(value, EscapedFormatOpen))
-            {
-                ValidateBalancedToEnd(value, openParenIndex: 7, tokenStart: 0);
-                return ValueToken.Literal(value.Substring(1));
-            }
 
             if (StartsWith(value, RefOpen))
             {
@@ -134,13 +115,69 @@ namespace Microsoft.Extensions.Configuration
                     SR.Format(SR.ReferenceResolution_TrailingContentAfterClose, tokenStart + closeIndex + 1));
             }
 
-            string template = value.Substring(openParenIndex + 1, closeIndex - openParenIndex - 1);
-            IReadOnlyList<ValueToken> tokens = ParseTemplate(template, templateStart: tokenStart + openParenIndex + 1);
+            int bodyStart = openParenIndex + 1;
+            int bodyEnd = closeIndex;
+            int contentStart = tokenStart;
+
+            ParseTrimmableTemplateBody(value, bodyStart, bodyEnd, contentStart, out IReadOnlyList<ValueToken> tokens);
             return ValueToken.Format(tokens);
         }
 
-        // Find the ')' that matches the '(' at openParenIndex. Tracks nested parens; skips over
-        // quoted literals and backslash escapes so they don't mismatch the brace counter.
+        // Apply trim-or-quote logic shared by format(...) bodies and chain defaults.
+        // - If body (after skipping leading whitespace) starts with a quote, the entire body
+        //   must be a single quoted string (whitespace allowed before/after quotes only); the
+        //   quoted text is preserved verbatim.
+        // - Otherwise, leading and trailing whitespace are trimmed.
+        // The resulting body is parsed as a template.
+        private static void ParseTrimmableTemplateBody(
+            string content,
+            int bodyStart,
+            int bodyEnd,
+            int contentStart,
+            out IReadOnlyList<ValueToken> tokens)
+        {
+            int i = bodyStart;
+            while (i < bodyEnd && IsWhite(content[i]))
+            {
+                i++;
+            }
+
+            if (i < bodyEnd && (content[i] == '\'' || content[i] == '"'))
+            {
+                int quoteStart = i;
+                string body = ScanQuotedBody(content, ref i, contentStart);
+
+                while (i < bodyEnd && IsWhite(content[i]))
+                {
+                    i++;
+                }
+
+                if (i < bodyEnd)
+                {
+                    throw new FormatException(SR.Format(SR.ReferenceResolution_TrailingContentAfterQuotedDefault, contentStart + i));
+                }
+
+                // Use the position just past the opening quote as the diagnostic base. Doubled
+                // quote escapes inside the body may shift offsets by ±1 per occurrence.
+                tokens = ParseTemplate(body, templateStart: contentStart + quoteStart + 1);
+                return;
+            }
+
+            int unquotedStart = i;
+            int unquotedEnd = bodyEnd;
+            while (unquotedEnd > unquotedStart && IsWhite(content[unquotedEnd - 1]))
+            {
+                unquotedEnd--;
+            }
+
+            string unquoted = unquotedStart >= unquotedEnd
+                ? string.Empty
+                : content.Substring(unquotedStart, unquotedEnd - unquotedStart);
+            tokens = ParseTemplate(unquoted, templateStart: contentStart + unquotedStart);
+        }
+
+        // Find the ')' that matches the '(' at openParenIndex. Tracks nested parens and skips
+        // over quoted regions ('...' or "...") so a `)` inside a quoted chain member is literal.
         private static int FindMatchingClose(string value, int openParenIndex, int tokenStart)
         {
             int depth = 1;
@@ -149,18 +186,9 @@ namespace Microsoft.Extensions.Configuration
             {
                 char c = value[i];
 
-                if (c == '\\')
-                {
-                    // Skip the escaped character (if any). Lone trailing '\' is consumed too;
-                    // segment-level parsers will surface specific errors when they actually try
-                    // to interpret the path/template body.
-                    i += (i + 1 < value.Length) ? 2 : 1;
-                    continue;
-                }
-
                 if (c == '\'' || c == '"')
                 {
-                    i = SkipQuoted(value, i, tokenStart + i);
+                    i = SkipQuoted(value, i, tokenStart);
                     continue;
                 }
 
@@ -188,231 +216,215 @@ namespace Microsoft.Extensions.Configuration
             throw new FormatException(SR.Format(SR.ReferenceResolution_ExpressionIsUnclosed, tokenStart + openParenIndex));
         }
 
-        // Validate that an escaped form (\ref(...) / \format(...)) has balanced parens that
-        // consume the entire value.
-        private static void ValidateBalancedToEnd(string value, int openParenIndex, int tokenStart)
+        // Advances past a quoted region starting at i (which must be at the opening quote).
+        // Returns the index just past the closing quote. Doubled quote chars are part of the
+        // body. Throws on unterminated quote.
+        private static int SkipQuoted(string s, int i, int tokenStart)
         {
-            int closeIndex = FindMatchingClose(value, openParenIndex, tokenStart);
-            if (closeIndex != value.Length - 1)
+            char q = s[i];
+            int openPos = i;
+            i++;
+            while (i < s.Length)
             {
-                throw new FormatException(
-                    SR.Format(SR.ReferenceResolution_TrailingContentAfterClose, tokenStart + closeIndex + 1));
+                char c = s[i];
+                if (c == q)
+                {
+                    if (i + 1 < s.Length && s[i + 1] == q)
+                    {
+                        i += 2;
+                        continue;
+                    }
+                    return i + 1;
+                }
+                i++;
             }
+            throw new FormatException(SR.Format(SR.ReferenceResolution_UnterminatedQuote, tokenStart + openPos));
+        }
+
+        // Scans a quoted member starting at content[i] (must be a quote). On success returns
+        // the unescaped body and advances i past the closing quote.
+        private static string ScanQuotedBody(string content, ref int i, int contentStart)
+        {
+            char q = content[i];
+            int openPos = i;
+            i++;
+            var sb = new StringBuilder();
+            while (i < content.Length)
+            {
+                char c = content[i];
+                if (c == q)
+                {
+                    if (i + 1 < content.Length && content[i + 1] == q)
+                    {
+                        sb.Append(q);
+                        i += 2;
+                        continue;
+                    }
+                    i++;
+                    return sb.ToString();
+                }
+                sb.Append(c);
+                i++;
+            }
+            throw new FormatException(SR.Format(SR.ReferenceResolution_UnterminatedQuote, contentStart + openPos));
         }
 
         // Parse the chain content between ref's parens. `content` is the substring; `contentStart`
         // is its absolute offset for diagnostic positions.
         private static ValueToken ParseChain(string content, int contentStart)
         {
-            // Empty chain: ref() → error.
-            if (TrimWhitespace(content, out int trimmedStart, out int trimmedEnd) == 0)
+            // Empty chain: ref() → error. We only reject all-whitespace here; we DO NOT trim
+            // the content overall, because trailing whitespace after '??' is part of the
+            // default-template body and must be preserved.
+            int leadingWhite = 0;
+            while (leadingWhite < content.Length && IsWhite(content[leadingWhite]))
+            {
+                leadingWhite++;
+            }
+            if (leadingWhite == content.Length)
             {
                 throw new FormatException(SR.Format(SR.ReferenceResolution_ExpressionIsEmpty, contentStart));
             }
 
             var paths = new List<ReferenceItem>();
-            ValueToken? defaultMember = null;
+            IReadOnlyList<ValueToken>? defaultTokens = null;
             bool hasEmptyDefault = false;
 
-            int i = trimmedStart;
-            int end = trimmedEnd;
+            int i = leadingWhite;
+            int end = content.Length;
 
-            // Special form: ref(?) — a chain consisting solely of '?' (with optional surrounding
-            // whitespace) means "empty string fallback, no path members".
-            if (end - i == 1 && content[i] == '?')
+            while (i < end)
             {
-                return ValueToken.Reference(Array.Empty<ReferenceItem>(), @default: null, hasEmptyDefault: true);
-            }
-
-            while (i <= end)
-            {
-                // Skip leading whitespace before a member.
+                // Skip leading whitespace before a path member.
                 while (i < end && IsWhite(content[i]))
                 {
                     i++;
                 }
 
-                if (i == end)
+                if (i >= end)
                 {
-                    // Empty trailing member → trailing '?'.
-                    hasEmptyDefault = true;
-                    break;
-                }
-
-                char first = content[i];
-
-                if (first == '?')
-                {
-                    // Empty member at start or between '?'s.
+                    // Trailing single '?' (no second '?'): error — '??' is required for empty default.
                     throw new FormatException(SR.Format(SR.ReferenceResolution_KeyIsEmpty, contentStart + i));
                 }
 
-                if (first == '\'' || first == '"')
+                if (content[i] == '?')
                 {
-                    int quoteEnd = SkipQuoted(content, i, contentStart + i);
-                    string raw = content.Substring(i, quoteEnd - i);
-                    string lit = UnquoteLiteral(raw);
-                    defaultMember = ValueToken.Literal(lit);
-                    i = SkipWhite(content, quoteEnd, end);
-                    break;
+                    // Leading '?' or '??' before any path member: at least one path is required.
+                    throw new FormatException(SR.Format(SR.ReferenceResolution_KeyIsEmpty, contentStart + i));
                 }
 
-                if (IsFormatCallStart(content, i, end))
+                if (content[i] == '\'' || content[i] == '"')
                 {
-                    int formatOpenIndex = i + FormatOpen.Length - 1; // index of '('
-                    int formatClose = FindMatchingCloseInRange(content, formatOpenIndex, end, contentStart + i);
-                    string template = content.Substring(formatOpenIndex + 1, formatClose - formatOpenIndex - 1);
-                    IReadOnlyList<ValueToken> tokens = ParseTemplate(template, templateStart: contentStart + formatOpenIndex + 1);
-                    defaultMember = ValueToken.Format(tokens);
-                    i = SkipWhite(content, formatClose + 1, end);
-                    break;
+                    // Quoted key member: body is the literal key (no ':' splitting, no '\' escape;
+                    // the doubled-quote escape consumed by ScanQuotedBody is the only special form).
+                    int quoteStart = i;
+                    string quotedBody = ScanQuotedBody(content, ref i, contentStart);
+                    if (quotedBody.Length == 0)
+                    {
+                        throw new FormatException(SR.Format(SR.ReferenceResolution_KeyIsEmpty, contentStart + quoteStart));
+                    }
+                    paths.Add(new ReferenceItem(quotedBody, parentHops: 0));
+                }
+                else
+                {
+                    // Unquoted path member: scan until '?'. Reserved characters cannot appear
+                    // in an unquoted path; use a quoted member ('…' / "…") to embed them.
+                    int pathStart = i;
+                    while (i < end)
+                    {
+                        char ch = content[i];
+                        if (ch == '?')
+                        {
+                            break;
+                        }
+                        i++;
+                    }
+
+                    int rawStart = pathStart;
+                    int rawEnd = i;
+                    while (rawEnd > rawStart && IsWhite(content[rawEnd - 1]))
+                    {
+                        rawEnd--;
+                    }
+
+                    if (rawEnd == rawStart)
+                    {
+                        throw new FormatException(SR.Format(SR.ReferenceResolution_KeyIsEmpty, contentStart + pathStart));
+                    }
+
+                    ReferenceItem item = ParsePath(content, rawStart, rawEnd, contentStart + rawStart);
+                    paths.Add(item);
                 }
 
-                // Path member.
-                int pathStart = i;
-                while (i < end)
+                // Allow whitespace between a member (especially a quoted one) and the next separator.
+                while (i < end && IsWhite(content[i]))
                 {
-                    char ch = content[i];
-                    if (ch == '\\' && i + 1 < end)
-                    {
-                        i += 2;
-                        continue;
-                    }
-                    if (ch == '?')
-                    {
-                        break;
-                    }
                     i++;
                 }
 
-                int rawStart = pathStart;
-                int rawEnd = i;
-                // Trim trailing whitespace on the path text.
-                while (rawEnd > rawStart && IsWhite(content[rawEnd - 1]))
-                {
-                    rawEnd--;
-                }
-
-                if (rawEnd == rawStart)
-                {
-                    throw new FormatException(SR.Format(SR.ReferenceResolution_KeyIsEmpty, contentStart + pathStart));
-                }
-
-                ReferenceItem item = ParsePath(content, rawStart, rawEnd, contentStart + rawStart);
-                paths.Add(item);
-
-                if (i == end)
+                if (i >= end)
                 {
                     break;
                 }
 
-                // content[i] == '?'
+                // content[i] should be '?' here. Anything else (e.g., extra content after a
+                // quoted member) is malformed.
+                if (content[i] != '?')
+                {
+                    throw new FormatException(SR.Format(SR.ReferenceResolution_InvalidExpression, contentStart + i));
+                }
+
+                // Check for '??' (default introducer).
+                if (i + 1 < end && content[i + 1] == '?')
+                {
+                    int defaultBodyStart = i + 2;
+                    ParseDefaultBody(content, defaultBodyStart, end, contentStart, out defaultTokens, out hasEmptyDefault);
+                    break;
+                }
+
+                // Single '?' separator → continue to next path. Track the position of this
+                // separator so we can report a clear error if the chain ends here (a bare
+                // trailing single '?' is not a valid chain — '??' is required for an empty default).
+                int separatorPos = i;
                 i++;
-            }
-
-            // Trailing '?' after a literal/format default is redundant → error.
-            if (defaultMember.HasValue)
-            {
-                int j = i;
-                while (j < end && IsWhite(content[j]))
+                if (i >= end)
                 {
-                    j++;
-                }
-                if (j < end)
-                {
-                    if (content[j] == '?')
-                    {
-                        throw new FormatException(SR.Format(SR.ReferenceResolution_RedundantTrailingQuestion, contentStart + j));
-                    }
-
-                    // Anything else after a literal/format member is unexpected: literal/format
-                    // is required to be the last chain member.
-                    throw new FormatException(SR.Format(SR.ReferenceResolution_DefaultMustBeLast, contentStart + j));
+                    throw new FormatException(SR.Format(SR.ReferenceResolution_KeyIsEmpty, contentStart + separatorPos));
                 }
             }
 
-            // Validate: cannot have both a trailing '?' and a literal/format default (would be
-            // hasEmptyDefault==true after defaultMember was set, which the loop already handled
-            // via the redundant-question branch above; this is defensive).
-            if (hasEmptyDefault && defaultMember.HasValue)
-            {
-                throw new FormatException(SR.Format(SR.ReferenceResolution_RedundantTrailingQuestion, contentStart));
-            }
-
-            IReadOnlyList<ValueToken>? defaultList = defaultMember.HasValue
-                ? new[] { defaultMember.Value }
-                : null;
-
-            return ValueToken.Reference(paths, defaultList, hasEmptyDefault);
+            return ValueToken.Reference(paths, defaultTokens, hasEmptyDefault);
         }
 
-        // Detect whether `content[i..]` begins with the literal text `format(` (i.e. a format-call
-        // member). The `(` need not be balanced here; only its presence is required.
-        private static bool IsFormatCallStart(string content, int i, int end)
+        // Parse the default-template body that follows '??'. May be quoted (preserves verbatim
+        // body, including leading/trailing whitespace; doubled-quote escapes the quote char) or
+        // Parse a chain default body into a token sequence. Defaults to a trimmed unquoted body
+        // unless quoted (`'…'` or `"…"`), in which case the body is preserved verbatim. Either
+        // way, the body is then parsed as a composite-format template ({...} placeholders +
+        // {{ }} brace escapes).
+        private static void ParseDefaultBody(
+            string content,
+            int bodyStart,
+            int end,
+            int contentStart,
+            out IReadOnlyList<ValueToken>? defaultTokens,
+            out bool hasEmptyDefault)
         {
-            int n = FormatOpen.Length;
-            if (i + n > end)
+            ParseTrimmableTemplateBody(content, bodyStart, end, contentStart, out IReadOnlyList<ValueToken> tokens);
+            if (tokens.Count == 0)
             {
-                return false;
+                defaultTokens = null;
+                hasEmptyDefault = true;
             }
-            for (int k = 0; k < n; k++)
+            else
             {
-                if (content[i + k] != FormatOpen[k])
-                {
-                    return false;
-                }
+                defaultTokens = tokens;
+                hasEmptyDefault = false;
             }
-            return true;
         }
 
-        // Variant of FindMatchingClose that operates on a substring window [openParenIndex .. end).
-        private static int FindMatchingCloseInRange(string content, int openParenIndex, int end, int tokenStart)
-        {
-            int depth = 1;
-            int i = openParenIndex + 1;
-            while (i < end)
-            {
-                char c = content[i];
-
-                if (c == '\\')
-                {
-                    i += (i + 1 < end) ? 2 : 1;
-                    continue;
-                }
-
-                if (c == '\'' || c == '"')
-                {
-                    i = SkipQuoted(content, i, tokenStart + (i - openParenIndex));
-                    continue;
-                }
-
-                if (c == '(')
-                {
-                    depth++;
-                    i++;
-                    continue;
-                }
-
-                if (c == ')')
-                {
-                    depth--;
-                    if (depth == 0)
-                    {
-                        return i;
-                    }
-                    i++;
-                    continue;
-                }
-
-                i++;
-            }
-
-            throw new FormatException(SR.Format(SR.ReferenceResolution_ExpressionIsUnclosed, tokenStart));
-        }
-
-        // Parse a path member from content[rawStart..rawEnd). Honors leading '..' segments and
-        // backslash escapes. Returns a ReferenceItem with the suffix (':' delimited) and parent
-        // hop count.
+        // Parse a path member from content[rawStart..rawEnd). Honors leading '..' segments.
+        // Returns a ReferenceItem with the suffix (':' delimited) and parent hop count.
         private static ReferenceItem ParsePath(string content, int rawStart, int rawEnd, int tokenStart)
         {
             // Count leading '..' (followed by ':' or '.' or end) for parent hops.
@@ -448,8 +460,8 @@ namespace Microsoft.Extensions.Configuration
             return new ReferenceItem(suffix, parentHops);
         }
 
-        // Build the post-parent-hops portion of a path: split on ':' or '.', apply backslash
-        // escape, normalize to ConfigurationPath.KeyDelimiter.
+        // Build the post-parent-hops portion of a path: split on ':' or '.', normalize to
+        // ConfigurationPath.KeyDelimiter.
         private static string BuildPathSuffix(string content, int start, int end, int tokenStart)
         {
             if (start >= end)
@@ -464,17 +476,6 @@ namespace Microsoft.Extensions.Configuration
             while (i < end)
             {
                 char c = content[i];
-
-                if (c == '\\')
-                {
-                    if (i + 1 >= end)
-                    {
-                        throw new FormatException(SR.Format(SR.ReferenceResolution_InvalidExpression, tokenStart + i));
-                    }
-                    segment.Append(content[i + 1]);
-                    i += 2;
-                    continue;
-                }
 
                 if (c == ':' || c == '.')
                 {
@@ -520,8 +521,10 @@ namespace Microsoft.Extensions.Configuration
         }
 
         // Parse a format(<template>) body into a sequence of Literal/Reference tokens.
-        // Anything except an unescaped `ref(` is verbatim. `\ref(` emits literal `ref(`,
-        // `\\` emits literal `\`, `\X` for any other X emits `\X` verbatim.
+        // - `{{` and `}}` are composite-format-style escapes for literal `{` and `}`.
+        // - A single `{` opens a placeholder whose content is a chain (same grammar as
+        //   inside ref(...)); the matching `}` closes it.
+        // - All other characters are verbatim.
         private static List<ValueToken> ParseTemplate(string template, int templateStart)
         {
             var tokens = new List<ValueToken>();
@@ -532,57 +535,41 @@ namespace Microsoft.Extensions.Configuration
             {
                 char c = template[i];
 
-                if (c == '\\')
+                if (c == '{')
                 {
-                    if (i + 1 >= template.Length)
+                    // `{{` → literal `{`.
+                    if (i + 1 < template.Length && template[i + 1] == '{')
                     {
-                        // Trailing lone backslash: emit verbatim.
-                        literal.Append('\\');
-                        i++;
-                        continue;
-                    }
-
-                    if (template[i + 1] == '\\')
-                    {
-                        literal.Append('\\');
+                        literal.Append('{');
                         i += 2;
                         continue;
                     }
 
-                    // \ref( → literal "ref(".
-                    if (i + RefOpen.Length < template.Length + 1 &&
-                        i + 1 + RefOpen.Length <= template.Length &&
-                        template.AsSpan(i + 1, RefOpen.Length).SequenceEqual(RefOpen.AsSpan()))
-                    {
-                        literal.Append(RefOpen);
-                        i += 1 + RefOpen.Length;
-                        continue;
-                    }
-
-                    // \X for any other X: emit '\' and X verbatim.
-                    literal.Append('\\');
-                    literal.Append(template[i + 1]);
-                    i += 2;
-                    continue;
-                }
-
-                // Detect ref( placeholder.
-                if (c == 'r' && i + RefOpen.Length <= template.Length &&
-                    template.AsSpan(i, RefOpen.Length).SequenceEqual(RefOpen.AsSpan()))
-                {
                     if (literal.Length > 0)
                     {
                         tokens.Add(ValueToken.Literal(literal.ToString()));
                         literal.Clear();
                     }
 
-                    int openParenIndex = i + RefOpen.Length - 1;
-                    int closeIndex = FindMatchingCloseInRange(template, openParenIndex, template.Length, templateStart + i);
-                    string content = template.Substring(openParenIndex + 1, closeIndex - openParenIndex - 1);
-                    ValueToken refToken = ParseChain(content, contentStart: templateStart + openParenIndex + 1);
+                    int braceClose = FindMatchingBrace(template, i, templateStart + i);
+                    string content = template.Substring(i + 1, braceClose - i - 1);
+                    ValueToken refToken = ParseChain(content, contentStart: templateStart + i + 1);
                     tokens.Add(refToken);
-                    i = closeIndex + 1;
+                    i = braceClose + 1;
                     continue;
+                }
+
+                if (c == '}')
+                {
+                    // `}}` → literal `}`. A bare `}` is an error: unbalanced placeholder close.
+                    if (i + 1 < template.Length && template[i + 1] == '}')
+                    {
+                        literal.Append('}');
+                        i += 2;
+                        continue;
+                    }
+
+                    throw new FormatException(SR.Format(SR.ReferenceResolution_InvalidExpression, templateStart + i));
                 }
 
                 literal.Append(c);
@@ -602,52 +589,82 @@ namespace Microsoft.Extensions.Configuration
             return tokens;
         }
 
-        private static int SkipQuoted(string s, int i, int tokenStart)
+        // Find the `}` that matches the `{` at openIndex within a format template.
+        // Inside a placeholder body the grammar is a CHAIN: paths separated by '?',
+        // optionally followed by '??' which switches the rest of that level into TEMPLATE
+        // mode (where '{{' / '}}' are escapes for literal '{' / '}'). Nested '{...}'
+        // placeholders push a fresh chain scope.
+        private static int FindMatchingBrace(string template, int openIndex, int tokenStart)
         {
-            char quote = s[i];
-            i++;
-            while (i < s.Length)
+            // templateModeStack[top] == false → currently in path-part of the chain at this depth.
+            // templateModeStack[top] == true  → past '??' at this depth, in template-part.
+            var templateMode = new Stack<bool>();
+            templateMode.Push(false);
+            int i = openIndex + 1;
+
+            while (i < template.Length)
             {
-                if (s[i] == quote)
+                char c = template[i];
+
+                if (c == '\'' || c == '"')
                 {
-                    if (i + 1 < s.Length && s[i + 1] == quote)
+                    // Quoted region (member or default body) — skip opaquely so any '{', '}',
+                    // '?' or paren inside is literal at this lexer level.
+                    i = SkipQuoted(template, i, tokenStart);
+                    continue;
+                }
+
+                bool inTemplate = templateMode.Peek();
+
+                if (inTemplate)
+                {
+                    // `{{` → literal `{`.
+                    if (c == '{' && i + 1 < template.Length && template[i + 1] == '{')
                     {
                         i += 2;
                         continue;
                     }
-                    return i + 1;
+                    // `}}` → literal `}`.
+                    if (c == '}' && i + 1 < template.Length && template[i + 1] == '}')
+                    {
+                        i += 2;
+                        continue;
+                    }
                 }
-                i++;
-            }
-            throw new FormatException(SR.Format(SR.ReferenceResolution_InvalidExpression, tokenStart));
-        }
-
-        private static string UnquoteLiteral(string raw)
-        {
-            // raw includes the enclosing quotes.
-            if (raw.Length < 2)
-            {
-                return string.Empty;
-            }
-
-            char quote = raw[0];
-            var sb = new StringBuilder(raw.Length - 2);
-            int i = 1;
-            int last = raw.Length - 1;
-            while (i < last)
-            {
-                if (raw[i] == quote && i + 1 < last && raw[i + 1] == quote)
+                else if (c == '?'
+                    && i + 1 < template.Length
+                    && template[i + 1] == '?')
                 {
-                    sb.Append(quote);
+                    // First '??' at this depth: switch to template-part for the remainder
+                    // of this chain level.
+                    templateMode.Pop();
+                    templateMode.Push(true);
                     i += 2;
                     continue;
                 }
 
-                sb.Append(raw[i]);
+                if (c == '{')
+                {
+                    templateMode.Push(false);
+                    i++;
+                    continue;
+                }
+
+                if (c == '}')
+                {
+                    templateMode.Pop();
+                    if (templateMode.Count == 0)
+                    {
+                        return i;
+                    }
+                    i++;
+                    continue;
+                }
+
                 i++;
             }
 
-            return sb.ToString();
+            throw new FormatException(SR.Format(SR.ReferenceResolution_ExpressionIsUnclosed, tokenStart));
         }
 
         private static int TrimWhitespace(string s, out int start, out int end)

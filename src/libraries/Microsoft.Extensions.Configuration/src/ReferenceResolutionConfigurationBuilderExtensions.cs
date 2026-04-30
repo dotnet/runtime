@@ -8,15 +8,14 @@ namespace Microsoft.Extensions.Configuration
 {
     /// <summary>
     /// Provides extension methods for configuring how individual <see cref="IConfigurationSource"/>
-    /// instances participate in <c>{{…}}</c> reference resolution performed by the
-    /// <see cref="IConfigurationRoot"/> built from the containing
+    /// instances participate in <c>ref(...)</c> / <c>format(...)</c> reference resolution
+    /// performed by the <see cref="IConfigurationRoot"/> built from the containing
     /// <see cref="IConfigurationBuilder"/>.
     /// </summary>
     /// <remarks>
-    /// Sources default to <see cref="ReferenceMode.Scan"/>. The reference-resolution engine is
-    /// attached to the built root unless every source has been explicitly set to a
-    /// non-<see cref="ReferenceMode.Scan"/> mode, in which case the built root behaves as a plain
-    /// <see cref="IConfigurationRoot"/> with no reference interpretation.
+    /// Sources default to <see cref="ReferenceMode.Read"/>: they are valid substitution targets
+    /// for other sources but their own values are not scanned for references. Mark at least one
+    /// source with <see cref="ReferenceMode.Scan"/> to activate the reference-resolution engine.
     /// </remarks>
     public static class ReferenceResolutionConfigurationBuilderExtensions
     {
@@ -24,7 +23,7 @@ namespace Microsoft.Extensions.Configuration
         // overrides. The value is a Dictionary<IConfigurationSource, ReferenceMode>
         // (reference-equality keys); at Build time it is correlated with the produced providers
         // so the engine can apply the correct mode per provider without wrapping them. Sources
-        // without an entry default to ReferenceMode.Scan.
+        // without an entry default to ReferenceMode.Read.
         internal const string SourceModesPropertyName = "Microsoft.Extensions.Configuration.ReferenceResolution.SourceModes";
 
         /// <summary>
@@ -153,11 +152,10 @@ namespace Microsoft.Extensions.Configuration
             return result;
         }
 
-        // Checks whether at least one source effectively participates as Scan. Since the default
-        // for sources without an explicit override is Scan, the engine attaches whenever any
-        // source is not explicitly set to a non-Scan mode. Used by the builder/manager to decide
-        // whether to attach the engine at Build time; when every source is explicitly Read/Ignore
-        // the feature is dormant and the root falls through to the normal provider walk.
+        // Checks whether at least one source is explicitly Scan. Sources without an override
+        // default to Read, which only makes them substitution targets for Scan sources — so
+        // the engine has no work unless at least one source opts into Scan. Used by the
+        // builder/manager to decide whether to attach the engine at Build time.
         internal static bool HasAnyScanSource(IDictionary<string, object> properties, IList<IConfigurationSource> sources)
         {
             if (sources.Count == 0)
@@ -168,24 +166,12 @@ namespace Microsoft.Extensions.Configuration
             Dictionary<IConfigurationSource, ReferenceMode>? overrides = TryGetSourceModes(properties);
             if (overrides is null || overrides.Count == 0)
             {
-                // No overrides — every source defaults to Scan.
-                return true;
+                return false;
             }
 
-            // If any override is Scan, obviously attach.
             foreach (ReferenceMode mode in overrides.Values)
             {
                 if (mode == ReferenceMode.Scan)
-                {
-                    return true;
-                }
-            }
-
-            // No explicit Scan. Attach only if at least one source is missing from the override
-            // map (and therefore defaults to Scan).
-            foreach (IConfigurationSource source in sources)
-            {
-                if (!overrides.ContainsKey(source))
                 {
                     return true;
                 }

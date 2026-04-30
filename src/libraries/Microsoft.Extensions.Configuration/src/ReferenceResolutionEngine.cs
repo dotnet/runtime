@@ -243,7 +243,7 @@ namespace Microsoft.Extensions.Configuration
                 {
                     _modes[i] = providerModes is not null && providerModes.TryGetValue(_providers[i], out ReferenceMode mode)
                         ? mode
-                        : ReferenceMode.Scan;
+                        : ReferenceMode.Read;
                 }
             }
 
