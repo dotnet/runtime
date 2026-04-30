@@ -395,8 +395,66 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         return hr;
     }
 
-    public int EnumerateAssembliesInAppDomain(ulong vmAppDomain, nint fpCallback, nint pUserData)
-        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.EnumerateAssembliesInAppDomain(vmAppDomain, fpCallback, pUserData) : HResults.E_NOTIMPL;
+    public int EnumerateAssembliesInAppDomain(ulong vmAppDomain, delegate* unmanaged<ulong, nint, void> fpCallback, nint pUserData)
+    {
+        int hr = HResults.S_OK;
+#if DEBUG
+        List<ulong>? cdacAssemblies = _legacy is not null ? new() : null;
+#endif
+        try
+        {
+            if (fpCallback == null)
+            {
+                throw new ArgumentNullException(nameof(fpCallback));
+            }
+
+            if (vmAppDomain == 0)
+            {
+                return hr;
+            }
+
+            Contracts.ILoader loader = _target.Contracts.Loader;
+            foreach (Contracts.ModuleHandle handle in loader.GetModuleHandles(
+                new TargetPointer(vmAppDomain),
+                AssemblyIterationFlags.IncludeLoading | AssemblyIterationFlags.IncludeLoaded | AssemblyIterationFlags.IncludeExecution))
+            {
+                TargetPointer assembly = loader.GetAssembly(handle);
+                fpCallback(assembly.Value, pUserData);
+#if DEBUG
+                cdacAssemblies?.Add(assembly.Value);
+#endif
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacy is not null && fpCallback != null)
+        {
+            List<ulong> dacAssemblies = new();
+            GCHandle dacHandle = GCHandle.Alloc(dacAssemblies);
+            try
+            {
+                int hrLocal = _legacy.EnumerateAssembliesInAppDomain(vmAppDomain, &CollectEnumerationCallback, GCHandle.ToIntPtr(dacHandle));
+                Debug.ValidateHResult(hr, hrLocal);
+                if (hr == HResults.S_OK)
+                {
+                    Debug.Assert(
+                        cdacAssemblies!.SequenceEqual(dacAssemblies),
+                        $"Assembly enumeration mismatch - "
+                        + $"cDAC: [{string.Join(",", cdacAssemblies!.Select(a => $"0x{a:x}"))}], "
+                        + $"DAC: [{string.Join(",", dacAssemblies.Select(a => $"0x{a:x}"))}]");
+                }
+            }
+            finally
+            {
+                dacHandle.Free();
+            }
+        }
+#endif
+        return hr;
+    }
 
     public int EnumerateModulesInAssembly(ulong vmAssembly, nint fpCallback, nint pUserData)
         => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.EnumerateModulesInAssembly(vmAssembly, fpCallback, pUserData) : HResults.E_NOTIMPL;
