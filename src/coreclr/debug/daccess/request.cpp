@@ -4065,11 +4065,11 @@ HRESULT ClrDataAccess::GetClrWatsonBucketsWorker(Thread * pThread, GenericModeBl
     PTR_VOID pBuckets = NULL;
 
     // Get the current throwable
-    OBJECTREF ohThrowable = pThread->GetExceptionState()->GetThrowable();
-    if (ohThrowable != NULL)
+    OBJECTREF oThrowable = pThread->GetExceptionState()->GetThrowable();
+    if (oThrowable != NULL)
     {
         // Does the throwable have buckets?
-        U1ARRAYREF refWatsonBucketArray = ((EXCEPTIONREF)ohThrowable)->GetWatsonBucketReference();
+        U1ARRAYREF refWatsonBucketArray = ((EXCEPTIONREF)oThrowable)->GetWatsonBucketReference();
         if (refWatsonBucketArray != NULL)
         {
             // Get the watson buckets from the throwable for non-preallocated

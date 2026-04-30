@@ -232,7 +232,7 @@ public:
         if (m_exception == NULL)
             return (OBJECTHANDLE)NULL;
 
-        return (OBJECTHANDLE)dac_cast<TADDR>(&m_exception);
+        return (OBJECTHANDLE)PTR_HOST_MEMBER_TADDR(ExInfo, this, m_exception);
     }
 
    inline BOOL DeliveredFirstChanceNotification()
