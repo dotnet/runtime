@@ -1380,6 +1380,26 @@ PAL_SetLogManagedCallstackForSignalCallback(
     g_logManagedCallstackForSignalCallback = callback;
 }
 
+/*++
+Function:
+  PAL_SetInProcCrashReportCallback
+
+Abstract:
+  Sets a callback that is invoked from the fatal-signal path to let the host
+  emit an in-proc crash report (used by Android CoreCLR in place of
+  out-of-proc createdump).
+
+  NOTE: Currently only one callback can be set at a time.
+--*/
+VOID
+PALAPI
+PAL_SetInProcCrashReportCallback(
+    IN PINPROCCRASHREPORT_CALLBACK callback)
+{
+    _ASSERTE(g_inProcCrashReportCallback == nullptr);
+    g_inProcCrashReportCallback = callback;
+}
+
 // Build the semaphore names using the PID and a value that can be used for distinguishing
 // between processes with the same PID (which ran at different times). This is to avoid
 // cases where a prior process with the same PID exited abnormally without having a chance
@@ -2797,15 +2817,6 @@ Parameters:
 
 (no return value)
 --*/
-VOID
-PALAPI
-PAL_SetInProcCrashReportCallback(
-    IN PINPROCCRASHREPORT_CALLBACK callback)
-{
-    _ASSERTE(g_inProcCrashReportCallback == nullptr);
-    g_inProcCrashReportCallback = callback;
-}
-
 VOID
 PROCCreateCrashDumpIfEnabled(int signal, siginfo_t* siginfo, void* context, bool serialize)
 {

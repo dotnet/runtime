@@ -619,6 +619,13 @@ CrashReportHelpers::ExpandDumpTemplate(
     }
 
     buffer[pos] = '\0';
+    if (*pattern != '\0')
+    {
+        // The output buffer filled before the full template was consumed.
+        // Fail rather than returning a truncated path that could collide or
+        // unexpectedly change the report location.
+        return 0;
+    }
     return pos;
 }
 
