@@ -2656,6 +2656,118 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
         Assert.True(!weakRef.IsAlive);
     }
 
+#if !ReflectionOnly && !XMLSERIALIZERGENERATORTESTS
+    // Tests for the "inverted" scenario: serializer is created from within a collectible ALC.
+    // This tests the ILGen path specifically; the reflection-based path already handles this.
+
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/34072", TestRuntimes.Mono)]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/95928", typeof(PlatformDetection), nameof(PlatformDetection.IsReadyToRunCompiled))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/124344", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile), nameof(PlatformDetection.IsCoreCLR))]
+    public static void Xml_SerializerCreatedInsideCollectibleALC()
+    {
+        // Inverted scenario: create XmlSerializer from within a collectible ALC context for a
+        // type that lives in that same collectible ALC. Verify the ALC can still be unloaded.
+        ExecuteAndUnloadWithContext("SerializableAssembly.dll", "SerializationTypes.SimpleType", out var weakRef);
+
+        for (int i = 0; weakRef.IsAlive && i < 10; i++)
+        {
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+        }
+        Assert.True(!weakRef.IsAlive);
+    }
+
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/34072", TestRuntimes.Mono)]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/95928", typeof(PlatformDetection), nameof(PlatformDetection.IsReadyToRunCompiled))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/124344", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile), nameof(PlatformDetection.IsCoreCLR))]
+    public static void Xml_FromTypesInsideCollectibleALC()
+    {
+        // Verify that XmlSerializer.FromTypes works when called from within a collectible ALC
+        // and that the ALC can be unloaded afterwards.
+        ExecuteAndUnloadFromTypes("SerializableAssembly.dll", "SerializationTypes.SimpleType", out var weakRef);
+
+        for (int i = 0; weakRef.IsAlive && i < 10; i++)
+        {
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+        }
+        Assert.True(!weakRef.IsAlive);
+    }
+
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/34072", TestRuntimes.Mono)]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/95928", typeof(PlatformDetection), nameof(PlatformDetection.IsReadyToRunCompiled))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/124344", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile), nameof(PlatformDetection.IsCoreCLR))]
+    public static void Xml_MultipleCollectibleALCsCanUnloadIndependently()
+    {
+        // Verify that multiple collectible ALCs each get their own cache partition and can
+        // unload independently without affecting each other.
+        ExecuteAndUnloadWithContext("SerializableAssembly.dll", "SerializationTypes.SimpleType", out var weakRef1);
+        ExecuteAndUnloadWithContext("SerializableAssembly.dll", "SerializationTypes.SimpleType", out var weakRef2);
+
+        for (int i = 0; (weakRef1.IsAlive || weakRef2.IsAlive) && i < 10; i++)
+        {
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+        }
+        Assert.True(!weakRef1.IsAlive);
+        Assert.True(!weakRef2.IsAlive);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static void ExecuteAndUnloadWithContext(string assemblyfile, string typename, out WeakReference wref)
+    {
+        var fullPath = Path.GetFullPath(assemblyfile);
+        var alc = new TestAssemblyLoadContext("XmlSerializerTests_Context", true, fullPath);
+        wref = new WeakReference(alc);
+
+        var asm = alc.LoadFromAssemblyPath(fullPath);
+        var type = asm.GetType(typename);
+        Assert.NotNull(type);
+        Assert.Equal(AssemblyLoadContext.GetLoadContext(type.Assembly), alc);
+
+        // Simulate code running within the collectible ALC (the "inverted" scenario)
+        using (alc.EnterContextualReflection())
+        {
+            XmlSerializer serializer = new XmlSerializer(type);
+            var obj = Activator.CreateInstance(type);
+            var rtobj = SerializeAndDeserialize(obj, null, () => serializer, true);
+            Assert.NotNull(rtobj);
+            Assert.True(rtobj.Equals(obj));
+        }
+
+        alc.Unload();
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static void ExecuteAndUnloadFromTypes(string assemblyfile, string typename, out WeakReference wref)
+    {
+        var fullPath = Path.GetFullPath(assemblyfile);
+        var alc = new TestAssemblyLoadContext("XmlSerializerTests_FromTypes", true, fullPath);
+        wref = new WeakReference(alc);
+
+        var asm = alc.LoadFromAssemblyPath(fullPath);
+        var type = asm.GetType(typename);
+        Assert.NotNull(type);
+
+        // Simulate code running within the collectible ALC using FromTypes
+        using (alc.EnterContextualReflection())
+        {
+            var serializers = XmlSerializer.FromTypes(new[] { type });
+            Assert.Single(serializers);
+            var obj = Activator.CreateInstance(type);
+            var rtobj = SerializeAndDeserialize(obj, null, () => serializers[0], true);
+            Assert.NotNull(rtobj);
+            Assert.True(rtobj.Equals(obj));
+        }
+
+        alc.Unload();
+    }
+#endif
+
+
     [Fact]
     public static void ValidateXElement()
     {

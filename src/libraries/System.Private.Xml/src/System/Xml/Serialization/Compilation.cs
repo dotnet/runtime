@@ -445,7 +445,57 @@ namespace System.Xml.Serialization
             TypeScope[] scopes = new TypeScope[scopeTable.Keys.Count];
             scopeTable.Keys.CopyTo(scopes, 0);
 
-            using (AssemblyLoadContext.EnterContextualReflection(mainAssembly))
+            // Capture the caller's ALC before EnterContextualReflection may overwrite it.
+            // This handles the "inverted" scenario where code runs within a collectible ALC
+            // and creates a serializer for a type that may appear to be in the default ALC.
+            AssemblyLoadContext? callerAlc = AssemblyLoadContext.CurrentContextualReflectionContext;
+
+            // Determine if any type involved requires a collectible dynamic assembly.
+            AssemblyLoadContext? collectibleAlc = null;
+
+            // Check the top-level types passed in
+            foreach (Type? t in types)
+            {
+                if (t == null) continue;
+                AssemblyLoadContext? alc = AssemblyLoadContext.GetLoadContext(t.Assembly);
+                if (alc?.IsCollectible == true)
+                {
+                    collectibleAlc = alc;
+                    break;
+                }
+            }
+
+            // Check all types discovered in the type scopes (e.g. generic type arguments,
+            // property types) so that types like List<CollectibleType> are handled correctly.
+            if (collectibleAlc == null)
+            {
+                foreach (TypeScope scope in scopes)
+                {
+                    foreach (Type scopeType in scope.Types)
+                    {
+                        AssemblyLoadContext? alc = AssemblyLoadContext.GetLoadContext(scopeType.Assembly);
+                        if (alc?.IsCollectible == true)
+                        {
+                            collectibleAlc = alc;
+                            break;
+                        }
+                    }
+                    if (collectibleAlc != null) break;
+                }
+            }
+
+            // If no collectible types were found in the type graph, fall back to the caller's ALC.
+            // This handles the "inverted" scenario where all serialized types are in the default ALC
+            // but the serializer is being created from within a collectible ALC.
+            if (collectibleAlc == null && callerAlc?.IsCollectible == true)
+                collectibleAlc = callerAlc;
+
+            // Enter contextual reflection using the effective ALC. For the inverted scenario the
+            // collectible ALC must be used (not mainAssembly which may be in the default ALC) so
+            // that DefineDynamicAssembly correctly places the generated assembly in the right ALC.
+            using (collectibleAlc != null
+                ? collectibleAlc.EnterContextualReflection()
+                : AssemblyLoadContext.EnterContextualReflection(mainAssembly))
             {
                 // Before generating any IL, check each mapping and supported type to make sure
                 // they are compatible with the current ALC
@@ -455,7 +505,10 @@ namespace System.Xml.Serialization
                     VerifyLoadContext(mapping.Accessor.Mapping?.TypeDesc?.Type, mainAssembly);
 
                 string assemblyName = "Microsoft.GeneratedCode";
-                AssemblyBuilder assemblyBuilder = CodeGenerator.CreateAssemblyBuilder(assemblyName);
+                // Create a collectible assembly when the effective context is a collectible ALC so
+                // that the generated assembly can reference collectible types and will itself be
+                // collected when the ALC is unloaded.
+                AssemblyBuilder assemblyBuilder = CodeGenerator.CreateAssemblyBuilder(assemblyName, collectible: collectibleAlc != null);
                 // Add AssemblyVersion attribute to match parent assembly version
                 if (mainType != null)
                 {
@@ -597,9 +650,12 @@ namespace System.Xml.Serialization
             if (typeALC == null || !typeALC.IsCollectible)
                 return;
 
-            // Collectible types should be in the same collectible context
+            // Collectible types should be in the same collectible context.
+            // Also check CurrentContextualReflectionContext to allow the "inverted" scenario where
+            // the serializer is created from within a collectible ALC for a type whose assembly
+            // is in the default ALC (e.g. List<CollectibleType>).
             var baseALC = AssemblyLoadContext.GetLoadContext(assembly) ?? AssemblyLoadContext.CurrentContextualReflectionContext;
-            if (typeALC != baseALC)
+            if (typeALC != baseALC && typeALC != AssemblyLoadContext.CurrentContextualReflectionContext)
                 throw new InvalidOperationException(SR.Format(SR.XmlTypeInBadLoadContext, t.FullName));
         }
 
@@ -692,6 +748,30 @@ namespace System.Xml.Serialization
         private readonly ConditionalWeakTable<Assembly, Dictionary<TempAssemblyCacheKey, TempAssembly>> _collectibleCaches = new ConditionalWeakTable<Assembly, Dictionary<TempAssemblyCacheKey, TempAssembly>>();
         private Dictionary<TempAssemblyCacheKey, TempAssembly> _fastCache = new Dictionary<TempAssemblyCacheKey, TempAssembly>();
 
+        // Returns the assembly to use as the ConditionalWeakTable key for a given type.
+        //
+        // When the type's assembly is collectible, it is used directly (original behavior).
+        // For the "inverted" scenario where the type appears to be in the default ALC (e.g.
+        // List<CollectibleType>) but the caller is executing within a collectible ALC, we use the
+        // first assembly from the caller's ALC as the weak key. This ensures the cache entry is
+        // GC'd when the caller's ALC is unloaded without creating a circular dependency between
+        // the ALC lifecycle and the cache entry.
+        private static Assembly? GetCollectibleKeyAssembly(Type t)
+        {
+            AssemblyLoadContext? alc = AssemblyLoadContext.GetLoadContext(t.Assembly);
+            if (alc?.IsCollectible == true)
+                return t.Assembly;
+
+            AssemblyLoadContext? currentAlc = AssemblyLoadContext.CurrentContextualReflectionContext;
+            if (currentAlc?.IsCollectible == true)
+            {
+                foreach (Assembly a in currentAlc.Assemblies)
+                    return a;
+            }
+
+            return null;
+        }
+
         internal TempAssembly? this[string? ns, Type t]
         {
             get
@@ -702,7 +782,8 @@ namespace System.Xml.Serialization
                 if (_fastCache.TryGetValue(key, out tempAssembly))
                     return tempAssembly;
 
-                if (_collectibleCaches.TryGetValue(t.Assembly, out var cCache))
+                Assembly? keyAssembly = GetCollectibleKeyAssembly(t);
+                if (keyAssembly != null && _collectibleCaches.TryGetValue(keyAssembly, out var cCache))
                     cCache.TryGetValue(key, out tempAssembly);
 
                 return tempAssembly;
@@ -717,17 +798,17 @@ namespace System.Xml.Serialization
                 if (tempAssembly == assembly)
                     return;
 
-                AssemblyLoadContext? alc = AssemblyLoadContext.GetLoadContext(t.Assembly);
+                Assembly? keyAssembly = GetCollectibleKeyAssembly(t);
                 TempAssemblyCacheKey key = new TempAssemblyCacheKey(ns, t);
                 Dictionary<TempAssemblyCacheKey, TempAssembly>? cache;
 
-                if (alc != null && alc.IsCollectible)
+                if (keyAssembly != null)
                 {
-                    cache = _collectibleCaches.TryGetValue(t.Assembly, out var c)   // Clone or create
+                    cache = _collectibleCaches.TryGetValue(keyAssembly, out var c)   // Clone or create
                         ? new Dictionary<TempAssemblyCacheKey, TempAssembly>(c)
                         : new Dictionary<TempAssemblyCacheKey, TempAssembly>();
                     cache[key] = assembly;
-                    _collectibleCaches.AddOrUpdate(t.Assembly, cache);
+                    _collectibleCaches.AddOrUpdate(keyAssembly, cache);
                 }
                 else
                 {

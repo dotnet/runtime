@@ -1276,12 +1276,16 @@ namespace System.Xml.Serialization
         }
 
         [RequiresDynamicCode(XmlSerializer.AotSerializationWarning)]
-        internal static AssemblyBuilder CreateAssemblyBuilder(string name)
+        internal static AssemblyBuilder CreateAssemblyBuilder(string name, bool collectible = false)
         {
             AssemblyName assemblyName = new AssemblyName();
             assemblyName.Name = name;
             assemblyName.Version = new Version(1, 0, 0, 0);
-            return AssemblyBuilder.DefineDynamicAssembly(assemblyName, AssemblyBuilderAccess.Run);
+            // Use RunAndCollect when creating a collectible assembly (e.g. for types in a collectible ALC).
+            // The CurrentContextualReflectionContext must already be set to the target collectible ALC
+            // before calling this method, so that DefineDynamicAssembly places the assembly there.
+            return AssemblyBuilder.DefineDynamicAssembly(assemblyName,
+                collectible ? AssemblyBuilderAccess.RunAndCollect : AssemblyBuilderAccess.Run);
         }
 
         internal static ModuleBuilder CreateModuleBuilder(AssemblyBuilder assemblyBuilder, string name)
