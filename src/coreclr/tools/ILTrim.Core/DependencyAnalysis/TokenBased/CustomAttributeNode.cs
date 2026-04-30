@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Reflection.Metadata;
+using System.Reflection.Metadata.Ecma335;
 using System.Text;
 
 using Internal.TypeSystem;
@@ -227,17 +228,16 @@ namespace ILCompiler.DependencyAnalysis
             // Resolve type name strings in the blob to their definitions.
             // Trimming may drop type forwarders, so we re-encode type names
             // to point to the assembly where the type is actually defined.
-            byte[] valueBlob = RewriteCustomAttributeBlob(customAttribute);
+            BlobBuilder blobBuilder = writeContext.GetSharedBlobBuilder();
+            RewriteCustomAttributeBlob(customAttribute, blobBuilder);
 
             return builder.AddCustomAttribute(writeContext.TokenMap.MapToken(customAttribute.Parent),
                 writeContext.TokenMap.MapToken(customAttribute.Constructor),
-                builder.GetOrAddBlob(valueBlob));
+                builder.GetOrAddBlob(blobBuilder));
         }
 
-        private byte[] RewriteCustomAttributeBlob(CustomAttribute customAttribute)
+        private void RewriteCustomAttributeBlob(CustomAttribute customAttribute, BlobBuilder blobBuilder)
         {
-            byte[] originalBlob = _module.MetadataReader.GetBlobBytes(customAttribute.Value);
-
             CustomAttributeValue<TypeDesc> decodedValue;
             try
             {
@@ -245,53 +245,49 @@ namespace ILCompiler.DependencyAnalysis
             }
             catch (TypeSystemException)
             {
-                return originalBlob;
+                blobBuilder.WriteBytes(_module.MetadataReader.GetBlobBytes(customAttribute.Value));
+                return;
             }
             catch (BadImageFormatException)
             {
-                return originalBlob;
+                blobBuilder.WriteBytes(_module.MetadataReader.GetBlobBytes(customAttribute.Value));
+                return;
             }
 
-            // Check if any type name string needs rewriting
-            var formatter = new CustomAttributeTypeNameFormatter();
             bool needsRewrite = false;
-
-            CheckArgumentsForRewrite(decodedValue, formatter, originalBlob, ref needsRewrite);
+            CheckArgumentsForRewrite(decodedValue, ref needsRewrite);
 
             if (!needsRewrite)
-                return originalBlob;
+            {
+                blobBuilder.WriteBytes(_module.MetadataReader.GetBlobBytes(customAttribute.Value));
+                return;
+            }
 
-            // Re-encode the entire blob
-            return EncodeCustomAttributeBlob(customAttribute, decodedValue, formatter);
+            EncodeCustomAttributeBlob(customAttribute, decodedValue, blobBuilder);
         }
 
-        private void CheckArgumentsForRewrite(
-            CustomAttributeValue<TypeDesc> decodedValue,
-            CustomAttributeTypeNameFormatter formatter,
-            byte[] originalBlob,
-            ref bool needsRewrite)
+        private static void CheckArgumentsForRewrite(CustomAttributeValue<TypeDesc> decodedValue, ref bool needsRewrite)
         {
             foreach (CustomAttributeTypedArgument<TypeDesc> fixedArg in decodedValue.FixedArguments)
             {
-                CheckArgumentValueForRewrite(fixedArg.Type, fixedArg.Value, formatter, ref needsRewrite);
+                CheckArgumentValueForRewrite(fixedArg.Type, fixedArg.Value, ref needsRewrite);
                 if (needsRewrite) return;
             }
 
             foreach (CustomAttributeNamedArgument<TypeDesc> namedArg in decodedValue.NamedArguments)
             {
-                CheckArgumentValueForRewrite(namedArg.Type, namedArg.Value, formatter, ref needsRewrite);
+                CheckArgumentValueForRewrite(namedArg.Type, namedArg.Value, ref needsRewrite);
                 if (needsRewrite) return;
             }
         }
 
-        private void CheckArgumentValueForRewrite(TypeDesc type, object value, CustomAttributeTypeNameFormatter formatter, ref bool needsRewrite)
+        private static void CheckArgumentValueForRewrite(TypeDesc type, object value, ref bool needsRewrite)
         {
             if (value is null || type is null)
                 return;
 
-            if (value is TypeDesc typeofType)
+            if (value is TypeDesc)
             {
-                // Check if the formatted name differs from what was originally stored
                 // Any typeof() with a type forwarder reference might need rewriting
                 needsRewrite = true;
                 return;
@@ -304,24 +300,18 @@ namespace ILCompiler.DependencyAnalysis
                 {
                     foreach (CustomAttributeTypedArgument<TypeDesc> element in arrayElements)
                     {
-                        CheckArgumentValueForRewrite(element.Type, element.Value, formatter, ref needsRewrite);
+                        CheckArgumentValueForRewrite(element.Type, element.Value, ref needsRewrite);
                         if (needsRewrite) return;
                     }
                 }
             }
         }
 
-        private byte[] EncodeCustomAttributeBlob(
+        private void EncodeCustomAttributeBlob(
             CustomAttribute customAttribute,
             CustomAttributeValue<TypeDesc> decodedValue,
-            CustomAttributeTypeNameFormatter formatter)
+            BlobBuilder blobBuilder)
         {
-            var blobBuilder = new BlobBuilder();
-
-            // Prolog (0x0001)
-            blobBuilder.WriteUInt16(1);
-
-            // Resolve the constructor to get parameter types
             MethodDesc constructor;
             try
             {
@@ -329,226 +319,172 @@ namespace ILCompiler.DependencyAnalysis
             }
             catch (TypeSystemException)
             {
-                return _module.MetadataReader.GetBlobBytes(customAttribute.Value);
+                blobBuilder.WriteBytes(_module.MetadataReader.GetBlobBytes(customAttribute.Value));
+                return;
             }
+
+            var formatter = new CustomAttributeTypeNameFormatter();
+            var encoder = new BlobEncoder(blobBuilder);
+            encoder.CustomAttributeSignature(out FixedArgumentsEncoder fixedArgs, out CustomAttributeNamedArgumentsEncoder namedArgs);
 
             // Write fixed arguments
             MethodSignature constructorSig = constructor.Signature;
             for (int i = 0; i < decodedValue.FixedArguments.Length; i++)
             {
                 TypeDesc paramType = constructorSig[i];
-                WriteArgumentValue(blobBuilder, paramType, decodedValue.FixedArguments[i].Type, decodedValue.FixedArguments[i].Value, formatter);
+                WriteLiteralValue(fixedArgs.AddArgument(), paramType, decodedValue.FixedArguments[i].Type, decodedValue.FixedArguments[i].Value, formatter);
             }
-
-            // NumNamed
-            blobBuilder.WriteUInt16((ushort)decodedValue.NamedArguments.Length);
 
             // Write named arguments
+            NamedArgumentsEncoder namedArgsEncoder = namedArgs.Count(decodedValue.NamedArguments.Length);
             foreach (CustomAttributeNamedArgument<TypeDesc> namedArg in decodedValue.NamedArguments)
             {
-                // Field or property
-                blobBuilder.WriteByte(namedArg.Kind == CustomAttributeNamedArgumentKind.Field ? (byte)0x53 : (byte)0x54);
+                namedArgsEncoder.AddArgument(
+                    namedArg.Kind == CustomAttributeNamedArgumentKind.Field,
+                    out NamedArgumentTypeEncoder type,
+                    out NameEncoder name,
+                    out LiteralEncoder literal);
 
-                // Field/property type
-                WriteFieldOrPropType(blobBuilder, namedArg.Type, formatter);
-
-                // Name as SerString
-                WriteSerString(blobBuilder, namedArg.Name);
-
-                // Value
-                WriteArgumentValue(blobBuilder, namedArg.Type, namedArg.Type, namedArg.Value, formatter);
+                EncodeNamedArgumentType(type, namedArg.Type, formatter);
+                name.Name(namedArg.Name);
+                WriteLiteralValue(literal, namedArg.Type, namedArg.Type, namedArg.Value, formatter);
             }
-
-            return blobBuilder.ToArray();
         }
 
-        private static void WriteFieldOrPropType(BlobBuilder builder, TypeDesc type, CustomAttributeTypeNameFormatter formatter)
+        private static void EncodeNamedArgumentType(NamedArgumentTypeEncoder type, TypeDesc argType, CustomAttributeTypeNameFormatter formatter)
         {
-            if (type is null)
-                return;
-
-            // ECMA-335 II.23.3 - FieldOrPropType encoding
-            if (type.IsEnum)
+            if (argType.IsObject)
             {
-                builder.WriteByte(0x55); // ELEMENT_TYPE_ENUM
-                WriteSerString(builder, formatter.FormatName(type, true));
+                type.Object();
                 return;
             }
 
-            if (type.IsSzArray)
+            if (argType.IsSzArray)
             {
-                builder.WriteByte(0x1D); // ELEMENT_TYPE_SZARRAY
-                WriteFieldOrPropType(builder, ((ArrayType)type).ElementType, formatter);
+                TypeDesc elementType = ((ArrayType)argType).ElementType;
+                if (elementType.IsObject)
+                {
+                    type.SZArray().ObjectArray();
+                }
+                else
+                {
+                    EncodeElementType(type.SZArray().ElementType(), elementType, formatter);
+                }
+                return;
+            }
+
+            EncodeElementType(type.ScalarType(), argType, formatter);
+        }
+
+        private static void EncodeElementType(CustomAttributeElementTypeEncoder encoder, TypeDesc type, CustomAttributeTypeNameFormatter formatter)
+        {
+            if (type.IsEnum)
+            {
+                encoder.Enum(formatter.FormatName(type, true));
+                return;
+            }
+
+            if (IsSystemType(type))
+            {
+                encoder.SystemType();
                 return;
             }
 
             switch (type.UnderlyingType.Category)
             {
-                case TypeFlags.Boolean: builder.WriteByte(0x02); break;
-                case TypeFlags.Char: builder.WriteByte(0x03); break;
-                case TypeFlags.SByte: builder.WriteByte(0x04); break;
-                case TypeFlags.Byte: builder.WriteByte(0x05); break;
-                case TypeFlags.Int16: builder.WriteByte(0x06); break;
-                case TypeFlags.UInt16: builder.WriteByte(0x07); break;
-                case TypeFlags.Int32: builder.WriteByte(0x08); break;
-                case TypeFlags.UInt32: builder.WriteByte(0x09); break;
-                case TypeFlags.Int64: builder.WriteByte(0x0A); break;
-                case TypeFlags.UInt64: builder.WriteByte(0x0B); break;
-                case TypeFlags.Single: builder.WriteByte(0x0C); break;
-                case TypeFlags.Double: builder.WriteByte(0x0D); break;
+                case TypeFlags.Boolean: encoder.Boolean(); break;
+                case TypeFlags.Char: encoder.Char(); break;
+                case TypeFlags.SByte: encoder.SByte(); break;
+                case TypeFlags.Byte: encoder.Byte(); break;
+                case TypeFlags.Int16: encoder.Int16(); break;
+                case TypeFlags.UInt16: encoder.UInt16(); break;
+                case TypeFlags.Int32: encoder.Int32(); break;
+                case TypeFlags.UInt32: encoder.UInt32(); break;
+                case TypeFlags.Int64: encoder.Int64(); break;
+                case TypeFlags.UInt64: encoder.UInt64(); break;
+                case TypeFlags.Single: encoder.Single(); break;
+                case TypeFlags.Double: encoder.Double(); break;
                 default:
                     if (type.IsString)
-                    {
-                        builder.WriteByte(0x0E); // ELEMENT_TYPE_STRING
-                    }
-                    else if (IsSystemType(type))
-                    {
-                        builder.WriteByte(0x50); // TYPE
-                    }
-                    else if (type.IsObject)
-                    {
-                        builder.WriteByte(0x51); // TAGGED_OBJECT / boxed
-                    }
+                        encoder.String();
                     break;
             }
         }
 
-        private void WriteArgumentValue(BlobBuilder builder, TypeDesc declaredType, TypeDesc actualType, object value, CustomAttributeTypeNameFormatter formatter)
+        private void WriteLiteralValue(LiteralEncoder literal, TypeDesc declaredType, TypeDesc actualType, object value, CustomAttributeTypeNameFormatter formatter)
         {
             if (declaredType is null)
                 return;
 
-            // Boxed (object-typed) arguments: write field/prop type tag then the value
+            // Boxed (object-typed) arguments: write type tag then the value
             if (declaredType.IsObject)
             {
-                WriteBoxedArgumentValue(builder, actualType, value, formatter);
-                return;
-            }
-
-            if (value is null)
-            {
-                if (declaredType.IsString)
+                if (value is null)
                 {
-                    // Null string
-                    builder.WriteByte(0xFF);
+                    literal.TaggedScalar(out CustomAttributeElementTypeEncoder type, out ScalarEncoder scalar);
+                    type.String();
+                    scalar.Constant(null);
                     return;
                 }
 
-                if (IsSystemType(declaredType))
+                if (actualType is not null && actualType.IsSzArray)
                 {
-                    // Null type
-                    builder.WriteByte(0xFF);
+                    literal.TaggedVector(out CustomAttributeArrayTypeEncoder arrayType, out VectorEncoder vector);
+                    TypeDesc elementType = ((ArrayType)actualType).ElementType;
+                    if (elementType.IsObject)
+                        arrayType.ObjectArray();
+                    else
+                        EncodeElementType(arrayType.ElementType(), elementType, formatter);
+                    WriteVectorElements(vector, elementType, value, formatter);
                     return;
                 }
 
-                if (declaredType.IsSzArray)
-                {
-                    // Null array = 0xFFFFFFFF
-                    builder.WriteUInt32(0xFFFFFFFF);
-                    return;
-                }
-            }
-
-            // Enum values
-            if (declaredType.IsEnum)
-            {
-                WritePrimitiveValue(builder, declaredType.UnderlyingType, value);
+                literal.TaggedScalar(out CustomAttributeElementTypeEncoder typeEncoder, out ScalarEncoder scalarEncoder);
+                EncodeElementType(typeEncoder, actualType, formatter);
+                WriteScalarValue(scalarEncoder, actualType, value, formatter);
                 return;
             }
 
-            // Primitive types
-            if (declaredType.UnderlyingType.IsPrimitive)
-            {
-                WritePrimitiveValue(builder, declaredType, value);
-                return;
-            }
-
-            // String
-            if (declaredType.IsString)
-            {
-                WriteSerString(builder, (string)value);
-                return;
-            }
-
-            // System.Type (typeof)
-            if (IsSystemType(declaredType))
-            {
-                if (value is TypeDesc typeofType)
-                {
-                    string typeName = formatter.FormatName(typeofType, true);
-                    WriteSerString(builder, typeName);
-                }
-                else
-                {
-                    builder.WriteByte(0xFF);
-                }
-                return;
-            }
-
-            // SZArray
+            // Array arguments
             if (declaredType.IsSzArray)
             {
-                if (value is ImmutableArray<CustomAttributeTypedArgument<TypeDesc>> arrayElements)
+                if (value is null)
                 {
-                    builder.WriteUInt32((uint)arrayElements.Length);
-                    TypeDesc elementType = ((ArrayType)declaredType).ElementType;
-                    foreach (CustomAttributeTypedArgument<TypeDesc> element in arrayElements)
-                    {
-                        WriteArgumentValue(builder, elementType, element.Type, element.Value, formatter);
-                    }
+                    literal.Scalar().NullArray();
+                    return;
                 }
-                else
+
+                TypeDesc elementType = ((ArrayType)declaredType).ElementType;
+                WriteVectorElements(literal.Vector(), elementType, value, formatter);
+                return;
+            }
+
+            // Scalar value (primitive, enum, string, Type)
+            WriteScalarValue(literal.Scalar(), declaredType, value, formatter);
+        }
+
+        private void WriteVectorElements(VectorEncoder vector, TypeDesc elementType, object value, CustomAttributeTypeNameFormatter formatter)
+        {
+            if (value is ImmutableArray<CustomAttributeTypedArgument<TypeDesc>> arrayElements)
+            {
+                LiteralsEncoder literals = vector.Count(arrayElements.Length);
+                foreach (CustomAttributeTypedArgument<TypeDesc> element in arrayElements)
                 {
-                    builder.WriteUInt32(0xFFFFFFFF);
+                    WriteLiteralValue(literals.AddLiteral(), elementType, element.Type, element.Value, formatter);
                 }
-                return;
             }
         }
 
-        private void WriteBoxedArgumentValue(BlobBuilder builder, TypeDesc actualType, object value, CustomAttributeTypeNameFormatter formatter)
+        private static void WriteScalarValue(ScalarEncoder scalar, TypeDesc type, object value, CustomAttributeTypeNameFormatter formatter)
         {
-            if (actualType is null || value is null)
+            if (IsSystemType(type))
             {
-                // Null boxed value - this should not normally happen but handle gracefully
-                builder.WriteByte(0x0E); // string type tag
-                builder.WriteByte(0xFF); // null
+                scalar.SystemType(value is TypeDesc typeofType ? formatter.FormatName(typeofType, true) : null);
                 return;
             }
 
-            WriteFieldOrPropType(builder, actualType, formatter);
-            WriteArgumentValue(builder, actualType, actualType, value, formatter);
-        }
-
-        private static void WritePrimitiveValue(BlobBuilder builder, TypeDesc type, object value)
-        {
-            switch (type.Category)
-            {
-                case TypeFlags.Boolean: builder.WriteBoolean((bool)value); break;
-                case TypeFlags.Char: builder.WriteUInt16((ushort)(char)value); break;
-                case TypeFlags.SByte: builder.WriteSByte((sbyte)value); break;
-                case TypeFlags.Byte: builder.WriteByte((byte)value); break;
-                case TypeFlags.Int16: builder.WriteInt16((short)value); break;
-                case TypeFlags.UInt16: builder.WriteUInt16((ushort)value); break;
-                case TypeFlags.Int32: builder.WriteInt32((int)value); break;
-                case TypeFlags.UInt32: builder.WriteUInt32((uint)value); break;
-                case TypeFlags.Int64: builder.WriteInt64((long)value); break;
-                case TypeFlags.UInt64: builder.WriteUInt64((ulong)value); break;
-                case TypeFlags.Single: builder.WriteSingle((float)value); break;
-                case TypeFlags.Double: builder.WriteDouble((double)value); break;
-            }
-        }
-
-        private static void WriteSerString(BlobBuilder builder, string value)
-        {
-            if (value is null)
-            {
-                builder.WriteByte(0xFF);
-                return;
-            }
-
-            byte[] bytes = Encoding.UTF8.GetBytes(value);
-            builder.WriteCompressedInteger(bytes.Length);
-            builder.WriteBytes(bytes);
+            // Primitives, enums (underlying value), strings, null
+            scalar.Constant(value);
         }
 
         private static bool IsSystemType(TypeDesc type)
