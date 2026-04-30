@@ -23,8 +23,9 @@
 #ifdef FEATURE_AUTO_TRACE
 #ifdef TARGET_UNIX
 #include "pal.h"
+#include <stdlib.h>
+#include <unistd.h>
 #endif // TARGET_UNIX
-#include <minipal/process.h>
 
 HANDLE auto_trace_event;
 static size_t g_n_tracers = 1;
@@ -77,7 +78,41 @@ void auto_trace_init()
 
 void auto_trace_launch_internal()
 {
-    minipal_create_process_w((const CHAR16_T*)command, nullptr, false, nullptr);
+#ifdef TARGET_UNIX
+    MAKE_UTF8PTR_FROMWIDE(commandUtf8, command);
+    if (commandUtf8 == nullptr)
+    {
+        return;
+    }
+
+    pid_t pid = fork();
+    if (pid == 0)
+    {
+        execl("/bin/sh", "sh", "-c", commandUtf8, (char*)nullptr);
+        _exit(EXIT_FAILURE);
+    }
+#else
+    STARTUPINFO si;
+    ZeroMemory(&si, sizeof(si));
+    si.cb = sizeof(STARTUPINFO);
+    si.dwFlags = STARTF_USESHOWWINDOW;
+    si.wShowWindow = SW_HIDE;
+
+    PROCESS_INFORMATION result;
+
+    BOOL code = CreateProcessW(
+        /* lpApplicationName    = */ nullptr,
+        /* lpCommandLine        = */ command,
+        /* lpCommandLine        = */ nullptr,
+        /* lpThreadAttributes   = */ nullptr,
+        /* bInheritHandles      = */ false,
+        /* dwCreationFlags      = */ CREATE_NEW_CONSOLE,
+        /* lpEnvironment        = */ nullptr,
+        /* lpCurrentDirectory   = */ nullptr,
+        /* lpStartupInfo        = */ &si,
+        /* lpProcessInformation = */ &result
+    );
+#endif
 }
 
 void auto_trace_launch()

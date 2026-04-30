@@ -27,6 +27,98 @@ WszCreateProcess(
     LPPROCESS_INFORMATION lpProcessInformation
     )
 {
+#ifdef HOST_UNIX
+    (void)lpApplicationName;
+    (void)lpProcessAttributes;
+    (void)lpThreadAttributes;
+    (void)dwCreationFlags;
+    (void)lpEnvironment;
+    (void)lpStartupInfo;
+
+    if (lpCommandLine == NULL)
+    {
+        SetLastError(ERROR_INVALID_PARAMETER);
+        return FALSE;
+    }
+
+    int commandLineLength = WideCharToMultiByte(CP_UTF8, 0, lpCommandLine, -1, NULL, 0, NULL, NULL);
+    if (commandLineLength == 0)
+    {
+        SetLastError(ERROR_INVALID_PARAMETER);
+        return FALSE;
+    }
+
+    NewArrayHolder<char> commandLineUtf8 = new (nothrow) char[commandLineLength];
+    if (commandLineUtf8 == NULL)
+    {
+        SetLastError(ERROR_OUTOFMEMORY);
+        return FALSE;
+    }
+
+    if (WideCharToMultiByte(CP_UTF8, 0, lpCommandLine, -1, commandLineUtf8, commandLineLength, NULL, NULL) == 0)
+    {
+        SetLastError(ERROR_INVALID_PARAMETER);
+        return FALSE;
+    }
+
+    NewArrayHolder<char> currentDirectoryUtf8;
+    if (lpCurrentDirectory != NULL)
+    {
+        int currentDirectoryLength = WideCharToMultiByte(CP_UTF8, 0, lpCurrentDirectory, -1, NULL, 0, NULL, NULL);
+        if (currentDirectoryLength == 0)
+        {
+            SetLastError(ERROR_INVALID_PARAMETER);
+            return FALSE;
+        }
+
+        currentDirectoryUtf8 = new (nothrow) char[currentDirectoryLength];
+        if (currentDirectoryUtf8 == NULL)
+        {
+            SetLastError(ERROR_OUTOFMEMORY);
+            return FALSE;
+        }
+
+        if (WideCharToMultiByte(CP_UTF8, 0, lpCurrentDirectory, -1, currentDirectoryUtf8, currentDirectoryLength, NULL, NULL) == 0)
+        {
+            SetLastError(ERROR_INVALID_PARAMETER);
+            return FALSE;
+        }
+    }
+
+    pid_t pid = fork();
+    if (pid < 0)
+    {
+        SetLastError(ERROR_INTERNAL_ERROR);
+        return FALSE;
+    }
+
+    if (pid == 0)
+    {
+        if (currentDirectoryUtf8 != NULL && chdir(currentDirectoryUtf8) != 0)
+        {
+            _exit(127);
+        }
+
+        execl("/bin/sh", "sh", "-c", commandLineUtf8.GetValue(), (char*)NULL);
+        _exit(127);
+    }
+
+    if (lpProcessInformation != NULL)
+    {
+        HANDLE processHandle = OpenProcess(PROCESS_ALL_ACCESS, bInheritHandles, static_cast<DWORD>(pid));
+        if (processHandle == NULL)
+        {
+            return FALSE;
+        }
+
+        lpProcessInformation->hProcess = processHandle;
+        lpProcessInformation->hThread = NULL;
+        lpProcessInformation->dwProcessId = static_cast<DWORD>(pid);
+        lpProcessInformation->dwThreadId_PAL_Undefined = 0;
+    }
+
+    return TRUE;
+#else
     BOOL fResult;
     DWORD err;
     {
@@ -58,6 +150,7 @@ WszCreateProcess(
 
     SetLastError(err);
     return fResult;
+#endif
 }
 
 #ifndef HOST_UNIX
