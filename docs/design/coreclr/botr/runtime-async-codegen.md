@@ -61,7 +61,7 @@ When encountered, triggers the function to suspend immediately, and return the p
 
 # Accessing known continuation fields
 
-The continuation flags encodes how to access several well-known fields if they are present in the continuation.
+The continuation flags encode how to access several well-known fields if they are present in the continuation.
 - The execution context
 - The continuation context
 - The exception object
