@@ -76,7 +76,7 @@ This contract depends on the following descriptors:
 | `ReadyToRunInfo` | `NumImportSections` | Count of import sections in the array |
 | `FuncEvalFrame` | `DebuggerEvalPtr` | Pointer to the Frame's DebuggerEval object |
 | `DebuggerEval` | `TargetContext` | Context saved inside DebuggerEval |
-| `DebuggerEval` | `EvalDuringException` | Flag used in processing FuncEvalFrame |
+| `DebuggerEval` | `EvalUsesHijack` | Flag used in processing FuncEvalFrame |
 | `ResumableFrame` | `TargetContextPtr` | Pointer to the Frame's Target Context |
 | `FaultingExceptionFrame` | `TargetContext` | Frame's Target Context |
 | `HijackFrame` | `ReturnAddress` | Frame's stored instruction pointer |
@@ -322,7 +322,7 @@ The following Frame types also use this mechanism:
 
 FuncEvalFrames hold a pointer to a `DebuggerEval`. The DebuggerEval holds a full context which is completely copied over to the working context when updating.
 
-**Return Address**: Returns null during exception evaluation (`EvalDuringException`). Otherwise, read from `TransitionBlock.ReturnAddress` like other TransitionFrame types.
+**Return Address**: Returns null when using hijack evaluation (`EvalUsesHijack`). Otherwise, read from `TransitionBlock.ReturnAddress` like other TransitionFrame types.
 
 #### ResumableFrame
 
