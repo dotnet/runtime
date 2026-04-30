@@ -1056,6 +1056,12 @@ void GCHeap::Promote(Object** ppObject, ScanContext* sc, uint32_t flags)
 
     if (!gc_heap::is_in_find_object_range (o))
     {
+#ifdef _DEBUG
+        if ((o != NULL) && !(flags & GC_CALL_INTERIOR))
+        {
+            ((CObjectHeader*)o)->Validate();
+        }
+#endif
         return;
     }
 
