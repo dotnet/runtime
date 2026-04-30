@@ -59,9 +59,6 @@
     <_PrebuiltNativeAOTLib>$(OriginalPublishDir)lib$(AssemblyName).a</_PrebuiltNativeAOTLib>
     <_AotCompileTargetName>_StageNativeAotLinkInputsOnHelix</_AotCompileTargetName>
     <SkipIlcCompile>true</SkipIlcCompile>
-    <!-- AppleBuildDependsOn baked $(_AotCompileTargetName) at import time, so the
-         override above doesn't reach the chain. Replace _AppleNativeAotCompile
-         (which would pull in IlcCompile) with our staging target. -->
     <AppleBuildDependsOn>$(AppleBuildDependsOn.Replace('_AppleNativeAotCompile', '_StageNativeAotLinkInputsOnHelix'))</AppleBuildDependsOn>
   </PropertyGroup>
 
