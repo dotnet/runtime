@@ -24637,7 +24637,7 @@ GenTree* Compiler::gtNewSimdCreateSequenceNode(
 #if defined(TARGET_ARM64)
     if (type == TYP_SIMD)
     {
-        // Only optimizatize when both op1 and op2 are constant
+        // Only optimize when both op1 and op2 are constant
         if (op1->OperIsConst() && op2->OperIsConst())
         {
             GenTreeVecCon* scalableVecCon = gtNewSimdVconNode(type, simdBaseType, SimdScalableSequence, 0);
@@ -35780,7 +35780,7 @@ bool GenTree::IsTrueMask(var_types simdBaseType) const
             // A true mask can be used with a larger type. Eg: A short true mask will be valid for a long vector.
             var_types maskBaseType = AsMskCon()->gtSimdScalableMaskVal.gtSimdMaskScalableBaseType;
 
-            return (genTypeSize(maskBaseType) >= genTypeSize(simdBaseType));
+            return (genTypeSize(maskBaseType) <= genTypeSize(simdBaseType));
         }
 #endif // DEBUG
         return SveMaskPatternAll == EvaluateSimdMaskToPattern<simd16_t>(simdBaseType, AsMskCon()->gtSimdMaskVal);
