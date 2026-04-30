@@ -263,7 +263,6 @@ namespace ILCompiler
                     compilationRoots.Add(new RuntimeConfigurationRootProvider(settingsBlobName, runtimeOptions));
                     compilationRoots.Add(new RuntimeConfigurationRootProvider(knobsBlobName, runtimeKnobs));
                     compilationRoots.Add(new ExpectedIsaFeaturesRootProvider(instructionSetSupport));
-                    compilationRoots.Add(new ManagedDataDescriptorProvider());
                     if (SplitExeInitialization)
                     {
                         compilationRoots.Add(new MainMethodRootProvider(entrypointModule, CreateInitializerList(typeSystemContext), generateLibraryAndModuleInitializers: false));
@@ -275,12 +274,14 @@ namespace ILCompiler
                     compilationRoots.Add(new RuntimeConfigurationRootProvider(settingsBlobName, runtimeOptions));
                     compilationRoots.Add(new RuntimeConfigurationRootProvider(knobsBlobName, runtimeKnobs));
                     compilationRoots.Add(new ExpectedIsaFeaturesRootProvider(instructionSetSupport));
-                    compilationRoots.Add(new ManagedDataDescriptorProvider());
                     if (SplitExeInitialization)
                     {
                         compilationRoots.Add(new NativeLibraryInitializerRootProvider(typeSystemContext.GeneratedAssembly, CreateInitializerList(typeSystemContext)));
                     }
                 }
+
+                if (Get(_command.EnableDebugInfo))
+                    compilationRoots.Add(new ManagedDataDescriptorProvider());
 
                 string win32resourcesModule = Get(_command.Win32ResourceModuleName);
                 if (typeSystemContext.Target.IsWindows && !string.IsNullOrEmpty(win32resourcesModule))

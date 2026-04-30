@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.Text.Json;
 
@@ -27,8 +28,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public const string SymbolName = "DotNetManagedContractDescriptor";
 
-        public override ObjectNodeSection GetSection(NodeFactory factory) =>
-            factory.Target.IsWindows ? ObjectNodeSection.ReadOnlyDataSection : ObjectNodeSection.DataSection;
+        public override ObjectNodeSection GetSection(NodeFactory factory) => ObjectNodeSection.ReadOnlyDataSection;
 
         public override bool StaticDependenciesAreComputed => true;
         public override bool IsShareable => false;
@@ -79,6 +79,7 @@ namespace ILCompiler.DependencyAnalysis
             builder.EmitZeroPointer();
 
             // Emit JSON bytes inline, null-terminated
+            Debug.Assert(builder.CountBytes == headerSize);
             builder.EmitBytes(jsonBytes);
             builder.EmitByte(0);
 
@@ -164,8 +165,6 @@ namespace ILCompiler.DependencyAnalysis
 
             return $"{ns}.{name}";
         }
-
-        protected internal override int Phase => (int)ObjectNodePhase.Ordered;
 
         public override int ClassCode => 0x4d444e01;
     }
