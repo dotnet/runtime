@@ -909,8 +909,13 @@ bool GCToOSInterface::SetThreadAffinity(uint16_t procNo)
 {
 #if HAVE_SCHED_SETAFFINITY || HAVE_PTHREAD_SETAFFINITY_NP
 
-    cpu_set_t* pCpuSet = CPU_ALLOC(g_configuredCpuCount);
     size_t cpuSetSize = CPU_ALLOC_SIZE(g_configuredCpuCount);
+    cpu_set_t* pCpuSet = CPU_ALLOC(g_configuredCpuCount);
+    if (pCpuSet == nullptr)
+    {
+        return false;
+    }
+
     CPU_ZERO_S(cpuSetSize, pCpuSet);
     CPU_SET_S((int)procNo, cpuSetSize, pCpuSet);
 
@@ -923,11 +928,11 @@ bool GCToOSInterface::SetThreadAffinity(uint16_t procNo)
     // - https://github.com/dotnet/runtime/pull/38795
     // - https://github.com/dotnet/runtime/issues/1634
     // - https://forum.snapcraft.io/t/requesting-autoconnect-for-interfaces-in-pigmeat-process-control-home/17987/13
- #if HAVE_SCHED_SETAFFINITY
+#if HAVE_SCHED_SETAFFINITY
     int st = sched_setaffinity(0, cpuSetSize, pCpuSet);
- #else
+#else
     int st = pthread_setaffinity_np(pthread_self(), cpuSetSize, pCpuSet);
- #endif
+#endif
 
     CPU_FREE(pCpuSet);
 
