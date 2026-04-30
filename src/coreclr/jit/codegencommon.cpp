@@ -6678,9 +6678,9 @@ void CodeGen::genIPmappingGen()
                 DebugInfo rootInfo = stmt->GetDebugInfo().GetRoot();
                 if (rootInfo.IsValid())
                 {
-                    for (unsigned vmIndex = 0; vmIndex < m_compiler->eeBoundariesCount; ++vmIndex)
+                    for (unsigned i = 0; i < m_compiler->eeBoundariesCount; ++i)
                     {
-                        if (m_compiler->eeBoundaries[vmIndex].ilOffset == rootInfo.GetLocation().GetOffset())
+                        if (m_compiler->eeBoundaries[i].ilOffset == rootInfo.GetLocation().GetOffset())
                         {
                             found = true;
                             break;
@@ -7926,7 +7926,7 @@ void CodeGen::genMultiRegStoreToLocal(GenTreeLclVar* lclNode)
         {
 #if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
             // Should consider the padding, empty struct fields, etc within a struct.
-            offset = returnTypeDesc->GetReturnFieldOffset(vmIndex);
+            offset = returnTypeDesc->GetReturnFieldOffset(i);
 #endif
 #ifdef SWIFT_SUPPORT
             if (offsets != nullptr)

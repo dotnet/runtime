@@ -2492,8 +2492,8 @@ PhaseStatus Compiler::fgWasmVirtualIP()
 
         for (unsigned XTnum = 0; XTnum < compHndBBtabCount; XTnum++)
         {
-            unsigned const    vmIndex = compEHTabOrderToVMClauseOrder[XTnum];
-            EHblkDsc* const   dsc     = ehGetDsc(vmIndex);
+            EHblkDsc* const dsc = ehGetDsc(XTnum);
+
             CORINFO_EH_CLAUSE clause;
             clause.ClassToken    = dsc->HasFilter() ? 0 : dsc->ebdTyp;
             clause.Flags         = ToCORINFO_EH_CLAUSE_FLAGS(dsc->ebdHandlerType);
@@ -2501,7 +2501,10 @@ PhaseStatus Compiler::fgWasmVirtualIP()
             clause.TryLength     = 0;
             clause.HandlerOffset = 0;
             clause.HandlerLength = 0;
-            clauses[vmIndex]     = {clause, dsc};
+
+            unsigned const vmIndex = compEHTabOrderToVMClauseOrder[XTnum];
+
+            clauses[vmIndex] = {clause, dsc};
         }
     }
 
