@@ -1357,11 +1357,13 @@ namespace System.Threading.Tasks.Tests
                 Thread.Sleep(1000);
 
                 // Poll to make sure the expected buffer got flush.
-                SpinWait.SpinUntil(() =>
+                bool flushed = SpinWait.SpinUntil(() =>
                 {
                     var ids = CollectAsyncEventIds(collectedEvents);
                     return ids.Exists(id => id == AsyncEventID.ResumeAsyncContext || id == AsyncEventID.SuspendAsyncContext || id == AsyncEventID.CompleteAsyncContext);
                 }, TimeSpan.FromSeconds(20));
+
+                Assert.True(flushed, "Expected periodic timer to flush buffer with core lifecycle events within timeout");
             });
 
             // DumpCollectedEvents(events);
@@ -1416,7 +1418,8 @@ namespace System.Threading.Tasks.Tests
                         firstBatchDone.Set();
 
                         // Wait for the flush to deliver our first buffer before generating more events.
-                        firstFlushSeen.Wait(TimeSpan.FromSeconds(20));
+                        bool flushed = firstFlushSeen.Wait(TimeSpan.FromSeconds(20));
+                        Assert.True(flushed, "Expected first flush of core lifecycle events within timeout");
 
                         // Second batch: generate more events on the same thread's context.
                         Func().GetAwaiter().GetResult();
@@ -1430,17 +1433,21 @@ namespace System.Threading.Tasks.Tests
                     SendFlushCommand();
 
                     // Poll for first buffer from our worker thread.
-                    SpinWait.SpinUntil(() => workerEvents.Count >= 1, TimeSpan.FromSeconds(20));
+                    bool firstFlush = SpinWait.SpinUntil(() => workerEvents.Count >= 1, TimeSpan.FromSeconds(20));
+                    Assert.True(firstFlush, "Expected periodic timer to flush core lifecycle events within timeout");
+
                     firstFlushSeen.Set();
 
                     // Wait for the worker to finish its second batch.
-                    thread.Join(TimeSpan.FromSeconds(20));
+                    bool joined = thread.Join(TimeSpan.FromSeconds(20));
+                    Assert.True(joined, "Expected worker thread to terminate within timeout after second batch of work");
 
                     // Force a flush to deliver the second batch.
                     SendFlushCommand();
 
                     // Poll for second buffer from our worker thread.
-                    SpinWait.SpinUntil(() => workerEvents.Count >= 2, TimeSpan.FromSeconds(20));
+                    bool secondFlush = SpinWait.SpinUntil(() => workerEvents.Count >= 2, TimeSpan.FromSeconds(20));
+                    Assert.True(secondFlush, "Expected periodic timer to flush core lifecycle events within timeout");
                 });
             }
 
@@ -1498,7 +1505,6 @@ namespace System.Threading.Tasks.Tests
                 thread.IsBackground = true;
                 thread.Start();
                 bool joined = thread.Join(TimeSpan.FromSeconds(20));
-
                 Assert.True(joined, "Expected worker thread to terminate within timeout before waiting for orphaned buffer flush");
 
                 // Do NOT send a flush command.
@@ -1506,11 +1512,13 @@ namespace System.Threading.Tasks.Tests
                 Thread.Sleep(1000);
 
                 // Poll to make sure the expected buffer got flush.
-                SpinWait.SpinUntil(() =>
+                bool flushed = SpinWait.SpinUntil(() =>
                 {
                     var ids = CollectAsyncEventIds(collectedEvents);
                     return ids.Exists(id => id == AsyncEventID.ResumeAsyncContext || id == AsyncEventID.SuspendAsyncContext || id == AsyncEventID.CompleteAsyncContext);
                 }, TimeSpan.FromSeconds(20));
+
+                Assert.True(flushed, "Expected periodic timer to flush buffer with core lifecycle events within timeout");
             });
 
             // DumpCollectedEvents(events);
@@ -1582,7 +1590,7 @@ namespace System.Threading.Tasks.Tests
             yield return new object[] { (long)CompleteAsyncMethodKeyword, new AsyncEventID[] { AsyncEventID.ResetAsyncThreadContext, AsyncEventID.CompleteAsyncMethod, AsyncEventID.AsyncProfilerMetadata } };
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsRuntimeAsyncSupported))]
+        [ConditionalTheory(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncAndThreadingSupported))]
         [MemberData(nameof(KeywordGatekeepingData))]
         public void RuntimeAsync_KeywordGatekeeping(long keywordValue, AsyncEventID[] allowedEventIds)
         {
@@ -1940,13 +1948,13 @@ namespace System.Threading.Tasks.Tests
 
             long[] wrapperIPs = metadataList[0].WrapperIPs;
 
-            Type cwType = typeof(object).Assembly.GetType("System.Runtime.CompilerServices.AsyncProfiler+ContinuationWrapper");
+            Type? cwType = typeof(object).Assembly.GetType("System.Runtime.CompilerServices.AsyncProfiler+ContinuationWrapper");
             Assert.NotNull(cwType);
 
             for (int i = 0; i < wrapperIPs.Length; i++)
             {
                 string expectedName = $"Continuation_Wrapper_{i}";
-                MethodInfo method = cwType.GetMethod(expectedName, BindingFlags.NonPublic | BindingFlags.Static);
+                MethodInfo? method = cwType.GetMethod(expectedName, BindingFlags.NonPublic | BindingFlags.Static);
                 Assert.True(method is not null, $"Expected method '{expectedName}' to exist on ContinuationWrapper type");
 
                 System.Runtime.CompilerServices.RuntimeHelpers.PrepareMethod(method.MethodHandle);
