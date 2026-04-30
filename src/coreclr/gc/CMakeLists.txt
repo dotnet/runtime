@@ -27,6 +27,7 @@ set(GC_SOURCES
 
 if(CLR_CMAKE_TARGET_ARCH_WASM)
   add_subdirectory(wasm)
+  include(unix/configure.cmake)
 elseif(CLR_CMAKE_HOST_UNIX)
   add_subdirectory(unix)
   include(unix/configure.cmake)
