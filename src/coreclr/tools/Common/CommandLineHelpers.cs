@@ -74,6 +74,7 @@ namespace System.CommandLine
             return token.ToLowerInvariant() switch
             {
                 "linux" => TargetOS.Linux,
+                "android" => TargetOS.Android,
                 "win" or "windows" => TargetOS.Windows,
                 "osx" => TargetOS.OSX,
                 "freebsd" => TargetOS.FreeBSD,
@@ -118,6 +119,21 @@ namespace System.CommandLine
                     _ => throw new CommandLineException($"Target architecture '{token}' is not supported")
                 };
             }
+        }
+
+        public static TargetOS GetEffectiveTargetOS(TargetOS targetOS)
+        {
+            return targetOS == TargetOS.Android ? TargetOS.Linux : targetOS;
+        }
+
+        public static TargetAbi GetTargetAbi(TargetOS targetOS, TargetArchitecture targetArchitecture, bool isArmel)
+        {
+            if (isArmel || (targetOS == TargetOS.Android && targetArchitecture == TargetArchitecture.ARM))
+            {
+                return TargetAbi.NativeAotArmel;
+            }
+
+            return TargetAbi.NativeAot;
         }
 
         public static RootCommand UseVersion(this RootCommand command)

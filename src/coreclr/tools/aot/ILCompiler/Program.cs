@@ -106,6 +106,8 @@ namespace ILCompiler
 
             TargetArchitecture targetArchitecture = Get(_command.TargetArchitecture);
             TargetOS targetOS = Get(_command.TargetOS);
+            TargetAbi targetAbi = Helpers.GetTargetAbi(targetOS, targetArchitecture, ILCompilerRootCommand.IsArmel);
+            targetOS = Helpers.GetEffectiveTargetOS(targetOS);
             InstructionSetSupport instructionSetSupport = Helpers.ConfigureInstructionSetSupport(Get(_command.InstructionSet), Get(_command.MaxVectorTBitWidth), isVectorTOptimistic, targetArchitecture, targetOS,
                 "Unrecognized instruction set {0}", "Unsupported combination of instruction sets: {0}/{1}", logger,
                 allowOptimistic: _command.OptimizationMode != OptimizationMode.PreferSize,
@@ -122,7 +124,6 @@ namespace ILCompiler
             SharedGenericsMode genericsMode = SharedGenericsMode.CanonicalReferenceTypes;
 
             var simdVectorLength = instructionSetSupport.GetVectorTSimdVector();
-            var targetAbi = ILCompilerRootCommand.IsArmel ? TargetAbi.NativeAotArmel : TargetAbi.NativeAot;
             var targetDetails = new TargetDetails(targetArchitecture, targetOS, targetAbi, simdVectorLength);
             CompilerTypeSystemContext typeSystemContext =
                 new CompilerTypeSystemContext(targetDetails, genericsMode, supportsReflection ? DelegateFeature.All : 0,

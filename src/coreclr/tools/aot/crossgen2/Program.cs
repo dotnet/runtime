@@ -85,6 +85,8 @@ namespace ILCompiler
 
             TargetArchitecture targetArchitecture = Get(_command.TargetArchitecture);
             TargetOS targetOS = Get(_command.TargetOS);
+            TargetAbi targetAbi = Helpers.GetTargetAbi(targetOS, targetArchitecture, Crossgen2RootCommand.IsArmel);
+            targetOS = Helpers.GetEffectiveTargetOS(targetOS);
             bool allowOptimistic = _command.OptimizationMode != OptimizationMode.PreferSize;
 
             if (targetOS is TargetOS.iOS or TargetOS.tvOS or TargetOS.iOSSimulator or TargetOS.tvOSSimulator or TargetOS.MacCatalyst or TargetOS.Browser)
@@ -100,7 +102,7 @@ namespace ILCompiler
                 allowOptimistic: allowOptimistic,
                 isReadyToRun: true);
             SharedGenericsMode genericsMode = SharedGenericsMode.CanonicalReferenceTypes;
-            var targetDetails = new TargetDetails(targetArchitecture, targetOS, Crossgen2RootCommand.IsArmel ? TargetAbi.NativeAotArmel : TargetAbi.NativeAot, instructionSetSupport.GetVectorTSimdVector());
+            var targetDetails = new TargetDetails(targetArchitecture, targetOS, targetAbi, instructionSetSupport.GetVectorTSimdVector());
 
             ConfigureImageBase(targetDetails);
 

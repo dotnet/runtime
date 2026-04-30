@@ -25,10 +25,6 @@ WARNING:   When setting properties based on their current state (for example:
     <!-- Crossgen2 testing is incompatible with the ilasm/ildasm round trip testing. -->
     <IlasmRoundTripIncompatible Condition="'$(AlwaysUseCrossGen2)' == 'true'">true</IlasmRoundTripIncompatible>
 
-    <_CrossGenTargetOS Condition="'$(TargetOS)' != 'android'">$(TargetOS)</_CrossGenTargetOS>
-    <_CrossGenTargetOS Condition="'$(TargetOS)' == 'android'">linux</_CrossGenTargetOS>
-    <_CrossGenTargetArch>$(TargetArchitecture)</_CrossGenTargetArch>
-    <_CrossGenTargetArch Condition="'$(TargetOS)' == 'android' and '$(TargetArchitecture)' == 'arm'">armel</_CrossGenTargetArch>
   </PropertyGroup>
 
   <!--
@@ -118,8 +114,8 @@ if [ ! -z ${RunCrossGen2+x} ]%3B then
 
         echo -o:"$__OutputFile" >> "$__ResponseFile"
         echo -O >> "$__ResponseFile"
-        echo --targetarch:$(_CrossGenTargetArch) >> "$__ResponseFile"
-        echo --targetos:$(_CrossGenTargetOS) >> "$__ResponseFile"
+        echo --targetarch:$(TargetArchitecture) >> "$__ResponseFile"
+        echo --targetos:$(TargetOS) >> "$__ResponseFile"
         echo --verify-type-and-field-layout >> "$__ResponseFile"
         echo --method-layout:random >> "$__ResponseFile"
         if [ ! -z ${CrossGen2SynthesizePgo+x} ]%3B then
@@ -303,8 +299,8 @@ if defined RunCrossGen2 (
     echo !__InputFile!>>!__ResponseFile!
     echo -O>>!__ResponseFile!
     echo -o:!__OutputFile!>>!__ResponseFile!
-    echo --targetarch:$(_CrossGenTargetArch)>>!__ResponseFile!
-    echo --targetos:$(_CrossGenTargetOS)>>!__ResponseFile!
+    echo --targetarch:$(TargetArchitecture)>>!__ResponseFile!
+    echo --targetos:$(TargetOS)>>!__ResponseFile!
     echo --verify-type-and-field-layout>>!__ResponseFile!
     echo --method-layout:random>>!__ResponseFile!
     if defined CrossGen2SynthesizePgo (
