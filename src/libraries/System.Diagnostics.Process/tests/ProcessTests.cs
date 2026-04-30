@@ -2499,10 +2499,11 @@ namespace System.Diagnostics.Tests
             string sleepCommandPathFileName = Path.Combine(TestDirectory, LongProcessName);
             File.Copy(sleepPath, sleepCommandPathFileName);
 
+            using SafeFileHandle nullHandle = File.OpenNullHandle();
             ProcessStartInfo psi = new(sleepCommandPathFileName, "600")
             {
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
+                StandardOutputHandle = nullHandle,
+                StandardErrorHandle= nullHandle
             };
             using (Process px = Process.Start(psi))
             {
