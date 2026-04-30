@@ -4521,9 +4521,6 @@ do                                                                      \
                     CONTINUATIONREF continuation = (CONTINUATIONREF)ObjectToOBJECTREF(*(Object**)(stack + pAsyncSuspendData->continuationArgOffset));
                     _ASSERTE(pInterpreterFrame->GetContinuation() == NULL);
 
-                    // The INTOP_CHECK_FOR_CONTINUATION opcode will have called to restore the execution context already
-                    // Now copy the locals
-
                     // copy locals that need to move from the continuation object
                     uint8_t *pContinuationData = continuation->GetResultStorage();
                     InterpIntervalMapEntry *pCopyEntry = pAsyncSuspendData->liveLocalsIntervals;
