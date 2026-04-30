@@ -34,6 +34,14 @@ namespace System.Threading.Tasks.Tests
 
     public class AsyncProfilerTests
     {
+        // The test scenarios drive async work via Task.Run(...).GetAwaiter().GetResult() (see
+        // RunScenarioAndFlush / RunScenario), which requires synchronous blocking waits. On
+        // single-threaded WASM this throws PlatformNotSupportedException from
+        // RuntimeFeature.ThrowIfMultithreadingIsNotSupported(), so gate the tests on both
+        // runtime async support and threading support.
+        public static bool IsRuntimeAsyncAndThreadingSupported =>
+            PlatformDetection.IsRuntimeAsyncSupported && PlatformDetection.IsThreadingSupported;
+
         private const string AsyncProfilerEventSourceName = "System.Runtime.CompilerServices.AsyncProfilerEventSource";
         private const int AsyncEventsId = 1;
         private const int HeaderSize = 1 + sizeof(uint) + sizeof(uint) + sizeof(ulong) + sizeof(uint) + sizeof(ulong) + sizeof(ulong);
@@ -645,7 +653,7 @@ namespace System.Threading.Tasks.Tests
             Assert.Equal(0, stackDepth);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsRuntimeAsyncSupported))]
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncAndThreadingSupported))]
         public void RuntimeAsync_EventBufferHeaderFormat()
         {
             var events = CollectEvents(CoreKeywords, () =>
@@ -689,7 +697,7 @@ namespace System.Threading.Tasks.Tests
             Assert.True(buffersChecked > 0, "Expected at least one buffer");
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsRuntimeAsyncSupported))]
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncAndThreadingSupported))]
         public void RuntimeAsync_EventsEmitted()
         {
             var events = CollectEvents(AllKeywords, () =>
@@ -706,7 +714,7 @@ namespace System.Threading.Tasks.Tests
             Assert.Contains(events, e => e.EventId == AsyncEventsId);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsRuntimeAsyncSupported))]
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncAndThreadingSupported))]
         public void RuntimeAsync_SuspendResumeCompleteEvents()
         {
             var events = CollectEvents(CoreKeywords, () =>
@@ -734,7 +742,7 @@ namespace System.Threading.Tasks.Tests
             Assert.Contains(AsyncEventID.CompleteAsyncContext, eventIds);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsRuntimeAsyncSupported))]
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncAndThreadingSupported))]
         public void RuntimeAsync_ContextEventIdLifecycle()
         {
             var events = CollectEvents(CoreKeywords, () =>
@@ -781,7 +789,7 @@ namespace System.Threading.Tasks.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsRuntimeAsyncSupported))]
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncAndThreadingSupported))]
         public void RuntimeAsync_ResumeCompleteMethodEvents()
         {
             var events = CollectEvents(MethodKeywords, () =>
@@ -800,7 +808,7 @@ namespace System.Threading.Tasks.Tests
             Assert.Contains(AsyncEventID.CompleteAsyncMethod, eventIds);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsRuntimeAsyncSupported))]
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncAndThreadingSupported))]
         public void RuntimeAsync_EventSequenceOrder()
         {
             var events = CollectEvents(CoreKeywords, () =>
@@ -824,7 +832,7 @@ namespace System.Threading.Tasks.Tests
             Assert.Equal(AsyncEventID.CompleteAsyncContext, coreEvents[3].EventId);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsRuntimeAsyncSupported))]
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncAndThreadingSupported))]
         public void RuntimeAsync_CreateAsyncContextEmittedOnFirstAwait()
         {
             var events = CollectEvents(CreateAsyncContextKeyword | CompleteAsyncContextKeyword, () =>
@@ -841,7 +849,7 @@ namespace System.Threading.Tasks.Tests
             Assert.Contains(AsyncEventID.CreateAsyncContext, eventIds);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsRuntimeAsyncSupported))]
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncAndThreadingSupported))]
         public void RuntimeAsync_CreateAsyncCallstackEmittedOnFirstAwait()
         {
             var events = CollectEvents(CreateAsyncCallstackKeyword | CompleteAsyncContextKeyword, () =>
@@ -865,7 +873,7 @@ namespace System.Threading.Tasks.Tests
             });
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsRuntimeAsyncSupported))]
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncAndThreadingSupported))]
         public void RuntimeAsync_CreateCallstackDepthMatchesChain()
         {
             var events = CollectEvents(CreateAsyncCallstackKeyword | CompleteAsyncContextKeyword, () =>
@@ -886,7 +894,7 @@ namespace System.Threading.Tasks.Tests
             Assert.Contains(callstacks, cs => cs.FrameCount == 3);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsRuntimeAsyncSupported))]
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncAndThreadingSupported))]
         public void RuntimeAsync_SuspendAsyncCallstackEmittedOnAwait()
         {
             var events = CollectEvents(SuspendAsyncCallstackKeyword | CompleteAsyncContextKeyword, () =>
@@ -914,7 +922,7 @@ namespace System.Threading.Tasks.Tests
             });
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsRuntimeAsyncSupported))]
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncAndThreadingSupported))]
         public void RuntimeAsync_SuspendCallstackDepthMatchesChain()
         {
             var events = CollectEvents(SuspendAsyncCallstackKeyword | CompleteAsyncContextKeyword, () =>
@@ -935,7 +943,7 @@ namespace System.Threading.Tasks.Tests
             Assert.Contains(callstacks, cs => cs.FrameCount == 3);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsRuntimeAsyncSupported))]
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncAndThreadingSupported))]
         public void RuntimeAsync_SuspendCallstackPrecedesComplete()
         {
             // Use a single-level async method so all events belong to the same context.
@@ -963,7 +971,7 @@ namespace System.Threading.Tasks.Tests
                 $"SuspendAsyncCallstack (index {suspendIdx}) should precede CompleteAsyncContext (index {completeIdx})");
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsRuntimeAsyncSupported))]
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncAndThreadingSupported))]
         public void RuntimeAsync_SuspendCallstackDeeperThanInitialResume()
         {
             // After the initial Yield, the first resume is at the lambda level (depth 1).
@@ -997,7 +1005,7 @@ namespace System.Threading.Tasks.Tests
                 $"Suspend callstack depth ({maxSuspendDepth}) should be deeper than shallowest resume callstack depth ({minResumeDepth})");
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsRuntimeAsyncSupported))]
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncAndThreadingSupported))]
         public void RuntimeAsync_CreateCallstackPrecedesResumeCallstack()
         {
             var events = CollectEvents(CreateAsyncContextKeyword | CreateAsyncCallstackKeyword | ResumeAsyncContextKeyword | ResumeAsyncCallstackKeyword | CompleteAsyncContextKeyword, () =>
@@ -1043,7 +1051,7 @@ namespace System.Threading.Tasks.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsRuntimeAsyncSupported))]
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncAndThreadingSupported))]
         public void RuntimeAsync_CreateAndFirstResumeCallstacksMatch()
         {
             var events = CollectEvents(CreateAsyncCallstackKeyword | ResumeAsyncCallstackKeyword | CompleteAsyncContextKeyword, () =>
@@ -1076,7 +1084,7 @@ namespace System.Threading.Tasks.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsRuntimeAsyncSupported))]
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncAndThreadingSupported))]
         public void RuntimeAsync_CallstackEmittedOnResume()
         {
             var events = CollectEvents(CallstackKeywords, () =>
@@ -1100,7 +1108,7 @@ namespace System.Threading.Tasks.Tests
             });
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsRuntimeAsyncSupported))]
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncAndThreadingSupported))]
         public void RuntimeAsync_CallstackDepthMatchesChain()
         {
             var events = CollectEvents(CallstackKeywords, () =>
@@ -1120,7 +1128,7 @@ namespace System.Threading.Tasks.Tests
             Assert.Contains(callstacks, cs => cs.FrameCount == 3);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsRuntimeAsyncSupported))]
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncAndThreadingSupported))]
         public void RuntimeAsync_CallstackSimulation_NormalCompletion()
         {
             var events = CollectEvents(CallstackKeywords, () =>
@@ -1136,7 +1144,7 @@ namespace System.Threading.Tasks.Tests
             AssertCallstackSimulationReachesZero(events);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsRuntimeAsyncSupported))]
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncAndThreadingSupported))]
         public void RuntimeAsync_CallstackSimulation_HandledException()
         {
             var events = CollectEvents(CallstackKeywords, () =>
@@ -1154,7 +1162,7 @@ namespace System.Threading.Tasks.Tests
             AssertCallstackSimulationReachesZero(events);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsRuntimeAsyncSupported))]
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncAndThreadingSupported))]
         public void RuntimeAsync_CallstackSimulation_UnhandledException()
         {
             var events = CollectEvents(CallstackKeywords, () =>
@@ -1177,7 +1185,7 @@ namespace System.Threading.Tasks.Tests
             AssertCallstackSimulationReachesZero(events);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsRuntimeAsyncSupported))]
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncAndThreadingSupported))]
         public void RuntimeAsync_UnhandledExceptionUnwind()
         {
             var events = CollectEvents(UnwindAsyncExceptionKeyword | CoreKeywords, () =>
@@ -1213,7 +1221,7 @@ namespace System.Threading.Tasks.Tests
             Assert.All(frameCounts, count => Assert.Equal(4u, count));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsRuntimeAsyncSupported))]
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncAndThreadingSupported))]
         public void RuntimeAsync_HandledExceptionUnwind()
         {
             var events = CollectEvents(UnwindAsyncExceptionKeyword | CoreKeywords, () =>
@@ -1240,7 +1248,7 @@ namespace System.Threading.Tasks.Tests
             Assert.All(frameCounts, count => Assert.Equal(2u, count));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsRuntimeAsyncSupported))]
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncAndThreadingSupported))]
         public void RuntimeAsync_WrapperIndexMatchesCallstack()
         {
             var captures = new List<(string MethodName, int WrapperSlot)>();
@@ -1294,7 +1302,7 @@ namespace System.Threading.Tasks.Tests
             Assert.Equal(nameof(WrapperTestA), resolvedNames[slotA]);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsRuntimeAsyncSupported))]
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncAndThreadingSupported))]
         public void RuntimeAsync_WrapperIndexResetEmitted()
         {
             var events = CollectEvents(AllKeywords, () =>
@@ -1314,7 +1322,7 @@ namespace System.Threading.Tasks.Tests
             Assert.Contains(AsyncEventID.ResetAsyncContinuationWrapperIndex, eventIds);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsRuntimeAsyncSupported))]
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncAndThreadingSupported))]
         public void RuntimeAsync_WrapperIndexNoResetUnder32()
         {
             var events = CollectEvents(AllKeywords, () =>
@@ -1334,7 +1342,7 @@ namespace System.Threading.Tasks.Tests
             Assert.DoesNotContain(AsyncEventID.ResetAsyncContinuationWrapperIndex, eventIds);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsRuntimeAsyncSupported))]
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncAndThreadingSupported))]
         public void RuntimeAsync_PeriodicTimerFlush()
         {
             var events = CollectEvents(CoreKeywords, (collectedEvents, _) =>
@@ -1364,7 +1372,7 @@ namespace System.Threading.Tasks.Tests
             Assert.True(coreEventCount > 0, "Expected periodic timer to flush buffer with core lifecycle events");
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsRuntimeAsyncSupported))]
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncAndThreadingSupported))]
         public void RuntimeAsync_PeriodicTimerFlush_PreservesOwnerThreadId()
         {
             // This test verifies that when the background flush timer flushes a thread's buffer,
@@ -1472,7 +1480,7 @@ namespace System.Threading.Tasks.Tests
         }
 
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsRuntimeAsyncSupported))]
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncAndThreadingSupported))]
         public void RuntimeAsync_DeadThreadFlush()
         {
             var events = CollectEvents(CoreKeywords, (collectedEvents, _) =>
@@ -1513,7 +1521,7 @@ namespace System.Threading.Tasks.Tests
             Assert.True(coreEventCount > 0, "Expected periodic timer to flush dead thread's buffer");
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsRuntimeAsyncSupported))]
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncAndThreadingSupported))]
         public void RuntimeAsync_NoSyncClockEventBeforeInterval()
         {
             var events = CollectEvents(CoreKeywords, () =>
@@ -1531,7 +1539,7 @@ namespace System.Threading.Tasks.Tests
             Assert.DoesNotContain(AsyncEventID.AsyncProfilerSyncClock, eventIds);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsRuntimeAsyncSupported))]
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncAndThreadingSupported))]
         public void RuntimeAsync_NoEventsWhenDisabled()
         {
             // Run async work WITHOUT a listener attached
@@ -1603,7 +1611,7 @@ namespace System.Threading.Tasks.Tests
                 $"allowed [{string.Join(", ", allowed)}]");
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsRuntimeAsyncSupported))]
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncAndThreadingSupported))]
         public void RuntimeAsync_ResetAsyncThreadContextEvent()
         {
             var events = CollectEvents(CoreKeywords, () =>
@@ -1621,7 +1629,7 @@ namespace System.Threading.Tasks.Tests
             Assert.Contains(AsyncEventID.ResetAsyncThreadContext, eventIds);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsRuntimeAsyncSupported))]
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncAndThreadingSupported))]
         public void RuntimeAsync_MetadataEventEmittedOnEnable()
         {
             var events = CollectEvents(AllKeywords, () =>
@@ -1646,7 +1654,7 @@ namespace System.Threading.Tasks.Tests
             Assert.All(meta.WrapperIPs, ip => Assert.True(ip != 0, "Each wrapper IP should be non-zero"));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsRuntimeAsyncSupported))]
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncAndThreadingSupported))]
         public void RuntimeAsync_MetadataEventEmittedOnceAcrossThreads()
         {
             const int threadCount = 8;
@@ -1673,7 +1681,7 @@ namespace System.Threading.Tasks.Tests
             Assert.True(metadataList.Count == 1, $"Expected exactly 1 metadata event across {threadCount} threads, got {metadataList.Count}");
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsRuntimeAsyncSupported))]
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncAndThreadingSupported))]
         public void RuntimeAsync_CallstackNativeIPDeltaRoundtrip()
         {
             // Verify that delta-encoded NativeIPs in callstacks roundtrip correctly,
@@ -1732,7 +1740,7 @@ namespace System.Threading.Tasks.Tests
                 "Expected at least one non-zero NativeIP delta across all callstack frames");
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsRuntimeAsyncSupported))]
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncAndThreadingSupported))]
         public void RuntimeAsync_CallstackStressWithVaryingDepths()
         {
             // Stress test: run many async calls with varying callstack depths.
@@ -1810,7 +1818,7 @@ namespace System.Threading.Tasks.Tests
             Assert.True(bufferCount >= 3, $"Expected at least 3 buffer flushes, got {bufferCount}");
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsRuntimeAsyncSupported))]
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncAndThreadingSupported))]
         public void RuntimeAsync_CallstackOverflowPathProducesValidFrames()
         {
             // Targeted test: run random-depth callstacks until we detect the overflow
@@ -1875,7 +1883,7 @@ namespace System.Threading.Tasks.Tests
                 "Failed to trigger callstack buffer overflow after 10 attempts");
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsRuntimeAsyncSupported))]
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncAndThreadingSupported))]
         public void RuntimeAsync_CallstackDepthCappedAtMaxFrames()
         {
             // Verify that callstack depth is capped when the continuation chain
@@ -1914,7 +1922,7 @@ namespace System.Threading.Tasks.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsRuntimeAsyncSupported))]
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncAndThreadingSupported))]
         public void RuntimeAsync_MetadataWrapperIPsMatchMethods()
         {
             var events = CollectEvents(AllKeywords, () =>
