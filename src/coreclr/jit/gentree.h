@@ -9860,7 +9860,7 @@ inline bool GenTree::IsMaskZero() const
 //                   with all bits set for the given type
 //
 // Arguments:
-//   simdBaseType - the base type to check aginst
+//   simdBaseType - the base type to check against
 //
 // Returns:
 //     True if this node is a mask constant with all bits set
@@ -9908,7 +9908,6 @@ inline uint64_t GenTree::GetIntegralVectorConstElement(size_t index, var_types s
 
                 case SimdScalableScalar:
                     return (index == 0) ? node->gtSimdScalableVal.gtSimdScalableIndex : 0;
-                    break;
 
                 default:
                     unreached();
