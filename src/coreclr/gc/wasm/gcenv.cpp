@@ -55,13 +55,12 @@ AffinitySet g_processAffinitySet;
 extern "C" int g_highestNumaNode = 0;
 extern "C" bool g_numaAvailable = false;
 
-static size_t g_RestrictedPhysicalMemoryLimit = 0;
-
 static int64_t g_totalPhysicalMemSize = 0;
 
 // Forward declarations
 static size_t GetRestrictedPhysicalMemoryLimit();
 static bool GetPhysicalMemoryUsed(size_t* val);
+static uint64_t GetAvailablePhysicalMemory();
 
 // ============================================================================
 // Initialization / Shutdown
@@ -333,13 +332,14 @@ static uint64_t GetTotalPhysicalMemory()
 
 size_t GCToOSInterface::GetVirtualMemoryLimit()
 {
-    // WASM linear memory has a hard engine-enforced ceiling, so report that
-    // maximum rather than an unbounded virtual address space.
     return GetVirtualMemoryMaxAddress();
 }
 
 size_t GCToOSInterface::GetVirtualMemoryMaxAddress()
 {
+    // On WASM, linear-memory ceiling = max addressable. Both APIs return the
+    // same value because there is no separate per-process virtual address space
+    // limit beyond what the engine permits the linear memory to grow to.
     return GetTotalPhysicalMemory();
 }
 
@@ -350,7 +350,7 @@ static size_t GetRestrictedPhysicalMemoryLimit()
     return 0;
 }
 
-bool GetPhysicalMemoryUsed(size_t* val)
+static bool GetPhysicalMemoryUsed(size_t* val)
 {
     // __builtin_wasm_memory_size(0) returns count of 64KB WASM pages, not GC pages.
     // Compute in 64 bits so a legitimate 0-page memory is not conflated with wasm32 overflow.
@@ -375,13 +375,10 @@ bool GetPhysicalMemoryUsed(size_t* val)
 
 uint64_t GCToOSInterface::GetPhysicalMemoryLimit(bool* is_restricted)
 {
-    size_t restricted_limit;
     if (is_restricted)
         *is_restricted = false;
 
-    restricted_limit = GetRestrictedPhysicalMemoryLimit();
-    g_RestrictedPhysicalMemoryLimit = restricted_limit;
-
+    size_t restricted_limit = GetRestrictedPhysicalMemoryLimit();
     if (restricted_limit != 0 && restricted_limit != SIZE_T_MAX)
     {
         if (is_restricted)

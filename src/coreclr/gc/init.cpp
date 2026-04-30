@@ -1295,11 +1295,13 @@ bool gc_heap::compute_hard_limit()
     large_pages_emulation_mode_p = (large_pages_config == 2);
 #endif //HOST_64BIT
 
+    // Large pages are pre-committed and cannot be decommitted, so they imply
+    // never_decommit_p. On WASM, reserve == commit (posix_memalign allocates real
+    // memory) and there is no way to give memory back to the engine.
 #ifdef HOST_WASM
-    // On WASM, reserve == commit (posix_memalign allocates real memory) and there is
-    // no way to give memory back to the engine. Tell the GC to treat decommit as a no-op
-    // and to never rely on memory shrinking back to the OS.
     never_decommit_p = true;
+#else
+    never_decommit_p = use_large_pages_p;
 #endif //HOST_WASM
 
     if (heap_hard_limit_oh[soh] || heap_hard_limit_oh[loh] || heap_hard_limit_oh[poh])

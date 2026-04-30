@@ -5376,9 +5376,9 @@ private:
     // Indicates that the underlying OS does not support decommitting memory.
     // Implies that VirtualCommit/VirtualDecommit are no-ops on heap memory and
     // that GC code paths that rely on returning memory to the OS must be skipped.
-    // Set unconditionally on WASM. The use_large_pages_p path also implies this
-    // (large pages are pre-committed and never decommitted) but additionally
-    // pulls in OS huge-page-specific behavior that is not desired on WASM.
+    // Set unconditionally on WASM and whenever use_large_pages_p is set (large pages
+    // are pre-committed and cannot be decommitted). Code that wants to skip a
+    // decommit-related path should test this flag rather than use_large_pages_p.
     PER_HEAP_ISOLATED_FIELD_INIT_ONLY bool never_decommit_p;
 
 #ifdef MULTIPLE_HEAPS
