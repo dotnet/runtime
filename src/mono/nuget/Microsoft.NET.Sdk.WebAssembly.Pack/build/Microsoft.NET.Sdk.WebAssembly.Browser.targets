@@ -203,6 +203,8 @@ Copyright (c) .NET Foundation. All rights reserved.
       <_WasmEnableWebcil>$(WasmEnableWebcil)</_WasmEnableWebcil>
       <_WasmEnableWebcil Condition="'$(_TargetingNET80OrLater)' != 'true'">false</_WasmEnableWebcil>
       <_WasmEnableWebcil Condition="'$(_WasmEnableWebcil)' == ''">true</_WasmEnableWebcil>
+      <_WasmWebcilVersion Condition="'$(_WasmWebcilVersion)' == '' and '$(RuntimeFlavor)' == 'CoreCLR'">1</_WasmWebcilVersion>
+      <_WasmWebcilVersion Condition="'$(_WasmWebcilVersion)' == ''">0</_WasmWebcilVersion>
       <_BlazorWebAssemblyJiterpreter>$(BlazorWebAssemblyJiterpreter)</_BlazorWebAssemblyJiterpreter>
       <_BlazorWebAssemblyRuntimeOptions>$(BlazorWebAssemblyRuntimeOptions)</_BlazorWebAssemblyRuntimeOptions>
       <_WasmInlineBootConfig Condition="'$(_WasmInlineBootConfig)' == '' and '$(_TargetingNET100OrLater)' == 'true'">true</_WasmInlineBootConfig>
@@ -351,9 +353,15 @@ Copyright (c) .NET Foundation. All rights reserved.
     <PropertyGroup>
       <_WasmBuildWebcilPath>$([MSBuild]::NormalizeDirectory($(IntermediateOutputPath), 'webcil'))</_WasmBuildWebcilPath>
       <_WasmBuildTmpWebcilPath>$([MSBuild]::NormalizeDirectory($(IntermediateOutputPath), 'tmp-webcil'))</_WasmBuildTmpWebcilPath>
+      <!-- Controls whether WASM framework/webcil static web assets are copied to bin/wwwroot/_framework/
+           at build time. Defaults to 'Never' (assets stay in obj/fx/ and are served via the static web
+           assets middleware). Set to 'PreserveNewest' to copy them to the output directory — this is
+           required for scenarios that run the app from bin/ without the static web assets middleware
+           (e.g. in-tree library tests). -->
+      <_WasmFrameworkCopyToOutputDirectory Condition="'$(_WasmFrameworkCopyToOutputDirectory)' == ''">Never</_WasmFrameworkCopyToOutputDirectory>
     </PropertyGroup>
 
-    <ConvertDllsToWebcil Candidates="@(_BuildAssetsCandidates)" IntermediateOutputPath="$(_WasmBuildTmpWebcilPath)" OutputPath="$(_WasmBuildWebcilPath)" IsEnabled="$(_WasmEnableWebcil)">
+    <ConvertDllsToWebcil Candidates="@(_BuildAssetsCandidates)" IntermediateOutputPath="$(_WasmBuildTmpWebcilPath)" OutputPath="$(_WasmBuildWebcilPath)" IsEnabled="$(_WasmEnableWebcil)" WebcilVersion="$(_WasmWebcilVersion)">
       <Output TaskParameter="WebcilCandidates" ItemName="_WebcilAssetsCandidates" />
       <Output TaskParameter="PassThroughCandidates" ItemName="_WasmFrameworkCandidates" />
       <Output TaskParameter="FileWrites" ItemName="FileWrites" />
@@ -384,7 +392,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       SourceType="Computed"
       AssetKind="Build"
       AssetRole="Primary"
-      CopyToOutputDirectory="PreserveNewest"
+      CopyToOutputDirectory="$(_WasmFrameworkCopyToOutputDirectory)"
       CopyToPublishDirectory="Never"
       FingerprintCandidates="$(_WasmFingerprintAssets)"
       FingerprintPatterns="@(FingerprintPatterns);@(_WasmFingerprintPatterns)"
@@ -403,7 +411,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       SourceType="Framework"
       AssetKind="Build"
       AssetRole="Primary"
-      CopyToOutputDirectory="PreserveNewest"
+      CopyToOutputDirectory="$(_WasmFrameworkCopyToOutputDirectory)"
       CopyToPublishDirectory="Never"
       FingerprintCandidates="$(_WasmFingerprintAssets)"
       FingerprintPatterns="@(FingerprintPatterns);@(_WasmFingerprintPatterns)"
@@ -427,12 +435,12 @@ Copyright (c) .NET Foundation. All rights reserved.
     <!-- Materialized framework assets must be visible to referencing projects (e.g. Blazor WASM
          hosted scenarios where the server project serves the client's framework files).
          UpdatePackageStaticWebAssets defaults AssetMode to CurrentProject and CopyToOutputDirectory
-         to Never. Override both: AssetMode=All so assets flow through project references, and
-         CopyToOutputDirectory=PreserveNewest so they are copied from the intermediate materialized
-         path (obj/fx/{SourceId}/) to bin/wwwroot/_framework/ at build time. -->
+         to Never. Override AssetMode=All so assets flow through project references. Framework
+         files stay in obj/fx/{SourceId}/ and are served by the static web assets middleware
+         during dotnet run — they are not copied to bin/wwwroot/_framework/ at build time. -->
     <ItemGroup>
       <_WasmMaterializedFrameworkAssets Update="@(_WasmMaterializedFrameworkAssets)"
-        AssetMode="All" CopyToOutputDirectory="PreserveNewest" />
+        AssetMode="All" CopyToOutputDirectory="$(_WasmFrameworkCopyToOutputDirectory)" />
       <WasmStaticWebAsset Include="@(_WasmMaterializedFrameworkAssets)" />
     </ItemGroup>
 
@@ -474,9 +482,22 @@ Copyright (c) .NET Foundation. All rights reserved.
     </ItemGroup>
   </Target>
 
-  <Target Name="_AddWasmDiagnosticPortsEnvironmentVariable">
+  <Target Name="_AddWasmDiagnosticPortsEnvironmentVariable" Condition="'$(EnableDiagnostics)' == 'true'">
+    <PropertyGroup>
+      <_WasmPerfInstFilter>$(WasmPerformanceInstrumentation)</_WasmPerfInstFilter>
+      <_WasmPerfInstInterval></_WasmPerfInstInterval>
+      <_WasmPerfInstDescriptor></_WasmPerfInstDescriptor>
+      <_WasmPerfInstInterval Condition="$(WasmPerformanceInstrumentation.Contains(',interval='))">$(WasmPerformanceInstrumentation.Substring($([MSBuild]::Add($(WasmPerformanceInstrumentation.IndexOf(',interval=')), 10))))</_WasmPerfInstInterval>
+      <_WasmPerfInstFilter Condition="$(WasmPerformanceInstrumentation.Contains(',interval='))">$(WasmPerformanceInstrumentation.Substring(0, $(WasmPerformanceInstrumentation.IndexOf(',interval='))))</_WasmPerfInstFilter>
+      <_WasmPerfInstInterval Condition="'$(_WasmPerfInstInterval)' != '' and $(_WasmPerfInstInterval.Contains(','))">$(_WasmPerfInstInterval.Substring(0, $(_WasmPerfInstInterval.IndexOf(','))))</_WasmPerfInstInterval>
+      <_WasmPerfInstDescriptor Condition="'$(_WasmPerfInstFilter)' != '' and '$(UseMonoRuntime)' != 'false'">eventpipe,callspec=$(_WasmPerfInstFilter)</_WasmPerfInstDescriptor>
+      <_WasmPerfInstFilter Condition="'$(_WasmPerfInstFilter)' == 'all' and '$(UseMonoRuntime)' == 'false'">*</_WasmPerfInstFilter>
+      <_WasmPerfInstDescriptor Condition="'$(_WasmPerfInstFilter)' != '' and '$(UseMonoRuntime)' == 'false'">$(_WasmPerfInstFilter)</_WasmPerfInstDescriptor>
+    </PropertyGroup>
     <ItemGroup>
       <WasmEnvironmentVariable Include="DOTNET_DiagnosticPorts" Value="$(DiagnosticPorts)" Condition="'$(DiagnosticPorts)' != ''"/>
+      <WasmEnvironmentVariable Include="DOTNET_WasmPerformanceInstrumentation" Value="$(_WasmPerfInstDescriptor)" Condition="'$(_WasmPerfInstDescriptor)' != ''" />
+      <WasmEnvironmentVariable Condition="'$(_WasmPerfInstInterval)' != ''" Include="DOTNET_EventPipeThreadSamplingRate" Value="$(_WasmPerfInstInterval)" />
     </ItemGroup>
   </Target>
 
@@ -751,7 +772,13 @@ Copyright (c) .NET Foundation. All rights reserved.
 
       <!-- remove the original assemblies -->
       <ResolvedFileToPublish Remove="@(WasmAssembliesToBundle)" />
-      <_WasmResolvedFilesToPublish Include="@(ResolvedFileToPublish)" />
+      <!-- Exclude items marked CopyToPublishDirectory=Never. These are build-only assets
+           (e.g., HotReload dll) that should not participate in publish. Without this filter,
+           ComputeWasmPublishAssets matches them by filename and replaces Framework-materialized
+           per-project assets with the raw SDK-path original, causing duplicate Identity crashes
+           in multi-client hosted publish scenarios. -->
+      <_WasmResolvedFilesToPublish Include="@(ResolvedFileToPublish)"
+        Condition="'%(ResolvedFileToPublish.CopyToPublishDirectory)' != 'Never'" />
     </ItemGroup>
 
     <ComputeWasmPublishAssets
@@ -785,7 +812,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       <_WasmPublishTmpWebcilPath>$([MSBuild]::NormalizeDirectory($(IntermediateOutputPath), 'tmp-webcil', 'publish'))</_WasmPublishTmpWebcilPath>
     </PropertyGroup>
 
-    <ConvertDllsToWebcil Candidates="@(_NewWasmPublishStaticWebAssets)" IntermediateOutputPath="$(_WasmPublishTmpWebcilPath)" OutputPath="$(_WasmPublishWebcilPath)" IsEnabled="$(_WasmEnableWebcil)">
+    <ConvertDllsToWebcil Candidates="@(_NewWasmPublishStaticWebAssets)" IntermediateOutputPath="$(_WasmPublishTmpWebcilPath)" OutputPath="$(_WasmPublishWebcilPath)" IsEnabled="$(_WasmEnableWebcil)" WebcilVersion="$(_WasmWebcilVersion)">
       <Output TaskParameter="WebcilCandidates" ItemName="_NewWebcilPublishStaticWebAssetsCandidates" />
       <Output TaskParameter="FileWrites" ItemName="FileWrites" />
     </ConvertDllsToWebcil>

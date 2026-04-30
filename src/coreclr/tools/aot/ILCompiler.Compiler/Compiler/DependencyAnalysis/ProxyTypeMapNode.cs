@@ -50,7 +50,7 @@ namespace ILCompiler.DependencyAnalysis
                 // If the key type has a canonical form, it could be created at runtime by the type loader.
                 // If there is a type loader template for it, create the generic type instantiation eagerly.
                 TypeDesc canonKey = key.ConvertToCanonForm(CanonicalFormKind.Specific);
-                if (canonKey != key)
+                if (canonKey != key && GenericTypesTemplateMap.IsEligibleToHaveATemplate(canonKey))
                 {
                     yield return new CombinedDependencyListEntry(
                         context.MaximallyConstructableType(key),

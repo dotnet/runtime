@@ -25,9 +25,9 @@ if(CLR_CMAKE_HOST_WIN32)
     ${STATIC_MT_CRT_LIB}
     ${STATIC_MT_VCRT_LIB}
   )
-  list(APPEND INTERPRETER_SOURCES
-    Native.rc
-  )
+  # Native.rc is added only to the shared library, not to the statically linked one,
+  # to prevent VERSION duplicates
+  set(INTERPRETER_RESOURCES Native.rc)
   add_definitions(-DFX_VER_INTERNALNAME_STR=clrinterpreter.dll)
 endif()
 
@@ -52,7 +52,7 @@ if (NOT CMAKE_GENERATOR MATCHES "Visual Studio")
 endif()
 
 if (NOT CLR_CMAKE_TARGET_ARCH_WASM)
-  add_library_clr(clrinterpreter SHARED $<TARGET_OBJECTS:clrinterpreter_objects> $<TARGET_OBJECTS:dn-containers>)
+  add_library_clr(clrinterpreter SHARED $<TARGET_OBJECTS:clrinterpreter_objects> $<TARGET_OBJECTS:dn-containers> ${INTERPRETER_RESOURCES})
 else()
   add_library_clr(clrinterpreter STATIC $<TARGET_OBJECTS:clrinterpreter_objects> $<TARGET_OBJECTS:dn-containers>)
 endif()

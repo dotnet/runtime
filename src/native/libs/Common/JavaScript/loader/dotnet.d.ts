@@ -49,6 +49,10 @@ interface DotnetHostBuilder {
      */
     withConfig(config: LoaderConfig): DotnetHostBuilder;
     /**
+     * @deprecated This method is no longer supported and will be removed in a future version.
+     */
+    withConfigSrc(configSrc: string): DotnetHostBuilder;
+    /**
      * "command line" arguments for the Main() method.
      * @param args
      */
@@ -102,8 +106,12 @@ interface DotnetHostBuilder {
     withResourceLoader(loadBootResource?: LoadBootResourceCallback): DotnetHostBuilder;
     /**
      * Downloads all the assets but doesn't create the runtime instance.
+     * @param httpCacheOnly If true, resources are only fetched into the browser HTTP cache
+     *   and discarded. A subsequent create() call will re-fetch from cache and do full init.
+     *   If false (default), resources are downloaded and loaded into WASM memory, so that
+     *   a subsequent create() call only needs to initialize the managed runtime.
      */
-    download(): Promise<void>;
+    download(httpCacheOnly?: boolean): Promise<void>;
     /**
      * Starts the runtime and returns promise of the API object.
      */
@@ -684,7 +692,7 @@ type DiagnosticsAPIType = {
 type DiagnosticCommandProviderV2 = {
     keywords: [number, number];
     logLevel: number;
-    provider_name: string;
+    providerName: string;
     arguments: string | null;
 };
 type DiagnosticCommandOptions = {
@@ -752,4 +760,4 @@ declare global {
 }
 
 export { GlobalizationMode, createDotnetRuntime as default, dotnet, exit };
-export type { AssetBehaviors, AssetEntry, CreateDotnetRuntimeType, DotnetHostBuilder, DotnetModuleConfig, EmscriptenModule, IMemoryView, LoaderConfig, ModuleAPI, RuntimeAPI };
+export type { AssemblyAsset, Asset, AssetBehaviors, AssetEntry, Assets, BootModule, CreateDotnetRuntimeType, DotnetHostBuilder, DotnetModuleConfig, EmscriptenModule, IMemoryView, IcuAsset, JsAsset, LoadBootResourceCallback, LoaderConfig, LoadingResource, ModuleAPI, PdbAsset, ResourceExtensions, ResourceList, RuntimeAPI, SymbolsAsset, VfsAsset, WasmAsset, WebAssemblyBootResourceType };

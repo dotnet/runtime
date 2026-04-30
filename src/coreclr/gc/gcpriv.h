@@ -1694,7 +1694,10 @@ private:
     PER_HEAP_METHOD void set_region_sweep_in_plan (heap_segment* region);
     PER_HEAP_METHOD void clear_region_sweep_in_plan (heap_segment* region);
     PER_HEAP_METHOD void clear_region_demoted (heap_segment* region);
-    PER_HEAP_METHOD void decide_on_demotion_pin_surv (heap_segment* region, int* no_pinned_surv_region_count);
+    PER_HEAP_METHOD void decide_on_demotion_pin_surv (heap_segment* region,
+                                                      int* no_pinned_surv_region_count,
+                                                      bool promote_gen1_pins_p,
+                                                      bool large_pins_p);
     PER_HEAP_METHOD void skip_pins_in_alloc_region (generation* consing_gen, int plan_gen_num);
     PER_HEAP_METHOD void process_last_np_surv_region (generation* consing_gen,
                                       int current_plan_gen_num,
@@ -1752,7 +1755,7 @@ private:
     PER_HEAP_ISOLATED_METHOD void move_aged_regions(region_free_list dest[count_free_region_kinds], region_free_list& src, free_region_kind kind, bool joined_last_gc_before_oom);
     PER_HEAP_ISOLATED_METHOD bool aged_region_p(heap_segment* region, free_region_kind kind);
     PER_HEAP_ISOLATED_METHOD void move_regions_to_decommit(region_free_list oregions[count_free_region_kinds]);
-    PER_HEAP_ISOLATED_METHOD size_t compute_basic_region_budgets(size_t heap_basic_budget_in_region_units[MAX_SUPPORTED_CPUS], size_t min_heap_basic_budget_in_region_units[MAX_SUPPORTED_CPUS], size_t total_basic_free_regions);
+    PER_HEAP_ISOLATED_METHOD size_t compute_basic_region_budgets(size_t heap_basic_budget_in_region_units[MAX_SUPPORTED_HEAPS], size_t min_heap_basic_budget_in_region_units[MAX_SUPPORTED_HEAPS], size_t total_basic_free_regions);
     PER_HEAP_ISOLATED_METHOD bool near_heap_hard_limit_p();
     PER_HEAP_ISOLATED_METHOD bool distribute_surplus_p(ptrdiff_t balance, int kind, bool aggressive_decommit_large_p);
     PER_HEAP_ISOLATED_METHOD void decide_on_decommit_strategy(bool joined_last_gc_before_oom);
@@ -2625,6 +2628,15 @@ private:
 #ifndef USE_REGIONS
     PER_HEAP_METHOD generation*  ensure_ephemeral_heap_segment (generation* consing_gen);
 #endif //!USE_REGIONS
+
+    PER_HEAP_ISOLATED_METHOD bool decide_on_gen1_pin_promotion (float pin_frag_ratio, float pin_surv_ratio);
+
+    PER_HEAP_METHOD void attribute_pin_higher_gen_alloc (
+#ifdef USE_REGIONS
+                                                        heap_segment* seg, int to_gen_number,
+#endif
+                                                        uint8_t* plug, size_t len);
+
     PER_HEAP_METHOD uint8_t* allocate_in_condemned_generations (generation* gen,
                                              size_t size,
                                              int from_gen_number,
@@ -2646,6 +2658,8 @@ private:
     PER_HEAP_METHOD size_t get_promoted_bytes();
 
 #ifdef USE_REGIONS
+    PER_HEAP_METHOD void attribute_pin_higher_gen_alloc (int frgn, int togn, size_t len);
+
     PER_HEAP_ISOLATED_METHOD void sync_promoted_bytes();
 
     PER_HEAP_ISOLATED_METHOD void set_heap_for_contained_basic_regions (heap_segment* region, gc_heap* hp);
@@ -3529,6 +3543,8 @@ private:
     // Set during a GC and checked by allocator after that GC
     PER_HEAP_FIELD_SINGLE_GC BOOL sufficient_gen0_space_p;
 
+    PER_HEAP_FIELD_SINGLE_GC BOOL decide_promote_gen1_pins_p;
+
     PER_HEAP_FIELD_SINGLE_GC bool no_gc_oom_p;
     PER_HEAP_FIELD_SINGLE_GC heap_segment* saved_loh_segment_no_gc;
 
@@ -3668,7 +3684,6 @@ private:
 
     PER_HEAP_FIELD_SINGLE_GC uint8_t* demotion_low;
     PER_HEAP_FIELD_SINGLE_GC uint8_t* demotion_high;
-    PER_HEAP_FIELD_SINGLE_GC BOOL demote_gen1_p;
     PER_HEAP_FIELD_SINGLE_GC uint8_t* last_gen1_pin_end;
 
     PER_HEAP_FIELD_SINGLE_GC BOOL ephemeral_promotion;
@@ -5354,7 +5369,9 @@ private:
 #endif
 
     // Indicate to use large pages. This only works if hardlimit is also enabled.
+    // GCLargePages=1 uses real OS large pages, GCLargePages=2 emulates it for testing.
     PER_HEAP_ISOLATED_FIELD_INIT_ONLY bool use_large_pages_p;
+    PER_HEAP_ISOLATED_FIELD_INIT_ONLY bool large_pages_emulation_mode_p;
 
 #ifdef MULTIPLE_HEAPS
     // Init-ed in gc_heap::initialize_gc

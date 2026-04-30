@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
@@ -9,7 +10,6 @@ internal readonly struct Thread_1 : IThread
 {
     private readonly Target _target;
     private readonly TargetPointer _threadStoreAddr;
-    private readonly ulong _threadLinkOffset;
 
     [Flags]
     private enum TLSIndexType
@@ -19,15 +19,28 @@ internal readonly struct Thread_1 : IThread
         DirectOnThreadLocalData = 2, // IndexOffset for this form of TLS index is an offset into the ThreadLocalData structure itself. This is used for very high performance scenarios, and scenario where the runtime native code needs to hold a TLS pointer to a managed TLS slot. Each one of these is hand-opted into this model.
     };
 
-    internal Thread_1(Target target, TargetPointer threadStore)
+    [Flags]
+    private enum ThreadState_1
+    {
+        Hijacked = 0x80,
+        Background = 0x200,
+        Unstarted = 0x400,
+        Stopped = 0x10000,
+        ThreadPoolWorker = 0x1000000,
+        Detached = unchecked((int)0x80000000)
+    }
+
+    [Flags]
+    private enum ExceptionFlags
+    {
+        DebuggerInterceptInfo = 0x00000200,
+        IsUnhandled = 0x00000800,
+    }
+
+    internal Thread_1(Target target)
     {
         _target = target;
-        _threadStoreAddr = threadStore;
-
-        // Get the offset into Thread of the SLink. We use this to find the actual
-        // first thread from the linked list node contained by the first thread.
-        Target.TypeInfo type = _target.GetTypeInfo(DataType.Thread);
-        _threadLinkOffset = (ulong)type.Fields[nameof(Data.Thread.LinkNext)].Offset;
+        _threadStoreAddr = target.ReadPointer(target.ReadGlobalPointer(Constants.Globals.ThreadStore));
     }
 
     ThreadStoreData IThread.GetThreadStoreData()
@@ -35,7 +48,7 @@ internal readonly struct Thread_1 : IThread
         Data.ThreadStore threadStore = _target.ProcessedData.GetOrAdd<Data.ThreadStore>(_threadStoreAddr);
         return new ThreadStoreData(
             threadStore.ThreadCount,
-            GetThreadFromLink(threadStore.FirstThreadLink),
+            threadStore.FirstThreadLink,
             _target.ReadPointer(_target.ReadGlobalPointer(Constants.Globals.FinalizerThread)),
             _target.ReadPointer(_target.ReadGlobalPointer(Constants.Globals.GCThread)));
     }
@@ -50,30 +63,63 @@ internal readonly struct Thread_1 : IThread
             threadStore.DeadCount);
     }
 
+    private static Contracts.ThreadState GetThreadState(ThreadState_1 state)
+    {
+        Contracts.ThreadState result = Contracts.ThreadState.Unknown;
+        if (state.HasFlag(ThreadState_1.Hijacked))
+            result |= Contracts.ThreadState.Hijacked;
+        if (state.HasFlag(ThreadState_1.Background))
+            result |= Contracts.ThreadState.Background;
+        if (state.HasFlag(ThreadState_1.Unstarted))
+            result |= Contracts.ThreadState.Unstarted;
+        if (state.HasFlag(ThreadState_1.Stopped))
+            result |= Contracts.ThreadState.Stopped;
+        if (state.HasFlag(ThreadState_1.ThreadPoolWorker))
+            result |= Contracts.ThreadState.ThreadPoolWorker;
+        if (state.HasFlag(ThreadState_1.Detached))
+            result |= Contracts.ThreadState.Detached;
+        return result;
+    }
+
     ThreadData IThread.GetThreadData(TargetPointer threadPointer)
     {
         Data.Thread thread = _target.ProcessedData.GetOrAdd<Data.Thread>(threadPointer);
 
         TargetPointer address = _target.ReadPointer(thread.ExceptionTracker);
         TargetPointer firstNestedException = TargetPointer.Null;
+        bool hasUnhandledException = false;
         if (address != TargetPointer.Null)
         {
             Data.ExceptionInfo exceptionInfo = _target.ProcessedData.GetOrAdd<Data.ExceptionInfo>(address);
             firstNestedException = exceptionInfo.PreviousNestedInfo;
+
+            if (exceptionInfo.ThrownObjectHandle.Handle != TargetPointer.Null)
+            {
+                uint exceptionFlags = exceptionInfo.ExceptionFlags;
+                hasUnhandledException = (exceptionFlags & (uint)ExceptionFlags.IsUnhandled) != 0
+                    && (exceptionFlags & (uint)ExceptionFlags.DebuggerInterceptInfo) == 0;
+            }
         }
 
+        if (thread.LastThrownObjectIsUnhandled != 0)
+            hasUnhandledException = true;
+
         return new ThreadData(
+            threadPointer,
             thread.Id,
             thread.OSId,
-            (ThreadState)thread.State,
+            GetThreadState((ThreadState_1)thread.State),
             (thread.PreemptiveGCDisabled & 0x1) != 0,
             thread.RuntimeThreadLocals?.AllocContext.GCAllocationContext.Pointer ?? TargetPointer.Null,
             thread.RuntimeThreadLocals?.AllocContext.GCAllocationContext.Limit ?? TargetPointer.Null,
             thread.Frame,
             firstNestedException,
-            thread.TEB,
+            thread.ExposedObject.Handle,
             thread.LastThrownObject.Handle,
-            GetThreadFromLink(thread.LinkNext));
+            thread.CurrentCustomDebuggerNotification.Handle,
+            thread.LastThrownObjectIsUnhandled != 0,
+            hasUnhandledException,
+            thread.LinkNext);
     }
 
     void IThread.GetThreadAllocContext(TargetPointer threadPointer, out long allocBytes, out long allocBytesLoh)
@@ -104,15 +150,6 @@ internal readonly struct Thread_1 : IThread
         if (id < idDispenserObj.HighestId)
             threadPtr = _target.ReadPointer(idDispenserObj.IdToThread + (ulong)(id * _target.PointerSize));
         return threadPtr;
-    }
-
-    private TargetPointer GetThreadFromLink(TargetPointer threadLink)
-    {
-        if (threadLink == TargetPointer.Null)
-            return TargetPointer.Null;
-
-        // Get the address of the thread containing the link
-        return new TargetPointer(threadLink - _threadLinkOffset);
     }
 
     TargetPointer IThread.GetThreadLocalStaticBase(TargetPointer threadPointer, TargetPointer tlsIndexPtr)
@@ -188,10 +225,10 @@ internal readonly struct Thread_1 : IThread
         if (exceptionInfo == null)
             return TargetPointer.Null;
 
-        if (exceptionInfo.ThrownObjectHandle == TargetPointer.Null || _target.ReadPointer(exceptionInfo.ThrownObjectHandle) == TargetPointer.Null)
+        if (exceptionInfo.ThrownObjectHandle.Handle == TargetPointer.Null || exceptionInfo.ThrownObjectHandle.Object == TargetPointer.Null)
             return TargetPointer.Null;
 
-        return exceptionInfo.ThrownObjectHandle;
+        return exceptionInfo.ThrownObjectHandle.Handle;
     }
 
     byte[] IThread.GetWatsonBuckets(TargetPointer threadPointer)
@@ -200,7 +237,7 @@ internal readonly struct Thread_1 : IThread
         var (thread, exceptionInfo) = GetThreadExceptionInfo(threadPointer);
         if (exceptionInfo == null)
             return Array.Empty<byte>();
-        Data.ObjectHandle throwableObject = _target.ProcessedData.GetOrAdd<Data.ObjectHandle>(exceptionInfo.ThrownObjectHandle);
+        Data.ObjectHandle throwableObject = exceptionInfo.ThrownObjectHandle;
         if (throwableObject.Object != TargetPointer.Null)
         {
             Data.Exception exception = _target.ProcessedData.GetOrAdd<Data.Exception>(throwableObject.Object);
@@ -232,5 +269,32 @@ internal readonly struct Thread_1 : IThread
         byte[] rval = new byte[_target.ReadGlobal<uint>(Constants.Globals.SizeOfGenericModeBlock)];
         _target.ReadBuffer(readFrom, rval);
         return rval;
+    }
+
+    byte[] IThread.GetContext(TargetPointer threadPointer, ThreadContextSource contextSource, uint contextFlags)
+    {
+        IPlatformAgnosticContext context = IPlatformAgnosticContext.GetContextForPlatform(_target);
+        byte[] bytes = new byte[context.Size];
+        Span<byte> buffer = new Span<byte>(bytes);
+
+        Data.Thread thread = _target.ProcessedData.GetOrAdd<Data.Thread>(threadPointer);
+
+        TargetPointer filterContext = TargetPointer.Null;
+
+        if (contextSource.HasFlag(ThreadContextSource.Debugger))
+            filterContext = thread.DebuggerFilterContext;
+
+        if (filterContext != TargetPointer.Null)
+        {
+            _target.ReadBuffer(filterContext.Value, buffer);
+            return bytes;
+        }
+
+        if (!_target.TryGetThreadContext(thread.OSId.Value, contextFlags, buffer))
+        {
+            throw new InvalidOperationException($"GetThreadContext failed for thread {thread.OSId.Value}");
+        }
+
+        return bytes;
     }
 }

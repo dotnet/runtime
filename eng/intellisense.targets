@@ -2,19 +2,28 @@
 
   <PropertyGroup>
     <UseCompilerGeneratedDocXmlFile Condition="'$(UseCompilerGeneratedDocXmlFile)' == ''">true</UseCompilerGeneratedDocXmlFile>
+    <!-- Set IsPlatformNotSupportedAssembly when GeneratePlatformNotSupportedAssemblyMessage is set. -->
+    <IsPlatformNotSupportedAssembly Condition="'$(IsPlatformNotSupportedAssembly)' == '' and '$(GeneratePlatformNotSupportedAssemblyMessage)' != ''">true</IsPlatformNotSupportedAssembly>
+    <!-- IsCandidateCompilerGeneratedDocFile indicates that the target framework can serve as the doc
+         source for PNSE sibling builds: the TF must be compatible with NetCoreAppCurrent and not itself be PNSE. -->    
+    <IsCandidateCompilerGeneratedDocFile
+      Condition="'$(TargetFramework)' != '' and
+                 '$(GeneratePlatformNotSupportedAssemblyMessage)' == '' and
+                 $([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', '$(NetCoreAppCurrent)'))">$(UseCompilerGeneratedDocXmlFile)</IsCandidateCompilerGeneratedDocFile>
+    <IntermediateDocFileOverride>$([MSBuild]::NormalizePath('$(IntermediateOutputPath)', 'doc-override', '$(TargetName).xml'))</IntermediateDocFileOverride>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(UseCompilerGeneratedDocXmlFile)' != 'true'">
     <IntellisensePackageXmlRootFolder>$([MSBuild]::NormalizeDirectory('$(NuGetPackageRoot)', 'microsoft.private.intellisense', '$(MicrosoftPrivateIntellisenseVersion)', 'IntellisenseFiles'))</IntellisensePackageXmlRootFolder>
-    <!-- Replace net10.0 with 'net-$(NetCoreAppCurrentVersion)' once we have a intellisense package with updated docs -->
+    <!-- Replace net10.0 with 'net-$(NetCoreAppCurrentVersion)' once we have an intellisense package with updated docs -->
     <IntellisensePackageXmlFilePathFromNetVersionFolder>$([MSBuild]::NormalizePath('$(IntellisensePackageXmlRootFolder)', 'net-10.0', '1033', '$(AssemblyName).xml'))</IntellisensePackageXmlFilePathFromNetVersionFolder>
     <IntellisensePackageXmlFilePathFromNetFolder>$([MSBuild]::NormalizePath('$(IntellisensePackageXmlRootFolder)', 'net', '1033', '$(AssemblyName).xml'))</IntellisensePackageXmlFilePathFromNetFolder>
-    <IntellisensePackageXmlFilePath Condition="'$(IntellisensePackageXmlFilePath)' == '' and Exists($(IntellisensePackageXmlFilePathFromNetVersionFolder))">$(IntellisensePackageXmlFilePathFromNetVersionFolder)</IntellisensePackageXmlFilePath>
-    <IntellisensePackageXmlFilePath Condition="'$(IntellisensePackageXmlFilePath)' == '' and Exists($(IntellisensePackageXmlFilePathFromNetFolder))">$(IntellisensePackageXmlFilePathFromNetFolder)</IntellisensePackageXmlFilePath>
-
-    <IntermediateDocFileItemFromIntellisensePackage>$([MSBuild]::NormalizePath('$(IntermediateOutputPath)', 'intellisense-package', '$(TargetName).xml'))</IntermediateDocFileItemFromIntellisensePackage>
-
-    <!-- Suppress "CS1591 - Missing XML comment for publicly visible type or member" compiler errors when the intellisense package xml file is used. -->
+    <DocFileOverride Condition="'$(DocFileOverride)' == '' and Exists($(IntellisensePackageXmlFilePathFromNetVersionFolder))">$(IntellisensePackageXmlFilePathFromNetVersionFolder)</DocFileOverride>
+    <DocFileOverride Condition="'$(DocFileOverride)' == '' and Exists($(IntellisensePackageXmlFilePathFromNetFolder))">$(IntellisensePackageXmlFilePathFromNetFolder)</DocFileOverride>
+  </PropertyGroup>
+  
+  <PropertyGroup Condition="'$(UseCompilerGeneratedDocXmlFile)' != 'true' or '$(IsPlatformNotSupportedAssembly)' == 'true'">
+    <!-- Suppress "CS1591 - Missing XML comment for publicly visible type or member" compiler errors when not using the compiler generated doc xml file. -->
     <NoWarn Condition="'$(SkipIntellisenseNoWarnCS1591)' != 'true'">$(NoWarn);CS1591</NoWarn>
   </PropertyGroup>
 
@@ -24,44 +33,48 @@
     <TargetPathWithTargetPlatformMoniker>
       <UseCompilerGeneratedDocXmlFile>$(UseCompilerGeneratedDocXmlFile)</UseCompilerGeneratedDocXmlFile>
       <IsPartialFacadeAssembly>$(IsPartialFacadeAssembly)</IsPartialFacadeAssembly>
-      <IsPlatformNotSupportedAssembly Condition="'$(GeneratePlatformNotSupportedAssemblyMessage)' != ''">true</IsPlatformNotSupportedAssembly>
+      <IsPlatformNotSupportedAssembly>$(IsPlatformNotSupportedAssembly)</IsPlatformNotSupportedAssembly>
       <SuppressPlatformNotSupportedAssemblyDocXmlError>$(SuppressPlatformNotSupportedAssemblyDocXmlError)</SuppressPlatformNotSupportedAssemblyDocXmlError>
     </TargetPathWithTargetPlatformMoniker>
   </ItemDefinitionGroup>
 
   <ItemGroup>
     <PackageDownload Include="Microsoft.Private.Intellisense" Version="[$(MicrosoftPrivateIntellisenseVersion)]" />
+    <!-- Flow IsCandidateCompilerGeneratedDocFile to the outer build via AdditionalTargetFrameworkInfoProperty so
+         that GetTargetFrameworks can identify which TF to use as the doc source for PNSE builds. -->
+    <AdditionalTargetFrameworkInfoProperty Include="IsCandidateCompilerGeneratedDocFile" />
   </ItemGroup>
 
   <!-- Warn if the docs team provided package doesn't have an intellisense file for a given library and the library explicitly
-       opts out from using the compiler generated xml file. -->
+       opts out from using the compiler generated xml file. For PNSE builds the doc XML comes from a non-PNSE sibling
+       target framework, so the warning is not applicable. -->
   <Target Name="ValidateIntellisensePackageXmlFilePathExists"
           Condition="'$(UseCompilerGeneratedDocXmlFile)' != 'true' and
-                     '$(IntellisensePackageXmlFilePath)' == ''"
+                     '$(DocFileOverride)' == '' and
+                     '$(IsPlatformNotSupportedAssembly)' != 'true'"
           BeforeTargets="CoreCompile">
     <Warning Text="The 'UseCompilerGeneratedDocXmlFile' property was set to '$(UseCompilerGeneratedDocXmlFile)', but the doc team doesn't provide a file for this assembly. Remove the 'UseCompilerGeneratedDocXmlFile' property to let the compiler generate the file." />
   </Target>
 
-  <!-- Prepare the intellisense package xml file by copying it to the project's intermediate folder and update its file timestamp.
-       This is necessary so that all project outputs are newer than all project inputs. Directly copying from the intellisense package
-       would violate that and break fast up-to-date check. -->
+  <!-- Copy DocFileOverride to the intermediate folder and touch it so outputs stay newer than inputs
+       for the fast up-to-date check. -->
   <Target Name="PrepareIntellisensePackageXmlFile"
-          Inputs="$(IntellisensePackageXmlFilePath)"
-          Outputs="$(IntermediateDocFileItemFromIntellisensePackage)">
-    <Copy SourceFiles="$(IntellisensePackageXmlFilePath)"
-          DestinationFiles="$(IntermediateDocFileItemFromIntellisensePackage)" />
+          Inputs="$(DocFileOverride)"
+          Outputs="$(IntermediateDocFileOverride)">
+    <Copy SourceFiles="$(DocFileOverride)"
+          DestinationFiles="$(IntermediateDocFileOverride)" />
 
-    <Touch Files="$(IntermediateDocFileItemFromIntellisensePackage)" />
+    <Touch Files="$(IntermediateDocFileOverride)" />
   </Target>
 
-  <!-- Replace the compiler generated xml file in the obj folder with the one that comes from the intellisense package. -->
+  <!-- Replace the compiler generated doc xml file with DocFileOverride. -->
   <Target Name="ChangeDocumentationFileForPackaging"
           DependsOnTargets="PrepareIntellisensePackageXmlFile"
           BeforeTargets="CopyFilesToOutputDirectory;DocumentationProjectOutputGroup"
-          Condition="'$(UseCompilerGeneratedDocXmlFile)' != 'true' and '$(IntellisensePackageXmlFilePath)' != ''">
+          Condition="'$(DocFileOverride)' != ''">
     <ItemGroup>
       <DocFileItem Remove="@(DocFileItem)" />
-      <DocFileItem Include="$(IntermediateDocFileItemFromIntellisensePackage)" />
+      <DocFileItem Include="$(IntermediateDocFileOverride)" />
     </ItemGroup>
   </Target>
 
@@ -72,6 +85,72 @@
     <ItemGroup>
       <TargetPathWithTargetPlatformMoniker DocFileItem="@(DocFileItem)" />
     </ItemGroup>
+  </Target>
+
+  <!-- Resolve the first non-PNSE sibling TF whose IsCandidateCompilerGeneratedDocFile is true. -->
+  <Target Name="GetPNSEDocTargetFramework"
+          Condition="'$(PNSEDocTargetFramework)' == ''">
+
+    <!-- GetTargetFrameworks is the standard outer-build target that aggregates per-TF metadata collected via
+         AdditionalTargetFrameworkInfoProperty, including IsCandidateCompilerGeneratedDocFile. -->
+    <MSBuild Projects="$(MSBuildProjectFullPath)"
+             Targets="GetTargetFrameworks"
+             RemoveProperties="TargetFramework">
+      <Output ItemName="_PNSETargetFrameworks" TaskParameter="TargetOutputs" />
+    </MSBuild>
+
+    <!-- Find the first TF whose IsCandidateCompilerGeneratedDocFile child element is 'true'.
+         AdditionalPropertiesFromProject is XML of the form:
+           <AdditionalProjectProperties>
+            <TargetFramework Name="net11.0">
+              <IsCandidateCompilerGeneratedDocFile>true</IsCandidateCompilerGeneratedDocFile>
+              ...
+            </TargetFramework>
+            <TargetFramework Name="net10.0">
+              <IsCandidateCompilerGeneratedDocFile>false</IsCandidateCompilerGeneratedDocFile>
+              ...
+            </TargetFramework>
+             ...
+           </AdditionalProjectProperties> -->
+    <XmlPeek XmlContent="@(_PNSETargetFrameworks->'%(AdditionalPropertiesFromProject)')"
+             Query="/AdditionalProjectProperties/TargetFramework[IsCandidateCompilerGeneratedDocFile='true'][1]/@Name">
+      <Output TaskParameter="Result" ItemName="_PNSECandidateTargetFramework" />
+    </XmlPeek>
+
+    <PropertyGroup>
+      <PNSEDocTargetFramework>@(_PNSECandidateTargetFramework)</PNSEDocTargetFramework>
+    </PropertyGroup>
+  </Target>
+
+  <!-- Skip the PNSE doc-source self-reference when not building a .NETCoreApp vertical. -->
+  <Target Name="AddProjectReferenceToPNSEDocSource"
+          DependsOnTargets="GetPNSEDocTargetFramework"
+          BeforeTargets="PrepareForBuild"
+          Condition="'$(IsPlatformNotSupportedAssembly)' == 'true' and
+                    '$(UseCompilerGeneratedDocXmlFile)' == 'true' and
+                    ('$(BuildTargetFramework)' == '' or '$(TargetFrameworkIdentifier)' == '.NETCoreApp')">
+    
+    <Error Condition="'$(PNSEDocTargetFramework)' == ''"
+           Text="Could not find a compatible TargetFramework to use as the documentation source for this PNSE build. Set 'PNSEDocTargetFramework' to the desired target framework." />
+
+    <!-- ProjectReference to the sibling TF; OutputItemType captures its DocFileItem into @(PNSEDocSource). -->
+    <ItemGroup Condition="'$(PNSEDocTargetFramework)' != ''">
+      <ProjectReference Include="$(MSBuildProjectFullPath)"
+                        SetTargetFramework="TargetFramework=$(PNSEDocTargetFramework)"
+                        ReferenceOutputAssembly="false"
+                        Private="false"
+                        PrivateAssets="all"
+                        OutputItemType="PNSEDocSource" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="SetDocFileOverrideFromPNSEDocSource"
+          AfterTargets="ResolveProjectReferences"
+          Condition="'@(PNSEDocSource)' != '' and '$(DocFileOverride)' == ''">
+    <PropertyGroup>
+      <!-- Use the DocFileItem metadata from the PNSEDocSource reference, which points to the compiler-generated doc XML from the non-PNSE sibling build. -->
+      <DocFileOverride>@(PNSEDocSource->'%(DocFileItem)')</DocFileOverride>
+    </PropertyGroup>
   </Target>
 
 </Project>

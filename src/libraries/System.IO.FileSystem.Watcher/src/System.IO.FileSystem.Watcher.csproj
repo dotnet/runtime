@@ -52,7 +52,7 @@
              Link="Common\Interop\Windows\Kernel32\Interop.FileOperations.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.ReadDirectoryChangesW.cs"
              Link="Common\Interop\Windows\Kernel32\Interop.ReadDirectoryChangesW.cs" />
-    <Compile Include="System\IO\FileSystemWatcher.Win32.cs">
+    <Compile Include="System\IO\FileSystemWatcher.Windows.cs">
       <SubType>Component</SubType>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.CloseHandle.cs"

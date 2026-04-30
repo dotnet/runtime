@@ -9150,6 +9150,64 @@ void emitter::emitIns_R_L(instruction ins, emitAttr attr, BasicBlock* dst, regNu
     appendToCurIG(id);
 }
 
+//--------------------------------------------------------------------
+// emitIns_R_L: Emit an instruction with a label operand.
+//
+// Arguments:
+//   ins - The instruction
+//   attr - Size of the instruction
+//   dst - Instruction group
+//   reg - Register destination
+//
+void emitter::emitIns_R_L(instruction ins, emitAttr attr, insGroup* dst, regNumber reg)
+{
+    assert(dst != nullptr);
+
+    insFormat fmt = IF_NONE;
+
+    switch (ins)
+    {
+        case INS_adr:
+            fmt = IF_LARGEADR;
+            break;
+        default:
+            unreached();
+    }
+
+    instrDescJmp* id = emitNewInstrJmp();
+
+    id->idIns(ins);
+    id->idInsFmt(fmt);
+    id->idjShort             = false;
+    id->idAddr()->iiaIGlabel = dst;
+    id->idSetIsBound(); // Mark as bound since we already have the target insGroup directly
+    id->idReg1(reg);
+    id->idOpSize(EA_PTRSIZE);
+    id->idjKeepLong = false;
+
+#ifdef DEBUG
+    if (m_compiler->opts.compLongAddress)
+        id->idjKeepLong = 1;
+#endif // DEBUG
+
+    /* Record the jump's IG and offset within it */
+
+    id->idjIG   = emitCurIG;
+    id->idjOffs = emitCurIGsize;
+
+    /* Append this jump to this IG's jump list */
+
+    id->idjNext      = emitCurIGjmpList;
+    emitCurIGjmpList = id;
+
+#if EMITTER_STATS
+    emitTotalIGjmps++;
+#endif
+
+    dispIns(id);
+    appendToCurIG(id);
+}
+
 /*****************************************************************************
  *
  *  Add a data label instruction.
@@ -13687,6 +13745,8 @@ void emitter::emitDispInsHelp(
             {
                 emitDispReg(id->idReg3(), EA_PTRSIZE, false);
             }
+
+            emitDispCommentForHandle(0, id->idDebugOnlyInfo()->idMemCookie, GTF_ICON_FTN_ADDR);
             break;
 
         case IF_LS_1A: // LS_1A   XX...V..iiiiiiii iiiiiiiiiiittttt      Rt    PC imm(1MB)
@@ -15197,11 +15257,11 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
 
 #if defined(DEBUG) || defined(LATE_DISASM)
 
-void emitter::getMemoryOperation(instrDesc* id, unsigned* pMemAccessKind, bool* pIsLocalAccess)
+void emitter::getMemoryOperation(instrDesc* id, PerfScoreMemoryAccessKind* pMemAccessKind, bool* pIsLocalAccess)
 {
-    unsigned    memAccessKind = PERFSCORE_MEMORY_NONE;
-    bool        isLocalAccess = false;
-    instruction ins           = id->idIns();
+    PerfScoreMemoryAccessKind memAccessKind = PerfScoreMemoryAccessKind::None;
+    bool                      isLocalAccess = false;
+    instruction               ins           = id->idIns();
 
     if (emitInsIsLoadOrStore(ins))
     {
@@ -15209,17 +15269,17 @@ void emitter::getMemoryOperation(instrDesc* id, unsigned* pMemAccessKind, bool* 
         {
             if (emitInsIsStore(ins))
             {
-                memAccessKind = PERFSCORE_MEMORY_READ_WRITE;
+                memAccessKind = PerfScoreMemoryAccessKind::ReadWrite;
             }
             else
             {
-                memAccessKind = PERFSCORE_MEMORY_READ;
+                memAccessKind = PerfScoreMemoryAccessKind::Read;
             }
         }
         else
         {
             assert(emitInsIsStore(ins));
-            memAccessKind = PERFSCORE_MEMORY_WRITE;
+            memAccessKind = PerfScoreMemoryAccessKind::Write;
         }
 
         insFormat insFmt = id->idInsFmt();
@@ -15352,7 +15412,7 @@ void emitter::getMemoryOperation(instrDesc* id, unsigned* pMemAccessKind, bool* 
 
             default:
                 assert(!"Logic Error");
-                memAccessKind = PERFSCORE_MEMORY_NONE;
+                memAccessKind = PerfScoreMemoryAccessKind::None;
                 break;
         }
     }
@@ -15384,8 +15444,8 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
     instruction                 ins    = id->idIns();
     insFormat                   insFmt = id->idInsFmt();
 
-    unsigned memAccessKind;
-    bool     isLocalAccess;
+    PerfScoreMemoryAccessKind memAccessKind;
+    bool                      isLocalAccess;
     getMemoryOperation(id, &memAccessKind, &isLocalAccess);
 
     result.insThroughput = PERFSCORE_THROUGHPUT_ILLEGAL;
@@ -15393,15 +15453,15 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
 
     // Initialize insLatency based upon the instruction's memAccessKind and local access values
     //
-    if (memAccessKind == PERFSCORE_MEMORY_READ)
+    if (memAccessKind == PerfScoreMemoryAccessKind::Read)
     {
         result.insLatency = isLocalAccess ? PERFSCORE_LATENCY_RD_STACK : PERFSCORE_LATENCY_RD_GENERAL;
     }
-    else if (memAccessKind == PERFSCORE_MEMORY_WRITE)
+    else if (memAccessKind == PerfScoreMemoryAccessKind::Write)
     {
         result.insLatency = isLocalAccess ? PERFSCORE_LATENCY_WR_STACK : PERFSCORE_LATENCY_WR_GENERAL;
     }
-    else if (memAccessKind == PERFSCORE_MEMORY_READ_WRITE)
+    else if (memAccessKind == PerfScoreMemoryAccessKind::ReadWrite)
     {
         result.insLatency = isLocalAccess ? PERFSCORE_LATENCY_RD_WR_STACK : PERFSCORE_LATENCY_RD_WR_GENERAL;
     }
@@ -15719,7 +15779,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
 
         case IF_LS_3B: // ldp, ldpsw, ldnp, stp, stnp  (load/store pair zero offset)
         case IF_LS_3C: // load/store pair with offset pre/post inc
-            if (memAccessKind == PERFSCORE_MEMORY_READ)
+            if (memAccessKind == PerfScoreMemoryAccessKind::Read)
             {
                 // ldp, ldpsw, ldnp
                 result.insThroughput = PERFSCORE_THROUGHPUT_1C;
@@ -15740,7 +15800,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             else // store instructions
             {
                 // stp, stnp
-                assert(memAccessKind == PERFSCORE_MEMORY_WRITE);
+                assert(memAccessKind == PerfScoreMemoryAccessKind::Write);
                 result.insThroughput = PERFSCORE_THROUGHPUT_1C;
             }
             break;
@@ -15754,7 +15814,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             break;
 
         case IF_LS_3E: //  ARMv8.1 LSE Atomics
-            if (memAccessKind == PERFSCORE_MEMORY_WRITE)
+            if (memAccessKind == PerfScoreMemoryAccessKind::Write)
             {
                 // staddb, staddlb, staddh, staddlh, stadd. staddl
                 result.insThroughput = PERFSCORE_THROUGHPUT_2C;
@@ -15762,7 +15822,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             }
             else
             {
-                assert(memAccessKind == PERFSCORE_MEMORY_READ_WRITE);
+                assert(memAccessKind == PerfScoreMemoryAccessKind::ReadWrite);
                 result.insThroughput = PERFSCORE_THROUGHPUT_3C;
                 result.insLatency    = max(PERFSCORE_LATENCY_3C, result.insLatency);
             }

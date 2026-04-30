@@ -112,16 +112,14 @@ BOOL bgc_heap_walk_for_etw_p = FALSE;
 #define num_partial_refs 32
 #endif //SERVER_GC
 
+#define demotion_plug_len_th (6*1024*1024)
+
 #ifdef USE_REGIONS
-// If the pinned survived is 1+% of the region size, we don't demote.
-#define demotion_pinned_ratio_th (1)
 // If the survived / region_size is 90+%, we don't compact this region.
 #define sip_surv_ratio_th (90)
 // If the survived due to cards from old generations / region_size is 90+%,
 // we don't compact this region, also we immediately promote it to gen2.
 #define sip_old_card_surv_ratio_th (90)
-#else
-#define demotion_plug_len_th (6*1024*1024)
 #endif //USE_REGIONS
 
 #ifdef HOST_64BIT
@@ -652,7 +650,7 @@ class t_join
     gc_join_flavor flavor;
 
 #ifdef JOIN_STATS
-    uint64_t start[MAX_SUPPORTED_CPUS], end[MAX_SUPPORTED_CPUS], start_seq;
+    uint64_t start[MAX_SUPPORTED_HEAPS], end[MAX_SUPPORTED_HEAPS], start_seq;
     // remember join id and last thread to arrive so restart can use these
     int thd;
     // we want to print statistics every 10 seconds - this is to remember the start of the 10 sec interval
@@ -2316,6 +2314,8 @@ BOOL        gc_heap::last_gc_before_oom = FALSE;
 
 BOOL        gc_heap::sufficient_gen0_space_p = FALSE;
 
+BOOL        gc_heap::decide_promote_gen1_pins_p = TRUE;
+
 #ifdef BACKGROUND_GC
 uint8_t*    gc_heap::background_saved_lowest_address = 0;
 uint8_t*    gc_heap::background_saved_highest_address = 0;
@@ -2366,8 +2366,6 @@ uint8_t*    gc_heap::gc_high = 0;
 uint8_t*    gc_heap::demotion_low;
 
 uint8_t*    gc_heap::demotion_high;
-
-BOOL        gc_heap::demote_gen1_p = TRUE;
 
 uint8_t*    gc_heap::last_gen1_pin_end;
 #endif //!USE_REGIONS
@@ -2621,6 +2619,7 @@ size_t gc_heap::eph_gen_starts_size = 0;
 heap_segment* gc_heap::segment_standby_list;
 #endif //USE_REGIONS
 bool          gc_heap::use_large_pages_p = 0;
+bool          gc_heap::large_pages_emulation_mode_p = 0;
 #ifdef HEAP_BALANCE_INSTRUMENTATION
 size_t        gc_heap::last_gc_end_time_us = 0;
 #endif //HEAP_BALANCE_INSTRUMENTATION
@@ -4504,10 +4503,10 @@ public:
     static unsigned n_sniff_buffers;
     static unsigned cur_sniff_index;
 
-    static uint16_t proc_no_to_heap_no[MAX_SUPPORTED_CPUS];
-    static uint16_t heap_no_to_proc_no[MAX_SUPPORTED_CPUS];
-    static uint16_t heap_no_to_numa_node[MAX_SUPPORTED_CPUS];
-    static uint16_t numa_node_to_heap_map[MAX_SUPPORTED_CPUS+4];
+    static uint16_t *proc_no_to_heap_no;
+    static uint16_t heap_no_to_proc_no[MAX_SUPPORTED_HEAPS];
+    static uint16_t heap_no_to_numa_node[MAX_SUPPORTED_HEAPS];
+    static uint16_t *numa_node_to_heap_map;
 
 #ifdef HEAP_BALANCE_INSTRUMENTATION
     // Note this is the total numa nodes GC heaps are on. There might be
@@ -4531,6 +4530,16 @@ public:
     static BOOL init(int n_heaps)
     {
         assert (sniff_buffer == NULL && n_sniff_buffers == 0);
+
+        uint32_t maxCpuCount = GCToOSInterface::GetMaxProcessorCount();
+        proc_no_to_heap_no = new (nothrow) uint16_t[maxCpuCount];
+        if (proc_no_to_heap_no == NULL)
+        {
+            return FALSE;
+        }
+
+        memset(proc_no_to_heap_no, 0, maxCpuCount*sizeof(uint16_t));
+
         if (!GCToOSInterface::CanGetCurrentProcessorNumber())
         {
             n_sniff_buffers = n_heaps*2+1;
@@ -4557,15 +4566,15 @@ public:
         // 2. assign heap numbers for each numa node
 
         // Pass 1: gather processor numbers and numa node numbers
-        uint16_t proc_no[MAX_SUPPORTED_CPUS];
-        uint16_t node_no[MAX_SUPPORTED_CPUS];
+        uint16_t proc_no[MAX_SUPPORTED_HEAPS];
+        uint16_t node_no[MAX_SUPPORTED_HEAPS];
         uint16_t max_node_no = 0;
         uint16_t heap_num;
         for (heap_num = 0; heap_num < n_heaps; heap_num++)
         {
             if (!GCToOSInterface::GetProcessorForHeap (heap_num, &proc_no[heap_num], &node_no[heap_num]))
                 break;
-            assert(proc_no[heap_num] < MAX_SUPPORTED_CPUS);
+            assert(proc_no[heap_num] < GCToOSInterface::GetMaxProcessorCount());
             if (!do_numa || node_no[heap_num] == NUMA_NODE_UNDEFINED)
                 node_no[heap_num] = 0;
             max_node_no = max(max_node_no, node_no[heap_num]);
@@ -4596,11 +4605,7 @@ public:
         if (GCToOSInterface::CanGetCurrentProcessorNumber())
         {
             uint32_t proc_no = GCToOSInterface::GetCurrentProcessorNumber();
-            // For a 32-bit process running on a machine with > 64 procs,
-            // even though the process can only use up to 32 procs, the processor
-            // index can be >= 64; or in the cpu group case, if the process is not running in cpu group #0,
-            // the GetCurrentProcessorNumber will return a number that's >= 64.
-            proc_no_to_heap_no[proc_no % MAX_SUPPORTED_CPUS] = (uint16_t)heap_number;
+            proc_no_to_heap_no[proc_no] = (uint16_t)heap_number;
         }
     }
 
@@ -4622,11 +4627,7 @@ public:
         if (GCToOSInterface::CanGetCurrentProcessorNumber())
         {
             uint32_t proc_no = GCToOSInterface::GetCurrentProcessorNumber();
-            // For a 32-bit process running on a machine with > 64 procs,
-            // even though the process can only use up to 32 procs, the processor
-            // index can be >= 64; or in the cpu group case, if the process is not running in cpu group #0,
-            // the GetCurrentProcessorNumber will return a number that's >= 64.
-            int adjusted_heap = proc_no_to_heap_no[proc_no % MAX_SUPPORTED_CPUS];
+            int adjusted_heap = proc_no_to_heap_no[proc_no];
             // with dynamic heap count, need to make sure the value is in range.
             if (adjusted_heap >= gc_heap::n_heaps)
             {
@@ -4688,9 +4689,21 @@ public:
         return heap_no_to_numa_node[heap_number];
     }
 
-    static void init_numa_node_to_heap_map(int nheaps)
+    static bool init_numa_node_to_heap_map(int nheaps)
     {
         // Called right after GCHeap::Init() for each heap
+
+        uint32_t maxCpuCount = GCToOSInterface::GetMaxProcessorCount();
+        // The upper limit of the numa node numbers is maxCpuCount - 1 since in the worst case each processor could be on a different NUMA node. 
+        // We add +1 here to make it easier to calculate the heap number range for the last NUMA node.
+        numa_node_to_heap_map = new (nothrow) uint16_t[maxCpuCount + 1];
+        if (numa_node_to_heap_map == nullptr)
+        {
+            return false;
+        }
+
+        memset(numa_node_to_heap_map, 0, (maxCpuCount + 1)*sizeof(uint16_t));
+
         // For each NUMA node used by the heaps, the
         // numa_node_to_heap_map[numa_node] is set to the first heap number on that node and
         // numa_node_to_heap_map[numa_node + 1] is set to the first heap number not on that node
@@ -4711,7 +4724,8 @@ public:
                 total_numa_nodes++;
                 heaps_on_node[total_numa_nodes].node_no = heap_no_to_numa_node[i];
 #endif
-
+                assert(heap_no_to_numa_node[i-1] < maxCpuCount);
+                assert(heap_no_to_numa_node[i] < maxCpuCount);
                 // Set the end of the heap number range for the previous NUMA node
                 numa_node_to_heap_map[heap_no_to_numa_node[i-1] + 1] =
                 // Set the start of the heap number range for the current NUMA node
@@ -4722,12 +4736,14 @@ public:
 #endif
         }
 
+        assert(heap_no_to_numa_node[nheaps-1] < maxCpuCount);
         // Set the end of the heap range for the last NUMA node
         numa_node_to_heap_map[heap_no_to_numa_node[nheaps-1] + 1] = (uint16_t)nheaps; //mark the end with nheaps
 
 #ifdef HEAP_BALANCE_INSTRUMENTATION
         total_numa_nodes++;
 #endif
+        return true;
     }
 
     static bool get_info_proc (int index, uint16_t* proc_no, uint16_t* node_no, int* start_heap, int* end_heap)
@@ -4751,7 +4767,7 @@ public:
 
         if (distribute_all_p)
         {
-            uint16_t current_heap_no_on_node[MAX_SUPPORTED_CPUS];
+            uint16_t current_heap_no_on_node[MAX_SUPPORTED_HEAPS];
             memset (current_heap_no_on_node, 0, sizeof (current_heap_no_on_node));
             uint16_t current_heap_no = 0;
 
@@ -4833,10 +4849,10 @@ public:
 uint8_t* heap_select::sniff_buffer;
 unsigned heap_select::n_sniff_buffers;
 unsigned heap_select::cur_sniff_index;
-uint16_t heap_select::proc_no_to_heap_no[MAX_SUPPORTED_CPUS];
-uint16_t heap_select::heap_no_to_proc_no[MAX_SUPPORTED_CPUS];
-uint16_t heap_select::heap_no_to_numa_node[MAX_SUPPORTED_CPUS];
-uint16_t heap_select::numa_node_to_heap_map[MAX_SUPPORTED_CPUS+4];
+uint16_t* heap_select::proc_no_to_heap_no;
+uint16_t heap_select::heap_no_to_proc_no[MAX_SUPPORTED_HEAPS];
+uint16_t heap_select::heap_no_to_numa_node[MAX_SUPPORTED_HEAPS];
+uint16_t* heap_select::numa_node_to_heap_map;
 #ifdef HEAP_BALANCE_INSTRUMENTATION
 uint16_t  heap_select::total_numa_nodes;
 node_heap_count heap_select::heaps_on_node[MAX_SUPPORTED_NODES];

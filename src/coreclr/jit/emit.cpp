@@ -1328,15 +1328,6 @@ void emitter::emitBegFN(bool hasFramePtr
     emitCntStackDepth = sizeof(int);
 #endif
 
-#ifdef PSEUDORANDOM_NOP_INSERTION
-    // for random NOP insertion
-
-    emitEnableRandomNops();
-    m_compiler->info.compRNG.Init(m_compiler->info.compChecksum);
-    emitNextNop           = emitNextRandomNop();
-    emitInInstrumentation = false;
-#endif // PSEUDORANDOM_NOP_INSERTION
-
     /* Create the first IG, it will be used for the prolog */
 
     emitNxtIGnum = 1;
@@ -1361,13 +1352,6 @@ void emitter::emitBegFN(bool hasFramePtr
 
     emitNewIG();
 }
-
-#ifdef PSEUDORANDOM_NOP_INSERTION
-int emitter::emitNextRandomNop()
-{
-    return m_compiler->info.compRNG.Next(1, 9);
-}
-#endif
 
 /*****************************************************************************
  *
@@ -1409,7 +1393,7 @@ float emitter::insEvaluateExecutionCost(instrDesc* id)
     insExecutionCharacteristics result        = getInsExecutionCharacteristics(id);
     float                       throughput    = result.insThroughput;
     float                       latency       = result.insLatency;
-    unsigned                    memAccessKind = result.insMemoryAccessKind;
+    PerfScoreMemoryAccessKind   memAccessKind = result.insMemoryAccessKind;
 
     // Check for PERFSCORE_THROUGHPUT_ILLEGAL and PERFSCORE_LATENCY_ILLEGAL.
     // Note that 0.0 throughput is allowed for pseudo-instructions in the instrDesc list that won't actually
@@ -1417,7 +1401,7 @@ float emitter::insEvaluateExecutionCost(instrDesc* id)
     assert(throughput >= 0.0);
     assert(latency >= 0.0);
 
-    if (memAccessKind == PERFSCORE_MEMORY_WRITE || memAccessKind == PERFSCORE_MEMORY_READ_WRITE)
+    if ((memAccessKind == PerfScoreMemoryAccessKind::Write) || (memAccessKind == PerfScoreMemoryAccessKind::ReadWrite))
     {
         // We assume that we won't read back from memory for the next WR_GENERAL cycles
         // Thus we normally won't pay latency costs for writes.
@@ -1615,39 +1599,6 @@ void* emitter::emitAllocAnyInstr(size_t sz, emitAttr opsz)
         emitNxtIG(true);
     }
 #endif
-
-#ifdef PSEUDORANDOM_NOP_INSERTION
-    // TODO-ARM-Bug?: PSEUDORANDOM_NOP_INSERTION is not defined for TARGET_ARM
-    //     ARM - This is currently broken on TARGET_ARM
-    //     When nopSize is odd we misalign emitCurIGsize
-    //
-    if (!m_compiler->IsAot() && !emitInInstrumentation &&
-        !emitIGisInProlog(emitCurIG) && // don't do this in prolog or epilog
-        !emitIGisInEpilog(emitCurIG) &&
-        emitRandomNops // sometimes we turn off where exact codegen is needed (pinvoke inline)
-    )
-    {
-        if (emitNextNop == 0)
-        {
-            int nopSize           = 4;
-            emitInInstrumentation = true;
-            instrDesc* idnop      = emitNewInstr();
-            emitInInstrumentation = false;
-            idnop->idInsFmt(IF_NONE);
-            idnop->idIns(INS_nop);
-#if defined(TARGET_XARCH)
-            idnop->idCodeSize(nopSize);
-#else
-#error "Undefined target for pseudorandom NOP insertion"
-#endif
-
-            emitCurIGsize += nopSize;
-            emitNextNop = emitNextRandomNop();
-        }
-        else
-            emitNextNop--;
-    }
-#endif // PSEUDORANDOM_NOP_INSERTION
 
     assert(IsCodeAligned(emitCurIGsize));
 
@@ -2275,7 +2226,7 @@ void emitter::emitGeneratePrologEpilog()
             case IGPT_FUNCLET_EPILOG:
                 INDEBUG(++funcletEpilogCnt);
                 emitBegFuncletEpilog(igPh);
-                codeGen->genFuncletEpilog();
+                codeGen->genFuncletEpilog(igPhBB);
                 emitEndFuncletEpilog();
                 break;
 
@@ -6595,7 +6546,7 @@ void emitter::emitCheckFuncletBranch(instrDesc* jmp, insGroup* jmpIG)
             assert(tgtEH->HasFinallyHandler());
 
             // Only to the first block of the finally (which is properly marked)
-            BasicBlock* tgtBlk = tgtEH->ebdHndBeg;
+            BasicBlock* tgtBlk = tgtFunc->GetStartBlock(m_compiler);
             assert(m_compiler->bbIsFuncletBeg(tgtBlk));
 
             // And now we made it back to where we started

@@ -10,16 +10,16 @@ internal sealed class EEClass : IData<EEClass>
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.EEClass);
 
-        MethodTable = target.ReadPointer(address + (ulong)type.Fields[nameof(MethodTable)].Offset);
-        MethodDescChunk = target.ReadPointer(address + (ulong)type.Fields[nameof(MethodDescChunk)].Offset);
-        NumMethods = target.Read<ushort>(address + (ulong)type.Fields[nameof(NumMethods)].Offset);
-        CorTypeAttr = target.Read<uint>(address + (ulong)type.Fields[nameof(CorTypeAttr)].Offset);
-        InternalCorElementType = target.Read<byte>(address + (ulong)type.Fields[nameof(InternalCorElementType)].Offset);
-        NumInstanceFields = target.Read<ushort>(address + (ulong)type.Fields[nameof(NumInstanceFields)].Offset);
-        NumStaticFields = target.Read<ushort>(address + (ulong)type.Fields[nameof(NumStaticFields)].Offset);
-        NumThreadStaticFields = target.Read<ushort>(address + (ulong)type.Fields[nameof(NumThreadStaticFields)].Offset);
-        FieldDescList = target.Read<ulong>(address + (ulong)type.Fields[nameof(FieldDescList)].Offset);
-        NumNonVirtualSlots = target.Read<ushort>(address + (ulong)type.Fields[nameof(NumNonVirtualSlots)].Offset);
+        MethodTable = target.ReadPointerField(address, type, nameof(MethodTable));
+        MethodDescChunk = target.ReadPointerField(address, type, nameof(MethodDescChunk));
+        NumMethods = target.ReadField<ushort>(address, type, nameof(NumMethods));
+        CorTypeAttr = target.ReadField<uint>(address, type, nameof(CorTypeAttr));
+        InternalCorElementType = target.ReadField<byte>(address, type, nameof(InternalCorElementType));
+        NumInstanceFields = target.ReadField<ushort>(address, type, nameof(NumInstanceFields));
+        NumStaticFields = target.ReadField<ushort>(address, type, nameof(NumStaticFields));
+        NumThreadStaticFields = target.ReadField<ushort>(address, type, nameof(NumThreadStaticFields));
+        FieldDescList = target.ReadPointerField(address, type, nameof(FieldDescList));
+        NumNonVirtualSlots = target.ReadField<ushort>(address, type, nameof(NumNonVirtualSlots));
     }
 
     public TargetPointer MethodTable { get; init; }

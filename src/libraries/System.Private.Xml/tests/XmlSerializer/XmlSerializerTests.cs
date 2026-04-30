@@ -716,6 +716,44 @@ public static partial class XmlSerializerTests
     }
 
     [Fact]
+    public static void Xml_StructImplementingIXmlSerializableWithoutParameterlessConstructor()
+    {
+        StructImplementingIXmlSerializableWithoutParameterlessConstructor value = new()
+        {
+            StringValue = "Hello world"
+        };
+        StructImplementingIXmlSerializableWithoutParameterlessConstructor actual = SerializeAndDeserialize(
+            value,
+            $"""
+            <?xml version="1.0"?>
+            <{nameof(StructImplementingIXmlSerializableWithoutParameterlessConstructor)} StringValue="Hello world" />
+            """
+        );
+        Assert.Equal(value.StringValue, actual.StringValue);
+        Assert.True(StructImplementingIXmlSerializableWithoutParameterlessConstructor.ReadXmlInvoked);
+        Assert.True(StructImplementingIXmlSerializableWithoutParameterlessConstructor.WriteXmlInvoked);
+    }
+
+    [Fact]
+    public static void Xml_StructImplementingIXmlSerializableWithParameterlessConstructor()
+    {
+        StructImplementingIXmlSerializableWithParameterlessConstructor value = new()
+        {
+            StringValue = "Hello world"
+        };
+        StructImplementingIXmlSerializableWithParameterlessConstructor actual = SerializeAndDeserialize(
+            value,
+            $"""
+            <?xml version="1.0"?>
+            <{nameof(StructImplementingIXmlSerializableWithParameterlessConstructor)} StringValue="Hello world" />
+            """
+        );
+        Assert.Equal(value.StringValue, actual.StringValue);
+        Assert.True(StructImplementingIXmlSerializableWithParameterlessConstructor.ReadXmlInvoked);
+        Assert.True(StructImplementingIXmlSerializableWithParameterlessConstructor.WriteXmlInvoked);
+    }
+
+    [Fact]
     public static void Xml_TypeWithFieldNameEndBySpecified()
     {
         var value = new TypeWithPropertyNameSpecified() { MyField = "MyField", MyFieldIgnored = 99, MyFieldSpecified = true, MyFieldIgnoredSpecified = false };
@@ -1674,6 +1712,42 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
 
         Assert.NotNull(actual);
         Assert.Equal(value.Foo, actual.Foo);
+    }
+
+    [Fact]
+    public static void Xml_InheritedShouldSerializeMethod_WithDefaultValue()
+    {
+        var value = new DerivedTypeWithInheritedShouldSerialize();
+
+        var actual = SerializeAndDeserialize(value, WithXmlHeader("<DerivedTypeWithInheritedShouldSerialize xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" />"));
+
+        Assert.NotNull(actual);
+        Assert.Equal(value.Foo, actual.Foo);
+        Assert.Equal(value.Bar, actual.Bar);
+    }
+
+    [Fact]
+    public static void Xml_InheritedShouldSerializeMethod_WithNonDefaultValue()
+    {
+        var value = new DerivedTypeWithInheritedShouldSerialize() { Foo = "SomeValue", Bar = "SomeBar" };
+
+        var actual = SerializeAndDeserialize(value, WithXmlHeader("<DerivedTypeWithInheritedShouldSerialize Bar=\"SomeBar\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\"><Foo>SomeValue</Foo></DerivedTypeWithInheritedShouldSerialize>"));
+
+        Assert.NotNull(actual);
+        Assert.Equal(value.Foo, actual.Foo);
+        Assert.Equal(value.Bar, actual.Bar);
+    }
+
+    [Fact]
+    public static void Xml_FieldBackedSpecifiedMember_SetOnDeserialize()
+    {
+        var value = new TypeWithFieldBackedSpecifiedMember() { Foo = "SomeValue", FooSpecified = true };
+
+        var actual = SerializeAndDeserialize(value, WithXmlHeader("<TypeWithFieldBackedSpecifiedMember xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\"><Foo>SomeValue</Foo></TypeWithFieldBackedSpecifiedMember>"));
+
+        Assert.NotNull(actual);
+        Assert.Equal("SomeValue", actual.Foo);
+        Assert.True(actual.FooSpecified);
     }
 
     [Fact]

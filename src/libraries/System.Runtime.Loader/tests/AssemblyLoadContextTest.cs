@@ -5,6 +5,8 @@ using System;
 using System.IO;
 using System.Reflection;
 using System.Reflection.Emit;
+using System.Runtime.CompilerServices;
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 namespace System.Runtime.Loader.Tests
@@ -275,5 +277,143 @@ namespace System.Runtime.Loader.Tests
             Exception error = Assert.Throws<FileLoadException>(() => alc.LoadFromAssemblyName(new AssemblyName("MyAssembly")));
             Assert.IsType<InvalidOperationException>(error.InnerException);
         }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsAssemblyLoadingSupported), nameof(PlatformDetection.IsCoreCLR), nameof(PlatformDetection.HasAssemblyFiles))]
+        public static void InvalidCastException_DifferentALC_ShowsAssemblyInfo()
+        {
+            var alc = new AssemblyLoadContext("TestALC");
+            Assembly alcAssembly = alc.LoadFromAssemblyPath(typeof(AssemblyLoadContextTest).Assembly.Location);
+
+            Type alcType = alcAssembly.GetType(typeof(InvalidCastSharedType).FullName!, throwOnError: true)!;
+            object instance = Activator.CreateInstance(alcType)!;
+
+            // Cast directly to InvalidCastSharedType from the Default ALC.
+            var ice = Assert.Throws<InvalidCastException>(() =>
+            {
+                InvalidCastSharedType _ = (InvalidCastSharedType)instance;
+            });
+
+            // The message should report both ALC contexts for the same-named type.
+            Assert.Contains(nameof(InvalidCastSharedType), ice.Message);
+            Assert.Contains("Default", ice.Message);
+            Assert.Contains("TestALC", ice.Message);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsAssemblyLoadingSupported), nameof(PlatformDetection.IsCoreCLR), nameof(PlatformDetection.HasAssemblyFiles))]
+        public static void InvalidCastException_GenericTypeArg_DifferentALC_ShowsAssemblyInfo()
+        {
+            var alc = new AssemblyLoadContext("TestALC");
+            Assembly alcAssembly = alc.LoadFromAssemblyPath(typeof(AssemblyLoadContextTest).Assembly.Location);
+
+            // The outer type (StrongBox<T>) is from CoreLib (same in all contexts),
+            // but the generic argument comes from a different ALC.
+            Type alcType = alcAssembly.GetType(typeof(InvalidCastSharedType).FullName!, throwOnError: true)!;
+            Type boxType = typeof(StrongBox<>).MakeGenericType(alcType);
+            object instance = Activator.CreateInstance(boxType)!;
+
+            var ice = Assert.Throws<InvalidCastException>(() =>
+            {
+                StrongBox<InvalidCastSharedType> _ = (StrongBox<InvalidCastSharedType>)instance;
+            });
+
+            // The message should include the types with the differing generic argument types
+            // and the ALC context names.
+            Assert.Contains(nameof(StrongBox<InvalidCastSharedType>), ice.Message);
+            Assert.Contains($"generic argument '{typeof(InvalidCastSharedType).FullName}", ice.Message);
+            Assert.Contains("Default", ice.Message);
+            Assert.Contains("TestALC", ice.Message);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsAssemblyLoadingSupported), nameof(PlatformDetection.IsCoreCLR), nameof(PlatformDetection.HasAssemblyFiles))]
+        public static void LoadFromAssemblyPath_CustomAlc_VersionMismatch()
+        {
+            string v1Path = ExtractEmbeddedAssembly("System.Runtime.Loader.Tests.AssemblyVersion1");
+            string v2Path = ExtractEmbeddedAssembly("System.Runtime.Loader.Tests.AssemblyVersion2");
+
+            try
+            {
+                var alc = new AssemblyLoadContext("TestALC");
+
+                Assembly loaded = alc.LoadFromAssemblyPath(v1Path);
+                string v1DisplayName = loaded.GetName().FullName;
+
+                var ex = Assert.Throws<FileLoadException>(() => alc.LoadFromAssemblyPath(v2Path));
+                Assert.Contains("'System.Runtime.Loader.Test.VersionDowngrade'", ex.Message);
+                Assert.Contains($"'{v1DisplayName}'", ex.Message);
+                Assert.Contains(v1Path, ex.Message);
+                Assert.Equal(HResults.COR_E_FILELOAD, ex.HResult);
+            }
+            finally
+            {
+                try { File.Delete(v1Path); } catch { }
+                try { File.Delete(v2Path); } catch { }
+            }
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsAssemblyLoadingSupported), nameof(PlatformDetection.IsCoreCLR), nameof(PlatformDetection.HasAssemblyFiles))]
+        public static void LoadFromAssemblyPath_DefaultAlc_Tpa_VersionMismatch()
+        {
+            Assembly referencedAssembly = typeof(ReferencedClassLib.Program).Assembly;
+            string tpaPath = referencedAssembly.Location;
+            string tpaDisplayName = referencedAssembly.GetName().FullName;
+            string v2Path = ExtractEmbeddedAssembly("System.Runtime.Loader.Tests.ReferencedClassLibVersion2");
+
+            try
+            {
+                var ex = Assert.Throws<FileLoadException>(() => AssemblyLoadContext.Default.LoadFromAssemblyPath(v2Path));
+                Assert.Contains("'ReferencedClassLib'", ex.Message);
+                Assert.Contains($"'{tpaDisplayName}'", ex.Message);
+                Assert.Contains(tpaPath, ex.Message);
+                Assert.Equal(HResults.FUSION_E_REF_DEF_MISMATCH, ex.HResult);
+            }
+            finally
+            {
+                try { File.Delete(v2Path); } catch { }
+            }
+        }
+
+        [ConditionalFact(typeof(AssemblyLoadContextTest), nameof(IsRemoteExecutorSupportedAndCoreCLR))]
+        public static void LoadFromAssemblyPath_DefaultAlc_NonTpaAssembly_MvidMismatch()
+        {
+            RemoteExecutor.Invoke(static () =>
+            {
+                string v1Path = ExtractEmbeddedAssembly("System.Runtime.Loader.Tests.AssemblyVersion1");
+                string v2Path = ExtractEmbeddedAssembly("System.Runtime.Loader.Tests.AssemblyVersion2");
+
+                try
+                {
+                    Assembly loaded = AssemblyLoadContext.Default.LoadFromAssemblyPath(v1Path);
+                    string v1DisplayName = loaded.GetName().FullName;
+
+                    var ex = Assert.Throws<FileLoadException>(() => AssemblyLoadContext.Default.LoadFromAssemblyPath(v2Path));
+                    Assert.Contains("'System.Runtime.Loader.Test.VersionDowngrade'", ex.Message);
+                    Assert.Contains($"'{v1DisplayName}'", ex.Message);
+                    Assert.Contains(v1Path, ex.Message);
+                    Assert.Equal(HResults.COR_E_FILELOAD, ex.HResult);
+                }
+                finally
+                {
+                    try { File.Delete(v1Path); } catch { }
+                    try { File.Delete(v2Path); } catch { }
+                }
+            }).Dispose();
+        }
+
+        private static bool IsRemoteExecutorSupportedAndCoreCLR => RemoteExecutor.IsSupported && PlatformDetection.IsAssemblyLoadingSupported && PlatformDetection.IsCoreCLR;
+
+        private static string ExtractEmbeddedAssembly(string name)
+        {
+            string tempPath = Path.Combine(Path.GetTempPath(), $"{Path.GetFileNameWithoutExtension(name)}_{Guid.NewGuid()}.dll");
+            using Stream resourceStream = typeof(AssemblyLoadContextTest).Assembly.GetManifestResourceStream($"{name}.dll");
+            Assert.NotNull(resourceStream);
+            using FileStream fileStream = File.Create(tempPath);
+            resourceStream.CopyTo(fileStream);
+
+            return tempPath;
+        }
+    }
+
+    public class InvalidCastSharedType
+    {
     }
 }
