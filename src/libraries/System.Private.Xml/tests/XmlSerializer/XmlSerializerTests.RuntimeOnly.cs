@@ -3668,6 +3668,18 @@ public static partial class XmlSerializerTests
     }
 
     [Fact]
+    public static void XML_XmlTextNoSeparator_StringArray_ConcatenatesWithoutDelimiter()
+    {
+        var original = new TypeWithXmlTextNoSeparatorOnStringArray { Text = new string[] { "abc", "def", "ghi" } };
+        var actual = SerializeAndDeserialize(original,
+            "<?xml version=\"1.0\"?><TypeWithXmlTextNoSeparatorOnStringArray xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\">abcdefghi</TypeWithXmlTextNoSeparatorOnStringArray>");
+        Assert.NotNull(actual.Text);
+        // Without a separator, deserialization returns the concatenated text as a single element
+        Assert.Single(actual.Text);
+        Assert.Equal("abcdefghi", actual.Text[0]);
+    }
+
+    [Fact]
     public static void XML_XmlTextSeparator_SpaceSeparatedStringArray_RoundTrips()
     {
         var original = new TypeWithXmlTextSeparatorSpaceOnStringArray { Text = new string[] { "val1", "val2", "val3" } };

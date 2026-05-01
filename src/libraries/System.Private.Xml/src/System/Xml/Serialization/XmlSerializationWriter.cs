@@ -2237,6 +2237,36 @@ namespace System.Xml.Serialization
             WriteQuotedCSharpString(_writer, value);
         }
 
+        internal static void WriteQuotedCSharpChar(IndentedWriter writer, char value)
+        {
+            writer.Write("'");
+            string? escapedValue = value switch
+            {
+                '\'' => "\\'",
+                '\\' => "\\\\",
+                '\r' => "\\r",
+                '\n' => "\\n",
+                '\t' => "\\t",
+                '\0' => "\\0",
+                <(char)32 => $"\\x{((byte)value >> 4):X}{((byte)value & 0xF):X}",
+                _ => null
+            };
+            if (escapedValue != null)
+            {
+                writer.Write(escapedValue);
+            }
+            else
+            {
+                writer.Write(value);
+            }
+            writer.Write("'");
+        }
+
+        internal void WriteQuotedCSharpChar(char value)
+        {
+            WriteQuotedCSharpChar(_writer, value);
+        }
+
         private const string HelperClassesForUseReflection = @"
     sealed class XSFieldInfo {{
        {3} fieldInfo;
@@ -3573,15 +3603,7 @@ namespace System.Xml.Serialization
                 Writer.WriteLine("}");
             }
 
-            // When text has a separator, handle the array as a separated list
-            if (text?.Separator.HasValue == true && elements.Length == 0)
-            {
-                WriteTextList(text, arrayTypeDesc, "a");
-            }
-            else
-            {
-                WriteArrayItems(elements, text, choice, arrayTypeDesc, "a", "c");
-            }
+            WriteArrayItems(elements, text, choice, arrayTypeDesc, "a", "c");
 
             if (arrayTypeDesc.IsNullable)
             {
@@ -3592,43 +3614,12 @@ namespace System.Xml.Serialization
             Writer.WriteLine("}");
         }
 
-        [RequiresUnreferencedCode("calls WriteText")]
-        private void WriteTextList(TextAccessor text, TypeDesc arrayTypeDesc, string arrayName)
-        {
-            TypeDesc arrayElementTypeDesc = arrayTypeDesc.ArrayElementTypeDesc!;
-            string separatorStr = text.Separator!.Value.ToString();
-
-            // Emit: for (int i = 0; i < a.Length; i++) { if (i != 0) WriteValue("sep"); WriteValue(a[i]); }
-            Writer.Write("for (int i = 0; i < ");
-            if (arrayTypeDesc.IsArray)
-            {
-                Writer.Write(arrayName);
-                Writer.Write(".Length");
-            }
-            else
-            {
-                Writer.Write("((");
-                Writer.Write(typeof(ICollection).FullName);
-                Writer.Write(")");
-                Writer.Write(arrayName);
-                Writer.Write(").Count");
-            }
-            Writer.WriteLine("; i++) {");
-            Writer.Indent++;
-            Writer.Write("if (i != 0) WriteValue(");
-            WriteQuotedCSharpString(separatorStr);
-            Writer.WriteLine(");");
-            string arrayTypeFullName = arrayElementTypeDesc.CSharpName;
-            WriteLocalDecl(arrayTypeFullName, "ai", RaCodeGen.GetStringForArrayMember(arrayName, "i", arrayTypeDesc), arrayElementTypeDesc.UseReflection);
-            WriteText("ai", text);
-            Writer.Indent--;
-            Writer.WriteLine("}");
-        }
-
         [RequiresUnreferencedCode("calls WriteElements")]
         private void WriteArrayItems(ElementAccessor[] elements, TextAccessor? text, ChoiceIdentifierAccessor? choice, TypeDesc arrayTypeDesc, string arrayName, string? choiceName)
         {
             TypeDesc arrayElementTypeDesc = arrayTypeDesc.ArrayElementTypeDesc!;
+            bool hasSeparator = text?.Separator.HasValue == true;
+            string? separatorStr = hasSeparator ? text!.Separator!.Value.ToString() : null;
 
             if (arrayTypeDesc.IsEnumerable)
             {
@@ -3675,11 +3666,29 @@ namespace System.Xml.Serialization
                     Writer.Write(RaCodeGen.GetStringForMethodInvoke(arrayName, arrayTypeDesc.CSharpName, "GetEnumerator", arrayTypeDesc.UseReflection));
                     Writer.WriteLine(";");
                 }
-                Writer.WriteLine("if (e != null)");
+                Writer.WriteLine("if (e != null) {");
+                Writer.Indent++;
+                if (hasSeparator)
+                {
+                    Writer.Write("int c");
+                    Writer.Write(arrayName);
+                    Writer.WriteLine(" = 0;");
+                }
                 Writer.WriteLine("while (e.MoveNext()) {");
                 Writer.Indent++;
                 string arrayTypeFullName = arrayElementTypeDesc.CSharpName;
                 WriteLocalDecl(arrayTypeFullName, $"{arrayName}i", "e.Current", arrayElementTypeDesc.UseReflection);
+                if (hasSeparator)
+                {
+                    Writer.Write("if (c");
+                    Writer.Write(arrayName);
+                    Writer.Write(" > 0) WriteValue(");
+                    WriteQuotedCSharpString(separatorStr);
+                    Writer.WriteLine(");");
+                    Writer.Write("c");
+                    Writer.Write(arrayName);
+                    Writer.WriteLine("++;");
+                }
                 WriteElements($"{arrayName}i", $"{choiceName}i", elements, text, choice, $"{arrayName}a", true, true);
             }
             else
@@ -3706,6 +3715,14 @@ namespace System.Xml.Serialization
                 Writer.Write(arrayName);
                 Writer.WriteLine("++) {");
                 Writer.Indent++;
+                if (hasSeparator)
+                {
+                    Writer.Write("if (i");
+                    Writer.Write(arrayName);
+                    Writer.Write(" != 0) WriteValue(");
+                    WriteQuotedCSharpString(separatorStr);
+                    Writer.WriteLine(");");
+                }
                 int count = elements.Length + (text == null ? 0 : 1);
                 if (count > 1)
                 {
@@ -3725,6 +3742,11 @@ namespace System.Xml.Serialization
             }
             Writer.Indent--;
             Writer.WriteLine("}");
+            if (arrayTypeDesc.IsEnumerable)
+            {
+                Writer.Indent--;
+                Writer.WriteLine("}");
+            }
         }
 
         [RequiresUnreferencedCode("calls WriteElements")]

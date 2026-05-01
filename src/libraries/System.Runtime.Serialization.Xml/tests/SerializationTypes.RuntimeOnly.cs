@@ -4643,6 +4643,12 @@ public class TypeWithXmlTextSeparatorSpaceOnStringArray
     public string[] Text;
 }
 
+public class TypeWithXmlTextNoSeparatorOnStringArray
+{
+    [XmlText]
+    public string[] Text;
+}
+
 public class TypeWithXmlTextSeparatorCommaOnStringArray
 {
     [XmlText(Separator = ',')]

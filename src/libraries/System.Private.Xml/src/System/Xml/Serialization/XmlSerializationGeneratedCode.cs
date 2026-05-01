@@ -98,6 +98,11 @@ namespace System.Xml.Serialization
             _raCodeGen.WriteQuotedCSharpString(value);
         }
 
+        internal void WriteQuotedCSharpChar(char value)
+        {
+            _raCodeGen.WriteQuotedCSharpChar(value);
+        }
+
         internal void GenerateHashtableGetBegin(string privateName, string publicName)
         {
             _writer.Write(typeof(Hashtable).FullName);

@@ -147,36 +147,13 @@ namespace System.Xml.Serialization
                 }
             }
 
-            // When text has a separator, handle the array as a separated list
-            if (text?.Separator.HasValue == true && elements.Length == 0)
-            {
-                WriteTextList(o, text);
-                return;
-            }
-
             WriteArrayItems(elements, text, choice, o, choiceSource);
-        }
-
-        private void WriteTextList(object o, TextAccessor text)
-        {
-            var a = o as IEnumerable;
-            Debug.Assert(a != null);
-            bool first = true;
-            string separatorStr = text.Separator!.Value.ToString();
-            foreach (object item in a)
-            {
-                if (!first)
-                {
-                    WriteValue(separatorStr);
-                }
-                WriteText(item, text);
-                first = false;
-            }
         }
 
         private void WriteArrayItems(ElementAccessor[] elements, TextAccessor? text, ChoiceIdentifierAccessor? choice, object o, object? choiceSources)
         {
             var arr = o as IList;
+            string separatorStr = text?.Separator.HasValue == true ? text.Separator.Value.ToString() : "";
 
             if (arr != null)
             {
@@ -184,6 +161,10 @@ namespace System.Xml.Serialization
                 {
                     object? ai = arr[i];
                     var choiceSource = ((Array?)choiceSources)?.GetValue(i);
+                    if (i > 0)
+                    {
+                        WriteValue(separatorStr);
+                    }
                     WriteElements(ai, choiceSource, elements, text, choice, true, true);
                 }
             }
@@ -199,6 +180,10 @@ namespace System.Xml.Serialization
                     while (e.MoveNext())
                     {
                         object ai = e.Current;
+                        if (c > 0)
+                        {
+                            WriteValue(separatorStr);
+                        }
                         var choiceSource = ((Array?)choiceSources)?.GetValue(c++);
                         WriteElements(ai, choiceSource, elements, text, choice, true, true);
                     }

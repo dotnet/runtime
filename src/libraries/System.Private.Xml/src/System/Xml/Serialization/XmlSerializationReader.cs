@@ -3855,8 +3855,8 @@ namespace System.Xml.Serialization
                     if (attribute.Separator.HasValue)
                     {
                         Writer.Write("string[] vals = listValues.Split(");
-                        WriteQuotedCSharpString(attribute.Separator.Value.ToString());
-                        Writer.WriteLine("[0]);");
+                        WriteQuotedCSharpChar(attribute.Separator.Value);
+                        Writer.WriteLine(");");
                     }
                     else
                     {
@@ -4143,8 +4143,8 @@ namespace System.Xml.Serialization
                         }
                         Writer.WriteLine(";");
                         Writer.Write("string[] vals = rawText.Split(");
-                        WriteQuotedCSharpString(text.Separator.Value.ToString());
-                        Writer.WriteLine("[0]);");
+                        WriteQuotedCSharpChar(text.Separator.Value);
+                        Writer.WriteLine(");");
                         Writer.WriteLine("for (int i = 0; i < vals.Length; i++) {");
                         Writer.Indent++;
                         WriteSourceBegin(member.ArraySource);
