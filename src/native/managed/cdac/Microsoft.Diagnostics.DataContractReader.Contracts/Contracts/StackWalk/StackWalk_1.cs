@@ -18,12 +18,14 @@ internal partial class StackWalk_1 : IStackWalk
     private readonly Target _target;
     private readonly IExecutionManager _eman;
     private readonly GcScanner _gcScanner;
+    private readonly FrameHelpers _frameHelpers;
 
     internal StackWalk_1(Target target)
     {
         _target = target;
         _eman = target.Contracts.ExecutionManager;
         _gcScanner = new GcScanner(target);
+        _frameHelpers = new FrameHelpers(target);
     }
 
     public enum StackWalkState
@@ -47,14 +49,9 @@ internal partial class StackWalk_1 : IStackWalk
         TargetPointer FrameAddress,
         ThreadData ThreadData,
         bool IsResumableFrame = false,
-        bool IsActiveFrame = false) : IStackDataFrameHandle
+        bool IsActiveFrame = false,
+        TargetPointer InterpContextFramePtr = default) : IStackDataFrameHandle
     { }
-
-    private enum ContextFlags
-    {
-        Full = 0x1,
-        All = 0x2,
-    }
 
     private class StackWalkData(IPlatformAgnosticContext context, StackWalkState state, FrameIterator frameIter, ThreadData threadData)
     {
@@ -62,7 +59,6 @@ internal partial class StackWalk_1 : IStackWalk
         public StackWalkState State { get; set; } = state;
         public FrameIterator FrameIter { get; set; } = frameIter;
         public ThreadData ThreadData { get; set; } = threadData;
-
 
         // Track isFirst exactly like native CrawlFrame::isFirst in StackFrameIterator.
         // Starts true, set false after processing a managed (frameless) frame,
@@ -80,7 +76,13 @@ internal partial class StackWalk_1 : IStackWalk
         // The frame type of the last SW_FRAME processed by Next().
         // Used by UpdateState to detect exception frames (FRAME_ATTR_EXCEPTION) and
         // set IsInterrupted when transitioning to a managed frame.
-        public FrameIterator.FrameType? LastProcessedFrameType { get; set; }
+        public FrameType? LastProcessedFrameType { get; set; }
+
+        // The address of the InterpreterFrame that we're currently walking via virtual
+        // unwind. Saved when UpdateContextFromFrame transitions from SW_FRAME to
+        // SW_FRAMELESS, used by InterpreterVirtualUnwind for FMF transition when the
+        // interpreter chain is exhausted. In native, this is stored in FirstArgReg.
+        public TargetPointer CurrentInterpreterFrameAddress { get; set; }
 
         public bool IsCurrentFrameResumable()
         {
@@ -95,9 +97,9 @@ internal partial class StackWalk_1 : IStackWalk
             // (see frames.h). On x86 it uses GcScanRoots_Impl instead of the
             // resumable frame pattern. When x86 cDAC stack walking is supported,
             // HijackFrame should be conditioned on the target architecture.
-            return ft is FrameIterator.FrameType.ResumableFrame
-                      or FrameIterator.FrameType.RedirectedThreadFrame
-                      or FrameIterator.FrameType.HijackFrame;
+            return ft is FrameType.ResumableFrame
+                      or FrameType.RedirectedThreadFrame
+                      or FrameType.HijackFrame;
         }
 
         /// <summary>
@@ -128,12 +130,18 @@ internal partial class StackWalk_1 : IStackWalk
             }
         }
 
-        public StackDataFrameHandle ToDataFrame()
+        public StackDataFrameHandle ToDataFrame(TargetPointer interpContextFramePtr = default)
         {
             bool isResumable = IsCurrentFrameResumable();
             bool isActiveFrame = IsFirst && State == StackWalkState.SW_FRAMELESS;
-            return new(Context.Clone(), State, FrameIter.CurrentFrameAddress, ThreadData, isResumable, isActiveFrame);
+            return new(Context.Clone(), State, FrameIter.CurrentFrameAddress, ThreadData, isResumable, isActiveFrame, interpContextFramePtr);
         }
+    }
+
+    private enum ContextFlags
+    {
+        Full = 0x1,
+        All = 0x2,
     }
 
     IEnumerable<IStackDataFrameHandle> IStackWalk.CreateStackWalk(ThreadData threadData)
@@ -141,7 +149,15 @@ internal partial class StackWalk_1 : IStackWalk
         IPlatformAgnosticContext context = IPlatformAgnosticContext.GetContextForPlatform(_target);
         uint contextFlags = context.AllContextFlags;
         FillContextFromThread(context, threadData, contextFlags);
-        StackWalkState state = IsManaged(context.InstructionPointer, out _) ? StackWalkState.SW_FRAMELESS : StackWalkState.SW_FRAME;
+        StackWalkState state;
+        if (IsManaged(context.InstructionPointer, out _))
+        {
+            state = StackWalkState.SW_FRAMELESS;
+        }
+        else
+        {
+            state = StackWalkState.SW_FRAME;
+        }
         FrameIterator frameIterator = new(_target, threadData);
 
         // if the next Frame is not valid and we are not in managed code, there is nothing to return
@@ -655,21 +671,46 @@ internal partial class StackWalk_1 : IStackWalk
                 Debug.Assert(
                     !handle.FrameIter.IsValid() ||
                     handle.Context.StackPointer.Value < handle.FrameIter.CurrentFrameAddress.Value ||
-                    handle.FrameIter.GetCurrentFrameType() == FrameIterator.FrameType.FaultingExceptionFrame,
+                    handle.FrameIter.GetCurrentFrameType() == FrameType.FaultingExceptionFrame,
                     $"SP (0x{handle.Context.StackPointer:X}) should be below next Frame (0x{handle.FrameIter.CurrentFrameAddress:X})");
 
                 // Reset interrupted state after processing a managed frame.
                 // Native stackwalk.cpp:2203-2205: isInterrupted = false; hasFaulted = false;
                 handle.IsInterrupted = false;
 
-                try
+                TargetPointer prevIP = handle.Context.InstructionPointer;
+                TargetPointer prevSP = handle.Context.StackPointer;
+
+                // Check if the current frame is interpreter code — if so, use
+                // interpreter virtual unwind instead of OS-level unwind.
+                // This mirrors VirtualUnwindInterpreterCallFrame in eetwain.cpp:2101.
+                if (IsInterpreterCode(prevIP))
                 {
-                    handle.Context.Unwind(_target);
+                    InterpreterVirtualUnwind(handle);
                 }
-                catch
+                else
                 {
-                    handle.State = StackWalkState.SW_ERROR;
-                    throw;
+                    try
+                    {
+                        handle.Context.Unwind(_target);
+                    }
+                    catch
+                    {
+                        handle.State = StackWalkState.SW_ERROR;
+                        throw;
+                    }
+                    // Guard against infinite loops when Unwind fails to advance.
+                    if (handle.Context.InstructionPointer == prevIP
+                        && handle.Context.StackPointer == prevSP)
+                    {
+                        if (handle.FrameIter.IsValid())
+                        {
+                            handle.State = StackWalkState.SW_FRAME;
+                            return true;
+                        }
+                        handle.State = StackWalkState.SW_COMPLETE;
+                        return false;
+                    }
                 }
                 break;
             case StackWalkState.SW_SKIPPED_FRAME:
@@ -684,21 +725,52 @@ internal partial class StackWalk_1 : IStackWalk
                 {
                     var frameType = handle.FrameIter.GetCurrentFrameType();
 
-                    TargetPointer returnAddress = handle.FrameIter.GetReturnAddress();
-                    bool isActiveICF = frameType == FrameIterator.FrameType.InlinedCallFrame
+                    // Save the InterpreterFrame address before advancing the frame iterator.
+                    // InterpreterVirtualUnwind needs this for the FMF transition when the
+                    // interpreter chain is exhausted.
+                    TargetPointer savedInterpreterFrameAddress = TargetPointer.Null;
+                    if (frameType == FrameType.InterpreterFrame)
+                    {
+                        savedInterpreterFrameAddress = handle.FrameIter.CurrentFrameAddress;
+                        handle.CurrentInterpreterFrameAddress = savedInterpreterFrameAddress;
+                    }
+
+                    TargetPointer returnAddress = handle.FrameIter.GetCurrentReturnAddress();
+                    bool isActiveICF = frameType == FrameType.InlinedCallFrame
                                        && returnAddress != TargetPointer.Null;
 
                     // Record the frame type so UpdateState can detect exception frames
                     // and set IsInterrupted when transitioning to the managed frame.
                     handle.LastProcessedFrameType = frameType;
 
-                    if (returnAddress != TargetPointer.Null)
+                    // For InterpreterFrame the FrameIterator has no GetReturnAddress
+                    // (interpreter virtual unwind manages the IP), but we still need
+                    // UpdateContextFromFrame to transition to SW_FRAMELESS in the
+                    // interpreted method.
+                    if (returnAddress != TargetPointer.Null
+                        || frameType == FrameType.InterpreterFrame)
                     {
-                        handle.FrameIter.UpdateContextFromFrame(handle.Context);
+                        handle.FrameIter.UpdateContextFromCurrentFrame(handle.Context);
                     }
                     if (!isActiveICF)
                     {
                         handle.FrameIter.Next();
+                    }
+
+                    // After advancing past an InterpreterFrame, the next frame must NOT be
+                    // the same InterpreterFrame. The native walker (PR #126953) prevents this
+                    // via ResetRegDisp dedup; our UpdateContextFromFrame + Next() achieves
+                    // the same by advancing the frame iterator past the InterpreterFrame
+                    // before the interpreter virtual unwind exhausts the chain and triggers
+                    // the FMF transition back to SW_FRAME.
+                    if (savedInterpreterFrameAddress != TargetPointer.Null
+                        && handle.FrameIter.IsValid()
+                        && handle.FrameIter.GetCurrentFrameType() == FrameType.InterpreterFrame
+                        && handle.FrameIter.CurrentFrameAddress == savedInterpreterFrameAddress)
+                    {
+                        Debug.Fail(
+                            $"InterpreterFrame at {savedInterpreterFrameAddress} was not advanced past — " +
+                            "this would cause doubled interpreter frames in the stack walk.");
                     }
                 }
                 break;
@@ -730,8 +802,8 @@ internal partial class StackWalk_1 : IStackWalk
             // Both FaultingExceptionFrame (hardware) and SoftwareExceptionFrame (managed throw)
             // have FRAME_ATTR_EXCEPTION set. The resulting managed frame gets ExecutionAborted,
             // causing GcInfoDecoder to skip live slot reporting at non-interruptible offsets.
-            if (handle.LastProcessedFrameType is FrameIterator.FrameType.FaultingExceptionFrame
-                                              or FrameIterator.FrameType.SoftwareExceptionFrame)
+            if (handle.LastProcessedFrameType is FrameType.FaultingExceptionFrame
+                                              or FrameType.SoftwareExceptionFrame)
             {
                 handle.IsInterrupted = true;
             }
@@ -795,14 +867,20 @@ internal partial class StackWalk_1 : IStackWalk
     }
 
     string IStackWalk.GetFrameName(TargetPointer frameIdentifier)
-        => FrameIterator.GetFrameName(_target, frameIdentifier);
+        => _frameHelpers.GetFrameName(frameIdentifier);
 
     TargetPointer IStackWalk.GetMethodDescPtr(TargetPointer framePtr)
-        => FrameIterator.GetMethodDescPtr(_target, framePtr);
+        => _frameHelpers.GetMethodDescPtr(framePtr);
 
     TargetPointer IStackWalk.GetMethodDescPtr(IStackDataFrameHandle stackDataFrameHandle)
     {
         StackDataFrameHandle handle = AssertCorrectHandle(stackDataFrameHandle);
+
+        // If this is a synthetic interpreter chain frame, resolve directly from the specific context frame
+        if (handle.InterpContextFramePtr != TargetPointer.Null)
+        {
+            return _frameHelpers.ResolveMethodDescFromInterpFrame(handle.InterpContextFramePtr);
+        }
 
         // if we are at a capital F Frame, we can get the method desc from the frame
         TargetPointer framePtr = ((IStackWalk)this).GetFrameAddress(handle);
@@ -816,9 +894,9 @@ internal partial class StackWalk_1 : IStackWalk
             bool reportInteropMD = false;
 
             Data.Frame frameData = _target.ProcessedData.GetOrAdd<Data.Frame>(framePtr);
-            FrameIterator.FrameType frameType = FrameIterator.GetFrameType(_target, frameData.Identifier);
+            FrameType frameType = _frameHelpers.GetFrameType(frameData.Identifier);
 
-            if (frameType == FrameIterator.FrameType.InlinedCallFrame &&
+            if (frameType == FrameType.InlinedCallFrame &&
                 handle.State == StackWalkState.SW_SKIPPED_FRAME)
             {
                 IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
@@ -886,4 +964,62 @@ internal partial class StackWalk_1 : IStackWalk
 
         return handle;
     }
+
+    #region Interpreter
+
+    // Interpreter-specific stack walk logic. Interpreted methods do not have OS-level
+    // unwind info; the helpers below implement the cDAC equivalent of native
+    // VirtualUnwindInterpreterCallFrame so the walker can step through interpreted
+    // call chains and transition cleanly back to the native caller of InterpExecMethod
+    // when the chain is exhausted.
+
+    /// <summary>
+    /// Checks if the given IP is in interpreter-managed code (CodeKind.Interpreter).
+    /// </summary>
+    private bool IsInterpreterCode(TargetPointer ip)
+    {
+        return _eman.GetCodeKind(new TargetCodePointer(ip)) == CodeKind.Interpreter;
+    }
+
+    /// <summary>
+    /// Performs interpreter virtual unwind, matching the native
+    /// VirtualUnwindInterpreterCallFrame in eetwain.cpp:2101-2124.
+    ///
+    /// When unwinding from a frameless interpreter frame, the SP points to the
+    /// current InterpMethodContextFrame. We follow pParent to get to the next
+    /// interpreted method in the call chain. If pParent is null, the interpreter
+    /// chain under the current InterpreterFrame is exhausted — we advance the
+    /// frame iterator past the InterpreterFrame and transition to SW_FRAME.
+    /// </summary>
+    private void InterpreterVirtualUnwind(StackWalkData handle)
+    {
+        TargetPointer currentFramePtr = handle.Context.StackPointer;
+        Data.InterpMethodContextFrame currentFrame = _target.ProcessedData.GetOrAdd<Data.InterpMethodContextFrame>(currentFramePtr);
+
+        if (currentFrame.ParentPtr != TargetPointer.Null)
+        {
+            Data.InterpMethodContextFrame parentFrame = _target.ProcessedData.GetOrAdd<Data.InterpMethodContextFrame>(currentFrame.ParentPtr);
+            if (parentFrame.Ip != TargetPointer.Null)
+            {
+                // Parent is active — set context to the parent interpreted method.
+                handle.Context.InstructionPointer = new TargetPointer((ulong)parentFrame.Ip);
+                handle.Context.StackPointer = currentFrame.ParentPtr;
+                return;
+            }
+        }
+
+        // No active parent — interpreter chain under this InterpreterFrame is exhausted.
+        // Use the saved InterpreterFrame's transition block to restore the context to
+        // the native caller of InterpExecMethod. This is the cDAC equivalent of the
+        // native DummyCallerIP → UpdateRegDisplay path (stackwalk.cpp:2159-2164).
+        if (handle.CurrentInterpreterFrameAddress != TargetPointer.Null)
+        {
+            Data.FramedMethodFrame framedMethodFrame = _target.ProcessedData.GetOrAdd<Data.FramedMethodFrame>(handle.CurrentInterpreterFrameAddress);
+            _frameHelpers.GetFrameHandler(handle.Context).HandleTransitionFrame(framedMethodFrame);
+            handle.CurrentInterpreterFrameAddress = TargetPointer.Null;
+        }
+        // UpdateState (called by Next) will see the IP and determine next state.
+    }
+
+    #endregion Interpreter
 }
