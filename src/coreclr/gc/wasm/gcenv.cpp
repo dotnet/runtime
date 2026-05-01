@@ -435,7 +435,7 @@ void GCToOSInterface::GetMemoryStatus(uint64_t restricted_limit, uint32_t* memor
         *memory_load = load;
 
     if (available_page_file != nullptr)
-        *available_page_file = GetAvailablePageFile();
+        *available_page_file = 0; // No page file on wasm
 }
 
 // ============================================================================
