@@ -32,7 +32,6 @@
 #include <minipal/thread.h>
 #include <minipal/time.h>
 #include <minipal/utils.h>
-#include <minipal/ospagesize.h>
 
 #include "globals.h"
 
@@ -45,8 +44,6 @@
 static const size_t WasmPageSize = 64 * 1024;
 
 uint32_t g_totalCpuCount = 1;
-
-uint32_t g_pageSizeUnixInl = 0;
 
 // NUMA globals - WASM has no NUMA support but these are referenced by the GC.
 extern "C" int g_highestNumaNode = 0;
@@ -64,8 +61,6 @@ static uint64_t GetAvailablePhysicalMemory();
 
 bool GCToOSInterface::Initialize()
 {
-    g_pageSizeUnixInl = (uint32_t)minipal_getpagesize();
-
     // Get the physical memory size
 #ifdef TARGET_BROWSER
     g_totalPhysicalMemSize = (int64_t)emscripten_get_heap_max();
