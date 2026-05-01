@@ -46,13 +46,6 @@ jobs:
       - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
         - OSX.15.Amd64
 
-    # Android arm
-    - ${{ if in(parameters.platform, 'android_arm') }}:
-      - ${{ if eq(variables['System.TeamProject'], 'public') }}:
-        - Windows.11.Amd64.Android.Open
-      - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
-        - Windows.11.Amd64.Android
-
     # Android arm64
     - ${{ if in(parameters.platform, 'android_arm64') }}:
       - ${{ if eq(variables['System.TeamProject'], 'public') }}:

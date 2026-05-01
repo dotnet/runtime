@@ -47,6 +47,8 @@ public static class Constants
         public const string DispatchThisPtrMask = nameof(DispatchThisPtrMask);
         public const string ComWrappersVtablePtrs = nameof(ComWrappersVtablePtrs);
         public const string GcNotificationFlags = nameof(GcNotificationFlags);
+        public const string JITNotificationTable = nameof(JITNotificationTable);
+        public const string JITNotificationTableSize = nameof(JITNotificationTableSize);
         public const string GlobalAllocContext = nameof(GlobalAllocContext);
 
         public const string StressLogEnabled = nameof(StressLogEnabled);
