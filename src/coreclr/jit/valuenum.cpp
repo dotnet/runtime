@@ -14348,13 +14348,6 @@ bool Compiler::fgValueNumberSpecialIntrinsic(GenTreeCall* call)
     {
         case NI_System_String_FastAllocateString:
         {
-            // Give the call a VN that is known to be non-null and that records the
-            // MethodTable and the requested length, so that:
-            //   * ARR_LENGTH on the result can be folded back to the length argument
-            //   * Two FastAllocateString calls with the same (pMT, length) get the same VN
-            //
-            // This intrinsic only applies to the 2-arg InternalCall overload:
-            //   string FastAllocateString(MethodTable* pMT, nint length)
             assert(call->gtArgs.CountUserArgs() == 2);
             ValueNumPair pMTVN    = call->gtArgs.GetUserArgByIndex(0)->GetNode()->gtVNPair;
             ValueNumPair lenArgVN = call->gtArgs.GetUserArgByIndex(1)->GetNode()->gtVNPair;
