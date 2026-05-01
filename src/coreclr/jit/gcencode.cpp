@@ -4651,7 +4651,7 @@ void GCInfo::gcInfoRecordGCRegStateChange(GcInfoEncoder* gcInfoEncoder,
                                           regMaskSmall   byRefMask,
                                           regMaskSmall*  pPtrRegs)
 {
-#ifndef TARGET_WASM
+#if HAS_FIXED_REGISTER_SET
     // Precondition: byRefMask is a subset of regMask.
     assert((byRefMask & ~regMask) == 0);
 
@@ -4709,7 +4709,7 @@ void GCInfo::gcInfoRecordGCRegStateChange(GcInfoEncoder* gcInfoEncoder,
         // Turn the bit we've just generated off and continue.
         regMask ^= tmpMask; // EAX,ECX,EDX,EBX,---,EBP,ESI,EDI
     }
-#endif // !TARGET_WASM
+#endif // HAS_FIXED_REGISTER_SET
 }
 
 /**************************************************************************
