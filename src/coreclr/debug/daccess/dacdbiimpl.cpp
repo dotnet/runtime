@@ -1316,7 +1316,7 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetNativeCodeInfoForAddr(CORDB_AD
 
         EX_TRY_ALLOW_DATATARGET_MISSING_MEMORY
         {
-            codeAddr = GetInterpreterCodeFromInterpreterPrecodeIfPresent(codeAddr);
+            codeAddr = GetInterpreterCodeFromEntryPointIfPresent(codeAddr);
         }
         EX_END_CATCH_ALLOW_DATATARGET_MISSING_MEMORY;
 
@@ -4361,29 +4361,6 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetModuleForAssembly(VMPTR_Assemb
     return hr;
 }
 
-
-// Implement IDacDbiInterface::GetAssemblyInfo
-HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetAssemblyInfo(VMPTR_Assembly vmAssembly, OUT AssemblyInfo * pData)
-{
-    DD_ENTER_MAY_THROW;
-
-    HRESULT hr = S_OK;
-    EX_TRY
-    {
-
-        _ASSERTE(pData != NULL);
-
-        ZeroMemory(pData, sizeof(*pData));
-
-        Assembly * pAssembly  = vmAssembly.GetDacPtr();
-
-        pData->vmAssembly.SetHostPtr(pAssembly);
-        pData->vmAppDomain.SetHostPtr(AppDomain::GetCurrentDomain());
-    }
-    EX_CATCH_HRESULT(hr);
-    return hr;
-}
-
 // Implement IDacDbiInterface::GetModuleData
 HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetModuleData(VMPTR_Module vmModule, OUT ModuleInfo * pData)
 {
@@ -4818,7 +4795,7 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::HasUnhandledException(VMPTR_Threa
         {
             // most managed exceptions are just a throwable bound to a
             // native exception. In that case this handle will be non-null
-            OBJECTHANDLE ohException = pThread->GetThrowableAsHandle();
+            OBJECTHANDLE ohException = pThread->GetThrowableAsPseudoHandle();
             if (ohException != (OBJECTHANDLE)NULL)
             {
                 // during the UEF we set the unhandled bit, if it is set the exception
@@ -4955,8 +4932,7 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetCurrentException(VMPTR_Thread 
 
         Thread * pThread = vmThread.GetDacPtr();
 
-        // OBJECTHANDLEs are really just TADDRs.
-        OBJECTHANDLE ohException = pThread->GetThrowableAsHandle();        // ohException can be NULL
+        OBJECTHANDLE ohException = pThread->GetThrowableAsPseudoHandle();
 
         if (ohException == (OBJECTHANDLE)NULL)
         {
@@ -5680,7 +5656,7 @@ BOOL DacDbiInterfaceImpl::IsThreadAtGCSafePlace(VMPTR_Thread vmThread)
     ULONG32 flags = (QUICKUNWIND | HANDLESKIPPEDFRAMES | DISABLE_MISSING_FRAME_DETECTION);
 
     StackFrameIterator iter;
-    iter.Init(pThread, pThread->GetFrame(), &rd, flags);
+    iter.Init(pThread, NULL, &rd, flags);
 
     CrawlFrame * pCF = &(iter.m_crawl);
     if (pCF->IsFrameless() && pCF->IsActiveFunc())
@@ -5886,58 +5862,10 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetContext(VMPTR_Thread vmThread,
         {
             // If the filter context is NULL, then we use the true context of the thread.
             pContextBuffer->ContextFlags = DT_CONTEXT_ALL;
-            HRESULT hr = m_pTarget->GetThreadContext(pThread->GetOSThreadId(),
+            IfFailThrow(m_pTarget->GetThreadContext(pThread->GetOSThreadId(),
                                                     pContextBuffer->ContextFlags,
                                                     sizeof(DT_CONTEXT),
-                                                    reinterpret_cast<BYTE *>(pContextBuffer));
-            if (hr == E_NOTIMPL)
-            {
-                // GetThreadContext is not implemented on this data target.
-                // That's why we have to make do with context we can obtain from Frames explicitly stored in Thread object.
-                // It suffices for managed debugging stackwalk.
-                REGDISPLAY tmpRd = {};
-                T_CONTEXT tmpContext = {};
-                FillRegDisplay(&tmpRd, &tmpContext);
-
-                // Going through thread Frames and looking for first (deepest one) one that
-                // that has context available for stackwalking (SP and PC)
-                // For example: RedirectedThreadFrame, InlinedCallFrame, DynamicHelperFrame
-                Frame *frame = pThread->GetFrame();
-
-                while (frame != NULL && frame != FRAME_TOP)
-                {
-#ifdef FEATURE_INTERPRETER
-                    if (frame->GetFrameIdentifier() == FrameIdentifier::InterpreterFrame)
-                    {
-                        PTR_InterpreterFrame pInterpreterFrame = dac_cast<PTR_InterpreterFrame>(frame);
-                        pInterpreterFrame->SetContextToInterpMethodContextFrame(&tmpContext);
-                        CopyMemory(pContextBuffer, &tmpContext, sizeof(*pContextBuffer));
-                        return S_OK;
-                    }
-#endif // FEATURE_INTERPRETER
-                    frame->UpdateRegDisplay(&tmpRd);
-                    if (GetRegdisplaySP(&tmpRd) != 0 && GetControlPC(&tmpRd) != 0)
-                    {
-                        UpdateContextFromRegDisp(&tmpRd, &tmpContext);
-                        CopyMemory(pContextBuffer, &tmpContext, sizeof(*pContextBuffer));
-                        pContextBuffer->ContextFlags = DT_CONTEXT_CONTROL
-    #if defined(TARGET_AMD64) || defined(TARGET_ARM)
-                                                    | DT_CONTEXT_INTEGER  // DT_CONTEXT_INTEGER is needed to include the frame register on ARM32 and AMD64 architectures
-                                                                          // DT_CONTEXT_CONTROL already includes the frame register for X86 and ARM64 architectures
-    #endif
-                        ;
-                        return S_OK;
-                    }
-                    frame = frame->Next();
-                }
-
-                // It looks like this thread is not running managed code.
-                ZeroMemory(pContextBuffer, sizeof(*pContextBuffer));
-            }
-            else
-            {
-                IfFailThrow(hr);
-            }
+                                                    reinterpret_cast<BYTE *>(pContextBuffer)));
         }
         else
         {

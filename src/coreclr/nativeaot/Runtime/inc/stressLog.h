@@ -47,6 +47,8 @@
 
 #if defined(STRESS_LOG)
 
+#include "cdacdata.h"
+
 //
 // Logging levels and facilities
 //
@@ -532,6 +534,7 @@ class ThreadStressLog {
     PTR_Thread pThread;         // thread associated with these stress logs
     StressMsg * origCurPtr;     // this holds the original curPtr before we start the dump
 
+    template<typename T> friend struct ::cdac_data;
     friend void PopulateDebugHeaders();
     friend class StressLog;
 
@@ -792,5 +795,18 @@ inline StressMsg* ThreadStressLog::AdvWritePastBoundary(int cArgs) {
 #define STRESS_LOG_RESERVE_MEM(numChunks)   do { } WHILE_0
 #endif // !STRESS_LOG || DACCESS_COMPILE
 #endif // !__GCENV_BASE_INCLUDED__
+
+#if defined(STRESS_LOG)
+template<> struct cdac_data<ThreadStressLog>
+{
+    static constexpr size_t Next = offsetof(ThreadStressLog, next);
+    static constexpr size_t ThreadId = offsetof(ThreadStressLog, threadId);
+    static constexpr size_t WriteHasWrapped = offsetof(ThreadStressLog, writeHasWrapped);
+    static constexpr size_t CurrentPtr = offsetof(ThreadStressLog, curPtr);
+    static constexpr size_t ChunkListHead = offsetof(ThreadStressLog, chunkListHead);
+    static constexpr size_t ChunkListTail = offsetof(ThreadStressLog, chunkListTail);
+    static constexpr size_t CurrentWriteChunk = offsetof(ThreadStressLog, curWriteChunk);
+};
+#endif // STRESS_LOG
 
 #endif // StressLog_h

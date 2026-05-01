@@ -9,11 +9,12 @@ namespace System.IO
 {
     public partial class FileLoadException
     {
-        private FileLoadException(string? fileName, int hResult)
+        private FileLoadException(string? fileName, string? requestingAssemblyChain, int hResult)
             : base(null)
         {
             HResult = hResult;
             FileName = fileName;
+            _requestingAssemblyChain = requestingAssemblyChain;
             _message = FormatFileLoadExceptionMessage(FileName, HResult);
         }
 
@@ -47,19 +48,20 @@ namespace System.IO
         }
 
         [UnmanagedCallersOnly]
-        internal static unsafe void Create(FileLoadExceptionKind kind, char* pFileName, int hresult, char* pDiagnosticInfo, object* pThrowable, Exception* pException)
+        internal static unsafe void Create(FileLoadExceptionKind kind, char* pFileName, char* pRequestingAssemblyChain, int hresult, char* pDiagnosticInfo, object* pThrowable, Exception* pException)
         {
             try
             {
                 string? fileName = pFileName is not null ? new string(pFileName) : null;
+                string? requestingAssemblyChain = pRequestingAssemblyChain is not null ? new string(pRequestingAssemblyChain) : null;
                 string? diagnosticInfo = pDiagnosticInfo is not null ? new string(pDiagnosticInfo) : null;
                 Debug.Assert(Enum.IsDefined(kind));
                 *pThrowable = kind switch
                 {
-                    FileLoadExceptionKind.BadImageFormat => new BadImageFormatException(fileName, hresult),
-                    FileLoadExceptionKind.FileNotFound => new FileNotFoundException(fileName, hresult, diagnosticInfo),
+                    FileLoadExceptionKind.BadImageFormat => new BadImageFormatException(fileName, requestingAssemblyChain, hresult),
+                    FileLoadExceptionKind.FileNotFound => new FileNotFoundException(fileName, requestingAssemblyChain, hresult, diagnosticInfo),
                     FileLoadExceptionKind.OutOfMemory => new OutOfMemoryException(),
-                    _ /* FileLoadExceptionKind.FileLoad */ => new FileLoadException(fileName, hresult),
+                    _ /* FileLoadExceptionKind.FileLoad */ => new FileLoadException(fileName, requestingAssemblyChain, hresult),
                 };
             }
             catch (Exception ex)

@@ -117,6 +117,7 @@
     <Compile Include="TypeBuilder\TypeBuilderGetField.cs" />
     <Compile Include="TypeBuilder\TypeBuilderGetGenericTypeDefinition.cs" />
     <Compile Include="TypeBuilder\TypeBuilderGetMethod.cs" />
+    <Compile Include="TypeBuilder\TypeBuilderGetNullableUnderlyingType.cs" />
     <Compile Include="TypeBuilder\TypeBuilderGUID.cs" />
     <Compile Include="TypeBuilder\TypeBuilderIsByRefLike.cs" />
     <Compile Include="TypeBuilder\TypeBuilderIsGenericParameter.cs" />

@@ -5,16 +5,17 @@ namespace System.IO
 {
     public partial class FileNotFoundException
     {
-        internal FileNotFoundException(string? fileName, int hResult)
+        internal FileNotFoundException(string? fileName, string? requestingAssemblyChain, int hResult)
             : base(null)
         {
             HResult = hResult;
             FileName = fileName;
+            _requestingAssemblyChain = requestingAssemblyChain;
             SetMessageField();
         }
 
-        internal FileNotFoundException(string? fileName, int hResult, string? diagnosticInfo)
-            : this(fileName, hResult)
+        internal FileNotFoundException(string? fileName, string? requestingAssemblyChain, int hResult, string? diagnosticInfo)
+            : this(fileName, requestingAssemblyChain, hResult)
         {
             FusionLog = diagnosticInfo;
         }

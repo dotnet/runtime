@@ -221,25 +221,6 @@ class AssemblySpec  : public BaseAssemblySpec
         return m_pAppDomain;
     }
 
-    inline HRESULT SetContentType(AssemblyContentType type)
-    {
-        LIMITED_METHOD_CONTRACT;
-        if (type == AssemblyContentType_Default)
-        {
-            m_dwFlags = (m_dwFlags & ~afContentType_Mask) | afContentType_Default;
-            return S_OK;
-        }
-        else if (type == AssemblyContentType_WindowsRuntime)
-        {
-            // WinRT assemblies are not supported as direct references.
-            return COR_E_PLATFORMNOTSUPPORTED;
-        }
-        else
-        {
-            _ASSERTE(!"Unexpected content type.");
-            return E_UNEXPECTED;
-        }
-    }
 };
 
 #define INITIAL_ASM_SPEC_HASH_SIZE 7
@@ -264,6 +245,8 @@ class AssemblySpecBindingCache
         inline Assembly* GetAssembly(){ LIMITED_METHOD_CONTRACT; return m_pAssembly; };
         inline void SetAssembly(Assembly* pAssembly){ LIMITED_METHOD_CONTRACT; m_pAssembly = pAssembly; };
         inline PEAssembly* GetFile(){ LIMITED_METHOD_CONTRACT; return m_pPEAssembly;};
+        inline Assembly* GetParentAssembly(){ LIMITED_METHOD_CONTRACT; return m_spec.GetParentAssembly(); };
+        inline void ClearParentAssembly(){ LIMITED_METHOD_CONTRACT; m_spec.SetParentAssembly(NULL); };
         inline BOOL IsError(){ LIMITED_METHOD_CONTRACT; return (m_exceptionType!=EXTYPE_NONE);};
 
         // bound to the file, but failed later
@@ -410,6 +393,7 @@ class AssemblySpecBindingCache
 
     Assembly *LookupAssembly(AssemblySpec *pSpec, BOOL fThrow=TRUE);
     PEAssembly *LookupFile(AssemblySpec *pSpec, BOOL fThrow = TRUE);
+    void GetParentAssemblyMap(MapSHash<Assembly*, Assembly*> &parentMap);
 
     BOOL StoreAssembly(AssemblySpec *pSpec, Assembly *pAssembly);
     BOOL StorePEAssembly(AssemblySpec *pSpec, PEAssembly *pPEAssembly);

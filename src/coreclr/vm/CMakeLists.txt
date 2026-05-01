@@ -18,10 +18,6 @@ if(CLR_CMAKE_TARGET_ANDROID)
     add_definitions(-DFEATURE_EMULATED_TLS)
 endif(CLR_CMAKE_TARGET_ANDROID)
 
-if(FEATURE_AUTO_TRACE)
-    add_definitions(-DFEATURE_AUTO_TRACE)
-endif(FEATURE_AUTO_TRACE)
-
 foreach (Config DEBUG CHECKED)
     add_compile_definitions($<$<CONFIG:${Config}>:WRITE_BARRIER_CHECK>)
 endforeach (Config)
@@ -313,7 +309,6 @@ set(VM_SOURCES_WKS
     corelib.cpp # <DisablePrecompiledHeaders>true</DisablePrecompiledHeaders>
     customattribute.cpp
     custommarshalerinfo.cpp
-    autotrace.cpp
     divmodint.cpp
     dllimport.cpp
     dllimportcallback.cpp
@@ -423,7 +418,6 @@ set(VM_HEADERS_WKS
     comutilnative.h
     customattribute.h
     custommarshalerinfo.h
-    autotrace.h
     diagnosticserveradapter.h
     divmodint.h
     dllimport.h

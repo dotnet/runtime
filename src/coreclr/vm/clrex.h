@@ -70,9 +70,7 @@ class StackTraceInfo
     static OBJECTREF GetKeepAliveObject(MethodDesc* pMethod);
     static void EnsureStackTraceArray(StackTraceArrayProtect *pStackTraceArrayProtected, size_t neededSize);
     static void EnsureKeepAliveArray(PTRARRAYREF *ppKeepAliveArray, size_t neededSize);
-    static void AppendElementImpl(OBJECTREF pThrowable, UINT_PTR currentIP, UINT_PTR currentSP, MethodDesc* pFunc, CrawlFrame* pCf, Thread* pThread, BOOL fRaisingForeignException);
 public:
-    static void AppendElement(OBJECTHANDLE hThrowable, UINT_PTR currentIP, UINT_PTR currentSP, MethodDesc* pFunc, CrawlFrame* pCf);
     static void AppendElement(OBJECTREF pThrowable, UINT_PTR currentIP, UINT_PTR currentSP, MethodDesc* pFunc, CrawlFrame* pCf);
 };
 
@@ -666,12 +664,19 @@ class EEFileLoadException : public EEException
     SString m_name;
     HRESULT m_hr;
     SString m_diagnosticInfo;
+    SString m_requestingAssemblyChain;
 
   public:
 
     EEFileLoadException(const SString &name, HRESULT hr, Exception *pInnerException = NULL);
     EEFileLoadException(const SString &name, HRESULT hr, const SString &diagnosticInfo, Exception *pInnerException = NULL);
     ~EEFileLoadException();
+
+    void SetRequestingAssemblyChain(const SString &requestingAssemblyChain)
+    {
+        WRAPPER_NO_CONTRACT;
+        m_requestingAssemblyChain = requestingAssemblyChain;
+    }
 
     // virtual overrides
     HRESULT GetHR()
@@ -695,7 +700,9 @@ class EEFileLoadException : public EEException
     virtual Exception *CloneHelper()
     {
         WRAPPER_NO_CONTRACT;
-        return new EEFileLoadException(m_name, m_hr, m_diagnosticInfo);
+        EEFileLoadException *pClone = new EEFileLoadException(m_name, m_hr, m_diagnosticInfo);
+        pClone->SetRequestingAssemblyChain(m_requestingAssemblyChain);
+        return pClone;
     }
 
  private:

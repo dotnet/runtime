@@ -178,7 +178,15 @@ function libCoreRunFactory() {
             } catch (e) {
                 return false;
             }
-            const wasmModule = new WebAssembly.Module(wasmBytes);
+            let wasmModule;
+            try {
+                wasmModule = new WebAssembly.Module(wasmBytes);
+            } catch (e) {
+                const errorMessage = e instanceof Error ? e.message : String(e);
+                console.error("Failed to construct WebAssembly module for Webcil image:", {wasmPath, errorMessage});
+                return false;
+            }
+
             const tableStartIndex = wasmTable.length;
 
             var payloadSize = 0;
@@ -195,7 +203,14 @@ function libCoreRunFactory() {
                 console.error("Webcil payload size is 0; cannot load image");
                 return false;
             }
-            wasmTable.grow(tableSize);
+
+            try {
+                wasmTable.grow(tableSize);
+            } catch (e) {
+                const errorMessage = e instanceof Error ? e.message : String(e);
+                console.error("Failed to grow WebAssembly table for Webcil image:", {wasmPath, errorMessage});
+                return false;
+            }
 
             var payloadPtr = 0;
             var wasmInstance;
