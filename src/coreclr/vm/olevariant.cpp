@@ -1903,8 +1903,9 @@ namespace
         case VT_LPSTR:
         {
             // SAFEARRAY LPSTR marshalling always uses default best-fit/throw-on-unmappable.
-            MethodTable* pDisabledMT = CoreLibBinder::GetClass(CLASS__MARSHALER_OPTION_DISABLED);
-            TypeHandle thArgs[2] = { TypeHandle(pDisabledMT), TypeHandle(pDisabledMT) };
+            MethodTable* pBestFitEnabledMT = CoreLibBinder::GetClass(CLASS__MARSHALER_OPTION_ENABLED);
+            MethodTable* pThrowOnUnmappableDisabledMT = CoreLibBinder::GetClass(CLASS__MARSHALER_OPTION_DISABLED);
+            TypeHandle thArgs[2] = { TypeHandle(pBestFitEnabledMT), TypeHandle(pThrowOnUnmappableDisabledMT) };
             return TypeHandle(CoreLibBinder::GetClass(CLASS__LPSTR_ARRAY_ELEMENT_MARSHALER)).Instantiate(Instantiation(thArgs, 2)).AsMethodTable();
         }
 
