@@ -2586,7 +2586,21 @@ extern "C" PCONTEXT __stdcall GetCurrentSavedRedirectContext()
 
 void Thread::RestoreContextSimulated(Thread* pThread, CONTEXT* pCtx, void* pFrame, DWORD dwLastError)
 {
-    pThread->HandleThreadAbort();        // Might throw an exception.
+    // Check for a pending abort and redirect pCtx to the abort handler if needed.
+    // This matches the non-x86 approach in RedirectedHandledJITCase: instead of calling
+    // HandleThreadAbort() directly (which runs managed code while the redirect context is
+    // still in use and could trigger a 2nd redirect asserting !m_RedirectContextInUse),
+    // we use COMPlusCheckForAbort() (NOTHROW/GC_NOTRIGGER) to get the abort handler
+    // address and redirect pCtx to it.  The abort exception is then raised after context
+    // has been restored and the redirect context is no longer in use.
+    UINT_PTR uResumePC = (UINT_PTR)GetIP(pCtx);
+    CopyOSContext(pThread->m_OSContext, pCtx);
+    UINT_PTR uAbortAddr = (UINT_PTR)COMPlusCheckForAbort();
+    if (uAbortAddr)
+    {
+        SetIP(pThread->m_OSContext, uResumePC);
+        SetIP(pCtx, uAbortAddr);
+    }
 
     // A counter to avoid a nasty case where an
     // up-stack filter throws another exception
