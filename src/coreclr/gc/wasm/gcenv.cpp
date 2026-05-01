@@ -364,6 +364,8 @@ static bool GetPhysicalMemoryUsed(size_t* val)
 
 uint64_t GCToOSInterface::GetPhysicalMemoryLimit(bool* is_restricted)
 {
+    // No restricted-memory mode on WASM. The linear memory ceiling enforced by the
+    // engine is the only hard cap; we don't auto-derive a GC heap_hard_limit from it.
     if (is_restricted)
         *is_restricted = false;
 
