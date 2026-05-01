@@ -63,11 +63,11 @@ entries via the AzDO Definitions API, and adds new rows here.
 | runtime-coreclr libraries-pgo | 145 | |
 | runtime-coreclr superpmi-replay | 150 | |
 | runtime-coreclr superpmi-asmdiffs-checked-release | 153 | |
+| runtime-coreclr jit-cfg | 155 | |
 | runtime-coreclr jitstress-random | 159 | |
 | runtime-coreclr libraries-jitstress-random | 160 | |
 | runtime-coreclr pgostress | 230 | |
 | runtime-coreclr jitstress-isas-avx512 | 235 | |
-| runtime-coreclr jit-cfg | 155 | |
 | runtime-coreclr superpmi-collect | — | **Private — skip** |
 | runtime-coreclr jitrollingbuild | — | **Private — skip** |
 
