@@ -702,9 +702,7 @@ namespace System.Xml.Serialization
 
                         if (text.Separator.HasValue)
                         {
-                            // Split on separator and add each part to the collection
-                            string[] parts = rawText.Split(text.Separator.Value);
-                            foreach (string part in parts)
+                            foreach (string part in rawText.Split(text.Separator.Value))
                             {
                                 anyText.Source!(part);
                             }
@@ -2002,7 +2000,9 @@ namespace System.Xml.Serialization
                 if (attribute.IsList)
                 {
                     string listValues = Reader.Value;
-                    string[] vals = listValues.Split(null);
+                    string[] vals = attribute.Separator.HasValue
+                        ? listValues.Split(attribute.Separator.Value)
+                        : listValues.Split((char[]?)null);
                     Array arrayValue = Array.CreateInstance(member.Mapping.TypeDesc!.Type!.GetElementType()!, vals.Length);
                     for (int i = 0; i < vals.Length; i++)
                     {

@@ -3852,7 +3852,16 @@ namespace System.Xml.Serialization
                 if (attribute.IsList)
                 {
                     Writer.WriteLine("string listValues = Reader.Value;");
-                    Writer.WriteLine("string[] vals = listValues.Split(null);");
+                    if (attribute.Separator.HasValue)
+                    {
+                        Writer.Write("string[] vals = listValues.Split(");
+                        WriteQuotedCSharpString(attribute.Separator.Value.ToString());
+                        Writer.WriteLine("[0]);");
+                    }
+                    else
+                    {
+                        Writer.WriteLine("string[] vals = listValues.Split(null);");
+                    }
                     Writer.WriteLine("for (int i = 0; i < vals.Length; i++) {");
                     Writer.Indent++;
 
@@ -4115,40 +4124,41 @@ namespace System.Xml.Serialization
             }
             else
             {
-                if (member.IsArrayLike && text.Separator.HasValue)
+                if (member.IsArrayLike)
                 {
-                    // Emit code to split the text on the separator and add each part individually
-                    string separatorStr = text.Separator.Value.ToString();
-                    Writer.WriteLine("{");
-                    Writer.Indent++;
-                    Writer.Write("string rawText = ");
-                    if (text.Mapping!.TypeDesc!.CollapseWhitespace)
+                    if (text.Separator.HasValue)
                     {
-                        Writer.Write("CollapseWhitespace(Reader.ReadString())");
+                        // Read the (optionally whitespace-collapsed) text content into a local, then
+                        // split on the configured separator and add each part to the collection.
+                        Writer.WriteLine("{");
+                        Writer.Indent++;
+                        Writer.Write("string rawText = ");
+                        if (text.Mapping!.TypeDesc!.CollapseWhitespace)
+                        {
+                            Writer.Write("CollapseWhitespace(Reader.ReadString())");
+                        }
+                        else
+                        {
+                            Writer.Write("Reader.ReadString()");
+                        }
+                        Writer.WriteLine(";");
+                        Writer.Write("string[] vals = rawText.Split(");
+                        WriteQuotedCSharpString(text.Separator.Value.ToString());
+                        Writer.WriteLine("[0]);");
+                        Writer.WriteLine("for (int i = 0; i < vals.Length; i++) {");
+                        Writer.Indent++;
+                        WriteSourceBegin(member.ArraySource);
+                        Writer.Write("vals[i]");
+                        WriteSourceEnd(member.ArraySource);
+                        Writer.WriteLine(";");
+                        Writer.Indent--;
+                        Writer.WriteLine("}");
+                        Writer.Indent--;
+                        Writer.WriteLine("}");
                     }
                     else
                     {
-                        Writer.Write("Reader.ReadString()");
-                    }
-                    Writer.WriteLine(";");
-                    Writer.Write("string[] vals = rawText.Split(");
-                    WriteQuotedCSharpString(separatorStr);
-                    Writer.WriteLine("[0]);");
-                    Writer.WriteLine("for (int i = 0; i < vals.Length; i++) {");
-                    Writer.Indent++;
-                    WriteSourceBegin(member.ArraySource);
-                    Writer.Write("vals[i]");
-                    WriteSourceEnd(member.ArraySource);
-                    Writer.WriteLine(";");
-                    Writer.Indent--;
-                    Writer.WriteLine("}");
-                    Writer.Indent--;
-                    Writer.WriteLine("}");
-                }
-                else
-                {
-                    if (member.IsArrayLike)
-                    {
+                        // No separator: add the entire text as a single element (existing behavior).
                         WriteSourceBegin(member.ArraySource);
                         if (text.Mapping!.TypeDesc!.CollapseWhitespace)
                         {
@@ -4158,25 +4168,27 @@ namespace System.Xml.Serialization
                         {
                             Writer.Write("Reader.ReadString()");
                         }
+                        WriteSourceEnd(member.ArraySource);
+                        Writer.WriteLine(";");
+                    }
+                }
+                else
+                {
+                    if (text.Mapping!.TypeDesc == StringTypeDesc || text.Mapping.TypeDesc!.FormatterName == "String")
+                    {
+                        Writer.Write("tmp = ReadString(tmp, ");
+                        if (text.Mapping.TypeDesc!.CollapseWhitespace)
+                            Writer.WriteLine("true);");
+                        else
+                            Writer.WriteLine("false);");
+
+                        WriteSourceBegin(member.ArraySource);
+                        Writer.Write("tmp");
                     }
                     else
                     {
-                        if (text.Mapping!.TypeDesc == StringTypeDesc || text.Mapping.TypeDesc!.FormatterName == "String")
-                        {
-                            Writer.Write("tmp = ReadString(tmp, ");
-                            if (text.Mapping.TypeDesc!.CollapseWhitespace)
-                                Writer.WriteLine("true);");
-                            else
-                                Writer.WriteLine("false);");
-
-                            WriteSourceBegin(member.ArraySource);
-                            Writer.Write("tmp");
-                        }
-                        else
-                        {
-                            WriteSourceBegin(member.ArraySource);
-                            WritePrimitive(text.Mapping, "Reader.ReadString()");
-                        }
+                        WriteSourceBegin(member.ArraySource);
+                        WritePrimitive(text.Mapping, "Reader.ReadString()");
                     }
                     WriteSourceEnd(member.ArraySource);
                     Writer.WriteLine(";");

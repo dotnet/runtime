@@ -2274,14 +2274,12 @@ namespace System.Xml.Serialization
 
         private static void ValidateSeparatorChar(char separator, string memberName)
         {
-            try
+            if (XmlCharType.IsTextChar(separator) && XmlCharType.IsAttributeValueChar(separator))
             {
-                XmlConvert.VerifyXmlChars(separator.ToString());
+                return;
             }
-            catch (XmlException)
-            {
-                throw new InvalidOperationException(SR.Format(SR.XmlInvalidSeparatorChar, separator, memberName));
-            }
+
+            throw new InvalidOperationException(SR.Format(SR.XmlInvalidSeparatorChar, separator, memberName));
         }
 
         private static void CheckNullable(bool isNullable, TypeDesc typeDesc, TypeMapping? mapping)

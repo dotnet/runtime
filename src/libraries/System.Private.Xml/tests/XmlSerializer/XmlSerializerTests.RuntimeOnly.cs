@@ -3703,13 +3703,25 @@ public static partial class XmlSerializerTests
         Assert.Equal("z", actual.Items[2]);
     }
 
-    [Fact]
-    public static void XML_XmlTextSeparator_InvalidChar_ThrowsOnSerializerCreation()
+    [Theory]
+    [InlineData(typeof(TypeWithXmlTextInvalidSeparator), "Text")]
+    [InlineData(typeof(TypeWithXmlTextInvalidSeparatorAmpersand), "Text")]
+    [InlineData(typeof(TypeWithXmlTextInvalidSeparatorQuote), "Text")]
+    [InlineData(typeof(TypeWithXmlAttributeInvalidSeparatorQuote), "Items")]
+    public static void XML_XmlSeparator_InvalidChar_ThrowsWithReflectingFieldMessage(Type type, string fieldName)
     {
-        Assert.Throws<InvalidOperationException>(() =>
+        Exception ex = Record.Exception(() =>
         {
-            // \0 is not a valid XML character; should throw at reflection time
-            var serializer = new XmlSerializer(typeof(TypeWithXmlTextInvalidSeparator));
+            var serializer = new XmlSerializer(type);
+#if ReflectionOnly
+            // The reflection-based serializer doesn't perform xml/type mapping in the constructor;
+            // mapping (and therefore separator validation) happens during the first Serialize/Deserialize
+            // call. Force the mapping to happen by serializing a default instance.
+            using var sw = new StringWriter();
+            serializer.Serialize(sw, Activator.CreateInstance(type));
+#endif
         });
+
+        AssertXmlMappingException(ex, type.Name, fieldName);
     }
 }

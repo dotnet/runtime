@@ -4661,3 +4661,21 @@ public class TypeWithXmlTextInvalidSeparator
     [XmlText(Separator = '\x01')]
     public string[] Text;
 }
+
+public class TypeWithXmlTextInvalidSeparatorAmpersand
+{
+    [XmlText(Separator = '&')]
+    public string[] Text;
+}
+
+public class TypeWithXmlTextInvalidSeparatorQuote
+{
+    [XmlText(Separator = '"')]
+    public string[] Text;
+}
+
+public class TypeWithXmlAttributeInvalidSeparatorQuote
+{
+    [XmlAttribute(Separator = '"')]
+    public string[] Items;
+}
