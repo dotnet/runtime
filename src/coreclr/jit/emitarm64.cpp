@@ -2595,20 +2595,9 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
 {
     assert(width <= 64);
 
-    UINT64 result = ~value;
-
-    if (width < 64)
-    {
-        // Check that 'value' fits in 'width' bits. Don't consider "sign" bits above width.
-        UINT64 maxVal       = 1ULL << width;
-        UINT64 lowBitsMask  = maxVal - 1;
-        UINT64 signBitsMask = ~lowBitsMask | (1ULL << (width - 1)); // The high bits must be set, and the top bit
-                                                                    // (sign bit) must be set.
-        assert((value < maxVal) || ((value & signBitsMask) == signBitsMask));
-
-        // mask off any extra bits that we got from the complement operation
-        result &= lowBitsMask;
-    }
+    // Mask for zero'ing bits above width.
+    UINT64 mask   = UINT64_MAX >> (64 - width);
+    UINT64 result = ~value & mask;
 
     return result;
 }
