@@ -7981,7 +7981,9 @@ public:
                                    // nor it implies that it's never negative.
         O2K_ZEROOBJ,
         O2K_SUBRANGE,
-        O2K_CONST_VEC
+        O2K_CONST_VEC,
+        O2K_VN, // arbitrary VN (used to express "X <relop> Y" for non-checked-bound Y).
+                // Only valid for O1K_VN op1 with relop kinds (OAK_LT/LE/GT/GE etc.)
     };
 
     struct AssertionDsc
@@ -8127,7 +8129,7 @@ public:
             ValueNum GetVN() const
             {
                 assert(!m_compiler->optLocalAssertionProp);
-                assert(KindIs(O2K_CONST_INT, O2K_CONST_DOUBLE, O2K_ZEROOBJ, O2K_CONST_VEC));
+                assert(KindIs(O2K_CONST_INT, O2K_CONST_DOUBLE, O2K_ZEROOBJ, O2K_CONST_VEC, O2K_VN));
                 assert(m_vn != ValueNumStore::NoVN);
                 return m_vn;
             }
@@ -8472,6 +8474,9 @@ public:
                            GetOp2().GetCheckedBoundConstant() == that.GetOp2().GetCheckedBoundConstant() &&
                            GetOp2().IsCheckedBoundNeverNegative() == that.GetOp2().IsCheckedBoundNeverNegative();
 
+                case O2K_VN:
+                    return GetOp2().GetVN() == that.GetOp2().GetVN();
+
                 case O2K_LCLVAR_COPY:
                     return GetOp2().GetLclNum() == that.GetOp2().GetLclNum();
 
@@ -8735,6 +8740,22 @@ public:
             dsc.m_op2.m_kind           = O2K_CONST_INT;
             dsc.m_op2.m_vn             = cnsVN;
             dsc.m_op2.m_icon.m_iconVal = cns;
+            return dsc;
+        }
+
+        // Create "op1VN <relop> op2VN" assertion where op2VN is an arbitrary VN
+        // (not a checked bound, not a constant). Both operands must be non-NoVN.
+        static AssertionDsc CreateCompareVN(const Compiler* comp, VNFunc relop, ValueNum op1VN, ValueNum op2VN)
+        {
+            assert(op1VN != ValueNumStore::NoVN);
+            assert(op2VN != ValueNumStore::NoVN);
+
+            AssertionDsc dsc    = CreateEmptyAssertion(comp);
+            dsc.m_assertionKind = FromVNFunc(relop);
+            dsc.m_op1.m_kind    = O1K_VN;
+            dsc.m_op1.m_vn      = op1VN;
+            dsc.m_op2.m_kind    = O2K_VN;
+            dsc.m_op2.m_vn      = op2VN;
             return dsc;
         }
     };

@@ -431,6 +431,7 @@ ValueNumStore::ValueNumStore(Compiler* comp, CompAllocator alloc)
     , m_nextChunkBase(0)
     , m_fixedPointMapSels(alloc, 8)
     , m_checkedBoundVNs(alloc)
+    , m_checkedIndexVNs(alloc)
     , m_chunks(alloc, 8)
     , m_intCnsMap(nullptr)
     , m_longCnsMap(nullptr)
@@ -7727,6 +7728,26 @@ void ValueNumStore::SetVNIsCheckedBound(ValueNum vn)
     m_checkedBoundVNs.AddOrUpdate(vn, true);
 }
 
+bool ValueNumStore::IsVNCheckedIndex(ValueNum vn)
+{
+    if (vn == NoVN)
+    {
+        return false;
+    }
+
+    bool dummy;
+    return m_checkedIndexVNs.TryGetValue(vn, &dummy);
+}
+
+void ValueNumStore::SetVNIsCheckedIndex(ValueNum vn)
+{
+    // Used to flag VNs that have appeared as the index of some GT_BOUNDS_CHECK so that
+    // assertion-prop can opportunistically create transitive "X <relop> Y" assertions
+    // involving such VNs (which are likely to participate in BCE later).
+    assert(!IsVNConstant(vn));
+    m_checkedIndexVNs.AddOrUpdate(vn, true);
+}
+
 #ifdef FEATURE_HW_INTRINSICS
 simd8_t GetConstantSimd8(ValueNumStore* vns, var_types baseType, ValueNum argVN)
 {
@@ -13346,6 +13367,15 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                         if ((lengthVN != ValueNumStore::NoVN) && !vnStore->IsVNConstant(lengthVN))
                         {
                             vnStore->SetVNIsCheckedBound(lengthVN);
+                        }
+
+                        // Also record the index VN so that assertion-prop can create transitive
+                        // "X <relop> indexVN" assertions for later BCE elimination.
+                        ValueNum indexVN =
+                            vnStore->VNNormalValue(tree->AsBoundsChk()->GetIndex()->gtVNPair.GetConservative());
+                        if ((indexVN != ValueNumStore::NoVN) && !vnStore->IsVNConstant(indexVN))
+                        {
+                            vnStore->SetVNIsCheckedIndex(indexVN);
                         }
                     }
                     break;

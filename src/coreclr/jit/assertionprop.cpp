@@ -904,6 +904,10 @@ void Compiler::optPrintAssertion(const AssertionDsc& curAssertion, AssertionInde
                    curAssertion.GetOp2().GetCheckedBoundConstant());
             break;
 
+        case O2K_VN:
+            printf(FMT_VN, curAssertion.GetOp2().GetVN());
+            break;
+
         default:
             unreached();
             break;
@@ -1421,6 +1425,11 @@ AssertionIndex Compiler::optAddAssertion(const AssertionDsc& newAssertion)
                 mayHaveDuplicates |= optAssertionHasAssertionsForVN(addOpVN, /* addIfNotFound */ canAddNewAssertions);
             }
         }
+        else if (newAssertion.GetOp2().KindIs(O2K_VN))
+        {
+            mayHaveDuplicates |= optAssertionHasAssertionsForVN(newAssertion.GetOp2().GetVN(),
+                                                                /* addIfNotFound */ canAddNewAssertions);
+        }
 
         if (mayHaveDuplicates)
         {
@@ -1802,6 +1811,30 @@ AssertionInfo Compiler::optCreateJTrueBoundsAssertion(GenTree* tree)
     if (vnStore->IsVNIntegralConstant(op2VN, &cns) && (!isUnsignedRelop || (cns > 0)))
     {
         AssertionDsc   dsc = AssertionDsc::CreateConstantBound(this, relopFunc, op1VN, op2VN);
+        AssertionIndex idx = optAddAssertion(dsc);
+        optCreateComplementaryAssertion(idx);
+        return idx;
+    }
+
+    // "X <relop> Y" - both arbitrary int VNs, neither a checked bound nor a constant.
+    // We use this to express assertions like "j <= i" between two indices to enable
+    // transitive bounds-check elimination such as:
+    //
+    //     if (j <= i && j >= 0) { arr[i] = 0; arr[j] = 0; }
+    //
+    // where "j <= i" combined with a known "i < arr.Length" (from the bounds check on
+    // arr[i]) and "j >= 0" lets us eliminate the bounds check on arr[j].
+    //
+    // Restricted to signed relops; unsigned would need extra reasoning to be sound.
+    // Gate tightly: BOTH operands must be "checked indices" (VNs seen as the index
+    // argument of some GT_BOUNDS_CHECK). This captures the index-vs-index pattern
+    // without polluting the assertion table for unrelated comparisons that are not
+    // useful for transitive BCE (e.g. comparator return values, loop bound compares
+    // already handled by the existing checked-bound paths).
+    if (!isUnsignedRelop && (op1VN != op2VN) && vnStore->IsVNCheckedIndex(op1VN) &&
+        vnStore->IsVNCheckedIndex(op2VN))
+    {
+        AssertionDsc   dsc = AssertionDsc::CreateCompareVN(this, relopFunc, op1VN, op2VN);
         AssertionIndex idx = optAddAssertion(dsc);
         optCreateComplementaryAssertion(idx);
         return idx;

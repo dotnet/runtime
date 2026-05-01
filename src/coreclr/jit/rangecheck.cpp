@@ -1037,7 +1037,8 @@ void RangeCheck::MergeEdgeAssertions(Compiler*        comp,
                                      ValueNum         preferredBoundVN,
                                      ASSERT_VALARG_TP assertions,
                                      Range*           pRange,
-                                     bool             canUseCheckedBounds)
+                                     bool             canUseCheckedBounds,
+                                     bool             useTransitiveVNRels)
 {
     Range assertedRange = Range(Limit(Limit::keUnknown));
     if (BitVecOps::IsEmpty(comp->apTraits, assertions))
@@ -1060,6 +1061,7 @@ void RangeCheck::MergeEdgeAssertions(Compiler*        comp,
         AssertionIndex assertionIndex = GetAssertionIndex(index);
 
         const Compiler::AssertionDsc& curAssertion = comp->optGetAssertion(assertionIndex);
+
 
         Limit      limit(Limit::keUndef);
         genTreeOps cmpOper    = GT_NONE;
@@ -1338,6 +1340,7 @@ void RangeCheck::MergeEdgeAssertions(Compiler*        comp,
             }
         }
         // Current assertion is not supported, ignore it
+        // (O2K_VN-based relop assertions are handled in a separate pass below.)
         else
         {
             continue;
@@ -1439,6 +1442,121 @@ void RangeCheck::MergeEdgeAssertions(Compiler*        comp,
         {
             JITDUMP("invalid range after tightening\n");
             return;
+        }
+    }
+
+    // Second pass: process O2K_VN-based relop assertions transitively.
+    //
+    // For an assertion "normalLclVN <relop> X" (or with X on the LHS), recursively look
+    // up X's bound against the same preferredBoundVN and use it to tighten normalLclVN.
+    // Sound only when normalLclVN is provably non-negative (otherwise applying a bound
+    // u< len from "j s<= i u< len" would be incorrect when j < 0).
+    if (!useTransitiveVNRels || (preferredBoundVN == ValueNumStore::NoVN) ||
+        !pRange->lLimit.IsConstant() || (pRange->lLimit.GetConstant() < 0))
+    {
+        return;
+    }
+
+    BitVecOps::Iter iter2(comp->apTraits, assertions);
+    unsigned        index2 = 0;
+    while (iter2.NextElem(&index2))
+    {
+        const Compiler::AssertionDsc& curAssertion = comp->optGetAssertion(GetAssertionIndex(index2));
+        if (!curAssertion.IsRelop() || !curAssertion.GetOp2().KindIs(Compiler::O2K_VN))
+        {
+            continue;
+        }
+
+        const ValueNum op1VN = curAssertion.GetOp1().GetVN();
+        const ValueNum op2VN = curAssertion.GetOp2().GetVN();
+
+        bool       isUnsigned;
+        genTreeOps cmpOper = Compiler::AssertionDsc::ToCompareOper(curAssertion.GetKind(), &isUnsigned);
+        ValueNum   otherVN;
+
+        if (op1VN == normalLclVN)
+        {
+            otherVN = op2VN;
+        }
+        else if (op2VN == normalLclVN)
+        {
+            // Normalize so that normalLclVN is on the LHS of the relop.
+            cmpOper = GenTree::SwapRelop(cmpOper);
+            otherVN = op1VN;
+        }
+        else
+        {
+            continue;
+        }
+
+        // O2K_VN assertions today are only created for signed relops; bail otherwise.
+        if (isUnsigned || (otherVN == normalLclVN) || (otherVN == preferredBoundVN))
+        {
+            continue;
+        }
+
+        // Recursively resolve otherVN's range against preferredBoundVN.
+        // useTransitiveVNRels=false prevents further levels of indirection.
+        Range otherRange = Range(Limit(Limit::keUndef));
+        MergeEdgeAssertions(comp, otherVN, preferredBoundVN, assertions, &otherRange,
+                            /*canUseCheckedBounds*/ true, /*useTransitiveVNRels*/ false);
+
+        Limit derivedLimit;
+        bool  isUpper;
+        switch (cmpOper)
+        {
+            case GT_LE:
+                derivedLimit = otherRange.uLimit;
+                isUpper      = true;
+                break;
+            case GT_LT:
+                derivedLimit = otherRange.uLimit;
+                isUpper      = true;
+                if (!derivedLimit.AddConstant(-1))
+                {
+                    continue;
+                }
+                break;
+            case GT_GE:
+                derivedLimit = otherRange.lLimit;
+                isUpper      = false;
+                break;
+            case GT_GT:
+                derivedLimit = otherRange.lLimit;
+                isUpper      = false;
+                if (!derivedLimit.AddConstant(1))
+                {
+                    continue;
+                }
+                break;
+            default:
+                continue;
+        }
+
+        // Require a symbolic limit referencing preferredBoundVN. Generic constant
+        // ranges (e.g. [0, INT32_MAX]) are too loose to help and risk overwriting
+        // a useful symbolic limit on pRange.
+        if (!derivedLimit.IsBinOpArray() || (derivedLimit.vn != preferredBoundVN))
+        {
+            continue;
+        }
+
+        Range copy = *pRange;
+        if (isUpper)
+        {
+            copy.uLimit = TightenLimit(derivedLimit, copy.uLimit, preferredBoundVN, false);
+        }
+        else
+        {
+            copy.lLimit = TightenLimit(derivedLimit, copy.lLimit, preferredBoundVN, true);
+        }
+
+        JITDUMP("Tightening pRange via transitive O2K_VN: [%s] -> [%s]\n", pRange->ToString(comp),
+                copy.ToString(comp));
+
+        if (copy.IsValid())
+        {
+            *pRange = copy;
         }
     }
 }
