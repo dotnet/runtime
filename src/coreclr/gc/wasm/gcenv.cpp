@@ -45,10 +45,6 @@ static const size_t WasmPageSize = 64 * 1024;
 
 uint32_t g_totalCpuCount = 1;
 
-// NUMA globals - WASM has no NUMA support but these are referenced by the GC.
-extern "C" int g_highestNumaNode = 0;
-extern "C" bool g_numaAvailable = false;
-
 static int64_t g_totalPhysicalMemSize = 0;
 
 // Forward declarations
