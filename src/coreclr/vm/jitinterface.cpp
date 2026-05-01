@@ -12631,6 +12631,17 @@ CORINFO_OBJECT_HANDLE CEEInfo::tryAppendStrings(CORINFO_OBJECT_HANDLE* strings, 
     _ASSERTE(strings != nullptr);
     _ASSERTE(count > 0);
 
+    // Bail out early if the method being compiled lives in a collectible
+    // (unloadable) context. We won't be able to bake a frozen-heap object
+    // address into the generated code in that case (collectible code can be
+    // unloaded, while frozen objects live forever), so any allocation we
+    // do here would be dead weight on the frozen heap. Reading
+    // m_pMethodBeingCompiled doesn't require the JIT/EE transition.
+    if ((m_pMethodBeingCompiled != nullptr) && m_pMethodBeingCompiled->IsCollectible())
+    {
+        return nullptr;
+    }
+
     CORINFO_OBJECT_HANDLE result = nullptr;
 
     JIT_TO_EE_TRANSITION();

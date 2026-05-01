@@ -1594,8 +1594,10 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                     else if (ni != NI_Illegal)
                     {
                         // Otherwise note "intrinsic" (most likely will be lowered as single instructions)
-                        // except Math where only a few intrinsics won't end up as normal calls
-                        if (!IsMathIntrinsic(ni) || IsTargetIntrinsic(ni))
+                        // except Math where only a few intrinsics won't end up as normal calls.
+                        // String.Concat is also excluded: when its arguments aren't constants the
+                        // call survives as a non-trivial method call and shouldn't bias the inliner.
+                        if ((!IsMathIntrinsic(ni) || IsTargetIntrinsic(ni)) && (ni != NI_System_String_Concat))
                         {
                             compInlineResult->Note(InlineObservation::CALLEE_INTRINSIC);
                         }
