@@ -1915,15 +1915,14 @@ ValueNum ValueNumStore::VNForSimdScalableCon(const simdscalable_t& cnsVal)
 {
     return VnForConst(cnsVal, GetSimdScalableCnsMap(), TYP_SIMD);
 }
+#endif // TARGET_XARCH
 
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
 ValueNum ValueNumStore::VNForSimdMaskScalableCon(const simdmaskscalable_t& cnsVal)
 {
     return VnForConst(simdmaskvalue_t::FromScalable(cnsVal), GetSimdMaskCnsMap(), TYP_MASK);
 }
 
-#endif // TARGET_XARCH
-
-#if defined(FEATURE_MASKED_HW_INTRINSICS)
 ValueNum ValueNumStore::VNForSimdMaskCon(const simdmask_t& cnsVal)
 {
     return VnForConst(simdmaskvalue_t::FromFixed(cnsVal), GetSimdMaskCnsMap(), TYP_MASK);
