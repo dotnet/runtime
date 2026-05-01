@@ -19,14 +19,12 @@ internal class GcScanner
     private readonly Target _target;
     private readonly IExecutionManager _eman;
     private readonly IGCInfo _gcInfo;
-    private readonly GcSignatureTypeProvider _gcSigTypeProvider;
 
     internal GcScanner(Target target)
     {
         _target = target;
         _eman = target.Contracts.ExecutionManager;
         _gcInfo = target.Contracts.GCInfo;
-        _gcSigTypeProvider = new GcSignatureTypeProvider(target);
     }
 
     /// <summary>
@@ -341,8 +339,10 @@ internal class GcScanner
             if (mdReader is null)
                 return;
 
-            RuntimeSignatureDecoder<GcTypeKind, object?> decoder = new(
-                _gcSigTypeProvider, _target, mdReader, genericContext: null);
+            GcSignatureTypeProvider provider = new(_target, moduleHandle);
+            GcSignatureContext genericContext = new(typeHandle, mdh);
+            RuntimeSignatureDecoder<GcTypeKind, GcSignatureContext> decoder = new(
+                provider, _target, mdReader, genericContext);
 
             // Match native MethodDesc::GetSig: prefer stored signature (dynamic, EEImpl,
             // and array method descs) before falling back to a metadata token lookup.

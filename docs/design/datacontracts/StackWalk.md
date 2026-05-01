@@ -479,7 +479,7 @@ When a transition frame's calling convention is not described by a precomputed G
 
 #### GcSignatureTypeProvider
 
-`GcSignatureTypeProvider` is an `IRuntimeSignatureTypeProvider<GcTypeKind, object?>` that classifies each parameter type into one of:
+`GcSignatureTypeProvider` is an `IRuntimeSignatureTypeProvider<GcTypeKind, GcSignatureContext>` that classifies each parameter type into one of:
 
 ```csharp
 internal enum GcTypeKind
@@ -491,7 +491,9 @@ internal enum GcTypeKind
 }
 ```
 
-The provider classifies primitives directly (`String`/`Object` -> `Ref`, `TypedReference` -> `Other`, others -> `None`) and uses the signature's `rawTypeKind` for `TypeDef`/`TypeRef`/`TypeSpec` (`ValueType` -> `Other`, otherwise `Ref`). Arrays are `Ref`, byrefs are `Interior`, raw pointers are `None`. Generic parameters (`!T`, `!!T`) are classified as `Ref` -- safe for reference-typed instantiations but conservative for value-typed instantiations. `ELEMENT_TYPE_INTERNAL` resolves the `TypeHandle` via `RuntimeTypeSystem.GetSignatureCorElementType` and maps the `CorElementType` to a `GcTypeKind`.
+The provider is scoped to the method's containing module (captured at construction) so that `TypeDef` and `TypeRef` tokens can be resolved to a loaded `MethodTable` via the module's `TypeDefToMethodTable` / `TypeRefToMethodTable` lookup tables. The decoder's generic context is a `GcSignatureContext(TypeHandle classContext, MethodDescHandle methodContext)` carrying the method's class and method instantiations.
+
+The provider classifies primitives directly (`String`/`Object` -> `Ref`, `TypedReference` -> `Other`, others -> `None`). For `TypeDef`/`TypeRef` it resolves the loaded `TypeHandle` and classifies via `RuntimeTypeSystem.GetSignatureCorElementType`, treating enums (`IsEnum`) as their underlying primitive (`None`). When the type cannot be resolved (e.g., not yet loaded), classification falls back to the signature's `rawTypeKind` (`ValueType` -> `Other`, otherwise `Ref`). Arrays are `Ref`, byrefs are `Interior`, raw pointers are `None`. Generic parameters (`!T`, `!!T`) are resolved against the `GcSignatureContext` (via `GetInstantiation` / `GetGenericMethodInstantiation`) and classified by their actual instantiation -- matching native `SigTypeContext`-driven `PeekElemTypeNormalized` behavior. `ELEMENT_TYPE_INTERNAL` resolves the `TypeHandle` via `RuntimeTypeSystem.GetSignatureCorElementType` and maps the `CorElementType` to a `GcTypeKind`.
 
 #### PromoteCallerStack Algorithm
 
@@ -500,7 +502,7 @@ The provider classifies primitives directly (`String`/`Object` -> `Ref`, `TypedR
 3. Obtain the method's signature blob, matching native `MethodDesc::GetSig`:
    - If `RuntimeTypeSystem.IsStoredSigMethodDesc` is true (dynamic, EEImpl, and array method descs), pin the stored signature span and pass a `BlobReader` over it to `RuntimeSignatureDecoder.DecodeMethodSignature`.
    - Otherwise, look up the signature via the metadata token (`mdMethodDef`), skipping methods with a nil token (`0x06000000`).
-4. Decode the signature with `RuntimeSignatureDecoder<GcTypeKind, object?>` and `GcSignatureTypeProvider`. See [SignatureDecoder contract](./SignatureDecoder.md) for the decoder.
+4. Decode the signature with `RuntimeSignatureDecoder<GcTypeKind, GcSignatureContext>` and a `GcSignatureTypeProvider` constructed for the method's module. The `GcSignatureContext` passes the method's class and method instantiations so that `VAR`/`MVAR` placeholders resolve to their actual types. See [SignatureDecoder contract](./SignatureDecoder.md) for the decoder.
 5. Skip varargs methods (the caller-stack layout is not described by the callee signature alone).
 6. Compute the number of reserved register slots in the `TransitionBlock`:
 
@@ -529,9 +531,9 @@ slotAddress = transitionBlockPtr + FirstGCRefMapSlot + (position * pointerSize);
 This signature-based scan is conservative compared to native:
 
 * It does not enumerate embedded GC refs inside large value types passed by value (a `GcTypeKind.Other` parameter is silently skipped).
-* Generic parameters are always classified as `Ref`, which is correct for reference-typed instantiations but treats value-typed instantiations as full references rather than skipping them.
+* It does not yet apply native's `ArgIterator`-driven multi-slot / HFA layout, nor does it model `String` constructors or `SuppressParamTypeArg`.
 
-Both limitations are visible to the cDAC GC stress verification harness, which compares cDAC and native walks; they may be tightened in future versions of this contract.
+These limitations are visible to the cDAC GC stress verification harness, which compares cDAC and native walks; they may be tightened in future versions of this contract.
 
 ### GCRefMap Format and Resolution
 
