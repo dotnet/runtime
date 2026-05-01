@@ -306,41 +306,24 @@ namespace ILCompiler.DependencyAnalysis
             if (argType.IsObject)
             {
                 type.Object();
-                return;
             }
-
-            if (argType.IsSzArray)
+            else if (argType.IsSzArray)
             {
                 TypeDesc elementType = ((ArrayType)argType).ElementType;
                 if (elementType.IsObject)
-                {
                     type.SZArray().ObjectArray();
-                }
                 else
-                {
                     EncodeElementType(type.SZArray().ElementType(), elementType, formatter);
-                }
-                return;
             }
-
-            EncodeElementType(type.ScalarType(), argType, formatter);
+            else
+            {
+                EncodeElementType(type.ScalarType(), argType, formatter);
+            }
         }
 
         private static void EncodeElementType(CustomAttributeElementTypeEncoder encoder, TypeDesc type, CustomAttributeTypeNameFormatter formatter)
         {
-            if (type.IsEnum)
-            {
-                encoder.Enum(formatter.FormatName(type, true));
-                return;
-            }
-
-            if (IsSystemType(type))
-            {
-                encoder.SystemType();
-                return;
-            }
-
-            switch (type.UnderlyingType.Category)
+            switch (type.Category)
             {
                 case TypeFlags.Boolean: encoder.Boolean(); break;
                 case TypeFlags.Char: encoder.Char(); break;
@@ -355,7 +338,11 @@ namespace ILCompiler.DependencyAnalysis
                 case TypeFlags.Single: encoder.Single(); break;
                 case TypeFlags.Double: encoder.Double(); break;
                 default:
-                    if (type.IsString)
+                    if (type.IsEnum)
+                        encoder.Enum(formatter.FormatName(type, true));
+                    else if (IsSystemType(type))
+                        encoder.SystemType();
+                    else if (type.IsString)
                         encoder.String();
                     break;
             }
@@ -364,20 +351,18 @@ namespace ILCompiler.DependencyAnalysis
         private void WriteLiteralValue(LiteralEncoder literal, TypeDesc declaredType, TypeDesc actualType, object value, CustomAttributeTypeNameFormatter formatter)
         {
             if (declaredType is null)
-                return;
-
-            // Boxed (object-typed) arguments: write type tag then the value
-            if (declaredType.IsObject)
+            {
+                // Nothing to write
+            }
+            else if (declaredType.IsObject)
             {
                 if (value is null)
                 {
                     literal.TaggedScalar(out CustomAttributeElementTypeEncoder type, out ScalarEncoder scalar);
                     type.String();
                     scalar.Constant(null);
-                    return;
                 }
-
-                if (actualType is not null && actualType.IsSzArray)
+                else if (actualType is not null && actualType.IsSzArray)
                 {
                     literal.TaggedVector(out CustomAttributeArrayTypeEncoder arrayType, out VectorEncoder vector);
                     TypeDesc elementType = ((ArrayType)actualType).ElementType;
@@ -386,31 +371,31 @@ namespace ILCompiler.DependencyAnalysis
                     else
                         EncodeElementType(arrayType.ElementType(), elementType, formatter);
                     WriteVectorElements(vector, elementType, value, formatter);
-                    return;
                 }
-
-                literal.TaggedScalar(out CustomAttributeElementTypeEncoder typeEncoder, out ScalarEncoder scalarEncoder);
-                EncodeElementType(typeEncoder, actualType, formatter);
-                WriteScalarValue(scalarEncoder, actualType, value, formatter);
-                return;
+                else
+                {
+                    literal.TaggedScalar(out CustomAttributeElementTypeEncoder typeEncoder, out ScalarEncoder scalarEncoder);
+                    EncodeElementType(typeEncoder, actualType, formatter);
+                    WriteScalarValue(scalarEncoder, actualType, value, formatter);
+                }
             }
-
-            // Array arguments
-            if (declaredType.IsSzArray)
+            else if (declaredType.IsSzArray)
             {
                 if (value is null)
                 {
                     literal.Scalar().NullArray();
-                    return;
                 }
-
-                TypeDesc elementType = ((ArrayType)declaredType).ElementType;
-                WriteVectorElements(literal.Vector(), elementType, value, formatter);
-                return;
+                else
+                {
+                    TypeDesc elementType = ((ArrayType)declaredType).ElementType;
+                    WriteVectorElements(literal.Vector(), elementType, value, formatter);
+                }
             }
-
-            // Scalar value (primitive, enum, string, Type)
-            WriteScalarValue(literal.Scalar(), declaredType, value, formatter);
+            else
+            {
+                // Scalar value (primitive, enum, string, Type)
+                WriteScalarValue(literal.Scalar(), declaredType, value, formatter);
+            }
         }
 
         private void WriteVectorElements(VectorEncoder vector, TypeDesc elementType, object value, CustomAttributeTypeNameFormatter formatter)
@@ -428,13 +413,9 @@ namespace ILCompiler.DependencyAnalysis
         private static void WriteScalarValue(ScalarEncoder scalar, TypeDesc type, object value, CustomAttributeTypeNameFormatter formatter)
         {
             if (IsSystemType(type))
-            {
                 scalar.SystemType(value is TypeDesc typeofType ? formatter.FormatName(typeofType, true) : null);
-                return;
-            }
-
-            // Primitives, enums (underlying value), strings, null
-            scalar.Constant(value);
+            else
+                scalar.Constant(value);
         }
 
         private static bool IsSystemType(TypeDesc type)
