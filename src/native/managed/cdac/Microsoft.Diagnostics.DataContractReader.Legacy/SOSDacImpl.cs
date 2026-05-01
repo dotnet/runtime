@@ -6276,7 +6276,7 @@ public sealed unsafe partial class SOSDacImpl
     private static (LoaderAllocatorHeapType heapType, nint AnsiPtr)[] InitializeHeapNameEntries()
     {
         // Order must match LoaderAllocatorLoaderHeapNames in src/coreclr/debug/daccess/request.cpp
-        LoaderAllocatorHeapType[] heapTypes = 
+        LoaderAllocatorHeapType[] heapTypes =
         [
             LoaderAllocatorHeapType.LowFrequencyHeap,
             LoaderAllocatorHeapType.HighFrequencyHeap,
@@ -6299,7 +6299,7 @@ public sealed unsafe partial class SOSDacImpl
     // data descriptor fields exist. This mirrors the DAC's compile-time
     // LoaderAllocatorLoaderHeapNames array and ensures a fixed count/ordering
     // regardless of per-loader-allocator runtime state (e.g. VCS manager being null).
-    private (string Name, nint AnsiPtr)[] GetFilteredHeapNameEntries()
+    private (LoaderAllocatorHeapType HeapType, nint AnsiPtr)[] GetFilteredHeapNameEntries()
     {
         if (_filteredHeapNameEntries is not null)
             return _filteredHeapNameEntries;
