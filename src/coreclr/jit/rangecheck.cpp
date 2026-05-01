@@ -209,9 +209,8 @@ bool RangeCheck::BetweenBounds(Range& range, GenTree* upper, int arrSize)
         {
             int lcns = range.LowerLimit().GetConstant();
             // Use "lcns < -arrSize" rather than "-lcns > arrSize" to avoid signed
-            // overflow when lcns == INT_MIN (negating INT_MIN is undefined and on
-            // two's-complement targets yields INT_MIN itself, which would then
-            // incorrectly compare as not greater than arrSize).
+            // overflow when lcns == INT_MIN.
+            assert(arrSize > 0);
             if (lcns >= 0 || lcns < -arrSize)
             {
                 return false;
@@ -243,6 +242,7 @@ bool RangeCheck::BetweenBounds(Range& range, GenTree* upper, int arrSize)
             // len + lcns, make sure we don't subtract too much from len. Use
             // "lcns < -arrSize" rather than "-lcns > arrSize" to avoid signed
             // overflow when lcns == INT_MIN.
+            assert(arrSize > 0);
             if (lcns >= 0 || lcns < -arrSize)
             {
                 return false;
