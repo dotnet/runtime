@@ -120,6 +120,21 @@
     </ItemGroup>
   </Target>
 
+  <!-- Filter out macOS-only debuggees on non-macOS platforms. Debuggees opt in
+       by setting <MacOnly>true</MacOnly> in their csproj. -->
+  <Target Name="_FilterMacOnlyDebuggees"
+          Condition="'$(HostOS)' != 'osx'"
+          BeforeTargets="GenerateAllDumps;BuildDebuggeesOnly;PrepareHelixPayload">
+    <MSBuild Projects="@(DebuggeeCsproj)"
+             Targets="GetDumpTypes"
+             Properties="Configuration=$(DebuggeeConfiguration)">
+      <Output TaskParameter="TargetOutputs" ItemName="_DebuggeeMetaMac" />
+    </MSBuild>
+    <ItemGroup>
+      <DebuggeeCsproj Remove="%(_DebuggeeMetaMac.ProjectPath)" Condition="'%(_DebuggeeMetaMac.MacOnly)' == 'true'" />
+    </ItemGroup>
+  </Target>
+
   <!-- Top-level target — must be invoked explicitly (not triggered by Build).
        Reads DumpTypes from each debuggee csproj and dispatches generation. -->
   <Target Name="GenerateAllDumps">

@@ -109,6 +109,10 @@ public abstract class ContractRegistry
     /// </summary>
     public virtual IBuiltInCOM BuiltInCOM => GetContract<IBuiltInCOM>();
     /// <summary>
+    /// Gets an instance of the ObjectiveCMarshal contract for the target.
+    /// </summary>
+    public virtual IObjectiveCMarshal ObjectiveCMarshal => GetContract<IObjectiveCMarshal>();
+    /// <summary>
     /// Gets an instance of the ConditionalWeakTable contract for the target.
     /// </summary>
     public virtual IConditionalWeakTable ConditionalWeakTable => GetContract<IConditionalWeakTable>();
