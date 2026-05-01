@@ -28,7 +28,8 @@ namespace ILCompiler.DependencyAnalysis
 
         public const string SymbolName = "DotNetManagedContractDescriptor";
 
-        public override ObjectNodeSection GetSection(NodeFactory factory) => ObjectNodeSection.ReadOnlyDataSection;
+        public override ObjectNodeSection GetSection(NodeFactory factory) =>
+            factory.Target.IsWindows ? ObjectNodeSection.ReadOnlyDataSection : ObjectNodeSection.DataSection;
 
         public override bool StaticDependenciesAreComputed => true;
         public override bool IsShareable => false;
