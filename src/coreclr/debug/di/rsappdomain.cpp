@@ -714,24 +714,11 @@ HRESULT CordbAppDomain::GetObject(ICorDebugValue **ppObject)
     ATT_REQUIRE_STOPPED_MAY_FAIL(GetProcess());
 
     _ASSERTE(!m_vmAppDomain.IsNull());
-    IDacDbiInterface * pDac = NULL;
     HRESULT hr = S_OK;
     EX_TRY
     {
-        pDac = m_pProcess->GetDAC();
-        VMPTR_OBJECTHANDLE vmObjHandle;
-        IfFailThrow(pDac->GetAppDomainObject(m_vmAppDomain, &vmObjHandle));
-        if (!vmObjHandle.IsNull())
-        {
-            ICorDebugReferenceValue * pRefValue = NULL;
-            hr = CordbReferenceValue::BuildFromGCHandle(this, vmObjHandle, &pRefValue);
-            *ppObject = pRefValue;
-        }
-        else
-        {
-            *ppObject = NULL;
-            hr = S_FALSE;
-        }
+        *ppObject = NULL;
+        hr = S_FALSE;
     }
     EX_CATCH_HRESULT(hr);
 
