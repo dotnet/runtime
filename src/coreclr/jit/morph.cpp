@@ -10386,7 +10386,6 @@ void Compiler::fgPushConstantsRight(GenTreeOp* tree)
             }
         }
     }
-    return tree;
 }
 
 //------------------------------------------------------------------------
