@@ -2659,8 +2659,7 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
         // The helper function address is the address of an indirection cell, so we load from the cell to get the PEP
         // address to push.
         assert(helperFunction.accessType == IAT_PVALUE);
-        GetEmitter()->emitAddressConstant(helperFunction.addr);
-        GetEmitter()->emitIns_I(INS_I_load, EA_PTRSIZE, 0);
+        GetEmitter()->emitLoadAtAddressConstant(INS_I_load, helperFunction.addr);
     }
 
     if (params.callType == EC_INDIR_R)
@@ -2668,8 +2667,7 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
         // Push the call target onto the wasm evaluation stack by dereferencing the indirection cell
         // and then the PEP pointed to by the indirection cell.
         assert(helperFunction.accessType == IAT_PVALUE);
-        GetEmitter()->emitAddressConstant(helperFunction.addr);
-        GetEmitter()->emitIns_I(INS_I_load, EA_PTRSIZE, 0);
+        GetEmitter()->emitLoadAtAddressConstant(INS_I_load, helperFunction.addr);
         GetEmitter()->emitIns_I(INS_I_load, EA_PTRSIZE, 0);
     }
 

@@ -32,6 +32,7 @@ void emitIns_R_R(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2)
 void emitIns_S_R(instruction ins, emitAttr attr, regNumber ireg, int varx, int offs);
 
 void emitAddressConstant(void* address);
+void emitLoadAtAddressConstant(instruction ins, void* address);
 
 static unsigned SizeOfULEB128(uint64_t value);
 static unsigned SizeOfSLEB128(int64_t value);

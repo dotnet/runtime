@@ -156,6 +156,31 @@ void emitter::emitAddressConstant(void* address)
     emitIns(INS_i32_add);
 }
 
+//------------------------------------------------------------------------
+// emitLoadAtAddressConstant: Emit a load whose effective address is a memory
+// address constant (an RVA from __r2r_start). This is a more compact alternative
+// to emitAddressConstant followed by a zero-offset load: instead of emitting
+//   global.get $__r2r_start
+//   i32.const   <reloc:WASM_MEMORY_ADDR_REL_SLEB>
+//   i32.add
+//   <ins> 0
+// it emits
+//   global.get $__r2r_start
+//   <ins> offset=<reloc:WASM_MEMORY_ADDR_REL_LEB>
+// using the offset relocation form of the load/store instruction.
+//
+// Arguments:
+//   ins     - the load (or store) instruction to emit (must be an IF_MEMARG instruction).
+//   address - the address constant whose contents should be loaded; encoded as an
+//             RVA-style relocation that the linker will fix up at runtime.
+//
+void emitter::emitLoadAtAddressConstant(instruction ins, void* address)
+{
+    assert(emitInsFormat(ins) == IF_MEMARG);
+    emitIns_I(INS_global_get, EA_4BYTE, 1 /* __r2r_start */);
+    emitIns_I(ins, EA_SET_FLG(EA_PTRSIZE, EA_CNS_RELOC_FLG), (cnsval_ssize_t)address);
+}
+
 /*****************************************************************************
  *
  *  Add a call instruction (direct or indirect).
@@ -782,12 +807,13 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         case IF_MEMARG:
         {
             dst += emitOutputOpcode(dst, ins);
-            uint64_t align  = emitGetAlignHintLog2(id);
-            uint64_t offset = emitGetInsSC(id);
+            uint64_t align = emitGetAlignHintLog2(id);
             assert(align <= UINT32_MAX); // spec says memarg alignment is u32
             assert(align < 64);          // spec says align > 2^6 produces a memidx for multiple memories.
             dst += emitOutputULEB128(dst, align);
-            dst += emitOutputULEB128(dst, offset);
+            // If the offset is a constant reloc, the offset encodes an RVA from __r2r_start
+            // and is fixed up at link/runtime via WASM_MEMORY_ADDR_REL_LEB.
+            dst += emitOutputConstant(dst, id, UNSIGNED, CorInfoReloc::WASM_MEMORY_ADDR_REL_LEB);
             break;
         }
         case IF_LOCAL_DECL:
