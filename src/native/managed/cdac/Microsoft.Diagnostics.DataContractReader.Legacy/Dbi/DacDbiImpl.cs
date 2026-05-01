@@ -1215,16 +1215,11 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             Contracts.ModuleHandle module = loader.GetModuleHandleFromModulePtr(new TargetPointer(vmModule));
             ModuleLookupTables lookupTables = loader.GetLookupTables(module);
             TargetPointer methodDesc = TargetPointer.Null;
-            try
-            {
-                if ((EcmaMetadataUtils.TokenType)(methodTk & EcmaMetadataUtils.TokenTypeMask) != EcmaMetadataUtils.TokenType.mdtMethodDef)
-                    throw new ArgumentException("methodTk must be a MethodDef token.", nameof(methodTk));
-                methodDesc = loader.GetModuleLookupMapElement(lookupTables.MethodDefToDesc, methodTk, out _);
-            }
-            catch (ArgumentOutOfRangeException)
-            {
-                // Invalid method token
-            }
+
+            if ((EcmaMetadataUtils.TokenType)(methodTk & EcmaMetadataUtils.TokenTypeMask) != EcmaMetadataUtils.TokenType.mdtMethodDef)
+                throw new ArgumentException("methodTk must be a MethodDef token.", nameof(methodTk));
+            methodDesc = loader.GetModuleLookupMapElement(lookupTables.MethodDefToDesc, methodTk, out _);
+
             if (methodDesc != TargetPointer.Null)
             {
                 ICodeVersions codeVersions = _target.Contracts.CodeVersions;

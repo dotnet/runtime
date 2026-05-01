@@ -516,7 +516,8 @@ internal readonly struct Loader_1 : ILoader
 
     TargetPointer ILoader.GetModuleLookupMapElement(TargetPointer table, uint token, out TargetNUInt flags)
     {
-        if (table == TargetPointer.Null)
+        uint rid = EcmaMetadataUtils.GetRowId(token);
+        if (table == TargetPointer.Null || rid == 0)
         {
             flags = new TargetNUInt(0);
             return TargetPointer.Null;
@@ -524,9 +525,6 @@ internal readonly struct Loader_1 : ILoader
 
         Data.ModuleLookupMap lookupMap = _target.ProcessedData.GetOrAdd<Data.ModuleLookupMap>(table);
         ulong supportedFlagsMask = lookupMap.SupportedFlagsMask.Value;
-
-        uint rid = EcmaMetadataUtils.GetRowId(token);
-        ArgumentOutOfRangeException.ThrowIfZero(rid);
         (TargetPointer rval, uint _) = IterateModuleLookupMap(table, rid, SearchLookupMap).FirstOrDefault();
         flags = new TargetNUInt(rval & supportedFlagsMask);
         return rval & ~supportedFlagsMask;
