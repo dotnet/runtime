@@ -449,7 +449,6 @@ ValueNumStore::ValueNumStore(Compiler* comp, CompAllocator alloc)
     , m_simd64CnsMap(nullptr)
 #elif defined(TARGET_ARM64)
     , m_simdScalableCnsMap(nullptr)
-    , m_simdMaskScalableCnsMap(nullptr)
 #endif // TARGET_XARCH
 #if defined(FEATURE_MASKED_HW_INTRINSICS)
     , m_simdMaskCnsMap(nullptr)
@@ -1919,7 +1918,7 @@ ValueNum ValueNumStore::VNForSimdScalableCon(const simdscalable_t& cnsVal)
 
 ValueNum ValueNumStore::VNForSimdMaskScalableCon(const simdmaskscalable_t& cnsVal)
 {
-    return VnForConst(cnsVal, GetSimdMaskScalableCnsMap(), TYP_MASK);
+    return VnForConst(simdmaskvalue_t::FromScalable(cnsVal), GetSimdMaskCnsMap(), TYP_MASK);
 }
 
 #endif // TARGET_XARCH
@@ -1927,7 +1926,7 @@ ValueNum ValueNumStore::VNForSimdMaskScalableCon(const simdmaskscalable_t& cnsVa
 #if defined(FEATURE_MASKED_HW_INTRINSICS)
 ValueNum ValueNumStore::VNForSimdMaskCon(const simdmask_t& cnsVal)
 {
-    return VnForConst(cnsVal, GetSimdMaskCnsMap(), TYP_MASK);
+    return VnForConst(simdmaskvalue_t::FromFixed(cnsVal), GetSimdMaskCnsMap(), TYP_MASK);
 }
 #endif // FEATURE_MASKED_HW_INTRINSICS
 #endif // FEATURE_SIMD
@@ -4178,12 +4177,19 @@ simdscalable_t ValueNumStore::GetConstantSimdScalable(ValueNum argVN)
 #if defined(FEATURE_MASKED_HW_INTRINSICS)
 // Given a simdmask constant value number return its value as a simdmask.
 //
-simdmask_t ValueNumStore::GetConstantSimdMask(ValueNum argVN)
+simdmaskvalue_t ValueNumStore::GetConstantSimdMaskValue(ValueNum argVN)
 {
     assert(IsVNConstant(argVN));
     assert(TypeOfVN(argVN) == TYP_MASK);
 
-    return ConstantValue<simdmask_t>(argVN);
+    return ConstantValue<simdmaskvalue_t>(argVN);
+}
+
+simdmask_t ValueNumStore::GetConstantSimdMask(ValueNum argVN)
+{
+    simdmaskvalue_t storage = GetConstantSimdMaskValue(argVN);
+
+    return storage.fixed;
 }
 #endif // FEATURE_MASKED_HW_INTRINSICS
 #endif // FEATURE_SIMD
@@ -10884,8 +10890,20 @@ void ValueNumStore::vnDump(Compiler* comp, ValueNum vn, bool isPtr)
 #if defined(FEATURE_MASKED_HW_INTRINSICS)
             case TYP_MASK:
             {
-                simdmask_t cnsVal = GetConstantSimdMask(vn);
-                printf("SimdMaskCns[0x%08x, 0x%08x]", cnsVal.u32[0], cnsVal.u32[1]);
+                simdmaskvalue_t cnsVal = GetConstantSimdMaskValue(vn);
+                if (cnsVal.IsScalable()
+#if defined(TARGET_ARM64) && defined(DEBUG)
+                    && JitConfig.JitUseScalableVectorT()
+#endif
+                        )
+                {
+                    printf("SimdMaskScalableCns[base:%s idx:%u]", varTypeName(cnsVal.scalable.gtSimdMaskScalableBaseType),
+                           cnsVal.scalable.gtSimdMaskScalableIndex);
+                }
+                else
+                {
+                    printf("SimdMaskCns[0x%08x, 0x%08x]", cnsVal.fixed.u32[0], cnsVal.fixed.u32[1]);
+                }
                 break;
             }
 #endif // FEATURE_MASKED_HW_INTRINSICS

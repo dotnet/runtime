@@ -306,6 +306,10 @@ static_assert(sizeof(simd64_t) == 64);
 #endif // TARGET_XARCH
 
 #if defined(FEATURE_MASKED_HW_INTRINSICS)
+// Forward declarations for mask types used by simdmask_t helpers.
+struct simdmaskscalable_t;
+struct simdmaskvalue_t;
+
 struct simdmask_t
 {
     union
@@ -374,6 +378,7 @@ struct simdmask_t
     {
         return {};
     }
+
 };
 static_assert(sizeof(simdmask_t) == 8);
 #endif // FEATURE_MASKED_HW_INTRINSICS
@@ -2228,6 +2233,39 @@ struct simdmaskscalable_t
     // for TYP_LONG would not be all true when used for TYP_BYTE, and instead would
     // be 000100010001...
     bool IsAllBitsSet(var_types simdBaseType) const;
+};
+
+struct simdmaskvalue_t
+{
+    uint8_t            isScalable;
+    simdmaskscalable_t scalable;
+    simdmask_t         fixed;
+
+    static simdmaskvalue_t FromFixed(const simdmask_t& mask)
+    {
+        simdmaskvalue_t result = {};
+
+        result.isScalable = 0;
+        result.fixed      = mask;
+
+        return result;
+    }
+
+    static simdmaskvalue_t FromScalable(const simdmaskscalable_t& mask)
+    {
+        simdmaskvalue_t result = {};
+
+        result.isScalable = 1;
+        result.scalable   = mask;
+        result.fixed      = simdmask_t::Zero();
+
+        return result;
+    }
+
+    bool IsScalable() const
+    {
+        return isScalable != 0;
+    }
 };
 
 static_assert(sizeof(simdmask_t) >= sizeof(simdmaskscalable_t));

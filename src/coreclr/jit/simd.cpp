@@ -948,6 +948,7 @@ bool EvaluateSimdCvtScalableMaskToVector(var_types baseType, simdscalable_t* vec
 
     return true;
 }
+
 #endif // TARGET_ARM64
 
 #endif // FEATURE_SIMD

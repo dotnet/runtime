@@ -398,7 +398,8 @@ public:
     simdscalable_t GetConstantSimdScalable(ValueNum argVN);
 #endif // TARGET_XARCH
 #if defined(FEATURE_MASKED_HW_INTRINSICS)
-    simdmask_t GetConstantSimdMask(ValueNum argVN);
+    simdmask_t      GetConstantSimdMask(ValueNum argVN);
+    simdmaskvalue_t GetConstantSimdMaskValue(ValueNum argVN);
 #endif // FEATURE_MASKED_HW_INTRINSICS
 #endif // FEATURE_SIMD
 
@@ -1967,57 +1968,40 @@ private:
         return m_simdScalableCnsMap;
     }
 
-    struct SimdMaskScalablePrimitiveKeyFuncs : public JitKeyFuncsDefEquals<simdmaskscalable_t>
+    struct SimdMaskPrimitiveKeyFuncs : public JitKeyFuncsDefEquals<simdmaskvalue_t>
     {
-        static bool Equals(const simdmaskscalable_t& x, const simdmaskscalable_t& y)
+        static bool Equals(const simdmaskvalue_t& x, const simdmaskvalue_t& y)
         {
-            return x == y;
+            if (x.IsScalable() != y.IsScalable())
+            {
+                return false;
+            }
+
+            return x.IsScalable() ? (x.scalable == y.scalable) : (x.fixed == y.fixed);
         }
 
-        static unsigned GetHashCode(const simdmaskscalable_t& val)
+        static unsigned GetHashCode(const simdmaskvalue_t& val)
         {
             unsigned hash = 0;
 
-            hash = static_cast<unsigned>(hash ^ val.gtSimdMaskScalableBaseType);
-            hash = static_cast<unsigned>(hash ^ val.gtSimdMaskScalableIndex);
+            if (val.IsScalable())
+            {
+                hash = static_cast<unsigned>(hash ^ val.isScalable);
+                hash = static_cast<unsigned>(hash ^ val.scalable.gtSimdMaskScalableBaseType);
+                hash = static_cast<unsigned>(hash ^ val.scalable.gtSimdMaskScalableIndex);
+            }
+            else
+            {
+                hash = static_cast<unsigned>(hash ^ val.isScalable);
+                hash = static_cast<unsigned>(hash ^ val.fixed.u32[0]);
+                hash = static_cast<unsigned>(hash ^ val.fixed.u32[1]);
+            }
 
             return hash;
         }
     };
 
-    typedef VNMap<simdmaskscalable_t, SimdMaskScalablePrimitiveKeyFuncs> SimdMaskScalableToValueNumMap;
-    SimdMaskScalableToValueNumMap*                                       m_simdMaskScalableCnsMap;
-    SimdMaskScalableToValueNumMap*                                       GetSimdMaskScalableCnsMap()
-    {
-        if (m_simdMaskScalableCnsMap == nullptr)
-        {
-            m_simdMaskScalableCnsMap = new (m_alloc) SimdMaskScalableToValueNumMap(m_alloc);
-        }
-        return m_simdMaskScalableCnsMap;
-    }
-
-#endif // TARGET_XARCH
-
-#if defined(FEATURE_MASKED_HW_INTRINSICS)
-    struct SimdMaskPrimitiveKeyFuncs : public JitKeyFuncsDefEquals<simdmask_t>
-    {
-        static bool Equals(const simdmask_t& x, const simdmask_t& y)
-        {
-            return x == y;
-        }
-
-        static unsigned GetHashCode(const simdmask_t& val)
-        {
-            unsigned hash = 0;
-
-            hash = static_cast<unsigned>(hash ^ val.u32[0]);
-            hash = static_cast<unsigned>(hash ^ val.u32[1]);
-
-            return hash;
-        }
-    };
-
-    typedef VNMap<simdmask_t, SimdMaskPrimitiveKeyFuncs> SimdMaskToValueNumMap;
+    typedef VNMap<simdmaskvalue_t, SimdMaskPrimitiveKeyFuncs> SimdMaskToValueNumMap;
     SimdMaskToValueNumMap*                               m_simdMaskCnsMap;
     SimdMaskToValueNumMap*                               GetSimdMaskCnsMap()
     {
@@ -2223,8 +2207,8 @@ struct ValueNumStore::VarTypConv<TYP_SIMD>
 template <>
 struct ValueNumStore::VarTypConv<TYP_MASK>
 {
-    typedef simdmask_t Type;
-    typedef simdmask_t Lang;
+    typedef simdmaskvalue_t Type;
+    typedef simdmaskvalue_t Lang;
 };
 #endif // FEATURE_MASKED_HW_INTRINSICS
 #endif // FEATURE_SIMD
@@ -2313,11 +2297,31 @@ FORCEINLINE simdscalable_t ValueNumStore::SafeGetConstantValue<simdscalable_t>(C
 
 #if defined(FEATURE_MASKED_HW_INTRINSICS)
 template <>
-FORCEINLINE simdmask_t ValueNumStore::SafeGetConstantValue<simdmask_t>(Chunk* c, unsigned offset)
+FORCEINLINE simdmaskvalue_t ValueNumStore::SafeGetConstantValue<simdmaskvalue_t>(Chunk* c, unsigned offset)
 {
     assert(c->m_typ == TYP_MASK);
     return reinterpret_cast<VarTypConv<TYP_MASK>::Lang*>(c->m_defs)[offset];
 }
+
+template <>
+FORCEINLINE simdmask_t ValueNumStore::SafeGetConstantValue<simdmask_t>(Chunk* c, unsigned offset)
+{
+    assert(c->m_typ == TYP_MASK);
+    simdmaskvalue_t storage = SafeGetConstantValue<simdmaskvalue_t>(c, offset);
+    assert(!storage.IsScalable());
+    return storage.fixed;
+}
+
+#if defined(TARGET_ARM64)
+template <>
+FORCEINLINE simdmaskscalable_t ValueNumStore::SafeGetConstantValue<simdmaskscalable_t>(Chunk* c, unsigned offset)
+{
+    assert(c->m_typ == TYP_MASK);
+    simdmaskvalue_t storage = SafeGetConstantValue<simdmaskvalue_t>(c, offset);
+    assert(storage.IsScalable());
+    return storage.scalable;
+}
+#endif // TARGET_ARM64
 #endif // FEATURE_MASKED_HW_INTRINSICS
 
 template <>
@@ -2420,6 +2424,39 @@ FORCEINLINE simdmask_t ValueNumStore::ConstantValueInternal<simdmask_t>(ValueNum
 
     return SafeGetConstantValue<simdmask_t>(c, offset);
 }
+
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
+template <>
+FORCEINLINE simdmaskvalue_t ValueNumStore::ConstantValueInternal<simdmaskvalue_t>(ValueNum vn DEBUGARG(bool coerce))
+{
+    Chunk* c = m_chunks.GetNoExpand(GetChunkNum(vn));
+    assert(c->m_attribs == CEA_Const);
+
+    unsigned offset = ChunkOffset(vn);
+
+    assert(c->m_typ == TYP_MASK);
+    assert(!coerce);
+
+    return SafeGetConstantValue<simdmaskvalue_t>(c, offset);
+}
+#endif
+
+#if defined(TARGET_ARM64)
+template <>
+FORCEINLINE simdmaskscalable_t
+ValueNumStore::ConstantValueInternal<simdmaskscalable_t>(ValueNum vn DEBUGARG(bool coerce))
+{
+    Chunk* c = m_chunks.GetNoExpand(GetChunkNum(vn));
+    assert(c->m_attribs == CEA_Const);
+
+    unsigned offset = ChunkOffset(vn);
+
+    assert(c->m_typ == TYP_MASK);
+    assert(!coerce);
+
+    return SafeGetConstantValue<simdmaskscalable_t>(c, offset);
+}
+#endif // TARGET_ARM64
 #endif // FEATURE_MASKED_HW_INTRINSICS
 #endif // FEATURE_SIMD
 
