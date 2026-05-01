@@ -4570,9 +4570,35 @@ void ILFixedArrayMarshaler::EmitConvertContentsCLRToNative(ILCodeStream* pslILEm
     CREATE_MARSHALER_CARRAY_OPERANDS mops;
     m_pargs->m_pMarshalInfo->GetMops(&mops);
 
-    ILCodeLabel* pSkipLabel = pslILEmit->NewCodeLabel();
+    // Compute the total native byte size of the inline array so we can
+    // zero it when the managed array is null.
+    MethodTable* pElementMT = mops.methodTable;
+    if (pElementMT->IsEnum())
+    {
+        pElementMT = CoreLibBinder::GetElementType(pElementMT->GetInternalCorElementType());
+    }
+
+    MethodTable* pNativeElementMT;
+    switch (mops.elementNativeType)
+    {
+    case NATIVE_TYPE_BOOLEAN:
+        pNativeElementMT = CoreLibBinder::GetClass(CLASS__INT32);
+        break;
+    case NATIVE_TYPE_I1:
+    case NATIVE_TYPE_U1:
+        pNativeElementMT = CoreLibBinder::GetClass(CLASS__BYTE);
+        break;
+    default:
+        pNativeElementMT = GetNativeMethodTableForVarType(mops.elementType, pElementMT);
+        break;
+    }
+
+    UINT uNativeSize = pNativeElementMT->GetNativeSize() * mops.additive;
+
+    ILCodeLabel* pNullLabel = pslILEmit->NewCodeLabel();
+    ILCodeLabel* pDoneLabel = pslILEmit->NewCodeLabel();
     EmitLoadManagedValue(pslILEmit);
-    pslILEmit->EmitBRFALSE(pSkipLabel);
+    pslILEmit->EmitBRFALSE(pNullLabel);
 
     MethodDesc* pMD = GetInstantiatedArrayMethod(m_pargs->m_pMarshalInfo, METHOD__STUBHELPERS__CONVERT_ARRAY_CONTENTS_TO_UNMANAGED);
 
@@ -4581,7 +4607,16 @@ void ILFixedArrayMarshaler::EmitConvertContentsCLRToNative(ILCodeStream* pslILEm
     pslILEmit->EmitLDC(mops.additive);
     pslILEmit->EmitCALL(pslILEmit->GetToken(pMD), 3, 0);
 
-    pslILEmit->EmitLabel(pSkipLabel);
+    pslILEmit->EmitBR(pDoneLabel);
+
+    // When the managed array is null, zero the native inline buffer.
+    pslILEmit->EmitLabel(pNullLabel);
+    EmitLoadNativeHomeAddr(pslILEmit);
+    pslILEmit->EmitLDC(0);
+    pslILEmit->EmitLDC(uNativeSize);
+    pslILEmit->EmitINITBLK();
+
+    pslILEmit->EmitLabel(pDoneLabel);
 }
 
 void ILFixedArrayMarshaler::EmitConvertContentsNativeToCLR(ILCodeStream* pslILEmit)
