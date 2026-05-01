@@ -177,11 +177,13 @@ void WasmRegAlloc::IdentifyCandidates()
         // We also need to ensure that any GC refs are not stored in wasm locals until we have support for
         // spilling them to the stack before calls.
         // TODO-WASM: Add support for spilling GC refs in order to relax this second restriction.
-        if (varDsc->lvLiveInOutOfHndlr) {
+        if (varDsc->lvLiveInOutOfHndlr)
+        {
             m_compiler->lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::LiveInOutOfHandler));
             varIsRegCandidate = false;
         }
-        if (varTypeIsGC(varDsc->lvType)) {
+        if (varTypeIsGC(varDsc->lvType))
+        {
             m_compiler->lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::WasmGCVisibility));
             varIsRegCandidate = false;
         }
@@ -432,7 +434,8 @@ void WasmRegAlloc::CollectReferencesForNode(GenTree* node)
         case GT_NULLCHECK:
             if (node->gtGetOp1()->gtLIRFlags & LIR::Flags::MultiplyUsed)
             {
-                ConsumeTemporaryRegForOperand(node->gtGetOp1() DEBUGARG("Orphaned GT_NULLCHECK with multiply-used flag"));
+                ConsumeTemporaryRegForOperand(node->gtGetOp1()
+                                                  DEBUGARG("Orphaned GT_NULLCHECK with multiply-used flag"));
             }
             break;
 
