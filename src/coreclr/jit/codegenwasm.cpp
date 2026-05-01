@@ -2302,8 +2302,9 @@ void CodeGen::genCodeForLclVar(GenTreeLclVar* tree)
     else
     {
         assert(genIsValidReg(varDsc->GetRegNum()));
-        unsigned wasmLclIndex = WasmRegToIndex(varDsc->GetRegNum());
-        GetEmitter()->emitIns_I(INS_local_get, emitTypeSize(tree), wasmLclIndex);
+        var_types type         = varDsc->GetRegisterType(tree);
+        unsigned  wasmLclIndex = WasmRegToIndex(varDsc->GetRegNum());
+        GetEmitter()->emitIns_I(INS_local_get, emitTypeSize(type), wasmLclIndex);
         // In this case, the resulting tree type may be different from the local var type where the value originates,
         // and so we need an explicit conversion since we can't "load"
         // the value with a different type like we can if the value is on the shadow stack.
