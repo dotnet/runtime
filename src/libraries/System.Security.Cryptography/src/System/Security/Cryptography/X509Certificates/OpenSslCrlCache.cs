@@ -608,7 +608,7 @@ namespace System.Security.Cryptography.X509Certificates
 
             private bool TryGetNode(int hashCode, string key, [NotNullWhen(true)] out Node? value)
             {
-                Debug.Assert(_lock.IsHeldByCurrentThread);
+                Debug.Assert(Monitor.IsEntered(_lock));
 
                 Node? previous = null;
                 Node? current = _head;
