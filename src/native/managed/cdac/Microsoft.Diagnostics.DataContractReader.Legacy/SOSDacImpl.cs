@@ -4034,13 +4034,69 @@ public sealed unsafe partial class SOSDacImpl
 
     int ISOSDacInterface.GetStackReferences(int osThreadID, DacComNullableByRef<ISOSStackRefEnum> ppEnum)
     {
-        // Stack reference enumeration is not yet complete in the cDAC — capital-F Frame
-        // GC root scanning (ScanFrameRoots) is still pending. Fall through to the legacy
-        // DAC so that consumers (dump tests, SOS) continue to work while the implementation
-        // is in progress.
-        return _legacyImpl is not null
-            ? _legacyImpl.GetStackReferences(osThreadID, ppEnum)
-            : HResults.E_NOTIMPL;
+        int hr = HResults.S_OK;
+        try
+        {
+            IThread threadContract = _target.Contracts.Thread;
+            IStackWalk stackWalkContract = _target.Contracts.StackWalk;
+            ThreadData? matchingThread = null;
+
+            ThreadStoreData threadStore = threadContract.GetThreadStoreData();
+            TargetPointer threadAddr = threadStore.FirstThread;
+            while (threadAddr != TargetPointer.Null)
+            {
+                ThreadData td = threadContract.GetThreadData(threadAddr);
+                if (td.OSId.Value == (ulong)osThreadID)
+                {
+                    matchingThread = td;
+                    break;
+                }
+                threadAddr = td.NextThread;
+            }
+
+            if (matchingThread is null)
+            {
+                throw new ArgumentException($"No thread with OS ID {osThreadID} was found.");
+            }
+
+            IReadOnlyList<StackReferenceData> refs = stackWalkContract.WalkStackReferences(matchingThread.Value);
+
+            SOSStackRefData[] sosRefs = new SOSStackRefData[refs.Count];
+            for (int i = 0; i < refs.Count; i++)
+            {
+                sosRefs[i] = new SOSStackRefData
+                {
+                    HasRegisterInformation = refs[i].HasRegisterInformation ? 1 : 0,
+                    Register = refs[i].Register,
+                    Offset = refs[i].Offset,
+                    Address = refs[i].Address.Value,
+                    Object = refs[i].Object.Value,
+                    Flags = refs[i].Flags,
+                    Source = refs[i].Source.Value,
+                    SourceType = refs[i].IsStackSourceFrame
+                        ? SOSStackSourceType.SOS_StackSourceFrame
+                        : SOSStackSourceType.SOS_StackSourceIP,
+                    StackPointer = refs[i].StackPointer.Value,
+                };
+            }
+
+            ppEnum.Interface = new SOSStackRefEnum(sosRefs);
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacyImpl is not null)
+        {
+            // Validate that the legacy DAC produces the same HResult.
+            // We pass isNullRef: false to request actual enumeration, but we don't
+            // compare individual refs — that's done by cdacstress.cpp at runtime.
+            int hrLocal = _legacyImpl.GetStackReferences(osThreadID, new DacComNullableByRef<ISOSStackRefEnum>(isNullRef: false));
+            Debug.ValidateHResult(hr, hrLocal);
+        }
+#endif
+        return hr;
     }
 
     int ISOSDacInterface.GetStressLogAddress(ClrDataAddress* stressLog)

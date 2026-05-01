@@ -17,6 +17,8 @@ internal sealed class MockExceptionInfo : TypedView
     private const string CSFEHClauseFieldName = "CSFEHClause";
     private const string CSFEnclosingClauseFieldName = "CSFEnclosingClause";
     private const string CallerOfActualHandlerFrameFieldName = "CallerOfActualHandlerFrame";
+    private const string ClauseForCatchHandlerStartPCFieldName = "ClauseForCatchHandlerStartPC";
+    private const string ClauseForCatchHandlerEndPCFieldName = "ClauseForCatchHandlerEndPC";
 
     public static Layout<MockExceptionInfo> CreateLayout(MockTarget.Architecture architecture)
         => new SequentialLayoutBuilder("ExceptionInfo", architecture)
@@ -30,6 +32,8 @@ internal sealed class MockExceptionInfo : TypedView
             .AddPointerField(CSFEHClauseFieldName)
             .AddPointerField(CSFEnclosingClauseFieldName)
             .AddPointerField(CallerOfActualHandlerFrameFieldName)
+            .AddUInt32Field(ClauseForCatchHandlerStartPCFieldName)
+            .AddUInt32Field(ClauseForCatchHandlerEndPCFieldName)
             .Build<MockExceptionInfo>();
 
     public ulong ThrownObjectHandle

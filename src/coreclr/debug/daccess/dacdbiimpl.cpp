@@ -5657,7 +5657,7 @@ BOOL DacDbiInterfaceImpl::IsThreadAtGCSafePlace(VMPTR_Thread vmThread)
     ULONG32 flags = (QUICKUNWIND | HANDLESKIPPEDFRAMES | DISABLE_MISSING_FRAME_DETECTION);
 
     StackFrameIterator iter;
-    iter.Init(pThread, pThread->GetFrame(), &rd, flags);
+    iter.Init(pThread, NULL, &rd, flags);
 
     CrawlFrame * pCF = &(iter.m_crawl);
     if (pCF->IsFrameless() && pCF->IsActiveFunc())
