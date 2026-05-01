@@ -3172,9 +3172,10 @@ PhaseStatus Compiler::fgCreateFunclets()
         fgCreateFuncletPrologBlocks();
 
         // We want to have the funclet order match the order of emission of EH clauses to the runtime.
+        // We cannot change the order of entries in the JIT's EH table, as there are many places
+        // in the JIT that depend on the current ordering.
         //
-        // This is not the same as the order of entries in the EH table, so build a mapping from
-        // So, build mappings from vm order to table order and vice versa.
+        // So, build mappings from vm order to EH table order and vice versa.
         //
         vmClauseOrderToEHTabOrder = new (this, CMK_BasicBlock) unsigned short[compHndBBtabCount];
         ehTabOrderToVMClauseOrder = new (this, CMK_BasicBlock) unsigned short[compHndBBtabCount];
