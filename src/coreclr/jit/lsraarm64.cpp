@@ -833,10 +833,12 @@ int LinearScan::BuildNode(GenTree* tree)
             GenTreeMskCon* mskCon = tree->AsMskCon();
 
             var_types maskBaseType = TYP_BYTE;
+#if defined(DEBUG)
             if (JitConfig.JitUseScalableVectorT())
             {
                 maskBaseType = mskCon->gtSimdScalableMaskVal.gtSimdMaskScalableBaseType;
             }
+#endif // DEBUG
 
             if (mskCon->IsAllBitsSet(maskBaseType) || mskCon->IsZero())
             {
