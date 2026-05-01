@@ -271,7 +271,7 @@ internal readonly struct RuntimeSignatureDecoder<TType, TGenericContext>
     private TType DecodeInternalType(ref BlobReader blobReader)
     {
         ulong val = ReadPointerSized(ref blobReader);
-        return _provider.GetInternalType(_target, new TargetPointer(val));
+        return _provider.GetInternalType(new TargetPointer(val));
     }
 
     private TType DecodeInternalModifiedType(ref BlobReader blobReader)
@@ -279,7 +279,7 @@ internal readonly struct RuntimeSignatureDecoder<TType, TGenericContext>
         bool isRequired = blobReader.ReadByte() != 0;
         ulong val = ReadPointerSized(ref blobReader);
         TType unmodifiedType = DecodeType(ref blobReader);
-        return _provider.GetInternalModifiedType(_target, new TargetPointer(val), unmodifiedType, isRequired);
+        return _provider.GetInternalModifiedType(new TargetPointer(val), unmodifiedType, isRequired);
     }
 
     private TType DecodeTypeHandle(ref BlobReader blobReader, byte rawTypeKind, bool allowTypeSpecifications)

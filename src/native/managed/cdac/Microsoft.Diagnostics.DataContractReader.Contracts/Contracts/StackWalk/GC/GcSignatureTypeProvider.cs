@@ -31,6 +31,13 @@ internal enum GcTypeKind
 internal sealed class GcSignatureTypeProvider
     : IRuntimeSignatureTypeProvider<GcTypeKind, object?>
 {
+    private readonly Target _target;
+
+    public GcSignatureTypeProvider(Target target)
+    {
+        _target = target;
+    }
+
     public GcTypeKind GetPrimitiveType(PrimitiveTypeCode typeCode)
         => typeCode switch
         {
@@ -60,17 +67,17 @@ internal sealed class GcSignatureTypeProvider
     public GcTypeKind GetGenericTypeParameter(object? genericContext, int index) => GcTypeKind.Ref;
     public GcTypeKind GetFunctionPointerType(MethodSignature<GcTypeKind> signature) => GcTypeKind.None;
     public GcTypeKind GetModifiedType(GcTypeKind modifier, GcTypeKind unmodifiedType, bool isRequired) => unmodifiedType;
-    public GcTypeKind GetInternalModifiedType(Target target, TargetPointer typeHandlePointer, GcTypeKind unmodifiedType, bool isRequired) => unmodifiedType;
+    public GcTypeKind GetInternalModifiedType(TargetPointer typeHandlePointer, GcTypeKind unmodifiedType, bool isRequired) => unmodifiedType;
     public GcTypeKind GetPinnedType(GcTypeKind elementType) => elementType;
 
-    public GcTypeKind GetInternalType(Target target, TargetPointer typeHandlePointer)
+    public GcTypeKind GetInternalType(TargetPointer typeHandlePointer)
     {
         if (typeHandlePointer == TargetPointer.Null)
             return GcTypeKind.None;
 
         try
         {
-            IRuntimeTypeSystem rts = target.Contracts.RuntimeTypeSystem;
+            IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
             TypeHandle th = rts.GetTypeHandle(typeHandlePointer);
             CorElementType corType = rts.GetSignatureCorElementType(th);
 

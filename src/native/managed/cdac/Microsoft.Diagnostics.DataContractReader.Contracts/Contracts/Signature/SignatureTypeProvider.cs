@@ -90,11 +90,11 @@ public class SignatureTypeProvider<T> : IRuntimeSignatureTypeProvider<TypeHandle
     public TypeHandle GetTypeFromSpecification(MetadataReader reader, T context, TypeSpecificationHandle handle, byte rawTypeKind)
         => throw new NotImplementedException();
 
-    public TypeHandle GetInternalType(Target target, TargetPointer typeHandlePointer)
+    public TypeHandle GetInternalType(TargetPointer typeHandlePointer)
         => typeHandlePointer == TargetPointer.Null
             ? new TypeHandle(TargetPointer.Null)
             : _runtimeTypeSystem.GetTypeHandle(typeHandlePointer);
 
-    public TypeHandle GetInternalModifiedType(Target target, TargetPointer typeHandlePointer, TypeHandle unmodifiedType, bool isRequired)
+    public TypeHandle GetInternalModifiedType(TargetPointer typeHandlePointer, TypeHandle unmodifiedType, bool isRequired)
         => unmodifiedType;
 }

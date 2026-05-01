@@ -347,7 +347,7 @@ internal class GcScanner
             MethodDefinition methodDef = mdReader.GetMethodDefinition(methodDefHandle);
 
             BlobReader blobReader = mdReader.GetBlobReader(methodDef.Signature);
-            GcSignatureTypeProvider gcProvider = new();
+            GcSignatureTypeProvider gcProvider = new(_target);
             RuntimeSignatureDecoder<GcTypeKind, object?> decoder = new(
                 gcProvider, _target, mdReader, genericContext: null);
             methodSig = decoder.DecodeMethodSignature(ref blobReader);

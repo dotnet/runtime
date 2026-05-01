@@ -471,7 +471,64 @@ At each frame yielded by `Filter`, the walk determines whether to scan for GC re
 - **PrestubMethodFrame / CallCountingHelperFrame**: Use signature-based scanning.
 - Other frame types: No GC roots to report.
 
-See [GCRefMap Format and Resolution](#gcrefmap-format-and-resolution) for the GCRefMap scanning path details.
+See [GCRefMap Format and Resolution](#gcrefmap-format-and-resolution) for the GCRefMap scanning path and [Signature-Based Scanning](#signature-based-scanning) for the signature decoding path.
+
+### Signature-Based Scanning
+
+When a transition frame's calling convention is not described by a precomputed GCRefMap (`PrestubMethodFrame`, `CallCountingHelperFrame`, and the fallback path for `StubDispatchFrame`/`ExternalMethodFrame`), the GC reference walk classifies caller-stack arguments by decoding the callee's method signature. This corresponds to native `TransitionFrame::PromoteCallerStack` (`src/coreclr/vm/frames.cpp`).
+
+#### GcSignatureTypeProvider
+
+`GcSignatureTypeProvider` is an `IRuntimeSignatureTypeProvider<GcTypeKind, object?>` that classifies each parameter type into one of:
+
+```csharp
+internal enum GcTypeKind
+{
+    None,       // Non-GC primitive that fits in a single slot
+    Ref,        // Object reference (TYPE_GC_REF)
+    Interior,   // Managed pointer / byref (TYPE_GC_BYREF)
+    Other,      // Value type that may contain GC refs, or any type larger than a slot
+}
+```
+
+The provider classifies primitives directly (`String`/`Object` -> `Ref`, `TypedReference` -> `Other`, others -> `None`) and uses the signature's `rawTypeKind` for `TypeDef`/`TypeRef`/`TypeSpec` (`ValueType` -> `Other`, otherwise `Ref`). Arrays are `Ref`, byrefs are `Interior`, raw pointers are `None`. Generic parameters (`!T`, `!!T`) are classified as `Ref` -- safe for reference-typed instantiations but conservative for value-typed instantiations. `ELEMENT_TYPE_INTERNAL` resolves the `TypeHandle` via `RuntimeTypeSystem.GetSignatureCorElementType` and maps the `CorElementType` to a `GcTypeKind`.
+
+#### PromoteCallerStack Algorithm
+
+1. Read the `MethodDesc` pointer from the `FramedMethodFrame` and obtain a `MethodDescHandle` from `RuntimeTypeSystem`.
+2. Resolve the method's `MetadataReader` via `Loader.GetModuleHandleFromModulePtr` and `EcmaMetadata.GetMetadata`. If metadata is unavailable, no caller-stack refs are reported (matches native fallback behavior).
+3. Get the `BlobReader` for the method's signature blob and decode it with `RuntimeSignatureDecoder<GcTypeKind, object?>` and `GcSignatureTypeProvider`. See [SignatureDecoder contract](./SignatureDecoder.md) for the decoder.
+4. Skip varargs methods (the caller-stack layout is not described by the callee signature alone).
+5. Compute the number of reserved register slots in the `TransitionBlock`:
+
+   | Reserved Slot | Condition |
+   |---|---|
+   | `this` pointer | `MethodSignature.Header.IsInstance` |
+   | Return buffer | Return type is `GcTypeKind.Other` |
+   | Generic instantiation arg | `RuntimeTypeSystem.RequiresInstArg(methodDesc)` |
+   | Async continuation | `RuntimeTypeSystem.IsAsyncMethod(methodDesc)` |
+   | ARM64 indirect-result register (`x8`) | Target architecture is ARM64 |
+
+6. If `IsInstance`, report the `this` slot at position `0` (or `1` on ARM64 to skip `x8`). The slot is reported as `GC_CALL_INTERIOR` for value-type `this`, otherwise as a normal reference.
+7. Walk `MethodSignature.ParameterTypes` starting at slot index = reserved slot count, advancing one slot per parameter:
+   - `GcTypeKind.Ref` -> report as a reference.
+   - `GcTypeKind.Interior` -> report with `GC_CALL_INTERIOR`.
+   - `GcTypeKind.Other` / `GcTypeKind.None` -> not reported (large value types are reported via the GCRefMap path when one is available; otherwise their interior refs are not visible to this scan).
+
+The slot address is computed using the same formula as the GCRefMap path:
+
+```csharp
+slotAddress = transitionBlockPtr + FirstGCRefMapSlot + (position * pointerSize);
+```
+
+#### Limitations vs. Native
+
+This signature-based scan is conservative compared to native:
+
+* It does not enumerate embedded GC refs inside large value types passed by value (a `GcTypeKind.Other` parameter is silently skipped).
+* Generic parameters are always classified as `Ref`, which is correct for reference-typed instantiations but treats value-typed instantiations as full references rather than skipping them.
+
+Both limitations are visible to the cDAC GC stress verification harness, which compares cDAC and native walks; they may be tightened in future versions of this contract.
 
 ### GCRefMap Format and Resolution
 
