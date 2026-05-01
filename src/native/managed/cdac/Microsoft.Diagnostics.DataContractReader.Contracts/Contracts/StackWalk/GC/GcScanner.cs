@@ -19,12 +19,14 @@ internal class GcScanner
     private readonly Target _target;
     private readonly IExecutionManager _eman;
     private readonly IGCInfo _gcInfo;
+    private readonly GcSignatureTypeProvider _gcSigTypeProvider;
 
     internal GcScanner(Target target)
     {
         _target = target;
         _eman = target.Contracts.ExecutionManager;
         _gcInfo = target.Contracts.GCInfo;
+        _gcSigTypeProvider = new GcSignatureTypeProvider(target);
     }
 
     /// <summary>
@@ -330,10 +332,6 @@ internal class GcScanner
         MethodSignature<GcTypeKind> methodSig;
         try
         {
-            uint methodToken = rts.GetMethodToken(mdh);
-            if (methodToken == 0x06000000)
-                return;
-
             TargetPointer methodTablePtr = rts.GetMethodTable(mdh);
             TypeHandle typeHandle = rts.GetTypeHandle(methodTablePtr);
             TargetPointer modulePtr = rts.GetModule(typeHandle);
@@ -343,14 +341,34 @@ internal class GcScanner
             if (mdReader is null)
                 return;
 
-            MethodDefinitionHandle methodDefHandle = MetadataTokens.MethodDefinitionHandle((int)(methodToken & 0x00FFFFFF));
-            MethodDefinition methodDef = mdReader.GetMethodDefinition(methodDefHandle);
-
-            BlobReader blobReader = mdReader.GetBlobReader(methodDef.Signature);
-            GcSignatureTypeProvider gcProvider = new(_target);
             RuntimeSignatureDecoder<GcTypeKind, object?> decoder = new(
-                gcProvider, _target, mdReader, genericContext: null);
-            methodSig = decoder.DecodeMethodSignature(ref blobReader);
+                _gcSigTypeProvider, _target, mdReader, genericContext: null);
+
+            // Match native MethodDesc::GetSig: prefer stored signature (dynamic, EEImpl,
+            // and array method descs) before falling back to a metadata token lookup.
+            if (rts.IsStoredSigMethodDesc(mdh, out ReadOnlySpan<byte> storedSig))
+            {
+                unsafe
+                {
+                    fixed (byte* pStoredSig = storedSig)
+                    {
+                        BlobReader blobReader = new BlobReader(pStoredSig, storedSig.Length);
+                        methodSig = decoder.DecodeMethodSignature(ref blobReader);
+                    }
+                }
+            }
+            else
+            {
+                uint methodToken = rts.GetMethodToken(mdh);
+                if (methodToken == 0x06000000)
+                    return;
+
+                MethodDefinitionHandle methodDefHandle = MetadataTokens.MethodDefinitionHandle((int)(methodToken & 0x00FFFFFF));
+                MethodDefinition methodDef = mdReader.GetMethodDefinition(methodDefHandle);
+
+                BlobReader blobReader = mdReader.GetBlobReader(methodDef.Signature);
+                methodSig = decoder.DecodeMethodSignature(ref blobReader);
+            }
         }
         catch (System.Exception)
         {

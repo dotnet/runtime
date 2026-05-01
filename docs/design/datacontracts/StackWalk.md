@@ -497,9 +497,12 @@ The provider classifies primitives directly (`String`/`Object` -> `Ref`, `TypedR
 
 1. Read the `MethodDesc` pointer from the `FramedMethodFrame` and obtain a `MethodDescHandle` from `RuntimeTypeSystem`.
 2. Resolve the method's `MetadataReader` via `Loader.GetModuleHandleFromModulePtr` and `EcmaMetadata.GetMetadata`. If metadata is unavailable, no caller-stack refs are reported (matches native fallback behavior).
-3. Get the `BlobReader` for the method's signature blob and decode it with `RuntimeSignatureDecoder<GcTypeKind, object?>` and `GcSignatureTypeProvider`. See [SignatureDecoder contract](./SignatureDecoder.md) for the decoder.
-4. Skip varargs methods (the caller-stack layout is not described by the callee signature alone).
-5. Compute the number of reserved register slots in the `TransitionBlock`:
+3. Obtain the method's signature blob, matching native `MethodDesc::GetSig`:
+   - If `RuntimeTypeSystem.IsStoredSigMethodDesc` is true (dynamic, EEImpl, and array method descs), pin the stored signature span and pass a `BlobReader` over it to `RuntimeSignatureDecoder.DecodeMethodSignature`.
+   - Otherwise, look up the signature via the metadata token (`mdMethodDef`), skipping methods with a nil token (`0x06000000`).
+4. Decode the signature with `RuntimeSignatureDecoder<GcTypeKind, object?>` and `GcSignatureTypeProvider`. See [SignatureDecoder contract](./SignatureDecoder.md) for the decoder.
+5. Skip varargs methods (the caller-stack layout is not described by the callee signature alone).
+6. Compute the number of reserved register slots in the `TransitionBlock`:
 
    | Reserved Slot | Condition |
    |---|---|
@@ -509,8 +512,8 @@ The provider classifies primitives directly (`String`/`Object` -> `Ref`, `TypedR
    | Async continuation | `RuntimeTypeSystem.IsAsyncMethod(methodDesc)` |
    | ARM64 indirect-result register (`x8`) | Target architecture is ARM64 |
 
-6. If `IsInstance`, report the `this` slot at position `0` (or `1` on ARM64 to skip `x8`). The slot is reported as `GC_CALL_INTERIOR` for value-type `this`, otherwise as a normal reference.
-7. Walk `MethodSignature.ParameterTypes` starting at slot index = reserved slot count, advancing one slot per parameter:
+7. If `IsInstance`, report the `this` slot at position `0` (or `1` on ARM64 to skip `x8`). The slot is reported as `GC_CALL_INTERIOR` for value-type `this`, otherwise as a normal reference.
+8. Walk `MethodSignature.ParameterTypes` starting at slot index = reserved slot count, advancing one slot per parameter:
    - `GcTypeKind.Ref` -> report as a reference.
    - `GcTypeKind.Interior` -> report with `GC_CALL_INTERIOR`.
    - `GcTypeKind.Other` / `GcTypeKind.None` -> not reported (large value types are reported via the GCRefMap path when one is available; otherwise their interior refs are not visible to this scan).
