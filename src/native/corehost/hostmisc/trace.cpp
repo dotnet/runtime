@@ -243,7 +243,8 @@ void trace::println(const pal::char_t* format, ...)
 
 void trace::println()
 {
-    println(_X(""));
+    std::lock_guard<spin_lock> lock(g_trace_lock);
+    ::fputc('\n', stdout);
 }
 
 void trace::warning(const pal::char_t* format, ...)
