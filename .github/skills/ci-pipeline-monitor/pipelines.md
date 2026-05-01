@@ -67,7 +67,7 @@ entries via the AzDO Definitions API, and adds new rows here.
 | runtime-coreclr libraries-jitstress-random | 160 | |
 | runtime-coreclr pgostress | 230 | |
 | runtime-coreclr jitstress-isas-avx512 | 235 | |
-| runtime-coreclr jit-cfg | 155 | Control flow guard. |
+| runtime-coreclr jit-cfg | 155 | |
 | runtime-coreclr superpmi-collect | — | **Private — skip** |
 | runtime-coreclr jitrollingbuild | — | **Private — skip** |
 
