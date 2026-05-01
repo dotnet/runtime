@@ -82,7 +82,6 @@ inline
 void
 ds_rt_auto_trace_init (void)
 {
-	// TODO: Implement.
 }
 
 static
@@ -90,7 +89,6 @@ inline
 void
 ds_rt_auto_trace_launch (void)
 {
-	// TODO: Implement.
 }
 
 static
@@ -98,7 +96,6 @@ inline
 void
 ds_rt_auto_trace_signal (void)
 {
-	// TODO: Implement.
 }
 
 static
@@ -106,7 +103,6 @@ inline
 void
 ds_rt_auto_trace_wait (void)
 {
-	// TODO: Implement.
 }
 
 /*

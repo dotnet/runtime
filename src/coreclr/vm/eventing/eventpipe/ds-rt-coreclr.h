@@ -74,24 +74,11 @@
 * AutoTrace.
 */
 
-#ifdef FEATURE_AUTO_TRACE
-#include "autotrace.h"
-#endif
-
 static
 void
 ds_rt_auto_trace_init (void)
 {
 	STATIC_CONTRACT_NOTHROW;
-
-#ifdef FEATURE_AUTO_TRACE
-	EX_TRY
-	{
-		auto_trace_init ();
-	}
-	EX_CATCH {}
-	EX_END_CATCH
-#endif
 }
 
 static
@@ -99,15 +86,6 @@ void
 ds_rt_auto_trace_launch (void)
 {
 	STATIC_CONTRACT_NOTHROW;
-
-#ifdef FEATURE_AUTO_TRACE
-	EX_TRY
-	{
-		auto_trace_launch ();
-	}
-	EX_CATCH {}
-	EX_END_CATCH
-#endif
 }
 
 static
@@ -115,15 +93,6 @@ void
 ds_rt_auto_trace_signal (void)
 {
 	STATIC_CONTRACT_NOTHROW;
-
-#ifdef FEATURE_AUTO_TRACE
-	EX_TRY
-	{
-		auto_trace_signal ();
-	}
-	EX_CATCH {}
-	EX_END_CATCH
-#endif
 }
 
 static
@@ -131,15 +100,6 @@ void
 ds_rt_auto_trace_wait (void)
 {
 	STATIC_CONTRACT_NOTHROW;
-
-#ifdef FEATURE_AUTO_TRACE
-	EX_TRY
-	{
-		auto_trace_wait ();
-	}
-	EX_CATCH {}
-	EX_END_CATCH
-#endif
 }
 
 /*
