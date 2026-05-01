@@ -68,38 +68,6 @@
 #define DS_EXIT_BLOCKING_PAL_SECTION
 
 /*
-* AutoTrace.
-*/
-
-static
-void
-ds_rt_auto_trace_init (void)
-{
-    STATIC_CONTRACT_NOTHROW;
-}
-
-static
-void
-ds_rt_auto_trace_launch (void)
-{
-    STATIC_CONTRACT_NOTHROW;
-}
-
-static
-void
-ds_rt_auto_trace_signal (void)
-{
-    STATIC_CONTRACT_NOTHROW;
-}
-
-static
-void
-ds_rt_auto_trace_wait (void)
-{
-    STATIC_CONTRACT_NOTHROW;
-}
-
-/*
  * DiagnosticsConfiguration.
  */
 
