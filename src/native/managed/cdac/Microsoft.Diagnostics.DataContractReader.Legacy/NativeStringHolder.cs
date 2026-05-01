@@ -4,7 +4,7 @@
 using System;
 using System.Runtime.InteropServices;
 
-namespace Microsoft.Diagnostics.DataContractReader.DumpTests;
+namespace Microsoft.Diagnostics.DataContractReader.Legacy;
 
 /// <summary>
 /// Creates a native-memory object that mimics the C++ IStringHolder vtable layout.
@@ -52,7 +52,7 @@ internal sealed class NativeStringHolder : IDisposable
     private int AssignCopyImpl(IntPtr thisPtr, IntPtr psz)
     {
         Value = Marshal.PtrToStringUni(psz);
-        return System.HResults.S_OK;
+        return HResults.S_OK;
     }
 
     public void Dispose()
