@@ -1265,9 +1265,18 @@ namespace System.StubHelpers
             IntPtr pNativeHome = Marshal.AllocCoTaskMem(allocSize);
 
             // marshal the object as class with layout (UnmanagedType.LPStruct)
-            if (IsIn(dwFlags))
+            try
             {
-                StubHelpers.LayoutTypeConvertToUnmanaged(pManagedHome, (byte*)pNativeHome, ref cleanupWorkList);
+                if (IsIn(dwFlags))
+                {
+                    StubHelpers.LayoutTypeConvertToUnmanaged(pManagedHome, (byte*)pNativeHome, ref cleanupWorkList);
+                }
+            }
+            catch
+            {
+                StubHelpers.DestroyCleanupList(ref cleanupWorkList);
+                Marshal.FreeCoTaskMem(pNativeHome);
+                throw;
             }
             if (IsOut(dwFlags))
             {
