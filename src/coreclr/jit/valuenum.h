@@ -2002,8 +2002,8 @@ private:
     };
 
     typedef VNMap<simdmaskvalue_t, SimdMaskPrimitiveKeyFuncs> SimdMaskToValueNumMap;
-    SimdMaskToValueNumMap*                               m_simdMaskCnsMap;
-    SimdMaskToValueNumMap*                               GetSimdMaskCnsMap()
+    SimdMaskToValueNumMap*                                    m_simdMaskCnsMap;
+    SimdMaskToValueNumMap*                                    GetSimdMaskCnsMap()
     {
         if (m_simdMaskCnsMap == nullptr)
         {

@@ -2971,7 +2971,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                     }
                 }
                 else
-#endif /// DEBUG
+#endif // DEBUG
                 {
                     simd_t simdVal;
 

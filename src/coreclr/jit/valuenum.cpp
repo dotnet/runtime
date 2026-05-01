@@ -10895,9 +10895,10 @@ void ValueNumStore::vnDump(Compiler* comp, ValueNum vn, bool isPtr)
 #if defined(TARGET_ARM64) && defined(DEBUG)
                     && JitConfig.JitUseScalableVectorT()
 #endif
-                        )
+                )
                 {
-                    printf("SimdMaskScalableCns[base:%s idx:%u]", varTypeName(cnsVal.scalable.gtSimdMaskScalableBaseType),
+                    printf("SimdMaskScalableCns[base:%s idx:%u]",
+                           varTypeName(cnsVal.scalable.gtSimdMaskScalableBaseType),
                            cnsVal.scalable.gtSimdMaskScalableIndex);
                 }
                 else

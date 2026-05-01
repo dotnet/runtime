@@ -378,7 +378,6 @@ struct simdmask_t
     {
         return {};
     }
-
 };
 static_assert(sizeof(simdmask_t) == 8);
 #endif // FEATURE_MASKED_HW_INTRINSICS
