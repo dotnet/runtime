@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <DumpTypes>Full</DumpTypes>
+    <R2RModes>Jit</R2RModes>
+    <!-- Interpret methods matching "Method*" — MethodA/B/C/D from this assembly.
+         The first match sets g_interpModule, causing all methods in this module to
+         be interpreted. Trampoline.Bounce is in a separate assembly and stays JIT'd. -->
+    <EnvironmentVariables>DOTNET_Interpreter=Method*</EnvironmentVariables>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Program.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- Trampoline is a separate assembly so its methods are NOT in g_interpModule
+         and will be JIT'd, creating interleaved JIT/interpreter frame regions. -->
+    <ProjectReference Include="..\InterpreterStack\Trampoline\Trampoline.csproj" />
+  </ItemGroup>
+</Project>
