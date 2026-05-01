@@ -2464,7 +2464,7 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
                                 emit->emitIns_R_I(INS_mov, EA_16BYTE, targetReg, simdVal.gtSimdScalableIndex);
                             }
                             else if ((simdVal.gtSimdScalableBaseType == TYP_DOUBLE) &&
-                                    emitter::emitIns_valid_imm_for_fmov(simdVal.gtSimdScalableIndexF64[0]))
+                                     emitter::emitIns_valid_imm_for_fmov(simdVal.gtSimdScalableIndexF64[0]))
                             {
                                 emit->emitIns_R_F(INS_fmov, EA_16BYTE, targetReg, simdVal.gtSimdScalableIndexF64[0]);
                             }

@@ -762,14 +762,16 @@ int LinearScan::BuildNode(GenTree* tree)
                         {
                             if (baseType == TYP_FLOAT)
                             {
-                                canEncodeScalar = emitter::emitIns_valid_imm_for_fmov(
-                                    *reinterpret_cast<const float*>(&vecCon->gtSimdScalableVal.gtSimdScalableIndex));
+                                float value;
+                                memcpy(&value, &vecCon->gtSimdScalableVal.gtSimdScalableIndex, sizeof(value));
+                                canEncodeScalar = emitter::emitIns_valid_imm_for_fmov(value);
                             }
                             else
                             {
                                 assert(baseType == TYP_DOUBLE);
-                                canEncodeScalar = emitter::emitIns_valid_imm_for_fmov(
-                                    *reinterpret_cast<const double*>(&vecCon->gtSimdScalableVal.gtSimdScalableIndex));
+                                double value;
+                                memcpy(&value, &vecCon->gtSimdScalableVal.gtSimdScalableIndex, sizeof(value));
+                                canEncodeScalar = emitter::emitIns_valid_imm_for_fmov(value);
                             }
                         }
                         else
