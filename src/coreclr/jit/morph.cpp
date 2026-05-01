@@ -6955,6 +6955,17 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optA
      * First do any PRE-ORDER processing
      */
 
+    //-------------------------------------------------------------------------
+    // NOTE: We may not have canonicalized or folded trees yet and so op1, op2,
+    //       or both may be constant. While PRE-ORDER shouldn't generally be doing
+    //       opts with constants, any such handling that is added needs to handle
+    //       this edge. POST-ORDER, however, occurs after such canonicalization.
+    //
+    // -- PRE-ORDER checking for constants tends to miss optimizations since its
+    //    child operands haven't been processed yet. This means it will fail to
+    //    handle any scenario where morphing a child results in a new constant.
+    // -------------------------------------------------------------------------
+
     switch (oper)
     {
         // Some arithmetic operators need to use a helper call to the EE
@@ -7440,37 +7451,6 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optA
                     return fgMorphTree(optimizedTree);
                 }
             }
-
-            // Pattern-matching optimization:
-            //    (a % c) ==/!= 0
-            // for power-of-2 constant `c`
-            // =>
-            //    a & (c - 1) ==/!= 0
-            // For integer `a`, even if negative.
-            if (opts.OptimizationEnabled())
-            {
-                assert(tree->OperIs(GT_EQ, GT_NE));
-                if (op1->OperIs(GT_MOD) && varTypeIsIntegral(op1) && op2->IsIntegralConst(0))
-                {
-                    GenTree* op1op2 = op1->AsOp()->gtOp2;
-                    if (op1op2->IsCnsIntOrI())
-                    {
-                        const ssize_t modValue = op1op2->AsIntCon()->IconValue();
-                        if (isPow2(modValue))
-                        {
-                            JITDUMP("\nTransforming:\n");
-                            DISPTREE(tree);
-
-                            op1->SetOper(GT_AND);                                 // Change % => &
-                            op1op2->AsIntConCommon()->SetIconValue(modValue - 1); // Change c => c - 1
-                            fgUpdateConstTreeValueNumber(op1op2);
-
-                            JITDUMP("\ninto:\n");
-                            DISPTREE(tree);
-                        }
-                    }
-                }
-            }
         }
 
             FALLTHROUGH;
@@ -7543,18 +7523,44 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optA
             indMac.m_user = tree->AsIndir();
             mac           = &indMac;
         }
-        // For additions, if we already have a context, keep track of whether all offsets added
-        // to the address are constant, and their sum does not overflow.
-        else if ((mac != nullptr) && tree->OperIs(GT_ADD) && op2->IsCnsIntOrI())
+        else if ((mac != nullptr) && tree->OperIs(GT_ADD))
         {
-            ClrSafeInt<size_t> offset(mac->m_totalOffset);
-            offset += op2->AsIntCon()->IconValue();
-            if (!offset.IsOverflow())
+            // For additions, if we already have a context, keep track of whether all offsets added
+            // to the address are constant, and their sum does not overflow.
+            //
+            // We then need to check both op1 and op2 because either or both may be a constant. There
+            // is no guarantee canonicalization of the trees has occurred and so checking for these
+            // edges is important.
+
+            GenTree* cns = nullptr;
+
+            if (op2->IsCnsIntOrI() && !op2->IsIconHandle())
             {
-                mac->m_totalOffset = offset.Value();
+                cns = op2;
+            }
+            else if (op1->IsCnsIntOrI() && !op1->IsIconHandle())
+            {
+                cns = op1;
+            }
+
+            if (cns != nullptr)
+            {
+                ClrSafeInt<size_t> offset(mac->m_totalOffset);
+                offset += cns->AsIntCon()->IconValue();
+
+                if (!offset.IsOverflow())
+                {
+                    mac->m_totalOffset = offset.Value();
+                }
+                else
+                {
+                    // The constant overflowed
+                    mac = nullptr;
+                }
             }
             else
             {
+                // No eligible constants were found
                 mac = nullptr;
             }
         }
@@ -7723,6 +7729,39 @@ DONE_MORPHING_CHILDREN:
     op1 = tree->AsOp()->gtOp1;
     op2 = tree->gtGetOp2IfPresent();
 
+    bool isCommutative = tree->OperIsCommutative();
+
+    if ((isCommutative || tree->OperIsCompare()) && op1->OperIsConst())
+    {
+        // We have one of the following:
+        // *     CNS op X       -    SWAP -       X op CNS
+        // *     CNS op CNS     - NO SWAP -     CNS op CNS
+        // *     CNS op CNS_HDL -    SWAP - CNS_HDL op CNS
+        // * CNS_HDL op X       -    SWAP -       X op CNS_HDL
+        // * CNS_HDL op CNS     - NO SWAP - CNS_HDL op CNS
+        // * CNS_HDL op CNS_HDL - NO SWAP - CNS_HDL op CNS_HDL
+        //
+        // This preserves the ordering if op1 and op2 are the
+        // same kind of constant and otherwise pushes constants
+        // to the right. The special scenario is that when one
+        // is a constant and the other a handle, we prefer the
+        // handle to be on the left.
+
+        if (!op2->OperIsConst() || (!op1->IsIconHandle() && op2->IsIconHandle()))
+        {
+            std::swap(op1, op2);
+
+            tree->AsOp()->gtOp1 = op1;
+            tree->AsOp()->gtOp2 = op2;
+
+            if (!isCommutative)
+            {
+                oper         = GenTree::SwapRelop(oper);
+                tree->gtOper = oper;
+            }
+        }
+    }
+
     /*-------------------------------------------------------------------------
      * Perform the required oper-specific postorder morphing
      */
@@ -7771,6 +7810,7 @@ DONE_MORPHING_CHILDREN:
 
         case GT_EQ:
         case GT_NE:
+        {
             if (op2->IsIntegralConst())
             {
                 tree = fgOptimizeEqualityComparisonWithConst(tree->AsOp());
@@ -7780,23 +7820,43 @@ DONE_MORPHING_CHILDREN:
                 op1  = tree->gtGetOp1();
                 op2  = tree->gtGetOp2();
             }
+
+            // Pattern-matching optimization:
+            //    (a % c) ==/!= 0
+            // for power-of-2 constant `c`
+            // =>
+            //    a & (c - 1) ==/!= 0
+            // For integer `a`, even if negative.
+            if (opts.OptimizationEnabled())
+            {
+                if (op1->OperIs(GT_MOD) && varTypeIsIntegral(op1) && op2->IsIntegralConst(0))
+                {
+                    GenTree* op1op2 = op1->AsOp()->gtOp2;
+                    if (op1op2->IsCnsIntOrI())
+                    {
+                        const ssize_t modValue = op1op2->AsIntCon()->IconValue();
+                        if (isPow2(modValue))
+                        {
+                            JITDUMP("\nTransforming:\n");
+                            DISPTREE(tree);
+
+                            op1->SetOper(GT_AND);                                 // Change % => &
+                            op1op2->AsIntConCommon()->SetIconValue(modValue - 1); // Change c => c - 1
+                            fgUpdateConstTreeValueNumber(op1op2);
+
+                            JITDUMP("\ninto:\n");
+                            DISPTREE(tree);
+                        }
+                    }
+                }
+            }
             goto COMPARE;
+        }
 
         case GT_LT:
         case GT_LE:
         case GT_GE:
         case GT_GT:
-            // Change "CNS relop op2" to "op2 relop* CNS"
-            if (op1->IsIntegralConst() && tree->OperIsCompare() && gtCanSwapOrder(op1, op2))
-            {
-                std::swap(tree->AsOp()->gtOp1, tree->AsOp()->gtOp2);
-                tree->gtOper = GenTree::SwapRelop(tree->OperGet());
-
-                oper = tree->OperGet();
-                op1  = tree->gtGetOp1();
-                op2  = tree->gtGetOp2();
-            }
-
             if (op1->OperIs(GT_CAST) || op2->OperIs(GT_CAST))
             {
                 tree = fgOptimizeRelationalComparisonWithCasts(tree->AsOp());
@@ -10319,14 +10379,6 @@ GenTree* Compiler::fgOptimizeCommutativeArithmetic(GenTreeOp* tree)
     assert(tree->OperIs(GT_ADD, GT_MUL, GT_OR, GT_XOR, GT_AND));
     assert(!tree->gtOverflowEx());
 
-    // Commute constants to the right.
-    if (tree->gtGetOp1()->OperIsConst() && !tree->gtGetOp1()->TypeIs(TYP_REF))
-    {
-        // TODO-Review: We used to assert here that "(!op2->OperIsConst() || !opts.OptEnabled(CLFLG_CONSTANTFOLD))".
-        // This may indicate a missed "remorph". Task is to re-enable this assertion and investigate.
-        std::swap(tree->gtOp1, tree->gtOp2);
-    }
-
     if (fgOperIsBitwiseRotationRoot(tree->OperGet()))
     {
         GenTree* rotationTree = fgRecognizeAndMorphBitwiseRotation(tree);
@@ -12453,6 +12505,10 @@ GenTreeOp* Compiler::fgMorphLongMul(GenTreeOp* mul)
 
 GenTree* Compiler::fgMorphTree(GenTree* tree, MorphAddrContext* mac)
 {
+    // We should never be called from CSE. Various optimizations below
+    // assume that it is safe to swap operands if one is a constant.
+    assert(!optValnumCSE_phase);
+
     assert(tree);
     tree->ClearMorphed();
 
