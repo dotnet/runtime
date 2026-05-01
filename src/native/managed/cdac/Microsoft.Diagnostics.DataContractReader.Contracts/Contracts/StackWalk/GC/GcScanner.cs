@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
+using Microsoft.Diagnostics.DataContractReader.SignatureHelpers;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
 
@@ -345,7 +346,11 @@ internal class GcScanner
             MethodDefinitionHandle methodDefHandle = MetadataTokens.MethodDefinitionHandle((int)(methodToken & 0x00FFFFFF));
             MethodDefinition methodDef = mdReader.GetMethodDefinition(methodDefHandle);
 
-            methodSig = _target.Contracts.SignatureDecoder.DecodeMethodSignatureForGC(methodDef.Signature, moduleHandle);
+            BlobReader blobReader = mdReader.GetBlobReader(methodDef.Signature);
+            GcSignatureTypeProvider gcProvider = new(_target, moduleHandle);
+            RuntimeSignatureDecoder<GcTypeKind, object?> decoder = new(
+                gcProvider, _target, genericContext: null, mdReader);
+            methodSig = decoder.DecodeMethodSignature(ref blobReader);
         }
         catch (System.Exception)
         {

@@ -10,13 +10,14 @@ namespace Microsoft.Diagnostics.DataContractReader.SignatureHelpers;
 
 /// <summary>
 /// Superset of SRM's <see cref="ISignatureTypeProvider{TType, TGenericContext}"/>
-/// that adds support for runtime-internal type codes (<c>ELEMENT_TYPE_INTERNAL</c>).
+/// that adds support for runtime-internal type codes
+/// (<c>ELEMENT_TYPE_INTERNAL</c> 0x21 and <c>ELEMENT_TYPE_CMOD_INTERNAL</c> 0x22).
 /// </summary>
 /// <remarks>
 /// Providers implementing this interface automatically satisfy SRM's
 /// <see cref="ISignatureTypeProvider{TType, TGenericContext}"/> and can be used
 /// with both SRM's <c>SignatureDecoder</c> and our
-/// <see cref="RuntimeSignatureDecoder{TType, TGenericContext, TReader}"/>.
+/// <see cref="RuntimeSignatureDecoder{TType, TGenericContext}"/>.
 /// </remarks>
 internal interface IRuntimeSignatureTypeProvider<TType, TGenericContext>
     : ISignatureTypeProvider<TType, TGenericContext>
@@ -35,240 +36,121 @@ internal interface IRuntimeSignatureTypeProvider<TType, TGenericContext>
 }
 
 /// <summary>
-/// Decodes method and local variable signatures, handling both standard ECMA-335
-/// types and runtime-internal types like <c>ELEMENT_TYPE_INTERNAL</c> (0x21).
+/// Decodes signature blobs. Behaves identically to SRM's
+/// <see cref="SignatureDecoder{TType, TGenericContext}"/> for standard ECMA-335 type codes,
+/// with added support for runtime-internal types
+/// (<c>ELEMENT_TYPE_INTERNAL</c> 0x21 and <c>ELEMENT_TYPE_CMOD_INTERNAL</c> 0x22).
 /// </summary>
-/// <remarks>
-/// <para>
-/// Handles the same ECMA-335 type codes as SRM's
-/// <see cref="SignatureDecoder{TType, TGenericContext}"/>, plus runtime-internal
-/// types (<c>ELEMENT_TYPE_INTERNAL</c> 0x21 and <c>ELEMENT_TYPE_CMOD_INTERNAL</c> 0x22).
-/// </para>
-/// <para>
-/// Internal custom modifiers (<c>ELEMENT_TYPE_CMOD_INTERNAL</c>) are skipped since
-/// they carry runtime TypeHandle pointers that are not meaningful for type classification.
-/// Standard custom modifiers (<c>modreq</c>/<c>modopt</c>) are decoded and dispatched
-/// to <see cref="ISignatureTypeProvider{TType, TGenericContext}.GetModifiedType"/>.
-/// </para>
-/// </remarks>
-internal ref struct RuntimeSignatureDecoder<TType, TGenericContext, TReader>
-    where TReader : ISignatureReader, allows ref struct
+internal readonly struct RuntimeSignatureDecoder<TType, TGenericContext>
 {
-    private const byte ELEMENT_TYPE_PTR = 0x0f;
-    private const byte ELEMENT_TYPE_BYREF = 0x10;
-    private const byte ELEMENT_TYPE_VALUETYPE = 0x11;
-    private const byte ELEMENT_TYPE_CLASS = 0x12;
-    private const byte ELEMENT_TYPE_VAR = 0x13;
-    private const byte ELEMENT_TYPE_ARRAY = 0x14;
-    private const byte ELEMENT_TYPE_GENERICINST = 0x15;
-    private const byte ELEMENT_TYPE_FNPTR = 0x1b;
-    private const byte ELEMENT_TYPE_SZARRAY = 0x1d;
-    private const byte ELEMENT_TYPE_MVAR = 0x1e;
-    private const byte ELEMENT_TYPE_CMOD_REQD = 0x1f;
-    private const byte ELEMENT_TYPE_CMOD_OPT = 0x20;
-    private const byte ELEMENT_TYPE_INTERNAL = 0x21;
-    private const byte ELEMENT_TYPE_CMOD_INTERNAL = 0x22;
-    private const byte ELEMENT_TYPE_SENTINEL = 0x41;
-    private const byte ELEMENT_TYPE_PINNED = 0x45;
+    private const int ELEMENT_TYPE_CMOD_INTERNAL = 0x22;
+    private const int ELEMENT_TYPE_INTERNAL = 0x21;
 
     private readonly IRuntimeSignatureTypeProvider<TType, TGenericContext> _provider;
-    private readonly MetadataReader? _metadataReader;
+    private readonly MetadataReader? _metadataReaderOpt;
     private readonly Target _target;
     private readonly TGenericContext _genericContext;
-    private TReader _reader;
+    private readonly int _pointerSize;
 
     public RuntimeSignatureDecoder(
         IRuntimeSignatureTypeProvider<TType, TGenericContext> provider,
         Target target,
         TGenericContext genericContext,
-        TReader reader,
         MetadataReader? metadataReader = null)
     {
+        ArgumentNullException.ThrowIfNull(provider);
+
         _provider = provider;
-        _metadataReader = metadataReader;
+        _metadataReaderOpt = metadataReader;
         _target = target;
         _genericContext = genericContext;
-        _reader = reader;
+        _pointerSize = target.PointerSize;
     }
 
-    /// <summary>Decodes a field signature (FieldSig).</summary>
-    public TType DecodeFieldSignature()
+    /// <summary>
+    /// Decodes a type embedded in a signature and advances the reader past the type.
+    /// </summary>
+    public TType DecodeType(ref BlobReader blobReader, bool allowTypeSpecifications = false)
     {
-        byte rawHeader = _reader.ReadByte();
-        SignatureHeader header = new(rawHeader);
-
-        if (header.Kind is not SignatureKind.Field)
-            throw new BadImageFormatException($"Expected field signature header, got: {header.Kind}");
-
-        return DecodeType();
+        return DecodeType(ref blobReader, allowTypeSpecifications, blobReader.ReadCompressedInteger());
     }
 
-    /// <summary>Decodes a method signature (MethodDefSig/MethodRefSig).</summary>
-    public MethodSignature<TType> DecodeMethodSignature()
+    private TType DecodeType(ref BlobReader blobReader, bool allowTypeSpecifications, int typeCode)
     {
-        byte rawHeader = _reader.ReadByte();
-        SignatureHeader header = new(rawHeader);
-
-        if (header.Kind is not SignatureKind.Method and not SignatureKind.Property)
-            throw new BadImageFormatException($"Unexpected signature header kind: {header.Kind}");
-
-        int genericParameterCount = 0;
-        if (header.IsGeneric)
-            genericParameterCount = ReadCompressedUInt();
-
-        int parameterCount = ReadCompressedUInt();
-        if (parameterCount > _reader.Remaining)
-            throw new BadImageFormatException($"Parameter count {parameterCount} exceeds remaining signature bytes");
-        TType returnType = DecodeType();
-
-        var parameterTypes = ImmutableArray.CreateBuilder<TType>(parameterCount);
-        int requiredParameterCount = parameterCount;
-        bool sentinelSeen = false;
-
-        for (int i = 0; i < parameterCount; i++)
-        {
-            if (_reader.Remaining > 0 && _reader.PeekByte() == ELEMENT_TYPE_SENTINEL)
-            {
-                if (sentinelSeen)
-                    throw new BadImageFormatException("Multiple sentinels in method signature");
-                sentinelSeen = true;
-                requiredParameterCount = i;
-                _reader.ReadByte();
-            }
-            parameterTypes.Add(DecodeType());
-        }
-
-        return new MethodSignature<TType>(
-            header, returnType, requiredParameterCount, genericParameterCount,
-            parameterTypes.MoveToImmutable());
-    }
-
-    /// <summary>Decodes a local variable signature (LocalVarSig).</summary>
-    public ImmutableArray<TType> DecodeLocalSignature()
-    {
-        byte header = _reader.ReadByte();
-        if (header != 0x07) // IMAGE_CEE_CS_CALLCONV_LOCAL_SIG
-            throw new BadImageFormatException($"Expected LocalVarSig header (0x07), got 0x{header:X2}");
-
-        int count = ReadCompressedUInt();
-        if (count == 0)
-            throw new BadImageFormatException("Local variable signature must have at least one entry");
-        if (count > _reader.Remaining)
-            throw new BadImageFormatException($"Local count {count} exceeds remaining signature bytes");
-        var locals = ImmutableArray.CreateBuilder<TType>(count);
-        for (int i = 0; i < count; i++)
-            locals.Add(DecodeType());
-        return locals.MoveToImmutable();
-    }
-
-    /// <summary>Decodes a single type embedded in a signature.</summary>
-    public TType DecodeType()
-    {
-        // Handle custom modifiers (standard and internal)
-        while (_reader.Remaining > 0)
-        {
-            byte peek = _reader.PeekByte();
-            if (peek is ELEMENT_TYPE_CMOD_REQD or ELEMENT_TYPE_CMOD_OPT)
-            {
-                bool isRequired = peek == ELEMENT_TYPE_CMOD_REQD;
-                _reader.ReadByte();
-                TType modifier = DecodeTypeDefOrRefOrSpec(0);
-                TType unmodifiedType = DecodeType();
-                return _provider.GetModifiedType(modifier, unmodifiedType, isRequired);
-            }
-            else if (peek == ELEMENT_TYPE_CMOD_INTERNAL)
-            {
-                _reader.ReadByte();
-                bool isRequired = _reader.ReadByte() != 0;
-                ulong val = _reader.ReadPointerSized(_target.PointerSize);
-                TType unmodifiedType = DecodeType();
-                return _provider.GetInternalModifiedType(
-                    _target, new TargetPointer(val), unmodifiedType, isRequired);
-            }
-            else
-            {
-                break;
-            }
-        }
-
-        byte typeCode = _reader.ReadByte();
+        TType elementType;
+        int index;
 
         switch (typeCode)
         {
-            case (byte)SignatureTypeCode.Boolean:
-            case (byte)SignatureTypeCode.Char:
-            case (byte)SignatureTypeCode.SByte:
-            case (byte)SignatureTypeCode.Byte:
-            case (byte)SignatureTypeCode.Int16:
-            case (byte)SignatureTypeCode.UInt16:
-            case (byte)SignatureTypeCode.Int32:
-            case (byte)SignatureTypeCode.UInt32:
-            case (byte)SignatureTypeCode.Int64:
-            case (byte)SignatureTypeCode.UInt64:
-            case (byte)SignatureTypeCode.Single:
-            case (byte)SignatureTypeCode.Double:
-            case (byte)SignatureTypeCode.IntPtr:
-            case (byte)SignatureTypeCode.UIntPtr:
-            case (byte)SignatureTypeCode.Object:
-            case (byte)SignatureTypeCode.String:
-            case (byte)SignatureTypeCode.Void:
-            case (byte)SignatureTypeCode.TypedReference:
+            case (int)SignatureTypeCode.Boolean:
+            case (int)SignatureTypeCode.Char:
+            case (int)SignatureTypeCode.SByte:
+            case (int)SignatureTypeCode.Byte:
+            case (int)SignatureTypeCode.Int16:
+            case (int)SignatureTypeCode.UInt16:
+            case (int)SignatureTypeCode.Int32:
+            case (int)SignatureTypeCode.UInt32:
+            case (int)SignatureTypeCode.Int64:
+            case (int)SignatureTypeCode.UInt64:
+            case (int)SignatureTypeCode.Single:
+            case (int)SignatureTypeCode.Double:
+            case (int)SignatureTypeCode.IntPtr:
+            case (int)SignatureTypeCode.UIntPtr:
+            case (int)SignatureTypeCode.Object:
+            case (int)SignatureTypeCode.String:
+            case (int)SignatureTypeCode.Void:
+            case (int)SignatureTypeCode.TypedReference:
                 return _provider.GetPrimitiveType((PrimitiveTypeCode)typeCode);
 
-            case ELEMENT_TYPE_CLASS:
-            case ELEMENT_TYPE_VALUETYPE:
-                return DecodeTypeDefOrRefOrSpec(typeCode);
+            case (int)SignatureTypeCode.Pointer:
+                elementType = DecodeType(ref blobReader);
+                return _provider.GetPointerType(elementType);
 
-            case ELEMENT_TYPE_PTR:
-                return _provider.GetPointerType(DecodeType());
+            case (int)SignatureTypeCode.ByReference:
+                elementType = DecodeType(ref blobReader);
+                return _provider.GetByReferenceType(elementType);
 
-            case ELEMENT_TYPE_BYREF:
-                return _provider.GetByReferenceType(DecodeType());
+            case (int)SignatureTypeCode.Pinned:
+                elementType = DecodeType(ref blobReader);
+                return _provider.GetPinnedType(elementType);
 
-            case ELEMENT_TYPE_SZARRAY:
-                return _provider.GetSZArrayType(DecodeType());
+            case (int)SignatureTypeCode.SZArray:
+                elementType = DecodeType(ref blobReader);
+                return _provider.GetSZArrayType(elementType);
 
-            case ELEMENT_TYPE_ARRAY:
-            {
-                TType elementType = DecodeType();
-                ArrayShape shape = DecodeArrayShape();
-                return _provider.GetArrayType(elementType, shape);
-            }
+            case (int)SignatureTypeCode.FunctionPointer:
+                MethodSignature<TType> methodSignature = DecodeMethodSignature(ref blobReader);
+                return _provider.GetFunctionPointerType(methodSignature);
 
-            case ELEMENT_TYPE_GENERICINST:
-            {
-                TType baseType = DecodeType();
-                int count = ReadCompressedUInt();
-                if (count == 0)
-                    throw new BadImageFormatException("Generic instantiation must have at least one type argument");
-                if (count > _reader.Remaining)
-                    throw new BadImageFormatException($"Generic argument count {count} exceeds remaining signature bytes");
-                var args = ImmutableArray.CreateBuilder<TType>(count);
-                for (int i = 0; i < count; i++)
-                    args.Add(DecodeType());
-                return _provider.GetGenericInstantiation(baseType, args.MoveToImmutable());
-            }
+            case (int)SignatureTypeCode.Array:
+                return DecodeArrayType(ref blobReader);
 
-            case ELEMENT_TYPE_VAR:
-                return _provider.GetGenericTypeParameter(_genericContext, ReadCompressedUInt());
+            case (int)SignatureTypeCode.RequiredModifier:
+                return DecodeModifiedType(ref blobReader, isRequired: true);
 
-            case ELEMENT_TYPE_MVAR:
-                return _provider.GetGenericMethodParameter(_genericContext, ReadCompressedUInt());
+            case (int)SignatureTypeCode.OptionalModifier:
+                return DecodeModifiedType(ref blobReader, isRequired: false);
 
-            case ELEMENT_TYPE_FNPTR:
-            {
-                MethodSignature<TType> fnSig = DecodeMethodSignature();
-                return _provider.GetFunctionPointerType(fnSig);
-            }
+            case (int)SignatureTypeCode.GenericTypeInstance:
+                return DecodeGenericTypeInstance(ref blobReader);
 
-            case ELEMENT_TYPE_PINNED:
-                return _provider.GetPinnedType(DecodeType());
+            case (int)SignatureTypeCode.GenericTypeParameter:
+                index = blobReader.ReadCompressedInteger();
+                return _provider.GetGenericTypeParameter(_genericContext, index);
+
+            case (int)SignatureTypeCode.GenericMethodParameter:
+                index = blobReader.ReadCompressedInteger();
+                return _provider.GetGenericMethodParameter(_genericContext, index);
+
+            case (int)SignatureTypeKind.Class:
+            case (int)SignatureTypeKind.ValueType:
+                return DecodeTypeHandle(ref blobReader, (byte)typeCode, allowTypeSpecifications);
 
             case ELEMENT_TYPE_INTERNAL:
-            {
-                ulong val = _reader.ReadPointerSized(_target.PointerSize);
-                return _provider.GetInternalType(_target, new TargetPointer(val));
-            }
+                return DecodeInternalType(ref blobReader);
+
+            case ELEMENT_TYPE_CMOD_INTERNAL:
+                return DecodeInternalModifiedType(ref blobReader);
 
             default:
                 throw new BadImageFormatException($"Unexpected signature type code: 0x{typeCode:X2}");
@@ -276,95 +158,200 @@ internal ref struct RuntimeSignatureDecoder<TType, TGenericContext, TReader>
     }
 
     /// <summary>
-    /// Decodes a TypeDefOrRefOrSpecEncoded token (ECMA-335 II.23.2.8).
-    /// The compressed value encodes tag in the low 2 bits and RID in the upper bits.
+    /// Decodes a list of types, with at least one instance that is preceded by its count as a compressed integer.
     /// </summary>
-    private TType DecodeTypeDefOrRefOrSpec(byte rawTypeKind)
+    private ImmutableArray<TType> DecodeTypeSequence(ref BlobReader blobReader)
     {
-        int coded = ReadCompressedUInt();
-        int tag = coded & 0x3;
-        int rid = coded >> 2;
-
-        if (rid == 0)
-            throw new BadImageFormatException("Nil TypeDefOrRefOrSpecEncoded handle in signature");
-
-        if (rid > 0x00FFFFFF)
-            throw new BadImageFormatException($"TypeDefOrRefOrSpecEncoded RID out of range: {rid}");
-
-        return tag switch
+        int count = blobReader.ReadCompressedInteger();
+        if (count == 0)
         {
-            0 => _provider.GetTypeFromDefinition(_metadataReader!, MetadataTokens.TypeDefinitionHandle(rid), rawTypeKind),
-            1 => _provider.GetTypeFromReference(_metadataReader!, MetadataTokens.TypeReferenceHandle(rid), rawTypeKind),
-            2 => _provider.GetTypeFromSpecification(_metadataReader!, _genericContext, MetadataTokens.TypeSpecificationHandle(rid), rawTypeKind),
-            _ => _provider.GetPrimitiveType(PrimitiveTypeCode.Object), // tag=3 is BaseType in native
-        };
-    }
+            throw new BadImageFormatException("Signature type sequence must have at least one element");
+        }
 
-    private ArrayShape DecodeArrayShape()
-    {
-        int rank = ReadCompressedUInt();
-        int numSizes = ReadCompressedUInt();
-        if (numSizes > _reader.Remaining)
-            throw new BadImageFormatException($"Array size count {numSizes} exceeds remaining signature bytes");
-        var sizes = ImmutableArray.CreateBuilder<int>(numSizes);
-        for (int i = 0; i < numSizes; i++)
-            sizes.Add(ReadCompressedUInt());
-        int numLoBounds = ReadCompressedUInt();
-        if (numLoBounds > _reader.Remaining)
-            throw new BadImageFormatException($"Array lower bound count {numLoBounds} exceeds remaining signature bytes");
-        var loBounds = ImmutableArray.CreateBuilder<int>(numLoBounds);
-        for (int i = 0; i < numLoBounds; i++)
-            loBounds.Add(ReadCompressedSignedInt());
-        return new ArrayShape(rank, sizes.MoveToImmutable(), loBounds.MoveToImmutable());
+        var types = ImmutableArray.CreateBuilder<TType>(count);
+        for (int i = 0; i < count; i++)
+        {
+            types.Add(DecodeType(ref blobReader));
+        }
+        return types.MoveToImmutable();
     }
 
     /// <summary>
-    /// Reads a compressed unsigned integer per ECMA-335 II.23.2.
+    /// Decodes a method (definition, reference, or standalone) or property signature blob.
     /// </summary>
-    private int ReadCompressedUInt()
+    public MethodSignature<TType> DecodeMethodSignature(ref BlobReader blobReader)
     {
-        byte first = _reader.ReadByte();
-        if ((first & 0x80) == 0)
-            return first;
-        if ((first & 0xC0) == 0x80)
-            return ((first & 0x3F) << 8) | _reader.ReadByte();
-        if ((first & 0xE0) == 0xC0)
-            return ((first & 0x1F) << 24) | (_reader.ReadByte() << 16) | (_reader.ReadByte() << 8) | _reader.ReadByte();
+        SignatureHeader header = blobReader.ReadSignatureHeader();
+        CheckMethodOrPropertyHeader(header);
 
-        throw new BadImageFormatException("Invalid compressed integer encoding");
+        int genericParameterCount = 0;
+        if (header.IsGeneric)
+        {
+            genericParameterCount = blobReader.ReadCompressedInteger();
+        }
+
+        int parameterCount = blobReader.ReadCompressedInteger();
+        TType returnType = DecodeType(ref blobReader);
+        ImmutableArray<TType> parameterTypes;
+        int requiredParameterCount;
+
+        if (parameterCount == 0)
+        {
+            requiredParameterCount = 0;
+            parameterTypes = ImmutableArray<TType>.Empty;
+        }
+        else
+        {
+            var parameterBuilder = ImmutableArray.CreateBuilder<TType>(parameterCount);
+            int parameterIndex;
+
+            for (parameterIndex = 0; parameterIndex < parameterCount; parameterIndex++)
+            {
+                int typeCode = blobReader.ReadCompressedInteger();
+                if (typeCode == (int)SignatureTypeCode.Sentinel)
+                {
+                    break;
+                }
+                parameterBuilder.Add(DecodeType(ref blobReader, allowTypeSpecifications: false, typeCode: typeCode));
+            }
+
+            requiredParameterCount = parameterIndex;
+            for (; parameterIndex < parameterCount; parameterIndex++)
+            {
+                parameterBuilder.Add(DecodeType(ref blobReader));
+            }
+            parameterTypes = parameterBuilder.MoveToImmutable();
+        }
+
+        return new MethodSignature<TType>(header, returnType, requiredParameterCount, genericParameterCount, parameterTypes);
     }
 
     /// <summary>
-    /// Reads a compressed signed integer per ECMA-335 II.23.2.
-    /// Uses sign extension based on encoded width, matching SRM's BlobReader.ReadCompressedSignedInteger.
+    /// Decodes a local variable signature blob and advances the reader past the signature.
     /// </summary>
-    private int ReadCompressedSignedInt()
+    public ImmutableArray<TType> DecodeLocalSignature(ref BlobReader blobReader)
     {
-        byte first = _reader.ReadByte();
+        SignatureHeader header = blobReader.ReadSignatureHeader();
+        CheckHeader(header, SignatureKind.LocalVariables);
+        return DecodeTypeSequence(ref blobReader);
+    }
 
-        if ((first & 0x80) == 0)
+    /// <summary>
+    /// Decodes a field signature blob and advances the reader past the signature.
+    /// </summary>
+    public TType DecodeFieldSignature(ref BlobReader blobReader)
+    {
+        SignatureHeader header = blobReader.ReadSignatureHeader();
+        CheckHeader(header, SignatureKind.Field);
+        return DecodeType(ref blobReader);
+    }
+
+    private TType DecodeArrayType(ref BlobReader blobReader)
+    {
+        TType elementType = DecodeType(ref blobReader);
+        int rank = blobReader.ReadCompressedInteger();
+        var sizes = ImmutableArray<int>.Empty;
+        var lowerBounds = ImmutableArray<int>.Empty;
+
+        int sizesCount = blobReader.ReadCompressedInteger();
+        if (sizesCount > 0)
         {
-            // 1-byte: 7 bits, sign bit is bit 0 of the encoded value
-            int value = first >> 1;
-            return (first & 1) != 0 ? value - 0x40 : value;
+            var builder = ImmutableArray.CreateBuilder<int>(sizesCount);
+            for (int i = 0; i < sizesCount; i++)
+            {
+                builder.Add(blobReader.ReadCompressedInteger());
+            }
+            sizes = builder.MoveToImmutable();
         }
 
-        if ((first & 0xC0) == 0x80)
+        int lowerBoundsCount = blobReader.ReadCompressedInteger();
+        if (lowerBoundsCount > 0)
         {
-            // 2-byte: 14 bits
-            int raw = ((first & 0x3F) << 8) | _reader.ReadByte();
-            int value = raw >> 1;
-            return (raw & 1) != 0 ? value - 0x2000 : value;
+            var builder = ImmutableArray.CreateBuilder<int>(lowerBoundsCount);
+            for (int i = 0; i < lowerBoundsCount; i++)
+            {
+                builder.Add(blobReader.ReadCompressedSignedInteger());
+            }
+            lowerBounds = builder.MoveToImmutable();
         }
 
-        if ((first & 0xE0) == 0xC0)
+        return _provider.GetArrayType(elementType, new ArrayShape(rank, sizes, lowerBounds));
+    }
+
+    private TType DecodeGenericTypeInstance(ref BlobReader blobReader)
+    {
+        TType genericType = DecodeType(ref blobReader);
+        ImmutableArray<TType> types = DecodeTypeSequence(ref blobReader);
+        return _provider.GetGenericInstantiation(genericType, types);
+    }
+
+    private TType DecodeModifiedType(ref BlobReader blobReader, bool isRequired)
+    {
+        // A standard modifier may be followed by an internal modifier; allow type specifications
+        // for the modifier handle (matches SRM behavior).
+        TType modifier = DecodeTypeHandle(ref blobReader, 0, allowTypeSpecifications: true);
+        TType unmodifiedType = DecodeType(ref blobReader);
+        return _provider.GetModifiedType(modifier, unmodifiedType, isRequired);
+    }
+
+    private TType DecodeInternalType(ref BlobReader blobReader)
+    {
+        ulong val = ReadPointerSized(ref blobReader);
+        return _provider.GetInternalType(_target, new TargetPointer(val));
+    }
+
+    private TType DecodeInternalModifiedType(ref BlobReader blobReader)
+    {
+        bool isRequired = blobReader.ReadByte() != 0;
+        ulong val = ReadPointerSized(ref blobReader);
+        TType unmodifiedType = DecodeType(ref blobReader);
+        return _provider.GetInternalModifiedType(_target, new TargetPointer(val), unmodifiedType, isRequired);
+    }
+
+    private TType DecodeTypeHandle(ref BlobReader blobReader, byte rawTypeKind, bool allowTypeSpecifications)
+    {
+        EntityHandle handle = blobReader.ReadTypeHandle();
+        if (!handle.IsNil)
         {
-            // 4-byte: 29 bits
-            int raw = ((first & 0x1F) << 24) | (_reader.ReadByte() << 16) | (_reader.ReadByte() << 8) | _reader.ReadByte();
-            int value = raw >> 1;
-            return (raw & 1) != 0 ? value - 0x10000000 : value;
+            switch (handle.Kind)
+            {
+                case HandleKind.TypeDefinition:
+                    return _provider.GetTypeFromDefinition(_metadataReaderOpt!, (TypeDefinitionHandle)handle, rawTypeKind);
+
+                case HandleKind.TypeReference:
+                    return _provider.GetTypeFromReference(_metadataReaderOpt!, (TypeReferenceHandle)handle, rawTypeKind);
+
+                case HandleKind.TypeSpecification:
+                    if (!allowTypeSpecifications)
+                    {
+                        throw new BadImageFormatException("TypeSpecification handle not allowed in this context");
+                    }
+                    return _provider.GetTypeFromSpecification(_metadataReaderOpt!, _genericContext, (TypeSpecificationHandle)handle, rawTypeKind);
+            }
         }
 
-        throw new BadImageFormatException("Invalid compressed signed integer encoding");
+        throw new BadImageFormatException("Expected TypeDef, TypeRef, or TypeSpec handle");
+    }
+
+    private ulong ReadPointerSized(ref BlobReader blobReader)
+    {
+        return _pointerSize == 8 ? blobReader.ReadUInt64() : blobReader.ReadUInt32();
+    }
+
+    private static void CheckHeader(SignatureHeader header, SignatureKind expectedKind)
+    {
+        if (header.Kind != expectedKind)
+        {
+            throw new BadImageFormatException($"Expected signature header {expectedKind}, got {header.Kind} (raw 0x{header.RawValue:X2})");
+        }
+    }
+
+    private static void CheckMethodOrPropertyHeader(SignatureHeader header)
+    {
+        SignatureKind kind = header.Kind;
+        if (kind != SignatureKind.Method && kind != SignatureKind.Property)
+        {
+            throw new BadImageFormatException($"Expected Method or Property signature header, got {kind} (raw 0x{header.RawValue:X2})");
+        }
     }
 }

@@ -3,9 +3,24 @@
 
 using System.Collections.Immutable;
 using System.Reflection.Metadata;
-using Microsoft.Diagnostics.DataContractReader.Contracts;
+using Microsoft.Diagnostics.DataContractReader.SignatureHelpers;
 
-namespace Microsoft.Diagnostics.DataContractReader.SignatureHelpers;
+namespace Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
+
+/// <summary>
+/// Classification of a signature type for GC scanning purposes.
+/// </summary>
+internal enum GcTypeKind
+{
+    /// <summary>Not a GC reference (primitives, pointers).</summary>
+    None,
+    /// <summary>Object reference (class, string, array).</summary>
+    Ref,
+    /// <summary>Interior pointer (byref).</summary>
+    Interior,
+    /// <summary>Value type that may contain embedded GC references.</summary>
+    Other,
+}
 
 /// <summary>
 /// Classifies signature types for GC scanning purposes.
