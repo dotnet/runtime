@@ -830,7 +830,13 @@ int LinearScan::BuildNode(GenTree* tree)
         {
             GenTreeMskCon* mskCon = tree->AsMskCon();
 
-            if (mskCon->IsAllBitsSet(TYP_BYTE) || mskCon->IsZero())
+            var_types maskBaseType = TYP_BYTE;
+            if (JitConfig.JitUseScalableVectorT())
+            {
+                maskBaseType = mskCon->gtSimdScalableMaskVal.gtSimdMaskScalableBaseType;
+            }
+
+            if (mskCon->IsAllBitsSet(maskBaseType) || mskCon->IsZero())
             {
                 // Directly encode constant to instructions.
             }
