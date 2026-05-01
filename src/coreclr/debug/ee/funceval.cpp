@@ -1182,7 +1182,22 @@ static OBJECTREF ReadAndBoxArgValue(DebuggerEval *pDE,
         if (pMT == NULL)
             pMT = pFallbackMT;
         if (pMT != NULL)
+        {
+            if (pMT->IsByRefLike())
+            {
+                // MethodTable::Box rejects byref-like value types because boxing them on the
+                // GC heap is generally unsafe (the heap object would carry stack pointers).
+                // For funceval we need a transient carrier so the managed trampoline can hand
+                // the value to the underlying QCall as a byref arg; the resulting "box" never
+                // escapes user code. Replicate FastBox's allocation+copy without the byref-like
+                // check.
+                pMT->EnsureInstanceActive();
+                OBJECTREF ref_ = AllocateObject(pMT);
+                CopyValueClass(ref_->UnBox(), pData, pMT);
+                return ref_;
+            }
             return pMT->Box(pData);
+        }
         return NULL;
     }
 
@@ -1377,6 +1392,10 @@ static void DoNormalFuncEval(DebuggerEval *pDE)
          pDE->m_md->m_pszDebugMethodName));
 
     UnmanagedCallersOnlyCaller funcEvalInvoker(METHOD__RUNTIME_HELPERS__INVOKE_FUNC_EVAL);
+    if (g_pInvokeFuncEvalMethodDesc == nullptr)
+    {
+        g_pInvokeFuncEvalMethodDesc = CoreLibBinder::GetMethod(METHOD__RUNTIME_HELPERS__INVOKE_FUNC_EVAL);
+    }
     funcEvalInvoker.InvokeThrowing(&invokeArgs, &ucoGc.resultObj);
 
     // Unpack results.
@@ -1384,7 +1403,10 @@ static void DoNormalFuncEval(DebuggerEval *pDE)
 
     if (pDE->m_evalType == DB_IPCE_FET_NEW_OBJECT)
     {
-        pDE->m_result[0] = ObjToArgSlot(newObj);
+        // For value-type ctors the allocating ConstructorInfo.Invoke returns the freshly
+        // constructed boxed value in resultObj. For reference-type ctors the constructor
+        // mutates newObj in place and Invoke returns null, so fall back to newObj.
+        pDE->m_result[0] = ObjToArgSlot(ucoGc.resultObj != NULL ? ucoGc.resultObj : newObj);
         pDE->m_retValueBoxing = Debugger::AllBoxed;
     }
     else if (ucoGc.resultObj != NULL)
@@ -1422,6 +1444,38 @@ static void DoNormalFuncEval(DebuggerEval *pDE)
     }
 
     pDE->m_successful = true;
+
+    // Value-type 'this' writeback: when the target is a constructor (or any other
+    // mutating instance method) on a value type called as NORMAL (e.g. the debugger
+    // evaluates `date = new DateTime(...)` by issuing a NORMAL funceval against the
+    // DateTime ctor with `&date` as the 'this' arg, expecting in-place mutation), we
+    // need to copy the mutated boxed 'this' back to the original argument storage.
+    // The old MDCS path got this for free by passing `pArgAddrs[0]` directly to the
+    // call as the value-type byref `this`; the UCO trampoline boxes the value into a
+    // managed object so we have to copy any mutation back ourselves.
+    if (pDE->m_evalType == DB_IPCE_FET_NORMAL &&
+        !staticMethod &&
+        ucoGc.thisArg != NULL &&
+        pDE->m_md->GetMethodTable()->IsValueType() &&
+        pDE->m_md->IsCtor())
+    {
+        DebuggerIPCE_FuncEvalArgData *pThisArgData = &argData[0];
+        MethodTable *pThisMT = pDE->m_md->GetMethodTable();
+        void *pThisData = ucoGc.thisArg->GetData();
+        unsigned thisSize = pThisMT->GetNumInstanceFieldBytes();
+
+        if (pThisArgData->argAddr != NULL && pArgAddrs[0] != NULL)
+        {
+            CopyValueClass(pArgAddrs[0], pThisData, pThisMT);
+        }
+        else if (pThisArgData->argIsLiteral)
+        {
+            memcpy(pThisArgData->argLiteralData, pThisData,
+                   min(thisSize, (unsigned)sizeof(pThisArgData->argLiteralData)));
+        }
+        // Register-homed value-type 'this' is uncommon for ctor-as-NORMAL evals;
+        // the existing byref writeback path likewise doesn't handle that case.
+    }
 
     // Create strong handle to prevent GC collection of object results.
     // For AllBoxed (struct/NEW_OBJECT), m_result holds a boxed OBJECTREF.

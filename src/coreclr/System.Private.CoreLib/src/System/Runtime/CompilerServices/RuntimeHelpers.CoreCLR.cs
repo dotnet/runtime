@@ -709,20 +709,58 @@ namespace System.Runtime.CompilerServices
 
                 object? thisObj = *pInvokeArgs->ThisObj;
                 object?[]? args = *pInvokeArgs->Args;
+                bool isNewObj = pInvokeArgs->IsNewObj != 0;
 
-                if (pInvokeArgs->IsNewObj != 0)
+                // Bypass the public MethodBase.Invoke path because:
+                //   1. ContainsStackPointers rejects methods on/returning byref-like types
+                //      (Span<T>, ReadOnlySpan<T>, ...). The debugger needs to be able to
+                //      evaluate these — the result never escapes user code (the debugger
+                //      reads it as raw bytes from the funceval result buffer), so the
+                //      anti-boxing safety guardrail does not apply here.
+                //   2. ConstructorInfo.Invoke(obj, ...) sets isConstructor=false in the
+                //      underlying QCall. For value types that means the ctor runs on a
+                //      throwaway copy and the pre-allocated box stays unmodified — i.e.
+                //      "new DateTime(...)" appeared to return the old date.
+                //
+                // RuntimeMethodHandle.InvokeMethod is the same QCall MethodBase.Invoke
+                // ultimately funnels into; calling it directly with isConstructor=isNewObj
+                // gives us the correct constructor semantics and accepts byref-like types.
+                Signature sig = method switch
                 {
-                    // Call constructor on the pre-allocated instance.
-                    // ConstructorInfo.Invoke(object, ...) invokes on an existing instance and returns null.
-                    method.Invoke(thisObj, BindingFlags.DoNotWrapExceptions, binder: null, args, culture: null);
-                    *pResult = thisObj!;
-                }
-                else
+                    RuntimeMethodInfo rmi => rmi.Signature,
+                    RuntimeConstructorInfo rci => rci.Signature,
+                    _ => throw new NotSupportedException(),
+                };
+
+                int argCount = args is null ? 0 : args.Length;
+                if (sig.Arguments.Length != argCount)
                 {
-                    object? result = method.Invoke(thisObj, BindingFlags.DoNotWrapExceptions, binder: null, args, culture: null);
-                    if (result is not null)
-                        *pResult = result;
+                    throw new TargetParameterCountException();
                 }
+
+                // Build the byref array the QCall expects. Mirrors MethodBaseInvoker's
+                // InvokeDirectByRefWithFewArgs: for value-type args the byref points at
+                // the boxed payload (skipping the object header); for ref-type args the
+                // byref points at the array slot itself.
+                IntPtr* pByRefStorage = stackalloc IntPtr[Math.Max(argCount, 1)];
+                for (int i = 0; i < argCount; i++)
+                {
+                    ref object? slot = ref args![i];
+                    if (sig.Arguments[i].IsValueType)
+                    {
+                        // Value-type arg must be non-null and pre-boxed by the caller
+                        // (the native side ReadAndBoxArgValue does this).
+                        *(ByReference*)(pByRefStorage + i) = ByReference.Create(ref slot!.GetRawData());
+                    }
+                    else
+                    {
+                        *(ByReference*)(pByRefStorage + i) = ByReference.Create(ref slot);
+                    }
+                }
+
+                object? result = RuntimeMethodHandle.InvokeMethod(thisObj, (void**)pByRefStorage, sig, isConstructor: isNewObj);
+                if (result is not null)
+                    *pResult = result;
             }
             catch (Exception ex)
             {
