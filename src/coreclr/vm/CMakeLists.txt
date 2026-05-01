@@ -18,7 +18,6 @@ if(CLR_CMAKE_TARGET_ANDROID)
     add_definitions(-DFEATURE_EMULATED_TLS)
 endif(CLR_CMAKE_TARGET_ANDROID)
 
-
 foreach (Config DEBUG CHECKED)
     add_compile_definitions($<$<CONFIG:${Config}>:WRITE_BARRIER_CHECK>)
 endforeach (Config)

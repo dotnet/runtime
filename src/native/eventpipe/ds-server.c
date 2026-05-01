@@ -221,7 +221,6 @@ ds_server_init (void)
 	}
 
 	if (ds_ipc_stream_factory_has_active_ports ()) {
-
 #ifndef PERFTRACING_DISABLE_THREADS
 		ep_rt_thread_id_t thread_id = ep_rt_uint64_t_to_thread_id_t (0);
 
