@@ -488,6 +488,7 @@ enum class DoNotEnregisterReason
     CallSpCheck,           // the local is used to do SP check on every call
     SimdUserForcesDep,     // a promoted struct was used by a SIMD/HWI node; it must be dependently promoted
     HiddenBufferStructArg, // the argument is a hidden return buffer passed to a method.
+    WasmGCVisibility,
 };
 
 enum class AddressExposedReason
