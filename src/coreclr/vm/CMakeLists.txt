@@ -350,7 +350,6 @@ set(VM_SOURCES_WKS
     nativeeventsource.cpp
     nativelibrary.cpp
     nativelibrarynative.cpp
-    olevariant.cpp
     pendingload.cpp
     pinvokeoverride.cpp
     profdetach.cpp
@@ -457,7 +456,6 @@ set(VM_HEADERS_WKS
     multicorejit.h
     multicorejitimpl.h
     nativeeventsource.h
-    olevariant.h
     pendingload.h
     profdetach.h
     profilingenumerators.h
@@ -597,6 +595,7 @@ if(CLR_CMAKE_TARGET_WIN32)
         dispatchinfo.cpp
         dispparammarshaler.cpp
         olecontexthelpers.cpp
+        olevariant.cpp
         runtimecallablewrapper.cpp
         stdinterfaces.cpp
         stdinterfaces_wrapper.cpp
@@ -613,6 +612,7 @@ if(CLR_CMAKE_TARGET_WIN32)
         dispatchinfo.h
         dispparammarshaler.h
         olecontexthelpers.h
+        olevariant.h
         runtimecallablewrapper.h
         stdinterfaces.h
         stdinterfaces_internal.h
