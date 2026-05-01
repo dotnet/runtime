@@ -367,14 +367,6 @@ uint64_t GCToOSInterface::GetPhysicalMemoryLimit(bool* is_restricted)
     if (is_restricted)
         *is_restricted = false;
 
-    size_t restricted_limit = GetRestrictedPhysicalMemoryLimit();
-    if (restricted_limit != 0 && restricted_limit != SIZE_T_MAX)
-    {
-        if (is_restricted)
-            *is_restricted = true;
-        return restricted_limit;
-    }
-
     return g_totalPhysicalMemSize;
 }
 
