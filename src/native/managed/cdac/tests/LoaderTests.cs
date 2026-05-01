@@ -156,31 +156,18 @@ public unsafe class LoaderTests
 
     private static readonly Dictionary<LoaderAllocatorHeapType, TargetPointer> MockHeapDictionary = new()
     {
-        [LoaderAllocatorHeapType.LowFrequency] = new(0x1000),
-        [LoaderAllocatorHeapType.HighFrequency] = new(0x2000),
-        [LoaderAllocatorHeapType.Statics] = new(0x3000),
-        [LoaderAllocatorHeapType.Stub] = new(0x4000),
-        [LoaderAllocatorHeapType.Executable] = new(0x5000),
-        [LoaderAllocatorHeapType.FixupPrecode] = new(0x6000),
-        [LoaderAllocatorHeapType.NewStubPrecode] = new(0x7000),
-        [LoaderAllocatorHeapType.Indcell] = new(0x8000),
-        [LoaderAllocatorHeapType.CacheEntry] = new(0x9000),
+        [LoaderAllocatorHeapType.LowFrequencyHeap] = new(0x1000),
+        [LoaderAllocatorHeapType.HighFrequencyHeap] = new(0x2000),
+        [LoaderAllocatorHeapType.StaticsHeap] = new(0x3000),
+        [LoaderAllocatorHeapType.StubHeap] = new(0x4000),
+        [LoaderAllocatorHeapType.ExecutableHeap] = new(0x5000),
+        [LoaderAllocatorHeapType.FixupPrecodeHeap] = new(0x6000),
+        [LoaderAllocatorHeapType.NewStubPrecodeHeap] = new(0x7000),
+        [LoaderAllocatorHeapType.IndcellHeap] = new(0x8000),
+        [LoaderAllocatorHeapType.CacheEntryHeap] = new(0x9000),
     };
 
-    private static LoaderAllocatorHeapType HeapNameToType(string name) => name switch
-    {
-        "LowFrequencyHeap" => LoaderAllocatorHeapType.LowFrequency,
-        "HighFrequencyHeap" => LoaderAllocatorHeapType.HighFrequency,
-        "StaticsHeap" => LoaderAllocatorHeapType.Statics,
-        "StubHeap" => LoaderAllocatorHeapType.Stub,
-        "ExecutableHeap" => LoaderAllocatorHeapType.Executable,
-        "FixupPrecodeHeap" => LoaderAllocatorHeapType.FixupPrecode,
-        "NewStubPrecodeHeap" => LoaderAllocatorHeapType.NewStubPrecode,
-        "DynamicHelpersStubHeap" => LoaderAllocatorHeapType.DynamicHelpers,
-        "IndcellHeap" => LoaderAllocatorHeapType.Indcell,
-        "CacheEntryHeap" => LoaderAllocatorHeapType.CacheEntry,
-        _ => throw new ArgumentException($"Unknown heap name: {name}"),
-    };
+    private static LoaderAllocatorHeapType HeapNameToType(string name) => Enum.Parse<LoaderAllocatorHeapType>(name);
 
     private static ISOSDacInterface13 CreateSOSDacInterface13ForHeapTests(MockTarget.Architecture arch)
     {

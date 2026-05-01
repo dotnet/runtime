@@ -63,16 +63,16 @@ readonly struct LoaderHeapBlockData
 enum LoaderAllocatorHeapType
 {
     Unknown,
-    LowFrequency,
-    HighFrequency,
-    Statics,
-    Stub,
-    Executable,
-    FixupPrecode,
-    NewStubPrecode,
-    DynamicHelpers,
-    Indcell,
-    CacheEntry,
+    LowFrequencyHeap,
+    HighFrequencyHeap,
+    StaticsHeap,
+    StubHeap,
+    ExecutableHeap,
+    FixupPrecodeHeap,
+    NewStubPrecodeHeap,
+    DynamicHelpersStubHeap,
+    IndcellHeap,
+    CacheEntryHeap,
 }
 ```
 
@@ -809,32 +809,32 @@ IReadOnlyDictionary<LoaderAllocatorHeapType, TargetPointer> GetLoaderAllocatorHe
 
     // Always-present heaps
     Dictionary<LoaderAllocatorHeapType, TargetPointer> heaps = {
-        [LoaderAllocatorHeapType.LowFrequency] = la.LowFrequencyHeap,
-        [LoaderAllocatorHeapType.HighFrequency] = la.HighFrequencyHeap,
-        [LoaderAllocatorHeapType.Statics] = la.StaticsHeap,
-        [LoaderAllocatorHeapType.Stub] = la.StubHeap,
-        [LoaderAllocatorHeapType.Executable] = la.ExecutableHeap,
+        [LoaderAllocatorHeapType.LowFrequencyHeap] = la.LowFrequencyHeap,
+        [LoaderAllocatorHeapType.HighFrequencyHeap] = la.HighFrequencyHeap,
+        [LoaderAllocatorHeapType.StaticsHeap] = la.StaticsHeap,
+        [LoaderAllocatorHeapType.StubHeap] = la.StubHeap,
+        [LoaderAllocatorHeapType.ExecutableHeap] = la.ExecutableHeap,
     };
 
     // Feature-conditional heaps: only included when the data descriptor field exists
     if (LoaderAllocator type has "FixupPrecodeHeap" field)
-        heaps[LoaderAllocatorHeapType.FixupPrecode] = la.FixupPrecodeHeap;
+        heaps[LoaderAllocatorHeapType.FixupPrecodeHeap] = la.FixupPrecodeHeap;
 
     if (LoaderAllocator type has "NewStubPrecodeHeap" field)
-        heaps[LoaderAllocatorHeapType.NewStubPrecode] = la.NewStubPrecodeHeap;
+        heaps[LoaderAllocatorHeapType.NewStubPrecodeHeap] = la.NewStubPrecodeHeap;
 
     if (LoaderAllocator type has "DynamicHelpersStubHeap" field)
-        heaps[LoaderAllocatorHeapType.DynamicHelpers] = la.DynamicHelpersStubHeap;
+        heaps[LoaderAllocatorHeapType.DynamicHelpersStubHeap] = la.DynamicHelpersStubHeap;
 
     // VirtualCallStubManager heaps: only included when VirtualCallStubManager is non-null
     if (la.VirtualCallStubManager != null)
     {
         VirtualCallStubManager vcsMgr = // read VirtualCallStubManager object at la.VirtualCallStubManager
 
-        heaps[LoaderAllocatorHeapType.Indcell] = vcsMgr.IndcellHeap;
+        heaps[LoaderAllocatorHeapType.IndcellHeap] = vcsMgr.IndcellHeap;
 
         if (VirtualCallStubManager type has "CacheEntryHeap" field)
-            heaps[LoaderAllocatorHeapType.CacheEntry] = vcsMgr.CacheEntryHeap;
+            heaps[LoaderAllocatorHeapType.CacheEntryHeap] = vcsMgr.CacheEntryHeap;
     }
 
     return heaps;

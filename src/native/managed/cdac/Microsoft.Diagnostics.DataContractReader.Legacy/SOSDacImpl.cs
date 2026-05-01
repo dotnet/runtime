@@ -6270,28 +6270,28 @@ public sealed unsafe partial class SOSDacImpl
     // Static ANSI string pointers for all known heap names, in the canonical order matching
     // LoaderAllocatorLoaderHeapNames in request.cpp. These are process-lifetime allocations,
     // equivalent to static const char* literals in C++.
-    private static readonly (string Name, nint AnsiPtr)[] s_heapNameEntries = InitializeHeapNameEntries();
-    private (string Name, nint AnsiPtr)[]? _filteredHeapNameEntries;
+    private static readonly (LoaderAllocatorHeapType HeapType, nint AnsiPtr)[] s_heapNameEntries = InitializeHeapNameEntries();
+    private (LoaderAllocatorHeapType HeapType, nint AnsiPtr)[]? _filteredHeapNameEntries;
 
-    private static (string Name, nint AnsiPtr)[] InitializeHeapNameEntries()
+    private static (LoaderAllocatorHeapType heapType, nint AnsiPtr)[] InitializeHeapNameEntries()
     {
         // Order must match LoaderAllocatorLoaderHeapNames in src/coreclr/debug/daccess/request.cpp
-        string[] names =
+        LoaderAllocatorHeapType[] heapTypes = 
         [
-            "LowFrequencyHeap",
-            "HighFrequencyHeap",
-            "StaticsHeap",
-            "StubHeap",
-            "ExecutableHeap",
-            "FixupPrecodeHeap",
-            "NewStubPrecodeHeap",
-            "DynamicHelpersStubHeap",
-            "IndcellHeap",
-            "CacheEntryHeap",
+            LoaderAllocatorHeapType.LowFrequencyHeap,
+            LoaderAllocatorHeapType.HighFrequencyHeap,
+            LoaderAllocatorHeapType.StaticsHeap,
+            LoaderAllocatorHeapType.StubHeap,
+            LoaderAllocatorHeapType.ExecutableHeap,
+            LoaderAllocatorHeapType.FixupPrecodeHeap,
+            LoaderAllocatorHeapType.NewStubPrecodeHeap,
+            LoaderAllocatorHeapType.DynamicHelpersStubHeap,
+            LoaderAllocatorHeapType.IndcellHeap,
+            LoaderAllocatorHeapType.CacheEntryHeap
         ];
-        var entries = new (string, nint)[names.Length];
-        for (int i = 0; i < names.Length; i++)
-            entries[i] = (names[i], Marshal.StringToHGlobalAnsi(names[i]));
+        var entries = new (LoaderAllocatorHeapType, nint)[heapTypes.Length];
+        for (int i = 0; i < heapTypes.Length; i++)
+            entries[i] = (heapTypes[i], Marshal.StringToHGlobalAnsi(heapTypes[i].ToString()));
         return entries;
     }
 
@@ -6307,12 +6307,12 @@ public sealed unsafe partial class SOSDacImpl
         Target.TypeInfo laType = _target.GetTypeInfo(DataType.LoaderAllocator);
         Target.TypeInfo vcsType = _target.GetTypeInfo(DataType.VirtualCallStubManager);
 
-        var entries = new List<(string Name, nint AnsiPtr)>();
+        var entries = new List<(LoaderAllocatorHeapType HeapType, nint AnsiPtr)>();
         foreach (var entry in s_heapNameEntries)
         {
-            bool include = entry.Name is "IndcellHeap" or "CacheEntryHeap"
-                ? vcsType.Fields.ContainsKey(entry.Name)
-                : laType.Fields.ContainsKey(entry.Name);
+            bool include = entry.HeapType is LoaderAllocatorHeapType.IndcellHeap or LoaderAllocatorHeapType.CacheEntryHeap
+                ? vcsType.Fields.ContainsKey(entry.HeapType.ToString())
+                : laType.Fields.ContainsKey(entry.HeapType.ToString());
             if (include)
                 entries.Add(entry);
         }
@@ -6394,7 +6394,7 @@ public sealed unsafe partial class SOSDacImpl
                 {
                     for (int i = 0; i < loaderHeapCount; i++)
                     {
-                        pLoaderHeaps[i] = heaps.TryGetValue(GetEnumForName(filteredEntries[i].Name), out TargetPointer heapAddr)
+                        pLoaderHeaps[i] = heaps.TryGetValue(filteredEntries[i].HeapType, out TargetPointer heapAddr)
                             ? heapAddr.ToClrDataAddress(_target)
                             : 0;
                         pKinds[i] = 0; // LoaderHeapKindNormal
@@ -6431,24 +6431,6 @@ public sealed unsafe partial class SOSDacImpl
         }
 #endif
         return hr;
-    }
-
-    private static LoaderAllocatorHeapType GetEnumForName(string name)
-    {
-        return name switch
-        {
-            "LowFrequencyHeap" => LoaderAllocatorHeapType.LowFrequency,
-            "HighFrequencyHeap" => LoaderAllocatorHeapType.HighFrequency,
-            "StaticsHeap" => LoaderAllocatorHeapType.Statics,
-            "StubHeap" => LoaderAllocatorHeapType.Stub,
-            "ExecutableHeap" => LoaderAllocatorHeapType.Executable,
-            "FixupPrecodeHeap" => LoaderAllocatorHeapType.FixupPrecode,
-            "NewStubPrecodeHeap" => LoaderAllocatorHeapType.NewStubPrecode,
-            "DynamicHelpersStubHeap" => LoaderAllocatorHeapType.DynamicHelpers,
-            "IndcellHeap" => LoaderAllocatorHeapType.Indcell,
-            "CacheEntryHeap" => LoaderAllocatorHeapType.CacheEntry,
-            _ => LoaderAllocatorHeapType.Unknown,
-        };
     }
 
     int ISOSDacInterface13.GetHandleTableMemoryRegions(DacComNullableByRef<ISOSMemoryEnum> ppEnum)

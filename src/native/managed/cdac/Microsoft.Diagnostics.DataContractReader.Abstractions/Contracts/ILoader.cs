@@ -47,16 +47,16 @@ public enum ClrModifiableAssemblies : uint
 public enum LoaderAllocatorHeapType
 {
     Unknown,
-    LowFrequency,
-    HighFrequency,
-    Statics,
-    Stub,
-    Executable,
-    FixupPrecode,
-    NewStubPrecode,
-    DynamicHelpers,
-    Indcell,
-    CacheEntry,
+    LowFrequencyHeap,
+    HighFrequencyHeap,
+    StaticsHeap,
+    StubHeap,
+    ExecutableHeap,
+    FixupPrecodeHeap,
+    NewStubPrecodeHeap,
+    DynamicHelpersStubHeap,
+    IndcellHeap,
+    CacheEntryHeap,
 }
 
 [Flags]
