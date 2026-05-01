@@ -31,15 +31,6 @@ internal enum GcTypeKind
 internal sealed class GcSignatureTypeProvider
     : IRuntimeSignatureTypeProvider<GcTypeKind, object?>
 {
-    private readonly Target _target;
-    private readonly ModuleHandle _moduleHandle;
-
-    public GcSignatureTypeProvider(Target target, ModuleHandle moduleHandle)
-    {
-        _target = target;
-        _moduleHandle = moduleHandle;
-    }
-
     public GcTypeKind GetPrimitiveType(PrimitiveTypeCode typeCode)
         => typeCode switch
         {

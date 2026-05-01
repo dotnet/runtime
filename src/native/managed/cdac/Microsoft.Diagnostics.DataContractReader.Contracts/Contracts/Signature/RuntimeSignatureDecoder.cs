@@ -9,33 +9,6 @@ using System.Reflection.Metadata.Ecma335;
 namespace Microsoft.Diagnostics.DataContractReader.SignatureHelpers;
 
 /// <summary>
-/// Superset of SRM's <see cref="ISignatureTypeProvider{TType, TGenericContext}"/>
-/// that adds support for runtime-internal type codes
-/// (<c>ELEMENT_TYPE_INTERNAL</c> 0x21 and <c>ELEMENT_TYPE_CMOD_INTERNAL</c> 0x22).
-/// </summary>
-/// <remarks>
-/// Providers implementing this interface automatically satisfy SRM's
-/// <see cref="ISignatureTypeProvider{TType, TGenericContext}"/> and can be used
-/// with both SRM's <c>SignatureDecoder</c> and our
-/// <see cref="RuntimeSignatureDecoder{TType, TGenericContext}"/>.
-/// </remarks>
-internal interface IRuntimeSignatureTypeProvider<TType, TGenericContext>
-    : ISignatureTypeProvider<TType, TGenericContext>
-{
-    /// <summary>
-    /// Classify an <c>ELEMENT_TYPE_INTERNAL</c> (0x21) type by resolving the
-    /// embedded TypeHandle pointer via the target's runtime type system.
-    /// </summary>
-    TType GetInternalType(Target target, TargetPointer typeHandlePointer);
-
-    /// <summary>
-    /// Classify an <c>ELEMENT_TYPE_CMOD_INTERNAL</c> (0x22) custom modifier by
-    /// resolving the embedded TypeHandle pointer via the target's runtime type system.
-    /// </summary>
-    TType GetInternalModifiedType(Target target, TargetPointer typeHandlePointer, TType unmodifiedType, bool isRequired);
-}
-
-/// <summary>
 /// Decodes signature blobs. Behaves identically to SRM's
 /// <see cref="SignatureDecoder{TType, TGenericContext}"/> for standard ECMA-335 type codes,
 /// with added support for runtime-internal types
@@ -47,7 +20,7 @@ internal readonly struct RuntimeSignatureDecoder<TType, TGenericContext>
     private const int ELEMENT_TYPE_INTERNAL = 0x21;
 
     private readonly IRuntimeSignatureTypeProvider<TType, TGenericContext> _provider;
-    private readonly MetadataReader? _metadataReaderOpt;
+    private readonly MetadataReader _metadataReader;
     private readonly Target _target;
     private readonly TGenericContext _genericContext;
     private readonly int _pointerSize;
@@ -55,13 +28,14 @@ internal readonly struct RuntimeSignatureDecoder<TType, TGenericContext>
     public RuntimeSignatureDecoder(
         IRuntimeSignatureTypeProvider<TType, TGenericContext> provider,
         Target target,
-        TGenericContext genericContext,
-        MetadataReader? metadataReader = null)
+        MetadataReader metadataReader,
+        TGenericContext genericContext)
     {
         ArgumentNullException.ThrowIfNull(provider);
+        ArgumentNullException.ThrowIfNull(metadataReader);
 
         _provider = provider;
-        _metadataReaderOpt = metadataReader;
+        _metadataReader = metadataReader;
         _target = target;
         _genericContext = genericContext;
         _pointerSize = target.PointerSize;
@@ -316,17 +290,17 @@ internal readonly struct RuntimeSignatureDecoder<TType, TGenericContext>
             switch (handle.Kind)
             {
                 case HandleKind.TypeDefinition:
-                    return _provider.GetTypeFromDefinition(_metadataReaderOpt!, (TypeDefinitionHandle)handle, rawTypeKind);
+                    return _provider.GetTypeFromDefinition(_metadataReader, (TypeDefinitionHandle)handle, rawTypeKind);
 
                 case HandleKind.TypeReference:
-                    return _provider.GetTypeFromReference(_metadataReaderOpt!, (TypeReferenceHandle)handle, rawTypeKind);
+                    return _provider.GetTypeFromReference(_metadataReader, (TypeReferenceHandle)handle, rawTypeKind);
 
                 case HandleKind.TypeSpecification:
                     if (!allowTypeSpecifications)
                     {
                         throw new BadImageFormatException("TypeSpecification handle not allowed in this context");
                     }
-                    return _provider.GetTypeFromSpecification(_metadataReaderOpt!, _genericContext, (TypeSpecificationHandle)handle, rawTypeKind);
+                    return _provider.GetTypeFromSpecification(_metadataReader, _genericContext, (TypeSpecificationHandle)handle, rawTypeKind);
             }
         }
 
