@@ -1054,15 +1054,14 @@ namespace
 {
     MethodDesc* GetStructMarshalingMethod(BinderMethodID methodId, MethodTable* pMT)
     {
-        CONTRACT(MethodDesc*)
+        CONTRACTL
         {
             THROWS;
             GC_TRIGGERS;
             MODE_PREEMPTIVE;
             PRECONDITION(CheckPointer(pMT));
-            POSTCONDITION(CheckPointer(RETVAL));
         }
-        CONTRACT_END;
+        CONTRACTL_END;
 
         MethodDesc* pPrimaryMD = CoreLibBinder::GetMethod(methodId);
 
@@ -1075,7 +1074,7 @@ namespace
             Instantiation(),
             FALSE);
 
-        RETURN pMD;
+        return pMD;
     }
 }
 

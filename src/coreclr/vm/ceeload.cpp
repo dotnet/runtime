@@ -589,16 +589,13 @@ static BOOL IsEditAndContinueCapable(Assembly *pAssembly, PEAssembly *pPEAssembl
 /* static */
 Module *Module::Create(Assembly *pAssembly, PEAssembly *pPEAssembly, AllocMemTracker *pamTracker)
 {
-    CONTRACT(Module *)
+    CONTRACTL
     {
         STANDARD_VM_CHECK;
         PRECONDITION(CheckPointer(pAssembly));
         PRECONDITION(CheckPointer(pPEAssembly));
-        POSTCONDITION(CheckPointer(RETVAL));
-        POSTCONDITION(RETVAL->GetAssembly() == pAssembly);
-        POSTCONDITION(RETVAL->GetPEAssembly() == pPEAssembly);
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     // Hoist CONTRACT into separate routine because of EX incompatibility
 
@@ -627,7 +624,9 @@ Module *Module::Create(Assembly *pAssembly, PEAssembly *pPEAssembly, AllocMemTra
     ModuleHolder pModuleSafe(pModule);
     pModuleSafe->DoInit(pamTracker, NULL);
 
-    RETURN pModuleSafe.Detach();
+    _ASSERTE(pModuleSafe->GetAssembly() == pAssembly);
+    _ASSERTE(pModuleSafe->GetPEAssembly() == pPEAssembly);
+    return pModuleSafe.Detach();
 }
 
 void Module::ApplyMetaData()
@@ -823,16 +822,15 @@ bool Module::NeedsGlobalMethodTable()
 
 MethodTable *Module::GetGlobalMethodTable()
 {
-    CONTRACT (MethodTable *)
+    CONTRACTL
     {
         INSTANCE_CHECK;
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(CONTRACT_RETURN NULL;);
-        POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
+        INJECT_FAULT(return NULL;);
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
 
     if ((m_dwPersistedFlags & COMPUTED_GLOBAL_CLASS) == 0)
@@ -847,11 +845,11 @@ MethodTable *Module::GetGlobalMethodTable()
         }
 
         InterlockedOr((LONG*)&m_dwPersistedFlags, COMPUTED_GLOBAL_CLASS);
-        RETURN pMT;
+        return pMT;
     }
     else
     {
-        RETURN LookupTypeDef(COR_GLOBAL_PARENT_TOKEN).AsMethodTable();
+        return LookupTypeDef(COR_GLOBAL_PARENT_TOKEN).AsMethodTable();
     }
 }
 
@@ -1107,7 +1105,7 @@ BOOL Module::IsRuntimeWrapExceptionsStatusComputed()
 {
     LIMITED_METHOD_CONTRACT;
 
-    return (m_dwPersistedFlags & COMPUTED_WRAP_EXCEPTIONS);
+    return m_dwPersistedFlags & COMPUTED_WRAP_EXCEPTIONS;
 }
 
 BOOL Module::IsRuntimeWrapExceptionsDuringEH()
@@ -1226,15 +1224,14 @@ BOOL Module::IsRuntimeMarshallingEnabled()
 //
 OBJECTREF Module::GetExposedObject()
 {
-    CONTRACT(OBJECTREF)
+    CONTRACTL
     {
         INSTANCE_CHECK;
-        POSTCONDITION(RETVAL != NULL);
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
         LoaderAllocator * pLoaderAllocator = GetLoaderAllocator();
 
@@ -1282,7 +1279,7 @@ OBJECTREF Module::GetExposedObject()
         }
     }
 
-    RETURN pLoaderAllocator->GetHandleValue(m_hExposedObject);
+    return pLoaderAllocator->GetHandleValue(m_hExposedObject);
 }
 
 OBJECTREF Module::GetExposedObjectIfExists()
@@ -1657,15 +1654,14 @@ static ISymUnmanagedReader* const k_pInvalidSymReader = (ISymUnmanagedReader*)0x
 #if defined(FEATURE_ISYM_READER)
 ISymUnmanagedReader *Module::GetISymUnmanagedReaderNoThrow(void)
 {
-    CONTRACT(ISymUnmanagedReader *)
+    CONTRACTL
     {
         INSTANCE_CHECK;
-        POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
         NOTHROW;
         WRAPPER(GC_TRIGGERS);
         MODE_ANY;
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     ISymUnmanagedReader *ret = NULL;
 
@@ -1676,7 +1672,7 @@ ISymUnmanagedReader *Module::GetISymUnmanagedReaderNoThrow(void)
     EX_SWALLOW_NONTERMINAL
     // We swallow any exception and say that we simply couldn't get a reader by returning NULL.
     // The only type of error that should be possible here is OOM.
-    RETURN (ret);
+    return ret;
 }
 
 #if defined(HOST_AMD64)
@@ -1691,18 +1687,17 @@ ISymUnmanagedReader *Module::GetISymUnmanagedReaderNoThrow(void)
 
 ISymUnmanagedReader *Module::GetISymUnmanagedReader(void)
 {
-    CONTRACT(ISymUnmanagedReader *)
+    CONTRACTL
     {
         INSTANCE_CHECK;
-        POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
         THROWS;
         WRAPPER(GC_TRIGGERS);
         MODE_ANY;
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     if (g_fEEShutDown)
-        RETURN NULL;
+        return NULL;
 
     // Verify that symbol reading is permitted for this module.
     // If we know we've already created a symbol reader, don't bother checking.  There is
@@ -1713,7 +1708,7 @@ ISymUnmanagedReader *Module::GetISymUnmanagedReader(void)
     // race on m_pISymUnmanagedReader here is OK.  The perf cost is minor because the only real
     // work is done by the security system which caches the result.
     if( m_pISymUnmanagedReader == NULL && !IsSymbolReadingEnabled() )
-        RETURN NULL;
+        return NULL;
 
     // Take the lock for the m_pISymUnmanagedReader
     // This ensures that we'll only ever attempt to create one reader at a time, and we won't
@@ -1741,7 +1736,7 @@ ISymUnmanagedReader *Module::GetISymUnmanagedReader(void)
         {
             // Case 3.  We don't have a module path or an in memory symbol stream,
             // so there is no-where to try and get symbols from.
-            RETURN (NULL);
+            return NULL;
         }
 
         // Create a binder to find the reader.
@@ -1764,13 +1759,13 @@ ISymUnmanagedReader *Module::GetISymUnmanagedReader(void)
         hr = GetClrModuleDirectory(symbolReaderPath);
         if (FAILED(hr))
         {
-            RETURN (NULL);
+            return NULL;
         }
         symbolReaderPath.Append(NATIVE_SYMBOL_READER_DLL);
         hr = FakeCoCreateInstanceEx(CLSID_CorSymBinder_SxS, symbolReaderPath.GetUnicode(), IID_ISymUnmanagedBinder, (void**)&pBinder, NULL);
         if (FAILED(hr))
         {
-            RETURN (NULL);
+            return NULL;
         }
 
         LOG((LF_CORDB, LL_INFO10, "M::GISUR: Created binder\n"));
@@ -1841,12 +1836,12 @@ ISymUnmanagedReader *Module::GetISymUnmanagedReader(void)
     // If we previously failed to create the reader, return NULL
     if (m_pISymUnmanagedReader == k_pInvalidSymReader)
     {
-        RETURN (NULL);
+        return NULL;
     }
 
     // Success - return an AddRef'd copy of the reader
     m_pISymUnmanagedReader->AddRef();
-    RETURN (m_pISymUnmanagedReader);
+    return m_pISymUnmanagedReader;
 }
 #endif // FEATURE_ISYM_READER
 
@@ -2283,25 +2278,25 @@ mdToken Module::GetEntryPointToken()
 
 BYTE *Module::GetProfilerBase()
 {
-    CONTRACT(BYTE*)
+    CONTRACTL
     {
         NOTHROW;
         GC_NOTRIGGER;
         CANNOT_TAKE_LOCK;
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     if (m_pPEAssembly == NULL)  // I'd rather assert this is not the case...
     {
-        RETURN NULL;
+        return NULL;
     }
     else if (m_pPEAssembly->HasLoadedPEImage())
     {
-        RETURN  (BYTE*)(m_pPEAssembly->GetLoadedLayout()->GetBase());
+        return (BYTE*)(m_pPEAssembly->GetLoadedLayout()->GetBase());
     }
     else
     {
-        RETURN NULL;
+        return NULL;
     }
 }
 
@@ -2314,17 +2309,16 @@ Module::GetAssemblyIfLoaded(
     AssemblyBinder      *pBinderForLoadedAssembly // = NULL
 )
 {
-    CONTRACT(Assembly *)
+    CONTRACTL
     {
         INSTANCE_CHECK;
         NOTHROW;
         GC_NOTRIGGER;
         FORBID_FAULT;
         MODE_ANY;
-        POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
         SUPPORTS_DAC;
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     Assembly * pAssembly = NULL;
     BOOL fCanUseRidMap = pMDImportOverride == NULL;
@@ -2402,7 +2396,7 @@ Module::GetAssemblyIfLoaded(
 
 #endif //DACCESS_COMPILE
 
-    RETURN pAssembly;
+    return pAssembly;
 } // Module::GetAssemblyIfLoaded
 
 DWORD
@@ -2440,16 +2434,15 @@ ModuleBase::GetAssemblyRefFlags(
 #ifndef DACCESS_COMPILE
 Assembly * Module::LoadAssemblyImpl(mdAssemblyRef kAssemblyRef)
 {
-    CONTRACT(Assembly *)
+    CONTRACTL
     {
         INSTANCE_CHECK;
         if (FORBIDGC_LOADER_USE_ENABLED()) NOTHROW; else THROWS;
         if (FORBIDGC_LOADER_USE_ENABLED()) GC_NOTRIGGER; else GC_TRIGGERS;
         if (FORBIDGC_LOADER_USE_ENABLED()) FORBID_FAULT; else { INJECT_FAULT(COMPlusThrowOM();); }
         MODE_ANY;
-        POSTCONDITION(CheckPointer(RETVAL, NULL_NOT_OK));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     ETWOnStartup (LoaderCatchCall_V1, LoaderCatchCallEnd_V1);
 
@@ -2460,7 +2453,7 @@ Assembly * Module::LoadAssemblyImpl(mdAssemblyRef kAssemblyRef)
     if (pAssembly != NULL)
     {
         ::GetAppDomain()->LoadAssembly(pAssembly, FILE_LOADED);
-        RETURN pAssembly;
+        return pAssembly;
     }
 
     {
@@ -2485,7 +2478,7 @@ Assembly * Module::LoadAssemblyImpl(mdAssemblyRef kAssemblyRef)
 
     StoreAssemblyRef(kAssemblyRef, pAssembly);
 
-    RETURN pAssembly;
+    return pAssembly;
 }
 #else
 Assembly * Module::LoadAssemblyImpl(mdAssemblyRef kAssemblyRef)
@@ -2497,7 +2490,7 @@ Assembly * Module::LoadAssemblyImpl(mdAssemblyRef kAssemblyRef)
 
 Module *Module::GetModuleIfLoaded(mdFile kFile)
 {
-    CONTRACT(Module *)
+    CONTRACTL
     {
         INSTANCE_CHECK;
         NOTHROW;
@@ -2505,11 +2498,10 @@ Module *Module::GetModuleIfLoaded(mdFile kFile)
         MODE_ANY;
         PRECONDITION(TypeFromToken(kFile) == mdtFile
                      || TypeFromToken(kFile) == mdtModuleRef);
-        POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
         FORBID_FAULT;
         SUPPORTS_DAC;
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     ENABLE_FORBID_GC_LOADER_USE_IN_THIS_SCOPE();
 
@@ -2522,20 +2514,20 @@ Module *Module::GetModuleIfLoaded(mdFile kFile)
         LPCSTR moduleName;
         if (FAILED(GetMDImport()->GetModuleRefProps(kFile, &moduleName)))
         {
-            RETURN NULL;
+            return NULL;
         }
 
-        RETURN GetAssembly()->GetModule()->GetModuleIfLoaded(mdFileNil);
+        return GetAssembly()->GetModule()->GetModuleIfLoaded(mdFileNil);
     }
 
-    RETURN NULL;
+    return NULL;
 }
 
 #ifndef DACCESS_COMPILE
 
 Module *ModuleBase::LoadModule(mdFile kFile)
 {
-    CONTRACT(Module *)
+    CONTRACTL
     {
         INSTANCE_CHECK;
         THROWS;
@@ -2544,7 +2536,7 @@ Module *ModuleBase::LoadModule(mdFile kFile)
         PRECONDITION(TypeFromToken(kFile) == mdtFile
                      || TypeFromToken(kFile) == mdtModuleRef);
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     LPCSTR psModuleName=NULL;
     if (TypeFromToken(kFile) == mdtModuleRef)
@@ -2564,13 +2556,13 @@ Module *ModuleBase::LoadModule(mdFile kFile)
 
     SString name(SString::Utf8, psModuleName);
     EEFileLoadException::Throw(name, COR_E_MULTIMODULEASSEMBLIESDIALLOWED, NULL);
-    RETURN NULL;
+    return NULL;
 }
 #endif // !DACCESS_COMPILE
 
 PTR_Module Module::LookupModule(mdToken kFile)
 {
-    CONTRACT(PTR_Module)
+    CONTRACTL
     {
         INSTANCE_CHECK;
         if (FORBIDGC_LOADER_USE_ENABLED()) NOTHROW; else THROWS;
@@ -2580,21 +2572,20 @@ PTR_Module Module::LookupModule(mdToken kFile)
         MODE_ANY;
         PRECONDITION(TypeFromToken(kFile) == mdtFile
                      || TypeFromToken(kFile) == mdtModuleRef);
-        POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
         SUPPORTS_DAC;
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     if (TypeFromToken(kFile) == mdtModuleRef)
     {
         LPCSTR moduleName;
         IfFailThrow(GetMDImport()->GetModuleRefProps(kFile, &moduleName));
 
-        RETURN GetAssembly()->GetModule()->LookupModule(mdFileNil);
+        return GetAssembly()->GetModule()->LookupModule(mdFileNil);
     }
 
     PTR_Module pModule = LookupFile(kFile);
-    RETURN pModule;
+    return pModule;
 }
 
 
@@ -2625,16 +2616,15 @@ TypeHandle ModuleBase::LookupTypeRef(mdTypeRef token)
 //
 PTR_TADDR LookupMapBase::GrowMap(ModuleBase * pModule, DWORD rid)
 {
-    CONTRACT(PTR_TADDR)
+    CONTRACTL
     {
         INSTANCE_CHECK;
         THROWS;
         GC_NOTRIGGER;
         MODE_ANY;
         INJECT_FAULT(ThrowOutOfMemory(););
-        POSTCONDITION(CheckPointer(RETVAL));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     LookupMapBase *pMap = this;
     LookupMapBase *pPrev = NULL;
@@ -2652,7 +2642,7 @@ PTR_TADDR LookupMapBase::GrowMap(ModuleBase * pModule, DWORD rid)
             if (dwIndex < pMap->dwCount)
             {
                 // Already there - some other thread must have added it
-                RETURN pMap->GetIndexPtr(dwIndex);
+                return pMap->GetIndexPtr(dwIndex);
             }
 
             dwBlockSize *= 2;
@@ -2681,7 +2671,7 @@ PTR_TADDR LookupMapBase::GrowMap(ModuleBase * pModule, DWORD rid)
         VolatileStore<LookupMapBase*>(&(pPrev->pNext), pNewMap);
     }
 
-    RETURN pNewMap->GetIndexPtr(dwIndex);
+    return pNewMap->GetIndexPtr(dwIndex);
 }
 
 #endif // DACCESS_COMPILE
@@ -2812,18 +2802,17 @@ void Module::DebugLogRidMapOccupancy()
 
 MethodDesc *Module::FindMethodThrowing(mdToken pMethod)
 {
-    CONTRACT (MethodDesc *)
+    CONTRACTL
     {
         INSTANCE_CHECK;
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        POSTCONDITION(CheckPointer(RETVAL));
     }
-    CONTRACT_END
+    CONTRACTL_END
 
     SigTypeContext typeContext;  /* empty type context: methods will not be generic */
-    RETURN MemberLoader::GetMethodDescFromMemberDefOrRefOrSpec(this, pMethod,
+    return MemberLoader::GetMethodDescFromMemberDefOrRefOrSpec(this, pMethod,
                                                                &typeContext,
                                                                TRUE, /* strictMetadataChecks */
                                                                FALSE /* dont get code shared between generic instantiations */);
@@ -2835,13 +2824,12 @@ MethodDesc *Module::FindMethodThrowing(mdToken pMethod)
 
 MethodDesc *Module::FindMethod(mdToken pMethod)
 {
-    CONTRACT (MethodDesc *) {
+    CONTRACTL {
         INSTANCE_CHECK;
         NOTHROW;
         GC_TRIGGERS;
         MODE_ANY;
-        POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
-    } CONTRACT_END;
+    } CONTRACTL_END;
 
     MethodDesc *pMDRet = NULL;
 
@@ -2861,7 +2849,7 @@ MethodDesc *Module::FindMethod(mdToken pMethod)
     }
     EX_END_CATCH
 
-    RETURN pMDRet;
+    return pMDRet;
 }
 
 // Return true if this module has any live (jitted) JMC functions.
@@ -2877,7 +2865,7 @@ bool Module::HasAnyJMCFunctions()
     // Since we don't get the jit-completes for ngen modules, we also check the module's
     // "default" status. This means we may err on the side of believing we have
     // JMC methods.
-    return ((m_debuggerSpecificData.m_cTotalJMCFuncs > 0) || m_debuggerSpecificData.m_fDefaultJMCStatus);
+    return (m_debuggerSpecificData.m_cTotalJMCFuncs > 0) || m_debuggerSpecificData.m_fDefaultJMCStatus;
 }
 
 // Alter our module's count of JMC functions.
@@ -3405,19 +3393,18 @@ void Module::FixupVTables()
 
 ModuleBase *Module::GetModuleFromIndex(DWORD ix)
 {
-    CONTRACT(ModuleBase*)
+    CONTRACTL
     {
         INSTANCE_CHECK;
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     if (IsReadyToRun())
     {
-        RETURN ZapSig::DecodeModuleFromIndex(this, ix);
+        return ZapSig::DecodeModuleFromIndex(this, ix);
     }
     else
     {
@@ -3425,12 +3412,12 @@ ModuleBase *Module::GetModuleFromIndex(DWORD ix)
         Assembly *pAssembly = this->LookupAssemblyRef(mdAssemblyRefToken);
         if (pAssembly)
         {
-            RETURN pAssembly->GetModule();
+            return pAssembly->GetModule();
         }
         else
         {
             // GetModuleFromIndex failed
-            RETURN NULL;
+            return NULL;
         }
     }
 }
@@ -3439,29 +3426,28 @@ ModuleBase *Module::GetModuleFromIndex(DWORD ix)
 
 ModuleBase *Module::GetModuleFromIndexIfLoaded(DWORD ix)
 {
-    CONTRACT(ModuleBase*)
+    CONTRACTL
     {
         INSTANCE_CHECK;
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
         PRECONDITION(IsReadyToRun());
-        POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
 #ifndef DACCESS_COMPILE
-    RETURN ZapSig::DecodeModuleFromIndexIfLoaded(this, ix);
+    return ZapSig::DecodeModuleFromIndexIfLoaded(this, ix);
 #else // DACCESS_COMPILE
     DacNotImpl();
-    RETURN NULL;
+    return NULL;
 #endif // DACCESS_COMPILE
 }
 
 #ifndef DACCESS_COMPILE
 IMDInternalImport* Module::GetNativeAssemblyImport(BOOL loadAllowed)
 {
-    CONTRACT(IMDInternalImport*)
+    CONTRACTL
     {
         INSTANCE_CHECK;
         if (loadAllowed) GC_TRIGGERS;                    else GC_NOTRIGGER;
@@ -3469,28 +3455,24 @@ IMDInternalImport* Module::GetNativeAssemblyImport(BOOL loadAllowed)
         if (loadAllowed) INJECT_FAULT(COMPlusThrowOM()); else FORBID_FAULT;
         MODE_ANY;
         PRECONDITION(IsReadyToRun());
-        POSTCONDITION(loadAllowed ?
-            CheckPointer(RETVAL) :
-            CheckPointer(RETVAL, NULL_OK));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
-    RETURN GetReadyToRunInfo()->GetNativeManifestModule()->GetMDImport();
+    return GetReadyToRunInfo()->GetNativeManifestModule()->GetMDImport();
 }
 
 BYTE* Module::GetNativeFixupBlobData(RVA rva)
 {
-    CONTRACT(BYTE*)
+    CONTRACTL
     {
         INSTANCE_CHECK;
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        POSTCONDITION(CheckPointer(RETVAL));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
-    RETURN(BYTE*) GetReadyToRunImage()->GetRvaData(rva);
+    return (BYTE*) GetReadyToRunImage()->GetRvaData(rva);
 }
 #endif // DACCESS_COMPILE
 
@@ -3760,15 +3742,14 @@ void Module::SetBeingUnloaded()
 /* static */
 ReflectionModule *ReflectionModule::Create(Assembly *pAssembly, PEAssembly *pPEAssembly, AllocMemTracker *pamTracker, LPCWSTR szName)
 {
-    CONTRACT(ReflectionModule *)
+    CONTRACTL
     {
         STANDARD_VM_CHECK;
         PRECONDITION(CheckPointer(pAssembly));
         PRECONDITION(CheckPointer(pPEAssembly));
         PRECONDITION(pPEAssembly->IsReflectionEmit());
-        POSTCONDITION(CheckPointer(RETVAL));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     // Hoist CONTRACT into separate routine because of EX incompatibility
 
@@ -3781,7 +3762,7 @@ ReflectionModule *ReflectionModule::Create(Assembly *pAssembly, PEAssembly *pPEA
     pModule->DoInit(pamTracker, szName);
     pModule->SetIsRuntimeWrapExceptionsCached_ForReflectionEmitModules();
 
-    RETURN pModule.Detach();
+    return pModule.Detach();
 }
 
 
@@ -4195,14 +4176,13 @@ static bool MethodSignatureContainsGenericVariables(SigParser& sp)
 //==========================================================================
 VASigCookie *Module::GetVASigCookie(Signature vaSignature, const SigTypeContext* typeContext)
 {
-    CONTRACT(VASigCookie*)
+    CONTRACTL
     {
         INSTANCE_CHECK;
         STANDARD_VM_CHECK;
-        POSTCONDITION(CheckPointer(RETVAL));
         INJECT_FAULT(COMPlusThrowOM());
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     SigTypeContext emptyContext;
 
@@ -4233,18 +4213,17 @@ VASigCookie *Module::GetVASigCookie(Signature vaSignature, const SigTypeContext*
 
     VASigCookie *pCookie = GetVASigCookieWorker(this, pLoaderModule, vaSignature, typeContext);
 
-    RETURN pCookie;
+    return pCookie;
 }
 
 VASigCookie *Module::GetVASigCookieWorker(Module* pDefiningModule, Module* pLoaderModule, Signature vaSignature, const SigTypeContext* typeContext)
 {
-    CONTRACT(VASigCookie*)
+    CONTRACTL
     {
         STANDARD_VM_CHECK;
-        POSTCONDITION(CheckPointer(RETVAL));
         INJECT_FAULT(COMPlusThrowOM());
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     VASigCookie *pCookie = NULL;
 
@@ -4379,7 +4358,7 @@ VASigCookie *Module::GetVASigCookieWorker(Module* pDefiningModule, Module* pLoad
         }
     }
 
-    RETURN pCookie;
+    return pCookie;
 }
 
 #endif // !DACCESS_COMPILE

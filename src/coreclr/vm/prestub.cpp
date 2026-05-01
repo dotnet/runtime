@@ -1470,12 +1470,11 @@ void MethodDesc::CreateDerivedTargetSig(MetaSig& msig, SigBuilder *stubSigBuilde
 Stub * CreateUnboxingILStubForValueTypeMethods(MethodDesc* pTargetMD)
 {
 
-    CONTRACT(Stub*)
+    CONTRACTL
     {
         STANDARD_VM_CHECK;
-        POSTCONDITION(CheckPointer(RETVAL));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     SigTypeContext typeContext(pTargetMD);
 
@@ -1554,20 +1553,19 @@ Stub * CreateUnboxingILStubForValueTypeMethods(MethodDesc* pTargetMD)
     pResolver->SetStubTargetMethodSig(pTargetSig, cbTargetSig);
     pResolver->SetStubTargetMethodDesc(pTargetMD);
 
-    RETURN Stub::NewStub(JitILStub(pStubMD));
+    return Stub::NewStub(JitILStub(pStubMD));
 
 }
 
 Stub * CreateInstantiatingILStub(MethodDesc* pTargetMD, void* pHiddenArg)
 {
 
-    CONTRACT(Stub*)
+    CONTRACTL
     {
         STANDARD_VM_CHECK;
         PRECONDITION(CheckPointer(pHiddenArg));
-        POSTCONDITION(CheckPointer(RETVAL));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     SigTypeContext typeContext;
     MethodTable* pStubMT;
@@ -1648,18 +1646,17 @@ Stub * CreateInstantiatingILStub(MethodDesc* pTargetMD, void* pHiddenArg)
     pResolver->SetStubTargetMethodSig(pTargetSig, cbTargetSig);
     pResolver->SetStubTargetMethodDesc(pTargetMD);
 
-    RETURN Stub::NewStub(JitILStub(pStubMD));
+    return Stub::NewStub(JitILStub(pStubMD));
 }
 
 /* Make a stub that for a value class method that expects a BOXed this pointer */
 Stub * MakeUnboxingStubWorker(MethodDesc *pMD)
 {
-    CONTRACT(Stub*)
+    CONTRACTL
     {
         STANDARD_VM_CHECK;
-        POSTCONDITION(CheckPointer(RETVAL));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     Stub *pstub = NULL;
 
@@ -1696,31 +1693,30 @@ Stub * MakeUnboxingStubWorker(MethodDesc *pMD)
 
         sl.EmitComputedInstantiatingMethodStub(pUnboxedMD, &portableShuffle[0], NULL);
 
-        RETURN sl.Link(pMD->GetLoaderAllocator()->GetStubHeap(), NEWSTUB_FL_INSTANTIATING_METHOD, "UnboxingStub");
+        return sl.Link(pMD->GetLoaderAllocator()->GetStubHeap(), NEWSTUB_FL_INSTANTIATING_METHOD, "UnboxingStub");
     }
 #elif defined(TARGET_X86)
     CPUSTUBLINKER sl;
     if (sl.EmitUnboxMethodStub(pUnboxedMD))
     {
-        RETURN sl.Link(pMD->GetLoaderAllocator()->GetStubHeap(), NEWSTUB_FL_NONE, "UnboxingStub");
+        return sl.Link(pMD->GetLoaderAllocator()->GetStubHeap(), NEWSTUB_FL_NONE, "UnboxingStub");
     }
 #endif // FEATURE_PORTABLE_SHUFFLE_THUNKS || TARGET_X86
 
-    RETURN CreateUnboxingILStubForValueTypeMethods(pUnboxedMD);
+    return CreateUnboxingILStubForValueTypeMethods(pUnboxedMD);
 }
 
 #if defined(FEATURE_SHARE_GENERIC_CODE)
 Stub * MakeInstantiatingStubWorker(MethodDesc *pMD)
 {
-    CONTRACT(Stub*)
+    CONTRACTL
     {
         STANDARD_VM_CHECK;
         PRECONDITION(pMD->IsInstantiatingStub());
         PRECONDITION(!pMD->RequiresInstArg());
         PRECONDITION(!pMD->IsSharedByGenericMethodInstantiations());
-        POSTCONDITION(CheckPointer(RETVAL));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     // Note: this should be kept idempotent ... in the sense that
     // if multiple threads get in here for the same pMD
@@ -1752,17 +1748,17 @@ Stub * MakeInstantiatingStubWorker(MethodDesc *pMD)
         _ASSERTE(pSharedMD != NULL && pSharedMD != pMD);
         sl.EmitComputedInstantiatingMethodStub(pSharedMD, &portableShuffle[0], extraArg);
 
-        RETURN sl.Link(pMD->GetLoaderAllocator()->GetStubHeap(), NEWSTUB_FL_INSTANTIATING_METHOD, "InstantiatingStub");
+        return sl.Link(pMD->GetLoaderAllocator()->GetStubHeap(), NEWSTUB_FL_INSTANTIATING_METHOD, "InstantiatingStub");
     }
 #elif defined(TARGET_X86)
     CPUSTUBLINKER sl;
     if (sl.EmitInstantiatingMethodStub(pSharedMD, extraArg))
     {
-        RETURN sl.Link(pMD->GetLoaderAllocator()->GetStubHeap(), NEWSTUB_FL_NONE, "InstantiatingStub");
+        return sl.Link(pMD->GetLoaderAllocator()->GetStubHeap(), NEWSTUB_FL_NONE, "InstantiatingStub");
     }
 #endif // FEATURE_PORTABLE_SHUFFLE_THUNKS || TARGET_X86
 
-    RETURN CreateInstantiatingILStub(pSharedMD, extraArg);
+    return CreateInstantiatingILStub(pSharedMD, extraArg);
 }
 #endif // defined(FEATURE_SHARE_GENERIC_CODE)
 
@@ -1950,7 +1946,7 @@ extern "C" PCODE STDCALL PreStubWorker(TransitionBlock* pTransitionBlock, Method
         pPFrame->Pop(CURRENT_THREAD);
     }
 
-    POSTCONDITION(pbRetVal != NULL);
+    _ASSERTE(pbRetVal != 0);
 
     return pbRetVal;
 }
@@ -2263,12 +2259,11 @@ static void TestSEHGuardPageRestore()
 // pointer to the stub, and not a pointer directly to the JITted code.
 PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMode)
 {
-    CONTRACT(PCODE)
+    CONTRACTL
     {
         STANDARD_VM_CHECK;
-        POSTCONDITION(RETVAL != NULL);
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     Stub *pStub = NULL;
     PCODE pCode = (PCODE)NULL;
@@ -2341,7 +2336,7 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
 
         GetOrCreatePrecode()->SetTargetInterlocked(pCode);
 
-        RETURN GetStableEntryPoint();
+        return GetStableEntryPoint();
     }
 #endif // FEATURE_COMINTEROP
 
@@ -2554,7 +2549,8 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
 
 Return:
 
-    RETURN pCode;
+    _ASSERTE(pCode != 0);
+    return pCode;
 }
 
 #endif // !DACCESS_COMPILE

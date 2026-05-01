@@ -82,11 +82,11 @@ class BranchInstructionFormat : public InstructionFormat
             if (fExternal)
             {
                 // Note that the parameter 'offset' is not an offset but the target address itself (when fExternal is true)
-                return (refSize == InstructionFormat::k64);
+                return refSize == InstructionFormat::k64;
             }
             else
             {
-                return ((offset >= -0x80000000L && offset <= 0x7fffffff) || (refSize == InstructionFormat::k64));
+                return (offset >= -0x80000000L && offset <= 0x7fffffff) || (refSize == InstructionFormat::k64);
             }
         }
 
@@ -359,7 +359,7 @@ void FaultingExceptionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool u
 
 void InlinedCallFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats)
 {
-    CONTRACT_VOID
+    CONTRACTL
     {
         NOTHROW;
         GC_NOTRIGGER;
@@ -369,7 +369,7 @@ void InlinedCallFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateF
         MODE_ANY;
         SUPPORTS_DAC;
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     if (!InlinedCallFrame::FrameHasActiveCall(this))
     {
@@ -414,8 +414,6 @@ void InlinedCallFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateF
     pRD->pCurrentContextPointers->Fp = &m_pCalleeSavedFP;
 
     LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    InlinedCallFrame::UpdateRegDisplay_Impl(pc:%p, sp:%p)\n", pRD->ControlPC, pRD->SP));
-
-    RETURN;
 }
 
 #ifdef FEATURE_HIJACK
@@ -427,14 +425,14 @@ TADDR ResumableFrame::GetReturnAddressPtr_Impl(void)
 
 void ResumableFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats)
 {
-    CONTRACT_VOID
+    CONTRACTL
     {
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
         SUPPORTS_DAC;
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     CopyMemory(pRD->pCurrentContext, m_Regs, sizeof(T_CONTEXT));
 
@@ -477,8 +475,6 @@ void ResumableFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFlo
     pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this field.  This is only temporary.
 
     LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    ResumableFrame::UpdateRegDisplay_Impl(pc:%p, sp:%p)\n", pRD->ControlPC, pRD->SP));
-
-    RETURN;
 }
 
 void HijackFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats)
@@ -788,13 +784,13 @@ void StubLinkerCPU::Init()
 static bool InRegister(UINT16 ofs)
 {
     _ASSERTE(ofs != ShuffleEntry::SENTINEL);
-    return (ofs & ShuffleEntry::REGMASK);
+    return ofs & ShuffleEntry::REGMASK;
 }
 
 static bool IsRegisterFloating(UINT16 ofs)
 {
     _ASSERTE(InRegister(ofs));
-    return (ofs & ShuffleEntry::FPREGMASK);
+    return ofs & ShuffleEntry::FPREGMASK;
 }
 
 static int GetRegister(UINT16 ofs)

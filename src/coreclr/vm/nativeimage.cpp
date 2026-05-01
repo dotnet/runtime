@@ -48,7 +48,6 @@ NativeImage::NativeImage(AssemblyBinder *pAssemblyBinder, ReadyToRunLoadedImage 
     CONTRACTL
     {
         THROWS;
-        CONSTRUCTOR_CHECK;
         STANDARD_VM_CHECK;
         INJECT_FAULT(COMPlusThrowOM(););
     }

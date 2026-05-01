@@ -502,7 +502,6 @@ static inline BOOL CheckSuspended(Thread *pThread)
     CONTRACTL_END;
 
     _ASSERTE(GetThreadNULLOk() != pThread);
-    _ASSERTE(CheckPointer(pThread));
 
 #ifndef DISABLE_THREADSUSPEND
     DWORD dwSuspendCount;
@@ -1058,7 +1057,7 @@ BOOL Thread::IsRudeAbort()
     }
     CONTRACTL_END;
 
-    return (IsAbortRequested() && (m_AbortType == EEPolicy::TA_Rude));
+    return IsAbortRequested() && (m_AbortType == EEPolicy::TA_Rude);
 }
 
 //
@@ -2552,7 +2551,7 @@ int RedirectedHandledJITCaseExceptionFilter(
     SetLastError(dwLastError);
 
     // Resume execution at point where thread was originally redirected
-    return (EXCEPTION_CONTINUE_EXECUTION);
+    return EXCEPTION_CONTINUE_EXECUTION;
 }
 #endif // TARGET_X86
 
@@ -2835,7 +2834,7 @@ BOOL Thread::RedirectThreadAtHandledJITCase(PFN_REDIRECTTARGET pTgt)
     // that we would need while allocating.
     // Other ways and attempts at suspending may yet succeed, but this redirection cannot continue.
     if (!pCtx)
-        return (FALSE);
+        return FALSE;
 
     //////////////////////////////////////
     // Get and save the thread's context
@@ -2864,10 +2863,10 @@ BOOL Thread::RedirectThreadAtHandledJITCase(PFN_REDIRECTTARGET pTgt)
     _ASSERTE(bRes && "Failed to GetThreadContext in RedirectThreadAtHandledJITCase - aborting redirect.");
 
     if (!bRes)
-        return (FALSE);
+        return FALSE;
 
     if (!IsContextSafeToRedirect(pCtx))
-        return (FALSE);
+        return FALSE;
 
     ////////////////////////////////////////////////////
     // Now redirect the thread to the helper function
@@ -2896,7 +2895,7 @@ BOOL Thread::RedirectThreadAtHandledJITCase(PFN_REDIRECTTARGET pTgt)
         void* stackPointer = (void*)GetSP(pCtx);
         if ((stackPointer < this->GetCachedStackLimit()) || (stackPointer > this->GetCachedStackBase()))
         {
-            return (FALSE);
+            return FALSE;
         }
 
         _ASSERTE(!"Failed to SetThreadContext in RedirectThreadAtHandledJITCase - aborting redirect.");
@@ -2916,7 +2915,7 @@ BOOL Thread::RedirectThreadAtHandledJITCase(PFN_REDIRECTTARGET pTgt)
     //////////////////////////////////////////////////
     // Indicate whether or not the redirect succeeded
 
-    return (bRes);
+    return bRes;
 }
 
 BOOL Thread::CheckForAndDoRedirect(PFN_REDIRECTTARGET pRedirectTarget)
@@ -2937,7 +2936,7 @@ BOOL Thread::CheckForAndDoRedirect(PFN_REDIRECTTARGET pRedirectTarget)
     fRes = RedirectThreadAtHandledJITCase(pRedirectTarget);
     LOG((LF_GC, LL_INFO1000, "RedirectThreadAtHandledJITCase %s.\n", fRes ? "SUCCEEDED" : "FAILED"));
 
-    return (fRes);
+    return fRes;
 }
 
 BOOL Thread::RedirectCurrentThreadAtHandledJITCase(PFN_REDIRECTTARGET pTgt, CONTEXT *pCurrentThreadCtx)
@@ -3644,7 +3643,7 @@ int RedirectedThrowControlExceptionFilter(
     SetCurrentSEHRecord(pCurSEH);
 
     // Resume execution at point where thread was originally redirected
-    return (EXCEPTION_CONTINUE_EXECUTION);
+    return EXCEPTION_CONTINUE_EXECUTION;
 }
 
 void RedirectedThrowControl()
@@ -4114,7 +4113,7 @@ bool Thread::SysStartSuspendForDebug(AppDomain *pAppDomain)
 // This can be safely called if we're already suspended.
 bool Thread::SysSweepThreadsForDebug(bool forceSync)
 {
-    CONTRACT(bool) {
+    CONTRACTL {
         NOTHROW;
         DISABLED(GC_TRIGGERS); // WaitUntilConcurrentGCComplete toggle GC mode, disabled because called by unmanaged thread
 
@@ -4124,9 +4123,8 @@ bool Thread::SysSweepThreadsForDebug(bool forceSync)
         PRECONDITION(GetThreadNULLOk() == NULL);
 
         // Iff we return true, then we have the TSL (or the aux lock used in workarounds).
-        POSTCONDITION(ThreadStore::HoldingThreadStore());
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     _ASSERTE(!forceSync); // deprecated parameter
 
@@ -4275,7 +4273,8 @@ Label_MarkThreadAsSynced:
         {
             // If that was the last thread, then the CLR is synced.
             // We return while own the thread store lock. We return true now, which indicates this to the caller.
-            RETURN true;
+            _ASSERTE(ThreadStore::HoldingThreadStore());
+            return true;
         }
         continue;
 
@@ -4283,13 +4282,15 @@ Label_MarkThreadAsSynced:
 
     if (m_DebugWillSyncCount < 0)
     {
-        RETURN true;
+        _ASSERTE(ThreadStore::HoldingThreadStore());
+        return true;
     }
 
-    // The CLR is not yet synced. We release the threadstore lock and return false.
+    // The CLR is not yet synced. We release the suspend-in-progress flag and return false.
     hldSuspendRuntimeInProgress.Release();
 
-    RETURN false;
+    _ASSERTE(ThreadStore::HoldingThreadStore());
+    return false;
 }
 
 void Thread::SysResumeFromDebug(AppDomain *pAppDomain)

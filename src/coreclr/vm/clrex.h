@@ -303,7 +303,7 @@ class EEMessageException : public EEException
 
     static BOOL IsEEMessageException(Exception *pException)
     {
-        return (*(PVOID*)pException == GetEEMessageExceptionVPtr());
+        return *(PVOID*)pException == GetEEMessageExceptionVPtr();
     }
 
  protected:
@@ -320,17 +320,16 @@ class EEMessageException : public EEException
 
     static PVOID GetEEMessageExceptionVPtr()
     {
-        CONTRACT (PVOID)
+        CONTRACTL
         {
             WRAPPER(THROWS);
             WRAPPER(GC_TRIGGERS);
             MODE_ANY;
-            POSTCONDITION(CheckPointer(RETVAL));
         }
-        CONTRACT_END;
+        CONTRACTL_END;
 
         EEMessageException boilerplate(E_FAIL);
-        RETURN (PVOID&)boilerplate;
+        return (PVOID&)boilerplate;
     }
 
     BOOL GetResourceMessage(UINT iResourceID, SString &result);
@@ -1177,4 +1176,3 @@ class CLRLastThrownObjectException : public CLRException
 bool IsHRESULTForExceptionKind(HRESULT hr, RuntimeExceptionKind kind);
 
 #endif // _CLREX_H_
-

@@ -80,13 +80,13 @@ inline BOOL MethodTable::IsClassPointerValid()
     LowBits lowBits = union_getLowBits(m_pCanonMT);
     if (lowBits == UNION_EECLASS)
     {
-        return (m_pEEClass != NULL);
+        return m_pEEClass != NULL;
     }
     else
     {
         // pointer to canonical MethodTable.
         TADDR canonicalMethodTable = union_getPointer(m_pCanonMT);
-        return (PTR_MethodTable(canonicalMethodTable)->m_pEEClass != NULL);
+        return PTR_MethodTable(canonicalMethodTable)->m_pEEClass != NULL;
     }
 }
 
@@ -130,28 +130,28 @@ inline WORD MethodTable::GetNumNonVirtualSlots()
 inline WORD MethodTable::GetNumInstanceFields()
 {
     WRAPPER_NO_CONTRACT;
-    return (GetClass()->GetNumInstanceFields());
+    return GetClass()->GetNumInstanceFields();
 }
 
 //==========================================================================================
 inline WORD MethodTable::GetNumStaticFields()
 {
     LIMITED_METHOD_DAC_CONTRACT;
-    return (GetClass()->GetNumStaticFields());
+    return GetClass()->GetNumStaticFields();
 }
 
 //==========================================================================================
 inline WORD MethodTable::GetNumThreadStaticFields()
 {
     LIMITED_METHOD_DAC_CONTRACT;
-    return (GetClass()->GetNumThreadStaticFields());
+    return GetClass()->GetNumThreadStaticFields();
 }
 
 //==========================================================================================
 inline DWORD MethodTable::GetNumInstanceFieldBytes()
 {
     LIMITED_METHOD_DAC_CONTRACT;
-    return(GetBaseSize() - GetClass()->GetBaseSizePadding());
+    return GetBaseSize() - GetClass()->GetBaseSizePadding();
 }
 
 //==========================================================================================
@@ -173,7 +173,7 @@ inline WORD MethodTable::GetNumIntroducedInstanceFields()
         wNumFields -= wNumParentFields;
     }
 
-    return(wNumFields);
+    return wNumFields;
 }
 
 //==========================================================================================
@@ -267,7 +267,7 @@ inline BOOL MethodTable::HasExplicitGuid()
 
     GUID guid;
     GetGuid(&guid, FALSE);
-    return (guid != GUID_NULL);
+    return guid != GUID_NULL;
 }
 
 #endif // FEATURE_COMINTEROP
@@ -287,7 +287,7 @@ inline BOOL MethodTable::IsEnum()
     // Make sure that we are not using this method during startup
     _ASSERTE(g_pEnumClass != NULL);
 
-    return (pParentMT == g_pEnumClass);
+    return pParentMT == g_pEnumClass;
 }
 
 //==========================================================================================
@@ -482,7 +482,6 @@ inline void MethodTable::CopySlotFrom(UINT32 slotNumber, MethodDataWrapper &hSou
     WRAPPER_NO_CONTRACT;
 
     MethodDesc *pMD = hSourceMTData->GetImplMethodDesc(slotNumber);
-    _ASSERTE(CheckPointer(pMD));
     _ASSERTE(pMD == pSourceMT->GetMethodDescForSlot_NoThrow(slotNumber));
     SetSlot(slotNumber, pMD->GetInitialEntryPointForCopiedSlot(NULL, NULL));
 }
@@ -532,7 +531,7 @@ inline BOOL MethodTable::MethodIterator::Prev()
     WRAPPER_NO_CONTRACT;
     if (IsValid())
         --m_iCur;
-    return (IsValid());
+    return IsValid();
 }
 
 //==========================================================================================
@@ -541,7 +540,7 @@ inline BOOL MethodTable::MethodIterator::Next()
     WRAPPER_NO_CONTRACT;
     if (IsValid())
         ++m_iCur;
-    return (IsValid());
+    return IsValid();
 }
 
 //==========================================================================================
@@ -716,7 +715,7 @@ inline UINT32 MethodTable::GetIndexAfterVtableIndirection(UINT32 slotNum)
     LIMITED_METHOD_DAC_CONTRACT;
     _ASSERTE((1 << VTABLE_SLOTS_PER_CHUNK_LOG2) == VTABLE_SLOTS_PER_CHUNK);
 
-    return (slotNum & (VTABLE_SLOTS_PER_CHUNK - 1));
+    return slotNum & (VTABLE_SLOTS_PER_CHUNK - 1);
 }
 
 //==========================================================================================
@@ -771,14 +770,14 @@ inline BOOL MethodTable::VtableIndirectionSlotIterator::Next()
     PRECONDITION(!Finished());
     if (m_i != (DWORD) -1)
         m_pSlot++;
-    return (++m_i < m_count);
+    return ++m_i < m_count;
 }
 
 //==========================================================================================
 inline BOOL MethodTable::VtableIndirectionSlotIterator::Finished()
 {
     LIMITED_METHOD_DAC_CONTRACT;
-    return (m_i == m_count);
+    return m_i == m_count;
 }
 
 //==========================================================================================
@@ -1060,7 +1059,7 @@ inline BOOL MethodTable::IsCanonicalMethodTable()
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
-    return (union_getLowBits(m_pCanonMT) == UNION_EECLASS);
+    return union_getLowBits(m_pCanonMT) == UNION_EECLASS;
 }
 
 //==========================================================================================

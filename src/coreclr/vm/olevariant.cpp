@@ -282,7 +282,7 @@ VARTYPE OleVariant::GetElementVarTypeForArrayRef(BASEARRAYREF pArrayRef)
     CONTRACTL_END;
 
     TypeHandle elemTypeHnd = pArrayRef->GetArrayElementTypeHandle();
-    return(GetVarTypeForTypeHandle(elemTypeHnd));
+    return GetVarTypeForTypeHandle(elemTypeHnd);
 }
 
 #ifdef FEATURE_COMINTEROP
@@ -717,17 +717,16 @@ MethodTable* OleVariant::GetNativeMethodTableForVarType(VARTYPE vt, MethodTable*
 
 const OleVariant::Marshaler *OleVariant::GetMarshalerForVarType(VARTYPE vt, BOOL fThrow)
 {
-    CONTRACT (const OleVariant::Marshaler*)
+    CONTRACTL
     {
         if (fThrow) THROWS; else NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
 #define RETURN_MARSHALER(ArrayOleToCom, ArrayComToOle, ClearArray) \
-    { static const Marshaler marshaler = { ArrayOleToCom, ArrayComToOle, ClearArray }; RETURN &marshaler; }
+    { static const Marshaler marshaler = { ArrayOleToCom, ArrayComToOle, ClearArray }; return &marshaler; }
 
 #ifdef FEATURE_COMINTEROP
     if (vt & VT_ARRAY)
@@ -806,7 +805,7 @@ VariantArray:
         );
 
     case VTHACK_BLITTABLERECORD:
-        RETURN NULL; // Requires no marshaling
+        return NULL; // Requires no marshaling
 
     case VTHACK_WINBOOL:
         RETURN_MARSHALER(
@@ -866,11 +865,11 @@ VariantArray:
         }
         else
         {
-            RETURN NULL;
+            return NULL;
         }
 
     default:
-        RETURN NULL;
+        return NULL;
     }
 } // OleVariant::Marshaler *OleVariant::GetMarshalerForVarType()
 
@@ -2274,7 +2273,7 @@ Exit:
 
 void OleVariant::MarshalObjectForOleVariant(const VARIANT * pOle, OBJECTREF * const & pObj)
 {
-    CONTRACT_VOID
+    CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
@@ -2284,7 +2283,7 @@ void OleVariant::MarshalObjectForOleVariant(const VARIANT * pOle, OBJECTREF * co
         PRECONDITION(CheckPointer(pObj));
         PRECONDITION(*pObj == NULL || (IsProtectedByGCFrame (pObj)));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     // if V_ISBYREF(pOle) and V_BYREF(pOle) is null then we have a problem,
     // unless we're dealing with VT_EMPTY or VT_NULL in which case that is ok??
@@ -2446,7 +2445,7 @@ void OleVariant::MarshalObjectForOleVariant(const VARIANT * pOle, OBJECTREF * co
         default:
             MarshalObjectForOleVariantUncommon(pOle, pObj);
         }
-        RETURN;
+        return;
     }
 
 /* ------------------------------------------------------------------------- *
@@ -2455,7 +2454,7 @@ void OleVariant::MarshalObjectForOleVariant(const VARIANT * pOle, OBJECTREF * co
 
 void OleVariant::ExtractContentsFromByrefVariant(VARIANT *pByrefVar, VARIANT *pDestVar)
 {
-    CONTRACT_VOID
+    CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
@@ -2463,7 +2462,7 @@ void OleVariant::ExtractContentsFromByrefVariant(VARIANT *pByrefVar, VARIANT *pD
         PRECONDITION(CheckPointer(pByrefVar));
         PRECONDITION(CheckPointer(pDestVar));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     VARTYPE vt = V_VT(pByrefVar) & ~VT_BYREF;
 
@@ -2524,13 +2523,11 @@ void OleVariant::ExtractContentsFromByrefVariant(VARIANT *pByrefVar, VARIANT *pD
             break;
         }
     }
-
-    RETURN;
 }
 
 void OleVariant::InsertContentsIntoByRefVariant(VARIANT *pSrcVar, VARIANT *pByrefVar)
 {
-    CONTRACT_VOID
+    CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
@@ -2538,7 +2535,7 @@ void OleVariant::InsertContentsIntoByRefVariant(VARIANT *pSrcVar, VARIANT *pByre
         PRECONDITION(CheckPointer(pByrefVar));
         PRECONDITION(CheckPointer(pSrcVar));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     _ASSERTE(V_VT(pSrcVar) == (V_VT(pByrefVar) & ~VT_BYREF) || V_VT(pByrefVar) == (VT_BYREF | VT_VARIANT));
 
@@ -2583,12 +2580,11 @@ void OleVariant::InsertContentsIntoByRefVariant(VARIANT *pSrcVar, VARIANT *pByre
             break;
         }
     }
-    RETURN;
 }
 
 void OleVariant::CreateByrefVariantForVariant(VARIANT *pSrcVar, VARIANT *pByrefVar)
 {
-    CONTRACT_VOID
+    CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
@@ -2596,7 +2592,7 @@ void OleVariant::CreateByrefVariantForVariant(VARIANT *pSrcVar, VARIANT *pByrefV
         PRECONDITION(CheckPointer(pByrefVar));
         PRECONDITION(CheckPointer(pSrcVar));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     // Set the type of the byref variant based on the type of the source variant.
     VARTYPE vt = V_VT(pSrcVar);
@@ -2646,8 +2642,6 @@ void OleVariant::CreateByrefVariantForVariant(VARIANT *pSrcVar, VARIANT *pByrefV
 
         V_VT(pByrefVar) = vt | VT_BYREF;
     }
-
-    RETURN;
 }
 
 /* ------------------------------------------------------------------------- *
@@ -3271,16 +3265,15 @@ void OleVariant::MarshalArrayVariantOleRefToObject(const VARIANT *pOleVariant,
 SAFEARRAY *OleVariant::CreateSafeArrayDescriptorForArrayRef(BASEARRAYREF *pArrayRef, VARTYPE vt,
                                                             MethodTable *pInterfaceMT)
 {
-    CONTRACT (SAFEARRAY*)
+    CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
         PRECONDITION(CheckPointer(pArrayRef));
         PRECONDITION(!(vt & VT_ARRAY));
-        POSTCONDITION(CheckPointer(RETVAL));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     ASSERT_PROTECTED(pArrayRef);
 
@@ -3372,7 +3365,7 @@ SAFEARRAY *OleVariant::CreateSafeArrayDescriptorForArrayRef(BASEARRAYREF *pArray
         IfFailThrow(SafeArraySetRecordInfo(pSafeArray, pRecInfo));
     }
 
-    RETURN pSafeArray.Detach();
+    return pSafeArray.Detach();
 }
 
 //
@@ -3384,7 +3377,7 @@ SAFEARRAY *OleVariant::CreateSafeArrayDescriptorForArrayRef(BASEARRAYREF *pArray
 SAFEARRAY *OleVariant::CreateSafeArrayForArrayRef(BASEARRAYREF *pArrayRef, VARTYPE vt,
                                                   MethodTable *pInterfaceMT)
 {
-    CONTRACT (SAFEARRAY*)
+    CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
@@ -3393,7 +3386,7 @@ SAFEARRAY *OleVariant::CreateSafeArrayForArrayRef(BASEARRAYREF *pArrayRef, VARTY
 //        PRECONDITION(CheckPointer(*pArrayRef));
         PRECONDITION(vt != VT_EMPTY);
     }
-    CONTRACT_END;
+    CONTRACTL_END;
     ASSERT_PROTECTED(pArrayRef);
 
     // Validate that the type of the managed array is the expected type.
@@ -3416,7 +3409,7 @@ SAFEARRAY *OleVariant::CreateSafeArrayForArrayRef(BASEARRAYREF *pArrayRef, VARTY
         COMPlusThrowHR(hr);
     }
 
-    RETURN pSafeArray;
+    return pSafeArray;
 }
 
 //
@@ -4126,25 +4119,26 @@ void OleVariant::ConvertBSTRToString(BSTR bstr, STRINGREF *pStringObj)
 
 BSTR OleVariant::ConvertStringToBSTR(STRINGREF *pStringObj)
 {
-    CONTRACT(BSTR)
+    CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
         PRECONDITION(CheckPointer(pStringObj));
-
-        // A null BSTR should only be returned if the input string is null.
-        POSTCONDITION(RETVAL != NULL || *pStringObj == NULL);
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     if (*pStringObj == NULL)
     {
-        RETURN NULL;
+        return NULL;
     }
 
     UnmanagedCallersOnlyCaller convertToNative(METHOD__BSTRMARSHALER__CONVERT_TO_NATIVE_UCO);
-    RETURN (BSTR)convertToNative.InvokeThrowing_Ret<INT_PTR>(pStringObj);
+    BSTR result = (BSTR)convertToNative.InvokeThrowing_Ret<INT_PTR>(pStringObj);
+
+    // A null BSTR should only be returned if the input string is null.
+    _ASSERTE(result != NULL);
+    return result;
 }
 
 extern "C" void QCALLTYPE Variant_ConvertValueTypeToRecord(QCall::ObjectHandleOnStack obj, VARIANT * pOle)

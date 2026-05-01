@@ -42,13 +42,12 @@ Thread* EEDbgInterfaceImpl::GetThread(void)
 // Since this may be called from a Debugger Interop Hijack, the EEThread may be bogus.
 // Thus we can't use contracts. If we do fix that, then the contract below would be nice...
 #if 0
-    CONTRACT(Thread *)
+    CONTRACTL
     {
         NOTHROW;
         GC_NOTRIGGER;
-        POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 #endif
 
     return ::GetThreadNULLOk();
@@ -76,16 +75,15 @@ StackWalkAction EEDbgInterfaceImpl::StackWalkFramesEx(Thread* pThread,
 
 Frame *EEDbgInterfaceImpl::GetFrame(CrawlFrame *pCF)
 {
-    CONTRACT(Frame *)
+    CONTRACTL
     {
         NOTHROW;
         GC_NOTRIGGER;
         PRECONDITION(CheckPointer(pCF));
-        POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
-    RETURN pCF->GetFrame();
+    return pCF->GetFrame();
 }
 
 bool EEDbgInterfaceImpl::InitRegDisplay(Thread* pThread,
@@ -275,7 +273,7 @@ bool EEDbgInterfaceImpl::IsThreadExceptionNull(Thread *pThread)
 
     void *pThrowable = *((void**)h);
 
-    return (pThrowable == NULL);
+    return pThrowable == NULL;
 }
 
 void EEDbgInterfaceImpl::ClearThreadException(Thread *pThread)
@@ -373,16 +371,15 @@ void EEDbgInterfaceImpl::SetThreadFilterContext(Thread *thread,
 
 CONTEXT *EEDbgInterfaceImpl::GetThreadFilterContext(Thread *thread)
 {
-    CONTRACT(CONTEXT *)
+    CONTRACTL
     {
         NOTHROW;
         GC_NOTRIGGER;
         PRECONDITION(CheckPointer(thread));
-        POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
-    RETURN thread->GetFilterContext();
+    return thread->GetFilterContext();
 }
 
 #ifdef FEATURE_INTEROP_DEBUGGING
@@ -415,16 +412,15 @@ PCODE EEDbgInterfaceImpl::GetNativeCodeStartAddress(PCODE address)
 
 MethodDesc *EEDbgInterfaceImpl::GetNativeCodeMethodDesc(const PCODE address)
 {
-    CONTRACT(MethodDesc *)
+    CONTRACTL
     {
         NOTHROW;
         GC_NOTRIGGER;
         PRECONDITION(address != NULL);
-        POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
-    RETURN ExecutionManager::GetCodeMethodDesc(address);
+    return ExecutionManager::GetCodeMethodDesc(address);
 }
 
 #ifndef USE_GC_INFO_DECODER
@@ -679,50 +675,47 @@ DWORD EEDbgInterfaceImpl::MethodDescIsStatic(MethodDesc *pFD)
 
 Module *EEDbgInterfaceImpl::MethodDescGetModule(MethodDesc *pFD)
 {
-    CONTRACT(Module *)
+    CONTRACTL
     {
         NOTHROW;
         GC_NOTRIGGER;
         PRECONDITION(CheckPointer(pFD));
-        POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
-    RETURN pFD->GetModule();
+    return pFD->GetModule();
 }
 
 #ifndef DACCESS_COMPILE
 
 COR_ILMETHOD* EEDbgInterfaceImpl::MethodDescGetILHeader(MethodDesc *pFD)
 {
-    CONTRACT(COR_ILMETHOD *)
+    CONTRACTL
     {
         THROWS;
         GC_NOTRIGGER;
         PRECONDITION(CheckPointer(pFD));
-        POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     if (pFD->IsIL())
     {
-        RETURN pFD->GetILHeader();
+        return pFD->GetILHeader();
     }
 
-    RETURN NULL;
+    return NULL;
 }
 
 MethodDesc *EEDbgInterfaceImpl::FindLoadedMethodRefOrDef(Module* pModule,
                                                           mdToken memberRef)
 {
-    CONTRACT(MethodDesc *)
+    CONTRACTL
     {
         NOTHROW;
         GC_NOTRIGGER;
         PRECONDITION(CheckPointer(pModule));
-        POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     // Must have a MemberRef or a MethodDef
     mdToken tkType = TypeFromToken(memberRef);
@@ -730,10 +723,10 @@ MethodDesc *EEDbgInterfaceImpl::FindLoadedMethodRefOrDef(Module* pModule,
 
     if (tkType == mdtMemberRef)
     {
-        RETURN pModule->LookupMemberRefAsMethod(memberRef);
+        return pModule->LookupMemberRefAsMethod(memberRef);
     }
 
-    RETURN pModule->LookupMethodDef(memberRef);
+    return pModule->LookupMethodDef(memberRef);
 }
 
 MethodDesc *EEDbgInterfaceImpl::LoadMethodDef(Module* pModule,
@@ -742,14 +735,13 @@ MethodDesc *EEDbgInterfaceImpl::LoadMethodDef(Module* pModule,
                                               TypeHandle *pGenericArgs,
                                               TypeHandle *pOwnerType)
 {
-    CONTRACT(MethodDesc *)
+    CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
         PRECONDITION(CheckPointer(pModule));
-        POSTCONDITION(CheckPointer(RETVAL));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     _ASSERTE(TypeFromToken(methodDef) == mdtMethodDef);
 
@@ -817,7 +809,7 @@ MethodDesc *EEDbgInterfaceImpl::LoadMethodDef(Module* pModule,
             *pOwnerType = TypeHandle(pRes->GetMethodTable());
         }
     }
-    RETURN (pRes);
+    return pRes;
 
 }
 
@@ -825,15 +817,15 @@ MethodDesc *EEDbgInterfaceImpl::LoadMethodDef(Module* pModule,
 TypeHandle EEDbgInterfaceImpl::FindLoadedClass(Module *pModule,
                                              mdTypeDef classToken)
 {
-    CONTRACT(TypeHandle)
+    CONTRACTL
     {
         NOTHROW;
         GC_NOTRIGGER;
         PRECONDITION(CheckPointer(pModule));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
-    RETURN ClassLoader::LookupTypeDefOrRefInModule(pModule, classToken);
+    return ClassLoader::LookupTypeDefOrRefInModule(pModule, classToken);
 
 }
 
@@ -915,15 +907,15 @@ TypeHandle EEDbgInterfaceImpl::FindLoadedElementType(CorElementType et)
 TypeHandle EEDbgInterfaceImpl::LoadClass(Module *pModule,
                                        mdTypeDef classToken)
 {
-    CONTRACT(TypeHandle)
+    CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
         PRECONDITION(CheckPointer(pModule));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
-    RETURN ClassLoader::LoadTypeDefOrRefThrowing(pModule, classToken,
+    return ClassLoader::LoadTypeDefOrRefThrowing(pModule, classToken,
                                                           ClassLoader::ThrowIfNotFound,
                                                           ClassLoader::PermitUninstDefOrRef);
 
@@ -934,32 +926,32 @@ TypeHandle EEDbgInterfaceImpl::LoadInstantiation(Module *pModule,
                                                  DWORD ntypars,
                                                  TypeHandle *inst)
 {
-    CONTRACT(TypeHandle)
+    CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
         PRECONDITION(CheckPointer(pModule));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
-    RETURN ClassLoader::LoadGenericInstantiationThrowing(pModule, typeDef, Instantiation(inst, ntypars));
+    return ClassLoader::LoadGenericInstantiationThrowing(pModule, typeDef, Instantiation(inst, ntypars));
 }
 
 TypeHandle EEDbgInterfaceImpl::LoadArrayType(CorElementType et,
                                              TypeHandle elemtype,
                                              unsigned rank)
 {
-    CONTRACT(TypeHandle)
+    CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     if (elemtype.IsNull())
-        RETURN TypeHandle();
+        return TypeHandle();
     else
-        RETURN ClassLoader::LoadArrayTypeThrowing(elemtype, et, rank);
+        return ClassLoader::LoadArrayTypeThrowing(elemtype, et, rank);
 }
 
 TypeHandle EEDbgInterfaceImpl::LoadPointerOrByrefType(CorElementType et,
@@ -1478,7 +1470,7 @@ unsigned EEDbgInterfaceImpl::GetSizeForCorElementType(CorElementType etyp)
 {
     WRAPPER_NO_CONTRACT;
 
-    return (::GetSizeForCorElementType(etyp));
+    return ::GetSizeForCorElementType(etyp);
 }
 
 
@@ -1494,7 +1486,7 @@ BOOL EEDbgInterfaceImpl::ObjIsInstanceOf(Object *pElement, TypeHandle toTypeHnd)
 {
     WRAPPER_NO_CONTRACT;
 
-    return (::ObjIsInstanceOf(pElement, toTypeHnd));
+    return ::ObjIsInstanceOf(pElement, toTypeHnd);
 }
 #endif
 

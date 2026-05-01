@@ -785,13 +785,12 @@ namespace
 
 NATIVE_LIBRARY_HANDLE NativeLibrary::LoadLibraryFromMethodDesc(PInvokeMethodDesc * pMD)
 {
-    CONTRACT(NATIVE_LIBRARY_HANDLE)
+    CONTRACTL
     {
         STANDARD_VM_CHECK;
         PRECONDITION(CheckPointer(pMD));
-        POSTCONDITION(RETVAL != NULL);
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     LoadLibErrorTracker errorTracker;
     NATIVE_LIBRARY_HANDLE hmod = LoadNativeLibrary(pMD, &errorTracker);
@@ -804,5 +803,5 @@ NATIVE_LIBRARY_HANDLE NativeLibrary::LoadLibraryFromMethodDesc(PInvokeMethodDesc
         errorTracker.Throw(ssLibName);
     }
 
-    RETURN hmod;
+    return hmod;
 }

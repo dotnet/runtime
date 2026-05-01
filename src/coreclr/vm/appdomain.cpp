@@ -1224,7 +1224,7 @@ bool SystemDomain::IsReflectionInvocationMethod(MethodDesc* pMeth)
         // Even if a user-created DynamicMethod uses the same naming convention, it will likely not
         // get here since since DynamicMethods by default are created in a special (non-system) module.
         // If this is not sufficient for conflict prevention, we can create a new private module.
-        return (strncmp(pMeth->GetName(), "InvokeStub_", ARRAY_SIZE("InvokeStub_") - 1) == 0);
+        return strncmp(pMeth->GetName(), "InvokeStub_", ARRAY_SIZE("InvokeStub_") - 1) == 0;
     }
 
     /* List of types that should be skipped to identify true caller */
@@ -1608,7 +1608,7 @@ HRESULT SystemDomain::NotifyProfilerShutdown()
         (&g_profControlBlock)->AppDomainShutdownFinished((AppDomainID) AppDomain::GetCurrentDomain(), S_OK);
         END_PROFILER_CALLBACK();
     }
-    return (S_OK);
+    return S_OK;
 }
 #endif // PROFILING_SUPPORTED
 
@@ -2353,21 +2353,20 @@ Assembly *AppDomain::LoadAssembly(AssemblySpec* pSpec,
                                   PEAssembly * pPEAssembly,
                                   FileLoadLevel targetLevel)
 {
-    CONTRACT(Assembly *)
+    CONTRACTL
     {
         GC_TRIGGERS;
         THROWS;
         MODE_ANY;
         PRECONDITION(CheckPointer(pPEAssembly));
-        POSTCONDITION(CheckPointer(RETVAL));
         INJECT_FAULT(COMPlusThrowOM(););
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     if (pSpec == nullptr)
     {
         // skip caching, since we don't have anything to base it on
-        RETURN LoadAssemblyInternal(pSpec, pPEAssembly, targetLevel);
+        return LoadAssemblyInternal(pSpec, pPEAssembly, targetLevel);
     }
 
     Assembly* pRetVal = NULL;
@@ -2413,7 +2412,7 @@ Assembly *AppDomain::LoadAssembly(AssemblySpec* pSpec,
     }
     EX_END_HOOK;
 
-    RETURN pRetVal;
+    return pRetVal;
 }
 
 
@@ -2421,20 +2420,16 @@ Assembly *AppDomain::LoadAssemblyInternal(AssemblySpec* pIdentity,
                                               PEAssembly * pPEAssembly,
                                               FileLoadLevel targetLevel)
 {
-    CONTRACT(Assembly *)
+    CONTRACTL
     {
         GC_TRIGGERS;
         THROWS;
         MODE_ANY;
         PRECONDITION(CheckPointer(pPEAssembly));
         PRECONDITION(::GetAppDomain()==this);
-        POSTCONDITION(CheckPointer(RETVAL));
-        POSTCONDITION(RETVAL->GetLoadLevel() >= GetCurrentFileLoadLevel()
-                      || RETVAL->GetLoadLevel() >= targetLevel);
-        POSTCONDITION(RETVAL->CheckNoError(targetLevel));
         INJECT_FAULT(COMPlusThrowOM(););
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
 
     Assembly * result;
@@ -2508,22 +2503,22 @@ Assembly *AppDomain::LoadAssemblyInternal(AssemblySpec* pIdentity,
         GetAppDomain()->AddAssemblyToCache(pIdentity, result);
     }
 
-    RETURN result;
+    _ASSERTE(result->GetLoadLevel() >= GetCurrentFileLoadLevel()
+        || result->GetLoadLevel() >= targetLevel);
+    _ASSERTE(result->CheckNoError(targetLevel));
+    return result;
 } // AppDomain::LoadAssembly
 
 Assembly *AppDomain::LoadAssembly(FileLoadLock *pLock, FileLoadLevel targetLevel)
 {
-    CONTRACT(Assembly *)
+    CONTRACTL
     {
         STANDARD_VM_CHECK;
         PRECONDITION(CheckPointer(pLock));
         PRECONDITION(AppDomain::GetCurrentDomain() == this);
         PRECONDITION(targetLevel >= FILE_LOAD_ALLOCATE);
-        POSTCONDITION(RETVAL->GetLoadLevel() >= GetCurrentFileLoadLevel()
-                      || RETVAL->GetLoadLevel() >= targetLevel);
-        POSTCONDITION(RETVAL->CheckNoError(targetLevel));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     // Make sure we release the lock on exit
     FileLoadLockRefHolder lockRef(pLock);
@@ -2536,7 +2531,10 @@ Assembly *AppDomain::LoadAssembly(FileLoadLock *pLock, FileLoadLevel targetLevel
 
         pAssembly->ThrowIfError(targetLevel);
 
-        RETURN pAssembly;
+        _ASSERTE(pAssembly->CheckNoError(targetLevel));
+        _ASSERTE(pAssembly->GetLoadLevel() >= GetCurrentFileLoadLevel()
+            || pAssembly->GetLoadLevel() >= targetLevel);
+        return pAssembly;
     }
 
     // Initialize a loading queue.  This will hold any loads which are triggered recursively but
@@ -2627,7 +2625,10 @@ Assembly *AppDomain::LoadAssembly(FileLoadLock *pLock, FileLoadLevel targetLevel
     // specify the minimum load level acceptable and throw if not reached.)
 
     pAssembly->RequireLoadLevel((FileLoadLevel)(immediateTargetLevel-1));
-    RETURN pAssembly;
+    _ASSERTE(pAssembly->GetLoadLevel() >= GetCurrentFileLoadLevel()
+        || pAssembly->GetLoadLevel() >= targetLevel);
+    _ASSERTE(pAssembly->CheckNoError(targetLevel));
+    return pAssembly;
 }
 
 void AppDomain::TryIncrementalLoad(FileLoadLevel workLevel, FileLoadLockHolder& lockHolder)
@@ -2846,20 +2847,21 @@ void AppDomain::SetFriendlyName(LPCWSTR pwzFriendlyName)
 
 LPCWSTR AppDomain::GetFriendlyName()
 {
-    CONTRACT (LPCWSTR)
+    CONTRACTL
     {
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
         INJECT_FAULT(COMPlusThrowOM(););
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     if (m_friendlyName == NULL)
-        RETURN DEFAULT_DOMAIN_FRIENDLY_NAME;
+    {
+        return DEFAULT_DOMAIN_FRIENDLY_NAME;
+    }
 
-    RETURN (LPCWSTR)m_friendlyName;
+    return (LPCWSTR)m_friendlyName;
 }
 
 #ifndef DACCESS_COMPILE
@@ -2957,24 +2959,23 @@ void AppDomain::AddUnmanagedImageToCache(LPCWSTR libraryName, NATIVE_LIBRARY_HAN
 
 NATIVE_LIBRARY_HANDLE AppDomain::FindUnmanagedImageInCache(LPCWSTR libraryName)
 {
-    CONTRACT(NATIVE_LIBRARY_HANDLE)
+    CONTRACTL
     {
         THROWS;
         GC_NOTRIGGER;
         MODE_ANY;
         PRECONDITION(CheckPointer(libraryName));
-        POSTCONDITION(CheckPointer(RETVAL,NULL_OK));
         INJECT_FAULT(COMPlusThrowOM(););
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     DomainCacheCrstHolderForGCPreemp lock(this);
 
     const UnmanagedImageCacheEntry *existingEntry = m_unmanagedCache.LookupPtr(libraryName);
     if (existingEntry == NULL)
-        RETURN NULL;
+        return NULL;
 
-    RETURN existingEntry->Handle;
+    return existingEntry->Handle;
 }
 
 BOOL AppDomain::RemoveFileFromCache(PEAssembly * pPEAssembly)
@@ -3411,15 +3412,14 @@ void AppDomain::RaiseExitProcessEvent()
 
 DefaultAssemblyBinder *AppDomain::CreateDefaultBinder()
 {
-    CONTRACT(DefaultAssemblyBinder *)
+    CONTRACTL
     {
         GC_TRIGGERS;
         THROWS;
         MODE_ANY;
-        POSTCONDITION(CheckPointer(RETVAL));
         INJECT_FAULT(COMPlusThrowOM(););
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     if (!m_pDefaultBinder)
     {
@@ -3431,7 +3431,7 @@ DefaultAssemblyBinder *AppDomain::CreateDefaultBinder()
         IfFailThrow(BINDER_SPACE::AssemblyBinderCommon::CreateDefaultBinder(&m_pDefaultBinder));
     }
 
-    RETURN m_pDefaultBinder;
+    return m_pDefaultBinder;
 }
 
 
@@ -3518,14 +3518,13 @@ void AppDomain::NotifyDebuggerUnload()
 
 RCWRefCache *AppDomain::GetRCWRefCache()
 {
-    CONTRACT(RCWRefCache*)
+    CONTRACTL
     {
         THROWS;
         GC_NOTRIGGER;
         MODE_ANY;
-        POSTCONDITION(CheckPointer(RETVAL));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     if (!m_pRCWRefCache) {
         NewHolder<RCWRefCache> pRCWRefCache = new RCWRefCache(this);
@@ -3534,7 +3533,7 @@ RCWRefCache *AppDomain::GetRCWRefCache()
             pRCWRefCache.SuppressRelease();
         }
     }
-    RETURN m_pRCWRefCache;
+    return m_pRCWRefCache;
 }
 #endif // FEATURE_COMWRAPPERS
 
@@ -3542,15 +3541,14 @@ RCWRefCache *AppDomain::GetRCWRefCache()
 
 RCWCache *AppDomain::CreateRCWCache()
 {
-    CONTRACT(RCWCache*)
+    CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
         INJECT_FAULT(COMPlusThrowOM(););
-        POSTCONDITION(CheckPointer(RETVAL));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     // Initialize the global RCW cleanup list here as well. This is so that it
     // it guaranteed to exist if any RCW's are created, but it is not created
@@ -3573,7 +3571,7 @@ RCWCache *AppDomain::CreateRCWCache()
         }
     }
 
-    RETURN m_pRCWCache;
+    return m_pRCWCache;
 }
 
 void AppDomain::ReleaseRCWs(LPVOID pCtxCookie)
@@ -3653,15 +3651,14 @@ Assembly* AppDomain::RaiseTypeResolveEventThrowing(Assembly* pAssembly, LPCSTR s
 
 Assembly* AppDomain::RaiseResourceResolveEvent(Assembly* pAssembly, LPCSTR szName)
 {
-    CONTRACT(Assembly*)
+    CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
         INJECT_FAULT(COMPlusThrowOM(););
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     Assembly* pResolvedAssembly = NULL;
 
@@ -3693,7 +3690,7 @@ Assembly* AppDomain::RaiseResourceResolveEvent(Assembly* pAssembly, LPCSTR szNam
     }
     GCPROTECT_END();
 
-    RETURN pResolvedAssembly;
+    return pResolvedAssembly;
 }
 
 
@@ -3701,15 +3698,14 @@ Assembly *
 AppDomain::RaiseAssemblyResolveEvent(
     AssemblySpec * pSpec)
 {
-    CONTRACT(Assembly*)
+    CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
         INJECT_FAULT(COMPlusThrowOM(););
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     StackSString ssName;
     pSpec->GetDisplayName(0, ssName);
@@ -3755,7 +3751,7 @@ AppDomain::RaiseAssemblyResolveEvent(
     }
     GCPROTECT_END();
 
-    RETURN pAssembly;
+    return pAssembly;
 } // AppDomain::RaiseAssemblyResolveEvent
 
 void SystemDomain::ProcessDelayedUnloadLoaderAllocators()
@@ -3808,12 +3804,12 @@ void SystemDomain::ProcessDelayedUnloadLoaderAllocators()
 
 void AppDomain::EnumStaticGCRefs(promote_func* fn, ScanContext* sc)
 {
-    CONTRACT_VOID
+    CONTRACTL
     {
         NOTHROW;
         GC_NOTRIGGER;
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     _ASSERTE(GCHeapUtilities::IsGCInProgress() &&
              GCHeapUtilities::IsServerHeap()   &&
@@ -3823,8 +3819,6 @@ void AppDomain::EnumStaticGCRefs(promote_func* fn, ScanContext* sc)
     {
         m_pPinnedHeapHandleTable->EnumStaticGCRefs(fn, sc);
     }
-
-    RETURN;
 }
 
 #endif // !DACCESS_COMPILE

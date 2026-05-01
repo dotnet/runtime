@@ -118,15 +118,14 @@ UMEntryThunkCache::~UMEntryThunkCache()
 
 UMEntryThunkData *UMEntryThunkCache::GetUMEntryThunk(MethodDesc *pMD)
 {
-    CONTRACT (UMEntryThunkData *)
+    CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
         PRECONDITION(CheckPointer(pMD));
-        POSTCONDITION(CheckPointer(RETVAL));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     CrstHolder ch(&m_crst);
 
@@ -153,7 +152,7 @@ UMEntryThunkData *UMEntryThunkCache::GetUMEntryThunk(MethodDesc *pMD)
         umHolder.SuppressRelease();
     }
 
-    RETURN pThunk;
+    return pThunk;
 }
 
 //-------------------------------------------------------------------------
@@ -266,15 +265,14 @@ PCODE TheUMEntryPrestubWorker(UMEntryThunkData* pUMEntryThunkData)
 
 UMEntryThunkData* UMEntryThunkData::CreateUMEntryThunk()
 {
-    CONTRACT (UMEntryThunkData*)
+    CONTRACTL
     {
         THROWS;
         GC_NOTRIGGER;
         MODE_ANY;
         INJECT_FAULT(COMPlusThrowOM());
-        POSTCONDITION(CheckPointer(RETVAL));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     UMEntryThunkData * pData = s_thunkFreeList.GetUMEntryThunk();
 
@@ -301,12 +299,12 @@ UMEntryThunkData* UMEntryThunkData::CreateUMEntryThunk()
         pamTracker->SuppressRelease();
     }
 
-    RETURN pData;
+    return pData;
 }
 
 UMEntryThunkData* UMEntryThunkData::CreateUMEntryThunk(LoaderAllocator* pLoaderAllocator, AllocMemTracker* pamTracker)
 {
-    CONTRACT (UMEntryThunkData*)
+    CONTRACTL
     {
         THROWS;
         GC_NOTRIGGER;
@@ -314,16 +312,15 @@ UMEntryThunkData* UMEntryThunkData::CreateUMEntryThunk(LoaderAllocator* pLoaderA
         PRECONDITION(CheckPointer(pLoaderAllocator));
         PRECONDITION(CheckPointer(pamTracker));
         INJECT_FAULT(COMPlusThrowOM());
-        POSTCONDITION(CheckPointer(RETVAL));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     UMEntryThunkData* pData = (UMEntryThunkData*)pamTracker->Track(pLoaderAllocator->GetLowFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(UMEntryThunkData))));
     UMEntryThunk* pThunk = (UMEntryThunk*)pamTracker->Track(pLoaderAllocator->GetNewStubPrecodeHeap()->AllocStub());
     pData->m_pUMEntryThunk = pThunk;
     pThunk->Init(pThunk, dac_cast<TADDR>(pData), NULL, dac_cast<TADDR>(PRECODE_UMENTRY_THUNK));
 
-    RETURN pData;
+    return pData;
 }
 
 void UMEntryThunkData::Terminate()

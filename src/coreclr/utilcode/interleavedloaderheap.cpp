@@ -43,7 +43,6 @@ UnlockedInterleavedLoaderHeap::UnlockedInterleavedLoaderHeap(
 {
     CONTRACTL
     {
-        CONSTRUCTOR_CHECK;
         NOTHROW;
         FORBID_FAULT;
     }
@@ -410,7 +409,6 @@ void UnlockedInterleavedLoaderHeap::UnlockedBackoutStub(void *pMem
     // define Backout(NULL) be a legal NOP.
     if (pMem == NULL)
     {
-        return;
     }
 
     size_t dwSize = m_dwGranularity;
@@ -449,7 +447,7 @@ void *UnlockedInterleavedLoaderHeap::UnlockedAllocStub_NoThrow(
                                                           INDEBUG(_In_ const char *szFile)
                                                           COMMA_INDEBUG(int  lineNum))
 {
-    CONTRACT(void*)
+    CONTRACTL
     {
         NOTHROW;
 
@@ -457,14 +455,14 @@ void *UnlockedInterleavedLoaderHeap::UnlockedAllocStub_NoThrow(
         //INJECT_FAULT( do{ if (*pdwExtra) {*pdwExtra = 0} RETURN NULL; } while(0) );
 
     }
-    CONTRACT_END
+    CONTRACTL_END
 
     size_t dwRequestedSize = m_dwGranularity;
     size_t alignment = 1;
 
     STATIC_CONTRACT_FAULT;
 
-    SHOULD_INJECT_FAULT(RETURN NULL);
+    SHOULD_INJECT_FAULT(return NULL);
 
     void *pResult;
 
@@ -486,7 +484,7 @@ void *UnlockedInterleavedLoaderHeap::UnlockedAllocStub_NoThrow(
         {
             if (!GetMoreCommittedPages(dwRequestedSize))
             {
-                RETURN NULL;
+                return NULL;
             }
         }
 
@@ -523,7 +521,7 @@ void *UnlockedInterleavedLoaderHeap::UnlockedAllocStub_NoThrow(
     EtwAllocRequest(this, pResult, dwRequestedSize);
 #endif //_DEBUG
 
-    RETURN pResult;
+    return pResult;
 }
 
 void *UnlockedInterleavedLoaderHeap::UnlockedAllocStub(
@@ -557,4 +555,3 @@ void InitializeLoaderHeapConfig(InterleavedLoaderHeapConfig *pConfig, size_t stu
 }
 
 #endif // #ifndef DACCESS_COMPILE
-

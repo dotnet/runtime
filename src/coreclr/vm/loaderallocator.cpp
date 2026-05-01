@@ -210,10 +210,10 @@ BOOL LoaderAllocator::Release()
 #ifdef ENABLE_LOG_LOADER_ALLOCATOR_CLEANUP
     minipal_log_print_info("LoaderAllocator::Release LA %d(%p) %d\n", this->m_nLoaderAllocator, this, (int)m_cReferences.Load());
 #endif
-    return (cNewReferences == 0);
+    return cNewReferences == 0;
 #else //DACCESS_COMPILE
 
-    return (m_cReferences == (UINT32)0);
+    return m_cReferences == (UINT32)0;
 #endif //DACCESS_COMPILE
 } // LoaderAllocator::Release
 
@@ -1034,8 +1034,6 @@ void LoaderAllocator::SetHandleValue(LOADERHANDLE handle, OBJECTREF value)
     }
 
     GCPROTECT_END();
-
-    return;
 }
 
 void LoaderAllocator::SetupManagedTracking(LOADERALLOCATORREF * pKeepLoaderAllocatorAlive)
@@ -1698,15 +1696,14 @@ void LoaderAllocator::UninitVirtualCallStubManager()
 
 EEMarshalingData *LoaderAllocator::GetMarshalingData()
 {
-    CONTRACT (EEMarshalingData*)
+    CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
         INJECT_FAULT(COMPlusThrowOM());
-        POSTCONDITION(CheckPointer(m_pMarshalingData));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     if (!m_pMarshalingData)
     {
@@ -1719,7 +1716,7 @@ EEMarshalingData *LoaderAllocator::GetMarshalingData()
         }
     }
 
-    RETURN m_pMarshalingData;
+    return m_pMarshalingData;
 }
 
 void LoaderAllocator::DeleteMarshalingData()

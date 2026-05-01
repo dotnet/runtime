@@ -5740,13 +5740,12 @@ ClrDataAccess::GetMethodNativeMap(MethodDesc* methodDesc,
 MethodDesc * ClrDataAccess::FindLoadedMethodRefOrDef(Module* pModule,
     mdToken memberRef)
 {
-    CONTRACT(MethodDesc *)
+    CONTRACTL
     {
         GC_NOTRIGGER;
         PRECONDITION(CheckPointer(pModule));
-        POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     // Must have a MemberRef or a MethodDef
     mdToken tkType = TypeFromToken(memberRef);
@@ -5754,10 +5753,10 @@ MethodDesc * ClrDataAccess::FindLoadedMethodRefOrDef(Module* pModule,
 
     if (tkType == mdtMemberRef)
     {
-        RETURN pModule->LookupMemberRefAsMethod(memberRef);
+        return pModule->LookupMemberRefAsMethod(memberRef);
     }
 
-    RETURN pModule->LookupMethodDef(memberRef);
+    return pModule->LookupMethodDef(memberRef);
 } // FindLoadedMethodRefOrDef
 
 //

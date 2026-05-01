@@ -63,11 +63,11 @@ template<class T>
 inline
 void DacDbiArrayList<T>::Dealloc()
 {
-    CONTRACT_VOID
+    CONTRACTL
     {
         NOTHROW;
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     if (m_pList != NULL)
     {
@@ -75,7 +75,6 @@ void DacDbiArrayList<T>::Dealloc()
         m_pList = NULL;
     }
     m_nEntries = 0;
-    RETURN;
 }
 
 // Alloc and Init are very similar.  Both preallocate the array; but Alloc leaves the
@@ -236,7 +235,7 @@ void TargetBuffer::Init(CORDB_ADDRESS address, ULONG size)
 inline
 bool TargetBuffer::IsEmpty() const
 {
-    return (this->cbSize == 0);
+    return this->cbSize == 0;
 }
 
 //-----------------------------------------------------------------------------

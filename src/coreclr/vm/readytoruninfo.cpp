@@ -277,12 +277,12 @@ BOOL ReadyToRunInfo::GetEnclosingToken(IMDInternalImport * pImport, ModuleBase* 
 
     case mdtTypeRef:
         if (SUCCEEDED(pImport->GetResolutionScopeOfTypeRef(mdType, pEnclosingToken)))
-            return ((TypeFromToken(*pEnclosingToken) == mdtTypeRef) && (*pEnclosingToken != mdTypeRefNil));
+            return (TypeFromToken(*pEnclosingToken) == mdtTypeRef) && (*pEnclosingToken != mdTypeRefNil);
         break;
 
     case mdtExportedType:
         if (SUCCEEDED(pImport->GetExportedTypeProps(mdType, NULL, NULL, pEnclosingToken, NULL, NULL)))
-            return ((TypeFromToken(*pEnclosingToken) == mdtExportedType) && (*pEnclosingToken != mdExportedTypeNil));
+            return (TypeFromToken(*pEnclosingToken) == mdtExportedType) && (*pEnclosingToken != mdExportedTypeNil);
         break;
     }
 
@@ -2156,7 +2156,7 @@ public:
     }
     Module *GetModuleIfLoaded(mdFile kFile) final
     {
-        CONTRACT(Module *)
+        CONTRACTL
         {
             INSTANCE_CHECK;
             NOTHROW;
@@ -2164,11 +2164,10 @@ public:
             MODE_ANY;
             PRECONDITION(TypeFromToken(kFile) == mdtFile
                         || TypeFromToken(kFile) == mdtModuleRef);
-            POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
             FORBID_FAULT;
             SUPPORTS_DAC;
         }
-        CONTRACT_END;
+        CONTRACTL_END;
 
         // Native manifest module functionality isn't actually multi-module assemblies, and File tokens are not useable
         if (TypeFromToken(kFile) == mdtFile)
@@ -2177,12 +2176,14 @@ public:
         _ASSERTE(TypeFromToken(kFile) == mdtModuleRef);
         Module* module = m_ModuleReferencesMap.GetElement(RidFromToken(kFile));
         if (module != NULL)
-            RETURN module;
+            {
+                return module;
+            }
 
         LPCSTR moduleName;
         if (FAILED(GetMDImport()->GetModuleRefProps(kFile, &moduleName)))
         {
-            RETURN NULL;
+            return NULL;
         }
 
         LPCSTR assemblyNameInModuleRef;
@@ -2211,7 +2212,7 @@ public:
                     mdToken assemblyRef;
                     if (FAILED(GetAssemblyRefTokenOfIndirectDependency(module, assemblyNameInModuleRef, assemblyNameLen, &assemblyRef)))
                     {
-                        RETURN NULL;
+                        return NULL;
                     }
 
                     if (assemblyRef == mdTokenNil)
@@ -2232,7 +2233,7 @@ public:
         if (module != NULL)
             m_ModuleReferencesMap.TrySetElement(RidFromToken(kFile), module);
 #endif
-        RETURN module;
+        return module;
     }
 
     Module *LoadModule(mdFile kFile) final
@@ -2395,7 +2396,7 @@ bool ReadyToRun_TypeGenericInfoMap::IsGeneric(mdTypeDef input, IMDInternalImport
     {
         HENUMInternalHolder hEnumTyPars(pImport);
         hEnumTyPars.EnumInit(mdtGenericParam, input);
-        return (pImport->EnumGetCount(&hEnumTyPars) != 0);
+        return pImport->EnumGetCount(&hEnumTyPars) != 0;
     }
     return !!((uint8_t)typeGenericInfo & (uint8_t)ReadyToRunTypeGenericInfo::GenericCountMask);
 }

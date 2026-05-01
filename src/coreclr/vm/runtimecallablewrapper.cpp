@@ -82,7 +82,7 @@ void ComClassFactory::ThrowHRMsg(HRESULT hr, DWORD dwMsgResID)
 //
 IUnknown *ComClassFactory::CreateInstanceFromClassFactory(IClassFactory *pClassFact, IUnknown *punkOuter, BOOL *pfDidContainment)
 {
-    CONTRACT (IUnknown*)
+    CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
@@ -92,9 +92,8 @@ IUnknown *ComClassFactory::CreateInstanceFromClassFactory(IClassFactory *pClassF
         PRECONDITION(CheckPointer(punkOuter, NULL_OK));
         PRECONDITION(CheckPointer(pfDidContainment, NULL_OK));
         PRECONDITION(CheckPointer(m_pClassMT, NULL_OK));
-        POSTCONDITION(CheckPointer(RETVAL));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     HRESULT hr = S_OK;
     SafeComHolder<IClassFactory2> pClassFact2 = NULL;
@@ -222,7 +221,7 @@ IUnknown *ComClassFactory::CreateInstanceFromClassFactory(IClassFactory *pClassF
     ComWrappersNative::MarkWrapperAsComActivated(pUnk);
 
     pUnk.SuppressRelease();
-    RETURN pUnk;
+    return pUnk;
 }
 
 
@@ -368,31 +367,29 @@ OBJECTREF ComClassFactory::CreateAggregatedInstance(MethodTable* pMTClass, BOOL 
 // Overridable
 IUnknown *ComClassFactory::CreateInstanceInternal(IUnknown *pOuter, BOOL *pfDidContainment)
 {
-    CONTRACT(IUnknown *)
+    CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
         PRECONDITION(CheckPointer(pOuter, NULL_OK));
         PRECONDITION(CheckPointer(pfDidContainment, NULL_OK));
-        POSTCONDITION(CheckPointer(RETVAL));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     SafeComHolder<IClassFactory> pClassFactory = GetIClassFactory();
-    RETURN CreateInstanceFromClassFactory(pClassFactory, pOuter, pfDidContainment);
+    return CreateInstanceFromClassFactory(pClassFactory, pOuter, pfDidContainment);
 }
 
 IClassFactory *ComClassFactory::GetIClassFactory()
 {
-    CONTRACT(IClassFactory *)
+    CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        POSTCONDITION(CheckPointer(RETVAL));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     HRESULT hr = S_OK;
     IClassFactory *pClassFactory = NULL;
@@ -442,7 +439,7 @@ IClassFactory *ComClassFactory::GetIClassFactory()
             COMPlusThrowHR(hr, IDS_EE_REMOTE_COGETCLASSOBJECT_FAILED, strHRHex, strClsid, m_wszServer, strHRDescription.GetUnicode());
     }
 
-    RETURN pClassFactory;
+    return pClassFactory;
 }
 
 //-------------------------------------------------------------
@@ -541,32 +538,30 @@ void ComClassFactory::Cleanup()
 // Obtain the appropriate wrapper cache from the current context.
 RCWCache* RCWCache::GetRCWCache()
 {
-    CONTRACT (RCWCache*)
+    CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     AppDomain * pDomain = GetAppDomain();
-    RETURN (pDomain ? pDomain->GetRCWCache() : NULL);
+    return pDomain ? pDomain->GetRCWCache() : NULL;
 }
 
 RCWCache* RCWCache::GetRCWCacheNoCreate()
 {
-    CONTRACT (RCWCache*)
+    CONTRACTL
     {
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     AppDomain * pDomain = GetAppDomain();
-    RETURN (pDomain ? pDomain->GetRCWCacheNoCreate() : NULL);
+    return pDomain ? pDomain->GetRCWCacheNoCreate() : NULL;
 }
 
 
@@ -632,8 +627,6 @@ void RCWCache::FindWrapperInCache_NoLock(IUnknown* pIdentity, RCWHolder* pRCW)
             pRCW->UnInit();
         }
     }
-
-    return;
 }
 
 BOOL RCWCache::FindOrInsertWrapper_NoLock(IUnknown* pIdentity, RCWHolder* pRCW, BOOL fAllowReinit)
@@ -1124,7 +1117,7 @@ VOID RCWCleanupList::CleanupWrappersInCurrentCtxThread(BOOL fWait, BOOL fManualC
 BOOL RCWCleanupList::IsEmpty()
 {
     LIMITED_METHOD_CONTRACT;
-    return (m_pFirstBucket == NULL);
+    return m_pFirstBucket == NULL;
 }
 
 // static
@@ -1206,14 +1199,14 @@ VOID RCWCleanupList::ReleaseRCWListRaw(RCW* pRCW)
 // The IUnknown passed in is AddRef'ed if we succeed in creating the wrapper.
 RCW* RCW::CreateRCW(IUnknown *pUnk, DWORD dwSyncBlockIndex, DWORD flags, MethodTable *pClassMT)
 {
-    CONTRACT (RCW*)
+    CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
         INJECT_FAULT(COMPlusThrowOM());
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     RCW *pRCW = NULL;
 
@@ -1222,12 +1215,12 @@ RCW* RCW::CreateRCW(IUnknown *pUnk, DWORD dwSyncBlockIndex, DWORD flags, MethodT
         pRCW = RCW::CreateRCWInternal(pUnk, dwSyncBlockIndex, flags, pClassMT);
     }
 
-    RETURN pRCW;
+    return pRCW;
 }
 
 RCW* RCW::CreateRCWInternal(IUnknown *pUnk, DWORD dwSyncBlockIndex, DWORD flags, MethodTable *pClassMT)
 {
-    CONTRACT (RCW*)
+    CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
@@ -1236,9 +1229,8 @@ RCW* RCW::CreateRCWInternal(IUnknown *pUnk, DWORD dwSyncBlockIndex, DWORD flags,
         PRECONDITION(CheckPointer(pUnk));
         PRECONDITION(dwSyncBlockIndex != 0);
         PRECONDITION(CheckPointer(pClassMT));
-        POSTCONDITION(CheckPointer(RETVAL));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     // now allocate the wrapper
     RCW *pWrap = new RCW();
@@ -1258,7 +1250,7 @@ RCW* RCW::CreateRCWInternal(IUnknown *pUnk, DWORD dwSyncBlockIndex, DWORD flags,
 
     pUnkHolder.SuppressRelease();
 
-    RETURN pWrap;
+    return pWrap;
 }
 
 //----------------------------------------------------------
@@ -1413,15 +1405,14 @@ LONG RCW::AddRef(RCWCache* pWrapCache)
 
 AppDomain* RCW::GetDomain()
 {
-    CONTRACT (AppDomain*)
+    CONTRACTL
     {
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        POSTCONDITION(CheckPointer(RETVAL));
     }
-    CONTRACT_END;
-    RETURN m_pRCWCache->GetDomain();
+    CONTRACTL_END;
+    return m_pRCWCache->GetDomain();
 }
 
 //--------------------------------------------------------------------------------
@@ -1698,14 +1689,13 @@ void RCW::CreateDuplicateWrapper(MethodTable *pNewMT, RCWHolder* pNewRCW)
 // instead of an IID.
 IUnknown* RCW::GetComIPFromRCW(REFIID iid)
 {
-    CONTRACT(IUnknown *)
+    CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     SafeComHolder<IUnknown> pRet = NULL;
     HRESULT hr = S_OK;
@@ -1724,7 +1714,7 @@ IUnknown* RCW::GetComIPFromRCW(REFIID iid)
     }
 
     pRet.SuppressRelease();
-    RETURN pRet;
+    return pRet;
 }
 
 //--------------------------------------------------------------------------------
@@ -1732,26 +1722,25 @@ IUnknown* RCW::GetComIPFromRCW(REFIID iid)
 // if not found QI for the interface and store it
 IUnknown* RCW::GetComIPFromRCW(MethodTable* pMT)
 {
-    CONTRACT (IUnknown*)
+    CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
         PRECONDITION(CheckPointer(pMT, NULL_OK));
-        POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     if (pMT == NULL || pMT->IsObjectClass())
     {
         // give out the IUnknown or IDispatch
         IUnknown *result = GetIUnknown();
         _ASSERTE(result != NULL);
-        RETURN result;
+        return result;
     }
 
     // returns an AddRef'ed IP
-    RETURN GetComIPForMethodTableFromCache(pMT);
+    return GetComIPForMethodTableFromCache(pMT);
 }
 
 
@@ -1760,17 +1749,16 @@ IUnknown* RCW::GetComIPFromRCW(MethodTable* pMT)
 // make sure it is on the right thread
 IUnknown* RCW::GetIUnknown()
 {
-    CONTRACT (IUnknown*)
+    CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        POSTCONDITION(CheckPointer(RETVAL));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     // Try to retrieve the IUnknown in the current context.
-    RETURN m_UnkEntry.GetIUnknownForCurrContext(false);
+    return m_UnkEntry.GetIUnknownForCurrContext(false);
 }
 
 //-----------------------------------------------------------------
@@ -1779,29 +1767,27 @@ IUnknown* RCW::GetIUnknown()
 // otherwise NULL will be returned.
 IUnknown* RCW::GetIUnknown_NoAddRef()
 {
-    CONTRACT (IUnknown*)
+    CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     // Retrieve the IUnknown in the current context.
-    RETURN m_UnkEntry.GetIUnknownForCurrContext(true);
+    return m_UnkEntry.GetIUnknownForCurrContext(true);
 }
 
 IUnknown *RCW::GetWellKnownInterface(REFIID riid)
 {
-    CONTRACT (IUnknown*)
+    CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     IUnknown *pUnk = NULL;
 
@@ -1815,7 +1801,7 @@ IUnknown *RCW::GetWellKnownInterface(REFIID riid)
     }
 
     // Return the IDispatch that is guaranteed to be valid on the current thread.
-    RETURN pUnk;
+    return pUnk;
 }
 
 //-----------------------------------------------------------------
@@ -1929,15 +1915,14 @@ HRESULT RCW::CallQueryInterface(MethodTable *pMT, Instantiation inst, IID *piid,
 // for the current apartment, use the cache and update the cache on miss
 IUnknown* RCW::GetComIPForMethodTableFromCache(MethodTable* pMT)
 {
-    CONTRACT(IUnknown*)
+    CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
         PRECONDITION(CheckPointer(pMT));
-        POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     ULONG cbRef;
     IUnknown* pUnk = 0;
@@ -1964,7 +1949,7 @@ IUnknown* RCW::GetComIPForMethodTableFromCache(MethodTable* pMT)
 
                 cbRef = SafeAddRef(pUnk);
                 LogInteropAddRef(pUnk, cbRef, "RCW::GetComIPForMethodTableFromCache: Addref because returning pUnk fetched from InterfaceEntry cache");
-                RETURN pUnk;
+                return pUnk;
             }
         }
     }
@@ -1976,7 +1961,7 @@ IUnknown* RCW::GetComIPForMethodTableFromCache(MethodTable* pMT)
     hr = CallQueryInterface(pMT, Instantiation(), &iid, &pUnk);
 
     if (pUnk == NULL)
-        RETURN NULL;
+        return NULL;
 
     // try to cache the interface pointer in the inline cache. This cache can only store interface pointers
     // returned from QI's in the same context where we created the RCW.
@@ -1999,7 +1984,7 @@ IUnknown* RCW::GetComIPForMethodTableFromCache(MethodTable* pMT)
         }
     }
 
-    RETURN pUnk;
+    return pUnk;
 }
 
 //----------------------------------------------------------
@@ -2063,15 +2048,14 @@ HRESULT RCW::EnterContext(PFNCTXCALLBACK pCallbackFunc, LPVOID pData)
 // Callback called to release the IUnkEntry and the Interface entries.
 HRESULT __stdcall RCW::ReleaseAllInterfacesCallBack(LPVOID pData)
 {
-    CONTRACT(HRESULT)
+    CONTRACTL
     {
         NOTHROW;
         GC_TRIGGERS;
         MODE_PREEMPTIVE;
         PRECONDITION(CheckPointer(pData));
-        POSTCONDITION(SUCCEEDED(RETVAL));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     RCW* pWrap = (RCW*)pData;
 
@@ -2098,7 +2082,7 @@ HRESULT __stdcall RCW::ReleaseAllInterfacesCallBack(LPVOID pData)
         }
     }
 
-    RETURN S_OK;
+    return S_OK;
 }
 
 //---------------------------------------------------------------------
@@ -2312,7 +2296,7 @@ BOOL ComObject::SupportsInterface(OBJECTREF oref, MethodTable* pIntfTable)
 // ThrowInvalidCastException
 void ComObject::ThrowInvalidCastException(OBJECTREF *pObj, MethodTable *pCastToMT)
 {
-    CONTRACT_VOID
+    CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
@@ -2320,9 +2304,8 @@ void ComObject::ThrowInvalidCastException(OBJECTREF *pObj, MethodTable *pCastToM
         PRECONDITION(pObj != NULL);
         PRECONDITION(*pObj != NULL);
         PRECONDITION(IsProtectedByGCFrame (pObj));
-        POSTCONDITION(!"This function should never return!");
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     SafeComHolder<IUnknown> pItf = NULL;
     HRESULT hr = S_OK;
@@ -2427,7 +2410,7 @@ void ComObject::ThrowInvalidCastException(OBJECTREF *pObj, MethodTable *pCastToM
         }
     }
 
-    RETURN;
+    UNREACHABLE();
 }
 
 //--------------------------------------------------------------------------------
@@ -2458,16 +2441,15 @@ void ComObject::ReleaseAllData(OBJECTREF oref)
 // static
 IUnknown *ComObject::GetComIPFromRCW(OBJECTREF *pObj, MethodTable* pIntfTable)
 {
-    CONTRACT (IUnknown*)
+    CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
         PRECONDITION(IsProtectedByGCFrame(pObj));
         PRECONDITION(CheckPointer(pIntfTable, NULL_OK));
-        POSTCONDITION(CheckPointer(RETVAL, NULL_OK)); // NULL if we couldn't find match
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     SafeComHolder<IUnknown> pIUnk;
 
@@ -2477,7 +2459,7 @@ IUnknown *ComObject::GetComIPFromRCW(OBJECTREF *pObj, MethodTable* pIntfTable)
     pIUnk = pRCW->GetComIPFromRCW(pIntfTable);
 
     RCWPROTECT_END(pRCW);
-    RETURN pIUnk.Extract();
+    return pIUnk.Extract();
 }
 
 //--------------------------------------------------------------------------
@@ -2485,24 +2467,21 @@ IUnknown *ComObject::GetComIPFromRCW(OBJECTREF *pObj, MethodTable* pIntfTable)
 // static
 IUnknown *ComObject::GetComIPFromRCWThrowing(OBJECTREF *pObj, MethodTable* pIntfTable)
 {
-    CONTRACT (IUnknown*)
+    CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
         PRECONDITION(IsProtectedByGCFrame(pObj));
         PRECONDITION(CheckPointer(pIntfTable, NULL_OK));
-        POSTCONDITION(CheckPointer(RETVAL));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     IUnknown* pIUnk = GetComIPFromRCW(pObj, pIntfTable);
 
     if (pIUnk == NULL)
         ThrowInvalidCastException(pObj, pIntfTable);
 
-    RETURN pIUnk;
+    return pIUnk;
 }
 #endif // #ifndef DACCESS_COMPILE
-
-

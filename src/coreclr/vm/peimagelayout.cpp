@@ -506,7 +506,6 @@ ConvertedImageLayout::ConvertedImageLayout(FlatImageLayout* source, bool disable
 {
     CONTRACTL
     {
-        CONSTRUCTOR_CHECK;
         STANDARD_VM_CHECK;
     }
     CONTRACTL_END;
@@ -597,7 +596,6 @@ LoadedImageLayout::LoadedImageLayout(PEImage* pOwner, HRESULT* loadFailure)
 {
     CONTRACTL
     {
-        CONSTRUCTOR_CHECK;
         STANDARD_VM_CHECK;
         PRECONDITION(CheckPointer(pOwner));
     }
@@ -695,7 +693,6 @@ FlatImageLayout::FlatImageLayout(PEImage* pOwner)
 {
     CONTRACTL
     {
-        CONSTRUCTOR_CHECK;
         STANDARD_VM_CHECK;
         PRECONDITION(CheckPointer(pOwner));
     }
@@ -829,7 +826,6 @@ FlatImageLayout::FlatImageLayout(PEImage* pOwner, const BYTE* array, COUNT_T siz
 {
     CONTRACTL
     {
-        CONSTRUCTOR_CHECK;
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;

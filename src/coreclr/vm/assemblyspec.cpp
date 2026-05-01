@@ -323,17 +323,15 @@ AssemblyBinder* AssemblySpec::GetBinderFromParentAssembly(AppDomain *pDomain)
 Assembly *AssemblySpec::LoadAssembly(FileLoadLevel targetLevel,
                                      BOOL fThrowOnFileNotFound)
 {
-    CONTRACT(Assembly *)
+    CONTRACTL
     {
         INSTANCE_CHECK;
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        POSTCONDITION((!fThrowOnFileNotFound && CheckPointer(RETVAL, NULL_OK))
-                      || CheckPointer(RETVAL));
         INJECT_FAULT(COMPlusThrowOM(););
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     ETWOnStartup (LoaderCatchCall_V1, LoaderCatchCallEnd_V1);
     AppDomain* pDomain = GetAppDomain();
@@ -345,14 +343,17 @@ Assembly *AssemblySpec::LoadAssembly(FileLoadLevel targetLevel,
         bindOperation.SetResult(assembly->GetPEAssembly(), true /*cached*/);
 
         pDomain->LoadAssembly(assembly, targetLevel);
-        RETURN assembly;
+        return assembly;
     }
 
     PEAssemblyHolder pFile(pDomain->BindAssemblySpec(this, fThrowOnFileNotFound));
     if (pFile == NULL)
-        RETURN NULL;
+    {
+        _ASSERTE(!fThrowOnFileNotFound);
+        return NULL;
+    }
 
-    RETURN pDomain->LoadAssembly(this, pFile, targetLevel);
+    return pDomain->LoadAssembly(this, pFile, targetLevel);
 }
 
 /* static */
@@ -362,36 +363,34 @@ Assembly *AssemblySpec::LoadAssembly(LPCSTR pSimpleName,
                                      DWORD cbPublicKeyOrToken,
                                      DWORD dwFlags)
 {
-    CONTRACT(Assembly *)
+    CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
         PRECONDITION(CheckPointer(pSimpleName));
-        POSTCONDITION(CheckPointer(RETVAL));
         INJECT_FAULT(COMPlusThrowOM(););
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     AssemblySpec spec;
     spec.Init(pSimpleName, pContext, pbPublicKeyOrToken, cbPublicKeyOrToken, dwFlags);
 
-    RETURN spec.LoadAssembly(FILE_LOADED);
+    return spec.LoadAssembly(FILE_LOADED);
 }
 
 /* static */
 Assembly *AssemblySpec::LoadAssembly(LPCWSTR pFilePath)
 {
-    CONTRACT(Assembly *)
+    CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
         PRECONDITION(CheckPointer(pFilePath));
-        POSTCONDITION(CheckPointer(RETVAL));
         INJECT_FAULT(COMPlusThrowOM(););
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     GCX_PREEMP();
 
@@ -405,7 +404,7 @@ Assembly *AssemblySpec::LoadAssembly(LPCWSTR pFilePath)
     if (!pILImage->CheckILFormat())
         THROW_BAD_FORMAT(BFA_BAD_IL, static_cast<PEImage*>(pILImage));
 
-    RETURN AssemblyNative::LoadFromPEImage(AppDomain::GetCurrentDomain()->GetDefaultBinder(), pILImage, true /* excludeAppPaths */);
+    return AssemblyNative::LoadFromPEImage(AppDomain::GetCurrentDomain()->GetDefaultBinder(), pILImage, true /* excludeAppPaths */);
 }
 
 HRESULT AssemblySpec::CheckFriendAssemblyName()
@@ -624,13 +623,13 @@ AssemblySpecBindingCache::AssemblyBinding* AssemblySpecBindingCache::LookupInter
 BOOL AssemblySpecBindingCache::Contains(AssemblySpec *pSpec)
 {
     WRAPPER_NO_CONTRACT;
-    return (LookupInternal(pSpec, TRUE) != (AssemblyBinding *) INVALIDENTRY);
+    return LookupInternal(pSpec, TRUE) != (AssemblyBinding *) INVALIDENTRY;
 }
 
 Assembly *AssemblySpecBindingCache::LookupAssembly(AssemblySpec *pSpec,
                                                          BOOL fThrow /*=TRUE*/)
 {
-    CONTRACT(Assembly *)
+    CONTRACTL
     {
         INSTANCE_CHECK;
         if (fThrow) {
@@ -644,16 +643,15 @@ Assembly *AssemblySpecBindingCache::LookupAssembly(AssemblySpec *pSpec,
             FORBID_FAULT;
         }
         MODE_ANY;
-        POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     AssemblyBinding *entry = (AssemblyBinding *) INVALIDENTRY;
 
     entry = LookupInternal(pSpec, fThrow);
 
     if (entry == (AssemblyBinding *) INVALIDENTRY)
-        RETURN NULL;
+        return NULL;
     else
     {
         if ((entry->GetAssembly() == NULL) && fThrow)
@@ -662,13 +660,13 @@ Assembly *AssemblySpecBindingCache::LookupAssembly(AssemblySpec *pSpec,
             entry->ThrowIfError();
         }
 
-        RETURN entry->GetAssembly();
+        return entry->GetAssembly();
     }
 }
 
 PEAssembly *AssemblySpecBindingCache::LookupFile(AssemblySpec *pSpec, BOOL fThrow /*=TRUE*/)
 {
-    CONTRACT(PEAssembly *)
+    CONTRACTL
     {
         INSTANCE_CHECK;
         if (fThrow) {
@@ -682,15 +680,14 @@ PEAssembly *AssemblySpecBindingCache::LookupFile(AssemblySpec *pSpec, BOOL fThro
             FORBID_FAULT;
         }
         MODE_ANY;
-        POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     AssemblyBinding *entry = (AssemblyBinding *) INVALIDENTRY;
     entry = LookupInternal(pSpec, fThrow);
 
     if (entry == (AssemblyBinding *) INVALIDENTRY)
-        RETURN NULL;
+        return NULL;
     else
     {
         if (fThrow && (entry->GetFile() == NULL))
@@ -699,7 +696,7 @@ PEAssembly *AssemblySpecBindingCache::LookupFile(AssemblySpec *pSpec, BOOL fThro
             entry->ThrowIfError();
         }
 
-        RETURN entry->GetFile();
+        return entry->GetFile();
     }
 }
 
@@ -798,16 +795,15 @@ private:
 
 BOOL AssemblySpecBindingCache::StoreAssembly(AssemblySpec *pSpec, Assembly *pAssembly)
 {
-    CONTRACT(BOOL)
+    CONTRACTL
     {
         INSTANCE_CHECK;
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        POSTCONDITION((!RETVAL) || (UnsafeContains(this, pSpec) && UnsafeVerifyLookupAssembly(this, pSpec, pAssembly)));
         INJECT_FAULT(COMPlusThrowOM(););
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     UPTR key = (UPTR)pSpec->Hash();
 
@@ -839,7 +835,8 @@ BOOL AssemblySpecBindingCache::StoreAssembly(AssemblySpec *pSpec, Assembly *pAss
         abHolder.SuppressRelease();
 
         STRESS_LOG2(LF_CLASSLOADER,LL_INFO10,"StorePEAssembly (StoreAssembly): Add cached entry (%p) with PEAssembly %p\n",entry,pAssembly->GetPEAssembly());
-        RETURN TRUE;
+        _ASSERTE(UnsafeContains(this, pSpec) && UnsafeVerifyLookupAssembly(this, pSpec, pAssembly));
+        return TRUE;
     }
     else
     {
@@ -849,7 +846,10 @@ BOOL AssemblySpecBindingCache::StoreAssembly(AssemblySpec *pSpec, Assembly *pAss
             {
                 // OK if this is a duplicate
                 if (entry->GetAssembly() == pAssembly)
-                    RETURN TRUE;
+                {
+                    _ASSERTE(UnsafeContains(this, pSpec) && UnsafeVerifyLookupAssembly(this, pSpec, pAssembly));
+                    return TRUE;
+                }
             }
             else
             {
@@ -858,13 +858,14 @@ BOOL AssemblySpecBindingCache::StoreAssembly(AssemblySpec *pSpec, Assembly *pAss
                     && pAssembly->GetPEAssembly()->Equals(entry->GetFile()))
                 {
                     entry->SetAssembly(pAssembly);
-                    RETURN TRUE;
+                    _ASSERTE(UnsafeContains(this, pSpec) && UnsafeVerifyLookupAssembly(this, pSpec, pAssembly));
+                    return TRUE;
                 }
             }
         }
 
         // Invalid cache transition (see above note about state transitions)
-        RETURN FALSE;
+        return FALSE;
     }
 }
 
@@ -874,16 +875,15 @@ BOOL AssemblySpecBindingCache::StoreAssembly(AssemblySpec *pSpec, Assembly *pAss
 
 BOOL AssemblySpecBindingCache::StorePEAssembly(AssemblySpec *pSpec, PEAssembly *pPEAssembly)
 {
-    CONTRACT(BOOL)
+    CONTRACTL
     {
         INSTANCE_CHECK;
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        POSTCONDITION((!RETVAL) || (UnsafeContains(this, pSpec) && UnsafeVerifyLookupFile(this, pSpec, pPEAssembly)));
         INJECT_FAULT(COMPlusThrowOM(););
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     UPTR key = (UPTR)pSpec->Hash();
 
@@ -924,7 +924,8 @@ BOOL AssemblySpecBindingCache::StorePEAssembly(AssemblySpec *pSpec, PEAssembly *
 
         STRESS_LOG2(LF_CLASSLOADER,LL_INFO10,"StorePEAssembly: Add cached entry (%p) with PEAssembly %p\n", entry, pPEAssembly);
 
-        RETURN TRUE;
+        _ASSERTE(UnsafeContains(this, pSpec) && UnsafeVerifyLookupFile(this, pSpec, pPEAssembly));
+        return TRUE;
     }
     else
     {
@@ -933,7 +934,10 @@ BOOL AssemblySpecBindingCache::StorePEAssembly(AssemblySpec *pSpec, PEAssembly *
             // OK if this is a duplicate
             if (entry->GetFile() != NULL
                 && pPEAssembly->Equals(entry->GetFile()))
-                RETURN TRUE;
+            {
+                _ASSERTE(UnsafeContains(this, pSpec) && UnsafeVerifyLookupFile(this, pSpec, pPEAssembly));
+                return TRUE;
+            }
         }
         else
         if (entry->IsPostBindError())
@@ -944,22 +948,21 @@ BOOL AssemblySpecBindingCache::StorePEAssembly(AssemblySpec *pSpec, PEAssembly *
         }
         STRESS_LOG2(LF_CLASSLOADER,LL_INFO10,"Incompatible cached entry found (%p) when adding PEAssembly %p\n", entry, pPEAssembly);
         // Invalid cache transition (see above note about state transitions)
-        RETURN FALSE;
+        return FALSE;
     }
 }
 
 BOOL AssemblySpecBindingCache::StoreException(AssemblySpec *pSpec, Exception* pEx)
 {
-    CONTRACT(BOOL)
+    CONTRACTL
     {
         INSTANCE_CHECK;
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        DISABLED(POSTCONDITION(UnsafeContains(this, pSpec))); //<TODO>@todo: Getting violations here - StoreExceptions could happen anywhere so this is possibly too aggressive.</TODO>
         INJECT_FAULT(COMPlusThrowOM(););
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     UPTR key = (UPTR)pSpec->Hash();
 
@@ -989,7 +992,7 @@ BOOL AssemblySpecBindingCache::StoreException(AssemblySpec *pSpec, Exception* pE
         abHolder.SuppressRelease();
 
         STRESS_LOG2(LF_CLASSLOADER,LL_INFO10,"StorePEAssembly (StoreException): Add cached entry (%p) with exception %p\n",entry,pEx);
-        RETURN TRUE;
+        return TRUE;
     }
     else
     {
@@ -997,7 +1000,7 @@ BOOL AssemblySpecBindingCache::StoreException(AssemblySpec *pSpec, Exception* pE
         if (entry->IsError())
         {
             if (entry->GetHR() == pEx->GetHR())
-                RETURN TRUE;
+                return TRUE;
         }
         else
         {
@@ -1005,18 +1008,18 @@ BOOL AssemblySpecBindingCache::StoreException(AssemblySpec *pSpec, Exception* pE
             if (entry->GetAssembly() == NULL)
             {
                 entry->InitException(pEx);
-                RETURN TRUE;
+                return TRUE;
             }
         }
 
         // Invalid cache transition (see above note about state transitions)
-        RETURN FALSE;
+        return FALSE;
     }
 }
 
 BOOL AssemblySpecBindingCache::RemoveAssembly(Assembly* pAssembly)
 {
-    CONTRACT(BOOL)
+    CONTRACTL
     {
         INSTANCE_CHECK;
         NOTHROW;
@@ -1024,7 +1027,7 @@ BOOL AssemblySpecBindingCache::RemoveAssembly(Assembly* pAssembly)
         MODE_ANY;
         PRECONDITION(pAssembly != NULL);
     }
-    CONTRACT_END;
+    CONTRACTL_END;
     BOOL result = FALSE;
     PtrHashMap::PtrIterator i = m_map.begin();
     while (!i.end())
@@ -1045,7 +1048,7 @@ BOOL AssemblySpecBindingCache::RemoveAssembly(Assembly* pAssembly)
         ++i;
     }
 
-    RETURN result;
+    return result;
 }
 
 /* static */

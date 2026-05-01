@@ -22,12 +22,12 @@ BOOL SString::LoadResource(int resourceID)
 
 HRESULT SString::LoadResourceAndReturnHR(int resourceID)
 {
-    CONTRACT(HRESULT)
+    CONTRACTL
     {
         INSTANCE_CHECK;
         NOTHROW;
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     HRESULT hr = E_FAIL;
 
@@ -82,5 +82,5 @@ HRESULT SString::LoadResourceAndReturnHR(int resourceID)
     EX_END_CATCH
 #endif //!FEATURE_UTILCODE_NO_DEPENDENCIES
 
-    RETURN hr;
+    return hr;
 } // SString::LoadResourceAndReturnHR
