@@ -18,7 +18,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
     /// <summary>
     /// A thunk that captures all arguments and dispatches to the interpreter via
-    /// READYTORUN_HELPER_InitInstClass. This node is string-discoverable so the
+    /// READYTORUN_HELPER_R2RToInterpreter. This node is string-discoverable so the
     /// runtime can find it by WasmSignature string at execution time.
     /// </summary>
     public class WasmR2RToInterpreterThunkNode : StringDiscoverableAssemblyStubNode, INodeWithTypeSignature, ISymbolDefinitionNode, ISortableSymbolNode
@@ -54,7 +54,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             _context = factory.TypeSystemContext;
             _wasmSignature = wasmSignature;
             _typeNode = factory.WasmTypeNode(wasmSignature);
-            _helperCell = factory.GetReadyToRunHelperCell(ReadyToRunHelper.InitInstClass);
+            _helperCell = factory.GetReadyToRunHelperCell(ReadyToRunHelper.R2RToInterpreter);
         }
 
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)

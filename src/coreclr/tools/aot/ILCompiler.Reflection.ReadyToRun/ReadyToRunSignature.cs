@@ -2086,6 +2086,9 @@ namespace ILCompiler.Reflection.ReadyToRun
                 case ReadyToRunHelper.InitInstClass:
                     builder.Append("INIT_INST_CLASS");
                     break;
+                case ReadyToRunHelper.R2RToInterpreter:
+                    builder.Append("R2R_TO_INTERPRETER");
+                    break;
 
                 default:
                     throw new BadImageFormatException(helperType.ToString());

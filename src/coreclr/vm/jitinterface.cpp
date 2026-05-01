@@ -63,6 +63,10 @@
 #include "tailcallhelp.h"
 #include "patchpointinfo.h"
 
+#if defined(FEATURE_INTERPRETER) && defined(FEATURE_PORTABLE_ENTRYPOINTS)
+void ExecuteInterpretedMethodWithArgs_PortableEntryPoint(PCODE portableEntrypoint, TransitionBlock* block, size_t argsSize, int8_t* retBuff);
+#endif
+
 // The Stack Overflow probe takes place in the COOPERATIVE_TRANSITION_BEGIN() macro
 //
 
@@ -14298,6 +14302,15 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
                 case READYTORUN_HELPER_DelayLoad_Helper_ObjObj:
                     result = (size_t)GetEEFuncEntryPoint(DelayLoad_Helper_ObjObj);
                     break;
+
+                case READYTORUN_HELPER_R2RToInterpreter:
+#if defined(FEATURE_INTERPRETER) && defined(FEATURE_PORTABLE_ENTRYPOINTS)
+                    result = (size_t)GetEEFuncEntryPoint(ExecuteInterpretedMethodWithArgs_PortableEntryPoint);
+                    break;
+#else
+                    STRESS_LOG1(LF_ZAP, LL_WARNING, "READYTORUN_HELPER_R2RToInterpreter unsupported for this target: %d\n", helperNum);
+                    return FALSE;
+#endif
 
                 default:
                     STRESS_LOG1(LF_ZAP, LL_WARNING, "Unknown READYTORUN_HELPER %d\n", helperNum);

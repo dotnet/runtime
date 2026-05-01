@@ -20,7 +20,7 @@
 // If you update this, ensure you run `git grep MINIMUM_READYTORUN_MAJOR_VERSION`
 // and handle pending work.
 #define READYTORUN_MAJOR_VERSION 18
-#define READYTORUN_MINOR_VERSION 0x0006
+#define READYTORUN_MINOR_VERSION 0x0007
 
 #define MINIMUM_READYTORUN_MAJOR_VERSION 18
 
@@ -57,6 +57,7 @@
 // R2R Version 18.4 adds ThrowArgument, ThrowArgumentOutOfRange, ThrowPlatformNotSupported, and ThrowNotImplemented helpers
 // R2R Version 18.5 adds READYTORUN_FLAG_STRIPPED_IL_BODIES, READYTORUN_FLAG_STRIPPED_INLINING_INFO, and READYTORUN_FLAG_STRIPPED_DEBUG_INFO flags
 // R2R Version 18.6 adds READYTORUN_FIXUP_InjectStringThunks for mapping strings to pregenerated code thunks
+// R2R Version 18.7 adds READYTORUN_HELPER_R2RToInterpreter
 
 struct READYTORUN_CORE_HEADER
 {
@@ -493,6 +494,7 @@ enum ReadyToRunHelper
 
     READYTORUN_HELPER_InitClass                 = 0x116,
     READYTORUN_HELPER_InitInstClass             = 0x117,
+    READYTORUN_HELPER_R2RToInterpreter          = 0x118,
 };
 
 #include "readytoruninstructionset.h"
