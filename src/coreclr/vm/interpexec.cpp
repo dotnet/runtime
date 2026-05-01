@@ -782,11 +782,14 @@ static void InterpBreakpoint(const int32_t *ip, const InterpMethodContextFrame *
             (void*)GetSP(&ctx),
             (void*)GetFP(&ctx)));
 
+        // Pass fIsVEH=FALSE: interpreter breakpoints are synthetic software callbacks,
+        // not vectored exception handler callbacks.
         if (g_pDebugInterface->FirstChanceNativeException(
             &exceptionRecord,
             &ctx,
             STATUS_BREAKPOINT,
-            pThread))
+            pThread,
+            FALSE /* fIsVEH */))
         {
             InterpThreadContext *pThreadContext = pThread->GetInterpThreadContext();
 

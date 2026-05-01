@@ -7878,8 +7878,8 @@ BOOL Debugger::ShouldSendCatchHandlerFound(Thread* pThread)
     else
     {
         BOOL forceSendCatchHandlerFound = FALSE;
-        OBJECTHANDLE objHandle = pThread->GetThrowableAsHandle();
-        OBJECTHANDLE retrievedHandle = m_pForceCatchHandlerFoundEventsTable->Lookup(objHandle); //destroy handle
+        OBJECTHANDLE objHandle = pThread->GetThrowableAsPseudoHandle();
+        OBJECTHANDLE retrievedHandle = m_pForceCatchHandlerFoundEventsTable->Lookup(objHandle);
         if (retrievedHandle != NULL)
         {
             forceSendCatchHandlerFound = TRUE;

@@ -1447,7 +1447,9 @@ BOOL HandleHardwareException(PAL_SEHException* ex)
             exInfo.TakeExceptionPointersOwnership(ex);
         }
 
-        GCPROTECT_BEGIN(exInfo.m_exception);
+        // m_exception is GC-reported via ExInfo chain scanning in ScanStackRoots.
+        // Do NOT also GCPROTECT it - reporting the same location twice corrupts
+        // the GC's relocation logic (see clr-code-guide.md §2.1.5).
         UnmanagedCallersOnlyCaller throwHwEx(METHOD__EH__RH_THROWHW_EX);
 
         pThread->IncPreventAbort();
@@ -1456,8 +1458,6 @@ BOOL HandleHardwareException(PAL_SEHException* ex)
         throwHwEx.InvokeDirect(exceptionCode, &exInfo);
 
         DispatchExSecondPass(&exInfo);
-
-        GCPROTECT_END();
 
         UNREACHABLE();
     }
@@ -1620,8 +1620,9 @@ VOID DECLSPEC_NORETURN DispatchManagedException(OBJECTREF throwable, CONTEXT* pE
         }
     }
 
-    GCPROTECT_BEGIN(exInfo.m_exception);
-
+    // m_exception is GC-reported via ExInfo chain scanning in ScanStackRoots.
+    // Do NOT also GCPROTECT it - reporting the same location twice corrupts
+    // the GC's relocation logic (see clr-code-guide.md §2.1.5).
     UnmanagedCallersOnlyCaller throwEx(METHOD__EH__RH_THROW_EX);
 
     pThread->IncPreventAbort();
@@ -1631,7 +1632,6 @@ VOID DECLSPEC_NORETURN DispatchManagedException(OBJECTREF throwable, CONTEXT* pE
 
     DispatchExSecondPass(&exInfo);
 
-    GCPROTECT_END();
     GCPROTECT_END();
 
     UNREACHABLE();
@@ -1674,7 +1674,9 @@ VOID DECLSPEC_NORETURN DispatchRethrownManagedException(CONTEXT* pExceptionConte
 
     ExInfo exInfo(pThread, pActiveExInfo->m_ptrs.ExceptionRecord, pExceptionContext, ExKind::None);
 
-    GCPROTECT_BEGIN(exInfo.m_exception);
+    // m_exception is GC-reported via ExInfo chain scanning in ScanStackRoots.
+    // Do NOT also GCPROTECT it - reporting the same location twice corrupts
+    // the GC's relocation logic (see clr-code-guide.md §2.1.5).
     UnmanagedCallersOnlyCaller rethrow(METHOD__EH__RH_RETHROW);
 
     pThread->IncPreventAbort();
@@ -1682,8 +1684,6 @@ VOID DECLSPEC_NORETURN DispatchRethrownManagedException(CONTEXT* pExceptionConte
     //Ex.RhRethrow(ref ExInfo activeExInfo, ref ExInfo exInfo)
     rethrow.InvokeDirect(pActiveExInfo, &exInfo);
     DispatchExSecondPass(&exInfo);
-
-    GCPROTECT_END();
 
     UNREACHABLE();
 }
@@ -2922,7 +2922,7 @@ ExInfo::StackRange::StackRange()
 void ExInfo::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
 {
     // ExInfo is embedded so don't enum 'this'.
-    OBJECTHANDLE_EnumMemoryRegions(m_hThrowable);
+    OBJECTREF_EnumMemoryRegions(m_exception);
     m_ptrs.ExceptionRecord.EnumMem();
     m_ptrs.ContextRecord.EnumMem();
 }
@@ -2973,7 +2973,7 @@ extern "C" void QCALLTYPE AppendExceptionStackFrame(QCall::ObjectHandleOnStack e
             _ASSERTE(pMD == codeInfo.GetMethodDesc());
 #endif // _DEBUG
 
-            StackTraceInfo::AppendElement(pExInfo->m_hThrowable, ip, sp, pMD, &pExInfo->m_frameIter.m_crawl);
+            StackTraceInfo::AppendElement(pExInfo->m_exception, ip, sp, pMD, &pExInfo->m_frameIter.m_crawl);
         }
     }
 
@@ -3772,7 +3772,7 @@ CLR_BOOL SfiInitWorker(StackFrameIterator* pThis, CONTEXT* pStackwalkCtx, CLR_BO
                 if (pMD != NULL)
                 {
                     GCX_COOP();
-                    StackTraceInfo::AppendElement(pExInfo->m_hThrowable, 0, GetRegdisplaySP(pExInfo->m_frameIter.m_crawl.GetRegisterSet()), pMD, &pExInfo->m_frameIter.m_crawl);
+                    StackTraceInfo::AppendElement(pExInfo->m_exception, 0, GetRegdisplaySP(pExInfo->m_frameIter.m_crawl.GetRegisterSet()), pMD, &pExInfo->m_frameIter.m_crawl);
 
 #if defined(DEBUGGING_SUPPORTED)
                     if (NotifyDebuggerOfStub(pThread, pFrame))
@@ -3954,7 +3954,7 @@ CLR_BOOL SfiNextWorker(StackFrameIterator* pThis, uint* uExCollideClauseIdx, CLR
             void* callbackCxt = NULL;
             Interop::ManagedToNativeExceptionCallback callback = Interop::GetPropagatingExceptionCallback(
                 &codeInfo,
-                pTopExInfo->m_hThrowable,
+                pTopExInfo->m_exception,
                 &callbackCxt);
 
             if (callback != NULL)
@@ -4091,7 +4091,7 @@ CLR_BOOL SfiNextWorker(StackFrameIterator* pThis, uint* uExCollideClauseIdx, CLR
                 if (pMD != NULL)
                 {
                     GCX_COOP();
-                    StackTraceInfo::AppendElement(pTopExInfo->m_hThrowable, 0, GetRegdisplaySP(pTopExInfo->m_frameIter.m_crawl.GetRegisterSet()), pMD, &pTopExInfo->m_frameIter.m_crawl);
+                    StackTraceInfo::AppendElement(pTopExInfo->m_exception, 0, GetRegdisplaySP(pTopExInfo->m_frameIter.m_crawl.GetRegisterSet()), pMD, &pTopExInfo->m_frameIter.m_crawl);
 
 #if defined(DEBUGGING_SUPPORTED)
                     if (NotifyDebuggerOfStub(pThread, pFrame))

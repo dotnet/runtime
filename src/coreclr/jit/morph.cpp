@@ -1748,27 +1748,32 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
         call->gtCallMethHnd = comp->eeFindHelper(CORINFO_HELP_PINVOKE_CALLI);
     }
 #if defined(FEATURE_READYTORUN)
-    // For arm/arm64, we dispatch code same as VSD using virtualStubParamInfo->GetReg()
-    // for indirection cell address, which ZapIndirectHelperThunk expects.
-    // For x64/x86 we use return address to get the indirection cell by disassembling the call site.
-    // That is not possible for fast tailcalls, so we only need this logic for fast tailcalls on xarch.
-    // Note that we call this before we know if something will be a fast tailcall or not.
-    // That's ok; after making something a tailcall, we will invalidate this information
-    // and reconstruct it if necessary. The tailcalling decision does not change since
-    // this is a non-standard arg in a register.
-    bool needsIndirectionCell = call->IsR2RRelativeIndir() && !call->IsDelegateInvoke();
-#if defined(TARGET_XARCH)
-    needsIndirectionCell &= call->IsFastTailCall();
+
+#ifdef TARGET_WASM
+    // TARGET_WASM does not use an explicit indirection cell arg for the R2R calling convention since
+    // the address of the indirection cell is recoverable from the portable entrypoint which
+    // we pass already as part of the Wasm managed calling convention (See LowerPEPCall).
+    bool needsIndirectionCellArg = false;
+#elif defined(TARGET_XARCH)
+    // For x64/x86 we use the return address to get the indirection cell by disassembling the call site.
+    // That is not possible for fast tailcalls, so we do need to pass the indirection cell address for fast tailcalls on
+    // xarch. Note that we call this before we know if something will be a fast tailcall or not. That's ok; after making
+    // something a tailcall, we will invalidate this information and reconstruct it if necessary. The tailcalling
+    // decision does not change since this is a non-standard arg in a register.
+    bool needsIndirectionCellArg = call->IsR2RRelativeIndir() && !call->IsDelegateInvoke() && call->IsFastTailCall();
+#else
+    // For arm/arm64 and other non-xarch targets, we dispatch code the same as VSD using virtualStubParamInfo->GetReg()
+    // for the indirection cell address, which the ReadyToRun DelayLoad helpers expect.
+    bool needsIndirectionCellArg = call->IsR2RRelativeIndir() && !call->IsDelegateInvoke();
 #endif
 
-    if (needsIndirectionCell)
+    if (needsIndirectionCellArg)
     {
         assert(call->gtEntryPoint.addr != nullptr);
 
         size_t   addrValue           = (size_t)call->gtEntryPoint.addr;
         GenTree* indirectCellAddress = comp->gtNewIconHandleNode(addrValue, GTF_ICON_FTN_ADDR);
         INDEBUG(indirectCellAddress->AsIntCon()->gtTargetHandle = (size_t)call->gtCallMethHnd);
-
 #ifdef TARGET_ARM
         // TODO-ARM: We currently do not properly kill this register in LSRA
         // (see getKillSetForCall which does so only for VSD calls).
@@ -1781,12 +1786,7 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
         // Push the stub address onto the list of arguments.
         NewCallArg indirCellAddrArg =
             NewCallArg::Primitive(indirectCellAddress).WellKnown(WellKnownArg::R2RIndirectionCell);
-#ifdef TARGET_WASM
-        // On wasm we need to ensure we put the indirection cell address last in LIR, after the SP and formal args.
-        PushBack(comp, indirCellAddrArg);
-#else
         InsertAfterThisOrFirst(comp, indirCellAddrArg);
-#endif // TARGET_WASM
     }
 #endif // defined(FEATURE_READYTORUN)
 

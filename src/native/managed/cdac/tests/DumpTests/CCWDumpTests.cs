@@ -17,6 +17,7 @@ namespace Microsoft.Diagnostics.DataContractReader.DumpTests;
 public class CCWDumpTests : DumpTestBase
 {
     protected override string DebuggeeName => "CCW";
+    protected override string DumpType => "full";
 
     /// <summary>
     /// Enumerates all strong GC handles from the dump, dereferences each one to get
