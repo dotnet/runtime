@@ -3673,7 +3673,6 @@ void Lowering::LowerCFGCall(GenTreeCall* call)
 
     GenTree* callTarget = call->gtControlExpr;
 
-
     if (callTarget == nullptr)
     {
         assert((call->gtCallType != CT_INDIRECT) && (!call->IsVirtual() || call->IsVirtualStubRelativeIndir()));
