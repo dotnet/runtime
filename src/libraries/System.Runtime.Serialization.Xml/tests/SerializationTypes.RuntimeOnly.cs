@@ -4637,15 +4637,16 @@ public class PrimiveAttributeTestDerived : PrimiveAttributeTestBase
     public int Number { get; set; }
 }
 
-public class TypeWithXmlTextSeparatorSpaceOnStringArray
-{
-    [XmlText(Separator = ' ')]
-    public string[] Text;
-}
-
+// TODO smolloy - new after here
 public class TypeWithXmlTextNoSeparatorOnStringArray
 {
     [XmlText]
+    public string[] Text;
+}
+
+public class TypeWithXmlTextSeparatorSpaceOnStringArray
+{
+    [XmlText(Separator = ' ')]
     public string[] Text;
 }
 

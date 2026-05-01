@@ -153,7 +153,8 @@ namespace System.Xml.Serialization
         private void WriteArrayItems(ElementAccessor[] elements, TextAccessor? text, ChoiceIdentifierAccessor? choice, object o, object? choiceSources)
         {
             var arr = o as IList;
-            string separatorStr = text?.Separator.HasValue == true ? text.Separator.Value.ToString() : "";
+            bool hasSeparator = text?.Separator.HasValue == true;
+            string? separatorStr = hasSeparator ? text!.Separator!.Value.ToString() : null;
 
             if (arr != null)
             {
@@ -161,7 +162,7 @@ namespace System.Xml.Serialization
                 {
                     object? ai = arr[i];
                     var choiceSource = ((Array?)choiceSources)?.GetValue(i);
-                    if (i > 0)
+                    if (hasSeparator && i > 0)
                     {
                         WriteValue(separatorStr);
                     }
@@ -180,7 +181,7 @@ namespace System.Xml.Serialization
                     while (e.MoveNext())
                     {
                         object ai = e.Current;
-                        if (c > 0)
+                        if (hasSeparator && c > 0)
                         {
                             WriteValue(separatorStr);
                         }
@@ -865,6 +866,7 @@ namespace System.Xml.Serialization
                     IEnumerator e = a.GetEnumerator();
                     bool shouldAppendSeparator = false;
                     char separatorChar = attribute.Separator ?? ' ';
+                    string separatorString = separatorChar.ToString();
                     if (e != null)
                     {
                         while (e.MoveNext())
@@ -891,7 +893,7 @@ namespace System.Xml.Serialization
                                 {
                                     if (shouldAppendSeparator)
                                     {
-                                        Writer.WriteString(separatorChar.ToString());
+                                        Writer.WriteString(separatorString);
                                     }
 
                                     if (ai is byte[])
