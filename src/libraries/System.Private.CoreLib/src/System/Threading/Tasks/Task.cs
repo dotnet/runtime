@@ -264,21 +264,6 @@ namespace System.Threading.Tasks
             }
         }
 
-        internal static void TryAddRuntimeAsyncContinuationChainTimestamps(Continuation continuationChain, Continuation timestampSource)
-        {
-            var continuationTimestamps = GetOrCreateRuntimeAsyncContinuationTimestamps();
-            lock (continuationTimestamps)
-            {
-                long timestamp = continuationTimestamps.TryGetValue(timestampSource, out long timestampVal) ? timestampVal : Stopwatch.GetTimestamp();
-                Continuation? nc = continuationChain;
-                while (nc != null)
-                {
-                    continuationTimestamps.TryAdd(nc, timestamp);
-                    nc = nc.Next;
-                }
-            }
-        }
-
         internal static void RemoveRuntimeAsyncContinuationTimestamp(Continuation continuation)
         {
             var continuationTimestamps = s_runtimeAsyncContinuationTimestamps;
