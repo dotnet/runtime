@@ -106,12 +106,12 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             string crlFile = Path.Combine(crlDirectory, crlFileName);
             string crlPem = await File.ReadAllTextAsync(crlFile).ConfigureAwait(false);
 
-            await File.WriteAllTextAsync(crlFile, crlPem.AsMemory(0, crlPem.Length / 2)).ConfigureAwait(false);
+            await File.WriteAllTextAsync(crlFile, crlPem.AsMemory(0, crlPem.Length / 2).ToString()).ConfigureAwait(false);
 
             RemoteExecutor.Invoke(
                 static base64Cert =>
                 {
-                    using (X509Certificate2 cert = X509CertificateLoader.LoadCertificate(Convert.FromBase64String(base64Cert)))
+                    using (X509Certificate2 cert = new X509Certificate2(Convert.FromBase64String(base64Cert)))
                     using (ChainHolder chainHolder = new ChainHolder())
                     {
                         bool valid = chainHolder.Chain.Build(cert);
@@ -137,7 +137,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                     {
                         RemoteCertificateValidationCallback = (sender, certificate, chain, errors) =>
                         {
-                            getDotNetCert = (X509Certificate2)certificate;
+                            getDotNetCert = new X509Certificate2(((X509Certificate2)certificate).RawData);
                             return errors == SslPolicyErrors.None;
                         }
                     }
