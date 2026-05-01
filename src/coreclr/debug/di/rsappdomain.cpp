@@ -702,8 +702,8 @@ HRESULT CordbAppDomain::GetName(ULONG32 cchName,
 }
 
 /*
- * GetObject returns the runtime app domain object.
- * Note: this is lazily initialized and may be NULL
+ * GetObject always returns S_FALSE with a null object.
+ * The runtime AppDomain object is not available through this API.
  */
 HRESULT CordbAppDomain::GetObject(ICorDebugValue **ppObject)
 {
