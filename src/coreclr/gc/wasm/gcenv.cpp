@@ -297,16 +297,6 @@ const AffinitySet* GCToOSInterface::SetGCThreadsAffinitySet(uintptr_t configAffi
 // Virtual / Physical Memory Limits
 // ============================================================================
 
-static uint64_t GetTotalPhysicalMemory()
-{
-#ifdef TARGET_BROWSER
-    return emscripten_get_heap_max();
-#else // TARGET_WASI
-    // WASI doesn't have an API to query max memory.
-    return 2ULL * 1024 * 1024 * 1024; // 2GB
-#endif
-}
-
 size_t GCToOSInterface::GetVirtualMemoryLimit()
 {
     return GetVirtualMemoryMaxAddress();
