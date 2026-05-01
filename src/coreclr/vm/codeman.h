@@ -112,8 +112,6 @@ enum StubCodeBlockKind : int
 #endif // FEATURE_TIERED_COMPILATION
     // Last valid value. Note that the definition is duplicated in debug\daccess\fntableaccess.cpp
     STUB_CODE_BLOCK_LAST = 0xF,
-    // Placeholders returned by code:GetStubCodeBlockKind
-    STUB_CODE_BLOCK_STUBLINK = 0x12,
     // Placeholder used by ReadyToRun images
     STUB_CODE_BLOCK_METHOD_CALL_THUNK = 0x13,
 };
@@ -124,8 +122,6 @@ inline const char *GetStubCodeBlockKindString(StubCodeBlockKind kind)
     {
     case STUB_CODE_BLOCK_JUMPSTUB:
         return "JumpStub";
-    case STUB_CODE_BLOCK_STUBLINK:
-        return "StubLinkStub";
     case STUB_CODE_BLOCK_METHOD_CALL_THUNK:
         return "MethodCallThunk";
 #ifdef FEATURE_TIERED_COMPILATION
