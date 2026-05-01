@@ -22,6 +22,7 @@ internal sealed class SignatureDecoder_1 : ISignatureDecoder
     private readonly Target _target;
     private readonly Dictionary<ModuleHandle, SignatureTypeProvider<TypeHandle>> _thProviders = [];
     private readonly Dictionary<ModuleHandle, SignatureTypeProvider<MethodDescHandle>> _mdhProviders = [];
+    private readonly Dictionary<ModuleHandle, GcSignatureTypeProvider> _gcProviders = [];
 
     internal SignatureDecoder_1(Target target)
     {
@@ -32,6 +33,7 @@ internal sealed class SignatureDecoder_1 : ISignatureDecoder
     {
         _thProviders.Clear();
         _mdhProviders.Clear();
+        _gcProviders.Clear();
     }
 
     private SignatureTypeProvider<TypeHandle> GetTypeHandleProvider(ModuleHandle moduleHandle)
@@ -57,12 +59,36 @@ internal sealed class SignatureDecoder_1 : ISignatureDecoder
         return newProvider;
     }
 
+
+    private GcSignatureTypeProvider GetGcProvider(ModuleHandle moduleHandle)
+    {
+        if (_gcProviders.TryGetValue(moduleHandle, out GcSignatureTypeProvider? provider))
+            return provider;
+
+        GcSignatureTypeProvider newProvider = new(_target, moduleHandle);
+        _gcProviders[moduleHandle] = newProvider;
+        return newProvider;
+    }
+
     TypeHandle ISignatureDecoder.DecodeFieldSignature(BlobHandle blobHandle, ModuleHandle moduleHandle, TypeHandle ctx)
     {
         SignatureTypeProvider<TypeHandle> provider = GetTypeHandleProvider(moduleHandle);
         MetadataReader mdReader = _target.Contracts.EcmaMetadata.GetMetadata(moduleHandle)!;
-        BlobReader blobReader = mdReader.GetBlobReader(blobHandle);
-        SignatureDecoder<TypeHandle, TypeHandle> decoder = new(provider, mdReader, ctx);
-        return decoder.DecodeFieldSignature(ref blobReader);
+
+        RuntimeSignatureDecoder<TypeHandle, TypeHandle, BlobHandleSignatureReader> decoder = new(
+            provider, _target, ctx,
+            new BlobHandleSignatureReader(mdReader, blobHandle, _target.IsLittleEndian), mdReader);
+        return decoder.DecodeFieldSignature();
+    }
+
+    MethodSignature<GcTypeKind> ISignatureDecoder.DecodeMethodSignatureForGC(BlobHandle blobHandle, ModuleHandle moduleHandle)
+    {
+        GcSignatureTypeProvider provider = GetGcProvider(moduleHandle);
+        MetadataReader mdReader = _target.Contracts.EcmaMetadata.GetMetadata(moduleHandle)!;
+
+        RuntimeSignatureDecoder<GcTypeKind, object?, BlobHandleSignatureReader> decoder = new(
+            provider, _target, genericContext: null,
+            new BlobHandleSignatureReader(mdReader, blobHandle, _target.IsLittleEndian), mdReader);
+        return decoder.DecodeMethodSignature();
     }
 }

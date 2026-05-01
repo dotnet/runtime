@@ -323,32 +323,29 @@ internal class GcScanner
         if (methodDescPtr == TargetPointer.Null)
             return;
 
-        ReadOnlySpan<byte> signature;
-        try
-        {
-            signature = GetMethodSignatureBytes(methodDescPtr);
-        }
-        catch (System.Exception)
-        {
-            return;
-        }
-
-        if (signature.IsEmpty)
-            return;
+        IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
+        MethodDescHandle mdh = rts.GetMethodDescHandle(methodDescPtr);
 
         MethodSignature<GcTypeKind> methodSig;
         try
         {
-            unsafe
-            {
-                fixed (byte* pSig = signature)
-                {
-                    BlobReader blobReader = new(pSig, signature.Length);
-                    SignatureDecoder<GcTypeKind, object?> decoder = new(
-                        GcSignatureTypeProvider.Instance, metadataReader: null!, genericContext: null);
-                    methodSig = decoder.DecodeMethodSignature(ref blobReader);
-                }
-            }
+            uint methodToken = rts.GetMethodToken(mdh);
+            if (methodToken == 0x06000000)
+                return;
+
+            TargetPointer methodTablePtr = rts.GetMethodTable(mdh);
+            TypeHandle typeHandle = rts.GetTypeHandle(methodTablePtr);
+            TargetPointer modulePtr = rts.GetModule(typeHandle);
+
+            ModuleHandle moduleHandle = _target.Contracts.Loader.GetModuleHandleFromModulePtr(modulePtr);
+            MetadataReader? mdReader = _target.Contracts.EcmaMetadata.GetMetadata(moduleHandle);
+            if (mdReader is null)
+                return;
+
+            MethodDefinitionHandle methodDefHandle = MetadataTokens.MethodDefinitionHandle((int)(methodToken & 0x00FFFFFF));
+            MethodDefinition methodDef = mdReader.GetMethodDefinition(methodDefHandle);
+
+            methodSig = _target.Contracts.SignatureDecoder.DecodeMethodSignatureForGC(methodDef.Signature, moduleHandle);
         }
         catch (System.Exception)
         {
@@ -357,9 +354,6 @@ internal class GcScanner
 
         if (methodSig.Header.CallingConvention is SignatureCallingConvention.VarArgs)
             return;
-
-        IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
-        MethodDescHandle mdh = rts.GetMethodDescHandle(methodDescPtr);
 
         bool hasThis = methodSig.Header.IsInstance;
         bool hasRetBuf = methodSig.ReturnType is GcTypeKind.Other;
@@ -438,36 +432,6 @@ internal class GcScanner
             }
             pos++;
         }
-    }
-
-    private ReadOnlySpan<byte> GetMethodSignatureBytes(TargetPointer methodDescPtr)
-    {
-        IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
-        MethodDescHandle mdh = rts.GetMethodDescHandle(methodDescPtr);
-
-        if (rts.IsStoredSigMethodDesc(mdh, out ReadOnlySpan<byte> storedSig))
-            return storedSig;
-
-        uint methodToken = rts.GetMethodToken(mdh);
-        if (methodToken == 0x06000000)
-            return default;
-
-        TargetPointer methodTablePtr = rts.GetMethodTable(mdh);
-        TypeHandle typeHandle = rts.GetTypeHandle(methodTablePtr);
-        TargetPointer modulePtr = rts.GetModule(typeHandle);
-
-        ILoader loader = _target.Contracts.Loader;
-        ModuleHandle moduleHandle = loader.GetModuleHandleFromModulePtr(modulePtr);
-
-        IEcmaMetadata ecmaMetadata = _target.Contracts.EcmaMetadata;
-        MetadataReader? mdReader = ecmaMetadata.GetMetadata(moduleHandle);
-        if (mdReader is null)
-            return default;
-
-        MethodDefinitionHandle methodDefHandle = MetadataTokens.MethodDefinitionHandle((int)(methodToken & 0x00FFFFFF));
-        MethodDefinition methodDef = mdReader.GetMethodDefinition(methodDefHandle);
-        BlobReader blobReader = mdReader.GetBlobReader(methodDef.Signature);
-        return blobReader.ReadBytes(blobReader.Length);
     }
 
     private TargetPointer AddressFromGCRefMapPos(Data.TransitionBlock tb, int pos)
