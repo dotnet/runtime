@@ -27,8 +27,6 @@ struct CodeBlockHandle
     TargetCodePointer GetFuncletStartAddress(CodeBlockHandle codeInfoHandle);
     // Get the method region info (hot and cold code size, and cold code start address)
     void GetMethodRegionInfo(CodeBlockHandle codeInfoHandle, out uint hotSize, out TargetPointer coldStart, out uint coldSize);
-    // Get the JIT type
-    JitType GetJITType(CodeBlockHandle codeInfoHandle);
     // Attempt to get the method desc of an entrypoint
     TargetPointer NonVirtualEntry2MethodDesc(TargetCodePointer entrypoint);
 
@@ -52,15 +50,15 @@ struct CodeBlockHandle
     // Get the exception clause info for the code block
     List<ExceptionClauseInfo> GetExceptionClauses(CodeBlockHandle codeInfoHandle);
 
-    // Classify a code address as a known stub kind (precode, jump stub, VSD stub, etc.).
-    // Returns Unknown if the address is not a recognized stub.
-    StubKind GetStubKind(TargetCodePointer jittedCodeAddress);
-
     // Extension Methods (implemented in terms of other APIs)
     // Returns true if the code block is a funclet (exception handler, filter, or finally)
     bool IsFunclet(CodeBlockHandle codeInfoHandle);
     // Returns true if the code block is specifically a filter funclet
     bool IsFilterFunclet(CodeBlockHandle codeInfoHandle);
+
+    // Classify a code address as a known code kind (jitted, ReadyToRun, stub, etc.).
+    // Returns Unknown if the address is not recognized.
+    CodeKind GetCodeKind(TargetCodePointer jittedCodeAddress);
 ```
 
 ```csharp
@@ -124,7 +122,7 @@ public struct ExceptionClauseInfo
     public TargetPointer? ModuleAddr;
 }
 
-public enum StubKind : uint
+public enum CodeKind : uint
 {
     Unknown = 0,
     JumpStub = 1,
@@ -137,6 +135,8 @@ public enum StubKind : uint
     CallCountingStub = 9,
     StubLinkStub = 10,
     MethodCallThunk = 11,
+    Jitted = 12,
+    ReadyToRun = 13
 }
 ```
 
@@ -405,15 +405,6 @@ public override void GetMethodRegionInfo(RangeSection rangeSection, TargetCodePo
 
 ```
 
-`GetJITType` returns the JIT type by finding the JIT manager for the data range containing the relevant code block. We return `Jit` for the `EEJitManager`, `R2R` for the `R2RJitManager`, and `Unknown` for any other value.
-```csharp
-public enum JitType : uint
-{
-    Unknown = 0,
-    Jit = 1,
-    R2R = 2
-};
-```
 `NonVirtualEntry2MethodDesc` attempts to find a method desc from an entrypoint. If portable entrypoints are enabled, we attempt to read the entrypoint data structure to find the method table. We also attempt to find the method desc from a precode stub. Finally, we attempt to find the method desc using `GetMethodInfo` as described above.
 ```csharp
 TargetPointer IExecutionManager.NonVirtualEntry2MethodDesc(TargetCodePointer entrypoint)
@@ -522,28 +513,7 @@ After obtaining the clause array bounds, the common iteration logic classifies e
 
 `IsFilterFunclet` first checks `IsFunclet`. If the code block is a funclet, it retrieves the EH clauses for the method and checks whether any filter clause's handler offset matches the funclet's relative offset. If a match is found, the funclet is a filter funclet.
 
-### Stub Kind Classification
-
-`GetStubKind` classifies a code address as a known stub type or managed code. It returns `Unknown` if the address is not recognized.
-
-The method looks up the address in the `RangeSectionMap`. If a `RangeSection` is found, the JIT manager for that section classifies the code:
-
-- **EEJitManager**: If the range section is a range list, reads the `CodeRangeMapRangeList.RangeListType` to determine the stub code block kind. Otherwise, it uses the nibble map to find the method code start, reads the code header indirect pointer, and checks whether it is a stub code block (value ≤ `StubCodeBlockLast`). If so, the value identifies the specific stub kind.
-- **ReadyToRunJitManager**: Checks whether the address falls within a delay-load method call thunk region.
-
-```csharp
-StubKind GetStubKind(TargetCodePointer jittedCodeAddress)
-{
-    TargetPointer address = CodePointerUtils.AddressFromCodePointer(jittedCodeAddress);
-
-    // Look up in range section map
-    RangeSection range = FindRangeSection(jittedCodeAddress);
-    if (range == null) return StubKind.Unknown;
-
-    JitManager jitManager = GetJitManager(range);
-    return jitManager.GetStubCodeBlockKind(range, jittedCodeAddress);
-}
-```
+`GetCodeKind` classifies a code address by finding its owning range section and determining the code kind. It distinguishes between jitted code, stub code blocks (jump stubs, precode stubs, VSD stubs, etc.), and ReadyToRun code. Returns `Unknown` if the address cannot be classified.
 
 ### EE JIT Manager and Code Heap Info
 

@@ -813,10 +813,10 @@ public sealed unsafe partial class SOSDacImpl
             {
                 data->MethodDescPtr = eman.GetMethodDesc(cbh).ToClrDataAddress(_target);
 
-                data->JITType = eman.GetJITType(cbh) switch
+                data->JITType = eman.GetCodeKind(targetCodePointer) switch
                 {
-                    Contracts.JitType.Jit => JitTypes.TYPE_JIT,
-                    Contracts.JitType.R2R => JitTypes.TYPE_PJIT,
+                    Contracts.CodeKind.Jitted => JitTypes.TYPE_JIT,
+                    Contracts.CodeKind.ReadyToRun => JitTypes.TYPE_PJIT,
                     _ => JitTypes.TYPE_UNKNOWN,
                 };
 

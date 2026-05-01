@@ -249,28 +249,6 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
         jitManager.GetMethodRegionInfo(range, codeInfoHandle.Address.Value, out hotSize, out coldStart, out coldSize);
     }
 
-    JitType IExecutionManager.GetJITType(CodeBlockHandle codeInfoHandle)
-    {
-        RangeSection range = RangeSectionFromCodeBlockHandle(codeInfoHandle);
-        if (range.Data == null)
-            return JitType.Unknown;
-
-        JitManager jitManager = GetJitManager(range.Data);
-
-        if (jitManager == _eeJitManager)
-        {
-            return JitType.Jit;
-        }
-        else if (jitManager == _r2rJitManager)
-        {
-            return JitType.R2R;
-        }
-        else
-        {
-            return JitType.Unknown;
-        }
-    }
-
     TargetPointer IExecutionManager.NonVirtualEntry2MethodDesc(TargetCodePointer entrypoint)
     {
         if (_target.ReadGlobal<byte>(Constants.Globals.FeaturePortableEntrypoints) != 0)
