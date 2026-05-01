@@ -646,7 +646,7 @@ namespace System.Runtime.CompilerServices
 
                 AsyncDispatcherInfo asyncDispatcherInfo;
                 asyncDispatcherInfo.Next = refDispatcherInfo;
-                asyncDispatcherInfo.NextContinuation = MoveContinuationState();
+                asyncDispatcherInfo.NextContinuation = headContinuation;
                 refDispatcherInfo = &asyncDispatcherInfo;
 
                 RuntimeAsyncInstrumentationHelpers.ResumeRuntimeAsyncContext(this, ref asyncDispatcherInfo, flags);
