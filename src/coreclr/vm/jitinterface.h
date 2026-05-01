@@ -303,7 +303,6 @@ class CEEInfo : public ICorJitInfo
     TypeHandle GetTypeFromContext(CORINFO_CONTEXT_HANDLE context);
     void GetTypeContext(CORINFO_CONTEXT_HANDLE context, SigTypeContext* pTypeContext);
 
-    void HandleException(struct _EXCEPTION_POINTERS* pExceptionPointers);
 public:
 #include "icorjitinfoimpl_generated.h"
     uint32_t getClassAttribsInternal (CORINFO_CLASS_HANDLE cls);

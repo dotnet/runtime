@@ -112,7 +112,7 @@ void ExInfo::PopExInfos(Thread *pThread, void *targetSp)
 #if defined(DEBUGGING_SUPPORTED)
     DWORD_PTR dwInterceptStackFrame = 0;
 
-    // This method may be called on an unmanaged thread, in which case no interception can be done.
+    // If there is no current ExInfo, there is nothing to inspect for interception.
     if (pExInfo)
     {
         ThreadExceptionState* pExState = pThread->GetExceptionState();

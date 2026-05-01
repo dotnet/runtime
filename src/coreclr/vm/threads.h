@@ -2667,12 +2667,12 @@ public:
         return m_LastThrownObjectHandle;
     }
 
-    void SetSOForLastThrownObject();
-
     // Sets the last thrown object. If the throwable cannot be tracked due to OOM, sets the
     // last thrown object to the preallocated OOM exception and returns it instead of the
     // original throwable.
     OBJECTREF SetLastThrownObject(OBJECTREF throwable, BOOL isUnhandled = FALSE);
+
+    void SetSOForLastThrownObject();
 
     // Inidcates that the last thrown object is now treated as unhandled
     void MarkLastThrownObjectUnhandled()
