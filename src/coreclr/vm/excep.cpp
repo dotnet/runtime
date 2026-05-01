@@ -5608,7 +5608,9 @@ void HandleManagedFault(EXCEPTION_RECORD* pExceptionRecord, CONTEXT* pContext)
         }
     }
 
-    GCPROTECT_BEGIN(exInfo.m_exception);
+    // m_exception is GC-reported via ExInfo chain scanning in ScanStackRoots.
+    // Do NOT also GCPROTECT it - reporting the same location twice corrupts
+    // the GC's relocation logic (see clr-code-guide.md §2.1.5).
     UnmanagedCallersOnlyCaller throwHwEx(METHOD__EH__RH_THROWHW_EX);
 
     pThread->IncPreventAbort();
@@ -5618,7 +5620,6 @@ void HandleManagedFault(EXCEPTION_RECORD* pExceptionRecord, CONTEXT* pContext)
 
     DispatchExSecondPass(&exInfo);
 
-    GCPROTECT_END();
     UNREACHABLE();
 }
 
