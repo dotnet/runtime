@@ -14351,7 +14351,7 @@ bool Compiler::fgValueNumberSpecialIntrinsic(GenTreeCall* call)
             assert(call->gtArgs.CountUserArgs() == 2);
             ValueNumPair pMTVN    = call->gtArgs.GetUserArgByIndex(0)->GetNode()->gtVNPair;
             ValueNumPair lenArgVN = call->gtArgs.GetUserArgByIndex(1)->GetNode()->gtVNPair;
-            call->gtVNPair        = vnStore->VNPairForFunc(TYP_REF, VNF_StrFastAllocate, pMTVN, lenArgVN);
+            fgValueNumberHelperCallFunc(call, TYP_REF, VNF_StrFastAllocate, pMTVN, lenArgVN);
             return true;
         }
 
