@@ -429,6 +429,13 @@ void WasmRegAlloc::CollectReferencesForNode(GenTree* node)
 {
     switch (node->OperGet())
     {
+        case GT_NULLCHECK:
+            if (node->gtGetOp1()->gtLIRFlags & LIR::Flags::MultiplyUsed)
+            {
+                ConsumeTemporaryRegForOperand(node->gtGetOp1() DEBUGARG("Orphaned GT_NULLCHECK with multiply-used flag"));
+            }
+            break;
+
         case GT_LCL_VAR:
             CollectReferencesForLclVar(node->AsLclVar());
             break;
