@@ -60,6 +60,8 @@ bool RhConfig::Environment::TryGetIntegerValue(const char* name, uint64_t* value
     if (!decimal && cchResult >= 2 && buffer[0] == '0' && (buffer[1] == 'x' || buffer[1] == 'X'))
     {
         startIndex = 2;
+        if (startIndex == cchResult)
+            return false; // parse error - hex prefix without any digits
     }
     for (uint32_t i = startIndex; i < cchResult; i++)
     {
