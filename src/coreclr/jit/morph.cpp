@@ -1748,27 +1748,32 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
         call->gtCallMethHnd = comp->eeFindHelper(CORINFO_HELP_PINVOKE_CALLI);
     }
 #if defined(FEATURE_READYTORUN)
-    // For arm/arm64, we dispatch code same as VSD using virtualStubParamInfo->GetReg()
-    // for indirection cell address, which ZapIndirectHelperThunk expects.
-    // For x64/x86 we use return address to get the indirection cell by disassembling the call site.
-    // That is not possible for fast tailcalls, so we only need this logic for fast tailcalls on xarch.
-    // Note that we call this before we know if something will be a fast tailcall or not.
-    // That's ok; after making something a tailcall, we will invalidate this information
-    // and reconstruct it if necessary. The tailcalling decision does not change since
-    // this is a non-standard arg in a register.
-    bool needsIndirectionCell = call->IsR2RRelativeIndir() && !call->IsDelegateInvoke();
-#if defined(TARGET_XARCH)
-    needsIndirectionCell &= call->IsFastTailCall();
+
+#ifdef TARGET_WASM
+    // TARGET_WASM does not use an explicit indirection cell arg for the R2R calling convention since
+    // the address of the indirection cell is recoverable from the portable entrypoint which
+    // we pass already as part of the Wasm managed calling convention (See LowerPEPCall).
+    bool needsIndirectionCellArg = false;
+#elif defined(TARGET_XARCH)
+    // For x64/x86 we use the return address to get the indirection cell by disassembling the call site.
+    // That is not possible for fast tailcalls, so we do need to pass the indirection cell address for fast tailcalls on
+    // xarch. Note that we call this before we know if something will be a fast tailcall or not. That's ok; after making
+    // something a tailcall, we will invalidate this information and reconstruct it if necessary. The tailcalling
+    // decision does not change since this is a non-standard arg in a register.
+    bool needsIndirectionCellArg = call->IsR2RRelativeIndir() && !call->IsDelegateInvoke() && call->IsFastTailCall();
+#else
+    // For arm/arm64 and other non-xarch targets, we dispatch code the same as VSD using virtualStubParamInfo->GetReg()
+    // for the indirection cell address, which the ReadyToRun DelayLoad helpers expect.
+    bool needsIndirectionCellArg = call->IsR2RRelativeIndir() && !call->IsDelegateInvoke();
 #endif
 
-    if (needsIndirectionCell)
+    if (needsIndirectionCellArg)
     {
         assert(call->gtEntryPoint.addr != nullptr);
 
         size_t   addrValue           = (size_t)call->gtEntryPoint.addr;
         GenTree* indirectCellAddress = comp->gtNewIconHandleNode(addrValue, GTF_ICON_FTN_ADDR);
         INDEBUG(indirectCellAddress->AsIntCon()->gtTargetHandle = (size_t)call->gtCallMethHnd);
-
 #ifdef TARGET_ARM
         // TODO-ARM: We currently do not properly kill this register in LSRA
         // (see getKillSetForCall which does so only for VSD calls).
@@ -1781,12 +1786,7 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
         // Push the stub address onto the list of arguments.
         NewCallArg indirCellAddrArg =
             NewCallArg::Primitive(indirectCellAddress).WellKnown(WellKnownArg::R2RIndirectionCell);
-#ifdef TARGET_WASM
-        // On wasm we need to ensure we put the indirection cell address last in LIR, after the SP and formal args.
-        PushBack(comp, indirCellAddrArg);
-#else
         InsertAfterThisOrFirst(comp, indirCellAddrArg);
-#endif // TARGET_WASM
     }
 #endif // defined(FEATURE_READYTORUN)
 
@@ -6439,13 +6439,22 @@ GenTree* Compiler::fgMorphCall(GenTreeCall* call)
 
     // Morph stelem.ref helper call to store a null value, into a store into an array without the helper.
     // This needs to be done after the arguments are morphed to ensure constant propagation has already taken place.
-    if (opts.OptimizationEnabled() && call->IsHelperCall(CORINFO_HELP_ARRADDR_ST))
+    if (opts.OptimizationEnabled() && call->IsHelperCallOrUserEquivalent(this, CORINFO_HELP_ARRADDR_ST))
     {
         assert(call->gtArgs.CountUserArgs() == 3);
 
         GenTree* arr   = call->gtArgs.GetUserArgByIndex(0)->GetNode();
         GenTree* index = call->gtArgs.GetUserArgByIndex(1)->GetNode();
         GenTree* value = call->gtArgs.GetUserArgByIndex(2)->GetNode();
+
+        if (!call->IsHelperCall())
+        {
+            // Convert back to helper call if it wasn't inlined.
+            // Currently, only helper calls are eligible to be direct calls if the target has reached
+            // its final tier. TODO: remove this workaround and convert this user call to direct as well.
+            call->gtCallMethHnd = eeFindHelper(CORINFO_HELP_ARRADDR_ST);
+            call->gtCallType    = CT_HELPER;
+        }
 
         if (gtCanSkipCovariantStoreCheck(value, arr))
         {
@@ -7878,7 +7887,6 @@ DONE_MORPHING_CHILDREN:
                     // Otherwise we may sign-extend incorrectly in cases where the GT_NEG
                     // node ends up feeding directly into a cast, for example in
                     // GT_CAST<ubyte>(GT_SUB(0, s_1.ubyte))
-
                     if (op1->IsIntegralConst(0))
                     {
                         tree->ChangeOper(GT_NEG);
@@ -10451,19 +10459,52 @@ GenTree* Compiler::fgOptimizeAddition(GenTreeOp* add)
             }
         }
 
-        // - a + b = > b - a
-        // ADD(NEG(a), b) => SUB(b, a)
-
-        // Do not do this if "op2" is constant for canonicalization purposes.
-        if (op1->OperIs(GT_NEG) && !op2->OperIs(GT_NEG) && !op2->IsIntegralConst() && gtCanSwapOrder(op1, op2))
+        if (op1->OperIs(GT_NEG) && !op2->OperIs(GT_NEG))
         {
-            add->SetOper(GT_SUB);
-            add->gtOp1 = op2;
-            add->gtOp2 = op1->AsOp()->gtGetOp1();
+            if (op2->IsIntegralConst())
+            {
+                // ADD(NEG(x), CONST) => XOR(x, CONST)
 
-            DEBUG_DESTROY_NODE(op1);
+                auto isSubToXorValid = [=](uint64_t cns, IntegralRange range) {
+                    // cns - x, where x in [lo, hi]
+                    uint64_t lo = IntegralRange::SymbolicToRealValue(range.GetLowerBound());
+                    uint64_t hi = IntegralRange::SymbolicToRealValue(range.GetUpperBound());
 
-            return add;
+                    // OR of all numbers in [lo, hi]
+                    uint64_t knownBits = (lo == hi) ? 0 : (UINT64_MAX >> BitOperations::LeadingZeroCount(lo ^ hi));
+                    knownBits          = lo | knownBits;
+
+                    // Zero out bits outside of TYPE. This handles cases that rely on overflow
+                    uint32_t sizeInBits = genTypeSize(add->TypeGet()) * BITS_PER_BYTE;
+                    knownBits &= (1ULL << (sizeInBits - 1)) - 1;
+
+                    // At every bit pos with a 1 in knownBits, cns also needs 1.
+                    // Otherwise borrowing occurs and XOR is not equivalent to SUB
+                    return (cns & knownBits) == knownBits;
+                };
+
+                IntegralRange range = IntegralRange::ForNode(op1->gtGetOp1(), this);
+                uint64_t      cns   = (uint64_t)op2->AsIntConCommon()->IntegralValue();
+                if (isSubToXorValid(cns, range))
+                {
+                    add->SetOper(GT_XOR, GenTree::PRESERVE_VN);
+                    add->gtOp1 = op1->gtGetOp1();
+                    return fgMorphTree(add);
+                }
+            }
+
+            // - a + b => b - a
+            // ADD(NEG(a), b) => SUB(b, a)
+            // Do not do this if "op2" is constant for canonicalization purposes.
+            if (!op2->IsIntegralConst() && gtCanSwapOrder(op1, op2))
+            {
+                add->SetOper(GT_SUB);
+                add->gtOp1 = op2;
+                add->gtOp2 = op1->AsOp()->gtGetOp1();
+
+                DEBUG_DESTROY_NODE(op1);
+                return add;
+            }
         }
 
         // a + -b = > a - b
@@ -11447,6 +11488,7 @@ GenTree* Compiler::fgMorphHWIntrinsic(GenTreeHWIntrinsic* tree)
                 {
                     innerOp = fgMorphHWIntrinsicOptional(innerOp->AsHWIntrinsic());
                 }
+                innerOp->SetMorphed(this);
 
                 tree->Op(opIndex) = innerOp;
             }
@@ -11503,44 +11545,58 @@ GenTree* Compiler::fgMorphHWIntrinsicRequired(GenTreeHWIntrinsic* tree)
             std::swap(op1, op2);
         }
 
-        if (((oper == GT_EQ) || (oper == GT_NE)) && op1->OperIsHWIntrinsic() && op2->IsCnsVec())
+        if ((oper == GT_EQ) || (oper == GT_NE))
         {
-            GenTreeHWIntrinsic* op1Intrinsic   = op1->AsHWIntrinsic();
-            NamedIntrinsic      op1IntrinsicId = op1Intrinsic->GetHWIntrinsicId();
-            var_types           op1Type        = op1Intrinsic->TypeGet();
-
-            if (HWIntrinsicInfo::ReturnsPerElementMask(op1IntrinsicId) &&
-                (genTypeSize(simdBaseType) == genTypeSize(op1Intrinsic->GetSimdBaseType())))
+            if (op2->IsCnsVec() && op1->IsVectorPerElementMask(simdBaseType, simdSize))
             {
-                // This optimization is only safe if we know the other node produces
-                // AllBitsSet or Zero per element and if the outer comparison is the
-                // same size as what the other node produces for its mask
-
                 bool reverseCond = false;
 
                 if (oper == GT_EQ)
                 {
-                    // Handle `Mask == Zero` and `Zero == Mask` for integral types
+                    // Handle `Equals(Mask, Zero)` for integral types
                     if (op2->IsVectorZero())
                     {
+                        // We are comparing something that is known per element to be either
+                        // AllBitsSet or Zero, with Zero.
+                        //
+                        // In such a case:
+                        // * `AllBitsSet == Zero` is false and so produces `Zero`
+                        // * `Zero == Zero` is true and so produces `AllBitsSet`
+                        //
+                        // This means that we are just inverting the input and can reverse
+                        // the condition
+
                         reverseCond = true;
                     }
                 }
                 else if (oper == GT_NE)
                 {
-                    // Handle `Mask != AllBitsSet` and `AllBitsSet != Mask` for integral types
+                    // Handle `~Equals(Mask, AllBitsSet)` for integral types
                     if (op2->IsVectorAllBitsSet())
                     {
+                        // We are comparing something that is known per element to be either
+                        // AllBitsSet or Zero, with AllBitsSet.
+                        //
+                        // In such a case:
+                        // * `AllBitsSet != AllBitsSet` is false and so produces `Zero`
+                        // * `Zero != AllBitsSet` is true and so produces `AllBitsSet`
+                        //
+                        // This means that we are just inverting the input and can reverse
+                        // the condition
+
                         reverseCond = true;
                     }
                 }
 
                 if (reverseCond)
                 {
-                    GenTree* newNode = nullptr;
+                    GenTree*  newNode = nullptr;
+                    var_types op1Type = op1->TypeGet();
 
-                    if (op1Intrinsic->OperIsConvertVectorToMask())
+                    if (op1->OperIsConvertVectorToMask())
                     {
+                        GenTreeHWIntrinsic* op1Intrinsic = op1->AsHWIntrinsic();
+
 #if defined(TARGET_XARCH)
                         op1 = op1Intrinsic->Op(1);
 #elif defined(TARGET_ARM64)
@@ -11577,6 +11633,12 @@ GenTree* Compiler::fgMorphHWIntrinsicRequired(GenTreeHWIntrinsic* tree)
                         if (op1Type != retType)
                         {
                             newNode = fgMorphHWIntrinsicRequired(newNode->AsHWIntrinsic());
+
+                            if (newNode->OperIsHWIntrinsic())
+                            {
+                                newNode = fgMorphHWIntrinsicOptional(newNode->AsHWIntrinsic());
+                            }
+                            newNode->SetMorphed(this);
 
                             if (retType == TYP_MASK)
                             {
@@ -11751,9 +11813,14 @@ GenTree* Compiler::fgMorphHWIntrinsicRequired(GenTreeHWIntrinsic* tree)
                     tree->ChangeHWIntrinsicId(addIntrinsic, op2, op1);
 
                     op2 = fgMorphHWIntrinsicRequired(op2->AsHWIntrinsic());
-                    op2->SetMorphed(this);
-                    tree->Op(1) = op2;
 
+                    if (op2->OperIsHWIntrinsic())
+                    {
+                        op2 = fgMorphHWIntrinsicOptional(op2->AsHWIntrinsic());
+                    }
+                    op2->SetMorphed(this);
+
+                    tree->Op(1) = op2;
                     return fgMorphHWIntrinsicRequired(tree);
                 }
             }

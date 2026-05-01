@@ -172,21 +172,13 @@ namespace
         MethodDesc* pStubMD = ILStubCache::CreateAndLinkNewILStubMethodDesc(
             pMD->GetLoaderAllocator(),
             pMD->GetMethodTable(),
-            PINVOKESTUB_FL_COMEVENTCALL,
+            PINVOKESTUB_FL_COM | PINVOKESTUB_FL_COMEVENTCALL,
             pMD->GetModule(),
             szMetaSig,
             cbMetaSigSize,
             &typeContext,
             &stubLinker
         );
-
-#if defined(FEATURE_DYNAMIC_METHOD_HAS_NATIVE_STACK_ARG_SIZE)
-        if (pStubMD->IsDynamicMethod())
-        {
-            DynamicMethodDesc* pDMD = pStubMD->AsDynamicMethodDesc();
-            pDMD->SetNativeStackArgSize(2 * TARGET_POINTER_SIZE); // The native stack arg size is constant since the signature for struct stubs is constant.
-        }
-#endif // FEATURE_DYNAMIC_METHOD_HAS_NATIVE_STACK_ARG_SIZE
 
         szMetaSig.SuppressRelease();
 

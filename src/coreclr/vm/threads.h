@@ -129,7 +129,6 @@ class     PInvoke;
 class     Frame;
 class     ThreadBaseObject;
 class     AppDomainStack;
-class     DomainAssembly;
 class     DeadlockAwareLock;
 class     EECodeInfo;
 class     DebuggerPatchSkip;
@@ -912,20 +911,6 @@ public:
     InterpThreadContext* GetOrCreateInterpThreadContext();
 #endif // FEATURE_INTERPRETER
 
-#ifndef TARGET_UNIX
-private:
-    _NT_TIB *m_pTEB;
-public:
-    _NT_TIB *GetTEB() {
-        LIMITED_METHOD_CONTRACT;
-        return m_pTEB;
-    }
-    PEXCEPTION_REGISTRATION_RECORD *GetExceptionListPtr() {
-        WRAPPER_NO_CONTRACT;
-        return &GetTEB()->ExceptionList;
-    }
-#endif // !TARGET_UNIX
-
     inline void SetTHAllocContextObj(TypeHandle th) {LIMITED_METHOD_CONTRACT; m_thAllocContextObj = th; }
 
     inline TypeHandle GetTHAllocContextObj() {LIMITED_METHOD_CONTRACT; return m_thAllocContextObj; }
@@ -1448,8 +1433,6 @@ public:
     //---------------------------------------------------------------
     // Last exception to be thrown
     //---------------------------------------------------------------
-    inline void SetThrowable(OBJECTREF pThrowable
-                             DEBUG_ARG(ThreadExceptionState::SetThrowableErrorChecking stecFlags = ThreadExceptionState::STEC_All));
 
     OBJECTREF GetThrowable()
     {
@@ -1458,25 +1441,25 @@ public:
         return m_ExceptionState.GetThrowable();
     }
 
-    // An unmnaged thread can check if a managed is processing an exception
     BOOL HasException()
     {
         LIMITED_METHOD_CONTRACT;
-        OBJECTHANDLE pThrowable = m_ExceptionState.GetThrowableAsHandle();
-        return pThrowable && *PTR_UNCHECKED_OBJECTREF(pThrowable);
+        return !IsThrowableNull();
     }
 
-    OBJECTHANDLE GetThrowableAsHandle()
+    // See ExInfo::GetThrowableAsPseudoHandle for details on the pseudo-handle.
+    OBJECTHANDLE GetThrowableAsPseudoHandle()
     {
-        LIMITED_METHOD_CONTRACT;
-        return m_ExceptionState.GetThrowableAsHandle();
+        LIMITED_METHOD_DAC_CONTRACT;
+
+        return m_ExceptionState.GetThrowableAsPseudoHandle();
     }
 
     // special null test (for use when we're in the wrong GC mode)
     BOOL IsThrowableNull()
     {
         WRAPPER_NO_CONTRACT;
-        return IsHandleNullUnchecked(m_ExceptionState.GetThrowableAsHandle());
+        return m_ExceptionState.IsThrowableNull();
     }
 
     BOOL IsExceptionInProgress()
@@ -2239,10 +2222,9 @@ public:
     {
         return m_PreventAbort != 0;
     }
-    // The ThreadStore manages a list of all the threads in the system.  I
-    // can't figure out how to expand the ThreadList template type without
-    // making m_Link public.
-    SLink       m_Link;
+    // The ThreadStore manages a list of all the threads in the system.
+    // Next pointer for SList linkage (ThreadStore::m_ThreadList).
+    PTR_Thread  m_pNext = NULL;
 
     // Debugger per-thread flag for enabling notification on "manual"
     // method calls,  for stepping logic
@@ -2690,8 +2672,7 @@ public:
     }
 
     void SafeUpdateLastThrownObject(void);
-    OBJECTREF SafeSetThrowables(OBJECTREF pThrowable
-                                DEBUG_ARG(ThreadExceptionState::SetThrowableErrorChecking stecFlags = ThreadExceptionState::STEC_All),
+    OBJECTREF SafeSetThrowables(OBJECTREF pThrowable,
                                 BOOL isUnhandled = FALSE);
 
     bool IsLastThrownObjectStackOverflowException()
@@ -3775,18 +3756,16 @@ struct cdac_data<Thread>
     static constexpr size_t CachedStackLimit = offsetof(Thread, m_CacheStackLimit);
     static constexpr size_t ExposedObject = offsetof(Thread, m_ExposedObject);
     static constexpr size_t LastThrownObject = offsetof(Thread, m_LastThrownObjectHandle);
-    static constexpr size_t Link = offsetof(Thread, m_Link);
+    static constexpr size_t LastThrownObjectIsUnhandled = offsetof(Thread, m_ltoIsUnhandled);
+    static constexpr size_t Link = offsetof(Thread, m_pNext);
     static constexpr size_t ThreadLocalDataPtr = offsetof(Thread, m_ThreadLocalDataPtr);
+    static constexpr size_t CurrentCustomDebuggerNotification = offsetof(Thread, m_hCurrNotification);
 
     static_assert(std::is_same<decltype(std::declval<Thread>().m_ExceptionState), ThreadExceptionState>::value,
         "Thread::m_ExceptionState is of type ThreadExceptionState");
     static constexpr size_t ExceptionTracker = offsetof(Thread, m_ExceptionState) + offsetof(ThreadExceptionState, m_pCurrentTracker);
     static constexpr size_t DebuggerFilterContext = offsetof(Thread, m_debuggerFilterContext);
-#ifdef PROFILING_SUPPORTED
-    static constexpr size_t ProfilerFilterContext = offsetof(Thread, m_pProfilerFilterContext);
-#endif // PROFILING_SUPPORTED
 #ifndef TARGET_UNIX
-    static constexpr size_t TEB = offsetof(Thread, m_pTEB);
     static constexpr size_t UEWatsonBucketTrackerBuckets = offsetof(Thread, m_ExceptionState) + offsetof(ThreadExceptionState, m_UEWatsonBucketTracker)
     + offsetof(EHWatsonBucketTracker, m_WatsonUnhandledInfo.m_pUnhandledBuckets);
 #endif
@@ -3809,7 +3788,7 @@ void UndoRevert(BOOL bReverted, HANDLE hToken);
 // ThreadStore::m_pThreadStore.
 // ---------------------------------------------------------------------------
 
-typedef SList<Thread, false, PTR_Thread> ThreadList;
+typedef SListTail<Thread> ThreadList;
 
 
 // The ThreadStore is a singleton class
@@ -4048,7 +4027,7 @@ public:
 template<>
 struct cdac_data<ThreadStore>
 {
-    static constexpr size_t FirstThreadLink = offsetof(ThreadStore, m_ThreadList) + offsetof(ThreadList, m_link);
+    static constexpr size_t FirstThreadLink = offsetof(ThreadStore, m_ThreadList) + offsetof(ThreadList, m_pHead);
     static constexpr size_t ThreadCount = offsetof(ThreadStore, m_ThreadCount);
     static constexpr size_t UnstartedCount = offsetof(ThreadStore, m_UnstartedThreadCount);
     static constexpr size_t BackgroundCount = offsetof(ThreadStore, m_BackgroundThreadCount);
@@ -4060,7 +4039,6 @@ typedef StateHolder<ThreadStore::LockThreadStore,ThreadStore::UnlockThreadStore>
 
 
 // This class dispenses small thread ids for the thin lock mechanism.
-// Recently we started using this class to dispense domain neutral module IDs as well.
 class IdDispenser
 {
 private:

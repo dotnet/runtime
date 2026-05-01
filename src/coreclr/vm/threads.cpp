@@ -1513,8 +1513,6 @@ void Thread::InitThread()
 #ifndef TARGET_UNIX
     (void) _controlfp_s( NULL, _RC_NEAR, _RC_CHOP|_RC_UP|_RC_DOWN|_RC_NEAR );
 
-    m_pTEB = (struct _NT_TIB*)NtCurrentTeb();
-
 #endif // !TARGET_UNIX
 
     if (m_CacheStackBase == 0)
@@ -3223,12 +3221,12 @@ OBJECTREF Thread::SafeSetLastThrownObject(OBJECTREF throwable)
 }
 
 //
-// This is a nice wrapper for SetThrowable and SetLastThrownObject, which catches any exceptions caused by not
-// being able to create the handle for the throwable, and sets the throwable to the preallocated out of memory
-// exception instead. It also updates the last thrown object, which is always updated when the throwable is
-// updated.
+// This is a nice wrapper for updating the last thrown object handle, which catches any exceptions caused by not
+// being able to create the handle for the throwable, and falls back to the preallocated out of memory exception
+// for the last thrown object instead. The throwable itself is stored directly in ExInfo::m_exception by managed
+// EH code, so this helper only updates the last thrown object state.
 //
-OBJECTREF Thread::SafeSetThrowables(OBJECTREF throwable DEBUG_ARG(ThreadExceptionState::SetThrowableErrorChecking stecFlags),
+OBJECTREF Thread::SafeSetThrowables(OBJECTREF throwable,
                                     BOOL isUnhandled)
 {
     CONTRACTL
@@ -3244,11 +3242,8 @@ OBJECTREF Thread::SafeSetThrowables(OBJECTREF throwable DEBUG_ARG(ThreadExceptio
 
     EX_TRY
     {
-        // Try to set the throwable.
-        SetThrowable(throwable DEBUG_ARG(stecFlags));
-
-        // Now, if the last thrown object is different, go ahead and update it. This makes sure that we re-throw
-        // the right object when we rethrow.
+        // The exception object is stored directly in ExInfo::m_exception by managed EH code,
+        // so we only need to update the last thrown object handle here.
         if (LastThrownObject() != throwable)
         {
             SetLastThrownObject(throwable);
@@ -3261,12 +3256,9 @@ OBJECTREF Thread::SafeSetThrowables(OBJECTREF throwable DEBUG_ARG(ThreadExceptio
     }
     EX_CATCH
     {
-        // If either set didn't work, then set both throwables to the preallocated OOM exception, and return that
-        // object instead of the original throwable.
+        // If we can't create a handle, set the last thrown object to the preallocated OOM exception.
         ret = CLRException::GetPreallocatedOutOfMemoryException();
 
-        // Neither of these will throw because we're setting with a preallocated exception.
-        SetThrowable(ret DEBUG_ARG(stecFlags));
         SetLastThrownObject(ret, isUnhandled);
     }
     EX_END_CATCH
@@ -3328,22 +3320,17 @@ void Thread::SafeUpdateLastThrownObject(void)
     }
     CONTRACTL_END;
 
-    OBJECTHANDLE hThrowable = GetThrowableAsHandle();
+    OBJECTREF throwable = GetExceptionState()->GetThrowable();
 
-    if (hThrowable != NULL)
+    if (throwable != NULL)
     {
         EX_TRY
         {
-            IGCHandleManager *pHandleTable = GCHandleUtilities::GetGCHandleManager();
-
-            // Creating a duplicate handle here ensures that the AD of the last thrown object
-            // matches the domain of the current throwable.
-            OBJECTHANDLE duplicateHandle = pHandleTable->CreateDuplicateHandle(hThrowable);
-            SetLastThrownObjectHandle(duplicateHandle);
+            SetLastThrownObject(throwable);
         }
         EX_CATCH
         {
-            // If we can't create a duplicate handle, we set both throwables to the preallocated OOM exception.
+            // If we can't create a handle, set the last thrown object to the preallocated OOM exception.
             SafeSetThrowables(CLRException::GetPreallocatedOutOfMemoryException());
         }
         EX_END_CATCH
@@ -3943,7 +3930,6 @@ BOOL ThreadStore::RemoveThread(Thread *target)
     CONTRACTL_END;
 
     BOOL    found;
-    Thread *ret;
 
 #if 0 // This assert is not valid when failing to create background GC thread.
       // Main GC thread holds the TS lock.
@@ -3953,9 +3939,8 @@ BOOL ThreadStore::RemoveThread(Thread *target)
     _ASSERTE(s_pThreadStore->m_Crst.GetEnterCount() > 0 ||
              IsAtProcessExit());
     _ASSERTE(s_pThreadStore->DbgFindThread(target));
-    ret = s_pThreadStore->m_ThreadList.FindAndRemove(target);
-    _ASSERTE(ret && ret == target);
-    found = (ret != NULL);
+    found = s_pThreadStore->m_ThreadList.FindAndRemove(target);
+    _ASSERTE(found);
 
     if (found)
     {
@@ -6707,7 +6692,7 @@ extern "C" InterpThreadContext* STDCALL GetInterpThreadContextWithPossiblyMissin
         {
             OBJECTHANDLE ohThrowable = CURRENT_THREAD->LastThrownObjectHandle();
             _ASSERTE(ohThrowable);
-            StackTraceInfo::AppendElement(ohThrowable, 0, (UINT_PTR)pTransitionBlock, pByteCodeStart->Method->methodHnd, NULL);
+            StackTraceInfo::AppendElement(ObjectFromHandle(ohThrowable), 0, (UINT_PTR)pTransitionBlock, pByteCodeStart->Method->methodHnd, NULL);
             EX_RETHROW;
         }
         EX_END_CATCH
@@ -6788,10 +6773,6 @@ Thread::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
     WRAPPER_NO_CONTRACT;
 
     DAC_ENUM_DTHIS();
-    if (flags != CLRDATA_ENUM_MEM_MINI && flags != CLRDATA_ENUM_MEM_TRIAGE && flags != CLRDATA_ENUM_MEM_HEAP2)
-    {
-        AppDomain::GetCurrentDomain()->EnumMemoryRegions(flags, true);
-    }
 
     if (m_debuggerFilterContext.IsValid())
     {
@@ -6879,11 +6860,6 @@ Thread::EnumMemoryRegionsWorker(CLRDataEnumMemoryFlags flags)
         DacGetThreadContext(this, &context);
     }
 
-    if (flags != CLRDATA_ENUM_MEM_MINI && flags != CLRDATA_ENUM_MEM_TRIAGE && flags != CLRDATA_ENUM_MEM_HEAP2)
-    {
-        AppDomain::GetCurrentDomain()->EnumMemoryRegions(flags, true);
-    }
-
     FillRegDisplay(&regDisp, &context);
     frameIter.Init(this, NULL, &regDisp, 0);
     while (frameIter.IsValid())
@@ -6943,8 +6919,8 @@ Thread::EnumMemoryRegionsWorker(CLRDataEnumMemoryFlags flags)
         DacEnumCodeForStackwalk(callEnd);
 
         // To stackwalk through funceval frames, we need to be sure to preserve the
-        // DebuggerModule's m_pRuntimeDomainAssembly.  This is the only case that doesn't use the current
-        // vmDomainAssembly in code:DacDbiInterfaceImpl::EnumerateInternalFrames.  The following
+        // DebuggerModule's m_pRuntimeAssembly.  This is the only case that doesn't use the current
+        // vmAssembly in code:DacDbiInterfaceImpl::EnumerateInternalFrames.  The following
         // code mimics that function.
         // Allow failure, since we want to continue attempting to walk the stack regardless of the outcome.
         EX_TRY

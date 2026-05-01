@@ -14,9 +14,13 @@
   <Import Sdk="Microsoft.NET.Sdk.WebAssembly" Project="Sdk.props" Condition="'$(UsingNativeAOT)' != 'true' and '$(UsingMicrosoftNETSdkWebAssembly)' == 'true'" />
   <Import Project="$(MSBuildThisFileDirectory)BrowserWasmApp.props" Condition="'$(UsingNativeAOT)' != 'true' and '$(RuntimeFlavor)' == 'Mono'" />
 
-  <!-- TODO-WASM https://github.com/dotnet/runtime/issues/120226 (CoreCLR on wasm defaults) -->
   <PropertyGroup Condition="'$(RuntimeFlavor)' == 'CoreCLR'">
+    <UseMonoRuntime>false</UseMonoRuntime>
+    <!-- TODO-WASM https://github.com/dotnet/runtime/issues/120226 (CoreCLR on wasm defaults) -->
     <InvariantGlobalization Condition="'$(InvariantGlobalization)' == ''">false</InvariantGlobalization>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(RuntimeFlavor)' == 'Mono'">
+    <UseMonoRuntime>true</UseMonoRuntime>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(IsTestProject)' == 'true' or '$(IsOutputTypeLibrary)' == 'true'">
