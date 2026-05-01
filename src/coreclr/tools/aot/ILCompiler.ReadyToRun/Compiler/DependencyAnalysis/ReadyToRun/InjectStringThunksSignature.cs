@@ -44,7 +44,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     // Emit a 4-byte relocation to the stub code.
                     // On WASM, this is a table index; on other platforms, an RVA.
                     RelocType relocType = factory.Target.Architecture == TargetArchitecture.Wasm32
-                        ? RelocType.WASM_TABLE_INDEX_I32
+                        ? RelocType.WASM_TABLE_INDEX_REL_I32
                         : RelocType.IMAGE_REL_BASED_ADDR32NB;
                     builder.EmitReloc(stub, relocType, delta: factory.Target.CodeDelta);
                 }

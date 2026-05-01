@@ -234,8 +234,7 @@ namespace Internal.JitInterface
 
             MethodSignature result = new MethodSignature(flags, 0, returnType, parameters.ToArray());
 
-            LoweringFlags relowerFlags = isManaged ? LoweringFlags.None : LoweringFlags.IsUnmanagedCallersOnly;
-            WasmSignature roundtripped = GetSignature(result, relowerFlags);
+            WasmSignature roundtripped = GetSignature(result, LoweringFlags.None);
             Debug.Assert(roundtripped.Equals(wasmSignature),
                 $"RaiseSignature roundtrip failed: input='{wasmSignature.SignatureString}', roundtripped='{roundtripped.SignatureString}'");
 
@@ -287,6 +286,11 @@ namespace Internal.JitInterface
 
         public static WasmSignature GetSignature(MethodSignature signature, LoweringFlags flags)
         {
+            if (!flags.HasFlag(LoweringFlags.IsUnmanagedCallersOnly) && signature.Flags.HasFlag(MethodSignatureFlags.UnmanagedCallingConvention))
+            {
+                flags = flags | LoweringFlags.IsUnmanagedCallersOnly;
+            }
+
             TypeDesc returnType = signature.ReturnType;
             WasmValueType pointerType = (signature.ReturnType.Context.Target.PointerSize == 4) ? WasmValueType.I32 : WasmValueType.I64;
             char hiddenParamChar = WasmValueTypeToSigChar(pointerType);

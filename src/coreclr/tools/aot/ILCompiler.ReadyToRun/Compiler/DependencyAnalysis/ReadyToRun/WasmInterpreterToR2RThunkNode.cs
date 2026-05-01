@@ -34,7 +34,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public override string LookupString => "M" + _wasmSignature.SignatureString;
 
-        MethodSignature INodeWithTypeSignature.Signature => WasmLowering.RaiseSignature(_wasmSignature, _context);
+        private static WasmSignature sigForInterpToR2RThunks = new WasmSignature(new WasmFuncType(new WasmResultType(new WasmValueType[]{WasmValueType.I32, WasmValueType.I32, WasmValueType.I32, WasmValueType.I32}), new WasmResultType(Array.Empty<WasmValueType>())), "viiii");
+        MethodSignature INodeWithTypeSignature.Signature => WasmLowering.RaiseSignature(sigForInterpToR2RThunks, _context);
         bool INodeWithTypeSignature.IsUnmanagedCallersOnly => false;
         bool INodeWithTypeSignature.IsAsyncCall => false;
         bool INodeWithTypeSignature.HasGenericContextArg => false;
@@ -72,6 +73,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         {
             DependencyList dependencies = base.ComputeNonRelocationBasedDependencies(factory);
             dependencies.Add(_targetTypeNode, "Wasm interpreter-to-R2R thunk requires target type node");
+            dependencies.Add(factory.WasmTypeNode(sigForInterpToR2RThunks), "Wasm interpreter-to-R2R thunk requires type for the function entry point");
             return dependencies;
         }
 

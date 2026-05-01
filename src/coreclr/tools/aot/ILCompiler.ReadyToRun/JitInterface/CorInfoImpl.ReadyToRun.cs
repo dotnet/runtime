@@ -860,8 +860,6 @@ namespace Internal.JitInterface
                         }
                     }
                 }
-                var compilationResult = CompileMethodInternal(methodCodeNodeNeedingCode, methodIL);
-                codeGotPublished = true;
 
                 // For managed methods on Wasm, add an interpreter-to-R2R thunk so the
                 // interpreter can call into this R2R-compiled function.
@@ -872,6 +870,9 @@ namespace Internal.JitInterface
                         _compilation.NodeFactory.WasmInterpreterToR2RThunk(wasmSig),
                         "Interpreter-to-R2R thunk for compiled method");
                 }
+
+                var compilationResult = CompileMethodInternal(methodCodeNodeNeedingCode, methodIL);
+                codeGotPublished = true;
 
                 if (compilationResult == CompilationResult.CompilationRetryRequested && logger.IsVerbose)
                 {
