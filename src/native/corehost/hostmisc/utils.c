@@ -370,6 +370,24 @@ bool utils_get_dotnet_root_from_env(pal_char_t* out_env_var_name, size_t env_var
         return true;
     }
 
+#if defined(_WIN32)
+    // WOW64: 32-bit process on 64-bit Windows. Check the legacy DOTNET_ROOT(x86) variable.
+    {
+        BOOL is_wow64 = FALSE;
+        if (IsWow64Process(GetCurrentProcess(), &is_wow64) && is_wow64)
+        {
+            if (get_file_path_from_env(_X("DOTNET_ROOT(x86)"), recv, recv_len))
+            {
+                const pal_char_t* name = _X("DOTNET_ROOT(x86)");
+                size_t len = pal_strlen(name);
+                if (len < env_var_name_len)
+                    memcpy(out_env_var_name, name, (len + 1) * sizeof(pal_char_t));
+                return true;
+            }
+        }
+    }
+#endif
+
     // Fallback to the default DOTNET_ROOT
     if (get_file_path_from_env(DOTNET_ROOT_ENV_VAR, recv, recv_len))
     {
