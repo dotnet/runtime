@@ -689,7 +689,7 @@ HRESULT CordbThread::SetDebugState(CorDebugThreadState state)
     FAIL_IF_NEUTERED(this);
     ATT_REQUIRE_STOPPED_MAY_FAIL(GetProcess());
 
-    LOG((LF_CORDB, LL_INFO1000, "CT::SDS: thread=%p 0x%zx, state=%d\n", this, m_id, state));
+    LOG((LF_CORDB, LL_INFO1000, "CT::SDS: thread=%p 0x%zx, state=%d\n", this, (size_t)m_id, state));
 
     // @dbgtodo- , sync - decide on how to suspend a thread. V2 leverages synchronization
     // (see below). For V3, do we just hard suspend the thread?

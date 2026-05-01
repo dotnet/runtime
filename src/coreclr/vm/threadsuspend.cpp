@@ -4309,7 +4309,7 @@ void Thread::SysResumeFromDebug(AppDomain *pAppDomain)
         return;
     }
 
-    LOG((LF_CORDB, LL_INFO1000, "RESUME: starting resume AD:0x%p.\n", pAppDomain));
+    LOG((LF_CORDB, LL_INFO1000, "RESUME: starting resume AD:%p.\n", pAppDomain));
 
 
     // Make sure we completed the previous sync
