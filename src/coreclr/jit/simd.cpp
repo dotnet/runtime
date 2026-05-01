@@ -915,6 +915,7 @@ bool EvaluateSimdCvtScalableMaskToVector(var_types baseType, simdscalable_t* vec
         vecCon->gtSimdScalableBaseType = baseType;
         vecCon->gtSimdScalableKind     = SimdScalableRepeated;
         vecCon->gtSimdScalableIndex    = 0;
+        vecCon->gtSimdScalableStep     = 0;
         return true;
     }
 
@@ -927,6 +928,7 @@ bool EvaluateSimdCvtScalableMaskToVector(var_types baseType, simdscalable_t* vec
 
     vecCon->gtSimdScalableBaseType = baseType;
     vecCon->gtSimdScalableKind     = SimdScalableRepeated;
+    vecCon->gtSimdScalableStep     = 0;
 
     switch (genTypeSize(baseType))
     {
