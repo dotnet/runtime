@@ -41,16 +41,10 @@
 #endif
 
 // WASM memory.grow operates in 64KB pages. This is distinct from OS_PAGE_SIZE
-// (the GC's page granularity), which we set to 16KB below.
+// (the GC's page granularity), which is 16KB on WASM (via minipal_getpagesize).
 static const size_t WasmPageSize = 64 * 1024;
 
-// The cached total number of CPUs that can be used in the OS.
-// WASM is single-threaded, so this is always 1.
-uint32_t g_totalCpuCount = 1;
-
 uint32_t g_pageSizeUnixInl = 0;
-
-AffinitySet g_processAffinitySet;
 
 // NUMA globals - WASM has no NUMA support but these are referenced by the GC.
 extern "C" int g_highestNumaNode = 0;
@@ -59,7 +53,6 @@ extern "C" bool g_numaAvailable = false;
 static int64_t g_totalPhysicalMemSize = 0;
 
 // Forward declarations
-static size_t GetRestrictedPhysicalMemoryLimit();
 static bool GetPhysicalMemoryUsed(size_t* val);
 static uint64_t GetAvailablePhysicalMemory();
 
@@ -70,16 +63,6 @@ static uint64_t GetAvailablePhysicalMemory();
 bool GCToOSInterface::Initialize()
 {
     g_pageSizeUnixInl = (uint32_t)minipal_getpagesize();
-
-    // WASM is single-threaded
-    g_totalCpuCount = 1;
-
-    if (!g_processAffinitySet.Initialize(1))
-    {
-        return false;
-    }
-
-    g_processAffinitySet.Add(0);
 
     // Get the physical memory size
 #ifdef TARGET_BROWSER
@@ -314,7 +297,7 @@ const AffinitySet* GCToOSInterface::SetGCThreadsAffinitySet(uintptr_t configAffi
 {
     (void)configAffinityMask;
     (void)configAffinitySet;
-    return &g_processAffinitySet;
+    return nullptr; // only for multiple heaps
 }
 
 // ============================================================================
@@ -341,23 +324,17 @@ size_t GCToOSInterface::GetVirtualMemoryMaxAddress()
     // On WASM, linear-memory ceiling = max addressable. Both APIs return the
     // same value because there is no separate per-process virtual address space
     // limit beyond what the engine permits the linear memory to grow to.
-    return GetTotalPhysicalMemory();
-}
-
-static size_t GetRestrictedPhysicalMemoryLimit()
-{
-    // No restricted-memory mode on WASM. The linear memory ceiling enforced by the
-    // engine is the only hard cap; we don't auto-derive a GC heap_hard_limit from it.
-    return 0;
+    return g_totalPhysicalMemSize;
 }
 
 static bool GetPhysicalMemoryUsed(size_t* val)
 {
-    // __builtin_wasm_memory_size(0) returns count of 64KB WASM pages, not GC pages.
-    // On wasm32 the spec maximum is 65536 pages = exactly 4GiB, which overflows
-    // size_t (UINT32_MAX) by one. No engine actually permits allocating the full
-    // 4GiB, but compute in uint64_t and clamp to be safe.
+#ifdef TARGET_BROWSER
+    uint64_t bytesUsed = static_cast<uint64_t>(emscripten_get_heap_size());
+#else // TARGET_WASI
     uint64_t bytesUsed = static_cast<uint64_t>(__builtin_wasm_memory_size(0)) * WasmPageSize;
+#endif
+
     *val = (bytesUsed > SIZE_MAX) ? SIZE_MAX : static_cast<size_t>(bytesUsed);
     return true;
 }
@@ -375,21 +352,12 @@ uint64_t GCToOSInterface::GetPhysicalMemoryLimit(bool* is_restricted)
 static uint64_t GetAvailablePhysicalMemory()
 {
 #ifdef TARGET_BROWSER
-    return emscripten_get_heap_max() - emscripten_get_heap_size();
+    uint64_t bytesUsed = static_cast<uint64_t>(emscripten_get_heap_size());
 #else // TARGET_WASI
-    // Best approximation: total minus currently used.
-    // __builtin_wasm_memory_size(0) returns count of 64KB WASM pages, not GC pages.
-    // Compute in 64 bits so a legitimate 0-page memory is not conflated with wasm32 overflow.
-    uint64_t used = static_cast<uint64_t>(__builtin_wasm_memory_size(0)) * static_cast<uint64_t>(WasmPageSize);
-    uint64_t total = GetTotalPhysicalMemory();
-    return (total > used) ? (total - used) : 0;
+    uint64_t bytesUsed = static_cast<uint64_t>(__builtin_wasm_memory_size(0)) * WasmPageSize;
 #endif
-}
-
-static uint64_t GetAvailablePageFile()
-{
-    // No swap on WASM
-    return 0;
+    uint64_t total = g_totalPhysicalMemSize;
+    return (total > bytesUsed) ? (total - bytesUsed) : 0;
 }
 
 void GCToOSInterface::GetMemoryStatus(uint64_t restricted_limit, uint32_t* memory_load, uint64_t* available_physical, uint64_t* available_page_file)
@@ -404,6 +372,10 @@ void GCToOSInterface::GetMemoryStatus(uint64_t restricted_limit, uint32_t* memor
         {
             available = restricted_limit > used ? restricted_limit - used : 0;
             load = (uint32_t)(((float)used * 100) / (float)restricted_limit);
+        }
+        else
+        {
+            available = GetAvailablePhysicalMemory();
         }
     }
     else
@@ -457,12 +429,12 @@ uint64_t GCToOSInterface::GetLowPrecisionTimeStamp()
 
 uint32_t GCToOSInterface::GetTotalProcessorCount()
 {
-    return g_totalCpuCount;
+    return 1;
 }
 
 uint32_t GCToOSInterface::GetMaxProcessorCount()
 {
-    return (uint32_t)g_processAffinitySet.MaxCpuCount();
+    return 1;
 }
 
 bool GCToOSInterface::CanEnableGCNumaAware()
