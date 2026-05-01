@@ -14114,6 +14114,7 @@ void Compiler::fgValueNumberHelperCallFunc(GenTreeCall* call, VNFunc vnf, ValueN
         }
         break;
 
+        case VNF_StrFastAllocate:
         case VNF_JitNewArr:
         case VNF_JitNewLclArr:
         {
@@ -14349,9 +14350,7 @@ bool Compiler::fgValueNumberSpecialIntrinsic(GenTreeCall* call)
         case NI_System_String_FastAllocateString:
         {
             assert(call->gtArgs.CountUserArgs() == 2);
-            ValueNumPair pMTVN    = call->gtArgs.GetUserArgByIndex(0)->GetNode()->gtVNPair;
-            ValueNumPair lenArgVN = call->gtArgs.GetUserArgByIndex(1)->GetNode()->gtVNPair;
-            fgValueNumberHelperCallFunc(call, TYP_REF, VNF_StrFastAllocate, pMTVN, lenArgVN);
+            fgValueNumberHelperCallFunc(call, VNF_StrFastAllocate, ValueNumStore::VNPForEmptyExcSet());
             return true;
         }
 
