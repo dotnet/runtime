@@ -6,6 +6,8 @@
 #include "daccess.h"
 
 class LoaderAllocator;
+class MethodDesc;
+class DynamicMethodDesc;
 
 // Initialize the global pregenerated string thunk hash table.
 // Must be called during EE startup before any R2R module loading.
@@ -31,6 +33,8 @@ void InitializePendingThunkResolutionLock();
 // Add a MethodDesc to its LoaderAllocator's pending list under the global lock.
 // Registers the LoaderAllocator if not already registered.
 void AddPendingPortableEntryPointThunkUnderLock(LoaderAllocator* pLoaderAllocator, MethodDesc* pMD);
+
+void ClearPendingThunkResolutionUnderLock(DynamicMethodDesc* pMD);
 
 // Unregister a LoaderAllocator from the global pending thunk resolution list.
 // Called during LoaderAllocator::Destroy.

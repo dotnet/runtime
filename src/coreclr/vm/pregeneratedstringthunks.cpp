@@ -151,7 +151,41 @@ static SArray<LoaderAllocator*> s_pendingThunkLoaderAllocators;
 void InitializePendingThunkResolutionLock()
 {
     WRAPPER_NO_CONTRACT;
-    s_pendingThunkResolutionLock.Init(CrstLeafLock, CRST_DEFAULT);
+    s_pendingThunkResolutionLock.Init(CrstPregeneratedStringThunks, CRST_DEFAULT);
+}
+
+void ClearPendingThunkResolutionUnderLock(DynamicMethodDesc* pMD)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    CrstHolder holder(&s_pendingThunkResolutionLock);
+
+    // Clear the pending thunk resolution flag for this method.
+    // This is necessary so that once a MethodDesc is no longer in use and gets recycled for a new method, it will not
+    // mistakenly be treated as needing a resolution. This must be done under the pendingThunkResolutionLock to avoid
+    // races with the ResolvePendingPortableEntryPointThunksGlobal loop.
+    pMD->InterlockedClearFlags(DynamicMethodDesc::FlagPendingThunkResolution);
+}
+
+void PortableEntrypointThunkProcessingReady()
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    // This is called once the EE is ready to process thunks (i.e. after the first R2R module is loaded and ProcessInjectStringThunksFixup can be called).
+    // At this point we can resolve any pending thunks that were added before we were ready.
+    ResolvePendingPortableEntryPointThunksGlobal();
 }
 
 void AddPendingPortableEntryPointThunkUnderLock(LoaderAllocator* pLoaderAllocator, MethodDesc* pMD)
@@ -241,6 +275,17 @@ void ResolvePendingPortableEntryPointThunksGlobal()
             {
                 nullCount++;
                 continue;
+            }
+
+            if (pMD->IsDynamicMethod())
+            {
+                if (!pMD->AsDynamicMethodDesc()->HasFlags(DynamicMethodDesc::FlagPendingThunkResolution))
+                {
+                    // This can happen if the method was GC'd and its slot reused for a new method. Clear the entry so we don't repeatedly check it.
+                    pending[i] = nullptr;
+                    nullCount++;
+                    continue;
+                }
             }
 
             void* thunk = GetPortableEntryPointToInterpreterThunk(pMD);

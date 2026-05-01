@@ -2129,6 +2129,9 @@ PCODE MethodDesc::GetMultiCallableAddrOfCode(CORINFO_ACCESS_FLAGS accessFlags /*
         // We have to allocate funcptr stub
         ret = GetLoaderAllocator()->GetFuncPtrStubs()->GetFuncPtrStub(this);
     }
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+    MethodDesc::EnsurePortableEntryPointIsCallableFromR2R(ret);
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
 
     return ret;
 }
@@ -2926,6 +2929,37 @@ PCODE MethodDesc::GetPortableEntryPointIfExists()
     return GetTemporaryEntryPointIfExists();
 }
 
+// Prepare a portable entry point to be callable from R2R code. This doesn't necessarily
+// fill in the native code slot, but if it is possible to do so it will.
+// This must be called before any R2R code may call the target method.
+//
+// Currently this is implemented by calling this in GetMultiCallableAddrOfCode
+// which works because current R2R codegen doesn't actually do direct vtable dispatch
+// If/When we fix that, we'll have to figure out the best way to ensure this is called
+// for virtual dispatches as well.
+void MethodDesc::EnsurePortableEntryPointIsCallableFromR2R(PCODE entryPoint)
+{
+    WRAPPER_NO_CONTRACT;
+
+    PortableEntryPoint *pep = PortableEntryPoint::ToPortableEntryPoint(entryPoint);
+    if (pep->HasNativeCode())
+    {
+        return;
+    }
+
+    MethodDesc* pMD = PortableEntryPoint::GetMethodDesc(entryPoint);
+    void* pPortableEntryPointToInterpreter = GetPortableEntryPointToInterpreterThunk(pMD);
+    if (pPortableEntryPointToInterpreter != nullptr)
+    {
+        pep->TrySetInterpreterThunk(pPortableEntryPointToInterpreter);
+    }
+     else
+    {
+        _ASSERTE(!pMD->ContainsGenericVariables());
+        pMD->GetLoaderAllocator()->AddPendingPortableEntryPointThunk(pMD);
+    }
+}
+
 void MethodDesc::SetPortableEntrypointInitialStateForMethod(PortableEntryPoint *portableEntry)
 {
     CONTRACTL
@@ -2935,11 +2969,28 @@ void MethodDesc::SetPortableEntrypointInitialStateForMethod(PortableEntryPoint *
         MODE_ANY;
     } CONTRACTL_END;
 
+    // Dynamic methods are often directly exposed as function pointers, so we want to intialize those early immediately.
+    if (!IsDynamicMethod())
+    {
+        // Otherwise, we want to do lazy initialization of the portable entry point if it wasn't already initialized to some exact target
+        if (portableEntry->HasNativeCodeUnchecked())
+        {
+            void* pPortableEntryPointToInterpreter = GetPortableEntryPointToInterpreterThunk(this);
+            _ASSERTE(pPortableEntryPointToInterpreter != nullptr);
+            portableEntry->Init_WithInterpreterThunk(pPortableEntryPointToInterpreter, this);
+        }
+        else
+        {
+            portableEntry->Init(this);
+        }
+        return;
+    }
+
     void* pPortableEntryPointToInterpreter = GetPortableEntryPointToInterpreterThunk(this);
 
     if (pPortableEntryPointToInterpreter != nullptr)
     {
-        portableEntry->Init(pPortableEntryPointToInterpreter, this);
+        portableEntry->Init_WithInterpreterThunk(pPortableEntryPointToInterpreter, this);
     }
     else
     {
@@ -2953,7 +3004,7 @@ void MethodDesc::SetPortableEntrypointInitialStateForMethod(PortableEntryPoint *
             // DynamicMethodDescs (LCG) can be re-used, so guard against duplicate adds
             // with a flag to avoid unbounded growth in the pending list.
             bool shouldAdd = true;
-            if (IsDynamicMethod())
+            if (IsDynamicMethod()) // TODO this check is now redundant with the one above.
             {
                 DynamicMethodDesc* pDMD = AsDynamicMethodDesc();
                 if (pDMD->HasFlags(DynamicMethodDesc::FlagPendingThunkResolution))
@@ -2968,9 +3019,6 @@ void MethodDesc::SetPortableEntrypointInitialStateForMethod(PortableEntryPoint *
             }
         }
     }
-    // If we find actual code, we will remove this flag, but we want to prefer the interpreter entry point
-    // until then to allow helpers to work for methods that haven't tried to get an entry point yet.
-    portableEntry->SetPrefersInterpreterEntryPoint();
 }
 
 void MethodDesc::ResetPortableEntryPoint()

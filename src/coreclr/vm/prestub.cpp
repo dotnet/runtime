@@ -2982,6 +2982,10 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(TransitionBlock * pTransitionBl
         }
     }
 
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+    MethodDesc::EnsurePortableEntryPointIsCallableFromR2R(pCode);
+#endif
+
     // Force a GC on every jit if the stress level is high enough
     GCStress<cfg_any>::MaybeTrigger();
     if (g_externalMethodFixupTraceActiveCount > 0)

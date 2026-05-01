@@ -11131,7 +11131,7 @@ PCODE CEECodeGenInfo::getHelperFtnStatic(CorInfoHelpFunc ftnNum)
             {
                 // CoreLib calls newobj helpers via calli. Give these helpers a MethodDesc
                 // so the interpreter can find the method signature for the call cookie.
-                portableEntryPoint->Init((void*)pfnHelper, CoreLibBinder::GetMethod(METHOD__RUNTIME_HELPERS__NEWOBJ_HELPER_DUMMY));
+                portableEntryPoint->Init_WithNativeCode((void*)pfnHelper, CoreLibBinder::GetMethod(METHOD__RUNTIME_HELPERS__NEWOBJ_HELPER_DUMMY));
             }
             else
             {
@@ -11145,6 +11145,9 @@ PCODE CEECodeGenInfo::getHelperFtnStatic(CorInfoHelpFunc ftnNum)
         }
         else
         {
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+            MethodDesc::EnsurePortableEntryPointIsCallableFromR2R(pfnHelper);
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
             VolatileStore(&hlpFuncEntryPoints[ftnNum], pfnHelper);
         }
     }

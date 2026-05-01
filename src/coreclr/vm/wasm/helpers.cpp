@@ -777,11 +777,10 @@ namespace
     ConvertResult LowerTypeHandle(TypeHandle th)
     {
         uint32_t size = th.GetSize();
+        CorElementType elemType = th.GetSignatureCorElementType();
 
-        if (th.IsTypeDesc() || !th.AsMethodTable()->IsValueType())
+        if (elemType != ELEMENT_TYPE_VALUETYPE)
         {
-            // Non-valuetype or TypeDesc — fall through to element type mapping
-            CorElementType elemType = th.GetSignatureCorElementType();
             switch (elemType)
             {
                 case ELEMENT_TYPE_I4: case ELEMENT_TYPE_U4:
