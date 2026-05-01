@@ -44,6 +44,8 @@
 // (the GC's page granularity), which is 16KB on WASM (via minipal_getpagesize).
 static const size_t WasmPageSize = 64 * 1024;
 
+uint32_t g_totalCpuCount = 1;
+
 uint32_t g_pageSizeUnixInl = 0;
 
 // NUMA globals - WASM has no NUMA support but these are referenced by the GC.
