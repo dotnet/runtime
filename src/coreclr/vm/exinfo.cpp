@@ -98,6 +98,14 @@ void ExInfo::ReleaseResources()
 // static
 void ExInfo::PopExInfos(Thread *pThread, void *targetSp)
 {
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_COOPERATIVE;
+    }
+    CONTRACTL_END;
+
     STRESS_LOG1(LF_EH, LL_INFO100, "Popping ExInfos below SP=%p\n", targetSp);
 
     ExInfo *pExInfo = (PTR_ExInfo)pThread->GetExceptionState()->GetCurrentExceptionTracker();
