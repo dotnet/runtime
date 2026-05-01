@@ -137,7 +137,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                     {
                         RemoteCertificateValidationCallback = (sender, certificate, chain, errors) =>
                         {
-                            getDotNetCert = (X509Certificate2)certificate;
+                            getDotNetCert = X509CertificateLoader.LoadCertificate(((X509Certificate2)certificate).RawData);
                             return errors == SslPolicyErrors.None;
                         }
                     }
