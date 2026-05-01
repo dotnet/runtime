@@ -16,7 +16,7 @@ namespace Microsoft.Diagnostics.DataContractReader.SignatureHelpers;
 /// with both SRM's <c>SignatureDecoder</c> and our
 /// <see cref="RuntimeSignatureDecoder{TType, TGenericContext}"/>.
 /// </remarks>
-internal interface IRuntimeSignatureTypeProvider<TType, TGenericContext>
+public interface IRuntimeSignatureTypeProvider<TType, TGenericContext>
     : ISignatureTypeProvider<TType, TGenericContext>
 {
     /// <summary>

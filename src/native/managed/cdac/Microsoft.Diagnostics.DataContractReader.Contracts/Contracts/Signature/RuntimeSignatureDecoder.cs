@@ -21,7 +21,6 @@ internal readonly struct RuntimeSignatureDecoder<TType, TGenericContext>
 
     private readonly IRuntimeSignatureTypeProvider<TType, TGenericContext> _provider;
     private readonly MetadataReader _metadataReader;
-    private readonly Target _target;
     private readonly TGenericContext _genericContext;
     private readonly int _pointerSize;
 
@@ -31,12 +30,8 @@ internal readonly struct RuntimeSignatureDecoder<TType, TGenericContext>
         MetadataReader metadataReader,
         TGenericContext genericContext)
     {
-        ArgumentNullException.ThrowIfNull(provider);
-        ArgumentNullException.ThrowIfNull(metadataReader);
-
         _provider = provider;
         _metadataReader = metadataReader;
-        _target = target;
         _genericContext = genericContext;
         _pointerSize = target.PointerSize;
     }

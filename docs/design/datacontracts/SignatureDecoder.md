@@ -39,8 +39,8 @@ Contracts used:
 
 The decoder additionally recognizes:
 
-* `ELEMENT_TYPE_INTERNAL` (`0x21`): followed by a target-sized pointer to a runtime `TypeHandle`. Provider returns a type via `GetInternalType(target, typeHandlePointer)`.
-* `ELEMENT_TYPE_CMOD_INTERNAL` (`0x22`): followed by a single byte indicating required (`1`) or optional (`0`), then a target-sized pointer to a runtime `TypeHandle`. Provider returns a modifier-applied type via `GetInternalModifiedType(target, typeHandlePointer, unmodifiedType, isRequired)`.
+* `ELEMENT_TYPE_INTERNAL` (`0x21`): followed by a target-sized pointer to a runtime `TypeHandle`. Provider returns a type via `GetInternalType(typeHandlePointer)`.
+* `ELEMENT_TYPE_CMOD_INTERNAL` (`0x22`): followed by a single byte indicating required (`1`) or optional (`0`), then a target-sized pointer to a runtime `TypeHandle`. Provider returns a modifier-applied type via `GetInternalModifiedType(typeHandlePointer, unmodifiedType, isRequired)`.
 
 Tag `3` in `TypeDefOrRefOrSpec` encoding throws `BadImageFormatException`, matching SRM behavior. The element type code is read as a compressed integer per ECMA-335 §II.23.2.
 
@@ -77,9 +77,9 @@ The following `ISignatureTypeProvider` APIs are trivially implemented using `Run
 
 `GetGenericTypeParameter` is only supported when `TGenericContext=TypeHandle` and looks up the type parameters from the context using `RuntimeTypeSystem.GetInstantiation`.
 
-`GetTypeFromDefinition` uses the `SignatureTypeProvider`'s `ModuleHandle` to lookup the given Token in the Module's `TypeDefToMethodTableMap`. If a value is not found returns null.
+`GetTypeFromDefinition` uses the `SignatureTypeProvider`'s `ModuleHandle` to lookup the given Token in the Module's `TypeDefToMethodTableMap`. If a value is not found, returns a default `TypeHandle` (`Address == TargetPointer.Null`).
 
-`GetTypeFromReference` uses the `SignatureTypeProvider`'s `ModuleHandle` to lookup the given Token in the Module's `TypeRefToMethodTableMap`. If a value is not found returns null. The implementation when the type exists in a different module is incomplete.
+`GetTypeFromReference` uses the `SignatureTypeProvider`'s `ModuleHandle` to lookup the given Token in the Module's `TypeRefToMethodTableMap`. If a value is not found, returns a default `TypeHandle` (`Address == TargetPointer.Null`). The implementation when the type exists in a different module is incomplete.
 
 `GetTypeFromSpecification` is not currently implemented.
 
