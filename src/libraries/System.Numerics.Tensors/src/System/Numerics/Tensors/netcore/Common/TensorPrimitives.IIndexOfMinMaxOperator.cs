@@ -11,10 +11,6 @@ namespace System.Numerics.Tensors
     {
         private interface IIndexOfMinMaxOperator<T>
         {
-            static abstract bool IsQuickReturn(T value);
-            static abstract Vector128<T> IsQuickReturn(Vector128<T> value);
-            static abstract Vector256<T> IsQuickReturn(Vector256<T> value);
-            static abstract Vector512<T> IsQuickReturn(Vector512<T> value);
             static abstract T Aggregate(Vector128<T> value);
             static abstract T Aggregate(Vector256<T> value);
             static abstract T Aggregate(Vector512<T> value);
@@ -68,7 +64,7 @@ namespace System.Numerics.Tensors
         {
             T result = x[0];
             int resultIndex = 0;
-            if (TOperator.IsQuickReturn(result))
+            if (T.IsNaN(result))
             {
                 return resultIndex;
             }
@@ -76,7 +72,7 @@ namespace System.Numerics.Tensors
             for (int i = 1; i < x.Length; i++)
             {
                 T current = x[i];
-                if (TOperator.IsQuickReturn(current))
+                if (T.IsNaN(current))
                 {
                     return i;
                 }
@@ -99,10 +95,13 @@ namespace System.Numerics.Tensors
 
             // Initialize result by reading first vector and quick return if possible.
             Vector128<T> result = Vector128.Create(x);
-            Vector128<T> mask = TOperator.IsQuickReturn(result);
-            if (mask != Vector128<T>.Zero)
+            if (typeof(T) == typeof(float) || typeof(T) == typeof(double))
             {
-                return IndexOfFirstMatch(mask);
+                Vector128<T> nanMask = IsNaN(result);
+                if (nanMask != Vector128<T>.Zero)
+                {
+                    return IndexOfFirstMatch(nanMask);
+                }
             }
 
             // Initialize indices.
@@ -129,14 +128,17 @@ namespace System.Numerics.Tensors
                 }
 
                 // Quick return if possible.
-                mask = TOperator.IsQuickReturn(current);
-                if (mask != Vector128<T>.Zero)
+                if (typeof(T) == typeof(float) || typeof(T) == typeof(double))
                 {
-                    return int.CreateChecked(currentIndex.ToScalar()) + IndexOfFirstMatch(mask);
+                    Vector128<T> nanMask = IsNaN(current);
+                    if (nanMask != Vector128<T>.Zero)
+                    {
+                        return int.CreateChecked(currentIndex.ToScalar()) + IndexOfFirstMatch(nanMask);
+                    }
                 }
 
                 // Get mask for which lanes that should have result updated.
-                mask = TOperator.Compare(current, result);
+                Vector128<T> mask = TOperator.Compare(current, result);
 
                 // Update result and indices.
                 result = ElementWiseSelect(mask, current, result);
@@ -160,10 +162,13 @@ namespace System.Numerics.Tensors
 
             // Initialize result by reading first vector and quick return if possible.
             Vector128<T> result = Vector128.Create(x);
-            Vector128<T> mask = TOperator.IsQuickReturn(result);
-            if (mask != Vector128<T>.Zero)
+            if (typeof(T) == typeof(float) || typeof(T) == typeof(double))
             {
-                return IndexOfFirstMatch(mask);
+                Vector128<T> nanMask = IsNaN(result);
+                if (nanMask != Vector128<T>.Zero)
+                {
+                    return IndexOfFirstMatch(nanMask);
+                }
             }
 
             // Initialize indices.
@@ -191,14 +196,17 @@ namespace System.Numerics.Tensors
                 }
 
                 // Quick return if possible.
-                mask = TOperator.IsQuickReturn(current);
-                if (mask != Vector128<T>.Zero)
+                if (typeof(T) == typeof(float) || typeof(T) == typeof(double))
                 {
-                    return (int)currentIndex.ToScalar() + IndexOfFirstMatch(mask);
+                    Vector128<T> nanMask = IsNaN(current);
+                    if (nanMask != Vector128<T>.Zero)
+                    {
+                        return (int)currentIndex.ToScalar() + IndexOfFirstMatch(nanMask);
+                    }
                 }
 
                 // Get mask for which lanes that should have result updated, also widen it for updating the indices.
-                mask = TOperator.Compare(current, result);
+                Vector128<T> mask = TOperator.Compare(current, result);
                 (Vector128<int> mask1, Vector128<int> mask2) = Vector128.Widen(mask.AsInt16());
 
                 // Update result and indices.
@@ -229,10 +237,13 @@ namespace System.Numerics.Tensors
 
             // Initialize result by reading first vector and quick return if possible.
             Vector128<T> result = Vector128.Create(x);
-            Vector128<T> mask = TOperator.IsQuickReturn(result);
-            if (mask != Vector128<T>.Zero)
+            if (typeof(T) == typeof(float) || typeof(T) == typeof(double))
             {
-                return IndexOfFirstMatch(mask);
+                Vector128<T> nanMask = IsNaN(result);
+                if (nanMask != Vector128<T>.Zero)
+                {
+                    return IndexOfFirstMatch(nanMask);
+                }
             }
 
             // Initialize indices.
@@ -262,14 +273,17 @@ namespace System.Numerics.Tensors
                 }
 
                 // Quick return if possible.
-                mask = TOperator.IsQuickReturn(current);
-                if (mask != Vector128<T>.Zero)
+                if (typeof(T) == typeof(float) || typeof(T) == typeof(double))
                 {
-                    return (int)currentIndex.ToScalar() + IndexOfFirstMatch(mask);
+                    Vector128<T> nanMask = IsNaN(current);
+                    if (nanMask != Vector128<T>.Zero)
+                    {
+                        return (int)currentIndex.ToScalar() + IndexOfFirstMatch(nanMask);
+                    }
                 }
 
                 // Get mask for which lanes that should have result updated, also widen it for updating the indices.
-                mask = TOperator.Compare(current, result);
+                Vector128<T> mask = TOperator.Compare(current, result);
                 (Vector128<short> lowerMask, Vector128<short> upperMask) = Vector128.Widen(mask.AsSByte());
                 (Vector128<int> mask1, Vector128<int> mask2) = Vector128.Widen(lowerMask);
                 (Vector128<int> mask3, Vector128<int> mask4) = Vector128.Widen(upperMask);
@@ -312,10 +326,13 @@ namespace System.Numerics.Tensors
 
             // Initialize result by reading first vector and quick return if possible.
             Vector256<T> result = Vector256.Create(x);
-            Vector256<T> mask = TOperator.IsQuickReturn(result);
-            if (mask != Vector256<T>.Zero)
+            if (typeof(T) == typeof(float) || typeof(T) == typeof(double))
             {
-                return IndexOfFirstMatch(mask);
+                Vector256<T> nanMask = IsNaN(result);
+                if (nanMask != Vector256<T>.Zero)
+                {
+                    return IndexOfFirstMatch(nanMask);
+                }
             }
 
             // Initialize indices.
@@ -342,14 +359,17 @@ namespace System.Numerics.Tensors
                 }
 
                 // Quick return if possible.
-                mask = TOperator.IsQuickReturn(current);
-                if (mask != Vector256<T>.Zero)
+                if (typeof(T) == typeof(float) || typeof(T) == typeof(double))
                 {
-                    return int.CreateChecked(currentIndex.ToScalar()) + IndexOfFirstMatch(mask);
+                    Vector256<T> nanMask = IsNaN(current);
+                    if (nanMask != Vector256<T>.Zero)
+                    {
+                        return int.CreateChecked(currentIndex.ToScalar()) + IndexOfFirstMatch(nanMask);
+                    }
                 }
 
                 // Get mask for which lanes that should have result updated.
-                mask = TOperator.Compare(current, result);
+                Vector256<T> mask = TOperator.Compare(current, result);
 
                 // Update result and indices.
                 result = ElementWiseSelect(mask, current, result);
@@ -373,10 +393,13 @@ namespace System.Numerics.Tensors
 
             // Initialize result by reading first vector and quick return if possible.
             Vector256<T> result = Vector256.Create(x);
-            Vector256<T> mask = TOperator.IsQuickReturn(result);
-            if (mask != Vector256<T>.Zero)
+            if (typeof(T) == typeof(float) || typeof(T) == typeof(double))
             {
-                return IndexOfFirstMatch(mask);
+                Vector256<T> nanMask = IsNaN(result);
+                if (nanMask != Vector256<T>.Zero)
+                {
+                    return IndexOfFirstMatch(nanMask);
+                }
             }
 
             // Initialize indices.
@@ -404,14 +427,17 @@ namespace System.Numerics.Tensors
                 }
 
                 // Quick return if possible.
-                mask = TOperator.IsQuickReturn(current);
-                if (mask != Vector256<T>.Zero)
+                if (typeof(T) == typeof(float) || typeof(T) == typeof(double))
                 {
-                    return (int)currentIndex.ToScalar() + IndexOfFirstMatch(mask);
+                    Vector256<T> nanMask = IsNaN(current);
+                    if (nanMask != Vector256<T>.Zero)
+                    {
+                        return (int)currentIndex.ToScalar() + IndexOfFirstMatch(nanMask);
+                    }
                 }
 
                 // Get mask for which lanes that should have result updated, also widen it for updating the indices.
-                mask = TOperator.Compare(current, result);
+                Vector256<T> mask = TOperator.Compare(current, result);
                 (Vector256<int> mask1, Vector256<int> mask2) = Vector256.Widen(mask.AsInt16());
 
                 // Update result and indices.
@@ -442,10 +468,13 @@ namespace System.Numerics.Tensors
 
             // Initialize result by reading first vector and quick return if possible.
             Vector256<T> result = Vector256.Create(x);
-            Vector256<T> mask = TOperator.IsQuickReturn(result);
-            if (mask != Vector256<T>.Zero)
+            if (typeof(T) == typeof(float) || typeof(T) == typeof(double))
             {
-                return IndexOfFirstMatch(mask);
+                Vector256<T> nanMask = IsNaN(result);
+                if (nanMask != Vector256<T>.Zero)
+                {
+                    return IndexOfFirstMatch(nanMask);
+                }
             }
 
             // Initialize indices.
@@ -475,14 +504,17 @@ namespace System.Numerics.Tensors
                 }
 
                 // Quick return if possible.
-                mask = TOperator.IsQuickReturn(current);
-                if (mask != Vector256<T>.Zero)
+                if (typeof(T) == typeof(float) || typeof(T) == typeof(double))
                 {
-                    return (int)currentIndex.ToScalar() + IndexOfFirstMatch(mask);
+                    Vector256<T> nanMask = IsNaN(current);
+                    if (nanMask != Vector256<T>.Zero)
+                    {
+                        return (int)currentIndex.ToScalar() + IndexOfFirstMatch(nanMask);
+                    }
                 }
 
                 // Get mask for which lanes that should have result updated, also widen it for updating the indices.
-                mask = TOperator.Compare(current, result);
+                Vector256<T> mask = TOperator.Compare(current, result);
                 (Vector256<short> lowerMask, Vector256<short> upperMask) = Vector256.Widen(mask.AsSByte());
                 (Vector256<int> mask1, Vector256<int> mask2) = Vector256.Widen(lowerMask);
                 (Vector256<int> mask3, Vector256<int> mask4) = Vector256.Widen(upperMask);
@@ -525,10 +557,13 @@ namespace System.Numerics.Tensors
 
             // Initialize result by reading first vector and quick return if possible.
             Vector512<T> result = Vector512.Create(x);
-            Vector512<T> mask = TOperator.IsQuickReturn(result);
-            if (mask != Vector512<T>.Zero)
+            if (typeof(T) == typeof(float) || typeof(T) == typeof(double))
             {
-                return IndexOfFirstMatch(mask);
+                Vector512<T> nanMask = IsNaN(result);
+                if (nanMask != Vector512<T>.Zero)
+                {
+                    return IndexOfFirstMatch(nanMask);
+                }
             }
 
             // Initialize indices.
@@ -555,14 +590,17 @@ namespace System.Numerics.Tensors
                 }
 
                 // Quick return if possible.
-                mask = TOperator.IsQuickReturn(current);
-                if (mask != Vector512<T>.Zero)
+                if (typeof(T) == typeof(float) || typeof(T) == typeof(double))
                 {
-                    return int.CreateChecked(currentIndex.ToScalar()) + IndexOfFirstMatch(mask);
+                    Vector512<T> nanMask = IsNaN(current);
+                    if (nanMask != Vector512<T>.Zero)
+                    {
+                        return int.CreateChecked(currentIndex.ToScalar()) + IndexOfFirstMatch(nanMask);
+                    }
                 }
 
                 // Get mask for which lanes that should have result updated.
-                mask = TOperator.Compare(current, result);
+                Vector512<T> mask = TOperator.Compare(current, result);
 
                 // Update result and indices.
                 result = ElementWiseSelect(mask, current, result);
@@ -586,10 +624,13 @@ namespace System.Numerics.Tensors
 
             // Initialize result by reading first vector and quick return if possible.
             Vector512<T> result = Vector512.Create(x);
-            Vector512<T> mask = TOperator.IsQuickReturn(result);
-            if (mask != Vector512<T>.Zero)
+            if (typeof(T) == typeof(float) || typeof(T) == typeof(double))
             {
-                return IndexOfFirstMatch(mask);
+                Vector512<T> nanMask = IsNaN(result);
+                if (nanMask != Vector512<T>.Zero)
+                {
+                    return IndexOfFirstMatch(nanMask);
+                }
             }
 
             // Initialize indices.
@@ -617,14 +658,17 @@ namespace System.Numerics.Tensors
                 }
 
                 // Quick return if possible.
-                mask = TOperator.IsQuickReturn(current);
-                if (mask != Vector512<T>.Zero)
+                if (typeof(T) == typeof(float) || typeof(T) == typeof(double))
                 {
-                    return (int)currentIndex.ToScalar() + IndexOfFirstMatch(mask);
+                    Vector512<T> nanMask = IsNaN(current);
+                    if (nanMask != Vector512<T>.Zero)
+                    {
+                        return (int)currentIndex.ToScalar() + IndexOfFirstMatch(nanMask);
+                    }
                 }
 
                 // Get mask for which lanes that should have result updated, also widen it for updating the indices.
-                mask = TOperator.Compare(current, result);
+                Vector512<T> mask = TOperator.Compare(current, result);
                 (Vector512<int> mask1, Vector512<int> mask2) = Vector512.Widen(mask.AsInt16());
 
                 // Update result and indices.
@@ -655,10 +699,13 @@ namespace System.Numerics.Tensors
 
             // Initialize result by reading first vector and quick return if possible.
             Vector512<T> result = Vector512.Create(x);
-            Vector512<T> mask = TOperator.IsQuickReturn(result);
-            if (mask != Vector512<T>.Zero)
+            if (typeof(T) == typeof(float) || typeof(T) == typeof(double))
             {
-                return IndexOfFirstMatch(mask);
+                Vector512<T> nanMask = IsNaN(result);
+                if (nanMask != Vector512<T>.Zero)
+                {
+                    return IndexOfFirstMatch(nanMask);
+                }
             }
 
             // Initialize indices.
@@ -688,14 +735,17 @@ namespace System.Numerics.Tensors
                 }
 
                 // Quick return if possible.
-                mask = TOperator.IsQuickReturn(current);
-                if (mask != Vector512<T>.Zero)
+                if (typeof(T) == typeof(float) || typeof(T) == typeof(double))
                 {
-                    return (int)currentIndex.ToScalar() + IndexOfFirstMatch(mask);
+                    Vector512<T> nanMask = IsNaN(current);
+                    if (nanMask != Vector512<T>.Zero)
+                    {
+                        return (int)currentIndex.ToScalar() + IndexOfFirstMatch(nanMask);
+                    }
                 }
 
                 // Get mask for which lanes that should have result updated, also widen it for updating the indices.
-                mask = TOperator.Compare(current, result);
+                Vector512<T> mask = TOperator.Compare(current, result);
                 (Vector512<short> lowerMask, Vector512<short> upperMask) = Vector512.Widen(mask.AsSByte());
                 (Vector512<int> mask1, Vector512<int> mask2) = Vector512.Widen(lowerMask);
                 (Vector512<int> mask3, Vector512<int> mask4) = Vector512.Widen(upperMask);

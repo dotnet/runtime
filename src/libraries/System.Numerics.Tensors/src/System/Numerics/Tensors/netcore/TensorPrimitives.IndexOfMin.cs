@@ -33,15 +33,6 @@ namespace System.Numerics.Tensors
             public static T Aggregate(Vector512<T> x) => HorizontalAggregate<T, MinOperator<T>>(x);
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static bool IsQuickReturn(T value) => T.IsNaN(value);
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static Vector128<T> IsQuickReturn(Vector128<T> value) => IsNaN(value);
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static Vector256<T> IsQuickReturn(Vector256<T> value) => IsNaN(value);
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static Vector512<T> IsQuickReturn(Vector512<T> value) => IsNaN(value);
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static bool Compare(T x, T y)
             {
                 if (x == y)
