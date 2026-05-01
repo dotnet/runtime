@@ -1,6 +1,19 @@
-# Contract SignatureDecoder
+# Contract Signature
 
-This contract encapsulates signature decoding in the cDAC.
+This contract describes the format of method, field, and local-variable signatures stored in target memory. Signatures use the ECMA-335 §II.23.2 format with two CoreCLR-internal element types added by the runtime.
+
+## Internal element types
+
+The runtime extends the standard ECMA-335 element type encoding with two values that may appear in signatures stored in target memory:
+
+| Encoding | Value | Layout following the tag |
+| --- | --- | --- |
+| `ELEMENT_TYPE_INTERNAL` | `0x21` | a target-sized pointer to a runtime `TypeHandle` |
+| `ELEMENT_TYPE_CMOD_INTERNAL` | `0x22` | one byte (`1` = required, `0` = optional), then a target-sized pointer to a runtime `TypeHandle` |
+
+These tags are used in signatures generated internally by the runtime that are not persisted to a managed image. They are defined alongside the standard ECMA-335 element types in `src/coreclr/inc/corhdr.h`. Their literal values are part of this contract -- changing them is a breaking change.
+
+Tag `3` in the `TypeDefOrRefOrSpec` encoding (ECMA-335 §II.23.2.8) is reserved and decoders throw `BadImageFormatException` when they encounter it.
 
 ## APIs of contract
 
@@ -10,17 +23,15 @@ TypeHandle DecodeFieldSignature(BlobHandle blobHandle, ModuleHandle moduleHandle
 
 ## Version 1
 
-In version 1 of the SignatureDecoder contract we use a cDAC-internal `RuntimeSignatureDecoder` that closely mirrors the API and behavior of `System.Reflection.Metadata.SignatureDecoder`. The cDAC decoder exists because runtime-internal signatures may contain `ELEMENT_TYPE_INTERNAL` (`0x21`) and `ELEMENT_TYPE_CMOD_INTERNAL` (`0x22`) elements -- target-pointer references to runtime type handles that are not part of ECMA-335 and that SRM does not understand.
-
 Data descriptors used:
 | Data Descriptor Name | Field | Meaning |
 | --- | --- | --- |
-
+| _none_ |  | |
 
 Global variables used:
 | Global Name | Type | Purpose |
 | --- | --- | --- |
-
+| _none_ |  | |
 
 Contracts used:
 | Contract Name |
@@ -29,67 +40,25 @@ Contracts used:
 | Loader |
 | EcmaMetadata |
 
-### RuntimeSignatureDecoder
+Constants:
+| Constant Name | Meaning | Value |
+| --- | --- | --- |
+| `ELEMENT_TYPE_INTERNAL` | runtime-internal element type tag for an internal `TypeHandle` | `0x21` |
+| `ELEMENT_TYPE_CMOD_INTERNAL` | runtime-internal element type tag for an internal modified type | `0x22` |
 
-`RuntimeSignatureDecoder<TType, TGenericContext>` is a cDAC polyfill that mirrors `System.Reflection.Metadata.SignatureDecoder<TType, TGenericContext>`:
+Decoding a signature follows the ECMA-335 §II.23.2 grammar. For all standard element types, decoding behaves identically to `System.Reflection.Metadata.SignatureDecoder<TType, TGenericContext>`. When the decoder encounters one of the two runtime-internal tags above, it reads the target-sized pointer (and optional `required` byte for `ELEMENT_TYPE_CMOD_INTERNAL`) from the signature blob and resolves it to a runtime `TypeHandle`.
 
-* Same constructor shape (`provider`, `metadataReader`, `genericContext`) plus an additional `Target` parameter so that internal-type pointer values can be sized correctly for the target.
-* Same public surface: `DecodeType(ref BlobReader, bool allowTypeSpecifications = false)`, `DecodeFieldSignature(ref BlobReader)`, `DecodeMethodSignature(ref BlobReader)`, and `DecodeLocalSignature(ref BlobReader)`.
-* Same parsing rules for ECMA-335 element types.
-
-The decoder additionally recognizes:
-
-* `ELEMENT_TYPE_INTERNAL` (`0x21`): followed by a target-sized pointer to a runtime `TypeHandle`. Provider returns a type via `GetInternalType(typeHandlePointer)`.
-* `ELEMENT_TYPE_CMOD_INTERNAL` (`0x22`): followed by a single byte indicating required (`1`) or optional (`0`), then a target-sized pointer to a runtime `TypeHandle`. Provider returns a modifier-applied type via `GetInternalModifiedType(typeHandlePointer, unmodifiedType, isRequired)`.
-
-Tag `3` in `TypeDefOrRefOrSpec` encoding throws `BadImageFormatException`, matching SRM behavior. The element type code is read as a compressed integer per ECMA-335 §II.23.2.
-
-### IRuntimeSignatureTypeProvider
-
-Provider implementations implement `IRuntimeSignatureTypeProvider<TType, TGenericContext>`, which is a superset of `System.Reflection.Metadata.ISignatureTypeProvider<TType, TGenericContext>` adding two methods to handle the runtime-only encodings:
+The decoder is implemented as `RuntimeSignatureDecoder<TType, TGenericContext>` -- a clone of SRM's `SignatureDecoder<TType, TGenericContext>` with added support for the two runtime-internal element types. The clone takes an additional `Target` so internal-type pointers can be sized for the target architecture. Provider implementations implement `IRuntimeSignatureTypeProvider<TType, TGenericContext>` -- a superset of `System.Reflection.Metadata.ISignatureTypeProvider<TType, TGenericContext>` -- adding two methods for the runtime-internal element types:
 
 ```csharp
 TType GetInternalType(TargetPointer typeHandlePointer);
 TType GetInternalModifiedType(TargetPointer typeHandlePointer, TType unmodifiedType, bool isRequired);
 ```
 
-Providers that need a `Target` to resolve type-handle pointers capture it themselves (typically as a constructor argument). The decoder does not pass the target through to provider methods.
+The contract's provider resolves these pointers through `RuntimeTypeSystem.GetTypeHandle`. Standard ECMA-335 element types resolve through `RuntimeTypeSystem.GetPrimitiveType` and `RuntimeTypeSystem.GetConstructedType`. Generic type parameters (`VAR`) and generic method parameters (`MVAR`) resolve via `RuntimeTypeSystem.GetInstantiation` and `RuntimeTypeSystem.GetGenericMethodInstantiation` respectively, using a `TypeHandle` (for generic types) or `MethodDescHandle` (for generic methods) generic context. `GetTypeFromDefinition` and `GetTypeFromReference` resolve tokens via the module's `TypeDefToMethodTableMap` / `TypeRefToMethodTableMap`; cross-module references and `GetTypeFromSpecification` are not currently implemented.
 
-### SignatureTypeProvider
-
-The cDAC implements `IRuntimeSignatureTypeProvider<TType, TGenericContext>` with `TType=TypeHandle`. `TGenericContext` can either be a `MethodDescHandle` or `TypeHandle`; `MethodDescHandle` context is used to look up generic method parameters, and `TypeHandle` context is used to look up generic type parameters.
-
-A cDAC `SignatureTypeProvider` is instantiated over a `Module` which is used to lookup types.
-
-The following `ISignatureTypeProvider` APIs are trivially implemented using `RuntimeTypeSystem.GetPrimitiveType` and `RuntimeTypeSystem.GetConstructedType`:
-
-* `GetArrayType` - `GetConstructedType`
-* `GetByReferenceType` - `GetConstructedType`
-* `GetFunctionPointerType` - Implemented as primitive `IntPtr` type
-* `GetGenericInstantiation` - `GetConstructedType`
-* `GetModifiedType` - Returns unmodified type
-* `GetPinnedType` - Returns unpinned type
-* `GetPointerType` - `GetConstructedType`
-* `GetPrimitiveType` - `GetConstructedType`
-* `GetSZArrayType` - `GetConstructedType`
-
-`GetGenericMethodParameter` is only supported when `TGenericContext=MethodDescHandle` and looks up the method parameters from the context using `RuntimeTypeSystem.GetGenericMethodInstantiation`.
-
-`GetGenericTypeParameter` is only supported when `TGenericContext=TypeHandle` and looks up the type parameters from the context using `RuntimeTypeSystem.GetInstantiation`.
-
-`GetTypeFromDefinition` uses the `SignatureTypeProvider`'s `ModuleHandle` to lookup the given Token in the Module's `TypeDefToMethodTableMap`. If a value is not found, returns a default `TypeHandle` (`Address == TargetPointer.Null`).
-
-`GetTypeFromReference` uses the `SignatureTypeProvider`'s `ModuleHandle` to lookup the given Token in the Module's `TypeRefToMethodTableMap`. If a value is not found, returns a default `TypeHandle` (`Address == TargetPointer.Null`). The implementation when the type exists in a different module is incomplete.
-
-`GetTypeFromSpecification` is not currently implemented.
-
-`GetInternalType` resolves the `TargetPointer` to a `TypeHandle` via the captured `Target`'s `RuntimeTypeSystem.GetTypeHandle`.
-
-`GetInternalModifiedType` returns the unmodified type, matching the behavior of `GetModifiedType`.
-
-### APIs
 ```csharp
-TypeHandle ISignatureDecoder.DecodeFieldSignature(BlobHandle blobHandle, ModuleHandle moduleHandle, TypeHandle ctx)
+TypeHandle ISignature.DecodeFieldSignature(BlobHandle blobHandle, ModuleHandle moduleHandle, TypeHandle ctx)
 {
     SignatureTypeProvider<TypeHandle> provider = new(_target, moduleHandle);
     MetadataReader mdReader = _target.Contracts.EcmaMetadata.GetMetadata(moduleHandle)!;
@@ -101,4 +70,4 @@ TypeHandle ISignatureDecoder.DecodeFieldSignature(BlobHandle blobHandle, ModuleH
 
 ### Other consumers
 
-`RuntimeSignatureDecoder` is shared infrastructure within the cDAC. Other contracts construct their own decoder + provider directly when they need to decode method or local signatures rather than going through this contract. For example, the [StackWalk](./StackWalk.md) contract uses `RuntimeSignatureDecoder<GcTypeKind, GcSignatureContext>` with a GC-specific provider to classify method parameters during signature-based GC reference scanning.
+`RuntimeSignatureDecoder` is shared infrastructure within the cDAC. Other contracts construct their own decoder and provider directly when they need to decode method or local signatures rather than going through this contract. For example, the [StackWalk](./StackWalk.md) contract uses `RuntimeSignatureDecoder<GcTypeKind, GcSignatureContext>` with a GC-specific provider to classify method parameters during signature-based GC reference scanning.
