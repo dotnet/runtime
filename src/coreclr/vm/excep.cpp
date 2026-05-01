@@ -116,10 +116,6 @@ BOOL ShouldOurUEFDisplayUI(PEXCEPTION_POINTERS pExceptionInfo)
 
 void NotifyAppDomainsOfUnhandledException(
     PEXCEPTION_POINTERS pExceptionPointers,
-    OBJECTREF   *pThrowableIn,
-    BOOL        useLastThrownObject);
-
-VOID SetManagedUnhandledExceptionBit(
     BOOL        useLastThrownObject);
 
 //-------------------------------------------------------------------------------
@@ -2021,10 +2017,10 @@ VOID DECLSPEC_NORETURN RaiseTheExceptionInternalOnly(OBJECTREF throwable)
     // Always save the current object in the handle so on rethrow we can reuse it. This is important as it
     // contains stack trace info.
     //
-    // Note: we use SafeSetLastThrownObject, which will try to set the throwable and if there are any problems,
+    // Note: we use SetLastThrownObject, which will try to set the throwable and if there are any problems,
     // it will set the throwable to something appropriate (like OOM exception) and return the new
     // exception. Thus, the user's exception object can be replaced here.
-    throwable = pThread->SafeSetLastThrownObject(throwable);
+    throwable = pThread->SetLastThrownObject(throwable);
 
     ULONG_PTR hr = GetHRFromThrowable(throwable);
 
@@ -3751,36 +3747,6 @@ BOOL InstallUnhandledExceptionFilter() {
 }
 
 //
-// Update the current throwable on the thread if necessary. If we're looking at one of our exceptions, and if the
-// current throwable on the thread is NULL, then we'll set it to something more useful based on the
-// LastThrownObject.
-//
-BOOL UpdateCurrentThrowable(PEXCEPTION_RECORD pExceptionRecord)
-{
-    STATIC_CONTRACT_THROWS;
-    STATIC_CONTRACT_MODE_ANY;
-    STATIC_CONTRACT_GC_TRIGGERS;
-
-    BOOL useLastThrownObject = FALSE;
-
-    Thread* pThread = GetThread();
-
-    // GetThrowable needs cooperative.
-    GCX_COOP();
-
-    if ((pThread->GetThrowable() == NULL) && (pThread->LastThrownObject() != NULL))
-    {
-        // If GetThrowable is NULL and LastThrownObject is not, use lastThrownObject.
-        //  In current (June 05) implementation, this is only used to pass to
-        //  NotifyAppDomainsOfUnhandledException, which needs to get a throwable
-        //  from somewhere, with which to notify the AppDomains.
-        useLastThrownObject = TRUE;
-    }
-
-    return useLastThrownObject;
-}
-
-//
 // COMUnhandledExceptionFilter is used to catch all unhandled exceptions.
 // The debugger will either handle the exception, attach a debugger, or
 // notify an existing attached debugger.
@@ -3953,7 +3919,7 @@ LONG InternalUnhandledExceptionFilter_Worker(
         BOOL useLastThrownObject = FALSE;
         if (!pParam->fIgnore && (pParam->pThread != NULL))
         {
-            useLastThrownObject = UpdateCurrentThrowable(pParam->pExceptionInfo->ExceptionRecord);
+            useLastThrownObject = pParam->pThread->IsThrowableNull() && !pParam->pThread->IsLastThrownObjectNull();
         }
 
 #ifdef DEBUGGING_SUPPORTED
@@ -3988,7 +3954,7 @@ LONG InternalUnhandledExceptionFilter_Worker(
 #endif // !TARGET_UNIX
 
             // Send notifications to the AppDomains.
-            NotifyAppDomainsOfUnhandledException(pParam->pExceptionInfo, NULL, useLastThrownObject);
+            NotifyAppDomainsOfUnhandledException(pParam->pExceptionInfo, useLastThrownObject);
         }
         else
         {
@@ -4530,7 +4496,6 @@ DefaultCatchHandler(PEXCEPTION_POINTERS pExceptionPointers,
 //******************************************************************************
 void NotifyAppDomainsOfUnhandledException(
     PEXCEPTION_POINTERS pExceptionPointers,
-    OBJECTREF   *pThrowableIn,
     BOOL        useLastThrownObject)
 {
     CONTRACTL
@@ -4564,11 +4529,7 @@ void NotifyAppDomainsOfUnhandledException(
 
     OBJECTREF throwable;
 
-    if (pThrowableIn != NULL)
-    {
-        throwable = *pThrowableIn;
-    }
-    else if (useLastThrownObject)
+    if (useLastThrownObject)
     {
         throwable = pThread->LastThrownObject();
     }
@@ -8178,7 +8139,7 @@ void SetupInitialThrowBucketDetails(UINT_PTR adjustedIp)
 #ifdef _DEBUG
             // Under OOM scenarios, its possible that when we are raising a threadabort,
             // the throwable may get converted to preallocated OOM object when RaiseTheExceptionInternalOnly
-            // invokes Thread::SafeSetLastThrownObject. We check if this is the current case and use it in
+            // invokes Thread::SetLastThrownObject. We check if this is the current case and use it in
             // our validation below.
             BOOL fIsPreallocatedOOMExceptionForTA = FALSE;
             if ((!fIsThreadAbortException) && pUEWatsonBucketTracker->CapturedForThreadAbort())

@@ -3186,7 +3186,7 @@ void CallCatchFunclet(OBJECTREF throwable, BYTE* pHandlerIP, REGDISPLAY* pvRegDi
 
     if (!pThread->GetExceptionState()->IsExceptionInProgress())
     {
-        pThread->SafeSetLastThrownObject(NULL);
+        pThread->SetLastThrownObject(NULL);
     }
 
     ExInfo::UpdateNonvolatileRegisters(pvRegDisplay->pCurrentContext, pvRegDisplay, FALSE);

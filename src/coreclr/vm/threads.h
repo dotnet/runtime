@@ -2640,8 +2640,6 @@ private:
 
     friend void DECLSPEC_NORETURN EEPolicy::HandleFatalStackOverflow(EXCEPTION_POINTERS *pExceptionInfo, BOOL fSkipDebugger);
 
-    void SetLastThrownObject(OBJECTREF throwable, BOOL isUnhandled = FALSE);
-
 public:
 
     BOOL IsLastThrownObjectNull() { WRAPPER_NO_CONTRACT; return (m_LastThrownObjectHandle == (OBJECTHANDLE)0); }
@@ -2670,7 +2668,11 @@ public:
     }
 
     void SetSOForLastThrownObject();
-    OBJECTREF SafeSetLastThrownObject(OBJECTREF throwable, BOOL isUnhandled = FALSE);
+
+    // Sets the last thrown object. If the throwable cannot be tracked due to OOM, sets the
+    // last thrown object to the preallocated OOM exception and returns it instead of the
+    // original throwable.
+    OBJECTREF SetLastThrownObject(OBJECTREF throwable, BOOL isUnhandled = FALSE);
 
     // Inidcates that the last thrown object is now treated as unhandled
     void MarkLastThrownObjectUnhandled()
@@ -2704,8 +2706,6 @@ public:
     void ClearThreadCurrNotification();
 
 private:
-    void SetLastThrownObjectHandle(OBJECTHANDLE h);
-
     ThreadExceptionState  m_ExceptionState;
 
 private:

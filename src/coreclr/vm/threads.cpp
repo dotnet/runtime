@@ -2271,7 +2271,7 @@ Thread::~Thread()
     if (!IsAtProcessExit())
     {
         // Destroy any handles that we're using to hold onto exception objects
-        SafeSetLastThrownObject(NULL);
+        SetLastThrownObject(NULL);
 
         DestroyShortWeakHandle(m_ExposedObject);
         DestroyStrongHandle(m_StrongHndToExposedObject);
@@ -2635,7 +2635,7 @@ void Thread::OnThreadTerminate(BOOL holdingLock)
         GCX_COOP();
 
         // Destroy the LastThrown handle (and anything that violates the above assert).
-        SafeSetLastThrownObject(NULL);
+        SetLastThrownObject(NULL);
 
         // Free loader allocator structures related to this thread
         FreeLoaderAllocatorHandlesForTLSData(this);
@@ -3107,11 +3107,11 @@ void Thread::SetExposedObject(OBJECTREF exposed)
     // IncExternalCount();
 }
 
-void Thread::SetLastThrownObject(OBJECTREF throwable, BOOL isUnhandled)
+OBJECTREF Thread::SetLastThrownObject(OBJECTREF throwable, BOOL isUnhandled)
 {
     CONTRACTL
     {
-        if ((throwable == NULL) || CLRException::IsPreallocatedExceptionObject(throwable)) NOTHROW; else THROWS; // From CreateHandle
+        NOTHROW;
         GC_NOTRIGGER;
         if (throwable == NULL) MODE_ANY; else MODE_COOPERATIVE;
     }
@@ -3138,33 +3138,44 @@ void Thread::SetLastThrownObject(OBJECTREF throwable, BOOL isUnhandled)
                                          // a new handle below.
     }
 
-    if (throwable != NULL)
+    if (throwable == NULL)
     {
-        _ASSERTE(this == GetThread());
+        m_ltoIsUnhandled = FALSE;
+        return NULL;
+    }
 
-        // Non-compliant exceptions are always wrapped.
-        // The use of the ExceptionNative:: helper here (rather than the global ::IsException helper)
-        // is hokey, but we need a GC_NOTRIGGER version and it's only for an ASSERT.
-        _ASSERTE(IsException(throwable->GetMethodTable()));
+    _ASSERTE(this == GetThread());
 
-        // If we're tracking one of the preallocated exception objects, then just use the global handle that
-        // matches it rather than creating a new one.
-        if (CLRException::IsPreallocatedExceptionObject(throwable))
-        {
-            m_LastThrownObjectHandle = CLRException::GetPreallocatedHandleForObject(throwable);
-        }
-        else
-        {
-            m_LastThrownObjectHandle = AppDomain::GetCurrentDomain()->CreateHandle(throwable);
-        }
+    // Non-compliant exceptions are always wrapped.
+    // The use of the ExceptionNative:: helper here (rather than the global ::IsException helper)
+    // is hokey, but we need a GC_NOTRIGGER version and it's only for an ASSERT.
+    _ASSERTE(IsException(throwable->GetMethodTable()));
 
-        _ASSERTE(m_LastThrownObjectHandle != NULL);
-        m_ltoIsUnhandled = isUnhandled;
+    // If we're tracking one of the preallocated exception objects, then just use the global handle that
+    // matches it rather than creating a new one.
+    if (CLRException::IsPreallocatedExceptionObject(throwable))
+    {
+        m_LastThrownObjectHandle = CLRException::GetPreallocatedHandleForObject(throwable);
     }
     else
     {
-        m_ltoIsUnhandled = FALSE;
+        EX_TRY
+        {
+            m_LastThrownObjectHandle = AppDomain::GetCurrentDomain()->CreateHandle(throwable);
+        }
+        EX_CATCH
+        {
+            // If we can't allocate a handle for the throwable, fall back to the preallocated OOM exception
+            // and return it so the caller can use it in place of the original throwable.
+            throwable = CLRException::GetPreallocatedOutOfMemoryException();
+            m_LastThrownObjectHandle = CLRException::GetPreallocatedHandleForObject(throwable);
+        }
+        EX_END_CATCH
     }
+
+    _ASSERTE(m_LastThrownObjectHandle != NULL);
+    m_ltoIsUnhandled = isUnhandled;
+    return throwable;
 }
 
 void Thread::SetSOForLastThrownObject()
@@ -3183,59 +3194,6 @@ void Thread::SetSOForLastThrownObject()
     // The current domain is going to be unloaded or the process is going to be killed, so
     // we will not leak a handle.
     m_LastThrownObjectHandle = CLRException::GetPreallocatedStackOverflowExceptionHandle();
-}
-
-//
-// This is a nice wrapper for SetLastThrownObject which catches any exceptions caused by not being able to create
-// the handle for the throwable, and setting the last thrown object to the preallocated out of memory exception
-// instead.
-//
-OBJECTREF Thread::SafeSetLastThrownObject(OBJECTREF throwable, BOOL isUnhandled)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        if (throwable == NULL) MODE_ANY; else MODE_COOPERATIVE;
-    }
-    CONTRACTL_END;
-
-    // We return the original throwable if nothing goes wrong.
-    OBJECTREF ret = throwable;
-
-    EX_TRY
-    {
-        SetLastThrownObject(throwable, isUnhandled);
-    }
-    EX_CATCH
-    {
-        // If it didn't work, then set the last thrown object to the preallocated OOM exception, and return that
-        // object instead of the original throwable.
-        ret = CLRException::GetPreallocatedOutOfMemoryException();
-        SetLastThrownObject(ret, isUnhandled);
-    }
-    EX_END_CATCH
-
-    return ret;
-}
-
-void Thread::SetLastThrownObjectHandle(OBJECTHANDLE h)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_COOPERATIVE;
-    }
-    CONTRACTL_END;
-
-    if (m_LastThrownObjectHandle != NULL &&
-        !CLRException::IsPreallocatedExceptionHandle(m_LastThrownObjectHandle))
-    {
-        DestroyHandle(m_LastThrownObjectHandle);
-    }
-
-    m_LastThrownObjectHandle = h;
 }
 
 // Background threads must be counted, because the EE should shut down when the

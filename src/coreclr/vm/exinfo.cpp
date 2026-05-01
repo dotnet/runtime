@@ -144,7 +144,7 @@ void ExInfo::PopExInfos(Thread *pThread, void *targetSp)
         // can find the exception object after the ExInfo is gone.
         if (pExInfo->m_exception != NULL)
         {
-            pThread->SafeSetLastThrownObject(pExInfo->m_exception);
+            pThread->SetLastThrownObject(pExInfo->m_exception);
         }
 
         pExInfo->ReleaseResources();

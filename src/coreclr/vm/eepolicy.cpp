@@ -623,7 +623,7 @@ void EEPolicy::LogFatalError(UINT exitCode, UINT_PTR address, LPCWSTR pszMessage
                     EXCEPTIONREF curEx = (EXCEPTIONREF)ObjectFromHandle(ohException);
                     curEx->SetInnerException(lto);
                 }
-                pThread->SafeSetLastThrownObject(ObjectFromHandle(ohException), TRUE);
+                pThread->SetLastThrownObject(ObjectFromHandle(ohException), TRUE);
             }
 
             // If a managed debugger is already attached, and if that debugger is thinking it might be inclined to
@@ -789,7 +789,7 @@ void DECLSPEC_NORETURN EEPolicy::HandleFatalStackOverflow(EXCEPTION_POINTERS *pE
             OBJECTHANDLE ohSO = CLRException::GetPreallocatedStackOverflowExceptionHandle();
             if (ohSO != NULL)
             {
-                pThread->SafeSetLastThrownObject(ObjectFromHandle(ohSO), TRUE);
+                pThread->SetLastThrownObject(ObjectFromHandle(ohSO), TRUE);
             }
             else
             {
