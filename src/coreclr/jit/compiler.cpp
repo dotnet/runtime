@@ -10738,6 +10738,9 @@ void Compiler::EnregisterStats::RecordLocal(const LclVarDsc* varDsc)
                 m_simdUserForcesDep++;
                 break;
 
+            case DoNotEnregisterReason::WasmGCVisibility:
+                break;
+
             default:
                 unreached();
                 break;
