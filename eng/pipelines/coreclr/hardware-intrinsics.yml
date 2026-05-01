@@ -21,14 +21,14 @@ extends:
     stages:
     - stage: Build
       jobs:
-      - template: /eng/pipelines/coreclr/templates/jit-hwintrin-common.yml
+      - template: /eng/pipelines/coreclr/templates/jit-hardware-intrinsics-common.yml
         parameters:
           platforms:
             - windows_x86
             - windows_x64
           testBuildArgs: 'tree JIT/HardwareIntrinsics'
 
-      - template: /eng/pipelines/coreclr/templates/jit-hwintrin-common.yml
+      - template: /eng/pipelines/coreclr/templates/jit-hardware-intrinsics-common.yml
         parameters:
           platforms:
             - linux_arm

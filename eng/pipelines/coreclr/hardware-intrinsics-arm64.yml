@@ -6,7 +6,7 @@ pr:
   paths:
     include:
     - eng/pipelines/coreclr/hardware-intrinsics-arm64.yml
-    - eng/pipelines/coreclr/templates/jit-hwintrin-common.yml
+    - eng/pipelines/coreclr/templates/jit-hardware-intrinsics-common.yml
     - src/coreclr/jit/*arm64*
 
 variables:
@@ -20,7 +20,7 @@ extends:
     stages:
     - stage: Build
       jobs:
-      - template: /eng/pipelines/coreclr/templates/jit-hwintrin-common.yml
+      - template: /eng/pipelines/coreclr/templates/jit-hardware-intrinsics-common.yml
         parameters:
           platforms:
             - linux_arm64
