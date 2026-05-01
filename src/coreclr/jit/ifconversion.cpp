@@ -583,7 +583,7 @@ bool OptIfConversionDsc::optIfConvert(int* pReachabilityBudget)
         }
         else
         {
-            selectTrueInput =  m_elseOperation.node->AsLclVar()->Data();
+            selectTrueInput = m_elseOperation.node->AsLclVar()->Data();
         }
     }
     else
