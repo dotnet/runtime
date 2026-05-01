@@ -3019,8 +3019,8 @@ public:
 
         for (; (i1 != end1) && (i2 != end2); ++i1, ++i2)
         {
-            if (!Compare(i1->GetNode(), i2->GetNode()) || (i1->GetOffset() != i2->GetOffset()) ||
-                (i1->GetType() != i2->GetType()))
+            if ((i1->GetOffset() != i2->GetOffset()) || (i1->GetType() != i2->GetType()) ||
+                !Compare(i1->GetNode(), i2->GetNode()))
             {
                 return false;
             }

@@ -11613,7 +11613,7 @@ bool Lowering::TryMakeIndirsAdjacent(GenTreeIndir* prevIndir, GenTreeIndir* indi
                 bool distinct = (storeOffs + (target_ssize_t)store->Size() <= offs) ||
                                 (offs + (target_ssize_t)indir->Size() <= storeOffs);
 
-                if (checkLocal && GenTree::Compare(indirAddr, storeAddr) && distinct)
+                if (checkLocal && distinct && GenTree::Compare(indirAddr, storeAddr))
                 {
                     JITDUMP("Cannot interfere with [%06u] since they are off the same local V%02u and indir range "
                             "[%03u..%03u) does not interfere with store range [%03u..%03u)\n",
