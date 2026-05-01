@@ -6932,6 +6932,8 @@ private:
     GenTree* fgMorphSmpOpOptional(GenTreeOp* tree, bool* optAssertionPropDone);
     GenTree* fgMorphConst(GenTree* tree);
 
+    void fgPushConstantsRight(GenTreeOp* tree);
+
     GenTreeOp* fgMorphCommutative(GenTreeOp* tree);
 
     GenTree* fgMorphReduceAddOps(GenTree* tree);

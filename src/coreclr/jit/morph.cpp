@@ -7729,39 +7729,6 @@ DONE_MORPHING_CHILDREN:
     op1 = tree->AsOp()->gtOp1;
     op2 = tree->gtGetOp2IfPresent();
 
-    bool isCommutative = tree->OperIsCommutative();
-
-    if ((isCommutative || tree->OperIsCompare()) && op1->OperIsConst())
-    {
-        // We have one of the following:
-        // *     CNS op X       -    SWAP -       X op CNS
-        // *     CNS op CNS     - NO SWAP -     CNS op CNS
-        // *     CNS op CNS_HDL -    SWAP - CNS_HDL op CNS
-        // * CNS_HDL op X       -    SWAP -       X op CNS_HDL
-        // * CNS_HDL op CNS     - NO SWAP - CNS_HDL op CNS
-        // * CNS_HDL op CNS_HDL - NO SWAP - CNS_HDL op CNS_HDL
-        //
-        // This preserves the ordering if op1 and op2 are the
-        // same kind of constant and otherwise pushes constants
-        // to the right. The special scenario is that when one
-        // is a constant and the other a handle, we prefer the
-        // handle to be on the left.
-
-        if (!op2->OperIsConst() || (!op1->IsIconHandle() && op2->IsIconHandle()))
-        {
-            std::swap(op1, op2);
-
-            tree->AsOp()->gtOp1 = op1;
-            tree->AsOp()->gtOp2 = op2;
-
-            if (!isCommutative)
-            {
-                oper         = GenTree::SwapRelop(oper);
-                tree->gtOper = oper;
-            }
-        }
-    }
-
     /*-------------------------------------------------------------------------
      * Perform the required oper-specific postorder morphing
      */
@@ -7811,6 +7778,13 @@ DONE_MORPHING_CHILDREN:
         case GT_EQ:
         case GT_NE:
         {
+            fgPushConstantsRight(tree->AsOp());
+            assert(tree->OperIsCompare());
+
+            oper = tree->OperGet();
+            op1  = tree->gtGetOp1();
+            op2  = tree->gtGetOp2();
+
             if (op2->IsIntegralConst())
             {
                 tree = fgOptimizeEqualityComparisonWithConst(tree->AsOp());
@@ -7840,7 +7814,9 @@ DONE_MORPHING_CHILDREN:
                             JITDUMP("\nTransforming:\n");
                             DISPTREE(tree);
 
-                            op1->SetOper(GT_AND);                                 // Change % => &
+                            op1->SetOper(GT_AND); // Change % => &
+                            op1->gtFlags &= ~(GTF_DIV_MOD_NO_OVERFLOW | GTF_DIV_MOD_NO_BY_ZERO);
+
                             op1op2->AsIntConCommon()->SetIconValue(modValue - 1); // Change c => c - 1
                             fgUpdateConstTreeValueNumber(op1op2);
 
@@ -7850,13 +7826,21 @@ DONE_MORPHING_CHILDREN:
                     }
                 }
             }
-            goto COMPARE;
+            break;
         }
 
         case GT_LT:
         case GT_LE:
         case GT_GE:
         case GT_GT:
+        {
+            fgPushConstantsRight(tree->AsOp());
+            assert(tree->OperIsCompare());
+
+            oper = tree->OperGet();
+            op1  = tree->gtGetOp1();
+            op2  = tree->gtGetOp2();
+
             if (op1->OperIs(GT_CAST) || op2->OperIs(GT_CAST))
             {
                 tree = fgOptimizeRelationalComparisonWithCasts(tree->AsOp());
@@ -7873,7 +7857,7 @@ DONE_MORPHING_CHILDREN:
                 op2  = tree->gtGetOp2();
             }
 
-            if (opts.OptimizationEnabled() && fgGlobalMorph && tree->OperIs(GT_GT, GT_LT, GT_LE, GT_GE))
+            if (opts.OptimizationEnabled() && fgGlobalMorph)
             {
                 // Normalize unsigned comparisons to signed if both operands a known to be never negative.
                 if (tree->IsUnsigned() && varTypeIsIntegral(op1) && op1->IsNeverNegative(this) &&
@@ -7891,11 +7875,8 @@ DONE_MORPHING_CHILDREN:
                     }
                 }
             }
-
-        COMPARE:
-
-            noway_assert(tree->OperIsCompare());
             break;
+        }
 
         case GT_MUL:
 
@@ -10366,6 +10347,49 @@ GenTree* Compiler::fgOptimizeHWIntrinsicAssociative(GenTreeHWIntrinsic* tree)
 #endif // FEATURE_HW_INTRINSICS
 
 //------------------------------------------------------------------------
+// fgPushConstantsRight: Pushes constants to the right to help canonicalize the shape
+//
+// Arguments:
+//   tree - the commutative or comparison node
+//
+void Compiler::fgPushConstantsRight(GenTreeOp* tree)
+{
+    assert(tree->OperIsCommutative() || tree->OperIsCompare());
+
+    GenTree* op1 = tree->gtGetOp1();
+    GenTree* op2 = tree->gtGetOp2();
+
+    if (op1->OperIsConst())
+    {
+        // We have one of the following:
+        // *     CNS op X       -    SWAP -       X op CNS
+        // *     CNS op CNS     - NO SWAP -     CNS op CNS
+        // *     CNS op CNS_HDL -    SWAP - CNS_HDL op CNS
+        // * CNS_HDL op X       -    SWAP -       X op CNS_HDL
+        // * CNS_HDL op CNS     - NO SWAP - CNS_HDL op CNS
+        // * CNS_HDL op CNS_HDL - NO SWAP - CNS_HDL op CNS_HDL
+        //
+        // This preserves the ordering if op1 and op2 are the
+        // same kind of constant and otherwise pushes constants
+        // to the right. The special scenario is that when one
+        // is a constant and the other a handle, we prefer the
+        // handle to be on the left.
+
+        if (!op2->OperIsConst() || (!op1->IsIconHandle() && op2->IsIconHandle()))
+        {
+            tree->gtOp1 = op2;
+            tree->gtOp2 = op1;
+
+            if (tree->OperIsCompare())
+            {
+                tree->gtOper = GenTree::SwapRelop(tree->gtOper);
+            }
+        }
+    }
+    return tree;
+}
+
+//------------------------------------------------------------------------
 // fgOptimizeCommutativeArithmetic: Optimizes commutative operations.
 //
 // Arguments:
@@ -10378,6 +10402,8 @@ GenTree* Compiler::fgOptimizeCommutativeArithmetic(GenTreeOp* tree)
 {
     assert(tree->OperIs(GT_ADD, GT_MUL, GT_OR, GT_XOR, GT_AND));
     assert(!tree->gtOverflowEx());
+
+    fgPushConstantsRight(tree);
 
     if (fgOperIsBitwiseRotationRoot(tree->OperGet()))
     {
