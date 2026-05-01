@@ -512,6 +512,13 @@ CORINFO_CLASS_HANDLE interceptor_ICJI::getObjectType(
     return original_ICorJitInfo->getObjectType(objPtr);
 }
 
+CORINFO_OBJECT_HANDLE interceptor_ICJI::tryAppendStrings(
+          CORINFO_OBJECT_HANDLE* strings,
+          int count)
+{
+    return original_ICorJitInfo->tryAppendStrings(strings, count);
+}
+
 bool interceptor_ICJI::getReadyToRunHelper(
           CORINFO_RESOLVED_TOKEN* pResolvedToken,
           CorInfoHelpFunc id,

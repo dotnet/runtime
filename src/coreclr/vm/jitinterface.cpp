@@ -12620,6 +12620,98 @@ bool CEEInfo::getObjectContent(CORINFO_OBJECT_HANDLE handle, uint8_t* buffer, in
     return result;
 }
 
+CORINFO_OBJECT_HANDLE CEEInfo::tryAppendStrings(CORINFO_OBJECT_HANDLE* strings, int count)
+{
+    CONTRACTL {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    _ASSERTE(strings != nullptr);
+    _ASSERTE(count > 0);
+
+    CORINFO_OBJECT_HANDLE result = nullptr;
+
+    JIT_TO_EE_TRANSITION();
+
+    EX_TRY
+    {
+        GCX_COOP();
+
+        // Use _alloca'ed storage so that GCPROTECT_ARRAY_BEGIN protects in-place.
+        OBJECTREF* sourceRefs = (OBJECTREF*)_alloca(count * sizeof(OBJECTREF));
+        memset((void*)sourceRefs, 0, count * sizeof(OBJECTREF));
+
+        STRINGREF resultRef = NULL;
+
+        GCPROTECT_ARRAY_BEGIN(*sourceRefs, count);
+        GCPROTECT_BEGIN(resultRef);
+
+        // Resolve the input handles into STRINGREFs and compute total length.
+        // Bail out if any handle does not refer to a System.String, or the
+        // total length wouldn't fit into a single string object.
+        size_t totalLength = 0;
+        bool   allValid    = true;
+        for (int i = 0; i < count; i++)
+        {
+            OBJECTREF obj = getObjectFromJitHandle(strings[i]);
+            if ((obj == NULL) || !obj->GetMethodTable()->IsString())
+            {
+                allValid = false;
+                break;
+            }
+            sourceRefs[i] = obj;
+            totalLength += ((STRINGREF)obj)->GetStringLength();
+            if (totalLength > (size_t)CORINFO_String_MaxLength)
+            {
+                allValid = false;
+                break;
+            }
+        }
+
+        if (allValid)
+        {
+            bool isFrozen = false;
+            resultRef = AllocateString((DWORD)totalLength, /*preferFrozenHeap*/ true, &isFrozen);
+            if (isFrozen && (resultRef != NULL))
+            {
+                WCHAR* dst = resultRef->GetBuffer();
+                for (int i = 0; i < count; i++)
+                {
+                    STRINGREF s = (STRINGREF)sourceRefs[i];
+                    DWORD     len = s->GetStringLength();
+                    if (len > 0)
+                    {
+                        memcpyNoGCRefs(dst, s->GetBuffer(), len * sizeof(WCHAR));
+                        dst += len;
+                    }
+                }
+                _ASSERTE(resultRef->GetBuffer()[totalLength] == W('\0'));
+
+                result = getJitHandleForObject((OBJECTREF)resultRef, /*knownFrozen*/ true);
+            }
+            // If the result didn't end up on the frozen heap, we drop it on
+            // the floor: we cannot keep a non-frozen handle alive across JIT
+            // boundaries and it's not safe to bake its address into codegen.
+        }
+
+        GCPROTECT_END(); // resultRef
+        GCPROTECT_END(); // sourceRefs
+    }
+    EX_CATCH
+    {
+        // tryAppendStrings is best-effort. Swallow exceptions (e.g. OOM)
+        // and report failure to the JIT.
+        result = nullptr;
+    }
+    EX_END_CATCH
+
+    EE_TO_JIT_TRANSITION();
+
+    return result;
+}
+
 /*********************************************************************/
 CORINFO_CLASS_HANDLE CEECodeGenInfo::getStaticFieldCurrentClass(CORINFO_FIELD_HANDLE fieldHnd,
                                                                 bool* pIsSpeculative)

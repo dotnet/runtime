@@ -174,6 +174,7 @@ LWM(GetUnmanagedCallConv, MethodOrSigInfoValue, DD)
 LWM(DoesFieldBelongToClass, DLDL, DWORD)
 DENSELWM(SigInstHandleMap, DWORDLONG)
 LWM(GetWasmTypeSymbol, Agnostic_GetWasmTypeSymbol, DWORDLONG)
+LWM(TryAppendStrings, DD, DWORDLONG)
 
 #undef LWM
 #undef DENSELWM

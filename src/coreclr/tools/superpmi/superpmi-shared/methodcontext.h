@@ -513,6 +513,10 @@ public:
     void dmpGetObjectContent(DLDD key, DD value);
     bool repGetObjectContent(CORINFO_OBJECT_HANDLE obj, uint8_t* buffer, int bufferSize, int valueOffset);
 
+    void recTryAppendStrings(CORINFO_OBJECT_HANDLE* strings, int count, CORINFO_OBJECT_HANDLE result);
+    void dmpTryAppendStrings(DD key, DWORDLONG value);
+    CORINFO_OBJECT_HANDLE repTryAppendStrings(CORINFO_OBJECT_HANDLE* strings, int count);
+
     void recGetStaticFieldCurrentClass(CORINFO_FIELD_HANDLE field, bool* pIsSpeculative, CORINFO_CLASS_HANDLE result);
     void dmpGetStaticFieldCurrentClass(DLD key, const Agnostic_GetStaticFieldCurrentClass& value);
     CORINFO_CLASS_HANDLE repGetStaticFieldCurrentClass(CORINFO_FIELD_HANDLE field, bool* pIsSpeculative);
@@ -1222,6 +1226,7 @@ enum mcPackets
     Packet_GetWasmTypeSymbol = 235,
     Packet_GetWasmLowering = 236,
     Packet_GetAsyncOtherVariant = 237,
+    Packet_TryAppendStrings = 238,
 };
 
 void SetDebugDumpVariables();

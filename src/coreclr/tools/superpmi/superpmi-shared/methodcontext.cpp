@@ -3939,6 +3939,53 @@ bool MethodContext::repGetObjectContent(CORINFO_OBJECT_HANDLE obj, uint8_t* buff
     return (bool)value.A;
 }
 
+void MethodContext::recTryAppendStrings(CORINFO_OBJECT_HANDLE* strings, int count, CORINFO_OBJECT_HANDLE result)
+{
+    if (TryAppendStrings == nullptr)
+        TryAppendStrings = new LightWeightMap<DD, DWORDLONG>();
+
+    // Convert input handles to DWORDLONG before storing so the buffer
+    // is portable regardless of pointer width.
+    DWORDLONG* castStrings = (DWORDLONG*)_alloca(count * sizeof(DWORDLONG));
+    for (int i = 0; i < count; i++)
+    {
+        castStrings[i] = CastHandle(strings[i]);
+    }
+
+    DD key;
+    ZeroMemory(&key, sizeof(key));
+    key.A = (DWORD)count;
+    key.B = (DWORD)TryAppendStrings->AddBuffer((uint8_t*)castStrings, (uint32_t)(count * sizeof(DWORDLONG)));
+
+    DWORDLONG value = CastHandle(result);
+
+    TryAppendStrings->Add(key, value);
+    DEBUG_REC(dmpTryAppendStrings(key, value));
+}
+void MethodContext::dmpTryAppendStrings(DD key, DWORDLONG value)
+{
+    printf("TryAppendStrings count-%u bufOff-%u, result-%016" PRIX64 "", key.A, key.B, value);
+    TryAppendStrings->Unlock();
+}
+CORINFO_OBJECT_HANDLE MethodContext::repTryAppendStrings(CORINFO_OBJECT_HANDLE* strings, int count)
+{
+    DWORDLONG* castStrings = (DWORDLONG*)_alloca(count * sizeof(DWORDLONG));
+    for (int i = 0; i < count; i++)
+    {
+        castStrings[i] = CastHandle(strings[i]);
+    }
+
+    DD key;
+    ZeroMemory(&key, sizeof(key));
+    key.A = (DWORD)count;
+    key.B = (DWORD)TryAppendStrings->Contains((uint8_t*)castStrings, (uint32_t)(count * sizeof(DWORDLONG)));
+
+    DWORDLONG value = LookupByKeyOrMiss(TryAppendStrings, key, ": count %u bufOff %u", key.A, key.B);
+
+    DEBUG_REP(dmpTryAppendStrings(key, value));
+    return (CORINFO_OBJECT_HANDLE)value;
+}
+
 void MethodContext::recGetStaticFieldCurrentClass(CORINFO_FIELD_HANDLE field,
                                                   bool*                pIsSpeculative,
                                                   CORINFO_CLASS_HANDLE result)

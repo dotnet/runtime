@@ -3599,6 +3599,60 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                 break;
             }
 
+            case NI_System_String_Concat:
+            {
+                // Recognize the static String.Concat(string, string [, string [, string]])
+                // overloads. We mark the call as "special" so morph and VN can later
+                // attempt to constant-fold it into a single frozen string handle.
+                if (((methodFlags & CORINFO_FLG_STATIC) == 0) || (sig->numArgs < 2) || (sig->numArgs > 4) ||
+                    (sig->retType != CORINFO_TYPE_CLASS))
+                {
+                    break;
+                }
+
+                // All arguments must be System.String, matching the String.Concat
+                // string-only overloads. Bail otherwise (e.g. params object[]).
+                bool                    allStringArgs = true;
+                CORINFO_ARG_LIST_HANDLE sigArg        = sig->args;
+                for (unsigned i = 0; i < sig->numArgs; i++)
+                {
+                    CORINFO_CLASS_HANDLE argClass = NO_CLASS_HANDLE;
+                    CorInfoType          argType  = strip(info.compCompHnd->getArgType(sig, sigArg, &argClass));
+                    if (argType != CORINFO_TYPE_CLASS)
+                    {
+                        allStringArgs = false;
+                        break;
+                    }
+                    // For CORINFO_TYPE_CLASS args, getArgType may return a null
+                    // class handle; query it explicitly and require it to be the
+                    // owning System.String class.
+                    if (argClass == NO_CLASS_HANDLE)
+                    {
+                        argClass = info.compCompHnd->getArgClass(sig, sigArg);
+                    }
+                    if (argClass != clsHnd)
+                    {
+                        allStringArgs = false;
+                        break;
+                    }
+                    sigArg = info.compCompHnd->getArgNext(sigArg);
+                }
+
+                if (!allStringArgs)
+                {
+                    break;
+                }
+
+                // Mark all string-only Concat overloads as special so both
+                // morph (gtFoldExprCall) and VN-based folding
+                // (optVNBasedFoldExpr_Call_StringConcat) can later try to fold
+                // them. The actual inline-suppression decision in
+                // impMarkInlineCandidateHelper additionally requires every
+                // argument to currently be a GT_CNS_STR.
+                isSpecial = true;
+                break;
+            }
+
             case NI_System_String_get_Chars:
             {
                 GenTree* op2  = impPopStack().val;
@@ -8253,6 +8307,34 @@ void Compiler::impMarkInlineCandidateHelper(GenTreeCall*           call,
         return;
     }
 
+    // Don't inline String.Concat when all arguments are constant strings.
+    // We let the call survive so morph and VN-based folding can replace it
+    // with a single frozen string handle. Inlining the call here would defeat
+    // that fold. We deliberately allow inlining when at least one argument is
+    // not a constant string — VN-based folding handles a few extra cases, but
+    // most non-constant calls are still better off inlined.
+    if (call->IsSpecialIntrinsic() && (lookupNamedIntrinsic(call->gtCallMethHnd) == NI_System_String_Concat))
+    {
+        bool allCns = true;
+        for (CallArg& arg : call->gtArgs.Args())
+        {
+            if (arg.GetWellKnownArg() != WellKnownArg::None)
+            {
+                continue;
+            }
+            if (!arg.GetNode()->OperIs(GT_CNS_STR))
+            {
+                allCns = false;
+                break;
+            }
+        }
+        if (allCns)
+        {
+            inlineResult->NoteFatal(InlineObservation::CALLEE_IS_FOLDABLE_INTRINSIC);
+            return;
+        }
+    }
+
     // Inlining candidate determination needs to honor only IL tail prefix.
     // Inlining takes precedence over implicit tail call optimization (if the call is not directly recursive).
     if (call->IsTailPrefixedCall())
@@ -10726,6 +10808,10 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                         if (strcmp(methodName, "Equals") == 0)
                         {
                             result = NI_System_String_Equals;
+                        }
+                        else if (strcmp(methodName, "Concat") == 0)
+                        {
+                            result = NI_System_String_Concat;
                         }
                         else if (strcmp(methodName, "get_Chars") == 0)
                         {

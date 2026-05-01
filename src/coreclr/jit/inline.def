@@ -43,6 +43,7 @@ INLINE_OBSERVATION(IS_JIT_NOINLINE,           bool,   "noinline per JitNoinline"
 INLINE_OBSERVATION(IS_NOINLINE,               bool,   "noinline per IL/cached result",        FATAL,       CALLEE)
 INLINE_OBSERVATION(IS_SYNCHRONIZED,           bool,   "is synchronized",                      FATAL,       CALLEE)
 INLINE_OBSERVATION(IS_VM_NOINLINE,            bool,   "noinline per VM",                      FATAL,       CALLEE)
+INLINE_OBSERVATION(IS_FOLDABLE_INTRINSIC,     bool,   "foldable intrinsic - keep as call",    FATAL,       CALLEE)
 INLINE_OBSERVATION(LACKS_RETURN,              bool,   "no return opcode",                     FATAL,       CALLEE)
 INLINE_OBSERVATION(LDFLD_NEEDS_HELPER,        bool,   "ldfld needs helper",                   FATAL,       CALLEE)
 INLINE_OBSERVATION(LOCALLOC_TOO_LARGE,        bool,   "localloc size too large",              FATAL,       CALLEE)

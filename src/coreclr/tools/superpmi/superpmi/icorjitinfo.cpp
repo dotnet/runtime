@@ -1456,6 +1456,12 @@ bool MyICJI::getObjectContent(CORINFO_OBJECT_HANDLE obj, uint8_t* buffer, int bu
     return jitInstance->mc->repGetObjectContent(obj, buffer, bufferSize, valueOffset);
 }
 
+CORINFO_OBJECT_HANDLE MyICJI::tryAppendStrings(CORINFO_OBJECT_HANDLE* strings, int count)
+{
+    jitInstance->mc->cr->AddCall("tryAppendStrings");
+    return jitInstance->mc->repTryAppendStrings(strings, count);
+}
+
 // return the class handle for the current value of a static field
 CORINFO_CLASS_HANDLE MyICJI::getStaticFieldCurrentClass(CORINFO_FIELD_HANDLE field, bool* pIsSpeculative)
 {

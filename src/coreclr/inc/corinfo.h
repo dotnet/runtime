@@ -3210,6 +3210,32 @@ public:
     // Returns the primitive type for passing/returning a Wasm struct by value,
     // or CORINFO_WASM_TYPE_VOID if passing/returning must be by reference.
     virtual CorInfoWasmType getWasmLowering(CORINFO_CLASS_HANDLE structHnd) = 0;
+
+    //------------------------------------------------------------------------------
+    // tryAppendStrings: try to concatenate the given frozen-string handles into a
+    //    single new frozen string and return its handle. This is a best-effort
+    //    helper used by the JIT to constant-fold String.Concat calls whose
+    //    arguments are known constant strings.
+    //
+    // Arguments:
+    //    strings     -    array of CORINFO_OBJECT_HANDLEs that must reference frozen
+    //                     System.String objects. May contain handles to the empty
+    //                     string. Must not be null when count > 0.
+    //    count       -    number of entries in 'strings'. Must be > 0.
+    //
+    // Return Value:
+    //    A handle to a frozen System.String object containing the ordered
+    //    concatenation of the input strings, or nullptr if the runtime could
+    //    not produce one (e.g. the result wouldn't fit on the frozen heap, or
+    //    the inputs are not really strings). The returned handle is suitable
+    //    for use with gtNewIconEmbObjHndNode (i.e. IAT_VALUE-style direct
+    //    object reference). The returned handle has the same lifetime as a
+    //    handle returned by constructStringLiteral.
+    //
+    virtual CORINFO_OBJECT_HANDLE tryAppendStrings (
+            CORINFO_OBJECT_HANDLE*      strings,                      /* IN  */
+            int                         count                         /* IN  */
+            ) = 0;
 };
 
 /*****************************************************************************

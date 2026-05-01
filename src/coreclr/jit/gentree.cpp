@@ -15162,6 +15162,68 @@ GenTree* Compiler::gtFoldExprCall(GenTreeCall* call)
             break;
         }
 
+        case NI_System_String_Concat:
+        {
+            // Try to fold String.Concat(<cns>, <cns> [, <cns> [, <cns>]]) into a
+            // single frozen-string handle. We only see this case when the
+            // importer marked the call as a special intrinsic, which requires
+            // every argument to be a GT_CNS_STR.
+            if ((compCurBB != nullptr) && compCurBB->isRunRarely())
+            {
+                // Don't waste frozen-heap budget on cold code.
+                break;
+            }
+
+            unsigned const argCount = call->gtArgs.CountUserArgs();
+            assert((argCount >= 2) && (argCount <= 4));
+
+            CORINFO_OBJECT_HANDLE handles[4] = {nullptr, nullptr, nullptr, nullptr};
+            bool                  allCns     = true;
+            for (unsigned i = 0; i < argCount; i++)
+            {
+                GenTree* argNode = call->gtArgs.GetUserArgByIndex(i)->GetNode();
+                if (!argNode->OperIs(GT_CNS_STR))
+                {
+                    allCns = false;
+                    break;
+                }
+
+                GenTreeStrCon* strCon = argNode->AsStrCon();
+                LPVOID         pValue = nullptr;
+                InfoAccessType iat;
+                if (strCon->IsStringEmptyField())
+                {
+                    iat = info.compCompHnd->emptyStringLiteral(&pValue);
+                }
+                else
+                {
+                    iat = info.compCompHnd->constructStringLiteral(strCon->gtScpHnd, strCon->gtSconCPX, &pValue);
+                }
+
+                if (iat != IAT_VALUE)
+                {
+                    // The string is not directly addressable as a frozen handle
+                    // (e.g. it's a lazily-allocated literal). Bail.
+                    allCns = false;
+                    break;
+                }
+
+                handles[i] = (CORINFO_OBJECT_HANDLE)pValue;
+            }
+
+            if (allCns)
+            {
+                CORINFO_OBJECT_HANDLE folded = info.compCompHnd->tryAppendStrings(handles, (int)argCount);
+                if (folded != nullptr)
+                {
+                    JITDUMP("Folded String.Concat of %u constant strings into a single frozen string handle\n",
+                            argCount);
+                    return gtNewIconEmbObjHndNode(folded);
+                }
+            }
+            break;
+        }
+
         default:
             break;
     }

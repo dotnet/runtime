@@ -1703,6 +1703,14 @@ bool interceptor_ICJI::getObjectContent(CORINFO_OBJECT_HANDLE obj, uint8_t* buff
     return result;
 }
 
+CORINFO_OBJECT_HANDLE interceptor_ICJI::tryAppendStrings(CORINFO_OBJECT_HANDLE* strings, int count)
+{
+    mc->cr->AddCall("tryAppendStrings");
+    CORINFO_OBJECT_HANDLE result = original_ICorJitInfo->tryAppendStrings(strings, count);
+    mc->recTryAppendStrings(strings, count, result);
+    return result;
+}
+
 // return the class handle for the current value of a static field
 CORINFO_CLASS_HANDLE interceptor_ICJI::getStaticFieldCurrentClass(CORINFO_FIELD_HANDLE field, bool* pIsSpeculative)
 {

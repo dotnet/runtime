@@ -3448,6 +3448,11 @@ namespace Internal.JitInterface
             return false;
         }
 
+        private CORINFO_OBJECT_STRUCT_* tryAppendStrings(CORINFO_OBJECT_STRUCT_** strings, int count)
+        {
+            return null;
+        }
+
         private CORINFO_OBJECT_STRUCT_* getRuntimeTypePointer(CORINFO_CLASS_STRUCT_* cls)
         {
             return null;

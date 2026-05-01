@@ -2657,6 +2657,60 @@ GenTree* Compiler::optVNBasedFoldExpr_Call_Memmove(GenTreeCall* call)
 }
 
 //------------------------------------------------------------------------------
+// optVNBasedFoldExpr_Call_StringConcat: Folds NI_System_String_Concat into a
+//    single frozen-string handle when every argument's value number resolves
+//    to a constant frozen-string handle.
+//
+// Arguments:
+//    block  -  The block containing the call.
+//    call   -  The String.Concat call to fold.
+//
+// Return Value:
+//    A new tree representing the concatenated frozen string, or nullptr if the
+//    call cannot be folded.
+//
+GenTree* Compiler::optVNBasedFoldExpr_Call_StringConcat(BasicBlock* block, GenTreeCall* call)
+{
+    // Don't waste frozen-heap budget on cold code.
+    if ((block != nullptr) && block->isRunRarely())
+    {
+        return nullptr;
+    }
+
+    unsigned const argCount = call->gtArgs.CountUserArgs();
+    if ((argCount < 2) || (argCount > 4))
+    {
+        return nullptr;
+    }
+
+    CORINFO_OBJECT_HANDLE handles[4] = {nullptr, nullptr, nullptr, nullptr};
+    for (unsigned i = 0; i < argCount; i++)
+    {
+        GenTree* argNode = call->gtArgs.GetUserArgByIndex(i)->GetNode();
+        ValueNum vn      = vnStore->VNConservativeNormalValue(argNode->gtVNPair);
+        if (!vnStore->IsVNObjHandle(vn))
+        {
+            return nullptr;
+        }
+
+        handles[i] = vnStore->ConstantObjHandle(vn);
+        if (handles[i] == nullptr)
+        {
+            return nullptr;
+        }
+    }
+
+    CORINFO_OBJECT_HANDLE folded = info.compCompHnd->tryAppendStrings(handles, (int)argCount);
+    if (folded == nullptr)
+    {
+        return nullptr;
+    }
+
+    JITDUMP("VN-fold: String.Concat of %u constant frozen strings -> single frozen string handle\n", argCount);
+    return gtNewIconEmbObjHndNode(folded);
+}
+
+//------------------------------------------------------------------------------
 // optVNBasedFoldExpr_Call: Folds given call using VN to a simpler tree.
 //
 // Arguments:
@@ -2736,6 +2790,11 @@ GenTree* Compiler::optVNBasedFoldExpr_Call(BasicBlock* block, GenTree* parent, G
     if (call->IsSpecialIntrinsic(this, NI_System_SpanHelpers_SequenceEqual))
     {
         return optVNBasedFoldExpr_Call_Memcmp(call);
+    }
+
+    if (call->IsSpecialIntrinsic(this, NI_System_String_Concat))
+    {
+        return optVNBasedFoldExpr_Call_StringConcat(block, call);
     }
 
     return nullptr;

@@ -2454,6 +2454,39 @@ namespace Internal.JitInterface
             return false;
         }
 
+        private CORINFO_OBJECT_STRUCT_* tryAppendStrings(CORINFO_OBJECT_STRUCT_** strings, int count)
+        {
+            // Best-effort string concatenation for JIT constant folding. Every
+            // input handle must reference a FrozenStringNode; otherwise we bail.
+            if (count <= 0)
+            {
+                return null;
+            }
+
+            string[] parts = new string[count];
+            long totalLength = 0;
+            for (int i = 0; i < count; i++)
+            {
+                if (HandleToObject(strings[i]) is not FrozenStringNode frozenStr)
+                {
+                    return null;
+                }
+                parts[i] = frozenStr.Data;
+                totalLength += parts[i].Length;
+                if (totalLength > 0x3FFFFFDF /* CORINFO_String_MaxLength */)
+                {
+                    return null;
+                }
+            }
+
+            string result = string.Concat(parts);
+            FrozenStringNode node = _compilation.NodeFactory.SerializedStringObject(result);
+            // FrozenStringNode never represents an indirection cell, so the
+            // handle is safe to consume as IAT_VALUE.
+            Debug.Assert(!node.RepresentsIndirectionCell);
+            return (CORINFO_OBJECT_STRUCT_*)ObjectToHandle(node);
+        }
+
         private int getArrayOrStringLength(CORINFO_OBJECT_STRUCT_* objHnd)
         {
             return HandleToObject(objHnd).ArrayLength ?? -1;

@@ -83,6 +83,7 @@ struct JitInterfaceCallbacks
     bool (* isObjectImmutable)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_OBJECT_HANDLE objPtr);
     bool (* getStringChar)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_OBJECT_HANDLE strObj, int index, uint16_t* value);
     CORINFO_CLASS_HANDLE (* getObjectType)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_OBJECT_HANDLE objPtr);
+    CORINFO_OBJECT_HANDLE (* tryAppendStrings)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_OBJECT_HANDLE* strings, int count);
     bool (* getReadyToRunHelper)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_RESOLVED_TOKEN* pResolvedToken, CorInfoHelpFunc id, CORINFO_METHOD_HANDLE callerHandle, CORINFO_CONST_LOOKUP* pLookup);
     void (* getReadyToRunDelegateCtorHelper)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_RESOLVED_TOKEN* pTargetMethod, unsigned int targetConstraint, CORINFO_CLASS_HANDLE delegateType, CORINFO_METHOD_HANDLE callerHandle, CORINFO_LOOKUP* pLookup);
     CorInfoInitClassResult (* initClass)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_FIELD_HANDLE field, CORINFO_METHOD_HANDLE method, CORINFO_CONTEXT_HANDLE context);
@@ -903,6 +904,16 @@ public:
 {
     CorInfoExceptionClass* pException = nullptr;
     CORINFO_CLASS_HANDLE temp = _callbacks->getObjectType(_thisHandle, &pException, objPtr);
+    if (pException != nullptr) throw pException;
+    return temp;
+}
+
+    virtual CORINFO_OBJECT_HANDLE tryAppendStrings(
+          CORINFO_OBJECT_HANDLE* strings,
+          int count)
+{
+    CorInfoExceptionClass* pException = nullptr;
+    CORINFO_OBJECT_HANDLE temp = _callbacks->tryAppendStrings(_thisHandle, &pException, strings, count);
     if (pException != nullptr) throw pException;
     return temp;
 }
