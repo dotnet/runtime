@@ -502,6 +502,10 @@ unsigned emitter::instrDesc::idCodeSize() const
             assert(!idIsCnsReloc());
             size = SizeOfULEB128(emitGetInsSC(this));
             break;
+        case IF_CODE_SIZE:
+            assert(!idIsCnsReloc());
+            size = PADDED_RELOC_SIZE;
+            break;
         case IF_LOCAL_DECL:
         {
             assert(idIsLclVarDecl());
@@ -590,6 +594,22 @@ size_t emitter::emitOutputULEB128(uint8_t* destination, uint64_t value)
         buffer[0] = (uint8_t)value;
         return 1;
     }
+}
+
+size_t emitter::emitOutputULEB128Padded(uint8_t* destination, uint64_t value)
+{
+    uint8_t* buffer = destination + writeableOffset;
+    int      i      = 0;
+
+    for (; i < PADDED_RELOC_SIZE - 1; i++)
+    {
+        buffer[i] = (uint8_t)((value & 0x7F) | 0x80);
+        value >>= 7;
+    }
+
+    buffer[i] = (uint8_t)value;
+
+    return PADDED_RELOC_SIZE;
 }
 
 size_t emitter::emitOutputSLEB128(uint8_t* destination, int64_t value)
@@ -836,6 +856,17 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             dst += emitOutputULEB128(dst, (int64_t)emitGetInsSC(id));
             break;
         }
+        case IF_CODE_SIZE:
+        {
+            // We always emit this as 5 bytes
+            FuncInfoDsc* const func        = m_compiler->funGetFunc(emitCurIG->igFuncIdx);
+            UNATIVE_OFFSET     startOffset = func->startLoc->CodeOffset(this);
+            UNATIVE_OFFSET     endOffset   = func->endLoc->CodeOffset(this);
+            assert(endOffset >= (startOffset + PADDED_RELOC_SIZE));
+            unsigned const size = endOffset - startOffset - PADDED_RELOC_SIZE;
+            dst += emitOutputULEB128Padded(dst, (int64_t)size);
+            break;
+        }
         default:
             NYI_WASM("emitOutputInstr");
             break;
@@ -1080,6 +1111,26 @@ void emitter::emitDispIns(
             // TODO: catch type
             // target label
             dispJumpTargetIfAny();
+        }
+        break;
+
+        case IF_CODE_SIZE:
+        {
+            FuncInfoDsc* const func = m_compiler->funGetFunc(emitCurIG->igFuncIdx);
+
+            emitLocation* const startLoc = func->startLoc;
+            emitLocation* const endLoc   = func->endLoc;
+
+            if (startLoc != nullptr)
+            {
+                assert(endLoc != nullptr);
+                UNATIVE_OFFSET codeSize = endLoc->CodeOffset(this) - startLoc->CodeOffset(this) - PADDED_RELOC_SIZE;
+                printf(" %u", codeSize);
+            }
+            else
+            {
+                printf(" <not yet determined>");
+            }
         }
         break;
 
