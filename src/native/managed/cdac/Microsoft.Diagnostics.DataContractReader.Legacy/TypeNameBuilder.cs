@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Text;
+using Microsoft.Diagnostics.DataContractReader;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
 
 namespace Microsoft.Diagnostics.DataContractReader.Legacy;
@@ -283,7 +284,14 @@ public struct TypeNameBuilder
                 Contracts.ModuleHandle moduleHandle = tnb.Target.Contracts.Loader.GetModuleHandleFromModulePtr(typeSystemContract.GetModule(typeHandle));
                 if (MetadataTokens.EntityHandle((int)typeDefToken).IsNil)
                 {
-                    tnb.AddName("(dynamicClass)");
+                    if (typeSystemContract.IsContinuation(typeHandle))
+                    {
+                        AppendContinuationName(ref tnb, typeSystemContract, typeHandle);
+                    }
+                    else
+                    {
+                        tnb.AddName("(dynamicClass)");
+                    }
                 }
                 else
                 {
@@ -478,6 +486,52 @@ public struct TypeNameBuilder
 
             HasAssemblySpec = true;
         }
+    }
+
+    /// <summary>
+    /// Builds the synthetic name for a dynamically-created continuation method table, mirroring the
+    /// native <c>AsyncContinuationsManager::PrintContinuationName</c> in <c>asynccontinuations.h</c>.
+    /// </summary>
+    /// <remarks>
+    /// The name has the form:
+    /// <c>Continuation_&lt;dataSize&gt;[_&lt;gcOffset&gt;_&lt;gcCount&gt;]*</c>
+    /// where:
+    /// <list type="bullet">
+    ///   <item><description>
+    ///     <c>dataSize</c> is the number of bytes of data payload (base size minus the fixed
+    ///     object-header and continuation-header overhead).
+    ///   </description></item>
+    ///   <item><description>
+    ///     Each <c>_gcOffset_gcCount</c> pair describes one GC-pointer run: <c>gcOffset</c> is the
+    ///     offset in bytes from the start of the data payload to the run, and <c>gcCount</c> is the
+    ///     number of pointer-sized GC references in that run.
+    ///   </description></item>
+    /// </list>
+    /// Only GC descriptor series whose <c>startoffset</c> is at or above the continuation data
+    /// payload (i.e., after the fixed <c>CORINFO_Continuation</c> header fields) are included.
+    /// </remarks>
+    private static void AppendContinuationName(ref TypeNameBuilder tnb, IRuntimeTypeSystem typeSystemContract, TypeHandle typeHandle)
+    {
+        uint baseSize = typeSystemContract.GetBaseSize(typeHandle);
+        uint continuationDataOffset = tnb.Target.GetTypeInfo(DataType.ContinuationObject).Size!.Value;
+        uint objHeaderSize = tnb.Target.GetTypeInfo(DataType.ObjectHeader).Size!.Value;
+        uint dataSize = baseSize - (objHeaderSize + continuationDataOffset);
+
+        var name = new StringBuilder("Continuation_");
+        name.Append(dataSize);
+
+        foreach ((uint seriesOffset, uint seriesSize) in typeSystemContract.GetGCDescSeries(typeHandle))
+        {
+            if (seriesOffset < continuationDataOffset)
+                continue;
+
+            name.Append('_');
+            name.Append(seriesOffset - continuationDataOffset);
+            name.Append('_');
+            name.Append(seriesSize / (uint)tnb.Target.PointerSize);
+        }
+
+        tnb.AddNameNoEscaping(name);
     }
 
     private static void AppendNestedTypeDef(ref TypeNameBuilder tnb, MetadataReader reader, TypeDefinitionHandle typeDefToken, TypeNameFormat format)
