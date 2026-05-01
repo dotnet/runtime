@@ -2737,7 +2737,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     {
         printf("****** START compiling %s (MethodHash=%08x)\n", info.compFullName, info.compMethodHash());
         printf("Generating code for %s %s\n", Target::g_tgtPlatformName(), Target::g_tgtCPUName);
-        printf(""); // in our logic this causes a flush
+        fflush(stdout); // flush
     }
 
     if (JitConfig.JitBreak().contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args))
@@ -6606,7 +6606,7 @@ void Compiler::compCompileFinish()
         printf(" %3d |", info.compTotalColdCodeSize);
 
         printf(" %s\n", eeGetMethodFullName(info.compMethodHnd));
-        printf(""); // in our logic this causes a flush
+        fflush(stdout); // flush
     }
 
     JITDUMP("Final metrics:\n");
@@ -6619,7 +6619,7 @@ void Compiler::compCompileFinish()
     if (verbose)
     {
         printf("\n****** DONE compiling %s\n", info.compFullName);
-        printf(""); // in our logic this causes a flush
+        fflush(stdout); // flush
     }
 
 #if TRACK_ENREG_STATS

@@ -6334,9 +6334,9 @@ bool DebuggerStepper::TrapStep(ControllerStackInfo *info, bool in)
     }
 
 #ifdef TARGET_X86
-    LOG((LF_CORDB,LL_INFO1000, "GetJitInfo for pc = 0x%x (addr of "
-        "that value:0x%x)\n", (const BYTE*)(GetControlPC(&info->m_activeFrame.registers)),
-        GetRegdisplayPCTAddr(&info->m_activeFrame.registers)));
+    LOG((LF_CORDB,LL_INFO1000, "GetJitInfo for pc = %p (addr of "
+        "that value:%p)\n", (void*)(GetControlPC(&info->m_activeFrame.registers)),
+        (void*)GetRegdisplayPCTAddr(&info->m_activeFrame.registers)));
 #endif
 
     // Note: we used to pass in the IP from the active frame to GetJitInfo, but there seems to be no value in that, and

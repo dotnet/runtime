@@ -2868,7 +2868,7 @@ void CodeGen::genGCWriteBarrier(GenTreeStoreInd* store, GCInfo::WriteBarrierForm
             unclassifiedBarrierSite++;
             printf("unclassifiedBarrierSite = %d:\n", unclassifiedBarrierSite);
             m_compiler->gtDispTree(store);
-            printf(""); // Flush.
+            fflush(stdout); // Flush.
             printf("\n");
         }
 #endif // DEBUG

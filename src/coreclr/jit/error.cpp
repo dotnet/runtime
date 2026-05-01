@@ -280,7 +280,7 @@ extern "C" void assertAbort(const char* why, const char* file, unsigned line)
                     env->compiler->info.compMethodHash(), env->compiler->compGetTieringName(/* short name */ true));
         msg = buff;
     }
-    printf(""); // null string means flush
+    fflush(stdout); // flush
 
 #if FUNC_INFO_LOGGING
     if (Compiler::compJitFuncInfoFile != nullptr)
