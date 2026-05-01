@@ -22,6 +22,7 @@ namespace System.Runtime.CompilerServices
         ContinueOnThreadPool = 1 << 0,
         ContinueOnCapturedSynchronizationContext = 1 << 1,
         ContinueOnCapturedTaskScheduler = 1 << 2,
+        AllContinueFlags = ContinueOnCapturedSynchronizationContext | ContinueOnThreadPool | ContinueOnCapturedTaskScheduler,
 
         // The flags encode where in the continuation various members are stored.
         // If the encoded index is 0, it means no such member is present.
@@ -414,15 +415,6 @@ namespace System.Runtime.CompilerServices
                 Continuation headContinuation = sentinelContinuation.Next!;
                 sentinelContinuation.Next = null;
 
-                // Head continuation should be the result of async call to AwaitAwaiter or UnsafeAwaitAwaiter.
-                // These never have special continuation context handling.
-                const ContinuationFlags continueFlags =
-                    ContinuationFlags.ContinueOnCapturedSynchronizationContext |
-                    ContinuationFlags.ContinueOnThreadPool |
-                    ContinuationFlags.ContinueOnCapturedTaskScheduler;
-
-                Debug.Assert((headContinuation.Flags & continueFlags) == 0);
-
                 SetContinuationState(headContinuation);
 
                 try
@@ -457,8 +449,8 @@ namespace System.Runtime.CompilerServices
                         // Since we see a VTS notifier, something was directly or indirectly
                         // awaiting an async thunk for a ValueTask-returning method.
                         // That can only happen in nontransparent/user code.
-                        Continuation nextUserContinuation = headContinuation.Next!;
-                        while ((nextUserContinuation.Flags & continueFlags) == 0 && nextUserContinuation.Next != null)
+                        Continuation nextUserContinuation = headContinuation;
+                        while ((nextUserContinuation.Flags & ContinuationFlags.AllContinueFlags) == 0 && nextUserContinuation.Next != null)
                         {
                             nextUserContinuation = nextUserContinuation.Next;
                         }
@@ -475,7 +467,7 @@ namespace System.Runtime.CompilerServices
                         }
 
                         // Clear continuation flags, so that continuation runs transparently
-                        nextUserContinuation.Flags &= ~continueFlags;
+                        nextUserContinuation.Flags &= ~ContinuationFlags.AllContinueFlags;
                         valueTaskSourceNotifier.OnCompleted(s_runContinuationAction, this, configFlags);
                     }
                     else
@@ -534,6 +526,12 @@ namespace System.Runtime.CompilerServices
                     }
                 }
 
+                Continuation headContinuation = MoveContinuationState();
+                if ((headContinuation.Flags & ContinuationFlags.AllContinueFlags) != 0 && QueueContinuationFollowUpActionIfNecessary(headContinuation))
+                {
+                    return;
+                }
+
                 RuntimeAsyncStackState stackState = default;
 
                 ref RuntimeAsyncAwaitState awaitState = ref t_runtimeAsyncAwaitState;
@@ -543,7 +541,7 @@ namespace System.Runtime.CompilerServices
 
                 AsyncDispatcherInfo asyncDispatcherInfo;
                 asyncDispatcherInfo.Next = refDispatcherInfo;
-                asyncDispatcherInfo.NextContinuation = MoveContinuationState();
+                asyncDispatcherInfo.NextContinuation = headContinuation;
                 refDispatcherInfo = &asyncDispatcherInfo;
 
                 while (true)
@@ -633,6 +631,12 @@ namespace System.Runtime.CompilerServices
             [StackTraceHidden]
             private unsafe void InstrumentedDispatchContinuations(AsyncInstrumentation.Flags flags)
             {
+                Continuation headContinuation = MoveContinuationState();
+                if ((headContinuation.Flags & ContinuationFlags.AllContinueFlags) != 0 && QueueContinuationFollowUpActionIfNecessary(headContinuation))
+                {
+                    return;
+                }
+
                 RuntimeAsyncStackState stackState = default;
 
                 ref RuntimeAsyncAwaitState awaitState = ref t_runtimeAsyncAwaitState;
@@ -759,7 +763,9 @@ namespace System.Runtime.CompilerServices
 
             private bool QueueContinuationFollowUpActionIfNecessary(Continuation continuation)
             {
-                if ((continuation.Flags & ContinuationFlags.ContinueOnThreadPool) != 0)
+                ContinuationFlags flags = continuation.Flags;
+                continuation.Flags &= ~ContinuationFlags.AllContinueFlags;
+                if ((flags & ContinuationFlags.ContinueOnThreadPool) != 0)
                 {
                     SynchronizationContext? ctx = Thread.CurrentThreadAssumedInitialized._synchronizationContext;
                     if (ctx == null || ctx.GetType() == typeof(SynchronizationContext))
@@ -777,7 +783,7 @@ namespace System.Runtime.CompilerServices
                     return true;
                 }
 
-                if ((continuation.Flags & ContinuationFlags.ContinueOnCapturedSynchronizationContext) != 0)
+                if ((flags & ContinuationFlags.ContinueOnCapturedSynchronizationContext) != 0)
                 {
                     object continuationContext = continuation.GetContinuationContext();
                     Debug.Assert(continuationContext is SynchronizationContext { });
@@ -803,7 +809,7 @@ namespace System.Runtime.CompilerServices
                     return true;
                 }
 
-                if ((continuation.Flags & ContinuationFlags.ContinueOnCapturedTaskScheduler) != 0)
+                if ((flags & ContinuationFlags.ContinueOnCapturedTaskScheduler) != 0)
                 {
                     object continuationContext = continuation.GetContinuationContext();
                     Debug.Assert(continuationContext is TaskScheduler { });
