@@ -46,7 +46,7 @@ static const size_t WasmPageSize = 64 * 1024;
 
 // The cached total number of CPUs that can be used in the OS.
 // WASM is single-threaded, so this is always 1.
-uint32_t g_totalCpuCount = 0;
+uint32_t g_totalCpuCount = 1;
 
 uint32_t g_pageSizeUnixInl = 0;
 
