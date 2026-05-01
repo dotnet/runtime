@@ -16,7 +16,7 @@ public class ThreadDumpTests : DumpTestBase
     private const int SpawnedThreadCount = 5;
 
     protected override string DebuggeeName => "BasicThreads";
-    protected override string DumpType => "full";
+    protected override string DumpType => "heap";
 
     [ConditionalTheory]
     [MemberData(nameof(TestConfigurations))]
