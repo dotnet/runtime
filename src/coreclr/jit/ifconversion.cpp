@@ -599,9 +599,25 @@ bool OptIfConversionDsc::optIfConvert(int* pReachabilityBudget)
     GenTree* select = m_compiler->gtNewConditionalNode(GT_SELECT, m_cond, selectTrueInput, selectFalseInput,
                                                        genActualType(m_thenOperation.node));
 
+#ifdef DEBUG
+    JITDUMP("\nSELECT created:\n");
+    if (m_compiler->verbose)
+    {
+        m_compiler->gtDispTree(select);
+    }
+#endif
+
     if (GenTree* optSelect = TryOptimizeSelect(select->AsConditional()); optSelect != nullptr)
     {
         select = optSelect;
+
+#ifdef DEBUG
+        JITDUMP("\nSELECT after optimizations:\n");
+        if (m_compiler->verbose)
+        {
+            m_compiler->gtDispTree(select);
+        }
+#endif
     }
 
 #ifdef TARGET_RISCV64
