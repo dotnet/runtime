@@ -2697,19 +2697,20 @@ PhaseStatus Compiler::fgWasmVirtualIP()
         JITDUMP("EH virtual IP ranges\n");
         for (EHblkDsc* const dsc : EHClauses(this))
         {
-            const unsigned index = ehGetIndex(dsc);
+            const unsigned index       = ehGetIndex(dsc);
+            const unsigned clauseIndex = compEHTabOrderToVMClauseOrder[index];
 
-            JITDUMP("EH#%02u: Try [%04u..%04u)", index, clauses[index].clause.TryOffset,
-                    clauses[index].clause.TryLength);
+            JITDUMP("EH#%02u: Try [%04u..%04u)", index, clauses[clauseIndex].clause.TryOffset,
+                    clauses[clauseIndex].clause.TryLength);
 
             if (dsc->HasFilter())
             {
-                JITDUMP(" Filter [%04u..%04u)\n", clauses[index].clause.ClassToken,
-                        clauses[index].clause.HandlerOffset);
+                JITDUMP(" Filter [%04u..%04u)\n", clauses[clauseIndex].clause.ClassToken,
+                        clauses[clauseIndex].clause.HandlerOffset);
             }
 
-            JITDUMP(" Handler [%04u..%04u)\n", clauses[index].clause.HandlerOffset,
-                    clauses[index].clause.HandlerLength);
+            JITDUMP(" Handler [%04u..%04u)\n", clauses[clauseIndex].clause.HandlerOffset,
+                    clauses[clauseIndex].clause.HandlerLength);
         }
     }
 #endif // DEBUG
