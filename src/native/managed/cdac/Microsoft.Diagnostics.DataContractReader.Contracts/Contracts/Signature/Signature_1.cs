@@ -8,17 +8,17 @@ using Microsoft.Diagnostics.DataContractReader.SignatureHelpers;
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
 // NOTE: some elements of SignatureTypeProvider remain unimplemented or minimally implemented
-// as they are not needed for the current usage of ISignatureDecoder.
+// as they are not needed for the current usage of ISignature.
 // GetModifiedType and GetPinnedType ignore pinning and custom modifiers.
 // GetTypeFromReference does not look up the type in another module.
 // GetTypeFromSpecification is unimplemented.
 // These can be completed as needed.
-internal sealed class SignatureDecoder_1 : ISignatureDecoder
+internal sealed class Signature_1 : ISignature
 {
     private readonly Target _target;
     private readonly Dictionary<ModuleHandle, SignatureTypeProvider<TypeHandle>> _thProviders = [];
 
-    internal SignatureDecoder_1(Target target)
+    internal Signature_1(Target target)
     {
         _target = target;
     }
@@ -40,7 +40,7 @@ internal sealed class SignatureDecoder_1 : ISignatureDecoder
         return newProvider;
     }
 
-    TypeHandle ISignatureDecoder.DecodeFieldSignature(BlobHandle blobHandle, ModuleHandle moduleHandle, TypeHandle ctx)
+    TypeHandle ISignature.DecodeFieldSignature(BlobHandle blobHandle, ModuleHandle moduleHandle, TypeHandle ctx)
     {
         SignatureTypeProvider<TypeHandle> provider = GetTypeHandleProvider(moduleHandle);
         MetadataReader mdReader = _target.Contracts.EcmaMetadata.GetMetadata(moduleHandle)!;

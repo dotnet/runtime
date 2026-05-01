@@ -502,7 +502,7 @@ The provider classifies primitives directly (`String`/`Object` -> `Ref`, `TypedR
 3. Obtain the method's signature blob, matching native `MethodDesc::GetSig`:
    - If `RuntimeTypeSystem.IsStoredSigMethodDesc` is true (dynamic, EEImpl, and array method descs), pin the stored signature span and pass a `BlobReader` over it to `RuntimeSignatureDecoder.DecodeMethodSignature`.
    - Otherwise, look up the signature via the metadata token (`mdMethodDef`), skipping methods with a nil token (`0x06000000`).
-4. Decode the signature with `RuntimeSignatureDecoder<GcTypeKind, GcSignatureContext>` and a `GcSignatureTypeProvider` constructed for the method's module. The `GcSignatureContext` passes the method's class and method instantiations so that `VAR`/`MVAR` placeholders resolve to their actual types. See [SignatureDecoder contract](./SignatureDecoder.md) for the decoder.
+4. Decode the signature with `RuntimeSignatureDecoder<GcTypeKind, GcSignatureContext>` and a `GcSignatureTypeProvider` constructed for the method's module. The `GcSignatureContext` passes the method's class and method instantiations so that `VAR`/`MVAR` placeholders resolve to their actual types. See [Signature contract](./Signature.md) for the decoder.
 5. Skip varargs methods (the caller-stack layout is not described by the callee signature alone).
 6. Compute the number of reserved register slots in the `TransitionBlock`:
 
