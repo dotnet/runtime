@@ -4380,8 +4380,14 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
 
     if (call->IsSpecialIntrinsic())
     {
-        failTailCall("Might turn into an intrinsic");
-        return nullptr;
+        // FastAllocateString is marked as a special intrinsic only to give the JIT
+        // hints about its return value (non-null, length tracked by VN). It is not
+        // re-expanded, so it is safe to tail call.
+        if (!call->IsSpecialIntrinsic(this, NI_System_String_FastAllocateString))
+        {
+            failTailCall("Might turn into an intrinsic");
+            return nullptr;
+        }
     }
 
 #ifdef TARGET_ARM

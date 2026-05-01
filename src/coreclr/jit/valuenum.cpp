@@ -2564,8 +2564,10 @@ ValueNum ValueNumStore::VNForFunc(var_types typ, VNFunc func, ValueNum arg0VN)
             }
 
             // Case 4: ARR_LENGTH(new T[(long)size]) -> size
+            //         ARR_LENGTH(String.FastAllocateString(pMT, (long)size)) -> size
             VNFuncApp newArrFuncApp;
-            if (GetVNFunc(arg0VN, &newArrFuncApp) && (newArrFuncApp.m_func == VNF_JitNewArr))
+            if (GetVNFunc(arg0VN, &newArrFuncApp) &&
+                ((newArrFuncApp.m_func == VNF_JitNewArr) || (newArrFuncApp.m_func == VNF_StrFastAllocate)))
             {
                 ValueNum actualSizeVN = VNIgnoreIntToLongCast(newArrFuncApp.m_args[1]);
                 if (TypeOfVN(actualSizeVN) == TYP_INT)
@@ -14344,6 +14346,22 @@ bool Compiler::fgValueNumberSpecialIntrinsic(GenTreeCall* call)
 
     switch (lookupNamedIntrinsic(call->gtCallMethHnd))
     {
+        case NI_System_String_FastAllocateString:
+        {
+            // Give the call a VN that is known to be non-null and that records the
+            // MethodTable and the requested length, so that:
+            //   * ARR_LENGTH on the result can be folded back to the length argument
+            //   * Two FastAllocateString calls with the same (pMT, length) get the same VN
+            //
+            // This intrinsic only applies to the 2-arg InternalCall overload:
+            //   string FastAllocateString(MethodTable* pMT, nint length)
+            assert(call->gtArgs.CountUserArgs() == 2);
+            ValueNumPair pMTVN    = call->gtArgs.GetUserArgByIndex(0)->GetNode()->gtVNPair;
+            ValueNumPair lenArgVN = call->gtArgs.GetUserArgByIndex(1)->GetNode()->gtVNPair;
+            call->gtVNPair        = vnStore->VNPairForFunc(TYP_REF, VNF_StrFastAllocate, pMTVN, lenArgVN);
+            return true;
+        }
+
         case NI_System_Type_GetTypeFromHandle:
         {
             // Optimize Type.GetTypeFromHandle(TypeHandleToRuntimeTypeHandle(clsHandle)) to a frozen handle.
