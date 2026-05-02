@@ -5156,6 +5156,98 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
     UINT assignMore             = 0xFFFFFFFF;
     bool have_LclVarDoubleAlign = false;
 
+#ifdef TARGET_AMD64
+    // Build a sorted array of local variable indices to optimize displacement encoding.
+    // On x64, stack accesses within [-128, +127] of the base register use a 1-byte
+    // displacement, while larger offsets require 4 bytes — saving 3 bytes per access
+    // promoted from disp32 to disp8.
+    //
+    // The sort uses access density (weighted ref count / local size) as the primary key
+    // so that locals with the highest access frequency per byte of frame space get the
+    // smallest offsets. This maximizes the total number of hot accesses that fit within
+    // the disp8 zone (~128 bytes from the frame pointer). As a secondary key, locals
+    // requiring 8-byte alignment are grouped before smaller locals to reduce alignment
+    // padding waste.
+    // (See also the comment in lvaAllocLocalAndSetVirtualOffset about sorting by alignment.)
+    //
+    // This optimization is safe because on AMD64, lvaAssignFrameOffsets is only called with
+    // FINAL_FRAME_LAYOUT (no tentative layout exists), so there is no "offsets must not get
+    // bigger" invariant to preserve between passes.
+    //
+    // We skip this optimization for EnC (which requires stable layout) and when ref counts
+    // are not available.
+    assert(lvaDoneFrameLayout == FINAL_FRAME_LAYOUT);
+    unsigned* lclVarSortOrder = nullptr;
+    if (lvaLocalVarRefCounted() && !opts.compDbgEnC && !opts.MinOpts())
+    {
+        // Estimate total local frame size to decide if sorting is worthwhile.
+        // Only sort when the frame exceeds the disp8 boundary (128 bytes);
+        // in smaller frames, all locals already fit in disp8 and sorting just churns
+        // offsets without benefit.
+        unsigned estimatedLocalSize = 0;
+        for (unsigned i = 0; i < lvaCount; i++)
+        {
+            estimatedLocalSize += lvaLclStackHomeSize(i);
+        }
+
+        if (estimatedLocalSize > 128)
+        {
+            JITDUMP("Sorting %u locals by access density for frame layout optimization "
+                    "(estimated frame size %u bytes)\n",
+                    lvaCount, estimatedLocalSize);
+
+            lclVarSortOrder = new (this, CMK_LvaTable) unsigned[lvaCount];
+            for (unsigned i = 0; i < lvaCount; i++)
+            {
+                lclVarSortOrder[i] = i;
+            }
+
+            jitstd::sort(lclVarSortOrder, lclVarSortOrder + lvaCount,
+                         [this](unsigned n1, unsigned n2) -> bool {
+                             const LclVarDsc* dsc1 = lvaGetDesc(n1);
+                             const LclVarDsc* dsc2 = lvaGetDesc(n2);
+
+                             // Sort by access density (weighted ref count per byte) descending.
+                             // This maximizes the number of hot accesses that fit within the
+                             // disp8 zone (first ~128 bytes of frame). A small hot local is
+                             // more valuable per frame byte than a large hot local.
+                             unsigned size1 = lvaLclStackHomeSize(n1);
+                             unsigned size2 = lvaLclStackHomeSize(n2);
+                             weight_t wt1   = dsc1->lvRefCntWtd(lvaRefCountState);
+                             weight_t wt2   = dsc2->lvRefCntWtd(lvaRefCountState);
+
+                             // Compare wt1/size1 > wt2/size2 as wt1*size2 > wt2*size1
+                             // to avoid division. Both sizes are > 0.
+                             weight_t density1 = wt1 * size2;
+                             weight_t density2 = wt2 * size1;
+                             if (density1 != density2)
+                             {
+                                 return density1 > density2;
+                             }
+
+                             // Among locals with equal density, group by alignment class
+                             // (8+ byte locals before smaller ones) to reduce padding.
+                             bool aligned1 = (size1 >= 8);
+                             bool aligned2 = (size2 >= 8);
+                             if (aligned1 != aligned2)
+                             {
+                                 return aligned1;
+                             }
+
+                             unsigned cnt1 = dsc1->lvRefCnt(lvaRefCountState);
+                             unsigned cnt2 = dsc2->lvRefCnt(lvaRefCountState);
+                             if (cnt1 != cnt2)
+                             {
+                                 return cnt1 > cnt2;
+                             }
+
+                             // Stable tiebreaker: lower lclNum first.
+                             return n1 < n2;
+                         });
+        }
+    }
+#endif // TARGET_AMD64
+
     for (cur = 0; alloc_order[cur]; cur++)
     {
         if ((assignMore & alloc_order[cur]) == 0)
@@ -5168,8 +5260,15 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
         unsigned   lclNum;
         LclVarDsc* varDsc;
 
-        for (lclNum = 0, varDsc = lvaTable; lclNum < lvaCount; lclNum++, varDsc++)
+        for (unsigned sortIdx = 0; sortIdx < lvaCount; sortIdx++)
         {
+#ifdef TARGET_AMD64
+            lclNum = (lclVarSortOrder != nullptr) ? lclVarSortOrder[sortIdx] : sortIdx;
+#else
+            lclNum = sortIdx;
+#endif
+            varDsc = lvaGetDesc(lclNum);
+
             /* Ignore field locals of the promotion type PROMOTION_TYPE_FIELD_DEPENDENT.
                In other words, we will not calculate the "base" address of the struct local if
                the promotion type is PROMOTION_TYPE_FIELD_DEPENDENT.
