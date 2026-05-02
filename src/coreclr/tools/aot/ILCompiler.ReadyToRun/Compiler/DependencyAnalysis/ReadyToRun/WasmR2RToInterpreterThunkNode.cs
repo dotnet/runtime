@@ -104,14 +104,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             int argIndex = 0;
             int argOffset;
 
-            // ArgIterator returns offsets relative to the TransitionBlock base, where arguments
-            // start at OffsetOfArgumentRegisters (== SizeOfTransitionBlock == 8 on Wasm32).
-            // We place args at argumentsOffset (16-byte aligned), so adjust each offset.
-            int argOffsetAdjustment = AlignmentHelper.AlignUp(transitionBlock.SizeOfTransitionBlock, 16) - transitionBlock.SizeOfTransitionBlock;
-
             while ((argOffset = argit.GetNextOffset()) != TransitionBlock.InvalidOffset)
             {
-                offsets[argIndex] = argOffset + argOffsetAdjustment;
+                offsets[argIndex] = argOffset;
                 isIndirectArg[argIndex] = argit.IsArgPassedByRef();
                 argIndex++;
             }
@@ -123,8 +118,13 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             // The arguments area must be 16-byte aligned. The TransitionBlock (8 bytes on Wasm32)
             // sits before the arguments, so it is 8-byte aligned but not 16-byte aligned.
-            // Layout from base: [TransitionBlock (8)] [padding to 16-align args] [args...]
+            // Layout from base: [TransitionBlock (8)] [args...]
             int argumentsOffset = AlignmentHelper.AlignUp(sizeOfTransitionBlock, 16);
+            int transitionBlockOffset = argumentsOffset - sizeOfTransitionBlock;
+            for (int i = 0; i < offsets.Length; i++)
+            {
+                offsets[i] += transitionBlockOffset;
+            }
             int sizeOfStoredLocals = argumentsOffset + AlignmentHelper.AlignUp(sizeOfArgumentArray, 16);
 
             bool hasWasmReturn = _typeNode.Type.Returns.Types.Length > 0;
@@ -149,14 +149,14 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             //   First 4 bytes (m_ReturnAddress) = 0
             expressions.Add(Local.Get(0));
             expressions.Add(I32.Const(0));
-            expressions.Add(I32.Store(0));
+            expressions.Add(I32.Store((ulong)transitionBlockOffset));
 
             //   Second 4 bytes (m_StackPointer) = original SP (local 0 + totalAlloc)
             expressions.Add(Local.Get(0));
             expressions.Add(Local.Get(0));
             expressions.Add(I32.Const(totalAlloc));
             expressions.Add(I32.Add);
-            expressions.Add(I32.Store(4));
+            expressions.Add(I32.Store((ulong)(transitionBlockOffset + 4)));
 
             // Store all arguments into the transition block area
             int wasmLocalIndex = 1; // local 0 is $sp
@@ -164,7 +164,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             // Handle 'this' pointer — it occupies a wasm local but is not in methodSignature.Length
             if (hasThis)
             {
-                int thisOffset = transitionBlock.ThisOffset + argOffsetAdjustment;
+                int thisOffset = transitionBlock.ThisOffset + transitionBlockOffset;
                 expressions.Add(Local.Get(0));
                 expressions.Add(Local.Get(wasmLocalIndex));
                 expressions.Add(I32.Store((ulong)thisOffset));
@@ -181,14 +181,15 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             {
                 TypeDesc paramType = methodSignature[i];
 
-                if (WasmLowering.IsEmptyStruct(paramType))
-                {
-                    continue;
-                }
-
                 int currentOffset = offsets[i];
 
-                if (isIndirectArg[i])
+                if (WasmLowering.IsEmptyStruct(paramType))
+                {
+                    expressions.Add(Local.Get(0));
+                    expressions.Add(I32.Const(0));
+                    expressions.Add(I32.Store((ulong)currentOffset));
+                }
+                else if (isIndirectArg[i])
                 {
                     // Indirect struct — copy the exact contents from the incoming pointer
                     int structSize = paramType.GetElementSize().AsInt;
@@ -271,9 +272,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             int portableEntrypointLocalIndex = _typeNode.Type.Params.Types.Length - 1;
             expressions.Add(Local.Get(portableEntrypointLocalIndex));
 
-            //   arg2: pointer to the collected arguments (base + argumentsOffset)
+            //   arg2: pointer to the collected arguments and transition block (base + transitionBlockOffset)
             expressions.Add(Local.Get(0));
-            expressions.Add(I32.Const(argumentsOffset));
+            expressions.Add(I32.Const(transitionBlockOffset));
             expressions.Add(I32.Add);
 
             //   arg3: size of arguments (excluding transition block)
