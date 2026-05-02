@@ -7570,30 +7570,57 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optA
             indMac.m_user = tree->AsIndir();
             mac           = &indMac;
         }
-        else if ((mac != nullptr) && tree->OperIs(GT_ADD))
+        else if (mac != nullptr)
         {
-            // For additions, if we already have a context, keep track of whether all offsets added
-            // to the address are constant, and their sum does not overflow.
-            //
-            // We then need to check both op1 and op2 because either or both may be a constant. There
-            // is no guarantee canonicalization of the trees has occurred and so checking for these
-            // edges is important.
+            // We should replace `mac` with `gtPeelOffsets` instead, but that is a larger refactoring
+            // for now, we just generally mirror the logic and rely on pre-order traversal to match
+            // what the loop would've handled
 
-            GenTree* cns = nullptr;
-
-            if (op2->IsCnsIntOrI() && !op2->IsIconHandle())
+            if (tree->OperIs(GT_ADD) && !tree->gtOverflow())
             {
-                cns = op2;
+                // For additions, if we already have a context, keep track of whether all offsets added
+                // to the address are constant, and their sum does not overflow.
+                //
+                // We then need to check both op1 and op2 because either or both may be a constant. There
+                // is no guarantee canonicalization of the trees has occurred and so checking for these
+                // edges is important.
+
+                GenTree* cns = nullptr;
+
+                if (op2->IsCnsIntOrI() && op2->TypeIs(TYP_I_IMPL) && !op2->IsIconHandle())
+                {
+                    cns = op2;
+                }
+                else if (op1->IsCnsIntOrI() && op1->TypeIs(TYP_I_IMPL) && !op1->IsIconHandle())
+                {
+                    cns = op1;
+                }
+
+                if (cns != nullptr)
+                {
+                    ClrSafeInt<target_ssize_t> offset(mac->m_totalOffset);
+                    offset += static_cast<target_ssize_t>(cns->AsIntCon()->IconValue());
+
+                    if (!offset.IsOverflow())
+                    {
+                        mac->m_totalOffset = offset.Value();
+                    }
+                    else
+                    {
+                        // The constant overflowed
+                        mac = nullptr;
+                    }
+                }
+                else
+                {
+                    // No eligible constants were found
+                    mac = nullptr;
+                }
             }
-            else if (op1->IsCnsIntOrI() && !op1->IsIconHandle())
+            else if (tree->OperIs(GT_LEA))
             {
-                cns = op1;
-            }
-
-            if (cns != nullptr)
-            {
-                ClrSafeInt<size_t> offset(mac->m_totalOffset);
-                offset += cns->AsIntCon()->IconValue();
+                ClrSafeInt<target_ssize_t> offset(mac->m_totalOffset);
+                offset += static_cast<target_ssize_t>(tree->AsAddrMode()->Offset());
 
                 if (!offset.IsOverflow())
                 {
@@ -7607,13 +7634,9 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optA
             }
             else
             {
-                // No eligible constants were found
+                // Reset the context.
                 mac = nullptr;
             }
-        }
-        else // Reset the context.
-        {
-            mac = nullptr;
         }
 
         tree->AsOp()->gtOp1 = op1 = fgMorphTree(op1, mac);
