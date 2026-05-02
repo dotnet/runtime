@@ -7451,9 +7451,56 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optA
                     return fgMorphTree(optimizedTree);
                 }
             }
-        }
 
+            // Pattern-matching optimization:
+            //    (a % c) ==/!= 0
+            // for power-of-2 constant `c`
+            // =>
+            //    a & (c - 1) ==/!= 0
+            // For integer `a`, even if negative.
+            if (opts.OptimizationEnabled())
+            {
+                // We handle this in pre-order because MOD may otherwise be morphed into a helper call
+
+                GenTree* cnsNode   = nullptr;
+                GenTree* otherNode = nullptr;
+
+                if (op2->IsIntegralConst(0))
+                {
+                    cnsNode   = op1;
+                    otherNode = op2;
+                }
+                else if (op1->IsIntegralConst(0))
+                {
+                    cnsNode   = op2;
+                    otherNode = op1;
+                }
+
+                if ((cnsNode != nullptr) && otherNode->OperIs(GT_MOD) && varTypeIsIntegral(otherNode))
+                {
+                    GenTree* divisor = otherNode->gtGetOp2();
+                    if (divisor->IsCnsIntOrI())
+                    {
+                        const ssize_t modValue = divisor->AsIntCon()->IconValue();
+                        if (isPow2(modValue))
+                        {
+                            JITDUMP("\nTransforming:\n");
+                            DISPTREE(tree);
+
+                            otherNode->SetOper(GT_AND); // Change % => &
+                            otherNode->gtFlags &= ~(GTF_DIV_MOD_NO_OVERFLOW | GTF_DIV_MOD_NO_BY_ZERO);
+
+                            divisor->AsIntConCommon()->SetIconValue(modValue - 1); // Change c => c - 1
+                            fgUpdateConstTreeValueNumber(divisor);
+
+                            JITDUMP("\ninto:\n");
+                            DISPTREE(tree);
+                        }
+                    }
+                }
+            }
             FALLTHROUGH;
+        }
 
         case GT_GT:
         {
@@ -7793,38 +7840,6 @@ DONE_MORPHING_CHILDREN:
                 oper = tree->OperGet();
                 op1  = tree->gtGetOp1();
                 op2  = tree->gtGetOp2();
-            }
-
-            // Pattern-matching optimization:
-            //    (a % c) ==/!= 0
-            // for power-of-2 constant `c`
-            // =>
-            //    a & (c - 1) ==/!= 0
-            // For integer `a`, even if negative.
-            if (opts.OptimizationEnabled())
-            {
-                if (op1->OperIs(GT_MOD) && varTypeIsIntegral(op1) && op2->IsIntegralConst(0))
-                {
-                    GenTree* op1op2 = op1->AsOp()->gtOp2;
-                    if (op1op2->IsCnsIntOrI())
-                    {
-                        const ssize_t modValue = op1op2->AsIntCon()->IconValue();
-                        if (isPow2(modValue))
-                        {
-                            JITDUMP("\nTransforming:\n");
-                            DISPTREE(tree);
-
-                            op1->SetOper(GT_AND); // Change % => &
-                            op1->gtFlags &= ~(GTF_DIV_MOD_NO_OVERFLOW | GTF_DIV_MOD_NO_BY_ZERO);
-
-                            op1op2->AsIntConCommon()->SetIconValue(modValue - 1); // Change c => c - 1
-                            fgUpdateConstTreeValueNumber(op1op2);
-
-                            JITDUMP("\ninto:\n");
-                            DISPTREE(tree);
-                        }
-                    }
-                }
             }
             break;
         }
