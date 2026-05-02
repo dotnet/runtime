@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 using System.Reflection;
+using System.Runtime;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
 using System.Runtime.Versioning;
@@ -742,23 +743,42 @@ namespace System.Runtime.CompilerServices
                 // InvokeDirectByRefWithFewArgs: for value-type args the byref points at
                 // the boxed payload (skipping the object header); for ref-type args the
                 // byref points at the array slot itself.
+                //
+                // The byref storage is unmanaged (stackalloc IntPtr[]) so we must register
+                // it with the GC as a frame of byrefs; otherwise a GC during the inner
+                // QCall could relocate the boxed objects (or the args array) and leave
+                // the byrefs pointing at stale memory.
                 IntPtr* pByRefStorage = stackalloc IntPtr[Math.Max(argCount, 1)];
-                for (int i = 0; i < argCount; i++)
+                NativeMemory.Clear(pByRefStorage, (nuint)Math.Max(argCount, 1) * (nuint)sizeof(IntPtr));
+                GCFrameRegistration regByRefStorage =
+                    new((void**)pByRefStorage, (uint)argCount, areByRefs: true);
+
+                object? result;
+                GCFrameRegistration.RegisterForGCReporting(&regByRefStorage);
+                try
                 {
-                    ref object? slot = ref args![i];
-                    if (sig.Arguments[i].IsValueType)
+                    for (int i = 0; i < argCount; i++)
                     {
-                        // Value-type arg must be non-null and pre-boxed by the caller
-                        // (the native side ReadAndBoxArgValue does this).
-                        *(ByReference*)(pByRefStorage + i) = ByReference.Create(ref slot!.GetRawData());
+                        ref object? slot = ref args![i];
+                        if (sig.Arguments[i].IsValueType)
+                        {
+                            // Value-type arg must be non-null and pre-boxed by the caller
+                            // (the native side ReadAndBoxArgValue does this).
+                            *(ByReference*)(pByRefStorage + i) = ByReference.Create(ref slot!.GetRawData());
+                        }
+                        else
+                        {
+                            *(ByReference*)(pByRefStorage + i) = ByReference.Create(ref slot);
+                        }
                     }
-                    else
-                    {
-                        *(ByReference*)(pByRefStorage + i) = ByReference.Create(ref slot);
-                    }
+
+                    result = RuntimeMethodHandle.InvokeMethod(thisObj, (void**)pByRefStorage, sig, isConstructor: isNewObj);
+                }
+                finally
+                {
+                    GCFrameRegistration.UnregisterForGCReporting(&regByRefStorage);
                 }
 
-                object? result = RuntimeMethodHandle.InvokeMethod(thisObj, (void**)pByRefStorage, sig, isConstructor: isNewObj);
                 if (result is not null)
                     *pResult = result;
             }
