@@ -664,26 +664,6 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetAppDomainId(VMPTR_AppDomain vm
     return hr;
 }
 
-// Get the managed AppDomain object for an AppDomain.
-HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetAppDomainObject(VMPTR_AppDomain vmAppDomain, OUT VMPTR_OBJECTHANDLE * pRetVal)
-{
-    DD_ENTER_MAY_THROW;
-
-    HRESULT hr = S_OK;
-    EX_TRY
-    {
-
-        AppDomain* pAppDomain = vmAppDomain.GetDacPtr();
-        OBJECTHANDLE hAppDomainManagedObject = pAppDomain->GetRawExposedObjectHandleForDebugger();
-        VMPTR_OBJECTHANDLE vmObj = VMPTR_OBJECTHANDLE::NullPtr();
-        vmObj.SetDacTargetPtr(hAppDomainManagedObject);
-        *pRetVal = vmObj;
-
-    }
-    EX_CATCH_HRESULT(hr);
-    return hr;
-}
-
 // Get the full AD friendly name for the given EE AppDomain.
 HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetAppDomainFullName(VMPTR_AppDomain vmAppDomain, IStringHolder * pStrName)
 {

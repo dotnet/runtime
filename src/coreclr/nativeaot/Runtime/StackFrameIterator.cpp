@@ -2072,6 +2072,10 @@ void StackFrameIterator::UnwindNonEHThunkSequence()
     // The iterator has reached the next managed frame.  Publish the computed lower bound value.
     ASSERT(m_pConservativeStackRangeLowerBound == NULL);
     m_pConservativeStackRangeLowerBound = pLowestLowerBound;
+
+    // The active frame was the thunk we just unwound through, not the managed caller. Do not
+    // report scratch registers from the caller's post-call GC state until the thunk has completed.
+    m_dwFlags &= ~ActiveStackFrame;
 }
 
 // This function is called immediately before a given frame is yielded from the iterator
