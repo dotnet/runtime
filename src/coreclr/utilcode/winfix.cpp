@@ -6,10 +6,11 @@
 #include "utilcode.h"
 #include "holder.h"
 
+#ifndef HOST_UNIX
+
 // The only purpose of this function is to make a local copy of lpCommandLine.
 // Because windows implementation of CreateProcessW can actually change lpCommandLine,
 // but we'd like to keep it const.
-#ifndef HOST_UNIX
 BOOL
 WszCreateProcess(
     LPCWSTR lpApplicationName,
@@ -56,10 +57,6 @@ WszCreateProcess(
     SetLastError(err);
     return fResult;
 }
-#endif // !HOST_UNIX
-
-#ifndef HOST_UNIX
-
 
 #include "psapi.h"
 #include "winnls.h"
