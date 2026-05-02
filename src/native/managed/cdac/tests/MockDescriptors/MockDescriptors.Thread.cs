@@ -8,7 +8,7 @@ namespace Microsoft.Diagnostics.DataContractReader.Tests;
 internal sealed class MockExceptionInfo : TypedView
 {
     private const string PreviousNestedInfoFieldName = "PreviousNestedInfo";
-    private const string ThrownObjectHandleFieldName = "ThrownObjectHandle";
+    private const string ThrownObjectFieldName = "ThrownObject";
     private const string ExceptionFlagsFieldName = "ExceptionFlags";
     private const string StackLowBoundFieldName = "StackLowBound";
     private const string StackHighBoundFieldName = "StackHighBound";
@@ -23,7 +23,7 @@ internal sealed class MockExceptionInfo : TypedView
     public static Layout<MockExceptionInfo> CreateLayout(MockTarget.Architecture architecture)
         => new SequentialLayoutBuilder("ExceptionInfo", architecture)
             .AddPointerField(PreviousNestedInfoFieldName)
-            .AddPointerField(ThrownObjectHandleFieldName)
+            .AddPointerField(ThrownObjectFieldName)
             .AddUInt32Field(ExceptionFlagsFieldName)
             .AddPointerField(StackLowBoundFieldName)
             .AddPointerField(StackHighBoundFieldName)
@@ -36,10 +36,10 @@ internal sealed class MockExceptionInfo : TypedView
             .AddUInt32Field(ClauseForCatchHandlerEndPCFieldName)
             .Build<MockExceptionInfo>();
 
-    public ulong ThrownObjectHandle
+    public ulong ThrownObject
     {
-        get => ReadPointerField(ThrownObjectHandleFieldName);
-        set => WritePointerField(ThrownObjectHandleFieldName, value);
+        get => ReadPointerField(ThrownObjectFieldName);
+        set => WritePointerField(ThrownObjectFieldName, value);
     }
 }
 

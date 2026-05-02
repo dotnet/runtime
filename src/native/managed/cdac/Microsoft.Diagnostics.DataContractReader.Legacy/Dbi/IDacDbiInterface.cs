@@ -167,9 +167,6 @@ public unsafe partial interface IDacDbiInterface
     int GetAppDomainId(ulong vmAppDomain, uint* pRetVal);
 
     [PreserveSig]
-    int GetAppDomainObject(ulong vmAppDomain, ulong* pRetVal);
-
-    [PreserveSig]
     int GetAppDomainFullName(ulong vmAppDomain, nint pStrName);
 
     [PreserveSig]
