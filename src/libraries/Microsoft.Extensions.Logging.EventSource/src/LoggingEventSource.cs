@@ -112,6 +112,14 @@ namespace Microsoft.Extensions.Logging.EventSource
             public const EventKeywords JsonMessage = (EventKeywords)8;
         }
 
+        private const string UseAppFilters = "UseAppFilters";
+        private const string WriteEventCoreSuppressionJustification = "WriteEventCore is safe when eventData object is a primitive type which is in this case.";
+        private const string WriteEventDynamicDependencySuppressionJustification = "DynamicDependency attribute will ensure that the required properties are not trimmed.";
+        // These must be initialized before Instance so they are available when OnEventCommand fires
+        // re-entrantly during the EventSource base constructor (static fields initialize in declaration order).
+        private static readonly char[] s_semicolon = new[] { ';' };
+        private static readonly char[] s_colon = new[] { ':' };
+
         /// <summary>
         ///  The one and only instance of the LoggingEventSource.
         /// </summary>
@@ -122,11 +130,6 @@ namespace Microsoft.Extensions.Logging.EventSource
         // having assignment in ctor would overwrite the value
         private LoggerFilterRule[] _filterSpec = Array.Empty<LoggerFilterRule>();
         private CancellationTokenSource? _cancellationTokenSource;
-        private const string UseAppFilters = "UseAppFilters";
-        private const string WriteEventCoreSuppressionJustification = "WriteEventCore is safe when eventData object is a primitive type which is in this case.";
-        private const string WriteEventDynamicDependencySuppressionJustification = "DynamicDependency attribute will ensure that the required properties are not trimmed.";
-        private static readonly char[] s_semicolon = new[] { ';' };
-        private static readonly char[] s_colon = new[] { ':' };
 
         // This event source uses IEnumerable<T> as an event parameter type which is only supported by EtwSelfDescribingEventFormat.
         private LoggingEventSource() : base(EventSourceSettings.EtwSelfDescribingEventFormat)
