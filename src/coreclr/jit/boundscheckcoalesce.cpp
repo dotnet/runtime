@@ -21,13 +21,13 @@
 //     the original checks would have failed too -- both throw the same
 //     IndexOutOfRangeException.
 //   * We only coalesce bounds checks that are not separated by side effects
-//     that could change observable exception ordering: calls, any other
-//     potentially-throwing node (div/mod, checked arithmetic, faulting
-//     indirections / null checks, etc.), `GTF_ORDER_SIDEEFF` (e.g. volatile
-//     loads), heap-visible stores, and stores to locals that are live across
-//     an exception handler reachable from this block. Other bounds checks
-//     between members of the group are not barriers (they only throw IOOB,
-//     the same exception type our strengthened check throws).
+//     that could change observable exception ordering. We use per-node
+//     effect flags from GenTree::OperEffects: calls and ordering-side-effect
+//     nodes (e.g. volatile loads) are barriers; nodes that may throw are
+//     barriers unless their only exception is IndexOutOfRange (so other
+//     bounds checks fall through naturally); heap-visible stores are
+//     barriers, as are local stores whose destination is live across an
+//     exception handler reachable from this block.
 //   * We require all candidates in the group to have the same length VN
 //     and constant non-negative indices. The first BC's index must itself
 //     be a constant so it can be mutated in place.
@@ -67,34 +67,37 @@ struct BoundsCheckCandidate
 // IsSideEffectBarrier: check if a node blocks bounds check coalescing
 //
 // Returns true if a node may have a side effect that should prevent us from
-// reordering an earlier bounds-check failure across it.
+// reordering an earlier bounds-check failure across it. Uses the per-node
+// (non-summary) effect flags from GenTree::OperEffects.
 //
-// Bounds checks themselves are not barriers: their only exception is IOOB,
-// the same exception type our strengthened check throws.
+// Calls and ordering-side-effect nodes (e.g. volatile loads) are barriers.
 //
-// Stores to tracked locals that are not live across any exception handler
-// reachable from this block are not barriers: they cannot be observed if a
-// bounds-check failure is reordered to before them.
+// A node that may throw is a barrier unless its only possible exception is
+// IndexOutOfRange (the same exception our strengthened check throws); this
+// is what lets a sibling GT_BOUNDS_CHECK fall through as a non-barrier.
+//
+// A heap-visible store is a barrier; a store to a tracked local that is not
+// live across any exception handler reachable from this block is not.
 //
 bool IsSideEffectBarrier(Compiler* comp, GenTree* node, bool blockHasEHSuccs)
 {
-    if (node->IsCall())
+    ExceptionSetFlags  exSet;
+    GenTreeFlags const effects = node->OperEffects(comp, &exSet);
+
+    if ((effects & (GTF_CALL | GTF_ORDER_SIDEEFF)) != 0)
     {
         return true;
     }
-    if (node->OperIs(GT_BOUNDS_CHECK))
+
+    if ((effects & GTF_EXCEPT) != 0)
     {
-        return false;
+        if ((exSet & ~ExceptionSetFlags::IndexOutOfRangeException) != ExceptionSetFlags::None)
+        {
+            return true;
+        }
     }
-    if (node->OperMayThrow(comp))
-    {
-        return true;
-    }
-    if ((node->gtFlags & GTF_ORDER_SIDEEFF) != 0)
-    {
-        return true;
-    }
-    if (node->OperIsStore())
+
+    if ((effects & GTF_ASG) != 0)
     {
         if (!node->OperIsLocalStore())
         {
@@ -107,6 +110,7 @@ bool IsSideEffectBarrier(Compiler* comp, GenTree* node, bool blockHasEHSuccs)
         LclVarDsc const* const dsc = comp->lvaGetDesc(node->AsLclVarCommon());
         return !dsc->lvTracked || dsc->lvLiveInOutOfHndlr;
     }
+
     return false;
 }
 } // namespace

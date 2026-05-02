@@ -163,6 +163,47 @@ public class ElidedBoundsChecks
         }
     }
 
+    static int s_storeObserved;
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static int StoreBetweenBCs(int[] a)
+    {
+        // A heap-visible store between two BCs must act as a barrier: if a
+        // is too short for a[5], the store to s_storeObserved must still be
+        // observable (i.e., the strengthened check must not throw IOOB
+        // before the store).
+        int t = a[3];
+        s_storeObserved = 99;
+        return t + a[5];
+    }
+
+    static int s_callObserved;
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static void MarkCalled()
+    {
+        s_callObserved = 99;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static int CallBetweenBCs(int[] a)
+    {
+        // A call between two BCs must act as a barrier even if the callee
+        // doesn't throw: the call's side effects (here, writing s_callObserved)
+        // must remain observable when the second BC fails.
+        int t = a[3];
+        MarkCalled();
+        return t + a[5];
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static int TwoArrays(int[] a, int[] b)
+    {
+        // Two arrays with distinct length VNs interleaved: bounds checks
+        // for `a` and `b` must not coalesce into a single group.
+        return a[0] + b[0] + a[3] + b[1];
+    }
+
     [Fact]
     public static int TestEntryPoint()
     {
@@ -246,6 +287,41 @@ public class ElidedBoundsChecks
         catch (IndexOutOfRangeException) { }
         if (s_finallyObserved != 99)
             return 0;
+
+        // Heap-visible store between BCs must remain observable when the
+        // second BC fails. If we (incorrectly) strengthened a[3] to a[5],
+        // the IOOB would fire before the store and s_storeObserved would
+        // stay 0.
+        s_storeObserved = 0;
+        if (StoreBetweenBCs(arr6) != (arr6[3] + arr6[5]))
+            return 0;
+        if (s_storeObserved != 99)
+            return 0;
+        s_storeObserved = 0;
+        Assert.Throws<IndexOutOfRangeException>(() => StoreBetweenBCs(new int[4]));
+        if (s_storeObserved != 99)
+            return 0;
+
+        // Non-throwing call between BCs must also act as a barrier.
+        s_callObserved = 0;
+        if (CallBetweenBCs(arr6) != (arr6[3] + arr6[5]))
+            return 0;
+        if (s_callObserved != 99)
+            return 0;
+        s_callObserved = 0;
+        Assert.Throws<IndexOutOfRangeException>(() => CallBetweenBCs(new int[4]));
+        if (s_callObserved != 99)
+            return 0;
+
+        // Distinct length VNs must not be merged into a single group.
+        int[] a4 = new int[] { 1, 2, 3, 4 };
+        int[] b2 = new int[] { 10, 20 };
+        if (TwoArrays(a4, b2) != (a4[0] + b2[0] + a4[3] + b2[1]))
+            return 0;
+        // a too short for a[3]: must throw IOOB.
+        Assert.Throws<IndexOutOfRangeException>(() => TwoArrays(new int[3], b2));
+        // b too short for b[1]: must throw IOOB.
+        Assert.Throws<IndexOutOfRangeException>(() => TwoArrays(a4, new int[1]));
 
         return 100;
     }
