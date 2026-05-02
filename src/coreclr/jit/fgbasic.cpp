@@ -5380,10 +5380,6 @@ void Compiler::fgMoveBlocksAfter(BasicBlock* bStart, BasicBlock* bEnd, BasicBloc
 // Return Value:
 //    The last block that was relocated, or nullptr on failure.
 //
-// Notes:
-//    This function can invalidate all pointers into the EH table, as well as
-//    change the size of the EH table!
-//
 BasicBlock* Compiler::fgRelocateEHRange(unsigned regionIndex, FG_RELOCATE_TYPE relocateType)
 {
     INDEBUG(const char* reason = "None";)

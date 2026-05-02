@@ -120,9 +120,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         return hr;
     }
 
-    public int GetAppDomainObject(ulong vmAppDomain, ulong* pRetVal)
-        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetAppDomainObject(vmAppDomain, pRetVal) : HResults.E_NOTIMPL;
-
     public int GetAppDomainFullName(ulong vmAppDomain, nint pStrName)
     {
         int hr = HResults.S_OK;
