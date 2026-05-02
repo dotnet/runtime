@@ -72,7 +72,7 @@ template <typename T>
 inline bool isAbsPow2(T i)
 {
     static_assert(std::numeric_limits<T>::is_signed);
-    return (i == std::numeric_limits<T>::min()) || isPow2(abs(i));
+    return (i == std::numeric_limits<T>::min()) || isPow2(std::abs(i));
 }
 
 template <typename T>

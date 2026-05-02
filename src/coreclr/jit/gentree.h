@@ -3337,6 +3337,7 @@ struct GenTreeIntConCommon : public GenTree
     inline ssize_t IconValue() const;
     inline void    SetIconValue(ssize_t val);
     inline INT64   IntegralValue() const;
+    UINT64         UnsignedIntegralValue() const;
     inline void    SetIntegralValue(int64_t value);
 
     template <typename T>
@@ -3536,7 +3537,7 @@ inline INT64 GenTreeIntConCommon::IntegralValue() const
 #ifdef TARGET_64BIT
     return LngValue();
 #else
-    return OperIs(GT_CNS_LNG) ? LngValue() : (INT64)IconValue();
+    return OperIs(GT_CNS_LNG) ? LngValue() : static_cast<INT64>(IconValue());
 #endif // TARGET_64BIT
 }
 
@@ -10450,12 +10451,7 @@ inline bool GenTree::IsIntegralConstPow2() const
 {
     if (IsIntegralConst())
     {
-        if (TypeIs(TYP_INT))
-        {
-            return isPow2(static_cast<int32_t>(AsIntConCommon()->IconValue()));
-        }
-
-        return isPow2(AsIntConCommon()->LngValue());
+        return isPow2(AsIntConCommon()->IntegralValue());
     }
 
     return false;
@@ -10478,12 +10474,7 @@ inline bool GenTree::IsIntegralConstUnsignedPow2() const
 {
     if (IsIntegralConst())
     {
-        if (TypeIs(TYP_INT))
-        {
-            return isPow2(static_cast<uint32_t>(AsIntConCommon()->IconValue()));
-        }
-
-        return isPow2(static_cast<uint64_t>(AsIntConCommon()->LngValue()));
+        return isPow2(AsIntConCommon()->UnsignedIntegralValue());
     }
 
     return false;
@@ -10501,12 +10492,7 @@ inline bool GenTree::IsIntegralConstAbsPow2() const
 {
     if (IsIntegralConst())
     {
-        if (TypeIs(TYP_INT))
-        {
-            return isAbsPow2(static_cast<int32_t>(AsIntConCommon()->IconValue()));
-        }
-
-        return isAbsPow2(AsIntConCommon()->LngValue());
+        return isAbsPow2(AsIntConCommon()->IntegralValue());
     }
 
     return false;

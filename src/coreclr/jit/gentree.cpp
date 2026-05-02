@@ -19671,6 +19671,15 @@ bool GenTreeIntConCommon::ImmedValCanBeFolded(Compiler* comp, genTreeOps op)
     return !ImmedValNeedsReloc(comp) || (op == GT_EQ) || (op == GT_NE);
 }
 
+UINT64 GenTreeIntConCommon::UnsignedIntegralValue() const
+{
+    uint64_t mask = (UINT64_MAX >> (64 - (genTypeSize(this) * BITS_PER_BYTE)));
+
+    INT64  signExtended = IntegralValue();
+    UINT64 zeroExtended = signExtended & mask;
+    return zeroExtended;
+}
+
 #if defined(TARGET_AMD64) || defined(TARGET_RISCV64)
 // Returns true if this absolute address fits within the base of an addr mode.
 // On Amd64 this effectively means, whether an absolute indirect address can
