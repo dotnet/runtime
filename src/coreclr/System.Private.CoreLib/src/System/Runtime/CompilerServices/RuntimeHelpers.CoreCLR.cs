@@ -694,6 +694,14 @@ namespace System.Runtime.CompilerServices
             public object* ThisObj;
             public object?[]* Args;
             public int IsNewObj;
+            // For byref-like value-type args (e.g. Span<T>) we cannot safely route the
+            // value through a heap box because the GC does not scan byref fields embedded
+            // in heap objects, so the inner ByReference field of a boxed Span would go
+            // stale on the next GC. Instead, the native funceval setup writes a raw byref
+            // to the original (GC-tracked) source storage into RawByRefs[i] and leaves the
+            // corresponding Args slot null. The trampoline forwards that raw byref directly
+            // into the QCall byref array.
+            public IntPtr* RawByRefs;
         }
 
         [UnmanagedCallersOnly]
@@ -757,8 +765,18 @@ namespace System.Runtime.CompilerServices
                 GCFrameRegistration.RegisterForGCReporting(&regByRefStorage);
                 try
                 {
+                    IntPtr* pRawByRefs = pInvokeArgs->RawByRefs;
                     for (int i = 0; i < argCount; i++)
                     {
+                        IntPtr raw = pRawByRefs != null ? pRawByRefs[i] : IntPtr.Zero;
+                        if (raw != IntPtr.Zero)
+                        {
+                            // Byref-like value type: native side already produced a byref
+                            // pointing at the GC-tracked source storage. Forward as-is.
+                            *(IntPtr*)(pByRefStorage + i) = raw;
+                            continue;
+                        }
+
                         ref object? slot = ref args![i];
                         if (sig.Arguments[i].IsValueType)
                         {

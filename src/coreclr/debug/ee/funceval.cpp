@@ -1358,13 +1358,46 @@ static void DoNormalFuncEval(DebuggerEval *pDE)
     }
 
     // Build managed object[] from the remaining arguments.
+    //
+    // Byref-like args (e.g. Span<T>) need special handling: we cannot route them through
+    // a heap box because the GC does not scan byref fields embedded in heap objects, so a
+    // GC during the inner call would leave the boxed value's internal byref pointing at
+    // stale memory. Instead, we hand the trampoline a parallel array of raw byrefs to the
+    // original (GC-tracked) source storage; the corresponding object[] slot stays null and
+    // the trampoline forwards the raw byref directly into the underlying QCall byref array.
+    void **pRawByRefs = NULL;
     if (methodArgCount > 0)
     {
         ucoGc.argsArray = (PTRARRAYREF)AllocateObjectArray(methodArgCount, g_pObjectClass);
 
+        SIZE_T cbRawByRefs = 0;
+        if (!(ClrSafeInt<SIZE_T>::multiply(methodArgCount, sizeof(void *), cbRawByRefs)) ||
+            (cbRawByRefs != (size_t)cbRawByRefs))
+        {
+            ThrowHR(COR_E_OVERFLOW);
+        }
+        pRawByRefs = (void **)_alloca(cbRawByRefs);
+        memset(pRawByRefs, 0, cbRawByRefs);
+
         for (unsigned i = 0; i < methodArgCount; i++)
         {
             unsigned srcIndex = firstArgIndex + i;
+
+            MethodTable *pArgMT = NULL;
+            if (pFEArgInfo[srcIndex].sigTypeHandle.IsValueType() && !pFEArgInfo[srcIndex].sigTypeHandle.IsNull())
+            {
+                pArgMT = pFEArgInfo[srcIndex].sigTypeHandle.GetMethodTable();
+            }
+
+            if (pArgMT != NULL && pArgMT->IsByRefLike() && pArgAddrs[srcIndex] != NULL)
+            {
+                // Byref-like with a real source address: hand the raw byref to the trampoline
+                // and leave the object[] slot null. pArgAddrs[srcIndex] is already kept alive
+                // and updated by the funceval-frame GC reporting.
+                pRawByRefs[i] = pArgAddrs[srcIndex];
+                continue;
+            }
+
             OBJECTREF argObj = ReadAndBoxArgValue(pDE, &argData[srcIndex], &pFEArgInfo[srcIndex], pArgAddrs[srcIndex]);
             ucoGc.argsArray->SetAt(i, argObj);
         }
@@ -1378,6 +1411,7 @@ static void DoNormalFuncEval(DebuggerEval *pDE)
         OBJECTREF   *pThisObj;
         PTRARRAYREF *pArgs;
         INT32        isNewObj;
+        void       **pRawByRefs;
     } invokeArgs;
 
     invokeArgs.pMD = pDE->m_md;
@@ -1385,6 +1419,7 @@ static void DoNormalFuncEval(DebuggerEval *pDE)
     invokeArgs.pThisObj = &ucoGc.thisArg;
     invokeArgs.pArgs = &ucoGc.argsArray;
     invokeArgs.isNewObj = (pDE->m_evalType == DB_IPCE_FET_NEW_OBJECT) ? 1 : 0;
+    invokeArgs.pRawByRefs = pRawByRefs;
 
     LOG((LF_CORDB, LL_EVERYTHING,
          "Func eval for %s::%s via UCOA\n",
