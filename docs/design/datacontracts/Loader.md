@@ -80,7 +80,7 @@ IEnumerable<TargetPointer> GetInstantiatedMethods(ModuleHandle handle);
 bool IsProbeExtensionResultValid(ModuleHandle handle);
 ModuleFlags GetFlags(ModuleHandle handle);
 bool IsReadyToRun(ModuleHandle handle);
-bool TryGetSimpleName(ModuleHandle handle, out string simpleName);
+string GetSimpleName(ModuleHandle handle);
 string GetPath(ModuleHandle handle);
 string GetFileName(ModuleHandle handle);
 TargetPointer GetLoaderAllocator(ModuleHandle handle);
@@ -119,6 +119,7 @@ enum DebuggerAssemblyControlFlags : uint
     DACF_NONE = 0x00,
     DACF_ALLOW_JIT_OPTS = 0x02,
     DACF_ENC_ENABLED = 0x08,
+    DACF_IGNORE_PDBS = 0x20,
     DACF_CONTROL_FLAGS_MASK = 0x2E,
 }
 ```
@@ -621,14 +622,11 @@ ModuleFlags GetFlags(ModuleHandle handle)
     return GetFlags(target.Read<uint>(handle.Address + /* Module::Flags offset */));
 }
 
-bool TryGetSimpleName(ModuleHandle handle, out string simpleName)
+string GetSimpleName(ModuleHandle handle)
 {
     TargetPointer simpleNameStart = target.ReadPointer(handle.Address + /* Module::SimpleName offset */);
-    if (simpleNameStart == TargetPointer.Null)
-        return false;
     byte[] simpleNameBytes = // Read<byte> from target starting at simpleNameStart until null terminator
-    simpleName = // convert to string, throw on invalid UTF-8
-    return true;
+    return // convert to string, throw on invalid UTF-8
 }
 
 string GetPath(ModuleHandle handle)

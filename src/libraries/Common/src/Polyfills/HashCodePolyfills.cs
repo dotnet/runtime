@@ -12,7 +12,7 @@ internal static class HashCodePolyfills
     {
         while (value.Length >= sizeof(int))
         {
-            hashCode.Add(MemoryMarshal.Read<int>(value));
+            hashCode.Add(BitConverter.ToInt32(value));
             value = value.Slice(sizeof(int));
         }
 

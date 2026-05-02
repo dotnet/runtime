@@ -23,6 +23,7 @@ internal readonly struct Loader_1 : ILoader
         JitOptimizationDisabled = 0x2,  // Cached flag: JIT optimizations are disabled
         EditAndContinue = 0x8,          // Edit and Continue is enabled for this module
         ReflectionEmit = 0x40,          // Reflection.Emit was used to create this module
+        EncCapable = 0x200,             // Cached flag: module is Edit and Continue capable
     }
 
     private const uint DebuggerInfoMask = 0x0000FC00;
@@ -389,6 +390,8 @@ internal readonly struct Loader_1 : ILoader
             flags |= ModuleFlags.EditAndContinue;
         if (runtimeFlags.HasFlag(ModuleFlags_1.ReflectionEmit))
             flags |= ModuleFlags.ReflectionEmit;
+        if (runtimeFlags.HasFlag(ModuleFlags_1.EncCapable))
+            flags |= ModuleFlags.EncCapable;
 
         return flags;
     }
@@ -444,17 +447,12 @@ internal readonly struct Loader_1 : ILoader
         return module.ReadyToRunInfo != TargetPointer.Null;
     }
 
-    bool ILoader.TryGetSimpleName(ModuleHandle handle, out string simpleName)
+    string ILoader.GetSimpleName(ModuleHandle handle)
     {
-        simpleName = string.Empty;
         Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);
-        if (module.SimpleName != TargetPointer.Null)
-        {
-            simpleName = _target.ReadUtf8String(module.SimpleName, strict: true);
-            return true;
-        }
-        else
-            return false;
+        return module.SimpleName != TargetPointer.Null
+            ? _target.ReadUtf8String(module.SimpleName, strict: true)
+            : string.Empty;
     }
 
     string ILoader.GetPath(ModuleHandle handle)

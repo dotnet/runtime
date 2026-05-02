@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
@@ -92,7 +93,7 @@ internal readonly struct Thread_1 : IThread
             Data.ExceptionInfo exceptionInfo = _target.ProcessedData.GetOrAdd<Data.ExceptionInfo>(address);
             firstNestedException = exceptionInfo.PreviousNestedInfo;
 
-            if (exceptionInfo.ThrownObjectHandle.Handle != TargetPointer.Null)
+            if (exceptionInfo.ThrownObject != TargetPointer.Null)
             {
                 uint exceptionFlags = exceptionInfo.ExceptionFlags;
                 hasUnhandledException = (exceptionFlags & (uint)ExceptionFlags.IsUnhandled) != 0
@@ -209,37 +210,37 @@ internal readonly struct Thread_1 : IThread
         return threadLocalStaticBase;
     }
 
-    private (Data.Thread thread, Data.ExceptionInfo? exceptionInfo) GetThreadExceptionInfo(TargetPointer threadPointer)
+    private (Data.Thread thread, Data.ExceptionInfo? exceptionInfo, TargetPointer exceptionTrackerAddr) GetThreadExceptionInfo(TargetPointer threadPointer)
     {
         Data.Thread thread = _target.ProcessedData.GetOrAdd<Data.Thread>(threadPointer);
         TargetPointer exceptionTrackerPtr = _target.ReadPointer(thread.ExceptionTracker);
         Data.ExceptionInfo? exceptionInfo = (exceptionTrackerPtr == TargetPointer.Null) ? null : _target.ProcessedData.GetOrAdd<Data.ExceptionInfo>(exceptionTrackerPtr);
-        return (thread, exceptionInfo);
+        return (thread, exceptionInfo, exceptionTrackerPtr);
     }
 
     TargetPointer IThread.GetCurrentExceptionHandle(TargetPointer threadPointer)
     {
-        var (_, exceptionInfo) = GetThreadExceptionInfo(threadPointer);
+        var (_, exceptionInfo, exceptionTrackerAddr) = GetThreadExceptionInfo(threadPointer);
 
-        if (exceptionInfo == null)
+        if (exceptionInfo is null || exceptionInfo.ThrownObject == TargetPointer.Null)
             return TargetPointer.Null;
 
-        if (exceptionInfo.ThrownObjectHandle.Handle == TargetPointer.Null || exceptionInfo.ThrownObjectHandle.Object == TargetPointer.Null)
-            return TargetPointer.Null;
-
-        return exceptionInfo.ThrownObjectHandle.Handle;
+        // Return the target address of the ThrownObject field as a pseudo-handle.
+        // Callers dereference this address to read the exception Object*.
+        Target.TypeInfo type = _target.GetTypeInfo(DataType.ExceptionInfo);
+        return exceptionTrackerAddr + (ulong)type.Fields[nameof(Data.ExceptionInfo.ThrownObject)].Offset;
     }
 
     byte[] IThread.GetWatsonBuckets(TargetPointer threadPointer)
     {
         TargetPointer readFrom;
-        var (thread, exceptionInfo) = GetThreadExceptionInfo(threadPointer);
+        var (thread, exceptionInfo, _) = GetThreadExceptionInfo(threadPointer);
         if (exceptionInfo == null)
             return Array.Empty<byte>();
-        Data.ObjectHandle throwableObject = exceptionInfo.ThrownObjectHandle;
-        if (throwableObject.Object != TargetPointer.Null)
+        TargetPointer thrownObject = exceptionInfo.ThrownObject;
+        if (thrownObject != TargetPointer.Null)
         {
-            Data.Exception exception = _target.ProcessedData.GetOrAdd<Data.Exception>(throwableObject.Object);
+            Data.Exception exception = _target.ProcessedData.GetOrAdd<Data.Exception>(thrownObject);
             if (exception.WatsonBuckets != TargetPointer.Null)
             {
                 readFrom = _target.Contracts.Object.GetArrayData(exception.WatsonBuckets, out _, out _, out _);
@@ -268,5 +269,32 @@ internal readonly struct Thread_1 : IThread
         byte[] rval = new byte[_target.ReadGlobal<uint>(Constants.Globals.SizeOfGenericModeBlock)];
         _target.ReadBuffer(readFrom, rval);
         return rval;
+    }
+
+    byte[] IThread.GetContext(TargetPointer threadPointer, ThreadContextSource contextSource, uint contextFlags)
+    {
+        IPlatformAgnosticContext context = IPlatformAgnosticContext.GetContextForPlatform(_target);
+        byte[] bytes = new byte[context.Size];
+        Span<byte> buffer = new Span<byte>(bytes);
+
+        Data.Thread thread = _target.ProcessedData.GetOrAdd<Data.Thread>(threadPointer);
+
+        TargetPointer filterContext = TargetPointer.Null;
+
+        if (contextSource.HasFlag(ThreadContextSource.Debugger))
+            filterContext = thread.DebuggerFilterContext;
+
+        if (filterContext != TargetPointer.Null)
+        {
+            _target.ReadBuffer(filterContext.Value, buffer);
+            return bytes;
+        }
+
+        if (!_target.TryGetThreadContext(thread.OSId.Value, contextFlags, buffer))
+        {
+            throw new InvalidOperationException($"GetThreadContext failed for thread {thread.OSId.Value}");
+        }
+
+        return bytes;
     }
 }

@@ -8,7 +8,8 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
 public interface IPlatformAgnosticContext
 {
     public abstract uint Size { get; }
-    public abstract uint DefaultContextFlags { get; }
+    public abstract uint FullContextFlags { get; }
+    public abstract uint AllContextFlags { get; }
 
     public int StackPointerRegister { get; }
 

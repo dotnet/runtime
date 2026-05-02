@@ -911,7 +911,7 @@ HRESULT ClrDataAccess::GetThreadData(CLRDATA_ADDRESS threadAddr, struct DacpThre
 void CopyNativeCodeVersionToReJitData(NativeCodeVersion nativeCodeVersion, NativeCodeVersion activeCodeVersion, DacpReJitData * pReJitData)
 {
     pReJitData->rejitID = nativeCodeVersion.GetILCodeVersion().GetVersionId();
-    pReJitData->NativeCodeAddr = GetInterpreterCodeFromInterpreterPrecodeIfPresent(nativeCodeVersion.GetNativeCode());
+    pReJitData->NativeCodeAddr = GetInterpreterCodeFromEntryPointIfPresent(nativeCodeVersion.GetNativeCode());
 
     if (nativeCodeVersion != activeCodeVersion)
     {
@@ -1021,7 +1021,7 @@ HRESULT ClrDataAccess::GetMethodDescData(
         if (!requestedNativeCodeVersion.IsNull() && requestedNativeCodeVersion.GetNativeCode() != (PCODE)NULL)
         {
             methodDescData->bHasNativeCode = TRUE;
-            methodDescData->NativeCodeAddr = TO_CDADDR(PCODEToPINSTR(GetInterpreterCodeFromInterpreterPrecodeIfPresent(requestedNativeCodeVersion.GetNativeCode())));
+            methodDescData->NativeCodeAddr = TO_CDADDR(PCODEToPINSTR(GetInterpreterCodeFromEntryPointIfPresent(requestedNativeCodeVersion.GetNativeCode())));
         }
         else
         {
@@ -1245,7 +1245,7 @@ HRESULT ClrDataAccess::GetTieredVersions(
         int count = 0;
         for (NativeCodeVersionIterator iter = nativeCodeVersions.Begin(); iter != nativeCodeVersions.End(); iter++)
         {
-            TADDR pNativeCode = PCODEToPINSTR(GetInterpreterCodeFromInterpreterPrecodeIfPresent((*iter).GetNativeCode()));
+            TADDR pNativeCode = PCODEToPINSTR(GetInterpreterCodeFromEntryPointIfPresent((*iter).GetNativeCode()));
             nativeCodeAddrs[count].NativeCodeAddr = pNativeCode;
             PTR_NativeCodeVersionNode pNode = (*iter).AsNode();
             nativeCodeAddrs[count].NativeCodeVersionNodePtr = PTR_CDADDR(pNode);
@@ -3308,7 +3308,7 @@ ClrDataAccess::GetNestedExceptionData(CLRDATA_ADDRESS exception, CLRDATA_ADDRESS
     }
     else
     {
-        *exceptionObject = TO_CDADDR(*PTR_TADDR(pExData->m_hThrowable));
+        *exceptionObject = dac_cast<TADDR>(pExData->m_exception);
         *nextNestedException = PTR_HOST_TO_TADDR(pExData->m_pPrevNestedInfo);
     }
 
@@ -4051,35 +4051,30 @@ HRESULT ClrDataAccess::GetClrWatsonBucketsWorker(Thread * pThread, GenericModeBl
     // By default, there are no buckets
     PTR_VOID pBuckets = NULL;
 
-    // Get the handle to the throwble
-    OBJECTHANDLE ohThrowable = pThread->GetThrowableAsHandle();
-    if (ohThrowable != NULL)
+    // Get the current throwable
+    OBJECTREF oThrowable = pThread->GetExceptionState()->GetThrowable();
+    if (oThrowable != NULL)
     {
-        // Get the object from handle and check if the throwable is preallocated or not
-        OBJECTREF oThrowable = ObjectFromHandle(ohThrowable);
-        if (oThrowable != NULL)
+        // Does the throwable have buckets?
+        U1ARRAYREF refWatsonBucketArray = ((EXCEPTIONREF)oThrowable)->GetWatsonBucketReference();
+        if (refWatsonBucketArray != NULL)
         {
-            // Does the throwable have buckets?
-            U1ARRAYREF refWatsonBucketArray = ((EXCEPTIONREF)oThrowable)->GetWatsonBucketReference();
-            if (refWatsonBucketArray != NULL)
+            // Get the watson buckets from the throwable for non-preallocated
+            // exceptions
+            pBuckets = dac_cast<PTR_VOID>(refWatsonBucketArray->GetDataPtr());
+        }
+        else
+        {
+            // This is a preallocated exception object - check if the UE Watson bucket tracker
+            // has any bucket details
+            pBuckets = pThread->GetExceptionState()->GetUEWatsonBucketTracker()->RetrieveWatsonBuckets();
+            if (pBuckets == NULL)
             {
-                // Get the watson buckets from the throwable for non-preallocated
-                // exceptions
-                pBuckets = dac_cast<PTR_VOID>(refWatsonBucketArray->GetDataPtr());
-            }
-            else
-            {
-                // This is a preallocated exception object - check if the UE Watson bucket tracker
-                // has any bucket details
-                pBuckets = pThread->GetExceptionState()->GetUEWatsonBucketTracker()->RetrieveWatsonBuckets();
-                if (pBuckets == NULL)
+                // Since the UE watson bucket tracker does not have them, look up the current
+                // exception tracker
+                if (pThread->GetExceptionState()->GetCurrentExceptionTracker() != NULL)
                 {
-                    // Since the UE watson bucket tracker does not have them, look up the current
-                    // exception tracker
-                    if (pThread->GetExceptionState()->GetCurrentExceptionTracker() != NULL)
-                    {
-                        pBuckets = pThread->GetExceptionState()->GetCurrentExceptionTracker()->GetWatsonBucketTracker()->RetrieveWatsonBuckets();
-                    }
+                    pBuckets = pThread->GetExceptionState()->GetCurrentExceptionTracker()->GetWatsonBucketTracker()->RetrieveWatsonBuckets();
                 }
             }
         }

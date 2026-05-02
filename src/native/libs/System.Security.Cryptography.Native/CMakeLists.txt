@@ -72,6 +72,7 @@ set(NATIVECRYPTO_SOURCES
     pal_evp_pkey_raw_signverify.c
     pal_evp_pkey_ml_dsa.c
     pal_evp_pkey_slh_dsa.c
+    pal_evp_pkey_x25519.c
     pal_hmac.c
     pal_ocsp.c
     pal_pkcs7.c
