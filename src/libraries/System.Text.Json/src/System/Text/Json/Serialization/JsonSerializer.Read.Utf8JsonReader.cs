@@ -349,7 +349,7 @@ namespace System.Text.Json
                                 ThrowHelper.ThrowJsonReaderException(ref reader, ExceptionResource.ExpectedOneCompleteToken);
                             }
 
-                            // Because the reader has advanced, the reader's position have been updated,
+                            // Because the reader has advanced, the reader's position has been updated,
                             // so we need to recapture them here.
                             lineNumber = reader.CurrentState._lineNumber;
                             bytePositionInLine = reader.CurrentState._bytePositionInLine;

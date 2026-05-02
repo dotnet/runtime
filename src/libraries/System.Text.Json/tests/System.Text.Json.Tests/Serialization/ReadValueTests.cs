@@ -907,6 +907,49 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(expectedLine, ex.LineNumber);
             Assert.Equal(expectedBytePosition, ex.BytePositionInLine);
         }
+
+        [Fact]
+        public static void ReaderPreservesPositionInfoMultiByteUtf8String()
+        {
+            // "😀葛🀄" occupies 11 bytes in UTF-8 (4 + 3 + 4) including surrogate pairs,
+            // so the closing quote sits at byte index 13 and BytePositionInLine after the token is 14.
+            byte[] utf8 = Encoding.UTF8.GetBytes("[\"😀葛🀄\"]");
+
+            JsonException ex = Assert.Throws<JsonException>(() =>
+            {
+                var reader = new Utf8JsonReader(utf8, isFinalBlock: true, state: default);
+                reader.Read();
+                reader.Read();
+                Assert.Equal(JsonTokenType.String, reader.TokenType);
+
+                JsonSerializer.Deserialize<int>(ref reader);
+            });
+
+            Assert.Equal(0, ex.LineNumber);
+            Assert.Equal(14, ex.BytePositionInLine);
+        }
+
+        [Theory]
+        [InlineData("[\n  {\"key\":1}\n]", typeof(string), 1, 3)]
+        [InlineData("[\n  [1, 2]\n]", typeof(string), 1, 3)]
+        public static void ReaderPreservesPositionInfoMultiLineContainer(
+            string json, Type deserializeType, long expectedLine, long expectedBytePosition)
+        {
+            byte[] utf8 = Encoding.UTF8.GetBytes(json);
+
+            JsonException ex = Assert.Throws<JsonException>(() =>
+            {
+                var reader = new Utf8JsonReader(utf8, isFinalBlock: true, state: default);
+                reader.Read();
+                reader.Read();
+                Assert.True(reader.TokenType is JsonTokenType.StartObject or JsonTokenType.StartArray);
+
+                JsonSerializer.Deserialize(ref reader, deserializeType);
+            });
+
+            Assert.Equal(expectedLine, ex.LineNumber);
+            Assert.Equal(expectedBytePosition, ex.BytePositionInLine);
+        }
     }
 
     // From https://github.com/dotnet/runtime/issues/882
