@@ -14966,6 +14966,11 @@ GenTree* Compiler::gtFoldExpr(GenTree* tree)
         return tree;
     }
 
+    if (tree->OperIsSimple() && (tree->OperIsCommutative() || tree->OperIsCompare()))
+    {
+        fgPushConstantsRight(tree->AsOp());
+    }
+
     if (!opts.Tier0OptimizationEnabled())
     {
         return tree;
