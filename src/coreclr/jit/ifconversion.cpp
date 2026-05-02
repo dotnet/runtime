@@ -607,17 +607,20 @@ bool OptIfConversionDsc::optIfConvert(int* pReachabilityBudget)
     }
 #endif
 
-    if (GenTree* optSelect = TryOptimizeSelect(select->AsConditional()); optSelect != nullptr)
     {
-        select = optSelect;
+        GenTree* optSelect = TryOptimizeSelect(select->AsConditional());
+        if (optSelect != nullptr)
+        {
+            select = optSelect;
 
 #ifdef DEBUG
-        JITDUMP("\nSELECT after optimizations:\n");
-        if (m_compiler->verbose)
-        {
-            m_compiler->gtDispTree(select);
-        }
+            JITDUMP("\nSELECT after optimizations:\n");
+            if (m_compiler->verbose)
+            {
+                m_compiler->gtDispTree(select);
+            }
 #endif
+        }
     }
 
 #ifdef TARGET_RISCV64
@@ -705,15 +708,20 @@ bool OptIfConversionDsc::optIfConvert(int* pReachabilityBudget)
 //
 GenTree* OptIfConversionDsc::TryOptimizeSelect(GenTreeConditional* select)
 {
-    if (GenTree* opt = TrySelectToCnsOpCond(select); opt != nullptr)
+    GenTree* opt = TrySelectToCnsOpCond(select);
+    if (opt != nullptr)
     {
         return opt;
     }
-    if (GenTree* opt = TrySelectToLclOpCond(select); opt != nullptr)
+
+    opt = TrySelectToLclOpCond(select);
+    if (opt != nullptr)
     {
         return opt;
     }
-    if (GenTree* opt = TrySelectToCondOpLcl(select); opt != nullptr)
+
+    opt = TrySelectToCondOpLcl(select);
+    if (opt != nullptr)
     {
         return opt;
     }
