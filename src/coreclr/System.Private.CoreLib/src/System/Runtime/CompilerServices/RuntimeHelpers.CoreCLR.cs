@@ -694,13 +694,9 @@ namespace System.Runtime.CompilerServices
             public object* ThisObj;
             public object?[]* Args;
             public int IsNewObj;
-            // For byref-like value-type args (e.g. Span<T>) we cannot safely route the
-            // value through a heap box because the GC does not scan byref fields embedded
-            // in heap objects, so the inner ByReference field of a boxed Span would go
-            // stale on the next GC. Instead, the native funceval setup writes a raw byref
-            // to the original (GC-tracked) source storage into RawByRefs[i] and leaves the
-            // corresponding Args slot null. The trampoline forwards that raw byref directly
-            // into the QCall byref array.
+            // Byref-like value types (for example Span<T>) cannot go through heap boxes:
+            // the GC does not track embedded byrefs in boxed payloads. Native funceval
+            // passes raw byrefs in RawByRefs[i] and leaves Args[i] null.
             public IntPtr* RawByRefs;
         }
 
@@ -720,20 +716,11 @@ namespace System.Runtime.CompilerServices
                 object?[]? args = *pInvokeArgs->Args;
                 bool isNewObj = pInvokeArgs->IsNewObj != 0;
 
-                // Bypass the public MethodBase.Invoke path because:
-                //   1. ContainsStackPointers rejects methods on/returning byref-like types
-                //      (Span<T>, ReadOnlySpan<T>, ...). The debugger needs to be able to
-                //      evaluate these — the result never escapes user code (the debugger
-                //      reads it as raw bytes from the funceval result buffer), so the
-                //      anti-boxing safety guardrail does not apply here.
-                //   2. ConstructorInfo.Invoke(obj, ...) sets isConstructor=false in the
-                //      underlying QCall. For value types that means the ctor runs on a
-                //      throwaway copy and the pre-allocated box stays unmodified — i.e.
-                //      "new DateTime(...)" appeared to return the old date.
-                //
-                // RuntimeMethodHandle.InvokeMethod is the same QCall MethodBase.Invoke
-                // ultimately funnels into; calling it directly with isConstructor=isNewObj
-                // gives us the correct constructor semantics and accepts byref-like types.
+                // Call RuntimeMethodHandle.InvokeMethod directly instead of public
+                // MethodBase.Invoke:
+                // 1. Public invoke blocks byref-like signatures (ContainsStackPointers).
+                // 2. ConstructorInfo.Invoke forces isConstructor=false, which breaks
+                //    value-type ctor funceval by mutating a temporary copy.
                 Signature sig = method switch
                 {
                     RuntimeMethodInfo rmi => rmi.Signature,
@@ -747,15 +734,9 @@ namespace System.Runtime.CompilerServices
                     throw new TargetParameterCountException();
                 }
 
-                // Build the byref array the QCall expects. Mirrors MethodBaseInvoker's
-                // InvokeDirectByRefWithFewArgs: for value-type args the byref points at
-                // the boxed payload (skipping the object header); for ref-type args the
-                // byref points at the array slot itself.
-                //
-                // The byref storage is unmanaged (stackalloc IntPtr[]) so we must register
-                // it with the GC as a frame of byrefs; otherwise a GC during the inner
-                // QCall could relocate the boxed objects (or the args array) and leave
-                // the byrefs pointing at stale memory.
+                // Build QCall byref arguments (same shape as MethodBaseInvoker):
+                // value types point at boxed payload; reference types point at args[] slots.
+                // Register this unmanaged storage as byrefs so GC can retarget them.
                 IntPtr* pByRefStorage = stackalloc IntPtr[Math.Max(argCount, 1)];
                 NativeMemory.Clear(pByRefStorage, (nuint)Math.Max(argCount, 1) * (nuint)sizeof(IntPtr));
                 GCFrameRegistration regByRefStorage =
@@ -771,8 +752,7 @@ namespace System.Runtime.CompilerServices
                         IntPtr raw = pRawByRefs != null ? pRawByRefs[i] : IntPtr.Zero;
                         if (raw != IntPtr.Zero)
                         {
-                            // Byref-like value type: native side already produced a byref
-                            // pointing at the GC-tracked source storage. Forward as-is.
+                            // Native side already provided a stable byref for this arg.
                             *(IntPtr*)(pByRefStorage + i) = raw;
                             continue;
                         }
@@ -780,8 +760,7 @@ namespace System.Runtime.CompilerServices
                         ref object? slot = ref args![i];
                         if (sig.Arguments[i].IsValueType)
                         {
-                            // Value-type arg must be non-null and pre-boxed by the caller
-                            // (the native side ReadAndBoxArgValue does this).
+                            // Value-type args are pre-boxed by native ReadAndBoxArgValue.
                             *(ByReference*)(pByRefStorage + i) = ByReference.Create(ref slot!.GetRawData());
                         }
                         else
