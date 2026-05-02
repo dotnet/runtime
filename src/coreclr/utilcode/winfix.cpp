@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-
 //*****************************************************************************
 // WinWrap.cpp
 //
@@ -10,105 +9,6 @@
 #include "winwrap.h"                    // Header for macros and functions.
 #include "utilcode.h"
 #include "holder.h"
-
-#ifdef HOST_UNIX
-
-// Command line splitting matching Win32 CreateProcessW semantics:
-// 1) Whitespace splits arguments (per isspace())
-// 2) Double quotes group text (whitespace inside quotes doesn't split)
-// 3) \" is an escaped double quote (produces literal " in output)
-// 4) Backslash followed by anything other than " is literal (kept as-is)
-// 5) Bare double quotes are stripped from output
-// Returns heap-allocated argv array (caller frees each element and the array).
-static char** SplitCommandLine(const char* cmd, int* out_argc)
-{
-    int capacity = 8;
-    int count = 0;
-    char** argv = (char**)malloc(capacity * sizeof(char*));
-    if (argv == NULL)
-        return NULL;
-
-    const char* p = cmd;
-    while (*p != '\0')
-    {
-        // Skip whitespace
-        while (*p != '\0' && isspace((unsigned char)*p))
-            p++;
-        if (*p == '\0')
-            break;
-
-        // Find the end of this argument (first pass: determine boundaries)
-        const char* arg_start = p;
-        bool in_quotes = false;
-        while (*p != '\0')
-        {
-            if (!in_quotes && isspace((unsigned char)*p))
-                break;
-
-            if (*p == '"')
-            {
-                // Check for escaped quote: \"
-                if (p > arg_start && *(p - 1) == '\\')
-                {
-                    // This is an escaped quote, not a real quote toggle
-                    p++;
-                    continue;
-                }
-                in_quotes = !in_quotes;
-                p++;
-            }
-            else
-            {
-                p++;
-            }
-        }
-
-        // Second pass: copy the argument, stripping bare quotes and handling \"
-        size_t arg_len = (size_t)(p - arg_start);
-        char* buf = (char*)malloc(arg_len + 1);
-        if (buf == NULL)
-        {
-            for (int i = 0; i < count; i++) free(argv[i]);
-            free(argv);
-            return NULL;
-        }
-
-        size_t j = 0;
-        const char* s = arg_start;
-        while (s < p)
-        {
-            if (*s == '"')
-            {
-                // Skip bare double quotes (they're grouping characters)
-                s++;
-            }
-            else if (*s == '\\' && (s + 1) < p && *(s + 1) == '"')
-            {
-                // Escaped double quote: \" -> produce literal "
-                buf[j++] = '"';
-                s += 2;
-            }
-            else
-            {
-                buf[j++] = *s++;
-            }
-        }
-        buf[j] = '\0';
-
-        if (count + 2 > capacity)
-        {
-            capacity *= 2;
-            argv = (char**)realloc(argv, capacity * sizeof(char*));
-        }
-        argv[count++] = buf;
-    }
-
-    argv[count] = NULL;
-    *out_argc = count;
-    return argv;
-}
-
-#endif // HOST_UNIX
 
 // The only purpose of this function is to make a local copy of lpCommandLine.
 // Because windows implementation of CreateProcessW can actually change lpCommandLine,
@@ -127,77 +27,6 @@ WszCreateProcess(
     LPPROCESS_INFORMATION lpProcessInformation
     )
 {
-#ifdef HOST_UNIX
-    // Only caller on Unix is LaunchCreateDump (excep.cpp); other parameters are ignored.
-    (void)lpApplicationName;
-    (void)lpProcessAttributes;
-    (void)lpThreadAttributes;
-    (void)dwCreationFlags;
-    (void)lpEnvironment;
-    (void)lpCurrentDirectory;
-    (void)lpStartupInfo;
-    _ASSERTE(lpCurrentDirectory == NULL);
-    _ASSERTE(lpProcessInformation != NULL);
-
-    if (lpCommandLine == NULL)
-    {
-        SetLastError(ERROR_INVALID_PARAMETER);
-        return FALSE;
-    }
-
-    int commandLineLength = WideCharToMultiByte(CP_UTF8, 0, lpCommandLine, -1, NULL, 0, NULL, NULL);
-    if (commandLineLength == 0)
-    {
-        SetLastError(ERROR_INVALID_PARAMETER);
-        return FALSE;
-    }
-
-    NewArrayHolder<char> commandLineUtf8 = new (nothrow) char[commandLineLength];
-    if (commandLineUtf8 == NULL)
-    {
-        SetLastError(ERROR_OUTOFMEMORY);
-        return FALSE;
-    }
-
-    if (WideCharToMultiByte(CP_UTF8, 0, lpCommandLine, -1, commandLineUtf8, commandLineLength, NULL, NULL) == 0)
-    {
-        SetLastError(ERROR_INVALID_PARAMETER);
-        return FALSE;
-    }
-
-    pid_t pid = fork();
-    if (pid < 0)
-    {
-        SetLastError(ERROR_INTERNAL_ERROR);
-        return FALSE;
-    }
-
-    if (pid == 0)
-    {
-        int argc = 0;
-        char** argv = SplitCommandLine(commandLineUtf8.GetValue(), &argc);
-        if (argv == NULL || argc == 0)
-        {
-            _exit(127);
-        }
-
-        execvp(argv[0], argv);
-        _exit(127);
-    }
-
-    HANDLE processHandle = OpenProcess(PROCESS_ALL_ACCESS, bInheritHandles, static_cast<DWORD>(pid));
-    if (processHandle == NULL)
-    {
-        return FALSE;
-    }
-
-    lpProcessInformation->hProcess = processHandle;
-    lpProcessInformation->hThread = NULL;
-    lpProcessInformation->dwProcessId = static_cast<DWORD>(pid);
-    lpProcessInformation->dwThreadId_PAL_Undefined = 0;
-
-    return TRUE;
-#else
     BOOL fResult;
     DWORD err;
     {
@@ -229,7 +58,6 @@ WszCreateProcess(
 
     SetLastError(err);
     return fResult;
-#endif
 }
 
 #ifndef HOST_UNIX
