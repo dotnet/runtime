@@ -854,9 +854,9 @@ bool CodeGen::genIsSameLocalVar(GenTree* op1, GenTree* op2)
 // inline
 void CodeGenInterface::genUpdateRegLife(const LclVarDsc* varDsc, bool isBorn, bool isDying DEBUGARG(GenTree* tree))
 {
+    // Targets like Wasm do not have a fixed set of registers so the regset logic in this method is unnecessary.
 #if EMIT_GENERATE_GCINFO && HAS_FIXED_REGISTER_SET
-    // The regset being updated here is only needed for codegen-level GCness tracking,
-    // and Wasm does not have registers
+    // The regset being updated here is only needed for codegen-level GCness tracking.
     regMaskTP regMask = genGetRegMask(varDsc);
 
 #ifdef DEBUG

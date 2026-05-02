@@ -10739,6 +10739,7 @@ void Compiler::EnregisterStats::RecordLocal(const LclVarDsc* varDsc)
                 break;
 
             case DoNotEnregisterReason::WasmGCVisibility:
+                m_wasmGcVisibility++;
                 break;
 
             default:
@@ -10869,6 +10870,7 @@ void Compiler::EnregisterStats::Dump(FILE* fout) const
     PRINT_STATS(m_swizzleArg, notEnreg);
     PRINT_STATS(m_blockOpRet, notEnreg);
     PRINT_STATS(m_returnSpCheck, notEnreg);
+    PRINT_STATS(m_wasmGcVisibility, notEnreg);
     PRINT_STATS(m_callSpCheck, notEnreg);
     PRINT_STATS(m_simdUserForcesDep, notEnreg);
 

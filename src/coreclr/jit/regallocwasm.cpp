@@ -174,14 +174,14 @@ void WasmRegAlloc::IdentifyCandidates()
 
         // Wasm RA currently does not support EH write-thru, so any local live in or out
         // of a handler must be located only on the stack.
-        // We also need to ensure that any GC refs are not stored in wasm locals until we have support for
-        // spilling them to the stack before calls.
-        // TODO-WASM: Add support for spilling GC refs in order to relax this second restriction.
         if (varDsc->lvLiveInOutOfHndlr)
         {
             m_compiler->lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::LiveInOutOfHandler));
             varIsRegCandidate = false;
         }
+        // We also need to ensure that any GC refs are not stored in wasm locals until we have support for
+        // spilling them to the stack before calls.
+        // TODO-WASM: Add support for spilling GC refs in order to relax this second restriction.
         if (varTypeIsGC(varDsc->lvType))
         {
             m_compiler->lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::WasmGCVisibility));
