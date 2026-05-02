@@ -112,6 +112,15 @@ namespace Microsoft.Extensions.Logging.EventSource
             public const EventKeywords JsonMessage = (EventKeywords)8;
         }
 
+        // s_semicolon and s_colon must be declared before Instance because the Instance
+        // constructor can trigger OnEventCommand re-entrantly (via EventPipe enable during
+        // the base EventSource constructor), which calls ParseFilterSpec, which uses these
+        // fields. Static field initializers execute in declaration order, so if these were
+        // declared after Instance they would still be null during the constructor.
+        // See: https://github.com/dotnet/roslyn/issues/77005
+        private static readonly char[] s_semicolon = new[] { ';' };
+        private static readonly char[] s_colon = new[] { ':' };
+
         /// <summary>
         ///  The one and only instance of the LoggingEventSource.
         /// </summary>
@@ -125,8 +134,6 @@ namespace Microsoft.Extensions.Logging.EventSource
         private const string UseAppFilters = "UseAppFilters";
         private const string WriteEventCoreSuppressionJustification = "WriteEventCore is safe when eventData object is a primitive type which is in this case.";
         private const string WriteEventDynamicDependencySuppressionJustification = "DynamicDependency attribute will ensure that the required properties are not trimmed.";
-        private static readonly char[] s_semicolon = new[] { ';' };
-        private static readonly char[] s_colon = new[] { ':' };
 
         // This event source uses IEnumerable<T> as an event parameter type which is only supported by EtwSelfDescribingEventFormat.
         private LoggingEventSource() : base(EventSourceSettings.EtwSelfDescribingEventFormat)
