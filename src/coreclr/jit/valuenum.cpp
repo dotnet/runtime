@@ -14351,6 +14351,7 @@ bool Compiler::fgValueNumberSpecialIntrinsic(GenTreeCall* call)
         {
             assert(call->gtArgs.CountUserArgs() == 2);
             fgValueNumberHelperCallFunc(call, VNF_StrFastAllocate, ValueNumStore::VNPForEmptyExcSet());
+            fgMutateGcHeap(call DEBUGARG("NI_System_String_FastAllocateString"));
             return true;
         }
 
