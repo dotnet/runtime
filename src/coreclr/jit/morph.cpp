@@ -7570,40 +7570,23 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optA
             indMac.m_user = tree->AsIndir();
             mac           = &indMac;
         }
-        else if ((mac != nullptr) && tree->OperIs(GT_ADD) && !tree->gtOverflow())
+        // For additions, if we already have a context, keep track of whether all offsets added
+        // to the address are constant, and their sum does not overflow.
+        else if ((mac != nullptr) && tree->OperIs(GT_ADD) && op2->IsCnsIntOrI())
         {
-            // For additions, if we already have a context, keep track of whether all offsets added
-            // to the address are constant, and their sum does not overflow.
-
-            fgPushConstantsRight(tree->AsOp());
-
-            op1 = tree->gtGetOp1();
-            op2 = tree->gtGetOp2();
-
-            if (op2->IsCnsIntOrI() && op2->TypeIs(TYP_I_IMPL) && !op2->IsIconHandle())
+            ClrSafeInt<size_t> offset(mac->m_totalOffset);
+            offset += op2->AsIntCon()->IconValue();
+            if (!offset.IsOverflow())
             {
-                ClrSafeInt<size_t> offset(mac->m_totalOffset);
-                offset += static_cast<size_t>(op2->AsIntCon()->IconValue());
-
-                if (!offset.IsOverflow())
-                {
-                    mac->m_totalOffset = offset.Value();
-                }
-                else
-                {
-                    // The constant overflowed
-                    mac = nullptr;
-                }
+                mac->m_totalOffset = offset.Value();
             }
             else
             {
-                // No eligible constants were found
                 mac = nullptr;
             }
         }
-        else
+        else // Reset the context.
         {
-            // Reset the context.
             mac = nullptr;
         }
 
