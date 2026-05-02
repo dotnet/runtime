@@ -7484,7 +7484,7 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optA
                             JITDUMP("\nTransforming:\n");
                             DISPTREE(tree);
 
-                            otherNode->SetOper(GT_AND); // Change % => &
+                            otherNode->SetOper(GT_AND, GenTree::PRESERVE_VN); // Change % => &
                             otherNode->gtFlags &= ~(GTF_DIV_MOD_NO_OVERFLOW | GTF_DIV_MOD_NO_BY_ZERO);
 
                             divisor->AsIntConCommon()->SetIconValue(modValue - 1); // Change c => c - 1
@@ -7906,7 +7906,7 @@ DONE_MORPHING_CHILDREN:
                     goto CM_ADD_OP;
                 }
 
-                /* Check for "cns1 - op2" , we change it to "(cns1 + (-op2))" */
+                /* Check for "cns1 - op2" , we change it to "((-op2) + cns1)" */
 
                 noway_assert(op1);
                 if (op1->IsCnsIntOrI())
@@ -7929,8 +7929,12 @@ DONE_MORPHING_CHILDREN:
                         return tree;
                     }
 
-                    tree->AsOp()->gtOp2 = op2 = gtNewOperNode(GT_NEG, genActualType(op2->TypeGet()), op2);
+                    op2 = gtNewOperNode(GT_NEG, genActualType(op2->TypeGet()), op2);
                     fgMorphTreeDone(op2);
+
+                    std::swap(op2, op1);
+                    tree->AsOp()->gtOp1 = op1;
+                    tree->AsOp()->gtOp2 = op2;
 
                     oper = GT_ADD;
                     tree->ChangeOper(oper);
