@@ -9058,8 +9058,8 @@ GenTree* Compiler::fgOptimizeRelationalComparisonWithFullRangeConst(GenTreeOp* c
     else
     {
         IntegralRange lhsRange = IntegralRange::ForNode(cmp->gtGetOp1(), this);
-        lhsMin                 = IntegralRange::SymbolicToRealValue(lhsRange.GetLowerBound());
-        lhsMax                 = IntegralRange::SymbolicToRealValue(lhsRange.GetUpperBound());
+        lhsMin                 = lhsRange.GetLowerBound();
+        lhsMax                 = lhsRange.GetUpperBound();
     }
 
     int64_t rhsMin;
@@ -9072,8 +9072,8 @@ GenTree* Compiler::fgOptimizeRelationalComparisonWithFullRangeConst(GenTreeOp* c
     else
     {
         IntegralRange rhsRange = IntegralRange::ForNode(cmp->gtGetOp2(), this);
-        rhsMin                 = IntegralRange::SymbolicToRealValue(rhsRange.GetLowerBound());
-        rhsMax                 = IntegralRange::SymbolicToRealValue(rhsRange.GetUpperBound());
+        rhsMin                 = rhsRange.GetLowerBound();
+        rhsMax                 = rhsRange.GetUpperBound();
     }
 
     genTreeOps op = cmp->gtOper;
@@ -10470,8 +10470,8 @@ GenTree* Compiler::fgOptimizeAddition(GenTreeOp* add)
 
                 auto isSubToXorValid = [=](uint64_t cns, IntegralRange range) {
                     // cns - x, where x in [lo, hi]
-                    uint64_t lo = IntegralRange::SymbolicToRealValue(range.GetLowerBound());
-                    uint64_t hi = IntegralRange::SymbolicToRealValue(range.GetUpperBound());
+                    uint64_t lo = range.GetLowerBound();
+                    uint64_t hi = range.GetUpperBound();
 
                     // OR of all numbers in [lo, hi]
                     uint64_t knownBits = (lo == hi) ? 0 : (UINT64_MAX >> BitOperations::LeadingZeroCount(lo ^ hi));
@@ -12815,7 +12815,7 @@ void Compiler::fgAssertionGen(GenTree* tree)
                 ssize_t iconVal = assertion.GetOp2().GetIntConstant();
                 if ((iconVal == 0) || (iconVal == 1))
                 {
-                    auto         range = IntegralRange(SymbolicIntegerValue::Zero, SymbolicIntegerValue::One);
+                    auto         range = IntegralRange(0, 1);
                     AssertionDsc extraAssertion =
                         AssertionDsc::CreateSubrange(this, assertion.GetOp1().GetLclNum(), range);
                     AssertionIndex extraIndex = optAddAssertion(extraAssertion);

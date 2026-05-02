@@ -27,46 +27,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 //
 bool IntegralRange::Contains(int64_t value) const
 {
-    int64_t lowerBound = SymbolicToRealValue(m_lowerBound);
-    int64_t upperBound = SymbolicToRealValue(m_upperBound);
-
-    return (lowerBound <= value) && (value <= upperBound);
-}
-
-//------------------------------------------------------------------------
-// SymbolicToRealValue: Convert a symbolic value to a 64-bit signed integer.
-//
-// Arguments:
-//    value - the symbolic value in question
-//
-// Return Value:
-//    Integer corresponding to the symbolic value.
-//
-/* static */ int64_t IntegralRange::SymbolicToRealValue(SymbolicIntegerValue value)
-{
-    static const int64_t SymbolicToRealMap[]{
-        INT64_MIN,               // SymbolicIntegerValue::LongMin
-        INT32_MIN,               // SymbolicIntegerValue::IntMin
-        INT16_MIN,               // SymbolicIntegerValue::ShortMin
-        INT8_MIN,                // SymbolicIntegerValue::ByteMin
-        0,                       // SymbolicIntegerValue::Zero
-        1,                       // SymbolicIntegerValue::One
-        INT8_MAX,                // SymbolicIntegerValue::ByteMax
-        UINT8_MAX,               // SymbolicIntegerValue::UByteMax
-        INT16_MAX,               // SymbolicIntegerValue::ShortMax
-        UINT16_MAX,              // SymbolicIntegerValue::UShortMax
-        CORINFO_Array_MaxLength, // SymbolicIntegerValue::ArrayLenMax
-        INT32_MAX,               // SymbolicIntegerValue::IntMax
-        UINT32_MAX,              // SymbolicIntegerValue::UIntMax
-        INT64_MAX                // SymbolicIntegerValue::LongMax
-    };
-
-    assert(sizeof(SymbolicIntegerValue) == sizeof(int32_t));
-    assert(SymbolicToRealMap[static_cast<int32_t>(SymbolicIntegerValue::LongMin)] == INT64_MIN);
-    assert(SymbolicToRealMap[static_cast<int32_t>(SymbolicIntegerValue::Zero)] == 0);
-    assert(SymbolicToRealMap[static_cast<int32_t>(SymbolicIntegerValue::LongMax)] == INT64_MAX);
-
-    return SymbolicToRealMap[static_cast<int32_t>(value)];
+    return (m_lowerBound <= value) && (value <= m_upperBound);
 }
 
 //------------------------------------------------------------------------
@@ -78,21 +39,21 @@ bool IntegralRange::Contains(int64_t value) const
 // Return Value:
 //    Symbolic value representing the smallest possible value "type" can represent.
 //
-/* static */ SymbolicIntegerValue IntegralRange::LowerBoundForType(var_types type)
+/* static */ int64_t IntegralRange::LowerBoundForType(var_types type)
 {
     switch (type)
     {
         case TYP_UBYTE:
         case TYP_USHORT:
-            return SymbolicIntegerValue::Zero;
+            return 0;
         case TYP_BYTE:
-            return SymbolicIntegerValue::ByteMin;
+            return INT8_MIN;
         case TYP_SHORT:
-            return SymbolicIntegerValue::ShortMin;
+            return INT16_MIN;
         case TYP_INT:
-            return SymbolicIntegerValue::IntMin;
+            return INT32_MIN;
         case TYP_LONG:
-            return SymbolicIntegerValue::LongMin;
+            return INT64_MIN;
         default:
             unreached();
     }
@@ -107,24 +68,24 @@ bool IntegralRange::Contains(int64_t value) const
 // Return Value:
 //    Symbolic value representing the largest possible value "type" can represent.
 //
-/* static */ SymbolicIntegerValue IntegralRange::UpperBoundForType(var_types type)
+/* static */ int64_t IntegralRange::UpperBoundForType(var_types type)
 {
     switch (type)
     {
         case TYP_BYTE:
-            return SymbolicIntegerValue::ByteMax;
+            return INT8_MAX;
         case TYP_UBYTE:
-            return SymbolicIntegerValue::UByteMax;
+            return UINT8_MAX;
         case TYP_SHORT:
-            return SymbolicIntegerValue::ShortMax;
+            return INT16_MAX;
         case TYP_USHORT:
-            return SymbolicIntegerValue::UShortMax;
+            return UINT16_MAX;
         case TYP_INT:
-            return SymbolicIntegerValue::IntMax;
+            return INT32_MAX;
         case TYP_UINT:
-            return SymbolicIntegerValue::UIntMax;
+            return UINT32_MAX;
         case TYP_LONG:
-            return SymbolicIntegerValue::LongMax;
+            return INT64_MAX;
         default:
             unreached();
     }
@@ -154,7 +115,7 @@ bool IntegralRange::Contains(int64_t value) const
         case GT_LE:
         case GT_GE:
         case GT_GT:
-            return {SymbolicIntegerValue::Zero, SymbolicIntegerValue::One};
+            return {0, 1};
 
         case GT_AND:
         {
@@ -164,14 +125,14 @@ bool IntegralRange::Contains(int64_t value) const
             {
                 // If both sides are known to be non-negative, the result is non-negative.
                 // Further, the top end of the range cannot exceed the min of the two upper bounds.
-                return {SymbolicIntegerValue::Zero, min(leftRange.GetUpperBound(), rightRange.GetUpperBound())};
+                return {0, min(leftRange.GetUpperBound(), rightRange.GetUpperBound())};
             }
 
             if (leftRange.IsNonNegative() || rightRange.IsNonNegative())
             {
                 // If only one side is known to be non-negative, however it is harder to
                 // reason about the upper bound.
-                return {SymbolicIntegerValue::Zero, UpperBoundForType(rangeType)};
+                return {0, UpperBoundForType(rangeType)};
             }
 
             break;
@@ -179,7 +140,7 @@ bool IntegralRange::Contains(int64_t value) const
 
         case GT_ARR_LENGTH:
         case GT_MDARR_LENGTH:
-            return {SymbolicIntegerValue::Zero, SymbolicIntegerValue::ArrayLenMax};
+            return {0, CORINFO_Array_MaxLength};
 
         case GT_CALL:
             if (node->AsCall()->NormalizesSmallTypesOnReturn())
@@ -200,7 +161,7 @@ bool IntegralRange::Contains(int64_t value) const
                 if (compiler->lvaGetDesc(lclVar->GetLclNum())->IsSpan())
                 {
                     assert(compiler->lvaIsImplicitByRefLocal(lclVar->GetLclNum()));
-                    return {SymbolicIntegerValue::Zero, UpperBoundForType(rangeType)};
+                    return {0, UpperBoundForType(rangeType)};
                 }
             }
             break;
@@ -213,7 +174,7 @@ bool IntegralRange::Contains(int64_t value) const
 
             if (node->TypeIs(TYP_INT) && varDsc->IsSpan() && lclFld->GetLclOffs() == OFFSETOF__CORINFO_Span__length)
             {
-                return {SymbolicIntegerValue::Zero, UpperBoundForType(rangeType)};
+                return {0, UpperBoundForType(rangeType)};
             }
 
             break;
@@ -230,7 +191,7 @@ bool IntegralRange::Contains(int64_t value) const
 
             if (varDsc->IsNeverNegative())
             {
-                return {SymbolicIntegerValue::Zero, UpperBoundForType(rangeType)};
+                return {0, UpperBoundForType(rangeType)};
             }
             break;
         }
@@ -239,13 +200,13 @@ bool IntegralRange::Contains(int64_t value) const
         {
             if (node->IsIntegralConst(0) || node->IsIntegralConst(1))
             {
-                return {SymbolicIntegerValue::Zero, SymbolicIntegerValue::One};
+                return {0, 1};
             }
 
             int64_t constValue = node->AsIntCon()->IntegralValue();
             if (constValue >= 0)
             {
-                return {SymbolicIntegerValue::Zero, UpperBoundForType(rangeType)};
+                return {0, UpperBoundForType(rangeType)};
             }
 
             break;
@@ -287,7 +248,7 @@ bool IntegralRange::Contains(int64_t value) const
                 case NI_AVX_TestC:
                 case NI_AVX_TestZ:
                 case NI_AVX_TestNotZAndNotC:
-                    return {SymbolicIntegerValue::Zero, SymbolicIntegerValue::One};
+                    return {0, 1};
 
                 case NI_X86Base_Extract:
                 case NI_X86Base_X64_Extract:
@@ -311,13 +272,13 @@ bool IntegralRange::Contains(int64_t value) const
                 case NI_X86Base_X64_PopCount:
                     // Note: No advantage in using a precise range for IntegralRange.
                     // Example: IntCns = 42 gives [0..127] with a non -precise range, [42,42] with a precise range.
-                    return {SymbolicIntegerValue::Zero, SymbolicIntegerValue::ByteMax};
+                    return {0, 127};
 #elif defined(TARGET_ARM64)
                 case NI_Vector64_op_Equality:
                 case NI_Vector64_op_Inequality:
                 case NI_Vector128_op_Equality:
                 case NI_Vector128_op_Inequality:
-                    return {SymbolicIntegerValue::Zero, SymbolicIntegerValue::One};
+                    return {0, 1};
 
                 case NI_AdvSimd_Extract:
                 case NI_Vector64_ToScalar:
@@ -338,7 +299,7 @@ bool IntegralRange::Contains(int64_t value) const
                 case NI_ArmBase_Arm64_LeadingSignCount:
                     // Note: No advantage in using a precise range for IntegralRange.
                     // Example: IntCns = 42 gives [0..127] with a non -precise range, [42,42] with a precise range.
-                    return {SymbolicIntegerValue::Zero, SymbolicIntegerValue::ByteMax};
+                    return {0, 127};
 #else
 #error Unsupported platform
 #endif
@@ -401,14 +362,14 @@ bool IntegralRange::Contains(int64_t value) const
         return ForType(fromType);
     }
 
-    SymbolicIntegerValue lowerBound;
-    SymbolicIntegerValue upperBound;
+    int64_t lowerBound;
+    int64_t upperBound;
 
     // CAST_OVF(small type <- int/long)   - [TO_TYPE_MIN..TO_TYPE_MAX]
     // CAST_OVF(small type <- uint/ulong) - [0..TO_TYPE_MAX]
     if (varTypeIsSmall(toType))
     {
-        lowerBound = fromUnsigned ? SymbolicIntegerValue::Zero : LowerBoundForType(toType);
+        lowerBound = fromUnsigned ? 0 : LowerBoundForType(toType);
         upperBound = UpperBoundForType(toType);
     }
     else
@@ -421,21 +382,21 @@ bool IntegralRange::Contains(int64_t value) const
             case TYP_UINT:
                 if (fromType == TYP_LONG)
                 {
-                    lowerBound = SymbolicIntegerValue::Zero;
-                    upperBound = SymbolicIntegerValue::UIntMax;
+                    lowerBound = 0;
+                    upperBound = UINT32_MAX;
                 }
                 else
                 {
-                    lowerBound = fromUnsigned ? SymbolicIntegerValue::IntMin : SymbolicIntegerValue::Zero;
-                    upperBound = SymbolicIntegerValue::IntMax;
+                    lowerBound = fromUnsigned ? INT32_MIN : 0;
+                    upperBound = INT32_MAX;
                 }
                 break;
 
             // CAST_OVF(int <- uint/ulong) - [0..INT_MAX]
             // CAST_OVF(int <- int/long)   - [INT_MIN..INT_MAX]
             case TYP_INT:
-                lowerBound = fromUnsigned ? SymbolicIntegerValue::Zero : SymbolicIntegerValue::IntMin;
-                upperBound = SymbolicIntegerValue::IntMax;
+                lowerBound = fromUnsigned ? 0 : INT32_MIN;
+                upperBound = INT32_MAX;
                 break;
 
             // CAST_OVF(ulong <- uint)  - [INT_MIN..INT_MAX]
@@ -443,7 +404,7 @@ bool IntegralRange::Contains(int64_t value) const
             // CAST_OVF(ulong <- ulong) - [LONG_MIN..LONG_MAX]
             // CAST_OVF(ulong <- long)  - [0..LONG_MAX]
             case TYP_ULONG:
-                lowerBound = fromUnsigned ? LowerBoundForType(fromType) : SymbolicIntegerValue::Zero;
+                lowerBound = fromUnsigned ? LowerBoundForType(fromType) : 0;
                 upperBound = UpperBoundForType(fromType);
                 break;
 
@@ -453,7 +414,7 @@ bool IntegralRange::Contains(int64_t value) const
             case TYP_LONG:
                 if (fromUnsigned && (fromType == TYP_LONG))
                 {
-                    lowerBound = SymbolicIntegerValue::Zero;
+                    lowerBound = 0;
                 }
                 else
                 {
@@ -534,42 +495,42 @@ bool IntegralRange::Contains(int64_t value) const
     {
         if ((fromType == TYP_INT) && fromUnsigned)
         {
-            return {SymbolicIntegerValue::Zero, SymbolicIntegerValue::UIntMax};
+            return {0, UINT32_MAX};
         }
 
-        return {SymbolicIntegerValue::IntMin, SymbolicIntegerValue::IntMax};
+        return {INT32_MIN, INT32_MAX};
     }
 
-    SymbolicIntegerValue lowerBound;
-    SymbolicIntegerValue upperBound;
+    int64_t lowerBound;
+    int64_t upperBound;
     switch (toType)
     {
         // CAST_OVF(uint <- ulong) - [INT_MIN..INT_MAX]
         // CAST_OVF(uint <- long)  - [INT_MIN..INT_MAX]
         case TYP_UINT:
-            lowerBound = SymbolicIntegerValue::IntMin;
-            upperBound = SymbolicIntegerValue::IntMax;
+            lowerBound = INT32_MIN;
+            upperBound = INT32_MAX;
             break;
 
         // CAST_OVF(int <- ulong) - [0..INT_MAX]
         // CAST_OVF(int <- long)  - [INT_MIN..INT_MAX]
         case TYP_INT:
-            lowerBound = fromUnsigned ? SymbolicIntegerValue::Zero : SymbolicIntegerValue::IntMin;
-            upperBound = SymbolicIntegerValue::IntMax;
+            lowerBound = fromUnsigned ? 0 : INT32_MIN;
+            upperBound = INT32_MAX;
             break;
 
         // CAST_OVF(ulong <- uint) - [0..UINT_MAX]
         // CAST_OVF(ulong <- int)  - [0..INT_MAX]
         case TYP_ULONG:
-            lowerBound = SymbolicIntegerValue::Zero;
-            upperBound = fromUnsigned ? SymbolicIntegerValue::UIntMax : SymbolicIntegerValue::IntMax;
+            lowerBound = 0;
+            upperBound = fromUnsigned ? UINT32_MAX : INT32_MAX;
             break;
 
         // CAST_OVF(long <- uint) - [0..UINT_MAX]
         // CAST_OVF(long <- int)  - [INT_MIN..INT_MAX]
         case TYP_LONG:
-            lowerBound = fromUnsigned ? SymbolicIntegerValue::Zero : SymbolicIntegerValue::IntMin;
-            upperBound = fromUnsigned ? SymbolicIntegerValue::UIntMax : SymbolicIntegerValue::IntMax;
+            lowerBound = fromUnsigned ? 0 : INT32_MIN;
+            upperBound = fromUnsigned ? UINT32_MAX : INT32_MAX;
             break;
 
         default:
@@ -588,9 +549,9 @@ bool IntegralRange::Contains(int64_t value) const
 #ifdef DEBUG
 /* static */ void IntegralRange::Print(IntegralRange range)
 {
-    printf("[%lld", SymbolicToRealValue(range.m_lowerBound));
+    printf("[%lld", range.m_lowerBound);
     printf("..");
-    printf("%lld]", SymbolicToRealValue(range.m_upperBound));
+    printf("%lld]", range.m_upperBound);
 }
 #endif // DEBUG
 
@@ -4771,8 +4732,8 @@ GenTree* Compiler::optAssertionProp_Cast(ASSERT_VALARG_TP assertions,
         // Get the non-overflowing input range for a cast. ForCastInput takes care of special cases like
         // small types and IsUnsigned flag for checked casts.
         IntegralRange castRng = IntegralRange::ForCastInput(cast);
-        int64_t       castLo  = IntegralRange::SymbolicToRealValue(castRng.GetLowerBound());
-        int64_t       castHi  = IntegralRange::SymbolicToRealValue(castRng.GetUpperBound());
+        int64_t       castLo  = castRng.GetLowerBound();
+        int64_t       castHi  = castRng.GetUpperBound();
         if (FitsIn<int>(castLo) && FitsIn<int>(castHi))
         {
             Range castToTypeRange = Range(Limit(Limit::keConstant, (int)castLo), Limit(Limit::keConstant, (int)castHi));
