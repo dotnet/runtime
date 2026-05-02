@@ -2577,8 +2577,10 @@ void StackTraceInfo::AppendElement(OBJECTREF pThrowable, UINT_PTR currentIP, UIN
         return;
     }
 
-    if ((pFunc != NULL && pFunc->IsDiagnosticsHidden()))
+    if (pFunc != NULL && (pFunc->IsDiagnosticsHidden() || pFunc == g_pEnvironmentCallEntryPointMethodDesc))
+    {
         return;
+    }
 
     struct
     {
