@@ -114,9 +114,9 @@ namespace Microsoft.Extensions.Logging.EventSource
 
         // s_semicolon and s_colon must be declared before Instance because the Instance
         // constructor can trigger OnEventCommand re-entrantly (via EventPipe enable during
-        // the base EventSource constructor), which calls ParseFilterSpec, which uses these
-        // fields. Static field initializers execute in declaration order, so if these were
-        // declared after Instance they would still be null during the constructor.
+        // the base EventSource constructor), which calls ParseFilterSpec.
+        // Static field initializers execute in declaration order, so if these were declared after 
+        // Instance they would still be null during the constructor.
         // See: https://github.com/dotnet/roslyn/issues/77005
         private static readonly char[] s_semicolon = new[] { ';' };
         private static readonly char[] s_colon = new[] { ':' };
