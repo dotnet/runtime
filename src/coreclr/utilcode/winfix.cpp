@@ -1,5 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 //*****************************************************************************
 // WinWrap.cpp
 //
@@ -127,12 +128,16 @@ WszCreateProcess(
     )
 {
 #ifdef HOST_UNIX
+    // Only caller on Unix is LaunchCreateDump (excep.cpp); other parameters are ignored.
     (void)lpApplicationName;
     (void)lpProcessAttributes;
     (void)lpThreadAttributes;
     (void)dwCreationFlags;
     (void)lpEnvironment;
+    (void)lpCurrentDirectory;
     (void)lpStartupInfo;
+    _ASSERTE(lpCurrentDirectory == NULL);
+    _ASSERTE(lpProcessInformation != NULL);
 
     if (lpCommandLine == NULL)
     {
@@ -160,30 +165,6 @@ WszCreateProcess(
         return FALSE;
     }
 
-    NewArrayHolder<char> currentDirectoryUtf8;
-    if (lpCurrentDirectory != NULL)
-    {
-        int currentDirectoryLength = WideCharToMultiByte(CP_UTF8, 0, lpCurrentDirectory, -1, NULL, 0, NULL, NULL);
-        if (currentDirectoryLength == 0)
-        {
-            SetLastError(ERROR_INVALID_PARAMETER);
-            return FALSE;
-        }
-
-        currentDirectoryUtf8 = new (nothrow) char[currentDirectoryLength];
-        if (currentDirectoryUtf8 == NULL)
-        {
-            SetLastError(ERROR_OUTOFMEMORY);
-            return FALSE;
-        }
-
-        if (WideCharToMultiByte(CP_UTF8, 0, lpCurrentDirectory, -1, currentDirectoryUtf8, currentDirectoryLength, NULL, NULL) == 0)
-        {
-            SetLastError(ERROR_INVALID_PARAMETER);
-            return FALSE;
-        }
-    }
-
     pid_t pid = fork();
     if (pid < 0)
     {
@@ -193,11 +174,6 @@ WszCreateProcess(
 
     if (pid == 0)
     {
-        if (currentDirectoryUtf8 != NULL && chdir(currentDirectoryUtf8) != 0)
-        {
-            _exit(127);
-        }
-
         int argc = 0;
         char** argv = SplitCommandLine(commandLineUtf8.GetValue(), &argc);
         if (argv == NULL || argc == 0)
@@ -209,19 +185,16 @@ WszCreateProcess(
         _exit(127);
     }
 
-    if (lpProcessInformation != NULL)
+    HANDLE processHandle = OpenProcess(PROCESS_ALL_ACCESS, bInheritHandles, static_cast<DWORD>(pid));
+    if (processHandle == NULL)
     {
-        HANDLE processHandle = OpenProcess(PROCESS_ALL_ACCESS, bInheritHandles, static_cast<DWORD>(pid));
-        if (processHandle == NULL)
-        {
-            return FALSE;
-        }
-
-        lpProcessInformation->hProcess = processHandle;
-        lpProcessInformation->hThread = NULL;
-        lpProcessInformation->dwProcessId = static_cast<DWORD>(pid);
-        lpProcessInformation->dwThreadId_PAL_Undefined = 0;
+        return FALSE;
     }
+
+    lpProcessInformation->hProcess = processHandle;
+    lpProcessInformation->hThread = NULL;
+    lpProcessInformation->dwProcessId = static_cast<DWORD>(pid);
+    lpProcessInformation->dwThreadId_PAL_Undefined = 0;
 
     return TRUE;
 #else
