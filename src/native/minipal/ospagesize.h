@@ -18,7 +18,7 @@ extern "C" {
 //
 // On other platforms the value is queried from the OS once and cached; the
 // definition lives in ospagesize.c so there is exactly one cache per process.
-#if defined(__wasm__)
+#if defined(TARGET_WASM)
 static inline size_t minipal_getpagesize(void)
 {
     // The OS page size used by CoreCLR on WASM (16KB).
@@ -26,7 +26,7 @@ static inline size_t minipal_getpagesize(void)
     // which is too coarse for GC alignment and thresholds.
     return 16 * 1024;
 }
-#elif defined(HOST_WINDOWS) || defined(_WIN32)
+#elif defined(HOST_WINDOWS)
 static inline size_t minipal_getpagesize(void)
 {
     // The page size on Windows is 4KB and is not going to change.
