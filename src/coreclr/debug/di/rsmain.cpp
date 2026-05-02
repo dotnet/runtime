@@ -1499,15 +1499,10 @@ HRESULT Cordb::SetUnmanagedHandler(ICorDebugUnmanagedCallback *pCallback)
     return S_OK;
 }
 
-// CreateProcess() isn't supported on Windows CoreCLR.
-// It is currently supported on Mac CoreCLR, but that may change.
+// CreateProcess() isn't supported on CoreCLR.
 bool Cordb::IsCreateProcessSupported()
 {
-#if !defined(FEATURE_DBGIPC_TRANSPORT_DI)
     return false;
-#else
-    return true;
-#endif
 }
 
 // Given everything we know about our configuration, can we support interop-debugging

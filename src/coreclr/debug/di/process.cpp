@@ -13987,19 +13987,7 @@ void CordbWin32EventThread::CreateProcess()
         false; // Interop not supported.
 #endif
 
-    // Have Win32 create the process...
-    hr = m_pNativePipeline->CreateProcessUnderDebugger(
-                                      m_actionData.createData.machineInfo,
-                                      m_actionData.createData.programName,
-                                      m_actionData.createData.programArgs,
-                                      m_actionData.createData.lpProcessAttributes,
-                                      m_actionData.createData.lpThreadAttributes,
-                                      m_actionData.createData.bInheritHandles,
-                                      dwCreationFlags,
-                                      m_actionData.createData.lpEnvironment,
-                                      m_actionData.createData.lpCurrentDirectory,
-                                      m_actionData.createData.lpStartupInfo,
-                                      m_actionData.createData.lpProcessInformation);
+    hr = E_NOTIMPL;
 
     if (SUCCEEDED(hr))
     {
