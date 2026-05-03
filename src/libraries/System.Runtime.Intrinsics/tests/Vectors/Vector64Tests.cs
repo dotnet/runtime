@@ -4697,6 +4697,32 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
             AssertVectorEqual(left, Vector64.ConcatLowerUpper(left, right));
         }
 
+        [Fact]
+        public void LaneOperationsDoubleCountOneTest()
+        {
+            Vector64<double> left = Vector64.Create(10.0);
+            Vector64<double> right = Vector64.Create(20.0);
+
+            AssertVectorEqual(left, Vector64.ZipLower(left, right));
+            AssertVectorEqual(left, Vector64.ZipUpper(left, right));
+
+            (Vector64<double> lower, Vector64<double> upper) = Vector64.Zip(left, right);
+            AssertVectorEqual(left, lower);
+            AssertVectorEqual(left, upper);
+
+            AssertVectorEqual(left, Vector64.UnzipEven(left, right));
+            AssertVectorEqual(Vector64<double>.Zero, Vector64.UnzipOdd(left, right));
+
+            (Vector64<double> even, Vector64<double> odd) = Vector64.Unzip(left, right);
+            AssertVectorEqual(left, even);
+            AssertVectorEqual(Vector64<double>.Zero, odd);
+
+            AssertVectorEqual(left, Vector64.ConcatLowerLower(left, right));
+            AssertVectorEqual(left, Vector64.ConcatUpperLower(left, right));
+            AssertVectorEqual(left, Vector64.ConcatUpperUpper(left, right));
+            AssertVectorEqual(left, Vector64.ConcatLowerUpper(left, right));
+        }
+
         private static Vector64<int> CreateVector64(Func<int, int> elementSelector)
         {
             int[] values = new int[Vector64<int>.Count];
