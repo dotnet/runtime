@@ -3653,10 +3653,6 @@ static void NotifyExceptionPassStarted(StackFrameIterator *pThis, Thread *pThrea
         }
         else
         {
-            // FuncEvalFrame / DebuggerU2MCatchHandlerFrame detection has been moved to SfiNextWorker
-            // where it runs during pass 1 at the native transition boundary with live iterator state.
-            // See the DEBUGGING_SUPPORTED block in SfiNextWorker's isPropagatingToNativeCode path.
-        }
     }
 }
 
