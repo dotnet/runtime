@@ -4831,7 +4831,10 @@ unsigned* Compiler::lvaComputeOptimalFrameLayoutOrder(int stkOffs, const UINT* a
         estimatedLocalSize += lvaLclStackHomeSize(i);
     }
 
-    if (estimatedLocalSize <= 128)
+    // Skip frames where even with alignment padding, all locals will fit in disp8 range.
+    // We use 64 rather than 128 because alignment padding can inflate the actual frame
+    // size significantly beyond the raw sum of local sizes.
+    if (estimatedLocalSize <= 64)
     {
         return nullptr;
     }
