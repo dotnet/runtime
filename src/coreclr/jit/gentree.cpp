@@ -24520,376 +24520,6 @@ GenTree* Compiler::gtNewSimdCreateSequenceNode(
     return result;
 }
 
-//----------------------------------------------------------------------------------------------
-// Compiler::gtNewSimdCreateGeometricSequenceNode: Creates a new simd CreateGeometricSequence node
-//
-//  Arguments:
-//    type                - The return type of SIMD node being created
-//    op1                 - The initial value
-//    op2                 - The multiplier value
-//    simdBaseType        - The base type of SIMD type of the intrinsic
-//    simdSize            - The size of the SIMD type of the intrinsic
-//
-// Returns:
-//    The created CreateGeometricSequence node
-//
-GenTree* Compiler::gtNewSimdCreateGeometricSequenceNode(
-    var_types type, GenTree* op1, GenTree* op2, var_types simdBaseType, unsigned simdSize)
-{
-    assert(varTypeIsSIMD(type));
-    assert(getSIMDTypeForSize(simdSize) == type);
-    assert(varTypeIsArithmetic(simdBaseType));
-    assert(op2->OperIsConst());
-
-    // op2 is expected to be constant. When op1 is also constant the whole sequence can be folded
-    // to a constant; otherwise build the constant multiplier vector and leave one broadcast+multiply.
-
-    GenTreeVecCon* vecCon    = gtNewVconNode(type);
-    uint32_t       simdCount = getSIMDVectorLength(simdSize, simdBaseType);
-    bool           isPartial = !op1->OperIsConst();
-
-    switch (simdBaseType)
-    {
-        case TYP_BYTE:
-        case TYP_UBYTE:
-        {
-            uint64_t initial    = isPartial ? 1 : static_cast<uint64_t>(op1->AsIntConCommon()->IntegralValue());
-            uint64_t multiplier = static_cast<uint64_t>(op2->AsIntConCommon()->IntegralValue());
-
-            for (uint32_t index = 0; index < simdCount; index++)
-            {
-                vecCon->gtSimdVal.u8[index] = static_cast<uint8_t>(initial);
-                initial *= multiplier;
-            }
-            break;
-        }
-
-        case TYP_SHORT:
-        case TYP_USHORT:
-        {
-            uint64_t initial    = isPartial ? 1 : static_cast<uint64_t>(op1->AsIntConCommon()->IntegralValue());
-            uint64_t multiplier = static_cast<uint64_t>(op2->AsIntConCommon()->IntegralValue());
-
-            for (uint32_t index = 0; index < simdCount; index++)
-            {
-                vecCon->gtSimdVal.u16[index] = static_cast<uint16_t>(initial);
-                initial *= multiplier;
-            }
-            break;
-        }
-
-        case TYP_INT:
-        case TYP_UINT:
-        {
-            uint64_t initial    = isPartial ? 1 : static_cast<uint64_t>(op1->AsIntConCommon()->IntegralValue());
-            uint64_t multiplier = static_cast<uint64_t>(op2->AsIntConCommon()->IntegralValue());
-
-            for (uint32_t index = 0; index < simdCount; index++)
-            {
-                vecCon->gtSimdVal.u32[index] = static_cast<uint32_t>(initial);
-                initial *= multiplier;
-            }
-            break;
-        }
-
-        case TYP_LONG:
-        case TYP_ULONG:
-        {
-            uint64_t initial    = isPartial ? 1 : static_cast<uint64_t>(op1->AsIntConCommon()->IntegralValue());
-            uint64_t multiplier = static_cast<uint64_t>(op2->AsIntConCommon()->IntegralValue());
-
-            for (uint32_t index = 0; index < simdCount; index++)
-            {
-                vecCon->gtSimdVal.u64[index] = initial;
-                initial *= multiplier;
-            }
-            break;
-        }
-
-        case TYP_FLOAT:
-        {
-            float initial    = isPartial ? 1.0f : static_cast<float>(op1->AsDblCon()->DconValue());
-            float multiplier = static_cast<float>(op2->AsDblCon()->DconValue());
-
-            for (uint32_t index = 0; index < simdCount; index++)
-            {
-                vecCon->gtSimdVal.f32[index] = initial;
-                initial *= multiplier;
-            }
-            break;
-        }
-
-        case TYP_DOUBLE:
-        {
-            double initial    = isPartial ? 1.0 : op1->AsDblCon()->DconValue();
-            double multiplier = op2->AsDblCon()->DconValue();
-
-            for (uint32_t index = 0; index < simdCount; index++)
-            {
-                vecCon->gtSimdVal.f64[index] = initial;
-                initial *= multiplier;
-            }
-            break;
-        }
-
-        default:
-        {
-            unreached();
-        }
-    }
-
-    GenTree* result = vecCon;
-
-    if (isPartial)
-    {
-        GenTree* initial = gtNewSimdCreateBroadcastNode(type, op1, simdBaseType, simdSize);
-        result           = gtNewSimdBinOpNode(GT_MUL, type, result, initial, simdBaseType, simdSize);
-    }
-
-    return result;
-}
-
-//----------------------------------------------------------------------------------------------
-// Compiler::gtNewSimdCreateAlternatingSequenceNode: Creates a new simd CreateAlternatingSequence node
-//
-//  Arguments:
-//    type                - The return type of SIMD node being created
-//    op1                 - The even-indexed value
-//    op2                 - The odd-indexed value
-//    simdBaseType        - The base type of SIMD type of the intrinsic
-//    simdSize            - The size of the SIMD type of the intrinsic
-//
-// Returns:
-//    The created CreateAlternatingSequence node
-//
-GenTree* Compiler::gtNewSimdCreateAlternatingSequenceNode(
-    var_types type, GenTree* op1, GenTree* op2, var_types simdBaseType, unsigned simdSize)
-{
-    assert(varTypeIsSIMD(type));
-    assert(getSIMDTypeForSize(simdSize) == type);
-    assert(varTypeIsArithmetic(simdBaseType));
-
-    // Fold constant pairs directly. Otherwise build two broadcasts and zip them, except where
-    // the target has a better way to broadcast the two-lane pattern directly.
-
-    uint32_t simdCount = getSIMDVectorLength(simdSize, simdBaseType);
-
-    if (simdCount == 1)
-    {
-        GenTree* result = gtNewSimdCreateBroadcastNode(type, op1, simdBaseType, simdSize);
-        return gtWrapWithSideEffects(result, op2, GTF_ALL_EFFECT);
-    }
-
-    if (op1->OperIsConst() && op2->OperIsConst())
-    {
-        GenTreeVecCon* vecCon = gtNewVconNode(type);
-
-        switch (simdBaseType)
-        {
-            case TYP_BYTE:
-            case TYP_UBYTE:
-            {
-                uint64_t even = static_cast<uint64_t>(op1->AsIntConCommon()->IntegralValue());
-                uint64_t odd  = static_cast<uint64_t>(op2->AsIntConCommon()->IntegralValue());
-
-                for (uint32_t index = 0; index < simdCount; index++)
-                {
-                    vecCon->gtSimdVal.u8[index] = static_cast<uint8_t>(((index & 1) == 0) ? even : odd);
-                }
-                break;
-            }
-
-            case TYP_SHORT:
-            case TYP_USHORT:
-            {
-                uint64_t even = static_cast<uint64_t>(op1->AsIntConCommon()->IntegralValue());
-                uint64_t odd  = static_cast<uint64_t>(op2->AsIntConCommon()->IntegralValue());
-
-                for (uint32_t index = 0; index < simdCount; index++)
-                {
-                    vecCon->gtSimdVal.u16[index] = static_cast<uint16_t>(((index & 1) == 0) ? even : odd);
-                }
-                break;
-            }
-
-            case TYP_INT:
-            case TYP_UINT:
-            {
-                uint64_t even = static_cast<uint64_t>(op1->AsIntConCommon()->IntegralValue());
-                uint64_t odd  = static_cast<uint64_t>(op2->AsIntConCommon()->IntegralValue());
-
-                for (uint32_t index = 0; index < simdCount; index++)
-                {
-                    vecCon->gtSimdVal.u32[index] = static_cast<uint32_t>(((index & 1) == 0) ? even : odd);
-                }
-                break;
-            }
-
-            case TYP_LONG:
-            case TYP_ULONG:
-            {
-                uint64_t even = static_cast<uint64_t>(op1->AsIntConCommon()->IntegralValue());
-                uint64_t odd  = static_cast<uint64_t>(op2->AsIntConCommon()->IntegralValue());
-
-                for (uint32_t index = 0; index < simdCount; index++)
-                {
-                    vecCon->gtSimdVal.u64[index] = ((index & 1) == 0) ? even : odd;
-                }
-                break;
-            }
-
-            case TYP_FLOAT:
-            {
-                double even = op1->AsDblCon()->DconValue();
-                double odd  = op2->AsDblCon()->DconValue();
-
-                for (uint32_t index = 0; index < simdCount; index++)
-                {
-                    vecCon->gtSimdVal.f32[index] = static_cast<float>(((index & 1) == 0) ? even : odd);
-                }
-                break;
-            }
-
-            case TYP_DOUBLE:
-            {
-                double even = op1->AsDblCon()->DconValue();
-                double odd  = op2->AsDblCon()->DconValue();
-
-                for (uint32_t index = 0; index < simdCount; index++)
-                {
-                    vecCon->gtSimdVal.f64[index] = ((index & 1) == 0) ? even : odd;
-                }
-                break;
-            }
-
-            default:
-            {
-                unreached();
-            }
-        }
-
-        return vecCon;
-    }
-
-#if defined(TARGET_XARCH)
-    if (((simdBaseType == TYP_INT) || (simdBaseType == TYP_UINT)) &&
-        ((compOpportunisticallyDependsOn(InstructionSet_AVX2) && ((simdSize == 16) || (simdSize == 32))) ||
-         (compOpportunisticallyDependsOn(InstructionSet_AVX512) && (simdSize == 64))))
-    {
-        // var pattern = Vector128.CreateScalarUnsafe(op1).WithElement(1, op2);
-        // return Broadcast(pattern.AsInt64()).As<T>();
-
-        GenTree* pattern = gtNewSimdCreateScalarUnsafeNode(TYP_SIMD16, op1, simdBaseType, 16);
-        pattern          = gtNewSimdWithElementNode(TYP_SIMD16, pattern, gtNewIconNode(1), op2, simdBaseType, 16);
-
-        if (simdSize == 64)
-        {
-            return gtNewSimdHWIntrinsicNode(type, pattern, NI_AVX512_BroadcastPairScalarToVector512, simdBaseType,
-                                            simdSize);
-        }
-
-        var_types      broadcastBaseType = (simdBaseType == TYP_INT) ? TYP_LONG : TYP_ULONG;
-        NamedIntrinsic broadcast =
-            (simdSize == 16) ? NI_AVX2_BroadcastScalarToVector128 : NI_AVX2_BroadcastScalarToVector256;
-        return gtNewSimdHWIntrinsicNode(type, pattern, broadcast, broadcastBaseType, simdSize);
-    }
-#endif // TARGET_XARCH
-
-    GenTree* even = gtNewSimdCreateBroadcastNode(type, op1, simdBaseType, simdSize);
-    GenTree* odd  = gtNewSimdCreateBroadcastNode(type, op2, simdBaseType, simdSize);
-
-    return gtNewSimdZipNode(type, even, odd, simdBaseType, simdSize, false);
-}
-
-//----------------------------------------------------------------------------------------------
-// Compiler::gtNewSimdGetSignSequenceNode: Creates a new simd SignSequence node
-//
-//  Arguments:
-//    type                - The return type of SIMD node being created
-//    simdBaseType        - The base type of SIMD type of the intrinsic
-//    simdSize            - The size of the SIMD type of the intrinsic
-//
-// Returns:
-//    The created SignSequence node
-//
-GenTree* Compiler::gtNewSimdGetSignSequenceNode(var_types type, var_types simdBaseType, unsigned simdSize)
-{
-    assert(varTypeIsSIMD(type));
-    assert(getSIMDTypeForSize(simdSize) == type);
-    assert(varTypeIsArithmetic(simdBaseType));
-
-    GenTreeVecCon* vecCon    = gtNewVconNode(type);
-    uint32_t       simdCount = getSIMDVectorLength(simdSize, simdBaseType);
-
-    switch (simdBaseType)
-    {
-        case TYP_BYTE:
-        case TYP_UBYTE:
-        {
-            for (uint32_t index = 0; index < simdCount; index++)
-            {
-                vecCon->gtSimdVal.u8[index] = ((index & 1) == 0) ? 1 : UINT8_MAX;
-            }
-            break;
-        }
-
-        case TYP_SHORT:
-        case TYP_USHORT:
-        {
-            for (uint32_t index = 0; index < simdCount; index++)
-            {
-                vecCon->gtSimdVal.u16[index] = ((index & 1) == 0) ? 1 : UINT16_MAX;
-            }
-            break;
-        }
-
-        case TYP_INT:
-        case TYP_UINT:
-        {
-            for (uint32_t index = 0; index < simdCount; index++)
-            {
-                vecCon->gtSimdVal.u32[index] = ((index & 1) == 0) ? 1 : UINT32_MAX;
-            }
-            break;
-        }
-
-        case TYP_LONG:
-        case TYP_ULONG:
-        {
-            for (uint32_t index = 0; index < simdCount; index++)
-            {
-                vecCon->gtSimdVal.u64[index] = ((index & 1) == 0) ? 1 : UINT64_MAX;
-            }
-            break;
-        }
-
-        case TYP_FLOAT:
-        {
-            for (uint32_t index = 0; index < simdCount; index++)
-            {
-                vecCon->gtSimdVal.f32[index] = ((index & 1) == 0) ? 1.0f : -1.0f;
-            }
-            break;
-        }
-
-        case TYP_DOUBLE:
-        {
-            for (uint32_t index = 0; index < simdCount; index++)
-            {
-                vecCon->gtSimdVal.f64[index] = ((index & 1) == 0) ? 1.0 : -1.0;
-            }
-            break;
-        }
-
-        default:
-        {
-            unreached();
-        }
-    }
-
-    return vecCon;
-}
-
 GenTree* Compiler::gtNewSimdDotProdNode(
     var_types type, GenTree* op1, GenTree* op2, var_types simdBaseType, unsigned simdSize)
 {
@@ -27129,6 +26759,376 @@ GenTree* Compiler::gtNewSimdNarrowNode(
 #else
 #error Unsupported platform
 #endif // !TARGET_XARCH && !TARGET_ARM64
+}
+
+//----------------------------------------------------------------------------------------------
+// Compiler::gtNewSimdCreateGeometricSequenceNode: Creates a new simd CreateGeometricSequence node
+//
+//  Arguments:
+//    type                - The return type of SIMD node being created
+//    op1                 - The initial value
+//    op2                 - The multiplier value
+//    simdBaseType        - The base type of SIMD type of the intrinsic
+//    simdSize            - The size of the SIMD type of the intrinsic
+//
+// Returns:
+//    The created CreateGeometricSequence node
+//
+GenTree* Compiler::gtNewSimdCreateGeometricSequenceNode(
+    var_types type, GenTree* op1, GenTree* op2, var_types simdBaseType, unsigned simdSize)
+{
+    assert(varTypeIsSIMD(type));
+    assert(getSIMDTypeForSize(simdSize) == type);
+    assert(varTypeIsArithmetic(simdBaseType));
+    assert(op2->OperIsConst());
+
+    // op2 is expected to be constant. When op1 is also constant the whole sequence can be folded
+    // to a constant; otherwise build the constant multiplier vector and leave one broadcast+multiply.
+
+    GenTreeVecCon* vecCon    = gtNewVconNode(type);
+    uint32_t       simdCount = getSIMDVectorLength(simdSize, simdBaseType);
+    bool           isPartial = !op1->OperIsConst();
+
+    switch (simdBaseType)
+    {
+        case TYP_BYTE:
+        case TYP_UBYTE:
+        {
+            uint64_t initial    = isPartial ? 1 : static_cast<uint64_t>(op1->AsIntConCommon()->IntegralValue());
+            uint64_t multiplier = static_cast<uint64_t>(op2->AsIntConCommon()->IntegralValue());
+
+            for (uint32_t index = 0; index < simdCount; index++)
+            {
+                vecCon->gtSimdVal.u8[index] = static_cast<uint8_t>(initial);
+                initial *= multiplier;
+            }
+            break;
+        }
+
+        case TYP_SHORT:
+        case TYP_USHORT:
+        {
+            uint64_t initial    = isPartial ? 1 : static_cast<uint64_t>(op1->AsIntConCommon()->IntegralValue());
+            uint64_t multiplier = static_cast<uint64_t>(op2->AsIntConCommon()->IntegralValue());
+
+            for (uint32_t index = 0; index < simdCount; index++)
+            {
+                vecCon->gtSimdVal.u16[index] = static_cast<uint16_t>(initial);
+                initial *= multiplier;
+            }
+            break;
+        }
+
+        case TYP_INT:
+        case TYP_UINT:
+        {
+            uint64_t initial    = isPartial ? 1 : static_cast<uint64_t>(op1->AsIntConCommon()->IntegralValue());
+            uint64_t multiplier = static_cast<uint64_t>(op2->AsIntConCommon()->IntegralValue());
+
+            for (uint32_t index = 0; index < simdCount; index++)
+            {
+                vecCon->gtSimdVal.u32[index] = static_cast<uint32_t>(initial);
+                initial *= multiplier;
+            }
+            break;
+        }
+
+        case TYP_LONG:
+        case TYP_ULONG:
+        {
+            uint64_t initial    = isPartial ? 1 : static_cast<uint64_t>(op1->AsIntConCommon()->IntegralValue());
+            uint64_t multiplier = static_cast<uint64_t>(op2->AsIntConCommon()->IntegralValue());
+
+            for (uint32_t index = 0; index < simdCount; index++)
+            {
+                vecCon->gtSimdVal.u64[index] = initial;
+                initial *= multiplier;
+            }
+            break;
+        }
+
+        case TYP_FLOAT:
+        {
+            float initial    = isPartial ? 1.0f : static_cast<float>(op1->AsDblCon()->DconValue());
+            float multiplier = static_cast<float>(op2->AsDblCon()->DconValue());
+
+            for (uint32_t index = 0; index < simdCount; index++)
+            {
+                vecCon->gtSimdVal.f32[index] = initial;
+                initial *= multiplier;
+            }
+            break;
+        }
+
+        case TYP_DOUBLE:
+        {
+            double initial    = isPartial ? 1.0 : op1->AsDblCon()->DconValue();
+            double multiplier = op2->AsDblCon()->DconValue();
+
+            for (uint32_t index = 0; index < simdCount; index++)
+            {
+                vecCon->gtSimdVal.f64[index] = initial;
+                initial *= multiplier;
+            }
+            break;
+        }
+
+        default:
+        {
+            unreached();
+        }
+    }
+
+    GenTree* result = vecCon;
+
+    if (isPartial)
+    {
+        GenTree* initial = gtNewSimdCreateBroadcastNode(type, op1, simdBaseType, simdSize);
+        result           = gtNewSimdBinOpNode(GT_MUL, type, result, initial, simdBaseType, simdSize);
+    }
+
+    return result;
+}
+
+//----------------------------------------------------------------------------------------------
+// Compiler::gtNewSimdCreateAlternatingSequenceNode: Creates a new simd CreateAlternatingSequence node
+//
+//  Arguments:
+//    type                - The return type of SIMD node being created
+//    op1                 - The even-indexed value
+//    op2                 - The odd-indexed value
+//    simdBaseType        - The base type of SIMD type of the intrinsic
+//    simdSize            - The size of the SIMD type of the intrinsic
+//
+// Returns:
+//    The created CreateAlternatingSequence node
+//
+GenTree* Compiler::gtNewSimdCreateAlternatingSequenceNode(
+    var_types type, GenTree* op1, GenTree* op2, var_types simdBaseType, unsigned simdSize)
+{
+    assert(varTypeIsSIMD(type));
+    assert(getSIMDTypeForSize(simdSize) == type);
+    assert(varTypeIsArithmetic(simdBaseType));
+
+    // Fold constant pairs directly. Otherwise build two broadcasts and zip them, except where
+    // the target has a better way to broadcast the two-lane pattern directly.
+
+    uint32_t simdCount = getSIMDVectorLength(simdSize, simdBaseType);
+
+    if (simdCount == 1)
+    {
+        GenTree* result = gtNewSimdCreateBroadcastNode(type, op1, simdBaseType, simdSize);
+        return gtWrapWithSideEffects(result, op2, GTF_ALL_EFFECT);
+    }
+
+    if (op1->OperIsConst() && op2->OperIsConst())
+    {
+        GenTreeVecCon* vecCon = gtNewVconNode(type);
+
+        switch (simdBaseType)
+        {
+            case TYP_BYTE:
+            case TYP_UBYTE:
+            {
+                uint64_t even = static_cast<uint64_t>(op1->AsIntConCommon()->IntegralValue());
+                uint64_t odd  = static_cast<uint64_t>(op2->AsIntConCommon()->IntegralValue());
+
+                for (uint32_t index = 0; index < simdCount; index++)
+                {
+                    vecCon->gtSimdVal.u8[index] = static_cast<uint8_t>(((index & 1) == 0) ? even : odd);
+                }
+                break;
+            }
+
+            case TYP_SHORT:
+            case TYP_USHORT:
+            {
+                uint64_t even = static_cast<uint64_t>(op1->AsIntConCommon()->IntegralValue());
+                uint64_t odd  = static_cast<uint64_t>(op2->AsIntConCommon()->IntegralValue());
+
+                for (uint32_t index = 0; index < simdCount; index++)
+                {
+                    vecCon->gtSimdVal.u16[index] = static_cast<uint16_t>(((index & 1) == 0) ? even : odd);
+                }
+                break;
+            }
+
+            case TYP_INT:
+            case TYP_UINT:
+            {
+                uint64_t even = static_cast<uint64_t>(op1->AsIntConCommon()->IntegralValue());
+                uint64_t odd  = static_cast<uint64_t>(op2->AsIntConCommon()->IntegralValue());
+
+                for (uint32_t index = 0; index < simdCount; index++)
+                {
+                    vecCon->gtSimdVal.u32[index] = static_cast<uint32_t>(((index & 1) == 0) ? even : odd);
+                }
+                break;
+            }
+
+            case TYP_LONG:
+            case TYP_ULONG:
+            {
+                uint64_t even = static_cast<uint64_t>(op1->AsIntConCommon()->IntegralValue());
+                uint64_t odd  = static_cast<uint64_t>(op2->AsIntConCommon()->IntegralValue());
+
+                for (uint32_t index = 0; index < simdCount; index++)
+                {
+                    vecCon->gtSimdVal.u64[index] = ((index & 1) == 0) ? even : odd;
+                }
+                break;
+            }
+
+            case TYP_FLOAT:
+            {
+                double even = op1->AsDblCon()->DconValue();
+                double odd  = op2->AsDblCon()->DconValue();
+
+                for (uint32_t index = 0; index < simdCount; index++)
+                {
+                    vecCon->gtSimdVal.f32[index] = static_cast<float>(((index & 1) == 0) ? even : odd);
+                }
+                break;
+            }
+
+            case TYP_DOUBLE:
+            {
+                double even = op1->AsDblCon()->DconValue();
+                double odd  = op2->AsDblCon()->DconValue();
+
+                for (uint32_t index = 0; index < simdCount; index++)
+                {
+                    vecCon->gtSimdVal.f64[index] = ((index & 1) == 0) ? even : odd;
+                }
+                break;
+            }
+
+            default:
+            {
+                unreached();
+            }
+        }
+
+        return vecCon;
+    }
+
+#if defined(TARGET_XARCH)
+    if (((simdBaseType == TYP_INT) || (simdBaseType == TYP_UINT)) &&
+        ((compOpportunisticallyDependsOn(InstructionSet_AVX2) && ((simdSize == 16) || (simdSize == 32))) ||
+         (compOpportunisticallyDependsOn(InstructionSet_AVX512) && (simdSize == 64))))
+    {
+        // var pattern = Vector128.CreateScalarUnsafe(op1).WithElement(1, op2);
+        // return Broadcast(pattern.AsInt64()).As<T>();
+
+        GenTree* pattern = gtNewSimdCreateScalarUnsafeNode(TYP_SIMD16, op1, simdBaseType, 16);
+        pattern          = gtNewSimdWithElementNode(TYP_SIMD16, pattern, gtNewIconNode(1), op2, simdBaseType, 16);
+
+        if (simdSize == 64)
+        {
+            return gtNewSimdHWIntrinsicNode(type, pattern, NI_AVX512_BroadcastPairScalarToVector512, simdBaseType,
+                                            simdSize);
+        }
+
+        var_types      broadcastBaseType = (simdBaseType == TYP_INT) ? TYP_LONG : TYP_ULONG;
+        NamedIntrinsic broadcast =
+            (simdSize == 16) ? NI_AVX2_BroadcastScalarToVector128 : NI_AVX2_BroadcastScalarToVector256;
+        return gtNewSimdHWIntrinsicNode(type, pattern, broadcast, broadcastBaseType, simdSize);
+    }
+#endif // TARGET_XARCH
+
+    GenTree* even = gtNewSimdCreateBroadcastNode(type, op1, simdBaseType, simdSize);
+    GenTree* odd  = gtNewSimdCreateBroadcastNode(type, op2, simdBaseType, simdSize);
+
+    return gtNewSimdZipNode(type, even, odd, simdBaseType, simdSize, false);
+}
+
+//----------------------------------------------------------------------------------------------
+// Compiler::gtNewSimdGetSignSequenceNode: Creates a new simd SignSequence node
+//
+//  Arguments:
+//    type                - The return type of SIMD node being created
+//    simdBaseType        - The base type of SIMD type of the intrinsic
+//    simdSize            - The size of the SIMD type of the intrinsic
+//
+// Returns:
+//    The created SignSequence node
+//
+GenTree* Compiler::gtNewSimdGetSignSequenceNode(var_types type, var_types simdBaseType, unsigned simdSize)
+{
+    assert(varTypeIsSIMD(type));
+    assert(getSIMDTypeForSize(simdSize) == type);
+    assert(varTypeIsArithmetic(simdBaseType));
+
+    GenTreeVecCon* vecCon    = gtNewVconNode(type);
+    uint32_t       simdCount = getSIMDVectorLength(simdSize, simdBaseType);
+
+    switch (simdBaseType)
+    {
+        case TYP_BYTE:
+        case TYP_UBYTE:
+        {
+            for (uint32_t index = 0; index < simdCount; index++)
+            {
+                vecCon->gtSimdVal.u8[index] = ((index & 1) == 0) ? 1 : UINT8_MAX;
+            }
+            break;
+        }
+
+        case TYP_SHORT:
+        case TYP_USHORT:
+        {
+            for (uint32_t index = 0; index < simdCount; index++)
+            {
+                vecCon->gtSimdVal.u16[index] = ((index & 1) == 0) ? 1 : UINT16_MAX;
+            }
+            break;
+        }
+
+        case TYP_INT:
+        case TYP_UINT:
+        {
+            for (uint32_t index = 0; index < simdCount; index++)
+            {
+                vecCon->gtSimdVal.u32[index] = ((index & 1) == 0) ? 1 : UINT32_MAX;
+            }
+            break;
+        }
+
+        case TYP_LONG:
+        case TYP_ULONG:
+        {
+            for (uint32_t index = 0; index < simdCount; index++)
+            {
+                vecCon->gtSimdVal.u64[index] = ((index & 1) == 0) ? 1 : UINT64_MAX;
+            }
+            break;
+        }
+
+        case TYP_FLOAT:
+        {
+            for (uint32_t index = 0; index < simdCount; index++)
+            {
+                vecCon->gtSimdVal.f32[index] = ((index & 1) == 0) ? 1.0f : -1.0f;
+            }
+            break;
+        }
+
+        case TYP_DOUBLE:
+        {
+            for (uint32_t index = 0; index < simdCount; index++)
+            {
+                vecCon->gtSimdVal.f64[index] = ((index & 1) == 0) ? 1.0 : -1.0;
+            }
+            break;
+        }
+
+        default:
+        {
+            unreached();
+        }
+    }
+
+    return vecCon;
 }
 
 //----------------------------------------------------------------------------------------------
