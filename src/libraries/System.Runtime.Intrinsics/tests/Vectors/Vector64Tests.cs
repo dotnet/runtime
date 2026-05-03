@@ -4579,6 +4579,119 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
             }
         }
 
+        [Fact]
+        public void CreateGeometricSequenceInt32Test()
+        {
+            Vector64<int> sequence = Vector64.CreateGeometricSequence(1, 2);
+            int expected = 1;
+
+            for (int index = 0; index < Vector64<int>.Count; index++)
+            {
+                Assert.Equal(expected, sequence.GetElement(index));
+                expected *= 2;
+            }
+        }
+
+        [Fact]
+        public void CreateAlternatingSequenceInt32Test()
+        {
+            Vector64<int> sequence = Vector64.CreateAlternatingSequence(5, -5);
+
+            for (int index = 0; index < Vector64<int>.Count; index++)
+            {
+                Assert.Equal(((index & 1) == 0) ? 5 : -5, sequence.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void CreateHarmonicSequenceDoubleTest()
+        {
+            Vector64<double> sequence = Vector64.CreateHarmonicSequence(1.0, 1.0);
+            double expected = 1.0;
+
+            for (int index = 0; index < Vector64<double>.Count; index++)
+            {
+                Assert.Equal(1.0 / expected, sequence.GetElement(index));
+                expected += 1.0;
+            }
+        }
+
+        [Fact]
+        public void CreateCauchySequenceDoubleTest()
+        {
+            Vector64<double> sequence = Vector64.CreateCauchySequence(1.0, 1.0);
+            double expected = 1.0;
+
+            for (int index = 0; index < Vector64<double>.Count; index++)
+            {
+                Assert.Equal(Math.Sqrt(expected), sequence.GetElement(index));
+                expected += 1.0;
+            }
+        }
+
+        [Fact]
+        public void SignSequenceInt32Test()
+        {
+            Vector64<int> sequence = Vector64<int>.SignSequence;
+
+            for (int index = 0; index < Vector64<int>.Count; index++)
+            {
+                Assert.Equal(((index & 1) == 0) ? 1 : -1, sequence.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void LaneOperationsInt32Test()
+        {
+            Vector64<int> left = Vector64.CreateSequence(0, 1);
+            Vector64<int> right = Vector64.CreateSequence(100, 1);
+            int count = Vector64<int>.Count;
+            int lowerCount = (count + 1) / 2;
+            int upperStart = count - lowerCount;
+
+            AssertVectorEqual(CreateVector64(index => ((index & 1) == 0) ? left.GetElement(index / 2) : right.GetElement(index / 2)), Vector64.ZipLower(left, right));
+            AssertVectorEqual(CreateVector64(index => ((index & 1) == 0) ? left.GetElement(upperStart + (index / 2)) : right.GetElement(upperStart + (index / 2))), Vector64.ZipUpper(left, right));
+
+            (Vector64<int> lower, Vector64<int> upper) = Vector64.Zip(left, right);
+            AssertVectorEqual(Vector64.ZipLower(left, right), lower);
+            AssertVectorEqual(Vector64.ZipUpper(left, right), upper);
+
+            AssertVectorEqual(left, Vector64.UnzipEven(lower, upper));
+            AssertVectorEqual(right, Vector64.UnzipOdd(lower, upper));
+
+            (Vector64<int> even, Vector64<int> odd) = Vector64.Unzip(lower, upper);
+            AssertVectorEqual(left, even);
+            AssertVectorEqual(right, odd);
+
+            AssertVectorEqual(CreateVector64(index => (index < lowerCount) ? left.GetElement(index) : right.GetElement(index - lowerCount)), Vector64.ConcatLowerLower(left, right));
+            AssertVectorEqual(CreateVector64(index => (index < lowerCount) ? left.GetElement(upperStart + index) : right.GetElement(index - lowerCount)), Vector64.ConcatUpperLower(left, right));
+            AssertVectorEqual(CreateVector64(index => (index < lowerCount) ? left.GetElement(upperStart + index) : right.GetElement(upperStart + index - lowerCount)), Vector64.ConcatUpperUpper(left, right));
+            AssertVectorEqual(CreateVector64(index => (index < lowerCount) ? left.GetElement(index) : right.GetElement(upperStart + index - lowerCount)), Vector64.ConcatLowerUpper(left, right));
+
+            AssertVectorEqual(CreateVector64(index => left.GetElement(count - 1 - index)), Vector64.Reverse(left));
+        }
+
+        private static Vector64<int> CreateVector64(Func<int, int> elementSelector)
+        {
+            int[] values = new int[Vector64<int>.Count];
+
+            for (int index = 0; index < values.Length; index++)
+            {
+                values[index] = elementSelector(index);
+            }
+
+            return Vector64.Create<int>(values);
+        }
+
+        private static void AssertVectorEqual<T>(Vector64<T> expected, Vector64<T> actual)
+            where T : struct
+        {
+            for (int index = 0; index < Vector64<T>.Count; index++)
+            {
+                Assert.Equal(expected.GetElement(index), actual.GetElement(index));
+            }
+        }
+
         [Theory]
         [MemberData(nameof(GenericMathTestMemberData.AsinDouble), MemberType = typeof(GenericMathTestMemberData))]
         public void AsinDoubleTest(double value, double expectedResult, double variance)

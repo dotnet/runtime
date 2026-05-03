@@ -4531,6 +4531,119 @@ namespace System.Numerics.Tests
             }
         }
 
+        [Fact]
+        public void CreateGeometricSequenceInt32Test()
+        {
+            Vector<int> sequence = Vector.CreateGeometricSequence(1, 2);
+            int expected = 1;
+
+            for (int index = 0; index < Vector<int>.Count; index++)
+            {
+                Assert.Equal(expected, sequence.GetElement(index));
+                expected *= 2;
+            }
+        }
+
+        [Fact]
+        public void CreateAlternatingSequenceInt32Test()
+        {
+            Vector<int> sequence = Vector.CreateAlternatingSequence(5, -5);
+
+            for (int index = 0; index < Vector<int>.Count; index++)
+            {
+                Assert.Equal(((index & 1) == 0) ? 5 : -5, sequence.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void CreateHarmonicSequenceDoubleTest()
+        {
+            Vector<double> sequence = Vector.CreateHarmonicSequence(1.0, 1.0);
+            double expected = 1.0;
+
+            for (int index = 0; index < Vector<double>.Count; index++)
+            {
+                Assert.Equal(1.0 / expected, sequence.GetElement(index));
+                expected += 1.0;
+            }
+        }
+
+        [Fact]
+        public void CreateCauchySequenceDoubleTest()
+        {
+            Vector<double> sequence = Vector.CreateCauchySequence(1.0, 1.0);
+            double expected = 1.0;
+
+            for (int index = 0; index < Vector<double>.Count; index++)
+            {
+                Assert.Equal(Math.Sqrt(expected), sequence.GetElement(index));
+                expected += 1.0;
+            }
+        }
+
+        [Fact]
+        public void SignSequenceInt32Test()
+        {
+            Vector<int> sequence = Vector<int>.SignSequence;
+
+            for (int index = 0; index < Vector<int>.Count; index++)
+            {
+                Assert.Equal(((index & 1) == 0) ? 1 : -1, sequence.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void LaneOperationsInt32Test()
+        {
+            Vector<int> left = Vector.CreateSequence(0, 1);
+            Vector<int> right = Vector.CreateSequence(100, 1);
+            int count = Vector<int>.Count;
+            int lowerCount = (count + 1) / 2;
+            int upperStart = count - lowerCount;
+
+            AssertVectorEqual(CreateVector(index => ((index & 1) == 0) ? left.GetElement(index / 2) : right.GetElement(index / 2)), Vector.ZipLower(left, right));
+            AssertVectorEqual(CreateVector(index => ((index & 1) == 0) ? left.GetElement(upperStart + (index / 2)) : right.GetElement(upperStart + (index / 2))), Vector.ZipUpper(left, right));
+
+            (Vector<int> lower, Vector<int> upper) = Vector.Zip(left, right);
+            AssertVectorEqual(Vector.ZipLower(left, right), lower);
+            AssertVectorEqual(Vector.ZipUpper(left, right), upper);
+
+            AssertVectorEqual(left, Vector.UnzipEven(lower, upper));
+            AssertVectorEqual(right, Vector.UnzipOdd(lower, upper));
+
+            (Vector<int> even, Vector<int> odd) = Vector.Unzip(lower, upper);
+            AssertVectorEqual(left, even);
+            AssertVectorEqual(right, odd);
+
+            AssertVectorEqual(CreateVector(index => (index < lowerCount) ? left.GetElement(index) : right.GetElement(index - lowerCount)), Vector.ConcatLowerLower(left, right));
+            AssertVectorEqual(CreateVector(index => (index < lowerCount) ? left.GetElement(upperStart + index) : right.GetElement(index - lowerCount)), Vector.ConcatUpperLower(left, right));
+            AssertVectorEqual(CreateVector(index => (index < lowerCount) ? left.GetElement(upperStart + index) : right.GetElement(upperStart + index - lowerCount)), Vector.ConcatUpperUpper(left, right));
+            AssertVectorEqual(CreateVector(index => (index < lowerCount) ? left.GetElement(index) : right.GetElement(upperStart + index - lowerCount)), Vector.ConcatLowerUpper(left, right));
+
+            AssertVectorEqual(CreateVector(index => left.GetElement(count - 1 - index)), Vector.Reverse(left));
+        }
+
+        private static Vector<int> CreateVector(Func<int, int> elementSelector)
+        {
+            int[] values = new int[Vector<int>.Count];
+
+            for (int index = 0; index < values.Length; index++)
+            {
+                values[index] = elementSelector(index);
+            }
+
+            return new Vector<int>(values);
+        }
+
+        private static void AssertVectorEqual<T>(Vector<T> expected, Vector<T> actual)
+            where T : struct
+        {
+            for (int index = 0; index < Vector<T>.Count; index++)
+            {
+                Assert.Equal(expected.GetElement(index), actual.GetElement(index));
+            }
+        }
+
         [Theory]
         [MemberData(nameof(GenericMathTestMemberData.CosDouble), MemberType = typeof(GenericMathTestMemberData))]
         public void CosDoubleTest(double value, double expectedResult, double variance)

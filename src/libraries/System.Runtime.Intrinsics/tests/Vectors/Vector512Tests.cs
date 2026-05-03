@@ -6264,6 +6264,119 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
             }
         }
 
+        [Fact]
+        public void CreateGeometricSequenceInt32Test()
+        {
+            Vector512<int> sequence = Vector512.CreateGeometricSequence(1, 2);
+            int expected = 1;
+
+            for (int index = 0; index < Vector512<int>.Count; index++)
+            {
+                Assert.Equal(expected, sequence.GetElement(index));
+                expected *= 2;
+            }
+        }
+
+        [Fact]
+        public void CreateAlternatingSequenceInt32Test()
+        {
+            Vector512<int> sequence = Vector512.CreateAlternatingSequence(5, -5);
+
+            for (int index = 0; index < Vector512<int>.Count; index++)
+            {
+                Assert.Equal(((index & 1) == 0) ? 5 : -5, sequence.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void CreateHarmonicSequenceDoubleTest()
+        {
+            Vector512<double> sequence = Vector512.CreateHarmonicSequence(1.0, 1.0);
+            double expected = 1.0;
+
+            for (int index = 0; index < Vector512<double>.Count; index++)
+            {
+                Assert.Equal(1.0 / expected, sequence.GetElement(index));
+                expected += 1.0;
+            }
+        }
+
+        [Fact]
+        public void CreateCauchySequenceDoubleTest()
+        {
+            Vector512<double> sequence = Vector512.CreateCauchySequence(1.0, 1.0);
+            double expected = 1.0;
+
+            for (int index = 0; index < Vector512<double>.Count; index++)
+            {
+                Assert.Equal(Math.Sqrt(expected), sequence.GetElement(index));
+                expected += 1.0;
+            }
+        }
+
+        [Fact]
+        public void SignSequenceInt32Test()
+        {
+            Vector512<int> sequence = Vector512<int>.SignSequence;
+
+            for (int index = 0; index < Vector512<int>.Count; index++)
+            {
+                Assert.Equal(((index & 1) == 0) ? 1 : -1, sequence.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void LaneOperationsInt32Test()
+        {
+            Vector512<int> left = Vector512.CreateSequence(0, 1);
+            Vector512<int> right = Vector512.CreateSequence(100, 1);
+            int count = Vector512<int>.Count;
+            int lowerCount = (count + 1) / 2;
+            int upperStart = count - lowerCount;
+
+            AssertVectorEqual(CreateVector512(index => ((index & 1) == 0) ? left.GetElement(index / 2) : right.GetElement(index / 2)), Vector512.ZipLower(left, right));
+            AssertVectorEqual(CreateVector512(index => ((index & 1) == 0) ? left.GetElement(upperStart + (index / 2)) : right.GetElement(upperStart + (index / 2))), Vector512.ZipUpper(left, right));
+
+            (Vector512<int> lower, Vector512<int> upper) = Vector512.Zip(left, right);
+            AssertVectorEqual(Vector512.ZipLower(left, right), lower);
+            AssertVectorEqual(Vector512.ZipUpper(left, right), upper);
+
+            AssertVectorEqual(left, Vector512.UnzipEven(lower, upper));
+            AssertVectorEqual(right, Vector512.UnzipOdd(lower, upper));
+
+            (Vector512<int> even, Vector512<int> odd) = Vector512.Unzip(lower, upper);
+            AssertVectorEqual(left, even);
+            AssertVectorEqual(right, odd);
+
+            AssertVectorEqual(CreateVector512(index => (index < lowerCount) ? left.GetElement(index) : right.GetElement(index - lowerCount)), Vector512.ConcatLowerLower(left, right));
+            AssertVectorEqual(CreateVector512(index => (index < lowerCount) ? left.GetElement(upperStart + index) : right.GetElement(index - lowerCount)), Vector512.ConcatUpperLower(left, right));
+            AssertVectorEqual(CreateVector512(index => (index < lowerCount) ? left.GetElement(upperStart + index) : right.GetElement(upperStart + index - lowerCount)), Vector512.ConcatUpperUpper(left, right));
+            AssertVectorEqual(CreateVector512(index => (index < lowerCount) ? left.GetElement(index) : right.GetElement(upperStart + index - lowerCount)), Vector512.ConcatLowerUpper(left, right));
+
+            AssertVectorEqual(CreateVector512(index => left.GetElement(count - 1 - index)), Vector512.Reverse(left));
+        }
+
+        private static Vector512<int> CreateVector512(Func<int, int> elementSelector)
+        {
+            int[] values = new int[Vector512<int>.Count];
+
+            for (int index = 0; index < values.Length; index++)
+            {
+                values[index] = elementSelector(index);
+            }
+
+            return Vector512.Create<int>(values);
+        }
+
+        private static void AssertVectorEqual<T>(Vector512<T> expected, Vector512<T> actual)
+            where T : struct
+        {
+            for (int index = 0; index < Vector512<T>.Count; index++)
+            {
+                Assert.Equal(expected.GetElement(index), actual.GetElement(index));
+            }
+        }
+
         [Theory]
         [MemberData(nameof(GenericMathTestMemberData.AsinDouble), MemberType = typeof(GenericMathTestMemberData))]
         public void AsinDoubleTest(double value, double expectedResult, double variance)
