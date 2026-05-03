@@ -4965,124 +4965,138 @@ unsigned* Compiler::lvaComputeOptimalFrameLayoutOrder(int stkOffs, const UINT* a
         return totalCost;
     };
 
-    unsigned* sortOrder      = new (this, CMK_LvaTable) unsigned[lvaCount];
-    unsigned* candidateOrder = new (this, CMK_LvaTable) unsigned[lvaCount];
+    unsigned* sortOrder = new (this, CMK_LvaTable) unsigned[lvaCount];
     for (unsigned i = 0; i < lvaCount; i++)
     {
-        sortOrder[i]      = i;
-        candidateOrder[i] = i;
+        sortOrder[i] = i;
     }
 
     // Score the original (unsorted) order as baseline.
-    unsigned    origCost = estimateLayoutCost(sortOrder);
-    unsigned    bestCost = origCost;
-    const char* bestName = "original";
+    unsigned    origCost   = estimateLayoutCost(sortOrder);
+    unsigned    bestCost   = origCost;
+    int         bestStrategy = -1; // -1 = original order
+    const char* bestName   = "original";
 
-    // Helper to try a strategy: sort candidateOrder, estimate cost,
-    // and update best if the cost is lower.
-    auto tryStrategy = [&](const char* name, auto comparator) -> unsigned {
+    // Helper to try a strategy: sort sortOrder, estimate cost, track if best.
+    // The array is re-sorted for each strategy; after all strategies are
+    // evaluated, we do one final sort with the winner.
+    auto tryStrategy = [&](int strategyIdx, const char* name, auto comparator) -> unsigned {
         for (unsigned i = 0; i < lvaCount; i++)
-            candidateOrder[i] = i;
-        jitstd::sort(candidateOrder, candidateOrder + lvaCount, comparator);
-        unsigned cost = estimateLayoutCost(candidateOrder);
+            sortOrder[i] = i;
+        jitstd::sort(sortOrder, sortOrder + lvaCount, comparator);
+        unsigned cost = estimateLayoutCost(sortOrder);
         if (cost < bestCost)
         {
-            bestCost = cost;
-            bestName = name;
-            memcpy(sortOrder, candidateOrder, lvaCount * sizeof(unsigned));
+            bestCost     = cost;
+            bestStrategy = strategyIdx;
+            bestName     = name;
         }
         return cost;
     };
 
-    // Strategy 1: Access density (weighted ref count / size) descending.
+    // Strategy 0: Access density (weighted ref count / size) descending.
     // A small hot local is more valuable per frame byte than a large hot local.
-    unsigned densityCost = tryStrategy("density",
-        [this, lclRefCounts](unsigned n1, unsigned n2) -> bool {
-            unsigned s1 = lvaLclStackHomeSize(n1);
-            unsigned s2 = lvaLclStackHomeSize(n2);
-            weight_t w1, w2;
-            if (lclRefCounts != nullptr)
-            {
-                w1 = static_cast<weight_t>(lclRefCounts[n1]);
-                w2 = static_cast<weight_t>(lclRefCounts[n2]);
-            }
-            else
-            {
-                w1 = lvaGetDesc(n1)->lvRefCntWtd(lvaRefCountState);
-                w2 = lvaGetDesc(n2)->lvRefCntWtd(lvaRefCountState);
-            }
-            // Compare w1/s1 > w2/s2 via cross-multiply to avoid division.
-            weight_t dens1 = w1 * s2;
-            weight_t dens2 = w2 * s1;
-            if (dens1 != dens2) return dens1 > dens2;
-            bool a1 = (s1 >= 8), a2 = (s2 >= 8);
-            if (a1 != a2) return a1;
-            unsigned c1 = (lclRefCounts != nullptr) ? lclRefCounts[n1]
-                                                    : lvaGetDesc(n1)->lvRefCnt(lvaRefCountState);
-            unsigned c2 = (lclRefCounts != nullptr) ? lclRefCounts[n2]
-                                                    : lvaGetDesc(n2)->lvRefCnt(lvaRefCountState);
-            if (c1 != c2) return c1 > c2;
-            return n1 < n2;
-        });
+    auto densityCompare = [this, lclRefCounts](unsigned n1, unsigned n2) -> bool {
+        unsigned s1 = lvaLclStackHomeSize(n1);
+        unsigned s2 = lvaLclStackHomeSize(n2);
+        weight_t w1, w2;
+        if (lclRefCounts != nullptr)
+        {
+            w1 = static_cast<weight_t>(lclRefCounts[n1]);
+            w2 = static_cast<weight_t>(lclRefCounts[n2]);
+        }
+        else
+        {
+            w1 = lvaGetDesc(n1)->lvRefCntWtd(lvaRefCountState);
+            w2 = lvaGetDesc(n2)->lvRefCntWtd(lvaRefCountState);
+        }
+        // Compare w1/s1 > w2/s2 via cross-multiply to avoid division.
+        weight_t dens1 = w1 * s2;
+        weight_t dens2 = w2 * s1;
+        if (dens1 != dens2) return dens1 > dens2;
+        bool a1 = (s1 >= 8), a2 = (s2 >= 8);
+        if (a1 != a2) return a1;
+        unsigned c1 = (lclRefCounts != nullptr) ? lclRefCounts[n1]
+                                                : lvaGetDesc(n1)->lvRefCnt(lvaRefCountState);
+        unsigned c2 = (lclRefCounts != nullptr) ? lclRefCounts[n2]
+                                                : lvaGetDesc(n2)->lvRefCnt(lvaRefCountState);
+        if (c1 != c2) return c1 > c2;
+        return n1 < n2;
+    };
+    unsigned densityCost = tryStrategy(0, "density", densityCompare);
 
-    // Strategy 2: Unweighted ref count descending.
-    unsigned refCntCost = tryStrategy("refCnt",
-        [this, lclRefCounts](unsigned n1, unsigned n2) -> bool {
-            unsigned c1 = (lclRefCounts != nullptr) ? lclRefCounts[n1]
-                                                    : lvaGetDesc(n1)->lvRefCnt(lvaRefCountState);
-            unsigned c2 = (lclRefCounts != nullptr) ? lclRefCounts[n2]
-                                                    : lvaGetDesc(n2)->lvRefCnt(lvaRefCountState);
-            if (c1 != c2) return c1 > c2;
-            bool a1 = (lvaLclStackHomeSize(n1) >= 8);
-            bool a2 = (lvaLclStackHomeSize(n2) >= 8);
-            if (a1 != a2) return a1;
-            return n1 < n2;
-        });
+    // Strategy 1: Unweighted ref count descending.
+    auto refCntCompare = [this, lclRefCounts](unsigned n1, unsigned n2) -> bool {
+        unsigned c1 = (lclRefCounts != nullptr) ? lclRefCounts[n1]
+                                                : lvaGetDesc(n1)->lvRefCnt(lvaRefCountState);
+        unsigned c2 = (lclRefCounts != nullptr) ? lclRefCounts[n2]
+                                                : lvaGetDesc(n2)->lvRefCnt(lvaRefCountState);
+        if (c1 != c2) return c1 > c2;
+        bool a1 = (lvaLclStackHomeSize(n1) >= 8);
+        bool a2 = (lvaLclStackHomeSize(n2) >= 8);
+        if (a1 != a2) return a1;
+        return n1 < n2;
+    };
+    unsigned refCntCost = tryStrategy(1, "refCnt", refCntCompare);
 
-    // Strategy 3: Weighted ref count descending.
+    // Strategy 2: Weighted ref count descending.
     // For MinOpts, weighted = unweighted (no block weights available).
-    unsigned weightCost = tryStrategy("weight",
-        [this, lclRefCounts](unsigned n1, unsigned n2) -> bool {
-            weight_t w1, w2;
-            if (lclRefCounts != nullptr)
-            {
-                w1 = static_cast<weight_t>(lclRefCounts[n1]);
-                w2 = static_cast<weight_t>(lclRefCounts[n2]);
-            }
-            else
-            {
-                w1 = lvaGetDesc(n1)->lvRefCntWtd(lvaRefCountState);
-                w2 = lvaGetDesc(n2)->lvRefCntWtd(lvaRefCountState);
-            }
-            if (w1 != w2) return w1 > w2;
-            bool a1 = (lvaLclStackHomeSize(n1) >= 8);
-            bool a2 = (lvaLclStackHomeSize(n2) >= 8);
-            if (a1 != a2) return a1;
-            return n1 < n2;
-        });
+    auto weightCompare = [this, lclRefCounts](unsigned n1, unsigned n2) -> bool {
+        weight_t w1, w2;
+        if (lclRefCounts != nullptr)
+        {
+            w1 = static_cast<weight_t>(lclRefCounts[n1]);
+            w2 = static_cast<weight_t>(lclRefCounts[n2]);
+        }
+        else
+        {
+            w1 = lvaGetDesc(n1)->lvRefCntWtd(lvaRefCountState);
+            w2 = lvaGetDesc(n2)->lvRefCntWtd(lvaRefCountState);
+        }
+        if (w1 != w2) return w1 > w2;
+        bool a1 = (lvaLclStackHomeSize(n1) >= 8);
+        bool a2 = (lvaLclStackHomeSize(n2) >= 8);
+        if (a1 != a2) return a1;
+        return n1 < n2;
+    };
+    unsigned weightCost = tryStrategy(2, "weight", weightCompare);
 
-    // Strategy 4: Unweighted ref count density (refCnt / size) descending.
-    unsigned refDensityCost = tryStrategy("refDensity",
-        [this, lclRefCounts](unsigned n1, unsigned n2) -> bool {
-            unsigned c1 = (lclRefCounts != nullptr) ? lclRefCounts[n1]
-                                                    : lvaGetDesc(n1)->lvRefCnt(lvaRefCountState);
-            unsigned c2 = (lclRefCounts != nullptr) ? lclRefCounts[n2]
-                                                    : lvaGetDesc(n2)->lvRefCnt(lvaRefCountState);
-            unsigned s1 = lvaLclStackHomeSize(n1);
-            unsigned s2 = lvaLclStackHomeSize(n2);
-            // Cross-multiply to avoid division.
-            unsigned long long dens1 = (unsigned long long)c1 * s2;
-            unsigned long long dens2 = (unsigned long long)c2 * s1;
-            if (dens1 != dens2) return dens1 > dens2;
-            bool a1 = (s1 >= 8), a2 = (s2 >= 8);
-            if (a1 != a2) return a1;
-            return n1 < n2;
-        });
+    // Strategy 3: Unweighted ref count density (refCnt / size) descending.
+    auto refDensityCompare = [this, lclRefCounts](unsigned n1, unsigned n2) -> bool {
+        unsigned c1 = (lclRefCounts != nullptr) ? lclRefCounts[n1]
+                                                : lvaGetDesc(n1)->lvRefCnt(lvaRefCountState);
+        unsigned c2 = (lclRefCounts != nullptr) ? lclRefCounts[n2]
+                                                : lvaGetDesc(n2)->lvRefCnt(lvaRefCountState);
+        unsigned s1 = lvaLclStackHomeSize(n1);
+        unsigned s2 = lvaLclStackHomeSize(n2);
+        // Cross-multiply to avoid division.
+        unsigned long long dens1 = (unsigned long long)c1 * s2;
+        unsigned long long dens2 = (unsigned long long)c2 * s1;
+        if (dens1 != dens2) return dens1 > dens2;
+        bool a1 = (s1 >= 8), a2 = (s2 >= 8);
+        if (a1 != a2) return a1;
+        return n1 < n2;
+    };
+    unsigned refDensityCost = tryStrategy(3, "refDensity", refDensityCompare);
 
-    // If original order won, no sorting needed.
-    if (bestCost == origCost)
+    // Apply the winning strategy's sort order (or return nullptr if original won).
+    if (bestStrategy < 0)
     {
         sortOrder = nullptr;
+    }
+    else
+    {
+        // Re-sort with the winning comparator to produce the final order.
+        for (unsigned i = 0; i < lvaCount; i++)
+            sortOrder[i] = i;
+        switch (bestStrategy)
+        {
+            case 0: jitstd::sort(sortOrder, sortOrder + lvaCount, densityCompare); break;
+            case 1: jitstd::sort(sortOrder, sortOrder + lvaCount, refCntCompare); break;
+            case 2: jitstd::sort(sortOrder, sortOrder + lvaCount, weightCompare); break;
+            case 3: jitstd::sort(sortOrder, sortOrder + lvaCount, refDensityCompare); break;
+            default: unreached();
+        }
     }
 
     JITDUMP("Frame layout costs: original=%u density=%u refCnt=%u weight=%u refDensity=%u; "
