@@ -24541,6 +24541,9 @@ GenTree* Compiler::gtNewSimdCreateGeometricSequenceNode(
     assert(varTypeIsArithmetic(simdBaseType));
     assert(op2->OperIsConst());
 
+    // op2 is expected to be constant. When op1 is also constant the whole sequence can be folded
+    // to a constant; otherwise build the constant multiplier vector and leave one broadcast+multiply.
+
     GenTreeVecCon* vecCon    = gtNewVconNode(type);
     uint32_t       simdCount = getSIMDVectorLength(simdSize, simdBaseType);
     bool           isPartial = !op1->OperIsConst();
@@ -24666,6 +24669,9 @@ GenTree* Compiler::gtNewSimdCreateAlternatingSequenceNode(
     assert(getSIMDTypeForSize(simdSize) == type);
     assert(varTypeIsArithmetic(simdBaseType));
 
+    // Fold constant pairs directly. Otherwise build two broadcasts and zip them, except where
+    // the target has a better way to broadcast the two-lane pattern directly.
+
     uint32_t simdCount = getSIMDVectorLength(simdSize, simdBaseType);
 
     if (simdCount == 1)
@@ -24764,6 +24770,30 @@ GenTree* Compiler::gtNewSimdCreateAlternatingSequenceNode(
 
         return vecCon;
     }
+
+#if defined(TARGET_XARCH)
+    if (((simdBaseType == TYP_INT) || (simdBaseType == TYP_UINT)) &&
+        ((compOpportunisticallyDependsOn(InstructionSet_AVX2) && ((simdSize == 16) || (simdSize == 32))) ||
+         (compOpportunisticallyDependsOn(InstructionSet_AVX512) && (simdSize == 64))))
+    {
+        // var pattern = Vector128.CreateScalarUnsafe(op1).WithElement(1, op2);
+        // return Broadcast(pattern.AsInt64()).As<T>();
+
+        GenTree* pattern = gtNewSimdCreateScalarUnsafeNode(TYP_SIMD16, op1, simdBaseType, 16);
+        pattern          = gtNewSimdWithElementNode(TYP_SIMD16, pattern, gtNewIconNode(1), op2, simdBaseType, 16);
+
+        if (simdSize == 64)
+        {
+            return gtNewSimdHWIntrinsicNode(type, pattern, NI_AVX512_BroadcastPairScalarToVector512, simdBaseType,
+                                            simdSize);
+        }
+
+        var_types      broadcastBaseType = (simdBaseType == TYP_INT) ? TYP_LONG : TYP_ULONG;
+        NamedIntrinsic broadcast =
+            (simdSize == 16) ? NI_AVX2_BroadcastScalarToVector128 : NI_AVX2_BroadcastScalarToVector256;
+        return gtNewSimdHWIntrinsicNode(type, pattern, broadcast, broadcastBaseType, simdSize);
+    }
+#endif // TARGET_XARCH
 
     GenTree* even = gtNewSimdCreateBroadcastNode(type, op1, simdBaseType, simdSize);
     GenTree* odd  = gtNewSimdCreateBroadcastNode(type, op2, simdBaseType, simdSize);
@@ -27136,6 +27166,53 @@ GenTree* Compiler::gtNewSimdConcatNode(var_types type,
         return gtWrapWithSideEffects(op1, op2, GTF_ALL_EFFECT);
     }
 
+#if defined(TARGET_ARM64)
+    if ((simdSize == 8) && (simdCount == 2) &&
+        ((simdBaseType == TYP_INT) || (simdBaseType == TYP_UINT) || (simdBaseType == TYP_FLOAT)))
+    {
+        // var result = op1;
+        // if (leftUpper)
+        // {
+        //     result = result.WithElement(0, result.GetElement(1));
+        // }
+        // return result.WithElement(1, op2.GetElement(rightUpper ? 1 : 0));
+
+        GenTree* result = op1;
+
+        if (leftUpper)
+        {
+            GenTree* resultDup = fgMakeMultiUse(&result);
+            result             = gtNewSimdHWIntrinsicNode(type, result, gtNewIconNode(0), resultDup, gtNewIconNode(1),
+                                                          NI_AdvSimd_Arm64_InsertSelectedScalar, simdBaseType, simdSize);
+        }
+
+        return gtNewSimdHWIntrinsicNode(type, result, gtNewIconNode(1), op2, gtNewIconNode(rightUpper ? 1 : 0),
+                                        NI_AdvSimd_Arm64_InsertSelectedScalar, simdBaseType, simdSize);
+    }
+
+    if (simdSize == 16)
+    {
+        // var result = op1.AsUInt64();
+        // if (leftUpper)
+        // {
+        //     result = result.WithElement(0, result.GetElement(1));
+        // }
+        // return result.WithElement(1, op2.AsUInt64().GetElement(rightUpper ? 1 : 0)).As<T>();
+
+        GenTree* result = op1;
+
+        if (leftUpper)
+        {
+            GenTree* resultDup = fgMakeMultiUse(&result);
+            result             = gtNewSimdHWIntrinsicNode(type, result, gtNewIconNode(0), resultDup, gtNewIconNode(1),
+                                                          NI_AdvSimd_Arm64_InsertSelectedScalar, TYP_ULONG, simdSize);
+        }
+
+        return gtNewSimdHWIntrinsicNode(type, result, gtNewIconNode(1), op2, gtNewIconNode(rightUpper ? 1 : 0),
+                                        NI_AdvSimd_Arm64_InsertSelectedScalar, TYP_ULONG, simdSize);
+    }
+#endif // TARGET_ARM64
+
 #if defined(TARGET_XARCH)
     if (simdSize == 16)
 #elif defined(TARGET_ARM64)
@@ -27144,6 +27221,29 @@ GenTree* Compiler::gtNewSimdConcatNode(var_types type,
 #error Unsupported platform
 #endif // !TARGET_XARCH && !TARGET_ARM64
     {
+#if defined(TARGET_XARCH)
+        if ((simdBaseType == TYP_INT) || (simdBaseType == TYP_UINT))
+        {
+            // return Sse.Shuffle(op1.AsSingle(), op2.AsSingle(), immediate).As<T>();
+
+            uint32_t leftStart  = leftUpper ? simdCount - lowerCount : 0;
+            uint32_t rightStart = rightUpper ? simdCount - lowerCount : 0;
+            unsigned immediate  = 0;
+
+            for (uint32_t index = 0; index < simdCount; index++)
+            {
+                uint32_t shuffleIndex = (index < lowerCount) ? leftStart + index : rightStart + index - lowerCount;
+                immediate |= shuffleIndex << (index * 2);
+            }
+
+            return gtNewSimdHWIntrinsicNode(type, op1, op2, gtNewIconNode(immediate), NI_X86Base_Shuffle, TYP_FLOAT,
+                                            simdSize);
+        }
+#endif // TARGET_XARCH
+
+        // var tmp = op1.ToVectorUnsafe().WithUpper(op2);
+        // return Shuffle(tmp, indices).GetLower();
+
         unsigned       wideSimdSize = simdSize * 2;
         var_types      wideType     = getSIMDTypeForSize(wideSimdSize);
         GenTreeVecCon* shuffle      = gtNewVconNode(wideType);
@@ -27207,6 +27307,10 @@ GenTree* Compiler::gtNewSimdConcatNode(var_types type,
         return gtNewSimdGetLowerNode(type, result, simdBaseType, wideSimdSize);
     }
 
+    // var lower = leftUpper ? op1.GetUpper() : op1.GetLower();
+    // var upper = rightUpper ? op2.GetUpper() : op2.GetLower();
+    // return lower.ToVectorUnsafe().WithUpper(upper);
+
     var_types halfType = getSIMDTypeForSize(simdSize / 2);
     GenTree*  lower    = leftUpper ? gtNewSimdGetUpperNode(halfType, op1, simdBaseType, simdSize)
                                    : gtNewSimdGetLowerNode(halfType, op1, simdBaseType, simdSize);
@@ -27259,6 +27363,28 @@ GenTree* Compiler::gtNewSimdZipNode(
         NamedIntrinsic intrinsic = upper ? NI_X86Base_UnpackHigh : NI_X86Base_UnpackLow;
         return gtNewSimdHWIntrinsicNode(type, op1, op2, intrinsic, simdBaseType, simdSize);
     }
+
+    if ((simdSize == 64) && ((simdBaseType == TYP_INT) || (simdBaseType == TYP_UINT)) &&
+        compOpportunisticallyDependsOn(InstructionSet_AVX512))
+    {
+        // var lower = Avx512F.UnpackLow(op1, op2);
+        // var upper = Avx512F.UnpackHigh(op1, op2);
+        // return Shuffle4x128(Shuffle4x128(lower, upper, lanes), ..., SHUFFLE_WYZX);
+
+        GenTree* op1Dup = fgMakeMultiUse(&op1);
+        GenTree* op2Dup = fgMakeMultiUse(&op2);
+
+        GenTree* lower  = gtNewSimdHWIntrinsicNode(type, op1, op2, NI_AVX512_UnpackLow, simdBaseType, simdSize);
+        GenTree* higher = gtNewSimdHWIntrinsicNode(type, op1Dup, op2Dup, NI_AVX512_UnpackHigh, simdBaseType, simdSize);
+
+        unsigned lanes     = upper ? 0xEE : 0x44;
+        GenTree* result    = gtNewSimdHWIntrinsicNode(type, lower, higher, gtNewIconNode(lanes), NI_AVX512_Shuffle4x128,
+                                                      simdBaseType, simdSize);
+        GenTree* resultDup = fgMakeMultiUse(&result);
+
+        return gtNewSimdHWIntrinsicNode(type, result, resultDup, gtNewIconNode(SHUFFLE_WYZX), NI_AVX512_Shuffle4x128,
+                                        simdBaseType, simdSize);
+    }
 #elif defined(TARGET_ARM64)
     NamedIntrinsic intrinsic = upper ? NI_AdvSimd_Arm64_ZipHigh : NI_AdvSimd_Arm64_ZipLow;
     return gtNewSimdHWIntrinsicNode(type, op1, op2, intrinsic, simdBaseType, simdSize);
@@ -27267,6 +27393,10 @@ GenTree* Compiler::gtNewSimdZipNode(
 #endif // !TARGET_XARCH && !TARGET_ARM64
 
 #if defined(TARGET_XARCH)
+    // var lower = Zip(left, right, upper: false);
+    // var upper = Zip(left, right, upper: true);
+    // return lower.ToVectorUnsafe().WithUpper(upper);
+
     var_types halfType = getSIMDTypeForSize(simdSize / 2);
     GenTree*  left     = upper ? gtNewSimdGetUpperNode(halfType, op1, simdBaseType, simdSize)
                                : gtNewSimdGetLowerNode(halfType, op1, simdBaseType, simdSize);
@@ -27318,11 +27448,24 @@ GenTree* Compiler::gtNewSimdUnzipNode(
     }
 
 #if defined(TARGET_ARM64)
+    // return odd ? AdvSimd.Arm64.UnzipOdd(op1, op2) : AdvSimd.Arm64.UnzipEven(op1, op2);
+
     NamedIntrinsic intrinsic = odd ? NI_AdvSimd_Arm64_UnzipOdd : NI_AdvSimd_Arm64_UnzipEven;
     return gtNewSimdHWIntrinsicNode(type, op1, op2, intrinsic, simdBaseType, simdSize);
 #elif defined(TARGET_XARCH)
     if (simdSize == 16)
     {
+        if ((simdBaseType == TYP_INT) || (simdBaseType == TYP_UINT))
+        {
+            // return Sse.Shuffle(op1.AsSingle(), op2.AsSingle(), odd ? 0xDD : 0x88).As<T>();
+
+            return gtNewSimdHWIntrinsicNode(type, op1, op2, gtNewIconNode(odd ? 0xDD : 0x88), NI_X86Base_Shuffle,
+                                            TYP_FLOAT, simdSize);
+        }
+
+        // var tmp = op1.ToVectorUnsafe().WithUpper(op2);
+        // return Shuffle(tmp, indices).GetLower();
+
         unsigned       wideSimdSize = simdSize * 2;
         var_types      wideType     = getSIMDTypeForSize(wideSimdSize);
         GenTreeVecCon* shuffle      = gtNewVconNode(wideType);
@@ -27379,6 +27522,58 @@ GenTree* Compiler::gtNewSimdUnzipNode(
         return gtNewSimdGetLowerNode(type, result, simdBaseType, wideSimdSize);
     }
 
+    if ((simdSize == 32) && ((simdBaseType == TYP_INT) || (simdBaseType == TYP_UINT)) &&
+        compOpportunisticallyDependsOn(InstructionSet_AVX2))
+    {
+        // var left = Shuffle(op1, indices);
+        // var right = Shuffle(op2, indices);
+        // return left.GetLower().ToVector256Unsafe().WithUpper(right.GetLower());
+
+        GenTreeVecCon* shuffle = gtNewVconNode(type);
+        uint32_t       start   = odd ? 1 : 0;
+
+        for (uint32_t index = 0; index < simdCount; index++)
+        {
+            shuffle->gtSimdVal.u32[index] = start + (2 * (index % (simdCount / 2)));
+        }
+
+        assert(IsValidForShuffle(shuffle, simdSize, simdBaseType, nullptr, false));
+
+        GenTree* leftShuffle  = shuffle;
+        GenTree* rightShuffle = gtCloneExpr(shuffle);
+        GenTree* left         = gtNewSimdShuffleNode(type, op1, leftShuffle, simdBaseType, simdSize, false);
+        GenTree* right        = gtNewSimdShuffleNode(type, op2, rightShuffle, simdBaseType, simdSize, false);
+
+        var_types halfType = getSIMDTypeForSize(simdSize / 2);
+        GenTree*  lower    = gtNewSimdGetLowerNode(halfType, left, simdBaseType, simdSize);
+        GenTree*  upper    = gtNewSimdGetLowerNode(halfType, right, simdBaseType, simdSize);
+
+        GenTree* result =
+            gtNewSimdHWIntrinsicNode(type, lower, NI_Vector128_ToVector256Unsafe, simdBaseType, simdSize / 2);
+        return gtNewSimdWithUpperNode(type, result, upper, simdBaseType, simdSize);
+    }
+
+    if ((simdSize == 64) && ((simdBaseType == TYP_INT) || (simdBaseType == TYP_UINT)) &&
+        compOpportunisticallyDependsOn(InstructionSet_AVX512))
+    {
+        // return Avx512F.PermuteVar16x32x2(op1, indices, op2);
+
+        GenTreeVecCon* shuffle = gtNewVconNode(type);
+        uint32_t       start   = odd ? 1 : 0;
+
+        for (uint32_t index = 0; index < simdCount; index++)
+        {
+            shuffle->gtSimdVal.u32[index] =
+                (index < (simdCount / 2)) ? start + (2 * index) : simdCount + start + (2 * (index - (simdCount / 2)));
+        }
+
+        return gtNewSimdHWIntrinsicNode(type, op1, shuffle, op2, NI_AVX512_PermuteVar16x32x2, simdBaseType, simdSize);
+    }
+
+    // var lower = Unzip(op1.GetLower(), op1.GetUpper());
+    // var upper = Unzip(op2.GetLower(), op2.GetUpper());
+    // return lower.ToVectorUnsafe().WithUpper(upper);
+
     GenTree* op1Dup = fgMakeMultiUse(&op1);
     GenTree* op2Dup = fgMakeMultiUse(&op2);
 
@@ -27425,6 +27620,31 @@ GenTree* Compiler::gtNewSimdReverseNode(var_types type, GenTree* op1, var_types 
     {
         return op1;
     }
+
+#if defined(TARGET_XARCH)
+    if ((simdSize == 32) && ((simdBaseType == TYP_INT) || (simdBaseType == TYP_UINT)) &&
+        compOpportunisticallyDependsOn(InstructionSet_AVX2))
+    {
+        // var tmp = Avx2.Shuffle(op1, SHUFFLE_XYZW);
+        // return Avx2.Permute2x128(tmp, tmp, 1);
+
+        GenTree* reverseInLane =
+            gtNewSimdHWIntrinsicNode(type, op1, gtNewIconNode(SHUFFLE_XYZW), NI_AVX2_Shuffle, simdBaseType, simdSize);
+        GenTree* reverseInLaneDup = fgMakeMultiUse(&reverseInLane);
+
+        return gtNewSimdHWIntrinsicNode(type, reverseInLane, reverseInLaneDup, gtNewIconNode(1), NI_AVX2_Permute2x128,
+                                        simdBaseType, simdSize);
+    }
+#elif defined(TARGET_ARM64)
+    if ((simdSize == 8) && ((simdBaseType == TYP_INT) || (simdBaseType == TYP_UINT) || (simdBaseType == TYP_FLOAT)))
+    {
+        // return AdvSimd.ReverseElement32(op1.AsInt64()).As<T>();
+
+        return gtNewSimdHWIntrinsicNode(type, op1, NI_AdvSimd_ReverseElement32, TYP_LONG, simdSize);
+    }
+#endif // TARGET_XARCH || TARGET_ARM64
+
+    // return Shuffle(op1, indices);
 
     GenTreeVecCon* shuffle = gtNewVconNode(type);
 
