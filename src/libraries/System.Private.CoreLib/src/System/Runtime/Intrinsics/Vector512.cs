@@ -6,6 +6,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics.X86;
 
 namespace System.Runtime.Intrinsics
 {
@@ -1764,6 +1765,11 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector512<T> CreateHarmonicSequence<T>(T start, T step)
         {
+            if (IsHardwareAccelerated)
+            {
+                return Vector512<T>.One / CreateSequence(start, step);
+            }
+
             T upperStart = Scalar<T>.Add(start, Scalar<T>.Multiply(Scalar<T>.Convert(Vector256<T>.Count), step));
 
             return Create(
@@ -1781,6 +1787,11 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector512<T> CreateCauchySequence<T>(T start, T step)
         {
+            if (IsHardwareAccelerated)
+            {
+                return Sqrt(CreateSequence(start, step));
+            }
+
             T upperStart = Scalar<T>.Add(start, Scalar<T>.Multiply(Scalar<T>.Convert(Vector256<T>.Count), step));
 
             return Create(
@@ -1828,7 +1839,32 @@ namespace System.Runtime.Intrinsics
         /// <inheritdoc cref="Vector.Zip{T}(Vector{T}, Vector{T})" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static (Vector512<T> Lower, Vector512<T> Upper) Zip<T>(Vector512<T> left, Vector512<T> right) => (ZipLower(left, right), ZipUpper(left, right));
+        public static (Vector512<T> Lower, Vector512<T> Upper) Zip<T>(Vector512<T> left, Vector512<T> right)
+        {
+            if (Avx512F.IsSupported && ((typeof(T) == typeof(int)) || (typeof(T) == typeof(uint))))
+            {
+                Vector512<int> lower = Avx512F.UnpackLow(left.AsInt32(), right.AsInt32());
+                Vector512<int> upper = Avx512F.UnpackHigh(left.AsInt32(), right.AsInt32());
+
+                Vector512<int> lowerResult = Avx512F.Shuffle4x128(lower, upper, 0x44);
+                lowerResult = Avx512F.Shuffle4x128(lowerResult, lowerResult, 0xD8);
+
+                Vector512<int> upperResult = Avx512F.Shuffle4x128(lower, upper, 0xEE);
+                upperResult = Avx512F.Shuffle4x128(upperResult, upperResult, 0xD8);
+
+                return (lowerResult.As<int, T>(), upperResult.As<int, T>());
+            }
+
+            if (IsHardwareAccelerated)
+            {
+                return (ZipLower(left, right), ZipUpper(left, right));
+            }
+
+            (Vector256<T> lower0, Vector256<T> upper0) = Vector256.Zip(left._lower, right._lower);
+            (Vector256<T> lower1, Vector256<T> upper1) = Vector256.Zip(left._upper, right._upper);
+
+            return (Create(lower0, upper0), Create(lower1, upper1));
+        }
 
         /// <inheritdoc cref="Vector.UnzipEven{T}(Vector{T}, Vector{T})" />
         [Intrinsic]
@@ -1849,7 +1885,35 @@ namespace System.Runtime.Intrinsics
         /// <inheritdoc cref="Vector.Unzip{T}(Vector{T}, Vector{T})" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static (Vector512<T> Even, Vector512<T> Odd) Unzip<T>(Vector512<T> left, Vector512<T> right) => (UnzipEven(left, right), UnzipOdd(left, right));
+        public static (Vector512<T> Even, Vector512<T> Odd) Unzip<T>(Vector512<T> left, Vector512<T> right)
+        {
+            if (Avx512F.IsSupported && ((typeof(T) == typeof(int)) || (typeof(T) == typeof(uint))))
+            {
+                Vector512<int> evenIndices = Vector512.Create(
+                    0, 2, 4, 6, 8, 10, 12, 14,
+                    16, 18, 20, 22, 24, 26, 28, 30
+                );
+                Vector512<int> oddIndices = Vector512.Create(
+                    1, 3, 5, 7, 9, 11, 13, 15,
+                    17, 19, 21, 23, 25, 27, 29, 31
+                );
+
+                Vector512<int> even = Avx512F.PermuteVar16x32x2(left.AsInt32(), evenIndices, right.AsInt32());
+                Vector512<int> odd = Avx512F.PermuteVar16x32x2(left.AsInt32(), oddIndices, right.AsInt32());
+
+                return (even.As<int, T>(), odd.As<int, T>());
+            }
+
+            if (IsHardwareAccelerated)
+            {
+                return (UnzipEven(left, right), UnzipOdd(left, right));
+            }
+
+            (Vector256<T> even0, Vector256<T> odd0) = Vector256.Unzip(left._lower, left._upper);
+            (Vector256<T> even1, Vector256<T> odd1) = Vector256.Unzip(right._lower, right._upper);
+
+            return (Create(even0, even1), Create(odd0, odd1));
+        }
 
         /// <inheritdoc cref="Vector.Reverse{T}(Vector{T})" />
         [Intrinsic]

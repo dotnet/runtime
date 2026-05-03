@@ -1726,6 +1726,11 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<T> CreateHarmonicSequence<T>(T start, T step)
         {
+            if (IsHardwareAccelerated)
+            {
+                return Vector256<T>.One / CreateSequence(start, step);
+            }
+
             T upperStart = Scalar<T>.Add(start, Scalar<T>.Multiply(Scalar<T>.Convert(Vector128<T>.Count), step));
 
             return Create(
@@ -1743,6 +1748,11 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<T> CreateCauchySequence<T>(T start, T step)
         {
+            if (IsHardwareAccelerated)
+            {
+                return Sqrt(CreateSequence(start, step));
+            }
+
             T upperStart = Scalar<T>.Add(start, Scalar<T>.Multiply(Scalar<T>.Convert(Vector128<T>.Count), step));
 
             return Create(
@@ -1790,7 +1800,21 @@ namespace System.Runtime.Intrinsics
         /// <inheritdoc cref="Vector.Zip{T}(Vector{T}, Vector{T})" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static (Vector256<T> Lower, Vector256<T> Upper) Zip<T>(Vector256<T> left, Vector256<T> right) => (ZipLower(left, right), ZipUpper(left, right));
+        public static (Vector256<T> Lower, Vector256<T> Upper) Zip<T>(Vector256<T> left, Vector256<T> right)
+        {
+            if (Avx2.IsSupported && ((typeof(T) == typeof(int)) || (typeof(T) == typeof(uint))))
+            {
+                Vector256<int> lower = Avx2.UnpackLow(left.AsInt32(), right.AsInt32());
+                Vector256<int> upper = Avx2.UnpackHigh(left.AsInt32(), right.AsInt32());
+
+                return (
+                    Avx2.Permute2x128(lower, upper, 0x20).As<int, T>(),
+                    Avx2.Permute2x128(lower, upper, 0x31).As<int, T>()
+                );
+            }
+
+            return (ZipLower(left, right), ZipUpper(left, right));
+        }
 
         /// <inheritdoc cref="Vector.UnzipEven{T}(Vector{T}, Vector{T})" />
         [Intrinsic]
@@ -1811,7 +1835,24 @@ namespace System.Runtime.Intrinsics
         /// <inheritdoc cref="Vector.Unzip{T}(Vector{T}, Vector{T})" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static (Vector256<T> Even, Vector256<T> Odd) Unzip<T>(Vector256<T> left, Vector256<T> right) => (UnzipEven(left, right), UnzipOdd(left, right));
+        public static (Vector256<T> Even, Vector256<T> Odd) Unzip<T>(Vector256<T> left, Vector256<T> right)
+        {
+            if (Avx2.IsSupported && ((typeof(T) == typeof(int)) || (typeof(T) == typeof(uint))))
+            {
+                Vector256<int> leftUnzip = Avx2.Shuffle(left.AsInt32(), 0xD8);
+                leftUnzip = Avx2.Permute4x64(leftUnzip.AsInt64(), 0xD8).AsInt32();
+
+                Vector256<int> rightUnzip = Avx2.Shuffle(right.AsInt32(), 0xD8);
+                rightUnzip = Avx2.Permute4x64(rightUnzip.AsInt64(), 0xD8).AsInt32();
+
+                return (
+                    Avx2.Permute2x128(leftUnzip, rightUnzip, 0x20).As<int, T>(),
+                    Avx2.Permute2x128(leftUnzip, rightUnzip, 0x31).As<int, T>()
+                );
+            }
+
+            return (UnzipEven(left, right), UnzipOdd(left, right));
+        }
 
         /// <inheritdoc cref="Vector.Reverse{T}(Vector{T})" />
         [Intrinsic]
