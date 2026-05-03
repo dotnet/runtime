@@ -5156,10 +5156,10 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
     UINT assignMore             = 0xFFFFFFFF;
     bool have_LclVarDoubleAlign = false;
 
-#ifdef TARGET_AMD64
-    // Multi-strategy frame layout optimization for x64.
+#ifdef TARGET_XARCH
+    // Multi-strategy frame layout optimization for x86/x64.
     //
-    // On x64, stack accesses within [-128, +127] of the base register use a 1-byte
+    // On x86/x64, stack accesses within [-128, +127] of the base register use a 1-byte
     // displacement (disp8), while larger offsets require 4 bytes (disp32) — 3 extra
     // bytes per access. We try multiple sort orders for locals and pick the one that
     // minimizes total encoding cost, estimated by simulating the frame allocation loop.
@@ -5169,12 +5169,12 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
     // count. This gives a direct estimate of total displacement encoding bytes.
     // (See also the comment in lvaAllocLocalAndSetVirtualOffset about sorting by alignment.)
     //
-    // This optimization is safe because on AMD64, lvaAssignFrameOffsets is only called
+    // This optimization is safe because on x86/x64, lvaAssignFrameOffsets is only called
     // with FINAL_FRAME_LAYOUT (no tentative layout exists).
     //
     // We only run this for frame-pointer-based frames because the disp8 boundary check
-    // assumes RBP-relative negative virtual offsets. RSP-based frames use positive offsets
-    // after fixup and contribute negligible savings.
+    // assumes EBP/RBP-relative negative virtual offsets. ESP/RSP-based frames use positive
+    // offsets after fixup and contribute negligible savings.
     //
     // We skip this for EnC (which requires stable layout), MinOpts (where ref counts are
     // less meaningful), and frames that fit entirely within the disp8 zone.
@@ -5393,7 +5393,7 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
                     bestName, bestCost, origCost > bestCost ? origCost - bestCost : 0);
         }
     }
-#endif // TARGET_AMD64
+#endif // TARGET_XARCH
 
     for (cur = 0; alloc_order[cur]; cur++)
     {
@@ -5409,7 +5409,7 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
 
         for (unsigned sortIdx = 0; sortIdx < lvaCount; sortIdx++)
         {
-#ifdef TARGET_AMD64
+#ifdef TARGET_XARCH
             lclNum = (lclVarSortOrder != nullptr) ? lclVarSortOrder[sortIdx] : sortIdx;
 #else
             lclNum = sortIdx;
