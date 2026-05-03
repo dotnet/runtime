@@ -1344,11 +1344,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 break;
             }
 
-            if (!impStackTop(1).val->OperIsConst() && varTypeIsFloating(simdBaseType))
-            {
-                break;
-            }
-
             if (varTypeIsLong(simdBaseType) && !impStackTop(1).val->OperIsConst() && (simdSize != 8))
             {
                 // TODO-ARM64-CQ: We should support long/ulong multiplication.
