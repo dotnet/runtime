@@ -74,7 +74,7 @@ namespace System.Runtime.Intrinsics.X86
             /// </summary>
             /// <remarks>
             ///   <para>Its functionality is exposed by the public <see cref="Math.BigMul(ulong, ulong, out ulong)" />.</para>
-            ///   <para>In the future it might emit mulx on compatible hardware</para>
+            ///   <para>In the future it may emit MULX on compatible hardware.</para>
             /// </remarks>
             internal static (ulong Lower, ulong Upper) BigMul(ulong left, ulong right) => BigMul(left, right);
 

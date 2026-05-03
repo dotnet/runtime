@@ -2488,8 +2488,9 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 SingleTypeRegSet apxAwareRegCandidates =
                     ForceLowGprForApxIfNeeded(op1, RBM_NONE, canHWIntrinsicUseApxRegs);
 
-                // mulEAX always use EAX, if one operand is contained, specify other op with fixed EAX register
-                // otherwise dont force any register, we might get the second parameter in EAX
+                // mulEAX always uses EAX; if one operand is contained, force the other op into EAX.
+                // Otherwise don't force any register: the second parameter may already happen to be in EAX,
+                // in which case codegen will use it as the implicit operand.
                 srcCount = BuildOperandUses(op1, op2->isContained() ? SRBM_EAX : apxAwareRegCandidates);
                 srcCount += BuildOperandUses(op2, apxAwareRegCandidates);
 
@@ -3033,7 +3034,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
     }
     else
     {
-        // Currently dstCount = 2 is only used for DivRem and BigMul, which has special constraints and is handled
+        // Currently dstCount = 2 is only used for DivRem and BigMul, which have special constraints and are handled
         // above
         assert((dstCount == 0) ||
                ((dstCount == 2) && ((intrinsicId == NI_X86Base_DivRem) || (intrinsicId == NI_X86Base_X64_DivRem) ||
