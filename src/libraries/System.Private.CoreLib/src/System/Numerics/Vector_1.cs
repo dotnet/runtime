@@ -164,7 +164,10 @@ namespace System.Numerics
             }
         }
 
-        /// <summary>Gets a new <see cref="Vector{T}" /> with elements that alternate between one and negative one, starting with one.</summary>
+        /// <summary>
+        /// Gets a new <see cref="Vector{T}" /> with elements that alternate between one and negative one, starting with one;
+        /// for unsigned element types, the negative-one value is represented as all bits set.
+        /// </summary>
         /// <exception cref="NotSupportedException">The type of the vector (<typeparamref name="T" />) is not supported.</exception>
         public static Vector<T> SignSequence
         {

@@ -2269,11 +2269,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 break;
             }
 
-            if (!impStackTop(1).val->OperIsConst() && varTypeIsFloating(simdBaseType))
-            {
-                break;
-            }
-
             if (!impStackTop(1).val->OperIsConst() && (simdSize == 32) && varTypeIsIntegral(simdBaseType) &&
                 !compOpportunisticallyDependsOn(InstructionSet_AVX2))
             {
