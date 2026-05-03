@@ -221,16 +221,14 @@ public unsafe class ThreadTests
             {
                 thread = threadBuilder.AddThread(1, 1234);
                 exceptionInfo = threadBuilder.GetExceptionInfo(thread);
-                TargetTestHelpers helpers = threadBuilder.Builder.TargetTestHelpers;
-                MockMemorySpace.BumpAllocator allocator = threadBuilder.Builder.CreateAllocator(0x1_0000, 0x2_0000);
-                MockMemorySpace.HeapFragment handleFragment = allocator.Allocate((ulong)helpers.PointerSize, "ThrownObjectHandle");
-                helpers.WritePointer(handleFragment.Data, expectedObject);
-                exceptionInfo!.ThrownObjectHandle = handleFragment.Address;
+                exceptionInfo!.ThrownObject = (ulong)expectedObject;
             });
 
         IThread contract = target.Contracts.Thread;
         TargetPointer thrownObjectHandle = contract.GetCurrentExceptionHandle(new TargetPointer(thread!.Address));
-        Assert.Equal(new TargetPointer(exceptionInfo!.ThrownObjectHandle), thrownObjectHandle);
+        // The handle is the address of the ThrownObject field - reading through it gives the object pointer
+        Assert.NotEqual(TargetPointer.Null, thrownObjectHandle);
+        Assert.Equal(expectedObject, target.ReadPointer(thrownObjectHandle));
     }
 
     [Theory]
@@ -265,11 +263,7 @@ public unsafe class ThreadTests
             {
                 thread = threadBuilder.AddThread(1, 1234);
                 exceptionInfo = threadBuilder.GetExceptionInfo(thread);
-                TargetTestHelpers helpers = threadBuilder.Builder.TargetTestHelpers;
-                MockMemorySpace.BumpAllocator allocator = threadBuilder.Builder.CreateAllocator(0x1_0000, 0x2_0000);
-                MockMemorySpace.HeapFragment handleFragment = allocator.Allocate((ulong)helpers.PointerSize, "ThrownObjectHandle");
-                helpers.WritePointer(handleFragment.Data, TargetPointer.Null);
-                exceptionInfo!.ThrownObjectHandle = handleFragment.Address;
+                exceptionInfo!.ThrownObject = 0;
             });
 
         IThread contract = target.Contracts.Thread;

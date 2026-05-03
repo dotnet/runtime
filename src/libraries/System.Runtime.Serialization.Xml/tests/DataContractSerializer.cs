@@ -4568,6 +4568,7 @@ public static partial class DataContractSerializerTests
     private static bool IsNotWindowsRandomOSR => !PlatformDetection.IsWindows || (Environment.GetEnvironmentVariable("DOTNET_JitRandomOnStackReplacement") == null);
 
     [SkipOnPlatform(TestPlatforms.Browser, "Causes a stack overflow")]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/127463", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile), nameof(PlatformDetection.IsCoreCLR))]
     [ConditionalFact(typeof(DataContractSerializerTests), nameof(IsNotWindowsRandomOSR))]
     public static void DCS_DeeplyLinkedData()
     {

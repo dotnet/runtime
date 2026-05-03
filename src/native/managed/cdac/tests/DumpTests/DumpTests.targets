@@ -39,6 +39,24 @@
     <DebuggeesDir>$([MSBuild]::NormalizeDirectory('$(MSBuildThisFileDirectory)', 'Debuggees'))</DebuggeesDir>
     <!-- Platform-aware dotnet host and exe suffix -->
     <_DotNetExe>$([MSBuild]::NormalizePath('$(RepoRoot)', '.dotnet', 'dotnet$(ExeSuffix)'))</_DotNetExe>
+    <!-- The configuration the locally-built CoreCLR (and crossgen2) lives under.
+         The debuggee publish must pass this through so that targetingpacks.targets
+         resolves Crossgen2InBuildDir to the right path (artifacts/bin/coreclr/<os>.<arch>.<CoreCLRConfiguration>/...).
+         CoreCLRConfiguration derives from RuntimeConfiguration, which itself defaults to Configuration. -->
+    <_DebuggeeRuntimeConfig Condition="'$(_DebuggeeRuntimeConfig)' == ''">$(RuntimeConfiguration)</_DebuggeeRuntimeConfig>
+    <_DebuggeeRuntimeConfig Condition="'$(_DebuggeeRuntimeConfig)' == ''">$(Configuration)</_DebuggeeRuntimeConfig>
+    <_DebuggeeRuntimeConfig Condition="'$(_DebuggeeRuntimeConfig)' == ''">Debug</_DebuggeeRuntimeConfig>
+
+    <!-- Properties that must be propagated through to the child `dotnet publish`
+         process so that targetingpacks.targets can resolve the local runtime/ref
+         packs and Crossgen2 pack at the correct paths. In a cross-build (e.g.
+         building on linux-x64 for linux-arm) the child publish would otherwise
+         default TargetArchitecture from the process architecture and resolve
+         MicrosoftNetCoreAppRuntimePackDir to the wrong RID. -->
+    <_DebuggeePublishProps>/p:RuntimeConfiguration=$(_DebuggeeRuntimeConfig)</_DebuggeePublishProps>
+    <_DebuggeePublishProps Condition="'$(TargetArchitecture)' != ''">$(_DebuggeePublishProps) /p:TargetArchitecture=$(TargetArchitecture)</_DebuggeePublishProps>
+    <_DebuggeePublishProps Condition="'$(TargetOS)' != ''">$(_DebuggeePublishProps) /p:TargetOS=$(TargetOS)</_DebuggeePublishProps>
+    <_DebuggeePublishProps Condition="'$(BuildArchitecture)' != ''">$(_DebuggeePublishProps) /p:BuildArchitecture=$(BuildArchitecture)</_DebuggeePublishProps>
   </PropertyGroup>
 
   <!-- Auto-detect testhost from repo artifacts (used for "local" runtime version). -->
@@ -167,7 +185,7 @@
     <PropertyGroup>
       <_PublishOutDir>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'artifacts', 'bin', 'DumpTests', '$(DebuggeeName)', '$(DebuggeeConfiguration)', '$(NetCoreAppCurrent)'))</_PublishOutDir>
     </PropertyGroup>
-    <Exec Command="&quot;$(_DotNetExe)&quot; publish &quot;$(_DebuggeeCsproj)&quot; -c $(DebuggeeConfiguration) -f $(NetCoreAppCurrent) -r $(PortableTargetRid) --no-self-contained /p:PublishReadyToRun=true --nologo -o &quot;$(_PublishOutDir)&quot;" />
+    <Exec Command="&quot;$(_DotNetExe)&quot; publish &quot;$(_DebuggeeCsproj)&quot; -c $(DebuggeeConfiguration) -f $(NetCoreAppCurrent) -r $(PortableTargetRid) --no-self-contained /p:PublishReadyToRun=true $(_DebuggeePublishProps) --nologo -o &quot;$(_PublishOutDir)&quot;" />
   </Target>
 
   <Target Name="_GenerateDumpsForDebuggee">
@@ -254,7 +272,7 @@
       <_DebuggeeCsproj>$([MSBuild]::NormalizePath('$(_DebuggeeDir)', '$(DebuggeeName).csproj'))</_DebuggeeCsproj>
     </PropertyGroup>
 
-    <Exec Command="&quot;$(_DotNetExe)&quot; publish &quot;$(_DebuggeeCsproj)&quot; -c $(DebuggeeConfiguration) -f $(NetCoreAppCurrent) -r $(PortableTargetRid) --no-self-contained /p:PublishReadyToRun=true --nologo -o &quot;$(_DebuggeeBinDir)&quot;"
+    <Exec Command="&quot;$(_DotNetExe)&quot; publish &quot;$(_DebuggeeCsproj)&quot; -c $(DebuggeeConfiguration) -f $(NetCoreAppCurrent) -r $(PortableTargetRid) --no-self-contained /p:PublishReadyToRun=true $(_DebuggeePublishProps) --nologo -o &quot;$(_DebuggeeBinDir)&quot;"
           WorkingDirectory="$(_DebuggeeDir)" />
 
     <MakeDir Directories="$(_DumpDir)" />
