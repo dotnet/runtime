@@ -359,6 +359,8 @@ namespace System.Tests
         {
             foreach (NumberFormatInfo defaultFormat in new[] { null, NumberFormatInfo.CurrentInfo })
             {
+                yield return new object[] { new Decimal128(Int128.MinValue, 1), "G", defaultFormat, "-1701411834604692317316873037158841000000" };
+                yield return new object[] { new Decimal128(Int128.MaxValue, 1), "G", defaultFormat, "1701411834604692317316873037158841000000" };
                 yield return new object[] { new Decimal128(3, 6144), "G", defaultFormat, "3" + new string('0', 6144) };
                 yield return new object[] { new Decimal128(-3, 6144), "G", defaultFormat, "-3" + new string('0', 6144) };
                 yield return new object[] { new Decimal128(-4567, 0), "G", defaultFormat, "-4567" };

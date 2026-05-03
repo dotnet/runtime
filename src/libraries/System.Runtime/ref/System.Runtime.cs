@@ -11326,7 +11326,7 @@ namespace System.Numerics
         public static Decimal32 Parse(string s, System.Globalization.NumberStyles style) { throw null; }
         public static Decimal32 Parse(ReadOnlySpan<char> s, IFormatProvider? provider) { throw null; }
         public static Decimal32 Parse(string s, IFormatProvider? provider) { throw null; }
-        public static Decimal32 Parse(ReadOnlySpan<char> s, System.Globalization.NumberStyles style = System.Globalization.NumberStyles.Number, IFormatProvider? provider = null) { throw null; }
+        public static Decimal32 Parse(ReadOnlySpan<char> s, System.Globalization.NumberStyles style = System.Globalization.NumberStyles.AllowDecimalPoint | System.Globalization.NumberStyles.AllowExponent | System.Globalization.NumberStyles.AllowLeadingSign | System.Globalization.NumberStyles.AllowLeadingWhite | System.Globalization.NumberStyles.AllowThousands | System.Globalization.NumberStyles.AllowTrailingWhite, IFormatProvider? provider = null) { throw null; }
         public static Decimal32 Parse(string s, System.Globalization.NumberStyles style, IFormatProvider? provider) { throw null; }
 
         public static Decimal32 NaN { get { throw null; } }
@@ -11367,7 +11367,7 @@ namespace System.Numerics
         public static Decimal64 Parse(string s, System.Globalization.NumberStyles style) { throw null; }
         public static Decimal64 Parse(ReadOnlySpan<char> s, IFormatProvider? provider) { throw null; }
         public static Decimal64 Parse(string s, IFormatProvider? provider) { throw null; }
-        public static Decimal64 Parse(ReadOnlySpan<char> s, System.Globalization.NumberStyles style = System.Globalization.NumberStyles.Number, IFormatProvider? provider = null) { throw null; }
+        public static Decimal64 Parse(ReadOnlySpan<char> s, System.Globalization.NumberStyles style = System.Globalization.NumberStyles.AllowDecimalPoint | System.Globalization.NumberStyles.AllowExponent | System.Globalization.NumberStyles.AllowLeadingSign | System.Globalization.NumberStyles.AllowLeadingWhite | System.Globalization.NumberStyles.AllowThousands | System.Globalization.NumberStyles.AllowTrailingWhite, IFormatProvider? provider = null) { throw null; }
         public static Decimal64 Parse(string s, System.Globalization.NumberStyles style, IFormatProvider? provider) { throw null; }
 
         public static Decimal64 NaN { get { throw null; } }
@@ -11408,7 +11408,7 @@ namespace System.Numerics
         public static Decimal128 Parse(string s, System.Globalization.NumberStyles style) { throw null; }
         public static Decimal128 Parse(ReadOnlySpan<char> s, IFormatProvider? provider) { throw null; }
         public static Decimal128 Parse(string s, IFormatProvider? provider) { throw null; }
-        public static Decimal128 Parse(ReadOnlySpan<char> s, System.Globalization.NumberStyles style = System.Globalization.NumberStyles.Number, IFormatProvider? provider = null) { throw null; }
+        public static Decimal128 Parse(ReadOnlySpan<char> s, System.Globalization.NumberStyles style = System.Globalization.NumberStyles.AllowDecimalPoint | System.Globalization.NumberStyles.AllowExponent | System.Globalization.NumberStyles.AllowLeadingSign | System.Globalization.NumberStyles.AllowLeadingWhite | System.Globalization.NumberStyles.AllowThousands | System.Globalization.NumberStyles.AllowTrailingWhite, IFormatProvider? provider = null) { throw null; }
         public static Decimal128 Parse(string s, System.Globalization.NumberStyles style, IFormatProvider? provider) { throw null; }
 
         public static Decimal128 NaN { get { throw null; } }

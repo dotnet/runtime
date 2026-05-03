@@ -63,7 +63,9 @@ namespace System.Numerics
 
         public Decimal32(int significand, int exponent)
         {
-            _value = Number.ConstructorToDecimalIeee754Bits<Decimal32, uint>(significand < 0, (uint)Math.Abs(significand), exponent);
+            bool isNegative = significand < 0;
+            uint unsignedSignificand = isNegative ? (uint)(-(long)significand) : (uint)significand;
+            _value = Number.ConstructorToDecimalIeee754Bits<Decimal32, uint>(isNegative, unsignedSignificand, exponent);;
         }
 
         /// <summary>
@@ -99,7 +101,7 @@ namespace System.Numerics
         /// <param name="style">The <see cref="NumberStyles"/> used to parse the input.</param>
         /// <param name="provider">A format provider. </param>
         /// <returns>The equivalent <see cref="Decimal32"/> value representing the input string. If the input exceeds Decimal32's range, a <see cref="PositiveInfinityValue"/> or <see cref="NegativeInfinityValue"/> is returned. </returns>
-        public static Decimal32 Parse(ReadOnlySpan<char> s, NumberStyles style = NumberStyles.Number, IFormatProvider? provider = null)
+        public static Decimal32 Parse(ReadOnlySpan<char> s, NumberStyles style = NumberStyles.Float | NumberStyles.AllowThousands, IFormatProvider? provider = null)
         {
             NumberFormatInfo.ValidateParseStyleFloatingPoint(style);
             return Number.ParseDecimalIeee754<char, Decimal32, uint>(s, style, NumberFormatInfo.GetInstance(provider));

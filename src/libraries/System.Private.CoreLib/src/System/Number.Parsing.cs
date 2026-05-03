@@ -1026,7 +1026,7 @@ namespace System
                     }
 
                     result = TDecimal.Construct(TDecimal.Zero);
-                    return ParsingStatus.OK;
+                    return ParsingStatus.Failed;
                 }
 
                 ReadOnlySpan<TChar> negativeSign = info.NegativeSignTChar<TChar>();

@@ -390,7 +390,6 @@ namespace System
             }
 
             string result = vlb.AsSpan().ToString();
-            vlb.Dispose();
             if (buffer != null)
             {
                 ArrayPool<byte>.Shared.Return(buffer);

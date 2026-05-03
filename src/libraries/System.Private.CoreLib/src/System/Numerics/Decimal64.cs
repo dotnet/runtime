@@ -66,7 +66,9 @@ namespace System.Numerics
 
         public Decimal64(long significand, int exponent)
         {
-            _value = Number.ConstructorToDecimalIeee754Bits<Decimal64, ulong>(significand < 0, (ulong)Math.Abs(significand), exponent);
+            bool isNegative = significand < 0;
+            ulong magnitude = isNegative ? 0UL - (ulong)significand : (ulong)significand;
+            _value = Number.ConstructorToDecimalIeee754Bits<Decimal64, ulong>(isNegative, magnitude, exponent);
         }
 
         internal Decimal64(ulong value)
@@ -107,7 +109,7 @@ namespace System.Numerics
         /// <param name="style">The <see cref="NumberStyles"/> used to parse the input.</param>
         /// <param name="provider">A format provider. </param>
         /// <returns>The equivalent <see cref="Decimal64"/> value representing the input string. If the input exceeds Decimal64's range, a <see cref="PositiveInfinityValue"/> or <see cref="NegativeInfinityValue"/> is returned. </returns>
-        public static Decimal64 Parse(ReadOnlySpan<char> s, NumberStyles style = NumberStyles.Number, IFormatProvider? provider = null)
+        public static Decimal64 Parse(ReadOnlySpan<char> s, NumberStyles style = NumberStyles.Float | NumberStyles.AllowThousands, IFormatProvider? provider = null)
         {
             NumberFormatInfo.ValidateParseStyleFloatingPoint(style);
             return Number.ParseDecimalIeee754<char, Decimal64, ulong>(s, style, NumberFormatInfo.GetInstance(provider));

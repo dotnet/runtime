@@ -344,6 +344,8 @@ namespace System.Tests
         {
             foreach (NumberFormatInfo defaultFormat in new[] { null, NumberFormatInfo.CurrentInfo })
             {
+                yield return new object[] { new Decimal32(int.MinValue, 1), "G", defaultFormat, "-21474840000" };
+                yield return new object[] { new Decimal32(int.MaxValue, 1), "G", defaultFormat, "21474840000" };
                 yield return new object[] { new Decimal32(3, 96), "G", defaultFormat, "3" + new string('0', 96) };
                 yield return new object[] { new Decimal32(-3, 96), "G", defaultFormat, "-3" + new string('0', 96) };
                 yield return new object[] { new Decimal32(-4567, 0), "G", defaultFormat, "-4567" };

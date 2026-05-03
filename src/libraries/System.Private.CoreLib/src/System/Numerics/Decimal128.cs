@@ -93,7 +93,7 @@ namespace System.Numerics
         /// <param name="style">The <see cref="NumberStyles"/> used to parse the input.</param>
         /// <param name="provider">A format provider. </param>
         /// <returns>The equivalent <see cref="Decimal128"/> value representing the input string. If the input exceeds Decimal128's range, a <see cref="PositiveInfinityValue"/> or <see cref="NegativeInfinityValue"/> is returned. </returns>
-        public static Decimal128 Parse(ReadOnlySpan<char> s, NumberStyles style = NumberStyles.Number, IFormatProvider? provider = null)
+        public static Decimal128 Parse(ReadOnlySpan<char> s, NumberStyles style = NumberStyles.Float | NumberStyles.AllowThousands, IFormatProvider? provider = null)
         {
             NumberFormatInfo.ValidateParseStyleFloatingPoint(style);
             return Number.ParseDecimalIeee754<char, Decimal128, UInt128>(s, style, NumberFormatInfo.GetInstance(provider));
@@ -251,7 +251,7 @@ namespace System.Numerics
             return Number.FormatDecimalIeee754<Decimal128, UInt128>(new UInt128(_upper, _lower), format, NumberFormatInfo.GetInstance(provider));
         }
 
-        private static UInt128[] UInt128Powers10 =>
+        private static readonly UInt128[] UInt128Powers10 =
             [
                 new UInt128(0, 1),
                 new UInt128(0, 10),
