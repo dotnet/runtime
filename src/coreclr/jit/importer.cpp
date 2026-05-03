@@ -9691,11 +9691,17 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 // Remember static-readonly fields written from a cctor; the late
                 // `fgPromoteCctorAllocsToFrozenHeap` phase uses this set to identify
                 // candidates without needing to re-resolve the field token.
+                //
+                // Restrict to fields whose owning class is the cctor's class. Verifiable
+                // IL forbids cross-class stsfld of initonly fields, but unverifiable IL
+                // can do it -- promoting such allocations could leave a frozen object
+                // orphaned if some other writer overwrites the field later.
                 if (isStoreStatic && ((info.compFlags & FLG_CCTOR) == FLG_CCTOR) &&
                     opts.jitFlags->IsSet(JitFlags::JIT_FLAG_FROZEN_ALLOC_ALLOWED) &&
                     ((fieldInfo.fieldFlags & (CORINFO_FLG_FIELD_STATIC | CORINFO_FLG_FIELD_FINAL)) ==
                      (CORINFO_FLG_FIELD_STATIC | CORINFO_FLG_FIELD_FINAL)) &&
-                    !eeIsSharedInst(info.compClassHnd))
+                    !eeIsSharedInst(info.compClassHnd) &&
+                    (info.compCompHnd->getFieldClass(resolvedToken.hField) == info.compClassHnd))
                 {
                     if (m_cctorFinalStaticFields == nullptr)
                     {
