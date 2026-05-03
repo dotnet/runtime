@@ -1706,12 +1706,8 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<T> CreateAlternatingSequence<T>(T even, T odd)
         {
-            Vector128<T> lower = Vector128.CreateAlternatingSequence(even, odd);
-            Vector128<T> upper = ((Vector128<T>.Count & 1) == 0)
-                ? Vector128.CreateAlternatingSequence(even, odd)
-                : Vector128.CreateAlternatingSequence(odd, even);
-
-            return Create(lower, upper);
+            Vector128<T> sequence = Vector128.CreateAlternatingSequence(even, odd);
+            return Create(sequence, sequence);
         }
 
         /// <summary>Creates a new <see cref="Vector256{T}" /> instance whose elements are the reciprocal of an arithmetic sequence.</summary>
