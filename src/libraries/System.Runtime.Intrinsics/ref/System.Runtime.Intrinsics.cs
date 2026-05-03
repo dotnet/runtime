@@ -4,6 +4,8 @@
 // Changes to this file must follow the https://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
+using System.Diagnostics.CodeAnalysis;
+
 namespace System.Runtime.Intrinsics
 {
     public static partial class Vector128
