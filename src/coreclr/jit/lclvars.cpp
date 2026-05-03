@@ -4867,8 +4867,7 @@ unsigned* Compiler::lvaComputeOptimalFrameLayoutOrder(int stkOffs, const UINT* a
 
     JITDUMP("Frame layout optimization: trying multiple strategies for %u locals "
             "(estimated frame size %u bytes%s)\n",
-            lvaCount, estimatedLocalSize,
-            lclRefCounts != nullptr ? ", using lightweight ref counts" : "");
+            lvaCount, estimatedLocalSize, lclRefCounts != nullptr ? ", using lightweight ref counts" : "");
 
     // Pre-compute which locals will be allocated in the main loop and their
     // pass category. Category 0 means "not allocatable" (skipped by the loop).
@@ -4876,7 +4875,7 @@ unsigned* Compiler::lvaComputeOptimalFrameLayoutOrder(int stkOffs, const UINT* a
     for (unsigned i = 0; i < lvaCount; i++)
     {
         lclPassCategory[i] = 0;
-        LclVarDsc* varDsc = lvaGetDesc(i);
+        LclVarDsc* varDsc  = lvaGetDesc(i);
 
         if (lvaIsFieldOfDependentlyPromotedStruct(varDsc))
             continue;
@@ -4892,16 +4891,14 @@ unsigned* Compiler::lvaComputeOptimalFrameLayoutOrder(int stkOffs, const UINT* a
             continue;
         if (i == lvaRetAddrVar)
             continue;
-        if (i == lvaMonAcquired || i == lvaAsyncExecutionContextVar ||
-            i == lvaAsyncSynchronizationContextVar)
+        if (i == lvaMonAcquired || i == lvaAsyncExecutionContextVar || i == lvaAsyncSynchronizationContextVar)
             continue;
         if (varDsc->lvIsParam && !lvaParamHasLocalStackSpace(i))
             continue;
 
         if (varDsc->lvIsUnsafeBuffer && compGSReorderStackLayout)
         {
-            lclPassCategory[i] =
-                varDsc->lvIsPtr ? ALLOC_UNSAFE_BUFFERS_WITH_PTRS : ALLOC_UNSAFE_BUFFERS;
+            lclPassCategory[i] = varDsc->lvIsPtr ? ALLOC_UNSAFE_BUFFERS_WITH_PTRS : ALLOC_UNSAFE_BUFFERS;
         }
         else if (varTypeIsGC(varDsc->TypeGet()) && varDsc->lvTracked)
         {
@@ -4918,7 +4915,7 @@ unsigned* Compiler::lvaComputeOptimalFrameLayoutOrder(int stkOffs, const UINT* a
     // When block init is used, the JIT zeros a contiguous range [untrLclLo, untrLclHi]
     // using SIMD stores. The code size depends on the span and alignment, so layouts
     // that scatter init-requiring locals produce larger prologs.
-    bool* lclNeedsInit  = new (this, CMK_LvaTable) bool[lvaCount];
+    bool*    lclNeedsInit  = new (this, CMK_LvaTable) bool[lvaCount];
     unsigned initSlotCount = 0;
     for (unsigned i = 0; i < lvaCount; i++)
     {
@@ -4996,8 +4993,7 @@ unsigned* Compiler::lvaComputeOptimalFrameLayoutOrder(int stkOffs, const UINT* a
 
                 simOff -= static_cast<int>(size);
 
-                unsigned refCnt = (lclRefCounts != nullptr) ? lclRefCounts[lcl]
-                                                            : varDsc->lvRefCnt(lvaRefCountState);
+                unsigned refCnt = (lclRefCounts != nullptr) ? lclRefCounts[lcl] : varDsc->lvRefCnt(lvaRefCountState);
                 totalCost += refCnt * ((simOff >= -128) ? 1u : 4u);
 
                 // Track the zero-init span for block-init cost estimation.
@@ -5041,10 +5037,10 @@ unsigned* Compiler::lvaComputeOptimalFrameLayoutOrder(int stkOffs, const UINT* a
     }
 
     // Score the original (unsorted) order as baseline.
-    unsigned    origCost   = estimateLayoutCost(sortOrder);
-    unsigned    bestCost   = origCost;
+    unsigned    origCost     = estimateLayoutCost(sortOrder);
+    unsigned    bestCost     = origCost;
     int         bestStrategy = -1; // -1 = original order
-    const char* bestName   = "original";
+    const char* bestName     = "original";
 
     // Helper to try a strategy: sort sortOrder, estimate cost, track if best.
     // The array is re-sorted for each strategy; after all strategies are
@@ -5082,28 +5078,29 @@ unsigned* Compiler::lvaComputeOptimalFrameLayoutOrder(int stkOffs, const UINT* a
         // Compare w1/s1 > w2/s2 via cross-multiply to avoid division.
         weight_t dens1 = w1 * s2;
         weight_t dens2 = w2 * s1;
-        if (dens1 != dens2) return dens1 > dens2;
+        if (dens1 != dens2)
+            return dens1 > dens2;
         bool a1 = (s1 >= 8), a2 = (s2 >= 8);
-        if (a1 != a2) return a1;
-        unsigned c1 = (lclRefCounts != nullptr) ? lclRefCounts[n1]
-                                                : lvaGetDesc(n1)->lvRefCnt(lvaRefCountState);
-        unsigned c2 = (lclRefCounts != nullptr) ? lclRefCounts[n2]
-                                                : lvaGetDesc(n2)->lvRefCnt(lvaRefCountState);
-        if (c1 != c2) return c1 > c2;
+        if (a1 != a2)
+            return a1;
+        unsigned c1 = (lclRefCounts != nullptr) ? lclRefCounts[n1] : lvaGetDesc(n1)->lvRefCnt(lvaRefCountState);
+        unsigned c2 = (lclRefCounts != nullptr) ? lclRefCounts[n2] : lvaGetDesc(n2)->lvRefCnt(lvaRefCountState);
+        if (c1 != c2)
+            return c1 > c2;
         return n1 < n2;
     };
     unsigned densityCost = tryStrategy(0, "density", densityCompare);
 
     // Strategy 1: Unweighted ref count descending.
     auto refCntCompare = [this, lclRefCounts](unsigned n1, unsigned n2) -> bool {
-        unsigned c1 = (lclRefCounts != nullptr) ? lclRefCounts[n1]
-                                                : lvaGetDesc(n1)->lvRefCnt(lvaRefCountState);
-        unsigned c2 = (lclRefCounts != nullptr) ? lclRefCounts[n2]
-                                                : lvaGetDesc(n2)->lvRefCnt(lvaRefCountState);
-        if (c1 != c2) return c1 > c2;
+        unsigned c1 = (lclRefCounts != nullptr) ? lclRefCounts[n1] : lvaGetDesc(n1)->lvRefCnt(lvaRefCountState);
+        unsigned c2 = (lclRefCounts != nullptr) ? lclRefCounts[n2] : lvaGetDesc(n2)->lvRefCnt(lvaRefCountState);
+        if (c1 != c2)
+            return c1 > c2;
         bool a1 = (lvaLclStackHomeSize(n1) >= 8);
         bool a2 = (lvaLclStackHomeSize(n2) >= 8);
-        if (a1 != a2) return a1;
+        if (a1 != a2)
+            return a1;
         return n1 < n2;
     };
     unsigned refCntCost = tryStrategy(1, "refCnt", refCntCompare);
@@ -5122,28 +5119,30 @@ unsigned* Compiler::lvaComputeOptimalFrameLayoutOrder(int stkOffs, const UINT* a
             w1 = lvaGetDesc(n1)->lvRefCntWtd(lvaRefCountState);
             w2 = lvaGetDesc(n2)->lvRefCntWtd(lvaRefCountState);
         }
-        if (w1 != w2) return w1 > w2;
+        if (w1 != w2)
+            return w1 > w2;
         bool a1 = (lvaLclStackHomeSize(n1) >= 8);
         bool a2 = (lvaLclStackHomeSize(n2) >= 8);
-        if (a1 != a2) return a1;
+        if (a1 != a2)
+            return a1;
         return n1 < n2;
     };
     unsigned weightCost = tryStrategy(2, "weight", weightCompare);
 
     // Strategy 3: Unweighted ref count density (refCnt / size) descending.
     auto refDensityCompare = [this, lclRefCounts](unsigned n1, unsigned n2) -> bool {
-        unsigned c1 = (lclRefCounts != nullptr) ? lclRefCounts[n1]
-                                                : lvaGetDesc(n1)->lvRefCnt(lvaRefCountState);
-        unsigned c2 = (lclRefCounts != nullptr) ? lclRefCounts[n2]
-                                                : lvaGetDesc(n2)->lvRefCnt(lvaRefCountState);
+        unsigned c1 = (lclRefCounts != nullptr) ? lclRefCounts[n1] : lvaGetDesc(n1)->lvRefCnt(lvaRefCountState);
+        unsigned c2 = (lclRefCounts != nullptr) ? lclRefCounts[n2] : lvaGetDesc(n2)->lvRefCnt(lvaRefCountState);
         unsigned s1 = lvaLclStackHomeSize(n1);
         unsigned s2 = lvaLclStackHomeSize(n2);
         // Cross-multiply to avoid division.
         unsigned long long dens1 = (unsigned long long)c1 * s2;
         unsigned long long dens2 = (unsigned long long)c2 * s1;
-        if (dens1 != dens2) return dens1 > dens2;
+        if (dens1 != dens2)
+            return dens1 > dens2;
         bool a1 = (s1 >= 8), a2 = (s2 >= 8);
-        if (a1 != a2) return a1;
+        if (a1 != a2)
+            return a1;
         return n1 < n2;
     };
     unsigned refDensityCost = tryStrategy(3, "refDensity", refDensityCompare);
@@ -5154,13 +5153,13 @@ unsigned* Compiler::lvaComputeOptimalFrameLayoutOrder(int stkOffs, const UINT* a
     auto sizeAscCompare = [this, lclRefCounts](unsigned n1, unsigned n2) -> bool {
         unsigned s1 = lvaLclStackHomeSize(n1);
         unsigned s2 = lvaLclStackHomeSize(n2);
-        if (s1 != s2) return s1 < s2;
+        if (s1 != s2)
+            return s1 < s2;
         // Within same size, prefer hotter locals first.
-        unsigned c1 = (lclRefCounts != nullptr) ? lclRefCounts[n1]
-                                                : lvaGetDesc(n1)->lvRefCnt(lvaRefCountState);
-        unsigned c2 = (lclRefCounts != nullptr) ? lclRefCounts[n2]
-                                                : lvaGetDesc(n2)->lvRefCnt(lvaRefCountState);
-        if (c1 != c2) return c1 > c2;
+        unsigned c1 = (lclRefCounts != nullptr) ? lclRefCounts[n1] : lvaGetDesc(n1)->lvRefCnt(lvaRefCountState);
+        unsigned c2 = (lclRefCounts != nullptr) ? lclRefCounts[n2] : lvaGetDesc(n2)->lvRefCnt(lvaRefCountState);
+        if (c1 != c2)
+            return c1 > c2;
         return n1 < n2;
     };
     unsigned sizeAscCost = tryStrategy(4, "sizeAsc", sizeAscCompare);
@@ -5170,7 +5169,8 @@ unsigned* Compiler::lvaComputeOptimalFrameLayoutOrder(int stkOffs, const UINT* a
     // tight while still prioritizing hot locals within each group.
     auto initGroupedDensityCompare = [this, lclRefCounts, lclNeedsInit](unsigned n1, unsigned n2) -> bool {
         bool init1 = lclNeedsInit[n1], init2 = lclNeedsInit[n2];
-        if (init1 != init2) return init1; // init-needing first
+        if (init1 != init2)
+            return init1; // init-needing first
         unsigned s1 = lvaLclStackHomeSize(n1);
         unsigned s2 = lvaLclStackHomeSize(n2);
         weight_t w1, w2;
@@ -5186,9 +5186,11 @@ unsigned* Compiler::lvaComputeOptimalFrameLayoutOrder(int stkOffs, const UINT* a
         }
         weight_t dens1 = w1 * s2;
         weight_t dens2 = w2 * s1;
-        if (dens1 != dens2) return dens1 > dens2;
+        if (dens1 != dens2)
+            return dens1 > dens2;
         bool a1 = (s1 >= 8), a2 = (s2 >= 8);
-        if (a1 != a2) return a1;
+        if (a1 != a2)
+            return a1;
         return n1 < n2;
     };
     unsigned initGroupedDensityCost = tryStrategy(5, "initGroupedDensity", initGroupedDensityCompare);
@@ -5205,21 +5207,33 @@ unsigned* Compiler::lvaComputeOptimalFrameLayoutOrder(int stkOffs, const UINT* a
             sortOrder[i] = i;
         switch (bestStrategy)
         {
-            case 0: jitstd::sort(sortOrder, sortOrder + lvaCount, densityCompare); break;
-            case 1: jitstd::sort(sortOrder, sortOrder + lvaCount, refCntCompare); break;
-            case 2: jitstd::sort(sortOrder, sortOrder + lvaCount, weightCompare); break;
-            case 3: jitstd::sort(sortOrder, sortOrder + lvaCount, refDensityCompare); break;
-            case 4: jitstd::sort(sortOrder, sortOrder + lvaCount, sizeAscCompare); break;
-            case 5: jitstd::sort(sortOrder, sortOrder + lvaCount, initGroupedDensityCompare); break;
-            default: unreached();
+            case 0:
+                jitstd::sort(sortOrder, sortOrder + lvaCount, densityCompare);
+                break;
+            case 1:
+                jitstd::sort(sortOrder, sortOrder + lvaCount, refCntCompare);
+                break;
+            case 2:
+                jitstd::sort(sortOrder, sortOrder + lvaCount, weightCompare);
+                break;
+            case 3:
+                jitstd::sort(sortOrder, sortOrder + lvaCount, refDensityCompare);
+                break;
+            case 4:
+                jitstd::sort(sortOrder, sortOrder + lvaCount, sizeAscCompare);
+                break;
+            case 5:
+                jitstd::sort(sortOrder, sortOrder + lvaCount, initGroupedDensityCompare);
+                break;
+            default:
+                unreached();
         }
     }
 
     JITDUMP("Frame layout costs: original=%u density=%u refCnt=%u weight=%u refDensity=%u "
             "sizeAsc=%u initGroupedDensity=%u; "
             "selected '%s' (cost=%u, saved %u encoding bytes est.)\n",
-            origCost, densityCost, refCntCost, weightCost, refDensityCost,
-            sizeAscCost, initGroupedDensityCost,
+            origCost, densityCost, refCntCost, weightCost, refDensityCost, sizeAscCost, initGroupedDensityCost,
             bestName, bestCost, origCost > bestCost ? origCost - bestCost : 0);
 
     return sortOrder;
