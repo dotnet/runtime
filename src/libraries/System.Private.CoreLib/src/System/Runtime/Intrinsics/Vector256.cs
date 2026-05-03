@@ -1658,6 +1658,200 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<T> CreateSequence<T>(T start, T step) => (Vector256<T>.Indices * step) + Create(start);
 
+        /// <summary>Creates a new <see cref="Vector256{T}" /> instance where the elements begin at a specified value and are multiplied by another specified value.</summary>
+        /// <typeparam name="T">The type of the elements in the vector.</typeparam>
+        /// <param name="initial">The value that element 0 will be initialized to.</param>
+        /// <param name="multiplier">The value that indicates how each element should be scaled from the previous.</param>
+        /// <returns>A new <see cref="Vector256{T}" /> instance with the first element initialized to <paramref name="initial" /> and each subsequent element initialized to the value of the previous element multiplied by <paramref name="multiplier" />.</returns>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector256<T> CreateGeometricSequence<T>(T initial, [ConstantExpected] T multiplier)
+        {
+            int count = Vector256<T>.Count;
+            Unsafe.SkipInit(out Vector256<T> result);
+
+            T value = initial;
+
+            for (int index = 0; index < count; index++)
+            {
+                result.SetElementUnsafe(index, value);
+                value = Scalar<T>.Multiply(value, multiplier);
+            }
+
+            return result;
+        }
+
+        /// <summary>Creates a new <see cref="Vector256{T}" /> instance whose elements alternate between two specified values.</summary>
+        /// <typeparam name="T">The type of the elements in the vector.</typeparam>
+        /// <param name="even">The value assigned to even-indexed elements.</param>
+        /// <param name="odd">The value assigned to odd-indexed elements.</param>
+        /// <returns>A new <see cref="Vector256{T}" /> instance whose even-indexed elements are initialized to <paramref name="even" /> and odd-indexed elements are initialized to <paramref name="odd" />.</returns>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector256<T> CreateAlternatingSequence<T>(T even, T odd)
+        {
+            int count = Vector256<T>.Count;
+            Unsafe.SkipInit(out Vector256<T> result);
+
+            for (int index = 0; index < count; index++)
+            {
+                result.SetElementUnsafe(index, ((index & 1) == 0) ? even : odd);
+            }
+
+            return result;
+        }
+
+        /// <summary>Creates a new <see cref="Vector256{T}" /> instance whose elements are the reciprocal of an arithmetic sequence.</summary>
+        /// <typeparam name="T">The type of the elements in the vector.</typeparam>
+        /// <param name="start">The value that element 0 of the arithmetic sequence will be initialized to.</param>
+        /// <param name="step">The value that indicates how far apart each element of the arithmetic sequence should be from the previous.</param>
+        /// <returns>A new <see cref="Vector256{T}" /> instance whose elements are initialized to one divided by the corresponding element of the arithmetic sequence.</returns>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector256<T> CreateHarmonicSequence<T>(T start, T step) => Vector256<T>.One / CreateSequence(start, step);
+
+        /// <summary>Creates a new <see cref="Vector256{T}" /> instance whose elements are the square root of an arithmetic sequence.</summary>
+        /// <typeparam name="T">The type of the elements in the vector.</typeparam>
+        /// <param name="start">The value that element 0 of the arithmetic sequence will be initialized to.</param>
+        /// <param name="step">The value that indicates how far apart each element of the arithmetic sequence should be from the previous.</param>
+        /// <returns>A new <see cref="Vector256{T}" /> instance whose elements are initialized to the square root of the corresponding element of the arithmetic sequence.</returns>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector256<T> CreateCauchySequence<T>(T start, T step) => Sqrt(CreateSequence(start, step));
+
+        /// <inheritdoc cref="Vector.ConcatLowerLower{T}(Vector{T}, Vector{T})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector256<T> ConcatLowerLower<T>(Vector256<T> left, Vector256<T> right) => ConcatHalves(left, right, leftUpper: false, rightUpper: false);
+
+        /// <inheritdoc cref="Vector.ConcatUpperLower{T}(Vector{T}, Vector{T})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector256<T> ConcatUpperLower<T>(Vector256<T> left, Vector256<T> right) => ConcatHalves(left, right, leftUpper: true, rightUpper: false);
+
+        /// <inheritdoc cref="Vector.ConcatUpperUpper{T}(Vector{T}, Vector{T})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector256<T> ConcatUpperUpper<T>(Vector256<T> left, Vector256<T> right) => ConcatHalves(left, right, leftUpper: true, rightUpper: true);
+
+        /// <inheritdoc cref="Vector.ConcatLowerUpper{T}(Vector{T}, Vector{T})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector256<T> ConcatLowerUpper<T>(Vector256<T> left, Vector256<T> right) => ConcatHalves(left, right, leftUpper: false, rightUpper: true);
+
+        /// <inheritdoc cref="Vector.ZipLower{T}(Vector{T}, Vector{T})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector256<T> ZipLower<T>(Vector256<T> left, Vector256<T> right) => Zip(left, right, upper: false);
+
+        /// <inheritdoc cref="Vector.ZipUpper{T}(Vector{T}, Vector{T})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector256<T> ZipUpper<T>(Vector256<T> left, Vector256<T> right) => Zip(left, right, upper: true);
+
+        /// <inheritdoc cref="Vector.Zip{T}(Vector{T}, Vector{T})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static (Vector256<T> Lower, Vector256<T> Upper) Zip<T>(Vector256<T> left, Vector256<T> right) => (ZipLower(left, right), ZipUpper(left, right));
+
+        private static Vector256<T> Zip<T>(Vector256<T> left, Vector256<T> right, bool upper)
+        {
+            int count = Vector256<T>.Count;
+            int lowerCount = (count + 1) / 2;
+            int start = upper ? count - lowerCount : 0;
+
+            Unsafe.SkipInit(out Vector256<T> result);
+
+            for (int index = 0; index < count; index++)
+            {
+                int elementIndex = start + (index / 2);
+                T value = ((index & 1) == 0)
+                    ? left.GetElementUnsafe(elementIndex)
+                    : right.GetElementUnsafe(elementIndex);
+
+                result.SetElementUnsafe(index, value);
+            }
+
+            return result;
+        }
+
+        /// <inheritdoc cref="Vector.UnzipEven{T}(Vector{T}, Vector{T})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector256<T> UnzipEven<T>(Vector256<T> left, Vector256<T> right) => Unzip(left, right, odd: false);
+
+        /// <inheritdoc cref="Vector.UnzipOdd{T}(Vector{T}, Vector{T})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector256<T> UnzipOdd<T>(Vector256<T> left, Vector256<T> right) => Unzip(left, right, odd: true);
+
+        /// <inheritdoc cref="Vector.Unzip{T}(Vector{T}, Vector{T})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static (Vector256<T> Even, Vector256<T> Odd) Unzip<T>(Vector256<T> left, Vector256<T> right) => (UnzipEven(left, right), UnzipOdd(left, right));
+
+        private static Vector256<T> Unzip<T>(Vector256<T> left, Vector256<T> right, bool odd)
+        {
+            int count = Vector256<T>.Count;
+            int start = odd ? 1 : 0;
+            int lowerCount = (count - start + 1) / 2;
+
+            if (lowerCount == 0)
+            {
+                return Vector256<T>.Zero;
+            }
+
+            Unsafe.SkipInit(out Vector256<T> result);
+
+            for (int index = 0; index < count; index++)
+            {
+                T value = (index < lowerCount)
+                    ? left.GetElementUnsafe(start + (index * 2))
+                    : right.GetElementUnsafe(start + ((index - lowerCount) * 2));
+
+                result.SetElementUnsafe(index, value);
+            }
+
+            return result;
+        }
+
+        /// <inheritdoc cref="Vector.Reverse{T}(Vector{T})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector256<T> Reverse<T>(Vector256<T> vector)
+        {
+            int count = Vector256<T>.Count;
+            Unsafe.SkipInit(out Vector256<T> result);
+
+            for (int index = 0; index < count; index++)
+            {
+                result.SetElementUnsafe(index, vector.GetElementUnsafe(count - 1 - index));
+            }
+
+            return result;
+        }
+
+        private static Vector256<T> ConcatHalves<T>(Vector256<T> left, Vector256<T> right, bool leftUpper, bool rightUpper)
+        {
+            int count = Vector256<T>.Count;
+            int lowerCount = (count + 1) / 2;
+            int leftStart = leftUpper ? count - lowerCount : 0;
+            int rightStart = rightUpper ? count - lowerCount : 0;
+
+            Unsafe.SkipInit(out Vector256<T> result);
+
+            for (int index = 0; index < count; index++)
+            {
+                T value = (index < lowerCount)
+                    ? left.GetElementUnsafe(leftStart + index)
+                    : right.GetElementUnsafe(rightStart + index - lowerCount);
+
+                result.SetElementUnsafe(index, value);
+            }
+
+            return result;
+        }
+
         /// <inheritdoc cref="Vector128.DegreesToRadians(Vector128{double})" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

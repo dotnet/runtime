@@ -312,6 +312,21 @@ namespace System.Numerics
         public static System.Numerics.Vector<T> CreateScalar<T>(T value) { throw null; }
         public static System.Numerics.Vector<T> CreateScalarUnsafe<T>(T value) { throw null; }
         public static System.Numerics.Vector<T> CreateSequence<T>(T start, T step) { throw null; }
+        public static System.Numerics.Vector<T> CreateGeometricSequence<T>(T initial, [System.Diagnostics.CodeAnalysis.ConstantExpected] T multiplier) { throw null; }
+        public static System.Numerics.Vector<T> CreateAlternatingSequence<T>(T even, T odd) { throw null; }
+        public static System.Numerics.Vector<T> CreateHarmonicSequence<T>(T start, T step) { throw null; }
+        public static System.Numerics.Vector<T> CreateCauchySequence<T>(T start, T step) { throw null; }
+        public static System.Numerics.Vector<T> ZipLower<T>(System.Numerics.Vector<T> left, System.Numerics.Vector<T> right) { throw null; }
+        public static System.Numerics.Vector<T> ZipUpper<T>(System.Numerics.Vector<T> left, System.Numerics.Vector<T> right) { throw null; }
+        public static (System.Numerics.Vector<T> Lower, System.Numerics.Vector<T> Upper) Zip<T>(System.Numerics.Vector<T> left, System.Numerics.Vector<T> right) { throw null; }
+        public static System.Numerics.Vector<T> UnzipEven<T>(System.Numerics.Vector<T> left, System.Numerics.Vector<T> right) { throw null; }
+        public static System.Numerics.Vector<T> UnzipOdd<T>(System.Numerics.Vector<T> left, System.Numerics.Vector<T> right) { throw null; }
+        public static (System.Numerics.Vector<T> Even, System.Numerics.Vector<T> Odd) Unzip<T>(System.Numerics.Vector<T> left, System.Numerics.Vector<T> right) { throw null; }
+        public static System.Numerics.Vector<T> ConcatLowerLower<T>(System.Numerics.Vector<T> left, System.Numerics.Vector<T> right) { throw null; }
+        public static System.Numerics.Vector<T> ConcatUpperLower<T>(System.Numerics.Vector<T> left, System.Numerics.Vector<T> right) { throw null; }
+        public static System.Numerics.Vector<T> ConcatUpperUpper<T>(System.Numerics.Vector<T> left, System.Numerics.Vector<T> right) { throw null; }
+        public static System.Numerics.Vector<T> ConcatLowerUpper<T>(System.Numerics.Vector<T> left, System.Numerics.Vector<T> right) { throw null; }
+        public static System.Numerics.Vector<T> Reverse<T>(System.Numerics.Vector<T> vector) { throw null; }
         public static System.Numerics.Vector<double> DegreesToRadians(System.Numerics.Vector<double> degrees) { throw null; }
         public static System.Numerics.Vector<float> DegreesToRadians(System.Numerics.Vector<float> degrees) { throw null; }
         public static System.Numerics.Vector<T> Divide<T>(System.Numerics.Vector<T> left, System.Numerics.Vector<T> right) { throw null; }
@@ -1131,6 +1146,7 @@ namespace System.Numerics
         public static System.Numerics.Vector<T> AllBitsSet { get { throw null; } }
         public static int Count { get { throw null; } }
         public static System.Numerics.Vector<T> Indices { get { throw null; } }
+        public static System.Numerics.Vector<T> SignSequence { get { throw null; } }
         public static bool IsSupported { get { throw null; } }
         public T this[int index] { get { throw null; } }
         public static System.Numerics.Vector<T> One { get { throw null; } }
