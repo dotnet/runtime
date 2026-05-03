@@ -4242,9 +4242,15 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         {
             assert(sig->numArgs == 2);
 
-            if ((simdSize == 16) && !compOpportunisticallyDependsOn(InstructionSet_AVX2))
+            if (simdSize == 16)
             {
-                break;
+                bool supportsX86BaseShuffle =
+                    (simdBaseType == TYP_INT) || (simdBaseType == TYP_UINT) || (simdBaseType == TYP_FLOAT);
+
+                if (!supportsX86BaseShuffle && !compOpportunisticallyDependsOn(InstructionSet_AVX2))
+                {
+                    break;
+                }
             }
 
             op2 = impSIMDPopStack();
@@ -4296,9 +4302,23 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         {
             assert(sig->numArgs == 2);
 
-            if (!compOpportunisticallyDependsOn(InstructionSet_AVX2))
+            if (simdSize == 16)
             {
-                break;
+                bool supportsX86BaseShuffle =
+                    (simdBaseType == TYP_INT) || (simdBaseType == TYP_UINT) || (simdBaseType == TYP_FLOAT);
+
+                if (!supportsX86BaseShuffle && !compOpportunisticallyDependsOn(InstructionSet_AVX2))
+                {
+                    break;
+                }
+            }
+            else if (simdSize > 16)
+            {
+                if (!compOpportunisticallyDependsOn(varTypeIsFloating(simdBaseType) ? InstructionSet_AVX
+                                                                                    : InstructionSet_AVX2))
+                {
+                    break;
+                }
             }
 
             op2 = impSIMDPopStack();
@@ -4316,9 +4336,13 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         {
             assert(sig->numArgs == 1);
 
-            if ((simdSize == 32) && !compOpportunisticallyDependsOn(InstructionSet_AVX2))
+            if (simdSize == 32)
             {
-                break;
+                if (!compOpportunisticallyDependsOn(varTypeIsFloating(simdBaseType) ? InstructionSet_AVX
+                                                                                    : InstructionSet_AVX2))
+                {
+                    break;
+                }
             }
 
             if ((simdSize == 64) && varTypeIsByte(simdBaseType) &&
