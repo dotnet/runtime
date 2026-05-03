@@ -936,6 +936,7 @@ namespace System.Numerics
         /// <param name="start">The value that element 0 of the arithmetic sequence will be initialized to.</param>
         /// <param name="step">The value that indicates how far apart each element of the arithmetic sequence should be from the previous.</param>
         /// <returns>A new <see cref="Vector{T}" /> instance whose elements are initialized to the square root of the corresponding element of the arithmetic sequence.</returns>
+        /// <exception cref="NotSupportedException">The type of <paramref name="start"/> and <paramref name="step"/> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<T> CreateCauchySequence<T>(T start, T step) => SquareRoot(CreateSequence(start, step));
@@ -3206,6 +3207,7 @@ namespace System.Numerics
         /// <param name="value">The vector whose square root is to be computed.</param>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
         /// <returns>A vector whose elements are the square root of the corresponding elements in <paramref name="value" />.</returns>
+        /// <exception cref="NotSupportedException">The type of <paramref name="value"/> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<T> SquareRoot<T>(Vector<T> value)
