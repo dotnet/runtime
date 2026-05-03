@@ -269,10 +269,13 @@
       <_EmccCFlags Include="$(EmccCompileOptimizationFlag)" />
       <_EmccCFlags Include="@(_EmccCommonFlags)" />
       <_EmccCFlags Include="-DGEN_PINVOKE=1" />
+      <_EmccCFlags Include="-DFEATURE_PORTABLE_ENTRYPOINTS=1" />
+      <_EmccCFlags Include="-D_PRECODE_PORTABLE_MINIMAL=1" />
       <_EmccCFlags Include="$(EmccExtraCFlags)" />
 
       <!-- Include paths for ManagedToNativeGenerator output compilation -->
       <_EmccCFlags Include="-I&quot;$(RepoRoot)src/coreclr/vm/wasm&quot;" Condition="Exists('$(RepoRoot)src/coreclr/vm/wasm/callhelpers.hpp')" />
+      <_EmccCFlags Include="-I&quot;$(RepoRoot)src/coreclr/vm&quot;" Condition="Exists('$(RepoRoot)src/coreclr/vm/precode_portable.hpp')" />
       <_EmccCFlags Include="-I&quot;$(RepoRoot)src/native&quot;" Condition="Exists('$(RepoRoot)src/native/minipal/entrypoints.h')" />
       <_EmccCFlags Include="-include &quot;$(_WasmIntermediateOutputPath)coreclr_compat.h&quot;" />
     </ItemGroup>

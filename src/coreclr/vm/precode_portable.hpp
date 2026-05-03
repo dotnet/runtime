@@ -8,17 +8,27 @@
 #ifndef FEATURE_PORTABLE_ENTRYPOINTS
 #error Requires FEATURE_PORTABLE_ENTRYPOINTS to be set
 #endif // !FEATURE_PORTABLE_ENTRYPOINTS
+
+#ifndef _PRECODE_PORTABLE_MINIMAL
 #include "cdacdata.h"
+#endif
+
+// _PRECODE_PORTABLE_MINIMAL: When defined, only the PortableEntryPoint::GetActualCode
+// declaration below is emitted. Used by the WASM app-level relink
+// build (wasm_m2n_invoke.g.cpp) which compiles outside the full CoreCLR build context
+// and only needs to resolve entry points to actual code pointers.
 
 class PortableEntryPoint final
 {
 public: // static
+    static void* GetActualCode(PCODE addr);
+#ifndef _PRECODE_PORTABLE_MINIMAL
+    static void SetActualCode(PCODE addr, PCODE actualCode);
+
     // Returns true if the _pActualCode field of a given PortableEntryPoint is set to a non-null address and that address is the preferred entry point instead of preferring InterpreterCode usage.
     static bool HasNativeEntryPoint(PCODE addr);
     static bool HasInterpreterData(PCODE addr);
 
-    static void* GetActualCode(PCODE addr);
-    static void SetActualCode(PCODE addr, PCODE actualCode);
     static MethodDesc* GetMethodDesc(PCODE addr);
     static void* GetInterpreterData(PCODE addr);
     static void SetInterpreterData(PCODE addr, PCODE interpreterData);
@@ -115,7 +125,10 @@ public:
     }
 
     friend struct ::cdac_data<PortableEntryPoint>;
+#endif // !_PRECODE_PORTABLE_MINIMAL
 };
+
+#ifndef _PRECODE_PORTABLE_MINIMAL
 template<>
 struct cdac_data<PortableEntryPoint>
 {
@@ -162,4 +175,5 @@ BOOL DoesSlotCallPrestub(PCODE pCode);
 
 class PrecodeMachineDescriptor { };
 
+#endif // !_PRECODE_PORTABLE_MINIMAL
 #endif // __PRECODE_PORTABLE_H__
