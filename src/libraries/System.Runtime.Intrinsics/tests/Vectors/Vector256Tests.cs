@@ -6495,6 +6495,36 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
+        public void CreateGeometricSequenceSingleNonConstantInitialTest()
+        {
+            const float multiplier = 1.0064822f;
+            float initial = GetNonConstant(1.0059024f);
+            Vector256<float> sequence = Vector256.CreateGeometricSequence(initial, multiplier);
+            float expected = initial;
+
+            for (int index = 0; index < Vector256<float>.Count; index++)
+            {
+                Assert.Equal(expected, sequence.GetElement(index));
+                expected *= multiplier;
+            }
+        }
+
+        [Fact]
+        public void CreateGeometricSequenceDoubleNonConstantInitialTest()
+        {
+            const double multiplier = 1e-50;
+            double initial = GetNonConstant(1e-154);
+            Vector256<double> sequence = Vector256.CreateGeometricSequence(initial, multiplier);
+            double expected = initial;
+
+            for (int index = 0; index < Vector256<double>.Count; index++)
+            {
+                Assert.Equal(expected, sequence.GetElement(index));
+                expected *= multiplier;
+            }
+        }
+
+        [Fact]
         public void CreateAlternatingSequenceInt32Test()
         {
             Vector256<int> sequence = Vector256.CreateAlternatingSequence(5, -5);
@@ -6626,6 +6656,9 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
                 Assert.Equal(expected.GetElement(index), actual.GetElement(index));
             }
         }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static T GetNonConstant<T>(T value) => value;
 
         [Theory]
         [MemberData(nameof(GenericMathTestMemberData.AsinDouble), MemberType = typeof(GenericMathTestMemberData))]

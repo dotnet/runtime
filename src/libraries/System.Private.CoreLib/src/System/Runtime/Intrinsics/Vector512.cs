@@ -1700,34 +1700,12 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector512<T> CreateGeometricSequence<T>(T initial, [ConstantExpected] T multiplier)
         {
-            T upperMultiplier = multiplier;
+            T upperInitial = initial;
 
-            if (Vector256<T>.Count >= 2)
+            for (int index = 0; index < Vector256<T>.Count; index++)
             {
-                upperMultiplier = Scalar<T>.Multiply(upperMultiplier, upperMultiplier);
+                upperInitial = Scalar<T>.Multiply(upperInitial, multiplier);
             }
-
-            if (Vector256<T>.Count >= 4)
-            {
-                upperMultiplier = Scalar<T>.Multiply(upperMultiplier, upperMultiplier);
-            }
-
-            if (Vector256<T>.Count >= 8)
-            {
-                upperMultiplier = Scalar<T>.Multiply(upperMultiplier, upperMultiplier);
-            }
-
-            if (Vector256<T>.Count >= 16)
-            {
-                upperMultiplier = Scalar<T>.Multiply(upperMultiplier, upperMultiplier);
-            }
-
-            if (Vector256<T>.Count >= 32)
-            {
-                upperMultiplier = Scalar<T>.Multiply(upperMultiplier, upperMultiplier);
-            }
-
-            T upperInitial = Scalar<T>.Multiply(initial, upperMultiplier);
 
             return Create(
                 Vector256.CreateGeometricSequence(initial, multiplier),
