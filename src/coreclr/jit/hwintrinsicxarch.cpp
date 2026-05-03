@@ -2258,6 +2258,62 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
+        case NI_Vector128_CreateGeometricSequence:
+        case NI_Vector256_CreateGeometricSequence:
+        case NI_Vector512_CreateGeometricSequence:
+        {
+            assert(sig->numArgs == 2);
+
+            if (!impStackTop(0).val->OperIsConst())
+            {
+                break;
+            }
+
+            if (!impStackTop(1).val->OperIsConst() && varTypeIsFloating(simdBaseType))
+            {
+                break;
+            }
+
+            if (!impStackTop(1).val->OperIsConst() && (simdSize == 32) && varTypeIsIntegral(simdBaseType) &&
+                !compOpportunisticallyDependsOn(InstructionSet_AVX2))
+            {
+                // We can't deal with TYP_SIMD32 for integral types if the compiler doesn't support AVX2
+                break;
+            }
+
+            impSpillSideEffect(true, stackState.esStackDepth -
+                                         2 DEBUGARG("Spilling op1 side effects for vector CreateGeometricSequence"));
+
+            op2 = impPopStack().val;
+            op1 = impPopStack().val;
+
+            retNode = gtNewSimdCreateGeometricSequenceNode(retType, op1, op2, simdBaseType, simdSize);
+            break;
+        }
+
+        case NI_Vector128_CreateAlternatingSequence:
+        case NI_Vector256_CreateAlternatingSequence:
+        case NI_Vector512_CreateAlternatingSequence:
+        {
+            assert(sig->numArgs == 2);
+
+            if ((!impStackTop(1).val->OperIsConst() || !impStackTop(0).val->OperIsConst()) && (simdSize == 32) &&
+                varTypeIsIntegral(simdBaseType) && !compOpportunisticallyDependsOn(InstructionSet_AVX2))
+            {
+                // We can't deal with TYP_SIMD32 for integral types if the compiler doesn't support AVX2
+                break;
+            }
+
+            impSpillSideEffect(true, stackState.esStackDepth -
+                                         2 DEBUGARG("Spilling op1 side effects for vector CreateAlternatingSequence"));
+
+            op2 = impPopStack().val;
+            op1 = impPopStack().val;
+
+            retNode = gtNewSimdCreateAlternatingSequenceNode(retType, op1, op2, simdBaseType, simdSize);
+            break;
+        }
+
         case NI_Vector128_op_Division:
         case NI_Vector256_op_Division:
         case NI_Vector512_op_Division:
@@ -2542,6 +2598,15 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         {
             assert(sig->numArgs == 0);
             retNode = gtNewSimdGetIndicesNode(retType, simdBaseType, simdSize);
+            break;
+        }
+
+        case NI_Vector128_get_SignSequence:
+        case NI_Vector256_get_SignSequence:
+        case NI_Vector512_get_SignSequence:
+        {
+            assert(sig->numArgs == 0);
+            retNode = gtNewSimdGetSignSequenceNode(retType, simdBaseType, simdSize);
             break;
         }
 
@@ -4164,6 +4229,111 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             op2     = impSIMDPopStack();
             op1     = impSIMDPopStack();
             retNode = gtNewSimdWithUpperNode(retType, op1, op2, simdBaseType, simdSize);
+            break;
+        }
+
+        case NI_Vector128_ConcatLowerLower:
+        case NI_Vector256_ConcatLowerLower:
+        case NI_Vector512_ConcatLowerLower:
+        case NI_Vector128_ConcatLowerUpper:
+        case NI_Vector256_ConcatLowerUpper:
+        case NI_Vector512_ConcatLowerUpper:
+        case NI_Vector128_ConcatUpperLower:
+        case NI_Vector256_ConcatUpperLower:
+        case NI_Vector512_ConcatUpperLower:
+        case NI_Vector128_ConcatUpperUpper:
+        case NI_Vector256_ConcatUpperUpper:
+        case NI_Vector512_ConcatUpperUpper:
+        {
+            assert(sig->numArgs == 2);
+
+            if ((simdSize == 16) && !compOpportunisticallyDependsOn(InstructionSet_AVX2))
+            {
+                break;
+            }
+
+            op2 = impSIMDPopStack();
+            op1 = impSIMDPopStack();
+
+            bool leftUpper =
+                (intrinsic == NI_Vector128_ConcatUpperLower) || (intrinsic == NI_Vector256_ConcatUpperLower) ||
+                (intrinsic == NI_Vector512_ConcatUpperLower) || (intrinsic == NI_Vector128_ConcatUpperUpper) ||
+                (intrinsic == NI_Vector256_ConcatUpperUpper) || (intrinsic == NI_Vector512_ConcatUpperUpper);
+            bool rightUpper =
+                (intrinsic == NI_Vector128_ConcatLowerUpper) || (intrinsic == NI_Vector256_ConcatLowerUpper) ||
+                (intrinsic == NI_Vector512_ConcatLowerUpper) || (intrinsic == NI_Vector128_ConcatUpperUpper) ||
+                (intrinsic == NI_Vector256_ConcatUpperUpper) || (intrinsic == NI_Vector512_ConcatUpperUpper);
+
+            retNode = gtNewSimdConcatNode(retType, op1, op2, simdBaseType, simdSize, leftUpper, rightUpper);
+            break;
+        }
+
+        case NI_Vector128_ZipLower:
+        case NI_Vector256_ZipLower:
+        case NI_Vector512_ZipLower:
+        case NI_Vector128_ZipUpper:
+        case NI_Vector256_ZipUpper:
+        case NI_Vector512_ZipUpper:
+        {
+            assert(sig->numArgs == 2);
+
+            if ((simdSize == 32) && varTypeIsIntegral(simdBaseType) &&
+                !compOpportunisticallyDependsOn(InstructionSet_AVX2))
+            {
+                break;
+            }
+
+            op2 = impSIMDPopStack();
+            op1 = impSIMDPopStack();
+
+            bool upper = (intrinsic == NI_Vector128_ZipUpper) || (intrinsic == NI_Vector256_ZipUpper) ||
+                         (intrinsic == NI_Vector512_ZipUpper);
+            retNode = gtNewSimdZipNode(retType, op1, op2, simdBaseType, simdSize, upper);
+            break;
+        }
+
+        case NI_Vector128_UnzipEven:
+        case NI_Vector256_UnzipEven:
+        case NI_Vector512_UnzipEven:
+        case NI_Vector128_UnzipOdd:
+        case NI_Vector256_UnzipOdd:
+        case NI_Vector512_UnzipOdd:
+        {
+            assert(sig->numArgs == 2);
+
+            if (!compOpportunisticallyDependsOn(InstructionSet_AVX2))
+            {
+                break;
+            }
+
+            op2 = impSIMDPopStack();
+            op1 = impSIMDPopStack();
+
+            bool odd = (intrinsic == NI_Vector128_UnzipOdd) || (intrinsic == NI_Vector256_UnzipOdd) ||
+                       (intrinsic == NI_Vector512_UnzipOdd);
+            retNode = gtNewSimdUnzipNode(retType, op1, op2, simdBaseType, simdSize, odd);
+            break;
+        }
+
+        case NI_Vector128_Reverse:
+        case NI_Vector256_Reverse:
+        case NI_Vector512_Reverse:
+        {
+            assert(sig->numArgs == 1);
+
+            if ((simdSize == 32) && !compOpportunisticallyDependsOn(InstructionSet_AVX2))
+            {
+                break;
+            }
+
+            if ((simdSize == 64) && varTypeIsByte(simdBaseType) &&
+                !compOpportunisticallyDependsOn(InstructionSet_AVX512v2))
+            {
+                break;
+            }
+
+            op1     = impSIMDPopStack();
+            retNode = gtNewSimdReverseNode(retType, op1, simdBaseType, simdSize);
             break;
         }
 

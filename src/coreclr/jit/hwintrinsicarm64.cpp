@@ -1334,6 +1334,52 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
+        case NI_Vector64_CreateGeometricSequence:
+        case NI_Vector128_CreateGeometricSequence:
+        {
+            assert(sig->numArgs == 2);
+
+            if (!impStackTop(0).val->OperIsConst())
+            {
+                break;
+            }
+
+            if (!impStackTop(1).val->OperIsConst() && varTypeIsFloating(simdBaseType))
+            {
+                break;
+            }
+
+            if (varTypeIsLong(simdBaseType) && !impStackTop(1).val->OperIsConst() && (simdSize != 8))
+            {
+                // TODO-ARM64-CQ: We should support long/ulong multiplication.
+                break;
+            }
+
+            impSpillSideEffect(true, stackState.esStackDepth -
+                                         2 DEBUGARG("Spilling op1 side effects for vector CreateGeometricSequence"));
+
+            op2 = impPopStack().val;
+            op1 = impPopStack().val;
+
+            retNode = gtNewSimdCreateGeometricSequenceNode(retType, op1, op2, simdBaseType, simdSize);
+            break;
+        }
+
+        case NI_Vector64_CreateAlternatingSequence:
+        case NI_Vector128_CreateAlternatingSequence:
+        {
+            assert(sig->numArgs == 2);
+
+            impSpillSideEffect(true, stackState.esStackDepth -
+                                         2 DEBUGARG("Spilling op1 side effects for vector CreateAlternatingSequence"));
+
+            op2 = impPopStack().val;
+            op1 = impPopStack().val;
+
+            retNode = gtNewSimdCreateAlternatingSequenceNode(retType, op1, op2, simdBaseType, simdSize);
+            break;
+        }
+
         case NI_Vector64_CreateScalarUnsafe:
         case NI_Vector128_CreateScalarUnsafe:
         {
@@ -1516,6 +1562,14 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         {
             assert(sig->numArgs == 0);
             retNode = gtNewSimdGetIndicesNode(retType, simdBaseType, simdSize);
+            break;
+        }
+
+        case NI_Vector64_get_SignSequence:
+        case NI_Vector128_get_SignSequence:
+        {
+            assert(sig->numArgs == 0);
+            retNode = gtNewSimdGetSignSequenceNode(retType, simdBaseType, simdSize);
             break;
         }
 
@@ -2841,6 +2895,71 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             op2     = impSIMDPopStack();
             op1     = impSIMDPopStack();
             retNode = gtNewSimdWithUpperNode(retType, op1, op2, simdBaseType, simdSize);
+            break;
+        }
+
+        case NI_Vector64_ConcatLowerLower:
+        case NI_Vector128_ConcatLowerLower:
+        case NI_Vector64_ConcatLowerUpper:
+        case NI_Vector128_ConcatLowerUpper:
+        case NI_Vector64_ConcatUpperLower:
+        case NI_Vector128_ConcatUpperLower:
+        case NI_Vector64_ConcatUpperUpper:
+        case NI_Vector128_ConcatUpperUpper:
+        {
+            assert(sig->numArgs == 2);
+
+            op2 = impSIMDPopStack();
+            op1 = impSIMDPopStack();
+
+            bool leftUpper =
+                (intrinsic == NI_Vector64_ConcatUpperLower) || (intrinsic == NI_Vector128_ConcatUpperLower) ||
+                (intrinsic == NI_Vector64_ConcatUpperUpper) || (intrinsic == NI_Vector128_ConcatUpperUpper);
+            bool rightUpper =
+                (intrinsic == NI_Vector64_ConcatLowerUpper) || (intrinsic == NI_Vector128_ConcatLowerUpper) ||
+                (intrinsic == NI_Vector64_ConcatUpperUpper) || (intrinsic == NI_Vector128_ConcatUpperUpper);
+
+            retNode = gtNewSimdConcatNode(retType, op1, op2, simdBaseType, simdSize, leftUpper, rightUpper);
+            break;
+        }
+
+        case NI_Vector64_ZipLower:
+        case NI_Vector128_ZipLower:
+        case NI_Vector64_ZipUpper:
+        case NI_Vector128_ZipUpper:
+        {
+            assert(sig->numArgs == 2);
+
+            op2 = impSIMDPopStack();
+            op1 = impSIMDPopStack();
+
+            bool upper = (intrinsic == NI_Vector64_ZipUpper) || (intrinsic == NI_Vector128_ZipUpper);
+            retNode    = gtNewSimdZipNode(retType, op1, op2, simdBaseType, simdSize, upper);
+            break;
+        }
+
+        case NI_Vector64_UnzipEven:
+        case NI_Vector128_UnzipEven:
+        case NI_Vector64_UnzipOdd:
+        case NI_Vector128_UnzipOdd:
+        {
+            assert(sig->numArgs == 2);
+
+            op2 = impSIMDPopStack();
+            op1 = impSIMDPopStack();
+
+            bool odd = (intrinsic == NI_Vector64_UnzipOdd) || (intrinsic == NI_Vector128_UnzipOdd);
+            retNode  = gtNewSimdUnzipNode(retType, op1, op2, simdBaseType, simdSize, odd);
+            break;
+        }
+
+        case NI_Vector64_Reverse:
+        case NI_Vector128_Reverse:
+        {
+            assert(sig->numArgs == 1);
+
+            op1     = impSIMDPopStack();
+            retNode = gtNewSimdReverseNode(retType, op1, simdBaseType, simdSize);
             break;
         }
 
