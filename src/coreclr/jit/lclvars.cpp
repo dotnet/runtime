@@ -5148,6 +5148,23 @@ unsigned* Compiler::lvaComputeOptimalFrameLayoutOrder(int stkOffs, const UINT* a
     };
     unsigned refDensityCost = tryStrategy(3, "refDensity", refDensityCompare);
 
+    // Strategy 4: Size ascending — maximize count of locals in disp8 range.
+    // Small locals consume less of the disp8 budget, so packing them first
+    // maximizes how many locals get short encodings.
+    auto sizeAscCompare = [this, lclRefCounts](unsigned n1, unsigned n2) -> bool {
+        unsigned s1 = lvaLclStackHomeSize(n1);
+        unsigned s2 = lvaLclStackHomeSize(n2);
+        if (s1 != s2) return s1 < s2;
+        // Within same size, prefer hotter locals first.
+        unsigned c1 = (lclRefCounts != nullptr) ? lclRefCounts[n1]
+                                                : lvaGetDesc(n1)->lvRefCnt(lvaRefCountState);
+        unsigned c2 = (lclRefCounts != nullptr) ? lclRefCounts[n2]
+                                                : lvaGetDesc(n2)->lvRefCnt(lvaRefCountState);
+        if (c1 != c2) return c1 > c2;
+        return n1 < n2;
+    };
+    unsigned sizeAscCost = tryStrategy(4, "sizeAsc", sizeAscCompare);
+
     // Apply the winning strategy's sort order (or return nullptr if original won).
     if (bestStrategy < 0)
     {
@@ -5164,13 +5181,16 @@ unsigned* Compiler::lvaComputeOptimalFrameLayoutOrder(int stkOffs, const UINT* a
             case 1: jitstd::sort(sortOrder, sortOrder + lvaCount, refCntCompare); break;
             case 2: jitstd::sort(sortOrder, sortOrder + lvaCount, weightCompare); break;
             case 3: jitstd::sort(sortOrder, sortOrder + lvaCount, refDensityCompare); break;
+            case 4: jitstd::sort(sortOrder, sortOrder + lvaCount, sizeAscCompare); break;
             default: unreached();
         }
     }
 
-    JITDUMP("Frame layout costs: original=%u density=%u refCnt=%u weight=%u refDensity=%u; "
+    JITDUMP("Frame layout costs: original=%u density=%u refCnt=%u weight=%u refDensity=%u "
+            "sizeAsc=%u; "
             "selected '%s' (cost=%u, saved %u encoding bytes est.)\n",
             origCost, densityCost, refCntCost, weightCost, refDensityCost,
+            sizeAscCost,
             bestName, bestCost, origCost > bestCost ? origCost - bestCost : 0);
 
     return sortOrder;
