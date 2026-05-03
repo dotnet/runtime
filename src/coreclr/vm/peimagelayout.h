@@ -76,6 +76,10 @@ public:
 
     void ApplyBaseRelocations(bool relocationMustWriteCopy);
 
+#ifdef FEATURE_WEBCIL
+    SSIZE_T GetTableBaseOffset() const;
+#endif
+
     // ------------------------------------------------------------
     // Format query
     // ------------------------------------------------------------
@@ -227,7 +231,7 @@ protected:
     // Protected forwarding helpers for subclass access to PEDecoder protected members
     IMAGE_NT_HEADERS* FindNTHeaders() const { return m_peDecoder.FindNTHeaders(); }
     IMAGE_SECTION_HEADER* RvaToSection(RVA rva) const { return m_peDecoder.RvaToSection(rva); }
-    void SetRelocated() { m_peDecoder.SetRelocated(); }
+    void SetRelocated();
 
 private:
     Volatile<LONG> m_refCount;

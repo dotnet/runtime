@@ -42,7 +42,6 @@ extern "C" void QCALLTYPE AssemblyNative_InternalLoad(NativeAssemblyNameParts* p
 
     BEGIN_QCALL;
 
-    DomainAssembly * pParentAssembly = NULL;
     Assembly * pRefAssembly = NULL;
     AssemblyBinder *pBinder = NULL;
 
@@ -146,19 +145,42 @@ Assembly* AssemblyNative::LoadFromPEImage(AssemblyBinder* pBinder, PEImage *pIma
 
     HRESULT hr = S_OK;
     PTR_AppDomain pCurDomain = GetAppDomain();
-    hr = pBinder->BindUsingPEImage(pImage, excludeAppPaths, &pAssembly);
+    ReleaseHolder<BINDER_SPACE::Assembly> pExistingAssembly;
+    hr = pBinder->BindUsingPEImage(pImage, excludeAppPaths, &pAssembly, &pExistingAssembly);
 
     if (hr != S_OK)
     {
         StackSString name;
         spec.GetDisplayName(0, name);
-        if (hr == COR_E_FILELOAD)
+        if (pExistingAssembly != nullptr)
         {
-            // Give a more specific message for the case when we found the assembly with the same name already loaded.
-            // Show the assembly name, since we know the error is about the assembly name.
+            // We have the existing assembly - extract its details for the error message.
+            StackSString simpleName;
+            spec.GetName(simpleName);
+
+            PathString loadedAssemblyName;
+            pExistingAssembly->GetAssemblyName()->GetDisplayName(loadedAssemblyName, BINDER_SPACE::AssemblyName::INCLUDE_VERSION | BINDER_SPACE::AssemblyName::INCLUDE_PUBLIC_KEY_TOKEN);
+            PathString loadedAssemblyPath{ pExistingAssembly->GetPEImage()->GetPath() };
+
+            StackSString errorString;
+            SString format;
+            if (!loadedAssemblyPath.IsEmpty())
+            {
+                format.LoadResource(IDS_HOST_ASSEMBLY_RESOLVER_ASSEMBLY_ALREADY_LOADED_WITH_VERSION_AND_PATH);
+                errorString.FormatMessage(FORMAT_MESSAGE_FROM_STRING, format.GetUnicode(), 0, 0, simpleName, loadedAssemblyName, loadedAssemblyPath);
+            }
+            else
+            {
+                format.LoadResource(IDS_HOST_ASSEMBLY_RESOLVER_ASSEMBLY_ALREADY_LOADED_WITH_VERSION);
+                errorString.FormatMessage(FORMAT_MESSAGE_FROM_STRING, format.GetUnicode(), 0, 0, simpleName, loadedAssemblyName);
+            }
+            COMPlusThrowHR(hr, IDS_EE_FILELOAD_ERROR_GENERIC, name.GetUnicode(), errorString.GetUnicode());
+        }
+        else if (hr == COR_E_FILELOAD)
+        {
             StackSString errorString;
             errorString.LoadResource(IDS_HOST_ASSEMBLY_RESOLVER_ASSEMBLY_ALREADY_LOADED_IN_CONTEXT);
-            COMPlusThrow(kFileLoadException, IDS_EE_FILELOAD_ERROR_GENERIC, name, errorString);
+            COMPlusThrowHR(hr, IDS_EE_FILELOAD_ERROR_GENERIC, name.GetUnicode(), errorString.GetUnicode());
         }
         else
         {
@@ -196,13 +218,13 @@ extern "C" void QCALLTYPE AssemblyNative_LoadFromPath(INT_PTR ptrNativeAssemblyB
 
         // Need to verify that this is a valid CLR assembly.
         if (!pILImage->CheckILFormat())
-            THROW_BAD_FORMAT(BFA_BAD_IL, pILImage.GetValue());
+            THROW_BAD_FORMAT(BFA_BAD_IL, static_cast<PEImage*>(pILImage));
 
         LoaderAllocator* pLoaderAllocator = pBinder->GetLoaderAllocator();
         if (pLoaderAllocator && pLoaderAllocator->IsCollectible() && !pILImage->IsILOnly())
         {
             // Loading IJW assemblies into a collectible AssemblyLoadContext is not allowed
-            THROW_BAD_FORMAT(BFA_IJW_IN_COLLECTIBLE_ALC, pILImage.GetValue());
+            THROW_BAD_FORMAT(BFA_IJW_IN_COLLECTIBLE_ALC, static_cast<PEImage*>(pILImage));
         }
     }
 
@@ -1062,7 +1084,7 @@ extern "C" void QCALLTYPE AssemblyNative_GetReferencedAssemblies(QCall::Assembly
         AssemblySpec spec;
         spec.InitializeSpec(mdAssemblyRef, pImport);
 
-        gc.pObj = (ASSEMBLYNAMEREF) AllocateObject(pAsmNameClass);
+        gc.pObj = NULL;
         spec.AssemblyNameInit(&gc.pObj);
 
         gc.ItemArray->SetAt(i, (OBJECTREF) gc.pObj);
@@ -1536,6 +1558,32 @@ namespace
         }
     }
 
+#ifdef FEATURE_READYTORUN
+    template<typename TReadyToRunInfoFilter, typename TReadyToRunInfoCallback>
+    bool ProcessPrecachedTypeMapInfo(
+        TReadyToRunInfoFilter filter,
+        TReadyToRunInfoCallback callback,
+        Assembly* pAssembly
+    )
+    {
+        STANDARD_VM_CONTRACT;
+
+        PTR_Module pModule = pAssembly->GetModule();
+        if (!pModule->IsReadyToRun())
+        {
+            return false;
+        }
+
+        PTR_ReadyToRunInfo pR2RInfo = pModule->GetReadyToRunInfo();
+
+        if (filter(pR2RInfo))
+        {
+            return callback(pR2RInfo);
+        }
+        return false;
+    }
+#endif
+
     class AssemblyPtrCollectionTraits : public DefaultSHashTraits<Assembly*>
     {
     public:
@@ -1584,6 +1632,15 @@ namespace
             }
 
             return TRUE;
+        }
+
+        void Add(Assembly* assembly)
+        {
+            if (_toProcess.Lookup(assembly) == NULL
+                && _processed.Lookup(assembly) == NULL)
+            {
+                _toProcess.Add(assembly);
+            }
         }
 
         bool IsEmpty() const
@@ -1653,6 +1710,8 @@ extern "C" void QCALLTYPE TypeMapLazyDictionary_ProcessAttributes(
     QCall::TypeHandle pGroupType,
     BOOL (*newExternalTypeEntry)(CallbackContext* context, ProcessAttributesCallbackArg* arg),
     BOOL (*newProxyTypeEntry)(CallbackContext* context, ProcessAttributesCallbackArg* arg),
+    BOOL (*newPrecachedExternalTypeMap)(CallbackContext* context),
+    BOOL (*newPrecachedProxyTypeMap)(CallbackContext* context),
     CallbackContext* context)
 {
     QCALL_CONTRACT;
@@ -1668,6 +1727,7 @@ extern "C" void QCALLTYPE TypeMapLazyDictionary_ProcessAttributes(
     MethodTable* groupTypeMT = groupTypeTH.AsMethodTable();
 
     AssemblyTargetProcessor assemblies{ pAssembly };
+    ExternalTypeNameHash seenPreprocessedExternalEntries;
     while (!assemblies.IsEmpty())
     {
         Assembly* currAssembly = assemblies.GetNext();
@@ -1677,33 +1737,167 @@ extern "C" void QCALLTYPE TypeMapLazyDictionary_ProcessAttributes(
             GCX_COOP();
             context->_currAssembly = currAssembly->GetExposedObject();
         }
+        bool hasPrecachedExternal = false;
+        bool hasPrecachedProxy = false;
+        bool hasPrecachedTargets = false;
 
-        ProcessTypeMapAttribute(
-            TypeMapAssemblyTargetAttributeName,
-            assemblies,
-            groupTypeMT,
-            currAssembly);
-
-        if (newExternalTypeEntry != NULL)
+#ifdef FEATURE_READYTORUN
+        // Only process the external type map if requested.
+        if (newExternalTypeEntry != nullptr)
         {
-            MappingsProcessor onExternalType{ newExternalTypeEntry, context };
-            ProcessTypeMapAttribute(
-                TypeMapAttributeName,
-                onExternalType,
-                groupTypeMT,
+            hasPrecachedExternal = ProcessPrecachedTypeMapInfo(
+                [=](PTR_ReadyToRunInfo pR2RInfo) { return pR2RInfo->HasPrecachedExternalTypeMap(groupTypeMT); },
+                [=, &seenPreprocessedExternalEntries](PTR_ReadyToRunInfo pR2RInfo) -> BOOL
+                {
+                    if (!pR2RInfo->CheckForUniqueExternalTypeMapKeys(groupTypeMT, &seenPreprocessedExternalEntries))
+                    {
+                        return FALSE;
+                    }
+                    return newPrecachedExternalTypeMap(context);
+                },
                 currAssembly);
         }
 
-        if (newProxyTypeEntry != NULL)
+        // Only process the proxy type map if requested.
+        if (newProxyTypeEntry != nullptr)
         {
-            MappingsProcessor onProxyType{ newProxyTypeEntry, context };
+            hasPrecachedProxy = ProcessPrecachedTypeMapInfo(
+                [=](PTR_ReadyToRunInfo pR2RInfo) { return pR2RInfo->HasPrecachedProxyTypeMap(groupTypeMT); },
+                [=](PTR_ReadyToRunInfo pR2RInfo) { return newPrecachedProxyTypeMap(context); },
+                currAssembly);
+        }
+
+        COUNT_T assemblyTargetCount = 0;
+        hasPrecachedTargets = ProcessPrecachedTypeMapInfo(
+            [=, &assemblyTargetCount](PTR_ReadyToRunInfo pR2RInfo) { return pR2RInfo->HasTypeMapAssemblyTargets(groupTypeMT, &assemblyTargetCount); },
+            [&](PTR_ReadyToRunInfo pR2RInfo)
+             {
+                CQuickArray<Module*> targetModules;
+                targetModules.ReSizeThrows(assemblyTargetCount);
+                COUNT_T numReturnedTargets = pR2RInfo->GetTypeMapAssemblyTargets(groupTypeMT, targetModules.Ptr(), assemblyTargetCount);
+                _ASSERTE(numReturnedTargets == assemblyTargetCount);
+                for (COUNT_T i = 0; i < assemblyTargetCount; i++)
+                {
+                    if (targetModules[i] == nullptr)
+                    {
+                        ThrowHR(COR_E_BADIMAGEFORMAT);
+                    }
+                    Assembly* targetAssembly = targetModules[i]->GetAssembly();
+                    assemblies.Add(targetAssembly);
+                }
+                return true;
+             },
+             currAssembly
+        );
+#endif // FEATURE_READYTORUN
+
+        if ((newExternalTypeEntry != nullptr && !hasPrecachedExternal) ||
+            (newProxyTypeEntry != nullptr && !hasPrecachedProxy) ||
+            !hasPrecachedTargets)
+        {
+            // Fall back to attribute parsing for the assembly targets if they were
+            // not found in the pre-cached R2R section, or if the external/proxy type
+            // maps were not pre-cached. When CrossGen2 fails to resolve an assembly
+            // target, it emits an assembly targets entry with count=0 but marks the
+            // external/proxy maps as invalid (state=0). Re-processing the assembly
+            // target attributes in that case ensures the runtime correctly loads (and
+            // throws for) unresolvable assemblies. The AssemblyTargetProcessor already
+            // deduplicates, so re-processing is safe.
             ProcessTypeMapAttribute(
-                TypeMapAssociationAttributeName,
-                onProxyType,
+                TypeMapAssemblyTargetAttributeName,
+                assemblies,
                 groupTypeMT,
                 currAssembly);
+
+            // We will only process the specific type maps if we have a callback to process
+            // the entry and the precached map was not calculated for this module.
+            if (newExternalTypeEntry != NULL && !hasPrecachedExternal)
+            {
+                MappingsProcessor onExternalType{ newExternalTypeEntry, context };
+                ProcessTypeMapAttribute(
+                    TypeMapAttributeName,
+                    onExternalType,
+                    groupTypeMT,
+                    currAssembly);
+            }
+
+            if (newProxyTypeEntry != NULL && !hasPrecachedProxy)
+            {
+                MappingsProcessor onProxyType{ newProxyTypeEntry, context };
+                ProcessTypeMapAttribute(
+                    TypeMapAssociationAttributeName,
+                    onProxyType,
+                    groupTypeMT,
+                    currAssembly);
+            }
         }
     }
 
     END_QCALL;
+}
+
+extern "C" TADDR QCALLTYPE TypeMapLazyDictionary_FindPrecachedExternalTypeMapEntry(
+    QCall::ModuleHandle pModule,
+    QCall::TypeHandle pGroupType,
+    LPCUTF8 key)
+{
+    QCALL_CONTRACT;
+    _ASSERTE(pModule != NULL);
+    _ASSERTE(!pGroupType.AsTypeHandle().IsNull());
+
+    TypeHandle resultTypeHnd{};
+
+    BEGIN_QCALL;
+
+#ifdef FEATURE_READYTORUN
+    if (pModule->IsReadyToRun())
+    {
+        PTR_ReadyToRunInfo pR2RInfo = pModule->GetReadyToRunInfo();
+
+        TypeHandle groupTypeTH = pGroupType.AsTypeHandle();
+        _ASSERTE(!groupTypeTH.IsTypeDesc());
+        MethodTable* groupTypeMT = groupTypeTH.AsMethodTable();
+
+        resultTypeHnd = pR2RInfo->FindPrecachedExternalTypeMapEntry(
+            groupTypeMT,
+            key);
+    }
+#endif // FEATURE_READYTORUN
+
+    END_QCALL;
+
+    return resultTypeHnd.AsTAddr();
+}
+
+extern "C" TADDR QCALLTYPE TypeMapLazyDictionary_FindPrecachedProxyTypeMapEntry(
+    QCall::ModuleHandle pModule,
+    QCall::TypeHandle pGroupType,
+    QCall::TypeHandle pType)
+{
+    QCALL_CONTRACT;
+    _ASSERTE(pModule != NULL);
+    _ASSERTE(!pGroupType.AsTypeHandle().IsNull());
+
+    TypeHandle resultTypeHnd{};
+
+    BEGIN_QCALL;
+
+#ifdef FEATURE_READYTORUN
+    if (pModule->IsReadyToRun())
+    {
+        PTR_ReadyToRunInfo pR2RInfo = pModule->GetReadyToRunInfo();
+
+        TypeHandle groupTypeTH = pGroupType.AsTypeHandle();
+        _ASSERTE(!groupTypeTH.IsTypeDesc());
+        MethodTable* groupTypeMT = groupTypeTH.AsMethodTable();
+
+        resultTypeHnd = pR2RInfo->FindPrecachedProxyTypeMapEntry(
+            groupTypeMT,
+            pType.AsTypeHandle());
+    }
+#endif // FEATURE_READYTORUN
+
+    END_QCALL;
+
+    return resultTypeHnd.AsTAddr();
 }

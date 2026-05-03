@@ -11,12 +11,12 @@ internal sealed class RangeSectionFragment : IData<RangeSectionFragment>
     public RangeSectionFragment(Target target, TargetPointer address)
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.RangeSectionFragment);
-        RangeBegin = target.ReadPointer(address + (ulong)type.Fields[nameof(RangeBegin)].Offset);
-        RangeEndOpen = target.ReadPointer(address + (ulong)type.Fields[nameof(RangeEndOpen)].Offset);
-        RangeSection = target.ReadPointer(address + (ulong)type.Fields[nameof(RangeSection)].Offset);
+        RangeBegin = target.ReadPointerField(address, type, nameof(RangeBegin));
+        RangeEndOpen = target.ReadPointerField(address, type, nameof(RangeEndOpen));
+        RangeSection = target.ReadPointerField(address, type, nameof(RangeSection));
         // The Next pointer uses the low bit as a collectible flag (see RangeSectionFragmentPointer in codeman.h).
         // Strip it to get the actual address.
-        Next = target.ReadPointer(address + (ulong)type.Fields[nameof(Next)].Offset) & ~1ul;
+        Next = target.ReadPointerField(address, type, nameof(Next)) & ~1ul;
     }
 
     public TargetPointer RangeBegin { get; init; }

@@ -7,6 +7,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
+using Microsoft.Win32.SafeHandles;
 using Xunit;
 
 namespace System.Diagnostics.Tests
@@ -350,7 +351,7 @@ namespace System.Diagnostics.Tests
             child2.StartInfo.RedirectStandardOutput = true;
             child2.Start();
             char[] output = new char[6];
-            child2.StandardOutput.Read(output, 0, output.Length);
+            child2.StandardOutput.ReadBlock(output, 0, output.Length);
             Assert.Equal("Signal", new string(output)); // wait for the signal before killing the peer
 
             child1.Kill();
@@ -380,7 +381,7 @@ namespace System.Diagnostics.Tests
             child2.StartInfo.RedirectStandardOutput = true;
             child2.Start();
             char[] output = new char[6];
-            child2.StandardOutput.Read(output, 0, output.Length);
+            child2.StandardOutput.ReadBlock(output, 0, output.Length);
             Assert.Equal("Signal", new string(output)); // wait for the signal before killing the peer
 
             child1.Kill();
@@ -670,6 +671,64 @@ namespace System.Diagnostics.Tests
         {
             var process = new Process();
             await Assert.ThrowsAsync<InvalidOperationException>(() => process.WaitForExitAsync());
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void ProcessSafeHandle_WaitForExit_ReturnsExitCode()
+        {
+            Process process = CreateProcess(static () => RemoteExecutor.SuccessExitCode);
+            process.Start();
+
+            ProcessExitStatus exitStatus = process.SafeHandle.WaitForExit();
+
+            Assert.Equal(RemoteExecutor.SuccessExitCode, exitStatus.ExitCode);
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void ProcessSafeHandle_TryWaitForExit_ReturnsExitCode()
+        {
+            Process process = CreateProcess(static () => RemoteExecutor.SuccessExitCode);
+            process.Start();
+
+            bool exited = process.SafeHandle.TryWaitForExit(TimeSpan.FromMilliseconds(WaitInMS), out ProcessExitStatus? exitStatus);
+
+            Assert.True(exited);
+            Assert.NotNull(exitStatus);
+            Assert.Equal(RemoteExecutor.SuccessExitCode, exitStatus.ExitCode);
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public async Task ProcessSafeHandle_WaitForExitAsync_ReturnsExitCode()
+        {
+            Process process = CreateProcess(static () => RemoteExecutor.SuccessExitCode);
+            process.Start();
+
+            ProcessExitStatus exitStatus = await process.SafeHandle.WaitForExitAsync();
+
+            Assert.Equal(RemoteExecutor.SuccessExitCode, exitStatus.ExitCode);
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void ProcessSafeHandle_WaitForExitOrKillOnTimeout_KillsOnTimeout()
+        {
+            Process process = CreateProcessLong();
+            process.Start();
+
+            ProcessExitStatus exitStatus = process.SafeHandle.WaitForExitOrKillOnTimeout(TimeSpan.FromMilliseconds(0));
+
+            Assert.True(exitStatus.Canceled);
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public async Task ProcessSafeHandle_WaitForExitOrKillOnCancellationAsync_KillsOnCancellation()
+        {
+            Process process = CreateProcessLong();
+            process.Start();
+
+            using CancellationTokenSource cts = new CancellationTokenSource(0);
+            ProcessExitStatus exitStatus = await process.SafeHandle.WaitForExitOrKillOnCancellationAsync(cts.Token);
+
+            Assert.True(exitStatus.Canceled);
         }
     }
 }

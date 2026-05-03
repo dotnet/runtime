@@ -21,7 +21,8 @@ public enum DataType
 
     /* VM Data Types */
 
-    GCHandle,
+    ObjectHandle,
+    JITNotification,
     CodePointer,
     Thread,
     ThreadStore,
@@ -42,9 +43,13 @@ public enum DataType
     Module,
     ModuleLookupMap,
     AppDomain,
+    Debugger,
+    DebuggerRCThread,
     SystemDomain,
     Assembly,
     LoaderAllocator,
+    LoaderHeap,
+    LoaderHeapBlock,
     PEAssembly,
     AssemblyBinder,
     PEImage,
@@ -73,6 +78,7 @@ public enum DataType
     StressMsg,
     StressMsgHeader,
     Object,
+    ContinuationObject,
     NativeObjectWrapperObject,
     ManagedObjectWrapperHolderObject,
     ManagedObjectWrapperLayout,
@@ -89,6 +95,7 @@ public enum DataType
     Array,
     SyncBlock,
     SyncTableEntry,
+    ObjectHeader,
     InteropSyncBlockInfo,
     SyncBlockCache,
     InstantiatedMethodDesc,
@@ -104,6 +111,9 @@ public enum DataType
     RangeSection,
     RealCodeHeader,
     CodeHeapListNode,
+    CodeHeap,
+    LoaderCodeHeap,
+    HostCodeHeap,
     MethodDescVersioningState,
     ILCodeVersioningState,
     NativeCodeVersionNode,
@@ -134,6 +144,7 @@ public enum DataType
     PatchpointInfo,
     PortableEntryPoint,
     VirtualCallStubManager,
+    EEConfig,
 
     TransitionBlock,
     DebuggerEval,
@@ -151,6 +162,9 @@ public enum DataType
     HijackFrame,
     TailCallFrame,
     StubDispatchFrame,
+    ExternalMethodFrame,
+    DynamicHelperFrame,
+
     ComCallWrapper,
     SimpleComCallWrapper,
     ComMethodTable,
@@ -158,7 +172,9 @@ public enum DataType
     RCW,
     CtxEntry,
     InterfaceEntry,
-
+    ComInterfaceEntry,
+    InternalComInterfaceDispatch,
+    AuxiliarySymbolInfo,
 
     /* GC Data Types */
 
@@ -171,4 +187,6 @@ public enum DataType
     HandleTableBucket,
     HandleTable,
     TableSegment,
+    CardTableInfo,
+    RegionFreeList,
 }

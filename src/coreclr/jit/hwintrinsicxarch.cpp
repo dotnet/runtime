@@ -498,6 +498,7 @@ int HWIntrinsicInfo::lookupImmUpperBound(NamedIntrinsic id)
         case NI_AVX_CompareScalar:
         case NI_AVX512_Compare:
         case NI_AVX512_CompareMask:
+        case NI_AVX512_CompareScalarMask:
         case NI_AVX10v2_MinMaxScalar:
         case NI_AVX10v2_MinMax:
         {
@@ -5396,9 +5397,9 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             CORINFO_ARG_LIST_HANDLE arg2 = info.compCompHnd->getArgNext(argList);
             CORINFO_ARG_LIST_HANDLE arg3 = info.compCompHnd->getArgNext(arg2);
 
-            argType                    = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg3, &argClass)));
-            CorInfoType op3BaseJitType = getBaseJitTypeOfSIMDType(argClass);
-            GenTree*    op3            = getArgForHWIntrinsic(argType, argClass);
+            argType               = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg3, &argClass)));
+            var_types op3BaseType = getBaseTypeOfSIMDType(argClass);
+            GenTree*  op3         = getArgForHWIntrinsic(argType, argClass);
 
             argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg2, &argClass)));
             op2     = getArgForHWIntrinsic(argType, argClass);
@@ -5407,7 +5408,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             op1     = getArgForHWIntrinsic(argType, argClass);
 
             retNode = gtNewSimdHWIntrinsicNode(retType, op1, op2, op3, intrinsic, simdBaseType, simdSize);
-            retNode->AsHWIntrinsic()->SetAuxiliaryJitType(op3BaseJitType);
+            retNode->AsHWIntrinsic()->SetAuxiliaryType(op3BaseType);
             break;
         }
 
@@ -5498,9 +5499,9 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             GenTree* op4 = getArgForHWIntrinsic(argType, argClass);
             SetOpLclRelatedToSIMDIntrinsic(op4);
 
-            argType                      = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg3, &argClass)));
-            CorInfoType indexBaseJitType = getBaseJitTypeOfSIMDType(argClass);
-            GenTree*    op3              = getArgForHWIntrinsic(argType, argClass);
+            argType                 = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg3, &argClass)));
+            var_types indexBaseType = getBaseTypeOfSIMDType(argClass);
+            GenTree*  op3           = getArgForHWIntrinsic(argType, argClass);
             SetOpLclRelatedToSIMDIntrinsic(op3);
 
             argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg2, &argClass)));
@@ -5513,7 +5514,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
             retNode = new (this, GT_HWINTRINSIC) GenTreeHWIntrinsic(retType, getAllocator(CMK_ASTNode), intrinsic,
                                                                     simdBaseType, simdSize, op1, op2, op3, op4, op5);
-            retNode->AsHWIntrinsic()->SetAuxiliaryJitType(indexBaseJitType);
+            retNode->AsHWIntrinsic()->SetAuxiliaryType(indexBaseType);
             break;
         }
 

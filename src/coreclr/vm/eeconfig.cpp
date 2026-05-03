@@ -139,12 +139,6 @@ HRESULT EEConfig::Init()
     pPerfTypesToLog = NULL;
     iFastGCStress = 0;
     iInjectFatalError = 0;
-#ifdef TEST_DATA_CONSISTENCY
-    // indicates whether to run the self test to determine that we are detecting when a lock is held by the
-    // LS in DAC builds. Initialized via the environment variable TestDataConsistency
-    fTestDataConsistency = false;
-#endif
-
     // In Thread::SuspendThread(), default the timeout to 2 seconds.  If the suspension
     // takes longer, assert (but keep trying).
     m_SuspendThreadDeadlockTimeoutMs = 2000;
@@ -232,8 +226,6 @@ HRESULT EEConfig::Init()
 #if defined(FEATURE_GDBJIT_FRAME)
     fGDBJitEmitDebugFrame = false;
 #endif
-
-    runtimeAsync = false;
 
     return S_OK;
 }
@@ -627,10 +619,6 @@ HRESULT EEConfig::sync()
 
 #ifdef _DEBUG
 
-#ifdef TEST_DATA_CONSISTENCY
-    fTestDataConsistency = (CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_TestDataConsistency) !=0);
-#endif
-
     m_SuspendThreadDeadlockTimeoutMs = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_SuspendThreadDeadlockTimeoutMs);
     m_SuspendDeadlockTimeout = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_SuspendDeadlockTimeout);
 #endif // _DEBUG
@@ -847,8 +835,6 @@ HRESULT EEConfig::sync()
 #if defined(FEATURE_CACHED_INTERFACE_DISPATCH) && defined(FEATURE_VIRTUAL_STUB_DISPATCH)
     fUseCachedInterfaceDispatch = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_UseCachedInterfaceDispatch) != 0;
 #endif // defined(FEATURE_CACHED_INTERFACE_DISPATCH) && defined(FEATURE_VIRTUAL_STUB_DISPATCH)
-
-    runtimeAsync = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_RuntimeAsync) != 0;
 
     return hr;
 }

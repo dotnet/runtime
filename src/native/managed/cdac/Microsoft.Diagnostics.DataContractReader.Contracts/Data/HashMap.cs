@@ -12,7 +12,7 @@ internal sealed class HashMap : IData<HashMap>
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.HashMap);
 
-        Buckets = target.ReadPointer(address + (ulong)type.Fields[nameof(Buckets)].Offset);
+        Buckets = target.ReadPointerField(address, type, nameof(Buckets));
     }
 
     public TargetPointer Buckets { get; }

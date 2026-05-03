@@ -8,6 +8,8 @@
     <StringResourcesPath>../src/Resources/Strings.resx</StringResourcesPath>
     <IncludeIndexRangeTypes>true</IncludeIndexRangeTypes>
     <IncludeSpanPolyfills>true</IncludeSpanPolyfills>
+    <!-- https://github.com/dotnet/runtime/issues/126862 -->
+    <EnableTrimAnalyzer>false</EnableTrimAnalyzer>
   </PropertyGroup>
 
   <Import Project="$(CommonPath)System\Security\Cryptography\Asn1\AsnXml.targets" />
@@ -147,6 +149,8 @@
              Link="CommonTest\System\Security\Cryptography\MLKemCngTests.NotSupported.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\PbeParametersTests.cs"
              Link="CommonTest\System\Security\Cryptography\PbeParametersTests.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\Pkcs8TestHelpers.cs"
+             Link="CommonTest\System\Security\Cryptography\Pkcs8TestHelpers.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\PqcBlobHelpers.cs"
              Link="Common\System\Security\Cryptography\PqcBlobHelpers.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\SP800108HmacCounterKdfTests.ArgValidation.cs"
