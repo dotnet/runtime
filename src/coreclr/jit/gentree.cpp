@@ -26917,8 +26917,9 @@ GenTree* Compiler::gtNewSimdCreateAlternatingSequenceNode(
 
     if (simdCount == 1)
     {
-        GenTree* result = gtNewSimdCreateBroadcastNode(type, op1, simdBaseType, simdSize);
-        return gtWrapWithSideEffects(result, op2, GTF_ALL_EFFECT);
+        GenTree* result    = gtNewSimdCreateBroadcastNode(type, op1, simdBaseType, simdSize);
+        GenTree* resultDup = fgMakeMultiUse(&result);
+        return gtNewOperNode(GT_COMMA, type, result, gtWrapWithSideEffects(resultDup, op2, GTF_ALL_EFFECT));
     }
 
     if (op1->OperIsConst() && op2->OperIsConst())
@@ -27163,7 +27164,9 @@ GenTree* Compiler::gtNewSimdConcatNode(var_types type,
 
     if (simdCount == 1)
     {
-        return gtWrapWithSideEffects(op1, op2, GTF_ALL_EFFECT);
+        GenTree* result    = op1;
+        GenTree* resultDup = fgMakeMultiUse(&result);
+        return gtNewOperNode(GT_COMMA, type, result, gtWrapWithSideEffects(resultDup, op2, GTF_ALL_EFFECT));
     }
 
 #if defined(TARGET_ARM64)
@@ -27222,7 +27225,7 @@ GenTree* Compiler::gtNewSimdConcatNode(var_types type,
 #endif // !TARGET_XARCH && !TARGET_ARM64
     {
 #if defined(TARGET_XARCH)
-        if ((simdBaseType == TYP_INT) || (simdBaseType == TYP_UINT))
+        if ((simdBaseType == TYP_INT) || (simdBaseType == TYP_UINT) || (simdBaseType == TYP_FLOAT))
         {
             // return Sse.Shuffle(op1.AsSingle(), op2.AsSingle(), immediate).As<T>();
 
@@ -27354,7 +27357,9 @@ GenTree* Compiler::gtNewSimdZipNode(
 
     if (getSIMDVectorLength(simdSize, simdBaseType) == 1)
     {
-        return gtWrapWithSideEffects(op1, op2, GTF_ALL_EFFECT);
+        GenTree* result    = op1;
+        GenTree* resultDup = fgMakeMultiUse(&result);
+        return gtNewOperNode(GT_COMMA, type, result, gtWrapWithSideEffects(resultDup, op2, GTF_ALL_EFFECT));
     }
 
 #if defined(TARGET_XARCH)
@@ -27442,9 +27447,15 @@ GenTree* Compiler::gtNewSimdUnzipNode(
 
     if (simdCount == 1)
     {
-        GenTree* result = odd ? gtNewZeroConNode(type) : op1;
-        result          = gtWrapWithSideEffects(result, odd ? op1 : op2, GTF_ALL_EFFECT);
-        return odd ? gtWrapWithSideEffects(result, op2, GTF_ALL_EFFECT) : result;
+        if (odd)
+        {
+            GenTree* result = gtWrapWithSideEffects(gtNewZeroConNode(type), op2, GTF_ALL_EFFECT);
+            return gtWrapWithSideEffects(result, op1, GTF_ALL_EFFECT);
+        }
+
+        GenTree* result    = op1;
+        GenTree* resultDup = fgMakeMultiUse(&result);
+        return gtNewOperNode(GT_COMMA, type, result, gtWrapWithSideEffects(resultDup, op2, GTF_ALL_EFFECT));
     }
 
 #if defined(TARGET_ARM64)
@@ -27455,7 +27466,7 @@ GenTree* Compiler::gtNewSimdUnzipNode(
 #elif defined(TARGET_XARCH)
     if (simdSize == 16)
     {
-        if ((simdBaseType == TYP_INT) || (simdBaseType == TYP_UINT))
+        if ((simdBaseType == TYP_INT) || (simdBaseType == TYP_UINT) || (simdBaseType == TYP_FLOAT))
         {
             // return Sse.Shuffle(op1.AsSingle(), op2.AsSingle(), odd ? 0xDD : 0x88).As<T>();
 
