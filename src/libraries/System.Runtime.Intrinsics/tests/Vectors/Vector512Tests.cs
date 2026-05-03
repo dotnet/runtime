@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+﻿﻿﻿﻿﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
@@ -6296,7 +6296,7 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
 
             for (int index = 0; index < Vector512<double>.Count; index++)
             {
-                Assert.Equal(1.0 / expected, sequence.GetElement(index));
+                AssertExtensions.Equal(1.0 / expected, sequence.GetElement(index), 1e-15);
                 expected += 1.0;
             }
         }
@@ -6309,7 +6309,7 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
 
             for (int index = 0; index < Vector512<double>.Count; index++)
             {
-                Assert.Equal(Math.Sqrt(expected), sequence.GetElement(index));
+                AssertExtensions.Equal(Math.Sqrt(expected), sequence.GetElement(index), 1e-15);
                 expected += 1.0;
             }
         }

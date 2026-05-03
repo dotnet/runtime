@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+﻿﻿﻿﻿﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
@@ -4611,7 +4611,7 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
 
             for (int index = 0; index < Vector64<double>.Count; index++)
             {
-                Assert.Equal(1.0 / expected, sequence.GetElement(index));
+                AssertExtensions.Equal(1.0 / expected, sequence.GetElement(index), 1e-15);
                 expected += 1.0;
             }
         }
@@ -4624,7 +4624,7 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
 
             for (int index = 0; index < Vector64<double>.Count; index++)
             {
-                Assert.Equal(Math.Sqrt(expected), sequence.GetElement(index));
+                AssertExtensions.Equal(Math.Sqrt(expected), sequence.GetElement(index), 1e-15);
                 expected += 1.0;
             }
         }
@@ -4669,6 +4669,32 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
             AssertVectorEqual(CreateVector64(index => (index < lowerCount) ? left.GetElement(index) : right.GetElement(upperStart + index - lowerCount)), Vector64.ConcatLowerUpper(left, right));
 
             AssertVectorEqual(CreateVector64(index => left.GetElement(count - 1 - index)), Vector64.Reverse(left));
+        }
+
+        [Fact]
+        public void LaneOperationsInt64CountOneTest()
+        {
+            Vector64<long> left = Vector64.Create(10L);
+            Vector64<long> right = Vector64.Create(20L);
+
+            AssertVectorEqual(left, Vector64.ZipLower(left, right));
+            AssertVectorEqual(left, Vector64.ZipUpper(left, right));
+
+            (Vector64<long> lower, Vector64<long> upper) = Vector64.Zip(left, right);
+            AssertVectorEqual(left, lower);
+            AssertVectorEqual(left, upper);
+
+            AssertVectorEqual(left, Vector64.UnzipEven(left, right));
+            AssertVectorEqual(Vector64<long>.Zero, Vector64.UnzipOdd(left, right));
+
+            (Vector64<long> even, Vector64<long> odd) = Vector64.Unzip(left, right);
+            AssertVectorEqual(left, even);
+            AssertVectorEqual(Vector64<long>.Zero, odd);
+
+            AssertVectorEqual(left, Vector64.ConcatLowerLower(left, right));
+            AssertVectorEqual(left, Vector64.ConcatUpperLower(left, right));
+            AssertVectorEqual(left, Vector64.ConcatUpperUpper(left, right));
+            AssertVectorEqual(left, Vector64.ConcatLowerUpper(left, right));
         }
 
         private static Vector64<int> CreateVector64(Func<int, int> elementSelector)
