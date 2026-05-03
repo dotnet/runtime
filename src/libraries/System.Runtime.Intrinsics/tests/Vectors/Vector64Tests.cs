@@ -4641,6 +4641,39 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
+        public void SignSequenceUInt32Test()
+        {
+            Vector64<uint> sequence = Vector64<uint>.SignSequence;
+
+            for (int index = 0; index < Vector64<uint>.Count; index++)
+            {
+                Assert.Equal(((index & 1) == 0) ? 1u : uint.MaxValue, sequence.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void SignSequenceSingleTest()
+        {
+            Vector64<float> sequence = Vector64<float>.SignSequence;
+
+            for (int index = 0; index < Vector64<float>.Count; index++)
+            {
+                Assert.Equal(((index & 1) == 0) ? 1.0f : -1.0f, sequence.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void SignSequenceDoubleTest()
+        {
+            Vector64<double> sequence = Vector64<double>.SignSequence;
+
+            for (int index = 0; index < Vector64<double>.Count; index++)
+            {
+                Assert.Equal(((index & 1) == 0) ? 1.0 : -1.0, sequence.GetElement(index));
+            }
+        }
+
+        [Fact]
         public void LaneOperationsInt32Test()
         {
             Vector64<int> left = Vector64.CreateSequence(0, 1);
