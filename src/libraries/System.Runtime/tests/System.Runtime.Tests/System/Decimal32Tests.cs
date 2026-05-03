@@ -131,6 +131,9 @@ namespace System.Tests
             yield return new object[] { "", defaultStyle, null, typeof(FormatException) };
             yield return new object[] { " ", defaultStyle, null, typeof(FormatException) };
             yield return new object[] { "Garbage", defaultStyle, null, typeof(FormatException) };
+            yield return new object[] { "+Garbage", defaultStyle, null, typeof(FormatException) };
+            yield return new object[] { "+", defaultStyle, null, typeof(FormatException) };
+            yield return new object[] { "+  ", defaultStyle, null, typeof(FormatException) };
 
             yield return new object[] { "ab", defaultStyle, null, typeof(FormatException) }; // Hex value
             yield return new object[] { "(123)", defaultStyle, null, typeof(FormatException) }; // Parentheses
