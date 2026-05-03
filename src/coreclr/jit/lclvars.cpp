@@ -4913,12 +4913,52 @@ unsigned* Compiler::lvaComputeOptimalFrameLayoutOrder(int stkOffs, const UINT* a
         }
     }
 
+    // Pre-compute which locals will likely need zero-initialization in the prolog.
+    // This approximates the logic in genCheckUseBlockInit (codegencommon.cpp).
+    // When block init is used, the JIT zeros a contiguous range [untrLclLo, untrLclHi]
+    // using SIMD stores. The code size depends on the span and alignment, so layouts
+    // that scatter init-requiring locals produce larger prologs.
+    bool* lclNeedsInit  = new (this, CMK_LvaTable) bool[lvaCount];
+    unsigned initSlotCount = 0;
+    for (unsigned i = 0; i < lvaCount; i++)
+    {
+        lclNeedsInit[i] = false;
+        if (lclPassCategory[i] == 0)
+            continue;
+
+        LclVarDsc* varDsc = lvaGetDesc(i);
+
+        if (fgVarIsNeverZeroInitializedInProlog(i))
+            continue;
+        if (lvaIsFieldOfDependentlyPromotedStruct(varDsc))
+            continue;
+        if (varDsc->lvHasExplicitInit)
+            continue;
+        if (varDsc->lvIsTemp && !varDsc->HasGCPtr())
+            continue;
+
+        if (info.compInitMem || varDsc->HasGCPtr() || varDsc->lvMustInit)
+        {
+            lclNeedsInit[i] = true;
+            initSlotCount += (lvaLclStackHomeSize(i) + sizeof(int) - 1) / sizeof(int);
+        }
+    }
+
+    // On AMD64, block init is used when initSlotCount > 4; on x86 when > 4.
+    // Block init zeros a contiguous range, so the code size depends on span.
+    // Individual init zeros each local separately, cost is independent of layout.
+    bool useBlockInit = (initSlotCount > 4);
+
     // Simulate frame layout for a given sort order and return total encoding cost.
     // Lower cost = better layout. Cost = Σ(refCnt × encodingBytes) where
     // encodingBytes is 1 for disp8 (offset in [-128,+127]) or 4 for disp32.
+    // When block init is used, we also add a zero-init cost proportional to the
+    // span of init-requiring locals (larger span = more SIMD stores in the prolog).
     auto estimateLayoutCost = [&](unsigned* order) -> unsigned {
         unsigned totalCost = 0;
         int      simOff    = stkOffs;
+        int      initLo    = 0;
+        int      initHi    = 0;
 
         for (int p = 0; allocOrder[p]; p++)
         {
@@ -4959,7 +4999,36 @@ unsigned* Compiler::lvaComputeOptimalFrameLayoutOrder(int stkOffs, const UINT* a
                 unsigned refCnt = (lclRefCounts != nullptr) ? lclRefCounts[lcl]
                                                             : varDsc->lvRefCnt(lvaRefCountState);
                 totalCost += refCnt * ((simOff >= -128) ? 1u : 4u);
+
+                // Track the zero-init span for block-init cost estimation.
+                if (useBlockInit && lclNeedsInit[lcl])
+                {
+                    int loOffs = simOff;
+                    int hiOffs = simOff + static_cast<int>(size);
+                    if (initLo == 0 && initHi == 0)
+                    {
+                        initLo = loOffs;
+                        initHi = hiOffs;
+                    }
+                    else
+                    {
+                        initLo = min(initLo, loOffs);
+                        initHi = max(initHi, hiOffs);
+                    }
+                }
             }
+        }
+
+        // Add zero-init prolog cost when block init will be used.
+        // The JIT zeros the contiguous range [initLo, initHi) using SIMD stores.
+        // Each 16-byte chunk requires one SIMD store instruction. We add a
+        // small penalty per chunk to favor layouts that keep the init span tight,
+        // without overwhelming the main encoding cost.
+        if (useBlockInit && initHi > initLo)
+        {
+            unsigned initSpan = static_cast<unsigned>(initHi - initLo);
+            unsigned initCost = ((initSpan + 15) / 16) * 2;
+            totalCost += initCost;
         }
 
         return totalCost;
