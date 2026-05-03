@@ -5165,6 +5165,34 @@ unsigned* Compiler::lvaComputeOptimalFrameLayoutOrder(int stkOffs, const UINT* a
     };
     unsigned sizeAscCost = tryStrategy(4, "sizeAsc", sizeAscCompare);
 
+    // Strategy 5: Density with init-grouping — init-needing locals sorted by
+    // density first, then non-init locals by density. Keeps the zero-init span
+    // tight while still prioritizing hot locals within each group.
+    auto initGroupedDensityCompare = [this, lclRefCounts, lclNeedsInit](unsigned n1, unsigned n2) -> bool {
+        bool init1 = lclNeedsInit[n1], init2 = lclNeedsInit[n2];
+        if (init1 != init2) return init1; // init-needing first
+        unsigned s1 = lvaLclStackHomeSize(n1);
+        unsigned s2 = lvaLclStackHomeSize(n2);
+        weight_t w1, w2;
+        if (lclRefCounts != nullptr)
+        {
+            w1 = static_cast<weight_t>(lclRefCounts[n1]);
+            w2 = static_cast<weight_t>(lclRefCounts[n2]);
+        }
+        else
+        {
+            w1 = lvaGetDesc(n1)->lvRefCntWtd(lvaRefCountState);
+            w2 = lvaGetDesc(n2)->lvRefCntWtd(lvaRefCountState);
+        }
+        weight_t dens1 = w1 * s2;
+        weight_t dens2 = w2 * s1;
+        if (dens1 != dens2) return dens1 > dens2;
+        bool a1 = (s1 >= 8), a2 = (s2 >= 8);
+        if (a1 != a2) return a1;
+        return n1 < n2;
+    };
+    unsigned initGroupedDensityCost = tryStrategy(5, "initGroupedDensity", initGroupedDensityCompare);
+
     // Apply the winning strategy's sort order (or return nullptr if original won).
     if (bestStrategy < 0)
     {
@@ -5182,15 +5210,16 @@ unsigned* Compiler::lvaComputeOptimalFrameLayoutOrder(int stkOffs, const UINT* a
             case 2: jitstd::sort(sortOrder, sortOrder + lvaCount, weightCompare); break;
             case 3: jitstd::sort(sortOrder, sortOrder + lvaCount, refDensityCompare); break;
             case 4: jitstd::sort(sortOrder, sortOrder + lvaCount, sizeAscCompare); break;
+            case 5: jitstd::sort(sortOrder, sortOrder + lvaCount, initGroupedDensityCompare); break;
             default: unreached();
         }
     }
 
     JITDUMP("Frame layout costs: original=%u density=%u refCnt=%u weight=%u refDensity=%u "
-            "sizeAsc=%u; "
+            "sizeAsc=%u initGroupedDensity=%u; "
             "selected '%s' (cost=%u, saved %u encoding bytes est.)\n",
             origCost, densityCost, refCntCost, weightCost, refDensityCost,
-            sizeAscCost,
+            sizeAscCost, initGroupedDensityCost,
             bestName, bestCost, origCost > bestCost ? origCost - bestCost : 0);
 
     return sortOrder;
