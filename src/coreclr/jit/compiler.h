@@ -3422,6 +3422,12 @@ public:
     GenTree* gtNewSimdCreateSequenceNode(
         var_types type, GenTree* op1, GenTree* op2, var_types simdBaseType, unsigned simdSize);
 
+    GenTree* gtNewSimdCreateGeometricSequenceNode(
+        var_types type, GenTree* op1, GenTree* op2, var_types simdBaseType, unsigned simdSize);
+
+    GenTree* gtNewSimdCreateAlternatingSequenceNode(
+        var_types type, GenTree* op1, GenTree* op2, var_types simdBaseType, unsigned simdSize);
+
     GenTree* gtNewSimdDotProdNode(var_types   type,
                                   GenTree*    op1,
                                   GenTree*    op2,
@@ -3445,6 +3451,8 @@ public:
                                      unsigned    simdSize);
 
     GenTree* gtNewSimdGetIndicesNode(var_types type, var_types simdBaseType, unsigned simdSize);
+
+    GenTree* gtNewSimdGetSignSequenceNode(var_types type, var_types simdBaseType, unsigned simdSize);
 
     GenTree* gtNewSimdGetLowerNode(var_types   type,
                                    GenTree*    op1,
@@ -3551,6 +3559,30 @@ public:
                                  GenTree*    op2,
                                  var_types   simdBaseType,
                                  unsigned    simdSize);
+
+    GenTree* gtNewSimdConcatNode(var_types type,
+                                 GenTree*  op1,
+                                 GenTree*  op2,
+                                 var_types simdBaseType,
+                                 unsigned  simdSize,
+                                 bool      leftUpper,
+                                 bool      rightUpper);
+
+    GenTree* gtNewSimdZipNode(var_types type,
+                              GenTree*  op1,
+                              GenTree*  op2,
+                              var_types simdBaseType,
+                              unsigned  simdSize,
+                              bool      upper);
+
+    GenTree* gtNewSimdUnzipNode(var_types type,
+                                GenTree*  op1,
+                                GenTree*  op2,
+                                var_types simdBaseType,
+                                unsigned  simdSize,
+                                bool      odd);
+
+    GenTree* gtNewSimdReverseNode(var_types type, GenTree* op1, var_types simdBaseType, unsigned simdSize);
 
     GenTree* gtNewSimdRoundNode(
         var_types type, GenTree* op1, var_types simdBaseType, unsigned simdSize);
