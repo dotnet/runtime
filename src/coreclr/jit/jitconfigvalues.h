@@ -706,6 +706,12 @@ RELEASE_CONFIG_INTEGER(JitObjectStackAllocationTrackFields, "JitObjectStackAlloc
 CONFIG_STRING(JitObjectStackAllocationTrackFieldsRange, "JitObjectStackAllocationTrackFieldsRange")
 CONFIG_INTEGER(JitObjectStackAllocationDumpConnGraph, "JitObjectStackAllocationDumpConnGraph", 0)
 
+// Force class constructors (.cctor) to be JITed at the FullOpts optimization level so that
+// the frozen-heap-promotion phase (which relies on SSA / VN) can run against them. Has no
+// effect when the VM has not set CORJIT_FLAG_FROZEN_ALLOC_ALLOWED (e.g. collectible loader
+// contexts).
+RELEASE_CONFIG_INTEGER(JitOptimizeCctors, "JitOptimizeCctors", 1) // enabled for CI testing
+
 RELEASE_CONFIG_INTEGER(JitEECallTimingInfo, "JitEECallTimingInfo", 0)
 
 CONFIG_INTEGER(JitEnableFinallyCloning, "JitEnableFinallyCloning", 1)

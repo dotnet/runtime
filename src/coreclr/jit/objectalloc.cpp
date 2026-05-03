@@ -1634,12 +1634,18 @@ GenTree* ObjectAllocator::MorphAllocObjNodeIntoHelperCall(GenTreeAllocObj* alloc
     }
 #endif
 
-    const bool morphArgs  = false;
-    GenTree*   helperCall = m_compiler->fgMorphIntoHelperCall(allocObj, allocObj->gtNewHelper, morphArgs, arg);
+    const bool           morphArgs        = false;
+    CORINFO_CLASS_HANDLE allocObjClsHnd   = allocObj->gtAllocObjClsHnd;
+    GenTree*             helperCall       =
+        m_compiler->fgMorphIntoHelperCall(allocObj, allocObj->gtNewHelper, morphArgs, arg);
     if (helperHasSideEffects)
     {
         helperCall->AsCall()->gtCallMoreFlags |= GTF_CALL_M_ALLOC_SIDE_EFFECTS;
     }
+
+    // Preserve the class handle so later phases (e.g. cctor frozen-heap promotion)
+    // can recover it without revisiting the importer.
+    helperCall->AsCall()->compileTimeHelperArgumentHandle = (CORINFO_GENERIC_HANDLE)allocObjClsHnd;
 
 #ifdef FEATURE_READYTORUN
     if (entryPoint.addr != nullptr)
