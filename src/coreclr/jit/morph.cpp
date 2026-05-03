@@ -6736,6 +6736,7 @@ GenTree* Compiler::fgMorphLeaf(GenTree* tree)
                 tree->SetOper(GT_CNS_INT);
                 tree->AsIntConCommon()->SetIconValue(ssize_t(addrInfo.handle));
                 tree->gtFlags |= GTF_ICON_FTN_ADDR;
+                fgUpdateConstTreeValueNumber(tree);
                 INDEBUG(tree->AsIntCon()->gtTargetHandle = reinterpret_cast<size_t>(funcHandle));
                 break;
 
@@ -7902,7 +7903,7 @@ DONE_MORPHING_CHILDREN:
                     fgUpdateConstTreeValueNumber(op2);
 
                     oper = GT_ADD;
-                    tree->ChangeOper(oper);
+                    tree->ChangeOper(oper, GenTree::PRESERVE_VN);
                     goto CM_ADD_OP;
                 }
 
@@ -7919,7 +7920,7 @@ DONE_MORPHING_CHILDREN:
                     // GT_CAST<ubyte>(GT_SUB(0, s_1.ubyte))
                     if (op1->IsIntegralConst(0))
                     {
-                        tree->ChangeOper(GT_NEG);
+                        tree->ChangeOper(GT_NEG, GenTree::PRESERVE_VN);
                         tree->gtType = genActualType(op2->TypeGet());
 
                         tree->AsOp()->gtOp1 = op2;
@@ -7937,7 +7938,7 @@ DONE_MORPHING_CHILDREN:
                     tree->AsOp()->gtOp2 = op2;
 
                     oper = GT_ADD;
-                    tree->ChangeOper(oper);
+                    tree->ChangeOper(oper, GenTree::PRESERVE_VN);
                     goto CM_ADD_OP;
                 }
             }
@@ -8065,8 +8066,9 @@ DONE_MORPHING_CHILDREN:
 
                     if (transform)
                     {
-                        tree->ChangeOper(GT_MUL);
+                        tree->ChangeOper(GT_MUL, GenTree::PRESERVE_VN);
                         op2->AsDblCon()->SetDconValue(divisor);
+                        fgUpdateConstTreeValueNumber(op2);
 
                         oper = GT_MUL;
                         goto CM_OVF_OP;
@@ -8929,6 +8931,7 @@ GenTree* Compiler::fgOptimizeEqualityComparisonWithConst(GenTreeOp* cmp)
                 {
                     goto SKIP; // Unsupported type or invalid shift amount.
                 }
+                fgUpdateConstTreeValueNumber(andMask);
                 andOp->gtOp1 = rshiftOp->gtGetOp1();
 
                 DEBUG_DESTROY_NODE(rshiftOp->gtGetOp2());
@@ -8961,6 +8964,7 @@ GenTree* Compiler::fgOptimizeEqualityComparisonWithConst(GenTreeOp* cmp)
             {
                 gtReverseCond(cmp);
                 op2->SetIntegralValue(0);
+                fgUpdateConstTreeValueNumber(op2);
             }
         }
     }
@@ -10113,6 +10117,7 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
                         {
                             ExtractEffectiveOp(GT_NOT, node, /* destroyNodes */ true);
                             cmpOp3->AsIntConCommon()->SetIntegralValue(static_cast<uint8_t>(mode));
+                            fgUpdateConstTreeValueNumber(cmpOp3);
                             return fgMorphHWIntrinsicRequired(op1Intrin);
                         }
                         break;
@@ -10667,7 +10672,7 @@ GenTree* Compiler::fgOptimizeMultiply(GenTreeOp* mul)
             }
             else
             {
-                mul->ChangeOper(GT_NEG);
+                mul->ChangeOper(GT_NEG, GenTree::PRESERVE_VN);
                 mul->AsOp()->gtOp2 = nullptr;
                 return mul;
             }
@@ -10999,7 +11004,7 @@ GenTree* Compiler::fgOptimizeBitwiseXor(GenTreeOp* xorOp)
     else if (op2->IsIntegralConst(-1))
     {
         /* "x ^ -1" is "~x" */
-        xorOp->ChangeOper(GT_NOT);
+        xorOp->ChangeOper(GT_NOT, GenTree::PRESERVE_VN);
         xorOp->gtOp2 = nullptr;
         DEBUG_DESTROY_NODE(op2);
 
@@ -11018,7 +11023,7 @@ GenTree* Compiler::fgOptimizeBitwiseXor(GenTreeOp* xorOp)
     {
         // "x ^ -0.0" is "-x"
 
-        xorOp->ChangeOper(GT_NEG);
+        xorOp->ChangeOper(GT_NEG, GenTree::PRESERVE_VN);
         xorOp->gtOp2 = nullptr;
 
         DEBUG_DESTROY_NODE(op2);
@@ -11327,13 +11332,16 @@ GenTree* Compiler::fgMorphSmpOpOptional(GenTreeOp* tree, bool* optAssertionPropD
                     /* Change '(val + iadd) * imul' -> '(val * imul) + (iadd * imul)' */
 
                     oper = GT_ADD;
-                    tree->ChangeOper(oper);
+                    tree->ChangeOper(oper, GenTree::PRESERVE_VN);
 
                     op2->AsIntCon()->SetValueTruncating(iadd * imul);
+                    fgUpdateConstTreeValueNumber(op2);
 
+                    // changing from (val + iadd) to (val * imul), so don't preserve VN
                     op1->ChangeOper(GT_MUL);
 
                     add->AsIntCon()->SetIconValue(imul);
+                    fgValueNumberTreeConst(add);
                 }
             }
 
@@ -11372,13 +11380,17 @@ GenTree* Compiler::fgMorphSmpOpOptional(GenTreeOp* tree, bool* optAssertionPropD
 
                     /* Change "(val + iadd) << ishf" into "(val<<ishf + iadd<<ishf)" */
 
-                    tree->ChangeOper(GT_ADD);
+                    tree->ChangeOper(GT_ADD, GenTree::PRESERVE_VN);
 
                     // we are reusing the shift amount node here, but the type we want is that of the shift result
                     op2->gtType = op1->gtType;
                     op2->AsIntConCommon()->SetValueTruncating(iadd << ishf);
+                    fgUpdateConstTreeValueNumber(op2);
+
+                    // changing from (val + iadd) to (val << ishf), so don't preserve VN
                     op1->ChangeOper(GT_LSH);
                     cns->AsIntConCommon()->SetIconValue(ishf);
+                    fgUpdateConstTreeValueNumber(cns);
                 }
             }
 
@@ -12400,7 +12412,7 @@ GenTree* Compiler::fgRecognizeAndMorphBitwiseRotation(GenTree* tree)
             {
                 tree->AsOp()->gtOp1 = rotatedValue;
                 tree->AsOp()->gtOp2 = rotateIndex;
-                tree->ChangeOper(rotateOp);
+                tree->ChangeOper(rotateOp, GenTree::PRESERVE_VN);
 
                 unsigned childFlags = 0;
                 for (GenTree* op : tree->Operands())
