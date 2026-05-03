@@ -4018,9 +4018,6 @@ CLR_BOOL SfiNextWorker(StackFrameIterator* pThis, uint* uExCollideClauseIdx, CLR
             // When the exception is propagating to native code during pass 1, notify the debugger if the next
             // explicit frame is a FuncEvalFrame or DebuggerU2MCatchHandlerFrame. The debugger needs this notification
             // while the managed stack frames are still present so it can inspect the failure location.
-            // This was previously done in NotifyExceptionPassStarted using stale StackFrameIterator state, but the
-            // iterator is no longer guaranteed to be in SFITER_FRAME_FUNCTION state at that point. Here, we have
-            // live iterator state and direct access to the frame chain.
 #if defined(DEBUGGING_SUPPORTED)
             if (pTopExInfo->m_passNumber == 1 && pFrame != FRAME_TOP)
             {
