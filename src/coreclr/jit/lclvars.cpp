@@ -5176,11 +5176,12 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
     // assumes EBP/RBP-relative negative virtual offsets. ESP/RSP-based frames use positive
     // offsets after fixup and contribute negligible savings.
     //
-    // We skip this for EnC (which requires stable layout), MinOpts (where ref counts are
-    // less meaningful), and frames that fit entirely within the disp8 zone.
+    // We skip this for EnC (which requires stable layout) and frames that fit entirely
+    // within the disp8 zone. For MinOpts/Tier0 where precise ref counts are not computed,
+    // we do a lightweight LIR walk to count local references for sorting purposes.
     assert(lvaDoneFrameLayout == FINAL_FRAME_LAYOUT);
     unsigned* lclVarSortOrder = nullptr;
-    if (lvaLocalVarRefCounted() && !opts.compDbgEnC && !opts.MinOpts() && codeGen->isFramePointerUsed())
+    if (lvaLocalVarRefCounted() && !opts.compDbgEnC && codeGen->isFramePointerUsed())
     {
         unsigned estimatedLocalSize = 0;
         for (unsigned i = 0; i < lvaCount; i++)
@@ -5190,9 +5191,36 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
 
         if (estimatedLocalSize > 128)
         {
+            // For MinOpts/Tier0, precise ref counts are not available (all lvRefCnt == 0).
+            // Do a lightweight LIR walk to count local references for sorting purposes.
+            // This is much cheaper than the full lvaMarkLclRefs pass — we only count
+            // occurrences without any of the analysis side effects.
+            unsigned* lclRefCounts = nullptr;
+            if (!PreciseRefCountsRequired())
+            {
+                lclRefCounts = new (this, CMK_LvaTable) unsigned[lvaCount];
+                memset(lclRefCounts, 0, lvaCount * sizeof(unsigned));
+
+                for (BasicBlock* const block : Blocks())
+                {
+                    for (GenTree* node : LIR::AsRange(block))
+                    {
+                        if (node->OperIsAnyLocal())
+                        {
+                            unsigned lclNum = node->AsLclVarCommon()->GetLclNum();
+                            if (lclNum < lvaCount)
+                            {
+                                lclRefCounts[lclNum]++;
+                            }
+                        }
+                    }
+                }
+            }
+
             JITDUMP("Frame layout optimization: trying multiple strategies for %u locals "
-                    "(estimated frame size %u bytes)\n",
-                    lvaCount, estimatedLocalSize);
+                    "(estimated frame size %u bytes%s)\n",
+                    lvaCount, estimatedLocalSize,
+                    lclRefCounts != nullptr ? ", using lightweight ref counts" : "");
 
             // Pre-compute which locals will be allocated in the main loop and their
             // pass category. Category 0 means "not allocatable" (skipped by the loop).
@@ -5282,7 +5310,8 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
 
                         simOff -= static_cast<int>(size);
 
-                        unsigned refCnt = varDsc->lvRefCnt(lvaRefCountState);
+                        unsigned refCnt = (lclRefCounts != nullptr) ? lclRefCounts[lcl]
+                                                                    : varDsc->lvRefCnt(lvaRefCountState);
                         totalCost += refCnt * ((simOff >= -128) ? 1u : 4u);
                     }
                 }
@@ -5322,30 +5351,41 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
             // Strategy 1: Access density (weighted ref count / size) descending.
             // A small hot local is more valuable per frame byte than a large hot local.
             unsigned densityCost = tryStrategy("density",
-                [this](unsigned n1, unsigned n2) -> bool {
-                    const LclVarDsc* d1 = lvaGetDesc(n1);
-                    const LclVarDsc* d2 = lvaGetDesc(n2);
+                [this, lclRefCounts](unsigned n1, unsigned n2) -> bool {
                     unsigned s1 = lvaLclStackHomeSize(n1);
                     unsigned s2 = lvaLclStackHomeSize(n2);
-                    weight_t w1 = d1->lvRefCntWtd(lvaRefCountState);
-                    weight_t w2 = d2->lvRefCntWtd(lvaRefCountState);
+                    weight_t w1, w2;
+                    if (lclRefCounts != nullptr)
+                    {
+                        w1 = static_cast<weight_t>(lclRefCounts[n1]);
+                        w2 = static_cast<weight_t>(lclRefCounts[n2]);
+                    }
+                    else
+                    {
+                        w1 = lvaGetDesc(n1)->lvRefCntWtd(lvaRefCountState);
+                        w2 = lvaGetDesc(n2)->lvRefCntWtd(lvaRefCountState);
+                    }
                     // Compare w1/s1 > w2/s2 via cross-multiply to avoid division.
                     weight_t dens1 = w1 * s2;
                     weight_t dens2 = w2 * s1;
                     if (dens1 != dens2) return dens1 > dens2;
                     bool a1 = (s1 >= 8), a2 = (s2 >= 8);
                     if (a1 != a2) return a1;
-                    unsigned c1 = d1->lvRefCnt(lvaRefCountState);
-                    unsigned c2 = d2->lvRefCnt(lvaRefCountState);
+                    unsigned c1 = (lclRefCounts != nullptr) ? lclRefCounts[n1]
+                                                            : lvaGetDesc(n1)->lvRefCnt(lvaRefCountState);
+                    unsigned c2 = (lclRefCounts != nullptr) ? lclRefCounts[n2]
+                                                            : lvaGetDesc(n2)->lvRefCnt(lvaRefCountState);
                     if (c1 != c2) return c1 > c2;
                     return n1 < n2;
                 });
 
             // Strategy 2: Unweighted ref count descending.
             unsigned refCntCost = tryStrategy("refCnt",
-                [this](unsigned n1, unsigned n2) -> bool {
-                    unsigned c1 = lvaGetDesc(n1)->lvRefCnt(lvaRefCountState);
-                    unsigned c2 = lvaGetDesc(n2)->lvRefCnt(lvaRefCountState);
+                [this, lclRefCounts](unsigned n1, unsigned n2) -> bool {
+                    unsigned c1 = (lclRefCounts != nullptr) ? lclRefCounts[n1]
+                                                            : lvaGetDesc(n1)->lvRefCnt(lvaRefCountState);
+                    unsigned c2 = (lclRefCounts != nullptr) ? lclRefCounts[n2]
+                                                            : lvaGetDesc(n2)->lvRefCnt(lvaRefCountState);
                     if (c1 != c2) return c1 > c2;
                     bool a1 = (lvaLclStackHomeSize(n1) >= 8);
                     bool a2 = (lvaLclStackHomeSize(n2) >= 8);
@@ -5354,10 +5394,20 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
                 });
 
             // Strategy 3: Weighted ref count descending.
+            // For MinOpts, weighted = unweighted (no block weights available).
             unsigned weightCost = tryStrategy("weight",
-                [this](unsigned n1, unsigned n2) -> bool {
-                    weight_t w1 = lvaGetDesc(n1)->lvRefCntWtd(lvaRefCountState);
-                    weight_t w2 = lvaGetDesc(n2)->lvRefCntWtd(lvaRefCountState);
+                [this, lclRefCounts](unsigned n1, unsigned n2) -> bool {
+                    weight_t w1, w2;
+                    if (lclRefCounts != nullptr)
+                    {
+                        w1 = static_cast<weight_t>(lclRefCounts[n1]);
+                        w2 = static_cast<weight_t>(lclRefCounts[n2]);
+                    }
+                    else
+                    {
+                        w1 = lvaGetDesc(n1)->lvRefCntWtd(lvaRefCountState);
+                        w2 = lvaGetDesc(n2)->lvRefCntWtd(lvaRefCountState);
+                    }
                     if (w1 != w2) return w1 > w2;
                     bool a1 = (lvaLclStackHomeSize(n1) >= 8);
                     bool a2 = (lvaLclStackHomeSize(n2) >= 8);
@@ -5367,9 +5417,11 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
 
             // Strategy 4: Unweighted ref count density (refCnt / size) descending.
             unsigned refDensityCost = tryStrategy("refDensity",
-                [this](unsigned n1, unsigned n2) -> bool {
-                    unsigned c1 = lvaGetDesc(n1)->lvRefCnt(lvaRefCountState);
-                    unsigned c2 = lvaGetDesc(n2)->lvRefCnt(lvaRefCountState);
+                [this, lclRefCounts](unsigned n1, unsigned n2) -> bool {
+                    unsigned c1 = (lclRefCounts != nullptr) ? lclRefCounts[n1]
+                                                            : lvaGetDesc(n1)->lvRefCnt(lvaRefCountState);
+                    unsigned c2 = (lclRefCounts != nullptr) ? lclRefCounts[n2]
+                                                            : lvaGetDesc(n2)->lvRefCnt(lvaRefCountState);
                     unsigned s1 = lvaLclStackHomeSize(n1);
                     unsigned s2 = lvaLclStackHomeSize(n2);
                     // Cross-multiply to avoid division.
