@@ -65,7 +65,7 @@ namespace System.Numerics
         {
             bool isNegative = significand < 0;
             uint unsignedSignificand = isNegative ? (uint)(-(long)significand) : (uint)significand;
-            _value = Number.ConstructorToDecimalIeee754Bits<Decimal32, uint>(isNegative, unsignedSignificand, exponent);;
+            _value = Number.ConstructorToDecimalIeee754Bits<Decimal32, uint>(isNegative, unsignedSignificand, exponent);
         }
 
         /// <summary>

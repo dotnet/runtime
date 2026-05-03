@@ -10,7 +10,7 @@ namespace System
     {
         /// <summary>
         /// Encodes the given IEEE 754 decimal components into their Binary Integer Decimal (BID),
-        /// handles rounding/infinitive cases, producing the final <typeparamref name="TValue"/> bit pattern.
+        /// handles rounding/infinite cases, producing the final <typeparamref name="TValue"/> bit pattern.
         /// </summary>
         /// <param name="signed">
         /// The sign of the value. <c>true</c> indicates a negative number; otherwise, <c>false</c>.

@@ -141,7 +141,7 @@ namespace System.Tests
 
             yield return new object[] { (123.456m).ToString(), NumberStyles.Integer, null, typeof(FormatException) }; // Decimal
             yield return new object[] { "  " + (123.456m).ToString(), NumberStyles.None, null, typeof(FormatException) }; // Leading space
-            yield return new object[] { (123.456m).ToString() + "   ", NumberStyles.None, null, typeof(FormatException) }; // Leading space
+            yield return new object[] { (123.456m).ToString() + "   ", NumberStyles.None, null, typeof(FormatException) }; // Trailing space
             yield return new object[] { "1E23", NumberStyles.None, null, typeof(FormatException) }; // Exponent
 
             yield return new object[] { "ab", NumberStyles.None, null, typeof(FormatException) }; // Hex value
