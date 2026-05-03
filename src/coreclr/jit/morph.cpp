@@ -7330,12 +7330,13 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optA
             // for the mod operator.
             else
 #else
-            // XARCH only applies this transformation if we know
-            // that magic division will be used - which is determined
-            // when 'b' is not a power of 2 constant and mod operator is signed.
-            // Lowering for XARCH does this optimization already,
-            // but is also done here to take advantage of CSE.
-            else if (tree->OperIs(GT_MOD) && op2->IsIntegralConst() && !op2->IsIntegralConstAbsPow2())
+            // XARCH only applies this transformation if we know that magic division will be used,
+            // which is when 'b' is a non-power-of-2 constant. For signed mod, power-of-2 divisors
+            // are handled by lowering via a special path. For unsigned mod, power-of-2 divisors are
+            // already handled above via fgMorphUModToAndSub.
+            // This is done here in morph (rather than waiting for lowering) to expose CSE opportunities
+            // when both `a / b` and `a % b` appear with the same constant divisor.
+            else if (tree->OperIs(GT_MOD, GT_UMOD) && op2->IsIntegralConst() && !op2->IsIntegralConstAbsPow2())
 #endif
             {
                 // Transformation: a % b = a - (a / b) * b;
