@@ -67,18 +67,32 @@ bool IsPromotableArrayAllocHelper(CorInfoHelpFunc helper)
     }
 }
 
-struct AllocLocation
+// A captured allocator call together with the parent store node that holds it
+// in its `Data()` slot, and the statement containing that parent. With these
+// three handles we can directly mutate the parent's slot (parent->Data() = ...)
+// and re-thread the statement, with no need to search the IR.
+struct AllocSite
 {
-    GenTreeCall* call  = nullptr;
-    BasicBlock*  block = nullptr;
+    GenTreeCall* call   = nullptr;
+    GenTree*     parent = nullptr; // GT_STOREIND or GT_STORE_LCL_VAR; holds `call` in Data().
+    Statement*   stmt   = nullptr; // statement containing `parent`.
 };
 
 // Recognise an allocator helper call on the value side of an stsfld store.
 // Peels GT_BOX, trivial commas (via gtEffectiveVal), and follows a single SSA
 // edge from a LCL_VAR to its defining STORE_LCL_VAR.
-AllocLocation TryGetAllocCallFromStsfldValue(Compiler* compiler, BasicBlock* stsfldBlock, GenTree* value)
+//
+// `defStmtMap` maps every STORE_LCL_VAR the phase has visited to its statement;
+// it lets us recover the SSA def's statement without scanning the block.
+AllocSite TryGetAllocSiteFromStsfldValue(
+    Compiler*                                                                       compiler,
+    Statement*                                                                      stsfldStmt,
+    GenTreeIndir*                                                                   stsfldStore,
+    JitHashTable<GenTree*, JitPtrKeyFuncs<GenTree>, Statement*>* defStmtMap)
 {
-    AllocLocation result;
+    AllocSite result;
+
+    GenTree* value = stsfldStore->Data();
 
     // box int + stsfld is imported as STORE_IND(field_addr, GT_BOX(LCL_VAR(boxTemp))).
     if (value->OperIs(GT_BOX))
@@ -90,8 +104,9 @@ AllocLocation TryGetAllocCallFromStsfldValue(Compiler* compiler, BasicBlock* sts
 
     if (value->IsCall())
     {
-        result.call  = value->AsCall();
-        result.block = stsfldBlock;
+        result.call   = value->AsCall();
+        result.parent = stsfldStore;
+        result.stmt   = stsfldStmt;
         return result;
     }
 
@@ -125,7 +140,7 @@ AllocLocation TryGetAllocCallFromStsfldValue(Compiler* compiler, BasicBlock* sts
         return result;
     }
 
-    GenTree* defValue = defNode->AsLclVarCommon()->Data();
+    GenTree* defValue = defNode->Data();
     if (defValue == nullptr)
     {
         return result;
@@ -137,8 +152,15 @@ AllocLocation TryGetAllocCallFromStsfldValue(Compiler* compiler, BasicBlock* sts
         return result;
     }
 
-    result.call  = defValue->AsCall();
-    result.block = ssaDef->GetBlock();
+    Statement* defStmt = nullptr;
+    if (!defStmtMap->Lookup(defNode, &defStmt))
+    {
+        return result;
+    }
+
+    result.call   = defValue->AsCall();
+    result.parent = defNode;
+    result.stmt   = defStmt;
     return result;
 }
 
@@ -177,9 +199,8 @@ CORINFO_FIELD_HANDLE GetStaticReadonlyFieldFromStoreInd(Compiler* compiler, GenT
 // allocCall == nullptr means "blocked" (multi-store or non-promotable store).
 struct FieldPromoteInfo
 {
-    GenTreeCall* allocCall    = nullptr;
-    BasicBlock*  allocBlock   = nullptr;
-    bool         isArrayAlloc = false;
+    AllocSite site;
+    bool      isArrayAlloc = false;
 };
 
 typedef JitHashTable<CORINFO_FIELD_HANDLE, JitPtrKeyFuncs<CORINFO_FIELD_STRUCT_>, FieldPromoteInfo> FieldMap;
@@ -216,15 +237,26 @@ PhaseStatus Compiler::fgPromoteCctorAllocsToFrozenHeap()
         return PhaseStatus::MODIFIED_NOTHING;
     }
 
-    FieldMap candidates(getAllocator(CMK_Generic));
+    // Maps every STORE_LCL_VAR encountered during pass 1 to its statement, so
+    // SSA-traced defs can be located without scanning the IR.
+    JitHashTable<GenTree*, JitPtrKeyFuncs<GenTree>, Statement*> defStmtMap(getAllocator(CMK_Generic));
+    FieldMap                                                    candidates(getAllocator(CMK_Generic));
 
-    // Pass 1: collect candidates.
+    // Pass 1: collect candidates. The defStmtMap is populated as we go; since
+    // the method has no cycles, every SSA def of a temp we trace through has
+    // already been visited by the time we encounter the using stsfld.
     for (BasicBlock* const block : Blocks())
     {
         for (Statement* const stmt : block->Statements())
         {
             for (GenTree* const tree : stmt->TreeList())
             {
+                if (tree->OperIs(GT_STORE_LCL_VAR))
+                {
+                    defStmtMap.Set(tree, stmt);
+                    continue;
+                }
+
                 if (!tree->OperIs(GT_STOREIND) || !tree->TypeIs(TYP_REF))
                 {
                     continue;
@@ -244,15 +276,14 @@ PhaseStatus Compiler::fgPromoteCctorAllocsToFrozenHeap()
                     continue;
                 }
 
-                AllocLocation loc   = TryGetAllocCallFromStsfldValue(this, block, store->Data());
-                GenTreeCall*  alloc = loc.call;
-                if ((alloc == nullptr) || !alloc->IsHelperCall())
+                AllocSite site = TryGetAllocSiteFromStsfldValue(this, stmt, store, &defStmtMap);
+                if ((site.call == nullptr) || !site.call->IsHelperCall())
                 {
                     BlockField(candidates, fld);
                     continue;
                 }
 
-                CorInfoHelpFunc helperNum = alloc->GetHelperNum();
+                CorInfoHelpFunc helperNum = site.call->GetHelperNum();
                 bool            isArr     = IsPromotableArrayAllocHelper(helperNum);
                 bool            isObj     = IsPromotableObjectAllocHelper(helperNum);
                 if (!isArr && !isObj)
@@ -263,15 +294,14 @@ PhaseStatus Compiler::fgPromoteCctorAllocsToFrozenHeap()
 
                 // We need the class handle to rebuild the call (R2R only). The
                 // importer/ObjectAllocator save it on every supported helper call.
-                if (alloc->compileTimeHelperArgumentHandle == nullptr)
+                if (site.call->compileTimeHelperArgumentHandle == nullptr)
                 {
                     BlockField(candidates, fld);
                     continue;
                 }
 
                 FieldPromoteInfo cand;
-                cand.allocCall    = alloc;
-                cand.allocBlock   = loc.block;
+                cand.site         = site;
                 cand.isArrayAlloc = isArr;
                 candidates.Set(fld, cand);
             }
@@ -285,17 +315,18 @@ PhaseStatus Compiler::fgPromoteCctorAllocsToFrozenHeap()
     //
     // For READYTORUN_NEW/READYTORUN_NEWARR_1 the type handle is in an R2R cell
     // rather than a user arg, so we rebuild the call with the (typeHandle [, length])
-    // shape that MAYBEFROZEN expects and re-run `fgMorphArgs`.
+    // shape that MAYBEFROZEN expects, splice it into the parent's `Data()` slot,
+    // and re-run `fgMorphArgs`.
     bool madeChanges = false;
     for (FieldMap::Node* const node : FieldMap::KeyValueIteration(&candidates))
     {
         const FieldPromoteInfo& candidate = node->GetValue();
-        if (candidate.allocCall == nullptr)
+        if (candidate.site.call == nullptr)
         {
             continue;
         }
 
-        GenTreeCall*         origCall = candidate.allocCall;
+        GenTreeCall*         origCall = candidate.site.call;
         CORINFO_CLASS_HANDLE clsHnd   = (CORINFO_CLASS_HANDLE)origCall->compileTimeHelperArgumentHandle;
         assert(clsHnd != NO_CLASS_HANDLE);
 
@@ -318,19 +349,6 @@ PhaseStatus Compiler::fgPromoteCctorAllocsToFrozenHeap()
         }
         else
         {
-            // Locate the original call's containing statement; the alloc may
-            // live in a different statement (and even block) than the stsfld.
-            Statement* allocStmt = nullptr;
-            for (Statement* const stmt : candidate.allocBlock->Statements())
-            {
-                if (gtFindLink(stmt, origCall).result != nullptr)
-                {
-                    allocStmt = stmt;
-                    break;
-                }
-            }
-            assert(allocStmt != nullptr);
-
             GenTree* lengthTree = nullptr;
             if (candidate.isArrayAlloc)
             {
@@ -356,16 +374,18 @@ PhaseStatus Compiler::fgPromoteCctorAllocsToFrozenHeap()
             // reuse the VN so downstream consumers stay coherent.
             newCall->gtVNPair = origCall->gtVNPair;
 
-            FindLinkData link = gtFindLink(allocStmt, origCall);
-            assert(link.result != nullptr);
-            *link.result = newCall;
+            // Splice the new call into the parent's `Data()` slot. `Data()`
+            // returns `GenTree*&` for both GT_STOREIND and GT_STORE_LCL_VAR,
+            // so a single virtual dispatch handles both parent kinds.
+            assert(candidate.site.parent->Data() == origCall);
+            candidate.site.parent->Data() = newCall;
 
             // fgMorphArgs determines ABI info and inserts PUTARG nodes that
             // lowering expects on the freshly-built call.
             fgMorphArgs(newCall);
 
-            gtUpdateStmtSideEffects(allocStmt);
-            fgSetStmtSeq(allocStmt);
+            gtUpdateStmtSideEffects(candidate.site.stmt);
+            fgSetStmtSeq(candidate.site.stmt);
         }
 
         madeChanges = true;
