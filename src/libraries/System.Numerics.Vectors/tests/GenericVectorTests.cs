@@ -4615,6 +4615,17 @@ namespace System.Numerics.Tests
         }
 
         [Fact]
+        public void SignSequenceDoubleTest()
+        {
+            Vector<double> sequence = Vector<double>.SignSequence;
+
+            for (int index = 0; index < Vector<double>.Count; index++)
+            {
+                Assert.Equal(((index & 1) == 0) ? 1.0 : -1.0, sequence.GetElement(index));
+            }
+        }
+
+        [Fact]
         public void LaneOperationsInt32Test()
         {
             Vector<int> left = Vector.CreateSequence(0, 1);

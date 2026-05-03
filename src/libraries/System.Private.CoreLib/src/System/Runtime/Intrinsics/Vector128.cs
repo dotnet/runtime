@@ -1583,6 +1583,7 @@ namespace System.Runtime.Intrinsics
         /// <param name="initial">The value that element 0 will be initialized to.</param>
         /// <param name="multiplier">The value that indicates how each element should be scaled from the previous.</param>
         /// <returns>A new <see cref="Vector128{T}" /> instance with the first element initialized to <paramref name="initial" /> and each subsequent element initialized to the value of the previous element multiplied by <paramref name="multiplier" />.</returns>
+        /// <exception cref="NotSupportedException">The type of <paramref name="initial"/> and <paramref name="multiplier"/> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector128<T> CreateGeometricSequence<T>(T initial, [ConstantExpected] T multiplier)

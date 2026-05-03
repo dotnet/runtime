@@ -5334,6 +5334,21 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
+        public void CreateGeometricSequenceDoubleNonConstantInitialTest()
+        {
+            const double multiplier = 1e-50;
+            double initial = GetNonConstant(1e-154);
+            Vector128<double> sequence = Vector128.CreateGeometricSequence(initial, multiplier);
+            double expected = initial;
+
+            for (int index = 0; index < Vector128<double>.Count; index++)
+            {
+                Assert.Equal(expected, sequence.GetElement(index));
+                expected *= multiplier;
+            }
+        }
+
+        [Fact]
         public void CreateAlternatingSequenceInt32Test()
         {
             Vector128<int> sequence = Vector128.CreateAlternatingSequence(5, -5);
