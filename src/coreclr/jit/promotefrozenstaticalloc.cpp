@@ -209,6 +209,42 @@ void BlockField(FieldMap& map, CORINFO_FIELD_HANDLE fld)
 {
     map.Set(fld, FieldPromoteInfo{}, FieldMap::Overwrite);
 }
+// Recover the class handle for a promotable allocator helper call.
+//
+// For R2R object/array helpers (READYTORUN_NEW, READYTORUN_NEWARR_1) the type
+// handle lives in the R2R indirection cell rather than in any user arg, so we
+// read it from `compileTimeHelperArgumentHandle` (populated at call construction
+// time).
+//
+// For JIT helpers the type handle is the call's first user arg. Read it via VN
+// so the lookup is robust against CSE / copy-prop replacing the embedded icon
+// with a temp.
+//
+// Returns NO_CLASS_HANDLE if the handle cannot be recovered.
+CORINFO_CLASS_HANDLE TryGetAllocClsHnd(Compiler* compiler, GenTreeCall* call)
+{
+#ifdef FEATURE_READYTORUN
+    CorInfoHelpFunc helper = call->GetHelperNum();
+    if ((helper == CORINFO_HELP_READYTORUN_NEW) || (helper == CORINFO_HELP_READYTORUN_NEWARR_1))
+    {
+        return (CORINFO_CLASS_HANDLE)call->compileTimeHelperArgumentHandle;
+    }
+#endif
+
+    if (call->gtArgs.CountUserArgs() == 0)
+    {
+        return NO_CLASS_HANDLE;
+    }
+
+    GenTree* arg0 = call->gtArgs.GetUserArgByIndex(0)->GetNode();
+    ValueNum vn   = arg0->gtVNPair.GetLiberal();
+    if (!compiler->vnStore->IsVNTypeHandle(vn))
+    {
+        return NO_CLASS_HANDLE;
+    }
+
+    return (CORINFO_CLASS_HANDLE)compiler->vnStore->CoercedConstantValue<ssize_t>(vn);
+}
 } // anonymous namespace
 
 //------------------------------------------------------------------------
@@ -292,9 +328,11 @@ PhaseStatus Compiler::fgPromoteCctorAllocsToFrozenHeap()
                     continue;
                 }
 
-                // We need the class handle to rebuild the call (R2R only). The
-                // importer/ObjectAllocator save it on every supported helper call.
-                if (site.call->compileTimeHelperArgumentHandle == nullptr)
+                // Verify we can recover the class handle. For R2R helpers it
+                // lives on the call; for JIT helpers we read it from arg 0's VN
+                // (see TryGetAllocClsHnd). Reject the candidate if either path
+                // fails to keep pass 2 simple.
+                if (TryGetAllocClsHnd(this, site.call) == NO_CLASS_HANDLE)
                 {
                     BlockField(candidates, fld);
                     continue;
@@ -326,14 +364,7 @@ PhaseStatus Compiler::fgPromoteCctorAllocsToFrozenHeap()
             continue;
         }
 
-        GenTreeCall*         origCall = candidate.site.call;
-        CORINFO_CLASS_HANDLE clsHnd   = (CORINFO_CLASS_HANDLE)origCall->compileTimeHelperArgumentHandle;
-        assert(clsHnd != NO_CLASS_HANDLE);
-
-        // Mirror impTokenToHandle(..., mustRestoreHandle=true) so the class is
-        // loaded before this code runs in AOT scenarios.
-        info.compCompHnd->classMustBeLoadedBeforeCodeIsRun(clsHnd);
-
+        GenTreeCall*    origCall   = candidate.site.call;
         CorInfoHelpFunc origHelper = origCall->GetHelperNum();
         CorInfoHelpFunc newHelper =
             candidate.isArrayAlloc ? CORINFO_HELP_NEWARR_1_MAYBEFROZEN : CORINFO_HELP_NEWFAST_MAYBEFROZEN;
@@ -349,6 +380,15 @@ PhaseStatus Compiler::fgPromoteCctorAllocsToFrozenHeap()
         }
         else
         {
+            // R2R rebuild path. The class handle isn't carried in any user arg
+            // (it lives in the R2R indirection cell), so recover it from the
+            // call's `compileTimeHelperArgumentHandle` annotation. Then call
+            // `classMustBeLoadedBeforeCodeIsRun` -- a no-op outside AOT, but
+            // mandatory for AOT-correct code.
+            CORINFO_CLASS_HANDLE clsHnd = TryGetAllocClsHnd(this, origCall);
+            assert(clsHnd != NO_CLASS_HANDLE);
+            info.compCompHnd->classMustBeLoadedBeforeCodeIsRun(clsHnd);
+
             GenTree* lengthTree = nullptr;
             if (candidate.isArrayAlloc)
             {

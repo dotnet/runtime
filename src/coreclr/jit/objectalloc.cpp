@@ -1643,9 +1643,16 @@ GenTree* ObjectAllocator::MorphAllocObjNodeIntoHelperCall(GenTreeAllocObj* alloc
         helperCall->AsCall()->gtCallMoreFlags |= GTF_CALL_M_ALLOC_SIDE_EFFECTS;
     }
 
-    // Preserve the class handle so later phases (e.g. cctor frozen-heap promotion)
-    // can recover it without revisiting the importer.
-    helperCall->AsCall()->compileTimeHelperArgumentHandle = (CORINFO_GENERIC_HANDLE)allocObjClsHnd;
+#ifdef FEATURE_READYTORUN
+    // For READYTORUN_NEW the type handle isn't a user arg (it lives in the R2R
+    // indirection cell), so preserve it on the call so later phases (e.g. cctor
+    // frozen-heap promotion) can recover it. For other helpers the type handle
+    // is in arg 0 and can be read from there directly.
+    if (helper == CORINFO_HELP_READYTORUN_NEW)
+    {
+        helperCall->AsCall()->compileTimeHelperArgumentHandle = (CORINFO_GENERIC_HANDLE)allocObjClsHnd;
+    }
+#endif
 
 #ifdef FEATURE_READYTORUN
     if (entryPoint.addr != nullptr)
