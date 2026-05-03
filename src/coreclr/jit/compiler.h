@@ -4277,6 +4277,9 @@ public:
     void lvaAssignVirtualFrameOffsetsToArgs();
     bool lvaGetRelativeOffsetToCallerAllocatedSpaceForParameter(unsigned lclNum, int* offset);
     void lvaAssignVirtualFrameOffsetsToLocals();
+#ifdef TARGET_XARCH
+    unsigned* lvaComputeOptimalFrameLayoutOrder(int stkOffs, const UINT* allocOrder);
+#endif
     bool lvaParamHasLocalStackSpace(unsigned lclNum);
     int lvaAllocLocalAndSetVirtualOffset(unsigned lclNum, unsigned size, int stkOffs);
     int lvaAllocAsyncContexts(int stkOffs);

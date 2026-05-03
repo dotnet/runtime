@@ -4778,6 +4778,319 @@ bool Compiler::lvaGetRelativeOffsetToCallerAllocatedSpaceForParameter(unsigned l
     return false;
 }
 
+// Allocation pass categories used by lvaAssignVirtualFrameOffsetsToLocals
+// and lvaComputeOptimalFrameLayoutOrder to classify locals by type.
+enum LclAllocCategory : UINT
+{
+    ALLOC_NON_PTRS                 = 0x1, // assign offsets to non-ptr
+    ALLOC_PTRS                     = 0x2, // Second pass, assign offsets to tracked ptrs
+    ALLOC_UNSAFE_BUFFERS           = 0x4,
+    ALLOC_UNSAFE_BUFFERS_WITH_PTRS = 0x8
+};
+
+#ifdef TARGET_XARCH
+//------------------------------------------------------------------------
+// lvaComputeOptimalFrameLayoutOrder: try multiple sort orders for locals and
+// pick the one that minimizes total displacement encoding cost.
+//
+// On x86/x64, stack accesses within [-128, +127] of the base register use a 1-byte
+// displacement (disp8), while larger offsets require 4 bytes (disp32) — 3 extra
+// bytes per access. We try multiple sort orders for locals and pick the one that
+// minimizes total encoding cost, estimated by simulating the frame allocation loop.
+//
+// The cost function computes Σ(refCnt × encodingBytes) where encodingBytes is 1
+// for disp8 or 4 for disp32, using unweighted refCnt as a proxy for instruction
+// count. This gives a direct estimate of total displacement encoding bytes.
+// (See also the comment in lvaAllocLocalAndSetVirtualOffset about sorting by alignment.)
+//
+// This optimization is safe because on x86/x64, lvaAssignFrameOffsets is only called
+// with FINAL_FRAME_LAYOUT (no tentative layout exists).
+//
+// We only run this for frame-pointer-based frames because the disp8 boundary check
+// assumes EBP/RBP-relative negative virtual offsets. ESP/RSP-based frames use positive
+// offsets after fixup and contribute negligible savings.
+//
+// We skip frames that fit entirely within the disp8 zone. For MinOpts/Tier0 where
+// precise ref counts are not computed, we do a lightweight LIR walk to count local
+// references for sorting purposes.
+//
+// Arguments:
+//   stkOffs    - current stack offset (after callee saves, XMM saves, and pre-allocated
+//                special locals)
+//   allocOrder - null-terminated array of allocation pass flags (ALLOC_NON_PTRS, etc.)
+//
+// Returns:
+//   An array of lclNum indices representing the optimal sort order, or nullptr if the
+//   original order is already optimal.
+//
+unsigned* Compiler::lvaComputeOptimalFrameLayoutOrder(int stkOffs, const UINT* allocOrder)
+{
+    unsigned estimatedLocalSize = 0;
+    for (unsigned i = 0; i < lvaCount; i++)
+    {
+        estimatedLocalSize += lvaLclStackHomeSize(i);
+    }
+
+    if (estimatedLocalSize <= 128)
+    {
+        return nullptr;
+    }
+
+    // For MinOpts/Tier0, precise ref counts are not available (all lvRefCnt == 0).
+    // Do a lightweight LIR walk to count local references for sorting purposes.
+    // This is much cheaper than the full lvaMarkLclRefs pass — we only count
+    // occurrences without any of the analysis side effects.
+    unsigned* lclRefCounts = nullptr;
+    if (!PreciseRefCountsRequired())
+    {
+        lclRefCounts = new (this, CMK_LvaTable) unsigned[lvaCount];
+        memset(lclRefCounts, 0, lvaCount * sizeof(unsigned));
+
+        for (BasicBlock* const block : Blocks())
+        {
+            for (GenTree* node : LIR::AsRange(block))
+            {
+                if (node->OperIsAnyLocal())
+                {
+                    unsigned lclNum = node->AsLclVarCommon()->GetLclNum();
+                    if (lclNum < lvaCount)
+                    {
+                        lclRefCounts[lclNum]++;
+                    }
+                }
+            }
+        }
+    }
+
+    JITDUMP("Frame layout optimization: trying multiple strategies for %u locals "
+            "(estimated frame size %u bytes%s)\n",
+            lvaCount, estimatedLocalSize,
+            lclRefCounts != nullptr ? ", using lightweight ref counts" : "");
+
+    // Pre-compute which locals will be allocated in the main loop and their
+    // pass category. Category 0 means "not allocatable" (skipped by the loop).
+    unsigned* lclPassCategory = new (this, CMK_LvaTable) unsigned[lvaCount];
+    for (unsigned i = 0; i < lvaCount; i++)
+    {
+        lclPassCategory[i] = 0;
+        LclVarDsc* varDsc = lvaGetDesc(i);
+
+        if (lvaIsFieldOfDependentlyPromotedStruct(varDsc))
+            continue;
+#if FEATURE_FIXED_OUT_ARGS
+        if (i == lvaOutgoingArgSpaceVar)
+            continue;
+#endif
+        if (lvaIsOSRLocal(i))
+            continue;
+        if (!varDsc->lvOnFrame)
+            continue;
+        if (i == lvaGSSecurityCookie && getNeedsGSSecurityCookie())
+            continue;
+        if (i == lvaRetAddrVar)
+            continue;
+        if (i == lvaMonAcquired || i == lvaAsyncExecutionContextVar ||
+            i == lvaAsyncSynchronizationContextVar)
+            continue;
+        if (varDsc->lvIsParam && !lvaParamHasLocalStackSpace(i))
+            continue;
+
+        if (varDsc->lvIsUnsafeBuffer && compGSReorderStackLayout)
+        {
+            lclPassCategory[i] =
+                varDsc->lvIsPtr ? ALLOC_UNSAFE_BUFFERS_WITH_PTRS : ALLOC_UNSAFE_BUFFERS;
+        }
+        else if (varTypeIsGC(varDsc->TypeGet()) && varDsc->lvTracked)
+        {
+            lclPassCategory[i] = ALLOC_PTRS;
+        }
+        else
+        {
+            lclPassCategory[i] = ALLOC_NON_PTRS;
+        }
+    }
+
+    // Simulate frame layout for a given sort order and return total encoding cost.
+    // Lower cost = better layout. Cost = Σ(refCnt × encodingBytes) where
+    // encodingBytes is 1 for disp8 (offset in [-128,+127]) or 4 for disp32.
+    auto estimateLayoutCost = [&](unsigned* order) -> unsigned {
+        unsigned totalCost = 0;
+        int      simOff    = stkOffs;
+
+        for (int p = 0; allocOrder[p]; p++)
+        {
+            UINT pass = allocOrder[p];
+            for (unsigned idx = 0; idx < lvaCount; idx++)
+            {
+                unsigned lcl = order[idx];
+                if (lclPassCategory[lcl] != pass)
+                    continue;
+
+                LclVarDsc* varDsc = lvaGetDesc(lcl);
+                unsigned   size   = lvaLclStackHomeSize(lcl);
+
+                // Simulate alignment padding (mirrors lvaAllocLocalAndSetVirtualOffset).
+                if (size >= 8)
+                {
+#if defined(FEATURE_SIMD) && ALIGN_SIMD_TYPES
+                    if (varTypeIsSIMD(varDsc))
+                    {
+                        int alignment = getSIMDTypeAlignment(varDsc->TypeGet());
+                        if (simOff % alignment != 0)
+                        {
+                            simOff -= static_cast<int>(alignment + (simOff % alignment));
+                        }
+                    }
+                    else
+#endif
+                    {
+                        if ((simOff % 8) != 0)
+                        {
+                            simOff -= static_cast<int>(8 + (simOff % 8));
+                        }
+                    }
+                }
+
+                simOff -= static_cast<int>(size);
+
+                unsigned refCnt = (lclRefCounts != nullptr) ? lclRefCounts[lcl]
+                                                            : varDsc->lvRefCnt(lvaRefCountState);
+                totalCost += refCnt * ((simOff >= -128) ? 1u : 4u);
+            }
+        }
+
+        return totalCost;
+    };
+
+    unsigned* sortOrder      = new (this, CMK_LvaTable) unsigned[lvaCount];
+    unsigned* candidateOrder = new (this, CMK_LvaTable) unsigned[lvaCount];
+    for (unsigned i = 0; i < lvaCount; i++)
+    {
+        sortOrder[i]      = i;
+        candidateOrder[i] = i;
+    }
+
+    // Score the original (unsorted) order as baseline.
+    unsigned    origCost = estimateLayoutCost(sortOrder);
+    unsigned    bestCost = origCost;
+    const char* bestName = "original";
+
+    // Helper to try a strategy: sort candidateOrder, estimate cost,
+    // and update best if the cost is lower.
+    auto tryStrategy = [&](const char* name, auto comparator) -> unsigned {
+        for (unsigned i = 0; i < lvaCount; i++)
+            candidateOrder[i] = i;
+        jitstd::sort(candidateOrder, candidateOrder + lvaCount, comparator);
+        unsigned cost = estimateLayoutCost(candidateOrder);
+        if (cost < bestCost)
+        {
+            bestCost = cost;
+            bestName = name;
+            memcpy(sortOrder, candidateOrder, lvaCount * sizeof(unsigned));
+        }
+        return cost;
+    };
+
+    // Strategy 1: Access density (weighted ref count / size) descending.
+    // A small hot local is more valuable per frame byte than a large hot local.
+    unsigned densityCost = tryStrategy("density",
+        [this, lclRefCounts](unsigned n1, unsigned n2) -> bool {
+            unsigned s1 = lvaLclStackHomeSize(n1);
+            unsigned s2 = lvaLclStackHomeSize(n2);
+            weight_t w1, w2;
+            if (lclRefCounts != nullptr)
+            {
+                w1 = static_cast<weight_t>(lclRefCounts[n1]);
+                w2 = static_cast<weight_t>(lclRefCounts[n2]);
+            }
+            else
+            {
+                w1 = lvaGetDesc(n1)->lvRefCntWtd(lvaRefCountState);
+                w2 = lvaGetDesc(n2)->lvRefCntWtd(lvaRefCountState);
+            }
+            // Compare w1/s1 > w2/s2 via cross-multiply to avoid division.
+            weight_t dens1 = w1 * s2;
+            weight_t dens2 = w2 * s1;
+            if (dens1 != dens2) return dens1 > dens2;
+            bool a1 = (s1 >= 8), a2 = (s2 >= 8);
+            if (a1 != a2) return a1;
+            unsigned c1 = (lclRefCounts != nullptr) ? lclRefCounts[n1]
+                                                    : lvaGetDesc(n1)->lvRefCnt(lvaRefCountState);
+            unsigned c2 = (lclRefCounts != nullptr) ? lclRefCounts[n2]
+                                                    : lvaGetDesc(n2)->lvRefCnt(lvaRefCountState);
+            if (c1 != c2) return c1 > c2;
+            return n1 < n2;
+        });
+
+    // Strategy 2: Unweighted ref count descending.
+    unsigned refCntCost = tryStrategy("refCnt",
+        [this, lclRefCounts](unsigned n1, unsigned n2) -> bool {
+            unsigned c1 = (lclRefCounts != nullptr) ? lclRefCounts[n1]
+                                                    : lvaGetDesc(n1)->lvRefCnt(lvaRefCountState);
+            unsigned c2 = (lclRefCounts != nullptr) ? lclRefCounts[n2]
+                                                    : lvaGetDesc(n2)->lvRefCnt(lvaRefCountState);
+            if (c1 != c2) return c1 > c2;
+            bool a1 = (lvaLclStackHomeSize(n1) >= 8);
+            bool a2 = (lvaLclStackHomeSize(n2) >= 8);
+            if (a1 != a2) return a1;
+            return n1 < n2;
+        });
+
+    // Strategy 3: Weighted ref count descending.
+    // For MinOpts, weighted = unweighted (no block weights available).
+    unsigned weightCost = tryStrategy("weight",
+        [this, lclRefCounts](unsigned n1, unsigned n2) -> bool {
+            weight_t w1, w2;
+            if (lclRefCounts != nullptr)
+            {
+                w1 = static_cast<weight_t>(lclRefCounts[n1]);
+                w2 = static_cast<weight_t>(lclRefCounts[n2]);
+            }
+            else
+            {
+                w1 = lvaGetDesc(n1)->lvRefCntWtd(lvaRefCountState);
+                w2 = lvaGetDesc(n2)->lvRefCntWtd(lvaRefCountState);
+            }
+            if (w1 != w2) return w1 > w2;
+            bool a1 = (lvaLclStackHomeSize(n1) >= 8);
+            bool a2 = (lvaLclStackHomeSize(n2) >= 8);
+            if (a1 != a2) return a1;
+            return n1 < n2;
+        });
+
+    // Strategy 4: Unweighted ref count density (refCnt / size) descending.
+    unsigned refDensityCost = tryStrategy("refDensity",
+        [this, lclRefCounts](unsigned n1, unsigned n2) -> bool {
+            unsigned c1 = (lclRefCounts != nullptr) ? lclRefCounts[n1]
+                                                    : lvaGetDesc(n1)->lvRefCnt(lvaRefCountState);
+            unsigned c2 = (lclRefCounts != nullptr) ? lclRefCounts[n2]
+                                                    : lvaGetDesc(n2)->lvRefCnt(lvaRefCountState);
+            unsigned s1 = lvaLclStackHomeSize(n1);
+            unsigned s2 = lvaLclStackHomeSize(n2);
+            // Cross-multiply to avoid division.
+            unsigned long long dens1 = (unsigned long long)c1 * s2;
+            unsigned long long dens2 = (unsigned long long)c2 * s1;
+            if (dens1 != dens2) return dens1 > dens2;
+            bool a1 = (s1 >= 8), a2 = (s2 >= 8);
+            if (a1 != a2) return a1;
+            return n1 < n2;
+        });
+
+    // If original order won, no sorting needed.
+    if (bestCost == origCost)
+    {
+        sortOrder = nullptr;
+    }
+
+    JITDUMP("Frame layout costs: original=%u density=%u refCnt=%u weight=%u refDensity=%u; "
+            "selected '%s' (cost=%u, saved %u encoding bytes est.)\n",
+            origCost, densityCost, refCntCost, weightCost, refDensityCost,
+            bestName, bestCost, origCost > bestCost ? origCost - bestCost : 0);
+
+    return sortOrder;
+}
+#endif // TARGET_XARCH
+
 //-----------------------------------------------------------------------------
 // lvaAssignVirtualFrameOffsetsToLocals: compute the virtual stack offsets for
 //  all elements on the stackframe.
@@ -5094,13 +5407,6 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
             non-pointer temps
      */
 
-    enum Allocation
-    {
-        ALLOC_NON_PTRS                 = 0x1, // assign offsets to non-ptr
-        ALLOC_PTRS                     = 0x2, // Second pass, assign offsets to tracked ptrs
-        ALLOC_UNSAFE_BUFFERS           = 0x4,
-        ALLOC_UNSAFE_BUFFERS_WITH_PTRS = 0x8
-    };
     UINT alloc_order[5];
 
     unsigned int cur = 0;
@@ -5158,292 +5464,12 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
 
 #ifdef TARGET_XARCH
     // Multi-strategy frame layout optimization for x86/x64.
-    //
-    // On x86/x64, stack accesses within [-128, +127] of the base register use a 1-byte
-    // displacement (disp8), while larger offsets require 4 bytes (disp32) — 3 extra
-    // bytes per access. We try multiple sort orders for locals and pick the one that
-    // minimizes total encoding cost, estimated by simulating the frame allocation loop.
-    //
-    // The cost function computes Σ(refCnt × encodingBytes) where encodingBytes is 1
-    // for disp8 or 4 for disp32, using unweighted refCnt as a proxy for instruction
-    // count. This gives a direct estimate of total displacement encoding bytes.
-    // (See also the comment in lvaAllocLocalAndSetVirtualOffset about sorting by alignment.)
-    //
-    // This optimization is safe because on x86/x64, lvaAssignFrameOffsets is only called
-    // with FINAL_FRAME_LAYOUT (no tentative layout exists).
-    //
-    // We only run this for frame-pointer-based frames because the disp8 boundary check
-    // assumes EBP/RBP-relative negative virtual offsets. ESP/RSP-based frames use positive
-    // offsets after fixup and contribute negligible savings.
-    //
-    // We skip this for EnC (which requires stable layout) and frames that fit entirely
-    // within the disp8 zone. For MinOpts/Tier0 where precise ref counts are not computed,
-    // we do a lightweight LIR walk to count local references for sorting purposes.
+    // See lvaComputeOptimalFrameLayoutOrder for details.
     assert(lvaDoneFrameLayout == FINAL_FRAME_LAYOUT);
     unsigned* lclVarSortOrder = nullptr;
     if (lvaLocalVarRefCounted() && !opts.compDbgEnC && codeGen->isFramePointerUsed())
     {
-        unsigned estimatedLocalSize = 0;
-        for (unsigned i = 0; i < lvaCount; i++)
-        {
-            estimatedLocalSize += lvaLclStackHomeSize(i);
-        }
-
-        if (estimatedLocalSize > 128)
-        {
-            // For MinOpts/Tier0, precise ref counts are not available (all lvRefCnt == 0).
-            // Do a lightweight LIR walk to count local references for sorting purposes.
-            // This is much cheaper than the full lvaMarkLclRefs pass — we only count
-            // occurrences without any of the analysis side effects.
-            unsigned* lclRefCounts = nullptr;
-            if (!PreciseRefCountsRequired())
-            {
-                lclRefCounts = new (this, CMK_LvaTable) unsigned[lvaCount];
-                memset(lclRefCounts, 0, lvaCount * sizeof(unsigned));
-
-                for (BasicBlock* const block : Blocks())
-                {
-                    for (GenTree* node : LIR::AsRange(block))
-                    {
-                        if (node->OperIsAnyLocal())
-                        {
-                            unsigned lclNum = node->AsLclVarCommon()->GetLclNum();
-                            if (lclNum < lvaCount)
-                            {
-                                lclRefCounts[lclNum]++;
-                            }
-                        }
-                    }
-                }
-            }
-
-            JITDUMP("Frame layout optimization: trying multiple strategies for %u locals "
-                    "(estimated frame size %u bytes%s)\n",
-                    lvaCount, estimatedLocalSize,
-                    lclRefCounts != nullptr ? ", using lightweight ref counts" : "");
-
-            // Pre-compute which locals will be allocated in the main loop and their
-            // pass category. Category 0 means "not allocatable" (skipped by the loop).
-            unsigned* lclPassCategory = new (this, CMK_LvaTable) unsigned[lvaCount];
-            for (unsigned i = 0; i < lvaCount; i++)
-            {
-                lclPassCategory[i] = 0;
-                LclVarDsc* varDsc = lvaGetDesc(i);
-
-                if (lvaIsFieldOfDependentlyPromotedStruct(varDsc))
-                    continue;
-#if FEATURE_FIXED_OUT_ARGS
-                if (i == lvaOutgoingArgSpaceVar)
-                    continue;
-#endif
-                if (lvaIsOSRLocal(i))
-                    continue;
-                if (!varDsc->lvOnFrame)
-                    continue;
-                if (i == lvaGSSecurityCookie && getNeedsGSSecurityCookie())
-                    continue;
-                if (i == lvaRetAddrVar)
-                    continue;
-                if (i == lvaMonAcquired || i == lvaAsyncExecutionContextVar ||
-                    i == lvaAsyncSynchronizationContextVar)
-                    continue;
-                if (varDsc->lvIsParam && !lvaParamHasLocalStackSpace(i))
-                    continue;
-
-                if (varDsc->lvIsUnsafeBuffer && compGSReorderStackLayout)
-                {
-                    lclPassCategory[i] =
-                        varDsc->lvIsPtr ? ALLOC_UNSAFE_BUFFERS_WITH_PTRS : ALLOC_UNSAFE_BUFFERS;
-                }
-                else if (varTypeIsGC(varDsc->TypeGet()) && varDsc->lvTracked)
-                {
-                    lclPassCategory[i] = ALLOC_PTRS;
-                }
-                else
-                {
-                    lclPassCategory[i] = ALLOC_NON_PTRS;
-                }
-            }
-
-            // Simulate frame layout for a given sort order and return total encoding cost.
-            // Lower cost = better layout. Cost = Σ(refCnt × encodingBytes) where
-            // encodingBytes is 1 for disp8 (offset in [-128,+127]) or 4 for disp32.
-            // Uses the current stkOffs as the starting point, which already accounts for
-            // callee saves, XMM saves, and any pre-allocated special locals.
-            auto estimateLayoutCost = [&](unsigned* order) -> unsigned {
-                unsigned totalCost = 0;
-                int      simOff    = stkOffs;
-
-                for (int p = 0; alloc_order[p]; p++)
-                {
-                    UINT pass = alloc_order[p];
-                    for (unsigned idx = 0; idx < lvaCount; idx++)
-                    {
-                        unsigned lcl = order[idx];
-                        if (lclPassCategory[lcl] != pass)
-                            continue;
-
-                        LclVarDsc* varDsc = lvaGetDesc(lcl);
-                        unsigned   size   = lvaLclStackHomeSize(lcl);
-
-                        // Simulate alignment padding (mirrors lvaAllocLocalAndSetVirtualOffset).
-                        if (size >= 8)
-                        {
-#if defined(FEATURE_SIMD) && ALIGN_SIMD_TYPES
-                            if (varTypeIsSIMD(varDsc))
-                            {
-                                int alignment = getSIMDTypeAlignment(varDsc->TypeGet());
-                                if (simOff % alignment != 0)
-                                {
-                                    simOff -= static_cast<int>(alignment + (simOff % alignment));
-                                }
-                            }
-                            else
-#endif
-                            {
-                                if ((simOff % 8) != 0)
-                                {
-                                    simOff -= static_cast<int>(8 + (simOff % 8));
-                                }
-                            }
-                        }
-
-                        simOff -= static_cast<int>(size);
-
-                        unsigned refCnt = (lclRefCounts != nullptr) ? lclRefCounts[lcl]
-                                                                    : varDsc->lvRefCnt(lvaRefCountState);
-                        totalCost += refCnt * ((simOff >= -128) ? 1u : 4u);
-                    }
-                }
-
-                return totalCost;
-            };
-
-            lclVarSortOrder              = new (this, CMK_LvaTable) unsigned[lvaCount];
-            unsigned* candidateOrder     = new (this, CMK_LvaTable) unsigned[lvaCount];
-            for (unsigned i = 0; i < lvaCount; i++)
-            {
-                lclVarSortOrder[i] = i;
-                candidateOrder[i]  = i;
-            }
-
-            // Score the original (unsorted) order as baseline.
-            unsigned    origCost = estimateLayoutCost(lclVarSortOrder);
-            unsigned    bestCost = origCost;
-            const char* bestName = "original";
-
-            // Helper to try a strategy: sort candidateOrder, estimate cost,
-            // and update best if the cost is lower.
-            auto tryStrategy = [&](const char* name, auto comparator) -> unsigned {
-                for (unsigned i = 0; i < lvaCount; i++)
-                    candidateOrder[i] = i;
-                jitstd::sort(candidateOrder, candidateOrder + lvaCount, comparator);
-                unsigned cost = estimateLayoutCost(candidateOrder);
-                if (cost < bestCost)
-                {
-                    bestCost = cost;
-                    bestName = name;
-                    memcpy(lclVarSortOrder, candidateOrder, lvaCount * sizeof(unsigned));
-                }
-                return cost;
-            };
-
-            // Strategy 1: Access density (weighted ref count / size) descending.
-            // A small hot local is more valuable per frame byte than a large hot local.
-            unsigned densityCost = tryStrategy("density",
-                [this, lclRefCounts](unsigned n1, unsigned n2) -> bool {
-                    unsigned s1 = lvaLclStackHomeSize(n1);
-                    unsigned s2 = lvaLclStackHomeSize(n2);
-                    weight_t w1, w2;
-                    if (lclRefCounts != nullptr)
-                    {
-                        w1 = static_cast<weight_t>(lclRefCounts[n1]);
-                        w2 = static_cast<weight_t>(lclRefCounts[n2]);
-                    }
-                    else
-                    {
-                        w1 = lvaGetDesc(n1)->lvRefCntWtd(lvaRefCountState);
-                        w2 = lvaGetDesc(n2)->lvRefCntWtd(lvaRefCountState);
-                    }
-                    // Compare w1/s1 > w2/s2 via cross-multiply to avoid division.
-                    weight_t dens1 = w1 * s2;
-                    weight_t dens2 = w2 * s1;
-                    if (dens1 != dens2) return dens1 > dens2;
-                    bool a1 = (s1 >= 8), a2 = (s2 >= 8);
-                    if (a1 != a2) return a1;
-                    unsigned c1 = (lclRefCounts != nullptr) ? lclRefCounts[n1]
-                                                            : lvaGetDesc(n1)->lvRefCnt(lvaRefCountState);
-                    unsigned c2 = (lclRefCounts != nullptr) ? lclRefCounts[n2]
-                                                            : lvaGetDesc(n2)->lvRefCnt(lvaRefCountState);
-                    if (c1 != c2) return c1 > c2;
-                    return n1 < n2;
-                });
-
-            // Strategy 2: Unweighted ref count descending.
-            unsigned refCntCost = tryStrategy("refCnt",
-                [this, lclRefCounts](unsigned n1, unsigned n2) -> bool {
-                    unsigned c1 = (lclRefCounts != nullptr) ? lclRefCounts[n1]
-                                                            : lvaGetDesc(n1)->lvRefCnt(lvaRefCountState);
-                    unsigned c2 = (lclRefCounts != nullptr) ? lclRefCounts[n2]
-                                                            : lvaGetDesc(n2)->lvRefCnt(lvaRefCountState);
-                    if (c1 != c2) return c1 > c2;
-                    bool a1 = (lvaLclStackHomeSize(n1) >= 8);
-                    bool a2 = (lvaLclStackHomeSize(n2) >= 8);
-                    if (a1 != a2) return a1;
-                    return n1 < n2;
-                });
-
-            // Strategy 3: Weighted ref count descending.
-            // For MinOpts, weighted = unweighted (no block weights available).
-            unsigned weightCost = tryStrategy("weight",
-                [this, lclRefCounts](unsigned n1, unsigned n2) -> bool {
-                    weight_t w1, w2;
-                    if (lclRefCounts != nullptr)
-                    {
-                        w1 = static_cast<weight_t>(lclRefCounts[n1]);
-                        w2 = static_cast<weight_t>(lclRefCounts[n2]);
-                    }
-                    else
-                    {
-                        w1 = lvaGetDesc(n1)->lvRefCntWtd(lvaRefCountState);
-                        w2 = lvaGetDesc(n2)->lvRefCntWtd(lvaRefCountState);
-                    }
-                    if (w1 != w2) return w1 > w2;
-                    bool a1 = (lvaLclStackHomeSize(n1) >= 8);
-                    bool a2 = (lvaLclStackHomeSize(n2) >= 8);
-                    if (a1 != a2) return a1;
-                    return n1 < n2;
-                });
-
-            // Strategy 4: Unweighted ref count density (refCnt / size) descending.
-            unsigned refDensityCost = tryStrategy("refDensity",
-                [this, lclRefCounts](unsigned n1, unsigned n2) -> bool {
-                    unsigned c1 = (lclRefCounts != nullptr) ? lclRefCounts[n1]
-                                                            : lvaGetDesc(n1)->lvRefCnt(lvaRefCountState);
-                    unsigned c2 = (lclRefCounts != nullptr) ? lclRefCounts[n2]
-                                                            : lvaGetDesc(n2)->lvRefCnt(lvaRefCountState);
-                    unsigned s1 = lvaLclStackHomeSize(n1);
-                    unsigned s2 = lvaLclStackHomeSize(n2);
-                    // Cross-multiply to avoid division.
-                    unsigned long long dens1 = (unsigned long long)c1 * s2;
-                    unsigned long long dens2 = (unsigned long long)c2 * s1;
-                    if (dens1 != dens2) return dens1 > dens2;
-                    bool a1 = (s1 >= 8), a2 = (s2 >= 8);
-                    if (a1 != a2) return a1;
-                    return n1 < n2;
-                });
-
-            // If original order won, no sorting needed.
-            if (bestCost == origCost)
-            {
-                lclVarSortOrder = nullptr;
-            }
-
-            JITDUMP("Frame layout costs: original=%u density=%u refCnt=%u weight=%u refDensity=%u; "
-                    "selected '%s' (cost=%u, saved %u encoding bytes est.)\n",
-                    origCost, densityCost, refCntCost, weightCost, refDensityCost,
-                    bestName, bestCost, origCost > bestCost ? origCost - bestCost : 0);
-        }
+        lclVarSortOrder = lvaComputeOptimalFrameLayoutOrder(stkOffs, alloc_order);
     }
 #endif // TARGET_XARCH
 
