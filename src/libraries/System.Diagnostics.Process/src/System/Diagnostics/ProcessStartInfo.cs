@@ -286,6 +286,7 @@ namespace System.Diagnostics
         /// </para>
         /// </remarks>
         /// <value><see langword="true"/> to terminate the child process when the parent exits; otherwise, <see langword="false"/>. The default is <see langword="false"/>.</value>
+        [SupportedOSPlatform("android")]
         [SupportedOSPlatform("linux")]
         [SupportedOSPlatform("windows")]
         public bool KillOnParentExit { get; set; }
