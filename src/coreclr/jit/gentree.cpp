@@ -27379,11 +27379,14 @@ GenTree* Compiler::gtNewSimdUnzipNode(
         return gtNewSimdGetLowerNode(type, result, simdBaseType, wideSimdSize);
     }
 
+    GenTree* op1Dup = fgMakeMultiUse(&op1);
+    GenTree* op2Dup = fgMakeMultiUse(&op2);
+
     var_types halfType = getSIMDTypeForSize(simdSize / 2);
     GenTree*  op1Lower = gtNewSimdGetLowerNode(halfType, op1, simdBaseType, simdSize);
-    GenTree*  op1Upper = gtNewSimdGetUpperNode(halfType, op1, simdBaseType, simdSize);
+    GenTree*  op1Upper = gtNewSimdGetUpperNode(halfType, op1Dup, simdBaseType, simdSize);
     GenTree*  op2Lower = gtNewSimdGetLowerNode(halfType, op2, simdBaseType, simdSize);
-    GenTree*  op2Upper = gtNewSimdGetUpperNode(halfType, op2, simdBaseType, simdSize);
+    GenTree*  op2Upper = gtNewSimdGetUpperNode(halfType, op2Dup, simdBaseType, simdSize);
 
     GenTree* lower  = gtNewSimdUnzipNode(halfType, op1Lower, op1Upper, simdBaseType, simdSize / 2, odd);
     GenTree* higher = gtNewSimdUnzipNode(halfType, op2Lower, op2Upper, simdBaseType, simdSize / 2, odd);
