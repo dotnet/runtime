@@ -1704,31 +1704,27 @@ namespace System.Runtime.Intrinsics
 
             if (Vector256<T>.Count >= 2)
             {
-                T multiplier2 = Scalar<T>.Multiply(multiplier, multiplier);
-                upperMultiplier = multiplier2;
+                upperMultiplier = Scalar<T>.Multiply(upperMultiplier, upperMultiplier);
+            }
 
-                if (Vector256<T>.Count >= 4)
-                {
-                    T multiplier4 = Scalar<T>.Multiply(multiplier2, multiplier2);
-                    upperMultiplier = multiplier4;
+            if (Vector256<T>.Count >= 4)
+            {
+                upperMultiplier = Scalar<T>.Multiply(upperMultiplier, upperMultiplier);
+            }
 
-                    if (Vector256<T>.Count >= 8)
-                    {
-                        T multiplier8 = Scalar<T>.Multiply(multiplier4, multiplier4);
-                        upperMultiplier = multiplier8;
+            if (Vector256<T>.Count >= 8)
+            {
+                upperMultiplier = Scalar<T>.Multiply(upperMultiplier, upperMultiplier);
+            }
 
-                        if (Vector256<T>.Count >= 16)
-                        {
-                            T multiplier16 = Scalar<T>.Multiply(multiplier8, multiplier8);
-                            upperMultiplier = multiplier16;
+            if (Vector256<T>.Count >= 16)
+            {
+                upperMultiplier = Scalar<T>.Multiply(upperMultiplier, upperMultiplier);
+            }
 
-                            if (Vector256<T>.Count >= 32)
-                            {
-                                upperMultiplier = Scalar<T>.Multiply(multiplier16, multiplier16);
-                            }
-                        }
-                    }
-                }
+            if (Vector256<T>.Count >= 32)
+            {
+                upperMultiplier = Scalar<T>.Multiply(upperMultiplier, upperMultiplier);
             }
 
             T upperInitial = Scalar<T>.Multiply(initial, upperMultiplier);
