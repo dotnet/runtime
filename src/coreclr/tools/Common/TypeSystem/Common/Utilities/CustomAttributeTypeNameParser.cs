@@ -49,6 +49,11 @@ namespace Internal.TypeSystem
                 return null;
             }
 
+            // Assembly.GetType (signaled by !fallbackToCoreLib) rejects top-level assembly-qualified
+            // names at runtime (Argument_AssemblyGetTypeCannotSpecifyAssembly).
+            if (!fallbackToCoreLib && parsed.AssemblyName is not null)
+                return null;
+
             TypeNameResolver resolver = new()
             {
                 _context = context,

@@ -31,6 +31,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             TestFunctionPointerReceiver();
             TestGenericParameterReceiver<InnerType>();
             TestGenericMethodArrayReceiver<InnerType>();
+            TestAssemblyQualifiedTypeName();
         }
 
         class InnerType
@@ -144,6 +145,15 @@ namespace Mono.Linker.Tests.Cases.DataFlow
         static void TestGenericMethodArrayReceiver<T>()
         {
             typeof(T[]).Assembly.GetType("Mono.Linker.Tests.Cases.DataFlow.AssemblyGetTypeDataFlow+InnerType");
+        }
+
+        // Assembly.GetType rejects top-level assembly-qualified names at runtime (returns null).
+        // The analyzer must not honor the qualifier and resolve in the named assembly. If it did,
+        // RequiresAll() would mark RUC members on System.Reflection.Assembly and emit IL2026.
+        static void TestAssemblyQualifiedTypeName()
+        {
+            typeof(AssemblyGetTypeDataFlow).Assembly.GetType(
+                "System.Reflection.Assembly, System.Runtime").RequiresAll();
         }
 
         static string GetUnknownString() => "unknown";

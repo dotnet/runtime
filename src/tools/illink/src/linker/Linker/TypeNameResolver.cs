@@ -41,6 +41,14 @@ namespace Mono.Linker
                 typeReference = null;
                 return false;
             }
+            // Assembly.GetType (signaled by !fallbackToCoreLib) rejects top-level assembly-qualified
+            // names at runtime (Argument_AssemblyGetTypeCannotSpecifyAssembly).
+            if (!fallbackToCoreLib && parsedTypeName.AssemblyName is not null)
+            {
+                typeReference = null;
+                typeResolutionRecords = null;
+                return false;
+            }
             typeReference = ResolveTypeName(assembly, parsedTypeName, typeResolutionRecords, fallbackToCoreLib);
 
             if (typeReference == null)
