@@ -75,35 +75,22 @@ namespace ILCompiler.DependencyAnalysis
             {
                 decodedValue = customAttribute.DecodeValue(new CustomAttributeTypeProvider(_module));
             }
-            catch (TypeSystemException)
+            catch (Exception ex) when (ex is TypeSystemException or BadImageFormatException)
             {
                 // Attribute ctor doesn't resolve, typeof() refers to something that can't be loaded,
-                // attribute refers to a non-existing field, etc.
-                return dependencies;
-            }
-            catch (BadImageFormatException)
-            {
-                // System.Reflection.Metadata throws BadImageFormatException if the blob is malformed.
+                // attribute refers to a non-existing field, malformed blob, etc.
                 return dependencies;
             }
 
-            GetDependenciesFromCustomAttributeBlob(dependencies, factory, decodedValue);
-
-            return dependencies;
-        }
-
-        private void GetDependenciesFromCustomAttributeBlob(DependencyList dependencies, NodeFactory factory, CustomAttributeValue<TypeDesc> value)
-        {
-            foreach (CustomAttributeTypedArgument<TypeDesc> fixedArg in value.FixedArguments)
+            foreach (CustomAttributeTypedArgument<TypeDesc> fixedArg in decodedValue.FixedArguments)
             {
                 GetDependenciesFromCustomAttributeArgument(dependencies, factory, fixedArg.Type, fixedArg.Value);
             }
 
             // Resolve the constructor once for all named arguments
-            MethodDesc constructor = _module.GetMethod(
-                _module.MetadataReader.GetCustomAttribute(Handle).Constructor);
+            MethodDesc constructor = _module.TryGetMethod(customAttribute.Constructor);
 
-            foreach (CustomAttributeNamedArgument<TypeDesc> namedArg in value.NamedArguments)
+            foreach (CustomAttributeNamedArgument<TypeDesc> namedArg in decodedValue.NamedArguments)
             {
                 if (constructor is not null)
                 {
@@ -115,6 +102,8 @@ namespace ILCompiler.DependencyAnalysis
 
                 GetDependenciesFromCustomAttributeArgument(dependencies, factory, namedArg.Type, namedArg.Value);
             }
+
+            return dependencies;
         }
 
         private static void GetDependenciesFromCustomAttributeArgument(DependencyList dependencies, NodeFactory factory, TypeDesc type, object value)
@@ -221,31 +210,14 @@ namespace ILCompiler.DependencyAnalysis
             {
                 decodedValue = customAttribute.DecodeValue(new CustomAttributeTypeProvider(_module));
             }
-            catch (TypeSystemException)
-            {
-                blobBuilder.WriteBytes(_module.MetadataReader.GetBlobBytes(customAttribute.Value));
-                return;
-            }
-            catch (BadImageFormatException)
+            catch (Exception ex) when (ex is TypeSystemException or BadImageFormatException)
             {
                 blobBuilder.WriteBytes(_module.MetadataReader.GetBlobBytes(customAttribute.Value));
                 return;
             }
 
-            EncodeCustomAttributeBlob(customAttribute, decodedValue, blobBuilder);
-        }
-
-        private void EncodeCustomAttributeBlob(
-            CustomAttribute customAttribute,
-            CustomAttributeValue<TypeDesc> decodedValue,
-            BlobBuilder blobBuilder)
-        {
-            MethodDesc constructor;
-            try
-            {
-                constructor = _module.GetMethod(customAttribute.Constructor);
-            }
-            catch (TypeSystemException)
+            MethodDesc constructor = _module.TryGetMethod(customAttribute.Constructor);
+            if (constructor is null)
             {
                 blobBuilder.WriteBytes(_module.MetadataReader.GetBlobBytes(customAttribute.Value));
                 return;
