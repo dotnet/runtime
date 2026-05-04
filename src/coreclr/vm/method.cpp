@@ -2976,56 +2976,17 @@ void MethodDesc::SetPortableEntrypointInitialStateForMethod(PortableEntryPoint *
         MODE_ANY;
     } CONTRACTL_END;
 
-    // Dynamic methods are often directly exposed as function pointers, so we want to intialize those early immediately.
-    if (!IsDynamicMethod())
+    if (!IsDynamicMethod() && portableEntry->HasNativeCodeUnchecked())
     {
-        // Otherwise, we want to do lazy initialization of the portable entry point if it wasn't already initialized to some exact target
-        if (portableEntry->HasNativeCodeUnchecked())
-        {
-            void* pPortableEntryPointToInterpreter = GetPortableEntryPointToInterpreterThunk(this);
-            _ASSERTE(pPortableEntryPointToInterpreter != nullptr);
-            portableEntry->Init_WithInterpreterThunk(pPortableEntryPointToInterpreter, this);
-        }
-        else
-        {
-            portableEntry->Init(this);
-        }
-        return;
-    }
-
-    void* pPortableEntryPointToInterpreter = GetPortableEntryPointToInterpreterThunk(this);
-
-    if (pPortableEntryPointToInterpreter != nullptr)
-    {
+        void* pPortableEntryPointToInterpreter = GetPortableEntryPointToInterpreterThunk(this);
+        _ASSERTE(pPortableEntryPointToInterpreter != nullptr);
         portableEntry->Init_WithInterpreterThunk(pPortableEntryPointToInterpreter, this);
     }
     else
     {
         portableEntry->Init(this);
-
-        // The R2R-to-interpreter thunk wasn't found yet. This can happen when an R2R module
-        // containing the thunk hasn't been loaded yet. Register this method for deferred
-        // resolution so it gets updated when new R2R thunks are injected.
-        if (!ContainsGenericVariables())
-        {
-            // DynamicMethodDescs (LCG) can be re-used, so guard against duplicate adds
-            // with a flag to avoid unbounded growth in the pending list.
-            bool shouldAdd = true;
-            if (IsDynamicMethod()) // TODO this check is now redundant with the one above.
-            {
-                DynamicMethodDesc* pDMD = AsDynamicMethodDesc();
-                if (pDMD->HasFlags(DynamicMethodDesc::FlagPendingThunkResolution))
-                {
-                    shouldAdd = false;
-                }
-            }
-
-            if (shouldAdd)
-            {
-                GetLoaderAllocator()->AddPendingPortableEntryPointThunk(this);
-            }
-        }
     }
+    return;
 }
 
 void MethodDesc::ResetPortableEntryPoint()
@@ -3486,7 +3447,12 @@ void MethodDesc::ResetCodeEntryPointForEnC()
 
     LOG((LF_ENC, LL_INFO100000, "MD::RCEPFENC: this:%p - %s::%s\n", this, m_pszDebugClassName, m_pszDebugMethodName));
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
+    bool oldEntrypointHadNativeCode = GetPortableEntryPointIfExists() != (PCODE)NULL && PortableEntryPoint::ToPortableEntryPoint(GetPortableEntryPoint())->HasNativeCode();
     ResetPortableEntryPoint();
+    if (oldEntrypointHadNativeCode)
+    {
+        MethodDesc::EnsurePortableEntryPointIsCallableFromR2R(GetPortableEntryPoint());
+    }
 #else // !FEATURE_PORTABLE_ENTRYPOINTS
     LOG((LF_ENC, LL_INFO100000, "MD::RCEPFENC: HasPrecode():%s, HasNativeCodeSlot():%s\n",
         (HasPrecode() ? "true" : "false"), (HasNativeCodeSlot() ? "true" : "false")));

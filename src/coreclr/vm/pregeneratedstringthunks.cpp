@@ -170,7 +170,7 @@ void ClearPendingThunkResolutionUnderLock(DynamicMethodDesc* pMD)
     // This is necessary so that once a MethodDesc is no longer in use and gets recycled for a new method, it will not
     // mistakenly be treated as needing a resolution. This must be done under the pendingThunkResolutionLock to avoid
     // races with the ResolvePendingPortableEntryPointThunksGlobal loop.
-    pMD->InterlockedClearFlags(DynamicMethodDesc::FlagPendingThunkResolution);
+    pMD->SetPendingThunkResolution(false);
 }
 
 void PortableEntrypointThunkProcessingReady()
@@ -200,11 +200,10 @@ void AddPendingPortableEntryPointThunkUnderLock(LoaderAllocator* pLoaderAllocato
 
     CrstHolder holder(&s_pendingThunkResolutionLock);
 
-    pLoaderAllocator->m_pendingPortableEntryPointThunks.Append(pMD);
-
-    if (pMD->IsDynamicMethod())
+    if (pMD->IsPendingThunkResolution())
     {
-        pMD->AsDynamicMethodDesc()->InterlockedSetFlags(DynamicMethodDesc::FlagPendingThunkResolution);
+        // Already pending, nothing to do.
+        return;
     }
 
     if (!pLoaderAllocator->m_registeredForPendingThunkResolution)
@@ -212,6 +211,10 @@ void AddPendingPortableEntryPointThunkUnderLock(LoaderAllocator* pLoaderAllocato
         s_pendingThunkLoaderAllocators.Append(pLoaderAllocator);
         pLoaderAllocator->m_registeredForPendingThunkResolution = true;
     }
+
+    pLoaderAllocator->m_pendingPortableEntryPointThunks.Append(pMD);
+
+    pMD->SetPendingThunkResolution(true);
 }
 
 void UnregisterLoaderAllocatorForPendingThunkResolution(LoaderAllocator* pLoaderAllocator)
@@ -244,8 +247,8 @@ void UnregisterLoaderAllocatorForPendingThunkResolution(LoaderAllocator* pLoader
         }
     }
 
-    pLoaderAllocator->m_registeredForPendingThunkResolution = false;
-    pLoaderAllocator->m_pendingPortableEntryPointThunks.Clear();
+    // Don't mark the loader allocator as unregistered, in case there is some degenerate path
+    // which attempts to register a thunk after this.
 }
 
 void ResolvePendingPortableEntryPointThunksGlobal()
@@ -277,15 +280,13 @@ void ResolvePendingPortableEntryPointThunksGlobal()
                 continue;
             }
 
-            if (pMD->IsDynamicMethod())
+            if (!pMD->IsPendingThunkResolution())
             {
-                if (!pMD->AsDynamicMethodDesc()->HasFlags(DynamicMethodDesc::FlagPendingThunkResolution))
-                {
-                    // This can happen if the method was GC'd and its slot reused for a new method. Clear the entry so we don't repeatedly check it.
-                    pending[i] = nullptr;
-                    nullCount++;
-                    continue;
-                }
+                _ASSERTE(pMD->IsDynamicMethod());
+                // This can happen if the method was GC'd and its slot reused for a new method. Clear the entry so we don't repeatedly check it.
+                pending[i] = nullptr;
+                nullCount++;
+                continue;
             }
 
             void* thunk = GetPortableEntryPointToInterpreterThunk(pMD);
@@ -300,9 +301,9 @@ void ResolvePendingPortableEntryPointThunksGlobal()
                 pending[i] = nullptr;
                 nullCount++;
 
-                if (pMD->IsDynamicMethod())
+                if (pMD->IsPendingThunkResolution())
                 {
-                    pMD->AsDynamicMethodDesc()->InterlockedClearFlags(DynamicMethodDesc::FlagPendingThunkResolution);
+                    pMD->SetPendingThunkResolution(false);
                 }
             }
         }

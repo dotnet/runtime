@@ -1860,6 +1860,16 @@ public:
 
     void PrepareForUseAsAFunctionPointer();
 
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+    bool IsPendingThunkResolution()
+    {
+        return (VolatileLoad(&m_bFlags4) & enum_flag4_PendingThunkResolution) != 0;
+    }
+    void SetPendingThunkResolution(bool isPending)
+    {
+        InterlockedUpdateFlags4(enum_flag4_PendingThunkResolution, isPending ? TRUE : FALSE);
+    }
+#endif
 private:
     void PrepareForUseAsADependencyOfANativeImageWorker();
 
@@ -1892,9 +1902,11 @@ protected:
         enum_flag4_RequiresStableEntryPoint                 = 0x02,
         enum_flag4_TemporaryEntryPointAssigned              = 0x04,
         enum_flag4_EnCAddedMethod                           = 0x08,
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+        enum_flag4_PendingThunkResolution                   = 0x10,
+#endif
     };
 
-    void InterlockedSetFlags4(BYTE mask, BYTE newValue);
     BYTE        m_bFlags4; // Used to hold more flags
 
     WORD m_wSlotNumber; // The slot number of this MethodDesc in the vtable array.
@@ -2936,9 +2948,7 @@ public:
         FlagRequiresCOM         = 0x00002000,
         FlagIsLCGMethod         = 0x00004000,
         FlagIsILStub            = 0x00008000,
-#ifdef FEATURE_PORTABLE_ENTRYPOINTS
-        FlagPendingThunkResolution = 0x00010000,
-#endif
+        // unused               = 0x00010000,
         // unused               = 0x00020000,
         FlagMask                = 0x0003f800,
         StackArgSizeMask        = 0xfffc0000, // native stack arg size for IL stubs

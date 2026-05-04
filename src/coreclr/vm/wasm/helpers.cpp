@@ -779,7 +779,7 @@ namespace
         uint32_t size = th.GetSize();
         CorElementType elemType = th.GetSignatureCorElementType();
 
-        if (elemType != ELEMENT_TYPE_VALUETYPE)
+        if ((elemType != ELEMENT_TYPE_VALUETYPE) && (elemType != ELEMENT_TYPE_TYPEDBYREF))
         {
             switch (elemType)
             {

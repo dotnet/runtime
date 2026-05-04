@@ -134,7 +134,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             while ((argOffset = argit.GetNextOffset()) != TransitionBlock.InvalidOffset)
             {
                 offsets[argIndex] = argOffset;
-                isIndirectArg[argIndex] = argit.IsArgPassedByRef();
+                isIndirectArg[argIndex] = argit.IsArgPassedByRef() && argit.IsValueType();
                 argIndex++;
             }
 

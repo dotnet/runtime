@@ -5913,6 +5913,12 @@ PCODE JitILStub(MethodDesc* pStubMD)
         // We need an entry point that can be called multiple times
         pCode = pStubMD->GetMultiCallableAddrOfCode();
     }
+    else
+    {
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+        MethodDesc::EnsurePortableEntryPointIsCallableFromR2R(pStubMD->GetPortableEntryPoint());
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
+    }
 
     return pCode;
 }

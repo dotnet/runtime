@@ -289,7 +289,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         /// Check whether an arg is automatically switched to passing by reference.
         /// Note that this overload does not handle varargs. This method only works for 
         /// valuetypes - true value types, primitives, enums and TypedReference.
-        /// The method is only overridden to do something meaningful on X64 and ARM64.
+        /// The method is only overridden to do something meaningful on X64, ARM64 and WASM.
         /// </summary>
         /// <param name="th">Type to analyze</param>
         public virtual bool IsArgPassedByRef(TypeHandle th)
