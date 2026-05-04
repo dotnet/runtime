@@ -311,11 +311,11 @@ bool Compiler::fgExpandRuntimeLookupsForCall(BasicBlock** pBlock, Statement* stm
     //     if (*fastPathValue == null)
     //         goto fallbackBb;
     //
-    // fastPathBb(BBJ_ALWAYS):              [weight: 0.8]
+    // fastPathBb(BBJ_ALWAYS):              [weight: 1.0]
     //     rtLookupLcl = *fastPathValue;
     //     goto block;
     //
-    // fallbackBb(BBJ_ALWAYS):              [weight: 0.2]
+    // fallbackBb(BBJ_ALWAYS):              [weight: 0]
     //     rtLookupLcl = HelperCall();
     //
     // block(...):                          [weight: 1.0]
@@ -354,15 +354,15 @@ bool Compiler::fgExpandRuntimeLookupsForCall(BasicBlock** pBlock, Statement* stm
         //         goto fallbackBb;
         //     ...
         //
-        // nullcheckBb(BBJ_COND):               [weight: 0.8]
+        // nullcheckBb(BBJ_COND):               [weight: 1.0]
         //     if (*fastPathValue == null)
         //         goto fallbackBb;
         //
-        // fastPathBb(BBJ_ALWAYS):              [weight: 0.64]
+        // fastPathBb(BBJ_ALWAYS):              [weight: 1.0]
         //     rtLookupLcl = *fastPathValue;
         //     goto block;
         //
-        // fallbackBb(BBJ_ALWAYS):              [weight: 0.36]
+        // fallbackBb(BBJ_ALWAYS):              [weight: 0]
         //     rtLookupLcl = HelperCall();
         //
         // block(...):                          [weight: 1.0]
@@ -412,8 +412,8 @@ bool Compiler::fgExpandRuntimeLookupsForCall(BasicBlock** pBlock, Statement* stm
             FlowEdge* const falseEdge = fgAddRefPred(nullcheckBb, sizeCheckBb);
             sizeCheckBb->SetTrueEdge(trueEdge);
             sizeCheckBb->SetFalseEdge(falseEdge);
-            trueEdge->setLikelihood(0.2);
-            falseEdge->setLikelihood(0.8);
+            trueEdge->setLikelihood(0.0);
+            falseEdge->setLikelihood(1.0);
         }
 
         // fallbackBb is reachable from both nullcheckBb and sizeCheckBb
@@ -432,32 +432,33 @@ bool Compiler::fgExpandRuntimeLookupsForCall(BasicBlock** pBlock, Statement* stm
     FlowEdge* const falseEdge = fgAddRefPred(fastPathBb, nullcheckBb);
     nullcheckBb->SetTrueEdge(trueEdge);
     nullcheckBb->SetFalseEdge(falseEdge);
-    trueEdge->setLikelihood(0.2);
-    falseEdge->setLikelihood(0.8);
+    trueEdge->setLikelihood(0.0);
+    falseEdge->setLikelihood(1.0);
 
     //
     // Re-distribute weights (see '[weight: X]' on the diagrams above)
-    // TODO: consider marking fallbackBb as rarely-taken
-    // TODO: derive block weights from edge likelihoods.
+    // We assume the null check and size check (if any) always pass, so the fast
+    // path inherits the full weight of prevBb and the fallback is treated as
+    // never taken.
     //
     block->inheritWeight(prevBb);
     if (needsSizeCheck)
     {
         sizeCheckBb->inheritWeight(prevBb);
-        // 80% chance we pass nullcheck
-        nullcheckBb->inheritWeightPercentage(sizeCheckBb, 80);
-        // 64% (0.8 * 0.8) chance we pass both nullcheck and sizecheck
-        fastPathBb->inheritWeightPercentage(nullcheckBb, 80);
-        // 100-64=36% chance we fail either nullcheck or sizecheck
-        fallbackBb->inheritWeightPercentage(sizeCheckBb, 36);
+        // Size check is assumed to always pass
+        nullcheckBb->inheritWeight(sizeCheckBb);
+        // Both checks are assumed to always pass, so the fast path runs every time
+        fastPathBb->inheritWeight(nullcheckBb);
+        // Fallback is assumed to never run
+        fallbackBb->inheritWeightPercentage(sizeCheckBb, 0);
     }
     else
     {
         nullcheckBb->inheritWeight(prevBb);
-        // 80% chance we pass nullcheck
-        fastPathBb->inheritWeightPercentage(nullcheckBb, 80);
-        // 20% chance we fail nullcheck (TODO: Consider making it cold (0%))
-        fallbackBb->inheritWeightPercentage(nullcheckBb, 20);
+        // Null check is assumed to always pass, so the fast path runs every time
+        fastPathBb->inheritWeight(nullcheckBb);
+        // Fallback is assumed to never run
+        fallbackBb->inheritWeightPercentage(nullcheckBb, 0);
     }
 
     //
