@@ -126,7 +126,7 @@ jobs:
             - Windows.Amd64.Server2022.Open
             - Windows.Server2025.Amd64.Open
             - ${{ if ne(parameters.jobParameters.testScope, 'outerloop') }}:
-              - (Windows.10.Amd64.ServerRS5.Open)windows.10.amd64.serverrs5.open@mcr.microsoft.com/dotnet-buildtools/prereqs:windowsservercore-ltsc2019-helix-amd64@sha256:754a73dec81279f87da34bd8ad9c7ce5c7295435d52d7eeeb1efdb090186c988
+              - (Windows.10.Amd64.ServerRS5.Open)windows.10.amd64.serverrs5.open@mcr.microsoft.com/dotnet-buildtools/prereqs:windowsservercore-ltsc2019-helix-amd64@sha256:9e71dbc7309ebc5aff24175cc366e012d32bf12128a2d5f350a188b97d8500de
           - ${{ if or(ne(parameters.jobParameters.isExtraPlatformsBuild, true), eq(parameters.jobParameters.includeAllPlatforms, true)) }}:
             # Primary Windows versions for all builds: newest server + Nano (distinct environment)
             - Windows.Server2025.Amd64.Open
@@ -137,7 +137,7 @@ jobs:
               - Windows.Amd64.Server2022.Open
               - Windows.11.Amd64.Client.Open
               - ${{ if eq(parameters.jobParameters.testScope, 'outerloop') }}:
-                - (Windows.10.Amd64.ServerRS5.Open)windows.10.amd64.serverrs5.open@mcr.microsoft.com/dotnet-buildtools/prereqs:windowsservercore-ltsc2019-helix-amd64@sha256:754a73dec81279f87da34bd8ad9c7ce5c7295435d52d7eeeb1efdb090186c988
+                - (Windows.10.Amd64.ServerRS5.Open)windows.10.amd64.serverrs5.open@mcr.microsoft.com/dotnet-buildtools/prereqs:windowsservercore-ltsc2019-helix-amd64@sha256:9e71dbc7309ebc5aff24175cc366e012d32bf12128a2d5f350a188b97d8500de
 
       # .NETFramework
       - ${{ if eq(parameters.jobParameters.framework, 'net481') }}:
