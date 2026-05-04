@@ -46,7 +46,6 @@
 
 #if HAVE_PR_SET_PDEATHSIG
 #include <sys/prctl.h>
-#include <stdatomic.h>
 #endif
 
 #if HAVE_SCHED_SETAFFINITY || HAVE_SCHED_GETAFFINITY
@@ -378,7 +377,7 @@ static pthread_mutex_t s_pdeathsig_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t s_pdeathsig_request_cond = PTHREAD_COND_INITIALIZER;
 static pthread_cond_t s_pdeathsig_done_cond = PTHREAD_COND_INITIALIZER;
 static PDeathSigForkRequest* s_pdeathsig_request = NULL;
-static _Atomic int s_pdeathsig_thread_started = 0;
+static int s_pdeathsig_thread_started = 0;
 
 static void* PDeathSigThreadFunc(void* arg)
 {
@@ -417,49 +416,41 @@ static void* PDeathSigThreadFunc(void* arg)
     return NULL;
 }
 
+// Must be called while s_pdeathsig_mutex is held.
 static int EnsurePDeathSigThread(void)
 {
-    // Fast path: check if the thread is already started
-    if (atomic_load_explicit(&s_pdeathsig_thread_started, memory_order_acquire))
+    if (s_pdeathsig_thread_started)
     {
         return 0;
     }
 
-    pthread_mutex_lock(&s_pdeathsig_mutex);
-    if (!atomic_load_explicit(&s_pdeathsig_thread_started, memory_order_acquire))
+    pthread_t thread;
+    pthread_attr_t attr;
+    int result = pthread_attr_init(&attr);
+    if (result != 0)
     {
-        pthread_t thread;
-        pthread_attr_t attr;
-        int result = pthread_attr_init(&attr);
-        if (result != 0)
-        {
-            pthread_mutex_unlock(&s_pdeathsig_mutex);
-            errno = result;
-            return -1;
-        }
-
-        result = pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
-        if (result != 0)
-        {
-            pthread_attr_destroy(&attr);
-            pthread_mutex_unlock(&s_pdeathsig_mutex);
-            errno = result;
-            return -1;
-        }
-
-        result = pthread_create(&thread, &attr, PDeathSigThreadFunc, NULL);
-        pthread_attr_destroy(&attr);
-
-        if (result != 0)
-        {
-            pthread_mutex_unlock(&s_pdeathsig_mutex);
-            errno = result;
-            return -1;
-        }
-
-        atomic_store_explicit(&s_pdeathsig_thread_started, 1, memory_order_release);
+        errno = result;
+        return -1;
     }
-    pthread_mutex_unlock(&s_pdeathsig_mutex);
+
+    result = pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
+    if (result != 0)
+    {
+        pthread_attr_destroy(&attr);
+        errno = result;
+        return -1;
+    }
+
+    result = pthread_create(&thread, &attr, PDeathSigThreadFunc, NULL);
+    pthread_attr_destroy(&attr);
+
+    if (result != 0)
+    {
+        errno = result;
+        return -1;
+    }
+
+    s_pdeathsig_thread_started = 1;
     return 0;
 }
 
@@ -469,12 +460,6 @@ static int32_t ForkAndExecOnPDeathSigThread(
     int32_t* childPid, int32_t stdinFd, int32_t stdoutFd, int32_t stderrFd,
     int32_t* inheritedFds, int32_t inheritedFdCount, int32_t startDetached)
 {
-    if (EnsurePDeathSigThread() != 0)
-    {
-        *childPid = -1;
-        return -1;
-    }
-
     PDeathSigForkRequest req;
     req.filename = filename;
     req.argv = argv;
@@ -497,6 +482,13 @@ static int32_t ForkAndExecOnPDeathSigThread(
     req.done = 0;
 
     pthread_mutex_lock(&s_pdeathsig_mutex);
+
+    if (EnsurePDeathSigThread() != 0)
+    {
+        pthread_mutex_unlock(&s_pdeathsig_mutex);
+        *childPid = -1;
+        return -1;
+    }
 
     // Wait until no other request is being processed. This serializes
     // concurrent callers so requests cannot overwrite each other.
@@ -920,9 +912,8 @@ static int32_t ForkAndExecProcessInternal(
                 ExitChild(waitForChildToExecPipe[WRITE_END_OF_PIPE], errno);
             }
 
-            // If the parent died between fork and prctl, this child may already have
-            // been reparented (for example, to a subreaper in a container). Verify
-            // that our parent PID is still the original parent we inherited at fork.
+            // If the parent died between fork and prctl, PR_SET_PDEATHSIG will not deliver the signal.
+            // Detect this by checking if the child process has been reparented.
             if (getppid() != expectedParentPid)
             {
                 ExitChild(waitForChildToExecPipe[WRITE_END_OF_PIPE], ESRCH);
