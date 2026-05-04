@@ -30,12 +30,12 @@ For example, if the seed is 123456789, create a directory named "123456789" and 
 3. Look for the .mc files corresponding to the examples you have created.
 Move the relevant .mc files under the appropriate example folders.
 
-4. Download the Helix payload for the windows-x64 job and Partition0 work item.
-If running on a different host than windows-x64, then use that host, but default to windows-x64 if not sure.
-To download the payload obtain the Job ID from the "Send job to Helix" step in the CI run.
+4. Download the Helix payload for the host you are using to run these triage steps, from the Partition0 work item.
+In most cases this will be the windows-x64 job; if you are running the triage steps on a different host, use that host's payload instead.
+To download the payload, obtain the Job ID from the "Send job to Helix" step in the CI run.
 Download the payload for Partition0 with `runfo get-helix-payload -j <helix job ID> -w Partition0 -o <output directory>`.
-This should result in corerun.exe, superpmi.exe and mcs.exe files that you should use for the next steps.
-We ALWAYS download the payload for the host/windows-x64, regardless of what platform the examples reproduced on.
+This should result in the host-appropriate corerun, superpmi, and mcs tools that you should use for the next steps.
+Choose the payload based on the machine running triage, not on the platform where the examples reproduced.
 
 Now, for each example, do the following. Do NOT parallelize. Finish ALL steps for each example before you start on the next example.
 
