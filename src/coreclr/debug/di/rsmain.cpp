@@ -1551,6 +1551,8 @@ HRESULT Cordb::CreateProcess(LPCWSTR lpApplicationName,
                              CorDebugCreateProcessFlags debuggingFlags,
                              ICorDebugProcess **ppProcess)
 {
+    PUBLIC_API_ENTRY(this);
+    FAIL_IF_NEUTERED(this);
     (void)lpApplicationName;
     (void)lpCommandLine;
     (void)lpProcessAttributes;
@@ -1587,6 +1589,8 @@ HRESULT Cordb::CreateProcessEx(ICorDebugRemoteTarget * pRemoteTarget,
         return E_INVALIDARG;
     }
 
+    PUBLIC_API_ENTRY(this);
+    FAIL_IF_NEUTERED(this);
     (void)lpApplicationName;
     (void)lpCommandLine;
     (void)lpProcessAttributes;
