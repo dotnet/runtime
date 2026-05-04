@@ -15,7 +15,7 @@
 #include "../dlls/mscorrc/resource.h"
 #include "typeparse.h"
 #include "comdelegate.h"
-#include "olevariant.h"
+#include "fieldmarshaler.h"
 #include "ilmarshalers.h"
 #include "interoputil.h"
 #include "mdfileformat.h"  // For CPackedLen
@@ -2190,6 +2190,7 @@ HRESULT MarshalInfo::HandleArrayElemType(NativeTypeParamInfo *pParamInfo, TypeHa
     // Set the array type handle and VARTYPE to use for marshalling.
     m_hndArrayElemType = arrayMarshalInfo.GetElementTypeHandle();
     m_arrayElementType = arrayMarshalInfo.GetElementVT();
+    m_arrayElementNativeType = arrayMarshalInfo.GetElementNativeType();
 
     if (m_type == MARSHAL_TYPE_NATIVEARRAY || m_type == MARSHAL_TYPE_FIXED_ARRAY)
     {
@@ -3071,7 +3072,7 @@ DispParamMarshaler *MarshalInfo::GenerateDispParamMarshaler()
     {
         THROWS;
         GC_TRIGGERS;
-        MODE_ANY;
+        MODE_PREEMPTIVE;
         INJECT_FAULT(COMPlusThrowOM());
         POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
     }
@@ -3321,7 +3322,7 @@ void ArrayMarshalInfo::InitElementInfo(CorNativeType arrayNativeType, MarshalInf
         {
             case NATIVE_TYPE_I1: //fallthru
             case NATIVE_TYPE_U1:
-                m_vtElement = VTHACK_ANSICHAR;
+                m_ntElement = NATIVE_TYPE_U1;
                 break;
 
             case NATIVE_TYPE_I2: //fallthru
@@ -3337,7 +3338,10 @@ void ArrayMarshalInfo::InitElementInfo(CorNativeType arrayNativeType, MarshalInf
                     m_vtElement = VT_UI2;
                 else
 #endif // FEATURE_COMINTEROP
-                    m_vtElement = isAnsi ? VTHACK_ANSICHAR : VT_UI2;
+                    if (isAnsi)
+                        m_ntElement = NATIVE_TYPE_U1;
+                    else
+                        m_vtElement = VT_UI2;
         }
     }
     else if (etElement == ELEMENT_TYPE_BOOLEAN)
@@ -3345,7 +3349,7 @@ void ArrayMarshalInfo::InitElementInfo(CorNativeType arrayNativeType, MarshalInf
         switch (ntElement)
         {
             case NATIVE_TYPE_BOOLEAN:
-                m_vtElement = VTHACK_WINBOOL;
+                m_ntElement = NATIVE_TYPE_BOOLEAN;
                 break;
 
 #ifdef FEATURE_COMINTEROP
@@ -3356,7 +3360,7 @@ void ArrayMarshalInfo::InitElementInfo(CorNativeType arrayNativeType, MarshalInf
 
             case NATIVE_TYPE_I1 :
             case NATIVE_TYPE_U1 :
-                m_vtElement = VTHACK_CBOOL;
+                m_ntElement = NATIVE_TYPE_I1;
                 break;
 
             // Compat: if the native type doesn't make sense, we need to ignore it and not report an error.
@@ -3371,7 +3375,7 @@ void ArrayMarshalInfo::InitElementInfo(CorNativeType arrayNativeType, MarshalInf
                 else
 #endif // FEATURE_COMINTEROP
                 {
-                    m_vtElement = VTHACK_WINBOOL;
+                    m_ntElement = NATIVE_TYPE_BOOLEAN;
                 }
                 break;
         }
@@ -3529,7 +3533,7 @@ void ArrayMarshalInfo::InitElementInfo(CorNativeType arrayNativeType, MarshalInf
             }
             else
             {
-                m_vtElement = OleVariant::GetVarTypeForTypeHandle(m_thElement);
+                m_vtElement = GetVarTypeForTypeHandle(m_thElement);
             }
         }
 #ifdef FEATURE_COMINTEROP

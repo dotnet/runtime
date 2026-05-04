@@ -360,9 +360,7 @@ IMDInternalImport * CordbProcess::LookupMetaData(VMPTR_PEAssembly vmPEAssembly)
     }
 
     // Cache didn't have it... time to search harder
-    VMPTR_AppDomain vmAppDomain;
-    GetDAC()->GetCurrentAppDomain(&vmAppDomain);
-    LookupOrCreateAppDomain(vmAppDomain);
+    GetAppDomain();
 
     // There may be perf issues here. The DAC may make a lot of metadata requests, and so
     // this may be an area for potential perf optimizations if we find things running slow.
@@ -2638,28 +2636,22 @@ COM_METHOD CordbProcess::GetAsyncStack(CORDB_ADDRESS continuationAddress, ICorDe
 
 HRESULT CordbProcess::GetTypeForObject(CORDB_ADDRESS addr, CordbType **ppType, CordbAppDomain **pAppDomain)
 {
-    VMPTR_AppDomain appDomain = VMPTR_AppDomain::NullPtr();
-
     HRESULT hr = E_FAIL;
-    IfFailThrow(GetDAC()->GetCurrentAppDomain(&appDomain));
-    if (!appDomain.IsNull())
+    CordbAppDomain *cdbAppDomain = GetAppDomain();
+
+    _ASSERTE(cdbAppDomain);
+
+    DebuggerIPCE_ExpandedTypeData data;
+    IfFailThrow(GetDAC()->GetObjectExpandedTypeInfo(AllBoxed, addr, &data));
+
+    CordbType *type = 0;
+    hr = CordbType::TypeDataToType(cdbAppDomain, &data, &type);
+
+    if (SUCCEEDED(hr))
     {
-        CordbAppDomain *cdbAppDomain = appDomain.IsNull() ? GetAppDomain() : LookupOrCreateAppDomain(appDomain);
-
-        _ASSERTE(cdbAppDomain);
-
-        DebuggerIPCE_ExpandedTypeData data;
-        IfFailThrow(GetDAC()->GetObjectExpandedTypeInfo(AllBoxed, addr, &data));
-
-        CordbType *type = 0;
-        hr = CordbType::TypeDataToType(cdbAppDomain, &data, &type);
-
-        if (SUCCEEDED(hr))
-        {
-            *ppType = type;
-            if (pAppDomain)
-                *pAppDomain = cdbAppDomain;
-        }
+        *ppType = type;
+        if (pAppDomain)
+            *pAppDomain = cdbAppDomain;
     }
 
     return hr;
@@ -2797,7 +2789,7 @@ HRESULT CordbRefEnum::Next(ULONG celt, COR_GC_REFERENCE refs[], ULONG *pceltFetc
                 {
                     for (ULONG i = 0; i < fetched; ++i)
                     {
-                        CordbAppDomain *pDomain = process->LookupOrCreateAppDomain(dacRefs[i].vmDomain);
+                        CordbAppDomain *pDomain = process->GetAppDomain();
 
                         ICorDebugAppDomain *pAppDomain = NULL;
                         ICorDebugValue *pOutObject = NULL;
@@ -4870,10 +4862,7 @@ void CordbProcess::RawDispatchEvent(
         pThread = LookupOrCreateThread(pEvent->vmThread);
     }
 
-    if (!pEvent->vmAppDomain.IsNull())
-    {
-        pAppDomain.Assign(LookupOrCreateAppDomain(pEvent->vmAppDomain));
-    }
+    pAppDomain.Assign(GetAppDomain());
 
     DWORD dwVolatileThreadId = 0;
     if (pThread != NULL)
@@ -5386,7 +5375,7 @@ void CordbProcess::RawDispatchEvent(
             // Either way, still send the CreateEvent. (We don't want to skip the Create event
             // just because the debugger did an enumerate)
             // We remove AppDomains from the hash as soon as they are exited.
-            pAppDomain.Assign(LookupOrCreateAppDomain(pEvent->AppDomainData.vmAppDomain));
+            pAppDomain.Assign(GetAppDomain());
             _ASSERTE(pAppDomain != NULL); // throws on failure
 
             {
@@ -5461,7 +5450,7 @@ void CordbProcess::RawDispatchEvent(
             pEval->m_resultType     = pEvent->FuncEvalComplete.resultType;
             pEval->m_resultAppDomainToken = pEvent->FuncEvalComplete.vmAppDomain;
 
-            CordbAppDomain *pResultAppDomain = LookupOrCreateAppDomain(pEvent->FuncEvalComplete.vmAppDomain);
+            CordbAppDomain *pResultAppDomain = GetAppDomain();
 
             _ASSERTE(OutstandingEvalCount() > 0);
             DecrementOutstandingEvalCount();
@@ -5531,7 +5520,7 @@ void CordbProcess::RawDispatchEvent(
             else
             {
                 _ASSERTE (pEvent->NameChange.eventType == APP_DOMAIN_NAME_CHANGE);
-                pAppDomain.Assign(LookupOrCreateAppDomain(pEvent->NameChange.vmAppDomain));
+                pAppDomain.Assign(GetAppDomain());
                 if (pAppDomain)
                 {
                     pAppDomain->InvalidateName();
@@ -8559,33 +8548,6 @@ HRESULT CordbProcess::SafeReadBuffer(TargetBuffer tb, BYTE * pLocalBuffer, BOOL 
     return S_OK;
 }
 
-
-//---------------------------------------------------------------------------------------
-// Lookup or create an appdomain.
-//
-// Arguments:
-//     vmAppDomain - CLR appdomain to lookup
-//
-// Returns:
-//     Instance of CordbAppDomain for the given appdomain. This is a cached instance.
-//     If the CordbAppDomain does not yet exist, it will be created and added to the cache.
-//     Never returns NULL. Throw on error.
-CordbAppDomain * CordbProcess::LookupOrCreateAppDomain(VMPTR_AppDomain vmAppDomain)
-{
-    if (m_pAppDomain == NULL)
-    {
-        _ASSERTE(GetProcessLock()->HasLock());
-
-        RSInitHolder<CordbAppDomain> pAppDomain;
-        pAppDomain.Assign(new CordbAppDomain(this, vmAppDomain));  // throws
-
-        m_pAppDomain = pAppDomain;
-        m_pAppDomain->InternalAddRef();
-        pAppDomain.ClearAndMarkDontNeuter();
-    }
-    return m_pAppDomain;
-}
-
 CordbAppDomain * CordbProcess::GetAppDomain()
 {
     // Return the one and only app domain
@@ -8594,10 +8556,17 @@ CordbAppDomain * CordbProcess::GetAppDomain()
         return m_pAppDomain;
     }
 
+    _ASSERTE(GetProcessLock()->HasLock());
+
     VMPTR_AppDomain vmAppDomain;
     IfFailThrow(GetDAC()->GetCurrentAppDomain(&vmAppDomain));
-    CordbAppDomain * appDomain = LookupOrCreateAppDomain(vmAppDomain);
-    return appDomain;
+    RSInitHolder<CordbAppDomain> pAppDomain;
+    pAppDomain.Assign(new CordbAppDomain(this, vmAppDomain));  // throws
+
+    m_pAppDomain = pAppDomain;
+    m_pAppDomain->InternalAddRef();
+    pAppDomain.ClearAndMarkDontNeuter();
+    return m_pAppDomain;
 }
 
 //---------------------------------------------------------------------------------------
@@ -8625,9 +8594,7 @@ HRESULT CordbProcess::EnumerateAppDomains(ICorDebugAppDomainEnum **ppAppDomains)
         ValidateOrThrow(ppAppDomains);
 
         // Ensure the appdomain is populated.
-        VMPTR_AppDomain vmAppDomain;
-        GetDAC()->GetCurrentAppDomain(&vmAppDomain);
-        LookupOrCreateAppDomain(vmAppDomain);
+        GetAppDomain();
 
         RSSmartPtr<CordbAppDomain> rgAppDomains[1];
         DWORD count = 0;
@@ -15082,11 +15049,9 @@ HRESULT CordbProcess::GetReferenceValueFromGCHandle(
         {
             ThrowHR(CORDBG_E_BAD_REFERENCE_VALUE);
         }
-        VMPTR_AppDomain vmAppDomain;
-        IfFailThrow(pDAC->GetCurrentAppDomain(&vmAppDomain));
 
         RSLockHolder lockHolder(GetProcessLock());
-        CordbAppDomain * pAppDomain = LookupOrCreateAppDomain(vmAppDomain);
+        CordbAppDomain * pAppDomain = GetAppDomain();
         lockHolder.Release();
 
         // Now that we finally have the AppDomain, we can go ahead and get a ReferenceValue
