@@ -2086,10 +2086,6 @@ GenTree* Compiler::getArrayLengthFromAllocation(GenTree* tree)
 
             assert((arrayLength == nullptr) || ((optMethodFlags & OMF_HAS_NEWARRAY) != 0));
         }
-        else if (call->IsSpecialIntrinsic(this, NI_System_String_FastAllocateString))
-        {
-            arrayLength = call->gtArgs.GetUserArgByIndex(1)->GetNode();
-        }
     }
 
     if (arrayLength != nullptr)

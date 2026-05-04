@@ -11,7 +11,6 @@ namespace System
 {
     public partial class String
     {
-        [Intrinsic]
         [MethodImpl(MethodImplOptions.InternalCall)]
         [RequiresUnsafe]
         internal static extern unsafe string FastAllocateString(MethodTable *pMT, nint length);
