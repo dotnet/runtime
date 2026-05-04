@@ -3720,5 +3720,43 @@ Assert.Fail();
             DataRow[] rows = tbl.Select(filter);
             Assert.Equal(1, rows.Length);
         }
+
+        [Fact]
+        public void EvaluateDependentExpressions_NullDataExpression_DoesNotThrow()
+        {
+            DataTable table = new DataTable();
+            table.Columns.Add("Id", typeof(int));
+            table.Columns.Add("Value", typeof(int));
+            DataColumn computedCol = table.Columns.Add("Computed", typeof(int), "Id + Value");
+
+            table.Rows.Add(1, 10);
+            table.Rows.Add(2, 20);
+
+            // Nulling out the expression
+            computedCol.Expression = null;
+
+            // Triggering data change. 
+            // The underlying EvaluateDependentExpressions method now gracefully handles null expressions.
+            var exception = Record.Exception(() => table.Rows[0]["Id"] = 5);
+            Assert.Null(exception);
+        }
+
+        [Fact]
+        public void DataExpression_Evaluate_NullDataType_DoesNotThrowArgumentNullException()
+        {
+            DataTable table = new DataTable();
+            table.Columns.Add("A", typeof(int));
+            table.Rows.Add(5);
+
+            Type expressionType = typeof(DataTable).Assembly.GetType("System.Data.DataExpression");
+            if (expressionType == null) return; 
+
+            object expr = Activator.CreateInstance(expressionType, System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Public, null, new object[] { table, "A + 5", null }, null);
+            
+            System.Reflection.MethodInfo evaluateMethod = expressionType.GetMethod("Evaluate", new Type[] { typeof(DataRow), typeof(DataRowVersion) });
+            object result = evaluateMethod.Invoke(expr, new object[] { table.Rows[0], DataRowVersion.Default });
+
+            Assert.Equal(10, Convert.ToInt32(result));
+        }
     }
 }
