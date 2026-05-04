@@ -9,7 +9,6 @@
 
 #include <callhelpers.hpp>
 #include <minipal/utils.h>
-#include "precode_portable.hpp"
 
 // Arguments are passed on the stack with each argument aligned to INTERP_STACK_SLOT_SIZE.
 #define ARG_ADDR(i) (pArgs + (i * INTERP_STACK_SLOT_SIZE))
