@@ -1347,7 +1347,8 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             if (varTypeIsFloating(simdBaseType) && !impStackTop(1).val->OperIsConst() &&
                 (getSIMDVectorLength(simdSize, simdBaseType) > 2))
             {
-                // Floating-point multiplication is not associative; use the fallback to preserve recurrence order.
+                // Floating-point multiplication is not associative. For a non-constant initial value and more than
+                // two elements, use the fallback to preserve recurrence order.
                 break;
             }
 

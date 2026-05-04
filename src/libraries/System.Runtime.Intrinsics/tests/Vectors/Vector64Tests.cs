@@ -4593,6 +4593,49 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
+        public void CreateGeometricSequenceByteWrapsTest()
+        {
+            Vector64<byte> sequence = Vector64.CreateGeometricSequence((byte)200, (byte)2);
+            byte expected = 200;
+
+            for (int index = 0; index < Vector64<byte>.Count; index++)
+            {
+                Assert.Equal(expected, sequence.GetElement(index));
+                expected = unchecked((byte)(expected * 2));
+            }
+        }
+
+        [Fact]
+        public void CreateGeometricSequenceSingleNonConstantInitialTest()
+        {
+            const float multiplier = 1.0064822f;
+            float initial = GetNonConstant(1.0059024f);
+            Vector64<float> sequence = Vector64.CreateGeometricSequence(initial, multiplier);
+            float expected = initial;
+
+            for (int index = 0; index < Vector64<float>.Count; index++)
+            {
+                Assert.Equal(expected, sequence.GetElement(index));
+                expected *= multiplier;
+            }
+        }
+
+        [Fact]
+        public void CreateGeometricSequenceDoubleNonConstantInitialTest()
+        {
+            const double multiplier = 1e-50;
+            double initial = GetNonConstant(1e-154);
+            Vector64<double> sequence = Vector64.CreateGeometricSequence(initial, multiplier);
+            double expected = initial;
+
+            for (int index = 0; index < Vector64<double>.Count; index++)
+            {
+                Assert.Equal(expected, sequence.GetElement(index));
+                expected *= multiplier;
+            }
+        }
+
+        [Fact]
         public void CreateAlternatingSequenceInt32Test()
         {
             Vector64<int> sequence = Vector64.CreateAlternatingSequence(5, -5);
@@ -4600,6 +4643,66 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
             for (int index = 0; index < Vector64<int>.Count; index++)
             {
                 Assert.Equal(((index & 1) == 0) ? 5 : -5, sequence.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void CreateAlternatingSequenceUInt32Test()
+        {
+            Vector64<uint> sequence = Vector64.CreateAlternatingSequence(5u, uint.MaxValue - 1u);
+
+            for (int index = 0; index < Vector64<uint>.Count; index++)
+            {
+                Assert.Equal(((index & 1) == 0) ? 5u : uint.MaxValue - 1u, sequence.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void CreateAlternatingSequenceDoubleTest()
+        {
+            Vector64<double> sequence = Vector64.CreateAlternatingSequence(1.5, -2.5);
+
+            for (int index = 0; index < Vector64<double>.Count; index++)
+            {
+                Assert.Equal(((index & 1) == 0) ? 1.5 : -2.5, sequence.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void CreateAlternatingSequenceDoubleCountOneEvaluatesOddTest()
+        {
+            int sideEffects = 0;
+            Vector64<double> sequence = Vector64.CreateAlternatingSequence(
+                1.0,
+                GetValueWithSideEffect(-2.0, ref sideEffects));
+
+            Assert.Equal(1, sideEffects);
+            Assert.Equal(1.0, sequence.GetElement(0));
+        }
+
+        [Fact]
+        public void CreateHarmonicSequenceInt32Test()
+        {
+            Vector64<int> sequence = Vector64.CreateHarmonicSequence(1, 1);
+            int expected = 1;
+
+            for (int index = 0; index < Vector64<int>.Count; index++)
+            {
+                Assert.Equal(1 / expected, sequence.GetElement(index));
+                expected += 1;
+            }
+        }
+
+        [Fact]
+        public void CreateHarmonicSequenceSingleTest()
+        {
+            Vector64<float> sequence = Vector64.CreateHarmonicSequence(1.0f, 1.0f);
+            float expected = 1.0f;
+
+            for (int index = 0; index < Vector64<float>.Count; index++)
+            {
+                AssertExtensions.Equal(1.0f / expected, sequence.GetElement(index), 1e-6f);
+                expected += 1.0f;
             }
         }
 
@@ -4613,6 +4716,32 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
             {
                 AssertExtensions.Equal(1.0 / expected, sequence.GetElement(index), 1e-15);
                 expected += 1.0;
+            }
+        }
+
+        [Fact]
+        public void CreateCauchySequenceInt32Test()
+        {
+            Vector64<int> sequence = Vector64.CreateCauchySequence(1, 3);
+            int expected = 1;
+
+            for (int index = 0; index < Vector64<int>.Count; index++)
+            {
+                Assert.Equal((int)Math.Sqrt(expected), sequence.GetElement(index));
+                expected += 3;
+            }
+        }
+
+        [Fact]
+        public void CreateCauchySequenceSingleTest()
+        {
+            Vector64<float> sequence = Vector64.CreateCauchySequence(1.0f, 1.0f);
+            float expected = 1.0f;
+
+            for (int index = 0; index < Vector64<float>.Count; index++)
+            {
+                AssertExtensions.Equal(MathF.Sqrt(expected), sequence.GetElement(index), 1e-6f);
+                expected += 1.0f;
             }
         }
 
@@ -4775,6 +4904,16 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
             {
                 Assert.Equal(expected.GetElement(index), actual.GetElement(index));
             }
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static T GetNonConstant<T>(T value) => value;
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static T GetValueWithSideEffect<T>(T value, ref int sideEffects)
+        {
+            sideEffects++;
+            return value;
         }
 
         [Theory]

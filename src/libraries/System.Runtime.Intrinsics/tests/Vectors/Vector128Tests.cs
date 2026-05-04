@@ -5319,6 +5319,19 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
+        public void CreateGeometricSequenceByteWrapsTest()
+        {
+            Vector128<byte> sequence = Vector128.CreateGeometricSequence((byte)200, (byte)2);
+            byte expected = 200;
+
+            for (int index = 0; index < Vector128<byte>.Count; index++)
+            {
+                Assert.Equal(expected, sequence.GetElement(index));
+                expected = unchecked((byte)(expected * 2));
+            }
+        }
+
+        [Fact]
         public void CreateGeometricSequenceSingleNonConstantInitialTest()
         {
             const float multiplier = 1.0064822f;
@@ -5360,6 +5373,54 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
+        public void CreateAlternatingSequenceUInt32Test()
+        {
+            Vector128<uint> sequence = Vector128.CreateAlternatingSequence(5u, uint.MaxValue - 1u);
+
+            for (int index = 0; index < Vector128<uint>.Count; index++)
+            {
+                Assert.Equal(((index & 1) == 0) ? 5u : uint.MaxValue - 1u, sequence.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void CreateAlternatingSequenceDoubleTest()
+        {
+            Vector128<double> sequence = Vector128.CreateAlternatingSequence(1.5, -2.5);
+
+            for (int index = 0; index < Vector128<double>.Count; index++)
+            {
+                Assert.Equal(((index & 1) == 0) ? 1.5 : -2.5, sequence.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void CreateHarmonicSequenceInt32Test()
+        {
+            Vector128<int> sequence = Vector128.CreateHarmonicSequence(1, 1);
+            int expected = 1;
+
+            for (int index = 0; index < Vector128<int>.Count; index++)
+            {
+                Assert.Equal(1 / expected, sequence.GetElement(index));
+                expected += 1;
+            }
+        }
+
+        [Fact]
+        public void CreateHarmonicSequenceSingleTest()
+        {
+            Vector128<float> sequence = Vector128.CreateHarmonicSequence(1.0f, 1.0f);
+            float expected = 1.0f;
+
+            for (int index = 0; index < Vector128<float>.Count; index++)
+            {
+                AssertExtensions.Equal(1.0f / expected, sequence.GetElement(index), 1e-6f);
+                expected += 1.0f;
+            }
+        }
+
+        [Fact]
         public void CreateHarmonicSequenceDoubleTest()
         {
             Vector128<double> sequence = Vector128.CreateHarmonicSequence(1.0, 1.0);
@@ -5369,6 +5430,32 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
             {
                 AssertExtensions.Equal(1.0 / expected, sequence.GetElement(index), 1e-15);
                 expected += 1.0;
+            }
+        }
+
+        [Fact]
+        public void CreateCauchySequenceInt32Test()
+        {
+            Vector128<int> sequence = Vector128.CreateCauchySequence(1, 3);
+            int expected = 1;
+
+            for (int index = 0; index < Vector128<int>.Count; index++)
+            {
+                Assert.Equal((int)Math.Sqrt(expected), sequence.GetElement(index));
+                expected += 3;
+            }
+        }
+
+        [Fact]
+        public void CreateCauchySequenceSingleTest()
+        {
+            Vector128<float> sequence = Vector128.CreateCauchySequence(1.0f, 1.0f);
+            float expected = 1.0f;
+
+            for (int index = 0; index < Vector128<float>.Count; index++)
+            {
+                AssertExtensions.Equal(MathF.Sqrt(expected), sequence.GetElement(index), 1e-6f);
+                expected += 1.0f;
             }
         }
 
@@ -5458,6 +5545,34 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
             AssertVectorEqual(CreateVector128(index => (index < lowerCount) ? left.GetElement(index) : right.GetElement(upperStart + index - lowerCount)), Vector128.ConcatLowerUpper(left, right));
 
             AssertVectorEqual(CreateVector128(index => left.GetElement(count - 1 - index)), Vector128.Reverse(left));
+        }
+
+        [Fact]
+        public void LaneOperationsDoubleTest()
+        {
+            Vector128<double> left = Vector128.Create(0.0, 1.0);
+            Vector128<double> right = Vector128.Create(100.0, 101.0);
+
+            AssertVectorEqual(Vector128.Create(0.0, 100.0), Vector128.ZipLower(left, right));
+            AssertVectorEqual(Vector128.Create(1.0, 101.0), Vector128.ZipUpper(left, right));
+
+            (Vector128<double> lower, Vector128<double> upper) = Vector128.Zip(left, right);
+            AssertVectorEqual(Vector128.ZipLower(left, right), lower);
+            AssertVectorEqual(Vector128.ZipUpper(left, right), upper);
+
+            AssertVectorEqual(left, Vector128.UnzipEven(lower, upper));
+            AssertVectorEqual(right, Vector128.UnzipOdd(lower, upper));
+
+            (Vector128<double> even, Vector128<double> odd) = Vector128.Unzip(lower, upper);
+            AssertVectorEqual(left, even);
+            AssertVectorEqual(right, odd);
+
+            AssertVectorEqual(Vector128.Create(0.0, 100.0), Vector128.ConcatLowerLower(left, right));
+            AssertVectorEqual(Vector128.Create(1.0, 100.0), Vector128.ConcatUpperLower(left, right));
+            AssertVectorEqual(Vector128.Create(1.0, 101.0), Vector128.ConcatUpperUpper(left, right));
+            AssertVectorEqual(Vector128.Create(0.0, 101.0), Vector128.ConcatLowerUpper(left, right));
+
+            AssertVectorEqual(Vector128.Create(1.0, 0.0), Vector128.Reverse(left));
         }
 
         private static Vector128<int> CreateVector128(Func<int, int> elementSelector)

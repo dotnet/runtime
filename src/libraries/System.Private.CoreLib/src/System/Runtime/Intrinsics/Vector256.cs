@@ -1686,6 +1686,7 @@ namespace System.Runtime.Intrinsics
         /// <param name="even">The value assigned to even-indexed elements.</param>
         /// <param name="odd">The value assigned to odd-indexed elements.</param>
         /// <returns>A new <see cref="Vector256{T}" /> instance whose even-indexed elements are initialized to <paramref name="even" /> and odd-indexed elements are initialized to <paramref name="odd" />.</returns>
+        /// <exception cref="NotSupportedException">The type of <paramref name="even"/> and <paramref name="odd"/> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<T> CreateAlternatingSequence<T>(T even, T odd)
@@ -1699,6 +1700,7 @@ namespace System.Runtime.Intrinsics
         /// <param name="start">The value that element 0 of the arithmetic sequence will be initialized to.</param>
         /// <param name="step">The value that indicates how far apart each element of the arithmetic sequence should be from the previous.</param>
         /// <returns>A new <see cref="Vector256{T}" /> instance whose elements are initialized to one divided by the corresponding element of the arithmetic sequence.</returns>
+        /// <exception cref="NotSupportedException">The type of <paramref name="start"/> and <paramref name="step"/> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<T> CreateHarmonicSequence<T>(T start, T step)

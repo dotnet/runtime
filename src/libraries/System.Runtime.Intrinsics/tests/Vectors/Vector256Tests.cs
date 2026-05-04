@@ -6495,6 +6495,19 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
+        public void CreateGeometricSequenceByteWrapsTest()
+        {
+            Vector256<byte> sequence = Vector256.CreateGeometricSequence((byte)200, (byte)2);
+            byte expected = 200;
+
+            for (int index = 0; index < Vector256<byte>.Count; index++)
+            {
+                Assert.Equal(expected, sequence.GetElement(index));
+                expected = unchecked((byte)(expected * 2));
+            }
+        }
+
+        [Fact]
         public void CreateGeometricSequenceSingleNonConstantInitialTest()
         {
             const float multiplier = 1.0064822f;
@@ -6536,6 +6549,54 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
+        public void CreateAlternatingSequenceUInt32Test()
+        {
+            Vector256<uint> sequence = Vector256.CreateAlternatingSequence(5u, uint.MaxValue - 1u);
+
+            for (int index = 0; index < Vector256<uint>.Count; index++)
+            {
+                Assert.Equal(((index & 1) == 0) ? 5u : uint.MaxValue - 1u, sequence.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void CreateAlternatingSequenceDoubleTest()
+        {
+            Vector256<double> sequence = Vector256.CreateAlternatingSequence(1.5, -2.5);
+
+            for (int index = 0; index < Vector256<double>.Count; index++)
+            {
+                Assert.Equal(((index & 1) == 0) ? 1.5 : -2.5, sequence.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void CreateHarmonicSequenceInt32Test()
+        {
+            Vector256<int> sequence = Vector256.CreateHarmonicSequence(1, 1);
+            int expected = 1;
+
+            for (int index = 0; index < Vector256<int>.Count; index++)
+            {
+                Assert.Equal(1 / expected, sequence.GetElement(index));
+                expected += 1;
+            }
+        }
+
+        [Fact]
+        public void CreateHarmonicSequenceSingleTest()
+        {
+            Vector256<float> sequence = Vector256.CreateHarmonicSequence(1.0f, 1.0f);
+            float expected = 1.0f;
+
+            for (int index = 0; index < Vector256<float>.Count; index++)
+            {
+                AssertExtensions.Equal(1.0f / expected, sequence.GetElement(index), 1e-6f);
+                expected += 1.0f;
+            }
+        }
+
+        [Fact]
         public void CreateHarmonicSequenceDoubleTest()
         {
             Vector256<double> sequence = Vector256.CreateHarmonicSequence(1.0, 1.0);
@@ -6545,6 +6606,32 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
             {
                 AssertExtensions.Equal(1.0 / expected, sequence.GetElement(index), 1e-15);
                 expected += 1.0;
+            }
+        }
+
+        [Fact]
+        public void CreateCauchySequenceInt32Test()
+        {
+            Vector256<int> sequence = Vector256.CreateCauchySequence(1, 3);
+            int expected = 1;
+
+            for (int index = 0; index < Vector256<int>.Count; index++)
+            {
+                Assert.Equal((int)Math.Sqrt(expected), sequence.GetElement(index));
+                expected += 3;
+            }
+        }
+
+        [Fact]
+        public void CreateCauchySequenceSingleTest()
+        {
+            Vector256<float> sequence = Vector256.CreateCauchySequence(1.0f, 1.0f);
+            float expected = 1.0f;
+
+            for (int index = 0; index < Vector256<float>.Count; index++)
+            {
+                AssertExtensions.Equal(MathF.Sqrt(expected), sequence.GetElement(index), 1e-6f);
+                expected += 1.0f;
             }
         }
 
