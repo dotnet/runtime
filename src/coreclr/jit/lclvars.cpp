@@ -4886,6 +4886,39 @@ unsigned* Compiler::lvaComputeOptimalFrameLayoutOrder(int stkOffs, const UINT* a
         }
     }
 
+    // Quick upper bound on potential savings: walk locals in default order,
+    // accumulate frame size, and count weighted refs that fall beyond disp8 range.
+    // This approximation ignores alignment padding and allocation passes but is
+    // cheap to compute and lets us skip methods where reordering cannot help much.
+    {
+        int      simOff        = stkOffs;
+        unsigned refsInDisp32  = 0;
+
+        for (unsigned i = 0; i < lvaCount; i++)
+        {
+            if (lclSize[i] == 0)
+            {
+                continue;
+            }
+            simOff -= static_cast<int>(lclSize[i]);
+            if (simOff < -128)
+            {
+                refsInDisp32 += lclRefCnt[i];
+            }
+        }
+
+        // Each ref beyond disp8 costs 3 extra bytes (disp32 vs disp8 encoding).
+        // If even moving ALL those refs into disp8 range wouldn't save much, skip.
+        unsigned maxSavings = refsInDisp32 * 3;
+        if (maxSavings <= 12)
+        {
+            JITDUMP("Frame layout optimization: skipping — max possible savings is %u bytes "
+                    "(refsInDisp32=%u)\n",
+                    maxSavings, refsInDisp32);
+            return nullptr;
+        }
+    }
+
     // Pre-compute alignment requirements for each local.
     // 0 = no alignment needed, otherwise the required alignment in bytes.
     unsigned* lclAlignTo = new (this, CMK_LvaTable) unsigned[lvaCount];
