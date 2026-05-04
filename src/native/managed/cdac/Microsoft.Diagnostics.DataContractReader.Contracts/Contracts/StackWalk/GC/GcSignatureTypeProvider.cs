@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Immutable;
+using System.Diagnostics;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using Microsoft.Diagnostics.DataContractReader.SignatureHelpers;
@@ -101,7 +102,22 @@ internal sealed class GcSignatureTypeProvider
     {
         try
         {
-            ReadOnlySpan<TypeHandle> instantiation = _target.Contracts.RuntimeTypeSystem.GetInstantiation(genericContext.ClassContext);
+            IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
+            TypeHandle classCtx = genericContext.ClassContext;
+
+            if (rts.IsArray(classCtx, out _))
+            {
+                // Match native SigTypeContext::InitTypeContext (typectxt.cpp): arrays use
+                // the element type as their class instantiation. RuntimeTypeSystem.GetInstantiation
+                // returns an empty span for arrays, so consult GetTypeParam directly (the
+                // managed equivalent of MethodTable::GetArrayInstantiation).
+                Debug.Assert(index == 0, "Array class context has a 1-element instantiation; index > 0 indicates a malformed signature.");
+                if (index != 0)
+                    return GcTypeKind.Ref;
+                return ClassifyTypeHandle(rts.GetTypeParam(classCtx));
+            }
+
+            ReadOnlySpan<TypeHandle> instantiation = rts.GetInstantiation(classCtx);
             if ((uint)index >= (uint)instantiation.Length)
                 return GcTypeKind.Ref;
             return ClassifyTypeHandle(instantiation[index]);
