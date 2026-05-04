@@ -1918,6 +1918,11 @@ void CallStubGenerator::ComputeCallStub(MetaSig &sig, PCODE *pRoutines, MethodDe
             }
 #endif
         }
+        else if (pMD->AsDynamicMethodDesc()->IsReversePInvokeStub())
+        {
+            unmanagedCallConv = CallConv::GetDefaultUnmanagedCallingConvention();
+            hasUnmanagedCallConv = true;
+        }
     }
     else if (pMD != NULL && pMD->HasUnmanagedCallersOnlyAttribute())
     {
