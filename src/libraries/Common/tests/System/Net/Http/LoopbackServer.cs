@@ -593,7 +593,7 @@ namespace System.Net.Test.Common
 
                     if (bytesRead == buffer.Length)
                     {
-                        byte[] newBuffer = new byte[buffer.Length + BufferSize];
+                        byte[] newBuffer = new byte[buffer.Length * 2];
                         buffer.CopyTo(newBuffer, 0);
                         offset = buffer.Length;
                         buffer = newBuffer;
@@ -632,7 +632,7 @@ namespace System.Net.Test.Common
                         if (_readEnd + 2 > _readBuffer.Length)
                         {
                             // We no longer have space to read CRLF. Allocate new buffer and start over.
-                            byte[] newBuffer = new byte[_readBuffer.Length + BufferSize];
+                            byte[] newBuffer = new byte[_readBuffer.Length * 2];
                             int dataLength = _readEnd - _readStart;
                             if (dataLength > 0)
                             {
