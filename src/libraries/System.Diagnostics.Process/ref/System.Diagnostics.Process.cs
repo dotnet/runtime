@@ -170,6 +170,7 @@ namespace System.Diagnostics
         protected void OnExited() { }
         public (byte[] StandardOutput, byte[] StandardError) ReadAllBytes(System.TimeSpan? timeout = default(System.TimeSpan?)) { throw null; }
         public System.Threading.Tasks.Task<(byte[] StandardOutput, byte[] StandardError)> ReadAllBytesAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public System.Collections.Generic.IEnumerable<System.Diagnostics.ProcessOutputLine> ReadAllLines(System.TimeSpan? timeout = default(System.TimeSpan?)) { throw null; }
         public System.Collections.Generic.IAsyncEnumerable<System.Diagnostics.ProcessOutputLine> ReadAllLinesAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public (string StandardOutput, string StandardError) ReadAllText(System.TimeSpan? timeout = default(System.TimeSpan?)) { throw null; }
         public System.Threading.Tasks.Task<(string StandardOutput, string StandardError)> ReadAllTextAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }

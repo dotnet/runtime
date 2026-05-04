@@ -237,15 +237,23 @@ pseudocode:
 ```
 Patchpoint:   // each assigned a dense set of IDs
 
-       if (++counter[ppID] > threshold) call PatchpointHelper(ppID)
+       if (++counter[ppID] > threshold)
+       {
+          var continuation = PatchpointHelper(ppID);
+          jmp continuation;
+       }
 ```
-The helper can use the return address to determine which patchpoint is making
-the request. To keep overheads manageable, we might instead want to down-count
-and pass the counter address to the helper.
+The helper can use the return address to determine which patchpoint is making the request.
+The return address is also used in case we should continue without transitioning into an OSR method.
+To keep overheads manageable, we might instead want to down-count and pass the counter address to the helper.
 ```
 Patchpoint:   // each assigned a dense set of IDs
 
-       if (--counter[ppID] <= 0) call PatchpointHelper(ppID, &counter[ppID])
+       if (--counter[ppID] <= 0)
+       {
+           var continuation = PatchpointHelper(ppID, &counter[ppID]);
+           jmp continuation;
+       }
 ```
 The helper logic would be similar to the following:
 ```
@@ -259,20 +267,20 @@ PatchpointHelper(int ppID, int* counter)
       case Unknown:
         *counter = initialThreshold;
         SetState(s, Active);
-        return;
+        return patchpointSite + <size of jmp>;
 
       case Active:
         *counter = checkThreshold;
         SetState(s, Pending);
         RequestAlternative(ppID);
-        return;
+        return patchpointSite + <size of jmp>;
 
       case Pending:
         *counter = checkThreshold;
-        return;
+        return patchpointSite + <size of jmp>;
 
       case Ready:
-         Transition(...); // does not return
+         return <address of alternative>;
      }
 }
 ```
@@ -477,15 +485,13 @@ this is to just leave the original frame in place, and have the OSR frame
 
 #### 3.4.1 Transition Implementation
 
-The original method conditionally calls to the patchpoint helper at
-patchpoints. The helper will return if there is no transition.
+The original method conditionally calls to the patchpoint helper at patchpoints.
+The helper returns a continuation address.
+If transition is desired, this is the address of the alternative version.
+Otherwise, it is the address in the tier0 code that follows the patchpoint helper call and jump instruction.
 
-For a transition, the helper will capture context and virtually unwind itself
-and the original method from the stack to recover callee-save register values
-live into the original method and then restore the callee FP and SP values into
-the context (preserving the original method frame); then set the context IP to
-the OSR method entry and restore context. OSR method will incorporate the
-original method frame as part of its frame.
+After transitioning the OSR method will incorporate the original method frame as part of its frame.
+This incorporation is slightly different between x64 and other targets. See below for more details.
 
 ## 4 Complications
 
@@ -658,13 +664,16 @@ prolog and duplicates its saves, and then a subsequent "shrink wrapped" prolog
 
 #### Implementation
 
-Callee-saves are currently handled sightly differently on x64
-than it is on arm64:
-* on x64, all the integer callee saves are saved in space pre-reserved in the Tier0 frame. The Tier0 method saves whatever subset it uses, and the OSR method saves any additional callee saves it uses. THe OSR method then restores this entire set on exit, with a single stack pointer adjustment. See [OSR x64 Epilog Redesign](https://github.com/dotnet/runtime/blob/main/docs/design/features/OSRX64EpilogRedesign.md) and the pull request [revise approach for x64 OSR epilogs](https://github.com/dotnet/runtime/pull/65609) for details.
-* for arm64, the virtual unwind done by the runtime restores the Tier0 callee saves, so the OSR method saves and restores the full set of callee saves it uses, and then does a second stack pointer adjustment to pop the Tier0 frame.
-Eventually we will revise arm64 to behave more like x64.
-* float callee-saves are handled separately for tier0 and OSR methods; there is opportunity here to also share save space as we do for x64 integer registers,
-but this might also lead to needlessly large tier0 frames.
+Callee-saves are currently handled differently on x64 than it is on other targets:
+* on x64, all the integer callee saves are saved in space pre-reserved in the Tier0 frame.
+  The Tier0 method saves whatever subset it uses, and the OSR method saves any additional callee saves it uses.
+  The OSR method then restores this entire set on exit, with a single stack pointer adjustment.
+  See [OSR x64 Epilog Redesign](https://github.com/dotnet/runtime/blob/main/docs/design/features/OSRX64EpilogRedesign.md) and the pull request [revise approach for x64 OSR epilogs](https://github.com/dotnet/runtime/pull/65609) for details.
+* for other targets the OSR method first restores the full set of callee saves saved by the tier0 version.
+  Its used callee saves are then saved and restored from the OSR part of the stack frame, in the same way as any normal prolog.
+* For x64 we disallow the use of float callee-saves in the tier0 method.
+  This avoids the need for special restore logic for float callee saves in the OSR method.
+  For other platforms the handling of callee saves falls out naturally together with the integer register handling.
 
 You might think the runtime helper would need to carefully save all the register state
 on entry, but that's not the case. Because the original method is un-optimized,
@@ -672,9 +681,7 @@ there isn't any live IL state in registers across the call to the patchpoint
 helper&mdash;all the live IL state for the method is on the original
 frame&mdash;so the argument and caller-save registers are dead at the
 patchpoint. Thus only part of register state that is significant for ongoing
-computation is the callee-saves, which are recovered via virtual unwind, and the
-frame and stack pointers of the original method, which are likewise recovered by
-virtual unwind.
+computation is the callee-saves and frame and stack pointers.
 
 If we were to support patchpoints in optimized code things would be more
 complicated.
@@ -803,6 +810,7 @@ G_M6138_IG04:           ;; bbWeight=0.01
        488D4DF0             lea      rcx, bword ptr [rbp-10H]    // &patchpointCounter
        BA06000000           mov      edx, 6                      // ilOffset
        E808CA465F           call     CORINFO_HELP_PATCHPOINT
+                            jmp      rax
 
 G_M6138_IG05:
        8B45FC               mov      eax, dword ptr [rbp-04H]

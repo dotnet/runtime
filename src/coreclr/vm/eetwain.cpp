@@ -2104,6 +2104,7 @@ static void VirtualUnwindInterpreterCallFrame(TADDR sp, T_CONTEXT *pContext)
     pFrame = pFrame->pParent;
     if (pFrame != NULL)
     {
+        // The parent frame's IP points past the call instruction (the resumption point).
         SetIP(pContext, (TADDR)pFrame->ip);
         SetSP(pContext, dac_cast<TADDR>(pFrame));
         SetFP(pContext, (TADDR)pFrame->pStack);

@@ -69,6 +69,7 @@ namespace System.IO
 
         public string? FileName { get; }
         public string? FusionLog { get; }
+        private readonly string? _requestingAssemblyChain;
 
         public override string ToString()
         {
@@ -76,6 +77,9 @@ namespace System.IO
 
             if (!string.IsNullOrEmpty(FileName))
                 s += Environment.NewLineConst + SR.Format(SR.IO_FileName_Name, FileName);
+
+            if (!string.IsNullOrEmpty(_requestingAssemblyChain))
+                s += Environment.NewLineConst + SR.Format(SR.IO_FileLoad_RequestedBy, _requestingAssemblyChain.ReplaceLineEndings());
 
             if (InnerException != null)
                 s += Environment.NewLineConst + InnerExceptionPrefix + InnerException.ToString();
@@ -98,6 +102,7 @@ namespace System.IO
         {
             FileName = info.GetString("FileNotFound_FileName");
             FusionLog = info.GetString("FileNotFound_FusionLog");
+            _requestingAssemblyChain = (string?)info.GetValueNoThrow("FileNotFound_RequestingAssemblyChain", typeof(string));
         }
 
         [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
@@ -107,6 +112,7 @@ namespace System.IO
             base.GetObjectData(info, context);
             info.AddValue("FileNotFound_FileName", FileName, typeof(string));
             info.AddValue("FileNotFound_FusionLog", FusionLog, typeof(string));
+            info.AddValue("FileNotFound_RequestingAssemblyChain", _requestingAssemblyChain, typeof(string));
         }
     }
 }

@@ -20,9 +20,9 @@ if /i "%__Os%" == "browser" (
             echo Error: Should set EMSDK_PATH environment variable pointing to emsdk root.
             exit /B 1
         )
-        set EMSDK_QUIET=1 && call "%__repoRoot%\src\mono\browser\emsdk\emsdk_env"
+        set "EMSDK_QUIET=1" && call "%__repoRoot%\src\mono\browser\emsdk\emsdk_env.cmd"
     ) else (
-        set EMSDK_QUIET=1 && call "%EMSDK_PATH%\emsdk_env"
+        set "EMSDK_QUIET=1" && call "%EMSDK_PATH%\emsdk_env.cmd"
     )
 )
 

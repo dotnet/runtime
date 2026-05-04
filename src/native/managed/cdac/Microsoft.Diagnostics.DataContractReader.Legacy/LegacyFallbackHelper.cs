@@ -26,17 +26,14 @@ internal static class LegacyFallbackHelper
         // Dump creation — the cDAC does not implement memory enumeration.
         nameof(ICLRDataEnumMemoryRegions.EnumMemoryRegions),
 
-        // IMetaDataImport QI — needed until managed MetadataReader wrapper lands (PR #127028).
-        nameof(ICustomQueryInterface.GetInterface),
+        // IXCLRDataModule — not yet implemented in the cDAC.
+        nameof(IXCLRDataModule.GetMethodDefinitionByToken),
 
         // GC heap analysis — not yet implemented in the cDAC (PR #125895).
         nameof(ISOSDacInterface11.IsTrackedType),
 
         // Loader heap traversal — not yet implemented in the cDAC (PR #125129).
         nameof(ISOSDacInterface.TraverseLoaderHeap),
-
-        // IXCLRDataMethodDefinition — SetCodeNotification not yet implemented (needs INotifications contract).
-        nameof(IXCLRDataMethodDefinition.SetCodeNotification),
     };
 
     // Files whose methods are all allowed to fall back.
