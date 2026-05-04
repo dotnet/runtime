@@ -120,14 +120,44 @@ namespace System.CommandLine
             }
         }
 
-        public static TargetAbi GetTargetAbi(TargetArchitecture targetArchitecture, bool isArmel, bool isAndroid)
+        public static TargetAbi GetTargetAbi(string targetArchitectureToken, string targetOSToken)
         {
-            if (isArmel || (isAndroid && targetArchitecture == TargetArchitecture.ARM))
+            bool isArm = targetArchitectureToken != null && targetArchitectureToken.Equals("arm", StringComparison.OrdinalIgnoreCase);
+            bool isArmel = targetArchitectureToken != null && targetArchitectureToken.Equals("armel", StringComparison.OrdinalIgnoreCase);
+            bool isAndroid = targetOSToken != null && targetOSToken.Equals("android", StringComparison.OrdinalIgnoreCase);
+
+            if (isArmel || (isAndroid && isArm))
             {
                 return TargetAbi.NativeAotArmel;
             }
 
             return TargetAbi.NativeAot;
+        }
+
+        public static string EnsureFirstTokenIsValidValue(ArgumentResult result, string[] validValues)
+        {
+            string firstToken = result.Tokens.Count > 0 ? result.Tokens[0].Value : null;
+
+            if (firstToken is not null && !ContainsValue(validValues, firstToken))
+            {
+                string optionName = result.Parent is OptionResult optionResult ? optionResult.Option.Name : result.Argument.Name;
+                result.AddError($"'{firstToken}' is not a valid value for {optionName} (valid values: '{string.Join("', '", validValues)}')");
+            }
+
+            return firstToken;
+
+            static bool ContainsValue(string[] validValues, string value)
+            {
+                foreach (string validValue in validValues)
+                {
+                    if (value.Equals(validValue, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return true;
+                    }
+                }
+
+                return false;
+            }
         }
 
         public static RootCommand UseVersion(this RootCommand command)

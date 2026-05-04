@@ -14,6 +14,9 @@ namespace ILCompiler
 {
     internal sealed class ILCompilerRootCommand : RootCommand
     {
+        private static readonly string[] s_validArchitectures = ["arm", "armel", "arm64", "x86", "x64", "riscv64", "loongarch64", "wasm"];
+        private static readonly string[] s_validOS = ["windows", "win", "linux", "android", "freebsd", "osx", "ios", "iossimulator", "tvos", "tvossimulator", "maccatalyst", "browser", "wasi"];
+
         public Argument<Dictionary<string, string>> InputFilePaths { get; } =
             new("input-file-path") { CustomParser = result => Helpers.BuildPathDictionary(result.Tokens, true), Description = "Input file(s)", Arity = ArgumentArity.OneOrMore };
         public Option<Dictionary<string, string>> ReferenceFiles { get; } =
@@ -160,10 +163,10 @@ namespace ILCompiler
             new("--trim") { DefaultValueFactory = _ => Array.Empty<string>(), Description = "Trim the specified assembly" };
         public Option<bool> RootDefaultAssemblies { get; } =
             new("--defaultrooting") { Description = "Root assemblies that are not marked [IsTrimmable]" };
-        public Option<TargetArchitecture> TargetArchitecture { get; } =
-            new("--targetarch") { CustomParser = MakeTargetArchitecture, DefaultValueFactory = MakeTargetArchitecture, Description = "Target architecture for cross compilation", HelpName = "arg" };
-        public Option<TargetOS> TargetOS { get; } =
-            new("--targetos") { CustomParser = MakeTargetOS, DefaultValueFactory = MakeTargetOS, Description = "Target OS for cross compilation", HelpName = "arg" };
+        public Option<string> TargetArchitecture { get; } =
+            new("--targetarch") { CustomParser = GetTargetArchitecture, Description = "Target architecture for cross compilation", HelpName = "arg" };
+        public Option<string> TargetOS { get; } =
+            new("--targetos") { CustomParser = GetTargetOS, Description = "Target OS for cross compilation", HelpName = "arg" };
         public Option<string> JitPath { get; } =
             new("--jitpath") { Description = "Path to JIT compiler library" };
         public Option<string> SingleMethodTypeName { get; } =
@@ -187,9 +190,6 @@ namespace ILCompiler
 
         public OptimizationMode OptimizationMode { get; private set; }
         public ParseResult Result;
-        public static bool IsArmel { get; private set; }
-        public static bool IsAndroid { get; private set; }
-
         public ILCompilerRootCommand(string[] args) : base(".NET Native IL Compiler")
         {
             Arguments.Add(InputFilePaths);
@@ -350,12 +350,9 @@ namespace ILCompiler
             Console.WriteLine("Use the '--' option to disambiguate between input files that have begin with -- and options. After a '--' option, all arguments are " +
                 "considered to be input files. If no input files begin with '--' then this option is not necessary.\n");
 
-            string[] ValidArchitectures = new string[] { "arm", "arm64", "x86", "x64", "riscv64", "loongarch64" };
-            string[] ValidOS = new string[] { "windows", "linux", "android", "freebsd", "osx", "maccatalyst", "ios", "iossimulator", "tvos", "tvossimulator" };
+            Console.WriteLine("Valid switches for {0} are: '{1}'. The default value is '{2}'\n", "--targetos", string.Join("', '", s_validOS), Helpers.GetTargetOS(null).ToString().ToLowerInvariant());
 
-            Console.WriteLine("Valid switches for {0} are: '{1}'. The default value is '{2}'\n", "--targetos", string.Join("', '", ValidOS), Helpers.GetTargetOS(null).ToString().ToLowerInvariant());
-
-            Console.WriteLine(string.Format("Valid switches for {0} are: '{1}'. The default value is '{2}'\n", "--targetarch", string.Join("', '", ValidArchitectures), Helpers.GetTargetArchitecture(null).ToString().ToLowerInvariant()));
+            Console.WriteLine(string.Format("Valid switches for {0} are: '{1}'. The default value is '{2}'\n", "--targetarch", string.Join("', '", s_validArchitectures), Helpers.GetTargetArchitecture(null).ToString().ToLowerInvariant()));
 
             Console.WriteLine("The allowable values for the --instruction-set option are described in the table below. Each architecture has a different set of valid " +
                 "instruction sets, and multiple instruction sets may be specified by separating the instructions sets by a ','. By default other instruction sets not " +
@@ -363,7 +360,7 @@ namespace ILCompiler
                 "All such light-up can be disallowed by specifying '-optimistic'. The instruction sets supported by the machine invoking the tool can be targeted by " +
                 "specifying 'native'. For example 'native', 'avx,aes', 'avx,aes,-avx2', or 'avx,aes,-optimistic'");
 
-            foreach (string arch in ValidArchitectures)
+            foreach (string arch in s_validArchitectures)
             {
                 TargetArchitecture targetArch = Helpers.GetTargetArchitecture(arch);
                 bool first = true;
@@ -396,23 +393,14 @@ namespace ILCompiler
             Console.WriteLine(string.Join(", ", Internal.JitInterface.InstructionSetFlags.AllCpuNames));
         }
 
-        private static TargetArchitecture MakeTargetArchitecture(ArgumentResult result)
+        private static string GetTargetArchitecture(ArgumentResult result)
         {
-            string firstToken = result.Tokens.Count > 0 ? result.Tokens[0].Value : null;
-            if (firstToken != null && firstToken.Equals("armel", StringComparison.OrdinalIgnoreCase))
-            {
-                IsArmel = true;
-                return Internal.TypeSystem.TargetArchitecture.ARM;
-            }
-
-            return Helpers.GetTargetArchitecture(firstToken);
+            return Helpers.EnsureFirstTokenIsValidValue(result, s_validArchitectures);
         }
 
-        private static TargetOS MakeTargetOS(ArgumentResult result)
+        private static string GetTargetOS(ArgumentResult result)
         {
-            string firstToken = result.Tokens.Count > 0 ? result.Tokens[0].Value : null;
-            IsAndroid = firstToken != null && firstToken.Equals("android", StringComparison.OrdinalIgnoreCase);
-            return Helpers.GetTargetOS(firstToken);
+            return Helpers.EnsureFirstTokenIsValidValue(result, s_validOS);
         }
 
         private static int MakeParallelism(ArgumentResult result)
