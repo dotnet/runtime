@@ -24,10 +24,10 @@ CDAC_TYPE_FIELD(GCHeap, T_POINTER, EphemeralHeapSegment, cdac_data<GC_NAMESPACE:
 CDAC_TYPE_FIELD(GCHeap, T_POINTER, CardTable, cdac_data<GC_NAMESPACE::gc_heap>::CardTable)
 CDAC_TYPE_FIELD(GCHeap, T_POINTER, FinalizeQueue, cdac_data<GC_NAMESPACE::gc_heap>::FinalizeQueue)
 CDAC_TYPE_FIELD(GCHeap, T_POINTER, GenerationTable, cdac_data<GC_NAMESPACE::gc_heap>::GenerationTable)
-#ifndef USE_REGIONS
+#if !defined(USE_REGIONS) && defined(BACKGROUND_GC)
 CDAC_TYPE_FIELD(GCHeap, T_POINTER, SavedSweepEphemeralSeg, cdac_data<GC_NAMESPACE::gc_heap>::SavedSweepEphemeralSeg)
 CDAC_TYPE_FIELD(GCHeap, T_POINTER, SavedSweepEphemeralStart, cdac_data<GC_NAMESPACE::gc_heap>::SavedSweepEphemeralStart)
-#endif // !USE_REGIONS
+#endif // !USE_REGIONS && BACKGROUND_GC
 CDAC_TYPE_FIELD(GCHeap, TYPE(OomHistory), OomData, cdac_data<GC_NAMESPACE::gc_heap>::OomData)
 #ifdef HEAP_ANALYZE
 CDAC_TYPE_FIELD(GCHeap, T_POINTER, InternalRootArray, cdac_data<GC_NAMESPACE::gc_heap>::InternalRootArray)

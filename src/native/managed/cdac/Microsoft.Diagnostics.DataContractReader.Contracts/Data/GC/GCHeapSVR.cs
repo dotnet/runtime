@@ -29,7 +29,7 @@ internal sealed class GCHeapSVR : IData<GCHeapSVR>, IGCHeap
         FinalizeQueue = target.ReadPointerField(address, type, nameof(FinalizeQueue));
         GenerationTable = address + (ulong)type.Fields[nameof(GenerationTable)].Offset;
 
-        // Fields only exist segment GC builds
+        // Fields only exist in segment GC builds with background GC
         if (type.Fields.ContainsKey(nameof(SavedSweepEphemeralSeg)))
             SavedSweepEphemeralSeg = target.ReadPointerField(address, type, nameof(SavedSweepEphemeralSeg));
         if (type.Fields.ContainsKey(nameof(SavedSweepEphemeralStart)))
