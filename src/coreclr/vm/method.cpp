@@ -2122,6 +2122,9 @@ PCODE MethodDesc::GetMultiCallableAddrOfCode(CORINFO_ACCESS_FLAGS accessFlags /*
 
     PCODE ret = TryGetMultiCallableAddrOfCode(accessFlags);
 
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+    _ASSERTE((ret != (PCODE)NULL) && "PortableEntryPoint logic should always cause the TryGetMultiCallableAddrOfCode to return a value");
+#else
     if (ret == (PCODE)NULL)
     {
         GCX_COOP();
@@ -2129,9 +2132,7 @@ PCODE MethodDesc::GetMultiCallableAddrOfCode(CORINFO_ACCESS_FLAGS accessFlags /*
         // We have to allocate funcptr stub
         ret = GetLoaderAllocator()->GetFuncPtrStubs()->GetFuncPtrStub(this);
     }
-#ifdef FEATURE_PORTABLE_ENTRYPOINTS
-    MethodDesc::EnsurePortableEntryPointIsCallableFromR2R(ret);
-#endif // FEATURE_PORTABLE_ENTRYPOINTS
+#endif
 
     return ret;
 }
@@ -2211,6 +2212,12 @@ PCODE MethodDesc::TryGetMultiCallableAddrOfCode(CORINFO_ACCESS_FLAGS accessFlags
         && PortableEntryPoint::ToPortableEntryPoint(entryPoint)->EnsureCodeForUnmanagedCallersOnly())
     {
         entryPoint = (PCODE)PortableEntryPoint::GetActualCode(entryPoint);
+    }
+    else
+    {
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+        MethodDesc::EnsurePortableEntryPointIsCallableFromR2R(entryPoint);
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
     }
 
     return entryPoint;
