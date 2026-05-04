@@ -14,7 +14,6 @@
 #include <errno.h>
 #include <unistd.h>
 #include <string.h>
-#include <pthread.h>
 #include <ucontext.h>
 #include <minipal/getexepath.h>
 #include <minipal/thread.h>
@@ -25,35 +24,6 @@
 #else
 static char sccsid[] = "@(#)Version N/A";
 #endif
-
-// Captures the crash-signal number so the SIGALRM watchdog handler installed
-// by CrashReportTimeoutScope can re-raise it on timeout; this preserves the
-// real death cause in the system tombstone (e.g. debuggerd on Android)
-// instead of overwriting it with SIGALRM.
-static volatile sig_atomic_t s_originalCrashSignal = 0;
-
-extern "C" void CrashReportTimeoutHandler(int /*signal*/)
-{
-    int original = static_cast<int>(s_originalCrashSignal);
-    if (original != 0)
-    {
-        struct sigaction reraiseAction = {};
-        reraiseAction.sa_handler = SIG_DFL;
-        sigemptyset(&reraiseAction.sa_mask);
-        sigaction(original, &reraiseAction, nullptr);
-
-        sigset_t signalSet;
-        sigemptyset(&signalSet);
-        sigaddset(&signalSet, original);
-        pthread_sigmask(SIG_UNBLOCK, &signalSet, nullptr);
-
-        raise(original);
-    }
-
-    // Fallback if raise() somehow fails to terminate us. 128 + N is the
-    // conventional exit code for "killed by signal N".
-    _exit(128 + SIGALRM);
-}
 
 class ThreadEnumerationContext
 {
@@ -159,20 +129,6 @@ private:
     bool m_writeFailed;
 };
 
-class CrashReportTimeoutScope
-{
-public:
-    CrashReportTimeoutScope(uint32_t timeoutSeconds, int crashSignal);
-    ~CrashReportTimeoutScope();
-
-    CrashReportTimeoutScope(const CrashReportTimeoutScope&) = delete;
-    CrashReportTimeoutScope& operator=(const CrashReportTimeoutScope&) = delete;
-
-private:
-    unsigned int m_timeoutSeconds;
-    bool m_armed;
-};
-
 class CrashReportHelpers
 {
 public:
@@ -261,8 +217,6 @@ InProcCrashReporter::CreateReport(
     {
         return;
     }
-
-    CrashReportTimeoutScope timeout(m_timeoutSeconds, signal);
 
     char reportPath[CRASHREPORT_STRING_BUFFER_SIZE];
     reportPath[0] = '\0';
@@ -371,7 +325,6 @@ InProcCrashReporter::Initialize(
     m_walkStackCallback = settings.walkStackCallback;
     m_getExceptionCallback = settings.getExceptionCallback;
     m_enumerateThreadsCallback = settings.enumerateThreadsCallback;
-    m_timeoutSeconds = settings.timeoutSeconds;
     CrashReportHelpers::CopyString(m_reportPath, sizeof(m_reportPath), settings.reportPath);
 
     m_processName[0] = '\0';
@@ -402,60 +355,6 @@ InProcCrashReporter::Initialize(
             free(exePath);
         }
     }
-}
-
-CrashReportTimeoutScope::CrashReportTimeoutScope(uint32_t timeoutSeconds, int crashSignal)
-    : m_timeoutSeconds(static_cast<unsigned int>(timeoutSeconds)),
-      m_armed(false)
-{
-    if (m_timeoutSeconds == 0)
-    {
-        return;
-    }
-
-    // Capture the original crash signal so the SIGALRM watchdog handler can
-    // re-raise it; this preserves the real death cause in the system tombstone
-    // / debuggerd output instead of overwriting it with SIGALRM.
-    s_originalCrashSignal = static_cast<sig_atomic_t>(crashSignal);
-
-    // Take over SIGALRM so the watchdog cannot be neutralized by an
-    // app-installed handler or a blocked crashing thread signal mask. We do
-    // not save the prior disposition or mask: this scope only runs while the
-    // process is crashing, and the chained signal handler terminates the
-    // process before any restored prior state could become observable.
-    struct sigaction watchdogAction = {};
-    watchdogAction.sa_handler = CrashReportTimeoutHandler;
-    sigemptyset(&watchdogAction.sa_mask);
-    sigaction(SIGALRM, &watchdogAction, nullptr);
-
-    sigset_t signalSet;
-    sigemptyset(&signalSet);
-    sigaddset(&signalSet, SIGALRM);
-    pthread_sigmask(SIG_UNBLOCK, &signalSet, nullptr);
-
-    // alarm() is POSIX async-signal-safe, which matters because this scope is
-    // armed from inside the crash signal handler. Higher-precision alternatives
-    // (setitimer, timer_settime) either are not POSIX-safe or are not portably
-    // available on all targeted platforms (timer_create is not implemented on
-    // Darwin), so the timeout knob stays in seconds. Any prior process-wide
-    // alarm we preempt is intentionally discarded for the same reason as the
-    // disposition/mask above.
-    (void)alarm(m_timeoutSeconds);
-    m_armed = true;
-}
-
-CrashReportTimeoutScope::~CrashReportTimeoutScope()
-{
-    if (!m_armed)
-    {
-        return;
-    }
-
-    // Cancel our watchdog so SIGALRM cannot fire after we leave the scope.
-    // We do not restore the prior SIGALRM disposition, thread signal mask,
-    // or process-wide alarm: the chained signal handler terminates the
-    // process before any of that prior state could be observed.
-    alarm(0);
 }
 
 void

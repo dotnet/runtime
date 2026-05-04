@@ -447,7 +447,6 @@ CrashReportConfigure()
     settings.walkStackCallback = CrashReportWalkStack;
     settings.getExceptionCallback = CrashReportGetException;
     settings.enumerateThreadsCallback = CrashReportEnumerateThreads;
-    settings.timeoutSeconds = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_CrashReportTimeoutSeconds);
 
     // Initialize the reporter and register the PAL signal-path callback last
     // so PAL only observes the reporter after all VM callbacks are wired in.
