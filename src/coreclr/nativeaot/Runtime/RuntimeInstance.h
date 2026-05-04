@@ -21,7 +21,6 @@ class RuntimeInstance
     friend class Thread;
     friend void PopulateDebugHeaders();
 
-    PTR_ThreadStore             m_pThreadStore;
     HANDLE                      m_hPalInstance; // this is the HANDLE passed into DllMain
 
 public:

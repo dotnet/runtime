@@ -80,8 +80,9 @@ struct DotNetRuntimeDebugHeader
     //  v1-v4 were never doc'ed but history is source control if you need it
     //  v5 - Thread now has an m_eeAllocContext field and the previous m_rgbAllocContextBuffer
     //       field is nested inside of it.
+    //  v6 - Removed RuntimeInstance.m_pThreadStore field, added g_pThreadStore global.
     //
-    const uint16_t MajorVersion = 5;
+    const uint16_t MajorVersion = 6;
 
     // This counter can be incremented to indicate back-compatible changes
     // This field must be encoded little endian, regardless of the typical endianness of
@@ -255,13 +256,10 @@ extern "C" void PopulateDebugHeaders()
     MAKE_SIZE_ENTRY(StressMsg);
     MAKE_DEBUG_FIELD_ENTRY(StressMsg, args);
 
-    MAKE_SIZE_ENTRY(RuntimeInstance);
-    MAKE_DEBUG_FIELD_ENTRY(RuntimeInstance, m_pThreadStore);
-
     MAKE_GLOBAL_ENTRY(g_CrashInfoBuffer);
 
-    RuntimeInstance *g_pTheRuntimeInstance = GetRuntimeInstance();
-    MAKE_GLOBAL_ENTRY(g_pTheRuntimeInstance);
+    ThreadStore *g_pThreadStore = ThreadStore::s_pThreadStore;
+    MAKE_GLOBAL_ENTRY(g_pThreadStore);
 
     MAKE_GLOBAL_ENTRY(g_gcDacGlobals);
 

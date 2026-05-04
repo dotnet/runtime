@@ -308,14 +308,14 @@ void InvokeUnmanagedCalliWithTransition(PCODE ftn, void *cookie, int8_t *stack, 
     {
         GCX_PREEMP();
 #ifdef PROFILING_SUPPORTED
-        if (CORProfilerTrackTransitions() && !pFrame->startIp->Method->methodHnd->IsILStub())
+        if (CORProfilerTrackTransitions() && !pFrame->startIp->Method->methodHnd->IsILStub() && !pFrame->startIp->Method->methodHnd->IsPInvoke())
         {
             ProfilerManagedToUnmanagedTransitionMD(pFrame->startIp->Method->methodHnd, COR_PRF_TRANSITION_CALL);
         }
 #endif
         InvokeUnmanagedCalli(ftn, cookie, pArgs, pRet);
 #ifdef PROFILING_SUPPORTED
-        if (CORProfilerTrackTransitions() && !pFrame->startIp->Method->methodHnd->IsILStub())
+        if (CORProfilerTrackTransitions() && !pFrame->startIp->Method->methodHnd->IsILStub() && !pFrame->startIp->Method->methodHnd->IsPInvoke())
         {
             ProfilerUnmanagedToManagedTransitionMD(pFrame->startIp->Method->methodHnd, COR_PRF_TRANSITION_CALL);
         }
@@ -782,11 +782,14 @@ static void InterpBreakpoint(const int32_t *ip, const InterpMethodContextFrame *
             (void*)GetSP(&ctx),
             (void*)GetFP(&ctx)));
 
+        // Pass fIsVEH=FALSE: interpreter breakpoints are synthetic software callbacks,
+        // not vectored exception handler callbacks.
         if (g_pDebugInterface->FirstChanceNativeException(
             &exceptionRecord,
             &ctx,
             STATUS_BREAKPOINT,
-            pThread))
+            pThread,
+            FALSE /* fIsVEH */))
         {
             InterpThreadContext *pThreadContext = pThread->GetInterpThreadContext();
 
@@ -4396,11 +4399,14 @@ do                                                                      \
                         );
                     }
                     continuation = LOCAL_VAR(ip[2], CONTINUATIONREF);
-                    SetObjectReference((OBJECTREF *)((uint8_t*)(OBJECTREFToObject(continuation)) + pAsyncSuspendData->offsetIntoContinuationTypeForExecutionContext), executionContext);
                     continuation->SetFlags(pAsyncSuspendData->flags);
 
+                    PTR_OBJECTREF pExecutionContext = continuation->GetExecutionContextObjectStorageOrNull();
+                    _ASSERTE(pExecutionContext != NULL);
+                    SetObjectReference(pExecutionContext, executionContext);
+
                     PTR_OBJECTREF pContinuationContext = continuation->GetContinuationContextObjectStorageOrNull();
-                    if (pContinuationContext != nullptr)
+                    if (pContinuationContext != NULL)
                     {
                         MethodDesc *captureSyncContextMethod = pAsyncSuspendData->captureSyncContextMethod;
                         int32_t *flagsAddress = continuation->GetFlagsAddress();
@@ -4554,9 +4560,6 @@ do                                                                      \
                     CONTINUATIONREF continuation = (CONTINUATIONREF)ObjectToOBJECTREF(*(Object**)(stack + pAsyncSuspendData->continuationArgOffset));
                     _ASSERTE(pInterpreterFrame->GetContinuation() == NULL);
 
-                    // The INTOP_CHECK_FOR_CONTINUATION opcode will have called to restore the execution context already
-                    // Now copy the locals
-
                     // copy locals that need to move from the continuation object
                     uint8_t *pContinuationData = continuation->GetResultStorage();
                     InterpIntervalMapEntry *pCopyEntry = pAsyncSuspendData->liveLocalsIntervals;
@@ -4599,18 +4602,7 @@ do                                                                      \
                         // And before it should be an INTOP_HANDLE_CONTINUATION_SUSPEND opcode
                         _ASSERTE(*ip == INTOP_HANDLE_CONTINUATION_RESUME);
                         _ASSERTE(*(ip-3) == INTOP_HANDLE_CONTINUATION_SUSPEND);
-                        InterpAsyncSuspendData *pAsyncSuspendData = (InterpAsyncSuspendData*)pMethod->pDataItems[ip[1]];
-
-                        returnOffset = pMethod->allocaSize;
-                        callArgsOffset = pMethod->allocaSize;
-
-                        OBJECTREF execContext = ObjectToOBJECTREF(*(Object**)(((uint8_t*)OBJECTREFToObject(continuation)) + pAsyncSuspendData->offsetIntoContinuationTypeForExecutionContext));
-
-                        // We need to call the RestoreExecutionContext helper method
-                        LOCAL_VAR(callArgsOffset, OBJECTREF) = execContext;
-
-                        targetMethod = pAsyncSuspendData->restoreExecutionContextMethod;
-                        goto CALL_INTERP_METHOD;
+                        break;
                     }
                     ip += 3;
                     break;

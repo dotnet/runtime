@@ -951,6 +951,52 @@ public static partial class XmlSerializerTests
     }
 
     [Fact]
+    public static void Xml_DeserializeFragmentsFromXmlReader()
+    {
+        const string payload = "<SimpleType><P1>one</P1><P2>1</P2></SimpleType><SimpleType><P1>two</P1><P2>2</P2></SimpleType>";
+        XmlSerializer serializer = new XmlSerializer(typeof(SimpleType));
+        byte[] data = Encoding.UTF8.GetBytes(payload);
+
+        // "Switch.System.Xml.UseXmlSerializerReadEndElementWorkaround" default should be true
+        using var stream = new BlockingAfterBufferStream(data);
+        using var reader = XmlReader.Create(stream, new XmlReaderSettings { ConformanceLevel = ConformanceLevel.Fragment });
+
+        Assert.True(serializer.CanDeserialize(reader));
+
+        SimpleType first = (SimpleType)serializer.Deserialize(reader);
+        Assert.Equal("one", first.P1);
+        Assert.Equal(1, first.P2);
+
+        Assert.True(serializer.CanDeserialize(reader));
+
+        SimpleType second = (SimpleType)serializer.Deserialize(reader);
+        Assert.Equal("two", second.P1);
+        Assert.Equal(2, second.P2);
+    }
+ 
+    [Fact]
+    public static void Xml_DeserializeFragmentsFromXmlReader_CanDisableWorkaround()
+    {
+        const string switchName = "Switch.System.Xml.UseXmlSerializerReadEndElementWorkaround";
+        const string payload = "<SimpleType><P1>one</P1><P2>1</P2></SimpleType><SimpleType><P1>two</P1><P2>2</P2></SimpleType>";
+        XmlSerializer serializer = new XmlSerializer(typeof(SimpleType));
+        byte[] data = Encoding.UTF8.GetBytes(payload);
+
+        using var compatSwitch = new XmlSerializerAppContextSwitchScope(switchName, false);
+        Assert.False(compatSwitch.CurrentValue);
+
+        using var stream = new BlockingAfterBufferStream(data);
+        using var reader = XmlReader.Create(stream, new XmlReaderSettings { ConformanceLevel = ConformanceLevel.Fragment });
+
+        SimpleType first = (SimpleType)serializer.Deserialize(reader);
+        Assert.Equal("one", first.P1);
+        Assert.Equal(1, first.P2);
+
+        InvalidOperationException exception = Assert.Throws<InvalidOperationException>(() => serializer.Deserialize(reader));
+        Assert.IsType<TimeoutException>(exception.InnerException);
+    }
+
+    [Fact]
     public static void Xml_TypeWithTimeSpanProperty()
     {
         var obj = new TypeWithTimeSpanProperty { TimeSpanProperty = TimeSpan.FromMilliseconds(1) };
@@ -3115,6 +3161,45 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
         => time.ToString($"HH:mm:ss.fffffff{(!ignoreUtc && time.Kind == DateTimeKind.Utc ? "Z" : "zzzzzz")}", CultureInfo.InvariantCulture);
 }
 
+internal sealed class BlockingAfterBufferStream : Stream
+{
+    private readonly byte[] _buffer;
+    private int _position;
+
+    public BlockingAfterBufferStream(byte[] buffer)
+    {
+        _buffer = buffer;
+    }
+
+    public override bool CanRead => true;
+    public override bool CanSeek => false;
+    public override bool CanWrite => false;
+    public override long Length => _buffer.Length;
+    public override long Position
+    {
+        get => _position;
+        set => throw new NotSupportedException();
+    }
+
+    public override int Read(byte[] buffer, int offset, int count)
+    {
+        if (_position < _buffer.Length)
+        {
+            int toCopy = Math.Min(count, _buffer.Length - _position);
+            Array.Copy(_buffer, _position, buffer, offset, toCopy);
+            _position += toCopy;
+            return toCopy;
+        }
+
+        throw new TimeoutException("Simulated Exception - No additional data is available.");
+    }
+
+    public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
+    public override void SetLength(long value) => throw new NotSupportedException();
+    public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+    public override void Flush() { }
+}
+
 internal sealed class XmlSerializerAppContextSwitchScope : IDisposable
 {
     private readonly string _name;
@@ -3139,11 +3224,31 @@ internal sealed class XmlSerializerAppContextSwitchScope : IDisposable
         if (_hadValue)
             AppContext.SetSwitch(_name, _originalValue);
         else
-            // There's no "unset", so pick a default or false
-            AppContext.SetSwitch(_name, false);
+            UnsetSwitch(_name);
+
         ClearCachedSwitch(_cachedName);
     }
 
+    private static void UnsetSwitch(string name)
+    {
+        const BindingFlags Flags = BindingFlags.NonPublic | BindingFlags.Static;
+
+        if (typeof(AppContext).GetField("s_switches", Flags)?.GetValue(null) is IDictionary switches)
+        {
+            lock (switches)
+            {
+                switches.Remove(name);
+            }
+        }
+
+        if (typeof(AppContext).GetField("s_dataStore", Flags)?.GetValue(null) is IDictionary dataStore)
+        {
+            lock (dataStore)
+            {
+                dataStore.Remove(name);
+            }
+        }
+    }
     private static void ClearCachedSwitch(string name)
     {
         Type t = Type.GetType("System.Xml.LocalAppContextSwitches, System.Private.Xml");
