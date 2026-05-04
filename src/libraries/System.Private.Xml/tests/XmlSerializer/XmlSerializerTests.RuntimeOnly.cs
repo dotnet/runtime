@@ -3785,6 +3785,7 @@ public static partial class XmlSerializerTests
 
     [Theory]
     [InlineData(typeof(TypeWithXmlTextInvalidSeparator), "Text")]
+    [InlineData(typeof(TypeWithXmlTextInvalidSeparatorAngleBracket), "Text")]
     [InlineData(typeof(TypeWithXmlTextInvalidSeparatorAmpersand), "Text")]
     [InlineData(typeof(TypeWithXmlTextInvalidSeparatorQuote), "Text")]
     [InlineData(typeof(TypeWithXmlAttributeInvalidSeparatorQuote), "Items")]
@@ -3823,5 +3824,61 @@ public static partial class XmlSerializerTests
         Assert.Equal(2, actual.All[4]);
         Assert.Equal(3.14, actual.All[5]);
         Assert.Equal("Two", actual.All[6]);
+    }
+
+    [Fact]
+    public static void XML_XmlTextNoSeparator_MixedContent_RoundTrips()
+    {
+        // Mixed content without a Separator: consecutive text items concatenate
+        // (matching the non-mixed string-array behavior) and elements remain separate.
+        var original = new TypeWithXmlTextNoSeparatorOnMixedContentWithElement
+        {
+            All = new object[] { 321, "One", "Plus", "One", 2, 3.14, "Two" }
+        };
+        var actual = SerializeAndDeserialize(original,
+            "<?xml version=\"1.0\"?><TypeWithXmlTextNoSeparatorOnMixedContentWithElement xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\"><int>321</int>OnePlusOne<int>2</int><double>3.14</double>Two</TypeWithXmlTextNoSeparatorOnMixedContentWithElement>");
+        Assert.NotNull(actual.All);
+        Assert.Equal(5, actual.All.Length);
+        Assert.Equal(321, actual.All[0]);
+        Assert.Equal("OnePlusOne", actual.All[1]);
+        Assert.Equal(2, actual.All[2]);
+        Assert.Equal(3.14, actual.All[3]);
+        Assert.Equal("Two", actual.All[4]);
+    }
+
+    [Fact]
+    public static void XML_XmlTextSeparator_MixedContent_NullBetweenText_NoStraySeparator()
+    {
+        // A null item produces no XML output. It must not write a stray separator
+        // and must preserve the lastWasText status quo so surrounding text items
+        // are still correctly separated.
+        var original = new TypeWithXmlTextSeparatorOnMixedContentWithElement
+        {
+            All = new object[] { "a", null, "b" }
+        };
+        var actual = SerializeAndDeserialize(original,
+            "<?xml version=\"1.0\"?><TypeWithXmlTextSeparatorOnMixedContentWithElement xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\">a,b</TypeWithXmlTextSeparatorOnMixedContentWithElement>");
+        // Null doesn't survive the round-trip; the separated text becomes two items.
+        Assert.NotNull(actual.All);
+        Assert.Equal(2, actual.All.Length);
+        Assert.Equal("a", actual.All[0]);
+        Assert.Equal("b", actual.All[1]);
+    }
+
+    [Fact]
+    public static void XML_XmlTextSeparator_MixedContent_NullAfterElement_NoLeadingSeparator()
+    {
+        // When a null item follows an element, the status quo (lastWasText = false)
+        // must be preserved so the following text item does not get a leading separator.
+        var original = new TypeWithXmlTextSeparatorOnMixedContentWithElement
+        {
+            All = new object[] { 1, null, "a" }
+        };
+        var actual = SerializeAndDeserialize(original,
+            "<?xml version=\"1.0\"?><TypeWithXmlTextSeparatorOnMixedContentWithElement xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\"><int>1</int>a</TypeWithXmlTextSeparatorOnMixedContentWithElement>");
+        Assert.NotNull(actual.All);
+        Assert.Equal(2, actual.All.Length);
+        Assert.Equal(1, actual.All[0]);
+        Assert.Equal("a", actual.All[1]);
     }
 }

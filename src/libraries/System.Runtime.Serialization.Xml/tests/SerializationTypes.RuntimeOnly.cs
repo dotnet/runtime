@@ -4668,6 +4668,12 @@ public class TypeWithXmlTextInvalidSeparator
     public string[] Text;
 }
 
+public class TypeWithXmlTextInvalidSeparatorAngleBracket
+{
+    [XmlText(Separator = '<')]
+    public string[] Text;
+}
+
 public class TypeWithXmlTextInvalidSeparatorAmpersand
 {
     [XmlText(Separator = '&')]
@@ -4692,6 +4698,14 @@ public class TypeWithXmlTextSeparatorOnMixedContentWithElement
     [XmlElement(typeof(int))]
     [XmlElement(typeof(double))]
     public object[] All = new object[] { 321, "One", "Plus", "One", 2, 3.14, "Two" };
+}
+
+public class TypeWithXmlTextNoSeparatorOnMixedContentWithElement
+{
+    [XmlText(typeof(string))]
+    [XmlElement(typeof(int))]
+    [XmlElement(typeof(double))]
+    public object[] All;
 }
 
 
