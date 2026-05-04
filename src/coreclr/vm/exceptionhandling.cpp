@@ -3182,12 +3182,12 @@ void CallCatchFunclet(OBJECTREF throwable, BYTE* pHandlerIP, REGDISPLAY* pvRegDi
     }
 #endif // DEBUGGING_SUPPORTED
 
-    ExInfo::PopExInfos(pThread, (void*)targetSp);
+    ExInfo::PopExInfos(pThread, (void*)targetSp, /* setLtoToPoppedException */ false);
 
-    if (!pThread->GetExceptionState()->IsExceptionInProgress())
-    {
-        pThread->SetLastThrownObject(NULL);
-    }
+    // Unconditionally clear the LastThrownObject after popping the ExInfos so that
+    // post-exception consumers do not see a stale exception object.
+    // If there is still ExInfos on the chain, the throwables can be read from there.
+    pThread->SetLastThrownObject(NULL);
 
     ExInfo::UpdateNonvolatileRegisters(pvRegDisplay->pCurrentContext, pvRegDisplay, FALSE);
     if (pHandlerIP != NULL)

@@ -88,7 +88,7 @@ struct ExInfo
         DWORD_PTR              dwHandlerStartPC,
         StackFrame             sf);
 
-    static void PopExInfos(Thread *pThread, void *targetSp);
+    static void PopExInfos(Thread *pThread, void *targetSp, bool setLtoToPoppedException = true);
 
     // Previous ExInfo in the chain of exceptions rethrown from their catch / finally handlers
     PTR_ExInfo     m_pPrevNestedInfo;

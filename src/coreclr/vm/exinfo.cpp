@@ -96,7 +96,7 @@ void ExInfo::ReleaseResources()
 }
 
 // static
-void ExInfo::PopExInfos(Thread *pThread, void *targetSp)
+void ExInfo::PopExInfos(Thread *pThread, void *targetSp, bool setLtoToPoppedException)
 {
     CONTRACTL
     {
@@ -127,6 +127,7 @@ void ExInfo::PopExInfos(Thread *pThread, void *targetSp)
     }
 #endif // DEBUGGING_SUPPORTED
 
+    OBJECTREF lastPoppedException = NULL;
     while (pExInfo && pExInfo < (void*)targetSp)
     {
 #if defined(DEBUGGING_SUPPORTED)
@@ -139,18 +140,23 @@ void ExInfo::PopExInfos(Thread *pThread, void *targetSp)
         }
 #endif // DEBUGGING_SUPPORTED
 
-        // Set LTO from the exception being destroyed so that post-ExInfo consumers
-        // (EX_CATCH via CLRLastThrownObjectException, ProcessCLRException bridging)
-        // can find the exception object after the ExInfo is gone.
         if (pExInfo->m_exception != NULL)
         {
-            pThread->SetLastThrownObject(pExInfo->m_exception);
+            lastPoppedException = pExInfo->m_exception;
         }
 
         pExInfo->ReleaseResources();
         pExInfo = (PTR_ExInfo)pExInfo->m_pPrevNestedInfo;
     }
     pThread->GetExceptionState()->m_pCurrentTracker = pExInfo;
+
+    if (lastPoppedException != NULL && setLtoToPoppedException)
+    {
+        // Set LTO from the exception being destroyed so that post-ExInfo consumers
+        // (EX_CATCH via CLRLastThrownObjectException, ProcessCLRException bridging)
+        // can find the exception object after the ExInfo is gone.
+        pThread->SetLastThrownObject(lastPoppedException);
+    }
 }
 
 static bool IsFilterStartOffset(EE_ILEXCEPTION_CLAUSE* pEHClause, DWORD_PTR dwHandlerStartPC)
