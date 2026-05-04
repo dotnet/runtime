@@ -63,9 +63,9 @@ jobs:
     # Browser wasm
     - ${{ if eq(parameters.platform, 'browser_wasm') }}:
       - ${{ if eq(variables['System.TeamProject'], 'public') }}:
-        - (Ubuntu.2604.Amd64.Open)AzureLinux.3.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-26.04-helix-webassembly-amd64@sha256:051f8f1a037bbe85fca4d81e4cd56d496840fbe3edcfee776d4963331cb28029
+        - (Ubuntu.2604.Amd64.Open)AzureLinux.3.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-26.04-helix-webassembly-amd64@sha256:c9dc51010e0627d319d55e058400b4888b03f4be8988d09e65a7505264ea45a2
       - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
-        - (Ubuntu.2604.Amd64)AzureLinux.3.Amd64@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-26.04-helix-webassembly-amd64@sha256:051f8f1a037bbe85fca4d81e4cd56d496840fbe3edcfee776d4963331cb28029
+        - (Ubuntu.2604.Amd64)AzureLinux.3.Amd64@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-26.04-helix-webassembly-amd64@sha256:c9dc51010e0627d319d55e058400b4888b03f4be8988d09e65a7505264ea45a2
 
     # iOS devices
     - ${{ if in(parameters.platform, 'ios_arm64') }}:
