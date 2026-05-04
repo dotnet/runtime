@@ -288,8 +288,16 @@ namespace ILLink.Shared.TrimAnalysis
             return false;
         }
 
-        private partial string GetAssemblyName(TypeProxy type)
-            => type.Type.ContainingAssembly?.Name ?? string.Empty;
+        private partial string? GetAssemblyName(TypeProxy type)
+            => type.Type switch
+            {
+                IArrayTypeSymbol or IPointerTypeSymbol or IFunctionPointerTypeSymbol or ITypeParameterSymbol => null,
+                // typeof(System.Array).Assembly is rejected for parity with the Cecil-based linker,
+                // where typeof(SomeType[]) lowers to System.Array and otherwise produces wrong
+                // analysis (System.Array.Assembly is CoreLib at runtime).
+                _ when type.Type.IsTypeOf(WellKnownType.System_Array) => null,
+                _ => type.Type.ContainingAssembly?.Name,
+            };
 
         private partial bool TryResolveTypeNameInAssemblyAndMark(string assemblyName, string typeName, out TypeProxy resolvedType)
         {

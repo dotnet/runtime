@@ -5,11 +5,13 @@ using System;
 using System.Reflection;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Helpers;
+using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.DataFlow
 {
     [SkipKeptItemsValidation]
     [ExpectedNoWarnings]
+    [SetupCompileArgument("/unsafe")]
     public class AssemblyGetTypeDataFlow
     {
         public static void Main()
@@ -25,6 +27,10 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             TestPointerType();
             TestGenericType();
             TestTypeOnlyInCoreLib();
+            TestArrayReceiver();
+            TestFunctionPointerReceiver();
+            TestGenericParameterReceiver<InnerType>();
+            TestGenericMethodArrayReceiver<InnerType>();
         }
 
         class InnerType
@@ -110,6 +116,34 @@ namespace Mono.Linker.Tests.Cases.DataFlow
         static void TestTypeOnlyInCoreLib()
         {
             typeof(AssemblyGetTypeDataFlow).Assembly.GetType("System.Reflection.Assembly").RequiresAll();
+        }
+
+        // The dataflow only models Type.Assembly for named types. Array, pointer, byref, function
+        // pointer, and open generic parameter receivers are intentionally rejected and fall back
+        // to an IL2026 warning at the Assembly.GetType call site.
+
+        [ExpectedWarning("IL2026")]
+        static void TestArrayReceiver()
+        {
+            typeof(InnerType[]).Assembly.GetType("Mono.Linker.Tests.Cases.DataFlow.AssemblyGetTypeDataFlow+InnerType");
+        }
+
+        [ExpectedWarning("IL2026")]
+        static unsafe void TestFunctionPointerReceiver()
+        {
+            typeof(delegate*<InnerType, void>).Assembly.GetType("Mono.Linker.Tests.Cases.DataFlow.AssemblyGetTypeDataFlow+InnerType");
+        }
+
+        [ExpectedWarning("IL2026")]
+        static void TestGenericParameterReceiver<T>()
+        {
+            typeof(T).Assembly.GetType("Mono.Linker.Tests.Cases.DataFlow.AssemblyGetTypeDataFlow+InnerType");
+        }
+
+        [ExpectedWarning("IL2026")]
+        static void TestGenericMethodArrayReceiver<T>()
+        {
+            typeof(T[]).Assembly.GetType("Mono.Linker.Tests.Cases.DataFlow.AssemblyGetTypeDataFlow+InnerType");
         }
 
         static string GetUnknownString() => "unknown";

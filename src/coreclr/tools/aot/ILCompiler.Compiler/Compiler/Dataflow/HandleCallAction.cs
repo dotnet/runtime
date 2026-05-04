@@ -719,13 +719,15 @@ namespace ILLink.Shared.TrimAnalysis
             return true;
         }
 
-        private partial string GetAssemblyName(TypeProxy type)
-            => type.Type switch
-            {
-                ParameterizedType parameterizedType => GetAssemblyName(new TypeProxy(parameterizedType.ParameterType)),
-                FunctionPointerType functionPointerType => GetAssemblyName(new TypeProxy(functionPointerType.Signature.ReturnType)),
-                _ => ((MetadataType)type.Type.GetTypeDefinition()).Module.Assembly.GetName().Name,
-            };
+        private partial string? GetAssemblyName(TypeProxy type)
+            // Only named types are supported. Reject array/pointer/byref (ParameterizedType),
+            // function pointer, signature variables, and System.Array itself. Rejecting System.Array
+            // covers the case where Cecil's IL scanner lowers typeof(SomeType[]) to System.Array,
+            // which would otherwise produce wrong analysis (System.Array.Assembly is CoreLib at
+            // runtime, but typeof(SomeType[]).Assembly is SomeType's assembly).
+            => type.Type is MetadataType metadataType && !metadataType.IsWellKnownType(Internal.TypeSystem.WellKnownType.Array)
+                ? metadataType.Module.Assembly.GetName().Name
+                : null;
 
         private partial bool TryResolveTypeNameInAssemblyAndMark(string assemblyName, string typeName, out TypeProxy resolvedType)
         {

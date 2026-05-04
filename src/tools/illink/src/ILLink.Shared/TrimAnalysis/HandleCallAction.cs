@@ -185,18 +185,24 @@ namespace ILLink.Shared.TrimAnalysis
                     break;
 
                 case IntrinsicId.Type_get_Assembly:
-                    if (instanceValue.IsEmpty())
-                    {
-                        returnValue = MultiValueLattice.Top;
-                        break;
-                    }
-
                     foreach (var value in instanceValue.AsEnumerable())
                     {
-                        if (value is SystemTypeValue systemType)
-                            AddReturnValue(new AssemblyValue(GetAssemblyName(systemType.RepresentedType)));
+                        string? assemblyName;
+                        if (value is SystemTypeValue systemType
+                            && (assemblyName = GetAssemblyName(systemType.RepresentedType)) is not null)
+                        {
+                            AddReturnValue(new AssemblyValue(assemblyName));
+                        }
                         else
+                        {
                             AddReturnValue(annotatedMethodReturnValue);
+                        }
+                    }
+                    if (instanceValue.IsEmpty())
+                    {
+                        // An unknown receiver has an unknown Assembly; downstream Assembly.GetType
+                        // should warn rather than silently widen to Top.
+                        returnValue = annotatedMethodReturnValue;
                     }
                     break;
 
@@ -1891,7 +1897,7 @@ namespace ILLink.Shared.TrimAnalysis
 
         private partial bool TryResolveTypeNameForCreateInstanceAndMark(in MethodProxy calledMethod, string assemblyName, string typeName, out TypeProxy resolvedType);
 
-        private partial string GetAssemblyName(TypeProxy type);
+        private partial string? GetAssemblyName(TypeProxy type);
 
         private partial bool TryResolveTypeNameInAssemblyAndMark(string assemblyName, string typeName, out TypeProxy resolvedType);
 
