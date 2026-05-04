@@ -887,6 +887,8 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
         compInlineResult->NoteDouble(InlineObservation::CALLSITE_PROFILE_FREQUENCY, 1.0);
         // Observe force inline state and code size.
         compInlineResult->NoteBool(InlineObservation::CALLEE_IS_FORCE_INLINE, isForceInline);
+        compInlineResult->NoteBool(InlineObservation::CALLEE_IS_INTRINSIC_TYPE,
+                                   (info.compClassAttr & CORINFO_FLG_INTRINSIC_TYPE) != 0);
         compInlineResult->NoteInt(InlineObservation::CALLEE_IL_CODE_SIZE, codeSize);
 
         // Determine if call site is within a try.
@@ -5250,6 +5252,8 @@ BasicBlock* Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
 
         for (BasicBlock* const predBlock : block->PredBlocksEditing())
         {
+            // Inherit affordances
+            predBlock->CopyFlags(block, BBF_ASYNC_RESUMPTION);
             // change all jumps/refs to the removed block
             fgReplaceJumpTarget(predBlock, block, succBlock);
         }
@@ -5377,10 +5381,6 @@ void Compiler::fgMoveBlocksAfter(BasicBlock* bStart, BasicBlock* bEnd, BasicBloc
 //
 // Return Value:
 //    The last block that was relocated, or nullptr on failure.
-//
-// Notes:
-//    This function can invalidate all pointers into the EH table, as well as
-//    change the size of the EH table!
 //
 BasicBlock* Compiler::fgRelocateEHRange(unsigned regionIndex, FG_RELOCATE_TYPE relocateType)
 {

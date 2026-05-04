@@ -1490,6 +1490,7 @@ struct cdac_data<StubDispatchFrame>
 {
     static constexpr size_t RepresentativeMTPtr = offsetof(StubDispatchFrame, m_pRepresentativeMT);
     static constexpr uint32_t RepresentativeSlot = offsetof(StubDispatchFrame, m_representativeSlot);
+    static constexpr size_t Indirection = offsetof(StubDispatchFrame, m_pIndirection);
 };
 
 typedef DPTR(class StubDispatchFrame) PTR_StubDispatchFrame;
@@ -1561,9 +1562,17 @@ public:
 #ifdef TARGET_X86
     void UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats = false);
 #endif
+
+    friend struct ::cdac_data<ExternalMethodFrame>;
 };
 
 typedef DPTR(class ExternalMethodFrame) PTR_ExternalMethodFrame;
+
+template <>
+struct cdac_data<ExternalMethodFrame>
+{
+    static constexpr size_t Indirection = offsetof(ExternalMethodFrame, m_pIndirection);
+};
 
 class DynamicHelperFrame : public FramedMethodFrame
 {
@@ -1583,9 +1592,17 @@ public:
         LIMITED_METHOD_DAC_CONTRACT;
         return TT_InternalCall;
     }
+
+    friend struct ::cdac_data<DynamicHelperFrame>;
 };
 
 typedef DPTR(class DynamicHelperFrame) PTR_DynamicHelperFrame;
+
+template <>
+struct cdac_data<DynamicHelperFrame>
+{
+    static constexpr size_t DynamicHelperFrameFlags = offsetof(DynamicHelperFrame, m_dynamicHelperFrameFlags);
+};
 
 //------------------------------------------------------------------------
 // This frame protects object references for the EE's convenience.
