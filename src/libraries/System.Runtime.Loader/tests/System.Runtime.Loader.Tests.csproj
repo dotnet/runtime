@@ -60,6 +60,7 @@
     <ProjectReference Include="ReferencedClassLibNeutralIsSatellite\ReferencedClassLibNeutralIsSatellite.csproj" />
     <ProjectReference Include="LoaderLinkTest.Shared\LoaderLinkTest.Shared.csproj" />
     <ProjectReference Include="LoaderLinkTest.Dynamic\LoaderLinkTest.Dynamic.csproj" />
+    <ProjectReference Include="MissingDependency.Root\MissingDependency.Root.csproj" />
     <ProjectReference Include="System.Runtime.Loader.Test.AssemblyVersion1\System.Runtime.Loader.Test.AssemblyVersion1.csproj" ReferenceOutputAssembly="false" OutputItemType="EmbeddedResource" Link="AssemblyVersion1.dll" />
     <ProjectReference Include="System.Runtime.Loader.Test.AssemblyVersion2\System.Runtime.Loader.Test.AssemblyVersion2.csproj" ReferenceOutputAssembly="false" OutputItemType="EmbeddedResource" Link="AssemblyVersion2.dll" />
     <ProjectReference Include="ReferencedClassLibVersion2\ReferencedClassLibVersion2.csproj" ReferenceOutputAssembly="false" OutputItemType="EmbeddedResource" Link="ReferencedClassLibVersion2.dll" />

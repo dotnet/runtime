@@ -5304,7 +5304,7 @@ ValueNum ValueNumStore::EvalUsingMathIdentity(var_types typ, VNFunc func, ValueN
         opVN  = arg0VN;
     }
 
-    auto identityForAddition = [=]() -> ValueNum {
+    auto identityForAddition = [=](bool ovf) -> ValueNum {
         ValueNum ZeroVN = VNZeroForType(typ);
 
         if (!varTypeIsFloating(typ))
@@ -5313,6 +5313,25 @@ ValueNum ValueNumStore::EvalUsingMathIdentity(var_types typ, VNFunc func, ValueN
             if (cnsVN == ZeroVN)
             {
                 return opVN;
+            }
+
+            if (!ovf)
+            {
+                // (a - x) + x == a   and   x + (a - x) == a
+                // (x - a) + a == x   and   a + (x - a) == x
+                //
+                // Since ADD is commutative, the args have already been canonicalized,
+                // but we don't know which side is the SUB. Check both arrangements.
+                for (int i = 0; i < 2; i++)
+                {
+                    ValueNum  subVN   = (i == 0) ? arg0VN : arg1VN;
+                    ValueNum  otherVN = (i == 0) ? arg1VN : arg0VN;
+                    VNFuncApp sub;
+                    if (GetVNFunc(subVN, &sub) && (sub.m_func == VNF_SUB) && (sub.m_args[1] == otherVN))
+                    {
+                        return sub.m_args[0];
+                    }
+                }
             }
         }
         else if (cnsVN == NoVN)
@@ -5385,6 +5404,15 @@ ValueNum ValueNumStore::EvalUsingMathIdentity(var_types typ, VNFunc func, ValueN
                     if (arg1Op2 == arg0VN)
                     {
                         return VNForFunc(typ, VNF_NEG, arg1Op1);
+                    }
+                }
+
+                // a - (a - x) == x
+                if (IsVNBinFunc(arg1VN, VNF_SUB, &arg1Op1, &arg1Op2))
+                {
+                    if (arg1Op1 == arg0VN)
+                    {
+                        return arg1Op2;
                     }
                 }
 
@@ -5517,7 +5545,7 @@ ValueNum ValueNumStore::EvalUsingMathIdentity(var_types typ, VNFunc func, ValueN
         {
             case GT_ADD:
             {
-                resultVN = identityForAddition();
+                resultVN = identityForAddition(/* ovf */ false);
                 break;
             }
 
@@ -6023,7 +6051,7 @@ ValueNum ValueNumStore::EvalUsingMathIdentity(var_types typ, VNFunc func, ValueN
             case VNF_ADD_OVF:
             case VNF_ADD_UN_OVF:
             {
-                resultVN = identityForAddition();
+                resultVN = identityForAddition(/* ovf */ true);
                 break;
             }
 

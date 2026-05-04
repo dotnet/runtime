@@ -70,7 +70,7 @@ PTR_VOID ConvertStackMarkToPointerOnOSStack(PTR_Thread pThread, PTR_VOID stackMa
                     }
                     pCurrent = pCurrent->pParent;
                 } while (pCurrent != NULL);
-                
+
             }
 
             pFrame = pFrame->PtrNextFrame();
@@ -1087,6 +1087,27 @@ BOOL StackFrameIterator::Init(Thread *    pThread,
 
     // process the REGDISPLAY and stop at the first frame
     ProcessIp(GetControlPC(m_crawl.pRD));
+#ifdef FEATURE_INTERPRETER
+    if (m_crawl.codeInfo.IsInterpretedCode())
+    {
+        // CONTEXT is in interpreted code where the first-arg register holds the owning InterpreterFrame.
+        // Skip past it so we don't re-enter its frame chain.
+        PTR_InterpreterFrame pOwning =
+            dac_cast<PTR_InterpreterFrame>((TADDR)GetFirstArgReg(m_crawl.pRD->pCurrentContext));
+        _ASSERTE(pOwning != NULL);
+        _ASSERTE(pOwning->GetFrameIdentifier() == FrameIdentifier::InterpreterFrame);
+
+        if (pFrame == NULL)
+        {
+            m_crawl.pFrame = pOwning->PtrNextFrame();
+        }
+        else
+        {
+            // Explicit pFrame must already be past the owner (callee Frames have lower addresses than their callers).
+            _ASSERTE(dac_cast<TADDR>(m_crawl.pFrame) > dac_cast<TADDR>(pOwning));
+        }
+    }
+#endif // FEATURE_INTERPRETER
     if (m_crawl.isFrameless && !!(m_crawl.pRD->pCurrentContext->ContextFlags & CONTEXT_EXCEPTION_ACTIVE))
     {
         m_crawl.hasFaulted = true;
@@ -1160,6 +1181,19 @@ BOOL StackFrameIterator::ResetRegDisp(PREGDISPLAY pRegDisp,
     PCODE curPc = GetControlPC(pRegDisp);
     ProcessIp(curPc);
 
+#ifdef FEATURE_INTERPRETER
+    if (m_crawl.codeInfo.IsInterpretedCode())
+    {
+        // CONTEXT is in interpreted code where the first-arg register holds the owning InterpreterFrame.
+        // Skip past it so we don't re-enter its frame chain.
+        PTR_InterpreterFrame pOwningInterpFrame =
+            dac_cast<PTR_InterpreterFrame>((TADDR)GetFirstArgReg(m_crawl.pRD->pCurrentContext));
+        _ASSERTE(pOwningInterpFrame != NULL);
+        _ASSERTE(pOwningInterpFrame->GetFrameIdentifier() == FrameIdentifier::InterpreterFrame);
+        m_crawl.pFrame = pOwningInterpFrame->PtrNextFrame();
+    }
+    else
+#endif // FEATURE_INTERPRETER
     // loop the frame chain to find the closet explicit frame which is lower than the specified REGDISPLAY
     // (stack grows up towards lower address)
     if (m_crawl.pFrame != FRAME_TOP)
