@@ -17,7 +17,7 @@ extends:
 
     containers:
       linux_arm:
-        image: mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-net11.0-cross-arm@sha256:462906ac0014b813e823afe392e6cf47c87e09ebb821ee20243e964646bf13f9
+        image: mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-net11.0-cross-arm@sha256:ac402d059f817f65382ec3d515496b26fe1a79c4b08372674e844eebcd807554
         env:
           ROOTFS_DIR: /crossrootfs/arm
 
