@@ -315,10 +315,6 @@ public class R2RTestSuites
     /// even with multiple suspension points and forced compilation retries (via
     /// --determinism-stress), each compiled method should have exactly one
     /// ResumptionStubEntryPoint fixup.
-    ///
-    /// Without routing the fixup through the precode-fixup path, retried
-    /// compilations would each add a duplicate fixup directly to the method node,
-    /// producing more than one ResumptionStubEntryPoint fixup per method.
     /// </summary>
     [Fact]
     public void RuntimeAsyncResumptionStubFixupDedup()
