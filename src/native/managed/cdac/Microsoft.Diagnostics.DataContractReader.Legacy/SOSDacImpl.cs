@@ -6390,15 +6390,12 @@ public sealed unsafe partial class SOSDacImpl
                 {
                     throw new ArgumentException($"The count parameter ({count}) is less than the number of loader heaps ({loaderHeapCount}).", nameof(count));
                 }
-                else
+                for (int i = 0; i < loaderHeapCount; i++)
                 {
-                    for (int i = 0; i < loaderHeapCount; i++)
-                    {
-                        pLoaderHeaps[i] = heaps.TryGetValue(filteredEntries[i].HeapType, out TargetPointer heapAddr)
-                            ? heapAddr.ToClrDataAddress(_target)
-                            : 0;
-                        pKinds[i] = 0; // LoaderHeapKindNormal
-                    }
+                    pLoaderHeaps[i] = heaps.TryGetValue(filteredEntries[i].HeapType, out TargetPointer heapAddr)
+                        ? heapAddr.ToClrDataAddress(_target)
+                        : 0;
+                    pKinds[i] = 0; // LoaderHeapKindNormal
                 }
             }
         }
