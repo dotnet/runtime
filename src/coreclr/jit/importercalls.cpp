@@ -7746,12 +7746,7 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
 
                 const bool needsInstParam = (dvInfo.instParamLookup.constLookup.accessType != IAT_VALUE) ||
                                             (dvInfo.instParamLookup.constLookup.handle != nullptr);
-                const CORINFO_LOOKUP* instParamLookup = nullptr;
-                if (needsInstParam)
-                {
-                    assert(((size_t)exactContext & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_METHOD);
-                    instParamLookup = &dvInfo.instParamLookup;
-                }
+                const CORINFO_LOOKUP* instParamLookup = needsInstParam ? &dvInfo.instParamLookup : nullptr;
 
                 // NOTE: This is currently used only with NativeAOT. In theory, we could also check if we
                 // have static PGO data to decide which class to guess first. Presumably, this is a rare case.
@@ -8014,15 +8009,9 @@ void Compiler::addGuardedDevirtualizationCandidate(GenTreeCall*           call,
 
     // We're all set, proceed with candidate creation.
     //
-    const bool needsMethodContext = ((size_t)contextHandle & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_METHOD;
-
-    CORINFO_METHOD_HANDLE instantiatingStub = NO_METHOD_HANDLE;
-    if (instParamLookup != nullptr)
-    {
-        assert(needsMethodContext);
-        instantiatingStub = (CORINFO_METHOD_HANDLE)((size_t)contextHandle & ~CORINFO_CONTEXTFLAGS_MASK);
-        assert(instantiatingStub != NO_METHOD_HANDLE);
-    }
+    CORINFO_METHOD_HANDLE instantiatingStub =
+        instParamLookup != nullptr ? (CORINFO_METHOD_HANDLE)((size_t)contextHandle & ~CORINFO_CONTEXTFLAGS_MASK)
+                                   : NO_METHOD_HANDLE;
 
     JITDUMP("Marking call [%06u] as guarded devirtualization candidate; will guess for %s %s\n", dspTreeID(call),
             classHandle != NO_CLASS_HANDLE ? "class" : "method",
@@ -8050,7 +8039,7 @@ void Compiler::addGuardedDevirtualizationCandidate(GenTreeCall*           call,
     pInfo->originalContextHandle                = originalContextHandle;
     pInfo->likelihood                           = likelihood;
     pInfo->exactContextHandle                   = contextHandle;
-    pInfo->needsMethodContext                   = needsMethodContext;
+    pInfo->needsMethodContext                   = instParamLookup != nullptr;
 
     // If the guarded method is an instantiating stub, find the instantiated method
     //
