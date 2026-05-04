@@ -259,7 +259,7 @@ void CodeGen::genCodeForBlock(BasicBlock* block)
     // and before first of the current block is emitted
     genUpdateLife(block->bbLiveIn);
 
-#if EMIT_GENERATE_GCINFO
+#if EMIT_GENERATE_GCINFO && HAS_FIXED_REGISTER_SET
     // Even if liveness didn't change, we need to update the registers containing GC references.
     // genUpdateLife will update the registers live due to liveness changes. But what about registers that didn't
     // change? We cleared them out above. Maybe we should just not clear them out, but update the ones that change
@@ -353,7 +353,7 @@ void CodeGen::genCodeForBlock(BasicBlock* block)
             }
         }
     }
-#endif // EMIT_GENERATE_GCINFO
+#endif // EMIT_GENERATE_GCINFO && HAS_FIXED_REGISTER_SET
 
     /* Start a new code output block */
 
@@ -569,7 +569,7 @@ void CodeGen::genCodeForBlock(BasicBlock* block)
 
     regSet.rsSpillChk();
 
-#if EMIT_GENERATE_GCINFO
+#if EMIT_GENERATE_GCINFO && HAS_FIXED_REGISTER_SET
     // Make sure we didn't bungle pointer register tracking
     regMaskTP ptrRegs       = gcInfo.gcRegGCrefSetCur | gcInfo.gcRegByrefSetCur;
     regMaskTP nonVarPtrRegs = ptrRegs & ~regSet.GetMaskVars();
@@ -618,7 +618,7 @@ void CodeGen::genCodeForBlock(BasicBlock* block)
     }
 
     noway_assert(nonVarPtrRegs == RBM_NONE);
-#endif // EMIT_GENERATE_GCINFO
+#endif // EMIT_GENERATE_GCINFO && HAS_FIXED_REGISTER_SET
 #endif // DEBUG
 
 #if defined(DEBUG)
@@ -1601,7 +1601,7 @@ regNumber CodeGen::genConsumeReg(GenTree* tree)
     // genUpdateLife() will also spill local var if marked as GTF_SPILL by calling CodeGen::genSpillVar
     genUpdateLife(tree);
 
-#if EMIT_GENERATE_GCINFO
+#if EMIT_GENERATE_GCINFO && HAS_FIXED_REGISTER_SET
     // there are three cases where consuming a reg means clearing the bit in the live mask
     // 1. it was not produced by a local
     // 2. it was produced by a local that is going dead
@@ -1659,7 +1659,7 @@ regNumber CodeGen::genConsumeReg(GenTree* tree)
     {
         gcInfo.gcMarkRegSetNpt(tree->gtGetRegMask());
     }
-#endif // EMIT_GENERATE_GCINFO
+#endif // EMIT_GENERATE_GCINFO && HAS_FIXED_REGISTER_SET
 
     genCheckConsumeNode(tree);
     return tree->GetRegNum();

@@ -9076,7 +9076,7 @@ void emitter::emitUpdateLiveGCregs(GCtype gcType, regMaskTP regs, BYTE* addr)
         return;
     }
 
-#if EMIT_GENERATE_GCINFO
+#if EMIT_GENERATE_GCINFO && HAS_FIXED_REGISTER_SET
     regMaskTP life;
     regMaskTP dead;
     regMaskTP chg;
@@ -9131,7 +9131,7 @@ void emitter::emitUpdateLiveGCregs(GCtype gcType, regMaskTP regs, BYTE* addr)
     // The 2 GC reg masks can't be overlapping
 
     assert((emitThisGCrefRegs & emitThisByrefRegs) == 0);
-#endif // EMIT_GENERATE_GCINFO
+#endif // EMIT_GENERATE_GCINFO && HAS_FIXED_REGISTER_SET
 }
 
 /*****************************************************************************
@@ -9434,7 +9434,7 @@ void emitter::emitGCregLiveUpd(GCtype gcType, regNumber reg, BYTE* addr)
 {
     assert(emitIssuing);
 
-#if EMIT_GENERATE_GCINFO
+#if EMIT_GENERATE_GCINFO && HAS_FIXED_REGISTER_SET
     // Don't track GC changes in epilogs
     if (emitIGisInEpilog(emitCurIG))
     {
@@ -9476,7 +9476,7 @@ void emitter::emitGCregLiveUpd(GCtype gcType, regNumber reg, BYTE* addr)
     // The 2 GC reg masks can't be overlapping
 
     assert((emitThisGCrefRegs & emitThisByrefRegs) == 0);
-#endif // EMIT_GENERATE_GCINFO
+#endif // EMIT_GENERATE_GCINFO && HAS_FIXED_REGISTER_SET
 }
 
 /*****************************************************************************
@@ -9494,7 +9494,7 @@ void emitter::emitGCregDeadUpdMask(regMaskTP regs, BYTE* addr)
         return;
     }
 
-#if EMIT_GENERATE_GCINFO
+#if EMIT_GENERATE_GCINFO && HAS_FIXED_REGISTER_SET
     // First, handle the gcref regs going dead
 
     regMaskTP gcrefRegs = emitThisGCrefRegs & regs;
@@ -9530,7 +9530,7 @@ void emitter::emitGCregDeadUpdMask(regMaskTP regs, BYTE* addr)
 
         emitThisByrefRegs &= ~byrefRegs;
     }
-#endif // EMIT_GENERATE_GCINFO
+#endif // EMIT_GENERATE_GCINFO && HAS_FIXED_REGISTER_SET
 }
 
 /*****************************************************************************
@@ -9542,7 +9542,7 @@ void emitter::emitGCregDeadUpd(regNumber reg, BYTE* addr)
 {
     assert(emitIssuing);
 
-#if EMIT_GENERATE_GCINFO
+#if EMIT_GENERATE_GCINFO && HAS_FIXED_REGISTER_SET
     // Don't track GC changes in epilogs
     if (emitIGisInEpilog(emitCurIG))
     {
@@ -9571,7 +9571,7 @@ void emitter::emitGCregDeadUpd(regNumber reg, BYTE* addr)
 
         emitThisByrefRegs &= ~regMask;
     }
-#endif // EMIT_GENERATE_GCINFO
+#endif // EMIT_GENERATE_GCINFO && HAS_FIXED_REGISTER_SET
 }
 
 /*****************************************************************************

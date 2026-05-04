@@ -854,7 +854,9 @@ bool CodeGen::genIsSameLocalVar(GenTree* op1, GenTree* op2)
 // inline
 void CodeGenInterface::genUpdateRegLife(const LclVarDsc* varDsc, bool isBorn, bool isDying DEBUGARG(GenTree* tree))
 {
-#if EMIT_GENERATE_GCINFO // The regset being updated here is only needed for codegen-level GCness tracking
+    // Targets like Wasm do not have a fixed set of registers so the regset logic in this method is unnecessary.
+#if EMIT_GENERATE_GCINFO && HAS_FIXED_REGISTER_SET
+    // The regset being updated here is only needed for codegen-level GCness tracking.
     regMaskTP regMask = genGetRegMask(varDsc);
 
 #ifdef DEBUG
@@ -884,7 +886,7 @@ void CodeGenInterface::genUpdateRegLife(const LclVarDsc* varDsc, bool isBorn, bo
         assert(varDsc->IsAlwaysAliveInMemory() || ((regSet.GetMaskVars() & regMask) == 0));
         regSet.AddMaskVars(regMask);
     }
-#endif // EMIT_GENERATE_GCINFO
+#endif // EMIT_GENERATE_GCINFO && HAS_FIXED_REGISTER_SET
 }
 
 #ifndef TARGET_WASM
@@ -1032,6 +1034,7 @@ void Compiler::compChangeLife(VARSET_VALARG_TP newLife)
         bool isByRef    = varDsc->TypeIs(TYP_BYREF);
         bool isInReg    = varDsc->lvIsInReg();
         bool isInMemory = !isInReg || varDsc->IsAlwaysAliveInMemory();
+#ifndef TARGET_WASM
         if (isInReg)
         {
             // TODO-Cleanup: Move the code from compUpdateLifeVar to genUpdateRegLife that updates the
@@ -1047,7 +1050,8 @@ void Compiler::compChangeLife(VARSET_VALARG_TP newLife)
             }
             codeGen->genUpdateRegLife(varDsc, false /*isBorn*/, true /*isDying*/ DEBUGARG(nullptr));
         }
-        // Update the gcVarPtrSetCur if it is in memory.
+#endif // !TARGET_WASM
+       // Update the gcVarPtrSetCur if it is in memory.
         if (isInMemory && (isGCRef || isByRef))
         {
             VarSetOps::RemoveElemD(this, codeGen->gcInfo.gcVarPtrSetCur, deadVarIndex);
@@ -1070,6 +1074,7 @@ void Compiler::compChangeLife(VARSET_VALARG_TP newLife)
         bool isByRef = varDsc->TypeIs(TYP_BYREF);
         if (varDsc->lvIsInReg())
         {
+#ifndef TARGET_WASM
             // If this variable is going live in a register, it is no longer live on the stack,
             // unless it is an EH/"spill at single-def" var, which always remains live on the stack.
             if (!varDsc->IsAlwaysAliveInMemory())
@@ -1092,6 +1097,7 @@ void Compiler::compChangeLife(VARSET_VALARG_TP newLife)
             {
                 codeGen->gcInfo.gcRegByrefSetCur |= regMask;
             }
+#endif // !TARGET_WASM
         }
         else if (lvaIsGCTracked(varDsc))
         {
@@ -1769,7 +1775,7 @@ void CodeGen::genExitCode(BasicBlock* block)
 
     genIPmappingAdd(IPmappingDscKind::Epilog, DebugInfo(), true);
 
-#if EMIT_GENERATE_GCINFO && defined(DEBUG)
+#if EMIT_GENERATE_GCINFO && defined(DEBUG) && !defined(TARGET_WASM)
     // For returnining epilogs do some validation that the GC info looks right.
     if (!block->HasFlag(BBF_HAS_JMP))
     {
@@ -1791,7 +1797,7 @@ void CodeGen::genExitCode(BasicBlock* block)
             }
         }
     }
-#endif // EMIT_GENERATE_GCINFO && defined(DEBUG)
+#endif // EMIT_GENERATE_GCINFO && defined(DEBUG) && !defined(TARGET_WASM)
 
     if (m_compiler->getNeedsGSSecurityCookie())
     {
@@ -7202,12 +7208,12 @@ void CodeGen::genReturn(GenTree* treeNode)
         }
     }
 
-#if EMIT_GENERATE_GCINFO
+#if EMIT_GENERATE_GCINFO && HAS_FIXED_REGISTER_SET
     if (treeNode->OperIs(GT_RETURN, GT_SWIFT_ERROR_RET))
     {
         genMarkReturnGCInfo();
     }
-#endif // EMIT_GENERATE_GCINFO
+#endif // EMIT_GENERATE_GCINFO && HAS_FIXED_REGISTER_SET
 
 #ifdef PROFILING_SUPPORTED
 
