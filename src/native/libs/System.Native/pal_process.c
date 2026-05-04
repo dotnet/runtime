@@ -377,7 +377,7 @@ static pthread_mutex_t s_pdeathsig_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t s_pdeathsig_request_cond = PTHREAD_COND_INITIALIZER;
 static pthread_cond_t s_pdeathsig_done_cond = PTHREAD_COND_INITIALIZER;
 static PDeathSigForkRequest* s_pdeathsig_request = NULL;
-static int s_pdeathsig_thread_started = 0;
+static bool s_pdeathsig_thread_started = false;
 
 static void* PDeathSigThreadFunc(void* arg)
 {
@@ -450,7 +450,7 @@ static int EnsurePDeathSigThread(void)
         return -1;
     }
 
-    s_pdeathsig_thread_started = 1;
+    s_pdeathsig_thread_started = true;
     return 0;
 }
 
