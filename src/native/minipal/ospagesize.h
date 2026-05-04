@@ -21,9 +21,9 @@ extern "C" {
 #if defined(HOST_WASM)
 static inline size_t minipal_getpagesize(void)
 {
-    // The OS page size used by CoreCLR on WASM (16KB).
     // WASM has no hardware pages; getpagesize() returns the 64KB memory.grow granularity,
-    // which is too coarse for GC alignment and thresholds.
+    // which is too coarse for GC alignment and thresholds. Reduce the OS page size used
+    // by the runtime on WASM to 16KB.
     return 16 * 1024;
 }
 #elif defined(HOST_WINDOWS)
