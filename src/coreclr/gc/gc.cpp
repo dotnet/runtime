@@ -13528,7 +13528,7 @@ void gc_heap::distribute_free_regions()
 
     size_t total_basic_free_regions = total_num_free_regions[basic_free_region] + surplus_regions[basic_free_region].get_num_free_regions();
     total_budget_in_region_units[basic_free_region] = compute_basic_region_budgets(heap_budget_in_region_units[basic_free_region], min_heap_budget_in_region_units[basic_free_region], total_basic_free_regions);
-    
+
     bool aggressive_decommit_large_p = joined_last_gc_before_oom || dt_high_memory_load_p() || near_heap_hard_limit_p();
 
     int region_factor[count_distributed_free_region_kinds] = { 1, LARGE_REGION_FACTOR };
@@ -14530,7 +14530,7 @@ HRESULT gc_heap::initialize_gc (size_t soh_segment_size,
     GCConfig::SetUOHWaitBGCSizeIncPercent (bgc_uoh_inc_percent_alloc_wait);
     dprintf (1, ("UOH allocs during BGC are allowed normally when inc ratio is  < %.3f, will wait when > %.3f",
         bgc_uoh_inc_ratio_alloc_normal, bgc_uoh_inc_ratio_alloc_wait));
-#endif 
+#endif
 
     // leave the first page to contain only segment info
     // because otherwise we could need to revisit the first page frequently in
@@ -32335,7 +32335,7 @@ void gc_heap::decide_on_demotion_pin_surv (heap_segment* region, int* no_pinned_
     int gen_num = heap_segment_gen_num (region);
     int new_gen_num = 0;
     int pinned_surv = heap_segment_pinned_survived (region);
-    int promote_pins_p = large_pins_p;
+    bool promote_pins_p = large_pins_p;
 
     if (pinned_surv == 0)
     {
@@ -32609,7 +32609,7 @@ void gc_heap::process_remaining_regions (int current_plan_gen_num, generation* c
         }
 
 #ifdef SIMPLE_DPRINTF
-        dprintf (REGIONS_LOG, ("h%d ad_p_d: PL: %zd, SL: %zd, pfr: %.3f, psr: %.3f, prmoote gen1 %d. gen1_pins_left %Id, total surv %Id (p:%Id), total_space %Id",
+        dprintf (REGIONS_LOG, ("h%d ad_p_d: PL: %zd, SL: %zd, pfr: %.3f, psr: %.3f, promote gen1 %d. gen1_pins_left %Id, total surv %Id (p:%Id), total_space %Id",
             heap_number, gen1_pins_left, total_space_to_skip, pin_frag_ratio, pin_surv_ratio, actual_promote_gen1_pins_p, gen1_pins_left,
             dd_survived_size (dynamic_data_of (max_generation - 1)), dd_pinned_survived_size (dynamic_data_of (max_generation - 1)), total_space_to_skip));
 #endif
@@ -49427,7 +49427,7 @@ HRESULT GCHeap::Initialize()
         }
         else
         {
-            gc_heap::regions_range = 
+            gc_heap::regions_range =
 #ifdef MULTIPLE_HEAPS
             // For SVR use max of 2x total_physical_memory or 256gb
             max(
