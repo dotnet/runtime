@@ -80,7 +80,7 @@ extends:
 
       # Used to test RHEL compatibility: Alma Linux is downstream of RHEL
       SourceBuild_linux_x64:
-        image: mcr.microsoft.com/dotnet-buildtools/prereqs:almalinux-9-source-build-amd64@sha256:327874499a3e62bc8548bd82dda2420338b9c5b322bf3e3a343236d262ddd327
+        image: mcr.microsoft.com/dotnet-buildtools/prereqs:almalinux-9-source-build-amd64@sha256:b39e2e5e210d320594f0fc05821f840a1d0c1f4f999cea6228a5f5f9fa8a060b
 
       linux_s390x:
         image: mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-net11.0-cross-s390x@sha256:846c828ce879b3fd8ff538f7f1b26f5e74385bdf5ad3397c589c9fcb6f2eb6aa
