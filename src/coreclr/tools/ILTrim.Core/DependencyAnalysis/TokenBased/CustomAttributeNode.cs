@@ -61,12 +61,13 @@ namespace ILCompiler.DependencyAnalysis
 
         public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
         {
+            DependencyList dependencies = new DependencyList();
+
             CustomAttribute customAttribute = _module.MetadataReader.GetCustomAttribute(Handle);
 
             // We decided not to report parent as a dependency because we don't expect custom attributes to be needed outside of their parent references
 
-            if (!customAttribute.Constructor.IsNil)
-                yield return new DependencyListEntry(factory.GetNodeForMethodToken(_module, customAttribute.Constructor), "Custom attribute constructor");
+            dependencies.Add(factory.GetNodeForMethodToken(_module, customAttribute.Constructor), "Custom attribute constructor");
 
             // Parse the custom attribute value blob and add dependencies from it
             CustomAttributeValue<TypeDesc> decodedValue;
@@ -78,24 +79,24 @@ namespace ILCompiler.DependencyAnalysis
             {
                 // Attribute ctor doesn't resolve, typeof() refers to something that can't be loaded,
                 // attribute refers to a non-existing field, etc.
-                yield break;
+                return dependencies;
             }
             catch (BadImageFormatException)
             {
                 // System.Reflection.Metadata throws BadImageFormatException if the blob is malformed.
-                yield break;
+                return dependencies;
             }
 
-            foreach (var entry in GetDependenciesFromCustomAttributeBlob(factory, decodedValue))
-                yield return entry;
+            GetDependenciesFromCustomAttributeBlob(dependencies, factory, decodedValue);
+
+            return dependencies;
         }
 
-        private IEnumerable<DependencyListEntry> GetDependenciesFromCustomAttributeBlob(NodeFactory factory, CustomAttributeValue<TypeDesc> value)
+        private void GetDependenciesFromCustomAttributeBlob(DependencyList dependencies, NodeFactory factory, CustomAttributeValue<TypeDesc> value)
         {
             foreach (CustomAttributeTypedArgument<TypeDesc> fixedArg in value.FixedArguments)
             {
-                foreach (var entry in GetDependenciesFromCustomAttributeArgument(factory, fixedArg.Type, fixedArg.Value))
-                    yield return entry;
+                GetDependenciesFromCustomAttributeArgument(dependencies, factory, fixedArg.Type, fixedArg.Value);
             }
 
             // Resolve the constructor once for all named arguments
@@ -107,66 +108,51 @@ namespace ILCompiler.DependencyAnalysis
                 if (constructor is not null)
                 {
                     if (namedArg.Kind == CustomAttributeNamedArgumentKind.Property)
-                    {
-                        foreach (var entry in GetDependenciesFromPropertySetter(factory, constructor.OwningType, namedArg.Name))
-                            yield return entry;
-                    }
+                        GetDependenciesFromPropertySetter(dependencies, factory, constructor.OwningType, namedArg.Name);
                     else if (namedArg.Kind == CustomAttributeNamedArgumentKind.Field)
-                    {
-                        foreach (var entry in GetDependenciesFromField(factory, constructor.OwningType, namedArg.Name))
-                            yield return entry;
-                    }
+                        GetDependenciesFromField(dependencies, factory, constructor.OwningType, namedArg.Name);
                 }
 
-                foreach (var entry in GetDependenciesFromCustomAttributeArgument(factory, namedArg.Type, namedArg.Value))
-                    yield return entry;
+                GetDependenciesFromCustomAttributeArgument(dependencies, factory, namedArg.Type, namedArg.Value);
             }
         }
 
-        private IEnumerable<DependencyListEntry> GetDependenciesFromCustomAttributeArgument(NodeFactory factory, TypeDesc type, object value)
+        private static void GetDependenciesFromCustomAttributeArgument(DependencyList dependencies, NodeFactory factory, TypeDesc type, object value)
         {
             if (type is null)
-                yield break;
+                return;
 
             // Report the type itself (e.g. enum types that need to be kept for boxing)
-            object reflectedType = factory.ReflectedType(type);
-            if (reflectedType is DependencyNode typeNode)
-                yield return new DependencyListEntry(typeNode, "Custom attribute blob");
+            if (factory.ReflectedType(type) is DependencyNode typeNode)
+                dependencies.Add(typeNode, "Custom attribute blob");
 
             if (type.UnderlyingType.IsPrimitive || type.IsString || value is null)
-                yield break;
+                return;
 
             if (type.IsSzArray)
             {
                 TypeDesc elementType = ((ArrayType)type).ElementType;
-                if (elementType.UnderlyingType.IsPrimitive || elementType.IsString)
-                    yield break;
-
-                if (value is ImmutableArray<CustomAttributeTypedArgument<TypeDesc>> arrayElements)
+                if (!elementType.UnderlyingType.IsPrimitive && !elementType.IsString
+                    && value is ImmutableArray<CustomAttributeTypedArgument<TypeDesc>> arrayElements)
                 {
                     foreach (CustomAttributeTypedArgument<TypeDesc> element in arrayElements)
                     {
-                        foreach (var entry in GetDependenciesFromCustomAttributeArgument(factory, element.Type, element.Value))
-                            yield return entry;
+                        GetDependenciesFromCustomAttributeArgument(dependencies, factory, element.Type, element.Value);
                     }
                 }
-
-                yield break;
             }
-
-            // typeof() - the value is a TypeDesc
-            if (value is TypeDesc typeofType)
+            else if (value is TypeDesc typeofType)
             {
-                object reflectedTypeofType = factory.ReflectedType(typeofType);
-                if (reflectedTypeofType is DependencyNode typeofNode)
-                    yield return new DependencyListEntry(typeofNode, "Custom attribute blob");
+                // typeof() - the value is a TypeDesc
+                if (factory.ReflectedType(typeofType) is DependencyNode typeofNode)
+                    dependencies.Add(typeofNode, "Custom attribute blob");
             }
         }
 
-        private static IEnumerable<DependencyListEntry> GetDependenciesFromPropertySetter(NodeFactory factory, TypeDesc attributeType, string propertyName)
+        private static void GetDependenciesFromPropertySetter(DependencyList dependencies, NodeFactory factory, TypeDesc attributeType, string propertyName)
         {
             if (attributeType is not EcmaType ecmaType)
-                yield break;
+                return;
 
             MetadataReader reader = ecmaType.MetadataReader;
             TypeDefinition typeDef = reader.GetTypeDefinition(ecmaType.Handle);
@@ -177,44 +163,36 @@ namespace ILCompiler.DependencyAnalysis
                 if (reader.StringComparer.Equals(propDef.Name, propertyName))
                 {
                     PropertyAccessors accessors = propDef.GetAccessors();
-                    if (!accessors.Setter.IsNil)
+                    if (!accessors.Setter.IsNil
+                        && factory.ReflectedMethod(ecmaType.Module.GetMethod(accessors.Setter)) is DependencyNode methodNode)
                     {
-                        object reflectedMethod = factory.ReflectedMethod(ecmaType.Module.GetMethod(accessors.Setter));
-                        if (reflectedMethod is DependencyNode methodNode)
-                            yield return new DependencyListEntry(methodNode, "Custom attribute blob");
+                        dependencies.Add(methodNode, "Custom attribute blob");
                     }
 
-                    yield break;
+                    return;
                 }
             }
 
             // Check base type
             TypeDesc baseType = attributeType.BaseType;
             if (baseType is not null)
-            {
-                foreach (var entry in GetDependenciesFromPropertySetter(factory, baseType, propertyName))
-                    yield return entry;
-            }
+                GetDependenciesFromPropertySetter(dependencies, factory, baseType, propertyName);
         }
 
-        private static IEnumerable<DependencyListEntry> GetDependenciesFromField(NodeFactory factory, TypeDesc attributeType, string fieldName)
+        private static void GetDependenciesFromField(DependencyList dependencies, NodeFactory factory, TypeDesc attributeType, string fieldName)
         {
             FieldDesc field = attributeType.GetField(Encoding.UTF8.GetBytes(fieldName));
             if (field is not null)
             {
-                object reflectedField = factory.ReflectedField(field);
-                if (reflectedField is DependencyNode fieldNode)
-                    yield return new DependencyListEntry(fieldNode, "Custom attribute blob");
-
-                yield break;
+                if (factory.ReflectedField(field) is DependencyNode fieldNode)
+                    dependencies.Add(fieldNode, "Custom attribute blob");
             }
-
-            // Check base type
-            TypeDesc baseType = attributeType.BaseType;
-            if (baseType is not null)
+            else
             {
-                foreach (var entry in GetDependenciesFromField(factory, baseType, fieldName))
-                    yield return entry;
+                // Check base type
+                TypeDesc baseType = attributeType.BaseType;
+                if (baseType is not null)
+                    GetDependenciesFromField(dependencies, factory, baseType, fieldName);
             }
         }
 
