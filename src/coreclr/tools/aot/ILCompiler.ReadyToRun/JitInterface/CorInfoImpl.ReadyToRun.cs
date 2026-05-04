@@ -2052,7 +2052,9 @@ namespace Internal.JitInterface
                     resolvedConstraint = true;
                     pResult->thisTransform = CORINFO_THIS_TRANSFORM.CORINFO_NO_THIS_TRANSFORM;
 
-                    exactType = constrainedType;
+                    exactType = (isStaticVirtual && dimResolution == DefaultInterfaceMethodResolution.DefaultImplementation)
+                        ? directMethod.OwningType
+                        : constrainedType;
                     if (isStaticVirtual)
                     {
                         pResolvedToken.tokenType = CorInfoTokenKind.CORINFO_TOKENKIND_ResolvedStaticVirtualMethod;
