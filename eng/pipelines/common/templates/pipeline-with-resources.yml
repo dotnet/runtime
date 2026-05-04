@@ -83,7 +83,7 @@ extends:
         image: mcr.microsoft.com/dotnet-buildtools/prereqs:almalinux-9-source-build-amd64@sha256:327874499a3e62bc8548bd82dda2420338b9c5b322bf3e3a343236d262ddd327
 
       linux_s390x:
-        image: mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-net11.0-cross-s390x@sha256:846c828ce879b3fd8ff538f7f1b26f5e74385bdf5ad3397c589c9fcb6f2eb6aa
+        image: mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-net11.0-cross-s390x@sha256:a4b90354ee8b21a90a7fbb986e35f5fba5cc26a2f5c1e38736744413729d2ded
         env:
           ROOTFS_DIR: /crossrootfs/s390x
 
