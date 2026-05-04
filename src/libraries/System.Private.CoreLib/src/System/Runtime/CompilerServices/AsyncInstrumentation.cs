@@ -10,7 +10,7 @@ namespace System.Runtime.CompilerServices
 {
     internal static class AsyncInstrumentation
     {
-        public static bool IsSupported => Debugger.IsSupported && EventSource.IsSupported;
+        public static bool IsSupported => Debugger.IsSupported || EventSource.IsSupported;
 
         [Flags]
         public enum Flags : uint
@@ -30,8 +30,8 @@ namespace System.Runtime.CompilerServices
             AsyncProfiler = 0x1000000,
             AsyncDebugger = 0x2000000,
 
-            // Bit 32 reserved for initialization state.
-            Uninitialized = 0x80000000
+            // Bit 32 reserved for synchronization flag.
+            Synchronize = 0x80000000
         }
 
         public const Flags DefaultFlags =
@@ -49,7 +49,7 @@ namespace System.Runtime.CompilerServices
             public static bool ResumeAsyncMethod(Flags flags) => (Flags.ResumeAsyncMethod & flags) != 0;
             public static bool CompleteAsyncMethod(Flags flags) => (Flags.CompleteAsyncMethod & flags) != 0;
             public static bool AsyncProfiler(Flags flags) => (Flags.AsyncProfiler & flags) != 0;
-            public static bool AsyncDebugger(Flags flags) => (Flags.AsyncDebugger & flags) != 0 && Task.s_asyncDebuggingEnabled;
+            public static bool AsyncDebugger(Flags flags) => (Flags.AsyncDebugger & flags) != 0;
         }
 
         public static Flags ActiveFlags => s_activeFlags;
@@ -58,9 +58,9 @@ namespace System.Runtime.CompilerServices
         public static Flags SyncActiveFlags()
         {
             Flags flags = s_activeFlags;
-            if (IsUninitialized(flags))
+            if ((flags & Flags.Synchronize) != 0)
             {
-                return InitializeFlags();
+                return SynchronizeFlags();
             }
             return flags;
         }
@@ -75,54 +75,31 @@ namespace System.Runtime.CompilerServices
             lock (s_lock)
             {
                 s_asyncProfilerActiveFlags = asyncProfilerFlags;
-                if (IsInitialized(s_activeFlags))
-                {
-                    s_activeFlags = s_asyncProfilerActiveFlags | s_asyncDebuggerActiveFlags;
-                }
+                s_activeFlags |= Flags.Synchronize;
             }
         }
 
-        public static void UpdateAsyncDebuggerFlags(Flags asyncDebuggerFlags)
-        {
-            if (asyncDebuggerFlags != Flags.Disabled)
-            {
-                asyncDebuggerFlags |= Flags.AsyncDebugger;
-            }
-
-            lock (s_lock)
-            {
-                s_asyncDebuggerActiveFlags = asyncDebuggerFlags;
-                if (IsInitialized(s_activeFlags))
-                {
-                    s_activeFlags = s_asyncProfilerActiveFlags | s_asyncDebuggerActiveFlags;
-                }
-            }
-        }
-
-        private static Flags InitializeFlags()
+        private static Flags SynchronizeFlags()
         {
             _ = TplEventSource.Log; // Touch TplEventSource to trigger static constructor which will initialize TPL flags if EventSource is supported.
+            _ = AsyncProfilerEventSource.Log; // Touch AsyncProfilerEventSource to trigger static constructor which will initialize async profiler flags if EventSource is supported.
 
             lock (s_lock)
             {
-                if (IsUninitialized(s_activeFlags))
+                Flags asyncDebuggerActiveFlags = Flags.Disabled;
+                if (Task.s_asyncDebuggingEnabled)
                 {
-                    s_activeFlags = s_asyncProfilerActiveFlags | s_asyncDebuggerActiveFlags;
+                    asyncDebuggerActiveFlags = DefaultFlags | Flags.AsyncDebugger;
                 }
 
+                s_activeFlags = (s_asyncProfilerActiveFlags | asyncDebuggerActiveFlags) & ~Flags.Synchronize;
                 return s_activeFlags;
             }
         }
 
-        private static bool IsInitialized(Flags flags) => !IsUninitialized(flags);
-
-        private static bool IsUninitialized(Flags flags) => (flags & Flags.Uninitialized) != 0;
-
-        private static Flags s_activeFlags = Flags.Uninitialized;
+        private static Flags s_activeFlags = Flags.Synchronize;
 
         private static Flags s_asyncProfilerActiveFlags;
-
-        private static Flags s_asyncDebuggerActiveFlags;
 
         private static readonly Lock s_lock = new();
     }

@@ -18,10 +18,6 @@ if(CLR_CMAKE_TARGET_ANDROID)
     add_definitions(-DFEATURE_EMULATED_TLS)
 endif(CLR_CMAKE_TARGET_ANDROID)
 
-if(FEATURE_AUTO_TRACE)
-    add_definitions(-DFEATURE_AUTO_TRACE)
-endif(FEATURE_AUTO_TRACE)
-
 foreach (Config DEBUG CHECKED)
     add_compile_definitions($<$<CONFIG:${Config}>:WRITE_BARRIER_CHECK>)
 endforeach (Config)
@@ -313,7 +309,6 @@ set(VM_SOURCES_WKS
     corelib.cpp # <DisablePrecompiledHeaders>true</DisablePrecompiledHeaders>
     customattribute.cpp
     custommarshalerinfo.cpp
-    autotrace.cpp
     divmodint.cpp
     dllimport.cpp
     dllimportcallback.cpp
@@ -355,7 +350,6 @@ set(VM_SOURCES_WKS
     nativeeventsource.cpp
     nativelibrary.cpp
     nativelibrarynative.cpp
-    olevariant.cpp
     pendingload.cpp
     pinvokeoverride.cpp
     profdetach.cpp
@@ -423,7 +417,6 @@ set(VM_HEADERS_WKS
     comutilnative.h
     customattribute.h
     custommarshalerinfo.h
-    autotrace.h
     diagnosticserveradapter.h
     divmodint.h
     dllimport.h
@@ -463,7 +456,6 @@ set(VM_HEADERS_WKS
     multicorejit.h
     multicorejitimpl.h
     nativeeventsource.h
-    olevariant.h
     pendingload.h
     profdetach.h
     profilingenumerators.h
@@ -603,6 +595,7 @@ if(CLR_CMAKE_TARGET_WIN32)
         dispatchinfo.cpp
         dispparammarshaler.cpp
         olecontexthelpers.cpp
+        olevariant.cpp
         runtimecallablewrapper.cpp
         stdinterfaces.cpp
         stdinterfaces_wrapper.cpp
@@ -619,6 +612,7 @@ if(CLR_CMAKE_TARGET_WIN32)
         dispatchinfo.h
         dispparammarshaler.h
         olecontexthelpers.h
+        olevariant.h
         runtimecallablewrapper.h
         stdinterfaces.h
         stdinterfaces_internal.h
