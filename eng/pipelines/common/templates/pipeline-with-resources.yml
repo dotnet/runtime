@@ -70,7 +70,7 @@ extends:
         image: mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.23-amd64@sha256:f38b4dbbb9a441d842d80bc9fbeabbda94cf92f9197f295bfbef810cbf026170
 
       linux_x64_sanitizer:
-        image: mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-net11.0-cross-amd64-sanitizer@sha256:567cec8ee739e1ba663d588e8ff5cfa10a9f2db8d71cbc8e5b48cff286a4a584
+        image: mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-net11.0-cross-amd64-sanitizer@sha256:d6ae4c886d5b9859b99fdad6e9de067f8728fe2c3beb68e9578715f798f4f5cd
         env:
           ROOTFS_DIR: /crossrootfs/x64
 
