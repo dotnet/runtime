@@ -51,7 +51,7 @@ extends:
 
       # This container contains all required toolsets to build for Android as well as tooling to build docker images.
       android_docker:
-        image: mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-net11.0-android-docker-amd64@sha256:46268aa47fab84c655114e37aa8cb81acffb27a0358ee2cffa133af7de47fe6a
+        image: mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-net11.0-android-docker-amd64@sha256:943d8e88803a4e902b6578689781002ad9dca5fe5d2fd1d7506c12cfd83df43f
 
       linux_x64:
         image: mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-net11.0-cross-amd64@sha256:a31af6e52ced742683bcd0775cb27878905573c80e275016d1da765c3537d160
