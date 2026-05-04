@@ -361,8 +361,8 @@ echo.
 echo Build target OS options:
 echo     os ^<value^>: Set the target OS. Common values: windows ^(default^), linux, osx, android,
 echo         ios, iossimulator, tvos, tvossimulator, maccatalyst, browser, wasi.
-echo     browser: Shorthand for "os browser" ^(targets WebAssembly in the browser^).
-echo     wasi: Shorthand for "os wasi" ^(targets WebAssembly System Interface^).
+echo     browser: Shorthand for "os browser" ^(typically combine with "wasm", for example "wasm browser"^).
+echo     wasi: Shorthand for "os wasi" ^(typically combine with "wasm", for example "wasm wasi"^).
 echo.
 echo -Rebuild: Clean up all test artifacts prior to building tests.
 echo -SkipRestorePackages: Skip package restore.
