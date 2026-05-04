@@ -43,7 +43,7 @@ extends:
 
       # This container contains all required toolsets to build for Android and for Linux with bionic libc.
       android:
-        image: mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-net11.0-cross-android-amd64@sha256:bbc4191c9bc75791faf3fb06d3f7a69822e6710d8b4c651fdf94314116f1d4b3
+        image: mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-net11.0-cross-android-amd64@sha256:d8cdb6c6b1c631e6f9fac2e4e0814037193c364c002843b0a78dadfb070efab7
 
       # This container contains all required toolsets to build for Android and for Linux with bionic libc and a special layout of OpenSSL.
       linux_bionic:
