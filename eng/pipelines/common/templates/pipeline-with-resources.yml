@@ -88,7 +88,7 @@ extends:
           ROOTFS_DIR: /crossrootfs/s390x
 
       linux_ppc64le:
-        image: mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-net11.0-cross-ppc64le@sha256:cd8001a24f2465383ccdb80fbf413db4976b0490aa5ea6079f4bd51095ea6cbe
+        image: mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-net11.0-cross-ppc64le@sha256:3849fefaf3d6529468e3996d951f1d5018f0baac04081c7a5b44a5c43bd6add9
         env:
           ROOTFS_DIR: /crossrootfs/ppc64le
 
