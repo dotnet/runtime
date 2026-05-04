@@ -15,6 +15,11 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #pragma hdrstop
 #endif
 
+#ifndef __STDC_FORMAT_MACROS
+#define __STDC_FORMAT_MACROS
+#endif
+#include <inttypes.h>
+
 #if defined(TARGET_LOONGARCH64)
 
 /*****************************************************************************/
@@ -3037,7 +3042,7 @@ AGAIN:
             }
             if (EMITVERBOSE)
             {
-                printf("Estimate of fwd jump [%08X/%03u]: %04X -> %04X = %04X\n", dspPtr(jmp),
+                printf("Estimate of fwd jump [%p/%03u]: %04X -> %04X = %04X\n", (void*)dspPtr(jmp),
                        jmp->idDebugOnlyInfo()->idNum, srcInstrOffs, dstOffs, jmpDist);
             }
 #endif // DEBUG_EMIT
@@ -3125,7 +3130,7 @@ AGAIN:
             }
             if (EMITVERBOSE)
             {
-                printf("Estimate of bwd jump [%08X/%03u]: %04X -> %04X = %04X\n", dspPtr(jmp),
+                printf("Estimate of bwd jump [%p/%03u]: %04X -> %04X = %04X\n", (void*)dspPtr(jmp),
                        jmp->idDebugOnlyInfo()->idNum, srcInstrOffs, dstOffs, jmpDist);
             }
 #endif // DEBUG_EMIT
@@ -4044,7 +4049,7 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
 #ifdef DEBUG
     if (m_compiler->opts.disAddr)
     {
-        printf("  0x%llx", insAdr);
+        printf("  %p", (void*)insAdr);
     }
 
     printf("  ");
@@ -4118,7 +4123,7 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
             }
             else if (ins == INS_jirl)
             {
-                printf("%s, %s, 0x%lx\n", RegNames[regd], RegNames[regj], offs16);
+                printf("%s, %s, 0x%x\n", RegNames[regd], RegNames[regj], offs16);
             }
             else if ((unsigned)(addr - emitCodeBlock) < emitPrologIG->igSize) // only for prolog
             {
@@ -4133,7 +4138,7 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
             }
             else
             {
-                printf("%s, %s, 0x%llx\n", RegNames[regj], RegNames[regd], (int64_t)insAdr + offs16);
+                printf("%s, %s, 0x%" PRIx64 "\n", RegNames[regj], RegNames[regd], (int64_t)insAdr + offs16);
             }
             return;
         }
@@ -4155,7 +4160,7 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
             }
             else
             {
-                printf("%s, 0x%llx\n", RegNames[regj], (int64_t)insAdr + tmp);
+                printf("%s, 0x%" PRIx64 "\n", RegNames[regj], (int64_t)insAdr + tmp);
             }
             return;
         }
@@ -4184,7 +4189,7 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
             }
             else
             {
-                printf("0x%llx\n", (int64_t)insAdr + tmp);
+                printf("0x%" PRIx64 "\n", (int64_t)insAdr + tmp);
             }
             return;
         }
@@ -4262,7 +4267,7 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
         {
             int offs21 = (((code >> 10) & 0xffff) | ((code & 0x1f) << 16)) << 11;
             offs21 >>= 9;
-            printf("fcc%d, 0x%llx\n", (code >> 5) & 0x7, (int64_t)insAdr + offs21);
+            printf("fcc%d, 0x%" PRIx64 "\n", (code >> 5) & 0x7, (int64_t)insAdr + offs21);
             return;
         }
         case DF_F_GR:

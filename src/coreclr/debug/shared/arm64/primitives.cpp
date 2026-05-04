@@ -21,8 +21,8 @@ void CORDbgCopyThreadContext(DT_CONTEXT* pDst, const DT_CONTEXT* pSrc)
     DWORD dstFlags = pDst->ContextFlags;
     DWORD srcFlags = pSrc->ContextFlags;
     LOG((LF_CORDB, LL_INFO1000000,
-         "CP::CTC: pDst=0x%08x dstFlags=0x%x, pSrc=0x%08x srcFlags=0x%x\n",
-         pDst, dstFlags, pSrc, srcFlags));
+         "CP::CTC: pDst=%p dstFlags=0x%x, pSrc=%p srcFlags=0x%x\n",
+         (void*)pDst, dstFlags, (void*)pSrc, srcFlags));
 
     if ((dstFlags & srcFlags & DT_CONTEXT_CONTROL) == DT_CONTEXT_CONTROL)
     {
@@ -74,7 +74,7 @@ void SetDebuggerREGDISPLAYFromREGDISPLAY(DebuggerREGDISPLAY* pDRD, REGDISPLAY* p
     pDRD->SP   = pRD->SP;
 
     LOG( (LF_CORDB, LL_INFO1000, "DT::TASSC:Registers:"
-          "SP = %x",
+          "SP = %zx",
           pDRD->SP) );
 }
 #endif // ALLOW_VMPTR_ACCESS || !RIGHT_SIDE_COMPILE

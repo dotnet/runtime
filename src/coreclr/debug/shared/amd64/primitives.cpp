@@ -168,10 +168,10 @@ void SetDebuggerREGDISPLAYFromREGDISPLAY(DebuggerREGDISPLAY* pDRD, REGDISPLAY* p
           "Rsi = %p   Rbx = %p   Rdx = %p   Rcx = %p   Rax = %p"
           "R8  = %p   R9  = %p   R10 = %p   R11 = %p"
           "R12 = %p   R13 = %p   R14 = %p   R15 = %p\n",
-          pDRD->SP, pDRD->PC,  pDRD->Rbp,  pDRD->Rdi,
-          pDRD->Rsi, pDRD->Rbx, pDRD->Rdx, pDRD->Rcx, pDRD->Rax,
-          pDRD->R8,  pDRD->R9,  pDRD->R10, pDRD->R11, pDRD->R12,
-          pDRD->R13, pDRD->R14, pDRD->R15) );
+          (void*)pDRD->SP, (void*)pDRD->PC,  (void*)pDRD->Rbp,  (void*)pDRD->Rdi,
+          (void*)pDRD->Rsi, (void*)pDRD->Rbx, (void*)pDRD->Rdx, (void*)pDRD->Rcx, (void*)pDRD->Rax,
+          (void*)pDRD->R8,  (void*)pDRD->R9,  (void*)pDRD->R10, (void*)pDRD->R11, (void*)pDRD->R12,
+          (void*)pDRD->R13, (void*)pDRD->R14, (void*)pDRD->R15) );
 
 }
 #endif // ALLOW_VMPTR_ACCESS || !RIGHT_SIDE_COMPILE

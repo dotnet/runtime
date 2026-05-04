@@ -15,6 +15,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #pragma hdrstop
 #endif
 
+#include <inttypes.h>
 #include "hostallocator.h"
 #include "instr.h"
 #include "emit.h"
@@ -949,7 +950,7 @@ insGroup* emitter::emitSavIG(bool emitAdd)
         // If there's an error during emission, we may want to connect the post-copy address
         // of an instrDesc with the pre-copy address (the one that was originally created).  This
         // printing enables that.
-        printf("copying instruction group from [0x%x..0x%x) to [0x%x..0x%x).\n", dspPtr(emitCurIGfreeBase),
+        printf("copying instruction group from [%p..%p) to [%p..%p).\n", dspPtr(emitCurIGfreeBase),
                dspPtr(emitCurIGfreeBase + sz), dspPtr(id), dspPtr(id + sz));
     }
 #endif
@@ -1775,7 +1776,7 @@ void emitter::emitCheckIGList()
 
         if (currIG->igOffs != currentOffset)
         {
-            printf("IG%02u has offset %08X, expected %08X\n", currIG->igNum, currIG->igOffs, currentOffset);
+            printf("IG%02u has offset %08X, expected %08zX\n", currIG->igNum, currIG->igOffs, currentOffset);
             assert(!"bad block offset");
         }
 
@@ -1868,7 +1869,7 @@ void emitter::emitCheckIGList()
 
     if (emitTotalCodeSize != 0 && emitTotalCodeSize != currentOffset)
     {
-        printf("Total code size is %08X, expected %08X\n", emitTotalCodeSize, currentOffset);
+        printf("Total code size is %08X, expected %08zX\n", emitTotalCodeSize, currentOffset);
         assert(!"bad total code size");
     }
 
@@ -3782,7 +3783,7 @@ const size_t hexEncodingSize = 19; // 8 bytes (wasm-objdump default) + 1 space.
 void emitter::emitDispInsIndent()
 {
     size_t indent = m_compiler->opts.disDiffable ? basicIndent : basicIndent + hexEncodingSize;
-    printf("%.*s", indent, "                             ");
+    printf("%.*s", static_cast<int>(indent), "                             ");
 }
 //------------------------------------------------------------------------
 // emitDispGCDeltaTitle: Print an appropriately indented title for a GC info delta
@@ -4043,7 +4044,7 @@ void emitter::emitDispIG(insGroup* ig, bool displayFunc, bool displayInstruction
 
         printf("\n");
 
-        printf("%*s;   PrevGCVars=%s ", strlen(buff), "",
+        printf("%*s;   PrevGCVars=%s ", static_cast<int>(strlen(buff)), "",
                VarSetOps::ToString(m_compiler, igPh->igPhData->igPhPrevGCrefVars));
         dumpConvertedVarSet(m_compiler, igPh->igPhData->igPhPrevGCrefVars);
         printf(", PrevGCrefRegs=");
@@ -4054,7 +4055,7 @@ void emitter::emitDispIG(insGroup* ig, bool displayFunc, bool displayInstruction
         emitDispRegSet(igPh->igPhData->igPhPrevByrefRegs);
         printf("\n");
 
-        printf("%*s;   InitGCVars=%s ", strlen(buff), "",
+        printf("%*s;   InitGCVars=%s ", static_cast<int>(strlen(buff)), "",
                VarSetOps::ToString(m_compiler, igPh->igPhData->igPhInitGCrefVars));
         dumpConvertedVarSet(m_compiler, igPh->igPhData->igPhInitGCrefVars);
         printf(", InitGCrefRegs=");
@@ -4414,7 +4415,7 @@ size_t emitter::emitIssue1Instr(insGroup* ig, instrDesc* id, BYTE** dp)
     /* Make sure the instruction descriptor size also matches our expectations */
     if (is != emitSizeOfInsDsc(id))
     {
-        printf("%s at %u: Expected size = %u , actual size = %u\n", emitIfName(id->idInsFmt()),
+        printf("%s at %u: Expected size = %zu , actual size = %zu\n", emitIfName(id->idInsFmt()),
                id->idDebugOnlyInfo()->idNum, is, emitSizeOfInsDsc(id));
         assert(is == emitSizeOfInsDsc(id));
     }
@@ -5257,7 +5258,7 @@ AGAIN:
             }
             if (EMITVERBOSE)
             {
-                printf("Estimate of fwd jump [%08X/%03u]: %04X -> %04X = %04X\n", dspPtr(jmp),
+                printf("Estimate of fwd jump [%p/%03u]: %04X -> %04X = %04X\n", dspPtr(jmp),
                        jmp->idDebugOnlyInfo()->idNum, srcInstrOffs, dstOffs, jmpDist);
             }
 #endif // DEBUG_EMIT
@@ -5300,7 +5301,7 @@ AGAIN:
             }
             if (EMITVERBOSE)
             {
-                printf("Estimate of bwd jump [%08X/%03u]: %04X -> %04X = %04X\n", dspPtr(jmp),
+                printf("Estimate of bwd jump [%p/%03u]: %04X -> %04X = %04X\n", dspPtr(jmp),
                        jmp->idDebugOnlyInfo()->idNum, srcInstrOffs, dstOffs, jmpDist);
             }
 #endif // DEBUG_EMIT
@@ -5494,7 +5495,7 @@ AGAIN:
 #ifdef DEBUG
         if (EMITVERBOSE)
         {
-            printf("Shrinking jump [%08X/%03u]\n", dspPtr(jmp), jmp->idDebugOnlyInfo()->idNum);
+            printf("Shrinking jump [%p/%03u]\n", dspPtr(jmp), jmp->idDebugOnlyInfo()->idNum);
         }
 #endif
         noway_assert((unsigned short)sizeDif == sizeDif);
@@ -7360,9 +7361,10 @@ unsigned emitter::emitEndCodeGen(Compiler*             comp,
                         if (isJccAffectedIns)
                         {
                             unsigned bytesCrossedBoundary = (unsigned)(afterInstrAddr & jccAlignBoundaryMask);
-                            printf("; ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ (%s: %d ; jcc erratum) %dB boundary "
+                            printf("; ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ (%s: %zu ; jcc erratum) %zuB boundary "
                                    "...............................\n",
-                                   codeGen->genInsDisplayName(curInstrDesc), bytesCrossedBoundary, jccAlignBoundary);
+                                   codeGen->genInsDisplayName(curInstrDesc), (size_t)bytesCrossedBoundary,
+                                   (size_t)jccAlignBoundary);
                         }
                     }
 
@@ -7405,7 +7407,7 @@ unsigned emitter::emitEndCodeGen(Compiler*             comp,
 #ifdef DEBUG
         if (m_compiler->opts.disAsm || m_compiler->verbose)
         {
-            printf("\t\t\t\t\t\t;; size=%d bbWeight=%s PerfScore %.2f", (cp - bp), refCntWtd2str(ig->igWeight),
+            printf("\t\t\t\t\t\t;; size=%zd bbWeight=%s PerfScore %.2f", (cp - bp), refCntWtd2str(ig->igWeight),
                    ig->igPerfScore);
         }
         *instrCount += ig->igInsCnt;
@@ -7527,12 +7529,12 @@ unsigned emitter::emitEndCodeGen(Compiler*             comp,
 
                     if (jmp->idjShort)
                     {
-                        printf("[5] Jump        is at %08X\n", (adr + 1 - emitCodeBlock));
+                        printf("[5] Jump        is at %08lX\n", static_cast<unsigned long>(adr + 1 - emitCodeBlock));
                         printf("[5] Jump distance is  %02X - %02X = %02X\n", *(BYTE*)adr, adj, *(BYTE*)adr - adj);
                     }
                     else
                     {
-                        printf("[5] Jump        is at %08X\n", (adr + 4 - emitCodeBlock));
+                        printf("[5] Jump        is at %08lX\n", static_cast<unsigned long>(adr + 4 - emitCodeBlock));
                         printf("[5] Jump distance is  %08X - %02X = %08X\n", *(int*)adr, adj, *(int*)adr - adj);
                     }
                 }
@@ -8326,7 +8328,7 @@ void emitter::emitOutputDataSec(dataSecDsc* sec, AllocMemChunk* chunks)
         // absolute label table
         if (dsc->dsType == dataSection::blockAbsoluteAddr)
         {
-            JITDUMP("  section %u, size %u, block absolute addr\n", secNum++, dscSize);
+            JITDUMP("  section %u, size %zu, block absolute addr\n", secNum++, dscSize);
 
             assert(dscSize && dscSize % TARGET_POINTER_SIZE == 0);
             size_t         numElems = dscSize / TARGET_POINTER_SIZE;
@@ -8350,13 +8352,13 @@ void emitter::emitOutputDataSec(dataSecDsc* sec, AllocMemChunk* chunks)
                     emitRecordRelocation(&(bDstRW[i]), target, CorInfoReloc::DIRECT);
                 }
 
-                JITDUMP("  " FMT_BB ": 0x%p\n", block->bbNum, bDstRW[i]);
+                JITDUMP("  " FMT_BB ": 0x%p\n", block->bbNum, (void*)(uintptr_t)bDstRW[i]);
             }
         }
         // relative label table
         else if (dsc->dsType == dataSection::blockRelative32)
         {
-            JITDUMP("  section %u, size %u, block relative addr\n", secNum++, dscSize);
+            JITDUMP("  section %u, size %zu, block relative addr\n", secNum++, dscSize);
 
             size_t    numElems = dscSize / 4;
             unsigned* uDstRW   = (unsigned*)dstRW;
@@ -8377,7 +8379,7 @@ void emitter::emitOutputDataSec(dataSecDsc* sec, AllocMemChunk* chunks)
         }
         else if (dsc->dsType == dataSection::asyncResumeInfo)
         {
-            JITDUMP("  section %u, size %u, async resume info\n", secNum++, dscSize);
+            JITDUMP("  section %u, size %zu, async resume info\n", secNum++, dscSize);
 
             size_t numElems = dscSize / sizeof(CORINFO_AsyncResumeInfo);
 
@@ -8444,7 +8446,7 @@ void emitter::emitOutputDataSec(dataSecDsc* sec, AllocMemChunk* chunks)
 #ifdef DEBUG
             if (EMITVERBOSE)
             {
-                printf("  section %3u, size %2u, RWD%2u:\t", secNum++, dscSize, curOffs);
+                printf("  section %3u, size %2zu, RWD%2zu:\t", secNum++, dscSize, curOffs);
 
                 for (size_t i = 0; i < dscSize; i++)
                 {
@@ -8559,7 +8561,8 @@ void emitter::emitDispDataSec(dataSecDsc* section, AllocMemChunk* dataChunks)
                     }
                     else
                     {
-                        printf("\tdq\t%016llXh", reinterpret_cast<uint64_t>(emitOffsetToPtr(ig->igOffs)));
+                        printf("\tdq\t%016" PRIX64 "h",
+                               (uint64_t) reinterpret_cast<uint64_t>(emitOffsetToPtr(ig->igOffs)));
                     }
 #endif // TARGET_64BIT
                 }
@@ -8639,7 +8642,7 @@ void emitter::emitDispDataSec(dataSecDsc* section, AllocMemChunk* dataChunks)
                         {
                             printf("\t<Unexpected data size %d (expected >= 4)\n", data->dsSize);
                         }
-                        printf("\tdd\t%08llXh\t", (UINT64) * reinterpret_cast<uint32_t*>(&data->Data()[i]));
+                        printf("\tdd\t%08" PRIX64 "h\t", (uint64_t) * reinterpret_cast<uint32_t*>(&data->Data()[i]));
                         printf("\t; %9.6g",
                                FloatingPointUtils::convertToDouble(*reinterpret_cast<float*>(&data->Data()[i])));
                         i += 4;
@@ -8650,7 +8653,7 @@ void emitter::emitDispDataSec(dataSecDsc* section, AllocMemChunk* dataChunks)
                         {
                             printf("\t<Unexpected data size %d (expected >= 8)\n", data->dsSize);
                         }
-                        printf("\tdq\t%016llXh", *reinterpret_cast<uint64_t*>(&data->Data()[i]));
+                        printf("\tdq\t%016" PRIX64 "h", *reinterpret_cast<uint64_t*>(&data->Data()[i]));
                         printf("\t; %12.9g", *reinterpret_cast<double*>(&data->Data()[i]));
                         i += 8;
                         break;
@@ -8708,12 +8711,12 @@ void emitter::emitDispDataSec(dataSecDsc* section, AllocMemChunk* dataChunks)
                                 {
                                     printf("\t<Unexpected data size %d (expected size%%8 == 0)\n", data->dsSize);
                                 }
-                                printf("\tdq\t%016llXh", *reinterpret_cast<uint64_t*>(&data->Data()[i]));
+                                printf("\tdq\t%016" PRIX64 "h", *reinterpret_cast<uint64_t*>(&data->Data()[i]));
                                 for (j = 8; j < 64; j += 8)
                                 {
                                     if (i + j >= data->dsSize)
                                         break;
-                                    printf(", %016llXh", *reinterpret_cast<uint64_t*>(&data->Data()[i + j]));
+                                    printf(", %016" PRIX64 "h", *reinterpret_cast<uint64_t*>(&data->Data()[i + j]));
                                 }
                                 i += j;
                                 break;

@@ -1305,7 +1305,7 @@ void Cordb::AddProcess(CordbProcess* process)
 {
     // At this point, we should have already checked that we
     // can have another debuggee.
-    STRESS_LOG1(LF_CORDB, LL_INFO10, "Cordb::AddProcess %08x...\n", process);
+    STRESS_LOG1(LF_CORDB, LL_INFO10, "Cordb::AddProcess %p...\n", process);
 
     if ((m_managedCallback == NULL) || (m_managedCallback2 == NULL) || (m_managedCallback3 == NULL) || (m_managedCallback4 == NULL))
     {
@@ -1330,7 +1330,7 @@ void Cordb::AddProcess(CordbProcess* process)
 //
 void Cordb::RemoveProcess(CordbProcess* process)
 {
-    STRESS_LOG1(LF_CORDB, LL_INFO10, "Cordb::RemoveProcess %08x...\n", process);
+    STRESS_LOG1(LF_CORDB, LL_INFO10, "Cordb::RemoveProcess %p...\n", process);
 
     LockProcessList();
     GetProcessList()->RemoveBase((ULONG_PTR)process->m_id);
@@ -1691,7 +1691,7 @@ HRESULT Cordb::CreateProcessCommon(ICorDebugRemoteTarget * pRemoteTarget,
                                     debuggingFlags
                                    );
 
-    LOG((LF_CORDB, LL_EVERYTHING, "Handle in Cordb::CreateProcess is: %.I64x\n", lpProcessInformation->hProcess));
+    LOG((LF_CORDB, LL_EVERYTHING, "Handle in Cordb::CreateProcess is: %p\n", lpProcessInformation->hProcess));
 
     if (SUCCEEDED(hr))
     {

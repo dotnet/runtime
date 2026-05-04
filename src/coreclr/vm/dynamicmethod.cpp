@@ -339,7 +339,7 @@ HeapList* HostCodeHeap::CreateCodeHeap(CodeHeapRequestInfo *pInfo, EECodeGenMana
         RETURN NULL;
     }
 
-    LOG((LF_BCL, LL_INFO100, "Level2 - CodeHeap creation {0x%p} - base addr 0x%p, size available 0x%p, nibble map ptr 0x%p\n",
+    LOG((LF_BCL, LL_INFO100, "Level2 - CodeHeap creation {0x%p} - base addr 0x%p, size available 0x%zx, nibble map ptr 0x%p\n",
                             (HostCodeHeap*)pCodeHeap, pCodeHeap->m_pBaseAddr, pCodeHeap->m_TotalBytesAvailable, pCodeHeap->m_pHeapList->pHdrMap));
 
     pCodeHeap.SuppressRelease();
@@ -463,7 +463,7 @@ HeapList* HostCodeHeap::InitializeHeapList(CodeHeapRequestInfo *pInfo)
     // wire it back
     m_pHeapList = (PTR_HeapList)pHp;
 
-    LOG((LF_BCL, LL_INFO100, "Level2 - CodeHeap creation {0x%p} - size available 0x%p, private data ptr [0x%p, 0x%p]\n",
+    LOG((LF_BCL, LL_INFO100, "Level2 - CodeHeap creation {0x%p} - size available 0x%zx, private data ptr [0x%p, 0x%zx]\n",
         (HostCodeHeap*)this, m_TotalBytesAvailable, pTracker, (pTracker ? pTracker->size : 0)));
 
     // It is important to exclude the CLRPersonalityRoutine from the tracked range
@@ -502,7 +502,7 @@ HostCodeHeap::TrackAllocation* HostCodeHeap::AllocFromFreeList(size_t header, si
 
     if (m_pFreeList)
     {
-        LOG((LF_BCL, LL_INFO100, "Level2 - CodeHeap [0x%p] - Alloc size corrected 0x%X for free list\n", this, size));
+        LOG((LF_BCL, LL_INFO100, "Level2 - CodeHeap [0x%p] - Alloc size corrected 0x%zx for free list\n", this, size));
         // walk the list looking for a block with enough capacity
         TrackAllocation *pCurrent = m_pFreeList;
         TrackAllocation *pPrevious = NULL;
@@ -513,7 +513,7 @@ HostCodeHeap::TrackAllocation* HostCodeHeap::AllocFromFreeList(size_t header, si
             if (pCurrent->size >= realSize + reserveForJumpStubs)
             {
                 // found a block
-                LOG((LF_BCL, LL_INFO100, "Level2 - CodeHeap [0x%p] - Block found, size 0x%X\n", this, pCurrent->size));
+                LOG((LF_BCL, LL_INFO100, "Level2 - CodeHeap [0x%p] - Block found, size 0x%zx\n", this, pCurrent->size));
 
                 ExecutableWriterHolderNoLog<TrackAllocation> previousWriterHolder;
                 if (pPrevious)
@@ -527,7 +527,7 @@ HostCodeHeap::TrackAllocation* HostCodeHeap::AllocFromFreeList(size_t header, si
                 // update the TrackAllocation record for the current block
                 if (pCurrent->size - realSize < max<size_t>(HOST_CODEHEAP_SIZE_ALIGN, sizeof(TrackAllocation)))
                 {
-                    LOG((LF_BCL, LL_INFO100, "Level2 - CodeHeap [0x%p] - Item removed %p, size 0x%X\n", this, pCurrent, pCurrent->size));
+                    LOG((LF_BCL, LL_INFO100, "Level2 - CodeHeap [0x%p] - Item removed %p, size 0x%zx\n", this, pCurrent, pCurrent->size));
                     // remove current
                     if (pPrevious)
                     {
@@ -547,7 +547,7 @@ HostCodeHeap::TrackAllocation* HostCodeHeap::AllocFromFreeList(size_t header, si
                     newCurrentWriterHolder.GetRW()->pNext = pCurrent->pNext;
                     newCurrentWriterHolder.GetRW()->size = pCurrent->size - realSize;
 
-                    LOG((LF_BCL, LL_INFO100, "Level2 - CodeHeap [0x%p] - Item changed %p, new size 0x%X\n", this, pNewCurrent, pNewCurrent->size));
+                    LOG((LF_BCL, LL_INFO100, "Level2 - CodeHeap [0x%p] - Item changed %p, new size 0x%zx\n", this, pNewCurrent, pNewCurrent->size));
                     if (pPrevious)
                     {
                         previousWriterHolder.GetRW()->pNext = pNewCurrent;
@@ -563,14 +563,14 @@ HostCodeHeap::TrackAllocation* HostCodeHeap::AllocFromFreeList(size_t header, si
 
                 currentWriterHolder.GetRW()->pHeap = this;
 
-                LOG((LF_BCL, LL_INFO100, "Level2 - CodeHeap [0x%p] - Allocation returned %p, size 0x%X - data -> %p\n", this, pCurrent, pCurrent->size, pPointer));
+                LOG((LF_BCL, LL_INFO100, "Level2 - CodeHeap [0x%p] - Allocation returned %p, size 0x%zx - data -> %p\n", this, pCurrent, pCurrent->size, pPointer));
                 return pCurrent;
             }
             pPrevious = pCurrent;
             pCurrent = pCurrent->pNext;
         }
     }
-    LOG((LF_BCL, LL_INFO100, "Level2 - CodeHeap [0x%p] - No block in free list for size 0x%X\n", this, size));
+    LOG((LF_BCL, LL_INFO100, "Level2 - CodeHeap [0x%p] - No block in free list for size 0x%zx\n", this, size));
     return NULL;
 }
 
@@ -584,7 +584,7 @@ void HostCodeHeap::AddToFreeList(TrackAllocation *pBlockToInsert, TrackAllocatio
     }
     CONTRACTL_END;
 
-    LOG((LF_BCL, LL_INFO100, "Level2 - CodeHeap [0x%p] - Add to FreeList [%p, 0x%X]\n", this, pBlockToInsert, pBlockToInsert->size));
+    LOG((LF_BCL, LL_INFO100, "Level2 - CodeHeap [0x%p] - Add to FreeList [%p, 0x%zx]\n", this, pBlockToInsert, pBlockToInsert->size));
 
     // append to the list in the proper position and coalesce if needed
     if (m_pFreeList)
@@ -603,7 +603,7 @@ void HostCodeHeap::AddToFreeList(TrackAllocation *pBlockToInsert, TrackAllocatio
                 {
                     previousWriterHolder.AssignExecutableWriterHolder(pPrevious, sizeof(TrackAllocation));
                     previousWriterHolder.GetRW()->pNext = pBlockToInsert;
-                    LOG((LF_BCL, LL_INFO100, "Level2 - CodeHeap [0x%p] - Insert block [%p, 0x%X] -> [%p, 0x%X] -> [%p, 0x%X]\n", this,
+                    LOG((LF_BCL, LL_INFO100, "Level2 - CodeHeap [0x%p] - Insert block [%p, 0x%zx] -> [%p, 0x%zx] -> [%p, 0x%zx]\n", this,
                                                                         pPrevious, pPrevious->size,
                                                                         pBlockToInsert, pBlockToInsert->size,
                                                                         pCurrent, pCurrent->size));
@@ -611,17 +611,17 @@ void HostCodeHeap::AddToFreeList(TrackAllocation *pBlockToInsert, TrackAllocatio
                 else
                 {
                     m_pFreeList = pBlockToInsert;
-                    LOG((LF_BCL, LL_INFO100, "Level2 - CodeHeap [0x%p] - Insert block [%p, 0x%X] to head\n", this, pBlockToInsert, pBlockToInsert->size));
+                    LOG((LF_BCL, LL_INFO100, "Level2 - CodeHeap [0x%p] - Insert block [%p, 0x%zx] to head\n", this, pBlockToInsert, pBlockToInsert->size));
                 }
 
                 // check for coalescing
                 if ((BYTE*)pBlockToInsert + pBlockToInsert->size == (BYTE*)pCurrent)
                 {
                     // coalesce with next
-                    LOG((LF_BCL, LL_INFO100, "Level2 - CodeHeap [0x%p] - Coalesce block [%p, 0x%X] with [%p, 0x%X] - new size 0x%X\n", this,
-                                                                        pBlockToInsert, pBlockToInsert->size,
-                                                                        pCurrent, pCurrent->size,
-                                                                        pCurrent->size + pBlockToInsert->size));
+                    LOG((LF_BCL, LL_INFO100, "Level2 - CodeHeap [0x%p] - Coalesce block [%p, 0x%zx] with [%p, 0x%zx] - new size 0x%zx\n", this,
+                                                                      pBlockToInsert, pBlockToInsert->size,
+                                                                      pCurrent, pCurrent->size,
+                                                                      pCurrent->size + pBlockToInsert->size));
                     pBlockToInsertRW->pNext = pCurrent->pNext;
                     pBlockToInsertRW->size += pCurrent->size;
                 }
@@ -629,7 +629,7 @@ void HostCodeHeap::AddToFreeList(TrackAllocation *pBlockToInsert, TrackAllocatio
                 if (pPrevious && (BYTE*)pPrevious + pPrevious->size == (BYTE*)pBlockToInsert)
                 {
                     // coalesce with previous
-                    LOG((LF_BCL, LL_INFO100, "Level2 - CodeHeap [0x%p] - Coalesce block [%p, 0x%X] with [%p, 0x%X] - new size 0x%X\n", this,
+                      LOG((LF_BCL, LL_INFO100, "Level2 - CodeHeap [0x%p] - Coalesce block [%p, 0x%zx] with [%p, 0x%zx] - new size 0x%zx\n", this,
                                                                         pPrevious, pPrevious->size,
                                                                         pBlockToInsert, pBlockToInsert->size,
                                                                         pPrevious->size + pBlockToInsert->size));
@@ -650,7 +650,7 @@ void HostCodeHeap::AddToFreeList(TrackAllocation *pBlockToInsert, TrackAllocatio
         if ((BYTE*)pPrevious + pPrevious->size == (BYTE*)pBlockToInsert)
         {
             // coalesce with previous
-            LOG((LF_BCL, LL_INFO100, "Level2 - CodeHeap [0x%p] - Coalesce block [%p, 0x%X] with [%p, 0x%X] - new size 0x%X\n", this,
+            LOG((LF_BCL, LL_INFO100, "Level2 - CodeHeap [0x%p] - Coalesce block [%p, 0x%zx] with [%p, 0x%zx] - new size 0x%zx\n", this,
                                                                 pPrevious, pPrevious->size,
                                                                 pBlockToInsert, pBlockToInsert->size,
                                                                 pPrevious->size + pBlockToInsert->size));
@@ -659,7 +659,7 @@ void HostCodeHeap::AddToFreeList(TrackAllocation *pBlockToInsert, TrackAllocatio
         else
         {
             previousWriterHolder2.GetRW()->pNext = pBlockToInsert;
-            LOG((LF_BCL, LL_INFO100, "Level2 - CodeHeap [0x%p] - Insert block [%p, 0x%X] to end after [%p, 0x%X]\n", this,
+            LOG((LF_BCL, LL_INFO100, "Level2 - CodeHeap [0x%p] - Insert block [%p, 0x%zx] to end after [%p, 0x%zx]\n", this,
                                                                 pBlockToInsert, pBlockToInsert->size,
                                                                 pPrevious, pPrevious->size));
         }
@@ -670,7 +670,7 @@ void HostCodeHeap::AddToFreeList(TrackAllocation *pBlockToInsert, TrackAllocatio
     // first in the list
     pBlockToInsertRW->pNext = m_pFreeList;
     m_pFreeList = pBlockToInsert;
-    LOG((LF_BCL, LL_INFO100, "Level2 - CodeHeap [0x%p] - Insert block [%p, 0x%X] to head\n", this,
+    LOG((LF_BCL, LL_INFO100, "Level2 - CodeHeap [0x%p] - Insert block [%p, 0x%zx] to head\n", this,
                                                         m_pFreeList, m_pFreeList->size));
 }
 
@@ -745,7 +745,7 @@ HostCodeHeap::TrackAllocation* HostCodeHeap::AllocMemory_NoThrow(size_t header, 
     if (totalRequiredSize > m_ApproximateLargestBlock)
         return NULL;
 
-    LOG((LF_BCL, LL_INFO100, "Level2 - CodeHeap [0x%p] - Allocation requested 0x%X\n", this, size));
+    LOG((LF_BCL, LL_INFO100, "Level2 - CodeHeap [0x%p] - Allocation requested 0x%zx\n", this, size));
 
     TrackAllocation* pTracker = AllocFromFreeList(header, size, alignment, reserveForJumpStubs);
     if (!pTracker)
@@ -788,7 +788,7 @@ HostCodeHeap::TrackAllocation* HostCodeHeap::AllocMemory_NoThrow(size_t header, 
         }
         else
         {
-            LOG((LF_BCL, LL_INFO100, "Level2 - CodeHeap [0x%p] - allocation failed:\n\tm_pLastAvailableCommittedAddr: 0x%X\n\tsizeToCommit: 0x%X\n\tm_pBaseAddr: 0x%X\n\tm_TotalBytesAvailable: 0x%X\n", this, m_pLastAvailableCommittedAddr, sizeToCommit, m_pBaseAddr, m_TotalBytesAvailable));
+            LOG((LF_BCL, LL_INFO100, "Level2 - CodeHeap [0x%p] - allocation failed:\n\tm_pLastAvailableCommittedAddr: %p\n\tsizeToCommit: 0x%zx\n\tm_pBaseAddr: %p\n\tm_TotalBytesAvailable: 0x%zx\n", this, m_pLastAvailableCommittedAddr, sizeToCommit, m_pBaseAddr, m_TotalBytesAvailable));
             // Update largest available block size
             m_ApproximateLargestBlock = totalRequiredSize - 1;
         }
@@ -1630,7 +1630,7 @@ void* ChunkAllocator::New(size_t size)
     size = ALIGN_UP(size, sizeof(void *));
 
     BYTE *pNewBlock = NULL;
-    LOG((LF_BCL, LL_INFO100, "Level2 - DM - Allocator [0x%p] - allocation requested 0x%X, available 0x%X\n", this, size, (m_pData) ? ((size_t*)m_pData)[1] : 0));
+    LOG((LF_BCL, LL_INFO100, "Level2 - DM - Allocator [0x%p] - allocation requested 0x%zx, available 0x%zx\n", this, size, (m_pData) ? ((size_t*)m_pData)[1] : 0));
     if (m_pData)
     {
         // we may have room available
@@ -1640,7 +1640,7 @@ void* ChunkAllocator::New(size_t size)
             LOG((LF_BCL, LL_INFO100, "Level2 - DM - Allocator [0x%p] - reusing block {0x%p}\n", this, m_pData));
             ((size_t*)m_pData)[1] = available - size;
             pNewBlock = (m_pData + CHUNK_SIZE - available);
-            LOG((LF_BCL, LL_INFO100, "Level2 - DM - Allocator [0x%p] - ptr -> 0x%p, available 0x%X\n", this, pNewBlock, ((size_t*)m_pData)[1]));
+            LOG((LF_BCL, LL_INFO100, "Level2 - DM - Allocator [0x%p] - ptr -> 0x%p, available 0x%zx\n", this, pNewBlock, ((size_t*)m_pData)[1]));
             return pNewBlock;
         }
     }
@@ -1688,7 +1688,7 @@ void* ChunkAllocator::New(size_t size)
     }
 
     pNewBlock += (sizeof(void*) * 2);
-    LOG((LF_BCL, LL_INFO100, "Level2 - DM - Allocator [0x%p] - ptr -> 0x%p, available 0x%X\n", this, pNewBlock, ((size_t*)m_pData)[1]));
+    LOG((LF_BCL, LL_INFO100, "Level2 - DM - Allocator [0x%p] - ptr -> 0x%p, available 0x%zx\n", this, pNewBlock, ((size_t*)m_pData)[1]));
     return pNewBlock;
 }
 

@@ -131,8 +131,8 @@ void FixContext(PCONTEXT pContextRecord)
 #define FIXUPREG(reg, value)                                                                \
     do {                                                                                    \
         STRESS_LOG2(LF_GCROOTS, LL_INFO100, "Updating " #reg " %p to %p\n",                 \
-                pContextRecord->reg,                                                        \
-                (value));                                                                   \
+                (void*)(size_t)(pContextRecord->reg),                                       \
+                (void*)(size_t)(value));                                                    \
         pContextRecord->reg = (value);                                                      \
     } while (0)
 
@@ -319,8 +319,8 @@ void ExInfo::UpdateNonvolatileRegisters(CONTEXT *pContextRecord, REGDISPLAY *pRe
         if (pRegDisplay->pCurrentContextPointers->reg != NULL)                              \
         {                                                                                   \
             STRESS_LOG3(LF_GCROOTS, LL_INFO100, "Updating " #reg " %p to %p from %p\n",     \
-                    pContextRecord->reg,                                                    \
-                    *pRegDisplay->pCurrentContextPointers->reg,                             \
+                    (void*)(size_t)pContextRecord->reg,                                     \
+                    (void*)(size_t)*pRegDisplay->pCurrentContextPointers->reg,              \
                     pRegDisplay->pCurrentContextPointers->reg);                             \
             pContextRecord->reg = *pRegDisplay->pCurrentContextPointers->reg;               \
         }                                                                                   \
@@ -869,7 +869,7 @@ static void DoEHLog(
         memset(pPadding, '.', cch);
         pPadding[cch] = 0;
 
-        LOG((LF_EH, lvl, pPadding));
+        LOG((LF_EH, lvl, "%s", pPadding));
     }
 
     LogSpewValist(LF_EH, lvl, fmt, args);
@@ -2236,7 +2236,7 @@ void ExInfo::StackRange::CombineWith(StackFrame sfCurrent, StackRange* pPrevious
         // previous tracker once they "escape" the previous tracker.
         STRESS_LOG3(LF_EH, LL_INFO100,
             "Initializing current StackRange with previous tracker's StackRange.  sfCurrent: %p, prev low: %p, prev high: %p\n",
-            sfCurrent.SP, pPreviousRange->m_sfLowBound.SP, pPreviousRange->m_sfHighBound.SP);
+            (void*)sfCurrent.SP, (void*)pPreviousRange->m_sfLowBound.SP, (void*)pPreviousRange->m_sfHighBound.SP);
 
         *this = *pPreviousRange;
     }
@@ -2334,7 +2334,7 @@ bool ExInfo::StackRange::IsConsistent()
         return true;
     }
 
-    LOG((LF_EH, LL_ERROR, "sp: low: %p high: %p\n", m_sfLowBound.SP, m_sfHighBound.SP));
+    LOG((LF_EH, LL_ERROR, "sp: low: %p high: %p\n", (void*)m_sfLowBound.SP, (void*)m_sfHighBound.SP));
 
     return false;
 }
@@ -2487,7 +2487,7 @@ bool ExInfo::HasFrameBeenUnwoundByAnyActiveException(CrawlFrame * pCF)
             csfToCheck = CallerStackFrame((UINT_PTR)pCF->GetFrame());
         }
         STRESS_LOG4(LF_EH|LF_GCROOTS, LL_INFO100, "CrawlFrame (%p): Frameless: %s %s: %p\n",
-                    pCF, pCF->IsFrameless() ? "Yes" : "No", pCF->IsFrameless() ? "CallerSP" : "Address", csfToCheck.SP);
+                    pCF, pCF->IsFrameless() ? "Yes" : "No", pCF->IsFrameless() ? "CallerSP" : "Address", (void*)csfToCheck.SP);
     }
 
     PTR_ExInfo pTopExInfo = (PTR_ExInfo)pTargetThread->GetExceptionState()->GetCurrentExceptionTracker();
@@ -2792,7 +2792,7 @@ StackFrame ExInfo::FindParentStackFrameHelper(CrawlFrame* pCF,
 lExit: ;
 
     STRESS_LOG3(LF_EH|LF_GCROOTS, LL_INFO100, "Returning 0x%p as the parent stack frame for %s 0x%p\n",
-                sfResult.SP, fIsFilterFunclet ? "filter funclet" : "funclet", csfCurrent.SP);
+                (void*)sfResult.SP, fIsFilterFunclet ? "filter funclet" : "funclet", (void*)csfCurrent.SP);
 
     return sfResult;
 }
@@ -3209,7 +3209,7 @@ void CallCatchFunclet(OBJECTREF throwable, BYTE* pHandlerIP, REGDISPLAY* pvRegDi
         if (propagateExceptionCallback)
         {
             // A propagation callback was supplied.
-            STRESS_LOG3(LF_EH, LL_INFO100, "Deferring exception propagation to Callback = %p, IP = %p, SP = %p \n", propagateExceptionCallback, GetIP(pvRegDisplay->pCurrentContext), GetSP(pvRegDisplay->pCurrentContext));
+            STRESS_LOG3(LF_EH, LL_INFO100, "Deferring exception propagation to Callback = %p, IP = %p, SP = %p \n", propagateExceptionCallback, (void*)GetIP(pvRegDisplay->pCurrentContext), (void*)GetSP(pvRegDisplay->pCurrentContext));
 
             UpdateContextForPropagationCallback(propagateExceptionCallback, propagateExceptionContext, pvRegDisplay->pCurrentContext);
             GCX_PREEMP_NO_DTOR();
@@ -3257,7 +3257,7 @@ void CallCatchFunclet(OBJECTREF throwable, BYTE* pHandlerIP, REGDISPLAY* pvRegDi
         else
 #endif
         {
-            STRESS_LOG2(LF_EH, LL_INFO100, "Resuming propagation of managed exception through native frames at IP=%p, SP=%p\n", GetIP(pvRegDisplay->pCurrentContext), GetSP(pvRegDisplay->pCurrentContext));
+            STRESS_LOG2(LF_EH, LL_INFO100, "Resuming propagation of managed exception through native frames at IP=%p, SP=%p\n", (void*)GetIP(pvRegDisplay->pCurrentContext), (void*)GetSP(pvRegDisplay->pCurrentContext));
 #ifdef TARGET_WASM
             // wasm cannot unwind frames, so we let C++ exception handling do all the work
             PropagateExceptionThroughNativeFrames(OBJECTREFToObject(throwable), targetSp);
@@ -3314,7 +3314,7 @@ void ResumeAtInterceptionLocation(REGDISPLAY* pvRegDisplay)
 
     SetIP(pvRegDisplay->pCurrentContext, uResumePC);
 
-    STRESS_LOG2(LF_EH, LL_INFO100, "Resuming at interception location at IP=%p, SP=%p\n", uResumePC, GetSP(pvRegDisplay->pCurrentContext));
+    STRESS_LOG2(LF_EH, LL_INFO100, "Resuming at interception location at IP=%p, SP=%p\n", (void*)uResumePC, (void*)GetSP(pvRegDisplay->pCurrentContext));
     codeInfo.GetCodeManager()->ResumeAfterCatch(pvRegDisplay->pCurrentContext, targetSSP, /* fIntercepted */ true);
 }
 

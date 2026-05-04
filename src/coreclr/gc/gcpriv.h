@@ -14,6 +14,7 @@
 #define inline __forceinline
 #endif // __GNUC__
 
+#include <inttypes.h>
 #include "gc.h"
 #include "gcrecord.h"
 
@@ -259,7 +260,10 @@ inline void FATAL_GC_ERROR()
 #endif //SYNCHRONIZATION_STATS
 
 #ifdef GC_CONFIG_DRIVEN
-void GCLogConfig (const char *fmt, ... );
+
+#include <minipal/types.h>
+
+void GCLogConfig (const char *fmt, ... ) MINIPAL_ATTR_FORMAT_PRINTF(1, 2);
 #define cprintf(x) {GCLogConfig x;}
 #endif //GC_CONFIG_DRIVEN
 
@@ -3050,7 +3054,7 @@ private:
 
         void print()
         {
-            dprintf (3, ("last plug: %Ix, last plug reloc: %Ix, before last: %Ix, b: %Ix",
+            dprintf (3, ("last plug: %p, last plug reloc: %zx, before last: %p, b: %zx",
                 last_plug, last_plug_relocation, before_last_plug, current_compacted_brick));
         }
     };
@@ -4490,7 +4494,7 @@ private:
                 if (adj->metric == adjust_budget)
                 {
                     (adj->count)++;
-                    dprintf (6666, ("last adjustment was also budget at GC#%Id, inc count to %d", adj->gc_index, adj->count));
+                    dprintf (6666, ("last adjustment was also budget at GC#%zd, inc count to %d", adj->gc_index, adj->count));
                     return;
                 }
             }
@@ -4502,7 +4506,7 @@ private:
             adj->hc_change = change_int;
             adj->gc_index = current_gc_index;
 
-            dprintf (6666, ("recording adjustment %s at #%d GC#%Id - distance to target %.3f, changed %d HC",
+            dprintf (6666, ("recording adjustment %s at #%d GC#%zd - distance to target %.3f, changed %d HC",
                 str_adjust_metrics[metric], current_adjustment_index, adj->gc_index, adj->distance, adj->hc_change));
 
             current_adjustment_index = (current_adjustment_index + 1) % recorded_adjustment_size;
@@ -4712,7 +4716,7 @@ private:
 
             bool check_p = (current_gc_index < (last_changed_gc_index + (2 * sample_size)));
 
-            dprintf (6666, ("last adjusted at GC#%Id, %Id GCs ago, %s",
+            dprintf (6666, ("last adjusted at GC#%zd, %zd GCs ago, %s",
                 last_changed_gc_index, (current_gc_index - last_changed_gc_index), (check_p ? "check success" : "already checked success")));
             if (!check_p)
             {
@@ -4775,11 +4779,11 @@ private:
             *current_around_target_accumulation = around_target_accumulation;
 
             *num_gcs_since_last_change = current_gc_index - last_changed_gc_index;
-            dprintf (6666, ("we adjusted at GC#%Id, %Id GCs ago", last_changed_gc_index, *num_gcs_since_last_change));
+            dprintf (6666, ("we adjusted at GC#%zd, %zd GCs ago", last_changed_gc_index, *num_gcs_since_last_change));
             if (last_changed_gc_index && (*num_gcs_since_last_change < (2 * sample_size)))
             {
                 *change_decision = decide_change_condition::too_few_samples;
-                dprintf (6666, ("we just adjusted %Id GCs ago, skipping", *num_gcs_since_last_change));
+                dprintf (6666, ("we just adjusted %zd GCs ago, skipping", *num_gcs_since_last_change));
                 return false;
             }
 
@@ -4899,9 +4903,9 @@ private:
                     *reason = hc_change_freq_reason::expensive_hc_change;
                 }
 
-                dprintf (6666, ("last HC change took %.3fms  / avg gc pause %.3fms = %d , factor %d",
+                dprintf (6666, ("last HC change took %.3fms  / avg gc pause %.3fms = %lu , factor %d",
                     (change_heap_count_time / 1000.0), (avg_gc_pause_time / 1000.0),
-                    (change_heap_count_time / avg_gc_pause_time), factor));
+                    (unsigned long)(change_heap_count_time / avg_gc_pause_time), factor));
             }
 
             if (change_int < 0)
@@ -4913,7 +4917,7 @@ private:
                 adjustment* adj = get_last_adjustment();
                 int last_hc_change = adj->hc_change;
 
-                dprintf (6666, ("dec: last HC change %d heaps at GC#%Id, factor %d", last_hc_change, last_change_gc_index, factor));
+                dprintf (6666, ("dec: last HC change %d heaps at GC#%zd, factor %d", last_hc_change, last_change_gc_index, factor));
 
                 if (last_hc_change < 0)
                 {
@@ -4931,7 +4935,7 @@ private:
                     if (last_2nd_change_gc_index > 0)
                     {
                         int last_2nd_hc_change = adj->hc_change;
-                        dprintf (6666, ("before last was %d heaps at GC#%Id (%Id GCs), factor is now %d",
+                        dprintf (6666, ("before last was %d heaps at GC#%zd (%zd GCs), factor is now %d",
                             last_2nd_hc_change, last_2nd_change_gc_index, (last_change_gc_index - last_2nd_change_gc_index), factor));
 
                         if (last_2nd_hc_change < 0)
@@ -5047,7 +5051,7 @@ private:
                         count = adj->count;
                     }
 
-                    dprintf (6666, ("we've changed budget instead of HC %d times from %Id GCs ago, thres %d times",
+                    dprintf (6666, ("we've changed budget instead of HC %d times from %zd GCs ago, thres %d times",
                                     count, num_gcs_since_change, delayed_hc_change_freq_factor));
 
                     if (count < delayed_hc_change_freq_factor)
@@ -5059,7 +5063,7 @@ private:
                 else
                 {
                     bool change_p = (num_gcs_since_change > (size_t)(*hc_change_freq_factor * sample_size));
-                    dprintf (6666, ("It's been %Id GCs since we changed last time, thres %d GCs, %s",
+                    dprintf (6666, ("It's been %zd GCs since we changed last time, thres %d GCs, %s",
                         num_gcs_since_change, (*hc_change_freq_factor * sample_size), (change_p ? "change" : "don't change yet")));
                     if (!change_p)
                     {
@@ -5103,7 +5107,7 @@ private:
             gen0_growth_soh_ratio = max ((double)gen0_growth_soh_ratio_min, gen0_growth_soh_ratio);
 
             size_t total_new_allocation_old_gen = (size_t)(gen0_growth_soh_ratio * (double)total_soh_stable_size);
-            dprintf (6666, ("stable soh %Id (%.3fmb), factor %.3f=>%.3f -> total gen0 new_alloc %Id (%.3fmb)",
+            dprintf (6666, ("stable soh %zd (%.3fmb), factor %.3f=>%.3f -> total gen0 new_alloc %zd (%.3fmb)",
                 total_soh_stable_size, ((double)total_soh_stable_size / 1000.0 / 1000.0),
                 saved_gen0_growth_soh_ratio, gen0_growth_soh_ratio, total_new_allocation_old_gen,
                 ((double)total_new_allocation_old_gen  / 1000.0 / 1000.0)));
@@ -5124,7 +5128,7 @@ private:
             budget_old_gen_per_heap = min (max_gen0_new_allocation, budget_old_gen_per_heap);
             budget_old_gen_per_heap = max (min_gen0_new_allocation, budget_old_gen_per_heap);
 
-            dprintf (6666, ("BCD: %Id/heap (%.3fmb) -> %.3fmb, BCS %Id/heap (%.3fmb)",
+            dprintf (6666, ("BCD: %zd/heap (%.3fmb) -> %.3fmb, BCS %zd/heap (%.3fmb)",
                 saved_budget_old_gen_per_heap, ((double)saved_budget_old_gen_per_heap / 1000.0 / 1000.0),
                 ((double)budget_old_gen_per_heap / 1000.0 / 1000.0),
                 bcs_per_heap, ((double)bcs_per_heap / 1000.0 / 1000.0)));
@@ -5149,7 +5153,7 @@ private:
                     last_changed_gc_index++;
                 }
 
-                dprintf (6666, ("last gc gen0 budget %Id, last adjustment %s was at GC#%Id, last BGC was #%Id, this GC #%Id, %s",
+                dprintf (6666, ("last gc gen0 budget %zd, last adjustment %s was at GC#%zd, last BGC was #%zd, this GC #%zd, %s",
                     last_budget_per_heap, str_adjust_metrics[adj->metric], saved_last_changed_gc_index, last_bgc_index, current_gc_index,
                     ((last_changed_gc_index < (current_gc_index - 1)) ? "didn't just change" : "did just change")));
 
@@ -5177,7 +5181,7 @@ private:
                         new_budget_per_heap = max (new_budget_per_heap, bcs_per_heap);
                         new_budget_per_heap = min (new_budget_per_heap, budget_old_gen_per_heap);
 
-                        dprintf (6666, ("adjust last budget %Id to %Id->%Id (%.3fmb)",
+                        dprintf (6666, ("adjust last budget %zd to %zd->%zd (%.3fmb)",
                             last_budget_per_heap, saved_new_budget_per_heap, new_budget_per_heap, (new_budget_per_heap / 1000.0 / 1000.0)));
 
                         return new_budget_per_heap;
@@ -5185,7 +5189,7 @@ private:
                 }
             }
 
-            dprintf (6666, ("taking min of the two: %Id, %Id", bcs_per_heap, budget_old_gen_per_heap));
+            dprintf (6666, ("taking min of the two: %zd, %zd", bcs_per_heap, budget_old_gen_per_heap));
             return min (bcs_per_heap, budget_old_gen_per_heap);
         }
 

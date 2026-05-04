@@ -4719,8 +4719,8 @@ ValueNum ValueNumStore::VNEvalFoldTypeCompare(var_types type, VNFunc func, Value
         return NoVN;
     }
 
-    JITDUMP("Asking runtime to compare %p (%s) and %p (%s) for equality\n", dspPtr(compileTimeHandle0),
-            m_compiler->eeGetClassName(CORINFO_CLASS_HANDLE(compileTimeHandle0)), dspPtr(compileTimeHandle1),
+    JITDUMP("Asking runtime to compare %p (%s) and %p (%s) for equality\n", (void*)dspPtr(compileTimeHandle0),
+            m_compiler->eeGetClassName(CORINFO_CLASS_HANDLE(compileTimeHandle0)), (void*)dspPtr(compileTimeHandle1),
             m_compiler->eeGetClassName(CORINFO_CLASS_HANDLE(compileTimeHandle1)));
 
     ValueNum               result = NoVN;
@@ -6552,7 +6552,7 @@ void Compiler::fgValueNumberLocalStore(GenTree*             storeNode,
             }
             else if (defSize.IsUnknown())
             {
-                JITDUMP("Tree [%06u] performs store to variable-sized local\n", dspTreeID(storeNode), defLclNum);
+                JITDUMP("Tree [%06u] performs store to variable-sized local\n", dspTreeID(storeNode));
                 // We don't know the bounds of this store at compile time, so it's given a unique number.
                 newLclValue = vnStore->VNPairForExpr(compCurBB, defVarDsc->TypeGet());
             }
@@ -10598,7 +10598,7 @@ void ValueNumStore::vnDump(Compiler* comp, ValueNum vn, bool isPtr)
     {
         ssize_t            val         = ConstantValue<ssize_t>(vn);
         const GenTreeFlags handleFlags = GetHandleFlags(vn);
-        printf("Hnd const: 0x%p %s", dspPtr(val), GenTree::gtGetHandleKindString(handleFlags));
+        printf("Hnd const: 0x%p %s", (void*)(size_t)dspPtr(val), GenTree::gtGetHandleKindString(handleFlags));
         if (!comp->IsAot())
         {
             switch (handleFlags & GTF_ICON_HDL_MASK)
@@ -10632,14 +10632,14 @@ void ValueNumStore::vnDump(Compiler* comp, ValueNum vn, bool isPtr)
                 int val = ConstantValue<int>(vn);
                 if (isPtr)
                 {
-                    printf("PtrCns[%p]", dspPtr(val));
+                    printf("PtrCns[%p]", (void*)(size_t)dspPtr(val));
                 }
                 else
                 {
                     printf("IntCns");
                     if ((val > -1000) && (val < 1000))
                     {
-                        printf(" %ld", val);
+                        printf(" %d", val);
                     }
                     else
                     {
@@ -10654,22 +10654,22 @@ void ValueNumStore::vnDump(Compiler* comp, ValueNum vn, bool isPtr)
                 INT64 val = ConstantValue<INT64>(vn);
                 if (isPtr)
                 {
-                    printf("LngPtrCns: 0x%p", dspPtr(val));
+                    printf("LngPtrCns: 0x%p", (void*)(size_t)dspPtr(val));
                 }
                 else
                 {
                     printf("LngCns");
                     if ((val > -1000) && (val < 1000))
                     {
-                        printf(" %ld", val);
+                        printf(" %lld", (long long)val);
                     }
                     else if ((val & 0xFFFFFFFF00000000LL) == 0)
                     {
-                        printf(" 0x%X", val);
+                        printf(" 0x%llX", (unsigned long long)val);
                     }
                     else
                     {
-                        printf(" 0x%llx", val);
+                        printf(" 0x%llx", (unsigned long long)val);
                     }
                 }
             }
@@ -10724,8 +10724,9 @@ void ValueNumStore::vnDump(Compiler* comp, ValueNum vn, bool isPtr)
             case TYP_SIMD32:
             {
                 simd32_t cnsVal = GetConstantSimd32(vn);
-                printf("Simd32Cns[0x%016llx, 0x%016llx, 0x%016llx, 0x%016llx]", cnsVal.u64[0], cnsVal.u64[1],
-                       cnsVal.u64[2], cnsVal.u64[3]);
+                printf("Simd32Cns[0x%016llx, 0x%016llx, 0x%016llx, 0x%016llx]", (unsigned long long)cnsVal.u64[0],
+                       (unsigned long long)cnsVal.u64[1], (unsigned long long)cnsVal.u64[2],
+                       (unsigned long long)cnsVal.u64[3]);
                 break;
             }
 
@@ -10734,8 +10735,10 @@ void ValueNumStore::vnDump(Compiler* comp, ValueNum vn, bool isPtr)
                 simd64_t cnsVal = GetConstantSimd64(vn);
                 printf(
                     "Simd64Cns[0x%016llx, 0x%016llx, 0x%016llx, 0x%016llx, 0x%016llx, 0x%016llx, 0x%016llx, 0x%016llx]",
-                    cnsVal.u64[0], cnsVal.u64[1], cnsVal.u64[2], cnsVal.u64[3], cnsVal.u64[4], cnsVal.u64[5],
-                    cnsVal.u64[6], cnsVal.u64[7]);
+                    (unsigned long long)cnsVal.u64[0], (unsigned long long)cnsVal.u64[1],
+                    (unsigned long long)cnsVal.u64[2], (unsigned long long)cnsVal.u64[3],
+                    (unsigned long long)cnsVal.u64[4], (unsigned long long)cnsVal.u64[5],
+                    (unsigned long long)cnsVal.u64[6], (unsigned long long)cnsVal.u64[7]);
                 break;
             }
 #endif // TARGET_XARCH
@@ -15658,7 +15661,7 @@ void Compiler::JitTestCheckVN()
             {
                 printf("  Node ");
                 Compiler::printTreeID(node);
-                printf(" -- VN class %d.\n", tlAndN.m_num);
+                printf(" -- VN class %d.\n", (int)tlAndN.m_num);
             }
 
             if (tlAndN.m_tl == TL_VNNorm)
@@ -15682,10 +15685,10 @@ void Compiler::JitTestCheckVN()
                 {
                     printf("Node: ");
                     Compiler::printTreeID(node);
-                    printf(", with value number " FMT_VN ", was declared in VN class %d,\n", nodeVN, tlAndN.m_num);
+                    printf(", with value number " FMT_VN ", was declared in VN class %d,\n", nodeVN, (int)tlAndN.m_num);
                     printf("but this value number " FMT_VN
                            " has already been associated with a different SSA name class: %d.\n",
-                           vn, num2);
+                           vn, (int)num2);
                     assert(false);
                 }
                 // And the current node must be of the specified SSA family.
@@ -15693,7 +15696,7 @@ void Compiler::JitTestCheckVN()
                 {
                     printf("Node: ");
                     Compiler::printTreeID(node);
-                    printf(", " FMT_VN " was declared in SSA name class %d,\n", nodeVN, tlAndN.m_num);
+                    printf(", " FMT_VN " was declared in SSA name class %d,\n", nodeVN, (int)tlAndN.m_num);
                     printf("but that name class was previously bound to a different value number: " FMT_VN ".\n", vn);
                     assert(false);
                 }
@@ -15706,10 +15709,10 @@ void Compiler::JitTestCheckVN()
                 {
                     printf("Node: ");
                     Compiler::printTreeID(node);
-                    printf(", " FMT_VN " was declared in value number class %d,\n", nodeVN, tlAndN.m_num);
+                    printf(", " FMT_VN " was declared in value number class %d,\n", nodeVN, (int)tlAndN.m_num);
                     printf(
                         "but this value number has already been associated with a different value number class: %d.\n",
-                        num);
+                        (int)num);
                     assert(false);
                 }
                 // Add to both mappings.
@@ -15744,7 +15747,7 @@ void Compiler::vnPrint(ValueNum vn, unsigned level)
 {
     if (ValueNumStore::isReservedVN(vn))
     {
-        printf(ValueNumStore::reservedName(vn));
+        printf("%s", ValueNumStore::reservedName(vn));
     }
     else
     {

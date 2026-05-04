@@ -45,6 +45,7 @@
 #include "utilcode.h"
 #include "sbuffer.h"
 #include "debugmacros.h"
+#include <minipal/types.h>
 
 // ==========================================================================================
 // Documentational typedefs: use these to indicate specific representations of 8 bit strings:
@@ -566,9 +567,9 @@ private:
     // Utilities
     //---------------------------------------------------------------------
 
-    void Printf(const CHAR *format, ...);
+    void Printf(const CHAR *format, ...) MINIPAL_ATTR_FORMAT_PRINTF(2, 3);
     void VPrintf(const CHAR *format, va_list args);
-    void AppendPrintf(const CHAR *format, ...);
+    void AppendPrintf(const CHAR *format, ...) MINIPAL_ATTR_FORMAT_PRINTF(2, 3);
     void AppendVPrintf(const CHAR *format, va_list args);
 
 public:

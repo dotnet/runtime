@@ -1740,7 +1740,7 @@ HRESULT CordbModule::UpdateFunction(mdMethodDef funcMetaDataToken,
     // go looking for it later and easier to put it in now than have code to insert it later.
     if (!pOldVersion)
     {
-        LOG((LF_ENC, LL_INFO10000, "CM::UF: adding %8.8x with version %d\n", funcMetaDataToken, enCVersion));
+        LOG((LF_ENC, LL_INFO10000, "CM::UF: adding %8.8x with version %zu\n", funcMetaDataToken, enCVersion));
         HRESULT hr = S_OK;
         EX_TRY
         {
@@ -1756,7 +1756,7 @@ HRESULT CordbModule::UpdateFunction(mdMethodDef funcMetaDataToken,
     // This method should not be called for versions that already exist
     _ASSERTE( enCVersion > pOldVersion->GetEnCVersionNumber());
 
-    LOG((LF_ENC, LL_INFO10000, "CM::UF: updating %8.8x with version %d\n", funcMetaDataToken, enCVersion));
+    LOG((LF_ENC, LL_INFO10000, "CM::UF: updating %8.8x with version %zu\n", funcMetaDataToken, enCVersion));
     // Create a new function object.
     CordbFunction * pNewVersion = new (nothrow) CordbFunction(this, funcMetaDataToken, enCVersion);
 
@@ -2190,14 +2190,14 @@ HRESULT CordbModule::ApplyChangesInternal(ULONG  cbMetaData,
                 {
                     // Done receiving update events
                     hr = retEvent->ApplyChangesResult.hr;
-                    LOG((LF_CORDB, LL_INFO1000, "[%x] RCET::DRCE: EnC apply changes result %8.8x.\n", hr));
+                    LOG((LF_CORDB, LL_INFO1000, "[%x] RCET::DRCE: EnC apply changes result %8.8x.\n", GetCurrentThreadId(), hr));
                     break;
                 }
 
                 _ASSERTE(retEvent->type == DB_IPCE_ENC_UPDATE_FUNCTION ||
                                   retEvent->type == DB_IPCE_ENC_ADD_FUNCTION ||
                                   retEvent->type == DB_IPCE_ENC_ADD_FIELD);
-                LOG((LF_CORDB, LL_INFO1000, "[%x] RCET::DRCE: EnC %s %8.8x to version %d.\n",
+                LOG((LF_CORDB, LL_INFO1000, "[%x] RCET::DRCE: EnC %s %8.8x to version %zu.\n",
                         GetCurrentThreadId(),
                         retEvent->type == DB_IPCE_ENC_UPDATE_FUNCTION ? "Update function" :
                         retEvent->type == DB_IPCE_ENC_ADD_FUNCTION ? "Add function" : "Add field",
@@ -2928,7 +2928,7 @@ HRESULT CordbCode::GetVersionNumber( ULONG32 *nVersion)
     FAIL_IF_NEUTERED(this);
     VALIDATE_POINTER_TO_OBJECT(nVersion, ULONG32 *);
 
-    LOG((LF_CORDB,LL_INFO10000,"R:CC:GVN:Returning 0x%x "
+    LOG((LF_CORDB,LL_INFO10000,"R:CC:GVN:Returning 0x%zx "
         "as version\n",m_nVersion));
 
     *nVersion = (ULONG32)m_nVersion;
@@ -3130,7 +3130,7 @@ HRESULT CordbILCode::GetLocalVarSig(SigParser *pLocalSigParser,
         }
         IfFailRet(hr);
 
-        LOG((LF_CORDB, LL_INFO100000, "CIC::GLVS creating sig parser sig=0x%x size=0x%x\n", localSignature, size));
+        LOG((LF_CORDB, LL_INFO100000, "CIC::GLVS creating sig parser sig=%p size=0x%x\n", localSignature, size));
         SigParser sigParser = SigParser(localSignature, size);
 
         uint32_t data;
@@ -5090,10 +5090,10 @@ CordbNativeCode * CordbModule::LookupOrCreateNativeCode(mdMethodDef methodToken,
         // We didn't have an instance, so we'll build one and add it to the hash table
         LOG((LF_CORDB,
              LL_INFO10000,
-             "R:CT::RSCreating code w/ ver:0x%x, md:0x%x, nativeStart=0x%08x, nativeSize=0x%08x\n",
+             "R:CT::RSCreating code w/ ver:0x%zx, md:0x%zx, nativeStart=0x%08zx, nativeSize=0x%08x\n",
              codeInfo.encVersion,
-             VmPtrToCookie(codeInfo.vmNativeCodeMethodDescToken),
-             codeInfo.m_rgCodeRegions[kHot].pAddress,
+             (size_t)VmPtrToCookie(codeInfo.vmNativeCodeMethodDescToken),
+             (size_t)codeInfo.m_rgCodeRegions[kHot].pAddress,
              codeInfo.m_rgCodeRegions[kHot].cbSize));
 
         // Lookup the function object that this code should be bound to

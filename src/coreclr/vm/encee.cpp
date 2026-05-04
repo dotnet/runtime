@@ -632,7 +632,7 @@ PCODE EditAndContinueModule::JitUpdatedFunction( MethodDesc *pMD,
                                 "EACM::JITUpdatedFunction JIT failed with the following exception:\n\n");
             errorMessage.Append(exceptionMessage);
             DbgAssertDialog(__FILE__, __LINE__, errorMessage.GetUTF8());
-            LOG((LF_ENC, LL_INFO100, errorMessage.GetUTF8()));
+            LOG((LF_ENC, LL_INFO100, "%s", errorMessage.GetUTF8()));
         }
 #endif
     } EX_END_CATCH
@@ -877,7 +877,7 @@ NOINLINE void EditAndContinueModule::FixContextAndResume(
     // Set the new IP
     // Note that all we're really doing here is setting the IP register.  We unfortunately don't
     // share any code with the implementation of debugger SetIP, despite the similarities.
-    LOG((LF_ENC, LL_INFO100, "EACM::ResumeInUpdatedFunction: Resume at EIP=%p\n", pNewCodeInfo->GetCodeAddress()));
+    LOG((LF_ENC, LL_INFO100, "EACM::ResumeInUpdatedFunction: Resume at EIP=%p\n", (void*)pNewCodeInfo->GetCodeAddress()));
 
     Thread *pCurThread = GetThread();
     pCurThread->SetFilterContext(pContext);
@@ -1185,7 +1185,7 @@ EnCAddedField *EnCAddedField::Allocate(OBJECTREF thisPointer, EnCFieldDesc *pFD)
     }
     CONTRACTL_END;
 
-    LOG((LF_ENC, LL_INFO1000, "\tEnCAF:Allocate for this %p, FD %p\n",  OBJECTREFToObject(thisPointer), pFD->GetMemberDef()));
+    LOG((LF_ENC, LL_INFO1000, "\tEnCAF:Allocate for this %p, FD 0x%x\n",  OBJECTREFToObject(thisPointer), pFD->GetMemberDef()));
 
     // Create a new EnCAddedField instance
     EnCAddedField *pEntry = new EnCAddedField;

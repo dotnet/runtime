@@ -5,6 +5,7 @@
 
 #pragma once
 #include "pal_types.h"
+#include <minipal/types.h>
 
 #undef EVP_PKEY_CTX_set_rsa_keygen_bits
 #undef EVP_PKEY_CTX_set_rsa_oaep_md
@@ -68,7 +69,7 @@ struct ossl_param_st
 
 void ERR_new(void);
 void ERR_set_debug(const char *file, int line, const char *func);
-void ERR_set_error(int lib, int reason, const char *fmt, ...);
+void ERR_set_error(int lib, int reason, const char *fmt, ...) MINIPAL_ATTR_FORMAT_PRINTF(3, 4);
 int EVP_CIPHER_get_nid(const EVP_CIPHER *e);
 
 EVP_KDF* EVP_KDF_fetch(OSSL_LIB_CTX *libctx, const char *algorithm, const char *properties);

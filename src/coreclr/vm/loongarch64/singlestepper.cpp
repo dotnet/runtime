@@ -7,6 +7,10 @@
 //
 
 #include "common.h"
+#ifndef __STDC_FORMAT_MACROS
+#define __STDC_FORMAT_MACROS
+#endif
+#include <inttypes.h>
 #include "loongarch64singlestepper.h"
 
 inline uint64_t SignExtend(uint64_t value, unsigned int signbit)
@@ -102,7 +106,7 @@ void LoongArch64SingleStepper::Bypass(uint64_t ip, uint32_t opcode)
         }
     }
 
-    LOG((LF_CORDB, LL_INFO100000, "LoongArch64SingleStepper::Bypass(pc=%lx, opcode=%x)\n", ip, opcode));
+    LOG((LF_CORDB, LL_INFO100000, "LoongArch64SingleStepper::Bypass(pc=%" PRIx64 ", opcode=%x)\n", ip, opcode));
 
     m_fBypass = true;
     m_originalPc = ip;
@@ -131,7 +135,7 @@ void LoongArch64SingleStepper::Apply(T_CONTEXT *pCtx)
 
     uint32_t opcode = m_opcodes[0];
 
-    LOG((LF_CORDB, LL_INFO100000, "LoongArch64SingleStepper::Apply(pc=%lx, opcode=%x)\n", (uint64_t)pCtx->Pc, opcode));
+    LOG((LF_CORDB, LL_INFO100000, "LoongArch64SingleStepper::Apply(pc=%" PRIx64 ", opcode=%x)\n", (uint64_t)pCtx->Pc, opcode));
 
 #ifdef _DEBUG
     // Make sure that we aren't trying to step through our own buffer.  If this asserts, something is horribly
@@ -274,7 +278,7 @@ bool LoongArch64SingleStepper::Fixup(T_CONTEXT *pCtx, DWORD dwExceptionCode)
         {
             if (m_rgCode[0] != kBreakpointOp)
             {
-                LOG((LF_CORDB, LL_INFO100000, "LoongArch64SingleStepper::Fixup executed code, ip = %lx\n", m_targetPc));
+                LOG((LF_CORDB, LL_INFO100000, "LoongArch64SingleStepper::Fixup executed code, ip = %" PRIx64 "\n", m_targetPc));
 
                 pCtx->Pc = m_targetPc;
             }
@@ -297,7 +301,7 @@ bool LoongArch64SingleStepper::Fixup(T_CONTEXT *pCtx, DWORD dwExceptionCode)
 
             pCtx->Pc = m_targetPc;
 
-            LOG((LF_CORDB, LL_INFO100000, "LoongArch64SingleStepper::Fixup emulated, ip = %lx\n", pCtx->Pc));
+            LOG((LF_CORDB, LL_INFO100000, "LoongArch64SingleStepper::Fixup emulated, ip = %" PRIx64 "\n", pCtx->Pc));
         }
     }
     else
@@ -307,7 +311,7 @@ bool LoongArch64SingleStepper::Fixup(T_CONTEXT *pCtx, DWORD dwExceptionCode)
         _ASSERTE(m_fEmulate == false);
         pCtx->Pc = m_originalPc;
 
-        LOG((LF_CORDB, LL_INFO100000, "LoongArch64SingleStepper::Fixup hit exception pc = %lx ex = %x\n", pCtx->Pc, dwExceptionCode));
+        LOG((LF_CORDB, LL_INFO100000, "LoongArch64SingleStepper::Fixup hit exception pc = %" PRIx64 " ex = %x\n", pCtx->Pc, dwExceptionCode));
     }
 
     _ASSERTE((pCtx->Pc & 0x3) == 0);

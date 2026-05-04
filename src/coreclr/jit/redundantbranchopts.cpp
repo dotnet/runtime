@@ -2263,7 +2263,7 @@ bool Compiler::optJumpThreadPhi(BasicBlock* block, GenTree* tree, ValueNum treeN
         //
         const unsigned lclNum    = phiDef.LclNum;
         const unsigned ssaDefNum = phiDef.SsaDef;
-        JITDUMP("... JT-PHI [interestingVN] in " FMT_BB " relop %s operand VN is PhiDef for V%02u\n", block->bbNum,
+        JITDUMP("... JT-PHI [interestingVN] in " FMT_BB " relop %s operand VN is PhiDef for V%02u.%u\n", block->bbNum,
                 i == 0 ? "first" : "second", lclNum, ssaDefNum);
         if (!foundPhiDef)
         {

@@ -4010,7 +4010,7 @@ bool ObjectAllocator::CheckCanClone(CloneInfo* info)
 
     // -1 here since we won't need to clone the allocation site itself.
     //
-    JITDUMP("allocation side cloning: %u blocks\n", visited->size() - 1);
+    JITDUMP("allocation side cloning: %zu blocks\n", visited->size() - 1);
 
     // The allocationBlock should not dominate the defBlock.
     // (if it does, optimization does not require cloning, as
@@ -4273,7 +4273,7 @@ bool ObjectAllocator::CheckCanClone(CloneInfo* info)
         }
     }
 
-    JITDUMP("total cloning including all enumerator uses: %u blocks\n", visited->size() - 1);
+    JITDUMP("total cloning including all enumerator uses: %zu blocks\n", visited->size() - 1);
     unsigned numberOfEHRegionsToClone = 0;
 
     // Now expand the clone block set to include any try regions that need cloning.

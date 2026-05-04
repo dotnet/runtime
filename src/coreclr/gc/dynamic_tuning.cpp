@@ -1536,7 +1536,7 @@ double gc_heap::bgc_tuning::calculate_ml_tuning (uint64_t current_available_phys
             (size_t)total_physical_mem, (size_t)available_memory_goal,
             (size_t)current_available_physical,
             gen2_physical_size, gen3_physical_size));
-    dprintf (BGC_TUNING_LOG, ("BTL: Max output: %zd, ER %zd / %zd = %.3f, %s",
+    dprintf (BGC_TUNING_LOG, ("BTL: Max output: %zd, ER %zd / %" PRIu64 " = %.3f, %s",
             (size_t)max_output,
             error, available_memory_goal, error_ratio,
             (include_in_i_p ? "inc" : "exc")));
@@ -2625,7 +2625,7 @@ void gc_heap::get_and_reset_uoh_alloc_info()
             hp->uoh_a_bgc_planning[i - uoh_start_generation] = 0;
         }
     }
-    dprintf (2, ("LOH alloc: outside bgc: %zd; bm: %zd; bp: %zd",
+    dprintf (2, ("LOH alloc: outside bgc: %" PRIu64 "; bm: %" PRIu64 "; bp: %" PRIu64,
         total_uoh_a_no_bgc,
         total_uoh_a_bgc_marking,
         total_uoh_a_bgc_planning));

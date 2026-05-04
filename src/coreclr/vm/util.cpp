@@ -581,7 +581,7 @@ SIZE_T *NativeVarStackAddr(const ICorDebugInfo::VarLoc &   varLoc,
         {
             dwAddr = (SIZE_T*)(*dwAddr);
         }
-        LOG((LF_CORDB, LL_INFO100, "NVSA: VLT_REG @ 0x%x (by ref = %d)\n", dwAddr, fByRef));
+          LOG((LF_CORDB, LL_INFO100, "NVSA: VLT_REG @ %p (by ref = %d)\n", dwAddr, fByRef));
         break;
 
     case ICorDebugInfo::VLT_STK_BYREF:
@@ -595,7 +595,7 @@ SIZE_T *NativeVarStackAddr(const ICorDebugInfo::VarLoc &   varLoc,
         {
             dwAddr = (SIZE_T*)(*dwAddr);
         }
-        LOG((LF_CORDB, LL_INFO100, "NVSA: VLT_STK @ 0x%x (by ref = %d)\n", dwAddr, fByRef));
+          LOG((LF_CORDB, LL_INFO100, "NVSA: VLT_STK @ %p (by ref = %d)\n", dwAddr, fByRef));
         break;
 
     case ICorDebugInfo::VLT_STK2:
@@ -605,21 +605,21 @@ SIZE_T *NativeVarStackAddr(const ICorDebugInfo::VarLoc &   varLoc,
         regOffs = GetRegOffsInCONTEXT(varLoc.vlStk2.vls2BaseReg);
         baseReg = (const BYTE *)*(SIZE_T *)(regOffs + (BYTE*)pCtx);
         dwAddr = (SIZE_T *)(baseReg + varLoc.vlStk2.vls2Offset);
-        LOG((LF_CORDB, LL_INFO100, "NVSA: VLT_STK_2 @ 0x%x\n",dwAddr));
+          LOG((LF_CORDB, LL_INFO100, "NVSA: VLT_STK_2 @ %p\n", dwAddr));
         break;
 
     case ICorDebugInfo::VLT_REG_STK:
         regOffs = GetRegOffsInCONTEXT(varLoc.vlRegStk.vlrsStk.vlrssBaseReg);
         baseReg = (const BYTE *)*(SIZE_T *)(regOffs + (BYTE*)pCtx);
         dwAddr = (SIZE_T *)(baseReg + varLoc.vlRegStk.vlrsStk.vlrssOffset);
-        LOG((LF_CORDB, LL_INFO100, "NVSA: REG_STK @ 0x%x\n",dwAddr));
+          LOG((LF_CORDB, LL_INFO100, "NVSA: REG_STK @ %p\n", dwAddr));
         break;
 
     case ICorDebugInfo::VLT_STK_REG:
         regOffs = GetRegOffsInCONTEXT(varLoc.vlStkReg.vlsrStk.vlsrsBaseReg);
         baseReg = (const BYTE *)*(SIZE_T *)(regOffs + (BYTE*)pCtx);
         dwAddr = (SIZE_T *)(baseReg + varLoc.vlStkReg.vlsrStk.vlsrsOffset);
-        LOG((LF_CORDB, LL_INFO100, "NVSA: STK_REG @ 0x%x\n",dwAddr));
+          LOG((LF_CORDB, LL_INFO100, "NVSA: STK_REG @ %p\n", dwAddr));
         break;
 
     case ICorDebugInfo::VLT_REG_REG:
@@ -692,20 +692,20 @@ bool    GetNativeVarVal(const ICorDebugInfo::VarLoc &   varLoc,
     case ICorDebugInfo::VLT_REG_REG:
         regOffs = GetRegOffsInCONTEXT(varLoc.vlRegReg.vlrrReg1);
         *pVal1 = *(SIZE_T *)(regOffs + (BYTE*)pCtx);
-        LOG((LF_CORDB, LL_INFO100, "GNVV: STK_REG_REG 1 @ 0x%x\n",
-            (SIZE_T *)(regOffs + (BYTE*)pCtx)));
+        LOG((LF_CORDB, LL_INFO100, "GNVV: STK_REG_REG 1 @ %p\n",
+            (void*)(regOffs + (BYTE*)pCtx)));
 
         regOffs = GetRegOffsInCONTEXT(varLoc.vlRegReg.vlrrReg2);
         *pVal2 = *(SIZE_T *)(regOffs + (BYTE*)pCtx);
-        LOG((LF_CORDB, LL_INFO100, "GNVV: STK_REG_REG 2 @ 0x%x\n",
-            (SIZE_T *)(regOffs + (BYTE*)pCtx)));
+        LOG((LF_CORDB, LL_INFO100, "GNVV: STK_REG_REG 2 @ %p\n",
+            (void*)(regOffs + (BYTE*)pCtx)));
         break;
 
     case ICorDebugInfo::VLT_REG_STK:
         regOffs = GetRegOffsInCONTEXT(varLoc.vlRegStk.vlrsReg);
         *pVal1 = *(SIZE_T *)(regOffs + (BYTE*)pCtx);
-        LOG((LF_CORDB, LL_INFO100, "GNVV: STK_REG_STK reg @ 0x%x\n",
-            (SIZE_T *)(regOffs + (BYTE*)pCtx)));
+        LOG((LF_CORDB, LL_INFO100, "GNVV: STK_REG_STK reg @ %p\n",
+            (void*)(regOffs + (BYTE*)pCtx)));
         *pVal2 = *NativeVarStackAddr(varLoc,pCtx);
         break;
 
@@ -713,8 +713,8 @@ bool    GetNativeVarVal(const ICorDebugInfo::VarLoc &   varLoc,
         *pVal1 = *NativeVarStackAddr(varLoc,pCtx);
         regOffs = GetRegOffsInCONTEXT(varLoc.vlStkReg.vlsrReg);
         *pVal2 = *(SIZE_T *)(regOffs + (BYTE*)pCtx);
-        LOG((LF_CORDB, LL_INFO100, "GNVV: STK_STK_REG reg @ 0x%x\n",
-            (SIZE_T *)(regOffs + (BYTE*)pCtx)));
+        LOG((LF_CORDB, LL_INFO100, "GNVV: STK_STK_REG reg @ %p\n",
+            (void*)(regOffs + (BYTE*)pCtx)));
         break;
 
     case ICorDebugInfo::VLT_FPSTK:
@@ -798,20 +798,20 @@ bool    SetNativeVarVal(const ICorDebugInfo::VarLoc &   varLoc,
     case ICorDebugInfo::VLT_REG_REG:
         regOffs = GetRegOffsInCONTEXT(varLoc.vlRegReg.vlrrReg1);
         *(SIZE_T *)(regOffs + (BYTE*)pCtx) = val1;
-        LOG((LF_CORDB, LL_INFO100, "SNVV: STK_REG_REG 1 @ 0x%x\n",
-            (SIZE_T *)(regOffs + (BYTE*)pCtx)));
+        LOG((LF_CORDB, LL_INFO100, "SNVV: STK_REG_REG 1 @ %p\n",
+            (void*)(regOffs + (BYTE*)pCtx)));
 
         regOffs = GetRegOffsInCONTEXT(varLoc.vlRegReg.vlrrReg2);
         *(SIZE_T *)(regOffs + (BYTE*)pCtx) = val2;
-        LOG((LF_CORDB, LL_INFO100, "SNVV: STK_REG_REG 2 @ 0x%x\n",
-            (SIZE_T *)(regOffs + (BYTE*)pCtx)));
+        LOG((LF_CORDB, LL_INFO100, "SNVV: STK_REG_REG 2 @ %p\n",
+            (void*)(regOffs + (BYTE*)pCtx)));
         break;
 
     case ICorDebugInfo::VLT_REG_STK:
         regOffs = GetRegOffsInCONTEXT(varLoc.vlRegStk.vlrsReg);
         *(SIZE_T *)(regOffs + (BYTE*)pCtx) = val1;
-        LOG((LF_CORDB, LL_INFO100, "SNVV: STK_REG_STK reg @ 0x%x\n",
-            (SIZE_T *)(regOffs + (BYTE*)pCtx)));
+        LOG((LF_CORDB, LL_INFO100, "SNVV: STK_REG_STK reg @ %p\n",
+            (void*)(regOffs + (BYTE*)pCtx)));
         *NativeVarStackAddr(varLoc,pCtx) = val2;
         break;
 
@@ -819,8 +819,8 @@ bool    SetNativeVarVal(const ICorDebugInfo::VarLoc &   varLoc,
         *NativeVarStackAddr(varLoc,pCtx) = val1;
         regOffs = GetRegOffsInCONTEXT(varLoc.vlStkReg.vlsrReg);
         *(SIZE_T *)(regOffs + (BYTE*)pCtx) = val2;
-        LOG((LF_CORDB, LL_INFO100, "SNVV: STK_STK_REG reg @ 0x%x\n",
-            (SIZE_T *)(regOffs + (BYTE*)pCtx)));
+        LOG((LF_CORDB, LL_INFO100, "SNVV: STK_STK_REG reg @ %p\n",
+            (void*)(regOffs + (BYTE*)pCtx)));
         break;
 
     case ICorDebugInfo::VLT_FPSTK:

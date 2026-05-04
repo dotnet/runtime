@@ -539,15 +539,15 @@ void UnlockedLoaderHeap::UnlockedBackoutMem(void *pMem,
                            "The arguments to BackoutMem() were:\n"
                            "\n"
                            "     Pointer: 0x%p\n"
-                           "     Size:    %lu (0x%lx)\n"
+                           "     Size:    %zu (0x%zx)\n"
                            "\n"
                            ,szFile
                            ,lineNum
                            ,szAllocFile
                            ,allocLineNum
                            ,pMem
-                           ,(ULONG)dwRequestedSize
-                           ,(ULONG)dwRequestedSize
+                           ,dwRequestedSize
+                           ,dwRequestedSize
                           );
 
 
@@ -866,7 +866,7 @@ void UnlockedLoaderHeap::DumpFreeList()
             if (sizeunaligned) buf.AppendUTF8(" *** ERROR: size not a multiple of ALLOC_ALIGN_CONSTANT ***");
             buf.AppendUTF8("\n");
 
-            minipal_log_print_info(buf.GetUTF8());
+            minipal_log_print_info("%s", buf.GetUTF8());
             buf.Clear();
 
             pBlock = pBlock->m_pNext;

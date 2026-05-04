@@ -683,11 +683,11 @@ FCIMPL2(void, StubHelpers::LogPinnedArgument, MethodDesc *target, Object *pinned
 
     if (target != NULL)
     {
-        STRESS_LOG3(LF_STUBS, LL_INFO100, "Managed object %#X with size '%#X' pinned for interop to Method [%pM]\n", pinnedArg, managedSize, target);
+        STRESS_LOG3(LF_STUBS, LL_INFO100, "Managed object %p with size '%zu' pinned for interop to Method [%pM]\n", pinnedArg, managedSize, target);
     }
     else
     {
-        STRESS_LOG2(LF_STUBS, LL_INFO100, "Managed object %#X pinned for interop with size '%#X'", pinnedArg, managedSize);
+        STRESS_LOG2(LF_STUBS, LL_INFO100, "Managed object %p pinned for interop with size '%zu'", pinnedArg, managedSize);
     }
 }
 FCIMPLEND

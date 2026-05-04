@@ -2366,7 +2366,7 @@ void Debugger::JITComplete(NativeCodeVersion nativeCodeVersion, TADDR newAddress
     MethodDesc* fd = nativeCodeVersion.GetMethodDesc();
 
     LOG((LF_CORDB, LL_INFO100000, "D::JITComplete: md:%p (%s::%s), address:%p.\n",
-        fd, fd->m_pszDebugClassName, fd->m_pszDebugMethodName, newAddress));
+        fd, fd->m_pszDebugClassName, fd->m_pszDebugMethodName, (void*)newAddress));
 
 #ifdef TARGET_ARM
     newAddress = newAddress|THUMB_CODE;
@@ -2401,12 +2401,12 @@ void Debugger::JITComplete(NativeCodeVersion nativeCodeVersion, TADDR newAddress
             // return the same code pointer and this callback is invoked
             // multiple times.
             LOG((LF_CORDB, LL_INFO1000000, "D::JITComplete: md:%p (%s::%s), address:%p. Already created\n",
-                fd, fd->m_pszDebugClassName, fd->m_pszDebugMethodName, newAddress));
+                fd, fd->m_pszDebugClassName, fd->m_pszDebugMethodName, (void*)newAddress));
             goto Exit;
         }
 
         LOG((LF_CORDB, LL_INFO1000000, "D::JITComplete: md:%p (%s::%s), address:%p. Created dji:%p\n",
-            fd, fd->m_pszDebugClassName, fd->m_pszDebugMethodName, newAddress, dji));
+            fd, fd->m_pszDebugClassName, fd->m_pszDebugMethodName, (void*)newAddress, dji));
 
         // Bind any IL patches to the newly jitted native code.
         HRESULT hr;
@@ -2607,7 +2607,7 @@ DebuggerJitInfo *Debugger::GetJitInfoWorker(MethodDesc *fd, const BYTE *pbAddr, 
             if(trace.GetTraceType() == TRACE_MANAGED && (PCODE)pbAddr != trace.GetAddress())
             {
                 startAddr = trace.GetAddress();
-                LOG((LF_CORDB,LL_INFO1000,"D::GJIW: Address thru thunk: 0x%p\n", startAddr));
+                LOG((LF_CORDB,LL_INFO1000,"D::GJIW: Address thru thunk: 0x%p\n", (void*)startAddr));
             }
 #ifdef LOGGING
             else
@@ -3477,7 +3477,7 @@ HRESULT Debugger::SetIP( bool fCanSetIPOnly, Thread *thread,Module *module,
         {
             offsetNatTo = offsetILTo;
             LOG((LF_CORDB, LL_INFO1000, "D::SIP:Dest of 0x%p (via native "
-                "offset) is fine!\n", offsetNatTo));
+                "offset) is fine!\n", (void*)offsetNatTo));
         }
 
         CorDebugMappingResult mapping;
@@ -3510,13 +3510,13 @@ HRESULT Debugger::SetIP( bool fCanSetIPOnly, Thread *thread,Module *module,
         // Once we finally have a native offset, it had better be in range.
         if (offsetNatTo >= dwSize)
         {
-            LOG((LF_CORDB, LL_INFO1000, "D::SIP:Code out of range! offsetNatTo = 0x%x, dwSize=0x%x\n", offsetNatTo, dwSize));
+            LOG((LF_CORDB, LL_INFO1000, "D::SIP:Code out of range! offsetNatTo = 0x%zx, dwSize=0x%x\n", offsetNatTo, dwSize));
             hrAdvise = E_INVALIDARG;
             goto LExit;
         }
 
         pbDest = CodeRegionInfo::GetCodeRegionInfo(dji).OffsetToAddress(offsetNatTo);
-        LOG((LF_CORDB, LL_INFO1000, "D::SIP:Dest is 0x%p\n", pbDest));
+        LOG((LF_CORDB, LL_INFO1000, "D::SIP:Dest is 0x%p\n", (void*)pbDest));
 
         // Don't allow SetIP if the source or target is cold (SetIPFromSrcToDst does not
         // correctly handle this case).
@@ -3538,7 +3538,7 @@ HRESULT Debugger::SetIP( bool fCanSetIPOnly, Thread *thread,Module *module,
                                  &pVCs);
         LOG((LF_CORDB|LF_ENC,
              LL_INFO10000,
-             "D::SIP: rgVal1 0x%X, rgVal2 0x%X\n",
+             "D::SIP: rgVal1 0x%p, rgVal2 0x%p\n",
              rgVal1,
              rgVal2));
 
@@ -3631,7 +3631,7 @@ HRESULT Debugger::SetIP( bool fCanSetIPOnly, Thread *thread,Module *module,
 
         ::SetIP(pCtx, pbDest);
 
-        LOG((LF_CORDB, LL_INFO1000, "D::SIP:Set IP to be 0x%p\n", GetIP(pCtx)));
+        LOG((LF_CORDB, LL_INFO1000, "D::SIP:Set IP to be 0x%p\n", (void*)GetIP(pCtx)));
     }
 
 
@@ -3724,7 +3724,7 @@ HRESULT Debugger::ShuffleVariablesGet(DebuggerJitInfo  *dji,
 
     LOG((LF_CORDB|LF_ENC,
          LL_INFO10000,
-         "D::SVG cVariables %d, hiddens %d, rgVal1 0x%X, rgVal2 0x%X\n",
+         "D::SVG cVariables %d, hiddens %d, rgVal1 0x%p, rgVal2 0x%p\n",
          cVariables,
          unsigned(-ICorDebugInfo::UNKNOWN_ILNUM),
          rgVal1,
@@ -3788,7 +3788,7 @@ HRESULT Debugger::ShuffleVariablesSet(DebuggerJitInfo  *dji,
 
     LOG((LF_CORDB|LF_ENC,
          LL_INFO10000,
-         "D::SVS: rgVal1 0x%X, rgVal2 0x%X\n",
+         "D::SVS: rgVal1 0x%p, rgVal2 0x%p\n",
          (*prgVal1),
          (*prgVal2)));
 
@@ -3803,7 +3803,7 @@ HRESULT Debugger::ShuffleVariablesSet(DebuggerJitInfo  *dji,
 
     LOG((LF_CORDB|LF_ENC,
          LL_INFO100000,
-         "D::SVS deleting rgVal1 0x%X, rgVal2 0x%X\n",
+         "D::SVS deleting rgVal1 0x%p, rgVal2 0x%p\n",
          (*prgVal1),
          (*prgVal2)));
 
@@ -4025,7 +4025,7 @@ GetSetFrameHelper::Init(MethodDesc *pMD)
                         m_rgSize[i] = GetSetFrameHelper::GetSizeOfElement(m_rgElemType[i]);
                     }
 
-                    LOG((LF_CORDB, LL_INFO10000, "GSFH::I: var 0x%x is of type %x, size:0x%x\n",
+                    LOG((LF_CORDB, LL_INFO10000, "GSFH::I: var 0x%x is of type %x, size:0x%zx\n",
                          i, m_rgElemType[i], m_rgSize[i]));
                 }
             }
@@ -4321,7 +4321,7 @@ HRESULT Debugger::GetVariablesFromOffset(MethodDesc  *pMD,
          pMD->m_pszDebugClassName,
          pMD->m_pszDebugMethodName,
          varNativeInfoCount,
-         offsetFrom));
+         (void*)offsetFrom));
 
     GetSetFrameHelper frameHelper;
     HRESULT hr = frameHelper.Init(pMD);
@@ -4430,7 +4430,7 @@ HRESULT Debugger::GetVariablesFromOffset(MethodDesc  *pMD,
         cValueClasses++;
 #ifdef _DEBUG
         LOG((LF_CORDB|LF_ENC,LL_INFO10000,
-             "D::GVFO [%2u] varnum %d, VC len %d, addr %p, sample: %8.8x%8.8x\n",
+             "D::GVFO [%2u] varnum %u, VC len %zu, addr %p, sample: %8.8x%8.8x\n",
              i,
              varNativeInfo[i].varNumber,
              cbClass,
@@ -4488,7 +4488,7 @@ HRESULT Debugger::SetVariablesAtOffset(MethodDesc  *pMD,
          pMD->m_pszDebugClassName,
          pMD->m_pszDebugMethodName,
          varNativeInfoCount,
-         offsetTo));
+         (void*)offsetTo));
 
     if (varNativeInfoCount == 0)
     {
@@ -4541,7 +4541,7 @@ HRESULT Debugger::SetVariablesAtOffset(MethodDesc  *pMD,
                                        BIT64_ARG(cbClass));
 
             LOG((LF_CORDB|LF_ENC,LL_INFO10000,
-                 "D::SVAO [%2d] varnum %d, nonVC type %x, addr %8.8x: %8.8x;%8.8x\n",
+                 "D::SVAO [%2d] varnum %u, nonVC type %d, addr %p: %8.8zx;%8.8zx\n",
                  i,
                  varNativeInfo[i].varNumber,
                  varNativeInfo[i].loc.vlType,
@@ -4564,7 +4564,7 @@ HRESULT Debugger::SetVariablesAtOffset(MethodDesc  *pMD,
         {
             // it's new in scope, so just clear it
             memset(NativeVarStackAddr(varNativeInfo[i].loc, pCtx), 0, cbClass);
-            LOG((LF_CORDB|LF_ENC,LL_INFO10000, "D::SVAO [%2d] varnum %d, new VC len %d, addr %8.8x\n",
+            LOG((LF_CORDB|LF_ENC,LL_INFO10000, "D::SVAO [%2d] varnum %u, new VC len %zu, addr %p\n",
                  i,
                  varNativeInfo[i].varNumber,
                  cbClass,
@@ -4575,7 +4575,7 @@ HRESULT Debugger::SetVariablesAtOffset(MethodDesc  *pMD,
         memmove(NativeVarStackAddr(varNativeInfo[i].loc, pCtx), rgpVCs[iVC], cbClass);
 #ifdef _DEBUG
         LOG((LF_CORDB|LF_ENC,LL_INFO10000,
-             "D::SVAO [%2d] varnum %d, VC len %d, addr: %8.8x sample: %8.8x%8.8x\n",
+             "D::SVAO [%2d] varnum %u, VC len %zu, addr: %p sample: %8.8x%8.8x\n",
              i,
              varNativeInfo[i].varNumber,
              cbClass,
@@ -5073,7 +5073,7 @@ DebuggerModule* Debugger::AddDebuggerModule(Assembly * pAssembly)
     }
     CONTRACTL_END;
 
-    LOG((LF_CORDB, LL_INFO1000, "D::ADM asm=0x%x\n", pAssembly));
+    LOG((LF_CORDB, LL_INFO1000, "D::ADM asm=0x%p\n", pAssembly));
     DebuggerDataLockHolder chInfo(this);
 
     Module *     pRuntimeModule = pAssembly->GetModule();
@@ -5090,7 +5090,7 @@ DebuggerModule* Debugger::AddDebuggerModule(Assembly * pAssembly)
     // @dbgtodo  inspection/exceptions - this may leak module in OOM case. LS is not OOM resilient; and we
     // expect to get rid of DebuggerModule anyways.
 
-    LOG((LF_CORDB, LL_INFO1000, "D::ADM asm=0x%x -> dm=0x%x\n", pAssembly, pModule));
+    LOG((LF_CORDB, LL_INFO1000, "D::ADM asm=0x%p -> dm=0x%p\n", pAssembly, pModule));
     return pModule;
 }
 
@@ -5226,7 +5226,7 @@ void Debugger::ReleaseAllRuntimeThreads(AppDomain *pAppDomain)
     pAppDomain = NULL;
 
     STRESS_LOG1(LF_CORDB, LL_INFO10000, "D::RART: Releasing all Runtime threads "
-        "for AppD 0x%x.\n", pAppDomain);
+        "for AppD 0x%p.\n", pAppDomain);
 
     // Mark that we're on our way now...
     m_trappingRuntimeThreads = FALSE;
@@ -5804,7 +5804,7 @@ void Debugger::SendBreakpoint(Thread *thread, CONTEXT *context,
     }
 #endif
 
-    LOG((LF_CORDB, LL_INFO10000, "D::SB: breakpoint BP:0x%x\n", breakpoint));
+    LOG((LF_CORDB, LL_INFO10000, "D::SB: breakpoint BP:0x%p\n", breakpoint));
 
     _ASSERTE((g_pEEInterface->GetThread() &&
              !g_pEEInterface->GetThread()->m_fPreemptiveGCDisabled));
@@ -8170,7 +8170,7 @@ void Debugger::ExceptionFilter(MethodDesc *fd, TADDR pMethodAddr, SIZE_T offset,
     }
     CONTRACTL_END;
 
-    LOG((LF_CORDB,LL_INFO10000, "D::EF: pStack:0x%x MD: %s::%s, offset:0x%x\n",
+    LOG((LF_CORDB,LL_INFO10000, "D::EF: pStack:0x%p MD: %s::%s, offset:0x%zx\n",
         pStack, fd->m_pszDebugClassName, fd->m_pszDebugMethodName, offset));
 
     //
@@ -8849,7 +8849,7 @@ void Debugger::ThreadStarted(Thread* pRuntimeThread)
     if (CORDBUnrecoverableError(this))
         return;
 
-    LOG((LF_CORDB, LL_INFO100, "D::TS: thread attach : ID=%#x AD:%#x\n",
+    LOG((LF_CORDB, LL_INFO100, "D::TS: thread attach : ID=%#x AD:%p\n",
          GetThreadIdHelper(pRuntimeThread), AppDomain::GetCurrentDomain()));
 
     // We just need to send a VMPTR_Thread. The RS will get everything else it needs from DAC.
@@ -8913,7 +8913,7 @@ void Debugger::DetachThread(Thread *pRuntimeThread)
     _ASSERTE (pRuntimeThread != NULL);
 
 
-    LOG((LF_CORDB, LL_INFO100, "D::DT: thread detach : ID=%#x AD:%#x.\n",
+    LOG((LF_CORDB, LL_INFO100, "D::DT: thread detach : ID=%#x AD:%p.\n",
          GetThreadIdHelper(pRuntimeThread), AppDomain::GetCurrentDomain()));
 
 
@@ -9072,7 +9072,7 @@ void Debugger::AppDomainCreated(AppDomain * pRuntimeAppDomain)
         return;
     }
 
-    STRESS_LOG1(LF_CORDB, LL_INFO10000, "D::SCADE: AppDomain creation:%#08x\n",
+    STRESS_LOG1(LF_CORDB, LL_INFO10000, "D::SCADE: AppDomain creation:%p\n",
             pRuntimeAppDomain);
 
 
@@ -9295,7 +9295,7 @@ void Debugger::SendUpdateModuleSymsEventAndBlock(Module* pRuntimeModule)
     }
 
     CGrowableStream * pStream = pRuntimeModule->GetInMemorySymbolStream();
-    LOG((LF_CORDB, LL_INFO10000, "D::UMS: update module syms RuntimeModule:0x%08x CGrowableStream:0x%08x\n", pRuntimeModule, pStream));
+    LOG((LF_CORDB, LL_INFO10000, "D::UMS: update module syms RuntimeModule:0x%p CGrowableStream:0x%p\n", pRuntimeModule, pStream));
     if (pStream == NULL)
     {
         // No in-memory Pdb available.
@@ -9336,7 +9336,7 @@ void Debugger::UnloadModule(Module* pRuntimeModule)
     if (CORDBUnrecoverableError(this))
         return;
 
-    LOG((LF_CORDB, LL_INFO100, "D::UM: unload module Mod:%#08x runtimeMod:%#08x modName:%s\n",
+    LOG((LF_CORDB, LL_INFO100, "D::UM: unload module Mod:%p runtimeMod:%p modName:%s\n",
          LookupOrCreateModule(pRuntimeModule), pRuntimeModule, pRuntimeModule->GetDebugName()));
 
     Thread *thread = g_pEEInterface->GetThread();
@@ -9347,14 +9347,14 @@ void Debugger::UnloadModule(Module* pRuntimeModule)
         DebuggerModule* module = LookupOrCreateModule(pRuntimeModule);
         if (module == NULL)
         {
-            LOG((LF_CORDB, LL_INFO100, "D::UM: module already unloaded runtimeMod:%#08x modName:%s\n",
+            LOG((LF_CORDB, LL_INFO100, "D::UM: module already unloaded runtimeMod:%p modName:%s\n",
                  pRuntimeModule, pRuntimeModule->GetDebugName()));
             goto LExit;
         }
         _ASSERTE(module != NULL);
 
         STRESS_LOG6(LF_CORDB, LL_INFO10000,
-            "D::UM: Unloading RTMod:%#08x (DomFile: %#08x, IsISStream:%#08x); DMod:%#08x(RTMod:%#08x DomFile: %#08x)\n",
+            "D::UM: Unloading RTMod:%p (DomFile: %p, IsISStream:%#08x); DMod:%p(RTMod:%p DomFile: %p)\n",
             pRuntimeModule, pRuntimeModule->GetAssembly(), false,
             module, module->GetRuntimeModule(), module->GetAssembly());
 
@@ -9428,7 +9428,7 @@ void Debugger::DestructModule(Module *pModule)
     }
     CONTRACTL_END;
 
-    LOG((LF_CORDB, LL_INFO100, "D::DM: destruct module runtimeMod:%#08x modName:%s\n",
+    LOG((LF_CORDB, LL_INFO100, "D::DM: destruct module runtimeMod:%p modName:%s\n",
          pModule, pModule->GetDebugName()));
 
     // @@@
@@ -9509,7 +9509,7 @@ void Debugger::SendClassLoadUnloadEvent (mdTypeDef classMetadataToken,
     CONTRACTL_END;
 
 
-    LOG((LF_CORDB,LL_INFO10000, "D::SCLUE: Tok:0x%x isLoad:0x%x Mod:%#08x\n",
+    LOG((LF_CORDB,LL_INFO10000, "D::SCLUE: Tok:0x%08x isLoad:0x%x Mod:%p\n",
         classMetadataToken, fIsLoadEvent, pClassDebuggerModule));
 
     DebuggerIPCEvent * pEvent = m_pRCThread->GetIPCEventSendBuffer();
@@ -9626,7 +9626,7 @@ BOOL  Debugger::LoadClass(TypeHandle th,
     if (CORDBUnrecoverableError(this))
         return FALSE;
 
-    LOG((LF_CORDB, LL_INFO10000, "D::LC: load class Tok:%#08x Mod:%#08x classMod:%#08x modName:%s\n",
+    LOG((LF_CORDB, LL_INFO10000, "D::LC: load class Tok:%#08x Mod:%p classMod:%p modName:%s\n",
          classMetadataToken, LookupOrCreateModule(classModule),
          classModule, classModule->GetDebugName()));
 
@@ -9680,7 +9680,7 @@ void Debugger::UnloadClass(mdTypeDef classMetadataToken,
         return;
     }
 
-    LOG((LF_CORDB, LL_INFO10000, "D::UC: unload class Tok:0x%08x Mod:%#08x \runtimeMod:%#08x modName:%s\n",
+    LOG((LF_CORDB, LL_INFO10000, "D::UC: unload class Tok:0x%08x Mod:%p runtimeMod:%p modName:%s\n",
          classMetadataToken, LookupOrCreateModule(classModule), classModule, classModule->GetDebugName()));
 
     Assembly *pAssembly = classModule->GetClassLoader()->GetAssembly();
@@ -10254,10 +10254,10 @@ bool Debugger::HandleIPCEvent(DebuggerIPCEvent * pEvent)
             }
 
             LOG((LF_CORDB,LL_INFO10000,"\tBP Add: BPTOK:"
-                "0x%x, tok=0x%08x, offset=0x%x, isIL=%d dm=0x%x m=0x%x\n",
+                "0x%p, tok=0x%08x, offset=0x%p, isIL=%d dm=0x%p m=0x%p\n",
                  pDebuggerBP,
                  pEvent->BreakpointData.funcMetadataToken,
-                 pEvent->BreakpointData.offset,
+                 (void*)pEvent->BreakpointData.offset,
                  pEvent->BreakpointData.isIL,
                  pDebuggerModule,
                  pModule));
@@ -10452,7 +10452,7 @@ bool Debugger::HandleIPCEvent(DebuggerIPCEvent * pEvent)
             Thread * pThread = pEvent->SetAllDebugState.vmThreadToken.GetRawPtr();
             CorDebugThreadState debugState = pEvent->SetAllDebugState.debugState;
 
-            LOG((LF_CORDB,LL_INFO10000,"HandleIPCE: SetAllDebugState: except thread 0x%08x (ID:0x%x) to state 0x%x\n",
+            LOG((LF_CORDB,LL_INFO10000,"HandleIPCE: SetAllDebugState: except thread 0x%p (ID:0x%x) to state 0x%x\n",
                  pThread,
                  (pThread != NULL) ? GetThreadIdHelper(pThread) : 0,
                  debugState));
@@ -11053,7 +11053,7 @@ bool Debugger::HandleIPCEvent(DebuggerIPCEvent * pEvent)
             SUPPRESS_ALLOCATION_ASSERTS_IN_THIS_SCOPE;
 
             Module * pModule = pEvent->MetadataUpdateRequest.vmModule.GetRawPtr();
-            LOG((LF_CORDB, LL_INFO100000, "D::HIPCE Got module 0x%x\n", pModule));
+            LOG((LF_CORDB, LL_INFO100000, "D::HIPCE Got module 0x%p\n", pModule));
 
             DWORD countBytes = 0;
 
@@ -11076,7 +11076,7 @@ bool Debugger::HandleIPCEvent(DebuggerIPCEvent * pEvent)
             pResult->MetadataUpdateRequest.pMetadataStart = pData;
             pResult->MetadataUpdateRequest.nMetadataSize = countBytes;
             pResult->hr = hr;
-            LOG((LF_CORDB, LL_INFO1000000, "D::HIPCE metadataStart=0x%x, nMetadataSize=0x%x\n", pData, countBytes));
+            LOG((LF_CORDB, LL_INFO1000000, "D::HIPCE metadataStart=0x%p, nMetadataSize=0x%x\n", pData, countBytes));
 
             m_pRCThread->SendIPCReply();
             LOG((LF_CORDB, LL_INFO1000000, "D::HIPCE reply sent\n"));
@@ -11602,7 +11602,7 @@ treatAllValuesAsBoxed:
         }
         break;
     }
-    LOG((LF_CORDB, LL_INFO10000, "D::THTETI: converted left-side type handle to expanded right-side type info, res->ClassTypeData.typeHandle = 0x%08x.\n", res->ClassTypeData.typeHandle.GetRawPtr()));
+    LOG((LF_CORDB, LL_INFO10000, "D::THTETI: converted left-side type handle to expanded right-side type info, res->ClassTypeData.typeHandle = 0x%p.\n", res->ClassTypeData.typeHandle.GetRawPtr()));
     return;
 }
 
@@ -11783,7 +11783,7 @@ void Debugger::GetAndSendTransitionStubInfo(CORDB_ADDRESS_TYPE *stubAddress)
     }
     CONTRACTL_END;
 
-    LOG((LF_CORDB, LL_INFO10000, "D::GASTSI: IsTransitionStub. Addr=0x%08x\n", stubAddress));
+    LOG((LF_CORDB, LL_INFO10000, "D::GASTSI: IsTransitionStub. Addr=0x%p\n", stubAddress));
 
     bool result = false;
 
@@ -11854,7 +11854,7 @@ HRESULT Debugger::AllocateRemoteBuffer( ULONG bufSize, void **ppBuffer )
     // Actually allocate the buffer
     BYTE* pBuffer = new (interopsafe, nothrow) BYTE[bufSize];
 
-    LOG((LF_CORDB, LL_EVERYTHING, "D::ARB: new'd 0x%x\n", *ppBuffer));
+    LOG((LF_CORDB, LL_EVERYTHING, "D::ARB: new'd 0x%p\n", *ppBuffer));
 
     // Check for out of memory error
     if (pBuffer == NULL)
@@ -12848,7 +12848,7 @@ HRESULT Debugger::AddFunction(MethodDesc* pMD, SIZE_T encVersion)
     DebuggerDataLockHolder debuggerDataLockHolder(this);
 
     LOG((LF_CORDB, LL_INFO10000, "D::AF: adding "
-         "%s::%s to version %d\n", pMD->m_pszDebugClassName, pMD->m_pszDebugMethodName, encVersion));
+         "%s::%s to version %zu\n", pMD->m_pszDebugClassName, pMD->m_pszDebugMethodName, encVersion));
 
     _ASSERTE(pMD != NULL);
     Module *pModule = g_pEEInterface->MethodDescGetModule(pMD);
@@ -12976,7 +12976,7 @@ HRESULT Debugger::MapILInfoToCurrentNative(MethodDesc *pMD,
     _ASSERTE(HasLazyData()); // only used for EnC, should have already inited.
 
     LOG((LF_CORDB, LL_INFO1000000, "D::MILITCN: %s::%s ilOff:0x%zx, natFnx:%p\n",
-        pMD->m_pszDebugClassName, pMD->m_pszDebugMethodName, ilOffset, nativeFnxStart));
+        pMD->m_pszDebugClassName, pMD->m_pszDebugMethodName, ilOffset, (void*)nativeFnxStart));
 
     *nativeOffset = 0;
     DebuggerJitInfo *djiTo = GetJitInfo( pMD, (const BYTE *)nativeFnxStart);
@@ -13894,7 +13894,7 @@ Debugger::InsertToMethodInfoList( DebuggerMethodInfo *dmi )
                                          dmi,
                                          FALSE);
 
-        LOG((LF_CORDB,LL_INFO10000,"D:IAHOL: DMI version 0x%04x for token 0x%08x\n",
+        LOG((LF_CORDB,LL_INFO10000,"D:IAHOL: DMI version 0x%04zx for token 0x%08x\n",
             dmi->GetCurrentEnCVersion(),dmi->m_token));
     }
     else
@@ -14364,7 +14364,7 @@ HRESULT Debugger::FuncEvalSetup(DebuggerIPCE_FuncEvalInfo *pEvalInfo,
     // will show a wrong IP, so it shouldn't be done.
     *debuggerEvalKey = pDE;
 
-    LOG((LF_CORDB, LL_INFO100000, "D:FES for pDE:%08x evalType:%d on thread %#x, id=0x%x\n",
+    LOG((LF_CORDB, LL_INFO100000, "D:FES for pDE:%p evalType:%d on thread %p, id=0x%x\n",
         pDE, pDE->m_evalType, pThread, GetThreadIdHelper(pThread)));
 
     return S_OK;
@@ -14408,7 +14408,7 @@ Debugger::FuncEvalAbort(
         pDE->m_aborting = DebuggerEval::FE_ABORT_NORMAL;
 
         LOG((LF_CORDB, LL_INFO1000,
-             "D::FEA: performing UserAbort on thread %#x, id=0x%x\n",
+             "D::FEA: performing UserAbort on thread %p, id=0x%x\n",
              pDE->m_thread, GetThreadIdHelper(pDE->m_thread)));
 
         if (!IsAtProcessExit() && !pDE->m_completed)
@@ -14475,7 +14475,7 @@ Debugger::FuncEvalRudeAbort(
         pDE->m_aborting = (DebuggerEval::FUNC_EVAL_ABORT_TYPE)(pDE->m_aborting | DebuggerEval::FE_ABORT_RUDE);
 
         LOG((LF_CORDB, LL_INFO1000,
-             "D::FEA: performing RudeAbort on thread %#x, id=0x%x\n",
+             "D::FEA: performing RudeAbort on thread %p, id=0x%x\n",
              pDE->m_thread, Debugger::GetThreadIdHelper(pDE->m_thread)));
 
         if (!IsAtProcessExit() && !pDE->m_completed)
@@ -14518,7 +14518,7 @@ HRESULT Debugger::FuncEvalCleanup(DebuggerEval *debuggerEvalKey)
 
     _ASSERTE(pDE->m_completed);
 
-    LOG((LF_CORDB, LL_INFO1000, "D::FEC: pDE:%08x 0x%08x, id=0x%x\n",
+    LOG((LF_CORDB, LL_INFO1000, "D::FEC: pDE:%p 0x%p, id=0x%x\n",
          pDE, pDE->m_thread, GetThreadIdHelper(pDE->m_thread)));
 
     DeleteInteropSafeExecutable(pDE->m_bpInfoSegment);
@@ -14885,7 +14885,7 @@ HRESULT Debugger::NameChangeEvent(AppDomain *pAppDomain, Thread *pThread)
         }
     }
 
-    LOG((LF_CORDB, LL_INFO1000, "D::NCE: Sending NameChangeEvent 0x%x 0x%x\n",
+    LOG((LF_CORDB, LL_INFO1000, "D::NCE: Sending NameChangeEvent 0x%p 0x%p\n",
         pAppDomain, pThread));
 
     Thread *curThread = g_pEEInterface->GetThread();

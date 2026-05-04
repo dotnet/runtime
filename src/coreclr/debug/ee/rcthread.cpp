@@ -1523,7 +1523,7 @@ HRESULT DebuggerRCThread::SendIPCEvent()
 
     STRESS_LOG2(LF_CORDB, LL_INFO1000, "D::SendIPCEvent %s to outofproc appD 0x%p,\n",
             IPCENames::GetName(pManagedEvent->type),
-            VmPtrToCookie(pManagedEvent->vmAppDomain));
+            (void*)VmPtrToCookie(pManagedEvent->vmAppDomain));
 
     // increase the debug counter
     DbgLog((DebuggerIPCEventType)(pManagedEvent->type & DB_IPCE_TYPE_MASK));
@@ -1652,7 +1652,7 @@ void DebuggerRCThread::DoFavor(FAVORCALLBACK fp, void * pData)
         // pickup that event, call the fp, and set the Read event
         SetEvent(GetFavorAvailableEvent());
 
-        LOG((LF_CORDB, LL_INFO10000, "DRCT::DF - Waiting on FavorReadEvent for favor 0x%08x\n", fp));
+        LOG((LF_CORDB, LL_INFO10000, "DRCT::DF - Waiting on FavorReadEvent for favor %p\n", (void*)fp));
 
         // Wait for either the FavorEventRead to be set (which means that the favor
         // was executed by the helper thread) or the helper thread's handle (which means
@@ -1690,12 +1690,12 @@ void DebuggerRCThread::DoFavor(FAVORCALLBACK fp, void * pData)
         if (wn == 0) // m_FavorEventRead
         {
             // Favor was executed, nothing to do here.
-            LOG((LF_CORDB, LL_INFO10000, "DRCT::DF - favor 0x%08x finished, ret = %d\n", fp, ret));
+            LOG((LF_CORDB, LL_INFO10000, "DRCT::DF - favor %p finished, ret = %d\n", (void*)fp, ret));
         }
         else
         {
             LOG((LF_CORDB, LL_INFO10000, "DRCT::DF - lost helper thread during wait, "
-                "doing favor 0x%08x on current thread\n", fp));
+                "doing favor %p on current thread\n", (void*)fp));
 
             // Since we have no timeout, we shouldn't be able to get an error on the wait,
             // but just in case ...
@@ -1717,14 +1717,14 @@ void DebuggerRCThread::DoFavor(FAVORCALLBACK fp, void * pData)
     else
     {
         LOG((LF_CORDB, LL_INFO10000, "DRCT::DF - helper thread not ready, "
-            "doing favor 0x%08x on current thread\n", fp));
+            "doing favor %p on current thread\n", (void*)fp));
         // If helper isn't ready yet, go ahead and execute the favor
         // on the callee's space
         (*fp)(pData);
     }
 
     // Drop a log message so that we know if we survived a stack overflow or not
-    LOG((LF_CORDB, LL_INFO10000, "DRCT::DF - Favor 0x%08x completed successfully\n", fp));
+    LOG((LF_CORDB, LL_INFO10000, "DRCT::DF - Favor %p completed successfully\n", (void*)fp));
 }
 
 

@@ -964,7 +964,7 @@ inline CLRException::CLRException()
 
 inline void CLRException::SetThrowableHandle(OBJECTHANDLE throwable)
 {
-    STRESS_LOG1(LF_EH, LL_INFO100, "in CLRException::SetThrowableHandle: obj = %x\n", throwable);
+    STRESS_LOG1(LF_EH, LL_INFO100, "in CLRException::SetThrowableHandle: obj = %p\n", (void*)throwable);
     m_throwableHandle = throwable;
 }
 

@@ -12,6 +12,8 @@
 #ifndef __LOG_H__
 #define __LOG_H__
 
+#include <minipal/types.h>
+
 
 #define DEFINE_LOG_FACILITY(logname, value)  logname = value,
 
@@ -74,14 +76,14 @@ extern VOID InitLogging();
 extern VOID ShutdownLogging();
 extern VOID FlushLogging();
 
-extern VOID LogSpew(DWORD facility, DWORD level, const char *fmt, ... );
+extern VOID LogSpew(DWORD facility, DWORD level, const char *fmt, ... ) MINIPAL_ATTR_FORMAT_PRINTF(3, 4);
 extern VOID LogSpewValist(DWORD facility, DWORD level, const char *fmt, va_list args);
 
-extern VOID LogSpew2(DWORD facility2, DWORD level, const char *fmt, ... );
+extern VOID LogSpew2(DWORD facility2, DWORD level, const char *fmt, ... ) MINIPAL_ATTR_FORMAT_PRINTF(3, 4);
 extern VOID LogSpew2Valist(DWORD facility2, DWORD level, const char *fmt, va_list args);
 
 extern VOID LogSpewAlwaysValist(const char *fmt, va_list args);
-extern VOID LogSpewAlways (const char *fmt, ... );
+extern VOID LogSpewAlways (const char *fmt, ... ) MINIPAL_ATTR_FORMAT_PRINTF(1, 2);
 extern VOID EnterLogLock();
 extern VOID LeaveLogLock();
 

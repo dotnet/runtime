@@ -358,9 +358,9 @@ bool gc_heap::on_used_changed (uint8_t* new_used)
                 assert ((UINT64_MAX - new_committed_size) > (uint64_t)g_gc_lowest_address);
                 uint8_t* double_commit = g_gc_lowest_address + new_committed_size;
                 new_bookkeeping_covered_committed = max(double_commit, new_used);
-                dprintf (REGIONS_LOG, ("committed_size                           = %zd", committed_size));
-                dprintf (REGIONS_LOG, ("total_size                               = %zd", total_size));
-                dprintf (REGIONS_LOG, ("new_committed_size                       = %zd", new_committed_size));
+                dprintf (REGIONS_LOG, ("committed_size                           = %" PRIu64, committed_size));
+                dprintf (REGIONS_LOG, ("total_size                               = %" PRIu64, total_size));
+                dprintf (REGIONS_LOG, ("new_committed_size                       = %" PRIu64, new_committed_size));
                 dprintf (REGIONS_LOG, ("double_commit                            = %p", double_commit));
             }
             dprintf (REGIONS_LOG, ("bookkeeping_covered_committed     = %p", bookkeeping_covered_committed));

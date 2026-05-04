@@ -532,7 +532,7 @@ void gc_heap::descr_generations (const char* msg)
 
         size_t idx = VolatileLoadWithoutBarrier (&settings.gc_index);
 
-        dprintf (REGIONS_LOG, ("[%s] GC#%5Id [%s] heap %Idmb (F: %Idmb %d%%) commit size: %Idmb, %0.3f min, %d,%d new in plan, %d in threading",
+        dprintf (REGIONS_LOG, ("[%s] GC#%5zd [%s] heap %zdmb (F: %zdmb %d%%) commit size: %zdmb, %0.3f min, %d,%d new in plan, %d in threading",
             msg, idx, (settings.promotion ? "PM" : "NPM"), alloc_size, frag_size,
             (int)((double)frag_size * 100.0 / (double)alloc_size),
             commit_size,
@@ -549,7 +549,7 @@ void gc_heap::descr_generations (const char* msg)
 
         int bgcs = VolatileLoadWithoutBarrier (&current_bgc_state);
 #ifdef SIMPLE_DPRINTF
-        dprintf (REGIONS_LOG, ("[%s] GC#%Id (bgcs: %d, %s) g0: %Idmb (f: %Idmb %d%%), g1: %Idmb (f: %Idmb %d%%), g2: %Idmb (f: %Idmb %d%%), g3: %Idmb (f: %Idmb %d%%)",
+        dprintf (REGIONS_LOG, ("[%s] GC#%zd (bgcs: %d, %s) g0: %zdmb (f: %zdmb %d%%), g1: %zdmb (f: %zdmb %d%%), g2: %zdmb (f: %zdmb %d%%), g3: %zdmb (f: %zdmb %d%%)",
             msg, idx, bgcs, str_bgc_state[bgcs],
             total_gen_size_mb[0], total_gen_fragmentation_mb[0], (total_gen_size_mb[0] ? (int)((double)total_gen_fragmentation_mb[0] * 100.0 / (double)total_gen_size_mb[0]) : 0),
             total_gen_size_mb[1], total_gen_fragmentation_mb[1], (total_gen_size_mb[1] ? (int)((double)total_gen_fragmentation_mb[1] * 100.0 / (double)total_gen_size_mb[1]) : 0),
@@ -559,7 +559,7 @@ void gc_heap::descr_generations (const char* msg)
         // print every 20 GCs so it's easy to see if we are making progress.
         if ((idx % 20) == 0)
         {
-            dprintf (1, ("[%5s] GC#%5Id total heap size: %Idmb (F: %Idmb %d%%) commit size: %Idmb, %0.3f min, %d,%d new in plan, %d in threading\n",
+            dprintf (1, ("[%5s] GC#%5zd total heap size: %zdmb (F: %zdmb %d%%) commit size: %zdmb, %0.3f min, %d,%d new in plan, %d in threading\n",
                 msg, idx, alloc_size, frag_size,
                 (int)((double)frag_size * 100.0 / (double)alloc_size),
                 commit_size,
@@ -1633,8 +1633,8 @@ void gc_heap::record_interesting_info_per_heap()
             (interesting_mechanism_bits_per_heap[i])++;
     }
 
-    //         h#  | GC  | gen | C   | EX  | NF  | BF  | ML  | DM  || PreS | PostS | Merge | Conv | Pre | Post | PrPo | PreP | PostP |
-    cprintf (("%2d | %6d | %1d | %1s | %2s | %2s | %2s | %2s | %2s || %5Id | %5Id | %5Id | %5Id | %5Id | %5Id | %5Id | %5Id | %5Id |",
+    //         h#  | GC   | gen | C   | EX  | NF  | BF  | ML  | DM  || PreS | PostS | Merge | Conv | Pre | Post | PrPo | PreP | PostP |
+    cprintf (("%2d | %6zu | %1d | %1s | %2s | %2s | %2s | %2s | %2s || %5zu | %5zu | %5zu | %5zu | %5zu | %5zu | %5zu | %5zu | %5zu |",
             heap_number,
             (size_t)settings.gc_index,
             settings.condemned_generation,

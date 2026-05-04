@@ -158,7 +158,7 @@ HRESULT GCHeap::Init(size_t hn)
 HRESULT GCHeap::Initialize()
 {
 #ifndef TRACE_GC
-    STRESS_LOG_VA (1, (ThreadStressLog::gcLoggingIsOffMsg()));
+    STRESS_LOG0 (LF_GC, LL_ALWAYS, "TraceGC is not turned on");
 #endif
     HRESULT hr = S_OK;
 
@@ -688,7 +688,7 @@ HRESULT GCHeap::Initialize()
 
             if (gc_heap::dynamic_heap_count_data.gen0_growth_soh_ratio_min > gc_heap::dynamic_heap_count_data.gen0_growth_soh_ratio_max)
             {
-                log_init_error_to_host ("DATAS min permil for gen0 growth %d is greater than max %d, it needs to be lower",
+                log_init_error_to_host ("DATAS min permil for gen0 growth %.3f is greater than max %.3f, it needs to be lower",
                     gc_heap::dynamic_heap_count_data.gen0_growth_soh_ratio_min, gc_heap::dynamic_heap_count_data.gen0_growth_soh_ratio_max);
                 return E_FAIL;
             }
@@ -697,7 +697,7 @@ HRESULT GCHeap::Initialize()
             GCConfig::SetGCDGen0GrowthPercent ((int)(gc_heap::dynamic_heap_count_data.gen0_growth_soh_ratio_percent * 100.0f));
             GCConfig::SetGCDGen0GrowthMinFactor ((int)(gc_heap::dynamic_heap_count_data.gen0_growth_soh_ratio_min * 1000.0f));
             GCConfig::SetGCDGen0GrowthMaxFactor ((int)(gc_heap::dynamic_heap_count_data.gen0_growth_soh_ratio_max * 1000.0f));
-            dprintf (6666, ("DATAS gen0 growth multiplier will be adjusted by %d%%, cap %.3f-%.3f, min budget %Id, max %Id",
+            dprintf (6666, ("DATAS gen0 growth multiplier will be adjusted by %d%%, cap %.3f-%.3f, min budget %zd, max %zd",
                 (int)GCConfig::GetGCDGen0GrowthPercent(),
                 gc_heap::dynamic_heap_count_data.gen0_growth_soh_ratio_min, gc_heap::dynamic_heap_count_data.gen0_growth_soh_ratio_max,
                 gc_heap::dynamic_heap_count_data.min_gen0_new_allocation, gc_heap::dynamic_heap_count_data.max_gen0_new_allocation));

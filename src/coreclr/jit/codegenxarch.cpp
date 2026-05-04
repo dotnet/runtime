@@ -8458,7 +8458,7 @@ void* CodeGen::genCreateAndStoreGCInfoJIT32(unsigned            codeSize,
         {
             if (temp == ptab)
             {
-                printf("\nMethod info block - ptrtab [%u bytes]:", ptrMapSize);
+                printf("\nMethod info block - ptrtab [%zu bytes]:", ptrMapSize);
                 printf("\n    %04X: %*c", i & ~0xF, 3 * (i & 0xF), ' ');
             }
             else
@@ -8485,7 +8485,7 @@ void* CodeGen::genCreateAndStoreGCInfoJIT32(unsigned            codeSize,
         InfoHdr     dumpHeader;
 
         printf("GC Info for method %s\n", m_compiler->info.compFullName);
-        printf("GC info size = %3u\n", m_compiler->compInfoBlkSize);
+        printf("GC info size = %3zu\n", m_compiler->compInfoBlkSize);
 
         size = gcInfo.gcInfoBlockHdrDump(base, &dumpHeader, &methodSize);
         // printf("size of header encoding is %3u\n", size);

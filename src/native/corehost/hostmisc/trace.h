@@ -5,17 +5,18 @@
 #define TRACE_H
 
 #include "pal.h"
+#include <minipal/types.h>
 
 namespace trace
 {
     void setup();
     bool enable();
     bool is_enabled();
-    void verbose(const pal::char_t* format, ...);
-    void info(const pal::char_t* format, ...);
-    void warning(const pal::char_t* format, ...);
-    void error(const pal::char_t* format, ...);
-    void println(const pal::char_t* format, ...);
+    void verbose(const pal::char_t* format, ...) MINIPAL_ATTR_FORMAT_PRINTF(1, 2);
+    void info(const pal::char_t* format, ...) MINIPAL_ATTR_FORMAT_PRINTF(1, 2);
+    void warning(const pal::char_t* format, ...) MINIPAL_ATTR_FORMAT_PRINTF(1, 2);
+    void error(const pal::char_t* format, ...) MINIPAL_ATTR_FORMAT_PRINTF(1, 2);
+    void println(const pal::char_t* format, ...) MINIPAL_ATTR_FORMAT_PRINTF(1, 2);
     void println();
     void flush();
 

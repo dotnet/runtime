@@ -1061,7 +1061,9 @@ BOOL SyncBlockCache::GCWeakPtrScanElement (int nb, HANDLESCANPROC scanProc, LPAR
 #ifdef VERIFY_HEAP
         if (g_pConfig->GetHeapVerifyLevel () & EEConfig::HEAPVERIFY_SYNCBLK)
         {
-            STRESS_LOG3 (LF_GC | LF_SYNC, LL_INFO100000, "scanning syncblk[%d, %p, %p]\n", nb, (size_t)SyncTableEntry::GetSyncTableEntry()[nb].m_SyncBlock, (size_t)*keyv);
+              STRESS_LOG3 (LF_GC | LF_SYNC, LL_INFO100000, "scanning syncblk[%d, %p, %p]\n", nb,
+                           (void*)(size_t)SyncTableEntry::GetSyncTableEntry()[nb].m_SyncBlock,
+                           (void*)(size_t)*keyv);
         }
 #endif
 
@@ -1072,7 +1074,8 @@ BOOL SyncBlockCache::GCWeakPtrScanElement (int nb, HANDLESCANPROC scanProc, LPAR
 #ifdef VERIFY_HEAP
             if (g_pConfig->GetHeapVerifyLevel () & EEConfig::HEAPVERIFY_SYNCBLK)
             {
-                STRESS_LOG3 (LF_GC | LF_SYNC, LL_INFO100000, "freeing syncblk[%d, %p, %p]\n", nb, (size_t)pSB, (size_t)*keyv);
+                  STRESS_LOG3 (LF_GC | LF_SYNC, LL_INFO100000, "freeing syncblk[%d, %p, %p]\n", nb,
+                               (void*)(size_t)pSB, (void*)(size_t)*keyv);
             }
 #endif
 
@@ -1297,7 +1300,7 @@ void DumpSyncBlockCache()
             descrip = buffer;
         }
         if (dumpSBStyle < 2)
-            LogSpewAlways("[%4.4d]: %zx %s\n", nb, oref, descrip);
+            LogSpewAlways("[%4.4d]: %p %s\n", nb, oref, descrip);
         else if (dumpSBStyle == 2)
             LogSpewAlways("[%4.4d]: %s\n", nb, descrip);
     }

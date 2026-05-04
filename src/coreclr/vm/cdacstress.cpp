@@ -308,7 +308,7 @@ bool CdacStress::Initialize()
     s_cdacModule = CLRLoadLibrary(path.GetUnicode());
     if (s_cdacModule == NULL)
     {
-        LOG((LF_GCROOTS, LL_WARNING, "CDAC GC Stress: Failed to load %S\n", path.GetUnicode()));
+        LOG((LF_GCROOTS, LL_WARNING, "CDAC GC Stress: Failed to load %s\n", path.GetUTF8()));
         return false;
     }
 

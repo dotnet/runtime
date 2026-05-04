@@ -1199,7 +1199,7 @@ void gc_heap::set_region_plan_gen_num (heap_segment* region, int plan_gen_num, b
     }
 
     planned_regions_per_gen[plan_gen_num]++;
-    dprintf (REGIONS_LOG, ("h%d g%d %zx(%zx) -> g%d (total %d region planned in g%d)",
+    dprintf (REGIONS_LOG, ("h%d g%d %zx(%p) -> g%d (total %d region planned in g%d)",
         heap_number, heap_segment_gen_num (region), (size_t)region, heap_segment_mem (region), plan_gen_num, planned_regions_per_gen[plan_gen_num], plan_gen_num));
 
     heap_segment_plan_gen_num (region) = plan_gen_num;

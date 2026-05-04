@@ -384,7 +384,8 @@ extern DummyGlobalContract ___contract;
 #undef FPO_ON
 #endif
 
-void LogErrorToHost(const char* format, ...);
+#include <minipal/types.h>
+void LogErrorToHost(const char* format, ...) MINIPAL_ATTR_FORMAT_PRINTF(1, 2);
 
 #endif // !_common_h_
 

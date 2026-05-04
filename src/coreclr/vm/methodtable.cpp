@@ -2887,7 +2887,7 @@ static bool FlattenFields(TypeHandle th, uint32_t structOffset, FpStructInRegist
             {
                 LOG((LF_JIT, LL_EVERYTHING, "FpStructInRegistersInfo:%*s "
                     " * field %s [%i..%i) overlaps with other fields (occupied bytes map: 0x%04x), treat as union\n",
-                    nestingLevel * 4, "", fields[i].GetFieldDesc()->GetDebugName(), startOffset, endOffset));
+                    nestingLevel * 4, "", fields[i].GetFieldDesc()->GetDebugName(), startOffset, endOffset, occupiedBytesMap));
                 return false;
             }
             occupiedBytesMap |= fieldOccupation;

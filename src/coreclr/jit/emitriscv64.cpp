@@ -3628,7 +3628,7 @@ void emitter::emitDispBranchLabel(const instrDesc* id) const
     {
         return emitPrintLabel(id->idAddr()->iiaIGlabel);
     }
-    printf("L_M%03u_", FMT_BB, m_compiler->compMethodID, id->idAddr()->iiaBBlabel->bbNum);
+    printf("L_M%03u_" FMT_BB, m_compiler->compMethodID, id->idAddr()->iiaBBlabel->bbNum);
 }
 
 bool emitter::emitDispBranch(unsigned         opcode2,

@@ -2979,8 +2979,8 @@ PhaseStatus Compiler::fgIncorporateProfileData()
 
             default:
                 JITDUMP("Unknown PGO record type 0x%x in schema entry %u (offset 0x%x count 0x%x other 0x%x)\n",
-                        fgPgoSchema[iSchema].InstrumentationKind, iSchema, fgPgoSchema[iSchema].ILOffset,
-                        fgPgoSchema[iSchema].Count, fgPgoSchema[iSchema].Other);
+                        static_cast<unsigned>(fgPgoSchema[iSchema].InstrumentationKind), iSchema,
+                        fgPgoSchema[iSchema].ILOffset, fgPgoSchema[iSchema].Count, fgPgoSchema[iSchema].Other);
                 otherRecords++;
                 break;
         }
@@ -4638,7 +4638,7 @@ bool Compiler::fgDebugCheckProfileWeights(ProfileChecks checks)
         return false;
     }
 
-    JITDUMP("Checking Profile Weights (flags:0x%x)\n", checks);
+    JITDUMP("Checking Profile Weights (flags:0x%x)\n", static_cast<unsigned>(checks));
     unsigned problemBlocks    = 0;
     unsigned unprofiledBlocks = 0;
     unsigned profiledBlocks   = 0;
@@ -4806,7 +4806,7 @@ bool Compiler::fgDebugCheckProfileWeights(ProfileChecks checks)
             //
             if (fgFirstBB->bbRefs > 1)
             {
-                JITDUMP("  Method entry " FMT_BB " is loop head, can't check entry/exit balance\n");
+                JITDUMP("  Method entry " FMT_BB " is loop head, can't check entry/exit balance\n", fgFirstBB->bbNum);
             }
             else if (!fgProfileWeightsConsistent(entryWeight, exitWeight))
             {

@@ -10826,7 +10826,7 @@ void LinearScan::TupleStyleDump(LsraTupleDumpMode mode)
                 assert(reg == assignedReg || varDsc->lvRegister == false);
                 if (reg != argReg)
                 {
-                    printf(getRegName(argReg));
+                    printf("%s", getRegName(argReg));
                     printf("=>");
                 }
                 printf("%s)", getRegName(reg));

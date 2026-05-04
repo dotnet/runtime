@@ -1507,7 +1507,7 @@ OBJECTREF COMDelegate::ConvertToDelegate(LPVOID pCallback, MethodTable* pMT)
     // Wire up the stubs to the new delegate instance.
     //
 
-    LOG((LF_INTEROP, LL_INFO10000, "Created delegate for function pointer: entrypoint: %p\n", pMarshalStub));
+    LOG((LF_INTEROP, LL_INFO10000, "Created delegate for function pointer: entrypoint: %p\n", (void*)pMarshalStub));
 
     // Create the new delegate
     DELEGATEREF delObj = (DELEGATEREF) pMT->Allocate();

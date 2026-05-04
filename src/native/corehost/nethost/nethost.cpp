@@ -31,7 +31,7 @@ NETHOST_API int NETHOST_CALLTYPE get_hostfxr_path(
     size_t min_parameters_size = offsetof(get_hostfxr_parameters, dotnet_root) + sizeof(const char_t*);
     if (parameters != nullptr && parameters->size < min_parameters_size)
     {
-        trace::error(_X("Invalid size for get_hostfxr_parameters. Expected at least %d"), min_parameters_size);
+        trace::error(_X("Invalid size for get_hostfxr_parameters. Expected at least %zu"), min_parameters_size);
         return StatusCode::InvalidArgFailure;
     }
 
