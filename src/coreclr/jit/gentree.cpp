@@ -3708,17 +3708,18 @@ genTreeOps GenTree::SwapRelop(genTreeOps relop)
     return swapOps[relop - GT_EQ];
 }
 
-/*****************************************************************************
- *
- *  Try to reverse the meaning of the given test condition in-place,
- *  without introducing any new IR nodes.
- *
- *  Returns true if the condition was reversed in-place.
- *  Returns false if reversing the condition would require introducing a new
- *  node (e.g. wrapping the tree in a "tree == 0" comparison). In that case,
- *  the tree is not modified.
- */
-
+//------------------------------------------------------------------------
+// gtTryReverseCond: Try to reverse the meaning of the given test condition
+//    in-place, without introducing any new IR nodes.
+//
+// Arguments:
+//    tree - The condition tree to reverse
+//
+// Return Value:
+//    True if the condition was reversed in-place. False if reversing the
+//    condition would require introducing a new node (e.g. wrapping the tree
+//    in a "tree == 0" comparison); in that case, the tree is not modified.
+//
 bool Compiler::gtTryReverseCond(GenTree* tree)
 {
     if (tree->OperIsCompare())
@@ -3757,11 +3758,18 @@ bool Compiler::gtTryReverseCond(GenTree* tree)
     return false;
 }
 
-/*****************************************************************************
- *
- *  Reverse the meaning of the given test condition.
- */
-
+//------------------------------------------------------------------------
+// gtReverseCond: Reverse the meaning of the given test condition.
+//
+// Arguments:
+//    tree - The condition tree to reverse
+//
+// Return Value:
+//    The reversed condition tree. This is normally the same node as the
+//    input tree, with its operator (or condition) reversed in-place. If the
+//    tree cannot be reversed in-place, a new GT_EQ node comparing the tree
+//    to zero is returned instead.
+//
 GenTree* Compiler::gtReverseCond(GenTree* tree)
 {
     if (!gtTryReverseCond(tree))
