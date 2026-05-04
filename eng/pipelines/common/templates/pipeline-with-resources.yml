@@ -54,7 +54,7 @@ extends:
         image: mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-net11.0-android-docker-amd64@sha256:46268aa47fab84c655114e37aa8cb81acffb27a0358ee2cffa133af7de47fe6a
 
       linux_x64:
-        image: mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-net11.0-cross-amd64@sha256:a31af6e52ced742683bcd0775cb27878905573c80e275016d1da765c3537d160
+        image: mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-net11.0-cross-amd64@sha256:b3bccb97c39671ff6ae42da1aebe2c36eefef762dbbff2b1c940107e7556925c
         env:
           ROOTFS_DIR: /crossrootfs/x64
 
