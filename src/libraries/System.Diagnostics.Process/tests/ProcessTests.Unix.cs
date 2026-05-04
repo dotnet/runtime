@@ -15,6 +15,7 @@ using System.Security;
 using Xunit;
 using Microsoft.DotNet.RemoteExecutor;
 using Microsoft.DotNet.XUnitExtensions;
+using Microsoft.Win32.SafeHandles;
 
 namespace System.Diagnostics.Tests
 {
