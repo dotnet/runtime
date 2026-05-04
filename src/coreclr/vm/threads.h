@@ -1469,7 +1469,6 @@ public:
         return m_ExceptionState.IsExceptionInProgress();
     }
 
-
     //---------------------------------------------------------------
     // Per-thread information used by handler
     //---------------------------------------------------------------
@@ -2631,7 +2630,7 @@ private:
     // LTO may be stale during active dispatch. Readers that need the current
     // exception should call GetThrowable() first and fall back to LastThrownObject()
     // only when GetThrowable() returns NULL.
-    OBJECTHANDLE m_LastThrownObjectHandle;      // Unsafe to use directly.  Use accessors instead.
+    OBJECTHANDLE m_LastThrownObjectHandle;
 
     // Indicates that the throwable in m_lastThrownObjectHandle should be treated as
     // unhandled. This occurs during fatal error and a few other early error conditions

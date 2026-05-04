@@ -3961,7 +3961,6 @@ LONG InternalUnhandledExceptionFilter_Worker(
             LOG((LF_EH, LL_INFO100, "InternalUnhandledExceptionFilter_Worker: Not collecting bucket information as thread object does not exist\n"));
         }
 
-
         // Launch Watson and see if we want to debug the process
         //
         // Note that we need to do this before "ignoring" exceptions like
