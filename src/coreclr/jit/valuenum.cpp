@@ -2564,8 +2564,10 @@ ValueNum ValueNumStore::VNForFunc(var_types typ, VNFunc func, ValueNum arg0VN)
             }
 
             // Case 4: ARR_LENGTH(new T[(long)size]) -> size
+            //         ARR_LENGTH(String.FastAllocateString(pMT, (long)size)) -> size
             VNFuncApp newArrFuncApp;
-            if (GetVNFunc(arg0VN, &newArrFuncApp) && (newArrFuncApp.m_func == VNF_JitNewArr))
+            if (GetVNFunc(arg0VN, &newArrFuncApp) &&
+                ((newArrFuncApp.m_func == VNF_JitNewArr) || (newArrFuncApp.m_func == VNF_StrFastAllocate)))
             {
                 ValueNum actualSizeVN = VNIgnoreIntToLongCast(newArrFuncApp.m_args[1]);
                 if (TypeOfVN(actualSizeVN) == TYP_INT)
@@ -14112,6 +14114,7 @@ void Compiler::fgValueNumberHelperCallFunc(GenTreeCall* call, VNFunc vnf, ValueN
         }
         break;
 
+        case VNF_StrFastAllocate:
         case VNF_JitNewArr:
         case VNF_JitNewLclArr:
         {
@@ -14344,6 +14347,14 @@ bool Compiler::fgValueNumberSpecialIntrinsic(GenTreeCall* call)
 
     switch (lookupNamedIntrinsic(call->gtCallMethHnd))
     {
+        case NI_System_String_FastAllocateString:
+        {
+            assert(call->gtArgs.CountUserArgs() == 2);
+            fgValueNumberHelperCallFunc(call, VNF_StrFastAllocate, ValueNumStore::VNPForEmptyExcSet());
+            fgMutateGcHeap(call DEBUGARG("NI_System_String_FastAllocateString"));
+            return true;
+        }
+
         case NI_System_Type_GetTypeFromHandle:
         {
             // Optimize Type.GetTypeFromHandle(TypeHandleToRuntimeTypeHandle(clsHandle)) to a frozen handle.
