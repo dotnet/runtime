@@ -124,6 +124,6 @@ extends:
           ROOTFS_DIR: /crossrootfs/x64
 
       tizen_armel:
-        image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-22.04-cross-armel-tizen@sha256:7be7701b9889fba8263dd1bd36b269541909071e8c725001f6875c04dad703d0
+        image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-22.04-cross-armel-tizen@sha256:a1d0affe09ce7ca2abd1badbb806e268d907f2abbe8e995e9d701e98727ace8a
         env:
           ROOTFS_DIR: /crossrootfs/armel
