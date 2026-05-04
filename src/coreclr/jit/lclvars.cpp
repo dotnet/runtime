@@ -6916,8 +6916,13 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
     pushedCount += 1; // pushed PC (return address)
 #endif
 
+#if defined(TARGET_POWERPC64)
+    noway_assert(compLclFrameSize + originalFrameSize ==
+		 (unsigned)(stkOffs + (pushedCount * (int)TARGET_POINTER_SIZE)));
+#else
     noway_assert(compLclFrameSize + originalFrameSize ==
                  (unsigned)-(stkOffs + (pushedCount * (int)TARGET_POINTER_SIZE)));
+#endif
 }
 
 //------------------------------------------------------------------------
@@ -7054,8 +7059,13 @@ int Compiler::lvaAllocLocalAndSetVirtualOffset(unsigned lclNum, unsigned size, i
     /* Reserve space on the stack by bumping the frame size */
 
     lvaIncrementFrameSize(size);
+#if defined(TARGET_POWERPC64)
+    lcl->SetStackOffset(stkOffs + 96); // TODO ALHAD Set appropriate stack offset when parameters size is more than 8 registers
+    stkOffs += size;
+#else
     stkOffs -= size;
     lcl->SetStackOffset(stkOffs);
+#endif
 
 #ifdef DEBUG
     if (verbose)

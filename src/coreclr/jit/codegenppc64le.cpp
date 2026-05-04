@@ -679,7 +679,7 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* lclNode)
             instruction ins  = ins_Store(targetType);
             emitAttr    attr = emitActualTypeSize(targetType);
 
-            emit->emitIns_S_R(ins, attr, dataReg, varNum, /* offset */ 0);
+            emit->emitIns_S_R(ins, attr, dataReg, varNum, /* offset */ 0); //TODO ALHAD Calculate correct offset if there parameters size span more than 8 registers
         }
         else // store into register (i.e move into register)
         {
