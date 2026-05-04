@@ -21,6 +21,10 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             TestCaseInsensitive();
             TestUnknownAssembly();
             TestUnknownTypeAssemblyGetType(null);
+            TestArrayType();
+            TestPointerType();
+            TestGenericType();
+            TestTypeOnlyInCoreLib();
         }
 
         class InnerType
@@ -68,6 +72,44 @@ namespace Mono.Linker.Tests.Cases.DataFlow
         static void TestUnknownTypeAssemblyGetType(Type unknownType)
         {
             unknownType.Assembly.GetType("Mono.Linker.Tests.Cases.DataFlow.AssemblyGetTypeDataFlow+InnerType");
+        }
+
+        // Verifies the resolver supports array type names. Without array support the analyzer
+        // would treat the result as unknown (Top) instead of a known SystemTypeValue, and
+        // GetProperty("Length") below would emit IL2075 instead of resolving Array.Length.
+        static void TestArrayType()
+        {
+            Type type = typeof(AssemblyGetTypeDataFlow).Assembly.GetType("Mono.Linker.Tests.Cases.DataFlow.AssemblyGetTypeDataFlow+InnerType[]");
+            type.GetProperty("Length");
+        }
+
+        static void TestPointerType()
+        {
+            Type type = typeof(AssemblyGetTypeDataFlow).Assembly.GetType("Mono.Linker.Tests.Cases.DataFlow.AssemblyGetTypeDataFlow+InnerType*");
+            type.RequiresAll();
+        }
+
+        class GenericType<T>
+        {
+        }
+
+        // Generic type arguments are unqualified; Assembly.GetType resolves them in the
+        // receiver assembly (no corelib fallback).
+        static void TestGenericType()
+        {
+            Type type = typeof(AssemblyGetTypeDataFlow).Assembly.GetType(
+                "Mono.Linker.Tests.Cases.DataFlow.AssemblyGetTypeDataFlow+GenericType`1[[Mono.Linker.Tests.Cases.DataFlow.AssemblyGetTypeDataFlow+InnerType]]");
+            type.RequiresAll();
+        }
+
+        // Verifies Assembly.GetType does not over-resolve to corelib. "System.Reflection.Assembly"
+        // is not defined in this assembly, so Assembly.GetType must return null at runtime; the
+        // analyzer must not statically resolve it to corelib's System.Reflection.Assembly. If it
+        // did, RequiresAll() would mark RequiresUnreferencedCode-annotated members like LoadFrom
+        // and emit IL2026.
+        static void TestTypeOnlyInCoreLib()
+        {
+            typeof(AssemblyGetTypeDataFlow).Assembly.GetType("System.Reflection.Assembly").RequiresAll();
         }
 
         static string GetUnknownString() => "unknown";

@@ -151,7 +151,7 @@ namespace ILLink.Shared.TrimAnalysis
             return null;
         }
 
-        public bool TryResolveTypeNameInAssembly(string assemblySimpleName, string typeName, [NotNullWhen(true)] out ITypeSymbol? type)
+        public bool TryResolveTypeNameInAssembly(string assemblySimpleName, string typeNameString, [NotNullWhen(true)] out ITypeSymbol? type)
         {
             type = null;
 
@@ -159,9 +159,10 @@ namespace ILLink.Shared.TrimAnalysis
             if (assembly is null)
                 return false;
 
-            // Note: GetTypeByMetadataName only handles simple metadata names, not arrays, pointers, or
-            // generic instantiations. Complex type names will return null and fall through to a warning.
-            type = assembly.GetTypeByMetadataName(typeName);
+            if (!TypeName.TryParse(typeNameString.AsSpan(), out TypeName? parsedTypeName, s_typeNameParseOptions))
+                return false;
+
+            type = ResolveTypeName(assembly, parsedTypeName);
             return type is not null;
         }
     }

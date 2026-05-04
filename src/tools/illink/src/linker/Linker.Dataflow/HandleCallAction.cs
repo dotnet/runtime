@@ -290,7 +290,7 @@ namespace ILLink.Shared.TrimAnalysis
                 return false;
             }
 
-            if (!_reflectionMarker.TryResolveTypeNameAndMark(resolvedAssembly, typeName, _diagnosticContext, out TypeReference? foundType))
+            if (!_reflectionMarker.TryResolveTypeNameAndMark(resolvedAssembly, typeName, _diagnosticContext, fallbackToCoreLib: true, out TypeReference? foundType))
             {
                 // It's not wrong to have a reference to non-existing type - the code may well expect to get an exception in this case
                 // Note that we did find the assembly, so it's not a ILLink config problem, it's either intentional, or wrong versions of assemblies
@@ -316,9 +316,7 @@ namespace ILLink.Shared.TrimAnalysis
                 return false;
             }
 
-            // Note: the underlying resolver falls back to corelib for unqualified type names.
-            // Assembly.GetType only searches the receiver assembly at runtime, so this may over-resolve.
-            if (!_reflectionMarker.TryResolveTypeNameAndMark(resolvedAssembly, typeName, _diagnosticContext, out TypeReference? foundType))
+            if (!_reflectionMarker.TryResolveTypeNameAndMark(resolvedAssembly, typeName, _diagnosticContext, fallbackToCoreLib: false, out TypeReference? foundType))
             {
                 resolvedType = default;
                 return false;

@@ -31,12 +31,13 @@ namespace Internal.TypeSystem
                 _context = module.Context,
                 _module = module,
                 _throwIfNotFound = throwIfNotFound,
+                _fallbackToCoreLib = true,
                 _canonGenericResolver = canonGenericResolver
             }.Resolve(parsed);
         }
 
         public static TypeDesc GetTypeByCustomAttributeTypeNameForDataFlow(string name, ModuleDesc callingModule,
-            TypeSystemContext context, List<ModuleDesc> referencedModules, bool needsAssemblyName, out bool failedBecauseNotFullyQualified)
+            TypeSystemContext context, List<ModuleDesc> referencedModules, bool needsAssemblyName, bool fallbackToCoreLib, out bool failedBecauseNotFullyQualified)
         {
             failedBecauseNotFullyQualified = false;
             if (!TypeName.TryParse(name.AsSpan(), out TypeName parsed, s_typeNameParseOptions))
@@ -52,7 +53,8 @@ namespace Internal.TypeSystem
             {
                 _context = context,
                 _module = callingModule,
-                _referencedModules = referencedModules
+                _referencedModules = referencedModules,
+                _fallbackToCoreLib = fallbackToCoreLib,
             };
 
             TypeDesc type = resolver.Resolve(parsed);
@@ -91,6 +93,7 @@ namespace Internal.TypeSystem
             internal TypeSystemContext _context;
             internal ModuleDesc _module;
             internal bool _throwIfNotFound;
+            internal bool _fallbackToCoreLib;
             internal Func<ModuleDesc, string, TypeDesc> _canonGenericResolver;
 
             internal List<ModuleDesc> _referencedModules;
@@ -153,7 +156,7 @@ namespace Internal.TypeSystem
                     }
                 }
 
-                if (topLevelTypeName.AssemblyName == null)
+                if (_fallbackToCoreLib && topLevelTypeName.AssemblyName == null)
                 {
                     // If it didn't resolve and wasn't assembly-qualified, we also try core library
                     if (module != _context.SystemModule)
