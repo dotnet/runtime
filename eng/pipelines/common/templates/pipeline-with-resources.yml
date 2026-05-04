@@ -98,7 +98,7 @@ extends:
           ROOTFS_DIR: /crossrootfs/riscv64
 
       linux_loongarch64:
-        image: mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-net11.0-cross-loongarch64@sha256:5908b2ef30027f87bbb6b037a21c09f17b1c5f632558d553202b5732860420ae
+        image: mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-net11.0-cross-loongarch64@sha256:6833f4b20402f1cb5e3565adefa2f1b3587d30c52a80a45a907e567d249e773e
         env:
           ROOTFS_DIR: /crossrootfs/loongarch64
 
