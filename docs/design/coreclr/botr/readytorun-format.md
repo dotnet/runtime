@@ -1001,6 +1001,96 @@ enum ReadyToRunHelper
 };
 ```
 
+# Wasm Signature String Encoding
+
+Every managed method signature is encoded as a compact string that uniquely identifies its
+lowered Wasm calling convention. This encoding is used in R2R thunk lookup tables and is
+shared across three codebases:
+
+- **crossgen2** (`WasmLowering.GetSignature`): reference implementation, produces the string
+  during R2R compilation.
+- **WasmAppBuilder** (`SignatureMapper`): MSBuild task that generates interpreter-to-native
+  thunk tables from reflection metadata.
+- **CoreCLR runtime** (`helpers.cpp`, `GetSignatureKey`): runtime signature computation for
+  calli and portable entrypoint thunks.
+
+The string format is:
+
+```
+<return> [<this>] [<hidden-params>...] <explicit-params>... [p]
+```
+
+**Return type** (first character):
+
+| Encoding | Meaning |
+|---|---|
+| `v` | void return, or empty struct return (no return buffer) |
+| `i` | returns `i32` |
+| `l` | returns `i64` |
+| `f` | returns `f32` |
+| `d` | returns `f64` |
+| `S<N>` | struct return via hidden buffer, `N` is the struct size in bytes |
+
+**This pointer** (if the method has a `this` parameter):
+
+| Encoding | Meaning |
+|---|---|
+| `T` | `this` pointer (managed instance methods) |
+
+**Hidden parameters** (inserted between `this` and explicit parameters, in order):
+
+1. **Generic context** (`i`): present when the method requires an inst method desc or
+   method table argument.
+2. **Async continuation** (`i`): present for async calls.
+
+Note: the hidden return buffer pointer is **not** encoded in the signature string. Its
+presence is implied by the return type being `S<N>` — when the caller sees a struct return,
+it knows a hidden retbuf pointer argument is present in the Wasm parameter list.
+
+**Explicit parameters** (one token per parameter, in declaration order):
+
+| Encoding | Meaning |
+|---|---|
+| `i` | `i32` parameter |
+| `l` | `i64` parameter |
+| `f` | `f32` parameter |
+| `d` | `f64` parameter |
+| `S<N>` | struct parameter passed by reference, `N` is the struct size in bytes |
+| `e` | empty struct parameter — elided from Wasm args but present in the string |
+
+**Suffix**:
+
+| Encoding | Meaning |
+|---|---|
+| `p` | managed call with portable entrypoint (the `&pe` argument is implicit) |
+| *(absent)* | unmanaged callers only (reverse P/Invoke) |
+
+**Prefix** (applied by the caller, not part of the core encoding):
+
+When storing signature strings in thunk lookup tables, callers prepend a single-character
+prefix to distinguish thunk categories:
+
+| Prefix | Meaning |
+|---|---|
+| `M` | Calli thunk or interpreter-to-native thunk |
+| `I` | Portable entrypoint-to-interpreter thunk |
+
+**Examples**:
+
+| Method | Signature string (no prefix) |
+|---|---|
+| `static void F()` | `vp` |
+| `static int F(int x)` | `iip` |
+| `void F(int x)` (instance) | `vTip` |
+| `static MyStruct F()` where `MyStruct` is 16 bytes | `S16p` |
+| `static void F(MyStruct s)` where `MyStruct` is 8 bytes | `vS8p` |
+| `static int F(float x, double y)` | `ifdp` |
+| `[UnmanagedCallersOnly] static int F(int x)` | `ii` |
+
+**Slot sizing for structs**: When computing interpreter stack layout, struct parameters
+(`S<N>`) consume `max(N / 8, 1)` interpreter stack slots, while all other parameter types
+consume exactly 1 slot.
+
 # References
 
 [ECMA-335](https://www.ecma-international.org/publications-and-standards/standards/ecma-335)

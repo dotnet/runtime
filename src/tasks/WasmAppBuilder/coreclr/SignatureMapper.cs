@@ -9,6 +9,9 @@ using System.Text;
 
 namespace Microsoft.WebAssembly.Build.Tasks.CoreClr;
 
+// Computes Wasm signature strings from reflection metadata.
+// The signature string format is documented in docs/design/coreclr/botr/readytorun-format.md
+// (section "Wasm Signature String Encoding").
 internal static class SignatureMapper
 {
     // Hardcoded struct sizes for types that crossgen2 encodes as S<N>.

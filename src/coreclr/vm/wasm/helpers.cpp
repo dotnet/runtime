@@ -906,6 +906,8 @@ namespace
     }
 
     // Computes the signature key string for a MetaSig.
+    // The format is documented in docs/design/coreclr/botr/readytorun-format.md
+    // (section "Wasm Signature String Encoding").
     // Returns the total number of characters needed (excluding null terminator).
     // Only writes characters while pos < maxSize, so the buffer is never overflowed.
     // Callers should check if the return value >= maxSize and retry with a larger buffer.

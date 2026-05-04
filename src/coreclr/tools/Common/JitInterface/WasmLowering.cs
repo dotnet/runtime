@@ -243,6 +243,8 @@ namespace Internal.JitInterface
 
         /// <summary>
         /// Gets the Wasm-level signature for a given MethodDesc.
+        /// The signature string format is documented in docs/design/coreclr/botr/readytorun-format.md
+        /// (section "Wasm Signature String Encoding").
         ///
         /// Parameters for managed Wasm calls have the following layout:
         /// i32 (SP), loweredParam0, ..., loweredParamN, i32 (PE entrypoint)
