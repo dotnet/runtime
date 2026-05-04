@@ -720,7 +720,11 @@ mono_llvm_register_intrinsic (LLVMModuleRef module, IntrinsicId id, LLVMTypeRef 
 
 	auto intrins_id = get_intrins_id (id);
 	if (intrins_id != not_intrinsic) {
+	#if LLVM_API_VERSION >= 2000
+		Function *f = Intrinsic::getOrInsertDeclaration (unwrap (module), intrins_id);
+#else
 		Function *f = Intrinsic::getDeclaration (unwrap (module), intrins_id);
+#endif
 		if (!f) {
 			outs () << id << "\n";
 			g_assert_not_reached ();
@@ -748,7 +752,11 @@ mono_llvm_register_overloaded_intrinsic (LLVMModuleRef module, IntrinsicId id, L
 	Type *arr [max_types];
 	for (int i = 0; i < ntypes; ++i)
 		arr [i] = unwrap (types [i]);
+#if LLVM_API_VERSION >= 2000
+	auto f = Intrinsic::getOrInsertDeclaration (unwrap (module), intrins_id, { arr, (size_t)ntypes });
+#else
 	auto f = Intrinsic::getDeclaration (unwrap (module), intrins_id, { arr, (size_t)ntypes });
+#endif
 	auto type = Intrinsic::getType (*unwrap(LLVMGetGlobalContext ()), intrins_id, { arr, (size_t)ntypes });
 	*out_type = wrap (type);
 	return wrap (f);

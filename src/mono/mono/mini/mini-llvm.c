@@ -30,6 +30,9 @@
 #define __STDC_CONSTANT_MACROS
 #endif
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+
 #include "llvm-c/Core.h"
 #include "llvm-c/BitWriter.h"
 #include "llvm-c/Analysis.h"
@@ -15447,3 +15450,5 @@ MonoCPUFeatures mono_llvm_get_cpu_features (void)
 
 	return cpu_features;
 }
+
+#pragma GCC diagnostic pop

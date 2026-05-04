@@ -46,7 +46,7 @@ This file should be imported by eng/Versions.props
     <SystemReflectionMetadataLoadContextPackageVersion>11.0.0-preview.4.26211.102</SystemReflectionMetadataLoadContextPackageVersion>
     <SystemTextJsonPackageVersion>11.0.0-preview.4.26211.102</SystemTextJsonPackageVersion>
     <!-- dotnet-icu dependencies -->
-    <MicrosoftNETCoreRuntimeICUTransportPackageVersion>11.0.0-alpha.1.26181.1</MicrosoftNETCoreRuntimeICUTransportPackageVersion>
+    <MicrosoftNETCoreRuntimeICUTransportPackageVersion>11.0.0-alpha.1.26253.2</MicrosoftNETCoreRuntimeICUTransportPackageVersion>
     <!-- dotnet-llvm-project dependencies -->
     <runtimelinuxarm64MicrosoftNETCoreRuntimeJITToolsPackageVersion>19.1.0-alpha.1.26173.1</runtimelinuxarm64MicrosoftNETCoreRuntimeJITToolsPackageVersion>
     <runtimelinuxarm64MicrosoftNETCoreRuntimeMonoLLVMLibclangPackageVersion>19.1.0-alpha.1.26173.1</runtimelinuxarm64MicrosoftNETCoreRuntimeMonoLLVMLibclangPackageVersion>
@@ -60,10 +60,10 @@ This file should be imported by eng/Versions.props
     <runtimelinuxmuslx64MicrosoftNETCoreRuntimeMonoLLVMLibclangPackageVersion>19.1.0-alpha.1.26173.1</runtimelinuxmuslx64MicrosoftNETCoreRuntimeMonoLLVMLibclangPackageVersion>
     <runtimelinuxmuslx64MicrosoftNETCoreRuntimeMonoLLVMSdkPackageVersion>19.1.0-alpha.1.26173.1</runtimelinuxmuslx64MicrosoftNETCoreRuntimeMonoLLVMSdkPackageVersion>
     <runtimelinuxmuslx64MicrosoftNETCoreRuntimeMonoLLVMToolsPackageVersion>19.1.0-alpha.1.26173.1</runtimelinuxmuslx64MicrosoftNETCoreRuntimeMonoLLVMToolsPackageVersion>
-    <runtimelinuxx64MicrosoftNETCoreRuntimeJITToolsPackageVersion>19.1.0-alpha.1.26173.1</runtimelinuxx64MicrosoftNETCoreRuntimeJITToolsPackageVersion>
-    <runtimelinuxx64MicrosoftNETCoreRuntimeMonoLLVMLibclangPackageVersion>19.1.0-alpha.1.26173.1</runtimelinuxx64MicrosoftNETCoreRuntimeMonoLLVMLibclangPackageVersion>
-    <runtimelinuxx64MicrosoftNETCoreRuntimeMonoLLVMSdkPackageVersion>19.1.0-alpha.1.26173.1</runtimelinuxx64MicrosoftNETCoreRuntimeMonoLLVMSdkPackageVersion>
-    <runtimelinuxx64MicrosoftNETCoreRuntimeMonoLLVMToolsPackageVersion>19.1.0-alpha.1.26173.1</runtimelinuxx64MicrosoftNETCoreRuntimeMonoLLVMToolsPackageVersion>
+    <runtimelinuxx64MicrosoftNETCoreRuntimeJITToolsPackageVersion>23.1.0-alpha.1.26253.2</runtimelinuxx64MicrosoftNETCoreRuntimeJITToolsPackageVersion>
+    <runtimelinuxx64MicrosoftNETCoreRuntimeMonoLLVMLibclangPackageVersion>23.1.0-alpha.1.26253.2</runtimelinuxx64MicrosoftNETCoreRuntimeMonoLLVMLibclangPackageVersion>
+    <runtimelinuxx64MicrosoftNETCoreRuntimeMonoLLVMSdkPackageVersion>23.1.0-alpha.1.26253.2</runtimelinuxx64MicrosoftNETCoreRuntimeMonoLLVMSdkPackageVersion>
+    <runtimelinuxx64MicrosoftNETCoreRuntimeMonoLLVMToolsPackageVersion>23.1.0-alpha.1.26253.2</runtimelinuxx64MicrosoftNETCoreRuntimeMonoLLVMToolsPackageVersion>
     <runtimeosxarm64MicrosoftNETCoreRuntimeJITToolsPackageVersion>19.1.0-alpha.1.26173.1</runtimeosxarm64MicrosoftNETCoreRuntimeJITToolsPackageVersion>
     <runtimeosxarm64MicrosoftNETCoreRuntimeMonoLLVMLibclangPackageVersion>19.1.0-alpha.1.26173.1</runtimeosxarm64MicrosoftNETCoreRuntimeMonoLLVMLibclangPackageVersion>
     <runtimeosxarm64MicrosoftNETCoreRuntimeMonoLLVMSdkPackageVersion>19.1.0-alpha.1.26173.1</runtimeosxarm64MicrosoftNETCoreRuntimeMonoLLVMSdkPackageVersion>
@@ -81,7 +81,7 @@ This file should be imported by eng/Versions.props
     <runtimelinuxarm64MicrosoftNETCoreRuntimeWasmNodeTransportPackageVersion>11.0.0-alpha.1.26173.2</runtimelinuxarm64MicrosoftNETCoreRuntimeWasmNodeTransportPackageVersion>
     <runtimelinuxmuslarm64MicrosoftNETCoreRuntimeWasmNodeTransportPackageVersion>11.0.0-alpha.1.26173.2</runtimelinuxmuslarm64MicrosoftNETCoreRuntimeWasmNodeTransportPackageVersion>
     <runtimelinuxmuslx64MicrosoftNETCoreRuntimeWasmNodeTransportPackageVersion>11.0.0-alpha.1.26173.2</runtimelinuxmuslx64MicrosoftNETCoreRuntimeWasmNodeTransportPackageVersion>
-    <runtimelinuxx64MicrosoftNETCoreRuntimeWasmNodeTransportPackageVersion>11.0.0-alpha.1.26173.2</runtimelinuxx64MicrosoftNETCoreRuntimeWasmNodeTransportPackageVersion>
+    <runtimelinuxx64MicrosoftNETCoreRuntimeWasmNodeTransportPackageVersion>11.0.0-alpha.1.26253.2</runtimelinuxx64MicrosoftNETCoreRuntimeWasmNodeTransportPackageVersion>
     <runtimeosxarm64MicrosoftNETCoreRuntimeWasmNodeTransportPackageVersion>11.0.0-alpha.1.26173.2</runtimeosxarm64MicrosoftNETCoreRuntimeWasmNodeTransportPackageVersion>
     <runtimeosxx64MicrosoftNETCoreRuntimeWasmNodeTransportPackageVersion>11.0.0-alpha.1.26173.2</runtimeosxx64MicrosoftNETCoreRuntimeWasmNodeTransportPackageVersion>
     <runtimewinarm64MicrosoftNETCoreRuntimeWasmNodeTransportPackageVersion>11.0.0-alpha.1.26173.2</runtimewinarm64MicrosoftNETCoreRuntimeWasmNodeTransportPackageVersion>
