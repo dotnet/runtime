@@ -416,7 +416,7 @@ namespace System.Formats.Tar.Tests
             // dir a/
             // symlink a/b → .
             // symlink a/b/c → .
-            // symlink a/b/c/d → .. / .. / outside
+            // symlink a/b/c/d → ../../outside
             // file a/d/ pwned.txt escapes
 
             using TempDirectory root = new TempDirectory();
@@ -442,9 +442,18 @@ namespace System.Formats.Tar.Tests
                 writer.WriteEntry(pwned);
             }
 
-            Assert.Throws<IOException>(() => TarFile.ExtractToDirectory(tarPath, destDir, overwriteFiles: true));
+            if (OperatingSystem.IsWindows())
+            {
+                // Windows only creates file symlinks and trying to process a directory symlink will throw UnauthorizedAccessException instead of IOException
+                Assert.Throws<UnauthorizedAccessException>(() => TarFile.ExtractToDirectory(tarPath, destDir, overwriteFiles: true));
+            }
+            else
+            {
+                Assert.Throws<IOException>(() => TarFile.ExtractToDirectory(tarPath, destDir, overwriteFiles: true));
+            }
+
             string outsideDir = Path.Combine(root.Path, "outside");
-            Assert.False(Directory.Exists(outsideDir), "outside/ directory should not have been created.");
+            Assert.False(Directory.Exists(outsideDir), "outside/directory should not have been created.");
             Assert.False(File.Exists(Path.Combine(outsideDir, "pwned.txt")), "pwned.txt should not have been written outside destination.");
 
         }
