@@ -74,6 +74,15 @@ CORINFO_CLASS_HANDLE interceptor_ICJI::getTypeDefinition(
     return original_ICorJitInfo->getTypeDefinition(type);
 }
 
+CORINFO_CLASS_HANDLE interceptor_ICJI::findTypeByName(
+          CORINFO_CLASS_HANDLE typeInAssembly,
+          CORINFO_MODULE_HANDLE typeNameModule,
+          unsigned typeNameToken)
+{
+    mcs->AddCall("findTypeByName");
+    return original_ICorJitInfo->findTypeByName(typeInAssembly, typeNameModule, typeNameToken);
+}
+
 CorInfoInline interceptor_ICJI::canInline(
           CORINFO_METHOD_HANDLE callerHnd,
           CORINFO_METHOD_HANDLE calleeHnd)

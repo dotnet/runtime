@@ -104,6 +104,16 @@ CORINFO_CLASS_HANDLE MyICJI::getTypeDefinition(
     return value;
 }
 
+CORINFO_CLASS_HANDLE MyICJI::findTypeByName(
+    CORINFO_CLASS_HANDLE typeInAssembly,
+    CORINFO_MODULE_HANDLE typeNameModule,
+    unsigned typeNameToken)
+{
+    jitInstance->mc->cr->AddCall("findTypeByName");
+    CORINFO_CLASS_HANDLE value = jitInstance->mc->repFindTypeByName(typeInAssembly, typeNameModule, typeNameToken);
+    return value;
+}
+
 // Decides if you have any limitations for inlining. If everything's OK, it will return
 // INLINE_PASS.
 //

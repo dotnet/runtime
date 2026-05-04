@@ -3311,7 +3311,6 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
         // boost. We actually have the implementation in managed, however, to keep the JIT simpler.
         return nullptr;
     }
-
     if (!isIntrinsic)
     {
         // Outside the cases above, there are many intrinsics which apply to only a
@@ -3450,6 +3449,8 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
             case NI_System_Type_get_TypeHandle:
             case NI_System_RuntimeType_get_TypeHandle:
             case NI_System_RuntimeTypeHandle_ToIntPtr:
+            case NI_System_Type_get_Assembly:
+            case NI_System_Reflection_Assembly_GetType:
 
             // This one is not simple, but it will help us
             // to avoid some unnecessary boxing
@@ -4181,6 +4182,99 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                     retNode         = gtNewHelperCallNode(CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE, TYP_REF, handle);
                     impPopStack();
                 }
+                break;
+            }
+
+            case NI_System_Type_get_Assembly:
+            {
+                // We don't expand this intrinsic directly — we just keep it as a special
+                // intrinsic call on the stack so Assembly.GetType can look through it.
+                isSpecial = true;
+                break;
+            }
+
+            case NI_System_Reflection_Assembly_GetType:
+            {
+                // Folding typeof(T).Assembly.GetType("Foo") to a constant requires
+                // findTypeByName to potentially load the type — that's safe and
+                // expected for AOT (NativeAOT, R2R), but for regular JIT it
+                // can introduce JIT-time type loading. Gate accordingly:
+                //   - Only when optimizations are enabled
+                //   - On by default for AOT (NativeAOT or R2R)
+                //   - Off by default for CoreCLR JIT (opt-in via JitFoldAssemblyGetType)
+                if (opts.OptimizationDisabled())
+                {
+                    break;
+                }
+                if (!IsAot() && (JitConfig.JitFoldAssemblyGetType() == 0))
+                {
+                    break;
+                }
+
+                // Only handle the single-arg overload (no throwOnError / ignoreCase)
+                if (sig->numArgs != 1)
+                {
+                    break;
+                }
+
+                GenTree* strArg = impStackTop(0).val;
+                GenTree* asmArg = impStackTop(1).val;
+
+                // Check: is strArg a string literal?
+                if (!strArg->OperIs(GT_CNS_STR) || strArg->AsStrCon()->IsStringEmptyField())
+                {
+                    break;
+                }
+
+                // Check: is asmArg a get_Assembly call on a typeof(T)?
+                GenTreeCall* asmCall = nullptr;
+                if (asmArg->OperIs(GT_CALL))
+                {
+                    asmCall = asmArg->AsCall();
+                }
+                else if (asmArg->OperIs(GT_RET_EXPR))
+                {
+                    asmCall = asmArg->AsRetExpr()->gtInlineCandidate;
+                }
+
+                if (asmCall == nullptr || lookupNamedIntrinsic(asmCall->gtCallMethHnd) != NI_System_Type_get_Assembly)
+                {
+                    break;
+                }
+
+                // Look through get_Assembly to find typeof(T)
+                GenTree*             typeArg = asmCall->gtArgs.GetArgByIndex(0)->GetNode();
+                CORINFO_CLASS_HANDLE hClass  = NO_CLASS_HANDLE;
+                if (!gtIsTypeof(typeArg, &hClass))
+                {
+                    break;
+                }
+
+                // We have typeof(Foo).Assembly.GetType("Bar") with known Foo and known "Bar"
+                GenTreeStrCon*       strCon = strArg->AsStrCon();
+                CORINFO_CLASS_HANDLE resolved =
+                    info.compCompHnd->findTypeByName(hClass, strCon->gtScpHnd, strCon->gtSconCPX);
+
+                if (resolved == NO_CLASS_HANDLE)
+                {
+                    break;
+                }
+
+                JITDUMP("\nIntrinsifying typeof(...).Assembly.GetType(\"...\") to a known type\n");
+
+                // Pop both args
+                impPopStack(); // string
+                impPopStack(); // assembly
+
+                // Bash the get_Assembly call to a NOP since we're discarding it
+                if (asmArg->OperIs(GT_RET_EXPR))
+                {
+                    asmCall->gtBashToNOP();
+                }
+
+                // Return the resolved type as CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE(resolvedHandle)
+                GenTree* handleNode = gtNewIconEmbClsHndNode(resolved);
+                retNode             = gtNewHelperCallNode(CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE, TYP_REF, handleNode);
                 break;
             }
 
@@ -10674,6 +10768,10 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                         {
                             result = NI_System_RuntimeType_get_TypeHandle;
                         }
+                        if (strcmp(methodName, "get_Assembly") == 0)
+                        {
+                            result = NI_System_Type_get_Assembly;
+                        }
                     }
                     else if (strcmp(className, "RuntimeTypeHandle") == 0)
                     {
@@ -10814,6 +10912,10 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                         else if (strcmp(methodName, "get_TypeHandle") == 0)
                         {
                             result = NI_System_Type_get_TypeHandle;
+                        }
+                        else if (strcmp(methodName, "get_Assembly") == 0)
+                        {
+                            result = NI_System_Type_get_Assembly;
                         }
                     }
                     break;
@@ -11070,6 +11172,16 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                                 // so we can still get the inlining profitability boost.
                                 result = NI_System_Numerics_Intrinsic;
                             }
+                        }
+                    }
+                }
+                else if (strcmp(namespaceName, "Reflection") == 0)
+                {
+                    if (strcmp(className, "Assembly") == 0)
+                    {
+                        if (strcmp(methodName, "GetType") == 0)
+                        {
+                            result = NI_System_Reflection_Assembly_GetType;
                         }
                     }
                 }

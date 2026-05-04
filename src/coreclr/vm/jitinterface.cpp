@@ -7820,6 +7820,63 @@ CORINFO_CLASS_HANDLE CEEInfo::getTypeDefinition(CORINFO_CLASS_HANDLE type)
     return result;
 }
 
+CORINFO_CLASS_HANDLE CEEInfo::findTypeByName(
+    CORINFO_CLASS_HANDLE typeInAssembly,
+    CORINFO_MODULE_HANDLE typeNameModule,
+    unsigned typeNameToken)
+{
+    CONTRACTL {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    CORINFO_CLASS_HANDLE result = NULL;
+
+    JIT_TO_EE_TRANSITION();
+
+    // Get the assembly from the type handle
+    TypeHandle th(typeInAssembly);
+    Assembly* pAssembly = th.GetAssembly();
+
+    // Read the string token from the module
+    Module* pModule = GetModule(typeNameModule);
+    ULONG cchString = 0;
+    LPCWSTR pString = nullptr;
+
+    if (FAILED(pModule->GetMDImport()->GetUserString(typeNameToken, &cchString, nullptr, &pString)) ||
+        pString == nullptr || cchString == 0)
+    {
+        goto Done;
+    }
+
+    {
+        // Convert UTF16 type name to UTF8
+        StackSString typeNameStr(pString, cchString);
+        LPCUTF8 typeNameUtf8 = typeNameStr.GetUTF8();
+
+        // Try to load the type by name within the assembly.
+        // Pass NULL for namespace - LoadTypeByNameThrowing will parse the fully qualified name.
+        TypeHandle resolvedType = ClassLoader::LoadTypeByNameThrowing(
+            pAssembly,
+            nullptr,         // namespace (parsed from name)
+            typeNameUtf8,    // fully qualified type name
+            ClassLoader::ReturnNullIfNotFound,
+            ClassLoader::LoadTypes);
+
+        if (!resolvedType.IsNull())
+        {
+            result = CORINFO_CLASS_HANDLE(resolvedType.AsPtr());
+        }
+    }
+
+Done:
+
+    EE_TO_JIT_TRANSITION();
+
+    return result;
+}
+
 /*************************************************************
  * Check if the caller and calle are in the same assembly
  * i.e. do not inline across assemblies

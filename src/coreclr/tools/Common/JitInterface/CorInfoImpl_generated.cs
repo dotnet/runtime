@@ -28,6 +28,7 @@ namespace Internal.JitInterface
                 s_callbacks.getMethodInfo = &_getMethodInfo;
                 s_callbacks.haveSameMethodDefinition = &_haveSameMethodDefinition;
                 s_callbacks.getTypeDefinition = &_getTypeDefinition;
+                s_callbacks.findTypeByName = &_findTypeByName;
                 s_callbacks.canInline = &_canInline;
                 s_callbacks.beginInlining = &_beginInlining;
                 s_callbacks.reportInliningDecision = &_reportInliningDecision;
@@ -210,6 +211,7 @@ namespace Internal.JitInterface
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, CORINFO_METHOD_INFO*, CORINFO_CONTEXT_STRUCT*, byte> getMethodInfo;
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, CORINFO_METHOD_STRUCT_*, byte> haveSameMethodDefinition;
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, CORINFO_CLASS_STRUCT_*> getTypeDefinition;
+            public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, CORINFO_MODULE_STRUCT_*, uint, CORINFO_CLASS_STRUCT_*> findTypeByName;
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, CORINFO_METHOD_STRUCT_*, CorInfoInline> canInline;
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, CORINFO_METHOD_STRUCT_*, void> beginInlining;
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, CORINFO_METHOD_STRUCT_*, CorInfoInline, byte*, void> reportInliningDecision;
@@ -499,6 +501,21 @@ namespace Internal.JitInterface
             try
             {
                 return _this.getTypeDefinition(type);
+            }
+            catch (Exception ex)
+            {
+                *ppException = _this.AllocException(ex);
+                return default;
+            }
+        }
+
+        [UnmanagedCallersOnly]
+        private static CORINFO_CLASS_STRUCT_* _findTypeByName(IntPtr thisHandle, IntPtr* ppException, CORINFO_CLASS_STRUCT_* typeInAssembly, CORINFO_MODULE_STRUCT_* typeNameModule, uint typeNameToken)
+        {
+            var _this = GetThis(thisHandle);
+            try
+            {
+                return _this.findTypeByName(typeInAssembly, typeNameModule, typeNameToken);
             }
             catch (Exception ex)
             {

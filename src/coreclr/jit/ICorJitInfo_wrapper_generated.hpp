@@ -88,6 +88,17 @@ CORINFO_CLASS_HANDLE WrapICorJitInfo::getTypeDefinition(
     return temp;
 }
 
+CORINFO_CLASS_HANDLE WrapICorJitInfo::findTypeByName(
+          CORINFO_CLASS_HANDLE typeInAssembly,
+          CORINFO_MODULE_HANDLE typeNameModule,
+          unsigned typeNameToken)
+{
+    API_ENTER(findTypeByName);
+    CORINFO_CLASS_HANDLE temp = wrapHnd->findTypeByName(typeInAssembly, typeNameModule, typeNameToken);
+    API_LEAVE(findTypeByName);
+    return temp;
+}
+
 CorInfoInline WrapICorJitInfo::canInline(
           CORINFO_METHOD_HANDLE callerHnd,
           CORINFO_METHOD_HANDLE calleeHnd)

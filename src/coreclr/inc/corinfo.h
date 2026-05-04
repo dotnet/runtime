@@ -2206,6 +2206,29 @@ public:
     //   should only be called when the input type is in fact a generic type.
     virtual CORINFO_CLASS_HANDLE getTypeDefinition(CORINFO_CLASS_HANDLE type) = 0;
 
+    //------------------------------------------------------------------------------
+    // findTypeByName: Resolve a type by name within the assembly containing the given type.
+    //
+    // Arguments:
+    //    typeInAssembly - A type handle identifying the target assembly
+    //    typeNameModule - The module containing the type name string token
+    //    typeNameToken  - The metadata token for the string literal with the type name
+    //
+    // Return Value:
+    //   The class handle for the resolved type, or NO_CLASS_HANDLE if the type
+    //   cannot be found within the assembly.
+    //
+    // Remarks:
+    //   This is used to intrinsify typeof(Foo).Assembly.GetType("Bar") patterns.
+    //   The type name is read from the metadata string token and resolved within
+    //   the assembly that contains typeInAssembly. Only simple type names are
+    //   supported (no arrays, pointers, or generic instantiations).
+    virtual CORINFO_CLASS_HANDLE findTypeByName(
+            CORINFO_CLASS_HANDLE        typeInAssembly,             /* IN  */
+            CORINFO_MODULE_HANDLE       typeNameModule,             /* IN  */
+            unsigned                    typeNameToken               /* IN  */
+            ) = 0;
+
     // Decides if you have any limitations for inlining. If everything's OK, it will return
     // INLINE_PASS.
     //

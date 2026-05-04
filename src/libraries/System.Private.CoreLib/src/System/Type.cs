@@ -24,7 +24,7 @@ namespace System
         public abstract string? AssemblyQualifiedName { get; }
         public abstract string? FullName { get; }
 
-        public abstract Assembly Assembly { get; }
+        public abstract Assembly Assembly { [Intrinsic] get; }
         public new abstract Module Module { get; }
 
         public bool IsInterface

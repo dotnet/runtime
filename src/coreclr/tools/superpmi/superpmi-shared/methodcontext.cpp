@@ -3062,6 +3062,36 @@ CORINFO_CLASS_HANDLE MethodContext::repGetTypeDefinition(CORINFO_CLASS_HANDLE cl
     return result;
 }
 
+void MethodContext::recFindTypeByName(CORINFO_CLASS_HANDLE typeInAssembly, CORINFO_MODULE_HANDLE typeNameModule, unsigned typeNameToken, CORINFO_CLASS_HANDLE result)
+{
+    if (FindTypeByName == nullptr)
+        FindTypeByName = new LightWeightMap<DLDLD, DWORDLONG>();
+
+    DLDLD key;
+    ZeroMemory(&key, sizeof(key));
+    key.A = CastHandle(typeInAssembly);
+    key.B = CastHandle(typeNameModule);
+    key.C = (DWORD)typeNameToken;
+    DWORDLONG value = CastHandle(result);
+    FindTypeByName->Add(key, value);
+    DEBUG_REC(dmpFindTypeByName(key, value));
+}
+void MethodContext::dmpFindTypeByName(DLDLD key, DWORDLONG value)
+{
+    printf("FindTypeByName key cls-%016" PRIX64 " mod-%016" PRIX64 " tok-%08X, value cls-%016" PRIX64 "", key.A, key.B, key.C, value);
+}
+CORINFO_CLASS_HANDLE MethodContext::repFindTypeByName(CORINFO_CLASS_HANDLE typeInAssembly, CORINFO_MODULE_HANDLE typeNameModule, unsigned typeNameToken)
+{
+    DLDLD key;
+    ZeroMemory(&key, sizeof(key));
+    key.A = CastHandle(typeInAssembly);
+    key.B = CastHandle(typeNameModule);
+    key.C = (DWORD)typeNameToken;
+    DWORDLONG value = LookupByKeyOrMiss(FindTypeByName, key, ": key %016" PRIX64 " %016" PRIX64 " %08X", key.A, key.B, key.C);
+    DEBUG_REP(dmpFindTypeByName(key, value));
+    return (CORINFO_CLASS_HANDLE)value;
+}
+
 void MethodContext::recGetNewHelper(CORINFO_CLASS_HANDLE  classHandle,
                                     bool                  hasSideEffects,
                                     CorInfoHelpFunc       result,

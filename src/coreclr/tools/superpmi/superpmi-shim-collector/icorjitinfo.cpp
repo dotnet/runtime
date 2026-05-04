@@ -124,6 +124,17 @@ CORINFO_CLASS_HANDLE interceptor_ICJI::getTypeDefinition(
     return result;
 }
 
+CORINFO_CLASS_HANDLE interceptor_ICJI::findTypeByName(
+    CORINFO_CLASS_HANDLE typeInAssembly,
+    CORINFO_MODULE_HANDLE typeNameModule,
+    unsigned typeNameToken)
+{
+    CORINFO_CLASS_HANDLE result = original_ICorJitInfo->findTypeByName(typeInAssembly, typeNameModule, typeNameToken);
+    mc->recFindTypeByName(typeInAssembly, typeNameModule, typeNameToken, result);
+
+    return result;
+}
+
 // Decides if you have any limitations for inlining. If everything's OK, it will return
 // INLINE_PASS.
 //

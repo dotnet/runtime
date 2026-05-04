@@ -51,6 +51,11 @@ bool haveSameMethodDefinition(
 CORINFO_CLASS_HANDLE getTypeDefinition(
           CORINFO_CLASS_HANDLE type) override;
 
+CORINFO_CLASS_HANDLE findTypeByName(
+          CORINFO_CLASS_HANDLE typeInAssembly,
+          CORINFO_MODULE_HANDLE typeNameModule,
+          unsigned typeNameToken) override;
+
 CorInfoInline canInline(
           CORINFO_METHOD_HANDLE callerHnd,
           CORINFO_METHOD_HANDLE calleeHnd) override;

@@ -410,6 +410,10 @@ public:
     void dmpGetTypeDefinition(DWORDLONG key, DWORDLONG value);
     CORINFO_CLASS_HANDLE repGetTypeDefinition(CORINFO_CLASS_HANDLE type);
 
+    void recFindTypeByName(CORINFO_CLASS_HANDLE typeInAssembly, CORINFO_MODULE_HANDLE typeNameModule, unsigned typeNameToken, CORINFO_CLASS_HANDLE result);
+    void dmpFindTypeByName(DLDLD key, DWORDLONG value);
+    CORINFO_CLASS_HANDLE repFindTypeByName(CORINFO_CLASS_HANDLE typeInAssembly, CORINFO_MODULE_HANDLE typeNameModule, unsigned typeNameToken);
+
     void recGetNewHelper(CORINFO_CLASS_HANDLE  classHandle,
                          bool                  hasSideEffects,
                          CorInfoHelpFunc       result,
@@ -1222,6 +1226,7 @@ enum mcPackets
     Packet_GetWasmTypeSymbol = 235,
     Packet_GetWasmLowering = 236,
     Packet_GetAsyncOtherVariant = 237,
+    Packet_FindTypeByName = 238,
 };
 
 void SetDebugDumpVariables();

@@ -19,6 +19,7 @@ struct JitInterfaceCallbacks
     bool (* getMethodInfo)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE ftn, CORINFO_METHOD_INFO* info, CORINFO_CONTEXT_HANDLE context);
     bool (* haveSameMethodDefinition)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE meth1Hnd, CORINFO_METHOD_HANDLE meth2Hnd);
     CORINFO_CLASS_HANDLE (* getTypeDefinition)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE type);
+    CORINFO_CLASS_HANDLE (* findTypeByName)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE typeInAssembly, CORINFO_MODULE_HANDLE typeNameModule, unsigned typeNameToken);
     CorInfoInline (* canInline)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE callerHnd, CORINFO_METHOD_HANDLE calleeHnd);
     void (* beginInlining)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE inlinerHnd, CORINFO_METHOD_HANDLE inlineeHnd);
     void (* reportInliningDecision)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE inlinerHnd, CORINFO_METHOD_HANDLE inlineeHnd, CorInfoInline inlineResult, const char* reason);
@@ -278,6 +279,17 @@ public:
 {
     CorInfoExceptionClass* pException = nullptr;
     CORINFO_CLASS_HANDLE temp = _callbacks->getTypeDefinition(_thisHandle, &pException, type);
+    if (pException != nullptr) throw pException;
+    return temp;
+}
+
+    virtual CORINFO_CLASS_HANDLE findTypeByName(
+          CORINFO_CLASS_HANDLE typeInAssembly,
+          CORINFO_MODULE_HANDLE typeNameModule,
+          unsigned typeNameToken)
+{
+    CorInfoExceptionClass* pException = nullptr;
+    CORINFO_CLASS_HANDLE temp = _callbacks->findTypeByName(_thisHandle, &pException, typeInAssembly, typeNameModule, typeNameToken);
     if (pException != nullptr) throw pException;
     return temp;
 }

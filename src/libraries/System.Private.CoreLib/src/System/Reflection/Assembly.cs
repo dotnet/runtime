@@ -101,8 +101,10 @@ namespace System.Reflection
         public virtual AssemblyName GetName() => GetName(copiedName: false);
         public virtual AssemblyName GetName(bool copiedName) { throw NotImplemented.ByDesign; }
 
+        [Intrinsic]
         [RequiresUnreferencedCode("Types might be removed by trimming. If the type name is a string literal, consider using Type.GetType instead.")]
         public virtual Type? GetType(string name) => GetType(name, throwOnError: false, ignoreCase: false);
+        [Intrinsic]
         [RequiresUnreferencedCode("Types might be removed by trimming. If the type name is a string literal, consider using Type.GetType instead.")]
         public virtual Type? GetType(string name, bool throwOnError) => GetType(name, throwOnError: throwOnError, ignoreCase: false);
         [RequiresUnreferencedCode("Types might be removed by trimming. If the type name is a string literal, consider using Type.GetType instead.")]

@@ -1281,6 +1281,46 @@ namespace Internal.JitInterface
             return ObjectToHandle(HandleToObject(type).GetTypeDefinition());
         }
 
+        private CORINFO_CLASS_STRUCT_* findTypeByName(CORINFO_CLASS_STRUCT_* typeInAssembly, CORINFO_MODULE_STRUCT_* typeNameModule, uint typeNameToken)
+        {
+            TypeDesc typeInAsm = HandleToObject(typeInAssembly);
+
+            // Get the module (assembly) that contains the type
+            if (typeInAsm is not MetadataType mdType)
+                return null;
+
+            ModuleDesc module = mdType.Module;
+
+            // Read the string token from the IL module
+            MethodILScope methodIL = HandleToObject(typeNameModule);
+            string typeName = (string)methodIL.GetObject((int)typeNameToken);
+
+            if (string.IsNullOrEmpty(typeName))
+                return null;
+
+            // Split fully qualified name into namespace and name at the last '.'
+            ReadOnlySpan<byte> nameSpaceUtf8;
+            ReadOnlySpan<byte> nameUtf8;
+
+            int lastDot = typeName.LastIndexOf('.');
+            if (lastDot >= 0)
+            {
+                nameSpaceUtf8 = System.Text.Encoding.UTF8.GetBytes(typeName.Substring(0, lastDot));
+                nameUtf8 = System.Text.Encoding.UTF8.GetBytes(typeName.Substring(lastDot + 1));
+            }
+            else
+            {
+                nameSpaceUtf8 = default;
+                nameUtf8 = System.Text.Encoding.UTF8.GetBytes(typeName);
+            }
+
+            MetadataType resolved = module.GetType(nameSpaceUtf8, nameUtf8, throwIfNotFound: false);
+            if (resolved == null)
+                return null;
+
+            return ObjectToHandle(resolved);
+        }
+
         private CorInfoInline canInline(CORINFO_METHOD_STRUCT_* callerHnd, CORINFO_METHOD_STRUCT_* calleeHnd)
         {
             MethodDesc callerMethod = HandleToObject(callerHnd);
