@@ -17,6 +17,38 @@
 #include "pedecoder.h"
 #include "memorystreams.h"
 
+#ifdef FEATURE_INTERPRETER
+#include "intopsshared.h"
+
+static const uint8_t s_interpOpLenTableForDI[] =
+{
+#define OPDEF(a,b,c,d,e,f) c,
+#include "intops.def"
+#undef OPDEF
+};
+
+static int GetInterpreterCallOpcodeLengthInSlots(int32_t opcode)
+{
+    switch (opcode)
+    {
+    case INTOP_CALL:
+    case INTOP_CALL_NULLCHECK:
+    case INTOP_CALL_TAIL:
+    case INTOP_CALLDELEGATE:
+    case INTOP_CALLDELEGATE_TAIL:
+    case INTOP_CALLI:
+    case INTOP_CALLI_TAIL:
+    case INTOP_CALLVIRT:
+    case INTOP_CALLVIRT_TAIL:
+    case INTOP_CALL_PINVOKE:
+        _ASSERTE(opcode >= 0 && (size_t)opcode < ARRAY_SIZE(s_interpOpLenTableForDI));
+        return s_interpOpLenTableForDI[opcode];
+    default:
+        return -1;
+    }
+}
+#endif // FEATURE_INTERPRETER
+
 //---------------------------------------------------------------------------------------
 // Initialize a new CordbModule around a Module in the target.
 //
@@ -3905,13 +3937,21 @@ HRESULT CordbVariableHome::GetOffset(LONG *pOffset)
 //-----------------------------------------------------------------------------
 CordbNativeCode::CordbNativeCode(CordbFunction *                pFunction,
                                  const NativeCodeFunctionData * pJitData,
-                                 BOOL                           fIsInstantiatedGeneric)
+                                 BOOL                           fIsInstantiatedGeneric,
+                                 BOOL                           fIsInterpreted)
   : CordbCode(pFunction, (UINT_PTR)pJitData->m_rgCodeRegions[kHot].pAddress, pJitData->encVersion, FALSE),
     m_vmNativeCodeMethodDescToken(pJitData->vmNativeCodeMethodDescToken),
     m_fCodeAvailable(TRUE),
     m_fIsInstantiatedGeneric(fIsInstantiatedGeneric != FALSE)
+#ifdef FEATURE_INTERPRETER
+    , m_fIsInterpreted(fIsInterpreted != FALSE)
+#endif
 {
     _ASSERTE(GetVersion() >= CorDB_DEFAULT_ENC_FUNCTION_VERSION);
+
+#ifndef FEATURE_INTERPRETER
+    (void)fIsInterpreted;
+#endif
 
     for (CodeBlobRegion region = kHot; region < MAX_REGIONS; ++region)
     {
@@ -4356,6 +4396,19 @@ HRESULT CordbNativeCode::EnumerateVariableHomes(ICorDebugVariableHomeEnum **ppEn
 
 int CordbNativeCode::GetCallInstructionLength(BYTE *ip, ULONG32 count)
 {
+#ifdef FEATURE_INTERPRETER
+    if (IsInterpreted())
+    {
+        if (count < sizeof(int32_t))
+            return -1;
+        int32_t interpOpcode;
+        memcpy(&interpOpcode, ip, sizeof(int32_t));
+        int interpSlots = GetInterpreterCallOpcodeLengthInSlots(interpOpcode);
+        if (interpSlots <= 0)
+            return -1;
+        return interpSlots * (int)sizeof(int32_t);
+    }
+#endif // FEATURE_INTERPRETER
 #if defined(TARGET_ARM) || defined(TARGET_RISCV64)
     if (Is32BitInstruction(*(WORD*)ip))
         return 4;
@@ -5028,7 +5081,9 @@ HRESULT CordbNativeCode::GetReturnValueLiveOffsetImpl(Instantiation *currentInst
                 // Get the length of the call instruction.
                 int offset = GetCallInstructionLength(nativeBuffer, fetched);
                 if (offset == -1)
-                    return E_UNEXPECTED; // Could not decode instruction, this should never happen.
+                {
+                    return E_UNEXPECTED;    // Could not decode instruction, this should never happen.
+                }
 
                 pOffsets[found] = pMap->nativeStartOffset + offset;
             }
@@ -5050,6 +5105,55 @@ HRESULT CordbNativeCode::GetReturnValueLiveOffsetImpl(Instantiation *currentInst
 
     return S_OK;
 }
+
+#ifdef FEATURE_INTERPRETER
+HRESULT CordbNativeCode::GetInterpreterCallDvarOffset(ULONG32 ILoffset, ULONG32 postCallNativeOffset, int32_t* pDvarOffset)
+{
+    if (pDvarOffset == NULL)
+        return E_INVALIDARG;
+
+    HRESULT hr = S_OK;
+    SequencePoints *pSP = GetSequencePoints();
+    DebuggerILToNativeMap *pMap = pSP->GetCallsiteMapAddr();
+
+    for (ULONG32 i = 0; i < pSP->GetCallsiteEntryCount() && pMap; ++i, pMap++)
+    {
+        if (pMap->ilOffset != ILoffset ||
+            (pMap->source & ICorDebugInfo::CALL_INSTRUCTION) != ICorDebugInfo::CALL_INSTRUCTION)
+        {
+            continue;
+        }
+
+        // slot 0 = opcode, slot 1 = dvar byte offset
+        BYTE nativeBuffer[2 * sizeof(int32_t)];
+        ULONG32 fetched = 0;
+        hr = GetCode(pMap->nativeStartOffset,
+                     pMap->nativeStartOffset + ARRAY_SIZE(nativeBuffer),
+                     ARRAY_SIZE(nativeBuffer),
+                     nativeBuffer,
+                     &fetched);
+        if (FAILED(hr) || fetched < ARRAY_SIZE(nativeBuffer))
+            continue;
+
+        int32_t interpOpcode;
+        memcpy(&interpOpcode, nativeBuffer, sizeof(int32_t));
+        int interpSlots = GetInterpreterCallOpcodeLengthInSlots(interpOpcode);
+        if (interpSlots <= 0)
+            return S_FALSE; // Not an interpreter call.
+
+        ULONG32 expectedPostCall = pMap->nativeStartOffset + interpSlots * (ULONG32)sizeof(int32_t);
+        if (expectedPostCall != postCallNativeOffset)
+            continue;
+
+        int32_t dvarOffset;
+        memcpy(&dvarOffset, nativeBuffer + sizeof(int32_t), sizeof(int32_t));
+        *pDvarOffset = dvarOffset;
+        return S_OK;
+    }
+
+    return S_FALSE;
+}
+#endif // FEATURE_INTERPRETER
 
 //-----------------------------------------------------------------------------
 // Creates a CordbNativeCode (if it's not already created) and adds it to the
@@ -5105,7 +5209,7 @@ CordbNativeCode * CordbModule::LookupOrCreateNativeCode(mdMethodDef methodToken,
         pFunction->InitParentClassOfFunction();
 
         // First, create a new CordbNativeCode instance--we'll need this to make the CordbJITInfo instance
-        pNativeCode = new (nothrow)CordbNativeCode(pFunction, &codeInfo, codeInfo.isInstantiatedGeneric != 0);
+        pNativeCode = new (nothrow)CordbNativeCode(pFunction, &codeInfo, codeInfo.isInstantiatedGeneric != 0, codeInfo.isInterpreted != 0);
         _ASSERTE(pNativeCode != NULL);
 
         m_nativeCodeTable.AddBaseOrThrow(pNativeCode);

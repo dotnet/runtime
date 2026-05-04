@@ -505,6 +505,9 @@ public:
     // indicates whether the function is a generic function, or a method inside a generic class (or both).
     BOOL             isInstantiatedGeneric;
 
+    // indicates whether the function is compiled by the CoreCLR interpreter rather than the JIT.
+    BOOL             isInterpreted;
+
     // MethodDesc for the function
     VMPTR_MethodDesc vmNativeCodeMethodDescToken;
 

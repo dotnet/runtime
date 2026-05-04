@@ -1255,6 +1255,10 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetNativeCodeInfo(VMPTR_Assembly 
             if (pCodeInfo->m_rgCodeRegions[kHot].pAddress != (CORDB_ADDRESS)NULL)
             {
                 pCodeInfo->isInstantiatedGeneric = pMethodDesc->HasClassOrMethodInstantiation();
+                {
+                    EECodeInfo codeInfo(PINSTRToPCODE((TADDR)pCodeInfo->m_rgCodeRegions[kHot].pAddress));
+                    pCodeInfo->isInterpreted = codeInfo.IsInterpretedCode();
+                }
                 LookupEnCVersions(pModule,
                                   pCodeInfo->vmNativeCodeMethodDescToken,
                                   functionToken,
@@ -1335,6 +1339,7 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetNativeCodeInfoForAddr(CORDB_AD
         vmMethodDesc.SetHostPtr(codeInfo.GetMethodDesc());
         MethodDesc* pMethodDesc = vmMethodDesc.GetDacPtr();
         pCodeInfo->isInstantiatedGeneric = pMethodDesc->HasClassOrMethodInstantiation();
+        pCodeInfo->isInterpreted = codeInfo.IsInterpretedCode();
         pCodeInfo->vmNativeCodeMethodDescToken = vmMethodDesc;
 
         SIZE_T unusedLatestEncVersion;

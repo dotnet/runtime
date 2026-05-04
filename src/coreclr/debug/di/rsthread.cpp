@@ -8847,6 +8847,24 @@ HRESULT CordbJITILFrame::GetReturnValueForILOffsetImpl(ULONG32 ILoffset, ICorDeb
     CordbType *pType = 0;
     IfFailRet(BuildInstantiationForCallsite(GetModule(), types, inst, &m_genericArgs, targetClass, genericSig));
     IfFailRet(CordbType::SigToType(GetModule(), &methodSig, &inst, &pType));
+
+#ifdef FEATURE_INTERPRETER
+    if (pCode->IsInterpreted())
+    {
+        // Interpreter return values live in an FP-relative dvar, not a register.
+        int32_t dvarOffset = 0;
+        IfFailRet(pCode->GetInterpreterCallDvarOffset(ILoffset, currentOffset, &dvarOffset));
+        ICorDebugInfo::NativeVarInfo synthetic = {};
+        synthetic.startOffset           = currentOffset;
+        synthetic.endOffset             = currentOffset;
+        synthetic.varNumber             = 0;
+        synthetic.loc.vlType            = ICorDebugInfo::VLT_STK;
+        synthetic.loc.vlStk.vlsBaseReg  = ICorDebugInfo::REGNUM_FP;
+        synthetic.loc.vlStk.vlsOffset   = dvarOffset;
+        return GetNativeVariable(pType, &synthetic, ppReturnValue);
+    }
+#endif // FEATURE_INTERPRETER
+
     return GetReturnValueForType(pType, ppReturnValue);
 }
 

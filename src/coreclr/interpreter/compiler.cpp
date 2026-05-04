@@ -324,7 +324,11 @@ InterpInst* InterpCompiler::NewIns(int opcode, int dataLen)
         // This is the first instruction we are emitting for this IL offset and the stack is empty, which
         // implies the IL stack is empty too.
         ins->flags |= INTERP_INST_FLAG_EMPTY_IL_STACK;
-        m_isFirstInstForEmptyILStack = false;
+        // Skip emit-nop instructions so the flag falls through to the first real IR.
+        if (!InterpOpIsEmitNop(opcode))
+        {
+            m_isFirstInstForEmptyILStack = false;
+        }
     }
     m_pLastNewIns = ins;
     return ins;
@@ -1054,9 +1058,8 @@ int32_t* InterpCompiler::EmitCodeIns(int32_t *ip, InterpInst *ins, TArray<Reloc*
         if (ilOffset < (uint32_t)m_ILCodeSizeFromILHeader)
         {
             uint32_t nativeOffset = ConvertOffset(ins->nativeOffset);
-            // Only emit mapping entries at IL offsets where the evaluation stack is empty
-            if ((ins->flags & INTERP_INST_FLAG_EMPTY_IL_STACK) &&
-                ((m_ILToNativeMapSize == 0) || (m_pILToNativeMap[m_ILToNativeMapSize - 1].ilOffset != ilOffset)))
+            // Emit one entry per IL offset, tagging STACK_EMPTY only when the IL stack was empty.
+            if ((m_ILToNativeMapSize == 0) || (m_pILToNativeMap[m_ILToNativeMapSize - 1].ilOffset != ilOffset))
             {
                 // This code assumes that instructions for the same IL offset are emitted in a single run without
                 // any other IL offsets in between and that they don't repeat again after the run ends.
@@ -1072,13 +1075,23 @@ int32_t* InterpCompiler::EmitCodeIns(int32_t *ip, InterpInst *ins, TArray<Reloc*
                 m_pNativeMapIndexToILOffset[ilOffset] = m_ILToNativeMapSize;
 #endif // DEBUG
 
-                // Since we can have at most one entry per IL offset,
-                // this map cannot possibly use more entries than the size of the IL code
-                assert(m_ILToNativeMapSize < m_ILCodeSize);
+                assert(m_ILToNativeMapSize < m_ILToNativeMapCapacity);
 
                 m_pILToNativeMap[m_ILToNativeMapSize].ilOffset = ilOffset;
                 m_pILToNativeMap[m_ILToNativeMapSize].nativeOffset = nativeOffset;
-                m_pILToNativeMap[m_ILToNativeMapSize].source = ICorDebugInfo::STACK_EMPTY;
+                m_pILToNativeMap[m_ILToNativeMapSize].source = (ins->flags & INTERP_INST_FLAG_EMPTY_IL_STACK)
+                    ? ICorDebugInfo::STACK_EMPTY
+                    : ICorDebugInfo::SOURCE_TYPE_INVALID;
+                m_ILToNativeMapSize++;
+            }
+
+            if (ins->flags & INTERP_INST_FLAG_DBG_CALL_INSTRUCTION)
+            {
+                assert(m_ILToNativeMapSize < m_ILToNativeMapCapacity);
+
+                m_pILToNativeMap[m_ILToNativeMapSize].ilOffset = ilOffset;
+                m_pILToNativeMap[m_ILToNativeMapSize].nativeOffset = nativeOffset;
+                m_pILToNativeMap[m_ILToNativeMapSize].source = ICorDebugInfo::CALL_INSTRUCTION;
                 m_ILToNativeMapSize++;
             }
         }
@@ -1178,7 +1191,9 @@ void InterpCompiler::EmitCode()
 
     // This will eventually be freed by the VM, using freeArray.
     // If we fail before handing them to the VM, there is logic in the InterpCompiler destructor to free it.
-    m_pILToNativeMap = (ICorDebugInfo::OffsetMapping*)m_compHnd->allocateArray(m_ILCodeSize * sizeof(ICorDebugInfo::OffsetMapping));
+    // Each IL offset may produce up to two entries (STACK_EMPTY plus CALL_INSTRUCTION).
+    m_ILToNativeMapCapacity = m_ILCodeSize * 2;
+    m_pILToNativeMap = (ICorDebugInfo::OffsetMapping*)m_compHnd->allocateArray(m_ILToNativeMapCapacity * sizeof(ICorDebugInfo::OffsetMapping));
 
     // For each BB, compute the number of EH clauses that overlap with it.
     for (unsigned int i = 0; i < getEHcount(m_methodInfo); i++)
@@ -5564,6 +5579,8 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
     m_pLastNewIns->SetSVar(CALL_ARGS_SVAR);
 
     m_pLastNewIns->flags |= INTERP_INST_FLAG_CALL;
+    if (!tailcall && !newObj)
+        m_pLastNewIns->flags |= INTERP_INST_FLAG_DBG_CALL_INSTRUCTION;
     m_pLastNewIns->info.pCallInfo = new (getAllocator(IMK_CallInfo)) InterpCallInfo();
     m_pLastNewIns->info.pCallInfo->pCallArgs = callArgs;
 
