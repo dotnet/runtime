@@ -2608,7 +2608,13 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector512_get_SignSequence:
         {
             assert(sig->numArgs == 0);
-            retNode = gtNewSimdGetSignSequenceNode(retType, simdBaseType, simdSize);
+
+            var_types scalarType  = genActualType(simdBaseType);
+            GenTree*  one         = gtNewOneConNode(scalarType);
+            GenTree*  negativeOne = varTypeIsFloating(simdBaseType) ? gtNewDconNode(-1.0, simdBaseType)
+                                                                    : gtNewAllBitsSetConNode(scalarType);
+
+            retNode = gtNewSimdCreateAlternatingSequenceNode(retType, one, negativeOne, simdBaseType, simdSize);
             break;
         }
 

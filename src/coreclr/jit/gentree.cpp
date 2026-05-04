@@ -26917,6 +26917,7 @@ GenTree* Compiler::gtNewSimdCreateAlternatingSequenceNode(
 
     if (simdCount == 1)
     {
+        // Only the even-indexed value contributes to the result, but op2 still needs to be evaluated for side effects.
         GenTree* result    = gtNewSimdCreateBroadcastNode(type, op1, simdBaseType, simdSize);
         GenTree* resultDup = fgMakeMultiUse(&result);
         return gtNewOperNode(GT_COMMA, type, result, gtWrapWithSideEffects(resultDup, op2, GTF_ALL_EFFECT));
@@ -27041,95 +27042,6 @@ GenTree* Compiler::gtNewSimdCreateAlternatingSequenceNode(
     GenTree* odd  = gtNewSimdCreateBroadcastNode(type, op2, simdBaseType, simdSize);
 
     return gtNewSimdZipNode(type, even, odd, simdBaseType, simdSize, false);
-}
-
-//----------------------------------------------------------------------------------------------
-// Compiler::gtNewSimdGetSignSequenceNode: Creates a new simd SignSequence node
-//
-//  Arguments:
-//    type                - The return type of SIMD node being created
-//    simdBaseType        - The base type of SIMD type of the intrinsic
-//    simdSize            - The size of the SIMD type of the intrinsic
-//
-// Returns:
-//    The created SignSequence node
-//
-GenTree* Compiler::gtNewSimdGetSignSequenceNode(var_types type, var_types simdBaseType, unsigned simdSize)
-{
-    assert(varTypeIsSIMD(type));
-    assert(getSIMDTypeForSize(simdSize) == type);
-    assert(varTypeIsArithmetic(simdBaseType));
-
-    GenTreeVecCon* vecCon    = gtNewVconNode(type);
-    uint32_t       simdCount = getSIMDVectorLength(simdSize, simdBaseType);
-
-    switch (simdBaseType)
-    {
-        case TYP_BYTE:
-        case TYP_UBYTE:
-        {
-            for (uint32_t index = 0; index < simdCount; index++)
-            {
-                vecCon->gtSimdVal.u8[index] = ((index & 1) == 0) ? 1 : UINT8_MAX;
-            }
-            break;
-        }
-
-        case TYP_SHORT:
-        case TYP_USHORT:
-        {
-            for (uint32_t index = 0; index < simdCount; index++)
-            {
-                vecCon->gtSimdVal.u16[index] = ((index & 1) == 0) ? 1 : UINT16_MAX;
-            }
-            break;
-        }
-
-        case TYP_INT:
-        case TYP_UINT:
-        {
-            for (uint32_t index = 0; index < simdCount; index++)
-            {
-                vecCon->gtSimdVal.u32[index] = ((index & 1) == 0) ? 1 : UINT32_MAX;
-            }
-            break;
-        }
-
-        case TYP_LONG:
-        case TYP_ULONG:
-        {
-            for (uint32_t index = 0; index < simdCount; index++)
-            {
-                vecCon->gtSimdVal.u64[index] = ((index & 1) == 0) ? 1 : UINT64_MAX;
-            }
-            break;
-        }
-
-        case TYP_FLOAT:
-        {
-            for (uint32_t index = 0; index < simdCount; index++)
-            {
-                vecCon->gtSimdVal.f32[index] = ((index & 1) == 0) ? 1.0f : -1.0f;
-            }
-            break;
-        }
-
-        case TYP_DOUBLE:
-        {
-            for (uint32_t index = 0; index < simdCount; index++)
-            {
-                vecCon->gtSimdVal.f64[index] = ((index & 1) == 0) ? 1.0 : -1.0;
-            }
-            break;
-        }
-
-        default:
-        {
-            unreached();
-        }
-    }
-
-    return vecCon;
 }
 
 //----------------------------------------------------------------------------------------------

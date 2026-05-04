@@ -3452,8 +3452,6 @@ public:
 
     GenTree* gtNewSimdGetIndicesNode(var_types type, var_types simdBaseType, unsigned simdSize);
 
-    GenTree* gtNewSimdGetSignSequenceNode(var_types type, var_types simdBaseType, unsigned simdSize);
-
     GenTree* gtNewSimdGetLowerNode(var_types   type,
                                    GenTree*    op1,
                                    var_types   simdBaseType,
