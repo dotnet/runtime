@@ -75,7 +75,7 @@ jobs:
               - (Ubuntu.2604.Amd64.Open)AzureLinux.3.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-26.04-helix-amd64@sha256:2d2df03fcfe386c1a95f7d778e17e6efac2d5e0b907a6d9efd4c05cbc4ab8cec
               # Additional distros on non-PR builds for broader coverage
               - ${{ if or(eq(variables['isRollingBuild'], true), eq(parameters.jobParameters.includeAllPlatforms, true)) }}:
-                - (AzureLinux.3.0.Amd64.Open)AzureLinux.3.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-helix-amd64@sha256:f0d4e84954cdc5f603bb25c9cb321b422b657479ac3df340c0819f23c9781c4e
+                - (AzureLinux.3.0.Amd64.Open)AzureLinux.3.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-helix-amd64@sha256:ff0868b68401f47e9d8e81508f1170eacbc0dba6cdc90a576f6e01193d4a0953
                 - (Centos.10.Amd64.Open)AzureLinux.3.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:centos-stream-10-helix-amd64@sha256:7a5b1a8c465581b40bcc5a4ec119b842152eb3e83986982ffbaed1ec2e2c1c35
 
     # OSX arm64
