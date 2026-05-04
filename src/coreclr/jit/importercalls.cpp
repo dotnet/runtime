@@ -415,7 +415,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
                 if (call->AsCall()->IsAsync())
                 {
-                    impInsertAsyncContinuationForLdvirtftnCall(call->AsCall());
+                    impInsertAsyncArgsForLdvirtftnCall(call->AsCall());
                 }
 
                 GenTree* thisPtr = impPopStack().val;
@@ -939,6 +939,11 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                                                           .WellKnown(WellKnownArg::VarArgsCookie));
             }
         }
+    }
+
+    if (asyncContinuation != nullptr)
+    {
+        impAddAsyncArgsToInlinedCall(call->AsCall());
     }
 
     //-------------------------------------------------------------------------
@@ -6970,13 +6975,39 @@ void Compiler::impCheckForPInvokeCall(
 //
 void Compiler::impSetupAsyncCall(GenTreeCall* call, OPCODE opcode, unsigned prefixFlags, const DebugInfo& callDI)
 {
+    AsyncCallInfo asyncInfo;
+
     if (compIsForInlining())
     {
-        compInlineResult->NoteFatal(InlineObservation::CALLEE_AWAIT);
-        return;
-    }
+        GenTreeCall* inlCall = impInlineInfo->iciCall;
+        JITDUMP("Call [%06u] being inlined has an async call [%06u]", dspTreeID(inlCall), dspTreeID(call));
+        assert(inlCall->IsAsync());
+        if (inlCall->GetAsyncInfo().ContinuationContextHandling != ContinuationContextHandling::None)
+        {
+            // Caller is relying on the async infrastructure to move the
+            // execution to the right place after returning from the callee.
+            JITDUMP(" and caller needs continuation context handling");
 
-    AsyncCallInfo asyncInfo;
+            if (!impCurrentMethodIsKnownToPreserveSynchronizationContext())
+            {
+                // May need to actually move the execution; we do not currently
+                // handle this case.
+                JITDUMP(" and callee may mutate synchronization context; cannot inline\n");
+                compInlineResult->NoteFatal(InlineObservation::CALLEE_AWAIT);
+                return;
+            }
+
+            JITDUMP(" but callee is known to preserve synchronization context; inlining anyway\n");
+            // These cases are selected only in a few cases:
+            assert((prefixFlags & PREFIX_IS_TASK_AWAIT) == 0);
+            assert((info.compMethodInfo->options & CORINFO_ASYNC_SAVE_CONTEXTS) == 0);
+            asyncInfo.ContinuationContextHandling = inlCall->GetAsyncInfo().ContinuationContextHandling;
+        }
+        else
+        {
+            JITDUMP(" but inlining call has no continuation context handling\n");
+        }
+    }
 
     unsigned newSourceTypes = ICorDebugInfo::ASYNC;
     newSourceTypes |= (unsigned)callDI.GetLocation().GetSourceTypes() & ~ICorDebugInfo::CALL_INSTRUCTION;
@@ -7033,9 +7064,75 @@ void Compiler::impSetupAsyncCall(GenTreeCall* call, OPCODE opcode, unsigned pref
 }
 
 //------------------------------------------------------------------------
-// impInsertAsyncContinuationForLdvirtftnCall:
-//   Insert the async continuation argument for a call the EE asked to be
-//   performed via ldvirtftn.
+// impAddAsyncArgsToInlinedCall:
+//   Add necessary async contexts to the specified inlined async call.
+//
+// Arguments:
+//    call        - The async call
+//
+void Compiler::impAddAsyncArgsToInlinedCall(GenTreeCall* call)
+{
+    if (!compIsForInlining())
+    {
+        return;
+    }
+
+    if ((info.compMethodInfo->options & CORINFO_ASYNC_SAVE_CONTEXTS) != 0)
+    {
+        // This async call in the inlinee needs its own context handling.
+        return;
+    }
+
+    GenTreeCall* inlCall = impInlineInfo->iciCall;
+    CallArg*     execArg = inlCall->gtArgs.FindWellKnownArg(WellKnownArg::AsyncExecutionContext);
+    CallArg*     syncArg = inlCall->gtArgs.FindWellKnownArg(WellKnownArg::AsyncSynchronizationContext);
+    if ((execArg == nullptr) && (syncArg == nullptr))
+    {
+        // Caller also has no async contexts handling
+        return;
+    }
+
+    // We are inlining an async call that does not save contexts into a call
+    // that does. We currently allow this only in cases where the tail of the
+    // inlinee can run in the caller's context, and hence we propagate the
+    // caller's context here. It means we do not need to worry about switching
+    // into the caller's context when the inlinee is returning to the caller
+    // after the await.
+    assert(execArg->GetNode()->OperIs(GT_LCL_VAR) && syncArg->GetNode()->OperIs(GT_LCL_VAR));
+    JITDUMP("Inheriting contexts [%06u] and [%06u] from caller node\n", dspTreeID(execArg->GetNode()),
+            dspTreeID(syncArg->GetNode()));
+
+    GenTree* execNode = gtCloneExpr(execArg->GetNode());
+    GenTree* syncNode = gtCloneExpr(syncArg->GetNode());
+    call->gtArgs.PushFront(this, NewCallArg::Primitive(syncNode).WellKnown(WellKnownArg::AsyncSynchronizationContext));
+    call->gtArgs.PushFront(this, NewCallArg::Primitive(execNode).WellKnown(WellKnownArg::AsyncExecutionContext));
+}
+
+//------------------------------------------------------------------------
+// impCurrentMethodIsKnownToPreserveSynchronizationContext:
+//   Check if the current method is known not to mutate Thread._synchronizationContext.
+//
+// Returns:
+//   True if so.
+//
+bool Compiler::impCurrentMethodIsKnownToPreserveSynchronizationContext()
+{
+    if (!impComputedIsAsyncThunk)
+    {
+        bool                  otherVariantIsThunk;
+        CORINFO_METHOD_HANDLE otherVariant =
+            info.compCompHnd->getAsyncOtherVariant(info.compMethodHnd, &otherVariantIsThunk);
+        impIsAsyncThunk         = (otherVariant != NO_METHOD_HANDLE) && !otherVariantIsThunk;
+        impComputedIsAsyncThunk = true;
+    }
+
+    return impIsAsyncThunk;
+}
+
+//------------------------------------------------------------------------
+// impInsertAsyncArgsForLdvirtftnCall:
+//   Insert the async args for a call the EE asked to be performed via
+//   ldvirtftn.
 //
 // Arguments:
 //    call - The call
@@ -7044,7 +7141,7 @@ void Compiler::impSetupAsyncCall(GenTreeCall* call, OPCODE opcode, unsigned pref
 //   Should be called before the 'this' arg is inserted, but after other IL args
 //   have been inserted.
 //
-void Compiler::impInsertAsyncContinuationForLdvirtftnCall(GenTreeCall* call)
+void Compiler::impInsertAsyncArgsForLdvirtftnCall(GenTreeCall* call)
 {
     assert(call->AsCall()->IsAsync());
 
@@ -7058,6 +7155,8 @@ void Compiler::impInsertAsyncContinuationForLdvirtftnCall(GenTreeCall* call)
         call->AsCall()->gtArgs.PushBack(this, NewCallArg::Primitive(gtNewNull(), TYP_REF)
                                                   .WellKnown(WellKnownArg::AsyncContinuation));
     }
+
+    impAddAsyncArgsToInlinedCall(call);
 }
 
 //------------------------------------------------------------------------

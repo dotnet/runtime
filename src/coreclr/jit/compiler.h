@@ -4850,8 +4850,12 @@ protected:
                             IL_OFFSET          rawILOffset);
 
     void impSetupAsyncCall(GenTreeCall* call, OPCODE opcode, unsigned prefixFlags, const DebugInfo& callDI);
+    void impAddAsyncArgsToInlinedCall(GenTreeCall* call);
+    bool impCurrentMethodIsKnownToPreserveSynchronizationContext();
+    bool impComputedIsAsyncThunk = false;
+    bool impIsAsyncThunk = false;
 
-    void impInsertAsyncContinuationForLdvirtftnCall(GenTreeCall* call);
+    void impInsertAsyncArgsForLdvirtftnCall(GenTreeCall* call);
 
     CORINFO_CLASS_HANDLE impGetSpecialIntrinsicExactReturnType(GenTreeCall* call);
 
