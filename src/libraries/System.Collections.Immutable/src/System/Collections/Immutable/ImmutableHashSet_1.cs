@@ -301,16 +301,6 @@ namespace System.Collections.Immutable
                 return other.Any();
             }
 
-            if (other is ICollection<T> otherAsICollectionGeneric)
-            {
-                return IsProperSubsetOfFastPath(otherAsICollectionGeneric, this.Origin);
-            }
-
-            else if (other is ICollection otherAsICollection && otherAsICollection.Count <= this.Origin.Count)
-            {
-                return false;
-            }
-
             return IsProperSubsetOf(other, this.Origin);
         }
 
@@ -757,39 +747,40 @@ namespace System.Collections.Immutable
             switch (other)
             {
                 case ImmutableHashSet<T> otherAsImmutableHashSet:
-                    if (otherAsImmutableHashSet.Count != origin.Count)
-                    {
-                        return false;
-                    }
-
                     if (EqualityComparer<IEqualityComparer<T>>.Default.Equals(origin.EqualityComparer, otherAsImmutableHashSet.KeyComparer))
                     {
+                        if (otherAsImmutableHashSet.Count != origin.Count)
+                        {
+                            return false;
+                        }
                         return SetEqualsWithImmutableHashset(otherAsImmutableHashSet, origin);
+                    }
+
+                    if (otherAsImmutableHashSet.Count < origin.Count)
+                    {
+                        return false;
                     }
                     break;
 
                 case HashSet<T> otherAsHashset:
-                    if (otherAsHashset.Count != origin.Count)
-                    {
-                        return false;
-                    }
-
                     if (EqualityComparer<IEqualityComparer<T>>.Default.Equals(origin.EqualityComparer, otherAsHashset.Comparer))
                     {
+                        if (otherAsHashset.Count != origin.Count)
+                        {
+                            return false;
+                        }
                         return SetEqualsWithHashset(otherAsHashset, origin);
+                    }
+
+                    if (otherAsHashset.Count < origin.Count)
+                    {
+                        return false;
                     }
                     break;
 
                 case ICollection<T> otherAsICollectionGeneric:
                     // We check for < instead of != because other is not guaranteed to be a set, it could be a collection with duplicates.
                     if (otherAsICollectionGeneric.Count < origin.Count)
-                    {
-                        return false;
-                    }
-                    break;
-
-                case ICollection otherAsICollection:
-                    if (otherAsICollection.Count < origin.Count)
                     {
                         return false;
                     }
@@ -938,63 +929,47 @@ namespace System.Collections.Immutable
             return new MutationResult(result, count, CountType.FinalValue);
         }
 
-        /// <summary>
-        /// Performs the set operation on a given data structure.
-        /// </summary>
-        private static bool IsProperSubsetOfFastPath(ICollection<T> other, MutationInput origin)
-        {
-            Requires.NotNull(other, nameof(other));
-
-            if (other.Count <= origin.Count)
-            {
-                return false;
-            }
-
-            if (other is ImmutableHashSet<T> otherAsImmutableHashSet)
-            {
-                if (otherAsImmutableHashSet.KeyComparer == origin.EqualityComparer)
-                {
-                   using (var e = new ImmutableHashSet<T>.Enumerator(origin.Root))
-                    {
-                        while (e.MoveNext())
-                        {
-                            if (!otherAsImmutableHashSet.Contains(e.Current))
-                            {
-                                return false;
-                            }
-                        }
-                    }
-                    return true;
-                }
-            }
-
-            else if (other is HashSet<T> otherAsHashSet)
-            {
-                if (otherAsHashSet.Comparer == origin.EqualityComparer)
-                {
-                    using (var e = new ImmutableHashSet<T>.Enumerator(origin.Root))
-                    {
-                        while (e.MoveNext())
-                        {
-                            if (!otherAsHashSet.Contains(e.Current))
-                            {
-                                return false;
-                            }
-                        }
-                    }
-                    return true;
-                }
-            }
-
-            return IsProperSubsetOf(other, origin);
-        }
-
-        /// <summary>
-        /// Performs the set operation on a given data structure.
-        /// </summary>
         private static bool IsProperSubsetOf(IEnumerable<T> other, MutationInput origin)
         {
             Requires.NotNull(other, nameof(other));
+
+            // For a proper subset, the 'other' collection must strictly exceed 'origin.Count'.
+            // We use '<=' as an early exit to reject smaller or equal-sized collections.
+            // This is safe even for non-unique collections (ICollection<T>): if the raw count
+            // is already insufficient, it cannot become a proper superset after deduplication.
+           switch (other)
+            {
+                case ImmutableHashSet<T> otherAsImmutableHashSet:
+                    if (otherAsImmutableHashSet.Count <= origin.Count)
+                    {
+                        return false;
+                    }
+
+                    if (EqualityComparer<IEqualityComparer<T>>.Default.Equals(origin.EqualityComparer, otherAsImmutableHashSet.KeyComparer))
+                    {
+                        return SetEqualsWithImmutableHashset(otherAsImmutableHashSet, origin);
+                    }
+                    break;
+
+                case HashSet<T> otherAsHashset:
+                    if (otherAsHashset.Count <= origin.Count)
+                    {
+                        return false;
+                    }
+
+                    if (EqualityComparer<IEqualityComparer<T>>.Default.Equals(origin.EqualityComparer, otherAsHashset.Comparer))
+                    {
+                        return SetEqualsWithHashset(otherAsHashset, origin);
+                    }
+                    break;
+
+                case ICollection<T> otherAsICollectionGeneric:
+                    if (otherAsICollectionGeneric.Count <= origin.Count)
+                    {
+                        return false;
+                    }
+                    break;
+            }
 
             var otherSet = new HashSet<T>(other, origin.EqualityComparer);
             if (otherSet.Count <= origin.Count)
@@ -1002,17 +977,7 @@ namespace System.Collections.Immutable
                 return false;
             }
 
-            using (var e = new ImmutableHashSet<T>.Enumerator(origin.Root))
-            {
-                while (e.MoveNext())
-                {
-                    if (!otherSet.Contains(e.Current))
-                    {
-                        return false;
-                    }
-                }
-            }
-            return true;
+            return SetEqualsWithHashset(otherSet, origin);
         }
 
         /// <summary>
