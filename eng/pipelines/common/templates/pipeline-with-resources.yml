@@ -76,7 +76,7 @@ extends:
 
       # Used to test RHEL compatibility: CentOS Stream is upstream of RHEL
       SourceBuild_centos_x64:
-        image: mcr.microsoft.com/dotnet-buildtools/prereqs:centos-stream-10-amd64@sha256:e601475697ad0647de81530cfdc93c7bb0c0687675048193f815865599eb8a92
+        image: mcr.microsoft.com/dotnet-buildtools/prereqs:centos-stream-10-amd64@sha256:d63463ffe55a21d1db560037c506d0b71258b5bcc36a1c489e8b7dba84efee27
 
       # Used to test RHEL compatibility: Alma Linux is downstream of RHEL
       SourceBuild_linux_x64:
@@ -106,7 +106,7 @@ extends:
         image: mcr.microsoft.com/dotnet-buildtools/prereqs:debian-13-gcc15-amd64@sha256:9165c90647a47c6c300d9c7e4a4fb41ac89c36a60b116ff38c7ccc66e9e393d2
 
       linux_x64_llvmaot:
-        image: mcr.microsoft.com/dotnet-buildtools/prereqs:centos-stream-10-amd64@sha256:e601475697ad0647de81530cfdc93c7bb0c0687675048193f815865599eb8a92
+        image: mcr.microsoft.com/dotnet-buildtools/prereqs:centos-stream-10-amd64@sha256:d63463ffe55a21d1db560037c506d0b71258b5bcc36a1c489e8b7dba84efee27
 
       browser_wasm:
         image: mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-net11.0-webassembly-amd64@sha256:5b8a4bba79623fb4e873d2fe7fe83a3c2734160f9e72549f870b8ae2e0e3c994
