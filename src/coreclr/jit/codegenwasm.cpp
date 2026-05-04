@@ -13,6 +13,7 @@
 #include "gcinfoencoder.h"
 
 static const int LINEAR_MEMORY_INDEX = 0;
+// stackPointer is the 0th global in our generated Wasm modules
 static const int STACK_POINTER_GLOBAL = 0;
 
 #ifdef TARGET_64BIT
@@ -155,7 +156,7 @@ void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pIni
     }
     else
     {
-        initialSPLclIndex = WasmRegToIndex(m_compiler->lvaGetParameterABIInfo(m_compiler->lvaWasmSpArg).Segment(0).GetRegister());;
+        initialSPLclIndex = WasmRegToIndex(m_compiler->lvaGetParameterABIInfo(m_compiler->lvaWasmSpArg).Segment(0).GetRegister());
     }
 
     assert(initialSPLclIndex == spLclIndex);
