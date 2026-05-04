@@ -75,7 +75,6 @@ internal sealed class InterpToNativeGenerator
 
         #include <callhelpers.hpp>
         #include <minipal/utils.h>
-        #include "precode_portable.hpp"
 
         // Arguments are passed on the stack with each argument aligned to INTERP_STACK_SLOT_SIZE.
         #define ARG_ADDR(i) (pArgs + (i * INTERP_STACK_SLOT_SIZE))
@@ -114,7 +113,7 @@ internal sealed class InterpToNativeGenerator
 
                         {{(isPortableEntryPointCall ? "NOINLINE " : "")}}static void {{CallFuncName(args, SignatureMapper.CharToNameType(signature[0]), isPortableEntryPointCall)}}(PCODE {{(isPortableEntryPointCall ? "pPortableEntryPoint" : "pcode")}}, int8_t* pArgs, int8_t* pRet)
                         {{{(isPortableEntryPointCall ? "\n        alignas(16) int framePointer = TERMINATE_R2R_STACK_WALK;" : "")}}
-                            {{result.nativeType}} (*fptr)({{portableEntrypointStackDeclaration}}{{args.Join(", ", (p, i) => SignatureMapper.CharToNativeType(p))}}{{portableEntrypointDeclaration}}) = ({{result.nativeType}} (*)({{portableEntrypointStackDeclaration}}{{args.Join(", ", (p, i) => SignatureMapper.CharToNativeType(p))}}{{portableEntrypointDeclaration}})){{(isPortableEntryPointCall ? "PortableEntryPoint::GetActualCode(pPortableEntryPoint)" : "pcode")}};
+                            {{result.nativeType}} (*fptr)({{portableEntrypointStackDeclaration}}{{args.Join(", ", (p, i) => SignatureMapper.CharToNativeType(p))}}{{portableEntrypointDeclaration}}) = ({{result.nativeType}} (*)({{portableEntrypointStackDeclaration}}{{args.Join(", ", (p, i) => SignatureMapper.CharToNativeType(p))}}{{portableEntrypointDeclaration}})){{(isPortableEntryPointCall ? "(pPortableEntryPoint)" : "pcode")}};
                             {{portabilityAssert}}{{(result.isVoid ? "" : "*" + "((" + result.nativeType + "*)pRet) = ")}}(*fptr)({{portableEntrypointStackParam}}{{args.Join(", ", (p, i) => $"{SignatureMapper.CharToArgType(p)}({i})")}}{{portableEntrypointParam}});
                         }
 
