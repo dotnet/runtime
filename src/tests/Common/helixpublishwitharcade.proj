@@ -36,6 +36,7 @@
     <_RunCrossGen>false</_RunCrossGen>
     <_RunCrossGen2>false</_RunCrossGen2>
     <_CompositeBuildMode>false</_CompositeBuildMode>
+    <_CrossGen2OutputFormat></_CrossGen2OutputFormat>
     <_LongRunningGCTests>false</_LongRunningGCTests>
     <_GcSimulatorTests>false</_GcSimulatorTests>
     <_RunInUnloadableContext>false</_RunInUnloadableContext>
@@ -102,6 +103,7 @@
         PublishTestResults=$(_PublishTestResults);
         RunCrossGen2=$(_RunCrossGen2);
         CompositeBuildMode=$(_CompositeBuildMode);
+        CrossGen2OutputFormat=$(_Crossgen2OutputFormat);
         LongRunningGCTests=$(_LongRunningGCTests);
         GcSimulatorTests=$(_GcSimulatorTests);
         RunInUnloadableContext=$(_RunInUnloadableContext);
@@ -646,6 +648,7 @@
     <HelixPreCommand Include="export CORE_ROOT=$HELIX_CORRELATION_PAYLOAD" />
     <HelixPreCommand Include="export RunCrossGen2=1" Condition=" '$(RunCrossGen2)' == 'true' " />
     <HelixPreCommand Include="export CompositeBuildMode=1" Condition=" '$(CompositeBuildMode)' == 'true' " />
+    <HelixPreCommand Include="export CrossGen2OutputFormat=$(CrossGen2OutputFormat)" Condition=" '$(CrossGen2OutputFormat)' != '' " />
     <HelixPreCommand Include="export RunningLongGCTests=1" Condition=" '$(LongRunningGCTests)' == 'true' " />
     <HelixPreCommand Include="export RunningGCSimulatorTests=1" Condition=" '$(GcSimulatorTests)' == 'true' " />
     <HelixPreCommand Include="export RunInUnloadableContext=1" Condition=" '$(RunInUnloadableContext)' == 'true' " />
