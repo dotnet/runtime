@@ -22,7 +22,7 @@ extends:
           ROOTFS_DIR: /crossrootfs/arm
 
       linux_arm64:
-        image: mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-net11.0-cross-arm64@sha256:8e2b84e8315f2014f7970399511ba485788c1f95c28857a72b9fb2fcbe760a48
+        image: mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-net11.0-cross-arm64@sha256:09f90b1e175d2344d5f6a526d2aa02b4df4535154c30595593053b1295141ef3
         env:
           ROOTFS_DIR: /crossrootfs/arm64
 
