@@ -156,7 +156,8 @@ void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pIni
     }
     else
     {
-        initialSPLclIndex = WasmRegToIndex(m_compiler->lvaGetParameterABIInfo(m_compiler->lvaWasmSpArg).Segment(0).GetRegister());
+        initialSPLclIndex =
+            WasmRegToIndex(m_compiler->lvaGetParameterABIInfo(m_compiler->lvaWasmSpArg).Segment(0).GetRegister());
     }
 
     assert(initialSPLclIndex == spLclIndex);
