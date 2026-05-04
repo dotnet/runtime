@@ -841,7 +841,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\AsyncValueTaskMethodBuilder.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\AsyncValueTaskMethodBuilderT.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\AsyncVoidMethodBuilder.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\AsyncInstrumentation.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\AsyncInstrumentation.cs" Condition="'$(FeatureMono)' != 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\CastCache.cs" Condition="'$(FeatureMono)' != 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\GenericCache.cs" Condition="'$(FeatureMono)' != 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\CallerArgumentExpressionAttribute.cs" />
@@ -942,6 +942,8 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\UnionAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\ValueTaskAwaiter.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\YieldAwaitable.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\AsyncProfiler.cs" Condition="'$(FeatureMono)' != 'true'" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\AsyncProfilerEventSource.cs" Condition="'$(FeatureMono)' != 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\ConstrainedExecution\Cer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\ConstrainedExecution\Consistency.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\ConstrainedExecution\CriticalFinalizerObject.cs" />
