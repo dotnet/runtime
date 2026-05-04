@@ -44,6 +44,7 @@ To do that, for each example, run `superpmi.exe <path to clrjit.dll> <path to .m
 The clrjit.dll used should be the one that corresponds to the target that reproduced the error.
 For example, if the example reproduced on linux-x64, then use clrjit_unix_x64_x64.dll.
 If the assertion failure reproduces it should give you the context index before the message, e.g. "#12345".
+For the next steps use the numeric portion of that index, e.g. "12345" without the "#" symbol.
 
 2. Once you have the context index, use superpmi to replay that specific context with `superpmi.exe <path to clrjit.dll> <path to .mc> -c <context index>`.
 Validate that this reproduces the assertion failure instantly.
@@ -52,7 +53,7 @@ Validate that this reproduces the assertion failure instantly.
 Delete all the other .mc files for that example, and keep only the repro.mc file.
 
 4. Create a jitdump file.
-To do that, run `superpmi.exe <path to corerun.exe> <path to repro.mc> -jitoption JitDump=*` and pipe the output to a jitdump.txt file in the example's directory.
+To do that, run `superpmi.exe <path to clrjit.dll> <path to repro.mc> -jitoption JitDump=*` and pipe the output to a jitdump.txt file in the example's directory.
 
 5. Analyze the jitdump file and try to come up with the root cause of that assertion failure.
 The JIT source code creating the jitdump is available at src/coreclr/jit/*.
@@ -61,7 +62,7 @@ Put your analysis into an analysis.md file in the example's directory.
 
 6. Create a details.zip file that includes the repro.mc and also the jitdump.txt file.
 
-7. Create an issue.md file that can be used to open a github issue later.
+7. Create an issue.md file that can be used to open a GitHub issue later.
 In this issue.md file include the following:
   - A header with the assertion failure message.
   For example, if the assertion failure is "Assertion failed: x > 0", the header should be "# Assertion failed: x > 0".
