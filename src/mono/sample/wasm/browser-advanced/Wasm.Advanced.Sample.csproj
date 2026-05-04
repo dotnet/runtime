@@ -18,8 +18,8 @@
 
     <_ExtraTrimmerArgs>$(_ExtraTrimmerArgs) --dump-dependencies</_ExtraTrimmerArgs>
 
-    <!-- 
     <RunAOTCompilation>true</RunAOTCompilation>
+    <!-- 
     <WasmNativeDebugSymbols>true</WasmNativeDebugSymbols>
     <WasmNativeStrip>false</WasmNativeStrip>
     -->

@@ -8078,7 +8078,7 @@ MONO_RESTORE_WARNING
 
 				LLVMValueRef info_var = LLVMAddGlobal (ctx->lmodule, LLVMArrayType (LLVMInt8Type (), 8), "@OBJC_IMAGE_INFO");
 				int32_t objc_imageinfo [] = { 0, 0 };
-				LLVMSetInitializer (info_var, mono_llvm_create_constant_data_array ((uint8_t *) &objc_imageinfo, 8));
+				LLVMSetInitializer (info_var, mono_llvm_create_constant_data_array (ctx->module->context, (uint8_t *) &objc_imageinfo, 8));
 				LLVMSetLinkage (info_var, LLVMPrivateLinkage);
 				LLVMSetExternallyInitialized (info_var, TRUE);
 				LLVMSetSection (info_var, "__DATA, __objc_imageinfo,regular,no_dead_strip");
@@ -8094,7 +8094,7 @@ MONO_RESTORE_WARNING
 
 				LLVMTypeRef name_var_type = LLVMArrayType (LLVMInt8Type (), (unsigned int)(strlen (name) + 1));
 				LLVMValueRef name_var = LLVMAddGlobal (ctx->lmodule, name_var_type, "@OBJC_METH_VAR_NAME_");
-				LLVMSetInitializer (name_var, mono_llvm_create_constant_data_array ((const uint8_t*)name, (int)(strlen (name) + 1)));
+				LLVMSetInitializer (name_var, mono_llvm_create_constant_data_array (ctx->module->context, (const uint8_t*)name, (int)(strlen (name) + 1)));
 				LLVMSetLinkage (name_var, LLVMPrivateLinkage);
 				LLVMSetSection (name_var, "__TEXT,__objc_methname,cstring_literals");
 				mark_as_used (ctx->module, name_var);
@@ -13622,7 +13622,7 @@ after_codegen_1:
 		LLVMValueRef name_var = LLVMAddGlobal (ctx->lmodule, type, "missing_method_name");
 		LLVMSetVisibility (name_var, LLVMHiddenVisibility);
 		LLVMSetLinkage (name_var, LLVMInternalLinkage);
-		LLVMSetInitializer (name_var, mono_llvm_create_constant_data_array ((guint8*)name, len + 1));
+		LLVMSetInitializer (name_var, mono_llvm_create_constant_data_array (ctx->module->context, (guint8*)name, len + 1));
 		mono_llvm_set_is_constant (name_var);
 		g_free (name);
 
@@ -14061,7 +14061,7 @@ add_types (MonoLLVMModule *module)
 void
 mono_llvm_init (gboolean enable_jit)
 {
-	ptr_t = mono_llvm_get_ptr_type ();
+	ptr_t = mono_llvm_get_ptr_type (LLVMGetGlobalContext ());
 
 	intrin_types [0][0] = i1_t = LLVMInt8Type ();
 	intrin_types [0][1] = i2_t = LLVMInt16Type ();
@@ -14472,7 +14472,7 @@ mono_llvm_emit_aot_data_aligned (const char *symbol, guint8 *data, int data_len,
 	d = LLVMAddGlobal (module->lmodule, type, symbol);
 	LLVMSetVisibility (d, LLVMHiddenVisibility);
 	LLVMSetLinkage (d, LLVMInternalLinkage);
-	LLVMSetInitializer (d, mono_llvm_create_constant_data_array (data, data_len));
+	LLVMSetInitializer (d, mono_llvm_create_constant_data_array (module->context, data, data_len));
 	if (align != 1)
 		LLVMSetAlignment (d, align);
 	mono_llvm_set_is_constant (d);
@@ -14914,7 +14914,7 @@ mono_llvm_emit_aot_module (const char *filename, const char *cu_name)
 			LLVMDeleteGlobal (cfg->llvm_dummy_info_var);
 			} else {
 				// FIXME: How can this happen ?
-				LLVMSetInitializer (cfg->llvm_dummy_info_var, mono_llvm_create_constant_data_array (NULL, 0));
+				LLVMSetInitializer (cfg->llvm_dummy_info_var, mono_llvm_create_constant_data_array (module->context, NULL, 0));
 			}
 		}
 	}
