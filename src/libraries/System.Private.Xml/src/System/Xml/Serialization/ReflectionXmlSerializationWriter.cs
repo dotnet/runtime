@@ -123,7 +123,7 @@ namespace System.Xml.Serialization
             }
             else
             {
-                WriteElements(o, choiceSource, elements, text, choice, writeAccessors, memberTypeDesc.IsNullable);
+                WriteElements(o, choiceSource, elements, text, choice, writeAccessors, memberTypeDesc.IsNullable, emitSeparator: false, separatorStr: null);
             }
         }
 
@@ -155,6 +155,7 @@ namespace System.Xml.Serialization
             var arr = o as IList;
             bool hasSeparator = text?.Separator.HasValue == true;
             string? separatorStr = hasSeparator ? text!.Separator!.Value.ToString() : null;
+            bool lastWasText = false;
 
             if (arr != null)
             {
@@ -162,11 +163,7 @@ namespace System.Xml.Serialization
                 {
                     object? ai = arr[i];
                     var choiceSource = ((Array?)choiceSources)?.GetValue(i);
-                    if (hasSeparator && i > 0)
-                    {
-                        WriteValue(separatorStr);
-                    }
-                    WriteElements(ai, choiceSource, elements, text, choice, true, true);
+                    lastWasText = WriteElements(ai, choiceSource, elements, text, choice, true, true, hasSeparator && lastWasText, separatorStr);
                 }
             }
             else
@@ -181,31 +178,34 @@ namespace System.Xml.Serialization
                     while (e.MoveNext())
                     {
                         object ai = e.Current;
-                        if (hasSeparator && c > 0)
-                        {
-                            WriteValue(separatorStr);
-                        }
                         var choiceSource = ((Array?)choiceSources)?.GetValue(c++);
-                        WriteElements(ai, choiceSource, elements, text, choice, true, true);
+                        lastWasText = WriteElements(ai, choiceSource, elements, text, choice, true, true, hasSeparator && lastWasText, separatorStr);
                     }
                 }
             }
         }
 
-        private void WriteElements(object? o, object? choiceSource, ElementAccessor[] elements, TextAccessor? text, ChoiceIdentifierAccessor? choice, bool writeAccessors, bool isNullable)
+        /// <returns>
+        /// true if this item was written as text, false if an element was written,
+        /// or <paramref name="emitSeparator"/> if nothing was written (preserving status quo).
+        /// Since <paramref name="emitSeparator"/> is true only when the previous item was
+        /// text in a separator-tracking context, returning it propagates that state forward.
+        /// </returns>
+        private bool WriteElements(object? o, object? choiceSource, ElementAccessor[] elements, TextAccessor? text, ChoiceIdentifierAccessor? choice, bool writeAccessors, bool isNullable, bool emitSeparator, string? separatorStr)
         {
             if (elements.Length == 0 && text == null)
-                return;
+                return emitSeparator;
 
             if (elements.Length == 1 && text == null)
             {
                 WriteElement(o, elements[0], writeAccessors);
+                return false;
             }
             else
             {
                 if (isNullable && choice == null && o == null)
                 {
-                    return;
+                    return emitSeparator;
                 }
 
                 int anyCount = 0;
@@ -251,7 +251,7 @@ namespace System.Xml.Serialization
                                 }
 
                                 WriteElement(o, element, writeAccessors);
-                                return;
+                                return false;
                             }
                         }
                     }
@@ -261,7 +261,7 @@ namespace System.Xml.Serialization
                         if (td.Type!.IsAssignableFrom(o!.GetType()))
                         {
                             WriteElement(o, element, writeAccessors);
-                            return;
+                            return false;
                         }
                     }
                 }
@@ -275,7 +275,7 @@ namespace System.Xml.Serialization
                             if (element.Name == elem.Name && element.Namespace == elem.NamespaceURI)
                             {
                                 WriteElement(elem, element, writeAccessors);
-                                return;
+                                return false;
                             }
                         }
 
@@ -287,17 +287,21 @@ namespace System.Xml.Serialization
                         if (unnamedAny != null)
                         {
                             WriteElement(elem, unnamedAny, writeAccessors);
-                            return;
+                            return false;
                         }
 
                         throw CreateUnknownAnyElementException(elem.Name, elem.NamespaceURI);
                     }
                 }
 
-                if (text != null)
+                if (text != null && o is not null)
                 {
-                    WriteText(o!, text);
-                    return;
+                    if (emitSeparator)
+                    {
+                        WriteValue(separatorStr);
+                    }
+                    WriteText(o, text);
+                    return true;
                 }
 
                 if (elements.Length > 0 && o != null)
@@ -305,6 +309,8 @@ namespace System.Xml.Serialization
                     throw CreateUnknownTypeException(o);
                 }
             }
+
+            return emitSeparator;
         }
 
         private static string FindChoiceEnumValue(ElementAccessor element, EnumMapping choiceMapping, bool useReflection)

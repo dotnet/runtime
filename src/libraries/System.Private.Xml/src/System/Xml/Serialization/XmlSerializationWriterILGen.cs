@@ -1480,6 +1480,14 @@ namespace System.Xml.Serialization
             bool hasSeparator = text?.Separator.HasValue == true;
             string? separatorStr = hasSeparator ? text!.Separator!.Value.ToString() : null;
 
+            LocalBuilder? lastWasTextLoc = null;
+            if (hasSeparator)
+            {
+                lastWasTextLoc = ilg.DeclareOrGetLocal(typeof(bool), "lastWasText");
+                ilg.Ldc(false);
+                ilg.Stloc(lastWasTextLoc);
+            }
+
             if (arrayTypeDesc.IsEnumerable)
             {
                 LocalBuilder eLoc = ilg.DeclareLocal(typeof(IEnumerator), "e");
@@ -1522,37 +1530,11 @@ namespace System.Xml.Serialization
                 ilg.Load(null);
                 ilg.If(Cmp.NotEqualTo);
 
-                LocalBuilder? firstLoc = null;
-                if (hasSeparator)
-                {
-                    firstLoc = ilg.DeclareOrGetLocal(typeof(bool), "first");
-                    ilg.Ldc(true);
-                    ilg.Stloc(firstLoc);
-                }
-
                 ilg.WhileBegin();
                 string arrayNamePlusA = $"{(arrayName).Replace(arrayTypeDesc.Name, "")}a{arrayElementTypeDesc.Name}";
                 string arrayNamePlusI = $"{(arrayName).Replace(arrayTypeDesc.Name, "")}i{arrayElementTypeDesc.Name}";
                 WriteLocalDecl(arrayNamePlusI, "e.Current", arrayElementTypeDesc.Type!);
-                if (hasSeparator)
-                {
-                    // if (!first) WriteValue(separatorStr); first = false;
-                    ilg.Ldloc(firstLoc!);
-                    ilg.Ldc(false);
-                    ilg.If(Cmp.EqualTo);
-                    MethodInfo XmlSerializationWriter_WriteValue = typeof(XmlSerializationWriter).GetMethod(
-                        "WriteValue",
-                        CodeGenerator.InstanceBindingFlags,
-                        new Type[] { typeof(string) }
-                        )!;
-                    ilg.Ldarg(0);
-                    ilg.Ldstr(separatorStr!);
-                    ilg.Call(XmlSerializationWriter_WriteValue);
-                    ilg.EndIf();
-                    ilg.Ldc(false);
-                    ilg.Stloc(firstLoc!);
-                }
-                WriteElements(new SourceInfo(arrayNamePlusI, null, null, arrayElementTypeDesc.Type, ilg), $"{choiceName}i", elements, text, choice, arrayNamePlusA, true, true);
+                WriteElements(new SourceInfo(arrayNamePlusI, null, null, arrayElementTypeDesc.Type, ilg), $"{choiceName}i", elements, text, choice, arrayNamePlusA, true, true, lastWasTextLoc, separatorStr);
 
                 ilg.WhileBeginCondition(); // while (e.MoveNext())
                 MethodInfo IEnumerator_MoveNext = typeof(IEnumerator).GetMethod(
@@ -1574,22 +1556,6 @@ namespace System.Xml.Serialization
                 string arrayNamePlusI = $"{(arrayName).Replace(arrayTypeDesc.Name, "")}i{arrayElementTypeDesc.Name}";
                 LocalBuilder localI = ilg.DeclareOrGetLocal(typeof(int), iPlusArrayName);
                 ilg.For(localI, 0, ilg.GetLocal(arrayName));
-                if (hasSeparator)
-                {
-                    // if (i != 0) WriteValue(separatorStr)
-                    ilg.Ldloc(localI);
-                    ilg.Ldc(0);
-                    ilg.If(Cmp.NotEqualTo);
-                    MethodInfo XmlSerializationWriter_WriteValue = typeof(XmlSerializationWriter).GetMethod(
-                        "WriteValue",
-                        CodeGenerator.InstanceBindingFlags,
-                        new Type[] { typeof(string) }
-                        )!;
-                    ilg.Ldarg(0);
-                    ilg.Ldstr(separatorStr!);
-                    ilg.Call(XmlSerializationWriter_WriteValue);
-                    ilg.EndIf();
-                }
                 int count = elements.Length + (text == null ? 0 : 1);
                 if (count > 1)
                 {
@@ -1598,17 +1564,17 @@ namespace System.Xml.Serialization
                     {
                         WriteLocalDecl($"{choiceName}i", ReflectionAwareILGen.GetStringForArrayMember(choiceName, iPlusArrayName), choice.Mapping!.TypeDesc!.Type!);
                     }
-                    WriteElements(new SourceInfo(arrayNamePlusI, null, null, arrayElementTypeDesc.Type, ilg), $"{choiceName}i", elements, text, choice, arrayNamePlusA, true, arrayElementTypeDesc.IsNullable);
+                    WriteElements(new SourceInfo(arrayNamePlusI, null, null, arrayElementTypeDesc.Type, ilg), $"{choiceName}i", elements, text, choice, arrayNamePlusA, true, arrayElementTypeDesc.IsNullable, lastWasTextLoc, separatorStr);
                 }
                 else
                 {
-                    WriteElements(new SourceInfo(ReflectionAwareILGen.GetStringForArrayMember(arrayName, iPlusArrayName), null, null, arrayElementTypeDesc.Type, ilg), null, elements, text, choice, arrayNamePlusA, true, arrayElementTypeDesc.IsNullable);
+                    WriteElements(new SourceInfo(ReflectionAwareILGen.GetStringForArrayMember(arrayName, iPlusArrayName), null, null, arrayElementTypeDesc.Type, ilg), null, elements, text, choice, arrayNamePlusA, true, arrayElementTypeDesc.IsNullable, lastWasTextLoc, separatorStr);
                 }
                 ilg.EndFor();
             }
         }
 
-        private void WriteElements(SourceInfo source, string? enumSource, ElementAccessor[] elements, TextAccessor? text, ChoiceIdentifierAccessor? choice, string arrayName, bool writeAccessors, bool isNullable)
+        private void WriteElements(SourceInfo source, string? enumSource, ElementAccessor[] elements, TextAccessor? text, ChoiceIdentifierAccessor? choice, string arrayName, bool writeAccessors, bool isNullable, LocalBuilder? lastWasTextLoc = null, string? separatorStr = null)
         {
             if (elements.Length == 0 && text == null) return;
             if (elements.Length == 1 && text == null)
@@ -1633,6 +1599,14 @@ namespace System.Xml.Serialization
                 ElementAccessor? unnamedAny = null; // can only have one
                 bool wroteFirstIf = false;
                 string? enumTypeName = choice == null ? null : choice.Mapping!.TypeDesc!.FullName;
+
+                LocalBuilder? curIsTextLoc = null;
+                if (lastWasTextLoc is not null)
+                {
+                    curIsTextLoc = ilg.DeclareOrGetLocal(typeof(bool), "curIsText");
+                    ilg.Ldc(false);
+                    ilg.Stloc(curIsTextLoc);
+                }
 
                 for (int i = 0; i < elements.Length; i++)
                 {
@@ -1853,11 +1827,45 @@ namespace System.Xml.Serialization
                         ilg.InitElseIf();
                         WriteInstanceOf(source, text.Mapping!.TypeDesc!.Type!);
                         ilg.AndIf();
+                        if (curIsTextLoc is not null)
+                        {
+                            ilg.Ldloc(lastWasTextLoc!);
+                            ilg.Ldc(true);
+                            ilg.If(Cmp.EqualTo);
+                            MethodInfo XmlSerializationWriter_WriteValue_Sep = typeof(XmlSerializationWriter).GetMethod(
+                                "WriteValue",
+                                CodeGenerator.InstanceBindingFlags,
+                                new Type[] { typeof(string) }
+                                )!;
+                            ilg.Ldarg(0);
+                            ilg.Ldstr(separatorStr!);
+                            ilg.Call(XmlSerializationWriter_WriteValue_Sep);
+                            ilg.EndIf();
+                            ilg.Ldc(true);
+                            ilg.Stloc(curIsTextLoc);
+                        }
                         SourceInfo castedSource = source.CastTo(text.Mapping.TypeDesc);
                         WriteText(castedSource, text);
                     }
                     else
                     {
+                        if (lastWasTextLoc is not null)
+                        {
+                            ilg.Ldloc(lastWasTextLoc);
+                            ilg.Ldc(true);
+                            ilg.If(Cmp.EqualTo);
+                            MethodInfo XmlSerializationWriter_WriteValue_Sep = typeof(XmlSerializationWriter).GetMethod(
+                                "WriteValue",
+                                CodeGenerator.InstanceBindingFlags,
+                                new Type[] { typeof(string) }
+                                )!;
+                            ilg.Ldarg(0);
+                            ilg.Ldstr(separatorStr!);
+                            ilg.Call(XmlSerializationWriter_WriteValue_Sep);
+                            ilg.EndIf();
+                            ilg.Ldc(true);
+                            ilg.Stloc(lastWasTextLoc);
+                        }
                         SourceInfo castedSource = source.CastTo(text.Mapping!.TypeDesc!);
                         WriteText(castedSource, text);
                     }
@@ -1886,6 +1894,12 @@ namespace System.Xml.Serialization
                     ilg.Throw();
 
                     ilg.EndIf();
+
+                    if (curIsTextLoc is not null)
+                    {
+                        ilg.Ldloc(curIsTextLoc);
+                        ilg.Stloc(lastWasTextLoc!);
+                    }
                 }
                 // See ilg.If() cond above
                 if (doEndIf) // if (isNullable && choice == null)

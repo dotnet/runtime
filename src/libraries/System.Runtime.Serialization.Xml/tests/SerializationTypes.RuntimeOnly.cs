@@ -4690,12 +4690,8 @@ public class TypeWithXmlTextSeparatorOnMixedContentWithElement
 {
     [XmlText(typeof(string), Separator = ',')]
     [XmlElement(typeof(int))]
-    public object[] All = new object[] { 321, "One" };
+    [XmlElement(typeof(double))]
+    public object[] All = new object[] { 321, "One", "Plus", "One", 2, 3.14, "Two" };
 }
 
-public class TypeWithXmlTextSeparatorOnMixedContentWithAnyElement
-{
-    [XmlText(typeof(string), Separator = ',')]
-    [XmlAnyElement]
-    public object[] All;
-}
+

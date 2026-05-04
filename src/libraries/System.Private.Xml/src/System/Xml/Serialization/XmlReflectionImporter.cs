@@ -1644,9 +1644,6 @@ namespace System.Xml.Serialization
 
                         if (a.XmlText.Separator != '\0')
                         {
-                            if (a.XmlElements.Count > 0 || a.XmlAnyElements.Count > 0)
-                                throw new InvalidOperationException(SR.Format(SR.XmlSeparatorOnMixedContent, accessorName));
-
                             ValidateSeparatorChar(a.XmlText.Separator, accessorName);
                             text.Separator = a.XmlText.Separator;
                         }

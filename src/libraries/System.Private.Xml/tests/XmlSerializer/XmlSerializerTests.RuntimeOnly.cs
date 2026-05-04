@@ -3805,20 +3805,23 @@ public static partial class XmlSerializerTests
         AssertXmlMappingException(ex, type.Name, fieldName);
     }
 
-    [Theory]
-    [InlineData(typeof(TypeWithXmlTextSeparatorOnMixedContentWithElement), "All")]
-    [InlineData(typeof(TypeWithXmlTextSeparatorOnMixedContentWithAnyElement), "All")]
-    public static void XML_XmlTextSeparator_MixedContent_Throws(Type type, string fieldName)
+    [Fact]
+    public static void XML_XmlTextSeparator_MixedContent_RoundTrips()
     {
-        Exception ex = Record.Exception(() =>
+        var original = new TypeWithXmlTextSeparatorOnMixedContentWithElement
         {
-            var serializer = new XmlSerializer(type);
-#if ReflectionOnly
-            using var sw = new StringWriter();
-            serializer.Serialize(sw, Activator.CreateInstance(type));
-#endif
-        });
-
-        AssertXmlMappingException(ex, type.Name, fieldName);
+            All = new object[] { 321, "One", "Plus", "One", 2, 3.14, "Two" }
+        };
+        var actual = SerializeAndDeserialize(original,
+            "<?xml version=\"1.0\"?><TypeWithXmlTextSeparatorOnMixedContentWithElement xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\"><int>321</int>One,Plus,One<int>2</int><double>3.14</double>Two</TypeWithXmlTextSeparatorOnMixedContentWithElement>");
+        Assert.NotNull(actual.All);
+        Assert.Equal(7, actual.All.Length);
+        Assert.Equal(321, actual.All[0]);
+        Assert.Equal("One", actual.All[1]);
+        Assert.Equal("Plus", actual.All[2]);
+        Assert.Equal("One", actual.All[3]);
+        Assert.Equal(2, actual.All[4]);
+        Assert.Equal(3.14, actual.All[5]);
+        Assert.Equal("Two", actual.All[6]);
     }
 }

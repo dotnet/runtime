@@ -3620,6 +3620,7 @@ namespace System.Xml.Serialization
             TypeDesc arrayElementTypeDesc = arrayTypeDesc.ArrayElementTypeDesc!;
             bool hasSeparator = text?.Separator.HasValue == true;
             string? separatorStr = hasSeparator ? text!.Separator!.Value.ToString() : null;
+            string? lastWasTextVar = hasSeparator ? $"lwt{arrayName}" : null;
 
             if (arrayTypeDesc.IsEnumerable)
             {
@@ -3670,29 +3671,24 @@ namespace System.Xml.Serialization
                 Writer.Indent++;
                 if (hasSeparator)
                 {
-                    Writer.Write("int c");
-                    Writer.Write(arrayName);
-                    Writer.WriteLine(" = 0;");
+                    Writer.Write("bool ");
+                    Writer.Write(lastWasTextVar);
+                    Writer.WriteLine(" = false;");
                 }
                 Writer.WriteLine("while (e.MoveNext()) {");
                 Writer.Indent++;
                 string arrayTypeFullName = arrayElementTypeDesc.CSharpName;
                 WriteLocalDecl(arrayTypeFullName, $"{arrayName}i", "e.Current", arrayElementTypeDesc.UseReflection);
-                if (hasSeparator)
-                {
-                    Writer.Write("if (c");
-                    Writer.Write(arrayName);
-                    Writer.Write(" > 0) WriteValue(");
-                    WriteQuotedCSharpString(separatorStr);
-                    Writer.WriteLine(");");
-                    Writer.Write("c");
-                    Writer.Write(arrayName);
-                    Writer.WriteLine("++;");
-                }
-                WriteElements($"{arrayName}i", $"{choiceName}i", elements, text, choice, $"{arrayName}a", true, true);
+                WriteElements($"{arrayName}i", $"{choiceName}i", elements, text, choice, $"{arrayName}a", true, true, lastWasTextVar, separatorStr);
             }
             else
             {
+                if (hasSeparator)
+                {
+                    Writer.Write("bool ");
+                    Writer.Write(lastWasTextVar);
+                    Writer.WriteLine(" = false;");
+                }
                 Writer.Write("for (int i");
                 Writer.Write(arrayName);
                 Writer.Write(" = 0; i");
@@ -3715,14 +3711,6 @@ namespace System.Xml.Serialization
                 Writer.Write(arrayName);
                 Writer.WriteLine("++) {");
                 Writer.Indent++;
-                if (hasSeparator)
-                {
-                    Writer.Write("if (i");
-                    Writer.Write(arrayName);
-                    Writer.Write(" != 0) WriteValue(");
-                    WriteQuotedCSharpString(separatorStr);
-                    Writer.WriteLine(");");
-                }
                 int count = elements.Length + (text == null ? 0 : 1);
                 if (count > 1)
                 {
@@ -3733,11 +3721,11 @@ namespace System.Xml.Serialization
                         string choiceFullName = choice.Mapping!.TypeDesc!.CSharpName;
                         WriteLocalDecl(choiceFullName, $"{choiceName}i", RaCodeGen.GetStringForArrayMember(choiceName!, $"i{arrayName}", choice.Mapping.TypeDesc), choice.Mapping.TypeDesc.UseReflection);
                     }
-                    WriteElements($"{arrayName}i", $"{choiceName}i", elements, text, choice, $"{arrayName}a", true, arrayElementTypeDesc.IsNullable);
+                    WriteElements($"{arrayName}i", $"{choiceName}i", elements, text, choice, $"{arrayName}a", true, arrayElementTypeDesc.IsNullable, lastWasTextVar, separatorStr);
                 }
                 else
                 {
-                    WriteElements(RaCodeGen.GetStringForArrayMember(arrayName, $"i{arrayName}", arrayTypeDesc), elements, text, choice, $"{arrayName}a", true, arrayElementTypeDesc.IsNullable);
+                    WriteElements(RaCodeGen.GetStringForArrayMember(arrayName, $"i{arrayName}", arrayTypeDesc), elements, text, choice, $"{arrayName}a", true, arrayElementTypeDesc.IsNullable, lastWasTextVar, separatorStr);
                 }
             }
             Writer.Indent--;
@@ -3750,13 +3738,13 @@ namespace System.Xml.Serialization
         }
 
         [RequiresUnreferencedCode("calls WriteElements")]
-        private void WriteElements(string source, ElementAccessor[] elements, TextAccessor? text, ChoiceIdentifierAccessor? choice, string arrayName, bool writeAccessors, bool isNullable)
+        private void WriteElements(string source, ElementAccessor[] elements, TextAccessor? text, ChoiceIdentifierAccessor? choice, string arrayName, bool writeAccessors, bool isNullable, string? lastWasTextVar = null, string? separatorStr = null)
         {
-            WriteElements(source, null, elements, text, choice, arrayName, writeAccessors, isNullable);
+            WriteElements(source, null, elements, text, choice, arrayName, writeAccessors, isNullable, lastWasTextVar, separatorStr);
         }
 
         [RequiresUnreferencedCode("calls WriteElement")]
-        private void WriteElements(string source, string? enumSource, ElementAccessor[] elements, TextAccessor? text, ChoiceIdentifierAccessor? choice, string arrayName, bool writeAccessors, bool isNullable)
+        private void WriteElements(string source, string? enumSource, ElementAccessor[] elements, TextAccessor? text, ChoiceIdentifierAccessor? choice, string arrayName, bool writeAccessors, bool isNullable, string? lastWasTextVar = null, string? separatorStr = null)
         {
             if (elements.Length == 0 && text == null) return;
             if (elements.Length == 1 && text == null)
@@ -3781,6 +3769,14 @@ namespace System.Xml.Serialization
                 ElementAccessor? unnamedAny = null; // can only have one
                 bool wroteFirstIf = false;
                 string? enumTypeName = choice == null ? null : choice.Mapping!.TypeDesc!.FullName;
+                string? curIsTextVar = null;
+                if (lastWasTextVar is not null)
+                {
+                    curIsTextVar = $"cit{arrayName}";
+                    Writer.Write("bool ");
+                    Writer.Write(curIsTextVar);
+                    Writer.WriteLine(" = false;");
+                }
 
                 for (int i = 0; i < elements.Length; i++)
                 {
@@ -3953,6 +3949,16 @@ namespace System.Xml.Serialization
                         WriteInstanceOf(source, fullTypeName, useReflection);
                         Writer.WriteLine(") {");
                         Writer.Indent++;
+                        if (curIsTextVar is not null)
+                        {
+                            Writer.Write("if (");
+                            Writer.Write(lastWasTextVar);
+                            Writer.Write(") WriteValue(");
+                            WriteQuotedCSharpString(separatorStr);
+                            Writer.WriteLine(");");
+                            Writer.Write(curIsTextVar);
+                            Writer.WriteLine(" = true;");
+                        }
                         string castedSource = source;
                         if (!useReflection)
                             castedSource = $"(({fullTypeName}){source})";
@@ -3962,6 +3968,16 @@ namespace System.Xml.Serialization
                     }
                     else
                     {
+                        if (lastWasTextVar is not null)
+                        {
+                            Writer.Write("if (");
+                            Writer.Write(lastWasTextVar);
+                            Writer.Write(") WriteValue(");
+                            WriteQuotedCSharpString(separatorStr);
+                            Writer.WriteLine(");");
+                            Writer.Write(lastWasTextVar);
+                            Writer.WriteLine(" = true;");
+                        }
                         string castedSource = source;
                         if (!useReflection)
                             castedSource = $"(({fullTypeName}){source})";
@@ -3988,6 +4004,14 @@ namespace System.Xml.Serialization
 
                     Writer.Indent--;
                     Writer.WriteLine("}");
+
+                    if (curIsTextVar is not null)
+                    {
+                        Writer.Write(lastWasTextVar);
+                        Writer.Write(" = ");
+                        Writer.Write(curIsTextVar);
+                        Writer.WriteLine(";");
+                    }
                 }
                 Writer.Indent--;
                 Writer.WriteLine("}");
