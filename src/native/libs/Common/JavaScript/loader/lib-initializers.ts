@@ -13,25 +13,28 @@ export async function invokeLibraryInitializers(functionName: string, args: any[
 
     const promises: Promise<void>[] = [];
     for (const asset of allModules) {
-        const mod = asset.moduleExports;
-        if (mod && typeof mod[functionName] === "function") {
-            const name = asset.name || asset.resolvedUrl || "unknown";
-            promises.push(
-                invokeWithErrorHandling(name, functionName, () => mod[functionName](...args))
-            );
-        }
+        promises.push(invokeWithErrorHandling(asset, functionName, args));
     }
     await Promise.all(promises);
 }
 
 async function invokeWithErrorHandling(
-    scriptName: string, methodName: string, callback: () => Promise<void> | undefined
+    asset: { moduleExports?: any; name?: string; resolvedUrl?: string },
+    functionName: string, args: any[]
 ): Promise<void> {
     try {
-        await callback();
+        const mod = await asset.moduleExports;
+        if (mod) {
+            asset.moduleExports = mod;
+        }
+        if (mod && typeof mod[functionName] === "function") {
+            await mod[functionName](...args);
+        }
     } catch (err) {
+        const name = asset.name || asset.resolvedUrl || "unknown";
+        const message = err instanceof Error ? err.message : String(err);
         dotnetLogger.warn(
-            `Failed to invoke '${methodName}' on library initializer '${scriptName}': ${err}`
+            `Failed to invoke '${functionName}' on library initializer '${name}': ${message}`
         );
         exit(1, err);
         throw err;
