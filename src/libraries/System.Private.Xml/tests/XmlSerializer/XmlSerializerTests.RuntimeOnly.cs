@@ -3667,7 +3667,6 @@ public static partial class XmlSerializerTests
         Assert.Equal(value.Number, actual.Number);
     }
 
-// TODO smolloy - new after here
     [Fact]
     public static void XML_XmlTextNoSeparator_StringArray_ConcatenatesWithoutDelimiter()
     {
@@ -3798,6 +3797,23 @@ public static partial class XmlSerializerTests
             // The reflection-based serializer doesn't perform xml/type mapping in the constructor;
             // mapping (and therefore separator validation) happens during the first Serialize/Deserialize
             // call. Force the mapping to happen by serializing a default instance.
+            using var sw = new StringWriter();
+            serializer.Serialize(sw, Activator.CreateInstance(type));
+#endif
+        });
+
+        AssertXmlMappingException(ex, type.Name, fieldName);
+    }
+
+    [Theory]
+    [InlineData(typeof(TypeWithXmlTextSeparatorOnMixedContentWithElement), "All")]
+    [InlineData(typeof(TypeWithXmlTextSeparatorOnMixedContentWithAnyElement), "All")]
+    public static void XML_XmlTextSeparator_MixedContent_Throws(Type type, string fieldName)
+    {
+        Exception ex = Record.Exception(() =>
+        {
+            var serializer = new XmlSerializer(type);
+#if ReflectionOnly
             using var sw = new StringWriter();
             serializer.Serialize(sw, Activator.CreateInstance(type));
 #endif

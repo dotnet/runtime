@@ -2286,9 +2286,6 @@
   <data name="XmlIllegalAttribute" xml:space="preserve">
     <value>For non-array types, you may use the following attributes: XmlAttribute, XmlText, XmlElement, or XmlAnyElement.</value>
   </data>
-  <data name="XmlInvalidSeparatorChar" xml:space="preserve">
-    <value>The Separator character '{0}' is not valid without escaping in both XML text content and attribute values and cannot be used as a separator for member '{1}'.</value>
-  </data>
   <data name="XmlIllegalType" xml:space="preserve">
     <value>The type for {0} may not be specified for primitive types.</value>
   </data>
@@ -2315,6 +2312,12 @@
   </data>
   <data name="XmlInvalidFormUnqualified" xml:space="preserve">
     <value>The Form property may not be 'Unqualified' when an explicit Namespace property is present.</value>
+  </data>
+  <data name="XmlInvalidSeparatorChar" xml:space="preserve">
+    <value>The Separator character '{0}' is not valid without escaping in both XML text content and attribute values and cannot be used as a separator for member '{1}'.</value>
+  </data>
+  <data name="XmlSeparatorOnMixedContent" xml:space="preserve">
+    <value>The Separator property on XmlTextAttribute is not supported for mixed-content members that also have XmlElement or XmlAnyElement mappings. Remove the Separator property from member '{0}'.</value>
   </data>
   <data name="XmlDuplicateNamespace" xml:space="preserve">
     <value>The namespace, {0}, is a duplicate.</value>

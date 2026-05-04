@@ -4637,7 +4637,6 @@ public class PrimiveAttributeTestDerived : PrimiveAttributeTestBase
     public int Number { get; set; }
 }
 
-// TODO smolloy - new after here
 public class TypeWithXmlTextNoSeparatorOnStringArray
 {
     [XmlText]
@@ -4685,4 +4684,18 @@ public class TypeWithXmlAttributeInvalidSeparatorQuote
 {
     [XmlAttribute(Separator = '"')]
     public string[] Items;
+}
+
+public class TypeWithXmlTextSeparatorOnMixedContentWithElement
+{
+    [XmlText(typeof(string), Separator = ',')]
+    [XmlElement(typeof(int))]
+    public object[] All = new object[] { 321, "One" };
+}
+
+public class TypeWithXmlTextSeparatorOnMixedContentWithAnyElement
+{
+    [XmlText(typeof(string), Separator = ',')]
+    [XmlAnyElement]
+    public object[] All;
 }
