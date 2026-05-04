@@ -411,7 +411,7 @@ namespace System.Formats.Tar
             string relative = normalizedFile.Substring(resolvedDest.Length)
                 .TrimStart(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
 
-            string[] components = relative.Split([Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar],
+            string[] components = relative.Split(new char[] { Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar },
                 StringSplitOptions.RemoveEmptyEntries);
 
             string current = resolvedDest;
@@ -466,7 +466,7 @@ namespace System.Formats.Tar
             }
 
             string[] components = fullPath.Substring(root.Length)
-                .Split([Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar], StringSplitOptions.RemoveEmptyEntries);
+                .Split(new char[] { Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar }, StringSplitOptions.RemoveEmptyEntries);
             string current = root;
             foreach (string component in components)
             {
