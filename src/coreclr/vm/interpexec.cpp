@@ -1438,7 +1438,7 @@ SWITCH_OPCODE:
                         if (seqPointOffset >= 0)
                         {
                             callbackIp = pFrame->startIp->GetByteCodes() + seqPointOffset;
-                            _ASSERTE(*callbackIp == INTOP_DEBUG_SEQ_POINT);
+                            _ASSERTE(*callbackIp == INTOP_DEBUG_SEQ_POINT || *callbackIp == INTOP_BREAKPOINT);
                         }
                         g_pDebugInterface->OnMethodEnter((void*)callbackIp);
                     }
