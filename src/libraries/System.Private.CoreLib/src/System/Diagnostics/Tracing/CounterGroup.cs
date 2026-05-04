@@ -143,10 +143,10 @@ namespace System.Diagnostics.Tracing
 
 #region Timer Processing
 
-        private long _timeStampSinceCollectionStarted;
+        private long _baseTimestamp;
+        private TimeSpan _timeSinceCollectionStarted;
         private TimeSpan _pollingInterval;
-        private long _pollingIntervalSwTicks;
-        private long _nextPollingTimeStamp;
+        private TimeSpan _nextPollingOffset;
 
         private void EnableTimer(float pollingIntervalInSeconds)
         {
@@ -156,13 +156,12 @@ namespace System.Diagnostics.Tracing
             if (_pollingInterval == TimeSpan.Zero || interval < _pollingInterval)
             {
                 _pollingInterval = interval;
-                _pollingIntervalSwTicks = _pollingInterval.Ticks * Stopwatch.Frequency / TimeSpan.TicksPerSecond;
                 // Schedule IncrementingPollingCounter reset and synchronously reset other counters
                 HandleCountersReset();
 
-                long now = Stopwatch.GetTimestamp();
-                _timeStampSinceCollectionStarted = now;
-                _nextPollingTimeStamp = now + _pollingIntervalSwTicks;
+                _baseTimestamp = Stopwatch.GetTimestamp();
+                _timeSinceCollectionStarted = TimeSpan.Zero;
+                _nextPollingOffset = _pollingInterval;
 
                 // Create the polling thread and init all the shared state if needed
                 if (s_pollingThread == null)
@@ -192,7 +191,6 @@ namespace System.Diagnostics.Tracing
         {
             Debug.Assert(Monitor.IsEntered(s_counterGroupLock));
             _pollingInterval = TimeSpan.Zero;
-            _pollingIntervalSwTicks = 0;
             s_counterGroupEnabledList?.Remove(this);
 
             if (s_needsResetIncrementingPollingCounters.Count > 0)
@@ -231,14 +229,14 @@ namespace System.Diagnostics.Tracing
         {
             if (_eventSource.IsEnabled())
             {
-                long now;
+                TimeSpan nowOffset;
                 TimeSpan elapsed;
                 TimeSpan pollingInterval;
                 DiagnosticCounter[] counters;
                 lock (s_counterGroupLock)
                 {
-                    now = Stopwatch.GetTimestamp();
-                    elapsed = Stopwatch.GetElapsedTime(_timeStampSinceCollectionStarted, now);
+                    nowOffset = Stopwatch.GetElapsedTime(_baseTimestamp);
+                    elapsed = nowOffset - _timeSinceCollectionStarted;
                     pollingInterval = _pollingInterval;
                     counters = new DiagnosticCounter[_counters.Count];
                     _counters.CopyTo(counters);
@@ -264,8 +262,8 @@ namespace System.Diagnostics.Tracing
 
                 lock (s_counterGroupLock)
                 {
-                    _timeStampSinceCollectionStarted = now;
-                    TimeSpan delta = Stopwatch.GetElapsedTime(_nextPollingTimeStamp, now);
+                    _timeSinceCollectionStarted = nowOffset;
+                    TimeSpan delta = nowOffset - _nextPollingOffset;
                     if (delta < _pollingInterval)
                     {
                         delta = _pollingInterval;
@@ -273,7 +271,8 @@ namespace System.Diagnostics.Tracing
 
                     if (_pollingInterval > TimeSpan.Zero)
                     {
-                        _nextPollingTimeStamp += (long)Math.Ceiling(delta / _pollingInterval) * _pollingIntervalSwTicks;
+                        long missed = (delta.Ticks + _pollingInterval.Ticks - 1) / _pollingInterval.Ticks;
+                        _nextPollingOffset += new TimeSpan(missed * _pollingInterval.Ticks);
                     }
                 }
             }
@@ -304,8 +303,8 @@ namespace System.Diagnostics.Tracing
                     sleepEvent = s_pollingThreadSleepEvent;
                     foreach (CounterGroup counterGroup in s_counterGroupEnabledList!)
                     {
-                        long now = Stopwatch.GetTimestamp();
-                        TimeSpan timeUntilNextPoll = Stopwatch.GetElapsedTime(now, counterGroup._nextPollingTimeStamp);
+                        TimeSpan nowOffset = Stopwatch.GetElapsedTime(counterGroup._baseTimestamp);
+                        TimeSpan timeUntilNextPoll = counterGroup._nextPollingOffset - nowOffset;
                         if (timeUntilNextPoll < TimeSpan.FromMilliseconds(1))
                         {
                             onTimers.Add(counterGroup);
