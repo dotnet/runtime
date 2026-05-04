@@ -4,7 +4,7 @@ This contract describes the format of method, field, and local-variable signatur
 
 ## Internal element types
 
-The runtime extends the standard ECMA-335 element type encoding with two values that may appear in signatures stored in target memory:
+The runtime extends the standard ECMA-335 element type encoding with values that may appear in signatures stored in target memory:
 
 | Encoding | Value | Layout following the tag |
 | --- | --- | --- |
@@ -44,9 +44,9 @@ Constants:
 | `ELEMENT_TYPE_INTERNAL` | runtime-internal element type tag for an internal `TypeHandle` | `0x21` |
 | `ELEMENT_TYPE_CMOD_INTERNAL` | runtime-internal element type tag for an internal modified type | `0x22` |
 
-Decoding a signature follows the ECMA-335 §II.23.2 grammar. For all standard element types, decoding behaves identically to `System.Reflection.Metadata.SignatureDecoder<TType, TGenericContext>`. When the decoder encounters one of the two runtime-internal tags above, it reads the target-sized pointer (and optional `required` byte for `ELEMENT_TYPE_CMOD_INTERNAL`) from the signature blob and resolves it to a runtime `TypeHandle`.
+Decoding a signature follows the ECMA-335 §II.23.2 grammar. For all standard element types, decoding behaves identically to `System.Reflection.Metadata.SignatureDecoder<TType, TGenericContext>`. When the decoder encounters one of the runtime-internal tags above, it reads the target-sized pointer (and optional `required` byte for `ELEMENT_TYPE_CMOD_INTERNAL`) from the signature blob and resolves it to a runtime `TypeHandle`.
 
-The decoder is implemented as `RuntimeSignatureDecoder<TType, TGenericContext>` -- a clone of SRM's `SignatureDecoder<TType, TGenericContext>` with added support for the two runtime-internal element types. The clone takes an additional `Target` so internal-type pointers can be sized for the target architecture. Provider implementations implement `IRuntimeSignatureTypeProvider<TType, TGenericContext>` -- a superset of `System.Reflection.Metadata.ISignatureTypeProvider<TType, TGenericContext>` -- adding two methods for the runtime-internal element types:
+The decoder is implemented as `RuntimeSignatureDecoder<TType, TGenericContext>` -- a clone of SRM's `SignatureDecoder<TType, TGenericContext>` with added support for the runtime-internal element types. The clone takes an additional `Target` so internal-type pointers can be sized for the target architecture. Provider implementations implement `IRuntimeSignatureTypeProvider<TType, TGenericContext>` -- a superset of `System.Reflection.Metadata.ISignatureTypeProvider<TType, TGenericContext>` -- adding methods for the runtime-internal element types:
 
 ```csharp
 TType GetInternalType(TargetPointer typeHandlePointer);
