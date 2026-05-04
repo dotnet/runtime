@@ -4924,29 +4924,45 @@ unsigned* Compiler::lvaComputeOptimalFrameLayoutOrder(int stkOffs, const UINT* a
         LclVarDsc* varDsc  = lvaGetDesc(i);
 
         if (lvaIsFieldOfDependentlyPromotedStruct(varDsc))
+        {
             continue;
+        }
 #if FEATURE_FIXED_OUT_ARGS
         if (i == lvaOutgoingArgSpaceVar)
+        {
             continue;
+        }
 #endif
         if (lvaIsOSRLocal(i))
+        {
             continue;
+        }
         if (!varDsc->lvOnFrame)
+        {
             continue;
-        if (i == lvaGSSecurityCookie && getNeedsGSSecurityCookie())
+        }
+        if ((i == lvaGSSecurityCookie) && getNeedsGSSecurityCookie())
+        {
             continue;
+        }
         if (i == lvaRetAddrVar)
+        {
             continue;
-        if (i == lvaMonAcquired || i == lvaAsyncExecutionContextVar || i == lvaAsyncSynchronizationContextVar)
+        }
+        if ((i == lvaMonAcquired) || (i == lvaAsyncExecutionContextVar) || (i == lvaAsyncSynchronizationContextVar))
+        {
             continue;
-        if (varDsc->lvIsParam && !lvaParamHasLocalStackSpace(i))
+        }
+        if ((varDsc->lvIsParam) && !lvaParamHasLocalStackSpace(i))
+        {
             continue;
+        }
 
-        if (varDsc->lvIsUnsafeBuffer && compGSReorderStackLayout)
+        if ((varDsc->lvIsUnsafeBuffer) && compGSReorderStackLayout)
         {
             lclPassCategory[i] = varDsc->lvIsPtr ? ALLOC_UNSAFE_BUFFERS_WITH_PTRS : ALLOC_UNSAFE_BUFFERS;
         }
-        else if (varTypeIsGC(varDsc->TypeGet()) && varDsc->lvTracked)
+        else if (varTypeIsGC(varDsc->TypeGet()) && (varDsc->lvTracked))
         {
             lclPassCategory[i] = ALLOC_PTRS;
         }
@@ -4967,20 +4983,30 @@ unsigned* Compiler::lvaComputeOptimalFrameLayoutOrder(int stkOffs, const UINT* a
     {
         lclNeedsInit[i] = false;
         if (lclPassCategory[i] == 0)
+        {
             continue;
+        }
 
         LclVarDsc* varDsc = lvaGetDesc(i);
 
         if (fgVarIsNeverZeroInitializedInProlog(i))
+        {
             continue;
+        }
         if (lvaIsFieldOfDependentlyPromotedStruct(varDsc))
+        {
             continue;
+        }
         if (varDsc->lvHasExplicitInit)
+        {
             continue;
-        if (varDsc->lvIsTemp && !varDsc->HasGCPtr())
+        }
+        if ((varDsc->lvIsTemp) && !varDsc->HasGCPtr())
+        {
             continue;
+        }
 
-        if (info.compInitMem || varDsc->HasGCPtr() || varDsc->lvMustInit)
+        if ((info.compInitMem) || varDsc->HasGCPtr() || (varDsc->lvMustInit))
         {
             lclNeedsInit[i] = true;
             initSlotCount += (lclSize[i] + sizeof(int) - 1) / sizeof(int);
@@ -5010,13 +5036,15 @@ unsigned* Compiler::lvaComputeOptimalFrameLayoutOrder(int stkOffs, const UINT* a
             {
                 unsigned lcl = order[idx];
                 if (lclPassCategory[lcl] != pass)
+                {
                     continue;
+                }
 
                 unsigned size    = lclSize[lcl];
                 unsigned alignTo = lclAlignTo[lcl];
 
                 // Simulate alignment padding (mirrors lvaAllocLocalAndSetVirtualOffset).
-                if (alignTo != 0 && (simOff % static_cast<int>(alignTo)) != 0)
+                if ((alignTo != 0) && ((simOff % static_cast<int>(alignTo)) != 0))
                 {
                     simOff -= static_cast<int>(alignTo + (simOff % static_cast<int>(alignTo)));
                 }
@@ -5026,11 +5054,11 @@ unsigned* Compiler::lvaComputeOptimalFrameLayoutOrder(int stkOffs, const UINT* a
                 totalCost += lclRefCnt[lcl] * ((simOff >= -128) ? 1u : 4u);
 
                 // Track the zero-init span for block-init cost estimation.
-                if (useBlockInit && lclNeedsInit[lcl])
+                if (useBlockInit && (lclNeedsInit[lcl]))
                 {
                     int loOffs = simOff;
                     int hiOffs = simOff + static_cast<int>(size);
-                    if (initLo == 0 && initHi == 0)
+                    if ((initLo == 0) && (initHi == 0))
                     {
                         initLo = loOffs;
                         initHi = hiOffs;
@@ -5049,7 +5077,7 @@ unsigned* Compiler::lvaComputeOptimalFrameLayoutOrder(int stkOffs, const UINT* a
         // Each 16-byte chunk requires one SIMD store instruction. We add a
         // small penalty per chunk to favor layouts that keep the init span tight,
         // without overwhelming the main encoding cost.
-        if (useBlockInit && initHi > initLo)
+        if (useBlockInit && (initHi > initLo))
         {
             unsigned initSpan = static_cast<unsigned>(initHi - initLo);
             unsigned initCost = ((initSpan + 15) / 16) * 2;
@@ -5077,7 +5105,9 @@ unsigned* Compiler::lvaComputeOptimalFrameLayoutOrder(int stkOffs, const UINT* a
     // into bestOrder to avoid a redundant re-sort at the end.
     auto tryStrategy = [&](int strategyIdx, const char* name, auto comparator) -> unsigned {
         for (unsigned i = 0; i < lvaCount; i++)
+        {
             sortOrder[i] = i;
+        }
         jitstd::sort(sortOrder, sortOrder + lvaCount, comparator);
         unsigned cost = estimateLayoutCost(sortOrder);
         if (cost < bestCost)
@@ -5096,12 +5126,18 @@ unsigned* Compiler::lvaComputeOptimalFrameLayoutOrder(int stkOffs, const UINT* a
         weight_t dens1 = lclWeight[n1] * lclSize[n2];
         weight_t dens2 = lclWeight[n2] * lclSize[n1];
         if (dens1 != dens2)
+        {
             return dens1 > dens2;
+        }
         bool a1 = (lclSize[n1] >= 8), a2 = (lclSize[n2] >= 8);
         if (a1 != a2)
+        {
             return a1;
+        }
         if (lclRefCnt[n1] != lclRefCnt[n2])
+        {
             return lclRefCnt[n1] > lclRefCnt[n2];
+        }
         return n1 < n2;
     };
     unsigned densityCost = tryStrategy(0, "density", densityCompare);
@@ -5111,9 +5147,13 @@ unsigned* Compiler::lvaComputeOptimalFrameLayoutOrder(int stkOffs, const UINT* a
     // maximizes how many locals get short encodings.
     auto sizeAscCompare = [lclSize, lclRefCnt](unsigned n1, unsigned n2) -> bool {
         if (lclSize[n1] != lclSize[n2])
+        {
             return lclSize[n1] < lclSize[n2];
+        }
         if (lclRefCnt[n1] != lclRefCnt[n2])
+        {
             return lclRefCnt[n1] > lclRefCnt[n2];
+        }
         return n1 < n2;
     };
     unsigned sizeAscCost = tryStrategy(1, "sizeAsc", sizeAscCompare);
@@ -5128,23 +5168,31 @@ unsigned* Compiler::lvaComputeOptimalFrameLayoutOrder(int stkOffs, const UINT* a
         // Strategy 2: Weighted ref count descending.
         auto weightCompare = [lclSize, lclWeight](unsigned n1, unsigned n2) -> bool {
             if (lclWeight[n1] != lclWeight[n2])
+            {
                 return lclWeight[n1] > lclWeight[n2];
+            }
             bool a1 = (lclSize[n1] >= 8), a2 = (lclSize[n2] >= 8);
             if (a1 != a2)
+            {
                 return a1;
+            }
             return n1 < n2;
         };
         weightCost = tryStrategy(2, "weight", weightCompare);
 
         // Strategy 3: Unweighted ref count density (refCnt / size) descending.
         auto refDensityCompare = [lclSize, lclRefCnt](unsigned n1, unsigned n2) -> bool {
-            unsigned long long dens1 = (unsigned long long)lclRefCnt[n1] * lclSize[n2];
-            unsigned long long dens2 = (unsigned long long)lclRefCnt[n2] * lclSize[n1];
+            double dens1 = (double)lclRefCnt[n1] * lclSize[n2];
+            double dens2 = (double)lclRefCnt[n2] * lclSize[n1];
             if (dens1 != dens2)
+            {
                 return dens1 > dens2;
+            }
             bool a1 = (lclSize[n1] >= 8), a2 = (lclSize[n2] >= 8);
             if (a1 != a2)
+            {
                 return a1;
+            }
             return n1 < n2;
         };
         refDensityCost = tryStrategy(3, "refDensity", refDensityCompare);
@@ -5160,14 +5208,20 @@ unsigned* Compiler::lvaComputeOptimalFrameLayoutOrder(int stkOffs, const UINT* a
         auto initGroupedDensityCompare = [lclSize, lclWeight, lclNeedsInit](unsigned n1, unsigned n2) -> bool {
             bool init1 = lclNeedsInit[n1], init2 = lclNeedsInit[n2];
             if (init1 != init2)
+            {
                 return init1; // init-needing first
+            }
             weight_t dens1 = lclWeight[n1] * lclSize[n2];
             weight_t dens2 = lclWeight[n2] * lclSize[n1];
             if (dens1 != dens2)
+            {
                 return dens1 > dens2;
+            }
             bool a1 = (lclSize[n1] >= 8), a2 = (lclSize[n2] >= 8);
             if (a1 != a2)
+            {
                 return a1;
+            }
             return n1 < n2;
         };
         initGroupedDensityCost = tryStrategy(4, "initGroupedDensity", initGroupedDensityCompare);
