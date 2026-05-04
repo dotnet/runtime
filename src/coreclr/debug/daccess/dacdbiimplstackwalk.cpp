@@ -723,7 +723,6 @@ FramePointer DacDbiInterfaceImpl::GetFramePointerWorker(StackFrameIterator * pIt
 }
 
 // Return TRUE if the specified CONTEXT is the CONTEXT of the leaf frame.
-// @dbgtodo  filter CONTEXT - Currently we check for the filter CONTEXT first.
 HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::IsLeafFrame(VMPTR_Thread vmThread, const DT_CONTEXT * pContext, OUT BOOL * pResult)
 {
     DD_ENTER_MAY_THROW;
@@ -733,7 +732,12 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::IsLeafFrame(VMPTR_Thread vmThread
     {
 
         DT_CONTEXT ctxLeaf;
-        IfFailThrow(GetContext(vmThread, &ctxLeaf));
+        Thread *  pThread  = vmThread.GetDacPtr();
+        ctxLeaf.ContextFlags = DT_CONTEXT_ALL;
+        IfFailThrow(m_pTarget->GetThreadContext(pThread->GetOSThreadId(),
+                                                ctxLeaf.ContextFlags,
+                                                sizeof(DT_CONTEXT),
+                                                reinterpret_cast<BYTE *>(&ctxLeaf)));
 
         // Call a platform-specific helper to compare the two contexts.
         *pResult = CompareControlRegisters(pContext, &ctxLeaf);

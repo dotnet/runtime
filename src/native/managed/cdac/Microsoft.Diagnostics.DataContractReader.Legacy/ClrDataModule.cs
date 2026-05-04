@@ -20,6 +20,8 @@ public sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCLRD
     private readonly TargetPointer _address;
     private readonly Target _target;
 
+    internal TargetPointer Address => _address;
+
     private bool _extentsSet;
     private CLRDataModuleExtent[] _extents = new CLRDataModuleExtent[2];
 
@@ -458,8 +460,7 @@ public sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCLRD
                 *nameLen = 0;
             Contracts.ILoader loader = _target.Contracts.Loader;
             Contracts.ModuleHandle handle = loader.GetModuleHandleFromModulePtr(_address);
-            if (!loader.TryGetSimpleName(handle, out string result))
-                throw new ArgumentException("Module does not have a simple name");
+            string result = loader.GetSimpleName(handle);
 
             uint nameLenLocal = 0;
             OutputBufferHelpers.CopyStringToBuffer(name, bufLen, &nameLenLocal, result);

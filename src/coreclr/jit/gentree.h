@@ -1623,6 +1623,11 @@ public:
         return ((OperKind(gtOper) & GTK_KINDMASK) == GTK_SPECIAL);
     }
 
+    bool OperIsSpecial() const
+    {
+        return OperIsSpecial(gtOper);
+    }
+
     bool OperIsSimple() const
     {
         return OperIsSimple(gtOper);
@@ -1868,8 +1873,13 @@ public:
         {
             return true;
         }
-#endif
         return OperIs(GT_JCC, GT_SETCC, GT_SELECTCC);
+#elif defined(TARGET_AMD64)
+        static_assert(AreContiguous(GT_JCC, GT_SETCC, GT_SELECTCC, GT_CCMP));
+        return (GT_JCC <= gtOper) && (gtOper <= GT_CCMP);
+#else
+        return OperIs(GT_JCC, GT_SETCC, GT_SELECTCC);
+#endif
     }
 
 #ifdef DEBUG
@@ -1981,9 +1991,6 @@ public:
         GenTree** unusedUse = nullptr;
         return TryGetUse(operand, &unusedUse);
     }
-
-private:
-    bool TryGetUseBinOp(GenTree* operand, GenTree*** pUse);
 
 public:
     GenTree* gtGetParent(GenTree*** pUse);
@@ -4491,6 +4498,11 @@ struct AsyncCallInfo
     // Tail awaits do not generate suspension points and the JIT instead
     // directly returns the callee's continuation to the caller.
     bool IsTailAwait = false;
+
+    bool NeedsToSaveAndRestoreExecutionContext() const
+    {
+        return true;
+    }
 };
 
 // Return type descriptor of a GT_CALL node.
@@ -5761,7 +5773,7 @@ struct GenTreeCall final : public GenTree
             return WellKnownArg::VirtualStubCell;
         }
 
-#if defined(TARGET_ARMARCH) || defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64) || defined(TARGET_WASM)
+#if defined(TARGET_ARMARCH) || defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
         // For ARM architectures, we always use an indirection cell for R2R calls.
         if (IsR2RRelativeIndir() && !IsDelegateInvoke())
         {
