@@ -3710,10 +3710,16 @@ genTreeOps GenTree::SwapRelop(genTreeOps relop)
 
 /*****************************************************************************
  *
- *  Reverse the meaning of the given test condition.
+ *  Try to reverse the meaning of the given test condition in-place,
+ *  without introducing any new IR nodes.
+ *
+ *  Returns true if the condition was reversed in-place.
+ *  Returns false if reversing the condition would require introducing a new
+ *  node (e.g. wrapping the tree in a "tree == 0" comparison). In that case,
+ *  the tree is not modified.
  */
 
-GenTree* Compiler::gtReverseCond(GenTree* tree)
+bool Compiler::gtTryReverseCond(GenTree* tree)
 {
     if (tree->OperIsCompare())
     {
@@ -3727,23 +3733,38 @@ GenTree* Compiler::gtReverseCond(GenTree* tree)
         {
             tree->gtFlags ^= GTF_RELOP_NAN_UN;
         }
+        return true;
     }
-    else if (tree->OperIs(GT_JCC, GT_SETCC))
+    if (tree->OperIs(GT_JCC, GT_SETCC))
     {
         GenTreeCC* cc   = tree->AsCC();
         cc->gtCondition = GenCondition::Reverse(cc->gtCondition);
+        return true;
     }
-    else if (tree->OperIs(GT_JCMP, GT_JTEST))
+    if (tree->OperIs(GT_JCMP, GT_JTEST))
     {
         GenTreeOpCC* opCC = tree->AsOpCC();
         opCC->gtCondition = GenCondition::Reverse(opCC->gtCondition);
+        return true;
     }
-    else if (tree->IsIntegralConst())
+    if (tree->IsIntegralConst())
     {
         GenTreeIntConCommon* con = tree->AsIntConCommon();
         con->SetIntegralValue(con->IsIntegralConst(0) ? 1 : 0);
+        return true;
     }
-    else
+
+    return false;
+}
+
+/*****************************************************************************
+ *
+ *  Reverse the meaning of the given test condition.
+ */
+
+GenTree* Compiler::gtReverseCond(GenTree* tree)
+{
+    if (!gtTryReverseCond(tree))
     {
         tree = gtNewOperNode(GT_EQ, TYP_INT, tree, gtNewZeroConNode(TYP_INT));
     }
