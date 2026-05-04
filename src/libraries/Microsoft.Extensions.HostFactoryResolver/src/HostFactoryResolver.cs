@@ -63,8 +63,8 @@ namespace Microsoft.Extensions.Hosting
                                                                  TimeSpan? waitTimeout = null,
                                                                  bool stopApplication = true,
                                                                  Action<object>? configureHostBuilder = null,
-                                                                 Dictionary<string, Action<object?>>? arbitraryActions = null,
-                                                                 Action<Exception?>? entrypointCompleted = null)
+                                                                 Action<Exception?>? entrypointCompleted = null,
+                                                                 Dictionary<string, Action<object?>>? arbitraryActions = null)
         {
             if (assembly.EntryPoint is null)
             {
@@ -90,7 +90,7 @@ namespace Microsoft.Extensions.Hosting
                 return null;
             }
 
-            return args => new HostingListener(args, assembly.EntryPoint, waitTimeout ?? s_defaultWaitTimeout, stopApplication, configureHostBuilder, arbitraryActions, entrypointCompleted).CreateHost();
+            return args => new HostingListener(args, assembly.EntryPoint, waitTimeout ?? s_defaultWaitTimeout, stopApplication, configureHostBuilder, entrypointCompleted, arbitraryActions).CreateHost();
         }
 
         private static Func<string[], T>? ResolveFactory<T>(Assembly assembly, string name)
@@ -204,19 +204,26 @@ namespace Microsoft.Extensions.Hosting
             private readonly TaskCompletionSource<object> _hostTcs = new();
             private IDisposable? _disposable;
             private readonly Action<object>? _configure;
-            private readonly Dictionary<string, Action<object?>>? _arbitraryActions;
             private readonly Action<Exception?>? _entrypointCompleted;
+            private readonly Dictionary<string, Action<object?>>? _arbitraryActions;
             private static readonly AsyncLocal<HostingListener> _currentListener = new();
 
-            public HostingListener(string[] args, MethodInfo entryPoint, TimeSpan waitTimeout, bool stopApplication, Action<object>? configure, Dictionary<string, Action<object?>>? arbitraryActions, Action<Exception?>? entrypointCompleted)
+            public HostingListener(
+                string[] args,
+                MethodInfo entryPoint,
+                TimeSpan waitTimeout,
+                bool stopApplication,
+                Action<object>? configure,
+                Action<Exception?>? entrypointCompleted,
+                Dictionary<string, Action<object?>>? arbitraryActions)
             {
                 _args = args;
                 _entryPoint = entryPoint;
                 _waitTimeout = waitTimeout;
                 _stopApplication = stopApplication;
                 _configure = configure;
-                _arbitraryActions = arbitraryActions;
                 _entrypointCompleted = entrypointCompleted;
+                _arbitraryActions = arbitraryActions;
             }
 
             public object CreateHost()
