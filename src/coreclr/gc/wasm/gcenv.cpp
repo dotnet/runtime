@@ -126,9 +126,11 @@ void GCToOSInterface::Sleep(uint32_t sleepMSec)
         static_cast<time_t>(sleepMSec / 1000),
         static_cast<long>((sleepMSec % 1000) * 1000000)
     };
+    timespec remaining;
 
-    while (nanosleep(&requested, &requested) != 0 && errno == EINTR)
+    while (nanosleep(&requested, &remaining) != 0 && errno == EINTR)
     {
+        requested = remaining;
     }
 #else
     // On single-threaded WASM, nanosleep is either a no-op or stalls the
