@@ -65,7 +65,8 @@ Put your analysis into an analysis.md file in the example's directory.
 In this issue.md file include the following:
   - A header with the assertion failure message.
   For example, if the assertion failure is "Assertion failed: x > 0", the header should be "# Assertion failed: x > 0".
-  - The reduced example from the .cs file
+  - The reduced example from the .cs file.
+  ALWAYS keep the comment header.
   - A section containing your analysis of the jitdump.
   Wrap the analysis in a `<details> <summary> Analysis of jitdump </summary> ... </details>` block.
   Make sure to add a note that the analysis is AI generated.
