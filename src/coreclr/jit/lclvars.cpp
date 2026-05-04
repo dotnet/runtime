@@ -4891,8 +4891,8 @@ unsigned* Compiler::lvaComputeOptimalFrameLayoutOrder(int stkOffs, const UINT* a
     // This approximation ignores alignment padding and allocation passes but is
     // cheap to compute and lets us skip methods where reordering cannot help much.
     {
-        int      simOff        = stkOffs;
-        unsigned refsInDisp32  = 0;
+        int      simOff       = stkOffs;
+        unsigned refsInDisp32 = 0;
 
         for (unsigned i = 0; i < lvaCount; i++)
         {
