@@ -65,6 +65,7 @@ public class AsyncContinuationDumpTests : DumpTestBase
     [ConditionalTheory]
     [MemberData(nameof(TestConfigurations))]
     [SkipOnVersion("net10.0", "Continuation support is not available in .NET 10")]
+    [SkipOnOS("osx", "AsyncDispatcherInfo type not found in CoreLib on macOS - https://github.com/dotnet/runtime/issues/127774")]
     public void ThreadLocalContinuation_IsContinuation(TestConfiguration config)
     {
         InitializeDumpTest(config);
