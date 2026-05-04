@@ -1,6 +1,6 @@
 # Contract Signature
 
-This contract describes the format of method, field, and local-variable signatures stored in target memory. Signatures use the ECMA-335 §II.23.2 format with two CoreCLR-internal element types added by the runtime.
+This contract describes the format of method, field, and local-variable signatures stored in target memory. Signatures use the ECMA-335 §II.23.2 format with CoreCLR-internal element types added by the runtime.
 
 ## Internal element types
 
@@ -12,8 +12,6 @@ The runtime extends the standard ECMA-335 element type encoding with two values 
 | `ELEMENT_TYPE_CMOD_INTERNAL` | `0x22` | one byte (`1` = required, `0` = optional), then a target-sized pointer to a runtime `TypeHandle` |
 
 These tags are used in signatures generated internally by the runtime that are not persisted to a managed image. They are defined alongside the standard ECMA-335 element types in `src/coreclr/inc/corhdr.h`. Their literal values are part of this contract -- changing them is a breaking change.
-
-Tag `3` in the `TypeDefOrRefOrSpec` encoding (ECMA-335 §II.23.2.8) is reserved and decoders throw `BadImageFormatException` when they encounter it.
 
 ## APIs of contract
 

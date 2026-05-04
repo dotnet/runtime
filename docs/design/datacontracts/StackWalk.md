@@ -528,12 +528,7 @@ slotAddress = transitionBlockPtr + FirstGCRefMapSlot + (position * pointerSize);
 
 #### Limitations vs. Native
 
-This signature-based scan is conservative compared to native:
-
-* It does not enumerate embedded GC refs inside large value types passed by value (a `GcTypeKind.Other` parameter is silently skipped).
-* It does not yet apply native's `ArgIterator`-driven multi-slot / HFA layout, nor does it model `String` constructors or `SuppressParamTypeArg`.
-
-These limitations are visible to the cDAC GC stress verification harness, which compares cDAC and native walks; they may be tightened in future versions of this contract.
+This signature-based scan has known gaps relative to native see [dotnet/runtime#127765](https://github.com/dotnet/runtime/issues/127765) for tracking.
 
 ### GCRefMap Format and Resolution
 
