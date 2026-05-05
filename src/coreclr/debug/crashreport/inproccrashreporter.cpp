@@ -19,6 +19,7 @@
 #include <minipal/getexepath.h>
 #include <minipal/thread.h>
 #ifdef __APPLE__
+#include <mach/mach.h>
 #include <sys/sysctl.h>
 #endif
 
@@ -30,21 +31,22 @@ static char sccsid[] = "@(#)Version N/A";
 #endif
 
 #ifdef __APPLE__
-// Query a sysctl by name into a caller-supplied stack buffer and write it to the JSON writer.
-// sysctlbyname is async-signal-safe and avoids heap allocation, matching the createdump
-// behavior (see src/coreclr/debug/createdump/crashreportwriter.cpp WriteSysctl).
-static void WriteSysctlString(SignalSafeJsonWriter* writer, const char* sysctlName, const char* valueName)
+// Query a sysctl by name into a caller-supplied buffer. Called from Initialize, NOT from the
+// signal handler -- sysctl/sysctlbyname is not on POSIX's async-signal-safe list, so the
+// queried values are cached for use during crash reporting (mirrors the m_hostName /
+// gethostname pattern).
+static void CacheSysctlString(const char* sysctlName, char* buffer, size_t bufferSize)
 {
-    char buffer[CRASHREPORT_STRING_BUFFER_SIZE];
-    size_t size = sizeof(buffer);
+    buffer[0] = '\0';
+    size_t size = bufferSize;
     if (sysctlbyname(sysctlName, buffer, &size, nullptr, 0) == 0 && size > 0)
     {
-        buffer[sizeof(buffer) - 1] = '\0';
-        writer->WriteString(valueName, buffer);
+        size_t terminatorIndex = (size < bufferSize) ? size : bufferSize - 1;
+        buffer[terminatorIndex] = '\0';
     }
     else
     {
-        writer->WriteString(valueName, "");
+        buffer[0] = '\0';
     }
 }
 #endif // __APPLE__
@@ -300,8 +302,14 @@ InProcCrashReporter::CreateReport(
     m_jsonWriter.OpenObject("parameters");
     m_jsonWriter.WriteSignedDecimalAsString("signal", static_cast<int64_t>(signal));
 #ifdef __APPLE__
-    WriteSysctlString(&m_jsonWriter, "kern.osproductversion", "OSVersion");
-    WriteSysctlString(&m_jsonWriter, "hw.model", "SystemModel");
+    if (m_osVersion[0] != '\0')
+    {
+        m_jsonWriter.WriteString("OSVersion", m_osVersion);
+    }
+    if (m_systemModel[0] != '\0')
+    {
+        m_jsonWriter.WriteString("SystemModel", m_systemModel);
+    }
     m_jsonWriter.WriteString("SystemManufacturer", "apple");
 #endif
     m_jsonWriter.CloseObject(); // parameters
@@ -377,6 +385,13 @@ InProcCrashReporter::Initialize(
     {
         m_hostName[0] = '\0';
     }
+
+#ifdef __APPLE__
+    // Cache sysctl values at Initialize because sysctl/sysctlbyname is not on POSIX's
+    // async-signal-safe list; CreateReport reads these from the signal-handler path.
+    CacheSysctlString("kern.osproductversion", m_osVersion, sizeof(m_osVersion));
+    CacheSysctlString("hw.model", m_systemModel, sizeof(m_systemModel));
+#endif
 }
 
 void
