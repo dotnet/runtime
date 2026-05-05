@@ -42,7 +42,7 @@ namespace System.Threading.Tasks.Tests
         // runtime async support and threading support.
         // Some tests rely on GetMethodFromNativeIP which is not supported on NativeAOT.
         public static bool IsRuntimeAsyncAndThreadingSupported =>
-            PlatformDetection.IsRuntimeAsyncSupported && PlatformDetection.IsMultithreadingSupported && PlatformDetection.IsNotNativeAot;
+            PlatformDetection.IsRuntimeAsyncSupported && PlatformDetection.IsMultithreadingSupported;
 
         // Gate for tests that can run without threading (e.g., single-threaded WASM).
         // These tests use async Task methods with await instead of Task.Run blocking.
