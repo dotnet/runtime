@@ -21,7 +21,8 @@ public enum DataType
 
     /* VM Data Types */
 
-    GCHandle,
+    ObjectHandle,
+    JITNotification,
     CodePointer,
     Thread,
     ThreadStore,
@@ -47,6 +48,8 @@ public enum DataType
     SystemDomain,
     Assembly,
     LoaderAllocator,
+    LoaderHeap,
+    LoaderHeapBlock,
     PEAssembly,
     AssemblyBinder,
     PEImage,
@@ -75,6 +78,7 @@ public enum DataType
     StressMsg,
     StressMsgHeader,
     Object,
+    ContinuationObject,
     NativeObjectWrapperObject,
     ManagedObjectWrapperHolderObject,
     ManagedObjectWrapperLayout,
@@ -158,6 +162,9 @@ public enum DataType
     HijackFrame,
     TailCallFrame,
     StubDispatchFrame,
+    ExternalMethodFrame,
+    DynamicHelperFrame,
+
     ComCallWrapper,
     SimpleComCallWrapper,
     ComMethodTable,

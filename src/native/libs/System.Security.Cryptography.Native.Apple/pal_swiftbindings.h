@@ -24,3 +24,11 @@ EXTERN_C void* AppleCryptoNative_DigestCurrent;
 EXTERN_C void* AppleCryptoNative_DigestOneShot;
 EXTERN_C void* AppleCryptoNative_DigestReset;
 EXTERN_C void* AppleCryptoNative_DigestClone;
+
+EXTERN_C void* AppleCryptoNative_X25519DeriveRawSecretAgreement;
+EXTERN_C void* AppleCryptoNative_X25519ExportPrivateKey;
+EXTERN_C void* AppleCryptoNative_X25519ExportPublicKey;
+EXTERN_C void* AppleCryptoNative_X25519FreeKey;
+EXTERN_C void* AppleCryptoNative_X25519GenerateKey;
+EXTERN_C void* AppleCryptoNative_X25519ImportPublicKey;
+EXTERN_C void* AppleCryptoNative_X25519ImportPrivateKey;

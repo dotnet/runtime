@@ -4417,7 +4417,7 @@ TADDR MethodAndStartAddressToEECodeInfoPointer(MethodDesc *pMethodDesc, PCODE pN
         return 0;
     }
 
-    return GetInterpreterCodeFromInterpreterPrecodeIfPresent(start);
+    return GetInterpreterCodeFromEntryPointIfPresent(start);
 }
 
 /****************************************************************************/

@@ -27,9 +27,11 @@ CDAC_TYPE_FIELD(GCHeap, T_POINTER, SavedSweepEphemeralSeg, cdac_data<GC_NAMESPAC
 CDAC_TYPE_FIELD(GCHeap, T_POINTER, SavedSweepEphemeralStart, cdac_data<GC_NAMESPACE::gc_heap>::SavedSweepEphemeralStart)
 #endif // !USE_REGIONS
 CDAC_TYPE_FIELD(GCHeap, TYPE(OomHistory), OomData, cdac_data<GC_NAMESPACE::gc_heap>::OomData)
+#ifdef HEAP_ANALYZE
 CDAC_TYPE_FIELD(GCHeap, T_POINTER, InternalRootArray, cdac_data<GC_NAMESPACE::gc_heap>::InternalRootArray)
 CDAC_TYPE_FIELD(GCHeap, T_NUINT, InternalRootArrayIndex, cdac_data<GC_NAMESPACE::gc_heap>::InternalRootArrayIndex)
 CDAC_TYPE_FIELD(GCHeap, T_INT32, HeapAnalyzeSuccess, cdac_data<GC_NAMESPACE::gc_heap>::HeapAnalyzeSuccess)
+#endif // HEAP_ANALYZE
 CDAC_TYPE_FIELD(GCHeap, T_POINTER, InterestingData, cdac_data<GC_NAMESPACE::gc_heap>::InterestingData)
 CDAC_TYPE_FIELD(GCHeap, T_POINTER, CompactReasons, cdac_data<GC_NAMESPACE::gc_heap>::CompactReasons)
 CDAC_TYPE_FIELD(GCHeap, T_POINTER, ExpandMechanisms, cdac_data<GC_NAMESPACE::gc_heap>::ExpandMechanisms)
@@ -166,9 +168,11 @@ CDAC_GLOBAL_POINTER(GCHeapSavedSweepEphemeralSeg, cdac_data<GC_NAMESPACE::gc_hea
 CDAC_GLOBAL_POINTER(GCHeapSavedSweepEphemeralStart, cdac_data<GC_NAMESPACE::gc_heap>::SavedSweepEphemeralStart)
 #endif // !USE_REGIONS
 CDAC_GLOBAL_POINTER(GCHeapOomData, cdac_data<GC_NAMESPACE::gc_heap>::OomData)
+#ifdef HEAP_ANALYZE
 CDAC_GLOBAL_POINTER(GCHeapInternalRootArray, cdac_data<GC_NAMESPACE::gc_heap>::InternalRootArray)
 CDAC_GLOBAL_POINTER(GCHeapInternalRootArrayIndex, cdac_data<GC_NAMESPACE::gc_heap>::InternalRootArrayIndex)
 CDAC_GLOBAL_POINTER(GCHeapHeapAnalyzeSuccess, cdac_data<GC_NAMESPACE::gc_heap>::HeapAnalyzeSuccess)
+#endif // HEAP_ANALYZE
 CDAC_GLOBAL_POINTER(GCHeapInterestingData, cdac_data<GC_NAMESPACE::gc_heap>::InterestingData)
 CDAC_GLOBAL_POINTER(GCHeapCompactReasons, cdac_data<GC_NAMESPACE::gc_heap>::CompactReasons)
 CDAC_GLOBAL_POINTER(GCHeapExpandMechanisms, cdac_data<GC_NAMESPACE::gc_heap>::ExpandMechanisms)

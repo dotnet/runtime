@@ -114,6 +114,7 @@ public interface IExecutionManager : IContract
     // Classify a code address as a known stub kind (precode, jump stub, VSD stub, etc.)
     // or as managed code. Returns Unknown if the address is not recognized.
     CodeKind GetCodeKind(TargetCodePointer jittedCodeAddress) => throw new NotImplementedException();
+    TargetPointer FindReadyToRunModule(TargetPointer address) => throw new NotImplementedException();
 }
 
 public readonly struct ExecutionManager : IExecutionManager

@@ -34,5 +34,6 @@ public sealed class ExecutionManager_2 : IExecutionManager
     public JitManagerInfo GetEEJitManagerInfo() => _executionManagerCore.GetEEJitManagerInfo();
     public IEnumerable<ICodeHeapInfo> GetCodeHeapInfos() => _executionManagerCore.GetCodeHeapInfos();
     public CodeKind GetCodeKind(TargetCodePointer entryPoint) => _executionManagerCore.GetCodeKind(entryPoint);
+    public TargetPointer FindReadyToRunModule(TargetPointer address) => _executionManagerCore.FindReadyToRunModule(address);
     public void Flush() => _executionManagerCore.Flush();
 }
