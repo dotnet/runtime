@@ -11,8 +11,7 @@ namespace ILCompiler.Reflection.ReadyToRun
     /// </summary>
     public interface IAssemblyMetadata
     {
-        PEReader ImageReader { get; }
-
+        BlobReader GetSectionData(int relativeVirtualAddress);
         MetadataReader MetadataReader { get;  }
     }
 }

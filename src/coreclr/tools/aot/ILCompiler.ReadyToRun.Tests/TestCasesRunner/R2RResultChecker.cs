@@ -483,7 +483,7 @@ internal sealed class SimpleAssemblyMetadata : IAssemblyMetadata
         _peReader = new PEReader(new MemoryStream(imageBytes));
     }
 
-    public PEReader ImageReader => _peReader;
+    public BlobReader GetSectionData(int relativeVirtualAddress) => _peReader.GetSectionData(relativeVirtualAddress).GetReader();
 
     public MetadataReader MetadataReader => _peReader.GetMetadataReader();
 }

@@ -403,13 +403,17 @@ namespace ILCompiler.Reflection.ReadyToRun
                 case HandleKind.MethodDefinition:
                 {
                     MethodDefinition methodDef = ComponentReader.MetadataReader.GetMethodDefinition((MethodDefinitionHandle)MethodHandle);
-                    if (methodDef.RelativeVirtualAddress != 0 && ComponentReader.ImageReader is not null)
+                    if (methodDef.RelativeVirtualAddress != 0)
                     {
-                        MethodBodyBlock mbb = ComponentReader.ImageReader.GetMethodBody(methodDef.RelativeVirtualAddress);
-                        if (!mbb.LocalSignature.IsNil)
+                        BlobReader sectionData = ComponentReader.GetSectionData(methodDef.RelativeVirtualAddress);
+                        if (sectionData.Length > 0)
                         {
-                            StandaloneSignature ss = ComponentReader.MetadataReader.GetStandaloneSignature(mbb.LocalSignature);
-                            LocalSignature = ss.DecodeLocalSignature(typeProvider, genericContext);
+                            MethodBodyBlock mbb = MethodBodyBlock.Create(sectionData);
+                            if (!mbb.LocalSignature.IsNil)
+                            {
+                                StandaloneSignature ss = ComponentReader.MetadataReader.GetStandaloneSignature(mbb.LocalSignature);
+                                LocalSignature = ss.DecodeLocalSignature(typeProvider, genericContext);
+                            }
                         }
                     }
                     Name = ComponentReader.MetadataReader.GetString(methodDef.Name);
