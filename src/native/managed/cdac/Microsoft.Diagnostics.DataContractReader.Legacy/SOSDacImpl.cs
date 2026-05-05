@@ -813,7 +813,8 @@ public sealed unsafe partial class SOSDacImpl
             {
                 data->MethodDescPtr = eman.GetMethodDesc(cbh).ToClrDataAddress(_target);
 
-                data->JITType = eman.GetCodeKind(targetCodePointer) switch
+                Contracts.CodeKind codeKind = eman.GetCodeKind(targetCodePointer);
+                data->JITType = codeKind switch
                 {
                     Contracts.CodeKind.Jitted => JitTypes.TYPE_JIT,
                     Contracts.CodeKind.ReadyToRun => JitTypes.TYPE_PJIT,
@@ -826,7 +827,13 @@ public sealed unsafe partial class SOSDacImpl
 
                 data->MethodStart = eman.GetStartAddress(cbh).Value;
 
-                IGCInfoHandle gcInfoHandle = gcInfo.DecodePlatformSpecificGCInfo(pGcInfo, gcVersion);
+                // Mirrors native ClrDataAccess::GetCodeHeaderData which routes through
+                // EECodeInfo::GetCodeManager()->GetFunctionSize: interpreter code uses the
+                // interpreter-specific GC info encoding, all other code uses the platform
+                // GC info encoding.
+                IGCInfoHandle gcInfoHandle = codeKind == Contracts.CodeKind.Interpreter
+                    ? gcInfo.DecodeInterpreterGCInfo(pGcInfo, gcVersion)
+                    : gcInfo.DecodePlatformSpecificGCInfo(pGcInfo, gcVersion);
                 data->MethodSize = gcInfo.GetCodeLength(gcInfoHandle);
 
                 eman.GetMethodRegionInfo(cbh, out uint hotRegionSize, out TargetPointer coldRegionStart, out uint coldRegionSize);

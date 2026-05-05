@@ -286,7 +286,7 @@ internal sealed class FrameHelpers
         }
     }
 
-    public IPlatformFrameHandler GetFrameHandler(IPlatformAgnosticContext context)
+    private IPlatformFrameHandler GetFrameHandler(IPlatformAgnosticContext context)
     {
         return context switch
         {
@@ -403,6 +403,12 @@ internal sealed class FrameHelpers
     // Matches the Windows CONTEXT_EXCEPTION_ACTIVE flag value. The PAL CONTEXT structures
     // on Linux/macOS use the same bit so a single constant is sufficient across platforms.
     private const uint CONTEXT_EXCEPTION_ACTIVE = 0x8000000;
+
+    public void ApplyInterpreterFrameTransition(IPlatformAgnosticContext context, TargetPointer interpreterFrameAddress)
+    {
+        Data.FramedMethodFrame framedMethodFrame = _target.ProcessedData.GetOrAdd<Data.FramedMethodFrame>(interpreterFrameAddress);
+        GetFrameHandler(context).HandleTransitionFrame(framedMethodFrame);
+    }
 
     /// <summary>
     /// Mirrors native <c>InterpreterFrame::SetContextToInterpMethodContextFrame</c> (frames.cpp).

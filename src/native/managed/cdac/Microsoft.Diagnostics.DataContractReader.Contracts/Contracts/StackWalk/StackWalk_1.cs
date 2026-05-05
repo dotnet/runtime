@@ -974,13 +974,12 @@ internal partial class StackWalk_1 : IStackWalk
             return;
 
         // No active parent: interpreter chain under this InterpreterFrame is exhausted.
-        // Use the saved InterpreterFrame's transition block to restore the context to
+        // Apply the InterpreterFrame's transition-block state to restore the context to
         // the native caller of InterpExecMethod. This is the cDAC equivalent of the
         // native DummyCallerIP -> UpdateRegDisplay path in stackwalk.cpp.
         if (handle.CurrentInterpreterFrameAddress != TargetPointer.Null)
         {
-            Data.FramedMethodFrame framedMethodFrame = _target.ProcessedData.GetOrAdd<Data.FramedMethodFrame>(handle.CurrentInterpreterFrameAddress);
-            _frameHelpers.GetFrameHandler(handle.Context).HandleTransitionFrame(framedMethodFrame);
+            _frameHelpers.ApplyInterpreterFrameTransition(handle.Context, handle.CurrentInterpreterFrameAddress);
             handle.CurrentInterpreterFrameAddress = TargetPointer.Null;
         }
         // UpdateState (called by Next) will see the IP and determine next state.

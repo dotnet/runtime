@@ -319,10 +319,11 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
     bool IExecutionManager.IsFunclet(CodeBlockHandle codeInfoHandle)
     {
         // Interpreter code has no native unwind info and therefore no funclets.
-        if (((IExecutionManager)this).GetJITType(codeInfoHandle) == JitType.Interpreter)
+        TargetCodePointer startAddress = ((IExecutionManager)this).GetStartAddress(codeInfoHandle);
+        if (((IExecutionManager)this).GetCodeKind(startAddress) == CodeKind.Interpreter)
             return false;
 
-        return ((IExecutionManager)this).GetStartAddress(codeInfoHandle) !=
+        return startAddress !=
                ((IExecutionManager)this).GetFuncletStartAddress(codeInfoHandle);
     }
 
