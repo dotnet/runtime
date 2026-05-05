@@ -132,6 +132,7 @@ private:
     bool        IsSupportedCompareOp(genTreeOps oper, var_types elementType) const;
     bool        TryCreateLoopPlan(FlowGraphNaturalLoop* loop, LoopVectorizationPlan* plan);
     bool        TryCreatePostIVLoopPlan(FlowGraphNaturalLoop* loop, LoopVectorizationPlan* plan);
+    bool        TryCreateLocalLimitLoopPlan(FlowGraphNaturalLoop* loop, LoopVectorizationPlan* plan);
     bool        TryAnalyzeMemory(LoopVectorizationPlan* plan);
     bool        TryAnalyzePostIVMemory(LoopVectorizationPlan* plan);
     bool        AddStore(LoopVectorizationPlan*               plan,

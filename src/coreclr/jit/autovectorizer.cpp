@@ -298,6 +298,13 @@ bool AutoVectorizer::TryCreateLoopPlan(FlowGraphNaturalLoop* loop, LoopVectoriza
         return true;
     }
 
+    LoopVectorizationPlan localLimitPlan;
+    if (TryCreateLocalLimitLoopPlan(loop, &localLimitPlan))
+    {
+        *plan = localLimitPlan;
+        return true;
+    }
+
     NaturalLoopIterInfo iterInfo;
     if (!loop->AnalyzeIteration(&iterInfo))
     {
@@ -326,6 +333,16 @@ bool AutoVectorizer::TryCreateLoopPlan(FlowGraphNaturalLoop* loop, LoopVectoriza
     }
 
     const genTreeOps testOper = iterInfo.TestOper();
+    genTreeOps       normalizedTestOper = testOper;
+    if (testOper == GT_GT)
+    {
+        normalizedTestOper = GT_LT;
+    }
+    else if (testOper == GT_GE)
+    {
+        normalizedTestOper = GT_LE;
+    }
+
     const bool       isSupportedNotEqualLoop =
         (testOper == GT_NE) && (step == 1) &&
         (iterInfo.HasArrayLengthLimit || iterInfo.HasInvariantLocalLimit ||
@@ -340,7 +357,7 @@ bool AutoVectorizer::TryCreateLoopPlan(FlowGraphNaturalLoop* loop, LoopVectoriza
         return false;
     }
 
-    if (!GenTree::StaticOperIs(testOper, GT_LT, GT_LE) && !isSupportedNotEqualLoop)
+    if (!GenTree::StaticOperIs(normalizedTestOper, GT_LT, GT_LE) && !isSupportedNotEqualLoop)
     {
         JITDUMP("test:\n");
         JITDUMPEXEC(m_compiler->gtDispTree(iterInfo.TestTree));
@@ -366,7 +383,7 @@ bool AutoVectorizer::TryCreateLoopPlan(FlowGraphNaturalLoop* loop, LoopVectoriza
     plan->IterTree     = iterInfo.IterTree;
     plan->TestTree     = iterInfo.TestTree;
     plan->TestBlock    = iterInfo.TestBlock;
-    plan->TestOper     = testOper;
+    plan->TestOper     = isSupportedNotEqualLoop ? testOper : normalizedTestOper;
     plan->Step         = 1;
     plan->ConstInitValue = static_cast<int>(iterInfo.ConstInitValue);
     plan->ElementType  = TYP_UNDEF;
@@ -513,6 +530,143 @@ bool AutoVectorizer::TryCreatePostIVLoopPlan(FlowGraphNaturalLoop* loop, LoopVec
             plan->VectorizationFactor, plan->StoreCount, plan->LoadCount);
     JITDUMP("loop test:\n");
     JITDUMPEXEC(m_compiler->gtDispTree(plan->TestTree));
+    DumpSLPPlan(*plan);
+    return true;
+}
+
+bool AutoVectorizer::TryCreateLocalLimitLoopPlan(FlowGraphNaturalLoop* loop, LoopVectorizationPlan* plan)
+{
+    BasicBlock* const header = loop->GetHeader();
+    if (header != loop->BackEdge(0)->getSourceBlock())
+    {
+        return false;
+    }
+
+    if (!header->KindIs(BBJ_COND))
+    {
+        return false;
+    }
+
+    Statement* const testStmt = header->lastStmt();
+    if ((testStmt == nullptr) || !testStmt->GetRootNode()->OperIs(GT_JTRUE))
+    {
+        return false;
+    }
+
+    GenTree* const relop = testStmt->GetRootNode()->gtGetOp1();
+    if (!relop->OperIsCompare())
+    {
+        return false;
+    }
+
+    GenTree* op1 = UnwrapCommaValue(relop->AsOp()->gtOp1);
+    GenTree* op2 = UnwrapCommaValue(relop->AsOp()->gtOp2);
+    genTreeOps testOper = relop->OperGet();
+
+    unsigned ivLcl = BAD_VAR_NUM;
+    GenTree* limit = nullptr;
+    if (op1->OperIs(GT_LCL_VAR) && op2->OperIs(GT_LCL_VAR) && GenTree::StaticOperIs(testOper, GT_LT, GT_LE))
+    {
+        ivLcl = op1->AsLclVarCommon()->GetLclNum();
+        limit = op2;
+    }
+    else if (op1->OperIs(GT_LCL_VAR) && op2->OperIs(GT_LCL_VAR) && GenTree::StaticOperIs(testOper, GT_GT, GT_GE))
+    {
+        ivLcl = op2->AsLclVarCommon()->GetLclNum();
+        limit = op1;
+        testOper = (testOper == GT_GT) ? GT_LT : GT_LE;
+    }
+    else
+    {
+        return false;
+    }
+
+    plan->Loop         = loop;
+    plan->Preheader    = loop->EntryEdge(0)->getSourceBlock();
+    plan->Header       = header;
+    plan->Latch        = header;
+    plan->Exit         = loop->ExitEdge(0)->getDestinationBlock();
+    plan->InductionVar = ivLcl;
+    plan->End          = limit;
+    plan->TestTree     = relop;
+    plan->TestBlock    = header;
+    plan->TestOper     = testOper;
+    plan->Step         = 1;
+
+    for (Statement* const stmt : header->Statements())
+    {
+        RecordLocalDefs(plan, stmt->GetRootNode());
+    }
+
+    for (Statement* const stmt : plan->Preheader->Statements())
+    {
+        RecordLocalDefs(plan, stmt->GetRootNode());
+    }
+
+    Statement* iterStmt = nullptr;
+    for (Statement* const stmt : header->Statements())
+    {
+        GenTree* const root = stmt->GetRootNode();
+        if (!root->OperIs(GT_STORE_LCL_VAR) || (root->AsLclVarCommon()->GetLclNum() != ivLcl))
+        {
+            continue;
+        }
+
+        int offset = 0;
+        if (!TryAnalyzeIndexExpr(plan, root->AsLclVarCommon()->Data(), ivLcl, &offset) || (offset != 1))
+        {
+            JITDUMPEXEC(m_compiler->gtDispStmt(stmt));
+            JITDUMP("local-limit IV update is not +1, bail out\n");
+            return false;
+        }
+
+        iterStmt = stmt;
+        break;
+    }
+
+    if (iterStmt == nullptr)
+    {
+        JITDUMPEXEC(m_compiler->gtDispTree(relop));
+        JITDUMP("local-limit loop has no IV update, bail out\n");
+        return false;
+    }
+
+    plan->IterTree = iterStmt->GetRootNode();
+
+    JITDUMP("loop " FMT_LP " local-limit IV V%02u, step=1, test=%s\n", loop->GetIndex(), ivLcl,
+            GenTree::OpName(testOper));
+    JITDUMP("loop test:\n");
+    JITDUMPEXEC(m_compiler->gtDispTree(relop));
+
+    if (!TryAnalyzeMemory(plan))
+    {
+        return false;
+    }
+
+#if defined(FEATURE_SIMD) && (defined(TARGET_XARCH) || defined(TARGET_ARM64))
+    plan->VectorSizeBytes     = GetVectorSizeBytes(plan->ElementType);
+    plan->VectorizationFactor = plan->VectorSizeBytes / plan->ElementSize;
+#endif
+
+    if (plan->VectorizationFactor < 2)
+    {
+        JITDUMP("loop " FMT_LP " vectorSize=%u, elementSize=%u, VF=%u\n", loop->GetIndex(), plan->VectorSizeBytes,
+                plan->ElementSize, plan->VectorizationFactor);
+        JITDUMP("vectorization factor is too small, bail out\n");
+        return false;
+    }
+
+    if (!TryBuildSLPPlan(plan))
+    {
+        return false;
+    }
+
+    JITDUMP("accepted loop " FMT_LP " as local-limit candidate\n", plan->Loop->GetIndex());
+    JITDUMP("  preheader=" FMT_BB ", header=" FMT_BB ", latch=" FMT_BB ", exit=" FMT_BB "\n", plan->Preheader->bbNum,
+            plan->Header->bbNum, plan->Latch->bbNum, plan->Exit->bbNum);
+    JITDUMP("  iv=V%02u, step=%d, test=%s, element=%s, vectorSize=%u, VF=%u, stores=%u, loads=%u\n",
+            plan->InductionVar, plan->Step, GenTree::OpName(plan->TestOper), varTypeName(plan->ElementType),
+            plan->VectorSizeBytes, plan->VectorizationFactor, plan->StoreCount, plan->LoadCount);
     DumpSLPPlan(*plan);
     return true;
 }
