@@ -1,6 +1,22 @@
 <Project>
   <Import Project="$([MSBuild]::GetPathOfFileAbove('Directory.Build.targets', '$(MSBuildThisFileDirectory)..\'))" />
 
+  <!--
+    Force debuggees to use the locally-built runtime/targeting packs and crossgen2
+    (not the SDK's bundled versions from global.json) when publishing with
+    PublishReadyToRun=true.
+
+    targetingpacks.targets handles runtime/targeting pack resolution.
+    tests.readytorun.targets overrides ResolveReadyToRunCompilers to use the
+    locally-built crossgen2 directly (the local build layout is flat, not the
+    NuGet pack "tools/" subdirectory layout the SDK expects).
+  -->
+  <Import Project="$(RepositoryEngineeringDir)targetingpacks.targets" />
+
+  <PropertyGroup>
+    <AfterMicrosoftNETSdkTargets>$(AfterMicrosoftNETSdkTargets);$(RepositoryEngineeringDir)testing\tests.readytorun.targets</AfterMicrosoftNETSdkTargets>
+  </PropertyGroup>
+
   <!-- Target invoked by GenerateAllDumps (from DumpTests.targets) on each debuggee csproj
        to extract the DumpTypes property. Returns the project name with DumpTypes metadata. -->
   <Target Name="GetDumpTypes" Returns="@(_DumpTypeOutput)">

@@ -202,7 +202,6 @@ interface IDacDbiInterface : IUnknown
 
     // App Domains
     HRESULT GetAppDomainId([in] VMPTR_AppDomain vmAppDomain, [out] ULONG * pRetVal);
-    HRESULT GetAppDomainObject([in] VMPTR_AppDomain vmAppDomain, [out] VMPTR_OBJECTHANDLE * pRetVal);
     HRESULT GetAppDomainFullName([in] VMPTR_AppDomain vmAppDomain, [in] IDacDbiStringHolder pStrName);
     HRESULT GetModuleSimpleName([in] VMPTR_Module vmModule, [in] IDacDbiStringHolder pStrFilename);
     HRESULT GetAssemblyPath([in] VMPTR_Assembly vmAssembly, [in] IDacDbiStringHolder pStrFilename, [out] BOOL * pResult);
