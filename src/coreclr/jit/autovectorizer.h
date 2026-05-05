@@ -132,6 +132,7 @@ private:
     Compiler* m_compiler;
 
     bool      IsEnabled() const;
+    bool      IsAggressiveVectorizing() const;
     bool      IsSupportedCompilation() const;
     unsigned  GetVectorSizeBytes(var_types elementType) const;
     bool      ReportVectorIsa(unsigned vectorSizeBytes) const;
@@ -141,6 +142,10 @@ private:
     bool      IsSupportedBinaryOp(genTreeOps oper, var_types elementType) const;
     bool      IsSupportedCompareOp(genTreeOps oper, var_types elementType) const;
     bool      IsSupportedIntrinsic(NamedIntrinsic intrinsic, var_types elementType) const;
+    bool      TrySelectVectorSizeAndBuildSLPPlan(LoopVectorizationPlan* plan);
+    bool      IsProfitableVectorSize(const LoopVectorizationPlan* plan, unsigned maxVectorSizeBytes) const;
+    bool      TryGetConstantTripCount(const LoopVectorizationPlan* plan, unsigned* tripCount) const;
+    unsigned  EstimateVectorPressure(const LoopVectorizationPlan* plan) const;
     bool      TryCreateLoopPlan(FlowGraphNaturalLoop* loop, LoopVectorizationPlan* plan);
     bool      TryCreatePostIVLoopPlan(FlowGraphNaturalLoop* loop, LoopVectorizationPlan* plan);
     bool      TryCreateLocalLimitLoopPlan(FlowGraphNaturalLoop* loop, LoopVectorizationPlan* plan);

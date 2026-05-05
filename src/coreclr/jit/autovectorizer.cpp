@@ -88,6 +88,11 @@ bool AutoVectorizer::IsEnabled() const
     return JitConfig.JitAutoVectorization() != 0;
 }
 
+bool AutoVectorizer::IsAggressiveVectorizing() const
+{
+    return JitConfig.JitAggressiveVectorizing() != 0;
+}
+
 bool AutoVectorizer::IsSupportedCompilation() const
 {
     if (m_compiler->opts.MinOpts() || m_compiler->opts.compDbgCode)
@@ -277,6 +282,215 @@ bool AutoVectorizer::IsSupportedIntrinsic(NamedIntrinsic intrinsic, var_types el
     }
 }
 
+bool AutoVectorizer::TrySelectVectorSizeAndBuildSLPPlan(LoopVectorizationPlan* plan)
+{
+#if defined(FEATURE_SIMD) && (defined(TARGET_XARCH) || defined(TARGET_ARM64))
+    const unsigned maxVectorSizeBytes = GetVectorSizeBytes(plan->ElementType);
+    if (maxVectorSizeBytes == 0)
+    {
+        JITDUMP("no supported vector size for %s, bail out\n", varTypeName(plan->ElementType));
+        return false;
+    }
+
+    unsigned vectorSizes[3]  = {};
+    unsigned vectorSizeCount = 0;
+
+#if defined(TARGET_XARCH)
+    if (maxVectorSizeBytes >= ZMM_REGSIZE_BYTES)
+    {
+        vectorSizes[vectorSizeCount++] = ZMM_REGSIZE_BYTES;
+    }
+
+    if (maxVectorSizeBytes >= YMM_REGSIZE_BYTES)
+    {
+        vectorSizes[vectorSizeCount++] = YMM_REGSIZE_BYTES;
+    }
+
+    vectorSizes[vectorSizeCount++] = XMM_REGSIZE_BYTES;
+#elif defined(TARGET_ARM64)
+    vectorSizes[vectorSizeCount++] = FP_REGSIZE_BYTES;
+#endif
+
+    const LoopVectorizationPlan originalPlan = *plan;
+
+    for (unsigned i = 0; i < vectorSizeCount; i++)
+    {
+        *plan = originalPlan;
+
+        plan->VectorSizeBytes     = vectorSizes[i];
+        plan->VectorizationFactor = plan->VectorSizeBytes / plan->ElementSize;
+
+        if (plan->VectorizationFactor < 2)
+        {
+            JITDUMP("vector width policy candidate: size=%u, elementSize=%u, VF=%u\n", plan->VectorSizeBytes,
+                    plan->ElementSize, plan->VectorizationFactor);
+            JITDUMP("vectorization factor is too small, trying next width\n");
+            continue;
+        }
+
+        if (!TryBuildSLPPlan(plan))
+        {
+            JITDUMP("vector width policy candidate %u did not build a legal SLP plan\n", plan->VectorSizeBytes);
+            continue;
+        }
+
+        if (IsAggressiveVectorizing())
+        {
+            JITDUMP("JitAggressiveVectorizing selected %u-byte vectors, VF=%u\n", plan->VectorSizeBytes,
+                    plan->VectorizationFactor);
+            return true;
+        }
+
+        if (IsProfitableVectorSize(plan, maxVectorSizeBytes))
+        {
+            JITDUMP("vector width policy selected %u-byte vectors, VF=%u\n", plan->VectorSizeBytes,
+                    plan->VectorizationFactor);
+            return true;
+        }
+
+        JITDUMP("vector width policy rejected %u-byte vectors, trying next width\n", plan->VectorSizeBytes);
+    }
+
+    *plan = originalPlan;
+    JITDUMP("vector width policy found no profitable vector size, bail out\n");
+    return false;
+#else
+    return false;
+#endif
+}
+
+bool AutoVectorizer::IsProfitableVectorSize(const LoopVectorizationPlan* plan, unsigned maxVectorSizeBytes) const
+{
+    unsigned   constantTripCount    = 0;
+    const bool hasConstantTripCount = TryGetConstantTripCount(plan, &constantTripCount);
+    if (hasConstantTripCount)
+    {
+        JITDUMP("vector width policy: constant trip count=%u\n", constantTripCount);
+        if (constantTripCount < plan->VectorizationFactor)
+        {
+            JITDUMP("trip count is smaller than VF=%u\n", plan->VectorizationFactor);
+            return false;
+        }
+
+        if ((plan->VectorSizeBytes > 16) && (constantTripCount < (2 * plan->VectorizationFactor)))
+        {
+            JITDUMP("tiny constant trip count favors a narrower vector width\n");
+            return false;
+        }
+    }
+
+    const SLPPlan& slpPlan        = plan->BodyPlan;
+    const unsigned vectorPressure = EstimateVectorPressure(plan);
+    const unsigned loopOverhead =
+        6 + (3 * slpPlan.RootCount) + (plan->ReductionPack != nullptr ? 5 : 0) + (plan->NeedsOverlapCheck ? 8 : 0);
+    const unsigned benefit = (slpPlan.EstimatedScalarCost > slpPlan.EstimatedVectorCost)
+                                 ? (slpPlan.EstimatedScalarCost - slpPlan.EstimatedVectorCost)
+                                 : 0;
+
+    const bool isCold = plan->Header->isRunRarely() || plan->Header->isBBWeightCold(m_compiler);
+    const bool isHot  = plan->Header->getBBWeight(m_compiler) >= (BB_UNITY_WEIGHT * BB_LOOP_WEIGHT_SCALE);
+
+    JITDUMP("vector width policy: size=%u, VF=%u, max=%u, benefit=%u, overhead=%u, pressure=%u, hot=%s, cold=%s\n",
+            plan->VectorSizeBytes, plan->VectorizationFactor, maxVectorSizeBytes, benefit, loopOverhead, vectorPressure,
+            dspBool(isHot), dspBool(isCold));
+
+    if (isCold)
+    {
+        JITDUMP("cold loop, bail out\n");
+        return false;
+    }
+
+    if (benefit < (loopOverhead / 2))
+    {
+        JITDUMP("estimated benefit is too small for vector-loop overhead\n");
+        return false;
+    }
+
+#if defined(TARGET_XARCH)
+    if (plan->VectorSizeBytes == ZMM_REGSIZE_BYTES)
+    {
+        if (plan->NeedsOverlapCheck)
+        {
+            JITDUMP("runtime overlap checks favor a narrower vector width\n");
+            return false;
+        }
+
+        if ((plan->ReductionPack != nullptr) && !isHot)
+        {
+            JITDUMP("512-bit reduction without hotness proof favors a narrower vector width\n");
+            return false;
+        }
+
+        if ((vectorPressure > 12) || ((slpPlan.NodeCount > 24) && !isHot))
+        {
+            JITDUMP("512-bit candidate has too much estimated pressure\n");
+            return false;
+        }
+    }
+
+    if ((plan->VectorSizeBytes == YMM_REGSIZE_BYTES) && (vectorPressure > 18) && !isHot)
+    {
+        JITDUMP("256-bit candidate has too much estimated pressure for an unproven-hot loop\n");
+        return false;
+    }
+#endif
+
+    return true;
+}
+
+bool AutoVectorizer::TryGetConstantTripCount(const LoopVectorizationPlan* plan, unsigned* tripCount) const
+{
+    if (plan->IsPostIV || (plan->End == nullptr) || !plan->End->IsCnsIntOrI())
+    {
+        return false;
+    }
+
+    const ssize_t limit = plan->End->AsIntConCommon()->IconValue();
+    ssize_t       trip  = limit - static_cast<ssize_t>(plan->ConstInitValue);
+
+    if (plan->TestOper == GT_LE)
+    {
+        trip++;
+    }
+
+    if (trip <= 0)
+    {
+        *tripCount = 0;
+        return true;
+    }
+
+    if (trip > UINT_MAX)
+    {
+        return false;
+    }
+
+    *tripCount = static_cast<unsigned>(trip);
+    return true;
+}
+
+unsigned AutoVectorizer::EstimateVectorPressure(const LoopVectorizationPlan* plan) const
+{
+    const SLPPlan& slpPlan  = plan->BodyPlan;
+    unsigned       pressure = plan->StoreCount + plan->LoadCount + slpPlan.RootCount;
+
+    for (unsigned i = 0; i < slpPlan.NodeCount; i++)
+    {
+        const PackNode& node = slpPlan.Nodes[i];
+        if ((node.Kind == PackKind::SplatConstant) || (node.Kind == PackKind::SplatScalar) ||
+            (node.Kind == PackKind::BinaryOp) || (node.Kind == PackKind::CompareOp) || (node.Kind == PackKind::Select))
+        {
+            pressure++;
+        }
+    }
+
+    if (plan->ReductionPack != nullptr)
+    {
+        pressure += 2;
+    }
+
+    return pressure;
+}
+
 bool AutoVectorizer::TryCreateLoopPlan(FlowGraphNaturalLoop* loop, LoopVectorizationPlan* plan)
 {
     JITDUMP("considering loop " FMT_LP "\n", loop->GetIndex());
@@ -453,20 +667,7 @@ bool AutoVectorizer::TryCreateLoopPlan(FlowGraphNaturalLoop* loop, LoopVectoriza
         return false;
     }
 
-#if defined(FEATURE_SIMD) && (defined(TARGET_XARCH) || defined(TARGET_ARM64))
-    plan->VectorSizeBytes     = GetVectorSizeBytes(plan->ElementType);
-    plan->VectorizationFactor = plan->VectorSizeBytes / plan->ElementSize;
-#endif
-
-    if (plan->VectorizationFactor < 2)
-    {
-        JITDUMP("loop " FMT_LP " vectorSize=%u, elementSize=%u, VF=%u\n", loop->GetIndex(), plan->VectorSizeBytes,
-                plan->ElementSize, plan->VectorizationFactor);
-        JITDUMP("vectorization factor is too small, bail out\n");
-        return false;
-    }
-
-    if (!TryBuildSLPPlan(plan))
+    if (!TrySelectVectorSizeAndBuildSLPPlan(plan))
     {
         return false;
     }
@@ -573,7 +774,7 @@ bool AutoVectorizer::TryCreatePostIVLoopPlan(FlowGraphNaturalLoop* loop, LoopVec
     JITDUMP("post-IV loop test:\n");
     JITDUMPEXEC(m_compiler->gtDispTree(relop));
 
-    if (!TryAnalyzePostIVMemory(plan) || !TryBuildSLPPlan(plan))
+    if (!TryAnalyzePostIVMemory(plan) || !TrySelectVectorSizeAndBuildSLPPlan(plan))
     {
         return false;
     }
@@ -704,20 +905,7 @@ bool AutoVectorizer::TryCreateLocalLimitLoopPlan(FlowGraphNaturalLoop* loop, Loo
         return false;
     }
 
-#if defined(FEATURE_SIMD) && (defined(TARGET_XARCH) || defined(TARGET_ARM64))
-    plan->VectorSizeBytes     = GetVectorSizeBytes(plan->ElementType);
-    plan->VectorizationFactor = plan->VectorSizeBytes / plan->ElementSize;
-#endif
-
-    if (plan->VectorizationFactor < 2)
-    {
-        JITDUMP("loop " FMT_LP " vectorSize=%u, elementSize=%u, VF=%u\n", loop->GetIndex(), plan->VectorSizeBytes,
-                plan->ElementSize, plan->VectorizationFactor);
-        JITDUMP("vectorization factor is too small, bail out\n");
-        return false;
-    }
-
-    if (!TryBuildSLPPlan(plan))
+    if (!TrySelectVectorSizeAndBuildSLPPlan(plan))
     {
         return false;
     }
@@ -1192,19 +1380,6 @@ bool AutoVectorizer::TryAnalyzePostIVMemory(LoopVectorizationPlan* plan)
     {
         JITDUMP("post-IV element type=%s\n", varTypeName(plan->ElementType));
         JITDUMP("post-IV unsupported element type, bail out\n");
-        return false;
-    }
-
-#if defined(FEATURE_SIMD) && (defined(TARGET_XARCH) || defined(TARGET_ARM64))
-    plan->VectorSizeBytes     = GetVectorSizeBytes(plan->ElementType);
-    plan->VectorizationFactor = plan->VectorSizeBytes / plan->ElementSize;
-#endif
-
-    if (plan->VectorizationFactor < 2)
-    {
-        JITDUMP("post-IV vectorSize=%u, elementSize=%u, VF=%u\n", plan->VectorSizeBytes, plan->ElementSize,
-                plan->VectorizationFactor);
-        JITDUMP("vectorization factor is too small, bail out\n");
         return false;
     }
 

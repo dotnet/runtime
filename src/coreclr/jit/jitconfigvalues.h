@@ -707,6 +707,7 @@ CONFIG_STRING(JitObjectStackAllocationTrackFieldsRange, "JitObjectStackAllocatio
 CONFIG_INTEGER(JitObjectStackAllocationDumpConnGraph, "JitObjectStackAllocationDumpConnGraph", 0)
 
 RELEASE_CONFIG_INTEGER(JitAutoVectorization, "JitAutoVectorization", 1)
+RELEASE_CONFIG_INTEGER(JitAggressiveVectorizing, "JitAggressiveVectorizing", 0)
 
 RELEASE_CONFIG_INTEGER(JitEECallTimingInfo, "JitEECallTimingInfo", 0)
 
