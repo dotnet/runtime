@@ -34,7 +34,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public override string LookupString => "M" + _wasmSignature.SignatureString;
 
-        private static WasmSignature sigForInterpToR2RThunks = new WasmSignature(new WasmFuncType(new WasmResultType(new WasmValueType[]{WasmValueType.I32, WasmValueType.I32, WasmValueType.I32, WasmValueType.I32}), new WasmResultType(Array.Empty<WasmValueType>())), "viiii");
+        private static WasmSignature sigForInterpToR2RThunks = new WasmSignature(new WasmFuncType(new WasmResultType(new WasmValueType[]{WasmValueType.I32, WasmValueType.I32, WasmValueType.I32}), new WasmResultType(Array.Empty<WasmValueType>())), "viii");
         MethodSignature INodeWithTypeSignature.Signature => WasmLowering.RaiseSignature(sigForInterpToR2RThunks, _context);
         bool INodeWithTypeSignature.IsUnmanagedCallersOnly => false;
         bool INodeWithTypeSignature.IsAsyncCall => false;
@@ -110,16 +110,14 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             bool hasWasmReturn = targetFuncType.Returns.Types.Length > 0;
 
             // Wasm locals for this thunk:
-            //   local 0: pcode (I32)
+            //   local 0: portableEntryPoint (I32)
             //   local 1: pArgs (I32)
             //   local 2: pRet (I32)
-            //   local 3: pPortableEntryPointContext (I32)
-            //   local 4: savedSp (I32) - save/restore SP global
-            const int LocalPcode = 0;
+            //   local 3: savedSp (I32) - save/restore SP global
+            const int LocalPortableEntrypoint = 0;
             const int LocalPArgs = 1;
             const int LocalPRet = 2;
-            const int LocalPortableEntrypoint = 3;
-            const int LocalSavedSp = 4;
+            const int LocalSavedSp = 3;
 
             const int FrameSize = 16; // 16-byte aligned allocation for framePointer
 
@@ -220,7 +218,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             expressions.Add(Local.Get(LocalPortableEntrypoint));
 
             // call_indirect with the target R2R function's type signature
-            expressions.Add(Local.Get(LocalPcode));
+            expressions.Add(Local.Get(LocalPortableEntrypoint));
+            expressions.Add(I32.Load(0)); // load the actual function index from the type node
             expressions.Add(ControlFlow.CallIndirect(targetTypeIndex, 0));
 
             // Handle wasm return value — pRet is already on the stack under the return value
@@ -275,10 +274,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             expressions.Add(Local.Get(LocalSavedSp));
             expressions.Add(Global.Set(WasmObjectWriter.StackPointerGlobalIndex));
 
-            instructionEncoder.FunctionBody = new WasmFunctionBody(
-                new WasmFuncType(
-                    new WasmResultType(new[] { WasmValueType.I32, WasmValueType.I32, WasmValueType.I32, WasmValueType.I32 }),
-                    new WasmResultType(Array.Empty<WasmValueType>())),
+            instructionEncoder.FunctionBody = new WasmFunctionBody(sigForInterpToR2RThunks.FuncType,
                 new[] { WasmValueType.I32 },
                 expressions.ToArray());
         }
