@@ -16,8 +16,8 @@ namespace ILLink.RoslynAnalyzer
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
     public sealed class RequiresUnsafeAnalyzer : RequiresAnalyzerBase
     {
-        private const string RequiresUnsafeAttribute = nameof(RequiresUnsafeAttribute);
-        public const string FullyQualifiedRequiresUnsafeAttribute = "System.Diagnostics.CodeAnalysis." + RequiresUnsafeAttribute;
+        internal const string RequiresUnsafeAttributeName = "RequiresUnsafeAttribute";
+        public const string FullyQualifiedRequiresUnsafeAttribute = "System.Diagnostics.CodeAnalysis." + RequiresUnsafeAttributeName;
 
         private static readonly DiagnosticDescriptor s_requiresUnsafeOnStaticCtor = DiagnosticDescriptors.GetDiagnosticDescriptor(DiagnosticId.RequiresUnsafeOnStaticConstructor);
         private static readonly DiagnosticDescriptor s_requiresUnsafeOnEntryPoint = DiagnosticDescriptors.GetDiagnosticDescriptor(DiagnosticId.RequiresUnsafeOnEntryPoint);
@@ -27,7 +27,7 @@ namespace ILLink.RoslynAnalyzer
         public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics =>
             ImmutableArray.Create(s_requiresUnsafeRule, s_requiresUnsafeAttributeMismatch, s_requiresUnsafeOnStaticCtor, s_requiresUnsafeOnEntryPoint);
 
-        private protected override string RequiresAttributeName => RequiresUnsafeAttribute;
+        private protected override string RequiresAttributeName => RequiresUnsafeAttributeName;
 
         internal override string RequiresAttributeFullyQualifiedName => FullyQualifiedRequiresUnsafeAttribute;
 
@@ -84,14 +84,10 @@ namespace ILLink.RoslynAnalyzer
                     return true;
                 if (node is ConstructorDeclarationSyntax ctor && ctor.Modifiers.Any(SyntaxKind.UnsafeKeyword))
                     return true;
+                if (node is FieldDeclarationSyntax field && field.Modifiers.Any(SyntaxKind.UnsafeKeyword))
+                    return true;
                 if (node is TypeDeclarationSyntax type && type.Modifiers.Any(SyntaxKind.UnsafeKeyword))
                     return true;
-
-                // Break out of lambdas/anonymous methods - they create a new scope
-                if (node.IsKind(SyntaxKind.AnonymousMethodExpression)
-                    || node.IsKind(SyntaxKind.SimpleLambdaExpression)
-                    || node.IsKind(SyntaxKind.ParenthesizedLambdaExpression))
-                    break;
 
                 node = node.Parent;
             }

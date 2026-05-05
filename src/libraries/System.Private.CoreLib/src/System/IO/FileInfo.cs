@@ -181,8 +181,9 @@ namespace System.IO
             // as it does on Windows.These checks can be removed if a solution to
             // https://github.com/dotnet/runtime/issues/14885 is found that doesn't require
             // validity checks before making an API call.
-            if (!System.IO.Directory.Exists(Path.GetDirectoryName(FullName)))
-                throw new DirectoryNotFoundException(SR.Format(SR.IO_PathNotFound_Path, FullName));
+            string? directoryPath = Path.GetDirectoryName(FullName);
+            if (!System.IO.Directory.Exists(directoryPath))
+                throw new DirectoryNotFoundException(SR.Format(SR.IO_PathNotFound_Path, directoryPath), directoryPath);
 
             if (!Exists)
                 throw new FileNotFoundException(SR.Format(SR.IO_FileNotFound_FileName, FullName), FullName);

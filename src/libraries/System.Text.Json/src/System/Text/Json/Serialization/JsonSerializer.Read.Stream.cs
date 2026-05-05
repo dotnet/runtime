@@ -374,7 +374,8 @@ namespace System.Text.Json
         /// <typeparam name="TValue">The element type to deserialize asynchronously.</typeparam>
         /// <returns>An <see cref="IAsyncEnumerable{TValue}" /> representation of the provided JSON sequence.</returns>
         /// <param name="utf8Json">JSON data to parse.</param>
-        /// <param name="topLevelValues"><see langword="true"/> to deserialize from a sequence of top-level JSON values, or <see langword="false"/> to deserialize from a single top-level array.</param>
+        /// <param name="topLevelValues"><see langword="true"/> to deserialize from a sequence of top-level JSON values
+        /// (for example, a <see href="https://jsonlines.org/">JSON Lines (JSONL)</see> document); <see langword="false"/> to deserialize from a single top-level array.</param>
         /// <param name="options">Options to control the behavior during reading.</param>
         /// <param name="cancellationToken">The <see cref="System.Threading.CancellationToken"/> that can be used to cancel the read operation.</param>
         /// <exception cref="System.ArgumentNullException">
@@ -383,8 +384,9 @@ namespace System.Text.Json
         /// <remarks>
         /// When <paramref name="topLevelValues"/> is set to <see langword="true" />, treats the stream as a sequence of
         /// whitespace separated top-level JSON values and attempts to deserialize each value into <typeparamref name="TValue"/>.
+        /// This is a superset of the <see href="https://jsonlines.org/">JSON Lines (JSONL)</see> format and can be used to consume valid JSONL documents.
         /// When <paramref name="topLevelValues"/> is set to <see langword="false" />, treats the stream as a JSON array and
-        /// attempts to serialize each element into <typeparamref name="TValue"/>.
+        /// attempts to deserialize each element into <typeparamref name="TValue"/>.
         /// </remarks>
         [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
         [RequiresDynamicCode(SerializationRequiresDynamicCodeMessage)]
@@ -428,7 +430,8 @@ namespace System.Text.Json
         /// <returns>An <see cref="IAsyncEnumerable{TValue}" /> representation of the provided JSON sequence.</returns>
         /// <param name="utf8Json">JSON data to parse.</param>
         /// <param name="jsonTypeInfo">Metadata about the element type to convert.</param>
-        /// <param name="topLevelValues">Whether to deserialize from a sequence of top-level JSON values.</param>
+        /// <param name="topLevelValues"><see langword="true"/> to deserialize from a sequence of top-level JSON values
+        /// (for example, a <see href="https://jsonlines.org/">JSON Lines (JSONL)</see> document); <see langword="false"/> to deserialize from a single top-level array.</param>
         /// <param name="cancellationToken">The <see cref="System.Threading.CancellationToken"/> that can be used to cancel the read operation.</param>
         /// <exception cref="System.ArgumentNullException">
         /// <paramref name="utf8Json"/> or <paramref name="jsonTypeInfo"/> is <see langword="null"/>.
@@ -436,8 +439,9 @@ namespace System.Text.Json
         /// <remarks>
         /// When <paramref name="topLevelValues"/> is set to <see langword="true" />, treats the stream as a sequence of
         /// whitespace separated top-level JSON values and attempts to deserialize each value into <typeparamref name="TValue"/>.
+        /// This is a superset of the <see href="https://jsonlines.org/">JSON Lines (JSONL)</see> format and can be used to consume valid JSONL documents.
         /// When <paramref name="topLevelValues"/> is set to <see langword="false" />, treats the stream as a JSON array and
-        /// attempts to serialize each element into <typeparamref name="TValue"/>.
+        /// attempts to deserialize each element into <typeparamref name="TValue"/>.
         /// </remarks>
         public static IAsyncEnumerable<TValue?> DeserializeAsyncEnumerable<TValue>(
             Stream utf8Json,

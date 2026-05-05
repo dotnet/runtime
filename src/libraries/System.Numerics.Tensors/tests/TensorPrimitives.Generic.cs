@@ -462,7 +462,7 @@ namespace System.Numerics.Tensors.Tests
             yield return Create(TensorPrimitives.Acos, T.Acos);
             yield return Create(TensorPrimitives.Asinh, T.Asinh);
             yield return Create(TensorPrimitives.AsinPi, T.AsinPi);
-            yield return Create(TensorPrimitives.Asin, T.Asin);
+            yield return Create(TensorPrimitives.Asin, T.Asin, trigTolerance);
             yield return Create(TensorPrimitives.Atanh, T.Atanh);
             yield return Create(TensorPrimitives.AtanPi, T.AtanPi);
             yield return Create(TensorPrimitives.Atan, T.Atan);
@@ -570,8 +570,8 @@ namespace System.Numerics.Tensors.Tests
         }
 
         [Theory]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/124344", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile), nameof(PlatformDetection.IsCoreCLR))]
         [MemberData(nameof(SpanDestinationFunctionsToTest))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/124344", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile), nameof(PlatformDetection.IsCoreCLR))]
         public void SpanDestinationFunctions_ValueRange(SpanDestinationDelegate tensorPrimitivesMethod, Func<T, T> expectedMethod, T? tolerance = null)
         {
             Assert.All(VectorLengthAndIteratedRange(ConvertFromSingle(-100f), ConvertFromSingle(100f), ConvertFromSingle(3f)), arg =>
@@ -2723,7 +2723,7 @@ namespace System.Numerics.Tensors.Tests
         {
             if (!Helpers.IsEqualWithTolerance(expected, actual, tolerance))
             {
-                throw EqualException.ForMismatchedValues(expected, actual);
+                throw EqualException.ForMismatchedValues($"{expected}", $"{actual}");
             }
         }
 

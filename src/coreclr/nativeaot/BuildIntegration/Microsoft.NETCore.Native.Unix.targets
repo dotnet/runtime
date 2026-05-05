@@ -48,10 +48,10 @@ The .NET Foundation licenses this file to you under the MIT license.
       <CrossCompileArch Condition="$(CrossCompileRid.EndsWith('-arm'))">armv7</CrossCompileArch>
 
       <CrossCompileAbi>gnu</CrossCompileAbi>
-      <CrossCompileAbi Condition="$(CrossCompileRid.StartsWith('linux-bionic-')) or $(CrossCompileRid.StartsWith('android-'))">android21</CrossCompileAbi>
+      <CrossCompileAbi Condition="$(CrossCompileRid.StartsWith('linux-bionic-')) or $(CrossCompileRid.StartsWith('android-'))">android24</CrossCompileAbi>
       <CrossCompileAbi Condition="$(CrossCompileRid.StartsWith('linux-musl-')) or $(CrossCompileRid.StartsWith('alpine-'))">musl</CrossCompileAbi>
       <CrossCompileAbi Condition="'$(CrossCompileRid)' == 'linux-arm'">gnueabihf</CrossCompileAbi>
-      <CrossCompileAbi Condition="'$(CrossCompileRid)' == 'linux-bionic-arm' or '$(CrossCompileRid)' == 'android-arm'">androideabi21</CrossCompileAbi>
+      <CrossCompileAbi Condition="'$(CrossCompileRid)' == 'linux-bionic-arm' or '$(CrossCompileRid)' == 'android-arm'">androideabi24</CrossCompileAbi>
       <CrossCompileAbi Condition="'$(CrossCompileRid)' == 'linux-musl-arm'">musleabihf</CrossCompileAbi>
     </PropertyGroup>
 
@@ -66,7 +66,7 @@ The .NET Foundation licenses this file to you under the MIT license.
       <TargetTriple Condition="'$(CrossCompileArch)' != '' and '$(_IsAlpineExitCode)' == '0'">$(CrossCompileArch)-alpine-linux-$(CrossCompileAbi)</TargetTriple>
       <TargetTriple Condition="'$(CrossCompileArch)' != '' and ($(CrossCompileRid.StartsWith('freebsd')))">$(CrossCompileArch)-unknown-freebsd12</TargetTriple>
 
-      <SharedLibraryInstallName Condition="'$(SharedLibraryInstallName)' == '' and '$(_IsApplePlatform)' == 'true' and '$(NativeLib)' == 'Shared'">@rpath/$(TargetName)$(NativeBinaryExt)</SharedLibraryInstallName>
+      <SharedLibraryInstallName Condition="'$(SharedLibraryInstallName)' == '' and '$(_IsApplePlatform)' == 'true' and '$(NativeLib)' == 'Shared'">@rpath/$(NativeBinaryPrefix)$(TargetName)$(NativeBinaryExt)</SharedLibraryInstallName>
 
       <EventPipeName>libeventpipe-disabled</EventPipeName>
       <EventPipeName Condition="'$(EventSourceSupport)' == 'true'">libeventpipe-enabled</EventPipeName>
@@ -102,12 +102,13 @@ The .NET Foundation licenses this file to you under the MIT license.
       <AppleMinOSVersion Condition="'$(AppleMinOSVersion)' == ''">14.0</AppleMinOSVersion>
       <TargetTriple Condition="'$(_targetArchitecture)' == 'x64'">x86_64-apple-macos$(AppleMinOSVersion)</TargetTriple>
       <TargetTriple Condition="'$(_targetArchitecture)' == 'arm64'">arm64-apple-macos$(AppleMinOSVersion)</TargetTriple>
+      <_AppleSdkName>macosx</_AppleSdkName>
     </PropertyGroup>
 
     <Error Condition="'$(_IsiOSLikePlatform)' == 'true' and ('$(_AppleSdkName)' == '' or '$(CrossCompileArch)' == '' or '$(_AppleTripleOS)' == ''  or '$(AppleMinOSVersion)' == '' or '$(_AppleTripleAbi)' == '')"
       Text="One of the required Apple SDK properties is empty and was not properly resolved: _AppleSdkName = '$(_AppleSdkName)' CrossCompileArch = '$(CrossCompileArch)' _AppleTripleOS = '$(_AppleTripleOS)' AppleMinOSVersion = '$(AppleMinOSVersion)' _AppleTripleAbi = '$(_AppleTripleAbi)'" />
 
-    <PropertyGroup Condition="'$(_IsiOSLikePlatform)' == 'true'">
+    <PropertyGroup Condition="'$(_IsApplePlatform)' == 'true'">
       <Xcrun Condition="'$(Xcrun)' == ''">xcrun</Xcrun>
       <_WhereXcrun>0</_WhereXcrun>
     </PropertyGroup>
@@ -116,13 +117,13 @@ The .NET Foundation licenses this file to you under the MIT license.
       <_HasDefaultSysRoot Condition="'$(SysRoot)' != ''">true</_HasDefaultSysRoot>
     </PropertyGroup>
 
-    <Exec Command="command -v &quot;$(Xcrun)&quot;" IgnoreExitCode="true" StandardOutputImportance="Low" Condition="'$(_IsiOSLikePlatform)' == 'true' And '$(_HasDefaultSysRoot)' != 'true'">
+    <Exec Command="command -v &quot;$(Xcrun)&quot;" IgnoreExitCode="true" StandardOutputImportance="Low" Condition="'$(_IsApplePlatform)' == 'true' And '$(_HasDefaultSysRoot)' != 'true'">
       <Output TaskParameter="ExitCode" PropertyName="_WhereXcrun" />
     </Exec>
     <Error Condition="'$(_WhereXcrun)' != '0' and '$(_IsiOSLikePlatform)' == 'true'"
       Text="'$(Xcrun)' not found in PATH. Make sure '$(Xcrun)' is available in PATH." />
 
-    <Exec Command="&quot;$(Xcrun)&quot; --sdk $(_AppleSdkName) --show-sdk-path" IgnoreExitCode="true" StandardOutputImportance="Low" Condition="'$(_HasDefaultSysRoot)' != 'true' and '$(_IsiOSLikePlatform)' == 'true'" ConsoleToMsBuild="true">
+    <Exec Command="&quot;$(Xcrun)&quot; --sdk $(_AppleSdkName) --show-sdk-path" IgnoreExitCode="true" StandardOutputImportance="Low" Condition="'$(_HasDefaultSysRoot)' != 'true' and '$(_IsApplePlatform)' == 'true'" ConsoleToMsBuild="true">
       <Output TaskParameter="ConsoleOutput" PropertyName="SysRoot" />
     </Exec>
     <Error Condition="'$(_HasDefaultSysRoot)' != 'true' and '$(_IsiOSLikePlatform)' == 'true' and !Exists('$(SysRoot)')"

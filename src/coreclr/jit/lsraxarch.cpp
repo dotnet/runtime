@@ -243,6 +243,22 @@ int LinearScan::BuildNode(GenTree* tree)
             assert(dstCount == 0);
             break;
 
+        case GT_PATCHPOINT:
+            // Patchpoint takes two args: counter addr (RDI/RCX) and IL offset (RSI/RDX)
+            // Calls helper and jumps to returned address - no value produced
+            srcCount = BuildOperandUses(tree->gtGetOp1(), RBM_ARG_0.GetIntRegSet());
+            BuildOperandUses(tree->gtGetOp2(), RBM_ARG_1.GetIntRegSet());
+            srcCount++;
+            BuildKills(tree, m_compiler->compHelperCallKillSet(CORINFO_HELP_PATCHPOINT));
+            break;
+
+        case GT_PATCHPOINT_FORCED:
+            // Forced patchpoint takes one arg: IL offset (RDI/RCX)
+            // Calls helper and jumps to returned address - no value produced
+            srcCount = BuildOperandUses(tree->gtGetOp1(), RBM_ARG_0.GetIntRegSet());
+            BuildKills(tree, m_compiler->compHelperCallKillSet(CORINFO_HELP_PATCHPOINT_FORCED));
+            break;
+
         case GT_SETCC:
             srcCount = 0;
             assert(dstCount == 1);
@@ -1209,18 +1225,12 @@ int LinearScan::BuildCall(GenTreeCall* call)
         }
     }
 
-    GenTree* ctrlExpr = call->gtControlExpr;
-    if (call->gtCallType == CT_INDIRECT)
-    {
-        ctrlExpr = call->gtCallAddr;
-    }
-
     RegisterType registerType = regType(call);
 
     // Set destination candidates for return value of the call.
 
 #ifdef TARGET_X86
-    if (call->IsHelperCall(m_compiler, CORINFO_HELP_INIT_PINVOKE_FRAME))
+    if (call->IsHelperCall(CORINFO_HELP_INIT_PINVOKE_FRAME))
     {
         // The x86 CORINFO_HELP_INIT_PINVOKE_FRAME helper uses a custom calling convention that returns with
         // TCB in REG_PINVOKE_TCB. AMD64/ARM64 use the standard calling convention. fgMorphCall() sets the
@@ -1282,6 +1292,7 @@ int LinearScan::BuildCall(GenTreeCall* call)
     srcCount += BuildCallArgUses(call);
 
     // set reg requirements on call target represented as control sequence.
+    GenTree* ctrlExpr = call->gtControlExpr;
     if (ctrlExpr != nullptr)
     {
         SingleTypeRegSet ctrlExprCandidates = RBM_NONE;
@@ -1933,7 +1944,7 @@ int LinearScan::BuildModDiv(GenTree* tree)
         tgtPrefUse          = op1Use;
         srcCount            = 1;
     }
-    srcCount += BuildDelayFreeUses(op2, op1, availableIntRegs & ~(SRBM_RAX | SRBM_RDX));
+    srcCount += BuildDelayFreeUses(op2, op1, lowGprRegs & ~(SRBM_RAX | SRBM_RDX));
 
     buildInternalRegisterUses();
 

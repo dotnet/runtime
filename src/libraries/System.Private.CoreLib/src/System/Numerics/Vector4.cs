@@ -770,18 +770,21 @@ namespace System.Numerics
         [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [RequiresUnsafe]
         public static unsafe Vector4 Load(float* source) => Vector128.Load(source).AsVector4();
 
         /// <inheritdoc cref="Vector128.LoadAligned{T}(T*)" />
         [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [RequiresUnsafe]
         public static unsafe Vector4 LoadAligned(float* source) => Vector128.LoadAligned(source).AsVector4();
 
         /// <inheritdoc cref="Vector128.LoadAlignedNonTemporal{T}(T*)" />
         [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [RequiresUnsafe]
         public static unsafe Vector4 LoadAlignedNonTemporal(float* source) => Vector128.LoadAlignedNonTemporal(source).AsVector4();
 
         /// <inheritdoc cref="Vector128.LoadUnsafe{T}(ref readonly T)" />
