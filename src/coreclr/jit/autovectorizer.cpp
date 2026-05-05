@@ -165,6 +165,26 @@ bool AutoVectorizer::IsSupportedElementType(var_types elementType) const
     }
 }
 
+bool AutoVectorizer::IsSupportedUnaryOp(genTreeOps oper, var_types elementType) const
+{
+    if (!IsSupportedElementType(elementType))
+    {
+        return false;
+    }
+
+    switch (oper)
+    {
+        case GT_NEG:
+            return varTypeIsArithmetic(elementType);
+
+        case GT_NOT:
+            return varTypeIsIntegral(elementType);
+
+        default:
+            return false;
+    }
+}
+
 bool AutoVectorizer::IsSupportedBinaryOp(genTreeOps oper, var_types elementType) const
 {
     if (!IsSupportedElementType(elementType))
@@ -186,9 +206,19 @@ bool AutoVectorizer::IsSupportedBinaryOp(genTreeOps oper, var_types elementType)
         case GT_XOR:
             return varTypeIsIntegral(elementType);
 
+        case GT_LSH:
+        case GT_RSH:
+        case GT_RSZ:
+            return varTypeIsIntegral(elementType);
+
         default:
             return false;
     }
+}
+
+bool AutoVectorizer::IsSupportedCompareOp(genTreeOps oper, var_types elementType) const
+{
+    return IsSupportedElementType(elementType) && GenTree::OperIsCompare(oper);
 }
 
 bool AutoVectorizer::TryCreateLoopPlan(FlowGraphNaturalLoop* loop, LoopVectorizationPlan* plan)
@@ -338,6 +368,7 @@ bool AutoVectorizer::TryCreateLoopPlan(FlowGraphNaturalLoop* loop, LoopVectoriza
     plan->TestBlock    = iterInfo.TestBlock;
     plan->TestOper     = testOper;
     plan->Step         = 1;
+    plan->ConstInitValue = static_cast<int>(iterInfo.ConstInitValue);
     plan->ElementType  = TYP_UNDEF;
     plan->ElementSize  = 0;
 
@@ -370,13 +401,11 @@ bool AutoVectorizer::TryCreateLoopPlan(FlowGraphNaturalLoop* loop, LoopVectoriza
     JITDUMP("accepted loop " FMT_LP " as canonical candidate\n", plan->Loop->GetIndex());
     JITDUMP("  preheader=" FMT_BB ", header=" FMT_BB ", latch=" FMT_BB ", exit=" FMT_BB "\n", plan->Preheader->bbNum,
             plan->Header->bbNum, plan->Latch->bbNum, plan->Exit->bbNum);
-    JITDUMP("  iv=V%02u, step=%d, test=%s, element=%s, vectorSize=%u, VF=%u, op=%s\n", plan->InductionVar, plan->Step,
-            GenTree::OpName(plan->TestOper), varTypeName(plan->ElementType), plan->VectorSizeBytes,
-            plan->VectorizationFactor, GenTree::OpName(plan->ScalarOper));
+    JITDUMP("  iv=V%02u, step=%d, test=%s, element=%s, vectorSize=%u, VF=%u, stores=%u, loads=%u\n",
+            plan->InductionVar, plan->Step, GenTree::OpName(plan->TestOper), varTypeName(plan->ElementType),
+            plan->VectorSizeBytes, plan->VectorizationFactor, plan->StoreCount, plan->LoadCount);
     JITDUMP("loop test:\n");
     JITDUMPEXEC(m_compiler->gtDispTree(plan->TestTree));
-    JITDUMP("scalar operand:\n");
-    JITDUMPEXEC(m_compiler->gtDispTree(plan->ScalarOperand));
     DumpSLPPlan(*plan);
     return true;
 }
@@ -479,92 +508,160 @@ bool AutoVectorizer::TryCreatePostIVLoopPlan(FlowGraphNaturalLoop* loop, LoopVec
     JITDUMP("accepted loop " FMT_LP " as post-IV candidate\n", plan->Loop->GetIndex());
     JITDUMP("  preheader=" FMT_BB ", header=" FMT_BB ", latch=" FMT_BB ", exit=" FMT_BB "\n", plan->Preheader->bbNum,
             plan->Header->bbNum, plan->Latch->bbNum, plan->Exit->bbNum);
-    JITDUMP("  tripCount=V%02u, test=%s, element=%s, vectorSize=%u, VF=%u, op=%s\n", plan->TripCountVar,
-            GenTree::OpName(plan->TestOper), varTypeName(plan->ElementType), plan->VectorSizeBytes,
-            plan->VectorizationFactor, GenTree::OpName(plan->ScalarOper));
+    JITDUMP("  tripCount=V%02u, test=%s, element=%s, vectorSize=%u, VF=%u, stores=%u, loads=%u\n",
+            plan->TripCountVar, GenTree::OpName(plan->TestOper), varTypeName(plan->ElementType), plan->VectorSizeBytes,
+            plan->VectorizationFactor, plan->StoreCount, plan->LoadCount);
     JITDUMP("loop test:\n");
     JITDUMPEXEC(m_compiler->gtDispTree(plan->TestTree));
-    JITDUMP("scalar operand:\n");
-    JITDUMPEXEC(m_compiler->gtDispTree(plan->ScalarOperand));
     DumpSLPPlan(*plan);
+    return true;
+}
+
+bool AutoVectorizer::AddStore(LoopVectorizationPlan*                     plan,
+                              Statement*                                 stmt,
+                              GenTree*                                   value,
+                              const LoopVectorizationPlan::ScalarAccess& access)
+{
+    if (plan->StoreCount >= LoopVectorizationPlan::MaxStores)
+    {
+        JITDUMPEXEC(m_compiler->gtDispStmt(stmt));
+        JITDUMP("store count exceeds budget %u, bail out\n", LoopVectorizationPlan::MaxStores);
+        return false;
+    }
+
+    if (!IsSupportedElementType(access.ElementType))
+    {
+        JITDUMPEXEC(m_compiler->gtDispStmt(stmt));
+        JITDUMP("store has unsupported element type %s, bail out\n", varTypeName(access.ElementType));
+        return false;
+    }
+
+    if ((plan->ElementType != TYP_UNDEF) && (plan->ElementType != access.ElementType))
+    {
+        JITDUMPEXEC(m_compiler->gtDispStmt(stmt));
+        JITDUMP("store element type %s does not match prior element type %s, bail out\n", varTypeName(access.ElementType),
+                varTypeName(plan->ElementType));
+        return false;
+    }
+
+    const unsigned index       = plan->StoreCount++;
+    plan->StoreStmts[index]   = stmt;
+    plan->StoreValues[index]  = value;
+    plan->StoreAccesses[index] = access;
+
+    if (plan->StoreStmt == nullptr)
+    {
+        plan->StoreStmt   = stmt;
+        plan->StoreAccess = access;
+    }
+
+    plan->ElementType = access.ElementType;
+    plan->ElementSize = access.ElementSize;
+    return true;
+}
+
+bool AutoVectorizer::AddLoad(LoopVectorizationPlan*                     plan,
+                             const LoopVectorizationPlan::ScalarAccess& access,
+                             unsigned*                                  index)
+{
+    for (unsigned i = 0; i < plan->LoadCount; i++)
+    {
+        const LoopVectorizationPlan::ScalarAccess& existing = plan->LoadAccesses[i];
+        if ((existing.Address == access.Address) || ((existing.BaseLocalIfKnown == access.BaseLocalIfKnown) &&
+                                                     (existing.OffsetLocalIfKnown == access.OffsetLocalIfKnown) &&
+                                                     (existing.IndexOffset == access.IndexOffset) &&
+                                                     (existing.ElementType == access.ElementType) &&
+                                                     (existing.IsArray == access.IsArray) &&
+                                                     (existing.IsByrefLocal == access.IsByrefLocal) &&
+                                                     (existing.IsByrefBaseWithOffset == access.IsByrefBaseWithOffset) &&
+                                                     (existing.IsByrefWithIndex == access.IsByrefWithIndex)))
+        {
+            *index = i;
+            return true;
+        }
+    }
+
+    if (plan->LoadCount >= LoopVectorizationPlan::MaxAccesses)
+    {
+        JITDUMP("load count exceeds budget %u, bail out\n", LoopVectorizationPlan::MaxAccesses);
+        return false;
+    }
+
+    if ((plan->ElementType != TYP_UNDEF) && (plan->ElementType != access.ElementType))
+    {
+        JITDUMP("load element type %s does not match loop element type %s, bail out\n", varTypeName(access.ElementType),
+                varTypeName(plan->ElementType));
+        return false;
+    }
+
+    *index                          = plan->LoadCount++;
+    plan->LoadAccesses[*index]      = access;
+    plan->LoadAccess                = plan->LoadAccesses[0];
+    plan->MinIndexOffset            = std::min(plan->MinIndexOffset, access.IndexOffset);
+    plan->MaxIndexOffset            = std::max(plan->MaxIndexOffset, access.IndexOffset);
+    return true;
+}
+
+bool AutoVectorizer::MayAlias(const LoopVectorizationPlan::ScalarAccess& first,
+                              const LoopVectorizationPlan::ScalarAccess& second) const
+{
+    if (first.IsArray && second.IsArray)
+    {
+        return true;
+    }
+
+    if ((first.IsByrefLocal || first.IsByrefBaseWithOffset || first.IsByrefWithIndex) &&
+        (second.IsByrefLocal || second.IsByrefBaseWithOffset || second.IsByrefWithIndex))
+    {
+        return true;
+    }
+
+    // Array and byref/span bases can still describe the same storage after morphing.
+    return true;
+}
+
+bool AutoVectorizer::ValidateMemoryDependences(LoopVectorizationPlan* plan)
+{
+    for (unsigned storeIndex = 0; storeIndex < plan->StoreCount; storeIndex++)
+    {
+        const LoopVectorizationPlan::ScalarAccess& store = plan->StoreAccesses[storeIndex];
+
+        plan->MinIndexOffset = std::min(plan->MinIndexOffset, store.IndexOffset);
+        plan->MaxIndexOffset = std::max(plan->MaxIndexOffset, store.IndexOffset);
+
+        for (unsigned loadIndex = 0; loadIndex < plan->LoadCount; loadIndex++)
+        {
+            const LoopVectorizationPlan::ScalarAccess& load = plan->LoadAccesses[loadIndex];
+            if (MayAlias(store, load) && (store.IndexOffset != load.IndexOffset))
+            {
+                JITDUMP("store offset=%d, load offset=%d\n", store.IndexOffset, load.IndexOffset);
+                JITDUMPEXEC(m_compiler->gtDispStmt(store.StatementRoot));
+                JITDUMPEXEC(m_compiler->gtDispTree(load.Address));
+                JITDUMP("possible loop-carried dependence, bail out\n");
+                return false;
+            }
+        }
+
+        for (unsigned otherIndex = storeIndex + 1; otherIndex < plan->StoreCount; otherIndex++)
+        {
+            const LoopVectorizationPlan::ScalarAccess& other = plan->StoreAccesses[otherIndex];
+            if (MayAlias(store, other) && (store.IndexOffset != other.IndexOffset))
+            {
+                JITDUMP("store offset=%d, other store offset=%d\n", store.IndexOffset, other.IndexOffset);
+                JITDUMPEXEC(m_compiler->gtDispStmt(store.StatementRoot));
+                JITDUMPEXEC(m_compiler->gtDispStmt(other.StatementRoot));
+                JITDUMP("possibly overlapping stores, bail out\n");
+                return false;
+            }
+        }
+    }
+
     return true;
 }
 
 bool AutoVectorizer::TryAnalyzeMemory(LoopVectorizationPlan* plan)
 {
-    bool     foundStore     = false;
-    bool     failed         = false;
-    unsigned valueTempVar   = BAD_VAR_NUM;
-    bool     foundValueTmp  = false;
-    bool     sawBoundsCheck = false;
-
-    auto analyzeValue = [&](Statement* stmt, GenTree* value) -> bool {
-        if (!TryNormalizeScalarValue(&value, plan->ElementType) ||
-            !value->OperIs(GT_ADD, GT_SUB, GT_MUL, GT_AND, GT_OR, GT_XOR))
-        {
-            JITDUMP("store data:\n");
-            JITDUMPEXEC(m_compiler->gtDispTree(value));
-            JITDUMP("store data is not a supported binary operation, bail out\n");
-            return false;
-        }
-
-        GenTreeOp* const binOp       = value->AsOp();
-        GenTree*         load        = nullptr;
-        GenTree*         scalar      = nullptr;
-        bool             scalarIsRhs = true;
-
-        GenTree* op1 = UnwrapCommaValue(binOp->gtOp1);
-        GenTree* op2 = UnwrapCommaValue(binOp->gtOp2);
-
-        if (TryGetIndirOperand(op1, &load))
-        {
-            scalar      = op2;
-            scalarIsRhs = true;
-        }
-        else if (TryGetIndirOperand(op2, &load))
-        {
-            scalar      = op1;
-            scalarIsRhs = false;
-        }
-        else
-        {
-            JITDUMP("binary operation:\n");
-            JITDUMPEXEC(m_compiler->gtDispTree(value));
-            JITDUMP("binary operation does not contain an array load, bail out\n");
-            return false;
-        }
-
-        if (!TryAnalyzeArrayAccess(plan, stmt, load, false, plan->InductionVar, &plan->LoadAccess))
-        {
-            JITDUMP("load:\n");
-            JITDUMPEXEC(m_compiler->gtDispTree(load));
-            JITDUMP("unsupported load access, bail out\n");
-            return false;
-        }
-
-        if (!IsSupportedBinaryOp(value->OperGet(), plan->LoadAccess.ElementType))
-        {
-            JITDUMP("binary operation:\n");
-            JITDUMPEXEC(m_compiler->gtDispTree(value));
-            JITDUMP("unsupported binary operation, bail out\n");
-            return false;
-        }
-
-        if (!TryGetInvariantOperand(plan->Loop, plan->InductionVar, scalar, plan->LoadAccess.ElementType))
-        {
-            JITDUMP("scalar operand:\n");
-            JITDUMPEXEC(m_compiler->gtDispTree(scalar));
-            JITDUMP("binary operand is not loop invariant, bail out\n");
-            return false;
-        }
-
-        plan->ScalarOperand      = scalar;
-        plan->ScalarOper         = value->OperGet();
-        plan->ScalarOperandIsRhs = scalarIsRhs;
-        plan->ElementType        = plan->LoadAccess.ElementType;
-        plan->ElementSize        = plan->LoadAccess.ElementSize;
-        return true;
-    };
+    bool failed = false;
 
     for (BasicBlock* block = plan->Preheader; block != nullptr; block = block->GetUniquePred(m_compiler))
     {
@@ -580,7 +677,7 @@ bool AutoVectorizer::TryAnalyzeMemory(LoopVectorizationPlan* plan)
             GenTree* const root               = stmt->GetRootNode();
             bool           stmtHasBoundsCheck = false;
             RecordLocalDefs(plan, root, &stmtHasBoundsCheck);
-            sawBoundsCheck |= stmtHasBoundsCheck;
+            plan->SawBoundsCheck |= stmtHasBoundsCheck;
 
             if (root == plan->IterTree)
             {
@@ -594,17 +691,15 @@ bool AutoVectorizer::TryAnalyzeMemory(LoopVectorizationPlan* plan)
 
             if (root->OperIs(GT_STORE_LCL_VAR))
             {
-                if (foundValueTmp || ((root->gtFlags & GTF_CALL) != 0) ||
-                    !analyzeValue(stmt, root->AsLclVarCommon()->Data()))
+                const unsigned lclNum = root->AsLclVarCommon()->GetLclNum();
+                if (((root->gtFlags & GTF_CALL) != 0) || !m_compiler->lvaGetDesc(lclNum)->lvIsTemp)
                 {
                     failed = true;
                     JITDUMPEXEC(m_compiler->gtDispStmt(stmt));
-                    JITDUMP("unsupported value temp in loop body, bail out\n");
+                    JITDUMP("unsupported local store in loop body, bail out\n");
                     return BasicBlockVisit::Abort;
                 }
 
-                valueTempVar  = root->AsLclVarCommon()->GetLclNum();
-                foundValueTmp = true;
                 continue;
             }
 
@@ -613,13 +708,6 @@ bool AutoVectorizer::TryAnalyzeMemory(LoopVectorizationPlan* plan)
                 failed = true;
                 JITDUMPEXEC(m_compiler->gtDispStmt(stmt));
                 JITDUMP("unsupported statement in loop body, bail out\n");
-                return BasicBlockVisit::Abort;
-            }
-
-            if (foundStore)
-            {
-                failed = true;
-                JITDUMP("multiple stores, bail out\n");
                 return BasicBlockVisit::Abort;
             }
 
@@ -632,7 +720,8 @@ bool AutoVectorizer::TryAnalyzeMemory(LoopVectorizationPlan* plan)
             }
 
             GenTreeStoreInd* const store = root->AsStoreInd();
-            if (!TryAnalyzeArrayAccess(plan, stmt, store, true, plan->InductionVar, &plan->StoreAccess))
+            LoopVectorizationPlan::ScalarAccess storeAccess;
+            if (!TryAnalyzeIndirAccess(plan, stmt, store, true, plan->InductionVar, &storeAccess))
             {
                 failed = true;
                 JITDUMP("store address:\n");
@@ -642,74 +731,11 @@ bool AutoVectorizer::TryAnalyzeMemory(LoopVectorizationPlan* plan)
             }
 
             GenTree* const storeData = UnwrapCommaValue(store->Data());
-            if (storeData->OperIs(GT_LCL_VAR) && (storeData->AsLclVarCommon()->GetLclNum() == valueTempVar))
-            {
-                if (!foundValueTmp)
-                {
-                    failed = true;
-                    JITDUMPEXEC(m_compiler->gtDispStmt(stmt));
-                    JITDUMP("store uses unknown value temp, bail out\n");
-                    return BasicBlockVisit::Abort;
-                }
-            }
-            else if (!analyzeValue(stmt, storeData))
+            if (!AddStore(plan, stmt, storeData, storeAccess))
             {
                 failed = true;
                 return BasicBlockVisit::Abort;
             }
-
-            if ((plan->StoreAccess.ElementType != plan->LoadAccess.ElementType) &&
-                (!varTypeIsIntegral(plan->StoreAccess.ElementType) ||
-                 !varTypeIsIntegral(plan->LoadAccess.ElementType) ||
-                 (plan->StoreAccess.ElementSize != plan->LoadAccess.ElementSize)))
-            {
-                failed = true;
-                JITDUMPEXEC(m_compiler->gtDispStmt(stmt));
-                JITDUMP("load/store element type mismatch, bail out\n");
-                return BasicBlockVisit::Abort;
-            }
-
-            if (sawBoundsCheck)
-            {
-                unsigned lengthLcl = BAD_VAR_NUM;
-                int      endOffset = 0;
-                if (!TryGetArrayLengthLimitLocal(plan, plan->End, &lengthLcl, &endOffset) ||
-                    (lengthLcl != plan->StoreAccess.BaseLocalIfKnown) ||
-                    (lengthLcl != plan->LoadAccess.BaseLocalIfKnown) ||
-                    ((plan->TestOper == GT_LE) ? (endOffset > -1) : (endOffset > 0)))
-                {
-                    failed = true;
-                    JITDUMPEXEC(m_compiler->gtDispStmt(stmt));
-                    JITDUMP("loop limit:\n");
-                    JITDUMPEXEC(m_compiler->gtDispTree(plan->End));
-                    JITDUMP("remaining bounds check without vector-limit proof, bail out\n");
-                    return BasicBlockVisit::Abort;
-                }
-            }
-
-            if (plan->StoreAccess.IndexOffset != plan->LoadAccess.IndexOffset)
-            {
-                failed = true;
-                JITDUMP("store index offset=%d, load index offset=%d\n", plan->StoreAccess.IndexOffset,
-                        plan->LoadAccess.IndexOffset);
-                JITDUMPEXEC(m_compiler->gtDispStmt(stmt));
-                JITDUMP("possible loop-carried dependence, bail out\n");
-                return BasicBlockVisit::Abort;
-            }
-
-            if (plan->StoreAccess.IndexOffset != 0)
-            {
-                failed = true;
-                JITDUMP("index offset=%d\n", plan->StoreAccess.IndexOffset);
-                JITDUMPEXEC(m_compiler->gtDispStmt(stmt));
-                JITDUMP("non-zero index offset, bail out\n");
-                return BasicBlockVisit::Abort;
-            }
-
-            plan->StoreStmt   = stmt;
-            plan->ElementType = plan->LoadAccess.ElementType;
-            plan->ElementSize = plan->LoadAccess.ElementSize;
-            foundStore        = true;
         }
 
         return BasicBlockVisit::Continue;
@@ -720,20 +746,20 @@ bool AutoVectorizer::TryAnalyzeMemory(LoopVectorizationPlan* plan)
         return false;
     }
 
-    if (!foundStore)
+    if (plan->StoreCount == 0)
     {
         JITDUMP("no vectorizable store, bail out\n");
         return false;
     }
 
-    JITDUMP("found %s[] store/load base V%02u, offset %d\n", varTypeName(plan->ElementType),
-            plan->StoreAccess.BaseLocalIfKnown, plan->StoreAccess.IndexOffset);
-    JITDUMP("canonical store:\n");
-    JITDUMPEXEC(m_compiler->gtDispStmt(plan->StoreStmt));
-    JITDUMP("canonical load address:\n");
-    JITDUMPEXEC(m_compiler->gtDispTree(plan->LoadAccess.Address));
-    JITDUMP("canonical store address:\n");
-    JITDUMPEXEC(m_compiler->gtDispTree(plan->StoreAccess.Address));
+    for (unsigned i = 0; i < plan->StoreCount; i++)
+    {
+        JITDUMP("canonical store %u, offset %d:\n", i, plan->StoreAccesses[i].IndexOffset);
+        JITDUMPEXEC(m_compiler->gtDispStmt(plan->StoreStmts[i]));
+        JITDUMP("store address:\n");
+        JITDUMPEXEC(m_compiler->gtDispTree(plan->StoreAccesses[i].Address));
+    }
+
     return true;
 }
 
@@ -742,14 +768,12 @@ bool AutoVectorizer::TryAnalyzePostIVMemory(LoopVectorizationPlan* plan)
     assert(plan->IsPostIV);
 
     BasicBlock* const block                = plan->Header;
-    unsigned          tempVar              = BAD_VAR_NUM;
-    bool              foundTempStore       = false;
-    bool              foundStore           = false;
     bool              foundTripCountUpdate = false;
 
     for (Statement* const stmt : block->Statements())
     {
         GenTree* const root = stmt->GetRootNode();
+        RecordLocalDefs(plan, root);
 
         if (root->OperIs(GT_JTRUE) && (root->gtGetOp1() == plan->TestTree))
         {
@@ -764,76 +788,46 @@ bool AutoVectorizer::TryAnalyzePostIVMemory(LoopVectorizationPlan* plan)
         if (root->OperIs(GT_STOREIND))
         {
             GenTreeStoreInd* const store = root->AsStoreInd();
-            if (!TryAnalyzePostIVAddress(stmt, store->Addr(), &plan->StoreAccess))
+            LoopVectorizationPlan::ScalarAccess storeAccess;
+            if (!TryAnalyzePostIVAddress(stmt, store->Addr(), &storeAccess))
             {
                 JITDUMPEXEC(m_compiler->gtDispStmt(stmt));
                 JITDUMP("post-IV store is not a local-addressed supported store, bail out\n");
                 return false;
             }
 
-            if (plan->StoreAccess.ElementType == TYP_UNDEF)
+            if (storeAccess.ElementType == TYP_UNDEF)
             {
-                plan->StoreAccess.ElementType = store->TypeGet();
-                plan->StoreAccess.ElementSize = genTypeSize(plan->StoreAccess.ElementType);
+                storeAccess.ElementType = store->TypeGet();
+                storeAccess.ElementSize = genTypeSize(storeAccess.ElementType);
             }
 
-            if (!IsSupportedElementType(plan->StoreAccess.ElementType))
+            if (!IsSupportedElementType(storeAccess.ElementType))
             {
                 JITDUMPEXEC(m_compiler->gtDispStmt(stmt));
                 JITDUMP("post-IV store has unsupported element type, bail out\n");
                 return false;
             }
 
-            if (genActualType(store->TypeGet()) != genActualType(plan->StoreAccess.ElementType))
+            if (genActualType(store->TypeGet()) != genActualType(storeAccess.ElementType))
             {
                 JITDUMPEXEC(m_compiler->gtDispStmt(stmt));
                 JITDUMP("post-IV store type does not match memory element type, bail out\n");
                 return false;
             }
 
-            if ((plan->ElementType != TYP_UNDEF) && (plan->ElementType != plan->StoreAccess.ElementType) &&
-                (!varTypeIsIntegral(plan->ElementType) || !varTypeIsIntegral(plan->StoreAccess.ElementType) ||
-                 (plan->ElementSize != plan->StoreAccess.ElementSize)))
-            {
-                JITDUMPEXEC(m_compiler->gtDispStmt(stmt));
-                JITDUMP("post-IV store element type mismatch, bail out\n");
-                return false;
-            }
-
-            plan->ElementType = (plan->ElementType == TYP_UNDEF) ? plan->StoreAccess.ElementType : plan->ElementType;
-            plan->ElementSize = genTypeSize(plan->ElementType);
-
-            plan->StoreStmt               = stmt;
-            plan->StoreAccess.ElementSize = plan->ElementSize;
-            plan->StoreAccess.ElementType = plan->ElementType;
-            plan->StoreAccess.IsStore     = true;
-
+            storeAccess.ElementSize = genTypeSize(storeAccess.ElementType);
+            storeAccess.IsStore     = true;
             GenTree* const storeData = UnwrapCommaValue(store->Data());
-            if (storeData->OperIs(GT_LCL_VAR))
+            if (!AddStore(plan, stmt, storeData, storeAccess))
             {
-                if (storeData->AsLclVarCommon()->GetLclNum() != tempVar)
-                {
-                    JITDUMPEXEC(m_compiler->gtDispStmt(stmt));
-                    JITDUMP("post-IV store data does not match computed temp, bail out\n");
-                    return false;
-                }
-            }
-            else if (TryAnalyzePostIVValue(stmt, storeData, plan))
-            {
-                foundTempStore = true;
-            }
-            else
-            {
-                JITDUMPEXEC(m_compiler->gtDispStmt(stmt));
-                JITDUMP("post-IV store data is unsupported, bail out\n");
                 return false;
             }
 
             JITDUMP("post-IV store:\n");
             JITDUMPEXEC(m_compiler->gtDispStmt(stmt));
             JITDUMP("post-IV store address:\n");
-            JITDUMPEXEC(m_compiler->gtDispTree(plan->StoreAccess.Address));
-            foundStore = true;
+            JITDUMPEXEC(m_compiler->gtDispTree(storeAccess.Address));
             continue;
         }
 
@@ -878,11 +872,9 @@ bool AutoVectorizer::TryAnalyzePostIVMemory(LoopVectorizationPlan* plan)
             }
         }
 
-        if (TryAnalyzePostIVValue(stmt, data, plan))
+        if (((root->gtFlags & GTF_CALL) == 0) && m_compiler->lvaGetDesc(lclNum)->lvIsTemp)
         {
-            tempVar        = lclNum;
-            foundTempStore = true;
-            JITDUMP("post-IV computed value temp V%02u:\n", tempVar);
+            JITDUMP("post-IV computed value temp V%02u:\n", lclNum);
             JITDUMPEXEC(m_compiler->gtDispStmt(stmt));
             continue;
         }
@@ -892,10 +884,9 @@ bool AutoVectorizer::TryAnalyzePostIVMemory(LoopVectorizationPlan* plan)
         return false;
     }
 
-    if (!foundTempStore || !foundStore || !foundTripCountUpdate)
+    if ((plan->StoreCount == 0) || !foundTripCountUpdate)
     {
-        JITDUMP("foundTempStore=%s, foundStore=%s, foundTripCountUpdate=%s\n", dspBool(foundTempStore),
-                dspBool(foundStore), dspBool(foundTripCountUpdate));
+        JITDUMP("storeCount=%u, foundTripCountUpdate=%s\n", plan->StoreCount, dspBool(foundTripCountUpdate));
         JITDUMP("incomplete post-IV memory pattern, bail out\n");
         return false;
     }
@@ -905,30 +896,6 @@ bool AutoVectorizer::TryAnalyzePostIVMemory(LoopVectorizationPlan* plan)
         JITDUMP("post-IV element type=%s\n", varTypeName(plan->ElementType));
         JITDUMP("post-IV unsupported element type, bail out\n");
         return false;
-    }
-
-    if (plan->StoreAccess.IsArray || plan->LoadAccess.IsArray)
-    {
-        if (!plan->StoreAccess.IsArray || !plan->LoadAccess.IsArray ||
-            (plan->StoreAccess.OffsetLocalIfKnown != plan->LoadAccess.OffsetLocalIfKnown))
-        {
-            JITDUMP("post-IV array store offset=V%02u, load offset=V%02u\n", plan->StoreAccess.OffsetLocalIfKnown,
-                    plan->LoadAccess.OffsetLocalIfKnown);
-            JITDUMP("post-IV array accesses do not share the same offset, bail out\n");
-            return false;
-        }
-    }
-
-    if (plan->StoreAccess.IsByrefBaseWithOffset || plan->LoadAccess.IsByrefBaseWithOffset)
-    {
-        if (!plan->StoreAccess.IsByrefBaseWithOffset || !plan->LoadAccess.IsByrefBaseWithOffset ||
-            (plan->StoreAccess.OffsetLocalIfKnown != plan->LoadAccess.OffsetLocalIfKnown))
-        {
-            JITDUMP("post-IV byref+offset store offset=V%02u, load offset=V%02u\n",
-                    plan->StoreAccess.OffsetLocalIfKnown, plan->LoadAccess.OffsetLocalIfKnown);
-            JITDUMP("post-IV byref+offset accesses do not share the same offset, bail out\n");
-            return false;
-        }
     }
 
 #if defined(FEATURE_SIMD) && (defined(TARGET_XARCH) || defined(TARGET_ARM64))
@@ -944,22 +911,7 @@ bool AutoVectorizer::TryAnalyzePostIVMemory(LoopVectorizationPlan* plan)
         return false;
     }
 
-    const unsigned storeUpdateVar =
-        plan->StoreAccess.IsByrefLocal ? plan->StoreAccess.BaseLocalIfKnown : plan->StoreAccess.OffsetLocalIfKnown;
-    const unsigned loadUpdateVar =
-        plan->LoadAccess.IsByrefLocal ? plan->LoadAccess.BaseLocalIfKnown : plan->LoadAccess.OffsetLocalIfKnown;
-
-    if (!HasAddressUpdate(plan, storeUpdateVar) || !HasAddressUpdate(plan, loadUpdateVar))
-    {
-        JITDUMP("store update var V%02u, load update var V%02u, expected delta=%u\n", storeUpdateVar, loadUpdateVar,
-                plan->ElementSize);
-        JITDUMP("missing post-IV address update, bail out\n");
-        return false;
-    }
-
-    bool foundAddressInit     = false;
-    bool foundLoadAddressInit = false;
-    bool foundTripCountInit   = false;
+    bool foundTripCountInit = false;
     for (Statement* const stmt : plan->Preheader->Statements())
     {
         GenTree* const root = stmt->GetRootNode();
@@ -969,125 +921,18 @@ bool AutoVectorizer::TryAnalyzePostIVMemory(LoopVectorizationPlan* plan)
         }
 
         const unsigned lclNum = root->AsLclVarCommon()->GetLclNum();
-        foundAddressInit |= (lclNum == storeUpdateVar);
-        foundLoadAddressInit |= (lclNum == loadUpdateVar);
         foundTripCountInit |= (lclNum == plan->TripCountVar);
     }
 
-    if (!foundAddressInit || !foundLoadAddressInit || !foundTripCountInit)
+    if (!foundTripCountInit)
     {
-        JITDUMP("foundAddressInit=%s, foundLoadAddressInit=%s, foundTripCountInit=%s\n", dspBool(foundAddressInit),
-                dspBool(foundLoadAddressInit), dspBool(foundTripCountInit));
+        JITDUMP("foundTripCountInit=%s\n", dspBool(foundTripCountInit));
         JITDUMP("missing post-IV preheader initialization, bail out\n");
         return false;
     }
 
-    JITDUMP("found post-IV %s byref loop store V%02u, load V%02u, trip count V%02u\n", varTypeName(plan->ElementType),
-            plan->StoreAccess.BaseLocalIfKnown, plan->LoadAccess.BaseLocalIfKnown, plan->TripCountVar);
-    JITDUMP("post-IV load address:\n");
-    JITDUMPEXEC(m_compiler->gtDispTree(plan->LoadAccess.Address));
-    JITDUMP("post-IV store address:\n");
-    JITDUMPEXEC(m_compiler->gtDispTree(plan->StoreAccess.Address));
-    return true;
-}
-
-bool AutoVectorizer::TryAnalyzePostIVValue(Statement* stmt, GenTree* data, LoopVectorizationPlan* plan)
-{
-    if (!TryNormalizeScalarValue(&data, plan->ElementType))
-    {
-        return false;
-    }
-
-    if (!data->OperIs(GT_ADD, GT_SUB, GT_MUL, GT_AND, GT_OR, GT_XOR))
-    {
-        return false;
-    }
-
-    GenTree*   load        = nullptr;
-    GenTree*   scalar      = nullptr;
-    bool       scalarIsRhs = true;
-    genTreeOps oper        = data->OperGet();
-
-    GenTree* op1 = UnwrapCommaValue(data->AsOp()->gtOp1);
-    GenTree* op2 = UnwrapCommaValue(data->AsOp()->gtOp2);
-
-    if (TryGetIndirOperand(op1, &load))
-    {
-        scalar      = op2;
-        scalarIsRhs = true;
-    }
-    else if (TryGetIndirOperand(op2, &load))
-    {
-        scalar      = op1;
-        scalarIsRhs = false;
-    }
-
-    if (load == nullptr)
-    {
-        return false;
-    }
-
-    if (!TryAnalyzePostIVAddress(stmt, load->AsIndir()->Addr(), &plan->LoadAccess))
-    {
-        JITDUMP("load:\n");
-        JITDUMPEXEC(m_compiler->gtDispTree(load));
-        JITDUMP("post-IV load is not a local-addressed supported load, bail out\n");
-        return false;
-    }
-
-    if (plan->LoadAccess.ElementType == TYP_UNDEF)
-    {
-        plan->LoadAccess.ElementType = load->TypeGet();
-        plan->LoadAccess.ElementSize = genTypeSize(plan->LoadAccess.ElementType);
-    }
-
-    if (!IsSupportedElementType(plan->LoadAccess.ElementType))
-    {
-        JITDUMP("load:\n");
-        JITDUMPEXEC(m_compiler->gtDispTree(load));
-        JITDUMP("post-IV load has unsupported element type, bail out\n");
-        return false;
-    }
-
-    if (!IsSupportedBinaryOp(oper, plan->LoadAccess.ElementType))
-    {
-        JITDUMP("binary operation:\n");
-        JITDUMPEXEC(m_compiler->gtDispTree(data));
-        JITDUMP("post-IV unsupported binary operation, bail out\n");
-        return false;
-    }
-
-    if (!TryGetInvariantOperand(plan->Loop, plan->TripCountVar, scalar, plan->LoadAccess.ElementType))
-    {
-        JITDUMP("scalar operand:\n");
-        JITDUMPEXEC(m_compiler->gtDispTree(scalar));
-        JITDUMP("post-IV scalar operand is not invariant, bail out\n");
-        return false;
-    }
-
-    if ((plan->ElementType != TYP_UNDEF) && (plan->ElementType != plan->LoadAccess.ElementType))
-    {
-        JITDUMP("load:\n");
-        JITDUMPEXEC(m_compiler->gtDispTree(load));
-        JITDUMP("post-IV load element type mismatch, bail out\n");
-        return false;
-    }
-
-    plan->ElementType = plan->LoadAccess.ElementType;
-    plan->ElementSize = genTypeSize(plan->ElementType);
-
-    plan->LoadAccess.ElementSize = plan->ElementSize;
-    plan->LoadAccess.ElementType = plan->ElementType;
-    plan->LoadAccess.IsLoad      = true;
-    plan->ScalarOperand          = scalar;
-    plan->ScalarOper             = oper;
-    plan->ScalarOperandIsRhs     = scalarIsRhs;
-    JITDUMP("post-IV value:\n");
-    JITDUMPEXEC(m_compiler->gtDispTree(data));
-    JITDUMP("post-IV load address:\n");
-    JITDUMPEXEC(m_compiler->gtDispTree(plan->LoadAccess.Address));
-    JITDUMP("post-IV scalar operand:\n");
-    JITDUMPEXEC(m_compiler->gtDispTree(plan->ScalarOperand));
+    JITDUMP("found post-IV %s loop with %u store(s), trip count V%02u\n", varTypeName(plan->ElementType),
+            plan->StoreCount, plan->TripCountVar);
     return true;
 }
 
@@ -1151,61 +996,364 @@ bool AutoVectorizer::TryNormalizeScalarValue(GenTree** value, var_types elementT
     return false;
 }
 
+AutoVectorizer::PackNode* AutoVectorizer::TryBuildComparePack(LoopVectorizationPlan* plan,
+                                                              Statement*             stmt,
+                                                              GenTree*               value,
+                                                              var_types              elementType)
+{
+    value = UnwrapCommaValue(value);
+    if (!value->OperIsCompare() || !IsSupportedCompareOp(value->OperGet(), elementType))
+    {
+        JITDUMPEXEC(m_compiler->gtDispTree(value));
+        JITDUMP("condition is not a supported SIMD comparison, bail out\n");
+        return nullptr;
+    }
+
+    PackNode* const op1 = TryBuildPack(plan, stmt, value->AsOp()->gtOp1, elementType);
+    if (op1 == nullptr)
+    {
+        return nullptr;
+    }
+
+    PackNode* const op2 = TryBuildPack(plan, stmt, value->AsOp()->gtOp2, elementType);
+    if (op2 == nullptr)
+    {
+        return nullptr;
+    }
+
+    PackNode* const cmp = NewPackNode(&plan->BodyPlan, PackKind::CompareOp, elementType, plan->VectorizationFactor);
+    if (cmp == nullptr)
+    {
+        JITDUMP("SLP node count=%u, max=%u\n", plan->BodyPlan.NodeCount, MaxPackNodes);
+        JITDUMP("SLP node budget exceeded, bail out\n");
+        return nullptr;
+    }
+
+    cmp->Oper        = value->OperGet();
+    cmp->Operands[0] = op1;
+    cmp->Operands[1] = op2;
+    cmp->Cost        = op1->Cost + op2->Cost + 1;
+    return cmp;
+}
+
+AutoVectorizer::PackNode* AutoVectorizer::TryBuildPack(LoopVectorizationPlan* plan,
+                                                       Statement*             stmt,
+                                                       GenTree*               value,
+                                                       var_types              elementType)
+{
+    value = UnwrapCommaValue(value);
+
+    if (!TryNormalizeScalarValue(&value, elementType))
+    {
+        JITDUMPEXEC(m_compiler->gtDispTree(value));
+        JITDUMP("value cannot be normalized to %s, bail out\n", varTypeName(elementType));
+        return nullptr;
+    }
+
+    GenTree* indir = nullptr;
+    if (TryGetIndirOperand(value, &indir))
+    {
+        LoopVectorizationPlan::ScalarAccess access;
+        if (!TryAnalyzeIndirAccess(plan, stmt, indir, false, plan->InductionVar, &access))
+        {
+            JITDUMPEXEC(m_compiler->gtDispTree(indir));
+            JITDUMP("unsupported load access, bail out\n");
+            return nullptr;
+        }
+
+        if (access.ElementType != elementType)
+        {
+            JITDUMPEXEC(m_compiler->gtDispTree(indir));
+            JITDUMP("load element type %s does not match expression type %s, bail out\n", varTypeName(access.ElementType),
+                    varTypeName(elementType));
+            return nullptr;
+        }
+
+        unsigned accessIndex = UINT_MAX;
+        if (!AddLoad(plan, access, &accessIndex))
+        {
+            return nullptr;
+        }
+
+        PackNode* const load = NewPackNode(&plan->BodyPlan, PackKind::LoadContiguous, elementType,
+                                           plan->VectorizationFactor);
+        if (load == nullptr)
+        {
+            JITDUMP("SLP node count=%u, max=%u\n", plan->BodyPlan.NodeCount, MaxPackNodes);
+            JITDUMP("SLP node budget exceeded, bail out\n");
+            return nullptr;
+        }
+
+        load->AccessIndex = accessIndex;
+        load->Lanes[0]    = access.Address;
+        load->Cost        = 1;
+        return load;
+    }
+
+    if (value->OperIs(GT_LCL_VAR))
+    {
+        GenTree* def = nullptr;
+        if (TryGetLocalDef(plan, value->AsLclVarCommon()->GetLclNum(), &def) && (def != value) &&
+            !def->OperIs(GT_PHI))
+        {
+            return TryBuildPack(plan, stmt, def, elementType);
+        }
+    }
+
+    if (value->IsCnsIntOrI() || value->IsCnsFltOrDbl() ||
+        TryGetInvariantOperand(plan->Loop, plan->IsPostIV ? plan->TripCountVar : plan->InductionVar, value, elementType))
+    {
+        const PackKind kind = value->IsCnsIntOrI() || value->IsCnsFltOrDbl() ? PackKind::SplatConstant
+                                                                            : PackKind::SplatScalar;
+        PackNode* const splat = NewPackNode(&plan->BodyPlan, kind, elementType, plan->VectorizationFactor);
+        if (splat == nullptr)
+        {
+            JITDUMP("SLP node count=%u, max=%u\n", plan->BodyPlan.NodeCount, MaxPackNodes);
+            JITDUMP("SLP node budget exceeded, bail out\n");
+            return nullptr;
+        }
+
+        splat->Lanes[0] = value;
+        splat->Cost     = 1;
+        return splat;
+    }
+
+    if (value->OperIs(GT_NEG, GT_NOT))
+    {
+        if (!IsSupportedUnaryOp(value->OperGet(), elementType))
+        {
+            JITDUMPEXEC(m_compiler->gtDispTree(value));
+            JITDUMP("unsupported unary operation for %s, bail out\n", varTypeName(elementType));
+            return nullptr;
+        }
+
+        PackNode* const operand = TryBuildPack(plan, stmt, value->AsOp()->gtOp1, elementType);
+        if (operand == nullptr)
+        {
+            return nullptr;
+        }
+
+        PackNode* const unary = NewPackNode(&plan->BodyPlan, PackKind::UnaryOp, elementType,
+                                            plan->VectorizationFactor);
+        if (unary == nullptr)
+        {
+            JITDUMP("SLP node count=%u, max=%u\n", plan->BodyPlan.NodeCount, MaxPackNodes);
+            JITDUMP("SLP node budget exceeded, bail out\n");
+            return nullptr;
+        }
+
+        unary->Oper        = value->OperGet();
+        unary->Operands[0] = operand;
+        unary->Cost        = operand->Cost + 1;
+        return unary;
+    }
+
+    if (value->OperIs(GT_ADD, GT_SUB, GT_MUL, GT_AND, GT_OR, GT_XOR, GT_LSH, GT_RSH, GT_RSZ))
+    {
+        if (!IsSupportedBinaryOp(value->OperGet(), elementType))
+        {
+            JITDUMPEXEC(m_compiler->gtDispTree(value));
+            JITDUMP("unsupported binary operation for %s, bail out\n", varTypeName(elementType));
+            return nullptr;
+        }
+
+        PackNode* const op1 = TryBuildPack(plan, stmt, value->AsOp()->gtOp1, elementType);
+        if (op1 == nullptr)
+        {
+            return nullptr;
+        }
+
+        PackNode* const op2 = TryBuildPack(plan, stmt, value->AsOp()->gtOp2, elementType);
+        if (op2 == nullptr)
+        {
+            return nullptr;
+        }
+
+        PackNode* const binary = NewPackNode(&plan->BodyPlan, PackKind::BinaryOp, elementType,
+                                             plan->VectorizationFactor);
+        if (binary == nullptr)
+        {
+            JITDUMP("SLP node count=%u, max=%u\n", plan->BodyPlan.NodeCount, MaxPackNodes);
+            JITDUMP("SLP node budget exceeded, bail out\n");
+            return nullptr;
+        }
+
+        binary->Oper        = value->OperGet();
+        binary->Operands[0] = op1;
+        binary->Operands[1] = op2;
+        binary->Cost        = op1->Cost + op2->Cost + 1;
+        return binary;
+    }
+
+    if (value->OperIs(GT_SELECT))
+    {
+        GenTreeConditional* const select = value->AsConditional();
+        PackNode* const           cond   = TryBuildComparePack(plan, stmt, select->gtCond, elementType);
+        if (cond == nullptr)
+        {
+            return nullptr;
+        }
+
+        PackNode* const trueValue = TryBuildPack(plan, stmt, select->gtOp1, elementType);
+        if (trueValue == nullptr)
+        {
+            return nullptr;
+        }
+
+        PackNode* const falseValue = TryBuildPack(plan, stmt, select->gtOp2, elementType);
+        if (falseValue == nullptr)
+        {
+            return nullptr;
+        }
+
+        PackNode* const selectPack = NewPackNode(&plan->BodyPlan, PackKind::Select, elementType,
+                                                 plan->VectorizationFactor);
+        if (selectPack == nullptr)
+        {
+            JITDUMP("SLP node count=%u, max=%u\n", plan->BodyPlan.NodeCount, MaxPackNodes);
+            JITDUMP("SLP node budget exceeded, bail out\n");
+            return nullptr;
+        }
+
+        selectPack->Operands[0] = cond;
+        selectPack->Operands[1] = trueValue;
+        selectPack->Operands[2] = falseValue;
+        selectPack->Cost        = cond->Cost + trueValue->Cost + falseValue->Cost + 1;
+        return selectPack;
+    }
+
+    JITDUMPEXEC(m_compiler->gtDispTree(value));
+    JITDUMP("unsupported value, bail out\n");
+    return nullptr;
+}
+
 bool AutoVectorizer::TryBuildSLPPlan(LoopVectorizationPlan* plan)
 {
     assert(plan->VectorizationFactor <= MaxLanes);
 
     SLPPlan* const slpPlan = &plan->BodyPlan;
+    *slpPlan               = SLPPlan();
 
-    PackNode* const load = NewPackNode(slpPlan, PackKind::LoadContiguous, plan->ElementType, plan->VectorizationFactor);
-    if (load == nullptr)
+    for (unsigned i = 0; i < plan->StoreCount; i++)
     {
-        JITDUMP("SLP node count=%u, max=%u\n", slpPlan->NodeCount, MaxPackNodes);
-        JITDUMP("SLP node budget exceeded, bail out\n");
+        PackNode* const value = TryBuildPack(plan, plan->StoreStmts[i], plan->StoreValues[i], plan->ElementType);
+        if (value == nullptr)
+        {
+            JITDUMPEXEC(m_compiler->gtDispStmt(plan->StoreStmts[i]));
+            JITDUMP("store value cannot be packed, bail out\n");
+            return false;
+        }
+
+        PackNode* const store = NewPackNode(slpPlan, PackKind::StoreContiguous, plan->ElementType,
+                                            plan->VectorizationFactor);
+        if (store == nullptr)
+        {
+            JITDUMP("SLP node count=%u, max=%u\n", slpPlan->NodeCount, MaxPackNodes);
+            JITDUMP("SLP node budget exceeded, bail out\n");
+            return false;
+        }
+
+        store->AccessIndex = i;
+        store->Lanes[0]    = plan->StoreAccesses[i].Address;
+        store->Operands[0] = value;
+        store->Cost        = value->Cost + 1;
+
+        slpPlan->Roots[slpPlan->RootCount++] = store;
+        slpPlan->Root                        = store;
+    }
+
+    if (plan->LoadCount == 0)
+    {
+        JITDUMP("SLP found no vector loads\n");
+    }
+
+    if (!ValidateMemoryDependences(plan))
+    {
         return false;
     }
-    load->Lanes[0] = plan->LoadAccess.Address;
-    load->Cost     = 1;
 
-    const PackKind  splatKind = plan->ScalarOperand->IsCnsIntOrI() ? PackKind::SplatConstant : PackKind::SplatScalar;
-    PackNode* const splat     = NewPackNode(slpPlan, splatKind, plan->ElementType, plan->VectorizationFactor);
-    if (splat == nullptr)
+    if (plan->SawBoundsCheck)
     {
-        JITDUMP("SLP node count=%u, max=%u\n", slpPlan->NodeCount, MaxPackNodes);
-        JITDUMP("SLP node budget exceeded, bail out\n");
-        return false;
-    }
-    splat->Lanes[0] = plan->ScalarOperand;
-    splat->Cost     = 1;
+        unsigned lengthLcl = BAD_VAR_NUM;
+        int      endOffset = 0;
+        if (!TryGetArrayLengthLimitLocal(plan, plan->End, &lengthLcl, &endOffset) ||
+            ((plan->TestOper == GT_LE) ? (endOffset > -1 - plan->MaxIndexOffset)
+                                       : (endOffset > -plan->MaxIndexOffset)))
+        {
+            JITDUMP("loop limit:\n");
+            JITDUMPEXEC(m_compiler->gtDispTree(plan->End));
+            JITDUMP("remaining bounds check without vector-limit proof for max offset %d, bail out\n",
+                    plan->MaxIndexOffset);
+            return false;
+        }
 
-    PackNode* const add = NewPackNode(slpPlan, PackKind::BinaryOp, plan->ElementType, plan->VectorizationFactor);
-    if (add == nullptr)
+        for (unsigned i = 0; i < plan->StoreCount; i++)
+        {
+            if (plan->StoreAccesses[i].IsArray && (plan->StoreAccesses[i].BaseLocalIfKnown != lengthLcl))
+            {
+                JITDUMPEXEC(m_compiler->gtDispStmt(plan->StoreStmts[i]));
+                JITDUMP("store array does not match proven loop limit array V%02u, bail out\n", lengthLcl);
+                return false;
+            }
+        }
+
+        for (unsigned i = 0; i < plan->LoadCount; i++)
+        {
+            if (plan->LoadAccesses[i].IsArray && (plan->LoadAccesses[i].BaseLocalIfKnown != lengthLcl))
+            {
+                JITDUMPEXEC(m_compiler->gtDispTree(plan->LoadAccesses[i].Address));
+                JITDUMP("load array does not match proven loop limit array V%02u, bail out\n", lengthLcl);
+                return false;
+            }
+        }
+    }
+
+    if (plan->IsPostIV)
     {
-        JITDUMP("SLP node count=%u, max=%u\n", slpPlan->NodeCount, MaxPackNodes);
-        JITDUMP("SLP node budget exceeded, bail out\n");
-        return false;
-    }
-    add->Oper        = plan->ScalarOper;
-    add->Operands[0] = plan->ScalarOperandIsRhs ? load : splat;
-    add->Operands[1] = plan->ScalarOperandIsRhs ? splat : load;
-    add->Cost        = 1;
+        auto hasExpectedAddressUpdate = [=](unsigned updateVar) {
+            for (unsigned i = 0; i < plan->AddressUpdateCount; i++)
+            {
+                if (plan->AddressUpdateVars[i] == updateVar)
+                {
+                    return plan->AddressUpdateDeltas[i] == static_cast<int>(plan->ElementSize);
+                }
+            }
 
-    PackNode* const store =
-        NewPackNode(slpPlan, PackKind::StoreContiguous, plan->ElementType, plan->VectorizationFactor);
-    if (store == nullptr)
+            return false;
+        };
+
+        for (unsigned i = 0; i < plan->StoreCount; i++)
+        {
+            const LoopVectorizationPlan::ScalarAccess& access = plan->StoreAccesses[i];
+            const unsigned updateVar = access.IsByrefLocal ? access.BaseLocalIfKnown : access.OffsetLocalIfKnown;
+            if (!hasExpectedAddressUpdate(updateVar))
+            {
+                JITDUMP("store update var V%02u, expected delta=%u\n", updateVar, plan->ElementSize);
+                JITDUMP("missing post-IV address update, bail out\n");
+                return false;
+            }
+        }
+
+        for (unsigned i = 0; i < plan->LoadCount; i++)
+        {
+            const LoopVectorizationPlan::ScalarAccess& access = plan->LoadAccesses[i];
+            const unsigned updateVar = access.IsByrefLocal ? access.BaseLocalIfKnown : access.OffsetLocalIfKnown;
+            if (!hasExpectedAddressUpdate(updateVar))
+            {
+                JITDUMP("load update var V%02u, expected delta=%u\n", updateVar, plan->ElementSize);
+                JITDUMP("missing post-IV address update, bail out\n");
+                return false;
+            }
+        }
+    }
+
+    for (unsigned i = 0; i < slpPlan->RootCount; i++)
     {
-        JITDUMP("SLP node count=%u, max=%u\n", slpPlan->NodeCount, MaxPackNodes);
-        JITDUMP("SLP node budget exceeded, bail out\n");
-        return false;
+        slpPlan->EstimatedVectorCost += slpPlan->Roots[i]->Cost;
     }
-    store->Lanes[0]    = plan->StoreAccess.Address;
-    store->Operands[0] = add;
-    store->Cost        = 1;
 
-    slpPlan->Root                   = store;
-    slpPlan->EstimatedScalarCost    = plan->VectorizationFactor * 3;
-    slpPlan->EstimatedVectorCost    = load->Cost + splat->Cost + add->Cost + store->Cost;
-    slpPlan->EstimatedCodeSizeDelta = 12;
+    slpPlan->EstimatedScalarCost    = plan->VectorizationFactor * slpPlan->EstimatedVectorCost;
+    slpPlan->EstimatedCodeSizeDelta = 8 + (4 * slpPlan->RootCount);
 
     JITDUMP("SLP accepted, estimated scalar=%u, vector=%u, codeSizeDelta=%u\n", slpPlan->EstimatedScalarCost,
             slpPlan->EstimatedVectorCost, slpPlan->EstimatedCodeSizeDelta);
@@ -1229,11 +1377,7 @@ bool AutoVectorizer::TryRewritePlan(LoopVectorizationPlan* plan)
         return false;
     }
 
-    const bool needsOverlapCheck = plan->IsPostIV &&
-                                   (plan->LoadAccess.IsByrefLocal || plan->LoadAccess.IsByrefBaseWithOffset) &&
-                                   (plan->StoreAccess.IsByrefLocal || plan->StoreAccess.IsByrefBaseWithOffset) &&
-                                   ((plan->LoadAccess.BaseLocalIfKnown != plan->StoreAccess.BaseLocalIfKnown) ||
-                                    (plan->LoadAccess.OffsetLocalIfKnown != plan->StoreAccess.OffsetLocalIfKnown));
+    const bool needsOverlapCheck = false;
 
     BasicBlock* const scalarGuard = m_compiler->fgNewBBbefore(BBJ_COND, plan->Header, false);
     BasicBlock* const loadBeforeCheck =
@@ -1280,39 +1424,32 @@ bool AutoVectorizer::TryRewritePlan(LoopVectorizationPlan* plan)
     JITDUMP("generated vector-loop test statement in " FMT_BB ":\n", vectorCheck->bbNum);
     JITDUMPEXEC(m_compiler->gtDispStmt(testStmt));
 
-    JITDUMP("scalar store selected for rewrite:\n");
-    JITDUMPEXEC(m_compiler->gtDispStmt(plan->StoreStmt));
+    for (unsigned i = 0; i < plan->BodyPlan.RootCount; i++)
+    {
+        PackNode* const root = plan->BodyPlan.Roots[i];
+        JITDUMP("scalar store selected for rewrite:\n");
+        JITDUMPEXEC(m_compiler->gtDispStmt(plan->StoreStmts[root->AccessIndex]));
 
-    GenTree* const vectorStore = BuildVectorStore(plan);
-    JITDUMP("generated vector store:\n");
-    JITDUMPEXEC(m_compiler->gtDispTree(vectorStore));
+        GenTree* const vectorStore = BuildVectorStore(plan, root);
+        JITDUMP("generated vector store:\n");
+        JITDUMPEXEC(m_compiler->gtDispTree(vectorStore));
 
-    Statement* const storeStmt = m_compiler->fgNewStmtAtEnd(vectorBody, vectorStore);
-    m_compiler->gtSetStmtInfo(storeStmt);
-    m_compiler->fgSetStmtSeq(storeStmt);
+        Statement* const storeStmt = m_compiler->fgNewStmtAtEnd(vectorBody, vectorStore);
+        m_compiler->gtSetStmtInfo(storeStmt);
+        m_compiler->fgSetStmtSeq(storeStmt);
+    }
 
     if (plan->IsPostIV)
     {
-        const unsigned storeUpdateVar =
-            plan->StoreAccess.IsByrefLocal ? plan->StoreAccess.BaseLocalIfKnown : plan->StoreAccess.OffsetLocalIfKnown;
-        const unsigned loadUpdateVar =
-            plan->LoadAccess.IsByrefLocal ? plan->LoadAccess.BaseLocalIfKnown : plan->LoadAccess.OffsetLocalIfKnown;
-
-        Statement* const addressUpdateStmt =
-            m_compiler->fgNewStmtAtEnd(vectorBody, BuildAddressUpdate(plan, storeUpdateVar));
-        m_compiler->gtSetStmtInfo(addressUpdateStmt);
-        m_compiler->fgSetStmtSeq(addressUpdateStmt);
-        JITDUMP("generated post-IV store address update in " FMT_BB ":\n", vectorBody->bbNum);
-        JITDUMPEXEC(m_compiler->gtDispStmt(addressUpdateStmt));
-
-        if (loadUpdateVar != storeUpdateVar)
+        for (unsigned i = 0; i < plan->AddressUpdateCount; i++)
         {
-            Statement* const loadAddressUpdateStmt =
-                m_compiler->fgNewStmtAtEnd(vectorBody, BuildAddressUpdate(plan, loadUpdateVar));
-            m_compiler->gtSetStmtInfo(loadAddressUpdateStmt);
-            m_compiler->fgSetStmtSeq(loadAddressUpdateStmt);
-            JITDUMP("generated post-IV load address update in " FMT_BB ":\n", vectorBody->bbNum);
-            JITDUMPEXEC(m_compiler->gtDispStmt(loadAddressUpdateStmt));
+            Statement* const addressUpdateStmt =
+                m_compiler->fgNewStmtAtEnd(vectorBody, BuildAddressUpdate(plan, plan->AddressUpdateVars[i]));
+            m_compiler->gtSetStmtInfo(addressUpdateStmt);
+            m_compiler->fgSetStmtSeq(addressUpdateStmt);
+            JITDUMP("generated post-IV address update V%02u in " FMT_BB ":\n", plan->AddressUpdateVars[i],
+                    vectorBody->bbNum);
+            JITDUMPEXEC(m_compiler->gtDispStmt(addressUpdateStmt));
         }
 
         Statement* const tripCountUpdateStmt =
@@ -1468,8 +1605,14 @@ const char* AutoVectorizer::PackKindName(PackKind kind) const
             return "splat-constant";
         case PackKind::SplatScalar:
             return "splat-scalar";
+        case PackKind::UnaryOp:
+            return "unary";
         case PackKind::BinaryOp:
             return "binary";
+        case PackKind::CompareOp:
+            return "compare";
+        case PackKind::Select:
+            return "select";
         default:
             return "invalid";
     }
@@ -1486,7 +1629,7 @@ void AutoVectorizer::DumpSLPPlan(const LoopVectorizationPlan& plan) const
         JITDUMP("  N%02u %-17s lanes=%u elem=%s cost=%u", i, PackKindName(node.Kind), node.LaneCount,
                 varTypeName(node.ElementType), node.Cost);
 
-        if (node.Kind == PackKind::BinaryOp)
+        if ((node.Kind == PackKind::UnaryOp) || (node.Kind == PackKind::BinaryOp) || (node.Kind == PackKind::CompareOp))
         {
             JITDUMP(" op=%s", GenTree::OpName(node.Oper));
         }
@@ -1501,9 +1644,29 @@ void AutoVectorizer::DumpSLPPlan(const LoopVectorizationPlan& plan) const
             JITDUMP(" op1=N%02u", static_cast<unsigned>(node.Operands[1] - slpPlan.Nodes));
         }
 
+        if (node.Operands[2] != nullptr)
+        {
+            JITDUMP(" op2=N%02u", static_cast<unsigned>(node.Operands[2] - slpPlan.Nodes));
+        }
+
         JITDUMP("\n");
     }
 #endif
+}
+
+GenTree* AutoVectorizer::BuildAddress(LoopVectorizationPlan* plan, const LoopVectorizationPlan::ScalarAccess& access)
+{
+    if (plan->IsPostIV)
+    {
+        return BuildPostIVAddress(access);
+    }
+
+    if (access.IsArray)
+    {
+        return BuildArrayAddress(plan, access);
+    }
+
+    return BuildByrefAddress(plan, access);
 }
 
 GenTree* AutoVectorizer::BuildArrayAddress(LoopVectorizationPlan*                     plan,
@@ -1552,6 +1715,39 @@ GenTree* AutoVectorizer::BuildArrayAddress(LoopVectorizationPlan*               
         GenTreeArrAddr(addr, access.ElementType, oldArrAddr->GetElemClassHandle(), static_cast<uint8_t>(firstOffset));
     arrAddr->gtFlags |= oldArrAddr->gtFlags & GTF_ARR_ADDR_NONNULL;
     return arrAddr;
+}
+
+GenTree* AutoVectorizer::BuildByrefAddress(LoopVectorizationPlan*                     plan,
+                                           const LoopVectorizationPlan::ScalarAccess& access)
+{
+    assert(access.IsByrefWithIndex);
+
+    LclVarDsc* const baseDsc = m_compiler->lvaGetDesc(access.BaseLocalIfKnown);
+    GenTree* const   base    = m_compiler->gtNewLclvNode(access.BaseLocalIfKnown, baseDsc->TypeGet());
+    LclVarDsc* const ivDsc   = m_compiler->lvaGetDesc(plan->InductionVar);
+    GenTree*         index   = m_compiler->gtNewLclvNode(plan->InductionVar, ivDsc->TypeGet());
+
+    if (access.IndexOffset != 0)
+    {
+        index =
+            m_compiler->gtNewOperNode(GT_ADD, index->TypeGet(), index, m_compiler->gtNewIconNode(access.IndexOffset));
+    }
+
+#ifdef TARGET_64BIT
+    if (!index->TypeIs(TYP_I_IMPL))
+    {
+        index = m_compiler->gtNewCastNode(TYP_I_IMPL, index, true, TYP_I_IMPL);
+    }
+#endif
+
+    GenTree* offset = index;
+    if (access.ElementSize > 1)
+    {
+        offset = m_compiler->gtNewOperNode(GT_MUL, TYP_I_IMPL, offset,
+                                           m_compiler->gtNewIconNode(access.ElementSize, TYP_I_IMPL));
+    }
+
+    return m_compiler->gtNewOperNode(GT_ADD, TYP_BYREF, base, offset);
 }
 
 GenTree* AutoVectorizer::BuildVectorLoopTest(LoopVectorizationPlan* plan)
@@ -1653,24 +1849,71 @@ GenTree* AutoVectorizer::BuildPostIVAddress(const LoopVectorizationPlan::ScalarA
     return arrAddr;
 }
 
-GenTree* AutoVectorizer::BuildVectorStore(LoopVectorizationPlan* plan)
+GenTree* AutoVectorizer::BuildPackNode(LoopVectorizationPlan* plan, PackNode* node)
 {
 #if defined(FEATURE_HW_INTRINSICS) && (defined(TARGET_XARCH) || defined(TARGET_ARM64))
     const unsigned  simdSize = plan->VectorSizeBytes;
     const var_types simdType = Compiler::getSIMDTypeForSize(simdSize);
 
-    GenTree* const loadAddress =
-        plan->IsPostIV ? BuildPostIVAddress(plan->LoadAccess) : BuildArrayAddress(plan, plan->LoadAccess);
-    GenTree* const storeAddress =
-        plan->IsPostIV ? BuildPostIVAddress(plan->StoreAccess) : BuildArrayAddress(plan, plan->StoreAccess);
-    GenTree* const vectorLoad = m_compiler->gtNewSimdLoadNode(simdType, loadAddress, plan->ElementType, simdSize);
-    GenTree* const scalar     = m_compiler->gtCloneExpr(plan->ScalarOperand);
-    GenTree* const splat      = m_compiler->gtNewSimdCreateBroadcastNode(simdType, scalar, plan->ElementType, simdSize);
-    GenTree* const op1        = plan->ScalarOperandIsRhs ? vectorLoad : splat;
-    GenTree* const op2        = plan->ScalarOperandIsRhs ? splat : vectorLoad;
-    GenTree* const vectorResult =
-        m_compiler->gtNewSimdBinOpNode(plan->ScalarOper, simdType, op1, op2, plan->ElementType, simdSize);
-    return m_compiler->gtNewSimdStoreNode(storeAddress, vectorResult, plan->ElementType, simdSize);
+    switch (node->Kind)
+    {
+        case PackKind::LoadContiguous:
+            return m_compiler->gtNewSimdLoadNode(simdType, BuildAddress(plan, plan->LoadAccesses[node->AccessIndex]),
+                                                 node->ElementType, simdSize);
+
+        case PackKind::SplatConstant:
+        case PackKind::SplatScalar:
+            return m_compiler->gtNewSimdCreateBroadcastNode(simdType, m_compiler->gtCloneExpr(node->Lanes[0]),
+                                                            node->ElementType, simdSize);
+
+        case PackKind::UnaryOp:
+            return m_compiler->gtNewSimdUnOpNode(node->Oper, simdType, BuildPackNode(plan, node->Operands[0]),
+                                                 node->ElementType, simdSize);
+
+        case PackKind::BinaryOp:
+        {
+            GenTree* const op1 = BuildPackNode(plan, node->Operands[0]);
+            GenTree*       op2 = BuildPackNode(plan, node->Operands[1]);
+            if ((node->Oper == GT_LSH) || (node->Oper == GT_RSH) || (node->Oper == GT_RSZ))
+            {
+                if ((node->Operands[1]->Kind != PackKind::SplatConstant) &&
+                    (node->Operands[1]->Kind != PackKind::SplatScalar))
+                {
+                    unreached();
+                }
+
+                op2 = m_compiler->gtCloneExpr(node->Operands[1]->Lanes[0]);
+            }
+
+            return m_compiler->gtNewSimdBinOpNode(node->Oper, simdType, op1, op2, node->ElementType, simdSize);
+        }
+
+        case PackKind::CompareOp:
+            return m_compiler->gtNewSimdCmpOpNode(node->Oper, simdType, BuildPackNode(plan, node->Operands[0]),
+                                                  BuildPackNode(plan, node->Operands[1]), node->ElementType, simdSize);
+
+        case PackKind::Select:
+            return m_compiler->gtNewSimdCndSelNode(simdType, BuildPackNode(plan, node->Operands[0]),
+                                                   BuildPackNode(plan, node->Operands[1]),
+                                                   BuildPackNode(plan, node->Operands[2]), node->ElementType, simdSize);
+
+        default:
+            unreached();
+    }
+#else
+    unreached();
+#endif
+}
+
+GenTree* AutoVectorizer::BuildVectorStore(LoopVectorizationPlan* plan, PackNode* node)
+{
+#if defined(FEATURE_HW_INTRINSICS) && (defined(TARGET_XARCH) || defined(TARGET_ARM64))
+    assert(node->Kind == PackKind::StoreContiguous);
+
+    const unsigned  simdSize     = plan->VectorSizeBytes;
+    GenTree* const  storeAddress = BuildAddress(plan, plan->StoreAccesses[node->AccessIndex]);
+    GenTree* const  vectorResult = BuildPackNode(plan, node->Operands[0]);
+    return m_compiler->gtNewSimdStoreNode(storeAddress, vectorResult, node->ElementType, simdSize);
 #else
     unreached();
 #endif
@@ -1782,6 +2025,63 @@ bool AutoVectorizer::TryAnalyzeArrayAccess(LoopVectorizationPlan*               
     return true;
 }
 
+bool AutoVectorizer::TryAnalyzeIndirAccess(LoopVectorizationPlan*               plan,
+                                           Statement*                           stmt,
+                                           GenTree*                             indir,
+                                           bool                                 isStore,
+                                           unsigned                             ivLcl,
+                                           LoopVectorizationPlan::ScalarAccess* access)
+{
+    assert(indir->OperIs(GT_IND, GT_STOREIND));
+
+    GenTreeIndir* const indirNode = indir->AsIndir();
+    if (indirNode->IsVolatile())
+    {
+        return false;
+    }
+
+    if (plan->IsPostIV)
+    {
+        if (!TryAnalyzePostIVAddress(stmt, indirNode->Addr(), access))
+        {
+            return false;
+        }
+
+        if (access->ElementType == TYP_UNDEF)
+        {
+            access->ElementType = indir->TypeGet();
+            access->ElementSize = genTypeSize(access->ElementType);
+        }
+
+        access->IsLoad     = !isStore;
+        access->IsStore    = isStore;
+        access->IsVolatile = false;
+        return IsSupportedElementType(access->ElementType);
+    }
+
+    if (TryAnalyzeArrayAccess(plan, stmt, indir, isStore, ivLcl, access))
+    {
+        return true;
+    }
+
+    GenTree* const addr        = UnwrapCommaValue(indirNode->Addr());
+    const var_types elementType = indir->TypeGet();
+    if (!TryAnalyzeByrefAddress(plan, addr, ivLcl, elementType, access))
+    {
+        return false;
+    }
+
+    access->StatementRoot = stmt;
+    access->Address       = addr;
+    access->ElementType   = elementType;
+    access->ElementSize   = genTypeSize(elementType);
+    access->IsLoad        = !isStore;
+    access->IsStore       = isStore;
+    access->IsVolatile    = false;
+
+    return IsSupportedElementType(access->ElementType);
+}
+
 bool AutoVectorizer::TryAnalyzePostIVAddress(Statement*                           stmt,
                                              GenTree*                             addr,
                                              LoopVectorizationPlan::ScalarAccess* access)
@@ -1844,6 +2144,152 @@ bool AutoVectorizer::TryAnalyzeByrefLocalAddress(GenTree* addr, unsigned* lclNum
     }
 
     *lclNum = addr->AsLclVarCommon()->GetLclNum();
+    return true;
+}
+
+bool AutoVectorizer::TryAnalyzeByrefAddress(LoopVectorizationPlan*               plan,
+                                            GenTree*                             addr,
+                                            unsigned                             ivLcl,
+                                            var_types                            elementType,
+                                            LoopVectorizationPlan::ScalarAccess* access)
+{
+    struct AddressParts
+    {
+        unsigned BaseLcl    = BAD_VAR_NUM;
+        ssize_t  Offset     = 0;
+        ssize_t  IndexScale = 0;
+    };
+
+    const unsigned elemSize = genTypeSize(elementType);
+    AddressParts   parts;
+
+    class AddressVisitor
+    {
+    public:
+        AddressVisitor(AutoVectorizer*        vectorizer,
+                       LoopVectorizationPlan* plan,
+                       unsigned               ivLcl,
+                       unsigned               elemSize,
+                       AddressParts*          parts)
+            : m_vectorizer(vectorizer)
+            , m_plan(plan)
+            , m_ivLcl(ivLcl)
+            , m_elemSize(elemSize)
+            , m_parts(parts)
+        {
+        }
+
+        bool Analyze(GenTree* tree)
+        {
+            tree = m_vectorizer->UnwrapCommaValue(tree);
+
+            if (tree->OperIs(GT_ADD))
+            {
+                return Analyze(tree->AsOp()->gtOp1) && Analyze(tree->AsOp()->gtOp2);
+            }
+
+            if (tree->IsCnsIntOrI())
+            {
+                m_parts->Offset += tree->AsIntConCommon()->IconValue();
+                return true;
+            }
+
+            if (tree->OperIs(GT_LCL_VAR) && tree->TypeIs(TYP_BYREF))
+            {
+                const unsigned lclNum = tree->AsLclVarCommon()->GetLclNum();
+                if ((m_parts->BaseLcl != BAD_VAR_NUM) && (m_parts->BaseLcl != lclNum))
+                {
+                    return false;
+                }
+
+                m_parts->BaseLcl = lclNum;
+                return true;
+            }
+
+            if (tree->OperIs(GT_MUL))
+            {
+                GenTree* index = tree->AsOp()->gtOp1;
+                GenTree* scale = tree->AsOp()->gtOp2;
+
+                if (!scale->IsCnsIntOrI())
+                {
+                    std::swap(index, scale);
+                }
+
+                if (!scale->IsCnsIntOrI() || (scale->AsIntConCommon()->IconValue() != m_elemSize))
+                {
+                    return false;
+                }
+
+                int indexOffset = 0;
+                if (!m_vectorizer->TryAnalyzeIndexExpr(m_plan, index, m_ivLcl, &indexOffset))
+                {
+                    return false;
+                }
+
+                m_parts->IndexScale += m_elemSize;
+                m_parts->Offset += static_cast<ssize_t>(indexOffset) * static_cast<ssize_t>(m_elemSize);
+                return true;
+            }
+
+            if (tree->OperIs(GT_LSH) && tree->AsOp()->gtOp2->IsCnsIntOrI())
+            {
+                const ssize_t shift = tree->AsOp()->gtOp2->AsIntConCommon()->IconValue();
+                if ((shift < 0) || (shift >= static_cast<ssize_t>(sizeof(ssize_t) * BITS_PER_BYTE)) ||
+                    ((static_cast<ssize_t>(1) << shift) != static_cast<ssize_t>(m_elemSize)))
+                {
+                    return false;
+                }
+
+                int indexOffset = 0;
+                if (!m_vectorizer->TryAnalyzeIndexExpr(m_plan, tree->AsOp()->gtOp1, m_ivLcl, &indexOffset))
+                {
+                    return false;
+                }
+
+                m_parts->IndexScale += m_elemSize;
+                m_parts->Offset += static_cast<ssize_t>(indexOffset) * static_cast<ssize_t>(m_elemSize);
+                return true;
+            }
+
+            if (m_elemSize == 1)
+            {
+                int indexOffset = 0;
+                if (m_vectorizer->TryAnalyzeIndexExpr(m_plan, tree, m_ivLcl, &indexOffset))
+                {
+                    m_parts->IndexScale += 1;
+                    m_parts->Offset += indexOffset;
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+    private:
+        AutoVectorizer*        m_vectorizer;
+        LoopVectorizationPlan* m_plan;
+        unsigned               m_ivLcl;
+        unsigned               m_elemSize;
+        AddressParts*          m_parts;
+    };
+
+    AddressVisitor visitor(this, plan, ivLcl, elemSize, &parts);
+    if (!visitor.Analyze(addr) || (parts.BaseLcl == BAD_VAR_NUM) || (parts.IndexScale != elemSize))
+    {
+        return false;
+    }
+
+    if ((parts.Offset % static_cast<ssize_t>(elemSize)) != 0)
+    {
+        return false;
+    }
+
+    access->BaseLocalIfKnown = parts.BaseLcl;
+    access->IndexOffset      = static_cast<int>(parts.Offset / static_cast<ssize_t>(elemSize));
+    access->ElementSize      = elemSize;
+    access->ElementType      = elementType;
+    access->IsByrefWithIndex = true;
     return true;
 }
 

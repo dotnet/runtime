@@ -13,7 +13,7 @@ public:
 
 private:
     static const unsigned MaxLanes     = 64;
-    static const unsigned MaxPackNodes = 8;
+    static const unsigned MaxPackNodes = 64;
 
     enum class PackKind
     {
@@ -22,7 +22,10 @@ private:
         StoreContiguous,
         SplatConstant,
         SplatScalar,
+        UnaryOp,
         BinaryOp,
+        CompareOp,
+        Select,
     };
 
     struct PackNode
@@ -31,15 +34,18 @@ private:
         var_types  ElementType     = TYP_UNDEF;
         genTreeOps Oper            = GT_COUNT;
         unsigned   LaneCount       = 0;
+        unsigned   AccessIndex     = UINT_MAX;
         GenTree*   Lanes[MaxLanes] = {};
-        PackNode*  Operands[2]     = {};
+        PackNode*  Operands[3]     = {};
         unsigned   Cost            = 0;
     };
 
     struct SLPPlan
     {
         PackNode  Nodes[MaxPackNodes];
+        PackNode* Roots[8]                = {};
         unsigned  NodeCount              = 0;
+        unsigned  RootCount              = 0;
         PackNode* Root                   = nullptr;
         unsigned  EstimatedScalarCost    = 0;
         unsigned  EstimatedVectorCost    = 0;
@@ -49,7 +55,9 @@ private:
     struct LoopVectorizationPlan
     {
         static const unsigned MaxAddressUpdates = 4;
+        static const unsigned MaxAccesses       = 16;
         static const unsigned MaxLocalDefs      = 8;
+        static const unsigned MaxStores         = 8;
 
         struct ScalarAccess
         {
@@ -66,6 +74,7 @@ private:
             bool       IsVolatile            = false;
             bool       IsByrefLocal          = false;
             bool       IsByrefBaseWithOffset = false;
+            bool       IsByrefWithIndex      = false;
         };
 
         FlowGraphNaturalLoop* Loop      = nullptr;
@@ -89,17 +98,24 @@ private:
         BasicBlock* TestBlock                              = nullptr;
         genTreeOps  TestOper                               = GT_COUNT;
         int         Step                                   = 0;
+        int         ConstInitValue                         = 0;
         var_types   ElementType                            = TYP_UNDEF;
         unsigned    ElementSize                            = 0;
         unsigned    VectorSizeBytes                        = 0;
         unsigned    VectorizationFactor                    = 0;
+        int         MinIndexOffset                         = 0;
+        int         MaxIndexOffset                         = 0;
+        bool        SawBoundsCheck                         = false;
 
-        Statement*   StoreStmt = nullptr;
+        Statement*   StoreStmts[MaxStores]        = {};
+        GenTree*     StoreValues[MaxStores]       = {};
+        ScalarAccess StoreAccesses[MaxStores]     = {};
+        unsigned     StoreCount                   = 0;
+        ScalarAccess LoadAccesses[MaxAccesses]    = {};
+        unsigned     LoadCount                    = 0;
+        Statement*   StoreStmt                    = nullptr;
         ScalarAccess StoreAccess;
         ScalarAccess LoadAccess;
-        GenTree*     ScalarOperand      = nullptr;
-        genTreeOps   ScalarOper         = GT_COUNT;
-        bool         ScalarOperandIsRhs = true;
         SLPPlan      BodyPlan;
     };
 
@@ -111,26 +127,40 @@ private:
     bool        ReportVectorIsa(unsigned vectorSizeBytes) const;
     bool        RecomputeLoopTable();
     bool        IsSupportedElementType(var_types elementType) const;
+    bool        IsSupportedUnaryOp(genTreeOps oper, var_types elementType) const;
     bool        IsSupportedBinaryOp(genTreeOps oper, var_types elementType) const;
+    bool        IsSupportedCompareOp(genTreeOps oper, var_types elementType) const;
     bool        TryCreateLoopPlan(FlowGraphNaturalLoop* loop, LoopVectorizationPlan* plan);
     bool        TryCreatePostIVLoopPlan(FlowGraphNaturalLoop* loop, LoopVectorizationPlan* plan);
     bool        TryAnalyzeMemory(LoopVectorizationPlan* plan);
     bool        TryAnalyzePostIVMemory(LoopVectorizationPlan* plan);
-    bool        TryAnalyzePostIVValue(Statement* stmt, GenTree* data, LoopVectorizationPlan* plan);
+    bool        AddStore(LoopVectorizationPlan*               plan,
+                         Statement*                           stmt,
+                         GenTree*                             value,
+                         const LoopVectorizationPlan::ScalarAccess& access);
+    bool        AddLoad(LoopVectorizationPlan* plan, const LoopVectorizationPlan::ScalarAccess& access, unsigned* index);
+    bool        ValidateMemoryDependences(LoopVectorizationPlan* plan);
+    bool        MayAlias(const LoopVectorizationPlan::ScalarAccess& first,
+                         const LoopVectorizationPlan::ScalarAccess& second) const;
     bool        TryGetIndirOperand(GenTree* tree, GenTree** indir);
     bool        TryNormalizeScalarValue(GenTree** value, var_types elementType) const;
+    PackNode*   TryBuildPack(LoopVectorizationPlan* plan, Statement* stmt, GenTree* value, var_types elementType);
+    PackNode*   TryBuildComparePack(LoopVectorizationPlan* plan, Statement* stmt, GenTree* value, var_types elementType);
     bool        TryBuildSLPPlan(LoopVectorizationPlan* plan);
     bool        TryRewritePlan(LoopVectorizationPlan* plan);
     PackNode*   NewPackNode(SLPPlan* slpPlan, PackKind kind, var_types elementType, unsigned laneCount);
     const char* PackKindName(PackKind kind) const;
     void        DumpSLPPlan(const LoopVectorizationPlan& plan) const;
+    GenTree*    BuildAddress(LoopVectorizationPlan* plan, const LoopVectorizationPlan::ScalarAccess& access);
     GenTree*    BuildArrayAddress(LoopVectorizationPlan* plan, const LoopVectorizationPlan::ScalarAccess& access);
+    GenTree*    BuildByrefAddress(LoopVectorizationPlan* plan, const LoopVectorizationPlan::ScalarAccess& access);
     GenTree*    BuildVectorLoopTest(LoopVectorizationPlan* plan);
     GenTree*    BuildPostIVSameStartCheck(LoopVectorizationPlan* plan);
     GenTree*    BuildPostIVStoreBeforeLoadCheck(LoopVectorizationPlan* plan);
     GenTree*    BuildPostIVLoadBeforeStoreCheck(LoopVectorizationPlan* plan);
     GenTree*    BuildPostIVAddress(const LoopVectorizationPlan::ScalarAccess& access);
-    GenTree*    BuildVectorStore(LoopVectorizationPlan* plan);
+    GenTree*    BuildPackNode(LoopVectorizationPlan* plan, PackNode* node);
+    GenTree*    BuildVectorStore(LoopVectorizationPlan* plan, PackNode* node);
     GenTree*    BuildIVUpdate(LoopVectorizationPlan* plan);
     GenTree*    BuildAddressUpdate(LoopVectorizationPlan* plan, unsigned addressVar);
     GenTree*    BuildTripCountUpdate(LoopVectorizationPlan* plan, int delta);
@@ -142,8 +172,19 @@ private:
                                       bool                                 isStore,
                                       unsigned                             ivLcl,
                                       LoopVectorizationPlan::ScalarAccess* access);
+    bool        TryAnalyzeIndirAccess(LoopVectorizationPlan*               plan,
+                                      Statement*                           stmt,
+                                      GenTree*                             indir,
+                                      bool                                 isStore,
+                                      unsigned                             ivLcl,
+                                      LoopVectorizationPlan::ScalarAccess* access);
     bool        TryAnalyzePostIVAddress(Statement* stmt, GenTree* addr, LoopVectorizationPlan::ScalarAccess* access);
     bool        TryAnalyzeByrefLocalAddress(GenTree* addr, unsigned* lclNum);
+    bool        TryAnalyzeByrefAddress(LoopVectorizationPlan*               plan,
+                                       GenTree*                             addr,
+                                       unsigned                             ivLcl,
+                                       var_types                            elementType,
+                                       LoopVectorizationPlan::ScalarAccess* access);
     bool        TryAnalyzePostIVArrayAddress(GenTreeArrAddr* arrAddr, LoopVectorizationPlan::ScalarAccess* access);
     bool        TryAnalyzeIndexExpr(LoopVectorizationPlan* plan, GenTree* tree, unsigned ivLcl, int* offset);
     bool        TryAnalyzeArrayAddress(LoopVectorizationPlan*               plan,
