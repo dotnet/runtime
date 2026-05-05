@@ -402,7 +402,12 @@ namespace System.Text
             ArgumentNullException.ThrowIfNull(source);
             source.AssertInvariants();
 
-            StringBuilder destination = new StringBuilder(source, takeOwnership: true);
+            StringBuilder destination = new StringBuilder();
+            destination.m_ChunkChars = source.m_ChunkChars;
+            destination.m_ChunkPrevious = source.m_ChunkPrevious;
+            destination.m_ChunkLength = source.m_ChunkLength;
+            destination.m_ChunkOffset = source.m_ChunkOffset;
+            destination.m_MaxCapacity = source.m_MaxCapacity;
 
             source.m_ChunkChars = [];
             source.m_ChunkPrevious = null;
@@ -411,21 +416,6 @@ namespace System.Text
             source.m_MaxCapacity = 0;
 
             return destination;
-        }
-
-        /// <summary>
-        /// Initializes a new <see cref="StringBuilder"/> by taking ownership of the chunks of
-        /// <paramref name="source"/>. The caller is responsible for resetting the state of
-        /// <paramref name="source"/> after this constructor returns.
-        /// </summary>
-        private StringBuilder(StringBuilder source, bool takeOwnership)
-        {
-            Debug.Assert(takeOwnership);
-            m_ChunkChars = source.m_ChunkChars;
-            m_ChunkPrevious = source.m_ChunkPrevious;
-            m_ChunkLength = source.m_ChunkLength;
-            m_ChunkOffset = source.m_ChunkOffset;
-            m_MaxCapacity = source.m_MaxCapacity;
         }
 
         /// <summary>
