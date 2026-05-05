@@ -95,6 +95,13 @@ namespace R2RDump
             {
                 byte[] image = File.ReadAllBytes(filename);
 
+                if (WebcilImageReader.IsWebcilImage(image))
+                {
+                    var webcilReader = new WebcilImageReader(image);
+                    return webcilReader.GetStandaloneAssemblyMetadata()
+                        ?? throw new BadImageFormatException($"ECMA metadata not found in Webcil file '{filename}'");
+                }
+
                 PEReader peReader = new PEReader(Unsafe.As<byte[], ImmutableArray<byte>>(ref image));
 
                 if (!peReader.HasMetadata)

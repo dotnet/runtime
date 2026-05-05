@@ -403,9 +403,8 @@ namespace ILCompiler.Reflection.ReadyToRun
                 case HandleKind.MethodDefinition:
                 {
                     MethodDefinition methodDef = ComponentReader.MetadataReader.GetMethodDefinition((MethodDefinitionHandle)MethodHandle);
-                    if (methodDef.RelativeVirtualAddress != 0)
+                    if (methodDef.RelativeVirtualAddress != 0 && ComponentReader.ImageReader is not null)
                     {
-                        System.Diagnostics.Debug.Assert(ComponentReader.ImageReader != null, "Component should be a PE and have an associated PEReader");
                         MethodBodyBlock mbb = ComponentReader.ImageReader.GetMethodBody(methodDef.RelativeVirtualAddress);
                         if (!mbb.LocalSignature.IsNil)
                         {
