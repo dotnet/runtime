@@ -57,7 +57,7 @@ jobs:
 # Consume the PAT number from the pre-activation step and select the corresponding secret
 engine:
   id: copilot
-  model: claude-opus-4.7
+  model: claude-sonnet-4.6
   env:
     # We cannot use line breaks in this expression as it leads to a syntax error in the compiled workflow
     # If none of the `COPILOT_PAT_#` secrets were selected, then the default COPILOT_GITHUB_TOKEN is used
@@ -256,7 +256,12 @@ Before filing, search for an existing Known Build Error issue with a matching `E
 
 These look like permission errors but are physical:
 
-- `curl` URLs containing `?` or `&` MUST be **single-quoted**. Double-quoted URLs trigger `Permission denied and could not request permission from user`.
+- **Pre-bind every URL to a shell variable on a line of its own, then `curl -s "$url"`.** Inline URLs with `?` or `&` are rejected as "Permission denied and could not request permission from user" even when single-quoted, because the Copilot CLI tool-approver treats query strings as interactive prompts. The only working pattern is:
+  ```bash
+  url='https://dev.azure.com/dnceng-public/public/_apis/build/builds?definitions=154&branchName=refs/heads/main&statusFilter=completed&resultFilter=succeeded,failed,partiallySucceeded&%24top=25&api-version=7.1'
+  curl -s "$url" | jq '.' | tee /tmp/gh-aw/agent/builds.json | jq -r '.value[0] | "\(.id) \(.result)"'
+  ```
+  Do **not** retry an inline URL hoping the rejection will clear — it won't. Switch to the variable pattern immediately.
 - `>` and `-o` redirection at the agent's command line is blocked. Use `| tee /path/to/file`.
 - `$(...)` and `${var@P}` are blocked at the command line. Compose values via `xargs -I{}` or by reading files inline.
 - OData `$top` must be encoded as `%24top` in URLs.
