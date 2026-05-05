@@ -127,6 +127,10 @@
     <HelixPreCommand Include="set DOTNET_DbgEnableMiniDump=1" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetOS)' != 'windows'">
+    <!-- Check available disk space before running tests -->
+    <HelixPreCommand Include="df -h" />
+    <!-- Disable core dumps (ulimit -c 0) since system cores are too large and we create many intentional crashes for tests, which would fill the machine. -->
+    <HelixPreCommand Include="ulimit -c 0" />
     <HelixPreCommand Include="export DOTNET_DbgEnableMiniDump=1" />
     <HelixPreCommand Include="chmod +x $HELIX_CORRELATION_PAYLOAD/dotnet" />
   </ItemGroup>
