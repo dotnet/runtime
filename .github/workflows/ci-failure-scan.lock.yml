@@ -55,7 +55,7 @@ name: "CI Outer-Loop Failure Scanner"
   # - maintainer # Roles processed as role check in pre-activation job
   # - write # Roles processed as role check in pre-activation job
   schedule:
-  - cron: "53 */6 * * *"
+  - cron: "34 */6 * * *"
     # Friendly format: every 6h (scattered)
   # steps: # Steps injected into pre-activation job
   # - name: Checkout the select-copilot-pat action folder
@@ -163,7 +163,7 @@ jobs:
         id: check-lock-file
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9
         env:
-          GH_AW_WORKFLOW_FILE: "mobile-scan.lock.yml"
+          GH_AW_WORKFLOW_FILE: "ci-failure-scan.lock.yml"
           GH_AW_CONTEXT_WORKFLOW_REF: "${{ github.workflow_ref }}"
         with:
           script: |
@@ -246,7 +246,7 @@ jobs:
           cat "${RUNNER_TEMP}/gh-aw/prompts/github_mcp_tools_with_safeoutputs_prompt.md"
           cat << 'GH_AW_PROMPT_bd8e55f06b00486c_EOF'
           </system>
-          {{#runtime-import .github/workflows/mobile-scan.md}}
+          {{#runtime-import .github/workflows/ci-failure-scan.md}}
           GH_AW_PROMPT_bd8e55f06b00486c_EOF
           } > "$GH_AW_PROMPT"
       - name: Interpolate variables and render templates
@@ -331,7 +331,7 @@ jobs:
       GH_AW_ASSETS_BRANCH: ""
       GH_AW_ASSETS_MAX_SIZE_KB: 0
       GH_AW_MCP_LOG_DIR: /tmp/gh-aw/mcp-logs/safeoutputs
-      GH_AW_WORKFLOW_ID_SANITIZED: mobilescan
+      GH_AW_WORKFLOW_ID_SANITIZED: cifailurescan
     outputs:
       checkout_pr_success: ${{ steps.checkout-pr.outputs.checkout_pr_success || 'true' }}
       effective_tokens: ${{ steps.parse-mcp-gateway.outputs.effective_tokens }}
@@ -954,7 +954,7 @@ jobs:
       issues: write
       pull-requests: write
     concurrency:
-      group: "gh-aw-conclusion-mobile-scan"
+      group: "gh-aw-conclusion-ci-failure-scan"
       cancel-in-progress: false
     outputs:
       incomplete_count: ${{ steps.report_incomplete.outputs.incomplete_count }}
@@ -1037,7 +1037,7 @@ jobs:
           GH_AW_WORKFLOW_NAME: "CI Outer-Loop Failure Scanner"
           GH_AW_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           GH_AW_AGENT_CONCLUSION: ${{ needs.agent.result }}
-          GH_AW_WORKFLOW_ID: "mobile-scan"
+          GH_AW_WORKFLOW_ID: "ci-failure-scan"
           GH_AW_ENGINE_ID: "copilot"
           GH_AW_SECRET_VERIFICATION_RESULT: ${{ needs.activation.outputs.secret_verification_result }}
           GH_AW_CHECKOUT_PR_SUCCESS: ${{ needs.agent.outputs.checkout_pr_success }}
@@ -1270,11 +1270,11 @@ jobs:
       pull-requests: write
     timeout-minutes: 15
     env:
-      GH_AW_CALLER_WORKFLOW_ID: "${{ github.repository }}/mobile-scan"
+      GH_AW_CALLER_WORKFLOW_ID: "${{ github.repository }}/ci-failure-scan"
       GH_AW_EFFECTIVE_TOKENS: ${{ needs.agent.outputs.effective_tokens }}
       GH_AW_ENGINE_ID: "copilot"
       GH_AW_ENGINE_MODEL: "claude-sonnet-4.6"
-      GH_AW_WORKFLOW_ID: "mobile-scan"
+      GH_AW_WORKFLOW_ID: "ci-failure-scan"
       GH_AW_WORKFLOW_NAME: "CI Outer-Loop Failure Scanner"
     outputs:
       code_push_failure_count: ${{ steps.process_safe_outputs.outputs.code_push_failure_count }}
