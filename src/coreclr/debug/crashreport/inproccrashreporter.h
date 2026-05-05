@@ -89,7 +89,7 @@ private:
         bool walkStack);
 
     void EmitConsoleHeader(int signal);
-    void EmitConsoleFooter();
+    void EmitConsoleModulesAndFooter();
 
     void EmitJsonHeader();
     void EmitJsonFooter(int signal);
