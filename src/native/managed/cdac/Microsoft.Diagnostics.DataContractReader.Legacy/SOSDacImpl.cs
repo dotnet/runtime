@@ -4034,13 +4034,69 @@ public sealed unsafe partial class SOSDacImpl
 
     int ISOSDacInterface.GetStackReferences(int osThreadID, DacComNullableByRef<ISOSStackRefEnum> ppEnum)
     {
-        // Stack reference enumeration is not yet complete in the cDAC — capital-F Frame
-        // GC root scanning (ScanFrameRoots) is still pending. Fall through to the legacy
-        // DAC so that consumers (dump tests, SOS) continue to work while the implementation
-        // is in progress.
-        return _legacyImpl is not null
-            ? _legacyImpl.GetStackReferences(osThreadID, ppEnum)
-            : HResults.E_NOTIMPL;
+        int hr = HResults.S_OK;
+        try
+        {
+            IThread threadContract = _target.Contracts.Thread;
+            IStackWalk stackWalkContract = _target.Contracts.StackWalk;
+            ThreadData? matchingThread = null;
+
+            ThreadStoreData threadStore = threadContract.GetThreadStoreData();
+            TargetPointer threadAddr = threadStore.FirstThread;
+            while (threadAddr != TargetPointer.Null)
+            {
+                ThreadData td = threadContract.GetThreadData(threadAddr);
+                if (td.OSId.Value == (ulong)osThreadID)
+                {
+                    matchingThread = td;
+                    break;
+                }
+                threadAddr = td.NextThread;
+            }
+
+            if (matchingThread is null)
+            {
+                throw new ArgumentException($"No thread with OS ID {osThreadID} was found.");
+            }
+
+            IReadOnlyList<StackReferenceData> refs = stackWalkContract.WalkStackReferences(matchingThread.Value);
+
+            SOSStackRefData[] sosRefs = new SOSStackRefData[refs.Count];
+            for (int i = 0; i < refs.Count; i++)
+            {
+                sosRefs[i] = new SOSStackRefData
+                {
+                    HasRegisterInformation = refs[i].HasRegisterInformation ? 1 : 0,
+                    Register = refs[i].Register,
+                    Offset = refs[i].Offset,
+                    Address = refs[i].Address.Value,
+                    Object = refs[i].Object.Value,
+                    Flags = refs[i].Flags,
+                    Source = refs[i].Source.Value,
+                    SourceType = refs[i].IsStackSourceFrame
+                        ? SOSStackSourceType.SOS_StackSourceFrame
+                        : SOSStackSourceType.SOS_StackSourceIP,
+                    StackPointer = refs[i].StackPointer.Value,
+                };
+            }
+
+            ppEnum.Interface = new SOSStackRefEnum(sosRefs);
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacyImpl is not null)
+        {
+            // Validate that the legacy DAC produces the same HResult.
+            // We pass isNullRef: false to request actual enumeration, but we don't
+            // compare individual refs — that's done by cdacstress.cpp at runtime.
+            int hrLocal = _legacyImpl.GetStackReferences(osThreadID, new DacComNullableByRef<ISOSStackRefEnum>(isNullRef: false));
+            Debug.ValidateHResult(hr, hrLocal);
+        }
+#endif
+        return hr;
     }
 
     int ISOSDacInterface.GetStressLogAddress(ClrDataAddress* stressLog)
@@ -6270,28 +6326,28 @@ public sealed unsafe partial class SOSDacImpl
     // Static ANSI string pointers for all known heap names, in the canonical order matching
     // LoaderAllocatorLoaderHeapNames in request.cpp. These are process-lifetime allocations,
     // equivalent to static const char* literals in C++.
-    private static readonly (string Name, nint AnsiPtr)[] s_heapNameEntries = InitializeHeapNameEntries();
-    private (string Name, nint AnsiPtr)[]? _filteredHeapNameEntries;
+    private static readonly (LoaderAllocatorHeapType HeapType, nint AnsiPtr)[] s_heapNameEntries = InitializeHeapNameEntries();
+    private (LoaderAllocatorHeapType HeapType, nint AnsiPtr)[]? _filteredHeapNameEntries;
 
-    private static (string Name, nint AnsiPtr)[] InitializeHeapNameEntries()
+    private static (LoaderAllocatorHeapType heapType, nint AnsiPtr)[] InitializeHeapNameEntries()
     {
         // Order must match LoaderAllocatorLoaderHeapNames in src/coreclr/debug/daccess/request.cpp
-        string[] names =
+        LoaderAllocatorHeapType[] heapTypes =
         [
-            "LowFrequencyHeap",
-            "HighFrequencyHeap",
-            "StaticsHeap",
-            "StubHeap",
-            "ExecutableHeap",
-            "FixupPrecodeHeap",
-            "NewStubPrecodeHeap",
-            "DynamicHelpersStubHeap",
-            "IndcellHeap",
-            "CacheEntryHeap",
+            LoaderAllocatorHeapType.LowFrequencyHeap,
+            LoaderAllocatorHeapType.HighFrequencyHeap,
+            LoaderAllocatorHeapType.StaticsHeap,
+            LoaderAllocatorHeapType.StubHeap,
+            LoaderAllocatorHeapType.ExecutableHeap,
+            LoaderAllocatorHeapType.FixupPrecodeHeap,
+            LoaderAllocatorHeapType.NewStubPrecodeHeap,
+            LoaderAllocatorHeapType.DynamicHelpersStubHeap,
+            LoaderAllocatorHeapType.IndcellHeap,
+            LoaderAllocatorHeapType.CacheEntryHeap
         ];
-        var entries = new (string, nint)[names.Length];
-        for (int i = 0; i < names.Length; i++)
-            entries[i] = (names[i], Marshal.StringToHGlobalAnsi(names[i]));
+        var entries = new (LoaderAllocatorHeapType, nint)[heapTypes.Length];
+        for (int i = 0; i < heapTypes.Length; i++)
+            entries[i] = (heapTypes[i], Marshal.StringToHGlobalAnsi(heapTypes[i].ToString()));
         return entries;
     }
 
@@ -6299,7 +6355,7 @@ public sealed unsafe partial class SOSDacImpl
     // data descriptor fields exist. This mirrors the DAC's compile-time
     // LoaderAllocatorLoaderHeapNames array and ensures a fixed count/ordering
     // regardless of per-loader-allocator runtime state (e.g. VCS manager being null).
-    private (string Name, nint AnsiPtr)[] GetFilteredHeapNameEntries()
+    private (LoaderAllocatorHeapType HeapType, nint AnsiPtr)[] GetFilteredHeapNameEntries()
     {
         if (_filteredHeapNameEntries is not null)
             return _filteredHeapNameEntries;
@@ -6307,12 +6363,12 @@ public sealed unsafe partial class SOSDacImpl
         Target.TypeInfo laType = _target.GetTypeInfo(DataType.LoaderAllocator);
         Target.TypeInfo vcsType = _target.GetTypeInfo(DataType.VirtualCallStubManager);
 
-        var entries = new List<(string Name, nint AnsiPtr)>();
+        var entries = new List<(LoaderAllocatorHeapType HeapType, nint AnsiPtr)>();
         foreach (var entry in s_heapNameEntries)
         {
-            bool include = entry.Name is "IndcellHeap" or "CacheEntryHeap"
-                ? vcsType.Fields.ContainsKey(entry.Name)
-                : laType.Fields.ContainsKey(entry.Name);
+            bool include = entry.HeapType is LoaderAllocatorHeapType.IndcellHeap or LoaderAllocatorHeapType.CacheEntryHeap
+                ? vcsType.Fields.ContainsKey(entry.HeapType.ToString())
+                : laType.Fields.ContainsKey(entry.HeapType.ToString());
             if (include)
                 entries.Add(entry);
         }
@@ -6371,15 +6427,13 @@ public sealed unsafe partial class SOSDacImpl
     }
     int ISOSDacInterface13.GetLoaderAllocatorHeaps(ClrDataAddress loaderAllocator, int count, ClrDataAddress* pLoaderHeaps, /*LoaderHeapKind*/ int* pKinds, int* pNeeded)
     {
-        if (loaderAllocator == 0)
-            return HResults.E_INVALIDARG;
-
         int hr = HResults.S_OK;
         try
         {
+            if (loaderAllocator == 0)
+                throw new ArgumentException("loaderAllocator cannot be zero.", nameof(loaderAllocator));
             Contracts.ILoader contract = _target.Contracts.Loader;
-            IReadOnlyDictionary<string, TargetPointer> heaps = contract.GetLoaderAllocatorHeaps(loaderAllocator.ToTargetPointer(_target));
-
+            IReadOnlyDictionary<LoaderAllocatorHeapType, TargetPointer> heaps = contract.GetLoaderAllocatorHeaps(loaderAllocator.ToTargetPointer(_target));
             var filteredEntries = GetFilteredHeapNameEntries();
             int loaderHeapCount = filteredEntries.Length;
 
@@ -6390,17 +6444,14 @@ public sealed unsafe partial class SOSDacImpl
             {
                 if (count < loaderHeapCount)
                 {
-                    hr = HResults.E_INVALIDARG;
+                    throw new ArgumentException($"The count parameter ({count}) is less than the number of loader heaps ({loaderHeapCount}).", nameof(count));
                 }
-                else
+                for (int i = 0; i < loaderHeapCount; i++)
                 {
-                    for (int i = 0; i < loaderHeapCount; i++)
-                    {
-                        pLoaderHeaps[i] = heaps.TryGetValue(filteredEntries[i].Name, out TargetPointer heapAddr)
-                            ? heapAddr.ToClrDataAddress(_target)
-                            : 0;
-                        pKinds[i] = 0; // LoaderHeapKindNormal
-                    }
+                    pLoaderHeaps[i] = heaps.TryGetValue(filteredEntries[i].HeapType, out TargetPointer heapAddr)
+                        ? heapAddr.ToClrDataAddress(_target)
+                        : 0;
+                    pKinds[i] = 0; // LoaderHeapKindNormal
                 }
             }
         }
@@ -6434,6 +6485,7 @@ public sealed unsafe partial class SOSDacImpl
 #endif
         return hr;
     }
+
     int ISOSDacInterface13.GetHandleTableMemoryRegions(DacComNullableByRef<ISOSMemoryEnum> ppEnum)
     {
         int hr = HResults.S_OK;

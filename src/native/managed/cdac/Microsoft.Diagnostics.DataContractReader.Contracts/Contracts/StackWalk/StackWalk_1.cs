@@ -8,7 +8,6 @@ using System.Collections.Generic;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
-using Microsoft.Diagnostics.DataContractReader.Contracts.GCInfoHelpers;
 using Microsoft.Diagnostics.DataContractReader.Data;
 using System.Linq;
 
@@ -18,11 +17,13 @@ internal partial class StackWalk_1 : IStackWalk
 {
     private readonly Target _target;
     private readonly IExecutionManager _eman;
+    private readonly GcScanner _gcScanner;
 
     internal StackWalk_1(Target target)
     {
         _target = target;
         _eman = target.Contracts.ExecutionManager;
+        _gcScanner = new GcScanner(target);
     }
 
     public enum StackWalkState
@@ -68,6 +69,19 @@ internal partial class StackWalk_1 : IStackWalk
         // set back to true when encountering a ResumableFrame (FRAME_ATTR_RESUMABLE).
         public bool IsFirst { get; set; } = true;
 
+        // Track isInterrupted like native CrawlFrame::isInterrupted.
+        // Set in UpdateState when transitioning to SW_FRAMELESS after processing a Frame
+        // with FRAME_ATTR_EXCEPTION (e.g., FaultingExceptionFrame). When true, the managed
+        // frame reached via that Frame's return address was interrupted by an exception,
+        // and EnumGcRefs should use ExecutionAborted to skip live slot reporting at
+        // non-interruptible offsets.
+        public bool IsInterrupted { get; set; }
+
+        // The frame type of the last SW_FRAME processed by Next().
+        // Used by UpdateState to detect exception frames (FRAME_ATTR_EXCEPTION) and
+        // set IsInterrupted when transitioning to a managed frame.
+        public FrameIterator.FrameType? LastProcessedFrameType { get; set; }
+
         public bool IsCurrentFrameResumable()
         {
             if (State is not (StackWalkState.SW_FRAME or StackWalkState.SW_SKIPPED_FRAME))
@@ -77,9 +91,10 @@ internal partial class StackWalk_1 : IStackWalk
             // Only frame types with FRAME_ATTR_RESUMABLE set isFirst=true.
             // FaultingExceptionFrame has FRAME_ATTR_FAULTED (sets hasFaulted)
             // but NOT FRAME_ATTR_RESUMABLE, so it must not be included here.
-            // TODO: HijackFrame only has FRAME_ATTR_RESUMABLE on non-x86 platforms.
-            // When x86 stack walking is supported, this should be conditioned on
-            // the target architecture.
+            // Note: HijackFrame only has FRAME_ATTR_RESUMABLE on non-x86 platforms
+            // (see frames.h). On x86 it uses GcScanRoots_Impl instead of the
+            // resumable frame pattern. When x86 cDAC stack walking is supported,
+            // HijackFrame should be conditioned on the target architecture.
             return ft is FrameIterator.FrameType.ResumableFrame
                       or FrameIterator.FrameType.RedirectedThreadFrame
                       or FrameIterator.FrameType.HijackFrame;
@@ -87,15 +102,25 @@ internal partial class StackWalk_1 : IStackWalk
 
         /// <summary>
         /// Update the IsFirst state for the NEXT frame, matching native stackwalk.cpp:
-        /// - After a frameless frame: isFirst = false (line 2202)
-        /// - After a ResumableFrame: isFirst = true (line 2235)
-        /// - After other Frames: isFirst = false (implicit in line 2235 assignment)
+        /// - After a frameless frame: isFirst = false
+        /// - After a ResumableFrame: isFirst = true
+        /// - After other Frames: isFirst = false
+        /// - After a skipped frame: isFirst unchanged (native never modifies isFirst
+        ///   in the SFITER_SKIPPED_FRAME_FUNCTION path — it keeps the value from Init)
         /// </summary>
         public void AdvanceIsFirst()
         {
             if (State == StackWalkState.SW_FRAMELESS)
             {
                 IsFirst = false;
+            }
+            else if (State == StackWalkState.SW_SKIPPED_FRAME)
+            {
+                // Native SFITER_SKIPPED_FRAME_FUNCTION (stackwalk.cpp:2086-2128) does NOT
+                // modify isFirst. It stays true from Init() so the subsequent managed frame
+                // gets IsActiveFunc()=true. This is important because skipped frames are
+                // explicit Frames embedded within the active managed frame (e.g. InlinedCallFrame
+                // from PInvoke), and the managed frame should still be treated as the leaf.
             }
             else
             {
@@ -112,52 +137,12 @@ internal partial class StackWalk_1 : IStackWalk
     }
 
     IEnumerable<IStackDataFrameHandle> IStackWalk.CreateStackWalk(ThreadData threadData)
-        => CreateStackWalkCore(threadData, skipInitialFrames: false, flags: ContextFlags.All);
-
-    /// <summary>
-    /// Core stack walk implementation.
-    /// </summary>
-    /// <param name="threadData">Thread to walk.</param>
-    /// <param name="skipInitialFrames">
-    /// When true, pre-advances the FrameIterator past explicit Frames below the initial
-    /// managed frame's caller SP. This matches the native DacStackReferenceWalker behavior
-    /// for GC reference enumeration, where these frames are within the current managed
-    /// frame's stack range and don't contribute additional GC roots.
-    ///
-    /// Must be false for ClrDataStackWalk, which advances the cDAC and legacy DAC in
-    /// lockstep and must yield the same frame sequence (including initial skipped frames).
-    /// </param>
-    private IEnumerable<IStackDataFrameHandle> CreateStackWalkCore(ThreadData threadData, bool skipInitialFrames, ContextFlags flags)
     {
         IPlatformAgnosticContext context = IPlatformAgnosticContext.GetContextForPlatform(_target);
-        uint contextFlags = flags switch
-        {
-            ContextFlags.Full => context.FullContextFlags,
-            ContextFlags.All => context.AllContextFlags,
-            _ => throw new ArgumentOutOfRangeException(nameof(flags)),
-        };
+        uint contextFlags = context.AllContextFlags;
         FillContextFromThread(context, threadData, contextFlags);
         StackWalkState state = IsManaged(context.InstructionPointer, out _) ? StackWalkState.SW_FRAMELESS : StackWalkState.SW_FRAME;
         FrameIterator frameIterator = new(_target, threadData);
-
-        if (skipInitialFrames)
-        {
-            TargetPointer skipBelowSP;
-            if (state == StackWalkState.SW_FRAMELESS)
-            {
-                IPlatformAgnosticContext callerCtx = context.Clone();
-                callerCtx.Unwind(_target);
-                skipBelowSP = callerCtx.StackPointer;
-            }
-            else
-            {
-                skipBelowSP = context.StackPointer;
-            }
-            while (frameIterator.IsValid() && frameIterator.CurrentFrameAddress.Value < skipBelowSP.Value)
-            {
-                frameIterator.Next();
-            }
-        }
 
         // if the next Frame is not valid and we are not in managed code, there is nothing to return
         if (state == StackWalkState.SW_FRAME && !frameIterator.IsValid())
@@ -170,7 +155,7 @@ internal partial class StackWalk_1 : IStackWalk
         // Mirror native Init() -> ProcessCurrentFrame() -> CheckForSkippedFrames():
         // When the initial frame is managed (SW_FRAMELESS), check if there are explicit
         // Frames below the caller SP that should be reported first. The native walker
-        // yields skipped frames BEFORE the containing managed frame on non-x86.
+        // yields skipped frames BEFORE the containing managed frame.
         if (state == StackWalkState.SW_FRAMELESS && CheckForSkippedFrames(stackWalkData))
         {
             stackWalkData.State = StackWalkState.SW_SKIPPED_FRAME;
@@ -188,18 +173,32 @@ internal partial class StackWalk_1 : IStackWalk
 
     IReadOnlyList<StackReferenceData> IStackWalk.WalkStackReferences(ThreadData threadData)
     {
-        IEnumerable<IStackDataFrameHandle> stackFrames = CreateStackWalkCore(threadData, skipInitialFrames: true, flags: ContextFlags.Full);
-        IEnumerable<StackDataFrameHandle> frames = stackFrames.Select(AssertCorrectHandle);
-        IEnumerable<GCFrameData> gcFrames = Filter(frames);
+        // Initialize the walk data directly
+        IPlatformAgnosticContext context = IPlatformAgnosticContext.GetContextForPlatform(_target);
+        FillContextFromThread(context, threadData, context.FullContextFlags);
+        StackWalkState state = IsManaged(context.InstructionPointer, out _) ? StackWalkState.SW_FRAMELESS : StackWalkState.SW_FRAME;
+        FrameIterator frameIterator = new(_target, threadData);
+
+        if (state == StackWalkState.SW_FRAME && !frameIterator.IsValid())
+            return [];
+
+        StackWalkData walkData = new(context, state, frameIterator, threadData);
+
+        // Mirror native Init() -> ProcessCurrentFrame() -> CheckForSkippedFrames():
+        // When the initial frame is managed (SW_FRAMELESS), check if there are explicit
+        // Frames below the caller SP that should be reported first. The native walker
+        // yields skipped frames BEFORE the containing managed frame.
+        if (walkData.State == StackWalkState.SW_FRAMELESS && CheckForSkippedFrames(walkData))
+            walkData.State = StackWalkState.SW_SKIPPED_FRAME;
 
         GcScanContext scanContext = new(_target, resolveInteriorPointers: false);
 
-        foreach (GCFrameData gcFrame in gcFrames)
+        // Filter drives Next() directly, matching native Filter()+NextRaw() integration.
+        // This prevents funclet-to-parent transitions from re-visiting already-walked frames.
+        foreach (GCFrameData gcFrame in Filter(walkData))
         {
             try
             {
-                _ = ((IStackWalk)this).GetMethodDescPtr(gcFrame.Frame);
-
                 bool reportGcReferences = gcFrame.ShouldCrawlFrameReportGCReferences;
 
                 TargetPointer pFrame = ((IStackWalk)this).GetFrameAddress(gcFrame.Frame);
@@ -215,26 +214,48 @@ internal partial class StackWalk_1 : IStackWalk
                         if (!IsManaged(gcFrame.Frame.Context.InstructionPointer, out CodeBlockHandle? cbh))
                             throw new InvalidOperationException("Expected managed code");
 
-                        CodeManagerFlags codeManagerFlags = gcFrame.Frame.IsActiveFrame
-                            ? CodeManagerFlags.ActiveStackFrame
-                            : 0;
+                        GcSlotEnumerationOptions gcOptions = new()
+                        {
+                            IsActiveFrame = gcFrame.Frame.IsActiveFrame,
 
-                        if (gcFrame.ShouldParentToFuncletSkipReportingGCReferences)
-                            codeManagerFlags |= CodeManagerFlags.ParentOfFuncletStackFrame;
+                            // If the frame was interrupted by an exception (reached via a
+                            // FaultingExceptionFrame), set ExecutionAborted so the GcInfoDecoder
+                            // skips live slot reporting at non-interruptible offsets. This matches
+                            // native CrawlFrame::GetCodeManagerFlags (stackwalk.h).
+                            IsExecutionAborted = gcFrame.IsInterrupted,
+                            IsParentOfFuncletStackFrame = gcFrame.ShouldParentToFuncletSkipReportingGCReferences,
+                            SuppressUntrackedSlots = _eman.IsFilterFunclet(cbh.Value),
+                        };
 
-                        // TODO: When ShouldParentFrameUseUnwindTargetPCforGCReporting is set,
-                        // use FindFirstInterruptiblePoint on the catch handler clause range
-                        // to override the relOffset for GC liveness lookup. This mirrors
-                        // native gcenv.ee.common.cpp behavior for catch-handler resumption.
+                        uint? relOffsetOverride = null;
+                        if (gcFrame.ShouldParentFrameUseUnwindTargetPCforGCReporting)
+                        {
+                            _eman.GetGCInfo(cbh.Value, out TargetPointer gcInfoAddr, out uint gcVersion);
+                            IGCInfoHandle gcHandle = _target.Contracts.GCInfo.DecodePlatformSpecificGCInfo(gcInfoAddr, gcVersion);
+                            uint startPC = gcFrame.ClauseForCatchHandlerStartPC;
+                            uint endPC = gcFrame.ClauseForCatchHandlerEndPC;
+                            foreach (var range in _target.Contracts.GCInfo.GetInterruptibleRanges(gcHandle))
+                            {
+                                if (range.EndOffset <= startPC)
+                                    continue;
+                                if (startPC >= range.StartOffset && startPC < range.EndOffset)
+                                {
+                                    relOffsetOverride = startPC;
+                                    break;
+                                }
+                                if (range.StartOffset < endPC)
+                                {
+                                    relOffsetOverride = range.StartOffset;
+                                    break;
+                                }
+                            }
+                        }
 
-                        GcScanner gcScanner = new(_target);
-                        gcScanner.EnumGcRefs(gcFrame.Frame.Context, cbh.Value, codeManagerFlags, scanContext);
+                        _gcScanner.EnumGcRefsForManagedFrame(gcFrame.Frame.Context, cbh.Value, gcOptions, scanContext, relOffsetOverride);
                     }
                     else
                     {
-                        // TODO: Frame-based GC root scanning (ScanFrameRoots) not yet implemented.
-                        // Frames that call PromoteCallerStack (StubDispatchFrame, ExternalMethodFrame,
-                        // DynamicHelperFrame, etc.) will be handled in a follow-up PR.
+                        _gcScanner.GcScanRoots(gcFrame.Frame.FrameAddress, scanContext);
                     }
                 }
             }
@@ -272,11 +293,25 @@ internal partial class StackWalk_1 : IStackWalk
         public bool ShouldParentToFuncletSkipReportingGCReferences { get; set; }
         public bool ShouldCrawlFrameReportGCReferences { get; set; } // required
         public bool ShouldParentFrameUseUnwindTargetPCforGCReporting { get; set; }
+        public uint ClauseForCatchHandlerStartPC { get; set; }
+        public uint ClauseForCatchHandlerEndPC { get; set; }
+        // Set when the frame was reached via an exception Frame (FRAME_ATTR_EXCEPTION).
+        // Causes ExecutionAborted to be passed to EnumGcRefs.
+        public bool IsInterrupted { get; set; }
     }
 
-    private IEnumerable<GCFrameData> Filter(IEnumerable<StackDataFrameHandle> handles)
+    /// <summary>
+    /// Port of native StackFrameIterator::Filter (GC_FUNCLET_REFERENCE_REPORTING mode).
+    /// Unlike the previous implementation that passively consumed pre-generated frames,
+    /// this version drives Next() directly — matching native Filter() which calls NextRaw()
+    /// internally to skip frames. This prevents funclet-to-parent transitions from
+    /// re-visiting already-walked frames.
+    /// </summary>
+#pragma warning disable IDE0059 // Unnecessary assignment — false positives from goto case + do/while pattern
+    private IEnumerable<GCFrameData> Filter(StackWalkData walkData)
     {
-        // StackFrameIterator::Filter assuming GC_FUNCLET_REFERENCE_REPORTING is defined
+        // Process the initial frame, then loop calling Next() for subsequent frames.
+        // This matches native: Init() produces the first frame, then Filter()+NextRaw() loop.
 
         // global tracking variables
         bool processNonFilterFunclet = false;
@@ -284,11 +319,19 @@ internal partial class StackWalk_1 : IStackWalk
         bool didFuncletReportGCReferences = true;
         TargetPointer parentStackFrame = TargetPointer.Null;
         TargetPointer funcletParentStackFrame = TargetPointer.Null;
-        TargetPointer intermediaryFuncletParentStackFrame;
+        TargetPointer intermediaryFuncletParentStackFrame = TargetPointer.Null;
 
-        foreach (StackDataFrameHandle handle in handles)
+        // Process the initial frame, then advance with Next()
+        bool isValid = walkData.State is not (StackWalkState.SW_ERROR or StackWalkState.SW_COMPLETE);
+        while (isValid)
         {
-            GCFrameData gcFrame = new(handle);
+            StackDataFrameHandle handle = walkData.ToDataFrame();
+            walkData.AdvanceIsFirst();
+
+            GCFrameData gcFrame = new(handle)
+            {
+                IsInterrupted = walkData.IsInterrupted,
+            };
 
             // per-frame tracking variables
             bool stop = false;
@@ -506,6 +549,9 @@ internal partial class StackWalk_1 : IStackWalk
                                                 didFuncletReportGCReferences = true;
 
                                                 gcFrame.ShouldParentFrameUseUnwindTargetPCforGCReporting = true;
+
+                                                gcFrame.ClauseForCatchHandlerStartPC = exInfo.ClauseForCatchHandlerStartPC;
+                                                gcFrame.ClauseForCatchHandlerEndPC = exInfo.ClauseForCatchHandlerEndPC;
                                             }
                                             else if (!IsFunclet(handle))
                                             {
@@ -580,8 +626,14 @@ internal partial class StackWalk_1 : IStackWalk
 
             if (stop)
                 yield return gcFrame;
+
+            // Advance the iterator - matching native Filter() calling NextRaw()
+            // When a frame was skipped (stop=false), this advances past it.
+            // When a frame was yielded (stop=true), this advances to the next frame.
+            isValid = Next(walkData);
         }
     }
+#pragma warning restore IDE0059
 
     private bool IsUnwoundToTargetParentFrame(StackDataFrameHandle handle, TargetPointer targetParentFrame)
     {
@@ -598,6 +650,18 @@ internal partial class StackWalk_1 : IStackWalk
         switch (handle.State)
         {
             case StackWalkState.SW_FRAMELESS:
+                // Native assertion (stackwalk.cpp): current SP must be below the next Frame.
+                // FaultingExceptionFrame is a special case where it gets pushed after the frame is running.
+                Debug.Assert(
+                    !handle.FrameIter.IsValid() ||
+                    handle.Context.StackPointer.Value < handle.FrameIter.CurrentFrameAddress.Value ||
+                    handle.FrameIter.GetCurrentFrameType() == FrameIterator.FrameType.FaultingExceptionFrame,
+                    $"SP (0x{handle.Context.StackPointer:X}) should be below next Frame (0x{handle.FrameIter.CurrentFrameAddress:X})");
+
+                // Reset interrupted state after processing a managed frame.
+                // Native stackwalk.cpp:2203-2205: isInterrupted = false; hasFaulted = false;
+                handle.IsInterrupted = false;
+
                 try
                 {
                     handle.Context.Unwind(_target);
@@ -609,13 +673,33 @@ internal partial class StackWalk_1 : IStackWalk
                 }
                 break;
             case StackWalkState.SW_SKIPPED_FRAME:
+                // Advance past the skipped frame, then let UpdateState detect
+                // whether there are more skipped frames or we've reached the managed method.
                 handle.FrameIter.Next();
                 break;
             case StackWalkState.SW_FRAME:
-                handle.FrameIter.UpdateContextFromFrame(handle.Context);
-                if (!handle.FrameIter.IsInlineCallFrameWithActiveCall())
+                // Native SFITER_FRAME_FUNCTION gates ProcessIp + UpdateRegDisplay on
+                // GetReturnAddress() != 0, and gates GotoNextFrame on !pInlinedFrame.
+                // pInlinedFrame is set only for active InlinedCallFrames.
                 {
-                    handle.FrameIter.Next();
+                    var frameType = handle.FrameIter.GetCurrentFrameType();
+
+                    TargetPointer returnAddress = handle.FrameIter.GetReturnAddress();
+                    bool isActiveICF = frameType == FrameIterator.FrameType.InlinedCallFrame
+                                       && returnAddress != TargetPointer.Null;
+
+                    // Record the frame type so UpdateState can detect exception frames
+                    // and set IsInterrupted when transitioning to the managed frame.
+                    handle.LastProcessedFrameType = frameType;
+
+                    if (returnAddress != TargetPointer.Null)
+                    {
+                        handle.FrameIter.UpdateContextFromFrame(handle.Context);
+                    }
+                    if (!isActiveICF)
+                    {
+                        handle.FrameIter.Next();
+                    }
                 }
                 break;
             case StackWalkState.SW_ERROR:
@@ -641,6 +725,18 @@ internal partial class StackWalk_1 : IStackWalk
         if (isManaged)
         {
             handle.State = StackWalkState.SW_FRAMELESS;
+
+            // Detect exception frames (FRAME_ATTR_EXCEPTION) when transitioning to managed.
+            // Both FaultingExceptionFrame (hardware) and SoftwareExceptionFrame (managed throw)
+            // have FRAME_ATTR_EXCEPTION set. The resulting managed frame gets ExecutionAborted,
+            // causing GcInfoDecoder to skip live slot reporting at non-interruptible offsets.
+            if (handle.LastProcessedFrameType is FrameIterator.FrameType.FaultingExceptionFrame
+                                              or FrameIterator.FrameType.SoftwareExceptionFrame)
+            {
+                handle.IsInterrupted = true;
+            }
+            handle.LastProcessedFrameType = null;
+
             if (CheckForSkippedFrames(handle))
             {
                 handle.State = StackWalkState.SW_SKIPPED_FRAME;
@@ -719,15 +815,17 @@ internal partial class StackWalk_1 : IStackWalk
             // 4) the return address method has a MDContext arg
             bool reportInteropMD = false;
 
-            if (FrameIterator.IsInlinedCallFrame(_target, framePtr) &&
+            Data.Frame frameData = _target.ProcessedData.GetOrAdd<Data.Frame>(framePtr);
+            FrameIterator.FrameType frameType = FrameIterator.GetFrameType(_target, frameData.Identifier);
+
+            if (frameType == FrameIterator.FrameType.InlinedCallFrame &&
                 handle.State == StackWalkState.SW_SKIPPED_FRAME)
             {
                 IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
 
-                // FrameIterator.GetReturnAddress is currently only implemented for InlinedCallFrame
-                // This is fine as this check is only needed for that frame type
-                TargetPointer returnAddress = FrameIterator.GetReturnAddress(_target, framePtr);
-                if (_eman.GetCodeBlockHandle(returnAddress.Value) is CodeBlockHandle cbh)
+                Data.InlinedCallFrame icf = _target.ProcessedData.GetOrAdd<Data.InlinedCallFrame>(framePtr);
+                TargetPointer returnAddress = icf.CallerReturnAddress;
+                if (returnAddress != TargetPointer.Null && _eman.GetCodeBlockHandle(returnAddress.Value) is CodeBlockHandle cbh)
                 {
                     MethodDescHandle returnMethodDesc = rts.GetMethodDescHandle(_eman.GetMethodDesc(cbh));
                     reportInteropMD = rts.HasMDContextArg(returnMethodDesc);
