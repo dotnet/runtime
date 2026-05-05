@@ -409,7 +409,7 @@ Optionally install the [WebAssembly DWARF Debugging](https://marketplace.visuals
 | `V8 execution is not supported on Windows` | Set `RunWithNodeJS=1` — Windows requires Node.js |
 | Tests not found by `run.sh` | Build tests first: `./src/tests/build.sh -wasm -os browser Debug /p:LibrariesConfiguration=Debug` |
 | `-coreroot` relative path fails | The `-coreroot` path **must be absolute** — use `$(pwd)/artifacts/...` or `%CD%\artifacts\...` |
-| `-test` path doubled (`src/tests/src/tests/...`) | The `-test` path must be relative to `src/tests/`, not the repo root — use `JIT/Regression/Foo.csproj`, not `src/tests/JIT/Regression/Foo.csproj` |
+| `-test` path doubled (`src/tests/src/tests/...`) | The path must be relative to `src/tests/`, not the repo root — use `JIT/Regression/Foo.csproj` on Linux/macOS with `-test:`, or on Windows with `test` |
 | `corerun.js` path errors | Use absolute unix-style paths, even on Windows |
 | Missing managed DLLs | Copy from `artifacts/bin/microsoft.netcore.app.runtime.browser-wasm/` to IL or corehost directory |
 | Library tests use Mono | Add `/p:RuntimeFlavor=CoreCLR` to the build command |
