@@ -336,7 +336,7 @@ XHARNESS_COMMAND=test-browser ./dotnet.sh build /t:Test src/libraries/System.App
 | Build script | `./build.sh` | `build.cmd` |
 | Test build | `./src/tests/build.sh` | `src\tests\build.cmd` |
 | Test build WASM flags | `-wasm -os browser` | `wasm browser` (bare keywords) |
-| Test build single test | `-test:Project.csproj` (colon) | `-test Project.csproj` (space) |
+| Test build single test | `-test:Project.csproj` (colon) | `test Project.csproj` (space) |
 | `-test` path base | Relative to `src/tests/` | Relative to `src\tests\` |
 | Test build priority | `-priority1` (single flag) | `priority 1` (space-separated) |
 | Run all tests | `./src/tests/run.sh wasm` | `src\tests\run.cmd wasm node` |
