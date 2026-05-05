@@ -45,7 +45,8 @@ FCIMPL2(void*, TailCallHelp::GetTailCallInfo, void** retAddrSlot, void** retAddr
     void* retAddrFromSlot = thread->GetReturnAddress(retAddrSlot);
 
 #if defined(TARGET_ARM64)
-    //TODO-PAC: Authenticate instead of stripping the return address.
+    // We strip the return address here as it's only used for comparison and
+    // not being used to branch execution to.
     retAddrFromSlot = PacStripPtr(retAddrFromSlot);
 #endif // TARGET_ARM64
     *retAddr = retAddrFromSlot;

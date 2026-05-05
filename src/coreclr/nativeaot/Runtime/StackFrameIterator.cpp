@@ -1859,7 +1859,7 @@ UnwindOutOfCurrentManagedFrame:
         ASSERT(!m_pThread->IsHijacked());
 
 #if defined(TARGET_ARM64)
-        // TODO-PAC: Authenticate instead of stripping the return address.
+        // We strip the PC here as it's not being used to branch execution to.
         SetControlPC(PacStripPtr(dac_cast<PTR_VOID>(PCODEToPINSTR(m_RegDisplay.GetIP()))));
 #else
         SetControlPC(dac_cast<PTR_VOID>(PCODEToPINSTR(m_RegDisplay.GetIP())));
@@ -2199,7 +2199,7 @@ void StackFrameIterator::CalculateCurrentMethodState()
     }
 
 #if defined(TARGET_ARM64)
-    //TODO-PAC: Authenticate instead of stripping the return addresses.
+    // We strip the PC here as it's not being used to branch execution to.
     m_ControlPC = PacStripPtr(m_ControlPC);
 #endif // TARGET_ARM64
 

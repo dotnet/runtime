@@ -6202,12 +6202,6 @@ static bool IsTailCall(const BYTE * ip, ControllerStackInfo* info, TailCallFunct
     TailCallTls* tls = GetThread()->GetTailCallTls();
     LPVOID tailCallAwareRetAddr = tls->GetFrame()->TailCallAwareReturnAddress;
 
-#if defined(TARGET_ARM64)
-    //TODO-PAC: Authenticate instead of stripping the return addresses.
-    retAddr = PacStripPtr(retAddr);
-    tailCallAwareRetAddr = PacStripPtr(tailCallAwareRetAddr);
-#endif // TARGET_ARM64
-
     LOG((LF_CORDB,LL_INFO1000, "ITCTR: ret addr is %p, tailcall aware ret addr is %p\n",
         retAddr, tailCallAwareRetAddr));
 

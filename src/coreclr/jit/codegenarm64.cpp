@@ -493,10 +493,8 @@ void CodeGen::genPrologSaveRegPair(regNumber reg1,
         if ((spOffset == 0) && (spDelta >= -512))
         {
             // We can use pre-indexed addressing when the stack adjustment fits in the instruction.
-            // Generate:
             // stp REG, REG + 1, [SP, #spDelta]!
             // 64-bit STP offset range: -512 to 504, multiple of 8.
-            assert(reg1 != REG_LR);
             GetEmitter()->emitIns_R_R_R_I(INS_stp, EA_PTRSIZE, reg1, reg2, REG_SPBASE, spDelta, INS_OPTS_PRE_INDEX);
             m_compiler->unwindSaveRegPairPreindexed(reg1, reg2, spDelta);
             needToSaveRegs = false;

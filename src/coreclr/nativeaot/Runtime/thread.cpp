@@ -823,7 +823,7 @@ void Thread::HijackReturnAddressWorker(StackFrameIterator* frameIterator, Hijack
         ASSERT(pvRetAddr != NULL);
 
 #if defined(TARGET_ARM64)
-        //TODO-PAC: Authenticate instead of stripping the return addresses.
+        // We strip the PC here as it's not being used to branch execution to.
         ASSERT(StackFrameIterator::IsValidReturnAddress(PacStripPtr(pvRetAddr)));
 #else
         ASSERT(StackFrameIterator::IsValidReturnAddress(pvRetAddr));

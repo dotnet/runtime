@@ -31,9 +31,9 @@
 #define FIELD_OFFSET(type, field)    ((LONG)__builtin_offsetof(type, field))
 #endif
 
-#if !defined(DACCESS_COMPILE) && !defined(FEATURE_CDAC_UNWINDER)
+#if !defined(DACCESS_COMPILE)
 extern "C" void* PacAuthPtr(void* ptr, void* sp);
-#endif // !defined(DACCESS_COMPILE) && !defined(FEATURE_CDAC_UNWINDER)
+#endif // !defined(DACCESS_COMPILE)
 
 #ifdef HOST_UNIX
 #define RtlZeroMemory ZeroMemory
@@ -258,10 +258,10 @@ do {                                                                            
 // Macros for stripping pointer authentication (PAC) bits.
 #if !defined(DACCESS_COMPILE) && !defined(FEATURE_CDAC_UNWINDER)
 
-#define HANDLE_PAC(pointer, sp)    RtlStripPacOnline(pointer, sp)
+#define HANDLE_PAC(pointer, sp)    RtlHandlePacOnline(pointer, sp)
 
 FORCEINLINE
-VOID RtlStripPacOnline(_Inout_ PULONG64 Pointer, _In_ ULONG64 Sp)
+VOID RtlHandlePacOnline(_Inout_ PULONG64 Pointer, _In_ ULONG64 Sp)
 
 /*++
 

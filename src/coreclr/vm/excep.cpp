@@ -6323,7 +6323,9 @@ bool GetPacSignInfo(PTR_CONTEXT pContextToCheck, EECodeInfo *pCodeInfo, TADDR re
 
     *pSpForPacSign = 0;
 
-    // In prolog or epilog while the current frame is still being established or torn down we cannot retrieve correct SP reliably.
+    // In prolog or epilog while the current frame is still being established or torn down
+    // retrieving correct SP is complex. We conservatively bail-out in this case.
+    // TODO-PAC: Explore opportunities to retrieve SP while in prolog/epilog.
     if (IsIPInProlog(pCodeInfo))
     {
         return false;
