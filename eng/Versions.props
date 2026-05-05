@@ -134,7 +134,7 @@
     <NETStandardLibraryRefVersion>2.1.0</NETStandardLibraryRefVersion>
     <NetStandardLibraryVersion>2.0.3</NetStandardLibraryVersion>
     <MicrosoftDiagnosticsToolsRuntimeClientVersion>1.0.4-preview6.19326.1</MicrosoftDiagnosticsToolsRuntimeClientVersion>
-    <DNNEVersion>2.0.5</DNNEVersion>
+    <DNNEVersion>2.1.2</DNNEVersion>
     <MicrosoftBuildVersion>17.11.48</MicrosoftBuildVersion>
     <MicrosoftBuildTasksCoreVersion>17.11.48</MicrosoftBuildTasksCoreVersion>
     <MicrosoftBuildFrameworkVersion>17.11.48</MicrosoftBuildFrameworkVersion>
@@ -155,7 +155,7 @@
     <NewtonsoftJsonVersion>13.0.3</NewtonsoftJsonVersion>
     <NewtonsoftJsonBsonVersion>1.0.2</NewtonsoftJsonBsonVersion>
     <MoqVersion>4.18.4</MoqVersion>
-    <MicrosoftDiagnosticsRuntimeVersion>4.0.0-beta.26210.1</MicrosoftDiagnosticsRuntimeVersion>
+    <MicrosoftDiagnosticsRuntimeVersion>4.0.722401</MicrosoftDiagnosticsRuntimeVersion>
     <AwesomeAssertionsVersion>8.0.2</AwesomeAssertionsVersion>
     <FsCheckVersion>2.14.3</FsCheckVersion>
     <CommandLineParserVersion>2.9.1</CommandLineParserVersion>

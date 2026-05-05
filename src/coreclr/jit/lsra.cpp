@@ -987,7 +987,7 @@ LinearScan::LinearScan(Compiler* theCompiler)
 #ifdef TARGET_AMD64
     // On x64 the OSR method does not restore float/mask registers from the
     // tier0 frame, so disallow using those in the tier0 method.
-    if (m_compiler->doesMethodHavePatchpoints() || m_compiler->doesMethodHavePartialCompilationPatchpoints())
+    if (m_compiler->doesMethodHavePatchpoints())
     {
 #if defined(UNIX_AMD64_ABI)
         availableFloatRegs &= ~RBM_FLT_CALLEE_SAVED;

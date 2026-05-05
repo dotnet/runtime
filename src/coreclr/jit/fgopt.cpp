@@ -881,7 +881,9 @@ void Compiler::fgCompactBlock(BasicBlock* block)
     JITDUMP("\nCompacting " FMT_BB " into " FMT_BB ":\n", target->bbNum, block->bbNum);
     fgRemoveRefPred(block->GetTargetEdge());
 
-    if (target->countOfInEdges() > 0)
+    const bool targetHadOtherPreds = (target->countOfInEdges() > 0);
+
+    if (targetHadOtherPreds)
     {
         JITDUMP("Second block has %u other incoming edges\n", target->countOfInEdges());
         assert(block->isEmpty());
@@ -1028,6 +1030,28 @@ void Compiler::fgCompactBlock(BasicBlock* block)
         block->SetFlags(BBF_PROF_WEIGHT);
     }
 
+    // When the target had other incoming edges that were retargeted to block,
+    // the inherited weight may not precisely match block's actual incoming flow
+    // due to accumulated rounding from prior weight adjustments (e.g.,
+    // decreaseBBProfileWeight called during earlier optimizations in the same
+    // iteration of fgUpdateFlowGraph). Mark profile as potentially inconsistent.
+    if (targetHadOtherPreds && block->hasProfileWeight() && fgPgoConsistent)
+    {
+        weight_t incomingLikelyWeight = 0;
+        for (FlowEdge* const predEdge : block->PredEdges())
+        {
+            incomingLikelyWeight += predEdge->getLikelyWeight();
+        }
+
+        if (!fgProfileWeightsConsistentOrSmall(block->bbWeight, incomingLikelyWeight))
+        {
+            JITDUMP("fgCompactBlock: " FMT_BB " weight " FMT_WT " inconsistent with incoming " FMT_WT
+                    " after compaction. Data %s inconsistent.\n",
+                    block->bbNum, block->bbWeight, incomingLikelyWeight, fgPgoConsistent ? "is now" : "was already");
+            fgPgoConsistent = false;
+        }
+    }
+
     VarSetOps::AssignAllowUninitRhs(this, block->bbLiveOut, target->bbLiveOut);
 
     // Update the beginning and ending IL offsets (bbCodeOffs and bbCodeOffsEnd).
@@ -1072,6 +1096,9 @@ void Compiler::fgCompactBlock(BasicBlock* block)
     // Update the flags for block with those found in target
 
     block->CopyFlags(target, BBF_COMPACT_UPD);
+
+    // If target was a resumption block, block now plays that role.
+    block->CopyFlags(target, BBF_ASYNC_RESUMPTION);
 
     // mark target as removed
 
@@ -1331,12 +1358,28 @@ bool Compiler::fgOptimizeBranchToEmptyUnconditional(BasicBlock* block, BasicBloc
                     assert(!block->FalseTargetIs(bDest));
                     removedWeight = block->GetTrueEdge()->getLikelyWeight();
                     fgRedirectEdge(block->TrueEdgeRef(), bDest->GetTarget());
+
+                    // If the redirect caused an edge merge (both edges now point
+                    // to the same target), fix the likelihood. fgRedirectEdge
+                    // keeps the existing edge's likelihood and drops the redirected
+                    // edge's. Since this is a BBJ_COND whose outgoing likelihoods
+                    // must sum to 1.0, and both edges now go to the same block,
+                    // the merged edge must carry likelihood 1.0.
+                    if (block->GetTrueEdge() == block->GetFalseEdge())
+                    {
+                        block->GetTrueEdge()->setLikelihood(1.0);
+                    }
                 }
                 else
                 {
                     assert(block->FalseTargetIs(bDest));
                     removedWeight = block->GetFalseEdge()->getLikelyWeight();
                     fgRedirectEdge(block->FalseEdgeRef(), bDest->GetTarget());
+
+                    if (block->GetTrueEdge() == block->GetFalseEdge())
+                    {
+                        block->GetFalseEdge()->setLikelihood(1.0);
+                    }
                 }
                 break;
 
@@ -1344,12 +1387,20 @@ bool Compiler::fgOptimizeBranchToEmptyUnconditional(BasicBlock* block, BasicBloc
                 unreached();
         }
 
+        // Inherit some special affordances.
+        block->CopyFlags(bDest, BBF_ASYNC_RESUMPTION);
+
         //
         // When we optimize a branch to branch we need to update the profile weight
         // of bDest by subtracting out the weight of the path that is being optimized.
         //
         if (bDest->hasProfileWeight())
         {
+            if (fgPgoConsistent && (bDest->bbWeight < removedWeight))
+            {
+                JITDUMP("Clamping " FMT_BB " weight in fgOptimizeBranchToEmptyUnconditional\n", bDest->bbNum);
+                fgPgoConsistent = false;
+            }
             bDest->decreaseBBProfileWeight(removedWeight);
         }
 
@@ -1602,6 +1653,9 @@ bool Compiler::fgOptimizeSwitchBranches(BasicBlock* block)
                 bDest->decreaseBBProfileWeight(edge->getLikelyWeight());
             }
 
+            // Inherit affordances
+            block->CopyFlags(bDest, BBF_ASYNC_RESUMPTION);
+
             // Redirect the jump to the new target
             //
             fgReplaceJumpTarget(block, bDest, bNewDest);
@@ -1616,7 +1670,7 @@ bool Compiler::fgOptimizeSwitchBranches(BasicBlock* block)
     if (modified)
     {
         JITDUMP(
-            "fgOptimizeSwitchBranches: Optimized switch flow. Profile needs to be re-propagated. Data %s consistent.\n",
+            "fgOptimizeSwitchBranches: Optimized switch flow. Profile needs to be re-propagated. Data %s inconsistent.\n",
             fgPgoConsistent ? "is now" : "was already");
         fgPgoConsistent = false;
     }
@@ -4588,6 +4642,9 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication /* = false */, bool isPh
                         std::swap(block->TrueEdgeRef(), block->FalseEdgeRef());
                         fgRedirectEdge(block->TrueEdgeRef(), bNext->GetTarget());
 
+                        // Inherit some affordances
+                        block->CopyFlags(bNext, BBF_ASYNC_RESUMPTION);
+
                         // bNext no longer flows to target
                         //
                         fgRemoveRefPred(bNext->GetTargetEdge());
@@ -4780,7 +4837,7 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication /* = false */, bool isPh
     // Mark the profile as inconsistent if we might have propagated the OSR entry weight.
     if (modified && opts.IsOSR())
     {
-        JITDUMP("fgUpdateFlowGraph: Inconsistent OSR entry weight may have been propagated. Data %s consistent.\n",
+        JITDUMP("fgUpdateFlowGraph: Inconsistent OSR entry weight may have been propagated. Data %s inconsistent.\n",
                 fgPgoConsistent ? "is now" : "was already");
         fgPgoConsistent = false;
     }

@@ -68,8 +68,6 @@ internal class GcInfoDecoder<TTraits> : IGCInfoDecoder where TTraits : IGCInfoTr
         GC_SPBASE_LAST = GC_FRAMEREG_REL,
     }
 
-    public readonly record struct InterruptibleRange(uint StartOffset, uint EndOffset);
-
     public readonly record struct GcSlotDesc
     {
         /* Register Slot */
@@ -514,62 +512,55 @@ internal class GcInfoDecoder<TTraits> : IGCInfoDecoder where TTraits : IGCInfoTr
         return _codeLength;
     }
 
+    public uint GetStackBaseRegister()
+    {
+        EnsureDecodedTo(DecodePoints.ReversePInvoke);
+        return _stackBaseRegister;
+    }
+
     public IReadOnlyList<InterruptibleRange> GetInterruptibleRanges()
     {
         EnsureDecodedTo(DecodePoints.InterruptibleRanges);
         return _interruptibleRanges;
     }
 
-    public uint StackBaseRegister
-    {
-        get
-        {
-            EnsureDecodedTo(DecodePoints.ReversePInvoke);
-            return _stackBaseRegister;
-        }
-    }
-
     public uint NumTrackedSlots => _numSlots - _numUntrackedSlots;
 
-    bool IGCInfoDecoder.EnumerateLiveSlots(
+    IReadOnlyList<LiveSlot> IGCInfoDecoder.EnumerateLiveSlots(
         uint instructionOffset,
-        CodeManagerFlags flags,
-        LiveSlotCallback reportSlot)
+        GcSlotEnumerationOptions options)
     {
-        return EnumerateLiveSlots(instructionOffset, flags,
+        List<LiveSlot> result = [];
+        EnumerateLiveSlots(instructionOffset, options,
             (uint slotIndex, GcSlotDesc slot, uint gcFlags) =>
             {
-                reportSlot(slot.IsRegister, slot.RegisterNumber, slot.SpOffset, (uint)slot.Base, gcFlags);
+                result.Add(new LiveSlot(slot.IsRegister, slot.RegisterNumber, slot.SpOffset, (uint)slot.Base, gcFlags));
             });
+        return result;
     }
 
     /// <summary>
     /// Enumerates all GC slots that are live at the given instruction offset, invoking the callback for each.
     /// This is the managed equivalent of the native GcInfoDecoder::EnumerateLiveSlots.
     /// </summary>
-    /// <param name="instructionOffset">The current instruction offset (relative to method start).</param>
-    /// <param name="flags">CodeManagerFlags controlling reporting behavior.</param>
-    /// <param name="reportSlot">Called for each live slot with (slotIndex, slotDesc, gcFlags).
-    /// gcFlags contains GC_SLOT_INTERIOR/GC_SLOT_PINNED from the slot descriptor.</param>
-    /// <returns>True if enumeration succeeded.</returns>
-    public bool EnumerateLiveSlots(
+    private bool EnumerateLiveSlots(
         uint instructionOffset,
-        CodeManagerFlags flags,
+        GcSlotEnumerationOptions options,
         Action<uint, GcSlotDesc, uint> reportSlot)
     {
         EnsureDecodedTo(DecodePoints.SlotTable);
 
-        bool executionAborted = flags.HasFlag(CodeManagerFlags.ExecutionAborted);
-        bool reportScratchSlots = flags.HasFlag(CodeManagerFlags.ActiveStackFrame);
-        bool reportFpBasedSlotsOnly = flags.HasFlag(CodeManagerFlags.ReportFPBasedSlotsOnly);
+        bool executionAborted = options.IsExecutionAborted;
+        bool reportScratchSlots = options.IsActiveFrame;
+        bool reportFpBasedSlotsOnly = options.ReportFPBasedSlotsOnly;
 
         // WantsReportOnlyLeaf is always true for non-legacy formats
-        if (flags.HasFlag(CodeManagerFlags.ParentOfFuncletStackFrame))
+        if (options.IsParentOfFuncletStackFrame)
             return true;
 
         uint numTracked = NumTrackedSlots;
         if (numTracked == 0)
-            goto ReportUntracked;
+            return ReportUntrackedAndSucceed();
 
         uint normBreakOffset = TTraits.NormalizeCodeOffset(instructionOffset);
 
@@ -655,7 +646,7 @@ internal class GcInfoDecoder<TTraits> : IGCInfoDecoder where TTraits : IGCInfoTr
                             fReport = !fReport;
                         }
                         Debug.Assert(readSlots == numTracked);
-                        goto ReportUntracked;
+                        return ReportUntrackedAndSucceed();
                     }
                     // Normal 1-bit-per-slot encoding follows
                 }
@@ -669,7 +660,7 @@ internal class GcInfoDecoder<TTraits> : IGCInfoDecoder where TTraits : IGCInfoTr
                     if (_reader.ReadBits(1, ref bitOffset) != 0)
                         ReportSlot(slotIndex, reportScratchSlots, reportFpBasedSlotsOnly, reportSlot);
                 }
-                goto ReportUntracked;
+                return ReportUntrackedAndSucceed();
             }
             else
             {
@@ -682,7 +673,7 @@ internal class GcInfoDecoder<TTraits> : IGCInfoDecoder where TTraits : IGCInfoTr
                 bitOffset += (int)(_numSafePoints * numTracked);
 
                 if (_numInterruptibleRanges == 0)
-                    goto ReportUntracked;
+                    return ReportUntrackedAndSucceed();
             }
 
             // ---- Fully-interruptible path ----
@@ -695,7 +686,7 @@ internal class GcInfoDecoder<TTraits> : IGCInfoDecoder where TTraits : IGCInfoTr
 
             uint numBitsPerPointer = (uint)_reader.DecodeVarLengthUnsigned(TTraits.POINTER_SIZE_ENCBASE, ref bitOffset);
             if (numBitsPerPointer == 0)
-                goto ReportUntracked;
+                return ReportUntrackedAndSucceed();
 
             int pointerTablePos = bitOffset;
 
@@ -709,7 +700,7 @@ internal class GcInfoDecoder<TTraits> : IGCInfoDecoder where TTraits : IGCInfoTr
                 if (chunkPointer != 0)
                     break;
                 if (chunk-- == 0)
-                    goto ReportUntracked;
+                    return ReportUntrackedAndSucceed();
             }
 
             int chunksStartPos = (int)(((uint)pointerTablePos + numChunks * numBitsPerPointer + 7) & (~7u));
@@ -815,14 +806,22 @@ internal class GcInfoDecoder<TTraits> : IGCInfoDecoder where TTraits : IGCInfoTr
             }
         }
 
-    ReportUntracked:
-        if (_numUntrackedSlots > 0 && (flags & (CodeManagerFlags.ParentOfFuncletStackFrame | CodeManagerFlags.NoReportUntracked)) == 0)
-        {
-            for (uint slotIndex = numTracked; slotIndex < _numSlots; slotIndex++)
-                ReportSlot(slotIndex, reportScratchSlots, reportFpBasedSlotsOnly, reportSlot);
-        }
+        return ReportUntrackedAndSucceed();
 
-        return true;
+        bool ReportUntrackedAndSucceed()
+        {
+            if (_numUntrackedSlots > 0 && !options.IsParentOfFuncletStackFrame && !options.SuppressUntrackedSlots)
+            {
+                // Native passes reportScratchSlots=true for untracked slots (see native
+                // ReportUntrackedSlots: "Report everything (although there should *never*
+                // be any scratch slots that are untracked)"). In practice the JIT can
+                // produce untracked scratch register slots for interior pointers, so they
+                // must be reported regardless of whether this is a leaf frame.
+                for (uint slotIndex = numTracked; slotIndex < _numSlots; slotIndex++)
+                    ReportSlot(slotIndex, reportScratchSlots: true, reportFpBasedSlotsOnly, reportSlot);
+            }
+            return true;
+        }
     }
 
     private void ReportSlot(uint slotIndex, bool reportScratchSlots, bool reportFpBasedSlotsOnly, Action<uint, GcSlotDesc, uint> reportSlot)

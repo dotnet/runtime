@@ -2164,11 +2164,6 @@ emitter::code_t emitter::AddEvexPrefix(const instrDesc* id, code_t code, emitAtt
             code |= EXTENDED_EVEX_PP_BITS;
         }
 
-        if (instrIsExtendedReg3opImul(ins))
-        {
-            // EVEX.R3
-            code &= 0xFF7FFFFFFFFFFFFFULL;
-        }
 #ifdef TARGET_AMD64
         if (IsCCMP(ins))
         {
@@ -2381,9 +2376,16 @@ emitter::code_t emitter::AddRex2Prefix(instruction ins, code_t code)
 {
     assert(IsRex2EncodableInstruction(ins));
 
+#ifdef TARGET_AMD64
+    if (ins >= INS_imul_08 && ins <= INS_imul_15)
+    {
+        // These instructions have a built-in REX prefix, so it needs to be zeroed out when adding the prefix.
+        code &= 0xFFFFFFFFULL;
+    }
+#endif
+
     // Note that there are cases that some register field might be filled before adding prefix,
     // So we don't check if the code has REX2 prefix already or not.
-
     code |= DEFAULT_2BYTE_REX2_PREFIX;
     if (IsLegacyMap1(code)) // 2-byte opcode on Map-1
     {
@@ -7189,6 +7191,19 @@ void emitter::emitIns_R_I(instruction         ins,
         // ACC form is not promoted into EVEX space, need to emit with MI form.
         sz += 1;
     }
+
+    if (ins == INS_test && reg == REG_EAX && TakesRex2Prefix(id))
+    {
+        // test eax/rax will use ACC form, which is not REX2 compatible.
+        if (size == EA_8BYTE)
+        {
+            sz -= 1;
+        }
+        else
+        {
+            sz -= 2;
+        }
+    }
 #endif // TARGET_AMD64
 
     // Do we need a REX prefix for AMD64? We need one if we are using any extended register (REX.R), or if we have a
@@ -9108,10 +9123,66 @@ void emitter::emitIns_R_L(instruction ins, emitAttr attr, BasicBlock* dst, regNu
     emitTotalIGjmps++;
 #endif
 
-    // Set the relocation flags - these give hint to zap to perform
-    // relocation of the specified 32bit address.
-    //
-    // Note the relocation flags influence the size estimate.
+    // Set reloc flags for AOT purposes. This also affects emitInsSizeAM below.
+    id->idSetRelocFlags(attr);
+
+    UNATIVE_OFFSET sz = emitInsSizeAM(id, insCodeRM(ins));
+    id->idCodeSize(sz);
+
+    dispIns(id);
+    emitCurIGsize += sz;
+}
+
+//--------------------------------------------------------------------
+// emitIns_R_L: Emit an instruction with a label operand.
+//
+// Arguments:
+//   ins - The instruction
+//   attr - Size of the instruction
+//   dst - Instruction group
+//   reg - Register destination
+//
+void emitter::emitIns_R_L(instruction ins, emitAttr attr, insGroup* dst, regNumber reg)
+{
+    assert(ins == INS_lea);
+
+    instrDescJmp* id = emitNewInstrJmp();
+
+    id->idIns(ins);
+    id->idReg1(reg);
+    id->idInsFmt(IF_RWR_LABEL);
+    id->idOpSize(EA_SIZE(attr)); // emitNewInstrJmp() sets the size (incorrectly) to EA_1BYTE
+    id->idAddr()->iiaIGlabel = dst;
+    id->idSetIsBound();
+
+    /* The label reference is always long */
+
+    id->idjShort    = 0;
+    id->idjKeepLong = 1;
+
+    /* Record the current IG and offset within it */
+
+    id->idjIG   = emitCurIG;
+    id->idjOffs = emitCurIGsize;
+
+    /* Append this instruction to this IG's jump list */
+
+    id->idjNext      = emitCurIGjmpList;
+    emitCurIGjmpList = id;
+
+#ifdef DEBUG
+    // Mark the catch return
+    if (m_compiler->compCurBB->KindIs(BBJ_EHCATCHRET))
+    {
+        id->idDebugOnlyInfo()->idCatchRet = true;
+    }
+#endif // DEBUG
+
+#if EMITTER_STATS
+    emitTotalIGjmps++;
+#endif
+
+    // Set reloc flags for AOT purposes. This also affects emitInsSizeAM below.
     id->idSetRelocFlags(attr);
 
     UNATIVE_OFFSET sz = emitInsSizeAM(id, insCodeRM(ins));
@@ -12677,86 +12748,6 @@ void emitter::emitDispIns(
 
 #define ID_INFO_DSP_RELOC ((bool)(id->idIsDspReloc()))
 
-    /* Display a constant value if the instruction references one */
-
-    if (!isNew && id->idHasMemGen())
-    {
-        /* Is this actually a reference to a data section? */
-        int offs = Compiler::eeGetJitDataOffs(id->idAddr()->iiaFieldHnd);
-
-        if (offs >= 0)
-        {
-            void* addr;
-
-            /* Display a data section reference */
-
-            assert((unsigned)offs < emitConsDsc.dsdOffs);
-            addr = emitDataOffsetToPtr((UNATIVE_OFFSET)offs);
-
-#if 0
-            // TODO-XArch-Cleanup: Fix or remove this code.
-            /* Is the operand an integer or floating-point value? */
-
-            bool isFP = false;
-
-            if  (CodeGen::instIsFP(id->idIns()))
-            {
-                switch (id->idIns())
-                {
-                case INS_fild:
-                case INS_fildl:
-                    break;
-
-                default:
-                    isFP = true;
-                    break;
-                }
-            }
-
-            if (offs & 1)
-                printf("@CNS%02u", offs);
-            else
-                printf("@RWD%02u", offs);
-
-            printf("      ");
-
-            if  (addr)
-            {
-                addr = 0;
-                // TODO-XArch-Bug?:
-                //          This was busted by switching the order
-                //          in which we output the code block vs.
-                //          the data blocks -- when we get here,
-                //          the data block has not been filled in
-                //          yet, so we'll display garbage.
-
-                if  (isFP)
-                {
-                    if  (id->idOpSize() == EA_4BYTE)
-                        printf("DF      %f \n", addr ? *(float   *)addr : 0);
-                    else
-                        printf("DQ      %lf\n", addr ? *(double  *)addr : 0);
-                }
-                else
-                {
-                    if  (id->idOpSize() <= EA_4BYTE)
-                        printf("DD      %d \n", addr ? *(int     *)addr : 0);
-                    else
-                        printf("DQ      %D \n", addr ? *(int64_t *)addr : 0);
-                }
-            }
-#endif
-        }
-    }
-
-    // printf("[F=%s] "   , emitIfName(id->idInsFmt()));
-    // printf("INS#%03u: ", id->idDebugOnlyInfo()->idNum);
-    // printf("[S=%02u] " , emitCurStackLvl); if (isNew) printf("[M=%02u] ", emitMaxStackDepth);
-    // printf("[S=%02u] " , emitCurStackLvl/sizeof(INT32));
-    // printf("[A=%08X] " , emitSimpleStkMask);
-    // printf("[A=%08X] " , emitSimpleByrefStkMask);
-    // printf("[L=%02u] " , id->idCodeSize());
-
     if (!isNew && !asmfm)
     {
         doffs = true;
@@ -14085,7 +14076,7 @@ void emitter::emitDispIns(
                 // targetIG is only set for 1st of the series of align instruction
                 if ((alignInstrId->idaLoopHeadPredIG != nullptr) && (alignInstrId->loopHeadIG() != nullptr))
                 {
-                    printf(" for IG%02u", alignInstrId->loopHeadIG()->igNum);
+                    printf(" for IG%02u", alignInstrId->loopHeadIG()->GetDisplayId());
                 }
                 printf("]");
             }
@@ -14715,11 +14706,13 @@ BYTE* emitter::emitOutputAM(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
             case EA_4BYTE:
 #ifdef TARGET_AMD64
             case EA_8BYTE:
+                // EVEX.MOVBE is assigned with RM opcode that does not follow the following rule.
+                if (ins != INS_movbe_apx)
 #endif
-
-                /* Set the 'w' bit to get the large version */
-
-                code |= 0x1;
+                {
+                    /* Set the 'w' bit to get the large version */
+                    code |= 0x1;
+                }
                 break;
 
 #ifdef TARGET_X86
@@ -14737,9 +14730,11 @@ BYTE* emitter::emitOutputAM(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
                 break;
         }
 #ifdef TARGET_AMD64
-        if (ins == INS_crc32_apx || ins == INS_movbe_apx)
+        if (ins >= INS_imul_08 && ins <= INS_imul_31)
         {
-            code |= (insEncodeReg345(id, id->idReg1(), size, &code) << 8);
+            // The built-in REX has been zeroed out in AddX86PrefixIfNeededAndNotPresent, need to add the register
+            // addressing bits in the prefix.
+            insEncodeReg345(id, inst3opImulReg(ins), size, &code);
         }
 #endif // TARGET_AMD64
     }
@@ -15626,11 +15621,11 @@ BYTE* emitter::emitOutputSV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
                 break;
         }
 #ifdef TARGET_AMD64
-        if (ins == INS_crc32_apx || ins == INS_movbe_apx)
+        if (ins >= INS_imul_08 && ins <= INS_imul_31)
         {
-            // The promoted CRC32 is in 1-byte opcode, unlike other instructions on this path, the register encoding for
-            // CRC32 need to be done here.
-            code |= (insEncodeReg345(id, id->idReg1(), size, &code) << 8);
+            // The built-in REX has been zero-ed out in AddX86PrefixIfNeededAndNotPresent, need to add the register
+            // addressing bits in the prefix.
+            insEncodeReg345(id, inst3opImulReg(ins), size, &code);
         }
 #endif // TARGET_AMD64
     }
@@ -16202,15 +16197,8 @@ BYTE* emitter::emitOutputCV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
     else
     {
         // Special case: mov reg, fs:[ddd] or mov reg, [ddd]
-        if (jitStaticFldIsGlobAddr(fldh))
-        {
-            addr = nullptr;
-        }
-        else
-        {
-            assert(jitStaticFldIsGlobAddr(fldh));
-            addr = nullptr;
-        }
+        assert(jitStaticFldIsGlobAddr(fldh));
+        addr = nullptr;
     }
 
     BYTE* target = (addr + offs);
@@ -17445,6 +17433,12 @@ BYTE* emitter::emitOutputRI(BYTE* dst, instrDesc* id)
             code = insCodeMI(ins);
             code = AddX86PrefixIfNeeded(id, code, size);
             code = insEncodeMIreg(id, reg, size, code);
+#ifdef TARGET_AMD64
+            if (ins >= INS_imul_08 && ins <= INS_imul_31)
+            {
+                insEncodeReg345(id, inst3opImulReg(ins), size, &code);
+            }
+#endif // TARGET_AMD64
         }
     }
 
@@ -20115,9 +20109,8 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 #endif
 
 #if FEATURE_LOOP_ALIGN
-    // Only compensate over-estimated instructions if emitCurIG is before
-    // the last IG that needs alignment.
-    if (emitCurIG->igNum <= emitLastAlignedIgNum)
+    // Only compensate over-estimated instructions if emitCurIG is before the last IG that needs alignment.
+    if ((emitLastAlignedIG != nullptr) && emitCurIG->IsBeforeOrEqual(emitLastAlignedIG))
     {
         int diff = id->idCodeSize() - ((UNATIVE_OFFSET)(dst - *dp));
         assert(diff >= 0);
@@ -20327,9 +20320,9 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
 
     // Model the memory throughput, latency, kind
 
-    float    memThroughput = PERFSCORE_THROUGHPUT_ILLEGAL;
-    float    memLatency    = PERFSCORE_LATENCY_ILLEGAL;
-    unsigned memAccessKind = 0;
+    float                     memThroughput = PERFSCORE_THROUGHPUT_ILLEGAL;
+    float                     memLatency    = PERFSCORE_LATENCY_ILLEGAL;
+    PerfScoreMemoryAccessKind memAccessKind = PerfScoreMemoryAccessKind::None;
 
     switch (memFmt)
     {
@@ -20339,7 +20332,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         {
             memThroughput = PERFSCORE_THROUGHPUT_RD;
             memLatency    = PERFSCORE_LATENCY_RD_STACK;
-            memAccessKind = PERFSCORE_MEMORY_READ;
+            memAccessKind = PerfScoreMemoryAccessKind::Read;
             break;
         }
 
@@ -20347,7 +20340,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         {
             memThroughput = PERFSCORE_THROUGHPUT_WR;
             memLatency    = PERFSCORE_LATENCY_WR_STACK;
-            memAccessKind = PERFSCORE_MEMORY_WRITE;
+            memAccessKind = PerfScoreMemoryAccessKind::Write;
             break;
         }
 
@@ -20355,7 +20348,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         {
             memThroughput = PERFSCORE_THROUGHPUT_RW;
             memLatency    = PERFSCORE_LATENCY_RD_WR_STACK;
-            memAccessKind = PERFSCORE_MEMORY_READ_WRITE;
+            memAccessKind = PerfScoreMemoryAccessKind::ReadWrite;
             break;
         }
 
@@ -20365,7 +20358,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         {
             memThroughput = PERFSCORE_THROUGHPUT_RD;
             memLatency    = PERFSCORE_LATENCY_RD_CONST_ADDR;
-            memAccessKind = PERFSCORE_MEMORY_READ;
+            memAccessKind = PerfScoreMemoryAccessKind::Read;
             break;
         }
 
@@ -20373,7 +20366,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         {
             memThroughput = PERFSCORE_THROUGHPUT_WR;
             memLatency    = PERFSCORE_LATENCY_WR_CONST_ADDR;
-            memAccessKind = PERFSCORE_MEMORY_WRITE;
+            memAccessKind = PerfScoreMemoryAccessKind::Write;
             break;
         }
 
@@ -20381,7 +20374,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         {
             memThroughput = PERFSCORE_THROUGHPUT_RW;
             memLatency    = PERFSCORE_LATENCY_RD_WR_CONST_ADDR;
-            memAccessKind = PERFSCORE_MEMORY_READ_WRITE;
+            memAccessKind = PerfScoreMemoryAccessKind::ReadWrite;
             break;
         }
 
@@ -20391,7 +20384,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         {
             memThroughput = PERFSCORE_THROUGHPUT_RD;
             memLatency    = PERFSCORE_LATENCY_RD_GENERAL;
-            memAccessKind = PERFSCORE_MEMORY_READ;
+            memAccessKind = PerfScoreMemoryAccessKind::Read;
             break;
         }
 
@@ -20399,7 +20392,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         {
             memThroughput = PERFSCORE_THROUGHPUT_WR;
             memLatency    = PERFSCORE_LATENCY_WR_GENERAL;
-            memAccessKind = PERFSCORE_MEMORY_WRITE;
+            memAccessKind = PerfScoreMemoryAccessKind::Write;
             break;
         }
 
@@ -20407,7 +20400,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         {
             memThroughput = PERFSCORE_THROUGHPUT_RW;
             memLatency    = PERFSCORE_LATENCY_RD_WR_GENERAL;
-            memAccessKind = PERFSCORE_MEMORY_READ_WRITE;
+            memAccessKind = PerfScoreMemoryAccessKind::ReadWrite;
             break;
         }
 
@@ -20415,7 +20408,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         {
             memThroughput = PERFSCORE_THROUGHPUT_ZERO;
             memLatency    = PERFSCORE_LATENCY_ZERO;
-            memAccessKind = PERFSCORE_MEMORY_NONE;
+            memAccessKind = PerfScoreMemoryAccessKind::None;
             break;
         }
 
@@ -20424,7 +20417,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             assert(!"Unhandled insFmt for switch (memFmt)");
             memThroughput = PERFSCORE_THROUGHPUT_ZERO;
             memLatency    = PERFSCORE_LATENCY_ZERO;
-            memAccessKind = PERFSCORE_MEMORY_NONE;
+            memAccessKind = PerfScoreMemoryAccessKind::None;
             break;
         }
     }
@@ -20547,7 +20540,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             }
             else
             {
-                assert(memAccessKind == PERFSCORE_MEMORY_WRITE); // _SHF form never emitted
+                assert(memAccessKind == PerfScoreMemoryAccessKind::Write); // _SHF form never emitted
                 insThroughput = PERFSCORE_THROUGHPUT_2C;
             }
             break;
@@ -20642,7 +20635,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             insThroughput = PERFSCORE_THROUGHPUT_1C;
             insLatency    = PERFSCORE_LATENCY_3C;
 
-            if (memAccessKind == PERFSCORE_MEMORY_READ)
+            if (memAccessKind == PerfScoreMemoryAccessKind::Read)
             {
                 // The reads have twice the throughput of the register to register variants
                 insThroughput = PERFSCORE_THROUGHPUT_2X;
@@ -20664,7 +20657,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             insThroughput = PERFSCORE_THROUGHPUT_1C;
             insLatency    = PERFSCORE_LATENCY_1C;
 
-            if (memAccessKind == PERFSCORE_MEMORY_READ)
+            if (memAccessKind == PerfScoreMemoryAccessKind::Read)
             {
                 // The reads have twice the throughput of the register to register variants
                 insThroughput = PERFSCORE_THROUGHPUT_2X;
@@ -20934,7 +20927,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         {
             insLatency = (opSize >= EA_32BYTE) ? PERFSCORE_LATENCY_3C : PERFSCORE_LATENCY_1C;
 
-            if (memAccessKind == PERFSCORE_MEMORY_NONE)
+            if (memAccessKind == PerfScoreMemoryAccessKind::None)
             {
                 insThroughput = PERFSCORE_THROUGHPUT_1C;
             }
@@ -20950,7 +20943,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_pinsrd:
         case INS_pinsrq:
         {
-            if (memAccessKind == PERFSCORE_MEMORY_NONE)
+            if (memAccessKind == PerfScoreMemoryAccessKind::None)
             {
                 insThroughput = PERFSCORE_THROUGHPUT_2C;
                 insLatency    = PERFSCORE_LATENCY_4C;
@@ -21345,7 +21338,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
     }
     else
     {
-        if (memAccessKind != PERFSCORE_MEMORY_NONE)
+        if (memAccessKind != PerfScoreMemoryAccessKind::None)
         {
             if (IsSimdInstruction(ins))
             {

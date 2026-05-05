@@ -14,8 +14,7 @@
 // It also handles things like creating and killing a process.
 
 // Usual lifecycle looks like this:
-// Debug a new process:
-// * CreateProcess(&pid)
+// Debug an existing process:
 // * On Mac, Optionally obtain an application group ID from a user
 // * Create a ProcessDescriptor pd
 // * GetTransportForProcess(&pd, &transport)
@@ -41,18 +40,6 @@ public:
     // Give back a previously acquired transport (if nobody else is using the transport it will close down the
     // connection at this point).
     void ReleaseTransport(DbgTransportSession *pTransport);
-
-    // When and if the process starts the runtime will be told to halt and wait for a debugger attach.
-    HRESULT CreateProcess(LPCWSTR lpApplicationName,
-                          LPCWSTR lpCommandLine,
-                          LPSECURITY_ATTRIBUTES lpProcessAttributes,
-                          LPSECURITY_ATTRIBUTES lpThreadAttributes,
-                          BOOL bInheritHandles,
-                          DWORD dwCreationFlags,
-                          LPVOID lpEnvironment,
-                          LPCWSTR lpCurrentDirectory,
-                          LPSTARTUPINFOW lpStartupInfo,
-                          LPPROCESS_INFORMATION lpProcessInformation);
 
     // Kill the process identified by PID.
     void KillProcess(DWORD dwPID);

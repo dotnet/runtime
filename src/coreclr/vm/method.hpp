@@ -60,10 +60,6 @@ EXTERN_C VOID STDCALL PInvokeImportThunk();
 #define METHOD_TOKEN_RANGE_BIT_COUNT (24 - METHOD_TOKEN_REMAINDER_BIT_COUNT)
 #define METHOD_TOKEN_RANGE_MASK ((1 << METHOD_TOKEN_RANGE_BIT_COUNT) - 1)
 
-#if defined(TARGET_X86) || defined(FEATURE_COMINTEROP)
-#define FEATURE_DYNAMIC_METHOD_HAS_NATIVE_STACK_ARG_SIZE
-#endif
-
 // [cDAC] [RuntimeTypeSystem]: Contract depends on the values of Thunk, None.
 enum class AsyncMethodFlags
 {
@@ -253,6 +249,14 @@ enum MethodDescFlags
 };
 
 // Used for storing additional items related to native code
+#ifdef FEATURE_INTERPRETER
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+typedef void(*InterpreterCalliCookie)(PCODE, int8_t*, int8_t*);
+#else
+typedef CallStubHeader* InterpreterCalliCookie;
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
+#endif // FEATURE_INTERPRETER
+
 struct MethodDescCodeData final
 {
 #ifdef FEATURE_CODE_VERSIONING
@@ -261,7 +265,7 @@ struct MethodDescCodeData final
 #endif // FEATURE_CODE_VERSIONING
     PCODE TemporaryEntryPoint;
 #ifdef FEATURE_INTERPRETER
-    CallStubHeader *CallStub;
+    InterpreterCalliCookie CalliCookie;
 #endif // FEATURE_INTERPRETER
 #if defined(_DEBUG) && defined(ALLOW_SXS_JIT)
     PatchpointInfo *AltJitPatchpointInfo;
@@ -873,12 +877,6 @@ public:
     // Returns the # of bytes of stack used by arguments. Does not include
     // arguments passed in registers.
     UINT SizeOfArgStack();
-
-#ifdef FEATURE_DYNAMIC_METHOD_HAS_NATIVE_STACK_ARG_SIZE
-    // Returns the # of bytes of stack used by arguments in a call from native to this function.
-    // Does not include arguments passed in registers.
-    UINT SizeOfNativeArgStack();
-#endif // FEATURE_DYNAMIC_METHOD_HAS_NATIVE_STACK_ARG_SIZE
 
     // Returns the # of bytes to pop after a call. Not necessary the
     // same as SizeOfArgStack()!
@@ -1641,7 +1639,7 @@ public:
     PCODE GetCodeForInterpreterOrJitted()
     {
         WRAPPER_NO_CONTRACT;
-        return GetInterpreterCodeFromInterpreterPrecodeIfPresent(GetNativeCode());
+        return GetInterpreterCodeFromEntryPointIfPresent(GetNativeCode());
     }
 
     // Returns GetNativeCode() if it exists, but also checks to see if there
@@ -1986,8 +1984,8 @@ public:
 #endif //!DACCESS_COMPILE
 
 #if defined(FEATURE_INTERPRETER) && !defined(DACCESS_COMPILE)
-    bool SetCallStub(CallStubHeader *pHeader);
-    CallStubHeader *GetCallStub();
+    bool SetCalliCookie(InterpreterCalliCookie cookie);
+    InterpreterCalliCookie GetCalliCookie();
 #endif // FEATURE_INTERPRETER && !DACCESS_COMPILE
 
 #ifdef FEATURE_CODE_VERSIONING
@@ -2682,6 +2680,12 @@ public:
         m_next = chunk;
     }
 
+    void SetNextChunkVolatile(MethodDescChunk *chunk)
+    {
+        LIMITED_METHOD_CONTRACT;
+        VolatileStore(&m_next, dac_cast<PTR_MethodDescChunk>(chunk));
+    }
+
     void SetLoaderModuleAttachedToChunk(Module* pModule)
     {
         m_flagsAndTokenRange |= enum_flag_LoaderModuleAttachedToChunk;
@@ -2693,7 +2697,11 @@ public:
     PTR_MethodDescChunk GetNextChunk()
     {
         LIMITED_METHOD_CONTRACT;
+#ifdef DACCESS_COMPILE
         return m_next;
+#else
+        return VolatileLoad(&m_next);
+#endif
     }
 
     UINT32 GetCount()
@@ -3008,7 +3016,7 @@ public:
         return asMetadata;
     }
 
-#if defined(TARGET_X86) || defined(FEATURE_COMINTEROP)
+#if defined(TARGET_X86)
     WORD GetNativeStackArgSize()
     {
         LIMITED_METHOD_DAC_CONTRACT;
@@ -3025,7 +3033,7 @@ public:
 #endif
         m_dwExtendedFlags = (m_dwExtendedFlags & ~StackArgSizeMask) | ((DWORD)cbArgSize << 16);
     }
-#endif // TARGET_X86 || FEATURE_COMINTEROP
+#endif // TARGET_X86
 
     bool IsReversePInvokeStub() const
     {

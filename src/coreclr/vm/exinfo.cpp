@@ -13,7 +13,6 @@
 
 ExInfo::ExInfo(Thread *pThread, EXCEPTION_RECORD *pExceptionRecord, CONTEXT *pExceptionContext, ExKind exceptionKind) :
     m_pPrevNestedInfo(pThread->GetExceptionState()->GetCurrentExceptionTracker()),
-    m_hThrowable{},
     m_ptrs({pExceptionRecord, pExceptionContext}),
     m_fDeliveredFirstChanceNotification(FALSE),
     m_ExceptionCode((pExceptionRecord != PTR_NULL) ? pExceptionRecord->ExceptionCode : 0),
@@ -39,6 +38,16 @@ ExInfo::ExInfo(Thread *pThread, EXCEPTION_RECORD *pExceptionRecord, CONTEXT *pEx
 #endif // HOST_WINDOWS
 {
     pThread->GetExceptionState()->m_pCurrentTracker = this;
+
+    // m_exception is GC-reported via ExInfo chain scanning in ScanStackRoots
+    // (not via GCPROTECT - reporting the same location twice corrupts the GC
+    // relocation logic; see clr-code-guide.md §2.1.5).  Mark the slot as
+    // protected in the debug OBJECTREF tracking table so that checked-build
+    // validation knows the reference is rooted.
+#ifdef USE_CHECKED_OBJECTREFS
+    Thread::ObjectRefProtected(&m_exception);
+#endif
+
     m_pInitialFrame = pThread->GetFrame();
     if (exceptionKind == ExKind::HardwareFault)
     {
@@ -72,14 +81,7 @@ void ExInfo::TakeExceptionPointersOwnership(PAL_SEHException* ex)
 
 void ExInfo::ReleaseResources()
 {
-    if (m_hThrowable)
-    {
-        if (!CLRException::IsPreallocatedExceptionHandle(m_hThrowable))
-        {
-            DestroyHandle(m_hThrowable);
-        }
-        m_hThrowable = NULL;
-    }
+    m_exception = NULL;
 
 #ifndef TARGET_UNIX
     // Clear any held Watson Bucketing details

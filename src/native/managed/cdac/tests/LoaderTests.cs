@@ -43,7 +43,7 @@ public unsafe class LoaderTests
         return target.Contracts.Loader;
     }
 
-    private static (ILoader Contract, TestPlaceholderTarget Target) CreateLoaderContractWithTarget(
+    internal static (ILoader Contract, TestPlaceholderTarget Target) CreateLoaderContractWithTarget(
         MockTarget.Architecture arch,
         Action<MockLoaderBuilder, TestPlaceholderTarget.Builder> configure)
     {
@@ -112,35 +112,40 @@ public unsafe class LoaderTests
 
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
-    public void TryGetSimpleName(MockTarget.Architecture arch)
+    public void GetSimpleName(MockTarget.Architecture arch)
     {
         string expected = "TestModule";
         TargetPointer moduleAddr = TargetPointer.Null;
-        TargetPointer moduleAddrEmptyName = TargetPointer.Null;
 
         ILoader contract = CreateLoaderContract(arch, loader =>
         {
             moduleAddr = loader.AddModule(simpleName: expected).Address;
-            moduleAddrEmptyName = loader.AddModule().Address;
         });
 
-        {
-            Contracts.ModuleHandle handle = contract.GetModuleHandleFromModulePtr(moduleAddr);
-            bool result = contract.TryGetSimpleName(handle, out string actual);
-            Assert.True(result);
-            Assert.Equal(expected, actual);
-        }
-        {
-            Contracts.ModuleHandle handle = contract.GetModuleHandleFromModulePtr(moduleAddrEmptyName);
-            bool result = contract.TryGetSimpleName(handle, out string actual);
-            Assert.False(result);
-            Assert.Equal(string.Empty, actual);
-        }
+        Contracts.ModuleHandle handle = contract.GetModuleHandleFromModulePtr(moduleAddr);
+        string actual = contract.GetSimpleName(handle);
+        Assert.Equal(expected, actual);
     }
 
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
-    public void TryGetSimpleName_InvalidUtf8(MockTarget.Architecture arch)
+    public void GetSimpleName_NullSimpleName(MockTarget.Architecture arch)
+    {
+        TargetPointer moduleAddr = TargetPointer.Null;
+
+        ILoader contract = CreateLoaderContract(arch, loader =>
+        {
+            moduleAddr = loader.AddModule().Address;
+        });
+
+        Contracts.ModuleHandle handle = contract.GetModuleHandleFromModulePtr(moduleAddr);
+        string actual = contract.GetSimpleName(handle);
+        Assert.Equal(string.Empty, actual);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetSimpleName_InvalidUtf8(MockTarget.Architecture arch)
     {
         // 0xFF is not valid UTF-8
         byte[] invalidUtf8 = [0xFF, 0xFE];
@@ -151,20 +156,20 @@ public unsafe class LoaderTests
         });
 
         Contracts.ModuleHandle handle = contract.GetModuleHandleFromModulePtr(moduleAddr);
-        Assert.Throws<DecoderFallbackException>(() => contract.TryGetSimpleName(handle, out _));
+        Assert.Throws<DecoderFallbackException>(() => contract.GetSimpleName(handle));
     }
 
-    private static readonly Dictionary<string, TargetPointer> MockHeapDictionary = new()
+    private static readonly Dictionary<LoaderAllocatorHeapType, TargetPointer> MockHeapDictionary = new()
     {
-        ["LowFrequencyHeap"] = new(0x1000),
-        ["HighFrequencyHeap"] = new(0x2000),
-        ["StaticsHeap"] = new(0x3000),
-        ["StubHeap"] = new(0x4000),
-        ["ExecutableHeap"] = new(0x5000),
-        ["FixupPrecodeHeap"] = new(0x6000),
-        ["NewStubPrecodeHeap"] = new(0x7000),
-        ["IndcellHeap"] = new(0x8000),
-        ["CacheEntryHeap"] = new(0x9000),
+        [LoaderAllocatorHeapType.LowFrequencyHeap] = new(0x1000),
+        [LoaderAllocatorHeapType.HighFrequencyHeap] = new(0x2000),
+        [LoaderAllocatorHeapType.StaticsHeap] = new(0x3000),
+        [LoaderAllocatorHeapType.StubHeap] = new(0x4000),
+        [LoaderAllocatorHeapType.ExecutableHeap] = new(0x5000),
+        [LoaderAllocatorHeapType.FixupPrecodeHeap] = new(0x6000),
+        [LoaderAllocatorHeapType.NewStubPrecodeHeap] = new(0x7000),
+        [LoaderAllocatorHeapType.IndcellHeap] = new(0x8000),
+        [LoaderAllocatorHeapType.CacheEntryHeap] = new(0x9000),
     };
 
     private const VCSHeapType VCSHeapTypeIndcell = VCSHeapType.IndcellHeap;
@@ -175,6 +180,8 @@ public unsafe class LoaderTests
     private static void VisitHeapNoOp(ulong address, nuint size, Interop.BOOL isCurrent)
     {
     }
+
+    private static LoaderAllocatorHeapType HeapNameToType(string name) => Enum.Parse<LoaderAllocatorHeapType>(name);
 
     private static ISOSDacInterface13 CreateSOSDacInterface13ForHeapTests(MockTarget.Architecture arch)
     {
@@ -210,7 +217,7 @@ public unsafe class LoaderTests
         var target = targetBuilder
             .AddTypes(types)
             .AddMockContract<ILoader>(Mock.Of<ILoader>(
-                l => l.GetLoaderAllocatorHeaps(It.IsAny<TargetPointer>()) == (IReadOnlyDictionary<string, TargetPointer>)MockHeapDictionary
+                l => l.GetLoaderAllocatorHeaps(It.IsAny<TargetPointer>()) == (IReadOnlyDictionary<LoaderAllocatorHeapType, TargetPointer>)MockHeapDictionary
                 && l.GetGlobalLoaderAllocator() == new TargetPointer(0x100)))
             .Build();
         return new SOSDacImpl(target, null);
@@ -237,12 +244,12 @@ public unsafe class LoaderTests
 
         TargetPointer indcellHeap = new(0x8000);
         TargetPointer firstBlock = new(0x8100);
-        var heaps = new Dictionary<string, TargetPointer>
+        var heaps = new Dictionary<LoaderAllocatorHeapType, TargetPointer>
         {
-            ["IndcellHeap"] = indcellHeap,
+            [LoaderAllocatorHeapType.IndcellHeap] = indcellHeap,
         };
         loader.Setup(l => l.GetLoaderAllocatorHeaps(new TargetPointer(0x100)))
-            .Returns((IReadOnlyDictionary<string, TargetPointer>)heaps);
+            .Returns((IReadOnlyDictionary<LoaderAllocatorHeapType, TargetPointer>)heaps);
         loader.Setup(l => l.GetFirstLoaderHeapBlock(indcellHeap)).Returns(firstBlock);
         loader.Setup(l => l.GetLoaderHeapBlockData(firstBlock)).Returns(new LoaderHeapBlockData
         {
@@ -267,13 +274,13 @@ public unsafe class LoaderTests
 
         TargetPointer cacheEntryHeap = new(0x9000);
         TargetPointer firstBlock = new(0x9100);
-        var heaps = new Dictionary<string, TargetPointer>
+        var heaps = new Dictionary<LoaderAllocatorHeapType, TargetPointer>
         {
-            ["IndcellHeap"] = new TargetPointer(0x8000),
-            ["CacheEntryHeap"] = cacheEntryHeap,
+            [LoaderAllocatorHeapType.IndcellHeap] = new TargetPointer(0x8000),
+            [LoaderAllocatorHeapType.CacheEntryHeap] = cacheEntryHeap,
         };
         loader.Setup(l => l.GetLoaderAllocatorHeaps(new TargetPointer(0x100)))
-            .Returns((IReadOnlyDictionary<string, TargetPointer>)heaps);
+            .Returns((IReadOnlyDictionary<LoaderAllocatorHeapType, TargetPointer>)heaps);
         loader.Setup(l => l.GetFirstLoaderHeapBlock(cacheEntryHeap)).Returns(firstBlock);
         loader.Setup(l => l.GetLoaderHeapBlockData(firstBlock)).Returns(new LoaderHeapBlockData
         {
@@ -297,7 +304,7 @@ public unsafe class LoaderTests
         (ISOSDacInterface impl, Mock<ILoader> loader) = CreateSOSDacInterfaceForVirtCallHeapTests(arch);
 
         loader.Setup(l => l.GetLoaderAllocatorHeaps(new TargetPointer(0x100)))
-            .Returns((IReadOnlyDictionary<string, TargetPointer>)new Dictionary<string, TargetPointer>());
+            .Returns((IReadOnlyDictionary<LoaderAllocatorHeapType, TargetPointer>)new Dictionary<LoaderAllocatorHeapType, TargetPointer>());
 
         delegate* unmanaged<ulong, nuint, Interop.BOOL, void> callback = &VisitHeapNoOp;
         int hr = impl.TraverseVirtCallStubHeap(new ClrDataAddress(0x1), VCSHeapTypeIndcell, callback);
@@ -313,9 +320,9 @@ public unsafe class LoaderTests
 
         TargetPointer indcellHeap = new(0x8000);
         loader.Setup(l => l.GetLoaderAllocatorHeaps(new TargetPointer(0x100)))
-            .Returns((IReadOnlyDictionary<string, TargetPointer>)new Dictionary<string, TargetPointer>
+            .Returns((IReadOnlyDictionary<LoaderAllocatorHeapType, TargetPointer>)new Dictionary<LoaderAllocatorHeapType, TargetPointer>
             {
-                ["IndcellHeap"] = indcellHeap,
+                [LoaderAllocatorHeapType.IndcellHeap] = indcellHeap,
             });
 
         delegate* unmanaged<ulong, nuint, Interop.BOOL, void> callback = &VisitHeapNoOp;
@@ -332,9 +339,9 @@ public unsafe class LoaderTests
         (ISOSDacInterface impl, Mock<ILoader> loader) = CreateSOSDacInterfaceForVirtCallHeapTests(arch);
 
         loader.Setup(l => l.GetLoaderAllocatorHeaps(new TargetPointer(0x100)))
-            .Returns((IReadOnlyDictionary<string, TargetPointer>)new Dictionary<string, TargetPointer>
+            .Returns((IReadOnlyDictionary<LoaderAllocatorHeapType, TargetPointer>)new Dictionary<LoaderAllocatorHeapType, TargetPointer>
             {
-                ["IndcellHeap"] = new TargetPointer(0x8000),
+                [LoaderAllocatorHeapType.IndcellHeap] = new TargetPointer(0x8000),
             });
 
         delegate* unmanaged<ulong, nuint, Interop.BOOL, void> callback = &VisitHeapNoOp;
@@ -350,9 +357,9 @@ public unsafe class LoaderTests
         (ISOSDacInterface impl, Mock<ILoader> loader) = CreateSOSDacInterfaceForVirtCallHeapTests(arch);
 
         loader.Setup(l => l.GetLoaderAllocatorHeaps(new TargetPointer(0x100)))
-            .Returns((IReadOnlyDictionary<string, TargetPointer>)new Dictionary<string, TargetPointer>
+            .Returns((IReadOnlyDictionary<LoaderAllocatorHeapType, TargetPointer>)new Dictionary<LoaderAllocatorHeapType, TargetPointer>
             {
-                ["IndcellHeap"] = new TargetPointer(0x8000),
+                [LoaderAllocatorHeapType.IndcellHeap] = new TargetPointer(0x8000),
             });
 
         delegate* unmanaged<ulong, nuint, Interop.BOOL, void> callback = &VisitHeapNoOp;
@@ -368,9 +375,9 @@ public unsafe class LoaderTests
         (ISOSDacInterface impl, Mock<ILoader> loader) = CreateSOSDacInterfaceForVirtCallHeapTests(arch);
 
         loader.Setup(l => l.GetLoaderAllocatorHeaps(new TargetPointer(0x100)))
-            .Returns((IReadOnlyDictionary<string, TargetPointer>)new Dictionary<string, TargetPointer>
+            .Returns((IReadOnlyDictionary<LoaderAllocatorHeapType, TargetPointer>)new Dictionary<LoaderAllocatorHeapType, TargetPointer>
             {
-                ["IndcellHeap"] = new TargetPointer(0x8000),
+                [LoaderAllocatorHeapType.IndcellHeap] = new TargetPointer(0x8000),
             });
 
         int hr = impl.TraverseVirtCallStubHeap(new ClrDataAddress(0x1), VCSHeapTypeIndcell, null);
@@ -406,11 +413,10 @@ public unsafe class LoaderTests
 
         Assert.Equal(HResults.S_OK, hr);
         Assert.Equal(MockHeapDictionary.Count, needed);
-        HashSet<string> expectedNames = new(MockHeapDictionary.Keys);
         for (int i = 0; i < needed; i++)
         {
             string actual = Marshal.PtrToStringAnsi((nint)names[i])!;
-            Assert.Contains(actual, expectedNames);
+            Assert.Contains(HeapNameToType(actual), MockHeapDictionary.Keys);
         }
     }
 
@@ -426,11 +432,10 @@ public unsafe class LoaderTests
 
         Assert.Equal(HResults.S_FALSE, hr);
         Assert.Equal(MockHeapDictionary.Count, needed);
-        HashSet<string> expectedNames = new(MockHeapDictionary.Keys);
         for (int i = 0; i < 2; i++)
         {
             string actual = Marshal.PtrToStringAnsi((nint)names[i])!;
-            Assert.Contains(actual, expectedNames);
+            Assert.Contains(HeapNameToType(actual), MockHeapDictionary.Keys);
         }
     }
 
@@ -478,7 +483,8 @@ public unsafe class LoaderTests
         for (int i = 0; i < needed; i++)
         {
             string name = Marshal.PtrToStringAnsi((nint)names[i])!;
-            Assert.Equal((ulong)MockHeapDictionary[name], (ulong)heaps[i]);
+            LoaderAllocatorHeapType heapType = HeapNameToType(name);
+            Assert.Equal((ulong)MockHeapDictionary[heapType], (ulong)heaps[i]);
             Assert.Equal(0, kinds[i]); // LoaderHeapKindNormal
         }
     }
