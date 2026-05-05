@@ -68,6 +68,9 @@ function set_env_vars()
     if [[ -n "$EMSDK_PATH" ]]; then
         export EMSDK_PATH
     fi
+    if [[ -n "$MINIPAL_INCLUDE_DIR" ]]; then
+        export MINIPAL_INCLUDE_DIR
+    fi
 
     local _SDK_DIR=
     if [[ -n "$HELIX_WORKITEM_UPLOAD_ROOT" ]]; then

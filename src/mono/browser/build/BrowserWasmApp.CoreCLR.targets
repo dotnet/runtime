@@ -274,16 +274,26 @@
     </ItemGroup>
 
     <!-- Compile flags for ManagedToNativeGenerator output (pinvoke-table.cpp,
-         wasm_m2n_invoke.g.cpp). All declarations these files need are provided
-         by coreclr_compat.h (which ships next to this targets file), force-included
-         here. We keep this off the user-source flags (_EmccCFlags) so user .c/.cpp
+         wasm_m2n_invoke.g.cpp). Force-include:
+           * coreclr_compat.h (ships next to this targets file) — provides type and
+             helper stubs to compile outside the full CoreCLR build context.
+           * minipal/utils.h — defines NOINLINE / FORCEINLINE / ARRAY_SIZE etc. used
+             directly by generator output (e.g. NOINLINE on portable-entry-point
+             call helpers in wasm_m2n_invoke.g.cpp).
+         We keep these off the user-source flags (_EmccCFlags) so user .c/.cpp
          in NativeFileReference don't pick up the C++-style struct decls (which
          would fail to compile in C without a 'struct' tag).
-         Avoiding reliance on the in-repo coreclr/vm/wasm and native/minipal headers
-         is intentional, since those aren't present in the WBT Helix payload. -->
+         _MinipalIncludeDir is provided via MINIPAL_INCLUDE_DIR (HelixPreCommand
+         on Helix, RunScriptCommands locally) so the dir resolves outside the
+         in-repo source tree; falls back to the in-repo path for full repo builds. -->
+    <PropertyGroup>
+      <_MinipalIncludeDir Condition="'$(MINIPAL_INCLUDE_DIR)' != ''">$([MSBuild]::EnsureTrailingSlash($([System.IO.Path]::GetFullPath('$(MINIPAL_INCLUDE_DIR)'))))</_MinipalIncludeDir>
+      <_MinipalIncludeDir Condition="'$(_MinipalIncludeDir)' == ''">$([MSBuild]::NormalizeDirectory('$(MSBuildThisFileDirectory)..', '..', '..', 'native', 'minipal'))</_MinipalIncludeDir>
+    </PropertyGroup>
     <ItemGroup>
       <_EmccCFlagsGenerated Include="@(_EmccCFlags)" />
       <_EmccCFlagsGenerated Include="-include &quot;$(MSBuildThisFileDirectory)coreclr_compat.h&quot;" />
+      <_EmccCFlagsGenerated Include="-include &quot;$(_MinipalIncludeDir)utils.h&quot;" />
     </ItemGroup>
 
     <!-- Source files: user NativeFileReference sources -->
@@ -363,9 +373,9 @@
     <ItemGroup>
       <_WasmSourceFileToCompileGenerated Remove="@(_WasmSourceFileToCompileGenerated)" />
       <_WasmSourceFileToCompileGenerated Include="$(_WasmPInvokeTablePath)"          ObjectFile="$(_WasmIntermediateOutputPath)pinvoke-table.o"
-                                                                                     Dependencies="$(_WasmCompileRspGenerated);$(MSBuildThisFileDirectory)coreclr_compat.h" />
+                                                                                     Dependencies="$(_WasmCompileRspGenerated);$(MSBuildThisFileDirectory)coreclr_compat.h;$(_MinipalIncludeDir)utils.h" />
       <_WasmSourceFileToCompileGenerated Include="$(_WasmInterpToNativeTablePath)"   ObjectFile="$(_WasmIntermediateOutputPath)wasm_m2n_invoke.o"
-                                                                                     Dependencies="$(_WasmCompileRspGenerated);$(MSBuildThisFileDirectory)coreclr_compat.h" />
+                                                                                     Dependencies="$(_WasmCompileRspGenerated);$(MSBuildThisFileDirectory)coreclr_compat.h;$(_MinipalIncludeDir)utils.h" />
     </ItemGroup>
   </Target>
 

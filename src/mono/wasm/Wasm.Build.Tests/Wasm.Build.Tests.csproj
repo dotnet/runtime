@@ -161,6 +161,13 @@
       <RunScriptCommands Condition="'$(OS)' != 'Windows_NT' and '$(RuntimeFlavor)' == 'CoreCLR'" Include="export WASM_APP_BUILDER_TASKS_ASSEMBLY_PATH=$(WasmAppBuilderDir)WasmAppBuilder.dll" />
       <RunScriptCommands Condition="'$(OS)' == 'Windows_NT' and '$(RuntimeFlavor)' == 'CoreCLR'" Include="set WASM_APP_BUILDER_TASKS_ASSEMBLY_PATH=$(WasmAppBuilderDir)WasmAppBuilder.dll" />
 
+      <!-- CoreCLR WBT: BrowserWasmApp.CoreCLR.targets force-includes minipal/utils.h (NOINLINE etc.)
+           when compiling ManagedToNativeGenerator output. On Helix, MINIPAL_INCLUDE_DIR is provided
+           by sendtohelix-browser.targets via HelixPreCommand. For local runs, point at the in-repo
+           minipal dir so the same import path resolves. -->
+      <RunScriptCommands Condition="'$(OS)' != 'Windows_NT' and '$(RuntimeFlavor)' == 'CoreCLR'" Include="export MINIPAL_INCLUDE_DIR=$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'src', 'native', 'minipal'))" />
+      <RunScriptCommands Condition="'$(OS)' == 'Windows_NT' and '$(RuntimeFlavor)' == 'CoreCLR'" Include="set MINIPAL_INCLUDE_DIR=$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'src', 'native', 'minipal'))" />
+
       <RunScriptCommands Condition="'$(OS)' != 'Windows_NT' and '$(RuntimeFlavor)' == 'CoreCLR' and '$(_LocalEmsdkPathForTests)' != ''" Include="export EMSDK_PATH=$(_LocalEmsdkPathForTests)" />
       <RunScriptCommands Condition="'$(OS)' == 'Windows_NT' and '$(RuntimeFlavor)' == 'CoreCLR' and '$(_LocalEmsdkPathForTests)' != ''" Include="set EMSDK_PATH=$(_LocalEmsdkPathForTests)" />
     </ItemGroup>

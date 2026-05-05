@@ -3,8 +3,13 @@
 // This header is pre-included via -include when compiling pinvoke-table.cpp
 // and wasm_m2n_invoke.g.cpp produced by ManagedToNativeGenerator, so those
 // files can be compiled outside the full CoreCLR build context (e.g. in
-// Wasm.Build.Tests on Helix where src/coreclr/vm/wasm/callhelpers.hpp and
-// src/native/minipal headers are not part of the payload).
+// Wasm.Build.Tests on Helix where src/coreclr/vm/wasm/callhelpers.hpp is not
+// part of the payload).
+//
+// Macro definitions consumed by generator output (NOINLINE, ARRAY_SIZE, ...)
+// come from src/native/minipal/utils.h, which is shipped to the WBT Helix
+// payload and force-included alongside this header by
+// BrowserWasmApp.CoreCLR.targets.
 //
 // Definitions for the symbols declared here live in libcoreclr_static.a (which
 // is linked in later) or in the same generated .cpp (e.g. g_wasmThunks /
