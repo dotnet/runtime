@@ -118,7 +118,7 @@ if (!resumed_C)
 {
   RestoreContextsOnSuspension(false, execContext_C, syncContext_C);
   // Logical return to B and linking in B's continuation
-  CaptureContinuationContext(continuation, ref continuationContinuationContextForB, ref continuation.FlagsForB)
+  CaptureContinuationContext(continuation, ref continuation.ContinuationContextForB, ref continuation.FlagsForB)
   CaptureExecutionContext(continuation, ref continuation.ExecutionContextForB);
   if (!resumed_B)
   {
@@ -147,7 +147,7 @@ This may look like a large amount of code for every suspension inside `C`, but s
 ### Resuming inside an inlinee
 
 Let's imagine we resume at the inlined `Task.Yield()` in `C`.
-Initially such a resumption progesses as normal: async infrastructures restores the `ExecutionContext` that was saved.
+Initially such a resumption progesses as normal: async infrastructure restores the `ExecutionContext` that was saved.
 If this was a task await (which it isn't, but often will be), the async infrastructure ensures it is running in the right continuation context.
 Then it resumes in the code.
 
@@ -200,9 +200,9 @@ This simplifies the cases above since `resumed_B` and `resumed_C` are always fal
 Today we compute the `resumed` value only for the top-level async function, since it is computed based on the async continuation parameter.
 With inlinees this strategy no longer works.
 Instead insert IR to compute these values at several points:
-1. When starting a function (whether it be inlined or the top function), assign `resumed_F = false`
-2. When resuming a function at a resumption point assign `resumed_F = true`
-3. When an inlined call logically returns, inherit the resumption status: `resumed_inliner |= resumed_inlinee`.
+1. When starting a function `F` (whether it be the top function or start of an inlined function), assign `resumed_F = false`
+2. When resuming `F` at one of its resumption points assign `resumed_F = true`
+3. When logically returning from `F` to its caller, inherit the resumption status: `resumed_caller |= resumed_F`.
 
 Note that these are introduced at different points. (1) and (3) will likely be inserted during `PHASE_SAVE_ASYNC_CONTEXTS` while (2) will be inserted in `PHASE_ASYNC`.
 
@@ -310,7 +310,7 @@ private struct AlwaysThreadPoolAwaitable : INotifyCompletion
 - `Baz()` always suspends, switching onto a thread pool thread. No continuation context is captured for custom awaitables.
 - On resumption, async infrastructure runs `Baz` directly in the context of `AlwaysThreadPoolAwaitable`
 - Next, async infrastructure switches to `_syncContext2` to run `Bar`'s continuation
-- Next, async infrastructure switches to `_syncContext1` to run `Baz`'s continuation
+- Next, async infrastructure switches to `_syncContext1` to run `Foo`'s continuation
 
 Inlining in this case would need to suspend+switch+resume in both the `IsOnRightContext` checks.
 
