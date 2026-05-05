@@ -11,7 +11,6 @@ using Xunit.Abstractions;
 
 namespace System.Xml.XslCompiledTransformApiTests
 {
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/124344", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile), nameof(PlatformDetection.IsCoreCLR))]
     public class SameInstanceXslTransformTestCase : XsltApiTestCaseBase2
     {
         // Variables from init string
@@ -37,6 +36,7 @@ namespace System.Xml.XslCompiledTransformApiTests
 
     //[TestCase(Name = "Same instance testing: Transform() - READER")]
     [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/124344", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile), nameof(PlatformDetection.IsCoreCLR))]
     public class SameInstanceXslTransformReader : SameInstanceXslTransformTestCase
     {
         private XPathDocument _xd;           // Loads XML file
@@ -321,6 +321,7 @@ namespace System.Xml.XslCompiledTransformApiTests
 
     //[TestCase(Name = "Same instance testing: Transform() - TEXTWRITER")]
     [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/124344", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile), nameof(PlatformDetection.IsCoreCLR))]
     public class SameInstanceXslTransformWriter : SameInstanceXslTransformTestCase
     {
         private XPathDocument _xd; // Loads XML file
