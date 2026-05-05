@@ -1212,11 +1212,15 @@ bool AutoVectorizer::TryNormalizeScalarValue(GenTree** value, var_types elementT
     return false;
 }
 
-AutoVectorizer::PackNode* AutoVectorizer::TryBuildComparePack(LoopVectorizationPlan* plan,
-                                                              Statement*             stmt,
-                                                              GenTree*               value,
-                                                              var_types              elementType)
+AutoVectorizer::PackNode* AutoVectorizer::TryBuildComparePack(
+    LoopVectorizationPlan* plan, Statement* stmt, GenTree* value, var_types elementType, unsigned depth)
 {
+    if (depth > MaxPackDepth)
+    {
+        JITDUMP("pack recursion depth exceeded %u, bail out\n", MaxPackDepth);
+        return nullptr;
+    }
+
     value = UnwrapCommaValue(value);
     if (!value->OperIsCompare() || !IsSupportedCompareOp(value->OperGet(), elementType))
     {
@@ -1225,13 +1229,13 @@ AutoVectorizer::PackNode* AutoVectorizer::TryBuildComparePack(LoopVectorizationP
         return nullptr;
     }
 
-    PackNode* const op1 = TryBuildPack(plan, stmt, value->AsOp()->gtOp1, elementType);
+    PackNode* const op1 = TryBuildPack(plan, stmt, value->AsOp()->gtOp1, elementType, depth + 1);
     if (op1 == nullptr)
     {
         return nullptr;
     }
 
-    PackNode* const op2 = TryBuildPack(plan, stmt, value->AsOp()->gtOp2, elementType);
+    PackNode* const op2 = TryBuildPack(plan, stmt, value->AsOp()->gtOp2, elementType, depth + 1);
     if (op2 == nullptr)
     {
         return nullptr;
@@ -1252,11 +1256,15 @@ AutoVectorizer::PackNode* AutoVectorizer::TryBuildComparePack(LoopVectorizationP
     return cmp;
 }
 
-AutoVectorizer::PackNode* AutoVectorizer::TryBuildPack(LoopVectorizationPlan* plan,
-                                                       Statement*             stmt,
-                                                       GenTree*               value,
-                                                       var_types              elementType)
+AutoVectorizer::PackNode* AutoVectorizer::TryBuildPack(
+    LoopVectorizationPlan* plan, Statement* stmt, GenTree* value, var_types elementType, unsigned depth)
 {
+    if (depth > MaxPackDepth)
+    {
+        JITDUMP("pack recursion depth exceeded %u, bail out\n", MaxPackDepth);
+        return nullptr;
+    }
+
     value = UnwrapCommaValue(value);
 
     if (!TryNormalizeScalarValue(&value, elementType))
@@ -1311,7 +1319,7 @@ AutoVectorizer::PackNode* AutoVectorizer::TryBuildPack(LoopVectorizationPlan* pl
         GenTree* def = nullptr;
         if (TryGetLocalDef(plan, value->AsLclVarCommon()->GetLclNum(), &def) && (def != value) && !def->OperIs(GT_PHI))
         {
-            return TryBuildPack(plan, stmt, def, elementType);
+            return TryBuildPack(plan, stmt, def, elementType, depth + 1);
         }
     }
 
@@ -1343,7 +1351,7 @@ AutoVectorizer::PackNode* AutoVectorizer::TryBuildPack(LoopVectorizationPlan* pl
             return nullptr;
         }
 
-        PackNode* const operand = TryBuildPack(plan, stmt, value->AsOp()->gtOp1, elementType);
+        PackNode* const operand = TryBuildPack(plan, stmt, value->AsOp()->gtOp1, elementType, depth + 1);
         if (operand == nullptr)
         {
             return nullptr;
@@ -1372,13 +1380,13 @@ AutoVectorizer::PackNode* AutoVectorizer::TryBuildPack(LoopVectorizationPlan* pl
             return nullptr;
         }
 
-        PackNode* const op1 = TryBuildPack(plan, stmt, value->AsOp()->gtOp1, elementType);
+        PackNode* const op1 = TryBuildPack(plan, stmt, value->AsOp()->gtOp1, elementType, depth + 1);
         if (op1 == nullptr)
         {
             return nullptr;
         }
 
-        PackNode* const op2 = TryBuildPack(plan, stmt, value->AsOp()->gtOp2, elementType);
+        PackNode* const op2 = TryBuildPack(plan, stmt, value->AsOp()->gtOp2, elementType, depth + 1);
         if (op2 == nullptr)
         {
             return nullptr;
@@ -1403,19 +1411,19 @@ AutoVectorizer::PackNode* AutoVectorizer::TryBuildPack(LoopVectorizationPlan* pl
     if (value->OperIs(GT_SELECT))
     {
         GenTreeConditional* const select = value->AsConditional();
-        PackNode* const           cond   = TryBuildComparePack(plan, stmt, select->gtCond, elementType);
+        PackNode* const           cond   = TryBuildComparePack(plan, stmt, select->gtCond, elementType, depth + 1);
         if (cond == nullptr)
         {
             return nullptr;
         }
 
-        PackNode* const trueValue = TryBuildPack(plan, stmt, select->gtOp1, elementType);
+        PackNode* const trueValue = TryBuildPack(plan, stmt, select->gtOp1, elementType, depth + 1);
         if (trueValue == nullptr)
         {
             return nullptr;
         }
 
-        PackNode* const falseValue = TryBuildPack(plan, stmt, select->gtOp2, elementType);
+        PackNode* const falseValue = TryBuildPack(plan, stmt, select->gtOp2, elementType, depth + 1);
         if (falseValue == nullptr)
         {
             return nullptr;

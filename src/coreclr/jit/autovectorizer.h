@@ -14,6 +14,7 @@ public:
 private:
     static const unsigned MaxLanes     = 64;
     static const unsigned MaxPackNodes = 64;
+    static const unsigned MaxPackDepth = 64;
 
     enum class PackKind
     {
@@ -151,11 +152,13 @@ private:
                        const LoopVectorizationPlan::ScalarAccess& second) const;
     bool      TryGetIndirOperand(GenTree* tree, GenTree** indir);
     bool      TryNormalizeScalarValue(GenTree** value, var_types elementType) const;
-    PackNode* TryBuildPack(LoopVectorizationPlan* plan, Statement* stmt, GenTree* value, var_types elementType);
-    PackNode* TryBuildComparePack(LoopVectorizationPlan* plan, Statement* stmt, GenTree* value, var_types elementType);
-    bool      TryBuildSLPPlan(LoopVectorizationPlan* plan);
-    bool      TryRewritePlan(LoopVectorizationPlan* plan);
-    PackNode* NewPackNode(SLPPlan* slpPlan, PackKind kind, var_types elementType, unsigned laneCount);
+    PackNode* TryBuildPack(
+        LoopVectorizationPlan* plan, Statement* stmt, GenTree* value, var_types elementType, unsigned depth = 0);
+    PackNode* TryBuildComparePack(
+        LoopVectorizationPlan* plan, Statement* stmt, GenTree* value, var_types elementType, unsigned depth);
+    bool        TryBuildSLPPlan(LoopVectorizationPlan* plan);
+    bool        TryRewritePlan(LoopVectorizationPlan* plan);
+    PackNode*   NewPackNode(SLPPlan* slpPlan, PackKind kind, var_types elementType, unsigned laneCount);
     const char* PackKindName(PackKind kind) const;
     void        DumpSLPPlan(const LoopVectorizationPlan& plan) const;
     GenTree*    BuildAddress(LoopVectorizationPlan* plan, const LoopVectorizationPlan::ScalarAccess& access);
