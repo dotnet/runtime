@@ -1987,16 +1987,16 @@ void CodeGen::instGen_Set_Reg_To_Imm(emitAttr       size,
 	if (size == EA_4BYTE)
 	{
 	    // 32-bit: lis + ori
-	    GetEmitter()->emitIns_R_I(INS_li, size, reg, imm, INS_OPTS_NONE, INS_SCALABLE_OPTS_NONE DEBUGARG(targetHandle) DEBUGARG(gtFlags));
-	    GetEmitter()->emitIns_R_I(INS_ori, size, reg, imm, INS_OPTS_NONE, INS_SCALABLE_OPTS_NONE DEBUGARG(targetHandle) DEBUGARG(gtFlags));
+	    GetEmitter()->emitIns_R_I(INS_lis, size, reg, (imm >> 16), INS_OPTS_NONE, INS_SCALABLE_OPTS_NONE DEBUGARG(targetHandle) DEBUGARG(gtFlags));
+	    GetEmitter()->emitIns_R_I(INS_ori, size, reg, (imm & 0xffff), INS_OPTS_NONE, INS_SCALABLE_OPTS_NONE DEBUGARG(targetHandle) DEBUGARG(gtFlags));
 	}
 	else //EA_8BYTE
 	{
-	    GetEmitter()->emitIns_R_I(INS_li, size, reg, imm, INS_OPTS_NONE, INS_SCALABLE_OPTS_NONE DEBUGARG(targetHandle) DEBUGARG(gtFlags));
-	    GetEmitter()->emitIns_R_I(INS_ori, size, reg, imm, INS_OPTS_NONE, INS_SCALABLE_OPTS_NONE DEBUGARG(targetHandle) DEBUGARG(gtFlags));
+	    GetEmitter()->emitIns_R_I(INS_lis, size, reg, ((imm >> 48) & 0xffff), INS_OPTS_NONE, INS_SCALABLE_OPTS_NONE DEBUGARG(targetHandle) DEBUGARG(gtFlags));
+	    GetEmitter()->emitIns_R_I(INS_ori, size, reg, ((imm >> 32) & 0xffff), INS_OPTS_NONE, INS_SCALABLE_OPTS_NONE DEBUGARG(targetHandle) DEBUGARG(gtFlags));
 	    GetEmitter()->emitIns_R_I(INS_sldi, size, reg, 32, INS_OPTS_NONE, INS_SCALABLE_OPTS_NONE DEBUGARG(targetHandle) DEBUGARG(gtFlags));
-	    GetEmitter()->emitIns_R_I(INS_oris, size, reg, imm, INS_OPTS_NONE, INS_SCALABLE_OPTS_NONE DEBUGARG(targetHandle) DEBUGARG(gtFlags));
-	    GetEmitter()->emitIns_R_I(INS_ori, size, reg, imm, INS_OPTS_NONE, INS_SCALABLE_OPTS_NONE DEBUGARG(targetHandle) DEBUGARG(gtFlags));
+	    GetEmitter()->emitIns_R_I(INS_oris, size, reg, ((imm >> 16) & 0xffff), INS_OPTS_NONE, INS_SCALABLE_OPTS_NONE DEBUGARG(targetHandle) DEBUGARG(gtFlags));
+	    GetEmitter()->emitIns_R_I(INS_ori, size, reg, (imm & 0xffff), INS_OPTS_NONE, INS_SCALABLE_OPTS_NONE DEBUGARG(targetHandle) DEBUGARG(gtFlags));
 	}
     }
 }

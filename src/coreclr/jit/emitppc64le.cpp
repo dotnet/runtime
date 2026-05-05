@@ -1105,13 +1105,13 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
         // Then load/store dataReg from/to [addrReg] with offset 0
         // IMPORTANT: In PowerPC, R0 as base register means "address 0", not "contents of R0"
         // This is a PowerPC ISA quirk that must be handled carefully
-	regNumber baseReg = addr->GetRegNum();
+ regNumber baseReg = addr->GetRegNum();
         if (baseReg == REG_R0)
         {
-	    // WORKAROUND: Skip loads/stores with R0 as base register
-            // TODO: Move address to another register before load/store
-            printf("WARNING: Skipping load/store with R0 base (likely invalid address)\n");
-            return;
+     // Move address from R0 to R9 to avoid PowerPC ISA quirk
+            // where R0 as base register means "address 0" instead of "contents of R0"
+            emitIns_R_R(INS_mov, EA_PTRSIZE, REG_R9, REG_R0);
+            baseReg = REG_R9;
         }
 
         emitIns_R_R_I(ins, attr, dataReg, baseReg, 0);
