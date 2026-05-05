@@ -67,15 +67,30 @@ struct cdac_data<GC_NAMESPACE::gc_heap>
 #endif // !USE_REGIONS
 
     /* For use in GCHeapAnalyzeData APIs */
+#ifdef HEAP_ANALYZE
     GC_HEAP_FIELD(InternalRootArray, internal_root_array)
     GC_HEAP_FIELD(InternalRootArrayIndex, internal_root_array_index)
     GC_HEAP_FIELD(HeapAnalyzeSuccess, heap_analyze_success)
+#endif // HEAP_ANALYZE
 
     /* For use in GCInterestingInfo APIs */
     GC_HEAP_FIELD(InterestingData, interesting_data_per_heap)
     GC_HEAP_FIELD(CompactReasons, compact_reasons_per_heap)
     GC_HEAP_FIELD(ExpandMechanisms, expand_mechanisms_per_heap)
     GC_HEAP_FIELD(InterestingMechanismBits, interesting_mechanism_bits_per_heap)
+    /* For use in GCFreeRegions APIs */
+#ifdef BACKGROUND_GC
+    GC_HEAP_FIELD(FreeableSohSegment, freeable_soh_segment)
+    GC_HEAP_FIELD(FreeableUohSegment, freeable_uoh_segment)
+#endif // BACKGROUND_GC
+#ifdef USE_REGIONS
+    GC_HEAP_FIELD(FreeRegions, free_regions)
+
+    static constexpr decltype(&GC_NAMESPACE::gc_heap::global_free_huge_regions) GlobalFreeHugeRegions = &GC_NAMESPACE::gc_heap::global_free_huge_regions;
+    static constexpr decltype(&GC_NAMESPACE::gc_heap::global_regions_to_decommit) GlobalRegionsToDecommit = &GC_NAMESPACE::gc_heap::global_regions_to_decommit;
+#endif // USE_REGIONS
+
+    static constexpr decltype(&GC_NAMESPACE::gc_heap::bookkeeping_start) BookkeepingStart = &GC_NAMESPACE::gc_heap::bookkeeping_start;
 };
 
 template<>

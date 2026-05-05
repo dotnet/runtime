@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Microsoft.Diagnostics.DataContractReader.Data;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
 
@@ -16,7 +17,6 @@ internal sealed class FrameIterator
 
         /* TransitionFrame Types */
         FramedMethodFrame,
-        CLRToCOMMethodFrame,
         PInvokeCalliFrame,
         PrestubMethodFrame,
         StubDispatchFrame,
@@ -37,9 +37,6 @@ internal sealed class FrameIterator
         TailCallFrame,
 
         /* Other Frame Types not handled by the iterator */
-        UnmanagedToManagedFrame,
-        ComMethodFrame,
-        ComPrestubMethodFrame,
         ProtectValueClassFrame,
         DebuggerClassInitMarkFrame,
         DebuggerExitFrame,
@@ -93,7 +90,6 @@ internal sealed class FrameIterator
 
             // TransitionFrame type frames
             case FrameType.FramedMethodFrame:
-            case FrameType.CLRToCOMMethodFrame:
             case FrameType.PInvokeCalliFrame:
             case FrameType.PrestubMethodFrame:
             case FrameType.StubDispatchFrame:
@@ -137,20 +133,81 @@ internal sealed class FrameIterator
         }
     }
 
-    public bool IsInlineCallFrameWithActiveCall()
+    /// <summary>
+    /// Returns the return address for the current Frame, matching native Frame::GetReturnAddress().
+    /// Returns TargetPointer.Null if the Frame has no return address (e.g., non-active ICF,
+    /// base Frame types, FuncEvalFrame during exception eval).
+    /// </summary>
+    public TargetPointer GetReturnAddress()
     {
-        if (GetFrameType(target, CurrentFrame.Identifier) != FrameType.InlinedCallFrame)
+        FrameType frameType = GetCurrentFrameType();
+        switch (frameType)
         {
-            return false;
-        }
-        Data.InlinedCallFrame inlinedCallFrame = target.ProcessedData.GetOrAdd<Data.InlinedCallFrame>(currentFramePointer);
-        return InlinedCallFrameHasActiveCall(inlinedCallFrame);
-    }
+            // InlinedCallFrame: returns 0 if inactive, else m_pCallerReturnAddress
+            case FrameType.InlinedCallFrame:
+                Data.InlinedCallFrame icf = target.ProcessedData.GetOrAdd<Data.InlinedCallFrame>(currentFramePointer);
+                return InlinedCallFrameHasActiveCall(icf) ? icf.CallerReturnAddress : TargetPointer.Null;
 
-    public static bool IsInlinedCallFrame(Target target, TargetPointer framePointer)
-    {
-        Data.Frame frame = target.ProcessedData.GetOrAdd<Data.Frame>(framePointer);
-        return GetFrameType(target, frame.Identifier) == FrameType.InlinedCallFrame;
+            // TransitionFrame types: read return address from the transition block
+            case FrameType.FramedMethodFrame:
+            case FrameType.PInvokeCalliFrame:
+            case FrameType.PrestubMethodFrame:
+            case FrameType.StubDispatchFrame:
+            case FrameType.CallCountingHelperFrame:
+            case FrameType.ExternalMethodFrame:
+            case FrameType.DynamicHelperFrame:
+                Data.FramedMethodFrame fmf = target.ProcessedData.GetOrAdd<Data.FramedMethodFrame>(currentFramePointer);
+                Data.TransitionBlock tb = target.ProcessedData.GetOrAdd<Data.TransitionBlock>(fmf.TransitionBlockPtr);
+                return tb.ReturnAddress;
+
+            // SoftwareExceptionFrame: stored m_ReturnAddress
+            case FrameType.SoftwareExceptionFrame:
+                Data.SoftwareExceptionFrame sef = target.ProcessedData.GetOrAdd<Data.SoftwareExceptionFrame>(currentFramePointer);
+                return sef.ReturnAddress;
+
+            // ResumableFrame / RedirectedThreadFrame: RIP from captured context
+            case FrameType.ResumableFrame:
+            case FrameType.RedirectedThreadFrame:
+            {
+                Data.ResumableFrame rf = target.ProcessedData.GetOrAdd<Data.ResumableFrame>(currentFramePointer);
+                IPlatformAgnosticContext ctx = IPlatformAgnosticContext.GetContextForPlatform(target);
+                ctx.ReadFromAddress(target, rf.TargetContextPtr);
+                return ctx.InstructionPointer;
+            }
+
+            // FaultingExceptionFrame: RIP from embedded context
+            case FrameType.FaultingExceptionFrame:
+            {
+                Data.FaultingExceptionFrame fef = target.ProcessedData.GetOrAdd<Data.FaultingExceptionFrame>(currentFramePointer);
+                IPlatformAgnosticContext ctx = IPlatformAgnosticContext.GetContextForPlatform(target);
+                ctx.ReadFromAddress(target, fef.TargetContext);
+                return ctx.InstructionPointer;
+            }
+
+            // HijackFrame: stored m_ReturnAddress
+            case FrameType.HijackFrame:
+                Data.HijackFrame hf = target.ProcessedData.GetOrAdd<Data.HijackFrame>(currentFramePointer);
+                return hf.ReturnAddress;
+
+            // TailCallFrame: stored m_ReturnAddress
+            case FrameType.TailCallFrame:
+                Data.TailCallFrame tcf = target.ProcessedData.GetOrAdd<Data.TailCallFrame>(currentFramePointer);
+                return tcf.ReturnAddress;
+
+            // FuncEvalFrame: returns 0 during exception eval, else from transition block
+            case FrameType.FuncEvalFrame:
+                Data.FuncEvalFrame funcEval = target.ProcessedData.GetOrAdd<Data.FuncEvalFrame>(currentFramePointer);
+                Data.DebuggerEval dbgEval = target.ProcessedData.GetOrAdd<Data.DebuggerEval>(funcEval.DebuggerEvalPtr);
+                if (dbgEval.EvalUsesHijack)
+                    return TargetPointer.Null;
+                Data.FramedMethodFrame funcEvalFmf = target.ProcessedData.GetOrAdd<Data.FramedMethodFrame>(currentFramePointer);
+                Data.TransitionBlock funcEvalTb = target.ProcessedData.GetOrAdd<Data.TransitionBlock>(funcEvalFmf.TransitionBlockPtr);
+                return funcEvalTb.ReturnAddress;
+
+            // Base Frame and unknown types: return 0 (matches native Frame::GetReturnAddressPtr_Impl)
+            default:
+                return TargetPointer.Null;
+        }
     }
 
     public static string GetFrameName(Target target, TargetPointer frameIdentifier)
@@ -165,7 +222,7 @@ internal sealed class FrameIterator
 
     public FrameType GetCurrentFrameType() => GetFrameType(target, CurrentFrame.Identifier);
 
-    private static FrameType GetFrameType(Target target, TargetPointer frameIdentifier)
+    internal static FrameType GetFrameType(Target target, TargetPointer frameIdentifier)
     {
         foreach (FrameType frameType in Enum.GetValues<FrameType>())
         {
@@ -206,7 +263,6 @@ internal sealed class FrameIterator
             case FrameType.ExternalMethodFrame:
             case FrameType.PrestubMethodFrame:
             case FrameType.CallCountingHelperFrame:
-            case FrameType.CLRToCOMMethodFrame:
             case FrameType.InterpreterFrame:
                 Data.FramedMethodFrame framedMethodFrame = target.ProcessedData.GetOrAdd<Data.FramedMethodFrame>(frame.Address);
                 return framedMethodFrame.MethodDescPtr;
@@ -235,21 +291,6 @@ internal sealed class FrameIterator
                 else
                     return TargetPointer.Null;
             default:
-                return TargetPointer.Null;
-        }
-    }
-
-    public static TargetPointer GetReturnAddress(Target target, TargetPointer framePtr)
-    {
-        Data.Frame frame = target.ProcessedData.GetOrAdd<Data.Frame>(framePtr);
-        FrameType frameType = GetFrameType(target, frame.Identifier);
-        switch (frameType)
-        {
-            case FrameType.InlinedCallFrame:
-                Data.InlinedCallFrame inlinedCallFrame = target.ProcessedData.GetOrAdd<Data.InlinedCallFrame>(frame.Address);
-                return InlinedCallFrameHasActiveCall(inlinedCallFrame) ? inlinedCallFrame.CallerReturnAddress : TargetPointer.Null;
-            default:
-                // NotImplemented for other frame types
                 return TargetPointer.Null;
         }
     }

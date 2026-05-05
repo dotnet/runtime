@@ -10,34 +10,21 @@ namespace System.Diagnostics
 {
     internal static partial class ProcessManager
     {
-        /// <summary>Gets the IDs of all processes on the current machine.</summary>
-        public static int[] GetProcessIds()
-        {
-            IEnumerable<int> pids = EnumerateProcessIds();
-            return new List<int>(pids).ToArray();
-        }
-
-        /// <summary>Gets process infos for each process on the specified machine.</summary>
+        /// <summary>Gets process infos for each process on the local machine.</summary>
+        /// <param name="builder">The builder to add found process infos to.</param>
         /// <param name="processNameFilter">Optional process name to use as an inclusion filter.</param>
-        /// <param name="machineName">The target machine.</param>
-        /// <returns>An array of process infos, one per found process.</returns>
-        public static ProcessInfo[] GetProcessInfos(string? processNameFilter, string machineName)
+        public static void GetProcessInfos(ref ArrayBuilder<ProcessInfo> builder, string? processNameFilter)
         {
-            ThrowIfRemoteMachine(machineName);
-
             // Iterate through all process IDs to load information about each process
             IEnumerable<int> pids = EnumerateProcessIds();
-            ArrayBuilder<ProcessInfo> processes = default;
             foreach (int pid in pids)
             {
                 ProcessInfo? pi = CreateProcessInfo(pid, processNameFilter);
                 if (pi != null)
                 {
-                    processes.Add(pi);
+                    builder.Add(pi);
                 }
             }
-
-            return processes.ToArray();
         }
 
         /// <summary>Gets an array of module infos for the specified process.</summary>
@@ -71,6 +58,17 @@ namespace System.Diagnostics
             return new ProcessModuleCollection(0);
         }
 
+        internal static string? GetProcessName(int processId, string _ /* machineName */, bool __ /* isRemoteMachine */, ref ProcessInfo? processInfo)
+        {
+            if (processInfo is not null)
+            {
+                return processInfo.ProcessName;
+            }
+
+            processInfo = CreateProcessInfo(processId);
+            return processInfo?.ProcessName;
+        }
+
         /// <summary>
         /// Creates a ProcessInfo from the specified process ID.
         /// </summary>
@@ -87,8 +85,7 @@ namespace System.Diagnostics
             }
 
             string? processName = Process.GetUntruncatedProcessName(ref processInfo, ref argString);
-            if (!string.IsNullOrEmpty(processNameFilter) &&
-                !string.Equals(processName, processNameFilter, StringComparison.OrdinalIgnoreCase))
+            if (processNameFilter != null && !processNameFilter.Equals(processName, StringComparison.OrdinalIgnoreCase))
             {
                 return null;
             }

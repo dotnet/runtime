@@ -394,24 +394,28 @@ namespace System.Runtime.Intrinsics.X86
             ///   <para>  VMOVDQU8 xmm1 {k1}{z}, m128</para>
             /// </summary>
             /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
+            [RequiresUnsafe]
             public static unsafe Vector128<byte> MaskLoad(byte* address, Vector128<byte> mask, Vector128<byte> merge) { throw new PlatformNotSupportedException(); }
             /// <summary>
             ///   <para>__m128i _mm_mask_loadu_epi16 (__m128i s, __mmask8 k, void const * mem_addr)</para>
             ///   <para>  VMOVDQU32 xmm1 {k1}{z}, m128</para>
             /// </summary>
             /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
+            [RequiresUnsafe]
             public static unsafe Vector128<short> MaskLoad(short* address, Vector128<short> mask, Vector128<short> merge) { throw new PlatformNotSupportedException(); }
             /// <summary>
             ///   <para>__m128i _mm_mask_loadu_epi8 (__m128i s, __mmask16 k, void const * mem_addr)</para>
             ///   <para>  VMOVDQU8 xmm1 {k1}{z}, m128</para>
             /// </summary>
             /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
+            [RequiresUnsafe]
             public static unsafe Vector128<sbyte> MaskLoad(sbyte* address, Vector128<sbyte> mask, Vector128<sbyte> merge) { throw new PlatformNotSupportedException(); }
             /// <summary>
             ///   <para>__m128i _mm_mask_loadu_epi16 (__m128i s, __mmask8 k, void const * mem_addr)</para>
             ///   <para>  VMOVDQU32 xmm1 {k1}{z}, m128</para>
             /// </summary>
             /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
+            [RequiresUnsafe]
             public static unsafe Vector128<ushort> MaskLoad(ushort* address, Vector128<ushort> mask, Vector128<ushort> merge) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
@@ -419,66 +423,78 @@ namespace System.Runtime.Intrinsics.X86
             ///   <para>  VMOVDQU8 ymm1 {k1}{z}, m256</para>
             /// </summary>
             /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
+            [RequiresUnsafe]
             public static unsafe Vector256<byte> MaskLoad(byte* address, Vector256<byte> mask, Vector256<byte> merge) { throw new PlatformNotSupportedException(); }
             /// <summary>
             ///   <para>__m256i _mm256_mask_loadu_epi16 (__m256i s, __mmask16 k, void const * mem_addr)</para>
             ///   <para>  VMOVDQU32 ymm1 {k1}{z}, m256</para>
             /// </summary>
             /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
+            [RequiresUnsafe]
             public static unsafe Vector256<short> MaskLoad(short* address, Vector256<short> mask, Vector256<short> merge) { throw new PlatformNotSupportedException(); }
             /// <summary>
             ///   <para>__m256i _mm256_mask_loadu_epi8 (__m256i s, __mmask32 k, void const * mem_addr)</para>
             ///   <para>  VMOVDQU8 ymm1 {k1}{z}, m256</para>
             /// </summary>
             /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
+            [RequiresUnsafe]
             public static unsafe Vector256<sbyte> MaskLoad(sbyte* address, Vector256<sbyte> mask, Vector256<sbyte> merge) { throw new PlatformNotSupportedException(); }
             /// <summary>
             ///   <para>__m256i _mm256_mask_loadu_epi16 (__m256i s, __mmask16 k, void const * mem_addr)</para>
             ///   <para>  VMOVDQU32 ymm1 {k1}{z}, m256</para>
             /// </summary>
             /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
+            [RequiresUnsafe]
             public static unsafe Vector256<ushort> MaskLoad(ushort* address, Vector256<ushort> mask, Vector256<ushort> merge) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
             ///   <para>void _mm_mask_storeu_si128 (void * mem_addr, __mmask16 k, __m128i a)</para>
             ///   <para>  VMOVDQU8 m128 {k1}{z}, xmm1</para>
             /// </summary>
+            [RequiresUnsafe]
             public static unsafe void MaskStore(byte* address, Vector128<byte> mask, Vector128<byte> source) { throw new PlatformNotSupportedException(); }
             /// <summary>
             ///   <para>void _mm_mask_storeu_si128 (void * mem_addr, __mmask8 k, __m128i a)</para>
             ///   <para>  VMOVDQU16 m128 {k1}{z}, xmm1</para>
             /// </summary>
+            [RequiresUnsafe]
             public static unsafe void MaskStore(short* address, Vector128<short> mask, Vector128<short> source) { throw new PlatformNotSupportedException(); }
             /// <summary>
             ///   <para>void _mm_mask_storeu_si128 (void * mem_addr, __mmask16 k, __m128i a)</para>
             ///   <para>  VMOVDQU8 m128 {k1}{z}, xmm1</para>
             /// </summary>
+            [RequiresUnsafe]
             public static unsafe void MaskStore(sbyte* address, Vector128<sbyte> mask, Vector128<sbyte> source) { throw new PlatformNotSupportedException(); }
             /// <summary>
             ///   <para>void _mm_mask_storeu_si128 (void * mem_addr, __mmask8 k, __m128i a)</para>
             ///   <para>  VMOVDQU16 m128 {k1}{z}, xmm1</para>
             /// </summary>
+            [RequiresUnsafe]
             public static unsafe void MaskStore(ushort* address, Vector128<ushort> mask, Vector128<ushort> source) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
             ///   <para>void _mm256_mask_storeu_si256 (void * mem_addr, __mmask32 k, __m256i a)</para>
             ///   <para>  VMOVDQU8 m256 {k1}{z}, ymm1</para>
             /// </summary>
+            [RequiresUnsafe]
             public static unsafe void MaskStore(byte* address, Vector256<byte> mask, Vector256<byte> source) { throw new PlatformNotSupportedException(); }
             /// <summary>
             ///   <para>void _mm256_mask_storeu_si256 (void * mem_addr, __mmask16 k, __m256i a)</para>
             ///   <para>  VMOVDQU16 m256 {k1}{z}, ymm1</para>
             /// </summary>
+            [RequiresUnsafe]
             public static unsafe void MaskStore(short* address, Vector256<short> mask, Vector256<short> source) { throw new PlatformNotSupportedException(); }
             /// <summary>
             ///   <para>void _mm256_mask_storeu_si256 (void * mem_addr, __mmask32 k, __m256i a)</para>
             ///   <para>  VMOVDQU8 m256 {k1}{z}, ymm1</para>
             /// </summary>
+            [RequiresUnsafe]
             public static unsafe void MaskStore(sbyte* address, Vector256<sbyte> mask, Vector256<sbyte> source) { throw new PlatformNotSupportedException(); }
             /// <summary>
             ///   <para>void _mm256_mask_storeu_si256 (void * mem_addr, __mmask16 k, __m256i a)</para>
             ///   <para>  VMOVDQU16 m256 {k1}{z}, ymm1</para>
             /// </summary>
+            [RequiresUnsafe]
             public static unsafe void MaskStore(ushort* address, Vector256<ushort> mask, Vector256<ushort> source) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
@@ -911,21 +927,25 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>__m512i _mm512_loadu_epi8 (void const * mem_addr)</para>
         ///   <para>  VMOVDQU8 zmm1, m512</para>
         /// </summary>
+        [RequiresUnsafe]
         public static new unsafe Vector512<sbyte> LoadVector512(sbyte* address) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>__m512i _mm512_loadu_epi8 (void const * mem_addr)</para>
         ///   <para>  VMOVDQU8 zmm1, m512</para>
         /// </summary>
+        [RequiresUnsafe]
         public static new unsafe Vector512<byte> LoadVector512(byte* address) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>__m512i _mm512_loadu_epi16 (void const * mem_addr)</para>
         ///   <para>  VMOVDQU16 zmm1, m512</para>
         /// </summary>
+        [RequiresUnsafe]
         public static new unsafe Vector512<short> LoadVector512(short* address) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>__m512i _mm512_loadu_epi16 (void const * mem_addr)</para>
         ///   <para>  VMOVDQU16 zmm1, m512</para>
         /// </summary>
+        [RequiresUnsafe]
         public static new unsafe Vector512<ushort> LoadVector512(ushort* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
@@ -933,45 +953,53 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VMOVDQU8 zmm1 {k1}{z}, m512</para>
         /// </summary>
         /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
+        [RequiresUnsafe]
         public static unsafe Vector512<byte> MaskLoad(byte* address, Vector512<byte> mask, Vector512<byte> merge) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>__m512i _mm512_mask_loadu_epi16 (__m512i s, __mmask32 k, void const * mem_addr)</para>
         ///   <para>  VMOVDQU32 zmm1 {k1}{z}, m512</para>
         /// </summary>
         /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
+        [RequiresUnsafe]
         public static unsafe Vector512<short> MaskLoad(short* address, Vector512<short> mask, Vector512<short> merge) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>__m512i _mm512_mask_loadu_epi8 (__m512i s, __mmask64 k, void const * mem_addr)</para>
         ///   <para>  VMOVDQU8 zmm1 {k1}{z}, m512</para>
         /// </summary>
         /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
+        [RequiresUnsafe]
         public static unsafe Vector512<sbyte> MaskLoad(sbyte* address, Vector512<sbyte> mask, Vector512<sbyte> merge) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>__m512i _mm512_mask_loadu_epi16 (__m512i s, __mmask32 k, void const * mem_addr)</para>
         ///   <para>  VMOVDQU32 zmm1 {k1}{z}, m512</para>
         /// </summary>
         /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
+        [RequiresUnsafe]
         public static unsafe Vector512<ushort> MaskLoad(ushort* address, Vector512<ushort> mask, Vector512<ushort> merge) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         ///   <para>void _mm512_mask_storeu_si512 (void * mem_addr, __mmask64 k, __m512i a)</para>
         ///   <para>  VMOVDQU8 m512 {k1}{z}, zmm1</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void MaskStore(byte* address, Vector512<byte> mask, Vector512<byte> source) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>void _mm512_mask_storeu_si512 (void * mem_addr, __mmask32 k, __m512i a)</para>
         ///   <para>  VMOVDQU16 m512 {k1}{z}, zmm1</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void MaskStore(short* address, Vector512<short> mask, Vector512<short> source) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>void _mm512_mask_storeu_si512 (void * mem_addr, __mmask64 k, __m512i a)</para>
         ///   <para>  VMOVDQU8 m512 {k1}{z}, zmm1</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void MaskStore(sbyte* address, Vector512<sbyte> mask, Vector512<sbyte> source) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>void _mm512_mask_storeu_si512 (void * mem_addr, __mmask32 k, __m512i a)</para>
         ///   <para>  VMOVDQU16 m512 {k1}{z}, zmm1</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void MaskStore(ushort* address, Vector512<ushort> mask, Vector512<ushort> source) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
@@ -1278,21 +1306,25 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>void _mm512_storeu_epi8 (void * mem_addr, __m512i a)</para>
         ///   <para>  VMOVDQU8 m512, zmm1</para>
         /// </summary>
+        [RequiresUnsafe]
         public static new unsafe void Store(sbyte* address, Vector512<sbyte> source) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>void _mm512_storeu_epi8 (void * mem_addr, __m512i a)</para>
         ///   <para>  VMOVDQU8 m512, zmm1</para>
         /// </summary>
+        [RequiresUnsafe]
         public static new unsafe void Store(byte* address, Vector512<byte> source) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>void _mm512_storeu_epi16 (void * mem_addr, __m512i a)</para>
         ///   <para>  VMOVDQU16 m512, zmm1</para>
         /// </summary>
+        [RequiresUnsafe]
         public static new unsafe void Store(short* address, Vector512<short> source) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>void _mm512_storeu_epi16 (void * mem_addr, __m512i a)</para>
         ///   <para>  VMOVDQU16 m512, zmm1</para>
         /// </summary>
+        [RequiresUnsafe]
         public static new unsafe void Store(ushort* address, Vector512<ushort> source) { throw new PlatformNotSupportedException(); }
 
         /// <summary>

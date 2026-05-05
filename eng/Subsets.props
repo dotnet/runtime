@@ -76,6 +76,7 @@
     <DefaultSubsets Condition="'$(TargetsAppleMobile)' == 'true'">clr+mono+libs+host+packs</DefaultSubsets>
     <DefaultSubsets Condition="'$(TargetsLinuxBionic)' == 'true' and '$(MonoSupported)' == 'true'">clr.nativeaotruntime+clr.nativeaotlibs+mono+libs+host+packs</DefaultSubsets>
     <DefaultSubsets Condition="'$(TargetsLinuxBionic)' == 'true' and '$(MonoSupported)' != 'true'">clr.nativeaotruntime+clr.nativeaotlibs+libs+packs</DefaultSubsets>
+    <DefaultSubsets Condition="'$(TargetsBrowser)' == 'true' and '$(RuntimeFlavor)' == 'CoreCLR'">clr+libs+tools+host+packs</DefaultSubsets>
     <!-- In source build, mono is only supported as primary runtime flavor. -->
     <DefaultSubsets Condition="'$(DotNetBuildSourceOnly)' == 'true' and '$(PrimaryRuntimeFlavor)' != 'Mono'">clr+libs+tools+host+packs</DefaultSubsets>
     <DefaultSubsets Condition="'$(DotNetBuildMonoCrossAOT)' == 'true'">mono+packs</DefaultSubsets>
@@ -472,6 +473,7 @@
                              $(CoreClrProjectRoot)tools\AssemblyChecker\AssemblyChecker.csproj;
                              $(CoreClrProjectRoot)tools\ILVerify\ILVerify.csproj;
                              $(CoreClrProjectRoot)tools\ILVerification\ILVerification.csproj;
+                             $(CoreClrProjectRoot)tools\ILTrim\ILTrim.csproj;
                              $(ToolsProjectRoot)StressLogAnalyzer\src\StressLogAnalyzer.csproj" Category="clr" Condition="'$(DotNetBuildSourceOnly)' != 'true'"/>
     <!--
       Always build the in-build variants of these tools. They run on the host machine, which we always have LKG packs for.
@@ -485,9 +487,7 @@
 
     <ProjectToBuild Include="$(CoreClrProjectRoot)tools\aot\ILCompiler\ILCompiler_publish.csproj" Condition="'$(SdkToolsSupported)' == 'true'" Category="clr" />
     <ProjectToBuild Include="$(CoreClrProjectRoot)tools\aot\crossgen2\crossgen2_publish.csproj" Condition="'$(SdkToolsSupported)' == 'true'" Category="clr" />
-
-    <!-- Build managed ilasm as part of the clr tools subset when building just dotnet/runtime as we use it in runtime testing. Don't do so for VMR builds as we aren't shipping it yet and it pulls in prebuilts that we haven't handled for source-build. -->
-    <ProjectToBuild Include="$(ToolsProjectRoot)ilasm\src\ilasm\ilasm.csproj" Condition="'$(SdkToolsSupported)' == 'true' and '$(DotNetBuildFromVMR)' != 'true'" Category="clr" />
+    <ProjectToBuild Include="$(ToolsProjectRoot)ilasm\src\ilasm\ilasm.csproj" Condition="'$(SdkToolsSupported)' == 'true'" Category="clr" />
 
     <ProjectToBuild Include="$(CoreClrProjectRoot)tools\aot\ILCompiler\ILCompiler.csproj" Condition="'$(SdkToolsSupported)' == 'true'" Category="clr" />
     <ProjectToBuild Include="$(CoreClrProjectRoot)tools\aot\crossgen2\crossgen2.csproj" Condition="'$(SdkToolsSupported)' == 'true'" Category="clr" />
@@ -504,7 +504,11 @@
       Test="true" Category="clr" Condition="'$(DotNetBuildSourceOnly)' != 'true' and '$(NativeAotSupported)' == 'true'"/>
     <ProjectToBuild Include="$(CoreClrProjectRoot)tools\aot\ILCompiler.Trimming.Tests\ILCompiler.Trimming.Tests.csproj"
       Test="true" Category="clr" Condition="'$(DotNetBuildSourceOnly)' != 'true' and '$(NativeAotSupported)' == 'true'"/>
+    <ProjectToBuild Include="$(CoreClrProjectRoot)tools\aot\ILCompiler.ReadyToRun.Tests\ILCompiler.ReadyToRun.Tests.csproj"
+      Test="true" Category="clr" Condition="'$(DotNetBuildSourceOnly)' != 'true' and '$(NativeAotSupported)' == 'true'"/>
     <ProjectToBuild Include="$(CoreClrProjectRoot)tools\ILVerification.Tests\ILVerification.Tests.csproj"
+      Test="true" Category="clr" Condition="'$(DotNetBuildSourceOnly)' != 'true'"/>
+    <ProjectToBuild Include="$(CoreClrProjectRoot)tools\ILTrim.Tests\ILTrim.Tests.csproj"
       Test="true" Category="clr" Condition="'$(DotNetBuildSourceOnly)' != 'true'"/>
   </ItemGroup>
 
@@ -666,6 +670,7 @@
 
   <!-- Host.tests subset (consumes live built libraries assets so needs to come after libraries) -->
   <ItemGroup Condition="$(_subset.Contains('+host.tests+'))">
+    <ProjectToBuild Include="$(SharedNativeRoot)corehost\corehost.proj" AdditionalProperties="$(TargetCxxLibraryProperties);BuildNativeHostTests=true;BuildNativeHostProduct=false" Category="host" />
     <TestProjectToBuild Include="$(InstallerProjectRoot)tests\AppHost.Bundle.Tests\AppHost.Bundle.Tests.csproj" />
     <TestProjectToBuild Include="$(InstallerProjectRoot)tests\HostActivation.Tests\HostActivation.Tests.csproj" />
     <TestProjectToBuild Include="$(InstallerProjectRoot)tests\Microsoft.NET.HostModel.Tests\Microsoft.NET.HostModel.Tests.csproj" />

@@ -99,6 +99,8 @@ namespace JIT.HardwareIntrinsics.X86._Avx512Bmm
         [Fact]
         public static void CheckSupported()
         {
+            if (!X86Base.IsSupported) return;
+
             (int Eax, int Ebx, int Ecx, int Edx) = X86Base.CpuId(unchecked((int)0x80000021), (int)0x0);
             bool isSupported = (Eax & (1 << 23)) != 0;
             Assert.Equal(isSupported, Avx512Bmm.IsSupported);

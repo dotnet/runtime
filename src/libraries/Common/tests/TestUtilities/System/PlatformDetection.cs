@@ -253,7 +253,7 @@ namespace System
         public static bool IsInvokingFinalizersSupported => !IsNativeAot;
         public static bool IsTypeEquivalenceSupported => !IsNativeAot && !IsMonoRuntime && IsWindows;
 
-        public static bool IsMetadataUpdateSupported => !IsNativeAot;
+        public static bool IsMetadataUpdateSupported => !IsBuiltWithAggressiveTrimming;
 
         // System.Security.Cryptography.Xml.XmlDsigXsltTransform.GetOutput() relies on XslCompiledTransform which relies
         // heavily on Reflection.Emit
@@ -267,7 +267,7 @@ namespace System
 
         public static bool IsAssemblyLoadingSupported => !IsNativeAot;
         public static bool IsNonBundledAssemblyLoadingSupported => IsAssemblyLoadingSupported && !IsMonoAOT;
-        public static bool IsMethodBodySupported => !IsNativeAot;
+        public static bool IsMethodBodySupported => !IsBuiltWithAggressiveTrimming;
         public static bool IsDebuggerTypeProxyAttributeSupported => !IsNativeAot;
         public static bool HasAssemblyFiles => !string.IsNullOrEmpty(typeof(PlatformDetection).Assembly.Location);
         public static bool HasHostExecutable => HasAssemblyFiles; // single-file don't have a host

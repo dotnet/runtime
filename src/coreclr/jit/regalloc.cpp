@@ -412,6 +412,7 @@ bool RegAllocImpl::isRegCandidate(LclVarDsc* varDsc)
     if (compiler->opts.MinOpts() && compiler->compHndBBtabCount > 0)
     {
         compiler->lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::LiveInOutOfHandler));
+        return false;
     }
 
     if (varDsc->lvDoNotEnregister)

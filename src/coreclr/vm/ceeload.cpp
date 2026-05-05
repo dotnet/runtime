@@ -497,11 +497,14 @@ void Module::Initialize(AllocMemTracker *pamTracker, LPCWSTR szName)
         m_pInstMethodHashTable = InstMethodHashTable::Create(GetLoaderAllocator(), this, PARAMMETHODS_HASH_BUCKETS, pamTracker);
     }
 
+#ifdef PROFILING_SUPPORTED_DATA
     // These will be initialized in NotifyProfilerLoadFinished, set them to
     // a safe initial value now.
     m_dwTypeCount = 0;
     m_dwExportedTypeCount = 0;
     m_dwCustomAttributeCount = 0;
+#endif // PROFILING_SUPPORTED_DATA
+
 #ifdef PROFILING_SUPPORTED
     // set profiler related JIT flags
     if (CORProfilerDisableInlining())
@@ -512,6 +515,8 @@ void Module::Initialize(AllocMemTracker *pamTracker, LPCWSTR szName)
     {
         m_dwTransientFlags = m_dwTransientFlags | PROF_DISABLE_OPTIMIZATIONS;
     }
+
+    UpdateJitOptimizationDisabledState();
 
     m_pJitInlinerTrackingMap = NULL;
     if (ReJitManager::IsReJITInlineTrackingEnabled())
@@ -535,6 +540,7 @@ void Module::SetDebuggerInfoBits(DebuggerAssemblyControlFlags newBits)
               ~DEBUGGER_INFO_MASK_PRIV) == 0);
 
     SetTransientFlagInterlockedWithMask(newBits << DEBUGGER_INFO_SHIFT_PRIV, DEBUGGER_INFO_MASK_PRIV);
+    UpdateJitOptimizationDisabledState();
 
 #ifdef DEBUGGING_SUPPORTED
     if (IsEditAndContinueCapable())
@@ -608,6 +614,7 @@ Module *Module::Create(Assembly *pAssembly, PEAssembly *pPEAssembly, AllocMemTra
 
         void* pMemory = pamTracker->Track(pAssembly->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(EditAndContinueModule))));
         pModule = new (pMemory) EditAndContinueModule(pAssembly, pPEAssembly);
+        pModule->SetTransientFlagInterlocked(IS_ENC_CAPABLE);
     }
     else
 #endif // FEATURE_METADATA_UPDATER
@@ -620,7 +627,7 @@ Module *Module::Create(Assembly *pAssembly, PEAssembly *pPEAssembly, AllocMemTra
     ModuleHolder pModuleSafe(pModule);
     pModuleSafe->DoInit(pamTracker, NULL);
 
-    RETURN pModuleSafe.Extract();
+    RETURN pModuleSafe.Detach();
 }
 
 void Module::ApplyMetaData()
@@ -855,13 +862,6 @@ BOOL Module::IsCollectible()
 {
     LIMITED_METHOD_DAC_CONTRACT;
     return GetAssembly()->IsCollectible();
-}
-
-DomainAssembly* Module::GetDomainAssembly()
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-
-    return m_pDomainAssembly;
 }
 
 #ifndef DACCESS_COMPILE
@@ -1217,13 +1217,6 @@ BOOL Module::IsRuntimeMarshallingEnabled()
         (hr == S_OK ? 0 : RUNTIME_MARSHALLING_ENABLED));
 
     return hr != S_OK;
-}
-
-void Module::SetDomainAssembly(DomainAssembly *pDomainAssembly)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    m_pDomainAssembly = pDomainAssembly;
 }
 
 //---------------------------------------------------------------------------------------
@@ -2061,22 +2054,6 @@ void Module::BuildClassForModule()
 }
 
 #endif // !DACCESS_COMPILE
-
-// Returns true iff the debugger should be notified about this module
-//
-// Notes:
-//   Debugger doesn't need to be notified about modules that can't be executed.
-//   (we do not have such cases at the moment)
-//
-//   This should be immutable for an instance of a module. That ensures that the debugger gets consistent
-//   notifications about it. It this value mutates, than the debugger may miss relevant notifications.
-BOOL Module::IsVisibleToDebugger()
-{
-    WRAPPER_NO_CONTRACT;
-    SUPPORTS_DAC;
-
-    return TRUE;
-}
 
 ReadyToRunLoadedImage * Module::GetReadyToRunImage()
 {
@@ -2952,14 +2929,6 @@ void Module::UpdateDynamicMetadataIfNeeded()
         return;
     }
 
-    // Since serializing metadata to an auxiliary buffer is only needed by the debugger,
-    // we should only be doing this for modules that the debugger can see.
-    if (!IsVisibleToDebugger())
-    {
-        return;
-    }
-
-
     HRESULT hr = S_OK;
     EX_TRY
     {
@@ -2982,18 +2951,14 @@ void Module::UpdateDynamicMetadataIfNeeded()
 
 #endif // DEBUGGING_SUPPORTED
 
-BOOL Module::NotifyDebuggerLoad(DomainAssembly * pDomainAssembly, int flags, BOOL attaching)
+BOOL Module::NotifyDebuggerLoad(Assembly * pAssembly, int flags, BOOL attaching)
 {
     WRAPPER_NO_CONTRACT;
-
-    // We don't notify the debugger about modules that don't contain any code.
-    if (!IsVisibleToDebugger())
-        return FALSE;
 
     // Always capture metadata, even if no debugger is attached. If a debugger later attaches, it will use
     // this data.
     {
-        Module * pModule = pDomainAssembly->GetAssembly()->GetModule();
+        Module * pModule = pAssembly->GetModule();
         pModule->UpdateDynamicMetadataIfNeeded();
     }
 
@@ -3012,8 +2977,7 @@ BOOL Module::NotifyDebuggerLoad(DomainAssembly * pDomainAssembly, int flags, BOO
         g_pDebugInterface->LoadModule(this,
                                       m_pPEAssembly->GetPath(),
                                       m_pPEAssembly->GetPath().GetCount(),
-                                      GetAssembly(),
-                                      pDomainAssembly,
+                                      pAssembly,
                                       attaching);
 
         result = TRUE;
@@ -3043,10 +3007,6 @@ void Module::NotifyDebuggerUnload()
     if (!pDomain->IsDebuggerAttached())
         return;
 
-    // We don't notify the debugger about modules that don't contain any code.
-    if (!IsVisibleToDebugger())
-        return;
-
     LookupMap<PTR_MethodTable>::Iterator typeDefIter(&m_TypeDefToMethodTableMap);
     while (typeDefIter.Next())
     {
@@ -3065,7 +3025,7 @@ using GetTokenForVTableEntry_t = mdToken(STDMETHODCALLTYPE*)(HMODULE module, BYT
 static HMODULE GetIJWHostForModule(Module* module)
 {
 #if !defined(TARGET_UNIX)
-    PEDecoder* pe = module->GetPEAssembly()->GetLoadedLayout();
+    PEImageLayout* pe = module->GetPEAssembly()->GetLoadedLayout();
 
     BYTE* baseAddress = (BYTE*)module->GetPEAssembly()->GetIJWBase();
 
@@ -3414,9 +3374,10 @@ void Module::FixupVTables()
 
                     UMEntryThunkData *pUMEntryThunkData = UMEntryThunkData::CreateUMEntryThunk();
 
-                    UMThunkMarshInfo *pUMThunkMarshInfo = (UMThunkMarshInfo*)(void*)(SystemDomain::GetGlobalLoaderAllocator()->GetLowFrequencyHeap()->AllocAlignedMem(sizeof(UMThunkMarshInfo), CODE_SIZE_ALIGN));
+                    DelegateUMThunkMarshInfo *pUMThunkMarshInfo = (DelegateUMThunkMarshInfo*)(void*)(SystemDomain::GetGlobalLoaderAllocator()->GetLowFrequencyHeap()->AllocAlignedMem(sizeof(DelegateUMThunkMarshInfo), CODE_SIZE_ALIGN));
 
-                    pUMThunkMarshInfo->LoadTimeInit(pMD);
+                    new (pUMThunkMarshInfo) DelegateUMThunkMarshInfo(pMD);
+
                     pUMEntryThunkData->LoadTimeInit((PCODE)0, NULL, pUMThunkMarshInfo, pMD);
 
                     SetTargetForVTableEntry(hInstThis, (BYTE **)&pPointers[iMethod], (BYTE *)pUMEntryThunkData->GetCode());
@@ -3820,7 +3781,7 @@ ReflectionModule *ReflectionModule::Create(Assembly *pAssembly, PEAssembly *pPEA
     pModule->DoInit(pamTracker, szName);
     pModule->SetIsRuntimeWrapExceptionsCached_ForReflectionEmitModules();
 
-    RETURN pModule.Extract();
+    RETURN pModule.Detach();
 }
 
 
@@ -4561,79 +4522,6 @@ void Module::EnumMemoryRegions(CLRDataEnumMemoryFlags flags,
     {
         GetLoaderAllocator()->EnumMemoryRegions(flags);
     }
-    else if (flags != CLRDATA_ENUM_MEM_MINI && flags != CLRDATA_ENUM_MEM_TRIAGE)
-    {
-        if (m_pAvailableClasses.IsValid())
-        {
-            m_pAvailableClasses->EnumMemoryRegions(flags);
-        }
-        if (m_pAvailableParamTypes.IsValid())
-        {
-            m_pAvailableParamTypes->EnumMemoryRegions(flags);
-        }
-        if (m_pInstMethodHashTable.IsValid())
-        {
-            m_pInstMethodHashTable->EnumMemoryRegions(flags);
-        }
-        if (m_pAvailableClassesCaseIns.IsValid())
-        {
-            m_pAvailableClassesCaseIns->EnumMemoryRegions(flags);
-        }
-
-        // Save the LookupMap structures.
-        m_MethodDefToDescMap.ListEnumMemoryRegions(flags);
-        m_FieldDefToDescMap.ListEnumMemoryRegions(flags);
-        m_MemberRefMap.ListEnumMemoryRegions(flags);
-        m_GenericParamToDescMap.ListEnumMemoryRegions(flags);
-        m_ManifestModuleReferencesMap.ListEnumMemoryRegions(flags);
-
-        LookupMap<PTR_MethodTable>::Iterator typeDefIter(&m_TypeDefToMethodTableMap);
-        while (typeDefIter.Next())
-        {
-            if (typeDefIter.GetElement())
-            {
-                typeDefIter.GetElement()->EnumMemoryRegions(flags);
-            }
-        }
-
-        LookupMap<PTR_TypeRef>::Iterator typeRefIter(&m_TypeRefToMethodTableMap);
-        while (typeRefIter.Next())
-        {
-            if (typeRefIter.GetElement())
-            {
-                TypeHandle th = TypeHandle::FromTAddr(dac_cast<TADDR>(typeRefIter.GetElement()));
-                th.EnumMemoryRegions(flags);
-            }
-        }
-
-        LookupMap<PTR_MethodDesc>::Iterator methodDefIter(&m_MethodDefToDescMap);
-        while (methodDefIter.Next())
-        {
-            if (methodDefIter.GetElement())
-            {
-                methodDefIter.GetElement()->EnumMemoryRegions(flags);
-            }
-        }
-
-        LookupMap<PTR_FieldDesc>::Iterator fieldDefIter(&m_FieldDefToDescMap);
-        while (fieldDefIter.Next())
-        {
-            if (fieldDefIter.GetElement())
-            {
-                fieldDefIter.GetElement()->EnumMemoryRegions(flags);
-            }
-        }
-
-        LookupMap<PTR_TypeVarTypeDesc>::Iterator genericParamIter(&m_GenericParamToDescMap);
-        while (genericParamIter.Next())
-        {
-            if (genericParamIter.GetElement())
-            {
-                genericParamIter.GetElement()->EnumMemoryRegions(flags);
-            }
-        }
-
-    }   // !CLRDATA_ENUM_MEM_MINI && !CLRDATA_ENUM_MEM_TRIAGE && !CLRDATA_ENUM_MEM_HEAP2
 
     LookupMap<PTR_Module>::Iterator asmRefIter(&m_ManifestModuleReferencesMap);
     while (asmRefIter.Next())

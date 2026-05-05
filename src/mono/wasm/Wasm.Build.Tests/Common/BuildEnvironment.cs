@@ -113,7 +113,7 @@ namespace Wasm.Build.Tests
                             $" {nameof(IsRunningOnCI)} is true but {nameof(IsWorkloadWithMultiThreadingForDefaultFramework)} is false.");
             }
 
-            UseWebcil = EnvironmentVariables.UseWebcil && EnvironmentVariables.RuntimeFlavor != "CoreCLR"; // TODO-WASM: CoreCLR support for Webcil https://github.com/dotnet/runtime/issues/120248
+            UseWebcil = EnvironmentVariables.UseWebcil;
             IsMonoRuntime = EnvironmentVariables.RuntimeFlavor == "Mono";
             IsCoreClrRuntime = EnvironmentVariables.RuntimeFlavor == "CoreCLR";
 
@@ -151,6 +151,20 @@ namespace Wasm.Build.Tests
                 // EnvVars["WasmTestForwardConsole"] = "true"; // only necessary for firefox, because chromedriver supports it natively
                 // EnvVars["WasmTestAsyncFlushOnExit"] = "true"; // only necessary for old nodejs versions
                 // EnvVars["WasmTestAppendElementOnExit"] = "true"; // only used by xharness // https://github.com/dotnet/xharness/blob/799df8d4c86ff50c83b7a57df9e3691eeab813ec/src/Microsoft.DotNet.XHarness.CLI/Commands/WASM/Browser/WasmBrowserTestRunner.cs#L122-L141
+
+                // Flow paths required by BrowserWasmApp.CoreCLR.targets into the dotnet-new-generated
+                // test project builds so its import chain (native.wasm.targets / AcquireEmscriptenSdk.targets)
+                // and UsingTask for WasmAppBuilder.dll resolve on both Helix and local runs.
+                // Names match those read by data/Local.Directory.Build.{props,targets}; MSBuild exposes
+                // env vars as properties with the same name, so SCREAMING_SNAKE keys stay consistent.
+                if (!string.IsNullOrEmpty(EnvironmentVariables.RepositoryEngineeringDir))
+                    EnvVars["REPOSITORY_ENGINEERING_DIR"] = EnvironmentVariables.RepositoryEngineeringDir;
+                if (!string.IsNullOrEmpty(EnvironmentVariables.BrowserBuildTargetsDir))
+                    EnvVars["BROWSER_BUILD_TARGETS_DIR"] = EnvironmentVariables.BrowserBuildTargetsDir;
+                if (!string.IsNullOrEmpty(EnvironmentVariables.WasmAppBuilderTasksAssemblyPath))
+                    EnvVars["WASM_APP_BUILDER_TASKS_ASSEMBLY_PATH"] = EnvironmentVariables.WasmAppBuilderTasksAssemblyPath;
+                if (!string.IsNullOrEmpty(EnvironmentVariables.EmsdkPath))
+                    EnvVars["EMSDK_PATH"] = EnvironmentVariables.EmsdkPath;
             }
 
             DotNet = Path.Combine(sdkForWorkloadPath!, "dotnet");

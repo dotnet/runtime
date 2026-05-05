@@ -74,42 +74,6 @@ ds_rt_mono_transport_get_default_name (
 	const ep_char8_t *suffix);
 
 /*
-* AutoTrace.
-*/
-
-static
-inline
-void
-ds_rt_auto_trace_init (void)
-{
-	// TODO: Implement.
-}
-
-static
-inline
-void
-ds_rt_auto_trace_launch (void)
-{
-	// TODO: Implement.
-}
-
-static
-inline
-void
-ds_rt_auto_trace_signal (void)
-{
-	// TODO: Implement.
-}
-
-static
-inline
-void
-ds_rt_auto_trace_wait (void)
-{
-	// TODO: Implement.
-}
-
-/*
  * DiagnosticsConfiguration.
  */
 

@@ -14,11 +14,6 @@ using Mono.Linker.Tests.Cases.Reflection;
 using Mono.Linker.Tests.Cases.Reflection.Dependencies;
 using Mono.Linker.Tests.Cases.Reflection.Dependencies.Library;
 
-[assembly: KeptAttributeAttribute(typeof(TypeMapAttribute<UsedTypeMap>))]
-[assembly: KeptAttributeAttribute(typeof(TypeMapAssociationAttribute<UsedTypeMap>))]
-[assembly: KeptAttributeAttribute(typeof(TypeMapAssociationAttribute<UsedProxyTypeMap>))]
-[assembly: KeptAttributeAttribute(typeof(TypeMapAttribute<UsedExternalTypeMap>))]
-[assembly: KeptAttributeAttribute(typeof(TypeMapAttribute<UsedWithoutAssemblyTargetUniverse>))]
 [assembly: TypeMap<UsedTypeMap>("TrimTargetIsTarget", typeof(TargetAndTrimTarget), typeof(TargetAndTrimTarget))]
 [assembly: TypeMap<UsedTypeMap>("TrimTargetIsUnrelated", typeof(TargetType), typeof(TrimTarget))]
 [assembly: TypeMap<UsedTypeMap>(nameof(AllocatedNoTypeCheckClassTarget), typeof(AllocatedNoTypeCheckClassTarget), typeof(AllocatedNoTypeCheckClass))]
@@ -33,14 +28,32 @@ using Mono.Linker.Tests.Cases.Reflection.Dependencies.Library;
 [assembly: TypeMap<UsedTypeMap>("Ldobj", typeof(LdobjTarget), typeof(LdobjType))]
 [assembly: TypeMap<UsedTypeMap>("ArrayElement", typeof(ArrayElementTarget), typeof(ArrayElement))]
 [assembly: TypeMap<UsedTypeMap>("TrimTargetIsAllocatedNoTypeCheckNoBoxStruct", typeof(ConstructedNoTypeCheckOrBoxTarget), typeof(ConstructedNoTypeCheckNoBoxStruct))]
+[assembly: TypeMap<UsedTypeMap>("TrimTargetIsUsedArrayType", typeof(ArrayTypeTrimTargetTarget), typeof(ArrayTypeTrimTargetClass[]))]
+[assembly: TypeMap<UsedTypeMap>("TrimTargetIsUnusedArrayType", typeof(ArrayTypeTrimTargetUnusedTarget), typeof(ArrayTypeTrimTargetUnusedClass[]))]
+[assembly: KeptAttributeAttribute(typeof(TypeMapAttribute<UsedTypeMap>), "TrimTargetIsTarget", typeof(TargetAndTrimTarget), typeof(TargetAndTrimTarget))]
+[assembly: KeptAttributeAttribute(typeof(TypeMapAttribute<UsedTypeMap>), "TrimTargetIsUnrelated", typeof(TargetType), typeof(TrimTarget))]
+[assembly: KeptAttributeAttribute(typeof(TypeMapAttribute<UsedTypeMap>), nameof(AllocatedNoTypeCheckClassTarget), typeof(AllocatedNoTypeCheckClassTarget), typeof(AllocatedNoTypeCheckClass))]
+[assembly: KeptAttributeAttribute(typeof(TypeMapAttribute<UsedTypeMap>), nameof(AlloctedNoTypeCheckStructTarget), typeof(AlloctedNoTypeCheckStructTarget), typeof(AllocatedNoTypeCheckStruct))]
+[assembly: KeptAttributeAttribute(typeof(TypeMapAttribute<UsedTypeMap>), "TypeMapEntryOnly", typeof(TypeMapEntryOnly))]
+[assembly: KeptAttributeAttribute(typeof(TypeMapAttribute<UsedTypeMap>), nameof(UnboxedOnlyTarget), typeof(UnboxedOnlyTarget), typeof(UnboxedOnly))]
+[assembly: KeptAttributeAttribute(typeof(TypeMapAttribute<UsedTypeMap>), "TypedRefSource", typeof(MakeRefTargetType), typeof(MakeRef))]
+[assembly: KeptAttributeAttribute(typeof(TypeMapAttribute<UsedTypeMap>), "TypedRefTarget", typeof(RefValueTargetType), typeof(RefValue))]
+[assembly: KeptAttributeAttribute(typeof(TypeMapAttribute<UsedTypeMap>), "Constrained", typeof(ConstrainedTarget), typeof(Constrained))]
+[assembly: KeptAttributeAttribute(typeof(TypeMapAttribute<UsedTypeMap>), "ConstrainedStatic", typeof(ConstraintedStaticTarget), typeof(ConstrainedStatic))]
+[assembly: KeptAttributeAttribute(typeof(TypeMapAttribute<UsedTypeMap>), "Ldobj", typeof(LdobjTarget), typeof(LdobjType))]
+[assembly: KeptAttributeAttribute(typeof(TypeMapAttribute<UsedTypeMap>), "ArrayElement", typeof(ArrayElementTarget), typeof(ArrayElement))]
+[assembly: KeptAttributeAttribute(typeof(TypeMapAttribute<UsedTypeMap>), "TrimTargetIsAllocatedNoTypeCheckNoBoxStruct", typeof(ConstructedNoTypeCheckOrBoxTarget), typeof(ConstructedNoTypeCheckNoBoxStruct))]
+[assembly: KeptAttributeAttribute(typeof(TypeMapAttribute<UsedTypeMap>), "TrimTargetIsUsedArrayType", typeof(ArrayTypeTrimTargetTarget), typeof(ArrayTypeTrimTargetClass[]))]
 
 // The TypeMap Universes are kept separate such that Proxy attributes shouldn't be kept if only the External type map is needed.
 [assembly: TypeMap<UsedExternalTypeMap>("UsedOnlyForExternalTypeMap", typeof(UsedExternalTarget), typeof(UsedTrimTarget))] // Kept
+[assembly: KeptAttributeAttribute(typeof(TypeMapAttribute<UsedExternalTypeMap>), "UsedOnlyForExternalTypeMap", typeof(UsedExternalTarget), typeof(UsedTrimTarget))]
 [assembly: TypeMapAssociation<UsedExternalTypeMap>(typeof(UsedProxySource), typeof(UsedProxyTarget))] // Removed
 
 // The TypeMap Universes are kept separate such that External attributes shouldn't be kept if only the Proxy type map is needed.
 [assembly: TypeMap<UsedProxyTypeMap>("UsedOnlyForExternalTypeMap", typeof(UsedExternalTarget2), typeof(UsedTrimTarget2))] // Removed
 [assembly: TypeMapAssociation<UsedProxyTypeMap>(typeof(UsedProxySource2), typeof(UsedProxyTarget2))] // Kept
+[assembly: KeptAttributeAttribute(typeof(TypeMapAssociationAttribute<UsedProxyTypeMap>), typeof(UsedProxySource2), typeof(UsedProxyTarget2))]
 
 [assembly: TypeMapAssociation<UsedTypeMap>(typeof(SourceClass), typeof(ProxyType))]
 [assembly: TypeMapAssociation<UsedTypeMap>(typeof(TypeCheckOnlyClass), typeof(TypeCheckOnlyProxy))]
@@ -48,6 +61,10 @@ using Mono.Linker.Tests.Cases.Reflection.Dependencies.Library;
 [assembly: TypeMapAssociation<UsedTypeMap>(typeof(I), typeof(IImpl))]
 [assembly: TypeMapAssociation<UsedTypeMap>(typeof(IInterfaceWithDynamicImpl), typeof(IDynamicImpl))]
 [assembly: TypeMapAssociation<UsedTypeMap>(typeof(ArrayElement), typeof(ArrayElementProxy))]
+[assembly: KeptAttributeAttribute(typeof(TypeMapAssociationAttribute<UsedTypeMap>), typeof(SourceClass), typeof(ProxyType))]
+[assembly: KeptAttributeAttribute(typeof(TypeMapAssociationAttribute<UsedTypeMap>), typeof(AllocatedNoBoxStructType), typeof(AllocatedNoBoxProxy))]
+[assembly: KeptAttributeAttribute(typeof(TypeMapAssociationAttribute<UsedTypeMap>), typeof(IInterfaceWithDynamicImpl), typeof(IDynamicImpl))]
+[assembly: KeptAttributeAttribute(typeof(TypeMapAssociationAttribute<UsedTypeMap>), typeof(ArrayElement), typeof(ArrayElementProxy))]
 
 [assembly: TypeMap<UnusedTypeMap>("UnusedName", typeof(UnusedTargetType), typeof(TrimTarget))]
 [assembly: TypeMapAssociation<UsedTypeMap>(typeof(UnusedSourceClass), typeof(UnusedProxyType))]
@@ -55,6 +72,7 @@ using Mono.Linker.Tests.Cases.Reflection.Dependencies.Library;
 [assembly: TypeMap<UsedTypeMap>("ClassWithStaticMethodAndField", typeof(TargetType5), typeof(ClassWithStaticMethodAndField))]
 
 [assembly: TypeMap<UsedWithoutAssemblyTargetUniverse>("UnimportantString", typeof(PreservedTargetType))]
+[assembly: KeptAttributeAttribute(typeof(TypeMapAttribute<UsedWithoutAssemblyTargetUniverse>), "UnimportantString", typeof(PreservedTargetType))]
 
 [assembly: KeptAttributeAttribute(typeof(TypeMapAssemblyTargetAttribute<UsedTypeMap>))]
 [assembly: TypeMapAssemblyTarget<UsedTypeMap>("library")]
@@ -122,6 +140,8 @@ namespace Mono.Linker.Tests.Cases.Reflection
     [RemovedTypeInAssembly("library2.dll", typeof(Mono.Linker.Tests.Cases.Reflection.Dependencies.Library2.TargetTypeUnconditional2))]
     [RemovedTypeInAssembly("library2.dll", typeof(Mono.Linker.Tests.Cases.Reflection.Dependencies.Library2.TrimTarget1))]
     [RemovedTypeInAssembly("library2.dll", typeof(Mono.Linker.Tests.Cases.Reflection.Dependencies.Library2.TrimTarget2))]
+    [RemovedTypeInAssembly("test", typeof(ArrayTypeTrimTargetUnusedClass))]
+    [RemovedTypeInAssembly("test", typeof(ArrayTypeTrimTargetUnusedTarget))]
     class TypeMap
     {
         [Kept]
@@ -190,6 +210,8 @@ namespace Mono.Linker.Tests.Cases.Reflection
             }
 
             Console.WriteLine(new ArrayElement[1]);
+
+            Console.WriteLine(new ArrayTypeTrimTargetClass[1] { new ArrayTypeTrimTargetClass() });
 
             Console.WriteLine(new ConstructedNoTypeCheckNoBoxStruct(42).Value);
 
@@ -539,4 +561,15 @@ namespace Mono.Linker.Tests.Cases.Reflection
 
     [Kept]
     class PreservedTargetType;
+
+    [Kept]
+    class ArrayTypeTrimTargetTarget;
+
+    [Kept]
+    [KeptMember(".ctor()")]
+    class ArrayTypeTrimTargetClass;
+
+    class ArrayTypeTrimTargetUnusedTarget;
+
+    class ArrayTypeTrimTargetUnusedClass;
 }
