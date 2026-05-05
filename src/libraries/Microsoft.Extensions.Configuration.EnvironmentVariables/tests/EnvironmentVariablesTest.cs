@@ -466,7 +466,7 @@ namespace Microsoft.Extensions.Configuration.EnvironmentVariables.Test
 
             envConfigSrc.Load(dict);
 
-            Assert.Equal("connection", envConfigSrc.Get("data:Connection___String"));
+            Assert.Equal("connection", envConfigSrc.Get("data:Connection:_String"));
         }
 
         [Fact]
