@@ -337,7 +337,7 @@ public class FrameIteratorTests
         ulong methodDescB = 0xBB00_0002;
         ulong methodDescC = 0xCC00_0003;
 
-        // Build three independent InterpMethod → InterpByteCodeStart chains
+        // Build three independent InterpMethod -> InterpByteCodeStart chains
         MockMemorySpace.HeapFragment CreateContextChainEntry(ulong methodDesc, ulong parentPtr, out MockMemorySpace.HeapFragment interpMethodFrag, out MockMemorySpace.HeapFragment byteCodeStartFrag)
         {
             interpMethodFrag = alloc.Allocate((ulong)types[DataType.InterpMethod].Size!, "InterpMethod");
@@ -367,7 +367,7 @@ public class FrameIteratorTests
             return contextFrameFrag;
         }
 
-        // Build chain: C (leaf) → B → A (root, ParentPtr=0)
+        // Build chain: C (leaf) -> B -> A (root, ParentPtr=0)
         var contextFrameA = CreateContextChainEntry(methodDescA, 0, out var interpMethodA, out var byteCodeStartA);
         var contextFrameB = CreateContextChainEntry(methodDescB, contextFrameA.Address, out var interpMethodB, out var byteCodeStartB);
         var contextFrameC = CreateContextChainEntry(methodDescC, contextFrameB.Address, out var interpMethodC, out var byteCodeStartC);

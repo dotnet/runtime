@@ -273,7 +273,7 @@ After the initial precode type is determined, for stub precodes a refined precod
     }
 
     // Version 3 only: resolves MethodDesc for interpreter precodes by following
-    // the InterpreterPrecodeData → InterpByteCodeStart → InterpMethod → MethodDesc chain.
+    // the InterpreterPrecodeData -> InterpByteCodeStart -> InterpMethod -> MethodDesc chain.
     internal sealed class InterpreterPrecode : ValidPrecode
     {
         internal InterpreterPrecode(TargetPointer instrPointer) : base(instrPointer, KnownPrecodeType.Interpreter) { }

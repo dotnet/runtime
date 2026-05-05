@@ -71,7 +71,7 @@ internal sealed class FrameHelpers
         return frameType.ToString();
     }
 
-    internal FrameType GetFrameType(TargetPointer frameIdentifier)
+    public FrameType GetFrameType(TargetPointer frameIdentifier)
     {
         foreach (FrameType frameType in Enum.GetValues<FrameType>())
         {
@@ -168,7 +168,7 @@ internal sealed class FrameHelpers
 
             case FrameType.InterpreterFrame:
                 {
-                    // Match native stackwalk.cpp:2248-2261: Set context to the top
+                    // Match native stackwalk.cpp: Set context to the top
                     // InterpMethodContextFrame so the walker transitions to SW_FRAMELESS
                     // and yields each interpreted method individually via virtual unwind.
                     Data.InterpreterFrame interpreterFrame = _target.ProcessedData.GetOrAdd<Data.InterpreterFrame>(frame.Address);
@@ -291,7 +291,7 @@ internal sealed class FrameHelpers
         }
     }
 
-    internal IPlatformFrameHandler GetFrameHandler(IPlatformAgnosticContext context)
+    public IPlatformFrameHandler GetFrameHandler(IPlatformAgnosticContext context)
     {
         return context switch
         {
@@ -305,7 +305,7 @@ internal sealed class FrameHelpers
         };
     }
 
-    internal static bool InlinedCallFrameHasActiveCall(Data.InlinedCallFrame frame)
+    private static bool InlinedCallFrameHasActiveCall(Data.InlinedCallFrame frame)
     {
         return frame.CallerReturnAddress != TargetPointer.Null;
     }
@@ -326,7 +326,7 @@ internal sealed class FrameHelpers
     /// Resolves the MethodDesc from a specific InterpMethodContextFrame by following:
     /// InterpMethodContextFrame.StartIp -> InterpByteCodeStart.Method -> InterpMethod.MethodDesc
     /// </summary>
-    internal TargetPointer ResolveMethodDescFromInterpFrame(TargetPointer interpMethodFramePtr)
+    public TargetPointer ResolveMethodDescFromInterpFrame(TargetPointer interpMethodFramePtr)
     {
         if (interpMethodFramePtr == TargetPointer.Null)
             return TargetPointer.Null;
@@ -351,7 +351,7 @@ internal sealed class FrameHelpers
     /// debugging it may point to a stale frame. This method seeks to the correct top frame using
     /// the Ip field (null = inactive, non-null = active) and the NextPtr/ParentPtr chains.
     /// </summary>
-    internal TargetPointer ResolveTopInterpMethodContextFrame(Data.InterpreterFrame interpreterFrame)
+    public TargetPointer ResolveTopInterpMethodContextFrame(Data.InterpreterFrame interpreterFrame)
     {
         TargetPointer hintPtr = interpreterFrame.TopInterpMethodContextFrame;
         if (hintPtr == TargetPointer.Null)
@@ -392,7 +392,7 @@ internal sealed class FrameHelpers
     /// via <see cref="ResolveTopInterpMethodContextFrame"/>, then the ParentPtr chain is walked.
     /// Only active frames (Ip != null) are yielded.
     /// </summary>
-    internal IEnumerable<TargetPointer> WalkInterpreterFrameChain(TargetPointer frameAddress)
+    public IEnumerable<TargetPointer> WalkInterpreterFrameChain(TargetPointer frameAddress)
     {
         Data.InterpreterFrame interpFrame = _target.ProcessedData.GetOrAdd<Data.InterpreterFrame>(frameAddress);
         TargetPointer interpMethodFramePtr = ResolveTopInterpMethodContextFrame(interpFrame);
