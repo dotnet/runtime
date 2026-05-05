@@ -85,9 +85,7 @@ safe-outputs:
     protected-files: blocked
     allowed-files:
       - "src/libraries/**/tests/**"
-      - "src/libraries/**/src/**"
       - "src/libraries/Common/tests/**"
-      - "src/libraries/Common/src/**"
       - "src/coreclr/**/tests/**"
       - "src/mono/**/tests/**"
       - "src/tests/**"
