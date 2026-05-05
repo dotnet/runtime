@@ -8,7 +8,7 @@ permissions:
   pull-requests: read
 
 on:
-  schedule: every 6h
+  schedule: every 12h
   workflow_dispatch:
   roles: [admin, maintainer, write]
 
@@ -84,11 +84,11 @@ safe-outputs:
     max: 10
     protected-files: blocked
     allowed-files:
-      - "src/libraries/**/tests/**"
-      - "src/libraries/Common/tests/**"
-      - "src/coreclr/**/tests/**"
-      - "src/mono/**/tests/**"
+      - "src/libraries/**"
+      - "src/coreclr/**"
+      - "src/mono/**"
       - "src/tests/**"
+      - "src/native/**"
       - "eng/testing/**"
     labels: [agentic-workflows]
   create-issue:
@@ -159,7 +159,8 @@ Read the relevant skill before classifying / fixing. Skills live under `.github/
   - `[ActiveIssue("https://github.com/dotnet/runtime/issues/<n>", TestPlatforms.<plat>)]` referencing an **existing** issue.
   - For JIT/GC stress: `[ActiveIssue("...", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsStressTest))]` or wrap with a guard helper that checks `DOTNET_JitStress`/`DOTNET_GCStress` env vars where the existing test infra supports it.
 - **Recurring flaky failure with a stable error signature** (≥ 2 occurrences on `main` in the scanned window, no obvious product fix in flight, blocking unrelated PRs) → file a **Known Build Error** issue (see "Known Build Error issue" section below). This lets Arcade Build Analysis auto-match future hits and unblock PRs.
-- **Build break on a single leg** (`Build product` or similar failed; `Send to Helix` skipped) → file a regular tracking issue (NOT a Known Build Error — Build Analysis explicitly forbids that for build breaks). Reference the failing source file or compile error from the log. Do not attempt an `allowed-files` PR for product code unless the fix is one-line and clearly limited to test infrastructure under `eng/testing/**`.
+- **Build break on a single leg** (`Build product` or similar failed; `Send to Helix` skipped) → if the compile error has a clear, mechanical root cause and the fix is **≤ 20 lines in a single file** (e.g., obvious typo, missing `#if`, wrong type cast, missing `using`), open a draft PR with the fix and reference the failing build. Otherwise file a regular tracking issue (NOT a Known Build Error — Build Analysis explicitly forbids that for build breaks). Reference the failing source file and compile error from the log.
+- **Small product fix opportunity** — if a test failure has a clear, well-localized root cause in product code (≤ 20 lines, single file, behavioral fix verifiable by the failing test), and the fix is in `src/libraries/**`, `src/coreclr/**`, `src/mono/**`, or `src/native/**`, open a draft PR with the fix. The PR body must (a) cite the failing test as evidence, (b) explain the root cause, and (c) state explicitly why the fix is safe (e.g., "doesn't change public API", "only affects the failing path"). Do not attempt this for changes touching: public API surface, JIT codegen, GC, threading, security primitives, or anything > 20 lines. When in doubt, file an issue instead — a small wrong fix is worse than a tracking issue.
 - **Product regression — JIT/GC/runtime bug surfaced by a stress mode** (native crash, GC assertion, JIT-emitted bad code) → **two-pass resolution across runs**:
   1. First run (no existing tracking issue found): file the tracking issue only. Do **not** open a PR — the issue number isn't available inside a patch (safe-outputs only resolve `aw_<id>` tokens in body text, never inside diffs).
   2. Subsequent run (a matching tracking issue with `area-*` + `arch-*` + `os-*` + stress-mode signature already exists, AND the failure is still occurring in the latest scanned build): you **MUST** open a draft PR adding `[ActiveIssue("https://github.com/dotnet/runtime/issues/<existing-issue-number>", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsStressTest))]` (or the `TestPlatforms.<plat>` overload for platform-specific stress) to the failing test(s). This is the convergence step — without it, the pipeline never goes green. Skipping the PR because "the issue is already tracked" is incorrect; the existence of the issue is precisely what enables the PR. The PR title prefix is `[ci-scan]`. The PR body's "Linked issue" section must link the existing tracking issue. Hardcode the issue number in the diff because the issue already exists.
