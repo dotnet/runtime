@@ -2114,11 +2114,10 @@ namespace System
                 throw new PlatformNotSupportedException();
             }
             Debug.Assert(sourceSpan.Length >= Vector128<ushort>.Count*2);
-            nuint lengthToExamine = (uint)sourceSpan.Length;
-            nuint offset = 0;
-            ref char source = ref MemoryMarshal.GetReference(sourceSpan);
+            int baseIndex = 0;
+            ReadOnlySpan<char> remaining = sourceSpan;
 
-            if (Vector512.IsHardwareAccelerated && lengthToExamine >= (uint)Vector512<ushort>.Count*2)
+            if (Vector512.IsHardwareAccelerated && (uint)remaining.Length >= (uint)Vector512<ushort>.Count*2)
             {
                 Vector512<ushort> v1 = Vector512.Create((ushort)c);
 
@@ -2129,10 +2128,10 @@ namespace System
                     // break out of this logic & use the more optimistic loop below.
                     // This is the similar logic to SpanHelpers.Packed.cs's IndexOf.
                     Vector512<byte> packedComparand = Vector512.Create((byte)c);
-                    do
+                    while ((uint)remaining.Length >= (uint)Vector512<ushort>.Count*2)
                     {
-                        Vector512<ushort> vector1 = Vector512.LoadUnsafe(ref source, offset);
-                        Vector512<ushort> vector2 = Vector512.LoadUnsafe(ref source, offset + (nuint)Vector512<ushort>.Count);
+                        Vector512<ushort> vector1 = Vector512.Create(remaining);
+                        Vector512<ushort> vector2 = Vector512.Create(remaining.Slice(Vector512<ushort>.Count));
                         var packed = PackedSpanHelpers.PackSources(vector1.AsInt16(), vector2.AsInt16());
 
                         if (Vector512.EqualsAny(packed, packedComparand))
@@ -2147,31 +2146,33 @@ namespace System
                             while (mask1 != 0)
                             {
                                 uint bitPos = (uint)BitOperations.TrailingZeroCount(mask1) / sizeof(char);
-                                sepListBuilder.Append((int)(offset + bitPos));
+                                sepListBuilder.Append(baseIndex + (int)bitPos);
                                 mask1 = BitOperations.ResetLowestSetBit(mask1);
                             }
                             while (mask2 != 0)
                             {
                                 uint bitPos = (uint)BitOperations.TrailingZeroCount(mask2) / sizeof(char);
-                                sepListBuilder.Append((int)(offset + bitPos) + Vector512<ushort>.Count);
+                                sepListBuilder.Append(baseIndex + (int)bitPos + Vector512<ushort>.Count);
                                 mask2 = BitOperations.ResetLowestSetBit(mask2);
                             }
 
                             // Break out of the loop if we had >1 match:
                             if (shouldBreak)
                             {
-                                offset += (nuint)(Vector512<ushort>.Count*2);
+                                baseIndex += Vector512<ushort>.Count*2;
+                                remaining = remaining.Slice(Vector512<ushort>.Count*2);
                                 break;
                             }
                         }
 
-                        offset += (nuint)(Vector512<ushort>.Count*2);
-                    } while (offset <= lengthToExamine - (nuint)(Vector512<ushort>.Count*2));
+                        baseIndex += Vector512<ushort>.Count*2;
+                        remaining = remaining.Slice(Vector512<ushort>.Count*2);
+                    }
                 }
 
-                while (offset <= lengthToExamine - (nuint)Vector512<ushort>.Count)
+                while ((uint)remaining.Length >= (uint)Vector512<ushort>.Count)
                 {
-                    Vector512<ushort> vector = Vector512.LoadUnsafe(ref source, offset);
+                    Vector512<ushort> vector = Vector512.Create(remaining);
                     Vector512<ushort> v1Eq = Vector512.Equals(vector, v1);
                     Vector512<byte> cmp = v1Eq.AsByte();
 
@@ -2182,32 +2183,34 @@ namespace System
                         do
                         {
                             uint bitPos = (uint)BitOperations.TrailingZeroCount(mask) / sizeof(char);
-                            sepListBuilder.Append((int)(offset + bitPos));
+                            sepListBuilder.Append(baseIndex + (int)bitPos);
                             mask = BitOperations.ResetLowestSetBit(mask);
                         } while (mask != 0);
                     }
 
-                    offset += (nuint)Vector512<ushort>.Count;
+                    baseIndex += Vector512<ushort>.Count;
+                    remaining = remaining.Slice(Vector512<ushort>.Count);
                 }
 
                 // Handle the last chunk in a vectorized way also.
                 // We do a whole vector's worth again, but just mask out the bits we've already handled.
-                if (offset < lengthToExamine)
+                if (remaining.Length > 0)
                 {
-                    Vector512<ushort> vector = Vector512.LoadUnsafe(ref source, lengthToExamine - (nuint)Vector512<ushort>.Count);
+                    Vector512<ushort> vector = Vector512.Create(sourceSpan.Slice(sourceSpan.Length - Vector512<ushort>.Count));
                     Vector512<ushort> v1Eq = Vector512.Equals(vector, v1);
                     Vector512<byte> cmp = v1Eq.AsByte();
-                    ulong mask = cmp.ExtractMostSignificantBits() & 0x5555555555555555 & ~((1UL << (Vector512<byte>.Count - (int)(lengthToExamine - offset) * sizeof(char))) - 1);
+                    int finalIndex = sourceSpan.Length - Vector512<ushort>.Count;
+                    ulong mask = cmp.ExtractMostSignificantBits() & 0x5555555555555555 & ~((1UL << (Vector512<byte>.Count - remaining.Length * sizeof(char))) - 1);
                     while (mask != 0)
                     {
                         uint bitPos = (uint)BitOperations.TrailingZeroCount(mask) / sizeof(char);
-                        sepListBuilder.Append((int)(lengthToExamine + bitPos) - Vector512<ushort>.Count);
+                        sepListBuilder.Append(finalIndex + (int)bitPos);
                         mask = BitOperations.ResetLowestSetBit(mask);
                     }
                 }
                 return;
             }
-            else if (Vector256.IsHardwareAccelerated && lengthToExamine >= (uint)Vector256<ushort>.Count*2)
+            else if (Vector256.IsHardwareAccelerated && (uint)remaining.Length >= (uint)Vector256<ushort>.Count*2)
             {
                 Vector256<ushort> v1 = Vector256.Create((ushort)c);
 
@@ -2218,10 +2221,10 @@ namespace System
                     // break out of this logic & use the more optimistic loop below.
                     // This is the similar logic to SpanHelpers.Packed.cs's IndexOf.
                     Vector256<byte> packedComparand = Vector256.Create((byte)c);
-                    do
+                    while ((uint)remaining.Length >= (uint)Vector256<ushort>.Count*2)
                     {
-                        Vector256<ushort> vector1 = Vector256.LoadUnsafe(ref source, offset);
-                        Vector256<ushort> vector2 = Vector256.LoadUnsafe(ref source, offset + (nuint)Vector256<ushort>.Count);
+                        Vector256<ushort> vector1 = Vector256.Create(remaining);
+                        Vector256<ushort> vector2 = Vector256.Create(remaining.Slice(Vector256<ushort>.Count));
                         var packed = PackedSpanHelpers.PackSources(vector1.AsInt16(), vector2.AsInt16());
 
                         if (Vector256.EqualsAny(packed, packedComparand))
@@ -2236,31 +2239,33 @@ namespace System
                             while (mask1 != 0)
                             {
                                 uint bitPos = (uint)BitOperations.TrailingZeroCount(mask1) / sizeof(char);
-                                sepListBuilder.Append((int)(offset + bitPos));
+                                sepListBuilder.Append(baseIndex + (int)bitPos);
                                 mask1 = BitOperations.ResetLowestSetBit(mask1);
                             }
                             while (mask2 != 0)
                             {
                                 uint bitPos = (uint)BitOperations.TrailingZeroCount(mask2) / sizeof(char);
-                                sepListBuilder.Append((int)(offset + bitPos) + Vector256<ushort>.Count);
+                                sepListBuilder.Append(baseIndex + (int)bitPos + Vector256<ushort>.Count);
                                 mask2 = BitOperations.ResetLowestSetBit(mask2);
                             }
 
                             // Break out of the loop if we had > 1 match:
                             if (shouldBreak)
                             {
-                                offset += (nuint)(Vector256<ushort>.Count*2);
+                                baseIndex += Vector256<ushort>.Count*2;
+                                remaining = remaining.Slice(Vector256<ushort>.Count*2);
                                 break;
                             }
                         }
 
-                        offset += (nuint)(Vector256<ushort>.Count*2);
-                    } while (offset <= lengthToExamine - (nuint)(Vector256<ushort>.Count*2));
+                        baseIndex += Vector256<ushort>.Count*2;
+                        remaining = remaining.Slice(Vector256<ushort>.Count*2);
+                    }
                 }
 
-                while (offset <= lengthToExamine - (nuint)Vector256<ushort>.Count)
+                while ((uint)remaining.Length >= (uint)Vector256<ushort>.Count)
                 {
-                    Vector256<ushort> vector = Vector256.LoadUnsafe(ref source, offset);
+                    Vector256<ushort> vector = Vector256.Create(remaining);
                     Vector256<ushort> v1Eq = Vector256.Equals(vector, v1);
                     Vector256<byte> cmp = v1Eq.AsByte();
 
@@ -2271,26 +2276,28 @@ namespace System
                         do
                         {
                             uint bitPos = (uint)BitOperations.TrailingZeroCount(mask) / sizeof(char);
-                            sepListBuilder.Append((int)(offset + bitPos));
+                            sepListBuilder.Append(baseIndex + (int)bitPos);
                             mask = BitOperations.ResetLowestSetBit(mask);
                         } while (mask != 0);
                     }
 
-                    offset += (nuint)Vector256<ushort>.Count;
+                    baseIndex += Vector256<ushort>.Count;
+                    remaining = remaining.Slice(Vector256<ushort>.Count);
                 }
 
                 // Handle the last chunk in a vectorized way also.
                 // We do a whole vector's worth again, but just mask out the bits we've already handled.
-                if (offset < lengthToExamine)
+                if (remaining.Length > 0)
                 {
-                    Vector256<ushort> vector = Vector256.LoadUnsafe(ref source, lengthToExamine - (nuint)Vector256<ushort>.Count);
+                    Vector256<ushort> vector = Vector256.Create(sourceSpan.Slice(sourceSpan.Length - Vector256<ushort>.Count));
                     Vector256<ushort> v1Eq = Vector256.Equals(vector, v1);
                     Vector256<byte> cmp = v1Eq.AsByte();
-                    uint mask = cmp.ExtractMostSignificantBits() & 0x55555555 & ~((1u << (Vector256<byte>.Count - (int)(lengthToExamine - offset) * sizeof(char))) - 1);
+                    int finalIndex = sourceSpan.Length - Vector256<ushort>.Count;
+                    uint mask = cmp.ExtractMostSignificantBits() & 0x55555555 & ~((1u << (Vector256<byte>.Count - remaining.Length * sizeof(char))) - 1);
                     while (mask != 0)
                     {
                         uint bitPos = (uint)BitOperations.TrailingZeroCount(mask) / sizeof(char);
-                        sepListBuilder.Append((int)(lengthToExamine + bitPos) - Vector256<ushort>.Count);
+                        sepListBuilder.Append(finalIndex + (int)bitPos);
                         mask = BitOperations.ResetLowestSetBit(mask);
                     }
                 }
@@ -2307,10 +2314,10 @@ namespace System
                     // break out of this logic & use the more optimistic loop below.
                     // This is the similar logic to SpanHelpers.Packed.cs's IndexOf.
                     Vector128<byte> packedComparand = Vector128.Create((byte)c);
-                    do
+                    while ((uint)remaining.Length >= (uint)Vector128<ushort>.Count*2)
                     {
-                        Vector128<ushort> vector1 = Vector128.LoadUnsafe(ref source, offset);
-                        Vector128<ushort> vector2 = Vector128.LoadUnsafe(ref source, offset + (nuint)Vector128<ushort>.Count);
+                        Vector128<ushort> vector1 = Vector128.Create(remaining);
+                        Vector128<ushort> vector2 = Vector128.Create(remaining.Slice(Vector128<ushort>.Count));
                         var packed = PackedSpanHelpers.PackSources(vector1.AsInt16(), vector2.AsInt16());
 
                         if (Vector128.EqualsAny(packed, packedComparand))
@@ -2325,31 +2332,33 @@ namespace System
                             while (mask1 != 0)
                             {
                                 uint bitPos = (uint)BitOperations.TrailingZeroCount(mask1) / sizeof(char);
-                                sepListBuilder.Append((int)(offset + bitPos));
+                                sepListBuilder.Append(baseIndex + (int)bitPos);
                                 mask1 = BitOperations.ResetLowestSetBit(mask1);
                             }
                             while (mask2 != 0)
                             {
                                 uint bitPos = (uint)BitOperations.TrailingZeroCount(mask2) / sizeof(char);
-                                sepListBuilder.Append((int)(offset + bitPos) + Vector128<ushort>.Count);
+                                sepListBuilder.Append(baseIndex + (int)bitPos + Vector128<ushort>.Count);
                                 mask2 = BitOperations.ResetLowestSetBit(mask2);
                             }
 
                             // Break out of the loop if we had > 1 match:
                             if (shouldBreak)
                             {
-                                offset += (nuint)(Vector128<ushort>.Count*2);
+                                baseIndex += Vector128<ushort>.Count*2;
+                                remaining = remaining.Slice(Vector128<ushort>.Count*2);
                                 break;
                             }
                         }
 
-                        offset += (nuint)(Vector128<ushort>.Count*2);
-                    } while (offset <= lengthToExamine - (nuint)(Vector128<ushort>.Count*2));
+                        baseIndex += Vector128<ushort>.Count*2;
+                        remaining = remaining.Slice(Vector128<ushort>.Count*2);
+                    }
                 }
 
-                while (offset <= lengthToExamine - (nuint)Vector128<ushort>.Count)
+                while ((uint)remaining.Length >= (uint)Vector128<ushort>.Count)
                 {
-                    Vector128<ushort> vector = Vector128.LoadUnsafe(ref source, offset);
+                    Vector128<ushort> vector = Vector128.Create(remaining);
                     Vector128<ushort> v1Eq = Vector128.Equals(vector, v1);
                     Vector128<byte> cmp = v1Eq.AsByte();
 
@@ -2360,26 +2369,28 @@ namespace System
                         do
                         {
                             uint bitPos = (uint)BitOperations.TrailingZeroCount(mask) / sizeof(char);
-                            sepListBuilder.Append((int)(offset + bitPos));
+                            sepListBuilder.Append(baseIndex + (int)bitPos);
                             mask = BitOperations.ResetLowestSetBit(mask);
                         } while (mask != 0);
                     }
 
-                    offset += (nuint)Vector128<ushort>.Count;
+                    baseIndex += Vector128<ushort>.Count;
+                    remaining = remaining.Slice(Vector128<ushort>.Count);
                 }
 
                 // Handle the last chunk in a vectorized way also.
                 // We do a whole vector's worth again, but just mask out the bits we've already handled.
-                if (offset < lengthToExamine)
+                if (remaining.Length > 0)
                 {
-                    Vector128<ushort> vector = Vector128.LoadUnsafe(ref source, lengthToExamine - (nuint)Vector128<ushort>.Count);
+                    Vector128<ushort> vector = Vector128.Create(sourceSpan.Slice(sourceSpan.Length - Vector128<ushort>.Count));
                     Vector128<ushort> v1Eq = Vector128.Equals(vector, v1);
                     Vector128<byte> cmp = v1Eq.AsByte();
-                    uint mask = cmp.ExtractMostSignificantBits() & 0x5555 & ~((1u << (Vector128<byte>.Count - (int)(lengthToExamine - offset) * sizeof(char))) - 1);
+                    int finalIndex = sourceSpan.Length - Vector128<ushort>.Count;
+                    uint mask = cmp.ExtractMostSignificantBits() & 0x5555 & ~((1u << (Vector128<byte>.Count - remaining.Length * sizeof(char))) - 1);
                     while (mask != 0)
                     {
                         uint bitPos = (uint)BitOperations.TrailingZeroCount(mask) / sizeof(char);
-                        sepListBuilder.Append((int)(lengthToExamine + bitPos) - Vector128<ushort>.Count);
+                        sepListBuilder.Append(finalIndex + (int)bitPos);
                         mask = BitOperations.ResetLowestSetBit(mask);
                     }
                 }
