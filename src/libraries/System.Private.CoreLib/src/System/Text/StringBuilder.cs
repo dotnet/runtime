@@ -400,14 +400,8 @@ namespace System.Text
         public static StringBuilder MoveChunks(StringBuilder source)
         {
             ArgumentNullException.ThrowIfNull(source);
-            source.AssertInvariants();
 
-            StringBuilder destination = new StringBuilder();
-            destination.m_ChunkChars = source.m_ChunkChars;
-            destination.m_ChunkPrevious = source.m_ChunkPrevious;
-            destination.m_ChunkLength = source.m_ChunkLength;
-            destination.m_ChunkOffset = source.m_ChunkOffset;
-            destination.m_MaxCapacity = source.m_MaxCapacity;
+            StringBuilder destination = new StringBuilder(source);
 
             source.m_ChunkChars = [];
             source.m_ChunkPrevious = null;
