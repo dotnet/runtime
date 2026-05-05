@@ -13,7 +13,7 @@ public:
     PhaseStatus RunRewrite();
 
 private:
-    static const unsigned MaxLanes = 16;
+    static const unsigned MaxLanes = 64;
     static const unsigned MaxPackNodes = 8;
 
     enum class PackKind
@@ -114,6 +114,8 @@ private:
     bool TryAnalyzeMemory(LoopVectorizationPlan* plan);
     bool TryAnalyzePostIVMemory(LoopVectorizationPlan* plan);
     bool TryAnalyzePostIVValue(Statement* stmt, GenTree* data, LoopVectorizationPlan* plan);
+    bool TryGetIndirOperand(GenTree* tree, GenTree** indir);
+    bool TryNormalizeScalarValue(GenTree** value, var_types elementType) const;
     bool TryBuildSLPPlan(LoopVectorizationPlan* plan);
     bool TryRewritePlan(LoopVectorizationPlan* plan);
     PackNode* NewPackNode(SLPPlan* slpPlan, PackKind kind, var_types elementType, unsigned laneCount);
@@ -131,14 +133,22 @@ private:
     GenTree* BuildTripCountUpdate(LoopVectorizationPlan* plan, int delta);
     GenTree* BuildScalarRemainderTest(LoopVectorizationPlan* plan);
     GenTree* UnwrapCommaValue(GenTree* tree);
-    bool TryAnalyzeArrayAccess(
-        Statement* stmt, GenTree* indir, bool isStore, unsigned ivLcl, LoopVectorizationPlan::ScalarAccess* access);
+    bool TryAnalyzeArrayAccess(FlowGraphNaturalLoop* loop,
+                               Statement*             stmt,
+                               GenTree*               indir,
+                               bool                   isStore,
+                               unsigned               ivLcl,
+                               LoopVectorizationPlan::ScalarAccess* access);
     bool TryAnalyzePostIVAddress(Statement* stmt, GenTree* addr, LoopVectorizationPlan::ScalarAccess* access);
     bool TryAnalyzeByrefLocalAddress(GenTree* addr, unsigned* lclNum);
     bool TryAnalyzePostIVArrayAddress(GenTreeArrAddr* arrAddr, LoopVectorizationPlan::ScalarAccess* access);
-    bool TryAnalyzeIndexExpr(GenTree* tree, unsigned ivLcl, int* offset);
-    bool TryAnalyzeArrayAddress(GenTreeArrAddr* arrAddr, unsigned ivLcl, LoopVectorizationPlan::ScalarAccess* access);
+    bool TryAnalyzeIndexExpr(FlowGraphNaturalLoop* loop, GenTree* tree, unsigned ivLcl, int* offset);
+    bool TryAnalyzeArrayAddress(
+        FlowGraphNaturalLoop* loop, GenTreeArrAddr* arrAddr, unsigned ivLcl, LoopVectorizationPlan::ScalarAccess* access);
+    bool TryFindDefInLoop(FlowGraphNaturalLoop* loop, unsigned lclNum, GenTree** data);
+    bool TryGetArrayLengthLimitLocal(GenTree* tree, unsigned* lclNum, int* offset);
     bool TryGetArrayLengthLocal(GenTree* tree, unsigned* lclNum);
+    bool IsCompatibleScalarType(GenTree* tree, var_types elementType) const;
     bool TryGetInvariantOperand(FlowGraphNaturalLoop* loop, unsigned ivLcl, GenTree* tree, var_types elementType);
     void RecordAddressUpdate(LoopVectorizationPlan* plan, unsigned addressVar, int delta);
     bool HasAddressUpdate(LoopVectorizationPlan* plan, unsigned addressVar);
