@@ -107,17 +107,17 @@ namespace System.Runtime.CompilerServices
                     {
                         if (s_metadataRevision != Revision)
                         {
-                            long[] wrapperIPs = ContinuationWrapper.GetContinuationWrapperIPs();
-
                             // Metadata payload:
                             // [qpcFrequency (compressed uint64)]
                             // [qpcSync (compressed uint64)]
                             // [utcSync (compressed uint64)]
                             // [eventBufferSize (compressed uint32)]
                             // [wrapperCount byte]
-                            // [wrapperIP0 (compressed uint64)] ... [wrapperIPn (compressed uint64)]
-                            const int MaxStaticEventPayloadSize = Serializer.MaxCompressedUInt64Size + Serializer.MaxCompressedUInt64Size + Serializer.MaxCompressedUInt64Size + Serializer.MaxCompressedUInt32Size + 1;
-                            int maxDynamicEventPayloadSize = wrapperIPs.Length * Serializer.MaxCompressedUInt64Size;
+                            // [wrapperNameTemplateLength byte]
+                            // [wrapperNameTemplate UTF8 bytes]
+                            byte[] templateBytes = System.Text.Encoding.UTF8.GetBytes(ContinuationWrapper.NameTemplate);
+                            const int MaxStaticEventPayloadSize = Serializer.MaxCompressedUInt64Size + Serializer.MaxCompressedUInt64Size + Serializer.MaxCompressedUInt64Size + Serializer.MaxCompressedUInt32Size + 1 + 1;
+                            int maxDynamicEventPayloadSize = templateBytes.Length;
 
                             ref EventBuffer eventBuffer = ref context.EventBuffer;
                             if (Serializer.AsyncEventHeader(context, ref eventBuffer, AsyncEventID.AsyncProfilerMetadata, MaxStaticEventPayloadSize + maxDynamicEventPayloadSize))
@@ -132,12 +132,10 @@ namespace System.Runtime.CompilerServices
                                 payloadSpanIndex += Serializer.WriteCompressedUInt64(payloadSpan.Slice(payloadSpanIndex), (ulong)utcTimeSync);
                                 payloadSpanIndex += Serializer.WriteCompressedUInt32(payloadSpan.Slice(payloadSpanIndex), EventBufferSize);
 
-                                payloadSpan[payloadSpanIndex++] = (byte)wrapperIPs.Length;
-
-                                for (int i = 0; i < wrapperIPs.Length; i++)
-                                {
-                                    payloadSpanIndex += Serializer.WriteCompressedUInt64(payloadSpan.Slice(payloadSpanIndex), (ulong)wrapperIPs[i]);
-                                }
+                                payloadSpan[payloadSpanIndex++] = ContinuationWrapper.COUNT;
+                                payloadSpan[payloadSpanIndex++] = (byte)templateBytes.Length;
+                                templateBytes.CopyTo(payloadSpan.Slice(payloadSpanIndex));
+                                payloadSpanIndex += templateBytes.Length;
 
                                 eventBuffer.Index += payloadSpanIndex;
 
@@ -857,9 +855,6 @@ namespace System.Runtime.CompilerServices
 
         internal static partial class ContinuationWrapper
         {
-            public const byte COUNT = 32;
-            public const byte COUNT_MASK = COUNT - 1;
-
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static void IncrementIndex(ref Info info)
             {

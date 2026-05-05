@@ -124,8 +124,9 @@ namespace System.Runtime.CompilerServices
         ///
         /// This creates a rotating pattern of unique return addresses on the native callstack. An OS
         /// CPU profiler (e.g., ETW, perf) captures these native IPs in its stack samples. The async
-        /// profiler emits the wrapper IP table in the metadata event, so a post-processing tool can
-        /// identify which wrapper IPs appear in a native callstack and correlate them with the
+        /// profiler emits the wrapper name template and count in the metadata event, so a post-processing
+        /// tool can format the template with each index (0..COUNT-1) to produce method names, resolve
+        /// them via symbol data (rundown events or PDB), and correlate native stack IPs with the
         /// async resume callstack events emitted at the same logical point. This bridges the gap
         /// between synchronous native stack samples and the asynchronous continuation chain.
         ///
@@ -138,6 +139,16 @@ namespace System.Runtime.CompilerServices
         [StackTraceHidden]
         internal static partial class ContinuationWrapper
         {
+            /// <summary>
+            /// Name template for the continuation wrapper methods. External tools format this template
+            /// with the wrapper index (0..COUNT-1) to produce method names for identifying wrapper frames in stacks.
+            /// Must match the actual method names below (e.g., Continuation_Wrapper_0, Continuation_Wrapper_1, ...).
+            /// </summary>
+            public const string NameTemplate = "Continuation_Wrapper_{0}";
+
+            public const byte COUNT = 32;
+            public const byte COUNT_MASK = COUNT - 1;
+
             public static void InitInfo(ref Info info)
             {
                 info.ContinuationTable = ref Unsafe.As<ContinuationWrapperTable, nint>(ref s_continuationWrappers);
@@ -152,16 +163,6 @@ namespace System.Runtime.CompilerServices
                 {
                     return ((delegate*<Continuation, ref byte, Continuation?>)(dispatcher))(curContinuation, ref resultLoc);
                 }
-            }
-
-            public static long[] GetContinuationWrapperIPs()
-            {
-                long[] ips = new long[COUNT];
-                for (int i = 0; i < COUNT; i++)
-                {
-                    ips[i] = Unsafe.Add(ref Unsafe.As<ContinuationWrapperTable, nint>(ref s_continuationWrappers), i);
-                }
-                return ips;
             }
 
             [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
