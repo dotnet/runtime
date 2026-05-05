@@ -3880,7 +3880,7 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetEnCHangingFieldInfo(const EnCH
         FieldDesc *  pFD      = NULL;
         PTR_CBYTE    pORField = NULL;
 
-        pFD = GetEnCFieldDesc(pEnCFieldInfo);                                   // already loaded class.
+        pFD = GetEnCFieldDesc(pEnCFieldInfo);
 
     #ifdef FEATURE_METADATA_UPDATER
         pORField = GetPtrToEnCField(pFD, pEnCFieldInfo);
