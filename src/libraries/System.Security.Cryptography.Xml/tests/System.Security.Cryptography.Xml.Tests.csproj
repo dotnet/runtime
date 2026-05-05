@@ -1,8 +1,9 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkMinimum)</TargetFrameworks>
     <Nullable>disable</Nullable>
     <NoWarn>$(NoWarn);SYSLIB0057</NoWarn>
+    <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\PlatformSupport.cs"
@@ -66,6 +67,7 @@
     <Compile Include="XmlDecryptionTransformTest.cs" />
   </ItemGroup>
   <ItemGroup>
+    <EmbeddedResource Include="EncryptedXmlSample4.xml" />
     <EmbeddedResource Include="EncryptedXmlSample3.xml" />
     <EmbeddedResource Include="EncryptedXmlSample2.xml" />
     <EmbeddedResource Include="EncryptedXmlSample1.xml" />
