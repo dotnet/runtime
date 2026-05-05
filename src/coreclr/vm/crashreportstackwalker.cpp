@@ -261,10 +261,8 @@ CrashReportGetExceptionForThread(
     bool result = false;
 
     // GCX_COOP transitions into cooperative mode via DisablePreemptiveGC.
-    // On the crashing thread (which holds the thread store lock taken by
-    // CrashReportSuspendThreads), RareDisablePreemptiveGC's fast-path skips
-    // the suspend-blocking check, so the transition is safe even though the
-    // EE is suspended.
+    // We early-return above when the thread isn't already cooperative, so
+    // GCX_COOP here is a no-op marker and never actually transitions modes.
     GCX_COOP();
 
     OBJECTREF throwable = pThread->GetThrowable();
@@ -302,22 +300,6 @@ CrashReportGetExceptionForThread(
     GCPROTECT_END();
 
     return result;
-}
-
-static
-bool
-CrashReportGetException(
-    char* exceptionTypeBuf,
-    size_t exceptionTypeBufSize,
-    uint32_t* hresult)
-{
-    Thread* pThread = GetThreadAsyncSafe();
-    if (pThread == nullptr)
-    {
-        return false;
-    }
-
-    return CrashReportGetExceptionForThread(pThread, exceptionTypeBuf, exceptionTypeBufSize, hresult);
 }
 
 // Suspend non-crashing managed threads via SuspendEE so their stacks
@@ -373,23 +355,32 @@ CrashReportEnumerateThreads(
 {
     Thread* pCrashThread = GetThreadAsyncSafe();
 
+    // Capture the crashing thread's exception state BEFORE suspending the EE
+    // so the throwable inspection runs in the thread's natural EE-live context,
+    // outside the suspended window which exists for safe-point operations on
+    // other threads.
+    char crashExceptionType[CRASHREPORT_STRING_BUFFER_SIZE];
+    crashExceptionType[0] = '\0';
+    uint32_t crashHresult = 0;
+    bool crashHasException = false;
+    bool isCrashingThread = pCrashThread != nullptr
+        && static_cast<uint64_t>(pCrashThread->GetOSThreadId()) == crashingTid;
+    if (isCrashingThread)
+    {
+        crashHasException = CrashReportGetExceptionForThread(
+            pCrashThread, crashExceptionType, sizeof(crashExceptionType), &crashHresult);
+    }
+
     bool runtimeSuspended = CrashReportSuspendThreads(pCrashThread);
 
     // Emit the crashing thread first so the report keeps the most important
     // thread even if later enumeration is incomplete.
-    if (pCrashThread != nullptr)
+    if (isCrashingThread)
     {
         uint64_t crashOsId = static_cast<uint64_t>(pCrashThread->GetOSThreadId());
-        if (crashOsId == crashingTid)
-        {
-            char exceptionType[CRASHREPORT_STRING_BUFFER_SIZE];
-            uint32_t hresult = 0;
-            bool hasException = CrashReportGetExceptionForThread(pCrashThread, exceptionType, sizeof(exceptionType), &hresult);
+        threadCallback(crashOsId, true, crashHasException ? crashExceptionType : "", crashHresult, ctx);
 
-            threadCallback(crashOsId, true, hasException ? exceptionType : "", hresult, ctx);
-
-            CrashReportWalkThread(pCrashThread, frameCallback, ctx);
-        }
+        CrashReportWalkThread(pCrashThread, frameCallback, ctx);
     }
 
     // Walk the remaining managed threads only when the runtime was
@@ -445,7 +436,6 @@ CrashReportConfigure()
     settings.reportPath = dumpName;
     settings.isManagedThreadCallback = CrashReportIsCurrentThreadManaged;
     settings.walkStackCallback = CrashReportWalkStack;
-    settings.getExceptionCallback = CrashReportGetException;
     settings.enumerateThreadsCallback = CrashReportEnumerateThreads;
 
     // Initialize the reporter and register the PAL signal-path callback last

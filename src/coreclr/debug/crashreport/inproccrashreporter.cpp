@@ -14,6 +14,7 @@
 #include <errno.h>
 #include <unistd.h>
 #include <string.h>
+#include <time.h>
 #include <ucontext.h>
 #include <minipal/getexepath.h>
 #include <minipal/thread.h>
@@ -30,17 +31,11 @@ class ThreadEnumerationContext
 public:
     ThreadEnumerationContext(
         SignalSafeJsonWriter* writer,
-        void* signalContext,
-        bool hasCrashException,
-        const char* crashExceptionType,
-        uint32_t crashExceptionHResult)
+        void* signalContext)
         : m_writer(writer),
           m_signalContext(signalContext),
           m_threadCount(0),
-          m_sawCrashThread(false),
-          m_hasCrashException(hasCrashException),
-          m_crashExceptionType(crashExceptionType),
-          m_crashExceptionHResult(crashExceptionHResult)
+          m_sawCrashThread(false)
     {
     }
 
@@ -52,8 +47,6 @@ public:
     SignalSafeJsonWriter* Writer() const { return m_writer; }
 
     void EnumerateThreads(InProcCrashReportEnumerateThreadsCallback callback, uint64_t crashingTid);
-
-    void EndEnumeration();
 
     static void ThreadCallback(
         uint64_t osThreadId,
@@ -100,9 +93,6 @@ private:
     void* m_signalContext;
     size_t m_threadCount;
     bool m_sawCrashThread;
-    bool m_hasCrashException;
-    const char* m_crashExceptionType;
-    uint32_t m_crashExceptionHResult;
 };
 
 class CrashReportOutputContext
@@ -195,22 +185,23 @@ public:
     static bool BuildReportPath(
         char* buffer,
         size_t bufferSize,
-        const char* dumpPath);
+        const char* dumpPath,
+        const char* processName,
+        const char* hostName);
 
     static size_t ExpandDumpTemplate(
         char* buffer,
         size_t bufferSize,
-        const char* pattern);
+        const char* pattern,
+        const char* processName,
+        const char* hostName);
 };
 
 void
 InProcCrashReporter::CreateReport(
     int signal,
     siginfo_t* siginfo,
-    void* context,
-    bool hasException,
-    const char* exceptionType,
-    uint32_t exceptionHResult)
+    void* context)
 {
     static LONG s_generating = 0;
     if (InterlockedCompareExchange(&s_generating, 1, 0) != 0)
@@ -218,10 +209,10 @@ InProcCrashReporter::CreateReport(
         return;
     }
 
-    char reportPath[CRASHREPORT_STRING_BUFFER_SIZE];
+    char reportPath[CRASHREPORT_PATH_BUFFER_SIZE];
     reportPath[0] = '\0';
 
-    if (m_reportPath[0] == '\0' || !CrashReportHelpers::BuildReportPath(reportPath, sizeof(reportPath), m_reportPath))
+    if (m_reportPath[0] == '\0' || !CrashReportHelpers::BuildReportPath(reportPath, sizeof(reportPath), m_reportPath, m_processName, m_hostName))
     {
         return;
     }
@@ -233,14 +224,6 @@ InProcCrashReporter::CreateReport(
     }
 
     (void)siginfo;
-
-    char exTypeBuf[CRASHREPORT_STRING_BUFFER_SIZE];
-    exTypeBuf[0] = '\0';
-    uint32_t exHresult = exceptionHResult;
-    if (hasException && exceptionType != nullptr)
-    {
-        CrashReportHelpers::CopyString(exTypeBuf, sizeof(exTypeBuf), exceptionType);
-    }
 
     CrashReportOutputContext outputContext(fd);
 
@@ -273,19 +256,19 @@ InProcCrashReporter::CreateReport(
     m_jsonWriter.OpenArray("threads");
     if (m_enumerateThreadsCallback != nullptr)
     {
-        ThreadEnumerationContext threadContext(&m_jsonWriter, context, hasException, exTypeBuf, exHresult);
+        ThreadEnumerationContext threadContext(&m_jsonWriter, context);
         uint64_t crashingTid = static_cast<uint64_t>(minipal_get_current_thread_id());
 
         threadContext.EnumerateThreads(m_enumerateThreadsCallback, crashingTid);
 
         if (threadContext.ThreadCount() == 0 || !threadContext.SawCrashThread())
         {
-            EmitSynthesizedCrashThread(context, hasException, exTypeBuf, exHresult, /*walkStack*/ false);
+            EmitSynthesizedCrashThread(context, /*walkStack*/ false);
         }
     }
     else
     {
-        EmitSynthesizedCrashThread(context, hasException, exTypeBuf, exHresult, /*walkStack*/ true);
+        EmitSynthesizedCrashThread(context, /*walkStack*/ true);
     }
     m_jsonWriter.CloseArray(); // threads
 
@@ -323,7 +306,6 @@ InProcCrashReporter::Initialize(
 {
     m_isManagedThreadCallback = settings.isManagedThreadCallback;
     m_walkStackCallback = settings.walkStackCallback;
-    m_getExceptionCallback = settings.getExceptionCallback;
     m_enumerateThreadsCallback = settings.enumerateThreadsCallback;
     CrashReportHelpers::CopyString(m_reportPath, sizeof(m_reportPath), settings.reportPath);
 
@@ -342,8 +324,7 @@ InProcCrashReporter::Initialize(
         if (n > 0)
         {
             buf[n] = '\0';
-            CrashReportHelpers::CopyString(m_processName, sizeof(m_processName),
-                                           CrashReportHelpers::GetFilename(buf));
+            CrashReportHelpers::CopyString(m_processName, sizeof(m_processName), CrashReportHelpers::GetFilename(buf));
         }
     }
 #endif
@@ -355,24 +336,26 @@ InProcCrashReporter::Initialize(
             free(exePath);
         }
     }
+
+    // Cache hostname here because gethostname is not on the POSIX
+    // async-signal-safe list; the dump-template expander needs it for %h
+    // expansion at crash time.
+    m_hostName[0] = '\0';
+    if (gethostname(m_hostName, sizeof(m_hostName) - 1) == 0)
+    {
+        m_hostName[sizeof(m_hostName) - 1] = '\0';
+    }
+    else
+    {
+        m_hostName[0] = '\0';
+    }
 }
 
 void
 InProcCrashReportSignalDispatcher(int signal, void* siginfo, void* context)
 {
     InProcCrashReporter& reporter = InProcCrashReporter::GetInstance();
-
-    char exTypeBuf[CRASHREPORT_STRING_BUFFER_SIZE];
-    exTypeBuf[0] = '\0';
-    uint32_t exHresult = 0;
-    bool hasException = false;
-
-    if (reporter.m_getExceptionCallback != nullptr && signal != SIGSEGV && signal != SIGBUS)
-    {
-        hasException = reporter.m_getExceptionCallback(exTypeBuf, sizeof(exTypeBuf), &exHresult);
-    }
-
-    reporter.CreateReport(signal, static_cast<siginfo_t*>(siginfo), context, hasException, exTypeBuf, exHresult);
+    reporter.CreateReport(signal, static_cast<siginfo_t*>(siginfo), context);
 }
 
 void
@@ -452,15 +435,19 @@ CrashReportOutputContext::ChunkCallback(
     return outputContext->HandleChunk(buffer, len);
 }
 
-// Expand a subset of the coredump template patterns used by createdump's
-// FormatDumpName: %%  %p  %d (PID).  Other specifiers are passed through
-// literally since the remaining createdump patterns (%e, %h, %t) are not
-// meaningful for in-proc crash reports.
+// Expand the coredump template patterns supported by createdump's
+// FormatDumpName for DOTNET_DbgMiniDumpName: %% %p %d (PID), %e (process
+// name, cached at Initialize), %h (hostname, cached at Initialize), and %t
+// (current epoch seconds via time(2), POSIX async-signal-safe). Unknown
+// specifiers are rejected (return 0) to match createdump and to avoid
+// silently producing diverging file names from the same template.
 size_t
 CrashReportHelpers::ExpandDumpTemplate(
     char* buffer,
     size_t bufferSize,
-    const char* pattern)
+    const char* pattern,
+    const char* processName,
+    const char* hostName)
 {
     if (buffer == nullptr || bufferSize == 0 || pattern == nullptr)
     {
@@ -472,48 +459,80 @@ CrashReportHelpers::ExpandDumpTemplate(
 
     while (*pattern != '\0' && pos + 1 < bufferSize)
     {
-        if (*pattern == '%')
+        if (*pattern != '%')
         {
-            pattern++;
-            if (*pattern == '%')
-            {
-                buffer[pos++] = '%';
-            }
-            else if (*pattern == 'p' || *pattern == 'd')
-            {
-                char pidBuf[CRASHREPORT_NUMBER_BUFFER_SIZE];
-                size_t pidLen = SignalSafeJsonWriter::FormatUnsignedDecimal(pidBuf, sizeof(pidBuf), pid);
-                if (pidLen == 0 || pos + pidLen >= bufferSize)
-                {
-                    // Not enough room to expand %p/%d; fail rather than emit
-                    // a path missing the PID (which could collide with the
-                    // dump file on disk).
-                    return 0;
-                }
-                memcpy(buffer + pos, pidBuf, pidLen);
-                pos += pidLen;
-            }
-            else
-            {
-                // Unknown specifier — pass through literally.
+            buffer[pos++] = *pattern++;
+            continue;
+        }
+
+        pattern++;
+        char specifier = *pattern;
+
+        const char* substitution = nullptr;
+        char numberBuf[CRASHREPORT_NUMBER_BUFFER_SIZE];
+
+        switch (specifier)
+        {
+            case '%':
                 if (pos + 1 < bufferSize)
                 {
                     buffer[pos++] = '%';
                 }
-                if (*pattern != '\0' && pos + 1 < bufferSize)
-                {
-                    buffer[pos++] = *pattern;
-                }
-            }
-
-            if (*pattern != '\0')
-            {
                 pattern++;
-            }
+                continue;
+
+            case 'p':
+            case 'd':
+                if (SignalSafeJsonWriter::FormatUnsignedDecimal(numberBuf, sizeof(numberBuf), pid) == 0)
+                {
+                    return 0;
+                }
+                substitution = numberBuf;
+                break;
+
+            case 'e':
+                substitution = (processName != nullptr && processName[0] != '\0') ? processName : nullptr;
+                break;
+
+            case 'h':
+                substitution = (hostName != nullptr && hostName[0] != '\0') ? hostName : nullptr;
+                break;
+
+            case 't':
+                if (SignalSafeJsonWriter::FormatUnsignedDecimal(
+                        numberBuf, sizeof(numberBuf), static_cast<uint64_t>(time(nullptr))) == 0)
+                {
+                    return 0;
+                }
+                substitution = numberBuf;
+                break;
+
+            default:
+                // Unknown / unsupported specifier; fail rather than emit a
+                // path with a literal '%X' that would diverge from the file
+                // name createdump would produce for the same template.
+                return 0;
         }
-        else
+
+        if (substitution == nullptr)
         {
-            buffer[pos++] = *pattern++;
+            // Required substitution unavailable (e.g. hostname capture failed
+            // at Initialize). Fail rather than emit a path missing this
+            // component, which could collide with the dump file on disk.
+            return 0;
+        }
+
+        size_t subLen = strlen(substitution);
+        if (pos + subLen >= bufferSize)
+        {
+            return 0;
+        }
+        memcpy(buffer + pos, substitution, subLen);
+        pos += subLen;
+
+        if (*pattern != '\0')
+        {
+            pattern++;
         }
     }
 
@@ -532,15 +551,17 @@ bool
 CrashReportHelpers::BuildReportPath(
     char* buffer,
     size_t bufferSize,
-    const char* dumpPath)
+    const char* dumpPath,
+    const char* processName,
+    const char* hostName)
 {
     if (buffer == nullptr || bufferSize == 0 || dumpPath == nullptr || dumpPath[0] == '\0')
     {
         return false;
     }
 
-    char expanded[CRASHREPORT_STRING_BUFFER_SIZE];
-    size_t expandedLen = ExpandDumpTemplate(expanded, sizeof(expanded), dumpPath);
+    char expanded[CRASHREPORT_PATH_BUFFER_SIZE];
+    size_t expandedLen = ExpandDumpTemplate(expanded, sizeof(expanded), dumpPath, processName, hostName);
     if (expandedLen == 0)
     {
         return false;
@@ -941,12 +962,7 @@ ThreadEnumerationContext::OnThread(
     m_writer->WriteString("crashed", isCrashThread ? "true" : "false");
     m_writer->WriteHexAsString("native_thread_id", osThreadId);
 
-    if (isCrashThread && m_hasCrashException)
-    {
-        m_writer->WriteString("managed_exception_type", m_crashExceptionType);
-        m_writer->WriteHexAsString("managed_exception_hresult", m_crashExceptionHResult);
-    }
-    else if (exceptionType != nullptr && exceptionType[0] != '\0')
+    if (exceptionType != nullptr && exceptionType[0] != '\0')
     {
         m_writer->WriteString("managed_exception_type", exceptionType);
         m_writer->WriteHexAsString("managed_exception_hresult", exceptionHResult);
@@ -990,12 +1006,7 @@ ThreadEnumerationContext::EnumerateThreads(
     }
 
     callback(crashingTid, &ThreadCallback, &FrameCallback, this);
-    EndEnumeration();
-}
 
-void
-ThreadEnumerationContext::EndEnumeration()
-{
     if (m_threadCount == 0)
     {
         return;
@@ -1013,9 +1024,6 @@ ThreadEnumerationContext::EndEnumeration()
 void
 InProcCrashReporter::EmitSynthesizedCrashThread(
     void* context,
-    bool hasException,
-    const char* crashExceptionType,
-    uint32_t crashExceptionHResult,
     bool walkStack)
 {
     uint64_t crashingTid = static_cast<uint64_t>(minipal_get_current_thread_id());
@@ -1025,12 +1033,6 @@ InProcCrashReporter::EmitSynthesizedCrashThread(
         m_isManagedThreadCallback != nullptr && m_isManagedThreadCallback() ? "true" : "false");
     m_jsonWriter.WriteString("crashed", "true");
     m_jsonWriter.WriteHexAsString("native_thread_id", crashingTid);
-
-    if (hasException)
-    {
-        m_jsonWriter.WriteString("managed_exception_type", crashExceptionType);
-        m_jsonWriter.WriteHexAsString("managed_exception_hresult", crashExceptionHResult);
-    }
 
     CrashReportHelpers::WriteRegistersToJson(&m_jsonWriter, context);
     m_jsonWriter.OpenArray("stack_frames");

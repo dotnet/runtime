@@ -13,10 +13,14 @@
 
 #include "signalsafejsonwriter.h"
 
-// Scratch-buffer sizes used throughout the in-proc crash reporter. 256 is
-// sized for path-like and identifier-like strings (report paths, process
-// name, type/class names). 32 is sized for a single hex-or-decimal integer
-// formatted as a C string (addresses, thread IDs, hresults).
+// Scratch-buffer sizes used throughout the in-proc crash reporter:
+// - 1024 (matching createdump's MAX_LONGPATH) for paths (report paths and
+//   expanded dump templates), so DOTNET_DbgMiniDumpName values that work
+//   with createdump also work here.
+// - 256 for identifiers (process name, type/class/exception names).
+// - 32 for a single hex-or-decimal integer formatted as a C string
+//   (addresses, thread IDs, hresults).
+static constexpr size_t CRASHREPORT_PATH_BUFFER_SIZE = 1024;
 static constexpr size_t CRASHREPORT_STRING_BUFFER_SIZE = 256;
 static constexpr size_t CRASHREPORT_NUMBER_BUFFER_SIZE = 32;
 
@@ -40,11 +44,6 @@ using InProcCrashReportWalkStackCallback = void (*)(
     InProcCrashReportFrameCallback frameCallback,
     void* ctx);
 
-using InProcCrashReportGetExceptionCallback = bool (*)(
-    char* exceptionTypeBuf,
-    size_t exceptionTypeBufSize,
-    uint32_t* hresult);
-
 using InProcCrashReportThreadCallback = void (*)(
     uint64_t osThreadId,
     bool isCrashThread,
@@ -63,7 +62,6 @@ struct InProcCrashReporterSettings
     const char* reportPath;
     InProcCrashReportIsManagedThreadCallback isManagedThreadCallback;
     InProcCrashReportWalkStackCallback walkStackCallback;
-    InProcCrashReportGetExceptionCallback getExceptionCallback;
     InProcCrashReportEnumerateThreadsCallback enumerateThreadsCallback;
 };
 
@@ -79,36 +77,24 @@ public:
     void CreateReport(
         int signal,
         siginfo_t* siginfo,
-        void* context,
-        bool hasException,
-        const char* exceptionType,
-        uint32_t exceptionHResult);
+        void* context);
 
 private:
     InProcCrashReporter() = default;
     InProcCrashReporter(const InProcCrashReporter&) = delete;
     InProcCrashReporter& operator=(const InProcCrashReporter&) = delete;
 
-    // The static signal-handler thunk needs to read m_getExceptionCallback to
-    // capture managed exception info on the crashing thread before invoking
-    // CreateReport. Friending the dispatcher avoids exposing the field via a
-    // public accessor that wouldn't have any other consumer.
-    friend void InProcCrashReportSignalDispatcher(int signal, void* siginfo, void* context);
-
     void EmitSynthesizedCrashThread(
         void* context,
-        bool hasException,
-        const char* crashExceptionType,
-        uint32_t crashExceptionHResult,
         bool walkStack);
 
     SignalSafeJsonWriter m_jsonWriter;
     InProcCrashReportIsManagedThreadCallback m_isManagedThreadCallback = nullptr;
     InProcCrashReportWalkStackCallback m_walkStackCallback = nullptr;
-    InProcCrashReportGetExceptionCallback m_getExceptionCallback = nullptr;
     InProcCrashReportEnumerateThreadsCallback m_enumerateThreadsCallback = nullptr;
-    char m_reportPath[CRASHREPORT_STRING_BUFFER_SIZE] = {};
+    char m_reportPath[CRASHREPORT_PATH_BUFFER_SIZE] = {};
     char m_processName[CRASHREPORT_STRING_BUFFER_SIZE] = {};
+    char m_hostName[CRASHREPORT_STRING_BUFFER_SIZE] = {};
 };
 
 // Free-function entry point used by the runtime to wire the in-proc crash
