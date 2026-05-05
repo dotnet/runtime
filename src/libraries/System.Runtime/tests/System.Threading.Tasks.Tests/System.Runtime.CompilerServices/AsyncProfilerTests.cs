@@ -845,6 +845,31 @@ namespace System.Threading.Tasks.Tests
         }
 
         /// <summary>
+        /// Returns true if any callstack event contains all expected method names as frames,
+        /// appearing in the given order (index 0 = innermost/deepest frame).
+        /// </summary>
+        private static bool HasCallstackWithExpectedFrames(List<ParsedEvent> callstacks, string[] expectedFrames)
+        {
+            foreach (var cs in callstacks)
+            {
+                var resolvedNames = cs.Frames
+                    .Select(f => GetMethodNameFromNativeIP(f.NativeIP))
+                    .ToList();
+
+                int matchIndex = 0;
+                for (int i = 0; i < resolvedNames.Count && matchIndex < expectedFrames.Length; i++)
+                {
+                    if (resolvedNames[i] is not null && resolvedNames[i]!.Contains(expectedFrames[matchIndex], StringComparison.Ordinal))
+                        matchIndex++;
+                }
+
+                if (matchIndex == expectedFrames.Length)
+                    return true;
+            }
+            return false;
+        }
+
+        /// <summary>
         /// For a given context, simulates the async callstack depth by walking events in order:
         /// ResumeAsyncCallstack sets the depth to frame count, CompleteAsyncMethod decrements,
         /// UnwindAsyncException subtracts unwound frames. Asserts depth reaches zero.
@@ -1121,15 +1146,18 @@ namespace System.Threading.Tasks.Tests
                 await CreateCallstackDepthMarker();
             });
 
-            DumpAllEvents(events);
+            // DumpAllEvents(events);
 
             var stream = ParseAllEvents(events);
             var createCallstacks = stream.CallstacksWithMarker(AsyncEventID.CreateAsyncCallstack, nameof(CreateCallstackDepthMarker));
 
-            // lambda -> CreateCallstackDepthMarker -> ChainedAsyncYield -> InnerAsyncYield
-            // First await should reflect the 4-level chain.
+            // The expected [NoInlining] frames in order (innermost first):
+            // InnerAsyncYield -> ChainedAsyncYield -> CreateCallstackDepthMarker
             Assert.NotEmpty(createCallstacks);
-            Assert.Contains(createCallstacks, cs => cs.FrameCount == 4);
+            string[] expectedFrames = [nameof(InnerAsyncYield), nameof(ChainedAsyncYield), nameof(CreateCallstackDepthMarker)];
+            Assert.True(
+                HasCallstackWithExpectedFrames(createCallstacks, expectedFrames),
+                $"Expected callstack to contain frames [{string.Join(", ", expectedFrames)}] in order");
         }
 
         [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(true)]
@@ -1178,15 +1206,18 @@ namespace System.Threading.Tasks.Tests
                 await SuspendDepthMarker();
             });
 
-            DumpAllEvents(events);
+            // DumpAllEvents(events);
 
             var stream = ParseAllEvents(events);
             var suspendCallstacks = stream.CallstacksWithMarker(AsyncEventID.SuspendAsyncCallstack, nameof(SuspendDepthMarker));
 
-            // lambda -> SuspendDepthMarker -> ChainedAsyncYield -> InnerAsyncYield
-            // First suspend should reflect the 4-level chain.
+            // The expected [NoInlining] frames in order (innermost first):
+            // InnerAsyncYield -> ChainedAsyncYield -> SuspendDepthMarker
             Assert.NotEmpty(suspendCallstacks);
-            Assert.Contains(suspendCallstacks, cs => cs.FrameCount == 4);
+            string[] expectedFrames = [nameof(InnerAsyncYield), nameof(ChainedAsyncYield), nameof(SuspendDepthMarker)];
+            Assert.True(
+                HasCallstackWithExpectedFrames(suspendCallstacks, expectedFrames),
+                $"Expected callstack to contain frames [{string.Join(", ", expectedFrames)}] in order");
         }
 
         [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(true)]
@@ -1381,14 +1412,18 @@ namespace System.Threading.Tasks.Tests
                 await CallstackDepthMarker();
             });
 
-            DumpAllEvents(events);
+            // DumpAllEvents(events);
 
             var stream = ParseAllEvents(events);
             var callstacks = stream.CallstacksWithMarker(AsyncEventID.ResumeAsyncCallstack, nameof(CallstackDepthMarker));
 
-            // lambda -> CallstackDepthMarker -> InnerAsyncYield ->: 3 levels deep after InnerAsyncYield yields.
+            // The expected [NoInlining] frames in order (innermost first):
+            // InnerAsyncYield -> CallstackDepthMarker
             Assert.NotEmpty(callstacks);
-            Assert.Contains(callstacks, cs => cs.FrameCount == 3);
+            string[] expectedFrames = [nameof(InnerAsyncYield), nameof(CallstackDepthMarker)];
+            Assert.True(
+                HasCallstackWithExpectedFrames(callstacks, expectedFrames),
+                $"Expected callstack to contain frames [{string.Join(", ", expectedFrames)}] in order");
         }
 
         [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(true)]
@@ -1428,7 +1463,7 @@ namespace System.Threading.Tasks.Tests
                 await SimulationHandledMarker();
             });
 
-            DumpAllEvents(events);
+            // DumpAllEvents(events);
 
             var stream = ParseAllEvents(events);
             AssertCallstackSimulationReachesZero(stream, nameof(SimulationHandledMarker));
