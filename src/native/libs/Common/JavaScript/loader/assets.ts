@@ -33,7 +33,10 @@ export async function loadDotnetModule(asset: JsAsset): Promise<JsModuleExports>
 
 export async function loadJSModule(asset: JsAsset): Promise<any> {
     const assetInternal = asset as AssetEntryInternal;
-    let mod: JsModuleExports = asset.moduleExports;
+    let mod: JsModuleExports = await asset.moduleExports;
+    if (mod) {
+        asset.moduleExports = mod;
+    }
     totalAssetsToDownload++;
     if (!mod) {
         if (assetInternal.name && !asset.resolvedUrl) {
@@ -50,6 +53,7 @@ export async function loadJSModule(asset: JsAsset): Promise<any> {
 
         if (!asset.resolvedUrl) throw new Error("Invalid config, resources is not set");
         mod = await import(/* webpackIgnore: true */ asset.resolvedUrl);
+        asset.moduleExports = mod;
     }
     onDownloadedAsset(assetInternal);
     return mod;
@@ -61,8 +65,6 @@ export async function callLibraryInitializerOnRuntimeConfigLoaded(asset: JsAsset
     try {
         if (typeof module.onRuntimeConfigLoaded === "function") {
             await module.onRuntimeConfigLoaded(loaderConfig);
-        } else if (typeof module.onRuntimeReady !== "function") {
-            dotnetLogger.warn(`Module '${name}' does not export 'onRuntimeConfigLoaded' function. Make sure the module initializer is correctly defined and exported.`);
         }
         return module;
     } catch (err) {
@@ -77,8 +79,6 @@ export async function callLibraryInitializerOnRuntimeReady([asset, modulePromise
     try {
         if (typeof module.onRuntimeReady === "function") {
             await module.onRuntimeReady(dotnetApi);
-        } else if (typeof module.onRuntimeConfigLoaded !== "function") {
-            dotnetLogger.warn(`Module '${name}' does not export 'onRuntimeReady' function. Make sure the module initializer is correctly defined and exported.`);
         }
     } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
