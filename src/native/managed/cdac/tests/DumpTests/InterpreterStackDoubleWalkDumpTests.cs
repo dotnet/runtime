@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.IO;
 using System.Linq;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
 using Microsoft.DotNet.XUnitExtensions;
@@ -138,62 +137,5 @@ public class InterpreterStackDoubleWalkDumpTests : DumpTestBase
                     $"Full stack: [{string.Join(", ", walker.Frames.Select(f => $"{f.Name ?? "<null>"}({f.FrameName ?? "frameless"})"))}]");
             }
         }
-    }
-
-    /// <summary>
-    /// Loads a cdb-collected dump where the worker thread's DebuggerFilterContext was
-    /// patched to have RIP pointing to an interpreter precode. This simulates the
-    /// scenario where a managed debugger breaks inside interpreted code.
-    ///
-    /// NOTE: Per native PR #126953, Init() asserts that the initial IP is never in
-    /// interpreter code. This test exercises a scenario that doesn't occur in practice
-    /// but is kept for comparison and future reference. The cDAC doesn't currently
-    /// handle this path correctly (the CONTEXT SP doesn't point to an
-    /// InterpMethodContextFrame, so interpreter virtual unwind fails).
-    ///
-    /// To regenerate this dump:
-    ///   1. Run the debuggee under cdb with <c>DOTNET_Interpreter=Method*</c>
-    ///   2. Break at <c>coreclr!EEPolicy::HandleFatalError</c>
-    ///   3. Find SpinStep's interpreter precode via <c>!name2ee</c>
-    ///   4. Allocate a CONTEXT, set RIP = precode, write it to Thread::m_debuggerFilterContext
-    ///   5. <c>.dump /o /ma</c>
-    /// </summary>
-    [ConditionalFact]
-    public void StackWalk_NoDoubledInterpreterFrames_WithDebuggerFilterContext()
-    {
-        string dumpPath = GetCdbDumpPath();
-        InitializeDumpTestFromPath(dumpPath);
-        SkipIfInterpreterNotAvailable();
-
-        // This test is kept for reference but the scenario is invalid per native
-        // PR #126953: Init() asserts IP is never in interpreter code.
-        // The cDAC's InterpreterVirtualUnwind reads InterpMethodContextFrame from SP,
-        // but our patched CONTEXT has SP = native stack pointer, not a frame address.
-        // Skip until the cDAC implements ResetRegDisp-style dedup (if ever needed).
-        throw new SkipTestException(
-            "DebuggerFilterContext with interpreter IP is not a valid scenario per native PR #126953. " +
-            "Kept for future reference.");
-    }
-
-    private static string GetCdbDumpPath()
-    {
-        string? repoRoot = FindRepoRoot();
-        if (repoRoot is null)
-            throw new InvalidOperationException("Could not locate the repository root.");
-
-        return Path.Combine(repoRoot, "artifacts", "dumps", "cdac", "local", "full", "jit",
-            "InterpreterStackDoubleWalk", "InterpreterStackDoubleWalk_cdb.dmp");
-    }
-
-    private static string? FindRepoRoot()
-    {
-        string? dir = AppContext.BaseDirectory;
-        while (dir is not null)
-        {
-            if (File.Exists(Path.Combine(dir, "global.json")))
-                return dir;
-            dir = Path.GetDirectoryName(dir);
-        }
-        return null;
     }
 }
