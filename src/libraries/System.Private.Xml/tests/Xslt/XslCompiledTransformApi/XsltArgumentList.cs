@@ -3361,7 +3361,6 @@ namespace System.Xml.XslCompiledTransformApiTests
         }
     }
 
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/124344", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile), nameof(PlatformDetection.IsCoreCLR))]
     public class ExObj : XsltApiTestCaseBase2
     {
         private ITestOutputHelper _output;
