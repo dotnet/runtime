@@ -37,6 +37,7 @@ PhaseStatus AutoVectorizer::RunAnalyze()
             candidateCount++;
             Dump("AutoVec: accepted loop " FMT_LP ", IV V%02u, VF=%u, vectorSize=%u\n", loop->GetIndex(),
                  plan.InductionVar, plan.VectorizationFactor, plan.VectorSizeBytes);
+            DumpSLPPlan(plan);
         }
     }
 
@@ -196,7 +197,7 @@ bool AutoVectorizer::TryCreateLoopPlan(FlowGraphNaturalLoop* loop, LoopVectoriza
 
     Dump("AutoVec: loop " FMT_LP " canonical IV V%02u, init=0, step=1, test=%s\n", loop->GetIndex(),
          iterInfo.IterVar, GenTree::OpName(testOper));
-    return TryAnalyzeMemory(plan);
+    return TryAnalyzeMemory(plan) && TryBuildSLPPlan(plan);
 }
 
 void AutoVectorizer::Reject(FlowGraphNaturalLoop* loop, const char* reason) const
@@ -365,6 +366,132 @@ bool AutoVectorizer::TryAnalyzeMemory(LoopVectorizationPlan* plan)
     Dump("AutoVec: found int[] store/load base V%02u, offset %d\n", plan->StoreAccess.BaseLocalIfKnown,
          plan->StoreAccess.IndexOffset);
     return true;
+}
+
+bool AutoVectorizer::TryBuildSLPPlan(LoopVectorizationPlan* plan)
+{
+    assert(plan->VectorizationFactor <= MaxLanes);
+
+    SLPPlan* const slpPlan = &plan->BodyPlan;
+
+    PackNode* const load = NewPackNode(slpPlan, PackKind::LoadContiguous, TYP_INT, plan->VectorizationFactor);
+    if (load == nullptr)
+    {
+        Reject(plan->Loop, "SLP node budget exceeded");
+        return false;
+    }
+    load->Lanes[0] = plan->LoadAccess.Address;
+    load->Cost     = 1;
+
+    const PackKind splatKind = plan->ScalarOperand->IsCnsIntOrI() ? PackKind::SplatConstant : PackKind::SplatScalar;
+    PackNode* const splat = NewPackNode(slpPlan, splatKind, TYP_INT, plan->VectorizationFactor);
+    if (splat == nullptr)
+    {
+        Reject(plan->Loop, "SLP node budget exceeded");
+        return false;
+    }
+    splat->Lanes[0] = plan->ScalarOperand;
+    splat->Cost     = 1;
+
+    PackNode* const add = NewPackNode(slpPlan, PackKind::BinaryOp, TYP_INT, plan->VectorizationFactor);
+    if (add == nullptr)
+    {
+        Reject(plan->Loop, "SLP node budget exceeded");
+        return false;
+    }
+    add->Oper        = plan->ScalarOper;
+    add->Operands[0] = plan->ScalarOperandIsRhs ? load : splat;
+    add->Operands[1] = plan->ScalarOperandIsRhs ? splat : load;
+    add->Cost        = 1;
+
+    PackNode* const store = NewPackNode(slpPlan, PackKind::StoreContiguous, TYP_INT, plan->VectorizationFactor);
+    if (store == nullptr)
+    {
+        Reject(plan->Loop, "SLP node budget exceeded");
+        return false;
+    }
+    store->Lanes[0]    = plan->StoreAccess.Address;
+    store->Operands[0] = add;
+    store->Cost        = 1;
+
+    slpPlan->Root                = store;
+    slpPlan->EstimatedScalarCost = plan->VectorizationFactor * 3;
+    slpPlan->EstimatedVectorCost = load->Cost + splat->Cost + add->Cost + store->Cost;
+    slpPlan->EstimatedCodeSizeDelta = 12;
+
+    Dump("AutoVec: SLP accepted, estimated scalar=%u, vector=%u, codeSizeDelta=%u\n",
+         slpPlan->EstimatedScalarCost, slpPlan->EstimatedVectorCost, slpPlan->EstimatedCodeSizeDelta);
+    return true;
+}
+
+AutoVectorizer::PackNode* AutoVectorizer::NewPackNode(
+    SLPPlan* slpPlan, PackKind kind, var_types elementType, unsigned laneCount)
+{
+    if ((slpPlan->NodeCount >= MaxPackNodes) || (laneCount > MaxLanes))
+    {
+        return nullptr;
+    }
+
+    PackNode* const node = &slpPlan->Nodes[slpPlan->NodeCount++];
+    node->Kind           = kind;
+    node->ElementType    = elementType;
+    node->LaneCount      = laneCount;
+    return node;
+}
+
+const char* AutoVectorizer::PackKindName(PackKind kind) const
+{
+    switch (kind)
+    {
+        case PackKind::LoadContiguous:
+            return "load-contiguous";
+        case PackKind::StoreContiguous:
+            return "store-contiguous";
+        case PackKind::SplatConstant:
+            return "splat-constant";
+        case PackKind::SplatScalar:
+            return "splat-scalar";
+        case PackKind::BinaryOp:
+            return "binary";
+        default:
+            return "invalid";
+    }
+}
+
+void AutoVectorizer::DumpSLPPlan(const LoopVectorizationPlan& plan) const
+{
+#ifdef DEBUG
+    if (!ShouldDump())
+    {
+        return;
+    }
+
+    const SLPPlan& slpPlan = plan.BodyPlan;
+    printf("AutoVec: pack tree:\n");
+    for (unsigned i = 0; i < slpPlan.NodeCount; i++)
+    {
+        const PackNode& node = slpPlan.Nodes[i];
+        printf("  N%02u %-17s lanes=%u elem=%s cost=%u", i, PackKindName(node.Kind), node.LaneCount,
+               varTypeName(node.ElementType), node.Cost);
+
+        if (node.Kind == PackKind::BinaryOp)
+        {
+            printf(" op=%s", GenTree::OpName(node.Oper));
+        }
+
+        if (node.Operands[0] != nullptr)
+        {
+            printf(" op0=N%02u", static_cast<unsigned>(node.Operands[0] - slpPlan.Nodes));
+        }
+
+        if (node.Operands[1] != nullptr)
+        {
+            printf(" op1=N%02u", static_cast<unsigned>(node.Operands[1] - slpPlan.Nodes));
+        }
+
+        printf("\n");
+    }
+#endif
 }
 
 bool AutoVectorizer::TryAnalyzeArrayAccess(

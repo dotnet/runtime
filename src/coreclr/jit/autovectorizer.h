@@ -13,6 +13,40 @@ public:
     PhaseStatus RunRewrite();
 
 private:
+    static const unsigned MaxLanes = 16;
+    static const unsigned MaxPackNodes = 8;
+
+    enum class PackKind
+    {
+        Invalid,
+        LoadContiguous,
+        StoreContiguous,
+        SplatConstant,
+        SplatScalar,
+        BinaryOp,
+    };
+
+    struct PackNode
+    {
+        PackKind  Kind        = PackKind::Invalid;
+        var_types ElementType = TYP_UNDEF;
+        genTreeOps Oper       = GT_COUNT;
+        unsigned  LaneCount   = 0;
+        GenTree*  Lanes[MaxLanes] = {};
+        PackNode* Operands[2] = {};
+        unsigned  Cost        = 0;
+    };
+
+    struct SLPPlan
+    {
+        PackNode  Nodes[MaxPackNodes];
+        unsigned  NodeCount           = 0;
+        PackNode* Root                = nullptr;
+        unsigned  EstimatedScalarCost = 0;
+        unsigned  EstimatedVectorCost = 0;
+        unsigned  EstimatedCodeSizeDelta = 0;
+    };
+
     struct LoopVectorizationPlan
     {
         struct ScalarAccess
@@ -51,6 +85,7 @@ private:
         GenTree*      ScalarOperand      = nullptr;
         genTreeOps    ScalarOper         = GT_COUNT;
         bool          ScalarOperandIsRhs = true;
+        SLPPlan       BodyPlan;
     };
 
     Compiler* m_compiler;
@@ -59,6 +94,10 @@ private:
     bool IsSupportedCompilation() const;
     bool TryCreateLoopPlan(FlowGraphNaturalLoop* loop, LoopVectorizationPlan* plan);
     bool TryAnalyzeMemory(LoopVectorizationPlan* plan);
+    bool TryBuildSLPPlan(LoopVectorizationPlan* plan);
+    PackNode* NewPackNode(SLPPlan* slpPlan, PackKind kind, var_types elementType, unsigned laneCount);
+    const char* PackKindName(PackKind kind) const;
+    void DumpSLPPlan(const LoopVectorizationPlan& plan) const;
     bool TryAnalyzeArrayAccess(
         Statement* stmt, GenTree* indir, bool isStore, unsigned ivLcl, LoopVectorizationPlan::ScalarAccess* access);
     bool TryAnalyzeIndexExpr(GenTree* tree, unsigned ivLcl, int* offset);
