@@ -2154,7 +2154,7 @@ private:
 
     PER_HEAP_ISOLATED_METHOD BOOL is_mark_set (uint8_t* o);
 
-    PER_HEAP_ISOLATED_METHOD BOOL reserve_initial_memory (size_t normal_size, size_t large_size, size_t pinned_size, int num_heaps, bool use_large_pages_p, bool separated_poh_p, uint16_t* heap_no_to_numa_node);
+    PER_HEAP_ISOLATED_METHOD BOOL reserve_initial_memory (size_t normal_size, size_t large_size, size_t pinned_size, int num_heaps, int large_page_config, bool separated_poh_p, uint16_t* heap_no_to_numa_node);
 
     PER_HEAP_ISOLATED_METHOD void destroy_initial_memory();
 
