@@ -230,8 +230,8 @@ void TLSIndexToMethodTableMap::Set(TLSIndex index, PTR_MethodTable pMT, bool isG
             memcpy(newMap, pMap, m_maxIndex * sizeof(TADDR));
             // Don't delete the old map in case some other thread is reading from it, this won't waste significant amounts of memory, since this map cannot grow indefinitely
         }
-        pMap = newMap;
-        m_maxIndex = newSize;
+        VolatileStore(&pMap, newMap); // Use a volatile store, so that the memcpy is guaranteed to be visible before the new pMap is visible on other threads.
+        VolatileStore(&m_maxIndex, newSize); // Use a volatile store so that any thread that reads the size will also have a consistent view of a map at least as big as newSize
     }
 
     TADDR rawValue = dac_cast<TADDR>(pMT);
@@ -245,7 +245,7 @@ void TLSIndexToMethodTableMap::Set(TLSIndex index, PTR_MethodTable pMT, bool isG
         m_collectibleEntries++;
     }
     _ASSERTE(pMap[index.GetIndexOffset()] == 0 || IsClearedValue(pMap[index.GetIndexOffset()]));
-    pMap[index.GetIndexOffset()] = rawValue;
+    VolatileStore(&pMap[index.GetIndexOffset()], rawValue);
 }
 
 void TLSIndexToMethodTableMap::Clear(TLSIndex index, uint8_t whenCleared)
@@ -265,7 +265,7 @@ void TLSIndexToMethodTableMap::Clear(TLSIndex index, uint8_t whenCleared)
     {
         m_collectibleEntries--;
     }
-    pMap[index.GetIndexOffset()] = (whenCleared << 2) | 0x3;
+    VolatileStore(&pMap[index.GetIndexOffset()], (whenCleared << 2) | 0x3);
     _ASSERTE(GetClearedMarker(pMap[index.GetIndexOffset()]) == whenCleared);
     _ASSERTE(IsClearedValue(pMap[index.GetIndexOffset()]));
 }
@@ -749,7 +749,7 @@ void GetTLSIndexForThreadStatic(MethodTable* pMT, bool gcStatic, TLSIndex* pInde
                 usedDirectOnThreadLocalDataPath = true;
             }
             if (usedDirectOnThreadLocalDataPath)
-                VolatileStoreWithoutBarrier(&g_pMethodTablesForDirectThreadLocalData[IndexOffsetToDirectThreadLocalIndex(newTLSIndex.GetIndexOffset())], pMT);
+                VolatileStore(&g_pMethodTablesForDirectThreadLocalData[IndexOffsetToDirectThreadLocalIndex(newTLSIndex.GetIndexOffset())], pMT);
         }
 
         if (!usedDirectOnThreadLocalDataPath)
@@ -772,7 +772,7 @@ void GetTLSIndexForThreadStatic(MethodTable* pMT, bool gcStatic, TLSIndex* pInde
         pMT->GetLoaderAllocator()->GetTLSIndexList().Append(newTLSIndex);
     }
 
-    *pIndex = newTLSIndex;
+    VolatileStore(pIndex, newTLSIndex); // Use a volatile store so that any other thread that sees the allocated index will also see the writes throughout this path.
 }
 
 void FreeTLSIndicesForLoaderAllocator(LoaderAllocator *pLoaderAllocator)
