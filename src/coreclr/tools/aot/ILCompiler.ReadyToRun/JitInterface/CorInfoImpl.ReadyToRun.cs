@@ -1489,7 +1489,7 @@ namespace Internal.JitInterface
                     resultField = resultField.GetTypicalFieldDefinition();
                     strippedInstantiation = resultField != resultDef;
 
-                    if(!(_compilation.NodeFactory.CompilationModuleGroup.VersionsWithType(resultField.OwningType) || resultField.OwningType.IsNonVersionable()))
+                    if (!(_compilation.NodeFactory.CompilationModuleGroup.VersionsWithType(resultField.OwningType) || resultField.OwningType.IsNonVersionable()))
                     {
                         ModuleToken result = _compilation.NodeFactory.Resolver.GetModuleTokenForField(resultField, allowDynamicallyCreatedReference: true, throwIfNotFound: true);
                         return result;

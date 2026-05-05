@@ -792,7 +792,7 @@ namespace ILCompiler
                 // Use ILTokenReplacer to iterate over tokens, not actually replace them
                 ILTokenReplacer.Replace(bytes, tok =>
                 {
-                    switch(il.GetObject(tok))
+                    switch (il.GetObject(tok))
                     {
                         case TypeSystemEntity tse:
                             _tokenManager.EnsureDefTokensAreAvailable(tse, ((EcmaMethod)method.GetPrimaryMethodDesc().GetTypicalMethodDefinition()).Module, true);
