@@ -2286,11 +2286,12 @@ namespace System.Data.Tests.Common
         public void DbConnectionOptions_EmptyBooleanValue_ThrowsArgumentException()
         {
             Type type = typeof(System.Data.Common.DbConnectionStringBuilder).Assembly.GetType("System.Data.Common.DbConnectionOptions");
-            if (type == null) return; // if internal type is not accessible or renamed, just return
+            Assert.NotNull(type);
 
             object options = Activator.CreateInstance(type, new object[] { "persist security info=;", null, false });
             System.Reflection.MethodInfo convertMethod = type.GetMethod("ConvertValueToBoolean", new Type[] { typeof(string), typeof(bool) });
-            
+            Assert.NotNull(convertMethod);
+
             var ex = Assert.Throws<System.Reflection.TargetInvocationException>(() => convertMethod.Invoke(options, new object[] { "persist security info", false }));
             Assert.IsType<ArgumentException>(ex.InnerException);
         }
