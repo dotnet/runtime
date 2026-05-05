@@ -249,6 +249,14 @@ enum MethodDescFlags
 };
 
 // Used for storing additional items related to native code
+#ifdef FEATURE_INTERPRETER
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+typedef void(*InterpreterCalliCookie)(PCODE, int8_t*, int8_t*);
+#else
+typedef CallStubHeader* InterpreterCalliCookie;
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
+#endif // FEATURE_INTERPRETER
+
 struct MethodDescCodeData final
 {
 #ifdef FEATURE_CODE_VERSIONING
@@ -257,7 +265,7 @@ struct MethodDescCodeData final
 #endif // FEATURE_CODE_VERSIONING
     PCODE TemporaryEntryPoint;
 #ifdef FEATURE_INTERPRETER
-    CallStubHeader *CallStub;
+    InterpreterCalliCookie CalliCookie;
 #endif // FEATURE_INTERPRETER
 #if defined(_DEBUG) && defined(ALLOW_SXS_JIT)
     PatchpointInfo *AltJitPatchpointInfo;
@@ -1976,8 +1984,8 @@ public:
 #endif //!DACCESS_COMPILE
 
 #if defined(FEATURE_INTERPRETER) && !defined(DACCESS_COMPILE)
-    bool SetCallStub(CallStubHeader *pHeader);
-    CallStubHeader *GetCallStub();
+    bool SetCalliCookie(InterpreterCalliCookie cookie);
+    InterpreterCalliCookie GetCalliCookie();
 #endif // FEATURE_INTERPRETER && !DACCESS_COMPILE
 
 #ifdef FEATURE_CODE_VERSIONING
