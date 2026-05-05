@@ -10379,11 +10379,12 @@ void CEEInfo::getAsyncInfo(CORINFO_ASYNC_INFO* pAsyncInfoOut)
     pAsyncInfoOut->continuationStateFldHnd = CORINFO_FIELD_HANDLE(CoreLibBinder::GetField(FIELD__CONTINUATION__STATE));
     pAsyncInfoOut->continuationFlagsFldHnd = CORINFO_FIELD_HANDLE(CoreLibBinder::GetField(FIELD__CONTINUATION__FLAGS));
     pAsyncInfoOut->captureExecutionContextMethHnd = CORINFO_METHOD_HANDLE(CoreLibBinder::GetMethod(METHOD__ASYNC_HELPERS__CAPTURE_EXECUTION_CONTEXT));
-    pAsyncInfoOut->restoreExecutionContextMethHnd = CORINFO_METHOD_HANDLE(CoreLibBinder::GetMethod(METHOD__ASYNC_HELPERS__RESTORE_EXECUTION_CONTEXT));
     pAsyncInfoOut->captureContinuationContextMethHnd = CORINFO_METHOD_HANDLE(CoreLibBinder::GetMethod(METHOD__ASYNC_HELPERS__CAPTURE_CONTINUATION_CONTEXT));
     pAsyncInfoOut->captureContextsMethHnd = CORINFO_METHOD_HANDLE(CoreLibBinder::GetMethod(METHOD__ASYNC_HELPERS__CAPTURE_CONTEXTS));
     pAsyncInfoOut->restoreContextsMethHnd = CORINFO_METHOD_HANDLE(CoreLibBinder::GetMethod(METHOD__ASYNC_HELPERS__RESTORE_CONTEXTS));
     pAsyncInfoOut->restoreContextsOnSuspensionMethHnd = CORINFO_METHOD_HANDLE(CoreLibBinder::GetMethod(METHOD__ASYNC_HELPERS__RESTORE_CONTEXTS_ON_SUSPENSION));
+    pAsyncInfoOut->finishSuspensionNoContinuationContextMethHnd = CORINFO_METHOD_HANDLE(CoreLibBinder::GetMethod(METHOD__ASYNC_HELPERS__FINISH_SUSPENSION_NO_CONTINUATION_CONTEXT));
+    pAsyncInfoOut->finishSuspensionWithContinuationContextMethHnd = CORINFO_METHOD_HANDLE(CoreLibBinder::GetMethod(METHOD__ASYNC_HELPERS__FINISH_SUSPENSION_WITH_CONTINUATION_CONTEXT));
 
     EE_TO_JIT_TRANSITION();
 }

@@ -882,12 +882,22 @@ HRESULT gc_heap::initialize_gc (size_t soh_segment_size,
         // Right now all the non mark array portions are commmitted since I'm calling make_card_table
         // on the whole range. This can be committed as needed.
         size_t reserve_size = regions_range;
-        uint8_t* reserve_range = (uint8_t*)virtual_alloc (reserve_size, use_large_pages_p);
+        // In large pages emulation mode, use normal reserve (not real large pages) then
+        // commit all upfront to simulate the "always committed" property.
+        bool use_real_large_pages = use_large_pages_p && !large_pages_emulation_mode_p;
+        uint8_t* reserve_range = (uint8_t*)virtual_alloc (reserve_size, use_real_large_pages);
         if (!reserve_range)
         {
             log_init_error_to_host ("Reserving %zd bytes (%zd GiB) for the regions range failed, do you have a virtual memory limit set on this process?",
                 reserve_size, gib (reserve_size));
             return E_OUTOFMEMORY;
+        }
+        if (large_pages_emulation_mode_p)
+        {
+            if (!GCToOSInterface::VirtualCommit (reserve_range, reserve_size))
+            {
+                return E_OUTOFMEMORY;
+            }
         }
 
         if (!global_region_allocator.init (reserve_range, (reserve_range + reserve_size),
@@ -909,8 +919,9 @@ HRESULT gc_heap::initialize_gc (size_t soh_segment_size,
                            heap_hard_limit_oh[soh] &&
                            (GCConfig::GetGCHeapHardLimitPOH() == 0) &&
                            (GCConfig::GetGCHeapHardLimitPOHPercent() == 0);
+    bool use_real_large_pages = use_large_pages_p && !large_pages_emulation_mode_p;
     if (!reserve_initial_memory (soh_segment_size, loh_segment_size, poh_segment_size, number_of_heaps,
-                                 use_large_pages_p, separated_poh_p, heap_no_to_numa_node))
+                                 use_real_large_pages, separated_poh_p, heap_no_to_numa_node))
         return E_OUTOFMEMORY;
     if (use_large_pages_p)
     {
@@ -1279,7 +1290,9 @@ bool gc_heap::compute_hard_limit()
     heap_hard_limit_oh[poh] = (size_t)GCConfig::GetGCHeapHardLimitPOH();
 
 #ifdef HOST_64BIT
-    use_large_pages_p = GCConfig::GetGCLargePages();
+    int64_t large_pages_config = GCConfig::GetGCLargePages();
+    use_large_pages_p = (large_pages_config != 0);
+    large_pages_emulation_mode_p = (large_pages_config == 2);
 #endif //HOST_64BIT
 
     if (heap_hard_limit_oh[soh] || heap_hard_limit_oh[loh] || heap_hard_limit_oh[poh])

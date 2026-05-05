@@ -360,9 +360,7 @@ IMDInternalImport * CordbProcess::LookupMetaData(VMPTR_PEAssembly vmPEAssembly)
     }
 
     // Cache didn't have it... time to search harder
-    VMPTR_AppDomain vmAppDomain;
-    GetDAC()->GetCurrentAppDomain(&vmAppDomain);
-    LookupOrCreateAppDomain(vmAppDomain);
+    GetAppDomain();
 
     // There may be perf issues here. The DAC may make a lot of metadata requests, and so
     // this may be an area for potential perf optimizations if we find things running slow.
@@ -1065,95 +1063,6 @@ CordbProcess::~CordbProcess()
     _ASSERTE(m_stopWaitEvent == NULL);
 
     // Set this to mark that we really did cleanup.
-}
-
-//-----------------------------------------------------------------------------
-// Static build helper.
-// This will create a process under the pCordb root, and add it to the list.
-// We don't return the process - caller gets the pid and looks it up under
-// the Cordb object.
-//
-// Arguments:
-//     pCordb - Pointer to the implementation of the owning Cordb object implementing the
-//         owning ICD interface.
-//     szProgramName - Name of the program to execute.
-//     szProgramArgs - Command line arguments for the process.
-//     lpProcessAttributes - OS-specific attributes for process creation.
-//     lpThreadAttributes - OS-specific attributes for thread creation.
-//     fInheritFlags - OS-specific flag for child process inheritance.
-//     dwCreationFlags - OS-specific creation flags.
-//     lpEnvironment - OS-specific environmental strings.
-//     szCurrentDirectory - OS-specific string for directory to run in.
-//     lpStartupInfo - OS-specific info on startup.
-//     lpProcessInformation - OS-specific process information buffer.
-//     corDebugFlags - What type of process to create, currently always managed.
-//-----------------------------------------------------------------------------
-HRESULT ShimProcess::CreateProcess(
-      Cordb * pCordb,
-      ICorDebugRemoteTarget * pRemoteTarget,
-      LPCWSTR szProgramName,
-      _In_z_ LPWSTR  szProgramArgs,
-      LPSECURITY_ATTRIBUTES lpProcessAttributes,
-      LPSECURITY_ATTRIBUTES lpThreadAttributes,
-      BOOL fInheritHandles,
-      DWORD dwCreationFlags,
-      PVOID lpEnvironment,
-      LPCWSTR szCurrentDirectory,
-      LPSTARTUPINFOW lpStartupInfo,
-      LPPROCESS_INFORMATION lpProcessInformation,
-      CorDebugCreateProcessFlags corDebugFlags
-)
-{
-    _ASSERTE(pCordb != NULL);
-
-#if defined(FEATURE_DBGIPC_TRANSPORT_DI)
-    // The transport cannot deal with creating a suspended process (it needs the debugger to start up and
-    // listen for connections).
-    _ASSERTE((dwCreationFlags & CREATE_SUSPENDED) == 0);
-#endif // FEATURE_DBGIPC_TRANSPORT_DI
-
-    HRESULT hr = S_OK;
-
-    RSExtSmartPtr<ShimProcess> pShim;
-    EX_TRY
-    {
-        pShim.Assign(new ShimProcess());
-
-        // Indicate that this process was started under the debugger as opposed to attaching later.
-        pShim->m_attached = false;
-
-        hr = pShim->CreateAndStartWin32ET(pCordb);
-        IfFailThrow(hr);
-
-        // Call out to newly created Win32-event Thread to create the process.
-        // If this succeeds, new CordbProcess will add a ref to the ShimProcess
-        hr = pShim->GetWin32EventThread()->SendCreateProcessEvent(pShim->GetMachineInfo(),
-                                                                  szProgramName,
-                                                                  szProgramArgs,
-                                                                  lpProcessAttributes,
-                                                                  lpThreadAttributes,
-                                                                  fInheritHandles,
-                                                                  dwCreationFlags,
-                                                                  lpEnvironment,
-                                                                  szCurrentDirectory,
-                                                                  lpStartupInfo,
-                                                                  lpProcessInformation,
-                                                                  corDebugFlags);
-        IfFailThrow(hr);
-    }
-    EX_CATCH_HRESULT(hr);
-
-    // If this succeeds, then process takes ownership of thread. Else we need to kill it.
-    if (FAILED(hr))
-    {
-        if (pShim != NULL)
-        {
-            pShim->Dispose();
-        }
-    }
-    // Always release our ref to ShimProcess. If the Process was created, then it takes a reference.
-
-    return hr;
 }
 
 //-----------------------------------------------------------------------------
@@ -2638,28 +2547,22 @@ COM_METHOD CordbProcess::GetAsyncStack(CORDB_ADDRESS continuationAddress, ICorDe
 
 HRESULT CordbProcess::GetTypeForObject(CORDB_ADDRESS addr, CordbType **ppType, CordbAppDomain **pAppDomain)
 {
-    VMPTR_AppDomain appDomain = VMPTR_AppDomain::NullPtr();
-
     HRESULT hr = E_FAIL;
-    IfFailThrow(GetDAC()->GetCurrentAppDomain(&appDomain));
-    if (!appDomain.IsNull())
+    CordbAppDomain *cdbAppDomain = GetAppDomain();
+
+    _ASSERTE(cdbAppDomain);
+
+    DebuggerIPCE_ExpandedTypeData data;
+    IfFailThrow(GetDAC()->GetObjectExpandedTypeInfo(AllBoxed, addr, &data));
+
+    CordbType *type = 0;
+    hr = CordbType::TypeDataToType(cdbAppDomain, &data, &type);
+
+    if (SUCCEEDED(hr))
     {
-        CordbAppDomain *cdbAppDomain = appDomain.IsNull() ? GetAppDomain() : LookupOrCreateAppDomain(appDomain);
-
-        _ASSERTE(cdbAppDomain);
-
-        DebuggerIPCE_ExpandedTypeData data;
-        IfFailThrow(GetDAC()->GetObjectExpandedTypeInfo(AllBoxed, addr, &data));
-
-        CordbType *type = 0;
-        hr = CordbType::TypeDataToType(cdbAppDomain, &data, &type);
-
-        if (SUCCEEDED(hr))
-        {
-            *ppType = type;
-            if (pAppDomain)
-                *pAppDomain = cdbAppDomain;
-        }
+        *ppType = type;
+        if (pAppDomain)
+            *pAppDomain = cdbAppDomain;
     }
 
     return hr;
@@ -2797,7 +2700,7 @@ HRESULT CordbRefEnum::Next(ULONG celt, COR_GC_REFERENCE refs[], ULONG *pceltFetc
                 {
                     for (ULONG i = 0; i < fetched; ++i)
                     {
-                        CordbAppDomain *pDomain = process->LookupOrCreateAppDomain(dacRefs[i].vmDomain);
+                        CordbAppDomain *pDomain = process->GetAppDomain();
 
                         ICorDebugAppDomain *pAppDomain = NULL;
                         ICorDebugValue *pOutObject = NULL;
@@ -4870,10 +4773,7 @@ void CordbProcess::RawDispatchEvent(
         pThread = LookupOrCreateThread(pEvent->vmThread);
     }
 
-    if (!pEvent->vmAppDomain.IsNull())
-    {
-        pAppDomain.Assign(LookupOrCreateAppDomain(pEvent->vmAppDomain));
-    }
+    pAppDomain.Assign(GetAppDomain());
 
     DWORD dwVolatileThreadId = 0;
     if (pThread != NULL)
@@ -5386,7 +5286,7 @@ void CordbProcess::RawDispatchEvent(
             // Either way, still send the CreateEvent. (We don't want to skip the Create event
             // just because the debugger did an enumerate)
             // We remove AppDomains from the hash as soon as they are exited.
-            pAppDomain.Assign(LookupOrCreateAppDomain(pEvent->AppDomainData.vmAppDomain));
+            pAppDomain.Assign(GetAppDomain());
             _ASSERTE(pAppDomain != NULL); // throws on failure
 
             {
@@ -5461,7 +5361,7 @@ void CordbProcess::RawDispatchEvent(
             pEval->m_resultType     = pEvent->FuncEvalComplete.resultType;
             pEval->m_resultAppDomainToken = pEvent->FuncEvalComplete.vmAppDomain;
 
-            CordbAppDomain *pResultAppDomain = LookupOrCreateAppDomain(pEvent->FuncEvalComplete.vmAppDomain);
+            CordbAppDomain *pResultAppDomain = GetAppDomain();
 
             _ASSERTE(OutstandingEvalCount() > 0);
             DecrementOutstandingEvalCount();
@@ -5531,7 +5431,7 @@ void CordbProcess::RawDispatchEvent(
             else
             {
                 _ASSERTE (pEvent->NameChange.eventType == APP_DOMAIN_NAME_CHANGE);
-                pAppDomain.Assign(LookupOrCreateAppDomain(pEvent->NameChange.vmAppDomain));
+                pAppDomain.Assign(GetAppDomain());
                 if (pAppDomain)
                 {
                     pAppDomain->InvalidateName();
@@ -8559,33 +8459,6 @@ HRESULT CordbProcess::SafeReadBuffer(TargetBuffer tb, BYTE * pLocalBuffer, BOOL 
     return S_OK;
 }
 
-
-//---------------------------------------------------------------------------------------
-// Lookup or create an appdomain.
-//
-// Arguments:
-//     vmAppDomain - CLR appdomain to lookup
-//
-// Returns:
-//     Instance of CordbAppDomain for the given appdomain. This is a cached instance.
-//     If the CordbAppDomain does not yet exist, it will be created and added to the cache.
-//     Never returns NULL. Throw on error.
-CordbAppDomain * CordbProcess::LookupOrCreateAppDomain(VMPTR_AppDomain vmAppDomain)
-{
-    if (m_pAppDomain == NULL)
-    {
-        _ASSERTE(GetProcessLock()->HasLock());
-
-        RSInitHolder<CordbAppDomain> pAppDomain;
-        pAppDomain.Assign(new CordbAppDomain(this, vmAppDomain));  // throws
-
-        m_pAppDomain = pAppDomain;
-        m_pAppDomain->InternalAddRef();
-        pAppDomain.ClearAndMarkDontNeuter();
-    }
-    return m_pAppDomain;
-}
-
 CordbAppDomain * CordbProcess::GetAppDomain()
 {
     // Return the one and only app domain
@@ -8594,10 +8467,17 @@ CordbAppDomain * CordbProcess::GetAppDomain()
         return m_pAppDomain;
     }
 
+    _ASSERTE(GetProcessLock()->HasLock());
+
     VMPTR_AppDomain vmAppDomain;
     IfFailThrow(GetDAC()->GetCurrentAppDomain(&vmAppDomain));
-    CordbAppDomain * appDomain = LookupOrCreateAppDomain(vmAppDomain);
-    return appDomain;
+    RSInitHolder<CordbAppDomain> pAppDomain;
+    pAppDomain.Assign(new CordbAppDomain(this, vmAppDomain));  // throws
+
+    m_pAppDomain = pAppDomain;
+    m_pAppDomain->InternalAddRef();
+    pAppDomain.ClearAndMarkDontNeuter();
+    return m_pAppDomain;
 }
 
 //---------------------------------------------------------------------------------------
@@ -8625,9 +8505,7 @@ HRESULT CordbProcess::EnumerateAppDomains(ICorDebugAppDomainEnum **ppAppDomains)
         ValidateOrThrow(ppAppDomains);
 
         // Ensure the appdomain is populated.
-        VMPTR_AppDomain vmAppDomain;
-        GetDAC()->GetCurrentAppDomain(&vmAppDomain);
-        LookupOrCreateAppDomain(vmAppDomain);
+        GetAppDomain();
 
         RSSmartPtr<CordbAppDomain> rgAppDomains[1];
         DWORD count = 0;
@@ -10616,12 +10494,11 @@ HRESULT CordbRCEventThread::Stop()
 enum
 {
     W32ETA_NONE              = 0,
-    W32ETA_CREATE_PROCESS    = 1,
-    W32ETA_ATTACH_PROCESS    = 2,
-    W32ETA_CONTINUE          = 3,
-    W32ETA_DETACH            = 4,
+    W32ETA_ATTACH_PROCESS    = 1,
+    W32ETA_CONTINUE          = 2,
+    W32ETA_DETACH            = 3,
 #ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
-    W32ETA_CAN_DETACH        = 5
+    W32ETA_CAN_DETACH        = 4
 #endif // OUT_OF_PROCESS_SETTHREADCONTEXT
 };
 
@@ -11769,11 +11646,6 @@ void CordbWin32EventThread::Win32EventLoop()
             _ASSERTE((dwStatus - WAIT_OBJECT_0) == 1);
             ExitProcess(false); // not detach
             fEventAvailable = false;
-        }
-        // Should we create a process?
-        else if (m_action == W32ETA_CREATE_PROCESS)
-        {
-            CreateProcess();
         }
         // Should we attach to a process?
         else if (m_action == W32ETA_ATTACH_PROCESS)
@@ -13924,173 +13796,6 @@ void CordbWin32EventThread::ForceDbgContinue(CordbProcess *pProcess, CordbUnmana
 
 
 //
-// Send a CreateProcess event to the Win32 thread to have it create us
-// a new process.
-//
-HRESULT CordbWin32EventThread::SendCreateProcessEvent(
-                                  MachineInfo machineInfo,
-                                  LPCWSTR programName,
-                                  _In_z_ LPWSTR  programArgs,
-                                  LPSECURITY_ATTRIBUTES lpProcessAttributes,
-                                  LPSECURITY_ATTRIBUTES lpThreadAttributes,
-                                  BOOL bInheritHandles,
-                                  DWORD dwCreationFlags,
-                                  PVOID lpEnvironment,
-                                  LPCWSTR lpCurrentDirectory,
-                                  LPSTARTUPINFOW lpStartupInfo,
-                                  LPPROCESS_INFORMATION lpProcessInformation,
-                                  CorDebugCreateProcessFlags corDebugFlags)
-{
-    HRESULT hr = S_OK;
-
-    LockSendToWin32EventThreadMutex();
-    LOG((LF_CORDB, LL_EVERYTHING, "CordbWin32EventThread::SCPE Called\n"));
-    m_actionData.createData.machineInfo = machineInfo;
-    m_actionData.createData.programName = programName;
-    m_actionData.createData.programArgs = programArgs;
-    m_actionData.createData.lpProcessAttributes = lpProcessAttributes;
-    m_actionData.createData.lpThreadAttributes = lpThreadAttributes;
-    m_actionData.createData.bInheritHandles = bInheritHandles;
-    m_actionData.createData.dwCreationFlags = dwCreationFlags;
-    m_actionData.createData.lpEnvironment = lpEnvironment;
-    m_actionData.createData.lpCurrentDirectory = lpCurrentDirectory;
-    m_actionData.createData.lpStartupInfo = lpStartupInfo;
-    m_actionData.createData.lpProcessInformation = lpProcessInformation;
-    m_actionData.createData.corDebugFlags = corDebugFlags;
-
-    // m_action is set last so that the win32 event thread can inspect
-    // it and take action without actually having to take any
-    // locks. The lock around this here is simply to prevent multiple
-    // threads from making requests at the same time.
-    m_action = W32ETA_CREATE_PROCESS;
-
-    BOOL succ = SetEvent(m_threadControlEvent);
-
-    if (succ)
-    {
-      DWORD ret = WaitForSingleObject(m_actionTakenEvent, INFINITE);
-
-        LOG((LF_CORDB, LL_EVERYTHING, "Process Handle is: %x, m_threadControlEvent is %x\n",
-             (UINT_PTR)m_actionData.createData.lpProcessInformation->hProcess, (UINT_PTR)m_threadControlEvent));
-
-        if (ret == WAIT_OBJECT_0)
-            hr = m_actionResult;
-        else
-            hr = HRESULT_FROM_GetLastError();
-    }
-    else
-        hr = HRESULT_FROM_GetLastError();
-
-    UnlockSendToWin32EventThreadMutex();
-
-    return hr;
-}
-
-
-//---------------------------------------------------------------------------------------
-//
-// Create a process
-//
-// Assumptions:
-//    This occurs on the win32 event thread. It is invokved via
-//    a message sent from code:CordbWin32EventThread::SendCreateProcessEvent
-//
-// Notes:
-//    Create a new process. This is called in the context of the Win32
-//    event thread to ensure that if we're Win32 debugging the process
-//    that the same thread that waits for debugging events will be the
-//    thread that creates the process.
-//
-//---------------------------------------------------------------------------------------
-void CordbWin32EventThread::CreateProcess()
-{
-    m_action = W32ETA_NONE;
-    HRESULT hr = S_OK;
-
-    DWORD dwCreationFlags = m_actionData.createData.dwCreationFlags;
-
-    // If the creation flags has DEBUG_PROCESS in them, then we're
-    // Win32 debugging this process. Otherwise, we have to create
-    // suspended to give us time to setup up our side of the IPC
-    // channel.
-    BOOL fInteropDebugging   =
-#if defined(FEATURE_INTEROP_DEBUGGING)
-        (dwCreationFlags & (DEBUG_PROCESS | DEBUG_ONLY_THIS_PROCESS));
-#else
-        false; // Interop not supported.
-#endif
-
-    // Have Win32 create the process...
-    hr = m_pNativePipeline->CreateProcessUnderDebugger(
-                                      m_actionData.createData.machineInfo,
-                                      m_actionData.createData.programName,
-                                      m_actionData.createData.programArgs,
-                                      m_actionData.createData.lpProcessAttributes,
-                                      m_actionData.createData.lpThreadAttributes,
-                                      m_actionData.createData.bInheritHandles,
-                                      dwCreationFlags,
-                                      m_actionData.createData.lpEnvironment,
-                                      m_actionData.createData.lpCurrentDirectory,
-                                      m_actionData.createData.lpStartupInfo,
-                                      m_actionData.createData.lpProcessInformation);
-
-    if (SUCCEEDED(hr))
-    {
-        // Process ID is filled in after process is successfully created.
-        DWORD dwProcessId = m_actionData.createData.lpProcessInformation->dwProcessId;
-        ProcessDescriptor pd = ProcessDescriptor::FromPid(dwProcessId);
-
-        RSUnsafeExternalSmartPtr<CordbProcess> pProcess;
-        hr = m_pShim->InitializeDataTarget(&pd);
-
-        if (SUCCEEDED(hr))
-        {
-            // To emulate V2 semantics, we pass 0 for the clrInstanceID into
-            // OpenVirtualProcess. This will then connect to the first CLR
-            // loaded.
-            const ULONG64 cFirstClrLoaded = 0;
-            hr = CordbProcess::OpenVirtualProcess(cFirstClrLoaded, m_pShim->GetDataTarget(), NULL, m_cordb, &pd, m_pShim, &pProcess);
-        }
-
-        // Shouldn't happen on a create, only an attach
-        _ASSERTE(hr != CORDBG_E_DEBUGGER_ALREADY_ATTACHED);
-
-        // Remember the process in the global list of processes.
-        if (SUCCEEDED(hr))
-        {
-            EX_TRY
-            {
-                // Mark if we're interop-debugging
-                if (fInteropDebugging)
-                {
-                    pProcess->EnableInteropDebugging();
-                }
-
-                m_cordb->AddProcess(pProcess); // will take ref if it succeeds
-            }
-            EX_CATCH_HRESULT(hr);
-        }
-
-        // If we're Win32 attached to this process, then increment the
-        // proper count, otherwise add this process to the wait set
-        // and resume the process's main thread.
-        if (SUCCEEDED(hr))
-        {
-            _ASSERTE(m_pProcess == NULL);
-            m_pProcess.Assign(pProcess);
-        }
-    }
-
-
-    //
-    // Signal the hr to the caller.
-    //
-    m_actionResult = hr;
-    SetEvent(m_actionTakenEvent);
-}
-
-
-//
 // Send a DebugActiveProcess event to the Win32 thread to have it attach to
 // a new process.
 //
@@ -15082,11 +14787,9 @@ HRESULT CordbProcess::GetReferenceValueFromGCHandle(
         {
             ThrowHR(CORDBG_E_BAD_REFERENCE_VALUE);
         }
-        VMPTR_AppDomain vmAppDomain;
-        IfFailThrow(pDAC->GetCurrentAppDomain(&vmAppDomain));
 
         RSLockHolder lockHolder(GetProcessLock());
-        CordbAppDomain * pAppDomain = LookupOrCreateAppDomain(vmAppDomain);
+        CordbAppDomain * pAppDomain = GetAppDomain();
         lockHolder.Release();
 
         // Now that we finally have the AppDomain, we can go ahead and get a ReferenceValue
