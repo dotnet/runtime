@@ -63,6 +63,7 @@ struct InProcCrashReporterSettings
     InProcCrashReportIsManagedThreadCallback isManagedThreadCallback;
     InProcCrashReportWalkStackCallback walkStackCallback;
     InProcCrashReportEnumerateThreadsCallback enumerateThreadsCallback;
+    uint32_t frameLimitPerThread;
 };
 
 class InProcCrashReporter
@@ -105,6 +106,7 @@ private:
     char m_osVersion[CRASHREPORT_STRING_BUFFER_SIZE] = {};
     char m_systemModel[CRASHREPORT_STRING_BUFFER_SIZE] = {};
 #endif
+    uint32_t m_frameLimitPerThread = 0;
 };
 
 // Free-function entry point used by the runtime to wire the in-proc crash

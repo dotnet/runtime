@@ -433,6 +433,7 @@ CrashReportConfigure()
     settings.isManagedThreadCallback = CrashReportIsCurrentThreadManaged;
     settings.walkStackCallback = CrashReportWalkStack;
     settings.enumerateThreadsCallback = CrashReportEnumerateThreads;
+    settings.frameLimitPerThread = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_CrashReportFrameLimitPerThread);
 
     // Initialize the reporter and register the PAL signal-path callback last
     // so PAL only observes the reporter after all VM callbacks are wired in.
