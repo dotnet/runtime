@@ -393,19 +393,13 @@ namespace System.Formats.Tar
                 ? StringComparison.OrdinalIgnoreCase
                 : StringComparison.Ordinal;
 
-            string resolvedDest = ResolveFullPath(destinationDirectoryPath);
+            string resolvedDest = ResolvePhysicalPath(destinationDirectoryPath);
             string destPrefix = resolvedDest.EndsWith(Path.DirectorySeparatorChar)
                 ? resolvedDest
                 : resolvedDest + Path.DirectorySeparatorChar;
 
             // Normalize file path (resolves .. and . but not symlinks)
             string normalizedFile = Path.GetFullPath(fileDestinationPath);
-
-            // Ensure normalizedFile starts with resolvedDest before slicing
-            if (!normalizedFile.StartsWith(destPrefix, pathComparison))
-            {
-                return true;
-            }
 
             // Walk relative components, resolving symlinks at each step
             string relative = normalizedFile.Substring(resolvedDest.Length)
@@ -450,12 +444,12 @@ namespace System.Formats.Tar
                 return Path.GetFullPath(path);
             }
 
-            return Path.GetFullPath(target.FullName);
+            return target.FullName;
         }
 
         // Resolves the full path of the specified path, resolving symlinks at each step.
         // This is needed to mitigate malicious entries in the archive that could lead to writing files outside of the intended directory.
-        private static string ResolveFullPath(string path)
+        private static string ResolvePhysicalPath(string path)
         {
             string fullPath = Path.GetFullPath(path);
             string? root = Path.GetPathRoot(fullPath);
