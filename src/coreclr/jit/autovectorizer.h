@@ -113,6 +113,11 @@ private:
         unsigned     StoreCount                   = 0;
         ScalarAccess LoadAccesses[MaxAccesses]    = {};
         unsigned     LoadCount                    = 0;
+        Statement*   ReductionStmt                = nullptr;
+        unsigned     ReductionLcl                 = BAD_VAR_NUM;
+        unsigned     ReductionVectorLcl           = BAD_VAR_NUM;
+        GenTree*     ReductionValue               = nullptr;
+        PackNode*    ReductionPack                = nullptr;
         Statement*   StoreStmt                    = nullptr;
         ScalarAccess StoreAccess;
         ScalarAccess LoadAccess;
@@ -139,6 +144,7 @@ private:
                          Statement*                           stmt,
                          GenTree*                             value,
                          const LoopVectorizationPlan::ScalarAccess& access);
+    bool        TryAddReduction(LoopVectorizationPlan* plan, Statement* stmt, GenTreeLclVarCommon* storeLcl);
     bool        AddLoad(LoopVectorizationPlan* plan, const LoopVectorizationPlan::ScalarAccess& access, unsigned* index);
     bool        ValidateMemoryDependences(LoopVectorizationPlan* plan);
     bool        MayAlias(const LoopVectorizationPlan::ScalarAccess& first,
@@ -162,6 +168,9 @@ private:
     GenTree*    BuildPostIVAddress(const LoopVectorizationPlan::ScalarAccess& access);
     GenTree*    BuildPackNode(LoopVectorizationPlan* plan, PackNode* node);
     GenTree*    BuildVectorStore(LoopVectorizationPlan* plan, PackNode* node);
+    GenTree*    BuildReductionInit(LoopVectorizationPlan* plan);
+    GenTree*    BuildReductionUpdate(LoopVectorizationPlan* plan);
+    GenTree*    BuildReductionFinalize(LoopVectorizationPlan* plan);
     GenTree*    BuildIVUpdate(LoopVectorizationPlan* plan);
     GenTree*    BuildAddressUpdate(LoopVectorizationPlan* plan, unsigned addressVar);
     GenTree*    BuildTripCountUpdate(LoopVectorizationPlan* plan, int delta);

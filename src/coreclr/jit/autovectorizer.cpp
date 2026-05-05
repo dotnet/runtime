@@ -714,6 +714,58 @@ bool AutoVectorizer::AddStore(LoopVectorizationPlan*                     plan,
     return true;
 }
 
+bool AutoVectorizer::TryAddReduction(LoopVectorizationPlan* plan, Statement* stmt, GenTreeLclVarCommon* storeLcl)
+{
+    if (plan->ReductionStmt != nullptr)
+    {
+        JITDUMPEXEC(m_compiler->gtDispStmt(stmt));
+        JITDUMP("multiple reductions, bail out\n");
+        return false;
+    }
+
+    const unsigned reductionLcl = storeLcl->GetLclNum();
+    GenTree* const data         = UnwrapCommaValue(storeLcl->Data());
+    if (!data->OperIs(GT_ADD))
+    {
+        return false;
+    }
+
+    GenTree* op1 = UnwrapCommaValue(data->AsOp()->gtOp1);
+    GenTree* op2 = UnwrapCommaValue(data->AsOp()->gtOp2);
+    if (!op1->OperIs(GT_LCL_VAR) || (op1->AsLclVarCommon()->GetLclNum() != reductionLcl))
+    {
+        std::swap(op1, op2);
+    }
+
+    if (!op1->OperIs(GT_LCL_VAR) || (op1->AsLclVarCommon()->GetLclNum() != reductionLcl))
+    {
+        return false;
+    }
+
+    const var_types elementType = genActualType(storeLcl->TypeGet());
+    if (!varTypeIsIntegral(elementType) || !IsSupportedElementType(elementType))
+    {
+        JITDUMPEXEC(m_compiler->gtDispStmt(stmt));
+        JITDUMP("reduction type %s is not supported, bail out\n", varTypeName(elementType));
+        return false;
+    }
+
+    if ((plan->ElementType != TYP_UNDEF) && (plan->ElementType != elementType))
+    {
+        JITDUMPEXEC(m_compiler->gtDispStmt(stmt));
+        JITDUMP("reduction element type %s does not match loop element type %s, bail out\n", varTypeName(elementType),
+                varTypeName(plan->ElementType));
+        return false;
+    }
+
+    plan->ReductionStmt  = stmt;
+    plan->ReductionLcl   = reductionLcl;
+    plan->ReductionValue = op2;
+    plan->ElementType    = elementType;
+    plan->ElementSize    = genTypeSize(elementType);
+    return true;
+}
+
 bool AutoVectorizer::AddLoad(LoopVectorizationPlan*                     plan,
                              const LoopVectorizationPlan::ScalarAccess& access,
                              unsigned*                                  index)
@@ -848,6 +900,11 @@ bool AutoVectorizer::TryAnalyzeMemory(LoopVectorizationPlan* plan)
                 const unsigned lclNum = root->AsLclVarCommon()->GetLclNum();
                 if (((root->gtFlags & GTF_CALL) != 0) || !m_compiler->lvaGetDesc(lclNum)->lvIsTemp)
                 {
+                    if (((root->gtFlags & GTF_CALL) == 0) && TryAddReduction(plan, stmt, root->AsLclVarCommon()))
+                    {
+                        continue;
+                    }
+
                     failed = true;
                     JITDUMPEXEC(m_compiler->gtDispStmt(stmt));
                     JITDUMP("unsupported local store in loop body, bail out\n");
@@ -900,9 +957,9 @@ bool AutoVectorizer::TryAnalyzeMemory(LoopVectorizationPlan* plan)
         return false;
     }
 
-    if (plan->StoreCount == 0)
+    if ((plan->StoreCount == 0) && (plan->ReductionStmt == nullptr))
     {
-        JITDUMP("no vectorizable store, bail out\n");
+        JITDUMP("no vectorizable store or reduction, bail out\n");
         return false;
     }
 
@@ -1033,14 +1090,20 @@ bool AutoVectorizer::TryAnalyzePostIVMemory(LoopVectorizationPlan* plan)
             continue;
         }
 
+        if (((root->gtFlags & GTF_CALL) == 0) && TryAddReduction(plan, stmt, storeLcl))
+        {
+            continue;
+        }
+
         JITDUMPEXEC(m_compiler->gtDispStmt(stmt));
         JITDUMP("unsupported post-IV statement, bail out\n");
         return false;
     }
 
-    if ((plan->StoreCount == 0) || !foundTripCountUpdate)
+    if (((plan->StoreCount == 0) && (plan->ReductionStmt == nullptr)) || !foundTripCountUpdate)
     {
-        JITDUMP("storeCount=%u, foundTripCountUpdate=%s\n", plan->StoreCount, dspBool(foundTripCountUpdate));
+        JITDUMP("storeCount=%u, reduction=%s, foundTripCountUpdate=%s\n", plan->StoreCount,
+                dspBool(plan->ReductionStmt != nullptr), dspBool(foundTripCountUpdate));
         JITDUMP("incomplete post-IV memory pattern, bail out\n");
         return false;
     }
@@ -1416,6 +1479,19 @@ bool AutoVectorizer::TryBuildSLPPlan(LoopVectorizationPlan* plan)
         slpPlan->Root                        = store;
     }
 
+    if (plan->ReductionStmt != nullptr)
+    {
+        PackNode* const reduction = TryBuildPack(plan, plan->ReductionStmt, plan->ReductionValue, plan->ElementType);
+        if (reduction == nullptr)
+        {
+            JITDUMPEXEC(m_compiler->gtDispStmt(plan->ReductionStmt));
+            JITDUMP("reduction value cannot be packed, bail out\n");
+            return false;
+        }
+
+        plan->ReductionPack = reduction;
+    }
+
     if (plan->LoadCount == 0)
     {
         JITDUMP("SLP found no vector loads\n");
@@ -1506,6 +1582,11 @@ bool AutoVectorizer::TryBuildSLPPlan(LoopVectorizationPlan* plan)
         slpPlan->EstimatedVectorCost += slpPlan->Roots[i]->Cost;
     }
 
+    if (plan->ReductionPack != nullptr)
+    {
+        slpPlan->EstimatedVectorCost += plan->ReductionPack->Cost + 3;
+    }
+
     slpPlan->EstimatedScalarCost    = plan->VectorizationFactor * slpPlan->EstimatedVectorCost;
     slpPlan->EstimatedCodeSizeDelta = 8 + (4 * slpPlan->RootCount);
 
@@ -1524,10 +1605,10 @@ bool AutoVectorizer::TryRewritePlan(LoopVectorizationPlan* plan)
         return false;
     }
 
-    if (plan->StoreStmt == nullptr)
+    if ((plan->StoreCount == 0) && (plan->ReductionStmt == nullptr))
     {
-        JITDUMP("loop " FMT_LP " has no selected store statement\n", plan->Loop->GetIndex());
-        JITDUMP("missing store statement for rewrite, bail out\n");
+        JITDUMP("loop " FMT_LP " has no selected store or reduction statement\n", plan->Loop->GetIndex());
+        JITDUMP("missing statement for rewrite, bail out\n");
         return false;
     }
 
@@ -1571,6 +1652,19 @@ bool AutoVectorizer::TryRewritePlan(LoopVectorizationPlan* plan)
         loadBeforeCheck->inheritWeightPercentage(plan->Header, 25);
     }
 
+    if (plan->ReductionStmt != nullptr)
+    {
+        const var_types simdType = Compiler::getSIMDTypeForSize(plan->VectorSizeBytes);
+        plan->ReductionVectorLcl = m_compiler->lvaGrabTemp(false DEBUGARG("auto vectorization reduction accumulator"));
+        m_compiler->lvaTable[plan->ReductionVectorLcl].lvType = simdType;
+
+        Statement* const reductionInitStmt = m_compiler->fgNewStmtAtEnd(plan->Preheader, BuildReductionInit(plan));
+        m_compiler->gtSetStmtInfo(reductionInitStmt);
+        m_compiler->fgSetStmtSeq(reductionInitStmt);
+        JITDUMP("generated reduction init in " FMT_BB ":\n", plan->Preheader->bbNum);
+        JITDUMPEXEC(m_compiler->gtDispStmt(reductionInitStmt));
+    }
+
     GenTree* const   vectorTest = BuildVectorLoopTest(plan);
     Statement* const testStmt   = m_compiler->fgNewStmtAtEnd(vectorCheck, vectorTest);
     m_compiler->gtSetStmtInfo(testStmt);
@@ -1591,6 +1685,18 @@ bool AutoVectorizer::TryRewritePlan(LoopVectorizationPlan* plan)
         Statement* const storeStmt = m_compiler->fgNewStmtAtEnd(vectorBody, vectorStore);
         m_compiler->gtSetStmtInfo(storeStmt);
         m_compiler->fgSetStmtSeq(storeStmt);
+    }
+
+    if (plan->ReductionStmt != nullptr)
+    {
+        JITDUMP("scalar reduction selected for rewrite:\n");
+        JITDUMPEXEC(m_compiler->gtDispStmt(plan->ReductionStmt));
+
+        Statement* const reductionUpdateStmt = m_compiler->fgNewStmtAtEnd(vectorBody, BuildReductionUpdate(plan));
+        m_compiler->gtSetStmtInfo(reductionUpdateStmt);
+        m_compiler->fgSetStmtSeq(reductionUpdateStmt);
+        JITDUMP("generated vector reduction update:\n");
+        JITDUMPEXEC(m_compiler->gtDispStmt(reductionUpdateStmt));
     }
 
     if (plan->IsPostIV)
@@ -1622,6 +1728,15 @@ bool AutoVectorizer::TryRewritePlan(LoopVectorizationPlan* plan)
         m_compiler->fgSetStmtSeq(ivStmt);
         JITDUMP("generated IV update in " FMT_BB ":\n", vectorBody->bbNum);
         JITDUMPEXEC(m_compiler->gtDispStmt(ivStmt));
+    }
+
+    if (plan->ReductionStmt != nullptr)
+    {
+        Statement* const reductionFinalizeStmt = m_compiler->fgNewStmtAtEnd(scalarGuard, BuildReductionFinalize(plan));
+        m_compiler->gtSetStmtInfo(reductionFinalizeStmt);
+        m_compiler->fgSetStmtSeq(reductionFinalizeStmt);
+        JITDUMP("generated reduction finalize in " FMT_BB ":\n", scalarGuard->bbNum);
+        JITDUMPEXEC(m_compiler->gtDispStmt(reductionFinalizeStmt));
     }
 
     Statement* const scalarGuardStmt = m_compiler->fgNewStmtAtEnd(scalarGuard, BuildScalarRemainderTest(plan));
@@ -2068,6 +2183,44 @@ GenTree* AutoVectorizer::BuildVectorStore(LoopVectorizationPlan* plan, PackNode*
     GenTree* const  storeAddress = BuildAddress(plan, plan->StoreAccesses[node->AccessIndex]);
     GenTree* const  vectorResult = BuildPackNode(plan, node->Operands[0]);
     return m_compiler->gtNewSimdStoreNode(storeAddress, vectorResult, node->ElementType, simdSize);
+#else
+    unreached();
+#endif
+}
+
+GenTree* AutoVectorizer::BuildReductionInit(LoopVectorizationPlan* plan)
+{
+    const var_types simdType = Compiler::getSIMDTypeForSize(plan->VectorSizeBytes);
+    return m_compiler->gtNewStoreLclVarNode(plan->ReductionVectorLcl, m_compiler->gtNewZeroConNode(simdType));
+}
+
+GenTree* AutoVectorizer::BuildReductionUpdate(LoopVectorizationPlan* plan)
+{
+#if defined(FEATURE_HW_INTRINSICS) && (defined(TARGET_XARCH) || defined(TARGET_ARM64))
+    const unsigned  simdSize = plan->VectorSizeBytes;
+    const var_types simdType = Compiler::getSIMDTypeForSize(simdSize);
+    GenTree* const  current  = m_compiler->gtNewLclvNode(plan->ReductionVectorLcl, simdType);
+    GenTree* const  value    = BuildPackNode(plan, plan->ReductionPack);
+    GenTree* const  sum      = m_compiler->gtNewSimdBinOpNode(GT_ADD, simdType, current, value, plan->ElementType,
+                                                              simdSize);
+    return m_compiler->gtNewStoreLclVarNode(plan->ReductionVectorLcl, sum);
+#else
+    unreached();
+#endif
+}
+
+GenTree* AutoVectorizer::BuildReductionFinalize(LoopVectorizationPlan* plan)
+{
+#if defined(FEATURE_HW_INTRINSICS) && (defined(TARGET_XARCH) || defined(TARGET_ARM64))
+    const unsigned  simdSize = plan->VectorSizeBytes;
+    const var_types simdType = Compiler::getSIMDTypeForSize(simdSize);
+    LclVarDsc* const reductionDsc = m_compiler->lvaGetDesc(plan->ReductionLcl);
+
+    GenTree* const current = m_compiler->gtNewLclvNode(plan->ReductionLcl, reductionDsc->TypeGet());
+    GenTree* const vector  = m_compiler->gtNewLclvNode(plan->ReductionVectorLcl, simdType);
+    GenTree* const scalar  = m_compiler->gtNewSimdSumNode(plan->ElementType, vector, plan->ElementType, simdSize);
+    GenTree* const sum     = m_compiler->gtNewOperNode(GT_ADD, reductionDsc->TypeGet(), current, scalar);
+    return m_compiler->gtNewStoreLclVarNode(plan->ReductionLcl, sum);
 #else
     unreached();
 #endif
