@@ -319,15 +319,10 @@ NoFloatingPointRetVal
 #endif ; FEATURE_HIJACK
 
 ; void* PacStripPtr(void *);
-; This function strips the pointer of PAC info that is passed as an agrument.
-; To avoid failing on non-PAC enabled machines, we use xpaclri (instead of xpaci) which strips lr explicitly.
-; Thus we move need to move input in lr, strip it and copy it back to the result register.
+; This function strips the pointer of PAC info that is passed as an argument.
     LEAF_ENTRY PacStripPtr
-        mov x9, lr
-        mov lr, x0
-        DCD     0xD50320FF  ; xpaclri instruction in binary to avoid error while compiling with non-PAC enabled compilers
-        mov x0, lr
-        ret     x9
+        DCD     0xDAC143E0  ; xpaci x0 instruction in binary to avoid requiring PAC-enabled assemblers
+        ret
     LEAF_END PacStripPtr
 
 ; void* PacSignPtr(void *, void *);

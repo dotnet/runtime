@@ -155,15 +155,10 @@ NESTED_END OnHijackTripThread, _TEXT
 
 // void* PacStripPtr(void *);
 // This function strips the pointer of PAC info that is passed as an argument.
-// To avoid failing on non-PAC enabled machines, we use xpaclri (instead of xpaci) which strips lr explicitly.
-// Thus we move need to move input in lr, strip it and copy it back to the result register.
 .arch_extension pauth
     LEAF_ENTRY PacStripPtr, _TEXT
-        mov x9, lr
-        mov lr, x0
-        xpaclri
-        mov x0, lr
-        ret x9
+        xpaci x0
+        ret
     LEAF_END PacStripPtr, _TEXT
 
 // void* PacSignPtr(void *, void *);
@@ -3552,4 +3547,3 @@ NESTED_ENTRY IL_Rethrow, _TEXT, NoHandler
     // Should never return
     brk     #0
 NESTED_END IL_Rethrow, _TEXT
-
