@@ -162,7 +162,7 @@ private:
 
         // Update weights
         remainderBlock->inheritWeight(block);
-        helperBlock->inheritWeightPercentage(block, 100 - HIGH_PROBABILITY);
+        helperBlock->bbSetRunRarely();
 
         // Fill in test block
         //
