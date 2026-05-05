@@ -109,7 +109,7 @@ public class WasmSdkBasedProjectProvider : ProjectProviderBase
         (config == Configuration.Release) ? NativeFilesType.Relinked :
         NativeFilesType.FromRuntimePack;
 
-    public void AssertBundle(Configuration config, MSBuildOptions buildOptions, bool isUsingWorkloads, bool? isNativeBuild = null, bool? wasmFingerprintDotnetJs = null)
+    public void AssertBundle(Configuration config, MSBuildOptions buildOptions, bool isUsingWorkloads, bool? isNativeBuild = null, bool? wasmFingerprintDotnetJs = null, string? runtimePackDir = null)
     {
         string frameworkDir = string.IsNullOrEmpty(buildOptions.NonDefaultFrameworkDir) ?
             GetBinFrameworkDir(config, buildOptions.IsPublish, DefaultTargetFramework) :
@@ -123,7 +123,8 @@ public class WasmSdkBasedProjectProvider : ProjectProviderBase
             ExpectSymbolsFile: true,
             AssertIcuAssets: true,
             AssertSymbolsFile: false,
-            ExpectDotnetJsFingerprinting: wasmFingerprintDotnetJs
+            ExpectDotnetJsFingerprinting: wasmFingerprintDotnetJs,
+            RuntimePackDir: runtimePackDir
         ));
     }
 
@@ -200,9 +201,13 @@ public class WasmSdkBasedProjectProvider : ProjectProviderBase
             ProjectProviderBase.AssertRuntimePackPath(buildOutput, buildOptions.TargetFramework ?? DefaultTargetFramework, buildOptions.RuntimeType);
         }
 
+        // Capture the runtime-pack root the build actually used so downstream asserts (e.g. ICU
+        // shard comparison) read from the same pack the publish output was produced from.
+        string? runtimePackDir = ProjectProviderBase.TryGetRuntimePackDirFromBuildOutput(buildOutput);
+
         if (buildOptions.IsPublish)
         {
-            AssertBundle(config, buildOptions, isUsingWorkloads, isNativeBuild, wasmFingerprintDotnetJs);
+            AssertBundle(config, buildOptions, isUsingWorkloads, isNativeBuild, wasmFingerprintDotnetJs, runtimePackDir);
         }
         else if (string.IsNullOrEmpty(buildOptions.NonDefaultFrameworkDir))
         {
