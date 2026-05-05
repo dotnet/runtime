@@ -501,6 +501,10 @@ namespace ILCompiler.Reflection.ReadyToRun
                     {
                         CompositeReader = new MachO.MachOImageReader(image);
                     }
+                    else if (WebcilImageReader.IsWebcilImage(image))
+                    {
+                        CompositeReader = new WebcilImageReader(image);
+                    }
                     else
                     {
                         CompositeReader = new PEImageReader(new PEReader(Unsafe.As<byte[], ImmutableArray<byte>>(ref image)));
