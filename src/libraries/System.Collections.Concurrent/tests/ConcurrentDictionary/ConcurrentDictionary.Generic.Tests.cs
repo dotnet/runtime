@@ -44,6 +44,7 @@ namespace System.Collections.Concurrent.Tests
 
         protected override string CreateTValue(int seed) => CreateTKey(seed);
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/127815", TestPlatforms.tvOS)]
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
