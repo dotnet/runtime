@@ -161,6 +161,13 @@ namespace System.Net.Sockets
         /// The number of seconds a TCP connection will wait for a keepalive response before sending another keepalive probe.
         /// </summary>
         TcpKeepAliveInterval = 17,
+
+        /// <summary>
+        /// Linux only. The kernel delays completing <c>accept()</c> until the client sends data
+        /// (e.g., TLS ClientHello). Value is the timeout in seconds; 0 disables.
+        /// Maps to <c>TCP_DEFER_ACCEPT</c> (option 9 on <c>SOL_TCP</c>).
+        /// </summary>
+        TcpDeferAccept = 9,
         #endregion
 
         #region SocketOptionlevel.Udp
