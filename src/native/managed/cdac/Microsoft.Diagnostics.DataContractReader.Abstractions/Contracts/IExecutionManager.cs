@@ -46,8 +46,9 @@ public enum CodeKind : uint
 {
     Unknown = 0,
     JumpStub = 1,
-    DynamicHelper = 3,
-    Prestub = 4,
+    DynamicHelper = 2,
+    StubPrecode = 3,
+    FixupPrecode = 4,
     VSD_DispatchStub = 5,
     VSD_ResolveStub = 6,
     VSD_LookupStub = 7,

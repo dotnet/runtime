@@ -686,7 +686,7 @@ public class ExecutionManagerTests
             });
 
         CodeKind kind = em.GetCodeKind(new TargetCodePointer(codeRangeStart + 0x100));
-        Assert.Equal(CodeKind.Prestub, kind);
+        Assert.Equal(CodeKind.StubPrecode, kind);
     }
 
     [Theory]

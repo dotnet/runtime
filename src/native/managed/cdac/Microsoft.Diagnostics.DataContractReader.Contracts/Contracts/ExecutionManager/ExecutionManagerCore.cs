@@ -17,6 +17,7 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
 
     // maps CodeBlockHandle.Address (which is the CodeHeaderAddress) to the CodeBlock
     private readonly Dictionary<TargetPointer, CodeBlock> _codeInfos = new();
+    private readonly Dictionary<TargetPointer, CodeKind> _codeKindInfos = new();
     private readonly Data.RangeSectionMap _topRangeSectionMap;
     private readonly ExecutionManagerHelpers.RangeSectionMap _rangeSectionMapLookup;
     private readonly EEJitManager _eeJitManager;
@@ -35,6 +36,7 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
     public void Flush()
     {
         _codeInfos.Clear();
+        _codeKindInfos.Clear();
     }
 
     // Note, because of RelativeOffset, this code info is per code pointer, not per method
@@ -165,9 +167,8 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
         }
     }
 
-    private CodeBlock? GetCodeBlock(TargetCodePointer jittedCodeAddress)
+    private CodeBlock? GetCodeBlock(RangeSection range, TargetCodePointer jittedCodeAddress)
     {
-        RangeSection range = RangeSection.Find(_target, _topRangeSectionMap, _rangeSectionMapLookup, jittedCodeAddress);
         if (range.Data == null)
         {
             return null;
@@ -189,12 +190,15 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
         {
             return new CodeBlockHandle(key);
         }
-        CodeBlock? info = GetCodeBlock(ip);
+        RangeSection range = RangeSection.Find(_target, _topRangeSectionMap, _rangeSectionMapLookup, ip);
+        CodeBlock? info = GetCodeBlock(range, ip);
         if (info == null || !info.Valid)
         {
             return null;
         }
         _codeInfos.TryAdd(key, info);
+        CodeKind kind = GetJitManager(range.Data!) == _eeJitManager ? CodeKind.Jitted : CodeKind.ReadyToRun;
+        _codeKindInfos.TryAdd(key, kind);
         return new CodeBlockHandle(key);
     }
 
@@ -521,22 +525,30 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
 
     public CodeKind GetCodeKind(TargetCodePointer jittedCodeAddress)
     {
+        TargetPointer addr = CodePointerUtils.AddressFromCodePointer(jittedCodeAddress, _target);
+        // first check the cache
+        if (_codeKindInfos.TryGetValue(addr, out CodeKind cachedKind))
+            return cachedKind;
         RangeSection range = RangeSection.Find(_target, _topRangeSectionMap, _rangeSectionMapLookup, jittedCodeAddress);
         if (range.Data == null)
             return CodeKind.Unknown;
 
+        // check if this is a stub
         JitManager jitManager = GetJitManager(range.Data);
         CodeKind stubKind = jitManager.GetStubCodeBlockKind(range, jittedCodeAddress);
         if (stubKind != CodeKind.Unknown)
         {
+            _codeKindInfos.TryAdd(addr, stubKind);
             return stubKind;
         }
-        if (((IExecutionManager)this).GetCodeBlockHandle(jittedCodeAddress) != null)
+
+        // check for managed code
+        if (GetCodeBlock(range, jittedCodeAddress) is CodeBlock codeBlock && codeBlock.Valid)
         {
-            if (jitManager == _eeJitManager)
-                return CodeKind.Jitted;
-            else if (jitManager == _r2rJitManager)
-                return CodeKind.ReadyToRun;
+            CodeKind kind = jitManager == _eeJitManager ? CodeKind.Jitted : CodeKind.ReadyToRun;
+            _codeKindInfos.TryAdd(addr, kind);
+            _codeInfos.TryAdd(addr, codeBlock);
+            return kind;
         }
         return CodeKind.Unknown;
     }

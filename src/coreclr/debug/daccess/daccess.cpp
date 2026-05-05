@@ -5342,10 +5342,66 @@ ClrDataAccess::RawGetMethodName(
     }
 
     PTR_StubManager pStubManager;
+    MethodDesc* methodDesc = NULL;
 
     pStubManager = StubManager::FindStubManager(TO_TADDR(address));
     if (pStubManager != NULL)
     {
+        if (pStubManager == PrecodeStubManager::g_pManager)
+        {
+            StubCodeBlockKind stubKind = RangeSectionStubManager::GetStubKind(TO_TADDR(address));
+            SIZE_T stubSize = 0;
+
+            switch (stubKind)
+            {
+            case STUB_CODE_BLOCK_STUBPRECODE:
+                stubSize = StubPrecode::CodeSize;
+                break;
+#ifdef HAS_FIXUP_PRECODE
+            case STUB_CODE_BLOCK_FIXUPPRECODE:
+                stubSize = FixupPrecode::CodeSize;
+                break;
+#endif
+            default:
+                break;
+            }
+
+            if (stubSize != 0)
+            {
+                const SIZE_T pageMask = GetStubCodePageSize() - 1;
+                const TADDR pageBase = TO_TADDR(address) & ~static_cast<TADDR>(pageMask);
+                const SIZE_T offset = static_cast<SIZE_T>(TO_TADDR(address) - pageBase);
+                PCODE precodeAddress = pageBase + (offset / stubSize) * stubSize;
+
+#ifdef TARGET_ARM
+                precodeAddress += THUMB_CODE;
+#endif
+
+                EX_TRY
+                {
+                    Precode* pPrecode = Precode::GetPrecodeFromEntryPoint(precodeAddress, TRUE);
+                    if (pPrecode != NULL && pPrecode->GetType() != PRECODE_UMENTRY_THUNK)
+                    {
+                        methodDesc = pPrecode->GetMethodDesc();
+                        if (methodDesc != NULL)
+                        {
+                            if (DacValidateMD(methodDesc))
+                            {
+                                if (displacement)
+                                {
+                                    *displacement = TO_TADDR(address) - PCODEToPINSTR(precodeAddress);
+                                }
+                                return GetFullMethodName(methodDesc, bufLen, symbolLen, symbolBuf);
+                            }
+                        }
+                    }
+                }
+                EX_CATCH
+                {
+                }
+                EX_END_CATCH
+            }
+        }
         LPCWSTR wszStubManagerName = pStubManager->GetStubManagerName(TO_TADDR(address));
         _ASSERTE(wszStubManagerName != NULL);
         if (u16_strcmp(wszStubManagerName, W("ThePreStub")) != 0 && u16_strcmp(wszStubManagerName, W("InteropDispatchStub")) != 0 && u16_strcmp(wszStubManagerName, W("TailCallStub")) != 0)

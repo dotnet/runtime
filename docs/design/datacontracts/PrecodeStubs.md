@@ -7,6 +7,10 @@ This contract provides support for examining [precode](../coreclr/botr/method-de
 ```csharp
     // Gets a pointer to the MethodDesc for a given stub entrypoint
     TargetPointer GetMethodDescFromStubAddress(TargetCodePointer entryPoint);
+
+    // Given an interior address within a precode stub and the kind of stub (StubPrecode or FixupPrecode),
+    // computes the entry point of the precode.
+    TargetPointer GetPrecodeEntryPointFromInteriorAddress(TargetCodePointer interiorAddress, bool isFixupPrecode);
 ```
 
 ## Version 1, 2, and 3
@@ -294,5 +298,34 @@ After the initial precode type is determined, for stub precodes a refined precod
         ValidPrecode precode = GetPrecodeFromEntryPoint(entryPoint);
 
         return precode.GetMethodDesc(_target, MachineDescriptor);
+    }
+```
+
+### `GetPrecodeEntryPointFromInteriorAddress`
+
+Given an interior address within a precode stub and the kind of stub (StubPrecode or FixupPrecode),
+computes the entry point of the precode.
+
+```csharp
+    TargetPointer IPrecodeStubs.GetPrecodeEntryPointFromInteriorAddress(TargetCodePointer interiorAddress, bool isFixupPrecode)
+    {
+        TargetPointer instrPointer = CodePointerReadableInstrPointer(interiorAddress);
+
+        uint stubSize;
+        if (isFixupPrecode)
+        {
+            stubSize = MachineDescriptor.FixupStubPrecodeSize;
+        }
+        else
+        {
+            stubSize = MachineDescriptor.StubPrecodeSize;
+        }
+
+        ulong pageMask = MachineDescriptor.StubCodePageSize - 1;
+        ulong pageBase = instrPointer.Value & ~pageMask;
+        ulong offset = instrPointer.Value - pageBase;
+        ulong entryPointAddress = pageBase + (offset / stubSize) * stubSize;
+
+        return new TargetPointer(entryPointAddress);
     }
 ```

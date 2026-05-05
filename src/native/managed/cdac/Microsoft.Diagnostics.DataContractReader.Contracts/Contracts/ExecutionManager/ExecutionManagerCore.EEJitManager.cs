@@ -222,7 +222,8 @@ internal partial class ExecutionManagerCore<T> : IExecutionManager
             {
                 StubCodeBlockKind.JumpStub => CodeKind.JumpStub,
                 StubCodeBlockKind.DynamicHelper => CodeKind.DynamicHelper,
-                StubCodeBlockKind.StubPrecode or StubCodeBlockKind.FixupPrecode => CodeKind.Prestub,
+                StubCodeBlockKind.StubPrecode => CodeKind.StubPrecode,
+                StubCodeBlockKind.FixupPrecode => CodeKind.FixupPrecode,
                 StubCodeBlockKind.VSDDispatchStub => CodeKind.VSD_DispatchStub,
                 StubCodeBlockKind.VSDResolveStub => CodeKind.VSD_ResolveStub,
                 StubCodeBlockKind.VSDLookupStub => CodeKind.VSD_LookupStub,

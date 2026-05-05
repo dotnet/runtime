@@ -146,4 +146,30 @@ internal class PrecodeStubsCommon<TPrecodeStubsImplementation, TStubPrecodeData>
 
         return precode.GetMethodDesc(_target, MachineDescriptor);
     }
+
+    TargetPointer IPrecodeStubs.GetPrecodeEntryPointFromInteriorAddress(TargetCodePointer interiorAddress, bool isFixupPrecode)
+    {
+        TargetPointer instrPointer = CodePointerReadableInstrPointer(interiorAddress);
+
+        uint stubSize;
+        if (isFixupPrecode)
+        {
+            if (MachineDescriptor.FixupStubPrecodeSize is not byte fixupSize || fixupSize == 0)
+                throw new InvalidOperationException("FixupPrecode size not available");
+            stubSize = fixupSize;
+        }
+        else
+        {
+            if (MachineDescriptor.StubPrecodeSize is not byte stubPrecodeSize || stubPrecodeSize == 0)
+                throw new InvalidOperationException("StubPrecode size not available");
+            stubSize = stubPrecodeSize;
+        }
+
+        ulong pageMask = MachineDescriptor.StubCodePageSize - 1;
+        ulong pageBase = instrPointer.Value & ~pageMask;
+        ulong offset = instrPointer.Value - pageBase;
+        ulong entryPointAddress = pageBase + (offset / stubSize) * stubSize;
+
+        return new TargetPointer(entryPointAddress);
+    }
 }

@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
+using System.Text;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
 using Microsoft.Diagnostics.DataContractReader.Contracts.Extensions;
 
@@ -119,21 +120,42 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
 
             // Try stub classification
             CodeKind codeKind = eman.GetCodeKind(codeAddr);
-            resultName = GetStubName(codeKind);
+            if (codeKind == CodeKind.StubPrecode || codeKind == CodeKind.FixupPrecode)
+            {
+                IPrecodeStubs precodeStubs = _target.Contracts.PrecodeStubs;
+                TargetPointer entryPoint = precodeStubs.GetPrecodeEntryPointFromInteriorAddress(codeAddr, codeKind == CodeKind.FixupPrecode);
+                TargetPointer methodDesc = eman.NonVirtualEntry2MethodDesc(new TargetCodePointer(entryPoint.Value));
+                if (methodDesc != TargetPointer.Null)
+                {
+                    if (displacement is not null)
+                        *displacement = codeAddr.AsTargetPointer - entryPoint;
+                    IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
+                    MethodDescHandle mdh = rts.GetMethodDescHandle(methodDesc);
+                    StringBuilder sb = new StringBuilder();
+                    TypeNameBuilder.AppendMethodInternal(_target, sb, mdh, TypeNameFormat.FormatSignature
+                        | TypeNameFormat.FormatNamespace
+                        | TypeNameFormat.FormatFullInst);
+                    resultName = sb.ToString();
+                }
+            }
+            if (resultName is null)
+            {
+                resultName = GetStubName(codeKind);
+                if (resultName is not null && displacement is not null)
+                    *displacement = 0;
+            }
 
             // try aux symbols
             if (resultName is null && _target.Contracts.AuxiliarySymbols.TryGetAuxiliarySymbolName(address.ToTargetPointer(_target), out string? auxSymbolName))
             {
                 resultName = auxSymbolName;
+                if (displacement is not null)
+                    *displacement = 0;
             }
 
             if (resultName is null)
             {
                 throw new InvalidCastException();
-            }
-            else if (displacement is not null)
-            {
-                *displacement = 0;
             }
 
             OutputBufferHelpers.CopyStringToBuffer(nameBuf, bufLen, nameLen, resultName);
@@ -186,6 +208,8 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
     {
         if (codeKind == Contracts.CodeKind.Unknown || codeKind == Contracts.CodeKind.Jitted || codeKind == Contracts.CodeKind.ReadyToRun)
             return null;
+        if (codeKind == Contracts.CodeKind.StubPrecode || codeKind == Contracts.CodeKind.FixupPrecode)
+            return "Prestub";
         return codeKind.ToString();
     }
 
