@@ -11,6 +11,7 @@ using Xunit.Abstractions;
 
 namespace System.Xml.XslCompiledTransformApiTests
 {
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/124344", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile), nameof(PlatformDetection.IsCoreCLR))]
     public class SameInstanceXslTransformTestCase : XsltApiTestCaseBase2
     {
         // Variables from init string

@@ -38,7 +38,6 @@ namespace System.Xml.XslCompiledTransformApiTests
     //
     ////////////////////////////////////////////////////////////////
     [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/124344", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile), nameof(PlatformDetection.IsCoreCLR))]
     public class XsltApiTestCaseBase2
     {
         // Generic data for all derived test cases
