@@ -3749,12 +3749,13 @@ Assert.Fail();
             table.Rows.Add(5);
 
             Type expressionType = typeof(DataTable).Assembly.GetType("System.Data.DataExpression");
-            if (expressionType == null) return; 
+            Assert.NotNull(expressionType);
 
-            object expr = Activator.CreateInstance(expressionType, System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Public, null, new object[] { table, "A + 5", null }, null);
-            
+            object expr = Activator.CreateInstance(expressionType!, System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Public, null, new object[] { table, "A + 5", null }, null);
+
             System.Reflection.MethodInfo evaluateMethod = expressionType.GetMethod("Evaluate", new Type[] { typeof(DataRow), typeof(DataRowVersion) });
-            object result = evaluateMethod.Invoke(expr, new object[] { table.Rows[0], DataRowVersion.Default });
+            Assert.NotNull(evaluateMethod);
+            object result = evaluateMethod!.Invoke(expr, new object[] { table.Rows[0], DataRowVersion.Default });
 
             Assert.Equal(10, Convert.ToInt32(result));
         }
