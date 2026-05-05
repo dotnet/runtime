@@ -1272,7 +1272,6 @@ namespace System.Diagnostics.Tracing
             /// <param name="pointer">Pinned tracelogging-compatible metadata blob.</param>
             /// <param name="size">The size of the metadata blob.</param>
             /// <param name="reserved">Value for reserved: 2 for per-provider metadata, 1 for per-event metadata</param>
-            [RequiresUnsafe]
             internal unsafe void SetMetadata(byte* pointer, int size, int reserved)
             {
                 this.m_Ptr = (ulong)pointer;
@@ -1321,7 +1320,6 @@ namespace System.Diagnostics.Tracing
                                     "requires unreferenced code, but EnsureDescriptorsInitialized does not access this member and is safe to call.")]
         [RequiresUnreferencedCode(EventSourceRequiresUnreferenceMessage)]
         [CLSCompliant(false)]
-        [RequiresUnsafe]
         protected unsafe void WriteEventCore(int eventId, int eventDataCount, EventData* data)
         {
             WriteEventWithRelatedActivityIdCore(eventId, null, eventDataCount, data);
@@ -1357,7 +1355,6 @@ namespace System.Diagnostics.Tracing
                                     "requires unreferenced code, but EnsureDescriptorsInitialized does not access this member and is safe to call.")]
         [RequiresUnreferencedCode(EventSourceRequiresUnreferenceMessage)]
         [CLSCompliant(false)]
-        [RequiresUnsafe]
         protected unsafe void WriteEventWithRelatedActivityIdCore(int eventId, Guid* relatedActivityId, int eventDataCount, EventData* data)
         {
             if (IsEnabled())
@@ -1573,7 +1570,6 @@ namespace System.Diagnostics.Tracing
 
         #region private
 
-        [RequiresUnsafe]
         private unsafe void WriteEventRaw(
             string? eventName,
             ref EventDescriptor eventDescriptor,
@@ -1791,7 +1787,6 @@ namespace System.Diagnostics.Tracing
             return new Guid(bytes.Slice(0, 16));
         }
 
-        [RequiresUnsafe]
         private static unsafe void DecodeObjects(object?[] decodedObjects, Type[] parameterTypes, EventData* data)
         {
             for (int i = 0; i < decodedObjects.Length; i++, data++)
@@ -1960,7 +1955,6 @@ namespace System.Diagnostics.Tracing
         }
 
         [Conditional("DEBUG")]
-        [RequiresUnsafe]
         private static unsafe void AssertValidString(EventData* data)
         {
             Debug.Assert(data->Size >= 0 && data->Size % 2 == 0, "String size should be even");
@@ -1991,7 +1985,6 @@ namespace System.Diagnostics.Tracing
                     Justification = "EnsureDescriptorsInitialized's use of GetType preserves this method which " +
                                     "requires unreferenced code, but EnsureDescriptorsInitialized does not access this member and is safe to call.")]
         [RequiresUnreferencedCode(EventSourceRequiresUnreferenceMessage)]
-        [RequiresUnsafe]
         private unsafe void WriteEventVarargs(int eventId, Guid* childActivityID, object?[] args)
         {
             if (IsEnabled())
@@ -2155,7 +2148,6 @@ namespace System.Diagnostics.Tracing
             }
         }
 
-        [RequiresUnsafe]
         private unsafe void WriteToAllListeners(EventWrittenEventArgs eventCallbackArgs, int eventDataCount, EventData* data)
         {
             Debug.Assert(m_eventData != null);
@@ -3926,7 +3918,6 @@ namespace System.Diagnostics.Tracing
 
 #if CORECLR
         [UnmanagedCallersOnly]
-        [RequiresUnsafe]
         private static unsafe void InitializeDefaultEventSources(Exception* pException)
         {
             try
@@ -4330,7 +4321,6 @@ namespace System.Diagnostics.Tracing
             TimeStamp = DateTime.UtcNow;
         }
 
-        [RequiresUnsafe]
         internal unsafe EventWrittenEventArgs(EventSource eventSource, int eventId, Guid* pActivityID, Guid* pChildActivityID)
             : this(eventSource, eventId)
         {
