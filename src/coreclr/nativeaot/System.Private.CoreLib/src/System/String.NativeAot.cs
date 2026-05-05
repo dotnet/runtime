@@ -18,6 +18,7 @@ namespace System
         [Intrinsic]
         public static readonly string Empty = "";
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static unsafe string FastAllocateString(nint length)
         {
             // We allocate one extra char as an interop convenience so that our strings are null-

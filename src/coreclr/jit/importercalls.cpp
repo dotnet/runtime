@@ -11078,6 +11078,16 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                         }
                     }
                 }
+                else if (strcmp(namespaceName, "Runtime") == 0)
+                {
+                    if (IsTargetAbi(CORINFO_NATIVEAOT_ABI) && (strcmp(className, "RuntimeImports") == 0))
+                    {
+                        if (strcmp(methodName, "RhNewString") == 0)
+                        {
+                            result = NI_System_String_FastAllocateString;
+                        }
+                    }
+                }
                 else if (strncmp(namespaceName, "Runtime.", 8) == 0)
                 {
                     namespaceName += 8;

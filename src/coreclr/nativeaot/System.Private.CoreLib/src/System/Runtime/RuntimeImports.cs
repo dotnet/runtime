@@ -401,6 +401,7 @@ namespace System.Runtime
         internal static extern unsafe Array RhNewVariableSizeObject(MethodTable* pEEType, int length);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
+        [Intrinsic]
         [RuntimeImport(RuntimeLibrary, "RhNewString")]
         internal static extern unsafe string RhNewString(MethodTable* pEEType, nint length);
 
