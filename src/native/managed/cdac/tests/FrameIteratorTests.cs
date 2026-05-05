@@ -70,6 +70,7 @@ public class FrameIteratorTests
         Fields =
         [
             new(nameof(Data.InterpreterFrame.TopInterpMethodContextFrame), DataType.pointer),
+            new(nameof(Data.InterpreterFrame.IsFaulting), DataType.uint8),
         ],
         BaseTypeFields = FrameFields
     };
@@ -83,6 +84,7 @@ public class FrameIteratorTests
             new(nameof(Data.InterpMethodContextFrame.ParentPtr), DataType.pointer),
             new(nameof(Data.InterpMethodContextFrame.Ip), DataType.pointer),
             new(nameof(Data.InterpMethodContextFrame.NextPtr), DataType.pointer),
+            new(nameof(Data.InterpMethodContextFrame.Stack), DataType.pointer),
         ]
     };
 
@@ -167,7 +169,7 @@ public class FrameIteratorTests
 
         int frameNextOffset = types[DataType.Frame].Fields[nameof(Data.Frame.Next)].Offset;
         int topContextFrameOffset = types[DataType.InterpreterFrame].Fields[nameof(Data.InterpreterFrame.TopInterpMethodContextFrame)].Offset;
-        int totalFrameSize = Math.Max(topContextFrameOffset + pointerSize, frameNextOffset + pointerSize);
+        int totalFrameSize = (int)types[DataType.InterpreterFrame].Size!.Value;
         var frameFrag = alloc.Allocate((ulong)totalFrameSize, "InterpreterFrame");
 
         helpers.WritePointer(frameFrag.Data.AsSpan(0, pointerSize), interpreterFrameIdentifierValue);
@@ -202,7 +204,7 @@ public class FrameIteratorTests
 
         int topContextFrameOffset = types[DataType.InterpreterFrame].Fields[nameof(Data.InterpreterFrame.TopInterpMethodContextFrame)].Offset;
         int frameNextOffset = types[DataType.Frame].Fields[nameof(Data.Frame.Next)].Offset;
-        int totalFrameSize = Math.Max(topContextFrameOffset + pointerSize, frameNextOffset + pointerSize);
+        int totalFrameSize = (int)types[DataType.InterpreterFrame].Size!.Value;
         var frameFrag = alloc.Allocate((ulong)totalFrameSize, "InterpreterFrame");
 
         helpers.WritePointer(frameFrag.Data.AsSpan(0, pointerSize), interpreterFrameIdentifierValue);
@@ -250,7 +252,7 @@ public class FrameIteratorTests
 
         int topContextFrameOffset = types[DataType.InterpreterFrame].Fields[nameof(Data.InterpreterFrame.TopInterpMethodContextFrame)].Offset;
         int frameNextOffset = types[DataType.Frame].Fields[nameof(Data.Frame.Next)].Offset;
-        int totalFrameSize = Math.Max(topContextFrameOffset + pointerSize, frameNextOffset + pointerSize);
+        int totalFrameSize = (int)types[DataType.InterpreterFrame].Size!.Value;
         var frameFrag = alloc.Allocate((ulong)totalFrameSize, "InterpreterFrame");
 
         helpers.WritePointer(frameFrag.Data.AsSpan(0, pointerSize), interpreterFrameIdentifierValue);
@@ -303,7 +305,7 @@ public class FrameIteratorTests
 
         int topContextFrameOffset = types[DataType.InterpreterFrame].Fields[nameof(Data.InterpreterFrame.TopInterpMethodContextFrame)].Offset;
         int frameNextOffset = types[DataType.Frame].Fields[nameof(Data.Frame.Next)].Offset;
-        int totalFrameSize = Math.Max(topContextFrameOffset + pointerSize, frameNextOffset + pointerSize);
+        int totalFrameSize = (int)types[DataType.InterpreterFrame].Size!.Value;
         var frameFrag = alloc.Allocate((ulong)totalFrameSize, "InterpreterFrame");
 
         helpers.WritePointer(frameFrag.Data.AsSpan(0, pointerSize), interpreterFrameIdentifierValue);
@@ -475,7 +477,7 @@ public class FrameIteratorTests
 
         int frameNextOffset = types[DataType.Frame].Fields[nameof(Data.Frame.Next)].Offset;
         int topContextFrameOffset = types[DataType.InterpreterFrame].Fields[nameof(Data.InterpreterFrame.TopInterpMethodContextFrame)].Offset;
-        int totalFrameSize = Math.Max(topContextFrameOffset + pointerSize, frameNextOffset + pointerSize);
+        int totalFrameSize = (int)types[DataType.InterpreterFrame].Size!.Value;
 
         // InterpreterFrame with hint pointing to the stale frame
         var frameFrag = alloc.Allocate((ulong)totalFrameSize, "InterpreterFrame");
@@ -571,7 +573,7 @@ public class FrameIteratorTests
 
         int frameNextOffset = types[DataType.Frame].Fields[nameof(Data.Frame.Next)].Offset;
         int topContextFrameOffset = types[DataType.InterpreterFrame].Fields[nameof(Data.InterpreterFrame.TopInterpMethodContextFrame)].Offset;
-        int totalFrameSize = Math.Max(topContextFrameOffset + pointerSize, frameNextOffset + pointerSize);
+        int totalFrameSize = (int)types[DataType.InterpreterFrame].Size!.Value;
 
         // InterpreterFrame with hint pointing to the lower frame
         var frameFrag = alloc.Allocate((ulong)totalFrameSize, "InterpreterFrame");
@@ -652,7 +654,7 @@ public class FrameIteratorTests
 
         int frameNextOffset = types[DataType.Frame].Fields[nameof(Data.Frame.Next)].Offset;
         int topContextFrameOffset = types[DataType.InterpreterFrame].Fields[nameof(Data.InterpreterFrame.TopInterpMethodContextFrame)].Offset;
-        int totalFrameSize = Math.Max(topContextFrameOffset + pointerSize, frameNextOffset + pointerSize);
+        int totalFrameSize = (int)types[DataType.InterpreterFrame].Size!.Value;
 
         // InterpreterFrame with hint pointing to the inactive frame
         var frameFrag = alloc.Allocate((ulong)totalFrameSize, "InterpreterFrame");

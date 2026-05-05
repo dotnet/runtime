@@ -970,22 +970,10 @@ internal partial class StackWalk_1 : IStackWalk
     /// </summary>
     private void InterpreterVirtualUnwind(StackWalkData handle)
     {
-        TargetPointer currentFramePtr = handle.Context.StackPointer;
-        Data.InterpMethodContextFrame currentFrame = _target.ProcessedData.GetOrAdd<Data.InterpMethodContextFrame>(currentFramePtr);
+        if (_frameHelpers.VirtualUnwindInterpreterCallFrame(handle.Context))
+            return;
 
-        if (currentFrame.ParentPtr != TargetPointer.Null)
-        {
-            Data.InterpMethodContextFrame parentFrame = _target.ProcessedData.GetOrAdd<Data.InterpMethodContextFrame>(currentFrame.ParentPtr);
-            if (parentFrame.Ip != TargetPointer.Null)
-            {
-                // Parent is active -- set context to the parent interpreted method.
-                handle.Context.InstructionPointer = new TargetPointer((ulong)parentFrame.Ip);
-                handle.Context.StackPointer = currentFrame.ParentPtr;
-                return;
-            }
-        }
-
-        // No active parent -- interpreter chain under this InterpreterFrame is exhausted.
+        // No active parent: interpreter chain under this InterpreterFrame is exhausted.
         // Use the saved InterpreterFrame's transition block to restore the context to
         // the native caller of InterpExecMethod. This is the cDAC equivalent of the
         // native DummyCallerIP -> UpdateRegDisplay path in stackwalk.cpp.

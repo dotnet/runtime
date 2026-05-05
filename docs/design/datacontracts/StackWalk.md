@@ -85,10 +85,12 @@ This contract depends on the following descriptors:
 | `HijackArgs` (amd64 Windows) | `Rsp` | Saved stack pointer |
 | `HijackArgs` (arm/arm64/x86) | For each register `r` saved in HijackArgs, `r` | Register names associated with stored register values |
 | `InterpreterFrame` | `TopInterpMethodContextFrame` | Pointer to the InterpreterFrame's top `InterpMethodContextFrame` |
+| `InterpreterFrame` | `IsFaulting` | Boolean indicating whether the topmost interpreted frame has thrown an exception. When set, the context for the top interpreted frame must include `CONTEXT_EXCEPTION_ACTIVE` so exception unwinders treat the IP as a faulting instruction rather than a return-from-call |
 | `InterpMethodContextFrame` | `StartIp` | Pointer to the `InterpByteCodeStart` for resolving the MethodDesc |
 | `InterpMethodContextFrame` | `ParentPtr` | Pointer to the parent `InterpMethodContextFrame` in the call chain (null for outermost frame) |
 | `InterpMethodContextFrame` | `Ip` | The actual instruction pointer within the method (null if frame is inactive/reusable) |
 | `InterpMethodContextFrame` | `NextPtr` | Pointer to the next `InterpMethodContextFrame` toward the top of the stack |
+| `InterpMethodContextFrame` | `Stack` | Pointer to the stack base for this interpreted method, used as the frame pointer when interpreter GC info uses a stack-base register |
 | `ArgumentRegisters` (arm) | For each register `r` saved in ArgumentRegisters, `r` | Register names associated with stored register values |
 | `CalleeSavedRegisters` | For each callee saved register `r`, `r` | Register names associated with stored register values |
 | `TailCallFrame` (x86 Windows) | `CalleeSavedRegisters` | CalleeSavedRegisters data structure |

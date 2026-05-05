@@ -2340,6 +2340,7 @@ template<>
 struct cdac_data<InterpreterFrame>
 {
     static constexpr size_t TopInterpMethodContextFrame = offsetof(InterpreterFrame, m_pTopInterpMethodContextFrame);
+    static constexpr size_t IsFaulting = offsetof(InterpreterFrame, m_isFaulting);
 };
 
 #endif // FEATURE_INTERPRETER

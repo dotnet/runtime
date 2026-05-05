@@ -168,17 +168,12 @@ internal sealed class FrameHelpers
 
             case FrameType.InterpreterFrame:
                 {
-                    // Match native stackwalk.cpp: Set context to the top
-                    // InterpMethodContextFrame so the walker transitions to SW_FRAMELESS
-                    // and yields each interpreted method individually via virtual unwind.
+                    // Mirrors native InterpreterFrame::SetContextToInterpMethodContextFrame
+                    // (frames.cpp). Sets context to the top InterpMethodContextFrame so the
+                    // walker transitions to SW_FRAMELESS and yields each interpreted method
+                    // individually via virtual unwind.
                     Data.InterpreterFrame interpreterFrame = _target.ProcessedData.GetOrAdd<Data.InterpreterFrame>(frame.Address);
-                    TargetPointer topContextFramePtr = ResolveTopInterpMethodContextFrame(interpreterFrame);
-                    if (topContextFramePtr != TargetPointer.Null)
-                    {
-                        Data.InterpMethodContextFrame topContextFrame = _target.ProcessedData.GetOrAdd<Data.InterpMethodContextFrame>(topContextFramePtr);
-                        context.InstructionPointer = new TargetPointer((ulong)topContextFrame.Ip);
-                        context.StackPointer = topContextFramePtr;
-                    }
+                    SetContextToInterpMethodContextFrame(context, interpreterFrame);
                     return;
                 }
 
@@ -403,5 +398,83 @@ internal sealed class FrameHelpers
                 yield return interpMethodFramePtr;
             interpMethodFramePtr = contextFrame.ParentPtr;
         }
+    }
+
+    // Matches the Windows CONTEXT_EXCEPTION_ACTIVE flag value. The PAL CONTEXT structures
+    // on Linux/macOS use the same bit so a single constant is sufficient across platforms.
+    private const uint CONTEXT_EXCEPTION_ACTIVE = 0x8000000;
+
+    /// <summary>
+    /// Mirrors native <c>InterpreterFrame::SetContextToInterpMethodContextFrame</c> (frames.cpp).
+    /// </summary>
+    public void SetContextToInterpMethodContextFrame(
+        IPlatformAgnosticContext context,
+        Data.InterpreterFrame interpreterFrame)
+    {
+        TargetPointer topContextFramePtr = ResolveTopInterpMethodContextFrame(interpreterFrame);
+        if (topContextFramePtr == TargetPointer.Null)
+            return;
+
+        Data.InterpMethodContextFrame topContextFrame = _target.ProcessedData.GetOrAdd<Data.InterpMethodContextFrame>(topContextFramePtr);
+        context.InstructionPointer = new TargetPointer((ulong)topContextFrame.Ip);
+        context.StackPointer = topContextFramePtr;
+        context.FramePointer = topContextFrame.Stack;
+        SetFirstArgRegister(context, interpreterFrame.Address);
+
+        uint flags = context.FullContextFlags;
+        if (interpreterFrame.IsFaulting)
+            flags |= CONTEXT_EXCEPTION_ACTIVE;
+        context.RawContextFlags = flags;
+    }
+
+    /// <summary>
+    /// Mirrors native <c>VirtualUnwindInterpreterCallFrame</c> (eetwain.cpp).
+    /// Returns false when the interpreter chain is exhausted (either no parent, or the
+    /// parent has no active IP).
+    /// </summary>
+    public bool VirtualUnwindInterpreterCallFrame(IPlatformAgnosticContext context)
+    {
+        TargetPointer currentFramePtr = context.StackPointer;
+        Data.InterpMethodContextFrame currentFrame = _target.ProcessedData.GetOrAdd<Data.InterpMethodContextFrame>(currentFramePtr);
+
+        if (currentFrame.ParentPtr == TargetPointer.Null)
+            return false;
+
+        Data.InterpMethodContextFrame parentFrame = _target.ProcessedData.GetOrAdd<Data.InterpMethodContextFrame>(currentFrame.ParentPtr);
+        if (parentFrame.Ip == TargetPointer.Null)
+            return false;
+
+        context.InstructionPointer = new TargetPointer((ulong)parentFrame.Ip);
+        context.StackPointer = currentFrame.ParentPtr;
+        context.FramePointer = parentFrame.Stack;
+        context.RawContextFlags = context.FullContextFlags;
+        return true;
+    }
+
+    private void SetFirstArgRegister(IPlatformAgnosticContext context, TargetPointer value)
+    {
+        string registerName = GetFirstArgRegisterName();
+        if (!context.TrySetRegister(registerName, new TargetNUInt(value.Value)))
+        {
+            throw new InvalidOperationException(
+                $"Failed to set first argument register '{registerName}' on the context.");
+        }
+    }
+
+    private string GetFirstArgRegisterName()
+    {
+        IRuntimeInfo runtimeInfo = _target.Contracts.RuntimeInfo;
+        return runtimeInfo.GetTargetArchitecture() switch
+        {
+            RuntimeInfoArchitecture.X64 =>
+                runtimeInfo.GetTargetOperatingSystem() == RuntimeInfoOperatingSystem.Windows ? "rcx" : "rdi",
+            RuntimeInfoArchitecture.Arm64 => "x0",
+            RuntimeInfoArchitecture.Arm => "r0",
+            RuntimeInfoArchitecture.X86 => "ecx",
+            RuntimeInfoArchitecture.LoongArch64 => "a0",
+            RuntimeInfoArchitecture.RiscV64 => "a0",
+            var arch => throw new NotSupportedException(
+                $"Unsupported architecture for first argument register: {arch}"),
+        };
     }
 }

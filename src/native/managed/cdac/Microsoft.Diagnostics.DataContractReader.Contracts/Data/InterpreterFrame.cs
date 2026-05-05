@@ -10,9 +10,13 @@ internal sealed class InterpreterFrame : IData<InterpreterFrame>
 
     public InterpreterFrame(Target target, TargetPointer address)
     {
+        Address = address;
         Target.TypeInfo type = target.GetTypeInfo(DataType.InterpreterFrame);
         TopInterpMethodContextFrame = target.ReadPointerField(address, type, nameof(TopInterpMethodContextFrame));
+        IsFaulting = target.ReadField<byte>(address, type, nameof(IsFaulting)) != 0;
     }
 
+    public TargetPointer Address { get; init; }
     public TargetPointer TopInterpMethodContextFrame { get; init; }
+    public bool IsFaulting { get; init; }
 }

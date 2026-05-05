@@ -300,7 +300,6 @@ public class PrecodeStubsTests
                 layout = targetTestHelpers.LayoutFields([
                     new(nameof(Data.InterpreterPrecodeData.Type), DataType.uint8),
                     new(nameof(Data.InterpreterPrecodeData.ByteCodeAddr), DataType.pointer),
-                    new("Target", DataType.pointer),
                 ]);
                 types[DataType.InterpreterPrecodeData] = new Target.TypeInfo()
                 {

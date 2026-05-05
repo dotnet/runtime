@@ -885,6 +885,7 @@ CDAC_TYPE_FIELD(InterpMethodContextFrame, T_POINTER, StartIp, offsetof(InterpMet
 CDAC_TYPE_FIELD(InterpMethodContextFrame, T_POINTER, ParentPtr, offsetof(InterpMethodContextFrame, pParent))
 CDAC_TYPE_FIELD(InterpMethodContextFrame, T_POINTER, Ip, offsetof(InterpMethodContextFrame, ip))
 CDAC_TYPE_FIELD(InterpMethodContextFrame, T_POINTER, NextPtr, offsetof(InterpMethodContextFrame, pNext))
+CDAC_TYPE_FIELD(InterpMethodContextFrame, T_POINTER, Stack, offsetof(InterpMethodContextFrame, pStack))
 CDAC_TYPE_END(InterpMethodContextFrame)
 #endif // FEATURE_INTERPRETER
 
@@ -1025,6 +1026,7 @@ CDAC_TYPE_END(FramedMethodFrame)
 CDAC_TYPE_BEGIN(InterpreterFrame)
 CDAC_TYPE_INDETERMINATE(InterpreterFrame)
 CDAC_TYPE_FIELD(InterpreterFrame, T_POINTER, TopInterpMethodContextFrame, cdac_data<InterpreterFrame>::TopInterpMethodContextFrame)
+CDAC_TYPE_FIELD(InterpreterFrame, T_BOOL, IsFaulting, cdac_data<InterpreterFrame>::IsFaulting)
 CDAC_TYPE_END(InterpreterFrame)
 #endif // FEATURE_INTERPRETER
 

@@ -150,7 +150,7 @@
 
     <MSBuild Projects="$(MSBuildProjectFile)"
              Targets="_GenerateDumpsForDebuggee"
-             Properties="DebuggeeName=%(_DebuggeeWithDumpTypes.Identity);_DebuggeeDumpTypes=%(_DebuggeeWithDumpTypes.DumpTypes);_DebuggeeR2RModes=%(_DebuggeeWithDumpTypes.R2RModes);_DebuggeeEnvVars=%(_DebuggeeWithDumpTypes.EnvironmentVariables)" />
+             Properties="DebuggeeName=%(_DebuggeeWithDumpTypes.Identity);_DebuggeeDumpTypes=%(_DebuggeeWithDumpTypes.DumpTypes);_DebuggeeR2RModes=%(_DebuggeeWithDumpTypes.R2RModes);_DebuggeeEnvVars=$([MSBuild]::Escape('%(_DebuggeeWithDumpTypes.EnvironmentVariables)'))" />
 
     <!-- Write dump-info.json into each version directory so tests can determine
          the OS/arch the dumps were generated on. -->
@@ -216,7 +216,7 @@
 
     <MSBuild Projects="$(MSBuildProjectFile)"
              Targets="_GenerateDumpsForDumpType"
-             Properties="DebuggeeName=$(DebuggeeName);_DumpTypeName=%(_DumpTypeItem.Identity);_DebuggeeR2RModes=$(_DebuggeeR2RModes);_DebuggeeEnvVars=$(_DebuggeeEnvVars)" />
+             Properties="DebuggeeName=$(DebuggeeName);_DumpTypeName=%(_DumpTypeItem.Identity);_DebuggeeR2RModes=$(_DebuggeeR2RModes);_DebuggeeEnvVars=$([MSBuild]::Escape('$(_DebuggeeEnvVars)'))" />
   </Target>
 
   <Target Name="_GenerateDumpsForDumpType">
@@ -236,7 +236,7 @@
 
     <MSBuild Projects="$(MSBuildProjectFile)"
              Targets="_GenerateDumpsForR2RMode"
-             Properties="DebuggeeName=$(DebuggeeName);_MiniDumpType=$(_MiniDumpType);_DumpTypeDirName=$(_DumpTypeDirName);_DumpTypeName=$(_DumpTypeName);_R2RModeName=%(_R2RModeItem.Identity);_DebuggeeEnvVars=$(_DebuggeeEnvVars)" />
+             Properties="DebuggeeName=$(DebuggeeName);_MiniDumpType=$(_MiniDumpType);_DumpTypeDirName=$(_DumpTypeDirName);_DumpTypeName=$(_DumpTypeName);_R2RModeName=%(_R2RModeItem.Identity);_DebuggeeEnvVars=$([MSBuild]::Escape('$(_DebuggeeEnvVars)'))" />
   </Target>
 
   <Target Name="_GenerateDumpsForR2RMode">
@@ -252,7 +252,7 @@
            Text="Invalid R2R mode '$(_R2RModeName)' specified for debuggee '$(DebuggeeName)'. Supported values: 'R2R', 'Jit'." />
     <MSBuild Projects="$(MSBuildProjectFile)"
              Targets="_GenerateSingleDump"
-             Properties="DebuggeeName=$(DebuggeeName);_MiniDumpType=$(_MiniDumpType);_DumpTypeDirName=$(_DumpTypeDirName);_DumpTypeName=$(_DumpTypeName);_R2RValue=$(_R2RValue);_R2RDirName=$(_R2RDirName);_DebuggeeEnvVars=$(_DebuggeeEnvVars);DumpRuntimeVersion=%(DumpRuntimeVersion.Identity)" />
+             Properties="DebuggeeName=$(DebuggeeName);_MiniDumpType=$(_MiniDumpType);_DumpTypeDirName=$(_DumpTypeDirName);_DumpTypeName=$(_DumpTypeName);_R2RValue=$(_R2RValue);_R2RDirName=$(_R2RDirName);_DebuggeeEnvVars=$([MSBuild]::Escape('$(_DebuggeeEnvVars)'));DumpRuntimeVersion=%(DumpRuntimeVersion.Identity)" />
   </Target>
 
   <Target Name="_GenerateSingleDump">
@@ -271,12 +271,12 @@
     <!-- Determine build/run strategy based on runtime version -->
     <MSBuild Projects="$(MSBuildProjectFile)"
              Targets="_GenerateLocalDump"
-             Properties="DebuggeeName=$(DebuggeeName);_MiniDumpType=$(_MiniDumpType);_DebuggeeDir=$(_DebuggeeDir);_DumpDir=$(_DumpDir);_DumpFile=$(_DumpFile);_R2RValue=$(_R2RValue);_DebuggeeEnvVars=$(_DebuggeeEnvVars)"
+             Properties="DebuggeeName=$(DebuggeeName);_MiniDumpType=$(_MiniDumpType);_DebuggeeDir=$(_DebuggeeDir);_DumpDir=$(_DumpDir);_DumpFile=$(_DumpFile);_R2RValue=$(_R2RValue);_DebuggeeEnvVars=$([MSBuild]::Escape('$(_DebuggeeEnvVars)'))"
              Condition="!Exists('$(_DumpFile)') AND '$(DumpRuntimeVersion)' == 'local'" />
 
     <MSBuild Projects="$(MSBuildProjectFile)"
              Targets="_GeneratePublishedDump"
-             Properties="DebuggeeName=$(DebuggeeName);DumpRuntimeVersion=$(DumpRuntimeVersion);_MiniDumpType=$(_MiniDumpType);_DebuggeeDir=$(_DebuggeeDir);_DumpDir=$(_DumpDir);_DumpFile=$(_DumpFile);_R2RValue=$(_R2RValue);_DebuggeeEnvVars=$(_DebuggeeEnvVars)"
+             Properties="DebuggeeName=$(DebuggeeName);DumpRuntimeVersion=$(DumpRuntimeVersion);_MiniDumpType=$(_MiniDumpType);_DebuggeeDir=$(_DebuggeeDir);_DumpDir=$(_DumpDir);_DumpFile=$(_DumpFile);_R2RValue=$(_R2RValue);_DebuggeeEnvVars=$([MSBuild]::Escape('$(_DebuggeeEnvVars)'))"
              Condition="!Exists('$(_DumpFile)') AND '$(DumpRuntimeVersion)' == 'net10.0' AND '$(_DumpTypeName)' != 'Heap'" />
 
     <Message Text="Dump created: $(_DumpFile)" Importance="high" Condition="Exists('$(_DumpFile)')" />
