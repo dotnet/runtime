@@ -37,7 +37,7 @@ namespace Microsoft.Extensions.Configuration
         private readonly List<IDisposable> _changeTokenRegistrations = new();
         private ConfigurationReloadToken _changeToken = new();
 
-        // Non-null when the builder opted into reference resolution via EnableReferenceResolution.
+        // Non-null when the builder opted into reference resolution via UseReferences.
         // Rebuilt on every source mutation (AddSource/ReloadSources) so it always reflects the
         // current provider set. Reads are unsynchronized; in-flight reads that observe a stale
         // engine still see a consistent (old) provider snapshot held by that engine.
@@ -182,12 +182,10 @@ namespace Microsoft.Extensions.Configuration
         private void SwapEngine()
         {
             ReferenceResolutionEngine? newEngine = null;
-            if (ReferenceResolutionConfigurationBuilderExtensions.HasAnyScanSource(_properties.Raw, _sources))
+            if (ReferenceResolutionConfigurationBuilderExtensions.IsEnabled(_properties))
             {
                 IReadOnlyList<IConfigurationProvider> providers = _providerManager.GetProvidersSnapshot();
-                Dictionary<IConfigurationProvider, ReferenceMode>? providerModes = ReferenceResolutionConfigurationBuilderExtensions
-                    .ResolveProviderModes(_properties.Raw, _sources, providers);
-                newEngine = new ReferenceResolutionEngine(providers, providerModes);
+                newEngine = new ReferenceResolutionEngine(providers);
             }
 
             ReferenceResolutionEngine? previous = Interlocked.Exchange(ref _engine, newEngine);
@@ -422,7 +420,7 @@ namespace Microsoft.Extensions.Configuration
             // does not penalize callers using slow-to-load sources (e.g. Azure App Configuration).
             private static bool IsReferenceResolutionProperty(string key)
             {
-                return key == ReferenceResolutionConfigurationBuilderExtensions.SourceModesPropertyName;
+                return key == ReferenceResolutionConfigurationBuilderExtensions.UseReferencesPropertyName;
             }
 
             public bool TryGetValue(string key, [NotNullWhen(true)] out object? value)

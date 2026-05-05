@@ -23,17 +23,9 @@ namespace Microsoft.Extensions.Configuration
             using ReferenceCountedProviders? reference = (root as ConfigurationManager)?.GetProvidersReference();
             IEnumerable<IConfigurationProvider> providers = reference?.Providers ?? root.Providers;
 
-            IEnumerable<string> keys = providers
+            IEnumerable<IConfigurationSection> children = providers
                 .Aggregate(Enumerable.Empty<string>(),
-                    (seed, source) => source.GetChildKeys(seed, path));
-
-            ReferenceResolutionEngine? engine = (root as ConfigurationRoot)?.Engine ?? (root as ConfigurationManager)?.Engine;
-            if (engine is not null)
-            {
-                keys = engine.GetChildKeys(keys, path);
-            }
-
-            IEnumerable<IConfigurationSection> children = keys
+                    (seed, source) => source.GetChildKeys(seed, path))
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .Select(key => root.GetSection(path == null ? key : path + ConfigurationPath.KeyDelimiter + key));
 

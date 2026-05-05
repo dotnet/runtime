@@ -10,7 +10,6 @@
 
   <ItemGroup>
     <Compile Include="$(LibrariesProjectRoot)Microsoft.Extensions.Configuration\tests\Common\ConfigurationProviderExtensions.cs" Link="Common\ConfigurationProviderExtensions.cs" />
-    <Compile Include="$(LibrariesProjectRoot)Microsoft.Extensions.Configuration\tests\ReferenceResolutionTestShims.cs" Link="ReferenceResolutionTestShims.cs" />
   </ItemGroup>
 
   <ItemGroup>

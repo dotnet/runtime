@@ -50,13 +50,9 @@ namespace Microsoft.Extensions.Configuration
                 providers.Add(source.Build(this));
             }
 
-            ReferenceResolutionEngine? engine = null;
-            if (ReferenceResolutionConfigurationBuilderExtensions.HasAnyScanSource(Properties, _sources))
-            {
-                Dictionary<IConfigurationProvider, ReferenceMode>? providerModes = ReferenceResolutionConfigurationBuilderExtensions
-                    .ResolveProviderModes(Properties, _sources, providers);
-                engine = new ReferenceResolutionEngine(providers, providerModes);
-            }
+            ReferenceResolutionEngine? engine = ReferenceResolutionConfigurationBuilderExtensions.IsEnabled(Properties)
+                ? new ReferenceResolutionEngine(providers)
+                : null;
             return new ConfigurationRoot(providers, engine);
         }
     }

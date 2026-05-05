@@ -7,188 +7,49 @@ using System.Collections.Generic;
 namespace Microsoft.Extensions.Configuration
 {
     /// <summary>
-    /// Provides extension methods for configuring how individual <see cref="IConfigurationSource"/>
-    /// instances participate in <c>ref(...)</c> / <c>format(...)</c> reference resolution
-    /// performed by the <see cref="IConfigurationRoot"/> built from the containing
-    /// <see cref="IConfigurationBuilder"/>.
+    /// Provides extension methods for opting an <see cref="IConfigurationBuilder"/> into
+    /// <c>ref(...)</c> reference resolution performed by the built <see cref="IConfigurationRoot"/>.
     /// </summary>
     /// <remarks>
-    /// Sources default to <see cref="ReferenceMode.Read"/>: they are valid substitution targets
-    /// for other sources but their own values are not scanned for references. Mark at least one
-    /// source with <see cref="ReferenceMode.Scan"/> to activate the reference-resolution engine.
+    /// When references are enabled, every value read through the root is inspected for a
+    /// top-level <c>ref(key1, key2, ...)</c> expression. The first listed key that resolves to
+    /// a non-null value supplies the result; resolution recurses on the resolved value.
+    /// Unresolved or malformed expressions are returned verbatim — the engine never throws.
     /// </remarks>
     public static class ReferenceResolutionConfigurationBuilderExtensions
     {
-        // Signal placed in IConfigurationBuilder.Properties that carries the per-source mode
-        // overrides. The value is a Dictionary<IConfigurationSource, ReferenceMode>
-        // (reference-equality keys); at Build time it is correlated with the produced providers
-        // so the engine can apply the correct mode per provider without wrapping them. Sources
-        // without an entry default to ReferenceMode.Read.
-        internal const string SourceModesPropertyName = "Microsoft.Extensions.Configuration.ReferenceResolution.SourceModes";
+        // Stored in IConfigurationBuilder.Properties as a boxed bool. Reading happens at Build
+        // time (or on each SwapEngine call for ConfigurationManager) so the flag may be toggled
+        // multiple times during builder configuration without affecting the providers themselves.
+        internal const string UseReferencesPropertyName = "Microsoft.Extensions.Configuration.UseReferences";
 
         /// <summary>
-        /// Sets the <see cref="ReferenceMode"/> for the most recently added source on the
-        /// builder.
+        /// Enables or disables <c>ref(...)</c> reference resolution for the configuration root
+        /// built from this <paramref name="builder"/>.
         /// </summary>
-        /// <param name="configurationBuilder">The <see cref="IConfigurationBuilder"/> whose last source should be configured.</param>
-        /// <param name="mode">The mode to apply to the source.</param>
-        /// <returns>The same <see cref="IConfigurationBuilder"/>.</returns>
-        /// <exception cref="InvalidOperationException">The builder has no sources to configure.</exception>
-        public static IConfigurationBuilder SetReferenceMode(this IConfigurationBuilder configurationBuilder, ReferenceMode mode)
+        /// <param name="builder">The <see cref="IConfigurationBuilder"/> to configure.</param>
+        /// <param name="enabled">
+        /// <see langword="true"/> to scan every provider's values for <c>ref(...)</c>
+        /// expressions; <see langword="false"/> to disable scanning. Defaults to <see langword="true"/>.
+        /// </param>
+        /// <returns>The same <paramref name="builder"/> instance so that calls can be chained.</returns>
+        public static IConfigurationBuilder UseReferences(this IConfigurationBuilder builder, bool enabled = true)
         {
-            ArgumentNullException.ThrowIfNull(configurationBuilder);
+            ArgumentNullException.ThrowIfNull(builder);
 
-            IList<IConfigurationSource> sources = configurationBuilder.Sources;
-            if (sources.Count == 0)
-            {
-                throw new InvalidOperationException(SR.ReferenceResolution_NoSourceToConfigure);
-            }
-
-            SetSourceMode(configurationBuilder, sources[sources.Count - 1], mode);
-            return configurationBuilder;
+            builder.Properties[UseReferencesPropertyName] = enabled;
+            return builder;
         }
 
-        /// <summary>
-        /// Sets the <see cref="ReferenceMode"/> for the specified source. Use this to configure
-        /// sources added by a host or other caller after they were registered.
-        /// </summary>
-        /// <param name="configurationBuilder">The <see cref="IConfigurationBuilder"/> containing the source.</param>
-        /// <param name="source">The source to configure. Must already be present in <see cref="IConfigurationBuilder.Sources"/>.</param>
-        /// <param name="mode">The mode to apply to the source.</param>
-        /// <returns>The same <see cref="IConfigurationBuilder"/>.</returns>
-        /// <exception cref="ArgumentException">The specified source is not present in the builder.</exception>
-        public static IConfigurationBuilder SetReferenceMode(this IConfigurationBuilder configurationBuilder, IConfigurationSource source, ReferenceMode mode)
+        // Reads the flag from a builder's Properties bag. Treats a missing entry, a non-bool
+        // entry, or an explicit `false` value as "disabled". Used by ConfigurationBuilder.Build
+        // and ConfigurationManager.SwapEngine to decide whether to attach the engine.
+        internal static bool IsEnabled(IDictionary<string, object> properties)
         {
-            ArgumentNullException.ThrowIfNull(configurationBuilder);
-            ArgumentNullException.ThrowIfNull(source);
-
-            if (!configurationBuilder.Sources.Contains(source))
-            {
-                throw new ArgumentException(SR.ReferenceResolution_SourceNotFound, nameof(source));
-            }
-
-            SetSourceMode(configurationBuilder, source, mode);
-            return configurationBuilder;
-        }
-
-        /// <summary>
-        /// Sets the <see cref="ReferenceMode"/> for a batch of sources. Each source must already
-        /// be present in <see cref="IConfigurationBuilder.Sources"/>; validation runs before any
-        /// change is applied, so the operation is atomic.
-        /// </summary>
-        /// <param name="configurationBuilder">The <see cref="IConfigurationBuilder"/> containing the sources.</param>
-        /// <param name="sources">The sources to configure. A <see langword="null"/> enumerable is treated as empty.</param>
-        /// <param name="mode">The mode to apply to every source in <paramref name="sources"/>.</param>
-        /// <returns>The same <see cref="IConfigurationBuilder"/>.</returns>
-        /// <exception cref="ArgumentException">A source in <paramref name="sources"/> is <see langword="null"/> or not present in the builder.</exception>
-        public static IConfigurationBuilder SetReferenceMode(this IConfigurationBuilder configurationBuilder, IEnumerable<IConfigurationSource> sources, ReferenceMode mode)
-        {
-            ArgumentNullException.ThrowIfNull(configurationBuilder);
-
-            if (sources is null)
-            {
-                return configurationBuilder;
-            }
-
-            // Materialize once and validate up-front so partial application is impossible.
-            var materialized = new List<IConfigurationSource>();
-            foreach (IConfigurationSource source in sources)
-            {
-                if (source is null)
-                {
-                    throw new ArgumentException(SR.ReferenceResolution_SourceNotFound, nameof(sources));
-                }
-                if (!configurationBuilder.Sources.Contains(source))
-                {
-                    throw new ArgumentException(SR.ReferenceResolution_SourceNotFound, nameof(sources));
-                }
-                materialized.Add(source);
-            }
-
-            foreach (IConfigurationSource source in materialized)
-            {
-                SetSourceMode(configurationBuilder, source, mode);
-            }
-
-            return configurationBuilder;
-        }
-
-        internal static Dictionary<IConfigurationSource, ReferenceMode>? TryGetSourceModes(IDictionary<string, object> properties)
-        {
-            if (properties is not null && properties.TryGetValue(SourceModesPropertyName, out object? raw))
-            {
-                return raw as Dictionary<IConfigurationSource, ReferenceMode>;
-            }
-
-            return null;
-        }
-
-        // Projects the per-source mode overrides onto the produced providers by positional
-        // correspondence. Sources and providers share order: ConfigurationBuilder.Build iterates
-        // sources to produce providers, and ConfigurationManager tracks source additions one-to-one
-        // with provider additions. Providers whose source has no override are omitted — callers
-        // treat a missing key as ReferenceMode.Scan. Mismatched counts return null.
-        internal static Dictionary<IConfigurationProvider, ReferenceMode>? ResolveProviderModes(
-            IDictionary<string, object> properties,
-            IList<IConfigurationSource> sources,
-            IReadOnlyList<IConfigurationProvider> providers)
-        {
-            Dictionary<IConfigurationSource, ReferenceMode>? overrides = TryGetSourceModes(properties);
-            if (overrides is null || overrides.Count == 0 || sources.Count != providers.Count)
-            {
-                return null;
-            }
-
-            Dictionary<IConfigurationProvider, ReferenceMode>? result = null;
-            for (int i = 0; i < sources.Count; i++)
-            {
-                if (overrides.TryGetValue(sources[i], out ReferenceMode mode))
-                {
-                    result ??= new Dictionary<IConfigurationProvider, ReferenceMode>();
-                    result[providers[i]] = mode;
-                }
-            }
-
-            return result;
-        }
-
-        // Checks whether at least one source is explicitly Scan. Sources without an override
-        // default to Read, which only makes them substitution targets for Scan sources — so
-        // the engine has no work unless at least one source opts into Scan. Used by the
-        // builder/manager to decide whether to attach the engine at Build time.
-        internal static bool HasAnyScanSource(IDictionary<string, object> properties, IList<IConfigurationSource> sources)
-        {
-            if (sources.Count == 0)
-            {
-                return false;
-            }
-
-            Dictionary<IConfigurationSource, ReferenceMode>? overrides = TryGetSourceModes(properties);
-            if (overrides is null || overrides.Count == 0)
-            {
-                return false;
-            }
-
-            foreach (ReferenceMode mode in overrides.Values)
-            {
-                if (mode == ReferenceMode.Scan)
-                {
-                    return true;
-                }
-            }
-
-            return false;
-        }
-
-        private static void SetSourceMode(IConfigurationBuilder configurationBuilder, IConfigurationSource source, ReferenceMode mode)
-        {
-            // Dictionary is written back to Properties whether newly created or not so that
-            // builders whose Properties dictionary reacts to writes (e.g., ConfigurationManager)
-            // trigger a rebuild of the engine with the new mode map.
-            Dictionary<IConfigurationSource, ReferenceMode> map = TryGetSourceModes(configurationBuilder.Properties)
-                ?? new Dictionary<IConfigurationSource, ReferenceMode>();
-            map[source] = mode;
-            configurationBuilder.Properties[SourceModesPropertyName] = map;
+            return properties is not null
+                && properties.TryGetValue(UseReferencesPropertyName, out object? raw)
+                && raw is bool flag
+                && flag;
         }
     }
 }
