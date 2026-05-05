@@ -691,7 +691,6 @@ namespace System.Runtime.CompilerServices
         }
 
         [UnmanagedCallersOnly]
-        [RequiresUnsafe]
         private static unsafe void InvokeFuncEval(FuncEvalInvokeArgs* pInvokeArgs, object* pResult, Exception* pException)
         {
             try
