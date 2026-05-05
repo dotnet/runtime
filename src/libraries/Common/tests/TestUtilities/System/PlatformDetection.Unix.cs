@@ -31,6 +31,7 @@ namespace System
         public static bool IsLinuxBionic => IsBionic();
         public static bool IsRedHatFamily => IsRedHatFamilyAndVersion();
         public static bool IsAzureLinux => IsDistroAndVersionOrHigher("azurelinux", 3);
+        public static bool IsAzureLinux4OrHigher => IsDistroAndVersionOrHigher("azurelinux", 4);
 
         public static bool IsMonoLinuxArm64 => IsMonoRuntime && IsLinux && IsArm64Process;
         public static bool IsNotMonoLinuxArm64 => !IsMonoLinuxArm64;
