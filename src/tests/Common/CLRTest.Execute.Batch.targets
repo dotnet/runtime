@@ -262,8 +262,38 @@ REM Local CoreShim requested - see MSBuild property 'CLRTestScriptLocalCoreShim'
 ECHO Copying '%CORE_ROOT%\CoreShim.dll'...
 COPY /y %CORE_ROOT%\CoreShim.dll .
       ]]></BatchCopyCoreShimLocalCmds>
-      <!-- Note that this overwrites CLRTestBatchPreCommands rather than adding to it. -->
-      <CLRTestBatchPreCommands Condition="'$(CLRTestKind)' == 'BuildAndRun' and '$(TargetArchitecture)' == 'wasm'"><![CDATA[
+      <CLRTestBatchPreCommands Condition="'$(CLRTestKind)' == 'BuildAndRun' and '$(TargetArchitecture)' == 'wasm' and '$(RuntimeFlavor)' == 'coreclr'"><![CDATA[
+$(CLRTestBatchPreCommands)
+IF NOT DEFINED RunWithNodeJS (
+    if defined RunCrossGen2 (
+      call :TakeLock
+    )
+
+    REM Build wasm app containing the test dll
+    IF DEFINED __TestDotNetCmd (
+        set __Command=%__TestDotNetCmd%
+    ) ELSE (
+        set __Command=dotnet
+    )
+
+    REM workaround msbuild issue - https://github.com/dotnet/runtime/issues/74328
+    set DOTNET_CLI_DO_NOT_USE_MSBUILD_SERVER=1
+
+    !__Command! msbuild %CORE_ROOT%\wasm-test-runner\WasmTestRunner.proj /p:NetCoreAppCurrent=$(NetCoreAppCurrent) /p:TestAssemblyFileName=$(MsBuildProjectName).dll /p:TestBinDir=%%CD%% $(CLRTestMSBuildArgs)
+    IF NOT "!ERRORLEVEL!"=="0" (
+        if defined RunCrossGen2 (
+          call :ReleaseLock
+        )
+        popd
+        Exit /b !ERRORLEVEL!
+    )
+
+    if defined RunCrossGen2 (
+      call :ReleaseLock
+    )
+)
+      ]]></CLRTestBatchPreCommands>
+      <CLRTestBatchPreCommands Condition="'$(CLRTestKind)' == 'BuildAndRun' and '$(TargetArchitecture)' == 'wasm' and '$(RuntimeFlavor)' != 'coreclr'"><![CDATA[
 IF NOT DEFINED RunWithNodeJS (
     REM Build wasm app containing the test dll
     IF DEFINED __TestDotNetCmd (
@@ -312,7 +342,50 @@ if defined RunCrossGen2 (
   call :ReleaseLock
 )
       ]]></BatchCLRTestLaunchCmds>
-      <BatchCLRTestLaunchCmds Condition="'$(CLRTestKind)' == 'BuildAndRun' And '$(TargetOS)' == 'browser'">
+      <BatchCLRTestLaunchCmds Condition="'$(CLRTestKind)' == 'BuildAndRun' And '$(TargetOS)' == 'browser' And '$(RuntimeFlavor)' == 'coreclr'">
+    <![CDATA[
+if defined RunCrossGen2 (
+  call :TakeLock
+)
+
+IF NOT DEFINED RunWithNodeJS (
+    ECHO V8 execution is not supported on Windows. Set RunWithNodeJS to use Node.
+    set CLRTestExitCode=1
+) ELSE (
+    if not defined __TestTimeout (
+      set __TestTimeout=300000
+    )
+
+    REM Convert Windows paths to Unix-style paths for Node.js
+    set "__CoreRootWin=%CORE_ROOT%"
+    set "__CoreRootUnix=%CORE_ROOT%"
+    set "__CoreRootUnix=!__CoreRootUnix:\=/!"
+    if "!__CoreRootUnix:~1,1!"==":" set "__CoreRootUnix=/!__CoreRootUnix:~3!"
+    
+    set "__ExePathUnix=!CD!\%ExePath%"
+    set "__ExePathUnix=!__ExePathUnix:\=/!"
+    if "!__ExePathUnix:~1,1!"==":" set "__ExePathUnix=/!__ExePathUnix:~3!"
+    
+    set "CORE_ROOT=!__CoreRootUnix!"
+    set "TestExclusionListPath=!__CoreRootUnix!/TestExclusionList.txt"
+    
+    ECHO Running with node
+    ECHO CORE_ROOT: !CORE_ROOT!
+    ECHO ExePath: !__ExePathUnix!
+    ECHO CLRTestExecutionArguments: %CLRTestExecutionArguments%
+    ECHO Timeout in ms: !__TestTimeout!
+    
+    set "__RunCmd=node --stack-size=8192 "!__CoreRootWin!\corerun.js" -c "!__CoreRootUnix!" "!__ExePathUnix!" %CLRTestExecutionArguments%"
+    ECHO Running: !__RunCmd!
+    call :RunWithTimeout !__TestTimeout!
+    set CLRTestExitCode=!ERRORLEVEL!
+)
+
+if defined RunCrossGen2 (
+  call :ReleaseLock
+)
+      ]]></BatchCLRTestLaunchCmds>
+      <BatchCLRTestLaunchCmds Condition="'$(CLRTestKind)' == 'BuildAndRun' And '$(TargetOS)' == 'browser' And '$(RuntimeFlavor)' != 'coreclr'">
     <![CDATA[
 IF NOT DEFINED RunWithNodeJS (
     ECHO V8 execution is not supported on Windows. Set RunWithNodeJS to use Node.

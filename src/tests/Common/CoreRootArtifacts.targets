@@ -63,7 +63,7 @@
       <RunTimeArtifactsIncludeFolders Include="IL/" TargetDir="IL/" />
 
       <!-- Used for Crossgen2 R2R tests -->
-      <RunTimeArtifactsIncludeFolders Include="crossgen2-published/" TargetDir="crossgen2/">
+      <RunTimeArtifactsIncludeFolders Condition="'$(CrossGen2HostArtifactsPath)' == ''" Include="crossgen2-published/" TargetDir="crossgen2/">
         <IncludeSubFolders>True</IncludeSubFolders>
       </RunTimeArtifactsIncludeFolders>
 
@@ -128,16 +128,24 @@
     </ItemGroup>
 
     <!-- Cross-architecture crossgen2 JIT libraries -->
-    <PropertyGroup>
+    <PropertyGroup Condition="'$(CrossGen2HostArtifactsPath)' == ''">
       <_Crossgen2Dir Condition="('$(TargetArchitecture)' != 'x64' and '$(BuildArchitecture)' == 'x64') or '$(EnableNativeSanitizers)' != ''">$(CoreCLRArtifactsPath)x64/crossgen2</_Crossgen2Dir>
     </PropertyGroup>
 
-    <ItemGroup Condition="'$(_Crossgen2Dir)' != ''">
+    <ItemGroup Condition="'$(_Crossgen2Dir)' != '' and '$(CrossGen2HostArtifactsPath)' == ''">
       <_CoreRootArtifactSource
           Include="
             $(_Crossgen2Dir)/$(LibPrefix)clrjit_*$(LibSuffix);
             $(_Crossgen2Dir)/$(LibPrefix)jitinterface_*$(LibSuffix);
             $(_Crossgen2Dir)/$(LibPrefix)Microsoft.DiaSymReader.Native.*$(LibSuffix)"
+          TargetDir="crossgen2/" />
+    </ItemGroup>
+
+    <!-- When CrossGen2HostArtifactsPath is specified (e.g., wasm targets needing a host crossgen2),
+         copy crossgen2 from the host coreclr build instead of from the target's CoreCLRArtifactsPath. -->
+    <ItemGroup Condition="'$(CrossGen2HostArtifactsPath)' != ''">
+      <_CoreRootArtifactSource
+          Include="$(CrossGen2HostArtifactsPath)/crossgen2-published/**/*"
           TargetDir="crossgen2/" />
     </ItemGroup>
 
