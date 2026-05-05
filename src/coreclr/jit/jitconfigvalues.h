@@ -708,7 +708,6 @@ CONFIG_INTEGER(JitObjectStackAllocationDumpConnGraph, "JitObjectStackAllocationD
 
 // Enable the late HIR auto-vectorizer.
 RELEASE_CONFIG_INTEGER(JitAutoVectorization, "JitAutoVectorization", 0)
-CONFIG_METHODSET(JitAutoVectorizationDump, "JitAutoVectorizationDump")
 
 RELEASE_CONFIG_INTEGER(JitEECallTimingInfo, "JitEECallTimingInfo", 0)
 

@@ -34,14 +34,14 @@ PhaseStatus AutoVectorizer::RunAnalyze()
         if (TryCreateLoopPlan(loop, &plan))
         {
             candidateCount++;
-            Dump("AutoVec: accepted loop " FMT_LP ", IV V%02u, VF=%u, vectorSize=%u\n", loop->GetIndex(),
-                 plan.IsPostIV ? plan.TripCountVar : plan.InductionVar, plan.VectorizationFactor,
-                 plan.VectorSizeBytes);
+            JITDUMP("accepted loop " FMT_LP ", IV V%02u, VF=%u, vectorSize=%u\n", loop->GetIndex(),
+                    plan.IsPostIV ? plan.TripCountVar : plan.InductionVar, plan.VectorizationFactor,
+                    plan.VectorSizeBytes);
             DumpSLPPlan(plan);
         }
     }
 
-    Dump("AutoVec: analysis found %u candidate loop%s\n", candidateCount, (candidateCount == 1) ? "" : "s");
+    JITDUMP("analysis found %u candidate loop%s\n", candidateCount, (candidateCount == 1) ? "" : "s");
     return PhaseStatus::MODIFIED_NOTHING;
 }
 
@@ -99,7 +99,7 @@ bool AutoVectorizer::IsSupportedCompilation() const
 {
     if (m_compiler->opts.MinOpts() || m_compiler->opts.compDbgCode)
     {
-        Dump("AutoVec: disabled for MinOpts/debuggable code\n");
+        JITDUMP("disabled for MinOpts/debuggable code\n");
         return false;
     }
 
@@ -107,13 +107,13 @@ bool AutoVectorizer::IsSupportedCompilation() const
     const unsigned vectorSizeBytes = GetVectorSizeBytes(TYP_INT);
     if (vectorSizeBytes < 16)
     {
-        Dump("AutoVec: target vector size %u is too small\n", vectorSizeBytes);
+        JITDUMP("target vector size %u is too small\n", vectorSizeBytes);
         return false;
     }
 
     return true;
 #else
-    Dump("AutoVec: unsupported target\n");
+    JITDUMP("unsupported target\n");
     return false;
 #endif
 }
@@ -179,7 +179,7 @@ bool AutoVectorizer::EnsureLoopTable()
 
     if (m_compiler->m_loops->NumLoops() == 0)
     {
-        Dump("AutoVec: no loops for rewrite\n");
+        JITDUMP("no loops for rewrite\n");
         return false;
     }
 
@@ -234,7 +234,7 @@ bool AutoVectorizer::IsSupportedBinaryOp(genTreeOps oper, var_types elementType)
 
 bool AutoVectorizer::TryCreateLoopPlan(FlowGraphNaturalLoop* loop, LoopVectorizationPlan* plan)
 {
-    Dump("AutoVec: considering loop " FMT_LP "\n", loop->GetIndex());
+    JITDUMP("considering loop " FMT_LP "\n", loop->GetIndex());
 
     if (loop->EntryEdges().size() != 1)
     {
@@ -293,6 +293,13 @@ bool AutoVectorizer::TryCreateLoopPlan(FlowGraphNaturalLoop* loop, LoopVectoriza
         return false;
     }
 
+    LoopVectorizationPlan postIVPlan;
+    if (TryCreatePostIVLoopPlan(loop, &postIVPlan))
+    {
+        *plan = postIVPlan;
+        return true;
+    }
+
     NaturalLoopIterInfo iterInfo;
     if (!loop->AnalyzeIteration(&iterInfo))
     {
@@ -300,10 +307,10 @@ bool AutoVectorizer::TryCreateLoopPlan(FlowGraphNaturalLoop* loop, LoopVectoriza
             (iterInfo.TestBlock == nullptr) ||
             (!iterInfo.HasConstLimit && !iterInfo.HasArrayLengthLimit && !iterInfo.HasInvariantLocalLimit))
         {
-            return TryCreatePostIVLoopPlan(loop, plan);
+            return false;
         }
 
-        Dump("AutoVec: loop " FMT_LP " has guarded canonical iteration\n", loop->GetIndex());
+        JITDUMP("loop " FMT_LP " has guarded canonical iteration\n", loop->GetIndex());
     }
 
     if (!iterInfo.HasConstInit || (iterInfo.ConstInitValue < 0))
@@ -319,8 +326,11 @@ bool AutoVectorizer::TryCreateLoopPlan(FlowGraphNaturalLoop* loop, LoopVectoriza
     }
 
     const genTreeOps testOper = iterInfo.TestOper();
-    const bool        isSupportedIncreasingLoop =
-        iterInfo.IsIncreasingLoop() || ((testOper == GT_NE) && (step == 1) && iterInfo.HasArrayLengthLimit);
+    const bool       isSupportedNotEqualLoop =
+        (testOper == GT_NE) && (step == 1) &&
+        (iterInfo.HasArrayLengthLimit || iterInfo.HasInvariantLocalLimit ||
+         (iterInfo.HasConstLimit && (iterInfo.ConstLimit() > iterInfo.ConstInitValue)));
+    const bool isSupportedIncreasingLoop = iterInfo.IsIncreasingLoop() || isSupportedNotEqualLoop;
 
     if ((step != 1) || !isSupportedIncreasingLoop)
     {
@@ -328,8 +338,7 @@ bool AutoVectorizer::TryCreateLoopPlan(FlowGraphNaturalLoop* loop, LoopVectoriza
         return false;
     }
 
-    if (!GenTree::StaticOperIs(testOper, GT_LT, GT_LE) &&
-        !((testOper == GT_NE) && iterInfo.HasArrayLengthLimit))
+    if (!GenTree::StaticOperIs(testOper, GT_LT, GT_LE) && !isSupportedNotEqualLoop)
     {
         Reject(loop, "unsupported loop test");
         return false;
@@ -356,8 +365,8 @@ bool AutoVectorizer::TryCreateLoopPlan(FlowGraphNaturalLoop* loop, LoopVectoriza
     plan->ElementType  = TYP_UNDEF;
     plan->ElementSize  = 0;
 
-    Dump("AutoVec: loop " FMT_LP " canonical IV V%02u, init=%d, step=1, test=%s\n", loop->GetIndex(),
-         iterInfo.IterVar, iterInfo.ConstInitValue, GenTree::OpName(testOper));
+    JITDUMP("loop " FMT_LP " canonical IV V%02u, init=%d, step=1, test=%s\n", loop->GetIndex(), iterInfo.IterVar,
+            iterInfo.ConstInitValue, GenTree::OpName(testOper));
 
     if (!TryAnalyzeMemory(plan))
     {
@@ -445,21 +454,21 @@ bool AutoVectorizer::TryCreatePostIVLoopPlan(FlowGraphNaturalLoop* loop, LoopVec
     plan->TestBlock    = header;
     plan->TestOper     = testOper;
     plan->Step         = -1;
-    Dump("AutoVec: loop " FMT_LP " post-IV trip count V%02u\n", loop->GetIndex(), plan->TripCountVar);
+    JITDUMP("loop " FMT_LP " post-IV trip count V%02u\n", loop->GetIndex(), plan->TripCountVar);
     return TryAnalyzePostIVMemory(plan) && TryBuildSLPPlan(plan);
 }
 
 void AutoVectorizer::Reject(FlowGraphNaturalLoop* loop, const char* reason) const
 {
-    Dump("AutoVec: rejected loop " FMT_LP ": %s\n", loop->GetIndex(), reason);
+    JITDUMP("rejected loop " FMT_LP ": %s\n", loop->GetIndex(), reason);
 }
 
 bool AutoVectorizer::TryAnalyzeMemory(LoopVectorizationPlan* plan)
 {
-    bool     foundStore    = false;
-    bool     failed        = false;
-    unsigned valueTempVar  = BAD_VAR_NUM;
-    bool     foundValueTmp = false;
+    bool     foundStore     = false;
+    bool     failed         = false;
+    unsigned valueTempVar   = BAD_VAR_NUM;
+    bool     foundValueTmp  = false;
     bool     sawBoundsCheck = false;
 
     auto analyzeValue = [&](Statement* stmt, GenTree* value) -> bool {
@@ -470,9 +479,9 @@ bool AutoVectorizer::TryAnalyzeMemory(LoopVectorizationPlan* plan)
             return false;
         }
 
-        GenTreeOp* const binOp = value->AsOp();
-        GenTree*         load = nullptr;
-        GenTree*         scalar = nullptr;
+        GenTreeOp* const binOp       = value->AsOp();
+        GenTree*         load        = nullptr;
+        GenTree*         scalar      = nullptr;
         bool             scalarIsRhs = true;
 
         GenTree* op1 = UnwrapCommaValue(binOp->gtOp1);
@@ -494,7 +503,7 @@ bool AutoVectorizer::TryAnalyzeMemory(LoopVectorizationPlan* plan)
             return false;
         }
 
-        if (!TryAnalyzeArrayAccess(plan->Loop, stmt, load, false, plan->InductionVar, &plan->LoadAccess))
+        if (!TryAnalyzeArrayAccess(plan, stmt, load, false, plan->InductionVar, &plan->LoadAccess))
         {
             Reject(plan->Loop, "unsupported load access");
             return false;
@@ -520,10 +529,19 @@ bool AutoVectorizer::TryAnalyzeMemory(LoopVectorizationPlan* plan)
         return true;
     };
 
+    for (BasicBlock* block = plan->Preheader; block != nullptr; block = block->GetUniquePred(m_compiler))
+    {
+        for (Statement* const stmt : block->Statements())
+        {
+            RecordLocalDefs(plan, stmt->GetRootNode());
+        }
+    }
+
     plan->Loop->VisitLoopBlocks([&](BasicBlock* block) {
         for (Statement* const stmt : block->Statements())
         {
             GenTree* const root = stmt->GetRootNode();
+            RecordLocalDefs(plan, root);
 
             if (root == plan->IterTree)
             {
@@ -576,7 +594,7 @@ bool AutoVectorizer::TryAnalyzeMemory(LoopVectorizationPlan* plan)
             sawBoundsCheck |= ContainsOper(root, GT_BOUNDS_CHECK);
 
             GenTreeStoreInd* const store = root->AsStoreInd();
-            if (!TryAnalyzeArrayAccess(plan->Loop, stmt, store, true, plan->InductionVar, &plan->StoreAccess))
+            if (!TryAnalyzeArrayAccess(plan, stmt, store, true, plan->InductionVar, &plan->StoreAccess))
             {
                 failed = true;
                 Reject(plan->Loop, "unsupported store access");
@@ -600,7 +618,8 @@ bool AutoVectorizer::TryAnalyzeMemory(LoopVectorizationPlan* plan)
             }
 
             if ((plan->StoreAccess.ElementType != plan->LoadAccess.ElementType) &&
-                (!varTypeIsIntegral(plan->StoreAccess.ElementType) || !varTypeIsIntegral(plan->LoadAccess.ElementType) ||
+                (!varTypeIsIntegral(plan->StoreAccess.ElementType) ||
+                 !varTypeIsIntegral(plan->LoadAccess.ElementType) ||
                  (plan->StoreAccess.ElementSize != plan->LoadAccess.ElementSize)))
             {
                 failed = true;
@@ -612,7 +631,7 @@ bool AutoVectorizer::TryAnalyzeMemory(LoopVectorizationPlan* plan)
             {
                 unsigned lengthLcl = BAD_VAR_NUM;
                 int      endOffset = 0;
-                if (!TryGetArrayLengthLimitLocal(plan->End, &lengthLcl, &endOffset) ||
+                if (!TryGetArrayLengthLimitLocal(plan, plan->End, &lengthLcl, &endOffset) ||
                     (lengthLcl != plan->StoreAccess.BaseLocalIfKnown) ||
                     (lengthLcl != plan->LoadAccess.BaseLocalIfKnown) ||
                     ((plan->TestOper == GT_LE) ? (endOffset > -1) : (endOffset > 0)))
@@ -637,10 +656,10 @@ bool AutoVectorizer::TryAnalyzeMemory(LoopVectorizationPlan* plan)
                 return BasicBlockVisit::Abort;
             }
 
-            plan->StoreStmt          = stmt;
-            plan->ElementType        = plan->LoadAccess.ElementType;
-            plan->ElementSize        = plan->LoadAccess.ElementSize;
-            foundStore               = true;
+            plan->StoreStmt   = stmt;
+            plan->ElementType = plan->LoadAccess.ElementType;
+            plan->ElementSize = plan->LoadAccess.ElementSize;
+            foundStore        = true;
         }
 
         return BasicBlockVisit::Continue;
@@ -657,9 +676,8 @@ bool AutoVectorizer::TryAnalyzeMemory(LoopVectorizationPlan* plan)
         return false;
     }
 
-    Dump("AutoVec: found %s[] store/load base V%02u, offset %d\n", varTypeName(plan->ElementType),
-         plan->StoreAccess.BaseLocalIfKnown,
-         plan->StoreAccess.IndexOffset);
+    JITDUMP("found %s[] store/load base V%02u, offset %d\n", varTypeName(plan->ElementType),
+            plan->StoreAccess.BaseLocalIfKnown, plan->StoreAccess.IndexOffset);
     return true;
 }
 
@@ -667,7 +685,7 @@ bool AutoVectorizer::TryAnalyzePostIVMemory(LoopVectorizationPlan* plan)
 {
     assert(plan->IsPostIV);
 
-    BasicBlock* const block = plan->Header;
+    BasicBlock* const block                = plan->Header;
     unsigned          tempVar              = BAD_VAR_NUM;
     bool              foundTempStore       = false;
     bool              foundStore           = false;
@@ -714,19 +732,21 @@ bool AutoVectorizer::TryAnalyzePostIVMemory(LoopVectorizationPlan* plan)
                 return false;
             }
 
-            if ((plan->ElementType != TYP_UNDEF) && (plan->ElementType != plan->StoreAccess.ElementType))
+            if ((plan->ElementType != TYP_UNDEF) && (plan->ElementType != plan->StoreAccess.ElementType) &&
+                (!varTypeIsIntegral(plan->ElementType) || !varTypeIsIntegral(plan->StoreAccess.ElementType) ||
+                 (plan->ElementSize != plan->StoreAccess.ElementSize)))
             {
                 Reject(plan->Loop, "post-IV store element type mismatch");
                 return false;
             }
 
-            plan->ElementType = plan->StoreAccess.ElementType;
+            plan->ElementType = (plan->ElementType == TYP_UNDEF) ? plan->StoreAccess.ElementType : plan->ElementType;
             plan->ElementSize = genTypeSize(plan->ElementType);
 
-            plan->StoreStmt                    = stmt;
-            plan->StoreAccess.ElementSize      = plan->ElementSize;
-            plan->StoreAccess.ElementType      = plan->ElementType;
-            plan->StoreAccess.IsStore          = true;
+            plan->StoreStmt               = stmt;
+            plan->StoreAccess.ElementSize = plan->ElementSize;
+            plan->StoreAccess.ElementType = plan->ElementType;
+            plan->StoreAccess.IsStore     = true;
 
             GenTree* const storeData = UnwrapCommaValue(store->Data());
             if (storeData->OperIs(GT_LCL_VAR))
@@ -851,9 +871,9 @@ bool AutoVectorizer::TryAnalyzePostIVMemory(LoopVectorizationPlan* plan)
         return false;
     }
 
-    bool foundAddressInit = false;
+    bool foundAddressInit     = false;
     bool foundLoadAddressInit = false;
-    bool foundTripCountInit = false;
+    bool foundTripCountInit   = false;
     for (Statement* const stmt : plan->Preheader->Statements())
     {
         GenTree* const root = stmt->GetRootNode();
@@ -874,9 +894,8 @@ bool AutoVectorizer::TryAnalyzePostIVMemory(LoopVectorizationPlan* plan)
         return false;
     }
 
-    Dump("AutoVec: found post-IV %s byref loop store V%02u, load V%02u, trip count V%02u\n",
-         varTypeName(plan->ElementType), plan->StoreAccess.BaseLocalIfKnown, plan->LoadAccess.BaseLocalIfKnown,
-         plan->TripCountVar);
+    JITDUMP("found post-IV %s byref loop store V%02u, load V%02u, trip count V%02u\n", varTypeName(plan->ElementType),
+            plan->StoreAccess.BaseLocalIfKnown, plan->LoadAccess.BaseLocalIfKnown, plan->TripCountVar);
     return true;
 }
 
@@ -892,10 +911,10 @@ bool AutoVectorizer::TryAnalyzePostIVValue(Statement* stmt, GenTree* data, LoopV
         return false;
     }
 
-    GenTree*  load        = nullptr;
-    GenTree*  scalar      = nullptr;
-    bool      scalarIsRhs = true;
-    genTreeOps oper       = data->OperGet();
+    GenTree*   load        = nullptr;
+    GenTree*   scalar      = nullptr;
+    bool       scalarIsRhs = true;
+    genTreeOps oper        = data->OperGet();
 
     GenTree* op1 = UnwrapCommaValue(data->AsOp()->gtOp1);
     GenTree* op2 = UnwrapCommaValue(data->AsOp()->gtOp2);
@@ -1039,8 +1058,8 @@ bool AutoVectorizer::TryBuildSLPPlan(LoopVectorizationPlan* plan)
     load->Lanes[0] = plan->LoadAccess.Address;
     load->Cost     = 1;
 
-    const PackKind splatKind = plan->ScalarOperand->IsCnsIntOrI() ? PackKind::SplatConstant : PackKind::SplatScalar;
-    PackNode* const splat = NewPackNode(slpPlan, splatKind, plan->ElementType, plan->VectorizationFactor);
+    const PackKind  splatKind = plan->ScalarOperand->IsCnsIntOrI() ? PackKind::SplatConstant : PackKind::SplatScalar;
+    PackNode* const splat     = NewPackNode(slpPlan, splatKind, plan->ElementType, plan->VectorizationFactor);
     if (splat == nullptr)
     {
         Reject(plan->Loop, "SLP node budget exceeded");
@@ -1060,7 +1079,8 @@ bool AutoVectorizer::TryBuildSLPPlan(LoopVectorizationPlan* plan)
     add->Operands[1] = plan->ScalarOperandIsRhs ? splat : load;
     add->Cost        = 1;
 
-    PackNode* const store = NewPackNode(slpPlan, PackKind::StoreContiguous, plan->ElementType, plan->VectorizationFactor);
+    PackNode* const store =
+        NewPackNode(slpPlan, PackKind::StoreContiguous, plan->ElementType, plan->VectorizationFactor);
     if (store == nullptr)
     {
         Reject(plan->Loop, "SLP node budget exceeded");
@@ -1070,13 +1090,13 @@ bool AutoVectorizer::TryBuildSLPPlan(LoopVectorizationPlan* plan)
     store->Operands[0] = add;
     store->Cost        = 1;
 
-    slpPlan->Root                = store;
-    slpPlan->EstimatedScalarCost = plan->VectorizationFactor * 3;
-    slpPlan->EstimatedVectorCost = load->Cost + splat->Cost + add->Cost + store->Cost;
+    slpPlan->Root                   = store;
+    slpPlan->EstimatedScalarCost    = plan->VectorizationFactor * 3;
+    slpPlan->EstimatedVectorCost    = load->Cost + splat->Cost + add->Cost + store->Cost;
     slpPlan->EstimatedCodeSizeDelta = 12;
 
-    Dump("AutoVec: SLP accepted, estimated scalar=%u, vector=%u, codeSizeDelta=%u\n",
-         slpPlan->EstimatedScalarCost, slpPlan->EstimatedVectorCost, slpPlan->EstimatedCodeSizeDelta);
+    JITDUMP("SLP accepted, estimated scalar=%u, vector=%u, codeSizeDelta=%u\n", slpPlan->EstimatedScalarCost,
+            slpPlan->EstimatedVectorCost, slpPlan->EstimatedCodeSizeDelta);
     return true;
 }
 
@@ -1095,21 +1115,22 @@ bool AutoVectorizer::TryRewritePlan(LoopVectorizationPlan* plan)
         return false;
     }
 
-    const bool needsOverlapCheck =
-        plan->IsPostIV && (plan->LoadAccess.IsByrefLocal || plan->LoadAccess.IsByrefBaseWithOffset) &&
-        (plan->StoreAccess.IsByrefLocal || plan->StoreAccess.IsByrefBaseWithOffset) &&
-        ((plan->LoadAccess.BaseLocalIfKnown != plan->StoreAccess.BaseLocalIfKnown) ||
-         (plan->LoadAccess.OffsetLocalIfKnown != plan->StoreAccess.OffsetLocalIfKnown));
+    const bool needsOverlapCheck = plan->IsPostIV &&
+                                   (plan->LoadAccess.IsByrefLocal || plan->LoadAccess.IsByrefBaseWithOffset) &&
+                                   (plan->StoreAccess.IsByrefLocal || plan->StoreAccess.IsByrefBaseWithOffset) &&
+                                   ((plan->LoadAccess.BaseLocalIfKnown != plan->StoreAccess.BaseLocalIfKnown) ||
+                                    (plan->LoadAccess.OffsetLocalIfKnown != plan->StoreAccess.OffsetLocalIfKnown));
 
-    BasicBlock* const scalarGuard = plan->IsPostIV ? m_compiler->fgNewBBbefore(BBJ_COND, plan->Header, false) : nullptr;
+    BasicBlock* const scalarGuard = m_compiler->fgNewBBbefore(BBJ_COND, plan->Header, false);
     BasicBlock* const loadBeforeCheck =
         needsOverlapCheck ? m_compiler->fgNewBBbefore(BBJ_COND, scalarGuard, false) : nullptr;
     BasicBlock* const storeBeforeCheck =
         needsOverlapCheck ? m_compiler->fgNewBBbefore(BBJ_COND, loadBeforeCheck, false) : nullptr;
     BasicBlock* const sameStartCheck =
         needsOverlapCheck ? m_compiler->fgNewBBbefore(BBJ_COND, storeBeforeCheck, false) : nullptr;
-    BasicBlock* const vectorCheck = m_compiler->fgNewBBbefore(BBJ_COND, needsOverlapCheck ? sameStartCheck : plan->Header, false);
-    BasicBlock* const vectorBody  = m_compiler->fgNewBBbefore(BBJ_ALWAYS, vectorCheck, false);
+    BasicBlock* const vectorCheck =
+        m_compiler->fgNewBBbefore(BBJ_COND, needsOverlapCheck ? sameStartCheck : scalarGuard, false);
+    BasicBlock* const vectorBody = m_compiler->fgNewBBbefore(BBJ_ALWAYS, vectorCheck, false);
 
     vectorCheck->clearTryIndex();
     vectorCheck->clearHndIndex();
@@ -1124,19 +1145,13 @@ bool AutoVectorizer::TryRewritePlan(LoopVectorizationPlan* plan)
         loadBeforeCheck->clearTryIndex();
         loadBeforeCheck->clearHndIndex();
     }
-    if (scalarGuard != nullptr)
-    {
-        scalarGuard->clearTryIndex();
-        scalarGuard->clearHndIndex();
-    }
+    scalarGuard->clearTryIndex();
+    scalarGuard->clearHndIndex();
 
     vectorCheck->inheritWeight(plan->Preheader);
     vectorBody->inheritWeight(plan->Header);
     vectorBody->scaleBBWeight(1.0 / static_cast<weight_t>(plan->VectorizationFactor));
-    if (scalarGuard != nullptr)
-    {
-        scalarGuard->inheritWeightPercentage(plan->Header, 25);
-    }
+    scalarGuard->inheritWeightPercentage(plan->Header, 25);
     if (sameStartCheck != nullptr)
     {
         sameStartCheck->inheritWeightPercentage(plan->Header, 25);
@@ -1144,12 +1159,18 @@ bool AutoVectorizer::TryRewritePlan(LoopVectorizationPlan* plan)
         loadBeforeCheck->inheritWeightPercentage(plan->Header, 25);
     }
 
-    GenTree* const vectorTest = BuildVectorLoopTest(plan);
-    Statement* const testStmt = m_compiler->fgNewStmtAtEnd(vectorCheck, vectorTest);
+    GenTree* const   vectorTest = BuildVectorLoopTest(plan);
+    Statement* const testStmt   = m_compiler->fgNewStmtAtEnd(vectorCheck, vectorTest);
     m_compiler->gtSetStmtInfo(testStmt);
     m_compiler->fgSetStmtSeq(testStmt);
 
+    JITDUMP("scalar store selected for rewrite:\n");
+    JITDUMPEXEC(m_compiler->gtDispStmt(plan->StoreStmt));
+
     GenTree* const vectorStore = BuildVectorStore(plan);
+    JITDUMP("generated vector store tree:\n");
+    JITDUMPEXEC(m_compiler->gtDispTree(vectorStore));
+
     Statement* const storeStmt = m_compiler->fgNewStmtAtEnd(vectorBody, vectorStore);
     m_compiler->gtSetStmtInfo(storeStmt);
     m_compiler->fgSetStmtSeq(storeStmt);
@@ -1179,26 +1200,24 @@ bool AutoVectorizer::TryRewritePlan(LoopVectorizationPlan* plan)
                                        BuildTripCountUpdate(plan, -static_cast<int>(plan->VectorizationFactor)));
         m_compiler->gtSetStmtInfo(tripCountUpdateStmt);
         m_compiler->fgSetStmtSeq(tripCountUpdateStmt);
-
-        Statement* const scalarGuardStmt =
-            m_compiler->fgNewStmtAtEnd(scalarGuard, BuildScalarRemainderTest(plan));
-        m_compiler->gtSetStmtInfo(scalarGuardStmt);
-        m_compiler->fgSetStmtSeq(scalarGuardStmt);
     }
     else
     {
-        GenTree* const ivUpdate = BuildIVUpdate(plan);
-        Statement* const ivStmt = m_compiler->fgNewStmtAtEnd(vectorBody, ivUpdate);
+        GenTree* const   ivUpdate = BuildIVUpdate(plan);
+        Statement* const ivStmt   = m_compiler->fgNewStmtAtEnd(vectorBody, ivUpdate);
         m_compiler->gtSetStmtInfo(ivStmt);
         m_compiler->fgSetStmtSeq(ivStmt);
     }
+
+    Statement* const scalarGuardStmt = m_compiler->fgNewStmtAtEnd(scalarGuard, BuildScalarRemainderTest(plan));
+    m_compiler->gtSetStmtInfo(scalarGuardStmt);
+    m_compiler->fgSetStmtSeq(scalarGuardStmt);
 
     m_compiler->fgRedirectEdge(plan->Preheader->TargetEdgeRef(), vectorCheck);
 
     FlowEdge* const vectorCheckToVectorBody =
         m_compiler->fgAddRefPred(needsOverlapCheck ? sameStartCheck : vectorBody, vectorCheck);
-    FlowEdge* const vectorCheckToScalar     =
-        m_compiler->fgAddRefPred(plan->IsPostIV ? scalarGuard : plan->Header, vectorCheck);
+    FlowEdge* const vectorCheckToScalar = m_compiler->fgAddRefPred(scalarGuard, vectorCheck);
     vectorCheckToVectorBody->setLikelihood(0.9);
     vectorCheckToScalar->setLikelihood(0.1);
     vectorCheck->SetCond(vectorCheckToVectorBody, vectorCheckToScalar);
@@ -1242,17 +1261,14 @@ bool AutoVectorizer::TryRewritePlan(LoopVectorizationPlan* plan)
         loadBeforeCheck->SetCond(loadBeforeToVector, loadBeforeToScalar);
     }
 
-    if (scalarGuard != nullptr)
-    {
-        FlowEdge* const scalarGuardToExit   = m_compiler->fgAddRefPred(plan->Exit, scalarGuard);
-        FlowEdge* const scalarGuardToScalar = m_compiler->fgAddRefPred(plan->Header, scalarGuard);
-        scalarGuardToExit->setLikelihood(0.5);
-        scalarGuardToScalar->setLikelihood(0.5);
-        scalarGuard->SetCond(scalarGuardToExit, scalarGuardToScalar);
-    }
+    FlowEdge* const scalarGuardToExit   = m_compiler->fgAddRefPred(plan->Exit, scalarGuard);
+    FlowEdge* const scalarGuardToScalar = m_compiler->fgAddRefPred(plan->Header, scalarGuard);
+    scalarGuardToExit->setLikelihood(0.5);
+    scalarGuardToScalar->setLikelihood(0.5);
+    scalarGuard->SetCond(scalarGuardToExit, scalarGuardToScalar);
 
-    Dump("AutoVec: rewrote loop " FMT_LP " with %u-byte vectors and scalar epilogue\n", plan->Loop->GetIndex(),
-         plan->VectorSizeBytes);
+    JITDUMP("rewrote loop " FMT_LP " with %u-byte vectors and scalar epilogue\n", plan->Loop->GetIndex(),
+            plan->VectorSizeBytes);
     m_compiler->Metrics.LoopsVectorized++;
     return true;
 #else
@@ -1261,8 +1277,10 @@ bool AutoVectorizer::TryRewritePlan(LoopVectorizationPlan* plan)
 #endif
 }
 
-AutoVectorizer::PackNode* AutoVectorizer::NewPackNode(
-    SLPPlan* slpPlan, PackKind kind, var_types elementType, unsigned laneCount)
+AutoVectorizer::PackNode* AutoVectorizer::NewPackNode(SLPPlan*  slpPlan,
+                                                      PackKind  kind,
+                                                      var_types elementType,
+                                                      unsigned  laneCount)
 {
     if ((slpPlan->NodeCount >= MaxPackNodes) || (laneCount > MaxLanes))
     {
@@ -1298,45 +1316,41 @@ const char* AutoVectorizer::PackKindName(PackKind kind) const
 void AutoVectorizer::DumpSLPPlan(const LoopVectorizationPlan& plan) const
 {
 #ifdef DEBUG
-    if (!ShouldDump())
-    {
-        return;
-    }
-
     const SLPPlan& slpPlan = plan.BodyPlan;
-    printf("AutoVec: pack tree:\n");
+    JITDUMP("pack tree:\n");
     for (unsigned i = 0; i < slpPlan.NodeCount; i++)
     {
         const PackNode& node = slpPlan.Nodes[i];
-        printf("  N%02u %-17s lanes=%u elem=%s cost=%u", i, PackKindName(node.Kind), node.LaneCount,
-               varTypeName(node.ElementType), node.Cost);
+        JITDUMP("  N%02u %-17s lanes=%u elem=%s cost=%u", i, PackKindName(node.Kind), node.LaneCount,
+                varTypeName(node.ElementType), node.Cost);
 
         if (node.Kind == PackKind::BinaryOp)
         {
-            printf(" op=%s", GenTree::OpName(node.Oper));
+            JITDUMP(" op=%s", GenTree::OpName(node.Oper));
         }
 
         if (node.Operands[0] != nullptr)
         {
-            printf(" op0=N%02u", static_cast<unsigned>(node.Operands[0] - slpPlan.Nodes));
+            JITDUMP(" op0=N%02u", static_cast<unsigned>(node.Operands[0] - slpPlan.Nodes));
         }
 
         if (node.Operands[1] != nullptr)
         {
-            printf(" op1=N%02u", static_cast<unsigned>(node.Operands[1] - slpPlan.Nodes));
+            JITDUMP(" op1=N%02u", static_cast<unsigned>(node.Operands[1] - slpPlan.Nodes));
         }
 
-        printf("\n");
+        JITDUMP("\n");
     }
 #endif
 }
 
-GenTree* AutoVectorizer::BuildArrayAddress(LoopVectorizationPlan* plan, const LoopVectorizationPlan::ScalarAccess& access)
+GenTree* AutoVectorizer::BuildArrayAddress(LoopVectorizationPlan*                     plan,
+                                           const LoopVectorizationPlan::ScalarAccess& access)
 {
-    GenTreeArrAddr* const oldArrAddr = access.Address->AsArrAddr();
+    GenTreeArrAddr* const oldArrAddr  = access.Address->AsArrAddr();
     const unsigned        elemSize    = access.ElementSize;
     const unsigned        firstOffset = oldArrAddr->GetFirstElemOffset();
-    const unsigned        arrayLcl   = access.BaseLocalIfKnown;
+    const unsigned        arrayLcl    = access.BaseLocalIfKnown;
 
     LclVarDsc* const arrayDsc = m_compiler->lvaGetDesc(arrayLcl);
     GenTree* const   arrRef   = m_compiler->gtNewLclvNode(arrayLcl, arrayDsc->TypeGet());
@@ -1345,7 +1359,8 @@ GenTree* AutoVectorizer::BuildArrayAddress(LoopVectorizationPlan* plan, const Lo
 
     if (access.IndexOffset != 0)
     {
-        index = m_compiler->gtNewOperNode(GT_ADD, index->TypeGet(), index, m_compiler->gtNewIconNode(access.IndexOffset));
+        index =
+            m_compiler->gtNewOperNode(GT_ADD, index->TypeGet(), index, m_compiler->gtNewIconNode(access.IndexOffset));
     }
 
 #ifdef TARGET_64BIT
@@ -1365,7 +1380,8 @@ GenTree* AutoVectorizer::BuildArrayAddress(LoopVectorizationPlan* plan, const Lo
 
     if (firstOffset != 0)
     {
-        offset = m_compiler->gtNewOperNode(GT_ADD, TYP_I_IMPL, offset, m_compiler->gtNewIconNode(firstOffset, TYP_I_IMPL));
+        offset =
+            m_compiler->gtNewOperNode(GT_ADD, TYP_I_IMPL, offset, m_compiler->gtNewIconNode(firstOffset, TYP_I_IMPL));
     }
 
     const var_types arrPtrType = arrRef->TypeIs(TYP_I_IMPL) ? TYP_I_IMPL : TYP_BYREF;
@@ -1381,8 +1397,8 @@ GenTree* AutoVectorizer::BuildVectorLoopTest(LoopVectorizationPlan* plan)
     if (plan->IsPostIV)
     {
         GenTree* const tripCount = m_compiler->gtNewLclvNode(plan->TripCountVar, TYP_INT);
-        GenTree* const cmp = m_compiler->gtNewOperNode(GT_GE, TYP_INT, tripCount,
-                                                       m_compiler->gtNewIconNode(plan->VectorizationFactor));
+        GenTree* const cmp =
+            m_compiler->gtNewOperNode(GT_GE, TYP_INT, tripCount, m_compiler->gtNewIconNode(plan->VectorizationFactor));
         return m_compiler->gtNewOperNode(GT_JTRUE, TYP_VOID, cmp);
     }
 
@@ -1392,8 +1408,9 @@ GenTree* AutoVectorizer::BuildVectorLoopTest(LoopVectorizationPlan* plan)
     GenTree* lastLane = m_compiler->gtNewCastNode(TYP_LONG, iv, false, TYP_LONG);
     if (plan->VectorizationFactor > 1)
     {
-        lastLane = m_compiler->gtNewOperNode(
-            GT_ADD, TYP_LONG, lastLane, m_compiler->gtNewLconNode(static_cast<int64_t>(plan->VectorizationFactor - 1)));
+        lastLane =
+            m_compiler->gtNewOperNode(GT_ADD, TYP_LONG, lastLane,
+                                      m_compiler->gtNewLconNode(static_cast<int64_t>(plan->VectorizationFactor - 1)));
     }
 
     end = m_compiler->gtNewCastNode(TYP_LONG, end, false, TYP_LONG);
@@ -1405,32 +1422,36 @@ GenTree* AutoVectorizer::BuildVectorLoopTest(LoopVectorizationPlan* plan)
 
 GenTree* AutoVectorizer::BuildPostIVSameStartCheck(LoopVectorizationPlan* plan)
 {
-    GenTree* const cmp =
-        m_compiler->gtNewOperNode(GT_EQ, TYP_INT, BuildPostIVAddress(plan->StoreAccess), BuildPostIVAddress(plan->LoadAccess));
+    GenTree* const cmp = m_compiler->gtNewOperNode(GT_EQ, TYP_INT, BuildPostIVAddress(plan->StoreAccess),
+                                                   BuildPostIVAddress(plan->LoadAccess));
     return m_compiler->gtNewOperNode(GT_JTRUE, TYP_VOID, cmp);
 }
 
 GenTree* AutoVectorizer::BuildPostIVStoreBeforeLoadCheck(LoopVectorizationPlan* plan)
 {
-    GenTree* const byteCount = m_compiler->gtNewOperNode(
-        GT_MUL, TYP_I_IMPL,
-        m_compiler->gtNewCastNode(TYP_I_IMPL, m_compiler->gtNewLclvNode(plan->TripCountVar, TYP_INT), true,
-                                  TYP_I_IMPL),
-        m_compiler->gtNewIconNode(plan->ElementSize, TYP_I_IMPL));
-    GenTree* const storeEnd = m_compiler->gtNewOperNode(GT_ADD, TYP_BYREF, BuildPostIVAddress(plan->StoreAccess), byteCount);
-    GenTree* const cmp      = m_compiler->gtNewOperNode(GT_LE, TYP_INT, storeEnd, BuildPostIVAddress(plan->LoadAccess));
+    GenTree* const byteCount =
+        m_compiler->gtNewOperNode(GT_MUL, TYP_I_IMPL,
+                                  m_compiler->gtNewCastNode(TYP_I_IMPL,
+                                                            m_compiler->gtNewLclvNode(plan->TripCountVar, TYP_INT),
+                                                            true, TYP_I_IMPL),
+                                  m_compiler->gtNewIconNode(plan->ElementSize, TYP_I_IMPL));
+    GenTree* const storeEnd =
+        m_compiler->gtNewOperNode(GT_ADD, TYP_BYREF, BuildPostIVAddress(plan->StoreAccess), byteCount);
+    GenTree* const cmp = m_compiler->gtNewOperNode(GT_LE, TYP_INT, storeEnd, BuildPostIVAddress(plan->LoadAccess));
     return m_compiler->gtNewOperNode(GT_JTRUE, TYP_VOID, cmp);
 }
 
 GenTree* AutoVectorizer::BuildPostIVLoadBeforeStoreCheck(LoopVectorizationPlan* plan)
 {
-    GenTree* const byteCount = m_compiler->gtNewOperNode(
-        GT_MUL, TYP_I_IMPL,
-        m_compiler->gtNewCastNode(TYP_I_IMPL, m_compiler->gtNewLclvNode(plan->TripCountVar, TYP_INT), true,
-                                  TYP_I_IMPL),
-        m_compiler->gtNewIconNode(plan->ElementSize, TYP_I_IMPL));
-    GenTree* const loadEnd = m_compiler->gtNewOperNode(GT_ADD, TYP_BYREF, BuildPostIVAddress(plan->LoadAccess), byteCount);
-    GenTree* const cmp     = m_compiler->gtNewOperNode(GT_LE, TYP_INT, loadEnd, BuildPostIVAddress(plan->StoreAccess));
+    GenTree* const byteCount =
+        m_compiler->gtNewOperNode(GT_MUL, TYP_I_IMPL,
+                                  m_compiler->gtNewCastNode(TYP_I_IMPL,
+                                                            m_compiler->gtNewLclvNode(plan->TripCountVar, TYP_INT),
+                                                            true, TYP_I_IMPL),
+                                  m_compiler->gtNewIconNode(plan->ElementSize, TYP_I_IMPL));
+    GenTree* const loadEnd =
+        m_compiler->gtNewOperNode(GT_ADD, TYP_BYREF, BuildPostIVAddress(plan->LoadAccess), byteCount);
+    GenTree* const cmp = m_compiler->gtNewOperNode(GT_LE, TYP_INT, loadEnd, BuildPostIVAddress(plan->StoreAccess));
     return m_compiler->gtNewOperNode(GT_JTRUE, TYP_VOID, cmp);
 }
 
@@ -1466,18 +1487,18 @@ GenTree* AutoVectorizer::BuildPostIVAddress(const LoopVectorizationPlan::ScalarA
 GenTree* AutoVectorizer::BuildVectorStore(LoopVectorizationPlan* plan)
 {
 #if defined(FEATURE_HW_INTRINSICS) && (defined(TARGET_XARCH) || defined(TARGET_ARM64))
-    const unsigned simdSize = plan->VectorSizeBytes;
+    const unsigned  simdSize = plan->VectorSizeBytes;
     const var_types simdType = Compiler::getSIMDTypeForSize(simdSize);
 
-    GenTree* const loadAddress  = plan->IsPostIV ? BuildPostIVAddress(plan->LoadAccess)
-                                                  : BuildArrayAddress(plan, plan->LoadAccess);
-    GenTree* const storeAddress = plan->IsPostIV ? BuildPostIVAddress(plan->StoreAccess)
-                                                  : BuildArrayAddress(plan, plan->StoreAccess);
-    GenTree* const vectorLoad   = m_compiler->gtNewSimdLoadNode(simdType, loadAddress, plan->ElementType, simdSize);
-    GenTree* const scalar       = m_compiler->gtCloneExpr(plan->ScalarOperand);
-    GenTree* const splat        = m_compiler->gtNewSimdCreateBroadcastNode(simdType, scalar, plan->ElementType, simdSize);
-    GenTree* const op1          = plan->ScalarOperandIsRhs ? vectorLoad : splat;
-    GenTree* const op2          = plan->ScalarOperandIsRhs ? splat : vectorLoad;
+    GenTree* const loadAddress =
+        plan->IsPostIV ? BuildPostIVAddress(plan->LoadAccess) : BuildArrayAddress(plan, plan->LoadAccess);
+    GenTree* const storeAddress =
+        plan->IsPostIV ? BuildPostIVAddress(plan->StoreAccess) : BuildArrayAddress(plan, plan->StoreAccess);
+    GenTree* const vectorLoad = m_compiler->gtNewSimdLoadNode(simdType, loadAddress, plan->ElementType, simdSize);
+    GenTree* const scalar     = m_compiler->gtCloneExpr(plan->ScalarOperand);
+    GenTree* const splat      = m_compiler->gtNewSimdCreateBroadcastNode(simdType, scalar, plan->ElementType, simdSize);
+    GenTree* const op1        = plan->ScalarOperandIsRhs ? vectorLoad : splat;
+    GenTree* const op2        = plan->ScalarOperandIsRhs ? splat : vectorLoad;
     GenTree* const vectorResult =
         m_compiler->gtNewSimdBinOpNode(plan->ScalarOper, simdType, op1, op2, plan->ElementType, simdSize);
     return m_compiler->gtNewSimdStoreNode(storeAddress, vectorResult, plan->ElementType, simdSize);
@@ -1488,9 +1509,9 @@ GenTree* AutoVectorizer::BuildVectorStore(LoopVectorizationPlan* plan)
 
 GenTree* AutoVectorizer::BuildIVUpdate(LoopVectorizationPlan* plan)
 {
-    GenTree* const iv     = m_compiler->gtNewLclvNode(plan->InductionVar, TYP_INT);
-    GenTree* const add    = m_compiler->gtNewOperNode(GT_ADD, TYP_INT, iv,
-                                                   m_compiler->gtNewIconNode(plan->VectorizationFactor));
+    GenTree* const iv = m_compiler->gtNewLclvNode(plan->InductionVar, TYP_INT);
+    GenTree* const add =
+        m_compiler->gtNewOperNode(GT_ADD, TYP_INT, iv, m_compiler->gtNewIconNode(plan->VectorizationFactor));
     return m_compiler->gtNewStoreLclVarNode(plan->InductionVar, add);
 }
 
@@ -1498,22 +1519,49 @@ GenTree* AutoVectorizer::BuildAddressUpdate(LoopVectorizationPlan* plan, unsigne
 {
     LclVarDsc* const addressDsc = m_compiler->lvaGetDesc(addressVar);
     GenTree* const   address    = m_compiler->gtNewLclvNode(addressVar, addressDsc->TypeGet());
-    GenTree* const   add        = m_compiler->gtNewOperNode(
-        GT_ADD, addressDsc->TypeGet(), address, m_compiler->gtNewIconNode(plan->VectorSizeBytes, TYP_I_IMPL));
+    GenTree* const   add        = m_compiler->gtNewOperNode(GT_ADD, addressDsc->TypeGet(), address,
+                                                            m_compiler->gtNewIconNode(plan->VectorSizeBytes, TYP_I_IMPL));
     return m_compiler->gtNewStoreLclVarNode(addressVar, add);
 }
 
 GenTree* AutoVectorizer::BuildTripCountUpdate(LoopVectorizationPlan* plan, int delta)
 {
     GenTree* const tripCount = m_compiler->gtNewLclvNode(plan->TripCountVar, TYP_INT);
-    GenTree* const add = m_compiler->gtNewOperNode(GT_ADD, TYP_INT, tripCount, m_compiler->gtNewIconNode(delta));
+    GenTree* const add       = m_compiler->gtNewOperNode(GT_ADD, TYP_INT, tripCount, m_compiler->gtNewIconNode(delta));
     return m_compiler->gtNewStoreLclVarNode(plan->TripCountVar, add);
 }
 
 GenTree* AutoVectorizer::BuildScalarRemainderTest(LoopVectorizationPlan* plan)
 {
-    GenTree* const tripCount = m_compiler->gtNewLclvNode(plan->TripCountVar, TYP_INT);
-    GenTree* const cmp       = m_compiler->gtNewOperNode(GT_EQ, TYP_INT, tripCount, m_compiler->gtNewIconNode(0));
+    GenTree* cmp;
+    if (plan->IsPostIV)
+    {
+        GenTree* const tripCount = m_compiler->gtNewLclvNode(plan->TripCountVar, TYP_INT);
+        cmp                      = m_compiler->gtNewOperNode(GT_EQ, TYP_INT, tripCount, m_compiler->gtNewIconNode(0));
+    }
+    else
+    {
+        GenTree* const iv  = m_compiler->gtNewLclvNode(plan->InductionVar, TYP_INT);
+        GenTree* const end = m_compiler->gtCloneExpr(plan->End);
+        genTreeOps     op;
+        switch (plan->TestOper)
+        {
+            case GT_LT:
+                op = GT_GE;
+                break;
+            case GT_LE:
+                op = GT_GT;
+                break;
+            case GT_NE:
+                op = GT_EQ;
+                break;
+            default:
+                unreached();
+        }
+
+        cmp = m_compiler->gtNewOperNode(op, TYP_INT, iv, end);
+    }
+
     return m_compiler->gtNewOperNode(GT_JTRUE, TYP_VOID, cmp);
 }
 
@@ -1527,11 +1575,11 @@ GenTree* AutoVectorizer::UnwrapCommaValue(GenTree* tree)
     return tree;
 }
 
-bool AutoVectorizer::TryAnalyzeArrayAccess(FlowGraphNaturalLoop* loop,
-                                           Statement*             stmt,
-                                           GenTree*               indir,
-                                           bool                   isStore,
-                                           unsigned               ivLcl,
+bool AutoVectorizer::TryAnalyzeArrayAccess(LoopVectorizationPlan*               plan,
+                                           Statement*                           stmt,
+                                           GenTree*                             indir,
+                                           bool                                 isStore,
+                                           unsigned                             ivLcl,
                                            LoopVectorizationPlan::ScalarAccess* access)
 {
     assert(indir->OperIs(GT_IND, GT_STOREIND));
@@ -1543,7 +1591,7 @@ bool AutoVectorizer::TryAnalyzeArrayAccess(FlowGraphNaturalLoop* loop,
         return false;
     }
 
-    if (!TryAnalyzeArrayAddress(loop, addr->AsArrAddr(), ivLcl, access))
+    if (!TryAnalyzeArrayAddress(plan, addr->AsArrAddr(), ivLcl, access))
     {
         return false;
     }
@@ -1558,8 +1606,9 @@ bool AutoVectorizer::TryAnalyzeArrayAccess(FlowGraphNaturalLoop* loop,
     return true;
 }
 
-bool AutoVectorizer::TryAnalyzePostIVAddress(
-    Statement* stmt, GenTree* addr, LoopVectorizationPlan::ScalarAccess* access)
+bool AutoVectorizer::TryAnalyzePostIVAddress(Statement*                           stmt,
+                                             GenTree*                             addr,
+                                             LoopVectorizationPlan::ScalarAccess* access)
 {
     addr = UnwrapCommaValue(addr);
 
@@ -1594,10 +1643,10 @@ bool AutoVectorizer::TryAnalyzePostIVAddress(
         if (op1->OperIs(GT_LCL_VAR) && op1->TypeIs(TYP_BYREF) && op2->OperIs(GT_LCL_VAR) &&
             op2->TypeIs(TYP_I_IMPL, TYP_LONG, TYP_INT))
         {
-            access->StatementRoot       = stmt;
-            access->Address             = addr;
-            access->BaseLocalIfKnown    = op1->AsLclVarCommon()->GetLclNum();
-            access->OffsetLocalIfKnown  = op2->AsLclVarCommon()->GetLclNum();
+            access->StatementRoot         = stmt;
+            access->Address               = addr;
+            access->BaseLocalIfKnown      = op1->AsLclVarCommon()->GetLclNum();
+            access->OffsetLocalIfKnown    = op2->AsLclVarCommon()->GetLclNum();
             access->IsByrefBaseWithOffset = true;
             return true;
         }
@@ -1716,13 +1765,13 @@ bool AutoVectorizer::TryAnalyzePostIVArrayAddress(GenTreeArrAddr* arrAddr, LoopV
     return IsSupportedElementType(access->ElementType);
 }
 
-bool AutoVectorizer::TryAnalyzeIndexExpr(FlowGraphNaturalLoop* loop, GenTree* tree, unsigned ivLcl, int* offset)
+bool AutoVectorizer::TryAnalyzeIndexExpr(LoopVectorizationPlan* plan, GenTree* tree, unsigned ivLcl, int* offset)
 {
     tree = UnwrapCommaValue(tree);
 
     if (tree->OperIs(GT_CAST))
     {
-        return TryAnalyzeIndexExpr(loop, tree->AsCast()->CastOp(), ivLcl, offset);
+        return TryAnalyzeIndexExpr(plan, tree->AsCast()->CastOp(), ivLcl, offset);
     }
 
     if (tree->OperIs(GT_LCL_VAR) && (tree->AsLclVarCommon()->GetLclNum() == ivLcl))
@@ -1730,12 +1779,12 @@ bool AutoVectorizer::TryAnalyzeIndexExpr(FlowGraphNaturalLoop* loop, GenTree* tr
         return true;
     }
 
-    if ((loop != nullptr) && tree->OperIs(GT_LCL_VAR))
+    if (tree->OperIs(GT_LCL_VAR))
     {
         GenTree* def = nullptr;
-        if (TryFindDefInLoop(loop, tree->AsLclVarCommon()->GetLclNum(), &def))
+        if (TryGetLocalDef(plan, tree->AsLclVarCommon()->GetLclNum(), &def))
         {
-            return TryAnalyzeIndexExpr(loop, def, ivLcl, offset);
+            return TryAnalyzeIndexExpr(plan, def, ivLcl, offset);
         }
     }
 
@@ -1747,21 +1796,23 @@ bool AutoVectorizer::TryAnalyzeIndexExpr(FlowGraphNaturalLoop* loop, GenTree* tr
         if (op1->IsCnsIntOrI())
         {
             *offset += static_cast<int>(op1->AsIntConCommon()->IconValue());
-            return TryAnalyzeIndexExpr(loop, op2, ivLcl, offset);
+            return TryAnalyzeIndexExpr(plan, op2, ivLcl, offset);
         }
 
         if (op2->IsCnsIntOrI())
         {
             *offset += static_cast<int>(op2->AsIntConCommon()->IconValue());
-            return TryAnalyzeIndexExpr(loop, op1, ivLcl, offset);
+            return TryAnalyzeIndexExpr(plan, op1, ivLcl, offset);
         }
     }
 
     return false;
 }
 
-bool AutoVectorizer::TryAnalyzeArrayAddress(
-    FlowGraphNaturalLoop* loop, GenTreeArrAddr* arrAddr, unsigned ivLcl, LoopVectorizationPlan::ScalarAccess* access)
+bool AutoVectorizer::TryAnalyzeArrayAddress(LoopVectorizationPlan*               plan,
+                                            GenTreeArrAddr*                      arrAddr,
+                                            unsigned                             ivLcl,
+                                            LoopVectorizationPlan::ScalarAccess* access)
 {
     struct AddressParts
     {
@@ -1777,10 +1828,13 @@ bool AutoVectorizer::TryAnalyzeArrayAddress(
     class AddressVisitor
     {
     public:
-        AddressVisitor(
-            AutoVectorizer* vectorizer, FlowGraphNaturalLoop* loop, unsigned ivLcl, unsigned elemSize, AddressParts* parts)
+        AddressVisitor(AutoVectorizer*        vectorizer,
+                       LoopVectorizationPlan* plan,
+                       unsigned               ivLcl,
+                       unsigned               elemSize,
+                       AddressParts*          parts)
             : m_vectorizer(vectorizer)
-            , m_loop(loop)
+            , m_plan(plan)
             , m_ivLcl(ivLcl)
             , m_elemSize(elemSize)
             , m_parts(parts)
@@ -1834,7 +1888,27 @@ bool AutoVectorizer::TryAnalyzeArrayAddress(
                 }
 
                 int indexOffset = 0;
-                if (!m_vectorizer->TryAnalyzeIndexExpr(m_loop, index, m_ivLcl, &indexOffset))
+                if (!m_vectorizer->TryAnalyzeIndexExpr(m_plan, index, m_ivLcl, &indexOffset))
+                {
+                    return false;
+                }
+
+                m_parts->IndexScale += m_elemSize;
+                m_parts->Offset += static_cast<ssize_t>(indexOffset) * static_cast<ssize_t>(m_elemSize);
+                return true;
+            }
+
+            if (tree->OperIs(GT_LSH) && tree->AsOp()->gtOp2->IsCnsIntOrI())
+            {
+                const ssize_t shift = tree->AsOp()->gtOp2->AsIntConCommon()->IconValue();
+                if ((shift < 0) || (shift >= static_cast<ssize_t>(sizeof(ssize_t) * BITS_PER_BYTE)) ||
+                    ((static_cast<ssize_t>(1) << shift) != static_cast<ssize_t>(m_elemSize)))
+                {
+                    return false;
+                }
+
+                int indexOffset = 0;
+                if (!m_vectorizer->TryAnalyzeIndexExpr(m_plan, tree->AsOp()->gtOp1, m_ivLcl, &indexOffset))
                 {
                     return false;
                 }
@@ -1847,7 +1921,7 @@ bool AutoVectorizer::TryAnalyzeArrayAddress(
             if (m_elemSize == 1)
             {
                 int indexOffset = 0;
-                if (m_vectorizer->TryAnalyzeIndexExpr(m_loop, tree, m_ivLcl, &indexOffset))
+                if (m_vectorizer->TryAnalyzeIndexExpr(m_plan, tree, m_ivLcl, &indexOffset))
                 {
                     m_parts->IndexScale += 1;
                     m_parts->Offset += indexOffset;
@@ -1859,14 +1933,14 @@ bool AutoVectorizer::TryAnalyzeArrayAddress(
         }
 
     private:
-        AutoVectorizer* m_vectorizer;
-        FlowGraphNaturalLoop* m_loop;
-        unsigned        m_ivLcl;
-        unsigned        m_elemSize;
-        AddressParts*   m_parts;
+        AutoVectorizer*        m_vectorizer;
+        LoopVectorizationPlan* m_plan;
+        unsigned               m_ivLcl;
+        unsigned               m_elemSize;
+        AddressParts*          m_parts;
     };
 
-    AddressVisitor visitor(this, loop, ivLcl, elemSize, &parts);
+    AddressVisitor visitor(this, plan, ivLcl, elemSize, &parts);
     if (!visitor.Analyze(arrAddr->Addr()))
     {
         return false;
@@ -1891,7 +1965,7 @@ bool AutoVectorizer::TryAnalyzeArrayAddress(
     return true;
 }
 
-bool AutoVectorizer::TryFindDefInLoop(FlowGraphNaturalLoop* loop, unsigned lclNum, GenTree** data)
+void AutoVectorizer::RecordLocalDefs(LoopVectorizationPlan* plan, GenTree* tree)
 {
     class Visitor final : public GenTreeVisitor<Visitor>
     {
@@ -1901,72 +1975,86 @@ bool AutoVectorizer::TryFindDefInLoop(FlowGraphNaturalLoop* loop, unsigned lclNu
             DoPreOrder = true,
         };
 
-        Visitor(Compiler* compiler, unsigned lclNum)
+        Visitor(Compiler* compiler, AutoVectorizer* vectorizer, LoopVectorizationPlan* plan)
             : GenTreeVisitor<Visitor>(compiler)
-            , m_lclNum(lclNum)
+            , m_vectorizer(vectorizer)
+            , m_plan(plan)
         {
         }
 
         fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
         {
             GenTree* const tree = *use;
-            if (tree->OperIs(GT_STORE_LCL_VAR) && (tree->AsLclVarCommon()->GetLclNum() == m_lclNum))
+            if (tree->OperIs(GT_STORE_LCL_VAR))
             {
-                if (m_data != nullptr)
-                {
-                    m_multipleDefs = true;
-                    return fgWalkResult::WALK_ABORT;
-                }
-
-                m_data = tree->AsLclVarCommon()->Data();
+                m_vectorizer->RecordLocalDef(m_plan, tree->AsLclVarCommon()->GetLclNum(),
+                                             tree->AsLclVarCommon()->Data());
             }
 
             return fgWalkResult::WALK_CONTINUE;
         }
 
-        bool TryGetData(GenTree** data) const
-        {
-            if ((m_data == nullptr) || m_multipleDefs)
-            {
-                return false;
-            }
-
-            *data = m_data;
-            return true;
-        }
-
-        bool HasMultipleDefs() const
-        {
-            return m_multipleDefs;
-        }
-
     private:
-        unsigned m_lclNum;
-        GenTree* m_data         = nullptr;
-        bool     m_multipleDefs = false;
+        AutoVectorizer*        m_vectorizer;
+        LoopVectorizationPlan* m_plan;
     };
 
-    Visitor visitor(m_compiler, lclNum);
-    loop->VisitLoopBlocks([&](BasicBlock* block) {
-        for (Statement* const stmt : block->Statements())
-        {
-            GenTree* root = stmt->GetRootNode();
-            visitor.WalkTree(&root, nullptr);
-            if (visitor.HasMultipleDefs())
-            {
-                return BasicBlockVisit::Abort;
-            }
-        }
-
-        return BasicBlockVisit::Continue;
-    });
-
-    return visitor.TryGetData(data);
+    Visitor visitor(m_compiler, this, plan);
+    visitor.WalkTree(&tree, nullptr);
 }
 
-bool AutoVectorizer::TryGetArrayLengthLimitLocal(GenTree* tree, unsigned* lclNum, int* offset)
+void AutoVectorizer::RecordLocalDef(LoopVectorizationPlan* plan, unsigned lclNum, GenTree* value)
+{
+    for (unsigned i = 0; i < plan->LocalDefCount; i++)
+    {
+        if (plan->LocalDefVars[i] == lclNum)
+        {
+            plan->LocalDefValues[i] = (plan->LocalDefValues[i] == value) ? value : nullptr;
+            return;
+        }
+    }
+
+    if (plan->LocalDefCount >= LoopVectorizationPlan::MaxLocalDefs)
+    {
+        return;
+    }
+
+    const unsigned index        = plan->LocalDefCount++;
+    plan->LocalDefVars[index]   = lclNum;
+    plan->LocalDefValues[index] = value;
+}
+
+bool AutoVectorizer::TryGetLocalDef(LoopVectorizationPlan* plan, unsigned lclNum, GenTree** value)
+{
+    for (unsigned i = 0; i < plan->LocalDefCount; i++)
+    {
+        if ((plan->LocalDefVars[i] == lclNum) && (plan->LocalDefValues[i] != nullptr))
+        {
+            *value = plan->LocalDefValues[i];
+            return true;
+        }
+    }
+
+    return false;
+}
+
+bool AutoVectorizer::TryGetArrayLengthLimitLocal(LoopVectorizationPlan* plan,
+                                                 GenTree*               tree,
+                                                 unsigned*              lclNum,
+                                                 int*                   offset)
 {
     tree = UnwrapCommaValue(tree);
+
+    if (tree->OperIs(GT_LCL_VAR))
+    {
+        GenTree* def = nullptr;
+        if (!TryGetLocalDef(plan, tree->AsLclVarCommon()->GetLclNum(), &def))
+        {
+            return false;
+        }
+
+        return TryGetArrayLengthLimitLocal(plan, def, lclNum, offset);
+    }
 
     if (TryGetArrayLengthLocal(tree, lclNum))
     {
@@ -2038,7 +2126,10 @@ bool AutoVectorizer::IsCompatibleScalarType(GenTree* tree, var_types elementType
     return false;
 }
 
-bool AutoVectorizer::TryGetInvariantOperand(FlowGraphNaturalLoop* loop, unsigned ivLcl, GenTree* tree, var_types elementType)
+bool AutoVectorizer::TryGetInvariantOperand(FlowGraphNaturalLoop* loop,
+                                            unsigned              ivLcl,
+                                            GenTree*              tree,
+                                            var_types             elementType)
 {
     if (!IsCompatibleScalarType(tree, elementType))
     {
@@ -2072,7 +2163,7 @@ void AutoVectorizer::RecordAddressUpdate(LoopVectorizationPlan* plan, unsigned a
 
     if (plan->AddressUpdateCount < LoopVectorizationPlan::MaxAddressUpdates)
     {
-        const unsigned index = plan->AddressUpdateCount++;
+        const unsigned index             = plan->AddressUpdateCount++;
         plan->AddressUpdateVars[index]   = addressVar;
         plan->AddressUpdateDeltas[index] = delta;
     }
@@ -2131,32 +2222,6 @@ bool AutoVectorizer::ContainsOper(GenTree* tree, genTreeOps oper)
     Visitor visitor(m_compiler, oper);
     visitor.WalkTree(&tree, nullptr);
     return visitor.Found();
-}
-
-bool AutoVectorizer::ShouldDump() const
-{
-#ifdef DEBUG
-    return m_compiler->verbose ||
-           JitConfig.JitAutoVectorizationDump().contains(m_compiler->info.compMethodHnd, m_compiler->info.compClassHnd,
-                                                         &m_compiler->info.compMethodInfo->args);
-#else
-    return false;
-#endif
-}
-
-void AutoVectorizer::Dump(const char* format, ...) const
-{
-#ifdef DEBUG
-    if (!ShouldDump())
-    {
-        return;
-    }
-
-    va_list args;
-    va_start(args, format);
-    vprintf(format, args);
-    va_end(args);
-#endif
 }
 
 PhaseStatus Compiler::optAutoVectorizeAnalyze()
