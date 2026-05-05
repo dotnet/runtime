@@ -4711,6 +4711,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         bool doRangeAnalysis           = true;
         bool doRangeCheckCloning       = true;
         bool doVNBasedDeadStoreRemoval = true;
+        bool doAutoVectorization       = false;
 
 #if defined(OPT_CONFIG)
         doSsa                     = (JitConfig.JitDoSsa() != 0);
@@ -4727,6 +4728,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         doVNBasedDeadStoreRemoval = doValueNum && (JitConfig.JitDoVNBasedDeadStoreRemoval() != 0);
         doVNBasedIntrinExpansion  = doValueNum;
 #endif // defined(OPT_CONFIG)
+        doAutoVectorization = doOptimizeIVs && (JitConfig.JitAutoVectorization() != 0);
 
         if (opts.optRepeat)
         {
@@ -4824,6 +4826,13 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
                 // Simplify and optimize induction variables used in natural loops
                 //
                 DoPhase(this, PHASE_OPTIMIZE_INDUCTION_VARIABLES, &Compiler::optInductionVariables);
+            }
+
+            if (doAutoVectorization)
+            {
+                // Analyze vectorization opportunities while SSA, VN, range, and IV facts are still current.
+                //
+                DoPhase(this, PHASE_AUTO_VECTORIZE_ANALYZE, &Compiler::optAutoVectorizeAnalyze);
             }
 
             fgInvalidateDfsTree();
@@ -4953,6 +4962,13 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         // If conversion
         //
         DoPhase(this, PHASE_IF_CONVERSION, &Compiler::optIfConversion);
+
+        if (JitConfig.JitAutoVectorization() != 0)
+        {
+            // Rewrite HIR loops late, after VN-DSE and if-conversion but before rationalization.
+            //
+            DoPhase(this, PHASE_AUTO_VECTORIZE_REWRITE, &Compiler::optAutoVectorizeRewrite);
+        }
 
         // Run flow optimizations before reordering blocks
         //

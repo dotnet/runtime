@@ -2718,6 +2718,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 */
 
 struct HWIntrinsicInfo;
+class AutoVectorizer;
 
 class Compiler
 {
@@ -2757,6 +2758,7 @@ class Compiler
     friend class Promotion;
     friend class ReplaceVisitor;
     friend class FlowGraphNaturalLoop;
+    friend class AutoVectorizer;
 
 #ifdef FEATURE_HW_INTRINSICS
     friend struct GenTreeHWIntrinsic;
@@ -7291,6 +7293,8 @@ public:
     void optReplaceScalarUsesWithConst(BasicBlock* block, unsigned lclNum, ssize_t cnsVal);
     void        optRemoveRedundantZeroInits();
     PhaseStatus optIfConversion(); // If conversion
+    PhaseStatus optAutoVectorizeAnalyze();
+    PhaseStatus optAutoVectorizeRewrite();
 
 public:
     bool fgHasLoops = false;

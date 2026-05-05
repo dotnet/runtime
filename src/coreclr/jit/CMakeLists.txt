@@ -93,6 +93,7 @@ set( JIT_SOURCES
   abi.cpp
   alloc.cpp
   assertionprop.cpp
+  autovectorizer.cpp
   async.cpp
   asyncanalysis.cpp
   bitset.cpp
@@ -311,6 +312,7 @@ set( JIT_HEADERS
   _typeinfo.h
   abi.h
   alloc.h
+  autovectorizer.h
   arraystack.h
   async.h
   bitset.h

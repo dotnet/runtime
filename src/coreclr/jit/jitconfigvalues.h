@@ -706,6 +706,10 @@ RELEASE_CONFIG_INTEGER(JitObjectStackAllocationTrackFields, "JitObjectStackAlloc
 CONFIG_STRING(JitObjectStackAllocationTrackFieldsRange, "JitObjectStackAllocationTrackFieldsRange")
 CONFIG_INTEGER(JitObjectStackAllocationDumpConnGraph, "JitObjectStackAllocationDumpConnGraph", 0)
 
+// Enable the late HIR auto-vectorizer.
+RELEASE_CONFIG_INTEGER(JitAutoVectorization, "JitAutoVectorization", 0)
+CONFIG_METHODSET(JitAutoVectorizationDump, "JitAutoVectorizationDump")
+
 RELEASE_CONFIG_INTEGER(JitEECallTimingInfo, "JitEECallTimingInfo", 0)
 
 CONFIG_INTEGER(JitEnableFinallyCloning, "JitEnableFinallyCloning", 1)
