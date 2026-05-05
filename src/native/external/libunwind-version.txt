@@ -11,3 +11,4 @@ Revert https://github.com/libunwind/libunwind/commit/ec03043244082b8f552881ba9fb
 Apply https://github.com/libunwind/libunwind/pull/734
 Apply https://github.com/libunwind/libunwind/pull/758
 Apply https://github.com/libunwind/libunwind/pull/741
+Apply https://github.com/libunwind/libunwind/pull/931
