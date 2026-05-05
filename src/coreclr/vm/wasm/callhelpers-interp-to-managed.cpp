@@ -20,32 +20,32 @@
 
 namespace
 {
-    NOINLINE static void CallFunc_F64_F64_F64_RetF64_PE(PCODE pcode, int8_t* pArgs, int8_t* pRet, PCODE pPortableEntryPointContext)
+    NOINLINE static void CallFunc_F64_F64_F64_RetF64_PE(PCODE pPortableEntryPoint, int8_t* pArgs, int8_t* pRet)
     {
         alignas(16) int framePointer = TERMINATE_R2R_STACK_WALK;
-        double (*fptr)(int*, double, double, double, PCODE) = (double (*)(int*, double, double, double, PCODE))pcode;
-        *((double*)pRet) = (*fptr)(&framePointer, ARG_F64(0), ARG_F64(1), ARG_F64(2), pPortableEntryPointContext);
+        double (*fptr)(int*, double, double, double, PCODE) = *(double (**)(int*, double, double, double, PCODE))(pPortableEntryPoint);
+        *((double*)pRet) = (*fptr)(&framePointer, ARG_F64(0), ARG_F64(1), ARG_F64(2), pPortableEntryPoint);
     }
 
-    NOINLINE static void CallFunc_F64_F64_RetF64_PE(PCODE pcode, int8_t* pArgs, int8_t* pRet, PCODE pPortableEntryPointContext)
+    NOINLINE static void CallFunc_F64_F64_RetF64_PE(PCODE pPortableEntryPoint, int8_t* pArgs, int8_t* pRet)
     {
         alignas(16) int framePointer = TERMINATE_R2R_STACK_WALK;
-        double (*fptr)(int*, double, double, PCODE) = (double (*)(int*, double, double, PCODE))pcode;
-        *((double*)pRet) = (*fptr)(&framePointer, ARG_F64(0), ARG_F64(1), pPortableEntryPointContext);
+        double (*fptr)(int*, double, double, PCODE) = *(double (**)(int*, double, double, PCODE))(pPortableEntryPoint);
+        *((double*)pRet) = (*fptr)(&framePointer, ARG_F64(0), ARG_F64(1), pPortableEntryPoint);
     }
 
-    NOINLINE static void CallFunc_F64_I32_RetF64_PE(PCODE pcode, int8_t* pArgs, int8_t* pRet, PCODE pPortableEntryPointContext)
+    NOINLINE static void CallFunc_F64_I32_RetF64_PE(PCODE pPortableEntryPoint, int8_t* pArgs, int8_t* pRet)
     {
         alignas(16) int framePointer = TERMINATE_R2R_STACK_WALK;
-        double (*fptr)(int*, double, int32_t, PCODE) = (double (*)(int*, double, int32_t, PCODE))pcode;
-        *((double*)pRet) = (*fptr)(&framePointer, ARG_F64(0), ARG_I32(1), pPortableEntryPointContext);
+        double (*fptr)(int*, double, int32_t, PCODE) = *(double (**)(int*, double, int32_t, PCODE))(pPortableEntryPoint);
+        *((double*)pRet) = (*fptr)(&framePointer, ARG_F64(0), ARG_I32(1), pPortableEntryPoint);
     }
 
-    NOINLINE static void CallFunc_F64_RetF64_PE(PCODE pcode, int8_t* pArgs, int8_t* pRet, PCODE pPortableEntryPointContext)
+    NOINLINE static void CallFunc_F64_RetF64_PE(PCODE pPortableEntryPoint, int8_t* pArgs, int8_t* pRet)
     {
         alignas(16) int framePointer = TERMINATE_R2R_STACK_WALK;
-        double (*fptr)(int*, double, PCODE) = (double (*)(int*, double, PCODE))pcode;
-        *((double*)pRet) = (*fptr)(&framePointer, ARG_F64(0), pPortableEntryPointContext);
+        double (*fptr)(int*, double, PCODE) = *(double (**)(int*, double, PCODE))(pPortableEntryPoint);
+        *((double*)pRet) = (*fptr)(&framePointer, ARG_F64(0), pPortableEntryPoint);
     }
 
     static void CallFunc_I32_RetF64(PCODE pcode, int8_t* pArgs, int8_t* pRet)
@@ -54,32 +54,32 @@ namespace
         *((double*)pRet) = (*fptr)(ARG_I32(0));
     }
 
-    NOINLINE static void CallFunc_F32_F32_F32_RetF32_PE(PCODE pcode, int8_t* pArgs, int8_t* pRet, PCODE pPortableEntryPointContext)
+    NOINLINE static void CallFunc_F32_F32_F32_RetF32_PE(PCODE pPortableEntryPoint, int8_t* pArgs, int8_t* pRet)
     {
         alignas(16) int framePointer = TERMINATE_R2R_STACK_WALK;
-        float (*fptr)(int*, float, float, float, PCODE) = (float (*)(int*, float, float, float, PCODE))pcode;
-        *((float*)pRet) = (*fptr)(&framePointer, ARG_F32(0), ARG_F32(1), ARG_F32(2), pPortableEntryPointContext);
+        float (*fptr)(int*, float, float, float, PCODE) = *(float (**)(int*, float, float, float, PCODE))(pPortableEntryPoint);
+        *((float*)pRet) = (*fptr)(&framePointer, ARG_F32(0), ARG_F32(1), ARG_F32(2), pPortableEntryPoint);
     }
 
-    NOINLINE static void CallFunc_F32_F32_RetF32_PE(PCODE pcode, int8_t* pArgs, int8_t* pRet, PCODE pPortableEntryPointContext)
+    NOINLINE static void CallFunc_F32_F32_RetF32_PE(PCODE pPortableEntryPoint, int8_t* pArgs, int8_t* pRet)
     {
         alignas(16) int framePointer = TERMINATE_R2R_STACK_WALK;
-        float (*fptr)(int*, float, float, PCODE) = (float (*)(int*, float, float, PCODE))pcode;
-        *((float*)pRet) = (*fptr)(&framePointer, ARG_F32(0), ARG_F32(1), pPortableEntryPointContext);
+        float (*fptr)(int*, float, float, PCODE) = *(float (**)(int*, float, float, PCODE))(pPortableEntryPoint);
+        *((float*)pRet) = (*fptr)(&framePointer, ARG_F32(0), ARG_F32(1), pPortableEntryPoint);
     }
 
-    NOINLINE static void CallFunc_F32_I32_RetF32_PE(PCODE pcode, int8_t* pArgs, int8_t* pRet, PCODE pPortableEntryPointContext)
+    NOINLINE static void CallFunc_F32_I32_RetF32_PE(PCODE pPortableEntryPoint, int8_t* pArgs, int8_t* pRet)
     {
         alignas(16) int framePointer = TERMINATE_R2R_STACK_WALK;
-        float (*fptr)(int*, float, int32_t, PCODE) = (float (*)(int*, float, int32_t, PCODE))pcode;
-        *((float*)pRet) = (*fptr)(&framePointer, ARG_F32(0), ARG_I32(1), pPortableEntryPointContext);
+        float (*fptr)(int*, float, int32_t, PCODE) = *(float (**)(int*, float, int32_t, PCODE))(pPortableEntryPoint);
+        *((float*)pRet) = (*fptr)(&framePointer, ARG_F32(0), ARG_I32(1), pPortableEntryPoint);
     }
 
-    NOINLINE static void CallFunc_F32_RetF32_PE(PCODE pcode, int8_t* pArgs, int8_t* pRet, PCODE pPortableEntryPointContext)
+    NOINLINE static void CallFunc_F32_RetF32_PE(PCODE pPortableEntryPoint, int8_t* pArgs, int8_t* pRet)
     {
         alignas(16) int framePointer = TERMINATE_R2R_STACK_WALK;
-        float (*fptr)(int*, float, PCODE) = (float (*)(int*, float, PCODE))pcode;
-        *((float*)pRet) = (*fptr)(&framePointer, ARG_F32(0), pPortableEntryPointContext);
+        float (*fptr)(int*, float, PCODE) = *(float (**)(int*, float, PCODE))(pPortableEntryPoint);
+        *((float*)pRet) = (*fptr)(&framePointer, ARG_F32(0), pPortableEntryPoint);
     }
 
     static void CallFunc_Void_RetI32(PCODE pcode, int8_t* pArgs, int8_t* pRet)
@@ -166,18 +166,18 @@ namespace
         *((int32_t*)pRet) = (*fptr)(ARG_IND(0), ARG_I32(1), ARG_I32(2), ARG_I32(3), ARG_I32(4), ARG_I32(5));
     }
 
-    NOINLINE static void CallFunc_This_I32_RetI32_PE(PCODE pcode, int8_t* pArgs, int8_t* pRet, PCODE pPortableEntryPointContext)
+    NOINLINE static void CallFunc_This_I32_RetI32_PE(PCODE pPortableEntryPoint, int8_t* pArgs, int8_t* pRet)
     {
         alignas(16) int framePointer = TERMINATE_R2R_STACK_WALK;
-        int32_t (*fptr)(int*, int32_t, int32_t, PCODE) = (int32_t (*)(int*, int32_t, int32_t, PCODE))pcode;
-        *((int32_t*)pRet) = (*fptr)(&framePointer, ARG_I32(0), ARG_I32(1), pPortableEntryPointContext);
+        int32_t (*fptr)(int*, int32_t, int32_t, PCODE) = *(int32_t (**)(int*, int32_t, int32_t, PCODE))(pPortableEntryPoint);
+        *((int32_t*)pRet) = (*fptr)(&framePointer, ARG_I32(0), ARG_I32(1), pPortableEntryPoint);
     }
 
-    NOINLINE static void CallFunc_This_RetI32_PE(PCODE pcode, int8_t* pArgs, int8_t* pRet, PCODE pPortableEntryPointContext)
+    NOINLINE static void CallFunc_This_RetI32_PE(PCODE pPortableEntryPoint, int8_t* pArgs, int8_t* pRet)
     {
         alignas(16) int framePointer = TERMINATE_R2R_STACK_WALK;
-        int32_t (*fptr)(int*, int32_t, PCODE) = (int32_t (*)(int*, int32_t, PCODE))pcode;
-        *((int32_t*)pRet) = (*fptr)(&framePointer, ARG_I32(0), pPortableEntryPointContext);
+        int32_t (*fptr)(int*, int32_t, PCODE) = *(int32_t (**)(int*, int32_t, PCODE))(pPortableEntryPoint);
+        *((int32_t*)pRet) = (*fptr)(&framePointer, ARG_I32(0), pPortableEntryPoint);
     }
 
     static void CallFunc_I32_RetI32(PCODE pcode, int8_t* pArgs, int8_t* pRet)
@@ -258,25 +258,25 @@ namespace
         *((int32_t*)pRet) = (*fptr)(ARG_I32(0), ARG_I32(1), ARG_I32(2), ARG_I32(3), ARG_I32(4), ARG_I32(5), ARG_I32(6), ARG_I32(7), ARG_I32(8), ARG_I32(9), ARG_I32(10), ARG_I32(11), ARG_I32(12), ARG_I32(13));
     }
 
-    NOINLINE static void CallFunc_I32_I32_I32_I32_I32_I32_RetI32_PE(PCODE pcode, int8_t* pArgs, int8_t* pRet, PCODE pPortableEntryPointContext)
+    NOINLINE static void CallFunc_I32_I32_I32_I32_I32_I32_RetI32_PE(PCODE pPortableEntryPoint, int8_t* pArgs, int8_t* pRet)
     {
         alignas(16) int framePointer = TERMINATE_R2R_STACK_WALK;
-        int32_t (*fptr)(int*, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, PCODE) = (int32_t (*)(int*, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, PCODE))pcode;
-        *((int32_t*)pRet) = (*fptr)(&framePointer, ARG_I32(0), ARG_I32(1), ARG_I32(2), ARG_I32(3), ARG_I32(4), ARG_I32(5), pPortableEntryPointContext);
+        int32_t (*fptr)(int*, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, PCODE) = *(int32_t (**)(int*, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, PCODE))(pPortableEntryPoint);
+        *((int32_t*)pRet) = (*fptr)(&framePointer, ARG_I32(0), ARG_I32(1), ARG_I32(2), ARG_I32(3), ARG_I32(4), ARG_I32(5), pPortableEntryPoint);
     }
 
-    NOINLINE static void CallFunc_I32_I32_I32_I32_I32_RetI32_PE(PCODE pcode, int8_t* pArgs, int8_t* pRet, PCODE pPortableEntryPointContext)
+    NOINLINE static void CallFunc_I32_I32_I32_I32_I32_RetI32_PE(PCODE pPortableEntryPoint, int8_t* pArgs, int8_t* pRet)
     {
         alignas(16) int framePointer = TERMINATE_R2R_STACK_WALK;
-        int32_t (*fptr)(int*, int32_t, int32_t, int32_t, int32_t, int32_t, PCODE) = (int32_t (*)(int*, int32_t, int32_t, int32_t, int32_t, int32_t, PCODE))pcode;
-        *((int32_t*)pRet) = (*fptr)(&framePointer, ARG_I32(0), ARG_I32(1), ARG_I32(2), ARG_I32(3), ARG_I32(4), pPortableEntryPointContext);
+        int32_t (*fptr)(int*, int32_t, int32_t, int32_t, int32_t, int32_t, PCODE) = *(int32_t (**)(int*, int32_t, int32_t, int32_t, int32_t, int32_t, PCODE))(pPortableEntryPoint);
+        *((int32_t*)pRet) = (*fptr)(&framePointer, ARG_I32(0), ARG_I32(1), ARG_I32(2), ARG_I32(3), ARG_I32(4), pPortableEntryPoint);
     }
 
-    NOINLINE static void CallFunc_I32_I32_I32_I32_RetI32_PE(PCODE pcode, int8_t* pArgs, int8_t* pRet, PCODE pPortableEntryPointContext)
+    NOINLINE static void CallFunc_I32_I32_I32_I32_RetI32_PE(PCODE pPortableEntryPoint, int8_t* pArgs, int8_t* pRet)
     {
         alignas(16) int framePointer = TERMINATE_R2R_STACK_WALK;
-        int32_t (*fptr)(int*, int32_t, int32_t, int32_t, int32_t, PCODE) = (int32_t (*)(int*, int32_t, int32_t, int32_t, int32_t, PCODE))pcode;
-        *((int32_t*)pRet) = (*fptr)(&framePointer, ARG_I32(0), ARG_I32(1), ARG_I32(2), ARG_I32(3), pPortableEntryPointContext);
+        int32_t (*fptr)(int*, int32_t, int32_t, int32_t, int32_t, PCODE) = *(int32_t (**)(int*, int32_t, int32_t, int32_t, int32_t, PCODE))(pPortableEntryPoint);
+        *((int32_t*)pRet) = (*fptr)(&framePointer, ARG_I32(0), ARG_I32(1), ARG_I32(2), ARG_I32(3), pPortableEntryPoint);
     }
 
     static void CallFunc_I32_I32_I32_I64_RetI32(PCODE pcode, int8_t* pArgs, int8_t* pRet)
@@ -285,11 +285,11 @@ namespace
         *((int32_t*)pRet) = (*fptr)(ARG_I32(0), ARG_I32(1), ARG_I32(2), ARG_I64(3));
     }
 
-    NOINLINE static void CallFunc_I32_I32_I32_RetI32_PE(PCODE pcode, int8_t* pArgs, int8_t* pRet, PCODE pPortableEntryPointContext)
+    NOINLINE static void CallFunc_I32_I32_I32_RetI32_PE(PCODE pPortableEntryPoint, int8_t* pArgs, int8_t* pRet)
     {
         alignas(16) int framePointer = TERMINATE_R2R_STACK_WALK;
-        int32_t (*fptr)(int*, int32_t, int32_t, int32_t, PCODE) = (int32_t (*)(int*, int32_t, int32_t, int32_t, PCODE))pcode;
-        *((int32_t*)pRet) = (*fptr)(&framePointer, ARG_I32(0), ARG_I32(1), ARG_I32(2), pPortableEntryPointContext);
+        int32_t (*fptr)(int*, int32_t, int32_t, int32_t, PCODE) = *(int32_t (**)(int*, int32_t, int32_t, int32_t, PCODE))(pPortableEntryPoint);
+        *((int32_t*)pRet) = (*fptr)(&framePointer, ARG_I32(0), ARG_I32(1), ARG_I32(2), pPortableEntryPoint);
     }
 
     static void CallFunc_I32_I32_I64_RetI32(PCODE pcode, int8_t* pArgs, int8_t* pRet)
@@ -298,11 +298,11 @@ namespace
         *((int32_t*)pRet) = (*fptr)(ARG_I32(0), ARG_I32(1), ARG_I64(2));
     }
 
-    NOINLINE static void CallFunc_I32_I32_RetI32_PE(PCODE pcode, int8_t* pArgs, int8_t* pRet, PCODE pPortableEntryPointContext)
+    NOINLINE static void CallFunc_I32_I32_RetI32_PE(PCODE pPortableEntryPoint, int8_t* pArgs, int8_t* pRet)
     {
         alignas(16) int framePointer = TERMINATE_R2R_STACK_WALK;
-        int32_t (*fptr)(int*, int32_t, int32_t, PCODE) = (int32_t (*)(int*, int32_t, int32_t, PCODE))pcode;
-        *((int32_t*)pRet) = (*fptr)(&framePointer, ARG_I32(0), ARG_I32(1), pPortableEntryPointContext);
+        int32_t (*fptr)(int*, int32_t, int32_t, PCODE) = *(int32_t (**)(int*, int32_t, int32_t, PCODE))(pPortableEntryPoint);
+        *((int32_t*)pRet) = (*fptr)(&framePointer, ARG_I32(0), ARG_I32(1), pPortableEntryPoint);
     }
 
     static void CallFunc_I32_I64_RetI32(PCODE pcode, int8_t* pArgs, int8_t* pRet)
@@ -335,11 +335,11 @@ namespace
         *((int32_t*)pRet) = (*fptr)(ARG_I32(0), ARG_I64(1), ARG_I64(2), ARG_I32(3));
     }
 
-    NOINLINE static void CallFunc_I32_RetI32_PE(PCODE pcode, int8_t* pArgs, int8_t* pRet, PCODE pPortableEntryPointContext)
+    NOINLINE static void CallFunc_I32_RetI32_PE(PCODE pPortableEntryPoint, int8_t* pArgs, int8_t* pRet)
     {
         alignas(16) int framePointer = TERMINATE_R2R_STACK_WALK;
-        int32_t (*fptr)(int*, int32_t, PCODE) = (int32_t (*)(int*, int32_t, PCODE))pcode;
-        *((int32_t*)pRet) = (*fptr)(&framePointer, ARG_I32(0), pPortableEntryPointContext);
+        int32_t (*fptr)(int*, int32_t, PCODE) = *(int32_t (**)(int*, int32_t, PCODE))(pPortableEntryPoint);
+        *((int32_t*)pRet) = (*fptr)(&framePointer, ARG_I32(0), pPortableEntryPoint);
     }
 
     static void CallFunc_I64_I32_I64_I32_RetI32(PCODE pcode, int8_t* pArgs, int8_t* pRet)
@@ -348,11 +348,11 @@ namespace
         *((int32_t*)pRet) = (*fptr)(ARG_I64(0), ARG_I32(1), ARG_I64(2), ARG_I32(3));
     }
 
-    NOINLINE static void CallFunc_Void_RetI32_PE(PCODE pcode, int8_t* pArgs, int8_t* pRet, PCODE pPortableEntryPointContext)
+    NOINLINE static void CallFunc_Void_RetI32_PE(PCODE pPortableEntryPoint, int8_t* pArgs, int8_t* pRet)
     {
         alignas(16) int framePointer = TERMINATE_R2R_STACK_WALK;
-        int32_t (*fptr)(int*, PCODE) = (int32_t (*)(int*, PCODE))pcode;
-        *((int32_t*)pRet) = (*fptr)(&framePointer, pPortableEntryPointContext);
+        int32_t (*fptr)(int*, PCODE) = *(int32_t (**)(int*, PCODE))(pPortableEntryPoint);
+        *((int32_t*)pRet) = (*fptr)(&framePointer, pPortableEntryPoint);
     }
 
     static void CallFunc_Void_RetI64(PCODE pcode, int8_t* pArgs, int8_t* pRet)
@@ -385,39 +385,39 @@ namespace
         *((int64_t*)pRet) = (*fptr)(ARG_I32(0), ARG_I64(1), ARG_I32(2));
     }
 
-    NOINLINE static void CallFunc_I32_I64_I64_RetI64_PE(PCODE pcode, int8_t* pArgs, int8_t* pRet, PCODE pPortableEntryPointContext)
+    NOINLINE static void CallFunc_I32_I64_I64_RetI64_PE(PCODE pPortableEntryPoint, int8_t* pArgs, int8_t* pRet)
     {
         alignas(16) int framePointer = TERMINATE_R2R_STACK_WALK;
-        int64_t (*fptr)(int*, int32_t, int64_t, int64_t, PCODE) = (int64_t (*)(int*, int32_t, int64_t, int64_t, PCODE))pcode;
-        *((int64_t*)pRet) = (*fptr)(&framePointer, ARG_I32(0), ARG_I64(1), ARG_I64(2), pPortableEntryPointContext);
+        int64_t (*fptr)(int*, int32_t, int64_t, int64_t, PCODE) = *(int64_t (**)(int*, int32_t, int64_t, int64_t, PCODE))(pPortableEntryPoint);
+        *((int64_t*)pRet) = (*fptr)(&framePointer, ARG_I32(0), ARG_I64(1), ARG_I64(2), pPortableEntryPoint);
     }
 
-    NOINLINE static void CallFunc_I32_I64_RetI64_PE(PCODE pcode, int8_t* pArgs, int8_t* pRet, PCODE pPortableEntryPointContext)
+    NOINLINE static void CallFunc_I32_I64_RetI64_PE(PCODE pPortableEntryPoint, int8_t* pArgs, int8_t* pRet)
     {
         alignas(16) int framePointer = TERMINATE_R2R_STACK_WALK;
-        int64_t (*fptr)(int*, int32_t, int64_t, PCODE) = (int64_t (*)(int*, int32_t, int64_t, PCODE))pcode;
-        *((int64_t*)pRet) = (*fptr)(&framePointer, ARG_I32(0), ARG_I64(1), pPortableEntryPointContext);
+        int64_t (*fptr)(int*, int32_t, int64_t, PCODE) = *(int64_t (**)(int*, int32_t, int64_t, PCODE))(pPortableEntryPoint);
+        *((int64_t*)pRet) = (*fptr)(&framePointer, ARG_I32(0), ARG_I64(1), pPortableEntryPoint);
     }
 
-    NOINLINE static void CallFunc_I32_RetI64_PE(PCODE pcode, int8_t* pArgs, int8_t* pRet, PCODE pPortableEntryPointContext)
+    NOINLINE static void CallFunc_I32_RetI64_PE(PCODE pPortableEntryPoint, int8_t* pArgs, int8_t* pRet)
     {
         alignas(16) int framePointer = TERMINATE_R2R_STACK_WALK;
-        int64_t (*fptr)(int*, int32_t, PCODE) = (int64_t (*)(int*, int32_t, PCODE))pcode;
-        *((int64_t*)pRet) = (*fptr)(&framePointer, ARG_I32(0), pPortableEntryPointContext);
+        int64_t (*fptr)(int*, int32_t, PCODE) = *(int64_t (**)(int*, int32_t, PCODE))(pPortableEntryPoint);
+        *((int64_t*)pRet) = (*fptr)(&framePointer, ARG_I32(0), pPortableEntryPoint);
     }
 
-    NOINLINE static void CallFunc_I64_I64_RetI64_PE(PCODE pcode, int8_t* pArgs, int8_t* pRet, PCODE pPortableEntryPointContext)
+    NOINLINE static void CallFunc_I64_I64_RetI64_PE(PCODE pPortableEntryPoint, int8_t* pArgs, int8_t* pRet)
     {
         alignas(16) int framePointer = TERMINATE_R2R_STACK_WALK;
-        int64_t (*fptr)(int*, int64_t, int64_t, PCODE) = (int64_t (*)(int*, int64_t, int64_t, PCODE))pcode;
-        *((int64_t*)pRet) = (*fptr)(&framePointer, ARG_I64(0), ARG_I64(1), pPortableEntryPointContext);
+        int64_t (*fptr)(int*, int64_t, int64_t, PCODE) = *(int64_t (**)(int*, int64_t, int64_t, PCODE))(pPortableEntryPoint);
+        *((int64_t*)pRet) = (*fptr)(&framePointer, ARG_I64(0), ARG_I64(1), pPortableEntryPoint);
     }
 
-    NOINLINE static void CallFunc_Void_RetI64_PE(PCODE pcode, int8_t* pArgs, int8_t* pRet, PCODE pPortableEntryPointContext)
+    NOINLINE static void CallFunc_Void_RetI64_PE(PCODE pPortableEntryPoint, int8_t* pArgs, int8_t* pRet)
     {
         alignas(16) int framePointer = TERMINATE_R2R_STACK_WALK;
-        int64_t (*fptr)(int*, PCODE) = (int64_t (*)(int*, PCODE))pcode;
-        *((int64_t*)pRet) = (*fptr)(&framePointer, pPortableEntryPointContext);
+        int64_t (*fptr)(int*, PCODE) = *(int64_t (**)(int*, PCODE))(pPortableEntryPoint);
+        *((int64_t*)pRet) = (*fptr)(&framePointer, pPortableEntryPoint);
     }
 
     static void CallFunc_Void_RetVoid(PCODE pcode, int8_t* pArgs, int8_t* pRet)
@@ -486,25 +486,25 @@ namespace
         (*fptr)(ARG_IND(0), ARG_I32(1), ARG_I32(2), ARG_I32(3), ARG_I32(4), ARG_I32(5), ARG_I32(6), ARG_I32(7), ARG_I32(8), ARG_I32(9), ARG_I32(10), ARG_I32(11));
     }
 
-    NOINLINE static void CallFunc_This_RetVoid_PE(PCODE pcode, int8_t* pArgs, int8_t* pRet, PCODE pPortableEntryPointContext)
+    NOINLINE static void CallFunc_This_RetVoid_PE(PCODE pPortableEntryPoint, int8_t* pArgs, int8_t* pRet)
     {
         alignas(16) int framePointer = TERMINATE_R2R_STACK_WALK;
-        void (*fptr)(int*, int32_t, PCODE) = (void (*)(int*, int32_t, PCODE))pcode;
-        (*fptr)(&framePointer, ARG_I32(0), pPortableEntryPointContext);
+        void (*fptr)(int*, int32_t, PCODE) = *(void (**)(int*, int32_t, PCODE))(pPortableEntryPoint);
+        (*fptr)(&framePointer, ARG_I32(0), pPortableEntryPoint);
     }
 
-    NOINLINE static void CallFunc_F64_I32_I32_RetVoid_PE(PCODE pcode, int8_t* pArgs, int8_t* pRet, PCODE pPortableEntryPointContext)
+    NOINLINE static void CallFunc_F64_I32_I32_RetVoid_PE(PCODE pPortableEntryPoint, int8_t* pArgs, int8_t* pRet)
     {
         alignas(16) int framePointer = TERMINATE_R2R_STACK_WALK;
-        void (*fptr)(int*, double, int32_t, int32_t, PCODE) = (void (*)(int*, double, int32_t, int32_t, PCODE))pcode;
-        (*fptr)(&framePointer, ARG_F64(0), ARG_I32(1), ARG_I32(2), pPortableEntryPointContext);
+        void (*fptr)(int*, double, int32_t, int32_t, PCODE) = *(void (**)(int*, double, int32_t, int32_t, PCODE))(pPortableEntryPoint);
+        (*fptr)(&framePointer, ARG_F64(0), ARG_I32(1), ARG_I32(2), pPortableEntryPoint);
     }
 
-    NOINLINE static void CallFunc_F32_I32_I32_RetVoid_PE(PCODE pcode, int8_t* pArgs, int8_t* pRet, PCODE pPortableEntryPointContext)
+    NOINLINE static void CallFunc_F32_I32_I32_RetVoid_PE(PCODE pPortableEntryPoint, int8_t* pArgs, int8_t* pRet)
     {
         alignas(16) int framePointer = TERMINATE_R2R_STACK_WALK;
-        void (*fptr)(int*, float, int32_t, int32_t, PCODE) = (void (*)(int*, float, int32_t, int32_t, PCODE))pcode;
-        (*fptr)(&framePointer, ARG_F32(0), ARG_I32(1), ARG_I32(2), pPortableEntryPointContext);
+        void (*fptr)(int*, float, int32_t, int32_t, PCODE) = *(void (**)(int*, float, int32_t, int32_t, PCODE))(pPortableEntryPoint);
+        (*fptr)(&framePointer, ARG_F32(0), ARG_I32(1), ARG_I32(2), pPortableEntryPoint);
     }
 
     static void CallFunc_I32_RetVoid(PCODE pcode, int8_t* pArgs, int8_t* pRet)
@@ -573,25 +573,25 @@ namespace
         (*fptr)(ARG_I32(0), ARG_I32(1), ARG_I32(2), ARG_I32(3), ARG_I32(4), ARG_I32(5));
     }
 
-    NOINLINE static void CallFunc_I32_I32_I32_RetVoid_PE(PCODE pcode, int8_t* pArgs, int8_t* pRet, PCODE pPortableEntryPointContext)
+    NOINLINE static void CallFunc_I32_I32_I32_RetVoid_PE(PCODE pPortableEntryPoint, int8_t* pArgs, int8_t* pRet)
     {
         alignas(16) int framePointer = TERMINATE_R2R_STACK_WALK;
-        void (*fptr)(int*, int32_t, int32_t, int32_t, PCODE) = (void (*)(int*, int32_t, int32_t, int32_t, PCODE))pcode;
-        (*fptr)(&framePointer, ARG_I32(0), ARG_I32(1), ARG_I32(2), pPortableEntryPointContext);
+        void (*fptr)(int*, int32_t, int32_t, int32_t, PCODE) = *(void (**)(int*, int32_t, int32_t, int32_t, PCODE))(pPortableEntryPoint);
+        (*fptr)(&framePointer, ARG_I32(0), ARG_I32(1), ARG_I32(2), pPortableEntryPoint);
     }
 
-    NOINLINE static void CallFunc_I32_I32_RetVoid_PE(PCODE pcode, int8_t* pArgs, int8_t* pRet, PCODE pPortableEntryPointContext)
+    NOINLINE static void CallFunc_I32_I32_RetVoid_PE(PCODE pPortableEntryPoint, int8_t* pArgs, int8_t* pRet)
     {
         alignas(16) int framePointer = TERMINATE_R2R_STACK_WALK;
-        void (*fptr)(int*, int32_t, int32_t, PCODE) = (void (*)(int*, int32_t, int32_t, PCODE))pcode;
-        (*fptr)(&framePointer, ARG_I32(0), ARG_I32(1), pPortableEntryPointContext);
+        void (*fptr)(int*, int32_t, int32_t, PCODE) = *(void (**)(int*, int32_t, int32_t, PCODE))(pPortableEntryPoint);
+        (*fptr)(&framePointer, ARG_I32(0), ARG_I32(1), pPortableEntryPoint);
     }
 
-    NOINLINE static void CallFunc_I32_RetVoid_PE(PCODE pcode, int8_t* pArgs, int8_t* pRet, PCODE pPortableEntryPointContext)
+    NOINLINE static void CallFunc_I32_RetVoid_PE(PCODE pPortableEntryPoint, int8_t* pArgs, int8_t* pRet)
     {
         alignas(16) int framePointer = TERMINATE_R2R_STACK_WALK;
-        void (*fptr)(int*, int32_t, PCODE) = (void (*)(int*, int32_t, PCODE))pcode;
-        (*fptr)(&framePointer, ARG_I32(0), pPortableEntryPointContext);
+        void (*fptr)(int*, int32_t, PCODE) = *(void (**)(int*, int32_t, PCODE))(pPortableEntryPoint);
+        (*fptr)(&framePointer, ARG_I32(0), pPortableEntryPoint);
     }
 
     static void CallFunc_I64_RetVoid(PCODE pcode, int8_t* pArgs, int8_t* pRet)
@@ -600,11 +600,11 @@ namespace
         (*fptr)(ARG_I64(0));
     }
 
-    NOINLINE static void CallFunc_Void_RetVoid_PE(PCODE pcode, int8_t* pArgs, int8_t* pRet, PCODE pPortableEntryPointContext)
+    NOINLINE static void CallFunc_Void_RetVoid_PE(PCODE pPortableEntryPoint, int8_t* pArgs, int8_t* pRet)
     {
         alignas(16) int framePointer = TERMINATE_R2R_STACK_WALK;
-        void (*fptr)(int*, PCODE) = (void (*)(int*, PCODE))pcode;
-        (*fptr)(&framePointer, pPortableEntryPointContext);
+        void (*fptr)(int*, PCODE) = *(void (**)(int*, PCODE))(pPortableEntryPoint);
+        (*fptr)(&framePointer, pPortableEntryPoint);
     }
 }
 
