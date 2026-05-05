@@ -1645,6 +1645,9 @@ namespace System.Xml.Serialization
                         if (a.XmlText.Separator != '\0')
                         {
                             ValidateSeparatorChar(a.XmlText.Separator, accessorName);
+                            if (text.Mapping is SpecialMapping)
+                                throw new InvalidOperationException(SR.Format(SR.XmlIllegalArrayTextSeparator, accessorName));
+
                             text.Separator = a.XmlText.Separator;
                         }
 

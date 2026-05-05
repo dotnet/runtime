@@ -819,6 +819,28 @@ public static partial class XmlSerializerTests
     }
 
     [Fact]
+    public static void XML_XmlTextSeparator_XmlNodeMixedContent_ThrowsWithReflectingFieldMessage()
+    {
+        Exception ex = Record.Exception(() =>
+        {
+#if XMLSERIALIZERGENERATORTESTS
+            new XmlReflectionImporter().ImportTypeMapping(typeof(TypeWithXmlTextSeparatorOnXmlNodeMixedContent));
+#else
+            var serializer = new XmlSerializer(typeof(TypeWithXmlTextSeparatorOnXmlNodeMixedContent));
+#if ReflectionOnly
+            // The reflection-based serializer doesn't perform xml/type mapping in the constructor;
+            // mapping (and therefore separator validation) happens during the first Serialize/Deserialize
+            // call. Force the mapping to happen by serializing a default instance.
+            using var sw = new StringWriter();
+            serializer.Serialize(sw, new TypeWithXmlTextSeparatorOnXmlNodeMixedContent());
+#endif
+#endif
+        });
+
+        AssertXmlMappingException(ex, nameof(TypeWithXmlTextSeparatorOnXmlNodeMixedContent), nameof(TypeWithXmlTextSeparatorOnXmlNodeMixedContent.All), "Separator");
+    }
+
+    [Fact]
     public static void Xml_TypeWithSchemaFormInXmlAttribute()
     {
         var value = new TypeWithSchemaFormInXmlAttribute() { TestProperty = "hello" };
@@ -3095,6 +3117,13 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
     private static string FormatTimeString(TimeOnly time) => time.ToString($"HH:mm:ss.FFFFFFF", CultureInfo.InvariantCulture);
     private static string FormatTimeString(DateTime time, bool ignoreUtc)
         => time.ToString($"HH:mm:ss.fffffff{(!ignoreUtc && time.Kind == DateTimeKind.Utc ? "Z" : "zzzzzz")}", CultureInfo.InvariantCulture);
+}
+
+public class TypeWithXmlTextSeparatorOnXmlNodeMixedContent
+{
+    [XmlText(typeof(XmlNode), Separator = ',')]
+    [XmlElement(typeof(int))]
+    public object[] All = new object[] { 1 };
 }
 
 internal sealed class XmlSerializerAppContextSwitchScope : IDisposable

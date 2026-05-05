@@ -50,9 +50,9 @@ namespace System.Xml.Serialization
             set { _dataType = value; }
         }
 
-        /// <summary>Gets or sets the separator character used when serializing an array to XML text content.</summary>
+        /// <summary>Gets or sets the separator character used when serializing an array of strings to XML text content.</summary>
         /// <remarks>
-        /// When set to a non-default value (i.e., not the null character <c>'\0'</c>), array items are serialized
+        /// When set to a non-default value (i.e., not the null character <c>'\0'</c>), string array items are serialized
         /// with this character as separator, and deserialization splits the text content on this character.
         /// The default value of <c>'\0'</c> means no separator: array items are concatenated without any separator,
         /// preserving the existing behavior.
