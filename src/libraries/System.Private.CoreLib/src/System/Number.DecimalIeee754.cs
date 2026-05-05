@@ -283,7 +283,8 @@ namespace System
                 return 1;
             }
 
-            return InternalUnsignedCompare(current, other);
+            int result = InternalUnsignedCompare(current, other);
+            return current.Signed ? -result : result;
 
             // This method is needed to correctly compare decimals that represent the same numeric value
             // but have different exponent/significand pairs. For example, 10e2 and 1e3 have different exponents,

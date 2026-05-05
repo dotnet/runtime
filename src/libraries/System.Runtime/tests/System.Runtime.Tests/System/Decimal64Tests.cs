@@ -293,6 +293,8 @@ namespace System.Tests
         public static IEnumerable<object[]> CompareTo_Other_ReturnsExpected_TestData()
         {
             yield return new object[] { new Decimal64(-1, 1), new Decimal64(-10, 0), 0 };
+            yield return new object[] { new Decimal64(-2, 1), new Decimal64(-3, 1), 1 };
+            yield return new object[] { new Decimal64(3, 1), new Decimal64(2, 1), 1 };
             yield return new object[] { new Decimal64(1, 369), new Decimal64(10, 368), 0 };
             yield return new object[] { new Decimal64(long.Parse(new string('9', 15)), 369), new Decimal64(long.Parse(new string('9', 15) + "0"), 368), 0 };
             yield return new object[] { new Decimal64(1, 1), new Decimal64(-1, 0), 1 };

@@ -461,12 +461,14 @@ namespace System
             if (TValue.IsZero(unpackDecimal.Significand))
             {
                 number.Scale = unpackDecimal.UnbiasedExponent < 0 ? unpackDecimal.UnbiasedExponent : 0;
+                number.DigitsCount = 0;
+                number.Digits[0] = (byte)'\0';
                 return;
             }
 
             string significand = TDecimal.ToDecStr(unpackDecimal.Significand);
 
-            Debug.Assert(significand.Length <= TDecimal.BufferLength);
+            Debug.Assert(significand.Length < TDecimal.BufferLength);
 
             for (int i = 0; i < significand.Length; i++)
             {

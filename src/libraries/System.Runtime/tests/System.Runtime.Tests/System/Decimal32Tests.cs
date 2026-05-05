@@ -291,6 +291,8 @@ namespace System.Tests
         public static IEnumerable<object[]> CompareTo_Other_ReturnsExpected_TestData()
         {
             yield return new object[] { new Decimal32(-1, 1), new Decimal32(-10, 0), 0 };
+            yield return new object[] { new Decimal32(-2, 1), new Decimal32(-3, 1), 1 };
+            yield return new object[] { new Decimal32(3, 1), new Decimal32(2, 1), 1 };
             yield return new object[] { new Decimal32(1, 90), new Decimal32(10, 89), 0 };
             yield return new object[] { new Decimal32(999999, 90), new Decimal32(9999990, 89), 0 };
             yield return new object[] { new Decimal32(1, 1), new Decimal32(-1, 0), 1 };

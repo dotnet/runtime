@@ -292,6 +292,8 @@ namespace System.Tests
         public static IEnumerable<object[]> CompareTo_Other_ReturnsExpected_TestData()
         {
             yield return new object[] { new Decimal128(-1, 1), new Decimal128(-10, 0), 0 };
+            yield return new object[] { new Decimal128(-2, 1), new Decimal128(-3, 1), 1 };
+            yield return new object[] { new Decimal128(3, 1), new Decimal128(2, 1), 1 };
             yield return new object[] { new Decimal128(1, 6144), new Decimal128(10, 6143), 0 };
             yield return new object[] { new Decimal128(Int128.Parse(new string('9', 33)), 6111), new Decimal128(Int128.Parse(new string('9', 33) + "0"), 6110), 0 };
             yield return new object[] { Decimal128.Parse(new string('9', 33) + new string('0', 6111)), new Decimal128(Int128.Parse(new string('9', 32) + "8"), 6110), 1 };
