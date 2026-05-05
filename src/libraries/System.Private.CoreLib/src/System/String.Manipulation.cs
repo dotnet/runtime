@@ -2115,7 +2115,8 @@ namespace System
             }
             Debug.Assert(sourceSpan.Length >= Vector128<ushort>.Count*2);
             int baseIndex = 0;
-            ReadOnlySpan<char> remaining = sourceSpan;
+            ReadOnlySpan<ushort> sourceSpanUInt16 = MemoryMarshal.Cast<char, ushort>(sourceSpan);
+            ReadOnlySpan<ushort> remaining = sourceSpanUInt16;
 
             if (Vector512.IsHardwareAccelerated && (uint)remaining.Length >= (uint)Vector512<ushort>.Count*2)
             {
@@ -2196,10 +2197,10 @@ namespace System
                 // We do a whole vector's worth again, but just mask out the bits we've already handled.
                 if (remaining.Length > 0)
                 {
-                    Vector512<ushort> vector = Vector512.Create(sourceSpan.Slice(sourceSpan.Length - Vector512<ushort>.Count));
+                    Vector512<ushort> vector = Vector512.Create(sourceSpanUInt16.Slice(sourceSpanUInt16.Length - Vector512<ushort>.Count));
                     Vector512<ushort> v1Eq = Vector512.Equals(vector, v1);
                     Vector512<byte> cmp = v1Eq.AsByte();
-                    int finalIndex = sourceSpan.Length - Vector512<ushort>.Count;
+                    int finalIndex = sourceSpanUInt16.Length - Vector512<ushort>.Count;
                     ulong mask = cmp.ExtractMostSignificantBits() & 0x5555555555555555 & ~((1UL << (Vector512<byte>.Count - remaining.Length * sizeof(char))) - 1);
                     while (mask != 0)
                     {
@@ -2289,10 +2290,10 @@ namespace System
                 // We do a whole vector's worth again, but just mask out the bits we've already handled.
                 if (remaining.Length > 0)
                 {
-                    Vector256<ushort> vector = Vector256.Create(sourceSpan.Slice(sourceSpan.Length - Vector256<ushort>.Count));
+                    Vector256<ushort> vector = Vector256.Create(sourceSpanUInt16.Slice(sourceSpanUInt16.Length - Vector256<ushort>.Count));
                     Vector256<ushort> v1Eq = Vector256.Equals(vector, v1);
                     Vector256<byte> cmp = v1Eq.AsByte();
-                    int finalIndex = sourceSpan.Length - Vector256<ushort>.Count;
+                    int finalIndex = sourceSpanUInt16.Length - Vector256<ushort>.Count;
                     uint mask = cmp.ExtractMostSignificantBits() & 0x55555555 & ~((1u << (Vector256<byte>.Count - remaining.Length * sizeof(char))) - 1);
                     while (mask != 0)
                     {
@@ -2382,10 +2383,10 @@ namespace System
                 // We do a whole vector's worth again, but just mask out the bits we've already handled.
                 if (remaining.Length > 0)
                 {
-                    Vector128<ushort> vector = Vector128.Create(sourceSpan.Slice(sourceSpan.Length - Vector128<ushort>.Count));
+                    Vector128<ushort> vector = Vector128.Create(sourceSpanUInt16.Slice(sourceSpanUInt16.Length - Vector128<ushort>.Count));
                     Vector128<ushort> v1Eq = Vector128.Equals(vector, v1);
                     Vector128<byte> cmp = v1Eq.AsByte();
-                    int finalIndex = sourceSpan.Length - Vector128<ushort>.Count;
+                    int finalIndex = sourceSpanUInt16.Length - Vector128<ushort>.Count;
                     uint mask = cmp.ExtractMostSignificantBits() & 0x5555 & ~((1u << (Vector128<byte>.Count - remaining.Length * sizeof(char))) - 1);
                     while (mask != 0)
                     {
