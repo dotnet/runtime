@@ -88,9 +88,10 @@ internal readonly struct Thread_1 : IThread
         TargetPointer address = _target.ReadPointer(thread.ExceptionTracker);
         TargetPointer firstNestedException = TargetPointer.Null;
         bool hasUnhandledException = false;
+        Data.ExceptionInfo? exceptionInfo = null;
         if (address != TargetPointer.Null)
         {
-            Data.ExceptionInfo exceptionInfo = _target.ProcessedData.GetOrAdd<Data.ExceptionInfo>(address);
+            exceptionInfo = _target.ProcessedData.GetOrAdd<Data.ExceptionInfo>(address);
             firstNestedException = exceptionInfo.PreviousNestedInfo;
 
             if (exceptionInfo.ThrownObject != TargetPointer.Null)
@@ -104,6 +105,16 @@ internal readonly struct Thread_1 : IThread
         if (thread.LastThrownObjectIsUnhandled != 0)
             hasUnhandledException = true;
 
+        // Prefer the active exception from ExInfo (pseudo-handle to m_exception field).
+        // After the removal of SetThrowable/m_hThrowable, m_LastThrownObjectHandle is only
+        // updated after exception dispatch completes, so during active dispatch it may be
+        // stale.  The pseudo-handle has the same dereference semantics as a real GC handle.
+        TargetPointer lastThrownObjectHandle = GetActiveExceptionPseudoHandle(exceptionInfo, address);
+        if (lastThrownObjectHandle == TargetPointer.Null)
+        {
+            lastThrownObjectHandle = thread.LastThrownObject.Handle;
+        }
+
         return new ThreadData(
             threadPointer,
             thread.Id,
@@ -115,7 +126,7 @@ internal readonly struct Thread_1 : IThread
             thread.Frame,
             firstNestedException,
             thread.ExposedObject.Handle,
-            thread.LastThrownObject.Handle,
+            lastThrownObjectHandle,
             thread.CurrentCustomDebuggerNotification.Handle,
             thread.LastThrownObjectIsUnhandled != 0,
             hasUnhandledException,
@@ -218,17 +229,25 @@ internal readonly struct Thread_1 : IThread
         return (thread, exceptionInfo, exceptionTrackerPtr);
     }
 
-    TargetPointer IThread.GetCurrentExceptionHandle(TargetPointer threadPointer)
+    /// <summary>
+    /// Returns the target address of the ExInfo::m_exception field as a pseudo-handle
+    /// if there is an active exception tracker with a non-null thrown object.
+    /// Callers dereference this address to read the exception Object*, just like a real
+    /// GC handle.  Returns TargetPointer.Null when no active exception is present.
+    /// </summary>
+    private TargetPointer GetActiveExceptionPseudoHandle(Data.ExceptionInfo? exceptionInfo, TargetPointer exceptionTrackerAddr)
     {
-        var (_, exceptionInfo, exceptionTrackerAddr) = GetThreadExceptionInfo(threadPointer);
-
         if (exceptionInfo is null || exceptionInfo.ThrownObject == TargetPointer.Null)
             return TargetPointer.Null;
 
-        // Return the target address of the ThrownObject field as a pseudo-handle.
-        // Callers dereference this address to read the exception Object*.
         Target.TypeInfo type = _target.GetTypeInfo(DataType.ExceptionInfo);
         return exceptionTrackerAddr + (ulong)type.Fields[nameof(Data.ExceptionInfo.ThrownObject)].Offset;
+    }
+
+    TargetPointer IThread.GetCurrentExceptionHandle(TargetPointer threadPointer)
+    {
+        var (_, exceptionInfo, exceptionTrackerAddr) = GetThreadExceptionInfo(threadPointer);
+        return GetActiveExceptionPseudoHandle(exceptionInfo, exceptionTrackerAddr);
     }
 
     byte[] IThread.GetWatsonBuckets(TargetPointer threadPointer)
