@@ -6768,6 +6768,11 @@ HRESULT Debugger::LaunchJitDebuggerAndNativeAttach(Thread * pThread, EXCEPTION_P
     }
     CONTRACTL_END;
 
+#ifdef TARGET_UNIX
+    // JIT-attach via CreateProcess + waitable process handle is Windows-only. Returning a
+    // failing HRESULT lets the calling code fall back to the standard hosting failure path.
+    return E_NOTIMPL;
+#else
     // You need to have called PreJitAttach first to determine which thread gets to launch the debugger
     _ASSERTE(m_jitAttachInProgress);
 
@@ -6847,7 +6852,7 @@ HRESULT Debugger::LaunchJitDebuggerAndNativeAttach(Thread * pThread, EXCEPTION_P
     _ASSERTE((res == WAIT_OBJECT_0) && "WaitForMultipleObjectsEx failed!");
     LOG( (LF_CORDB, LL_INFO10000, "D::LJDANA: Leaving\n") );
     return S_OK;
-
+#endif // TARGET_UNIX
 }
 
 // Blocks until the debugger completes jit attach

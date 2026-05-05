@@ -16,10 +16,8 @@
 
 #ifdef __APPLE__
 #include <mach/mach.h>
-#include <mach/mach_vm.h>
 #else
 #include <fcntl.h>
-#include <stdio.h>
 #endif
 
 class ShimRemoteDataTarget : public ShimDataTarget

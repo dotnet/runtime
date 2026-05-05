@@ -29,9 +29,6 @@ Abstract:
 
 #include <sys/types.h>
 #include <unistd.h>
-#if HAVE_KQUEUE
-#include <sys/event.h>
-#endif // HAVE_KQUEUE
 #include "pal/dbgmsg.h"
 
 #ifdef _DEBUG
@@ -398,39 +395,17 @@ namespace CorUnix
             SynchMgrStatusReadyForProcessShutDown,
             SynchMgrStatusError
         };
-        enum SynchWorkerCmd
-        {
-            SynchWorkerCmdNop,
-            SynchWorkerCmdShutdown,
-            SynchWorkerCmdLast
-        };
 
         // constants
         static const int CtrlrsCacheMaxSize                = 256;
         static const int SynchDataCacheMaxSize             = 256;
         static const int WTListNodeCacheMaxSize            = 256;
-        static const int MaxWorkerConsecutiveEintrs        = 128;
-        static const int MaxConsecutiveEagains             = 128;
-        static const int WorkerThreadShuttingDownTimeout   = 1000; // ms
-        static const int WorkerCmdCompletionTimeout        = 250;  // ms
         static const DWORD SecondNativeWaitTimeout         = INFINITE;
-        static const DWORD WorkerThreadTerminationTimeout  = 2000; // ms
 
         // static members
         static CPalSynchronizationManager * s_pObjSynchMgr;
         static Volatile<LONG>               s_lInitStatus;
         static minipal_mutex             s_csSynchProcessLock;
-
-        // members
-        DWORD                           m_dwWorkerThreadTid;
-        IPalObject *                    m_pipoThread;
-        CPalThread *                    m_pthrWorker;
-        int                             m_iProcessPipeRead;
-        int                             m_iProcessPipeWrite;
-#if HAVE_KQUEUE
-        int                             m_iKQueue;
-        struct kevent                   m_keProcessPipeEvent;
-#endif // HAVE_KQUEUE
 
         // caches
         CSynchWaitControllerCache       m_cacheWaitCtrlrs;
@@ -442,7 +417,6 @@ namespace CorUnix
 
         // static methods
         static PAL_ERROR Initialize();
-        static DWORD PALAPI WorkerThread(LPVOID pArg);
 
     protected:
         CPalSynchronizationManager();
@@ -456,7 +430,6 @@ namespace CorUnix
 
     private:
         static IPalSynchronizationManager * CreatePalSynchronizationManager();
-        static PAL_ERROR StartWorker(CPalThread * pthrCurrent);
         static PAL_ERROR PrepareForShutdown(void);
 
     public:
@@ -677,35 +650,6 @@ namespace CorUnix
             DWORD * pdwSignaledObject);
 
         static void ThreadPrepareForShutdown(void);
-
-#ifndef CORECLR
-        static bool GetProcessPipeName(
-            LPSTR pDest,
-            int iDestSize,
-            DWORD dwPid);
-#endif // !CORECLR
-
-        //
-        // Non-static helper methods
-        //
-    private:
-        PAL_ERROR ReadCmdFromProcessPipe(
-            int iPollTimeout,
-            SynchWorkerCmd * pswcWorkerCmd,
-            SharedID * pshridMarshaledData,
-            DWORD * pdwData);
-
-        PAL_ERROR WakeUpLocalWorkerThread(
-            SynchWorkerCmd swcWorkerCmd);
-
-        int ReadBytesFromProcessPipe(
-            int iTimeout,
-            BYTE * pRecvBuf,
-            LONG lBytes);
-
-        bool CreateProcessPipe();
-
-        PAL_ERROR ShutdownProcessPipe();
 
     public:
         //
