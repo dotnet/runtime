@@ -6801,18 +6801,7 @@ private:
     GenTree* fgMorphIntoHelperCall(
         GenTree* tree, int helper, bool morphArgs, GenTree* arg1 = nullptr, GenTree* arg2 = nullptr);
 
-    // A "MorphAddrContext" carries information from the surrounding context.  If we are evaluating a byref address,
-    // it is useful to know whether the address will be immediately dereferenced, or whether the address value will
-    // be used, perhaps by passing it as an argument to a called method.  This affects how null checking is done:
-    // for sufficiently small offsets, we can rely on OS page protection to implicitly null-check addresses that we
-    // know will be dereferenced.  To know that reliance on implicit null checking is sound, we must further know that
-    // all offsets between the top-level indirection and the bottom are constant, and that their sum is sufficiently
-    // small; hence the other fields of MorphAddrContext.
-    struct MorphAddrContext
-    {
-        GenTreeIndir* m_user = nullptr;  // Indirection using this address.
-        size_t        m_totalOffset = 0; // Sum of offsets between the top-level indirection and here (current context).
-    };
+    void fgMarkAddrModeForFieldAddr(GenTreeIndir* indir);
 
 #ifdef FEATURE_SIMD
     GenTree* getSIMDStructFromField(GenTree*  tree,
@@ -6847,8 +6836,8 @@ public:
     void fgAssignSetVarDef(GenTree* tree);
 
 private:
-    GenTree* fgMorphFieldAddr(GenTree* tree, MorphAddrContext* mac);
-    GenTree* fgMorphExpandInstanceField(GenTree* tree, MorphAddrContext* mac);
+    GenTree* fgMorphFieldAddr(GenTree* tree);
+    GenTree* fgMorphExpandInstanceField(GenTree* tree);
     GenTree* fgMorphExpandTlsFieldAddr(GenTree* tree);
     bool fgCanFastTailCall(GenTreeCall* call, const char** failReason);
 #if FEATURE_FASTTAILCALL
@@ -6903,7 +6892,7 @@ public:
     GenTree* fgMorphInitBlock(GenTree* tree);
     GenTree* fgMorphCopyBlock(GenTree* tree);
 private:
-    GenTree* fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optAssertionPropDone = nullptr);
+    GenTree* fgMorphSmpOp(GenTree* tree, bool* optAssertionPropDone = nullptr);
     bool fgTryReplaceStructLocalWithFields(GenTree** use);
     GenTree* fgMorphFinalizeIndir(GenTreeIndir* indir);
     GenTree* fgOptimizeCast(GenTreeCast* cast);
@@ -6940,7 +6929,7 @@ private:
     GenTree* fgMorphReduceAddOps(GenTree* tree);
 
 public:
-    GenTree* fgMorphTree(GenTree* tree, MorphAddrContext* mac = nullptr);
+    GenTree* fgMorphTree(GenTree* tree);
 
 private:
     void fgAssertionGen(GenTree* tree);
