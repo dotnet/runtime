@@ -533,10 +533,12 @@ namespace ILCompiler.Reflection.ReadyToRun
     {
         private readonly MetadataReader _metadataReader;
         private readonly WebcilImageReader _webcilReader;
+        private readonly byte[] _metadataBytes;
 
         public WebcilAssemblyMetadata(byte[] metadataBytes, WebcilImageReader webcilReader)
         {
             _webcilReader = webcilReader;
+            _metadataBytes = metadataBytes;
             fixed (byte* p = metadataBytes)
             {
                 _metadataReader = new MetadataReader(p, metadataBytes.Length);
