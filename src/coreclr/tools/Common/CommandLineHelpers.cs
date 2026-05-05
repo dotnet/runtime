@@ -120,7 +120,7 @@ namespace System.CommandLine
             }
         }
 
-        public static (TargetArchitecture, TargetOS, TargetAbi) GetTargetDetails(string targetArchitectureToken, string targetOSToken)
+        public static (TargetArchitecture, TargetOS, TargetAbi) GetTargetSpec(string targetArchitectureToken, string targetOSToken)
         {
             targetArchitectureToken = targetArchitectureToken?.ToLowerInvariant();
             targetOSToken = targetOSToken?.ToLowerInvariant();
