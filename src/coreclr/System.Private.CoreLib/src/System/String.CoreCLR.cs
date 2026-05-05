@@ -13,7 +13,6 @@ namespace System
     {
         [Intrinsic]
         [MethodImpl(MethodImplOptions.InternalCall)]
-        [RequiresUnsafe]
         private static extern unsafe string FastAllocateString(MethodTable *pMT, nint length);
 
         [DebuggerHidden]
@@ -53,7 +52,6 @@ namespace System
             }
         }
 
-        [RequiresUnsafe]
         internal unsafe int GetBytesFromEncoding(byte* pbNativeBuffer, int cbNativeBuffer, Encoding encoding)
         {
             // encoding == Encoding.UTF8
