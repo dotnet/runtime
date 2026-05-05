@@ -288,8 +288,8 @@ void CodeGen::genEmbeddedMaskedHWIntrinsic(const HWIntrinsic intrinCndSel, regNu
     const HWIntrinsic intrinEmbMask(embMaskOp->AsHWIntrinsic());
     instruction       insEmbMask = HWIntrinsicInfo::lookupIns(intrinEmbMask.id, intrinEmbMask.baseType, m_compiler);
 
-    bool isRMW             = embMaskOp->isRMWHWIntrinsic(m_compiler);
-    bool isOptionalEmbMask = HWIntrinsicInfo::IsOptionalEmbeddedMaskedOperation(intrinEmbMask.id);
+    const bool isRMW             = embMaskOp->isRMWHWIntrinsic(m_compiler);
+    bool       isOptionalEmbMask = HWIntrinsicInfo::IsOptionalEmbeddedMaskedOperation(intrinEmbMask.id);
 
     regNumber maskReg       = maskOp->GetRegNum();
     regNumber embMaskOp1Reg = REG_NA;
@@ -328,6 +328,10 @@ void CodeGen::genEmbeddedMaskedHWIntrinsic(const HWIntrinsic intrinCndSel, regNu
     insOpts         opt      = emitter::optGetSveInsOpt(emitTypeSize(intrinCndSel.baseType));
     insOpts         embOpt   = opt;
     insScalableOpts sopt     = INS_SCALABLE_OPTS_NONE;
+
+#ifdef DEBUG
+    checkRMWRegisters(intrinEmbMask, targetReg);
+#endif
 
     // Setup instruction options and handle special cases.
     if (intrinEmbMask.numOperands == 1)
@@ -423,8 +427,6 @@ void CodeGen::genEmbeddedMaskedHWIntrinsic(const HWIntrinsic intrinCndSel, regNu
                 embOpt = INS_OPTS_SCALABLE_B;
                 // This instruction is zeroing predicated, just use unpredicated mov.
                 assert(falseOp->IsVectorZero());
-                assert((targetReg == embMaskOp2Reg) || (targetReg != embMaskOp1Reg) ||
-                       genIsSameLocalVar(intrinEmbMask.op1, intrinEmbMask.op2));
                 GetEmitter()->emitInsSve_R_R_R_R(insEmbMask, emitSize, targetReg, maskReg, embMaskOp1Reg, embMaskOp2Reg,
                                                  embOpt, sopt);
                 return;
@@ -436,8 +438,6 @@ void CodeGen::genEmbeddedMaskedHWIntrinsic(const HWIntrinsic intrinCndSel, regNu
                 // but the FADDA instruction only has a predicated variant.
                 // Thus, we expect the JIT to wrap this with CndSel.
                 assert(falseOp->IsVectorZero());
-                assert((targetReg == embMaskOp1Reg) || (targetReg != embMaskOp2Reg) ||
-                       genIsSameLocalVar(intrinEmbMask.op1, intrinEmbMask.op2));
                 GetEmitter()->emitInsSve_R_R_R_R(insEmbMask, emitSize, targetReg, maskReg, embMaskOp1Reg, embMaskOp2Reg,
                                                  embOpt, sopt);
                 return;
@@ -448,8 +448,6 @@ void CodeGen::genEmbeddedMaskedHWIntrinsic(const HWIntrinsic intrinCndSel, regNu
             {
                 // These instructions do not support movprfx.
                 embOpt = INS_OPTS_D_TO_S;
-                assert((targetReg == embMaskOp1Reg) || (targetReg != embMaskOp2Reg) ||
-                       genIsSameLocalVar(intrinEmbMask.op1, intrinEmbMask.op2));
                 FALLTHROUGH;
             }
 
@@ -740,6 +738,74 @@ void CodeGen::genEmbeddedMaskedHWIntrinsic(const HWIntrinsic intrinCndSel, regNu
     }
 }
 
+#ifdef DEBUG
+void CodeGen::checkRMWRegisters(const HWIntrinsic intrin, regNumber targetReg)
+{
+    GenTree* rmwOp;
+    switch (intrin.id)
+    {
+        case NI_Sve2_AddCarryWideningEven:
+        case NI_Sve2_AddCarryWideningOdd:
+            // RMW operates on op3
+            rmwOp = intrin.op3;
+            break;
+        case NI_Sve_CreateBreakPropagateMask:
+        case NI_Sve2_BitwiseSelect:
+        case NI_Sve2_BitwiseSelectLeftInverted:
+        case NI_Sve2_BitwiseSelectRightInverted:
+            // RMW operates on op2
+            rmwOp = intrin.op2;
+            break;
+        default:
+            if (HWIntrinsicInfo::IsExplicitMaskedOperation(intrin.id))
+            {
+                rmwOp = intrin.op2;
+            }
+            else
+            {
+                rmwOp = intrin.op1;
+            }
+            break;
+    }
+
+    regNumber rmwReg = rmwOp->GetRegNum();
+    if (targetReg != rmwReg)
+    {
+        switch (intrin.numOperands)
+        {
+            case 5:
+                assert((targetReg != intrin.op5->GetRegNum()) || genIsSameLocalVar(rmwOp, intrin.op5));
+                FALLTHROUGH;
+
+            case 4:
+                assert((targetReg != intrin.op4->GetRegNum()) || genIsSameLocalVar(rmwOp, intrin.op4));
+                FALLTHROUGH;
+
+            case 3:
+                if (rmwReg != intrin.op3->GetRegNum())
+                {
+                    assert((targetReg != intrin.op3->GetRegNum()) || genIsSameLocalVar(rmwOp, intrin.op3));
+                }
+                FALLTHROUGH;
+
+            case 2:
+                if (rmwReg != intrin.op2->GetRegNum())
+                {
+                    assert((targetReg != intrin.op2->GetRegNum()) || genIsSameLocalVar(rmwOp, intrin.op2));
+                }
+                if (rmwReg != intrin.op1->GetRegNum())
+                {
+                    assert((targetReg != intrin.op1->GetRegNum()) || genIsSameLocalVar(rmwOp, intrin.op1));
+                }
+                break;
+
+            default:
+                break;
+        }
+    }
+}
+#endif // DEBUG
+
 //------------------------------------------------------------------------
 // genHWIntrinsic: Generates the code for a given hardware intrinsic node.
 //
@@ -837,68 +903,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
     // If we see an optional embedded masked operation here, it is not embedded (and not RMW).
     if (isRMW && !HWIntrinsicInfo::IsOptionalEmbeddedMaskedOperation(intrin.id))
     {
-        GenTree* rmwOp;
-        switch (intrin.id)
-        {
-            case NI_Sve2_AddCarryWideningEven:
-            case NI_Sve2_AddCarryWideningOdd:
-                // RMW operates on op3
-                rmwOp = intrin.op3;
-                break;
-            case NI_Sve_CreateBreakPropagateMask:
-            case NI_Sve2_BitwiseSelect:
-            case NI_Sve2_BitwiseSelectLeftInverted:
-            case NI_Sve2_BitwiseSelectRightInverted:
-                // RMW operates on op2
-                rmwOp = intrin.op2;
-                break;
-            default:
-                if (HWIntrinsicInfo::IsExplicitMaskedOperation(intrin.id))
-                {
-                    rmwOp = intrin.op2;
-                }
-                else
-                {
-                    rmwOp = intrin.op1;
-                }
-                break;
-        }
-
-        regNumber rmwReg = rmwOp->GetRegNum();
-        if (targetReg != rmwReg)
-        {
-            switch (intrin.numOperands)
-            {
-                case 5:
-                    assert((targetReg != op5Reg) || genIsSameLocalVar(rmwOp, intrin.op5));
-                    FALLTHROUGH;
-
-                case 4:
-                    assert((targetReg != op4Reg) || genIsSameLocalVar(rmwOp, intrin.op4));
-                    FALLTHROUGH;
-
-                case 3:
-                    if (rmwReg != op3Reg)
-                    {
-                        assert((targetReg != op3Reg) || genIsSameLocalVar(rmwOp, intrin.op3));
-                    }
-                    FALLTHROUGH;
-
-                case 2:
-                    if (rmwReg != op2Reg)
-                    {
-                        assert((targetReg != op2Reg) || genIsSameLocalVar(rmwOp, intrin.op2));
-                    }
-                    if (rmwReg != op1Reg)
-                    {
-                        assert((targetReg != op1Reg) || genIsSameLocalVar(rmwOp, intrin.op1));
-                    }
-                    break;
-
-                default:
-                    break;
-            }
-        }
+        checkRMWRegisters(intrin, targetReg);
     }
 #endif // DEBUG
 
