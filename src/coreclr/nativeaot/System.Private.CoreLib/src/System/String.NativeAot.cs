@@ -18,6 +18,8 @@ namespace System
         [Intrinsic]
         public static readonly string Empty = "";
 
+        private const string RuntimeLibrary = "*";
+
         [Intrinsic]
         [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhNewString")]
