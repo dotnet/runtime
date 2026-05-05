@@ -911,7 +911,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public static void ReaderPreservesPositionInfoMultiByteUtf8String()
         {
-            // "😀葛🀄" occupies 11 bytes in UTF-8 (4 + 3 + 4) including surrogate pairs,
+            // "😀葛🀄" occupies 11 bytes in UTF-8 (4 + 3 + 4),
             // so the closing quote sits at byte index 13 and BytePositionInLine after the token is 14.
             byte[] utf8 = Encoding.UTF8.GetBytes("[\"😀葛🀄\"]");
 
