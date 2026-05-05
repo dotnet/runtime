@@ -507,11 +507,6 @@
         <target state="translated">Атрибуты "[In]" и "[Out]" поддерживаются только для параметров массива. Рассмотрите возможность использования ключевого слова "ref", чтобы сделать параметр изменяемым.</target>
         <note />
       </trans-unit>
-      <trans-unit id="InOutAttributes">
-        <source>[In] and [Out] attributes</source>
-        <target state="translated">Атрибуты [In] и [Out]</target>
-        <note />
-      </trans-unit>
       <trans-unit id="InVariantShouldBeRef">
         <source>Objects marshalled from VARIANTs as 'in' parameters in unmanaged-to-managed calls will not propagate back the updated result, even if the VARIANT is a VT_BYREF variant. Use a 'ref' parameter instead of an 'in' parameter to propagate the updated value back to the caller.</source>
         <target state="translated">Объекты, маршалированные из VARIANT в качестве параметров "in" в вызовах с переходом от неуправляемых к управляемым, не будут распространяться обратно на обновленный результат, даже если VARIANT является вариантом VT_BYREF. Используйте параметр "ref" вместо параметра "in", чтобы распространить обновленное значение обратно на вызывающую сторону.</target>

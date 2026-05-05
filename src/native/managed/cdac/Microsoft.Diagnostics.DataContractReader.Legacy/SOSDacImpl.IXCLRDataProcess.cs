@@ -20,9 +20,9 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
 {
     int IXCLRDataProcess.Flush()
     {
-        _target.ProcessedData.Clear();
+        _target.Flush();
 
-        // As long as any part of cDAC falls back to the legacy DAC, we need to propagate the Flush call
+        // Flush is always propagated — it's cache management, not data retrieval.
         if (_legacyProcess is not null)
             return _legacyProcess.Flush();
 
@@ -30,13 +30,13 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
     }
 
     int IXCLRDataProcess.StartEnumTasks(ulong* handle)
-        => _legacyProcess is not null ? _legacyProcess.StartEnumTasks(handle) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacyProcess is not null ? _legacyProcess.StartEnumTasks(handle) : HResults.E_NOTIMPL;
 
     int IXCLRDataProcess.EnumTask(ulong* handle, DacComNullableByRef<IXCLRDataTask> task)
-        => _legacyProcess is not null ? _legacyProcess.EnumTask(handle, task) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacyProcess is not null ? _legacyProcess.EnumTask(handle, task) : HResults.E_NOTIMPL;
 
     int IXCLRDataProcess.EndEnumTasks(ulong handle)
-        => _legacyProcess is not null ? _legacyProcess.EndEnumTasks(handle) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacyProcess is not null ? _legacyProcess.EndEnumTasks(handle) : HResults.E_NOTIMPL;
 
     int IXCLRDataProcess.GetTaskByOSThreadID(uint osThreadID, DacComNullableByRef<IXCLRDataTask> task)
     {
@@ -74,25 +74,25 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
     }
 
     int IXCLRDataProcess.GetTaskByUniqueID(ulong taskID, DacComNullableByRef<IXCLRDataTask> task)
-        => _legacyProcess is not null ? _legacyProcess.GetTaskByUniqueID(taskID, task) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacyProcess is not null ? _legacyProcess.GetTaskByUniqueID(taskID, task) : HResults.E_NOTIMPL;
 
     int IXCLRDataProcess.GetFlags(uint* flags)
-        => _legacyProcess is not null ? _legacyProcess.GetFlags(flags) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacyProcess is not null ? _legacyProcess.GetFlags(flags) : HResults.E_NOTIMPL;
 
     int IXCLRDataProcess.IsSameObject(IXCLRDataProcess* process)
-        => _legacyProcess is not null ? _legacyProcess.IsSameObject(process) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacyProcess is not null ? _legacyProcess.IsSameObject(process) : HResults.E_NOTIMPL;
 
     int IXCLRDataProcess.GetManagedObject(DacComNullableByRef<IXCLRDataValue> value)
-        => _legacyProcess is not null ? _legacyProcess.GetManagedObject(value) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacyProcess is not null ? _legacyProcess.GetManagedObject(value) : HResults.E_NOTIMPL;
 
     int IXCLRDataProcess.GetDesiredExecutionState(uint* state)
-        => _legacyProcess is not null ? _legacyProcess.GetDesiredExecutionState(state) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacyProcess is not null ? _legacyProcess.GetDesiredExecutionState(state) : HResults.E_NOTIMPL;
 
     int IXCLRDataProcess.SetDesiredExecutionState(uint state)
-        => _legacyProcess is not null ? _legacyProcess.SetDesiredExecutionState(state) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacyProcess is not null ? _legacyProcess.SetDesiredExecutionState(state) : HResults.E_NOTIMPL;
 
     int IXCLRDataProcess.GetAddressType(ClrDataAddress address, /*CLRDataAddressType*/ uint* type)
-        => _legacyProcess is not null ? _legacyProcess.GetAddressType(address, type) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacyProcess is not null ? _legacyProcess.GetAddressType(address, type) : HResults.E_NOTIMPL;
 
     int IXCLRDataProcess.GetRuntimeNameByAddress(
         ClrDataAddress address,
@@ -101,42 +101,42 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
         uint* nameLen,
         char* nameBuf,
         ClrDataAddress* displacement)
-        => _legacyProcess is not null ? _legacyProcess.GetRuntimeNameByAddress(address, flags, bufLen, nameLen, nameBuf, displacement) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacyProcess is not null ? _legacyProcess.GetRuntimeNameByAddress(address, flags, bufLen, nameLen, nameBuf, displacement) : HResults.E_NOTIMPL;
 
     int IXCLRDataProcess.StartEnumAppDomains(ulong* handle)
-        => _legacyProcess is not null ? _legacyProcess.StartEnumAppDomains(handle) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacyProcess is not null ? _legacyProcess.StartEnumAppDomains(handle) : HResults.E_NOTIMPL;
 
     int IXCLRDataProcess.EnumAppDomain(ulong* handle, /*IXCLRDataAppDomain*/ void** appDomain)
-        => _legacyProcess is not null ? _legacyProcess.EnumAppDomain(handle, appDomain) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacyProcess is not null ? _legacyProcess.EnumAppDomain(handle, appDomain) : HResults.E_NOTIMPL;
 
     int IXCLRDataProcess.EndEnumAppDomains(ulong handle)
-        => _legacyProcess is not null ? _legacyProcess.EndEnumAppDomains(handle) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacyProcess is not null ? _legacyProcess.EndEnumAppDomains(handle) : HResults.E_NOTIMPL;
 
     int IXCLRDataProcess.GetAppDomainByUniqueID(ulong id, /*IXCLRDataAppDomain*/ void** appDomain)
-        => _legacyProcess is not null ? _legacyProcess.GetAppDomainByUniqueID(id, appDomain) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacyProcess is not null ? _legacyProcess.GetAppDomainByUniqueID(id, appDomain) : HResults.E_NOTIMPL;
 
     int IXCLRDataProcess.StartEnumAssemblies(ulong* handle)
-        => _legacyProcess is not null ? _legacyProcess.StartEnumAssemblies(handle) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacyProcess is not null ? _legacyProcess.StartEnumAssemblies(handle) : HResults.E_NOTIMPL;
 
     int IXCLRDataProcess.EnumAssembly(ulong* handle, DacComNullableByRef<IXCLRDataAssembly> assembly)
-        => _legacyProcess is not null ? _legacyProcess.EnumAssembly(handle, assembly) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacyProcess is not null ? _legacyProcess.EnumAssembly(handle, assembly) : HResults.E_NOTIMPL;
 
     int IXCLRDataProcess.EndEnumAssemblies(ulong handle)
-        => _legacyProcess is not null ? _legacyProcess.EndEnumAssemblies(handle) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacyProcess is not null ? _legacyProcess.EndEnumAssemblies(handle) : HResults.E_NOTIMPL;
 
     int IXCLRDataProcess.StartEnumModules(ulong* handle)
-        => _legacyProcess is not null ? _legacyProcess.StartEnumModules(handle) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacyProcess is not null ? _legacyProcess.StartEnumModules(handle) : HResults.E_NOTIMPL;
 
     int IXCLRDataProcess.EnumModule(ulong* handle, DacComNullableByRef<IXCLRDataModule> mod)
-        => _legacyProcess is not null ? _legacyProcess.EnumModule(handle, mod) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacyProcess is not null ? _legacyProcess.EnumModule(handle, mod) : HResults.E_NOTIMPL;
 
     int IXCLRDataProcess.EndEnumModules(ulong handle)
-        => _legacyProcess is not null ? _legacyProcess.EndEnumModules(handle) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacyProcess is not null ? _legacyProcess.EndEnumModules(handle) : HResults.E_NOTIMPL;
 
     int IXCLRDataProcess.GetModuleByAddress(ClrDataAddress address, DacComNullableByRef<IXCLRDataModule> mod)
-        => _legacyProcess is not null ? _legacyProcess.GetModuleByAddress(address, mod) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacyProcess is not null ? _legacyProcess.GetModuleByAddress(address, mod) : HResults.E_NOTIMPL;
 
-    internal sealed class EnumMethodInstances
+    internal sealed class EnumMethodInstances : IEnum<MethodDescHandle>
     {
         private readonly Target _target;
         private readonly TargetPointer _mainMethodDesc;
@@ -144,7 +144,7 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
         private readonly ILoader _loader;
         private readonly IRuntimeTypeSystem _rts;
         private readonly ICodeVersions _cv;
-        public IEnumerator<MethodDescHandle> methodEnumerator = Enumerable.Empty<MethodDescHandle>().GetEnumerator();
+        public IEnumerator<MethodDescHandle> Enumerator { get; set; } = Enumerable.Empty<MethodDescHandle>().GetEnumerator();
         public TargetPointer LegacyHandle { get; set; } = TargetPointer.Null;
 
         public EnumMethodInstances(Target target, TargetPointer methodDesc, TargetPointer appDomain)
@@ -174,7 +174,7 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
                 return HResults.S_FALSE;
             }
 
-            methodEnumerator = IterateMethodInstances().GetEnumerator();
+            Enumerator = IterateMethodInstances().GetEnumerator();
 
             return HResults.S_OK;
         }
@@ -361,14 +361,30 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
                 EnumMethodInstances emi = new(_target, methodDesc, TargetPointer.Null);
                 emi.LegacyHandle = handleLocal;
 
-                GCHandle gcHandle = GCHandle.Alloc(emi);
-                *handle = (ulong)GCHandle.ToIntPtr(gcHandle).ToInt64();
                 hr = emi.Start();
+                if (hr == HResults.S_OK)
+                {
+                    *handle = (ulong)((IEnum<MethodDescHandle>)emi).GetHandle();
+                    // Legacy handle ownership transferred to emi — don't clean up below.
+                    handleLocal = default;
+                }
             }
         }
         catch (System.Exception ex)
         {
             hr = ex.HResult;
+        }
+        finally
+        {
+            // The legacy enumeration is started eagerly (before the cDAC try block) so
+            // that EnumMethodInstanceByAddress can advance both enumerations in lockstep.
+            // If the cDAC side fails to produce an enum (exception, no code block found,
+            // or emi.Start() returns S_FALSE), the legacy handle would be orphaned because
+            // the caller receives *handle == 0 and has no way to call End. Clean it up here.
+            if (_legacyProcess is not null && handleLocal != default)
+            {
+                _legacyProcess.EndEnumMethodInstancesByAddress(handleLocal);
+            }
         }
 
 #if DEBUG
@@ -402,9 +418,9 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
 
         try
         {
-            if (emi.methodEnumerator.MoveNext())
+            if (emi.Enumerator.MoveNext())
             {
-                MethodDescHandle methodDesc = emi.methodEnumerator.Current;
+                MethodDescHandle methodDesc = emi.Enumerator.Current;
                 method.Interface = new ClrDataMethodInstance(_target, methodDesc, emi._appDomain, legacyMethod);
             }
             else
@@ -476,16 +492,183 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
         char* nameBuf,
         DacComNullableByRef<IXCLRDataValue> value,
         ClrDataAddress* displacement)
-        => _legacyProcess is not null ? _legacyProcess.GetDataByAddress(address, flags, appDomain, tlsTask, bufLen, nameLen, nameBuf, value, displacement) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacyProcess is not null ? _legacyProcess.GetDataByAddress(address, flags, appDomain, tlsTask, bufLen, nameLen, nameBuf, value, displacement) : HResults.E_NOTIMPL;
 
-    int IXCLRDataProcess.GetExceptionStateByExceptionRecord(/*struct EXCEPTION_RECORD64*/ void* record, /*IXCLRDataExceptionState*/ void** exState)
-        => _legacyProcess is not null ? _legacyProcess.GetExceptionStateByExceptionRecord(record, exState) : HResults.E_NOTIMPL;
+    int IXCLRDataProcess.GetExceptionStateByExceptionRecord(EXCEPTION_RECORD64* record, DacComNullableByRef<IXCLRDataExceptionState> exState)
+        => LegacyFallbackHelper.CanFallback() && _legacyProcess is not null ? _legacyProcess.GetExceptionStateByExceptionRecord(record, exState) : HResults.E_NOTIMPL;
 
-    int IXCLRDataProcess.TranslateExceptionRecordToNotification(/*struct EXCEPTION_RECORD64*/ void* record, /*IXCLRDataExceptionNotification*/ void* notify)
-        => _legacyProcess is not null ? _legacyProcess.TranslateExceptionRecordToNotification(record, notify) : HResults.E_NOTIMPL;
+    int IXCLRDataProcess.TranslateExceptionRecordToNotification(EXCEPTION_RECORD64* record, [MarshalUsing(typeof(UniqueComInterfaceMarshaller<IXCLRDataExceptionNotification>))] IXCLRDataExceptionNotification notify)
+    {
+        // notify must be unique so that we can cast it to ComObject, call FinalRelease on it, and deterministically release.
+        // This is required because notify is a stack allocated object created by the caller.
+        // If the object goes out of scope before we dispose and finalize it, we can crash during GC.
+        ComObject comObj = (ComObject)(object)notify;
+
+        int hr = HResults.S_OK;
+        try
+        {
+            Span<TargetPointer> exInfo = stackalloc TargetPointer[EXCEPTION_RECORD64.ExceptionMaximumParameters];
+            for (int i = 0; i < EXCEPTION_RECORD64.ExceptionMaximumParameters; i++)
+                exInfo[i] = new TargetPointer(record->ExceptionInformation[i]);
+
+            INotifications notifications = _target.Contracts.Notifications;
+            if (!notifications.TryParseNotification(exInfo, out NotificationData? notification))
+                return HResults.E_INVALIDARG;
+
+            switch (notification)
+            {
+                case ModuleLoadNotificationData moduleLoad:
+                {
+                    IXCLRDataModule? legacyModule = null;
+                    if (_legacyImpl is not null)
+                    {
+                        DacComNullableByRef<IXCLRDataModule> legacyModuleOut = new(isNullRef: false);
+                        _legacyImpl.GetModule(moduleLoad.ModuleAddress.ToClrDataAddress(_target), legacyModuleOut);
+                        legacyModule = legacyModuleOut.Interface;
+                    }
+
+                    notify.OnModuleLoaded(new ClrDataModule(moduleLoad.ModuleAddress, _target, legacyModule));
+                    break;
+                }
+
+                case ModuleUnloadNotificationData moduleUnload:
+                {
+                    IXCLRDataModule? legacyModule = null;
+                    if (_legacyImpl is not null)
+                    {
+                        DacComNullableByRef<IXCLRDataModule> legacyModuleOut = new(isNullRef: false);
+                        _legacyImpl.GetModule(moduleUnload.ModuleAddress.ToClrDataAddress(_target), legacyModuleOut);
+                        legacyModule = legacyModuleOut.Interface;
+                    }
+
+                    notify.OnModuleUnloaded(new ClrDataModule(moduleUnload.ModuleAddress, _target, legacyModule));
+                    break;
+                }
+
+                case JitNotificationData jit:
+                {
+                    TargetPointer appDomainPointer = _target.ReadGlobalPointer(Constants.Globals.AppDomain);
+                    TargetPointer appDomain = _target.ReadPointer(appDomainPointer);
+
+                    IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
+                    MethodDescHandle methodDesc = rts.GetMethodDescHandle(jit.MethodDescAddress);
+
+                    ClrDataMethodInstance methodInst = new(_target, methodDesc, appDomain, null);
+                    notify.OnCodeGenerated(methodInst);
+                    if (notify is IXCLRDataExceptionNotification5 notify5)
+                    {
+                        notify5.OnCodeGenerated2(methodInst, jit.NativeCodeAddress.ToClrDataAddress(_target));
+                    }
+                    break;
+                }
+
+                case ExceptionNotificationData exception:
+                {
+                    if (notify is IXCLRDataExceptionNotification2 notify2)
+                    {
+                        IThread thread = _target.Contracts.Thread;
+                        Contracts.ThreadData threadData = thread.GetThreadData(exception.ThreadAddress);
+                        TargetPointer thrownObjectHandle = thread.GetCurrentExceptionHandle(exception.ThreadAddress);
+                        notify2.OnException(new ClrDataExceptionState(
+                            _target,
+                            exception.ThreadAddress,
+                            (uint)CLRDataExceptionStateFlag.CLRDATA_EXCEPTION_DEFAULT,
+                            thrownObjectHandle,
+                            threadData.FirstNestedException,
+                            null));
+                    }
+                    else
+                        return HResults.E_INVALIDARG;
+                    break;
+                }
+
+                case GcNotificationData gc:
+                {
+                    if (gc.IsSupportedEvent)
+                    {
+                        if (notify is IXCLRDataExceptionNotification3 notify3)
+                        {
+                            notify3.OnGcEvent(new GcEvtArgs
+                            {
+                                type = gc.EventData.EventType switch
+                                {
+                                    GcEventType.MarkEnd => GcEvtArgs.GcEvt_t.GC_MARK_END,
+                                    _ => GcEvtArgs.GcEvt_t.GC_EVENT_TYPE_MAX,
+                                },
+                                condemnedGeneration = gc.EventData.CondemnedGeneration,
+                            });
+                        }
+                        hr = HResults.S_OK;
+                    }
+                    else
+                        hr = HResults.E_FAIL;
+                    break;
+                }
+
+                case ExceptionCatcherEnterNotificationData exceptionCatcherEnter:
+                {
+                    if (notify is IXCLRDataExceptionNotification4 notify4)
+                    {
+                        TargetPointer appDomainPointer = _target.ReadGlobalPointer(Constants.Globals.AppDomain);
+                        TargetPointer appDomain = _target.ReadPointer(appDomainPointer);
+                        IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
+                        MethodDescHandle methodDesc = rts.GetMethodDescHandle(exceptionCatcherEnter.MethodDescAddress);
+                        notify4.ExceptionCatcherEnter(new ClrDataMethodInstance(_target, methodDesc, appDomain, null), exceptionCatcherEnter.NativeOffset);
+                    }
+                    break;
+                }
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+        finally
+        {
+            comObj.FinalRelease();
+        }
+        return hr;
+    }
 
     int IXCLRDataProcess.Request(uint reqCode, uint inBufferSize, byte* inBuffer, uint outBufferSize, byte* outBuffer)
-        => _legacyProcess is not null ? _legacyProcess.Request(reqCode, inBufferSize, inBuffer, outBufferSize, outBuffer) : HResults.E_NOTIMPL;
+    {
+        int hr = HResults.E_INVALIDARG;
+
+        if (reqCode == (uint)CLRDataGeneralRequest.CLRDATA_REQUEST_REVISION)
+        {
+            if (inBufferSize == 0 && inBuffer is null && outBufferSize == sizeof(uint) && outBuffer is not null)
+            {
+                // Revision 10: Fixed DefaultCOMImpl::Release() to use pre-decrement (--mRef).
+                // Consumers that previously compensated for the broken ref counting (e.g., ClrMD)
+                // should check this revision to avoid double-freeing.
+                *(uint*)outBuffer = 10;
+                hr = HResults.S_OK;
+            }
+        }
+        else
+        {
+            return LegacyFallbackHelper.CanFallback() && _legacyProcess is not null ? _legacyProcess.Request(reqCode, inBufferSize, inBuffer, outBufferSize, outBuffer) : HResults.E_NOTIMPL;
+        }
+#if DEBUG
+        if (_legacyProcess is not null)
+        {
+            byte[] localBuffer = new byte[(int)outBufferSize];
+            fixed (byte* localOutBuffer = localBuffer)
+            {
+                int hrLocal = _legacyProcess.Request(reqCode, inBufferSize, inBuffer, outBufferSize, localOutBuffer);
+                Debug.ValidateHResult(hr, hrLocal);
+                if (hr == HResults.S_OK && reqCode == (uint)CLRDataGeneralRequest.CLRDATA_REQUEST_REVISION)
+                {
+                    Debug.Assert(outBufferSize == sizeof(uint) && outBuffer is not null);
+                    uint legacyRevision = *(uint*)localOutBuffer;
+                    uint revision = *(uint*)outBuffer;
+                    Debug.Assert(revision == legacyRevision);
+                }
+            }
+        }
+#endif
+        return hr;
+    }
 
     int IXCLRDataProcess.CreateMemoryValue(
         IXCLRDataAppDomain? appDomain,
@@ -493,47 +676,170 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
         IXCLRDataTypeInstance? type,
         ClrDataAddress addr,
         DacComNullableByRef<IXCLRDataValue> value)
-        => _legacyProcess is not null ? _legacyProcess.CreateMemoryValue(appDomain, tlsTask, type, addr, value) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacyProcess is not null ? _legacyProcess.CreateMemoryValue(appDomain, tlsTask, type, addr, value) : HResults.E_NOTIMPL;
 
     int IXCLRDataProcess.SetAllTypeNotifications(IXCLRDataModule? mod, uint flags)
-        => _legacyProcess is not null ? _legacyProcess.SetAllTypeNotifications(mod, flags) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacyProcess is not null ? _legacyProcess.SetAllTypeNotifications(mod, flags) : HResults.E_NOTIMPL;
 
     int IXCLRDataProcess.SetAllCodeNotifications(IXCLRDataModule? mod, uint flags)
-        => _legacyProcess is not null ? _legacyProcess.SetAllCodeNotifications(mod, flags) : HResults.E_NOTIMPL;
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            if (!CodeNotificationFlagsConverter.IsValid(flags))
+                throw new ArgumentException("Invalid code notification flags");
+
+            TargetPointer moduleAddr = TargetPointer.Null;
+            if (mod is not null)
+            {
+                if (mod is not ClrDataModule cdm)
+                    throw new ArgumentException();
+                moduleAddr = cdm.Address;
+            }
+
+            _target.Contracts.CodeNotifications.SetAllCodeNotifications(moduleAddr, CodeNotificationFlagsConverter.FromCom(flags));
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+        // No #if DEBUG validation: SetAllCodeNotifications is a write operation.
+        // Both the cDAC and legacy DAC independently write to g_pNotificationTable.
+
+        return hr;
+    }
 
     int IXCLRDataProcess.GetTypeNotifications(
         uint numTokens,
         /*IXCLRDataModule*/ void** mods,
         IXCLRDataModule? singleMod,
-        [In, MarshalUsing(CountElementName = nameof(numTokens))] /*mdTypeDef*/ uint[] tokens,
-        [In, Out, MarshalUsing(CountElementName = nameof(numTokens))] uint[] flags)
-        => _legacyProcess is not null ? _legacyProcess.GetTypeNotifications(numTokens, mods, singleMod, tokens, flags) : HResults.E_NOTIMPL;
+        [In, MarshalUsing(CountElementName = nameof(numTokens))] /*mdTypeDef*/ uint[]? tokens,
+        [In, Out, MarshalUsing(CountElementName = nameof(numTokens))] uint[]? flags)
+        => LegacyFallbackHelper.CanFallback() && _legacyProcess is not null ? _legacyProcess.GetTypeNotifications(numTokens, mods, singleMod, tokens, flags) : HResults.E_NOTIMPL;
 
     int IXCLRDataProcess.SetTypeNotifications(
         uint numTokens,
         /*IXCLRDataModule*/ void** mods,
         IXCLRDataModule? singleMod,
-        [In, MarshalUsing(CountElementName = nameof(numTokens))] /*mdTypeDef*/ uint[] tokens,
-        [In, MarshalUsing(CountElementName = nameof(numTokens))] uint[] flags,
+        [In, MarshalUsing(CountElementName = nameof(numTokens))] /*mdTypeDef*/ uint[]? tokens,
+        [In, MarshalUsing(CountElementName = nameof(numTokens))] uint[]? flags,
         uint singleFlags)
-        => _legacyProcess is not null ? _legacyProcess.SetTypeNotifications(numTokens, mods, singleMod, tokens, flags, singleFlags) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacyProcess is not null ? _legacyProcess.SetTypeNotifications(numTokens, mods, singleMod, tokens, flags, singleFlags) : HResults.E_NOTIMPL;
 
     int IXCLRDataProcess.GetCodeNotifications(
         uint numTokens,
         /*IXCLRDataModule*/ void** mods,
         IXCLRDataModule? singleMod,
-        [In, MarshalUsing(CountElementName = nameof(numTokens))] /*mdMethodDef*/ uint[] tokens,
-        [In, Out, MarshalUsing(CountElementName = nameof(numTokens))] uint[] flags)
-        => _legacyProcess is not null ? _legacyProcess.GetCodeNotifications(numTokens, mods, singleMod, tokens, flags) : HResults.E_NOTIMPL;
+        [In, MarshalUsing(CountElementName = nameof(numTokens))] /*mdMethodDef*/ uint[]? tokens,
+        [In, Out, MarshalUsing(CountElementName = nameof(numTokens))] uint[]? flags)
+    {
+        int hr = HResults.S_OK;
+        ICodeNotifications codeNotif = _target.Contracts.CodeNotifications;
+
+        try
+        {
+            // Match legacy DAC (daccess.cpp ClrDataAccess::GetCodeNotifications):
+            // tokens and flags are both required; exactly one of mods/singleMod must be non-null.
+            if (tokens is null || flags is null ||
+                (mods is null && singleMod is null) ||
+                (mods is not null && singleMod is not null))
+                throw new ArgumentException();
+
+            TargetPointer moduleAddr = TargetPointer.Null;
+            if (singleMod is not null)
+            {
+                if (singleMod is not ClrDataModule singleCdm)
+                    throw new ArgumentException();
+                moduleAddr = singleCdm.Address;
+            }
+
+            for (uint i = 0; i < numTokens; i++)
+            {
+                if (singleMod is null)
+                    moduleAddr = GetModuleAddress(mods[i]);
+
+                flags[i] = CodeNotificationFlagsConverter.ToCom(codeNotif.GetCodeNotification(moduleAddr, tokens[i]));
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+        // No #if DEBUG validation: GetCodeNotifications is a read, but both cDAC and
+        // legacy DAC allocate the table on-demand when called, which would cause
+        // dual-allocation. Validation is safe at a higher layer when a dump is used.
+
+        return hr;
+    }
 
     int IXCLRDataProcess.SetCodeNotifications(
         uint numTokens,
         /*IXCLRDataModule*/ void** mods,
         IXCLRDataModule? singleMod,
-        [In, MarshalUsing(CountElementName = nameof(numTokens))] /*mdMethodDef */ uint[] tokens,
-        [In, MarshalUsing(CountElementName = nameof(numTokens))] uint[] flags,
+        [In, MarshalUsing(CountElementName = nameof(numTokens))] /*mdMethodDef */ uint[]? tokens,
+        [In, MarshalUsing(CountElementName = nameof(numTokens))] uint[]? flags,
         uint singleFlags)
-        => _legacyProcess is not null ? _legacyProcess.SetCodeNotifications(numTokens, mods, singleMod, tokens, flags, singleFlags) : HResults.E_NOTIMPL;
+    {
+        // Behavior difference from the legacy DAC: the legacy DAC performs an upfront
+        // capacity check (numTokens > table size returns E_OUTOFMEMORY with no writes
+        // performed). The cDAC's CodeNotifications contract does not expose a capacity
+        // check, so this batch wrapper writes entries one at a time. If the in-target
+        // table fills up part-way through, entries written before the overflow remain
+        // set and the first failing per-entry SetCodeNotification surfaces a COMException
+        // with HResult == E_FAIL, which is mapped to the returned hr below. Callers that
+        // depend on atomic batch semantics should size their batches conservatively.
+        int hr = HResults.S_OK;
+
+        try
+        {
+            if (tokens is null ||
+                (mods is null && singleMod is null) ||
+                (mods is not null && singleMod is not null))
+                throw new ArgumentException();
+
+            // Validate flags.
+            if (flags is not null)
+            {
+                for (uint check = 0; check < numTokens; check++)
+                {
+                    if (!CodeNotificationFlagsConverter.IsValid(flags[check]))
+                        throw new ArgumentException("Invalid code notification flags");
+                }
+            }
+            else if (!CodeNotificationFlagsConverter.IsValid(singleFlags))
+            {
+                throw new ArgumentException("Invalid code notification flags");
+            }
+
+            TargetPointer moduleAddr = TargetPointer.Null;
+            if (singleMod is not null)
+            {
+                if (singleMod is not ClrDataModule singleCdm)
+                    throw new ArgumentException();
+                moduleAddr = singleCdm.Address;
+            }
+
+            for (uint i = 0; i < numTokens; i++)
+            {
+                if (singleMod is null)
+                    moduleAddr = GetModuleAddress(mods[i]);
+
+                uint f = flags is not null ? flags[i] : singleFlags;
+                _target.Contracts.CodeNotifications.SetCodeNotification(moduleAddr, tokens[i], CodeNotificationFlagsConverter.FromCom(f));
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+        // No #if DEBUG validation: SetCodeNotifications is a write operation.
+        // Both the cDAC and legacy DAC independently write to g_pNotificationTable.
+
+        return hr;
+    }
 
     int IXCLRDataProcess.GetOtherNotificationFlags(uint* flags)
     {
@@ -609,13 +915,13 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
     }
 
     int IXCLRDataProcess.StartEnumMethodDefinitionsByAddress(ClrDataAddress address, ulong* handle)
-        => _legacyProcess is not null ? _legacyProcess.StartEnumMethodDefinitionsByAddress(address, handle) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacyProcess is not null ? _legacyProcess.StartEnumMethodDefinitionsByAddress(address, handle) : HResults.E_NOTIMPL;
 
     int IXCLRDataProcess.EnumMethodDefinitionByAddress(ulong* handle, DacComNullableByRef<IXCLRDataMethodDefinition> method)
-        => _legacyProcess is not null ? _legacyProcess.EnumMethodDefinitionByAddress(handle, method) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacyProcess is not null ? _legacyProcess.EnumMethodDefinitionByAddress(handle, method) : HResults.E_NOTIMPL;
 
     int IXCLRDataProcess.EndEnumMethodDefinitionsByAddress(ulong handle)
-        => _legacyProcess is not null ? _legacyProcess.EndEnumMethodDefinitionsByAddress(handle) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacyProcess is not null ? _legacyProcess.EndEnumMethodDefinitionsByAddress(handle) : HResults.E_NOTIMPL;
 
     int IXCLRDataProcess.FollowStub(
         uint inFlags,
@@ -624,7 +930,7 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
         ClrDataAddress* outAddr,
         /*struct CLRDATA_FOLLOW_STUB_BUFFER*/ void* outBuffer,
         uint* outFlags)
-        => _legacyProcess is not null ? _legacyProcess.FollowStub(inFlags, inAddr, inBuffer, outAddr, outBuffer, outFlags) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacyProcess is not null ? _legacyProcess.FollowStub(inFlags, inAddr, inBuffer, outAddr, outBuffer, outFlags) : HResults.E_NOTIMPL;
 
     int IXCLRDataProcess.FollowStub2(
         IXCLRDataTask? task,
@@ -634,7 +940,7 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
         ClrDataAddress* outAddr,
         /*struct CLRDATA_FOLLOW_STUB_BUFFER*/ void* outBuffer,
         uint* outFlags)
-        => _legacyProcess is not null ? _legacyProcess.FollowStub2(task, inFlags, inAddr, inBuffer, outAddr, outBuffer, outFlags) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacyProcess is not null ? _legacyProcess.FollowStub2(task, inFlags, inAddr, inBuffer, outAddr, outBuffer, outFlags) : HResults.E_NOTIMPL;
 
     int IXCLRDataProcess.DumpNativeImage(
         ClrDataAddress loadedBase,
@@ -642,7 +948,7 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
         /*IXCLRDataDisplay*/ void* display,
         /*IXCLRLibrarySupport*/ void* libSupport,
         /*IXCLRDisassemblySupport*/ void* dis)
-        => _legacyProcess is not null ? _legacyProcess.DumpNativeImage(loadedBase, name, display, libSupport, dis) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacyProcess is not null ? _legacyProcess.DumpNativeImage(loadedBase, name, display, libSupport, dis) : HResults.E_NOTIMPL;
 
     int IXCLRDataProcess2.GetGcNotification(GcEvtArgs* gcEvtArgs)
     {
@@ -679,5 +985,15 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
         }
 #endif
         return hr;
+    }
+
+    private static TargetPointer GetModuleAddress(void* comModulePtr)
+    {
+        if (System.Runtime.InteropServices.ComWrappers.TryGetObject((nint)comModulePtr, out object? obj))
+        {
+            if (obj is ClrDataModule cdm)
+                return cdm.Address;
+        }
+        throw new ArgumentException("Could not resolve module address from COM pointer");
     }
 }

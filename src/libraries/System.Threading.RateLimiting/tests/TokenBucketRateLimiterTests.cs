@@ -1453,6 +1453,38 @@ namespace System.Threading.RateLimiting.Test
             Assert.Equal(9, limiter.GetStatistics().CurrentAvailablePermits);
         }
 
+        [Fact]
+        public void AttemptAcquireZeroWithFractionalTokensReportsUnavailable()
+        {
+            var limiter = new TokenBucketRateLimiter(new TokenBucketRateLimiterOptions
+            {
+                TokenLimit = 3,
+                QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                QueueLimit = 1,
+                ReplenishmentPeriod = TimeSpan.FromMilliseconds(2),
+                TokensPerPeriod = 1,
+                AutoReplenishment = false
+            });
+
+            // Drain all tokens
+            var lease = limiter.AttemptAcquire(3);
+            Assert.True(lease.IsAcquired);
+            Assert.Equal(0, limiter.GetStatistics().CurrentAvailablePermits);
+
+            // Advance 1ms of a 2ms period — produces ~0.5 fractional tokens
+            Replenish(limiter, 1L);
+
+            // Fractional tokens should not be reported as available
+            Assert.Equal(0, limiter.GetStatistics().CurrentAvailablePermits);
+            Assert.False(limiter.AttemptAcquire(0).IsAcquired);
+
+            // Advance another 1ms — completes the period, reaching ~1.0 tokens
+            Replenish(limiter, 1L);
+
+            Assert.Equal(1, limiter.GetStatistics().CurrentAvailablePermits);
+            Assert.True(limiter.AttemptAcquire(0).IsAcquired);
+        }
+
         private static readonly double TickFrequency = (double)TimeSpan.TicksPerSecond / Stopwatch.Frequency;
 
         static internal void Replenish(TokenBucketRateLimiter limiter, long addMilliseconds)

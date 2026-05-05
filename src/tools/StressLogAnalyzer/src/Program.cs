@@ -354,12 +354,11 @@ public static class Program
         }
         try
         {
-            (Func<Target> targetFactory, StressLogHeader.ModuleTable moduleTable, int contractVersion, TargetPointer logs) = CreateTarget(accessor.SafeMemoryMappedViewHandle);
+            (Func<Target> targetFactory, StressLogHeader.ModuleTable moduleTable, TargetPointer logs) = CreateTarget(accessor.SafeMemoryMappedViewHandle);
 
             Target globalTarget = targetFactory();
 
-            StressLogFactory factory = new();
-            IStressLog globalStressLogContract = factory.CreateContract(globalTarget, contractVersion);
+            IStressLog globalStressLogContract = globalTarget.Contracts.GetContract<IStressLog>();
 
             using TextWriter? outputFile = options.OutputFile is not null ? File.CreateText(options.OutputFile.FullName) : null;
 
@@ -375,7 +374,7 @@ public static class Program
             TimeTracker timeTracker = CreateTimeTracker(accessor.SafeMemoryMappedViewHandle, options);
 
             var analyzer = new StressLogAnalyzer(
-                () => factory.CreateContract(globalTarget, contractVersion),
+                globalTarget.Contracts.GetContract<IStressLog>,
                 stringFinder,
                 messageFilter,
                 options.ThreadFilter,
@@ -472,7 +471,7 @@ public static class Program
         return filter;
     }
 
-    private static unsafe (Func<Target> targetFactory, StressLogHeader.ModuleTable table, int contractVersion, TargetPointer logs) CreateTarget(SafeMemoryMappedViewHandle handle)
+    private static unsafe (Func<Target> targetFactory, StressLogHeader.ModuleTable table, TargetPointer logs) CreateTarget(SafeMemoryMappedViewHandle handle)
     {
         byte* buffer = null;
         handle.AcquirePointer(ref buffer);
@@ -485,9 +484,9 @@ public static class Program
             throw new InvalidOperationException("Invalid memory-mapped stress log.");
         }
 
-        int contractVersion = (int)(header->version & 0xFFFF);
+        string contractVersion = $"c{(int)(header->version & 0xFFFF)}";
 
-        return (CreateTarget, header->moduleTable, contractVersion, header->logs);
+        return (CreateTarget, header->moduleTable, header->logs);
 
         ContractDescriptorTarget CreateTarget() => ContractDescriptorTarget.Create(
             GetDescriptor(contractVersion),
@@ -495,9 +494,10 @@ public static class Program
             (address, buffer) => ReadFromMemoryMappedLog(address, buffer, header),
             (address, buffer) => throw new NotImplementedException("StressLogAnalyzer does not provide WriteToTarget implementation"),
             (threadId, contextFlags, bufferToFill) => throw new NotImplementedException("StressLogAnalyzer does not provide GetTargetThreadContext implementation"),
+            (ulong size, out ulong allocatedAddress) => throw new NotImplementedException("StressLogAnalyzer does not provide AllocVirtual implementation"),
             true,
             nuint.Size,
-            []);
+            [CoreCLRContracts.Register]);
     }
 
     private static unsafe TimeTracker CreateTimeTracker(SafeMemoryMappedViewHandle handle, Options options)
@@ -515,7 +515,7 @@ public static class Program
         }
     }
 
-    private static ContractDescriptorParser.ContractDescriptor GetDescriptor(int stressLogVersion)
+    private static ContractDescriptorParser.ContractDescriptor GetDescriptor(string stressLogVersion)
     {
         return new ContractDescriptorParser.ContractDescriptor
         {

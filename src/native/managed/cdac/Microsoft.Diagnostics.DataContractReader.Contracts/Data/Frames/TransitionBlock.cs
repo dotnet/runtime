@@ -11,20 +11,24 @@ internal class TransitionBlock : IData<TransitionBlock>
     public TransitionBlock(Target target, TargetPointer address)
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.TransitionBlock);
-        ReturnAddress = target.ReadPointer(address + (ulong)type.Fields[nameof(ReturnAddress)].Offset);
+        ReturnAddress = target.ReadPointerField(address, type, nameof(ReturnAddress));
         CalleeSavedRegisters = address + (ulong)type.Fields[nameof(CalleeSavedRegisters)].Offset;
 
-        if (type.Fields.ContainsKey(nameof(ArgumentRegisters)))
-        {
-            ArgumentRegisters = address + (ulong)type.Fields[nameof(ArgumentRegisters)].Offset;
-        }
+        // These are computed positions within the TransitionBlock.
+        ArgumentRegisters = address + (ulong)type.Fields[nameof(ArgumentRegisters)].Offset;
+        FirstGCRefMapSlot = address + (ulong)type.Fields[nameof(FirstGCRefMapSlot)].Offset;
     }
 
     public TargetPointer ReturnAddress { get; }
     public TargetPointer CalleeSavedRegisters { get; }
 
     /// <summary>
-    /// Only available on ARM targets.
+    /// Address of the argument registers area within this TransitionBlock.
     /// </summary>
-    public TargetPointer? ArgumentRegisters { get; }
+    public TargetPointer ArgumentRegisters { get; }
+
+    /// <summary>
+    /// Address of the first slot covered by the GCRefMap within this TransitionBlock.
+    /// </summary>
+    public TargetPointer FirstGCRefMapSlot { get; }
 }

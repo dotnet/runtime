@@ -31,6 +31,12 @@ REGDEF(SP,     13, 0x2000, "sp"   )
 REGDEF(LR,     14, 0x4000, "lr"   )
 REGDEF(PC,     15, 0x8000, "pc"   )
 
+// Allow us to call R11/FP, SP, LR and PC by their register number names
+REGALIAS(FP,  R11)
+REGALIAS(R13, SP)
+REGALIAS(R14, LR)
+REGALIAS(R15, PC)
+
 #define FPBASE 16
 #define VFPMASK(x) (((int64_t)1) << (x+FPBASE))
 
@@ -67,12 +73,8 @@ REGDEF(F29,  29+FPBASE, VFPMASK(29), "f29")
 REGDEF(F30,  30+FPBASE, VFPMASK(30), "f30")
 REGDEF(F31,  31+FPBASE, VFPMASK(31), "f31")
 
-
-// Allow us to call R11/FP, SP, LR and PC by their register number names
-REGALIAS(FP,  R11)
-REGALIAS(R13, SP)
-REGALIAS(R14, LR)
-REGALIAS(R15, PC)
+// This must be last!
+REGDEF(STK,  32+FPBASE, 0x0000,      "STK")
 
 // Ignore REG_* symbols defined in Android NDK
 #undef REG_R0
@@ -107,6 +109,16 @@ REGALIAS(R15, PC)
 #define REG_LR JITREG_LR
 #undef REG_PC
 #define REG_PC JITREG_PC
+
+#undef REG_FP
+#define REG_FP JITREG_FP
+#undef REG_R13
+#define REG_R13 JITREG_R13
+#undef REG_R14
+#define REG_R14 JITREG_R14
+#undef REG_R15
+#define REG_R15 JITREG_R15
+
 #undef REG_F0
 #define REG_F0 JITREG_F0
 #undef REG_F1
@@ -171,19 +183,9 @@ REGALIAS(R15, PC)
 #define REG_F30 JITREG_F30
 #undef REG_F31
 #define REG_F31 JITREG_F31
-#undef REG_FP
-#define REG_FP JITREG_FP
-#undef REG_R13
-#define REG_R13 JITREG_R13
-#undef REG_R14
-#define REG_R14 JITREG_R14
-#undef REG_R15
-#define REG_R15 JITREG_R15
+
 #undef REG_STK
 #define REG_STK JITREG_STK
-
-// This must be last!
-REGDEF(STK,  32+FPBASE, 0x0000,      "STK")
 
 /*****************************************************************************/
 #undef  REGDEF

@@ -23,31 +23,15 @@
 #include "reflectioninvocation.h"
 #include "sigbuilder.h"
 #include "callconvbuilder.hpp"
-#include "callsiteinspect.h"
-
-#define DISPATCH_INVOKE_SLOT 6
-
-#ifndef DACCESS_COMPILE
-
-//
-// dllimport.cpp
-void CreateCLRToDispatchCOMStub(
-            MethodDesc * pMD,
-            DWORD        dwStubFlags             // PInvokeStubFlags
-            );
-
-PCODE TheGenericCLRToCOMCallStub()
-{
-    LIMITED_METHOD_CONTRACT;
-
-    return GetEEFuncEntryPoint(GenericCLRToCOMCallStub);
-}
+#include "method.hpp"
 
 CLRToCOMCallInfo *CLRToCOMCall::PopulateCLRToCOMCallMethodDesc(MethodDesc* pMD, DWORD* pdwStubFlags)
 {
     CONTRACTL
     {
-        STANDARD_VM_CHECK;
+        THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
         PRECONDITION(CheckPointer(pMD));
         PRECONDITION(CheckPointer(pdwStubFlags, NULL_OK));
     }
@@ -141,22 +125,89 @@ CLRToCOMCallInfo *CLRToCOMCall::PopulateCLRToCOMCallMethodDesc(MethodDesc* pMD, 
     return pComInfo;
 }
 
-MethodDesc* CLRToCOMCall::GetILStubMethodDesc(MethodDesc* pMD, DWORD dwStubFlags)
+namespace
 {
-    STANDARD_VM_CONTRACT;
+    MethodDesc* CreateEventCallStub(MethodDesc* pMD)
+    {
+        STANDARD_VM_CONTRACT;
 
-    if (SF_IsCOMLateBoundStub(dwStubFlags) || SF_IsCOMEventCallStub(dwStubFlags))
-        return NULL;
+        _ASSERTE(pMD->IsCLRToCOMCall());
 
-    // Get the call signature information
-    StubSigDesc sigDesc(pMD);
+        CLRToCOMCallInfo* pComInfo = CLRToCOMCallInfo::FromMethodDesc(pMD);
 
-    return PInvoke::CreateCLRToNativeILStub(
-                    &sigDesc,
-                    (CorNativeLinkType)0,
-                    (CorNativeLinkFlags)0,
-                    CallConv::GetDefaultUnmanagedCallingConvention(),
-                    dwStubFlags);
+        _ASSERTE(pComInfo->m_pEventProviderMD != NULL);
+
+        MethodDesc *pEvProvMD = pComInfo->m_pEventProviderMD;
+        MethodTable *pEvProvMT = pEvProvMD->GetMethodTable();
+
+        FunctionSigBuilder sigBuilder;
+        sigBuilder.SetCallingConv((CorCallingConvention)IMAGE_CEE_CS_CALLCONV_DEFAULT_HASTHIS);
+
+        LocalDesc obj(ELEMENT_TYPE_OBJECT);
+        sigBuilder.NewArg(&obj);
+
+        MetaSig sig(pEvProvMD);
+        LocalDesc retType(sig.GetRetTypeHandleThrowing());
+        sigBuilder.SetReturnType(&retType);
+
+        DWORD cbMetaSigSize = sigBuilder.GetSigSize();
+        AllocMemHolder<BYTE> szMetaSig(pMD->GetMethodTable()->GetLoaderAllocator()->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(cbMetaSigSize)));
+        sigBuilder.GetSig(szMetaSig, cbMetaSigSize);
+
+        Signature signature(szMetaSig, cbMetaSigSize);
+        SigTypeContext typeContext;
+
+        ILStubLinker stubLinker(pMD->GetModule(), signature, &typeContext, pEvProvMD, ILStubLinkerFlags::ILSTUB_LINKER_FLAG_STUB_HAS_THIS);
+
+        ILCodeStream* pCode = stubLinker.NewCodeStream(ILStubLinker::kDispatch);
+
+        pCode->EmitLoadThis();
+        pCode->EmitLDTOKEN(pCode->GetToken(pEvProvMT));
+        pCode->EmitCALL(METHOD__TYPE__GET_TYPE_FROM_HANDLE, 1, 1);
+        pCode->EmitCALL(METHOD__COM_OBJECT__GET_EVENT_PROVIDER, 2, 1);
+        pCode->EmitLDARG(0);
+        pCode->EmitCALL(pCode->GetToken(pEvProvMD), 2, 1);
+        pCode->EmitRET();
+
+        MethodDesc* pStubMD = ILStubCache::CreateAndLinkNewILStubMethodDesc(
+            pMD->GetLoaderAllocator(),
+            pMD->GetMethodTable(),
+            PINVOKESTUB_FL_COM | PINVOKESTUB_FL_COMEVENTCALL,
+            pMD->GetModule(),
+            szMetaSig,
+            cbMetaSigSize,
+            &typeContext,
+            &stubLinker
+        );
+
+        szMetaSig.SuppressRelease();
+
+        return pStubMD;
+    }
+
+    MethodDesc* GetILStubMethodDesc(MethodDesc* pMD, DWORD dwStubFlags)
+    {
+        STANDARD_VM_CONTRACT;
+
+        // COM event stubs are very simple and don't go through any marshalling logic.
+        // We generate them as a regular IL stub outside of the P/Invoke system.
+        if (SF_IsCOMEventCallStub(dwStubFlags))
+        {
+            _ASSERTE(pMD->IsCLRToCOMCall()); //  no generic COM eventing
+            ((CLRToCOMCallMethodDesc *)pMD)->InitComEventCallInfo();
+            return CreateEventCallStub(pMD);
+        }
+
+        // Get the call signature information
+        StubSigDesc sigDesc(pMD);
+
+        return PInvoke::CreateCLRToNativeILStub(
+                        &sigDesc,
+                        (CorNativeLinkType)0,
+                        (CorNativeLinkFlags)0,
+                        CallConv::GetDefaultUnmanagedCallingConvention(),
+                        dwStubFlags);
+    }
 }
 
 PCODE CLRToCOMCall::GetStubForILStub(MethodDesc* pMD, MethodDesc** ppStubMD)
@@ -169,770 +220,10 @@ PCODE CLRToCOMCall::GetStubForILStub(MethodDesc* pMD, MethodDesc** ppStubMD)
     DWORD dwStubFlags;
     CLRToCOMCallInfo* pComInfo = CLRToCOMCall::PopulateCLRToCOMCallMethodDesc(pMD, &dwStubFlags);
 
-    *ppStubMD = CLRToCOMCall::GetILStubMethodDesc(pMD, dwStubFlags);
+    *ppStubMD = GetILStubMethodDesc(pMD, dwStubFlags);
 
-    if (*ppStubMD != NULL)
-    {
-        PCODE pCode = JitILStub(*ppStubMD);
-        InterlockedCompareExchangeT<PCODE>(pComInfo->GetAddrOfILStubField(), pCode, NULL);
-    }
-    else
-    {
-        CreateCLRToDispatchCOMStub(pMD, dwStubFlags);
-    }
+    PCODE pCode = JitILStub(*ppStubMD);
+    InterlockedCompareExchangeT<PCODE>(pComInfo->GetAddrOfILStubField(), pCode, NULL);
 
-    PCODE pStub = NULL;
-
-    if (*ppStubMD)
-    {
-        {
-            pStub = *pComInfo->GetAddrOfILStubField();
-        }
-    }
-    else
-    {
-        pStub = TheGenericCLRToCOMCallStub();
-    }
-
-    return pStub;
-}
-
-I4ARRAYREF SetUpWrapperInfo(MethodDesc *pMD)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-        INJECT_FAULT(COMPlusThrowOM());
-        PRECONDITION(CheckPointer(pMD));
-        PRECONDITION(!pMD->IsAsyncMethod());
-    }
-    CONTRACTL_END;
-
-    MetaSig msig(pMD);
-    int numArgs = msig.NumFixedArgs();
-
-    I4ARRAYREF WrapperTypeArr = NULL;
-
-    GCPROTECT_BEGIN(WrapperTypeArr)
-    {
-        //
-        // Allocate the array of wrapper types.
-        //
-
-        WrapperTypeArr = (I4ARRAYREF)AllocatePrimitiveArray(ELEMENT_TYPE_I4, numArgs);
-
-        GCX_PREEMP();
-
-        // Collects ParamDef information in an indexed array where element 0 represents
-        // the return type.
-        mdParamDef *params = (mdParamDef*)_alloca((numArgs+1) * sizeof(mdParamDef));
-        CollateParamTokens(msig.GetModule()->GetMDImport(), pMD->GetMemberDef(), numArgs, params);
-
-
-        //
-        // Look up the best fit mapping info via Assembly & Interface level attributes
-        //
-
-        BOOL BestFit = TRUE;
-        BOOL ThrowOnUnmappableChar = FALSE;
-        ReadBestFitCustomAttribute(pMD, &BestFit, &ThrowOnUnmappableChar);
-
-        //
-        // Determine the wrapper type of the arguments.
-        //
-
-        int iParam = 1;
-        CorElementType mtype;
-        while (ELEMENT_TYPE_END != (mtype = msig.NextArg()))
-        {
-            //
-            // Set up the marshaling info for the parameter.
-            //
-
-            MarshalInfo Info(msig.GetModule(), msig.GetArgProps(), msig.GetSigTypeContext(), params[iParam],
-                             MarshalInfo::MARSHAL_SCENARIO_COMINTEROP, (CorNativeLinkType)0, (CorNativeLinkFlags)0,
-                             TRUE, iParam, numArgs, BestFit, ThrowOnUnmappableChar, FALSE, pMD, TRUE
-    #ifdef _DEBUG
-                             , pMD->m_pszDebugMethodName, pMD->m_pszDebugClassName, iParam
-    #endif
-                             );
-
-            DispatchWrapperType wrapperType = Info.GetDispWrapperType();
-
-            {
-                GCX_COOP();
-
-                //
-                // Based on the MarshalInfo, set the wrapper type.
-                //
-
-                *((DWORD*)WrapperTypeArr->GetDataPtr() + iParam - 1) = wrapperType;
-            }
-
-            //
-            // Increase the argument index.
-            //
-
-            iParam++;
-        }
-    }
-    GCPROTECT_END();
-
-    return WrapperTypeArr;
-}
-
-UINT32 CLRToCOMEventCallWorker(CLRToCOMMethodFrame* pFrame, CLRToCOMCallMethodDesc *pMD)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-        PRECONDITION(CheckPointer(pFrame));
-        PRECONDITION(CheckPointer(pMD));
-    }
-    CONTRACTL_END;
-
-    struct {
-        OBJECTREF EventProviderTypeObj;
-        OBJECTREF EventProviderObj;
-        OBJECTREF ThisObj;
-    } gc;
-    gc.EventProviderTypeObj = NULL;
-    gc.EventProviderObj = NULL;
-    gc.ThisObj = NULL;
-
-    LOG((LF_STUBS, LL_INFO1000, "Calling CLRToCOMEventCallWorker %s::%s \n", pMD->m_pszDebugClassName, pMD->m_pszDebugMethodName));
-
-    // Retrieve the method table and the method desc of the call.
-    MethodDesc *pEvProvMD = pMD->GetEventProviderMD();
-    MethodTable *pEvProvMT = pEvProvMD->GetMethodTable();
-
-    GCPROTECT_BEGIN(gc)
-    {
-        // Retrieve the exposed type object for event provider.
-        gc.EventProviderTypeObj = pEvProvMT->GetManagedClassObject();
-        gc.ThisObj = pFrame->GetThis();
-
-        MethodDescCallSite getEventProvider(METHOD__COM_OBJECT__GET_EVENT_PROVIDER, &gc.ThisObj);
-
-        // Retrieve the event provider for the event interface type.
-        ARG_SLOT GetEventProviderArgs[] =
-        {
-            ObjToArgSlot(gc.ThisObj),
-            ObjToArgSlot(gc.EventProviderTypeObj)
-        };
-
-        gc.EventProviderObj = getEventProvider.Call_RetOBJECTREF(GetEventProviderArgs);
-
-        // Set up an arg iterator to retrieve the arguments from the frame.
-        MetaSig mSig(pMD);
-        ArgIterator ArgItr(&mSig);
-
-        // Make the call on the event provider method desc.
-        MethodDescCallSite eventProvider(pEvProvMD, &gc.EventProviderObj);
-
-        // Retrieve the event handler passed in.
-        OBJECTREF EventHandlerObj = ObjectToOBJECTREF(*(Object**)(pFrame->GetTransitionBlock() + ArgItr.GetNextOffset()));
-
-        ARG_SLOT EventMethArgs[] =
-        {
-            ObjToArgSlot(gc.EventProviderObj),
-            ObjToArgSlot(EventHandlerObj)
-        };
-
-        //
-        // If this can ever return something bigger than an INT64 byval
-        // then this code is broken.  Currently, however, it cannot.
-        //
-        *(ARG_SLOT *)(pFrame->GetReturnValuePtr()) = eventProvider.Call_RetArgSlot(EventMethArgs);
-
-        // The COM event call worker does not support value returned in
-        // floating point registers.
-        _ASSERTE(ArgItr.GetFPReturnSize() == 0);
-    }
-    GCPROTECT_END();
-
-    // tell the asm stub that we are not returning an FP type
-    return 0;
-}
-
-static CallsiteDetails CreateCallsiteDetails(_In_ FramedMethodFrame *pFrame)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-        PRECONDITION(CheckPointer(pFrame));
-    }
-    CONTRACTL_END;
-
-    MethodDesc *pMD = pFrame->GetFunction();
-    _ASSERTE(!pMD->ContainsGenericVariables() && pMD->IsRuntimeMethodHandle());
-
-    const BOOL fIsDelegate = pMD->GetMethodTable()->IsDelegate();
-    _ASSERTE(!fIsDelegate && pMD->IsRuntimeMethodHandle());
-
-    MethodDesc *pDelegateMD = nullptr;
-    INT32 callsiteFlags = CallsiteDetails::None;
-    if (fIsDelegate)
-    {
-        // Gather details on the delegate itself
-        DelegateEEClass* delegateCls = (DelegateEEClass*)pMD->GetMethodTable()->GetClass();
-        _ASSERTE(pFrame->GetThis()->GetMethodTable()->IsDelegate());
-
-        if (strcmp(pMD->GetName(), "BeginInvoke") == 0)
-        {
-            callsiteFlags |= CallsiteDetails::BeginInvoke;
-        }
-        else
-        {
-            _ASSERTE(strcmp(pMD->GetName(), "EndInvoke") == 0);
-            callsiteFlags |= CallsiteDetails::EndInvoke;
-        }
-
-        pDelegateMD = pMD;
-
-        // Get at the underlying method desc for this frame
-        pMD = COMDelegate::GetMethodDesc(pFrame->GetThis());
-        _ASSERTE(pDelegateMD != nullptr
-            && pMD != nullptr
-            && !pMD->ContainsGenericVariables()
-            && pMD->IsRuntimeMethodHandle());
-    }
-
-    if (pMD->IsCtor())
-        callsiteFlags |= CallsiteDetails::Ctor;
-
-    Signature signature;
-    Module *pModule;
-    SigTypeContext typeContext;
-
-    if (fIsDelegate)
-    {
-        _ASSERTE(pDelegateMD != nullptr);
-        signature = pDelegateMD->GetSignature();
-        pModule = pDelegateMD->GetModule();
-
-        // If the delegate is generic, pDelegateMD may not represent the exact instantiation so we recover it from 'this'.
-        SigTypeContext::InitTypeContext(pFrame->GetThis()->GetMethodTable()->GetInstantiation(), Instantiation{}, &typeContext);
-    }
-    else if (pMD->IsVarArg())
-    {
-        VASigCookie *pVACookie = pFrame->GetVASigCookie();
-        signature = pVACookie->signature;
-        pModule = pVACookie->pModule;
-        SigTypeContext::InitTypeContext(&typeContext);
-    }
-    else
-    {
-        // COM doesn't support generics so the type is obvious
-        TypeHandle actualType = TypeHandle{ pMD->GetMethodTable() };
-
-        signature = pMD->GetSignature();
-        pModule = pMD->GetModule();
-        SigTypeContext::InitTypeContext(pMD, actualType, &typeContext);
-    }
-
-    // If the signature is marked preserve sig, then the return
-    // is required to be an HRESULT, per COM rules. We set a flag to
-    // indicate this state to avoid issues when a C# developer defines
-    // an HRESULT in C# as a ValueClass with a single int field. This
-    // is convenient but does violate the COM ABI. Setting the flag
-    // lets us permit this convention and allow either a 4 byte primitive
-    // or the commonly used C# type "struct HResult { int Value; }".
-    if (IsMiPreserveSig(pMD->GetImplAttrs()))
-        callsiteFlags |= CallsiteDetails::HResultReturn;
-
-    _ASSERTE(!signature.IsEmpty() && pModule != nullptr);
-
-    // Create details
-    return CallsiteDetails{ { signature, pModule, &typeContext }, pFrame, pMD, fIsDelegate, callsiteFlags };
-}
-
-UINT32 CLRToCOMLateBoundWorker(
-    _In_ CLRToCOMMethodFrame *pFrame,
-    _In_ CLRToCOMCallMethodDesc *pMD)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-        INJECT_FAULT(COMPlusThrowOM());
-        PRECONDITION(CheckPointer(pFrame));
-        PRECONDITION(CheckPointer(pMD));
-    }
-    CONTRACTL_END;
-
-    HRESULT hr;
-
-    LOG((LF_STUBS, LL_INFO1000, "Calling CLRToCOMLateBoundWorker %s::%s \n", pMD->m_pszDebugClassName, pMD->m_pszDebugMethodName));
-
-    // Retrieve the method table and the method desc of the call.
-    MethodTable *pItfMT = pMD->GetInterfaceMethodTable();
-    CLRToCOMCallMethodDesc *pItfMD = pMD;
-
-    // Make sure this is only called on IDispatch only interfaces.
-    _ASSERTE(pItfMT->GetComInterfaceType() == ifDispatch);
-
-    // If this is a method impl MD then we need to retrieve the actual interface MD that
-    // this is a method impl for.
-    // REVISIT_TODO: Stop using ComSlot to convert method impls to interface MD
-    // _ASSERTE(pMD->m_pCLRToCOMCallInfo->m_cachedComSlot == 7);
-    if (!pMD->GetMethodTable()->IsInterface())
-    {
-        const unsigned cbExtraSlots = 7;
-        pItfMD = (CLRToCOMCallMethodDesc*)pItfMT->GetMethodDescForSlot(pMD->m_pCLRToCOMCallInfo->m_cachedComSlot - cbExtraSlots);
-        CONSISTENCY_CHECK(pMD->GetInterfaceMD() == pItfMD);
-    }
-
-    // Token of member to call
-    mdToken tkMember;
-    DWORD binderFlags = BINDER_AllLookup;
-
-    // Property details
-    mdProperty propToken;
-    LPCUTF8 strMemberName;
-    ULONG uSemantic;
-
-    // We should never see an async method here, as the async variant should go down
-    // the async stub path and call the non-async variant (which ends up here).
-    _ASSERTE(!pItfMD->IsAsyncMethod());
-
-    // See if there is property information for this member.
-    hr = pItfMT->GetMDImport()->GetPropertyInfoForMethodDef(pItfMD->GetMemberDef(), &propToken, &strMemberName, &uSemantic);
-    if (hr != S_OK)
-    {
-        // Non-property method
-        strMemberName = pItfMD->GetName();
-        tkMember = pItfMD->GetMemberDef();
-        binderFlags |= BINDER_InvokeMethod;
-    }
-    else
-    {
-        // Property accessor
-        tkMember = propToken;
-
-        // Determine which type of accessor we are dealing with.
-        switch (uSemantic)
-        {
-        case msGetter:
-        {
-            // INVOKE_PROPERTYGET
-            binderFlags |= BINDER_GetProperty;
-            break;
-        }
-
-        case msSetter:
-        {
-            // INVOKE_PROPERTYPUT or INVOKE_PROPERTYPUTREF
-            ULONG cAssoc;
-            ASSOCIATE_RECORD* pAssoc;
-
-            IMDInternalImport *pMDImport = pItfMT->GetMDImport();
-
-            // Retrieve all the associates.
-            HENUMInternalHolder henum{ pMDImport };
-            henum.EnumAssociateInit(propToken);
-
-            cAssoc = henum.EnumGetCount();
-            _ASSERTE(cAssoc > 0);
-
-            ULONG allocSize = cAssoc * sizeof(*pAssoc);
-            if (allocSize < cAssoc)
-                COMPlusThrowHR(COR_E_OVERFLOW);
-
-            pAssoc = (ASSOCIATE_RECORD*)_alloca((size_t)allocSize);
-            IfFailThrow(pMDImport->GetAllAssociates(&henum, pAssoc, cAssoc));
-
-            // Check to see if there is both a set and an other. If this is the case
-            // then the setter is a INVOKE_PROPERTYPUTREF otherwise we will make it a
-            // INVOKE_PROPERTYPUT | INVOKE_PROPERTYPUTREF.
-            bool propHasOther = false;
-            for (ULONG i = 0; i < cAssoc; i++)
-            {
-                if (pAssoc[i].m_dwSemantics == msOther)
-                {
-                    propHasOther = true;
-                    break;
-                }
-            }
-
-            if (propHasOther)
-            {
-                // There is both a INVOKE_PROPERTYPUT and a INVOKE_PROPERTYPUTREF for this
-                // property. Therefore be specific and make this invoke a INVOKE_PROPERTYPUTREF.
-                binderFlags |= BINDER_PutRefDispProperty;
-            }
-            else
-            {
-                // Only a setter so make the invoke a set which maps to
-                // INVOKE_PROPERTYPUT | INVOKE_PROPERTYPUTREF.
-                binderFlags = BINDER_SetProperty;
-            }
-            break;
-        }
-
-        case msOther:
-        {
-            // INVOKE_PROPERTYPUT
-            binderFlags |= BINDER_PutDispProperty;
-            break;
-        }
-
-        default:
-        {
-            _ASSERTE(!"Invalid method semantic!");
-        }
-        }
-    }
-
-    // If the method has a void return type, then set the IgnoreReturn binding flag.
-    if (pItfMD->IsVoid())
-        binderFlags |= BINDER_IgnoreReturn;
-
-    UINT32 fpRetSize = 0;
-
-    struct
-    {
-        OBJECTREF MemberName;
-        OBJECTREF ItfTypeObj;
-        PTRARRAYREF Args;
-        BOOLARRAYREF ArgsIsByRef;
-        PTRARRAYREF ArgsTypes;
-        OBJECTREF ArgsWrapperTypes;
-        OBJECTREF RetValType;
-        OBJECTREF RetVal;
-    } gc;
-    gc.MemberName = NULL;
-    gc.ItfTypeObj = NULL;
-    gc.Args = NULL;
-    gc.ArgsIsByRef = NULL;
-    gc.ArgsTypes = NULL;
-    gc.ArgsWrapperTypes = NULL;
-    gc.RetValType = NULL;
-    gc.RetVal = NULL;
-    GCPROTECT_BEGIN(gc);
-    {
-        // Retrieve the exposed type object for the interface.
-        gc.ItfTypeObj = pItfMT->GetManagedClassObject();
-
-        // Retrieve the name of the target member. If the member
-        // has a DISPID then use that to optimize the invoke.
-        DISPID dispId = DISPID_UNKNOWN;
-        hr = pItfMD->GetMDImport()->GetDispIdOfMemberDef(tkMember, (ULONG*)&dispId);
-        if (hr == S_OK)
-        {
-            WCHAR strTmp[ARRAY_SIZE(DISPID_NAME_FORMAT_STRING) + MaxUnsigned32BitDecString];
-            _snwprintf_s(strTmp, ARRAY_SIZE(strTmp), _TRUNCATE, DISPID_NAME_FORMAT_STRING, dispId);
-            gc.MemberName = StringObject::NewString(strTmp);
-        }
-        else
-        {
-            gc.MemberName = StringObject::NewString(strMemberName);
-        }
-
-        CallsiteDetails callsite = CreateCallsiteDetails(pFrame);
-
-        // Arguments
-        CallsiteInspect::GetCallsiteArgs(callsite, &gc.Args, &gc.ArgsIsByRef, &gc.ArgsTypes);
-
-        // If call requires object wrapping, set up the array of wrapper types.
-        if (pMD->RequiresArgumentWrapping())
-            gc.ArgsWrapperTypes = SetUpWrapperInfo(pItfMD);
-
-        // Return type
-        TypeHandle retValHandle = callsite.MetaSig.GetRetTypeHandleThrowing();
-        gc.RetValType = retValHandle.GetManagedClassObject();
-
-        // the return value is written into the Frame's neginfo, so we don't
-        // need to return it directly. We can just have the stub do that work.
-        // However, the stub needs to know what type of FP return this is, if
-        // any, so we return the return size info as the return value.
-        if (callsite.MetaSig.HasFPReturn())
-        {
-            callsite.MetaSig.Reset();
-            ArgIterator argit{ &callsite.MetaSig };
-            fpRetSize = argit.GetFPReturnSize();
-            _ASSERTE(fpRetSize > 0);
-        }
-
-        // Create a call site for the invoke
-        MethodDescCallSite forwardCallToInvoke(METHOD__CLASS__FORWARD_CALL_TO_INVOKE, &gc.ItfTypeObj);
-
-        // Prepare the arguments that will be passed to the method.
-        ARG_SLOT invokeArgs[] =
-        {
-            ObjToArgSlot(gc.ItfTypeObj),
-            ObjToArgSlot(gc.MemberName),
-            (ARG_SLOT)binderFlags,
-            ObjToArgSlot(pFrame->GetThis()),
-            ObjToArgSlot(gc.Args),
-            ObjToArgSlot(gc.ArgsIsByRef),
-            ObjToArgSlot(gc.ArgsWrapperTypes),
-            ObjToArgSlot(gc.ArgsTypes),
-            ObjToArgSlot(gc.RetValType)
-        };
-
-        // Invoke the method
-        gc.RetVal = forwardCallToInvoke.CallWithValueTypes_RetOBJECTREF(invokeArgs);
-
-        // Ensure all outs and return values are moved back to the current callsite
-        CallsiteInspect::PropagateOutParametersBackToCallsite(gc.Args, gc.RetVal, callsite);
-    }
-    GCPROTECT_END();
-
-    return fpRetSize;
-}
-
-// calls that propagate from CLR to COM
-
-#pragma optimize( "y", off )
-/*static*/
-UINT32 STDCALL CLRToCOMWorker(TransitionBlock * pTransitionBlock, CLRToCOMCallMethodDesc * pMD)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-        ENTRY_POINT;
-        PRECONDITION(CheckPointer(pTransitionBlock, NULL_NOT_OK));
-    }
-    CONTRACTL_END;
-
-    UINT32 returnValue = 0;
-
-    // This must happen before the UnC handler is setup.  Otherwise, an exception will
-    // cause the UnC handler to pop this frame, leaving a GC hole a mile wide.
-
-    MAKE_CURRENT_THREAD_AVAILABLE();
-
-    CLRToCOMMethodFrame frame(pTransitionBlock, pMD);
-    CLRToCOMMethodFrame * pFrame = &frame;
-
-    //we need to zero out the return value buffer because we will report it during GC
-#ifdef ENREGISTERED_RETURNTYPE_MAXSIZE
-    ZeroMemory (pFrame->GetReturnValuePtr(), ENREGISTERED_RETURNTYPE_MAXSIZE);
-#else
-    *(ARG_SLOT *)pFrame->GetReturnValuePtr() = 0;
-#endif
-
-    // Link frame into the chain.
-    pFrame->Push(CURRENT_THREAD);
-
-    INSTALL_UNWIND_AND_CONTINUE_HANDLER
-
-    _ASSERTE(pMD->IsCLRToCOMCall());
-
-    // Make sure we have been properly loaded here
-    CONSISTENCY_CHECK(GetAppDomain()->CheckCanExecuteManagedCode(pMD));
-
-    // Retrieve the interface method table.
-    MethodTable *pItfMT = pMD->GetInterfaceMethodTable();
-
-    // If the interface is a COM event call, then delegate to the CLRToCOMEventCallWorker.
-    if (pItfMT->IsComEventItfType())
-    {
-        returnValue = CLRToCOMEventCallWorker(pFrame, pMD);
-    }
-    else if (pItfMT->GetComInterfaceType() == ifDispatch)
-    {
-        // If the interface is a Dispatch only interface then convert the early bound
-        // call to a late bound call.
-        returnValue = CLRToCOMLateBoundWorker(pFrame, pMD);
-    }
-    else
-    {
-        LOG((LF_STUBS, LL_INFO1000, "Calling CLRToCOMWorker %s::%s \n", pMD->m_pszDebugClassName, pMD->m_pszDebugMethodName));
-
-        CONSISTENCY_CHECK_MSG(false, "Should not get here when using IL stubs.");
-    }
-
-    UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
-
-    pFrame->Pop(CURRENT_THREAD);
-
-    return returnValue;
-}
-
-#pragma optimize( "", on )
-
-#endif // #ifndef DACCESS_COMPILE
-
-//---------------------------------------------------------
-// Debugger support for CLRToCOMMethodFrame
-//---------------------------------------------------------
-TADDR CLRToCOMCall::GetFrameCallIP(FramedMethodFrame *frame)
-{
-    CONTRACT (TADDR)
-    {
-        WRAPPER(THROWS);
-        WRAPPER(GC_TRIGGERS);
-        MODE_ANY;
-        PRECONDITION(CheckPointer(frame));
-        POSTCONDITION(CheckPointer((void*)RETVAL, NULL_OK));
-    }
-    CONTRACT_END;
-
-    CLRToCOMCallMethodDesc *pCMD = dac_cast<PTR_CLRToCOMCallMethodDesc>(frame->GetFunction());
-    MethodTable *pItfMT = pCMD->GetInterfaceMethodTable();
-    TADDR ip = NULL;
-#ifndef DACCESS_COMPILE
-    SafeComHolder<IUnknown> pUnk   = NULL;
-#endif
-
-    _ASSERTE(pCMD->IsCLRToCOMCall());
-
-    // Note: if this is a COM event call, then the call will be delegated to a different object. The logic below will
-    // fail with an invalid cast error. For V1, we just won't step into those.
-    if (pItfMT->IsComEventItfType())
-        RETURN NULL;
-
-    //
-    // This is called from some strange places - from
-    // unmanaged code, from managed code, from the debugger
-    // helper thread.  Make sure we can deal with this object
-    // ref.
-    //
-
-#ifndef DACCESS_COMPILE
-
-    Thread* thread = GetThreadNULLOk();
-    if (thread == NULL)
-    {
-        //
-        // This is being called from the debug helper thread.
-        // Unfortunately this doesn't bode well for the CLR IP
-        // mapping code - it expects to be called from the appropriate
-        // context.
-        //
-        // This context-naive code will work for most cases.
-        //
-        // It toggles the GC mode, tries to setup a thread, etc, right after our
-        // verification that we have no Thread object above. This needs to be fixed properly in Beta 2. This is a work
-        // around for Beta 1, which is just to #if 0 the code out and return NULL.
-        //
-        pUnk = NULL;
-    }
-    else
-    {
-        GCX_COOP();
-
-        OBJECTREF *pOref = frame->GetThisPtr();
-        pUnk = ComObject::GetComIPFromRCWThrowing(pOref, pItfMT);
-    }
-
-    if (pUnk != NULL)
-    {
-        if (pItfMT->GetComInterfaceType() == ifDispatch)
-            ip = (TADDR)(*(void ***)(IUnknown*)pUnk)[DISPATCH_INVOKE_SLOT];
-        else
-            ip = (TADDR)(*(void ***)(IUnknown*)pUnk)[pCMD->m_pCLRToCOMCallInfo->m_cachedComSlot];
-    }
-
-#else
-    DacNotImpl();
-#endif // #ifndef DACCESS_COMPILE
-
-    RETURN ip;
-}
-
-void CLRToCOMMethodFrame::GetUnmanagedCallSite_Impl(TADDR* ip,
-                                              TADDR* returnIP,
-                                              TADDR* returnSP)
-{
-    CONTRACTL
-    {
-        WRAPPER(THROWS);
-        WRAPPER(GC_TRIGGERS);
-        MODE_ANY;
-        PRECONDITION(CheckPointer(ip, NULL_OK));
-        PRECONDITION(CheckPointer(returnIP, NULL_OK));
-        PRECONDITION(CheckPointer(returnSP, NULL_OK));
-    }
-    CONTRACTL_END;
-
-    LOG((LF_CORDB, LL_INFO100000, "CLRToCOMMethodFrame::GetUnmanagedCallSite\n"));
-
-    if (ip != NULL)
-        *ip = CLRToCOMCall::GetFrameCallIP(this);
-
-    TADDR retSP = NULL;
-    // We can't assert retSP here because the debugger may actually call this function even when
-    // the frame is not fully initiailzed.  It is ok because the debugger has code to handle this
-    // case.  However, other callers may not be tolerant of this case, so we should push this assert
-    // to the callers
-    //_ASSERTE(retSP != NULL);
-
-    if (returnIP != NULL)
-    {
-        *returnIP = retSP ? *(TADDR*)retSP : NULL;
-    }
-
-    if (returnSP != NULL)
-    {
-        *returnSP = retSP;
-    }
-
-}
-
-
-
-BOOL CLRToCOMMethodFrame::TraceFrame_Impl(Thread *thread, BOOL fromPatch,
-                                    TraceDestination *trace, REGDISPLAY *regs)
-{
-    CONTRACTL
-    {
-        WRAPPER(THROWS);
-        WRAPPER(GC_TRIGGERS);
-        MODE_ANY;
-        PRECONDITION(CheckPointer(thread));
-        PRECONDITION(CheckPointer(trace));
-    }
-    CONTRACTL_END;
-
-    //
-    // Get the call site info
-    //
-
-#if defined(HOST_64BIT)
-    // Interop debugging is currently not supported on WIN64, so we always return FALSE.
-    // The result is that you can't step into an unmanaged frame or step out to one.  You
-    // also can't step a breakpoint in one.
-    return FALSE;
-#endif // HOST_64BIT
-
-    TADDR ip, returnIP, returnSP;
-    GetUnmanagedCallSite(&ip, &returnIP, &returnSP);
-
-    //
-    // If we've already made the call, we can't trace any more.
-    //
-    // !!! Note that this test isn't exact.
-    //
-
-    if (!fromPatch &&
-        (dac_cast<TADDR>(thread->GetFrame()) != dac_cast<TADDR>(this) ||
-         !thread->m_fPreemptiveGCDisabled ||
-         *PTR_TADDR(returnSP) == returnIP))
-    {
-        LOG((LF_CORDB, LL_INFO10000, "CLRToCOMMethodFrame::TraceFrame: can't trace...\n"));
-        return FALSE;
-    }
-
-    //
-    // Otherwise, return the unmanaged destination.
-    //
-
-    trace->InitForUnmanaged(ip);
-
-    LOG((LF_CORDB, LL_INFO10000,
-         "CLRToCOMMethodFrame::TraceFrame: ip=0x%p\n", ip));
-
-    return TRUE;
+    return *pComInfo->GetAddrOfILStubField();
 }

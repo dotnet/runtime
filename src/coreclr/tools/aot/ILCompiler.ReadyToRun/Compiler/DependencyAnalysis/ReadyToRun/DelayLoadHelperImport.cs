@@ -20,7 +20,11 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         private readonly bool _useVirtualCall;
         private readonly bool _useJumpableStub;
 
-        private readonly ImportThunk _delayLoadHelper;
+        private readonly ISymbolNode _delayLoadHelper;
+
+        public bool UseVirtualCall => _useVirtualCall;
+        public bool UseJumpableStub => _useJumpableStub;
+        public ReadyToRunHelper HelperId => _helper;
 
         public DelayLoadHelperImport(
             NodeFactory factory, 
@@ -35,7 +39,14 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             _helper = helper;
             _useVirtualCall = useVirtualCall;
             _useJumpableStub = useJumpableStub;
-            _delayLoadHelper = factory.ImportThunk(helper, importSectionNode, useVirtualCall, useJumpableStub);
+            if (factory.Target.Architecture == TargetArchitecture.Wasm32)
+            {
+                _delayLoadHelper = factory.WasmImportThunkPortableEntrypoint(this);
+            }
+            else
+            {
+                _delayLoadHelper = factory.ImportThunk(helper, importSectionNode, useVirtualCall, useJumpableStub);
+            }
         }
 
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)

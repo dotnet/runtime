@@ -27,6 +27,7 @@ The System.Text.Json library is built-in as part of the shared framework in .NET
     <Compile Include="$(CommonPath)System\Text\Json\PooledByteBufferWriter.cs" Link="Common\System\Text\Json\PooledByteBufferWriter.cs" />
     <Compile Include="..\Common\JsonCamelCaseNamingPolicy.cs" Link="Common\System\Text\Json\JsonCamelCaseNamingPolicy.cs" />
     <Compile Include="..\Common\JsonNamingPolicy.cs" Link="Common\System\Text\Json\JsonNamingPolicy.cs" />
+    <Compile Include="..\Common\JsonPascalCaseNamingPolicy.cs" Link="Common\System\Text\Json\JsonPascalCaseNamingPolicy.cs" />
     <Compile Include="..\Common\JsonAttribute.cs" Link="Common\System\Text\Json\Serialization\JsonAttribute.cs" />
     <Compile Include="..\Common\JsonCommentHandling.cs" Link="Common\System\Text\Json\JsonCommentHandling.cs" />
     <Compile Include="..\Common\JsonConstants.cs" Link="Common\System\Text\Json\JsonConstants.cs" />
@@ -116,6 +117,7 @@ The System.Text.Json library is built-in as part of the shared framework in .NET
     <Compile Include="System\Text\Json\Serialization\Attributes\JsonIgnoreAttribute.cs" />
     <Compile Include="System\Text\Json\Serialization\Attributes\JsonIncludeAttribute.cs" />
     <Compile Include="System\Text\Json\Serialization\Attributes\JsonNumberHandlingAttribute.cs" />
+    <Compile Include="System\Text\Json\Serialization\Attributes\JsonNamingPolicyAttribute.cs" />
     <Compile Include="System\Text\Json\Serialization\Attributes\JsonPolymorphicAttribute.cs" />
     <Compile Include="System\Text\Json\Serialization\Attributes\JsonPropertyNameAttribute.cs" />
     <Compile Include="System\Text\Json\Serialization\Attributes\JsonRequiredAttribute.cs" />
@@ -165,7 +167,6 @@ The System.Text.Json library is built-in as part of the shared framework in .NET
     <Compile Include="System\Text\Json\Serialization\Metadata\PropertyRefCacheBuilder.cs" />
     <Compile Include="System\Text\Json\Serialization\PipeReadBufferState.cs" />
     <Compile Include="System\Text\Json\Serialization\PolymorphicSerializationState.cs" />
-    <Compile Include="System\Text\Json\StackHelper.cs" />
     <Compile Include="System\Text\Json\ValueQueue.cs" />
     <Compile Include="System\Text\Json\Writer\Utf8JsonWriter.WriteValues.StringSegment.cs" />
     <Compile Include="System\Text\Json\Writer\Utf8JsonWriterCache.cs" />
@@ -203,6 +204,7 @@ The System.Text.Json library is built-in as part of the shared framework in .NET
     <Compile Include="System\Text\Json\Serialization\Converters\FSharp\FSharpMapConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\FSharp\FSharpSetConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\FSharp\FSharpTypeConverterFactory.cs" />
+    <Compile Include="System\Text\Json\Serialization\Converters\FSharp\FSharpUnionConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\FSharp\FSharpOptionConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\FSharp\FSharpValueOptionConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Node\JsonArrayConverter.cs" />
@@ -364,6 +366,12 @@ The System.Text.Json library is built-in as part of the shared framework in .NET
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\UnconditionalSuppressMessageAttribute.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Reflection\NullabilityInfo.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Reflection\NullabilityInfoContext.cs" />
+    <Compile Include="$(CommonPath)Polyfills\DoublePolyfills.cs" Link="Common\Polyfills\DoublePolyfills.cs" />
+    <Compile Include="$(CommonPath)Polyfills\SinglePolyfills.cs" Link="Common\Polyfills\SinglePolyfills.cs" />
+    <Compile Include="$(CommonPath)Polyfills\BitArrayPolyfills.cs" Link="Common\Polyfills\BitArrayPolyfills.cs" />
+    <Compile Include="$(CommonPath)Polyfills\BitConverterPolyfills.cs" Link="Common\Polyfills\BitConverterPolyfills.cs" />
+    <Compile Include="$(CommonPath)Polyfills\ArrayPolyfills.cs" Link="Common\Polyfills\ArrayPolyfills.cs" />
+    <Compile Include="$(CommonPath)Polyfills\RuntimeHelpersPolyfills.cs" Link="Common\Polyfills\RuntimeHelpersPolyfills.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp' or $([MSBuild]::VersionLessThan('$(TargetFrameworkVersion)', '9.0'))">
@@ -394,9 +402,9 @@ The System.Text.Json library is built-in as part of the shared framework in .NET
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
-    <Compile Include="$(CommonPath)System\IO\StreamExtensions.netstandard.cs" Link="Common\System\IO\StreamExtensions.netstandard.cs" />
-    <Compile Include="$(CommonPath)System\Text\StringBuilderExtensions.cs" Link="Common\System\Text\StringBuilderExtensions.cs" />
-    <Compile Include="System\Collections\Generic\StackExtensions.netstandard.cs" />
+    <Compile Include="$(CommonPath)Polyfills\StreamMemoryPolyfills.cs" Link="Common\Polyfills\StreamMemoryPolyfills.cs" />
+    <Compile Include="$(CommonPath)Polyfills\StringBuilderPolyfills.cs" Link="Common\Polyfills\StringBuilderPolyfills.cs" />
+    <Compile Include="$(CommonPath)Polyfills\StackPolyfills.cs" Link="Common\Polyfills\StackPolyfills.cs" />
     <Compile Include="$(CommonPath)System\Buffers\ArrayBufferWriter.cs" Link="Common\System\Buffers\ArrayBufferWriter.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\StringSyntaxAttribute.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\RequiresDynamicCodeAttribute.cs" />

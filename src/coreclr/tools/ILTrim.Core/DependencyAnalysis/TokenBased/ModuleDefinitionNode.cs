@@ -1,0 +1,69 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+using System.Collections.Generic;
+using System.Reflection.Metadata;
+using System.Reflection.Metadata.Ecma335;
+using Internal.TypeSystem.Ecma;
+
+using Debug = System.Diagnostics.Debug;
+
+namespace ILCompiler.DependencyAnalysis
+{
+    /// <summary>
+    /// Represents an entry in the Module metadata table.
+    /// </summary>
+    public sealed class ModuleDefinitionNode : TokenBasedNode
+    {
+        // The first entry in the TypeDefinition table has a special meaning and is where
+        // global fields and methods go.
+        private TypeDefinitionHandle GlobalModuleTypeHandle => MetadataTokens.TypeDefinitionHandle(1);
+
+        public ModuleDefinitionNode(EcmaModule module)
+            : base(module, EntityHandle.ModuleDefinition)
+        {
+        }
+
+        public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
+        {
+            DependencyList dependencies = new DependencyList();
+
+            if (_module.MetadataReader.IsAssembly)
+                dependencies.Add(factory.AssemblyDefinition(_module), "Assembly definition of the module");
+
+            dependencies.Add(factory.TypeDefinition(_module, GlobalModuleTypeHandle), "Global module type");
+
+            CustomAttributeNode.AddDependenciesDueToCustomAttributes(ref dependencies, factory, _module, _module.MetadataReader.GetModuleDefinition().GetCustomAttributes());
+
+            foreach (var resourceHandle in _module.MetadataReader.ManifestResources)
+            {
+                dependencies.Add(factory.ManifestResource(_module, resourceHandle), "Manifest resource of a module");
+            }
+
+            return dependencies;
+        }
+
+        protected override EntityHandle WriteInternal(ModuleWritingContext writeContext)
+        {
+            MetadataReader reader = _module.MetadataReader;
+            ModuleDefinition moduleDefinition = reader.GetModuleDefinition();
+
+            MetadataBuilder mdBuilder = writeContext.MetadataBuilder;
+
+            // The global module type is the type with RID 1. It needs to map back to RID 1.
+            Debug.Assert(writeContext.TokenMap.MapToken(GlobalModuleTypeHandle) == GlobalModuleTypeHandle);
+
+            return mdBuilder.AddModule(moduleDefinition.Generation,
+                mdBuilder.GetOrAddString(reader.GetString(moduleDefinition.Name)),
+                mdBuilder.GetOrAddGuid(reader.GetGuid(moduleDefinition.Mvid)),
+                mdBuilder.GetOrAddGuid(reader.GetGuid(moduleDefinition.GenerationId)),
+                mdBuilder.GetOrAddGuid(reader.GetGuid(moduleDefinition.BaseGenerationId)));
+        }
+
+        public override string ToString()
+        {
+            MetadataReader reader = _module.MetadataReader;
+            return reader.GetString(reader.GetModuleDefinition().Name);
+        }
+    }
+}

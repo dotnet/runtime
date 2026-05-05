@@ -230,6 +230,18 @@ namespace System.Text.Json
         }
 
         [DoesNotReturn]
+        public static void ThrowInvalidOperationException_SerializationConverterOnAttributeOpenGenericNotCompatible(Type classType, MemberInfo? memberInfo, Type converterType)
+        {
+            string location = classType.ToString();
+            if (memberInfo != null)
+            {
+                location += $".{memberInfo.Name}";
+            }
+
+            throw new InvalidOperationException(SR.Format(SR.SerializationConverterOnAttributeOpenGenericNotCompatible, location, converterType));
+        }
+
+        [DoesNotReturn]
         public static void ThrowInvalidOperationException_SerializerOptionsReadOnly(JsonSerializerContext? context)
         {
             string message = context == null
@@ -290,37 +302,47 @@ namespace System.Text.Json
         [DoesNotReturn]
         public static void ThrowJsonException_JsonRequiredPropertyMissing(JsonTypeInfo parent, BitArray assignedOrNotRequiredPropertiesSet)
         {
-            StringBuilder listOfMissingPropertiesBuilder = new();
-            bool first = true;
-
-            // Soft cut-off length - once message becomes longer than that we won't be adding more elements
-            const int CutOffLength = 60;
+            StringBuilder builder = new();
 
             foreach (JsonPropertyInfo property in parent.PropertyCache)
             {
-                if (assignedOrNotRequiredPropertiesSet[property.PropertyIndex])
+                if (!assignedOrNotRequiredPropertiesSet[property.PropertyIndex])
                 {
-                    continue;
-                }
-
-                if (!first)
-                {
-                    listOfMissingPropertiesBuilder.Append(CultureInfo.CurrentUICulture.TextInfo.ListSeparator);
-                    listOfMissingPropertiesBuilder.Append(' ');
-                }
-
-                listOfMissingPropertiesBuilder.Append('\'');
-                listOfMissingPropertiesBuilder.Append(property.Name);
-                listOfMissingPropertiesBuilder.Append('\'');
-                first = false;
-
-                if (listOfMissingPropertiesBuilder.Length >= CutOffLength)
-                {
-                    break;
+                    if (!AppendMissingProperty(builder, property.Name))
+                    {
+                        break;
+                    }
                 }
             }
 
-            throw new JsonException(SR.Format(SR.JsonRequiredPropertiesMissing, parent.Type, listOfMissingPropertiesBuilder.ToString()));
+            throw new JsonException(SR.Format(SR.JsonRequiredPropertiesMissing, parent.Type, builder.ToString()));
+        }
+
+        [DoesNotReturn]
+        public static void ThrowJsonException_JsonRequiredPropertyMissing(Type type, string propertyList)
+        {
+            throw new JsonException(SR.Format(SR.JsonRequiredPropertiesMissing, type, propertyList));
+        }
+
+        /// <summary>
+        /// Appends a property name to a missing-properties list with culture-aware separators and a soft length cut-off.
+        /// Returns false when the cut-off is reached and no more names should be appended.
+        /// </summary>
+        internal static bool AppendMissingProperty(StringBuilder builder, string propertyName)
+        {
+            const int CutOffLength = 60;
+
+            if (builder.Length > 0)
+            {
+                builder.Append(CultureInfo.CurrentUICulture.TextInfo.ListSeparator);
+                builder.Append(' ');
+            }
+
+            builder.Append('\'');
+            builder.Append(propertyName);
+            builder.Append('\'');
+
+            return builder.Length < CutOffLength;
         }
 
         [DoesNotReturn]
@@ -518,7 +540,9 @@ namespace System.Text.Json
             if (string.IsNullOrEmpty(message))
             {
                 // Use a default message.
-                Type propertyType = state.Current.JsonPropertyInfo?.PropertyType ?? state.Current.JsonTypeInfo.Type;
+                Type propertyType = state.Current.JsonPropertyInfo?.PropertyType ??
+                    state.Current.CtorArgumentState?.JsonParameterInfo?.ParameterType ??
+                    state.Current.JsonTypeInfo.Type;
                 message = SR.Format(SR.DeserializeUnableToConvertValue, propertyType);
                 ex.AppendPathInformation = true;
             }
