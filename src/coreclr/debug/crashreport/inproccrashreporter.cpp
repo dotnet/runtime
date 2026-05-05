@@ -713,7 +713,7 @@ CrashReportHelpers::GetInstructionPointer(
 #if defined(__APPLE__) && defined(__x86_64__)
     return static_cast<uint64_t>(ucontext->uc_mcontext->__ss.__rip);
 #elif defined(__APPLE__) && defined(__aarch64__)
-    return static_cast<uint64_t>(arm_thread_state64_get_pc(ucontext->uc_mcontext->__ss));
+    return reinterpret_cast<uint64_t>(arm_thread_state64_get_pc_fptr(ucontext->uc_mcontext->__ss));
 #elif defined(__x86_64__)
     return static_cast<uint64_t>(ucontext->uc_mcontext.gregs[REG_RIP]);
 #elif defined(__aarch64__)
