@@ -801,6 +801,24 @@ public static partial class XmlSerializerTests
     }
 
     [Fact]
+    public static void XML_XmlTextSeparator_ChoiceMixedContent_NullBetweenText_RoundTrips()
+    {
+        var original = new TypeWithXmlTextSeparatorOnChoiceMixedContent
+        {
+            All = new object[] { "a", null, "b" },
+            Choices = new XmlTextSeparatorChoice[] { XmlTextSeparatorChoice.None, XmlTextSeparatorChoice.None, XmlTextSeparatorChoice.None }
+        };
+
+        var actual = SerializeAndDeserialize(original,
+            WithXmlHeader("<TypeWithXmlTextSeparatorOnChoiceMixedContent xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\">a,b</TypeWithXmlTextSeparatorOnChoiceMixedContent>"));
+
+        Assert.NotNull(actual.All);
+        Assert.Equal(2, actual.All.Length);
+        Assert.Equal("a", actual.All[0]);
+        Assert.Equal("b", actual.All[1]);
+    }
+
+    [Fact]
     public static void Xml_TypeWithSchemaFormInXmlAttribute()
     {
         var value = new TypeWithSchemaFormInXmlAttribute() { TestProperty = "hello" };

@@ -1604,7 +1604,7 @@ namespace System.Xml.Serialization
                 if (lastWasTextLoc is not null)
                 {
                     curIsTextLoc = ilg.DeclareOrGetLocal(typeof(bool), "curIsText");
-                    ilg.Ldc(false);
+                    ilg.Ldloc(lastWasTextLoc);
                     ilg.Stloc(curIsTextLoc);
                 }
 
@@ -1653,6 +1653,11 @@ namespace System.Xml.Serialization
 
                         SourceInfo castedSource = source.CastTo(element.Mapping.TypeDesc!);
                         WriteElement(element.Any ? source : castedSource, element, arrayName, writeAccessors);
+                        if (curIsTextLoc is not null)
+                        {
+                            ilg.Ldc(false);
+                            ilg.Stloc(curIsTextLoc);
+                        }
                     }
                     else
                     {
@@ -1664,6 +1669,11 @@ namespace System.Xml.Serialization
                         ilg.AndIf();
                         SourceInfo castedSource = source.CastTo(td);
                         WriteElement(element.Any ? source : castedSource, element, arrayName, writeAccessors);
+                        if (curIsTextLoc is not null)
+                        {
+                            ilg.Ldc(false);
+                            ilg.Stloc(curIsTextLoc);
+                        }
                     }
                 }
                 if (wroteFirstIf)
@@ -1760,6 +1770,11 @@ namespace System.Xml.Serialization
                         if (choice != null) ilg.If();
                         else ilg.AndIf();
                         WriteElement(new SourceInfo("elem", null, null, elemLoc.LocalType, ilg), element, arrayName, writeAccessors);
+                        if (curIsTextLoc is not null)
+                        {
+                            ilg.Ldc(false);
+                            ilg.Stloc(curIsTextLoc);
+                        }
 
                         if (choice != null)
                         {
@@ -1789,6 +1804,11 @@ namespace System.Xml.Serialization
                     if (unnamedAny != null)
                     {
                         WriteElement(new SourceInfo("elem", null, null, elemLoc.LocalType, ilg), unnamedAny, arrayName, writeAccessors);
+                        if (curIsTextLoc is not null)
+                        {
+                            ilg.Ldc(false);
+                            ilg.Stloc(curIsTextLoc);
+                        }
                     }
                     else
                     {

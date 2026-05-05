@@ -3775,7 +3775,9 @@ namespace System.Xml.Serialization
                     curIsTextVar = $"cit{arrayName}";
                     Writer.Write("bool ");
                     Writer.Write(curIsTextVar);
-                    Writer.WriteLine(" = false;");
+                    Writer.Write(" = ");
+                    Writer.Write(lastWasTextVar);
+                    Writer.WriteLine(";");
                 }
 
                 for (int i = 0; i < elements.Length; i++)
@@ -3822,6 +3824,11 @@ namespace System.Xml.Serialization
                         if (!useReflection)
                             castedSource = $"(({fullTypeName}){source})";
                         WriteElement(element.Any ? source : castedSource, element, arrayName, writeAccessors);
+                        if (curIsTextVar is not null)
+                        {
+                            Writer.Write(curIsTextVar);
+                            Writer.WriteLine(" = false;");
+                        }
                         Writer.Indent--;
                         Writer.WriteLine("}");
                     }
@@ -3840,6 +3847,11 @@ namespace System.Xml.Serialization
                         if (!useReflection)
                             castedSource = $"(({fullTypeName}){source})";
                         WriteElement(element.Any ? source : castedSource, element, arrayName, writeAccessors);
+                        if (curIsTextVar is not null)
+                        {
+                            Writer.Write(curIsTextVar);
+                            Writer.WriteLine(" = false;");
+                        }
                         Writer.Indent--;
                         Writer.WriteLine("}");
                     }
@@ -3896,6 +3908,11 @@ namespace System.Xml.Serialization
                         Writer.WriteLine(") {");
                         Writer.Indent++;
                         WriteElement("elem", element, arrayName, writeAccessors);
+                        if (curIsTextVar is not null)
+                        {
+                            Writer.Write(curIsTextVar);
+                            Writer.WriteLine(" = false;");
+                        }
 
                         if (choice != null)
                         {
@@ -3925,6 +3942,11 @@ namespace System.Xml.Serialization
                     if (unnamedAny != null)
                     {
                         WriteElement("elem", unnamedAny, arrayName, writeAccessors);
+                        if (curIsTextVar is not null)
+                        {
+                            Writer.Write(curIsTextVar);
+                            Writer.WriteLine(" = false;");
+                        }
                     }
                     else
                     {
