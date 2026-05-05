@@ -52,12 +52,17 @@ private:
     {
         ProcessEntry           *m_pNext;            // Next entry in the list
         DWORD                   m_dwPID;            // Process ID for this entry
-        HANDLE                  m_hProcess;         // Process handle
+        HANDLE                  m_hProcessExited;   // Manual-reset event signaled when m_dwPID exits
         DbgTransportSession    *m_transport;        // Debugger's connection to the process
         DWORD                   m_cProcessRef;      // Ref count
+        pthread_t               m_pollerThread;     // Thread that polls m_dwPID for exit
+        bool                    m_fPollerStarted;   // True once m_pollerThread has been created
+        Volatile<bool>          m_fStopPoller;      // Set to true to ask the poller thread to exit
 
         ~ProcessEntry();
     };
+
+    static void *ProcessExitPollerThread(void *arg);
 
     ProcessEntry           *m_pProcessList;         // Head of list of currently alive processes (unsorted)
     RSLock                  m_sLock;                // Lock protecting read and write access to the target list

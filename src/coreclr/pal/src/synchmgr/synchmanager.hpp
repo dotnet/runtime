@@ -337,14 +337,8 @@ namespace CorUnix
     class CSynchWaitController : public CSynchControllerBase,
                                  public ISynchWaitController
     {
-        // Per-object-type specific data
-        //
-        // Process (otiProcess)
-        IPalObject *m_pProcessObject; // process that owns m_pProcLocalData, this is stored without a reference
-        CProcProcessLocalData * m_pProcLocalData;
-
     public:
-        CSynchWaitController() : m_pProcessObject(NULL), m_pProcLocalData(NULL) {}
+        CSynchWaitController() = default;
         virtual ~CSynchWaitController() = default;
 
         //
@@ -360,10 +354,6 @@ namespace CorUnix
             DWORD dwIndex);
 
         virtual void ReleaseController(void);
-
-        CProcProcessLocalData * GetProcessLocalData(void);
-
-        void SetProcessData(IPalObject* pProcessObject, CProcProcessLocalData * pProcLocalData);
     };
 
     class CSynchStateController : public CSynchControllerBase,
@@ -415,28 +405,12 @@ namespace CorUnix
             SynchWorkerCmdLast
         };
 
-        typedef struct _MonitoredProcessesListNode
-        {
-            struct _MonitoredProcessesListNode * pNext;
-            LONG lRefCount;
-            CSynchData * psdSynchData;
-            DWORD dwPid;
-            DWORD dwExitCode;
-            bool fIsActualExitCode;
-
-            // Object that owns pProcLocalData. This is stored, with a reference, to
-            // ensure that pProcLocalData is not deleted.
-            IPalObject *pProcessObject;
-            CProcProcessLocalData * pProcLocalData;
-        } MonitoredProcessesListNode;
-
         // constants
         static const int CtrlrsCacheMaxSize                = 256;
         static const int SynchDataCacheMaxSize             = 256;
         static const int WTListNodeCacheMaxSize            = 256;
         static const int MaxWorkerConsecutiveEintrs        = 128;
         static const int MaxConsecutiveEagains             = 128;
-        static const int WorkerThreadProcMonitoringTimeout = 250;  // ms
         static const int WorkerThreadShuttingDownTimeout   = 1000; // ms
         static const int WorkerCmdCompletionTimeout        = 250;  // ms
         static const DWORD SecondNativeWaitTimeout         = INFINITE;
@@ -446,7 +420,6 @@ namespace CorUnix
         static CPalSynchronizationManager * s_pObjSynchMgr;
         static Volatile<LONG>               s_lInitStatus;
         static minipal_mutex             s_csSynchProcessLock;
-        static minipal_mutex             s_csMonitoredProcessesLock;
 
         // members
         DWORD                           m_dwWorkerThreadTid;
@@ -458,10 +431,6 @@ namespace CorUnix
         int                             m_iKQueue;
         struct kevent                   m_keProcessPipeEvent;
 #endif // HAVE_KQUEUE
-
-        MonitoredProcessesListNode *    m_pmplnMonitoredProcesses;
-        LONG                            m_lMonitoredProcessesCount;
-        MonitoredProcessesListNode *    m_pmplnExitedNodes;
 
         // caches
         CSynchWaitControllerCache       m_cacheWaitCtrlrs;
@@ -720,10 +689,6 @@ namespace CorUnix
         // Non-static helper methods
         //
     private:
-        LONG DoMonitorProcesses(CPalThread * pthrCurrent);
-
-        void DiscardMonitoredProcesses(CPalThread * pthrCurrent);
-
         PAL_ERROR ReadCmdFromProcessPipe(
             int iPollTimeout,
             SynchWorkerCmd * pswcWorkerCmd,
@@ -751,25 +716,9 @@ namespace CorUnix
             CPalThread * pthrCurrent,
             ThreadWaitInfo * ptwiWaitInfo);
 
-        PAL_ERROR RegisterProcessForMonitoring(
-            CPalThread * pthrCurrent,
-            CSynchData *psdSynchData,
-            IPalObject *pProcessObject,
-            CProcProcessLocalData * pProcLocalData);
-
-        PAL_ERROR UnRegisterProcessForMonitoring(
-            CPalThread * pthrCurrent,
-            CSynchData *psdSynchData,
-            DWORD dwPid);
-
         //
         // Utility static methods, no lock required
         //
-        static bool HasProcessExited(
-            DWORD dwPid,
-            DWORD * pdwExitCode,
-            bool * pfIsActualExitCode);
-
         static bool InterlockedAwaken(
             DWORD *pWaitState);
 

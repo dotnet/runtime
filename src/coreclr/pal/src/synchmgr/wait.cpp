@@ -39,7 +39,6 @@ static PalObjectTypeId sg_rgWaitObjectsIds[] =
         otiAutoResetEvent,
         otiManualResetEvent,
         otiSemaphore,
-        otiProcess,
         otiThread
     };
 static CAllowedObjectTypes sg_aotWaitObject(sg_rgWaitObjectsIds,

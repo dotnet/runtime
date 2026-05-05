@@ -36,14 +36,6 @@ add_executable_clr(paltests
   EXCLUDE_FROM_ALL
   paltests.cpp
   common/palsuite.cpp
-  #composite/object_management/event/nonshared/event.cpp
-  #composite/object_management/event/nonshared/main.cpp
-  #composite/object_management/event/shared/event.cpp
-  #composite/object_management/event/shared/main.cpp
-  #composite/object_management/semaphore/nonshared/main.cpp
-  #composite/object_management/semaphore/nonshared/semaphore.cpp
-  #composite/object_management/semaphore/shared/main.cpp
-  #composite/object_management/semaphore/shared/semaphore.cpp
   c_runtime/atof/test1/test1.cpp
   c_runtime/atoi/test1/test1.cpp
   c_runtime/isalnum/test1/test1.cpp
@@ -141,12 +133,6 @@ add_executable_clr(paltests
   c_runtime/_wtoi/test1/test1.cpp
   #debug_api/DebugBreak/test1/test1.cpp
   debug_api/OutputDebugStringW/test1/test1.cpp
-  #debug_api/WriteProcessMemory/test1/helper.cpp
-  #debug_api/WriteProcessMemory/test1/test1.cpp
-  #debug_api/WriteProcessMemory/test3/helper.cpp
-  #debug_api/WriteProcessMemory/test3/test3.cpp
-  #debug_api/WriteProcessMemory/test4/helper.cpp
-  #debug_api/WriteProcessMemory/test4/test4.cpp
   #exception_handling/pal_except/test1/test1.cpp
   #exception_handling/pal_except/test2/test2.cpp
   #exception_handling/pal_except/test3/test3.cpp

@@ -142,7 +142,6 @@ namespace CorUnix
     CPalSynchronizationManager * CPalSynchronizationManager::s_pObjSynchMgr = NULL;
     Volatile<LONG> CPalSynchronizationManager::s_lInitStatus = SynchMgrStatusIdle;
     minipal_mutex CPalSynchronizationManager::s_csSynchProcessLock;
-    minipal_mutex CPalSynchronizationManager::s_csMonitoredProcessesLock;
 
     CPalSynchronizationManager::CPalSynchronizationManager()
         : m_dwWorkerThreadTid(0),
@@ -150,9 +149,6 @@ namespace CorUnix
           m_pthrWorker(NULL),
           m_iProcessPipeRead(-1),
           m_iProcessPipeWrite(-1),
-          m_pmplnMonitoredProcesses(NULL),
-          m_lMonitoredProcessesCount(0),
-          m_pmplnExitedNodes(NULL),
           m_cacheWaitCtrlrs(CtrlrsCacheMaxSize),
           m_cacheStateCtrlrs(CtrlrsCacheMaxSize),
           m_cacheSynchData(SynchDataCacheMaxSize),
@@ -629,33 +625,6 @@ namespace CorUnix
                                              potObjectType,
                                              psdSynchData);
             }
-
-            if (CSynchControllerBase::WaitController == ctCtrlrType &&
-                otiProcess == potObjectType->GetId())
-            {
-                CProcProcessLocalData * pProcLocData;
-                IDataLock * pDataLock;
-
-                palErr = rgObjects[uIdx]->GetProcessLocalData(
-                    pthrCurrent,
-                    ReadLock,
-                    &pDataLock,
-                    (void **)&pProcLocData);
-
-                if (NO_ERROR != palErr)
-                {
-                    // In case of failure here, bail out of the loop, but
-                    // keep track (by incrementing the counter 'uIdx') of the
-                    // fact that this controller has already being initialized
-                    // and therefore need to be Release'd rather than just
-                    // returned to the cache
-                    uIdx++;
-                    break;
-                }
-
-                Ctrlrs.pWaitCtrlrs[uIdx]->SetProcessData(rgObjects[uIdx], pProcLocData);
-                pDataLock->ReleaseLock(pthrCurrent, false);
-            }
         }
         if (NO_ERROR != palErr)
         {
@@ -912,7 +881,6 @@ namespace CorUnix
         }
 
         minipal_mutex_init(&s_csSynchProcessLock);
-        minipal_mutex_init(&s_csMonitoredProcessesLock);
 
         pSynchManager = new(std::nothrow) CPalSynchronizationManager();
         if (NULL == pSynchManager)
@@ -1042,9 +1010,6 @@ namespace CorUnix
             goto PFS_exit;
         }
 
-        // Discard process monitoring for process waits
-        pSynchManager->DiscardMonitoredProcesses(pthrCurrent);
-
         if (NULL == pSynchManager->m_pipoThread)
         {
             // If m_pipoThread is NULL here, that means that StartWorker has
@@ -1164,8 +1129,6 @@ namespace CorUnix
 
         while (!fWorkerIsDone)
         {
-            LONG lProcessCount;
-
             palErr = pSynchManager->ReadCmdFromProcessPipe(iPollTimeout,
                                                            &swcCmd,
                                                            &shridMarshaledData,
@@ -1198,15 +1161,10 @@ namespace CorUnix
                     }
                     else
                     {
-                        lProcessCount = pSynchManager->DoMonitorProcesses(pthrWorker);
-                        if (lProcessCount > 0)
-                        {
-                            iPollTimeout = WorkerThreadProcMonitoringTimeout;
-                        }
-                        else
-                        {
-                            iPollTimeout = INFTIM;
-                        }
+                        // Process-exit monitoring used to be performed here. The PAL no longer
+                        // exposes waitable process handles, so the worker thread only needs to
+                        // wait for explicit commands.
+                        iPollTimeout = INFTIM;
                     }
                     break;
                 case SynchWorkerCmdShutdown:
@@ -1934,164 +1892,7 @@ namespace CorUnix
         _ASSERT_MSG(bOriginatingNodeFound, "Couldn't find originating node while unsignaling rest of the wait all\n");
     }
 
-    /*++
-    Method:
-      CPalSynchronizationManager::RegisterProcessForMonitoring
 
-    Registers the process object represented by the passed psdSynchData and
-    pProcLocalData. The worker thread will monitor the actual process and,
-    upon process termination, it will set the exit code in pProcLocalData,
-    and it will signal the process object, by signaling its psdSynchData.
-    --*/
-    PAL_ERROR CPalSynchronizationManager::RegisterProcessForMonitoring(
-        CPalThread * pthrCurrent,
-        CSynchData *psdSynchData,
-        IPalObject *pProcessObject,
-        CProcProcessLocalData * pProcLocalData)
-    {
-        PAL_ERROR palErr = NO_ERROR;
-        MonitoredProcessesListNode * pmpln;
-        bool fWakeUpWorker = false;
-        bool fMonitoredProcessesLock = false;
-
-        VALIDATEOBJECT(psdSynchData);
-
-        minipal_mutex_enter(&s_csMonitoredProcessesLock);
-
-        fMonitoredProcessesLock = true;
-
-        pmpln = m_pmplnMonitoredProcesses;
-        while (pmpln)
-        {
-            if (psdSynchData == pmpln->psdSynchData)
-            {
-                _ASSERT_MSG(pmpln->dwPid == pProcLocalData->dwProcessId, "Invalid node in Monitored Processes List\n");
-                break;
-            }
-
-            pmpln = pmpln->pNext;
-        }
-
-        if (pmpln)
-        {
-            pmpln->lRefCount++;
-        }
-        else
-        {
-            pmpln = new(std::nothrow) MonitoredProcessesListNode();
-            if (NULL == pmpln)
-            {
-                ERROR("No memory to allocate MonitoredProcessesListNode structure\n");
-                palErr = ERROR_NOT_ENOUGH_MEMORY;
-                goto RPFM_exit;
-            }
-
-            pmpln->lRefCount      = 1;
-            pmpln->dwPid          = pProcLocalData->dwProcessId;
-            pmpln->dwExitCode     = 0;
-            pmpln->pProcessObject = pProcessObject;
-            pmpln->pProcessObject->AddReference();
-            pmpln->pProcLocalData = pProcLocalData;
-
-            // Acquire SynchData and AddRef it
-            pmpln->psdSynchData = psdSynchData;
-            psdSynchData->AddRef();
-
-            pmpln->pNext = m_pmplnMonitoredProcesses;
-            m_pmplnMonitoredProcesses = pmpln;
-            m_lMonitoredProcessesCount++;
-
-            fWakeUpWorker = true;
-        }
-
-        // Unlock
-        minipal_mutex_leave(&s_csMonitoredProcessesLock);
-        fMonitoredProcessesLock = false;
-
-        if (fWakeUpWorker)
-        {
-            CPalSynchronizationManager * pSynchManager = GetInstance();
-
-            palErr = pSynchManager->WakeUpLocalWorkerThread(SynchWorkerCmdNop);
-            if (NO_ERROR != palErr)
-            {
-                ERROR("Failed waking up worker thread for process "
-                      "monitoring registration [errno=%d {%s%}]\n",
-                      errno, strerror(errno));
-                palErr = ERROR_INTERNAL_ERROR;
-            }
-        }
-
-    RPFM_exit:
-        if (fMonitoredProcessesLock)
-        {
-            minipal_mutex_leave(&s_csMonitoredProcessesLock);
-        }
-
-        return palErr;
-    }
-
-    /*++
-    Method:
-      CPalSynchronizationManager::UnRegisterProcessForMonitoring
-
-    Unregisters a process object currently monitored by the worker thread
-    (typically called if the wait timed out before the process exited, or
-    if the wait was a normal (i.e. non wait-all) wait that involved othter
-    objects, and another object has been signaled).
-    --*/
-    PAL_ERROR CPalSynchronizationManager::UnRegisterProcessForMonitoring(
-        CPalThread * pthrCurrent,
-        CSynchData *psdSynchData,
-        DWORD dwPid)
-    {
-        PAL_ERROR palErr = NO_ERROR;
-        MonitoredProcessesListNode * pmpln, * pmplnPrev = NULL;
-
-        VALIDATEOBJECT(psdSynchData);
-
-        minipal_mutex_enter(&s_csMonitoredProcessesLock);
-
-        pmpln = m_pmplnMonitoredProcesses;
-        while (pmpln)
-        {
-            if (psdSynchData == pmpln->psdSynchData)
-            {
-                _ASSERT_MSG(dwPid == pmpln->dwPid, "Invalid node in Monitored Processes List\n");
-                break;
-            }
-
-            pmplnPrev = pmpln;
-            pmpln = pmpln->pNext;
-        }
-
-        if (pmpln)
-        {
-            if (0 == --pmpln->lRefCount)
-            {
-                if (NULL != pmplnPrev)
-                {
-                    pmplnPrev->pNext = pmpln->pNext;
-                }
-                else
-                {
-                    m_pmplnMonitoredProcesses = pmpln->pNext;
-                }
-
-                m_lMonitoredProcessesCount--;
-                pmpln->pProcessObject->ReleaseReference(pthrCurrent);
-                pmpln->psdSynchData->Release(pthrCurrent);
-                delete pmpln;
-            }
-        }
-        else
-        {
-            palErr = ERROR_NOT_FOUND;
-        }
-
-        minipal_mutex_leave(&s_csMonitoredProcessesLock);
-        return palErr;
-    }
 
     /*++
     Method:
@@ -2114,195 +1915,7 @@ namespace CorUnix
         ASSERT("This code should never be executed\n");
     }
 
-    /*++
-    Method:
-      CPalSynchronizationManager::DoMonitorProcesses
 
-    This method is called by the worker thread to execute one step of
-    monitoring for all the process currently registered for monitoring
-    --*/
-    LONG CPalSynchronizationManager::DoMonitorProcesses(
-        CPalThread * pthrCurrent)
-    {
-        MonitoredProcessesListNode * pNode, * pPrev = NULL, * pNext;
-        LONG lInitialNodeCount;
-        LONG lRemovingCount = 0;
-        bool fLocalSynchLock = false;
-        bool fMonitoredProcessesLock = false;
-
-        // Note: we first need to grab the monitored processes lock to walk
-        //       the list of monitored processes, and then, if there is any
-        //       which exited, to grab the synchronization lock(s) to signal
-        //       the process object. Anyway we cannot grab the synchronization
-        //       lock(s) while holding the monitored processes lock; that
-        //       would cause deadlock, since RegisterProcessForMonitoring and
-        //       UnRegisterProcessForMonitoring call stacks grab the locks
-        //       in the opposite order. Grabbing the synch lock(s) first (and
-        //       therefore all the times) would cause unacceptable contention
-        //       (process monitoring is done in polling mode).
-        //       Therefore we need to remove list nodes for processes that
-        //       exited copying them to the exited array, while holding only
-        //       the monitored processes lock, and then to signal them from that
-        //       array holding synch lock(s) and monitored processes lock,
-        //       acquired in this order. Holding again the monitored processes
-        //       lock is needed in order to support object promotion.
-
-        // Grab the monitored processes lock
-        minipal_mutex_enter(&s_csMonitoredProcessesLock);
-        fMonitoredProcessesLock = true;
-
-        lInitialNodeCount = m_lMonitoredProcessesCount;
-
-        pNode = m_pmplnMonitoredProcesses;
-        while (pNode)
-        {
-            pNext = pNode->pNext;
-
-            if (HasProcessExited(pNode->dwPid,
-                                 &pNode->dwExitCode,
-                                 &pNode->fIsActualExitCode))
-            {
-                TRACE("Process %u exited with return code %u\n",
-                      pNode->dwPid,
-                      pNode->fIsActualExitCode ? "actual" : "guessed",
-                      pNode->dwExitCode);
-
-                if (NULL != pPrev)
-                {
-                    pPrev->pNext = pNext;
-                }
-                else
-                {
-                    m_pmplnMonitoredProcesses = pNext;
-                }
-
-                m_lMonitoredProcessesCount--;
-
-                // Insert in the list of nodes for exited processes
-                pNode->pNext = m_pmplnExitedNodes;
-                m_pmplnExitedNodes = pNode;
-                lRemovingCount++;
-            }
-            else
-            {
-                pPrev = pNode;
-            }
-
-            // Go to the next
-            pNode = pNext;
-        }
-
-        // Release the monitored processes lock
-        minipal_mutex_leave(&s_csMonitoredProcessesLock);
-        fMonitoredProcessesLock = false;
-
-        if (lRemovingCount > 0)
-        {
-            // First grab the local synch lock
-            AcquireLocalSynchLock(pthrCurrent);
-            fLocalSynchLock = true;
-
-            // Acquire the monitored processes lock
-            minipal_mutex_enter(&s_csMonitoredProcessesLock);
-            fMonitoredProcessesLock = true;
-
-            // Start from the beginning of the exited processes list
-            pNode = m_pmplnExitedNodes;
-
-            // Invalidate the list
-            m_pmplnExitedNodes = NULL;
-
-            while (pNode)
-            {
-                pNext = pNode->pNext;
-
-                TRACE("Process pid=%u exited with exitcode=%u\n",
-                      pNode->dwPid, pNode->dwExitCode);
-
-                // Store the exit code in the process local data
-                if (pNode->fIsActualExitCode)
-                {
-                    pNode->pProcLocalData->dwExitCode = pNode->dwExitCode;
-                }
-
-                // Set process status to PS_DONE
-                pNode->pProcLocalData->ps = PS_DONE;
-
-                // Set signal count
-                pNode->psdSynchData->SetSignalCount(1);
-
-                // Releasing all local waiters
-                //
-                // We just called directly in CSynchData::SetSignalCount(), so
-                // we need to take care of waking up waiting threads according
-                // to the Process object semantics (i.e. every thread must be
-                // awakend). Anyway if a process object is shared among two or
-                // more processes and threads from different processes are
-                // waiting on it, the object will be registered for monitoring
-                // in each of the processes. As result its signal count will
-                // be set to one more times (which is not a problem, given the
-                // process object semantics) and each worker thread will wake
-                // up waiting threads. Therefore we need to make sure that each
-                // worker wakes up only threads in its own process: we do that
-                // by calling ReleaseAllLocalWaiters
-                pNode->psdSynchData->ReleaseAllLocalWaiters(pthrCurrent);
-
-                // We are done with pProcLocalData, so we can release the process object
-                pNode->pProcessObject->ReleaseReference(pthrCurrent);
-
-                // Release the reference to the SynchData
-                pNode->psdSynchData->Release(pthrCurrent);
-
-                // Delete the node
-                delete pNode;
-
-                // Go to the next
-                pNode = pNext;
-            }
-        }
-
-        if (fMonitoredProcessesLock)
-        {
-            minipal_mutex_leave(&s_csMonitoredProcessesLock);
-        }
-
-        if (fLocalSynchLock)
-        {
-            ReleaseLocalSynchLock(pthrCurrent);
-        }
-
-        return (lInitialNodeCount - lRemovingCount);
-    }
-
-    /*++
-    Method:
-      CPalSynchronizationManager::DiscardMonitoredProcesses
-
-    This method is called at shutdown time to discard all the registration
-    for the processes currently monitored by the worker thread.
-    This method must be called at shutdown time, otherwise some shared memory
-    may be leaked at process shutdown.
-    --*/
-    void CPalSynchronizationManager::DiscardMonitoredProcesses(
-        CPalThread * pthrCurrent)
-    {
-        MonitoredProcessesListNode * pNode;
-
-        // Grab the monitored processes lock
-        minipal_mutex_enter(&s_csMonitoredProcessesLock);
-
-        while (m_pmplnMonitoredProcesses)
-        {
-            pNode = m_pmplnMonitoredProcesses;
-            m_pmplnMonitoredProcesses = pNode->pNext;
-            pNode->pProcessObject->ReleaseReference(pthrCurrent);
-            pNode->psdSynchData->Release(pthrCurrent);
-            delete pNode;
-        }
-
-        // Release the monitored processes lock
-        minipal_mutex_leave(&s_csMonitoredProcessesLock);
-    }
 
     /*++
     Method:
@@ -2882,109 +2495,6 @@ namespace CorUnix
 
 #endif // SYNCHMGR_SUSPENSION_SAFE_CONDITION_SIGNALING
 
-    /*++
-    Method:
-      CPalSynchronizationManager::HasProcessExited
-
-    Tests whether or not a process has exited
-    --*/
-    bool CPalSynchronizationManager::HasProcessExited(
-        DWORD dwPid,
-        DWORD * pdwExitCode,
-        bool * pfIsActualExitCode)
-    {
-        pid_t pidWaitRetval;
-        int iStatus;
-        bool fRet = false;
-
-        TRACE("Looking for status of process; trying wait()\n");
-
-        while(1)
-        {
-            /* try to get state of process, using non-blocking call */
-            pidWaitRetval = waitpid(dwPid, &iStatus, WNOHANG);
-
-            if ((DWORD)pidWaitRetval == dwPid)
-            {
-                /* success; get the exit code */
-                if (WIFEXITED(iStatus))
-                {
-                    *pdwExitCode = WEXITSTATUS(iStatus);
-                    *pfIsActualExitCode = true;
-                    TRACE("Exit code was %d\n", *pdwExitCode);
-                }
-                else if (WIFSIGNALED(iStatus))
-                {
-                    *pdwExitCode = 128 + WTERMSIG(iStatus);
-                    *pfIsActualExitCode = true;
-                    TRACE("Exited by signal %d = exit code %d\n", WTERMSIG(iStatus), *pdwExitCode);
-                }
-                else
-                {
-                    WARN("Process terminated without exiting; can't get exit "
-                         "code. Assuming EXIT_FAILURE.\n");
-                    *pfIsActualExitCode = true;
-                    *pdwExitCode = EXIT_FAILURE;
-                }
-
-                fRet = true;
-            }
-            else if (0 == pidWaitRetval)
-            {
-                // The process is still running.
-                TRACE("Process %#x is still active.\n", dwPid);
-            }
-            else
-            {
-                // A legitimate cause of failure is EINTR; if this happens we
-                // have to try again. A second legitimate cause is ECHILD, which
-                // happens if we're trying to retrieve the status of a currently-
-                // running process that isn't a child of this process.
-                if(EINTR == errno)
-                {
-                    TRACE("waitpid() failed with EINTR; re-waiting\n");
-                    continue;
-                }
-                else if (ECHILD == errno)
-                {
-                    TRACE("waitpid() failed with ECHILD; calling kill instead\n");
-                    if (kill(dwPid, 0) != 0)
-                    {
-                        if (ESRCH == errno)
-                        {
-                            WARN("kill() failed with ESRCH, i.e. target "
-                                 "process exited and it wasn't a child, "
-                                 "so can't get the exit code, assuming  "
-                                 "it was 0.\n");
-                            *pfIsActualExitCode = false;
-                            *pdwExitCode = 0;
-                        }
-                        else
-                        {
-                            ERROR("kill(pid, 0) failed; errno is %d (%s)\n",
-                                  errno, strerror(errno));
-                            *pfIsActualExitCode = false;
-                            *pdwExitCode = EXIT_FAILURE;
-                        }
-
-                        fRet = true;
-                    }
-                }
-                else
-                {
-                    // Ignoring unexpected waitpid errno and assuming that
-                    // the process is still running
-                    ERROR("waitpid(pid=%u) failed with errno=%d (%s)\n",
-                          dwPid, errno, strerror(errno));
-                }
-            }
-
-            // Break out of the loop in all cases except EINTR.
-            break;
-        }
-
-        return fRet;
-    }
 
     /*++
     Method:
