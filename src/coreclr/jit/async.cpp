@@ -1264,9 +1264,9 @@ void ContinuationLayout::Dump(int indent)
         printf("%*s  +%03u OSR address\n", indent, "", OSRAddressOffset);
     }
 
-    if (ExceptionOffset != UINT_MAX)
+    if (ExecutionContextOffset != UINT_MAX)
     {
-        printf("%*s  +%03u Exception\n", indent, "", ExceptionOffset);
+        printf("%*s  +%03u Execution context\n", indent, "", ExecutionContextOffset);
     }
 
     if (ContinuationContextOffset != UINT_MAX)
@@ -1274,14 +1274,14 @@ void ContinuationLayout::Dump(int indent)
         printf("%*s  +%03u Continuation context\n", indent, "", ContinuationContextOffset);
     }
 
+    if (ExceptionOffset != UINT_MAX)
+    {
+        printf("%*s  +%03u Exception\n", indent, "", ExceptionOffset);
+    }
+
     if (KeepAliveOffset != UINT_MAX)
     {
         printf("%*s  +%03u Keep alive object\n", indent, "", KeepAliveOffset);
-    }
-
-    if (ExecutionContextOffset != UINT_MAX)
-    {
-        printf("%*s  +%03u Execution context\n", indent, "", ExecutionContextOffset);
     }
 
     for (const LiveLocalInfo& inf : Locals)
@@ -1428,14 +1428,19 @@ ContinuationLayout* ContinuationLayoutBuilder::Create()
         layout->OSRAddressOffset = allocLayout(TARGET_POINTER_SIZE, TARGET_POINTER_SIZE);
     }
 
-    if (m_needsException)
+    if (m_needsExecutionContext)
     {
-        layout->ExceptionOffset = allocLayout(TARGET_POINTER_SIZE, TARGET_POINTER_SIZE);
+        layout->ExecutionContextOffset = allocLayout(TARGET_POINTER_SIZE, TARGET_POINTER_SIZE);
     }
 
     if (m_needsContinuationContext)
     {
         layout->ContinuationContextOffset = allocLayout(TARGET_POINTER_SIZE, TARGET_POINTER_SIZE);
+    }
+
+    if (m_needsException)
+    {
+        layout->ExceptionOffset = allocLayout(TARGET_POINTER_SIZE, TARGET_POINTER_SIZE);
     }
 
     // Now allocate all returns
@@ -1449,11 +1454,6 @@ ContinuationLayout* ContinuationLayoutBuilder::Create()
     if (m_needsKeepAlive)
     {
         layout->KeepAliveOffset = allocLayout(TARGET_POINTER_SIZE, TARGET_POINTER_SIZE);
-    }
-
-    if (m_needsExecutionContext)
-    {
-        layout->ExecutionContextOffset = allocLayout(TARGET_POINTER_SIZE, TARGET_POINTER_SIZE);
     }
 
     // Then all locals
@@ -1471,10 +1471,10 @@ ContinuationLayout* ContinuationLayoutBuilder::Create()
                         : new (m_compiler, CMK_Async) bool[layout->Size / TARGET_POINTER_SIZE]{};
 
     GCPointerBitMapBuilder bitmapBuilder(objRefs, layout->Size);
-    bitmapBuilder.SetIfNotMax(layout->ExceptionOffset);
-    bitmapBuilder.SetIfNotMax(layout->ContinuationContextOffset);
-    bitmapBuilder.SetIfNotMax(layout->KeepAliveOffset);
     bitmapBuilder.SetIfNotMax(layout->ExecutionContextOffset);
+    bitmapBuilder.SetIfNotMax(layout->ContinuationContextOffset);
+    bitmapBuilder.SetIfNotMax(layout->ExceptionOffset);
+    bitmapBuilder.SetIfNotMax(layout->KeepAliveOffset);
 
     for (LiveLocalInfo& inf : layout->Locals)
     {
@@ -1814,12 +1814,24 @@ void AsyncTransformation::CreateSuspension(BasicBlock*                      call
         continuationFlags |= index << firstBit;
     };
 
-    if (subLayout.NeedsException())
-        encodeIndex(layout.ExceptionOffset, CORINFO_CONTINUATION_EXCEPTION_INDEX_FIRST_BIT,
-                    CORINFO_CONTINUATION_EXCEPTION_INDEX_NUM_BITS);
+    if (subLayout.NeedsExecutionContext())
+    {
+        encodeIndex(layout.ExecutionContextOffset, CORINFO_CONTINUATION_EXECUTION_CONTEXT_INDEX_FIRST_BIT,
+                    CORINFO_CONTINUATION_EXECUTION_CONTEXT_INDEX_NUM_BITS);
+    }
+
     if (subLayout.NeedsContinuationContext())
+    {
         encodeIndex(layout.ContinuationContextOffset, CORINFO_CONTINUATION_CONTEXT_INDEX_FIRST_BIT,
                     CORINFO_CONTINUATION_CONTEXT_INDEX_NUM_BITS);
+    }
+
+    if (subLayout.NeedsException())
+    {
+        encodeIndex(layout.ExceptionOffset, CORINFO_CONTINUATION_EXCEPTION_INDEX_FIRST_BIT,
+                    CORINFO_CONTINUATION_EXCEPTION_INDEX_NUM_BITS);
+    }
+
     if (call->gtReturnType != TYP_VOID)
     {
         const ReturnInfo* returnInfo = layout.FindReturn(m_compiler, call);
@@ -1827,8 +1839,11 @@ void AsyncTransformation::CreateSuspension(BasicBlock*                      call
         encodeIndex(returnInfo->Offset, CORINFO_CONTINUATION_RESULT_INDEX_FIRST_BIT,
                     CORINFO_CONTINUATION_RESULT_INDEX_NUM_BITS);
     }
+
     if (callInfo.ContinuationContextHandling == ContinuationContextHandling::ContinueOnThreadPool)
+    {
         continuationFlags |= CORINFO_CONTINUATION_CONTINUE_ON_THREAD_POOL;
+    }
 
     newContinuation      = m_compiler->gtNewLclvNode(newContinuationVar, TYP_REF);
     unsigned flagsOffset = m_compiler->info.compCompHnd->getFieldOffset(m_asyncInfo->continuationFlagsFldHnd);
@@ -2514,33 +2529,6 @@ void AsyncTransformation::RestoreFromDataOnResumption(const ContinuationLayout& 
                                                       const ContinuationLayoutBuilder& subLayout,
                                                       BasicBlock*                      resumeBB)
 {
-    if (subLayout.NeedsExecutionContext())
-    {
-        GenTree*     valuePlaceholder = m_compiler->gtNewZeroConNode(TYP_REF);
-        GenTreeCall* restoreCall =
-            m_compiler->gtNewCallNode(CT_USER_FUNC, m_asyncInfo->restoreExecutionContextMethHnd, TYP_VOID);
-        SetCallEntrypointForR2R(restoreCall, m_compiler, m_asyncInfo->restoreExecutionContextMethHnd);
-        restoreCall->gtArgs.PushFront(m_compiler, NewCallArg::Primitive(valuePlaceholder));
-
-        m_compiler->compCurBB = resumeBB;
-        m_compiler->fgMorphTree(restoreCall);
-
-        LIR::AsRange(resumeBB).InsertAtEnd(LIR::SeqTree(m_compiler, restoreCall));
-
-        LIR::Use valueUse;
-        bool     gotUse = LIR::AsRange(resumeBB).TryGetUse(valuePlaceholder, &valueUse);
-        assert(gotUse);
-
-        GenTree* continuation      = m_compiler->gtNewLclvNode(m_compiler->lvaAsyncContinuationArg, TYP_REF);
-        unsigned execContextOffset = OFFSETOF__CORINFO_Continuation__data + layout.ExecutionContextOffset;
-        GenTree* execContextValue  = LoadFromOffset(continuation, execContextOffset, TYP_REF);
-
-        LIR::AsRange(resumeBB).InsertBefore(valuePlaceholder, LIR::SeqTree(m_compiler, execContextValue));
-        valueUse.ReplaceWith(execContextValue);
-
-        LIR::AsRange(resumeBB).Remove(valuePlaceholder);
-    }
-
     // Copy data
     for (const LiveLocalInfo& inf : layout.Locals)
     {

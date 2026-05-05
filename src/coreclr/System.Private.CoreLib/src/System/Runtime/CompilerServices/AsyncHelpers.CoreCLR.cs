@@ -28,17 +28,20 @@ namespace System.Runtime.CompilerServices
         // Otherwise the exact offset of the member is computed as
         //   DataOffset + (index - 1) * PointerSize
         //
-        ExceptionIndexFirstBit = 3,
-        ExceptionIndexNumBits = 2,
+        ExecutionContextIndexFirstBit = 3,
+        ExecutionContextIndexNumBits = 2,
 
         ContinuationContextIndexFirstBit = 5,
         ContinuationContextIndexNumBits = 2,
 
+        ExceptionIndexFirstBit = 7,
+        ExceptionIndexNumBits = 3,
+
         // For JIT, the continuation stores space for every possible type of
         // async callee's result. We need to represent the offset to each of
         // these, so we allocate the rest of the bits for this.
-        ResultIndexFirstBit = 7,
-        ResultIndexNumBits = 25,
+        ResultIndexFirstBit = 10,
+        ResultIndexNumBits = 22,
     }
 
     // Keep in sync with CORINFO_AsyncResumeInfo in corinfo.h
@@ -90,6 +93,16 @@ namespace System.Runtime.CompilerServices
         {
             const uint mask = (1u << (int)ContinuationFlags.ExceptionIndexNumBits) - 1;
             return ((uint)Flags & (mask << (int)ContinuationFlags.ExceptionIndexFirstBit)) != 0;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public unsafe ExecutionContext? GetExecutionContext()
+        {
+            const uint mask = (1u << (int)ContinuationFlags.ExecutionContextIndexNumBits) - 1;
+            uint index = ((uint)Flags >> (int)ContinuationFlags.ExecutionContextIndexFirstBit) & mask;
+            Debug.Assert(index != 0);
+            ref byte data = ref RuntimeHelpers.GetRawData(this);
+            return Unsafe.As<byte, ExecutionContext?>(ref Unsafe.Add(ref data, (DataOffset - PointerSize) + index * PointerSize));
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -234,7 +247,7 @@ namespace System.Runtime.CompilerServices
             public Continuation? SentinelContinuation;
 
             // We cache the thread here to avoid unnecessary repeated TLS lookups.
-            public Thread CurrentThread;
+            public Thread? CurrentThread;
 
             public RuntimeAsyncStackState* StackState;
 
@@ -243,7 +256,7 @@ namespace System.Runtime.CompilerServices
                 // CaptureContext is called from leaf await helpers. We either just started a runtime async chain
                 // (from a thunk), or we came from DispatchContinuations (on resumption).
                 // Both cases have already initialized CurrentThread.
-                Thread curThread = CurrentThread;
+                Thread? curThread = CurrentThread;
                 Debug.Assert(curThread != null);
                 Debug.Assert(StackState != null);
                 // Here we get the execution context for presenting to the notifier,
@@ -401,7 +414,7 @@ namespace System.Runtime.CompilerServices
 
             internal unsafe bool HandleSuspended(ref RuntimeAsyncAwaitState state)
             {
-                Thread currentThread = state.CurrentThread;
+                Thread? currentThread = state.CurrentThread;
                 Debug.Assert(currentThread != null);
 
                 RuntimeAsyncStackState* stackState = state.StackState;
@@ -541,7 +554,10 @@ namespace System.Runtime.CompilerServices
                     }
                 }
 
-                RuntimeAsyncStackState stackState = default;
+                // Intentionally skip initialization for this state; the Push
+                // call below will initialize non-GC refs, and GC refs will be
+                // zeroed by prolog.
+                RuntimeAsyncStackState stackState;
 
                 ref RuntimeAsyncAwaitState awaitState = ref t_runtimeAsyncAwaitState;
                 awaitState.Push(&stackState);
@@ -562,6 +578,8 @@ namespace System.Runtime.CompilerServices
                         Continuation? nextContinuation = curContinuation.Next;
                         asyncDispatcherInfo.NextContinuation = nextContinuation;
 
+                        Debug.Assert(awaitState.CurrentThread != null);
+                        RestoreExecutionContext(awaitState.CurrentThread, curContinuation.GetExecutionContext());
                         ref byte resultLoc = ref nextContinuation != null ? ref nextContinuation.GetResultStorageOrNull() : ref GetResultStorage();
 
                         Continuation? newContinuation = curContinuation.ResumeInfo->Resume(curContinuation, ref resultLoc);
@@ -640,7 +658,10 @@ namespace System.Runtime.CompilerServices
             [StackTraceHidden]
             private unsafe void InstrumentedDispatchContinuations(AsyncInstrumentation.Flags flags)
             {
-                RuntimeAsyncStackState stackState = default;
+                // Intentionally skip initialization for this state; the Push
+                // call below will initialize non-GC refs, and GC refs will be
+                // zeroed by prolog.
+                RuntimeAsyncStackState stackState;
 
                 ref RuntimeAsyncAwaitState awaitState = ref t_runtimeAsyncAwaitState;
                 awaitState.Push(&stackState);
@@ -663,6 +684,8 @@ namespace System.Runtime.CompilerServices
                         Continuation? nextContinuation = curContinuation.Next;
                         asyncDispatcherInfo.NextContinuation = nextContinuation;
 
+                        Debug.Assert(awaitState.CurrentThread != null);
+                        RestoreExecutionContext(awaitState.CurrentThread, curContinuation.GetExecutionContext());
                         ref byte resultLoc = ref nextContinuation != null ? ref nextContinuation.GetResultStorageOrNull() : ref GetResultStorage();
 
                         RuntimeAsyncInstrumentationHelpers.ResumeRuntimeAsyncMethod(ref asyncDispatcherInfo, flags, curContinuation);
@@ -954,16 +977,10 @@ namespace System.Runtime.CompilerServices
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static void RestoreExecutionContext(ExecutionContext? previousExecCtx)
+        private static void RestoreExecutionContext(Thread thread, ExecutionContext? previousExecCtx)
         {
-            if (previousExecCtx == ExecutionContext.DefaultFlowSuppressed)
-            {
-                return;
-            }
-
-            Thread thread = Thread.CurrentThreadAssumedInitialized;
             ExecutionContext? currentExecCtx = thread._executionContext;
-            if (previousExecCtx != currentExecCtx)
+            if (previousExecCtx != currentExecCtx && previousExecCtx != ExecutionContext.DefaultFlowSuppressed)
             {
                 ExecutionContext.RestoreChangedContextToThread(thread, previousExecCtx, currentExecCtx);
             }
