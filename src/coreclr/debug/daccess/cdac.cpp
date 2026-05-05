@@ -109,7 +109,6 @@ CDAC CDAC::Create(uint64_t descriptorAddr, ICorDebugDataTarget* target, IUnknown
         return {};
 
     decltype(&cdac_reader_init) init = reinterpret_cast<decltype(&cdac_reader_init)>(::GetProcAddress(cdacLib, "cdac_reader_init"));
-    _ASSERTE(init != nullptr);
 
     // Check if the target supports memory allocation (ICLRDataTarget2)
     ICLRDataTarget2* target2 = nullptr;
@@ -134,7 +133,6 @@ CDAC::CDAC(HMODULE module, intptr_t handle, ICorDebugDataTarget* target, IUnknow
     , m_target{target}
     , m_legacyImpl{legacyImpl}
 {
-    _ASSERTE(m_module != NULL && m_cdac_handle != 0 && m_target != NULL);
 
     m_target->AddRef();
 }
@@ -144,7 +142,6 @@ CDAC::~CDAC()
     if (m_cdac_handle)
     {
         decltype(&cdac_reader_free) free = reinterpret_cast<decltype(&cdac_reader_free)>(::GetProcAddress(m_module, "cdac_reader_free"));
-        _ASSERTE(free != nullptr);
         free(m_cdac_handle);
     }
 
@@ -155,15 +152,11 @@ CDAC::~CDAC()
 void CDAC::CreateSosInterface(IUnknown** sos)
 {
     decltype(&cdac_reader_create_sos_interface) createSosInterface = reinterpret_cast<decltype(&cdac_reader_create_sos_interface)>(::GetProcAddress(m_module, "cdac_reader_create_sos_interface"));
-    _ASSERTE(createSosInterface != nullptr);
     int ret = createSosInterface(m_cdac_handle, m_legacyImpl, sos);
-    _ASSERTE(ret == 0);
 }
 
 void CDAC::CreateDacDbiInterface(IUnknown** dbi)
 {
     decltype(&cdac_reader_create_dacdbi_interface) createDacDbiInterface = reinterpret_cast<decltype(&cdac_reader_create_dacdbi_interface)>(::GetProcAddress(m_module, "cdac_reader_create_dacdbi_interface"));
-    _ASSERTE(createDacDbiInterface != nullptr);
     int ret = createDacDbiInterface(m_cdac_handle, m_legacyImpl, dbi);
-    _ASSERTE(ret == 0);
 }

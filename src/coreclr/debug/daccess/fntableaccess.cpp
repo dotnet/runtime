@@ -34,7 +34,6 @@
 { \
    if (!fpReadMemory(pUserContext, (LPCVOID)(src), &(dst), sizeof(dst), NULL))  \
    { \
-      _ASSERTE(!"MSCORDBG ERROR: ReadProcessMemory failed!!"); \
       return STATUS_UNSUCCESSFUL; \
    } \
 }
@@ -52,8 +51,6 @@ static NTSTATUS OutOfProcessFindHeader(ReadMemoryFunction fpReadMemory,PVOID pUs
     DWORD_PTR   startPos  = ADDR2POS(addr);       // align to 32 byte buckets ( == index into the array of nibbles)
     DWORD_PTR   offset    = ADDR2OFFS(addr);      // this is the offset inside the bucket + 1
     DWORD *     pMap      = (DWORD *) pMapIn;     // make this a pointer type so our pointer math is correct w/o adding sizeof(DWORD) everywhere
-
-    _ASSERTE(offset == (offset & NIBBLE_MASK));   // the offset must fit in a nibble
 
     pMap += (startPos >> LOG2_NIBBLES_PER_DWORD); // points to the proper DWORD of the map
 
@@ -204,7 +201,6 @@ extern "C" NTSTATUS OutOfProcessFunctionTableCallbackEx(IN  ReadMemoryFunction  
             // than we have anticipated.
             hdrOffsetInitial = hdrOffset;
 
-            _ASSERTE(((LONG64)hdrOffset) >= lSmallestOffset);
             OutOfProcessFindHeader(fpReadMemory, pUserContext, Hp.pHdrMap, hdrOffset, hdrOffset);
 
             while (((LONG64)hdrOffset) >= lSmallestOffset)  // MUST BE A SIGNED COMPARISON
@@ -220,7 +216,6 @@ extern "C" NTSTATUS OutOfProcessFunctionTableCallbackEx(IN  ReadMemoryFunction  
                     nEntries += nUnwindInfos;
                 }
 
-                _ASSERTE(((LONG64)hdrOffset) >= lSmallestOffset);
                 OutOfProcessFindHeader(fpReadMemory, pUserContext, Hp.pHdrMap, hdrOffset, hdrOffset);
             }
 
@@ -239,7 +234,6 @@ extern "C" NTSTATUS OutOfProcessFunctionTableCallbackEx(IN  ReadMemoryFunction  
             index     = 0;
             hdrOffset = hdrOffsetInitial;
 
-            _ASSERTE(((LONG64)hdrOffset) >= lSmallestOffset);
             OutOfProcessFindHeader(fpReadMemory, pUserContext, Hp.pHdrMap, hdrOffset, hdrOffset);
 
             while (((LONG64)hdrOffset) >= lSmallestOffset)  // MUST BE A SIGNED COMPARISON
@@ -263,7 +257,6 @@ extern "C" NTSTATUS OutOfProcessFunctionTableCallbackEx(IN  ReadMemoryFunction  
                     }
                 }
 
-                _ASSERTE(((LONG64)hdrOffset) >= lSmallestOffset);
                 OutOfProcessFindHeader(fpReadMemory, pUserContext, Hp.pHdrMap, hdrOffset, hdrOffset);
             }
 

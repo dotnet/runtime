@@ -210,7 +210,6 @@ DataTargetAdapter::WriteVirtual(
         // WriteProcessMemory), even though that isn't strictly required by the old interface.
         // If this does happen, we technically leave the process in an inconsistent state, and we make no
         // attempt to recover from that here.
-        _ASSERTE_MSG(false, "Legacy data target WriteVirtual partial write - target left in inconsistent state");
         return HRESULT_FROM_WIN32(ERROR_PARTIAL_COPY);
     }
     return hr;

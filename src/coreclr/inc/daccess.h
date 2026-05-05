@@ -717,30 +717,6 @@ extern void DacLogMessage(LPCSTR format, ...);
 // like other instances but can't be looked up by address.
 PVOID DacAllocHostOnlyInstance(ULONG32 size, bool throwEx);
 
-// Determines whether ASSERTs should be raised when inconsistencies in the target are detected
-bool DacTargetConsistencyAssertsEnabled();
-
-// Sets whether ASSERTs should be raised when then fail.
-// Returns the previous value
-bool DacSetEnableDacAssertsUnconditionally(bool enable);
-
-class DacAssertsEnabledHolder
-{
-#ifdef _DEBUG
-    bool m_fOldValue;
-public:
-    DacAssertsEnabledHolder()
-    {
-        m_fOldValue = DacSetEnableDacAssertsUnconditionally(true);
-    }
-
-    ~DacAssertsEnabledHolder()
-    {
-        DacSetEnableDacAssertsUnconditionally(m_fOldValue);
-    }
-#endif // _DEBUG
-};
-
 // Host instances can be marked as they are enumerated in
 // order to break cycles.  This function returns true if
 // the instance is already marked, otherwise it marks the
@@ -2492,13 +2468,6 @@ typedef DPTR(PTR_PCODE) PTR_PTR_PCODE;
 // Macros like MAIN_CLR_MODULE_NAME* for the DAC module
 #define MAIN_DAC_MODULE_NAME_W  W("mscordaccore")
 #define MAIN_DAC_MODULE_DLL_NAME_W  W("mscordaccore.dll")
-
-// TARGET_CONSISTENCY_CHECK represents a condition that should not fail unless the DAC target is corrupt.
-// This is in contrast to ASSERTs in DAC infrastructure code which shouldn't fail regardless of the memory
-// read from the target.  At the moment we treat these the same, but in the future we will want a mechanism
-// for disabling just the target consistency checks (eg. for tests that intentionally use corrupted targets).
-// @dbgtodo : Separating asserts and target consistency checks is tracked by DevDiv Bugs 31674
-#define TARGET_CONSISTENCY_CHECK(expr,msg) _ASSERTE_MSG(expr,msg)
 
 // For cross compilation, controlling type layout is important
 // We add a simple macro here which defines DAC_ALIGNAS to the C++11 alignas operator

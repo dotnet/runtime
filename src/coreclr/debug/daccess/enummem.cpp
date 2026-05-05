@@ -492,7 +492,6 @@ HRESULT ClrDataAccess::DumpManagedExcepObject(CLRDataEnumMemoryFlags flags, OBJE
 
         if (TypeFromToken(exceptionTypeDef) != mdtTypeDef)
         {
-            _ASSERTE(!"Module should have contained a TypeDef, dump will likely be missing exception type lookup!");
         }
 
         // The lookup from the Module that contains this TypeDef:
@@ -643,7 +642,6 @@ HRESULT ClrDataAccess::DumpManagedStackTraceStringObject(CLRDataEnumMemoryFlags 
         StripFileInfoFromStackTrace(stackTrace);
 
         COUNT_T traceCharCount = stackTrace.GetCount();
-        _ASSERTE(traceCharCount <= orefStackTrace->GetStringLength());
 
         // fill the rest of the string with \0
         WCHAR *buffer = stackTrace.OpenUnicodeBuffer(orefStackTrace->GetStringLength());
@@ -838,7 +836,6 @@ HRESULT ClrDataAccess::EnumMemWalkStackHelper(CLRDataEnumMemoryFlags flags,
                 {
                     if (!frameHadContext)
                     {
-                        _ASSERTE(!"Stack frame should always have an associated context!");
                         break;
                     }
 
@@ -850,26 +847,22 @@ HRESULT ClrDataAccess::EnumMemWalkStackHelper(CLRDataEnumMemoryFlags flags,
 
                         if (currentSP <= previousSP)
                         {
-                            _ASSERTE(!"Target stack has been corrupted, SP for current frame must be larger than previous frame.");
                             break;
                         }
 
                         if (currentSP % sizeof(TADDR) != 0)
                         {
-                            _ASSERTE(!"Target stack has been corrupted, SP must be aligned.");
                             break;
                         }
 
                         if (!pThread->IsAddressInStack(currentSP))
                         {
-                            _ASSERTE(!"Target stack has been corrupted, SP must in the stack range.");
                             break;
                         }
                     }
                 }
                 else
                 {
-                    _ASSERTE(!"The stack frame should always know what type it is!");
                     break;
                 }
 
@@ -1047,7 +1040,7 @@ private:
         }
 
     private:
-        TrivialTADDRNode() { _ASSERTE(!"You should never call this ctor."); }
+        TrivialTADDRNode() {  }
     };
 
     TrivialTADDRNode *m_pHead;
@@ -1570,7 +1563,6 @@ HRESULT ClrDataAccess::EnumMemCLRMainModuleInfo()
     if (i < 1)
     {
         status = E_UNEXPECTED;
-        _ASSERTE(!"Collecting dump of target with no debug directory entries!");
     }
 
     // For CLRv4+, the resource directory contains the necessary info
@@ -1584,13 +1576,11 @@ HRESULT ClrDataAccess::EnumMemCLRMainModuleInfo()
     // content is very small (~0x600 bytes of raw data), so getting all is
     // the easy thing to do.  If resources become larger in later
     // releases, we'll have to specifically get just the debugging-related resources.
-    _ASSERTE(pe.HasDirectoryEntry(IMAGE_DIRECTORY_ENTRY_RESOURCE));
     if (pe.HasDirectoryEntry(IMAGE_DIRECTORY_ENTRY_RESOURCE))
     {
         COUNT_T size = 0;
         TADDR pResourceDirData = pe.GetDirectoryEntryData(IMAGE_DIRECTORY_ENTRY_RESOURCE, &size);
 
-        _ASSERTE(size < 0x2000);
         ReportMem((TADDR)pResourceDirData, size, true);
     }
     else
@@ -1955,13 +1945,11 @@ HRESULT ClrDataAccess::EnumMemoryRegionsWrapper(IN CLRDataEnumMemoryFlags flags)
         }
         else
         {
-            _ASSERTE(!"Bad flags passing to EnumMemoryRegionsWrapper!");
         }
     }
     EX_CATCH_HRESULT(status);
 
     // The only exception that should reach here is the cancel exception
-    _ASSERTE(SUCCEEDED(status) || status == COR_E_OPERATIONCANCELED);
 
     return status;
 }
@@ -2026,7 +2014,6 @@ ClrDataAccess::EnumMemoryRegions(IN ICLRDataEnumMemoryRegionsCallback* callback,
     DAC_ENTER();
 
     // We should not be trying to enumerate while we have an enumeration outstanding
-    _ASSERTE(m_enumMemCb==NULL);
     m_enumMemCb = callback;
 
     // QI for ICLRDataEnumMemoryRegionsCallback2 will succeed only for Win8+.
@@ -2089,7 +2076,6 @@ ClrDataAccess::EnumMemoryRegions(IN ICLRDataEnumMemoryRegionsCallback* callback,
         // own exceptions.
         if (!DacExceptionFilter(GET_EXCEPTION(), this, &status))
         {
-            _ASSERTE_MSG(false, "Got unexpected exception in EnumMemoryRegions");
             EX_RETHROW;
         }
     }

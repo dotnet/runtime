@@ -30,7 +30,6 @@
 Thread* __stdcall
 DacGetThread(ULONG32 osThread)
 {
-    _ASSERTE(osThread > 0);
 
     if (!g_dacImpl)
     {

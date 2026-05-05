@@ -1330,7 +1330,6 @@ ClrDataModule::QueryInterface(THIS_
                               IN REFIID interfaceId,
                               OUT PVOID* iface)
 {
-    _ASSERTE(iface != NULL);
 
     if (IsEqualIID(interfaceId, IID_IUnknown) ||
         IsEqualIID(interfaceId, __uuidof(IXCLRDataModule)))
@@ -2785,7 +2784,6 @@ ClrDataModule::SetJITCompilerFlags(
         }
         else
         {
-            _ASSERTE(m_module != NULL);
 
             BOOL fAllowJitOpts = ((dwFlags & CORDEBUG_JIT_DISABLE_OPTIMIZATION) != CORDEBUG_JIT_DISABLE_OPTIMIZATION);
 
@@ -2801,7 +2799,6 @@ ClrDataModule::SetJITCompilerFlags(
             // set flags. This will write back to the target
             m_module->SetDebuggerInfoBits((DebuggerAssemblyControlFlags)dwBits);
 
-            _ASSERTE(SUCCEEDED(hr));
         }
     }
     EX_CATCH
@@ -2858,7 +2855,6 @@ ClrDataModule::GetMdInterface(PVOID* retIface)
             }
         }
 
-        _ASSERTE(m_mdImport != NULL);
         m_mdImport->AddRef();
         *retIface = m_mdImport;
         status = S_OK;
@@ -3617,7 +3613,6 @@ ClrDataMethodDefinition::NewFromModule(ClrDataAccess* dac,
         return E_OUTOFMEMORY;
     }
 
-    _ASSERTE(methDef || pubMethDef);
 
     if (methDef)
     {
@@ -4429,7 +4424,6 @@ ClrDataMethodInstance::NewFromModule(ClrDataAccess* dac,
         return E_OUTOFMEMORY;
     }
 
-    _ASSERTE(methInst || pubMethInst);
 
     if (methInst)
     {
@@ -4933,7 +4927,6 @@ ClrDataExceptionState::NewFromThread(ClrDataAccess* dac,
         return E_OUTOFMEMORY;
     }
 
-    _ASSERTE(exception || pubException);
 
     if (exception)
     {

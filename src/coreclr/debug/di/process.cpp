@@ -695,9 +695,6 @@ CordbProcess::CreateDacDbiInterface()
 
     // We now have a resource, pInterfacePtr, that needs to be freed.
     m_pDacPrimitives = pInterfacePtr;
-
-    // Setup DAC target consistency checking based on what we're using for DBI
-    IfFailThrow(m_pDacPrimitives->DacSetTargetConsistencyChecks( m_fAssertOnTargetInconsistency ));
 }
 
 //---------------------------------------------------------------------------------------

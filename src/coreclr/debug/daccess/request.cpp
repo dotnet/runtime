@@ -933,7 +933,6 @@ void CopyNativeCodeVersionToReJitData(NativeCodeVersion nativeCodeVersion, Nativ
         switch (nativeCodeVersion.GetILCodeVersion().GetRejitState())
         {
         default:
-            _ASSERTE(!"Unknown SharedRejitInfo state.  DAC should be updated to understand this new state.");
             pReJitData->flags = DacpReJitData::kUnknown;
             break;
 
@@ -1077,7 +1076,6 @@ HRESULT ClrDataAccess::GetMethodDescData(
                 &methodDescData->rejitDataCurrent);
 
             // Requested ReJitInfo
-            _ASSERTE(methodDescData->rejitDataRequested.rejitID == 0);
             if (ip != (CLRDATA_ADDRESS)NULL && !requestedNativeCodeVersion.IsNull())
             {
                 CopyNativeCodeVersionToReJitData(
@@ -1184,7 +1182,6 @@ HRESULT ClrDataAccess::GetMethodDescData(
                     if (value)
                     {
                         FieldDesc *pField = (&g_CoreLib)->GetField(FIELD__DYNAMICRESOLVER__DYNAMIC_METHOD);
-                        _ASSERTE(pField);
                         value = pField->GetRefValue(value);
                         if (value)
                         {
@@ -1381,7 +1378,6 @@ ClrDataAccess::GetCodeHeaderData(CLRDATA_ADDRESS ip, struct DacpCodeHeaderData *
         codeHeaderData->MethodStart =
             (CLRDATA_ADDRESS) codeInfo.GetStartAddress();
         size_t methodSize = codeInfo.GetCodeManager()->GetFunctionSize(codeInfo.GetGCInfoToken());
-        _ASSERTE(FitsIn<DWORD>(methodSize));
         codeHeaderData->MethodSize = static_cast<DWORD>(methodSize);
 
         IJitManager::MethodRegionInfo methodRegionInfo = {(TADDR)NULL, 0, (TADDR)NULL, 0};
@@ -2968,7 +2964,6 @@ ClrDataAccess::GetHeapSegmentData(CLRDATA_ADDRESS seg, struct DacpHeapSegmentDat
     if (GCHeapUtilities::IsServerHeap())
     {
 #if !defined(FEATURE_SVR_GC)
-        _ASSERTE(0);
 #else // !defined(FEATURE_SVR_GC)
         hr = GetServerHeapData(seg, heapSegment);
 #endif //!defined(FEATURE_SVR_GC)
@@ -3017,7 +3012,6 @@ ClrDataAccess::GetGCHeapList(unsigned int count, CLRDATA_ADDRESS heaps[], unsign
     if (GCHeapUtilities::IsServerHeap())
     {
 #if !defined(FEATURE_SVR_GC)
-        _ASSERTE(0);
 #else // !defined(FEATURE_SVR_GC)
         unsigned int heapCount = GCHeapCount();
         if (pNeeded)
@@ -3059,7 +3053,6 @@ ClrDataAccess::GetGCHeapData(struct DacpGcHeapData *gcheapData)
     //       GC_HEAP_WKS     = 1,
     //       GC_HEAP_SVR     = 2
     // If we get something other than that, we probably read the wrong location.
-    _ASSERTE(gcHeapValue >= GC_HEAP_INVALID && gcHeapValue <= GC_HEAP_SVR);
 
     // we have GC_HEAP_INVALID if gcHeapValue == 0, so we're done - we haven't
     // initialized the heap yet.
@@ -3080,7 +3073,6 @@ ClrDataAccess::GetGCHeapData(struct DacpGcHeapData *gcheapData)
     if (GCHeapUtilities::IsServerHeap())
     {
 #if !defined (FEATURE_SVR_GC)
-        _ASSERTE(0);
         gcheapData->HeapCount = 1;
 #else // !defined (FEATURE_SVR_GC)
         gcheapData->HeapCount = GCHeapCount();
@@ -3144,7 +3136,6 @@ ClrDataAccess::GetOOMData(CLRDATA_ADDRESS oomAddr, struct DacpOomData *data)
     else
         hr = ServerOomData(oomAddr, data);
 #else
-    _ASSERTE_MSG(false, "IsServerHeap returned true but FEATURE_SVR_GC not defined");
     hr = E_NOTIMPL;
 #endif //FEATURE_SVR_GC
 
@@ -3230,7 +3221,6 @@ ClrDataAccess::GetGCInterestingInfoData(CLRDATA_ADDRESS interestingInfoAddr, str
     else
         hr = ServerGCInterestingInfoData(interestingInfoAddr, data);
 #else
-    _ASSERTE_MSG(false, "IsServerHeap returned true but FEATURE_SVR_GC not defined");
     hr = E_NOTIMPL;
 #endif //FEATURE_SVR_GC
 
@@ -3256,7 +3246,6 @@ ClrDataAccess::GetHeapAnalyzeData(CLRDATA_ADDRESS addr, struct  DacpGcHeapAnalyz
     else
         hr = ServerGCHeapAnalyzeData(addr, data);
 #else
-    _ASSERTE_MSG(false, "IsServerHeap returned true but FEATURE_SVR_GC not defined");
     hr = E_NOTIMPL;
 #endif //FEATURE_SVR_GC
 
@@ -4338,7 +4327,6 @@ PTR_IUnknown ClrDataAccess::DACGetCOMIPFromCCW(PTR_ComCallWrapper pCCW, int vtab
 #ifdef FEATURE_COMWRAPPERS
 BOOL ClrDataAccess::DACGetComWrappersCCWVTableQIAddress(CLRDATA_ADDRESS ccwPtr, TADDR *vTableAddress, TADDR *qiAddress)
 {
-    _ASSERTE(vTableAddress != NULL && qiAddress != NULL);
 
     HRESULT hr = S_OK;
     ULONG32 bytesRead = 0;
@@ -4726,7 +4714,6 @@ HRESULT ClrDataAccess::GetReJITInformation(CLRDATA_ADDRESS methodDesc, int rejit
         switch (ilVersion.GetRejitState())
         {
         default:
-            _ASSERTE(!"Unknown SharedRejitInfo state.  DAC should be updated to understand this new state.");
             pReJitData->flags = DacpReJitData2::kUnknown;
             break;
 

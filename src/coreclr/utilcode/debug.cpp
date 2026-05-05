@@ -368,22 +368,6 @@ VOID DbgAssertDialog(const char *szFile, int iLine, const char *szExpr)
 
     DEBUG_ONLY_FUNCTION;
 
-#ifdef DACCESS_COMPILE
-    // In the DAC case, asserts can mean one of two things.
-    // Either there is a bug in the DAC infrastructure itself (a real assert), or just
-    // that the target is corrupt or being accessed at an inconsistent state (a "target
-    // consistency failure").  For target consistency failures, we need a mechanism to disable them
-    // (without affecting other asserts) so that we can test corrupt / inconsistent targets.
-
-    // @dbgtodo  DAC: For now we're treating all asserts as if they are target consistency checks.
-    // In the future we should differentiate the two so that real asserts continue to fire, even when
-    // we expect the target to be inconsistent.  See DevDiv Bugs 31674.
-    if( !DacTargetConsistencyAssertsEnabled() )
-    {
-        return;
-    }
-#endif // #ifndef DACCESS_COMPILE
-
     // We increment this every time we use the SUPPRESS_ALLOCATION_ASSERTS_IN_THIS_SCOPE
     // macro below.  If it is a big number it means either a lot of threads are asserting
     // or we have a recursion in the Assert logic (usually the latter).  At least with this

@@ -50,7 +50,6 @@ inline TADDR CLRDATA_ADDRESS_TO_TADDR(CLRDATA_ADDRESS cdAddr)
     INT64 iSignedAddr = (INT64)cdAddr;
     if (iSignedAddr > INT_MAX || iSignedAddr < INT_MIN)
     {
-        _ASSERTE_MSG(false, "CLRDATA_ADDRESS out of range for this platform");
         DacError(E_INVALIDARG);
     }
 #endif
@@ -83,7 +82,6 @@ inline TADDR CORDB_ADDRESS_TO_TADDR(CORDB_ADDRESS cdbAddr)
     static_assert(sizeof(TADDR)==sizeof(UINT));
     if (cdbAddr > UINT_MAX)
     {
-        _ASSERTE_MSG(false, "CORDB_ADDRESS out of range for this platform");
         DacError(E_INVALIDARG);
     }
 #endif
@@ -1348,12 +1346,6 @@ public:
                                               IXCLRLibrarySupport *support,
                                               IXCLRDisassemblySupport *dis);
 
-    // Set whether inconsistencies in the target should raise asserts.
-    void SetTargetConsistencyChecks(bool fEnableAsserts);
-
-    // Get whether inconsistencies in the target should raise asserts.
-    bool TargetConsistencyAssertsEnabled();
-
     // Get the ICLRDataTarget2 instance, if any
     ICLRDataTarget2 * GetLegacyTarget2()        { return m_pLegacyTarget2; }
 
@@ -1439,9 +1431,6 @@ private:
     JITNotification* m_jitNotificationTable;
     TSIZE_T m_cbMemoryReported;
     DumpMemoryReportStatics m_dumpStats;
-
-    // If true, inconsistencies in the target will cause ASSERTs to be raised in DEBUG builds
-    bool m_fEnableTargetConsistencyAsserts;
 
 #ifdef _DEBUG
 protected:
@@ -1644,7 +1633,6 @@ public:
     template <class T>
     bool Read(CORDB_ADDRESS addr, T *t)
     {
-        _ASSERTE(t);
 
         // Unfortunately the ctor can fail the alloc for the byte array.  In this case
         // we'll just fall back to non-cached reads.
@@ -1659,7 +1647,6 @@ public:
                 return MisalignedRead(addr, t);
 
         // If MoveToPage succeeds, we MUST be on the right page.
-        _ASSERTE(addr >= mCurrPageStart);
 
         // However, the amount of data requested may fall off of the page.  In that case,
         // fall back to MisalignedRead.
@@ -1904,7 +1891,6 @@ class DacReferenceList
 
         const T& Get(unsigned int index) const
         {
-            _ASSERTE(index < _count);
             return _array[index];
         }
 
@@ -2010,8 +1996,6 @@ class DacStackReferenceWalker : public DefaultCOMImpl<ISOSStackRefEnum, IID_ISOS
         DacScanContext(DacStackReferenceWalker *walker, DacReferenceList<SOSStackRefData> *list, bool resolveInteriorPointers)
             : pWalker(walker), pList(list), pFrame(0), sp(0), pc(0), stop(false), resolvePointers(resolveInteriorPointers), pEnumFunc(0)
         {
-            _ASSERTE(pWalker);
-            _ASSERTE(pList);
         }
     };
 
@@ -2079,7 +2063,6 @@ class DacHandleWalker : public DefaultCOMImpl<ISOSHandleEnum, IID_ISOSHandleEnum
         DacHandleWalkerParam(DacReferenceList<SOSHandleData> *list)
             : List(list), Result(S_OK), AppDomain(0), Type(0)
         {
-            _ASSERTE(list);
         }
     };
 

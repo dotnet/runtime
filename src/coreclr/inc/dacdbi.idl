@@ -195,7 +195,6 @@ interface IDacDbiInterface : IUnknown
     // Initialization
     HRESULT CheckDbiVersion([in] const struct DbiVersion * pVersion);
     HRESULT FlushCache();
-    HRESULT DacSetTargetConsistencyChecks([in] BOOL fEnableAsserts);
 
     // Process State
     HRESULT IsLeftSideInitialized([out] BOOL * pResult);

@@ -1486,7 +1486,6 @@ DacInstanceManager::~DacInstanceManager(void)
 DAC_INSTANCE*
 DacInstanceManager::Add(DAC_INSTANCE* inst)
 {
-    _ASSERTE(inst != NULL);
     const KeyValuePair<TADDR, DAC_INSTANCE*>* pEntry = m_hash.LookupPtr(inst->addr);
     if (pEntry != NULL)
     {
@@ -1497,7 +1496,6 @@ DacInstanceManager::Add(DAC_INSTANCE* inst)
         inst->next = existing;
 
         //verify descending order
-        _ASSERTE(inst->size >= existing->size);
 
         m_hash.ReplacePtr(pEntry, KeyValuePair<TADDR, DAC_INSTANCE*>(inst->addr, inst));
     }
@@ -1539,7 +1537,6 @@ DacInstanceManager::Alloc(TADDR addr, ULONG32 size, DAC_USAGE_TYPE usage)
     //
 
     fullSize = (size + DAC_INSTANCE_ALIGN - 1) & ~(DAC_INSTANCE_ALIGN - 1);
-    _ASSERTE(fullSize && fullSize <= 0xffffffff - 2 * sizeof(*inst));
     fullSize += sizeof(*inst);
 
     //
@@ -1604,7 +1601,6 @@ DacInstanceManager::Alloc(TADDR addr, ULONG32 size, DAC_USAGE_TYPE usage)
 
     inst = (DAC_INSTANCE*)((PBYTE)block + block->bytesUsed);
     block->bytesUsed += fullSize;
-    _ASSERTE(block->bytesFree >= fullSize);
     block->bytesFree -= fullSize;
 
     inst->next = NULL;
@@ -1675,7 +1671,6 @@ DacInstanceManager::ReturnAlloc(DAC_INSTANCE* inst)
         }
         else
         {
-            _ASSERTE(pPrevBlock->next == block);
             pPrevBlock->next = block->next;
         }
         ClrVirtualFree(block, 0, MEM_RELEASE);
@@ -1721,7 +1716,6 @@ DacInstanceManager::Write(DAC_INSTANCE* inst, bool throwEx)
 void
 DacInstanceManager::Supersede(DAC_INSTANCE* inst)
 {
-    _ASSERTE(inst != NULL);
 
     //
     // This instance has been superseded by a larger
@@ -2385,7 +2379,6 @@ public:
     // its map entries to an OStreamBuff.
     bool PrepareStreamForWriting(Reserve_Fnptr pfn, void * writeState)
     {
-        _ASSERTE(pfn != NULL && writeState != NULL);
         m_reserveFn = pfn;
         m_writeState = writeState;
 
@@ -2399,7 +2392,6 @@ public:
     // its name
     bool AddEEName(TADDR taEE, const SString & eeName)
     {
-        _ASSERTE(m_reserveFn != NULL && m_writeState != NULL);
 
         // as a micro-optimization convert to Utf8 here as both raw_size and
         // raw_serialize are optimized for Utf8...
@@ -2578,8 +2570,6 @@ public:
 
     HRESULT EnumStreams(IN CLRDataEnumMemoryFlags flags)
     {
-        _ASSERTE(flags == CLRDATA_ENUM_MEM_MINI || flags == CLRDATA_ENUM_MEM_TRIAGE);
-        _ASSERTE(m_rw == eWO || m_rw == eRW);
 
         DWORD cbWritten = 0;
 
@@ -2617,8 +2607,6 @@ public:
 private:
     HRESULT Initialize()
     {
-        _ASSERTE(m_rw == eNone);
-        _ASSERTE(m_rawBuffer == NULL);
 
         HRESULT hr = S_OK;
 
@@ -2661,7 +2649,6 @@ private:
 
     HRESULT DumpAllStreams(DWORD * pcbWritten)
     {
-        _ASSERTE(m_rw == eWO);
 
         HRESULT hr = S_OK;
 
@@ -2693,7 +2680,6 @@ private:
 
     HRESULT ReadAllStreams()
     {
-        _ASSERTE(!m_bStreamsRead);
 
         if (m_rw == eNone || m_rw == eWO)
         {
@@ -2709,8 +2695,6 @@ private:
         // read header
         StreamsHeader hdr;
         in >> hdr;
-        _ASSERTE(hdr.dwSig == sig);
-        _ASSERTE(hdr.dwCntStreams == 1);
 
         // read EE struct pointer -> EE name map
         m_EENames.Clear();
@@ -2827,16 +2811,7 @@ ClrDataAccess::ClrDataAccess(ICorDebugDataTarget * pTarget, ICLRDataTarget * pLe
     m_streams = NULL;
 #endif // FEATURE_MINIMETADATA_IN_TRIAGEDUMPS
 
-    // Target consistency checks are disabled by default.
-    // See code:ClrDataAccess::SetTargetConsistencyChecks for details.
-    m_fEnableTargetConsistencyAsserts = false;
-
 #ifdef _DEBUG
-    if (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_DbgDACEnableAssert))
-    {
-        m_fEnableTargetConsistencyAsserts = true;
-    }
-
     // Verification asserts are disabled by default because some debuggers (cdb/windbg) probe likely locations
     // for DAC and having this assert pop up all the time can be annoying.  We let derived classes enable
     // this if they want.  It can also be overridden at run-time with DOTNET_DbgDACAssertOnMismatch,
@@ -4288,7 +4263,6 @@ ClrDataAccess::TranslateExceptionRecordToNotification(
 
         default:
             // notifyType has already been validated.
-            _ASSERTE(FALSE);
             break;
         }
 
@@ -5399,7 +5373,6 @@ ClrDataAccess::RawGetMethodName(
     /* [out] */ CLRDATA_ADDRESS* displacement)
 {
 #ifdef TARGET_ARM
-    _ASSERTE((address & THUMB_CODE) == 0);
     address &= ~THUMB_CODE;
 #endif
 
@@ -5494,7 +5467,6 @@ ClrDataAccess::RawGetMethodName(
         }
 
         LPCWSTR wszStubManagerName = pStubManager->GetStubManagerName(TO_TADDR(address));
-        _ASSERTE(wszStubManagerName != NULL);
 
         return FormatCLRStubName(
             wszStubManagerName,
@@ -5558,7 +5530,6 @@ ClrDataAccess::GetMethodExtents(MethodDesc* methodDesc,
         }
 
         EECodeInfo codeInfo(methodStart);
-        _ASSERTE(codeInfo.IsValid());
 
         TADDR codeSize = codeInfo.GetCodeManager()->GetFunctionSize(codeInfo.GetGCInfoToken());
 
@@ -5652,7 +5623,6 @@ ClrDataAccess::GetMethodNativeMap(MethodDesc* methodDesc,
                                   CLRDATA_ADDRESS* codeStart,
                                   ULONG32* codeOffset)
 {
-    _ASSERTE((codeOffset == NULL) || (address != (TADDR)NULL));
 
     // Use the DebugInfoStore to get IL->Native maps.
     // It doesn't matter whether we're jitted, ngenned etc.
@@ -5750,7 +5720,6 @@ MethodDesc * ClrDataAccess::FindLoadedMethodRefOrDef(Module* pModule,
 
     // Must have a MemberRef or a MethodDef
     mdToken tkType = TypeFromToken(memberRef);
-    _ASSERTE((tkType == mdtMemberRef) || (tkType == mdtMethodDef));
 
     if (tkType == mdtMemberRef)
     {
@@ -5819,7 +5788,6 @@ bool ClrDataAccess::ReportMem(TADDR addr, TSIZE_T size, bool fExpectSuccess /*= 
                 // reporting and continue with the next data structure (where the exception is caught),
                 // just like we would for a DAC read error (otherwise we might do something stupid
                 // like get into an infinite loop, or otherwise waste time with corrupt data).
-                TARGET_CONSISTENCY_CHECK(false, "Found unreadable memory while reporting memory regions for dump gathering");
                 return false;
             }
         }
@@ -5835,7 +5803,6 @@ bool ClrDataAccess::ReportMem(TADDR addr, TSIZE_T size, bool fExpectSuccess /*= 
     const TSIZE_T kMaxMiniDumpRegion = 4*1024*1024 - 3;    // 4MB-3
     if (size > kMaxMiniDumpRegion && (m_enumMemFlags == CLRDATA_ENUM_MEM_MINI || m_enumMemFlags == CLRDATA_ENUM_MEM_TRIAGE))
     {
-        TARGET_CONSISTENCY_CHECK( false, "Dump target consistency failure - truncating minidump data structure");
         size = kMaxMiniDumpRegion;
     }
 
@@ -5993,7 +5960,6 @@ bool ClrDataAccess::IsFullyReadable(TADDR taBase, TSIZE_T dwSize)
         if (taEnd - taCurr <= 1)
         {
             // We just read the last byte so we're done
-            _ASSERTE( taCurr = taEnd - 1 );
             bDone = true;
         }
         else if (dwInc == 0 || dwInc >= taEnd - taCurr)
@@ -6189,7 +6155,6 @@ ClrDataAccess::GetMDImport(const PEAssembly* pPEAssembly, const ReflectionModule
     IMDInternalImport* mdImport = NULL;
     PVOID       mdBaseHost = NULL;
 
-    _ASSERTE((pPEAssembly == NULL && reflectionModule != NULL) || (pPEAssembly != NULL && reflectionModule == NULL));
     TADDR     peAssemblyAddr = (pPEAssembly != NULL) ? dac_cast<TADDR>(pPEAssembly) : dac_cast<TADDR>(reflectionModule);
 
     //
@@ -6302,43 +6267,6 @@ ClrDataAccess::GetMDImport(const PEAssembly* pPEAssembly, const ReflectionModule
     }
 
     return mdImport;
-}
-
-
-//
-// Set whether inconsistencies in the target should raise asserts.
-// This overrides the default initial setting.
-//
-// Arguments:
-//     fEnableAsserts - whether ASSERTs in dacized code should be enabled
-//
-
-void ClrDataAccess::SetTargetConsistencyChecks(bool fEnableAsserts)
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-    m_fEnableTargetConsistencyAsserts = fEnableAsserts;
-}
-
-//
-// Get whether inconsistencies in the target should raise asserts.
-//
-// Return value:
-//     whether ASSERTs in dacized code should be enabled
-//
-// Notes:
-//     The implementation of ASSERT accesses this via code:DacTargetConsistencyAssertsEnabled
-//
-//     By default, this is disabled, unless DOTNET_DbgDACEnableAssert is set (see code:ClrDataAccess::ClrDataAccess).
-//     This is necessary for compatibility.  For example, SOS expects to be able to scan for
-//     valid MethodTables etc. (which may cause ASSERTs), and also doesn't want ASSERTs when working
-//     with targets with corrupted memory.
-//
-//     Calling code:ClrDataAccess::SetTargetConsistencyChecks overrides the default setting.
-//
-bool ClrDataAccess::TargetConsistencyAssertsEnabled()
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-    return m_fEnableTargetConsistencyAsserts;
 }
 
 //
@@ -6524,7 +6452,6 @@ BOOL ClrDataAccess::IsExceptionFromManagedCode(EXCEPTION_RECORD* pExceptionRecor
 //----------------------------------------------------------------------------
 HRESULT ClrDataAccess::GetWatsonBuckets(DWORD dwThreadId, GenericModeBlock * pGM)
 {
-    _ASSERTE((dwThreadId != 0) && (pGM != NULL));
     if ((dwThreadId == 0) || (pGM == NULL))
     {
         return E_INVALIDARG;
@@ -6533,7 +6460,6 @@ HRESULT ClrDataAccess::GetWatsonBuckets(DWORD dwThreadId, GenericModeBlock * pGM
     DAC_ENTER();
 
     Thread * pThread = DacGetThread(dwThreadId);
-    _ASSERTE(pThread != NULL);
 
     HRESULT hr = E_UNEXPECTED;
 
@@ -6642,14 +6568,12 @@ CLRDataCreateInstance(REFIID iid,
             {
                 IUnknown* thisImpl;
                 HRESULT qiRes = pClrDataAccess->QueryInterface(IID_IUnknown, (void**)&thisImpl);
-                _ASSERTE(SUCCEEDED(qiRes));
                 CDAC& cdac = pClrDataAccess->m_cdac;
                 cdac = CDAC::Create(contractDescriptorAddr, pClrDataAccess->m_pTarget, thisImpl);
                 if (cdac.IsValid())
                 {
                     // Get SOS interfaces from the cDAC if available.
                     cdac.CreateSosInterface(&cdacInterface);
-                    _ASSERTE(cdacInterface != nullptr);
 
                     // Lifetime is now managed by cDAC implementation of SOS interfaces
                     pClrDataAccess->Release();
@@ -6702,7 +6626,6 @@ CLRDataCreateInstance(REFIID iid,
 //----------------------------------------------------------------------------
 BOOL OutOfProcessExceptionEventGetProcessIdAndThreadId(HANDLE hProcess, HANDLE hThread, DWORD * pPId, DWORD * pThreadId)
 {
-    _ASSERTE((pPId != NULL) && (pThreadId != NULL));
 
 #ifdef TARGET_UNIX
     // UNIXTODO: mikem 1/13/15 Need appropriate PAL functions for getting ids
@@ -6976,7 +6899,6 @@ STDAPI OutOfProcessExceptionEventSignatureCallback(_In_ PDWORD pContext,
 
     // it's possible for the OS to kill
     // the faulting process before WER crash reporting has completed.
-    _ASSERTE(hr == S_OK || hr == CORDBG_E_READVIRTUAL_FAILURE);
 
     if (hr != S_OK)
     {
@@ -6996,7 +6918,6 @@ STDAPI OutOfProcessExceptionEventSignatureCallback(_In_ PDWORD pContext,
 
     if (dwIndex >= paramCount)
     {
-        _ASSERTE(!"dwIndex is out of range");
         return E_INVALIDARG;
     }
 
@@ -7137,7 +7058,6 @@ UINT32 DacHandleWalker::BuildTypemask(UINT types[], UINT typeCount)
 
     for (UINT i = 0; i < typeCount; ++i)
     {
-        _ASSERTE(types[i] < 32);
         mask |= (1 << types[i]);
     }
 
@@ -7441,8 +7361,6 @@ void DacStackReferenceWalker::WalkStack()
     if (mEnumerated)
         return;
 
-    _ASSERTE(mList.GetCount() == 0);
-    _ASSERTE(mThread);
 
     class ProfilerFilterContextHolder
     {
@@ -7664,7 +7582,6 @@ StackWalkAction DacStackReferenceWalker::Callback(CrawlFrame *pCF, VOID *pData)
             if (pCF->IsFrameless())
             {
                 ICodeManager * pCM = pCF->GetCodeManager();
-                _ASSERTE(pCM != NULL);
 
                 unsigned flags = pCF->GetCodeManagerFlags();
 
@@ -7776,7 +7693,6 @@ StackWalkAction DacStackReferenceWalker::Callback(CrawlFrame *pCF, VOID *pData)
                 if (paramContextType == GENERIC_PARAM_CONTEXT_METHODDESC)
                 {
                     MethodDesc *pMDReal = dac_cast<PTR_MethodDesc>(pCF->GetParamTypeArg());
-                    _ASSERTE((pMDReal != NULL) || !pCF->IsFrameless());
                     if (pMDReal != NULL)
                     {
                         PTR_Object obj = pMDReal->GetLoaderAllocator()->GetExposedObject();
@@ -7786,7 +7702,6 @@ StackWalkAction DacStackReferenceWalker::Callback(CrawlFrame *pCF, VOID *pData)
                 else if (paramContextType == GENERIC_PARAM_CONTEXT_METHODTABLE)
                 {
                     MethodTable *pMTReal = dac_cast<PTR_MethodTable>(pCF->GetParamTypeArg());
-                    _ASSERTE((pMTReal != NULL) || !pCF->IsFrameless());
                     if (pMTReal != NULL)
                     {
                         PTR_Object obj = pMTReal->GetLoaderAllocator()->GetExposedObject();
@@ -7805,7 +7720,6 @@ StackWalkAction DacStackReferenceWalker::Callback(CrawlFrame *pCF, VOID *pData)
 DacStackReferenceErrorEnum::DacStackReferenceErrorEnum(DacStackReferenceWalker *pEnum, SOSStackErrorList *pErrors)
     : mEnum(pEnum), mHead(pErrors), mCurr(pErrors)
 {
-    _ASSERTE(mEnum);
 
     if (mHead != NULL)
         mEnum->AddRef();

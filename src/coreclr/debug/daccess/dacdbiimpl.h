@@ -72,9 +72,6 @@ public:
     // Flush the DAC cache. This should be called when target memory changes.
     HRESULT STDMETHODCALLTYPE FlushCache();
 
-    // enable or disable DAC target consistency checks
-    HRESULT STDMETHODCALLTYPE DacSetTargetConsistencyChecks(BOOL fEnableAsserts);
-
     IAllocator * GetAllocator()
     {
         return m_pAllocator;
@@ -940,7 +937,6 @@ public:
         // If we're not re-entrant, then assert.
         if (!fAllowReentrant)
         {
-            _ASSERTE(g_dacImpl == NULL);
         }
 
         // This cast is safe because ClrDataAccess can't call the DacDbi layer.

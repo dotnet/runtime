@@ -158,9 +158,6 @@ public unsafe partial interface IDacDbiInterface
     int FlushCache();
 
     [PreserveSig]
-    int DacSetTargetConsistencyChecks(Interop.BOOL fEnableAsserts);
-
-    [PreserveSig]
     int IsLeftSideInitialized(Interop.BOOL* pResult);
 
     [PreserveSig]

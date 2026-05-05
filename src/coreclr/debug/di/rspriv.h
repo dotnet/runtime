@@ -3168,7 +3168,6 @@ public:
      */
     HRESULT ReleaseRemoteBuffer(void **ppBuffer);
 
-
     void TargetConsistencyCheck(bool fExpression);
 
     // Activate interop-debugging, after the process has initially been Init()

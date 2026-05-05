@@ -294,7 +294,6 @@ DacInstantiateTypeByAddressHelper(TADDR addr, ULONG32 size, bool throwEx, bool f
 
     // DacInstanceManager::Alloc will assert (with a non-obvious message) on 0-size instances.
     // Fail sooner and more obviously here.
-    _ASSERTE_MSG( size > 0, "DAC coding error: instance size cannot be 0" );
 
     // Do not attempt to allocate more than 64megs for one object instance.  While we should
     // never even come close to this size, in cases of heap corruption or bogus data passed
@@ -338,7 +337,6 @@ DacInstantiateTypeByAddressHelper(TADDR addr, ULONG32 size, bool throwEx, bool f
             {
                 // The same address has already been marshalled as a VPTR, now we're trying to marshal as a
                 // DPTR.  This is not allowed.
-                _ASSERTE_MSG(false, "DAC coding error: DPTR/VPTR usage conflict");
                 DacError(E_INVALIDARG);
                 UNREACHABLE();
             }
@@ -453,7 +451,6 @@ DacInstantiateClassByVTable(TADDR addr, ULONG32 minSize, bool throwEx)
             // Sanity check that the object we're returning is big enough to fill the PTR type it's being
             // accessed with.  For more information, see the similar check below for the case when the
             // object isn't already cached
-            _ASSERTE_MSG(inst->size >= minSize, "DAC coding error: Attempt to instantiate a VPTR from an object that is too small");
 
             return inst + 1;
         }
@@ -502,7 +499,6 @@ DacInstantiateClassByVTable(TADDR addr, ULONG32 minSize, bool throwEx)
         // Can't identify the vtable pointer.
         if (throwEx)
         {
-            _ASSERTE_MSG(false,"DAC coding error: Unrecognized vtable pointer in VPTR marshalling code");
             DacError(E_INVALIDARG);
         }
         return NULL;
@@ -515,7 +511,6 @@ DacInstantiateClassByVTable(TADDR addr, ULONG32 minSize, bool throwEx)
     // into a PTR_GlobalLoaderAllocator will cause this ASSERT to fire (because AssemblyLoaderAllocator
     // and GlobalLoaderAllocator derived from LoaderAllocator and AssemblyLoaderAllocator is smaller
     // than GlobalLoaderAllocator).
-    _ASSERTE_MSG(size >= minSize, "DAC coding error: Attempt to instantiate a VPTR from an object that is too small");
 
     inst = g_dacImpl->m_instances.Alloc(addr, size, DAC_VPTR);
     if (!inst)
@@ -846,8 +841,6 @@ DacGetTargetAddrForHostAddr(LPCVOID ptr, bool throwEx)
             {
                 // This means a pointer was supplied which doesn't actually point to the beginning of
                 // a marshalled DAC instance.
-                _ASSERTE_MSG(false, "DAC coding error: Attempt to get target address from a host pointer "
-                                    "which is not an instance marshalled by DAC!");
                 DacError(status);
             }
         }
@@ -978,8 +971,6 @@ DacGetTargetAddrForHostInteriorAddr(LPCVOID ptr, bool throwEx)
             {
                 // This means a pointer was supplied which doesn't actually point to somewhere in a marshalled
                 // DAC instance.
-                _ASSERTE_MSG(false, "DAC coding error: Attempt to get target address from a host interior "
-                                    "pointer which is not an instance marshalled by DAC!");
                 DacError(status);
             }
         }
@@ -1220,40 +1211,6 @@ DacAllocHostOnlyInstance(ULONG32 size, bool throwEx)
     g_dacImpl->m_instances.AddSuperseded(inst);
 
     return inst + 1;
-}
-
-thread_local bool t_DacAssertsUnconditionally = false;
-
-bool DacSetEnableDacAssertsUnconditionally(bool enable)
-{
-    bool oldValue = t_DacAssertsUnconditionally;
-    t_DacAssertsUnconditionally = enable;
-    return oldValue;
-}
-
-//
-// Queries whether ASSERTs should be raised when inconsistencies in the target are detected
-//
-// Return Value:
-//   true if ASSERTs should be raised in DACized code.
-//   false if ASSERTs should be ignored.
-//
-// Notes:
-//   See code:ClrDataAccess::TargetConsistencyAssertsEnabled for details.
-bool DacTargetConsistencyAssertsEnabled()
-{
-    if (!g_dacImpl)
-    {
-        // No ClrDataAccess instance available (maybe we're still initializing).  Any asserts when this is
-        // the case should only be host-asserts (i.e. always bugs), and so we should just return true.
-        return true;
-    }
-
-    // If asserts are unconditionally enabled via the thread local, simply return true.
-    if (t_DacAssertsUnconditionally)
-        return true;
-
-    return g_dacImpl->TargetConsistencyAssertsEnabled();
 }
 
 //

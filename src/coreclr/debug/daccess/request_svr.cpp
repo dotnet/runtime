@@ -455,7 +455,6 @@ HRESULT DacHeapWalker::InitHeapDataSvr(HeapData *&pHeaps, size_t &pCount)
 
             seg = seg->next;
         }
-        _ASSERTE(count == j);
     }
     return S_OK;
 }

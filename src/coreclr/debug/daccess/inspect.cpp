@@ -96,7 +96,6 @@ GetTypeFieldValueFlags(TypeHandle typeHandle,
     }
     else
     {
-        _ASSERTE(!typeHandle.IsNull());
         eltType = typeHandle.GetInternalCorElementType();
     }
 
@@ -372,7 +371,6 @@ ClrDataValue::IntGetBytes(
         {
             ULONG32 done;
 
-            _ASSERTE(FitsIn<ULONG32>(loc->size));
             status = m_dac->m_pTarget->
                 ReadVirtual(loc->addr, buffer, static_cast<ULONG32>(loc->size),
                             &done);
@@ -414,7 +412,6 @@ ClrDataValue::GetBytes(
 
         if (dataSize)
         {
-            _ASSERTE(FitsIn<ULONG32>(m_totalSize));
             *dataSize = static_cast<ULONG32>(m_totalSize);
         }
 
@@ -463,7 +460,6 @@ ClrDataValue::SetBytes(
 
         if (dataSize)
         {
-            _ASSERTE(FitsIn<ULONG32>(m_totalSize));
             *dataSize = static_cast<ULONG32>(m_totalSize);
         }
 
@@ -910,7 +906,6 @@ ClrDataValue::GetRefAssociatedValue(IXCLRDataValue** assocValue)
 
     TADDR refAddr;
 
-    _ASSERTE(m_totalSize == sizeof(refAddr));
 
     if ((status = IntGetBytes(sizeof(refAddr),
                               (PBYTE)&refAddr)) != S_OK)
@@ -2694,7 +2689,6 @@ ClrDataTypeDefinition::NewFromModule(ClrDataAccess* dac,
         return E_OUTOFMEMORY;
     }
 
-    _ASSERTE(typeDef || pubTypeDef);
 
     if (typeDef)
     {
@@ -3808,7 +3802,6 @@ ClrDataTypeInstance::NewFromModule(ClrDataAccess* dac,
         return E_OUTOFMEMORY;
     }
 
-    _ASSERTE(typeInst || pubTypeInst);
 
     if (typeInst)
     {

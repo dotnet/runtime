@@ -44,7 +44,6 @@ public:
     static StackWalkData * FromHandle(StackWalkHandle handle)
     {
         SUPPORTS_DAC;
-        _ASSERTE(handle != NULL);
         return reinterpret_cast<StackWalkData *>(handle);
     }
 
@@ -77,7 +76,6 @@ void DeleteStackwalk(StackWalkHandle pHandle)
     SUPPORTS_DAC;
 
     StackWalkData * pBuffer = (StackWalkData *) pHandle;
-    _ASSERTE(pBuffer != NULL);
     delete pBuffer;
 }
 
@@ -117,7 +115,6 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::CreateStackWalk(VMPTR_Thread vmTh
     EX_TRY
     {
 
-        _ASSERTE(ppSFIHandle != NULL);
 
         Thread * pThread = vmThread.GetDacPtr();
 
@@ -202,7 +199,6 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::SetStackWalkCurrentContext(VMPTR_
 
     #if defined(_DEBUG)
         // The caller should have checked this already.
-        _ASSERTE(CheckContext(vmThread, pContext) == S_OK);
     #endif  // _DEBUG
 
         // DD can't keep pointers back into the RS address space.
@@ -324,7 +320,6 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::UnwindStackWalkFrame(StackWalkHan
             // Currently the only case where we adjust the stack pointer is at M2U transitions.
             if (pIter->GetFrameState() == StackFrameIterator::SFITER_NATIVE_MARKER_FRAME)
             {
-                _ASSERTE(!pCF->IsActiveFrame());
                 AdjustRegDisplayForStackParameter(pCF->GetRegisterSet(),
                                                   cbStackParameterSize,
                                                   pCF->IsActiveFrame(),
@@ -390,14 +385,12 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetStackWalkCurrentFrameInfo(Stac
     EX_TRY
     {
 
-        _ASSERTE(pSFIHandle != NULL);
 
         StackFrameIterator * pIter = GetIteratorFromHandle(pSFIHandle);
 
         FrameType ftResult = kInvalid;
         if (pIter->GetFrameState() == StackFrameIterator::SFITER_DONE)
         {
-            _ASSERTE(!pIter->IsValid());
             ftResult = kAtEndOfStack;
         }
         else
@@ -814,7 +807,6 @@ void DacDbiInterfaceImpl::InitFrameData(StackFrameIterator *   pIter,
         EX_TRY_ALLOW_DATATARGET_MISSING_MEMORY
         {
             pAssembly = (pModule ? pModule->GetAssembly() : NULL);
-            _ASSERTE(pAssembly != NULL);
         }
         EX_END_CATCH_ALLOW_DATATARGET_MISSING_MEMORY
 
@@ -822,8 +814,6 @@ void DacDbiInterfaceImpl::InitFrameData(StackFrameIterator *   pIter,
         // This is a managed stack frame.
         //
 
-        _ASSERTE(pMD != NULL);
-        _ASSERTE(pModule != NULL);
 
         //
         // initialize the rest of the DebuggerIPCE_STRData
@@ -971,7 +961,6 @@ void DacDbiInterfaceImpl::InitFrameData(StackFrameIterator *   pIter,
     }
     else
     {
-        _ASSERTE(!"DDII::InitFrameData() - We should never stop at internal frames.");
         ThrowHR(CORDBG_E_TARGET_INCONSISTENT);
     }
 }
@@ -1127,7 +1116,6 @@ void DacDbiInterfaceImpl::AdjustRegDisplayForStackParameter(REGDISPLAY *        
         }
         else
         {
-            _ASSERTE(!"Currently, we should not hit this case.\n");
 
             // The CONTEXT comes from the unmanaged world.
             sp += cbStackParameterSize;
@@ -1322,7 +1310,6 @@ PTR_CONTEXT DacDbiInterfaceImpl::RetrieveHijackedContext(REGDISPLAY * pRD)
 
 BOOL DacDbiInterfaceImpl::UnwindRuntimeStackFrame(StackFrameIterator * pIter)
 {
-    _ASSERTE(IsRuntimeUnwindableStub(GetControlPC(pIter->m_crawl.GetRegisterSet())));
 
     T_CONTEXT *    pContext = NULL;
     REGDISPLAY * pRD = pIter->m_crawl.GetRegisterSet();

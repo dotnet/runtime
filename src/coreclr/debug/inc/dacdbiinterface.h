@@ -206,29 +206,6 @@ public:
     //
     virtual HRESULT STDMETHODCALLTYPE FlushCache() = 0;
 
-    //
-    // Control DAC's checking of the target's consistency. Specifically, if this is disabled then
-    // ASSERTs in VM code are ignored. The default is disabled, since DAC should do it's best to
-    // return results even with a corrupt or unsynchronized target. See
-    // code:ClrDataAccess::TargetConsistencyAssertsEnabled for more details.
-    //
-    // When testing with a non-corrupt and properly synchronized target, this should be enabled to
-    // help catch bugs.
-    //
-    // Arguments:
-    //   fEnableAsserts - whether ASSERTs should be raised when consistency checks fail (_DEBUG
-    //   builds only)
-    //
-    // Notes:
-    //   In the future we may want to extend DAC target consistency checks to be retail checks
-    //   (exceptions) as well. We'll also need a mechanism for disabling them (eg. when an advanced
-    //   user wants to try to get a result anyway even though the target is inconsistent). In that
-    //   case we'll want an additional argument here for enabling/disabling the throwing of
-    //   consistency failures exceptions (this is independent from asserts - there are legitimate
-    //   scenarios for all 4 combinations).
-    //
-    virtual HRESULT STDMETHODCALLTYPE DacSetTargetConsistencyChecks(BOOL fEnableAsserts) = 0;
-
     //-----------------------------------------------------------------------------
     // General purpose target inspection functions
     //-----------------------------------------------------------------------------
