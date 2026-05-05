@@ -167,9 +167,6 @@ public unsafe partial interface IDacDbiInterface
     int GetAppDomainId(ulong vmAppDomain, uint* pRetVal);
 
     [PreserveSig]
-    int GetAppDomainObject(ulong vmAppDomain, ulong* pRetVal);
-
-    [PreserveSig]
     int GetAppDomainFullName(ulong vmAppDomain, nint pStrName);
 
     [PreserveSig]
@@ -206,7 +203,7 @@ public unsafe partial interface IDacDbiInterface
     int SetCompilerFlags(ulong vmAssembly, Interop.BOOL fAllowJitOpts, Interop.BOOL fEnableEnC);
 
     [PreserveSig]
-    int EnumerateAssembliesInAppDomain(ulong vmAppDomain, nint fpCallback, nint pUserData);
+    int EnumerateAssembliesInAppDomain(ulong vmAppDomain, delegate* unmanaged<ulong, nint, void> fpCallback, nint pUserData);
 
     [PreserveSig]
     int EnumerateModulesInAssembly(ulong vmAssembly, nint fpCallback, nint pUserData);
@@ -320,10 +317,10 @@ public unsafe partial interface IDacDbiInterface
     int GetFramePointer(nuint pSFIHandle, ulong* pRetVal);
 
     [PreserveSig]
-    int IsLeafFrame(ulong vmThread, nint pContext, Interop.BOOL* pResult);
+    int IsLeafFrame(ulong vmThread, byte* pContext, Interop.BOOL* pResult);
 
     [PreserveSig]
-    int GetContext(ulong vmThread, nint pContextBuffer);
+    int GetContext(ulong vmThread, byte* pContextBuffer);
 
     [PreserveSig]
     int ConvertContextToDebuggerRegDisplay(nint pInContext, nint pOutDRD, Interop.BOOL fActive);

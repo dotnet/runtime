@@ -1030,7 +1030,6 @@ namespace ILCompiler
             [
                 // For CorInfoImpl.getAsyncInfo
                 asyncHelpers.GetKnownMethod("CaptureExecutionContext"u8, null),
-                asyncHelpers.GetKnownMethod("RestoreExecutionContext"u8, null),
                 asyncHelpers.GetKnownMethod("CaptureContinuationContext"u8, null),
                 asyncHelpers.GetKnownMethod("CaptureContexts"u8, null),
                 asyncHelpers.GetKnownMethod("RestoreContexts"u8, null),
