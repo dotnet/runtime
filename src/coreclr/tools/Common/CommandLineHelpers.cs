@@ -127,9 +127,12 @@ namespace System.CommandLine
 
             TargetArchitecture targetArchitecture = GetTargetArchitecture(targetArchitectureToken);
             TargetOS targetOS = GetTargetOS(targetOSToken);
-            TargetAbi targetAbi = targetArchitectureToken == "armel" || (targetArchitectureToken == "arm" && targetOSToken == "android")
-                ? TargetAbi.NativeAotArmel
-                : TargetAbi.NativeAot;
+            TargetAbi targetAbi = (targetOSToken, targetArchitectureToken) switch
+            {
+                (_, "armel") => TargetAbi.NativeAotArmel,
+                ("android", "arm") => TargetAbi.NativeAotArmel,
+                _ => TargetAbi.NativeAot,
+            };
 
             return (targetArchitecture, targetOS, targetAbi);
         }
