@@ -83,11 +83,34 @@ namespace System.Threading.Tasks.Tests
             SuspendAsyncContextKeyword | SuspendAsyncCallstackKeyword |
             CompleteAsyncContextKeyword | CompleteAsyncMethodKeyword | UnwindAsyncExceptionKeyword;
 
-        private static readonly MethodInfo s_getMethodFromNativeIP =
-            typeof(StackFrame).GetMethod("GetMethodFromNativeIP", BindingFlags.Static | BindingFlags.NonPublic)!;
+        // CoreCLR has StackFrame.GetMethodFromNativeIP (static, non-public).
+        // NativeAOT lacks that but has an internal StackFrame(IntPtr, bool) constructor;
+        // we resolve the name via DiagnosticMethodInfo.Create(frame).
+        private static readonly MethodInfo? s_getMethodFromNativeIPMethod =
+            typeof(StackFrame).GetMethod("GetMethodFromNativeIP", BindingFlags.Static | BindingFlags.NonPublic);
 
-        private static MethodBase? GetMethodFromNativeIP(ulong nativeIP)
-            => (MethodBase?)s_getMethodFromNativeIP.Invoke(null, new object[] { (IntPtr)nativeIP });
+        private static readonly ConstructorInfo? s_stackFrameFromIPCtor =
+            s_getMethodFromNativeIPMethod is null
+                ? typeof(StackFrame).GetConstructor(BindingFlags.Instance | BindingFlags.NonPublic, null, new[] { typeof(IntPtr), typeof(bool) }, null)
+                : null;
+
+        internal static string? GetMethodNameFromNativeIP(ulong nativeIP)
+        {
+            if (s_getMethodFromNativeIPMethod is not null)
+            {
+                var method = (MethodBase?)s_getMethodFromNativeIPMethod.Invoke(null, new object[] { (IntPtr)nativeIP });
+                return method?.Name;
+            }
+
+            if (s_stackFrameFromIPCtor is not null)
+            {
+                var frame = (StackFrame)s_stackFrameFromIPCtor.Invoke(new object[] { (IntPtr)nativeIP, false })!;
+                var diagInfo = DiagnosticMethodInfo.Create(frame);
+                return diagInfo?.Name;
+            }
+
+            return null;
+        }
 
         [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(true)]
         [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
@@ -250,19 +273,35 @@ namespace System.Threading.Tasks.Tests
             var st = new StackTrace();
             for (int i = 0; i < st.FrameCount - 1; i++)
             {
-                string? name = st.GetFrame(i)?.GetMethod()?.Name;
+                string? name = GetFrameMethodName(st.GetFrame(i));
                 if (name is not null && name.Contains(resumedMethodName))
                 {
-                    // The next frame should be the Continuation_Wrapper_N that dispatched this method.
-                    string? wrapperName = st.GetFrame(i + 1)?.GetMethod()?.Name;
-                    if (wrapperName is not null && wrapperName.StartsWith("Continuation_Wrapper_", StringComparison.Ordinal))
+                    // Scan subsequent frames, skipping unresolvable stubs (e.g. delegate invoke thunks on NativeAOT).
+                    for (int j = i + 1; j < st.FrameCount; j++)
                     {
-                        return int.Parse(wrapperName.Substring("Continuation_Wrapper_".Length));
+                        string? wrapperName = GetFrameMethodName(st.GetFrame(j));
+                        if (wrapperName is null)
+                            continue;
+                        if (wrapperName.StartsWith("Continuation_Wrapper_", StringComparison.Ordinal))
+                            return int.Parse(wrapperName.Substring("Continuation_Wrapper_".Length));
+                        break;
                     }
                     return -1;
                 }
             }
             return -1;
+        }
+
+        private static string? GetFrameMethodName(StackFrame? frame)
+        {
+            if (frame is null)
+                return null;
+            string? name = frame.GetMethod()?.Name;
+            if (name is null)
+            {
+                name = DiagnosticMethodInfo.Create(frame)?.Name;
+            }
+            return name;
         }
 
         private delegate bool EventVisitor(AsyncEventID eventId, ReadOnlySpan<byte> buffer, ref int index);
@@ -471,8 +510,8 @@ namespace System.Threading.Tasks.Tests
                     return false;
                 foreach (var (nativeIP, _) in Frames)
                 {
-                    var method = GetMethodFromNativeIP(nativeIP);
-                    if (method is not null && method.Name.Contains(markerMethodName, StringComparison.Ordinal))
+                    var methodName = GetMethodNameFromNativeIP(nativeIP);
+                    if (methodName is not null && methodName.Contains(markerMethodName, StringComparison.Ordinal))
                         return true;
                 }
                 return false;
@@ -1956,7 +1995,7 @@ namespace System.Threading.Tasks.Tests
                     var (nativeIP, _) = cs.Frames[i];
                     Assert.True(nativeIP != 0, $"Frame {i} has zero NativeIP");
 
-                    var method = GetMethodFromNativeIP(nativeIP);
+                    var method = GetMethodNameFromNativeIP(nativeIP);
                     Assert.True(method is not null, $"Frame {i}: NativeIP 0x{nativeIP:X} does not resolve to a managed method");
 
                     if (i > 0)
@@ -2025,7 +2064,7 @@ namespace System.Threading.Tasks.Tests
                     var (nativeIP, _) = cs.Frames[f];
                     Assert.True(nativeIP != 0, $"Frame {f} has zero NativeIP");
 
-                    var method = GetMethodFromNativeIP(nativeIP);
+                    var method = GetMethodNameFromNativeIP(nativeIP);
                     Assert.True(method is not null, $"Frame {f}: NativeIP 0x{nativeIP:X} does not resolve to a managed method");
                 }
             }
@@ -2173,7 +2212,7 @@ namespace System.Threading.Tasks.Tests
                             var (nativeIP, _) = cs.Frames[f];
                             Assert.True(nativeIP != 0, $"Overflow callstack frame {f} has zero NativeIP");
 
-                            var method = GetMethodFromNativeIP(nativeIP);
+                            var method = GetMethodNameFromNativeIP(nativeIP);
                             Assert.True(method is not null, $"Overflow callstack frame {f}: NativeIP 0x{nativeIP:X} does not resolve to a managed method");
                         }
                     }
@@ -2221,7 +2260,7 @@ namespace System.Threading.Tasks.Tests
             foreach (var (nativeIP, _) in deepest.Frames)
             {
                 Assert.True(nativeIP != 0, "Frame has zero NativeIP");
-                var method = GetMethodFromNativeIP(nativeIP);
+                var method = GetMethodNameFromNativeIP(nativeIP);
                 Assert.True(method is not null, $"NativeIP 0x{nativeIP:X} does not resolve to a managed method");
             }
         }
@@ -2241,20 +2280,14 @@ namespace System.Threading.Tasks.Tests
             Assert.True(metadataList.Count >= 1, "Expected at least one metadata event in buffer");
 
             long[] wrapperIPs = metadataList[0].WrapperIPs;
-
-            Type? cwType = typeof(object).Assembly.GetType("System.Runtime.CompilerServices.AsyncProfiler+ContinuationWrapper");
-            Assert.NotNull(cwType);
+            Assert.True(wrapperIPs.Length > 0, "Expected at least one wrapper IP in metadata");
 
             for (int i = 0; i < wrapperIPs.Length; i++)
             {
                 string expectedName = $"Continuation_Wrapper_{i}";
-                MethodInfo? method = cwType.GetMethod(expectedName, BindingFlags.NonPublic | BindingFlags.Static);
-                Assert.True(method is not null, $"Expected method '{expectedName}' to exist on ContinuationWrapper type");
-
-                System.Runtime.CompilerServices.RuntimeHelpers.PrepareMethod(method.MethodHandle);
-                long expectedIP = method.MethodHandle.GetFunctionPointer().ToInt64();
-
-                Assert.True(wrapperIPs[i] == expectedIP, $"Wrapper IP mismatch at index {i}: metadata has 0x{wrapperIPs[i]:X}, " + $"method '{expectedName}' has 0x{expectedIP:X}");
+                string? resolvedName = GetMethodNameFromNativeIP((ulong)wrapperIPs[i]);
+                Assert.True(resolvedName is not null, $"Wrapper IP at index {i} (0x{wrapperIPs[i]:X}) did not resolve to a method");
+                Assert.True(resolvedName == expectedName, $"Wrapper IP at index {i}: expected '{expectedName}', got '{resolvedName}'");
             }
         }
     }
@@ -2508,30 +2541,9 @@ namespace System.Threading.Tasks.Tests
             return index;
         }
 
-        private static readonly MethodInfo? s_getMethodFromNativeIP =
-            typeof(StackFrame).GetMethod("GetMethodFromNativeIP", BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public);
-
-        private static string ResolveAsyncMethodName(nint nativeIP)
-        {
-            if (s_getMethodFromNativeIP is not null)
-            {
-                try
-                {
-                    MethodBase? method = s_getMethodFromNativeIP.Invoke(null, [nativeIP]) as MethodBase;
-                    return method?.Name ?? string.Empty;
-                }
-                catch
-                {
-                }
-            }
-
-            return string.Empty;
-        }
-
         private static void OutputAsyncFrame(ulong nativeIP, int state, int frameIndex)
         {
-            string asyncMethodName = ResolveAsyncMethodName((nint)nativeIP);
-            asyncMethodName = !string.IsNullOrEmpty(asyncMethodName) ? asyncMethodName : $"??";
+            string asyncMethodName = AsyncProfilerTests.GetMethodNameFromNativeIP(nativeIP) ?? "??";
             string nativeIPString = $"0x{nativeIP:X}";
             Console.WriteLine($"  Frame {frameIndex}: AsyncMethod = {asyncMethodName}, NativeIP = {nativeIPString}, State = {state}");
         }
