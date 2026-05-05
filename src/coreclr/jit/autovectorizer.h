@@ -31,14 +31,15 @@ private:
 
     struct PackNode
     {
-        PackKind   Kind            = PackKind::Invalid;
-        var_types  ElementType     = TYP_UNDEF;
-        genTreeOps Oper            = GT_COUNT;
-        unsigned   LaneCount       = 0;
-        unsigned   AccessIndex     = UINT_MAX;
-        GenTree*   Lanes[MaxLanes] = {};
-        PackNode*  Operands[3]     = {};
-        unsigned   Cost            = 0;
+        PackKind       Kind            = PackKind::Invalid;
+        var_types      ElementType     = TYP_UNDEF;
+        genTreeOps     Oper            = GT_COUNT;
+        NamedIntrinsic IntrinsicName   = NI_Illegal;
+        unsigned       LaneCount       = 0;
+        unsigned       AccessIndex     = UINT_MAX;
+        GenTree*       Lanes[MaxLanes] = {};
+        PackNode*      Operands[3]     = {};
+        unsigned       Cost            = 0;
     };
 
     struct SLPPlan
@@ -66,6 +67,7 @@ private:
             GenTree*   Address               = nullptr;
             unsigned   BaseLocalIfKnown      = BAD_VAR_NUM;
             unsigned   OffsetLocalIfKnown    = BAD_VAR_NUM;
+            unsigned   InvariantIndexLocal   = BAD_VAR_NUM;
             int        IndexOffset           = 0;
             unsigned   ElementSize           = 0;
             var_types  ElementType           = TYP_UNDEF;
@@ -107,6 +109,7 @@ private:
         int         MinIndexOffset                         = 0;
         int         MaxIndexOffset                         = 0;
         bool        SawBoundsCheck                         = false;
+        bool        NeedsOverlapCheck                      = false;
 
         Statement*   StoreStmts[MaxStores]     = {};
         GenTree*     StoreValues[MaxStores]    = {};
@@ -117,6 +120,7 @@ private:
         Statement*   ReductionStmt             = nullptr;
         unsigned     ReductionLcl              = BAD_VAR_NUM;
         unsigned     ReductionVectorLcl        = BAD_VAR_NUM;
+        genTreeOps   ReductionOper             = GT_COUNT;
         GenTree*     ReductionValue            = nullptr;
         PackNode*    ReductionPack             = nullptr;
         Statement*   StoreStmt                 = nullptr;
@@ -136,6 +140,7 @@ private:
     bool      IsSupportedUnaryOp(genTreeOps oper, var_types elementType) const;
     bool      IsSupportedBinaryOp(genTreeOps oper, var_types elementType) const;
     bool      IsSupportedCompareOp(genTreeOps oper, var_types elementType) const;
+    bool      IsSupportedIntrinsic(NamedIntrinsic intrinsic, var_types elementType) const;
     bool      TryCreateLoopPlan(FlowGraphNaturalLoop* loop, LoopVectorizationPlan* plan);
     bool      TryCreatePostIVLoopPlan(FlowGraphNaturalLoop* loop, LoopVectorizationPlan* plan);
     bool      TryCreateLocalLimitLoopPlan(FlowGraphNaturalLoop* loop, LoopVectorizationPlan* plan);
@@ -168,7 +173,7 @@ private:
     GenTree*    BuildPostIVSameStartCheck(LoopVectorizationPlan* plan);
     GenTree*    BuildPostIVStoreBeforeLoadCheck(LoopVectorizationPlan* plan);
     GenTree*    BuildPostIVLoadBeforeStoreCheck(LoopVectorizationPlan* plan);
-    GenTree*    BuildPostIVAddress(const LoopVectorizationPlan::ScalarAccess& access);
+    GenTree*    BuildPostIVAddress(LoopVectorizationPlan* plan, const LoopVectorizationPlan::ScalarAccess& access);
     GenTree*    BuildPackNode(LoopVectorizationPlan* plan, PackNode* node);
     GenTree*    BuildVectorStore(LoopVectorizationPlan* plan, PackNode* node);
     GenTree*    BuildReductionInit(LoopVectorizationPlan* plan);
@@ -199,7 +204,13 @@ private:
                                        var_types                            elementType,
                                        LoopVectorizationPlan::ScalarAccess* access);
     bool        TryAnalyzePostIVArrayAddress(GenTreeArrAddr* arrAddr, LoopVectorizationPlan::ScalarAccess* access);
-    bool        TryAnalyzeIndexExpr(LoopVectorizationPlan* plan, GenTree* tree, unsigned ivLcl, int* offset);
+    bool        TryAnalyzeIndexExpr(LoopVectorizationPlan* plan,
+                                    GenTree*               tree,
+                                    unsigned               ivLcl,
+                                    int*                   offset,
+                                    unsigned*              invariantLcl = nullptr,
+                                    bool*                  sawIv        = nullptr,
+                                    unsigned               depth        = 0);
     bool        TryAnalyzeArrayAddress(LoopVectorizationPlan*               plan,
                                        GenTreeArrAddr*                      arrAddr,
                                        unsigned                             ivLcl,
@@ -207,9 +218,17 @@ private:
     void        RecordLocalDefs(LoopVectorizationPlan* plan, GenTree* tree, bool* foundBoundsCheck = nullptr);
     void        RecordLocalDef(LoopVectorizationPlan* plan, unsigned lclNum, GenTree* value);
     bool        TryGetLocalDef(LoopVectorizationPlan* plan, unsigned lclNum, GenTree** value);
-    bool        TryGetArrayLengthLimitLocal(LoopVectorizationPlan* plan, GenTree* tree, unsigned* lclNum, int* offset);
-    bool        TryGetArrayLengthLocal(GenTree* tree, unsigned* lclNum);
-    bool        IsCompatibleScalarType(GenTree* tree, var_types elementType) const;
+    bool        TryCollectArrayLengthLimitLocals(LoopVectorizationPlan* plan,
+                                                 GenTree*               tree,
+                                                 unsigned*              lclNums,
+                                                 int*                   offsets,
+                                                 unsigned               maxCount,
+                                                 unsigned*              count,
+                                                 unsigned               depth = 0);
+    bool        TryGetArrayLengthLimitLocal(
+               LoopVectorizationPlan* plan, GenTree* tree, unsigned* lclNum, int* offset, unsigned depth = 0);
+    bool TryGetArrayLengthLocal(GenTree* tree, unsigned* lclNum);
+    bool IsCompatibleScalarType(GenTree* tree, var_types elementType) const;
     bool TryGetInvariantOperand(FlowGraphNaturalLoop* loop, unsigned ivLcl, GenTree* tree, var_types elementType);
     void RecordAddressUpdate(LoopVectorizationPlan* plan, unsigned addressVar, int delta);
     bool HasAddressUpdate(LoopVectorizationPlan* plan, unsigned addressVar);
