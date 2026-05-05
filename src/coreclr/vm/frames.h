@@ -1304,7 +1304,7 @@ public:
         LIMITED_METHOD_DAC_CONTRACT;
 
 #if defined(TARGET_ARM64) && !defined(DACCESS_COMPILE)
-        if ((CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_JitPacEnabled) == 1) && (m_SpForPacSign != 0))
+        if (m_SpForPacSign != 0)
         {
             return (PCODE)PacAuthPtr((void*)m_ReturnAddress, (void*)m_SpForPacSign);
         }

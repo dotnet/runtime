@@ -256,7 +256,7 @@ do {                                                                            
 #endif // !defined(DEBUGGER_UNWIND)
 
 // Macros for stripping pointer authentication (PAC) bits.
-#if !defined(DACCESS_COMPILE) && !defined(FEATURE_CDAC_UNWINDER)
+#if !defined(DACCESS_COMPILE)
 
 #define HANDLE_PAC(pointer, sp)    RtlHandlePacOnline(pointer, sp)
 
@@ -323,7 +323,7 @@ Return Value:
     return;
 }
 
-#endif // !defined(DACCESS_COMPILE) && !defined(FEATURE_CDAC_UNWINDER)
+#endif // !defined(DACCESS_COMPILE)
 
 //
 // Macros to clarify opcode parsing
@@ -2406,7 +2406,6 @@ ExecuteCodes:
                 return STATUS_UNWIND_INVALID_SEQUENCE;
             }
 
-            // TODO-PAC: Authenticate instead of stripping the return address.
             HANDLE_PAC(&ContextRecord->Lr, ContextRecord->Sp);
 
             //

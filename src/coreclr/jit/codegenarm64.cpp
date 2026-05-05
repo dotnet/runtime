@@ -1602,6 +1602,7 @@ void CodeGen::genFuncletEpilog(BasicBlock* /* block */)
         {
             GetEmitter()->emitIns_R_R_R_I(INS_ldp, EA_PTRSIZE, REG_FP, REG_LR, REG_SPBASE, 0);
             m_compiler->unwindSaveRegPair(REG_FP, REG_LR, 0);
+
             genStackPointerAdjustment(-genFuncletInfo.fiSpDelta1, REG_SCRATCH, nullptr, /* reportUnwindData */ true);
         }
         else
@@ -1632,6 +1633,7 @@ void CodeGen::genFuncletEpilog(BasicBlock* /* block */)
     else if (genFuncletInfo.fiFrameType == 3)
     {
         // With OSR we may see large values for fiSpDelta1
+        //
         if (m_compiler->opts.IsOSR())
         {
             GetEmitter()->emitIns_R_R_R_I(INS_ldp, EA_PTRSIZE, REG_FP, REG_LR, REG_SPBASE, 0);
