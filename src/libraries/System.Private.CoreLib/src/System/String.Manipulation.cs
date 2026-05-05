@@ -2126,7 +2126,7 @@ namespace System
                     // Process in double chunks & check if either chunk is likely to contain matches at once.
                     // If we get multiple matches in a single chunk, we assume they're likely to be close &
                     // break out of this logic & use the more optimistic loop below.
-                    // This is the similar logic to SpanHelpers.Packed.cs's IndexOf.
+                    // This is similar logic to SpanHelpers.Packed.cs's IndexOf.
                     Vector512<byte> packedComparand = Vector512.Create((byte)c);
                     while ((uint)remaining.Length >= (uint)Vector512<ushort>.Count*2)
                     {
