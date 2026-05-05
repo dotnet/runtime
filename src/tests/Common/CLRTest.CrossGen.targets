@@ -24,7 +24,6 @@ WARNING:   When setting properties based on their current state (for example:
 
     <!-- Crossgen2 testing is incompatible with the ilasm/ildasm round trip testing. -->
     <IlasmRoundTripIncompatible Condition="'$(AlwaysUseCrossGen2)' == 'true'">true</IlasmRoundTripIncompatible>
-
   </PropertyGroup>
 
   <!--

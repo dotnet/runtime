@@ -25,12 +25,6 @@ namespace System.CommandLine
     {
         public const string DefaultSystemModule = "System.Private.CoreLib";
 
-        private static readonly string[] s_validTargetArchitectures = ["arm", "armel", "arm64", "x86", "x64", "riscv64", "loongarch64", "wasm"];
-        private static readonly string[] s_validTargetOS = ["windows", "win", "linux", "android", "freebsd", "osx", "ios", "iossimulator", "tvos", "tvossimulator", "maccatalyst", "browser", "wasi"];
-
-        public static IReadOnlyList<string> ValidTargetArchitectures => s_validTargetArchitectures;
-        public static IReadOnlyList<string> ValidTargetOS => s_validTargetOS;
-
         public static Dictionary<string, string> BuildPathDictionary(IReadOnlyList<Token> tokens, bool strict)
         {
             Dictionary<string, string> dictionary = new(StringComparer.OrdinalIgnoreCase);
