@@ -2352,6 +2352,9 @@ void Compiler::lvaSetVarDoNotEnregister(unsigned varNum DEBUGARG(DoNotEnregister
         case DoNotEnregisterReason::LocalField:
             JITDUMP("was accessed as a local field\n");
             break;
+        case DoNotEnregisterReason::WasmGCVisibility:
+            JITDUMP("Wasm GC needs to see it\n");
+            break;
         case DoNotEnregisterReason::VMNeedsStackAddr:
             JITDUMP("VM needs stack addr\n");
             break;
@@ -4183,7 +4186,7 @@ unsigned Compiler::lvaGetMaxSpillTempSize()
  *
  *    Wasm leaf frame, no localloc
  *
- * 
+ *
  *      |     caller frame      |
  *      +=======================+ <---- Virtual '0'
  *      |                       |
@@ -4197,7 +4200,7 @@ unsigned Compiler::lvaGetMaxSpillTempSize()
  *              V
  *
  *   Wasm, leaf frame, localloc
- * 
+ *
  *      |     caller frame      |
  *      +=======================+ <---- Virtual '0'
  *      |                       |
@@ -4232,9 +4235,9 @@ unsigned Compiler::lvaGetMaxSpillTempSize()
  *      |       | Stack grows   |
  *              | downward
  *              V
- * 
+ *
  *   Wasm, non-leaf frame, localloc
- * 
+ *
  *      |     caller frame      |
  *      +=======================+ <---- Virtual '0'
  *      |                       |

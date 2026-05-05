@@ -3028,6 +3028,15 @@ GenTree* Lowering::LowerCall(GenTree* node)
         }
     }
 
+#ifdef TARGET_WASM
+    // For any type of managed call, if we have portable entry points enabled, we need to lower
+    // the call according to the portable entrypoint abi
+    if (!call->IsUnmanaged() && m_compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PORTABLE_ENTRY_POINTS))
+    {
+        LowerPEPCall(call);
+    }
+#endif // TARGET_WASM
+
     if (varTypeIsStruct(call))
     {
         LowerCallStruct(call);

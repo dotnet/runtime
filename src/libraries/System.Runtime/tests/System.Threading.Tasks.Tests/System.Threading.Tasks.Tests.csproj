@@ -7,6 +7,7 @@
     <!-- https://github.com/dotnet/runtime/issues/126862 -->
     <EnableTrimAnalyzer>false</EnableTrimAnalyzer>
     <EnableAotAnalyzer>false</EnableAotAnalyzer>
+    <EventSourceSupport Condition="'$(TestNativeAot)' == 'true'">true</EventSourceSupport>
   </PropertyGroup>
   <PropertyGroup Condition="'$(TargetOS)' == 'browser'">
     <_WasmPThreadPoolUnusedSize>10</_WasmPThreadPoolUnusedSize>
@@ -59,6 +60,7 @@
     <Compile Include="System.Runtime.CompilerServices\AsyncIteratorMethodBuilderTests.cs" />
     <Compile Include="System.Runtime.CompilerServices\AsyncTaskMethodBuilderTests.cs" />
     <Compile Include="System.Runtime.CompilerServices\RuntimeAsyncTests.cs" Condition="'$(RuntimeFlavor)' != 'mono'" />
+    <Compile Include="System.Runtime.CompilerServices\AsyncProfilerTests.cs" Condition="'$(RuntimeFlavor)' != 'mono'" />
     <Compile Include="System.Runtime.CompilerServices\ConfiguredAsyncDisposable.cs" />
     <Compile Include="System.Runtime.CompilerServices\ConfiguredCancelableAsyncEnumerableTests.cs" />
     <Compile Include="System.Runtime.CompilerServices\TaskAwaiterTests.cs" />
