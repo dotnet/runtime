@@ -1433,8 +1433,6 @@ public:
     //---------------------------------------------------------------
     // Last exception to be thrown
     //---------------------------------------------------------------
-    inline void SetThrowable(OBJECTREF pThrowable
-                             DEBUG_ARG(ThreadExceptionState::SetThrowableErrorChecking stecFlags = ThreadExceptionState::STEC_All));
 
     OBJECTREF GetThrowable()
     {
@@ -1443,25 +1441,25 @@ public:
         return m_ExceptionState.GetThrowable();
     }
 
-    // An unmnaged thread can check if a managed is processing an exception
     BOOL HasException()
     {
         LIMITED_METHOD_CONTRACT;
-        OBJECTHANDLE pThrowable = m_ExceptionState.GetThrowableAsHandle();
-        return pThrowable && *PTR_UNCHECKED_OBJECTREF(pThrowable);
+        return !IsThrowableNull();
     }
 
-    OBJECTHANDLE GetThrowableAsHandle()
+    // See ExInfo::GetThrowableAsPseudoHandle for details on the pseudo-handle.
+    OBJECTHANDLE GetThrowableAsPseudoHandle()
     {
-        LIMITED_METHOD_CONTRACT;
-        return m_ExceptionState.GetThrowableAsHandle();
+        LIMITED_METHOD_DAC_CONTRACT;
+
+        return m_ExceptionState.GetThrowableAsPseudoHandle();
     }
 
     // special null test (for use when we're in the wrong GC mode)
     BOOL IsThrowableNull()
     {
         WRAPPER_NO_CONTRACT;
-        return IsHandleNullUnchecked(m_ExceptionState.GetThrowableAsHandle());
+        return m_ExceptionState.IsThrowableNull();
     }
 
     BOOL IsExceptionInProgress()
@@ -2674,8 +2672,7 @@ public:
     }
 
     void SafeUpdateLastThrownObject(void);
-    OBJECTREF SafeSetThrowables(OBJECTREF pThrowable
-                                DEBUG_ARG(ThreadExceptionState::SetThrowableErrorChecking stecFlags = ThreadExceptionState::STEC_All),
+    OBJECTREF SafeSetThrowables(OBJECTREF pThrowable,
                                 BOOL isUnhandled = FALSE);
 
     bool IsLastThrownObjectStackOverflowException()
@@ -3768,9 +3765,6 @@ struct cdac_data<Thread>
         "Thread::m_ExceptionState is of type ThreadExceptionState");
     static constexpr size_t ExceptionTracker = offsetof(Thread, m_ExceptionState) + offsetof(ThreadExceptionState, m_pCurrentTracker);
     static constexpr size_t DebuggerFilterContext = offsetof(Thread, m_debuggerFilterContext);
-#ifdef PROFILING_SUPPORTED
-    static constexpr size_t ProfilerFilterContext = offsetof(Thread, m_pProfilerFilterContext);
-#endif // PROFILING_SUPPORTED
 #ifndef TARGET_UNIX
     static constexpr size_t UEWatsonBucketTrackerBuckets = offsetof(Thread, m_ExceptionState) + offsetof(ThreadExceptionState, m_UEWatsonBucketTracker)
     + offsetof(EHWatsonBucketTracker, m_WatsonUnhandledInfo.m_pUnhandledBuckets);

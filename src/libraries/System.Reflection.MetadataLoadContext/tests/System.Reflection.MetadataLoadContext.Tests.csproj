@@ -62,6 +62,7 @@
     <Compile Include="src\Tests\Type\TypeTests.GetInterface.cs" />
     <Compile Include="src\Tests\Type\TypeTests.GetMember.cs" />
     <Compile Include="src\Tests\Type\TypeTests.Interfaces.cs" />
+    <Compile Include="src\Tests\Type\TypeTests.Nullable.cs" />
     <Compile Include="src\Tests\Type\TypeTests.StructLayoutAttribute.cs" />
     <Compile Include="src\Tests\Type\TypeTests.TypeFactories.cs" />
     <Compile Include="src\TestUtils\CoreMetadataAssemblyResolver.cs" />

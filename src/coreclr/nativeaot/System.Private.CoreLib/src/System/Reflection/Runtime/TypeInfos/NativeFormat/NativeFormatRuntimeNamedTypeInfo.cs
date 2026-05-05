@@ -199,6 +199,11 @@ namespace System.Reflection.Runtime.TypeInfos.NativeFormat
 
         protected sealed override IEnumerable<CustomAttributeData> TrueCustomAttributes => RuntimeCustomAttributeData.GetCustomAttributes(_reader, _typeDefinition.CustomAttributes);
 
+        public sealed override Type? GetNullableUnderlyingType()
+        {
+            return (this.ToType() == typeof(Nullable<>)) ? RuntimeGenericTypeParameters[0].ToType() : null;
+        }
+
         internal sealed override RuntimeTypeInfo[] RuntimeGenericTypeParameters
         {
             get
