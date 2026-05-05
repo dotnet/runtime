@@ -291,6 +291,7 @@
       <CrossgenCmd>$(CrossgenCmd) --release</CrossgenCmd>
       <CrossgenCmd>$(CrossgenCmd) --nocleanup</CrossgenCmd>
       <CrossgenCmd>$(CrossgenCmd) --target-arch $(TargetArchitecture)</CrossgenCmd>
+      <CrossgenCmd Condition="'$(CrossGen2HostArtifactsPath)' != ''">$(CrossgenCmd) --target-os $(TargetOS)</CrossgenCmd>
       <CrossgenCmd>$(CrossgenCmd) -dop $(NUMBER_OF_PROCESSORS)</CrossgenCmd>
       <CrossgenCmd>$(CrossgenCmd) -m "$(CORE_ROOT)\StandardOptimizationData.mibc"</CrossgenCmd>
 
@@ -300,7 +301,8 @@
       <CrossgenCmd Condition="'$(__CompositeBuildMode)' == ''">$(CrossgenCmd) --crossgen2-parallelism 1</CrossgenCmd>
 
       <CrossgenCmd>$(CrossgenCmd) --verify-type-and-field-layout</CrossgenCmd>
-      <CrossgenCmd>$(CrossgenCmd) --crossgen2-path "$(__BinDir)\$(BuildArchitecture)\crossgen2\crossgen2$(ExeSuffix)"</CrossgenCmd>
+      <CrossgenCmd Condition="'$(CrossGen2HostArtifactsPath)' == ''">$(CrossgenCmd) --crossgen2-path "$(__BinDir)\$(BuildArchitecture)\crossgen2\crossgen2$(ExeSuffix)"</CrossgenCmd>
+      <CrossgenCmd Condition="'$(CrossGen2HostArtifactsPath)' != ''">$(CrossgenCmd) --crossgen2-path "$(CrossGen2HostArtifactsPath)\crossgen2-published\crossgen2$(ExeSuffix)"</CrossgenCmd>
     </PropertyGroup>
 
     <Message Importance="High" Text="$(MsgPrefix)Compiling framework using Crossgen2: $(CrossgenCmd)" />

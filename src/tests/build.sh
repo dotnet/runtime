@@ -115,6 +115,9 @@ build_Tests()
     buildArgs+=("/maxcpucount")
     buildArgs+=("${__msbuildLog}" "${__msbuildWrn}" "${__msbuildErr}" "${__msbuildBinLog}")
     buildArgs+=("/p:NUMBER_OF_PROCESSORS=${__NumProc}")
+    if [[ -n "$__CrossGen2HostArtifactsPath" ]]; then
+        buildArgs+=("/p:CrossGen2HostArtifactsPath=$__CrossGen2HostArtifactsPath")
+    fi
     buildArgs+=("${__UnprocessedBuildArgs[@]}")
 
     # Disable warnAsError - https://github.com/dotnet/runtime/issues/11077
@@ -146,6 +149,7 @@ usage_list+=("-copynativeonly - Only copy the native test binaries to the manage
 usage_list+=("-generatelayoutonly - Only generate the Core_Root layout without building managed or native test components.")
 usage_list+=("")
 usage_list+=("-crossgen2 - Precompiles the framework managed assemblies in coreroot using the Crossgen2 compiler.")
+usage_list+=("-crossgen2host:<path> - Override the path to the host coreclr artifacts used for crossgen2 when targeting wasm.")
 usage_list+=("-composite - Use Crossgen2 composite mode (all framework gets compiled into a single native R2R library).")
 usage_list+=("-nativeaot - Builds the tests for Native AOT compilation.")
 usage_list+=("-priority1 - Include priority=1 tests in the build.")
@@ -196,6 +200,17 @@ handle_arguments_local() {
         composite|-composite)
             __CompositeBuildMode=1
             __TestBuildMode=crossgen2
+            ;;
+
+        crossgen2host*|-crossgen2host*)
+            local arg="$1"
+            local parts=(${arg//:/ })
+            if [[ ${#parts[@]} -eq 1 ]]; then
+                __CrossGen2HostArtifactsPath="$2"
+                __ShiftArgs=1
+            else
+                __CrossGen2HostArtifactsPath="${parts[1]}"
+            fi
             ;;
 
         nativeaot|-nativeaot)
@@ -352,6 +367,7 @@ __Mono=0
 __MonoAot=0
 __MonoFullAot=0
 __BuildLogRootName="TestBuild"
+__CrossGen2HostArtifactsPath=
 CORE_ROOT=
 EnableNativeSanitizers=
 
@@ -401,6 +417,20 @@ __IntermediatesDir="$__RootBinDir/obj/coreclr/$__OSPlatformConfig"
 __TestIntermediatesDir="$__RootBinDir/tests/coreclr/obj/$__OSPlatformConfig"
 __CrossCompIntermediatesDir="$__IntermediatesDir/crossgen"
 __MonoBinDir="$__RootBinDir/bin/mono/$__OSPlatformConfig"
+
+# Auto-detect CrossGen2HostArtifactsPath for wasm targets (crossgen2 is never available in wasm builds)
+if [[ "$__TargetArch" == "wasm" && -z "$__CrossGen2HostArtifactsPath" ]]; then
+    # Determine the host OS name as used in artifact paths
+    if [[ "$platform" == "darwin" ]]; then
+        __HostOSName="osx"
+    elif [[ "$platform" == "freebsd" ]]; then
+        __HostOSName="freebsd"
+    else
+        __HostOSName="linux"
+    fi
+    __CrossGen2HostArtifactsPath="$__RootBinDir/bin/coreclr/$__HostOSName.$__HostArch.$__BuildType"
+    echo "${__MsgPrefix}Auto-detected CrossGen2HostArtifactsPath: $__CrossGen2HostArtifactsPath"
+fi
 
 # CI_SPECIFIC - On CI machines, $HOME may not be set. In such a case, create a subfolder and set the variable to it.
 # This is needed by CLI to function.

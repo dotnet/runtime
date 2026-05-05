@@ -54,6 +54,7 @@ set __Ninja=1
 set __CMakeArgs=
 set __EnableNativeSanitizers=
 set __Priority=0
+set __CrossGen2HostArtifactsPath=
 
 set __BuildNeedTargetArg=
 
@@ -106,6 +107,7 @@ if /i "%arg%" == "GenerateLayoutOnly"    (set __GenerateLayoutOnly=1&set __SkipM
 if /i "%arg%" == "MSBuild"               (set __Ninja=0&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%arg%" == "crossgen2"             (set __TestBuildMode=crossgen2&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%arg%" == "composite"             (set __CompositeBuildMode=1&set __TestBuildMode=crossgen2&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%arg%" == "crossgen2host"         (set __CrossGen2HostArtifactsPath=%2&set processedArgs=!processedArgs! %1 %2&shift&shift&goto Arg_Loop)
 if /i "%arg%" == "pdb"                   (set __CreatePdb=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%arg%" == "NativeAOT"             (set __TestBuildMode=nativeaot&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%arg%" == "Perfmap"               (set __CreatePerfmap=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
@@ -225,6 +227,22 @@ if "%__Mono%"=="1" (
   set __CommonMSBuildArgs=!__CommonMSBuildArgs! "/p:RuntimeFlavor=mono"
 ) else (
   set __CommonMSBuildArgs=!__CommonMSBuildArgs! "/p:RuntimeFlavor=coreclr"
+)
+
+REM Auto-detect CrossGen2HostArtifactsPath for wasm targets (crossgen2 is never available in wasm builds)
+if /i "%__BuildArch%" == "wasm" if "%__CrossGen2HostArtifactsPath%" == "" (
+    REM Prefer PROCESSOR_ARCHITEW6432 for WOW64 compatibility, then fall back to PROCESSOR_ARCHITECTURE
+    set "__HostProcArch=%PROCESSOR_ARCHITEW6432%"
+    if "!__HostProcArch!" == "" set "__HostProcArch=%PROCESSOR_ARCHITECTURE%"
+    set "__HostArch=x64"
+    if /i "!__HostProcArch!" == "ARM64" set "__HostArch=arm64"
+    if /i "!__HostProcArch!" == "x86" set "__HostArch=x86"
+    set "__CrossGen2HostArtifactsPath=%__RootBinDir%\bin\coreclr\windows.!__HostArch!.%__BuildType%"
+    echo %__MsgPrefix%Auto-detected CrossGen2HostArtifactsPath: !__CrossGen2HostArtifactsPath!
+)
+
+if not "%__CrossGen2HostArtifactsPath%" == "" (
+    set __CommonMSBuildArgs=!__CommonMSBuildArgs! "/p:CrossGen2HostArtifactsPath=%__CrossGen2HostArtifactsPath%"
 )
 
 if %__Ninja% == 0 (
@@ -368,6 +386,7 @@ echo -CopyNativeOnly: Only copy the native test binaries to the managed output. 
 echo -GenerateLayoutOnly: Only generate the Core_Root layout without building managed or native test components.
 echo -MSBuild: Use MSBuild instead of Ninja.
 echo -Crossgen2: Precompiles the framework managed assemblies in coreroot using the Crossgen2 compiler.
+echo -Crossgen2Host ^<path^>: Override the path to the host coreclr artifacts used for crossgen2 when targeting wasm.
 echo -Composite: Use Crossgen2 composite mode (all framework gets compiled into a single native R2R library).
 echo -PDB: Create PDB files when precompiling the framework managed assemblies.
 echo -NativeAOT: Builds the tests for Native AOT compilation.
