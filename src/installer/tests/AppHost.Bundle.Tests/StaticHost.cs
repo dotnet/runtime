@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Runtime.InteropServices;
 using Microsoft.DotNet.Cli.Build.Framework;
 using Microsoft.DotNet.CoreSetup.Test;
 using Xunit;
@@ -25,6 +26,70 @@ namespace AppHost.Bundle.Tests
                     .Should().Pass()
                     .And.HaveStdOutContaining("Hello World");
             }
+        }
+
+        [ConditionalFact(typeof(StaticHost), nameof(CanCheckExpectedExports))]
+        private void ExpectedExports()
+        {
+            string[] expectedExports =
+            [
+                "DotNetRuntimeInfo",
+                "g_dacTable",
+                "MetaDataGetDispenser",
+                "DotNetRuntimeContractDescriptor",
+            ];
+
+            string singleFileHostPath = Binaries.SingleFileHost.FilePath;
+
+            if (OperatingSystem.IsWindows())
+            {
+                IntPtr handle = NativeLibrary.Load(singleFileHostPath);
+                try
+                {
+                    foreach (string exportName in expectedExports)
+                    {
+                        Assert.True(
+                            NativeLibrary.TryGetExport(handle, exportName, out _),
+                            $"Expected singlefilehost to export {exportName}");
+                    }
+                }
+                finally
+                {
+                    NativeLibrary.Free(handle);
+                }
+            }
+            else
+            {
+                // Use nm to check for exported defined symbols.
+                // On macOS, -gUj shows external defined symbol names only.
+                // On Linux, -D --defined-only shows defined dynamic symbols.
+                Command command = OperatingSystem.IsMacOS()
+                    ? Command.Create("nm", "-gUj", singleFileHostPath)
+                    : Command.Create("nm", "-D", "--defined-only", singleFileHostPath);
+
+                CommandResult result = command
+                    .CaptureStdOut()
+                    .CaptureStdErr()
+                    .Execute();
+                result.Should().Pass();
+
+                foreach (string exportName in expectedExports)
+                {
+                    Assert.Contains(exportName, result.StdOut);
+                }
+            }
+        }
+
+        private static bool CanCheckExpectedExports()
+        {
+            // On Windows we verify the exports by loading singlefilehost into the current
+            // process. That only works when the built host architecture matches the test
+            // process architecture.
+            return !OperatingSystem.IsWindows()
+                || string.Equals(
+                    TestContext.BuildArchitecture,
+                    RuntimeInformation.ProcessArchitecture.ToString().ToLowerInvariant(),
+                    StringComparison.Ordinal);
         }
     }
 }
