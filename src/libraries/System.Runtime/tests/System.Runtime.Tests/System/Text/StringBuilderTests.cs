@@ -6,7 +6,6 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
 using System.Reflection;
-using System.Runtime.InteropServices;
 using System.Tests;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
@@ -2182,7 +2181,7 @@ namespace System.Text.Tests
             List<char[]> originalChunkBuffers = new List<char[]>();
             foreach (ReadOnlyMemory<char> chunk in source.GetChunks())
             {
-                originalChunkBuffers.Add(MemoryMarshal.AsMemory(chunk).ToArray());
+                originalChunkBuffers.Add(chunk.ToArray());
             }
 
             StringBuilder destination = StringBuilder.MoveChunks(source);
@@ -2212,10 +2211,11 @@ namespace System.Text.Tests
             Assert.Throws<ArgumentOutOfRangeException>(() => source.Append('x'));
         }
 
+        private static readonly FieldInfo s_chunkCharsField = typeof(StringBuilder).GetField("m_ChunkChars", BindingFlags.Instance | BindingFlags.NonPublic);
+
         private static char[] GetChunkCharsField(StringBuilder builder)
         {
-            FieldInfo field = typeof(StringBuilder).GetField("m_ChunkChars", BindingFlags.Instance | BindingFlags.NonPublic);
-            return (char[])field.GetValue(builder);
+            return (char[])s_chunkCharsField.GetValue(builder);
         }
 
         private static void AssertSourceIsDrained(StringBuilder source)
