@@ -382,6 +382,53 @@ namespace System.Text
         }
 
         /// <summary>
+        /// Creates a new <see cref="StringBuilder"/> instance initialized to the same state as
+        /// <paramref name="source"/>, and resets <paramref name="source"/> to an empty state with
+        /// no allocated buffers.
+        /// </summary>
+        /// <param name="source">The <see cref="StringBuilder"/> whose chunks should be moved to the
+        /// returned instance.</param>
+        /// <returns>A new <see cref="StringBuilder"/> instance that owns the chunks previously held
+        /// by <paramref name="source"/>.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="source"/> is <see langword="null"/>.</exception>
+        /// <remarks>
+        /// In contrast to <see cref="Clear"/>, which retains the existing internal buffer,
+        /// this method releases all internal buffers from <paramref name="source"/>. Ownership of
+        /// the chunks is transferred in O(1) to the returned <see cref="StringBuilder"/>; the
+        /// underlying character data is not copied.
+        /// </remarks>
+        public static StringBuilder MoveChunks(StringBuilder source)
+        {
+            ArgumentNullException.ThrowIfNull(source);
+            source.AssertInvariants();
+
+            StringBuilder destination = new StringBuilder(source, takeOwnership: true);
+
+            source.m_ChunkChars = [];
+            source.m_ChunkPrevious = null;
+            source.m_ChunkLength = 0;
+            source.m_ChunkOffset = 0;
+            source.m_MaxCapacity = 0;
+
+            return destination;
+        }
+
+        /// <summary>
+        /// Initializes a new <see cref="StringBuilder"/> by taking ownership of the chunks of
+        /// <paramref name="source"/>. The caller is responsible for resetting the state of
+        /// <paramref name="source"/> after this constructor returns.
+        /// </summary>
+        private StringBuilder(StringBuilder source, bool takeOwnership)
+        {
+            Debug.Assert(takeOwnership);
+            m_ChunkChars = source.m_ChunkChars;
+            m_ChunkPrevious = source.m_ChunkPrevious;
+            m_ChunkLength = source.m_ChunkLength;
+            m_ChunkOffset = source.m_ChunkOffset;
+            m_MaxCapacity = source.m_MaxCapacity;
+        }
+
+        /// <summary>
         /// Gets or sets the length of this builder.
         /// </summary>
         public int Length
