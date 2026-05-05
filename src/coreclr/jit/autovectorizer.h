@@ -15,6 +15,20 @@ public:
 private:
     struct LoopVectorizationPlan
     {
+        struct ScalarAccess
+        {
+            Statement* StatementRoot     = nullptr;
+            GenTree*   Address           = nullptr;
+            unsigned   BaseLocalIfKnown  = BAD_VAR_NUM;
+            int        IndexOffset       = 0;
+            unsigned   ElementSize       = 0;
+            var_types  ElementType       = TYP_UNDEF;
+            bool       IsLoad            = false;
+            bool       IsStore           = false;
+            bool       IsArray           = false;
+            bool       IsVolatile        = false;
+        };
+
         FlowGraphNaturalLoop* Loop      = nullptr;
         BasicBlock*           Preheader = nullptr;
         BasicBlock*           Header    = nullptr;
@@ -23,10 +37,20 @@ private:
 
         unsigned  InductionVar       = BAD_VAR_NUM;
         GenTree*  End                = nullptr;
+        GenTree*  IterTree           = nullptr;
+        GenTree*  TestTree           = nullptr;
+        BasicBlock* TestBlock        = nullptr;
         genTreeOps TestOper          = GT_COUNT;
         int       Step               = 0;
         unsigned  VectorSizeBytes    = 0;
         unsigned  VectorizationFactor = 0;
+
+        Statement*    StoreStmt          = nullptr;
+        ScalarAccess  StoreAccess;
+        ScalarAccess  LoadAccess;
+        GenTree*      ScalarOperand      = nullptr;
+        genTreeOps    ScalarOper         = GT_COUNT;
+        bool          ScalarOperandIsRhs = true;
     };
 
     Compiler* m_compiler;
@@ -34,6 +58,14 @@ private:
     bool IsEnabled() const;
     bool IsSupportedCompilation() const;
     bool TryCreateLoopPlan(FlowGraphNaturalLoop* loop, LoopVectorizationPlan* plan);
+    bool TryAnalyzeMemory(LoopVectorizationPlan* plan);
+    bool TryAnalyzeArrayAccess(
+        Statement* stmt, GenTree* indir, bool isStore, unsigned ivLcl, LoopVectorizationPlan::ScalarAccess* access);
+    bool TryAnalyzeIndexExpr(GenTree* tree, unsigned ivLcl, int* offset);
+    bool TryAnalyzeArrayAddress(GenTreeArrAddr* arrAddr, unsigned ivLcl, LoopVectorizationPlan::ScalarAccess* access);
+    bool TryGetArrayLengthLocal(GenTree* tree, unsigned* lclNum);
+    bool TryGetInvariantInt(FlowGraphNaturalLoop* loop, unsigned ivLcl, GenTree* tree);
+    bool ContainsOper(GenTree* tree, genTreeOps oper);
     void Reject(FlowGraphNaturalLoop* loop, const char* reason) const;
 
     bool ShouldDump() const;
