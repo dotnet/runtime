@@ -4695,6 +4695,8 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
     fgNodeThreading = NodeThreading::AllTrees;
 
+    bool doAutoVectorization = false;
+
     // At this point we know if we are fully interruptible or not
     if (opts.OptimizationEnabled())
     {
@@ -4711,7 +4713,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         bool doRangeAnalysis           = true;
         bool doRangeCheckCloning       = true;
         bool doVNBasedDeadStoreRemoval = true;
-        bool doAutoVectorization       = false;
 
 #if defined(OPT_CONFIG)
         doSsa                     = (JitConfig.JitDoSsa() != 0);
@@ -4826,13 +4827,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
                 // Simplify and optimize induction variables used in natural loops
                 //
                 DoPhase(this, PHASE_OPTIMIZE_INDUCTION_VARIABLES, &Compiler::optInductionVariables);
-            }
-
-            if (doAutoVectorization)
-            {
-                // Analyze vectorization opportunities while SSA, VN, range, and IV facts are still current.
-                //
-                DoPhase(this, PHASE_AUTO_VECTORIZE_ANALYZE, &Compiler::optAutoVectorizeAnalyze);
             }
 
             fgInvalidateDfsTree();
@@ -4963,11 +4957,11 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         //
         DoPhase(this, PHASE_IF_CONVERSION, &Compiler::optIfConversion);
 
-        if (JitConfig.JitAutoVectorization() != 0)
+        if (doAutoVectorization)
         {
             // Rewrite HIR loops late, after VN-DSE and if-conversion but before rationalization.
             //
-            DoPhase(this, PHASE_AUTO_VECTORIZE_REWRITE, &Compiler::optAutoVectorizeRewrite);
+            DoPhase(this, PHASE_AUTO_VECTORIZATION, &Compiler::optAutoVectorize);
         }
 
         // Run flow optimizations before reordering blocks

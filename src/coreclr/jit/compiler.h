@@ -7293,8 +7293,7 @@ public:
     void optReplaceScalarUsesWithConst(BasicBlock* block, unsigned lclNum, ssize_t cnsVal);
     void        optRemoveRedundantZeroInits();
     PhaseStatus optIfConversion(); // If conversion
-    PhaseStatus optAutoVectorizeAnalyze();
-    PhaseStatus optAutoVectorizeRewrite();
+    PhaseStatus optAutoVectorize(); // Auto-vectorization of loops
 
 public:
     bool fgHasLoops = false;

@@ -9,8 +9,7 @@ class AutoVectorizer
 public:
     explicit AutoVectorizer(Compiler* compiler);
 
-    PhaseStatus RunAnalyze();
-    PhaseStatus RunRewrite();
+    PhaseStatus Run();
 
 private:
     static const unsigned MaxLanes     = 64;
@@ -110,7 +109,7 @@ private:
     bool        IsSupportedCompilation() const;
     unsigned    GetVectorSizeBytes(var_types elementType) const;
     bool        ReportVectorIsa(unsigned vectorSizeBytes) const;
-    bool        EnsureLoopTable();
+    bool        RecomputeLoopTable();
     bool        IsSupportedElementType(var_types elementType) const;
     bool        IsSupportedBinaryOp(genTreeOps oper, var_types elementType) const;
     bool        TryCreateLoopPlan(FlowGraphNaturalLoop* loop, LoopVectorizationPlan* plan);
@@ -151,7 +150,7 @@ private:
                                        GenTreeArrAddr*                      arrAddr,
                                        unsigned                             ivLcl,
                                        LoopVectorizationPlan::ScalarAccess* access);
-    void        RecordLocalDefs(LoopVectorizationPlan* plan, GenTree* tree);
+    void        RecordLocalDefs(LoopVectorizationPlan* plan, GenTree* tree, bool* foundBoundsCheck = nullptr);
     void        RecordLocalDef(LoopVectorizationPlan* plan, unsigned lclNum, GenTree* value);
     bool        TryGetLocalDef(LoopVectorizationPlan* plan, unsigned lclNum, GenTree** value);
     bool        TryGetArrayLengthLimitLocal(LoopVectorizationPlan* plan, GenTree* tree, unsigned* lclNum, int* offset);
@@ -160,8 +159,6 @@ private:
     bool TryGetInvariantOperand(FlowGraphNaturalLoop* loop, unsigned ivLcl, GenTree* tree, var_types elementType);
     void RecordAddressUpdate(LoopVectorizationPlan* plan, unsigned addressVar, int delta);
     bool HasAddressUpdate(LoopVectorizationPlan* plan, unsigned addressVar);
-    bool ContainsOper(GenTree* tree, genTreeOps oper);
-    void Reject(FlowGraphNaturalLoop* loop, const char* reason) const;
 };
 
 #endif // _AUTOVECTORIZER_H_
