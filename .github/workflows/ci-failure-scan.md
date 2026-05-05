@@ -114,7 +114,7 @@ Platform-agnostic scan of `dnceng-public/public` outer-loop CI pipelines on `mai
 
 ## Pipelines to scan
 
-Iterate over every pipeline in this list. For each, fetch the latest completed build on branch `main`, then look back through ~10 prior completed builds to compute first-seen-in-window and occurrence counts.
+Iterate over every pipeline in this list. For each, fetch builds on branch `main` filtered to `resultFilter=succeeded,failed,partiallySucceeded` (skip `canceled`). Pick the most recent such build as the "latest", then look back through ~10 prior completed builds to compute first-seen-in-window and occurrence counts.
 
 | Pipeline | Definition ID | Notes |
 |----------|---------------|-------|
@@ -161,7 +161,10 @@ Read the relevant skill before classifying / fixing. Skills live under `.github/
   - `[ActiveIssue("https://github.com/dotnet/runtime/issues/<n>", TestPlatforms.<plat>)]` referencing an **existing** issue.
   - For JIT/GC stress: `[ActiveIssue("...", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsStressTest))]` or wrap with a guard helper that checks `DOTNET_JitStress`/`DOTNET_GCStress` env vars where the existing test infra supports it.
 - **Recurring flaky failure with a stable error signature** (≥ 2 occurrences on `main` in the scanned window, no obvious product fix in flight, blocking unrelated PRs) → file a **Known Build Error** issue (see "Known Build Error issue" section below). This lets Arcade Build Analysis auto-match future hits and unblock PRs.
+- **Build break on a single leg** (`Build product` or similar failed; `Send to Helix` skipped) → file a regular tracking issue (NOT a Known Build Error — Build Analysis explicitly forbids that for build breaks). Reference the failing source file or compile error from the log. Do not attempt an `allowed-files` PR for product code unless the fix is one-line and clearly limited to test infrastructure under `eng/testing/**`.
 - **Anything else** — product regression, native crash, multi-assembly cluster, JIT/GC product bug, infrastructure (queue exhaustion / dead-letter / device-lost) — file a tracking issue. Group all infra failures from one run into a single issue. Before filing, `search_issues` for an open issue with the matching `area-*` + `os-*` label and update its description in place rather than duplicating.
+
+For each failure compute a `(definition_id, work_item_or_phase, queue, stress_mode, [FAIL] or compile-error signature)` signature. Look back through ~10 completed builds in the same definition to build first-seen-in-window timestamp and occurrence count.
 
 Do not emit `noop`. Either a PR or an issue must come out of every actionable failure.
 
@@ -169,13 +172,25 @@ Cap: **10 PRs and 5 issues per run.** Group failures that share one fix into a s
 
 ## Data sources
 
-- AzDO REST: `https://dev.azure.com/dnceng-public/public/_apis/build/...` — list completed builds per definition on branch `main`, get a build's timeline, download per-job AzDO logs.
-- Helix REST: `https://helix.dot.net/api/jobs/{jobId}/workitems?api-version=2019-06-17`. Helix job IDs appear in AzDO logs as `Job <GUID> on <Queue>`. Each work item has `Name`, `State`, `ExitCode`, `ConsoleOutputUri`. Failed: `ExitCode != 0` or `State == "Failed"`. Console URIs containing `helix-workitem-deadletter` are dead-lettered (queue had no agent) — group as infra.
-- Build Analysis (when present): `https://dev.azure.com/dnceng-public/public/_apis/build/builds/{id}/attachments/Build_Analysis_*` — use to dedupe against already-known issues.
+- AzDO REST: `https://dev.azure.com/dnceng-public/public/_apis/build/...`. Anonymous access only — do **not** call `_apis/test/...` or `vstmr.dev.azure.com`; both redirect to sign-in. Stay on `builds`, `builds/{id}/timeline`, `builds/{id}/logs/{logId}`.
+  - List builds: `?definitions={id}&branchName=refs/heads/main&statusFilter=completed&resultFilter=succeeded,failed,partiallySucceeded&%24top=20&api-version=7.1`.
+  - Timeline: `/builds/{id}/timeline?api-version=7.1` returns a flat `records[]` array; reconstruct the tree via `parentId`.
+  - Failed-leaf rule: a record with `result == "failed"` whose log id is non-null is a leaf to inspect; failed Stage/Phase records without a failed child Job indicate a build break — open the parent Phase log and the most recent non-succeeded Task log.
+- Helix REST: `https://helix.dot.net/api/jobs/{jobId}/workitems?api-version=2019-06-17`. Helix job IDs come from the `Send to Helix` Task log, which is a child of the failed Job. Each work item has `Name`, `State`, `ExitCode`, `ConsoleOutputUri`. Failed: `ExitCode != 0` or `State == "Failed"`. Console URIs containing `helix-workitem-deadletter` are dead-lettered (queue had no agent) — group as infra.
+- Build Analysis attachment (best-effort, may 404): `https://dev.azure.com/dnceng-public/public/_apis/build/builds/{id}/attachments/Build_Analysis_KnownIssues_v1?api-version=7.1`. Use to dedupe against already-known issues. A 404 means none were attached; do not fail.
 
-For each failure compute a `(work_item, queue, stress_mode, [FAIL] signature)` signature. Look back through ~10 completed builds in the same definition to build first-seen-in-window timestamp and occurrence count.
+## Failure classification
 
-Drill into one representative console log per signature to confirm the failure shape (`[FAIL]` markers, assertion text, JIT stress mode echoed in the log) before classifying.
+Classify every failed timeline record before deciding whether to PR or file an issue. The timeline graph is `Stage → Phase → Job → Task`. Walk it as follows:
+
+1. List every record with `result == "failed"`. For each failed Job, list its child Tasks (records whose `parentId == job.id`).
+2. **Build break (no test ever ran)**: among the Job's Tasks, the failed Task is `Build product`, `Build native components`, `Configure CMake`, or any pre-test compile step, **and** the `Send to Helix` Task is `skipped`. → tracking issue. Do **not** attempt a test-side fix.
+3. **Phase/Stage-only failure with no failed Job underneath**: typical of compile-time breaks aggregated at the phase level (e.g. `windows-arm64 checked` on the JIT stress pipelines). Open the Phase log and the latest log of any non-succeeded child Task; classify as build break and file a tracking issue.
+4. **Send to Helix succeeded but the Job still failed**: open the `Send to Helix` log, extract Helix job IDs (look for `Job <GUID> on <Queue>` or `JobId: <GUID>`; the Helix info-mart log entry that always appears is `Sent Helix Job: <GUID>`), then query Helix for failed work items. This is the test-failure path.
+5. **Helix work item failure**: confirm via `ConsoleOutputUri`. `helix-workitem-deadletter` URIs → infra (group into one issue). Otherwise fetch the console log, find the `[FAIL]` line, and proceed to PR vs issue selection.
+6. **Infra-shaped Job failure** without Helix workitems (e.g., `Initialize job` failed, agent disconnect, "Pool is offline") → file a single grouped infra issue, do not retry per-leg.
+
+Drill into one representative console log per signature to confirm the shape before classifying.
 
 ## PR body
 
