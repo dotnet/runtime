@@ -9,7 +9,6 @@ using System.IO;
 using System.Reflection.Metadata;
 using System.Reflection.PortableExecutable;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 
 using Microsoft.NET.WebAssembly.Webcil;
 
@@ -102,7 +101,7 @@ namespace ILCompiler.Reflection.ReadyToRun
                 {
                     // Read the full file to check for Webcil inside WASM
                     stream.Seek(0, SeekOrigin.Begin);
-                    byte[] fullImage = new byte[stream.Length];
+                    byte[] fullImage = GC.AllocateArray<byte>((int)stream.Length, pinned: true);
                     stream.Read(fullImage, 0, fullImage.Length);
                     return TryFindWebcilInWasm(fullImage, out _);
                 }
@@ -117,6 +116,8 @@ namespace ILCompiler.Reflection.ReadyToRun
 
         public ImmutableArray<byte> GetEntireImage()
             => Unsafe.As<byte[], ImmutableArray<byte>>(ref Unsafe.AsRef(in _image));
+
+        internal byte[] GetImage() => _image;
 
         public int GetOffset(int rva)
         {
@@ -156,10 +157,10 @@ namespace ILCompiler.Reflection.ReadyToRun
                 return null;
 
             int metadataOffset = GetOffset(_corHeaderMetadataDirectory.RelativeVirtualAddress);
-            var metadataBytes = new byte[_corHeaderMetadataDirectory.Size];
+            var metadataBytes = GC.AllocateArray<byte>(_corHeaderMetadataDirectory.Size, pinned: true);
             Array.Copy(_image, metadataOffset, metadataBytes, 0, _corHeaderMetadataDirectory.Size);
 
-            return new WebcilAssemblyMetadata(metadataBytes);
+            return new WebcilAssemblyMetadata(metadataBytes, this);
         }
 
         public IAssemblyMetadata GetManifestAssemblyMetadata(MetadataReader manifestReader)
@@ -364,20 +365,31 @@ namespace ILCompiler.Reflection.ReadyToRun
     /// </summary>
     internal sealed unsafe class WebcilAssemblyMetadata : IAssemblyMetadata
     {
-        private readonly byte[] _metadataBytes;
-        private readonly GCHandle _pinnedBytes;
         private readonly MetadataReader _metadataReader;
+        private readonly WebcilImageReader _webcilReader;
 
-        public WebcilAssemblyMetadata(byte[] metadataBytes)
+        public WebcilAssemblyMetadata(byte[] metadataBytes, WebcilImageReader webcilReader)
         {
-            _metadataBytes = metadataBytes;
-            _pinnedBytes = GCHandle.Alloc(_metadataBytes, GCHandleType.Pinned);
-            _metadataReader = new MetadataReader(
-                (byte*)_pinnedBytes.AddrOfPinnedObject(),
-                _metadataBytes.Length);
+            _webcilReader = webcilReader;
+            fixed (byte* p = metadataBytes)
+            {
+                _metadataReader = new MetadataReader(p, metadataBytes.Length);
+            }
         }
 
-        public PEReader ImageReader => null;
+        public BlobReader GetSectionData(int relativeVirtualAddress)
+        {
+            if (_webcilReader is null)
+                return default;
+
+            int offset = _webcilReader.GetOffset(relativeVirtualAddress);
+            byte[] image = _webcilReader.GetImage();
+            int remaining = image.Length - offset;
+            fixed (byte* p = image)
+            {
+                return new BlobReader(p + offset, remaining);
+            }
+        }
 
         public MetadataReader MetadataReader => _metadataReader;
     }
