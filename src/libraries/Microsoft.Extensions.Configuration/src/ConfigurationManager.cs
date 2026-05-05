@@ -184,8 +184,7 @@ namespace Microsoft.Extensions.Configuration
             ReferenceResolutionEngine? newEngine = null;
             if (ReferenceResolutionConfigurationBuilderExtensions.IsEnabled(_properties))
             {
-                IReadOnlyList<IConfigurationProvider> providers = _providerManager.GetProvidersSnapshot();
-                newEngine = new ReferenceResolutionEngine(providers);
+                newEngine = new ReferenceResolutionEngine(_providerManager.NonReferenceCountedProviders);
             }
 
             ReferenceResolutionEngine? previous = Interlocked.Exchange(ref _engine, newEngine);

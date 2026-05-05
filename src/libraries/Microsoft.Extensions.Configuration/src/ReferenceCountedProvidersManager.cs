@@ -16,7 +16,7 @@ namespace Microsoft.Extensions.Configuration
         private bool _disposed;
 
         // This is only used to support IConfigurationRoot.Providers because we cannot track the lifetime of that reference.
-        public IEnumerable<IConfigurationProvider> NonReferenceCountedProviders => _refCountedProviders.NonReferenceCountedProviders;
+        public IReadOnlyList<IConfigurationProvider> NonReferenceCountedProviders => _refCountedProviders.NonReferenceCountedProviders;
 
         public ReferenceCountedProviders GetReference()
         {
@@ -72,22 +72,6 @@ namespace Microsoft.Extensions.Configuration
                 {
                     provider
                 };
-            }
-        }
-
-        // Returns an immutable snapshot of the currently-built providers. Used by the builder's
-        // source.Build(...) loop so a ReferenceResolutionConfigurationSource can observe providers
-        // registered before it.
-        public IReadOnlyList<IConfigurationProvider> GetProvidersSnapshot()
-        {
-            lock (_replaceProvidersLock)
-            {
-                if (_disposed)
-                {
-                    throw new ObjectDisposedException(nameof(ConfigurationManager));
-                }
-
-                return _refCountedProviders.Providers.ToArray();
             }
         }
 
