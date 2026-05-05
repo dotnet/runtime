@@ -687,7 +687,38 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetThreadAllocInfo(vmThread, pThreadAllocInfo) : HResults.E_NOTIMPL;
 
     public int SetDebugState(ulong vmThread, int debugState)
-        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.SetDebugState(vmThread, debugState) : HResults.E_NOTIMPL;
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            TargetPointer threadPtr = new TargetPointer(vmThread);
+
+            if (debugState == (int)CorDebugThreadState.ThreadSuspend)
+            {
+                _target.Contracts.Thread.SetThreadState(threadPtr, Contracts.ThreadStateNoConcurrency.DebuggerUserSuspend);
+            }
+            else if (debugState == (int)CorDebugThreadState.ThreadRun)
+            {
+                _target.Contracts.Thread.ResetThreadState(threadPtr, Contracts.ThreadStateNoConcurrency.DebuggerUserSuspend);
+            }
+            else
+            {
+                throw new ArgumentException("Invalid debug state value.", nameof(debugState));
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacy is not null)
+        {
+            int hrLocal = _legacy.SetDebugState(vmThread, debugState);
+            Debug.ValidateHResult(hr, hrLocal);
+        }
+#endif
+        return hr;
+    }
 
     public int HasUnhandledException(ulong vmThread, Interop.BOOL* pResult)
     {

@@ -40,6 +40,7 @@ internal sealed class Thread : IData<Thread>
     public uint Id { get; init; }
     public TargetNUInt OSId { get; init; }
     public uint State { get; init; }
+    public uint StateNC { get; } // Used for nameof only
     public uint PreemptiveGCDisabled { get; init; }
     public RuntimeThreadLocals? RuntimeThreadLocals { get; init; }
     public TargetPointer Frame { get; init; }

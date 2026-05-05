@@ -583,9 +583,9 @@ public:
     // <TODO>@TODO: its possible that the ThreadTasks from above and these flags should be merged.</TODO>
     enum ThreadStateNoConcurrency
     {
-        TSNC_Unknown                    = 0x00000000, // threads are initialized this way
+        TSNC_Unknown                    = 0x00000000, // threads are initialized this way [cDAC] [Thread]: Contract depends on this value.
 
-        TSNC_DebuggerUserSuspend        = 0x00000001, // marked "suspended" by the debugger
+        TSNC_DebuggerUserSuspend        = 0x00000001, // marked "suspended" by the debugger [cDAC] [Thread]: Contract depends on this value.
         // unused                       = 0x00000002,
         TSNC_DebuggerIsStepping         = 0x00000004, // debugger is stepping this thread
         TSNC_DebuggerIsManagedException = 0x00000008, // EH is re-raising a managed exception.
@@ -3752,6 +3752,7 @@ struct cdac_data<Thread>
     static constexpr size_t Id = offsetof(Thread, m_ThreadId);
     static constexpr size_t OSId = offsetof(Thread, m_OSThreadId);
     static constexpr size_t State = offsetof(Thread, m_State);
+    static constexpr size_t StateNC = offsetof(Thread, m_StateNC);
     static constexpr size_t PreemptiveGCDisabled = offsetof(Thread, m_fPreemptiveGCDisabled);
     static constexpr size_t RuntimeThreadLocals = offsetof(Thread, m_pRuntimeThreadLocals);
     static constexpr size_t Frame = offsetof(Thread, m_pFrame);

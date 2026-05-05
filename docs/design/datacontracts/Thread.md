@@ -54,9 +54,19 @@ record struct ThreadData (
 ```
 
 ``` csharp
+enum ThreadStateNoConcurrency
+{
+    Unknown                     = 0x00000000, // Threads are initialized this way
+    DebuggerUserSuspend         = 0x00000001, // Marked "suspended" by the debugger
+}
+```
+
+``` csharp
 ThreadStoreData GetThreadStoreData();
 ThreadStoreCounts GetThreadCounts();
 ThreadData GetThreadData(TargetPointer threadPointer);
+void SetThreadState(TargetPointer thread, ThreadStateNoConcurrency stateNC);
+void ResetThreadState(TargetPointer thread, ThreadStateNoConcurrency stateNC);
 void GetStackLimitData(TargetPointer threadPointer, out TargetPointer stackBase, out TargetPointer stackLimit, out TargetPointer frameAddress);
 TargetPointer IdToThread(uint id);
 TargetPointer GetThreadLocalStaticBase(TargetPointer threadPointer, TargetPointer tlsIndexPtr);
@@ -105,6 +115,7 @@ The contract additionally depends on these data descriptors
 | `Thread` | `Id` | Thread identifier |
 | `Thread` | `OSId` | Operating system thread identifier |
 | `Thread` | `State` | Thread state flags |
+| `Thread` | `StateNC` | Thread state flags (no concurrency) |
 | `Thread` | `PreemptiveGCDisabled` | Flag indicating if preemptive GC is disabled |
 | `Thread` | `Frame` | Pointer to current frame |
 | `Thread` | `CachedStackBase` | Pointer to the base of the stack |
@@ -210,6 +221,18 @@ void IThread.GetStackLimitData(TargetPointer threadPointer, out TargetPointer st
     stackBase = target.ReadPointer(threadPointer + /* Thread::CachedStackBase offset */);
     stackLimit = target.ReadPointer(threadPointer + /* Thread::CachedStackLimit offset */);
     frameAddress = threadPointer + /* Thread::Frame offset */;
+}
+
+void SetThreadState(TargetPointer thread, ThreadStateNoConcurrency stateNC)
+{
+    uint currentStateNC = target.Read<uint>(thread + /* Thread::StateNC offset */);
+    target.Write<uint>(thread + /* Thread::StateNC offset */, currentStateNC | (uint)stateNC);
+}
+
+void ResetThreadState(TargetPointer thread, ThreadStateNoConcurrency stateNC)
+{
+    uint currentStateNC = target.Read<uint>(thread + /* Thread::StateNC offset */);
+    target.Write<uint>(thread + /* Thread::StateNC offset */, currentStateNC & ~(uint)stateNC);
 }
 
 TargetPointer IThread.IdToThread(uint id)

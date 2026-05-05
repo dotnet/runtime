@@ -276,4 +276,62 @@ public unsafe class ThreadTests
         TargetPointer thrownObjectHandle = contract.GetCurrentExceptionHandle(new TargetPointer(thread!.Address));
         Assert.Equal(TargetPointer.Null, thrownObjectHandle);
     }
+
+    public static IEnumerable<object[]> SetThreadStateData()
+    {
+        foreach (var arch in new MockTarget.StdArch())
+        {
+            yield return [arch[0], ThreadStateNoConcurrency.Unknown, ThreadStateNoConcurrency.DebuggerUserSuspend];
+            yield return [arch[0], ThreadStateNoConcurrency.DebuggerUserSuspend, ThreadStateNoConcurrency.DebuggerUserSuspend];
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(SetThreadStateData))]
+    public void SetThreadState(MockTarget.Architecture arch, ThreadStateNoConcurrency initialStateNC, ThreadStateNoConcurrency expectedStateNC)
+    {
+        MockThread? thread = null;
+        TestPlaceholderTarget target = CreateTarget(
+            arch,
+            threadBuilder =>
+            {
+                thread = threadBuilder.AddThread(1, 1234);
+                thread.StateNC = (uint)initialStateNC;
+            });
+        IThread contract = target.Contracts.Thread;
+        TargetPointer threadPtr = new(thread!.Address);
+
+        contract.SetThreadState(threadPtr, ThreadStateNoConcurrency.DebuggerUserSuspend);
+
+        Assert.Equal((uint)expectedStateNC, thread.StateNC);
+    }
+
+    public static IEnumerable<object[]> ResetThreadStateData()
+    {
+        foreach (var arch in new MockTarget.StdArch())
+        {
+            yield return [arch[0], ThreadStateNoConcurrency.DebuggerUserSuspend, ThreadStateNoConcurrency.Unknown];
+            yield return [arch[0], ThreadStateNoConcurrency.Unknown, ThreadStateNoConcurrency.Unknown];
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(ResetThreadStateData))]
+    public void ResetThreadState(MockTarget.Architecture arch, ThreadStateNoConcurrency initialStateNC, ThreadStateNoConcurrency expectedStateNC)
+    {
+        MockThread? thread = null;
+        TestPlaceholderTarget target = CreateTarget(
+            arch,
+            threadBuilder =>
+            {
+                thread = threadBuilder.AddThread(1, 1234);
+                thread.StateNC = (uint)initialStateNC;
+            });
+        IThread contract = target.Contracts.Thread;
+        TargetPointer threadPtr = new(thread!.Address);
+
+        contract.ResetThreadState(threadPtr, ThreadStateNoConcurrency.DebuggerUserSuspend);
+
+        Assert.Equal((uint)expectedStateNC, thread.StateNC);
+    }
 }
