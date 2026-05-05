@@ -119,6 +119,172 @@ namespace ILCompiler.Reflection.ReadyToRun
 
         internal byte[] GetImage() => _image;
 
+        /// <summary>
+        /// Returns true if this Webcil image is wrapped inside a WASM module.
+        /// </summary>
+        public bool IsWasmWrapped => _webcilOffset > 0;
+
+        /// <summary>
+        /// Represents a decoded WASM function body with its locals and type signature.
+        /// </summary>
+        public readonly struct WasmFunctionInfo
+        {
+            public byte[] Image { get; init; }
+            public int InstructionOffset { get; init; }
+            public int InstructionLength { get; init; }
+            /// <summary>Local variable declarations: (count, valtype byte) pairs.</summary>
+            public IReadOnlyList<(uint Count, byte ValType)> Locals { get; init; }
+            /// <summary>Parameter types from the function's type signature.</summary>
+            public IReadOnlyList<byte> ParamTypes { get; init; }
+            /// <summary>Result types from the function's type signature.</summary>
+            public IReadOnlyList<byte> ResultTypes { get; init; }
+        }
+
+        /// <summary>
+        /// Gets the full function info for a WASM function by its index in the code section.
+        /// Returns null if the image is not WASM-wrapped or the function index is out of range.
+        /// </summary>
+        public WasmFunctionInfo? GetWasmFunctionBody(int functionIndex)
+        {
+            if (!IsWasmWrapped)
+                return null;
+
+            // First pass: collect type section (section 1) and function section (section 3)
+            List<(byte[] ParamTypes, byte[] ResultTypes)> types = null;
+            List<uint> funcTypeIndices = null;
+            int codeOffset = -1;
+
+            int offset = 8; // Skip WASM magic + version
+            while (offset < _image.Length)
+            {
+                byte sectionId = _image[offset++];
+                uint sectionSize = ReadLebU32(_image, ref offset);
+                int sectionEnd = offset + (int)sectionSize;
+
+                switch (sectionId)
+                {
+                    case 1: // Type section
+                        types = ParseTypeSection(_image, ref offset, sectionEnd);
+                        break;
+                    case 3: // Function section
+                        funcTypeIndices = ParseFunctionSection(_image, ref offset, sectionEnd);
+                        break;
+                    case 10: // Code section
+                        codeOffset = offset;
+                        break;
+                }
+
+                offset = sectionEnd;
+            }
+
+            if (codeOffset < 0)
+                return null;
+
+            // Parse the code section to find the target function body
+            offset = codeOffset;
+            uint funcCount = ReadLebU32(_image, ref offset);
+            for (uint i = 0; i < funcCount; i++)
+            {
+                uint bodySize = ReadLebU32(_image, ref offset);
+                int bodyEnd = offset + (int)bodySize;
+
+                if (i == (uint)functionIndex)
+                {
+                    // Read local declarations
+                    var locals = new List<(uint Count, byte ValType)>();
+                    uint localDeclCount = ReadLebU32(_image, ref offset);
+                    for (uint j = 0; j < localDeclCount; j++)
+                    {
+                        uint count = ReadLebU32(_image, ref offset);
+                        byte valType = _image[offset++];
+                        locals.Add((count, valType));
+                    }
+
+                    int instrLength = bodyEnd - offset;
+
+                    // Resolve type signature
+                    byte[] paramTypes = Array.Empty<byte>();
+                    byte[] resultTypes = Array.Empty<byte>();
+                    if (funcTypeIndices is not null && (uint)functionIndex < funcTypeIndices.Count)
+                    {
+                        uint typeIdx = funcTypeIndices[functionIndex];
+                        if (types is not null && typeIdx < types.Count)
+                        {
+                            paramTypes = types[(int)typeIdx].ParamTypes;
+                            resultTypes = types[(int)typeIdx].ResultTypes;
+                        }
+                    }
+
+                    return new WasmFunctionInfo
+                    {
+                        Image = _image,
+                        InstructionOffset = offset,
+                        InstructionLength = instrLength,
+                        Locals = locals,
+                        ParamTypes = paramTypes,
+                        ResultTypes = resultTypes
+                    };
+                }
+
+                offset = bodyEnd;
+            }
+
+            return null;
+        }
+
+        private static List<(byte[] ParamTypes, byte[] ResultTypes)> ParseTypeSection(byte[] data, ref int offset, int end)
+        {
+            var types = new List<(byte[], byte[])>();
+            uint count = ReadLebU32(data, ref offset);
+            for (uint i = 0; i < count && offset < end; i++)
+            {
+                byte form = data[offset++];
+                // 0x60 = func type
+                if (form != 0x60)
+                {
+                    // Skip unknown type forms
+                    break;
+                }
+                uint paramCount = ReadLebU32(data, ref offset);
+                byte[] paramTypes = new byte[paramCount];
+                for (uint j = 0; j < paramCount; j++)
+                    paramTypes[j] = data[offset++];
+                uint resultCount = ReadLebU32(data, ref offset);
+                byte[] resultTypes = new byte[resultCount];
+                for (uint j = 0; j < resultCount; j++)
+                    resultTypes[j] = data[offset++];
+                types.Add((paramTypes, resultTypes));
+            }
+            return types;
+        }
+
+        private static List<uint> ParseFunctionSection(byte[] data, ref int offset, int end)
+        {
+            var indices = new List<uint>();
+            uint count = ReadLebU32(data, ref offset);
+            for (uint i = 0; i < count && offset < end; i++)
+            {
+                indices.Add(ReadLebU32(data, ref offset));
+            }
+            return indices;
+        }
+
+        private static uint ReadLebU32(byte[] data, ref int offset)
+        {
+            uint result = 0;
+            int shift = 0;
+            byte b;
+            do
+            {
+                if (offset >= data.Length)
+                    return result;
+                b = data[offset++];
+                result |= (uint)(b & 0x7F) << shift;
+                shift += 7;
+            } while ((b & 0x80) != 0);
+            return result;
+        }
+
         public int GetOffset(int rva)
         {
             foreach (var section in _sections)
