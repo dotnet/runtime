@@ -20,7 +20,7 @@ namespace System.Runtime
 
     public static partial class RuntimeImports
     {
-        private const string RuntimeLibrary = "*";
+        internal const string RuntimeLibrary = "*";
 
         //
         // calls for GCHandle.

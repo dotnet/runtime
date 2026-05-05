@@ -18,11 +18,9 @@ namespace System
         [Intrinsic]
         public static readonly string Empty = "";
 
-        private const string RuntimeLibrary = "*";
-
         [Intrinsic]
         [MethodImpl(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhNewString")]
+        [RuntimeImport(RuntimeImports.RuntimeLibrary, "RhNewString")]
         private static extern unsafe string FastAllocateString(MethodTable *pMT, nint length);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
