@@ -43,7 +43,7 @@ private:
     struct SLPPlan
     {
         PackNode  Nodes[MaxPackNodes];
-        PackNode* Roots[8]                = {};
+        PackNode* Roots[8]               = {};
         unsigned  NodeCount              = 0;
         unsigned  RootCount              = 0;
         PackNode* Root                   = nullptr;
@@ -107,18 +107,18 @@ private:
         int         MaxIndexOffset                         = 0;
         bool        SawBoundsCheck                         = false;
 
-        Statement*   StoreStmts[MaxStores]        = {};
-        GenTree*     StoreValues[MaxStores]       = {};
-        ScalarAccess StoreAccesses[MaxStores]     = {};
-        unsigned     StoreCount                   = 0;
-        ScalarAccess LoadAccesses[MaxAccesses]    = {};
-        unsigned     LoadCount                    = 0;
-        Statement*   ReductionStmt                = nullptr;
-        unsigned     ReductionLcl                 = BAD_VAR_NUM;
-        unsigned     ReductionVectorLcl           = BAD_VAR_NUM;
-        GenTree*     ReductionValue               = nullptr;
-        PackNode*    ReductionPack                = nullptr;
-        Statement*   StoreStmt                    = nullptr;
+        Statement*   StoreStmts[MaxStores]     = {};
+        GenTree*     StoreValues[MaxStores]    = {};
+        ScalarAccess StoreAccesses[MaxStores]  = {};
+        unsigned     StoreCount                = 0;
+        ScalarAccess LoadAccesses[MaxAccesses] = {};
+        unsigned     LoadCount                 = 0;
+        Statement*   ReductionStmt             = nullptr;
+        unsigned     ReductionLcl              = BAD_VAR_NUM;
+        unsigned     ReductionVectorLcl        = BAD_VAR_NUM;
+        GenTree*     ReductionValue            = nullptr;
+        PackNode*    ReductionPack             = nullptr;
+        Statement*   StoreStmt                 = nullptr;
         ScalarAccess StoreAccess;
         ScalarAccess LoadAccess;
         SLPPlan      BodyPlan;
@@ -126,36 +126,36 @@ private:
 
     Compiler* m_compiler;
 
-    bool        IsEnabled() const;
-    bool        IsSupportedCompilation() const;
-    unsigned    GetVectorSizeBytes(var_types elementType) const;
-    bool        ReportVectorIsa(unsigned vectorSizeBytes) const;
-    bool        RecomputeLoopTable();
-    bool        IsSupportedElementType(var_types elementType) const;
-    bool        IsSupportedUnaryOp(genTreeOps oper, var_types elementType) const;
-    bool        IsSupportedBinaryOp(genTreeOps oper, var_types elementType) const;
-    bool        IsSupportedCompareOp(genTreeOps oper, var_types elementType) const;
-    bool        TryCreateLoopPlan(FlowGraphNaturalLoop* loop, LoopVectorizationPlan* plan);
-    bool        TryCreatePostIVLoopPlan(FlowGraphNaturalLoop* loop, LoopVectorizationPlan* plan);
-    bool        TryCreateLocalLimitLoopPlan(FlowGraphNaturalLoop* loop, LoopVectorizationPlan* plan);
-    bool        TryAnalyzeMemory(LoopVectorizationPlan* plan);
-    bool        TryAnalyzePostIVMemory(LoopVectorizationPlan* plan);
-    bool        AddStore(LoopVectorizationPlan*               plan,
-                         Statement*                           stmt,
-                         GenTree*                             value,
-                         const LoopVectorizationPlan::ScalarAccess& access);
-    bool        TryAddReduction(LoopVectorizationPlan* plan, Statement* stmt, GenTreeLclVarCommon* storeLcl);
-    bool        AddLoad(LoopVectorizationPlan* plan, const LoopVectorizationPlan::ScalarAccess& access, unsigned* index);
-    bool        ValidateMemoryDependences(LoopVectorizationPlan* plan);
-    bool        MayAlias(const LoopVectorizationPlan::ScalarAccess& first,
-                         const LoopVectorizationPlan::ScalarAccess& second) const;
-    bool        TryGetIndirOperand(GenTree* tree, GenTree** indir);
-    bool        TryNormalizeScalarValue(GenTree** value, var_types elementType) const;
-    PackNode*   TryBuildPack(LoopVectorizationPlan* plan, Statement* stmt, GenTree* value, var_types elementType);
-    PackNode*   TryBuildComparePack(LoopVectorizationPlan* plan, Statement* stmt, GenTree* value, var_types elementType);
-    bool        TryBuildSLPPlan(LoopVectorizationPlan* plan);
-    bool        TryRewritePlan(LoopVectorizationPlan* plan);
-    PackNode*   NewPackNode(SLPPlan* slpPlan, PackKind kind, var_types elementType, unsigned laneCount);
+    bool      IsEnabled() const;
+    bool      IsSupportedCompilation() const;
+    unsigned  GetVectorSizeBytes(var_types elementType) const;
+    bool      ReportVectorIsa(unsigned vectorSizeBytes) const;
+    bool      RecomputeLoopTable();
+    bool      IsSupportedElementType(var_types elementType) const;
+    bool      IsSupportedUnaryOp(genTreeOps oper, var_types elementType) const;
+    bool      IsSupportedBinaryOp(genTreeOps oper, var_types elementType) const;
+    bool      IsSupportedCompareOp(genTreeOps oper, var_types elementType) const;
+    bool      TryCreateLoopPlan(FlowGraphNaturalLoop* loop, LoopVectorizationPlan* plan);
+    bool      TryCreatePostIVLoopPlan(FlowGraphNaturalLoop* loop, LoopVectorizationPlan* plan);
+    bool      TryCreateLocalLimitLoopPlan(FlowGraphNaturalLoop* loop, LoopVectorizationPlan* plan);
+    bool      TryAnalyzeMemory(LoopVectorizationPlan* plan);
+    bool      TryAnalyzePostIVMemory(LoopVectorizationPlan* plan);
+    bool      AddStore(LoopVectorizationPlan*                     plan,
+                       Statement*                                 stmt,
+                       GenTree*                                   value,
+                       const LoopVectorizationPlan::ScalarAccess& access);
+    bool      TryAddReduction(LoopVectorizationPlan* plan, Statement* stmt, GenTreeLclVarCommon* storeLcl);
+    bool      AddLoad(LoopVectorizationPlan* plan, const LoopVectorizationPlan::ScalarAccess& access, unsigned* index);
+    bool      ValidateMemoryDependences(LoopVectorizationPlan* plan);
+    bool      MayAlias(const LoopVectorizationPlan::ScalarAccess& first,
+                       const LoopVectorizationPlan::ScalarAccess& second) const;
+    bool      TryGetIndirOperand(GenTree* tree, GenTree** indir);
+    bool      TryNormalizeScalarValue(GenTree** value, var_types elementType) const;
+    PackNode* TryBuildPack(LoopVectorizationPlan* plan, Statement* stmt, GenTree* value, var_types elementType);
+    PackNode* TryBuildComparePack(LoopVectorizationPlan* plan, Statement* stmt, GenTree* value, var_types elementType);
+    bool      TryBuildSLPPlan(LoopVectorizationPlan* plan);
+    bool      TryRewritePlan(LoopVectorizationPlan* plan);
+    PackNode* NewPackNode(SLPPlan* slpPlan, PackKind kind, var_types elementType, unsigned laneCount);
     const char* PackKindName(PackKind kind) const;
     void        DumpSLPPlan(const LoopVectorizationPlan& plan) const;
     GenTree*    BuildAddress(LoopVectorizationPlan* plan, const LoopVectorizationPlan::ScalarAccess& access);
