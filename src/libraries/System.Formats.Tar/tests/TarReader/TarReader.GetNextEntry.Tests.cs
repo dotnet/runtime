@@ -624,5 +624,57 @@ namespace System.Formats.Tar.Tests
             Assert.Equal(TarEntryType.SymbolicLink, entry.EntryType);
             Assert.Null(reader2.GetNextEntry());
         }
+
+        [Fact]
+        public void PaxExtendedAttributes_ExceedsMaxMetadataBlockSize_Throws()
+        {
+            using MemoryStream archive = new MemoryStream();
+            var extendedAttributes = new Dictionary<string, string>
+            {
+                ["bigkey"] = new string('x', 1024 * 1024 + 1)
+            };
+            using (TarWriter writer = new TarWriter(archive, TarEntryFormat.Pax, leaveOpen: true))
+            {
+                PaxTarEntry entry = new PaxTarEntry(TarEntryType.RegularFile, "test.txt", extendedAttributes);
+                writer.WriteEntry(entry);
+            }
+
+            archive.Seek(0, SeekOrigin.Begin);
+            using TarReader reader = new TarReader(archive);
+            Assert.Throws<InvalidOperationException>(() => reader.GetNextEntry());
+        }
+
+        [Fact]
+        public void GnuLongPath_ExceedsMaxMetadataBlockSize_Throws()
+        {
+            using MemoryStream archive = new MemoryStream();
+            string longName = new string('a', 1024 * 1024 + 1);
+            using (TarWriter writer = new TarWriter(archive, TarEntryFormat.Gnu, leaveOpen: true))
+            {
+                GnuTarEntry entry = new GnuTarEntry(TarEntryType.RegularFile, longName);
+                writer.WriteEntry(entry);
+            }
+
+            archive.Seek(0, SeekOrigin.Begin);
+            using TarReader reader = new TarReader(archive);
+            Assert.Throws<InvalidOperationException>(() => reader.GetNextEntry());
+        }
+
+        [Fact]
+        public void GnuLongLink_ExceedsMaxMetadataBlockSize_Throws()
+        {
+            using MemoryStream archive = new MemoryStream();
+            string longLink = new string('a', 1024 * 1024 + 1);
+            using (TarWriter writer = new TarWriter(archive, TarEntryFormat.Gnu, leaveOpen: true))
+            {
+                GnuTarEntry entry = new GnuTarEntry(TarEntryType.SymbolicLink, "test.txt");
+                entry.LinkName = longLink;
+                writer.WriteEntry(entry);
+            }
+
+            archive.Seek(0, SeekOrigin.Begin);
+            using TarReader reader = new TarReader(archive);
+            Assert.Throws<InvalidOperationException>(() => reader.GetNextEntry());
+        }
     }
 }
