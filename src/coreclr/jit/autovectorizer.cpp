@@ -120,7 +120,7 @@ bool AutoVectorizer::IsSupportedCompilation() const
 
 unsigned AutoVectorizer::GetVectorSizeBytes(var_types elementType) const
 {
-    if (elementType != TYP_INT)
+    if (!IsSupportedElementType(elementType))
     {
         return 0;
     }
@@ -184,6 +184,46 @@ bool AutoVectorizer::EnsureLoopTable()
     }
 
     return true;
+}
+
+bool AutoVectorizer::IsSupportedElementType(var_types elementType) const
+{
+    switch (elementType)
+    {
+        case TYP_INT:
+        case TYP_LONG:
+        case TYP_FLOAT:
+        case TYP_DOUBLE:
+            return true;
+        default:
+            return false;
+    }
+}
+
+bool AutoVectorizer::IsSupportedBinaryOp(genTreeOps oper, var_types elementType) const
+{
+    if (!IsSupportedElementType(elementType))
+    {
+        return false;
+    }
+
+    switch (oper)
+    {
+        case GT_ADD:
+        case GT_SUB:
+            return true;
+
+        case GT_MUL:
+            return elementType != TYP_LONG;
+
+        case GT_AND:
+        case GT_OR:
+        case GT_XOR:
+            return varTypeIsIntegral(elementType);
+
+        default:
+            return false;
+    }
 }
 
 bool AutoVectorizer::TryCreateLoopPlan(FlowGraphNaturalLoop* loop, LoopVectorizationPlan* plan)
@@ -290,6 +330,8 @@ bool AutoVectorizer::TryCreateLoopPlan(FlowGraphNaturalLoop* loop, LoopVectoriza
     plan->TestBlock    = iterInfo.TestBlock;
     plan->TestOper     = testOper;
     plan->Step         = 1;
+    plan->ElementType  = TYP_INT;
+    plan->ElementSize  = genTypeSize(TYP_INT);
 #if defined(FEATURE_SIMD) && (defined(TARGET_XARCH) || defined(TARGET_ARM64))
     plan->VectorSizeBytes     = GetVectorSizeBytes(TYP_INT);
     plan->VectorizationFactor = plan->VectorSizeBytes / genTypeSize(TYP_INT);
@@ -359,17 +401,6 @@ bool AutoVectorizer::TryCreatePostIVLoopPlan(FlowGraphNaturalLoop* loop, LoopVec
     plan->TestBlock    = header;
     plan->TestOper     = GT_NE;
     plan->Step         = -1;
-#if defined(FEATURE_SIMD) && (defined(TARGET_XARCH) || defined(TARGET_ARM64))
-    plan->VectorSizeBytes     = GetVectorSizeBytes(TYP_INT);
-    plan->VectorizationFactor = plan->VectorSizeBytes / genTypeSize(TYP_INT);
-#endif
-
-    if (plan->VectorizationFactor < 2)
-    {
-        Reject(loop, "vectorization factor is too small");
-        return false;
-    }
-
     Dump("AutoVec: loop " FMT_LP " post-IV trip count V%02u\n", loop->GetIndex(), plan->TripCountVar);
     return TryAnalyzePostIVMemory(plan) && TryBuildSLPPlan(plan);
 }
@@ -473,7 +504,7 @@ bool AutoVectorizer::TryAnalyzeMemory(LoopVectorizationPlan* plan)
                 return BasicBlockVisit::Abort;
             }
 
-            if (!TryGetInvariantInt(plan->Loop, plan->InductionVar, scalar))
+            if (!TryGetInvariantOperand(plan->Loop, plan->InductionVar, scalar, TYP_INT))
             {
                 failed = true;
                 Reject(plan->Loop, "add operand is not loop invariant int");
@@ -547,12 +578,9 @@ bool AutoVectorizer::TryAnalyzePostIVMemory(LoopVectorizationPlan* plan)
     assert(plan->IsPostIV);
 
     BasicBlock* const block = plan->Header;
-    unsigned          tempVar = BAD_VAR_NUM;
-    GenTree*          scalar = nullptr;
-    bool              scalarIsRhs = true;
-    bool              foundTempStore = false;
-    bool              foundStore = false;
-    bool              foundAddressUpdate = false;
+    unsigned          tempVar              = BAD_VAR_NUM;
+    bool              foundTempStore       = false;
+    bool              foundStore           = false;
     bool              foundTripCountUpdate = false;
 
     for (Statement* const stmt : block->Statements())
@@ -572,31 +600,45 @@ bool AutoVectorizer::TryAnalyzePostIVMemory(LoopVectorizationPlan* plan)
         if (root->OperIs(GT_STOREIND))
         {
             GenTreeStoreInd* const store = root->AsStoreInd();
-            unsigned addressVar = BAD_VAR_NUM;
-            if (!store->TypeIs(TYP_INT) || !TryAnalyzeByrefLocalAddress(store->Addr(), &addressVar) ||
-                !store->Data()->OperIs(GT_LCL_VAR))
+            if (!IsSupportedElementType(store->TypeGet()) ||
+                !TryAnalyzePostIVAddress(stmt, store->Addr(), &plan->StoreAccess))
             {
-                Reject(plan->Loop, "post-IV store is not a local-addressed int store");
+                Reject(plan->Loop, "post-IV store is not a local-addressed supported store");
                 return false;
             }
 
-            if ((plan->AddressVar != BAD_VAR_NUM) && (plan->AddressVar != addressVar))
+            if ((plan->ElementType != TYP_UNDEF) && (plan->ElementType != store->TypeGet()))
             {
-                Reject(plan->Loop, "post-IV store address does not match load address");
+                Reject(plan->Loop, "post-IV store element type mismatch");
                 return false;
             }
 
-            plan->AddressVar = addressVar;
-            tempVar          = store->Data()->AsLclVarCommon()->GetLclNum();
+            plan->ElementType = store->TypeGet();
+            plan->ElementSize = genTypeSize(plan->ElementType);
 
             plan->StoreStmt                    = stmt;
-            plan->StoreAccess.StatementRoot    = stmt;
-            plan->StoreAccess.Address          = store->Addr();
-            plan->StoreAccess.BaseLocalIfKnown = addressVar;
-            plan->StoreAccess.ElementSize      = genTypeSize(TYP_INT);
-            plan->StoreAccess.ElementType      = TYP_INT;
+            plan->StoreAccess.ElementSize      = plan->ElementSize;
+            plan->StoreAccess.ElementType      = plan->ElementType;
             plan->StoreAccess.IsStore          = true;
-            plan->StoreAccess.IsByrefLocal     = true;
+
+            GenTree* const storeData = UnwrapCommaValue(store->Data());
+            if (storeData->OperIs(GT_LCL_VAR))
+            {
+                if (storeData->AsLclVarCommon()->GetLclNum() != tempVar)
+                {
+                    Reject(plan->Loop, "post-IV store data does not match computed temp");
+                    return false;
+                }
+            }
+            else if (TryAnalyzePostIVValue(stmt, storeData, plan))
+            {
+                foundTempStore = true;
+            }
+            else
+            {
+                Reject(plan->Loop, "post-IV store data is unsupported");
+                return false;
+            }
 
             foundStore = true;
             continue;
@@ -629,106 +671,81 @@ bool AutoVectorizer::TryAnalyzePostIVMemory(LoopVectorizationPlan* plan)
             GenTree* op1 = data->AsOp()->gtOp1;
             GenTree* op2 = data->AsOp()->gtOp2;
 
-            if (op2->IsIntegralConst(genTypeSize(TYP_INT)) && op1->OperIs(GT_LCL_VAR) &&
-                (op1->AsLclVarCommon()->GetLclNum() == lclNum) && storeLcl->TypeIs(TYP_BYREF))
+            if (op2->IsCnsIntOrI() && op1->OperIs(GT_LCL_VAR) && (op1->AsLclVarCommon()->GetLclNum() == lclNum) &&
+                storeLcl->TypeIs(TYP_BYREF, TYP_I_IMPL, TYP_LONG))
             {
-                if ((plan->AddressVar != BAD_VAR_NUM) && (plan->AddressVar != lclNum))
-                {
-                    Reject(plan->Loop, "post-IV address update does not match store address");
-                    return false;
-                }
-
-                plan->AddressVar = lclNum;
-                foundAddressUpdate = true;
+                RecordAddressUpdate(plan, lclNum, static_cast<int>(op2->AsIntConCommon()->IconValue()));
                 continue;
             }
         }
 
-        if (data->OperIs(GT_ADD))
+        if (TryAnalyzePostIVValue(stmt, data, plan))
         {
-            GenTree* load = nullptr;
-            scalar        = nullptr;
-            scalarIsRhs   = true;
-
-            if (data->AsOp()->gtOp1->OperIs(GT_COMMA))
-            {
-                GenTree* const commaValue = data->AsOp()->gtOp1->AsOp()->gtOp2;
-                if (commaValue->OperIs(GT_IND))
-                {
-                    load        = commaValue;
-                    scalar      = data->AsOp()->gtOp2;
-                    scalarIsRhs = true;
-                }
-            }
-            else if (data->AsOp()->gtOp1->OperIs(GT_IND))
-            {
-                load        = data->AsOp()->gtOp1;
-                scalar      = data->AsOp()->gtOp2;
-                scalarIsRhs = true;
-            }
-            else if (data->AsOp()->gtOp2->OperIs(GT_IND))
-            {
-                load        = data->AsOp()->gtOp2;
-                scalar      = data->AsOp()->gtOp1;
-                scalarIsRhs = false;
-            }
-
-            if (load != nullptr)
-            {
-                unsigned addressVar = BAD_VAR_NUM;
-                if (!load->TypeIs(TYP_INT) || !TryAnalyzeByrefLocalAddress(load->AsIndir()->Addr(), &addressVar))
-                {
-                    Reject(plan->Loop, "post-IV load is not a local-addressed int load");
-                    return false;
-                }
-
-                if (!TryGetInvariantInt(plan->Loop, plan->TripCountVar, scalar))
-                {
-                    Reject(plan->Loop, "post-IV scalar operand is not invariant int");
-                    return false;
-                }
-
-                if ((plan->AddressVar != BAD_VAR_NUM) && (plan->AddressVar != addressVar))
-                {
-                    Reject(plan->Loop, "post-IV load address does not match store address");
-                    return false;
-                }
-
-                plan->AddressVar                  = addressVar;
-                plan->LoadAccess.StatementRoot    = stmt;
-                plan->LoadAccess.Address          = load->AsIndir()->Addr();
-                plan->LoadAccess.BaseLocalIfKnown = addressVar;
-                plan->LoadAccess.ElementSize      = genTypeSize(TYP_INT);
-                plan->LoadAccess.ElementType      = TYP_INT;
-                plan->LoadAccess.IsLoad           = true;
-                plan->LoadAccess.IsByrefLocal     = true;
-                plan->ScalarOperand               = scalar;
-                plan->ScalarOper                  = GT_ADD;
-                plan->ScalarOperandIsRhs          = scalarIsRhs;
-
-                tempVar = lclNum;
-                foundTempStore = true;
-                continue;
-            }
+            tempVar        = lclNum;
+            foundTempStore = true;
+            continue;
         }
 
         Reject(plan->Loop, "unsupported post-IV statement");
         return false;
     }
 
-    if (!foundTempStore || !foundStore || !foundAddressUpdate || !foundTripCountUpdate)
+    if (!foundTempStore || !foundStore || !foundTripCountUpdate)
     {
         Reject(plan->Loop, "incomplete post-IV memory pattern");
         return false;
     }
 
-    if (tempVar == BAD_VAR_NUM)
+    if ((plan->ElementType == TYP_UNDEF) || !IsSupportedElementType(plan->ElementType))
     {
-        Reject(plan->Loop, "post-IV temporary store not found");
+        Reject(plan->Loop, "post-IV unsupported element type");
+        return false;
+    }
+
+    if (plan->StoreAccess.IsArray || plan->LoadAccess.IsArray)
+    {
+        if (!plan->StoreAccess.IsArray || !plan->LoadAccess.IsArray ||
+            (plan->StoreAccess.OffsetLocalIfKnown != plan->LoadAccess.OffsetLocalIfKnown))
+        {
+            Reject(plan->Loop, "post-IV array accesses do not share the same offset");
+            return false;
+        }
+    }
+
+    if (plan->StoreAccess.IsByrefBaseWithOffset || plan->LoadAccess.IsByrefBaseWithOffset)
+    {
+        if (!plan->StoreAccess.IsByrefBaseWithOffset || !plan->LoadAccess.IsByrefBaseWithOffset ||
+            (plan->StoreAccess.OffsetLocalIfKnown != plan->LoadAccess.OffsetLocalIfKnown))
+        {
+            Reject(plan->Loop, "post-IV byref+offset accesses do not share the same offset");
+            return false;
+        }
+    }
+
+#if defined(FEATURE_SIMD) && (defined(TARGET_XARCH) || defined(TARGET_ARM64))
+    plan->VectorSizeBytes     = GetVectorSizeBytes(plan->ElementType);
+    plan->VectorizationFactor = plan->VectorSizeBytes / plan->ElementSize;
+#endif
+
+    if (plan->VectorizationFactor < 2)
+    {
+        Reject(plan->Loop, "vectorization factor is too small");
+        return false;
+    }
+
+    const unsigned storeUpdateVar =
+        plan->StoreAccess.IsByrefLocal ? plan->StoreAccess.BaseLocalIfKnown : plan->StoreAccess.OffsetLocalIfKnown;
+    const unsigned loadUpdateVar =
+        plan->LoadAccess.IsByrefLocal ? plan->LoadAccess.BaseLocalIfKnown : plan->LoadAccess.OffsetLocalIfKnown;
+
+    if (!HasAddressUpdate(plan, storeUpdateVar) || !HasAddressUpdate(plan, loadUpdateVar))
+    {
+        Reject(plan->Loop, "missing post-IV address update");
         return false;
     }
 
     bool foundAddressInit = false;
+    bool foundLoadAddressInit = false;
     bool foundTripCountInit = false;
     for (Statement* const stmt : plan->Preheader->Statements())
     {
@@ -739,18 +756,89 @@ bool AutoVectorizer::TryAnalyzePostIVMemory(LoopVectorizationPlan* plan)
         }
 
         const unsigned lclNum = root->AsLclVarCommon()->GetLclNum();
-        foundAddressInit |= (lclNum == plan->AddressVar);
+        foundAddressInit |= (lclNum == storeUpdateVar);
+        foundLoadAddressInit |= (lclNum == loadUpdateVar);
         foundTripCountInit |= (lclNum == plan->TripCountVar);
     }
 
-    if (!foundAddressInit || !foundTripCountInit)
+    if (!foundAddressInit || !foundLoadAddressInit || !foundTripCountInit)
     {
         Reject(plan->Loop, "missing post-IV preheader initialization");
         return false;
     }
 
-    Dump("AutoVec: found post-IV int byref loop address V%02u, trip count V%02u\n", plan->AddressVar,
+    Dump("AutoVec: found post-IV %s byref loop store V%02u, load V%02u, trip count V%02u\n",
+         varTypeName(plan->ElementType), plan->StoreAccess.BaseLocalIfKnown, plan->LoadAccess.BaseLocalIfKnown,
          plan->TripCountVar);
+    return true;
+}
+
+bool AutoVectorizer::TryAnalyzePostIVValue(Statement* stmt, GenTree* data, LoopVectorizationPlan* plan)
+{
+    if (!data->OperIs(GT_ADD, GT_SUB, GT_MUL, GT_AND, GT_OR, GT_XOR))
+    {
+        return false;
+    }
+
+    GenTree*  load        = nullptr;
+    GenTree*  scalar      = nullptr;
+    bool      scalarIsRhs = true;
+    genTreeOps oper       = data->OperGet();
+
+    GenTree* op1 = UnwrapCommaValue(data->AsOp()->gtOp1);
+    GenTree* op2 = UnwrapCommaValue(data->AsOp()->gtOp2);
+
+    if (op1->OperIs(GT_IND))
+    {
+        load        = op1;
+        scalar      = op2;
+        scalarIsRhs = true;
+    }
+    else if (op2->OperIs(GT_IND))
+    {
+        load        = op2;
+        scalar      = op1;
+        scalarIsRhs = false;
+    }
+
+    if (load == nullptr)
+    {
+        return false;
+    }
+
+    if (!IsSupportedElementType(load->TypeGet()) || !TryAnalyzePostIVAddress(stmt, load->AsIndir()->Addr(), &plan->LoadAccess))
+    {
+        Reject(plan->Loop, "post-IV load is not a local-addressed supported load");
+        return false;
+    }
+
+    if (!IsSupportedBinaryOp(oper, load->TypeGet()))
+    {
+        Reject(plan->Loop, "post-IV unsupported binary operation");
+        return false;
+    }
+
+    if (!TryGetInvariantOperand(plan->Loop, plan->TripCountVar, scalar, load->TypeGet()))
+    {
+        Reject(plan->Loop, "post-IV scalar operand is not invariant");
+        return false;
+    }
+
+    if ((plan->ElementType != TYP_UNDEF) && (plan->ElementType != load->TypeGet()))
+    {
+        Reject(plan->Loop, "post-IV load element type mismatch");
+        return false;
+    }
+
+    plan->ElementType = load->TypeGet();
+    plan->ElementSize = genTypeSize(plan->ElementType);
+
+    plan->LoadAccess.ElementSize = plan->ElementSize;
+    plan->LoadAccess.ElementType = plan->ElementType;
+    plan->LoadAccess.IsLoad      = true;
+    plan->ScalarOperand          = scalar;
+    plan->ScalarOper             = oper;
+    plan->ScalarOperandIsRhs     = scalarIsRhs;
     return true;
 }
 
@@ -760,7 +848,7 @@ bool AutoVectorizer::TryBuildSLPPlan(LoopVectorizationPlan* plan)
 
     SLPPlan* const slpPlan = &plan->BodyPlan;
 
-    PackNode* const load = NewPackNode(slpPlan, PackKind::LoadContiguous, TYP_INT, plan->VectorizationFactor);
+    PackNode* const load = NewPackNode(slpPlan, PackKind::LoadContiguous, plan->ElementType, plan->VectorizationFactor);
     if (load == nullptr)
     {
         Reject(plan->Loop, "SLP node budget exceeded");
@@ -770,7 +858,7 @@ bool AutoVectorizer::TryBuildSLPPlan(LoopVectorizationPlan* plan)
     load->Cost     = 1;
 
     const PackKind splatKind = plan->ScalarOperand->IsCnsIntOrI() ? PackKind::SplatConstant : PackKind::SplatScalar;
-    PackNode* const splat = NewPackNode(slpPlan, splatKind, TYP_INT, plan->VectorizationFactor);
+    PackNode* const splat = NewPackNode(slpPlan, splatKind, plan->ElementType, plan->VectorizationFactor);
     if (splat == nullptr)
     {
         Reject(plan->Loop, "SLP node budget exceeded");
@@ -779,7 +867,7 @@ bool AutoVectorizer::TryBuildSLPPlan(LoopVectorizationPlan* plan)
     splat->Lanes[0] = plan->ScalarOperand;
     splat->Cost     = 1;
 
-    PackNode* const add = NewPackNode(slpPlan, PackKind::BinaryOp, TYP_INT, plan->VectorizationFactor);
+    PackNode* const add = NewPackNode(slpPlan, PackKind::BinaryOp, plan->ElementType, plan->VectorizationFactor);
     if (add == nullptr)
     {
         Reject(plan->Loop, "SLP node budget exceeded");
@@ -790,7 +878,7 @@ bool AutoVectorizer::TryBuildSLPPlan(LoopVectorizationPlan* plan)
     add->Operands[1] = plan->ScalarOperandIsRhs ? splat : load;
     add->Cost        = 1;
 
-    PackNode* const store = NewPackNode(slpPlan, PackKind::StoreContiguous, TYP_INT, plan->VectorizationFactor);
+    PackNode* const store = NewPackNode(slpPlan, PackKind::StoreContiguous, plan->ElementType, plan->VectorizationFactor);
     if (store == nullptr)
     {
         Reject(plan->Loop, "SLP node budget exceeded");
@@ -819,14 +907,41 @@ bool AutoVectorizer::TryRewritePlan(LoopVectorizationPlan* plan)
         return false;
     }
 
-    BasicBlock* const vectorCheck = m_compiler->fgNewBBbefore(BBJ_COND, plan->Header, false);
-    BasicBlock* const vectorBody  = m_compiler->fgNewBBbefore(BBJ_ALWAYS, vectorCheck, false);
+    if (plan->StoreStmt == nullptr)
+    {
+        Reject(plan->Loop, "missing store statement for rewrite");
+        return false;
+    }
+
+    const bool needsOverlapCheck =
+        plan->IsPostIV && (plan->LoadAccess.IsByrefLocal || plan->LoadAccess.IsByrefBaseWithOffset) &&
+        (plan->StoreAccess.IsByrefLocal || plan->StoreAccess.IsByrefBaseWithOffset) &&
+        ((plan->LoadAccess.BaseLocalIfKnown != plan->StoreAccess.BaseLocalIfKnown) ||
+         (plan->LoadAccess.OffsetLocalIfKnown != plan->StoreAccess.OffsetLocalIfKnown));
+
     BasicBlock* const scalarGuard = plan->IsPostIV ? m_compiler->fgNewBBbefore(BBJ_COND, plan->Header, false) : nullptr;
+    BasicBlock* const loadBeforeCheck =
+        needsOverlapCheck ? m_compiler->fgNewBBbefore(BBJ_COND, scalarGuard, false) : nullptr;
+    BasicBlock* const storeBeforeCheck =
+        needsOverlapCheck ? m_compiler->fgNewBBbefore(BBJ_COND, loadBeforeCheck, false) : nullptr;
+    BasicBlock* const sameStartCheck =
+        needsOverlapCheck ? m_compiler->fgNewBBbefore(BBJ_COND, storeBeforeCheck, false) : nullptr;
+    BasicBlock* const vectorCheck = m_compiler->fgNewBBbefore(BBJ_COND, needsOverlapCheck ? sameStartCheck : plan->Header, false);
+    BasicBlock* const vectorBody  = m_compiler->fgNewBBbefore(BBJ_ALWAYS, vectorCheck, false);
 
     vectorCheck->clearTryIndex();
     vectorCheck->clearHndIndex();
     vectorBody->clearTryIndex();
     vectorBody->clearHndIndex();
+    if (sameStartCheck != nullptr)
+    {
+        sameStartCheck->clearTryIndex();
+        sameStartCheck->clearHndIndex();
+        storeBeforeCheck->clearTryIndex();
+        storeBeforeCheck->clearHndIndex();
+        loadBeforeCheck->clearTryIndex();
+        loadBeforeCheck->clearHndIndex();
+    }
     if (scalarGuard != nullptr)
     {
         scalarGuard->clearTryIndex();
@@ -840,46 +955,66 @@ bool AutoVectorizer::TryRewritePlan(LoopVectorizationPlan* plan)
     {
         scalarGuard->inheritWeightPercentage(plan->Header, 25);
     }
+    if (sameStartCheck != nullptr)
+    {
+        sameStartCheck->inheritWeightPercentage(plan->Header, 25);
+        storeBeforeCheck->inheritWeightPercentage(plan->Header, 25);
+        loadBeforeCheck->inheritWeightPercentage(plan->Header, 25);
+    }
 
     GenTree* const vectorTest = BuildVectorLoopTest(plan);
-    Statement* const testStmt = m_compiler->fgNewStmtAtEnd(vectorCheck, vectorTest, plan->StoreStmt->GetDebugInfo());
+    Statement* const testStmt = m_compiler->fgNewStmtAtEnd(vectorCheck, vectorTest);
     m_compiler->gtSetStmtInfo(testStmt);
     m_compiler->fgSetStmtSeq(testStmt);
 
     GenTree* const vectorStore = BuildVectorStore(plan);
-    Statement* const storeStmt = m_compiler->fgNewStmtAtEnd(vectorBody, vectorStore, plan->StoreStmt->GetDebugInfo());
+    Statement* const storeStmt = m_compiler->fgNewStmtAtEnd(vectorBody, vectorStore);
     m_compiler->gtSetStmtInfo(storeStmt);
     m_compiler->fgSetStmtSeq(storeStmt);
 
     if (plan->IsPostIV)
     {
+        const unsigned storeUpdateVar =
+            plan->StoreAccess.IsByrefLocal ? plan->StoreAccess.BaseLocalIfKnown : plan->StoreAccess.OffsetLocalIfKnown;
+        const unsigned loadUpdateVar =
+            plan->LoadAccess.IsByrefLocal ? plan->LoadAccess.BaseLocalIfKnown : plan->LoadAccess.OffsetLocalIfKnown;
+
         Statement* const addressUpdateStmt =
-            m_compiler->fgNewStmtAtEnd(vectorBody, BuildAddressUpdate(plan), plan->StoreStmt->GetDebugInfo());
+            m_compiler->fgNewStmtAtEnd(vectorBody, BuildAddressUpdate(plan, storeUpdateVar));
         m_compiler->gtSetStmtInfo(addressUpdateStmt);
         m_compiler->fgSetStmtSeq(addressUpdateStmt);
 
+        if (loadUpdateVar != storeUpdateVar)
+        {
+            Statement* const loadAddressUpdateStmt =
+                m_compiler->fgNewStmtAtEnd(vectorBody, BuildAddressUpdate(plan, loadUpdateVar));
+            m_compiler->gtSetStmtInfo(loadAddressUpdateStmt);
+            m_compiler->fgSetStmtSeq(loadAddressUpdateStmt);
+        }
+
         Statement* const tripCountUpdateStmt =
-            m_compiler->fgNewStmtAtEnd(vectorBody, BuildTripCountUpdate(plan, -static_cast<int>(plan->VectorizationFactor)),
-                                       plan->StoreStmt->GetDebugInfo());
+            m_compiler->fgNewStmtAtEnd(vectorBody,
+                                       BuildTripCountUpdate(plan, -static_cast<int>(plan->VectorizationFactor)));
         m_compiler->gtSetStmtInfo(tripCountUpdateStmt);
         m_compiler->fgSetStmtSeq(tripCountUpdateStmt);
 
         Statement* const scalarGuardStmt =
-            m_compiler->fgNewStmtAtEnd(scalarGuard, BuildScalarRemainderTest(plan), plan->StoreStmt->GetDebugInfo());
+            m_compiler->fgNewStmtAtEnd(scalarGuard, BuildScalarRemainderTest(plan));
         m_compiler->gtSetStmtInfo(scalarGuardStmt);
         m_compiler->fgSetStmtSeq(scalarGuardStmt);
     }
     else
     {
         GenTree* const ivUpdate = BuildIVUpdate(plan);
-        Statement* const ivStmt = m_compiler->fgNewStmtAtEnd(vectorBody, ivUpdate, plan->StoreStmt->GetDebugInfo());
+        Statement* const ivStmt = m_compiler->fgNewStmtAtEnd(vectorBody, ivUpdate);
         m_compiler->gtSetStmtInfo(ivStmt);
         m_compiler->fgSetStmtSeq(ivStmt);
     }
 
     m_compiler->fgRedirectEdge(plan->Preheader->TargetEdgeRef(), vectorCheck);
 
-    FlowEdge* const vectorCheckToVectorBody = m_compiler->fgAddRefPred(vectorBody, vectorCheck);
+    FlowEdge* const vectorCheckToVectorBody =
+        m_compiler->fgAddRefPred(needsOverlapCheck ? sameStartCheck : vectorBody, vectorCheck);
     FlowEdge* const vectorCheckToScalar     =
         m_compiler->fgAddRefPred(plan->IsPostIV ? scalarGuard : plan->Header, vectorCheck);
     vectorCheckToVectorBody->setLikelihood(0.9);
@@ -889,6 +1024,41 @@ bool AutoVectorizer::TryRewritePlan(LoopVectorizationPlan* plan)
     FlowEdge* const vectorBodyToCheck = m_compiler->fgAddRefPred(vectorCheck, vectorBody);
     vectorBodyToCheck->setLikelihood(1.0);
     vectorBody->SetKindAndTargetEdge(BBJ_ALWAYS, vectorBodyToCheck);
+
+    if (sameStartCheck != nullptr)
+    {
+        Statement* const sameStartStmt = m_compiler->fgNewStmtAtEnd(sameStartCheck, BuildPostIVSameStartCheck(plan));
+        m_compiler->gtSetStmtInfo(sameStartStmt);
+        m_compiler->fgSetStmtSeq(sameStartStmt);
+
+        Statement* const storeBeforeStmt =
+            m_compiler->fgNewStmtAtEnd(storeBeforeCheck, BuildPostIVStoreBeforeLoadCheck(plan));
+        m_compiler->gtSetStmtInfo(storeBeforeStmt);
+        m_compiler->fgSetStmtSeq(storeBeforeStmt);
+
+        Statement* const loadBeforeStmt =
+            m_compiler->fgNewStmtAtEnd(loadBeforeCheck, BuildPostIVLoadBeforeStoreCheck(plan));
+        m_compiler->gtSetStmtInfo(loadBeforeStmt);
+        m_compiler->fgSetStmtSeq(loadBeforeStmt);
+
+        FlowEdge* const sameStartToVector = m_compiler->fgAddRefPred(vectorBody, sameStartCheck);
+        FlowEdge* const sameStartToNext   = m_compiler->fgAddRefPred(storeBeforeCheck, sameStartCheck);
+        sameStartToVector->setLikelihood(0.1);
+        sameStartToNext->setLikelihood(0.9);
+        sameStartCheck->SetCond(sameStartToVector, sameStartToNext);
+
+        FlowEdge* const storeBeforeToVector = m_compiler->fgAddRefPred(vectorBody, storeBeforeCheck);
+        FlowEdge* const storeBeforeToNext   = m_compiler->fgAddRefPred(loadBeforeCheck, storeBeforeCheck);
+        storeBeforeToVector->setLikelihood(0.45);
+        storeBeforeToNext->setLikelihood(0.55);
+        storeBeforeCheck->SetCond(storeBeforeToVector, storeBeforeToNext);
+
+        FlowEdge* const loadBeforeToVector = m_compiler->fgAddRefPred(vectorBody, loadBeforeCheck);
+        FlowEdge* const loadBeforeToScalar = m_compiler->fgAddRefPred(scalarGuard, loadBeforeCheck);
+        loadBeforeToVector->setLikelihood(0.45);
+        loadBeforeToScalar->setLikelihood(0.55);
+        loadBeforeCheck->SetCond(loadBeforeToVector, loadBeforeToScalar);
+    }
 
     if (scalarGuard != nullptr)
     {
@@ -1041,25 +1211,84 @@ GenTree* AutoVectorizer::BuildVectorLoopTest(LoopVectorizationPlan* plan)
     return m_compiler->gtNewOperNode(GT_JTRUE, TYP_VOID, cmp);
 }
 
+GenTree* AutoVectorizer::BuildPostIVSameStartCheck(LoopVectorizationPlan* plan)
+{
+    GenTree* const cmp =
+        m_compiler->gtNewOperNode(GT_EQ, TYP_INT, BuildPostIVAddress(plan->StoreAccess), BuildPostIVAddress(plan->LoadAccess));
+    return m_compiler->gtNewOperNode(GT_JTRUE, TYP_VOID, cmp);
+}
+
+GenTree* AutoVectorizer::BuildPostIVStoreBeforeLoadCheck(LoopVectorizationPlan* plan)
+{
+    GenTree* const byteCount = m_compiler->gtNewOperNode(
+        GT_MUL, TYP_I_IMPL,
+        m_compiler->gtNewCastNode(TYP_I_IMPL, m_compiler->gtNewLclvNode(plan->TripCountVar, TYP_INT), true,
+                                  TYP_I_IMPL),
+        m_compiler->gtNewIconNode(plan->ElementSize, TYP_I_IMPL));
+    GenTree* const storeEnd = m_compiler->gtNewOperNode(GT_ADD, TYP_BYREF, BuildPostIVAddress(plan->StoreAccess), byteCount);
+    GenTree* const cmp      = m_compiler->gtNewOperNode(GT_LE, TYP_INT, storeEnd, BuildPostIVAddress(plan->LoadAccess));
+    return m_compiler->gtNewOperNode(GT_JTRUE, TYP_VOID, cmp);
+}
+
+GenTree* AutoVectorizer::BuildPostIVLoadBeforeStoreCheck(LoopVectorizationPlan* plan)
+{
+    GenTree* const byteCount = m_compiler->gtNewOperNode(
+        GT_MUL, TYP_I_IMPL,
+        m_compiler->gtNewCastNode(TYP_I_IMPL, m_compiler->gtNewLclvNode(plan->TripCountVar, TYP_INT), true,
+                                  TYP_I_IMPL),
+        m_compiler->gtNewIconNode(plan->ElementSize, TYP_I_IMPL));
+    GenTree* const loadEnd = m_compiler->gtNewOperNode(GT_ADD, TYP_BYREF, BuildPostIVAddress(plan->LoadAccess), byteCount);
+    GenTree* const cmp     = m_compiler->gtNewOperNode(GT_LE, TYP_INT, loadEnd, BuildPostIVAddress(plan->StoreAccess));
+    return m_compiler->gtNewOperNode(GT_JTRUE, TYP_VOID, cmp);
+}
+
+GenTree* AutoVectorizer::BuildPostIVAddress(const LoopVectorizationPlan::ScalarAccess& access)
+{
+    if (access.IsByrefLocal)
+    {
+        LclVarDsc* const addrDsc = m_compiler->lvaGetDesc(access.BaseLocalIfKnown);
+        return m_compiler->gtNewLclvNode(access.BaseLocalIfKnown, addrDsc->TypeGet());
+    }
+
+    if (access.IsByrefBaseWithOffset)
+    {
+        LclVarDsc* const baseDsc   = m_compiler->lvaGetDesc(access.BaseLocalIfKnown);
+        LclVarDsc* const offsetDsc = m_compiler->lvaGetDesc(access.OffsetLocalIfKnown);
+        GenTree* const   base      = m_compiler->gtNewLclvNode(access.BaseLocalIfKnown, baseDsc->TypeGet());
+        GenTree* const   offset    = m_compiler->gtNewLclvNode(access.OffsetLocalIfKnown, offsetDsc->TypeGet());
+        return m_compiler->gtNewOperNode(GT_ADD, TYP_BYREF, base, offset);
+    }
+
+    GenTreeArrAddr* const oldArrAddr = access.Address->AsArrAddr();
+    LclVarDsc* const      arrayDsc   = m_compiler->lvaGetDesc(access.BaseLocalIfKnown);
+    LclVarDsc* const      offsetDsc  = m_compiler->lvaGetDesc(access.OffsetLocalIfKnown);
+    GenTree* const        arrRef     = m_compiler->gtNewLclvNode(access.BaseLocalIfKnown, arrayDsc->TypeGet());
+    GenTree* const        offset     = m_compiler->gtNewLclvNode(access.OffsetLocalIfKnown, offsetDsc->TypeGet());
+    GenTree* const        addr       = m_compiler->gtNewOperNode(GT_ADD, TYP_BYREF, arrRef, offset);
+    GenTreeArrAddr* const arrAddr    = new (m_compiler, GT_ARR_ADDR)
+        GenTreeArrAddr(addr, access.ElementType, oldArrAddr->GetElemClassHandle(), oldArrAddr->GetFirstElemOffset());
+    arrAddr->gtFlags |= oldArrAddr->gtFlags & GTF_ARR_ADDR_NONNULL;
+    return arrAddr;
+}
+
 GenTree* AutoVectorizer::BuildVectorStore(LoopVectorizationPlan* plan)
 {
 #if defined(FEATURE_HW_INTRINSICS) && (defined(TARGET_XARCH) || defined(TARGET_ARM64))
     const unsigned simdSize = plan->VectorSizeBytes;
     const var_types simdType = Compiler::getSIMDTypeForSize(simdSize);
 
-    GenTree* const loadAddress = plan->IsPostIV
-                                     ? m_compiler->gtNewLclvNode(plan->AddressVar,
-                                                                 m_compiler->lvaGetDesc(plan->AddressVar)->TypeGet())
-                                     : BuildArrayAddress(plan, plan->LoadAccess);
-    GenTree* const storeAddress = plan->IsPostIV
-                                      ? m_compiler->gtNewLclvNode(plan->AddressVar,
-                                                                  m_compiler->lvaGetDesc(plan->AddressVar)->TypeGet())
-                                      : BuildArrayAddress(plan, plan->StoreAccess);
-    GenTree* const vectorLoad   = m_compiler->gtNewSimdLoadNode(simdType, loadAddress, TYP_INT, simdSize);
+    GenTree* const loadAddress  = plan->IsPostIV ? BuildPostIVAddress(plan->LoadAccess)
+                                                  : BuildArrayAddress(plan, plan->LoadAccess);
+    GenTree* const storeAddress = plan->IsPostIV ? BuildPostIVAddress(plan->StoreAccess)
+                                                  : BuildArrayAddress(plan, plan->StoreAccess);
+    GenTree* const vectorLoad   = m_compiler->gtNewSimdLoadNode(simdType, loadAddress, plan->ElementType, simdSize);
     GenTree* const scalar       = m_compiler->gtCloneExpr(plan->ScalarOperand);
-    GenTree* const splat        = m_compiler->gtNewSimdCreateBroadcastNode(simdType, scalar, TYP_INT, simdSize);
-    GenTree* const vectorAdd    = m_compiler->gtNewSimdBinOpNode(GT_ADD, simdType, vectorLoad, splat, TYP_INT, simdSize);
-    return m_compiler->gtNewSimdStoreNode(storeAddress, vectorAdd, TYP_INT, simdSize);
+    GenTree* const splat        = m_compiler->gtNewSimdCreateBroadcastNode(simdType, scalar, plan->ElementType, simdSize);
+    GenTree* const op1          = plan->ScalarOperandIsRhs ? vectorLoad : splat;
+    GenTree* const op2          = plan->ScalarOperandIsRhs ? splat : vectorLoad;
+    GenTree* const vectorResult =
+        m_compiler->gtNewSimdBinOpNode(plan->ScalarOper, simdType, op1, op2, plan->ElementType, simdSize);
+    return m_compiler->gtNewSimdStoreNode(storeAddress, vectorResult, plan->ElementType, simdSize);
 #else
     unreached();
 #endif
@@ -1073,13 +1302,13 @@ GenTree* AutoVectorizer::BuildIVUpdate(LoopVectorizationPlan* plan)
     return m_compiler->gtNewStoreLclVarNode(plan->InductionVar, add);
 }
 
-GenTree* AutoVectorizer::BuildAddressUpdate(LoopVectorizationPlan* plan)
+GenTree* AutoVectorizer::BuildAddressUpdate(LoopVectorizationPlan* plan, unsigned addressVar)
 {
-    LclVarDsc* const addressDsc = m_compiler->lvaGetDesc(plan->AddressVar);
-    GenTree* const   address    = m_compiler->gtNewLclvNode(plan->AddressVar, addressDsc->TypeGet());
+    LclVarDsc* const addressDsc = m_compiler->lvaGetDesc(addressVar);
+    GenTree* const   address    = m_compiler->gtNewLclvNode(addressVar, addressDsc->TypeGet());
     GenTree* const   add        = m_compiler->gtNewOperNode(
         GT_ADD, addressDsc->TypeGet(), address, m_compiler->gtNewIconNode(plan->VectorSizeBytes, TYP_I_IMPL));
-    return m_compiler->gtNewStoreLclVarNode(plan->AddressVar, add);
+    return m_compiler->gtNewStoreLclVarNode(addressVar, add);
 }
 
 GenTree* AutoVectorizer::BuildTripCountUpdate(LoopVectorizationPlan* plan, int delta)
@@ -1094,6 +1323,16 @@ GenTree* AutoVectorizer::BuildScalarRemainderTest(LoopVectorizationPlan* plan)
     GenTree* const tripCount = m_compiler->gtNewLclvNode(plan->TripCountVar, TYP_INT);
     GenTree* const cmp       = m_compiler->gtNewOperNode(GT_EQ, TYP_INT, tripCount, m_compiler->gtNewIconNode(0));
     return m_compiler->gtNewOperNode(GT_JTRUE, TYP_VOID, cmp);
+}
+
+GenTree* AutoVectorizer::UnwrapCommaValue(GenTree* tree)
+{
+    while (tree->OperIs(GT_COMMA))
+    {
+        tree = tree->AsOp()->gtOp2;
+    }
+
+    return tree;
 }
 
 bool AutoVectorizer::TryAnalyzeArrayAccess(
@@ -1122,6 +1361,54 @@ bool AutoVectorizer::TryAnalyzeArrayAccess(
     return true;
 }
 
+bool AutoVectorizer::TryAnalyzePostIVAddress(
+    Statement* stmt, GenTree* addr, LoopVectorizationPlan::ScalarAccess* access)
+{
+    addr = UnwrapCommaValue(addr);
+
+    unsigned byrefLcl = BAD_VAR_NUM;
+    if (TryAnalyzeByrefLocalAddress(addr, &byrefLcl))
+    {
+        access->StatementRoot    = stmt;
+        access->Address          = addr;
+        access->BaseLocalIfKnown = byrefLcl;
+        access->IsByrefLocal     = true;
+        return true;
+    }
+
+    if (addr->OperIs(GT_ARR_ADDR))
+    {
+        access->StatementRoot = stmt;
+        access->Address       = addr;
+        access->IsArray       = true;
+        return TryAnalyzePostIVArrayAddress(addr->AsArrAddr(), access);
+    }
+
+    if (addr->OperIs(GT_ADD) && addr->TypeIs(TYP_BYREF))
+    {
+        GenTree* op1 = UnwrapCommaValue(addr->AsOp()->gtOp1);
+        GenTree* op2 = UnwrapCommaValue(addr->AsOp()->gtOp2);
+
+        if (!op1->OperIs(GT_LCL_VAR) || !op1->TypeIs(TYP_BYREF))
+        {
+            std::swap(op1, op2);
+        }
+
+        if (op1->OperIs(GT_LCL_VAR) && op1->TypeIs(TYP_BYREF) && op2->OperIs(GT_LCL_VAR) &&
+            op2->TypeIs(TYP_I_IMPL, TYP_LONG, TYP_INT))
+        {
+            access->StatementRoot       = stmt;
+            access->Address             = addr;
+            access->BaseLocalIfKnown    = op1->AsLclVarCommon()->GetLclNum();
+            access->OffsetLocalIfKnown  = op2->AsLclVarCommon()->GetLclNum();
+            access->IsByrefBaseWithOffset = true;
+            return true;
+        }
+    }
+
+    return false;
+}
+
 bool AutoVectorizer::TryAnalyzeByrefLocalAddress(GenTree* addr, unsigned* lclNum)
 {
     if (addr->OperIs(GT_COMMA))
@@ -1136,6 +1423,100 @@ bool AutoVectorizer::TryAnalyzeByrefLocalAddress(GenTree* addr, unsigned* lclNum
 
     *lclNum = addr->AsLclVarCommon()->GetLclNum();
     return true;
+}
+
+bool AutoVectorizer::TryAnalyzePostIVArrayAddress(GenTreeArrAddr* arrAddr, LoopVectorizationPlan::ScalarAccess* access)
+{
+    struct AddressParts
+    {
+        unsigned ArrayLcl  = BAD_VAR_NUM;
+        unsigned OffsetLcl = BAD_VAR_NUM;
+    };
+
+    AddressParts parts;
+
+    class AddressVisitor
+    {
+    public:
+        explicit AddressVisitor(AddressParts* parts)
+            : m_parts(parts)
+        {
+        }
+
+        bool Analyze(GenTree* tree)
+        {
+            tree = Unwrap(tree);
+
+            if (tree->OperIs(GT_ARR_ADDR))
+            {
+                return Analyze(tree->AsArrAddr()->Addr());
+            }
+
+            if (tree->OperIs(GT_ADD))
+            {
+                return Analyze(tree->AsOp()->gtOp1) && Analyze(tree->AsOp()->gtOp2);
+            }
+
+            if (tree->IsCnsIntOrI())
+            {
+                return true;
+            }
+
+            if (tree->OperIs(GT_LCL_VAR))
+            {
+                const unsigned lclNum = tree->AsLclVarCommon()->GetLclNum();
+                if (varTypeIsGC(tree->TypeGet()))
+                {
+                    if ((m_parts->ArrayLcl != BAD_VAR_NUM) && (m_parts->ArrayLcl != lclNum))
+                    {
+                        return false;
+                    }
+
+                    m_parts->ArrayLcl = lclNum;
+                    return true;
+                }
+
+                if (tree->TypeIs(TYP_I_IMPL, TYP_LONG, TYP_INT))
+                {
+                    if ((m_parts->OffsetLcl != BAD_VAR_NUM) && (m_parts->OffsetLcl != lclNum))
+                    {
+                        return false;
+                    }
+
+                    m_parts->OffsetLcl = lclNum;
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+    private:
+        static GenTree* Unwrap(GenTree* tree)
+        {
+            while (tree->OperIs(GT_COMMA))
+            {
+                tree = tree->AsOp()->gtOp2;
+            }
+
+            return tree;
+        }
+
+        AddressParts* m_parts;
+    };
+
+    AddressVisitor visitor(&parts);
+    if (!visitor.Analyze(arrAddr->Addr()) || (parts.ArrayLcl == BAD_VAR_NUM) || (parts.OffsetLcl == BAD_VAR_NUM))
+    {
+        return false;
+    }
+
+    access->BaseLocalIfKnown   = parts.ArrayLcl;
+    access->OffsetLocalIfKnown = parts.OffsetLcl;
+    access->ElementSize        = genTypeSize(arrAddr->GetElemType());
+    access->ElementType        = arrAddr->GetElemType();
+    access->IsArray            = true;
+    return IsSupportedElementType(access->ElementType);
 }
 
 bool AutoVectorizer::TryAnalyzeIndexExpr(GenTree* tree, unsigned ivLcl, int* offset)
@@ -1314,9 +1695,9 @@ bool AutoVectorizer::TryGetArrayLengthLocal(GenTree* tree, unsigned* lclNum)
     return true;
 }
 
-bool AutoVectorizer::TryGetInvariantInt(FlowGraphNaturalLoop* loop, unsigned ivLcl, GenTree* tree)
+bool AutoVectorizer::TryGetInvariantOperand(FlowGraphNaturalLoop* loop, unsigned ivLcl, GenTree* tree, var_types elementType)
 {
-    if (!tree->TypeIs(TYP_INT))
+    if (!tree->TypeIs(elementType))
     {
         return false;
     }
@@ -1333,6 +1714,38 @@ bool AutoVectorizer::TryGetInvariantInt(FlowGraphNaturalLoop* loop, unsigned ivL
 
     const unsigned lclNum = tree->AsLclVarCommon()->GetLclNum();
     return (lclNum != ivLcl) && !loop->HasDef(lclNum);
+}
+
+void AutoVectorizer::RecordAddressUpdate(LoopVectorizationPlan* plan, unsigned addressVar, int delta)
+{
+    for (unsigned i = 0; i < plan->AddressUpdateCount; i++)
+    {
+        if (plan->AddressUpdateVars[i] == addressVar)
+        {
+            plan->AddressUpdateDeltas[i] = delta;
+            return;
+        }
+    }
+
+    if (plan->AddressUpdateCount < LoopVectorizationPlan::MaxAddressUpdates)
+    {
+        const unsigned index = plan->AddressUpdateCount++;
+        plan->AddressUpdateVars[index]   = addressVar;
+        plan->AddressUpdateDeltas[index] = delta;
+    }
+}
+
+bool AutoVectorizer::HasAddressUpdate(LoopVectorizationPlan* plan, unsigned addressVar)
+{
+    for (unsigned i = 0; i < plan->AddressUpdateCount; i++)
+    {
+        if (plan->AddressUpdateVars[i] == addressVar)
+        {
+            return plan->AddressUpdateDeltas[i] == static_cast<int>(plan->ElementSize);
+        }
+    }
+
+    return false;
 }
 
 bool AutoVectorizer::ContainsOper(GenTree* tree, genTreeOps oper)
