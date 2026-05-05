@@ -126,19 +126,16 @@ namespace System.CommandLine
             }
         }
 
-        public static (TargetArchitecture TargetArchitecture, TargetOS TargetOS, TargetAbi TargetAbi) GetTargetDetails(string targetArchitectureToken, string targetOSToken)
+        public static (TargetArchitecture, TargetOS, TargetAbi) GetTargetDetails(string targetArchitectureToken, string targetOSToken)
         {
             targetArchitectureToken = targetArchitectureToken?.ToLowerInvariant();
             targetOSToken = targetOSToken?.ToLowerInvariant();
 
             TargetArchitecture targetArchitecture = GetTargetArchitecture(targetArchitectureToken);
             TargetOS targetOS = GetTargetOS(targetOSToken);
-
-            TargetAbi targetAbi = TargetAbi.NativeAot;
-            if ((targetArchitecture == TargetArchitecture.ARM) && (targetArchitectureToken == "armel" || targetOSToken == "android"))
-            {
-                targetAbi = TargetAbi.NativeAotArmel;
-            }
+            TargetAbi targetAbi = targetArchitectureToken == "armel" || (targetArchitectureToken == "arm" && targetOSToken == "android")
+                ? TargetAbi.NativeAotArmel
+                : TargetAbi.NativeAot;
 
             return (targetArchitecture, targetOS, targetAbi);
         }
