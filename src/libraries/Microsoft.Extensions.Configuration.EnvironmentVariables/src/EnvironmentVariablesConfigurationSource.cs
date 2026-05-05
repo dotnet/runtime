@@ -36,40 +36,30 @@ namespace Microsoft.Extensions.Configuration.EnvironmentVariables
             return Core(name, first);
 
             // Local function to avoid the overhead of stackalloc when there are no double underscores in the string.
-            static string Core(string name, int first)
+            static string Core(string name, int index)
             {
-#if NET
                 var builder = new ValueStringBuilder(stackalloc char[256]);
-#else
-                var builder = new StringBuilder(name.Length);
-#endif
 
-                // For short strings, this seems to be faster than Append(name.Slice(0, first)).
-                for (int j = 0; j < first; j++)
+                builder.Append(name.AsSpan(0, index));
+
+                while (index < name.Length)
                 {
-                    builder.Append(name[j]);
-                }
-
-                int i = first;
-
-                while (i < name.Length)
-                {
-                    if (name[i] == '_' && i + 1 < name.Length && name[i + 1] == '_')
+                    if (name[index] == '_' && index + 1 < name.Length && name[index + 1] == '_')
                     {
-                        if (i + 2 < name.Length && name[i + 2] == '_')
+                        if (index + 2 < name.Length && name[index + 2] == '_')
                         {
                             builder.Append('.');
-                            i += 3;
+                            index += 3;
                         }
                         else
                         {
                             builder.Append(':');
-                            i += 2;
+                            index += 2;
                         }
                     }
                     else
                     {
-                        builder.Append(name[i++]);
+                        builder.Append(name[index++]);
                     }
                 }
 

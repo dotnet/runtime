@@ -15,7 +15,7 @@
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Configuration.Abstractions\src\Microsoft.Extensions.Configuration.Abstractions.csproj" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
+  <ItemGroup>
     <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs"
              Link="Common\System\Text\ValueStringBuilder.cs" />
   </ItemGroup>
