@@ -13,7 +13,7 @@ internal sealed class ExceptionInfo : IData<ExceptionInfo>
         Target.TypeInfo type = target.GetTypeInfo(DataType.ExceptionInfo);
 
         PreviousNestedInfo = target.ReadPointerField(address, type, nameof(PreviousNestedInfo));
-        ThrownObjectHandle = target.ReadDataField<ObjectHandle>(address, type, nameof(ThrownObjectHandle));
+        ThrownObject = target.ReadPointerField(address, type, nameof(ThrownObject));
         if (type.Fields.ContainsKey(nameof(ExceptionWatsonBucketTrackerBuckets)))
             ExceptionWatsonBucketTrackerBuckets = target.ReadPointerField(address, type, nameof(ExceptionWatsonBucketTrackerBuckets));
         ExceptionFlags = target.ReadField<uint>(address, type, nameof(ExceptionFlags));
@@ -28,7 +28,7 @@ internal sealed class ExceptionInfo : IData<ExceptionInfo>
     }
 
     public TargetPointer PreviousNestedInfo { get; }
-    public ObjectHandle ThrownObjectHandle { get; }
+    public TargetPointer ThrownObject { get; }
     public uint ExceptionFlags { get; }
     public TargetPointer StackLowBound { get; }
     public TargetPointer StackHighBound { get; }

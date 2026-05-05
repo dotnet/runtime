@@ -185,8 +185,6 @@
 
   <!-- https://github.com/dotnet/runtime/issues/125495 - These tests are disabled on browser/CoreCLR because of crashes and test failures. -->
   <ItemGroup Condition="'$(TargetOS)' == 'browser' and '$(RuntimeFlavor)' == 'CoreCLR' and '$(RunDisabledWasmTests)' != 'true'">
-    <!-- crashes -->
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Threading.Thread\tests\System.Threading.Thread.Tests.csproj" />
     <!-- test failures -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Formats.Nrbf\tests\System.Formats.Nrbf.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Linq.Expressions\tests\System.Linq.Expressions.Tests.csproj" />

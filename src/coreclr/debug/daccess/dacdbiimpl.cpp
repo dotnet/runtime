@@ -664,26 +664,6 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetAppDomainId(VMPTR_AppDomain vm
     return hr;
 }
 
-// Get the managed AppDomain object for an AppDomain.
-HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetAppDomainObject(VMPTR_AppDomain vmAppDomain, OUT VMPTR_OBJECTHANDLE * pRetVal)
-{
-    DD_ENTER_MAY_THROW;
-
-    HRESULT hr = S_OK;
-    EX_TRY
-    {
-
-        AppDomain* pAppDomain = vmAppDomain.GetDacPtr();
-        OBJECTHANDLE hAppDomainManagedObject = pAppDomain->GetRawExposedObjectHandleForDebugger();
-        VMPTR_OBJECTHANDLE vmObj = VMPTR_OBJECTHANDLE::NullPtr();
-        vmObj.SetDacTargetPtr(hAppDomainManagedObject);
-        *pRetVal = vmObj;
-
-    }
-    EX_CATCH_HRESULT(hr);
-    return hr;
-}
-
 // Get the full AD friendly name for the given EE AppDomain.
 HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetAppDomainFullName(VMPTR_AppDomain vmAppDomain, IStringHolder * pStrName)
 {
@@ -4795,7 +4775,7 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::HasUnhandledException(VMPTR_Threa
         {
             // most managed exceptions are just a throwable bound to a
             // native exception. In that case this handle will be non-null
-            OBJECTHANDLE ohException = pThread->GetThrowableAsHandle();
+            OBJECTHANDLE ohException = pThread->GetThrowableAsPseudoHandle();
             if (ohException != (OBJECTHANDLE)NULL)
             {
                 // during the UEF we set the unhandled bit, if it is set the exception
@@ -4932,8 +4912,7 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetCurrentException(VMPTR_Thread 
 
         Thread * pThread = vmThread.GetDacPtr();
 
-        // OBJECTHANDLEs are really just TADDRs.
-        OBJECTHANDLE ohException = pThread->GetThrowableAsHandle();        // ohException can be NULL
+        OBJECTHANDLE ohException = pThread->GetThrowableAsPseudoHandle();
 
         if (ohException == (OBJECTHANDLE)NULL)
         {

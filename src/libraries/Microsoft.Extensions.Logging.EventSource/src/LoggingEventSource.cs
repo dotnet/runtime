@@ -112,6 +112,17 @@ namespace Microsoft.Extensions.Logging.EventSource
             public const EventKeywords JsonMessage = (EventKeywords)8;
         }
 
+        // Separators are in a nested class so their initialization is guaranteed to complete
+        // before first use, regardless of declaration order in the outer class.  The Instance
+        // constructor can trigger OnEventCommand re-entrantly (via EventPipe enable during
+        // the base EventSource constructor), which calls ParseFilterSpec and needs these arrays.
+        // See: https://github.com/dotnet/roslyn/issues/77005
+        private static class Separators
+        {
+            internal static readonly char[] Semicolon = new[] { ';' };
+            internal static readonly char[] Colon = new[] { ':' };
+        }
+
         /// <summary>
         ///  The one and only instance of the LoggingEventSource.
         /// </summary>
@@ -125,8 +136,6 @@ namespace Microsoft.Extensions.Logging.EventSource
         private const string UseAppFilters = "UseAppFilters";
         private const string WriteEventCoreSuppressionJustification = "WriteEventCore is safe when eventData object is a primitive type which is in this case.";
         private const string WriteEventDynamicDependencySuppressionJustification = "DynamicDependency attribute will ensure that the required properties are not trimmed.";
-        private static readonly char[] s_semicolon = new[] { ';' };
-        private static readonly char[] s_colon = new[] { ':' };
 
         // This event source uses IEnumerable<T> as an event parameter type which is only supported by EtwSelfDescribingEventFormat.
         private LoggingEventSource() : base(EventSourceSettings.EtwSelfDescribingEventFormat)
@@ -426,7 +435,7 @@ namespace Microsoft.Extensions.Logging.EventSource
 
             var rules = new List<LoggerFilterRule>();
             int ruleStringsStartIndex = 0;
-            string[] ruleStrings = filterSpec.Split(s_semicolon, StringSplitOptions.RemoveEmptyEntries);
+            string[] ruleStrings = filterSpec.Split(Separators.Semicolon, StringSplitOptions.RemoveEmptyEntries);
             if (ruleStrings.Length > 0 && ruleStrings[0].Equals(UseAppFilters, StringComparison.OrdinalIgnoreCase))
             {
                 // Avoid adding default rule to disable event source loggers
@@ -441,7 +450,7 @@ namespace Microsoft.Extensions.Logging.EventSource
             {
                 string rule = ruleStrings[i];
                 LogLevel level = defaultLevel;
-                string[] parts = rule.Split(s_colon, 2);
+                string[] parts = rule.Split(Separators.Colon, 2);
                 string loggerName = parts[0];
                 if (loggerName.Length == 0)
                 {

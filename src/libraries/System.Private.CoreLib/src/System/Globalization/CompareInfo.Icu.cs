@@ -64,7 +64,6 @@ namespace System.Globalization
             }
         }
 
-        [RequiresUnsafe]
         private unsafe int IcuIndexOfCore(ReadOnlySpan<char> source, ReadOnlySpan<char> target, CompareOptions options, int* matchLengthPtr, bool fromBeginning)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
@@ -102,7 +101,6 @@ namespace System.Globalization
         /// as the JIT wouldn't be able to optimize the ignoreCase path away.
         /// </summary>
         /// <returns></returns>
-        [RequiresUnsafe]
         private unsafe int IndexOfOrdinalIgnoreCaseHelper(ReadOnlySpan<char> source, ReadOnlySpan<char> target, CompareOptions options, int* matchLengthPtr, bool fromBeginning)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
@@ -218,7 +216,6 @@ namespace System.Globalization
             }
         }
 
-        [RequiresUnsafe]
         private unsafe int IndexOfOrdinalHelper(ReadOnlySpan<char> source, ReadOnlySpan<char> target, CompareOptions options, int* matchLengthPtr, bool fromBeginning)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
@@ -314,7 +311,6 @@ namespace System.Globalization
         }
 
         // this method sets '*matchLengthPtr' (if not nullptr) only on success
-        [RequiresUnsafe]
         private unsafe bool IcuStartsWith(ReadOnlySpan<char> source, ReadOnlySpan<char> prefix, CompareOptions options, int* matchLengthPtr)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
@@ -344,7 +340,6 @@ namespace System.Globalization
             }
         }
 
-        [RequiresUnsafe]
         private unsafe bool StartsWithOrdinalIgnoreCaseHelper(ReadOnlySpan<char> source, ReadOnlySpan<char> prefix, CompareOptions options, int* matchLengthPtr)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
@@ -427,7 +422,6 @@ namespace System.Globalization
             }
         }
 
-        [RequiresUnsafe]
         private unsafe bool StartsWithOrdinalHelper(ReadOnlySpan<char> source, ReadOnlySpan<char> prefix, CompareOptions options, int* matchLengthPtr)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
@@ -501,7 +495,6 @@ namespace System.Globalization
         }
 
         // this method sets '*matchLengthPtr' (if not nullptr) only on success
-        [RequiresUnsafe]
         private unsafe bool IcuEndsWith(ReadOnlySpan<char> source, ReadOnlySpan<char> suffix, CompareOptions options, int* matchLengthPtr)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
@@ -531,7 +524,6 @@ namespace System.Globalization
             }
         }
 
-        [RequiresUnsafe]
         private unsafe bool EndsWithOrdinalIgnoreCaseHelper(ReadOnlySpan<char> source, ReadOnlySpan<char> suffix, CompareOptions options, int* matchLengthPtr)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
@@ -615,7 +607,6 @@ namespace System.Globalization
             }
         }
 
-        [RequiresUnsafe]
         private unsafe bool EndsWithOrdinalHelper(ReadOnlySpan<char> source, ReadOnlySpan<char> suffix, CompareOptions options, int* matchLengthPtr)
         {
             Debug.Assert(!GlobalizationMode.Invariant);

@@ -4,6 +4,9 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 include_directories(BEFORE ${CMAKE_CURRENT_SOURCE_DIR})
 include_directories(${ARCH_SOURCES_DIR})
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../interop/inc)
+if(FEATURE_INPROC_CRASHREPORT)
+    include_directories(${CLR_DIR}/debug/crashreport)
+endif(FEATURE_INPROC_CRASHREPORT)
 include_directories(${CLR_SRC_NATIVE_DIR})
 include_directories(${RUNTIME_DIR})
 
@@ -350,7 +353,6 @@ set(VM_SOURCES_WKS
     nativeeventsource.cpp
     nativelibrary.cpp
     nativelibrarynative.cpp
-    olevariant.cpp
     pendingload.cpp
     pinvokeoverride.cpp
     profdetach.cpp
@@ -457,7 +459,6 @@ set(VM_HEADERS_WKS
     multicorejit.h
     multicorejitimpl.h
     nativeeventsource.h
-    olevariant.h
     pendingload.h
     profdetach.h
     profilingenumerators.h
@@ -554,6 +555,12 @@ if(FEATURE_OBJCMARSHAL)
     )
 endif(FEATURE_OBJCMARSHAL)
 
+if(FEATURE_INPROC_CRASHREPORT AND NOT CLR_CROSS_COMPONENTS_BUILD)
+    list(APPEND VM_SOURCES_WKS
+        crashreportstackwalker.cpp
+    )
+endif(FEATURE_INPROC_CRASHREPORT AND NOT CLR_CROSS_COMPONENTS_BUILD)
+
 list(APPEND VM_SOURCES_WKS
     interoplibinterface_java.cpp
 )
@@ -597,6 +604,7 @@ if(CLR_CMAKE_TARGET_WIN32)
         dispatchinfo.cpp
         dispparammarshaler.cpp
         olecontexthelpers.cpp
+        olevariant.cpp
         runtimecallablewrapper.cpp
         stdinterfaces.cpp
         stdinterfaces_wrapper.cpp
@@ -613,6 +621,7 @@ if(CLR_CMAKE_TARGET_WIN32)
         dispatchinfo.h
         dispparammarshaler.h
         olecontexthelpers.h
+        olevariant.h
         runtimecallablewrapper.h
         stdinterfaces.h
         stdinterfaces_internal.h

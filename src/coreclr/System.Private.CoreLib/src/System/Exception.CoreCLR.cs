@@ -115,7 +115,6 @@ namespace System
         }
 
         [UnmanagedCallersOnly]
-        [RequiresUnsafe]
         private static unsafe void InternalPreserveStackTrace(Exception* pException, Exception* pOutException)
         {
             try
@@ -272,7 +271,6 @@ namespace System
         }
 
         [UnmanagedCallersOnly]
-        [RequiresUnsafe]
         internal static unsafe void CreateRuntimeWrappedException(object* pThrownObject, object* pResult, Exception* pException)
         {
             try
@@ -286,7 +284,6 @@ namespace System
         }
 
         [UnmanagedCallersOnly]
-        [RequiresUnsafe]
         internal static unsafe void CreateTypeInitializationException(char* pTypeName, Exception* pInnerException, object* pResult, Exception* pException)
         {
             try

@@ -15,11 +15,8 @@ parameters:
     - windows_arm64
     - linux_arm64
     - linux_arm
-    # TODO: Re-enable osx once disk space issue is resolved.
-    # macOS full dumps are ~5.7GB each; with 8+ full-dump debuggees the Helix
-    # machines run out of disk space (~45GB total). See PR #124782 for details.
-    # - osx_arm64
-    # - osx_x64
+    - osx_arm64
+    - osx_x64
 - name: cdacDumpTestMode
   displayName: cDAC Dump Test Mode
   type: string
