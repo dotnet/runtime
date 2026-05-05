@@ -1121,7 +1121,7 @@ namespace System.Threading.Tasks.Tests
                 await CreateCallstackDepthMarker();
             });
 
-            // DumpAllEvents(events);
+            DumpAllEvents(events);
 
             var stream = ParseAllEvents(events);
             var createCallstacks = stream.CallstacksWithMarker(AsyncEventID.CreateAsyncCallstack, nameof(CreateCallstackDepthMarker));
@@ -1178,7 +1178,7 @@ namespace System.Threading.Tasks.Tests
                 await SuspendDepthMarker();
             });
 
-            // DumpAllEvents(events);
+            DumpAllEvents(events);
 
             var stream = ParseAllEvents(events);
             var suspendCallstacks = stream.CallstacksWithMarker(AsyncEventID.SuspendAsyncCallstack, nameof(SuspendDepthMarker));
@@ -1381,7 +1381,7 @@ namespace System.Threading.Tasks.Tests
                 await CallstackDepthMarker();
             });
 
-            // DumpAllEvents(events);
+            DumpAllEvents(events);
 
             var stream = ParseAllEvents(events);
             var callstacks = stream.CallstacksWithMarker(AsyncEventID.ResumeAsyncCallstack, nameof(CallstackDepthMarker));
@@ -1428,7 +1428,7 @@ namespace System.Threading.Tasks.Tests
                 await SimulationHandledMarker();
             });
 
-            // DumpAllEvents(events);
+            DumpAllEvents(events);
 
             var stream = ParseAllEvents(events);
             AssertCallstackSimulationReachesZero(stream, nameof(SimulationHandledMarker));
