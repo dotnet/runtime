@@ -2049,7 +2049,7 @@ namespace System
             else if (separators.Length <= 1)
             {
                 char sep0 = separators[0];
-                if (Vector128.IsHardwareAccelerated && source.Length >= Vector128<ushort>.Count*2)
+                if (Vector128.IsHardwareAccelerated && source.Length >= Vector128<ushort>.Count * 2)
                 {
                     MakeSeparatorListVectorized(source, ref sepListBuilder, sep0);
                     return;
@@ -2072,7 +2072,7 @@ namespace System
                 sep0 = separators[0];
                 sep1 = separators[1];
                 sep2 = separators.Length > 2 ? separators[2] : sep1;
-                if (Vector128.IsHardwareAccelerated && source.Length >= Vector128<ushort>.Count*2)
+                if (Vector128.IsHardwareAccelerated && source.Length >= Vector128<ushort>.Count * 2)
                 {
                     MakeSeparatorListVectorized(source, ref sepListBuilder, sep0, sep1, sep2);
                     return;
