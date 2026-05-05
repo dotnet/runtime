@@ -2024,7 +2024,7 @@ void qsort1(uint8_t** low, uint8_t** high, unsigned int depth);
 #endif //USE_INTROSORT
 
 void* virtual_alloc (size_t size);
-void* virtual_alloc (size_t size, bool use_large_pages_p, uint16_t numa_node = NUMA_NODE_UNDEFINED);
+void* virtual_alloc (size_t size, int large_page_config, uint16_t numa_node = NUMA_NODE_UNDEFINED);
 
 /* per heap static initialization */
 #if defined(BACKGROUND_GC) && !defined(MULTIPLE_HEAPS)
@@ -4017,10 +4017,10 @@ heap_segment* make_initial_segment (int gen, int h_number, gc_heap* hp)
 
 void* virtual_alloc (size_t size)
 {
-    return virtual_alloc(size, false);
+    return virtual_alloc(size, 0);
 }
 
-void* virtual_alloc (size_t size, bool use_large_pages_p, uint16_t numa_node)
+void* virtual_alloc (size_t size, int large_page_config, uint16_t numa_node)
 {
     size_t requested_size = size;
 
@@ -4041,9 +4041,24 @@ void* virtual_alloc (size_t size, bool use_large_pages_p, uint16_t numa_node)
     }
 #endif // !FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
 
-    void* prgmem = use_large_pages_p ?
-        GCToOSInterface::VirtualReserveAndCommitLargePages(requested_size, numa_node) :
-        GCToOSInterface::VirtualReserve(requested_size, card_size * card_word_width, flags, numa_node);
+    void* prgmem;
+    if (large_page_config == 2)
+    {
+        prgmem = GCToOSInterface::VirtualReserve (requested_size, card_size * card_word_width, flags, numa_node);
+        if (prgmem && !GCToOSInterface::VirtualCommit (prgmem, requested_size))
+        {
+            GCToOSInterface::VirtualRelease (prgmem, requested_size);
+            prgmem = 0;
+        }
+    }
+    else if (large_page_config == 1)
+    {
+        prgmem = GCToOSInterface::VirtualReserveAndCommitLargePages (requested_size, numa_node);
+    }
+    else
+    {
+        prgmem = GCToOSInterface::VirtualReserve (requested_size, card_size * card_word_width, flags, numa_node);
+    }
     void *aligned_mem = prgmem;
 
     // We don't want (prgmem + size) to be right at the end of the address space
