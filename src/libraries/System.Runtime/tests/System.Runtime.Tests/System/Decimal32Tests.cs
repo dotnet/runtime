@@ -61,7 +61,9 @@ namespace System.Tests
             yield return new object[] { "+NaN", NumberStyles.Any, invariantFormat, Decimal32.NaN };
             yield return new object[] { "Infinity", NumberStyles.Any, invariantFormat, Decimal32.PositiveInfinity };
             yield return new object[] { "+Infinity", NumberStyles.Any, invariantFormat, Decimal32.PositiveInfinity };
+            yield return new object[] { "1" + new string('0', 97), NumberStyles.Any, invariantFormat, Decimal32.PositiveInfinity };
             yield return new object[] { "-Infinity", NumberStyles.Any, invariantFormat, Decimal32.NegativeInfinity };
+            yield return new object[] { "-1" + new string('0', 97), NumberStyles.Any, invariantFormat, Decimal32.NegativeInfinity };
         }
 
 
@@ -114,6 +116,7 @@ namespace System.Tests
             yield return new object[] { "0.00", "0.00" };
             yield return new object[] { "0." + new string('0', 101), "0." + new string('0', 101) };
             yield return new object[] { "0." + new string('0', 1000), "0." + new string('0', 101) };
+            yield return new object[] { "0." + new string('0', 1000) + "1234567", "0." + new string('0', 101) };
             yield return new object[] { "0e-2", "0.00" };
             yield return new object[] { "0e-101", "0." + new string('0', 101) };
             yield return new object[] { "0e-1000", "0." + new string('0', 101) };

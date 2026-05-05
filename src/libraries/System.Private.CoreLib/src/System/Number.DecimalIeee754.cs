@@ -50,17 +50,28 @@ namespace System
 
             if (exponent > TDecimal.MaxAdjustedExponent)
             {
-                return HandleExponentOverflow(signed, significand, exponent);
+                return ClampExponentOverflow(signed, significand, exponent);
             }
 
-            if (significand > TDecimal.MaxSignificand || exponent < TDecimal.MinAdjustedExponent)
+            if (exponent < TDecimal.MinAdjustedExponent)
             {
-                return Round(signed, significand, exponent);
+                return ClampExponentUnderflow(signed, significand, exponent);
+            }
+
+            if (significand > TDecimal.MaxSignificand)
+            {
+                int numberDigits = TDecimal.CountDigits(significand);
+                int numberDigitsRemove = numberDigits - TDecimal.Precision;
+                if (exponent + numberDigitsRemove > TDecimal.MaxAdjustedExponent)
+                {
+                    return signed ? TDecimal.NegativeInfinity : TDecimal.PositiveInfinity;
+                }
+                return RemoveDigitsAndRoundHalfToEven(signed, significand, exponent, numberDigitsRemove);
             }
 
             return DecimalIeee754FiniteNumberBinaryEncoding<TDecimal, TValue>(signed, significand, exponent);
 
-            static TValue HandleExponentOverflow(bool signed, TValue significand, int exponent)
+            static TValue ClampExponentOverflow(bool signed, TValue significand, int exponent)
             {
                 Debug.Assert(exponent > TDecimal.MaxAdjustedExponent);
 
@@ -81,46 +92,32 @@ namespace System
                 return DecimalIeee754FiniteNumberBinaryEncoding<TDecimal, TValue>(signed, significand, exponent);
             }
 
-            // This method adjusts the significand and exponent to ensure they fall within valid bounds.
-            // It handles underflow of the exponent by trimming digits,
-            // and applies rounding when the number of digits exceeds the allowed precision.
-            static TValue Round(bool signed, TValue significand, int exponent)
+            static TValue ClampExponentUnderflow(bool signed, TValue significand, int exponent)
             {
-                Debug.Assert(significand > TDecimal.MaxSignificand || exponent < TDecimal.MinAdjustedExponent);
+                Debug.Assert(exponent < TDecimal.MinAdjustedExponent);
 
                 int numberDigits = TDecimal.CountDigits(significand);
-                int numberDigitsRemove = 0;
 
-                if (exponent < TDecimal.MinAdjustedExponent)
+                int numberDigitsRemove = TDecimal.MinAdjustedExponent - exponent;
+
+                if (numberDigitsRemove >= numberDigits)
                 {
-                    numberDigitsRemove = TDecimal.MinAdjustedExponent - exponent;
-
-                    if (numberDigitsRemove >= numberDigits)
-                    {
-                        return DecimalIeee754FiniteNumberBinaryEncoding<TDecimal, TValue>(signed, TValue.Zero, TDecimal.MinAdjustedExponent);
-                    }
+                    return DecimalIeee754FiniteNumberBinaryEncoding<TDecimal, TValue>(signed, TValue.Zero, TDecimal.MinAdjustedExponent);
                 }
 
-                if (numberDigits - numberDigitsRemove > TDecimal.Precision)
-                {
-                    numberDigitsRemove += numberDigits - TDecimal.Precision;
+                int numberDigitsRemain = numberDigits - numberDigitsRemove;
 
-                    if (exponent + numberDigitsRemove >= TDecimal.MaxAdjustedExponent)
-                    {
-                        return signed ? TDecimal.NegativeInfinity : TDecimal.PositiveInfinity;
-                    }
-                }
-
-                return RemoveDigitsAndRoundHalfToEven(signed, significand, exponent, numberDigitsRemove);
+                return numberDigitsRemain > TDecimal.Precision
+                    ? RemoveDigitsAndRoundHalfToEven(signed, significand, exponent, numberDigitsRemove + (numberDigitsRemain - TDecimal.Precision))
+                    : RemoveDigitsAndRoundHalfToEven(signed, significand, exponent, numberDigitsRemove);
             }
 
             static TValue RemoveDigitsAndRoundHalfToEven(bool signed, TValue significand, int exponent, int numberDigitsRemove)
             {
-                (significand, TValue remainder) = TDecimal.DivRemPow10(significand, numberDigitsRemove);
                 exponent += numberDigitsRemove;
+                (significand, TValue remainder) = TDecimal.DivRemPow10(significand, numberDigitsRemove);
 
                 Debug.Assert(significand <= TDecimal.MaxSignificand);
-
                 if (remainder == TValue.Zero)
                 {
                     return DecimalIeee754FiniteNumberBinaryEncoding<TDecimal, TValue>(signed, significand, exponent);
@@ -128,16 +125,24 @@ namespace System
 
                 TValue half = TValue.CreateTruncating(5) * TDecimal.Power10(numberDigitsRemove - 1);
 
-                if (remainder > half || (remainder == half && TValue.IsOddInteger(significand)))
+                if (remainder < half || (remainder == half && TValue.IsEvenInteger(significand)))
                 {
-                    significand += TValue.One;
-
-                    if (significand > TDecimal.MaxSignificand)
-                    {
-                        return Round(signed, significand, exponent);
-                    }
+                    // round down
+                    return DecimalIeee754FiniteNumberBinaryEncoding<TDecimal, TValue>(signed, significand, exponent);
                 }
 
+                if (significand == TDecimal.MaxSignificand)
+                {
+                    exponent += 1;
+                    if (exponent > TDecimal.MaxAdjustedExponent)
+                    {
+                        return signed ? TDecimal.NegativeInfinity : TDecimal.PositiveInfinity;
+                    }
+                    significand = TDecimal.Power10(TDecimal.Precision - 1);
+                    return DecimalIeee754FiniteNumberBinaryEncoding<TDecimal, TValue>(signed, significand, exponent);
+                }
+
+                significand += TValue.One;
                 return DecimalIeee754FiniteNumberBinaryEncoding<TDecimal, TValue>(signed, significand, exponent);
             }
         }
@@ -357,33 +362,79 @@ namespace System
             Debug.Assert(number.Digits[0] != '0');
             Debug.Assert(number.DigitsCount != 0);
 
-            if (number.DigitsCount > TDecimal.Precision)
-            {
-                return DecimalIeee754Rounding<TDecimal, TValue>(ref number, TDecimal.Precision);
-            }
-
-            int positiveExponent = (Math.Max(0, number.Scale));
+            int positiveExponent = Math.Max(0, number.Scale);
             int integerDigitsPresent = Math.Min(positiveExponent, number.DigitsCount);
             int fractionalDigitsPresent = number.DigitsCount - integerDigitsPresent;
             int exponent = number.Scale - integerDigitsPresent - fractionalDigitsPresent;
 
+            if (exponent > TDecimal.MaxExponent)
+            {
+                return number.IsNegative ? TDecimal.NegativeInfinity : TDecimal.PositiveInfinity;
+            }
+
+            if (exponent > TDecimal.MaxAdjustedExponent)
+            {
+                return ClampExponentOverflow(ref number, exponent);
+            }
+
             if (exponent < TDecimal.MinAdjustedExponent)
             {
-                int numberDigitsRemove = (TDecimal.MinAdjustedExponent - exponent);
-                if (numberDigitsRemove < number.DigitsCount)
+                return ClampExponentUnderflow(ref number, exponent);
+            }
+
+            if (number.DigitsCount > TDecimal.Precision)
+            {
+                int numberDigitsRemove = number.DigitsCount - TDecimal.Precision;
+                if (exponent + numberDigitsRemove > TDecimal.MaxAdjustedExponent)
                 {
-                    int numberDigitsRemain = number.DigitsCount - numberDigitsRemove;
-                    return DecimalIeee754Rounding<TDecimal, TValue>(ref number, numberDigitsRemain);
+                    return number.IsNegative ? TDecimal.NegativeInfinity : TDecimal.PositiveInfinity;
                 }
-                else
-                {
-                    return number.IsNegative ? TDecimal.NegativeZero : TDecimal.Zero;
-                }
+                return DecimalIeee754Rounding<TDecimal, TValue>(ref number, TDecimal.Precision);
             }
 
             TValue significand = TDecimal.NumberToSignificand(ref number, number.DigitsCount);
 
             return DecimalIeee754FiniteNumberBinaryEncoding<TDecimal, TValue>(number.IsNegative, significand, exponent);
+
+            static TValue ClampExponentOverflow(ref NumberBuffer number, int exponent)
+            {
+                Debug.Assert(exponent > TDecimal.MaxAdjustedExponent);
+
+                int numberDigits = number.DigitsCount;
+
+                int numberZeroDigits = exponent - TDecimal.MaxAdjustedExponent;
+
+                if (numberDigits + numberZeroDigits > TDecimal.Precision)
+                {
+                    return number.IsNegative ? TDecimal.NegativeInfinity : TDecimal.PositiveInfinity;
+                }
+
+                for (int i = numberDigits; i < numberDigits + numberZeroDigits; i++)
+                {
+                    number.Digits[i] = (byte)'0';
+                }
+                number.DigitsCount += numberZeroDigits;
+                number.Scale -= numberZeroDigits;
+
+                number.CheckConsistency();
+
+                TValue significand = TDecimal.NumberToSignificand(ref number, number.DigitsCount);
+
+                return DecimalIeee754FiniteNumberBinaryEncoding<TDecimal, TValue>(number.IsNegative, significand, exponent);
+            }
+
+            static TValue ClampExponentUnderflow(ref NumberBuffer number, int exponent)
+            {
+                Debug.Assert(exponent < TDecimal.MinAdjustedExponent);
+                int numberDigitsRemove = TDecimal.MinAdjustedExponent - exponent;
+                if (numberDigitsRemove >= number.DigitsCount)
+                {
+                    return DecimalIeee754FiniteNumberBinaryEncoding<TDecimal, TValue>(number.IsNegative, TValue.Zero, TDecimal.MinAdjustedExponent);
+                }
+                int numberDigitsRemain = number.DigitsCount - numberDigitsRemove;
+                Debug.Assert(numberDigitsRemain <= TDecimal.Precision);
+                return DecimalIeee754Rounding<TDecimal, TValue>(ref number, numberDigitsRemain);
+            }
         }
 
         /// <summary>
@@ -465,6 +516,7 @@ namespace System
             where TValue : unmanaged, IBinaryInteger<TValue>
         {
             Debug.Assert(digits < number.DigitsCount);
+            Debug.Assert(digits <= TDecimal.Precision);
 
             TValue significand = TDecimal.NumberToSignificand(ref number, digits);
 
@@ -474,15 +526,14 @@ namespace System
             int integerDigitsPresent = Math.Min(positiveExponent, number.DigitsCount);
             int fractionalDigitsPresent = number.DigitsCount - integerDigitsPresent;
             int exponent = number.Scale - integerDigitsPresent - fractionalDigitsPresent;
-
             exponent += number.DigitsCount - digits;
 
-            bool increaseOne = false;
+            bool roundDown = true;
             int midPointValue = number.Digits[digits];
 
             if (midPointValue > '5')
             {
-                increaseOne = true;
+                roundDown = false;
             }
             else if (midPointValue == '5')
             {
@@ -494,7 +545,7 @@ namespace System
                 {
                     if (c != '0')
                     {
-                        increaseOne = true;
+                        roundDown = false;
                         tiedToEvenRounding = false;
                         break;
                     }
@@ -502,13 +553,13 @@ namespace System
                     c = number.Digits[index];
                 }
 
-                if (tiedToEvenRounding && !int.IsEvenInteger(number.Digits[digits - 1] - '0'))
+                if (tiedToEvenRounding && int.IsOddInteger(number.Digits[digits - 1] - '0'))
                 {
-                    increaseOne = true;
+                    roundDown = false;
                 }
             }
 
-            if (!increaseOne)
+            if (roundDown)
             {
                 return DecimalIeee754FiniteNumberBinaryEncoding<TDecimal, TValue>(number.IsNegative, significand, exponent);
             }

@@ -466,28 +466,16 @@ namespace System
 
             string significand = TDecimal.ToDecStr(unpackDecimal.Significand);
 
+            Debug.Assert(significand.Length <= TDecimal.BufferLength);
+
             for (int i = 0; i < significand.Length; i++)
             {
                 number.Digits[i] = (byte)significand[i];
             }
 
-            number.Scale = TValue.IsZero(unpackDecimal.Significand) ? 0 : significand.Length + unpackDecimal.UnbiasedExponent;
-
-            if (unpackDecimal.UnbiasedExponent > 0)
-            {
-                number.DigitsCount = significand.Length + unpackDecimal.UnbiasedExponent;
-
-                for (int i = 0; i < unpackDecimal.UnbiasedExponent; i++)
-                {
-                    number.Digits[significand.Length + i] = (byte)'0';
-                }
-            }
-            else
-            {
-                number.DigitsCount = significand.Length;
-            }
-
-            number.Digits[number.DigitsCount] = (byte)'\0';
+            number.Scale = significand.Length + unpackDecimal.UnbiasedExponent;
+            number.DigitsCount = significand.Length;
+            number.Digits[significand.Length] = (byte)'\0';
 
             number.CheckConsistency();
         }

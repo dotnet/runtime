@@ -40,8 +40,8 @@ namespace System.Tests
 
             yield return new object[] { "0." + new string('0', 396) + "12345", defaultStyle, invariantFormat, new Decimal64(12, -398) };
             yield return new object[] { "-0." + new string('0', 396) + "12345", defaultStyle, invariantFormat, new Decimal64(-12, -398) };
-            yield return new object[] { "0." + new string('0', 396) + "12562", defaultStyle, invariantFormat, new Decimal64(13, -398) };
-            yield return new object[] { "-0." + new string('0', 396) + "12562", defaultStyle, invariantFormat, new Decimal64(-13, -398) };
+            yield return new object[] { "0." + new string('0', 396) + "12662", defaultStyle, invariantFormat, new Decimal64(13, -398) };
+            yield return new object[] { "-0." + new string('0', 396) + "12662", defaultStyle, invariantFormat, new Decimal64(-13, -398) };
 
             yield return new object[] { emptyFormat.NumberDecimalSeparator + "234", defaultStyle, null, new Decimal64(234, -3) };
             yield return new object[] { "234" + emptyFormat.NumberDecimalSeparator, defaultStyle, null, new Decimal64(234, 0) };
@@ -62,7 +62,9 @@ namespace System.Tests
             yield return new object[] { "+NaN", NumberStyles.Any, invariantFormat, Decimal64.NaN };
             yield return new object[] { "Infinity", NumberStyles.Any, invariantFormat, Decimal64.PositiveInfinity };
             yield return new object[] { "+Infinity", NumberStyles.Any, invariantFormat, Decimal64.PositiveInfinity };
+            yield return new object[] { "1" + new string('0', 385), NumberStyles.Any, invariantFormat, Decimal64.PositiveInfinity };
             yield return new object[] { "-Infinity", NumberStyles.Any, invariantFormat, Decimal64.NegativeInfinity };
+            yield return new object[] { "-1" + new string('0', 385), NumberStyles.Any, invariantFormat, Decimal64.NegativeInfinity };
         }
 
 
@@ -115,6 +117,7 @@ namespace System.Tests
             yield return new object[] { "0.00", "0.00" };
             yield return new object[] { "0." + new string('0', 398), "0." + new string('0', 398) };
             yield return new object[] { "0." + new string('0', 1000), "0." + new string('0', 398) };
+            yield return new object[] { "0." + new string('0', 1000) + "1234567", "0." + new string('0', 398) };
             yield return new object[] { "0e-2", "0.00" };
             yield return new object[] { "0e-398", "0." + new string('0', 398) };
             yield return new object[] { "0e-10000", "0." + new string('0', 398) };
