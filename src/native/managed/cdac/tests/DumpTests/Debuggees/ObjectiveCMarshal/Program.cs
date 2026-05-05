@@ -16,7 +16,9 @@ internal static partial class Program
     [ObjectiveCTrackedTypeAttribute]
     private sealed class TrackedObject
     {
+#pragma warning disable CA1821 // Intentionally empty — the runtime requires a finalizer for IsTrackedReferenceWithFinalizer
         ~TrackedObject() { }
+#pragma warning restore CA1821
     }
 
     private static unsafe void Main()
