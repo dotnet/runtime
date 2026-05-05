@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Tests;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
@@ -2176,12 +2177,12 @@ namespace System.Text.Tests
             StringBuilder source = StringBuilderWithMultipleChunks();
             string expected = source.ToString();
 
-            // Snapshot the chunk chain so we can verify that exactly the same chunk
-            // instances and char[] buffers are moved to the destination.
-            List<char[]> originalChunkBuffers = new List<char[]>();
+            // Capture the backing char[] arrays by identity to verify no-copy move semantics.
+            List<(char[] Array, int Offset, int Count)> originalChunks = new List<(char[], int, int)>();
             foreach (ReadOnlyMemory<char> chunk in source.GetChunks())
             {
-                originalChunkBuffers.Add(chunk.ToArray());
+                Assert.True(MemoryMarshal.TryGetArray(chunk, out ArraySegment<char> segment));
+                originalChunks.Add((segment.Array!, segment.Offset, segment.Count));
             }
 
             StringBuilder destination = StringBuilder.MoveChunks(source);
@@ -2191,38 +2192,59 @@ namespace System.Text.Tests
             int i = 0;
             foreach (ReadOnlyMemory<char> chunk in destination.GetChunks())
             {
-                Assert.True(originalChunkBuffers[i++].AsSpan().SequenceEqual(chunk.Span));
+                Assert.True(MemoryMarshal.TryGetArray(chunk, out ArraySegment<char> segment));
+                Assert.Same(originalChunks[i].Array, segment.Array);
+                Assert.Equal(originalChunks[i].Offset, segment.Offset);
+                Assert.Equal(originalChunks[i].Count, segment.Count);
+                i++;
             }
-            Assert.Equal(originalChunkBuffers.Count, i);
+            Assert.Equal(originalChunks.Count, i);
 
             AssertSourceIsDrained(source);
         }
 
         [Fact]
-        public static void MoveChunks_DrainedSourceIsUnusable()
+        public static void MoveChunks_DrainedSource_RemainsUsable()
         {
             var source = new StringBuilder("abc");
+            int originalMaxCapacity = source.MaxCapacity;
             StringBuilder destination = StringBuilder.MoveChunks(source);
 
             Assert.Equal("abc", destination.ToString());
+            Assert.Equal(originalMaxCapacity, source.MaxCapacity);
 
-            // Because all of source's state has been zeroed out (including m_MaxCapacity),
-            // appending any non-empty content should throw.
-            Assert.Throws<ArgumentOutOfRangeException>(() => source.Append('x'));
+            // source is empty but fully usable; subsequent appends allocate new buffers.
+            source.Append('x');
+            Assert.Equal("x", source.ToString());
         }
 
-        private static readonly FieldInfo s_chunkCharsField = typeof(StringBuilder).GetField("m_ChunkChars", BindingFlags.Instance | BindingFlags.NonPublic);
+        [Fact]
+        public static void MoveChunks_AlreadyDrainedSource_ProducesEmptyDestination()
+        {
+            var source = new StringBuilder("abc");
+            int originalMaxCapacity = source.MaxCapacity;
+            _ = StringBuilder.MoveChunks(source);
+
+            // MoveChunks on an already-drained (empty) source produces an empty destination.
+            StringBuilder destination = StringBuilder.MoveChunks(source);
+
+            Assert.Equal(0, destination.Length);
+            Assert.Equal(0, destination.Capacity);
+            Assert.Equal(originalMaxCapacity, destination.MaxCapacity);
+            AssertSourceIsDrained(source);
+        }
+
+        private static readonly FieldInfo s_chunkCharsField = typeof(StringBuilder).GetField("m_ChunkChars", BindingFlags.Instance | BindingFlags.NonPublic)!;
 
         private static char[] GetChunkCharsField(StringBuilder builder)
         {
-            return (char[])s_chunkCharsField.GetValue(builder);
+            return (char[])s_chunkCharsField.GetValue(builder)!;
         }
 
         private static void AssertSourceIsDrained(StringBuilder source)
         {
             Assert.Equal(0, source.Length);
             Assert.Equal(0, source.Capacity);
-            Assert.Equal(0, source.MaxCapacity);
             Assert.Same(Array.Empty<char>(), GetChunkCharsField(source));
         }
 
