@@ -98,6 +98,6 @@ function(generate_data_descriptors)
     # found"), which is fatal under /WX.
     set_target_properties(${LIBRARY} PROPERTIES
         COMPILE_PDB_NAME "${LIBRARY}"
-        COMPILE_PDB_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}")
+        COMPILE_PDB_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>")
   endif()
 endfunction(generate_data_descriptors)
