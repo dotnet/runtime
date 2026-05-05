@@ -95,7 +95,7 @@ extends:
             crossgen2OutputFormat: macho
             displayNameArgs: R2R_Composite_MachO
             liveLibrariesBuildConfig: Release
-            unifiedArtifactsName: Checked_CoreCLR_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)_MachO
+            unifiedArtifactsName: Checked_CoreCLR_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
 
       # Outerloop testing in non-composite mode
       - template: /eng/pipelines/common/platform-matrix.yml

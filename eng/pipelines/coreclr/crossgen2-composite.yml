@@ -114,4 +114,4 @@ extends:
             crossgen2OutputFormat: macho
             displayNameArgs: Composite_MachO
             liveLibrariesBuildConfig: Release
-            unifiedArtifactsName: BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)_MachO
+            unifiedArtifactsName: BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
