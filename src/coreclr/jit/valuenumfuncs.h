@@ -65,6 +65,7 @@ ValueNumFuncDef(IndexOutOfRangeExc, 2, false, false) // Array bounds check, Args
 ValueNumFuncDef(InvalidCastExc, 2, false, false)     // CastClass check, Args: 0: ref value being cast; 1: handle of type being cast to
 ValueNumFuncDef(R2RInvalidCastExc, 2, false, false)  // CastClass check, Args: 0: ref value being cast; 1: entry point of R2R cast helper
 ValueNumFuncDef(NewArrOverflowExc, 1, false, false)  // Raises Integer overflow when Arg 0 is negative
+ValueNumFuncDef(NewStringOverflowExc, 1, false, false) // Raises Integer overflow when Arg 0 is negative or bigger than CORINFO_String_MaxLength
 ValueNumFuncDef(DynamicClassInitExc, 1, false, false)       // Represents exceptions thrown by static constructor for class. Args: 0: VN of DynamicStaticsInfo
 ValueNumFuncDef(ThreadClassInitExc, 1, false, false)       // Represents exceptions thrown by static constructor for class. Args: 0: VN of ThreadStaticsInfo
 ValueNumFuncDef(R2RClassInitExc, 1, false, false)    // Represents exceptions thrown by static constructor for class. Args: 0: VN of R2R entry point
