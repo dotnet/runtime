@@ -247,8 +247,8 @@ namespace System
         /// <param name="stream">Stream containing the data.</param>
         /// <param name="cancellationToken">A token that may be used to cancel the operation.</param>
         /// <returns>A value representing all of the data remaining in <paramref name="stream"/>.</returns>
-        public static Task<BinaryData> FromStreamAsync(Stream stream, CancellationToken cancellationToken = default)
-            => FromStreamAsync(stream, mediaType: null, cancellationToken);
+        public static async Task<BinaryData> FromStreamAsync(Stream stream, CancellationToken cancellationToken = default)
+            => await FromStreamAsync(stream, mediaType: null, cancellationToken).ConfigureAwait(false);
 
         /// <summary>
         /// Creates a <see cref="BinaryData"/> instance from the specified stream
@@ -260,12 +260,12 @@ namespace System
         /// <param name="cancellationToken">A token that may be used to cancel the operation.</param>
         /// <returns>A value representing all of the data remaining in <paramref name="stream"/>.</returns>
         /// <seealso cref="MediaTypeNames"/>
-        public static Task<BinaryData> FromStreamAsync(Stream stream, string? mediaType,
+        public static async Task<BinaryData> FromStreamAsync(Stream stream, string? mediaType,
             CancellationToken cancellationToken = default)
         {
             ArgumentNullException.ThrowIfNull(stream);
 
-            return FromStreamAsync(stream, useAsync: true, mediaType, cancellationToken);
+            return await FromStreamAsync(stream, useAsync: true, mediaType, cancellationToken).ConfigureAwait(false);
         }
 
         private static async Task<BinaryData> FromStreamAsync(Stream stream, bool useAsync,
@@ -334,8 +334,8 @@ namespace System
         /// <param name="path">The path to the file.</param>
         /// <param name="cancellationToken">A token that may be used to cancel the operation.</param>
         /// <returns>A value representing all of the data from the file.</returns>
-        public static Task<BinaryData> FromFileAsync(string path, CancellationToken cancellationToken = default)
-            => FromFileAsync(path, mediaType: null, cancellationToken);
+        public static async Task<BinaryData> FromFileAsync(string path, CancellationToken cancellationToken = default)
+            => await FromFileAsync(path, mediaType: null, cancellationToken).ConfigureAwait(false);
 
         /// <summary>
         /// Creates a <see cref="BinaryData"/> instance from the specified file
@@ -346,12 +346,12 @@ namespace System
         /// <param name="cancellationToken">A token that may be used to cancel the operation.</param>
         /// <returns>A value representing all of the data from the file.</returns>
         /// <seealso cref="MediaTypeNames"/>
-        public static Task<BinaryData> FromFileAsync(string path, string? mediaType,
+        public static async Task<BinaryData> FromFileAsync(string path, string? mediaType,
             CancellationToken cancellationToken = default)
         {
             ArgumentNullException.ThrowIfNull(path);
 
-            return Core();
+            return await Core().ConfigureAwait(false);
 
             async Task<BinaryData> Core()
             {

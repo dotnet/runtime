@@ -101,8 +101,8 @@ namespace System.Net.Http.Json
             return new JsonContent(inputValue, jsonTypeInfo, mediaType);
         }
 
-        protected override Task SerializeToStreamAsync(Stream stream, TransportContext? context)
-            => SerializeToStreamAsyncCore(stream, CancellationToken.None);
+        protected override async Task SerializeToStreamAsync(Stream stream, TransportContext? context)
+            => await SerializeToStreamAsyncCore(stream, CancellationToken.None).ConfigureAwait(false);
 
         protected override bool TryComputeLength(out long length)
         {

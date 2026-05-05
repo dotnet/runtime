@@ -165,24 +165,24 @@ namespace System.IO.Pipes
             throw new TimeoutException();
         }
 
-        public Task ConnectAsync()
+        public async Task ConnectAsync()
         {
             // We cannot avoid creating lambda here by using Connect method
             // unless we don't care about start time to be measured before the thread is started
-            return ConnectAsync(Timeout.Infinite, CancellationToken.None);
+            await ConnectAsync(Timeout.Infinite, CancellationToken.None).ConfigureAwait(false);
         }
 
-        public Task ConnectAsync(int timeout)
+        public async Task ConnectAsync(int timeout)
         {
-            return ConnectAsync(timeout, CancellationToken.None);
+            await ConnectAsync(timeout, CancellationToken.None).ConfigureAwait(false);
         }
 
-        public Task ConnectAsync(CancellationToken cancellationToken)
+        public async Task ConnectAsync(CancellationToken cancellationToken)
         {
-            return ConnectAsync(Timeout.Infinite, cancellationToken);
+            await ConnectAsync(Timeout.Infinite, cancellationToken).ConfigureAwait(false);
         }
 
-        public Task ConnectAsync(int timeout, CancellationToken cancellationToken)
+        public async Task ConnectAsync(int timeout, CancellationToken cancellationToken)
         {
             CheckConnectOperationsClient();
 
@@ -190,20 +190,20 @@ namespace System.IO.Pipes
 
             if (cancellationToken.IsCancellationRequested)
             {
-                return Task.FromCanceled(cancellationToken);
+                await Task.FromCanceled(cancellationToken).ConfigureAwait(false);
             }
 
             int startTime = Environment.TickCount; // We need to measure time here, not in the lambda
 
-            return Task.Factory.StartNew(static state =>
+            await Task.Factory.StartNew(static state =>
             {
                 var tuple = ((NamedPipeClientStream stream, int timeout, CancellationToken cancellationToken, int startTime))state!;
                 tuple.stream.ConnectInternal(tuple.timeout, tuple.cancellationToken, tuple.startTime);
-            }, (this, timeout, cancellationToken, startTime), cancellationToken, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
+            }, (this, timeout, cancellationToken, startTime), cancellationToken, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default).ConfigureAwait(false);
         }
 
-        public Task ConnectAsync(TimeSpan timeout, CancellationToken cancellationToken = default) =>
-            ConnectAsync(ToTimeoutMilliseconds(timeout), cancellationToken);
+        public async Task ConnectAsync(TimeSpan timeout, CancellationToken cancellationToken = default) =>
+            await ConnectAsync(ToTimeoutMilliseconds(timeout), cancellationToken).ConfigureAwait(false);
 
         private static int ToTimeoutMilliseconds(TimeSpan timeout)
         {

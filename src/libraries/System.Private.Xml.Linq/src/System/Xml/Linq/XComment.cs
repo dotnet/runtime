@@ -105,13 +105,13 @@ namespace System.Xml.Linq
         /// The <see cref="XmlWriter"/> to write this <see cref="XComment"/> to.
         /// </param>
         /// <param name="cancellationToken">A cancellation token.</param>
-        public override Task WriteToAsync(XmlWriter writer, CancellationToken cancellationToken)
+        public override async Task WriteToAsync(XmlWriter writer, CancellationToken cancellationToken)
         {
             ArgumentNullException.ThrowIfNull(writer);
 
             if (cancellationToken.IsCancellationRequested)
-                return Task.FromCanceled(cancellationToken);
-            return writer.WriteCommentAsync(value);
+                await Task.FromCanceled(cancellationToken).ConfigureAwait(false);
+            await writer.WriteCommentAsync(value).ConfigureAwait(false);
         }
 
         internal override XNode CloneNode()

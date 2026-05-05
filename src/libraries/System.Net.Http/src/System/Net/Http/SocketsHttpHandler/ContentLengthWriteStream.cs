@@ -34,18 +34,18 @@ namespace System.Net.Http
                 connection.Write(buffer);
             }
 
-            public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken ignored) // token ignored as it comes from SendAsync
+            public override async ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken ignored) // token ignored as it comes from SendAsync
             {
                 BytesWritten += buffer.Length;
 
                 if (BytesWritten > _contentLength)
                 {
-                    return ValueTask.FromException(ExceptionDispatchInfo.SetCurrentStackTrace(new HttpRequestException(SR.net_http_content_write_larger_than_content_length)));
+                    throw ExceptionDispatchInfo.SetCurrentStackTrace(new HttpRequestException(SR.net_http_content_write_larger_than_content_length));
                 }
 
                 HttpConnection connection = GetConnectionOrThrow();
                 Debug.Assert(connection._currentRequest != null);
-                return connection.WriteAsync(buffer);
+                await connection.WriteAsync(buffer).ConfigureAwait(false);
             }
 
             public override Task FinishAsync(bool async)

@@ -88,10 +88,10 @@ namespace System.Xml
             CoreWriter.Flush();
         }
 
-        public override Task FlushAsync()
+        public override async Task FlushAsync()
         {
             CheckAsync();
-            return SetLastTask(CoreWriter.FlushAsync());
+            await SetLastTask(CoreWriter.FlushAsync()).ConfigureAwait(false);
         }
 
         public override string? LookupPrefix(string ns)
@@ -106,10 +106,10 @@ namespace System.Xml
             CoreWriter.WriteAttributes(reader, defattr);
         }
 
-        public override Task WriteAttributesAsync(XmlReader reader, bool defattr)
+        public override async Task WriteAttributesAsync(XmlReader reader, bool defattr)
         {
             CheckAsync();
-            return SetLastTask(CoreWriter.WriteAttributesAsync(reader, defattr));
+            await SetLastTask(CoreWriter.WriteAttributesAsync(reader, defattr)).ConfigureAwait(false);
         }
 
         public override void WriteBase64(byte[] buffer, int index, int count)
@@ -118,10 +118,10 @@ namespace System.Xml
             CoreWriter.WriteBase64(buffer, index, count);
         }
 
-        public override Task WriteBase64Async(byte[] buffer, int index, int count)
+        public override async Task WriteBase64Async(byte[] buffer, int index, int count)
         {
             CheckAsync();
-            return SetLastTask(CoreWriter.WriteBase64Async(buffer, index, count));
+            await SetLastTask(CoreWriter.WriteBase64Async(buffer, index, count)).ConfigureAwait(false);
         }
 
         public override void WriteBinHex(byte[] buffer, int index, int count)
@@ -130,10 +130,10 @@ namespace System.Xml
             CoreWriter.WriteBinHex(buffer, index, count);
         }
 
-        public override Task WriteBinHexAsync(byte[] buffer, int index, int count)
+        public override async Task WriteBinHexAsync(byte[] buffer, int index, int count)
         {
             CheckAsync();
-            return SetLastTask(CoreWriter.WriteBinHexAsync(buffer, index, count));
+            await SetLastTask(CoreWriter.WriteBinHexAsync(buffer, index, count)).ConfigureAwait(false);
         }
 
         public override void WriteCData(string? text)
@@ -142,10 +142,10 @@ namespace System.Xml
             CoreWriter.WriteCData(text);
         }
 
-        public override Task WriteCDataAsync(string? text)
+        public override async Task WriteCDataAsync(string? text)
         {
             CheckAsync();
-            return SetLastTask(CoreWriter.WriteCDataAsync(text));
+            await SetLastTask(CoreWriter.WriteCDataAsync(text)).ConfigureAwait(false);
         }
 
         public override void WriteCharEntity(char ch)
@@ -154,10 +154,10 @@ namespace System.Xml
             CoreWriter.WriteCharEntity(ch);
         }
 
-        public override Task WriteCharEntityAsync(char ch)
+        public override async Task WriteCharEntityAsync(char ch)
         {
             CheckAsync();
-            return SetLastTask(CoreWriter.WriteCharEntityAsync(ch));
+            await SetLastTask(CoreWriter.WriteCharEntityAsync(ch)).ConfigureAwait(false);
         }
 
         public override void WriteChars(char[] buffer, int index, int count)
@@ -166,10 +166,10 @@ namespace System.Xml
             CoreWriter.WriteChars(buffer, index, count);
         }
 
-        public override Task WriteCharsAsync(char[] buffer, int index, int count)
+        public override async Task WriteCharsAsync(char[] buffer, int index, int count)
         {
             CheckAsync();
-            return SetLastTask(CoreWriter.WriteCharsAsync(buffer, index, count));
+            await SetLastTask(CoreWriter.WriteCharsAsync(buffer, index, count)).ConfigureAwait(false);
         }
 
         public override void WriteComment(string? text)
@@ -178,10 +178,10 @@ namespace System.Xml
             CoreWriter.WriteComment(text);
         }
 
-        public override Task WriteCommentAsync(string? text)
+        public override async Task WriteCommentAsync(string? text)
         {
             CheckAsync();
-            return SetLastTask(CoreWriter.WriteCommentAsync(text));
+            await SetLastTask(CoreWriter.WriteCommentAsync(text)).ConfigureAwait(false);
         }
 
         public override void WriteDocType(string name, string? pubid, string? sysid, string? subset)
@@ -190,10 +190,10 @@ namespace System.Xml
             CoreWriter.WriteDocType(name, pubid, sysid, subset);
         }
 
-        public override Task WriteDocTypeAsync(string name, string? pubid, string? sysid, string? subset)
+        public override async Task WriteDocTypeAsync(string name, string? pubid, string? sysid, string? subset)
         {
             CheckAsync();
-            return SetLastTask(CoreWriter.WriteDocTypeAsync(name, pubid, sysid, subset));
+            await SetLastTask(CoreWriter.WriteDocTypeAsync(name, pubid, sysid, subset)).ConfigureAwait(false);
         }
 
         public override void WriteEndAttribute()
@@ -208,10 +208,10 @@ namespace System.Xml
             CoreWriter.WriteEndDocument();
         }
 
-        public override Task WriteEndDocumentAsync()
+        public override async Task WriteEndDocumentAsync()
         {
             CheckAsync();
-            return SetLastTask(CoreWriter.WriteEndDocumentAsync());
+            await SetLastTask(CoreWriter.WriteEndDocumentAsync()).ConfigureAwait(false);
         }
 
         public override void WriteEndElement()
@@ -220,10 +220,10 @@ namespace System.Xml
             CoreWriter.WriteEndElement();
         }
 
-        public override Task WriteEndElementAsync()
+        public override async Task WriteEndElementAsync()
         {
             CheckAsync();
-            return SetLastTask(CoreWriter.WriteEndElementAsync());
+            await SetLastTask(CoreWriter.WriteEndElementAsync()).ConfigureAwait(false);
         }
 
         public override void WriteEntityRef(string name)
@@ -232,10 +232,10 @@ namespace System.Xml
             CoreWriter.WriteEntityRef(name);
         }
 
-        public override Task WriteEntityRefAsync(string name)
+        public override async Task WriteEntityRefAsync(string name)
         {
             CheckAsync();
-            return SetLastTask(CoreWriter.WriteEntityRefAsync(name));
+            await SetLastTask(CoreWriter.WriteEntityRefAsync(name)).ConfigureAwait(false);
         }
 
         public override void WriteFullEndElement()
@@ -244,10 +244,10 @@ namespace System.Xml
             CoreWriter.WriteFullEndElement();
         }
 
-        public override Task WriteFullEndElementAsync()
+        public override async Task WriteFullEndElementAsync()
         {
             CheckAsync();
-            return SetLastTask(CoreWriter.WriteFullEndElementAsync());
+            await SetLastTask(CoreWriter.WriteFullEndElementAsync()).ConfigureAwait(false);
         }
 
         public override void WriteName(string name)
@@ -256,10 +256,10 @@ namespace System.Xml
             CoreWriter.WriteName(name);
         }
 
-        public override Task WriteNameAsync(string name)
+        public override async Task WriteNameAsync(string name)
         {
             CheckAsync();
-            return SetLastTask(CoreWriter.WriteNameAsync(name));
+            await SetLastTask(CoreWriter.WriteNameAsync(name)).ConfigureAwait(false);
         }
 
         public override void WriteNmToken(string name)
@@ -268,10 +268,10 @@ namespace System.Xml
             CoreWriter.WriteNmToken(name);
         }
 
-        public override Task WriteNmTokenAsync(string name)
+        public override async Task WriteNmTokenAsync(string name)
         {
             CheckAsync();
-            return SetLastTask(CoreWriter.WriteNmTokenAsync(name));
+            await SetLastTask(CoreWriter.WriteNmTokenAsync(name)).ConfigureAwait(false);
         }
 
         public override void WriteNode(XmlReader reader, bool defattr)
@@ -280,10 +280,10 @@ namespace System.Xml
             CoreWriter.WriteNode(reader, defattr);
         }
 
-        public override Task WriteNodeAsync(XmlReader reader, bool defattr)
+        public override async Task WriteNodeAsync(XmlReader reader, bool defattr)
         {
             CheckAsync();
-            return SetLastTask(CoreWriter.WriteNodeAsync(reader, defattr));
+            await SetLastTask(CoreWriter.WriteNodeAsync(reader, defattr)).ConfigureAwait(false);
         }
 
         public override void WriteProcessingInstruction(string name, string? text)
@@ -292,10 +292,10 @@ namespace System.Xml
             CoreWriter.WriteProcessingInstruction(name, text);
         }
 
-        public override Task WriteProcessingInstructionAsync(string name, string? text)
+        public override async Task WriteProcessingInstructionAsync(string name, string? text)
         {
             CheckAsync();
-            return SetLastTask(CoreWriter.WriteProcessingInstructionAsync(name, text));
+            await SetLastTask(CoreWriter.WriteProcessingInstructionAsync(name, text)).ConfigureAwait(false);
         }
 
         public override void WriteQualifiedName(string localName, string? ns)
@@ -304,10 +304,10 @@ namespace System.Xml
             CoreWriter.WriteQualifiedName(localName, ns);
         }
 
-        public override Task WriteQualifiedNameAsync(string localName, string? ns)
+        public override async Task WriteQualifiedNameAsync(string localName, string? ns)
         {
             CheckAsync();
-            return SetLastTask(CoreWriter.WriteQualifiedNameAsync(localName, ns));
+            await SetLastTask(CoreWriter.WriteQualifiedNameAsync(localName, ns)).ConfigureAwait(false);
         }
 
         public override void WriteRaw(string data)
@@ -322,16 +322,16 @@ namespace System.Xml
             CoreWriter.WriteRaw(buffer, index, count);
         }
 
-        public override Task WriteRawAsync(string data)
+        public override async Task WriteRawAsync(string data)
         {
             CheckAsync();
-            return SetLastTask(CoreWriter.WriteRawAsync(data));
+            await SetLastTask(CoreWriter.WriteRawAsync(data)).ConfigureAwait(false);
         }
 
-        public override Task WriteRawAsync(char[] buffer, int index, int count)
+        public override async Task WriteRawAsync(char[] buffer, int index, int count)
         {
             CheckAsync();
-            return SetLastTask(CoreWriter.WriteRawAsync(buffer, index, count));
+            await SetLastTask(CoreWriter.WriteRawAsync(buffer, index, count)).ConfigureAwait(false);
         }
 
         public override void WriteStartAttribute(string? prefix, string localName, string? ns)
@@ -352,16 +352,16 @@ namespace System.Xml
             CoreWriter.WriteStartDocument(standalone);
         }
 
-        public override Task WriteStartDocumentAsync()
+        public override async Task WriteStartDocumentAsync()
         {
             CheckAsync();
-            return SetLastTask(CoreWriter.WriteStartDocumentAsync());
+            await SetLastTask(CoreWriter.WriteStartDocumentAsync()).ConfigureAwait(false);
         }
 
-        public override Task WriteStartDocumentAsync(bool standalone)
+        public override async Task WriteStartDocumentAsync(bool standalone)
         {
             CheckAsync();
-            return SetLastTask(CoreWriter.WriteStartDocumentAsync(standalone));
+            await SetLastTask(CoreWriter.WriteStartDocumentAsync(standalone)).ConfigureAwait(false);
         }
 
         public override void WriteStartElement(string? prefix, string localName, string? ns)
@@ -370,10 +370,10 @@ namespace System.Xml
             CoreWriter.WriteStartElement(prefix, localName, ns);
         }
 
-        public override Task WriteStartElementAsync(string? prefix, string localName, string? ns)
+        public override async Task WriteStartElementAsync(string? prefix, string localName, string? ns)
         {
             CheckAsync();
-            return SetLastTask(CoreWriter.WriteStartElementAsync(prefix, localName, ns));
+            await SetLastTask(CoreWriter.WriteStartElementAsync(prefix, localName, ns)).ConfigureAwait(false);
         }
 
         public override void WriteString(string? text)
@@ -382,10 +382,10 @@ namespace System.Xml
             CoreWriter.WriteString(text);
         }
 
-        public override Task WriteStringAsync(string? text)
+        public override async Task WriteStringAsync(string? text)
         {
             CheckAsync();
-            return SetLastTask(CoreWriter.WriteStringAsync(text));
+            await SetLastTask(CoreWriter.WriteStringAsync(text)).ConfigureAwait(false);
         }
 
         public override void WriteSurrogateCharEntity(char lowChar, char highChar)
@@ -394,10 +394,10 @@ namespace System.Xml
             CoreWriter.WriteSurrogateCharEntity(lowChar, highChar);
         }
 
-        public override Task WriteSurrogateCharEntityAsync(char lowChar, char highChar)
+        public override async Task WriteSurrogateCharEntityAsync(char lowChar, char highChar)
         {
             CheckAsync();
-            return SetLastTask(CoreWriter.WriteSurrogateCharEntityAsync(lowChar, highChar));
+            await SetLastTask(CoreWriter.WriteSurrogateCharEntityAsync(lowChar, highChar)).ConfigureAwait(false);
         }
 
         public override void WriteValue(string? value)
@@ -460,10 +460,10 @@ namespace System.Xml
             CoreWriter.WriteWhitespace(ws);
         }
 
-        public override Task WriteWhitespaceAsync(string? ws)
+        public override async Task WriteWhitespaceAsync(string? ws)
         {
             CheckAsync();
-            return SetLastTask(CoreWriter.WriteWhitespaceAsync(ws));
+            await SetLastTask(CoreWriter.WriteWhitespaceAsync(ws)).ConfigureAwait(false);
         }
 
         public override void WriteStartElement(string? prefix, XmlDictionaryString localName, XmlDictionaryString? namespaceUri)

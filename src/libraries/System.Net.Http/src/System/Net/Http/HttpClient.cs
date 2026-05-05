@@ -156,23 +156,23 @@ namespace System.Net.Http
 
         #region Simple Get Overloads
 
-        public Task<string> GetStringAsync([StringSyntax(StringSyntaxAttribute.Uri)] string? requestUri) =>
-            GetStringAsync(CreateUri(requestUri));
+        public async Task<string> GetStringAsync([StringSyntax(StringSyntaxAttribute.Uri)] string? requestUri) =>
+            await GetStringAsync(CreateUri(requestUri)).ConfigureAwait(false);
 
-        public Task<string> GetStringAsync(Uri? requestUri) =>
-            GetStringAsync(requestUri, CancellationToken.None);
+        public async Task<string> GetStringAsync(Uri? requestUri) =>
+            await GetStringAsync(requestUri, CancellationToken.None).ConfigureAwait(false);
 
-        public Task<string> GetStringAsync([StringSyntax(StringSyntaxAttribute.Uri)] string? requestUri, CancellationToken cancellationToken) =>
-            GetStringAsync(CreateUri(requestUri), cancellationToken);
+        public async Task<string> GetStringAsync([StringSyntax(StringSyntaxAttribute.Uri)] string? requestUri, CancellationToken cancellationToken) =>
+            await GetStringAsync(CreateUri(requestUri), cancellationToken).ConfigureAwait(false);
 
-        public Task<string> GetStringAsync(Uri? requestUri, CancellationToken cancellationToken)
+        public async Task<string> GetStringAsync(Uri? requestUri, CancellationToken cancellationToken)
         {
             HttpRequestMessage request = CreateRequestMessage(HttpMethod.Get, requestUri);
 
             // Called outside of async state machine to propagate certain exception even without awaiting the returned task.
             CheckRequestBeforeSend(request);
 
-            return GetStringAsyncCore(request, cancellationToken);
+            return await GetStringAsyncCore(request, cancellationToken).ConfigureAwait(false);
         }
 
         private async Task<string> GetStringAsyncCore(HttpRequestMessage request, CancellationToken cancellationToken)
@@ -228,23 +228,23 @@ namespace System.Net.Http
             }
         }
 
-        public Task<byte[]> GetByteArrayAsync([StringSyntax(StringSyntaxAttribute.Uri)] string? requestUri) =>
-            GetByteArrayAsync(CreateUri(requestUri));
+        public async Task<byte[]> GetByteArrayAsync([StringSyntax(StringSyntaxAttribute.Uri)] string? requestUri) =>
+            await GetByteArrayAsync(CreateUri(requestUri)).ConfigureAwait(false);
 
-        public Task<byte[]> GetByteArrayAsync(Uri? requestUri) =>
-            GetByteArrayAsync(requestUri, CancellationToken.None);
+        public async Task<byte[]> GetByteArrayAsync(Uri? requestUri) =>
+            await GetByteArrayAsync(requestUri, CancellationToken.None).ConfigureAwait(false);
 
-        public Task<byte[]> GetByteArrayAsync([StringSyntax(StringSyntaxAttribute.Uri)] string? requestUri, CancellationToken cancellationToken) =>
-            GetByteArrayAsync(CreateUri(requestUri), cancellationToken);
+        public async Task<byte[]> GetByteArrayAsync([StringSyntax(StringSyntaxAttribute.Uri)] string? requestUri, CancellationToken cancellationToken) =>
+            await GetByteArrayAsync(CreateUri(requestUri), cancellationToken).ConfigureAwait(false);
 
-        public Task<byte[]> GetByteArrayAsync(Uri? requestUri, CancellationToken cancellationToken)
+        public async Task<byte[]> GetByteArrayAsync(Uri? requestUri, CancellationToken cancellationToken)
         {
             HttpRequestMessage request = CreateRequestMessage(HttpMethod.Get, requestUri);
 
             // Called outside of async state machine to propagate certain exception even without awaiting the returned task.
             CheckRequestBeforeSend(request);
 
-            return GetByteArrayAsyncCore(request, cancellationToken);
+            return await GetByteArrayAsyncCore(request, cancellationToken).ConfigureAwait(false);
         }
 
         private async Task<byte[]> GetByteArrayAsyncCore(HttpRequestMessage request, CancellationToken cancellationToken)
@@ -303,23 +303,23 @@ namespace System.Net.Http
             }
         }
 
-        public Task<Stream> GetStreamAsync([StringSyntax(StringSyntaxAttribute.Uri)] string? requestUri) =>
-            GetStreamAsync(CreateUri(requestUri));
+        public async Task<Stream> GetStreamAsync([StringSyntax(StringSyntaxAttribute.Uri)] string? requestUri) =>
+            await GetStreamAsync(CreateUri(requestUri)).ConfigureAwait(false);
 
-        public Task<Stream> GetStreamAsync([StringSyntax(StringSyntaxAttribute.Uri)] string? requestUri, CancellationToken cancellationToken) =>
-            GetStreamAsync(CreateUri(requestUri), cancellationToken);
+        public async Task<Stream> GetStreamAsync([StringSyntax(StringSyntaxAttribute.Uri)] string? requestUri, CancellationToken cancellationToken) =>
+            await GetStreamAsync(CreateUri(requestUri), cancellationToken).ConfigureAwait(false);
 
-        public Task<Stream> GetStreamAsync(Uri? requestUri) =>
-            GetStreamAsync(requestUri, CancellationToken.None);
+        public async Task<Stream> GetStreamAsync(Uri? requestUri) =>
+            await GetStreamAsync(requestUri, CancellationToken.None).ConfigureAwait(false);
 
-        public Task<Stream> GetStreamAsync(Uri? requestUri, CancellationToken cancellationToken)
+        public async Task<Stream> GetStreamAsync(Uri? requestUri, CancellationToken cancellationToken)
         {
             HttpRequestMessage request = CreateRequestMessage(HttpMethod.Get, requestUri);
 
             // Called outside of async state machine to propagate certain exception even without awaiting the returned task.
             CheckRequestBeforeSend(request);
 
-            return GetStreamAsyncCore(request, cancellationToken);
+            return await GetStreamAsyncCore(request, cancellationToken).ConfigureAwait(false);
         }
 
         private async Task<Stream> GetStreamAsyncCore(HttpRequestMessage request, CancellationToken cancellationToken)
@@ -353,89 +353,89 @@ namespace System.Net.Http
 
         #region REST Send Overloads
 
-        public Task<HttpResponseMessage> GetAsync([StringSyntax(StringSyntaxAttribute.Uri)] string? requestUri) =>
-            GetAsync(CreateUri(requestUri));
+        public async Task<HttpResponseMessage> GetAsync([StringSyntax(StringSyntaxAttribute.Uri)] string? requestUri) =>
+            await GetAsync(CreateUri(requestUri)).ConfigureAwait(false);
 
-        public Task<HttpResponseMessage> GetAsync(Uri? requestUri) =>
-            GetAsync(requestUri, DefaultCompletionOption);
+        public async Task<HttpResponseMessage> GetAsync(Uri? requestUri) =>
+            await GetAsync(requestUri, DefaultCompletionOption).ConfigureAwait(false);
 
-        public Task<HttpResponseMessage> GetAsync([StringSyntax(StringSyntaxAttribute.Uri)] string? requestUri, HttpCompletionOption completionOption) =>
-            GetAsync(CreateUri(requestUri), completionOption);
+        public async Task<HttpResponseMessage> GetAsync([StringSyntax(StringSyntaxAttribute.Uri)] string? requestUri, HttpCompletionOption completionOption) =>
+            await GetAsync(CreateUri(requestUri), completionOption).ConfigureAwait(false);
 
-        public Task<HttpResponseMessage> GetAsync(Uri? requestUri, HttpCompletionOption completionOption) =>
-            GetAsync(requestUri, completionOption, CancellationToken.None);
+        public async Task<HttpResponseMessage> GetAsync(Uri? requestUri, HttpCompletionOption completionOption) =>
+            await GetAsync(requestUri, completionOption, CancellationToken.None).ConfigureAwait(false);
 
-        public Task<HttpResponseMessage> GetAsync([StringSyntax(StringSyntaxAttribute.Uri)] string? requestUri, CancellationToken cancellationToken) =>
-            GetAsync(CreateUri(requestUri), cancellationToken);
+        public async Task<HttpResponseMessage> GetAsync([StringSyntax(StringSyntaxAttribute.Uri)] string? requestUri, CancellationToken cancellationToken) =>
+            await GetAsync(CreateUri(requestUri), cancellationToken).ConfigureAwait(false);
 
-        public Task<HttpResponseMessage> GetAsync(Uri? requestUri, CancellationToken cancellationToken) =>
-            GetAsync(requestUri, DefaultCompletionOption, cancellationToken);
+        public async Task<HttpResponseMessage> GetAsync(Uri? requestUri, CancellationToken cancellationToken) =>
+            await GetAsync(requestUri, DefaultCompletionOption, cancellationToken).ConfigureAwait(false);
 
-        public Task<HttpResponseMessage> GetAsync([StringSyntax(StringSyntaxAttribute.Uri)] string? requestUri, HttpCompletionOption completionOption, CancellationToken cancellationToken) =>
-            GetAsync(CreateUri(requestUri), completionOption, cancellationToken);
+        public async Task<HttpResponseMessage> GetAsync([StringSyntax(StringSyntaxAttribute.Uri)] string? requestUri, HttpCompletionOption completionOption, CancellationToken cancellationToken) =>
+            await GetAsync(CreateUri(requestUri), completionOption, cancellationToken).ConfigureAwait(false);
 
-        public Task<HttpResponseMessage> GetAsync(Uri? requestUri, HttpCompletionOption completionOption, CancellationToken cancellationToken) =>
-            SendAsync(CreateRequestMessage(HttpMethod.Get, requestUri), completionOption, cancellationToken);
+        public async Task<HttpResponseMessage> GetAsync(Uri? requestUri, HttpCompletionOption completionOption, CancellationToken cancellationToken) =>
+            await SendAsync(CreateRequestMessage(HttpMethod.Get, requestUri), completionOption, cancellationToken).ConfigureAwait(false);
 
-        public Task<HttpResponseMessage> PostAsync([StringSyntax(StringSyntaxAttribute.Uri)] string? requestUri, HttpContent? content) =>
-            PostAsync(CreateUri(requestUri), content);
+        public async Task<HttpResponseMessage> PostAsync([StringSyntax(StringSyntaxAttribute.Uri)] string? requestUri, HttpContent? content) =>
+            await PostAsync(CreateUri(requestUri), content).ConfigureAwait(false);
 
-        public Task<HttpResponseMessage> PostAsync(Uri? requestUri, HttpContent? content) =>
-            PostAsync(requestUri, content, CancellationToken.None);
+        public async Task<HttpResponseMessage> PostAsync(Uri? requestUri, HttpContent? content) =>
+            await PostAsync(requestUri, content, CancellationToken.None).ConfigureAwait(false);
 
-        public Task<HttpResponseMessage> PostAsync([StringSyntax(StringSyntaxAttribute.Uri)] string? requestUri, HttpContent? content, CancellationToken cancellationToken) =>
-            PostAsync(CreateUri(requestUri), content, cancellationToken);
+        public async Task<HttpResponseMessage> PostAsync([StringSyntax(StringSyntaxAttribute.Uri)] string? requestUri, HttpContent? content, CancellationToken cancellationToken) =>
+            await PostAsync(CreateUri(requestUri), content, cancellationToken).ConfigureAwait(false);
 
-        public Task<HttpResponseMessage> PostAsync(Uri? requestUri, HttpContent? content, CancellationToken cancellationToken)
+        public async Task<HttpResponseMessage> PostAsync(Uri? requestUri, HttpContent? content, CancellationToken cancellationToken)
         {
             HttpRequestMessage request = CreateRequestMessage(HttpMethod.Post, requestUri);
             request.Content = content;
-            return SendAsync(request, cancellationToken);
+            return await SendAsync(request, cancellationToken).ConfigureAwait(false);
         }
 
-        public Task<HttpResponseMessage> PutAsync([StringSyntax(StringSyntaxAttribute.Uri)] string? requestUri, HttpContent? content) =>
-            PutAsync(CreateUri(requestUri), content);
+        public async Task<HttpResponseMessage> PutAsync([StringSyntax(StringSyntaxAttribute.Uri)] string? requestUri, HttpContent? content) =>
+            await PutAsync(CreateUri(requestUri), content).ConfigureAwait(false);
 
-        public Task<HttpResponseMessage> PutAsync(Uri? requestUri, HttpContent? content) =>
-            PutAsync(requestUri, content, CancellationToken.None);
+        public async Task<HttpResponseMessage> PutAsync(Uri? requestUri, HttpContent? content) =>
+            await PutAsync(requestUri, content, CancellationToken.None).ConfigureAwait(false);
 
-        public Task<HttpResponseMessage> PutAsync([StringSyntax(StringSyntaxAttribute.Uri)] string? requestUri, HttpContent? content, CancellationToken cancellationToken) =>
-            PutAsync(CreateUri(requestUri), content, cancellationToken);
+        public async Task<HttpResponseMessage> PutAsync([StringSyntax(StringSyntaxAttribute.Uri)] string? requestUri, HttpContent? content, CancellationToken cancellationToken) =>
+            await PutAsync(CreateUri(requestUri), content, cancellationToken).ConfigureAwait(false);
 
-        public Task<HttpResponseMessage> PutAsync(Uri? requestUri, HttpContent? content, CancellationToken cancellationToken)
+        public async Task<HttpResponseMessage> PutAsync(Uri? requestUri, HttpContent? content, CancellationToken cancellationToken)
         {
             HttpRequestMessage request = CreateRequestMessage(HttpMethod.Put, requestUri);
             request.Content = content;
-            return SendAsync(request, cancellationToken);
+            return await SendAsync(request, cancellationToken).ConfigureAwait(false);
         }
 
-        public Task<HttpResponseMessage> PatchAsync([StringSyntax(StringSyntaxAttribute.Uri)] string? requestUri, HttpContent? content) =>
-            PatchAsync(CreateUri(requestUri), content);
+        public async Task<HttpResponseMessage> PatchAsync([StringSyntax(StringSyntaxAttribute.Uri)] string? requestUri, HttpContent? content) =>
+            await PatchAsync(CreateUri(requestUri), content).ConfigureAwait(false);
 
-        public Task<HttpResponseMessage> PatchAsync(Uri? requestUri, HttpContent? content) =>
-            PatchAsync(requestUri, content, CancellationToken.None);
+        public async Task<HttpResponseMessage> PatchAsync(Uri? requestUri, HttpContent? content) =>
+            await PatchAsync(requestUri, content, CancellationToken.None).ConfigureAwait(false);
 
-        public Task<HttpResponseMessage> PatchAsync([StringSyntax(StringSyntaxAttribute.Uri)] string? requestUri, HttpContent? content, CancellationToken cancellationToken) =>
-            PatchAsync(CreateUri(requestUri), content, cancellationToken);
+        public async Task<HttpResponseMessage> PatchAsync([StringSyntax(StringSyntaxAttribute.Uri)] string? requestUri, HttpContent? content, CancellationToken cancellationToken) =>
+            await PatchAsync(CreateUri(requestUri), content, cancellationToken).ConfigureAwait(false);
 
-        public Task<HttpResponseMessage> PatchAsync(Uri? requestUri, HttpContent? content, CancellationToken cancellationToken)
+        public async Task<HttpResponseMessage> PatchAsync(Uri? requestUri, HttpContent? content, CancellationToken cancellationToken)
         {
             HttpRequestMessage request = CreateRequestMessage(HttpMethod.Patch, requestUri);
             request.Content = content;
-            return SendAsync(request, cancellationToken);
+            return await SendAsync(request, cancellationToken).ConfigureAwait(false);
         }
 
-        public Task<HttpResponseMessage> DeleteAsync([StringSyntax(StringSyntaxAttribute.Uri)] string? requestUri) =>
-            DeleteAsync(CreateUri(requestUri));
+        public async Task<HttpResponseMessage> DeleteAsync([StringSyntax(StringSyntaxAttribute.Uri)] string? requestUri) =>
+            await DeleteAsync(CreateUri(requestUri)).ConfigureAwait(false);
 
-        public Task<HttpResponseMessage> DeleteAsync(Uri? requestUri) =>
-            DeleteAsync(requestUri, CancellationToken.None);
+        public async Task<HttpResponseMessage> DeleteAsync(Uri? requestUri) =>
+            await DeleteAsync(requestUri, CancellationToken.None).ConfigureAwait(false);
 
-        public Task<HttpResponseMessage> DeleteAsync([StringSyntax(StringSyntaxAttribute.Uri)] string? requestUri, CancellationToken cancellationToken) =>
-            DeleteAsync(CreateUri(requestUri), cancellationToken);
+        public async Task<HttpResponseMessage> DeleteAsync([StringSyntax(StringSyntaxAttribute.Uri)] string? requestUri, CancellationToken cancellationToken) =>
+            await DeleteAsync(CreateUri(requestUri), cancellationToken).ConfigureAwait(false);
 
-        public Task<HttpResponseMessage> DeleteAsync(Uri? requestUri, CancellationToken cancellationToken) =>
-            SendAsync(CreateRequestMessage(HttpMethod.Delete, requestUri), cancellationToken);
+        public async Task<HttpResponseMessage> DeleteAsync(Uri? requestUri, CancellationToken cancellationToken) =>
+            await SendAsync(CreateRequestMessage(HttpMethod.Delete, requestUri), cancellationToken).ConfigureAwait(false);
 
         #endregion REST Send Overloads
 
@@ -505,22 +505,22 @@ namespace System.Net.Http
             }
         }
 
-        public Task<HttpResponseMessage> SendAsync(HttpRequestMessage request) =>
-            SendAsync(request, DefaultCompletionOption, CancellationToken.None);
+        public async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request) =>
+            await SendAsync(request, DefaultCompletionOption, CancellationToken.None).ConfigureAwait(false);
 
-        public override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) =>
-            SendAsync(request, DefaultCompletionOption, cancellationToken);
+        public override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) =>
+            await SendAsync(request, DefaultCompletionOption, cancellationToken).ConfigureAwait(false);
 
-        public Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, HttpCompletionOption completionOption) =>
-            SendAsync(request, completionOption, CancellationToken.None);
+        public async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, HttpCompletionOption completionOption) =>
+            await SendAsync(request, completionOption, CancellationToken.None).ConfigureAwait(false);
 
-        public Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, HttpCompletionOption completionOption, CancellationToken cancellationToken)
+        public async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, HttpCompletionOption completionOption, CancellationToken cancellationToken)
         {
             // Called outside of async state machine to propagate certain exception even without awaiting the returned task.
             CheckRequestBeforeSend(request);
             (CancellationTokenSource cts, bool disposeCts, CancellationTokenSource pendingRequestsCts) = PrepareCancellationTokenSource(cancellationToken);
 
-            return Core(request, completionOption, cts, disposeCts, pendingRequestsCts, cancellationToken);
+            return await Core(request, completionOption, cts, disposeCts, pendingRequestsCts, cancellationToken).ConfigureAwait(false);
 
             async Task<HttpResponseMessage> Core(
                 HttpRequestMessage request, HttpCompletionOption completionOption,

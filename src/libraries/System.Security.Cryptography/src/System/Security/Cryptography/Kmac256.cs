@@ -497,7 +497,7 @@ namespace System.Security.Cryptography
         ///   The platform does not support KMAC256. Callers can use the <see cref="IsSupported" /> property
         ///   to determine if the platform supports KMAC256.
         /// </exception>
-        public static ValueTask<byte[]> HashDataAsync(
+        public static async ValueTask<byte[]> HashDataAsync(
             byte[] key,
             Stream source,
             int outputLength,
@@ -510,7 +510,7 @@ namespace System.Security.Cryptography
 
             CheckStreamCanRead(source);
             CheckPlatformSupport();
-            return LiteHashProvider.KmacStreamAsync(HashAlgorithmNames.KMAC256, key, source, xof: false, outputLength, customizationString, cancellationToken);
+            return await LiteHashProvider.KmacStreamAsync(HashAlgorithmNames.KMAC256, key, source, xof: false, outputLength, customizationString, cancellationToken).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -544,7 +544,7 @@ namespace System.Security.Cryptography
         ///   The platform does not support KMAC256. Callers can use the <see cref="IsSupported" /> property
         ///   to determine if the platform supports KMAC256.
         /// </exception>
-        public static ValueTask<byte[]> HashDataAsync(
+        public static async ValueTask<byte[]> HashDataAsync(
             ReadOnlyMemory<byte> key,
             Stream source,
             int outputLength,
@@ -556,7 +556,7 @@ namespace System.Security.Cryptography
 
             CheckStreamCanRead(source);
             CheckPlatformSupport();
-            return LiteHashProvider.KmacStreamAsync(HashAlgorithmNames.KMAC256, key.Span, source, xof: false, outputLength, customizationString.Span, cancellationToken);
+            return await LiteHashProvider.KmacStreamAsync(HashAlgorithmNames.KMAC256, key.Span, source, xof: false, outputLength, customizationString.Span, cancellationToken).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -585,7 +585,7 @@ namespace System.Security.Cryptography
         ///   The platform does not support KMAC256. Callers can use the <see cref="IsSupported" /> property
         ///   to determine if the platform supports KMAC256.
         /// </exception>
-        public static ValueTask HashDataAsync(
+        public static async ValueTask HashDataAsync(
             ReadOnlyMemory<byte> key,
             Stream source,
             Memory<byte> destination,
@@ -596,7 +596,7 @@ namespace System.Security.Cryptography
 
             CheckStreamCanRead(source);
             CheckPlatformSupport();
-            return LiteHashProvider.KmacStreamAsync(HashAlgorithmNames.KMAC256, key.Span, source, xof: false, destination, customizationString.Span, cancellationToken);
+            await LiteHashProvider.KmacStreamAsync(HashAlgorithmNames.KMAC256, key.Span, source, xof: false, destination, customizationString.Span, cancellationToken).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -688,14 +688,14 @@ namespace System.Security.Cryptography
         /// <exception cref="ArgumentNullException">
         ///   <paramref name="key" />, <paramref name="source" />, or <paramref name="hash" /> is <see langword="null" />.
         /// </exception>
-        public static ValueTask<bool> VerifyAsync(
+        public static async ValueTask<bool> VerifyAsync(
             byte[] key,
             Stream source,
             byte[] hash,
             byte[]? customizationString = null,
             CancellationToken cancellationToken = default)
         {
-            return KmacStatic<KmacTrait>.VerifyAsync(key, source, hash, customizationString, cancellationToken);
+            return await KmacStatic<KmacTrait>.VerifyAsync(key, source, hash, customizationString, cancellationToken).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -733,14 +733,14 @@ namespace System.Security.Cryptography
         ///   The length of the hash to produce and verify is determined by the length of <paramref name="hash" />.
         ///   Callers should ensure the length of the hash meets the desired security requirements.
         /// </remarks>
-        public static ValueTask<bool> VerifyAsync(
+        public static async ValueTask<bool> VerifyAsync(
             ReadOnlyMemory<byte> key,
             Stream source,
             ReadOnlyMemory<byte> hash,
             ReadOnlyMemory<byte> customizationString = default,
             CancellationToken cancellationToken = default)
         {
-            return KmacStatic<KmacTrait>.VerifyAsync(key, source, hash, customizationString, cancellationToken);
+            return await KmacStatic<KmacTrait>.VerifyAsync(key, source, hash, customizationString, cancellationToken).ConfigureAwait(false);
         }
 
         private static void HashDataCore(

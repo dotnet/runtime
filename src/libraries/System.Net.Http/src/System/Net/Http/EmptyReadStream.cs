@@ -25,10 +25,10 @@ namespace System.Net.Http
             cancellationToken.IsCancellationRequested ? ValueTask.FromCanceled<int>(cancellationToken) :
             new ValueTask<int>(0);
 
-        public override Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
+        public override async Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
         {
             ValidateCopyToArguments(destination, bufferSize);
-            return NopAsync(cancellationToken);
+            await NopAsync(cancellationToken).ConfigureAwait(false);
         }
 
         public override void Write(ReadOnlySpan<byte> buffer) => throw new NotSupportedException(SR.net_http_content_readonly_stream);

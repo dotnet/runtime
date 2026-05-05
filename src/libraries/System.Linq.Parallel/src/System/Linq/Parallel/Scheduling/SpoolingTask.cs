@@ -50,7 +50,7 @@ namespace System.Linq.Parallel
                         TraceHelpers.TraceInfo("SpoolingTask::Spool: Running partition[{0}] asynchronously", i);
 
                         QueryTask asyncTask = new StopAndGoSpoolingTask<TInputOutput, TIgnoreKey>(i, groupState, partitions[i], channels[i]);
-                        asyncTask.RunAsynchronously(taskScheduler);
+                        _ = asyncTask.RunAsynchronously(taskScheduler);
                     }
 
                     TraceHelpers.TraceInfo("SpoolingTask::Spool: Running partition[{0}] synchronously", maxToRunInParallel);
@@ -105,7 +105,7 @@ namespace System.Linq.Parallel
                         TraceHelpers.TraceInfo("SpoolingTask::Spool: Running partition[{0}] asynchronously", i);
 
                         QueryTask asyncTask = new PipelineSpoolingTask<TInputOutput, TIgnoreKey>(i, groupState, partitions[i], channels[i]);
-                        asyncTask.RunAsynchronously(taskScheduler);
+                        _ = asyncTask.RunAsynchronously(taskScheduler);
                     }
                 });
 
@@ -148,7 +148,7 @@ namespace System.Linq.Parallel
                         TraceHelpers.TraceInfo("SpoolingTask::Spool: Running partition[{0}] asynchronously", i);
 
                         QueryTask asyncTask = new ForAllSpoolingTask<TInputOutput, TIgnoreKey>(i, groupState, partitions[i]);
-                        asyncTask.RunAsynchronously(taskScheduler);
+                        _ = asyncTask.RunAsynchronously(taskScheduler);
                     }
 
                     TraceHelpers.TraceInfo("SpoolingTask::Spool: Running partition[{0}] synchronously", maxToRunInParallel);

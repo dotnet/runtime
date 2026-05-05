@@ -302,7 +302,7 @@ namespace System.Xml
             return readCount;
         }
 
-        public override Task<int> ReadElementContentAsBase64Async(byte[] buffer, int index, int count)
+        public override async Task<int> ReadElementContentAsBase64Async(byte[] buffer, int index, int count)
         {
             ArgumentNullException.ThrowIfNull(buffer);
             if (index < 0 || (uint)count > buffer.Length - index)
@@ -312,10 +312,10 @@ namespace System.Xml
 
             if (ReadState != ReadState.Interactive)
             {
-                return Task.FromResult(0);
+                return 0;
             }
 
-            return Core(buffer, index, count);
+            return await Core(buffer, index, count).ConfigureAwait(false);
 
             async Task<int> Core(byte[] buffer, int index, int count)
             {
@@ -356,7 +356,7 @@ namespace System.Xml
             }
         }
 
-        public override Task<int> ReadElementContentAsBinHexAsync(byte[] buffer, int index, int count)
+        public override async Task<int> ReadElementContentAsBinHexAsync(byte[] buffer, int index, int count)
         {
             ArgumentNullException.ThrowIfNull(buffer);
             if (index < 0 || (uint)count > buffer.Length - index)
@@ -366,10 +366,10 @@ namespace System.Xml
 
             if (ReadState != ReadState.Interactive)
             {
-                return Task.FromResult(0);
+                return 0;
             }
 
-            return Core(buffer, index, count);
+            return await Core(buffer, index, count).ConfigureAwait(false);
 
             async Task<int> Core(byte[] buffer, int index, int count)
             {

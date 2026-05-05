@@ -207,9 +207,9 @@ namespace Microsoft.Extensions.Caching.Memory
         /// <param name="key">The key of the entry to look for or create.</param>
         /// <param name="factory">The factory task that creates the value associated with this key if the key does not exist in the cache.</param>
         /// <returns>The task object representing the asynchronous operation.</returns>
-        public static Task<TItem?> GetOrCreateAsync<TItem>(this IMemoryCache cache, object key, Func<ICacheEntry, Task<TItem>> factory)
+        public static async Task<TItem?> GetOrCreateAsync<TItem>(this IMemoryCache cache, object key, Func<ICacheEntry, Task<TItem>> factory)
         {
-            return GetOrCreateAsync<TItem>(cache, key, factory, null);
+            return await GetOrCreateAsync<TItem>(cache, key, factory, null).ConfigureAwait(false);
         }
 
         /// <summary>

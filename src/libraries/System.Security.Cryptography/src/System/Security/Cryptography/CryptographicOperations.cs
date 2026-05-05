@@ -305,7 +305,7 @@ namespace System.Security.Cryptography
         /// <exception cref="OperationCanceledException">
         ///   <paramref name="cancellationToken"/> has been canceled.
         /// </exception>
-        public static ValueTask<int> HashDataAsync(
+        public static async ValueTask<int> HashDataAsync(
             HashAlgorithmName hashAlgorithm,
             Stream source,
             Memory<byte> destination,
@@ -316,11 +316,11 @@ namespace System.Security.Cryptography
             Debug.Assert(hashAlgorithm.Name is not null);
             CheckDestinationSize(hashSizeInBytes, destination.Length);
 
-            return LiteHashProvider.HashStreamAsync(
+            return await LiteHashProvider.HashStreamAsync(
                 hashAlgorithm.Name,
                 source,
                 destination,
-                cancellationToken);
+                cancellationToken).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -354,7 +354,7 @@ namespace System.Security.Cryptography
         /// <exception cref="OperationCanceledException">
         ///   <paramref name="cancellationToken"/> has been canceled.
         /// </exception>
-        public static ValueTask<byte[]> HashDataAsync(
+        public static async ValueTask<byte[]> HashDataAsync(
             HashAlgorithmName hashAlgorithm,
             Stream source,
             CancellationToken cancellationToken = default)
@@ -363,7 +363,7 @@ namespace System.Security.Cryptography
             CheckStream(source);
             Debug.Assert(hashAlgorithm.Name is not null);
 
-            return LiteHashProvider.HashStreamAsync(hashAlgorithm.Name, source, cancellationToken);
+            return await LiteHashProvider.HashStreamAsync(hashAlgorithm.Name, source, cancellationToken).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -651,14 +651,14 @@ namespace System.Security.Cryptography
         /// <exception cref="OperationCanceledException">
         ///   <paramref name="cancellationToken"/> has been canceled.
         /// </exception>
-        public static ValueTask<byte[]> HmacDataAsync(
+        public static async ValueTask<byte[]> HmacDataAsync(
             HashAlgorithmName hashAlgorithm,
             byte[] key,
             Stream source,
             CancellationToken cancellationToken = default)
         {
             ArgumentNullException.ThrowIfNull(key);
-            return HmacDataAsync(hashAlgorithm, new ReadOnlyMemory<byte>(key), source, cancellationToken);
+            return await HmacDataAsync(hashAlgorithm, new ReadOnlyMemory<byte>(key), source, cancellationToken).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -696,7 +696,7 @@ namespace System.Security.Cryptography
         /// <exception cref="OperationCanceledException">
         ///   <paramref name="cancellationToken"/> has been canceled.
         /// </exception>
-        public static ValueTask<int> HmacDataAsync(
+        public static async ValueTask<int> HmacDataAsync(
             HashAlgorithmName hashAlgorithm,
             ReadOnlyMemory<byte> key,
             Stream source,
@@ -708,7 +708,7 @@ namespace System.Security.Cryptography
             Debug.Assert(hashAlgorithm.Name is not null);
             CheckDestinationSize(hashSizeInBytes, destination.Length);
 
-            return LiteHashProvider.HmacStreamAsync(hashAlgorithm.Name, key.Span, source, destination, cancellationToken);
+            return await LiteHashProvider.HmacStreamAsync(hashAlgorithm.Name, key.Span, source, destination, cancellationToken).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -743,7 +743,7 @@ namespace System.Security.Cryptography
         /// <exception cref="OperationCanceledException">
         ///   <paramref name="cancellationToken"/> has been canceled.
         /// </exception>
-        public static ValueTask<byte[]> HmacDataAsync(
+        public static async ValueTask<byte[]> HmacDataAsync(
             HashAlgorithmName hashAlgorithm,
             ReadOnlyMemory<byte> key,
             Stream source,
@@ -753,7 +753,7 @@ namespace System.Security.Cryptography
             CheckStream(source);
             Debug.Assert(hashAlgorithm.Name is not null);
 
-            return LiteHashProvider.HmacStreamAsync(hashAlgorithm.Name, key.Span, source, cancellationToken);
+            return await LiteHashProvider.HmacStreamAsync(hashAlgorithm.Name, key.Span, source, cancellationToken).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -971,7 +971,7 @@ namespace System.Security.Cryptography
         ///   This API performs a fixed-time comparison of the derived HMAC against a known HMAC to prevent leaking
         ///   timing information.
         /// </remarks>
-        public static ValueTask<bool> VerifyHmacAsync(
+        public static async ValueTask<bool> VerifyHmacAsync(
             HashAlgorithmName hashAlgorithm,
             ReadOnlyMemory<byte> key,
             Stream source,
@@ -988,7 +988,7 @@ namespace System.Security.Cryptography
             CheckStream(source);
             Debug.Assert(hashAlgorithm.Name is not null);
 
-            return VerifyHmacAsyncInner(hashAlgorithm.Name, key, source, hash, cancellationToken);
+            return await VerifyHmacAsyncInner(hashAlgorithm.Name, key, source, hash, cancellationToken).ConfigureAwait(false);
 
             static async ValueTask<bool> VerifyHmacAsyncInner(
                 string hashAlgorithm,
@@ -1025,7 +1025,7 @@ namespace System.Security.Cryptography
         ///   </para>
         /// </exception>
         /// <inheritdoc cref="VerifyHmacAsync(HashAlgorithmName, ReadOnlyMemory{byte}, Stream, ReadOnlyMemory{byte}, CancellationToken)" />
-        public static ValueTask<bool> VerifyHmacAsync(
+        public static async ValueTask<bool> VerifyHmacAsync(
             HashAlgorithmName hashAlgorithm,
             byte[] key,
             Stream source,
@@ -1035,12 +1035,12 @@ namespace System.Security.Cryptography
             ArgumentNullException.ThrowIfNull(key);
             ArgumentNullException.ThrowIfNull(hash);
 
-            return VerifyHmacAsync(
+            return await VerifyHmacAsync(
                 hashAlgorithm,
                 new ReadOnlyMemory<byte>(key),
                 source,
                 new ReadOnlyMemory<byte>(hash),
-                cancellationToken);
+                cancellationToken).ConfigureAwait(false);
         }
 
         private static void CheckStream([NotNull] Stream source)

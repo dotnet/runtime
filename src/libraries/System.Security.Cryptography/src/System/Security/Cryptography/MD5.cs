@@ -159,9 +159,9 @@ namespace System.Security.Cryptography
         ///   <paramref name="source" /> does not support reading.
         /// </exception>
         [UnsupportedOSPlatform("browser")]
-        public static ValueTask<byte[]> HashDataAsync(Stream source, CancellationToken cancellationToken = default)
+        public static async ValueTask<byte[]> HashDataAsync(Stream source, CancellationToken cancellationToken = default)
         {
-            return HashStatic<HashTrait>.HashDataAsync(source, cancellationToken);
+            return await HashStatic<HashTrait>.HashDataAsync(source, cancellationToken).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -188,12 +188,12 @@ namespace System.Security.Cryptography
         ///   </p>
         /// </exception>
         [UnsupportedOSPlatform("browser")]
-        public static ValueTask<int> HashDataAsync(
+        public static async ValueTask<int> HashDataAsync(
             Stream source,
             Memory<byte> destination,
             CancellationToken cancellationToken = default)
         {
-            return HashStatic<HashTrait>.HashDataAsync(source, destination, cancellationToken);
+            return await HashStatic<HashTrait>.HashDataAsync(source, destination, cancellationToken).ConfigureAwait(false);
         }
 
         private sealed class Implementation : MD5

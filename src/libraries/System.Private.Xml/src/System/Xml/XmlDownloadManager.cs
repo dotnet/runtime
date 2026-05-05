@@ -24,16 +24,16 @@ namespace System.Xml
             }
         }
 
-        internal static Task<Stream> GetStreamAsync(Uri uri, ICredentials? credentials, IWebProxy? proxy)
+        internal static async Task<Stream> GetStreamAsync(Uri uri, ICredentials? credentials, IWebProxy? proxy)
         {
             if (uri.Scheme == "file")
             {
                 Uri fileUri = uri;
-                return Task.FromResult<Stream>(new FileStream(fileUri.LocalPath, FileMode.Open, FileAccess.Read, FileShare.Read, 1, useAsync: true));
+                return new FileStream(fileUri.LocalPath, FileMode.Open, FileAccess.Read, FileShare.Read, 1, useAsync: true);
             }
             else
             {
-                return GetNonFileStreamAsync(uri, credentials, proxy);
+                return await GetNonFileStreamAsync(uri, credentials, proxy).ConfigureAwait(false);
             }
         }
 

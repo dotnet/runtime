@@ -22,39 +22,45 @@ namespace System.Xml
         //
         internal sealed partial class DtdParserProxy : IDtdParserAdapterV1
         {
-            Task<int> IDtdParserAdapter.ReadDataAsync()
+            async Task<int> IDtdParserAdapter.ReadDataAsync()
             {
-                return _reader.DtdParserProxy_ReadDataAsync();
+                return await _reader.DtdParserProxy_ReadDataAsync().ConfigureAwait(false);
             }
 
-            Task<int> IDtdParserAdapter.ParseNumericCharRefAsync(StringBuilder? internalSubsetBuilder)
+            async
+                        Task<int> IDtdParserAdapter.ParseNumericCharRefAsync(StringBuilder? internalSubsetBuilder)
             {
-                return _reader.DtdParserProxy_ParseNumericCharRefAsync(internalSubsetBuilder);
+                return await _reader.DtdParserProxy_ParseNumericCharRefAsync(internalSubsetBuilder).ConfigureAwait(false);
             }
 
-            Task<int> IDtdParserAdapter.ParseNamedCharRefAsync(bool expand, StringBuilder? internalSubsetBuilder)
+            async
+                        Task<int> IDtdParserAdapter.ParseNamedCharRefAsync(bool expand, StringBuilder? internalSubsetBuilder)
             {
-                return _reader.DtdParserProxy_ParseNamedCharRefAsync(expand, internalSubsetBuilder);
+                return await _reader.DtdParserProxy_ParseNamedCharRefAsync(expand, internalSubsetBuilder).ConfigureAwait(false);
             }
 
-            Task IDtdParserAdapter.ParsePIAsync(StringBuilder? sb)
+            async
+                        Task IDtdParserAdapter.ParsePIAsync(StringBuilder? sb)
             {
-                return _reader.DtdParserProxy_ParsePIAsync(sb);
+                await _reader.DtdParserProxy_ParsePIAsync(sb).ConfigureAwait(false);
             }
 
-            Task IDtdParserAdapter.ParseCommentAsync(StringBuilder? sb)
+            async
+                        Task IDtdParserAdapter.ParseCommentAsync(StringBuilder? sb)
             {
-                return _reader.DtdParserProxy_ParseCommentAsync(sb);
+                await _reader.DtdParserProxy_ParseCommentAsync(sb).ConfigureAwait(false);
             }
 
-            Task<(int, bool)> IDtdParserAdapter.PushEntityAsync(IDtdEntityInfo entity)
+            async
+                        Task<(int, bool)> IDtdParserAdapter.PushEntityAsync(IDtdEntityInfo entity)
             {
-                return _reader.DtdParserProxy_PushEntityAsync(entity);
+                return await _reader.DtdParserProxy_PushEntityAsync(entity).ConfigureAwait(false);
             }
 
-            Task<bool> IDtdParserAdapter.PushExternalSubsetAsync(string? systemId, string? publicId)
+            async
+                        Task<bool> IDtdParserAdapter.PushExternalSubsetAsync(string? systemId, string? publicId)
             {
-                return _reader.DtdParserProxy_PushExternalSubsetAsync(systemId, publicId);
+                return await _reader.DtdParserProxy_PushExternalSubsetAsync(systemId, publicId).ConfigureAwait(false);
             }
         }
     }

@@ -24,7 +24,7 @@ namespace System.Xml
         public override object? GetEntity(Uri absoluteUri, string? role, Type? ofObjectToReturn) => XmlResolver.ThrowingResolver.GetEntity(absoluteUri, role, ofObjectToReturn);
 
         // Forward to ThrowingResolver to get its exception message
-        public override Task<object> GetEntityAsync(Uri absoluteUri, string? role, Type? ofObjectToReturn) => XmlResolver.ThrowingResolver.GetEntityAsync(absoluteUri, role, ofObjectToReturn);
+        public override async Task<object> GetEntityAsync(Uri absoluteUri, string? role, Type? ofObjectToReturn) => await XmlResolver.ThrowingResolver.GetEntityAsync(absoluteUri, role, ofObjectToReturn).ConfigureAwait(false);
 
         // An earlier implementation of this type overrode this method, so we'll continue to do so
         // to preserve binary compatibility.

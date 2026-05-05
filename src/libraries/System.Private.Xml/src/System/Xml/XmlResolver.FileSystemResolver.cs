@@ -37,13 +37,13 @@ namespace System.Xml
                 throw new XmlException(SR.Xml_UnsupportedClass, string.Empty);
             }
 
-            public override Task<object> GetEntityAsync(Uri absoluteUri, string? role, Type? ofObjectToReturn)
+            public override async Task<object> GetEntityAsync(Uri absoluteUri, string? role, Type? ofObjectToReturn)
             {
                 if (ofObjectToReturn == null || ofObjectToReturn == typeof(Stream) || ofObjectToReturn == typeof(object))
                 {
                     if (absoluteUri.Scheme == "file")
                     {
-                        return Task.FromResult<object>(new FileStream(absoluteUri.LocalPath, FileMode.Open, FileAccess.Read, FileShare.Read, 1, useAsync: true));
+                        return new FileStream(absoluteUri.LocalPath, FileMode.Open, FileAccess.Read, FileShare.Read, 1, useAsync: true);
                     }
                 }
 

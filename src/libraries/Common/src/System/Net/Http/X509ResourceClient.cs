@@ -33,9 +33,9 @@ namespace System.Net.Http
             return task.Result;
         }
 
-        internal static Task<byte[]?> DownloadAssetAsync(string uri, TimeSpan downloadTimeout)
+        internal static async Task<byte[]?> DownloadAssetAsync(string uri, TimeSpan downloadTimeout)
         {
-            return DownloadAssetCore(uri, downloadTimeout, async: true);
+            return await DownloadAssetCore(uri, downloadTimeout, async: true).ConfigureAwait(false);
         }
 
         private static async Task<byte[]?> DownloadAssetCore(string uri, TimeSpan downloadTimeout, bool async)

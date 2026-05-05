@@ -50,12 +50,12 @@ namespace System.Net.Http
             return _innerHandler!.Send(request, cancellationToken);
         }
 
-        protected internal override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        protected internal override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
             ArgumentNullException.ThrowIfNull(request);
 
             SetOperationStarted();
-            return _innerHandler!.SendAsync(request, cancellationToken);
+            return await _innerHandler!.SendAsync(request, cancellationToken).ConfigureAwait(false);
         }
 
         protected override void Dispose(bool disposing)

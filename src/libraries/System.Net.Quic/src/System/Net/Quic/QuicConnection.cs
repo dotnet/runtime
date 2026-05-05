@@ -59,7 +59,7 @@ public sealed partial class QuicConnection : IAsyncDisposable
     /// <param name="options">Options for the connection.</param>
     /// <param name="cancellationToken">A cancellation token that can be used to cancel the asynchronous operation.</param>
     /// <returns>An asynchronous task that completes with the connected connection.</returns>
-    public static ValueTask<QuicConnection> ConnectAsync(QuicClientConnectionOptions options, CancellationToken cancellationToken = default)
+    public static async ValueTask<QuicConnection> ConnectAsync(QuicClientConnectionOptions options, CancellationToken cancellationToken = default)
     {
         if (!IsSupported)
         {
@@ -68,7 +68,7 @@ public sealed partial class QuicConnection : IAsyncDisposable
 
         // Validate and fill in defaults for the options.
         options.Validate(nameof(options));
-        return StartConnectAsync(options, cancellationToken);
+        return await StartConnectAsync(options, cancellationToken).ConfigureAwait(false);
 
         static async ValueTask<QuicConnection> StartConnectAsync(QuicClientConnectionOptions options, CancellationToken cancellationToken)
         {

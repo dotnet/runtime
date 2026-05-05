@@ -121,13 +121,13 @@ namespace System.IO.Hashing
         /// <exception cref="ArgumentNullException">
         ///   <paramref name="stream"/> is <see langword="null"/>.
         /// </exception>
-        public Task AppendAsync(Stream stream, CancellationToken cancellationToken = default)
+        public async Task AppendAsync(Stream stream, CancellationToken cancellationToken = default)
         {
             ArgumentNullException.ThrowIfNull(stream);
 
-            return stream.CopyToAsync(
+            await stream.CopyToAsync(
                 new CopyToDestinationStream(this),
-                cancellationToken);
+                cancellationToken).ConfigureAwait(false);
         }
 
         /// <summary>

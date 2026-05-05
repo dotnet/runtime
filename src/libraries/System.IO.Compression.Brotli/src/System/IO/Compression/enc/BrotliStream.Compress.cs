@@ -128,10 +128,10 @@ namespace System.IO.Compression
         /// <remarks><para>This method enables you to perform resource-intensive I/O operations without blocking the main thread. This performance consideration is particularly important in apps where a time-consuming stream operation can block the UI thread and make your app appear as if it is not working. The async methods are used in conjunction with the <see langword="async" /> and <see langword="await" /> keywords in Visual Basic and C#.</para>
         /// <para>Use the <see cref="System.IO.Compression.BrotliStream.CanWrite" /> property to determine whether the current instance supports writing.</para>
         /// <para>If the operation is canceled before it completes, the returned task contains the <see cref="System.Threading.Tasks.TaskStatus.Canceled" /> value for the <see cref="System.Threading.Tasks.Task.Status" /> property.</para></remarks>
-        public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        public override async Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
             ValidateBufferArguments(buffer, offset, count);
-            return WriteAsync(new ReadOnlyMemory<byte>(buffer, offset, count), cancellationToken).AsTask();
+            await WriteAsync(new ReadOnlyMemory<byte>(buffer, offset, count), cancellationToken).ConfigureAwait(false);
         }
 
         /// <summary>Asynchronously writes compressed bytes to the underlying Brotli stream from the specified byte memory range.</summary>

@@ -37,14 +37,14 @@ namespace System.Linq
         /// element at the specified position in the source sequence.
         /// </returns>
         /// <exception cref="ArgumentNullException"><paramref name="source"/> is <see langword="null"/>.</exception>
-        public static ValueTask<TSource?> ElementAtOrDefaultAsync<TSource>(
+        public static async ValueTask<TSource?> ElementAtOrDefaultAsync<TSource>(
             this IAsyncEnumerable<TSource> source,
             int index,
             CancellationToken cancellationToken = default)
         {
             ArgumentNullException.ThrowIfNull(source);
 
-            return ElementAtOrDefaultAsync(source, index, throwIfNotFound: false, cancellationToken);
+            return await ElementAtOrDefaultAsync(source, index, throwIfNotFound: false, cancellationToken).ConfigureAwait(false);
         }
 
         /// <summary>Returns the element at a specified index in a sequence.</summary>
@@ -88,19 +88,19 @@ namespace System.Linq
         /// <para>The default value for reference and nullable types is <see langword="null" />.</para>
         /// </remarks>
         /// <exception cref="ArgumentNullException"><paramref name="source"/> is <see langword="null"/>.</exception>
-        public static ValueTask<TSource?> ElementAtOrDefaultAsync<TSource>(
+        public static async ValueTask<TSource?> ElementAtOrDefaultAsync<TSource>(
             this IAsyncEnumerable<TSource> source,
             Index index,
             CancellationToken cancellationToken = default)
         {
             if (!index.IsFromEnd)
             {
-                return ElementAtOrDefaultAsync(source, index.Value, cancellationToken);
+                return await ElementAtOrDefaultAsync(source, index.Value, cancellationToken).ConfigureAwait(false);
             }
 
             ArgumentNullException.ThrowIfNull(source);
 
-            return ElementAtFromEndOrDefault(source, index.Value, throwIfNotFound: false, cancellationToken);
+            return await ElementAtFromEndOrDefault(source, index.Value, throwIfNotFound: false, cancellationToken).ConfigureAwait(false);
         }
 
         private static async ValueTask<TSource?> ElementAtOrDefaultAsync<TSource>(

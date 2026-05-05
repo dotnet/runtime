@@ -37,8 +37,8 @@ public static partial class ZipFileExtensions
     /// Relative path information is interpreted as relative to the current working directory.</param>
     /// <param name="cancellationToken">The cancellation token to monitor for cancellation requests.</param>
     /// <returns>A task that represents the asynchronous extract operation. The task completes when all entries have been extracted or an error occurs.</returns>
-    public static Task ExtractToDirectoryAsync(this ZipArchive source, string destinationDirectoryName, CancellationToken cancellationToken = default) =>
-        ExtractToDirectoryAsync(source, destinationDirectoryName, overwriteFiles: false, cancellationToken);
+    public static async Task ExtractToDirectoryAsync(this ZipArchive source, string destinationDirectoryName, CancellationToken cancellationToken = default) =>
+        await ExtractToDirectoryAsync(source, destinationDirectoryName, overwriteFiles: false, cancellationToken).ConfigureAwait(false);
 
     /// <summary>
     /// Extracts all of the files in the archive to a directory on the file system. The specified directory may already exist.

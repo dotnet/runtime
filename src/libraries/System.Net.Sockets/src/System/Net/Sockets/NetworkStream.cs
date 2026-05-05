@@ -560,7 +560,7 @@ namespace System.Net.Sockets
         // Returns:
         //
         //     A Task<int> representing the read.
-        public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        public override async Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
             ValidateBufferArguments(buffer, offset, count);
             ThrowIfDisposed();
@@ -571,11 +571,11 @@ namespace System.Net.Sockets
 
             try
             {
-                return _streamSocket.ReceiveAsync(
+                return await _streamSocket.ReceiveAsync(
                     new Memory<byte>(buffer, offset, count),
                     SocketFlags.None,
                     fromNetworkStream: true,
-                    cancellationToken).AsTask();
+                    cancellationToken).ConfigureAwait(false);
             }
             catch (Exception exception) when (!(exception is OutOfMemoryException))
             {
@@ -583,7 +583,7 @@ namespace System.Net.Sockets
             }
         }
 
-        public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
+        public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
         {
             bool canRead = CanRead; // Prevent race with Dispose.
             ThrowIfDisposed();
@@ -594,11 +594,11 @@ namespace System.Net.Sockets
 
             try
             {
-                return _streamSocket.ReceiveAsync(
+                return await _streamSocket.ReceiveAsync(
                     buffer,
                     SocketFlags.None,
                     fromNetworkStream: true,
-                    cancellationToken: cancellationToken);
+                    cancellationToken: cancellationToken).ConfigureAwait(false);
             }
             catch (Exception exception) when (!(exception is OutOfMemoryException))
             {
@@ -621,7 +621,7 @@ namespace System.Net.Sockets
         // Returns:
         //
         //     A Task representing the write.
-        public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        public override async Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
             ValidateBufferArguments(buffer, offset, count);
             ThrowIfDisposed();
@@ -632,10 +632,10 @@ namespace System.Net.Sockets
 
             try
             {
-                return _streamSocket.SendAsyncForNetworkStream(
+                await _streamSocket.SendAsyncForNetworkStream(
                     new ReadOnlyMemory<byte>(buffer, offset, count),
                     SocketFlags.None,
-                    cancellationToken).AsTask();
+                    cancellationToken).ConfigureAwait(false);
             }
             catch (Exception exception) when (!(exception is OutOfMemoryException))
             {
@@ -643,7 +643,7 @@ namespace System.Net.Sockets
             }
         }
 
-        public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
+        public override async ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
         {
             bool canWrite = CanWrite; // Prevent race with Dispose.
             ThrowIfDisposed();
@@ -654,10 +654,10 @@ namespace System.Net.Sockets
 
             try
             {
-                return _streamSocket.SendAsyncForNetworkStream(
+                await _streamSocket.SendAsyncForNetworkStream(
                     buffer,
                     SocketFlags.None,
-                    cancellationToken);
+                    cancellationToken).ConfigureAwait(false);
             }
             catch (Exception exception) when (!(exception is OutOfMemoryException))
             {

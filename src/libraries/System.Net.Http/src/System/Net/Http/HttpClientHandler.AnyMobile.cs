@@ -769,11 +769,11 @@ namespace System.Net.Http
             throw new PlatformNotSupportedException();
         }
 
-        protected internal override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request,
+        protected internal override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request,
             CancellationToken cancellationToken)
         {
             ArgumentNullException.ThrowIfNull(request);
-            return Handler.SendAsync(request, cancellationToken);
+            return await Handler.SendAsync(request, cancellationToken).ConfigureAwait(false);
         }
 
         // lazy-load the validator func so it can be trimmed by the ILLinker if it isn't used.

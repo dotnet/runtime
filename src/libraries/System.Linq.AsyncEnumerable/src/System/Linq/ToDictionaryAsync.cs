@@ -21,14 +21,14 @@ namespace System.Linq
         /// <returns>A <see cref="Dictionary{TKey,TValue}"/> that contains keys and values from <paramref name="source"/>.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="source"/> is <see langword="null"/>.</exception>
         /// <exception cref="ArgumentException"><paramref name="source"/> contains one or more duplicate keys (via the returned task).</exception>
-        public static ValueTask<Dictionary<TKey, TValue>> ToDictionaryAsync<TKey, TValue>(
+        public static async ValueTask<Dictionary<TKey, TValue>> ToDictionaryAsync<TKey, TValue>(
             this IAsyncEnumerable<KeyValuePair<TKey, TValue>> source,
             IEqualityComparer<TKey>? comparer = null,
             CancellationToken cancellationToken = default) where TKey : notnull
         {
             ArgumentNullException.ThrowIfNull(source);
 
-            return Impl(source.WithCancellation(cancellationToken), comparer);
+            return await Impl(source.WithCancellation(cancellationToken), comparer).ConfigureAwait(false);
 
             static async ValueTask<Dictionary<TKey, TValue>> Impl(
                 ConfiguredCancelableAsyncEnumerable<KeyValuePair<TKey, TValue>> source,
@@ -55,9 +55,9 @@ namespace System.Linq
         /// <returns>A <see cref="Dictionary{TKey,TValue}"/> that contains keys and values from <paramref name="source"/>.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="source"/> is <see langword="null"/>.</exception>
         /// <exception cref="ArgumentException"><paramref name="source"/> contains one or more duplicate keys (via the returned task).</exception>
-        public static ValueTask<Dictionary<TKey, TValue>> ToDictionaryAsync<TKey, TValue>(
+        public static async ValueTask<Dictionary<TKey, TValue>> ToDictionaryAsync<TKey, TValue>(
             this IAsyncEnumerable<(TKey Key, TValue Value)> source, IEqualityComparer<TKey>? comparer = null, CancellationToken cancellationToken = default) where TKey : notnull =>
-            source.ToDictionaryAsync(vt => vt.Key, vt => vt.Value, comparer, cancellationToken);
+            await source.ToDictionaryAsync(vt => vt.Key, vt => vt.Value, comparer, cancellationToken).ConfigureAwait(false);
 
         /// <summary>
         /// Creates a <see cref="Dictionary{TKey, TValue}"/> from an <see cref="IAsyncEnumerable{T}"/>
@@ -73,7 +73,7 @@ namespace System.Linq
         /// <exception cref="ArgumentNullException"><paramref name="source"/> is <see langword="null"/>.</exception>
         /// <exception cref="ArgumentNullException"><paramref name="keySelector"/> is <see langword="null"/>.</exception>
         /// <exception cref="ArgumentException"><paramref name="source"/> contains one or more duplicate keys (via the returned task).</exception>
-        public static ValueTask<Dictionary<TKey, TSource>> ToDictionaryAsync<TSource, TKey>(
+        public static async ValueTask<Dictionary<TKey, TSource>> ToDictionaryAsync<TSource, TKey>(
             this IAsyncEnumerable<TSource> source,
             Func<TSource, TKey> keySelector,
             IEqualityComparer<TKey>? comparer = null,
@@ -82,7 +82,7 @@ namespace System.Linq
             ArgumentNullException.ThrowIfNull(source);
             ArgumentNullException.ThrowIfNull(keySelector);
 
-            return Impl(source.WithCancellation(cancellationToken), keySelector, comparer);
+            return await Impl(source.WithCancellation(cancellationToken), keySelector, comparer).ConfigureAwait(false);
 
             static async ValueTask<Dictionary<TKey, TSource>> Impl(
                 ConfiguredCancelableAsyncEnumerable<TSource> source,
@@ -112,7 +112,7 @@ namespace System.Linq
         /// <exception cref="ArgumentNullException"><paramref name="source"/> is <see langword="null"/>.</exception>
         /// <exception cref="ArgumentNullException"><paramref name="keySelector"/> is <see langword="null"/>.</exception>
         /// <exception cref="ArgumentException"><paramref name="source"/> contains one or more duplicate keys (via the returned task).</exception>
-        public static ValueTask<Dictionary<TKey, TSource>> ToDictionaryAsync<TSource, TKey>(
+        public static async ValueTask<Dictionary<TKey, TSource>> ToDictionaryAsync<TSource, TKey>(
             this IAsyncEnumerable<TSource> source,
             Func<TSource, CancellationToken, ValueTask<TKey>> keySelector,
             IEqualityComparer<TKey>? comparer = null,
@@ -121,7 +121,7 @@ namespace System.Linq
             ArgumentNullException.ThrowIfNull(source);
             ArgumentNullException.ThrowIfNull(keySelector);
 
-            return Impl(source, keySelector, comparer, cancellationToken);
+            return await Impl(source, keySelector, comparer, cancellationToken).ConfigureAwait(false);
 
             static async ValueTask<Dictionary<TKey, TSource>> Impl(
                 IAsyncEnumerable<TSource> source,
@@ -155,7 +155,7 @@ namespace System.Linq
         /// <exception cref="ArgumentNullException"><paramref name="keySelector"/> is <see langword="null"/>.</exception>
         /// <exception cref="ArgumentNullException"><paramref name="elementSelector"/> is <see langword="null"/>.</exception>
         /// <exception cref="ArgumentException"><paramref name="source"/> contains one or more duplicate keys (via the returned task).</exception>
-        public static ValueTask<Dictionary<TKey, TElement>> ToDictionaryAsync<TSource, TKey, TElement>(
+        public static async ValueTask<Dictionary<TKey, TElement>> ToDictionaryAsync<TSource, TKey, TElement>(
             this IAsyncEnumerable<TSource> source,
             Func<TSource, TKey> keySelector,
             Func<TSource, TElement> elementSelector,
@@ -166,7 +166,7 @@ namespace System.Linq
             ArgumentNullException.ThrowIfNull(keySelector);
             ArgumentNullException.ThrowIfNull(elementSelector);
 
-            return Impl(source.WithCancellation(cancellationToken), keySelector, elementSelector, comparer);
+            return await Impl(source.WithCancellation(cancellationToken), keySelector, elementSelector, comparer).ConfigureAwait(false);
 
             static async ValueTask<Dictionary<TKey, TElement>> Impl(
                 ConfiguredCancelableAsyncEnumerable<TSource> source,
@@ -201,7 +201,7 @@ namespace System.Linq
         /// <exception cref="ArgumentNullException"><paramref name="keySelector"/> is <see langword="null"/>.</exception>
         /// <exception cref="ArgumentNullException"><paramref name="elementSelector"/> is <see langword="null"/>.</exception>
         /// <exception cref="ArgumentException"><paramref name="source"/> contains one or more duplicate keys (via the returned task).</exception>
-        public static ValueTask<Dictionary<TKey, TElement>> ToDictionaryAsync<TSource, TKey, TElement>(
+        public static async ValueTask<Dictionary<TKey, TElement>> ToDictionaryAsync<TSource, TKey, TElement>(
             this IAsyncEnumerable<TSource> source,
             Func<TSource, CancellationToken, ValueTask<TKey>> keySelector,
             Func<TSource, CancellationToken, ValueTask<TElement>> elementSelector,
@@ -212,7 +212,7 @@ namespace System.Linq
             ArgumentNullException.ThrowIfNull(keySelector);
             ArgumentNullException.ThrowIfNull(elementSelector);
 
-            return Impl(source, keySelector, elementSelector, comparer, cancellationToken);
+            return await Impl(source, keySelector, elementSelector, comparer, cancellationToken).ConfigureAwait(false);
 
             static async ValueTask<Dictionary<TKey, TElement>> Impl(
                 IAsyncEnumerable<TSource> source,

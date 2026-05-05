@@ -55,7 +55,7 @@ namespace System.IO.Pipes
             return ReadCore(buffer);
         }
 
-        public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        public override async Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
             ValidateBufferArguments(buffer, offset, count);
             if (!CanRead)
@@ -65,7 +65,7 @@ namespace System.IO.Pipes
 
             if (cancellationToken.IsCancellationRequested)
             {
-                return Task.FromCanceled<int>(cancellationToken);
+                return await Task.FromCanceled<int>(cancellationToken).ConfigureAwait(false);
             }
 
             CheckReadOperations();
@@ -73,10 +73,10 @@ namespace System.IO.Pipes
             if (count == 0)
             {
                 UpdateMessageCompletion(false);
-                return Task.FromResult(0);
+                return 0;
             }
 
-            return ReadAsyncCore(new Memory<byte>(buffer, offset, count), cancellationToken).AsTask();
+            return await ReadAsyncCore(new Memory<byte>(buffer, offset, count), cancellationToken).ConfigureAwait(false);
         }
 
         public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default(CancellationToken))

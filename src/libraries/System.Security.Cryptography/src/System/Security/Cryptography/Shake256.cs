@@ -412,7 +412,7 @@ namespace System.Security.Cryptography
         ///   The platform does not support SHAKE256. Callers can use the <see cref="IsSupported" /> property
         ///   to determine if the platform supports SHAKE256.
         /// </exception>
-        public static ValueTask HashDataAsync(Stream source, Memory<byte> destination, CancellationToken cancellationToken = default)
+        public static async ValueTask HashDataAsync(Stream source, Memory<byte> destination, CancellationToken cancellationToken = default)
         {
             ArgumentNullException.ThrowIfNull(source);
 
@@ -422,7 +422,7 @@ namespace System.Security.Cryptography
             }
 
             CheckPlatformSupport();
-            return LiteHashProvider.XofStreamAsync(HashAlgorithmId, source, destination, cancellationToken);
+            await LiteHashProvider.XofStreamAsync(HashAlgorithmId, source, destination, cancellationToken).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -453,7 +453,7 @@ namespace System.Security.Cryptography
         ///   The platform does not support SHAKE256. Callers can use the <see cref="IsSupported" /> property
         ///   to determine if the platform supports SHAKE256.
         /// </exception>
-        public static ValueTask<byte[]> HashDataAsync(Stream source, int outputLength, CancellationToken cancellationToken = default)
+        public static async ValueTask<byte[]> HashDataAsync(Stream source, int outputLength, CancellationToken cancellationToken = default)
         {
             ArgumentNullException.ThrowIfNull(source);
             ArgumentOutOfRangeException.ThrowIfNegative(outputLength);
@@ -464,7 +464,7 @@ namespace System.Security.Cryptography
             }
 
             CheckPlatformSupport();
-            return LiteHashProvider.XofStreamAsync(HashAlgorithmId, outputLength, source, cancellationToken);
+            return await LiteHashProvider.XofStreamAsync(HashAlgorithmId, outputLength, source, cancellationToken).ConfigureAwait(false);
         }
 
         private static void HashDataCore(ReadOnlySpan<byte> source, Span<byte> destination)

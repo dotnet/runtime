@@ -140,10 +140,10 @@ public partial class QuicStream : Stream
     }
 
     /// <inheritdoc />
-    public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken = default)
+    public override async Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken = default)
     {
         ValidateBufferArguments(buffer, offset, count);
-        return ReadAsync(new Memory<byte>(buffer, offset, count), cancellationToken).AsTask();
+        return await ReadAsync(new Memory<byte>(buffer, offset, count), cancellationToken).ConfigureAwait(false);
     }
 
     // Write boilerplate.
@@ -198,10 +198,10 @@ public partial class QuicStream : Stream
     }
 
     /// <inheritdoc />
-    public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken = default)
+    public override async Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken = default)
     {
         ValidateBufferArguments(buffer, offset, count);
-        return WriteAsync(new ReadOnlyMemory<byte>(buffer, offset, count), cancellationToken).AsTask();
+        await WriteAsync(new ReadOnlyMemory<byte>(buffer, offset, count), cancellationToken).ConfigureAwait(false);
     }
 
     // Flush.

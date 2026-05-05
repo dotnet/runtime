@@ -1503,7 +1503,7 @@ namespace System.Net.Http
 
                 public override void Write(ReadOnlySpan<byte> buffer) => throw new NotSupportedException(SR.net_http_content_readonly_stream);
 
-                public override ValueTask WriteAsync(ReadOnlyMemory<byte> destination, CancellationToken cancellationToken) => ValueTask.FromException(ExceptionDispatchInfo.SetCurrentStackTrace(new NotSupportedException(SR.net_http_content_readonly_stream)));
+                public override async ValueTask WriteAsync(ReadOnlyMemory<byte> destination, CancellationToken cancellationToken) => await ValueTask.FromException(ExceptionDispatchInfo.SetCurrentStackTrace(new NotSupportedException(SR.net_http_content_readonly_stream))).ConfigureAwait(false);
             }
 
             private sealed class Http2WriteStream : Http2ReadWriteStream
@@ -1522,22 +1522,22 @@ namespace System.Net.Http
 
                 public override int Read(Span<byte> buffer) => throw new NotSupportedException(SR.net_http_content_writeonly_stream);
 
-                public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken) => ValueTask.FromException<int>(ExceptionDispatchInfo.SetCurrentStackTrace(new NotSupportedException(SR.net_http_content_writeonly_stream)));
+                public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken) => await ValueTask.FromException<int>(ExceptionDispatchInfo.SetCurrentStackTrace(new NotSupportedException(SR.net_http_content_writeonly_stream))).ConfigureAwait(false);
 
                 public override void CopyTo(Stream destination, int bufferSize) => throw new NotSupportedException(SR.net_http_content_writeonly_stream);
 
-                public override Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken) => Task.FromException(ExceptionDispatchInfo.SetCurrentStackTrace(new NotSupportedException(SR.net_http_content_writeonly_stream)));
+                public override async Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken) => await Task.FromException(ExceptionDispatchInfo.SetCurrentStackTrace(new NotSupportedException(SR.net_http_content_writeonly_stream))).ConfigureAwait(false);
 
-                public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken)
+                public override async ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken)
                 {
                     BytesWritten += buffer.Length;
 
                     if ((ulong)BytesWritten > (ulong)ContentLength) // If ContentLength == -1, this will always be false
                     {
-                        return ValueTask.FromException(ExceptionDispatchInfo.SetCurrentStackTrace(new HttpRequestException(SR.net_http_content_write_larger_than_content_length)));
+                        await ValueTask.FromException(ExceptionDispatchInfo.SetCurrentStackTrace(new HttpRequestException(SR.net_http_content_write_larger_than_content_length))).ConfigureAwait(false);
                     }
 
-                    return base.WriteAsync(buffer, cancellationToken);
+                    await base.WriteAsync(buffer, cancellationToken).ConfigureAwait(false);
                 }
             }
 
@@ -1602,21 +1602,21 @@ namespace System.Net.Http
                     return http2Stream.ReadData(destination, _responseMessage);
                 }
 
-                public override ValueTask<int> ReadAsync(Memory<byte> destination, CancellationToken cancellationToken)
+                public override async ValueTask<int> ReadAsync(Memory<byte> destination, CancellationToken cancellationToken)
                 {
                     Http2Stream? http2Stream = _http2Stream;
 
                     if (http2Stream == null)
                     {
-                        return ValueTask.FromException<int>(ExceptionDispatchInfo.SetCurrentStackTrace(new ObjectDisposedException(nameof(Http2ReadStream))));
+                        return await ValueTask.FromException<int>(ExceptionDispatchInfo.SetCurrentStackTrace(new ObjectDisposedException(nameof(Http2ReadStream)))).ConfigureAwait(false);
                     }
 
                     if (cancellationToken.IsCancellationRequested)
                     {
-                        return ValueTask.FromCanceled<int>(cancellationToken);
+                        return await ValueTask.FromCanceled<int>(cancellationToken).ConfigureAwait(false);
                     }
 
-                    return http2Stream.ReadDataAsync(destination, _responseMessage, cancellationToken);
+                    return await http2Stream.ReadDataAsync(destination, _responseMessage, cancellationToken).ConfigureAwait(false);
                 }
 
                 public override void CopyTo(Stream destination, int bufferSize)
@@ -1636,17 +1636,17 @@ namespace System.Net.Http
                         http2Stream.CopyToAsync(_responseMessage, destination, bufferSize, cancellationToken);
                 }
 
-                public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken)
+                public override async ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken)
                 {
 
                     Http2Stream? http2Stream = _http2Stream;
 
                     if (http2Stream == null)
                     {
-                        return ValueTask.FromException(ExceptionDispatchInfo.SetCurrentStackTrace(new ObjectDisposedException(nameof(Http2WriteStream))));
+                        await ValueTask.FromException(ExceptionDispatchInfo.SetCurrentStackTrace(new ObjectDisposedException(nameof(Http2WriteStream)))).ConfigureAwait(false);
                     }
 
-                    return http2Stream.SendDataAsync(buffer, cancellationToken);
+                    await http2Stream!.SendDataAsync(buffer, cancellationToken).ConfigureAwait(false);
                 }
 
                 public override Task FlushAsync(CancellationToken cancellationToken)

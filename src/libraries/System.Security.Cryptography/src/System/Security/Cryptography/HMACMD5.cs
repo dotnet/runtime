@@ -228,9 +228,9 @@ namespace System.Security.Cryptography
         ///   <paramref name="source" /> does not support reading.
         /// </exception>
         [UnsupportedOSPlatform("browser")]
-        public static ValueTask<byte[]> HashDataAsync(ReadOnlyMemory<byte> key, Stream source, CancellationToken cancellationToken = default)
+        public static async ValueTask<byte[]> HashDataAsync(ReadOnlyMemory<byte> key, Stream source, CancellationToken cancellationToken = default)
         {
-            return HMACStatic<HMACTrait>.HashDataAsync(key, source, cancellationToken);
+            return await HMACStatic<HMACTrait>.HashDataAsync(key, source, cancellationToken).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -250,9 +250,9 @@ namespace System.Security.Cryptography
         ///   <paramref name="source" /> does not support reading.
         /// </exception>
         [UnsupportedOSPlatform("browser")]
-        public static ValueTask<byte[]> HashDataAsync(byte[] key, Stream source, CancellationToken cancellationToken = default)
+        public static async ValueTask<byte[]> HashDataAsync(byte[] key, Stream source, CancellationToken cancellationToken = default)
         {
-            return HMACStatic<HMACTrait>.HashDataAsync(key, source, cancellationToken);
+            return await HMACStatic<HMACTrait>.HashDataAsync(key, source, cancellationToken).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -280,13 +280,13 @@ namespace System.Security.Cryptography
         ///   </p>
         /// </exception>
         [UnsupportedOSPlatform("browser")]
-        public static ValueTask<int> HashDataAsync(
+        public static async ValueTask<int> HashDataAsync(
             ReadOnlyMemory<byte> key,
             Stream source,
             Memory<byte> destination,
             CancellationToken cancellationToken = default)
         {
-            return HMACStatic<HMACTrait>.HashDataAsync(key, source, destination, cancellationToken);
+            return await HMACStatic<HMACTrait>.HashDataAsync(key, source, destination, cancellationToken).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -387,13 +387,13 @@ namespace System.Security.Cryptography
         ///   timing information.
         /// </remarks>
         [UnsupportedOSPlatform("browser")]
-        public static ValueTask<bool> VerifyAsync(
+        public static async ValueTask<bool> VerifyAsync(
             ReadOnlyMemory<byte> key,
             Stream source,
             ReadOnlyMemory<byte> hash,
             CancellationToken cancellationToken = default)
         {
-            return HMACStatic<HMACTrait>.VerifyAsync(key, source, hash, cancellationToken);
+            return await HMACStatic<HMACTrait>.VerifyAsync(key, source, hash, cancellationToken).ConfigureAwait(false);
         }
 
         /// <exception cref="ArgumentNullException">
@@ -401,13 +401,13 @@ namespace System.Security.Cryptography
         /// </exception>
         /// <inheritdoc cref="VerifyAsync(ReadOnlyMemory{byte}, Stream, ReadOnlyMemory{byte}, CancellationToken)" />
         [UnsupportedOSPlatform("browser")]
-        public static ValueTask<bool> VerifyAsync(
+        public static async ValueTask<bool> VerifyAsync(
             byte[] key,
             Stream source,
             byte[] hash,
             CancellationToken cancellationToken = default)
         {
-            return HMACStatic<HMACTrait>.VerifyAsync(key, source, hash, cancellationToken);
+            return await HMACStatic<HMACTrait>.VerifyAsync(key, source, hash, cancellationToken).ConfigureAwait(false);
         }
 
         protected override void Dispose(bool disposing)

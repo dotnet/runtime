@@ -299,7 +299,9 @@ namespace System.IO
             }
         }
 
-        public Task<int> ReadAsync(byte[] buffer, int offset, int count) => ReadAsync(buffer, offset, count, CancellationToken.None);
+#pragma warning disable CA1835 // This 3-arg overload must call the 4-arg Task<int> overload, not the Memory<byte> one
+        public async Task<int> ReadAsync(byte[] buffer, int offset, int count) => await ReadAsync(buffer, offset, count, CancellationToken.None).ConfigureAwait(false);
+#pragma warning restore CA1835
 
         public virtual Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken) =>
             cancellationToken.IsCancellationRequested ?

@@ -218,23 +218,23 @@ namespace System.Net.Sockets
         public TcpClient EndAcceptTcpClient(IAsyncResult asyncResult) =>
             EndAcceptCore<TcpClient>(asyncResult);
 
-        public Task<Socket> AcceptSocketAsync() => AcceptSocketAsync(CancellationToken.None).AsTask();
+        public async Task<Socket> AcceptSocketAsync() => await AcceptSocketAsync(CancellationToken.None).ConfigureAwait(false);
 
-        public ValueTask<Socket> AcceptSocketAsync(CancellationToken cancellationToken)
+        public async ValueTask<Socket> AcceptSocketAsync(CancellationToken cancellationToken)
         {
             if (!_active)
             {
                 throw new InvalidOperationException(SR.net_stopped);
             }
 
-            return _serverSocket!.AcceptAsync(cancellationToken);
+            return await _serverSocket!.AcceptAsync(cancellationToken).ConfigureAwait(false);
         }
 
-        public Task<TcpClient> AcceptTcpClientAsync() => AcceptTcpClientAsync(CancellationToken.None).AsTask();
+        public async Task<TcpClient> AcceptTcpClientAsync() => await AcceptTcpClientAsync(CancellationToken.None).ConfigureAwait(false);
 
-        public ValueTask<TcpClient> AcceptTcpClientAsync(CancellationToken cancellationToken)
+        public async ValueTask<TcpClient> AcceptTcpClientAsync(CancellationToken cancellationToken)
         {
-            return WaitAndWrap(AcceptSocketAsync(cancellationToken));
+            return await WaitAndWrap(AcceptSocketAsync(cancellationToken)).ConfigureAwait(false);
 
             static async ValueTask<TcpClient> WaitAndWrap(ValueTask<Socket> task) =>
                 new TcpClient(await task.ConfigureAwait(false));

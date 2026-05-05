@@ -233,9 +233,9 @@ namespace System.IO.IsolatedStorage
             _fs.Flush(flushToDisk);
         }
 
-        public override Task FlushAsync(CancellationToken cancellationToken)
+        public override async Task FlushAsync(CancellationToken cancellationToken)
         {
-            return _fs.FlushAsync(cancellationToken);
+            await _fs.FlushAsync(cancellationToken).ConfigureAwait(false);
         }
 
         public override void SetLength(long value)
@@ -253,14 +253,14 @@ namespace System.IO.IsolatedStorage
             return _fs.Read(buffer);
         }
 
-        public override Task<int> ReadAsync(byte[] buffer, int offset, int count, Threading.CancellationToken cancellationToken)
+        public override async Task<int> ReadAsync(byte[] buffer, int offset, int count, Threading.CancellationToken cancellationToken)
         {
-            return _fs.ReadAsync(buffer, offset, count, cancellationToken);
+            return await _fs.ReadAsync(buffer, offset, count, cancellationToken).ConfigureAwait(false);
         }
 
-        public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken)
+        public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken)
         {
-            return _fs.ReadAsync(buffer, cancellationToken);
+            return await _fs.ReadAsync(buffer, cancellationToken).ConfigureAwait(false);
         }
 
         public override int ReadByte()
@@ -285,14 +285,14 @@ namespace System.IO.IsolatedStorage
             _fs.Write(buffer);
         }
 
-        public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        public override async Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
-            return _fs.WriteAsync(buffer, offset, count, cancellationToken);
+            await _fs.WriteAsync(buffer, offset, count, cancellationToken).ConfigureAwait(false);
         }
 
-        public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken)
+        public override async ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken)
         {
-            return _fs.WriteAsync(buffer, cancellationToken);
+            await _fs.WriteAsync(buffer, cancellationToken).ConfigureAwait(false);
         }
 
         public override void WriteByte(byte value)

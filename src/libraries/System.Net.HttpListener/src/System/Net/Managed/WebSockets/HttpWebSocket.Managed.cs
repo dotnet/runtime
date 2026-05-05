@@ -106,17 +106,17 @@ namespace System.Net.WebSockets
 
             public override void Abort() => _inner.Abort();
 
-            public override Task CloseAsync(
+            public override async Task CloseAsync(
                 WebSocketCloseStatus closeStatus,
                 string? statusDescription,
                 CancellationToken cancellationToken) =>
-                _inner.CloseAsync(closeStatus, statusDescription, cancellationToken);
+                await _inner.CloseAsync(closeStatus, statusDescription, cancellationToken).ConfigureAwait(false);
 
-            public override Task CloseOutputAsync(
+            public override async Task CloseOutputAsync(
                 WebSocketCloseStatus closeStatus,
                 string? statusDescription,
                 CancellationToken cancellationToken) =>
-                _inner.CloseOutputAsync(closeStatus, statusDescription, cancellationToken);
+                await _inner.CloseOutputAsync(closeStatus, statusDescription, cancellationToken).ConfigureAwait(false);
 
             public override void Dispose()
             {
@@ -163,17 +163,17 @@ namespace System.Net.WebSockets
                 Dispose(false);
             }
 
-            public override Task<WebSocketReceiveResult> ReceiveAsync(
+            public override async Task<WebSocketReceiveResult> ReceiveAsync(
                 ArraySegment<byte> buffer,
                 CancellationToken cancellationToken) =>
-                _inner.ReceiveAsync(buffer, cancellationToken);
+                await _inner.ReceiveAsync(buffer, cancellationToken).ConfigureAwait(false);
 
-            public override Task SendAsync(
+            public override async Task SendAsync(
                 ArraySegment<byte> buffer,
                 WebSocketMessageType messageType,
                 bool endOfMessage,
                 CancellationToken cancellationToken) =>
-                _inner.SendAsync(buffer, messageType, endOfMessage, cancellationToken);
+                await _inner.SendAsync(buffer, messageType, endOfMessage, cancellationToken).ConfigureAwait(false);
         }
     }
 }

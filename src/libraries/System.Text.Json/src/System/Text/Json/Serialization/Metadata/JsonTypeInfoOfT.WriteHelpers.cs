@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
@@ -59,7 +59,7 @@ namespace System.Text.Json.Serialization.Metadata
             }
         }
 
-        internal Task SerializeAsync(Stream utf8Json,
+        internal async Task SerializeAsync(Stream utf8Json,
             T? rootValue,
             CancellationToken cancellationToken,
             object? rootValueBoxed = null)
@@ -68,17 +68,17 @@ namespace System.Text.Json.Serialization.Metadata
             // Value chosen as 90% of the default buffer used in PooledByteBufferWriter.
             // This is a tradeoff between likelihood of needing to grow the array vs. utilizing most of the buffer
             int flushThreshold = (int)(writer.Capacity * JsonSerializer.FlushThreshold);
-            return SerializeAsync(writer, rootValue, flushThreshold, cancellationToken, rootValueBoxed);
+            await SerializeAsync(writer, rootValue, flushThreshold, cancellationToken, rootValueBoxed).ConfigureAwait(false);
         }
 
-        internal Task SerializeAsync(PipeWriter utf8Json,
+        internal async Task SerializeAsync(PipeWriter utf8Json,
             T? rootValue,
             CancellationToken cancellationToken,
             object? rootValueBoxed = null)
         {
             // Value chosen as 90% of 4 buffer segments in Pipes. This is semi-arbitrarily chosen and may be changed in future iterations.
             int flushThreshold = (int)(4 * PipeOptions.Default.MinimumSegmentSize * JsonSerializer.FlushThreshold);
-            return SerializeAsync(utf8Json, rootValue, flushThreshold, cancellationToken, rootValueBoxed);
+            await SerializeAsync(utf8Json, rootValue, flushThreshold, cancellationToken, rootValueBoxed).ConfigureAwait(false);
         }
 
         // Root serialization method for async streaming serialization.
@@ -340,14 +340,14 @@ namespace System.Text.Json.Serialization.Metadata
         internal sealed override void SerializeAsObject(Utf8JsonWriter writer, object? rootValue)
             => Serialize(writer, JsonSerializer.UnboxOnWrite<T>(rootValue), rootValue);
 
-        internal sealed override Task SerializeAsObjectAsync(PipeWriter pipeWriter, object? rootValue, int flushThreshold, CancellationToken cancellationToken)
-            => SerializeAsync(pipeWriter, JsonSerializer.UnboxOnWrite<T>(rootValue), flushThreshold, cancellationToken, rootValue);
+        internal sealed override async Task SerializeAsObjectAsync(PipeWriter pipeWriter, object? rootValue, int flushThreshold, CancellationToken cancellationToken)
+            => await SerializeAsync(pipeWriter, JsonSerializer.UnboxOnWrite<T>(rootValue), flushThreshold, cancellationToken, rootValue).ConfigureAwait(false);
 
-        internal sealed override Task SerializeAsObjectAsync(Stream utf8Json, object? rootValue, CancellationToken cancellationToken)
-            => SerializeAsync(utf8Json, JsonSerializer.UnboxOnWrite<T>(rootValue), cancellationToken, rootValue);
+        internal sealed override async Task SerializeAsObjectAsync(Stream utf8Json, object? rootValue, CancellationToken cancellationToken)
+            => await SerializeAsync(utf8Json, JsonSerializer.UnboxOnWrite<T>(rootValue), cancellationToken, rootValue).ConfigureAwait(false);
 
-        internal sealed override Task SerializeAsObjectAsync(PipeWriter utf8Json, object? rootValue, CancellationToken cancellationToken)
-            => SerializeAsync(utf8Json, JsonSerializer.UnboxOnWrite<T>(rootValue), cancellationToken, rootValue);
+        internal sealed override async Task SerializeAsObjectAsync(PipeWriter utf8Json, object? rootValue, CancellationToken cancellationToken)
+            => await SerializeAsync(utf8Json, JsonSerializer.UnboxOnWrite<T>(rootValue), cancellationToken, rootValue).ConfigureAwait(false);
 
         internal sealed override void SerializeAsObject(Stream utf8Json, object? rootValue)
             => Serialize(utf8Json, JsonSerializer.UnboxOnWrite<T>(rootValue), rootValue);

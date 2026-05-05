@@ -34,9 +34,9 @@ namespace System.Net
             BaseStream.Write(buffer);
         }
 
-        protected override ValueTask WriteAsyncInternal(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
+        protected override async ValueTask WriteAsyncInternal(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
         {
-            return BaseStream.WriteAsync(buffer, cancellationToken);
+            await BaseStream.WriteAsync(buffer, cancellationToken).ConfigureAwait(false);
         }
 
         protected override int ReadInternal(Span<byte> buffer)
@@ -44,9 +44,9 @@ namespace System.Net
             return BaseStream.Read(buffer);
         }
 
-        protected override ValueTask<int> ReadAsyncInternal(Memory<byte> buffer, CancellationToken cancellationToken = default)
+        protected override async ValueTask<int> ReadAsyncInternal(Memory<byte> buffer, CancellationToken cancellationToken = default)
         {
-            return BaseStream.ReadAsync(buffer, cancellationToken);
+            return await BaseStream.ReadAsync(buffer, cancellationToken).ConfigureAwait(false);
         }
     }
 }

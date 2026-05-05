@@ -123,13 +123,12 @@ namespace System.IO
             }
         }
 
-        public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        public override async Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
             ValidateBufferArguments(buffer, offset, count);
             EnsureNotClosed();
-            return cancellationToken.IsCancellationRequested ?
-                Task.FromCanceled<int>(cancellationToken) :
-                Task.FromResult(ReadBuffer(new Span<byte>(buffer, offset, count)));
+            cancellationToken.ThrowIfCancellationRequested();
+            return ReadBuffer(new Span<byte>(buffer, offset, count));
         }
 
 #if !NETFRAMEWORK && !NETSTANDARD2_0

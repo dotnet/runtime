@@ -17,14 +17,14 @@ namespace System.Linq
         /// <param name="cancellationToken">The <see cref="CancellationToken"/> to monitor for cancellation requests. The default is <see cref="CancellationToken.None"/>.</param>
         /// <returns>A <see cref="HashSet{T}"/> that contains values of type <typeparamref name="TSource"/> selected from the input sequence.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="source"/> is <see langword="null"/>.</exception>
-        public static ValueTask<HashSet<TSource>> ToHashSetAsync<TSource>(
+        public static async ValueTask<HashSet<TSource>> ToHashSetAsync<TSource>(
             this IAsyncEnumerable<TSource> source,
             IEqualityComparer<TSource>? comparer = null,
             CancellationToken cancellationToken = default)
         {
             ArgumentNullException.ThrowIfNull(source);
 
-            return Impl(source.WithCancellation(cancellationToken), comparer);
+            return await Impl(source.WithCancellation(cancellationToken), comparer).ConfigureAwait(false);
 
             static async ValueTask<HashSet<TSource>> Impl(
                 ConfiguredCancelableAsyncEnumerable<TSource> source,

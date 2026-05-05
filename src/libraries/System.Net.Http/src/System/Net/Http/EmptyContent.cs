@@ -29,8 +29,8 @@ namespace System.Net.Http
         protected override Stream CreateContentReadStream(CancellationToken cancellationToken) =>
             EmptyReadStream.Instance;
 
-        protected override Task<Stream> CreateContentReadStreamAsync() =>
-            Task.FromResult<Stream>(EmptyReadStream.Instance);
+        protected override async Task<Stream> CreateContentReadStreamAsync() =>
+            EmptyReadStream.Instance;
 
         protected override Task<Stream> CreateContentReadStreamAsync(CancellationToken cancellationToken) =>
             cancellationToken.IsCancellationRequested ? Task.FromCanceled<Stream>(cancellationToken) :

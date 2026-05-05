@@ -53,8 +53,8 @@ namespace System.Net.Http
             StreamToStreamCopy.Copy(_content, stream, _bufferSize, !_content.CanSeek);
         }
 
-        protected override Task SerializeToStreamAsync(Stream stream, TransportContext? context) =>
-            SerializeToStreamAsyncCore(stream, default);
+        protected override async Task SerializeToStreamAsync(Stream stream, TransportContext? context) =>
+            await SerializeToStreamAsyncCore(stream, default).ConfigureAwait(false);
 
         protected override Task SerializeToStreamAsync(Stream stream, TransportContext? context, CancellationToken cancellationToken) =>
             // Only skip the original protected virtual SerializeToStreamAsync if this
@@ -62,16 +62,16 @@ namespace System.Net.Http
             GetType() == typeof(StreamContent) ? SerializeToStreamAsyncCore(stream, cancellationToken) :
             base.SerializeToStreamAsync(stream, context, cancellationToken);
 
-        private Task SerializeToStreamAsyncCore(Stream stream, CancellationToken cancellationToken)
+        private async Task SerializeToStreamAsyncCore(Stream stream, CancellationToken cancellationToken)
         {
             Debug.Assert(stream != null);
             PrepareContent();
-            return StreamToStreamCopy.CopyAsync(
+            await StreamToStreamCopy.CopyAsync(
                 _content,
                 stream,
                 _bufferSize,
                 !_content.CanSeek, // If the stream can't be re-read, make sure that it gets disposed once it is consumed.
-                cancellationToken);
+                cancellationToken).ConfigureAwait(false);
         }
 
         protected internal override bool TryComputeLength(out long length)
@@ -103,11 +103,11 @@ namespace System.Net.Http
             return new ReadOnlyStream(_content);
         }
 
-        protected override Task<Stream> CreateContentReadStreamAsync()
+        protected override async Task<Stream> CreateContentReadStreamAsync()
         {
             SeekToStartIfSeekable();
             // Wrap the stream with a read-only stream to prevent someone from writing to the stream.
-            return Task.FromResult<Stream>(new ReadOnlyStream(_content));
+            return new ReadOnlyStream(_content);
         }
 
         internal override Stream? TryCreateContentReadStream() =>

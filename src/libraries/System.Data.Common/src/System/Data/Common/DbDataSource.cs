@@ -63,8 +63,8 @@ namespace System.Data.Common
         public DbConnection OpenConnection()
             => OpenDbConnection();
 
-        public ValueTask<DbConnection> OpenConnectionAsync(CancellationToken cancellationToken = default)
-            => OpenDbConnectionAsync(cancellationToken);
+        public async ValueTask<DbConnection> OpenConnectionAsync(CancellationToken cancellationToken = default)
+            => await OpenDbConnectionAsync(cancellationToken).ConfigureAwait(false);
 
         public DbCommand CreateCommand(string? commandText = null)
             => CreateDbCommand(commandText);
@@ -334,8 +334,8 @@ namespace System.Data.Common
             public override void Prepare()
                 => throw ExceptionBuilder.NotSupportedOnDataSourceCommand();
 
-            public override Task PrepareAsync(CancellationToken cancellationToken = default)
-                => Task.FromException(ExceptionBuilder.NotSupportedOnDataSourceCommand());
+            public override async Task PrepareAsync(CancellationToken cancellationToken = default)
+                => throw ExceptionBuilder.NotSupportedOnDataSourceCommand();
 
             // The below are incompatible with commands executed directly against DbDataSource, since no DbConnection
             // is involved at the user API level and the DbCommandWrapper owns the DbConnection.
@@ -563,8 +563,8 @@ namespace System.Data.Common
             public override void Prepare()
                 => throw ExceptionBuilder.NotSupportedOnDataSourceBatch();
 
-            public override Task PrepareAsync(CancellationToken cancellationToken = default)
-                => Task.FromException(ExceptionBuilder.NotSupportedOnDataSourceBatch());
+            public override async Task PrepareAsync(CancellationToken cancellationToken = default)
+                => throw ExceptionBuilder.NotSupportedOnDataSourceBatch();
 
             // The below are incompatible with batches executed directly against DbDataSource, since no DbConnection
             // is involved at the user API level and the DbBatchWrapper owns the DbConnection.

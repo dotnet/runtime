@@ -251,12 +251,12 @@ namespace System.Net
             return BeginGetClientCertificateCore(requestCallback, state);
         }
 
-        public Task<X509Certificate2?> GetClientCertificateAsync()
+        public async Task<X509Certificate2?> GetClientCertificateAsync()
         {
-            return Task.Factory.FromAsync(
+            return await Task.Factory.FromAsync(
                 (callback, state) => ((HttpListenerRequest)state!).BeginGetClientCertificate(callback, state),
                 iar => ((HttpListenerRequest)iar.AsyncState!).EndGetClientCertificate(iar),
-                this);
+                this).ConfigureAwait(false);
         }
 
         internal ListenerClientCertState ClientCertState { get; set; } = ListenerClientCertState.NotInitialized;

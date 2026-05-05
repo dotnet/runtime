@@ -64,13 +64,13 @@ namespace System.Xml.Linq
         /// <returns>
         /// A Task that represents the eventual completion of the operation.
         /// </returns>
-        public override Task WriteToAsync(XmlWriter writer, CancellationToken cancellationToken)
+        public override async Task WriteToAsync(XmlWriter writer, CancellationToken cancellationToken)
         {
             ArgumentNullException.ThrowIfNull(writer);
 
             if (cancellationToken.IsCancellationRequested)
-                return Task.FromCanceled(cancellationToken);
-            return writer.WriteCDataAsync(text);
+                await Task.FromCanceled(cancellationToken).ConfigureAwait(false);
+            await writer.WriteCDataAsync(text).ConfigureAwait(false);
         }
 
         internal override XNode CloneNode()

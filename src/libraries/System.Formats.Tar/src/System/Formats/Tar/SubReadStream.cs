@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
@@ -68,13 +68,13 @@ namespace System.Formats.Tar
 
         private int LimitByRemaining(int bufferSize) => (int)Math.Min(Remaining, bufferSize);
 
-        internal ValueTask AdvanceToEndAsync(CancellationToken cancellationToken)
+        internal async ValueTask AdvanceToEndAsync(CancellationToken cancellationToken)
         {
             _hasReachedEnd = true;
 
             long remaining = Remaining;
             _positionInSuperStream = _endInSuperStream;
-            return TarHelpers.AdvanceStreamAsync(_superStream, remaining, cancellationToken);
+            await TarHelpers.AdvanceStreamAsync(_superStream, remaining, cancellationToken).ConfigureAwait(false);
         }
 
         internal void AdvanceToEnd()
@@ -125,25 +125,25 @@ namespace System.Formats.Tar
             return Read(new Span<byte>(ref b)) == 1 ? b : -1;
         }
 
-        public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        public override async Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
             if (cancellationToken.IsCancellationRequested)
             {
-                return Task.FromCanceled<int>(cancellationToken);
+                return await Task.FromCanceled<int>(cancellationToken).ConfigureAwait(false);
             }
             ValidateBufferArguments(buffer, offset, count);
-            return ReadAsync(new Memory<byte>(buffer, offset, count), cancellationToken).AsTask();
+            return await ReadAsync(new Memory<byte>(buffer, offset, count), cancellationToken).ConfigureAwait(false);
         }
 
-        public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
+        public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
         {
             if (cancellationToken.IsCancellationRequested)
             {
-                return ValueTask.FromCanceled<int>(cancellationToken);
+                return await ValueTask.FromCanceled<int>(cancellationToken).ConfigureAwait(false);
             }
             ThrowIfDisposed();
             ThrowIfBeyondEndOfStream();
-            return ReadAsyncCore(buffer, cancellationToken);
+            return await ReadAsyncCore(buffer, cancellationToken).ConfigureAwait(false);
         }
 
         protected async ValueTask<int> ReadAsyncCore(Memory<byte> buffer, CancellationToken cancellationToken)

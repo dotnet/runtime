@@ -94,13 +94,13 @@ namespace System.Net.Http
             return new MemoryStream(_bufferedContent.GetSingleBuffer(), 0, (int)_bufferedContent.Length, writable: false);
         }
 
-        public Task<string> ReadAsStringAsync() =>
-            ReadAsStringAsync(CancellationToken.None);
+        public async Task<string> ReadAsStringAsync() =>
+            await ReadAsStringAsync(CancellationToken.None).ConfigureAwait(false);
 
-        public Task<string> ReadAsStringAsync(CancellationToken cancellationToken)
+        public async Task<string> ReadAsStringAsync(CancellationToken cancellationToken)
         {
             CheckDisposed();
-            return WaitAndReturnAsync(LoadIntoBufferAsync(cancellationToken), this, static s => s.ReadBufferedContentAsString());
+            return await WaitAndReturnAsync(LoadIntoBufferAsync(cancellationToken), this, static s => s.ReadBufferedContentAsString()).ConfigureAwait(false);
         }
 
         private string ReadBufferedContentAsString()
@@ -190,13 +190,13 @@ namespace System.Net.Http
             }
         }
 
-        public Task<byte[]> ReadAsByteArrayAsync() =>
-            ReadAsByteArrayAsync(CancellationToken.None);
+        public async Task<byte[]> ReadAsByteArrayAsync() =>
+            await ReadAsByteArrayAsync(CancellationToken.None).ConfigureAwait(false);
 
-        public Task<byte[]> ReadAsByteArrayAsync(CancellationToken cancellationToken)
+        public async Task<byte[]> ReadAsByteArrayAsync(CancellationToken cancellationToken)
         {
             CheckDisposed();
-            return WaitAndReturnAsync(LoadIntoBufferAsync(cancellationToken), this, static s => s.ReadBufferedContentAsByteArray());
+            return await WaitAndReturnAsync(LoadIntoBufferAsync(cancellationToken), this, static s => s.ReadBufferedContentAsByteArray()).ConfigureAwait(false);
         }
 
         internal byte[] ReadBufferedContentAsByteArray()
@@ -236,8 +236,8 @@ namespace System.Net.Http
             }
         }
 
-        public Task<Stream> ReadAsStreamAsync() =>
-            ReadAsStreamAsync(CancellationToken.None);
+        public async Task<Stream> ReadAsStreamAsync() =>
+            await ReadAsStreamAsync(CancellationToken.None).ConfigureAwait(false);
 
         public Task<Stream> ReadAsStreamAsync(CancellationToken cancellationToken)
         {
@@ -306,8 +306,8 @@ namespace System.Net.Http
             throw new NotSupportedException(SR.Format(SR.net_http_missing_sync_implementation, GetType(), nameof(HttpContent), nameof(SerializeToStream)));
         }
 
-        protected virtual Task SerializeToStreamAsync(Stream stream, TransportContext? context, CancellationToken cancellationToken) =>
-            SerializeToStreamAsync(stream, context);
+        protected virtual async Task SerializeToStreamAsync(Stream stream, TransportContext? context, CancellationToken cancellationToken) =>
+            await SerializeToStreamAsync(stream, context).ConfigureAwait(false);
 
         // TODO https://github.com/dotnet/runtime/issues/31316: Expose something to enable this publicly.  For very specific
         // HTTP/2 scenarios (e.g. gRPC), we need to be able to allow request content to continue sending after SendAsync has
@@ -338,26 +338,26 @@ namespace System.Net.Http
             }
         }
 
-        public Task CopyToAsync(Stream stream) =>
-            CopyToAsync(stream, CancellationToken.None);
+        public async Task CopyToAsync(Stream stream) =>
+            await CopyToAsync(stream, CancellationToken.None).ConfigureAwait(false);
 
-        public Task CopyToAsync(Stream stream, CancellationToken cancellationToken) =>
-            CopyToAsync(stream, null, cancellationToken);
+        public async Task CopyToAsync(Stream stream, CancellationToken cancellationToken) =>
+            await CopyToAsync(stream, null, cancellationToken).ConfigureAwait(false);
 
-        public Task CopyToAsync(Stream stream, TransportContext? context) =>
-            CopyToAsync(stream, context, CancellationToken.None);
+        public async Task CopyToAsync(Stream stream, TransportContext? context) =>
+            await CopyToAsync(stream, context, CancellationToken.None).ConfigureAwait(false);
 
-        public Task CopyToAsync(Stream stream, TransportContext? context, CancellationToken cancellationToken)
+        public async Task CopyToAsync(Stream stream, TransportContext? context, CancellationToken cancellationToken)
         {
             CheckDisposed();
             ArgumentNullException.ThrowIfNull(stream);
             try
             {
-                return WaitAsync(InternalCopyToAsync(stream, context, cancellationToken));
+                await WaitAsync(InternalCopyToAsync(stream, context, cancellationToken)).ConfigureAwait(false);
             }
             catch (Exception e) when (StreamCopyExceptionNeedsWrapping(e))
             {
-                return Task.FromException(GetStreamCopyException(e));
+                throw GetStreamCopyException(e);
             }
 
             static async Task WaitAsync(ValueTask copyTask)
@@ -438,14 +438,14 @@ namespace System.Net.Http
             _bufferedContent = tempBuffer;
         }
 
-        public Task LoadIntoBufferAsync() =>
-            LoadIntoBufferAsync(MaxBufferSize);
+        public async Task LoadIntoBufferAsync() =>
+            await LoadIntoBufferAsync(MaxBufferSize).ConfigureAwait(false);
 
         // No "CancellationToken" parameter needed since canceling the CTS will close the connection, resulting
         // in an exception being thrown while we're buffering.
         // If buffering is used without a connection, it is supposed to be fast, thus no cancellation required.
-        public Task LoadIntoBufferAsync(long maxBufferSize) =>
-            LoadIntoBufferAsync(maxBufferSize, CancellationToken.None);
+        public async Task LoadIntoBufferAsync(long maxBufferSize) =>
+            await LoadIntoBufferAsync(maxBufferSize, CancellationToken.None).ConfigureAwait(false);
 
         /// <summary>
         /// Serialize the HTTP content to a memory buffer as an asynchronous operation.
@@ -458,8 +458,8 @@ namespace System.Net.Http
         /// </remarks>
         /// <exception cref="OperationCanceledException">The cancellation token was canceled. This exception is stored into the returned task.</exception>
         /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
-        public Task LoadIntoBufferAsync(CancellationToken cancellationToken) =>
-            LoadIntoBufferAsync(MaxBufferSize, cancellationToken);
+        public async Task LoadIntoBufferAsync(CancellationToken cancellationToken) =>
+            await LoadIntoBufferAsync(MaxBufferSize, cancellationToken).ConfigureAwait(false);
 
         /// <summary>
         /// Serialize the HTTP content to a memory buffer as an asynchronous operation.
@@ -546,18 +546,18 @@ namespace System.Net.Http
             return CreateMemoryStreamFromBufferedContent();
         }
 
-        protected virtual Task<Stream> CreateContentReadStreamAsync()
+        protected virtual async Task<Stream> CreateContentReadStreamAsync()
         {
             // By default just buffer the content to a memory stream. Derived classes can override this behavior
             // if there is a better way to retrieve the content as stream (e.g. byte array/string use a more efficient
             // way, like wrapping a read-only MemoryStream around the bytes/string)
-            return WaitAndReturnAsync(LoadIntoBufferAsync(), this, static s => (Stream)s.CreateMemoryStreamFromBufferedContent());
+            return await WaitAndReturnAsync(LoadIntoBufferAsync(), this, static s => (Stream)s.CreateMemoryStreamFromBufferedContent()).ConfigureAwait(false);
         }
 
-        protected virtual Task<Stream> CreateContentReadStreamAsync(CancellationToken cancellationToken)
+        protected virtual async Task<Stream> CreateContentReadStreamAsync(CancellationToken cancellationToken)
         {
             // Drops the CT for compatibility reasons, see https://github.com/dotnet/runtime/issues/916#issuecomment-562083237
-            return CreateContentReadStreamAsync();
+            return await CreateContentReadStreamAsync().ConfigureAwait(false);
         }
 
         // As an optimization for internal consumers of HttpContent (e.g. HttpClient.GetStreamAsync), and for

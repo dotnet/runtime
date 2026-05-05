@@ -80,14 +80,14 @@ namespace System.IO.Pipelines
         public sealed override int EndRead(IAsyncResult asyncResult) =>
             TaskToAsyncResult.End<int>(asyncResult);
 
-        public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        public override async Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
             if (buffer is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.buffer);
             }
 
-            return ReadAsyncInternal(new Memory<byte>(buffer, offset, count), cancellationToken).AsTask();
+            return await ReadAsyncInternal(new Memory<byte>(buffer, offset, count), cancellationToken).ConfigureAwait(false);
         }
 
 #if (!NETSTANDARD2_0 && !NETFRAMEWORK)
@@ -96,9 +96,9 @@ namespace System.IO.Pipelines
             return ReadInternal(buffer);
         }
 
-        public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
+        public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
         {
-            return ReadAsyncInternal(buffer, cancellationToken);
+            return await ReadAsyncInternal(buffer, cancellationToken).ConfigureAwait(false);
         }
 #endif
 
@@ -148,12 +148,12 @@ namespace System.IO.Pipelines
             return 0;
         }
 
-        public override Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
+        public override async Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
         {
             StreamHelpers.ValidateCopyToArgs(this, destination, bufferSize);
 
             // Delegate to CopyToAsync on the PipeReader
-            return _pipeReader.CopyToAsync(destination, cancellationToken);
+            await _pipeReader.CopyToAsync(destination, cancellationToken).ConfigureAwait(false);
         }
     }
 }

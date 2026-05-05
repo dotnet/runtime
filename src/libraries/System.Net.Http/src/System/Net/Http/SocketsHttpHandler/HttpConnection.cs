@@ -1487,13 +1487,13 @@ namespace System.Net.Http
             WriteToStream(source);
         }
 
-        private ValueTask WriteWithoutBufferingAsync(ReadOnlyMemory<byte> source, bool async)
+        private async ValueTask WriteWithoutBufferingAsync(ReadOnlyMemory<byte> source, bool async)
         {
             if (_writeBuffer.ActiveLength == 0)
             {
                 // There's nothing in the write buffer we need to flush.
                 // Just write the supplied data out to the stream.
-                return WriteToStreamAsync(source, async);
+                await WriteToStreamAsync(source, async).ConfigureAwait(false);
             }
 
             if (source.Length <= _writeBuffer.AvailableLength)
@@ -1503,12 +1503,12 @@ namespace System.Net.Http
                 // the content to the write buffer and then flush it, so that we
                 // can do a single send rather than two.
                 WriteToBuffer(source.Span);
-                return FlushAsync(async);
+                await FlushAsync(async).ConfigureAwait(false);
             }
 
             // There's data in the write buffer and the data we're writing doesn't fit after it.
             // Do two writes, one to flush the buffer and then another to write the supplied content.
-            return FlushThenWriteWithoutBufferingAsync(source, async);
+            await FlushThenWriteWithoutBufferingAsync(source, async).ConfigureAwait(false);
         }
 
         private async ValueTask FlushThenWriteWithoutBufferingAsync(ReadOnlyMemory<byte> source, bool async)

@@ -33,7 +33,7 @@ public static partial class ZipFile
     /// to specify relative or absolute path information. Relative path information is interpreted as relative to the current working directory.</param>
     /// <param name="cancellationToken">The cancellation token to monitor for cancellation requests.</param>
     /// <returns>A task that represents the asynchronous operation. The task result is an opened <see cref="ZipArchive"/> in <see cref="ZipArchiveMode.Read"/> mode.</returns>
-    public static Task<ZipArchive> OpenReadAsync(string archiveFileName, CancellationToken cancellationToken = default) => OpenAsync(archiveFileName, ZipArchiveMode.Read, cancellationToken);
+    public static async Task<ZipArchive> OpenReadAsync(string archiveFileName, CancellationToken cancellationToken = default) => await OpenAsync(archiveFileName, ZipArchiveMode.Read, cancellationToken).ConfigureAwait(false);
 
     /// <summary>
     /// Asynchronously opens a <code>ZipArchive</code> on the specified <code>archiveFileName</code> in the specified <code>ZipArchiveMode</code> mode.
@@ -73,7 +73,7 @@ public static partial class ZipFile
     /// Note that creating a Zip file with the <code>ZipArchiveMode.Create</code> mode is more efficient when creating a new Zip file.</param>
     /// <param name="cancellationToken">The cancellation token to monitor for cancellation requests.</param>
     /// <returns>A task that represents the asynchronous operation. The task result is an opened <see cref="ZipArchive"/> in the requested <paramref name="mode"/>.</returns>
-    public static Task<ZipArchive> OpenAsync(string archiveFileName, ZipArchiveMode mode, CancellationToken cancellationToken = default) => OpenAsync(archiveFileName, mode, entryNameEncoding: null, cancellationToken);
+    public static async Task<ZipArchive> OpenAsync(string archiveFileName, ZipArchiveMode mode, CancellationToken cancellationToken = default) => await OpenAsync(archiveFileName, mode, entryNameEncoding: null, cancellationToken).ConfigureAwait(false);
 
     /// <summary>
     /// Asynchronously opens a <code>ZipArchive</code> on the specified <code>archiveFileName</code> in the specified <code>ZipArchiveMode</code> mode.
@@ -216,8 +216,8 @@ public static partial class ZipFile
     /// <param name="destinationArchiveFileName">The name of the archive to be created.</param>
     /// <param name="cancellationToken">The cancellation token to monitor for cancellation requests.</param>
     /// <returns>A task that represents the asynchronous create operation. The task completes when the archive has been written to disk.</returns>
-    public static Task CreateFromDirectoryAsync(string sourceDirectoryName, string destinationArchiveFileName, CancellationToken cancellationToken = default) =>
-        DoCreateFromDirectoryAsync(sourceDirectoryName, destinationArchiveFileName, compressionLevel: null, includeBaseDirectory: false, entryNameEncoding: null, cancellationToken);
+    public static async Task CreateFromDirectoryAsync(string sourceDirectoryName, string destinationArchiveFileName, CancellationToken cancellationToken = default) =>
+        await DoCreateFromDirectoryAsync(sourceDirectoryName, destinationArchiveFileName, compressionLevel: null, includeBaseDirectory: false, entryNameEncoding: null, cancellationToken).ConfigureAwait(false);
 
     /// <summary>
     /// <p>Asynchronously creates a Zip archive at the path <code>destinationArchiveFileName</code> that contains the files and directories in the directory
@@ -265,8 +265,8 @@ public static partial class ZipFile
     /// should be included directly in the archive.</param>
     /// <param name="cancellationToken">The cancellation token to monitor for cancellation requests.</param>
     /// <returns>A task that represents the asynchronous create operation. The task completes when the archive has been written to disk.</returns>
-    public static Task CreateFromDirectoryAsync(string sourceDirectoryName, string destinationArchiveFileName, CompressionLevel compressionLevel, bool includeBaseDirectory, CancellationToken cancellationToken = default) =>
-        DoCreateFromDirectoryAsync(sourceDirectoryName, destinationArchiveFileName, compressionLevel, includeBaseDirectory, entryNameEncoding: null, cancellationToken);
+    public static async Task CreateFromDirectoryAsync(string sourceDirectoryName, string destinationArchiveFileName, CompressionLevel compressionLevel, bool includeBaseDirectory, CancellationToken cancellationToken = default) =>
+        await DoCreateFromDirectoryAsync(sourceDirectoryName, destinationArchiveFileName, compressionLevel, includeBaseDirectory, entryNameEncoding: null, cancellationToken).ConfigureAwait(false);
 
     /// <summary>
     /// <p>Asynchronously creates a Zip archive at the path <code>destinationArchiveFileName</code> that contains the files and directories in the directory
@@ -337,9 +337,9 @@ public static partial class ZipFile
     /// </param>
     /// <param name="cancellationToken">The cancellation token to monitor for cancellation requests.</param>
     /// <returns>A task that represents the asynchronous create operation. The task completes when the archive has been written to disk.</returns>
-    public static Task CreateFromDirectoryAsync(string sourceDirectoryName, string destinationArchiveFileName,
+    public static async Task CreateFromDirectoryAsync(string sourceDirectoryName, string destinationArchiveFileName,
                                            CompressionLevel compressionLevel, bool includeBaseDirectory, Encoding? entryNameEncoding, CancellationToken cancellationToken = default) =>
-        DoCreateFromDirectoryAsync(sourceDirectoryName, destinationArchiveFileName, compressionLevel, includeBaseDirectory, entryNameEncoding, cancellationToken);
+        await DoCreateFromDirectoryAsync(sourceDirectoryName, destinationArchiveFileName, compressionLevel, includeBaseDirectory, entryNameEncoding, cancellationToken).ConfigureAwait(false);
 
     /// <summary>
     /// Asynchronously creates a zip archive in the specified stream that contains the files and directories from the specified directory.
@@ -365,8 +365,8 @@ public static partial class ZipFile
     ///An I/O error occurred while opening a file to be archived.</exception>
     /// <exception cref="NotSupportedException"><paramref name="sourceDirectoryName" /> contains an invalid format.</exception>
     /// <exception cref="OperationCanceledException">An asynchronous operation is cancelled.</exception>
-    public static Task CreateFromDirectoryAsync(string sourceDirectoryName, Stream destination, CancellationToken cancellationToken = default) =>
-       DoCreateFromDirectoryAsync(sourceDirectoryName, destination, compressionLevel: null, includeBaseDirectory: false, entryNameEncoding: null, cancellationToken);
+    public static async Task CreateFromDirectoryAsync(string sourceDirectoryName, Stream destination, CancellationToken cancellationToken = default) =>
+       await DoCreateFromDirectoryAsync(sourceDirectoryName, destination, compressionLevel: null, includeBaseDirectory: false, entryNameEncoding: null, cancellationToken).ConfigureAwait(false);
 
     /// <summary>
     /// Asynchronously creates a zip archive in the specified stream that contains the files and directories from the specified directory, uses the specified compression level, and optionally includes the base directory.
@@ -395,8 +395,8 @@ public static partial class ZipFile
     /// <exception cref="ArgumentOutOfRangeException"><paramref name="compressionLevel"/> is not a valid <see cref="CompressionLevel"/> value.</exception>
     /// <exception cref="OperationCanceledException">An asynchronous operation is cancelled.</exception>
     /// <returns>A task that represents the asynchronous create operation. The task completes when the archive has been written to the specified stream.</returns>
-    public static Task CreateFromDirectoryAsync(string sourceDirectoryName, Stream destination, CompressionLevel compressionLevel, bool includeBaseDirectory, CancellationToken cancellationToken = default) =>
-        DoCreateFromDirectoryAsync(sourceDirectoryName, destination, compressionLevel, includeBaseDirectory, entryNameEncoding: null, cancellationToken);
+    public static async Task CreateFromDirectoryAsync(string sourceDirectoryName, Stream destination, CompressionLevel compressionLevel, bool includeBaseDirectory, CancellationToken cancellationToken = default) =>
+        await DoCreateFromDirectoryAsync(sourceDirectoryName, destination, compressionLevel, includeBaseDirectory, entryNameEncoding: null, cancellationToken).ConfigureAwait(false);
 
     /// <summary>
     /// Asynchronously creates a zip archive in the specified stream that contains the files and directories from the specified directory, uses the specified compression level and character encoding for entry names, and optionally includes the base directory.
@@ -426,9 +426,9 @@ public static partial class ZipFile
     /// <exception cref="ArgumentOutOfRangeException"><paramref name="compressionLevel"/> is not a valid <see cref="CompressionLevel"/> value.</exception>
     /// <exception cref="OperationCanceledException">An asynchronous operation is cancelled.</exception>
     /// <returns>A task that represents the asynchronous create operation. The task completes when the archive has been written to the specified stream.</returns>
-    public static Task CreateFromDirectoryAsync(string sourceDirectoryName, Stream destination,
+    public static async Task CreateFromDirectoryAsync(string sourceDirectoryName, Stream destination,
                                            CompressionLevel compressionLevel, bool includeBaseDirectory, Encoding? entryNameEncoding, CancellationToken cancellationToken = default) =>
-        DoCreateFromDirectoryAsync(sourceDirectoryName, destination, compressionLevel, includeBaseDirectory, entryNameEncoding, cancellationToken);
+        await DoCreateFromDirectoryAsync(sourceDirectoryName, destination, compressionLevel, includeBaseDirectory, entryNameEncoding, cancellationToken).ConfigureAwait(false);
 
     private static async Task DoCreateFromDirectoryAsync(string sourceDirectoryName, string destinationArchiveFileName,
                                               CompressionLevel? compressionLevel, bool includeBaseDirectory, Encoding? entryNameEncoding, CancellationToken cancellationToken)

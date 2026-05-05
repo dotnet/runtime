@@ -202,15 +202,15 @@ namespace System.Net.Http
             return response!;
         }
 
-        public static Task<HttpResponseMessage> SendWithNtProxyAuthAsync(HttpRequestMessage request, Uri proxyUri, bool async, ICredentials proxyCredentials, TokenImpersonationLevel impersonationLevel, HttpConnection connection, HttpConnectionPool connectionPool, CancellationToken cancellationToken)
+        public static async Task<HttpResponseMessage> SendWithNtProxyAuthAsync(HttpRequestMessage request, Uri proxyUri, bool async, ICredentials proxyCredentials, TokenImpersonationLevel impersonationLevel, HttpConnection connection, HttpConnectionPool connectionPool, CancellationToken cancellationToken)
         {
-            return SendWithNtAuthAsync(request, proxyUri, async, proxyCredentials, impersonationLevel, isProxyAuth: true, connection, connectionPool, cancellationToken);
+            return await SendWithNtAuthAsync(request, proxyUri, async, proxyCredentials, impersonationLevel, isProxyAuth: true, connection, connectionPool, cancellationToken).ConfigureAwait(false);
         }
 
-        public static Task<HttpResponseMessage> SendWithNtConnectionAuthAsync(HttpRequestMessage request, bool async, ICredentials credentials, TokenImpersonationLevel impersonationLevel, HttpConnection connection, HttpConnectionPool connectionPool, CancellationToken cancellationToken)
+        public static async Task<HttpResponseMessage> SendWithNtConnectionAuthAsync(HttpRequestMessage request, bool async, ICredentials credentials, TokenImpersonationLevel impersonationLevel, HttpConnection connection, HttpConnectionPool connectionPool, CancellationToken cancellationToken)
         {
             Debug.Assert(request.RequestUri != null);
-            return SendWithNtAuthAsync(request, request.RequestUri, async, credentials, impersonationLevel, isProxyAuth: false, connection, connectionPool, cancellationToken);
+            return await SendWithNtAuthAsync(request, request.RequestUri, async, credentials, impersonationLevel, isProxyAuth: false, connection, connectionPool, cancellationToken).ConfigureAwait(false);
         }
     }
 }

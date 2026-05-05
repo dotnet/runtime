@@ -162,16 +162,16 @@ namespace System.Net
             return TaskToAsyncResult.Begin(t, callback, state);
         }
 
-        public override Task<Stream> GetRequestStreamAsync()
+        public override async Task<Stream> GetRequestStreamAsync()
         {
             CheckAndMarkAsyncGetRequestStreamPending();
-            return Task.Factory.StartNew<Stream>(s =>
+            return await Task.Factory.StartNew<Stream>(s =>
             {
                 FileWebRequest thisRef = (FileWebRequest)s!;
                 Stream writeStream = thisRef.CreateWriteStream();
                 thisRef._writePending = false;
                 return writeStream;
-            }, this, CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
+            }, this, CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default).ConfigureAwait(false);
         }
 
         private void CheckAndMarkAsyncGetResponsePending()
@@ -223,16 +223,16 @@ namespace System.Net
             return TaskToAsyncResult.Begin(t, callback, state);
         }
 
-        public override Task<WebResponse> GetResponseAsync()
+        public override async Task<WebResponse> GetResponseAsync()
         {
             CheckAndMarkAsyncGetResponsePending();
-            return Task.Factory.StartNew(s =>
+            return await Task.Factory.StartNew(s =>
             {
                 var thisRef = (FileWebRequest)s!;
                 WebResponse response = thisRef.CreateResponse();
                 _readPending = false;
                 return response;
-            }, this, CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
+            }, this, CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default).ConfigureAwait(false);
         }
 
         public override Stream EndGetRequestStream(IAsyncResult asyncResult)
@@ -419,12 +419,12 @@ namespace System.Net
             }
         }
 
-        public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        public override async Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
             CheckAborted();
             try
             {
-                return base.ReadAsync(buffer, offset, count, cancellationToken);
+                return await base.ReadAsync(buffer, offset, count, cancellationToken).ConfigureAwait(false);
             }
             catch
             {
@@ -433,12 +433,12 @@ namespace System.Net
             }
         }
 
-        public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        public override async Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
             CheckAborted();
             try
             {
-                return base.WriteAsync(buffer, offset, count, cancellationToken);
+                await base.WriteAsync(buffer, offset, count, cancellationToken).ConfigureAwait(false);
             }
             catch
             {
@@ -447,12 +447,12 @@ namespace System.Net
             }
         }
 
-        public override Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
+        public override async Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
         {
             CheckAborted();
             try
             {
-                return base.CopyToAsync(destination, bufferSize, cancellationToken);
+                await base.CopyToAsync(destination, bufferSize, cancellationToken).ConfigureAwait(false);
             }
             catch
             {

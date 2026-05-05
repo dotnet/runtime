@@ -832,13 +832,13 @@ namespace System.Xml.Linq
         /// A new <see cref="XElement"/> containing the contents of the passed
         /// in <see cref="XmlReader"/>.
         /// </returns>
-        public static Task<XElement> LoadAsync(XmlReader reader, LoadOptions options, CancellationToken cancellationToken)
+        public static async Task<XElement> LoadAsync(XmlReader reader, LoadOptions options, CancellationToken cancellationToken)
         {
             ArgumentNullException.ThrowIfNull(reader);
 
             if (cancellationToken.IsCancellationRequested)
-                return Task.FromCanceled<XElement>(cancellationToken);
-            return LoadAsyncInternal(reader, options, cancellationToken);
+                return await Task.FromCanceled<XElement>(cancellationToken).ConfigureAwait(false);
+            return await LoadAsyncInternal(reader, options, cancellationToken).ConfigureAwait(false);
         }
 
         private static async Task<XElement> LoadAsyncInternal(XmlReader reader, LoadOptions options, CancellationToken cancellationToken)
@@ -1174,13 +1174,13 @@ namespace System.Xml.Linq
         /// The <see cref="XmlWriter"/> to output the XML to.
         /// </param>
         /// <param name="cancellationToken">A cancellation token.</param>
-        public Task SaveAsync(XmlWriter writer, CancellationToken cancellationToken)
+        public async Task SaveAsync(XmlWriter writer, CancellationToken cancellationToken)
         {
             ArgumentNullException.ThrowIfNull(writer);
 
             if (cancellationToken.IsCancellationRequested)
-                return Task.FromCanceled(cancellationToken);
-            return SaveAsyncInternal(writer, cancellationToken);
+                await Task.FromCanceled(cancellationToken).ConfigureAwait(false);
+            await SaveAsyncInternal(writer, cancellationToken).ConfigureAwait(false);
         }
 
         private async Task SaveAsyncInternal(XmlWriter writer, CancellationToken cancellationToken)
@@ -1312,13 +1312,13 @@ namespace System.Xml.Linq
         /// The <see cref="XmlTextWriter"/> to write this <see cref="XElement"/> to.
         /// </param>
         /// <param name="cancellationToken">A cancellation token.</param>
-        public override Task WriteToAsync(XmlWriter writer, CancellationToken cancellationToken)
+        public override async Task WriteToAsync(XmlWriter writer, CancellationToken cancellationToken)
         {
             ArgumentNullException.ThrowIfNull(writer);
 
             if (cancellationToken.IsCancellationRequested)
-                return Task.FromCanceled(cancellationToken);
-            return new ElementWriter(writer).WriteElementAsync(this, cancellationToken);
+                await Task.FromCanceled(cancellationToken).ConfigureAwait(false);
+            await new ElementWriter(writer).WriteElementAsync(this, cancellationToken).ConfigureAwait(false);
         }
 
         /// <summary>

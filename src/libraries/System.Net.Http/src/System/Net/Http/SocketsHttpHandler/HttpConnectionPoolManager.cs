@@ -368,16 +368,16 @@ namespace System.Net.Http
             return pool.SendAsync(request, async, doRequestAuth, cancellationToken);
         }
 
-        public ValueTask<HttpResponseMessage> SendProxyConnectAsync(HttpRequestMessage request, Uri proxyUri, bool async, CancellationToken cancellationToken)
+        public async ValueTask<HttpResponseMessage> SendProxyConnectAsync(HttpRequestMessage request, Uri proxyUri, bool async, CancellationToken cancellationToken)
         {
-            return SendAsyncCore(request, proxyUri, async, doRequestAuth: false, isProxyConnect: true, cancellationToken);
+            return await SendAsyncCore(request, proxyUri, async, doRequestAuth: false, isProxyConnect: true, cancellationToken).ConfigureAwait(false);
         }
 
-        public ValueTask<HttpResponseMessage> SendAsync(HttpRequestMessage request, bool async, bool doRequestAuth, CancellationToken cancellationToken)
+        public async ValueTask<HttpResponseMessage> SendAsync(HttpRequestMessage request, bool async, bool doRequestAuth, CancellationToken cancellationToken)
         {
             if (_proxy == null)
             {
-                return SendAsyncCore(request, null, async, doRequestAuth, isProxyConnect: false, cancellationToken);
+                return await SendAsyncCore(request, null, async, doRequestAuth, isProxyConnect: false, cancellationToken).ConfigureAwait(false);
             }
 
             // Do proxy lookup.
@@ -393,7 +393,7 @@ namespace System.Net.Http
 
                         if (multiProxy.ReadNext(out proxyUri, out bool isFinalProxy) && !isFinalProxy)
                         {
-                            return SendAsyncMultiProxy(request, async, doRequestAuth, multiProxy, proxyUri, cancellationToken);
+                            return await SendAsyncMultiProxy(request, async, doRequestAuth, multiProxy, proxyUri, cancellationToken).ConfigureAwait(false);
                         }
                     }
                     else
@@ -414,7 +414,7 @@ namespace System.Net.Http
                 throw new NotSupportedException(SR.net_http_invalid_proxy_scheme);
             }
 
-            return SendAsyncCore(request, proxyUri, async, doRequestAuth, isProxyConnect: false, cancellationToken);
+            return await SendAsyncCore(request, proxyUri, async, doRequestAuth, isProxyConnect: false, cancellationToken).ConfigureAwait(false);
         }
 
         /// <summary>

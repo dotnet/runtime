@@ -15,15 +15,15 @@ namespace System.Xml
     internal sealed partial class XsdCachingReader : XmlReader, IXmlLineInfo
     {
         // Gets the text value of the current node.
-        public override Task<string> GetValueAsync()
+        public override async Task<string> GetValueAsync()
         {
             if (_returnOriginalStringValues)
             {
-                return Task.FromResult(_cachedNode!.OriginalStringValue!);
+                return _cachedNode!.OriginalStringValue!;
             }
             else
             {
-                return Task.FromResult(_cachedNode!.RawValue);
+                return _cachedNode!.RawValue;
             }
         }
 
@@ -131,12 +131,12 @@ namespace System.Xml
         }
 
         //Private methods
-        internal Task SetToReplayModeAsync()
+        internal async Task SetToReplayModeAsync()
         {
             _cacheState = CachingReaderState.Replay;
             _currentContentIndex = 0;
             _currentAttrIndex = -1;
-            return ReadAsync(); //Position on first node recorded to begin replaying
+            await ReadAsync().ConfigureAwait(false); //Position on first node recorded to begin replaying
         }
     }
 }

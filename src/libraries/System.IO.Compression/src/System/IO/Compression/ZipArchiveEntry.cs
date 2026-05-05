@@ -1651,10 +1651,10 @@ namespace System.IO.Compression
             public override void WriteByte(byte value) =>
                 Write(new ReadOnlySpan<byte>(in value));
 
-            public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+            public override async Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
             {
                 ValidateBufferArguments(buffer, offset, count);
-                return WriteAsync(new ReadOnlyMemory<byte>(buffer, offset, count), cancellationToken).AsTask();
+                await WriteAsync(new ReadOnlyMemory<byte>(buffer, offset, count), cancellationToken).ConfigureAwait(false);
             }
 
             public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
@@ -1688,12 +1688,12 @@ namespace System.IO.Compression
                 _crcSizeStream.Flush();
             }
 
-            public override Task FlushAsync(CancellationToken cancellationToken)
+            public override async Task FlushAsync(CancellationToken cancellationToken)
             {
                 ThrowIfDisposed();
                 Debug.Assert(CanWrite);
 
-                return _crcSizeStream.FlushAsync(cancellationToken);
+                await _crcSizeStream.FlushAsync(cancellationToken).ConfigureAwait(false);
             }
 
             protected override void Dispose(bool disposing)

@@ -19,11 +19,11 @@ namespace System.Net.Http
             stream.Write(_content.Span);
         }
 
-        protected override Task SerializeToStreamAsync(Stream stream, TransportContext? context) =>
-            stream.WriteAsync(_content).AsTask();
+        protected override async Task SerializeToStreamAsync(Stream stream, TransportContext? context) =>
+            await stream.WriteAsync(_content).ConfigureAwait(false);
 
-        protected override Task SerializeToStreamAsync(Stream stream, TransportContext? context, CancellationToken cancellationToken) =>
-            stream.WriteAsync(_content, cancellationToken).AsTask();
+        protected override async Task SerializeToStreamAsync(Stream stream, TransportContext? context, CancellationToken cancellationToken) =>
+            await stream.WriteAsync(_content, cancellationToken).ConfigureAwait(false);
 
         protected internal override bool TryComputeLength(out long length)
         {
@@ -34,8 +34,8 @@ namespace System.Net.Http
         protected override Stream CreateContentReadStream(CancellationToken cancellationToken) =>
             new ReadOnlyMemoryStream(_content);
 
-        protected override Task<Stream> CreateContentReadStreamAsync() =>
-            Task.FromResult<Stream>(new ReadOnlyMemoryStream(_content));
+        protected override async Task<Stream> CreateContentReadStreamAsync() =>
+            new ReadOnlyMemoryStream(_content);
 
         internal override Stream TryCreateContentReadStream() =>
             new ReadOnlyMemoryStream(_content);

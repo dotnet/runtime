@@ -177,43 +177,43 @@ namespace System.Net.Security
             AuthenticateAsync<SyncReadWriteAdapter>(default(CancellationToken)).GetAwaiter().GetResult();
         }
 
-        public virtual Task AuthenticateAsClientAsync() =>
-            AuthenticateAsClientAsync((NetworkCredential)CredentialCache.DefaultCredentials, binding: null, string.Empty, ProtectionLevel.EncryptAndSign, TokenImpersonationLevel.Identification);
+        public virtual async Task AuthenticateAsClientAsync() =>
+            await AuthenticateAsClientAsync((NetworkCredential)CredentialCache.DefaultCredentials, binding: null, string.Empty, ProtectionLevel.EncryptAndSign, TokenImpersonationLevel.Identification).ConfigureAwait(false);
 
-        public virtual Task AuthenticateAsClientAsync(NetworkCredential credential, string targetName) =>
-            AuthenticateAsClientAsync(credential, binding: null, targetName, ProtectionLevel.EncryptAndSign, TokenImpersonationLevel.Identification);
+        public virtual async Task AuthenticateAsClientAsync(NetworkCredential credential, string targetName) =>
+            await AuthenticateAsClientAsync(credential, binding: null, targetName, ProtectionLevel.EncryptAndSign, TokenImpersonationLevel.Identification).ConfigureAwait(false);
 
-        public virtual Task AuthenticateAsClientAsync(
+        public virtual async Task AuthenticateAsClientAsync(
             NetworkCredential credential, string targetName,
             ProtectionLevel requiredProtectionLevel,
             TokenImpersonationLevel allowedImpersonationLevel) =>
-            AuthenticateAsClientAsync(credential, binding: null, targetName, requiredProtectionLevel, allowedImpersonationLevel);
+            await AuthenticateAsClientAsync(credential, binding: null, targetName, requiredProtectionLevel, allowedImpersonationLevel).ConfigureAwait(false);
 
-        public virtual Task AuthenticateAsClientAsync(NetworkCredential credential, ChannelBinding? binding, string targetName) =>
-            AuthenticateAsClientAsync(credential, binding, targetName, ProtectionLevel.EncryptAndSign, TokenImpersonationLevel.Identification);
+        public virtual async Task AuthenticateAsClientAsync(NetworkCredential credential, ChannelBinding? binding, string targetName) =>
+            await AuthenticateAsClientAsync(credential, binding, targetName, ProtectionLevel.EncryptAndSign, TokenImpersonationLevel.Identification).ConfigureAwait(false);
 
-        public virtual Task AuthenticateAsClientAsync(
+        public virtual async Task AuthenticateAsClientAsync(
             NetworkCredential credential, ChannelBinding? binding, string targetName, ProtectionLevel requiredProtectionLevel,
             TokenImpersonationLevel allowedImpersonationLevel)
         {
             ValidateCreateContext(DefaultPackage, isServer: false, credential, targetName, binding, requiredProtectionLevel, allowedImpersonationLevel);
-            return AuthenticateAsync<AsyncReadWriteAdapter>(default(CancellationToken));
+            await AuthenticateAsync<AsyncReadWriteAdapter>(default(CancellationToken)).ConfigureAwait(false);
         }
 
-        public virtual Task AuthenticateAsServerAsync() =>
-            AuthenticateAsServerAsync((NetworkCredential)CredentialCache.DefaultCredentials, policy: null, ProtectionLevel.EncryptAndSign, TokenImpersonationLevel.Identification);
+        public virtual async Task AuthenticateAsServerAsync() =>
+            await AuthenticateAsServerAsync((NetworkCredential)CredentialCache.DefaultCredentials, policy: null, ProtectionLevel.EncryptAndSign, TokenImpersonationLevel.Identification).ConfigureAwait(false);
 
-        public virtual Task AuthenticateAsServerAsync(ExtendedProtectionPolicy? policy) =>
-            AuthenticateAsServerAsync((NetworkCredential)CredentialCache.DefaultCredentials, policy, ProtectionLevel.EncryptAndSign, TokenImpersonationLevel.Identification);
+        public virtual async Task AuthenticateAsServerAsync(ExtendedProtectionPolicy? policy) =>
+            await AuthenticateAsServerAsync((NetworkCredential)CredentialCache.DefaultCredentials, policy, ProtectionLevel.EncryptAndSign, TokenImpersonationLevel.Identification).ConfigureAwait(false);
 
-        public virtual Task AuthenticateAsServerAsync(NetworkCredential credential, ProtectionLevel requiredProtectionLevel, TokenImpersonationLevel requiredImpersonationLevel) =>
-            AuthenticateAsServerAsync(credential, policy: null, requiredProtectionLevel, requiredImpersonationLevel);
+        public virtual async Task AuthenticateAsServerAsync(NetworkCredential credential, ProtectionLevel requiredProtectionLevel, TokenImpersonationLevel requiredImpersonationLevel) =>
+            await AuthenticateAsServerAsync(credential, policy: null, requiredProtectionLevel, requiredImpersonationLevel).ConfigureAwait(false);
 
-        public virtual Task AuthenticateAsServerAsync(
+        public virtual async Task AuthenticateAsServerAsync(
             NetworkCredential credential, ExtendedProtectionPolicy? policy, ProtectionLevel requiredProtectionLevel, TokenImpersonationLevel requiredImpersonationLevel)
         {
             ValidateCreateContext(DefaultPackage, credential, string.Empty, policy, requiredProtectionLevel, requiredImpersonationLevel);
-            return AuthenticateAsync<AsyncReadWriteAdapter>(default(CancellationToken));
+            await AuthenticateAsync<AsyncReadWriteAdapter>(default(CancellationToken)).ConfigureAwait(false);
         }
 
         public override bool IsAuthenticated => IsAuthenticatedCore;
@@ -293,8 +293,8 @@ namespace System.Net.Security
         public override void Flush() =>
             InnerStream.Flush();
 
-        public override Task FlushAsync(CancellationToken cancellationToken) =>
-            InnerStream.FlushAsync(cancellationToken);
+        public override async Task FlushAsync(CancellationToken cancellationToken) =>
+            await InnerStream.FlushAsync(cancellationToken).ConfigureAwait(false);
 
         public override int Read(byte[] buffer, int offset, int count)
         {
@@ -311,28 +311,28 @@ namespace System.Net.Security
             return vt.GetAwaiter().GetResult();
         }
 
-        public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        public override async Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
             ValidateBufferArguments(buffer, offset, count);
 
             ThrowIfFailed(authSuccessCheck: true);
             if (!CanGetSecureStream)
             {
-                return InnerStream.ReadAsync(buffer, offset, count, cancellationToken);
+                return await InnerStream.ReadAsync(buffer, offset, count, cancellationToken).ConfigureAwait(false);
             }
 
-            return ReadAsync<AsyncReadWriteAdapter>(new Memory<byte>(buffer, offset, count), cancellationToken).AsTask();
+            return await ReadAsync<AsyncReadWriteAdapter>(new Memory<byte>(buffer, offset, count), cancellationToken).ConfigureAwait(false);
         }
 
-        public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
+        public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
         {
             ThrowIfFailed(authSuccessCheck: true);
             if (!CanGetSecureStream)
             {
-                return InnerStream.ReadAsync(buffer, cancellationToken);
+                return await InnerStream.ReadAsync(buffer, cancellationToken).ConfigureAwait(false);
             }
 
-            return ReadAsync<AsyncReadWriteAdapter>(buffer, cancellationToken);
+            return await ReadAsync<AsyncReadWriteAdapter>(buffer, cancellationToken).ConfigureAwait(false);
         }
 
         private async ValueTask<int> ReadAsync<TIOAdapter>(Memory<byte> buffer, CancellationToken cancellationToken)
@@ -475,17 +475,17 @@ namespace System.Net.Security
         }
 
         /// <returns>A <see cref="Task"/> that represents the asynchronous read operation.</returns>
-        public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        public override async Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
             ValidateBufferArguments(buffer, offset, count);
 
             ThrowIfFailed(authSuccessCheck: true);
             if (!CanGetSecureStream)
             {
-                return InnerStream.WriteAsync(buffer, offset, count, cancellationToken);
+                await InnerStream.WriteAsync(buffer, offset, count, cancellationToken).ConfigureAwait(false);
             }
 
-            return WriteAsync<AsyncReadWriteAdapter>(new ReadOnlyMemory<byte>(buffer, offset, count), cancellationToken);
+            await WriteAsync<AsyncReadWriteAdapter>(new ReadOnlyMemory<byte>(buffer, offset, count), cancellationToken).ConfigureAwait(false);
         }
 
         /// <returns>A <see cref="ValueTask"/> that represents the asynchronous read operation.</returns>

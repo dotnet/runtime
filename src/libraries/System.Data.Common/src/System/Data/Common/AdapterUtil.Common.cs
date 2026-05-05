@@ -19,7 +19,7 @@ namespace System.Data.Common
         // location so that the catcher of the exception will have the appropriate call stack.
         // This class is used so that there will be compile time checking of error messages.
 
-        internal static Task<T> CreatedTaskWithCancellation<T>() => Task.FromCanceled<T>(new CancellationToken(true));
+        internal static async Task<T> CreatedTaskWithCancellation<T>() => await Task.FromCanceled<T>(new CancellationToken(true)).ConfigureAwait(false);
 
         // this method accepts BID format as an argument, this attribute allows FXCopBid rule to validate calls to it
         static partial void TraceException(string trace, Exception e)

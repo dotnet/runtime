@@ -18,7 +18,7 @@ namespace System.Linq
         /// <param name="cancellationToken">The <see cref="CancellationToken"/> to monitor for cancellation requests. The default is <see cref="CancellationToken.None"/>.</param>
         /// <returns><see langword="true"/> if the source sequence contains an element that has the specified value; otherwise, <see langword="false"/>.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="source"/> is <see langword="null"/>.</exception>
-        public static ValueTask<bool> ContainsAsync<TSource>(
+        public static async ValueTask<bool> ContainsAsync<TSource>(
             this IAsyncEnumerable<TSource> source,
             TSource value,
             IEqualityComparer<TSource>? comparer = null,
@@ -26,7 +26,7 @@ namespace System.Linq
         {
             ArgumentNullException.ThrowIfNull(source);
 
-            return Impl(source.WithCancellation(cancellationToken), value, comparer ?? EqualityComparer<TSource>.Default);
+            return await Impl(source.WithCancellation(cancellationToken), value, comparer ?? EqualityComparer<TSource>.Default).ConfigureAwait(false);
 
             async static ValueTask<bool> Impl(
                 ConfiguredCancelableAsyncEnumerable<TSource> source,

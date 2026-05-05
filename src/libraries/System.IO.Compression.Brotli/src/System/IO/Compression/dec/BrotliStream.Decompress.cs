@@ -126,10 +126,10 @@ namespace System.IO.Compression
         /// <remarks><para>This method enables you to perform resource-intensive I/O operations without blocking the main thread. This performance consideration is particularly important in apps where a time-consuming stream operation can block the UI thread and make your app appear as if it is not working. The async methods are used in conjunction with the <see langword="async" /> and <see langword="await" /> keywords in Visual Basic and C#.</para>
         /// <para>Use the <see cref="System.IO.Compression.BrotliStream.CanRead" /> property to determine whether the current instance supports reading.</para>
         /// <para>If the operation is canceled before it completes, the returned task contains the <see cref="System.Threading.Tasks.TaskStatus.Canceled" /> value for the <see cref="System.Threading.Tasks.Task.Status" /> property.</para></remarks>
-        public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        public override async Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
             ValidateBufferArguments(buffer, offset, count);
-            return ReadAsync(new Memory<byte>(buffer, offset, count), cancellationToken).AsTask();
+            return await ReadAsync(new Memory<byte>(buffer, offset, count), cancellationToken).ConfigureAwait(false);
         }
 
         /// <summary>Asynchronously reads a sequence of bytes from the current Brotli stream, writes them to a byte memory range, advances the position within the Brotli stream by the number of bytes read, and monitors cancellation requests.</summary>
@@ -139,7 +139,7 @@ namespace System.IO.Compression
         /// <remarks><para>This method enables you to perform resource-intensive I/O operations without blocking the main thread. This performance consideration is particularly important in apps where a time-consuming stream operation can block the UI thread and make your app appear as if it is not working. The async methods are used in conjunction with the <see langword="async" /> and <see langword="await" /> keywords in Visual Basic and C#.</para>
         /// <para>Use the <see cref="System.IO.Compression.BrotliStream.CanRead" /> property to determine whether the current instance supports reading.</para>
         /// <para>If the operation is canceled before it completes, the returned task contains the <see cref="System.Threading.Tasks.TaskStatus.Canceled" /> value for the <see cref="System.Threading.Tasks.Task.Status" /> property.</para></remarks>
-        public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default(CancellationToken))
+        public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default(CancellationToken))
         {
             if (_mode != CompressionMode.Decompress)
                 throw new InvalidOperationException(SR.BrotliStream_Compress_UnsupportedOperation);
@@ -148,10 +148,10 @@ namespace System.IO.Compression
 
             if (cancellationToken.IsCancellationRequested)
             {
-                return ValueTask.FromCanceled<int>(cancellationToken);
+                return await ValueTask.FromCanceled<int>(cancellationToken).ConfigureAwait(false);
             }
 
-            return Core(buffer, cancellationToken);
+            return await Core(buffer, cancellationToken).ConfigureAwait(false);
 
             async ValueTask<int> Core(Memory<byte> buffer, CancellationToken cancellationToken)
             {

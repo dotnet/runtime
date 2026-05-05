@@ -12,19 +12,19 @@ namespace System.Xml
 {
     internal partial class XmlWrappingReader : XmlReader, IXmlLineInfo
     {
-        public override Task<string> GetValueAsync()
+        public override async Task<string> GetValueAsync()
         {
-            return reader.GetValueAsync();
+            return await reader.GetValueAsync().ConfigureAwait(false);
         }
 
-        public override Task<bool> ReadAsync()
+        public override async Task<bool> ReadAsync()
         {
-            return reader.ReadAsync();
+            return await reader.ReadAsync().ConfigureAwait(false);
         }
 
-        public override Task SkipAsync()
+        public override async Task SkipAsync()
         {
-            return reader.SkipAsync();
+            await reader.SkipAsync().ConfigureAwait(false);
         }
     }
 }

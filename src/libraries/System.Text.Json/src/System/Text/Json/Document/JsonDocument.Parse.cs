@@ -205,14 +205,14 @@ namespace System.Text.Json
         /// <exception cref="ArgumentException">
         ///   <paramref name="options"/> contains unsupported options.
         /// </exception>
-        public static Task<JsonDocument> ParseAsync(
+        public static async Task<JsonDocument> ParseAsync(
             Stream utf8Json,
             JsonDocumentOptions options = default,
             CancellationToken cancellationToken = default)
         {
             ArgumentNullException.ThrowIfNull(utf8Json);
 
-            return ParseAsyncCore(utf8Json, options, cancellationToken);
+            return await ParseAsyncCore(utf8Json, options, cancellationToken).ConfigureAwait(false);
         }
 
         private static async Task<JsonDocument> ParseAsyncCore(

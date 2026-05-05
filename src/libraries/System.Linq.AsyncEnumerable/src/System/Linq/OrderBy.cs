@@ -202,8 +202,8 @@ namespace System.Linq
 
             protected OrderedIterator(IAsyncEnumerable<TElement> source) => _source = source;
 
-            private protected ValueTask<int[]> CreateSortedMapAsync(TElement[] buffer, CancellationToken cancellationToken) =>
-                GetEnumerableSorter().SortAsync(buffer, buffer.Length, cancellationToken);
+            private protected async ValueTask<int[]> CreateSortedMapAsync(TElement[] buffer, CancellationToken cancellationToken) =>
+                await GetEnumerableSorter().SortAsync(buffer, buffer.Length, cancellationToken).ConfigureAwait(false);
 
             internal abstract EnumerableSorter<TElement> GetEnumerableSorter(EnumerableSorter<TElement>? next = null);
 

@@ -185,14 +185,14 @@ namespace System.Net
             return Stream.EndRead(asyncResult);
         }
 
-        public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        public override async Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
-            return Stream.ReadAsync(buffer, offset, count, cancellationToken);
+            return await Stream.ReadAsync(buffer, offset, count, cancellationToken).ConfigureAwait(false);
         }
 
-        public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
+        public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
         {
-            return Stream.ReadAsync(buffer, cancellationToken);
+            return await Stream.ReadAsync(buffer, cancellationToken).ConfigureAwait(false);
         }
 
         public override IAsyncResult BeginWrite(byte[] buffer, int offset, int size, AsyncCallback? callback, object? state)
@@ -205,14 +205,14 @@ namespace System.Net
             Stream.EndWrite(asyncResult);
         }
 
-        public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        public override async Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
-            return Stream.WriteAsync(buffer, offset, count, cancellationToken);
+            await Stream.WriteAsync(buffer, offset, count, cancellationToken).ConfigureAwait(false);
         }
 
-        public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
+        public override async ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
         {
-            return Stream.WriteAsync(buffer, cancellationToken);
+            await Stream.WriteAsync(buffer, cancellationToken).ConfigureAwait(false);
         }
 
         public override void Flush()
@@ -220,9 +220,9 @@ namespace System.Net
             Stream.Flush();
         }
 
-        public override Task FlushAsync(CancellationToken cancellationToken)
+        public override async Task FlushAsync(CancellationToken cancellationToken)
         {
-            return Stream.FlushAsync(cancellationToken);
+            await Stream.FlushAsync(cancellationToken).ConfigureAwait(false);
         }
 
         public override void SetLength(long value)

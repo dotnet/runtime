@@ -95,7 +95,7 @@ namespace System.Linq.Parallel
                         TraceHelpers.TraceInfo("OrderPreservingSpoolingTask::Spool: Running partition[{0}] asynchronously", i);
                         QueryTask asyncTask = new OrderPreservingSpoolingTask<TInputOutput, TKey>(
                             i, groupState, results, sortHelpers[i]);
-                        asyncTask.RunAsynchronously(taskScheduler);
+                        _ = asyncTask.RunAsynchronously(taskScheduler);
                     }
 
                     // Run one task synchronously on the current thread.

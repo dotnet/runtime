@@ -12,65 +12,65 @@ namespace System.Net.Sockets
     public static class SocketTaskExtensions
     {
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public static Task<Socket> AcceptAsync(this Socket socket) =>
-            socket.AcceptAsync();
+        public static async Task<Socket> AcceptAsync(this Socket socket) =>
+            await socket.AcceptAsync().ConfigureAwait(false);
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public static Task<Socket> AcceptAsync(this Socket socket, Socket? acceptSocket) =>
-            socket.AcceptAsync(acceptSocket);
+        public static async Task<Socket> AcceptAsync(this Socket socket, Socket? acceptSocket) =>
+            await socket.AcceptAsync(acceptSocket).ConfigureAwait(false);
 
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public static Task ConnectAsync(this Socket socket, EndPoint remoteEP) =>
-            socket.ConnectAsync(remoteEP);
+        public static async Task ConnectAsync(this Socket socket, EndPoint remoteEP) =>
+            await socket.ConnectAsync(remoteEP).ConfigureAwait(false);
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public static ValueTask ConnectAsync(this Socket socket, EndPoint remoteEP, CancellationToken cancellationToken) =>
-            socket.ConnectAsync(remoteEP, cancellationToken);
+        public static async ValueTask ConnectAsync(this Socket socket, EndPoint remoteEP, CancellationToken cancellationToken) =>
+            await socket.ConnectAsync(remoteEP, cancellationToken).ConfigureAwait(false);
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public static Task ConnectAsync(this Socket socket, IPAddress address, int port) =>
-            socket.ConnectAsync(address, port);
+        public static async Task ConnectAsync(this Socket socket, IPAddress address, int port) =>
+            await socket.ConnectAsync(address, port).ConfigureAwait(false);
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public static ValueTask ConnectAsync(this Socket socket, IPAddress address, int port, CancellationToken cancellationToken) =>
-            socket.ConnectAsync(address, port, cancellationToken);
+        public static async ValueTask ConnectAsync(this Socket socket, IPAddress address, int port, CancellationToken cancellationToken) =>
+            await socket.ConnectAsync(address, port, cancellationToken).ConfigureAwait(false);
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public static Task ConnectAsync(this Socket socket, IPAddress[] addresses, int port) =>
-            socket.ConnectAsync(addresses, port);
+        public static async Task ConnectAsync(this Socket socket, IPAddress[] addresses, int port) =>
+            await socket.ConnectAsync(addresses, port).ConfigureAwait(false);
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public static ValueTask ConnectAsync(this Socket socket, IPAddress[] addresses, int port, CancellationToken cancellationToken) =>
-            socket.ConnectAsync(addresses, port, cancellationToken);
+        public static async ValueTask ConnectAsync(this Socket socket, IPAddress[] addresses, int port, CancellationToken cancellationToken) =>
+            await socket.ConnectAsync(addresses, port, cancellationToken).ConfigureAwait(false);
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public static Task ConnectAsync(this Socket socket, string host, int port) =>
-            socket.ConnectAsync(host, port);
+        public static async Task ConnectAsync(this Socket socket, string host, int port) =>
+            await socket.ConnectAsync(host, port).ConfigureAwait(false);
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public static ValueTask ConnectAsync(this Socket socket, string host, int port, CancellationToken cancellationToken) =>
-            socket.ConnectAsync(host, port, cancellationToken);
+        public static async ValueTask ConnectAsync(this Socket socket, string host, int port, CancellationToken cancellationToken) =>
+            await socket.ConnectAsync(host, port, cancellationToken).ConfigureAwait(false);
 
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public static Task<int> ReceiveAsync(this Socket socket, ArraySegment<byte> buffer, SocketFlags socketFlags) =>
-            socket.ReceiveAsync(buffer, socketFlags);
+        public static async Task<int> ReceiveAsync(this Socket socket, ArraySegment<byte> buffer, SocketFlags socketFlags) =>
+            await socket.ReceiveAsync(buffer, socketFlags).ConfigureAwait(false);
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public static ValueTask<int> ReceiveAsync(this Socket socket, Memory<byte> buffer, SocketFlags socketFlags, CancellationToken cancellationToken = default) =>
-            socket.ReceiveAsync(buffer, socketFlags, cancellationToken);
+        public static async ValueTask<int> ReceiveAsync(this Socket socket, Memory<byte> buffer, SocketFlags socketFlags, CancellationToken cancellationToken = default) =>
+            await socket.ReceiveAsync(buffer, socketFlags, cancellationToken).ConfigureAwait(false);
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public static Task<int> ReceiveAsync(this Socket socket, IList<ArraySegment<byte>> buffers, SocketFlags socketFlags) =>
-            socket.ReceiveAsync(buffers, socketFlags);
+        public static async Task<int> ReceiveAsync(this Socket socket, IList<ArraySegment<byte>> buffers, SocketFlags socketFlags) =>
+            await socket.ReceiveAsync(buffers, socketFlags).ConfigureAwait(false);
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public static Task<SocketReceiveFromResult> ReceiveFromAsync(this Socket socket, ArraySegment<byte> buffer, SocketFlags socketFlags, EndPoint remoteEndPoint) =>
-            socket.ReceiveFromAsync(buffer, socketFlags, remoteEndPoint);
+        public static async Task<SocketReceiveFromResult> ReceiveFromAsync(this Socket socket, ArraySegment<byte> buffer, SocketFlags socketFlags, EndPoint remoteEndPoint) =>
+            await socket.ReceiveFromAsync(buffer, socketFlags, remoteEndPoint).ConfigureAwait(false);
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public static Task<SocketReceiveMessageFromResult> ReceiveMessageFromAsync(this Socket socket, ArraySegment<byte> buffer, SocketFlags socketFlags, EndPoint remoteEndPoint) =>
-            socket.ReceiveMessageFromAsync(buffer, socketFlags, remoteEndPoint);
+        public static async Task<SocketReceiveMessageFromResult> ReceiveMessageFromAsync(this Socket socket, ArraySegment<byte> buffer, SocketFlags socketFlags, EndPoint remoteEndPoint) =>
+            await socket.ReceiveMessageFromAsync(buffer, socketFlags, remoteEndPoint).ConfigureAwait(false);
 
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public static Task<int> SendAsync(this Socket socket, ArraySegment<byte> buffer, SocketFlags socketFlags) =>
-            socket.SendAsync(buffer, socketFlags);
+        public static async Task<int> SendAsync(this Socket socket, ArraySegment<byte> buffer, SocketFlags socketFlags) =>
+            await socket.SendAsync(buffer, socketFlags).ConfigureAwait(false);
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public static ValueTask<int> SendAsync(this Socket socket, ReadOnlyMemory<byte> buffer, SocketFlags socketFlags, CancellationToken cancellationToken = default) =>
-            socket.SendAsync(buffer, socketFlags, cancellationToken);
+        public static async ValueTask<int> SendAsync(this Socket socket, ReadOnlyMemory<byte> buffer, SocketFlags socketFlags, CancellationToken cancellationToken = default) =>
+            await socket.SendAsync(buffer, socketFlags, cancellationToken).ConfigureAwait(false);
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public static Task<int> SendAsync(this Socket socket, IList<ArraySegment<byte>> buffers, SocketFlags socketFlags) =>
-            socket.SendAsync(buffers, socketFlags);
+        public static async Task<int> SendAsync(this Socket socket, IList<ArraySegment<byte>> buffers, SocketFlags socketFlags) =>
+            await socket.SendAsync(buffers, socketFlags).ConfigureAwait(false);
 
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public static Task<int> SendToAsync(this Socket socket, ArraySegment<byte> buffer, SocketFlags socketFlags, EndPoint remoteEP) =>
-            socket.SendToAsync(buffer, socketFlags, remoteEP);
+        public static async Task<int> SendToAsync(this Socket socket, ArraySegment<byte> buffer, SocketFlags socketFlags, EndPoint remoteEP) =>
+            await socket.SendToAsync(buffer, socketFlags, remoteEP).ConfigureAwait(false);
     }
 }

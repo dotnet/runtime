@@ -420,27 +420,27 @@ namespace System.IO.Compression
             return TaskToAsyncResult.End<int>(asyncResult);
         }
 
-        public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        public override async Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
             ValidateBufferArguments(buffer, offset, count);
-            return ReadAsyncMemory(new Memory<byte>(buffer, offset, count), cancellationToken).AsTask();
+            return await ReadAsyncMemory(new Memory<byte>(buffer, offset, count), cancellationToken).ConfigureAwait(false);
         }
 
-        public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
+        public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
         {
             if (GetType() != typeof(DeflateStream))
             {
                 // Ensure that existing streams derived from DeflateStream and that override ReadAsync(byte[],...)
                 // get their existing behaviors when the newer Memory-based overload is used.
-                return base.ReadAsync(buffer, cancellationToken);
+                return await base.ReadAsync(buffer, cancellationToken).ConfigureAwait(false);
             }
             else
             {
-                return ReadAsyncMemory(buffer, cancellationToken);
+                return await ReadAsyncMemory(buffer, cancellationToken).ConfigureAwait(false);
             }
         }
 
-        internal ValueTask<int> ReadAsyncMemory(Memory<byte> buffer, CancellationToken cancellationToken)
+        internal async ValueTask<int> ReadAsyncMemory(Memory<byte> buffer, CancellationToken cancellationToken)
         {
             EnsureDecompressionMode();
             EnsureNoActiveAsyncOperation();
@@ -448,13 +448,13 @@ namespace System.IO.Compression
 
             if (cancellationToken.IsCancellationRequested)
             {
-                return ValueTask.FromCanceled<int>(cancellationToken);
+                return await ValueTask.FromCanceled<int>(cancellationToken).ConfigureAwait(false);
             }
 
             EnsureBufferInitialized();
             Debug.Assert(_inflater != null);
 
-            return Core(buffer, cancellationToken);
+            return await Core(buffer, cancellationToken).ConfigureAwait(false);
 
             async ValueTask<int> Core(Memory<byte> buffer, CancellationToken cancellationToken)
             {
@@ -819,23 +819,23 @@ namespace System.IO.Compression
             TaskToAsyncResult.End(asyncResult);
         }
 
-        public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        public override async Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
             ValidateBufferArguments(buffer, offset, count);
-            return WriteAsyncMemory(new ReadOnlyMemory<byte>(buffer, offset, count), cancellationToken).AsTask();
+            await WriteAsyncMemory(new ReadOnlyMemory<byte>(buffer, offset, count), cancellationToken).ConfigureAwait(false);
         }
 
-        public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
+        public override async ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
         {
             if (GetType() != typeof(DeflateStream))
             {
                 // Ensure that existing streams derived from DeflateStream and that override WriteAsync(byte[],...)
                 // get their existing behaviors when the newer Memory-based overload is used.
-                return base.WriteAsync(buffer, cancellationToken);
+                await base.WriteAsync(buffer, cancellationToken).ConfigureAwait(false);
             }
             else
             {
-                return WriteAsyncMemory(buffer, cancellationToken);
+                await WriteAsyncMemory(buffer, cancellationToken).ConfigureAwait(false);
             }
         }
 
@@ -896,7 +896,7 @@ namespace System.IO.Compression
             new CopyToStream(this, destination, bufferSize).CopyFromSourceToDestination();
         }
 
-        public override Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
+        public override async Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
         {
             ValidateCopyToArguments(destination, bufferSize);
 
@@ -907,11 +907,11 @@ namespace System.IO.Compression
             // Early check for cancellation
             if (cancellationToken.IsCancellationRequested)
             {
-                return Task.FromCanceled<int>(cancellationToken);
+                await Task.FromCanceled<int>(cancellationToken).ConfigureAwait(false);
             }
 
             // Do the copy
-            return new CopyToStream(this, destination, bufferSize, cancellationToken).CopyFromSourceToDestinationAsync();
+            await new CopyToStream(this, destination, bufferSize, cancellationToken).CopyFromSourceToDestinationAsync().ConfigureAwait(false);
         }
 
         private sealed class CopyToStream : Stream
@@ -1041,11 +1041,11 @@ namespace System.IO.Compression
                 return WriteAsyncCore(buffer.AsMemory(offset, count), cancellationToken).AsTask();
             }
 
-            public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
+            public override async ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
             {
                 _deflateStream.EnsureNotDisposed();
 
-                return WriteAsyncCore(buffer, cancellationToken);
+                await WriteAsyncCore(buffer, cancellationToken).ConfigureAwait(false);
             }
 
             private async ValueTask WriteAsyncCore(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken)

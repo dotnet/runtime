@@ -55,16 +55,16 @@ namespace System.IO.Compression
             _stream.WriteByte(value);
         }
 
-        public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        public override async Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
             _position += count;
-            return _stream.WriteAsync(buffer, offset, count, cancellationToken);
+            await _stream.WriteAsync(buffer, offset, count, cancellationToken).ConfigureAwait(false);
         }
 
-        public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default(CancellationToken))
+        public override async ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default(CancellationToken))
         {
             _position += buffer.Length;
-            return _stream.WriteAsync(buffer, cancellationToken);
+            await _stream.WriteAsync(buffer, cancellationToken).ConfigureAwait(false);
         }
 
         public override bool CanTimeout => _stream.CanTimeout;
@@ -80,7 +80,7 @@ namespace System.IO.Compression
         }
 
         public override void Flush() => _stream.Flush();
-        public override Task FlushAsync(CancellationToken cancellationToken) => _stream.FlushAsync(cancellationToken);
+        public override async Task FlushAsync(CancellationToken cancellationToken) => await _stream.FlushAsync(cancellationToken).ConfigureAwait(false);
 
         public override void Close()
         {
@@ -93,7 +93,7 @@ namespace System.IO.Compression
                 _stream.Dispose();
         }
 
-        public override ValueTask DisposeAsync() => _stream.DisposeAsync();
+        public override async ValueTask DisposeAsync() => await _stream.DisposeAsync().ConfigureAwait(false);
 
         public override long Length
         {

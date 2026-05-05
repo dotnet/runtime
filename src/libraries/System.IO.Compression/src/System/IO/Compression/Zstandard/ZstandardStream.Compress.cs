@@ -259,10 +259,10 @@ namespace System.IO.Compression
         /// <exception cref="InvalidOperationException">The <see cref="CompressionMode" /> value was <see cref="CompressionMode.Decompress"/> when the object was created, or concurrent read operations were attempted.</exception>
         /// <exception cref="ObjectDisposedException">The stream is disposed.</exception>
         /// <exception cref="IOException">Failed to compress data to the underlying stream.</exception>
-        public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        public override async Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
             ValidateBufferArguments(buffer, offset, count);
-            return WriteAsync(new ReadOnlyMemory<byte>(buffer, offset, count), cancellationToken).AsTask();
+            await WriteAsync(new ReadOnlyMemory<byte>(buffer, offset, count), cancellationToken).ConfigureAwait(false);
         }
 
         /// <summary>Asynchronously writes compressed bytes to the underlying stream from the specified memory.</summary>

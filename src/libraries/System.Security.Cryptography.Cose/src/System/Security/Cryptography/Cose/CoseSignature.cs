@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
@@ -524,7 +524,7 @@ namespace System.Security.Cryptography.Cose
         /// </exception>
         /// <seealso cref="VerifyDetached(AsymmetricAlgorithm, Stream, ReadOnlySpan{byte})"/>
         /// <seealso cref="CoseMessage.Content"/>
-        public Task<bool> VerifyDetachedAsync(AsymmetricAlgorithm key, Stream detachedContent, ReadOnlyMemory<byte> associatedData = default, CancellationToken cancellationToken = default)
+        public async Task<bool> VerifyDetachedAsync(AsymmetricAlgorithm key, Stream detachedContent, ReadOnlyMemory<byte> associatedData = default, CancellationToken cancellationToken = default)
         {
             ArgumentNullException.ThrowIfNull(key);
             ArgumentNullException.ThrowIfNull(detachedContent);
@@ -547,7 +547,7 @@ namespace System.Security.Cryptography.Cose
             CoseAlgorithm coseAlgorithm = GetCoseAlgorithmFromProtectedHeaders();
             CoseKey coseKey = CoseKey.FromUntrustedAlgorithmAndKey(coseAlgorithm, key);
 
-            return VerifyAsyncCore(coseKey, detachedContent, associatedData, cancellationToken);
+            return await VerifyAsyncCore(coseKey, detachedContent, associatedData, cancellationToken).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -588,7 +588,7 @@ namespace System.Security.Cryptography.Cose
         /// </exception>
         /// <seealso cref="VerifyDetached(CoseKey, Stream, ReadOnlySpan{byte})"/>
         /// <seealso cref="CoseMessage.Content"/>
-        public Task<bool> VerifyDetachedAsync(CoseKey key, Stream detachedContent, ReadOnlyMemory<byte> associatedData = default, CancellationToken cancellationToken = default)
+        public async Task<bool> VerifyDetachedAsync(CoseKey key, Stream detachedContent, ReadOnlyMemory<byte> associatedData = default, CancellationToken cancellationToken = default)
         {
             ArgumentNullException.ThrowIfNull(key);
             ArgumentNullException.ThrowIfNull(detachedContent);
@@ -608,7 +608,7 @@ namespace System.Security.Cryptography.Cose
                 throw new InvalidOperationException(SR.ContentWasEmbedded);
             }
 
-            return VerifyAsyncCore(key, detachedContent, associatedData, cancellationToken);
+            return await VerifyAsyncCore(key, detachedContent, associatedData, cancellationToken).ConfigureAwait(false);
         }
 
         private async Task<bool> VerifyAsyncCore(CoseKey key, Stream content, ReadOnlyMemory<byte> associatedData, CancellationToken cancellationToken)

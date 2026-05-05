@@ -172,17 +172,17 @@ namespace System.Formats.Tar
         /// <para>-or-</para>
         /// <para>Two or more Extended Attributes entries were found consecutively in the current <see cref="TarEntryFormat.Pax"/> archive.</para></exception>
         /// <exception cref="IOException">An I/O problem occurred.</exception>
-        public ValueTask<TarEntry?> GetNextEntryAsync(bool copyData = false, CancellationToken cancellationToken = default)
+        public async ValueTask<TarEntry?> GetNextEntryAsync(bool copyData = false, CancellationToken cancellationToken = default)
         {
             if (cancellationToken.IsCancellationRequested)
             {
-                return ValueTask.FromCanceled<TarEntry?>(cancellationToken);
+                return await ValueTask.FromCanceled<TarEntry?>(cancellationToken).ConfigureAwait(false);
             }
 
             if (_reachedEndMarkers)
             {
                 // Avoid advancing the stream if we already found the end of the archive.
-                return ValueTask.FromResult<TarEntry?>(null);
+                return null;
             }
 
             Debug.Assert(_archiveStream.CanRead);
@@ -190,10 +190,10 @@ namespace System.Formats.Tar
             if (_archiveStream.CanSeek && _archiveStream.Length == 0)
             {
                 // Attempting to get the next entry on an empty tar stream
-                return ValueTask.FromResult<TarEntry?>(null);
+                return null;
             }
 
-            return GetNextEntryInternalAsync(copyData, cancellationToken);
+            return await GetNextEntryInternalAsync(copyData, cancellationToken).ConfigureAwait(false);
         }
 
         // Moves the underlying archive stream position pointer to the beginning of the next header.

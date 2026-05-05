@@ -23,7 +23,7 @@ namespace System.Net.Http.Json
             }
         }
 
-        protected override Task SerializeToStreamAsync(Stream stream, TransportContext? context, CancellationToken cancellationToken)
-            => SerializeToStreamAsyncCore(stream, cancellationToken);
+        protected override async Task SerializeToStreamAsync(Stream stream, TransportContext? context, CancellationToken cancellationToken)
+            => await SerializeToStreamAsyncCore(stream, cancellationToken).ConfigureAwait(false);
     }
 }

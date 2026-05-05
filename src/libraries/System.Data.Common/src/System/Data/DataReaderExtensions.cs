@@ -96,11 +96,11 @@ namespace System.Data
             return reader.GetFieldValue<T>(reader.GetOrdinal(name));
         }
 
-        public static Task<T> GetFieldValueAsync<T>(this DbDataReader reader, string name, CancellationToken cancellationToken = default(CancellationToken))
+        public static async Task<T> GetFieldValueAsync<T>(this DbDataReader reader, string name, CancellationToken cancellationToken = default(CancellationToken))
         {
             ArgumentNullException.ThrowIfNull(reader);
 
-            return reader.GetFieldValueAsync<T>(reader.GetOrdinal(name), cancellationToken);
+            return await reader.GetFieldValueAsync<T>(reader.GetOrdinal(name), cancellationToken).ConfigureAwait(false);
         }
 
         public static float GetFloat(this DbDataReader reader, string name)
@@ -189,11 +189,11 @@ namespace System.Data
             return reader.IsDBNull(reader.GetOrdinal(name));
         }
 
-        public static Task<bool> IsDBNullAsync(this DbDataReader reader, string name, CancellationToken cancellationToken = default(CancellationToken))
+        public static async Task<bool> IsDBNullAsync(this DbDataReader reader, string name, CancellationToken cancellationToken = default(CancellationToken))
         {
             ArgumentNullException.ThrowIfNull(reader);
 
-            return reader.IsDBNullAsync(reader.GetOrdinal(name), cancellationToken);
+            return await reader.IsDBNullAsync(reader.GetOrdinal(name), cancellationToken).ConfigureAwait(false);
         }
     }
 }

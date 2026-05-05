@@ -45,13 +45,13 @@ namespace System.Net.Http
             }
         }
 
-        protected sealed override Task SerializeToStreamAsync(Stream stream, TransportContext? context) =>
-            SerializeToStreamAsync(stream, context, CancellationToken.None);
+        protected sealed override async Task SerializeToStreamAsync(Stream stream, TransportContext? context) =>
+            await SerializeToStreamAsync(stream, context, CancellationToken.None).ConfigureAwait(false);
 
-        protected sealed override Task SerializeToStreamAsync(Stream stream, TransportContext? context, CancellationToken cancellationToken)
+        protected sealed override async Task SerializeToStreamAsync(Stream stream, TransportContext? context, CancellationToken cancellationToken)
         {
             ArgumentNullException.ThrowIfNull(stream);
-            return Impl(stream, cancellationToken);
+            await Impl(stream, cancellationToken).ConfigureAwait(false);
 
             async Task Impl(Stream stream, CancellationToken cancellationToken)
             {
@@ -72,8 +72,8 @@ namespace System.Net.Http
         protected sealed override Stream CreateContentReadStream(CancellationToken cancellationToken) =>
             ConsumeStream();
 
-        protected sealed override Task<Stream> CreateContentReadStreamAsync() =>
-            Task.FromResult<Stream>(ConsumeStream());
+        protected sealed override async Task<Stream> CreateContentReadStreamAsync() =>
+            ConsumeStream();
 
         internal sealed override Stream TryCreateContentReadStream() =>
             ConsumeStream();

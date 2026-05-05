@@ -200,15 +200,15 @@ namespace System.Formats.Tar
         }
 
         // Writes the current header as a PAX Global Extended Attributes entry into the archive stream and returns the value of the final checksum.
-        internal Task WriteAsPaxGlobalExtendedAttributesAsync(Stream archiveStream, Memory<byte> buffer, int globalExtendedAttributesEntryNumber, CancellationToken cancellationToken)
+        internal async Task WriteAsPaxGlobalExtendedAttributesAsync(Stream archiveStream, Memory<byte> buffer, int globalExtendedAttributesEntryNumber, CancellationToken cancellationToken)
         {
             if (cancellationToken.IsCancellationRequested)
             {
-                return Task.FromCanceled<int>(cancellationToken);
+                await Task.FromCanceled<int>(cancellationToken).ConfigureAwait(false);
             }
 
             VerifyGlobalExtendedAttributesDataIsValid(globalExtendedAttributesEntryNumber);
-            return WriteAsPaxExtendedAttributesAsync(archiveStream, buffer, ExtendedAttributes, isGea: true, globalExtendedAttributesEntryNumber, cancellationToken);
+            await WriteAsPaxExtendedAttributesAsync(archiveStream, buffer, ExtendedAttributes, isGea: true, globalExtendedAttributesEntryNumber, cancellationToken).ConfigureAwait(false);
         }
 
         // Verifies the data is valid for writing a Global Extended Attributes entry.
@@ -232,17 +232,17 @@ namespace System.Formats.Tar
             }
         }
 
-        internal Task WriteAsV7Async(Stream archiveStream, Memory<byte> buffer, CancellationToken cancellationToken)
+        internal async Task WriteAsV7Async(Stream archiveStream, Memory<byte> buffer, CancellationToken cancellationToken)
         {
             Debug.Assert(archiveStream.CanSeek || _dataStream == null || _dataStream.CanSeek);
 
             if (archiveStream.CanSeek && _dataStream is { CanSeek: false })
             {
-                return WriteWithUnseekableDataStreamAsync(TarEntryFormat.V7, archiveStream, buffer, shouldAdvanceToEnd: true, cancellationToken);
+                await WriteWithUnseekableDataStreamAsync(TarEntryFormat.V7, archiveStream, buffer, shouldAdvanceToEnd: true, cancellationToken).ConfigureAwait(false);
             }
 
             // Else: Seek status of archive does not matter
-            return WriteWithSeekableDataStreamAsync(TarEntryFormat.V7, archiveStream, buffer, cancellationToken);
+            await WriteWithSeekableDataStreamAsync(TarEntryFormat.V7, archiveStream, buffer, cancellationToken).ConfigureAwait(false);
         }
 
         internal void WriteAsUstar(Stream archiveStream, Span<byte> buffer)
@@ -259,17 +259,17 @@ namespace System.Formats.Tar
             }
         }
 
-        internal Task WriteAsUstarAsync(Stream archiveStream, Memory<byte> buffer, CancellationToken cancellationToken)
+        internal async Task WriteAsUstarAsync(Stream archiveStream, Memory<byte> buffer, CancellationToken cancellationToken)
         {
             Debug.Assert(archiveStream.CanSeek || _dataStream == null || _dataStream.CanSeek);
 
             if (archiveStream.CanSeek && _dataStream is { CanSeek: false })
             {
-                return WriteWithUnseekableDataStreamAsync(TarEntryFormat.Ustar, archiveStream, buffer, shouldAdvanceToEnd: true, cancellationToken);
+                await WriteWithUnseekableDataStreamAsync(TarEntryFormat.Ustar, archiveStream, buffer, shouldAdvanceToEnd: true, cancellationToken).ConfigureAwait(false);
             }
 
             // Else: Seek status of archive does not matter
-            return WriteWithSeekableDataStreamAsync(TarEntryFormat.Ustar, archiveStream, buffer, cancellationToken);
+            await WriteWithSeekableDataStreamAsync(TarEntryFormat.Ustar, archiveStream, buffer, cancellationToken).ConfigureAwait(false);
         }
 
         // Writes the current header as a PAX entry into the archive stream.
@@ -499,12 +499,12 @@ namespace System.Formats.Tar
         }
 
         // Asynchronously writes the current header as a PAX Extended Attributes entry into the archive stream and returns the value of the final checksum.
-        private Task WriteAsPaxExtendedAttributesAsync(Stream archiveStream, Memory<byte> buffer, Dictionary<string, string> extendedAttributes, bool isGea, int globalExtendedAttributesEntryNumber, CancellationToken cancellationToken)
+        private async Task WriteAsPaxExtendedAttributesAsync(Stream archiveStream, Memory<byte> buffer, Dictionary<string, string> extendedAttributes, bool isGea, int globalExtendedAttributesEntryNumber, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
             WriteAsPaxExtendedAttributesShared(isGea, globalExtendedAttributesEntryNumber, extendedAttributes);
             Debug.Assert(_dataStream == null || (extendedAttributes.Count > 0 && _dataStream.CanSeek)); // We generate the extended attributes data stream, should always be seekable
-            return WriteWithSeekableDataStreamAsync(TarEntryFormat.Pax, archiveStream, buffer, cancellationToken);
+            await WriteWithSeekableDataStreamAsync(TarEntryFormat.Pax, archiveStream, buffer, cancellationToken).ConfigureAwait(false);
         }
 
         // Initializes the name, mode and type flag of a PAX extended attributes entry.

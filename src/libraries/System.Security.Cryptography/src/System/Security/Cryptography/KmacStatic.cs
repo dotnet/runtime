@@ -100,7 +100,7 @@ namespace System.Security.Cryptography
                 new ReadOnlySpan<byte>(customizationString)); // null to empty conversion is expected.
         }
 
-        internal static ValueTask<bool> VerifyAsync(
+        internal static async ValueTask<bool> VerifyAsync(
             ReadOnlyMemory<byte> key,
             Stream source,
             ReadOnlyMemory<byte> hash,
@@ -112,7 +112,7 @@ namespace System.Security.Cryptography
             ThrowIfStreamUnreadable(source);
             ThrowIfNotSupported();
 
-            return VerifyAsyncInner(key, source, hash, customizationString, cancellationToken);
+            return await VerifyAsyncInner(key, source, hash, customizationString, cancellationToken).ConfigureAwait(false);
 
             static async ValueTask<bool> VerifyAsyncInner(
                 ReadOnlyMemory<byte> key,
@@ -139,7 +139,7 @@ namespace System.Security.Cryptography
             }
         }
 
-        internal static ValueTask<bool> VerifyAsync(
+        internal static async ValueTask<bool> VerifyAsync(
             byte[] key,
             Stream source,
             byte[] hash,
@@ -149,12 +149,12 @@ namespace System.Security.Cryptography
             ArgumentNullException.ThrowIfNull(key);
             ArgumentNullException.ThrowIfNull(hash);
 
-            return VerifyAsync(
+            return await VerifyAsync(
                 new ReadOnlyMemory<byte>(key),
                 source,
                 new ReadOnlyMemory<byte>(hash),
                 new ReadOnlyMemory<byte>(customizationString), // null to empty conversion is expected.
-                cancellationToken);
+                cancellationToken).ConfigureAwait(false);
         }
 
         private static bool VerifyCore<TSource>(

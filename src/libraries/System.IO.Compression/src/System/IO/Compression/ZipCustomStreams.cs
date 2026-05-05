@@ -118,20 +118,20 @@ namespace System.IO.Compression
             return _baseStream.ReadByte();
         }
 
-        public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        public override async Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
             ThrowIfDisposed();
             ThrowIfCantRead();
 
-            return _baseStream.ReadAsync(buffer, offset, count, cancellationToken);
+            return await _baseStream.ReadAsync(buffer, offset, count, cancellationToken).ConfigureAwait(false);
         }
 
-        public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
+        public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
         {
             ThrowIfDisposed();
             ThrowIfCantRead();
 
-            return _baseStream.ReadAsync(buffer, cancellationToken);
+            return await _baseStream.ReadAsync(buffer, cancellationToken).ConfigureAwait(false);
         }
 
         public override long Seek(long offset, SeekOrigin origin)
@@ -179,22 +179,22 @@ namespace System.IO.Compression
             _baseStream.WriteByte(value);
         }
 
-        public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        public override async Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
             ThrowIfDisposed();
             ThrowIfCantWrite();
 
             NotifyWrite();
-            return _baseStream.WriteAsync(buffer, offset, count, cancellationToken);
+            await _baseStream.WriteAsync(buffer, offset, count, cancellationToken).ConfigureAwait(false);
         }
 
-        public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
+        public override async ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
         {
             ThrowIfDisposed();
             ThrowIfCantWrite();
 
             NotifyWrite();
-            return _baseStream.WriteAsync(buffer, cancellationToken);
+            await _baseStream.WriteAsync(buffer, cancellationToken).ConfigureAwait(false);
         }
 
         private void NotifyWrite()
@@ -214,12 +214,12 @@ namespace System.IO.Compression
             _baseStream.Flush();
         }
 
-        public override Task FlushAsync(CancellationToken cancellationToken)
+        public override async Task FlushAsync(CancellationToken cancellationToken)
         {
             ThrowIfDisposed();
             ThrowIfCantWrite();
 
-            return _baseStream.FlushAsync(cancellationToken);
+            await _baseStream.FlushAsync(cancellationToken).ConfigureAwait(false);
         }
 
         protected override void Dispose(bool disposing)
@@ -374,17 +374,17 @@ namespace System.IO.Compression
             return Read(new Span<byte>(ref b)) == 1 ? b : -1;
         }
 
-        public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        public override async Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
             ValidateBufferArguments(buffer, offset, count);
-            return ReadAsync(new Memory<byte>(buffer, offset, count), cancellationToken).AsTask();
+            return await ReadAsync(new Memory<byte>(buffer, offset, count), cancellationToken).ConfigureAwait(false);
         }
 
-        public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
+        public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
         {
             ThrowIfDisposed();
             ThrowIfCantRead();
-            return Core(buffer, cancellationToken);
+            return await Core(buffer, cancellationToken).ConfigureAwait(false);
 
             async ValueTask<int> Core(Memory<byte> buffer, CancellationToken cancellationToken)
             {
@@ -631,10 +631,10 @@ namespace System.IO.Compression
         public override void WriteByte(byte value) =>
             Write(new ReadOnlySpan<byte>(in value));
 
-        public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        public override async Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
             ValidateBufferArguments(buffer, offset, count);
-            return WriteAsync(new ReadOnlyMemory<byte>(buffer, offset, count), cancellationToken).AsTask();
+            await WriteAsync(new ReadOnlyMemory<byte>(buffer, offset, count), cancellationToken).ConfigureAwait(false);
         }
 
         public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
@@ -802,12 +802,12 @@ namespace System.IO.Compression
             return Read(new Span<byte>(ref b)) == 1 ? b : -1;
         }
 
-        public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        public override async Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
             ThrowIfDisposed();
             ValidateBufferArguments(buffer, offset, count);
 
-            return ReadAsync(buffer.AsMemory(offset, count), cancellationToken).AsTask();
+            return await ReadAsync(buffer.AsMemory(offset, count), cancellationToken).ConfigureAwait(false);
         }
 
         public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)

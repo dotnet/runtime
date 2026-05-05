@@ -114,7 +114,7 @@ namespace System.Security.Cryptography
             return HashData(new ReadOnlySpan<byte>(key), source);
         }
 
-        internal static ValueTask<byte[]> HashDataAsync(
+        internal static async ValueTask<byte[]> HashDataAsync(
             ReadOnlyMemory<byte> key,
             Stream source,
             CancellationToken cancellationToken)
@@ -125,17 +125,17 @@ namespace System.Security.Cryptography
                 throw new ArgumentException(SR.Argument_StreamNotReadable, nameof(source));
 
             CheckPlatformSupport();
-            return LiteHashProvider.HmacStreamAsync(THMAC.HashAlgorithmName, key.Span, source, cancellationToken);
+            return await LiteHashProvider.HmacStreamAsync(THMAC.HashAlgorithmName, key.Span, source, cancellationToken).ConfigureAwait(false);
         }
 
-        internal static ValueTask<byte[]> HashDataAsync(byte[] key, Stream source, CancellationToken cancellationToken)
+        internal static async ValueTask<byte[]> HashDataAsync(byte[] key, Stream source, CancellationToken cancellationToken)
         {
             ArgumentNullException.ThrowIfNull(key);
 
-            return HashDataAsync(new ReadOnlyMemory<byte>(key), source, cancellationToken);
+            return await HashDataAsync(new ReadOnlyMemory<byte>(key), source, cancellationToken).ConfigureAwait(false);
         }
 
-        internal static ValueTask<int> HashDataAsync(
+        internal static async ValueTask<int> HashDataAsync(
             ReadOnlyMemory<byte> key,
             Stream source,
             Memory<byte> destination,
@@ -150,12 +150,12 @@ namespace System.Security.Cryptography
                 throw new ArgumentException(SR.Argument_StreamNotReadable, nameof(source));
 
             CheckPlatformSupport();
-            return LiteHashProvider.HmacStreamAsync(
+            return await LiteHashProvider.HmacStreamAsync(
                 THMAC.HashAlgorithmName,
                 key.Span,
                 source,
                 destination,
-                cancellationToken);
+                cancellationToken).ConfigureAwait(false);
         }
 
         internal static bool Verify(byte[] key, byte[] source, byte[] hash)
@@ -196,7 +196,7 @@ namespace System.Security.Cryptography
             return Verify(new ReadOnlySpan<byte>(key), source, new ReadOnlySpan<byte>(hash));
         }
 
-        internal static ValueTask<bool> VerifyAsync(
+        internal static async ValueTask<bool> VerifyAsync(
             ReadOnlyMemory<byte> key,
             Stream source,
             ReadOnlyMemory<byte> hash,
@@ -211,7 +211,7 @@ namespace System.Security.Cryptography
                 throw new ArgumentException(SR.Argument_StreamNotReadable, nameof(source));
 
             CheckPlatformSupport();
-            return VerifyAsyncInner(key, source, hash, cancellationToken);
+            return await VerifyAsyncInner(key, source, hash, cancellationToken).ConfigureAwait(false);
 
             static async ValueTask<bool> VerifyAsyncInner(
                 ReadOnlyMemory<byte> key,
@@ -236,7 +236,7 @@ namespace System.Security.Cryptography
             }
         }
 
-        internal static ValueTask<bool> VerifyAsync(
+        internal static async ValueTask<bool> VerifyAsync(
             byte[] key,
             Stream source,
             byte[] hash,
@@ -246,7 +246,7 @@ namespace System.Security.Cryptography
             ArgumentNullException.ThrowIfNull(hash);
             // source parameter check is done in called overload.
 
-            return VerifyAsync(new ReadOnlyMemory<byte>(key), source, new ReadOnlyMemory<byte>(hash), cancellationToken);
+            return await VerifyAsync(new ReadOnlyMemory<byte>(key), source, new ReadOnlyMemory<byte>(hash), cancellationToken).ConfigureAwait(false);
         }
 
         internal static void CheckPlatformSupport()

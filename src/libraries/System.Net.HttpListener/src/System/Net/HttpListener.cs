@@ -287,12 +287,12 @@ namespace System.Net
             }
         }
 
-        public Task<HttpListenerContext> GetContextAsync()
+        public async Task<HttpListenerContext> GetContextAsync()
         {
-            return Task.Factory.FromAsync(
+            return await Task.Factory.FromAsync(
                 (callback, state) => ((HttpListener)state!).BeginGetContext(callback, state),
                 iar => ((HttpListener)iar!.AsyncState!).EndGetContext(iar),
-                this);
+                this).ConfigureAwait(false);
         }
 
         public void Close()

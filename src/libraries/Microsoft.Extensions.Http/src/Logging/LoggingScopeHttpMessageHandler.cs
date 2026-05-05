@@ -45,10 +45,10 @@ namespace Microsoft.Extensions.Http.Logging
             _options = options;
         }
 
-        private Task<HttpResponseMessage> SendCoreAsync(HttpRequestMessage request, bool useAsync, CancellationToken cancellationToken)
+        private async Task<HttpResponseMessage> SendCoreAsync(HttpRequestMessage request, bool useAsync, CancellationToken cancellationToken)
         {
             ArgumentNullException.ThrowIfNull(request);
-            return Core(request, useAsync, cancellationToken);
+            return await Core(request, useAsync, cancellationToken).ConfigureAwait(false);
 
             async Task<HttpResponseMessage> Core(HttpRequestMessage request, bool useAsync, CancellationToken cancellationToken)
             {
@@ -84,8 +84,8 @@ namespace Microsoft.Extensions.Http.Logging
 
         /// <inheritdoc />
         /// <remarks>Logs the request to and response from the sent <see cref="HttpRequestMessage"/>.</remarks>
-        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
-            => SendCoreAsync(request, useAsync: true, cancellationToken);
+        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+            => await SendCoreAsync(request, useAsync: true, cancellationToken).ConfigureAwait(false);
 
 #if NET
         /// <inheritdoc />

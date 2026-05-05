@@ -194,10 +194,10 @@ namespace Microsoft.Extensions.DependencyInjection
         /// synchronization context. Services should not rely on disposal continuations running on any particular context.
         /// </remarks>
         /// <returns>A value task that represents the asynchronous operation.</returns>
-        public ValueTask DisposeAsync()
+        public async ValueTask DisposeAsync()
         {
             DisposeCore();
-            return Root.DisposeAsync();
+            await Root.DisposeAsync().ConfigureAwait(false);
         }
 
         private void DisposeCore()

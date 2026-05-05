@@ -22,7 +22,7 @@ namespace System.Linq
         /// <remarks>
         /// <para>If <typeparamref name="TKey" /> is a reference type and the source sequence is empty or contains only values that are <see langword="null" />, this method returns <see langword="null" />.</para>
         /// </remarks>
-        public static ValueTask<TSource?> MaxByAsync<TSource, TKey>(
+        public static async ValueTask<TSource?> MaxByAsync<TSource, TKey>(
             this IAsyncEnumerable<TSource> source,
             Func<TSource, TKey> keySelector,
             IComparer<TKey>? comparer = null,
@@ -31,7 +31,7 @@ namespace System.Linq
             ArgumentNullException.ThrowIfNull(source);
             ArgumentNullException.ThrowIfNull(keySelector);
 
-            return Impl(source, keySelector, comparer ?? Comparer<TKey>.Default, cancellationToken);
+            return await Impl(source, keySelector, comparer ?? Comparer<TKey>.Default, cancellationToken).ConfigureAwait(false);
 
             static async ValueTask<TSource?> Impl(
                 IAsyncEnumerable<TSource> source,
@@ -132,7 +132,7 @@ namespace System.Linq
         /// <remarks>
         /// <para>If <typeparamref name="TKey" /> is a reference type and the source sequence is empty or contains only values that are <see langword="null" />, this method returns <see langword="null" />.</para>
         /// </remarks>
-        public static ValueTask<TSource?> MaxByAsync<TSource, TKey>(
+        public static async ValueTask<TSource?> MaxByAsync<TSource, TKey>(
             this IAsyncEnumerable<TSource> source,
             Func<TSource, CancellationToken, ValueTask<TKey>> keySelector,
             IComparer<TKey>? comparer = null,
@@ -141,7 +141,7 @@ namespace System.Linq
             ArgumentNullException.ThrowIfNull(source);
             ArgumentNullException.ThrowIfNull(keySelector);
 
-            return Impl(source, keySelector, comparer ?? Comparer<TKey>.Default, cancellationToken);
+            return await Impl(source, keySelector, comparer ?? Comparer<TKey>.Default, cancellationToken).ConfigureAwait(false);
 
             static async ValueTask<TSource?> Impl(
                 IAsyncEnumerable<TSource> source,

@@ -68,7 +68,7 @@ namespace System.Xml
             Task task = WriteStartAttributeAsync(prefix, localName, ns);
             if (task.IsSuccess())
             {
-                return WriteStringAsync(value).CallTaskFuncWhenFinishAsync(thisRef => thisRef.WriteEndAttributeAsync(), this);
+                return WriteStringAsync(value).CallTaskFuncWhenFinishAsync(async thisRef => await thisRef.WriteEndAttributeAsync().ConfigureAwait(false), this);
             }
 
             return WriteAttributeStringAsyncHelper(task, value);
@@ -180,9 +180,9 @@ namespace System.Xml
         }
 
         // Encodes the specified binary bytes as bin hex and writes out the resulting text.
-        public virtual Task WriteBinHexAsync(byte[] buffer, int index, int count)
+        public virtual async Task WriteBinHexAsync(byte[] buffer, int index, int count)
         {
-            return BinHexEncoder.EncodeAsync(buffer, index, count, this);
+            await BinHexEncoder.EncodeAsync(buffer, index, count, this).ConfigureAwait(false);
         }
 
         // Flushes data that is in the internal buffers into the underlying streams/TextReader and flushes the stream/TextReader.
@@ -196,17 +196,17 @@ namespace System.Xml
 
         // Writes out the specified name, ensuring it is a valid NmToken according to the XML specification
         // (http://www.w3.org/TR/1998/REC-xml-19980210#NT-Name).
-        public virtual Task WriteNmTokenAsync(string name)
+        public virtual async Task WriteNmTokenAsync(string name)
         {
             ArgumentException.ThrowIfNullOrEmpty(name);
-            return WriteStringAsync(XmlConvert.VerifyNMTOKEN(name, ExceptionType.ArgumentException));
+            await WriteStringAsync(XmlConvert.VerifyNMTOKEN(name, ExceptionType.ArgumentException)).ConfigureAwait(false);
         }
 
         // Writes out the specified name, ensuring it is a valid Name according to the XML specification
         // (http://www.w3.org/TR/1998/REC-xml-19980210#NT-Name).
-        public virtual Task WriteNameAsync(string name)
+        public virtual async Task WriteNameAsync(string name)
         {
-            return WriteStringAsync(XmlConvert.VerifyQName(name, ExceptionType.ArgumentException));
+            await WriteStringAsync(XmlConvert.VerifyQName(name, ExceptionType.ArgumentException)).ConfigureAwait(false);
         }
 
         // Writes out the specified namespace-qualified name by looking up the prefix that is in scope for the given namespace.
@@ -228,10 +228,10 @@ namespace System.Xml
         // XmlReader Helper Methods
 
         // Writes out all the attributes found at the current position in the specified XmlReader.
-        public virtual Task WriteAttributesAsync(XmlReader reader, bool defattr)
+        public virtual async Task WriteAttributesAsync(XmlReader reader, bool defattr)
         {
             ArgumentNullException.ThrowIfNull(reader);
-            return Core(reader, defattr);
+            await Core(reader, defattr).ConfigureAwait(false);
 
             async Task Core(XmlReader reader, bool defattr)
             {
@@ -277,16 +277,16 @@ namespace System.Xml
 
         // Copies the current node from the given reader to the writer (including child nodes), and if called on an element moves the XmlReader
         // to the corresponding end element.
-        public virtual Task WriteNodeAsync(XmlReader reader, bool defattr)
+        public virtual async Task WriteNodeAsync(XmlReader reader, bool defattr)
         {
             ArgumentNullException.ThrowIfNull(reader);
 
             if (reader.Settings is { Async: true })
             {
-                return WriteNodeAsync_CallAsyncReader(reader, defattr);
+                await WriteNodeAsync_CallAsyncReader(reader, defattr).ConfigureAwait(false);
             }
 
-            return WriteNodeAsync_CallSyncReader(reader, defattr);
+            await WriteNodeAsync_CallSyncReader(reader, defattr).ConfigureAwait(false);
         }
 
 
@@ -416,10 +416,10 @@ namespace System.Xml
         }
 
         // Copies the current node from the given XPathNavigator to the writer (including child nodes).
-        public virtual Task WriteNodeAsync(XPathNavigator navigator, bool defattr)
+        public virtual async Task WriteNodeAsync(XPathNavigator navigator, bool defattr)
         {
             ArgumentNullException.ThrowIfNull(navigator);
-            return Core(navigator, defattr);
+            await Core(navigator, defattr).ConfigureAwait(false);
 
             async Task Core(XPathNavigator navigator, bool defattr)
             {

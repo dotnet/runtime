@@ -32,8 +32,6 @@ namespace System.IO
         private readonly bool _exposable;   // Whether the array can be returned to the user.
         private bool _isOpen;      // Is this stream open or closed?
 
-        private CachedCompletedInt32Task _lastReadTask; // The last successful task returned from ReadAsync
-
         private static int MemStreamMaxLength => Array.MaxLength;
 
         public MemoryStream()
@@ -122,7 +120,6 @@ namespace System.IO
                 _writable = false;
                 _expandable = false;
                 // Don't set buffer to null - allow TryGetBuffer, GetBuffer & ToArray to work.
-                _lastReadTask = default;
             }
         }
 
@@ -365,27 +362,15 @@ namespace System.IO
             return n;
         }
 
-        public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        public override async Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
             ValidateBufferArguments(buffer, offset, count);
 
             // If cancellation was requested, bail early
-            if (cancellationToken.IsCancellationRequested)
-                return Task.FromCanceled<int>(cancellationToken);
+            cancellationToken.ThrowIfCancellationRequested();
 
-            try
-            {
-                int n = Read(buffer, offset, count);
-                return _lastReadTask.GetTask(n);
-            }
-            catch (OperationCanceledException oce)
-            {
-                return Task.FromCanceled<int>(oce);
-            }
-            catch (Exception exception)
-            {
-                return Task.FromException<int>(exception);
-            }
+            int n = Read(buffer, offset, count);
+            return n;
         }
 
         public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
