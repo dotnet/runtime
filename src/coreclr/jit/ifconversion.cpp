@@ -627,7 +627,7 @@ bool OptIfConversionDsc::optIfConvert(int* pReachabilityBudget)
     if (select->OperIs(GT_SELECT))
     {
         JITDUMP("Skipping if-conversion that could not be optimized to ordinary operations\n");
-        return false;
+        return true;
     }
 #endif
 
