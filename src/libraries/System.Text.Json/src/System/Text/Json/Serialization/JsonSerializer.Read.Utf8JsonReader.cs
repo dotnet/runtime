@@ -325,12 +325,8 @@ namespace System.Text.Json
             ReadOnlySpan<byte> valueSpan = default;
             ReadOnlySequence<byte> valueSequence = default;
 
-            // Capture the original reader's position so that the scoped reader, after consuming its
-            // first token, lands on the same position the original reader is currently at.
-            // The values captured here represent the position immediately after the current token,
-            // the per-case logic below rewinds them to the position immediately before the value token starts.
-            long lineNumber = reader.CurrentState._lineNumber;
-            long bytePositionInLine = reader.CurrentState._bytePositionInLine;
+            long lineNumber = 0;
+            long bytePositionInLine = 0;
 
             try
             {
@@ -348,14 +344,16 @@ namespace System.Text.Json
                             {
                                 ThrowHelper.ThrowJsonReaderException(ref reader, ExceptionResource.ExpectedOneCompleteToken);
                             }
-
-                            // Because the reader has advanced, the reader's position has been updated,
-                            // so we need to recapture them here.
-                            lineNumber = reader.CurrentState._lineNumber;
-                            bytePositionInLine = reader.CurrentState._bytePositionInLine;
                             break;
                         }
                 }
+
+                // Capture the original reader's position so that the scoped reader, after consuming its
+                // first token, lands on the same position the original reader is currently at.
+                // The values captured here represent the position immediately after the current token,
+                // the per-case logic below rewinds them to the position immediately before the value token starts.
+                lineNumber = reader.CurrentState._lineNumber;
+                bytePositionInLine = reader.CurrentState._bytePositionInLine;
 
                 switch (reader.TokenType)
                 {
