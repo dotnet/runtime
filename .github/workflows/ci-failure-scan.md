@@ -221,6 +221,15 @@ Use this when a PR is not the right tool — product regression, native crash, m
 
 Same `os-*`, `area-*`, `arch-*` labels.
 
+## Outputs: title and labels
+
+- **All issues and PRs MUST have title prefix `[ci-scan] `**, including tracking issues, Known Build Error issues, and muting PRs. Examples:
+  - `[ci-scan] Test failure: <fully.qualified.TestName> on <pipeline>`
+  - `[ci-scan] Known Build Error: <short description>`
+  - `[ci-scan] Skip <test-or-family> under <stress-or-platform> (refs #<n>)`
+- **Do not use the word "Mute" or "Muting"** in titles. Use "Skip", "Disable", "Suppress", or "Exclude" depending on the mechanism. Examples: "Skip … under GCStress", "Disable … on tvOS", "Suppress … in MiniFull AOT mode".
+- Labels are unchanged from the per-outcome rules above.
+
 ## Known Build Error issue
 
 A Known Build Error is a tracking issue that Arcade Build Analysis (https://github.com/dotnet/arcade/blob/main/Documentation/Projects/Build%20Analysis/KnownIssueJsonStepByStep.md) automatically matches against future failures so PRs aren't blocked by an already-tracked flake.
@@ -231,9 +240,9 @@ File one when **all** of the following hold:
 - No fix PR is currently open (verify via `search_pull_requests`).
 - The failure is **not** a build break — only test failures, hangs, or infra issues. Build breaks must use a regular issue.
 
-Required structure (Build Analysis is strict — match the headings exactly):
+Required structure (Build Analysis is strict — match the headings exactly, and use **exactly three backticks** for the JSON code fence; never four. The opening and closing fence must be the same length, otherwise the fence is broken and Build Analysis silently skips the issue):
 
-````markdown
+```
 ## Build Information
 Build: <link to the dev.azure.com build that first hit this in window>
 Build error leg or test failing: <AzDO leg name>-<assembly or test name>
@@ -243,15 +252,17 @@ Pull request: <link to the PR if the build was a PR build, otherwise omit this l
 
 <!-- Use ErrorMessage for String.Contains matches. Use ErrorPattern for regex (single line / no backtracking). Set BuildRetry to `true` only for clear infra flakes. ExcludeConsoleLog skips helix log scanning. -->
 
-```json
+(open three backticks, then `json` on the same line)
 {
   "ErrorMessage": "<the exact substring from the failure log; prefer the [FAIL] line>",
   "ErrorPattern": "",
   "BuildRetry": false,
   "ExcludeConsoleLog": false
 }
+(close three backticks)
 ```
-````
+
+The pseudo-instructions `(open three backticks, then ...)` and `(close three backticks)` above are **placeholders** in this prompt because nesting fenced code blocks in the prompt itself is fragile; in the actual issue body emit literal ```` ``` `` (three backticks) on each side of the JSON object. Verify the open and close fences both consist of exactly three backticks before submitting. If you are uncertain, count them.
 
 Choose `ErrorMessage` (substring) by default. Use `ErrorPattern` only when a regex is genuinely needed and confirm it has no catastrophic backtracking. Set `BuildRetry: true` **only** for confirmed infra/queue-side flakes (dead-letter, device-lost, agent disconnect) where retrying is safe.
 
@@ -275,6 +286,18 @@ These look like permission errors but are physical:
 - `$(...)` and `${var@P}` are blocked at the command line. Compose values via `xargs -I{}` or by reading files inline.
 - OData `$top` must be encoded as `%24top` in URLs.
 - Bash allowlist: `dotnet`, `git`, `find`, `ls`, `cat`, `grep`, `head`, `tail`, `wc`, `curl`, `jq`, `tee`, `sed`, `awk`, `tr`, `cut`, `sort`, `uniq`, `xargs`, `echo`, `date`, `mkdir`, `test`, `env`, `basename`, `dirname`, `bash`, `sh`, `chmod`. No `gh`, no `pwsh`, no `python`. Each call runs in a fresh subshell — persist intermediate state to files under `/tmp/gh-aw/agent/`.
+
+## Coverage discipline (avoid arbitrary selection)
+
+Failure selection must be **systematic, not opportunistic**. Process pipelines in the order listed in the "Pipelines to scan" table. For each pipeline:
+
+1. List every failed signature in the latest scanned build (sorted by occurrence count in the window, descending).
+2. For each signature, decide and record one of: `→ filed-issue #aw_<id>`, `→ filed-PR #aw_<id>`, `→ existing-issue #<n>`, `→ existing-PR #<n>`, `→ skipped: <reason>`. A skipped signature MUST have a reason (e.g., "build canceled, not a test failure", "less than 2 occurrences and not blocking", "owned by area-Infrastructure rota and already triaged").
+3. Keep a per-pipeline tally on disk under `/tmp/gh-aw/agent/coverage/<pipeline>.txt`. At the end, print a summary table to the agent log: `pipeline | total-signatures | issues-filed | prs-filed | reused-existing | skipped-with-reason`.
+
+Caps still apply (10 PRs / 5 issues / run); when the cap is hit, fall back to "skipped: cap reached" rather than dropping signatures silently. Subsequent runs will pick them up.
+
+Do not jump between pipelines mid-investigation. Finish all classifications for pipeline N before moving to pipeline N+1.
 
 ## Submit
 
