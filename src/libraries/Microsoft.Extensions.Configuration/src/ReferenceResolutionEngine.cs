@@ -25,6 +25,7 @@ namespace Microsoft.Extensions.Configuration
     {
         private const int MaxDepth = 32;
         private const string RefOpen = "ref(";
+        private const string EscapeOpen = @"\ref(";
 
         private readonly IReadOnlyList<IConfigurationProvider> _providers;
         private readonly IDisposable[] _changeTokenRegistrations;
@@ -114,6 +115,17 @@ namespace Microsoft.Extensions.Configuration
                 return raw;
             }
 
+            // Escape: a value starting with "\ref(" is treated as a literal whose leading '\'
+            // is stripped. The result is returned verbatim and (via TryGet's outer cache)
+            // memoized in the stripped form, so subsequent reads see the literal directly.
+            // The check is intentionally narrow — only the exact prefix "\ref(" is touched, so
+            // unrelated values starting with '\' (Windows paths, escape sequences elsewhere)
+            // are unaffected.
+            if (TryStripBackslashEscape(raw, out string? literal))
+            {
+                return literal;
+            }
+
             if (!TryParseRef(raw, out List<string>? keys))
             {
                 return raw;
@@ -146,6 +158,24 @@ namespace Microsoft.Extensions.Configuration
 
             // No fallback resolved — leave the original ref expression intact.
             return raw;
+        }
+
+        // Detects the escape form: a value beginning with "\ref(". Strips the leading '\' and
+        // returns the remainder as a literal. The check is intentionally narrow — only values
+        // that start with the exact prefix "\ref(" are touched, so unrelated strings (Windows
+        // paths, prose, escape sequences elsewhere) are unaffected. Closing-paren balance is
+        // irrelevant: the escape applies whether or not the rest is a well-formed expression.
+        private static bool TryStripBackslashEscape(string value, [NotNullWhen(true)] out string? literal)
+        {
+            if (value.Length >= EscapeOpen.Length
+                && value.AsSpan(0, EscapeOpen.Length).SequenceEqual(EscapeOpen.AsSpan()))
+            {
+                literal = value.Substring(1);
+                return true;
+            }
+
+            literal = null;
+            return false;
         }
 
         // Recognises a strict whole-string `ref(<keys>)` shape:

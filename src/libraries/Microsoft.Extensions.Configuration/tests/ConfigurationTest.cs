@@ -1257,5 +1257,80 @@ namespace Microsoft.Extensions.Configuration.Test
 
             Assert.Equal("second", config["Alias"]);
         }
+
+        [Theory]
+        [InlineData(@"\ref(Target)", "ref(Target)")]
+        [InlineData(@"\ref(Primary, Secondary)", "ref(Primary, Secondary)")]
+        [InlineData(@"\ref(", "ref(")]
+        [InlineData(@"\ref()", "ref()")]
+        [InlineData(@"\ref(Target", "ref(Target")]
+        public void UseReferences_BackslashEscapesLiteralRef(string raw, string expected)
+        {
+            var config = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string>
+                {
+                    ["Primary"] = "primary-value",
+                    ["Secondary"] = "secondary-value",
+                    ["Target"] = "target-value",
+                    ["Alias"] = raw,
+                })
+                .UseReferences()
+                .Build();
+
+            Assert.Equal(expected, config["Alias"]);
+        }
+
+        [Theory]
+        [InlineData(@"\")]
+        [InlineData(@"\refusal")]
+        [InlineData(@"\foo")]
+        [InlineData(@"\\ref(Target)")]
+        [InlineData(@"C:\path\to\file")]
+        public void UseReferences_BackslashWithoutRefPrefixIsLeftAlone(string raw)
+        {
+            var config = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string>
+                {
+                    ["Target"] = "target-value",
+                    ["Alias"] = raw,
+                })
+                .UseReferences()
+                .Build();
+
+            Assert.Equal(raw, config["Alias"]);
+        }
+
+        [Fact]
+        public void UseReferences_EscapeAppliesAcrossRecursiveResolution()
+        {
+            var config = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string>
+                {
+                    ["Target"] = "should-not-be-read",
+                    ["Inner"] = @"\ref(Target)",
+                    ["Outer"] = "ref(Inner)",
+                })
+                .UseReferences()
+                .Build();
+
+            // Inner resolves to the literal "ref(Target)"; Outer reads Inner's resolved value
+            // and must NOT re-parse it as a reference.
+            Assert.Equal("ref(Target)", config["Inner"]);
+            Assert.Equal("ref(Target)", config["Outer"]);
+        }
+
+        [Fact]
+        public void UseReferences_EscapeIsInertWhenResolutionDisabled()
+        {
+            var config = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string>
+                {
+                    ["Alias"] = @"\ref(Target)",
+                })
+                .Build();
+
+            // With UseReferences off, the engine never runs, so the escape pass is also bypassed.
+            Assert.Equal(@"\ref(Target)", config["Alias"]);
+        }
     }
 }
