@@ -54,7 +54,7 @@ with the authoritative [`docs/area-owners.md`](../../../../docs/area-owners.md).
 | JIT, code generation, inlining, tiered compilation | `area-CodeGen-coreclr` |
 | NativeAOT, ahead-of-time compilation | `area-NativeAOT-coreclr` |
 | Crossgen2, R2R, ReadyToRun, R2RDump | `area-ReadyToRun` |
-| Assembly loading, AssemblyLoadContext | `area-assemblyloading` |
+| Assembly loading, AssemblyLoadContext | `area-AssemblyLoader` |
 | Host, `dotnet` executable, hostfxr, hostpolicy, Host model | `area-Host` |
 | Interop, COM, P/Invoke, marshalling (runtime) | `area-Interop-coreclr` |
 | Single-file deployment | `area-Single-File` |
