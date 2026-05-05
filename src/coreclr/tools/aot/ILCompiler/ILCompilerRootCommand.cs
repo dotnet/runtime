@@ -14,9 +14,6 @@ namespace ILCompiler
 {
     internal sealed class ILCompilerRootCommand : RootCommand
     {
-        private static readonly string[] s_validArchitectures = ["arm", "armel", "arm64", "x86", "x64", "riscv64", "loongarch64", "wasm"];
-        private static readonly string[] s_validOS = ["windows", "win", "linux", "android", "freebsd", "osx", "ios", "iossimulator", "tvos", "tvossimulator", "maccatalyst", "browser", "wasi"];
-
         public Argument<Dictionary<string, string>> InputFilePaths { get; } =
             new("input-file-path") { CustomParser = result => Helpers.BuildPathDictionary(result.Tokens, true), Description = "Input file(s)", Arity = ArgumentArity.OneOrMore };
         public Option<Dictionary<string, string>> ReferenceFiles { get; } =
@@ -164,9 +161,9 @@ namespace ILCompiler
         public Option<bool> RootDefaultAssemblies { get; } =
             new("--defaultrooting") { Description = "Root assemblies that are not marked [IsTrimmable]" };
         public Option<string> TargetArchitecture { get; } =
-            new("--targetarch") { CustomParser = GetTargetArchitecture, Description = "Target architecture for cross compilation", HelpName = "arg" };
+            new("--targetarch") { Description = "Target architecture for cross compilation", HelpName = "arg" };
         public Option<string> TargetOS { get; } =
-            new("--targetos") { CustomParser = GetTargetOS, Description = "Target OS for cross compilation", HelpName = "arg" };
+            new("--targetos") { Description = "Target OS for cross compilation", HelpName = "arg" };
         public Option<string> JitPath { get; } =
             new("--jitpath") { Description = "Path to JIT compiler library" };
         public Option<string> SingleMethodTypeName { get; } =
@@ -350,9 +347,9 @@ namespace ILCompiler
             Console.WriteLine("Use the '--' option to disambiguate between input files that have begin with -- and options. After a '--' option, all arguments are " +
                 "considered to be input files. If no input files begin with '--' then this option is not necessary.\n");
 
-            Console.WriteLine("Valid switches for {0} are: '{1}'. The default value is '{2}'\n", "--targetos", string.Join("', '", s_validOS), Helpers.GetTargetOS(null).ToString().ToLowerInvariant());
+            Console.WriteLine("Valid switches for {0} are: '{1}'. The default value is '{2}'\n", "--targetos", string.Join("', '", Helpers.ValidTargetOS), Helpers.GetTargetOS(null).ToString().ToLowerInvariant());
 
-            Console.WriteLine(string.Format("Valid switches for {0} are: '{1}'. The default value is '{2}'\n", "--targetarch", string.Join("', '", s_validArchitectures), Helpers.GetTargetArchitecture(null).ToString().ToLowerInvariant()));
+            Console.WriteLine(string.Format("Valid switches for {0} are: '{1}'. The default value is '{2}'\n", "--targetarch", string.Join("', '", Helpers.ValidTargetArchitectures), Helpers.GetTargetArchitecture(null).ToString().ToLowerInvariant()));
 
             Console.WriteLine("The allowable values for the --instruction-set option are described in the table below. Each architecture has a different set of valid " +
                 "instruction sets, and multiple instruction sets may be specified by separating the instructions sets by a ','. By default other instruction sets not " +
@@ -360,7 +357,7 @@ namespace ILCompiler
                 "All such light-up can be disallowed by specifying '-optimistic'. The instruction sets supported by the machine invoking the tool can be targeted by " +
                 "specifying 'native'. For example 'native', 'avx,aes', 'avx,aes,-avx2', or 'avx,aes,-optimistic'");
 
-            foreach (string arch in s_validArchitectures)
+            foreach (string arch in Helpers.ValidTargetArchitectures)
             {
                 TargetArchitecture targetArch = Helpers.GetTargetArchitecture(arch);
                 bool first = true;
@@ -391,16 +388,6 @@ namespace ILCompiler
             Console.WriteLine();
             Console.WriteLine("The following CPU names are predefined groups of instruction sets and can be used in --instruction-set too:");
             Console.WriteLine(string.Join(", ", Internal.JitInterface.InstructionSetFlags.AllCpuNames));
-        }
-
-        private static string GetTargetArchitecture(ArgumentResult result)
-        {
-            return Helpers.EnsureFirstTokenIsValidValue(result, s_validArchitectures);
-        }
-
-        private static string GetTargetOS(ArgumentResult result)
-        {
-            return Helpers.EnsureFirstTokenIsValidValue(result, s_validOS);
         }
 
         private static int MakeParallelism(ArgumentResult result)

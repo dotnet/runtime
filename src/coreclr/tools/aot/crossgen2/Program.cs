@@ -83,11 +83,8 @@ namespace ILCompiler
             // that would cause the entire image to be invalidated.
             bool isVectorTOptimistic = true;
 
-            string targetArchitectureToken = Get(_command.TargetArchitecture);
-            string targetOSToken = Get(_command.TargetOS);
-            TargetArchitecture targetArchitecture = Helpers.GetTargetArchitecture(targetArchitectureToken);
-            TargetOS targetOS = Helpers.GetTargetOS(targetOSToken);
-            TargetAbi targetAbi = Helpers.GetTargetAbi(targetArchitectureToken, targetOSToken);
+            (TargetArchitecture targetArchitecture, TargetOS targetOS, TargetAbi targetAbi) =
+                Helpers.GetTargetDetails(Get(_command.TargetArchitecture), Get(_command.TargetOS));
             bool allowOptimistic = _command.OptimizationMode != OptimizationMode.PreferSize;
 
             if (targetOS is TargetOS.iOS or TargetOS.tvOS or TargetOS.iOSSimulator or TargetOS.tvOSSimulator or TargetOS.MacCatalyst or TargetOS.Browser)

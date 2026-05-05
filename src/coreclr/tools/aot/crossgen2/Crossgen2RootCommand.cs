@@ -16,9 +16,6 @@ namespace ILCompiler
 {
     internal class Crossgen2RootCommand : RootCommand
     {
-        private static readonly string[] s_validArchitectures = ["arm", "armel", "arm64", "x86", "x64", "riscv64", "loongarch64", "wasm"];
-        private static readonly string[] s_validOS = ["windows", "win", "linux", "android", "freebsd", "osx", "ios", "iossimulator", "tvos", "tvossimulator", "maccatalyst", "browser", "wasi"];
-
         public Argument<Dictionary<string, string>> InputFilePaths { get; } =
             new("input-file-path") { CustomParser = result => Helpers.BuildPathDictionary(result.Tokens, true), Description = "Input file(s)", Arity = ArgumentArity.OneOrMore };
         public Option<Dictionary<string, string>> UnrootedInputFilePaths { get; } =
@@ -90,7 +87,7 @@ namespace ILCompiler
         public Option<string> ImageBase { get; } =
             new("--imagebase") { Description = SR.ImageBase };
         public Option<string> TargetArchitecture { get; } =
-            new("--targetarch") { CustomParser = GetTargetArchitecture, Description = SR.TargetArchOption, HelpName = "arg" };
+            new("--targetarch") { Description = SR.TargetArchOption, HelpName = "arg" };
         public Option<bool> EnableGenericCycleDetection { get; } =
             new("--enable-generic-cycle-detection") { Description = SR.EnableGenericCycleDetection };
         public Option<int> GenericCycleDepthCutoff { get; } =
@@ -98,7 +95,7 @@ namespace ILCompiler
         public Option<int> GenericCycleBreadthCutoff { get; } =
             new("--maxgenericcyclebreadth") { DefaultValueFactory = _ => ReadyToRunCompilerContext.DefaultGenericCycleBreadthCutoff, Description = SR.GenericCycleBreadthCutoff };
         public Option<string> TargetOS { get; } =
-            new("--targetos") { CustomParser = GetTargetOS, Description = SR.TargetOSOption, HelpName = "arg" };
+            new("--targetos") { Description = SR.TargetOSOption, HelpName = "arg" };
         public Option<string> JitPath { get; } =
             new("--jitpath") { Description = SR.JitPathOption };
         public Option<bool> PrintReproInstructions { get; } =
@@ -309,9 +306,9 @@ namespace ILCompiler
             Console.WriteLine(SR.DashDashHelp);
             Console.WriteLine();
 
-            Console.WriteLine(String.Format(SR.SwitchWithDefaultHelp, "--targetos", String.Join("', '", s_validOS), Helpers.GetTargetOS(null).ToString().ToLowerInvariant()));
+            Console.WriteLine(String.Format(SR.SwitchWithDefaultHelp, "--targetos", String.Join("', '", Helpers.ValidTargetOS), Helpers.GetTargetOS(null).ToString().ToLowerInvariant()));
             Console.WriteLine();
-            Console.WriteLine(String.Format(SR.SwitchWithDefaultHelp, "--targetarch", String.Join("', '", s_validArchitectures), Helpers.GetTargetArchitecture(null).ToString().ToLowerInvariant()));
+            Console.WriteLine(String.Format(SR.SwitchWithDefaultHelp, "--targetarch", String.Join("', '", Helpers.ValidTargetArchitectures), Helpers.GetTargetArchitecture(null).ToString().ToLowerInvariant()));
             Console.WriteLine();
             Console.WriteLine(String.Format(SR.SwitchWithDefaultHelp, "--type-validation", String.Join("', '", Enum.GetNames<TypeValidationRule>()), nameof(TypeValidationRule.Automatic)));
             Console.WriteLine();
@@ -324,7 +321,7 @@ namespace ILCompiler
             Console.WriteLine();
 
             Console.WriteLine(SR.InstructionSetHelp);
-            foreach (string arch in s_validArchitectures)
+            foreach (string arch in Helpers.ValidTargetArchitectures)
             {
                 TargetArchitecture targetArch = Helpers.GetTargetArchitecture(arch);
                 bool first = true;
@@ -355,16 +352,6 @@ namespace ILCompiler
             Console.WriteLine();
             Console.WriteLine(SR.CpuFamilies);
             Console.WriteLine(string.Join(", ", Internal.JitInterface.InstructionSetFlags.AllCpuNames));
-        }
-
-        private static string GetTargetArchitecture(ArgumentResult result)
-        {
-            return Helpers.EnsureFirstTokenIsValidValue(result, s_validArchitectures);
-        }
-
-        private static string GetTargetOS(ArgumentResult result)
-        {
-            return Helpers.EnsureFirstTokenIsValidValue(result, s_validOS);
         }
 
         private static int MakeParallelism(ArgumentResult result)

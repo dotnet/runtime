@@ -104,11 +104,8 @@ namespace ILCompiler
             // directly encoded as part of the required ISAs.
             bool isVectorTOptimistic = false;
 
-            string targetArchitectureToken = Get(_command.TargetArchitecture);
-            string targetOSToken = Get(_command.TargetOS);
-            TargetArchitecture targetArchitecture = Helpers.GetTargetArchitecture(targetArchitectureToken);
-            TargetOS targetOS = Helpers.GetTargetOS(targetOSToken);
-            TargetAbi targetAbi = Helpers.GetTargetAbi(targetArchitectureToken, targetOSToken);
+            (TargetArchitecture targetArchitecture, TargetOS targetOS, TargetAbi targetAbi) =
+                Helpers.GetTargetDetails(Get(_command.TargetArchitecture), Get(_command.TargetOS));
             InstructionSetSupport instructionSetSupport = Helpers.ConfigureInstructionSetSupport(Get(_command.InstructionSet), Get(_command.MaxVectorTBitWidth), isVectorTOptimistic, targetArchitecture, targetOS,
                 "Unrecognized instruction set {0}", "Unsupported combination of instruction sets: {0}/{1}", logger,
                 allowOptimistic: _command.OptimizationMode != OptimizationMode.PreferSize,

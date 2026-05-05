@@ -25,6 +25,12 @@ namespace System.CommandLine
     {
         public const string DefaultSystemModule = "System.Private.CoreLib";
 
+        private static readonly string[] s_validTargetArchitectures = ["arm", "armel", "arm64", "x86", "x64", "riscv64", "loongarch64", "wasm"];
+        private static readonly string[] s_validTargetOS = ["windows", "win", "linux", "android", "freebsd", "osx", "ios", "iossimulator", "tvos", "tvossimulator", "maccatalyst", "browser", "wasi"];
+
+        public static IReadOnlyList<string> ValidTargetArchitectures => s_validTargetArchitectures;
+        public static IReadOnlyList<string> ValidTargetOS => s_validTargetOS;
+
         public static Dictionary<string, string> BuildPathDictionary(IReadOnlyList<Token> tokens, bool strict)
         {
             Dictionary<string, string> dictionary = new(StringComparer.OrdinalIgnoreCase);
@@ -120,44 +126,21 @@ namespace System.CommandLine
             }
         }
 
-        public static TargetAbi GetTargetAbi(string targetArchitectureToken, string targetOSToken)
+        public static (TargetArchitecture TargetArchitecture, TargetOS TargetOS, TargetAbi TargetAbi) GetTargetDetails(string targetArchitectureToken, string targetOSToken)
         {
-            bool isArm = targetArchitectureToken != null && targetArchitectureToken.Equals("arm", StringComparison.OrdinalIgnoreCase);
-            bool isArmel = targetArchitectureToken != null && targetArchitectureToken.Equals("armel", StringComparison.OrdinalIgnoreCase);
-            bool isAndroid = targetOSToken != null && targetOSToken.Equals("android", StringComparison.OrdinalIgnoreCase);
+            targetArchitectureToken = targetArchitectureToken?.ToLowerInvariant();
+            targetOSToken = targetOSToken?.ToLowerInvariant();
 
-            if (isArmel || (isAndroid && isArm))
+            TargetArchitecture targetArchitecture = GetTargetArchitecture(targetArchitectureToken);
+            TargetOS targetOS = GetTargetOS(targetOSToken);
+
+            TargetAbi targetAbi = TargetAbi.NativeAot;
+            if ((targetArchitecture == TargetArchitecture.ARM) && (targetArchitectureToken == "armel" || targetOSToken == "android"))
             {
-                return TargetAbi.NativeAotArmel;
+                targetAbi = TargetAbi.NativeAotArmel;
             }
 
-            return TargetAbi.NativeAot;
-        }
-
-        public static string EnsureFirstTokenIsValidValue(ArgumentResult result, string[] validValues)
-        {
-            string firstToken = result.Tokens.Count > 0 ? result.Tokens[0].Value : null;
-
-            if (firstToken is not null && !ContainsValue(validValues, firstToken))
-            {
-                string optionName = result.Parent is OptionResult optionResult ? optionResult.Option.Name : result.Argument.Name;
-                result.AddError($"'{firstToken}' is not a valid value for {optionName} (valid values: '{string.Join("', '", validValues)}')");
-            }
-
-            return firstToken;
-
-            static bool ContainsValue(string[] validValues, string value)
-            {
-                foreach (string validValue in validValues)
-                {
-                    if (value.Equals(validValue, StringComparison.OrdinalIgnoreCase))
-                    {
-                        return true;
-                    }
-                }
-
-                return false;
-            }
+            return (targetArchitecture, targetOS, targetAbi);
         }
 
         public static RootCommand UseVersion(this RootCommand command)
