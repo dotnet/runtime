@@ -13,7 +13,28 @@ public:
     PhaseStatus RunRewrite();
 
 private:
+    struct LoopVectorizationPlan
+    {
+        FlowGraphNaturalLoop* Loop      = nullptr;
+        BasicBlock*           Preheader = nullptr;
+        BasicBlock*           Header    = nullptr;
+        BasicBlock*           Latch     = nullptr;
+        BasicBlock*           Exit      = nullptr;
+
+        unsigned  InductionVar       = BAD_VAR_NUM;
+        GenTree*  End                = nullptr;
+        genTreeOps TestOper          = GT_COUNT;
+        int       Step               = 0;
+        unsigned  VectorSizeBytes    = 0;
+        unsigned  VectorizationFactor = 0;
+    };
+
     Compiler* m_compiler;
+
+    bool IsEnabled() const;
+    bool IsSupportedCompilation() const;
+    bool TryCreateLoopPlan(FlowGraphNaturalLoop* loop, LoopVectorizationPlan* plan);
+    void Reject(FlowGraphNaturalLoop* loop, const char* reason) const;
 
     bool ShouldDump() const;
     void Dump(const char* format, ...) const;
