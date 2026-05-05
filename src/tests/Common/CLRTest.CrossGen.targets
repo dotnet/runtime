@@ -174,6 +174,9 @@ if [ ! -z ${RunCrossGen2+x} ]%3B then
           if [ "$(CrossGen2OutputFormat)" == "macho" ]; then
               __CompositeExt=".o"
               __CompositeExtFinal=".dylib"
+          elif [ "$(CrossGen2OutputFormat)" == "wasm" ]; then
+              __CompositeExt=".wasm"
+              __CompositeExtFinal=".wasm"
           fi
           RunCrossgen2OnFiles "$PWD/composite-r2r${__CompositeExt}" "$PWD/composite-r2r${__CompositeExtFinal}" "$PWD/IL-CG2/*.dll"
       else
@@ -182,6 +185,9 @@ if [ ! -z ${RunCrossGen2+x} ]%3B then
           do
             echo $dllFile
             bareFileName="${dllFile##*/}"
+            if [ "$(CrossGen2OutputFormat)" == "wasm" ]; then
+                bareFileName="${bareFileName%.dll}.wasm"
+            fi
             RunCrossgen2OnFiles "$PWD/$bareFileName" "$PWD/$bareFileName" "$dllFile"
             if [ $__cg2ExitCode -ne 0 ]; then
               break
@@ -255,7 +261,11 @@ if defined RunCrossGen2 (
 
     if defined CompositeBuildMode (
         set ExtraCrossGen2Args=!ExtraCrossGen2Args! --composite
-        set __OutputFile=!scriptPath!\composite-r2r.dll
+        if "$(CrossGen2OutputFormat)"=="wasm" (
+            set __OutputFile=!scriptPath!\composite-r2r.wasm
+        ) else (
+            set __OutputFile=!scriptPath!\composite-r2r.dll
+        )
         set __PdbFile=!scriptPath!\composite-r2r.ni.pdb
         rem In composite mode, treat all dll's in the test folder as rooting inputs
         set __InputFile=!scriptPath!IL-CG2\*.dll
@@ -264,7 +274,11 @@ if defined RunCrossGen2 (
     ) else (
         set ExtraCrossGen2Args=!ExtraCrossGen2Args! -r:!scriptPath!IL-CG2\*.dll
         for %%I in (!scriptPath!IL-CG2\*.dll) do (
-            set __OutputFile=!scriptPath!%%~nI.dll
+            if "$(CrossGen2OutputFormat)"=="wasm" (
+                set __OutputFile=!scriptPath!%%~nI.wasm
+            ) else (
+                set __OutputFile=!scriptPath!%%~nI.dll
+            )
             set __PdbFile=!scriptPath!%%~nI.ni.pdb
             set __InputFile=%%I
             call :CompileOneFileCrossgen2
@@ -302,6 +316,9 @@ if defined RunCrossGen2 (
     echo --targetos:$(TargetOS)>>!__ResponseFile!
     echo --verify-type-and-field-layout>>!__ResponseFile!
     echo --method-layout:random>>!__ResponseFile!
+    if not "$(CrossGen2OutputFormat)"=="" (
+        echo -f:$(CrossGen2OutputFormat)>>!__ResponseFile!
+    )
     if defined CrossGen2SynthesizePgo (
         echo --synthesize-random-mibc>>!__ResponseFile!
         echo --embed-pgo-data>>!__ResponseFile!
