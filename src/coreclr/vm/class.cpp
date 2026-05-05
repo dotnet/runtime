@@ -705,23 +705,33 @@ HRESULT EEClass::AddMethod(MethodTable* pMT, mdMethodDef methodDef, MethodDesc**
             Module* pMod = pAssembly->GetModule();
             LOG((LF_ENC, LL_INFO100, "EEClass::AddMethod Checking: %s mod:%p\n", pMod->GetDebugName(), pMod));
 
-            EETypeHashTable* paramTypes = pMod->GetAvailableParamTypes();
-            CrstHolder ch(pMod->GetClassLoader()->GetAvailableTypesLock());
-
-            EETypeHashTable::Iterator it(paramTypes);
-            EETypeHashEntry* pEntry;
-            while (paramTypes->FindNext(&it, &pEntry))
+            InlineSArray<MethodTable*, 8> instantiations;
             {
-                TypeHandle th = pEntry->GetTypeHandle();
-                if (th.IsTypeDesc())
-                    continue;
+                EETypeHashTable* paramTypes = pMod->GetAvailableParamTypes();
+                CrstHolder ch(pMod->GetClassLoader()->GetAvailableTypesLock());
 
-                // Only update instantiations of the generic MethodTable we updated above.
-                MethodTable* pMTMaybe = th.AsMethodTable();
-                if (!pMTMaybe->IsCanonicalMethodTable() || !pMT->HasSameTypeDefAs(pMTMaybe))
+                EETypeHashTable::Iterator it(paramTypes);
+                EETypeHashEntry* pEntry;
+                while (paramTypes->FindNext(&it, &pEntry))
                 {
-                    continue;
+                    TypeHandle th = pEntry->GetTypeHandle();
+                    if (th.IsTypeDesc())
+                        continue;
+
+                    // Only update instantiations of the generic MethodTable we updated above.
+                    MethodTable* pMTMaybe = th.AsMethodTable();
+                    if (!pMTMaybe->IsCanonicalMethodTable() || !pMT->HasSameTypeDefAs(pMTMaybe))
+                    {
+                        continue;
+                    }
+
+                    instantiations.Append(pMTMaybe);
                 }
+            }
+
+            for (COUNT_T i = 0; i < instantiations.GetCount(); i++)
+            {
+                MethodTable* pMTMaybe = instantiations[i];
 
                 // Create a primary MethodDesc on this instantiation.
                 MethodDesc* pNewMDUnused;
