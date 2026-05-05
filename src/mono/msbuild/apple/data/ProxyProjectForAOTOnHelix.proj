@@ -61,7 +61,7 @@
     <AppleBuildDependsOn>PrepareForAppleBuild;_PublishRuntimePack;_PrepareForAppleBuildAppOnHelix;_RunR2RCompilationOnHelix;_InitializeCommonProperties;_BeforeAppleBuild;_AppleResolveReferences;_StageNativeAotLinkInputsOnHelix;_AppleGenerateAppBundle;_AfterAppleBuild;_AfterAppleBuildOnHelix</AppleBuildDependsOn>
   </PropertyGroup>
 
-  <ItemGroup Condition="'$(_NativeAotLibraryTestOnHelix)' == 'true'">
+  <ItemGroup Condition="'$(UseNativeAOTRuntime)' == 'true'">
     <DirectPInvoke Include="__Internal" />
   </ItemGroup>
 
