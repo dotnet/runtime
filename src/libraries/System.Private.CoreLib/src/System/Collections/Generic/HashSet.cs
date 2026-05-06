@@ -1641,7 +1641,7 @@ namespace System.Collections.Generic
         ///
         /// If callers are concerned about whether this is a proper subset, they take care of that.
         /// </summary>
-        private bool IsSubsetOfHashSetWithSameComparer(HashSet<T> other)
+        internal bool IsSubsetOfHashSetWithSameComparer(HashSet<T> other)
         {
             Entry[] entries = _entries!;
             int count = _count;
@@ -1927,7 +1927,7 @@ namespace System.Collections.Generic
         /// speed up if it knows the other item has unique elements. I.e. if they're using
         /// different equality comparers, then uniqueness assumption between sets break.
         /// </summary>
-        private static bool EqualityComparersAreEqual(HashSet<T> set1, HashSet<T> set2)
+        internal static bool EqualityComparersAreEqual(HashSet<T> set1, HashSet<T> set2)
             => set1._comparer == set2._comparer || set1.Comparer.Equals(set2.Comparer);
 
         /// <summary>
