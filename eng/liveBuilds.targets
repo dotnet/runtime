@@ -248,6 +248,7 @@
         $(HostSharedFrameworkDir)dotnet.native.js;
         $(HostSharedFrameworkDir)dotnet.native.wasm;
         "
+        Exclude="$(LibrariesSharedFrameworkDir)libminipal.a"
         IsNative="true" />
 
       <LibrariesRuntimeFiles Condition="'$(TargetOS)' == 'browser' and '$(RuntimeFlavor)' == 'Mono'"

@@ -270,6 +270,7 @@
     <PlatformManifestFileEntry Include="libgcinfo_unix_wasm.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libminipal.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libnativeresourcestring.a" IsNative="true" />
+    <PlatformManifestFileEntry Include="libBrowserHost.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libBrowserHost.js" IsNative="true" />
     <PlatformManifestFileEntry Include="libBrowserHost.js.map" IsNative="true" />
     <PlatformManifestFileEntry Include="libSystem.Native.Browser.Utils.js" IsNative="true" />
