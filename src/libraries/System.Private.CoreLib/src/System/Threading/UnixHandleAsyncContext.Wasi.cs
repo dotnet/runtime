@@ -223,6 +223,8 @@ namespace System.Threading
 
     public sealed partial class UnixHandleAsyncContext
     {
+        public static bool IsSupported => true;
+
         internal bool IsRegistered
         {
             get;

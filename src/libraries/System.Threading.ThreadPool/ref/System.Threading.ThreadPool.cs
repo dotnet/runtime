@@ -81,6 +81,7 @@ namespace System.Threading
     public sealed partial class UnixHandleAsyncContext : System.IDisposable
     {
         internal UnixHandleAsyncContext() { }
+        public static bool IsSupported { get { throw null; } }
         public bool InlineCompletions { get { throw null; } set { } }
         public bool IsReadReady(out int observedSequenceNumber) { throw null; }
         public bool IsWriteReady(out int observedSequenceNumber) { throw null; }

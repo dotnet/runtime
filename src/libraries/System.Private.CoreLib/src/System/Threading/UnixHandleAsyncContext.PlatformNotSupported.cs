@@ -7,6 +7,8 @@ namespace System.Threading
 {
     public sealed partial class UnixHandleAsyncContext : IDisposable
     {
+        public static bool IsSupported => false;
+
         internal UnixHandleAsyncContext(SafeHandle handle) { throw new PlatformNotSupportedException(); }
 
         public bool InlineCompletions { get; set; }

@@ -84,7 +84,8 @@ namespace Microsoft.Win32.SafeHandles
         // Pipe and Socket support non-blocking and do not support random access.
         // Character devices may support non-blocking and may support random access.
         private bool SupportsNonBlocking
-            => Type is FileHandleType.Socket or FileHandleType.Pipe or FileHandleType.CharacterDevice;
+            => UnixHandleAsyncContext.IsSupported
+                && Type is FileHandleType.Socket or FileHandleType.Pipe or FileHandleType.CharacterDevice;
         private bool UseThreadPoolForAsync
             => !SupportsNonBlocking;
 
