@@ -141,7 +141,6 @@ struct CalliStubParam
     int8_t *pRet;
     Object** pContinuationRet;
 };
-#endif // FEATURE_INTERPRETER
 
 struct DelegateInvokeMethodParam
 {
@@ -162,7 +161,7 @@ struct UnmanagedMethodWithTransitionParam
     PCODE callTarget;
 };
 
-struct UnmanagedCalliWithTransiationParam
+struct UnmanagedCalliWithTransitionParam
 {
     PCODE ftn;
     InterpreterCalliCookie cookie;
@@ -171,6 +170,7 @@ struct UnmanagedCalliWithTransiationParam
     int8_t *pArgs;
     int8_t *pRet;
 };
+#endif // FEATURE_INTERPRETER
 
 void InterpDispatchCache_ReclaimAll();
 void InterpDispatchCache_ClearForLoaderAllocator(LoaderAllocator* pLoaderAllocator);

@@ -287,7 +287,7 @@ void InvokeUnmanagedMethodWithTransition(UnmanagedMethodWithTransitionParam *pPa
 }
 
 NOINLINE
-void InvokeUnmanagedCalliWithTransition(UnmanagedCalliWithTransiationParam *pParam)
+void InvokeUnmanagedCalliWithTransition(UnmanagedCalliWithTransitionParam *pParam)
 {
     CONTRACTL
     {
@@ -3182,7 +3182,7 @@ SWITCH_OPCODE:
                         }
                         else
                         {
-                            UnmanagedCalliWithTransiationParam param = { calliFunctionPointer, cookie, stack, pFrame, callArgsAddress, returnValueAddress };
+                            UnmanagedCalliWithTransitionParam param = { calliFunctionPointer, cookie, stack, pFrame, callArgsAddress, returnValueAddress };
                             InvokeUnmanagedCalliWithTransition(&param);
                         }
                     }
