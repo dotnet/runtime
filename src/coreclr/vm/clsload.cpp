@@ -3765,10 +3765,8 @@ BOOL AccessCheckOptions::DemandMemberAccess(AccessCheckContext *pContext, const 
 
     _ASSERTE(m_accessCheckType != kNormalAccessibilityChecks);
 
-    BOOL canAccessTarget = FALSE;
-
-    // In CoreCLR kNormalAccessNoTransparency and kRestrictedMemberAccessNoTransparency means that one can access private/internal
-    // classes/members in app code.
+    // The only remaining access check modes that reach here are kNormalAccessNoTransparency and
+    // kRestrictedMemberAccessNoTransparency, both of which unconditionally allow access.
     return TRUE;
 }
 

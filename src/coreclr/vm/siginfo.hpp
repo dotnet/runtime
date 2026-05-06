@@ -1182,6 +1182,7 @@ private:
 };
 
 #endif // FEATURE_TYPEEQUIVALENCE && !DACCESS_COMPILE
+
 class TargetInstantiationForAccessCheck
 {
 public:

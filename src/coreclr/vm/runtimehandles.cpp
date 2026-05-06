@@ -85,6 +85,8 @@ static BOOL CheckCAVisibilityFromDecoratedType(MethodTable* pCAMT, MethodDesc* p
     AccessCheckContext accessContext(NULL, pDecoratedMT, pDecoratedModule->GetAssembly());
     TargetTypeForAccessCheck typeForAccessCheck(pCAMT);
 
+    // NULL for pOptionalTargetMethod: CA constructors cannot be generic methods,
+    // so there is no method instantiation to check.
     return ClassLoader::CanAccess(
         &accessContext,
         typeForAccessCheck,

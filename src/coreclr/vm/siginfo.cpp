@@ -1112,7 +1112,7 @@ DWORD TargetTypeForAccessCheck::GetProtection() const
 
 TypeHandle TargetTypeForAccessCheck::GetTypeHandleForThrow() const
 {
-    LIMITED_METHOD_CONTRACT;
+    STANDARD_VM_CONTRACT;
     if (InstantiationForAccessCheck != nullptr)
     {
         return InstantiationForAccessCheck->GetSig().GetTypeHandleThrowing(InstantiationForAccessCheck->GetModule(), InstantiationForAccessCheck->GetTypeContext());
@@ -1132,7 +1132,7 @@ bool TargetTypeForAccessCheck::CanAccessTypeInstantiation( // True if access is 
     AccessCheckContext* pContext,
     const AccessCheckOptions & accessCheckOptions) const
 {
-    LIMITED_METHOD_CONTRACT;
+    STANDARD_VM_CONTRACT;
     if (InstantiationForAccessCheck != nullptr)
     {
         SigPointer sig = InstantiationForAccessCheck->GetSig();
