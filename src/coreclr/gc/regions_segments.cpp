@@ -1305,7 +1305,7 @@ size_t gc_heap::get_soh_start_obj_len (uint8_t* start_obj)
 heap_segment* gc_heap::make_heap_segment (uint8_t* new_pages, size_t size, gc_heap* hp, int gen_num)
 {
     gc_oh_num oh = gen_to_oh (gen_num);
-    size_t initial_commit = (use_large_pages_p || never_decommit_p) ? size : SEGMENT_INITIAL_COMMIT;
+    size_t initial_commit = never_decommit_p ? size : SEGMENT_INITIAL_COMMIT;
     int h_number =
 #ifdef MULTIPLE_HEAPS
         hp->heap_number;

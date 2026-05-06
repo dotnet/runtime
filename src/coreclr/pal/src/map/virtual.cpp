@@ -572,13 +572,11 @@ static LPVOID ReserveVirtualMemory(
     TRACE( "Reserving the memory now.\n");
 
 #ifdef TARGET_WASM
-    if (lpAddress != nullptr)
-    {
-        // Address hints (lpAddress) cannot be honored on WASM.
-        ERROR("Failed due to unsupported address hint on WASM.\n");
-        pthrCurrent->SetLastError(ERROR_INVALID_ADDRESS);
-        return nullptr;
-    }
+    // WASM cannot honor address hints - ignore lpAddress and allocate
+    // at whatever address posix_memalign returns. Callers must handle
+    // getting a different address than requested (same as Linux with
+    // some SELinux settings).
+    (void)StartBoundary;
     (void)fAllocationType; // Large pages / executable flags are N/A on WASM.
 
     // WASM has no virtual memory - mmap(PROT_NONE) still consumes linear memory,
