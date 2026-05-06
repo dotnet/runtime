@@ -84,7 +84,7 @@ namespace Microsoft.Win32.SafeHandles
         // Pipe and Socket support non-blocking and do not support random access.
         // Character devices may support non-blocking and may support random access.
         private bool SupportsNonBlocking
-            => UnixHandleAsyncContext.IsSupported
+            => UnixHandleAsyncContext.IsSupported // We can't handle non-blocking.
                 && Type is FileHandleType.Socket or FileHandleType.Pipe or FileHandleType.CharacterDevice;
         private bool UseThreadPoolForAsync
             => !SupportsNonBlocking;
@@ -801,7 +801,7 @@ namespace Microsoft.Win32.SafeHandles
             {
                 fixed (byte* bufPtr = &MemoryMarshal.GetReference(buffer))
                 {
-                    bool completed = TryCompleteWriteAt(offset, bufPtr, buffer.Length, out int bytesWritten, out Interop.ErrorInfo errorInfo, out bool pending);
+                    bool completed = TryCompleteWriteAt(offset, bufPtr, buffer.Length, out int bytesWritten, out Interop.ErrorInfo errorInfo);
 
                     buffer = buffer.Slice(bytesWritten);
                     offset += bytesWritten;
@@ -813,7 +813,6 @@ namespace Microsoft.Win32.SafeHandles
                         return;
                     }
 
-                    Debug.Assert(pending);
                     if (!isBlocking)
                     {
                         break;
@@ -881,7 +880,7 @@ namespace Microsoft.Win32.SafeHandles
             {
                 fixed (byte* bufPtr = &MemoryMarshal.GetReference(source.Span))
                 {
-                    bool completed = TryCompleteWriteAt(offset, bufPtr, source.Length, out bytesWritten, out Interop.ErrorInfo writeResult, out _);
+                    bool completed = TryCompleteWriteAt(offset, bufPtr, source.Length, out bytesWritten, out Interop.ErrorInfo writeResult);
 
                     source = source.Slice(bytesWritten);
                     offset += bytesWritten;
@@ -1023,13 +1022,12 @@ namespace Microsoft.Win32.SafeHandles
             bool doSync = isBlocking || AsyncContext.IsWriteReady(out sequenceNumber);
             while (doSync)
             {
-                if (TryCompleteWriteAt(ref offset, buffers, ref bufferIndex, ref bufferOffset, out Interop.ErrorInfo errorInfo, out bool pending))
+                if (TryCompleteWriteAt(ref offset, buffers, ref bufferIndex, ref bufferOffset, out Interop.ErrorInfo errorInfo))
                 {
                     CheckFileCall(errorInfo);
                     return;
                 }
 
-                Debug.Assert(pending);
                 if (!isBlocking)
                 {
                     break;
@@ -1080,7 +1078,7 @@ namespace Microsoft.Win32.SafeHandles
             int sequenceNumber;
             if (AsyncContext.IsWriteReady(out sequenceNumber))
             {
-                if (TryCompleteWriteAt(ref offset, buffers, ref bufferIndex, ref bufferOffset, out Interop.ErrorInfo writeResult, out _))
+                if (TryCompleteWriteAt(ref offset, buffers, ref bufferIndex, ref bufferOffset, out Interop.ErrorInfo writeResult))
                 {
                     CheckFileCall(writeResult);
                     return default;
@@ -1448,7 +1446,7 @@ namespace Microsoft.Win32.SafeHandles
             {
                 if (_buffers != null)
                 {
-                    if (_owner.TryCompleteWriteAt(ref _offset, _buffers, ref _bufferIndex, ref _bufferOffset, out Interop.ErrorInfo errorInfo, out bool pending))
+                    if (_owner.TryCompleteWriteAt(ref _offset, _buffers, ref _bufferIndex, ref _bufferOffset, out Interop.ErrorInfo errorInfo))
                     {
                         if (errorInfo.Error != Interop.Error.SUCCESS)
                         {
@@ -1456,7 +1454,7 @@ namespace Microsoft.Win32.SafeHandles
                         }
                         return true;
                     }
-                    Debug.Assert(!_runOnThreadPool || !pending, "ThreadPool only used with non-blocking");
+                    Debug.Assert(!_runOnThreadPool, "ThreadPool only used with non-blocking");
                     return false;
                 }
 
@@ -1464,7 +1462,7 @@ namespace Microsoft.Win32.SafeHandles
                 {
                     Debug.Assert(_syncRemaining > 0);
 
-                    bool completed = _owner.TryCompleteWriteAt(_offset, _syncBuffer, _syncRemaining, out int bytesWritten, out Interop.ErrorInfo errorInfo, out bool pending);
+                    bool completed = _owner.TryCompleteWriteAt(_offset, _syncBuffer, _syncRemaining, out int bytesWritten, out Interop.ErrorInfo errorInfo);
 
                     _syncBuffer += bytesWritten;
                     _syncRemaining -= bytesWritten;
@@ -1479,7 +1477,7 @@ namespace Microsoft.Win32.SafeHandles
                         return true;
                     }
 
-                    Debug.Assert(!_runOnThreadPool || !pending, "ThreadPool only used with non-blocking");
+                    Debug.Assert(!_runOnThreadPool, "ThreadPool only used with non-blocking");
                     return false;
                 }
 
@@ -1488,7 +1486,7 @@ namespace Microsoft.Win32.SafeHandles
 
                 fixed (byte* bufPtr = &MemoryMarshal.GetReference(span))
                 {
-                    bool completed = _owner.TryCompleteWriteAt(_offset, bufPtr, span.Length, out int bytesWritten, out Interop.ErrorInfo errorInfo, out bool pending);
+                    bool completed = _owner.TryCompleteWriteAt(_offset, bufPtr, span.Length, out int bytesWritten, out Interop.ErrorInfo errorInfo);
 
                     _buffer = _buffer.Slice(bytesWritten);
                     _offset += bytesWritten;
@@ -1501,8 +1499,7 @@ namespace Microsoft.Win32.SafeHandles
                         }
                         return true;
                     }
-
-                    Debug.Assert(!_runOnThreadPool || !pending, "ThreadPool only used with non-blocking");
+                    Debug.Assert(!_runOnThreadPool, "ThreadPool only used with non-blocking");
                     return false;
                 }
             }
@@ -1686,11 +1683,11 @@ namespace Microsoft.Win32.SafeHandles
             return true;
         }
 
-        private unsafe bool TryCompleteWriteAt(ref long offset, IReadOnlyList<ReadOnlyMemory<byte>> buffers, ref int bufferIndex, ref int bufferOffset, out Interop.ErrorInfo errorInfo, out bool pending)
+        private unsafe bool TryCompleteWriteAt(ref long offset, IReadOnlyList<ReadOnlyMemory<byte>> buffers, ref int bufferIndex, ref int bufferOffset, out Interop.ErrorInfo errorInfo)
         {
             if (SupportsRandomAccess)
             {
-                if (TryCompleteWriteAt(useOffset: true, ref offset, buffers, ref bufferIndex, ref bufferOffset, out errorInfo, out pending))
+                if (TryCompleteWriteAt(useOffset: true, ref offset, buffers, ref bufferIndex, ref bufferOffset, out errorInfo))
                 {
                     if (errorInfo.Error != Interop.Error.SUCCESS && ShouldFallBackToNonOffsetSyscall(errorInfo))
                     {
@@ -1707,10 +1704,10 @@ namespace Microsoft.Win32.SafeHandles
                 }
             }
 
-            return TryCompleteWriteAt(useOffset: false, ref offset, buffers, ref bufferIndex, ref bufferOffset, out errorInfo, out pending);
+            return TryCompleteWriteAt(useOffset: false, ref offset, buffers, ref bufferIndex, ref bufferOffset, out errorInfo);
         }
 
-        private unsafe bool TryCompleteWriteAt(bool useOffset, ref long offset, IReadOnlyList<ReadOnlyMemory<byte>> buffers, ref int bufferIndex, ref int bufferOffset, out Interop.ErrorInfo errorInfo, out bool pending)
+        private unsafe bool TryCompleteWriteAt(bool useOffset, ref long offset, IReadOnlyList<ReadOnlyMemory<byte>> buffers, ref int bufferIndex, ref int bufferOffset, out Interop.ErrorInfo errorInfo)
         {
             Span<Interop.Sys.IOVector> stackVectors = stackalloc Interop.Sys.IOVector[IovStackThreshold];
             while (true)
@@ -1724,7 +1721,6 @@ namespace Microsoft.Win32.SafeHandles
                 if (bufferIndex >= buffers.Count)
                 {
                     errorInfo = default;
-                    pending = false;
                     return true;
                 }
 
@@ -1761,8 +1757,7 @@ namespace Microsoft.Win32.SafeHandles
                         if (bytesWritten < 0)
                         {
                             errorInfo = Interop.Sys.GetLastErrorInfo();
-                            pending = IsPending(errorInfo);
-                            return !pending;
+                            return !IsPending(errorInfo);
                         }
 
                         errorInfo = default;
@@ -1770,7 +1765,6 @@ namespace Microsoft.Win32.SafeHandles
 
                         if (bytesWritten == totalToWrite)
                         {
-                            pending = false;
                             return true;
                         }
 
@@ -1802,11 +1796,11 @@ namespace Microsoft.Win32.SafeHandles
             }
         }
 
-        private unsafe bool TryCompleteWriteAt(long offset, byte* buffer, int length, out int bytesWritten, out Interop.ErrorInfo errorInfo, out bool pending)
+        private unsafe bool TryCompleteWriteAt(long offset, byte* buffer, int length, out int bytesWritten, out Interop.ErrorInfo errorInfo)
         {
             if (SupportsRandomAccess)
             {
-                if (TryCompleteWriteAt(useOffset: true, offset, buffer, length, out bytesWritten, out errorInfo, out pending))
+                if (TryCompleteWriteAt(useOffset: true, offset, buffer, length, out bytesWritten, out errorInfo))
                 {
                     if (errorInfo.Error != Interop.Error.SUCCESS && ShouldFallBackToNonOffsetSyscall(errorInfo))
                     {
@@ -1823,10 +1817,10 @@ namespace Microsoft.Win32.SafeHandles
                 }
             }
 
-            return TryCompleteWriteAt(useOffset: false, offset, buffer, length, out bytesWritten, out errorInfo, out pending);
+            return TryCompleteWriteAt(useOffset: false, offset, buffer, length, out bytesWritten, out errorInfo);
         }
 
-        private unsafe bool TryCompleteWriteAt(bool useOffset, long offset, byte* buffer, int length, out int bytesWritten, out Interop.ErrorInfo errorInfo, out bool pending)
+        private unsafe bool TryCompleteWriteAt(bool useOffset, long offset, byte* buffer, int length, out int bytesWritten, out Interop.ErrorInfo errorInfo)
         {
             int totalBytesWritten = 0;
             while (true)
@@ -1839,15 +1833,13 @@ namespace Microsoft.Win32.SafeHandles
                 {
                     errorInfo = Interop.Sys.GetLastErrorInfo();
                     bytesWritten = totalBytesWritten;
-                    pending = IsPending(errorInfo);
-                    return !pending;
+                    return !IsPending(errorInfo);
                 }
 
                 totalBytesWritten += written;
                 length -= written;
                 if (length == 0)
                 {
-                    pending = false;
                     errorInfo = default;
                     bytesWritten = totalBytesWritten;
                     return true;
