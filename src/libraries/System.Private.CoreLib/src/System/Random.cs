@@ -190,16 +190,19 @@ namespace System
         /// Unlike <see cref="Next()"/>, which returns an <see cref="int"/> that is less than <see cref="int.MaxValue"/>,
         /// <c>NextInteger&lt;int&gt;()</c> returns an <see cref="int"/> in the inclusive range from zero through
         /// <see cref="int.MaxValue"/> and may return <see cref="int.MaxValue"/>.
-        /// <typeparamref name="T"/> must use a two's complement representation for signed values.
+        /// <remarks><typeparamref name="T"/> must behave as if it were a two's complement value with all values in range being representable.</remarks>
         /// </remarks>
         public T NextInteger<T>() where T : IBinaryInteger<T>, IMinMaxValue<T>
         {
-            if (T.MaxValue == T.Zero)
+            if (!T.IsPositive(T.MaxValue))
             {
-                return T.Zero;
-            }
+                if (T.MaxValue == T.Zero)
+                {
+                    return T.Zero;
+                }
 
-            Debug.Assert(T.IsPositive(T.MaxValue));
+                throw new ArgumentOutOfRangeException(nameof(T), SR.Format(SR.ArgumentOutOfRange_Generic_MustBeNonNegative, nameof(T.MaxValue), T.MaxValue));
+            }
 
             int bitLength = T.MaxValue.GetShortestBitLength();
             int byteCount = (bitLength + 7) >> 3;
@@ -217,17 +220,10 @@ namespace System
 
             try
             {
-                while (true)
-                {
-                    NextBytes(bytes);
-                    bytes[^1] &= topMask;
+                NextBytes(bytes);
+                bytes[^1] &= topMask;
 
-                    T value = T.ReadLittleEndian(bytes, isUnsigned: true);
-                    if (value <= T.MaxValue)
-                    {
-                        return value;
-                    }
-                }
+                return T.ReadLittleEndian(bytes, isUnsigned: true);
             }
             finally
             {
@@ -248,7 +244,7 @@ namespace System
         /// [0, <paramref name="maxValue"/>). However, if <paramref name="maxValue"/> equals zero, zero is returned.
         /// </returns>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="maxValue"/> is less than zero.</exception>
-        /// <remarks><typeparamref name="T"/> must use a two's complement representation for signed values.</remarks>
+        /// <remarks><typeparamref name="T"/> must behave as if it were a two's complement value with all values in range being representable.</remarks>
         public T NextInteger<T>(T maxValue) where T : IBinaryInteger<T>
         {
             ArgumentOutOfRangeException.ThrowIfNegative(maxValue);
@@ -268,7 +264,7 @@ namespace System
         /// equals <paramref name="maxValue"/>, <paramref name="minValue"/> is returned.
         /// </returns>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="minValue"/> is greater than <paramref name="maxValue"/>.</exception>
-        /// <remarks><typeparamref name="T"/> must use a two's complement representation for signed values.</remarks>
+        /// <remarks><typeparamref name="T"/> must behave as if it were a two's complement value with all values in range being representable.</remarks>
         public T NextInteger<T>(T minValue, T maxValue) where T : IBinaryInteger<T>
         {
             if (minValue > maxValue)
@@ -276,16 +272,12 @@ namespace System
                 ThrowMinMaxValueSwapped();
             }
 
-            T range = maxValue - minValue;
-
             // For signed types, subtraction may overflow when the range exceeds T.MaxValue.
             // T.IsNegative(range) detects this. Fall back to full-width generation.
-            if (T.IsNegative(range))
-            {
-                return NextBinaryIntegerFullRange(minValue, maxValue);
-            }
-
-            return NextBinaryIntegerInRange(range) + minValue;
+            T range = maxValue - minValue;
+            return T.IsNegative(range) ?
+                NextBinaryIntegerFullRange(minValue, maxValue) :
+                NextBinaryIntegerInRange(range) + minValue;
         }
 
         /// <summary>Generates a random value in [T.Zero, maxExclusive) where maxExclusive is non-negative.</summary>
@@ -331,12 +323,7 @@ namespace System
             }
 
             // Generic fallback for large ulong, nuint, Int128, UInt128, BigInteger, etc.
-            return NextBinaryIntegerRejectionSampling(maxExclusive);
-        }
 
-        /// <summary>Generic rejection sampling for arbitrary <see cref="IBinaryInteger{T}"/> types.</summary>
-        private T NextBinaryIntegerRejectionSampling<T>(T maxExclusive) where T : IBinaryInteger<T>
-        {
             if (maxExclusive == T.Zero)
             {
                 return T.Zero;
@@ -345,7 +332,7 @@ namespace System
             Debug.Assert(T.IsPositive(maxExclusive));
 
             int bitLength = maxExclusive.GetShortestBitLength();
-            int byteCount = (bitLength + 7) >> 3;
+            int byteCount = (int)(((uint)bitLength + 7) / 8);
 
             // Compute mask for the top byte to reduce rejection rate.
             int topBits = bitLength & 7;
