@@ -16,6 +16,7 @@ TargetPointer GetTaggedMemory(TargetPointer address, out TargetNUInt size);
 Data descriptors used:
 | Data Descriptor Name | Field | Meaning |
 | --- | --- | --- |
+| `SyncBlock` | `InteropInfo` | Pointer to interop info (RCW, tagged memory, etc) |
 | `InteropSyncBlockInfo` | `TaggedMemory` | Pointer to the tagged memory for the object (if it exists) |
 
 Contracts used:

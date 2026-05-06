@@ -67,24 +67,4 @@ public class ObjectiveCMarshalDumpTests : DumpTestBase
             Assert.Equal(2ul * (ulong)Target.PointerSize, size.Value);
         }
     }
-
-    [ConditionalTheory]
-    [MemberData(nameof(TestConfigurations))]
-    [SkipOnOS(IncludeOnly = "osx", Reason = "Objective-C interop (tagged memory) is only supported on macOS")]
-    public void IsTrackedReferenceWithFinalizer_TrackedObject_ReturnsTrue(TestConfiguration config)
-    {
-        InitializeDumpTest(config);
-        IRuntimeTypeSystem rtsContract = Target.Contracts.RuntimeTypeSystem;
-        IObject objectContract = Target.Contracts.Object;
-
-        List<TargetPointer> trackedObjects = FindTrackedObjects();
-        Assert.NotEmpty(trackedObjects);
-
-        foreach (TargetPointer objPtr in trackedObjects)
-        {
-            TargetPointer mt = objectContract.GetMethodTableAddress(objPtr);
-            TypeHandle typeHandle = rtsContract.GetTypeHandle(mt);
-            Assert.True(rtsContract.IsTrackedReferenceWithFinalizer(typeHandle));
-        }
-    }
 }

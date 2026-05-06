@@ -7,9 +7,9 @@ using System.Runtime.InteropServices.ObjectiveC;
 
 /// <summary>
 /// Debuggee for cDAC dump tests — exercises the ObjectiveCMarshal contract's tagged memory APIs.
-/// Creates an Objective-C tracked reference object with tagged memory allocated and pins it
-/// in a GC handle so dump tests can find it. This debuggee is macOS-only, as tagged memory
-/// support requires FEATURE_OBJCMARSHAL.
+/// Creates an Objective-C tracked reference object with tagged memory allocated and keeps it
+/// alive via a strong GC handle so dump tests can find it. This debuggee is macOS-only, as
+/// tagged memory support requires FEATURE_OBJCMARSHAL.
 /// </summary>
 internal static partial class Program
 {
@@ -46,7 +46,7 @@ internal static partial class Program
         // Create a reference tracking handle — this allocates tagged memory
         GCHandle handle = ObjectiveCMarshal.CreateReferenceTrackingHandle(obj, out _);
 
-        // Pin the object in a strong handle so the dump test can find it
+        // Keep the object alive via a strong handle so the dump test can find it
         GCHandle strongHandle = GCHandle.Alloc(obj, GCHandleType.Normal);
 
         GC.KeepAlive(handle);
