@@ -50,7 +50,7 @@ namespace Microsoft.Extensions.Configuration
                 providers.Add(source.Build(this));
             }
 
-            ReferenceResolutionEngine? engine = ReferenceResolutionConfigurationBuilderExtensions.IsEnabled(Properties)
+            ReferenceResolutionEngine? engine = ConfigurationBuilderExtensions.IsAllowed(Properties)
                 ? new ReferenceResolutionEngine(providers)
                 : null;
             return new ConfigurationRoot(providers, engine);

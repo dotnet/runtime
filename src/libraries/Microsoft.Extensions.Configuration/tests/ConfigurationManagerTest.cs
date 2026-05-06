@@ -97,7 +97,7 @@ namespace Microsoft.Extensions.Configuration.Test
         }
 
         [Fact]
-        public void UseReferencesEnablesResolutionForExistingAndLaterAddedSources()
+        public void AllowExpansionsEnablesResolutionForExistingAndLaterAddedSources()
         {
             var config = new ConfigurationManager();
             IConfigurationBuilder builder = config;
@@ -107,15 +107,15 @@ namespace Microsoft.Extensions.Configuration.Test
                 ["Alias"] = "ref(Target)",
             });
 
-            // Without UseReferences the value is verbatim.
+            // Without AllowExpansions the value is verbatim.
             Assert.Equal("ref(Target)", config["Alias"]);
 
-            builder.UseReferences();
+            builder.AllowExpansions();
 
             // Still no Target → engine returns the raw expression.
             Assert.Equal("ref(Target)", config["Alias"]);
 
-            // Sources added after UseReferences participate in resolution; the engine is
+            // Sources added after AllowExpansions participate in resolution; the engine is
             // rebuilt as the source list changes.
             builder.AddInMemoryCollection(new Dictionary<string, string>
             {
@@ -125,7 +125,7 @@ namespace Microsoft.Extensions.Configuration.Test
             Assert.Equal("actual", config["Alias"]);
 
             // Toggling off restores verbatim behaviour.
-            builder.UseReferences(false);
+            builder.AllowExpansions(false);
             Assert.Equal("ref(Target)", config["Alias"]);
         }
 

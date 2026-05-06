@@ -37,7 +37,7 @@ namespace Microsoft.Extensions.Configuration
         private readonly List<IDisposable> _changeTokenRegistrations = new();
         private ConfigurationReloadToken _changeToken = new();
 
-        // Non-null when the builder opted into reference resolution via UseReferences.
+        // Non-null when the builder opted into value expansions via AllowExpansions.
         // Rebuilt on every source mutation (AddSource/ReloadSources) so it always reflects the
         // current provider set. Reads are unsynchronized; in-flight reads that observe a stale
         // engine still see a consistent (old) provider snapshot held by that engine.
@@ -182,7 +182,7 @@ namespace Microsoft.Extensions.Configuration
         private void SwapEngine()
         {
             ReferenceResolutionEngine? newEngine = null;
-            if (ReferenceResolutionConfigurationBuilderExtensions.IsEnabled(_properties))
+            if (ConfigurationBuilderExtensions.IsAllowed(_properties))
             {
                 newEngine = new ReferenceResolutionEngine(_providerManager.NonReferenceCountedProviders);
             }
@@ -311,7 +311,7 @@ namespace Microsoft.Extensions.Configuration
                 set
                 {
                     _properties[key] = value;
-                    if (IsReferenceResolutionProperty(key))
+                    if (IsAllowExpansionsProperty(key))
                     {
                         _config.SwapEngine();
                     }
@@ -333,7 +333,7 @@ namespace Microsoft.Extensions.Configuration
             public void Add(string key, object value)
             {
                 _properties.Add(key, value);
-                if (IsReferenceResolutionProperty(key))
+                if (IsAllowExpansionsProperty(key))
                 {
                     _config.SwapEngine();
                 }
@@ -346,7 +346,7 @@ namespace Microsoft.Extensions.Configuration
             public void Add(KeyValuePair<string, object> item)
             {
                 ((IDictionary<string, object>)_properties).Add(item);
-                if (IsReferenceResolutionProperty(item.Key))
+                if (IsAllowExpansionsProperty(item.Key))
                 {
                     _config.SwapEngine();
                 }
@@ -385,7 +385,7 @@ namespace Microsoft.Extensions.Configuration
             public bool Remove(string key)
             {
                 var wasRemoved = _properties.Remove(key);
-                if (IsReferenceResolutionProperty(key))
+                if (IsAllowExpansionsProperty(key))
                 {
                     _config.SwapEngine();
                 }
@@ -400,7 +400,7 @@ namespace Microsoft.Extensions.Configuration
             public bool Remove(KeyValuePair<string, object> item)
             {
                 var wasRemoved = ((IDictionary<string, object>)_properties).Remove(item);
-                if (IsReferenceResolutionProperty(item.Key))
+                if (IsAllowExpansionsProperty(item.Key))
                 {
                     _config.SwapEngine();
                 }
@@ -417,9 +417,9 @@ namespace Microsoft.Extensions.Configuration
             // through SwapEngine avoids the O(n) provider rebuild/Load cost that a general property
             // write triggers via ReloadSources, so enabling or reconfiguring resolution mid-setup
             // does not penalize callers using slow-to-load sources (e.g. Azure App Configuration).
-            private static bool IsReferenceResolutionProperty(string key)
+            private static bool IsAllowExpansionsProperty(string key)
             {
-                return key == ReferenceResolutionConfigurationBuilderExtensions.UseReferencesPropertyName;
+                return key == ConfigurationBuilderExtensions.AllowExpansionsPropertyName;
             }
 
             public bool TryGetValue(string key, [NotNullWhen(true)] out object? value)

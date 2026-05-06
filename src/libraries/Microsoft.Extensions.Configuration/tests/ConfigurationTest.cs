@@ -1007,7 +1007,7 @@ namespace Microsoft.Extensions.Configuration.Test
         }
 
         [Fact]
-        public void UseReferences_Disabled_ReturnsRawValueVerbatim()
+        public void AllowExpansions_Disabled_ReturnsRawValueVerbatim()
         {
             var config = new ConfigurationBuilder()
                 .AddInMemoryCollection(new Dictionary<string, string>
@@ -1021,7 +1021,7 @@ namespace Microsoft.Extensions.Configuration.Test
         }
 
         [Fact]
-        public void UseReferences_DefaultEnablesResolution()
+        public void AllowExpansions_DefaultEnablesResolution()
         {
             var config = new ConfigurationBuilder()
                 .AddInMemoryCollection(new Dictionary<string, string>
@@ -1029,14 +1029,14 @@ namespace Microsoft.Extensions.Configuration.Test
                     ["Target"] = "actual",
                     ["Alias"] = "ref(Target)",
                 })
-                .UseReferences()
+                .AllowExpansions()
                 .Build();
 
             Assert.Equal("actual", config["Alias"]);
         }
 
         [Fact]
-        public void UseReferences_ExplicitFalseDisablesResolution()
+        public void AllowExpansions_ExplicitFalseDisablesResolution()
         {
             var config = new ConfigurationBuilder()
                 .AddInMemoryCollection(new Dictionary<string, string>
@@ -1044,7 +1044,7 @@ namespace Microsoft.Extensions.Configuration.Test
                     ["Target"] = "actual",
                     ["Alias"] = "ref(Target)",
                 })
-                .UseReferences(false)
+                .AllowExpansions(false)
                 .Build();
 
             Assert.Equal("ref(Target)", config["Alias"]);
@@ -1054,7 +1054,7 @@ namespace Microsoft.Extensions.Configuration.Test
         [InlineData("ref(Primary, Secondary)", "primary-value")]
         [InlineData("ref(Missing, Secondary)", "secondary-value")]
         [InlineData("ref(Missing1, Missing2, Primary)", "primary-value")]
-        public void UseReferences_FallbackChain_PicksFirstResolved(string raw, string expected)
+        public void AllowExpansions_FallbackChain_PicksFirstResolved(string raw, string expected)
         {
             var config = new ConfigurationBuilder()
                 .AddInMemoryCollection(new Dictionary<string, string>
@@ -1063,21 +1063,21 @@ namespace Microsoft.Extensions.Configuration.Test
                     ["Secondary"] = "secondary-value",
                     ["Alias"] = raw,
                 })
-                .UseReferences()
+                .AllowExpansions()
                 .Build();
 
             Assert.Equal(expected, config["Alias"]);
         }
 
         [Fact]
-        public void UseReferences_AllKeysMissing_ReturnsRawValueVerbatim()
+        public void AllowExpansions_AllKeysMissing_ReturnsRawValueVerbatim()
         {
             var config = new ConfigurationBuilder()
                 .AddInMemoryCollection(new Dictionary<string, string>
                 {
                     ["Alias"] = "ref(Missing1, Missing2)",
                 })
-                .UseReferences()
+                .AllowExpansions()
                 .Build();
 
             Assert.Equal("ref(Missing1, Missing2)", config["Alias"]);
@@ -1087,7 +1087,7 @@ namespace Microsoft.Extensions.Configuration.Test
         [InlineData("ref( Target )")]
         [InlineData("ref(Target  )")]
         [InlineData("ref(  Target)")]
-        public void UseReferences_TrimsWhitespaceAroundKeys(string raw)
+        public void AllowExpansions_TrimsWhitespaceAroundKeys(string raw)
         {
             var config = new ConfigurationBuilder()
                 .AddInMemoryCollection(new Dictionary<string, string>
@@ -1095,14 +1095,14 @@ namespace Microsoft.Extensions.Configuration.Test
                     ["Target"] = "actual",
                     ["Alias"] = raw,
                 })
-                .UseReferences()
+                .AllowExpansions()
                 .Build();
 
             Assert.Equal("actual", config["Alias"]);
         }
 
         [Fact]
-        public void UseReferences_RecursiveResolution()
+        public void AllowExpansions_RecursiveResolution()
         {
             var config = new ConfigurationBuilder()
                 .AddInMemoryCollection(new Dictionary<string, string>
@@ -1111,28 +1111,28 @@ namespace Microsoft.Extensions.Configuration.Test
                     ["B"] = "ref(C)",
                     ["C"] = "final",
                 })
-                .UseReferences()
+                .AllowExpansions()
                 .Build();
 
             Assert.Equal("final", config["A"]);
         }
 
         [Fact]
-        public void UseReferences_DirectCycle_ReturnsRawValueVerbatim()
+        public void AllowExpansions_DirectCycle_ReturnsRawValueVerbatim()
         {
             var config = new ConfigurationBuilder()
                 .AddInMemoryCollection(new Dictionary<string, string>
                 {
                     ["A"] = "ref(A)",
                 })
-                .UseReferences()
+                .AllowExpansions()
                 .Build();
 
             Assert.Equal("ref(A)", config["A"]);
         }
 
         [Fact]
-        public void UseReferences_IndirectCycle_ReturnsRawValueVerbatim()
+        public void AllowExpansions_IndirectCycle_ReturnsRawValueVerbatim()
         {
             var config = new ConfigurationBuilder()
                 .AddInMemoryCollection(new Dictionary<string, string>
@@ -1140,7 +1140,7 @@ namespace Microsoft.Extensions.Configuration.Test
                     ["A"] = "ref(B)",
                     ["B"] = "ref(A)",
                 })
-                .UseReferences()
+                .AllowExpansions()
                 .Build();
 
             // The cycle aborts resolution and returns whichever raw is current at the
@@ -1160,7 +1160,7 @@ namespace Microsoft.Extensions.Configuration.Test
         [InlineData("ref(Target) trailing", "ref(Target) trailing")]
         [InlineData("ref(ref(Target))", "ref(ref(Target))")]
         [InlineData("REF(Target)", "REF(Target)")]
-        public void UseReferences_MalformedExpression_ReturnsVerbatim(string raw, string expected)
+        public void AllowExpansions_MalformedExpression_ReturnsVerbatim(string raw, string expected)
         {
             var config = new ConfigurationBuilder()
                 .AddInMemoryCollection(new Dictionary<string, string>
@@ -1168,14 +1168,14 @@ namespace Microsoft.Extensions.Configuration.Test
                     ["Target"] = "actual",
                     ["Alias"] = raw,
                 })
-                .UseReferences()
+                .AllowExpansions()
                 .Build();
 
             Assert.Equal(expected, config["Alias"]);
         }
 
         [Fact]
-        public void UseReferences_SectionTarget_ReturnsRawValueVerbatim()
+        public void AllowExpansions_SectionTarget_ReturnsRawValueVerbatim()
         {
             var config = new ConfigurationBuilder()
                 .AddInMemoryCollection(new Dictionary<string, string>
@@ -1183,14 +1183,14 @@ namespace Microsoft.Extensions.Configuration.Test
                     ["Section:Child"] = "child-value",
                     ["Alias"] = "ref(Section)",
                 })
-                .UseReferences()
+                .AllowExpansions()
                 .Build();
 
             Assert.Equal("ref(Section)", config["Alias"]);
         }
 
         [Fact]
-        public void UseReferences_LiteralValuesPassThrough()
+        public void AllowExpansions_LiteralValuesPassThrough()
         {
             var config = new ConfigurationBuilder()
                 .AddInMemoryCollection(new Dictionary<string, string>
@@ -1198,7 +1198,7 @@ namespace Microsoft.Extensions.Configuration.Test
                     ["Plain"] = "hello world",
                     ["Empty"] = "",
                 })
-                .UseReferences()
+                .AllowExpansions()
                 .Build();
 
             Assert.Equal("hello world", config["Plain"]);
@@ -1206,7 +1206,7 @@ namespace Microsoft.Extensions.Configuration.Test
         }
 
         [Fact]
-        public void UseReferences_GetSectionValuePropagatesThroughEngine()
+        public void AllowExpansions_GetSectionValuePropagatesThroughEngine()
         {
             var config = new ConfigurationBuilder()
                 .AddInMemoryCollection(new Dictionary<string, string>
@@ -1214,7 +1214,7 @@ namespace Microsoft.Extensions.Configuration.Test
                     ["Target"] = "actual",
                     ["Outer:Inner"] = "ref(Target)",
                 })
-                .UseReferences()
+                .AllowExpansions()
                 .Build();
 
             Assert.Equal("actual", config.GetSection("Outer:Inner").Value);
@@ -1222,7 +1222,7 @@ namespace Microsoft.Extensions.Configuration.Test
         }
 
         [Fact]
-        public void UseReferences_ChildrenAreNotSyntheticallyAddedFromRefs()
+        public void AllowExpansions_ChildrenAreNotSyntheticallyAddedFromRefs()
         {
             // Phase 1 has no section aliases; ref(...) is scalar-only, so the section's children
             // come solely from providers and never include synthesized keys.
@@ -1232,14 +1232,14 @@ namespace Microsoft.Extensions.Configuration.Test
                     ["Target:Child"] = "value",
                     ["Alias"] = "ref(Target)",
                 })
-                .UseReferences()
+                .AllowExpansions()
                 .Build();
 
             Assert.Empty(config.GetSection("Alias").GetChildren());
         }
 
         [Fact]
-        public void UseReferences_ReloadInvalidatesCache()
+        public void AllowExpansions_ReloadInvalidatesCache()
         {
             var data = new Dictionary<string, string>
             {
@@ -1250,7 +1250,7 @@ namespace Microsoft.Extensions.Configuration.Test
 
             var config = (IConfigurationRoot)new ConfigurationBuilder()
                 .Add(source)
-                .UseReferences()
+                .AllowExpansions()
                 .Build();
 
             Assert.Equal("first", config["Alias"]);
@@ -1267,7 +1267,7 @@ namespace Microsoft.Extensions.Configuration.Test
         [InlineData(@"\ref(", "ref(")]
         [InlineData(@"\ref()", "ref()")]
         [InlineData(@"\ref(Target", "ref(Target")]
-        public void UseReferences_BackslashEscapesLiteralRef(string raw, string expected)
+        public void AllowExpansions_BackslashEscapesLiteralRef(string raw, string expected)
         {
             var config = new ConfigurationBuilder()
                 .AddInMemoryCollection(new Dictionary<string, string>
@@ -1277,7 +1277,7 @@ namespace Microsoft.Extensions.Configuration.Test
                     ["Target"] = "target-value",
                     ["Alias"] = raw,
                 })
-                .UseReferences()
+                .AllowExpansions()
                 .Build();
 
             Assert.Equal(expected, config["Alias"]);
@@ -1289,7 +1289,7 @@ namespace Microsoft.Extensions.Configuration.Test
         [InlineData(@"\foo")]
         [InlineData(@"\\ref(Target)")]
         [InlineData(@"C:\path\to\file")]
-        public void UseReferences_BackslashWithoutRefPrefixIsLeftAlone(string raw)
+        public void AllowExpansions_BackslashWithoutRefPrefixIsLeftAlone(string raw)
         {
             var config = new ConfigurationBuilder()
                 .AddInMemoryCollection(new Dictionary<string, string>
@@ -1297,14 +1297,14 @@ namespace Microsoft.Extensions.Configuration.Test
                     ["Target"] = "target-value",
                     ["Alias"] = raw,
                 })
-                .UseReferences()
+                .AllowExpansions()
                 .Build();
 
             Assert.Equal(raw, config["Alias"]);
         }
 
         [Fact]
-        public void UseReferences_EscapeAppliesAcrossRecursiveResolution()
+        public void AllowExpansions_EscapeAppliesAcrossRecursiveResolution()
         {
             var config = new ConfigurationBuilder()
                 .AddInMemoryCollection(new Dictionary<string, string>
@@ -1313,7 +1313,7 @@ namespace Microsoft.Extensions.Configuration.Test
                     ["Inner"] = @"\ref(Target)",
                     ["Outer"] = "ref(Inner)",
                 })
-                .UseReferences()
+                .AllowExpansions()
                 .Build();
 
             // Inner resolves to the literal "ref(Target)"; Outer reads Inner's resolved value
@@ -1323,7 +1323,7 @@ namespace Microsoft.Extensions.Configuration.Test
         }
 
         [Fact]
-        public void UseReferences_EscapeIsInertWhenResolutionDisabled()
+        public void AllowExpansions_EscapeIsInertWhenResolutionDisabled()
         {
             var config = new ConfigurationBuilder()
                 .AddInMemoryCollection(new Dictionary<string, string>
@@ -1332,8 +1332,191 @@ namespace Microsoft.Extensions.Configuration.Test
                 })
                 .Build();
 
-            // With UseReferences off, the engine never runs, so the escape pass is also bypassed.
+            // With AllowExpansions off, the engine never runs, so the escape pass is also bypassed.
             Assert.Equal(@"\ref(Target)", config["Alias"]);
+        }
+
+        [Theory]
+        [InlineData("'simple'", "Resolved")]
+        [InlineData("\"simple\"", "Resolved")]
+        [InlineData("  'simple'  ", "Resolved")] // outer whitespace trimmed
+        public void AllowExpansions_QuotedKey_ResolvesLikeBareKey(string keyExpr, string expected)
+        {
+            var config = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string>
+                {
+                    ["simple"] = "Resolved",
+                    ["Alias"] = $"ref({keyExpr})",
+                })
+                .AllowExpansions()
+                .Build();
+
+            Assert.Equal(expected, config["Alias"]);
+        }
+
+        [Fact]
+        public void AllowExpansions_QuotedKey_PreservesSpecialCharacters()
+        {
+            // Configuration keys may legally contain commas, parens, spaces, and ':' — quoting
+            // lets a reference target such keys without the parser interpreting the metacharacters.
+            var config = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string>
+                {
+                    ["odd, key (with) chars"] = "Resolved",
+                    ["Alias"] = "ref('odd, key (with) chars')",
+                })
+                .AllowExpansions()
+                .Build();
+
+            Assert.Equal("Resolved", config["Alias"]);
+        }
+
+        [Fact]
+        public void AllowExpansions_QuotedKey_DoubledQuoteIsLiteral()
+        {
+            var config = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string>
+                {
+                    ["it's"] = "Resolved",
+                    ["Alias"] = "ref('it''s')",
+                })
+                .AllowExpansions()
+                .Build();
+
+            Assert.Equal("Resolved", config["Alias"]);
+        }
+
+        [Fact]
+        public void AllowExpansions_MixedQuotedAndBareKeys_FallbackChainHonored()
+        {
+            var config = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string>
+                {
+                    ["bare"] = "BareValue",
+                    ["q"] = "QuotedValue",
+                    ["A"] = "ref(missing, 'q', bare)",
+                })
+                .AllowExpansions()
+                .Build();
+
+            Assert.Equal("QuotedValue", config["A"]);
+        }
+
+        [Theory]
+        [InlineData("ref('unterminated)")]
+        [InlineData("ref(\"unterminated)")]
+        [InlineData("ref('a' extra)")]      // junk after the closing quote
+        [InlineData("ref('')")]             // empty quoted key
+        [InlineData("ref('a',)")]           // trailing comma
+        public void AllowExpansions_MalformedQuoting_ReturnsRawValueVerbatim(string raw)
+        {
+            var config = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string>
+                {
+                    ["a"] = "ShouldNotResolve",
+                    ["Value"] = raw,
+                })
+                .AllowExpansions()
+                .Build();
+
+            Assert.Equal(raw, config["Value"]);
+        }
+
+        [Fact]
+        public void AllowExpansions_RelativeKey_ResolvesAgainstAnchorParent()
+        {
+            var config = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string>
+                {
+                    ["App:Db:Host"] = "localhost",
+                    ["App:Db:ConnectionString"] = "ref(..:Host)",
+                })
+                .AllowExpansions()
+                .Build();
+
+            Assert.Equal("localhost", config["App:Db:ConnectionString"]);
+        }
+
+        [Fact]
+        public void AllowExpansions_RelativeKey_MultipleUpLevels()
+        {
+            var config = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string>
+                {
+                    ["App:Logging:Level"] = "Info",
+                    ["App:Db:ConnectionString"] = "ref(..:..:Logging:Level)",
+                })
+                .AllowExpansions()
+                .Build();
+
+            Assert.Equal("Info", config["App:Db:ConnectionString"]);
+        }
+
+        [Fact]
+        public void AllowExpansions_RelativeKey_AnchoredAtEachStep()
+        {
+            // The anchor used to expand a relative reference is the key whose value is being
+            // resolved at that step — not the originally requested key. Here `App:Db:Conn`
+            // refers to `..:Host` (i.e. App:Db:Host), and that value itself refers to
+            // `..:Source` which must resolve relative to `App:Db:Host` → `App:Db:Source`.
+            var config = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string>
+                {
+                    ["App:Db:Source"] = "primary",
+                    ["App:Db:Host"] = "ref(..:Source)",
+                    ["App:Db:Conn"] = "ref(..:Host)",
+                })
+                .AllowExpansions()
+                .Build();
+
+            Assert.Equal("primary", config["App:Db:Conn"]);
+        }
+
+        [Fact]
+        public void AllowExpansions_RelativeKey_PastRoot_FallsThroughToNextFallback()
+        {
+            var config = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string>
+                {
+                    ["Top:Value"] = "ref(..:..:..:Backup, Backup)",
+                    ["Backup"] = "fallback-value",
+                })
+                .AllowExpansions()
+                .Build();
+
+            // The first listed key walks past root; the engine skips it and falls through
+            // to the second listed key.
+            Assert.Equal("fallback-value", config["Top:Value"]);
+        }
+
+        [Fact]
+        public void AllowExpansions_RelativeKey_PastRoot_NoFallback_ReturnsRawVerbatim()
+        {
+            var config = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string>
+                {
+                    ["Top"] = "ref(..:..:Foo)",
+                })
+                .AllowExpansions()
+                .Build();
+
+            Assert.Equal("ref(..:..:Foo)", config["Top"]);
+        }
+
+        [Fact]
+        public void AllowExpansions_RelativeKey_QuotedDotsAreLiteral()
+        {
+            // A quoted ".." segment is a literal key, not a relative-up marker.
+            var config = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string>
+                {
+                    [".."] = "literal-dots",
+                    ["Alias"] = "ref('..')",
+                })
+                .AllowExpansions()
+                .Build();
+
+            Assert.Equal("literal-dots", config["Alias"]);
         }
     }
 }
