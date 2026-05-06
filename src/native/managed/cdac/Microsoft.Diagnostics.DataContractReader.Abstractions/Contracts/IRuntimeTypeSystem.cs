@@ -122,6 +122,12 @@ public interface IRuntimeTypeSystem : IContract
     bool RequiresAlign8(TypeHandle typeHandle) => throw new NotImplementedException();
     // True if the MethodTable represents a continuation type used by the async continuation feature
     bool IsContinuation(TypeHandle typeHandle) => throw new NotImplementedException();
+    /// <summary>
+    /// Enumerates GC pointer runs from the CGCDesc stored before the method table.
+    /// Returns (offset, size) pairs normalized to actual byte lengths.
+    /// See RuntimeTypeSystem.md for the full GCDesc format documentation.
+    /// </summary>
+    IEnumerable<(uint Offset, uint Size)> GetGCDescSeries(TypeHandle typeHandle, uint numComponents = 0) => throw new NotImplementedException();
     bool IsDynamicStatics(TypeHandle typeHandle) => throw new NotImplementedException();
     ushort GetNumInterfaces(TypeHandle typeHandle) => throw new NotImplementedException();
 
@@ -155,6 +161,7 @@ public interface IRuntimeTypeSystem : IContract
     // If this returns CorElementType.ValueType it may be a normal valuetype or a "NATIVE" valuetype used to represent an interop view on a structure
     // HasTypeParam will return true for cases where this is the interop view
     CorElementType GetSignatureCorElementType(TypeHandle typeHandle) => throw new NotImplementedException();
+    bool IsValueType(TypeHandle typeHandle) => throw new NotImplementedException();
 
     // Internal element type of the type. Unlike GetSignatureCorElementType, this returns the underlying primitive
     // type for enums (e.g. I4 for an enum with int underlying type) and for PrimitiveValueType categories.
@@ -183,6 +190,14 @@ public interface IRuntimeTypeSystem : IContract
     // Return true for an uninstantiated generic method
     bool IsGenericMethodDefinition(MethodDescHandle methodDesc) => throw new NotImplementedException();
     ReadOnlySpan<TypeHandle> GetGenericMethodInstantiation(MethodDescHandle methodDesc) => throw new NotImplementedException();
+
+    // Return true if the method requires a hidden instantiation argument (generic context parameter).
+    // This corresponds to native MethodDesc::RequiresInstArg().
+    bool RequiresInstArg(MethodDescHandle methodDesc) => throw new NotImplementedException();
+
+    // Return true if the method uses the async calling convention (CORINFO_CALLCONV_ASYNCCALL).
+    // This corresponds to native MethodDesc::IsAsyncMethod().
+    bool IsAsyncMethod(MethodDescHandle methodDesc) => throw new NotImplementedException();
 
     // Return mdtMethodDef (0x06000000) if the method doesn't have a token, otherwise return the token of the method
     uint GetMethodToken(MethodDescHandle methodDesc) => throw new NotImplementedException();
@@ -231,6 +246,10 @@ public interface IRuntimeTypeSystem : IContract
 
     OptimizationTier GetMethodDescOptimizationTier(MethodDescHandle methodDescHandle) => throw new NotImplementedException();
     bool IsEligibleForTieredCompilation(MethodDescHandle methodDescHandle) => throw new NotImplementedException();
+
+    bool IsAsyncThunkMethod(MethodDescHandle methodDesc) => throw new NotImplementedException();
+
+    bool IsWrapperStub(MethodDescHandle methodDesc) => throw new NotImplementedException();
     #endregion MethodDesc inspection APIs
     #region FieldDesc inspection APIs
     TargetPointer GetMTOfEnclosingClass(TargetPointer fieldDescPointer) => throw new NotImplementedException();

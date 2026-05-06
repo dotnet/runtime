@@ -25,13 +25,15 @@ internal class TestPlaceholderTarget : Target
 
     internal delegate int ReadFromTargetDelegate(ulong address, Span<byte> buffer);
     internal delegate int WriteToTargetDelegate(ulong address, Span<byte> buffer);
+    internal delegate TargetPointer AllocateMemoryDelegate(uint size);
 
     private readonly ReadFromTargetDelegate _dataReader;
     private readonly WriteToTargetDelegate? _dataWriter;
+    private readonly AllocateMemoryDelegate? _allocateMemory;
     private static readonly UTF8Encoding strictUTF8Encoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
     private static readonly UTF8Encoding looseUTF8Encoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: false);
 
-    public TestPlaceholderTarget(MockTarget.Architecture arch, ReadFromTargetDelegate reader, Dictionary<DataType, Target.TypeInfo> types = null, (string Name, ulong Value)[] globals = null, (string Name, string Value)[] globalStrings = null, WriteToTargetDelegate? writer = null)
+    public TestPlaceholderTarget(MockTarget.Architecture arch, ReadFromTargetDelegate reader, Dictionary<DataType, Target.TypeInfo> types = null, (string Name, ulong Value)[] globals = null, (string Name, string Value)[] globalStrings = null, WriteToTargetDelegate? writer = null, AllocateMemoryDelegate? allocateMemory = null)
     {
         IsLittleEndian = arch.IsLittleEndian;
         PointerSize = arch.Is64Bit ? 8 : 4;
@@ -40,6 +42,7 @@ internal class TestPlaceholderTarget : Target
         _typeInfoCache = types ?? [];
         _dataReader = reader;
         _dataWriter = writer;
+        _allocateMemory = allocateMemory;
         _globals = globals ?? [];
         _globalStrings = globalStrings ?? [];
     }
@@ -80,6 +83,7 @@ internal class TestPlaceholderTarget : Target
         private readonly List<Action<TestContractRegistry>> _contractSetups = new();
         private Action<ContractRegistry> _registrations = CoreCLRContracts.Register;
         private ReadFromTargetDelegate? _readerOverride;
+        private AllocateMemoryDelegate? _allocateMemory;
 
         public Builder(MockTarget.Architecture arch)
         {
@@ -114,13 +118,19 @@ internal class TestPlaceholderTarget : Target
             return this;
         }
 
+        public Builder UseAllocateMemory(AllocateMemoryDelegate allocateMemory)
+        {
+            _allocateMemory = allocateMemory;
+            return this;
+        }
+
         public Builder UseRegistrations(Action<ContractRegistry> registrations)
         {
             _registrations = registrations;
             return this;
         }
 
-        public Builder AddContract<TContract>(int version) where TContract : IContract
+        public Builder AddContract<TContract>(string version) where TContract : IContract
         {
             _contractSetups.Add(registry => registry.SetVersion<TContract>(version));
             return this;
@@ -147,7 +157,8 @@ internal class TestPlaceholderTarget : Target
                 _types,
                 _globals.ToArray(),
                 _globalStrings.ToArray(),
-                memoryContext.WriteToTarget);
+                memoryContext.WriteToTarget,
+                _allocateMemory);
 
             var registry = new TestContractRegistry();
             registry.SetTarget(target);
@@ -217,6 +228,14 @@ internal class TestPlaceholderTarget : Target
             throw new NotImplementedException();
         if (_dataWriter(address, buffer) < 0)
             throw new InvalidOperationException($"Failed to write {buffer.Length} bytes at 0x{address:x8}.");
+    }
+
+    public override TargetPointer AllocateMemory(uint size)
+    {
+        if (_allocateMemory is null)
+            return base.AllocateMemory(size); // throws NotImplementedException
+
+        return _allocateMemory(size);
     }
 
     public override string ReadUtf8String(ulong address, bool strict = false)
@@ -348,6 +367,22 @@ internal class TestPlaceholderTarget : Target
         if (!success || bytesWritten != buffer.Length)
             throw new InvalidOperationException($"Failed to write {typeof(T)} to buffer.");
         WriteBuffer(address, buffer);
+    }
+
+    public override void WritePointer(ulong address, TargetPointer value)
+    {
+        if (PointerSize == 8)
+            Write<ulong>(address, value.Value);
+        else
+            Write<uint>(address, checked((uint)value.Value));
+    }
+
+    public override void WriteNUInt(ulong address, TargetNUInt value)
+    {
+        if (PointerSize == 8)
+            Write<ulong>(address, value.Value);
+        else
+            Write<uint>(address, checked((uint)value.Value));
     }
 
     #region subclass reader helpers
@@ -527,21 +562,21 @@ internal class TestPlaceholderTarget : Target
 
     internal sealed class TestContractRegistry : ContractRegistry
     {
-        private readonly Dictionary<(Type, int), Func<Target, IContract>> _creators = new();
-        private readonly Dictionary<Type, int> _versions = new();
+        private readonly Dictionary<(Type, string), Func<Target, IContract>> _creators = new();
+        private readonly Dictionary<Type, string> _versions = new();
         private readonly Dictionary<Type, IContract> _mocks = new();
         private readonly Dictionary<Type, IContract> _resolved = new();
         private Target _target = null!;
 
         public void SetTarget(Target target) => _target = target;
 
-        public void SetVersion<TContract>(int version) where TContract : IContract
+        public void SetVersion<TContract>(string version) where TContract : IContract
             => _versions[typeof(TContract)] = version;
 
         public void SetMock<TContract>(TContract mock) where TContract : IContract
             => _mocks[typeof(TContract)] = mock;
 
-        public override void Register<TContract>(int version, Func<Target, TContract> creator)
+        public override void Register<TContract>(string version, Func<Target, TContract> creator)
             => _creators[(typeof(TContract), version)] = t => creator(t);
 
         public override bool TryGetContract<TContract>([NotNullWhen(true)] out TContract contract, out string? failureReason)
@@ -559,7 +594,7 @@ internal class TestPlaceholderTarget : Target
             {
                 resolved = mock;
             }
-            else if (_versions.TryGetValue(typeof(TContract), out int version))
+            else if (_versions.TryGetValue(typeof(TContract), out string? version))
             {
                 if (!_creators.TryGetValue((typeof(TContract), version), out var creator))
                 {

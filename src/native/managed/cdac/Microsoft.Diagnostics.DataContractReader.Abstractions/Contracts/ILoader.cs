@@ -33,6 +33,7 @@ public enum DebuggerAssemblyControlFlags : uint
     DACF_NONE = 0x00,
     DACF_ALLOW_JIT_OPTS = 0x02,
     DACF_ENC_ENABLED = 0x08,
+    DACF_IGNORE_PDBS = 0x20,
     DACF_CONTROL_FLAGS_MASK = 0x2E,
 }
 
@@ -41,6 +42,21 @@ public enum ClrModifiableAssemblies : uint
     Unset = 0,
     None = 1,
     Debug = 2,
+}
+
+public enum LoaderAllocatorHeapType
+{
+    Unknown,
+    LowFrequencyHeap,
+    HighFrequencyHeap,
+    StaticsHeap,
+    StubHeap,
+    ExecutableHeap,
+    FixupPrecodeHeap,
+    NewStubPrecodeHeap,
+    DynamicHelpersStubHeap,
+    IndcellHeap,
+    CacheEntryHeap,
 }
 
 [Flags]
@@ -73,6 +89,13 @@ public record struct ModuleLookupTables(
     TargetPointer TypeRefToMethodTable,
     TargetPointer MethodDefToILCodeVersioningState);
 
+public readonly struct LoaderHeapBlockData
+{
+    public TargetPointer Address { get; init; }
+    public TargetNUInt Size { get; init; }
+    public TargetPointer NextBlock { get; init; }
+}
+
 public interface ILoader : IContract
 {
     static string IContract.Name => nameof(Loader);
@@ -95,7 +118,7 @@ public interface ILoader : IContract
     bool IsProbeExtensionResultValid(ModuleHandle handle) => throw new NotImplementedException();
     ModuleFlags GetFlags(ModuleHandle handle) => throw new NotImplementedException();
     bool IsReadyToRun(ModuleHandle handle) => throw new NotImplementedException();
-    bool TryGetSimpleName(ModuleHandle handle, out string simpleName) => throw new NotImplementedException();
+    string GetSimpleName(ModuleHandle handle) => throw new NotImplementedException();
     string GetPath(ModuleHandle handle) => throw new NotImplementedException();
     string GetFileName(ModuleHandle handle) => throw new NotImplementedException();
     TargetPointer GetLoaderAllocator(ModuleHandle handle) => throw new NotImplementedException();
@@ -106,6 +129,7 @@ public interface ILoader : IContract
     IEnumerable<(TargetPointer, uint)> EnumerateModuleLookupMap(TargetPointer table) => throw new NotImplementedException();
     bool IsCollectible(ModuleHandle handle) => throw new NotImplementedException();
     bool IsDynamic(ModuleHandle handle) => throw new NotImplementedException();
+    bool IsModuleMapped(ModuleHandle handle) => throw new NotImplementedException();
     bool IsAssemblyLoaded(ModuleHandle handle) => throw new NotImplementedException();
 
     TargetPointer GetGlobalLoaderAllocator() => throw new NotImplementedException();
@@ -116,7 +140,12 @@ public interface ILoader : IContract
     TargetPointer GetILHeader(ModuleHandle handle, uint token) => throw new NotImplementedException();
     TargetPointer GetObjectHandle(TargetPointer loaderAllocatorPointer) => throw new NotImplementedException();
     TargetPointer GetDynamicIL(ModuleHandle handle, uint token) => throw new NotImplementedException();
-    IReadOnlyDictionary<string, TargetPointer> GetLoaderAllocatorHeaps(TargetPointer loaderAllocatorPointer) => throw new NotImplementedException();
+
+    // Returns the first block of the loader heap linked list, or TargetPointer.Null if the heap has no blocks.
+    TargetPointer GetFirstLoaderHeapBlock(TargetPointer loaderHeap) => throw new NotImplementedException();
+    // Returns the data for the given loader heap block (address, size, and next block pointer).
+    LoaderHeapBlockData GetLoaderHeapBlockData(TargetPointer block) => throw new NotImplementedException();
+    IReadOnlyDictionary<LoaderAllocatorHeapType, TargetPointer> GetLoaderAllocatorHeaps(TargetPointer loaderAllocatorPointer) => throw new NotImplementedException();
 
     DebuggerAssemblyControlFlags GetDebuggerInfoBits(ModuleHandle handle) => throw new NotImplementedException();
     void SetDebuggerInfoBits(ModuleHandle handle, DebuggerAssemblyControlFlags newBits) => throw new NotImplementedException();

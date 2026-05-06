@@ -2300,12 +2300,7 @@ void CordbThread::GetActiveInternalFramesCallback(const DebuggerIPCE_STRData * p
     _ASSERTE(pFrameData->eType == DebuggerIPCE_STRData::cStubFrame);
 
     // Look up the CordbAppDomain.
-    CordbAppDomain * pAppDomain = NULL;
-    VMPTR_AppDomain vmCurrentAppDomain = pFrameData->vmCurrentAppDomainToken;
-    if (!vmCurrentAppDomain.IsNull())
-    {
-        pAppDomain = pThis->GetProcess()->LookupOrCreateAppDomain(vmCurrentAppDomain);
-    }
+    CordbAppDomain * pAppDomain = pThis->GetProcess()->GetAppDomain();
 
     // Create a CordbInternalFrame.
     CordbInternalFrame * pInternalFrame = new CordbInternalFrame(pThis,
@@ -5943,9 +5938,7 @@ HRESULT CordbNativeFrame::IsMatchingParentFrame(ICorDebugNativeFrame2 * pPotenti
         {
             FramePointer fpParent  = this->m_misc.fpParentOrSelf;
             FramePointer fpToCheck = pFrameToCheck->m_misc.fpParentOrSelf;
-
-            IDacDbiInterface * pDAC = GetProcess()->GetDAC();
-            IfFailThrow(pDAC->IsMatchingParentFrame(fpToCheck, fpParent, pIsParent));
+            *pIsParent = (fpParent == fpToCheck);
         }
     }
     EX_CATCH_HRESULT(hr);
@@ -10473,7 +10466,7 @@ HRESULT CordbEval::GetResult(ICorDebugValue **ppResult)
             // @dbgtodo  funceval - push this up
             RSLockHolder lockHolder(GetProcess()->GetProcessLock());
 
-            pAppDomain = m_thread->GetProcess()->LookupOrCreateAppDomain(m_resultAppDomainToken);
+            pAppDomain = m_thread->GetProcess()->GetAppDomain();
         }
         else
         {

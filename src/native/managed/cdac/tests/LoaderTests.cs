@@ -38,12 +38,12 @@ public unsafe class LoaderTests
 
         var target = targetBuilder
             .AddTypes(CreateContractTypes(loader))
-            .AddContract<ILoader>(version: 1)
+            .AddContract<ILoader>(version: "c1")
             .Build();
         return target.Contracts.Loader;
     }
 
-    private static (ILoader Contract, TestPlaceholderTarget Target) CreateLoaderContractWithTarget(
+    internal static (ILoader Contract, TestPlaceholderTarget Target) CreateLoaderContractWithTarget(
         MockTarget.Architecture arch,
         Action<MockLoaderBuilder, TestPlaceholderTarget.Builder> configure)
     {
@@ -53,7 +53,7 @@ public unsafe class LoaderTests
         configure(loader, targetBuilder);
 
         targetBuilder.AddTypes(CreateContractTypes(loader));
-        targetBuilder.AddContract<ILoader>(version: 1);
+        targetBuilder.AddContract<ILoader>(version: "c1");
         var target = targetBuilder.Build();
         return (target.Contracts.Loader, target);
     }
@@ -112,35 +112,40 @@ public unsafe class LoaderTests
 
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
-    public void TryGetSimpleName(MockTarget.Architecture arch)
+    public void GetSimpleName(MockTarget.Architecture arch)
     {
         string expected = "TestModule";
         TargetPointer moduleAddr = TargetPointer.Null;
-        TargetPointer moduleAddrEmptyName = TargetPointer.Null;
 
         ILoader contract = CreateLoaderContract(arch, loader =>
         {
             moduleAddr = loader.AddModule(simpleName: expected).Address;
-            moduleAddrEmptyName = loader.AddModule().Address;
         });
 
-        {
-            Contracts.ModuleHandle handle = contract.GetModuleHandleFromModulePtr(moduleAddr);
-            bool result = contract.TryGetSimpleName(handle, out string actual);
-            Assert.True(result);
-            Assert.Equal(expected, actual);
-        }
-        {
-            Contracts.ModuleHandle handle = contract.GetModuleHandleFromModulePtr(moduleAddrEmptyName);
-            bool result = contract.TryGetSimpleName(handle, out string actual);
-            Assert.False(result);
-            Assert.Equal(string.Empty, actual);
-        }
+        Contracts.ModuleHandle handle = contract.GetModuleHandleFromModulePtr(moduleAddr);
+        string actual = contract.GetSimpleName(handle);
+        Assert.Equal(expected, actual);
     }
 
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
-    public void TryGetSimpleName_InvalidUtf8(MockTarget.Architecture arch)
+    public void GetSimpleName_NullSimpleName(MockTarget.Architecture arch)
+    {
+        TargetPointer moduleAddr = TargetPointer.Null;
+
+        ILoader contract = CreateLoaderContract(arch, loader =>
+        {
+            moduleAddr = loader.AddModule().Address;
+        });
+
+        Contracts.ModuleHandle handle = contract.GetModuleHandleFromModulePtr(moduleAddr);
+        string actual = contract.GetSimpleName(handle);
+        Assert.Equal(string.Empty, actual);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetSimpleName_InvalidUtf8(MockTarget.Architecture arch)
     {
         // 0xFF is not valid UTF-8
         byte[] invalidUtf8 = [0xFF, 0xFE];
@@ -151,21 +156,23 @@ public unsafe class LoaderTests
         });
 
         Contracts.ModuleHandle handle = contract.GetModuleHandleFromModulePtr(moduleAddr);
-        Assert.Throws<DecoderFallbackException>(() => contract.TryGetSimpleName(handle, out _));
+        Assert.Throws<DecoderFallbackException>(() => contract.GetSimpleName(handle));
     }
 
-    private static readonly Dictionary<string, TargetPointer> MockHeapDictionary = new()
+    private static readonly Dictionary<LoaderAllocatorHeapType, TargetPointer> MockHeapDictionary = new()
     {
-        ["LowFrequencyHeap"] = new(0x1000),
-        ["HighFrequencyHeap"] = new(0x2000),
-        ["StaticsHeap"] = new(0x3000),
-        ["StubHeap"] = new(0x4000),
-        ["ExecutableHeap"] = new(0x5000),
-        ["FixupPrecodeHeap"] = new(0x6000),
-        ["NewStubPrecodeHeap"] = new(0x7000),
-        ["IndcellHeap"] = new(0x8000),
-        ["CacheEntryHeap"] = new(0x9000),
+        [LoaderAllocatorHeapType.LowFrequencyHeap] = new(0x1000),
+        [LoaderAllocatorHeapType.HighFrequencyHeap] = new(0x2000),
+        [LoaderAllocatorHeapType.StaticsHeap] = new(0x3000),
+        [LoaderAllocatorHeapType.StubHeap] = new(0x4000),
+        [LoaderAllocatorHeapType.ExecutableHeap] = new(0x5000),
+        [LoaderAllocatorHeapType.FixupPrecodeHeap] = new(0x6000),
+        [LoaderAllocatorHeapType.NewStubPrecodeHeap] = new(0x7000),
+        [LoaderAllocatorHeapType.IndcellHeap] = new(0x8000),
+        [LoaderAllocatorHeapType.CacheEntryHeap] = new(0x9000),
     };
+
+    private static LoaderAllocatorHeapType HeapNameToType(string name) => Enum.Parse<LoaderAllocatorHeapType>(name);
 
     private static ISOSDacInterface13 CreateSOSDacInterface13ForHeapTests(MockTarget.Architecture arch)
     {
@@ -201,7 +208,7 @@ public unsafe class LoaderTests
         var target = targetBuilder
             .AddTypes(types)
             .AddMockContract<ILoader>(Mock.Of<ILoader>(
-                l => l.GetLoaderAllocatorHeaps(It.IsAny<TargetPointer>()) == (IReadOnlyDictionary<string, TargetPointer>)MockHeapDictionary
+                l => l.GetLoaderAllocatorHeaps(It.IsAny<TargetPointer>()) == (IReadOnlyDictionary<LoaderAllocatorHeapType, TargetPointer>)MockHeapDictionary
                 && l.GetGlobalLoaderAllocator() == new TargetPointer(0x100)))
             .Build();
         return new SOSDacImpl(target, null);
@@ -235,11 +242,10 @@ public unsafe class LoaderTests
 
         Assert.Equal(HResults.S_OK, hr);
         Assert.Equal(MockHeapDictionary.Count, needed);
-        HashSet<string> expectedNames = new(MockHeapDictionary.Keys);
         for (int i = 0; i < needed; i++)
         {
             string actual = Marshal.PtrToStringAnsi((nint)names[i])!;
-            Assert.Contains(actual, expectedNames);
+            Assert.Contains(HeapNameToType(actual), MockHeapDictionary.Keys);
         }
     }
 
@@ -255,11 +261,10 @@ public unsafe class LoaderTests
 
         Assert.Equal(HResults.S_FALSE, hr);
         Assert.Equal(MockHeapDictionary.Count, needed);
-        HashSet<string> expectedNames = new(MockHeapDictionary.Keys);
         for (int i = 0; i < 2; i++)
         {
             string actual = Marshal.PtrToStringAnsi((nint)names[i])!;
-            Assert.Contains(actual, expectedNames);
+            Assert.Contains(HeapNameToType(actual), MockHeapDictionary.Keys);
         }
     }
 
@@ -307,7 +312,8 @@ public unsafe class LoaderTests
         for (int i = 0; i < needed; i++)
         {
             string name = Marshal.PtrToStringAnsi((nint)names[i])!;
-            Assert.Equal((ulong)MockHeapDictionary[name], (ulong)heaps[i]);
+            LoaderAllocatorHeapType heapType = HeapNameToType(name);
+            Assert.Equal((ulong)MockHeapDictionary[heapType], (ulong)heaps[i]);
             Assert.Equal(0, kinds[i]); // LoaderHeapKindNormal
         }
     }
@@ -442,7 +448,7 @@ public unsafe class LoaderTests
 
         var target = targetBuilder
             .AddTypes(types)
-            .AddContract<ILoader>(version: 1)
+            .AddContract<ILoader>(version: "c1")
             .Build();
 
         return (target, new TargetPointer(peAssemblyFrag.Address), new TargetPointer(webcilImage.Address));
@@ -531,6 +537,22 @@ public unsafe class LoaderTests
         Assert.Equal((TargetPointer)(imageBase + 0x2700u), contract.GetILAddr(peAssemblyAddr, 0x4500));
     }
 
+    public static IEnumerable<object[]> IsModuleMappedData()
+    {
+        foreach (object[] archData in new MockTarget.StdArch())
+        {
+            var arch = (MockTarget.Architecture)archData[0];
+            // PE format (0), FLAG_MAPPED (1) → true
+            yield return [arch, 0u, 1u, true];
+            // PE format (0), no flags → false
+            yield return [arch, 0u, 0u, false];
+            // Webcil format (1), FLAG_MAPPED set → still false
+            yield return [arch, 1u, 1u, false];
+            // Webcil format (1), no flags → false
+            yield return [arch, 1u, 0u, false];
+        }
+    }
+
     public static IEnumerable<object[]> GetDebuggerInfoBitsData()
     {
         foreach (var arch in new MockTarget.StdArch())
@@ -539,6 +561,85 @@ public unsafe class LoaderTests
             yield return [DebuggerAllowJitOptsPriv, DebuggerAssemblyControlFlags.DACF_ALLOW_JIT_OPTS, arch[0]];
             yield return [DebuggerEncEnabledPriv, DebuggerAssemblyControlFlags.DACF_ENC_ENABLED, arch[0]];
         }
+    }
+
+    [Theory]
+    [MemberData(nameof(IsModuleMappedData))]
+    public void IsModuleMapped_ReturnsExpected(MockTarget.Architecture arch, uint format, uint flags, bool expected)
+    {
+        TargetTestHelpers helpers = new(arch);
+        var targetBuilder = new TestPlaceholderTarget.Builder(arch);
+        MockMemorySpace.Builder builder = targetBuilder.MemoryBuilder;
+        MockLoaderBuilder loader = new(builder);
+        var allocator = builder.CreateAllocator(0x0010_0000, 0x0020_0000);
+
+        MockLoaderModule module = loader.AddModule();
+
+        var probeExtLayout = helpers.LayoutFields([
+            new(nameof(Data.ProbeExtensionResult.Type), DataType.int32),
+        ]);
+        var peAssemblyLayout = helpers.LayoutFields([
+            new(nameof(Data.PEAssembly.PEImage), DataType.pointer),
+            new(nameof(Data.PEAssembly.AssemblyBinder), DataType.pointer),
+        ]);
+        var peImageLayout = helpers.LayoutFields([
+            new(nameof(Data.PEImage.LoadedImageLayout), DataType.pointer),
+            new(nameof(Data.PEImage.ProbeExtensionResult), DataType.ProbeExtensionResult, probeExtLayout.Stride),
+        ]);
+        var imageLayoutLayout = helpers.LayoutFields([
+            new(nameof(Data.PEImageLayout.Base), DataType.pointer),
+            new(nameof(Data.PEImageLayout.Size), DataType.uint32),
+            new(nameof(Data.PEImageLayout.Flags), DataType.uint32),
+            new(nameof(Data.PEImageLayout.Format), DataType.uint32),
+        ]);
+
+        MockMemorySpace.HeapFragment Allocate(uint size, string name)
+        {
+            MockMemorySpace.HeapFragment frag = allocator.Allocate(size, name);
+            return frag;
+        }
+
+        var layoutFrag = Allocate(imageLayoutLayout.Stride, "PEImageLayout");
+        helpers.Write(layoutFrag.Data.AsSpan().Slice(imageLayoutLayout.Fields[nameof(Data.PEImageLayout.Flags)].Offset, sizeof(uint)), flags);
+        helpers.Write(layoutFrag.Data.AsSpan().Slice(imageLayoutLayout.Fields[nameof(Data.PEImageLayout.Format)].Offset, sizeof(uint)), format);
+
+        var peImageFrag = Allocate(peImageLayout.Stride, "PEImage");
+        helpers.WritePointer(peImageFrag.Data.AsSpan().Slice(peImageLayout.Fields[nameof(Data.PEImage.LoadedImageLayout)].Offset, helpers.PointerSize), layoutFrag.Address);
+
+        var peAssemblyFrag = Allocate(peAssemblyLayout.Stride, "PEAssembly");
+        helpers.WritePointer(peAssemblyFrag.Data.AsSpan().Slice(peAssemblyLayout.Fields[nameof(Data.PEAssembly.PEImage)].Offset, helpers.PointerSize), peImageFrag.Address);
+
+        module.PEAssembly = peAssemblyFrag.Address;
+
+        var types = CreateContractTypes(loader);
+        types[DataType.PEAssembly] = new() { Fields = peAssemblyLayout.Fields, Size = peAssemblyLayout.Stride };
+        types[DataType.PEImage] = new() { Fields = peImageLayout.Fields, Size = peImageLayout.Stride };
+        types[DataType.PEImageLayout] = new() { Fields = imageLayoutLayout.Fields, Size = imageLayoutLayout.Stride };
+        types[DataType.ProbeExtensionResult] = new() { Fields = probeExtLayout.Fields, Size = probeExtLayout.Stride };
+
+        var target = targetBuilder
+            .AddTypes(types)
+            .AddContract<ILoader>(version: "c1")
+            .Build();
+
+        ILoader contract = target.Contracts.Loader;
+        Contracts.ModuleHandle handle = contract.GetModuleHandleFromModulePtr(new TargetPointer(module.Address));
+        Assert.Equal(expected, contract.IsModuleMapped(handle));
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void IsModuleMapped_NoPEAssembly_ReturnsFalse(MockTarget.Architecture arch)
+    {
+        TargetPointer moduleAddr = TargetPointer.Null;
+
+        ILoader contract = CreateLoaderContract(arch, loader =>
+        {
+            moduleAddr = loader.AddModule().Address;
+        });
+
+        Contracts.ModuleHandle handle = contract.GetModuleHandleFromModulePtr(moduleAddr);
+        Assert.False(contract.IsModuleMapped(handle));
     }
 
     [Theory]
@@ -710,5 +811,43 @@ public unsafe class LoaderTests
 
         uint rawFlags = target.Read<uint>(moduleAddr + (ulong)flagsOffset);
         Assert.True((rawFlags & IsEditAndContinue) != 0, "IS_EDIT_AND_CONTINUE should be set when DACF_ENC_ENABLED is explicitly requested");
+    }
+
+    public static IEnumerable<object[]> GetCompilerFlagsData()
+    {
+        foreach (var arch in new MockTarget.StdArch())
+        {
+            yield return [IsJitOptimizationDisabled | IsEditAndContinue, Interop.BOOL.FALSE, Interop.BOOL.TRUE, arch[0]];
+            yield return [0u, Interop.BOOL.TRUE, Interop.BOOL.FALSE, arch[0]];
+            yield return [IsJitOptimizationDisabled, Interop.BOOL.FALSE, Interop.BOOL.FALSE, arch[0]];
+            yield return [IsEditAndContinue, Interop.BOOL.TRUE, Interop.BOOL.TRUE, arch[0]];
+            // Debugger allows JIT opts but profiler disables them (IS_JIT_OPTIMIZATION_DISABLED wins)
+            yield return [DebuggerAllowJitOptsPriv | IsJitOptimizationDisabled, Interop.BOOL.FALSE, Interop.BOOL.FALSE, arch[0]];
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(GetCompilerFlagsData))]
+    public void GetCompilerFlags(uint rawFlags, Interop.BOOL expectedAllowJITOpts, Interop.BOOL expectedEnableEnC, MockTarget.Architecture arch)
+    {
+        var targetBuilder = new TestPlaceholderTarget.Builder(arch);
+        MockLoaderBuilder loader = new(targetBuilder.MemoryBuilder);
+
+        MockLoaderModule module = loader.AddModule(flags: rawFlags);
+        ulong assemblyAddr = module.Assembly;
+
+        var target = targetBuilder
+            .AddTypes(CreateContractTypes(loader))
+            .AddContract<ILoader>(version: "c1")
+            .Build();
+
+        DacDbiImpl dbi = new(target, legacyObj: null);
+
+        Interop.BOOL allowJITOpts;
+        Interop.BOOL enableEnC;
+        int hr = dbi.GetCompilerFlags(assemblyAddr, &allowJITOpts, &enableEnC);
+        Assert.Equal(HResults.S_OK, hr);
+        Assert.Equal(expectedAllowJITOpts, allowJITOpts);
+        Assert.Equal(expectedEnableEnC, enableEnC);
     }
 }

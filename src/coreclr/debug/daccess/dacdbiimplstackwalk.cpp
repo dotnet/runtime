@@ -297,24 +297,12 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::UnwindStackWalkFrame(StackWalkHan
                 }
                 else if (pIter->GetFrameState() == StackFrameIterator::SFITER_FRAMELESS_METHOD)
                 {
-                    MethodDesc *pMD = pIter->m_crawl.GetFunction();
-                    MethodTable *pMT = pMD->GetMethodTable();
-
-                    // Skip the exception handling managed code, the debugger clients are not supposed to see them
-                    // EH.DispatchEx, EH.RhThrowEx, EH.RhThrowHwEx, ExceptionServices.InternalCalls.SfiInit, ExceptionServices.InternalCalls.SfiNext
-                    // and System.Runtime.StackFrameIterator.*
-                    if (pMT == g_pEHClass || pMT == g_pExceptionServicesInternalCallsClass || pMT == g_pStackFrameIteratorClass)
-                    {
-                        continue;
-                    }
-
-                    // Skip the runtime helper that invokes the main program entrypoint, the debuggers do not want to see it.
-                    // Environment.CallEntryPoint
-                    if (pMD == g_pEnvironmentCallEntryPointMethodDesc)
-                    {
-                        continue;
-                    }
-
+                    // Runtime-internal frames (exception handling helpers, entry point, etc.) are NOT
+                    // skipped here with continue. On x86, GetFrameWorker() unwinds one frame ahead to
+                    // compute the frame pointer (see rsstackwalk.cpp). Skipping frames here would cause
+                    // the unwind to land on the wrong frame, producing incorrect frame pointers.
+                    // Instead, GetStackWalkCurrentFrameInfo classifies these frames and GetFrameWorker
+                    // returns S_FALSE to hide them from debugger clients.
                     fIsAtEndOfStack = FALSE;
                 }
                 else
@@ -425,7 +413,8 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetStackWalkCurrentFrameInfo(Stac
                     {
                         MethodDesc *pMD = pIter->m_crawl.GetFunction();
                         // EH.DispatchEx, EH.RhThrowEx, EH.RhThrowHwEx, ExceptionServices.InternalCalls.SfiInit, ExceptionServices.InternalCalls.SfiNext
-                        if (pMD->GetMethodTable() == g_pEHClass || pMD->GetMethodTable() == g_pExceptionServicesInternalCallsClass)
+                        // and System.Runtime.StackFrameIterator.*
+                        if (pMD->GetMethodTable() == g_pEHClass || pMD->GetMethodTable() == g_pExceptionServicesInternalCallsClass || pMD->GetMethodTable() == g_pStackFrameIteratorClass)
                         {
                             ftResult = kManagedExceptionHandlingCodeFrame;
                         }
@@ -649,28 +638,6 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::EnumerateInternalFrames(VMPTR_Thr
     return hr;
 }
 
-// Given the FramePointer of the parent frame and the FramePointer of the current frame,
-// check if the current frame is the parent frame.
-HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::IsMatchingParentFrame(FramePointer fpToCheck, FramePointer fpParent, OUT BOOL * pResult)
-{
-    DD_ENTER_MAY_THROW;
-
-    HRESULT hr = S_OK;
-    EX_TRY
-    {
-
-        StackFrame sfToCheck = StackFrame((UINT_PTR)fpToCheck.GetSPValue());
-
-        StackFrame sfParent  = StackFrame((UINT_PTR)fpParent.GetSPValue());
-
-        // Ask the ExInfo to figure out the answer.
-        // Don't try to compare the StackFrames/FramePointers ourselves.
-        *pResult = ExInfo::IsUnwoundToTargetParentFrame(sfToCheck, sfParent);
-    }
-    EX_CATCH_HRESULT(hr);
-    return hr;
-}
-
 // Return the stack parameter size of the given method.
 HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetStackParameterSize(CORDB_ADDRESS controlPC, OUT ULONG32 * pRetVal)
 {
@@ -756,7 +723,6 @@ FramePointer DacDbiInterfaceImpl::GetFramePointerWorker(StackFrameIterator * pIt
 }
 
 // Return TRUE if the specified CONTEXT is the CONTEXT of the leaf frame.
-// @dbgtodo  filter CONTEXT - Currently we check for the filter CONTEXT first.
 HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::IsLeafFrame(VMPTR_Thread vmThread, const DT_CONTEXT * pContext, OUT BOOL * pResult)
 {
     DD_ENTER_MAY_THROW;
@@ -766,7 +732,12 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::IsLeafFrame(VMPTR_Thread vmThread
     {
 
         DT_CONTEXT ctxLeaf;
-        IfFailThrow(GetContext(vmThread, &ctxLeaf));
+        Thread *  pThread  = vmThread.GetDacPtr();
+        ctxLeaf.ContextFlags = DT_CONTEXT_ALL;
+        IfFailThrow(m_pTarget->GetThreadContext(pThread->GetOSThreadId(),
+                                                ctxLeaf.ContextFlags,
+                                                sizeof(DT_CONTEXT),
+                                                reinterpret_cast<BYTE *>(&ctxLeaf)));
 
         // Call a platform-specific helper to compare the two contexts.
         *pResult = CompareControlRegisters(pContext, &ctxLeaf);

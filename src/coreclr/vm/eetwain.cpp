@@ -712,6 +712,7 @@ bool EECodeManager::IsGcSafe( EECodeInfo     *pCodeInfo,
     return false;
 }
 
+// FIXME-WASM: Add TARGET_WASM once we implement tail calls on Wasm.
 #if defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 bool EECodeManager::HasTailCalls( EECodeInfo     *pCodeInfo)
 {
@@ -1899,6 +1900,7 @@ DWORD_PTR InterpreterCodeManager::CallFunclet(OBJECTREF throwable, void* pHandle
 #else
     // For WASM, create the TransitionBlock in C++ and call the worker directly
     TransitionBlock transitionBlock{};
+    transitionBlock.m_StackPointer = 0;
     transitionBlock.m_ReturnAddress = (TADDR)&CallInterpreterFuncletWorker;
     return CallInterpreterFuncletWorker(throwable, pHandler, pRD, pExInfo, isFilter, &transitionBlock);
 #endif
@@ -1940,7 +1942,7 @@ void InterpreterCodeManager::ResumeAfterCatch(CONTEXT *pContext, size_t targetSS
 
 #if defined(HOST_AMD64) && defined(HOST_WINDOWS)
     targetSSP = pInterpreterFrame->GetInterpExecMethodSSP();
-#endif    
+#endif
     ExecuteFunctionBelowContext((PCODE)ThrowResumeAfterCatchException, pContext, targetSSP, resumeSP, resumeIP);
 #endif // TARGET_WASM
 }
@@ -2103,6 +2105,7 @@ static void VirtualUnwindInterpreterCallFrame(TADDR sp, T_CONTEXT *pContext)
     pFrame = pFrame->pParent;
     if (pFrame != NULL)
     {
+        // The parent frame's IP points past the call instruction (the resumption point).
         SetIP(pContext, (TADDR)pFrame->ip);
         SetSP(pContext, dac_cast<TADDR>(pFrame));
         SetFP(pContext, (TADDR)pFrame->pStack);
@@ -2110,7 +2113,7 @@ static void VirtualUnwindInterpreterCallFrame(TADDR sp, T_CONTEXT *pContext)
     else
     {
         // This indicates that there are no more interpreter frames to unwind in the current InterpExecMethod
-        // The stack walker will not find any code manager for the address InterpreterFrame::DummyCallerIP (0) 
+        // The stack walker will not find any code manager for the address InterpreterFrame::DummyCallerIP (0)
         // and move on to the next explicit frame which is the InterpreterFrame.
         // The SP is set to the address of the InterpreterFrame. For the case of interpreted exception handling
         // funclets, this matches the pExInfo->m_csfEHClause.SP that the CallFunclet sets.

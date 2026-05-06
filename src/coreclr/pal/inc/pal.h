@@ -264,6 +264,25 @@ PALAPI
 PAL_SetLogManagedCallstackForSignalCallback(
     IN PLOGMANAGEDCALLSTACKFORSIGNAL_CALLBACK callback);
 
+/// <summary>
+/// Callback invoked from the fatal-signal path to write an in-proc crash
+/// report. The callback runs inside the signal handler and must therefore
+/// be async-signal-safe. siginfo is opaque (siginfo_t*) and context is the
+/// raw ucontext_t pointer received by the PAL signal handler.
+///
+/// Registration is opt-in: if no callback is installed the PAL falls back
+/// to its default crash-dump path (createdump where available). The PAL
+/// itself has no source-level dependency on the in-proc reporter library;
+/// it only knows about this callback ABI.
+/// </summary>
+typedef VOID (*PINPROCCRASHREPORT_CALLBACK)(int signal, void* siginfo, void* context);
+
+PALIMPORT
+VOID
+PALAPI
+PAL_SetInProcCrashReportCallback(
+    IN PINPROCCRASHREPORT_CALLBACK callback);
+
 PALIMPORT
 VOID
 PALAPI
@@ -729,23 +748,6 @@ typedef struct _PROCESS_INFORMATION {
     DWORD dwProcessId;
     DWORD dwThreadId_PAL_Undefined;
 } PROCESS_INFORMATION, *PPROCESS_INFORMATION, *LPPROCESS_INFORMATION;
-
-PALIMPORT
-BOOL
-PALAPI
-CreateProcessW(
-           IN LPCWSTR lpApplicationName,
-           IN LPWSTR lpCommandLine,
-           IN LPSECURITY_ATTRIBUTES lpProcessAttributes,
-           IN LPSECURITY_ATTRIBUTES lpThreadAttributes,
-           IN BOOL bInheritHandles,
-           IN DWORD dwCreationFlags,
-           IN LPVOID lpEnvironment,
-           IN LPCWSTR lpCurrentDirectory,
-           IN LPSTARTUPINFOW lpStartupInfo,
-           OUT LPPROCESS_INFORMATION lpProcessInformation);
-
-#define CreateProcess CreateProcessW
 
 PALIMPORT
 PAL_NORETURN
@@ -2335,7 +2337,7 @@ typedef BOOL(*UnwindReadMemoryCallback)(PVOID address, PVOID buffer, SIZE_T size
 
 PALIMPORT BOOL PALAPI PAL_VirtualUnwind(CONTEXT *context);
 
-PALIMPORT BOOL PALAPI PAL_VirtualUnwindOutOfProc(CONTEXT *context, PULONG64 functionStart, SIZE_T baseAddress, UnwindReadMemoryCallback readMemoryCallback);
+PALIMPORT BOOL PALAPI PAL_VirtualUnwindOutOfProc(CONTEXT *context, PULONG64 functionStart, SIZE_T baseAddress, UnwindReadMemoryCallback readMemoryCallback, bool *isSignalFrame);
 
 PALIMPORT BOOL PALAPI PAL_GetUnwindInfoSize(SIZE_T baseAddress, ULONG64 ehFrameHdrAddr, UnwindReadMemoryCallback readMemoryCallback, PULONG64 ehFrameStart, PULONG64 ehFrameSize);
 
