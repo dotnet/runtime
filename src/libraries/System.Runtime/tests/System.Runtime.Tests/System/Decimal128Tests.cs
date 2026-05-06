@@ -126,10 +126,6 @@ namespace System.Tests
         {
             NumberStyles defaultStyle = NumberStyles.Number;
 
-            var customFormat = new NumberFormatInfo();
-            customFormat.CurrencySymbol = "$";
-            customFormat.NumberDecimalSeparator = ".";
-
             yield return new object[] { null, defaultStyle, null, typeof(ArgumentNullException) };
             yield return new object[] { "", defaultStyle, null, typeof(FormatException) };
             yield return new object[] { " ", defaultStyle, null, typeof(FormatException) };

@@ -466,9 +466,16 @@ namespace System
         {
             Debug.Assert(significand <= TDecimal.MaxSignificand);
 
-            if (TValue.IsZero(significand) && exponent < TDecimal.MinAdjustedExponent)
+            if (TValue.IsZero(significand))
             {
-                exponent = TDecimal.MinAdjustedExponent;
+                if (exponent < TDecimal.MinAdjustedExponent)
+                {
+                    exponent = TDecimal.MinAdjustedExponent;
+                }
+                else if (exponent > TDecimal.MaxExponent)
+                {
+                    exponent = TDecimal.MaxExponent;
+                }
             }
 
             uint biasedExponent = (uint)(exponent + TDecimal.ExponentBias);
