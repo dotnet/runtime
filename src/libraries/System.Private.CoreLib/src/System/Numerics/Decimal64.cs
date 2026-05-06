@@ -111,7 +111,7 @@ namespace System.Numerics
         /// <returns>The equivalent <see cref="Decimal64"/> value representing the input string. If the input exceeds Decimal64's range, a <see cref="PositiveInfinity"/> or <see cref="NegativeInfinity"/> is returned. </returns>
         public static Decimal64 Parse(ReadOnlySpan<char> s, NumberStyles style = NumberStyles.Float | NumberStyles.AllowThousands, IFormatProvider? provider = null)
         {
-            NumberFormatInfo.ValidateParseStyleFloatingPoint(style);
+            NumberFormatInfo.ValidateParseStyleDecimal(style);
             return Number.ParseDecimalIeee754<char, Decimal64, ulong>(s, style, NumberFormatInfo.GetInstance(provider));
         }
 
@@ -169,7 +169,7 @@ namespace System.Numerics
         /// <returns><see langword="true" /> if the parse was successful, <see langword="false" /> otherwise.</returns>
         public static bool TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, [MaybeNullWhen(false)] out Decimal64 result)
         {
-            NumberFormatInfo.ValidateParseStyleFloatingPoint(style);
+            NumberFormatInfo.ValidateParseStyleDecimal(style);
             return Number.TryParseDecimalIeee754<char, Decimal64, ulong>(s, style, NumberFormatInfo.GetInstance(provider), out result) == Number.ParsingStatus.OK;
         }
 
@@ -183,7 +183,7 @@ namespace System.Numerics
         /// <returns><see langword="true" /> if the parse was successful, <see langword="false" /> otherwise.</returns>
         public static bool TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, [MaybeNullWhen(false)] out Decimal64 result)
         {
-            NumberFormatInfo.ValidateParseStyleFloatingPoint(style);
+            NumberFormatInfo.ValidateParseStyleDecimal(style);
 
             if (s == null)
             {

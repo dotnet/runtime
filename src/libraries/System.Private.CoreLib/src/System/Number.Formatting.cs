@@ -341,7 +341,7 @@ namespace System
             return result;
         }
 
-        private static string? FormatDecimalIeee754<TDecimal, TValue, TChar>(ref ValueListBuilder<TChar> vlb, TValue value, ReadOnlySpan<char> format, NumberFormatInfo info)
+        private static unsafe string? FormatDecimalIeee754<TDecimal, TValue, TChar>(ref ValueListBuilder<TChar> vlb, TValue value, ReadOnlySpan<char> format, NumberFormatInfo info)
             where TDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TDecimal, TValue>
             where TValue : unmanaged, IBinaryInteger<TValue>
             where TChar : unmanaged, IUtfChar<TChar>
@@ -374,9 +374,9 @@ namespace System
                 }
             }
             char fmt = ParseFormatSpecifier(format, out int digits);
-            byte[] buffer = ArrayPool<byte>.Shared.Rent(TDecimal.BufferLength);
 
-            NumberBuffer number = new NumberBuffer(NumberBufferKind.Decimal, buffer);
+            byte* pDigits = stackalloc byte[TDecimal.BufferLength];
+            NumberBuffer number = new NumberBuffer(NumberBufferKind.Decimal, pDigits, TDecimal.BufferLength);
 
             DecimalIeee754ToNumber<TDecimal, TValue>(value, ref number);
 
@@ -389,12 +389,7 @@ namespace System
                 NumberToStringFormat(ref vlb, ref number, format, info);
             }
 
-            string result = vlb.AsSpan().ToString();
-            if (buffer != null)
-            {
-                ArrayPool<byte>.Shared.Return(buffer);
-            }
-            return result;
+            return null;
         }
 
         public static unsafe string FormatDecimal(decimal value, ReadOnlySpan<char> format, NumberFormatInfo info)
