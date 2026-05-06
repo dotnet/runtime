@@ -1,6 +1,6 @@
 ---
 name: "CI Outer-Loop Failure Scanner"
-description: "Periodic platform-agnostic scan of runtime-extra-platforms and outer-loop CI pipelines (JIT/GC stress, PGO, libraries-jitstress, etc.). Fixes per-test failures via PR; files an actionable tracking issue otherwise."
+description: "Periodic scan of runtime-extra-platforms and outer-loop CI pipelines (JIT/GC stress, PGO, libraries-jitstress, etc.). Files Known Build Errors so failures are immediately ignorable in PR CI; opens companion skip PRs to remove the failure permanently after human review."
 
 permissions:
   contents: read
@@ -117,27 +117,38 @@ Iterate over every pipeline in this list. For each, fetch builds on branch `main
 | Pipeline | Definition ID | Notes |
 |----------|---------------|-------|
 | runtime-extra-platforms | 154 | Apple mobile, Android, browser, wasi, NativeAOT outer loop |
+| runtime-coreclr outerloop | 108 | |
 | runtime-coreclr jitstress | 109 | JIT stress modes |
 | runtime-coreclr jitstressregs | 110 | |
 | runtime-coreclr jitstress2-jitstressregs | 111 | |
 | runtime-coreclr gcstress0x3-gcstress0xc | 112 | |
 | runtime-coreclr gcstress-extra | 113 | |
+| runtime-coreclr r2r-extra | 114 | |
 | runtime-coreclr jitstress-isas-x86 | 115 | |
 | runtime-coreclr jitstress-isas-arm | 116 | |
 | runtime-coreclr jitstressregs-x86 | 117 | |
 | runtime-coreclr libraries-jitstressregs | 118 | |
 | runtime-coreclr libraries-jitstress2-jitstressregs | 119 | |
+| runtime-coreclr r2r | 120 | |
+| runtime-coreclr gc-simulator | 123 | |
+| runtime-coreclr crossgen2 | 124 | |
 | runtime-jit-experimental | 137 | OSR / partial compilation |
 | runtime-coreclr libraries-jitstress | 138 | |
 | runtime-coreclr ilasm | 140 | |
 | runtime-coreclr pgo | 144 | |
 | runtime-coreclr libraries-pgo | 145 | |
+| gc-standalone | 146 | ADO name differs from display name |
 | runtime-coreclr superpmi-replay | 150 | |
+| runtime-coreclr superpmi-asmdiffs-checked-release | 153 | |
 | runtime-coreclr jit-cfg | 155 | Control flow guard |
 | runtime-coreclr jitstress-random | 159 | Stress mode value comes from logs |
 | runtime-coreclr libraries-jitstress-random | 160 | Stress mode value comes from logs |
 | runtime-coreclr pgostress | 230 | |
 | runtime-coreclr jitstress-isas-avx512 | 235 | |
+| runtime-nativeaot-outerloop | 265 | |
+| runtime-diagnostics | 309 | |
+| runtime-interpreter | 316 | ADO name differs from display name |
+| runtime-libraries-interpreter | 330 | ADO name differs from display name |
 
 If a pipeline has no completed build in the last 7 days, skip it silently.
 
@@ -153,26 +164,55 @@ Read the relevant skill before classifying / fixing. Skills live under `.github/
 
 ## Outcome (per actionable failure)
 
-- **Per-test platform / configuration incompatibility** (e.g., test fails only under `jitstress=2`, `gcstress=0xC`, on a single mobile arch, on browser, on NativeAOT) → open a draft PR with a per-test attribute change:
+The primary purpose of this workflow is to keep PR CI green. **KBE** = Known Build Error: an issue tagged `Known Build Error` whose body contains a JSON `ErrorMessage`/`ErrorPattern` block that Arcade Build Analysis matches against future failure logs to mark them as already-tracked, so unrelated PRs aren't blocked. KBEs are immediately effective for PR CI; muting PRs are not effective until merged by a human (latency ≥ 12h, often days). The workflow runs every 12h and converges on **two artifacts per failure across two runs**: KBE in run N (immediate), muting PR in run N+1 (permanent after merge), with a small-fix PR added in run N+1 when scope allows.
+
+### Per-failure deliverables
+
+For each actionable failure, produce **up to three artifacts**:
+
+1. **KBE** — immediate Build Analysis signal so PR CI is unblocked right away. Always produced (or reused if one already exists) for stable-signature failures.
+2. **Muting PR** — small, clean, mergeable PR that just adds `[ActiveIssue(...)]` / `<GCStressIncompatible>` referencing the KBE. No diagnosis logic, no product code. Designed to be merge-without-thinking by any maintainer who agrees the failure should be silenced. Always produced when (1) is produced.
+3. **Fix PR** — actual product/test code fix. Produced **only when** (a) the root cause is clear from the failure log, (b) the change fits the "small product fix opportunity" bounds (≤ 20 lines, single file, non-API, non-JIT-codegen, non-GC, non-threading, non-security), and (c) the failing test verifies the fix. Otherwise the deeper investigation is left to the area owner via the KBE — do NOT attempt a speculative fix PR.
+
+The muting PR and the fix PR are independent: a maintainer can merge the muting PR immediately (CI goes green) and then iterate on the fix PR at human pace. If the fix PR lands first, the muting PR becomes a no-op and can be closed; if the muting PR lands first, the fix PR removes the `[ActiveIssue]` annotation.
+
+### Two-pass KBE → PR flow (across runs)
+
+Same-run KBE + PR is not possible: gh-aw strict mode forbids `issues: write` on the agent job, so the agent cannot create issues at runtime — it can only emit safe-outputs `create_issue` directives that are processed by a separate post-agent job after the agent finishes. Issue numbers are therefore never visible to the agent during execution. Patches cannot reference an issue number that doesn't exist yet.
+
+The agent must accept this constraint and produce KBEs in run N, then companion PRs in run N+1. The 12-hour cadence makes this acceptable: the KBE alone unblocks PR CI immediately (the moment the safe-outputs job processes it, ~1 min after the agent finishes), and the muting PR follows within 12h.
+
+For each actionable failure, in this order:
+
+1. **Search for existing artifacts** before creating anything new:
+   - `search_issues` for an open KBE: `is:issue is:open label:"Known Build Error" in:body "<error-signature>"`. Try variations on the signature (full `[FAIL]` line, assertion text, exception type + test name).
+   - `search_pull_requests` for an open muting PR that already silences this test: `is:pr is:open in:title "<test-name>" "[ci-scan]"` and `is:pr is:open "<test-name>" ActiveIssue`.
+   - `search_pull_requests` for an open small-fix PR: `is:pr is:open in:title "<short-failure-description>" "[ci-scan]"`.
+   - If a KBE + muting PR already cover this failure, **skip** — record it in the coverage tally as `→ already-covered: KBE #<n> + PR #<n>` and move on. Do not duplicate.
+2. **No existing KBE → file one via safe-outputs `create_issue`**. Apply labels: `Known Build Error`, `blocking-clean-ci`, plus any verified `area-*` / `os-*` / `arch-*` (see "Never invent labels" below). Title prefix: `[ci-scan] `. Body: the KBE format described in "Known Build Error issue" below. The safe-outputs handler will create the issue ~1 minute after the agent finishes; the issue number is not available to the agent during this run.
+3. **Existing KBE found AND failure still occurring AND no muting PR exists yet → open the muting PR via safe-outputs `create_pull_request`** with the existing KBE issue number hardcoded in the diff: `[ActiveIssue("https://github.com/dotnet/runtime/issues/<existing-N>", ...)]` for unit tests, `<GCStressIncompatible>true</GCStressIncompatible>` (with an inline `<!-- https://github.com/dotnet/runtime/issues/<existing-N> -->` comment) for stress-incompatible JIT csproj families. PR title prefix `[ci-scan] `; PR body's "Linked KBE" section links the issue. This PR must change **only test annotations / csproj test-config flags** — no product code, no diagnosis, no logic. Aim for ≤ 5 lines of diff.
+4. **(Optional, alongside step 3) Open a small-fix PR via safe-outputs `create_pull_request`** if the failure satisfies the "small product fix opportunity" criteria above. Separate PR, separate branch, separate diff. PR body must (a) cite the failing test as evidence, (b) explain the root cause, (c) state explicitly why the fix is safe, and (d) note "If this lands before #<muting-PR>, that PR can be closed". Do not bundle the fix into the muting PR — keep them separate so a maintainer can take one without the other.
+
+Caps: safe-outputs `create_issue` max 5/run, `create_pull_request` max 10/run. When a cap is hit, fall back to "skipped: cap reached" rather than silently dropping signatures — subsequent runs will pick them up.
+
+After every run, you should be able to answer YES to: "for each actionable failure I encountered, did I either (a) confirm a KBE+PR pair already covers it, or (b) file the missing piece (KBE or PR or both, depending on what was missing)?" If the answer is NO for any of them, you have not done the job.
+
+### Per-failure-class rules
+
+- **Recurring failure with a stable error signature** (≥ 2 occurrences on `main` in the scanned window) → KBE + muting PR (mandatory) + fix PR (optional, only if criteria met).
+- **Per-test platform / configuration incompatibility** (e.g., test fails only under `jitstress=2`, `gcstress=0xC`, on a single mobile arch, on browser, on NativeAOT) — KBE + muting PR (mandatory). Allowed muting PR mechanisms:
   - `[SkipOnPlatform(TestPlatforms.<plat>, "<reason>")]` for platform-specific failures.
   - `[ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.<helper>))]` narrowed via existing helpers.
-  - `[ActiveIssue("https://github.com/dotnet/runtime/issues/<n>", TestPlatforms.<plat>)]` referencing an **existing** issue.
-  - For JIT/GC stress: `[ActiveIssue("...", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsStressTest))]` or wrap with a guard helper that checks `DOTNET_JitStress`/`DOTNET_GCStress` env vars where the existing test infra supports it.
-- **Recurring flaky failure with a stable error signature** (≥ 2 occurrences on `main` in the scanned window, no obvious product fix in flight, blocking unrelated PRs) → file a **Known Build Error** issue (see "Known Build Error issue" section below). This lets Arcade Build Analysis auto-match future hits and unblock PRs.
-- **Build break on a single leg** (`Build product` or similar failed; `Send to Helix` skipped) → if the compile error has a clear, mechanical root cause and the fix is **≤ 20 lines in a single file** (e.g., obvious typo, missing `#if`, wrong type cast, missing `using`), open a draft PR with the fix and reference the failing build. Otherwise file a regular tracking issue (NOT a Known Build Error — Build Analysis explicitly forbids that for build breaks). Reference the failing source file and compile error from the log.
-- **Small product fix opportunity** — if a test failure has a clear, well-localized root cause in product code (≤ 20 lines, single file, behavioral fix verifiable by the failing test), and the fix is in `src/libraries/**`, `src/coreclr/**`, `src/mono/**`, or `src/native/**`, open a draft PR with the fix. The PR body must (a) cite the failing test as evidence, (b) explain the root cause, and (c) state explicitly why the fix is safe (e.g., "doesn't change public API", "only affects the failing path"). Do not attempt this for changes touching: public API surface, JIT codegen, GC, threading, security primitives, or anything > 20 lines. When in doubt, file an issue instead — a small wrong fix is worse than a tracking issue.
-- **Product regression — JIT/GC/runtime bug surfaced by a stress mode** (native crash, GC assertion, JIT-emitted bad code) → **two-pass resolution across runs**:
-  1. First run (no existing tracking issue found): file the tracking issue only. Do **not** open a PR — the issue number isn't available inside a patch (safe-outputs only resolve `aw_<id>` tokens in body text, never inside diffs).
-  2. Subsequent run (a matching tracking issue with `area-*` + `arch-*` + `os-*` + stress-mode signature already exists, AND the failure is still occurring in the latest scanned build): you **MUST** open a draft PR adding `[ActiveIssue("https://github.com/dotnet/runtime/issues/<existing-issue-number>", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsStressTest))]` (or the `TestPlatforms.<plat>` overload for platform-specific stress) to the failing test(s). This is the convergence step — without it, the pipeline never goes green. Skipping the PR because "the issue is already tracked" is incorrect; the existence of the issue is precisely what enables the PR. The PR title prefix is `[ci-scan]`. The PR body's "Linked issue" section must link the existing tracking issue. Hardcode the issue number in the diff because the issue already exists.
-
-  To find the matching existing issue, `search_issues` for: `is:issue is:open label:area-<X> in:title "<test-name>"` and `is:issue is:open label:area-<X> "<assertion-substring>"`. Match on test name + stress mode + arch. If multiple candidates, pick the one with the most recent activity. If you found such an issue earlier in the run while deduplicating, **do not stop there — proceed to file the muting PR**.
-
-  After every run, you should be able to answer YES to: "for each still-failing stress-mode product bug whose tracking issue already exists, did I emit a `create_pull_request` output?" If the answer is NO for any of them, you have not done the job.
-- **Anything else** — multi-assembly cluster, infrastructure (queue exhaustion / dead-letter / device-lost) — file a tracking issue. Group all infra failures from one run into a single issue. Before filing, `search_issues` for an open issue with the matching `area-*` + `os-*` label and update its description in place rather than duplicating.
+  - `[ActiveIssue("https://github.com/dotnet/runtime/issues/<N>", TestPlatforms.<plat>)]` referencing the KBE.
+  - For JIT/GC stress: `[ActiveIssue("...", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsStressTest))]` or `<GCStressIncompatible>true</GCStressIncompatible>` at the csproj level. **Tradeoff**: stress-guarded skips remove the test signal from the stress pipelines, so the bug becomes invisible in those pipelines until the JIT fix lands. The KBE you filed in step 2 is what keeps the JIT team aware; without that KBE, the muting PR alone would silently lose the signal.
+- **Build break on a single leg** (`Build product` or similar failed; `Send to Helix` skipped) → if the compile error has a clear, mechanical root cause and the fix is **≤ 20 lines in a single file** (e.g., obvious typo, missing `#if`, wrong type cast, missing `using`), open a fix PR. **No KBE for build breaks** — Build Analysis explicitly forbids that. If the fix is non-trivial, file a regular tracking issue and reference the failing source file and compile error.
+- **Anything else** — multi-assembly cluster, infrastructure (queue exhaustion / dead-letter / device-lost) — file a tracking issue (not a KBE). Group all infra failures from one run into a single issue. Before filing, `search_issues` for an open issue with the matching `area-*` + `os-*` label and update its description in place rather than duplicating.
 
 For each failure compute a `(definition_id, work_item_or_phase, queue, stress_mode, [FAIL] or compile-error signature)` signature. Look back through ~10 completed builds in the same definition to build first-seen-in-window timestamp and occurrence count.
 
-**Convergence target**: leave each pipeline green-on-next-run by either (a) muting the failing test via PR or (b) filing a Known Build Error issue that Build Analysis can auto-match. A tracking-issue-only outcome is acceptable only for build breaks and infra failures where there is nothing to mute on the test side.
+**Convergence target**: for every actionable test/runtime failure, leave the run with both (a) a KBE filed (immediate effect on PR CI via Build Analysis) and (b) a clean muting PR open against that KBE (permanent effect after merge, low review cost). The fix PR is a bonus when the root cause is obviously small. A tracking-issue-only outcome is acceptable only for build breaks (which Build Analysis cannot match) and infra failures.
+
+After every run, you should be able to answer YES to: "for each actionable failure I encountered, did I emit (or already find) both a KBE and a muting PR?" If the answer is NO for any of them, you have not done the job.
 
 Do not emit `noop`. Either a PR or an issue must come out of every actionable failure.
 
@@ -220,6 +260,40 @@ Use this when a PR is not the right tool — product regression, native crash, m
 
 Same `os-*`, `area-*`, `arch-*` labels.
 
+### JIT pipeline issue template (definitions 109–160, 230, 235, 108, 137, 144–145, 150, 153)
+
+For tracking issues filed against a JIT, GC, PGO, or stress pipeline, use this body layout instead of the generic "five sections" above (matches the in-repo convention; see #125685 for the canonical example):
+
+```
+**Summary:**
+  <one-line description of the failure shape>
+
+**Failed in (<N>):**
+- [<pipeline name> <build number>](<build url>)
+- [<pipeline name> <build number>](<build url>)
+- ...
+
+**Console Log:** [Console Log](<one representative helix console log url>)
+
+**Failed tests:**
+(use a fenced code block; per-pipeline, list the failing legs and tests)
+<pipeline-name-1>
+- <leg name e.g. net11.0-windows-Release-x64-jitstress2_jitstressregs8-Windows.10.Amd64.Open>
+  - <test assembly or test name>
+  - <test assembly or test name>
+<pipeline-name-2>
+- <leg name>
+  - <test assembly>
+
+**Error Message:**
+(fenced code block with the canonical error line)
+
+**Stack Trace:**
+(fenced code block with the relevant stack trace; trim noise but keep the failing frame)
+```
+
+This format makes the issue immediately actionable for JIT/GC owners (@JulieLeeMSFT, @BruceForstall, @jakobbotsch, @dotnet/jit-contrib) without further drilldown. Apply the appropriate `area-CodeGen-coreclr` / `area-GC-coreclr` / `area-PGO-coreclr` / `area-Tools-ILVerification` label per the failing pipeline.
+
 ## Outputs: title and labels
 
 - **All issues and PRs MUST have title prefix `[ci-scan] `**, including tracking issues, Known Build Error issues, and muting PRs. Examples:
@@ -227,6 +301,7 @@ Same `os-*`, `area-*`, `arch-*` labels.
   - `[ci-scan] Known Build Error: <short description>`
   - `[ci-scan] Skip <test-or-family> under <stress-or-platform> (refs #<n>)`
 - **Do not use the word "Mute" or "Muting"** in titles. Use "Skip", "Disable", "Suppress", or "Exclude" depending on the mechanism. Examples: "Skip … under GCStress", "Disable … on tvOS", "Suppress … in MiniFull AOT mode".
+- **Never invent labels.** Only apply labels that already exist on dotnet/runtime. Before applying any `area-*` label, verify it exists by listing repository labels via `curl -s 'https://api.github.com/repos/dotnet/runtime/labels?per_page=100&page=N'` (with pre-bound URL variable) and grep for the candidate name. If the canonical owner label cannot be confirmed, omit the `area-*` label entirely and let triage assign it — do not invent a plausible-looking label like `area-Extensions-FileProviders` that does not exist. The same rule applies to `os-*`, `arch-*`, and any other label families. Stick to labels you have verified.
 - Labels are unchanged from the per-outcome rules above.
 
 ## Known Build Error issue
@@ -269,7 +344,7 @@ Title: `Test failure: <fully.qualified.TestName>` for test failures, or `Known B
 
 Labels: `Known Build Error`, `blocking-clean-ci`, plus the test's `area-*` label and any `os-*` / `arch-*` labels that apply.
 
-Before filing, search for an existing Known Build Error issue with a matching `ErrorMessage` (`label:"Known Build Error" in:body "<signature>"`). If one exists and is open, do not duplicate — instead append the new build to the existing issue's body via an issue comment with the build link, leg, and timestamp.
+Before filing, search for an existing Known Build Error issue with a matching `ErrorMessage` (`label:"Known Build Error" in:body "<signature>"`). If one exists and is open, **skip silently — do not duplicate, do not append a comment**. Build Analysis already counts the new occurrence in its hit-count summary on the issue body; piling on issue comments per occurrence creates noise on already-noisy KBEs (some have tens of hits per run). If `search_issues` returns no matches, proceed to file the new KBE.
 
 ## Hard environment constraints
 
