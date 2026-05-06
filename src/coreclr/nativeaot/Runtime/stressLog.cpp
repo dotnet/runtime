@@ -95,9 +95,12 @@ void StressLog::Initialize(unsigned facilities,  unsigned level, unsigned maxByt
         return;
     }
 
-    g_pStressLog = &theLog;
+    if (!minipal_mutex_init(&theLog.lock))
+    {
+        return;
+    }
 
-    minipal_mutex_init(&theLog.lock);
+    g_pStressLog = &theLog;
     if (maxBytesPerThread < STRESSLOG_CHUNK_SIZE)
     {
         maxBytesPerThread = STRESSLOG_CHUNK_SIZE;
@@ -144,9 +147,8 @@ ThreadStressLog* StressLog::CreateThreadStressLog(Thread * pThread) {
         return NULL;
     }
 
-    minipal_mutex_enter(&theLog.lock);
+    minipal::MutexHolder holder(theLog.lock);
     msgs = CreateThreadStressLogHelper(pThread);
-    minipal_mutex_leave(&theLog.lock);
 
     return msgs;
 }
