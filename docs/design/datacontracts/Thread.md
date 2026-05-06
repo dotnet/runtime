@@ -32,21 +32,14 @@ enum ThreadState
     Unstarted           = 0x00000400,    // Thread has never been started
     Stopped             = 0x00010000,    // Thread has started to shut down
     ThreadPoolWorker    = 0x01000000,    // is this a threadpool worker thread?
-    Interruptible       = 0x02000000,    // Thread is in a Sleep(), Wait(), Join()
+    WaitSleepJoin       = 0x02000000,    // Thread is in a Sleep(), Wait(), Join()
     Detached            = unchecked((int)0x80000000), // Thread was detached
-}
-
-enum ThreadStateNC
-{
-    Unknown                 = 0x00000000,
-    DebuggerSleepWaitJoin   = 0x04000000, // Indicates to the debugger that this thread is in a sleep wait or join state
 }
 
 record struct ThreadData (
     uint Id;
     TargetNUInt OSId;
     ThreadState State;
-    ThreadStateNC StateNC;
     bool PreemptiveGCDisabled
     TargetPointer AllocContextPointer;
     TargetPointer AllocContextLimit;
@@ -113,7 +106,6 @@ The contract additionally depends on these data descriptors
 | `Thread` | `Id` | Thread identifier |
 | `Thread` | `OSId` | Operating system thread identifier |
 | `Thread` | `State` | Thread state flags |
-| `Thread` | `StateNC` | Thread state flags (no concurrency) |
 | `Thread` | `PreemptiveGCDisabled` | Flag indicating if preemptive GC is disabled |
 | `Thread` | `Frame` | Pointer to current frame |
 | `Thread` | `CachedStackBase` | Pointer to the base of the stack |

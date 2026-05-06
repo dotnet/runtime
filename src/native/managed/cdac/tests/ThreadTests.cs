@@ -101,8 +101,7 @@ public unsafe class ThreadTests
     {
         const uint id = 1;
         const ulong osId = 1234;
-        const uint state = 0x02000200; // Interruptible | Background
-        const uint stateNC = 0x04000000; // DebuggerSleepWaitJoin
+        const uint state = 0x02000200; // WaitSleepJoin | Background
         MockThread? thread = null;
 
         TestPlaceholderTarget target = CreateTarget(
@@ -111,15 +110,13 @@ public unsafe class ThreadTests
             {
                 thread = threadBuilder.AddThread(id, osId);
                 thread.State = state;
-                thread.StateNC = stateNC;
             });
 
         IThread contract = target.Contracts.Thread;
         ThreadData data = contract.GetThreadData(new TargetPointer(thread!.Address));
         Assert.True(data.State.HasFlag(ThreadState.Background));
-        Assert.True(data.State.HasFlag(ThreadState.Interruptible));
+        Assert.True(data.State.HasFlag(ThreadState.WaitSleepJoin));
         Assert.False(data.State.HasFlag(ThreadState.Stopped));
-        Assert.True(data.StateNC.HasFlag(ThreadStateNC.DebuggerSleepWaitJoin));
     }
 
     [Theory]

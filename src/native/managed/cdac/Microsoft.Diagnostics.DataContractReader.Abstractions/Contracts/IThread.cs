@@ -33,15 +33,8 @@ public enum ThreadState
     Unstarted           = 0x00000400,   // Thread has never been started
     Stopped             = 0x00010000,   // Thread has started to shut down
     ThreadPoolWorker    = 0x01000000,   // Thread is a thread pool worker thread
-    Interruptible       = 0x02000000,   // Thread is in a Sleep(), Wait(), Join()
+    WaitSleepJoin       = 0x02000000,   // Thread is in a Sleep(), Wait(), Join()
     Detached            = unchecked((int)0x80000000), // Thread was detached
-}
-
-[Flags]
-public enum ThreadStateNC
-{
-    Unknown                 = 0x00000000,
-    DebuggerSleepWaitJoin   = 0x04000000, // Indicates to the debugger that this thread is in a sleep wait or join state
 }
 
 public record struct ThreadData(
@@ -49,7 +42,6 @@ public record struct ThreadData(
     uint Id,
     TargetNUInt OSId,
     ThreadState State,
-    ThreadStateNC StateNC,
     bool PreemptiveGCDisabled,
     TargetPointer AllocContextPointer,
     TargetPointer AllocContextLimit,

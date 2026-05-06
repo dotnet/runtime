@@ -267,9 +267,7 @@ public class DacDbiThreadDumpTests : DumpTestBase
             Assert.Equal((data.State & ThreadState.Background) != 0, userState.HasFlag(CorDebugUserState.USER_BACKGROUND));
             Assert.Equal((data.State & ThreadState.Unstarted) != 0, userState.HasFlag(CorDebugUserState.USER_UNSTARTED));
             Assert.Equal((data.State & ThreadState.Stopped) != 0, userState.HasFlag(CorDebugUserState.USER_STOPPED));
-            Assert.Equal(
-                (data.State & ThreadState.Interruptible) != 0 || (data.StateNC & ThreadStateNC.DebuggerSleepWaitJoin) != 0,
-                userState.HasFlag(CorDebugUserState.USER_WAIT_SLEEP_JOIN));
+            Assert.Equal((data.State & ThreadState.WaitSleepJoin) != 0, userState.HasFlag(CorDebugUserState.USER_WAIT_SLEEP_JOIN));
             Assert.Equal((data.State & ThreadState.ThreadPoolWorker) != 0, userState.HasFlag(CorDebugUserState.USER_THREADPOOL));
 
             current = data.NextThread;

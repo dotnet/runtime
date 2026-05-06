@@ -764,8 +764,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             if ((threadState & Contracts.ThreadState.Stopped) != 0)
                 result |= CorDebugUserState.USER_STOPPED;
 
-            if ((threadState & Contracts.ThreadState.Interruptible) != 0 ||
-                (threadData.StateNC & Contracts.ThreadStateNC.DebuggerSleepWaitJoin) != 0)
+            if ((threadState & Contracts.ThreadState.WaitSleepJoin) != 0)
                 result |= CorDebugUserState.USER_WAIT_SLEEP_JOIN;
 
             if ((threadState & Contracts.ThreadState.ThreadPoolWorker) != 0)

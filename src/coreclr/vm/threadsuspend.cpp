@@ -1538,7 +1538,7 @@ Thread::UserAbort(EEPolicy::ThreadAbortTypes abortType, DWORD timeout)
 
             // If the thread is in sleep, wait, or join interrupt it
             // However, we do NOT want to interrupt if the thread is already processing an exception
-            if (m_State & TS_Interruptible)
+            if (m_State & TS_WaitSleepJoin)
             {
                 UserInterrupt(TI_Abort);        // if the user wakes up because of this, it will read the
                                                 // abort requested bit and initiate the abort
@@ -2221,7 +2221,7 @@ void Thread::HandleThreadAbort ()
 
     if (ReadyForAbort())
     {
-        ResetThreadState ((ThreadState)(TS_Interrupted | TS_Interruptible));
+        ResetThreadState ((ThreadState)(TS_Interrupted | TS_WaitSleepJoin));
         // We are going to abort.  Abort satisfies Thread.Interrupt requirement.
         InterlockedExchange (&m_UserInterrupt, 0);
 
@@ -2267,7 +2267,7 @@ void Thread::PreWorkForThreadAbort()
     SetAbortInitiated();
     // if an abort and interrupt happen at the same time (e.g. on a sleeping thread),
     // the abort is favored. But we do need to reset the interrupt bits.
-    ResetThreadState((ThreadState)(TS_Interruptible | TS_Interrupted));
+    ResetThreadState((ThreadState)(TS_WaitSleepJoin | TS_Interrupted));
     ResetUserInterrupted();
 }
 

@@ -15,7 +15,6 @@ internal sealed class Thread : IData<Thread>
         Id = target.ReadField<uint>(address, type, nameof(Id));
         OSId = target.ReadNUIntField(address, type, nameof(OSId));
         State = target.ReadField<uint>(address, type, nameof(State));
-        StateNC = target.ReadField<uint>(address, type, nameof(StateNC));
         PreemptiveGCDisabled = target.ReadField<uint>(address, type, nameof(PreemptiveGCDisabled));
 
         RuntimeThreadLocals = target.ReadDataFieldPointer<RuntimeThreadLocals>(address, type, nameof(RuntimeThreadLocals));
@@ -41,7 +40,6 @@ internal sealed class Thread : IData<Thread>
     public uint Id { get; init; }
     public TargetNUInt OSId { get; init; }
     public uint State { get; init; }
-    public uint StateNC { get; init; }
     public uint PreemptiveGCDisabled { get; init; }
     public RuntimeThreadLocals? RuntimeThreadLocals { get; init; }
     public TargetPointer Frame { get; init; }
