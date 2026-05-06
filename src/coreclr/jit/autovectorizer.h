@@ -166,6 +166,7 @@ private:
     bool     RecomputeLoopTable();
     bool     IsSupportedElementType(var_types elementType) const;
     bool     AreCompatibleElementTypes(var_types first, var_types second) const;
+    bool     IsLoopInvariantLocal(FlowGraphNaturalLoop* loop, unsigned ivLcl, unsigned lclNum) const;
     bool     IsSupportedUnaryOp(genTreeOps oper, var_types elementType) const;
     bool     IsSupportedBinaryOp(genTreeOps oper, var_types elementType) const;
     bool     IsSupportedCompareOp(genTreeOps oper, var_types elementType) const;

@@ -223,6 +223,22 @@ bool AutoVectorizer::AreCompatibleElementTypes(var_types first, var_types second
     return varTypeToUnsigned(first) == varTypeToUnsigned(second);
 }
 
+bool AutoVectorizer::IsLoopInvariantLocal(FlowGraphNaturalLoop* loop, unsigned ivLcl, unsigned lclNum) const
+{
+    if (lclNum == ivLcl)
+    {
+        return false;
+    }
+
+    LclVarDsc* const dsc = m_compiler->lvaGetDesc(lclNum);
+    if (dsc->IsAddressExposed() || dsc->lvPromoted)
+    {
+        return false;
+    }
+
+    return !loop->HasDef(lclNum);
+}
+
 bool AutoVectorizer::IsSupportedUnaryOp(genTreeOps oper, var_types elementType) const
 {
     if (!IsSupportedElementType(elementType))
@@ -4445,7 +4461,7 @@ bool AutoVectorizer::TryAnalyzeIndexExpr(LoopVectorizationPlan* plan,
         }
 
         if ((invariantLcl != nullptr) && tree->TypeIs(TYP_INT, TYP_UINT, TYP_I_IMPL, TYP_LONG, TYP_ULONG) &&
-            !plan->Loop->HasDef(lclNum))
+            IsLoopInvariantLocal(plan->Loop, ivLcl, lclNum))
         {
             if ((*invariantLcl != BAD_VAR_NUM) && (*invariantLcl != lclNum))
             {
@@ -5206,7 +5222,7 @@ bool AutoVectorizer::TryGetInvariantOperand(FlowGraphNaturalLoop* loop,
     }
 
     const unsigned lclNum = tree->AsLclVarCommon()->GetLclNum();
-    return (lclNum != ivLcl) && !loop->HasDef(lclNum);
+    return IsLoopInvariantLocal(loop, ivLcl, lclNum);
 }
 
 void AutoVectorizer::RecordAddressUpdate(LoopVectorizationPlan* plan, unsigned addressVar, int delta)
