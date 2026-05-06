@@ -258,7 +258,7 @@ namespace System.Numerics.Tensors
                     nanMask = IsNaN(result);
                     if (nanMask != Vector512<T>.Zero)
                     {
-                        return result.GetElement(IndexOfFirstMatch(nanMask));
+                        return result.GetElement(Vector512.IndexOfWhereAllBitsSet(nanMask));
                     }
                 }
 
@@ -277,7 +277,7 @@ namespace System.Numerics.Tensors
                         nanMask = ~Vector512.Equals(current, current);
                         if (nanMask != Vector512<T>.Zero)
                         {
-                            return current.GetElement(IndexOfFirstMatch(nanMask));
+                            return current.GetElement(Vector512.IndexOfWhereAllBitsSet(nanMask));
                         }
                     }
 
@@ -296,7 +296,7 @@ namespace System.Numerics.Tensors
                         nanMask = ~Vector512.Equals(current, current);
                         if (nanMask != Vector512<T>.Zero)
                         {
-                            return current.GetElement(IndexOfFirstMatch(nanMask));
+                            return current.GetElement(Vector512.IndexOfWhereAllBitsSet(nanMask));
                         }
                     }
 
@@ -323,7 +323,7 @@ namespace System.Numerics.Tensors
                     nanMask = ~Vector256.Equals(result, result);
                     if (nanMask != Vector256<T>.Zero)
                     {
-                        return result.GetElement(IndexOfFirstMatch(nanMask));
+                        return result.GetElement(Vector256.IndexOfWhereAllBitsSet(nanMask));
                     }
                 }
 
@@ -342,7 +342,7 @@ namespace System.Numerics.Tensors
                         nanMask = ~Vector256.Equals(current, current);
                         if (nanMask != Vector256<T>.Zero)
                         {
-                            return current.GetElement(IndexOfFirstMatch(nanMask));
+                            return current.GetElement(Vector256.IndexOfWhereAllBitsSet(nanMask));
                         }
                     }
 
@@ -362,7 +362,7 @@ namespace System.Numerics.Tensors
                         nanMask = ~Vector256.Equals(current, current);
                         if (nanMask != Vector256<T>.Zero)
                         {
-                            return current.GetElement(IndexOfFirstMatch(nanMask));
+                            return current.GetElement(Vector256.IndexOfWhereAllBitsSet(nanMask));
                         }
                     }
 
@@ -389,7 +389,7 @@ namespace System.Numerics.Tensors
                     nanMask = IsNaN(result);
                     if (nanMask != Vector128<T>.Zero)
                     {
-                        return result.GetElement(IndexOfFirstMatch(nanMask));
+                        return result.GetElement(Vector128.IndexOfWhereAllBitsSet(nanMask));
                     }
                 }
 
@@ -408,7 +408,7 @@ namespace System.Numerics.Tensors
                         nanMask = IsNaN(current);
                         if (nanMask != Vector128<T>.Zero)
                         {
-                            return current.GetElement(IndexOfFirstMatch(nanMask));
+                            return current.GetElement(Vector128.IndexOfWhereAllBitsSet(nanMask));
                         }
                     }
 
@@ -427,7 +427,7 @@ namespace System.Numerics.Tensors
                         nanMask = IsNaN(current);
                         if (nanMask != Vector128<T>.Zero)
                         {
-                            return current.GetElement(IndexOfFirstMatch(nanMask));
+                            return current.GetElement(Vector128.IndexOfWhereAllBitsSet(nanMask));
                         }
                     }
 

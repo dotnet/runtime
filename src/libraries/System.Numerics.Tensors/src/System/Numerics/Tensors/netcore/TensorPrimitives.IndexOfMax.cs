@@ -176,7 +176,7 @@ namespace System.Numerics.Tensors
                     nanMask = ~Vector512.Equals(result, result);
                     if (nanMask != Vector512<T>.Zero)
                     {
-                        return IndexOfFirstMatch(nanMask);
+                        return Vector512.IndexOfWhereAllBitsSet(nanMask);
                     }
                 }
 
@@ -195,7 +195,7 @@ namespace System.Numerics.Tensors
                         nanMask = ~Vector512.Equals(current, current);
                         if (nanMask != Vector512<T>.Zero)
                         {
-                            return i + IndexOfFirstMatch(nanMask);
+                            return i + Vector512.IndexOfWhereAllBitsSet(nanMask);
                         }
                     }
 
@@ -215,7 +215,7 @@ namespace System.Numerics.Tensors
                         nanMask = ~Vector512.Equals(current, current);
                         if (nanMask != Vector512<T>.Zero)
                         {
-                            int indexInVectorOfFirstMatch = IndexOfFirstMatch(nanMask);
+                            int indexInVectorOfFirstMatch = Vector512.IndexOfWhereAllBitsSet(nanMask);
                             return typeof(T) == typeof(double) ?
                                 (int)(long)(object)currentIndex.As<T, long>()[indexInVectorOfFirstMatch] :
                                 (int)(object)currentIndex.As<T, int>()[indexInVectorOfFirstMatch];
@@ -260,7 +260,7 @@ namespace System.Numerics.Tensors
                     nanMask = ~Vector256.Equals(result, result);
                     if (nanMask != Vector256<T>.Zero)
                     {
-                        return IndexOfFirstMatch(nanMask);
+                        return Vector256.IndexOfWhereAllBitsSet(nanMask);
                     }
                 }
 
@@ -279,7 +279,7 @@ namespace System.Numerics.Tensors
                         nanMask = ~Vector256.Equals(current, current);
                         if (nanMask != Vector256<T>.Zero)
                         {
-                            return i + IndexOfFirstMatch(nanMask);
+                            return i + Vector256.IndexOfWhereAllBitsSet(nanMask);
                         }
                     }
 
@@ -299,7 +299,7 @@ namespace System.Numerics.Tensors
                         nanMask = ~Vector256.Equals(current, current);
                         if (nanMask != Vector256<T>.Zero)
                         {
-                            int indexInVectorOfFirstMatch = IndexOfFirstMatch(nanMask);
+                            int indexInVectorOfFirstMatch = Vector256.IndexOfWhereAllBitsSet(nanMask);
                             return typeof(T) == typeof(double) ?
                                 (int)(long)(object)currentIndex.As<T, long>()[indexInVectorOfFirstMatch] :
                                 (int)(object)currentIndex.As<T, int>()[indexInVectorOfFirstMatch];
@@ -344,7 +344,7 @@ namespace System.Numerics.Tensors
                     nanMask = ~Vector128.Equals(result, result);
                     if (nanMask != Vector128<T>.Zero)
                     {
-                        return IndexOfFirstMatch(nanMask);
+                        return Vector128.IndexOfWhereAllBitsSet(nanMask);
                     }
                 }
 
@@ -363,7 +363,7 @@ namespace System.Numerics.Tensors
                         nanMask = ~Vector128.Equals(current, current);
                         if (nanMask != Vector128<T>.Zero)
                         {
-                            return i + IndexOfFirstMatch(nanMask);
+                            return i + Vector128.IndexOfWhereAllBitsSet(nanMask);
                         }
                     }
 
@@ -383,7 +383,7 @@ namespace System.Numerics.Tensors
                         nanMask = ~Vector128.Equals(current, current);
                         if (nanMask != Vector128<T>.Zero)
                         {
-                            int indexInVectorOfFirstMatch = IndexOfFirstMatch(nanMask);
+                            int indexInVectorOfFirstMatch = Vector128.IndexOfWhereAllBitsSet(nanMask);
                             return typeof(T) == typeof(double) ?
                                 (int)(long)(object)currentIndex.As<T, long>()[indexInVectorOfFirstMatch] :
                                 (int)(object)currentIndex.As<T, int>()[indexInVectorOfFirstMatch];
@@ -418,15 +418,6 @@ namespace System.Numerics.Tensors
 
             return curIn;
         }
-
-        private static int IndexOfFirstMatch<T>(Vector128<T> mask) =>
-            BitOperations.TrailingZeroCount(mask.ExtractMostSignificantBits());
-
-        private static int IndexOfFirstMatch<T>(Vector256<T> mask) =>
-            BitOperations.TrailingZeroCount(mask.ExtractMostSignificantBits());
-
-        private static int IndexOfFirstMatch<T>(Vector512<T> mask) =>
-            BitOperations.TrailingZeroCount(mask.ExtractMostSignificantBits());
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static unsafe Vector256<T> IndexLessThan<T>(Vector256<T> indices1, Vector256<T> indices2) =>

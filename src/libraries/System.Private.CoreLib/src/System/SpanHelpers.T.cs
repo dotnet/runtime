@@ -3713,49 +3713,37 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static unsafe int ComputeFirstIndex<T>(ref T searchSpace, ref T current, Vector128<T> equals) where T : struct
         {
-            uint notEqualsElements = equals.ExtractMostSignificantBits();
-            int index = BitOperations.TrailingZeroCount(notEqualsElements);
-            return index + (int)((nuint)Unsafe.ByteOffset(ref searchSpace, ref current) / (nuint)sizeof(T));
+            return Vector128.IndexOfFirstMatch(equals) + (int)((nuint)Unsafe.ByteOffset(ref searchSpace, ref current) / (nuint)sizeof(T));
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static unsafe int ComputeFirstIndex<T>(ref T searchSpace, ref T current, Vector256<T> equals) where T : struct
         {
-            uint notEqualsElements = equals.ExtractMostSignificantBits();
-            int index = BitOperations.TrailingZeroCount(notEqualsElements);
-            return index + (int)((nuint)Unsafe.ByteOffset(ref searchSpace, ref current) / (nuint)sizeof(T));
+            return Vector256.IndexOfFirstMatch(equals) + (int)((nuint)Unsafe.ByteOffset(ref searchSpace, ref current) / (nuint)sizeof(T));
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static unsafe int ComputeFirstIndex<T>(ref T searchSpace, ref T current, Vector512<T> equals) where T : struct
         {
-            ulong notEqualsElements = equals.ExtractMostSignificantBits();
-            int index = BitOperations.TrailingZeroCount(notEqualsElements);
-            return index + (int)((nuint)Unsafe.ByteOffset(ref searchSpace, ref current) / (nuint)sizeof(T));
+            return Vector512.IndexOfFirstMatch(equals) + (int)((nuint)Unsafe.ByteOffset(ref searchSpace, ref current) / (nuint)sizeof(T));
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static int ComputeLastIndex<T>(nint offset, Vector128<T> equals) where T : struct
         {
-            uint notEqualsElements = equals.ExtractMostSignificantBits();
-            int index = 31 - BitOperations.LeadingZeroCount(notEqualsElements); // 31 = 32 (bits in Int32) - 1 (indexing from zero)
-            return (int)offset + index;
+            return (int)offset + Vector128.IndexOfLastMatch(equals);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static int ComputeLastIndex<T>(nint offset, Vector256<T> equals) where T : struct
         {
-            uint notEqualsElements = equals.ExtractMostSignificantBits();
-            int index = 31 - BitOperations.LeadingZeroCount(notEqualsElements); // 31 = 32 (bits in Int32) - 1 (indexing from zero)
-            return (int)offset + index;
+            return (int)offset + Vector256.IndexOfLastMatch(equals);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static int ComputeLastIndex<T>(nint offset, Vector512<T> equals) where T : struct
         {
-            ulong notEqualsElements = equals.ExtractMostSignificantBits();
-            int index = 63 - BitOperations.LeadingZeroCount(notEqualsElements); // 31 = 32 (bits in Int32) - 1 (indexing from zero)
-            return (int)offset + index;
+            return (int)offset + Vector512.IndexOfLastMatch(equals);
         }
 
         internal interface INegator<T> where T : struct
@@ -4176,7 +4164,7 @@ namespace System
                     ref T oneVectorAwayFromEnd = ref Unsafe.Subtract(ref end, Vector512<T>.Count);
                     while (Unsafe.IsAddressLessThan(ref current, ref oneVectorAwayFromEnd))
                     {
-                        count += BitOperations.PopCount(Vector512.Equals(Vector512.LoadUnsafe(ref current), targetVector).ExtractMostSignificantBits());
+                        count += Vector512.CountMatches(Vector512.Equals(Vector512.LoadUnsafe(ref current), targetVector));
                         current = ref Unsafe.Add(ref current, Vector512<T>.Count);
                     }
 
@@ -4191,7 +4179,7 @@ namespace System
                     ref T oneVectorAwayFromEnd = ref Unsafe.Subtract(ref end, Vector256<T>.Count);
                     while (Unsafe.IsAddressLessThan(ref current, ref oneVectorAwayFromEnd))
                     {
-                        count += BitOperations.PopCount(Vector256.Equals(Vector256.LoadUnsafe(ref current), targetVector).ExtractMostSignificantBits());
+                        count += Vector256.CountMatches(Vector256.Equals(Vector256.LoadUnsafe(ref current), targetVector));
                         current = ref Unsafe.Add(ref current, Vector256<T>.Count);
                     }
 
@@ -4206,7 +4194,7 @@ namespace System
                     ref T oneVectorAwayFromEnd = ref Unsafe.Subtract(ref end, Vector128<T>.Count);
                     while (Unsafe.IsAddressLessThan(ref current, ref oneVectorAwayFromEnd))
                     {
-                        count += BitOperations.PopCount(Vector128.Equals(Vector128.LoadUnsafe(ref current), targetVector).ExtractMostSignificantBits());
+                        count += Vector128.CountMatches(Vector128.Equals(Vector128.LoadUnsafe(ref current), targetVector));
                         current = ref Unsafe.Add(ref current, Vector128<T>.Count);
                     }
 
