@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- This debuggee is intentionally macOS-only (Objective-C interop). -->
+    <NoWarn>$(NoWarn);CA1416</NoWarn>
+    <DumpTypes>Full</DumpTypes>
+    <MacOnly>true</MacOnly>
+  </PropertyGroup>
+</Project>
