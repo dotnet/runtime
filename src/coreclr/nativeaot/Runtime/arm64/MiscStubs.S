@@ -6,6 +6,7 @@
 
 // void* PacStripPtr(void *);
 // This function strips the pointer of PAC info that is passed as an argument.
+// We prefer to strip a pointer where it's not going to be used to branch execution to.
 .arch_extension pauth
     LEAF_ENTRY PacStripPtr, _TEXT
         xpaci x0

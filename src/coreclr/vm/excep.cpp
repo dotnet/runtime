@@ -6393,26 +6393,7 @@ bool GetPacSignInfo(PTR_CONTEXT pContextToCheck, EECodeInfo *pCodeInfo, TADDR re
         }
     };
 
-    ULONG unwindOpCount = 0;
-    for (ULONG_PTR unwindOpPtr = UnwindCodePtr; unwindOpPtr < UnwindCodesEndPtr;)
-    {
-        BYTE curCode = *(BYTE*)unwindOpPtr;
-        if (curCode == 0xE4)   // end
-        {
-            break;
-        }
-
-        SIZE_T unwindOpSize = GetUnwindOpSize(curCode);
-        if ((unwindOpPtr + unwindOpSize) > UnwindCodesEndPtr)
-        {
-            return false;
-        }
-
-        unwindOpCount++;
-        unwindOpPtr += unwindOpSize;
-    }
-
-    ULONG_PTR* unwindOpStarts = (ULONG_PTR*)_alloca(unwindOpCount * sizeof(ULONG_PTR));
+    ULONG_PTR* unwindOpStarts = (ULONG_PTR*)_alloca((UnwindCodesEndPtr - UnwindCodePtr) * sizeof(ULONG_PTR));
     ULONG      unwindOpIndex  = 0;
     for (ULONG_PTR unwindOpPtr = UnwindCodePtr; unwindOpPtr < UnwindCodesEndPtr;)
     {
@@ -6433,8 +6414,8 @@ bool GetPacSignInfo(PTR_CONTEXT pContextToCheck, EECodeInfo *pCodeInfo, TADDR re
     }
 
     SSIZE_T currentSpOffset = 0;
-    SSIZE_T pacSpOffset = SSIZE_T_MIN;
     SSIZE_T lrSlotOffset = SSIZE_T_MIN;
+    BOOL hasPacSignLR = false;
     constexpr SSIZE_T PtrSize = 8;
 
     // ARM64 prolog unwind codes are stored in reverse prolog order. Replay them in prolog order so
@@ -6443,6 +6424,18 @@ bool GetPacSignInfo(PTR_CONTEXT pContextToCheck, EECodeInfo *pCodeInfo, TADDR re
     {
         UnwindCodePtr = unwindOpStarts[--unwindOpIndex];
         ULONG CurCode = *(BYTE*)UnwindCodePtr;
+
+        if (((CurCode & 0xFC) == 0xC8) || // save_regp
+            ((CurCode & 0xFE) == 0xD8) || // save_fregp
+            ((CurCode & 0xFE) == 0xDC) || // save_freg
+            CurCode == 0xE1 ||            // set_fp
+            CurCode == 0xE2 ||            // add_fp
+            CurCode == 0xE3 ||            // nop
+            CurCode == 0xE5 ||            // end_c
+            CurCode == 0xE6)              // save_next
+        {
+            continue;
+        }
 
         if ((CurCode & 0xE0) == 0x00) // alloc_s
         {
@@ -6476,12 +6469,8 @@ bool GetPacSignInfo(PTR_CONTEXT pContextToCheck, EECodeInfo *pCodeInfo, TADDR re
             continue;
         }
 
-        if ((CurCode & 0xFC) == 0xC8) // save_regp
-        {
-            continue;
-        }
-
-        if ((CurCode & 0xFC) == 0xCC) // save_regp_x
+        if (((CurCode & 0xFC) == 0xCC) || // save_regp_x
+            ((CurCode & 0xFE) == 0xDA))   // save_fregp_x
         {
             ULONG z = *(BYTE*)(UnwindCodePtr + 1) & 0x3F;
             currentSpOffset -= (z + 1) * 8;
@@ -6521,23 +6510,6 @@ bool GetPacSignInfo(PTR_CONTEXT pContextToCheck, EECodeInfo *pCodeInfo, TADDR re
             continue;
         }
 
-        if ((CurCode & 0xFE) == 0xD8) // save_fregp
-        {
-            continue;
-        }
-
-        if ((CurCode & 0xFE) == 0xDA) // save_fregp_x
-        {
-            ULONG z = *(BYTE*)(UnwindCodePtr + 1) & 0x3F;
-            currentSpOffset -= (z + 1) * 8;
-            continue;
-        }
-
-        if ((CurCode & 0xFE) == 0xDC) // save_freg
-        {
-            continue;
-        }
-
         if (CurCode == 0xDE) // save_freg_x
         {
             ULONG z = *(BYTE*)(UnwindCodePtr + 1) & 0x1F;
@@ -6552,46 +6524,22 @@ bool GetPacSignInfo(PTR_CONTEXT pContextToCheck, EECodeInfo *pCodeInfo, TADDR re
             continue;
         }
 
-        if (CurCode == 0xE1) // set_fp
-        {
-            continue;
-        }
-
-        if (CurCode == 0xE2) // add_fp
-        {
-            continue;
-        }
-
-        if (CurCode == 0xE3) // nop
-        {
-            continue;
-        }
-
-        if (CurCode == 0xE5) // end_c
-        {
-            continue;
-        }
-
-        if (CurCode == 0xE6) // save_next
-        {
-            continue;
-        }
-
         if (CurCode == 0xFC) // pac_sign_lr
         {
-            if (pacSpOffset == SSIZE_T_MIN)
+            _ASSERTE(currentSpOffset == 0);
+            if (currentSpOffset != 0)
             {
-                // Snapshot the SP delta for the PACIASP in prolog.
-                pacSpOffset = currentSpOffset;
+                return false;
             }
 
+            hasPacSignLR = true;
             continue;
         }
 
         return false;
     }
 
-    if (pacSpOffset == SSIZE_T_MIN)
+    if (!hasPacSignLR)
     {
         return true;
     }
@@ -6601,7 +6549,7 @@ bool GetPacSignInfo(PTR_CONTEXT pContextToCheck, EECodeInfo *pCodeInfo, TADDR re
         return false;
     }
 
-    *pSpForPacSign = (TADDR)((SSIZE_T)retAddrLocation + pacSpOffset - lrSlotOffset);
+    *pSpForPacSign = (TADDR)((SSIZE_T)retAddrLocation - lrSlotOffset);
     return true;
 }
 #endif // TARGET_ARM64

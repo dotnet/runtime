@@ -4482,7 +4482,7 @@ struct ExecutionState
 #if defined(TARGET_X86)
         m_FirstPass = true;
 #elif defined(TARGET_ARM64)
-    m_pSpForPacSign = nullptr;
+        m_pSpForPacSign = nullptr;
 #endif
     }
 };

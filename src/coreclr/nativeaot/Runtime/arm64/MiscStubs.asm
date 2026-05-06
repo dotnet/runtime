@@ -7,6 +7,7 @@
 
 ; void* PacStripPtr(void *);
 ; This function strips the pointer of PAC info that is passed as an argument.
+; We prefer to strip a pointer where it's not going to be used to branch execution to.
     LEAF_ENTRY PacStripPtr
         DCD     0xDAC143E0  ; xpaci x0 instruction in binary to avoid requiring PAC-enabled assemblers
         ret
