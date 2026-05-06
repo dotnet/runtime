@@ -146,6 +146,11 @@ namespace System.Runtime.CompilerServices
             /// </summary>
             public const string NameTemplate = "Continuation_Wrapper_{0}";
 
+            /// <summary>
+            /// Pre-encoded UTF8 bytes of <see cref="NameTemplate"/> for zero-allocation metadata emission.
+            /// </summary>
+            public static ReadOnlySpan<byte> NameTemplateUtf8 => "Continuation_Wrapper_{0}"u8;
+
             public const byte COUNT = 32;
             public const byte COUNT_MASK = COUNT - 1;
 

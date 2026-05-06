@@ -113,10 +113,10 @@ namespace System.Runtime.CompilerServices
                             // [utcSync (compressed uint64)]
                             // [eventBufferSize (compressed uint32)]
                             // [wrapperCount byte]
-                            // [wrapperNameTemplateLength byte]
+                            // [wrapperNameTemplateLength (compressed uint32)]
                             // [wrapperNameTemplate UTF8 bytes]
-                            byte[] templateBytes = System.Text.Encoding.UTF8.GetBytes(ContinuationWrapper.NameTemplate);
-                            const int MaxStaticEventPayloadSize = Serializer.MaxCompressedUInt64Size + Serializer.MaxCompressedUInt64Size + Serializer.MaxCompressedUInt64Size + Serializer.MaxCompressedUInt32Size + 1 + 1;
+                            ReadOnlySpan<byte> templateBytes = ContinuationWrapper.NameTemplateUtf8;
+                            const int MaxStaticEventPayloadSize = Serializer.MaxCompressedUInt64Size + Serializer.MaxCompressedUInt64Size + Serializer.MaxCompressedUInt64Size + Serializer.MaxCompressedUInt32Size + 1 + Serializer.MaxCompressedUInt32Size;
                             int maxDynamicEventPayloadSize = templateBytes.Length;
 
                             ref EventBuffer eventBuffer = ref context.EventBuffer;
@@ -133,7 +133,7 @@ namespace System.Runtime.CompilerServices
                                 payloadSpanIndex += Serializer.WriteCompressedUInt32(payloadSpan.Slice(payloadSpanIndex), EventBufferSize);
 
                                 payloadSpan[payloadSpanIndex++] = ContinuationWrapper.COUNT;
-                                payloadSpan[payloadSpanIndex++] = (byte)templateBytes.Length;
+                                payloadSpanIndex += Serializer.WriteCompressedUInt32(payloadSpan.Slice(payloadSpanIndex), (uint)templateBytes.Length);
                                 templateBytes.CopyTo(payloadSpan.Slice(payloadSpanIndex));
                                 payloadSpanIndex += templateBytes.Length;
 

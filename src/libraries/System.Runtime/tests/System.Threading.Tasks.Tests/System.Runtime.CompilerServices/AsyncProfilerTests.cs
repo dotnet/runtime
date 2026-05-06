@@ -285,7 +285,10 @@ namespace System.Threading.Tasks.Tests
                         if (wrapperName is null)
                             continue;
                         if (wrapperName.StartsWith(WrapperNamePrefix, StringComparison.Ordinal))
-                            return int.Parse(wrapperName.Substring(WrapperNamePrefix.Length));
+                        {
+                            string wrapperSuffix = wrapperName.Substring(WrapperNamePrefix.Length);
+                            return int.TryParse(wrapperSuffix, out int wrapperSlot) ? wrapperSlot : -1;
+                        }
                         break;
                     }
                     return -1;
@@ -448,9 +451,9 @@ namespace System.Threading.Tasks.Tests
             utcSync = ReadCompressedUInt64(buffer, ref index);
             eventBufferSize = ReadCompressedUInt32(buffer, ref index);
             wrapperCount = buffer[index++];
-            byte templateLength = buffer[index++];
-            wrapperNameTemplate = System.Text.Encoding.UTF8.GetString(buffer.Slice(index, templateLength));
-            index += templateLength;
+            uint templateLength = ReadCompressedUInt32(buffer, ref index);
+            wrapperNameTemplate = System.Text.Encoding.UTF8.GetString(buffer.Slice(index, (int)templateLength));
+            index += (int)templateLength;
         }
 
         private record struct MetadataFromBuffer(ulong QpcFrequency, ulong QpcSync, ulong UtcSync, uint EventBufferSize, byte WrapperCount, string WrapperNameTemplate);
@@ -533,7 +536,7 @@ namespace System.Threading.Tasks.Tests
             public IReadOnlyList<ParsedEvent> All => _events;
 
             /// <summary>All distinct event IDs present in the stream.</summary>
-            public IEnumerable<AsyncEventID> EventIds => _events.Select(e => e.EventId);
+            public IEnumerable<AsyncEventID> EventIds => _events.Select(e => e.EventId).Distinct();
 
             /// <summary>Filter events by event ID, in timestamp order.</summary>
             public IEnumerable<ParsedEvent> OfType(AsyncEventID eventId) =>
@@ -2535,9 +2538,9 @@ namespace System.Threading.Tasks.Tests
             byte wrapperCount = buffer[index++];
             Console.WriteLine($"  WrapperCount: {wrapperCount}");
 
-            byte templateLength = buffer[index++];
-            string wrapperNameTemplate = System.Text.Encoding.UTF8.GetString(buffer.Slice(index, templateLength));
-            index += templateLength;
+            uint templateLength = ReadCompressedUInt32(buffer, ref index);
+            string wrapperNameTemplate = System.Text.Encoding.UTF8.GetString(buffer.Slice(index, (int)templateLength));
+            index += (int)templateLength;
             Console.WriteLine($"  WrapperNameTemplate: \"{wrapperNameTemplate}\"");
             Console.WriteLine($"  Methods: {string.Format(wrapperNameTemplate, 0)} .. {string.Format(wrapperNameTemplate, wrapperCount - 1)}");
 
