@@ -190,29 +190,35 @@ For each actionable failure, in this order:
    - `search_pull_requests` for an open small-fix PR: `is:pr is:open in:title "<short-failure-description>" "[ci-scan]"`.
    - If a KBE + muting PR already cover this failure, **skip** — record it in the coverage tally as `→ already-covered: KBE #<n> + PR #<n>` and move on. Do not duplicate.
 2. **No existing KBE → file one via safe-outputs `create_issue`**. Apply labels: `Known Build Error`, `blocking-clean-ci`, plus any verified `area-*` / `os-*` / `arch-*` (see "Never invent labels" below). Title prefix: `[ci-scan] `. Body: the KBE format described in "Known Build Error issue" below. The safe-outputs handler will create the issue ~1 minute after the agent finishes; the issue number is not available to the agent during this run.
-3. **Existing KBE found AND failure still occurring AND no muting PR exists yet → open the muting PR via safe-outputs `create_pull_request`** with the existing KBE issue number hardcoded in the diff: `[ActiveIssue("https://github.com/dotnet/runtime/issues/<existing-N>", ...)]` for unit tests, `<GCStressIncompatible>true</GCStressIncompatible>` (with an inline `<!-- https://github.com/dotnet/runtime/issues/<existing-N> -->` comment) for stress-incompatible JIT csproj families. PR title prefix `[ci-scan] `; PR body's "Linked KBE" section links the issue. This PR must change **only test annotations / csproj test-config flags** — no product code, no diagnosis, no logic. Aim for ≤ 5 lines of diff.
-4. **(Optional, alongside step 3) Open a small-fix PR via safe-outputs `create_pull_request`** if the failure satisfies the "small product fix opportunity" criteria above. Separate PR, separate branch, separate diff. PR body must (a) cite the failing test as evidence, (b) explain the root cause, (c) state explicitly why the fix is safe, and (d) note "If this lands before #<muting-PR>, that PR can be closed". Do not bundle the fix into the muting PR — keep them separate so a maintainer can take one without the other.
+3. **Existing KBE found AND failure still occurring AND no muting PR exists yet → open the muting PR via safe-outputs `create_pull_request`** with the existing KBE issue number hardcoded in the diff: `[ActiveIssue("https://github.com/dotnet/runtime/issues/<existing-N>", ...)]` for unit tests, `<GCStressIncompatible>true</GCStressIncompatible>` (with an inline `<!-- https://github.com/dotnet/runtime/issues/<existing-N> -->` comment) for stress-incompatible JIT csproj families. PR title prefix `[ci-scan] `; **the PR body MUST include a top-level "Linked KBE" line of the form `Linked KBE: #<existing-N>` so the link is unambiguous and machine-readable**, in addition to the prose "Linked KBE" section. This PR must change **only test annotations / csproj test-config flags** — no product code, no diagnosis, no logic. Aim for ≤ 5 lines of diff.
+4. **(Optional, alongside step 3) Open a small-fix PR via safe-outputs `create_pull_request`** if the failure satisfies the "small product fix opportunity" criteria above. Separate PR, separate branch, separate diff. PR body must (a) cite the failing test as evidence, (b) explain the root cause, (c) state explicitly why the fix is safe, (d) include `Linked KBE: #<existing-N>` as a top-level line, and (e) note "If this lands before #<muting-PR>, that PR can be closed". Do not bundle the fix into the muting PR — keep them separate so a maintainer can take one without the other.
 
 Caps: safe-outputs `create_issue` max 5/run, `create_pull_request` max 10/run. When a cap is hit, fall back to "skipped: cap reached" rather than silently dropping signatures — subsequent runs will pick them up.
 
-After every run, you should be able to answer YES to: "for each actionable failure I encountered, did I either (a) confirm a KBE+PR pair already covers it, or (b) file the missing piece (KBE or PR or both, depending on what was missing)?" If the answer is NO for any of them, you have not done the job.
+After every run, you should be able to answer YES to **whichever of these applies to each failure**:
+
+- **First-encounter failure (no existing KBE):** "Did I file the KBE?" Muting/fix PRs are deferred to the next run — they cannot reference an issue number that doesn't exist yet at agent runtime.
+- **Existing KBE, no muting PR yet:** "Did I open the muting PR (and, if criteria met, the small-fix PR)?"
+- **Existing KBE + existing muting PR:** "Did I confirm both, skip silently, and record `→ already-covered: KBE #<n> + PR #<n>` in the coverage tally?"
+
+If the answer is NO for any failure, you have not done the job.
 
 ### Per-failure-class rules
 
-- **Recurring failure with a stable error signature** (≥ 2 occurrences on `main` in the scanned window) → KBE + muting PR (mandatory) + fix PR (optional, only if criteria met).
-- **Per-test platform / configuration incompatibility** (e.g., test fails only under `jitstress=2`, `gcstress=0xC`, on a single mobile arch, on browser, on NativeAOT) — KBE + muting PR (mandatory). Allowed muting PR mechanisms:
+The two-pass flow above applies to all classes below. "KBE + muting PR" means: KBE in the run that first encounters the failure, muting PR in the next run that finds the KBE already exists.
+
+- **Recurring failure with a stable error signature** (≥ 2 occurrences on `main` in the scanned window) → KBE (run N) + muting PR (run N+1) + fix PR (optional, run N+1, only if criteria met).
+- **Per-test platform / configuration incompatibility** (e.g., test fails only under `jitstress=2`, `gcstress=0xC`, on a single mobile arch, on browser, on NativeAOT) → KBE (run N) + muting PR (run N+1). Allowed muting PR mechanisms:
   - `[SkipOnPlatform(TestPlatforms.<plat>, "<reason>")]` for platform-specific failures.
   - `[ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.<helper>))]` narrowed via existing helpers.
   - `[ActiveIssue("https://github.com/dotnet/runtime/issues/<N>", TestPlatforms.<plat>)]` referencing the KBE.
-  - For JIT/GC stress: `[ActiveIssue("...", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsStressTest))]` or `<GCStressIncompatible>true</GCStressIncompatible>` at the csproj level. **Tradeoff**: stress-guarded skips remove the test signal from the stress pipelines, so the bug becomes invisible in those pipelines until the JIT fix lands. The KBE you filed in step 2 is what keeps the JIT team aware; without that KBE, the muting PR alone would silently lose the signal.
-- **Build break on a single leg** (`Build product` or similar failed; `Send to Helix` skipped) → if the compile error has a clear, mechanical root cause and the fix is **≤ 20 lines in a single file** (e.g., obvious typo, missing `#if`, wrong type cast, missing `using`), open a fix PR. **No KBE for build breaks** — Build Analysis explicitly forbids that. If the fix is non-trivial, file a regular tracking issue and reference the failing source file and compile error.
-- **Anything else** — multi-assembly cluster, infrastructure (queue exhaustion / dead-letter / device-lost) — file a tracking issue (not a KBE). Group all infra failures from one run into a single issue. Before filing, `search_issues` for an open issue with the matching `area-*` + `os-*` label and update its description in place rather than duplicating.
+  - For JIT/GC stress: `[ActiveIssue("...", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsStressTest))]` or `<GCStressIncompatible>true</GCStressIncompatible>` at the csproj level. **Tradeoff**: stress-guarded skips remove the test signal from the stress pipelines, so the bug becomes invisible in those pipelines until the JIT fix lands. The KBE filed in run N is what keeps the JIT team aware; without that KBE, the muting PR alone would silently lose the signal.
+- **Build break on a single leg** (`Build product` or similar failed; `Send to Helix` skipped) → if the compile error has a clear, mechanical root cause and the fix is **≤ 20 lines in a single file** (e.g., obvious typo, missing `#if`, wrong type cast, missing `using`), open a fix PR (no KBE — Build Analysis explicitly forbids KBEs for build breaks). If the fix is non-trivial, file a regular tracking issue and reference the failing source file and compile error.
+- **Anything else** — multi-assembly cluster, infrastructure (queue exhaustion / dead-letter / device-lost) — file a tracking issue (not a KBE). Group all infra failures from one run into a single issue. Before filing, `search_issues` for an open issue with the matching `area-*` + `os-*` label and skip silently if one already exists (do not duplicate, do not append a comment — the agent only has read permission on existing issues).
 
 For each failure compute a `(definition_id, work_item_or_phase, queue, stress_mode, [FAIL] or compile-error signature)` signature. Look back through ~10 completed builds in the same definition to build first-seen-in-window timestamp and occurrence count.
 
-**Convergence target**: for every actionable test/runtime failure, leave the run with both (a) a KBE filed (immediate effect on PR CI via Build Analysis) and (b) a clean muting PR open against that KBE (permanent effect after merge, low review cost). The fix PR is a bonus when the root cause is obviously small. A tracking-issue-only outcome is acceptable only for build breaks (which Build Analysis cannot match) and infra failures.
-
-After every run, you should be able to answer YES to: "for each actionable failure I encountered, did I emit (or already find) both a KBE and a muting PR?" If the answer is NO for any of them, you have not done the job.
+**Convergence target**: across two consecutive runs, every actionable test/runtime failure ends up with both (a) a KBE filed (immediate effect on PR CI via Build Analysis) and (b) a clean muting PR open against that KBE (permanent effect after merge, low review cost). The fix PR is a bonus when the root cause is obviously small. A tracking-issue-only outcome is acceptable only for build breaks (which Build Analysis cannot match) and infra failures.
 
 Do not emit `noop`. Either a PR or an issue must come out of every actionable failure.
 
@@ -340,7 +346,7 @@ The pseudo-instructions `(open three backticks, then ...)` and `(close three bac
 
 Choose `ErrorMessage` (substring) by default. Use `ErrorPattern` only when a regex is genuinely needed and confirm it has no catastrophic backtracking. Set `BuildRetry: true` **only** for confirmed infra/queue-side flakes (dead-letter, device-lost, agent disconnect) where retrying is safe.
 
-Title: `Test failure: <fully.qualified.TestName>` for test failures, or `Known Build Error: <short description>` for non-test build errors.
+Title: `[ci-scan] Test failure: <fully.qualified.TestName>` for test failures, or `[ci-scan] Known Build Error: <short description>` for non-test build errors. The `[ci-scan] ` prefix is mandatory on every issue and PR this workflow files (see "Outputs: title and labels" above).
 
 Labels: `Known Build Error`, `blocking-clean-ci`, plus the test's `area-*` label and any `os-*` / `arch-*` labels that apply.
 
