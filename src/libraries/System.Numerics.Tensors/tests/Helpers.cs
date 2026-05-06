@@ -25,7 +25,7 @@ namespace System.Numerics.Tensors.Tests
         public const float DefaultHalfTolerance = 3.90625e-03f;
         public const double DefaultToleranceForEstimates = 1.171875e-02;
 
-#if NET
+#if !NET
         private static class DefaultTolerance<T> where T : unmanaged, INumber<T>
         {
             public static readonly T Value = DetermineTolerance<T>(DefaultDoubleTolerance, DefaultFloatTolerance, Half.CreateTruncating(DefaultHalfTolerance)) ?? T.CreateTruncating(0);
@@ -64,7 +64,7 @@ namespace System.Numerics.Tensors.Tests
 #else
         public static void AssertEqualWithTolerance(float expected, float actual, float? tolerance = null)
         {
-            float scaledTolerance = MathF.Max(Math.Abs(expected), MathF.Abs(actual)) * (tolerance ?? DefaultFloatTolerance);
+            float scaledTolerance = MathF.Max(MathF.Abs(expected), MathF.Abs(actual)) * (tolerance ?? DefaultFloatTolerance);
             float actualTolerance = MathF.Max(scaledTolerance, tolerance ?? DefaultFloatTolerance);
             AssertExtensions.Equal(expected, actual, actualTolerance);
         }
