@@ -14076,7 +14076,7 @@ void emitter::emitDispIns(
                 // targetIG is only set for 1st of the series of align instruction
                 if ((alignInstrId->idaLoopHeadPredIG != nullptr) && (alignInstrId->loopHeadIG() != nullptr))
                 {
-                    printf(" for IG%02u", alignInstrId->loopHeadIG()->igNum);
+                    printf(" for IG%02u", alignInstrId->loopHeadIG()->GetDisplayId());
                 }
                 printf("]");
             }
@@ -20109,9 +20109,8 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 #endif
 
 #if FEATURE_LOOP_ALIGN
-    // Only compensate over-estimated instructions if emitCurIG is before
-    // the last IG that needs alignment.
-    if (emitCurIG->igNum <= emitLastAlignedIgNum)
+    // Only compensate over-estimated instructions if emitCurIG is before the last IG that needs alignment.
+    if ((emitLastAlignedIG != nullptr) && emitCurIG->IsBeforeOrEqual(emitLastAlignedIG))
     {
         int diff = id->idCodeSize() - ((UNATIVE_OFFSET)(dst - *dp));
         assert(diff >= 0);

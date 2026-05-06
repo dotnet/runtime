@@ -262,7 +262,6 @@ namespace System.Threading
             }
         }
 
-        [RequiresUnsafe]
         private static unsafe void InitializeSharedData(void* v)
         {
             if (UsePThreadMutexes)

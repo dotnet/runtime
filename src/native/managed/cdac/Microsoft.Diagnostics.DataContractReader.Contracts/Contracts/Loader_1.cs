@@ -697,38 +697,38 @@ internal readonly struct Loader_1 : ILoader
         };
     }
 
-    IReadOnlyDictionary<string, TargetPointer> ILoader.GetLoaderAllocatorHeaps(TargetPointer loaderAllocatorPointer)
+    IReadOnlyDictionary<LoaderAllocatorHeapType, TargetPointer> ILoader.GetLoaderAllocatorHeaps(TargetPointer loaderAllocatorPointer)
     {
         Data.LoaderAllocator loaderAllocator = _target.ProcessedData.GetOrAdd<Data.LoaderAllocator>(loaderAllocatorPointer);
         Target.TypeInfo laType = _target.GetTypeInfo(DataType.LoaderAllocator);
 
-        Dictionary<string, TargetPointer> heaps = new()
+        Dictionary<LoaderAllocatorHeapType, TargetPointer> heaps = new()
         {
-            [nameof(Data.LoaderAllocator.LowFrequencyHeap)] = loaderAllocator.LowFrequencyHeap,
-            [nameof(Data.LoaderAllocator.HighFrequencyHeap)] = loaderAllocator.HighFrequencyHeap,
-            [nameof(Data.LoaderAllocator.StaticsHeap)] = loaderAllocator.StaticsHeap,
-            [nameof(Data.LoaderAllocator.StubHeap)] = loaderAllocator.StubHeap,
-            [nameof(Data.LoaderAllocator.ExecutableHeap)] = loaderAllocator.ExecutableHeap,
+            [LoaderAllocatorHeapType.LowFrequencyHeap] = loaderAllocator.LowFrequencyHeap,
+            [LoaderAllocatorHeapType.HighFrequencyHeap] = loaderAllocator.HighFrequencyHeap,
+            [LoaderAllocatorHeapType.StaticsHeap] = loaderAllocator.StaticsHeap,
+            [LoaderAllocatorHeapType.StubHeap] = loaderAllocator.StubHeap,
+            [LoaderAllocatorHeapType.ExecutableHeap] = loaderAllocator.ExecutableHeap,
         };
 
         if (laType.Fields.ContainsKey(nameof(Data.LoaderAllocator.FixupPrecodeHeap)))
-            heaps[nameof(Data.LoaderAllocator.FixupPrecodeHeap)] = loaderAllocator.FixupPrecodeHeap!.Value;
+            heaps[LoaderAllocatorHeapType.FixupPrecodeHeap] = loaderAllocator.FixupPrecodeHeap!.Value;
 
         if (laType.Fields.ContainsKey(nameof(Data.LoaderAllocator.NewStubPrecodeHeap)))
-            heaps[nameof(Data.LoaderAllocator.NewStubPrecodeHeap)] = loaderAllocator.NewStubPrecodeHeap!.Value;
+            heaps[LoaderAllocatorHeapType.NewStubPrecodeHeap] = loaderAllocator.NewStubPrecodeHeap!.Value;
 
         if (laType.Fields.ContainsKey(nameof(Data.LoaderAllocator.DynamicHelpersStubHeap)))
-            heaps[nameof(Data.LoaderAllocator.DynamicHelpersStubHeap)] = loaderAllocator.DynamicHelpersStubHeap!.Value;
+            heaps[LoaderAllocatorHeapType.DynamicHelpersStubHeap] = loaderAllocator.DynamicHelpersStubHeap!.Value;
 
         if (loaderAllocator.VirtualCallStubManager != TargetPointer.Null)
         {
             Data.VirtualCallStubManager vcsMgr = _target.ProcessedData.GetOrAdd<Data.VirtualCallStubManager>(loaderAllocator.VirtualCallStubManager);
             Target.TypeInfo vcsType = _target.GetTypeInfo(DataType.VirtualCallStubManager);
 
-            heaps[nameof(Data.VirtualCallStubManager.IndcellHeap)] = vcsMgr.IndcellHeap;
+            heaps[LoaderAllocatorHeapType.IndcellHeap] = vcsMgr.IndcellHeap;
 
             if (vcsType.Fields.ContainsKey(nameof(Data.VirtualCallStubManager.CacheEntryHeap)))
-                heaps[nameof(Data.VirtualCallStubManager.CacheEntryHeap)] = vcsMgr.CacheEntryHeap!.Value;
+                heaps[LoaderAllocatorHeapType.CacheEntryHeap] = vcsMgr.CacheEntryHeap!.Value;
         }
 
         return heaps;

@@ -209,6 +209,10 @@
 #include "gdbjit.h"
 #endif // FEATURE_GDBJIT
 
+#ifdef FEATURE_INPROC_CRASHREPORT
+#include "crashreportstackwalker.h"
+#endif // FEATURE_INPROC_CRASHREPORT
+
 #include "genanalysis.h"
 
 #ifdef HAVE_GCCOVER
@@ -708,6 +712,10 @@ void EEStartupHelper()
 #ifdef HOST_ANDROID
         PAL_SetLogManagedCallstackForSignalCallback(EEPolicy::LogManagedCallstackForSignal);
 #endif // HOST_ANDROID
+
+#ifdef FEATURE_INPROC_CRASHREPORT
+        CrashReportConfigure();
+#endif // FEATURE_INPROC_CRASHREPORT
 
 #ifdef STRESS_LOG
         if (CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_StressLog, g_pConfig->StressLog()) != 0) {

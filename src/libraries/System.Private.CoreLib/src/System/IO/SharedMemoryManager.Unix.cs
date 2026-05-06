@@ -128,7 +128,6 @@ namespace System.IO
         private readonly nuint _sharedDataTotalByteCount;
         private int _referenceCount = 1;
 
-        [RequiresUnsafe]
         public SharedMemoryProcessDataHeader(SharedMemoryId id, SafeFileHandle fileHandle, SharedMemorySharedDataHeader* sharedDataHeader, nuint sharedDataTotalByteCount)
         {
             _id = id;
@@ -708,7 +707,6 @@ namespace System.IO
             }
         }
 
-        [RequiresUnsafe]
         public void* Pointer => (void*)addr;
     }
 
