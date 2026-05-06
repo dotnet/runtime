@@ -748,22 +748,22 @@ bool AutoVectorizer::TryCreateLoopPlan(FlowGraphNaturalLoop* loop, LoopVectoriza
 bool AutoVectorizer::TryCreatePostIVLoopPlan(FlowGraphNaturalLoop* loop, LoopVectorizationPlan* plan)
 {
     BasicBlock* const header = loop->GetHeader();
-    if (header != loop->BackEdge(0)->getSourceBlock())
+    BasicBlock* const latch  = loop->BackEdge(0)->getSourceBlock();
+    if ((header != latch) && (loop->ExitEdges().size() != 1))
     {
-        JITDUMP("post-IV candidate header=" FMT_BB ", backedge source=" FMT_BB "\n", header->bbNum,
-                loop->BackEdge(0)->getSourceBlock()->bbNum);
-        JITDUMP("post-IV form is not a single-block loop, bail out\n");
+        JITDUMP("post-IV candidate header=" FMT_BB ", backedge source=" FMT_BB "\n", header->bbNum, latch->bbNum);
+        JITDUMP("post-IV loop has unsupported exit shape, bail out\n");
         return false;
     }
 
-    if (!header->KindIs(BBJ_COND))
+    if (!latch->KindIs(BBJ_COND))
     {
-        JITDUMP("post-IV candidate header " FMT_BB " jump kind=%s\n", header->bbNum, bbKindNames[header->GetKind()]);
-        JITDUMP("post-IV loop header is not conditional, bail out\n");
+        JITDUMP("post-IV candidate latch " FMT_BB " jump kind=%s\n", latch->bbNum, bbKindNames[latch->GetKind()]);
+        JITDUMP("post-IV loop latch is not conditional, bail out\n");
         return false;
     }
 
-    Statement* const testStmt = header->lastStmt();
+    Statement* const testStmt = latch->lastStmt();
     if ((testStmt == nullptr) || !testStmt->GetRootNode()->OperIs(GT_JTRUE))
     {
         if (testStmt != nullptr)
@@ -823,7 +823,7 @@ bool AutoVectorizer::TryCreatePostIVLoopPlan(FlowGraphNaturalLoop* loop, LoopVec
     plan->Loop         = loop;
     plan->Preheader    = loop->EntryEdge(0)->getSourceBlock();
     plan->Header       = header;
-    plan->Latch        = header;
+    plan->Latch        = latch;
     plan->Exit         = loop->ExitEdge(0)->getDestinationBlock();
     plan->IsPostIV     = true;
     plan->TripCountVar = op1->AsLclVarCommon()->GetLclNum();
@@ -1079,11 +1079,32 @@ bool AutoVectorizer::TryAddReduction(LoopVectorizationPlan* plan, Statement* stm
         }
     }
 
-    GenTree* const data        = UnwrapCommaValue(storeLcl->Data());
-    genTreeOps     reductionOp = data->OperGet();
-    NamedIntrinsic reductionNI = NI_Illegal;
-    GenTree*       op1         = nullptr;
-    GenTree*       op2         = nullptr;
+    GenTree* data                    = UnwrapCommaValue(storeLcl->Data());
+    GenTree* virtualSelectCond       = nullptr;
+    GenTree* virtualSelectTrueValue  = nullptr;
+    GenTree* virtualSelectFalseValue = nullptr;
+    for (unsigned depth = 0; data->OperIs(GT_LCL_VAR) && (depth < MaxPackDepth); depth++)
+    {
+        if (TryGetSelectLocalDef(plan, data->AsLclVarCommon()->GetLclNum(), &virtualSelectCond, &virtualSelectTrueValue,
+                                 &virtualSelectFalseValue))
+        {
+            break;
+        }
+
+        GenTree* def = nullptr;
+        if (!TryGetLocalDef(plan, data->AsLclVarCommon()->GetLclNum(), &def) || (def == data) || def->OperIs(GT_PHI))
+        {
+            break;
+        }
+
+        data = UnwrapCommaValue(def);
+    }
+
+    const var_types elementType = genActualType(storeLcl->TypeGet());
+    genTreeOps      reductionOp = data->OperGet();
+    NamedIntrinsic  reductionNI = NI_Illegal;
+    GenTree*        op1         = nullptr;
+    GenTree*        op2         = nullptr;
 
     if (data->OperIs(GT_ADD, GT_SUB))
     {
@@ -1122,12 +1143,84 @@ bool AutoVectorizer::TryAddReduction(LoopVectorizationPlan* plan, Statement* stm
         reductionNI = intrinsic->gtIntrinsicName;
         reductionOp = GT_INTRINSIC;
     }
+#ifdef FEATURE_HW_INTRINSICS
+    else if (varTypeIsFloating(elementType) && data->OperIs(GT_HWINTRINSIC) &&
+             TryGetScalarMinMaxHWINTRINSICReduction(plan, data->AsHWIntrinsic(), reductionLcl, &reductionNI, &op2))
+    {
+        reductionOp = GT_INTRINSIC;
+    }
+#endif
+    else if ((virtualSelectCond != nullptr) || data->OperIs(GT_SELECT))
+    {
+        GenTree* cond = virtualSelectCond;
+        GenTree* trueValue;
+        GenTree* falseValue;
+        if (cond != nullptr)
+        {
+            trueValue  = UnwrapCommaValue(virtualSelectTrueValue);
+            falseValue = UnwrapCommaValue(virtualSelectFalseValue);
+        }
+        else
+        {
+            GenTreeConditional* const select = data->AsConditional();
+            cond                             = UnwrapCommaValue(select->gtCond);
+            trueValue                        = UnwrapCommaValue(select->gtOp1);
+            falseValue                       = UnwrapCommaValue(select->gtOp2);
+        }
+
+        if (!cond->OperIsCompare())
+        {
+            return false;
+        }
+
+        GenTree*   cmpOp1  = UnwrapCommaValue(cond->AsOp()->gtOp1);
+        GenTree*   cmpOp2  = UnwrapCommaValue(cond->AsOp()->gtOp2);
+        genTreeOps cmpOper = cond->OperGet();
+
+        bool reductionIsTrueValue =
+            trueValue->OperIs(GT_LCL_VAR) && (trueValue->AsLclVarCommon()->GetLclNum() == reductionLcl);
+        bool reductionIsFalseValue =
+            falseValue->OperIs(GT_LCL_VAR) && (falseValue->AsLclVarCommon()->GetLclNum() == reductionLcl);
+        if (!reductionIsTrueValue && !reductionIsFalseValue)
+        {
+            return false;
+        }
+
+        GenTree* value = reductionIsTrueValue ? falseValue : trueValue;
+        if (cmpOp2->OperIs(GT_LCL_VAR) && (cmpOp2->AsLclVarCommon()->GetLclNum() == reductionLcl))
+        {
+            std::swap(cmpOp1, cmpOp2);
+            cmpOper = GenTree::SwapRelop(cmpOper);
+        }
+
+        if (!cmpOp1->OperIs(GT_LCL_VAR) || (cmpOp1->AsLclVarCommon()->GetLclNum() != reductionLcl) ||
+            !GenTree::Compare(cmpOp2, value))
+        {
+            return false;
+        }
+
+        if (GenTree::StaticOperIs(cmpOper, GT_LT, GT_LE))
+        {
+            reductionNI = reductionIsTrueValue ? NI_System_Math_Min : NI_System_Math_Max;
+        }
+        else if (GenTree::StaticOperIs(cmpOper, GT_GT, GT_GE))
+        {
+            reductionNI = reductionIsTrueValue ? NI_System_Math_Max : NI_System_Math_Min;
+        }
+        else
+        {
+            return false;
+        }
+
+        op1         = reductionIsTrueValue ? trueValue : falseValue;
+        op2         = value;
+        reductionOp = GT_INTRINSIC;
+    }
     else
     {
         return false;
     }
 
-    const var_types elementType = genActualType(storeLcl->TypeGet());
     if (!varTypeIsArithmetic(elementType) || !IsSupportedElementType(elementType))
     {
         JITDUMPEXEC(m_compiler->gtDispStmt(stmt));
@@ -1146,6 +1239,7 @@ bool AutoVectorizer::TryAddReduction(LoopVectorizationPlan* plan, Statement* stm
     LoopVectorizationPlan::ReductionInfo& reduction = plan->Reductions[plan->ReductionCount++];
     reduction.Stmt                                  = stmt;
     reduction.Lcl                                   = reductionLcl;
+    reduction.ElementType                           = elementType;
     reduction.Oper                                  = reductionOp;
     reduction.Intrinsic                             = reductionNI;
     reduction.Value                                 = op2;
@@ -1383,12 +1477,162 @@ bool AutoVectorizer::TryAnalyzeMemory(LoopVectorizationPlan* plan)
     return true;
 }
 
+bool AutoVectorizer::TryRecordSelectLocalDef(LoopVectorizationPlan* plan, BasicBlock* block)
+{
+    if (!block->KindIs(BBJ_COND))
+    {
+        return false;
+    }
+
+    Statement* const testStmt = block->lastStmt();
+    if ((testStmt == nullptr) || !testStmt->GetRootNode()->OperIs(GT_JTRUE))
+    {
+        return false;
+    }
+
+    GenTree* const cond = testStmt->GetRootNode()->gtGetOp1();
+    if (!cond->OperIsCompare())
+    {
+        return false;
+    }
+
+    BasicBlock* const trueBlock  = block->GetTrueTarget();
+    BasicBlock* const falseBlock = block->GetFalseTarget();
+    if ((trueBlock == falseBlock) || !plan->Loop->ContainsBlock(trueBlock) || !plan->Loop->ContainsBlock(falseBlock))
+    {
+        JITDUMP("post-IV select candidate " FMT_BB " has non-loop true/false targets, bail out\n", block->bbNum);
+        return false;
+    }
+
+    if ((trueBlock->GetUniquePred(m_compiler) != block) || (falseBlock->GetUniquePred(m_compiler) != block))
+    {
+        JITDUMP("post-IV select candidate " FMT_BB " true/false targets are not uniquely reached, bail out\n",
+                block->bbNum);
+        return false;
+    }
+
+    BasicBlock* const mergeBlock = trueBlock->GetUniqueSucc();
+    if ((mergeBlock == nullptr) || (falseBlock->GetUniqueSucc() != mergeBlock) ||
+        !plan->Loop->ContainsBlock(mergeBlock))
+    {
+        JITDUMP("post-IV select candidate " FMT_BB " true/false targets do not merge in-loop, bail out\n",
+                block->bbNum);
+        return false;
+    }
+
+    auto getSingleStore = [=](BasicBlock* storeBlock, unsigned* lclNum, GenTree** value) {
+        bool found = false;
+        for (Statement* const stmt : storeBlock->Statements())
+        {
+            GenTree* const root = stmt->GetRootNode();
+            if (root->OperIs(GT_NOP))
+            {
+                continue;
+            }
+
+            if (!root->OperIs(GT_STORE_LCL_VAR) || ((root->gtFlags & GTF_CALL) != 0))
+            {
+                return false;
+            }
+
+            if (found)
+            {
+                return false;
+            }
+
+            *lclNum = root->AsLclVarCommon()->GetLclNum();
+            *value  = UnwrapCommaValue(root->AsLclVarCommon()->Data());
+            found   = true;
+        }
+
+        return found;
+    };
+
+    unsigned trueLcl    = BAD_VAR_NUM;
+    unsigned falseLcl   = BAD_VAR_NUM;
+    GenTree* trueValue  = nullptr;
+    GenTree* falseValue = nullptr;
+    if (!getSingleStore(trueBlock, &trueLcl, &trueValue) || !getSingleStore(falseBlock, &falseLcl, &falseValue) ||
+        (trueLcl != falseLcl) || m_compiler->lvaGetDesc(trueLcl)->IsAddressExposed())
+    {
+        JITDUMP("post-IV select candidate " FMT_BB " does not store one temp on each branch, bail out\n", block->bbNum);
+        return false;
+    }
+
+    for (unsigned i = 0; i < plan->SelectLocalDefCount; i++)
+    {
+        LoopVectorizationPlan::SelectLocalDef& existing = plan->SelectLocalDefs[i];
+        if (existing.Lcl == trueLcl)
+        {
+            existing.Cond       = cond;
+            existing.TrueValue  = trueValue;
+            existing.FalseValue = falseValue;
+            existing.TrueBlock  = trueBlock;
+            existing.FalseBlock = falseBlock;
+            return true;
+        }
+    }
+
+    if (plan->SelectLocalDefCount >= LoopVectorizationPlan::MaxSelectDefs)
+    {
+        JITDUMP("post-IV select candidate " FMT_BB " exceeds select-def budget %u, bail out\n", block->bbNum,
+                LoopVectorizationPlan::MaxSelectDefs);
+        return false;
+    }
+
+    LoopVectorizationPlan::SelectLocalDef& selectDef = plan->SelectLocalDefs[plan->SelectLocalDefCount++];
+    selectDef.Lcl                                    = trueLcl;
+    selectDef.Cond                                   = cond;
+    selectDef.TrueValue                              = trueValue;
+    selectDef.FalseValue                             = falseValue;
+    selectDef.TrueBlock                              = trueBlock;
+    selectDef.FalseBlock                             = falseBlock;
+    return true;
+}
+
+bool AutoVectorizer::TryGetSelectLocalDef(
+    LoopVectorizationPlan* plan, unsigned lclNum, GenTree** cond, GenTree** trueValue, GenTree** falseValue)
+{
+    for (unsigned i = 0; i < plan->SelectLocalDefCount; i++)
+    {
+        const LoopVectorizationPlan::SelectLocalDef& selectDef = plan->SelectLocalDefs[i];
+        if (selectDef.Lcl == lclNum)
+        {
+            *cond       = selectDef.Cond;
+            *trueValue  = selectDef.TrueValue;
+            *falseValue = selectDef.FalseValue;
+            return true;
+        }
+    }
+
+    return false;
+}
+
+bool AutoVectorizer::IsSelectLocalDefStore(LoopVectorizationPlan* plan, BasicBlock* block, GenTree* root)
+{
+    if (!root->OperIs(GT_STORE_LCL_VAR))
+    {
+        return false;
+    }
+
+    const unsigned lclNum = root->AsLclVarCommon()->GetLclNum();
+    for (unsigned i = 0; i < plan->SelectLocalDefCount; i++)
+    {
+        const LoopVectorizationPlan::SelectLocalDef& selectDef = plan->SelectLocalDefs[i];
+        if ((selectDef.Lcl == lclNum) && ((selectDef.TrueBlock == block) || (selectDef.FalseBlock == block)))
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+
 bool AutoVectorizer::TryAnalyzePostIVMemory(LoopVectorizationPlan* plan)
 {
     assert(plan->IsPostIV);
 
-    BasicBlock* const block                = plan->Header;
-    bool              foundTripCountUpdate = false;
+    bool foundTripCountUpdate = false;
 
     for (BasicBlock* pred = plan->Preheader; pred != nullptr; pred = pred->GetUniquePred(m_compiler))
     {
@@ -1398,129 +1642,168 @@ bool AutoVectorizer::TryAnalyzePostIVMemory(LoopVectorizationPlan* plan)
         }
     }
 
-    for (Statement* const stmt : block->Statements())
-    {
-        GenTree* const root = stmt->GetRootNode();
-        RecordLocalDefs(plan, root);
-
-        if (root->OperIs(GT_JTRUE) && (root->gtGetOp1() == plan->TestTree))
+    plan->Loop->VisitLoopBlocks([&](BasicBlock* block) {
+        for (Statement* const stmt : block->Statements())
         {
-            continue;
+            RecordLocalDefs(plan, stmt->GetRootNode());
         }
 
-        if (root->OperIs(GT_STORE_LCL_VAR) && root->AsLclVarCommon()->Data()->OperIs(GT_PHI))
+        return BasicBlockVisit::Continue;
+    });
+
+    plan->Loop->VisitLoopBlocks([&](BasicBlock* block) {
+        (void)TryRecordSelectLocalDef(plan, block);
+        return BasicBlockVisit::Continue;
+    });
+
+    bool failed = false;
+    plan->Loop->VisitLoopBlocks([&](BasicBlock* block) {
+        for (Statement* const stmt : block->Statements())
         {
-            continue;
-        }
+            GenTree* const root = stmt->GetRootNode();
 
-        if (root->OperIs(GT_STOREIND))
-        {
-            GenTreeStoreInd* const              store = root->AsStoreInd();
-            LoopVectorizationPlan::ScalarAccess storeAccess;
-            if (!TryAnalyzePostIVAddress(stmt, store->Addr(), &storeAccess))
+            if (root->OperIs(GT_JTRUE) && (root->gtGetOp1() == plan->TestTree))
             {
-                JITDUMPEXEC(m_compiler->gtDispStmt(stmt));
-                JITDUMP("post-IV store is not a local-addressed supported store, bail out\n");
-                return false;
-            }
-
-            if (storeAccess.ElementType == TYP_UNDEF)
-            {
-                storeAccess.ElementType = store->TypeGet();
-                storeAccess.ElementSize = genTypeSize(storeAccess.ElementType);
-            }
-
-            if (!IsSupportedElementType(storeAccess.ElementType))
-            {
-                JITDUMPEXEC(m_compiler->gtDispStmt(stmt));
-                JITDUMP("post-IV store has unsupported element type, bail out\n");
-                return false;
-            }
-
-            if (genActualType(store->TypeGet()) != genActualType(storeAccess.ElementType))
-            {
-                JITDUMPEXEC(m_compiler->gtDispStmt(stmt));
-                JITDUMP("post-IV store type does not match memory element type, bail out\n");
-                return false;
-            }
-
-            storeAccess.ElementSize  = genTypeSize(storeAccess.ElementType);
-            storeAccess.IsStore      = true;
-            GenTree* const storeData = UnwrapCommaValue(store->Data());
-            if (!AddStore(plan, stmt, storeData, storeAccess))
-            {
-                return false;
-            }
-
-            JITDUMP("post-IV store:\n");
-            JITDUMPEXEC(m_compiler->gtDispStmt(stmt));
-            JITDUMP("post-IV store address:\n");
-            JITDUMPEXEC(m_compiler->gtDispTree(storeAccess.Address));
-            continue;
-        }
-
-        if (!root->OperIs(GT_STORE_LCL_VAR))
-        {
-            JITDUMPEXEC(m_compiler->gtDispStmt(stmt));
-            JITDUMP("unsupported post-IV statement, bail out\n");
-            return false;
-        }
-
-        GenTreeLclVarCommon* const storeLcl = root->AsLclVarCommon();
-        GenTree* const             data     = storeLcl->Data();
-        const unsigned             lclNum   = storeLcl->GetLclNum();
-
-        if ((lclNum == plan->TripCountVar) && data->OperIs(GT_ADD, GT_SUB))
-        {
-            GenTree*   op1 = data->AsOp()->gtOp1;
-            GenTree*   op2 = data->AsOp()->gtOp2;
-            const bool decrementsByOne =
-                (data->OperIs(GT_ADD) && op2->IsIntegralConst(-1)) || (data->OperIs(GT_SUB) && op2->IsIntegralConst(1));
-            if (decrementsByOne && op1->OperIs(GT_LCL_VAR) &&
-                (op1->AsLclVarCommon()->GetLclNum() == plan->TripCountVar))
-            {
-                foundTripCountUpdate = true;
-                JITDUMP("post-IV trip-count update:\n");
-                JITDUMPEXEC(m_compiler->gtDispStmt(stmt));
                 continue;
             }
-        }
 
-        if (data->OperIs(GT_ADD, GT_SUB))
-        {
-            GenTree* op1 = data->AsOp()->gtOp1;
-            GenTree* op2 = data->AsOp()->gtOp2;
-
-            if (op2->IsCnsIntOrI() && op1->OperIs(GT_LCL_VAR) && (op1->AsLclVarCommon()->GetLclNum() == lclNum) &&
-                storeLcl->TypeIs(TYP_BYREF, TYP_I_IMPL, TYP_LONG))
+            if (root->OperIs(GT_JTRUE) && TryRecordSelectLocalDef(plan, block))
             {
-                int delta = static_cast<int>(op2->AsIntConCommon()->IconValue());
-                if (data->OperIs(GT_SUB))
+                continue;
+            }
+
+            if (IsSelectLocalDefStore(plan, block, root))
+            {
+                continue;
+            }
+
+            if (root->OperIs(GT_STORE_LCL_VAR) && root->AsLclVarCommon()->Data()->OperIs(GT_PHI))
+            {
+                continue;
+            }
+
+            if (root->OperIs(GT_STOREIND))
+            {
+                GenTreeStoreInd* const              store = root->AsStoreInd();
+                LoopVectorizationPlan::ScalarAccess storeAccess;
+                if (!TryAnalyzePostIVAddress(stmt, store->Addr(), &storeAccess))
                 {
-                    delta = -delta;
+                    JITDUMPEXEC(m_compiler->gtDispStmt(stmt));
+                    JITDUMP("post-IV store is not a local-addressed supported store, bail out\n");
+                    failed = true;
+                    return BasicBlockVisit::Abort;
                 }
 
-                RecordAddressUpdate(plan, lclNum, delta);
-                JITDUMP("post-IV address update V%02u by %d bytes:\n", lclNum, delta);
+                if (storeAccess.ElementType == TYP_UNDEF)
+                {
+                    storeAccess.ElementType = store->TypeGet();
+                    storeAccess.ElementSize = genTypeSize(storeAccess.ElementType);
+                }
+
+                if (!IsSupportedElementType(storeAccess.ElementType))
+                {
+                    JITDUMPEXEC(m_compiler->gtDispStmt(stmt));
+                    JITDUMP("post-IV store has unsupported element type, bail out\n");
+                    failed = true;
+                    return BasicBlockVisit::Abort;
+                }
+
+                if (genActualType(store->TypeGet()) != genActualType(storeAccess.ElementType))
+                {
+                    JITDUMPEXEC(m_compiler->gtDispStmt(stmt));
+                    JITDUMP("post-IV store type does not match memory element type, bail out\n");
+                    failed = true;
+                    return BasicBlockVisit::Abort;
+                }
+
+                storeAccess.ElementSize  = genTypeSize(storeAccess.ElementType);
+                storeAccess.IsStore      = true;
+                GenTree* const storeData = UnwrapCommaValue(store->Data());
+                if (!AddStore(plan, stmt, storeData, storeAccess))
+                {
+                    failed = true;
+                    return BasicBlockVisit::Abort;
+                }
+
+                JITDUMP("post-IV store:\n");
+                JITDUMPEXEC(m_compiler->gtDispStmt(stmt));
+                JITDUMP("post-IV store address:\n");
+                JITDUMPEXEC(m_compiler->gtDispTree(storeAccess.Address));
+                continue;
+            }
+
+            if (!root->OperIs(GT_STORE_LCL_VAR))
+            {
+                JITDUMPEXEC(m_compiler->gtDispStmt(stmt));
+                JITDUMP("unsupported post-IV statement, bail out\n");
+                failed = true;
+                return BasicBlockVisit::Abort;
+            }
+
+            GenTreeLclVarCommon* const storeLcl = root->AsLclVarCommon();
+            GenTree* const             data     = storeLcl->Data();
+            const unsigned             lclNum   = storeLcl->GetLclNum();
+
+            if ((lclNum == plan->TripCountVar) && data->OperIs(GT_ADD, GT_SUB))
+            {
+                GenTree*   op1             = data->AsOp()->gtOp1;
+                GenTree*   op2             = data->AsOp()->gtOp2;
+                const bool decrementsByOne = (data->OperIs(GT_ADD) && op2->IsIntegralConst(-1)) ||
+                                             (data->OperIs(GT_SUB) && op2->IsIntegralConst(1));
+                if (decrementsByOne && op1->OperIs(GT_LCL_VAR) &&
+                    (op1->AsLclVarCommon()->GetLclNum() == plan->TripCountVar))
+                {
+                    foundTripCountUpdate = true;
+                    JITDUMP("post-IV trip-count update:\n");
+                    JITDUMPEXEC(m_compiler->gtDispStmt(stmt));
+                    continue;
+                }
+            }
+
+            if (data->OperIs(GT_ADD, GT_SUB))
+            {
+                GenTree* op1 = data->AsOp()->gtOp1;
+                GenTree* op2 = data->AsOp()->gtOp2;
+
+                if (op2->IsCnsIntOrI() && op1->OperIs(GT_LCL_VAR) && (op1->AsLclVarCommon()->GetLclNum() == lclNum) &&
+                    storeLcl->TypeIs(TYP_BYREF, TYP_I_IMPL, TYP_LONG))
+                {
+                    int delta = static_cast<int>(op2->AsIntConCommon()->IconValue());
+                    if (data->OperIs(GT_SUB))
+                    {
+                        delta = -delta;
+                    }
+
+                    RecordAddressUpdate(plan, lclNum, delta);
+                    JITDUMP("post-IV address update V%02u by %d bytes:\n", lclNum, delta);
+                    JITDUMPEXEC(m_compiler->gtDispStmt(stmt));
+                    continue;
+                }
+            }
+
+            if (((root->gtFlags & GTF_CALL) == 0) && m_compiler->lvaGetDesc(lclNum)->lvIsTemp)
+            {
+                JITDUMP("post-IV computed value temp V%02u:\n", lclNum);
                 JITDUMPEXEC(m_compiler->gtDispStmt(stmt));
                 continue;
             }
-        }
 
-        if (((root->gtFlags & GTF_CALL) == 0) && m_compiler->lvaGetDesc(lclNum)->lvIsTemp)
-        {
-            JITDUMP("post-IV computed value temp V%02u:\n", lclNum);
+            if (((root->gtFlags & GTF_CALL) == 0) && TryAddReduction(plan, stmt, storeLcl))
+            {
+                continue;
+            }
+
             JITDUMPEXEC(m_compiler->gtDispStmt(stmt));
-            continue;
+            JITDUMP("unsupported post-IV statement, bail out\n");
+            failed = true;
+            return BasicBlockVisit::Abort;
         }
 
-        if (((root->gtFlags & GTF_CALL) == 0) && TryAddReduction(plan, stmt, storeLcl))
-        {
-            continue;
-        }
+        return BasicBlockVisit::Continue;
+    });
 
-        JITDUMPEXEC(m_compiler->gtDispStmt(stmt));
-        JITDUMP("unsupported post-IV statement, bail out\n");
+    if (failed)
+    {
         return false;
     }
 
@@ -1668,6 +1951,7 @@ AutoVectorizer::PackNode* AutoVectorizer::TryBuildComparePack(
     return cmp;
 }
 
+#ifdef FEATURE_HW_INTRINSICS
 bool AutoVectorizer::TryGetScalarFromCreateScalar(LoopVectorizationPlan* plan,
                                                   GenTree*               tree,
                                                   GenTree**              scalar,
@@ -1710,6 +1994,142 @@ bool AutoVectorizer::TryGetScalarFromCreateScalar(LoopVectorizationPlan* plan,
     }
 
     return false;
+}
+
+bool AutoVectorizer::TryFindMinMaxCompare(GenTree* mask, GenTree* trueVector, GenTree* falseVector, bool* isMin)
+{
+    mask = UnwrapCommaValue(mask);
+    if (!mask->OperIs(GT_HWINTRINSIC))
+    {
+        if (mask->OperIs(GT_LCL_VAR))
+        {
+            return false;
+        }
+
+        if (mask->OperIs(GT_COMMA))
+        {
+            return TryFindMinMaxCompare(mask->AsOp()->gtOp1, trueVector, falseVector, isMin) ||
+                   TryFindMinMaxCompare(mask->AsOp()->gtOp2, trueVector, falseVector, isMin);
+        }
+
+        if (mask->OperIs(GT_AND, GT_AND_NOT, GT_OR, GT_XOR))
+        {
+            return TryFindMinMaxCompare(mask->AsOp()->gtOp1, trueVector, falseVector, isMin) ||
+                   TryFindMinMaxCompare(mask->AsOp()->gtOp2, trueVector, falseVector, isMin);
+        }
+
+        return false;
+    }
+
+    GenTreeHWIntrinsic* const intrinsic         = mask->AsHWIntrinsic();
+    const NamedIntrinsic      id                = intrinsic->GetHWIntrinsicId();
+    const bool                isCompareLessThan = (id == NI_X86Base_CompareLessThan)
+#if defined(TARGET_XARCH)
+                                   || (id == NI_AVX_CompareLessThan) || (id == NI_AVX2_CompareLessThan)
+#elif defined(TARGET_ARM64)
+                                   || (id == NI_AdvSimd_CompareLessThan) || (id == NI_AdvSimd_Arm64_CompareLessThan) ||
+                                   (id == NI_AdvSimd_Arm64_CompareLessThanScalar)
+#endif
+        ;
+
+    if (isCompareLessThan && (intrinsic->GetOperandCount() == 2))
+    {
+        GenTree* const op1 = UnwrapCommaValue(intrinsic->Op(1));
+        GenTree* const op2 = UnwrapCommaValue(intrinsic->Op(2));
+        if (op1->OperIs(GT_LCL_VAR) && op2->OperIs(GT_LCL_VAR) && trueVector->OperIs(GT_LCL_VAR) &&
+            falseVector->OperIs(GT_LCL_VAR))
+        {
+            const unsigned op1Lcl     = op1->AsLclVarCommon()->GetLclNum();
+            const unsigned op2Lcl     = op2->AsLclVarCommon()->GetLclNum();
+            const unsigned trueLcl    = trueVector->AsLclVarCommon()->GetLclNum();
+            const unsigned falseLcl   = falseVector->AsLclVarCommon()->GetLclNum();
+            const bool     trueFirst  = (op1Lcl == trueLcl) && (op2Lcl == falseLcl);
+            const bool     falseFirst = (op1Lcl == falseLcl) && (op2Lcl == trueLcl);
+            if (trueFirst || falseFirst)
+            {
+                *isMin = trueFirst;
+                return true;
+            }
+        }
+    }
+
+    for (size_t index = 1; index <= intrinsic->GetOperandCount(); index++)
+    {
+        if (TryFindMinMaxCompare(intrinsic->Op(index), trueVector, falseVector, isMin))
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+bool AutoVectorizer::TryGetScalarMinMaxHWINTRINSICReduction(LoopVectorizationPlan* plan,
+                                                            GenTreeHWIntrinsic*    intrinsic,
+                                                            unsigned               reductionLcl,
+                                                            NamedIntrinsic*        intrinsicName,
+                                                            GenTree**              reductionValue)
+{
+    const NamedIntrinsic intrinsicId = intrinsic->GetHWIntrinsicId();
+    if ((intrinsicId != NI_Vector128_ToScalar)
+#if defined(TARGET_XARCH)
+        && (intrinsicId != NI_Vector256_ToScalar) && (intrinsicId != NI_Vector512_ToScalar)
+#elif defined(TARGET_ARM64)
+        && (intrinsicId != NI_Vector64_ToScalar)
+#endif
+    )
+    {
+        return false;
+    }
+
+    if ((intrinsic->GetOperandCount() != 1) || !intrinsic->Op(1)->OperIs(GT_HWINTRINSIC))
+    {
+        return false;
+    }
+
+    GenTreeHWIntrinsic* const select   = intrinsic->Op(1)->AsHWIntrinsic();
+    const NamedIntrinsic      selectId = select->GetHWIntrinsicId();
+    if ((select->GetOperandCount() != 3) ||
+        ((selectId != NI_Vector128_ConditionalSelect)
+#if defined(TARGET_XARCH)
+         && (selectId != NI_Vector256_ConditionalSelect) && (selectId != NI_Vector512_ConditionalSelect)
+#elif defined(TARGET_ARM64)
+         && (selectId != NI_Vector64_ConditionalSelect)
+#endif
+             ))
+    {
+        return false;
+    }
+
+    GenTree* const mask        = select->Op(1);
+    GenTree* const trueVector  = UnwrapCommaValue(select->Op(2));
+    GenTree* const falseVector = UnwrapCommaValue(select->Op(3));
+    GenTree*       trueScalar  = nullptr;
+    GenTree*       falseScalar = nullptr;
+    if (!TryGetScalarFromCreateScalar(plan, trueVector, &trueScalar) ||
+        !TryGetScalarFromCreateScalar(plan, falseVector, &falseScalar))
+    {
+        return false;
+    }
+
+    const bool reductionIsTrue =
+        trueScalar->OperIs(GT_LCL_VAR) && (trueScalar->AsLclVarCommon()->GetLclNum() == reductionLcl);
+    const bool reductionIsFalse =
+        falseScalar->OperIs(GT_LCL_VAR) && (falseScalar->AsLclVarCommon()->GetLclNum() == reductionLcl);
+    if (!reductionIsTrue && !reductionIsFalse)
+    {
+        return false;
+    }
+
+    bool isMin;
+    if (!TryFindMinMaxCompare(mask, trueVector, falseVector, &isMin))
+    {
+        return false;
+    }
+
+    *intrinsicName  = isMin ? NI_System_Math_Min : NI_System_Math_Max;
+    *reductionValue = reductionIsTrue ? falseScalar : trueScalar;
+    return true;
 }
 
 AutoVectorizer::PackNode* AutoVectorizer::TryBuildScalarHWINTRINSICPack(
@@ -1814,6 +2234,7 @@ AutoVectorizer::PackNode* AutoVectorizer::TryBuildScalarHWINTRINSICPack(
     ternary->Cost          = op1->Cost + op2->Cost + op3->Cost + 1;
     return ternary;
 }
+#endif
 
 AutoVectorizer::PackNode* AutoVectorizer::TryBuildPack(
     LoopVectorizationPlan* plan, Statement* stmt, GenTree* value, var_types elementType, unsigned depth)
@@ -2092,6 +2513,7 @@ AutoVectorizer::PackNode* AutoVectorizer::TryBuildPack(
         return selectPack;
     }
 
+#ifdef FEATURE_HW_INTRINSICS
     if (value->OperIs(GT_HWINTRINSIC))
     {
         PackNode* const intrinsicPack =
@@ -2105,6 +2527,7 @@ AutoVectorizer::PackNode* AutoVectorizer::TryBuildPack(
         JITDUMP("unsupported scalar hardware intrinsic, bail out\n");
         return nullptr;
     }
+#endif
 
     JITDUMPEXEC(m_compiler->gtDispTree(value));
     JITDUMP("unsupported value, bail out\n");
@@ -3142,19 +3565,23 @@ GenTree* AutoVectorizer::BuildReductionFinalize(LoopVectorizationPlan* plan, uns
 
     if (reduction.Oper == GT_INTRINSIC)
     {
-        GenTree* scalar = m_compiler->gtNewSimdToScalarNode(reductionDsc->TypeGet(),
-                                                            m_compiler->gtNewLclvNode(reduction.VectorLcl, simdType),
-                                                            plan->ElementType, simdSize);
-
-        for (unsigned lane = 1; lane < plan->VectorizationFactor; lane++)
+        GenTree* vector          = m_compiler->gtNewLclvNode(reduction.VectorLcl, simdType);
+        unsigned reducedSimdSize = simdSize;
+        while (reducedSimdSize > 16)
         {
-            GenTree* const laneValue =
-                m_compiler->gtNewSimdGetElementNode(reductionDsc->TypeGet(),
-                                                    m_compiler->gtNewLclvNode(reduction.VectorLcl, simdType),
-                                                    m_compiler->gtNewIconNode(lane), plan->ElementType, simdSize);
-            scalar = BuildReductionIntrinsicNode(reduction, scalar, laneValue, reductionDsc->TypeGet());
+            GenTree* const  vectorDup = m_compiler->fgMakeMultiUse(&vector);
+            const unsigned  halfSize  = reducedSimdSize / 2;
+            const var_types halfType  = Compiler::getSIMDTypeForSize(halfSize);
+            GenTree* const  lower =
+                m_compiler->gtNewSimdGetLowerNode(halfType, vector, plan->ElementType, reducedSimdSize);
+            GenTree* const upper =
+                m_compiler->gtNewSimdGetUpperNode(halfType, vectorDup, plan->ElementType, reducedSimdSize);
+
+            vector          = BuildVectorMinMaxOp(reduction, lower, upper, halfType, halfSize);
+            reducedSimdSize = halfSize;
         }
 
+        GenTree* const scalar = BuildHorizontalVectorMinMaxReduction(reduction, vector, reducedSimdSize);
         return m_compiler->gtNewStoreLclVarNode(reduction.Lcl, scalar);
     }
 
@@ -3168,14 +3595,207 @@ GenTree* AutoVectorizer::BuildReductionFinalize(LoopVectorizationPlan* plan, uns
 #endif
 }
 
+GenTree* AutoVectorizer::BuildScalarMinMaxReduction(const LoopVectorizationPlan::ReductionInfo& reduction,
+                                                    GenTree*                                    vector,
+                                                    unsigned                                    simdSize,
+                                                    unsigned                                    startLane,
+                                                    unsigned                                    laneCount)
+{
+#if defined(FEATURE_HW_INTRINSICS) && (defined(TARGET_XARCH) || defined(TARGET_ARM64))
+    assert(laneCount > 0);
+    if (laneCount == 1)
+    {
+        return m_compiler->gtNewSimdGetElementNode(reduction.ElementType, vector, m_compiler->gtNewIconNode(startLane),
+                                                   reduction.ElementType, simdSize);
+    }
+
+    GenTree* const vectorDup = m_compiler->fgMakeMultiUse(&vector);
+    const unsigned leftCount = laneCount / 2;
+    GenTree* const left      = BuildScalarMinMaxReduction(reduction, vector, simdSize, startLane, leftCount);
+    GenTree* const right =
+        BuildScalarMinMaxReduction(reduction, vectorDup, simdSize, startLane + leftCount, laneCount - leftCount);
+    return BuildReductionIntrinsicNode(reduction, left, right, reduction.ElementType);
+#else
+    unreached();
+#endif
+}
+
+GenTree* AutoVectorizer::BuildShuffle(GenTree* vector, var_types elementType, unsigned simdSize, const uint8_t* indices)
+{
+#if defined(FEATURE_HW_INTRINSICS) && (defined(TARGET_XARCH) || defined(TARGET_ARM64))
+    const var_types simdType     = Compiler::getSIMDTypeForSize(simdSize);
+    const unsigned  elementCount = simdSize / genTypeSize(elementType);
+    GenTreeVecCon*  indicesNode  = m_compiler->gtNewVconNode(simdType);
+
+    for (unsigned index = 0; index < elementCount; index++)
+    {
+        switch (elementType)
+        {
+            case TYP_BYTE:
+            case TYP_UBYTE:
+                indicesNode->gtSimdVal.u8[index] = indices[index];
+                break;
+            case TYP_SHORT:
+            case TYP_USHORT:
+                indicesNode->gtSimdVal.u16[index] = indices[index];
+                break;
+            case TYP_INT:
+            case TYP_UINT:
+            case TYP_FLOAT:
+                indicesNode->gtSimdVal.u32[index] = indices[index];
+                break;
+            case TYP_LONG:
+            case TYP_ULONG:
+            case TYP_DOUBLE:
+                indicesNode->gtSimdVal.u64[index] = indices[index];
+                break;
+            default:
+                unreached();
+        }
+    }
+
+    return m_compiler->gtNewSimdShuffleNode(simdType, vector, indicesNode, elementType, simdSize, false);
+#else
+    unreached();
+#endif
+}
+
+GenTree* AutoVectorizer::BuildHorizontalVectorMinMaxReduction(const LoopVectorizationPlan::ReductionInfo& reduction,
+                                                              GenTree*                                    vector,
+                                                              unsigned                                    simdSize)
+{
+#if defined(FEATURE_HW_INTRINSICS) && (defined(TARGET_XARCH) || defined(TARGET_ARM64))
+    assert(simdSize == 16);
+
+    const var_types elementType  = reduction.ElementType;
+    const var_types simdType     = Compiler::getSIMDTypeForSize(simdSize);
+    const unsigned  elementCount = simdSize / genTypeSize(elementType);
+
+    if ((elementCount == 4) && (varTypeIsInt(elementType) || (elementType == TYP_FLOAT)))
+    {
+        static const uint8_t shuffle1[4] = {1, 0, 3, 2};
+        GenTree*             vectorDup   = m_compiler->fgMakeMultiUse(&vector);
+        GenTree*             shuffled    = BuildShuffle(vectorDup, elementType, simdSize, shuffle1);
+        vector                           = BuildVectorMinMaxOp(reduction, vector, shuffled, simdType, simdSize);
+
+        static const uint8_t shuffle2[4] = {2, 3, 0, 1};
+        vectorDup                        = m_compiler->fgMakeMultiUse(&vector);
+        shuffled                         = BuildShuffle(vectorDup, elementType, simdSize, shuffle2);
+        vector                           = BuildVectorMinMaxOp(reduction, vector, shuffled, simdType, simdSize);
+
+        return m_compiler->gtNewSimdToScalarNode(elementType, vector, elementType, simdSize);
+    }
+
+    if ((elementCount == 2) && (varTypeIsLong(elementType) || (elementType == TYP_DOUBLE)))
+    {
+        static const uint8_t shuffle[2] = {1, 0};
+        GenTree* const       vectorDup  = m_compiler->fgMakeMultiUse(&vector);
+        GenTree* const       shuffled   = BuildShuffle(vectorDup, elementType, simdSize, shuffle);
+        vector                          = BuildVectorMinMaxOp(reduction, vector, shuffled, simdType, simdSize);
+        return m_compiler->gtNewSimdToScalarNode(elementType, vector, elementType, simdSize);
+    }
+
+    return BuildScalarMinMaxReduction(reduction, vector, simdSize, 0, elementCount);
+#else
+    unreached();
+#endif
+}
+
 GenTree* AutoVectorizer::BuildReductionIntrinsicNode(const LoopVectorizationPlan::ReductionInfo& reduction,
                                                      GenTree*                                    op1,
                                                      GenTree*                                    op2,
                                                      var_types                                   resultType)
 {
     assert(IsReductionMinMaxIntrinsic(reduction.Intrinsic));
-    return new (m_compiler, GT_INTRINSIC)
-        GenTreeIntrinsic(resultType, op1, op2, reduction.Intrinsic, nullptr R2RARG(CORINFO_CONST_LOOKUP{IAT_VALUE}));
+
+    if (varTypeIsFloating(resultType))
+    {
+#if defined(FEATURE_HW_INTRINSICS) && (defined(TARGET_XARCH) || defined(TARGET_ARM64))
+        const unsigned  simdSize = 16;
+        const var_types simdType = Compiler::getSIMDTypeForSize(simdSize);
+        bool            isMax;
+        bool            isMagnitude;
+        bool            isNumber;
+        GetMinMaxIntrinsicInfo(reduction.Intrinsic, &isMax, &isMagnitude, &isNumber);
+
+        GenTree* const vectorOp1 = m_compiler->gtNewSimdCreateScalarUnsafeNode(simdType, op1, resultType, simdSize);
+        GenTree* const vectorOp2 = m_compiler->gtNewSimdCreateScalarUnsafeNode(simdType, op2, resultType, simdSize);
+        GenTree* const minMax =
+            ((reduction.Intrinsic == NI_System_Math_MinNative) || (reduction.Intrinsic == NI_System_Math_MaxNative))
+                ? m_compiler->gtNewSimdMinMaxNativeNode(simdType, vectorOp1, vectorOp2, resultType, simdSize, isMax)
+                : m_compiler->gtNewSimdMinMaxNode(simdType, vectorOp1, vectorOp2, resultType, simdSize, isMax,
+                                                  isMagnitude, isNumber);
+        return m_compiler->gtNewSimdToScalarNode(resultType, minMax, resultType, simdSize);
+#else
+        unreached();
+#endif
+    }
+
+    genTreeOps compareOper;
+    switch (reduction.Intrinsic)
+    {
+        case NI_System_Math_Min:
+        case NI_System_Math_MinNative:
+        case NI_System_Math_MinUnsigned:
+            compareOper = GT_LT;
+            break;
+
+        case NI_System_Math_Max:
+        case NI_System_Math_MaxNative:
+        case NI_System_Math_MaxUnsigned:
+            compareOper = GT_GT;
+            break;
+
+        default:
+            unreached();
+    }
+
+    GenTree* const compare = m_compiler->gtNewOperNode(compareOper, TYP_INT, op1, op2);
+    if ((reduction.Intrinsic == NI_System_Math_MinUnsigned) || (reduction.Intrinsic == NI_System_Math_MaxUnsigned))
+    {
+        compare->gtFlags |= GTF_UNSIGNED;
+    }
+
+    GenTree* const op1Clone = m_compiler->gtCloneExpr(op1);
+    GenTree* const op2Clone = m_compiler->gtCloneExpr(op2);
+    return m_compiler->gtNewConditionalNode(GT_SELECT, compare, op1Clone, op2Clone, resultType);
+}
+
+void AutoVectorizer::GetMinMaxIntrinsicInfo(NamedIntrinsic intrinsic,
+                                            bool*          isMax,
+                                            bool*          isMagnitude,
+                                            bool*          isNumber) const
+{
+    *isMax = (intrinsic == NI_System_Math_Max) || (intrinsic == NI_System_Math_MaxNative) ||
+             (intrinsic == NI_System_Math_MaxUnsigned) || (intrinsic == NI_System_Math_MaxMagnitude) ||
+             (intrinsic == NI_System_Math_MaxMagnitudeNumber) || (intrinsic == NI_System_Math_MaxNumber);
+    *isMagnitude = (intrinsic == NI_System_Math_MinMagnitude) || (intrinsic == NI_System_Math_MaxMagnitude) ||
+                   (intrinsic == NI_System_Math_MinMagnitudeNumber) || (intrinsic == NI_System_Math_MaxMagnitudeNumber);
+    *isNumber = (intrinsic == NI_System_Math_MinNumber) || (intrinsic == NI_System_Math_MaxNumber) ||
+                (intrinsic == NI_System_Math_MinMagnitudeNumber) || (intrinsic == NI_System_Math_MaxMagnitudeNumber);
+}
+
+GenTree* AutoVectorizer::BuildVectorMinMaxOp(const LoopVectorizationPlan::ReductionInfo& reduction,
+                                             GenTree*                                    op1,
+                                             GenTree*                                    op2,
+                                             var_types                                   simdType,
+                                             unsigned                                    simdSize)
+{
+#if defined(FEATURE_HW_INTRINSICS) && (defined(TARGET_XARCH) || defined(TARGET_ARM64))
+    bool isMax;
+    bool isMagnitude;
+    bool isNumber;
+    GetMinMaxIntrinsicInfo(reduction.Intrinsic, &isMax, &isMagnitude, &isNumber);
+    if ((reduction.Intrinsic == NI_System_Math_MinNative) || (reduction.Intrinsic == NI_System_Math_MaxNative))
+    {
+        return m_compiler->gtNewSimdMinMaxNativeNode(simdType, op1, op2, reduction.ElementType, simdSize, isMax);
+    }
+
+    return m_compiler->gtNewSimdMinMaxNode(simdType, op1, op2, reduction.ElementType, simdSize, isMax, isMagnitude,
+                                           isNumber);
+#else
+    unreached();
+#endif
 }
 
 GenTree* AutoVectorizer::BuildVectorReductionOp(LoopVectorizationPlan*                      plan,
@@ -3190,26 +3810,7 @@ GenTree* AutoVectorizer::BuildVectorReductionOp(LoopVectorizationPlan*          
         return m_compiler->gtNewSimdBinOpNode(GT_ADD, simdType, op1, op2, plan->ElementType, plan->VectorSizeBytes);
     }
 
-    const bool isMax =
-        (reduction.Intrinsic == NI_System_Math_Max) || (reduction.Intrinsic == NI_System_Math_MaxNative) ||
-        (reduction.Intrinsic == NI_System_Math_MaxUnsigned) || (reduction.Intrinsic == NI_System_Math_MaxMagnitude) ||
-        (reduction.Intrinsic == NI_System_Math_MaxMagnitudeNumber) || (reduction.Intrinsic == NI_System_Math_MaxNumber);
-    const bool isMagnitude = (reduction.Intrinsic == NI_System_Math_MinMagnitude) ||
-                             (reduction.Intrinsic == NI_System_Math_MaxMagnitude) ||
-                             (reduction.Intrinsic == NI_System_Math_MinMagnitudeNumber) ||
-                             (reduction.Intrinsic == NI_System_Math_MaxMagnitudeNumber);
-    const bool isNumber = (reduction.Intrinsic == NI_System_Math_MinNumber) ||
-                          (reduction.Intrinsic == NI_System_Math_MaxNumber) ||
-                          (reduction.Intrinsic == NI_System_Math_MinMagnitudeNumber) ||
-                          (reduction.Intrinsic == NI_System_Math_MaxMagnitudeNumber);
-    if ((reduction.Intrinsic == NI_System_Math_MinNative) || (reduction.Intrinsic == NI_System_Math_MaxNative))
-    {
-        return m_compiler->gtNewSimdMinMaxNativeNode(simdType, op1, op2, plan->ElementType, plan->VectorSizeBytes,
-                                                     isMax);
-    }
-
-    return m_compiler->gtNewSimdMinMaxNode(simdType, op1, op2, plan->ElementType, plan->VectorSizeBytes, isMax,
-                                           isMagnitude, isNumber);
+    return BuildVectorMinMaxOp(reduction, op1, op2, simdType, plan->VectorSizeBytes);
 #else
     unreached();
 #endif
@@ -4330,13 +4931,13 @@ void AutoVectorizer::RecordLocalDefs(LoopVectorizationPlan* plan, GenTree* tree,
     visitor.WalkTree(&tree, nullptr);
 }
 
-void AutoVectorizer::RecordLocalDef(LoopVectorizationPlan* plan, unsigned lclNum, GenTree* value)
+void AutoVectorizer::RecordLocalDef(LoopVectorizationPlan* plan, unsigned lclNum, GenTree* value, bool overwrite)
 {
     for (unsigned i = 0; i < plan->LocalDefCount; i++)
     {
         if (plan->LocalDefVars[i] == lclNum)
         {
-            plan->LocalDefValues[i] = (plan->LocalDefValues[i] == value) ? value : nullptr;
+            plan->LocalDefValues[i] = overwrite || (plan->LocalDefValues[i] == value) ? value : nullptr;
             return;
         }
     }

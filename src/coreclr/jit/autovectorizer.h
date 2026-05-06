@@ -61,6 +61,7 @@ private:
         static const unsigned MaxAccesses       = 16;
         static const unsigned MaxLocalDefs      = 32;
         static const unsigned MaxReductions     = 4;
+        static const unsigned MaxSelectDefs     = 8;
         static const unsigned MaxStores         = 12;
 
         struct ScalarAccess
@@ -89,31 +90,45 @@ private:
         BasicBlock*           Latch     = nullptr;
         BasicBlock*           Exit      = nullptr;
 
-        bool        IsPostIV                               = false;
-        unsigned    InductionVar                           = BAD_VAR_NUM;
-        unsigned    TripCountVar                           = BAD_VAR_NUM;
-        unsigned    AddressUpdateVars[MaxAddressUpdates]   = {};
-        int         AddressUpdateDeltas[MaxAddressUpdates] = {};
-        unsigned    AddressUpdateCount                     = 0;
-        unsigned    LocalDefVars[MaxLocalDefs]             = {};
-        GenTree*    LocalDefValues[MaxLocalDefs]           = {};
-        unsigned    LocalDefCount                          = 0;
-        GenTree*    End                                    = nullptr;
-        GenTree*    IterTree                               = nullptr;
-        GenTree*    TestTree                               = nullptr;
-        BasicBlock* TestBlock                              = nullptr;
-        genTreeOps  TestOper                               = GT_COUNT;
-        int         Step                                   = 0;
-        bool        HasConstInit                           = false;
-        int         ConstInitValue                         = 0;
-        var_types   ElementType                            = TYP_UNDEF;
-        unsigned    ElementSize                            = 0;
-        unsigned    VectorSizeBytes                        = 0;
-        unsigned    VectorizationFactor                    = 0;
-        int         MinIndexOffset                         = 0;
-        int         MaxIndexOffset                         = 0;
-        bool        SawBoundsCheck                         = false;
-        bool        NeedsOverlapCheck                      = false;
+        bool     IsPostIV                               = false;
+        unsigned InductionVar                           = BAD_VAR_NUM;
+        unsigned TripCountVar                           = BAD_VAR_NUM;
+        unsigned AddressUpdateVars[MaxAddressUpdates]   = {};
+        int      AddressUpdateDeltas[MaxAddressUpdates] = {};
+        unsigned AddressUpdateCount                     = 0;
+        unsigned LocalDefVars[MaxLocalDefs]             = {};
+        GenTree* LocalDefValues[MaxLocalDefs]           = {};
+        unsigned LocalDefCount                          = 0;
+
+        struct SelectLocalDef
+        {
+            unsigned    Lcl        = BAD_VAR_NUM;
+            GenTree*    Cond       = nullptr;
+            GenTree*    TrueValue  = nullptr;
+            GenTree*    FalseValue = nullptr;
+            BasicBlock* TrueBlock  = nullptr;
+            BasicBlock* FalseBlock = nullptr;
+        };
+
+        SelectLocalDef SelectLocalDefs[MaxSelectDefs];
+        unsigned       SelectLocalDefCount = 0;
+
+        GenTree*    End                 = nullptr;
+        GenTree*    IterTree            = nullptr;
+        GenTree*    TestTree            = nullptr;
+        BasicBlock* TestBlock           = nullptr;
+        genTreeOps  TestOper            = GT_COUNT;
+        int         Step                = 0;
+        bool        HasConstInit        = false;
+        int         ConstInitValue      = 0;
+        var_types   ElementType         = TYP_UNDEF;
+        unsigned    ElementSize         = 0;
+        unsigned    VectorSizeBytes     = 0;
+        unsigned    VectorizationFactor = 0;
+        int         MinIndexOffset      = 0;
+        int         MaxIndexOffset      = 0;
+        bool        SawBoundsCheck      = false;
+        bool        NeedsOverlapCheck   = false;
 
         Statement*   StoreStmts[MaxStores]     = {};
         GenTree*     StoreValues[MaxStores]    = {};
@@ -124,13 +139,14 @@ private:
 
         struct ReductionInfo
         {
-            Statement*     Stmt      = nullptr;
-            unsigned       Lcl       = BAD_VAR_NUM;
-            unsigned       VectorLcl = BAD_VAR_NUM;
-            genTreeOps     Oper      = GT_COUNT;
-            NamedIntrinsic Intrinsic = NI_Illegal;
-            GenTree*       Value     = nullptr;
-            PackNode*      Pack      = nullptr;
+            Statement*     Stmt        = nullptr;
+            unsigned       Lcl         = BAD_VAR_NUM;
+            unsigned       VectorLcl   = BAD_VAR_NUM;
+            var_types      ElementType = TYP_UNDEF;
+            genTreeOps     Oper        = GT_COUNT;
+            NamedIntrinsic Intrinsic   = NI_Illegal;
+            GenTree*       Value       = nullptr;
+            PackNode*      Pack        = nullptr;
         };
 
         ReductionInfo Reductions[MaxReductions];
@@ -144,27 +160,31 @@ private:
 
     Compiler* m_compiler;
 
-    bool      IsEnabled() const;
-    bool      IsAggressiveVectorizing() const;
-    bool      IsSupportedCompilation() const;
-    unsigned  GetVectorSizeBytes(var_types elementType) const;
-    bool      ReportVectorIsa(unsigned vectorSizeBytes) const;
-    bool      RecomputeLoopTable();
-    bool      IsSupportedElementType(var_types elementType) const;
-    bool      AreCompatibleElementTypes(var_types first, var_types second) const;
-    bool      IsSupportedUnaryOp(genTreeOps oper, var_types elementType) const;
-    bool      IsSupportedBinaryOp(genTreeOps oper, var_types elementType) const;
-    bool      IsSupportedCompareOp(genTreeOps oper, var_types elementType) const;
-    bool      IsSupportedIntrinsic(NamedIntrinsic intrinsic, var_types elementType) const;
-    bool      TrySelectVectorSizeAndBuildSLPPlan(LoopVectorizationPlan* plan);
-    bool      IsProfitableVectorSize(const LoopVectorizationPlan* plan, unsigned maxVectorSizeBytes) const;
-    bool      TryGetConstantTripCount(const LoopVectorizationPlan* plan, unsigned* tripCount) const;
-    unsigned  EstimateVectorPressure(const LoopVectorizationPlan* plan) const;
-    bool      TryCreateLoopPlan(FlowGraphNaturalLoop* loop, LoopVectorizationPlan* plan);
-    bool      TryCreatePostIVLoopPlan(FlowGraphNaturalLoop* loop, LoopVectorizationPlan* plan);
-    bool      TryCreateLocalLimitLoopPlan(FlowGraphNaturalLoop* loop, LoopVectorizationPlan* plan);
-    bool      TryAnalyzeMemory(LoopVectorizationPlan* plan);
-    bool      TryAnalyzePostIVMemory(LoopVectorizationPlan* plan);
+    bool     IsEnabled() const;
+    bool     IsAggressiveVectorizing() const;
+    bool     IsSupportedCompilation() const;
+    unsigned GetVectorSizeBytes(var_types elementType) const;
+    bool     ReportVectorIsa(unsigned vectorSizeBytes) const;
+    bool     RecomputeLoopTable();
+    bool     IsSupportedElementType(var_types elementType) const;
+    bool     AreCompatibleElementTypes(var_types first, var_types second) const;
+    bool     IsSupportedUnaryOp(genTreeOps oper, var_types elementType) const;
+    bool     IsSupportedBinaryOp(genTreeOps oper, var_types elementType) const;
+    bool     IsSupportedCompareOp(genTreeOps oper, var_types elementType) const;
+    bool     IsSupportedIntrinsic(NamedIntrinsic intrinsic, var_types elementType) const;
+    bool     TrySelectVectorSizeAndBuildSLPPlan(LoopVectorizationPlan* plan);
+    bool     IsProfitableVectorSize(const LoopVectorizationPlan* plan, unsigned maxVectorSizeBytes) const;
+    bool     TryGetConstantTripCount(const LoopVectorizationPlan* plan, unsigned* tripCount) const;
+    unsigned EstimateVectorPressure(const LoopVectorizationPlan* plan) const;
+    bool     TryCreateLoopPlan(FlowGraphNaturalLoop* loop, LoopVectorizationPlan* plan);
+    bool     TryCreatePostIVLoopPlan(FlowGraphNaturalLoop* loop, LoopVectorizationPlan* plan);
+    bool     TryCreateLocalLimitLoopPlan(FlowGraphNaturalLoop* loop, LoopVectorizationPlan* plan);
+    bool     TryAnalyzeMemory(LoopVectorizationPlan* plan);
+    bool     TryAnalyzePostIVMemory(LoopVectorizationPlan* plan);
+    bool     TryRecordSelectLocalDef(LoopVectorizationPlan* plan, BasicBlock* block);
+    bool     TryGetSelectLocalDef(
+            LoopVectorizationPlan* plan, unsigned lclNum, GenTree** cond, GenTree** trueValue, GenTree** falseValue);
+    bool      IsSelectLocalDefStore(LoopVectorizationPlan* plan, BasicBlock* block, GenTree* root);
     bool      AddStore(LoopVectorizationPlan*                     plan,
                        Statement*                                 stmt,
                        GenTree*                                   value,
@@ -180,14 +200,22 @@ private:
         LoopVectorizationPlan* plan, Statement* stmt, GenTree* value, var_types elementType, unsigned depth = 0);
     PackNode* TryBuildComparePack(
         LoopVectorizationPlan* plan, Statement* stmt, GenTree* value, var_types elementType, unsigned depth);
+#ifdef FEATURE_HW_INTRINSICS
     PackNode* TryBuildScalarHWINTRINSICPack(LoopVectorizationPlan* plan,
                                             Statement*             stmt,
                                             GenTreeHWIntrinsic*    intrinsic,
                                             var_types              elementType,
                                             unsigned               depth);
+    bool      TryGetScalarMinMaxHWINTRINSICReduction(LoopVectorizationPlan* plan,
+                                                     GenTreeHWIntrinsic*    intrinsic,
+                                                     unsigned               reductionLcl,
+                                                     NamedIntrinsic*        intrinsicName,
+                                                     GenTree**              reductionValue);
+    bool      TryFindMinMaxCompare(GenTree* mask, GenTree* trueVector, GenTree* falseVector, bool* isMin);
     bool TryGetScalarFromCreateScalar(LoopVectorizationPlan* plan, GenTree* tree, GenTree** scalar, unsigned depth = 0);
-    bool TryBuildSLPPlan(LoopVectorizationPlan* plan);
-    bool TryRewritePlan(LoopVectorizationPlan* plan);
+#endif
+    bool        TryBuildSLPPlan(LoopVectorizationPlan* plan);
+    bool        TryRewritePlan(LoopVectorizationPlan* plan);
     PackNode*   NewPackNode(SLPPlan* slpPlan, PackKind kind, var_types elementType, unsigned laneCount);
     const char* PackKindName(PackKind kind) const;
     void        DumpSLPPlan(const LoopVectorizationPlan& plan) const;
@@ -208,6 +236,21 @@ private:
                                             GenTree*                                    op1,
                                             GenTree*                                    op2,
                                             var_types                                   resultType);
+    GenTree*    BuildScalarMinMaxReduction(const LoopVectorizationPlan::ReductionInfo& reduction,
+                                           GenTree*                                    vector,
+                                           unsigned                                    simdSize,
+                                           unsigned                                    startLane,
+                                           unsigned                                    laneCount);
+    GenTree*    BuildHorizontalVectorMinMaxReduction(const LoopVectorizationPlan::ReductionInfo& reduction,
+                                                     GenTree*                                    vector,
+                                                     unsigned                                    simdSize);
+    GenTree*    BuildShuffle(GenTree* vector, var_types elementType, unsigned simdSize, const uint8_t* indices);
+    void        GetMinMaxIntrinsicInfo(NamedIntrinsic intrinsic, bool* isMax, bool* isMagnitude, bool* isNumber) const;
+    GenTree*    BuildVectorMinMaxOp(const LoopVectorizationPlan::ReductionInfo& reduction,
+                                    GenTree*                                    op1,
+                                    GenTree*                                    op2,
+                                    var_types                                   simdType,
+                                    unsigned                                    simdSize);
     GenTree*    BuildVectorReductionOp(LoopVectorizationPlan*                      plan,
                                        const LoopVectorizationPlan::ReductionInfo& reduction,
                                        GenTree*                                    op1,
@@ -254,7 +297,7 @@ private:
     bool        IsLimitAtMost(
                LoopVectorizationPlan* plan, GenTree* limit, GenTree* length, int lengthOffset, unsigned depth = 0);
     void RecordLocalDefs(LoopVectorizationPlan* plan, GenTree* tree, bool* foundBoundsCheck = nullptr);
-    void RecordLocalDef(LoopVectorizationPlan* plan, unsigned lclNum, GenTree* value);
+    void RecordLocalDef(LoopVectorizationPlan* plan, unsigned lclNum, GenTree* value, bool overwrite = false);
     bool TryGetLocalDef(LoopVectorizationPlan* plan, unsigned lclNum, GenTree** value);
     bool TryCollectArrayLengthLimitLocals(LoopVectorizationPlan* plan,
                                           GenTree*               tree,
