@@ -138,6 +138,13 @@ public struct COR_FIELD
 
 #pragma warning restore CS0649
 
+public enum DynamicMethodType
+{
+    kNone = 0,
+    kDiagnosticHidden = 1,
+    kLCGMethod = 2,
+}
+
 // Name-surface projection of IDacDbiInterface in native method order for COM binding validation.
 // Parameter shapes are intentionally coarse placeholders and will be refined with method implementation work.
 [GeneratedComInterface]
@@ -158,9 +165,6 @@ public unsafe partial interface IDacDbiInterface
 
     [PreserveSig]
     int GetAppDomainId(ulong vmAppDomain, uint* pRetVal);
-
-    [PreserveSig]
-    int GetAppDomainObject(ulong vmAppDomain, ulong* pRetVal);
 
     [PreserveSig]
     int GetAppDomainFullName(ulong vmAppDomain, nint pStrName);
@@ -187,9 +191,6 @@ public unsafe partial interface IDacDbiInterface
     int GetModuleData(ulong vmModule, DacDbiModuleInfo* pData);
 
     [PreserveSig]
-    int GetAssemblyInfo(ulong vmAssembly, DacDbiAssemblyInfo* pData);
-
-    [PreserveSig]
     int GetModuleForAssembly(ulong vmAssembly, ulong* pModule);
 
     [PreserveSig]
@@ -202,7 +203,7 @@ public unsafe partial interface IDacDbiInterface
     int SetCompilerFlags(ulong vmAssembly, Interop.BOOL fAllowJitOpts, Interop.BOOL fEnableEnC);
 
     [PreserveSig]
-    int EnumerateAssembliesInAppDomain(ulong vmAppDomain, nint fpCallback, nint pUserData);
+    int EnumerateAssembliesInAppDomain(ulong vmAppDomain, delegate* unmanaged<ulong, nint, void> fpCallback, nint pUserData);
 
     [PreserveSig]
     int EnumerateModulesInAssembly(ulong vmAssembly, nint fpCallback, nint pUserData);
@@ -223,7 +224,7 @@ public unsafe partial interface IDacDbiInterface
     int Hijack(ulong vmThread, uint dwThreadId, nint pRecord, nint pOriginalContext, uint cbSizeContext, int reason, nint pUserData, ulong* pRemoteContextAddr);
 
     [PreserveSig]
-    int EnumerateThreads(nint fpCallback, nint pUserData);
+    int EnumerateThreads(delegate* unmanaged<ulong, nint, void> fpCallback, nint pUserData);
 
     [PreserveSig]
     int IsThreadMarkedDead(ulong vmThread, Interop.BOOL* pResult);
@@ -316,10 +317,10 @@ public unsafe partial interface IDacDbiInterface
     int GetFramePointer(nuint pSFIHandle, ulong* pRetVal);
 
     [PreserveSig]
-    int IsLeafFrame(ulong vmThread, nint pContext, Interop.BOOL* pResult);
+    int IsLeafFrame(ulong vmThread, byte* pContext, Interop.BOOL* pResult);
 
     [PreserveSig]
-    int GetContext(ulong vmThread, nint pContextBuffer);
+    int GetContext(ulong vmThread, byte* pContextBuffer);
 
     [PreserveSig]
     int ConvertContextToDebuggerRegDisplay(nint pInContext, nint pOutDRD, Interop.BOOL fActive);
@@ -544,7 +545,7 @@ public unsafe partial interface IDacDbiInterface
     int GetLoaderHeapMemoryRanges(nint pRanges);
 
     [PreserveSig]
-    int IsModuleMapped(ulong pModule, int* isModuleMapped);
+    int IsModuleMapped(ulong pModule, Interop.BOOL* isModuleMapped);
 
     [PreserveSig]
     int MetadataUpdatesApplied(Interop.BOOL* pResult);

@@ -1590,22 +1590,18 @@ namespace System.Net.WebSockets
                 }
                 _receiveBufferOffset = 0;
 
-                // While we don't have enough data, read more.
-                if (_receiveBufferCount < minimumRequiredBytes)
+                int bytesToRead = minimumRequiredBytes - _receiveBufferCount;
+                int numRead = await _stream.ReadAtLeastAsync(
+                    _receiveBuffer.Slice(_receiveBufferCount), bytesToRead, throwOnEndOfStream: false, cancellationToken).ConfigureAwait(false);
+                _receiveBufferCount += numRead;
+
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Trace(this, $"bytesRead={numRead}");
+
+                if (numRead < bytesToRead)
                 {
-                    int bytesToRead = minimumRequiredBytes - _receiveBufferCount;
-                    int numRead = await _stream.ReadAtLeastAsync(
-                        _receiveBuffer.Slice(_receiveBufferCount), bytesToRead, throwOnEndOfStream: false, cancellationToken).ConfigureAwait(false);
-                    _receiveBufferCount += numRead;
-
-                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Trace(this, $"bytesRead={numRead}");
-
-                    if (numRead < bytesToRead)
-                    {
-                        ThrowEOFUnexpected();
-                    }
-                    _keepAlivePingState?.OnDataReceived();
+                    ThrowEOFUnexpected();
                 }
+                _keepAlivePingState?.OnDataReceived();
             }
         }
 

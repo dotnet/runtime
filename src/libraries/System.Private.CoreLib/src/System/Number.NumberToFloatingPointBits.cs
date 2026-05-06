@@ -945,7 +945,6 @@ namespace System
         /// https://lemire.me/blog/2022/01/21/swar-explained-parsing-eight-digits/
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [RequiresUnsafe]
         internal static uint ParseEightDigitsUnrolled(byte* chars)
         {
             // let's take the following value (byte*) 12345678 and read it unaligned :

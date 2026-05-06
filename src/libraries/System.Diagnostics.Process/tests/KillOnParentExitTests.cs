@@ -7,7 +7,7 @@ using Xunit;
 
 namespace System.Diagnostics.Tests
 {
-    [PlatformSpecific(TestPlatforms.Windows)]
+    [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.Linux)]
     public class KillOnParentExitTests : ProcessTestBase
     {
         [Fact]

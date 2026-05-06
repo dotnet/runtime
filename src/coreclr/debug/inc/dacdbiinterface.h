@@ -266,23 +266,6 @@ public:
     virtual HRESULT STDMETHODCALLTYPE GetAppDomainId(VMPTR_AppDomain vmAppDomain, OUT ULONG * pRetVal) = 0;
 
     //
-    // Get the managed AppDomain object for an AppDomain.
-    //
-    // Arguments:
-    //  vmAppDomain  - VM pointer to the AppDomain object of interest
-    //  pRetVal - [out] Objecthandle for the managed app domain object or the Null VMPTR if there is no object created yet.
-    //
-    // Return Value:
-    //    S_OK on success; otherwise, an appropriate failure HRESULT.
-    //
-    // Notes:
-    //   The AppDomain managed object is lazily constructed on the AppDomain the first time
-    //   it is requested. It may be NULL.
-    //
-    virtual HRESULT STDMETHODCALLTYPE GetAppDomainObject(VMPTR_AppDomain vmAppDomain, OUT VMPTR_OBJECTHANDLE * pRetVal) = 0;
-
-
-    //
     // Get the full AD friendly name for the given EE AppDomain.
     //
     // Arguments:
@@ -490,23 +473,7 @@ public:
     //    vmModule - vm handle to a module
     //    pData - required out parameter which will be filled out with module properties
     //
-    // Notes:
-    //    See definition of AssemblyInfo for more details about what properties
-    //    this gives back.
     virtual HRESULT STDMETHODCALLTYPE GetModuleData(VMPTR_Module vmModule, OUT ModuleInfo * pData) = 0;
-
-
-    //
-    // Get properties for a Assembly
-    //
-    // Arguments:
-    //    vmAssembly - vm handle to a Assembly
-    //    pData - required out parameter which will be filled out with module properties
-    //
-    // Notes:
-    //    See definition of AssemblyInfo for more details about what properties
-    //    this gives back.
-    virtual HRESULT STDMETHODCALLTYPE GetAssemblyInfo(VMPTR_Assembly vmAssembly, OUT AssemblyInfo * pData) = 0;
 
     virtual HRESULT STDMETHODCALLTYPE GetModuleForAssembly(VMPTR_Assembly vmAssembly, OUT VMPTR_Module * pModule) = 0;
 
@@ -1948,8 +1915,8 @@ public:
     //
     // Arguments:
     //    vmObject          - The object to check for ownership
-    //    pRetVal           - [out] Inside the structure we have: 
-    //      pVmThread - the owning thread or VMPTR_Thread::NullPtr() if unowned, 
+    //    pRetVal           - [out] Inside the structure we have:
+    //      pVmThread - the owning thread or VMPTR_Thread::NullPtr() if unowned,
     //      pAcquisitionCount - the number of times the lock would need to be released in order for it to be unowned.
     //
     // Return Value:

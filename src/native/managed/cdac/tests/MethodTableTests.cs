@@ -27,6 +27,7 @@ public class MethodTableTests
             [DataType.ParamTypeDesc] = TargetTestHelpers.CreateTypeInfo(rtsBuilder.ParamTypeDescLayout),
             [DataType.TypeVarTypeDesc] = TargetTestHelpers.CreateTypeInfo(rtsBuilder.TypeVarTypeDescLayout),
             [DataType.GCCoverageInfo] = TargetTestHelpers.CreateTypeInfo(rtsBuilder.GCCoverageInfoLayout),
+            [DataType.ContinuationObject] = new Target.TypeInfo { Size = rtsBuilder.ContinuationObjectSize },
         };
 
     internal static (string Name, ulong Value)[] CreateContractGlobals(MockRTS rtsBuilder)
@@ -648,5 +649,402 @@ public class MethodTableTests
         IRuntimeTypeSystem contract = target.Contracts.RuntimeTypeSystem;
         Contracts.TypeHandle typeHandle = contract.GetTypeHandle(methodTablePtr);
         Assert.Equal(flagSet, contract.RequiresAlign8(typeHandle));
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetGCDescSeriesReturnsEmptyForNonMethodTable(MockTarget.Architecture arch)
+    {
+        // TypeDesc handles should yield no series
+        TargetPointer typeDescAddress = default;
+        TestPlaceholderTarget target = CreateTarget(
+            arch,
+            rtsBuilder =>
+            {
+                MockParamTypeDesc typeDesc = rtsBuilder.AddParamTypeDesc();
+                typeDescAddress = typeDesc.Address | (ulong)RuntimeTypeSystem_1.TypeHandleBits.TypeDesc;
+            });
+
+        IRuntimeTypeSystem contract = target.Contracts.RuntimeTypeSystem;
+        Contracts.TypeHandle typeDescHandle = contract.GetTypeHandle(typeDescAddress);
+        Assert.Empty(contract.GetGCDescSeries(typeDescHandle));
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetGCDescSeriesReturnsEmptyWhenNoGCPointers(MockTarget.Architecture arch)
+    {
+        TargetPointer mtPtr = default;
+        TestPlaceholderTarget target = CreateTarget(
+            arch,
+            rtsBuilder =>
+            {
+                MockEEClass eeClass = rtsBuilder.AddEEClass("NoGCPointers");
+                MockMethodTable mt = rtsBuilder.AddMethodTable("NoGCPointers");
+                uint baseSize = rtsBuilder.Builder.TargetTestHelpers.ObjectBaseSize;
+                mt.BaseSize = baseSize;
+                mt.ParentMethodTable = rtsBuilder.SystemObjectMethodTable.Address;
+                mt.NumVirtuals = 3;
+                eeClass.MethodTable = mt.Address;
+                mt.EEClassOrCanonMT = eeClass.Address;
+                // MTFlags does NOT have ContainsGCPointers (0x01000000) set
+                mtPtr = mt.Address;
+            });
+
+        IRuntimeTypeSystem contract = target.Contracts.RuntimeTypeSystem;
+        Contracts.TypeHandle typeHandle = contract.GetTypeHandle(mtPtr);
+        Assert.False(contract.ContainsGCPointers(typeHandle));
+        Assert.Empty(contract.GetGCDescSeries(typeHandle));
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetGCDescSeriesReturnsSingleSeries(MockTarget.Architecture arch)
+    {
+        TargetPointer mtPtr = default;
+        uint expectedSeriesOffset = 0;
+        uint expectedSeriesSize = 0;
+
+        TestPlaceholderTarget target = CreateTarget(
+            arch,
+            rtsBuilder =>
+            {
+                TargetTestHelpers helpers = rtsBuilder.Builder.TargetTestHelpers;
+                uint pointerSize = (uint)helpers.PointerSize;
+
+                // Object layout: [ObjHeader][MT*][ref1]
+                // BaseSize = ObjHeader + MT* + ref1 = 3 * pointerSize
+                uint baseSize = helpers.ObjHeaderSize + 2u * pointerSize;
+
+                // One series covering the single reference field.
+                // seriessize is stored as (actualSize - baseSize); for one pointer: pointerSize - baseSize
+                ulong rawSeriesSize = pointerSize - baseSize;  // stored as size_t (wraps to large value)
+                ulong rawSeriesOffset = helpers.ObjHeaderSize + pointerSize; // after ObjHeader+MT*
+
+                MockEEClass eeClass = rtsBuilder.AddEEClass("SingleRef");
+                MockMethodTable mt = rtsBuilder.AddMethodTableWithGCDesc(
+                    "SingleRef",
+                    baseSize,
+                    [(rawSeriesSize, rawSeriesOffset)]);
+                mt.MTFlags |= 0x01000000u; // ContainsGCPointers
+                mt.ParentMethodTable = rtsBuilder.SystemObjectMethodTable.Address;
+                mt.NumVirtuals = 3;
+                eeClass.MethodTable = mt.Address;
+                mt.EEClassOrCanonMT = eeClass.Address;
+
+                mtPtr = mt.Address;
+                expectedSeriesOffset = (uint)rawSeriesOffset;
+                // After normalization: rawSeriesSize + baseSize = pointerSize (one pointer-sized run)
+                expectedSeriesSize = pointerSize;
+            });
+
+        IRuntimeTypeSystem contract = target.Contracts.RuntimeTypeSystem;
+        Contracts.TypeHandle typeHandle = contract.GetTypeHandle(mtPtr);
+        Assert.True(contract.ContainsGCPointers(typeHandle));
+
+        (uint Offset, uint Size)[] series = contract.GetGCDescSeries(typeHandle).ToArray();
+        Assert.Single(series);
+        Assert.Equal(expectedSeriesOffset, series[0].Offset);
+        Assert.Equal(expectedSeriesSize, series[0].Size);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetGCDescSeriesReturnsMultipleSeriesInOrder(MockTarget.Architecture arch)
+    {
+        TargetPointer mtPtr = default;
+        (uint Offset, uint Size)[] expectedSeries = [];
+
+        TestPlaceholderTarget target = CreateTarget(
+            arch,
+            rtsBuilder =>
+            {
+                TargetTestHelpers helpers = rtsBuilder.Builder.TargetTestHelpers;
+                uint pointerSize = (uint)helpers.PointerSize;
+
+                // Two separate GC reference runs in the object.
+                // Object layout: [ObjHeader][MT*][ref1][nonref][ref2]
+                uint baseSize = helpers.ObjHeaderSize + 4u * pointerSize;
+
+                ulong series0Offset = helpers.ObjHeaderSize + pointerSize;            // ref1 field
+                ulong series0Size = pointerSize - baseSize;                            // raw stored size
+
+                ulong series1Offset = helpers.ObjHeaderSize + 3u * pointerSize;       // ref2 field
+                ulong series1Size = pointerSize - baseSize;
+
+                MockEEClass eeClass = rtsBuilder.AddEEClass("TwoRefs");
+                MockMethodTable mt = rtsBuilder.AddMethodTableWithGCDesc(
+                    "TwoRefs",
+                    baseSize,
+                    // Ordered highest (lowest index) to lowest as required by AddMethodTableWithGCDesc
+                    [(series0Size, series0Offset), (series1Size, series1Offset)]);
+                mt.MTFlags |= 0x01000000u; // ContainsGCPointers
+                mt.ParentMethodTable = rtsBuilder.SystemObjectMethodTable.Address;
+                mt.NumVirtuals = 3;
+                eeClass.MethodTable = mt.Address;
+                mt.EEClassOrCanonMT = eeClass.Address;
+
+                mtPtr = mt.Address;
+                // After normalization (rawSize + baseSize), each series covers one pointer
+                expectedSeries =
+                [
+                    ((uint)series0Offset, pointerSize),
+                    ((uint)series1Offset, pointerSize),
+                ];
+            });
+
+        IRuntimeTypeSystem contract = target.Contracts.RuntimeTypeSystem;
+        Contracts.TypeHandle typeHandle = contract.GetTypeHandle(mtPtr);
+
+        (uint Offset, uint Size)[] series = contract.GetGCDescSeries(typeHandle).ToArray();
+        Assert.Equal(expectedSeries.Length, series.Length);
+        for (int i = 0; i < expectedSeries.Length; i++)
+        {
+            Assert.Equal(expectedSeries[i].Offset, series[i].Offset);
+            Assert.Equal(expectedSeries[i].Size, series[i].Size);
+        }
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetGCDescSeriesReturnsSingleValueClassSeries(MockTarget.Architecture arch)
+    {
+        // A negative NumSeries indicates a value-class (repeating) series layout.
+        // This models a 1-element array of struct { ref field; }: one val_serie_item with nptrs=1, skip=0.
+        TargetPointer mtPtr = default;
+        uint expectedOffset = 0;
+        uint expectedSize = 0;
+
+        TestPlaceholderTarget target = CreateTarget(
+            arch,
+            rtsBuilder =>
+            {
+                TargetTestHelpers helpers = rtsBuilder.Builder.TargetTestHelpers;
+                uint pointerSize = (uint)helpers.PointerSize;
+
+                // Array of structs each containing one GC ref.
+                // startoffset is relative to the object pointer (MT* slot), past MT* + length.
+                uint startOffset = 2u * pointerSize; // past MT* + length
+                uint componentSize = pointerSize;    // element is struct { ref field; }
+                uint baseSize = helpers.ObjHeaderSize + 2u * pointerSize; // ObjHeader + MT* + length
+
+                MockEEClass eeClass = rtsBuilder.AddEEClass("ValueClassArray_1ref");
+                MockMethodTable mt = rtsBuilder.AddMethodTableWithValueClassGCDesc(
+                    "ValueClassArray_1ref",
+                    baseSize,
+                    startOffset,
+                    [(1, 0)]); // nptrs=1, skip=0
+                // Set array flags with componentSize so GetComponentSize returns the element size.
+                mt.MTFlags = (uint)(MethodTableFlags_1.WFLAGS_HIGH.HasComponentSize
+                    | MethodTableFlags_1.WFLAGS_HIGH.Category_Array)
+                    | componentSize
+                    | 0x01000000u; // ContainsGCPointers
+                mt.ParentMethodTable = rtsBuilder.SystemObjectMethodTable.Address;
+                mt.NumVirtuals = 3;
+                eeClass.MethodTable = mt.Address;
+                mt.EEClassOrCanonMT = eeClass.Address;
+                mtPtr = mt.Address;
+
+                expectedOffset = startOffset;
+                expectedSize = 1u * pointerSize;
+            });
+
+        IRuntimeTypeSystem contract = target.Contracts.RuntimeTypeSystem;
+        Contracts.TypeHandle typeHandle = contract.GetTypeHandle(mtPtr);
+        Assert.True(contract.ContainsGCPointers(typeHandle));
+
+        // Pass numComponents=1 because value-class GCDesc iterates one element per component.
+        (uint Offset, uint Size)[] series = contract.GetGCDescSeries(typeHandle, 1).ToArray();
+        Assert.Single(series);
+        Assert.Equal(expectedOffset, series[0].Offset);
+        Assert.Equal(expectedSize, series[0].Size);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetGCDescSeriesReturnsMultipleValueClassSeries(MockTarget.Architecture arch)
+    {
+        // Two val_serie_items: [2 ptrs, skip 2*ptrSize] [1 ptr, skip 0 bytes]
+        // This models a 1-element array of struct { ref a; ref b; int pad1; int pad2; ref c; }
+        TargetPointer mtPtr = default;
+        (uint Offset, uint Size)[] expectedSeries = [];
+
+        TestPlaceholderTarget target = CreateTarget(
+            arch,
+            rtsBuilder =>
+            {
+                TargetTestHelpers helpers = rtsBuilder.Builder.TargetTestHelpers;
+                uint pointerSize = (uint)helpers.PointerSize;
+
+                // startoffset is relative to the object pointer (MT* slot), past MT* + length.
+                uint startOffset = 2u * pointerSize; // past MT* + length
+                uint baseSize = helpers.ObjHeaderSize + 2u * pointerSize; // ObjHeader + MT* + length
+
+                uint skip = 2u * pointerSize; // two pointer-sized non-ref fields between runs
+                // Element layout: [ref a (ptr)][ref b (ptr)][pad1 (ptr)][pad2 (ptr)][ref c (ptr)] = 5 * pointerSize
+                uint componentSize = (2u + 2u + 1u) * pointerSize;
+
+                MockEEClass eeClass = rtsBuilder.AddEEClass("ValueClassArray_2runs");
+                MockMethodTable mt = rtsBuilder.AddMethodTableWithValueClassGCDesc(
+                    "ValueClassArray_2runs",
+                    baseSize,
+                    startOffset,
+                    [(2, skip), (1, 0)]); // first: 2 ptrs then skip, second: 1 ptr no skip
+                // Set array flags with componentSize so GetComponentSize returns the element size.
+                mt.MTFlags = (uint)(MethodTableFlags_1.WFLAGS_HIGH.HasComponentSize
+                    | MethodTableFlags_1.WFLAGS_HIGH.Category_Array)
+                    | componentSize
+                    | 0x01000000u; // ContainsGCPointers
+                mt.ParentMethodTable = rtsBuilder.SystemObjectMethodTable.Address;
+                mt.NumVirtuals = 3;
+                eeClass.MethodTable = mt.Address;
+                mt.EEClassOrCanonMT = eeClass.Address;
+                mtPtr = mt.Address;
+
+                expectedSeries =
+                [
+                    (startOffset, 2u * pointerSize),                                      // first run: 2 ptrs
+                    (startOffset + 2u * pointerSize + skip, 1u * pointerSize),            // second run: 1 ptr after skip
+                ];
+            });
+
+        IRuntimeTypeSystem contract = target.Contracts.RuntimeTypeSystem;
+        Contracts.TypeHandle typeHandle = contract.GetTypeHandle(mtPtr);
+
+        // Pass numComponents=1 because value-class GCDesc iterates one element per component.
+        (uint Offset, uint Size)[] series = contract.GetGCDescSeries(typeHandle, 1).ToArray();
+        Assert.Equal(expectedSeries.Length, series.Length);
+        for (int i = 0; i < expectedSeries.Length; i++)
+        {
+            Assert.Equal(expectedSeries[i].Offset, series[i].Offset);
+            Assert.Equal(expectedSeries[i].Size, series[i].Size);
+        }
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetGCDescSeriesRegularSeriesWithArrayNumComponents(MockTarget.Architecture arch)
+    {
+        // object[] has a single regular series. When numComponents > 0, the series size
+        // should extend across all elements: rawSeriesSize + baseSize + numComponents * componentSize.
+        TargetPointer mtPtr = default;
+        uint expectedSeriesOffset = 0;
+
+        TestPlaceholderTarget target = CreateTarget(
+            arch,
+            rtsBuilder =>
+            {
+                TargetTestHelpers helpers = rtsBuilder.Builder.TargetTestHelpers;
+                uint pointerSize = (uint)helpers.PointerSize;
+
+                // object[] layout: [ObjHeader][MT*][Length][elem0][elem1][elem2]
+                // baseSize covers the header: ObjHeader + MT* + Length = 3 * pointerSize
+                // componentSize = pointerSize (each element is a reference)
+                uint baseSize = helpers.ObjHeaderSize + 2u * pointerSize; // ObjHeader + MT* + Length field
+                uint componentSize = pointerSize;
+
+                // One series starting after ObjHeader+MT*+Length, covering element slots.
+                // rawSeriesSize is stored as (actualRunForOneElement - baseSize).
+                // For object[], the series covers from first element to end: actualRun = pointerSize (per-element).
+                // But the raw value encodes (pointerSize - baseSize) so that rawSeriesSize + objectSize gives total span.
+                ulong rawSeriesSize = pointerSize - baseSize; // wraps unsigned
+                ulong seriesOffset = helpers.ObjHeaderSize + 2u * pointerSize; // after header + length
+
+                MockEEClass eeClass = rtsBuilder.AddEEClass("ObjectArray");
+                MockMethodTable mt = rtsBuilder.AddMethodTableWithGCDesc(
+                    "ObjectArray",
+                    baseSize,
+                    [(rawSeriesSize, seriesOffset)]);
+                // Set array flags: HasComponentSize | Category_Array | componentSize in low bits
+                mt.MTFlags = (uint)(MethodTableFlags_1.WFLAGS_HIGH.HasComponentSize
+                    | MethodTableFlags_1.WFLAGS_HIGH.Category_Array)
+                    | componentSize
+                    | 0x01000000u; // ContainsGCPointers
+                mt.ParentMethodTable = rtsBuilder.SystemObjectMethodTable.Address;
+                mt.NumVirtuals = 3;
+                eeClass.MethodTable = mt.Address;
+                mt.EEClassOrCanonMT = eeClass.Address;
+
+                mtPtr = mt.Address;
+                expectedSeriesOffset = (uint)seriesOffset;
+            });
+
+        IRuntimeTypeSystem contract = target.Contracts.RuntimeTypeSystem;
+        Contracts.TypeHandle typeHandle = contract.GetTypeHandle(mtPtr);
+        Assert.True(contract.ContainsGCPointers(typeHandle));
+        uint pointerSz = (uint)target.PointerSize;
+
+        // With 0 components, series size = rawSeriesSize + baseSize = pointerSize (one element worth)
+        (uint Offset, uint Size)[] series0 = contract.GetGCDescSeries(typeHandle, 0).ToArray();
+        Assert.Single(series0);
+        Assert.Equal(expectedSeriesOffset, series0[0].Offset);
+        Assert.Equal(pointerSz, series0[0].Size);
+
+        // With 3 components, objectSize = baseSize + 3*pointerSize, so series size = pointerSize - baseSize + objectSize = 4*pointerSize
+        uint numComponents = 3;
+        (uint Offset, uint Size)[] series3 = contract.GetGCDescSeries(typeHandle, numComponents).ToArray();
+        Assert.Single(series3);
+        Assert.Equal(expectedSeriesOffset, series3[0].Offset);
+        Assert.Equal((numComponents + 1) * pointerSz, series3[0].Size);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetGCDescSeriesValueClassRepeatingWithArrayNumComponents(MockTarget.Architecture arch)
+    {
+        // Array of structs where each element has one GC ref (nptrs=1, skip=pointerSize for a non-ref field).
+        // With numComponents > 0, the repeating pattern should iterate across multiple elements.
+        TargetPointer mtPtr = default;
+
+        TestPlaceholderTarget target = CreateTarget(
+            arch,
+            rtsBuilder =>
+            {
+                TargetTestHelpers helpers = rtsBuilder.Builder.TargetTestHelpers;
+                uint pointerSize = (uint)helpers.PointerSize;
+
+                // Array layout: [ObjHeader][MT*][Length][elem0.ref][elem0.int][elem1.ref][elem1.int]...
+                // Each element is { ref field, int field } = 2 * pointerSize.
+                uint baseSize = helpers.ObjHeaderSize + 2u * pointerSize; // header + length
+                uint componentSize = 2u * pointerSize;
+                uint startOffset = helpers.ObjHeaderSize + 2u * pointerSize; // first element starts after header
+
+                MockEEClass eeClass = rtsBuilder.AddEEClass("StructArray");
+                MockMethodTable mt = rtsBuilder.AddMethodTableWithValueClassGCDesc(
+                    "StructArray",
+                    baseSize,
+                    startOffset,
+                    [(1, pointerSize)]); // nptrs=1 ref, skip=pointerSize (non-ref field)
+                mt.MTFlags = (uint)(MethodTableFlags_1.WFLAGS_HIGH.HasComponentSize
+                    | MethodTableFlags_1.WFLAGS_HIGH.Category_Array)
+                    | componentSize
+                    | 0x01000000u; // ContainsGCPointers
+                mt.ParentMethodTable = rtsBuilder.SystemObjectMethodTable.Address;
+                mt.NumVirtuals = 3;
+                eeClass.MethodTable = mt.Address;
+                mt.EEClassOrCanonMT = eeClass.Address;
+
+                mtPtr = mt.Address;
+            });
+
+        IRuntimeTypeSystem contract = target.Contracts.RuntimeTypeSystem;
+        Contracts.TypeHandle typeHandle = contract.GetTypeHandle(mtPtr);
+        Assert.True(contract.ContainsGCPointers(typeHandle));
+        uint elemSize = 2 * (uint)target.PointerSize;
+        uint startOff = 3u * (uint)target.PointerSize;
+
+        // With 0 components, the for loop runs 0 times so the result is always empty.
+        (uint Offset, uint Size)[] series0 = contract.GetGCDescSeries(typeHandle, 0).ToArray();
+        Assert.Empty(series0);
+
+        // With 2 components, objectSize = baseSize + 2 * elemSize = baseSize + 4*ptr.
+        // The loop should produce 2 runs (one per element), each at the ref field of that element.
+        uint numComponents = 2;
+        (uint Offset, uint Size)[] series2 = contract.GetGCDescSeries(typeHandle, numComponents).ToArray();
+        Assert.Equal(2, series2.Length);
+        Assert.Equal(startOff, series2[0].Offset);
+        Assert.Equal((uint)target.PointerSize, series2[0].Size);
+        Assert.Equal(startOff + elemSize, series2[1].Offset);
+        Assert.Equal((uint)target.PointerSize, series2[1].Size);
     }
 }

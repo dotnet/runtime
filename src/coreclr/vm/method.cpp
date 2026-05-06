@@ -274,29 +274,52 @@ void MethodDesc::SetMethodDescOptimizationTier(NativeCodeVersion::OptimizationTi
     _ASSERTE(m_codeData != NULL);
     VolatileStoreWithoutBarrier(&m_codeData->OptimizationTier, tier);
 }
+
+#if defined(_DEBUG) && defined(ALLOW_SXS_JIT)
+HRESULT MethodDesc::SetMethodDescAltJitPatchpointInfo(PatchpointInfo* pInfo)
+{
+    WRAPPER_NO_CONTRACT;
+
+    HRESULT hr;
+    IfFailRet(EnsureCodeDataExists(NULL));
+
+    _ASSERTE(m_codeData != NULL);
+    VolatileStoreWithoutBarrier(&m_codeData->AltJitPatchpointInfo, pInfo);
+    return S_OK;
+}
+
+PatchpointInfo* MethodDesc::GetMethodDescAltJitPatchpointInfo()
+{
+    WRAPPER_NO_CONTRACT;
+    if (m_codeData == NULL)
+        return nullptr;
+    return VolatileLoadWithoutBarrier(&m_codeData->AltJitPatchpointInfo);
+}
+#endif // _DEBUG && ALLOW_SXS_JIT
+
 #endif // FEATURE_CODE_VERSIONING
 
 #ifdef FEATURE_INTERPRETER
-// Set the call stub for the interpreter to JIT/AOT calls
-// Returns true if the current call set the stub, false if it was already set
-bool MethodDesc::SetCallStub(CallStubHeader *pHeader)
+// Cache the calli cookie on the MethodDesc
+// Returns true if the current call set the cookie, false if it was already set
+bool MethodDesc::SetCalliCookie(InterpreterCalliCookie cookie)
 {
     STANDARD_VM_CONTRACT;
 
     IfFailThrow(EnsureCodeDataExists(NULL));
 
     _ASSERTE(m_codeData != NULL);
-    return InterlockedCompareExchangeT(&m_codeData->CallStub, pHeader, NULL) == NULL;
+    return InterlockedCompareExchangeT((void**)&m_codeData->CalliCookie, (void*)cookie, (void*)NULL) == NULL;
 }
 
-CallStubHeader *MethodDesc::GetCallStub()
+InterpreterCalliCookie MethodDesc::GetCalliCookie()
 {
     LIMITED_METHOD_CONTRACT;
 
     PTR_MethodDescCodeData codeData = VolatileLoadWithoutBarrier(&m_codeData);
     if (codeData == NULL)
         return NULL;
-    return VolatileLoadWithoutBarrier(&codeData->CallStub);
+    return (InterpreterCalliCookie)VolatileLoadWithoutBarrier(&codeData->CalliCookie);
 }
 #endif // FEATURE_INTERPRETER
 
@@ -1758,20 +1781,6 @@ UINT MethodDesc::SizeOfArgStack()
     ArgIterator argit(&msig);
     return argit.SizeOfArgStack();
 }
-
-#ifdef FEATURE_DYNAMIC_METHOD_HAS_NATIVE_STACK_ARG_SIZE
-UINT MethodDesc::SizeOfNativeArgStack()
-{
-#ifndef UNIX_AMD64_ABI
-    return SizeOfArgStack();
-#else
-    WRAPPER_NO_CONTRACT;
-    MetaSig msig(this);
-    PInvokeArgIterator argit(&msig);
-    return argit.SizeOfArgStack();
-#endif
-}
-#endif // FEATURE_DYNAMIC_METHOD_HAS_NATIVE_STACK_ARG_SIZE
 
 #ifdef TARGET_X86
 //*******************************************************************************
@@ -3520,11 +3529,17 @@ BOOL PInvokeMethodDesc::TryGetResolvedPInvokeTarget(_In_ PInvokeMethodDesc* pMD,
         return TRUE;
     }
 
-    // We only resolve P/Invoke targets early for SuppressGCTransition inlined P/Invokes.
-    // We do so because we cannot resolve the target of a SuppressGCTransition inlined P/Invoke at the time of the call
-    // as the resolution logic violates the rules of SuppressGCTransition (this behavior is documented).
+    // We only resolve P/Invoke targets early in two cases:
+    // - SuppressGCTransition inlined P/Invokes.
+    //   We do so because we cannot resolve the target of a SuppressGCTransition inlined P/Invoke at the time of the call
+    //   as the resolution logic violates the rules of SuppressGCTransition (this behavior is documented).
+    // - Platforms with no P/Invoke import precode:
+    //   On these platforms, there is no mechanism to lazily resolve the target of a P/Invoke,
+    //   so we must resolve it eagerly in order for the call to succeed.
+#ifdef HAS_PINVOKE_IMPORT_PRECODE
     if (!pMD->ShouldSuppressGCTransition())
         return FALSE;
+#endif
 
     PInvoke::ResolvePInvokeTarget(pMD);
     *ndirectTarget = pMD->GetPInvokeTarget();

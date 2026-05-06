@@ -170,7 +170,25 @@ void WasmRegAlloc::IdentifyCandidates()
         LclVarDsc* varDsc = m_compiler->lvaGetDesc(lclNum);
         varDsc->SetRegNum(REG_STK);
 
-        if (isRegCandidate(varDsc))
+        bool varIsRegCandidate = isRegCandidate(varDsc);
+
+        // Wasm RA currently does not support EH write-thru, so any local live in or out
+        // of a handler must be located only on the stack.
+        if (varDsc->lvLiveInOutOfHndlr)
+        {
+            m_compiler->lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::LiveInOutOfHandler));
+            varIsRegCandidate = false;
+        }
+        // We also need to ensure that any GC refs are not stored in wasm locals until we have support for
+        // spilling them to the stack before calls.
+        // TODO-WASM: Add support for spilling GC refs in order to relax this second restriction.
+        if (varTypeIsGC(varDsc->lvType))
+        {
+            m_compiler->lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::WasmGCVisibility));
+            varIsRegCandidate = false;
+        }
+
+        if (varIsRegCandidate)
         {
             JITDUMP("RA candidate: V%02u\n", lclNum);
             InitializeCandidate(varDsc);
@@ -413,6 +431,14 @@ void WasmRegAlloc::CollectReferencesForNode(GenTree* node)
 {
     switch (node->OperGet())
     {
+        case GT_NULLCHECK:
+            if (node->gtGetOp1()->gtLIRFlags & LIR::Flags::MultiplyUsed)
+            {
+                ConsumeTemporaryRegForOperand(node->gtGetOp1()
+                                                  DEBUGARG("Orphaned GT_NULLCHECK with multiply-used flag"));
+            }
+            break;
+
         case GT_LCL_VAR:
             CollectReferencesForLclVar(node->AsLclVar());
             break;

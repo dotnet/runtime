@@ -93,6 +93,10 @@ public abstract class ContractRegistry
     /// </summary>
     public virtual INotifications Notifications => GetContract<INotifications>();
     /// <summary>
+    /// Gets an instance of the CodeNotifications contract for the target.
+    /// </summary>
+    public virtual ICodeNotifications CodeNotifications => GetContract<ICodeNotifications>();
+    /// <summary>
     /// Gets an instance of the SignatureDecoder contract for the target.
     /// </summary>
     public virtual ISignatureDecoder SignatureDecoder => GetContract<ISignatureDecoder>();
