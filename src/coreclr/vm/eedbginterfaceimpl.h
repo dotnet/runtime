@@ -88,8 +88,6 @@ public:
 
     OBJECTHANDLE GetThreadException(Thread *pThread);
 
-    bool IsThreadExceptionNull(Thread *pThread);
-
     void ClearThreadException(Thread *pThread);
 
     bool StartSuspendForDebug(AppDomain *pAppDomain,

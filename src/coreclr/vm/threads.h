@@ -2619,7 +2619,7 @@ private:
     // Differs from m_pThrowable in that it doesn't stack on nested exceptions.
     OBJECTHANDLE m_LastThrownObjectHandle;      // Unsafe to use directly.  Use accessors instead.
 
-    // Indicates that the throwable in m_lastThrownObjectHandle should be treated as
+    // Indicates that the throwable in m_LastThrownObjectHandle should be treated as
     // unhandled. This occurs during fatal error and a few other early error conditions
     // before EH is fully set up.
     BOOL m_ltoIsUnhandled;
@@ -2628,22 +2628,18 @@ private:
 
 public:
 
-    BOOL IsLastThrownObjectNull() { WRAPPER_NO_CONTRACT; return (m_LastThrownObjectHandle == (OBJECTHANDLE)0); }
+    BOOL IsLastThrownObjectNull()
+    {
+        WRAPPER_NO_CONTRACT;
+        _ASSERTE(m_LastThrownObjectHandle != NULL);
+        return ObjectHandleIsNull(m_LastThrownObjectHandle);
+    }
 
     OBJECTREF LastThrownObject()
     {
         WRAPPER_NO_CONTRACT;
-
-        if (m_LastThrownObjectHandle == (OBJECTHANDLE)0)
-        {
-            return NULL;
-        }
-        else
-        {
-            // We only have a handle if we have an object to keep in it.
-            _ASSERTE(ObjectFromHandle(m_LastThrownObjectHandle) != NULL);
-            return ObjectFromHandle(m_LastThrownObjectHandle);
-        }
+        _ASSERTE(m_LastThrownObjectHandle != NULL);
+        return ObjectFromHandle(m_LastThrownObjectHandle);
     }
 
     OBJECTHANDLE LastThrownObjectHandle()
@@ -2655,7 +2651,6 @@ public:
 
     void SetLastThrownObject(OBJECTREF throwable, BOOL isUnhandled = FALSE);
     void SetSOForLastThrownObject();
-    OBJECTREF SafeSetLastThrownObject(OBJECTREF throwable);
 
     // Inidcates that the last thrown object is now treated as unhandled
     void MarkLastThrownObjectUnhandled()
@@ -2671,7 +2666,7 @@ public:
         return m_ltoIsUnhandled;
     }
 
-    void SafeUpdateLastThrownObject(void);
+    void UpdateLastThrownObject(void);
     OBJECTREF SafeSetThrowables(OBJECTREF pThrowable,
                                 BOOL isUnhandled = FALSE);
 
@@ -2693,8 +2688,6 @@ public:
     void ClearThreadCurrNotification();
 
 private:
-    void SetLastThrownObjectHandle(OBJECTHANDLE h);
-
     ThreadExceptionState  m_ExceptionState;
 
 private:

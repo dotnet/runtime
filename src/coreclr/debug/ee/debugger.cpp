@@ -7449,7 +7449,7 @@ HRESULT Debugger::SendException(Thread *pThread,
             (fFirstChance && (!pExState->GetFlags()->SentDebugFirstChance() || !pExState->GetFlags()->SentDebugUserFirstChance())));
 
     // There must be a managed exception object to send a managed exception event
-    if (g_pEEInterface->IsThreadExceptionNull(pThread) && (pThread->LastThrownObjectHandle() == NULL))
+    if (pThread->IsThrowableNull() && pThread->IsLastThrownObjectNull())
     {
         managedEventNeeded = FALSE;
     }
@@ -7736,7 +7736,7 @@ LONG Debugger::NotifyOfCHFFilter(EXCEPTION_POINTERS* pExceptionPointers, PVOID p
 {
     CONTRACTL
     {
-        if ((GetThreadNULLOk() == NULL) || g_pEEInterface->IsThreadExceptionNull(GetThread()))
+        if ((GetThreadNULLOk() == NULL) || GetThread()->IsThrowableNull())
         {
             NOTHROW;
             GC_NOTRIGGER;
@@ -7766,7 +7766,7 @@ LONG Debugger::NotifyOfCHFFilter(EXCEPTION_POINTERS* pExceptionPointers, PVOID p
     // useful information for the debugger and, in fact, it may be a completely
     // internally handled runtime exception, so we should do nothing.
     //
-    if ((GetThreadNULLOk() == NULL) || g_pEEInterface->IsThreadExceptionNull(GetThread()))
+    if ((GetThreadNULLOk() == NULL) || GetThread()->IsThrowableNull())
     {
         return EXCEPTION_CONTINUE_SEARCH;
     }
@@ -12336,7 +12336,7 @@ bool Debugger::IsThreadAtSafePlace(Thread *thread)
     // NOTE: don't check for thread->IsExceptionInProgress(), SO has special handling
     // that directly sets the last thrown object without ever creating a tracker.
     // (Tracker is what thread->IsExceptionInProgress() checks for)
-    if (g_pEEInterface->GetThreadException(thread) == CLRException::GetPreallocatedStackOverflowExceptionHandle())
+    if (thread->IsLastThrownObjectStackOverflowException())
     {
         return false;
     }

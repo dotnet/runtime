@@ -2020,11 +2020,7 @@ VOID DECLSPEC_NORETURN RaiseTheExceptionInternalOnly(OBJECTREF throwable)
 
     // Always save the current object in the handle so on rethrow we can reuse it. This is important as it
     // contains stack trace info.
-    //
-    // Note: we use SafeSetLastThrownObject, which will try to set the throwable and if there are any problems,
-    // it will set the throwable to something appropriate (like OOM exception) and return the new
-    // exception. Thus, the user's exception object can be replaced here.
-    throwable = pThread->SafeSetLastThrownObject(throwable);
+    pThread->SetLastThrownObject(throwable);
 
     ULONG_PTR hr = GetHRFromThrowable(throwable);
 
@@ -4007,7 +4003,7 @@ LONG InternalUnhandledExceptionFilter_Worker(
             OBJECTREF oThrowable = pParam->pThread->GetThrowable();
             if ((oThrowable != NULL) && (pParam->pThread->LastThrownObject() != oThrowable))
             {
-                pParam->pThread->SafeSetLastThrownObject(oThrowable);
+                pParam->pThread->SetLastThrownObject(oThrowable);
                 LOG((LF_EH, LL_INFO100, "InternalUnhandledExceptionFilter_Worker: Resetting the LastThrownObject as it appears to have changed.\n"));
             }
 
@@ -8194,10 +8190,10 @@ void SetupInitialThrowBucketDetails(UINT_PTR adjustedIp)
         if (fAreBucketingDetailsPresent)
         {
 #ifdef _DEBUG
-            // Under OOM scenarios, its possible that when we are raising a threadabort,
-            // the throwable may get converted to preallocated OOM object when RaiseTheExceptionInternalOnly
-            // invokes Thread::SafeSetLastThrownObject. We check if this is the current case and use it in
-            // our validation below.
+            // It's possible that the throwable is the preallocated OOM object even when the
+            // bucket tracker captured the buckets for a thread abort (e.g., OOM was thrown
+            // directly while a thread abort was in flight). Account for that case in our
+            // validation below.
             BOOL fIsPreallocatedOOMExceptionForTA = FALSE;
             if ((!fIsThreadAbortException) && pUEWatsonBucketTracker->CapturedForThreadAbort())
             {

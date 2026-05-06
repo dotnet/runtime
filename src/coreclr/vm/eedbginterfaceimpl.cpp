@@ -248,20 +248,12 @@ OBJECTHANDLE EEDbgInterfaceImpl::GetThreadException(Thread *pThread)
 
     // Return the last thrown object if there's no current throwable.
     // This logic is similar to UpdateCurrentThrowable().
-    return pThread->m_LastThrownObjectHandle;
-}
-
-bool EEDbgInterfaceImpl::IsThreadExceptionNull(Thread *pThread)
-{
-    CONTRACTL
+    if (!pThread->IsLastThrownObjectNull())
     {
-        NOTHROW;
-        GC_NOTRIGGER;
-        PRECONDITION(CheckPointer(pThread));
+        return pThread->LastThrownObjectHandle();
     }
-    CONTRACTL_END;
 
-    return pThread->IsThrowableNull();
+    return NULL;
 }
 
 void EEDbgInterfaceImpl::ClearThreadException(Thread *pThread)

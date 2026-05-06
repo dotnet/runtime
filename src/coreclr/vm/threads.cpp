@@ -1242,7 +1242,9 @@ Thread::Thread()
     m_StrongHndToExposedObject = CreateGlobalStrongHandle(NULL);
     GlobalStrongHandleHolder strongHndToExposedObjectHolder(m_StrongHndToExposedObject);
 
-    m_LastThrownObjectHandle = NULL;
+    m_LastThrownObjectHandle = CreateGlobalStrongHandle(NULL);
+    GlobalStrongHandleHolder lastThrownObjectHandleHolder(m_LastThrownObjectHandle);
+
     m_ltoIsUnhandled = FALSE;
 
     m_debuggerFilterContext = NULL;
@@ -1364,6 +1366,7 @@ Thread::Thread()
     exposedObjectHolder.SuppressRelease();
     strongHndToExposedObjectHolder.SuppressRelease();
     contextHolder.SuppressRelease();
+    lastThrownObjectHandleHolder.SuppressRelease();
 
 #ifdef FEATURE_COMINTEROP
     m_uliInitializeSpyCookie.QuadPart = 0ul;
@@ -2270,11 +2273,13 @@ Thread::~Thread()
 
     if (!IsAtProcessExit())
     {
-        // Destroy any handles that we're using to hold onto exception objects
-        SafeSetThrowables(NULL);
-
         DestroyShortWeakHandle(m_ExposedObject);
         DestroyStrongHandle(m_StrongHndToExposedObject);
+
+        if (m_LastThrownObjectHandle != g_pPreallocatedStackOverflowException)
+        {
+            DestroyStrongHandle(m_LastThrownObjectHandle);
+        }
     }
 
     g_pThinLockThreadIdDispenser->DisposeId(GetThreadId());
@@ -3111,7 +3116,7 @@ void Thread::SetLastThrownObject(OBJECTREF throwable, BOOL isUnhandled)
 {
     CONTRACTL
     {
-        if ((throwable == NULL) || CLRException::IsPreallocatedExceptionObject(throwable)) NOTHROW; else THROWS; // From CreateHandle
+        NOTHROW;
         GC_NOTRIGGER;
         if (throwable == NULL) MODE_ANY; else MODE_COOPERATIVE;
     }
@@ -3125,44 +3130,22 @@ void Thread::SetLastThrownObject(OBJECTREF throwable, BOOL isUnhandled)
     // you can't have a NULL unhandled exception
     _ASSERTE(!(throwable == NULL && isUnhandled));
 
-    if (m_LastThrownObjectHandle != NULL)
-    {
-        // We'll sometimes use a handle for a preallocated exception object. We should never, ever destroy one of
-        // these handles... they'll be destroyed when the Runtime shuts down.
-        if (!CLRException::IsPreallocatedExceptionHandle(m_LastThrownObjectHandle))
-        {
-            DestroyHandle(m_LastThrownObjectHandle);
-        }
-
-        m_LastThrownObjectHandle = NULL; // Make sure to set this to NULL here just in case we throw trying to make
-                                         // a new handle below.
-    }
+    // Each Thread owns a per-thread strong handle for the LastThrownObject slot
+    // (allocated in the Thread ctor, destroyed in ~Thread). Setting LTO is just
+    // a payload write; no handle allocation or destruction is needed.
+    _ASSERTE(m_LastThrownObjectHandle != NULL);
+    _ASSERTE(throwable == NULL || this == GetThread());
+    _ASSERTE(throwable == NULL || IsException(throwable->GetMethodTable()));
 
     if (throwable != NULL)
     {
-        _ASSERTE(this == GetThread());
-
-        // Non-compliant exceptions are always wrapped.
-        // The use of the ExceptionNative:: helper here (rather than the global ::IsException helper)
-        // is hokey, but we need a GC_NOTRIGGER version and it's only for an ASSERT.
-        _ASSERTE(IsException(throwable->GetMethodTable()));
-
-        // If we're tracking one of the preallocated exception objects, then just use the global handle that
-        // matches it rather than creating a new one.
-        if (CLRException::IsPreallocatedExceptionObject(throwable))
-        {
-            m_LastThrownObjectHandle = CLRException::GetPreallocatedHandleForObject(throwable);
-        }
-        else
-        {
-            m_LastThrownObjectHandle = AppDomain::GetCurrentDomain()->CreateHandle(throwable);
-        }
-
-        _ASSERTE(m_LastThrownObjectHandle != NULL);
+        StoreObjectInHandle(m_LastThrownObjectHandle, throwable);
         m_ltoIsUnhandled = isUnhandled;
+
     }
     else
     {
+        ResetOBJECTHANDLE(m_LastThrownObjectHandle);
         m_ltoIsUnhandled = FALSE;
     }
 }
@@ -3183,41 +3166,6 @@ void Thread::SetSOForLastThrownObject()
     // The current domain is going to be unloaded or the process is going to be killed, so
     // we will not leak a handle.
     m_LastThrownObjectHandle = CLRException::GetPreallocatedStackOverflowExceptionHandle();
-}
-
-//
-// This is a nice wrapper for SetLastThrownObject which catches any exceptions caused by not being able to create
-// the handle for the throwable, and setting the last thrown object to the preallocated out of memory exception
-// instead.
-//
-OBJECTREF Thread::SafeSetLastThrownObject(OBJECTREF throwable)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        if (throwable == NULL) MODE_ANY; else MODE_COOPERATIVE;
-    }
-    CONTRACTL_END;
-
-    // We return the original throwable if nothing goes wrong.
-    OBJECTREF ret = throwable;
-
-    EX_TRY
-    {
-        // Try to set the throwable.
-        SetLastThrownObject(throwable);
-    }
-    EX_CATCH
-    {
-        // If it didn't work, then set the last thrown object to the preallocated OOM exception, and return that
-        // object instead of the original throwable.
-        ret = CLRException::GetPreallocatedOutOfMemoryException();
-        SetLastThrownObject(ret);
-    }
-    EX_END_CATCH
-
-    return ret;
 }
 
 //
@@ -3283,34 +3231,15 @@ void Thread::SyncManagedExceptionState(bool fIsDebuggerThread)
         GCX_COOP();
 
         // Syncup the LastThrownObject on the managed thread
-        SafeUpdateLastThrownObject();
+        UpdateLastThrownObject();
     }
-}
-
-void Thread::SetLastThrownObjectHandle(OBJECTHANDLE h)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_COOPERATIVE;
-    }
-    CONTRACTL_END;
-
-    if (m_LastThrownObjectHandle != NULL &&
-        !CLRException::IsPreallocatedExceptionHandle(m_LastThrownObjectHandle))
-    {
-        DestroyHandle(m_LastThrownObjectHandle);
-    }
-
-    m_LastThrownObjectHandle = h;
 }
 
 //
 // Create a duplicate handle of the current throwable and set the last thrown object to that. This ensures that the
 // last thrown object and the current throwable have handles that are in the same app domain.
 //
-void Thread::SafeUpdateLastThrownObject(void)
+void Thread::UpdateLastThrownObject(void)
 {
     CONTRACTL
     {
@@ -3324,16 +3253,7 @@ void Thread::SafeUpdateLastThrownObject(void)
 
     if (throwable != NULL)
     {
-        EX_TRY
-        {
-            SetLastThrownObject(throwable);
-        }
-        EX_CATCH
-        {
-            // If we can't create a handle, set the last thrown object to the preallocated OOM exception.
-            SafeSetThrowables(CLRException::GetPreallocatedOutOfMemoryException());
-        }
-        EX_END_CATCH
+        SetLastThrownObject(throwable);
     }
 }
 
@@ -6690,9 +6610,8 @@ extern "C" InterpThreadContext* STDCALL GetInterpThreadContextWithPossiblyMissin
         }
         EX_CATCH
         {
-            OBJECTHANDLE ohThrowable = CURRENT_THREAD->LastThrownObjectHandle();
-            _ASSERTE(ohThrowable);
-            StackTraceInfo::AppendElement(ObjectFromHandle(ohThrowable), 0, (UINT_PTR)pTransitionBlock, pByteCodeStart->Method->methodHnd, NULL);
+            _ASSERTE(!CURRENT_THREAD->IsLastThrownObjectNull());
+            StackTraceInfo::AppendElement(CURRENT_THREAD->LastThrownObject(), 0, (UINT_PTR)pTransitionBlock, pByteCodeStart->Method->methodHnd, NULL);
             EX_RETHROW;
         }
         EX_END_CATCH

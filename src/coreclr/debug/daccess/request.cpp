@@ -900,9 +900,9 @@ HRESULT ClrDataAccess::GetThreadData(CLRDATA_ADDRESS threadAddr, struct DacpThre
     // which has the same dereference semantics as a real GC handle.
     {
         OBJECTHANDLE ohException = thread->GetThrowableAsPseudoHandle();
-        if (ohException == (OBJECTHANDLE)NULL)
+        if (ohException == (OBJECTHANDLE)NULL && !thread->IsLastThrownObjectNull())
         {
-            ohException = thread->m_LastThrownObjectHandle;
+            ohException = thread->LastThrownObjectHandle();
         }
         threadData->lastThrownObjectHandle = TO_CDADDR(ohException);
     }

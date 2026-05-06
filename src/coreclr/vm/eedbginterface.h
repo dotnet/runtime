@@ -100,8 +100,6 @@ public:
 
     virtual OBJECTHANDLE GetThreadException(Thread *pThread) = 0;
 
-    virtual bool IsThreadExceptionNull(Thread *pThread) = 0;
-
     virtual void ClearThreadException(Thread *pThread) = 0;
 
     virtual bool StartSuspendForDebug(AppDomain *pAppDomain,

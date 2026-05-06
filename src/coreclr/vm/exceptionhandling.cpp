@@ -3186,7 +3186,7 @@ void CallCatchFunclet(OBJECTREF throwable, BYTE* pHandlerIP, REGDISPLAY* pvRegDi
 
     if (!pThread->GetExceptionState()->IsExceptionInProgress())
     {
-        pThread->SafeSetLastThrownObject(NULL);
+        pThread->SetLastThrownObject(NULL);
     }
 
     // Sync managed exception state, for the managed thread, based upon any active exception tracker

@@ -10543,9 +10543,7 @@ void CEEInfo::HandleException(struct _EXCEPTION_POINTERS *pExceptionPointers)
             if (_gc.oCurrentThrowable != _gc.oLastThrownObject)
             {
                 // Update the LTO.
-                //
-                // Note: Incase of OOM, this will get set to OOM instance.
-                pCurThread->SafeSetLastThrownObject(_gc.oCurrentThrowable);
+                pCurThread->SetLastThrownObject(_gc.oCurrentThrowable);
             }
 
             GCPROTECT_END();
