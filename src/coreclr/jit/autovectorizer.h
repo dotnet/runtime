@@ -12,9 +12,10 @@ public:
     PhaseStatus Run();
 
 private:
-    static const unsigned MaxLanes     = 64;
-    static const unsigned MaxPackNodes = 64;
-    static const unsigned MaxPackDepth = 64;
+    static const unsigned MaxLanes     = 64; // 512-bit vectors over byte elements.
+    static const unsigned MaxPackNodes = 96;
+    static const unsigned MaxPackDepth = 24;
+    static const unsigned MaxRoots     = 16;
 
     enum class PackKind
     {
@@ -46,7 +47,7 @@ private:
     struct SLPPlan
     {
         PackNode  Nodes[MaxPackNodes];
-        PackNode* Roots[8]               = {};
+        PackNode* Roots[MaxRoots]        = {};
         unsigned  NodeCount              = 0;
         unsigned  RootCount              = 0;
         PackNode* Root                   = nullptr;
@@ -57,12 +58,12 @@ private:
 
     struct LoopVectorizationPlan
     {
-        static const unsigned MaxAddressUpdates = 4;
-        static const unsigned MaxAccesses       = 16;
-        static const unsigned MaxLocalDefs      = 32;
-        static const unsigned MaxReductions     = 4;
-        static const unsigned MaxSelectDefs     = 8;
-        static const unsigned MaxStores         = 12;
+        static const unsigned MaxAddressUpdates = 8;
+        static const unsigned MaxAccesses       = 32;
+        static const unsigned MaxLocalDefs      = 64;
+        static const unsigned MaxReductions     = 8;
+        static const unsigned MaxSelectDefs     = 16;
+        static const unsigned MaxStores         = MaxRoots;
 
         struct ScalarAccess
         {
@@ -152,10 +153,7 @@ private:
         ReductionInfo Reductions[MaxReductions];
         unsigned      ReductionCount = 0;
 
-        Statement*   StoreStmt = nullptr;
-        ScalarAccess StoreAccess;
-        ScalarAccess LoadAccess;
-        SLPPlan      BodyPlan;
+        SLPPlan BodyPlan;
     };
 
     Compiler* m_compiler;
@@ -185,6 +183,7 @@ private:
     bool     TryGetSelectLocalDef(
             LoopVectorizationPlan* plan, unsigned lclNum, GenTree** cond, GenTree** trueValue, GenTree** falseValue);
     bool      IsSelectLocalDefStore(LoopVectorizationPlan* plan, BasicBlock* block, GenTree* root);
+    bool      IsSelectLocalDefBranch(LoopVectorizationPlan* plan, BasicBlock* block, GenTree* root);
     bool      AddStore(LoopVectorizationPlan*                     plan,
                        Statement*                                 stmt,
                        GenTree*                                   value,
@@ -312,7 +311,6 @@ private:
     bool IsCompatibleScalarType(GenTree* tree, var_types elementType) const;
     bool TryGetInvariantOperand(FlowGraphNaturalLoop* loop, unsigned ivLcl, GenTree* tree, var_types elementType);
     void RecordAddressUpdate(LoopVectorizationPlan* plan, unsigned addressVar, int delta);
-    bool HasAddressUpdate(LoopVectorizationPlan* plan, unsigned addressVar);
 };
 
 #endif // _AUTOVECTORIZER_H_

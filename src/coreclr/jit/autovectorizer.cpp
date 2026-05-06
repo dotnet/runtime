@@ -165,7 +165,11 @@ bool AutoVectorizer::ReportVectorIsa(unsigned vectorSizeBytes) const
 
 bool AutoVectorizer::RecomputeLoopTable()
 {
-    m_compiler->fgInvalidateDfsTree();
+    if (!m_compiler->fgMightHaveNaturalLoops)
+    {
+        JITDUMP("method has no natural loops, bail out\n");
+        return false;
+    }
 
     m_compiler->m_dfsTree = m_compiler->fgComputeDfs();
     m_compiler->m_loops   = FlowGraphNaturalLoops::Find(m_compiler->m_dfsTree);
@@ -411,11 +415,10 @@ bool AutoVectorizer::IsProfitableVectorSize(const LoopVectorizationPlan* plan, u
             return false;
         }
 
-        if ((plan->VectorSizeBytes > 16) && (constantTripCount < (2 * plan->VectorizationFactor)))
-        {
-            JITDUMP("tiny constant trip count favors a narrower vector width\n");
-            return false;
-        }
+        // Constant-trip loops already need at least one full vector. If they do,
+        // prefer the target's widest legal vector and let the scalar epilogue
+        // handle the small tail; choosing a narrower width here tends to hide
+        // obvious fixed-size vectorization opportunities.
     }
 
     const SLPPlan& slpPlan        = plan->BodyPlan;
@@ -426,8 +429,9 @@ bool AutoVectorizer::IsProfitableVectorSize(const LoopVectorizationPlan* plan, u
                                  ? (slpPlan.EstimatedScalarCost - slpPlan.EstimatedVectorCost)
                                  : 0;
 
-    const bool isCold = plan->Header->isRunRarely() || plan->Header->isBBWeightCold(m_compiler);
-    const bool isHot  = plan->Header->getBBWeight(m_compiler) >= (BB_UNITY_WEIGHT * BB_LOOP_WEIGHT_SCALE);
+    const bool isCold =
+        plan->Header->isRunRarely() || (plan->Header->hasProfileWeight() && plan->Header->isBBWeightCold(m_compiler));
+    const bool isHot = plan->Header->getBBWeight(m_compiler) >= (BB_UNITY_WEIGHT * BB_LOOP_WEIGHT_SCALE);
 
     JITDUMP("vector width policy: size=%u, VF=%u, max=%u, benefit=%u, overhead=%u, pressure=%u, hot=%s, cold=%s\n",
             plan->VectorSizeBytes, plan->VectorizationFactor, maxVectorSizeBytes, benefit, loopOverhead, vectorPressure,
@@ -439,35 +443,34 @@ bool AutoVectorizer::IsProfitableVectorSize(const LoopVectorizationPlan* plan, u
         return false;
     }
 
-    if (benefit < (loopOverhead / 2))
+    const bool isSimpleMemoryLoop =
+        (plan->StoreCount != 0) && (plan->ReductionCount == 0) && !plan->NeedsOverlapCheck && (slpPlan.RootCount <= 2);
+    const unsigned requiredBenefit =
+        isSimpleMemoryLoop ? std::max(1u, loopOverhead / 4) : std::max(1u, loopOverhead / 3);
+
+    if (benefit < requiredBenefit)
     {
-        JITDUMP("estimated benefit is too small for vector-loop overhead\n");
+        JITDUMP("estimated benefit is too small for vector-loop overhead; required=%u\n", requiredBenefit);
         return false;
     }
 
 #if defined(TARGET_XARCH)
     if (plan->VectorSizeBytes == ZMM_REGSIZE_BYTES)
     {
-        if (plan->NeedsOverlapCheck)
+        if (plan->NeedsOverlapCheck && !isHot && (benefit < loopOverhead))
         {
             JITDUMP("runtime overlap checks favor a narrower vector width\n");
             return false;
         }
 
-        if ((plan->ReductionCount != 0) && !isHot)
-        {
-            JITDUMP("512-bit reduction without hotness proof favors a narrower vector width\n");
-            return false;
-        }
-
-        if ((vectorPressure > 12) || ((slpPlan.NodeCount > 24) && !isHot))
+        if ((vectorPressure > 20) || ((slpPlan.NodeCount > 40) && !isHot))
         {
             JITDUMP("512-bit candidate has too much estimated pressure\n");
             return false;
         }
     }
 
-    if ((plan->VectorSizeBytes == YMM_REGSIZE_BYTES) && (vectorPressure > 18) && !isHot)
+    if ((plan->VectorSizeBytes == YMM_REGSIZE_BYTES) && (vectorPressure > 28) && !isHot)
     {
         JITDUMP("256-bit candidate has too much estimated pressure for an unproven-hot loop\n");
         return false;
@@ -1048,12 +1051,6 @@ bool AutoVectorizer::AddStore(LoopVectorizationPlan*                     plan,
     plan->StoreValues[index]   = value;
     plan->StoreAccesses[index] = access;
 
-    if (plan->StoreStmt == nullptr)
-    {
-        plan->StoreStmt   = stmt;
-        plan->StoreAccess = access;
-    }
-
     plan->ElementType = access.ElementType;
     plan->ElementSize = access.ElementSize;
     return true;
@@ -1284,7 +1281,6 @@ bool AutoVectorizer::AddLoad(LoopVectorizationPlan*                     plan,
 
     *index                     = plan->LoadCount++;
     plan->LoadAccesses[*index] = access;
-    plan->LoadAccess           = plan->LoadAccesses[0];
     plan->MinIndexOffset       = std::min(plan->MinIndexOffset, access.IndexOffset);
     plan->MaxIndexOffset       = std::max(plan->MaxIndexOffset, access.IndexOffset);
     return true;
@@ -1628,6 +1624,27 @@ bool AutoVectorizer::IsSelectLocalDefStore(LoopVectorizationPlan* plan, BasicBlo
     return false;
 }
 
+bool AutoVectorizer::IsSelectLocalDefBranch(LoopVectorizationPlan* plan, BasicBlock* block, GenTree* root)
+{
+    if (!block->KindIs(BBJ_COND) || !root->OperIs(GT_JTRUE))
+    {
+        return false;
+    }
+
+    GenTree* const cond = root->gtGetOp1();
+    for (unsigned i = 0; i < plan->SelectLocalDefCount; i++)
+    {
+        const LoopVectorizationPlan::SelectLocalDef& selectDef = plan->SelectLocalDefs[i];
+        if ((selectDef.Cond == cond) && block->TrueTargetIs(selectDef.TrueBlock) &&
+            block->FalseTargetIs(selectDef.FalseBlock))
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+
 bool AutoVectorizer::TryAnalyzePostIVMemory(LoopVectorizationPlan* plan)
 {
     assert(plan->IsPostIV);
@@ -1648,10 +1665,6 @@ bool AutoVectorizer::TryAnalyzePostIVMemory(LoopVectorizationPlan* plan)
             RecordLocalDefs(plan, stmt->GetRootNode());
         }
 
-        return BasicBlockVisit::Continue;
-    });
-
-    plan->Loop->VisitLoopBlocks([&](BasicBlock* block) {
         (void)TryRecordSelectLocalDef(plan, block);
         return BasicBlockVisit::Continue;
     });
@@ -1667,7 +1680,7 @@ bool AutoVectorizer::TryAnalyzePostIVMemory(LoopVectorizationPlan* plan)
                 continue;
             }
 
-            if (root->OperIs(GT_JTRUE) && TryRecordSelectLocalDef(plan, block))
+            if (IsSelectLocalDefBranch(plan, block, root))
             {
                 continue;
             }
@@ -3288,8 +3301,11 @@ GenTree* AutoVectorizer::BuildVectorLoopTest(LoopVectorizationPlan* plan)
 
 GenTree* AutoVectorizer::BuildPostIVSameStartCheck(LoopVectorizationPlan* plan)
 {
-    GenTree* const cmp = m_compiler->gtNewOperNode(GT_EQ, TYP_INT, BuildPostIVAddress(plan, plan->StoreAccess),
-                                                   BuildPostIVAddress(plan, plan->LoadAccess));
+    assert(plan->StoreCount == 1);
+    assert(plan->LoadCount == 1);
+
+    GenTree* const cmp = m_compiler->gtNewOperNode(GT_EQ, TYP_INT, BuildPostIVAddress(plan, plan->StoreAccesses[0]),
+                                                   BuildPostIVAddress(plan, plan->LoadAccesses[0]));
     return m_compiler->gtNewOperNode(GT_JTRUE, TYP_VOID, cmp);
 }
 
@@ -3303,10 +3319,13 @@ GenTree* AutoVectorizer::BuildPostIVStoreBeforeLoadCheck(LoopVectorizationPlan* 
                                                                                       tripCountDsc->TypeGet()),
                                                             varTypeIsUnsigned(tripCountDsc->TypeGet()), TYP_I_IMPL),
                                   m_compiler->gtNewIconNode(plan->ElementSize, TYP_I_IMPL));
+    assert(plan->StoreCount == 1);
+    assert(plan->LoadCount == 1);
+
     GenTree* const storeEnd =
-        m_compiler->gtNewOperNode(GT_ADD, TYP_BYREF, BuildPostIVAddress(plan, plan->StoreAccess), byteCount);
+        m_compiler->gtNewOperNode(GT_ADD, TYP_BYREF, BuildPostIVAddress(plan, plan->StoreAccesses[0]), byteCount);
     GenTree* const cmp =
-        m_compiler->gtNewOperNode(GT_LE, TYP_INT, storeEnd, BuildPostIVAddress(plan, plan->LoadAccess));
+        m_compiler->gtNewOperNode(GT_LE, TYP_INT, storeEnd, BuildPostIVAddress(plan, plan->LoadAccesses[0]));
     return m_compiler->gtNewOperNode(GT_JTRUE, TYP_VOID, cmp);
 }
 
@@ -3320,10 +3339,13 @@ GenTree* AutoVectorizer::BuildPostIVLoadBeforeStoreCheck(LoopVectorizationPlan* 
                                                                                       tripCountDsc->TypeGet()),
                                                             varTypeIsUnsigned(tripCountDsc->TypeGet()), TYP_I_IMPL),
                                   m_compiler->gtNewIconNode(plan->ElementSize, TYP_I_IMPL));
+    assert(plan->StoreCount == 1);
+    assert(plan->LoadCount == 1);
+
     GenTree* const loadEnd =
-        m_compiler->gtNewOperNode(GT_ADD, TYP_BYREF, BuildPostIVAddress(plan, plan->LoadAccess), byteCount);
+        m_compiler->gtNewOperNode(GT_ADD, TYP_BYREF, BuildPostIVAddress(plan, plan->LoadAccesses[0]), byteCount);
     GenTree* const cmp =
-        m_compiler->gtNewOperNode(GT_LE, TYP_INT, loadEnd, BuildPostIVAddress(plan, plan->StoreAccess));
+        m_compiler->gtNewOperNode(GT_LE, TYP_INT, loadEnd, BuildPostIVAddress(plan, plan->StoreAccesses[0]));
     return m_compiler->gtNewOperNode(GT_JTRUE, TYP_VOID, cmp);
 }
 
@@ -5202,19 +5224,6 @@ void AutoVectorizer::RecordAddressUpdate(LoopVectorizationPlan* plan, unsigned a
         plan->AddressUpdateVars[index]   = addressVar;
         plan->AddressUpdateDeltas[index] = delta;
     }
-}
-
-bool AutoVectorizer::HasAddressUpdate(LoopVectorizationPlan* plan, unsigned addressVar)
-{
-    for (unsigned i = 0; i < plan->AddressUpdateCount; i++)
-    {
-        if (plan->AddressUpdateVars[i] == addressVar)
-        {
-            return abs(plan->AddressUpdateDeltas[i]) == static_cast<int>(plan->ElementSize);
-        }
-    }
-
-    return false;
 }
 
 PhaseStatus Compiler::optAutoVectorize()
