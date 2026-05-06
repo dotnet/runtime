@@ -60,7 +60,6 @@ namespace System.Globalization
 
         // EnumCalendarInfoExEx callback itself.
         [UnmanagedCallersOnly]
-        [RequiresUnsafe]
         private static unsafe Interop.BOOL EnumCalendarInfoCallback(char* lpCalendarInfoString, uint calendar, IntPtr pReserved, void* lParam)
         {
             EnumData* context = (EnumData*)lParam;
@@ -93,7 +92,6 @@ namespace System.Globalization
         }
 
         [UnmanagedCallersOnly]
-        [RequiresUnsafe]
         private static unsafe Interop.BOOL EnumCalendarsCallback(char* lpCalendarInfoString, uint calendar, IntPtr reserved, void* lParam)
         {
             NlsEnumCalendarsData* context = (NlsEnumCalendarsData*)lParam;

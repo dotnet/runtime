@@ -24,7 +24,6 @@ namespace System.Text.Unicode
         /// <remarks>
         /// Returns a pointer to the end of <paramref name="pInputBuffer"/> if the buffer is well-formed.
         /// </remarks>
-        [RequiresUnsafe]
         public static byte* GetPointerToFirstInvalidByte(byte* pInputBuffer, int inputLength, out int utf16CodeUnitCountAdjustment, out int scalarCountAdjustment)
         {
             Debug.Assert(inputLength >= 0, "Input length must not be negative.");

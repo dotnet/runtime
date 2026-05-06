@@ -427,7 +427,6 @@ namespace System.Globalization
             return result;
         }
 
-        [RequiresUnsafe]
         private static unsafe bool EnumCalendarInfo(string localeName, CalendarId calendarId, CalendarDataType dataType, IcuEnumCalendarsData* callbackContext)
         {
 #if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
@@ -439,7 +438,6 @@ namespace System.Globalization
         }
 
         [UnmanagedCallersOnly]
-        [RequiresUnsafe]
         private static unsafe void EnumCalendarInfoCallback(char* calendarStringPtr, IntPtr context)
         {
             try
