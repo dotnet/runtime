@@ -651,6 +651,14 @@ bool AutoVectorizer::TryCreateLoopPlan(FlowGraphNaturalLoop* loop, LoopVectoriza
     const bool isSupportedIncreasingLoop = iterInfo.IsIncreasingLoop() || isSupportedNotEqualLoop;
     const bool isSupportedDecreasingLoop = iterInfo.IsDecreasingLoop();
 
+    if (testOper == GT_EQ)
+    {
+        JITDUMP("test:\n");
+        JITDUMPEXEC(m_compiler->gtDispTree(iterInfo.TestTree));
+        JITDUMP("equality loop test is not a vectorizable counted range, bail out\n");
+        return false;
+    }
+
     if ((abs(step) != 1) || (!isSupportedIncreasingLoop && !isSupportedDecreasingLoop))
     {
         JITDUMP("IV update:\n");
@@ -878,6 +886,13 @@ bool AutoVectorizer::TryCreateLocalLimitLoopPlan(FlowGraphNaturalLoop* loop, Loo
     {
         ivLcl = op1->AsLclVarCommon()->GetLclNum();
         limit = op2;
+    }
+    else if (testOper == GT_EQ)
+    {
+        JITDUMP("local-limit loop test:\n");
+        JITDUMPEXEC(m_compiler->gtDispTree(relop));
+        JITDUMP("equality loop test is not a vectorizable counted range, bail out\n");
+        return false;
     }
     else
     {
@@ -2789,6 +2804,13 @@ GenTree* AutoVectorizer::BuildVectorLoopTest(LoopVectorizationPlan* plan)
         case GT_GT:
         case GT_GE:
             cmpOper = plan->TestOper;
+            break;
+        case GT_NE:
+            // The supported canonical not-equal form is a forward counted loop.
+            // Use a strict range test for the last vector lane so the vector loop
+            // never executes the iteration where the scalar loop would stop.
+            assert(plan->Step > 0);
+            cmpOper = GT_LT;
             break;
         default:
             unreached();
