@@ -47,6 +47,7 @@ namespace System.Collections.Concurrent.Tests
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/81945", typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming))]
         public void NonRandomizedToRandomizedUpgrade_FunctionsCorrectly(bool ignoreCase)
         {
             List<string> strings = GenerateCollidingStrings(110); // higher than the collisions threshold
