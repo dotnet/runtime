@@ -151,6 +151,7 @@ private:
     bool      ReportVectorIsa(unsigned vectorSizeBytes) const;
     bool      RecomputeLoopTable();
     bool      IsSupportedElementType(var_types elementType) const;
+    bool      AreCompatibleElementTypes(var_types first, var_types second) const;
     bool      IsSupportedUnaryOp(genTreeOps oper, var_types elementType) const;
     bool      IsSupportedBinaryOp(genTreeOps oper, var_types elementType) const;
     bool      IsSupportedCompareOp(genTreeOps oper, var_types elementType) const;

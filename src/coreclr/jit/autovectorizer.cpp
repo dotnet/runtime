@@ -199,6 +199,26 @@ bool AutoVectorizer::IsSupportedElementType(var_types elementType) const
     }
 }
 
+bool AutoVectorizer::AreCompatibleElementTypes(var_types first, var_types second) const
+{
+    if (first == second)
+    {
+        return true;
+    }
+
+    if (!IsSupportedElementType(first) || !IsSupportedElementType(second))
+    {
+        return false;
+    }
+
+    if (!varTypeIsIntegral(first) || !varTypeIsIntegral(second))
+    {
+        return false;
+    }
+
+    return varTypeToUnsigned(first) == varTypeToUnsigned(second);
+}
+
 bool AutoVectorizer::IsSupportedUnaryOp(genTreeOps oper, var_types elementType) const
 {
     if (!IsSupportedElementType(elementType))
@@ -974,7 +994,7 @@ bool AutoVectorizer::AddStore(LoopVectorizationPlan*                     plan,
         return false;
     }
 
-    if ((plan->ElementType != TYP_UNDEF) && (plan->ElementType != access.ElementType))
+    if ((plan->ElementType != TYP_UNDEF) && !AreCompatibleElementTypes(plan->ElementType, access.ElementType))
     {
         JITDUMPEXEC(m_compiler->gtDispStmt(stmt));
         JITDUMP("store element type %s does not match prior element type %s, bail out\n",
@@ -1074,7 +1094,7 @@ bool AutoVectorizer::TryAddReduction(LoopVectorizationPlan* plan, Statement* stm
         return false;
     }
 
-    if ((plan->ElementType != TYP_UNDEF) && (plan->ElementType != elementType))
+    if ((plan->ElementType != TYP_UNDEF) && !AreCompatibleElementTypes(plan->ElementType, elementType))
     {
         JITDUMPEXEC(m_compiler->gtDispStmt(stmt));
         JITDUMP("reduction element type %s does not match loop element type %s, bail out\n", varTypeName(elementType),
@@ -1120,7 +1140,7 @@ bool AutoVectorizer::AddLoad(LoopVectorizationPlan*                     plan,
         return false;
     }
 
-    if ((plan->ElementType != TYP_UNDEF) && (plan->ElementType != access.ElementType))
+    if ((plan->ElementType != TYP_UNDEF) && !AreCompatibleElementTypes(plan->ElementType, access.ElementType))
     {
         JITDUMP("load element type %s does not match loop element type %s, bail out\n", varTypeName(access.ElementType),
                 varTypeName(plan->ElementType));
@@ -1783,7 +1803,7 @@ AutoVectorizer::PackNode* AutoVectorizer::TryBuildPack(
             return nullptr;
         }
 
-        if (access.ElementType != elementType)
+        if (!AreCompatibleElementTypes(access.ElementType, elementType))
         {
             JITDUMPEXEC(m_compiler->gtDispTree(indir));
             JITDUMP("load element type %s does not match expression type %s, bail out\n",
