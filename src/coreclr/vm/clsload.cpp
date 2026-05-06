@@ -4181,7 +4181,7 @@ BOOL ClassLoader::CanAccessClass(                   // True if access is legal, 
         INJECT_FAULT(COMPlusThrowOM(););
         MODE_ANY;
         PRECONDITION(CheckPointer(pContext));
-        PRECONDITION(CheckPointer(pTargetClass));
+        PRECONDITION(!pTargetClass.IsNull());
     }
     CONTRACTL_END
 

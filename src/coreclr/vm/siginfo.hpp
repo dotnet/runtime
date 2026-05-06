@@ -257,7 +257,7 @@ public:
                                          HandleRecursiveGenericsForFieldLayoutLoad *pRecursiveFieldGenericHandling = NULL
                                          ) const;
 
-        // Execute access checks for Method Instantiation siganatures. Used to avoid materializing methods we don't need to materialize.
+        // Execute access checks for type signatures. Used to avoid materializing types we don't need to materialize.
         bool AccessCheckType(
                         Module* pModule,
                         AccessCheckContext* pContext,

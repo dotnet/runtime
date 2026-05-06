@@ -5502,8 +5502,8 @@ void CEEInfo::getCallInfo(
                     typeParam = typeParam.GetTypeParam();
                 }
 
-                // No access check is need for Var, MVar, or FnPtr.
-                if (!typeParam.IsNull())
+                // No access check is needed for Var, MVar, or FnPtr.
+                if (!typeParam.IsNull() && !typeParam.IsGenericVariable())
                 {
                     _ASSERTE(pCallerForSecurity != NULL && callerTypeForSecurity != NULL);
                     AccessCheckContext accessContext(pCallerForSecurity, callerTypeForSecurity.GetMethodTable());
