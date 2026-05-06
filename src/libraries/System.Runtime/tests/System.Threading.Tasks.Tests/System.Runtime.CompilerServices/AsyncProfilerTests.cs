@@ -1278,7 +1278,7 @@ namespace System.Threading.Tasks.Tests
         {
             var events = await CollectEventsAsync(CallstackKeywords, CreatePrecedesResumeMarker);
 
-            //DumpAllEvents(events);
+            DumpAllEvents(events);
 
             var stream = ParseAllEvents(events);
             var createStacks = stream.CallstacksWithMarker(AsyncEventID.CreateAsyncCallstack, nameof(CreatePrecedesResumeMarker));
@@ -1420,7 +1420,7 @@ namespace System.Threading.Tasks.Tests
         {
             var events = await CollectEventsAsync(CallstackKeywords, SimulationHandledMarker);
 
-            // DumpAllEvents(events);
+            DumpAllEvents(events);
 
             var stream = ParseAllEvents(events);
             AssertCallstackSimulationReachesZero(stream, nameof(SimulationHandledMarker));
