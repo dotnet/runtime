@@ -583,7 +583,7 @@ public:
     // <TODO>@TODO: its possible that the ThreadTasks from above and these flags should be merged.</TODO>
     enum ThreadStateNoConcurrency
     {
-        TSNC_Unknown                    = 0x00000000, // threads are initialized this way [cDAC] [Thread]: Contract depends on this value.
+        TSNC_Unknown                    = 0x00000000, // threads are initialized this way
 
         TSNC_DebuggerUserSuspend        = 0x00000001, // marked "suspended" by the debugger
         // unused                       = 0x00000002,
