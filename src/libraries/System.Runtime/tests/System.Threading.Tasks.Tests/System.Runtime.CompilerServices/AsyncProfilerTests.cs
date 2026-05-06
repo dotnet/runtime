@@ -820,7 +820,18 @@ namespace System.Threading.Tasks.Tests
                 {
                     SendFlushCommand();
                     result.Events.Clear();
-                    await scenario().ConfigureAwait(false);
+                    // Clear SynchronizationContext so RuntimeAsync continuations don't capture
+                    // xunit's context, which would cause per-frame re-queuing instead of inlining.
+                    var prevCtx = SynchronizationContext.Current;
+                    SynchronizationContext.SetSynchronizationContext(null);
+                    try
+                    {
+                        await scenario().ConfigureAwait(false);
+                    }
+                    finally
+                    {
+                        SynchronizationContext.SetSynchronizationContext(prevCtx);
+                    }
                     SendFlushCommand();
                 }).ConfigureAwait(false);
             }
@@ -911,10 +922,7 @@ namespace System.Threading.Tasks.Tests
         [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncSupported))]
         public async Task RuntimeAsync_EventBufferHeaderFormat()
         {
-            var events = await CollectEventsAsync(CoreKeywords, async () =>
-            {
-                await SingleAsyncYield();
-            });
+            var events = await CollectEventsAsync(CoreKeywords, SingleAsyncYield);
 
             // DumpAllEvents(events);
 
@@ -951,10 +959,7 @@ namespace System.Threading.Tasks.Tests
         [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncSupported))]
         public async Task RuntimeAsync_EventsEmitted()
         {
-            var events = await CollectEventsAsync(AllKeywords, async () =>
-            {
-                await SingleAsyncYield();
-            });
+            var events = await CollectEventsAsync(AllKeywords, SingleAsyncYield);
 
             // DumpAllEvents(events);
 
@@ -973,10 +978,7 @@ namespace System.Threading.Tasks.Tests
         [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncSupported))]
         public async Task RuntimeAsync_SuspendResumeCompleteEvents()
         {
-            var events = await CollectEventsAsync(CallstackKeywords, async () =>
-            {
-                await SuspendResumeCompleteMarker();
-            });
+            var events = await CollectEventsAsync(CallstackKeywords, SuspendResumeCompleteMarker);
 
             // DumpAllEvents(events);
 
@@ -1007,10 +1009,7 @@ namespace System.Threading.Tasks.Tests
         [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncSupported))]
         public async Task RuntimeAsync_ContextEventIdLifecycle()
         {
-            var events = await CollectEventsAsync(CallstackKeywords, async () =>
-            {
-                await ContextLifecycleMarker();
-            });
+            var events = await CollectEventsAsync(CallstackKeywords, ContextLifecycleMarker);
 
             // DumpAllEvents(events);
 
@@ -1035,10 +1034,7 @@ namespace System.Threading.Tasks.Tests
         [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncSupported))]
         public async Task RuntimeAsync_ResumeCompleteMethodEvents()
         {
-            var events = await CollectEventsAsync(MethodKeywords, async () =>
-            {
-                await ChainedAsyncYield();
-            });
+            var events = await CollectEventsAsync(MethodKeywords, ChainedAsyncYield);
 
             // DumpAllEvents(events);
 
@@ -1059,10 +1055,7 @@ namespace System.Threading.Tasks.Tests
         [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncSupported))]
         public async Task RuntimeAsync_EventSequenceOrder()
         {
-            var events = await CollectEventsAsync(CallstackKeywords, async () =>
-            {
-                await EventSequenceOrderMarker();
-            });
+            var events = await CollectEventsAsync(CallstackKeywords, EventSequenceOrderMarker);
 
             // DumpAllEvents(events);
 
@@ -1093,10 +1086,7 @@ namespace System.Threading.Tasks.Tests
         [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncSupported))]
         public async Task RuntimeAsync_CreateAsyncContextEmittedOnFirstAwait()
         {
-            var events = await CollectEventsAsync(CreateAsyncContextKeyword | CompleteAsyncContextKeyword, async () =>
-            {
-                await SingleAsyncYield();
-            });
+            var events = await CollectEventsAsync(CreateAsyncContextKeyword | CompleteAsyncContextKeyword, SingleAsyncYield);
 
             // DumpAllEvents(events);
 
@@ -1114,10 +1104,7 @@ namespace System.Threading.Tasks.Tests
         [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncSupported))]
         public async Task RuntimeAsync_CreateAsyncCallstackEmittedOnFirstAwait()
         {
-            var events = await CollectEventsAsync(CallstackKeywords, async () =>
-            {
-                await CreateCallstackMarker();
-            });
+            var events = await CollectEventsAsync(CallstackKeywords, CreateCallstackMarker);
 
             // DumpAllEvents(events);
 
@@ -1144,10 +1131,7 @@ namespace System.Threading.Tasks.Tests
         [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncSupported))]
         public async Task RuntimeAsync_CreateCallstackDepthMatchesChain()
         {
-            var events = await CollectEventsAsync(CallstackKeywords, async () =>
-            {
-                await CreateCallstackDepthMarker();
-            });
+            var events = await CollectEventsAsync(CallstackKeywords, CreateCallstackDepthMarker);
 
             // DumpAllEvents(events);
 
@@ -1174,10 +1158,7 @@ namespace System.Threading.Tasks.Tests
         [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncSupported))]
         public async Task RuntimeAsync_SuspendAsyncCallstackEmittedOnAwait()
         {
-            var events = await CollectEventsAsync(CallstackKeywords, async () =>
-            {
-                await SuspendCallstackMarker();
-            });
+            var events = await CollectEventsAsync(CallstackKeywords, SuspendCallstackMarker);
 
             // DumpAllEvents(events);
 
@@ -1204,10 +1185,7 @@ namespace System.Threading.Tasks.Tests
         [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncSupported))]
         public async Task RuntimeAsync_SuspendCallstackDepthMatchesChain()
         {
-            var events = await CollectEventsAsync(CallstackKeywords, async () =>
-            {
-                await SuspendDepthMarker();
-            });
+            var events = await CollectEventsAsync(CallstackKeywords, SuspendDepthMarker);
 
             // DumpAllEvents(events);
 
@@ -1234,10 +1212,7 @@ namespace System.Threading.Tasks.Tests
         [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncSupported))]
         public async Task RuntimeAsync_SuspendCallstackPrecedesComplete()
         {
-            var events = await CollectEventsAsync(CallstackKeywords, async () =>
-            {
-                await SuspendPrecedesCompleteMarker();
-            });
+            var events = await CollectEventsAsync(CallstackKeywords, SuspendPrecedesCompleteMarker);
 
             // DumpAllEvents(events);
 
@@ -1272,10 +1247,7 @@ namespace System.Threading.Tasks.Tests
         [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncSupported))]
         public async Task RuntimeAsync_SuspendCallstackDeeperThanInitialResume()
         {
-            var events = await CollectEventsAsync(CallstackKeywords, async () =>
-            {
-                await SuspendDeeperMarker();
-            });
+            var events = await CollectEventsAsync(CallstackKeywords, SuspendDeeperMarker);
 
             // DumpAllEvents(events);
 
@@ -1304,12 +1276,9 @@ namespace System.Threading.Tasks.Tests
         [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncSupported))]
         public async Task RuntimeAsync_CreateCallstackPrecedesResumeCallstack()
         {
-            var events = await CollectEventsAsync(CallstackKeywords, async () =>
-            {
-                await CreatePrecedesResumeMarker();
-            });
+            var events = await CollectEventsAsync(CallstackKeywords, CreatePrecedesResumeMarker);
 
-            // DumpAllEvents(events);
+            //DumpAllEvents(events);
 
             var stream = ParseAllEvents(events);
             var createStacks = stream.CallstacksWithMarker(AsyncEventID.CreateAsyncCallstack, nameof(CreatePrecedesResumeMarker));
@@ -1340,10 +1309,7 @@ namespace System.Threading.Tasks.Tests
         [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncSupported))]
         public async Task RuntimeAsync_CreateAndFirstResumeCallstacksMatch()
         {
-            var events = await CollectEventsAsync(CallstackKeywords, async () =>
-            {
-                await CreateResumeMatchMarker();
-            });
+            var events = await CollectEventsAsync(CallstackKeywords, CreateResumeMatchMarker);
 
             // DumpAllEvents(events);
 
@@ -1380,10 +1346,7 @@ namespace System.Threading.Tasks.Tests
         [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncSupported))]
         public async Task RuntimeAsync_CallstackEmittedOnResume()
         {
-            var events = await CollectEventsAsync(CallstackKeywords, async () =>
-            {
-                await CallstackOnResumeMarker();
-            });
+            var events = await CollectEventsAsync(CallstackKeywords, CallstackOnResumeMarker);
 
             // DumpAllEvents(events);
 
@@ -1410,10 +1373,7 @@ namespace System.Threading.Tasks.Tests
         [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncSupported))]
         public async Task RuntimeAsync_CallstackDepthMatchesChain()
         {
-            var events = await CollectEventsAsync(CallstackKeywords, async () =>
-            {
-                await CallstackDepthMarker();
-            });
+            var events = await CollectEventsAsync(CallstackKeywords, CallstackDepthMarker);
 
             // DumpAllEvents(events);
 
@@ -1440,10 +1400,7 @@ namespace System.Threading.Tasks.Tests
         [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncSupported))]
         public async Task RuntimeAsync_CallstackSimulation_NormalCompletion()
         {
-            var events = await CollectEventsAsync(CallstackKeywords, async () =>
-            {
-                await SimulationNormalMarker();
-            });
+            var events = await CollectEventsAsync(CallstackKeywords, SimulationNormalMarker);
 
             // DumpAllEvents(events);
 
@@ -1461,10 +1418,7 @@ namespace System.Threading.Tasks.Tests
         [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncSupported))]
         public async Task RuntimeAsync_CallstackSimulation_HandledException()
         {
-            var events = await CollectEventsAsync(CallstackKeywords, async () =>
-            {
-                await SimulationHandledMarker();
-            });
+            var events = await CollectEventsAsync(CallstackKeywords, SimulationHandledMarker);
 
             // DumpAllEvents(events);
 
@@ -1479,19 +1433,23 @@ namespace System.Threading.Tasks.Tests
             await DeepUnhandledOuter();
         }
 
+        [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(false)]
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+        static async Task SimulationUnhandledMarkerCatcher()
+        {
+            try
+            {
+                await SimulationUnhandledMarker();
+            }
+            catch (InvalidOperationException)
+            {
+            }
+        }
+
         [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncSupported))]
         public async Task RuntimeAsync_CallstackSimulation_UnhandledException()
         {
-            var events = await CollectEventsAsync(CallstackKeywords, async () =>
-            {
-                try
-                {
-                    await SimulationUnhandledMarker();
-                }
-                catch (InvalidOperationException)
-                {
-                }
-            });
+            var events = await CollectEventsAsync(CallstackKeywords, SimulationUnhandledMarkerCatcher);
 
             // DumpAllEvents(events);
 
@@ -1506,19 +1464,23 @@ namespace System.Threading.Tasks.Tests
             await DeepUnhandledOuter();
         }
 
+        [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(false)]
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+        static async Task UnhandledUnwindCatcher()
+        {
+            try
+            {
+                await UnhandledUnwindMarker();
+            }
+            catch (InvalidOperationException)
+            {
+            }
+        }
+
         [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncSupported))]
         public async Task RuntimeAsync_UnhandledExceptionUnwind()
         {
-            var events = await CollectEventsAsync(CallstackKeywords, async () =>
-            {
-                try
-                {
-                    await UnhandledUnwindMarker();
-                }
-                catch (InvalidOperationException)
-                {
-                }
-            });
+            var events = await CollectEventsAsync(CallstackKeywords, UnhandledUnwindCatcher);
 
             // DumpAllEvents(events);
 
@@ -1552,10 +1514,7 @@ namespace System.Threading.Tasks.Tests
         [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncSupported))]
         public async Task RuntimeAsync_HandledExceptionUnwind()
         {
-            var events = await CollectEventsAsync(CallstackKeywords, async () =>
-            {
-                await HandledUnwindMarker();
-            });
+            var events = await CollectEventsAsync(CallstackKeywords, HandledUnwindMarker);
 
             // DumpAllEvents(events);
 
@@ -1848,10 +1807,7 @@ namespace System.Threading.Tasks.Tests
         [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncSupported))]
         public async Task RuntimeAsync_NoSyncClockEventBeforeInterval()
         {
-            var events = await CollectEventsAsync(CoreKeywords, async () =>
-            {
-                await SingleAsyncYield();
-            });
+            var events = await CollectEventsAsync(CoreKeywords, SingleAsyncYield);
 
             var ids = ParseAllEvents(events).EventIds;
 
@@ -1897,6 +1853,14 @@ namespace System.Threading.Tasks.Tests
             yield return new object[] { (long)CompleteAsyncMethodKeyword, new AsyncEventID[] { AsyncEventID.ResetAsyncThreadContext, AsyncEventID.CompleteAsyncMethod, AsyncEventID.AsyncProfilerMetadata } };
         }
 
+        [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(true)]
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+        static async Task KeywordGatekeepingMarker()
+        {
+            await OuterCatches();
+            await ChainedAsyncYield();
+        }
+
         // This test is sensitive to event noise - it asserts that ONLY the expected event
         // types appear for a given keyword. It cannot run in parallel with other async
         // profiler scenarios that might produce events on the same thread context.
@@ -1911,11 +1875,7 @@ namespace System.Threading.Tasks.Tests
             // Run a scenario that exercises all event types: resume, suspend,
             // complete, method events, callstacks, and exception unwinds.
             // Only the events matching the enabled keyword should be emitted.
-            var events = await CollectEventsAsync(kw, async () =>
-            {
-                await OuterCatches();
-                await ChainedAsyncYield();
-            });
+            var events = await CollectEventsAsync(kw, KeywordGatekeepingMarker);
 
             var stream = ParseAllEvents(events);
             var unexpected = stream.EventIds.Where(id => !allowed.Contains(id)).ToList();
@@ -1926,10 +1886,7 @@ namespace System.Threading.Tasks.Tests
         [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncSupported))]
         public async Task RuntimeAsync_ResetAsyncThreadContextEvent()
         {
-            var events = await CollectEventsAsync(CoreKeywords, async () =>
-            {
-                await SingleAsyncYield();
-            });
+            var events = await CollectEventsAsync(CoreKeywords, SingleAsyncYield);
 
             // DumpAllEvents(events);
 
@@ -1941,10 +1898,7 @@ namespace System.Threading.Tasks.Tests
         [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncSupported))]
         public async Task RuntimeAsync_MetadataEventEmittedOnEnable()
         {
-            var events = await CollectEventsAsync(AllKeywords, async () =>
-            {
-                await SingleAsyncYield();
-            });
+            var events = await CollectEventsAsync(AllKeywords, SingleAsyncYield);
 
             // DumpAllEvents(events);
 
@@ -2009,10 +1963,7 @@ namespace System.Threading.Tasks.Tests
             // methods at different JIT-assigned addresses, the deltas between consecutive
             // NativeIPs will naturally span both directions. This exercises the full
             // zigzag + LEB128 encode/decode path through the production serializer.
-            var events = await CollectEventsAsync(CallstackKeywords, async () =>
-            {
-                await NativeIPDeltaRoundtripMarker();
-            });
+            var events = await CollectEventsAsync(CallstackKeywords, NativeIPDeltaRoundtripMarker);
 
             var stream = ParseAllEvents(events);
             var callstacks = stream.CallstacksWithMarker(AsyncEventID.ResumeAsyncCallstack, nameof(NativeIPDeltaRoundtripMarker));
@@ -2306,10 +2257,7 @@ namespace System.Threading.Tasks.Tests
         [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncSupported))]
         public async Task RuntimeAsync_MetadataMatchesWrapperMethods()
         {
-            var events = await CollectEventsAsync(AllKeywords, async () =>
-            {
-                await SingleAsyncYield();
-            });
+            var events = await CollectEventsAsync(AllKeywords, SingleAsyncYield);
 
             var stream = ParseAllEvents(events);
             var metadataList = stream.MetadataEvents;
@@ -2538,7 +2486,7 @@ namespace System.Threading.Tasks.Tests
             byte wrapperCount = buffer[index++];
             Console.WriteLine($"  WrapperCount: {wrapperCount}");
 
-            uint templateLength = ReadCompressedUInt32(buffer, ref index);
+            Deserializer.ReadCompressedUInt32(buffer, ref index, out uint templateLength);
             string wrapperNameTemplate = System.Text.Encoding.UTF8.GetString(buffer.Slice(index, (int)templateLength));
             index += (int)templateLength;
             Console.WriteLine($"  WrapperNameTemplate: \"{wrapperNameTemplate}\"");
