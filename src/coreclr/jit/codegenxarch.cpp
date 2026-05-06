@@ -8552,6 +8552,14 @@ void CodeGen::genCreateAndStoreGCInfoX64(unsigned codeSize, unsigned prologSize 
             assert(m_compiler->lvaGetCallerSPRelativeOffset(m_compiler->lvaMonAcquired) == -preservedAreaSize);
         }
 
+        if (m_compiler->lvaAsyncThreadObjectVar != BAD_VAR_NUM)
+        {
+            preservedAreaSize += TARGET_POINTER_SIZE;
+
+            assert(m_compiler->lvaGetCallerSPRelativeOffset(m_compiler->lvaAsyncThreadObjectVar) ==
+                   -preservedAreaSize);
+        }
+
         if (m_compiler->lvaAsyncExecutionContextVar != BAD_VAR_NUM)
         {
             preservedAreaSize += TARGET_POINTER_SIZE;

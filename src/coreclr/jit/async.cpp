@@ -88,7 +88,10 @@ PhaseStatus Compiler::SaveAsyncContexts()
         return PhaseStatus::MODIFIED_NOTHING;
     }
 
-    // Create locals for ExecutionContext and SynchronizationContext
+    // Create locals for Thread, ExecutionContext and SynchronizationContext
+    lvaAsyncThreadObjectVar                     = lvaGrabTemp(false DEBUGARG("Async Thread"));
+    lvaGetDesc(lvaAsyncThreadObjectVar)->lvType = TYP_REF;
+
     lvaAsyncExecutionContextVar                     = lvaGrabTemp(false DEBUGARG("Async ExecutionContext"));
     lvaGetDesc(lvaAsyncExecutionContextVar)->lvType = TYP_REF;
 
@@ -97,6 +100,7 @@ PhaseStatus Compiler::SaveAsyncContexts()
 
     if (opts.IsOSR())
     {
+        lvaGetDesc(lvaAsyncThreadObjectVar)->lvIsOSRLocal       = true;
         lvaGetDesc(lvaAsyncExecutionContextVar)->lvIsOSRLocal       = true;
         lvaGetDesc(lvaAsyncSynchronizationContextVar)->lvIsOSRLocal = true;
     }
@@ -190,8 +194,10 @@ PhaseStatus Compiler::SaveAsyncContexts()
         captureCall->gtArgs.PushFront(this,
                                       NewCallArg::Primitive(gtNewLclAddrNode(lvaAsyncSynchronizationContextVar, 0)));
         captureCall->gtArgs.PushFront(this, NewCallArg::Primitive(gtNewLclAddrNode(lvaAsyncExecutionContextVar, 0)));
-        lvaGetDesc(lvaAsyncSynchronizationContextVar)->lvHasLdAddrOp = true;
+        captureCall->gtArgs.PushFront(this, NewCallArg::Primitive(gtNewLclAddrNode(lvaAsyncThreadObjectVar, 0)));
+        lvaGetDesc(lvaAsyncThreadObjectVar)->lvHasLdAddrOp       = true;
         lvaGetDesc(lvaAsyncExecutionContextVar)->lvHasLdAddrOp       = true;
+        lvaGetDesc(lvaAsyncSynchronizationContextVar)->lvHasLdAddrOp = true;
 
         CORINFO_CALL_INFO callInfo = {};
         callInfo.hMethod           = captureCall->gtCallMethHnd;
@@ -224,6 +230,7 @@ PhaseStatus Compiler::SaveAsyncContexts()
     restoreCall->gtArgs.PushFront(this,
                                   NewCallArg::Primitive(gtNewLclVarNode(lvaAsyncSynchronizationContextVar, TYP_REF)));
     restoreCall->gtArgs.PushFront(this, NewCallArg::Primitive(gtNewLclVarNode(lvaAsyncExecutionContextVar, TYP_REF)));
+    restoreCall->gtArgs.PushFront(this, NewCallArg::Primitive(gtNewLclVarNode(lvaAsyncThreadObjectVar, TYP_REF)));
     restoreCall->gtArgs.PushFront(this, NewCallArg::Primitive(resumed));
 
     Statement* restoreStmt = fgNewStmtFromTree(restoreCall);
@@ -391,6 +398,7 @@ BasicBlock* Compiler::CreateReturnBB(unsigned* mergedReturnLcl)
     restoreCall->gtArgs.PushFront(this,
                                   NewCallArg::Primitive(gtNewLclVarNode(lvaAsyncSynchronizationContextVar, TYP_REF)));
     restoreCall->gtArgs.PushFront(this, NewCallArg::Primitive(gtNewLclVarNode(lvaAsyncExecutionContextVar, TYP_REF)));
+    restoreCall->gtArgs.PushFront(this, NewCallArg::Primitive(gtNewLclVarNode(lvaAsyncThreadObjectVar, TYP_REF)));
     restoreCall->gtArgs.PushFront(this, NewCallArg::Primitive(resumed));
 
     // This restore is an inline candidate (unlike the fault one)
@@ -993,6 +1001,10 @@ void AsyncTransformation::CreateLiveSetForSuspension(BasicBlock*                
     call->VisitLocalDefs(m_compiler, visitDef);
 
     // Exclude method-level context locals (only live on synchronous path)
+    if (m_compiler->lvaAsyncThreadObjectVar != BAD_VAR_NUM)
+    {
+        excludedLocals.AddOrUpdate(m_compiler->lvaAsyncThreadObjectVar, true);
+    }
     if (m_compiler->lvaAsyncSynchronizationContextVar != BAD_VAR_NUM)
     {
         excludedLocals.AddOrUpdate(m_compiler->lvaAsyncSynchronizationContextVar, true);
@@ -2307,7 +2319,7 @@ void AsyncTransformation::RestoreContexts(BasicBlock* block, GenTreeCall* call, 
     JITDUMP("    Call [%06u] has async contexts; will restore on suspension\n", Compiler::dspTreeID(call));
 
     // Insert call
-    //   AsyncHelpers.RestoreContexts(resumed, execContext, syncContext);
+    //   AsyncHelpers.RestoreContextsOnSuspension(resumed, execContext, syncContext);
 
     GenTree*     resumedPlaceholder     = m_compiler->gtNewIconNode(0);
     GenTree*     execContextPlaceholder = m_compiler->gtNewNull();
@@ -3041,7 +3053,8 @@ BasicBlock* AsyncTransformation::CreateSharedFinishContextHandlingBB(SuspensionC
         syncContextLclNum = m_compiler->lvaAsyncSynchronizationContextVar;
     }
 
-    InsertFinishContextHandlingCall(block, layout, helper, m_compiler->gtNewLclvNode(execContextLclNum, TYP_REF),
+    InsertFinishContextHandlingCall(block, layout, helper,
+        m_compiler->gtNewLclvNode(execContextLclNum, TYP_REF),
                                     m_compiler->gtNewLclvNode(syncContextLclNum, TYP_REF));
 
     return block;

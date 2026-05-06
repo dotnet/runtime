@@ -2330,7 +2330,7 @@ void InterpCompiler::CreateILVars()
     // add some starting extra space for new vars
     m_varsCapacity = m_numILVars + getEHcount(m_methodInfo) + 64;
     m_pVars = getAllocator(IMK_Var).allocateZeroed<InterpVar>(m_varsCapacity);
-    m_varsSize = m_numILVars + hasParamArg + hasContinuationArg + (hasThisPointerShadowCopyAsParamIndex ? 1 : 0) + (m_isAsyncMethodWithContextSaveRestore ? 2 : 0) + getEHcount(m_methodInfo);
+    m_varsSize = m_numILVars + hasParamArg + hasContinuationArg + (hasThisPointerShadowCopyAsParamIndex ? 1 : 0) + (m_isAsyncMethodWithContextSaveRestore ? 3 : 0) + getEHcount(m_methodInfo);
 
     offset = 0;
 
@@ -2431,10 +2431,16 @@ void InterpCompiler::CreateILVars()
 
     if (m_isAsyncMethodWithContextSaveRestore)
     {
+        m_threadObjVarIndex = index;
+        CreateNextLocalVar(index, NULL, InterpTypeO, &offset);
+        INTERP_DUMP("alloc Async Thread (var %d) to offset %d\n", m_threadObjVarIndex, m_pVars[m_threadObjVarIndex].offset);
+        index++;
+
         m_execContextVarIndex = index;
         CreateNextLocalVar(index, NULL, InterpTypeO, &offset);
         INTERP_DUMP("alloc ExecutableContextVar (var %d) to offset %d\n", m_execContextVarIndex, m_pVars[m_execContextVarIndex].offset);
         index++;
+
         m_syncContextVarIndex = index;
         CreateNextLocalVar(index, NULL, InterpTypeO, &offset);
         INTERP_DUMP("alloc SyncContextVar (var %d) to offset %d\n", m_syncContextVarIndex, m_pVars[m_syncContextVarIndex].offset);
@@ -4739,7 +4745,14 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
         m_pLastNewIns->SetSVar(m_continuationArgIndex);
         PushInterpType(InterpTypeI4, NULL);
         m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
-        int32_t isStartedArg = m_pStackPointer[-1].var;
+        int32_t isResumedArg = m_pStackPointer[-1].var;
+        m_pStackPointer--;
+
+        AddIns(INTOP_MOV_P);
+        m_pLastNewIns->SetSVar(m_threadObjVarIndex);
+        PushInterpType(InterpTypeO, NULL);
+        m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+        int32_t threadAddressVar = m_pStackPointer[-1].var;
         m_pStackPointer--;
 
         AddIns(INTOP_MOV_P);
@@ -4773,12 +4786,13 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
 
         m_pLastNewIns->flags |= INTERP_INST_FLAG_CALL;
         m_pLastNewIns->info.pCallInfo = new (getAllocator(IMK_CallInfo)) InterpCallInfo();
-        int32_t numArgs = 3;
+        int32_t numArgs = 4;
         int32_t *callArgs = getAllocator(IMK_CallInfo).allocate<int32_t>(numArgs + 1);
-        callArgs[0] = isStartedArg;
-        callArgs[1] = execContextAddressVar;
-        callArgs[2] = syncContextAddressVar;
-        callArgs[3] = CALL_ARGS_TERMINATOR;
+        callArgs[0] = isResumedArg;
+        callArgs[1] = threadAddressVar;
+        callArgs[2] = execContextAddressVar;
+        callArgs[3] = syncContextAddressVar;
+        callArgs[4] = CALL_ARGS_TERMINATOR;
         m_pLastNewIns->info.pCallInfo->pCallArgs = callArgs;
 
         m_ip += 5;
@@ -6147,7 +6161,7 @@ void InterpCompiler::EmitSuspend(const CORINFO_CALL_INFO &callInfo, Continuation
         // Save the current execution context into the continuation
         AddIns(INTOP_RESTORE_CONTEXTS_ON_SUSPEND);
         m_pLastNewIns->data[0] = suspendDataIndex;
-        m_pLastNewIns->SetSVars3(varAllocatedContinuation, m_continuationArgIndex, m_execContextVarIndex /* We know the sync context immediately follows */);
+        m_pLastNewIns->SetSVars3(varAllocatedContinuation, m_continuationArgIndex, m_threadObjVarIndex /* We know the contexts immediately follow */);
         PushInterpType(InterpTypeO, NULL);
         varAllocatedContinuation = m_pStackPointer[-1].var;
         m_pStackPointer--;
@@ -8040,7 +8054,7 @@ void InterpCompiler::GenerateCode(CORINFO_METHOD_INFO* methodInfo)
         INTERP_DUMP("Synchronized method - adding extra IL opcodes for async save/restore\n");
 
         // Async methods are methods implemented by adding a try/finally in the method
-        // which takes the lock on entry and releases it on exit. To integrate this into the interpreter, we actually
+        // which captures contexts on entry and restores them on exit. To integrate this into the interpreter, we actually
         // add a set of extra "IL" opcodes at the end of the method which do the monitor finally and actual return
         // logic.
 
@@ -8217,7 +8231,15 @@ void InterpCompiler::GenerateCode(CORINFO_METHOD_INFO* methodInfo)
 
     if (m_isAsyncMethodWithContextSaveRestore)
     {
-        // Load the address of the execution context/sync context locals, and call AsyncHelpers.CaptureContexts
+        // Load the address of the thread/execution context/sync context locals, and call AsyncHelpers.CaptureContexts
+        AddIns(INTOP_LDLOCA);
+        m_pLastNewIns->SetSVar(m_threadObjVarIndex);
+        PushInterpType(InterpTypeByRef, NULL);
+        m_pStackPointer[-1].SetAsLocalVariableAddress();
+        m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+        int32_t threadAddressVar = m_pStackPointer[-1].var;
+        m_pStackPointer--;
+
         AddIns(INTOP_LDLOCA);
         m_pLastNewIns->SetSVar(m_execContextVarIndex);
         PushInterpType(InterpTypeByRef, NULL);
@@ -8252,11 +8274,12 @@ void InterpCompiler::GenerateCode(CORINFO_METHOD_INFO* methodInfo)
 
         m_pLastNewIns->flags |= INTERP_INST_FLAG_CALL;
         m_pLastNewIns->info.pCallInfo = new (getAllocator(IMK_CallInfo)) InterpCallInfo();
-        int32_t numArgs = 2;
+        int32_t numArgs = 3;
         int32_t *callArgs = getAllocator(IMK_CallInfo).allocate<int32_t>(numArgs + 1);
-        callArgs[0] = execContextAddressVar;
-        callArgs[1] = syncContextAddressVar;
-        callArgs[2] = CALL_ARGS_TERMINATOR;
+        callArgs[1] = threadAddressVar;
+        callArgs[1] = execContextAddressVar;
+        callArgs[2] = syncContextAddressVar;
+        callArgs[3] = CALL_ARGS_TERMINATOR;
         m_pLastNewIns->info.pCallInfo->pCallArgs = callArgs;
     }
 

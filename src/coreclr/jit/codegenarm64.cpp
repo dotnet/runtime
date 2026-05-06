@@ -1716,6 +1716,11 @@ void CodeGen::genCaptureFuncletPrologEpilogInfo()
         saveRegsSize += m_compiler->lvaLclStackHomeSize(m_compiler->lvaMonAcquired);
     }
 
+    if ((m_compiler->lvaAsyncThreadObjectVar != BAD_VAR_NUM) && !m_compiler->opts.IsOSR())
+    {
+        saveRegsSize += m_compiler->lvaLclStackHomeSize(m_compiler->lvaAsyncThreadObjectVar);
+    }
+
     if ((m_compiler->lvaAsyncExecutionContextVar != BAD_VAR_NUM) && !m_compiler->opts.IsOSR())
     {
         saveRegsSize += m_compiler->lvaLclStackHomeSize(m_compiler->lvaAsyncExecutionContextVar);

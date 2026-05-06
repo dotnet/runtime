@@ -5715,6 +5715,14 @@ void Compiler::generatePatchpointInfo()
                 patchpointInfo->MonitorAcquiredOffset());
     }
 
+    if (lvaAsyncThreadObjectVar != BAD_VAR_NUM)
+    {
+        LclVarDsc* const varDsc = lvaGetDesc(lvaAsyncThreadObjectVar);
+        patchpointInfo->SetAsyncThreadOffset(varDsc->GetStackOffset() + offsetAdjust);
+        JITDUMP("--OSR-- async thread object V%02u virtual offset is %d\n", lvaAsyncThreadObjectVar,
+                patchpointInfo->AsyncThreadOffset());
+    }
+
     if (lvaAsyncExecutionContextVar != BAD_VAR_NUM)
     {
         LclVarDsc* const varDsc = lvaGetDesc(lvaAsyncExecutionContextVar);
@@ -10427,6 +10435,7 @@ bool Compiler::lvaIsOSRLocal(unsigned varNum)
             // Sanity check for promoted fields of OSR locals.
             //
             if ((varNum >= info.compLocalsCount) && (varNum != lvaMonAcquired) &&
+                (varNum != lvaAsyncThreadObjectVar) &&
                 (varNum != lvaAsyncExecutionContextVar) && (varNum != lvaAsyncSynchronizationContextVar))
             {
                 assert(varDsc->lvIsStructField);
@@ -10460,6 +10469,10 @@ int Compiler::lvaOSRLocalTier0FrameOffset(unsigned varNum)
     if (varNum == lvaMonAcquired)
     {
         return info.compPatchpointInfo->MonitorAcquiredOffset();
+    }
+    if (varNum == lvaAsyncThreadObjectVar)
+    {
+        return info.compPatchpointInfo->AsyncThreadOffset();
     }
     if (varNum == lvaAsyncExecutionContextVar)
     {

@@ -2491,6 +2491,10 @@ void CodeGen::genCaptureFuncletPrologEpilogInfo()
         {
             saveSizeWithPSP += TARGET_POINTER_SIZE;
         }
+        if (m_compiler->lvaAsyncThreadObjectVar != BAD_VAR_NUM)
+        {
+            saveSizeWithPSP += TARGET_POINTER_SIZE;
+        }
         if (m_compiler->lvaAsyncExecutionContextVar != BAD_VAR_NUM)
         {
             saveSizeWithPSP += TARGET_POINTER_SIZE;

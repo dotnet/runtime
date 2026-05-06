@@ -5294,7 +5294,7 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
                 continue;
             }
 
-            if ((lclNum == lvaMonAcquired) || (lclNum == lvaAsyncExecutionContextVar) ||
+            if ((lclNum == lvaMonAcquired) || (lclNum == lvaAsyncThreadObjectVar) || (lclNum == lvaAsyncExecutionContextVar) ||
                 (lclNum == lvaAsyncSynchronizationContextVar))
             {
                 continue;
@@ -5759,7 +5759,7 @@ int Compiler::lvaAllocLocalAndSetVirtualOffset(unsigned lclNum, unsigned size, i
 
 //------------------------------------------------------------------------
 // lvaAllocAsyncContexts:
-//   Allocate stack space for the two async context locals, if present.
+//   Allocate stack space for the thread object and two async context locals, if present.
 //
 // Arguments:
 //   stkOffs - Current stack offset
@@ -5769,6 +5769,18 @@ int Compiler::lvaAllocLocalAndSetVirtualOffset(unsigned lclNum, unsigned size, i
 //
 int Compiler::lvaAllocAsyncContexts(int stkOffs)
 {
+    if (lvaAsyncThreadObjectVar != BAD_VAR_NUM)
+    {
+        stkOffs = lvaAllocLocalAndSetVirtualOffset(lvaAsyncThreadObjectVar,
+                                                   lvaLclStackHomeSize(lvaAsyncThreadObjectVar), stkOffs);
+    }
+    else
+    {
+        // For x86 EnC the VM expects that we always allocate stack space
+        // for this local when contexts were saved.
+        assert((info.compMethodInfo->options & CORINFO_ASYNC_SAVE_CONTEXTS) == 0);
+    }
+
     if (lvaAsyncExecutionContextVar != BAD_VAR_NUM)
     {
         stkOffs = lvaAllocLocalAndSetVirtualOffset(lvaAsyncExecutionContextVar,
