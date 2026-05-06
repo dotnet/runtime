@@ -236,9 +236,13 @@ bool AutoVectorizer::IsSupportedBinaryOp(genTreeOps oper, var_types elementType)
             return true;
 
         case GT_AND:
+        case GT_AND_NOT:
         case GT_OR:
         case GT_XOR:
             return varTypeIsIntegral(elementType);
+
+        case GT_DIV:
+            return varTypeIsFloating(elementType);
 
         case GT_LSH:
         case GT_RSH:
@@ -267,11 +271,26 @@ bool AutoVectorizer::IsSupportedIntrinsic(NamedIntrinsic intrinsic, var_types el
         case NI_System_Math_Abs:
             return varTypeIsFloating(elementType);
 
+        case NI_System_Math_Ceiling:
+        case NI_System_Math_Floor:
+        case NI_System_Math_Round:
+        case NI_System_Math_Sqrt:
+        case NI_System_Math_Truncate:
+            return varTypeIsFloating(elementType);
+
         case NI_System_Math_Min:
         case NI_System_Math_Max:
         case NI_System_Math_MinNative:
         case NI_System_Math_MaxNative:
             return varTypeIsArithmetic(elementType);
+
+        case NI_System_Math_MinMagnitude:
+        case NI_System_Math_MaxMagnitude:
+        case NI_System_Math_MinMagnitudeNumber:
+        case NI_System_Math_MaxMagnitudeNumber:
+        case NI_System_Math_MinNumber:
+        case NI_System_Math_MaxNumber:
+            return varTypeIsFloating(elementType);
 
         case NI_System_Math_MinUnsigned:
         case NI_System_Math_MaxUnsigned:
@@ -1637,7 +1656,7 @@ AutoVectorizer::PackNode* AutoVectorizer::TryBuildPack(
             return nullptr;
         }
 
-        if (intrinsic->gtIntrinsicName == NI_System_Math_Abs)
+        if (intrinsic->gtGetOp2() == nullptr)
         {
             PackNode* const operand = TryBuildPack(plan, stmt, intrinsic->gtGetOp1(), elementType, depth + 1);
             if (operand == nullptr)
@@ -1659,6 +1678,24 @@ AutoVectorizer::PackNode* AutoVectorizer::TryBuildPack(
             unary->Operands[0]   = operand;
             unary->Cost          = operand->Cost + 1;
             return unary;
+        }
+
+        if ((intrinsic->gtIntrinsicName != NI_System_Math_Min) &&
+            (intrinsic->gtIntrinsicName != NI_System_Math_Max) &&
+            (intrinsic->gtIntrinsicName != NI_System_Math_MinNative) &&
+            (intrinsic->gtIntrinsicName != NI_System_Math_MaxNative) &&
+            (intrinsic->gtIntrinsicName != NI_System_Math_MinUnsigned) &&
+            (intrinsic->gtIntrinsicName != NI_System_Math_MaxUnsigned) &&
+            (intrinsic->gtIntrinsicName != NI_System_Math_MinMagnitude) &&
+            (intrinsic->gtIntrinsicName != NI_System_Math_MaxMagnitude) &&
+            (intrinsic->gtIntrinsicName != NI_System_Math_MinMagnitudeNumber) &&
+            (intrinsic->gtIntrinsicName != NI_System_Math_MaxMagnitudeNumber) &&
+            (intrinsic->gtIntrinsicName != NI_System_Math_MinNumber) &&
+            (intrinsic->gtIntrinsicName != NI_System_Math_MaxNumber))
+        {
+            JITDUMPEXEC(m_compiler->gtDispTree(value));
+            JITDUMP("intrinsic has unsupported operand shape, bail out\n");
+            return nullptr;
         }
 
         PackNode* const op1 = TryBuildPack(plan, stmt, intrinsic->gtGetOp1(), elementType, depth + 1);
@@ -1690,7 +1727,7 @@ AutoVectorizer::PackNode* AutoVectorizer::TryBuildPack(
         return binary;
     }
 
-    if (value->OperIs(GT_ADD, GT_SUB, GT_MUL, GT_AND, GT_OR, GT_XOR, GT_LSH, GT_RSH, GT_RSZ))
+    if (value->OperIs(GT_ADD, GT_SUB, GT_MUL, GT_AND, GT_AND_NOT, GT_OR, GT_XOR, GT_DIV, GT_LSH, GT_RSH, GT_RSZ))
     {
         if (!IsSupportedBinaryOp(value->OperGet(), elementType))
         {
@@ -2550,9 +2587,29 @@ GenTree* AutoVectorizer::BuildPackNode(LoopVectorizationPlan* plan, PackNode* no
         case PackKind::UnaryOp:
             if (node->Oper == GT_INTRINSIC)
             {
-                assert(node->IntrinsicName == NI_System_Math_Abs);
-                return m_compiler->gtNewSimdAbsNode(simdType, BuildPackNode(plan, node->Operands[0]), node->ElementType,
-                                                    simdSize);
+                switch (node->IntrinsicName)
+                {
+                    case NI_System_Math_Abs:
+                        return m_compiler->gtNewSimdAbsNode(simdType, BuildPackNode(plan, node->Operands[0]),
+                                                            node->ElementType, simdSize);
+                    case NI_System_Math_Ceiling:
+                        return m_compiler->gtNewSimdCeilNode(simdType, BuildPackNode(plan, node->Operands[0]),
+                                                             node->ElementType, simdSize);
+                    case NI_System_Math_Floor:
+                        return m_compiler->gtNewSimdFloorNode(simdType, BuildPackNode(plan, node->Operands[0]),
+                                                              node->ElementType, simdSize);
+                    case NI_System_Math_Round:
+                        return m_compiler->gtNewSimdRoundNode(simdType, BuildPackNode(plan, node->Operands[0]),
+                                                              node->ElementType, simdSize);
+                    case NI_System_Math_Sqrt:
+                        return m_compiler->gtNewSimdSqrtNode(simdType, BuildPackNode(plan, node->Operands[0]),
+                                                             node->ElementType, simdSize);
+                    case NI_System_Math_Truncate:
+                        return m_compiler->gtNewSimdTruncNode(simdType, BuildPackNode(plan, node->Operands[0]),
+                                                              node->ElementType, simdSize);
+                    default:
+                        unreached();
+                }
             }
 
             return m_compiler->gtNewSimdUnOpNode(node->Oper, simdType, BuildPackNode(plan, node->Operands[0]),
@@ -2566,7 +2623,18 @@ GenTree* AutoVectorizer::BuildPackNode(LoopVectorizationPlan* plan, PackNode* no
             {
                 const bool isMax = (node->IntrinsicName == NI_System_Math_Max) ||
                                    (node->IntrinsicName == NI_System_Math_MaxNative) ||
-                                   (node->IntrinsicName == NI_System_Math_MaxUnsigned);
+                                   (node->IntrinsicName == NI_System_Math_MaxUnsigned) ||
+                                   (node->IntrinsicName == NI_System_Math_MaxMagnitude) ||
+                                   (node->IntrinsicName == NI_System_Math_MaxMagnitudeNumber) ||
+                                   (node->IntrinsicName == NI_System_Math_MaxNumber);
+                const bool isMagnitude = (node->IntrinsicName == NI_System_Math_MinMagnitude) ||
+                                         (node->IntrinsicName == NI_System_Math_MaxMagnitude) ||
+                                         (node->IntrinsicName == NI_System_Math_MinMagnitudeNumber) ||
+                                         (node->IntrinsicName == NI_System_Math_MaxMagnitudeNumber);
+                const bool isNumber = (node->IntrinsicName == NI_System_Math_MinNumber) ||
+                                      (node->IntrinsicName == NI_System_Math_MaxNumber) ||
+                                      (node->IntrinsicName == NI_System_Math_MinMagnitudeNumber) ||
+                                      (node->IntrinsicName == NI_System_Math_MaxMagnitudeNumber);
                 if ((node->IntrinsicName == NI_System_Math_MinNative) ||
                     (node->IntrinsicName == NI_System_Math_MaxNative))
                 {
@@ -2575,7 +2643,7 @@ GenTree* AutoVectorizer::BuildPackNode(LoopVectorizationPlan* plan, PackNode* no
                 }
 
                 return m_compiler->gtNewSimdMinMaxNode(simdType, op1, op2, node->ElementType, simdSize, isMax,
-                                                       /* isMagnitude */ false, /* isNumber */ false);
+                                                       isMagnitude, isNumber);
             }
 
             if ((node->Oper == GT_LSH) || (node->Oper == GT_RSH) || (node->Oper == GT_RSZ))
