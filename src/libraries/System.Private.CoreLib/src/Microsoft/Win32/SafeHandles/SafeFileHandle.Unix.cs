@@ -785,7 +785,7 @@ namespace Microsoft.Win32.SafeHandles
             throw new OperationCanceledException();
         }
 
-        internal unsafe void Write(long offset, ReadOnlySpan<byte> buffer)
+        internal unsafe void Write(long offset, ReadOnlySpan<byte> buffer, OSFileStreamStrategy? strategy = null)
         {
             if (buffer.IsEmpty)
             {
@@ -800,35 +800,40 @@ namespace Microsoft.Win32.SafeHandles
             {
                 fixed (byte* bufPtr = &MemoryMarshal.GetReference(buffer))
                 {
-                    if (TryCompleteWriteAt(offset, bufPtr, buffer.Length, out int bytesWritten, out Interop.ErrorInfo errorInfo, out bool pending))
+                    bool completed = TryCompleteWriteAt(offset, bufPtr, buffer.Length, out int bytesWritten, out Interop.ErrorInfo errorInfo, out bool pending);
+
+                    buffer = buffer.Slice(bytesWritten);
+                    offset += bytesWritten;
+
+                    if (completed)
                     {
+                        strategy?.OnIncompleteOperation(buffer.Length, 0);
                         CheckFileCall(errorInfo);
                         return;
                     }
-                    buffer = buffer.Slice(bytesWritten);
-                    offset += bytesWritten;
-                    if (isBlocking && pending)
+
+                    Debug.Assert(pending);
+                    if (!isBlocking)
                     {
-                        isBlocking = false;
-                        doSync = AsyncContext.IsWriteReady(out sequenceNumber);
+                        break;
                     }
-                    else
-                    {
-                        Debug.Assert(buffer.Length != 0);
-                        doSync = isBlocking;
-                    }
+                    // The handle changed to non-blocking due to a concurrent operation.
+                    isBlocking = false;
+                    doSync = AsyncContext.IsWriteReady(out sequenceNumber);
                 }
             }
 
             WriteOperation op = RentWriteOperation();
             fixed (byte* bufPtr = &MemoryMarshal.GetReference(buffer))
             {
-                op.Init(offset, bufPtr, buffer.Length);
+                op.Init(offset, bufPtr, buffer.Length, strategy);
 
                 SyncResult result = AsyncContext.WriteSync(op, sequenceNumber, timeout: -1);
 
                 if (result == SyncResult.Completed)
                 {
+                    strategy?.OnIncompleteOperation(op.SyncRemaining, 0);
+
                     Exception? exception = op.Exception;
 
                     ReturnWriteOperation(op);
@@ -875,9 +880,14 @@ namespace Microsoft.Win32.SafeHandles
             {
                 fixed (byte* bufPtr = &MemoryMarshal.GetReference(source.Span))
                 {
-                    if (TryCompleteWriteAt(offset, bufPtr, source.Length, out bytesWritten, out Interop.ErrorInfo writeResult, out _))
+                    bool completed = TryCompleteWriteAt(offset, bufPtr, source.Length, out bytesWritten, out Interop.ErrorInfo writeResult, out _);
+
+                    source = source.Slice(bytesWritten);
+                    offset += bytesWritten;
+
+                    if (completed)
                     {
-                        UpdateFileStreamForAsyncWrite(strategy, source.Slice(Math.Max(bytesWritten, 0)));
+                        UpdateFileStreamForAsyncWrite(strategy, source);
                         CheckFileCall(writeResult);
                         return default;
                     }
@@ -885,7 +895,7 @@ namespace Microsoft.Win32.SafeHandles
             }
 
             WriteOperation op = RentWriteOperation();
-            op.Init(offset + bytesWritten, source.Slice(bytesWritten), cancellationToken, strategy);
+            op.Init(offset, source, cancellationToken, strategy);
 
             AsyncResult result = AsyncContext.WriteAsync(op, sequenceNumber, cancellationToken);
 
@@ -1017,15 +1027,15 @@ namespace Microsoft.Win32.SafeHandles
                     CheckFileCall(errorInfo);
                     return;
                 }
-                if (isBlocking && pending)
+
+                Debug.Assert(pending);
+                if (!isBlocking)
                 {
-                    isBlocking = false;
-                    doSync = AsyncContext.IsWriteReady(out sequenceNumber);
+                    break;
                 }
-                else
-                {
-                    doSync = isBlocking;
-                }
+                // The handle changed to non-blocking due to a concurrent operation.
+                isBlocking = false;
+                doSync = AsyncContext.IsWriteReady(out sequenceNumber);
             }
 
             WriteOperation op = RentWriteOperation();
@@ -1337,11 +1347,15 @@ namespace Microsoft.Win32.SafeHandles
             internal ReadOnlyMemory<byte> Remaining
                 => _buffer;
 
-            internal void Init(long offset, byte* syncBuffer, int syncRemaining)
+            internal int SyncRemaining
+                => _syncRemaining;
+
+            internal void Init(long offset, byte* syncBuffer, int syncRemaining, OSFileStreamStrategy? strategy = null)
             {
                 _offset = offset;
                 _syncBuffer = syncBuffer;
                 _syncRemaining = syncRemaining;
+                _strategy = strategy;
             }
 
             internal void Init(long offset, ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken, OSFileStreamStrategy? strategy = null)
@@ -1449,7 +1463,13 @@ namespace Microsoft.Win32.SafeHandles
                 {
                     Debug.Assert(_syncRemaining > 0);
 
-                    if (_owner.TryCompleteWriteAt(_offset, _syncBuffer, _syncRemaining, out int bytesWritten, out Interop.ErrorInfo errorInfo, out bool pending))
+                    bool completed = _owner.TryCompleteWriteAt(_offset, _syncBuffer, _syncRemaining, out int bytesWritten, out Interop.ErrorInfo errorInfo, out bool pending);
+
+                    _syncBuffer += bytesWritten;
+                    _syncRemaining -= bytesWritten;
+                    _offset += bytesWritten;
+
+                    if (completed)
                     {
                         if (errorInfo.Error != Interop.Error.SUCCESS)
                         {
@@ -1457,9 +1477,7 @@ namespace Microsoft.Win32.SafeHandles
                         }
                         return true;
                     }
-                    _syncBuffer += bytesWritten;
-                    _syncRemaining -= bytesWritten;
-                    _offset += bytesWritten;
+
                     Debug.Assert(!_runOnThreadPool || !pending, "ThreadPool only used with non-blocking");
                     return false;
                 }
@@ -1469,20 +1487,20 @@ namespace Microsoft.Win32.SafeHandles
 
                 fixed (byte* bufPtr = &MemoryMarshal.GetReference(span))
                 {
-                    if (_owner.TryCompleteWriteAt(_offset, bufPtr, span.Length, out int bytesWritten, out Interop.ErrorInfo errorInfo, out bool pending))
+                    bool completed = _owner.TryCompleteWriteAt(_offset, bufPtr, span.Length, out int bytesWritten, out Interop.ErrorInfo errorInfo, out bool pending);
+
+                    _buffer = _buffer.Slice(bytesWritten);
+                    _offset += bytesWritten;
+
+                    if (completed)
                     {
                         if (errorInfo.Error != Interop.Error.SUCCESS)
                         {
                             Exception = Interop.GetExceptionForIoErrno(errorInfo, _owner.Path);
                         }
-                        else
-                        {
-                            _buffer = default; // Clear for UpdateFileStreamForAsyncWrite.
-                        }
                         return true;
                     }
-                    _buffer = _buffer.Slice(bytesWritten);
-                    _offset += bytesWritten;
+
                     Debug.Assert(!_runOnThreadPool || !pending, "ThreadPool only used with non-blocking");
                     return false;
                 }
@@ -1490,7 +1508,14 @@ namespace Microsoft.Win32.SafeHandles
 
             protected internal override void OnCompleted(OnCompletedResult result)
             {
-                UpdateFileStreamForAsyncWrite(_strategy, _buffer);
+                if (_syncBuffer != null)
+                {
+                    _strategy?.OnIncompleteOperation(_syncRemaining, 0);
+                }
+                else
+                {
+                    UpdateFileStreamForAsyncWrite(_strategy, _buffer);
+                }
 
                 if (result == OnCompletedResult.Completed)
                 {
@@ -1686,96 +1711,92 @@ namespace Microsoft.Win32.SafeHandles
 
         private unsafe bool TryCompleteWriteAt(bool useOffset, ref long offset, IReadOnlyList<ReadOnlyMemory<byte>> buffers, ref int bufferIndex, ref int bufferOffset, out Interop.ErrorInfo errorInfo, out bool pending)
         {
-            while (bufferIndex < buffers.Count && buffers[bufferIndex].Length <= bufferOffset)
+            Span<Interop.Sys.IOVector> stackVectors = stackalloc Interop.Sys.IOVector[IovStackThreshold];
+            while (true)
             {
-                bufferIndex++;
-                bufferOffset = 0;
-            }
-
-            if (bufferIndex >= buffers.Count)
-            {
-                errorInfo = default;
-                pending = false;
-                return true;
-            }
-
-            int remaining = buffers.Count - bufferIndex;
-            MemoryHandle[] memHandles = new MemoryHandle[remaining];
-            Span<Interop.Sys.IOVector> vectors = remaining <= IovStackThreshold
-                ? stackalloc Interop.Sys.IOVector[IovStackThreshold].Slice(0, remaining)
-                : new Interop.Sys.IOVector[remaining];
-
-            try
-            {
-                long totalToWrite = 0;
-                for (int i = 0; i < remaining; i++)
+                // Skip zero-length buffers.
+                while (bufferIndex < buffers.Count && buffers[bufferIndex].Length == 0)
                 {
-                    ReadOnlyMemory<byte> buf = buffers[bufferIndex + i];
-                    MemoryHandle mh = buf.Pin();
-                    byte* ptr = (byte*)mh.Pointer;
-                    int len = buf.Length;
-                    if (i == 0 && bufferOffset > 0)
-                    {
-                        ptr += bufferOffset;
-                        len -= bufferOffset;
-                    }
-                    vectors[i] = new Interop.Sys.IOVector { Base = ptr, Count = (UIntPtr)len };
-                    memHandles[i] = mh;
-                    totalToWrite += len;
+                    bufferIndex++;
                 }
 
-                fixed (Interop.Sys.IOVector* pinnedVectors = &MemoryMarshal.GetReference(vectors))
+                if (bufferIndex >= buffers.Count)
                 {
-                    long bytesWritten = useOffset
-                        ? Interop.Sys.PWriteV(this, pinnedVectors, remaining, offset)
-                        : Interop.Sys.WriteV(this, pinnedVectors, remaining);
-                    if (bytesWritten < 0)
-                    {
-                        errorInfo = Interop.Sys.GetLastErrorInfo();
-                        if (IsPending(errorInfo))
-                        {
-                            pending = true;
-                            return false;
-                        }
-                        pending = false;
-                        return true;
-                    }
-
-                    pending = false;
                     errorInfo = default;
-                    offset += bytesWritten;
-
-                    if (bytesWritten == totalToWrite)
-                    {
-                        bufferIndex = buffers.Count;
-                        bufferOffset = 0;
-                        return true;
-                    }
-
-                    long written = bytesWritten;
-                    while (written > 0)
-                    {
-                        int currentLen = buffers[bufferIndex].Length - bufferOffset;
-                        if (written >= currentLen)
-                        {
-                            written -= currentLen;
-                            bufferIndex++;
-                            bufferOffset = 0;
-                        }
-                        else
-                        {
-                            bufferOffset += (int)written;
-                            written = 0;
-                        }
-                    }
-                    return false;
+                    pending = false;
+                    return true;
                 }
-            }
-            finally
-            {
-                foreach (MemoryHandle mh in memHandles)
+
+                int remaining = buffers.Count - bufferIndex;
+                MemoryHandle[] memHandles = new MemoryHandle[remaining];
+                Span<Interop.Sys.IOVector> vectors = remaining <= IovStackThreshold
+                    ? stackVectors.Slice(0, remaining)
+                    : new Interop.Sys.IOVector[remaining];
+
+                try
                 {
-                    mh.Dispose();
+                    long totalToWrite = 0;
+                    for (int i = 0; i < remaining; i++)
+                    {
+                        ReadOnlyMemory<byte> buf = buffers[bufferIndex + i];
+                        MemoryHandle mh = buf.Pin();
+                        byte* ptr = (byte*)mh.Pointer;
+                        int len = buf.Length;
+                        if (i == 0 && bufferOffset > 0)
+                        {
+                            ptr += bufferOffset;
+                            len -= bufferOffset;
+                        }
+                        vectors[i] = new Interop.Sys.IOVector { Base = ptr, Count = (UIntPtr)len };
+                        memHandles[i] = mh;
+                        totalToWrite += len;
+                    }
+
+                    fixed (Interop.Sys.IOVector* pinnedVectors = &MemoryMarshal.GetReference(vectors))
+                    {
+                        long bytesWritten = useOffset
+                            ? Interop.Sys.PWriteV(this, pinnedVectors, remaining, offset)
+                            : Interop.Sys.WriteV(this, pinnedVectors, remaining);
+                        if (bytesWritten < 0)
+                        {
+                            errorInfo = Interop.Sys.GetLastErrorInfo();
+                            pending = IsPending(errorInfo);
+                            return !pending;
+                        }
+
+                        errorInfo = default;
+                        offset += bytesWritten;
+
+                        if (bytesWritten == totalToWrite)
+                        {
+                            pending = false;
+                            return true;
+                        }
+
+                        long written = bytesWritten;
+                        while (written > 0)
+                        {
+                            int currentLen = buffers[bufferIndex].Length - bufferOffset;
+                            if (written >= currentLen)
+                            {
+                                written -= currentLen;
+                                bufferIndex++;
+                                bufferOffset = 0;
+                            }
+                            else
+                            {
+                                bufferOffset += (int)written;
+                                written = 0;
+                            }
+                        }
+                    }
+                }
+                finally
+                {
+                    foreach (MemoryHandle mh in memHandles)
+                    {
+                        mh.Dispose();
+                    }
                 }
             }
         }
@@ -1806,26 +1827,34 @@ namespace Microsoft.Win32.SafeHandles
 
         private unsafe bool TryCompleteWriteAt(bool useOffset, long offset, byte* buffer, int length, out int bytesWritten, out Interop.ErrorInfo errorInfo, out bool pending)
         {
-            int toWrite = GetNumberOfBytesToWrite(length);
-            bytesWritten = useOffset
-                ? Interop.Sys.PWrite(this, buffer, toWrite, offset)
-                : Interop.Sys.Write(this, buffer, toWrite);
-            if (bytesWritten < 0)
+            int totalBytesWritten = 0;
+            while (true)
             {
-                errorInfo = Interop.Sys.GetLastErrorInfo();
-                if (IsPending(errorInfo))
+                int toWrite = GetNumberOfBytesToWrite(length);
+                int written = useOffset
+                    ? Interop.Sys.PWrite(this, buffer, toWrite, offset)
+                    : Interop.Sys.Write(this, buffer, toWrite);
+                if (written < 0)
                 {
-                    pending = true;
-                    bytesWritten = 0;
-                    return false;
+                    errorInfo = Interop.Sys.GetLastErrorInfo();
+                    bytesWritten = totalBytesWritten;
+                    pending = IsPending(errorInfo);
+                    return !pending;
                 }
-                pending = false;
-                return true;
-            }
 
-            pending = false;
-            errorInfo = default;
-            return bytesWritten == length;
+                totalBytesWritten += written;
+                length -= written;
+                if (length == 0)
+                {
+                    pending = false;
+                    errorInfo = default;
+                    bytesWritten = totalBytesWritten;
+                    return true;
+                }
+
+                buffer += written;
+                offset += written;
+            }
         }
 
         private static void UpdateFileStreamForAsyncRead(OSFileStreamStrategy? strategy, Memory<byte> destination, int bytesRead)

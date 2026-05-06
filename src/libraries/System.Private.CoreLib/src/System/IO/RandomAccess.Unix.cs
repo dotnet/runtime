@@ -26,8 +26,8 @@ namespace System.IO
         private static ValueTask<long> ReadScatterAtOffsetAsync(SafeFileHandle handle, IReadOnlyList<Memory<byte>> buffers, long fileOffset, CancellationToken cancellationToken)
             => handle.ReadAsync(fileOffset, buffers, cancellationToken);
 
-        internal static unsafe void WriteAtOffset(SafeFileHandle handle, ReadOnlySpan<byte> buffer, long fileOffset)
-            => handle.Write(fileOffset, buffer);
+        internal static unsafe void WriteAtOffset(SafeFileHandle handle, ReadOnlySpan<byte> buffer, long fileOffset, OSFileStreamStrategy? strategy = null)
+            => handle.Write(fileOffset, buffer, strategy);
 
         internal static unsafe void WriteGatherAtOffset(SafeFileHandle handle, IReadOnlyList<ReadOnlyMemory<byte>> buffers, long fileOffset)
             => handle.Write(fileOffset, buffers);

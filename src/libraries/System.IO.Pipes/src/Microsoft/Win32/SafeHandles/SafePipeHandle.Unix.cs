@@ -215,19 +215,17 @@ namespace Microsoft.Win32.SafeHandles
                 {
                     return errorInfo;
                 }
-                buffer = buffer.Slice(bytesWritten);
-                if (isBlocking && pending)
+
+                buffer = buffer.Slice(bytesWritten); // Write may be partial.
+
+                Debug.Assert(pending);
+                if (!isBlocking)
                 {
-                    // The handle changed to non-blocking due to a concurrent operation.
-                    isBlocking = false;
-                    doSync = AsyncContext.IsWriteReady(out sequenceNumber);
+                    break;
                 }
-                else
-                {
-                    // There are bytes remaining for a blocking write.
-                    Debug.Assert(buffer.Length != 0);
-                    doSync = isBlocking;
-                }
+                // The handle changed to non-blocking due to a concurrent operation.
+                isBlocking = false;
+                doSync = AsyncContext.IsWriteReady(out sequenceNumber);
             }
 
             WriteOperation op = RentWriteOperation();
@@ -516,23 +514,30 @@ namespace Microsoft.Win32.SafeHandles
 
         private unsafe bool TryCompleteWrite(byte* buffer, int length, out int bytesWritten, out Interop.ErrorInfo errorInfo, out bool pending)
         {
-            bytesWritten = Interop.Sys.Write(this, buffer, length);
-            if (bytesWritten < 0)
+            int totalBytesWritten = 0;
+            while (true)
             {
-                errorInfo = Interop.Sys.GetLastErrorInfo();
-                if (IsPending(errorInfo))
+                int written = Interop.Sys.Write(this, buffer, length);
+                if (written < 0)
                 {
-                    pending = true;
-                    bytesWritten = 0;
-                    return false;
+                    errorInfo = Interop.Sys.GetLastErrorInfo();
+                    bytesWritten = totalBytesWritten;
+                    pending = IsPending(errorInfo);
+                    return !pending;
                 }
-                pending = false;
-                return true;
-            }
 
-            pending = false;
-            errorInfo = default;
-            return bytesWritten == length;
+                totalBytesWritten += written;
+                length -= written;
+                if (length == 0)
+                {
+                    pending = false;
+                    errorInfo = default;
+                    bytesWritten = totalBytesWritten;
+                    return true;
+                }
+
+                buffer += written;
+            }
         }
 
         private static bool IsPending(Interop.ErrorInfo errorInfo)
