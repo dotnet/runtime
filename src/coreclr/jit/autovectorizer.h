@@ -60,6 +60,7 @@ private:
         static const unsigned MaxAddressUpdates = 4;
         static const unsigned MaxAccesses       = 16;
         static const unsigned MaxLocalDefs      = 32;
+        static const unsigned MaxReductions     = 4;
         static const unsigned MaxStores         = 12;
 
         struct ScalarAccess
@@ -119,12 +120,21 @@ private:
         unsigned     StoreCount                = 0;
         ScalarAccess LoadAccesses[MaxAccesses] = {};
         unsigned     LoadCount                 = 0;
-        Statement*   ReductionStmt             = nullptr;
-        unsigned     ReductionLcl              = BAD_VAR_NUM;
-        unsigned     ReductionVectorLcl        = BAD_VAR_NUM;
-        genTreeOps   ReductionOper             = GT_COUNT;
-        GenTree*     ReductionValue            = nullptr;
-        PackNode*    ReductionPack             = nullptr;
+
+        struct ReductionInfo
+        {
+            Statement*     Stmt       = nullptr;
+            unsigned       Lcl        = BAD_VAR_NUM;
+            unsigned       VectorLcl  = BAD_VAR_NUM;
+            genTreeOps     Oper       = GT_COUNT;
+            NamedIntrinsic Intrinsic  = NI_Illegal;
+            GenTree*       Value      = nullptr;
+            PackNode*      Pack       = nullptr;
+        };
+
+        ReductionInfo Reductions[MaxReductions];
+        unsigned      ReductionCount = 0;
+
         Statement*   StoreStmt                 = nullptr;
         ScalarAccess StoreAccess;
         ScalarAccess LoadAccess;
@@ -189,9 +199,18 @@ private:
     GenTree*    BuildPostIVAddress(LoopVectorizationPlan* plan, const LoopVectorizationPlan::ScalarAccess& access);
     GenTree*    BuildPackNode(LoopVectorizationPlan* plan, PackNode* node);
     GenTree*    BuildVectorStore(LoopVectorizationPlan* plan, PackNode* node);
-    GenTree*    BuildReductionInit(LoopVectorizationPlan* plan);
-    GenTree*    BuildReductionUpdate(LoopVectorizationPlan* plan);
-    GenTree*    BuildReductionFinalize(LoopVectorizationPlan* plan);
+    GenTree*    BuildReductionInit(LoopVectorizationPlan* plan, unsigned reductionIndex);
+    GenTree*    BuildReductionUpdate(LoopVectorizationPlan* plan, unsigned reductionIndex);
+    GenTree*    BuildReductionFinalize(LoopVectorizationPlan* plan, unsigned reductionIndex);
+    GenTree*    BuildReductionIntrinsicNode(const LoopVectorizationPlan::ReductionInfo& reduction,
+                                            GenTree*                                    op1,
+                                            GenTree*                                    op2,
+                                            var_types                                   resultType);
+    GenTree*    BuildVectorReductionOp(LoopVectorizationPlan*                     plan,
+                                       const LoopVectorizationPlan::ReductionInfo& reduction,
+                                       GenTree*                                    op1,
+                                       GenTree*                                    op2);
+    bool        IsReductionMinMaxIntrinsic(NamedIntrinsic intrinsic) const;
     GenTree*    BuildIVUpdate(LoopVectorizationPlan* plan);
     GenTree*    BuildAddressUpdate(LoopVectorizationPlan* plan, unsigned addressVar);
     GenTree*    BuildTripCountUpdate(LoopVectorizationPlan* plan, int delta);
