@@ -2034,14 +2034,16 @@ bool AutoVectorizer::TryFindMinMaxCompare(GenTree* mask, GenTree* trueVector, Ge
         return false;
     }
 
-    GenTreeHWIntrinsic* const intrinsic         = mask->AsHWIntrinsic();
-    const NamedIntrinsic      id                = intrinsic->GetHWIntrinsicId();
-    const bool                isCompareLessThan = (id == NI_X86Base_CompareLessThan)
+    GenTreeHWIntrinsic* const intrinsic = mask->AsHWIntrinsic();
+    const NamedIntrinsic      id        = intrinsic->GetHWIntrinsicId();
+    const bool                isCompareLessThan =
 #if defined(TARGET_XARCH)
-                                   || (id == NI_AVX_CompareLessThan) || (id == NI_AVX2_CompareLessThan)
+        (id == NI_X86Base_CompareLessThan) || (id == NI_AVX_CompareLessThan) || (id == NI_AVX2_CompareLessThan)
 #elif defined(TARGET_ARM64)
-                                   || (id == NI_AdvSimd_CompareLessThan) || (id == NI_AdvSimd_Arm64_CompareLessThan) ||
-                                   (id == NI_AdvSimd_Arm64_CompareLessThanScalar)
+        (id == NI_AdvSimd_CompareLessThan) || (id == NI_AdvSimd_Arm64_CompareLessThan) ||
+        (id == NI_AdvSimd_Arm64_CompareLessThanScalar)
+#else
+        false
 #endif
         ;
 
