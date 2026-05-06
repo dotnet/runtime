@@ -318,7 +318,7 @@ File one when **all** of the following hold:
 - The failure has occurred ≥ 2 times in the scanned window on `main`.
 - The error has a stable substring or regex signature that uniquely identifies it.
 - No fix PR is currently open (verify via `search_pull_requests`).
-- The failure is **not** a build break — only test failures, hangs, or infra issues. Build breaks must use a regular issue.
+- The failure is **not** a build break or an infrastructure failure — only test failures or hangs are eligible for a KBE. Build breaks and infra failures (for example dead-letter, device-lost, or agent-disconnect issues) must use a regular tracking issue.
 
 Required structure (Build Analysis is strict — match the headings exactly, and use **exactly three backticks** for the JSON code fence; never four. The opening and closing fence must be the same length, otherwise the fence is broken and Build Analysis silently skips the issue):
 
