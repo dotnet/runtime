@@ -348,45 +348,33 @@ namespace System.Net.Http.Functional.Tests
                 $"Server sent {serverBytesWritten} compressed bytes, expected fewer than the {BufferLimit}-byte buffer limit");
         }
 
-        private sealed class ByteCountingStream : Stream
+        private sealed class ByteCountingStream : DelegatingStream
         {
-            private readonly Stream _inner;
-
-            public ByteCountingStream(Stream inner) { _inner = inner; }
+            public ByteCountingStream(Stream inner) : base(inner) { }
 
             public long BytesWritten { get; private set; }
 
-            public override bool CanRead => _inner.CanRead;
-            public override bool CanSeek => _inner.CanSeek;
-            public override bool CanWrite => _inner.CanWrite;
-            public override long Length => _inner.Length;
-            public override long Position { get => _inner.Position; set => _inner.Position = value; }
-            public override void Flush() => _inner.Flush();
-            public override int Read(byte[] buffer, int offset, int count) => _inner.Read(buffer, offset, count);
-            public override long Seek(long offset, SeekOrigin origin) => _inner.Seek(offset, origin);
-            public override void SetLength(long value) => _inner.SetLength(value);
-
             public override void Write(byte[] buffer, int offset, int count)
             {
-                _inner.Write(buffer, offset, count);
+                base.Write(buffer, offset, count);
                 BytesWritten += count;
             }
 
             public override void Write(ReadOnlySpan<byte> buffer)
             {
-                _inner.Write(buffer);
+                base.Write(buffer);
                 BytesWritten += buffer.Length;
             }
 
             public override async Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
             {
-                await _inner.WriteAsync(buffer, offset, count, cancellationToken);
+                await base.WriteAsync(buffer, offset, count, cancellationToken);
                 BytesWritten += count;
             }
 
             public override async ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
             {
-                await _inner.WriteAsync(buffer, cancellationToken);
+                await base.WriteAsync(buffer, cancellationToken);
                 BytesWritten += buffer.Length;
             }
         }
