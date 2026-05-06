@@ -174,6 +174,7 @@ if [[ "$__TargetArch" != "$__HostArch" ]]; then
 fi
 
 if [[ "$USE_SCCACHE" == "true" ]]; then
+    chmod +x "$(command -v sccache)" 2>/dev/null || true
     __CMakeArgs="-DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache $__CMakeArgs"
 fi
 
