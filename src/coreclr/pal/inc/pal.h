@@ -733,15 +733,6 @@ WaitForSingleObjectEx(
 PALIMPORT
 DWORD
 PALAPI
-WaitForMultipleObjects(
-               IN DWORD nCount,
-               IN CONST HANDLE *lpHandles,
-               IN BOOL bWaitAll,
-               IN DWORD dwMilliseconds);
-
-PALIMPORT
-DWORD
-PALAPI
 WaitForMultipleObjectsEx(
              IN DWORD nCount,
              IN CONST HANDLE *lpHandles,

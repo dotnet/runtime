@@ -388,7 +388,6 @@ add_executable_clr(paltests
   threading/SwitchToThread/test1/test1.cpp
   threading/TerminateProcess/test1/TerminateProcess.cpp
   threading/ThreadPriority/test1/ThreadPriority.cpp
-  threading/WaitForMultipleObjects/test1/test1.cpp
   threading/WaitForMultipleObjectsEx/test1/test1.cpp
   threading/WaitForSingleObject/test1/test1.cpp
   threading/WaitForSingleObject/WFSOSemaphoreTest/WFSOSemaphoreTest.cpp

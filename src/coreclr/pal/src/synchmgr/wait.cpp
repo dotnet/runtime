@@ -110,37 +110,6 @@ WaitForSingleObjectEx(IN HANDLE hHandle,
 
 /*++
 Function:
-  WaitForMultipleObjects
-
-See MSDN doc.
-
---*/
-DWORD
-PALAPI
-WaitForMultipleObjects(IN DWORD nCount,
-                       IN CONST HANDLE *lpHandles,
-                       IN BOOL bWaitAll,
-                       IN DWORD dwMilliseconds)
-{
-    DWORD dwRet;
-
-    PERF_ENTRY(WaitForMultipleObjects);
-    ENTRY("WaitForMultipleObjects(nCount=%d, lpHandles=%p,"
-          " bWaitAll=%d, dwMilliseconds=%u)\n",
-          nCount, lpHandles, bWaitAll, dwMilliseconds);
-
-    CPalThread * pThread = InternalGetCurrentThread();
-
-    dwRet = InternalWaitForMultipleObjectsEx(pThread, nCount, lpHandles,
-                                             bWaitAll, dwMilliseconds);
-
-    LOGEXIT("WaitForMultipleObjects returns DWORD %u\n", dwRet);
-    PERF_EXIT(WaitForMultipleObjects);
-    return dwRet;
-}
-
-/*++
-Function:
   WaitForMultipleObjectsEx
 
 See MSDN doc for info about this function.
@@ -552,4 +521,3 @@ DWORD CorUnix::InternalSleepEx (
     return dwRet;
 #endif // !FEATURE_MULTITHREADING
 }
-
