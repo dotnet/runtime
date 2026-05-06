@@ -103,6 +103,8 @@ void CodeGen::genMarkLabelsForCodegen()
 //
 void CodeGen::genBeginFnProlog()
 {
+    GetEmitter()->emitIns(INS_code_size);
+
     FuncInfoDsc* const func = m_compiler->funGetFunc(ROOT_FUNC_IDX);
     assert(func->funWasmLocalDecls != nullptr);
 
@@ -350,6 +352,8 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
 {
     assert(m_compiler->bbIsFuncletBeg(block));
     JITDUMP("*************** In genFuncletProlog()\n");
+
+    GetEmitter()->emitIns(INS_code_size);
 
     // Local sig for the funclet
     //
