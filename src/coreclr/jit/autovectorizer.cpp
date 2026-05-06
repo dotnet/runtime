@@ -465,7 +465,7 @@ bool AutoVectorizer::TryGetConstantTripCount(const LoopVectorizationPlan* plan, 
     }
 
     const ssize_t limit = plan->End->AsIntConCommon()->IconValue();
-    ssize_t trip;
+    ssize_t       trip;
     if (plan->Step < 0)
     {
         trip = static_cast<ssize_t>(plan->ConstInitValue) - limit;
@@ -674,8 +674,8 @@ bool AutoVectorizer::TryCreateLoopPlan(FlowGraphNaturalLoop* loop, LoopVectoriza
 
     if (iterInfo.HasConstInit)
     {
-        JITDUMP("loop " FMT_LP " canonical IV V%02u, init=%d, step=%d, test=%s\n", loop->GetIndex(),
-                iterInfo.IterVar, iterInfo.ConstInitValue, plan->Step, GenTree::OpName(testOper));
+        JITDUMP("loop " FMT_LP " canonical IV V%02u, init=%d, step=%d, test=%s\n", loop->GetIndex(), iterInfo.IterVar,
+                iterInfo.ConstInitValue, plan->Step, GenTree::OpName(testOper));
     }
     else
     {
@@ -1131,15 +1131,15 @@ bool AutoVectorizer::ValidateMemoryDependences(LoopVectorizationPlan* plan)
             {
                 if (!plan->IsPostIV && (plan->Step > 0) && (load.IndexOffset > store.IndexOffset))
                 {
-                    JITDUMP("store offset=%d, load offset=%d; forward load is not loop-carried\n",
-                            store.IndexOffset, load.IndexOffset);
+                    JITDUMP("store offset=%d, load offset=%d; forward load is not loop-carried\n", store.IndexOffset,
+                            load.IndexOffset);
                     continue;
                 }
 
                 if (!plan->IsPostIV && (plan->Step < 0) && (load.IndexOffset < store.IndexOffset))
                 {
-                    JITDUMP("store offset=%d, load offset=%d; backward load is not loop-carried\n",
-                            store.IndexOffset, load.IndexOffset);
+                    JITDUMP("store offset=%d, load offset=%d; backward load is not loop-carried\n", store.IndexOffset,
+                            load.IndexOffset);
                     continue;
                 }
 
@@ -1865,8 +1865,7 @@ AutoVectorizer::PackNode* AutoVectorizer::TryBuildPack(
             return unary;
         }
 
-        if ((intrinsic->gtIntrinsicName != NI_System_Math_Min) &&
-            (intrinsic->gtIntrinsicName != NI_System_Math_Max) &&
+        if ((intrinsic->gtIntrinsicName != NI_System_Math_Min) && (intrinsic->gtIntrinsicName != NI_System_Math_Max) &&
             (intrinsic->gtIntrinsicName != NI_System_Math_MinNative) &&
             (intrinsic->gtIntrinsicName != NI_System_Math_MaxNative) &&
             (intrinsic->gtIntrinsicName != NI_System_Math_MinUnsigned) &&
@@ -2081,8 +2080,8 @@ bool AutoVectorizer::TryBuildSLPPlan(LoopVectorizationPlan* plan)
 
         if (!plan->HasConstInit || ((plan->ConstInitValue + plan->MinIndexOffset) < 0))
         {
-            JITDUMP("hasConstInit=%s, init=%d, minIndexOffset=%d\n", dspBool(plan->HasConstInit),
-                    plan->ConstInitValue, plan->MinIndexOffset);
+            JITDUMP("hasConstInit=%s, init=%d, minIndexOffset=%d\n", dspBool(plan->HasConstInit), plan->ConstInitValue,
+                    plan->MinIndexOffset);
             JITDUMP("remaining bounds check without lower-bound proof, bail out\n");
             return false;
         }
@@ -2713,9 +2712,9 @@ GenTree* AutoVectorizer::BuildVectorLoopTest(LoopVectorizationPlan* plan)
     GenTree* lastLane = m_compiler->gtNewCastNode(TYP_LONG, iv, false, TYP_LONG);
     if (plan->VectorizationFactor > 1)
     {
-        lastLane = m_compiler->gtNewOperNode(
-            plan->Step < 0 ? GT_SUB : GT_ADD, TYP_LONG, lastLane,
-            m_compiler->gtNewLconNode(static_cast<int64_t>(plan->VectorizationFactor - 1)));
+        lastLane =
+            m_compiler->gtNewOperNode(plan->Step < 0 ? GT_SUB : GT_ADD, TYP_LONG, lastLane,
+                                      m_compiler->gtNewLconNode(static_cast<int64_t>(plan->VectorizationFactor - 1)));
     }
 
     end = m_compiler->gtNewCastNode(TYP_LONG, end, false, TYP_LONG);
@@ -2733,7 +2732,7 @@ GenTree* AutoVectorizer::BuildVectorLoopTest(LoopVectorizationPlan* plan)
             unreached();
     }
 
-    GenTree* const   cmp     = m_compiler->gtNewOperNode(cmpOper, TYP_INT, lastLane, end);
+    GenTree* const cmp = m_compiler->gtNewOperNode(cmpOper, TYP_INT, lastLane, end);
     return m_compiler->gtNewOperNode(GT_JTRUE, TYP_VOID, cmp);
 }
 
@@ -3893,8 +3892,8 @@ bool AutoVectorizer::TryProveRemainingBoundsChecks(LoopVectorizationPlan* plan)
             GenTreeBoundsChk* const boundsCheck = tree->AsBoundsChk();
             int                     indexOffset = 0;
             bool                    sawIv       = false;
-            if (!m_vectorizer->TryAnalyzeIndexExpr(m_plan, boundsCheck->GetIndex(), m_plan->InductionVar,
-                                                   &indexOffset, nullptr, &sawIv) ||
+            if (!m_vectorizer->TryAnalyzeIndexExpr(m_plan, boundsCheck->GetIndex(), m_plan->InductionVar, &indexOffset,
+                                                   nullptr, &sawIv) ||
                 !sawIv)
             {
                 JITDUMPEXEC(m_compiler->gtDispTree(tree));
@@ -3932,7 +3931,7 @@ bool AutoVectorizer::TryProveRemainingBoundsChecks(LoopVectorizationPlan* plan)
         for (Statement* const stmt : block->Statements())
         {
             GenTree* root = stmt->GetRootNode();
-            Visitor visitor(m_compiler, this, plan, &failed);
+            Visitor  visitor(m_compiler, this, plan, &failed);
             visitor.WalkTree(&root, nullptr);
             if (failed)
             {
@@ -4088,11 +4087,10 @@ bool AutoVectorizer::TryCollectArrayLengthLimitLocals(LoopVectorizationPlan* pla
             GenTree* const cmpOp1 = UnwrapCommaValue(cond->AsOp()->gtOp1);
             GenTree* const cmpOp2 = UnwrapCommaValue(cond->AsOp()->gtOp2);
 
-            const bool isMinSelect =
-                (GenTree::StaticOperIs(cond->OperGet(), GT_LT, GT_LE) && GenTree::Compare(cmpOp1, thenOp) &&
-                 GenTree::Compare(cmpOp2, elseOp)) ||
-                (GenTree::StaticOperIs(cond->OperGet(), GT_GT, GT_GE) && GenTree::Compare(cmpOp2, thenOp) &&
-                 GenTree::Compare(cmpOp1, elseOp));
+            const bool isMinSelect = (GenTree::StaticOperIs(cond->OperGet(), GT_LT, GT_LE) &&
+                                      GenTree::Compare(cmpOp1, thenOp) && GenTree::Compare(cmpOp2, elseOp)) ||
+                                     (GenTree::StaticOperIs(cond->OperGet(), GT_GT, GT_GE) &&
+                                      GenTree::Compare(cmpOp2, thenOp) && GenTree::Compare(cmpOp1, elseOp));
 
             if (isMinSelect)
             {
