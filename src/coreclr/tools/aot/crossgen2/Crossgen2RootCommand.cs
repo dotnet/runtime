@@ -87,7 +87,7 @@ namespace ILCompiler
         public Option<string> ImageBase { get; } =
             new("--imagebase") { Description = SR.ImageBase };
         public Option<string> TargetArchitecture { get; } =
-            new("--targetarch") { Description = SR.TargetArchOption, HelpName = "arg" };
+            new("--targetarch") { Description = SR.TargetArchOption };
         public Option<bool> EnableGenericCycleDetection { get; } =
             new("--enable-generic-cycle-detection") { Description = SR.EnableGenericCycleDetection };
         public Option<int> GenericCycleDepthCutoff { get; } =
@@ -95,7 +95,7 @@ namespace ILCompiler
         public Option<int> GenericCycleBreadthCutoff { get; } =
             new("--maxgenericcyclebreadth") { DefaultValueFactory = _ => ReadyToRunCompilerContext.DefaultGenericCycleBreadthCutoff, Description = SR.GenericCycleBreadthCutoff };
         public Option<string> TargetOS { get; } =
-            new("--targetos") { Description = SR.TargetOSOption, HelpName = "arg" };
+            new("--targetos") { Description = SR.TargetOSOption };
         public Option<string> JitPath { get; } =
             new("--jitpath") { Description = SR.JitPathOption };
         public Option<bool> PrintReproInstructions { get; } =

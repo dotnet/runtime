@@ -161,9 +161,9 @@ namespace ILCompiler
         public Option<bool> RootDefaultAssemblies { get; } =
             new("--defaultrooting") { Description = "Root assemblies that are not marked [IsTrimmable]" };
         public Option<string> TargetArchitecture { get; } =
-            new("--targetarch") { Description = "Target architecture for cross compilation", HelpName = "arg" };
+            new("--targetarch") { Description = "Target architecture for cross compilation" };
         public Option<string> TargetOS { get; } =
-            new("--targetos") { Description = "Target OS for cross compilation", HelpName = "arg" };
+            new("--targetos") { Description = "Target OS for cross compilation" };
         public Option<string> JitPath { get; } =
             new("--jitpath") { Description = "Path to JIT compiler library" };
         public Option<string> SingleMethodTypeName { get; } =
