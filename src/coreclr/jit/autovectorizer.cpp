@@ -1128,6 +1128,13 @@ bool AutoVectorizer::TryAddReduction(LoopVectorizationPlan* plan, Statement* stm
 
     if (data->OperIs(GT_ADD, GT_SUB))
     {
+        if (data->gtOverflow())
+        {
+            JITDUMPEXEC(m_compiler->gtDispStmt(stmt));
+            JITDUMP("reduction uses checked arithmetic, bail out\n");
+            return false;
+        }
+
         op1 = UnwrapCommaValue(data->AsOp()->gtOp1);
         op2 = UnwrapCommaValue(data->AsOp()->gtOp2);
         if (!op1->OperIs(GT_LCL_VAR) || (op1->AsLclVarCommon()->GetLclNum() != reductionLcl))
@@ -2471,6 +2478,13 @@ AutoVectorizer::PackNode* AutoVectorizer::TryBuildPack(
 
     if (value->OperIs(GT_ADD, GT_SUB, GT_MUL, GT_AND, GT_AND_NOT, GT_OR, GT_XOR, GT_DIV, GT_LSH, GT_RSH, GT_RSZ))
     {
+        if (value->OperMayOverflow() && value->gtOverflow())
+        {
+            JITDUMPEXEC(m_compiler->gtDispTree(value));
+            JITDUMP("checked arithmetic is not supported, bail out\n");
+            return nullptr;
+        }
+
         if (!IsSupportedBinaryOp(value->OperGet(), elementType))
         {
             JITDUMPEXEC(m_compiler->gtDispTree(value));
