@@ -1849,7 +1849,7 @@ CorInfoHFAElemType MethodTable::GetVectorHFA()
             hfaType = CORINFO_HFA_ELEM_VECTOR64;
         }
 
-        if ((hfaType != CORINFO_HFA_ELEM_NONE) && (GetLoadLevel() >= CLASS_LOAD_EXACTPARENTS))
+        if (hfaType != CORINFO_HFA_ELEM_NONE)
         {
             // We need to verify that T (the element or "base" type) is a numerical type.
             TypeHandle typeArg = GetInstantiation()[0];
