@@ -24,7 +24,7 @@ namespace System.Formats.Tar
         private const string GnuMagic = "ustar ";
         private const string GnuVersion = " \0";
 
-        // // Maximum allowed size for metadata data sections (PAX extended attributes, GNU LongPath/LongLink).
+        // Maximum allowed size for metadata sections (PAX extended attributes, GNU LongPath/LongLink).
         private const int MaxMetadataBlockSize = 1024 * 1024;
 
         // Names of PAX extended attributes commonly found fields
