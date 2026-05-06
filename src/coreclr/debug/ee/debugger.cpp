@@ -7449,7 +7449,7 @@ HRESULT Debugger::SendException(Thread *pThread,
             (fFirstChance && (!pExState->GetFlags()->SentDebugFirstChance() || !pExState->GetFlags()->SentDebugUserFirstChance())));
 
     // There must be a managed exception object to send a managed exception event
-    if (g_pEEInterface->IsThreadExceptionNull(pThread) && (pThread->LastThrownObjectHandle() == NULL))
+    if (pThread->IsThrowableNull(ThrowableSource::ExInfoOrLTO))
     {
         managedEventNeeded = FALSE;
     }
@@ -7878,7 +7878,7 @@ BOOL Debugger::ShouldSendCatchHandlerFound(Thread* pThread)
     else
     {
         BOOL forceSendCatchHandlerFound = FALSE;
-        OBJECTHANDLE objHandle = pThread->GetThrowableAsPseudoHandle();
+        OBJECTHANDLE objHandle = pThread->GetThrowableHandle(ThrowableSource::ExInfoOnly);
         OBJECTHANDLE retrievedHandle = m_pForceCatchHandlerFoundEventsTable->Lookup(objHandle);
         if (retrievedHandle != NULL)
         {

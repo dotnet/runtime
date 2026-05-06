@@ -1845,7 +1845,7 @@ BOOL IsInFirstFrameOfHandler(Thread *pThread, IJitManager *pJitManager, const ME
     CONTRACTL_END;
 
     // if don't have a throwable the aren't processing an exception
-    if (pThread->IsThrowableNull())
+    if (pThread->IsThrowableNull(ThrowableSource::ExInfoOnly))
         return FALSE;
 
     EH_CLAUSE_ENUMERATOR pEnumState;
@@ -2807,7 +2807,7 @@ BOOL IsStackOverflowException(Thread* pThread, EXCEPTION_RECORD* pExceptionRecor
     }
 
     if (IsComPlusException(pExceptionRecord) &&
-         pThread->IsLastThrownObjectStackOverflowException())
+         pThread->GetThrowableHandle(ThrowableSource::LTOOnly) == g_pPreallocatedStackOverflowException)
     {
         return true;
     }
@@ -3545,10 +3545,7 @@ BOOL ExceptionIsAlwaysSwallowed(EXCEPTION_POINTERS *pExceptionInfo)
             OBJECTREF throwable;
 
             GCX_COOP();
-            if ((throwable = pThread->GetThrowable()) == NULL)
-            {
-                throwable = pThread->LastThrownObject();
-            }
+            throwable = pThread->GetThrowableRef(ThrowableSource::ExInfoOrLTO);
             //@todo: could throwable be NULL here?
             isSwallowed = IsExceptionOfType(kThreadAbortException, &throwable);
         }
@@ -3908,7 +3905,7 @@ LONG InternalUnhandledExceptionFilter_Worker(
         {   // Possibly interesting exception.  Is there no Thread at all?  Or, is there a Thread,
             //  but with no exception at all on it?
             if ((pParam->pThread == NULL) ||
-                (pParam->pThread->IsThrowableNull() && pParam->pThread->IsLastThrownObjectNull()) )
+                pParam->pThread->IsThrowableNull(ThrowableSource::ExInfoOrLTO) )
             {   // Whatever this exception is, we don't know about it.  Treat as Native.
                 tore = TypeOfReportedError::NativeThreadUnhandledException;
             }
@@ -3919,7 +3916,8 @@ LONG InternalUnhandledExceptionFilter_Worker(
         BOOL useLastThrownObject = FALSE;
         if (!pParam->fIgnore && (pParam->pThread != NULL))
         {
-            useLastThrownObject = pParam->pThread->IsThrowableNull() && !pParam->pThread->IsLastThrownObjectNull();
+            useLastThrownObject = pParam->pThread->IsThrowableNull(ThrowableSource::ExInfoOnly) &&
+                                  !pParam->pThread->IsThrowableNull(ThrowableSource::LTOOnly);
         }
 
 #ifdef DEBUGGING_SUPPORTED
@@ -4377,11 +4375,11 @@ DefaultCatchHandler(PEXCEPTION_POINTERS pExceptionPointers,
     }
     else if (useLastThrownObject)
     {
-        throwable = pThread->LastThrownObject();
+        throwable = pThread->GetThrowableRef(ThrowableSource::LTOOnly);
     }
     else
     {
-        throwable = pThread->GetThrowable();
+        throwable = pThread->GetThrowableRef(ThrowableSource::ExInfoOnly);
     }
 
     // If we've got no managed object, then we can't send an event or print a message, so we just return.
@@ -4530,11 +4528,11 @@ void NotifyAppDomainsOfUnhandledException(
 
     if (useLastThrownObject)
     {
-        throwable = pThread->LastThrownObject();
+        throwable = pThread->GetThrowableRef(ThrowableSource::LTOOnly);
     }
     else
     {
-        throwable = pThread->GetThrowable();
+        throwable = pThread->GetThrowableRef(ThrowableSource::ExInfoOnly);
     }
 
     // If we've got no managed object, then we can't send an event, so we just return.
@@ -4759,7 +4757,7 @@ LPVOID COMPlusCheckForAbort(UINT_PTR uTryCatchResumeAddress)
 
     if ((!pThread->IsAbortRequested()) ||         // if no abort has been requested
         (!pThread->IsRudeAbort() &&
-        (pThread->GetThrowable() != NULL)) )  // or if there is a pending exception
+        !pThread->IsThrowableNull(ThrowableSource::ExInfoOnly)) )  // or if there is a pending exception
     {
         goto exit;
     }
@@ -4774,7 +4772,7 @@ LPVOID COMPlusCheckForAbort(UINT_PTR uTryCatchResumeAddress)
     }
 
     // else we must produce an abort
-    if ((pThread->GetThrowable() == NULL) &&
+    if (pThread->IsThrowableNull(ThrowableSource::ExInfoOnly) &&
         (pThread->IsAbortInitiated()))
     {
         // Oops, we just swallowed an abort, must restart the process
@@ -5033,7 +5031,7 @@ bool IsInterceptableException(Thread *pThread)
     return ((pThread != NULL)                       &&
             (!pThread->IsAbortRequested())          &&
             (pThread->IsExceptionInProgress())      &&
-            (!pThread->IsThrowableNull())
+            (!pThread->IsThrowableNull(ThrowableSource::ExInfoOnly))
 
 #ifdef DEBUGGING_SUPPORTED
             &&
@@ -6854,7 +6852,7 @@ LONG ReflectionInvocationExceptionFilter(
     // Attempt to capture buckets for non-preallocated exceptions just before the ReflectionInvocation boundary
     {
         GCX_COOP();
-        OBJECTREF oThrowable = GetThread()->GetThrowable();
+        OBJECTREF oThrowable = GetThread()->GetThrowableRef(ThrowableSource::ExInfoOnly);
         if ((oThrowable != NULL) && (CLRException::IsPreallocatedExceptionObject(oThrowable) == FALSE))
         {
             SetupWatsonBucketsForNonPreallocatedExceptions();
@@ -7168,7 +7166,7 @@ BOOL SetupWatsonBucketsForNonPreallocatedExceptions(OBJECTREF oThrowable /* = NU
     GCPROTECT_BEGIN(gc);
 
     // Get the throwable to be used
-    gc.oThrowable = (oThrowable != NULL) ? oThrowable : pThread->GetThrowable();
+    gc.oThrowable = (oThrowable != NULL) ? oThrowable : pThread->GetThrowableRef(ThrowableSource::ExInfoOnly);
     if (gc.oThrowable == NULL)
     {
         // If we have no throwable, then simply return back.
@@ -7292,7 +7290,7 @@ BOOL SetupWatsonBucketsForEscapingPreallocatedExceptions()
     GCPROTECT_BEGIN(gc);
 
     // Get the throwable corresponding to the escaping exception
-    gc.oThrowable = pThread->GetThrowable();
+    gc.oThrowable = pThread->GetThrowableRef(ThrowableSource::ExInfoOnly);
     if (gc.oThrowable == NULL)
     {
         // If we have no throwable, then simply return back.
@@ -7444,7 +7442,8 @@ void SetupWatsonBucketsForUEF(BOOL fUseLastThrownObject)
     gc.oBuckets = NULL;
     GCPROTECT_BEGIN(gc);
 
-    gc.oThrowable = fUseLastThrownObject ? pThread->LastThrownObject() : pThread->GetThrowable();
+    gc.oThrowable = fUseLastThrownObject ? pThread->GetThrowableRef(ThrowableSource::LTOOnly)
+                                         : pThread->GetThrowableRef(ThrowableSource::ExInfoOnly);
     BOOL fThrowableExists = (gc.oThrowable != NULL);
     BOOL fIsThrowablePreallocated = !fThrowableExists ? FALSE : CLRException::IsPreallocatedExceptionObject(gc.oThrowable);
 
@@ -8523,7 +8522,7 @@ void CopyWatsonBucketsBetweenThrowables(U1ARRAYREF oManagedWatsonBuckets, OBJECT
     GCPROTECT_BEGIN(_gc);
 
     _gc.oSourceWatsonBuckets = oManagedWatsonBuckets;
-    _gc.oTo = (oThrowableTo == NULL)?GetThread()->GetThrowable():oThrowableTo;
+    _gc.oTo = (oThrowableTo == NULL) ? GetThread()->GetThrowableRef(ThrowableSource::ExInfoOnly) : oThrowableTo;
     _ASSERTE(_gc.oTo != NULL);
 
     // The target throwable to which Watson buckets are going to be copied
@@ -8596,7 +8595,7 @@ BOOL CopyWatsonBucketsToThrowable(PTR_VOID pUnmanagedBuckets, OBJECTREF oTargetT
         THROWS;
         PRECONDITION(GetThreadNULLOk() != NULL);
         PRECONDITION(pUnmanagedBuckets != NULL);
-        PRECONDITION(!CLRException::IsPreallocatedExceptionObject((oTargetThrowable == NULL)?GetThread()->GetThrowable():oTargetThrowable));
+        PRECONDITION(!CLRException::IsPreallocatedExceptionObject((oTargetThrowable == NULL) ? GetThread()->GetThrowableRef(ThrowableSource::ExInfoOnly) : oTargetThrowable));
         PRECONDITION(IsWatsonEnabled());
     }
     CONTRACTL_END;
@@ -8610,7 +8609,7 @@ BOOL CopyWatsonBucketsToThrowable(PTR_VOID pUnmanagedBuckets, OBJECTREF oTargetT
 
     ZeroMemory(&_gc, sizeof(_gc));
     GCPROTECT_BEGIN(_gc);
-    _gc.oThrowable = (oTargetThrowable == NULL)?GetThread()->GetThrowable():oTargetThrowable;
+    _gc.oThrowable = (oTargetThrowable == NULL) ? GetThread()->GetThrowableRef(ThrowableSource::ExInfoOnly) : oTargetThrowable;
 
     // Throwable to which buckets should be copied to, must exist.
     _ASSERTE(_gc.oThrowable != NULL);
@@ -8712,7 +8711,7 @@ void SetStateForWatsonBucketing(BOOL fIsRethrownException, OBJECTHANDLE ohOrigin
     _ASSERTE(pCurExState->GetCurrentExceptionTracker() != NULL);
 
     // Get the current throwable
-    gc.oCurrentThrowable = pThread->GetThrowable();
+    gc.oCurrentThrowable = pThread->GetThrowableRef(ThrowableSource::ExInfoOnly);
     _ASSERTE(gc.oCurrentThrowable != NULL);
 
     // Is the throwable a preallocated exception object?

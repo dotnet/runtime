@@ -453,12 +453,9 @@ UINT_PTR GetIPOfThrowSite(
     //  trace, it will start with the topmost (lowest address, newest) managed
     //  code, which is what we want.
     GCX_COOP();
-    OBJECTREF throwable = pThread->GetThrowable();
-
-    // If there was no managed code on the stack and we are on 64-bit, then we won't have propagated
-    // the LastThrownObject into the Throwable yet.
-    if (throwable == NULL)
-        throwable = pThread->LastThrownObject();
+    // ExInfo first; fall back to LTO when no managed code was on the stack
+    // (e.g., 64-bit native-only callstack didn't propagate LTO into the Throwable).
+    OBJECTREF throwable = pThread->GetThrowableRef(ThrowableSource::ExInfoOrLTO);
 
     _ASSERTE(throwable != NULL);
     _ASSERTE(IsException(throwable->GetMethodTable()));

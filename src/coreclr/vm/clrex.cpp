@@ -74,7 +74,7 @@ OBJECTREF CLRException::GetThrowable()
     }
 
     if ((IsType(CLRLastThrownObjectException::GetType()) &&
-         pThread->LastThrownObject() == GetPreallocatedStackOverflowException()))
+         pThread->GetThrowableRef(ThrowableSource::LTOOnly) == GetPreallocatedStackOverflowException()))
     {
         return GetPreallocatedStackOverflowException();
     }
@@ -596,7 +596,7 @@ OBJECTREF CLRException::GetThrowableFromException(Exception *pException)
 
     if (NULL == pException)
     {
-        return pThread->LastThrownObject();
+        return pThread->GetThrowableRef(ThrowableSource::LTOOnly);
     }
 
     if (pException->IsType(CLRException::GetType()))
@@ -624,7 +624,7 @@ OBJECTREF CLRException::GetThrowableFromException(Exception *pException)
             // as an unrelated unmanaged exception.
             if (IsComPlusException(&(pSEHException->m_exception)))
             {
-                return pThread->LastThrownObject();
+                return pThread->GetThrowableRef(ThrowableSource::LTOOnly);
             }
             else
             {
@@ -725,11 +725,11 @@ OBJECTREF CLRException::GetThrowableFromException(Exception *pException)
                 }
                 else
                 if (pNewException->IsType(CLRLastThrownObjectException::GetType()) &&
-                    (pThread->LastThrownObject() != NULL))
+                    !pThread->IsThrowableNull(ThrowableSource::LTOOnly))
                 {
                     STRESS_LOG0(LF_EH, LL_INFO100, "CLRException::GetThrowableFromException: LTO Exception creating throwable; getting LastThrownObject.\n");
                     if (oRetVal == NULL)
-                        oRetVal = pThread->LastThrownObject();
+                        oRetVal = pThread->GetThrowableRef(ThrowableSource::LTOOnly);
                 }
                 else
                 {
@@ -770,7 +770,7 @@ OBJECTREF CLRException::GetThrowableFromExceptionRecord(EXCEPTION_RECORD *pExcep
 
     if (IsComPlusException(pExceptionRecord))
     {
-        return GetThread()->LastThrownObject();
+        return GetThread()->GetThrowableRef(ThrowableSource::LTOOnly);
     }
 
     return NULL;
@@ -2004,7 +2004,7 @@ OBJECTREF CLRLastThrownObjectException::CreateThrowable()
 
     DEBUG_STMT(Validate());
 
-    return GetThread()->LastThrownObject();
+    return GetThread()->GetThrowableRef(ThrowableSource::LTOOnly);
 } // OBJECTREF CLRLastThrownObjectException::CreateThrowable()
 
 #if defined(_DEBUG)
@@ -2025,7 +2025,7 @@ CLRLastThrownObjectException* CLRLastThrownObjectException::Validate()
     GCPROTECT_BEGIN(throwable);
 
     Thread * pThread = GetThread();
-    throwable = pThread->LastThrownObject();
+    throwable = pThread->GetThrowableRef(ThrowableSource::LTOOnly);
 
     DWORD dwCurrentExceptionCode = GetCurrentExceptionCode();
 

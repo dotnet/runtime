@@ -616,7 +616,7 @@ void EEPolicy::LogFatalError(UINT exitCode, UINT_PTR address, LPCWSTR pszMessage
                 // for fail-fast, if there's a LTO available then use that as the inner exception object
                 // for the FEEE we'll be reporting.  this can help the Watson back-end to generate better
                 // buckets for apps that call Environment.FailFast() and supply an exception object.
-                OBJECTREF lto = pThread->LastThrownObject();
+                OBJECTREF lto = pThread->GetThrowableRef(ThrowableSource::LTOOnly);
 
                 if (exitCode == static_cast<UINT>(COR_E_FAILFAST) && lto != NULL)
                 {

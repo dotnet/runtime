@@ -942,11 +942,7 @@ OBJECTREF BaseBucketParamsManager::GetRealExceptionObject()
         // If it is an exception, see if there is a Throwable object.
         if (m_pThread != NULL)
         {
-            throwable = m_pThread->GetThrowable();
-
-            // If the "Throwable" is null, try the "LastThrownObject"
-            if (throwable == NULL)
-                throwable = m_pThread->LastThrownObject();
+            throwable = m_pThread->GetThrowableRef(ThrowableSource::ExInfoOrLTO);
         }
     }
 

@@ -1526,7 +1526,7 @@ Thread::UserAbort(EEPolicy::ThreadAbortTypes abortType, DWORD timeout)
             // we're leaving managed code anyway.  The top-most handler is responsible for resetting
             // the bit.
             //
-            if (HasException() &&
+            if (!IsThrowableNull(ThrowableSource::ExInfoOnly) &&
                 // For rude abort, we will initiated abort
                 !IsRudeAbort())
             {

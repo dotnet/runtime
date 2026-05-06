@@ -241,7 +241,7 @@ std::invoke_result_t<Function> CallWithSEHWrapper(Function function)
         // The managed ones are represented by SEH exception, which cannot be handled there
         // because it is not possible to handle both SEH and C++ exceptions in the same frame.
         GCX_COOP_NO_DTOR();
-        OBJECTREF ohThrowable = GetThread()->LastThrownObject();
+        OBJECTREF ohThrowable = GetThread()->GetThrowableRef(ThrowableSource::ExInfoOrLTO);
         DispatchManagedException(ohThrowable);
     }
     PAL_ENDTRY
@@ -278,7 +278,7 @@ void InvokeUnmanagedMethodWithTransition(UnmanagedMethodWithTransitionParam *pPa
         // The managed ones are represented by SEH exception, which cannot be handled there
         // because it is not possible to handle both SEH and C++ exceptions in the same frame.
         GCX_COOP_NO_DTOR();
-        OBJECTREF ohThrowable = GetThread()->LastThrownObject();
+        OBJECTREF ohThrowable = GetThread()->GetThrowableRef(ThrowableSource::LTOOnly);
         DispatchManagedException(ohThrowable);
     }
     PAL_ENDTRY

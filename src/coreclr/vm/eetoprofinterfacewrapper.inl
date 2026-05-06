@@ -36,7 +36,7 @@ class EEToProfilerExceptionInterfaceWrapper
             _ASSERTE(pThread->PreemptiveGCDisabled());
 
             // Get a reference to the object that won't move
-            OBJECTREF thrown = pThread->GetThrowable();
+            OBJECTREF thrown = pThread->GetThrowableRef(ThrowableSource::ExInfoOnly);
 
             (&g_profControlBlock)->ExceptionThrown(
                 reinterpret_cast<ObjectID>((*(BYTE **)&thrown)));
@@ -195,7 +195,7 @@ class EEToProfilerExceptionInterfaceWrapper
                 // passed CAN change when gc happens.
                 OBJECTREF thrown = NULL;
                 GCPROTECT_BEGIN(thrown);
-                thrown = pThread->GetThrowable();
+                thrown = pThread->GetThrowableRef(ThrowableSource::ExInfoOnly);
                 {
                     (&g_profControlBlock)->ExceptionCatcherEnter(
                         (FunctionID) pFunc,

@@ -894,7 +894,7 @@ HRESULT ClrDataAccess::GetThreadData(CLRDATA_ADDRESS threadAddr, struct DacpThre
     // from the OS thread ID via the debugger's native API (e.g., IDebuggerServices::GetThreadTeb).
     threadData->teb = (CLRDATA_ADDRESS)NULL;
     threadData->lastThrownObjectHandle =
-        TO_CDADDR(thread->m_LastThrownObjectHandle);
+        TO_CDADDR(thread->GetThrowableHandle(ThrowableSource::ExInfoOrLTO));
     threadData->nextThread =
         HOST_CDADDR(ThreadStore::s_pThreadStore->m_ThreadList.GetNext(thread));
     if (thread->m_ExceptionState.m_pCurrentTracker)

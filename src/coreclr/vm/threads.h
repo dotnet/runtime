@@ -429,6 +429,40 @@ typedef DPTR(struct gc_alloc_context) PTR_gc_alloc_context;
 //
 // A code:Thread contains all the per-thread information needed by the runtime.  We can get this
 // structure through the OS TLS slot see code:#RuntimeThreadLocals for more information.
+
+// Names the source from which Thread::GetThrowableRef / GetThrowableHandle should
+// retrieve the current exception object. After the lazy-LTO change, the active
+// ExInfo is the source of truth during dispatch and the LastThrownObject (LTO)
+// field may lag or hold a synthetic/fatal value. Each reader must say which
+// view it wants instead of relying on an implicit invariant.
+enum class ThrowableSource
+{
+    // Only consult the active ExInfo (m_ExceptionState). NULL if none.
+    // Use when the in-flight dispatch is the only acceptable answer
+    // (e.g. GC stack scan, dispatch-time consumers).
+    ExInfoOnly,
+
+    // Only consult the LTO field. Returns whatever LTO holds, including stale
+    // or synthetic values. Use for Watson / fatal-error reporters that want the
+    // LTO state literally.
+    LTOOnly,
+
+    // ExInfo first; fall back to LTO if no active ExInfo. Replicates the
+    // pre-lazy "LTO was always coherent" reader behavior. Default replacement
+    // for callers that previously read LTO assuming eager sync.
+    ExInfoOrLTO,
+
+    // LTO only when m_ltoIsUnhandled is set; otherwise NULL. Use for
+    // "did the process die with an unhandled exception" probes (DBI's
+    // HasUnhandledException / GetCurrentException flavors).
+    LTOIfUnhandled,
+
+    // ExInfo first; then LTO only if m_ltoIsUnhandled. Avoids the mid-dispatch
+    // stale-LTO trap when the in-flight ExInfo is the canonical source but a
+    // pre-EH-init fatal may have populated LTO.
+    ExInfoOrLTOIfUnhandled,
+};
+
 class Thread
 {
     friend class  ThreadStore;
@@ -1433,34 +1467,6 @@ public:
     //---------------------------------------------------------------
     // Last exception to be thrown
     //---------------------------------------------------------------
-
-    OBJECTREF GetThrowable()
-    {
-        WRAPPER_NO_CONTRACT;
-
-        return m_ExceptionState.GetThrowable();
-    }
-
-    BOOL HasException()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return !IsThrowableNull();
-    }
-
-    // See ExInfo::GetThrowableAsPseudoHandle for details on the pseudo-handle.
-    OBJECTHANDLE GetThrowableAsPseudoHandle()
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-
-        return m_ExceptionState.GetThrowableAsPseudoHandle();
-    }
-
-    // special null test (for use when we're in the wrong GC mode)
-    BOOL IsThrowableNull()
-    {
-        WRAPPER_NO_CONTRACT;
-        return m_ExceptionState.IsThrowableNull();
-    }
 
     BOOL IsExceptionInProgress()
     {
@@ -2622,14 +2628,14 @@ private:
     //    CLRLastThrownObjectException::CreateThrowable and other EX_CATCH consumers.
     //
     // LTO is NOT kept in sync with ExInfo::m_exception during active exception
-    // dispatch. While an ExInfo is alive, m_exception is the source of truth -
-    // use GetThrowable() or GetThrowableAsPseudoHandle() to read it. LTO is set
-    // lazily by PopExInfos just before each ExInfo is destroyed, and by
-    // RaiseTheExceptionInternalOnly before the ExInfo is created.
+    // dispatch. While an ExInfo is alive, m_exception is the source of truth.
+    // LTO is set lazily by PopExInfos just before each ExInfo is destroyed, and
+    // by RaiseTheExceptionInternalOnly before the ExInfo is created.
     //
     // LTO may be stale during active dispatch. Readers that need the current
-    // exception should call GetThrowable() first and fall back to LastThrownObject()
-    // only when GetThrowable() returns NULL.
+    // exception should use Thread::GetThrowableHandle / GetThrowableRef /
+    // IsThrowableNull with a ThrowableSource that captures their intent
+    // (typically ExInfoOrLTO for "current exception").
     OBJECTHANDLE m_LastThrownObjectHandle;
 
     // Indicates that the throwable in m_lastThrownObjectHandle should be treated as
@@ -2641,30 +2647,16 @@ private:
 
 public:
 
-    BOOL IsLastThrownObjectNull() { WRAPPER_NO_CONTRACT; return (m_LastThrownObjectHandle == (OBJECTHANDLE)0); }
-
-    OBJECTREF LastThrownObject()
-    {
-        WRAPPER_NO_CONTRACT;
-
-        if (m_LastThrownObjectHandle == (OBJECTHANDLE)0)
-        {
-            return NULL;
-        }
-        else
-        {
-            // We only have a handle if we have an object to keep in it.
-            _ASSERTE(ObjectFromHandle(m_LastThrownObjectHandle) != NULL);
-            return ObjectFromHandle(m_LastThrownObjectHandle);
-        }
-    }
-
-    OBJECTHANDLE LastThrownObjectHandle()
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-
-        return m_LastThrownObjectHandle;
-    }
+    // Source-explicit accessors. See the ThrowableSource enum for the meaning
+    // of each value. These are the canonical way to retrieve the "current"
+    // exception object: the caller names which view it wants instead of
+    // relying on the (lazy) LTO field being coherent with the active ExInfo.
+    // GetThrowableRef requires MODE_COOPERATIVE for a non-NULL result;
+    // GetThrowableHandle and IsThrowableNull are mode-agnostic and safe in
+    // preemptive contexts and from DAC.
+    OBJECTHANDLE GetThrowableHandle(ThrowableSource source);
+    OBJECTREF    GetThrowableRef   (ThrowableSource source);
+    BOOL         IsThrowableNull   (ThrowableSource source);
 
     // Sets the last thrown object. If the throwable cannot be tracked due to OOM, sets the
     // last thrown object to the preallocated OOM exception and returns it instead of the
@@ -2685,14 +2677,6 @@ public:
     {
         LIMITED_METHOD_DAC_CONTRACT;
         return m_ltoIsUnhandled;
-    }
-
-    bool IsLastThrownObjectStackOverflowException()
-    {
-        LIMITED_METHOD_CONTRACT;
-        CONSISTENCY_CHECK(NULL != g_pPreallocatedStackOverflowException);
-
-        return (m_LastThrownObjectHandle == g_pPreallocatedStackOverflowException);
     }
 
     // get the current notification (if any) from this thread

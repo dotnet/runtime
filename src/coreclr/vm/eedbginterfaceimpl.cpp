@@ -239,15 +239,8 @@ OBJECTHANDLE EEDbgInterfaceImpl::GetThreadException(Thread *pThread)
     }
     CONTRACTL_END;
 
-    OBJECTHANDLE oh = pThread->GetThrowableAsPseudoHandle();
-
-    if (oh != NULL)
-    {
-        return oh;
-    }
-
     // Return the last thrown object if there's no current throwable.
-    return pThread->m_LastThrownObjectHandle;
+    return pThread->GetThrowableHandle(ThrowableSource::ExInfoOrLTO);
 }
 
 bool EEDbgInterfaceImpl::IsThreadExceptionNull(Thread *pThread)
@@ -260,7 +253,7 @@ bool EEDbgInterfaceImpl::IsThreadExceptionNull(Thread *pThread)
     }
     CONTRACTL_END;
 
-    return pThread->IsThrowableNull();
+    return pThread->IsThrowableNull(ThrowableSource::ExInfoOnly);
 }
 
 void EEDbgInterfaceImpl::ClearThreadException(Thread *pThread)

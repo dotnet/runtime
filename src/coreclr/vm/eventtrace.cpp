@@ -2782,7 +2782,7 @@ VOID ETW::ExceptionLog::ExceptionThrown(CrawlFrame  *pCf, BOOL bIsReThrownExcept
         NOTHROW;
         GC_TRIGGERS;
         PRECONDITION(GetThreadNULLOk() != NULL);
-        PRECONDITION(GetThread()->GetThrowable() != NULL);
+        PRECONDITION(!GetThread()->IsThrowableNull(ThrowableSource::ExInfoOnly));
     } CONTRACTL_END;
 
     if(!(bIsReThrownException || bIsNewException))
@@ -2814,7 +2814,7 @@ VOID ETW::ExceptionLog::ExceptionThrown(CrawlFrame  *pCf, BOOL bIsReThrownExcept
         gc.exceptionMessageRef = NULL;
         GCPROTECT_BEGIN(gc);
 
-        gc.exceptionObj = pThread->GetThrowable();
+        gc.exceptionObj = pThread->GetThrowableRef(ThrowableSource::ExInfoOnly);
         gc.innerExceptionObj = ((EXCEPTIONREF)gc.exceptionObj)->GetInnerException();
 
         ThreadExceptionState *pExState = pThread->GetExceptionState();

@@ -1933,7 +1933,7 @@ extern "C" PCODE STDCALL PreStubWorker(TransitionBlock* pTransitionBlock, Method
         }
         EX_CATCH
         {
-            OBJECTHANDLE ohThrowable = CURRENT_THREAD->LastThrownObjectHandle();
+            OBJECTHANDLE ohThrowable = CURRENT_THREAD->GetThrowableHandle(ThrowableSource::LTOOnly);
             _ASSERTE(ohThrowable);
             StackTraceInfo::AppendElement(ObjectFromHandle(ohThrowable), 0, (UINT_PTR)pTransitionBlock, pMD, NULL);
             EX_RETHROW;
@@ -2136,7 +2136,7 @@ void ExecuteInterpretedMethodWithArgs_PortableEntryPoint_Complex(PCODE portableE
         }
         EX_CATCH
         {
-            OBJECTHANDLE ohThrowable = CURRENT_THREAD->LastThrownObjectHandle();
+            OBJECTHANDLE ohThrowable = CURRENT_THREAD->GetThrowableHandle(ThrowableSource::LTOOnly);
             _ASSERTE(ohThrowable);
             if (finishedPrestubPortion)
             {

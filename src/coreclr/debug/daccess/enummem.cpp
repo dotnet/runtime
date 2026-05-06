@@ -1147,7 +1147,7 @@ HRESULT ClrDataAccess::EnumMemDumpAllThreadsStack(CLRDataEnumMemoryFlags flags)
                 pThread = ((ClrDataTask *)pIXCLRDataTask.GetValue())->GetThread();
 
                 // dump the exception object
-                DumpManagedExcepObject(flags, pThread->LastThrownObject());
+                DumpManagedExcepObject(flags, pThread->GetThrowableRef(ThrowableSource::ExInfoOrLTO));
 
                 // Now probe into the exception info
                 status = pIXCLRDataTask->GetCurrentExceptionState(&pExcepState);
@@ -1235,7 +1235,7 @@ HRESULT ClrDataAccess::EnumMemDumpAllThreadsStack(CLRDataEnumMemoryFlags flags)
 
 #ifndef FEATURE_MINIMETADATA_IN_TRIAGEDUMPS
                 // dump the exception object
-                DumpManagedExcepObject(flags, pThread->LastThrownObject());
+                DumpManagedExcepObject(flags, pThread->GetThrowableRef(ThrowableSource::ExInfoOrLTO));
 #endif // FEATURE_MINIMETADATA_IN_TRIAGEDUMPS
 
                 // Stack Walking

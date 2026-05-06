@@ -3196,6 +3196,187 @@ void Thread::SetSOForLastThrownObject()
     m_LastThrownObjectHandle = CLRException::GetPreallocatedStackOverflowExceptionHandle();
 }
 
+#endif // !DACCESS_COMPILE
+
+// Source-explicit handle accessor. Returns whichever handle the caller asked
+// for, or (OBJECTHANDLE)NULL if no source matched. See ThrowableSource for
+// the meaning of each value.
+OBJECTHANDLE Thread::GetThrowableHandle(ThrowableSource source)
+{
+    LIMITED_METHOD_CONTRACT;
+    SUPPORTS_DAC;
+
+    OBJECTHANDLE exInfoHandle = (OBJECTHANDLE)NULL;
+    bool considerExInfo = false;
+    bool considerLTO = false;
+    bool ltoRequiresUnhandled = false;
+
+    switch (source)
+    {
+        case ThrowableSource::ExInfoOnly:
+            considerExInfo = true;
+            break;
+        case ThrowableSource::LTOOnly:
+            considerLTO = true;
+            break;
+        case ThrowableSource::ExInfoOrLTO:
+            considerExInfo = true;
+            considerLTO = true;
+            break;
+        case ThrowableSource::LTOIfUnhandled:
+            considerLTO = true;
+            ltoRequiresUnhandled = true;
+            break;
+        case ThrowableSource::ExInfoOrLTOIfUnhandled:
+            considerExInfo = true;
+            considerLTO = true;
+            ltoRequiresUnhandled = true;
+            break;
+    }
+
+    if (considerExInfo)
+    {
+        exInfoHandle = m_ExceptionState.GetThrowableAsPseudoHandle();
+        if (exInfoHandle != (OBJECTHANDLE)NULL)
+        {
+            return exInfoHandle;
+        }
+    }
+
+    if (considerLTO)
+    {
+        if (ltoRequiresUnhandled && !m_ltoIsUnhandled)
+        {
+            return (OBJECTHANDLE)NULL;
+        }
+        return m_LastThrownObjectHandle;
+    }
+
+    return (OBJECTHANDLE)NULL;
+}
+
+// Source-explicit OBJECTREF accessor. Materializes the chosen source as an
+// OBJECTREF; requires MODE_COOPERATIVE because non-NULL OBJECTREFs are only
+// safe to construct under cooperative GC mode. Use GetThrowableHandle when
+// MODE_ANY is required.
+OBJECTREF Thread::GetThrowableRef(ThrowableSource source){
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_COOPERATIVE;
+    }
+    CONTRACTL_END;
+
+    bool considerExInfo = false;
+    bool considerLTO = false;
+    bool ltoRequiresUnhandled = false;
+
+    switch (source)
+    {
+        case ThrowableSource::ExInfoOnly:
+            considerExInfo = true;
+            break;
+        case ThrowableSource::LTOOnly:
+            considerLTO = true;
+            break;
+        case ThrowableSource::ExInfoOrLTO:
+            considerExInfo = true;
+            considerLTO = true;
+            break;
+        case ThrowableSource::LTOIfUnhandled:
+            considerLTO = true;
+            ltoRequiresUnhandled = true;
+            break;
+        case ThrowableSource::ExInfoOrLTOIfUnhandled:
+            considerExInfo = true;
+            considerLTO = true;
+            ltoRequiresUnhandled = true;
+            break;
+    }
+
+    if (considerExInfo)
+    {
+        OBJECTREF exInfoThrowable = m_ExceptionState.GetThrowable();
+        if (exInfoThrowable != NULL)
+        {
+            return exInfoThrowable;
+        }
+    }
+
+    if (considerLTO)
+    {
+        if (ltoRequiresUnhandled && !m_ltoIsUnhandled)
+        {
+            return NULL;
+        }
+        if (m_LastThrownObjectHandle == (OBJECTHANDLE)NULL)
+        {
+            return NULL;
+        }
+        // We only have a handle if we have an object to keep in it.
+        _ASSERTE(ObjectFromHandle(m_LastThrownObjectHandle) != NULL);
+        return ObjectFromHandle(m_LastThrownObjectHandle);
+    }
+
+    return NULL;
+}
+
+// Source-explicit null predicate. Returns TRUE iff the chosen source has no
+// throwable to return. Safe to call in MODE_ANY (including preemptive GC
+// mode) and from DAC: the underlying checks are pointer-value comparisons
+// (handle == NULL, m_pCurrentTracker == NULL, m_exception == NULL) and a
+// flag read; no OBJECTREF is materialized.
+BOOL Thread::IsThrowableNull(ThrowableSource source)
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+
+    bool considerExInfo = false;
+    bool considerLTO = false;
+    bool ltoRequiresUnhandled = false;
+
+    switch (source)
+    {
+        case ThrowableSource::ExInfoOnly:
+            considerExInfo = true;
+            break;
+        case ThrowableSource::LTOOnly:
+            considerLTO = true;
+            break;
+        case ThrowableSource::ExInfoOrLTO:
+            considerExInfo = true;
+            considerLTO = true;
+            break;
+        case ThrowableSource::LTOIfUnhandled:
+            considerLTO = true;
+            ltoRequiresUnhandled = true;
+            break;
+        case ThrowableSource::ExInfoOrLTOIfUnhandled:
+            considerExInfo = true;
+            considerLTO = true;
+            ltoRequiresUnhandled = true;
+            break;
+    }
+
+    if (considerExInfo && !m_ExceptionState.IsThrowableNull())
+    {
+        return FALSE;
+    }
+
+    if (considerLTO)
+    {
+        if (ltoRequiresUnhandled && !m_ltoIsUnhandled)
+        {
+            return TRUE;
+        }
+        return m_LastThrownObjectHandle == (OBJECTHANDLE)NULL;
+    }
+
+    return TRUE;
+}
+
+#ifndef DACCESS_COMPILE
+
 // Background threads must be counted, because the EE should shut down when the
 // last non-background thread terminates.  But we only count running ones.
 void Thread::SetBackground(BOOL isBack)
@@ -6549,7 +6730,7 @@ extern "C" InterpThreadContext* STDCALL GetInterpThreadContextWithPossiblyMissin
         }
         EX_CATCH
         {
-            OBJECTHANDLE ohThrowable = CURRENT_THREAD->LastThrownObjectHandle();
+            OBJECTHANDLE ohThrowable = CURRENT_THREAD->GetThrowableHandle(ThrowableSource::LTOOnly);
             _ASSERTE(ohThrowable);
             StackTraceInfo::AppendElement(ObjectFromHandle(ohThrowable), 0, (UINT_PTR)pTransitionBlock, pByteCodeStart->Method->methodHnd, NULL);
             EX_RETHROW;

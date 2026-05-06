@@ -521,7 +521,7 @@ ClrDataTask::GetLastExceptionState(
 
     EX_TRY
     {
-        if (m_thread->m_LastThrownObjectHandle)
+        if (!m_thread->IsThrowableNull(ThrowableSource::ExInfoOrLTO))
         {
             *exception = new (nothrow)
                 ClrDataExceptionState(m_dac,
@@ -529,7 +529,7 @@ ClrDataTask::GetLastExceptionState(
                                       m_thread,
                                       CLRDATA_EXCEPTION_PARTIAL,
                                       NULL,
-                                      m_thread->m_LastThrownObjectHandle,
+                                      m_thread->GetThrowableHandle(ThrowableSource::ExInfoOrLTO),
                                       NULL);
             status = *exception ? S_OK : E_OUTOFMEMORY;
         }
@@ -4910,7 +4910,7 @@ ClrDataExceptionState::NewFromThread(ClrDataAccess* dac,
                                      ClrDataExceptionState** exception,
                                      IXCLRDataExceptionState** pubException)
 {
-    if (!thread->HasException())
+    if (thread->IsThrowableNull(ThrowableSource::ExInfoOrLTO))
     {
         return E_NOINTERFACE;
     }

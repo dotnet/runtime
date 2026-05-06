@@ -778,7 +778,7 @@ OBJECTREF ExInfo::CreateThrowable(
 
     if ((!bAsynchronousThreadStop) && IsComPlusException(pExceptionRecord))
     {
-        oThrowable = pThread->LastThrownObject();
+        oThrowable = pThread->GetThrowableRef(ThrowableSource::LTOOnly);
     }
     else
     {
@@ -2145,6 +2145,7 @@ CallDescrWorkerUnwindFrameChainHandler(IN     PEXCEPTION_RECORD   pExceptionReco
     }
     else if (IS_UNWINDING(pExceptionRecord->ExceptionFlags))
     {
+        GCX_COOP();
         CleanUpForSecondPass(pThread, false, pEstablisherFrame, pEstablisherFrame);
     }
 
