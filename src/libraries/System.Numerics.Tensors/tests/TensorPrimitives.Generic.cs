@@ -116,10 +116,7 @@ namespace System.Numerics.Tensors.Tests
 
                 for (int i = 0; i < tensorLength; i++)
                 {
-                    if (!Helpers.IsEqualWithTolerance(TTo.CreateTruncating(source.Span[i]), destination.Span[i]))
-                    {
-                        throw new XunitException($"{typeof(TFrom).Name} => {typeof(TTo).Name}. Input: {source.Span[i]}. Actual: {destination.Span[i]}. Expected: {TTo.CreateTruncating(source.Span[i])}.");
-                    }
+                    Helpers.AssertEqualWithTolerance(TTo.CreateTruncating(source.Span[i]), destination.Span[i]);
                 }
             }
         }
@@ -148,10 +145,7 @@ namespace System.Numerics.Tensors.Tests
 
                 for (int i = 0; i < tensorLength; i++)
                 {
-                    if (!Helpers.IsEqualWithTolerance(TTo.CreateSaturating(source.Span[i]), destination.Span[i]))
-                    {
-                        throw new XunitException($"{typeof(TFrom).Name} => {typeof(TTo).Name}. Input: {source.Span[i]}. Actual: {destination.Span[i]}. Expected: {TTo.CreateSaturating(source.Span[i])}.");
-                    }
+                    Helpers.AssertEqualWithTolerance(TTo.CreateSaturating(source.Span[i]), destination.Span[i]);
                 }
             }
         }
@@ -180,10 +174,7 @@ namespace System.Numerics.Tensors.Tests
 
                 for (int i = 0; i < tensorLength; i++)
                 {
-                    if (!Helpers.IsEqualWithTolerance(TTo.CreateChecked(source.Span[i]), destination.Span[i]))
-                    {
-                        throw new XunitException($"{typeof(TFrom).Name} => {typeof(TTo).Name}. Input: {source.Span[i]}. Actual: {destination.Span[i]}. Expected: {TTo.CreateChecked(source.Span[i])}.");
-                    }
+                    Helpers.AssertEqualWithTolerance(TTo.CreateChecked(source.Span[i]), destination.Span[i]);
                 }
             }
         }
@@ -202,7 +193,7 @@ namespace System.Numerics.Tensors.Tests
                 TensorPrimitives.ConvertChecked<TFrom, TTo>(source.Span, destination.Span);
                 foreach (TTo result in destination.Span)
                 {
-                    Assert.True(Helpers.IsEqualWithTolerance(TTo.CreateChecked(valid), result));
+                    Helpers.AssertEqualWithTolerance(TTo.CreateChecked(valid), result);
                 }
 
                 // Test with at least one invalid
@@ -277,10 +268,7 @@ namespace System.Numerics.Tensors.Tests
                 for (int i = 0; i < tensorLength; i++)
                 {
                     TTo expected = TFrom.ConvertToInteger<TTo>(source.Span[i]);
-                    if (!Helpers.IsEqualWithTolerance(expected, destination.Span[i]))
-                    {
-                        throw new XunitException($"{typeof(TFrom).Name} => {typeof(TTo).Name}. Input: {source.Span[i]}. Expected: {expected}. Actual: {destination.Span[i]}.");
-                    }
+                    Helpers.AssertEqualWithTolerance(expected, destination.Span[i]);
                 }
             }
         }
@@ -308,10 +296,7 @@ namespace System.Numerics.Tensors.Tests
                 for (int i = 0; i < tensorLength; i++)
                 {
                     TTo expected = TFrom.ConvertToIntegerNative<TTo>(source.Span[i]);
-                    if (!Helpers.IsEqualWithTolerance(expected, destination.Span[i]))
-                    {
-                        throw new XunitException($"{typeof(TFrom).Name} => {typeof(TTo).Name}. Input: {source.Span[i]}. Expected: {expected}. Actual: {destination.Span[i]}.");
-                    }
+                    Helpers.AssertEqualWithTolerance(expected, destination.Span[i]);
                 }
             }
         }
@@ -2721,10 +2706,7 @@ namespace System.Numerics.Tensors.Tests
 
         protected override void AssertEqualTolerance(T expected, T actual, T? tolerance = null)
         {
-            if (!Helpers.IsEqualWithTolerance(expected, actual, tolerance))
-            {
-                throw EqualException.ForMismatchedValues($"{expected}", $"{actual}");
-            }
+            Helpers.AssertEqualWithTolerance(expected, actual, tolerance);
         }
 
         protected override T Cosh(T x) => throw new NotSupportedException();

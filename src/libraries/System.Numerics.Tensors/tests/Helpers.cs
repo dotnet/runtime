@@ -31,28 +31,42 @@ namespace System.Numerics.Tensors.Tests
             public static readonly T Value = DetermineTolerance<T>(DefaultDoubleTolerance, DefaultFloatTolerance, Half.CreateTruncating(DefaultHalfTolerance)) ?? T.CreateTruncating(0);
         }
 
-        public static bool IsEqualWithTolerance<T>(T expected, T actual, T? tolerance = null) where T : unmanaged, INumber<T>
+        public static void AssertEqualWithTolerance<T>(T expected, T actual, T? tolerance = null) where T : unmanaged, INumber<T>
         {
-            if (T.IsNaN(expected) != T.IsNaN(actual))
+            T actualTolerance = tolerance ?? DefaultTolerance<T>.Value;
+            if (!T.IsZero(actualTolerance))
             {
-                return false;
+                T scaledTolerance = T.Max(T.Abs(expected), T.Abs(actual)) * actualTolerance;
+                actualTolerance = T.Max(scaledTolerance, actualTolerance);
             }
 
-            tolerance = tolerance ?? DefaultTolerance<T>.Value;
-            T diff = T.Abs(expected - actual);
-            return !(diff > tolerance && diff > T.Max(T.Abs(expected), T.Abs(actual)) * tolerance);
+            if (typeof(T) == typeof(double))
+            {
+                AssertExtensions.Equal((double)(object)expected, (double)(object)actual, (double)(object)actualTolerance);
+            }
+            else if (typeof(T) == typeof(float))
+            {
+                AssertExtensions.Equal((float)(object)expected, (float)(object)actual, (float)(object)actualTolerance);
+            }
+            else if (typeof(T) == typeof(Half))
+            {
+                AssertExtensions.Equal((Half)(object)expected, (Half)(object)actual, (Half)(object)actualTolerance);
+            }
+            else if (typeof(T) == typeof(NFloat))
+            {
+                AssertExtensions.Equal((NFloat)(object)expected, (NFloat)(object)actual, (NFloat)(object)actualTolerance);
+            }
+            else
+            {
+                Assert.Equal(expected, actual);
+            }
         }
 #else
-        public static bool IsEqualWithTolerance(float expected, float actual, float? tolerance = null)
+        public static void AssertEqualWithTolerance(float expected, float actual, float? tolerance = null)
         {
-            if (float.IsNaN(expected) != float.IsNaN(actual))
-            {
-                return false;
-            }
-
-            tolerance ??= DefaultFloatTolerance;
-            float diff = MathF.Abs(expected - actual);
-            return !(diff > tolerance && diff > MathF.Max(MathF.Abs(expected), MathF.Abs(actual)) * tolerance);
+            float scaledTolerance = MathF.Max(Math.Abs(expected), MathF.Abs(actual)) * (tolerance ?? DefaultFloatTolerance);
+            float actualTolerance = MathF.Max(scaledTolerance, tolerance ?? DefaultFloatTolerance);
+            AssertExtensions.Equal(expected, actual, actualTolerance);
         }
 #endif
 
@@ -79,13 +93,13 @@ namespace System.Numerics.Tensors.Tests
             }
             else if (typeof(T) == typeof(NFloat))
             {
-                if (IntPtr.Size == 8 && doubleTolerance != null)
+                if (NFloat.Size == 8 && doubleTolerance != null)
                 {
                     return (T?)(object)(NFloat)doubleTolerance;
                 }
-                else if (IntPtr.Size == 4 && floatTolerance != null)
+                else if (NFloat.Size == 4 && floatTolerance != null)
                 {
-                    return (T?)(object)(NFloat)doubleTolerance;
+                    return (T?)(object)(NFloat)floatTolerance;
                 }
             }
 #endif
