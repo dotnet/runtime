@@ -21,7 +21,6 @@
 #include "method.hpp"
 #include "class.h"
 #include "runtimecallablewrapper.h"
-#include "olevariant.h"
 #include "cachelinealloc.h"
 #include "threads.h"
 #include "ceemain.h"
