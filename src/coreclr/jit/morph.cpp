@@ -7796,72 +7796,25 @@ DONE_MORPHING_CHILDREN:
 
         case GT_EQ:
         case GT_NE:
-        {
-            fgPushConstantsRight(tree->AsOp());
-            assert(tree->OperIsCompare());
-
-            oper = tree->OperGet();
-            op1  = tree->gtGetOp1();
-            op2  = tree->gtGetOp2();
-
-            if (op2->IsIntegralConst())
-            {
-                tree = fgOptimizeEqualityComparisonWithConst(tree->AsOp());
-                assert(tree->OperIsCompare());
-
-                oper = tree->OperGet();
-                op1  = tree->gtGetOp1();
-                op2  = tree->gtGetOp2();
-            }
-            break;
-        }
-
         case GT_LT:
         case GT_LE:
         case GT_GE:
         case GT_GT:
         {
             fgPushConstantsRight(tree->AsOp());
-            assert(tree->OperIsCompare());
+            assert(tree->OperIsCmpCompare());
 
+            tree = fgOptimizeCmp(tree->AsOp());
+            if (!tree->OperIsSimple())
+            {
+                return tree;
+            }
+
+            typ  = tree->TypeGet();
             oper = tree->OperGet();
             op1  = tree->gtGetOp1();
             op2  = tree->gtGetOp2();
 
-            if (op1->OperIs(GT_CAST) || op2->OperIs(GT_CAST))
-            {
-                tree = fgOptimizeRelationalComparisonWithCasts(tree->AsOp());
-                oper = tree->OperGet();
-                op1  = tree->gtGetOp1();
-                op2  = tree->gtGetOp2();
-            }
-
-            if (op2->IsIntegralConst())
-            {
-                tree = fgOptimizeRelationalComparisonWithConst(tree->AsOp());
-                oper = tree->OperGet();
-                op1  = tree->gtGetOp1();
-                op2  = tree->gtGetOp2();
-            }
-
-            if (opts.OptimizationEnabled() && fgGlobalMorph)
-            {
-                // Normalize unsigned comparisons to signed if both operands a known to be never negative.
-                if (tree->IsUnsigned() && varTypeIsIntegral(op1) && op1->IsNeverNegative(this) &&
-                    op2->IsNeverNegative(this))
-                {
-                    tree->ClearUnsigned();
-                }
-
-                if (op2->IsIntegralConst() || op1->IsIntegralConst())
-                {
-                    tree = fgOptimizeRelationalComparisonWithFullRangeConst(tree->AsOp());
-                    if (tree->OperIs(GT_CNS_INT))
-                    {
-                        return tree;
-                    }
-                }
-            }
             break;
         }
 
@@ -8767,16 +8720,75 @@ GenTree* Compiler::fgOptimizeBitCast(GenTreeUnOp* bitCast)
 }
 
 //------------------------------------------------------------------------
-// fgOptimizeEqualityComparisonWithConst: optimizes various EQ/NE(OP, CONST) patterns.
+// fgOptimizeCmp: Optimizes the GT_EQ/GT_NE/GT_LT/GT_LE/GT_GE/GT_GT tree
 //
 // Arguments:
-//    cmp - The GT_NE/GT_EQ tree the second operand of which is an integral constant
+//    cmp - The compare tree
+//
+// Return Value:
+//    The optimized tree that can have any shape.
+//
+GenTree* Compiler::fgOptimizeCmp(GenTreeOp* cmp)
+{
+    assert(cmp->OperIsCmpCompare());
+
+    if (!varTypeIsIntegralOrI(cmp))
+    {
+        return cmp;
+    }
+
+    // TODO-CQ: This should be called for all comparisons
+    if (cmp->OperIs(GT_LT, GT_LE, GT_GE, GT_GT) &&
+        (cmp->gtGetOp1()->OperIs(GT_CAST) || cmp->gtGetOp2()->OperIs(GT_CAST)))
+    {
+        cmp = fgOptimizeCmpWithCasts(cmp)->AsOp();
+    }
+
+    if (cmp->gtGetOp2()->IsIntegralConst())
+    {
+        if (cmp->OperIs(GT_LT, GT_LE, GT_GE, GT_GT))
+        {
+            cmp = fgOptimizeCmpLtLeGeGtWithConst(cmp)->AsOp();
+        }
+        else if (cmp->OperIs(GT_EQ, GT_NE))
+        {
+            cmp = fgOptimizeCmpEqNeWithConst(cmp)->AsOp();
+        }
+    }
+
+    if (cmp->OperIs(GT_LT, GT_LE, GT_GE, GT_GT) && opts.OptimizationEnabled() && fgGlobalMorph)
+    {
+        // Normalize unsigned comparisons to signed if both operands a known to be never negative.
+        if (cmp->IsUnsigned() && varTypeIsIntegral(cmp->gtGetOp1()) && cmp->gtGetOp1()->IsNeverNegative(this) &&
+            cmp->gtGetOp2()->IsNeverNegative(this))
+        {
+            cmp->ClearUnsigned();
+        }
+
+        if (cmp->gtGetOp1()->IsIntegralConst() || cmp->gtGetOp2()->IsIntegralConst())
+        {
+            GenTree* optTree = fgOptimizeCmpLtLeGeGtFullRangeConst(cmp);
+            if (optTree->OperIs(GT_CNS_INT))
+            {
+                return optTree;
+            }
+        }
+    }
+
+    return cmp;
+}
+
+//------------------------------------------------------------------------
+// fgOptimizeCmpEqNeWithConst: optimizes various EQ/NE(OP, CONST) patterns.
+//
+// Arguments:
+//    cmp - The GT_EQ/GT_NE tree the second operand of which is an integral constant
 //
 // Return Value:
 //    The optimized tree, "cmp" in case no optimizations were done.
 //    Currently only returns relop trees.
 //
-GenTree* Compiler::fgOptimizeEqualityComparisonWithConst(GenTreeOp* cmp)
+GenTree* Compiler::fgOptimizeCmpEqNeWithConst(GenTreeOp* cmp)
 {
     assert(cmp->OperIs(GT_EQ, GT_NE));
     assert(cmp->gtGetOp2()->IsIntegralConst());
@@ -9053,13 +9065,13 @@ SKIP:
 }
 
 //------------------------------------------------------------------------
-// fgOptimizeRelationalComparisonWithFullRangeConst: optimizes a comparison operation.
+// fgOptimizeCmpLtLeGeGtFullRangeConst: optimizes a comparison operation.
 //
 // Recognizes "Always false"/"Always true" comparisons against various full range constant operands and morphs
 // them into zero/one.
 //
 // Arguments:
-//   cmp - the GT_LT/GT_GT tree to morph.
+//   cmp - the GT_LT/GT_LE/GT_GE/GT_GT tree to morph.
 //
 // Return Value:
 //   1. The unmodified "cmp" tree.
@@ -9068,7 +9080,7 @@ SKIP:
 // Assumptions:
 //   The second operand is an integral constant or the first operand is an integral constant.
 //
-GenTree* Compiler::fgOptimizeRelationalComparisonWithFullRangeConst(GenTreeOp* cmp)
+GenTree* Compiler::fgOptimizeCmpLtLeGeGtFullRangeConst(GenTreeOp* cmp)
 {
     if (gtTreeHasSideEffects(cmp, GTF_SIDE_EFFECT))
     {
@@ -9178,13 +9190,13 @@ GenTree* Compiler::fgOptimizeRelationalComparisonWithFullRangeConst(GenTreeOp* c
 }
 
 //------------------------------------------------------------------------
-// fgOptimizeRelationalComparisonWithConst: optimizes a comparison operation.
+// fgOptimizeCmpLtLeGeGtWithConst: optimizes a comparison operation.
 //
 // Recognizes comparisons against various constant operands and morphs
 // them, if possible, into comparisons against zero.
 //
 // Arguments:
-//   cmp - the GT_LE/GT_LT/GT_GE/GT_GT tree to morph.
+//   cmp - the GT_LT/GT_LE/GT_GE/GT_GT tree to morph.
 //
 // Return Value:
 //   The "cmp" tree, possibly with a modified oper.
@@ -9194,9 +9206,9 @@ GenTree* Compiler::fgOptimizeRelationalComparisonWithFullRangeConst(GenTreeOp* c
 //   The operands have been swapped so that any constants are on the right.
 //   The second operand is an integral constant.
 //
-GenTree* Compiler::fgOptimizeRelationalComparisonWithConst(GenTreeOp* cmp)
+GenTree* Compiler::fgOptimizeCmpLtLeGeGtWithConst(GenTreeOp* cmp)
 {
-    assert(cmp->OperIs(GT_LE, GT_LT, GT_GE, GT_GT));
+    assert(cmp->OperIs(GT_LT, GT_LE, GT_GE, GT_GT));
     assert(cmp->gtGetOp2()->IsIntegralConst());
 
     GenTree*             op1 = cmp->gtGetOp1();
@@ -10847,7 +10859,7 @@ GenTree* Compiler::fgOptimizeBitwiseAnd(GenTreeOp* andOp)
 }
 
 //------------------------------------------------------------------------
-// fgOptimizeRelationalComparisonWithCasts: Recognizes comparisons against
+// fgOptimizeCmpWithCasts: Recognizes comparisons against
 //   various cast operands and tries to remove them. E.g.:
 //
 //   *  GE        int
@@ -10872,7 +10884,7 @@ GenTree* Compiler::fgOptimizeBitwiseAnd(GenTreeOp* andOp)
 //   These patterns quite often show up along with index checks
 //
 // Arguments:
-//   cmp - the GT_LE/GT_LT/GT_GE/GT_GT tree to morph.
+//   cmp - the GT_EQ/GT_NE/GT_LT/GT_LE/GT_GE/GT_GT tree to morph.
 //
 // Return Value:
 //   Returns the same tree where operands might have narrower types
@@ -10880,17 +10892,16 @@ GenTree* Compiler::fgOptimizeBitwiseAnd(GenTreeOp* andOp)
 // Notes:
 //   TODO-Casts: consider unifying this function with "optNarrowTree"
 //
-GenTree* Compiler::fgOptimizeRelationalComparisonWithCasts(GenTreeOp* cmp)
+GenTree* Compiler::fgOptimizeCmpWithCasts(GenTreeOp* cmp)
 {
-    assert(cmp->OperIs(GT_LE, GT_LT, GT_GE, GT_GT));
+    assert(cmp->OperIsCmpCompare());
+    assert(cmp->gtGetOp1()->OperIs(GT_CAST) || cmp->gtGetOp2()->OperIs(GT_CAST));
 
     GenTree* op1 = cmp->gtGetOp1();
     GenTree* op2 = cmp->gtGetOp2();
 
     // Caller is expected to call this function only if we have at least one CAST node
     assert(op1->OperIs(GT_CAST) || op2->OperIs(GT_CAST));
-
-    assert(genActualType(op1) == genActualType(op2));
 
     if (!op1->TypeIs(TYP_LONG))
     {
@@ -10926,6 +10937,8 @@ GenTree* Compiler::fgOptimizeRelationalComparisonWithCasts(GenTreeOp* cmp)
     {
         return cmp;
     }
+
+    assert(genActualType(op1) == genActualType(op2));
 
     auto isUpperZero = [this](GenTree* op) {
         if (op->IsIntegralConst())
