@@ -33,7 +33,7 @@ public sealed class ExecutionManager_1 : IExecutionManager
     public List<ExceptionClauseInfo> GetExceptionClauses(CodeBlockHandle codeInfoHandle) => _executionManagerCore.GetExceptionClauses(codeInfoHandle);
     public JitManagerInfo GetEEJitManagerInfo() => _executionManagerCore.GetEEJitManagerInfo();
     public IEnumerable<ICodeHeapInfo> GetCodeHeapInfos() => _executionManagerCore.GetCodeHeapInfos();
-    public CodeKind GetCodeKind(TargetCodePointer entryPoint) => _executionManagerCore.GetCodeKind(entryPoint);
+    public CodeKind GetCodeKind(TargetCodePointer codeAddress) => _executionManagerCore.GetCodeKind(codeAddress);
     public TargetPointer FindReadyToRunModule(TargetPointer address) => _executionManagerCore.FindReadyToRunModule(address);
     public void Flush() => _executionManagerCore.Flush();
 }

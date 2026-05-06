@@ -113,7 +113,7 @@ public interface IExecutionManager : IContract
     IEnumerable<ICodeHeapInfo> GetCodeHeapInfos() => throw new NotImplementedException();
     // Classify a code address as a known stub kind (precode, jump stub, VSD stub, etc.)
     // or as managed code. Returns Unknown if the address is not recognized.
-    CodeKind GetCodeKind(TargetCodePointer jittedCodeAddress) => throw new NotImplementedException();
+    CodeKind GetCodeKind(TargetCodePointer codeAddress) => throw new NotImplementedException();
     TargetPointer FindReadyToRunModule(TargetPointer address) => throw new NotImplementedException();
 }
 

@@ -748,7 +748,7 @@ public class ExecutionManagerTests
             });
 
         CodeKind kind = em.GetCodeKind(new TargetCodePointer(methodStart));
-        Assert.Equal(CodeKind.Unknown, kind);
+        Assert.Equal(CodeKind.Jitted, kind);
     }
 
     [Theory]
@@ -808,7 +808,7 @@ public class ExecutionManagerTests
             });
 
         CodeKind kind = em.GetCodeKind(new TargetCodePointer(codeRangeStart + thunkRva + thunkSize + 0x10));
-        Assert.Equal(CodeKind.Unknown, kind);
+        Assert.Equal(CodeKind.ReadyToRun, kind);
     }
 
     public static IEnumerable<object[]> StdArchAllVersions()
