@@ -1,0 +1,6 @@
+<Project>
+  <PropertyGroup>
+    <!-- The C++/CLI targets don't let us set this in the project file where CMake lets us set project properties, so we set it in an imported project file where it will work. -->
+    <UseIJWHost>false</UseIJWHost>
+  </PropertyGroup>
+</Project>

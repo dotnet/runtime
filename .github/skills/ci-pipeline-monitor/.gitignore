@@ -1,0 +1,12 @@
+# Generated during monitoring runs — recreated each time the skill runs
+logs/
+helix-logs/
+scripts/monitor.db
+scripts/__pycache__/
+
+# Temporary ad-hoc scripts (created during triage, deleted after use)
+temp/
+
+# Intermediate JSON output files (piped between scripts)
+failing_builds.json
+failed_tests.json

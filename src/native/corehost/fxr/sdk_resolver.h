@@ -1,0 +1,96 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+#pragma once
+
+#include "pal.h"
+#include "fx_ver.h"
+
+// Note: this must be kept in-sync with `RollForwardPolicyNames`.
+enum class sdk_roll_forward_policy
+{
+    // The specified policy is not supported.
+    unsupported,
+    // Do not roll forward (require an exact match to requested).
+    disable,
+    // Allow a roll-forward to the latest patch level if the requested version is not installed.
+    patch,
+    // Allow a roll-forward to the nearest available feature band with latest patch level.
+    feature,
+    // Allow a roll-forward to the nearest available minor version with latest patch level.
+    minor,
+    // Allow a roll-forward to the nearest available major version with latest patch level.
+    major,
+    // Roll-forward to the latest patch level (major, minor, and feature band must match).
+    latest_patch,
+    // Roll-forward to the latest installed feature band (major and minor must match).
+    latest_feature,
+    // Roll-forward to the latest minor version (major must match).
+    latest_minor,
+    // Roll-forward to the latest major version (latest version installed).
+    latest_major,
+};
+
+class sdk_resolver
+{
+public:
+    struct global_file_info
+    {
+        enum class state
+        {
+            not_found,
+            valid,
+            invalid_json,
+            invalid_data,
+            // Invalid data that doesn't fall back to default resolution. If we are able to remove the fallback
+            // and just fail on invalid data, this should be removed and invalid_data used instead.
+            __invalid_data_no_fallback,
+            __last
+        };
+
+        state state;
+        pal::string_t path;
+        pal::string_t error_message;
+
+        // Whether or not the global.json is actually used for resolution.
+        bool is_data_used() const { return state == state::valid || state == state::__invalid_data_no_fallback; }
+    };
+
+    const global_file_info& global_file() const { return global_json; }
+
+    const fx_ver_t& get_requested_version() const;
+
+    pal::string_t resolve(const pal::string_t& dotnet_root, bool print_errors = true, pal::string_t* out_resolved_root = nullptr) const;
+
+    std::vector<pal::string_t> get_search_paths(const pal::string_t& dotnet_root) const;
+
+    void print_resolution_error(const pal::string_t& dotnet_root, const pal::char_t *prefix) const;
+
+    static sdk_resolver from_nearest_global_file(bool allow_prerelease = true);
+
+    static sdk_resolver from_nearest_global_file(
+        const pal::string_t& cwd,
+        bool allow_prerelease = true);
+
+private:
+    explicit sdk_resolver(bool allow_prerelease = true);
+    static sdk_roll_forward_policy to_policy(const pal::string_t& name);
+    static const pal::char_t* to_policy_name(sdk_roll_forward_policy policy);
+    static pal::string_t find_nearest_global_file(const pal::string_t& cwd);
+    global_file_info parse_global_file(const pal::string_t& global_file_path);
+    bool matches_policy(const fx_ver_t& current) const;
+    bool is_better_match(const fx_ver_t& current, const fx_ver_t& previous) const;
+    bool exact_match_preferred() const;
+    bool is_policy_use_latest() const;
+
+    // Returns true and sets sdk_path/resolved_version if a matching SDK was found
+    bool resolve_sdk_path_and_version(const pal::string_t& dir, pal::string_t& sdk_path, fx_ver_t& resolved_version) const;
+
+    global_file_info global_json;
+    fx_ver_t requested_version;
+    sdk_roll_forward_policy roll_forward;
+    bool allow_prerelease;
+    bool has_custom_paths;
+    std::vector<pal::string_t> paths;
+    pal::string_t error_message;
+};

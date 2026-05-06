@@ -1,0 +1,100 @@
+#!/bin/csh
+
+# Smoketest v1.1
+#
+# This smoketest is intended to stress briefly every part of PAL,
+# and is to be run before submitting or approving a patch, to ensure
+# that it is not breaking the PAL.  It should run in about 30 seconds
+#
+# Installation:
+# smoketest.dat and this script should be placed in xxx/xport/tests/palsuite.
+# Execute smoketest with the location of rotor as a commandline arg
+# with no trailing 
+# 
+# Be sure that xrun and testharness are built. (in xport/tests/harness,
+# cd test_harness, gmake, cd ../xrun, gmake)
+#
+if ($#argv != 1) then
+   echo smoketest v1.1
+   echo " "
+   echo Usage: smoketest location-of-xport
+   echo " "
+   echo "where location-of-xport is the location of your xport checkout"
+   echo "ie. xxxx/xport (with NO TRAILING /)"
+   echo "   (For example: smoketest ~/xport)"
+   exit
+endif
+
+setenv ROTOR_DIR         $argv[1]
+setenv TH_BIN            $argv[1]/tests/harness/test_harness/testharness
+setenv TH_CONFIG         $argv[1]/tests/palsuite/smoketest.dat
+setenv TH_RESULTS        $argv[1]/tests/palsuite/smoketest.log
+setenv TH_DIR            $argv[1]/tests/palsuite
+setenv TH_XRUN           $argv[1]/tests/harness/xrun/xrun
+setenv PAL_DBG_CHANNELS  ""
+
+
+# Let's check to make sure that the developer has built xrun
+# and testharness for us and/or that the variables above were set
+# properly
+if ((-e $TH_BIN) != 1) then
+   echo $TH_BIN was not found. 
+   echo Did you forget to build the test harness\?
+   exit
+endif
+
+if ((-e $TH_XRUN) != 1) then
+   echo $TH_XRUN was not found.  
+   echo Did you forget to build Xrun\?
+   exit
+endif
+
+
+$TH_BIN 2>&1 /dev/null
+
+
+set FAILING = `grep EXEC,FAIL $TH_RESULTS | wc -l`
+set PASSING = `grep EXEC,PASS $TH_RESULTS | wc -l`
+set DISABLED = `grep EXEC,DISABLED $TH_RESULTS | wc -l`
+set TOTAL_TESTS = `grep BUILD $TH_RESULTS | wc -l`
+set OTHERS = $TOTAL_TESTS
+@ OTHERS = ((($OTHERS - $FAILING) - $PASSING ) - $DISABLED)
+
+clear
+echo Summary:
+echo ========
+echo Total Number of Tests: $TOTAL_TESTS
+echo Total Passing:         $PASSING / $TOTAL_TESTS
+echo Total Failing:         $FAILING / $TOTAL_TESTS
+echo Total Disabled:        $DISABLED / $TOTAL_TESTS
+echo Other Problems:        $OTHERS / $TOTAL_TESTS
+
+if ($FAILING > 0) then
+   echo " " 
+   echo "*******************************************"
+   echo "*******************************************"
+   echo "*******************************************"
+   echo "*******************************************"
+   echo "WARNING  WARNING  WARNING  WARNING  WARNING"
+   echo " "
+
+   if ($FAILING > 1) then
+      echo There are now $FAILING tests failing. 
+   else
+      echo There is now 1 test failing. 
+   endif
+
+   echo Please run: 
+   echo " "
+   echo   grep \"EXEC,FAIL\" $TH_RESULTS
+   echo " "
+   echo to figure out what is going wrong.
+   echo "*******************************************"
+   echo "*******************************************"
+   echo "*******************************************"
+   echo "*******************************************"
+else
+   echo " " 
+   echo "Smoketest executed OK."
+   rm $TH_RESULTS
+endif

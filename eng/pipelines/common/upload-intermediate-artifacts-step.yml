@@ -1,0 +1,23 @@
+parameters:
+  name: ''
+  isOfficialBuild: true
+
+steps:
+- task: CopyFiles@2
+  displayName: Prepare job-specific intermediate artifacts subdirectory
+  inputs:
+    SourceFolder: '$(Build.SourcesDirectory)/artifacts/packages/$(_BuildConfig)'
+    Contents: |
+      Shipping/**/*
+      NonShipping/**/*
+    TargetFolder: '$(Build.StagingDirectory)/IntermediateArtifacts/${{ parameters.name }}'
+    CleanTargetFolder: true
+
+- template: /eng/pipelines/common/templates/publish-build-artifacts.yml
+  parameters:
+    isOfficialBuild: ${{ parameters.isOfficialBuild }}
+    displayName: Publish intermediate artifacts
+    inputs:
+      PathtoPublish: '$(Build.StagingDirectory)/IntermediateArtifacts'
+      ArtifactName: IntermediateArtifacts
+      ArtifactType: container

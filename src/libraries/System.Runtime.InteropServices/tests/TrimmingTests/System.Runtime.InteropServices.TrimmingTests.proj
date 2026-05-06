@@ -1,0 +1,32 @@
+<Project DefaultTargets="Build">
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props))" />
+
+  <ItemGroup>
+    <!-- Validate that disabling the interop feature switch trims the interop code. -->
+    <TestConsoleAppSourceFiles Include="GeneratedComInterfaceComImportInteropTrimmed.cs">
+      <DisabledFeatureSwitches>System.Runtime.InteropServices.Marshalling.EnableGeneratedComInterfaceComImportInterop</DisabledFeatureSwitches>
+      <SkipOnTestRuntimes>osx-x64;linux-x64;browser-wasm</SkipOnTestRuntimes>
+    </TestConsoleAppSourceFiles>
+    <!-- Validate that disabling the built-in COM interop wholesale trims the interop code. -->
+    <TestConsoleAppSourceFiles Include="GeneratedComInterfaceComImportInteropTrimmed.cs">
+      <DisabledFeatureSwitches>System.Runtime.InteropServices.BuiltInComInterop.IsSupported</DisabledFeatureSwitches>
+      <SkipOnTestRuntimes>osx-x64;linux-x64;browser-wasm</SkipOnTestRuntimes>
+    </TestConsoleAppSourceFiles>
+    <!-- Validate that targetting test runtimes that don't support built-in COM interop trims the interop code. -->
+    <TestConsoleAppSourceFiles Include="GeneratedComInterfaceComImportInteropTrimmed.cs">
+      <DisabledFeatureSwitches></DisabledFeatureSwitches>
+      <SkipOnTestRuntimes>win-x64;browser-wasm</SkipOnTestRuntimes>
+    </TestConsoleAppSourceFiles>
+    <!-- Validate that the CCW VTables are folded by ILC -->
+    <TestConsoleAppSourceFiles Include="CCWPreinitializationNativeAot.cs" NativeAotOnly="true">
+      <SkipOnTestRuntimes>osx-x64;linux-x64;browser-wasm</SkipOnTestRuntimes>
+      <DisabledProperties>IlcTrimMetadata</DisabledProperties>
+    </TestConsoleAppSourceFiles>
+
+    <TestConsoleAppSourceFiles Include="TypeMap.cs" NativeAotOnly="true">
+      <EnabledProperties>IlcGenerateMstatFile;IlcGenerateDgmlFile</EnabledProperties>
+    </TestConsoleAppSourceFiles>
+  </ItemGroup>
+
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />
+</Project>

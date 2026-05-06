@@ -1,0 +1,1784 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+/* ------------------------------------------------------------------------- *
+ * Common Language Runtime Debugging Symbol Reader/Writer/Binder Interfaces
+ * ------------------------------------------------------------------------- */
+
+/* ------------------------------------------------------------------------- *
+ * Imported types
+ * ------------------------------------------------------------------------- */
+
+cpp_quote("#if 0")
+typedef UINT32 mdToken;
+typedef mdToken mdTypeDef;
+typedef mdToken mdMethodDef;
+typedef SIZE_T IMAGE_DEBUG_DIRECTORY;
+cpp_quote("#endif")
+
+cpp_quote("#ifndef __CORHDR_H__")
+typedef mdToken mdSignature;
+cpp_quote("#endif")
+
+#include "winerror.h"
+
+/* ------------------------------------------------------------------------- *
+ * Guids for known languages, language vendors, and document types
+ * ------------------------------------------------------------------------- */
+
+cpp_quote("EXTERN_GUID(CorSym_LanguageType_C, 0x63a08714, 0xfc37, 0x11d2, 0x90, 0x4c, 0x0, 0xc0, 0x4f, 0xa3, 0x02, 0xa1);")
+cpp_quote("EXTERN_GUID(CorSym_LanguageType_CPlusPlus, 0x3a12d0b7, 0xc26c, 0x11d0, 0xb4, 0x42, 0x0, 0xa0, 0x24, 0x4a, 0x1d, 0xd2);")
+cpp_quote("EXTERN_GUID(CorSym_LanguageType_CSharp, 0x3f5162f8, 0x07c6, 0x11d3, 0x90, 0x53, 0x0, 0xc0, 0x4f, 0xa3, 0x02, 0xa1);")
+cpp_quote("EXTERN_GUID(CorSym_LanguageType_Basic, 0x3a12d0b8, 0xc26c, 0x11d0, 0xb4, 0x42, 0x0, 0xa0, 0x24, 0x4a, 0x1d, 0xd2);")
+cpp_quote("EXTERN_GUID(CorSym_LanguageType_Java, 0x3a12d0b4, 0xc26c, 0x11d0, 0xb4, 0x42, 0x0, 0xa0, 0x24, 0x4a, 0x1d, 0xd2);")
+cpp_quote("EXTERN_GUID(CorSym_LanguageType_Cobol, 0xaf046cd1, 0xd0e1, 0x11d2, 0x97, 0x7c, 0x0, 0xa0, 0xc9, 0xb4, 0xd5, 0xc);")
+cpp_quote("EXTERN_GUID(CorSym_LanguageType_Pascal, 0xaf046cd2, 0xd0e1, 0x11d2, 0x97, 0x7c, 0x0, 0xa0, 0xc9, 0xb4, 0xd5, 0xc);")
+cpp_quote("EXTERN_GUID(CorSym_LanguageType_ILAssembly, 0xaf046cd3, 0xd0e1, 0x11d2, 0x97, 0x7c, 0x0, 0xa0, 0xc9, 0xb4, 0xd5, 0xc);")
+cpp_quote("EXTERN_GUID(CorSym_LanguageType_JScript, 0x3a12d0b6, 0xc26c, 0x11d0, 0xb4, 0x42, 0x00, 0xa0, 0x24, 0x4a, 0x1d, 0xd2);")
+cpp_quote("EXTERN_GUID(CorSym_LanguageType_SMC, 0xd9b9f7b, 0x6611, 0x11d3, 0xbd, 0x2a, 0x0, 0x0, 0xf8, 0x8, 0x49, 0xbd);")
+cpp_quote("EXTERN_GUID(CorSym_LanguageType_MCPlusPlus, 0x4b35fde8, 0x07c6, 0x11d3, 0x90, 0x53, 0x0, 0xc0, 0x4f, 0xa3, 0x02, 0xa1);")
+cpp_quote("EXTERN_GUID(CorSym_LanguageVendor_Microsoft, 0x994b45c4, 0xe6e9, 0x11d2, 0x90, 0x3f, 0x00, 0xc0, 0x4f, 0xa3, 0x02, 0xa1);")
+cpp_quote("EXTERN_GUID(CorSym_DocumentType_Text, 0x5a869d0b, 0x6611, 0x11d3, 0xbd, 0x2a, 0x0, 0x0, 0xf8, 0x8, 0x49, 0xbd);")
+cpp_quote("EXTERN_GUID(CorSym_DocumentType_MC, 0xeb40cb65, 0x3c1f, 0x4352, 0x9d, 0x7b, 0xba, 0xf, 0xc4, 0x7a, 0x9d, 0x77);")
+
+#ifdef INTEROPLIB
+module LanguageType
+{
+	const LPSTR C = 	"{63a08714-fc37-11d2-904c-00c04fa302a1}";
+	const LPSTR CPlusPlus = "{3a12d0b7-c26c-11d0-b442-00a0244a1dd2}";
+	const LPSTR CSharp = 	"{3f5162f8-07c6-11d3-9053-00c04fa302a1}";
+	const LPSTR Basic = 	"{3a12d0b8-c26c-11d0-b442-00a0244a1dd2}";
+	const LPSTR Java = 	"{3a12d0b4-c26c-11d0-b442-00a0244a1dd2}";
+	const LPSTR Cobol = 	"{af046cd1-d0e1-11d2-977c-00a0c9b4d50c}";
+	const LPSTR Pascal = 	"{af046cd2-d0e1-11d2-977c-00a0c9b4d50c}";
+	const LPSTR ILAssembly ="{af046cd3-d0e1-11d2-977c-00a0c9b4d50c}";
+	const LPSTR JScript = 	"{3a12d0b6-c26c-11d0-b442-00a0244a1dd2}";
+	const LPSTR SMC = 	"{0d9b9f7b-6611-11d3-bd2a-0000f80849bd}";
+	const LPSTR MCPlusPlus ="{4b35fde8-07c6-11d3-9053-00c04fa302a1}";
+}
+
+
+module ErrorCodes80
+{
+	const int E_SYM_DESTROYED = MAKE_HRESULT(1, FACILITY_ITF, 0xdead);
+}
+
+
+#endif // ndef INTEROPLIB
+
+
+/* ------------------------------------------------------------------------- *
+ * Guids for known Source Hash Algorithms
+ * ------------------------------------------------------------------------- */
+
+cpp_quote("EXTERN_GUID(CorSym_SourceHash_MD5,  0x406ea660, 0x64cf, 0x4c82, 0xb6, 0xf0, 0x42, 0xd4, 0x81, 0x72, 0xa7, 0x99);")
+cpp_quote("EXTERN_GUID(CorSym_SourceHash_SHA1, 0xff1816ec, 0xaa5e, 0x4d10, 0x87, 0xf7, 0x6f, 0x49, 0x63, 0x83, 0x34, 0x60);")
+
+
+/* ------------------------------------------------------------------------- *
+ * Forward declarations
+ * ------------------------------------------------------------------------- */
+
+interface ISymUnmanagedDocument;
+interface ISymUnmanagedDocumentWriter;
+interface ISymUnmanagedMethod;
+interface ISymUnmanagedNamespace;
+interface ISymUnmanagedReader;
+interface ISymUnmanagedReaderSymbolSearchInfo;
+interface ISymUnmanagedScope;
+interface ISymUnmanagedVariable;
+interface ISymUnmanagedSymbolSearchInfo;
+interface ISymUnmanagedWriter;
+interface ISymUnmanagedWriter2;
+interface ISymUnmanagedBinder;
+
+/* ------------------------------------------------------------------------- *
+ * CorSymAddrKind -- specifies the kinds of addresses used by the interfaces
+ * ------------------------------------------------------------------------- */
+
+typedef enum CorSymAddrKind
+{
+    /*
+     * ADDR_IL_OFFSET: addr1 = IL local var or param index.
+     */
+    ADDR_IL_OFFSET = 1,
+
+    /*
+     * ADDR_NATIVE_RVA: addr1 = RVA into module.
+     */
+    ADDR_NATIVE_RVA = 2,
+
+    /*
+     * ADDR_NATIVE_REGISTER: addr1 = register the var is stored in.
+     */
+    ADDR_NATIVE_REGISTER = 3,
+
+    /*
+     * ADDR_NATIVE_REGREL: addr1 = register, addr2 = offset.
+     */
+    ADDR_NATIVE_REGREL = 4,
+
+    /*
+     * ADDR_NATIVE_OFFSET: addr1 = offset from start of parent.
+     */
+    ADDR_NATIVE_OFFSET = 5,
+
+    /*
+     * ADDR_NATIVE_REGREG: addr1 = reg low, addr2 = reg high.
+     */
+    ADDR_NATIVE_REGREG = 6,
+
+    /*
+     * ADDR_NATIVE_REGSTK: addr1 = reg low, addr2 = reg stk, addr3 = offset.
+     */
+    ADDR_NATIVE_REGSTK = 7,
+
+    /*
+     * ADDR_NATIVE_STKREG: addr1 = reg stk, addr2 = offset, addr3 = reg high.
+     */
+    ADDR_NATIVE_STKREG = 8,
+
+    /*
+     * ADDR_BITFIELD: addr1 = field start, addr = field length.
+     */
+    ADDR_BITFIELD = 9,
+
+    /*
+     * ADDR_NATIVE_SECTOFF: addr1 = section, addr = offset
+     */
+    ADDR_NATIVE_ISECTOFFSET = 10
+
+} CorSymAddrKind;
+
+typedef enum CorSymVarFlag {
+
+    /*
+     * VAR_IS_COMP_GEN: Variable is compiler generated.
+     */
+    VAR_IS_COMP_GEN = 1
+
+} CorSymVarFlag;
+
+/* ------------------------------------------------------------------------- *
+ * Library definition
+ *
+ * Use the _SxS coclasses for tools designed to work with .NET Framework
+ * 1.1 and above. On computers that only have version 1.0 installed, fall
+ * back to the _deprecated coclasses if CoCreating the _SxS ones fails.
+ * ------------------------------------------------------------------------- */
+
+#ifndef INTEROPLIB
+
+[
+  uuid(7E348441-7E1F-380E-A0F6-22668F0F9E4B),
+  version(1.0),
+  helpstring("Common Language Runtime Symbol Store 1.0 Type Library")
+]
+library CorSymLib
+{
+    importlib("STDOLE2.TLB");
+
+#endif // ndef INTEROPLIB
+
+
+    [
+        uuid(108296C1-281E-11d3-BD22-0000F80849BD)
+    ]
+    coclass CorSymWriter_deprecated
+    {
+        [default] interface ISymUnmanagedWriter;
+    };
+
+    [
+        uuid(108296C2-281E-11d3-BD22-0000F80849BD)
+    ]
+    coclass CorSymReader_deprecated
+    {
+        [default] interface ISymUnmanagedReader;
+    };
+
+    [
+        uuid(AA544D41-28CB-11d3-BD22-0000F80849BD)
+    ]
+    coclass CorSymBinder_deprecated
+    {
+        [default] interface ISymUnmanagedBinder;
+    };
+
+    [
+        uuid(0AE2DEB0-F901-478b-BB9F-881EE8066788)
+    ]
+    coclass CorSymWriter_SxS
+    {
+        [default] interface ISymUnmanagedWriter;
+    };
+
+    [
+        uuid(0A3976C5-4529-4ef8-B0B0-42EED37082CD)
+    ]
+    coclass CorSymReader_SxS
+    {
+        [default] interface ISymUnmanagedReader;
+    };
+
+    [
+        uuid(0A29FF9E-7F9C-4437-8B11-F424491E3931)
+    ]
+    coclass CorSymBinder_SxS
+    {
+        [default] interface ISymUnmanagedBinder;
+    };
+
+
+#ifndef INTEROPLIB
+};
+#endif // ndef INTEROPLIB
+
+
+/* ------------------------------------------------------------------------- *
+ * ISymUnmanagedBinder interface
+ * ------------------------------------------------------------------------- */
+
+[
+ object,
+ uuid(AA544D42-28CB-11d3-BD22-0000F80849BD),
+ pointer_default(unique)
+]
+interface ISymUnmanagedBinder : IUnknown
+{
+    /*
+     * Given a metadata interface and a file name, returns the
+     * correct ISymUnmanagedReader that will read the debugging symbols
+     * associated with the module.
+     *
+     *  This will only open the Pdb if it is next to the Exe.
+     *  This change has been made for security purposes
+     *
+     *  If you need a more extensive search for the pdb
+     *  use ISymUnmanagedBinder2.
+     */
+
+    HRESULT GetReaderForFile([in] IUnknown *importer,
+                             [in] const WCHAR *fileName,
+                             [in] const WCHAR *searchPath,
+                             [out, retval] ISymUnmanagedReader **pRetVal);
+
+	/*
+	 * Given a metadata interface and a stream that contains
+	 * the symbol store, returns the correct ISymUnmanagedReader
+	 * that will read the debugging symbols from the given
+	 * symbol store.
+	 */
+	HRESULT GetReaderFromStream([in] IUnknown *importer,
+                                [in] IStream *pstream,
+                                [out,retval] ISymUnmanagedReader **pRetVal);
+};
+
+typedef enum CorSymSearchPolicyAttributes
+{
+    AllowRegistryAccess      = 0x1,     // query the registry for symbol search paths
+    AllowSymbolServerAccess  = 0x2,     // access a symbol server
+    AllowOriginalPathAccess  = 0x4,     // look at the path specified in Debug Directory
+    AllowReferencePathAccess = 0x8      // look for PDB in the place where the exe is.
+} CorSymSearchPolicyAttributes;
+
+/* ------------------------------------------------------------------------- *
+ * ISymUnmanagedBinder2 interface: QI from an ISymUnmanagedBinder
+ * ------------------------------------------------------------------------- */
+[
+ object,
+ uuid(ACCEE350-89AF-4ccb-8B40-1C2C4C6F9434),
+ pointer_default(unique)
+]
+interface ISymUnmanagedBinder2 : ISymUnmanagedBinder
+{
+    /*
+	 *  Given a metadata interface and a file name, returns the correct
+	 *  ISymUnmanagedReader interface that will read the debugging symbols associated
+	 *  with the module.
+	 *
+	 *  This version of the function can search for the PDB in areas other than
+	 *  right next to the module.
+	 *  The search policy can be controlled by combining CorSymSearchPolicyAttributes
+     *  e.g AllowReferencePathAccess|AllowSymbolServerAccess will look for the pdb next
+     *  to the PE file and on a symbol server, but won't query the registry or use the path
+     *  in the PE file.
+     *  If a searchPath is provided, those directories will always be searched.
+     */
+
+    HRESULT GetReaderForFile2([in] IUnknown *importer,
+                              [in] const WCHAR *fileName,
+                              [in] const WCHAR *searchPath,
+                              [in] ULONG32 searchPolicy,
+                              [out,retval] ISymUnmanagedReader **pRetVal);
+
+};
+
+/* ------------------------------------------------------------------------- *
+ * ISymUnmanagedBinder3 interface: QI from an ISymUnmanagedBinder
+ * ------------------------------------------------------------------------- */
+[
+ object,
+ uuid(28AD3D43-B601-4d26-8A1B-25F9165AF9D7),
+ pointer_default(unique)
+]
+interface ISymUnmanagedBinder3 : ISymUnmanagedBinder2
+{
+	/*
+	 * GetReaderFromCallback allows the user to implement supply via callback either an
+	 * IID_IDiaReadExeAtRVACallback or IID_IDiaReadExeAtOffsetCallback to obtain the
+	 * Debug directory information from memory.
+	 */
+	HRESULT GetReaderFromCallback([in] IUnknown *importer,
+                                  [in] const WCHAR *fileName,
+                                  [in] const WCHAR *searchPath,
+                                  [in] ULONG32 searchPolicy,
+                                  [in] IUnknown *callback,
+                                  [out,retval] ISymUnmanagedReader **pRetVal);
+};
+
+cpp_quote("static const int E_SYM_DESTROYED = MAKE_HRESULT(1, FACILITY_ITF, 0xdead);")
+
+[
+ object,
+ uuid(969708D2-05E5-4861-A3B0-96E473CDF63F),
+ pointer_default(unique)
+]
+interface ISymUnmanagedDispose : IUnknown
+{
+
+   /*
+    * Calling this function will cause the underlying object to
+    * release all internal references and return failure on any subsequent
+    * method calls.
+    */
+
+    HRESULT Destroy();
+};
+
+/* ------------------------------------------------------------------------- *
+ * ISymUnmanagedDocument interface
+ *
+ * Represents a document referenced by a symbol store. A document is defined
+ * by an URL and a document type GUID. Using the URL and document type GUID,
+ * one can locate the document however it is stored. Document source can
+ * optionally be stored in the symbol store, and retrieved through this
+ * interface.
+ * ------------------------------------------------------------------------- */
+
+[
+ object,
+ uuid(40DE4037-7C81-3E1E-B022-AE1ABFF2CA08),
+ pointer_default(unique)
+]
+interface ISymUnmanagedDocument : IUnknown
+{
+    /*
+     * Return the URL for this document.
+     */
+    HRESULT GetURL([in] ULONG32 cchUrl,
+                   [out] ULONG32 *pcchUrl,
+                   [out, size_is(cchUrl),
+                   length_is(*pcchUrl)] WCHAR szUrl[]);
+
+    /*
+     * Get the document type of this document.
+     */
+    HRESULT GetDocumentType([out, retval] GUID* pRetVal);
+
+    /*
+     * Get the language id of this document.
+     */
+    HRESULT GetLanguage([out, retval] GUID* pRetVal);
+
+    /*
+     * Get the language vendor of this document.
+     */
+    HRESULT GetLanguageVendor([out, retval] GUID* pRetVal);
+
+    /*
+     * Get the check sum algorithm id. Returns a guid of all zeros if
+     * there is no checksum.
+     */
+    HRESULT GetCheckSumAlgorithmId([out, retval] GUID* pRetVal);
+
+    /*
+     * Get the check sum.
+     */
+    HRESULT GetCheckSum([in] ULONG32 cData,
+                        [out] ULONG32 *pcData,
+                        [out, size_is(cData),
+                        length_is(*pcData)] BYTE data[]);
+
+    /*
+     * Given a line in this document that may or may not be a sequence
+     * point, return the closest line that is a sequence point.  */
+    HRESULT FindClosestLine([in] ULONG32 line,
+                            [out, retval] ULONG32* pRetVal);
+
+    /*
+     * Returns true if the document has source embedded in the
+     * debugging symbols.
+     */
+    HRESULT HasEmbeddedSource([out, retval] BOOL *pRetVal);
+
+    /*
+     * Returns the length, in bytes, of the embedded source.
+     */
+    HRESULT GetSourceLength([out, retval] ULONG32* pRetVal);
+
+    /*
+     * Returns the embedded source into the given buffer. The buffer must
+     * be large enough to hold the source.
+     */
+    HRESULT GetSourceRange([in] ULONG32 startLine,
+                           [in] ULONG32 startColumn,
+                           [in] ULONG32 endLine,
+                           [in] ULONG32 endColumn,
+                           [in] ULONG32 cSourceBytes,
+                           [out] ULONG32 *pcSourceBytes,
+                           [out, size_is(cSourceBytes),
+                           length_is(*pcSourceBytes)] BYTE source[]);
+
+};
+
+/* ------------------------------------------------------------------------- *
+ * ISymUnmanagedDocumentWriter interface
+ *
+ * Provides functions for writing to a document referenced by a symbol
+ * store.
+ * ------------------------------------------------------------------------- */
+
+[
+ object,
+ uuid(B01FAFEB-C450-3A4D-BEEC-B4CEEC01E006),
+ pointer_default(unique)
+]
+interface ISymUnmanagedDocumentWriter : IUnknown
+{
+    /*
+     * Sets embedded source for a document being written.
+     */
+    HRESULT SetSource([in] ULONG32 sourceSize,
+                      [in, size_is(sourceSize)] BYTE source[]);
+
+    /*
+     * Sets check sum info.
+     */
+    HRESULT SetCheckSum([in] GUID algorithmId,
+                        [in] ULONG32 checkSumSize,
+                        [in, size_is(checkSumSize)] BYTE checkSum[]);
+};
+
+/* ------------------------------------------------------------------------- *
+ * ISymUnmanagedMethod interface
+ *
+ * Represents a method within the symbol store. Provides access to only the
+ * symbol-related attributes of a method, rather than type-related attributes.
+ * ------------------------------------------------------------------------- */
+
+[
+ object,
+ uuid(B62B923C-B500-3158-A543-24F307A8B7E1),
+ pointer_default(unique)
+]
+interface ISymUnmanagedMethod : IUnknown
+{
+    /*
+     * Return the metadata token for this method.
+     */
+    HRESULT GetToken([out, retval] mdMethodDef *pToken);
+
+    /*
+     * Get the count of sequence points within this method.
+     */
+    HRESULT GetSequencePointCount([out, retval] ULONG32* pRetVal);
+
+    /*
+     * Get the root lexical scope within this method.
+	 * This scope encloses the entire method.
+     */
+    HRESULT GetRootScope([out, retval] ISymUnmanagedScope** pRetVal);
+
+    /*
+     * Get the most enclosing lexical scope within this method that
+     * encloses the given offset. This can be used to start
+	 * local variable searches.
+     */
+    HRESULT GetScopeFromOffset([in] ULONG32 offset,
+                               [out, retval] ISymUnmanagedScope** pRetVal);
+
+    /*
+     * Given a position within a document, return the offset within
+     * this method that cooresponds to the position.
+     */
+    HRESULT GetOffset([in] ISymUnmanagedDocument* document,
+                      [in] ULONG32 line,
+                      [in] ULONG32 column,
+                      [out, retval] ULONG32* pRetVal);
+
+    /*
+     * Given a position in a document, return an array of start/end
+     * offset paris that correspond to the ranges of IL that the
+     * position covers within this method. The array is an array of
+     * integers and is [start,end,start,end]. The number of range
+     * pairs is the length of the array / 2.
+     */
+    HRESULT GetRanges([in] ISymUnmanagedDocument* document,
+                      [in] ULONG32 line,
+                      [in] ULONG32 column,
+                      [in] ULONG32 cRanges,
+                      [out] ULONG32 *pcRanges,
+                      [out, size_is(cRanges),
+                      length_is(*pcRanges)] ULONG32 ranges[]);
+
+    /*
+     * Get the parameters for this method. The parameters are returned
+     * in the order they are defined within the method's signature.
+     */
+    HRESULT GetParameters([in] ULONG32 cParams,
+                          [out] ULONG32 *pcParams,
+                          [out, size_is(cParams),
+                          length_is(*pcParams)] ISymUnmanagedVariable* params[]);
+
+    /*
+     * Get the namespace that this method is defined within.
+     */
+    HRESULT GetNamespace([out] ISymUnmanagedNamespace **pRetVal);
+
+    /*
+     * Get the start/end document positions for the source of this
+     * method. The first array position is the start while the second
+     * is the end. Returns true if positions were defined, false
+     * otherwise.
+     */
+    HRESULT GetSourceStartEnd([in] ISymUnmanagedDocument *docs[2],
+                              [in] ULONG32 lines[2],
+                              [in] ULONG32 columns[2],
+                              [out] BOOL *pRetVal);
+
+    /*
+     * Get all the sequence points within this method.
+     */
+    HRESULT GetSequencePoints([in] ULONG32 cPoints,
+                              [out] ULONG32 *pcPoints,
+                              [in, size_is(cPoints)] ULONG32 offsets[],
+                              [in, size_is(cPoints)] ISymUnmanagedDocument* documents[],
+                              [in, size_is(cPoints)] ULONG32 lines[],
+                              [in, size_is(cPoints)] ULONG32 columns[],
+                              [in, size_is(cPoints)] ULONG32 endLines[],
+                              [in, size_is(cPoints)] ULONG32 endColumns[]);
+};
+
+[
+ object,
+ uuid(85E891DA-A631-4c76-ACA2-A44A39C46B8C),
+ pointer_default(unique)
+]
+interface ISymENCUnmanagedMethod : IUnknown
+{
+	/*
+	 * Get the file name for the line associated with offset dwOffset.
+	 */
+    HRESULT GetFileNameFromOffset([in] ULONG32 dwOffset,
+                                  [in] ULONG32 cchName,
+                                  [out] ULONG32 *pcchName,
+                                  [out, size_is(cchName),
+                                    length_is(*pcchName)] WCHAR szName[]);
+
+	/*
+	 * Get the Line information associated with dwOffset.
+	 * If dwOffset is not a sequence point it is associated with the previous one.
+	 * pdwStartOffset provides the associated sequence point.
+	 */
+    HRESULT GetLineFromOffset([in] ULONG32 dwOffset,
+                              [out] ULONG32* pline,
+                              [out] ULONG32* pcolumn,
+                              [out] ULONG32* pendLine,
+                              [out] ULONG32* pendColumn,
+                              [out] ULONG32* pdwStartOffset);
+
+	/*
+	 * Get the number of Documents that this method has lines in.
+	 */
+	HRESULT GetDocumentsForMethodCount([out, retval] ULONG32* pRetVal);
+
+	/*
+	 * Get the documents this method has lines in.
+	 */
+	HRESULT GetDocumentsForMethod([in] ULONG32 cDocs,
+                                  [out] ULONG32 *pcDocs,
+                                  [in, size_is(cDocs)] ISymUnmanagedDocument* documents[]);
+	/*
+	 * Get the smallest start line and largest end line, for the method, in a specific document.
+	 */
+	HRESULT GetSourceExtentInDocument([in] ISymUnmanagedDocument *document,
+									  [out] ULONG32* pstartLine,
+									  [out] ULONG32* pendLine);
+};
+
+/* ------------------------------------------------------------------------- *
+ * ISymUnmanagedNamespace interface
+ *
+ * Represents a namespace.
+ * ------------------------------------------------------------------------- */
+
+[
+ object,
+ uuid(0DFF7289-54F8-11d3-BD28-0000F80849BD),
+ pointer_default(unique)
+]
+interface ISymUnmanagedNamespace : IUnknown
+{
+    /*
+     * Get the name of this namespace.
+     */
+    HRESULT GetName([in] ULONG32 cchName,
+                    [out] ULONG32 *pcchName,
+                    [out, size_is(cchName),
+                    length_is(*pcchName)] WCHAR szName[]);
+
+    /*
+     * Get the children of this namespace.
+     */
+    HRESULT GetNamespaces([in] ULONG32 cNameSpaces,
+                          [out] ULONG32 *pcNameSpaces,
+                          [out, size_is(cNameSpaces),
+                          length_is(*pcNameSpaces)]
+                          ISymUnmanagedNamespace* namespaces[]);
+
+    /*
+     * Return all variables defined at global scope within this namespace.
+     */
+    HRESULT GetVariables([in] ULONG32 cVars,
+                         [out] ULONG32 *pcVars,
+                         [out, size_is(cVars),
+                         length_is(*pcVars)] ISymUnmanagedVariable *pVars[]);
+};
+
+/* ------------------------------------------------------------------------- *
+ * ISymUnmanagedReader interface
+ *
+ * Represents a symbol reader. Provides access to documents, methods, and
+ * variables within a symbol store.
+ * ------------------------------------------------------------------------- */
+
+[
+ object,
+ uuid(B4CE6286-2A6B-3712-A3B7-1EE1DAD467B5),
+ pointer_default(unique)
+]
+interface ISymUnmanagedReader : IUnknown
+{
+    /*
+     * Find a document. Language, vendor, and document type are optional.
+     */
+    HRESULT GetDocument([in] WCHAR *url,
+                        [in] GUID language,
+                        [in] GUID languageVendor,
+                        [in] GUID documentType,
+                        [out, retval] ISymUnmanagedDocument** pRetVal);
+
+    /*
+     * Return an array of all the documents defined in the symbol store.
+     */
+    HRESULT GetDocuments([in] ULONG32 cDocs,
+                         [out] ULONG32 *pcDocs,
+                         [out, size_is(cDocs),
+                         length_is(*pcDocs)] ISymUnmanagedDocument *pDocs[]);
+
+    /*
+     * Return the method that was specified as the user entry point
+     * for the module, if any. This would be, perhaps, the user's main
+     * method rather than compiler generated stubs before main.
+     */
+    HRESULT GetUserEntryPoint([out, retval] mdMethodDef *pToken);
+
+    /*
+     * Get a symbol reader method given a method token.
+     */
+    HRESULT GetMethod([in] mdMethodDef token,
+                      [out, retval] ISymUnmanagedMethod** pRetVal);
+
+    /*
+     * Get a symbol reader method given a method token and an E&C
+     * version number. Version numbers start at 1 and are incremented
+     * each time the method is changed due to an E&C operation.
+     */
+    HRESULT GetMethodByVersion([in] mdMethodDef token,
+                               [in] int version,
+                               [out, retval] ISymUnmanagedMethod** pRetVal);
+
+    /*
+     * Return a non-local variable given its parent and name.
+     */
+    HRESULT GetVariables([in] mdToken parent,
+                         [in] ULONG32 cVars,
+                         [out] ULONG32 *pcVars,
+                         [out, size_is(cVars),
+                         length_is(*pcVars)] ISymUnmanagedVariable *pVars[]);
+    /*
+     * Return all global variables.
+     */
+    HRESULT GetGlobalVariables([in] ULONG32 cVars,
+                               [out] ULONG32 *pcVars,
+                               [out, size_is(cVars),
+                               length_is(*pcVars)] ISymUnmanagedVariable *pVars[]);
+
+    /*
+     * Given a position in a document, return the ISymUnmanagedMethod that
+     * contains that position.
+     */
+    HRESULT GetMethodFromDocumentPosition([in] ISymUnmanagedDocument* document,
+                                          [in] ULONG32 line,
+                                          [in] ULONG32 column,
+                                          [out, retval] ISymUnmanagedMethod** pRetVal);
+
+    /*
+     * Gets a custom attribute based upon its name. Not to be
+     * confused with Metadata custom attributes, these attributes are
+     * held in the symbol store.
+     */
+    HRESULT GetSymAttribute([in] mdToken parent,
+                            [in] WCHAR *name,
+                            [in] ULONG32 cBuffer,
+                            [out] ULONG32 *pcBuffer,
+                            [out, size_is(cBuffer),
+                            length_is(*pcBuffer)] BYTE buffer[]);
+
+    /*
+     * Get the namespaces defined at global scope within this symbol store.
+     */
+    HRESULT GetNamespaces([in] ULONG32 cNameSpaces,
+                          [out] ULONG32 *pcNameSpaces,
+                          [out, size_is(cNameSpaces),
+                          length_is(*pcNameSpaces)]
+                          ISymUnmanagedNamespace* namespaces[]);
+
+    /*
+     * Initialize the symbol reader with the metadata importer interface
+     * that this reader will be associated with, along with the filename
+     * of the module. This can only be called once, and must be called
+     * before any other reader methods are called.
+     *
+     * Note: you need only specify one of the filename or the pIStream,
+     * not both. The searchPath parameter is optional.
+     */
+    HRESULT Initialize([in] IUnknown *importer,
+                       [in] const WCHAR *filename,
+                       [in] const WCHAR *searchPath,
+                       [in] IStream *pIStream);
+
+    /*
+     * Update the existing symbol reader with a delta symbol store. This
+     * is used in EnC scenarios as a way to update the symbol store to
+     * match deltas to the original PE file.
+     *
+     * Only one of the filename or pIStream parameters need be specified.
+     * If a filename is specified, the symbol store will be updated with
+     * the symbols in that file. If a IStream is specified, the store will
+     * be updated with the data from the IStream.
+     */
+    HRESULT UpdateSymbolStore([in] const WCHAR *filename,
+                              [in] IStream *pIStream);
+
+    /*
+     * Update the existing symbol reader with a delta symbol
+     * store. This is much like UpdateSymbolStore, but the given detla
+     * acts as a complete replacement rather than an update.
+     *
+     * Only one of the filename or pIStream parameters need be specified.
+     * If a filename is specified, the symbol store will be updated with
+     * the symbols in that file. If a IStream is specified, the store will
+     * be updated with the data from the IStream.
+     */
+    HRESULT ReplaceSymbolStore([in] const WCHAR *filename,
+                               [in] IStream *pIStream);
+
+    /*
+     * Provides the on disk filename of the symbol store.
+     */
+
+    HRESULT GetSymbolStoreFileName( [in] ULONG32 cchName,
+                                    [out] ULONG32 *pcchName,
+                                    [out, size_is(cchName),
+                                    length_is(*pcchName)]  WCHAR szName[]);
+
+    /*
+     * Given a position in a document, return the ISymUnmanagedMethods that
+     * contains that position.
+     */
+    HRESULT GetMethodsFromDocumentPosition([in] ISymUnmanagedDocument* document,
+                                           [in] ULONG32 line,
+                                           [in] ULONG32 column,
+                                           [in] ULONG32 cMethod,
+                                           [out] ULONG32* pcMethod,
+                                           [out, size_is(cMethod),
+                                           length_is(*pcMethod)] ISymUnmanagedMethod* pRetVal[]);
+
+    /*
+     * Get the given version of the given document.
+	 * The document version starts at 1 and is incremented each time
+     * the document is updated via UpdateSymbols.
+     * bCurrent is true is this is the latest version of the document.
+     */
+    HRESULT GetDocumentVersion([in] ISymUnmanagedDocument *pDoc,
+                               [out] int* version,
+                               [out] BOOL* pbCurrent);
+
+    /*
+     * The method version starts at 1 and is incremented each time
+     * the method is recompiled.  (This can happen without changes to the method.)
+     */
+    HRESULT GetMethodVersion([in] ISymUnmanagedMethod* pMethod,
+                             [out] int* version);
+
+};
+
+//
+// ISymUnmanagedSourceServerModule
+//
+// QI for this interface from an ISymUnmanagedReader
+[
+	object,
+	uuid(997DD0CC-A76F-4c82-8D79-EA87559D27AD),
+	pointer_default(unique)
+]
+interface ISymUnmanagedSourceServerModule : IUnknown
+{
+ 	// returns the source server data for the module
+	// caller must free using CoTaskMemFree()
+	HRESULT GetSourceServerData(
+			[out] ULONG* pDataByteCount,
+			[out, size_is (, *pDataByteCount)] BYTE** ppData);
+
+}
+
+// QI for this interface from an ISymUnmanagedReader
+[
+ object,
+ uuid(E502D2DD-8671-4338-8F2A-FC08229628C4),
+ pointer_default(unique)
+]
+interface ISymUnmanagedENCUpdate : IUnknown
+{
+
+    // UpdateSymbolStore2:
+
+    // Line deltas allow a compiler to omit functions that have not been modified from
+    // the pdb stream provided the line information meets the following condition.
+    // The correct line information can be determined with the old pdb line info and
+    // one delta for all lines in the function.
+    //
+
+    typedef struct _SYMLINEDELTA
+    {
+        mdMethodDef mdMethod;
+        INT32       delta;
+    } SYMLINEDELTA;
+
+    HRESULT UpdateSymbolStore2([in] IStream *pIStream,
+                               [in] SYMLINEDELTA* pDeltaLines,
+                               [in] ULONG cDeltaLines);
+
+    HRESULT GetLocalVariableCount([in] mdMethodDef mdMethodToken,
+                                  [out] ULONG *pcLocals);
+
+    HRESULT GetLocalVariables([in] mdMethodDef mdMethodToken,
+                              [in] ULONG cLocals,
+                              [out, size_is(cLocals),
+                              length_is(*pceltFetched)] ISymUnmanagedVariable *rgLocals[],
+                              [out] ULONG *pceltFetched);
+
+    // Perf: Allow method boundaries to be computed before the first
+    // UpdateSymbolStore2.
+    HRESULT InitializeForEnc();
+
+	//
+	// This allows updating the line info for a method that has not been recompiled,
+	// but whose lines have moved independently.  A delta for each statement is allowed.
+	//
+    HRESULT UpdateMethodLines([in] mdMethodDef mdMethodToken,
+    						  [in, size_is(cDeltas)] INT32* pDeltas,
+    						  [in] ULONG cDeltas);
+};
+
+/* ------------------------------------------------------------------------- *
+ * ISymUnmanagedReaderSymbolSearchInfo interface
+ * ------------------------------------------------------------------------- */
+
+// QI for this interface from an ISymUnmanagedReader
+[
+ object,
+ uuid(20D9645D-03CD-4e34-9C11-9848A5B084F1),
+ pointer_default(unique)
+]
+interface ISymUnmanagedReaderSymbolSearchInfo : IUnknown
+{
+    HRESULT GetSymbolSearchInfoCount([out] ULONG32 *pcSearchInfo);
+
+    HRESULT GetSymbolSearchInfo([in] ULONG32 cSearchInfo,
+                                [out] ULONG32 *pcSearchInfo,
+                                [out, size_is(cSearchInfo),
+                                length_is(*pcSearchInfo)] ISymUnmanagedSymbolSearchInfo **rgpSearchInfo);
+};
+
+/* ------------------------------------------------------------------------- *
+ * ISymUnmanagedScope interface
+ *
+ * Represents a lexical scope within a method.
+ * ------------------------------------------------------------------------- */
+
+[
+ object,
+ uuid(68005D0F-B8E0-3B01-84D5-A11A94154942),
+ pointer_default(unique)
+]
+interface ISymUnmanagedScope : IUnknown
+{
+    /*
+     * Get the method that contains this scope.
+     */
+    HRESULT GetMethod([out, retval] ISymUnmanagedMethod** pRetVal);
+
+    /*
+     * Get the parent scope of this scope.
+     */
+    HRESULT GetParent([out, retval] ISymUnmanagedScope** pRetVal);
+
+    /*
+     * Get the children of this scope.
+     */
+    HRESULT GetChildren([in] ULONG32 cChildren,
+                        [out] ULONG32 *pcChildren,
+                        [out, size_is(cChildren),
+                        length_is(*pcChildren)] ISymUnmanagedScope* children[]);
+
+    /*
+     * Get the start offset for this scope,
+     */
+    HRESULT GetStartOffset([out, retval] ULONG32* pRetVal);
+
+    /*
+     * Get the end offset for this scope.
+     */
+    HRESULT GetEndOffset([out, retval] ULONG32* pRetVal);
+
+    /*
+     * Get a count of the number of local variables defined within this
+     * scope.
+     */
+    HRESULT GetLocalCount([out, retval] ULONG32 *pRetVal);
+
+    /*
+     * Get the local variables defined within this scope.
+     */
+    HRESULT GetLocals([in] ULONG32 cLocals,
+                      [out] ULONG32 *pcLocals,
+                      [out, size_is(cLocals),
+                      length_is(*pcLocals)] ISymUnmanagedVariable* locals[]);
+
+    /*
+     * Get the namespaces that are being "used" within this scope.
+     */
+    HRESULT GetNamespaces([in] ULONG32 cNameSpaces,
+                          [out] ULONG32 *pcNameSpaces,
+                          [out, size_is(cNameSpaces),
+                          length_is(*pcNameSpaces)]
+                          ISymUnmanagedNamespace* namespaces[]);
+};
+
+[
+ object,
+ uuid(48B25ED8-5BAD-41bc-9CEE-CD62FABC74E9),
+ pointer_default(unique)
+]
+interface ISymUnmanagedConstant : IUnknown
+{
+    /*
+     * Get the name of this constant.
+     */
+    HRESULT GetName([in] ULONG32 cchName,
+                    [out] ULONG32 *pcchName,
+                    [out, size_is(cchName),
+                    length_is(*pcchName)] WCHAR szName[]);
+
+    HRESULT GetValue(VARIANT* pValue);
+
+   HRESULT GetSignature([in] ULONG32 cSig,
+                         [out] ULONG32 *pcSig,
+                         [out, size_is(cSig),
+                         length_is(*pcSig)] BYTE sig[]);
+
+};
+
+/*
+ * QI for this interface from an ISymUnmanagedScope.
+ */
+[
+ object,
+ uuid(AE932FBA-3FD8-4dba-8232-30A2309B02DB),
+ pointer_default(unique)
+]
+interface ISymUnmanagedScope2 : ISymUnmanagedScope
+{
+    /*
+     * Get a count of the number of constants defined within this
+     * scope.
+     */
+    HRESULT GetConstantCount([out, retval] ULONG32 *pRetVal);
+    /*
+     * Get the local constants defined within this scope.
+     */
+    HRESULT GetConstants([in] ULONG32 cConstants,
+                         [out] ULONG32 *pcConstants,
+                         [out, size_is(cConstants),
+                         length_is(*pcConstants)] ISymUnmanagedConstant* constants[]);
+};
+
+/* ------------------------------------------------------------------------- *
+ * ISymUnmanagedVariable interface
+ *
+ * Represents a variable--a parameter, a local variable, or a field.
+ * ------------------------------------------------------------------------- */
+
+[
+ object,
+ uuid(9F60EEBE-2D9A-3F7C-BF58-80BC991C60BB),
+ pointer_default(unique)
+]
+interface ISymUnmanagedVariable : IUnknown
+{
+    /*
+     * Get the name of this variable.
+     */
+    HRESULT GetName([in] ULONG32 cchName,
+                    [out] ULONG32 *pcchName,
+                    [out, size_is(cchName),
+                    length_is(*pcchName)] WCHAR szName[]);
+
+    /*
+     * Get the attribute flags for this variable.
+     */
+    HRESULT GetAttributes([out, retval] ULONG32* pRetVal);
+
+    /*
+     * Get the signature of this variable.
+     */
+    HRESULT GetSignature([in] ULONG32 cSig,
+                         [out] ULONG32 *pcSig,
+                         [out, size_is(cSig),
+                         length_is(*pcSig)] BYTE sig[]);
+
+    /*
+     * Get the kind of address of this variable
+	 * The retval will be one of the CorSymAddrKind constants.
+     */
+    HRESULT GetAddressKind([out, retval] ULONG32* pRetVal);
+
+    /*
+     * Get the first address field for this variable. Its meaning depends
+     * on the address kind.
+     */
+    HRESULT GetAddressField1([out, retval] ULONG32* pRetVal);
+
+    /*
+     * Get the second address field for this variable. Its meaning depends
+     * on the address kind.
+     */
+    HRESULT GetAddressField2([out, retval] ULONG32* pRetVal);
+
+    /*
+     * Get the third address field for this variable. Its meaning depends
+     * on the address kind.
+     */
+    HRESULT GetAddressField3([out, retval] ULONG32* pRetVal);
+
+    /*
+     * Get the start offset of this variable within its parent. If this is
+     * a local variable within a scope, this will fall within the offsets
+     * defined for the scope.
+     */
+    HRESULT GetStartOffset([out, retval] ULONG32* pRetVal);
+
+    /*
+     * Get the end offset of this variable within its parent. If this is
+     * a local variable within a scope, this will fall within the offsets
+     * defined for the scope.
+     */
+    HRESULT GetEndOffset([out, retval] ULONG32* pRetVal);
+};
+
+/* ------------------------------------------------------------------------- *
+ * ISymUnmanagedSymbolSearchInfo interface
+ * ------------------------------------------------------------------------- */
+
+[
+ object,
+ uuid(F8B3534A-A46B-4980-B520-BEC4ACEABA8F),
+ pointer_default(unique)
+]
+interface ISymUnmanagedSymbolSearchInfo : IUnknown
+{
+    HRESULT GetSearchPathLength([out] ULONG32 *pcchPath);
+
+    HRESULT GetSearchPath([in] ULONG32 cchPath,
+                          [out] ULONG32 *pcchPath,
+                          [out, size_is(cchPath),
+                          length_is(*pcchPath)] WCHAR szPath[]);
+
+    HRESULT GetHRESULT([out] HRESULT *phr);
+};
+
+/* ------------------------------------------------------------------------- *
+ * ISymUnmanagedWriter interface
+ *
+ * Represents a symbol writer. Provides methods to define documents,
+ * sequence points, lexical scopes, and variables.
+ * ------------------------------------------------------------------------- */
+
+[
+ object,
+ uuid(ED14AA72-78E2-4884-84E2-334293AE5214),
+ pointer_default(unique)
+]
+interface ISymUnmanagedWriter : IUnknown
+{
+    /*
+     * Define a source document. Guid's will be provided for languages,
+     * vendors, and document types that we currently know about.
+     */
+    HRESULT DefineDocument([in] const WCHAR *url,
+                           [in] const GUID *language,
+                           [in] const GUID *languageVendor,
+                           [in] const GUID *documentType,
+                           [out, retval] ISymUnmanagedDocumentWriter** pRetVal);
+
+    /*
+     * Define the method that the user has defined as their entry point
+     * for this module. This would be, perhaps, the user's main method
+     * rather than compiler generated stubs before main.
+     */
+    HRESULT SetUserEntryPoint([in] mdMethodDef entryMethod);
+
+    /*
+     * Open a method to emit symbol information into. The given method
+     * becomes the current method for calls do define sequence points,
+     * parameters and lexical scopes. There is an implicit lexical
+     * scope around the entire method. Re-opening a method that has
+     * been previously closed effectivley erases any previously
+     * defined symbols for that method.
+     *
+     * There can be only one open method at a time.
+     */
+    HRESULT OpenMethod([in] mdMethodDef method);
+
+    /*
+     * Close the current method. Once a method is closed, no more
+     * symbols can be defined within it.
+     */
+    HRESULT CloseMethod();
+
+    /*
+     * Open a new lexical scope in the current method. The scope
+     * becomes the new current scope and is effectivley pushed onto a
+     * stack of scopes. startOffset is the offset, in bytes from the
+     * beginning of the method, of the first instruction in the
+     * lexical scope. Scopes must form a hierarchy. Siblings are not
+     * allowed to overlap.
+     *
+     * OpenScope returns an opaque scope id that can be used with
+     * SetScopeRange to define a scope's start/end offset at a later
+     * time. In this case, the offsets passed to OpenScope and
+     * CloseScope are ignored.
+     *
+     * Note: scope id's are only valid in the current method.
+     */
+    HRESULT OpenScope([in] ULONG32 startOffset,
+                      [out, retval] ULONG32* pRetVal);
+
+    /*
+     * Close the current lexical scope. Once a scope is closed no more
+     * variables can be defined within it. endOffset points past the
+     * last instruction in the scope.
+     */
+    HRESULT CloseScope([in] ULONG32 endOffset);
+
+    /*
+     * Define the offset range for a given lexical scope.
+     */
+    HRESULT SetScopeRange([in] ULONG32 scopeID,
+                          [in] ULONG32 startOffset,
+                          [in] ULONG32 endOffset);
+
+    /*
+     * Define a single variable in the current lexical
+     * scope. startOffset and endOffset are optional. If 0, then they
+     * are ignored and the variable is defined over the entire
+     * scope. If non-zero, then they must fall within the offsets of
+     * the current scope. This can be called multiple times for a
+     * variable of the same name that has multiple homes throughout a
+     * scope. (Note: start/end offsets must not overlap in such a
+     * case.)
+     */
+    HRESULT DefineLocalVariable([in] const WCHAR *name,
+                                [in] ULONG32 attributes,
+                                [in] ULONG32 cSig,
+                                [in, size_is(cSig)] unsigned char signature[],
+                                [in] ULONG32 addrKind,
+                                [in] ULONG32 addr1,
+                                [in] ULONG32 addr2,
+                                [in] ULONG32 addr3,
+                                [in] ULONG32 startOffset,
+                                [in] ULONG32 endOffset);
+
+    /*
+     * Define a single parameter in the current method. The type of
+     * each parameter is taken from its position (sequence) within the
+     * method's signature.
+     *
+     * Note: if parameters are defined in the metadata for a given
+     * method, then clearly one would not have to define them again
+     * with calls to this method. The symbol readers will have to be
+     * smart enough to check the normal metadata for these first then
+     * fall back to the symbol store.
+     */
+    HRESULT DefineParameter([in] const WCHAR *name,
+                            [in] ULONG32 attributes,
+                            [in] ULONG32 sequence,
+                            [in] ULONG32 addrKind,
+                            [in] ULONG32 addr1,
+                            [in] ULONG32 addr2,
+                            [in] ULONG32 addr3);
+
+    /*
+     * Define a single variable not within a method. This is used for
+     * certain fields in classes, bitfields, etc.
+     */
+    HRESULT DefineField([in] mdTypeDef parent,
+                        [in] const WCHAR *name,
+                        [in] ULONG32 attributes,
+                        [in] ULONG32 cSig,
+                        [in, size_is(cSig)] unsigned char signature[],
+                        [in] ULONG32 addrKind,
+                        [in] ULONG32 addr1,
+                        [in] ULONG32 addr2,
+                        [in] ULONG32 addr3);
+
+    /*
+     * Define a single global variable.
+     */
+    HRESULT DefineGlobalVariable([in] const WCHAR *name,
+                                 [in] ULONG32 attributes,
+                                 [in] ULONG32 cSig,
+                                 [in, size_is(cSig)] unsigned char signature[],
+                                 [in] ULONG32 addrKind,
+                                 [in] ULONG32 addr1,
+                                 [in] ULONG32 addr2,
+                                 [in] ULONG32 addr3);
+
+    /*
+     * Close will close the ISymUnmanagedWriter and commit the symbols
+     * to the symbol store. The ISymUnmanagedWriter becomes invalid
+     * after this call for further updates.
+     */
+    HRESULT Close();
+
+    /*
+     * Defines a custom attribute based upon its name. Not to be
+     * confused with Metadata custom attributes, these attributes are
+     * held in the symbol store.
+     */
+    HRESULT SetSymAttribute([in] mdToken parent,
+                            [in] const WCHAR *name,
+                            [in] ULONG32 cData,
+                            [in, size_is(cData)] unsigned char data[]);
+
+    /*
+     * Opens a new namespace. Call this before defining methods or
+     * variables that live within a namespace. Namespaces can be nested.
+     */
+    HRESULT OpenNamespace([in] const WCHAR *name);
+
+    /*
+     * Close the most recently opened namespace.
+     */
+    HRESULT CloseNamespace();
+
+    /*
+     * Specifies that the given, fully qualified namespace name is
+     * being used within the currently open lexical scope. Closing the
+     * current scope will also stop using the namespace, and the
+     * namespace will be in use in all scopes that inherit from the
+     * currently open scope.
+     */
+    HRESULT UsingNamespace([in] const WCHAR *fullName);
+
+    /*
+     * Specifies the true start and end of a method within a source
+     * file. Use this to specify the extent of a method independently
+     * of what sequence points exist within the method.
+     */
+    HRESULT SetMethodSourceRange([in] ISymUnmanagedDocumentWriter *startDoc,
+                                 [in] ULONG32 startLine,
+                                 [in] ULONG32 startColumn,
+                                 [in] ISymUnmanagedDocumentWriter *endDoc,
+                                 [in] ULONG32 endLine,
+                                 [in] ULONG32 endColumn);
+
+    /*
+     * Sets the metadata emitter interface that this writer will be
+     * associated with. Also sets the output filename of where the
+     * debugging symbols will be written. This can only be called once,
+     * and must be called before any other writer methods are called.
+     *
+     * Some writers may require a filename, while others may not. A
+     * filename can always be passed to this method, however, with
+     * no ill effects on writers that do not use it.
+     *
+     * The pIStream parameter is optional. If specified, the symbol
+     * writer will emit the symbols into the given IStream rather than
+     * to the file specified in filename.
+     *
+     * The fFullBuild parameter indicates to the symbol writer whether
+     * this is a full build or an incremental build.
+     */
+    HRESULT Initialize([in] IUnknown *emitter,
+                       [in] const WCHAR *filename,
+                       [in] IStream *pIStream,
+                       [in] BOOL fFullBuild);
+
+    /*
+     * Returns the necessary info for a compiler to write the
+     * necessary debug directory entry into the PE header.
+     *
+     * pIDD should point to a IMAGE_DEBUG_DIRECTORY that the symbol
+     * writer will fill out. All fields except for TimeDateStamp and
+     * PointerToRawData will be filled out by the symbol writer. (The
+     * compiler is responsible for setting TimeDateStamp and
+     * PointerToRawData appropiatley.)
+     *
+     * data should point to a buffer large enough to hold the debug
+     * data for the symbol store.
+     *
+     * A compiler should call this method, then emit the data blob to
+     * the PE file and set the PointerToRawData field in the
+     * IMAGE_DEBUG_DIRECTORY to point to the emitted data. Then, the
+     * IMAGE_DEBUG_DIRECTORY should be written to the PE file. The
+     * compiler should also set the TimeDateStamp field to equal the
+     * TimeDateStamp of the PE file being generated.
+     */
+    HRESULT GetDebugInfo([in, out] IMAGE_DEBUG_DIRECTORY *pIDD,
+                         [in] DWORD cData,
+                         [out] DWORD *pcData,
+                         [out, size_is(cData),
+                         length_is(*pcData)] BYTE data[]);
+
+    /*
+     * Define a group of sequence points within the current method.
+     * Each line/column defines the start of a statement within a
+     * method. Each end line/column defines the end of a statement
+     * with a method. (End line/column is optional.) The arrays should
+     * be sorted by offset. The offset is always the offset from the
+     * start of the method, in bytes.
+     */
+    HRESULT DefineSequencePoints([in] ISymUnmanagedDocumentWriter* document,
+                                 [in] ULONG32 spCount,
+                                 [in, size_is(spCount)] ULONG32 offsets[],
+                                 [in, size_is(spCount)] ULONG32 lines[],
+                                 [in, size_is(spCount)] ULONG32 columns[],
+                                 [in, size_is(spCount)] ULONG32 endLines[],
+                                 [in, size_is(spCount)] ULONG32 endColumns[]);
+
+    /*
+     * This method tells the symbol writer that a metadata token has
+     * been remapped as the metadata was emitted. If the symbol writer
+     * has stored the old token within the symbol store, it must
+     * either update the stored token to the new value, or persist the
+     * map for the corresponding symbol reader to remap during the
+     * read phase.
+     */
+    HRESULT RemapToken([in] mdToken oldToken,
+                       [in] mdToken newToken);
+
+    /*
+     * Same as Initialize except that the final path name is the path string to
+     * name the final location of the pdb file. This is used in build environments in
+     * which the pdb is built in a temporary location and moved when the build is
+     * complete.
+     */
+    HRESULT Initialize2([in] IUnknown *emitter,
+                   [in] const WCHAR *tempfilename,
+                   [in] IStream *pIStream,
+                   [in] BOOL fFullBuild,
+                   [in] const WCHAR *finalfilename);
+
+    /*
+     * Defines a name for a constant value.
+     */
+    HRESULT DefineConstant( [in] const WCHAR *name,
+                            [in] VARIANT value,
+                            [in] ULONG32 cSig,
+                            [in, size_is(cSig)] unsigned char signature[]);
+
+    /*
+     * Abort will close the ISymUnmanagedWriter without committing the symbols
+     * to the symbol store. The ISymUnmanagedWriter becomes invalid
+     * after this call for further updates.
+     */
+    HRESULT Abort();
+
+};
+
+/* ------------------------------------------------------------------------- *
+ * ISymUnmanagedWriter2 interface
+ * ------------------------------------------------------------------------- */
+
+[
+ object,
+ uuid(0B97726E-9E6D-4f05-9A26-424022093CAA),
+ pointer_default(unique)
+]
+interface ISymUnmanagedWriter2 : ISymUnmanagedWriter
+{
+    /*
+     * Define a single variable in the current lexical
+     * scope. startOffset and endOffset are optional. If 0, then they
+     * are ignored and the variable is defined over the entire
+     * scope. If non-zero, then they must fall within the offsets of
+     * the current scope. This can be called multiple times for a
+     * variable of the same name that has multiple homes throughout a
+     * scope. (Note: start/end offsets must not overlap in such a
+     * case.)
+     */
+    HRESULT DefineLocalVariable2([in] const WCHAR *name,
+                                 [in] ULONG32 attributes,
+                                 [in] mdSignature sigToken,
+                                 [in] ULONG32 addrKind,
+                                 [in] ULONG32 addr1,
+                                 [in] ULONG32 addr2,
+                                 [in] ULONG32 addr3,
+                                 [in] ULONG32 startOffset,
+                                 [in] ULONG32 endOffset);
+
+    /*
+     * Define a single global variable.
+     */
+    HRESULT DefineGlobalVariable2([in] const WCHAR *name,
+                                  [in] ULONG32 attributes,
+                                  [in] mdSignature sigToken,
+                                  [in] ULONG32 addrKind,
+                                  [in] ULONG32 addr1,
+                                  [in] ULONG32 addr2,
+                                  [in] ULONG32 addr3);
+
+
+    /*
+     * Defines a name for a constant value.
+     */
+    HRESULT DefineConstant2( [in] const WCHAR *name,
+                             [in] VARIANT value,
+                             [in] mdSignature sigToken);
+
+};
+
+/* ------------------------------------------------------------------------- *
+ * ISymUnmanagedWriter3 interface
+ * ------------------------------------------------------------------------- */
+
+[
+ object,
+ uuid(12F1E02C-1E05-4B0E-9468-EBC9D1BB040F),
+ pointer_default(unique)
+]
+interface ISymUnmanagedWriter3 : ISymUnmanagedWriter2
+{
+    /*
+     * Open a method, and also provide its real section offset in image
+     */
+    HRESULT OpenMethod2( [in] mdMethodDef method,
+                        [in] ULONG32 isect,
+                        [in] ULONG32 offset);
+
+    /*
+     * Commit the changes written so far to the stream
+     */
+
+    HRESULT Commit();
+};
+
+/* ------------------------------------------------------------------------- *
+ * ISymUnmanagedWriter4 interface
+ * ------------------------------------------------------------------------- */
+
+[
+ object,
+ uuid(BC7E3F53-F458-4C23-9DBD-A189E6E96594),
+ pointer_default(unique)
+]
+interface ISymUnmanagedWriter4 : ISymUnmanagedWriter3
+{
+    /*
+     * Functions the same as ISymUnmanagedWriter::GetDebugInfo with the exception
+     * that the path string is padded with zeros following the terminating null
+     * character to make the string data a fixed size of MAX_PATH. Padding is only
+     * given if the path string length itself is less than MAX_PATH.
+     *
+     * This makes writing tools that difference PE files easier.
+     */
+    HRESULT GetDebugInfoWithPadding([in, out] IMAGE_DEBUG_DIRECTORY *pIDD,
+                                    [in] DWORD cData,
+                                    [out] DWORD *pcData,
+                                    [out, size_is(cData),
+                                    length_is(*pcData)] BYTE data[]);
+};
+
+/* ------------------------------------------------------------------------- *
+ * ISymUnmanagedWriter5 interface
+ * ------------------------------------------------------------------------- */
+
+[
+ object,
+ uuid(DCF7780D-BDE9-45DF-ACFE-21731A32000C),
+ pointer_default(unique)
+]
+interface ISymUnmanagedWriter5 : ISymUnmanagedWriter4
+{
+    /*
+     * Open a special custom data section to emit token to source span mapping
+     * information into. Opening this section while a method is already open
+     * or vice versa is an error.
+     */
+    HRESULT OpenMapTokensToSourceSpans();
+
+    /*
+     * Close the special custom data section for token to source span mapping
+     * information. Once it is closed no more mapping information can be added.
+     */
+    HRESULT CloseMapTokensToSourceSpans();
+
+    /*
+     * Maps the given metadata token to the given source line span in the specified
+     * source file.
+     *
+     * Must be called between calls to OpenMapTokensToSourceSpans() and
+     * CloseMapTokensToSourceSpans().
+     */
+    HRESULT MapTokenToSourceSpan([in] mdToken token,
+                                 [in] ISymUnmanagedDocumentWriter* document,
+                                 [in] ULONG32 line,
+                                 [in] ULONG32 column,
+                                 [in] ULONG32 endLine,
+                                 [in] ULONG32 endColumn);
+};
+
+
+/* ------------------------------------------------------------------------- *
+ * ISymUnmanagedReader interface
+ * ------------------------------------------------------------------------- */
+
+[
+ object,
+ uuid(A09E53B2-2A57-4cca-8F63-B84F7C35D4AA),
+ pointer_default(unique)
+]
+interface ISymUnmanagedReader2 : ISymUnmanagedReader
+{
+    /*
+     * Get a symbol reader method given a method token and an E&C
+     * version number. Version numbers start at 1 and are incremented
+     * each time the method is changed due to an E&C operation.
+     */
+    HRESULT GetMethodByVersionPreRemap([in] mdMethodDef token,
+                                       [in] int version,
+                                       [out, retval] ISymUnmanagedMethod** pRetVal);
+    /*
+     * Gets a custom attribute based upon its name. Not to be
+     * confused with Metadata custom attributes, these attributes are
+     * held in the symbol store.
+     */
+    HRESULT GetSymAttributePreRemap([in] mdToken parent,
+                                    [in] WCHAR *name,
+                                    [in] ULONG32 cBuffer,
+                                    [out] ULONG32 *pcBuffer,
+                                    [out, size_is(cBuffer),
+                                    length_is(*pcBuffer)] BYTE buffer[]);
+
+    /*
+     * Gets every method that has line information in the provided Document.
+     */
+    HRESULT GetMethodsInDocument([in] ISymUnmanagedDocument *document,
+                                 [in] ULONG32 cMethod,
+                                 [out] ULONG32* pcMethod,
+                                 [out, size_is(cMethod),
+                                    length_is(*pcMethod)] ISymUnmanagedMethod* pRetVal[]);
+
+};
+
+/* ------------------------------------------------------------------------- *
+ * ISymNGenWriter interface
+ * ------------------------------------------------------------------------- */
+
+[
+ object,
+ uuid(d682fd12-43de-411c-811b-be8404cea126),
+ pointer_default(unique)
+]
+interface ISymNGenWriter : IUnknown
+{
+    /*
+     * Add a new public symbol to the NGEN PDB.
+     */
+    HRESULT AddSymbol([in] BSTR pSymbol,
+                      [in] USHORT iSection,
+                      [in] ULONGLONG rva);
+
+    /*
+     * Adds a new section to the NGEN PDB.
+     */
+    HRESULT AddSection([in] USHORT iSection,
+                       [in] USHORT flags,
+                       [in] long offset,
+                       [in] long cb);
+};
+
+
+/* ------------------------------------------------------------------------- *
+ * ISymNGenWriter2 interface
+ * ------------------------------------------------------------------------- */
+[
+ object,
+ local,
+ uuid(B029E51B-4C55-4fe2-B993-9F7BC1F10DB4),
+ pointer_default(unique)
+]
+interface ISymNGenWriter2 : ISymNGenWriter
+{
+    HRESULT OpenModW([in] LPCWSTR wszModule,
+                     [in] LPCWSTR wszObjFile,
+                     [out] BYTE** ppmod);
+
+    HRESULT CloseMod([in] BYTE* pmod);
+
+    HRESULT ModAddSymbols([in] BYTE* pmod, [in] BYTE* pbSym, [in] long cb);
+
+    HRESULT ModAddSecContribEx(
+        [in] BYTE* pmod,
+        [in] USHORT isect,
+        [in] long off,
+        [in] long cb,
+        [in] ULONG dwCharacteristics,
+        [in] DWORD dwDataCrc,
+        [in] DWORD dwRelocCrc);
+
+    HRESULT QueryPDBNameExW(
+        [out, size_is(cchMax)] WCHAR wszPDB[],
+        [in] SIZE_T cchMax);
+};
+
+
+/* ------------------------------------------------------------------------- *
+ * ISymUnmanagedAsyncPropertiesWriter interface
+ *
+ * Allows definition of optional async method information per method symbol.
+ * Must use with an opened method (i.e. between calls to ISymUnmanagedWriter's
+ * OpenMethod and CloseMethod methods).
+ * ------------------------------------------------------------------------- */
+
+[
+ object,
+ uuid(FC073774-1739-4232-BD56-A027294BEC15),
+ pointer_default(unique)
+]
+interface ISymUnmanagedAsyncMethodPropertiesWriter : IUnknown
+{
+    /*
+    * Sets the starting method that initiates the async operation.
+    *
+    * When performing a step-out of an async method, if the caller matches
+    * the kickoff method, we will step out synchronously.  Otherwise, an
+    * async step-out will occur.
+    *
+    * This works in C#/VB because there is an initial method stub that
+    * creates the state machine object and starts if off, hence "kickoff"
+    * Still have to determine if this will work with F#.
+    */
+    HRESULT DefineKickoffMethod([in] mdToken kickoffMethod);
+
+    /*
+    * Sets the IL offset for the compiler generated catch handler that wraps
+    * an async method.
+    *
+    * The IL offset of the generated catch is used by the debugger to handle
+    * the catch as though it were non-user code even though it may occur in
+    * a user code method.  In particular it is used in response to a
+    * CatchHandlerFound exception event.
+    */
+    HRESULT DefineCatchHandlerILOffset([in] ULONG32 catchHandlerOffset);
+
+    /*
+     * Define a group of async scopes within the current method.
+     *
+     * Each yield offset matches an await's return instruction,
+     * identifying a potential yield.  Each breakpointMethod/breakpointOffset
+     * pair tells us where the asynchronous operation will resume
+     * (which may be in a different method).
+     */
+    HRESULT DefineAsyncStepInfo([in] ULONG32 count,
+                                [in, size_is(count)] ULONG32 yieldOffsets[],
+                                [in, size_is(count)] ULONG32 breakpointOffset[],
+                                [in, size_is(count)] mdToken breakpointMethod[]);
+};
+
+/* ------------------------------------------------------------------------- *
+ * ISymUnmanagedAsyncMethod interface
+ *
+ * This interface is the reading complement to
+ * ISymUnmanangedAsyncMethodPropertiesWriter
+ * ------------------------------------------------------------------------- */
+
+[
+ object,
+ uuid(B20D55B3-532E-4906-87E7-25BD5734ABD2),
+ pointer_default(unique)
+]
+interface ISymUnmanagedAsyncMethod : IUnknown
+{
+    /*
+    * Checks if the method has asynch information or not.
+    *
+    * If this method returns FALSE then it is invalid to call any
+    * other methods in this interface.  They will all return
+    * E_UNEXPECTED in this case.
+    */
+    HRESULT IsAsyncMethod([out, retval] BOOL* pRetVal);
+
+    /*
+    * See ISymUnmanagedAsyncMethodPropertiesWriter::DefineKickoffMethod
+    */
+    HRESULT GetKickoffMethod([out, retval] mdToken* kickoffMethod);
+
+    /*
+    * See ISymUnmanagedAsyncMethodPropertiesWriter::DefineCatchHandlerILOffset
+    */
+    HRESULT HasCatchHandlerILOffset([out, retval] BOOL* pRetVal);
+
+    /*
+    * See ISymUnmanagedAsyncMethodPropertiesWriter::DefineCatchHandlerILOffset
+    */
+    HRESULT GetCatchHandlerILOffset([out, retval] ULONG32* pRetVal);
+
+    /*
+     * See ISymUnmanagedAsyncMethodPropertiesWriter::DefineAsyncStepInfo
+     */
+    HRESULT GetAsyncStepInfoCount([out, retval] ULONG32* pRetVal);
+
+    /*
+     * See ISymUnmanagedAsyncMethodPropertiesWriter::DefineAsyncStepInfo
+     */
+    HRESULT GetAsyncStepInfo([in] ULONG32 cStepInfo,
+                             [out] ULONG32 *pcStepInfo,
+                             [in, size_is(cStepInfo)] ULONG32 yieldOffsets[],
+                             [in, size_is(cStepInfo)] ULONG32 breakpointOffset[],
+                             [in, size_is(cStepInfo)] mdToken breakpointMethod[]);
+};

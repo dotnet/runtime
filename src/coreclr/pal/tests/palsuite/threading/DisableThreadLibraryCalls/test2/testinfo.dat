@@ -1,0 +1,17 @@
+# Licensed to the .NET Foundation under one or more agreements.
+# The .NET Foundation licenses this file to you under the MIT license.
+
+Version = 1.0
+Section = threading
+Function = DisableThreadLibraryCalls
+Name = Test for DisableThreadLibraryCalls
+TYPE = DEFAULT
+EXE1 = test2
+LIB1 = dllmain1
+LIB2 = dllmain2
+Description
+= Test to ensure proper operation of the DisableThreadLibraryCalls()
+= API. This tests to make sure the DisableThreadLibraryCalls() called
+= for one DLL loaded by a process takes effect *only* for that DLL
+= and not for any others, by checking the THREAD_ATTACH notifications
+= in each.

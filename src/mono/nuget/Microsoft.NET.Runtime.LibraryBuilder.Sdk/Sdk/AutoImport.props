@@ -1,0 +1,9 @@
+<!-- Licensed to the .NET Foundation under one or more agreements. The .NET Foundation licenses this file to you under the MIT license. -->
+<Project>
+  <PropertyGroup>
+    <TargetOS Condition="'$(RuntimeIdentifier)' != '' and $(RuntimeIdentifier.Contains('-'))">$(RuntimeIdentifier.Substring(0, $(RuntimeIdentifier.IndexOf('-'))))</TargetOS>
+
+    <TargetsAppleMobile Condition="'$(TargetOS)' == 'ios' or '$(TargetOS)' == 'iossimulator' or '$(TargetOS)' == 'maccatalyst' or '$(TargetOS)' == 'tvos' or '$(TargetOS)' == 'tvossimulator'">true</TargetsAppleMobile>
+    <TargetsAndroid Condition="'$(TargetOS)' == 'android'">true</TargetsAndroid>
+  </PropertyGroup>
+</Project>

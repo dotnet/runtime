@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <CLRTestPriority>1</CLRTestPriority>
+    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+    <DebugType>None</DebugType>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="seq_gc_val_1.cs" />
+    <Compile Include="body_safe_val.cs" />
+  </ItemGroup>
+</Project>

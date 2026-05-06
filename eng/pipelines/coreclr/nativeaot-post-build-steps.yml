@@ -1,0 +1,23 @@
+parameters:
+  buildConfig: ''
+  archType: ''
+  osGroup: ''
+  osSubgroup: ''
+  testBuildArgs: ''
+  helixQueues: ''
+  liveLibrariesBuildConfig: ''
+
+steps:
+  # Build coreclr native test output and send to helix
+  - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
+    parameters:
+      buildConfig: ${{ parameters.buildConfig }}
+      archType: ${{ parameters.archType }}
+      osGroup: ${{ parameters.osGroup }}
+      osSubgroup: ${{ parameters.osSubgroup }}
+      runtimeFlavor: coreclr
+      runtimeVariant: ''
+      testBuildArgs: ${{ parameters.testBuildArgs }}
+      nativeAotTest: true
+      helixQueues: ${{ parameters.helixQueues }}
+      liveLibrariesBuildConfig: ${{ parameters.liveLibrariesBuildConfig }}

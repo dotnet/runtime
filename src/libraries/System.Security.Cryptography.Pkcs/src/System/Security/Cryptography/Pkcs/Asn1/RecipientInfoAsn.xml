@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<asn:Choice
+  xmlns:asn="http://schemas.dot.net/asnxml/201808/"
+  name="RecipientInfoAsn"
+  namespace="System.Security.Cryptography.Pkcs.Asn1">
+
+  <!--
+    https://tools.ietf.org/html/rfc5652#section-6.2
+
+    RecipientInfo ::= CHOICE {
+        ktri KeyTransRecipientInfo,
+        kari[1] KeyAgreeRecipientInfo,
+        kekri[2] KEKRecipientInfo,
+        pwri[3] PasswordRecipientinfo,
+        ori[4] OtherRecipientInfo
+    }
+  -->
+  <asn:AsnType name="Ktri" typeName="System.Security.Cryptography.Pkcs.Asn1.KeyTransRecipientInfoAsn" />
+  <asn:AsnType name="Kari" typeName="System.Security.Cryptography.Pkcs.Asn1.KeyAgreeRecipientInfoAsn" implicitTag="1" />
+  <!-- By not declaring the rest of the types here we get an ASN deserialization
+       error for unsupported recipient types -->
+</asn:Choice>

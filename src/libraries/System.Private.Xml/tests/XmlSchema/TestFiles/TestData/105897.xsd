@@ -1,0 +1,120 @@
+<!-- Schema defined in the SOAP Version 1.2 Part 1 specification
+     Last Call Working Draft:
+     http://www.w3.org/TR/2002/WD-soap12-part1-20020621/
+     $Id: soap-envelope.xsd,v 1.1 2002/12/16 17:47:34 ylafon Exp $
+
+     Copyright 2001 W3C (Massachusetts Institute of Technology,
+     Institut National de Recherche en Informatique et en Automatique,
+     Keio University). All Rights Reserved.
+     http://www.w3.org/Consortium/Legal/
+
+     This document is governed by the W3C Software License [1] as
+     described in the FAQ [2].
+
+     [1] http://www.w3.org/Consortium/Legal/copyright-software-19980720
+     [2] http://www.w3.org/Consortium/Legal/IPR-FAQ-20000620.html#DTD
+-->
+<xs:schema targetNamespace="http://www.w3.org/2002/12/soap-envelope" xmlns:tns="http://www.w3.org/2002/12/soap-envelope" xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified">
+    <xs:import namespace="http://www.w3.org/XML/1998/namespace"/>
+    <!-- Envelope, header and body -->
+    <xs:element name="Envelope" type="tns:Envelope"/>
+    <xs:complexType name="Envelope">
+        <xs:sequence>
+            <xs:element ref="tns:Header" minOccurs="0"/>
+            <xs:element ref="tns:Body"/>
+        </xs:sequence>
+        <xs:anyAttribute namespace="##other" processContents="lax"/>
+    </xs:complexType>
+    <xs:element name="Header" type="tns:Header"/>
+    <xs:complexType name="Header">
+        <xs:sequence>
+            <xs:any namespace="##other" processContents="lax" minOccurs="0" maxOccurs="unbounded"/>
+        </xs:sequence>
+        <xs:anyAttribute namespace="##other" processContents="lax"/>
+    </xs:complexType>
+    <xs:element name="Body" type="tns:Body"/>
+    <xs:complexType name="Body">
+        <xs:sequence>
+            <xs:any namespace="##any" processContents="lax" minOccurs="0" maxOccurs="unbounded"/>
+        </xs:sequence>
+        <xs:anyAttribute namespace="##other" processContents="lax"/>
+    </xs:complexType>
+    <!-- Global Attributes.  The following attributes are intended to be
+  usable via qualified attribute names on any complex type referencing
+  them.  -->
+    <xs:attribute name="mustUnderstand" type="xs:boolean" default="0"/>
+    <xs:attribute name="role" type="xs:anyURI"/>
+    <xs:attribute name="encodingStyle" type="xs:anyURI"/>
+    <!-- encodingStyle' indicates any canonicalization conventions
+  followed in the contents of the containing element.  For example, the
+  value 'http://www.w3.org/2002/12/soap-encoding' indicates the pattern
+  described in the last call working draft of SOAP Version 1.2 Part 2:
+  Adjuncts -->
+    <xs:element name="Fault" type="tns:Fault"/>
+    <xs:complexType name="Fault" final="extension">
+        <xs:annotation>
+            <xs:documentation>
+	    Fault reporting structure
+	  </xs:documentation>
+        </xs:annotation>
+        <xs:sequence>
+            <xs:element name="Code" type="tns:faultcode"/>
+            <xs:element name="Reason" type="tns:faultreason"/>
+            <xs:element name="Node" type="xs:anyURI" minOccurs="0"/>
+            <xs:element name="Role" type="xs:anyURI" minOccurs="0"/>
+            <xs:element name="Detail" type="tns:detail" minOccurs="0"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="faultreason">
+        <xs:sequence>
+            <xs:element name="Text" type="tns:reasontext" maxOccurs="unbounded"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="reasontext">
+        <xs:simpleContent>
+            <xs:extension base="xs:string"/>
+        </xs:simpleContent>
+    </xs:complexType>
+    <xs:complexType name="faultcode">
+        <xs:sequence>
+            <xs:element name="Value" type="tns:faultcodeEnum"/>
+            <xs:element name="Subcode" type="tns:subcode" minOccurs="0"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:simpleType name="faultcodeEnum">
+        <xs:restriction base="xs:QName">
+            <xs:enumeration value="tns:DataEncodingUnknown"/>
+            <xs:enumeration value="tns:MustUnderstand"/>
+            <xs:enumeration value="tns:Receiver"/>
+            <xs:enumeration value="tns:Sender"/>
+            <xs:enumeration value="tns:VersionMismatch"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:complexType name="subcode">
+        <xs:sequence>
+            <xs:element name="Value" type="xs:QName"/>
+            <xs:element name="Subcode" type="tns:subcode" minOccurs="0"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="detail">
+        <xs:sequence>
+            <xs:any namespace="##any" processContents="lax" minOccurs="0" maxOccurs="unbounded"/>
+        </xs:sequence>
+        <xs:anyAttribute namespace="##other" processContents="lax"/>
+    </xs:complexType>
+    <!-- Global element declaration and complex type definition for header entry returned due to a mustUnderstand fault -->
+    <xs:element name="NotUnderstood" type="tns:NotUnderstoodType"/>
+    <xs:complexType name="NotUnderstoodType">
+        <xs:attribute name="qname" type="xs:QName" use="required"/>
+    </xs:complexType>
+    <!-- Global element and associated types for managing version transition as described in Appendix A of the SOAP Version 1.2 Part 1 Last Call Working Draft -->
+    <xs:complexType name="SupportedEnvType">
+        <xs:attribute name="qname" type="xs:QName" use="required"/>
+    </xs:complexType>
+    <xs:element name="Upgrade" type="tns:UpgradeType"/>
+    <xs:complexType name="UpgradeType">
+        <xs:sequence>
+            <xs:element name="SupportedEnvelope" type="tns:SupportedEnvType" form="qualified" maxOccurs="unbounded"/>
+        </xs:sequence>
+    </xs:complexType>
+</xs:schema>

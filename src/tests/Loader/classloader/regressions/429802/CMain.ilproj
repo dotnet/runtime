@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk.IL">
+  <PropertyGroup>
+    <CLRTestPriority>1</CLRTestPriority>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="CMain.il" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="BarImpl.ilproj" />
+    <ProjectReference Include="MyBar.ilproj" />
+  </ItemGroup>
+</Project>

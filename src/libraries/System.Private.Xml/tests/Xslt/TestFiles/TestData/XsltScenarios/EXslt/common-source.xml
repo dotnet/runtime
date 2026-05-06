@@ -1,0 +1,5 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<data>
+    <!-- Some comment -->
+    <foo bar="value">text</foo>
+</data> 

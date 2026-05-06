@@ -1,0 +1,5 @@
+<Project Sdk="Microsoft.NET.Sdk.IL">
+  <ItemGroup>
+    <Compile Include="constrained3.il" />
+  </ItemGroup>
+</Project>

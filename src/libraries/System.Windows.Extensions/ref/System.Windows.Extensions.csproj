@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppPrevious);$(NetCoreAppMinimum)</TargetFrameworks>
+    <SkipValidateReferenceAssemblyProjectReferences>true</SkipValidateReferenceAssemblyProjectReferences>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="System.Windows.Extensions.cs" />
+    <Compile Include="System.Windows.Extensions.Forwards.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Avoid a product dependency to System.Drawing.Common, this reference is only needed for TypeForwards -->
+    <ProjectReference Include="$(LibrariesProjectRoot)shims\stubs\System.Drawing.Common.csproj" PrivateAssets="all" />
+  </ItemGroup>
+
+</Project>

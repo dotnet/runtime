@@ -1,0 +1,5 @@
+<!--When @Title is Mr. ex:Gender must be Male-->
+<ex:Person Title="Mr" xmlns:ex="http://www.topologi.com/example">
+    <ex:Name>Eddie</ex:Name>
+    <ex:Gender></ex:Gender>
+</ex:Person>

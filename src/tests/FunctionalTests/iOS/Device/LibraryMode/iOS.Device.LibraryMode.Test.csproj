@@ -1,0 +1,52 @@
+<Project Sdk="Microsoft.NET.Sdk" TreatAsLocalProperty="MonoForceInterpreter">
+
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+    <TestRuntime>true</TestRuntime>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <RuntimeIdentifier>$(TargetOS)-$(TargetArchitecture)</RuntimeIdentifier>
+    <TargetOS Condition="'$(TargetOS)' == ''">ios</TargetOS>
+    <IncludesTestRunner>false</IncludesTestRunner>
+    <ExpectedExitCode>42</ExpectedExitCode>
+    <SelfContained>true</SelfContained>
+    <UseConsoleUITemplate>true</UseConsoleUITemplate>
+    <ForceLibraryModeGenerateAppBundle>true</ForceLibraryModeGenerateAppBundle>
+    <NativeLib Condition="'$(NativeLib)' == ''">shared</NativeLib>
+    <BundlesResources Condition="'$(BundlesResources)' == ''">false</BundlesResources>
+    <Optimized Condition="'$(Configuration)' == 'Release'">true</Optimized>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(RuntimeFlavor)' == 'Mono'">
+    <RunAOTCompilation>true</RunAOTCompilation>
+    <MonoEnableLLVM>true</MonoEnableLLVM>
+    <MainLibraryFileName>iOS.Device.LibraryMode.Test.dll</MainLibraryFileName>
+    <MonoForceInterpreter>false</MonoForceInterpreter>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Preserves the UnmanagedCallersOnly method -->
+    <TrimmerRootDescriptor Include="$(MSBuildThisFileDirectory)ILLink.Descriptors.xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="ClassLibrary.cs" />
+  </ItemGroup>
+
+  <!-- TODO: This should not be necesarry when https://github.com/dotnet/runtime/issues/93447 is fixed -->
+  <PropertyGroup Condition="'$(UseNativeAOTRuntime)' == 'true'">
+    <ILCompilerTargetsPath Condition="'$(ILCompilerTargetsPath)' == ''">$(CoreClrProjectRoot)nativeaot/BuildIntegration/Microsoft.DotNet.ILCompiler.SingleEntry.targets</ILCompilerTargetsPath>
+    <ILLinkTargetsPath Condition="'$(ILLinkTargetsPath)' == ''">$(ToolsProjectRoot)illink/src/ILLink.Tasks/build/Microsoft.NET.ILLink.targets</ILLinkTargetsPath>
+    <IlcBuildTasksDir>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'artifacts', 'bin', 'coreclr', '$(TargetOS).$(TargetArchitecture).$(CoreCLRConfiguration)', 'ilc-published', 'netstandard'))</IlcBuildTasksDir>
+    <IlcBuildTasksPath>$(IlcBuildTasksDir)ILCompiler.Build.Tasks.dll</IlcBuildTasksPath>
+  </PropertyGroup>
+
+  <!-- TODO: This should be moved to a common build integration targets to support local builds when https://github.com/dotnet/runtime/issues/93447 is addressed -->
+  <Target Name="_PrepareSetupForLocalBuild" BeforeTargets="SetupProperties" Condition="'$(UseNativeAOTRuntime)' == 'true' and $(BuildTestsOn) == 'local'">
+    <PropertyGroup>
+      <IlcToolsPath>$(CoreCLRCrossILCompilerDir)</IlcToolsPath>
+      <IlcSdkPath>$(CoreCLRAotSdkDir)</IlcSdkPath>
+      <IlcFrameworkPath>$(LibrariesAllBinArtifactsPath)</IlcFrameworkPath>
+      <IlcFrameworkNativePath>$(LibrariesAllBinArtifactsPath)</IlcFrameworkNativePath>
+    </PropertyGroup>
+  </Target>
+
+</Project>

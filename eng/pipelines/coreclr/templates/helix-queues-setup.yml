@@ -1,0 +1,165 @@
+parameters:
+  jobTemplate: ''
+  variables: {}
+  osGroup: ''
+  osSubgroup: ''
+  archType: ''
+  container: ''
+  pool: ''
+  platform: ''
+  shouldContinueOnError: false
+  jobParameters: {}
+
+# parameters.jobParameters.helixQueueGroup values:
+# 'pr' -- pull request
+# 'ci' -- continuous integration ("merge")
+# 'libraries' -- libraries tests
+# 'cet' -- machines supporting CET technology
+# 'superpmi-diffs' -- as high capacity queues as possible since no OS testing is necessary for this
+# Many of these values are unused below, as we use the same queues for many of the scenarios.
+# However, having these options allows us to easily tune the queues we use for each scenario as needed based on new hardware support.
+
+jobs:
+- template: ${{ parameters.jobTemplate }}
+  parameters:
+    variables: ${{ parameters.variables }}
+    osGroup: ${{ parameters.osGroup }}
+    osSubgroup: ${{ parameters.osSubgroup }}
+    archType: ${{ parameters.archType }}
+    container: ${{ parameters.container }}
+    pool: ${{ parameters.pool }}
+    platform: ${{ parameters.platform }}
+    shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
+    helixQueues:
+
+    # iOS Simulator/Mac Catalyst arm64
+    - ${{ if in(parameters.platform, 'iossimulator_arm64', 'tvossimulator_arm64', 'maccatalyst_arm64') }}:
+      - ${{ if eq(variables['System.TeamProject'], 'public') }}:
+        - OSX.15.Arm64.Open
+      - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
+        - OSX.15.Arm64
+
+    # iOS/tvOS Simulator x64 & MacCatalyst x64
+    - ${{ if in(parameters.platform, 'iossimulator_x64', 'tvossimulator_x64', 'maccatalyst_x64') }}:
+      - ${{ if eq(variables['System.TeamProject'], 'public') }}:
+        - OSX.15.Amd64.Open
+      - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
+        - OSX.15.Amd64
+
+    # Android arm64
+    - ${{ if in(parameters.platform, 'android_arm64') }}:
+      - ${{ if eq(variables['System.TeamProject'], 'public') }}:
+        - Windows.11.Amd64.Android.Open
+      - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
+        - Windows.11.Amd64.Android
+
+    # Android x64
+    - ${{ if in(parameters.platform, 'android_x64') }}:
+      - ${{ if eq(variables['System.TeamProject'], 'public') }}:
+        - Ubuntu.2204.Amd64.Android.29.Open
+      - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
+        - Ubuntu.2204.Amd64.Android.29
+
+    # Browser wasm
+    - ${{ if eq(parameters.platform, 'browser_wasm') }}:
+      - ${{ if eq(variables['System.TeamProject'], 'public') }}:
+        - (Ubuntu.2604.Amd64.Open)AzureLinux.3.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-26.04-helix-webassembly-amd64@sha256:c9dc51010e0627d319d55e058400b4888b03f4be8988d09e65a7505264ea45a2
+      - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
+        - (Ubuntu.2604.Amd64)AzureLinux.3.Amd64@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-26.04-helix-webassembly-amd64@sha256:c9dc51010e0627d319d55e058400b4888b03f4be8988d09e65a7505264ea45a2
+
+    # iOS devices
+    - ${{ if in(parameters.platform, 'ios_arm64') }}:
+      - ${{ if eq(variables['System.TeamProject'], 'public') }}:
+        - osx.15.amd64.iphone.open
+      - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
+        - osx.15.amd64.iphone
+
+    # tvOS devices
+    - ${{ if in(parameters.platform, 'tvos_arm64') }}:
+      - ${{ if eq(variables['System.TeamProject'], 'public') }}:
+        - osx.15.amd64.appletv.open
+      - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
+        - osx.15.amd64.appletv
+
+    # Linux arm
+    - ${{ if eq(parameters.platform, 'linux_arm') }}:
+      - ${{ if eq(variables['System.TeamProject'], 'public') }}:
+        - (Debian.13.Arm32.Open)AzureLinux.3.Arm64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-13-helix-arm32v7@sha256:9ee81df17d6a4bf96b7b2f785a1352a3a762aec2a01b2bb8ffd691520aad7dee
+      - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
+        - (Debian.13.Arm32)AzureLinux.3.Arm64@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-13-helix-arm32v7@sha256:9ee81df17d6a4bf96b7b2f785a1352a3a762aec2a01b2bb8ffd691520aad7dee
+
+    # Linux arm64
+    - ${{ if eq(parameters.platform, 'linux_arm64') }}:
+      - ${{ if eq(variables['System.TeamProject'], 'public') }}:
+        - AzureLinux.3.Arm64.Open
+      - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
+        - AzureLinux.3.Arm64
+
+    # Linux musl x64
+    - ${{ if eq(parameters.platform, 'linux_musl_x64') }}:
+      - ${{ if eq(variables['System.TeamProject'], 'public') }}:
+        - (Alpine.323.Amd64.Open)AzureLinux.3.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.23-helix-amd64@sha256:28a8f1c15d472911de8095c1bb21b624cfd5eae6aeb00d4092c3894cb0d3966b
+      - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
+        - (Alpine.323.Amd64)AzureLinux.3.Amd64@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.23-helix-amd64@sha256:28a8f1c15d472911de8095c1bb21b624cfd5eae6aeb00d4092c3894cb0d3966b
+
+    # Linux musl arm32
+    - ${{ if eq(parameters.platform, 'linux_musl_arm') }}:
+      - ${{ if eq(variables['System.TeamProject'], 'public') }}:
+        - (Alpine.323.Arm32.Open)AzureLinux.3.Arm64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.23-helix-arm32v7@sha256:d442f29874a97bdadc42c48eaf0b0e0c65454414e42aadfa0dba3cb206e3ecef
+      - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
+        - (Alpine.323.Arm32)AzureLinux.3.Arm64@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.23-helix-arm32v7@sha256:d442f29874a97bdadc42c48eaf0b0e0c65454414e42aadfa0dba3cb206e3ecef
+
+    # Linux musl arm64
+    - ${{ if eq(parameters.platform, 'linux_musl_arm64') }}:
+      - ${{ if eq(variables['System.TeamProject'], 'public') }}:
+        - (Alpine.323.Arm64.Open)AzureLinux.3.Arm64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.23-helix-arm64v8@sha256:ede25506b331984c7f64a2961e5f5ca6222f237a929c2ad2a4c4f4a5af652504
+      - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
+        - (Alpine.323.Arm64)AzureLinux.3.Arm64@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.23-helix-arm64v8@sha256:ede25506b331984c7f64a2961e5f5ca6222f237a929c2ad2a4c4f4a5af652504
+
+    # Linux x64
+    - ${{ if eq(parameters.platform, 'linux_x64') }}:
+      - ${{ if eq(variables['System.TeamProject'], 'public') }}:
+        - AzureLinux.3.Amd64.Open
+      - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
+        - AzureLinux.3.Amd64
+
+    # OSX arm64
+    - ${{ if eq(parameters.platform, 'osx_arm64') }}:
+      - ${{ if and(eq(variables['System.TeamProject'], 'public'), ne(parameters.jobParameters.helixQueueGroup, 'superpmi-diffs')) }}:
+        - $(helix_macos_arm64)
+      - ${{ if and(eq(variables['System.TeamProject'], 'public'), eq(parameters.jobParameters.helixQueueGroup, 'superpmi-diffs')) }}:
+        - OSX.15.Arm64.Open
+      - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
+        - OSX.14.Arm64
+
+    # OSX x64
+    - ${{ if eq(parameters.platform, 'osx_x64') }}:
+      - ${{ if eq(variables['System.TeamProject'], 'public') }}:
+        - $(helix_macos_x64)
+      - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
+        - OSX.13.Amd64
+
+    # windows x64
+    - ${{ if eq(parameters.platform, 'windows_x64') }}:
+      - ${{ if and(eq(variables['System.TeamProject'], 'public'), ne(parameters.jobParameters.helixQueueGroup, 'cet')) }}:
+        - Windows.10.Amd64.Open
+      - ${{ if and(eq(variables['System.TeamProject'], 'public'), eq(parameters.jobParameters.helixQueueGroup, 'cet')) }}:
+        - Windows.11.Amd64.Cet.Open
+      - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
+        - Windows.10.Amd64
+
+    # windows x86
+    - ${{ if eq(parameters.platform, 'windows_x86') }}:
+      - ${{ if eq(variables['System.TeamProject'], 'public') }}:
+        - Windows.10.Amd64.Open
+      - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
+        - Windows.10.Amd64.X86.Rt
+
+    # windows arm64
+    - ${{ if eq(parameters.platform, 'windows_arm64') }}:
+      - ${{ if eq(variables['System.TeamProject'], 'public') }}:
+        - Windows.11.Arm64.Open
+      - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
+        - Windows.11.Arm64
+
+    ${{ insert }}: ${{ parameters.jobParameters }}

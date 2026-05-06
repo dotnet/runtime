@@ -1,0 +1,4 @@
+/.deps
+/.libs
+/*.la
+/*.lo

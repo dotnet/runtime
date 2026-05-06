@@ -1,0 +1,34 @@
+<x xmlns:n1="urn:p1" xmlns:n2="urn:p2" xmlns:n3="urn:p3">
+
+  <n1:y1>
+    <z1 n2:a="v">
+    </z1>
+  </n1:y1>
+
+  <y2 xmlns="urn:pd2">
+    <z2 xmlns="">
+    </z2>
+  </y2>
+
+  <y3 xmlns="">
+    <z3 xmlns="">
+      <!-- a comment -->
+    </z3>
+  </y3>
+
+  <y4 xmlns="">
+    <z4 xmlns="urn:pd4">
+      [CDATA[ some cdata contents ]]
+    </z4>
+  </y4>
+
+  <n1:y5 xmlns="urn:pd5">
+    <n2:z5 xmlns="urn:pd1">
+      <n2:zz5 xmlns="">
+        <n2:zzz5 xmlns="">
+        </n2:zzz5>
+      </n2:zz5>
+    </n2:z5>
+  </n1:y5>
+
+</x>

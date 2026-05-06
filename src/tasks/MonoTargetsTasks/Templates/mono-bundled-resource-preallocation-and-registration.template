@@ -1,0 +1,73 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+#include <stdint.h>
+
+%ResourceSymbols%
+typedef enum {
+	MONO_BUNDLED_DATA,
+	MONO_BUNDLED_ASSEMBLY,
+	MONO_BUNDLED_SATELLITE_ASSEMBLY,
+	MONO_BUNDLED_RESOURCE_COUNT
+} MonoBundledResourceType;
+
+typedef void (*free_bundled_resource_func)(void *, void*);
+
+typedef struct _MonoBundledResource {
+	MonoBundledResourceType type;
+	const char *id;
+	free_bundled_resource_func free_func;
+	void *free_data;
+} MonoBundledResource;
+
+typedef struct _MonoBundledData {
+	const char *name;
+	const uint8_t *data;
+	uint32_t size;
+} MonoBundledData;
+
+typedef struct _MonoBundledDataResource {
+	MonoBundledResource resource;
+	MonoBundledData data;
+} MonoBundledDataResource;
+
+typedef struct _MonoBundledSymbolData {
+	const uint8_t *data;
+	uint32_t size;
+} MonoBundledSymbolData;
+
+typedef struct _MonoBundledAssemblyData {
+	const char *name;
+	const uint8_t *data;
+	uint32_t size;
+} MonoBundledAssemblyData;
+
+typedef struct _MonoBundledAssemblyResource {
+	MonoBundledResource resource;
+	MonoBundledAssemblyData assembly;
+	MonoBundledSymbolData symbol_data;
+} MonoBundledAssemblyResource;
+
+typedef struct _MonoBundledSatelliteAssemblyData {
+	const char *name;
+	const char *culture;
+	const uint8_t *data;
+	uint32_t size;
+} MonoBundledSatelliteAssemblyData;
+
+typedef struct _MonoBundledSatelliteAssemblyResource {
+	MonoBundledResource resource;
+	MonoBundledSatelliteAssemblyData satellite_assembly;
+} MonoBundledSatelliteAssemblyResource;
+
+extern void
+mono_bundled_resources_add (MonoBundledResource **resources_to_bundle, uint32_t len);
+
+%PreallocatedStructs%
+
+%PreallocatedResources%
+void
+%BundleRegistrationFunctionName% (void)
+{
+%AddPreallocatedResources%
+}

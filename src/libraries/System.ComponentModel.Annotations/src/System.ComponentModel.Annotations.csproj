@@ -1,0 +1,82 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <!--
+      Since many resource strings in this library are shown to an end-user,
+      always generate default resource string values which will be used when UseSystemResourceKeys is true in trimmed apps.
+    -->
+    <GenerateResxSourceIncludeDefaultValues>true</GenerateResxSourceIncludeDefaultValues>
+    <UseCompilerGeneratedDocXmlFile>false</UseCompilerGeneratedDocXmlFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="System\ComponentModel\DataAnnotations\AllowedValuesAttribute.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\AssociatedMetadataTypeTypeDescriptor.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\AssociatedMetadataTypeTypeDescriptionProvider.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\AssociationAttribute.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\Base64StringAttribute.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\CompareAttribute.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\ConcurrencyCheckAttribute.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\CreditCardAttribute.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\CustomValidationAttribute.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\DataType.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\DataTypeAttribute.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\DeniedValuesAttribute.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\DisplayAttribute.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\DisplayColumnAttribute.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\DisplayFormatAttribute.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\EditableAttribute.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\EmailAddressAttribute.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\EnumDataTypeAttribute.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\FileExtensionsAttribute.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\FilterUIHintAttribute.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\IValidatableObject.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\KeyAttribute.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\LengthAttribute.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\LocalizableString.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\MaxLengthAttribute.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\MetadataPropertyDescriptorWrapper.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\MetadataTypeAttribute.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\MinLengthAttribute.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\PhoneAttribute.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\RangeAttribute.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\RegularExpressionAttribute.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\RequiredAttribute.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\ScaffoldColumnAttribute.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\Schema\ColumnAttribute.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\Schema\ComplexTypeAttribute.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\Schema\DatabaseGeneratedAttribute.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\Schema\DatabaseGeneratedOption.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\Schema\ForeignKeyAttribute.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\Schema\InversePropertyAttribute.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\Schema\NotMappedAttribute.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\Schema\TableAttribute.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\StringLengthAttribute.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\TimestampAttribute.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\UIHintAttribute.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\UrlAttribute.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\ValidationAttribute.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\ValidationAttributeStore.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\ValidationContext.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\ValidationException.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\ValidationResult.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\Validator.cs" />
+    <Compile Include="$(CommonPath)System\NotImplemented.cs" Link="Common\System\NotImplemented.cs" />
+    <Compile Include="$(CommonPath)System\Obsoletions.cs" Link="Common\System\Obsoletions.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Collections\src\System.Collections.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Collections.Concurrent\src\System.Collections.Concurrent.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.ComponentModel\src\System.ComponentModel.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.ComponentModel.Primitives\src\System.ComponentModel.Primitives.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.ComponentModel.TypeConverter\src\System.ComponentModel.TypeConverter.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Linq\src\System.Linq.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Memory\src\System.Memory.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime\src\System.Runtime.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Text.RegularExpressions\src\System.Text.RegularExpressions.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Threading\src\System.Threading.csproj" />
+  </ItemGroup>
+
+</Project>

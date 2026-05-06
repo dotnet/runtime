@@ -1,0 +1,5 @@
+<linker>
+  <assembly fullname="TrimmingBehaviors">
+    <resource name="RemovedResource3" action="remove" />
+  </assembly>
+</linker>

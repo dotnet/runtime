@@ -1,0 +1,42 @@
+<Project TreatAsLocalProperty="RuntimeFlavor;BuildNativeAOTRuntimePack">
+  <PropertyGroup>
+    <RuntimeFlavor>CoreCLR</RuntimeFlavor>
+    <BuildNativeAOTRuntimePack>true</BuildNativeAOTRuntimePack>
+    <OutDirName>naot-pack</OutDirName>
+  </PropertyGroup>
+
+  <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
+  <Import Project="Sdk.props" Sdk="Microsoft.DotNet.SharedFramework.Sdk" />
+
+  <PropertyGroup>
+    <PlatformPackageType>RuntimePack</PlatformPackageType>
+    <UseTemplatedPlatformManifest>true</UseTemplatedPlatformManifest>
+    <UseRidGraph>true</UseRidGraph>
+    <SkipInstallerBuild>true</SkipInstallerBuild>
+    <PublishReadyToRun>false</PublishReadyToRun>
+    <OverridePackageId>$(SharedFrameworkName).Runtime.NativeAOT.$(RuntimeIdentifier)</OverridePackageId>
+    <IncludeStaticLibrariesInPack>true</IncludeStaticLibrariesInPack>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <IgnoredDuplicateType Include="Internal.Runtime.CompilerHelpers.LibraryInitializer" />
+    <FilesToPackage Include="$(CoreCLRArtifactsPath)StandardOptimizationData.mibc"
+                    Condition="Exists('$(CoreCLRArtifactsPath)StandardOptimizationData.mibc')" />
+  </ItemGroup>
+
+
+  <Import Project="Microsoft.NETCore.App.Runtime.props" />
+
+  <Target Name="IncludeSymbolFilesInNativeAOTPackage"
+          AfterTargets="GetFilesToPackage">
+    <ItemGroup>
+      <!-- ILC needs the symbols next to the binaries -->
+      <FilesToPackage Condition="'%(FilesToPackage.IsSymbolFile)' == 'true'">
+        <IncludeAlways>true</IncludeAlways>
+      </FilesToPackage>
+      <FilesToPackage Condition="'%(Filename)%(Extension)' == 'nonportable.txt'">
+        <ExcludeFromDataFiles>true</ExcludeFromDataFiles>
+      </FilesToPackage>
+    </ItemGroup>
+  </Target>
+</Project>

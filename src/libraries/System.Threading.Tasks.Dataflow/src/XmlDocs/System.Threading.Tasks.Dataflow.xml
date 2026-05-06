@@ -1,0 +1,1449 @@
+﻿<!--
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+ -->
+<doc>
+  <assembly>
+    <name>System.Threading.Tasks.Dataflow</name>
+  </assembly>
+  <members>
+    <member name="T:System.Threading.Tasks.Dataflow.ActionBlock`1">
+      <summary>Provides a dataflow block that invokes a provided <see cref="T:System.Action`1" /> delegate for every data element received.</summary>
+      <typeparam name="TInput">The type of data that this <see cref="T:System.Threading.Tasks.Dataflow.ActionBlock`1" /> operates on.</typeparam>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.ActionBlock`1.#ctor(System.Action{`0})">
+      <summary>Initializes a new instance of the <see cref="T:System.Threading.Tasks.Dataflow.ActionBlock`1" /> class with the specified action.</summary>
+      <param name="action">The action to invoke with each data element received.</param>
+      <exception cref="T:System.ArgumentNullException">
+        <paramref name="action" /> is null.</exception>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.ActionBlock`1.#ctor(System.Action{`0},System.Threading.Tasks.Dataflow.ExecutionDataflowBlockOptions)">
+      <summary>Initializes a new instance of the <see cref="T:System.Threading.Tasks.Dataflow.ActionBlock`1" /> class with the specified action and configuration options.</summary>
+      <param name="action">The action to invoke with each data element received.</param>
+      <param name="dataflowBlockOptions">The options with which to configure this <see cref="T:System.Threading.Tasks.Dataflow.ActionBlock`1" />.</param>
+      <exception cref="T:System.ArgumentNullException">
+        <paramref name="action" /> is null.-or-<paramref name="dataflowBlockOptions" /> is null.</exception>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.ActionBlock`1.#ctor(System.Func{`0,System.Threading.Tasks.Task})">
+      <summary>Initializes a new instance of the <see cref="T:System.Threading.Tasks.Dataflow.ActionBlock`1" /> class with the specified action.</summary>
+      <param name="action">The action to invoke with each data element received.</param>
+      <exception cref="T:System.ArgumentNullException">
+        <paramref name="action" /> is null.</exception>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.ActionBlock`1.#ctor(System.Func{`0,System.Threading.Tasks.Task},System.Threading.Tasks.Dataflow.ExecutionDataflowBlockOptions)">
+      <summary>Initializes a new instance of the <see cref="T:System.Threading.Tasks.Dataflow.ActionBlock`1" /> class with the specified action and configuration options.</summary>
+      <param name="action">The action to invoke with each data element received.</param>
+      <param name="dataflowBlockOptions">The options with which to configure this <see cref="T:System.Threading.Tasks.Dataflow.ActionBlock`1" />.</param>
+      <exception cref="T:System.ArgumentNullException">
+        <paramref name="action" /> is null.-or-<paramref name="dataflowBlockOptions" /> is null.</exception>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.ActionBlock`1.Complete">
+      <summary>Signals to the dataflow block that it shouldn't accept or produce any more messages and shouldn't consume any more postponed messages.</summary>
+    </member>
+    <member name="P:System.Threading.Tasks.Dataflow.ActionBlock`1.Completion">
+      <summary>Gets a <see cref="T:System.Threading.Tasks.Task" /> object that represents the asynchronous operation and completion of the dataflow block.</summary>
+      <returns>The completed task.</returns>
+    </member>
+    <member name="P:System.Threading.Tasks.Dataflow.ActionBlock`1.InputCount">
+      <summary>Gets the number of input items waiting to be processed by this block.</summary>
+      <returns>The number of input items waiting to be processed by this block.</returns>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.ActionBlock`1.Post(`0)">
+      <summary>Posts an item to the target dataflow block.</summary>
+      <returns>The number of input items.</returns>
+      <param name="item">The item being offered to the target.</param>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.ActionBlock`1.System#Threading#Tasks#Dataflow#IDataflowBlock#Fault(System.Exception)">
+      <summary>Causes the dataflow block to complete in a faulted state.</summary>
+      <param name="exception">The exception that caused the faulting.</param>
+      <exception cref="T:System.ArgumentNullException">
+        <paramref name="exception" /> is null.</exception>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.ActionBlock`1.System#Threading#Tasks#Dataflow#ITargetBlock{TInput}#OfferMessage(System.Threading.Tasks.Dataflow.DataflowMessageHeader,`0,System.Threading.Tasks.Dataflow.ISourceBlock{`0},System.Boolean)">
+      <summary>Offers a message to the dataflow block, and gives it the opportunity to consume or postpone the message.</summary>
+      <returns>The status of the offered message. If the message was accepted by the target, <see cref="F:System.Threading.Tasks.Dataflow.DataflowMessageStatus.Accepted" /> is returned, and the source should no longer use the offered message, because it is now owned by the target. If the message was postponed by the target, <see cref="F:System.Threading.Tasks.Dataflow.DataflowMessageStatus.Postponed" /> is returned as a notification that the target may later attempt to consume or reserve the message; in the meantime, the source still owns the message and may offer it to other blocks.If the target would have otherwise postponed message, but <paramref name="source" /> was null, <see cref="F:System.Threading.Tasks.Dataflow.DataflowMessageStatus.Declined" /> is returned. If the target tried to accept the message but missed it due to the source delivering the message to another target or simply discarding it, <see cref="F:System.Threading.Tasks.Dataflow.DataflowMessageStatus.NotAvailable" /> is returned. If the target chose not to accept the message, <see cref="F:System.Threading.Tasks.Dataflow.DataflowMessageStatus.Declined" /> is returned. If the target chose not to accept the message and will never accept another message from this source, <see cref="F:System.Threading.Tasks.Dataflow.DataflowMessageStatus.DecliningPermanently" /> is returned.</returns>
+      <param name="messageHeader">The header of the message being offered.</param>
+      <param name="messageValue">The value of the message being offered.</param>
+      <param name="source">The dataflow block that is offering the message. This may be null.</param>
+      <param name="consumeToAccept">true to instruct the target to call <see cref="M:System.Threading.Tasks.Dataflow.ISourceBlock`1.ConsumeMessage()" /> synchronously during the call to <see cref="M:System.Threading.Tasks.Dataflow.ITargetBlock`1.OfferMessage()" />, prior to returning <see cref="F:System.Threading.Tasks.Dataflow.DataflowMessageStatus.Accepted" />, in order to consume the message.</param>
+      <exception cref="T:System.ArgumentException">
+        <paramref name="messageHeader" /> is not valid.-or-<paramref name="consumeToAccept" /> may be true only if provided with a non-null <paramref name="source" />.</exception>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.ActionBlock`1.ToString">
+      <summary>Returns a string that represents the formatted name of this <see cref="T:System.Threading.Tasks.Dataflow.IDataflowBlock" /> instance.</summary>
+      <returns>A string that represents the formatted name of this <see cref="T:System.Threading.Tasks.Dataflow.IDataflowBlock" /> instance.</returns>
+    </member>
+    <member name="T:System.Threading.Tasks.Dataflow.BatchBlock`1">
+      <summary>Provides a dataflow block that batches inputs into arrays.</summary>
+      <typeparam name="T">Specifies the type of data put into batches.</typeparam>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.BatchBlock`1.#ctor(System.Int32)">
+      <summary>Initializes a new <see cref="T:System.Threading.Tasks.Dataflow.BatchBlock`1" /> with the specified batch size.</summary>
+      <param name="batchSize">The number of items to group into a batch.</param>
+      <exception cref="T:System.ArgumentOutOfRangeException">The <paramref name="batchSize" /> must be positive.</exception>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.BatchBlock`1.#ctor(System.Int32,System.Threading.Tasks.Dataflow.GroupingDataflowBlockOptions)">
+      <summary>Initializes a new <see cref="T:System.Threading.Tasks.Dataflow.BatchBlock`1" /> with the specified batch size, declining option, and block options.</summary>
+      <param name="batchSize">The number of items to group into a batch.</param>
+      <param name="dataflowBlockOptions">The options with which to configure this <see cref="T:System.Threading.Tasks.Dataflow.BatchBlock`1" />.</param>
+      <exception cref="T:System.ArgumentOutOfRangeException">The <paramref name="batchSize" /> must be positive.-or-The <paramref name="batchSize" /> must be smaller than the value of the <see cref="P:System.Threading.Tasks.Dataflow.DataflowBlockOptions.BoundedCapacity" /> option if a non-default value has been set.</exception>
+      <exception cref="T:System.ArgumentNullException">The <paramref name="dataflowBlockOptions" /> is null.</exception>
+    </member>
+    <member name="P:System.Threading.Tasks.Dataflow.BatchBlock`1.BatchSize">
+      <summary>Gets the size of the batches generated by this <see cref="T:System.Threading.Tasks.Dataflow.BatchBlock`1" />.</summary>
+      <returns>The batch size.</returns>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.BatchBlock`1.Complete">
+      <summary>Signals to the <see cref="T:System.Threading.Tasks.Dataflow.IDataflowBlock" /> that it should not accept nor produce any more messages nor consume any more postponed messages.</summary>
+    </member>
+    <member name="P:System.Threading.Tasks.Dataflow.BatchBlock`1.Completion">
+      <summary>Gets a <see cref="T:System.Threading.Tasks.Task" /> that represents the asynchronous operation and completion of the dataflow block.</summary>
+      <returns>The task.</returns>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.BatchBlock`1.LinkTo(System.Threading.Tasks.Dataflow.ITargetBlock{`0[]},System.Threading.Tasks.Dataflow.DataflowLinkOptions)">
+      <summary>Links the <see cref="T:System.Threading.Tasks.Dataflow.ISourceBlock`1" /> to the specified <see cref="T:System.Threading.Tasks.Dataflow.ITargetBlock`1" />.</summary>
+      <returns>An IDisposable that, upon calling Dispose, will unlink the source from the target.</returns>
+      <param name="target">The <see cref="T:System.Threading.Tasks.Dataflow.ITargetBlock`1" /> to which to connect this source.</param>
+      <param name="linkOptions">A <see cref="T:System.Threading.Tasks.Dataflow.DataflowLinkOptions" /> instance that configures the link.</param>
+      <exception cref="T:System.ArgumentNullException">
+        <paramref name="target" /> is null (Nothing in Visual Basic) or <paramref name="linkOptions" /> is null (Nothing in Visual Basic).</exception>
+    </member>
+    <member name="P:System.Threading.Tasks.Dataflow.BatchBlock`1.OutputCount">
+      <summary>Gets the number of output items available to be received from this block.</summary>
+      <returns>The number of output items.</returns>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.BatchBlock`1.System#Threading#Tasks#Dataflow#IDataflowBlock#Fault(System.Exception)">
+      <summary>Causes the <see cref="T:System.Threading.Tasks.Dataflow.IDataflowBlock" /> to complete in a <see cref="F:System.Threading.Tasks.TaskStatus.Faulted" /> state.</summary>
+      <param name="exception">The <see cref="T:System.Exception" /> that caused the faulting.</param>
+      <exception cref="T:System.ArgumentNullException">The <paramref name="exception" /> is null.</exception>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.BatchBlock`1.System#Threading#Tasks#Dataflow#ISourceBlock{TOutput}#ConsumeMessage(System.Threading.Tasks.Dataflow.DataflowMessageHeader,System.Threading.Tasks.Dataflow.ITargetBlock{`0[]},System.Boolean@)">
+      <summary>Called by a linked <see cref="T:System.Threading.Tasks.Dataflow.ITargetBlock`1" /> to accept and consume a <see cref="T:System.Threading.Tasks.Dataflow.DataflowMessageHeader" /> previously offered by this <see cref="T:System.Threading.Tasks.Dataflow.ISourceBlock`1" />.</summary>
+      <returns>The value of the consumed message. This may correspond to a different <see cref="T:System.Threading.Tasks.Dataflow.DataflowMessageHeader" /> instance than was previously reserved and passed as the <paramref name="messageHeader" /> to <see cref="M:ConsumeMessage" />. The consuming <see cref="T:System.Threading.Tasks.Dataflow.ITargetBlock`1" /> must use the returned value instead of the value passed as messageValue through <see cref="M:OfferMessage" />.If the message requested is not available, the return value will be null.</returns>
+      <param name="messageHeader">The <see cref="T:System.Threading.Tasks.Dataflow.DataflowMessageHeader" /> of the message being consumed.</param>
+      <param name="target">The <see cref="T:System.Threading.Tasks.Dataflow.ITargetBlock`1" /> consuming the message.</param>
+      <param name="messageConsumed">true if the message was successfully consumed; otherwise, false.</param>
+      <exception cref="T:System.ArgumentException">The <paramref name="messageHeader" /> is not valid.</exception>
+      <exception cref="T:System.ArgumentNullException">The <paramref name="target" /> is null.</exception>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.BatchBlock`1.System#Threading#Tasks#Dataflow#ISourceBlock{TOutput}#ReleaseReservation(System.Threading.Tasks.Dataflow.DataflowMessageHeader,System.Threading.Tasks.Dataflow.ITargetBlock{`0[]})">
+      <summary>Called by a linked <see cref="T:System.Threading.Tasks.Dataflow.ITargetBlock`1" /> to release a previously reserved <see cref="T:System.Threading.Tasks.Dataflow.DataflowMessageHeader" /> by this <see cref="T:System.Threading.Tasks.Dataflow.ISourceBlock`1" />.</summary>
+      <param name="messageHeader">The <see cref="T:System.Threading.Tasks.Dataflow.DataflowMessageHeader" /> of the reserved message being released.</param>
+      <param name="target">The <see cref="T:System.Threading.Tasks.Dataflow.ITargetBlock`1" /> releasing the message it previously reserved.</param>
+      <exception cref="T:System.ArgumentException">The <paramref name="messageHeader" /> is not valid.</exception>
+      <exception cref="T:System.ArgumentNullException">The <paramref name="target" /> is null.</exception>
+      <exception cref="T:System.InvalidOperationException">The <paramref name="target" /> did not have the message reserved.</exception>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.BatchBlock`1.System#Threading#Tasks#Dataflow#ISourceBlock{TOutput}#ReserveMessage(System.Threading.Tasks.Dataflow.DataflowMessageHeader,System.Threading.Tasks.Dataflow.ITargetBlock{`0[]})">
+      <summary>Called by a linked <see cref="T:System.Threading.Tasks.Dataflow.ITargetBlock`1" /> to reserve a previously offered <see cref="T:System.Threading.Tasks.Dataflow.DataflowMessageHeader" /> by this <see cref="T:System.Threading.Tasks.Dataflow.ISourceBlock`1" />.</summary>
+      <returns>true if the message was successfully reserved; otherwise, false.</returns>
+      <param name="messageHeader">The <see cref="T:System.Threading.Tasks.Dataflow.DataflowMessageHeader" /> of the message being reserved.</param>
+      <param name="target">The <see cref="T:System.Threading.Tasks.Dataflow.ITargetBlock`1" /> reserving the message.</param>
+      <exception cref="T:System.ArgumentException">The <paramref name="messageHeader" /> is not valid.</exception>
+      <exception cref="T:System.ArgumentNullException">The <paramref name="target" /> is null.</exception>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.BatchBlock`1.System#Threading#Tasks#Dataflow#ITargetBlock{TInput}#OfferMessage(System.Threading.Tasks.Dataflow.DataflowMessageHeader,`0,System.Threading.Tasks.Dataflow.ISourceBlock{`0},System.Boolean)">
+      <summary>Offers a message to the <see cref="T:System.Threading.Tasks.Dataflow.ITargetBlock`1" />, giving the target the opportunity to consume or postpone the message.</summary>
+      <returns>The status of the offered message. If the message was accepted by the target, <see cref="F:System.Threading.Tasks.Dataflow.DataflowMessageStatus.Accepted" /> is returned, and the source should no longer use the offered message, because it is now owned by the target. If the message was postponed by the target, <see cref="F:System.Threading.Tasks.Dataflow.DataflowMessageStatus.Postponed" /> is returned as a notification that the target may later attempt to consume or reserve the message; in the meantime, the source still owns the message and may offer it to other blocks.If the target would have otherwise postponed message, but <paramref name="source" /> was null, <see cref="F:System.Threading.Tasks.Dataflow.DataflowMessageStatus.Declined" /> is instead returned. If the target tried to accept the message but missed it due to the source delivering the message to another target or simply discarding it, <see cref="F:System.Threading.Tasks.Dataflow.DataflowMessageStatus.NotAvailable" /> is returned. If the target chose not to accept the message, <see cref="F:System.Threading.Tasks.Dataflow.DataflowMessageStatus.Declined" /> is returned. If the target chose not to accept the message and will never accept another message from this source, <see cref="F:System.Threading.Tasks.Dataflow.DataflowMessageStatus.DecliningPermanently" /> is returned.</returns>
+      <param name="messageHeader">A <see cref="T:System.Threading.Tasks.Dataflow.DataflowMessageHeader" /> instance that represents the header of the message being offered.</param>
+      <param name="messageValue">The value of the message being offered.</param>
+      <param name="source">The <see cref="T:System.Threading.Tasks.Dataflow.ISourceBlock`1" /> offering the message. This may be null.</param>
+      <param name="consumeToAccept">Set to true to instruct the target to call <see cref="M:System.Threading.Tasks.Dataflow.ISourceBlock`1.ConsumeMessage()" /> synchronously during the call to <see cref="M:System.Threading.Tasks.Dataflow.ITargetBlock`1.OfferMessage()" />, prior to returning <see cref="F:System.Threading.Tasks.Dataflow.DataflowMessageStatus.Accepted" />, in order to consume the message.</param>
+      <exception cref="T:System.ArgumentException">The <paramref name="messageHeader" /> is not valid.-or-<paramref name="consumeToAccept" /> may only be true if provided with a non-null <paramref name="source" />.</exception>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.BatchBlock`1.ToString">
+      <summary>Returns a string that represents the formatted name of this <see cref="T:System.Threading.Tasks.Dataflow.IDataflowBlock" /> instance.</summary>
+      <returns>A string that represents the formatted name of this <see cref="T:System.Threading.Tasks.Dataflow.IDataflowBlock" /> instance.</returns>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.BatchBlock`1.TriggerBatch">
+      <summary>Triggers the <see cref="T:System.Threading.Tasks.Dataflow.BatchBlock`1" /> to initiate a batching operation even if the number of currently queued or postponed items is less than the <see cref="P:System.Threading.Tasks.Dataflow.BatchBlock`1.BatchSize" />.</summary>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.BatchBlock`1.TryReceive(System.Predicate{`0[]},`0[]@)">
+      <summary>Attempts to synchronously receive an available output item from the <see cref="T:System.Threading.Tasks.Dataflow.IReceivableSourceBlock`1" />.</summary>
+      <returns>true if an item could be received; otherwise, false.</returns>
+      <param name="filter">The predicate a value must successfully pass in order for it to be received. <paramref name="filter" /> may be null, in which case all items will pass.</param>
+      <param name="item">The item received from the source.</param>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.BatchBlock`1.TryReceiveAll(System.Collections.Generic.IList{`0[]}@)">
+      <summary>Attempts to synchronously receive all available items from the <see cref="T:System.Threading.Tasks.Dataflow.IReceivableSourceBlock`1" />.</summary>
+      <returns>true if one or more items could be received; otherwise, false.</returns>
+      <param name="items">The items received from the source.</param>
+    </member>
+    <member name="T:System.Threading.Tasks.Dataflow.BatchedJoinBlock`2">
+      <summary>Provides a dataflow block that batches a specified number of inputs of potentially differing types provided to one or more of its targets.</summary>
+      <typeparam name="T1">Specifies the type of data accepted by the block's first target.</typeparam>
+      <typeparam name="T2">Specifies the type of data accepted by the block's second target.</typeparam>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.BatchedJoinBlock`2.#ctor(System.Int32)">
+      <summary>Initializes a new<see cref="T:System.Threading.Tasks.Dataflow.BatchedJoinBlock`2" /> with the specified configuration.</summary>
+      <param name="batchSize">The number of items to group into a batch.</param>
+      <exception cref="T:System.ArgumentOutOfRangeException">The <paramref name="batchSize" /> must be positive.</exception>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.BatchedJoinBlock`2.#ctor(System.Int32,System.Threading.Tasks.Dataflow.GroupingDataflowBlockOptions)">
+      <summary>Initializes a new <see cref="T:System.Threading.Tasks.Dataflow.BatchedJoinBlock`2" /> with the specified configuration.</summary>
+      <param name="batchSize">The number of items to group into a batch.</param>
+      <param name="dataflowBlockOptions">The options with which to configure this <see cref="T:System.Threading.Tasks.Dataflow.BatchedJoinBlock`2" />.</param>
+      <exception cref="T:System.ArgumentOutOfRangeException">The <paramref name="batchSize" /> must be positive.</exception>
+      <exception cref="T:System.ArgumentNullException">The <paramref name="dataflowBlockOptions" /> is null.</exception>
+    </member>
+    <member name="P:System.Threading.Tasks.Dataflow.BatchedJoinBlock`2.BatchSize">
+      <summary>Gets the size of the batches generated by this <see cref="T:System.Threading.Tasks.Dataflow.BatchedJoinBlock`2" />.</summary>
+      <returns>The batch size.</returns>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.BatchedJoinBlock`2.Complete">
+      <summary>Signals to the <see cref="T:System.Threading.Tasks.Dataflow.IDataflowBlock" /> that it should not accept nor produce any more messages nor consume any more postponed messages.</summary>
+    </member>
+    <member name="P:System.Threading.Tasks.Dataflow.BatchedJoinBlock`2.Completion">
+      <summary>Gets a <see cref="T:System.Threading.Tasks.Task" /> that represents the asynchronous operation and completion of the dataflow block.</summary>
+      <returns>The task.</returns>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.BatchedJoinBlock`2.LinkTo(System.Threading.Tasks.Dataflow.ITargetBlock{System.Tuple{System.Collections.Generic.IList{`0},System.Collections.Generic.IList{`1}}},System.Threading.Tasks.Dataflow.DataflowLinkOptions)">
+      <summary>Links the <see cref="T:System.Threading.Tasks.Dataflow.ISourceBlock`1" /> to the specified <see cref="T:System.Threading.Tasks.Dataflow.ITargetBlock`1" />.</summary>
+      <returns>An IDisposable that, upon calling Dispose, will unlink the source from the target.</returns>
+      <param name="target">The <see cref="T:System.Threading.Tasks.Dataflow.ITargetBlock`1" /> to which to connect this source.</param>
+      <param name="linkOptions">A <see cref="T:System.Threading.Tasks.Dataflow.DataflowLinkOptions" />  instance that configures the link.</param>
+      <exception cref="T:System.ArgumentNullException">
+        <paramref name="target" /> is null (Nothing in Visual Basic) or <paramref name="linkOptions" /> is null (Nothing in Visual Basic).</exception>
+    </member>
+    <member name="P:System.Threading.Tasks.Dataflow.BatchedJoinBlock`2.OutputCount">
+      <summary>Gets the number of output items available to be received from this block.</summary>
+      <returns>The number of output items.</returns>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.BatchedJoinBlock`2.System#Threading#Tasks#Dataflow#IDataflowBlock#Fault(System.Exception)">
+      <summary>Causes the <see cref="T:System.Threading.Tasks.Dataflow.IDataflowBlock" /> to complete in a <see cref="F:System.Threading.Tasks.TaskStatus.Faulted" /> state.</summary>
+      <param name="exception">The <see cref="T:System.Exception" /> that caused the faulting.</param>
+      <exception cref="T:System.ArgumentNullException">The <paramref name="exception" /> is null.</exception>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.BatchedJoinBlock`2.System#Threading#Tasks#Dataflow#ISourceBlock{TOutput}#ConsumeMessage(System.Threading.Tasks.Dataflow.DataflowMessageHeader,System.Threading.Tasks.Dataflow.ITargetBlock{System.Tuple{System.Collections.Generic.IList{`0},System.Collections.Generic.IList{`1}}},System.Boolean@)">
+      <summary>Called by a linked <see cref="T:System.Threading.Tasks.Dataflow.ITargetBlock`1" /> to accept and consume a <see cref="T:System.Threading.Tasks.Dataflow.DataflowMessageHeader" /> previously offered by this <see cref="T:System.Threading.Tasks.Dataflow.ISourceBlock`1" />.</summary>
+      <returns>The value of the consumed message. This may correspond to a different <see cref="T:System.Threading.Tasks.Dataflow.DataflowMessageHeader" /> instance than was previously reserved and passed as the <paramref name="messageHeader" /> to <see cref="M:ConsumeMessage" />. The consuming <see cref="T:System.Threading.Tasks.Dataflow.ITargetBlock`1" /> must use the returned value instead of the value passed as messageValue through <see cref="M:OfferMessage" />.If the message requested is not available, the return value will be null.</returns>
+      <param name="messageHeader">The <see cref="T:System.Threading.Tasks.Dataflow.DataflowMessageHeader" /> of the message being consumed.</param>
+      <param name="target">The <see cref="T:System.Threading.Tasks.Dataflow.ITargetBlock`1" /> consuming the message.</param>
+      <param name="messageConsumed">true if the message was successfully consumed; otherwise, false.</param>
+      <exception cref="T:System.ArgumentException">The <paramref name="messageHeader" /> is not valid.</exception>
+      <exception cref="T:System.ArgumentNullException">The <paramref name="target" /> is null.</exception>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.BatchedJoinBlock`2.System#Threading#Tasks#Dataflow#ISourceBlock{TOutput}#ReleaseReservation(System.Threading.Tasks.Dataflow.DataflowMessageHeader,System.Threading.Tasks.Dataflow.ITargetBlock{System.Tuple{System.Collections.Generic.IList{`0},System.Collections.Generic.IList{`1}}})">
+      <summary>Called by a linked <see cref="T:System.Threading.Tasks.Dataflow.ITargetBlock`1" /> to release a previously reserved <see cref="T:System.Threading.Tasks.Dataflow.DataflowMessageHeader" /> by this <see cref="T:System.Threading.Tasks.Dataflow.ISourceBlock`1" />.</summary>
+      <param name="messageHeader">The <see cref="T:System.Threading.Tasks.Dataflow.DataflowMessageHeader" /> of the reserved message being released.</param>
+      <param name="target">The <see cref="T:System.Threading.Tasks.Dataflow.ITargetBlock`1" /> releasing the message it previously reserved.</param>
+      <exception cref="T:System.ArgumentException">The <paramref name="messageHeader" /> is not valid.</exception>
+      <exception cref="T:System.ArgumentNullException">The <paramref name="target" /> is null.</exception>
+      <exception cref="T:System.InvalidOperationException">The <paramref name="target" /> did not have the message reserved.</exception>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.BatchedJoinBlock`2.System#Threading#Tasks#Dataflow#ISourceBlock{TOutput}#ReserveMessage(System.Threading.Tasks.Dataflow.DataflowMessageHeader,System.Threading.Tasks.Dataflow.ITargetBlock{System.Tuple{System.Collections.Generic.IList{`0},System.Collections.Generic.IList{`1}}})">
+      <summary>Called by a linked <see cref="T:System.Threading.Tasks.Dataflow.ITargetBlock`1" /> to reserve a previously offered <see cref="T:System.Threading.Tasks.Dataflow.DataflowMessageHeader" /> by this <see cref="T:System.Threading.Tasks.Dataflow.ISourceBlock`1" />.</summary>
+      <returns>true if the message was successfully reserved; otherwise, false.</returns>
+      <param name="messageHeader">The <see cref="T:System.Threading.Tasks.Dataflow.DataflowMessageHeader" /> of the message being reserved.</param>
+      <param name="target">The <see cref="T:System.Threading.Tasks.Dataflow.ITargetBlock`1" /> reserving the message.</param>
+      <exception cref="T:System.ArgumentException">The <paramref name="messageHeader" /> is not valid.</exception>
+      <exception cref="T:System.ArgumentNullException">The <paramref name="target" /> is null.</exception>
+    </member>
+    <member name="P:System.Threading.Tasks.Dataflow.BatchedJoinBlock`2.Target1">
+      <summary>Gets a target that may be used to offer messages of the first type.</summary>
+      <returns>The target.</returns>
+    </member>
+    <member name="P:System.Threading.Tasks.Dataflow.BatchedJoinBlock`2.Target2">
+      <summary>Gets a target that may be used to offer messages of the second type.</summary>
+      <returns>The target.</returns>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.BatchedJoinBlock`2.ToString">
+      <summary>Returns a string that represents the formatted name of this <see cref="T:System.Threading.Tasks.Dataflow.IDataflowBlock" /> instance.</summary>
+      <returns>A string that represents the formatted name of this <see cref="T:System.Threading.Tasks.Dataflow.IDataflowBlock" /> instance.</returns>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.BatchedJoinBlock`2.TryReceive(System.Predicate{System.Tuple{System.Collections.Generic.IList{`0},System.Collections.Generic.IList{`1}}},System.Tuple{System.Collections.Generic.IList{`0},System.Collections.Generic.IList{`1}}@)">
+      <summary>Attempts to synchronously receive an available output item from the <see cref="T:System.Threading.Tasks.Dataflow.IReceivableSourceBlock`1" />.</summary>
+      <returns>true if an item could be received; otherwise, false.</returns>
+      <param name="filter">The predicate a value must successfully pass in order for it to be received. <paramref name="filter" /> may be null, in which case all items will pass.</param>
+      <param name="item">The item received from the source.</param>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.BatchedJoinBlock`2.TryReceiveAll(System.Collections.Generic.IList{System.Tuple{System.Collections.Generic.IList{`0},System.Collections.Generic.IList{`1}}}@)">
+      <summary>Attempts to synchronously receive all available items from the <see cref="T:System.Threading.Tasks.Dataflow.IReceivableSourceBlock`1" />.</summary>
+      <returns>true if one or more items could be received; otherwise, false.</returns>
+      <param name="items">The items received from the source.</param>
+    </member>
+    <member name="T:System.Threading.Tasks.Dataflow.BatchedJoinBlock`3">
+      <summary>Provides a dataflow block that batches a specified number of inputs of potentially differing types provided to one or more of its targets.</summary>
+      <typeparam name="T1">Specifies the type of data accepted by the block's first target.</typeparam>
+      <typeparam name="T2">Specifies the type of data accepted by the block's second target.</typeparam>
+      <typeparam name="T3">Specifies the type of data accepted by the block's third target.</typeparam>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.BatchedJoinBlock`3.#ctor(System.Int32)">
+      <summary>Initializes a new <see cref="T:System.Threading.Tasks.Dataflow.BatchedJoinBlock`3" /> with the specified configuration.</summary>
+      <param name="batchSize">The number of items to group into a batch.</param>
+      <exception cref="T:System.ArgumentOutOfRangeException">The <paramref name="batchSize" /> must be positive.</exception>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.BatchedJoinBlock`3.#ctor(System.Int32,System.Threading.Tasks.Dataflow.GroupingDataflowBlockOptions)">
+      <summary>Initializes a new <see cref="T:System.Threading.Tasks.Dataflow.BatchedJoinBlock`3" /> with the specified configuration.</summary>
+      <param name="batchSize">The number of items to group into a batch.</param>
+      <param name="dataflowBlockOptions">The options with which to configure this <see cref="T:System.Threading.Tasks.Dataflow.BatchedJoinBlock`2" />.</param>
+      <exception cref="T:System.ArgumentOutOfRangeException">The <paramref name="batchSize" /> must be positive.</exception>
+      <exception cref="T:System.ArgumentNullException">The <paramref name="dataflowBlockOptions" /> is null.</exception>
+    </member>
+    <member name="P:System.Threading.Tasks.Dataflow.BatchedJoinBlock`3.BatchSize">
+      <summary>Gets the size of the batches generated by this <see cref="T:System.Threading.Tasks.Dataflow.BatchedJoinBlock`3" />.</summary>
+      <returns>The batch size.</returns>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.BatchedJoinBlock`3.Complete">
+      <summary>Signals to the <see cref="T:System.Threading.Tasks.Dataflow.IDataflowBlock" /> that it should not accept nor produce any more messages nor consume any more postponed messages.</summary>
+    </member>
+    <member name="P:System.Threading.Tasks.Dataflow.BatchedJoinBlock`3.Completion">
+      <summary>Gets a <see cref="T:System.Threading.Tasks.Task" /> that represents the asynchronous operation and completion of the dataflow block.</summary>
+      <returns>The task.</returns>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.BatchedJoinBlock`3.LinkTo(System.Threading.Tasks.Dataflow.ITargetBlock{System.Tuple{System.Collections.Generic.IList{`0},System.Collections.Generic.IList{`1},System.Collections.Generic.IList{`2}}},System.Threading.Tasks.Dataflow.DataflowLinkOptions)">
+      <summary>Links the <see cref="T:System.Threading.Tasks.Dataflow.ISourceBlock`1" /> to the specified <see cref="T:System.Threading.Tasks.Dataflow.ITargetBlock`1" />.</summary>
+      <returns>An IDisposable that, upon calling Dispose, will unlink the source from the target.</returns>
+      <param name="target">The <see cref="T:System.Threading.Tasks.Dataflow.ITargetBlock`1" /> to which to connect this source.</param>
+      <param name="linkOptions">true if the source should unlink from the target after successfully propagating a single message; false to remain connected even after a single message has been propagated.</param>
+      <exception cref="T:System.ArgumentNullException">
+        <paramref name="target" /> is null (Nothing in Visual Basic) or <paramref name="linkOptions" /> is null (Nothing in Visual Basic).</exception>
+    </member>
+    <member name="P:System.Threading.Tasks.Dataflow.BatchedJoinBlock`3.OutputCount">
+      <summary>Gets the number of output items available to be received from this block.</summary>
+      <returns>The number of output items.</returns>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.BatchedJoinBlock`3.System#Threading#Tasks#Dataflow#IDataflowBlock#Fault(System.Exception)">
+      <summary>Causes the <see cref="T:System.Threading.Tasks.Dataflow.IDataflowBlock" /> to complete in a <see cref="F:System.Threading.Tasks.TaskStatus.Faulted" /> state.</summary>
+      <param name="exception">The <see cref="T:System.Exception" /> that caused the faulting.</param>
+      <exception cref="T:System.ArgumentNullException">The <paramref name="exception" /> is null.</exception>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.BatchedJoinBlock`3.System#Threading#Tasks#Dataflow#ISourceBlock{TOutput}#ConsumeMessage(System.Threading.Tasks.Dataflow.DataflowMessageHeader,System.Threading.Tasks.Dataflow.ITargetBlock{System.Tuple{System.Collections.Generic.IList{`0},System.Collections.Generic.IList{`1},System.Collections.Generic.IList{`2}}},System.Boolean@)">
+      <summary>Called by a linked <see cref="T:System.Threading.Tasks.Dataflow.ITargetBlock`1" /> to accept and consume a <see cref="T:System.Threading.Tasks.Dataflow.DataflowMessageHeader" /> previously offered by this <see cref="T:System.Threading.Tasks.Dataflow.ISourceBlock`1" />.</summary>
+      <returns>The value of the consumed message. This may correspond to a different <see cref="T:System.Threading.Tasks.Dataflow.DataflowMessageHeader" /> instance than was previously reserved and passed as the <paramref name="messageHeader" /> to <see cref="M:ConsumeMessage" />. The consuming <see cref="T:System.Threading.Tasks.Dataflow.ITargetBlock`1" /> must use the returned value instead of the value passed as messageValue through <see cref="M:OfferMessage" />.If the message requested is not available, the return value will be null.</returns>
+      <param name="messageHeader">The <see cref="T:System.Threading.Tasks.Dataflow.DataflowMessageHeader" /> of the message being consumed.</param>
+      <param name="target">The <see cref="T:System.Threading.Tasks.Dataflow.ITargetBlock`1" /> consuming the message.</param>
+      <param name="messageConsumed">true if the message was successfully consumed; otherwise, false.</param>
+      <exception cref="T:System.ArgumentException">The <paramref name="messageHeader" /> is not valid.</exception>
+      <exception cref="T:System.ArgumentNullException">The <paramref name="target" /> is null.</exception>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.BatchedJoinBlock`3.System#Threading#Tasks#Dataflow#ISourceBlock{TOutput}#ReleaseReservation(System.Threading.Tasks.Dataflow.DataflowMessageHeader,System.Threading.Tasks.Dataflow.ITargetBlock{System.Tuple{System.Collections.Generic.IList{`0},System.Collections.Generic.IList{`1},System.Collections.Generic.IList{`2}}})">
+      <summary>Called by a linked <see cref="T:System.Threading.Tasks.Dataflow.ITargetBlock`1" /> to release a previously reserved <see cref="T:System.Threading.Tasks.Dataflow.DataflowMessageHeader" /> by this <see cref="T:System.Threading.Tasks.Dataflow.ISourceBlock`1" />.</summary>
+      <param name="messageHeader">The <see cref="T:System.Threading.Tasks.Dataflow.DataflowMessageHeader" /> of the reserved message being released.</param>
+      <param name="target">The <see cref="T:System.Threading.Tasks.Dataflow.ITargetBlock`1" /> releasing the message it previously reserved.</param>
+      <exception cref="T:System.ArgumentException">The <paramref name="messageHeader" /> is not valid.</exception>
+      <exception cref="T:System.ArgumentNullException">The <paramref name="target" /> is null.</exception>
+      <exception cref="T:System.InvalidOperationException">The <paramref name="target" /> did not have the message reserved.</exception>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.BatchedJoinBlock`3.System#Threading#Tasks#Dataflow#ISourceBlock{TOutput}#ReserveMessage(System.Threading.Tasks.Dataflow.DataflowMessageHeader,System.Threading.Tasks.Dataflow.ITargetBlock{System.Tuple{System.Collections.Generic.IList{`0},System.Collections.Generic.IList{`1},System.Collections.Generic.IList{`2}}})">
+      <summary>Called by a linked <see cref="T:System.Threading.Tasks.Dataflow.ITargetBlock`1" /> to reserve a previously offered <see cref="T:System.Threading.Tasks.Dataflow.DataflowMessageHeader" /> by this <see cref="T:System.Threading.Tasks.Dataflow.ISourceBlock`1" />.</summary>
+      <returns>true if the message was successfully reserved; otherwise, false.</returns>
+      <param name="messageHeader">The <see cref="T:System.Threading.Tasks.Dataflow.DataflowMessageHeader" /> of the message being reserved.</param>
+      <param name="target">The <see cref="T:System.Threading.Tasks.Dataflow.ITargetBlock`1" /> reserving the message.</param>
+      <exception cref="T:System.ArgumentException">The <paramref name="messageHeader" /> is not valid.</exception>
+      <exception cref="T:System.ArgumentNullException">The <paramref name="target" /> is null.</exception>
+    </member>
+    <member name="P:System.Threading.Tasks.Dataflow.BatchedJoinBlock`3.Target1">
+      <summary>Gets a target that may be used to offer messages of the first type.</summary>
+      <returns>The target.</returns>
+    </member>
+    <member name="P:System.Threading.Tasks.Dataflow.BatchedJoinBlock`3.Target2">
+      <summary>Gets a target that may be used to offer messages of the second type.</summary>
+      <returns>The target.</returns>
+    </member>
+    <member name="P:System.Threading.Tasks.Dataflow.BatchedJoinBlock`3.Target3">
+      <summary>Gets a target that may be used to offer messages of the third type.</summary>
+      <returns>The target.</returns>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.BatchedJoinBlock`3.ToString">
+      <summary>Returns a string that represents the formatted name of this <see cref="T:System.Threading.Tasks.Dataflow.IDataflowBlock" /> instance.</summary>
+      <returns>A string that represents the formatted name of this <see cref="T:System.Threading.Tasks.Dataflow.IDataflowBlock" /> instance.</returns>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.BatchedJoinBlock`3.TryReceive(System.Predicate{System.Tuple{System.Collections.Generic.IList{`0},System.Collections.Generic.IList{`1},System.Collections.Generic.IList{`2}}},System.Tuple{System.Collections.Generic.IList{`0},System.Collections.Generic.IList{`1},System.Collections.Generic.IList{`2}}@)">
+      <summary>Attempts to synchronously receive an available output item from the <see cref="T:System.Threading.Tasks.Dataflow.IReceivableSourceBlock`1" />.</summary>
+      <returns>true if an item could be received; otherwise, false.</returns>
+      <param name="filter">The predicate a value must successfully pass in order for it to be received. <paramref name="filter" /> may be null in which case all items will pass.</param>
+      <param name="item">The item received from the source.</param>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.BatchedJoinBlock`3.TryReceiveAll(System.Collections.Generic.IList{System.Tuple{System.Collections.Generic.IList{`0},System.Collections.Generic.IList{`1},System.Collections.Generic.IList{`2}}}@)">
+      <summary>Attempts to synchronously receive all available items from the <see cref="T:System.Threading.Tasks.Dataflow.IReceivableSourceBlock`1" />.</summary>
+      <returns>true if one or more items could be received; otherwise, false.</returns>
+      <param name="items">The items received from the source.</param>
+    </member>
+    <member name="T:System.Threading.Tasks.Dataflow.BroadcastBlock`1">
+      <summary>Provides a buffer for storing at most one element at time, overwriting each message with the next as it arrives.  Messages are broadcast to all linked targets, all of which may consume a clone of the message.</summary>
+      <typeparam name="T">Specifies the type of the data buffered by this dataflow block.</typeparam>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.BroadcastBlock`1.#ctor(System.Func{`0,`0})">
+      <summary>Initializes the <see cref="T:System.Threading.Tasks.Dataflow.BroadcastBlock`1" /> with the specified cloning function.</summary>
+      <param name="cloningFunction">The function to use to clone the data when offered to other blocks.</param>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.BroadcastBlock`1.#ctor(System.Func{`0,`0},System.Threading.Tasks.Dataflow.DataflowBlockOptions)">
+      <summary>Initializes the <see cref="T:System.Threading.Tasks.Dataflow.BroadcastBlock`1" /> with the specified cloning function and <see cref="T:System.Threading.Tasks.Dataflow.DataflowBlockOptions" />.</summary>
+      <param name="cloningFunction">The function to use to clone the data when offered to other blocks.</param>
+      <param name="dataflowBlockOptions">The options with which to configure this <see cref="T:System.Threading.Tasks.Dataflow.BroadcastBlock`1" />.</param>
+      <exception cref="T:System.ArgumentNullException">The <paramref name="dataflowBlockOptions" /> is null.</exception>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.BroadcastBlock`1.Complete">
+      <summary>Signals to the <see cref="T:System.Threading.Tasks.Dataflow.IDataflowBlock" /> that it should not accept nor produce any more messages nor consume any more postponed messages.</summary>
+    </member>
+    <member name="P:System.Threading.Tasks.Dataflow.BroadcastBlock`1.Completion">
+      <summary>Gets a <see cref="T:System.Threading.Tasks.Task" /> that represents the asynchronous operation and completion of the dataflow block.</summary>
+      <returns>The task.</returns>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.BroadcastBlock`1.LinkTo(System.Threading.Tasks.Dataflow.ITargetBlock{`0},System.Threading.Tasks.Dataflow.DataflowLinkOptions)">
+      <summary>Links the <see cref="T:System.Threading.Tasks.Dataflow.ISourceBlock`1" /> to the specified <see cref="T:System.Threading.Tasks.Dataflow.ITargetBlock`1" />.</summary>
+      <returns>An IDisposable that, upon calling Dispose, will unlink the source from the target.</returns>
+      <param name="target">The <see cref="T:System.Threading.Tasks.Dataflow.ITargetBlock`1" /> to which to connect this source.</param>
+      <param name="linkOptions">A <see cref="T:System.Threading.Tasks.Dataflow.DataflowLinkOptions" />  instance that configures the link.</param>
+      <exception cref="T:System.ArgumentNullException">
+        <paramref name="target" /> is null (Nothing in Visual Basic) or <paramref name="linkOptions" /> is null (Nothing in Visual Basic).</exception>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.BroadcastBlock`1.System#Threading#Tasks#Dataflow#IDataflowBlock#Fault(System.Exception)">
+      <summary>Causes the <see cref="T:System.Threading.Tasks.Dataflow.IDataflowBlock" /> to complete in a <see cref="F:System.Threading.Tasks.TaskStatus.Faulted" /> state.</summary>
+      <param name="exception">The <see cref="T:System.Exception" /> that caused the faulting.</param>
+      <exception cref="T:System.ArgumentNullException">The <paramref name="exception" /> is null.</exception>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.BroadcastBlock`1.System#Threading#Tasks#Dataflow#IReceivableSourceBlock{TOutput}#TryReceiveAll(System.Collections.Generic.IList{`0}@)">
+      <summary>Attempts to synchronously receive all available items from the <see cref="T:System.Threading.Tasks.Dataflow.IReceivableSourceBlock`1" />.</summary>
+      <returns>true if one or more items could be received; otherwise, false.</returns>
+      <param name="items">The items received from the source.</param>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.BroadcastBlock`1.System#Threading#Tasks#Dataflow#ISourceBlock{TOutput}#ConsumeMessage(System.Threading.Tasks.Dataflow.DataflowMessageHeader,System.Threading.Tasks.Dataflow.ITargetBlock{`0},System.Boolean@)">
+      <summary>Called by a linked <see cref="T:System.Threading.Tasks.Dataflow.ITargetBlock`1" /> to accept and consume a <see cref="T:System.Threading.Tasks.Dataflow.DataflowMessageHeader" /> previously offered by this <see cref="T:System.Threading.Tasks.Dataflow.ISourceBlock`1" />.</summary>
+      <returns>The value of the consumed message. This may correspond to a different <see cref="T:System.Threading.Tasks.Dataflow.DataflowMessageHeader" /> instance than was previously reserved and passed as the <paramref name="messageHeader" /> to <see cref="M:System.Threading.Tasks.Dataflow.ISourceBlock`1.ConsumeMessage()" />. The consuming <see cref="T:System.Threading.Tasks.Dataflow.ITargetBlock`1" /> must use the returned value instead of the value passed as <paramref name="messageValue" /> through <see cref="M:System.Threading.Tasks.Dataflow.ITargetBlock`1.OfferMessage()" />.If the message requested is not available, the return value will be null.</returns>
+      <param name="messageHeader">The <see cref="T:System.Threading.Tasks.Dataflow.DataflowMessageHeader" /> of the message being consumed.</param>
+      <param name="target">The <see cref="T:System.Threading.Tasks.Dataflow.ITargetBlock`1" /> consuming the message.</param>
+      <param name="messageConsumed">true if the message was successfully consumed; otherwise, false.</param>
+      <exception cref="T:System.ArgumentException">The <paramref name="messageHeader" /> is not valid.</exception>
+      <exception cref="T:System.ArgumentNullException">The <paramref name="target" /> is null.</exception>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.BroadcastBlock`1.System#Threading#Tasks#Dataflow#ISourceBlock{TOutput}#ReleaseReservation(System.Threading.Tasks.Dataflow.DataflowMessageHeader,System.Threading.Tasks.Dataflow.ITargetBlock{`0})">
+      <summary>Called by a linked <see cref="T:System.Threading.Tasks.Dataflow.ITargetBlock`1" /> to release a previously reserved <see cref="T:System.Threading.Tasks.Dataflow.DataflowMessageHeader" /> by this <see cref="T:System.Threading.Tasks.Dataflow.ISourceBlock`1" />.</summary>
+      <param name="messageHeader">The <see cref="T:System.Threading.Tasks.Dataflow.DataflowMessageHeader" /> of the reserved message being released.</param>
+      <param name="target">The <see cref="T:System.Threading.Tasks.Dataflow.ITargetBlock`1" /> releasing the message it previously reserved.</param>
+      <exception cref="T:System.ArgumentException">The <paramref name="messageHeader" /> is not valid.</exception>
+      <exception cref="T:System.ArgumentNullException">The <paramref name="target" /> is null.</exception>
+      <exception cref="T:System.InvalidOperationException">The <paramref name="target" /> did not have the message reserved.</exception>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.BroadcastBlock`1.System#Threading#Tasks#Dataflow#ISourceBlock{TOutput}#ReserveMessage(System.Threading.Tasks.Dataflow.DataflowMessageHeader,System.Threading.Tasks.Dataflow.ITargetBlock{`0})">
+      <summary>Called by a linked <see cref="T:System.Threading.Tasks.Dataflow.ITargetBlock`1" /> to reserve a previously offered <see cref="T:System.Threading.Tasks.Dataflow.DataflowMessageHeader" /> by this <see cref="T:System.Threading.Tasks.Dataflow.ISourceBlock`1" />.</summary>
+      <returns>true if the message was successfully reserved; otherwise, false.</returns>
+      <param name="messageHeader">The <see cref="T:System.Threading.Tasks.Dataflow.DataflowMessageHeader" /> of the message being reserved.</param>
+      <param name="target">The <see cref="T:System.Threading.Tasks.Dataflow.ITargetBlock`1" /> reserving the message.</param>
+      <exception cref="T:System.ArgumentException">The <paramref name="messageHeader" /> is not valid.</exception>
+      <exception cref="T:System.ArgumentNullException">The <paramref name="target" /> is null.</exception>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.BroadcastBlock`1.System#Threading#Tasks#Dataflow#ITargetBlock{TInput}#OfferMessage(System.Threading.Tasks.Dataflow.DataflowMessageHeader,`0,System.Threading.Tasks.Dataflow.ISourceBlock{`0},System.Boolean)">
+      <summary>Offers a message to the <see cref="T:System.Threading.Tasks.Dataflow.ITargetBlock`1" />, giving the target the opportunity to consume or postpone the message.</summary>
+      <returns>The status of the offered message. If the message was accepted by the target, <see cref="F:System.Threading.Tasks.Dataflow.DataflowMessageStatus.Accepted" /> is returned, and the source should no longer use the offered message, because it is now owned by the target. If the message was postponed by the target, <see cref="F:System.Threading.Tasks.Dataflow.DataflowMessageStatus.Postponed" /> is returned as a notification that the target may later attempt to consume or reserve the message; in the meantime, the source still owns the message and may offer it to other blocks.If the target would have otherwise postponed message, but <paramref name="source" /> was null, <see cref="F:System.Threading.Tasks.Dataflow.DataflowMessageStatus.Declined" /> is instead returned. If the target tried to accept the message but missed it due to the source delivering the message to another target or simply discarding it, <see cref="F:System.Threading.Tasks.Dataflow.DataflowMessageStatus.NotAvailable" /> is returned. If the target chose not to accept the message, <see cref="F:System.Threading.Tasks.Dataflow.DataflowMessageStatus.Declined" /> is returned. If the target chose not to accept the message and will never accept another message from this source, <see cref="F:System.Threading.Tasks.Dataflow.DataflowMessageStatus.DecliningPermanently" /> is returned.</returns>
+      <param name="messageHeader">A <see cref="T:System.Threading.Tasks.Dataflow.DataflowMessageHeader" /> instance that represents the header of the message being offered.</param>
+      <param name="messageValue">The value of the message being offered.</param>
+      <param name="source">The <see cref="T:System.Threading.Tasks.Dataflow.ISourceBlock`1" /> offering the message. This may be null.</param>
+      <param name="consumeToAccept">Set to true to instruct the target to call <see cref="M:System.Threading.Tasks.Dataflow.ISourceBlock`1.ConsumeMessage()" /> synchronously during the call to <see cref="M:System.Threading.Tasks.Dataflow.ITargetBlock`1.OfferMessage()" />, prior to returning <see cref="F:System.Threading.Tasks.Dataflow.DataflowMessageStatus.Accepted" />, in order to consume the message.</param>
+      <exception cref="T:System.ArgumentException">The <paramref name="messageHeader" /> is not valid.-or-<paramref name="consumeToAccept" /> may only be true if provided with a non-null <paramref name="source" />.</exception>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.BroadcastBlock`1.ToString">
+      <summary>Returns a string that represents the formatted name of this <see cref="T:System.Threading.Tasks.Dataflow.IDataflowBlock" /> instance.</summary>
+      <returns>A string that represents the formatted name of this <see cref="T:System.Threading.Tasks.Dataflow.IDataflowBlock" /> instance.</returns>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.BroadcastBlock`1.TryReceive(System.Predicate{`0},`0@)">
+      <summary>Attempts to synchronously receive an available output item from the <see cref="T:System.Threading.Tasks.Dataflow.IReceivableSourceBlock`1" />.</summary>
+      <returns>true if an item could be received; otherwise, false.</returns>
+      <param name="filter">The predicate a value must successfully pass in order for it to be received. <paramref name="filter" /> may be null, in which case all items will pass.</param>
+      <param name="item">The item received from the source.</param>
+    </member>
+    <member name="T:System.Threading.Tasks.Dataflow.BufferBlock`1">
+      <summary>Provides a buffer for storing data.</summary>
+      <typeparam name="T">Specifies the type of the data buffered by this dataflow block.</typeparam>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.BufferBlock`1.#ctor">
+      <summary>Initializes a new <see cref="T:System.Threading.Tasks.Dataflow.BufferBlock`1" />.</summary>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.BufferBlock`1.#ctor(System.Threading.Tasks.Dataflow.DataflowBlockOptions)">
+      <summary>Initializes a new <see cref="T:System.Threading.Tasks.Dataflow.BufferBlock`1" /> with the specified <see cref="T:System.Threading.Tasks.Dataflow.DataflowBlockOptions" />.</summary>
+      <param name="dataflowBlockOptions">The options with which to configure this <see cref="T:System.Threading.Tasks.Dataflow.BufferBlock`1" />.</param>
+      <exception cref="T:System.ArgumentNullException">The <paramref name="dataflowBlockOptions" /> is null.</exception>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.BufferBlock`1.Complete">
+      <summary>Signals to the <see cref="T:System.Threading.Tasks.Dataflow.IDataflowBlock" /> that it should not accept nor produce any more messages nor consume any more postponed messages.</summary>
+    </member>
+    <member name="P:System.Threading.Tasks.Dataflow.BufferBlock`1.Completion">
+      <summary>Gets a <see cref="T:System.Threading.Tasks.Task" /> that represents the asynchronous operation and completion of the dataflow block.</summary>
+      <returns>The task.</returns>
+    </member>
+    <member name="P:System.Threading.Tasks.Dataflow.BufferBlock`1.Count">
+      <summary>Gets the number of items currently stored in the buffer.</summary>
+      <returns>The number of items.</returns>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.BufferBlock`1.LinkTo(System.Threading.Tasks.Dataflow.ITargetBlock{`0},System.Threading.Tasks.Dataflow.DataflowLinkOptions)">
+      <summary>Links the <see cref="T:System.Threading.Tasks.Dataflow.ISourceBlock`1" /> to the specified <see cref="T:System.Threading.Tasks.Dataflow.ITargetBlock`1" />.</summary>
+      <returns>An IDisposable that, upon calling Dispose, will unlink the source from the target.</returns>
+      <param name="target">The <see cref="T:System.Threading.Tasks.Dataflow.ITargetBlock`1" /> to which to connect this source.</param>
+      <param name="linkOptions">A <see cref="T:System.Threading.Tasks.Dataflow.DataflowLinkOptions" />  instance that configures the link.</param>
+      <exception cref="T:System.ArgumentNullException">
+        <paramref name="target" /> is null (Nothing in Visual Basic) or <paramref name="linkOptions" /> is null (Nothing in Visual Basic).</exception>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.BufferBlock`1.System#Threading#Tasks#Dataflow#IDataflowBlock#Fault(System.Exception)">
+      <summary>Causes the <see cref="T:System.Threading.Tasks.Dataflow.IDataflowBlock" /> to complete in a <see cref="F:System.Threading.Tasks.TaskStatus.Faulted" /> state.</summary>
+      <param name="exception">The <see cref="T:System.Exception" /> that caused the faulting.</param>
+      <exception cref="T:System.ArgumentNullException">The <paramref name="exception" /> is null.</exception>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.BufferBlock`1.System#Threading#Tasks#Dataflow#ISourceBlock{TOutput}#ConsumeMessage(System.Threading.Tasks.Dataflow.DataflowMessageHeader,System.Threading.Tasks.Dataflow.ITargetBlock{`0},System.Boolean@)">
+      <summary>Called by a linked <see cref="T:System.Threading.Tasks.Dataflow.ITargetBlock`1" /> to accept and consume a <see cref="T:System.Threading.Tasks.Dataflow.DataflowMessageHeader" /> previously offered by this <see cref="T:System.Threading.Tasks.Dataflow.ISourceBlock`1" />.</summary>
+      <returns>The value of the consumed message. This may correspond to a different <see cref="T:System.Threading.Tasks.Dataflow.DataflowMessageHeader" /> instance than was previously reserved and passed as the <paramref name="messageHeader" /> to  <see cref="M:System.Threading.Tasks.Dataflow.ISourceBlock`1.ConsumeMessage(System.Threading.Tasks.Dataflow.DataflowMessageHeader,System.Threading.Tasks.Dataflow.ITargetBlock{`0},System.Boolean@)" />. The consuming <see cref="T:System.Threading.Tasks.Dataflow.ITargetBlock`1" /> must use the returned value instead of the value passed as <paramref name="messageValue" /> through <see cref="M:System.Threading.Tasks.Dataflow.ITargetBlock`1.OfferMessage()" />.If the message requested is not available, the return value will be null.</returns>
+      <param name="messageHeader">The <see cref="T:System.Threading.Tasks.Dataflow.DataflowMessageHeader" /> of the message being consumed.</param>
+      <param name="target">The <see cref="T:System.Threading.Tasks.Dataflow.ITargetBlock`1" /> consuming the message.</param>
+      <param name="messageConsumed">true if the message was successfully consumed; otherwise, false.</param>
+      <exception cref="T:System.ArgumentException">The <paramref name="messageHeader" /> is not valid.</exception>
+      <exception cref="T:System.ArgumentNullException">The <paramref name="target" /> is null.</exception>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.BufferBlock`1.System#Threading#Tasks#Dataflow#ISourceBlock{TOutput}#ReleaseReservation(System.Threading.Tasks.Dataflow.DataflowMessageHeader,System.Threading.Tasks.Dataflow.ITargetBlock{`0})">
+      <summary>Called by a linked <see cref="T:System.Threading.Tasks.Dataflow.ITargetBlock`1" /> to release a previously reserved <see cref="T:System.Threading.Tasks.Dataflow.DataflowMessageHeader" /> by this <see cref="T:System.Threading.Tasks.Dataflow.ISourceBlock`1" />.</summary>
+      <param name="messageHeader">The <see cref="T:System.Threading.Tasks.Dataflow.DataflowMessageHeader" /> of the reserved message being released.</param>
+      <param name="target">The <see cref="T:System.Threading.Tasks.Dataflow.ITargetBlock`1" /> releasing the message it previously reserved.</param>
+      <exception cref="T:System.ArgumentException">The <paramref name="messageHeader" /> is not valid.</exception>
+      <exception cref="T:System.ArgumentNullException">The <paramref name="target" /> is null.</exception>
+      <exception cref="T:System.InvalidOperationException">The <paramref name="target" /> did not have the message reserved.</exception>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.BufferBlock`1.System#Threading#Tasks#Dataflow#ISourceBlock{TOutput}#ReserveMessage(System.Threading.Tasks.Dataflow.DataflowMessageHeader,System.Threading.Tasks.Dataflow.ITargetBlock{`0})">
+      <summary>Called by a linked <see cref="T:System.Threading.Tasks.Dataflow.ITargetBlock`1" /> to reserve a previously offered <see cref="T:System.Threading.Tasks.Dataflow.DataflowMessageHeader" /> by this <see cref="T:System.Threading.Tasks.Dataflow.ISourceBlock`1" />.</summary>
+      <returns>true if the message was successfully reserved; otherwise, false.</returns>
+      <param name="messageHeader">The <see cref="T:System.Threading.Tasks.Dataflow.DataflowMessageHeader" /> of the message being reserved.</param>
+      <param name="target">The <see cref="T:System.Threading.Tasks.Dataflow.ITargetBlock`1" /> reserving the message.</param>
+      <exception cref="T:System.ArgumentException">The <paramref name="messageHeader" /> is not valid.</exception>
+      <exception cref="T:System.ArgumentNullException">The <paramref name="target" /> is null.</exception>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.BufferBlock`1.System#Threading#Tasks#Dataflow#ITargetBlock{TInput}#OfferMessage(System.Threading.Tasks.Dataflow.DataflowMessageHeader,`0,System.Threading.Tasks.Dataflow.ISourceBlock{`0},System.Boolean)">
+      <summary>Offers a message to the <see cref="T:System.Threading.Tasks.Dataflow.ITargetBlock`1" />, giving the target the opportunity to consume or postpone the message.</summary>
+      <returns>The status of the offered message. If the message was accepted by the target, <see cref="F:System.Threading.Tasks.Dataflow.DataflowMessageStatus.Accepted" /> is returned, and the source should no longer use the offered message, because it is now owned by the target. If the message was postponed by the target, <see cref="F:System.Threading.Tasks.Dataflow.DataflowMessageStatus.Postponed" /> is returned as a notification that the target may later attempt to consume or reserve the message; in the meantime, the source still owns the message and may offer it to other blocks.If the target would have otherwise postponed message, but <paramref name="source" /> was null, <see cref="F:System.Threading.Tasks.Dataflow.DataflowMessageStatus.Declined" /> is instead returned. If the target tried to accept the message but missed it due to the source delivering the message to another target or simply discarding it, <see cref="F:System.Threading.Tasks.Dataflow.DataflowMessageStatus.NotAvailable" /> is returned. If the target chose not to accept the message, <see cref="F:System.Threading.Tasks.Dataflow.DataflowMessageStatus.Declined" /> is returned. If the target chose not to accept the message and will never accept another message from this source, <see cref="F:System.Threading.Tasks.Dataflow.DataflowMessageStatus.DecliningPermanently" /> is returned.</returns>
+      <param name="messageHeader">A <see cref="T:System.Threading.Tasks.Dataflow.DataflowMessageHeader" /> instance that represents the header of the message being offered.</param>
+      <param name="messageValue">The value of the message being offered.</param>
+      <param name="source">The <see cref="T:System.Threading.Tasks.Dataflow.ISourceBlock`1" /> offering the message. This may be null.</param>
+      <param name="consumeToAccept">Set to true to instruct the target to call <see cref="M:System.Threading.Tasks.Dataflow.ISourceBlock`1.ConsumeMessage(System.Threading.Tasks.Dataflow.DataflowMessageHeader,System.Threading.Tasks.Dataflow.ITargetBlock{`0},System.Boolean@)" /> synchronously during the call to <see cref="M:System.Threading.Tasks.Dataflow.ITargetBlock`1.OfferMessage()" />, prior to returning <see cref="F:System.Threading.Tasks.Dataflow.DataflowMessageStatus.Accepted" />, in order to consume the message.</param>
+      <exception cref="T:System.ArgumentException">The <paramref name="messageHeader" /> is not valid.-or-<paramref name="consumeToAccept" /> may only be true if provided with a non-null <paramref name="source" />.</exception>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.BufferBlock`1.ToString">
+      <summary>Returns a string that represents the formatted name of this <see cref="T:System.Threading.Tasks.Dataflow.IDataflowBlock" /> instance.</summary>
+      <returns>A string that represents the formatted name of this <see cref="T:System.Threading.Tasks.Dataflow.IDataflowBlock" /> instance.</returns>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.BufferBlock`1.TryReceive(System.Predicate{`0},`0@)">
+      <summary>Attempts to synchronously receive an available output item from the <see cref="T:System.Threading.Tasks.Dataflow.IReceivableSourceBlock`1" />.</summary>
+      <returns>true if an item could be received; otherwise, false.</returns>
+      <param name="filter">The predicate value must successfully pass in order for it to be received. <paramref name="filter" /> may be null, in which case all items will pass.</param>
+      <param name="item">The item received from the source.</param>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.BufferBlock`1.TryReceiveAll(System.Collections.Generic.IList{`0}@)">
+      <summary>Attempts to synchronously receive all available items from the <see cref="T:System.Threading.Tasks.Dataflow.IReceivableSourceBlock`1" />.</summary>
+      <returns>true if one or more items could be received; otherwise, false.</returns>
+      <param name="items">The items received from the source.</param>
+    </member>
+    <member name="T:System.Threading.Tasks.Dataflow.DataflowBlock">
+      <summary>Provides a set of static (Shared in Visual Basic) methods for working with dataflow blocks.</summary>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.DataflowBlock.AsObservable``1(System.Threading.Tasks.Dataflow.ISourceBlock{``0})">
+      <summary>Creates a new <see cref="T:System.IObservable`1" /> abstraction over the <see cref="T:System.Threading.Tasks.Dataflow.ISourceBlock`1" />.</summary>
+      <returns>An <see cref="T:System.IObservable`1" /> that enables observers to be subscribed to the source.</returns>
+      <param name="source">The source to wrap.</param>
+      <typeparam name="TOutput">Specifies the type of data contained in the source.</typeparam>
+      <exception cref="T:System.ArgumentNullException">The <paramref name="source" /> is null.</exception>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.DataflowBlock.AsObserver``1(System.Threading.Tasks.Dataflow.ITargetBlock{``0})">
+      <summary>Creates a new <see cref="T:System.IObserver`1" /> abstraction over the <see cref="T:System.Threading.Tasks.Dataflow.ITargetBlock`1" />.</summary>
+      <returns>An observer that wraps the target block.</returns>
+      <param name="target">The target to wrap.</param>
+      <typeparam name="TInput">Specifies the type of input accepted by the target block.</typeparam>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.DataflowBlock.Choose``2(System.Threading.Tasks.Dataflow.ISourceBlock{``0},System.Action{``0},System.Threading.Tasks.Dataflow.ISourceBlock{``1},System.Action{``1})">
+      <summary>Monitors two dataflow sources, invoking the provided handler for whichever source makes data available first.</summary>
+      <returns>A <see cref="T:System.Threading.Tasks.Task`1" /> that represents the asynchronous choice. If both sources are completed prior to the choice completing, the resulting task will be canceled. When one of the sources has data available and successfully propagates it to the choice, the resulting task will complete when the handler completes; if the handler throws an exception, the task will end in the <see cref="F:System.Threading.Tasks.TaskStatus.Faulted" /> state and will contain the unhandled exception. Otherwise, the task will end with its <see cref="P:System.Threading.Tasks.Task`1.Result" /> set to either 0 or 1 to represent the first or second source, respectively.This method will only consume an element from one of the two data sources, never both.</returns>
+      <param name="source1">The first source.</param>
+      <param name="action1">The handler to execute on data from the first source.</param>
+      <param name="source2">The second source.</param>
+      <param name="action2">The handler to execute on data from the second source.</param>
+      <typeparam name="T1">Specifies type of data contained in the first source.</typeparam>
+      <typeparam name="T2">Specifies type of data contained in the second source.</typeparam>
+      <exception cref="T:System.ArgumentNullException">The <paramref name="source1" /> is null.-or-The <paramref name="action1" /> is null.-or-The <paramref name="source2" /> is null.-or-The <paramref name="action2" /> is null.</exception>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.DataflowBlock.Choose``2(System.Threading.Tasks.Dataflow.ISourceBlock{``0},System.Action{``0},System.Threading.Tasks.Dataflow.ISourceBlock{``1},System.Action{``1},System.Threading.Tasks.Dataflow.DataflowBlockOptions)">
+      <summary>Monitors two dataflow sources, invoking the provided handler for whichever source makes data available first.</summary>
+      <returns>A <see cref="T:System.Threading.Tasks.Task`1" /> that represents the asynchronous choice. If both sources are completed prior to the choice completing, or if the <see cref="T:System.Threading.CancellationToken" /> provided as part of <paramref name="dataflowBlockOptions" /> is canceled prior to the choice completing, the resulting task will be canceled. When one of the sources has data available and successfully propagates it to the choice, the resulting task will complete when the handler completes; if the handler throws an exception, the task will end in the <see cref="F:System.Threading.Tasks.TaskStatus.Faulted" /> state and will contain the unhandled exception. Otherwise, the task will end with its <see cref="P:System.Threading.Tasks.Task`1.Result" /> set to either 0 or 1 to represent the first or second source, respectively.This method will only consume an element from one of the two data sources, never both. If cancellation is requested after an element has been received, the cancellation request will be ignored, and the relevant handler will be allowed to execute. </returns>
+      <param name="source1">The first source.</param>
+      <param name="action1">The handler to execute on data from the first source.</param>
+      <param name="source2">The second source.</param>
+      <param name="action2">The handler to execute on data from the second source.</param>
+      <param name="dataflowBlockOptions">The options with which to configure this choice.</param>
+      <typeparam name="T1">Specifies type of data contained in the first source.</typeparam>
+      <typeparam name="T2">Specifies type of data contained in the second source.</typeparam>
+      <exception cref="T:System.ArgumentNullException">The <paramref name="source1" /> is null.-or-The <paramref name="action1" /> is null.-or-The <paramref name="source2" /> is null.-or-The <paramref name="action2" /> is null.-or-The <paramref name="dataflowBlockOptions" /> is null.</exception>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.DataflowBlock.Choose``3(System.Threading.Tasks.Dataflow.ISourceBlock{``0},System.Action{``0},System.Threading.Tasks.Dataflow.ISourceBlock{``1},System.Action{``1},System.Threading.Tasks.Dataflow.ISourceBlock{``2},System.Action{``2})">
+      <summary>Monitors three dataflow sources, invoking the provided handler for whichever source makes data available first.</summary>
+      <returns>A <see cref="T:System.Threading.Tasks.Task`1" /> that represents the asynchronous choice. If all sources are completed prior to the choice completing, the resulting task will be canceled. When one of the sources has data available and successfully propagates it to the choice, the resulting task will complete when the handler completes; if the handler throws an exception, the task will end in the <see cref="F:System.Threading.Tasks.TaskStatus.Faulted" /> state and will contain the unhandled exception. Otherwise, the task will end with its <see cref="P:System.Threading.Tasks.Task`1.Result" /> set to the 0-based index of the source.This method will only consume an element from one of the data sources, never more than one.</returns>
+      <param name="source1">The first source.</param>
+      <param name="action1">The handler to execute on data from the first source.</param>
+      <param name="source2">The second source.</param>
+      <param name="action2">The handler to execute on data from the second source.</param>
+      <param name="source3">The third source.</param>
+      <param name="action3">The handler to execute on data from the third source.</param>
+      <typeparam name="T1">Specifies type of data contained in the first source.</typeparam>
+      <typeparam name="T2">Specifies type of data contained in the second source.</typeparam>
+      <typeparam name="T3">Specifies type of data contained in the third source.</typeparam>
+      <exception cref="T:System.ArgumentNullException">The <paramref name="source1" /> is null.-or-The <paramref name="action1" /> is null.-or-The <paramref name="source2" /> is null.-or-The <paramref name="action2" /> is null.-or-The <paramref name="source3" /> is null.-or-The <paramref name="action3" /> is null.</exception>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.DataflowBlock.Choose``3(System.Threading.Tasks.Dataflow.ISourceBlock{``0},System.Action{``0},System.Threading.Tasks.Dataflow.ISourceBlock{``1},System.Action{``1},System.Threading.Tasks.Dataflow.ISourceBlock{``2},System.Action{``2},System.Threading.Tasks.Dataflow.DataflowBlockOptions)">
+      <summary>Monitors three dataflow sources, invoking the provided handler for whichever source makes data available first.</summary>
+      <returns>A <see cref="T:System.Threading.Tasks.Task`1" /> that represents the asynchronous choice. If all sources are completed prior to the choice completing, or if the <see cref="T:System.Threading.CancellationToken" /> provided as part of <paramref name="dataflowBlockOptions" /> is canceled prior to the choice completing, the resulting task will be canceled. When one of the sources has data available and successfully propagates it to the choice, the resulting task will complete when the handler completes; if the handler throws an exception, the task will end in the <see cref="F:System.Threading.Tasks.TaskStatus.Faulted" /> state and will contain the unhandled exception. Otherwise, the task will end with its <see cref="P:System.Threading.Tasks.Task`1.Result" /> set to the 0-based index of the source.This method will only consume an element from one of the data sources, never more than one. If cancellation is requested after an element has been received, the cancellation request will be ignored, and the relevant handler will be allowed to execute. </returns>
+      <param name="source1">The first source.</param>
+      <param name="action1">The handler to execute on data from the first source.</param>
+      <param name="source2">The second source.</param>
+      <param name="action2">The handler to execute on data from the second source.</param>
+      <param name="source3">The third source.</param>
+      <param name="action3">The handler to execute on data from the third source.</param>
+      <param name="dataflowBlockOptions">The options with which to configure this choice.</param>
+      <typeparam name="T1">Specifies type of data contained in the first source.</typeparam>
+      <typeparam name="T2">Specifies type of data contained in the second source.</typeparam>
+      <typeparam name="T3">Specifies type of data contained in the third source.</typeparam>
+      <exception cref="T:System.ArgumentNullException">The <paramref name="source1" /> is null.-or-The <paramref name="action1" /> is null.-or-The <paramref name="source2" /> is null.-or-The <paramref name="action2" /> is null.-or-The <paramref name="source3" /> is null.-or-The <paramref name="action3" /> is null.-or-The <paramref name="dataflowBlockOptions" /> is null.</exception>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.DataflowBlock.Encapsulate``2(System.Threading.Tasks.Dataflow.ITargetBlock{``0},System.Threading.Tasks.Dataflow.ISourceBlock{``1})">
+      <summary>Encapsulates a target and a source into a single propagator.</summary>
+      <returns>The encapsulated target and source.</returns>
+      <param name="target">The target to encapsulate.</param>
+      <param name="source">The source to encapsulate.</param>
+      <typeparam name="TInput">Specifies the type of input expected by the target.</typeparam>
+      <typeparam name="TOutput">Specifies the type of output produced by the source.</typeparam>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.DataflowBlock.LinkTo``1(System.Threading.Tasks.Dataflow.ISourceBlock{``0},System.Threading.Tasks.Dataflow.ITargetBlock{``0})">
+      <summary>Links the <see cref="T:System.Threading.Tasks.Dataflow.ISourceBlock`1" /> to the specified <see cref="T:System.Threading.Tasks.Dataflow.ITargetBlock`1" />.</summary>
+      <returns>An <see cref="T:System.IDisposable" /> that, upon calling Dispose, will unlink the source from the target.</returns>
+      <param name="source">The source from which to link.</param>
+      <param name="target">The <see cref="T:System.Threading.Tasks.Dataflow.ITargetBlock`1" /> to which to connect the source.</param>
+      <typeparam name="TOutput">Specifies the type of data contained in the source.</typeparam>
+      <exception cref="T:System.ArgumentNullException">The <paramref name="source" /> is null.-or-The <paramref name="target" /> is null.</exception>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.DataflowBlock.LinkTo``1(System.Threading.Tasks.Dataflow.ISourceBlock{``0},System.Threading.Tasks.Dataflow.ITargetBlock{``0},System.Predicate{``0})">
+      <summary>Links the <see cref="T:System.Threading.Tasks.Dataflow.ISourceBlock`1" /> to the specified <see cref="T:System.Threading.Tasks.Dataflow.ITargetBlock`1" /> using the specified filter.</summary>
+      <returns>An <see cref="T:System.IDisposable" /> that, upon calling Dispose, will unlink the source from the target.</returns>
+      <param name="source">The source from which to link.</param>
+      <param name="target">The <see cref="T:System.Threading.Tasks.Dataflow.ITargetBlock`1" /> to which to connect the source.</param>
+      <param name="predicate">The filter a message must pass in order for it to propagate from the source to the target.</param>
+      <typeparam name="TOutput">Specifies the type of data contained in the source.</typeparam>
+      <exception cref="T:System.ArgumentNullException">The <paramref name="source" /> is null.-or-The <paramref name="target" /> is null.-or-The <paramref name="predicate" /> is null.</exception>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.DataflowBlock.LinkTo``1(System.Threading.Tasks.Dataflow.ISourceBlock{``0},System.Threading.Tasks.Dataflow.ITargetBlock{``0},System.Threading.Tasks.Dataflow.DataflowLinkOptions,System.Predicate{``0})">
+      <summary>Links the <see cref="T:System.Threading.Tasks.Dataflow.ISourceBlock`1" /> to the specified <see cref="T:System.Threading.Tasks.Dataflow.ITargetBlock`1" /> using the specified filter.</summary>
+      <returns>An <see cref="T:System.IDisposable" /> that, upon calling Dispose, will unlink the source from the target.</returns>
+      <param name="source">The source from which to link.</param>
+      <param name="target">The <see cref="T:System.Threading.Tasks.Dataflow.ITargetBlock`1" /> to which to connect the source.</param>
+      <param name="linkOptions">One of the enumeration values that specifies how to configure a link between dataflow blocks.</param>
+      <param name="predicate">The filter a message must pass in order for it to propagate from the source to the target.</param>
+      <typeparam name="TOutput">Specifies the type of data contained in the source.</typeparam>
+      <exception cref="T:System.ArgumentNullException">The <paramref name="source" /> is null (Nothing in Visual Basic).-or-The <paramref name="target" /> is null (Nothing in Visual Basic).-or-The <paramref name="linkOptions" /> is null (Nothing in Visual Basic).-or-The <paramref name="predicate" /> is null (Nothing in Visual Basic).</exception>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.DataflowBlock.NullTarget``1">
+      <summary>Gets a target block that synchronously accepts all messages offered to it and drops them.</summary>
+      <returns>A <see cref="T:System.Threading.Tasks.Dataflow.ITargetBlock`1" /> that accepts and subsequently drops all offered messages.</returns>
+      <typeparam name="TInput">The type of the messages this block can accept.</typeparam>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.DataflowBlock.OutputAvailableAsync``1(System.Threading.Tasks.Dataflow.ISourceBlock{``0})">
+      <summary>Provides a <see cref="T:System.Threading.Tasks.Task`1" /> that asynchronously monitors the source for available output.</summary>
+      <returns>A <see cref="T:System.Threading.Tasks.Task`1" /> that informs of whether and when more output is available. If, when the task completes, its <see cref="P:System.Threading.Tasks.Task`1.Result" /> is true, more output is available in the source (though another consumer of the source may retrieve the data).  If it returns false, more output is not and will never be available, due to the source completing prior to output being available.</returns>
+      <param name="source">The source to monitor.</param>
+      <typeparam name="TOutput">Specifies the type of data contained in the source.</typeparam>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.DataflowBlock.OutputAvailableAsync``1(System.Threading.Tasks.Dataflow.ISourceBlock{``0},System.Threading.CancellationToken)">
+      <summary>Provides a <see cref="T:System.Threading.Tasks.Task`1" /> that asynchronously monitors the source for available output.</summary>
+      <returns>A <see cref="T:System.Threading.Tasks.Task`1" /> that informs of whether and when more output is available. If, when the task completes, its <see cref="P:System.Threading.Tasks.Task`1.Result" /> is true, more output is available in the source (though another consumer of the source may retrieve the data). If it returns false, more output is not and will never be available, due to the source completing prior to output being available. If it returns false, more output is not and will never be available, due to the source completing prior to output being available.</returns>
+      <param name="source">The source to monitor.</param>
+      <param name="cancellationToken">The cancellation token with which to cancel the asynchronous operation.</param>
+      <typeparam name="TOutput">Specifies the type of data contained in the source.</typeparam>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.DataflowBlock.Post``1(System.Threading.Tasks.Dataflow.ITargetBlock{``0},``0)">
+      <summary>Posts an item to the <see cref="T:System.Threading.Tasks.Dataflow.ITargetBlock`1" />.</summary>
+      <returns>true if the item was accepted by the target block; otherwise, false.</returns>
+      <param name="target">The target block.</param>
+      <param name="item">The item being offered to the target.</param>
+      <typeparam name="TInput">Specifies the type of data accepted by the target block.</typeparam>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.DataflowBlock.Receive``1(System.Threading.Tasks.Dataflow.ISourceBlock{``0})">
+      <summary>Synchronously receives an item from the source.</summary>
+      <returns>The received item.</returns>
+      <param name="source">The source from which to receive.</param>
+      <typeparam name="TOutput">Specifies the type of data contained in the source.</typeparam>
+      <exception cref="T:System.ArgumentNullException">The <paramref name="source" /> is null.</exception>
+      <exception cref="T:System.InvalidOperationException">No item could be received from the source.</exception>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.DataflowBlock.Receive``1(System.Threading.Tasks.Dataflow.ISourceBlock{``0},System.Threading.CancellationToken)">
+      <summary>Synchronously receives an item from the source.</summary>
+      <returns>The received item.</returns>
+      <param name="source">The source from which to receive.</param>
+      <param name="cancellationToken">The <see cref="T:System.Threading.CancellationToken" /> which may be used to cancel the receive operation.</param>
+      <typeparam name="TOutput">Specifies the type of data contained in the source.</typeparam>
+      <exception cref="T:System.ArgumentNullException">The <paramref name="source" /> is null.</exception>
+      <exception cref="T:System.InvalidOperationException">No item could be received from the source.</exception>
+      <exception cref="T:System.OperationCanceledException">The operation was canceled before an item was received from the source.</exception>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.DataflowBlock.Receive``1(System.Threading.Tasks.Dataflow.ISourceBlock{``0},System.TimeSpan)">
+      <summary>Synchronously receives an item from the source.</summary>
+      <returns>The received item.</returns>
+      <param name="source">The source from which to receive.</param>
+      <param name="timeout">A <see cref="T:System.TimeSpan" /> that represents the number of milliseconds to wait, or a TimeSpan that represents -1 milliseconds to wait indefinitely.</param>
+      <typeparam name="TOutput">Specifies the type of data contained in the source.</typeparam>
+      <exception cref="T:System.ArgumentOutOfRangeException">
+        <paramref name="timeout" /> is a negative number other than -1 milliseconds, which represents an infinite time-out-or-<paramref name="timeout" /> is greater than <see cref="F:System.Int32.MaxValue" />.</exception>
+      <exception cref="T:System.ArgumentNullException">The <paramref name="source" /> is null.</exception>
+      <exception cref="T:System.InvalidOperationException">No item could be received from the source.</exception>
+      <exception cref="T:System.TimeoutException">The specified timeout expired before an item was received from the source.</exception>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.DataflowBlock.Receive``1(System.Threading.Tasks.Dataflow.ISourceBlock{``0},System.TimeSpan,System.Threading.CancellationToken)">
+      <summary>Synchronously receives an item from the source.</summary>
+      <returns>The received item.</returns>
+      <param name="source">The source from which to receive.</param>
+      <param name="timeout">A <see cref="T:System.TimeSpan" /> that represents the number of milliseconds to wait, or a TimeSpan that represents -1 milliseconds to wait indefinitely.</param>
+      <param name="cancellationToken">The <see cref="T:System.Threading.CancellationToken" /> which may be used to cancel the receive operation.</param>
+      <typeparam name="TOutput">Specifies the type of data contained in the source.</typeparam>
+      <exception cref="T:System.ArgumentNullException">The <paramref name="source" /> is null.</exception>
+      <exception cref="T:System.ArgumentOutOfRangeException">
+        <paramref name="timeout" /> is a negative number other than -1 milliseconds, which represents an infinite time-out-or-<paramref name="timeout" /> is greater than <see cref="F:System.Int32.MaxValue" />.</exception>
+      <exception cref="T:System.InvalidOperationException">No item could be received from the source.</exception>
+      <exception cref="T:System.TimeoutException">The specified timeout expired before an item was received from the source.</exception>
+      <exception cref="T:System.OperationCanceledException">The operation was canceled before an item was received from the source.</exception>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.DataflowBlock.ReceiveAsync``1(System.Threading.Tasks.Dataflow.ISourceBlock{``0})">
+      <summary>Asynchronously receives a value from the specified source.</summary>
+      <returns>A <see cref="T:System.Threading.Tasks.Task`1" /> that represents the asynchronous receive operation. When an item is successfully received from the source, the returned task will be completed and its <see cref="P:System.Threading.Tasks.Task`1.Result" /> will return the received item. If an item cannot be retrieved, because the source is empty and completed, the returned task will be canceled.</returns>
+      <param name="source">The source from which to asynchronously receive.</param>
+      <typeparam name="TOutput">Specifies the type of data contained in the source.</typeparam>
+      <exception cref="T:System.ArgumentNullException">The <paramref name="source" /> is null.</exception>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.DataflowBlock.ReceiveAsync``1(System.Threading.Tasks.Dataflow.ISourceBlock{``0},System.Threading.CancellationToken)">
+      <summary>Asynchronously receives a value from the specified source.</summary>
+      <returns>A <see cref="T:System.Threading.Tasks.Task`1" /> that represents the asynchronous receive operation. When an item is successfully received from the source, the returned task will be completed and its <see cref="P:System.Threading.Tasks.Task`1.Result" />will return the received item. If an item cannot be retrieved, either because cancellation is requested or the source is empty and completed, the returned task will be canceled.</returns>
+      <param name="source">The source from which to asynchronously receive.</param>
+      <param name="cancellationToken">The <see cref="T:System.Threading.CancellationToken" /> which may be used to cancel the receive operation.</param>
+      <typeparam name="TOutput">Specifies the type of data contained in the source.</typeparam>
+      <exception cref="T:System.ArgumentNullException">The <paramref name="source" /> is null.</exception>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.DataflowBlock.ReceiveAsync``1(System.Threading.Tasks.Dataflow.ISourceBlock{``0},System.TimeSpan)">
+      <summary>Asynchronously receives a value from the specified source.</summary>
+      <returns>A <see cref="T:System.Threading.Tasks.Task`1" /> that represents the asynchronous receive operation. When an item is successfully received from the source, the returned task will be completed and its <see cref="P:System.Threading.Tasks.Task`1.Result" /> will return the received item. If an item cannot be retrieved, either because the timeout expires or the source is empty and completed, the returned task will be canceled.</returns>
+      <param name="source">The source from which to asynchronously receive.</param>
+      <param name="timeout">A <see cref="T:System.TimeSpan" /> that represents the number of milliseconds to wait, or a TimeSpan that represents -1 milliseconds to wait indefinitely.</param>
+      <typeparam name="TOutput">Specifies the type of data contained in the source.</typeparam>
+      <exception cref="T:System.ArgumentNullException">The <paramref name="source" /> is null.</exception>
+      <exception cref="T:System.ArgumentOutOfRangeException">
+        <paramref name="timeout" /> is a negative number other than -1 milliseconds, which represents an infinite time-out-or-<paramref name="timeout" /> is greater than <see cref="F:System.Int32.MaxValue" />.</exception>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.DataflowBlock.ReceiveAsync``1(System.Threading.Tasks.Dataflow.ISourceBlock{``0},System.TimeSpan,System.Threading.CancellationToken)">
+      <summary>Asynchronously receives a value from the specified source.</summary>
+      <returns>A <see cref="T:System.Threading.Tasks.Task`1" /> that represents the asynchronous receive operation. When an item is successfully received from the source, the returned task will be completed and its <see cref="P:System.Threading.Tasks.Task`1.Result" /> will return the received item. If an item cannot be retrieved, either because the timeout expires, cancellation is requested, or the source is empty and completed, the returned task will be canceled.</returns>
+      <param name="source">The source from which to asynchronously receive.</param>
+      <param name="timeout">A <see cref="T:System.TimeSpan" /> that represents the number of milliseconds to wait, or a TimeSpan that represents -1 milliseconds to wait indefinitely.</param>
+      <param name="cancellationToken">The <see cref="T:System.Threading.CancellationToken" /> which may be used to cancel the receive operation.</param>
+      <typeparam name="TOutput">Specifies the type of data contained in the source.</typeparam>
+      <exception cref="T:System.ArgumentNullException">The <paramref name="source" /> is null.</exception>
+      <exception cref="T:System.ArgumentOutOfRangeException">
+        <paramref name="timeout" /> is a negative number other than -1 milliseconds, which represents an infinite time-out-or-<paramref name="timeout" /> is greater than <see cref="F:System.Int32.MaxValue" />.</exception>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.DataflowBlock.SendAsync``1(System.Threading.Tasks.Dataflow.ITargetBlock{``0},``0)">
+      <summary>Asynchronously offers a message to the target message block, allowing for postponement.</summary>
+      <returns>A <see cref="T:System.Threading.Tasks.Task`1" /> that represents the asynchronous send. If the target accepts and consumes the offered element during the call to <see cref="M:System.Threading.Tasks.Dataflow.DataflowBlock.SendAsync``1(System.Threading.Tasks.Dataflow.ITargetBlock{``0},``0)" />, upon return from the call the resulting <see cref="T:System.Threading.Tasks.Task`1" /> will be completed and its <see cref="P:System.Threading.Tasks.Task`1.Result" /> property will return true. If the target declines the offered element during the call, upon return from the call the resulting <see cref="T:System.Threading.Tasks.Task`1" /> will be completed and its <see cref="P:System.Threading.Tasks.Task`1.Result" /> property will return false. If the target postpones the offered element, the element will be buffered until such time that the target consumes or releases it, at which point the task will complete, with its <see cref="P:System.Threading.Tasks.Task`1.Result" /> indicating whether the message was consumed. If the target never attempts to consume or release the message, the returned task will never complete.</returns>
+      <param name="target">The target to which to post the data.</param>
+      <param name="item">The item being offered to the target.</param>
+      <typeparam name="TInput">Specifies the type of the data to post to the target.</typeparam>
+      <exception cref="T:System.ArgumentNullException">The <paramref name="target" /> is null.</exception>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.DataflowBlock.SendAsync``1(System.Threading.Tasks.Dataflow.ITargetBlock{``0},``0,System.Threading.CancellationToken)">
+      <summary>Asynchronously offers a message to the target message block, allowing for postponement.</summary>
+      <returns>A <see cref="T:System.Threading.Tasks.Task{Boolean}" /> that represents the asynchronous send.  If the target accepts and consumes the offered element during the call to SendAsync, upon return from the call the resulting <see cref="T:System.Threading.Tasks.Task{Boolean}" /> will be completed and its Result property will return true.  If the target declines the offered element during the call, upon return from the call the resulting <see cref="T:System.Threading.Tasks.Task{Boolean}" /> will be completed and its Result property will return false. If the target postpones the offered element, the element will be buffered until such time that the target consumes or releases it, at which point the Task will complete, with its Result indicating whether the message was consumed. If the target never attempts to consume or release the message, the returned task will never complete.If cancellation is requested before the target has successfully consumed the sent data, the returned task will complete in the Canceled state and the data will no longer be available to the target.</returns>
+      <param name="target">The target to which to post the data.</param>
+      <param name="item">The item being offered to the target.</param>
+      <param name="cancellationToken">The cancellation token with which to request cancellation of the send operation.</param>
+      <typeparam name="TInput">Specifies the type of the data to post to the target.</typeparam>
+      <exception cref="T:System.ArgumentNullException">The <paramref name="target" /> is null (Nothing in Visual Basic).</exception>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.DataflowBlock.TryReceive``1(System.Threading.Tasks.Dataflow.IReceivableSourceBlock{``0},``0@)">
+      <summary>Attempts to synchronously receive an item from the <see cref="T:System.Threading.Tasks.Dataflow.ISourceBlock`1" />.</summary>
+      <returns>true if an item could be received; otherwise, false.</returns>
+      <param name="source">The source from which to receive.</param>
+      <param name="item">The item received from the source.</param>
+      <typeparam name="TOutput">Specifies the type of data contained in the source.</typeparam>
+    </member>
+    <member name="T:System.Threading.Tasks.Dataflow.DataflowBlockOptions">
+      <summary>Provides options used to configure the processing performed by dataflow blocks.</summary>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.DataflowBlockOptions.#ctor">
+      <summary>Initializes a new <see cref="T:System.Threading.Tasks.Dataflow.DataflowBlockOptions" />.</summary>
+    </member>
+    <member name="P:System.Threading.Tasks.Dataflow.DataflowBlockOptions.BoundedCapacity">
+      <summary>Gets or sets the maximum number of messages that may be buffered by the block.</summary>
+      <returns>The maximum number of messages.</returns>
+    </member>
+    <member name="P:System.Threading.Tasks.Dataflow.DataflowBlockOptions.CancellationToken">
+      <summary>Gets or sets the <see cref="T:System.Threading.CancellationToken" /> to monitor for cancellation requests.</summary>
+      <returns>The token.</returns>
+    </member>
+    <member name="P:System.Threading.Tasks.Dataflow.DataflowBlockOptions.MaxMessagesPerTask">
+      <summary>Gets or sets the maximum number of messages that may be processed per task.</summary>
+      <returns>The maximum number of messages.</returns>
+    </member>
+    <member name="P:System.Threading.Tasks.Dataflow.DataflowBlockOptions.NameFormat">
+      <summary>Gets or sets the format string to use when a block is queried for its name.</summary>
+      <returns>The format string to use when a block is queried for its name.</returns>
+    </member>
+    <member name="P:System.Threading.Tasks.Dataflow.DataflowBlockOptions.TaskScheduler">
+      <summary>Gets or sets the <see cref="T:System.Threading.Tasks.TaskScheduler" /> to use for scheduling tasks.</summary>
+      <returns>The task scheduler.</returns>
+    </member>
+    <member name="F:System.Threading.Tasks.Dataflow.DataflowBlockOptions.Unbounded">
+      <summary>A constant used to specify an unlimited quantity for <see cref="T:System.Threading.Tasks.Dataflow.DataflowBlockOptions" /> members that provide an upper bound. This field is constant.</summary>
+    </member>
+    <member name="T:System.Threading.Tasks.Dataflow.DataflowLinkOptions">
+      <summary>Provides options used to configure a link between dataflow blocks.</summary>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.DataflowLinkOptions.#ctor">
+      <summary>Initializes the <see cref="T:System.Threading.Tasks.Dataflow.DataflowLinkOptions" />.</summary>
+    </member>
+    <member name="P:System.Threading.Tasks.Dataflow.DataflowLinkOptions.Append">
+      <summary>Gets or sets whether the link should be appended to the source’s list of links, or whether it should be prepended.</summary>
+      <returns>Returns <see cref="T:System.Boolean" />.</returns>
+    </member>
+    <member name="P:System.Threading.Tasks.Dataflow.DataflowLinkOptions.MaxMessages">
+      <summary>Gets or sets the maximum number of messages that may be consumed across the link.</summary>
+      <returns>Returns <see cref="T:System.Int32" />.</returns>
+    </member>
+    <member name="P:System.Threading.Tasks.Dataflow.DataflowLinkOptions.PropagateCompletion">
+      <summary>Gets or sets whether the linked target will have completion and faulting notification propagated to it automatically.</summary>
+      <returns>Returns <see cref="T:System.Boolean" />.</returns>
+    </member>
+    <member name="T:System.Threading.Tasks.Dataflow.DataflowMessageHeader">
+      <summary>Provides a container of data attributes for passing between dataflow blocks.</summary>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.DataflowMessageHeader.#ctor(System.Int64)">
+      <summary>Initializes a new <see cref="T:System.Threading.Tasks.Dataflow.DataflowMessageHeader" /> with the specified attributes.</summary>
+      <param name="id">The ID of the message. Must be unique within the originating source block. It does not need to be globally unique.</param>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.DataflowMessageHeader.Equals(System.Object)">
+      <summary>Checks boxed <see cref="T:System.Threading.Tasks.Dataflow.DataflowMessageHeader" /> instances for equality by ID.</summary>
+      <returns>true if the instances are equal; otherwise, false.</returns>
+      <param name="obj">A boxed <see cref="T:System.Threading.Tasks.Dataflow.DataflowMessageHeader" /> instance.</param>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.DataflowMessageHeader.Equals(System.Threading.Tasks.Dataflow.DataflowMessageHeader)">
+      <summary>Checks two <see cref="T:System.Threading.Tasks.Dataflow.DataflowMessageHeader" /> instances for equality by ID without boxing.</summary>
+      <returns>true if the instances are equal; otherwise, false.</returns>
+      <param name="other">Another <see cref="T:System.Threading.Tasks.Dataflow.DataflowMessageHeader" /> instance.</param>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.DataflowMessageHeader.GetHashCode">
+      <summary>Generates a hash code for the <see cref="T:System.Threading.Tasks.Dataflow.DataflowMessageHeader" /> instance.</summary>
+      <returns>The hash code.</returns>
+    </member>
+    <member name="P:System.Threading.Tasks.Dataflow.DataflowMessageHeader.Id">
+      <summary>Gets the ID of the message within the source.</summary>
+      <returns>The ID contained in the <see cref="T:System.Threading.Tasks.Dataflow.DataflowMessageHeader" /> instance.</returns>
+    </member>
+    <member name="P:System.Threading.Tasks.Dataflow.DataflowMessageHeader.IsValid">
+      <summary>Gets the validity of the message.</summary>
+      <returns>true if the ID of the message is different from 0. false if the ID of the message is 0.</returns>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.DataflowMessageHeader.op_Equality(System.Threading.Tasks.Dataflow.DataflowMessageHeader,System.Threading.Tasks.Dataflow.DataflowMessageHeader)">
+      <summary>Checks two <see cref="T:System.Threading.Tasks.Dataflow.DataflowMessageHeader" /> instances for equality by ID.</summary>
+      <returns>true if the instances are equal; otherwise, false.</returns>
+      <param name="left">A <see cref="T:System.Threading.Tasks.Dataflow.DataflowMessageHeader" /> instance.</param>
+      <param name="right">A <see cref="T:System.Threading.Tasks.Dataflow.DataflowMessageHeader" /> instance.</param>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.DataflowMessageHeader.op_Inequality(System.Threading.Tasks.Dataflow.DataflowMessageHeader,System.Threading.Tasks.Dataflow.DataflowMessageHeader)">
+      <summary>Checks two <see cref="T:System.Threading.Tasks.Dataflow.DataflowMessageHeader" /> instances for non-equality by ID.</summary>
+      <returns>true if the instances are not equal; otherwise, false.</returns>
+      <param name="left">A <see cref="T:System.Threading.Tasks.Dataflow.DataflowMessageHeader" /> instance.</param>
+      <param name="right">A <see cref="T:System.Threading.Tasks.Dataflow.DataflowMessageHeader" /> instance.</param>
+    </member>
+    <member name="T:System.Threading.Tasks.Dataflow.DataflowMessageStatus">
+      <summary>Represents the status of a <see cref="T:System.Threading.Tasks.Dataflow.DataflowMessageHeader" /> when passed between dataflow blocks.</summary>
+    </member>
+    <member name="F:System.Threading.Tasks.Dataflow.DataflowMessageStatus.Accepted">
+      <summary>Indicates that the <see cref="T:System.Threading.Tasks.Dataflow.ITargetBlock`1" /> accepted the message. Once a target has accepted a message, it is wholly owned by the target.</summary>
+    </member>
+    <member name="F:System.Threading.Tasks.Dataflow.DataflowMessageStatus.Declined">
+      <summary>Indicates that the <see cref="T:System.Threading.Tasks.Dataflow.ITargetBlock`1" /> declined the message. The <see cref="T:System.Threading.Tasks.Dataflow.ISourceBlock`1" /> still owns the message.</summary>
+    </member>
+    <member name="F:System.Threading.Tasks.Dataflow.DataflowMessageStatus.Postponed">
+      <summary>Indicates that the <see cref="T:System.Threading.Tasks.Dataflow.ITargetBlock`1" /> postponed the message for potential consumption at a later time.  The <see cref="T:System.Threading.Tasks.Dataflow.ISourceBlock`1" /> still owns the message.</summary>
+    </member>
+    <member name="F:System.Threading.Tasks.Dataflow.DataflowMessageStatus.NotAvailable">
+      <summary>Indicates that the <see cref="T:System.Threading.Tasks.Dataflow.ITargetBlock`1" /> tried to accept the message from the <see cref="T:System.Threading.Tasks.Dataflow.ISourceBlock`1" />, but the message was no longer available.</summary>
+    </member>
+    <member name="F:System.Threading.Tasks.Dataflow.DataflowMessageStatus.DecliningPermanently">
+      <summary>Indicates that the <see cref="T:System.Threading.Tasks.Dataflow.ITargetBlock`1" /> declined the message. The <see cref="T:System.Threading.Tasks.Dataflow.ISourceBlock`1" /> still owns the message.  Additionally, the <see cref="T:System.Threading.Tasks.Dataflow.ITargetBlock`1" /> will decline all future messages sent by the source.</summary>
+    </member>
+    <member name="T:System.Threading.Tasks.Dataflow.ExecutionDataflowBlockOptions">
+      <summary>Provides options used to configure the processing performed by dataflow blocks that process each message through the invocation of a user-provided delegate. These are dataflow blocks such as <see cref="T:System.Threading.Tasks.Dataflow.ActionBlock`1" /> and <see cref="T:System.Threading.Tasks.Dataflow.TransformBlock`2" />.</summary>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.ExecutionDataflowBlockOptions.#ctor">
+      <summary>Initializes a new <see cref="T:System.Threading.Tasks.Dataflow.ExecutionDataflowBlockOptions" />.</summary>
+    </member>
+    <member name="P:System.Threading.Tasks.Dataflow.ExecutionDataflowBlockOptions.MaxDegreeOfParallelism">
+      <summary>Gets the maximum number of messages that may be processed by the block concurrently.</summary>
+      <returns>The maximum number of messages.</returns>
+    </member>
+    <member name="P:System.Threading.Tasks.Dataflow.ExecutionDataflowBlockOptions.SingleProducerConstrained">
+      <summary>Gets whether code using the dataflow block is constrained to one producer at a time.</summary>
+      <returns>Returns <see cref="T:System.Boolean" />.</returns>
+    </member>
+    <member name="T:System.Threading.Tasks.Dataflow.GroupingDataflowBlockOptions">
+      <summary>Provides options used to configure the processing performed by dataflow blocks that group together multiple messages. These are dataflow blocks such as <see cref="T:System.Threading.Tasks.Dataflow.JoinBlock`2" /> and <see cref="T:System.Threading.Tasks.Dataflow.BatchBlock`1" />.</summary>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.GroupingDataflowBlockOptions.#ctor">
+      <summary>Initializes a new <see cref="T:System.Threading.Tasks.Dataflow.GroupingDataflowBlockOptions" />.</summary>
+    </member>
+    <member name="P:System.Threading.Tasks.Dataflow.GroupingDataflowBlockOptions.Greedy">
+      <summary>Gets or sets the Boolean value to use to determine whether to greedily consume offered messages.</summary>
+      <returns>true to greedily consume offered messages; otherwise, false.</returns>
+    </member>
+    <member name="P:System.Threading.Tasks.Dataflow.GroupingDataflowBlockOptions.MaxNumberOfGroups">
+      <summary>Gets or sets the maximum number of groups that should be generated by the block.</summary>
+      <returns>The maximum number of groups.</returns>
+    </member>
+    <member name="T:System.Threading.Tasks.Dataflow.IDataflowBlock">
+      <summary>Represents a dataflow block.</summary>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.IDataflowBlock.Complete">
+      <summary>Signals to the <see cref="T:System.Threading.Tasks.Dataflow.IDataflowBlock" /> that it should not accept nor produce any more messages nor consume any more postponed messages.</summary>
+    </member>
+    <member name="P:System.Threading.Tasks.Dataflow.IDataflowBlock.Completion">
+      <summary>Gets a <see cref="T:System.Threading.Tasks.Task" /> that represents the asynchronous operation and completion of the dataflow block.</summary>
+      <returns>The task.</returns>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.IDataflowBlock.Fault(System.Exception)">
+      <summary>Causes the <see cref="T:System.Threading.Tasks.Dataflow.IDataflowBlock" /> to complete in a <see cref="F:System.Threading.Tasks.TaskStatus.Faulted" /> state.</summary>
+      <param name="exception">The <see cref="T:System.Exception" /> that caused the faulting.</param>
+      <exception cref="T:System.ArgumentNullException">The <paramref name="exception" /> is null.</exception>
+    </member>
+    <member name="T:System.Threading.Tasks.Dataflow.IPropagatorBlock`2">
+      <summary>Represents a dataflow block that is both a target for data and a source of data.</summary>
+      <typeparam name="TInput">Specifies the type of data accepted by the <see cref="T:System.Threading.Tasks.Dataflow.IPropagatorBlock`2" />.This type parameter is contravariant. That is, you can use either the type you specified or any type that is less derived. For more information about covariance and contravariance, see Covariance and Contravariance in Generics.</typeparam>
+      <typeparam name="TOutput">Specifies the type of data supplied by the <see cref="T:System.Threading.Tasks.Dataflow.IPropagatorBlock`2" />.This type parameter is covariant. That is, you can use either the type you specified or any type that is more derived. For more information about covariance and contravariance, see Covariance and Contravariance in Generics.</typeparam>
+    </member>
+    <member name="T:System.Threading.Tasks.Dataflow.IReceivableSourceBlock`1">
+      <summary>Represents a dataflow block that supports receiving messages without linking.</summary>
+      <typeparam name="TOutput">Specifies the type of data supplied by the <see cref="T:System.Threading.Tasks.Dataflow.IReceivableSourceBlock`1" />.</typeparam>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.IReceivableSourceBlock`1.TryReceive(System.Predicate{`0},`0@)">
+      <summary>Attempts to synchronously receive an available output item from the<see cref="T:System.Threading.Tasks.Dataflow.IReceivableSourceBlock`1" />.</summary>
+      <returns>true if an item could be received; otherwise, false.</returns>
+      <param name="filter">The predicate value must successfully pass in order for it to be received. <paramref name="filter" /> may be null, in which case all items will pass.</param>
+      <param name="item">The item received from the source.</param>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.IReceivableSourceBlock`1.TryReceiveAll(System.Collections.Generic.IList{`0}@)">
+      <summary>Attempts to synchronously receive all available items from the <see cref="T:System.Threading.Tasks.Dataflow.IReceivableSourceBlock`1" />.</summary>
+      <returns>true if one or more items could be received; otherwise, false.</returns>
+      <param name="items">The items received from the source.</param>
+    </member>
+    <member name="T:System.Threading.Tasks.Dataflow.ISourceBlock`1">
+      <summary>Represents a dataflow block that is a source of data.</summary>
+      <typeparam name="TOutput">Specifies the type of data supplied by the <see cref="T:System.Threading.Tasks.Dataflow.ISourceBlock`1" />.This type parameter is covariant. That is, you can use either the type you specified or any type that is more derived. For more information about covariance and contravariance, see Covariance and Contravariance in Generics.</typeparam>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.ISourceBlock`1.ConsumeMessage(System.Threading.Tasks.Dataflow.DataflowMessageHeader,System.Threading.Tasks.Dataflow.ITargetBlock{`0},System.Boolean@)">
+      <summary>Called by a linked <see cref="T:System.Threading.Tasks.Dataflow.ITargetBlock`1" /> to accept and consume a <see cref="T:System.Threading.Tasks.Dataflow.DataflowMessageHeader" /> previously offered by this <see cref="T:System.Threading.Tasks.Dataflow.ISourceBlock`1" />.</summary>
+      <returns>The value of the consumed message. This may correspond to a different <see cref="T:System.Threading.Tasks.Dataflow.DataflowMessageHeader" /> instance than was previously reserved and passed as the <paramref name="messageHeader" /> to <see cref="M:System.Threading.Tasks.Dataflow.ISourceBlock`1.ConsumeMessage()" />. The consuming <see cref="T:System.Threading.Tasks.Dataflow.ITargetBlock`1" /> must use the returned value instead of the value passed as <paramref name="messageValue" /> through <see cref="M:System.Threading.Tasks.Dataflow.ITargetBlock`1.OfferMessage()" />.If the message requested is not available, the return value will be null.</returns>
+      <param name="messageHeader">The <see cref="T:System.Threading.Tasks.Dataflow.DataflowMessageHeader" /> of the message being consumed.</param>
+      <param name="target">The <see cref="T:System.Threading.Tasks.Dataflow.ITargetBlock`1" /> consuming the message.</param>
+      <param name="messageConsumed">true if the message was successfully consumed; otherwise, false.</param>
+      <exception cref="T:System.ArgumentException">The <paramref name="messageHeader" /> is not valid.</exception>
+      <exception cref="T:System.ArgumentNullException">The <paramref name="target" /> is null.</exception>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.ISourceBlock`1.LinkTo(System.Threading.Tasks.Dataflow.ITargetBlock{`0},System.Threading.Tasks.Dataflow.DataflowLinkOptions)">
+      <summary>Links the <see cref="T:System.Threading.Tasks.Dataflow.ISourceBlock`1" /> to the specified <see cref="T:System.Threading.Tasks.Dataflow.ITargetBlock`1" />.</summary>
+      <returns>An IDisposable that, upon calling Dispose, will unlink the source from the target.</returns>
+      <param name="target">The <see cref="T:System.Threading.Tasks.Dataflow.ITargetBlock`1" /> to which to connect this source.</param>
+      <param name="linkOptions">A <see cref="T:System.Threading.Tasks.Dataflow.DataflowLinkOptions" /> instance that configures the link.</param>
+      <exception cref="T:System.ArgumentNullException">
+        <paramref name="target" /> is null (Nothing in Visual Basic) or <paramref name="linkOptions" /> is null (Nothing in Visual Basic).</exception>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.ISourceBlock`1.ReleaseReservation(System.Threading.Tasks.Dataflow.DataflowMessageHeader,System.Threading.Tasks.Dataflow.ITargetBlock{`0})">
+      <summary>Called by a linked <see cref="T:System.Threading.Tasks.Dataflow.ITargetBlock`1" /> to release a previously reserved <see cref="T:System.Threading.Tasks.Dataflow.DataflowMessageHeader" /> by this <see cref="T:System.Threading.Tasks.Dataflow.ISourceBlock`1" />.</summary>
+      <param name="messageHeader">The <see cref="T:System.Threading.Tasks.Dataflow.DataflowMessageHeader" /> of the reserved message being released.</param>
+      <param name="target">The <see cref="T:System.Threading.Tasks.Dataflow.ITargetBlock`1" /> releasing the message it previously reserved.</param>
+      <exception cref="T:System.ArgumentException">The <paramref name="messageHeader" /> is not valid.</exception>
+      <exception cref="T:System.ArgumentNullException">The <paramref name="target" /> is null.</exception>
+      <exception cref="T:System.InvalidOperationException">The <paramref name="target" /> did not have the message reserved.</exception>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.ISourceBlock`1.ReserveMessage(System.Threading.Tasks.Dataflow.DataflowMessageHeader,System.Threading.Tasks.Dataflow.ITargetBlock{`0})">
+      <summary>Called by a linked <see cref="T:System.Threading.Tasks.Dataflow.ITargetBlock`1" /> to reserve a previously offered <see cref="T:System.Threading.Tasks.Dataflow.DataflowMessageHeader" /> by this <see cref="T:System.Threading.Tasks.Dataflow.ISourceBlock`1" />.</summary>
+      <returns>true if the message was successfully reserved; otherwise, false.</returns>
+      <param name="messageHeader">The <see cref="T:System.Threading.Tasks.Dataflow.DataflowMessageHeader" /> of the message being reserved.</param>
+      <param name="target">The <see cref="T:System.Threading.Tasks.Dataflow.ITargetBlock`1" /> reserving the message.</param>
+      <exception cref="T:System.ArgumentException">The <paramref name="messageHeader" /> is not valid.</exception>
+      <exception cref="T:System.ArgumentNullException">The <paramref name="target" /> is null.</exception>
+    </member>
+    <member name="T:System.Threading.Tasks.Dataflow.ITargetBlock`1">
+      <summary>Represents a dataflow block that is a target for data.</summary>
+      <typeparam name="TInput">Specifies the type of data accepted by the <see cref="T:System.Threading.Tasks.Dataflow.ITargetBlock`1" />.This type parameter is contravariant. That is, you can use either the type you specified or any type that is less derived. For more information about covariance and contravariance, see Covariance and Contravariance in Generics.</typeparam>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.ITargetBlock`1.OfferMessage(System.Threading.Tasks.Dataflow.DataflowMessageHeader,`0,System.Threading.Tasks.Dataflow.ISourceBlock{`0},System.Boolean)">
+      <summary>Offers a message to the <see cref="T:System.Threading.Tasks.Dataflow.ITargetBlock`1" />, giving the target the opportunity to consume or postpone the message.</summary>
+      <returns>The status of the offered message. If the message was accepted by the target, <see cref="F:System.Threading.Tasks.Dataflow.DataflowMessageStatus.Accepted" /> is returned, and the source should no longer use the offered message, because it is now owned by the target. If the message was postponed by the target, <see cref="F:System.Threading.Tasks.Dataflow.DataflowMessageStatus.Postponed" /> is returned as a notification that the target may later attempt to consume or reserve the message; in the meantime, the source still owns the message and may offer it to other blocks.If the target would have otherwise postponed message, but <paramref name="source" /> was null, <see cref="F:System.Threading.Tasks.Dataflow.DataflowMessageStatus.Declined" /> is instead returned. If the target tried to accept the message but missed it due to the source delivering the message to another target or simply discarding it, <see cref="F:System.Threading.Tasks.Dataflow.DataflowMessageStatus.NotAvailable" /> is returned. If the target chose not to accept the message, <see cref="F:System.Threading.Tasks.Dataflow.DataflowMessageStatus.Declined" /> is returned. If the target chose not to accept the message and will never accept another message from this source, <see cref="F:System.Threading.Tasks.Dataflow.DataflowMessageStatus.DecliningPermanently" /> is returned.</returns>
+      <param name="messageHeader">A <see cref="T:System.Threading.Tasks.Dataflow.DataflowMessageHeader" /> instance that represents the header of the message being offered.</param>
+      <param name="messageValue">The value of the message being offered.</param>
+      <param name="source">The <see cref="T:System.Threading.Tasks.Dataflow.ISourceBlock`1" /> offering the message. This may be null.</param>
+      <param name="consumeToAccept">Set to true to instruct the target to call <see cref="M:System.Threading.Tasks.Dataflow.ISourceBlock`1.ConsumeMessage()" /> synchronously during the call to <see cref="M:System.Threading.Tasks.Dataflow.ITargetBlock`1.OfferMessage()" />, prior to returning <see cref="F:System.Threading.Tasks.Dataflow.DataflowMessageStatus.Accepted" />, in order to consume the message.</param>
+      <exception cref="T:System.ArgumentException">The <paramref name="messageHeader" /> is not valid.-or-<paramref name="consumeToAccept" /> may only be true if provided with a non-null <paramref name="source" />.</exception>
+    </member>
+    <member name="T:System.Threading.Tasks.Dataflow.JoinBlock`2">
+      <summary>Provides a dataflow block that joins across multiple dataflow sources, not necessarily of the same type, waiting for one item to arrive for each type before they’re all released together as a tuple consisting of one item per type.</summary>
+      <typeparam name="T1">Specifies the type of data accepted by the block's first target.</typeparam>
+      <typeparam name="T2">Specifies the type of data accepted by the block's second target.</typeparam>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.JoinBlock`2.#ctor">
+      <summary>Initializes a new <see cref="T:System.Threading.Tasks.Dataflow.JoinBlock`2" />.</summary>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.JoinBlock`2.#ctor(System.Threading.Tasks.Dataflow.GroupingDataflowBlockOptions)">
+      <summary>Initializes a new <see cref="T:System.Threading.Tasks.Dataflow.JoinBlock`2" />.</summary>
+      <param name="dataflowBlockOptions">The options with which to configure this <see cref="T:System.Threading.Tasks.Dataflow.JoinBlock`2" />.</param>
+      <exception cref="T:System.ArgumentNullException">The <paramref name="dataflowBlockOptions" /> is null.</exception>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.JoinBlock`2.Complete">
+      <summary>Signals to the <see cref="T:System.Threading.Tasks.Dataflow.IDataflowBlock" /> that it should not accept nor produce any more messages nor consume any more postponed messages.</summary>
+    </member>
+    <member name="P:System.Threading.Tasks.Dataflow.JoinBlock`2.Completion">
+      <summary>Gets a <see cref="T:System.Threading.Tasks.Task" /> that represents the asynchronous operation and completion of the dataflow block.</summary>
+      <returns>The task.</returns>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.JoinBlock`2.LinkTo(System.Threading.Tasks.Dataflow.ITargetBlock{System.Tuple{`0,`1}},System.Threading.Tasks.Dataflow.DataflowLinkOptions)">
+      <summary>Links the <see cref="T:System.Threading.Tasks.Dataflow.ISourceBlock`1" /> to the specified <see cref="T:System.Threading.Tasks.Dataflow.ITargetBlock`1" />.</summary>
+      <returns>An IDisposable that, upon calling Dispose, will unlink the source from the target.</returns>
+      <param name="target">The <see cref="T:System.Threading.Tasks.Dataflow.ITargetBlock`1" /> to which to connect this source.</param>
+      <param name="linkOptions">A <see cref="T:System.Threading.Tasks.Dataflow.DataflowLinkOptions" /> instance that configures the link.</param>
+      <exception cref="T:System.ArgumentNullException">
+        <paramref name="target" /> is null (Nothing in Visual Basic) or <paramref name="linkOptions" /> is null (Nothing in Visual Basic).</exception>
+    </member>
+    <member name="P:System.Threading.Tasks.Dataflow.JoinBlock`2.OutputCount">
+      <summary>Gets the number of output items available to be received from this block.</summary>
+      <returns>The number of output items.</returns>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.JoinBlock`2.System#Threading#Tasks#Dataflow#IDataflowBlock#Fault(System.Exception)">
+      <summary>Causes the <see cref="T:System.Threading.Tasks.Dataflow.IDataflowBlock" /> to complete in a <see cref="F:System.Threading.Tasks.TaskStatus.Faulted" /> state.</summary>
+      <param name="exception">The <see cref="T:System.Exception" /> that caused the faulting.</param>
+      <exception cref="T:System.ArgumentNullException">The <paramref name="exception" /> is null.</exception>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.JoinBlock`2.System#Threading#Tasks#Dataflow#ISourceBlock{TOutput}#ConsumeMessage(System.Threading.Tasks.Dataflow.DataflowMessageHeader,System.Threading.Tasks.Dataflow.ITargetBlock{System.Tuple{`0,`1}},System.Boolean@)">
+      <summary>Called by a linked <see cref="T:System.Threading.Tasks.Dataflow.ITargetBlock`1" /> to accept and consume a <see cref="T:System.Threading.Tasks.Dataflow.DataflowMessageHeader" /> previously offered by this <see cref="T:System.Threading.Tasks.Dataflow.ISourceBlock`1" />.</summary>
+      <returns>The value of the consumed message. This may correspond to a different <see cref="T:System.Threading.Tasks.Dataflow.DataflowMessageHeader" /> instance than was previously reserved and passed as the <paramref name="messageHeader" /> to <see cref="M:System.Threading.Tasks.Dataflow.ISourceBlock`1.ConsumeMessage()" />. The consuming <see cref="T:System.Threading.Tasks.Dataflow.ITargetBlock`1" /> must use the returned value instead of the value passed as <paramref name="messageValue" /> through <see cref="M:System.Threading.Tasks.Dataflow.ITargetBlock`1.OfferMessage()" />.If the message requested is not available, the return value will be null.</returns>
+      <param name="messageHeader">The <see cref="T:System.Threading.Tasks.Dataflow.DataflowMessageHeader" /> of the message being consumed.</param>
+      <param name="target">The <see cref="T:System.Threading.Tasks.Dataflow.ITargetBlock`1" /> consuming the message.</param>
+      <param name="messageConsumed">true if the message was successfully consumed; otherwise, false.</param>
+      <exception cref="T:System.ArgumentException">The <paramref name="messageHeader" /> is not valid.</exception>
+      <exception cref="T:System.ArgumentNullException">The <paramref name="target" /> is null.</exception>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.JoinBlock`2.System#Threading#Tasks#Dataflow#ISourceBlock{TOutput}#ReleaseReservation(System.Threading.Tasks.Dataflow.DataflowMessageHeader,System.Threading.Tasks.Dataflow.ITargetBlock{System.Tuple{`0,`1}})">
+      <summary>Called by a linked <see cref="T:System.Threading.Tasks.Dataflow.ITargetBlock`1" /> to release a previously reserved <see cref="T:System.Threading.Tasks.Dataflow.DataflowMessageHeader" /> by this <see cref="T:System.Threading.Tasks.Dataflow.ISourceBlock`1" />.</summary>
+      <param name="messageHeader">The <see cref="T:System.Threading.Tasks.Dataflow.DataflowMessageHeader" /> of the reserved message being released.</param>
+      <param name="target">The <see cref="T:System.Threading.Tasks.Dataflow.ITargetBlock`1" /> releasing the message it previously reserved.</param>
+      <exception cref="T:System.ArgumentException">The <paramref name="messageHeader" /> is not valid.</exception>
+      <exception cref="T:System.ArgumentNullException">The <paramref name="target" /> is null.</exception>
+      <exception cref="T:System.InvalidOperationException">The <paramref name="target" /> did not have the message reserved.</exception>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.JoinBlock`2.System#Threading#Tasks#Dataflow#ISourceBlock{TOutput}#ReserveMessage(System.Threading.Tasks.Dataflow.DataflowMessageHeader,System.Threading.Tasks.Dataflow.ITargetBlock{System.Tuple{`0,`1}})">
+      <summary>Called by a linked <see cref="T:System.Threading.Tasks.Dataflow.ITargetBlock`1" /> to reserve a previously offered <see cref="T:System.Threading.Tasks.Dataflow.DataflowMessageHeader" /> by this <see cref="T:System.Threading.Tasks.Dataflow.ISourceBlock`1" />.</summary>
+      <returns>true if the message was successfully reserved; otherwise, false.</returns>
+      <param name="messageHeader">The <see cref="T:System.Threading.Tasks.Dataflow.DataflowMessageHeader" /> of the message being reserved.</param>
+      <param name="target">The <see cref="T:System.Threading.Tasks.Dataflow.ITargetBlock`1" /> reserving the message.</param>
+      <exception cref="T:System.ArgumentException">The <paramref name="messageHeader" /> is not valid.</exception>
+      <exception cref="T:System.ArgumentNullException">The <paramref name="target" /> is null.</exception>
+    </member>
+    <member name="P:System.Threading.Tasks.Dataflow.JoinBlock`2.Target1">
+      <summary>Gets a target that may be used to offer messages of the first type.</summary>
+      <returns>The target.</returns>
+    </member>
+    <member name="P:System.Threading.Tasks.Dataflow.JoinBlock`2.Target2">
+      <summary>Gets a target that may be used to offer messages of the second type.</summary>
+      <returns>The target.</returns>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.JoinBlock`2.ToString">
+      <summary>Returns a string that represents the formatted name of this <see cref="T:System.Threading.Tasks.Dataflow.IDataflowBlock" /> instance.</summary>
+      <returns>A string that represents the formatted name of this <see cref="T:System.Threading.Tasks.Dataflow.IDataflowBlock" /> instance.</returns>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.JoinBlock`2.TryReceive(System.Predicate{System.Tuple{`0,`1}},System.Tuple{`0,`1}@)">
+      <summary>Attempts to synchronously receive an available output item from the <see cref="T:System.Threading.Tasks.Dataflow.IReceivableSourceBlock`1" />.</summary>
+      <returns>true if an item could be received; otherwise, false.</returns>
+      <param name="filter">The predicate value must successfully pass in order for it to be received. <paramref name="filter" /> may be null, in which case all items will pass.</param>
+      <param name="item">The item received from the source.</param>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.JoinBlock`2.TryReceiveAll(System.Collections.Generic.IList{System.Tuple{`0,`1}}@)">
+      <summary>Attempts to synchronously receive all available items from the <see cref="T:System.Threading.Tasks.Dataflow.IReceivableSourceBlock`1" />.</summary>
+      <returns>true if one or more items could be received; otherwise, false.</returns>
+      <param name="items">The items received from the source.</param>
+    </member>
+    <member name="T:System.Threading.Tasks.Dataflow.JoinBlock`3">
+      <summary>Provides a dataflow block that joins across multiple dataflow sources, which are not necessarily of the same type, waiting for one item to arrive for each type before they’re all released together as a tuple that contains one item per type.</summary>
+      <typeparam name="T1">Specifies the type of data accepted by the block's first target.</typeparam>
+      <typeparam name="T2">Specifies the type of data accepted by the block's second target.</typeparam>
+      <typeparam name="T3">Specifies the type of data accepted by the block's third target.</typeparam>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.JoinBlock`3.#ctor">
+      <summary>Initializes a new <see cref="T:System.Threading.Tasks.Dataflow.JoinBlock`3" />.</summary>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.JoinBlock`3.#ctor(System.Threading.Tasks.Dataflow.GroupingDataflowBlockOptions)">
+      <summary>Initializes a new <see cref="T:System.Threading.Tasks.Dataflow.JoinBlock`3" />.</summary>
+      <param name="dataflowBlockOptions">The options with which to configure this <see cref="T:System.Threading.Tasks.Dataflow.JoinBlock`2" />.</param>
+      <exception cref="T:System.ArgumentNullException">The <paramref name="dataflowBlockOptions" /> is null.</exception>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.JoinBlock`3.Complete">
+      <summary>Signals to the <see cref="T:System.Threading.Tasks.Dataflow.IDataflowBlock" /> that it should not accept nor produce any more messages nor consume any more postponed messages.</summary>
+    </member>
+    <member name="P:System.Threading.Tasks.Dataflow.JoinBlock`3.Completion">
+      <summary>Gets a <see cref="T:System.Threading.Tasks.Task" /> that represents the asynchronous operation and completion of the dataflow block.</summary>
+      <returns>The task.</returns>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.JoinBlock`3.LinkTo(System.Threading.Tasks.Dataflow.ITargetBlock{System.Tuple{`0,`1,`2}},System.Threading.Tasks.Dataflow.DataflowLinkOptions)">
+      <summary>Links the <see cref="T:System.Threading.Tasks.Dataflow.ISourceBlock`1" /> to the specified <see cref="T:System.Threading.Tasks.Dataflow.ITargetBlock`1" />.</summary>
+      <returns>An IDisposable that, upon calling Dispose, will unlink the source from the target.</returns>
+      <param name="target">The <see cref="T:System.Threading.Tasks.Dataflow.ITargetBlock`1" /> to which to connect this source.</param>
+      <param name="linkOptions">A <see cref="T:System.Threading.Tasks.Dataflow.DataflowLinkOptions" /> instance that configures the link.</param>
+      <exception cref="T:System.ArgumentNullException">
+        <paramref name="target" /> is null (Nothing in Visual Basic) or <paramref name="linkOptions" /> is null (Nothing in Visual Basic).</exception>
+    </member>
+    <member name="P:System.Threading.Tasks.Dataflow.JoinBlock`3.OutputCount">
+      <summary>Gets the number of output items available to be received from this block.</summary>
+      <returns>The number of output items.</returns>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.JoinBlock`3.System#Threading#Tasks#Dataflow#IDataflowBlock#Fault(System.Exception)">
+      <summary>Causes the <see cref="T:System.Threading.Tasks.Dataflow.IDataflowBlock" /> to complete in a <see cref="F:System.Threading.Tasks.TaskStatus.Faulted" /> state.</summary>
+      <param name="exception">The <see cref="T:System.Exception" /> that caused the faulting.</param>
+      <exception cref="T:System.ArgumentNullException">The <paramref name="exception" /> is null.</exception>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.JoinBlock`3.System#Threading#Tasks#Dataflow#ISourceBlock{TOutput}#ConsumeMessage(System.Threading.Tasks.Dataflow.DataflowMessageHeader,System.Threading.Tasks.Dataflow.ITargetBlock{System.Tuple{`0,`1,`2}},System.Boolean@)">
+      <summary>Called by a linked <see cref="T:System.Threading.Tasks.Dataflow.ITargetBlock`1" /> to accept and consume a <see cref="T:System.Threading.Tasks.Dataflow.DataflowMessageHeader" /> previously offered by this <see cref="T:System.Threading.Tasks.Dataflow.ISourceBlock`1" />.</summary>
+      <returns>The value of the consumed message. This may correspond to a different <see cref="T:System.Threading.Tasks.Dataflow.DataflowMessageHeader" /> instance than was previously reserved and passed as the <paramref name="messageHeader" /> to <see cref="M:System.Threading.Tasks.Dataflow.ISourceBlock`1.ConsumeMessage()" />. The consuming <see cref="T:System.Threading.Tasks.Dataflow.ITargetBlock`1" /> must use the returned value instead of the value passed as <paramref name="messageValue" /> through <see cref="M:System.Threading.Tasks.Dataflow.ITargetBlock`1.OfferMessage()" />.If the message requested is not available, the return value will be null.</returns>
+      <param name="messageHeader">The <see cref="T:System.Threading.Tasks.Dataflow.DataflowMessageHeader" /> of the message being consumed.</param>
+      <param name="target">The <see cref="T:System.Threading.Tasks.Dataflow.ITargetBlock`1" /> consuming the message.</param>
+      <param name="messageConsumed">true if the message was successfully consumed; otherwise, false.</param>
+      <exception cref="T:System.ArgumentException">The <paramref name="messageHeader" /> is not valid.</exception>
+      <exception cref="T:System.ArgumentNullException">The <paramref name="target" /> is null.</exception>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.JoinBlock`3.System#Threading#Tasks#Dataflow#ISourceBlock{TOutput}#ReleaseReservation(System.Threading.Tasks.Dataflow.DataflowMessageHeader,System.Threading.Tasks.Dataflow.ITargetBlock{System.Tuple{`0,`1,`2}})">
+      <summary>Called by a linked <see cref="T:System.Threading.Tasks.Dataflow.ITargetBlock`1" /> to release a previously reserved <see cref="T:System.Threading.Tasks.Dataflow.DataflowMessageHeader" /> by this <see cref="T:System.Threading.Tasks.Dataflow.ISourceBlock`1" />.</summary>
+      <param name="messageHeader">The <see cref="T:System.Threading.Tasks.Dataflow.DataflowMessageHeader" /> of the reserved message being released.</param>
+      <param name="target">The <see cref="T:System.Threading.Tasks.Dataflow.ITargetBlock`1" /> releasing the message it previously reserved.</param>
+      <exception cref="T:System.ArgumentException">The <paramref name="messageHeader" /> is not valid.</exception>
+      <exception cref="T:System.ArgumentNullException">The <paramref name="target" /> is null.</exception>
+      <exception cref="T:System.InvalidOperationException">The <paramref name="target" /> did not have the message reserved.</exception>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.JoinBlock`3.System#Threading#Tasks#Dataflow#ISourceBlock{TOutput}#ReserveMessage(System.Threading.Tasks.Dataflow.DataflowMessageHeader,System.Threading.Tasks.Dataflow.ITargetBlock{System.Tuple{`0,`1,`2}})">
+      <summary>Called by a linked <see cref="T:System.Threading.Tasks.Dataflow.ITargetBlock`1" /> to reserve a previously offered <see cref="T:System.Threading.Tasks.Dataflow.DataflowMessageHeader" /> by this <see cref="T:System.Threading.Tasks.Dataflow.ISourceBlock`1" />.</summary>
+      <returns>true if the message was successfully reserved; otherwise, false.</returns>
+      <param name="messageHeader">The <see cref="T:System.Threading.Tasks.Dataflow.DataflowMessageHeader" /> of the message being reserved.</param>
+      <param name="target">The <see cref="T:System.Threading.Tasks.Dataflow.ITargetBlock`1" /> reserving the message.</param>
+      <exception cref="T:System.ArgumentException">The <paramref name="messageHeader" /> is not valid.</exception>
+      <exception cref="T:System.ArgumentNullException">The <paramref name="target" /> is null.</exception>
+    </member>
+    <member name="P:System.Threading.Tasks.Dataflow.JoinBlock`3.Target1">
+      <summary>Gets a target that may be used to offer messages of the first type.</summary>
+      <returns>The target.</returns>
+    </member>
+    <member name="P:System.Threading.Tasks.Dataflow.JoinBlock`3.Target2">
+      <summary>Gets a target that may be used to offer messages of the second type.</summary>
+      <returns>The target.</returns>
+    </member>
+    <member name="P:System.Threading.Tasks.Dataflow.JoinBlock`3.Target3">
+      <summary>Gets a target that may be used to offer messages of the third type.</summary>
+      <returns>The target.</returns>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.JoinBlock`3.ToString">
+      <summary>Returns a string that represents the formatted name of this <see cref="T:System.Threading.Tasks.Dataflow.IDataflowBlock" /> instance.</summary>
+      <returns>A string that represents the formatted name of this <see cref="T:System.Threading.Tasks.Dataflow.IDataflowBlock" /> instance.</returns>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.JoinBlock`3.TryReceive(System.Predicate{System.Tuple{`0,`1,`2}},System.Tuple{`0,`1,`2}@)">
+      <summary>Attempts to synchronously receive an available output item from the <see cref="T:System.Threading.Tasks.Dataflow.IReceivableSourceBlock`1" />.</summary>
+      <returns>true if an item could be received; otherwise, false.</returns>
+      <param name="filter">The predicate value must successfully pass in order for it to be received. <paramref name="filter" /> may be null, in which case all items will pass.</param>
+      <param name="item">The item received from the source.</param>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.JoinBlock`3.TryReceiveAll(System.Collections.Generic.IList{System.Tuple{`0,`1,`2}}@)">
+      <summary>Attempts to synchronously receive all available items from the <see cref="T:System.Threading.Tasks.Dataflow.IReceivableSourceBlock`1" />.</summary>
+      <returns>true if one or more items could be received; otherwise, false.</returns>
+      <param name="items">The items received from the source.</param>
+    </member>
+    <member name="T:System.Threading.Tasks.Dataflow.TransformBlock`2">
+      <summary>Provides a dataflow block that invokes a provided <see cref="T:System.Func`2" /> delegate for every data element received.</summary>
+      <typeparam name="TInput">Specifies the type of data received and operated on by this <see cref="T:System.Threading.Tasks.Dataflow.TransformBlock`2" />.</typeparam>
+      <typeparam name="TOutput">Specifies the type of data output by this <see cref="T:System.Threading.Tasks.Dataflow.TransformBlock`2" />.</typeparam>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.TransformBlock`2.#ctor(System.Func{`0,System.Threading.Tasks.Task{`1}})">
+      <summary>Initializes a new <see cref="T:System.Threading.Tasks.Dataflow.TransformBlock`2" /> with the specified <see cref="T:System.Func`2" />.</summary>
+      <param name="transform">The function to invoke with each data element received.</param>
+      <exception cref="T:System.ArgumentNullException">The <paramref name="transform" /> is null.</exception>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.TransformBlock`2.#ctor(System.Func{`0,System.Threading.Tasks.Task{`1}},System.Threading.Tasks.Dataflow.ExecutionDataflowBlockOptions)">
+      <summary>Initializes a new <see cref="T:System.Threading.Tasks.Dataflow.TransformBlock`2" /> with the specified <see cref="T:System.Func`2" /> and <see cref="T:System.Threading.Tasks.Dataflow.ExecutionDataflowBlockOptions" />.</summary>
+      <param name="transform">The function to invoke with each data element received.</param>
+      <param name="dataflowBlockOptions">The options with which to configure this <see cref="T:System.Threading.Tasks.Dataflow.TransformBlock`2" />.</param>
+      <exception cref="T:System.ArgumentNullException">The <paramref name="transform" /> is null.-or-The <paramref name="dataflowBlockOptions" /> is null.</exception>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.TransformBlock`2.#ctor(System.Func{`0,`1})">
+      <summary>Initializes a new <see cref="T:System.Threading.Tasks.Dataflow.TransformBlock`2" /> with the specified <see cref="T:System.Func`2" />.</summary>
+      <param name="transform">The function to invoke with each data element received.</param>
+      <exception cref="T:System.ArgumentNullException">The <paramref name="transform" /> is null.</exception>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.TransformBlock`2.#ctor(System.Func{`0,`1},System.Threading.Tasks.Dataflow.ExecutionDataflowBlockOptions)">
+      <summary>Initializes a new <see cref="T:System.Threading.Tasks.Dataflow.TransformBlock`2" /> with the specified <see cref="T:System.Func`2" /> and <see cref="T:System.Threading.Tasks.Dataflow.ExecutionDataflowBlockOptions" />.</summary>
+      <param name="transform">The function to invoke with each data element received.</param>
+      <param name="dataflowBlockOptions">The options with which to configure this <see cref="T:System.Threading.Tasks.Dataflow.TransformBlock`2" />.</param>
+      <exception cref="T:System.ArgumentNullException">The <paramref name="transform" /> is null.-or-The <paramref name="dataflowBlockOptions" /> is null.</exception>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.TransformBlock`2.Complete">
+      <summary>Signals to the <see cref="T:System.Threading.Tasks.Dataflow.IDataflowBlock" /> that it should not accept nor produce any more messages nor consume any more postponed messages.</summary>
+    </member>
+    <member name="P:System.Threading.Tasks.Dataflow.TransformBlock`2.Completion">
+      <summary>Gets a <see cref="T:System.Threading.Tasks.Task" /> that represents the asynchronous operation and completion of the dataflow block.</summary>
+      <returns>The task.</returns>
+    </member>
+    <member name="P:System.Threading.Tasks.Dataflow.TransformBlock`2.InputCount">
+      <summary>Gets the number of input items waiting to be processed by this block.</summary>
+      <returns>The number of input items.</returns>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.TransformBlock`2.LinkTo(System.Threading.Tasks.Dataflow.ITargetBlock{`1},System.Threading.Tasks.Dataflow.DataflowLinkOptions)">
+      <summary>Links the <see cref="T:System.Threading.Tasks.Dataflow.ISourceBlock`1" /> to the specified <see cref="T:System.Threading.Tasks.Dataflow.ITargetBlock`1" />.</summary>
+      <returns>An IDisposable that, upon calling Dispose, will unlink the source from the target.</returns>
+      <param name="target">The <see cref="T:System.Threading.Tasks.Dataflow.ITargetBlock`1" /> to which to connect this source.</param>
+      <param name="linkOptions">A <see cref="T:System.Threading.Tasks.Dataflow.DataflowLinkOptions" /> instance that configures the link.</param>
+      <exception cref="T:System.ArgumentNullException">
+        <paramref name="target" /> is null (Nothing in Visual Basic) or <paramref name="linkOptions" /> is null (Nothing in Visual Basic).</exception>
+    </member>
+    <member name="P:System.Threading.Tasks.Dataflow.TransformBlock`2.OutputCount">
+      <summary>Gets the number of output items available to be received from this block.</summary>
+      <returns>The number of output items.</returns>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.TransformBlock`2.System#Threading#Tasks#Dataflow#IDataflowBlock#Fault(System.Exception)">
+      <summary>Causes the <see cref="T:System.Threading.Tasks.Dataflow.IDataflowBlock" /> to complete in a <see cref="F:System.Threading.Tasks.TaskStatus.Faulted" /> state.</summary>
+      <param name="exception">The <see cref="T:System.Exception" /> that caused the faulting.</param>
+      <exception cref="T:System.ArgumentNullException">The <paramref name="exception" /> is null.</exception>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.TransformBlock`2.System#Threading#Tasks#Dataflow#ISourceBlock{TOutput}#ConsumeMessage(System.Threading.Tasks.Dataflow.DataflowMessageHeader,System.Threading.Tasks.Dataflow.ITargetBlock{`1},System.Boolean@)">
+      <summary>Called by a linked <see cref="T:System.Threading.Tasks.Dataflow.ITargetBlock`1" /> to accept and consume a <see cref="T:System.Threading.Tasks.Dataflow.DataflowMessageHeader" /> previously offered by this <see cref="T:System.Threading.Tasks.Dataflow.ISourceBlock`1" />.</summary>
+      <returns>The value of the consumed message. This may correspond to a different <see cref="T:System.Threading.Tasks.Dataflow.DataflowMessageHeader" /> instance than was previously reserved and passed as the <paramref name="messageHeader" /> to <see cref="M:System.Threading.Tasks.Dataflow.ISourceBlock`1.ConsumeMessage()" />. The consuming <see cref="T:System.Threading.Tasks.Dataflow.ITargetBlock`1" /> must use the returned value instead of the value passed as <paramref name="messageValue" /> through <see cref="M:System.Threading.Tasks.Dataflow.TransformBlock`2.System#Threading#Tasks#Dataflow#ITargetBlock{TInput}#OfferMessage()" />.If the message requested is not available, the return value will be null.</returns>
+      <param name="messageHeader">The <see cref="T:System.Threading.Tasks.Dataflow.DataflowMessageHeader" /> of the message being consumed.</param>
+      <param name="target">The <see cref="T:System.Threading.Tasks.Dataflow.ITargetBlock`1" /> consuming the message.</param>
+      <param name="messageConsumed">true if the message was successfully consumed; otherwise, false.</param>
+      <exception cref="T:System.ArgumentException">The <paramref name="messageHeader" /> is not valid.</exception>
+      <exception cref="T:System.ArgumentNullException">The <paramref name="target" /> is null.</exception>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.TransformBlock`2.System#Threading#Tasks#Dataflow#ISourceBlock{TOutput}#ReleaseReservation(System.Threading.Tasks.Dataflow.DataflowMessageHeader,System.Threading.Tasks.Dataflow.ITargetBlock{`1})">
+      <summary>Called by a linked <see cref="T:System.Threading.Tasks.Dataflow.ITargetBlock`1" /> to release a previously reserved <see cref="T:System.Threading.Tasks.Dataflow.DataflowMessageHeader" /> by this <see cref="T:System.Threading.Tasks.Dataflow.ISourceBlock`1" />.</summary>
+      <param name="messageHeader">The <see cref="T:System.Threading.Tasks.Dataflow.DataflowMessageHeader" /> of the reserved message being released.</param>
+      <param name="target">The <see cref="T:System.Threading.Tasks.Dataflow.ITargetBlock`1" /> releasing the message it previously reserved.</param>
+      <exception cref="T:System.ArgumentException">The <paramref name="messageHeader" /> is not valid.</exception>
+      <exception cref="T:System.ArgumentNullException">The <paramref name="target" /> is null.</exception>
+      <exception cref="T:System.InvalidOperationException">The <paramref name="target" /> did not have the message reserved.</exception>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.TransformBlock`2.System#Threading#Tasks#Dataflow#ISourceBlock{TOutput}#ReserveMessage(System.Threading.Tasks.Dataflow.DataflowMessageHeader,System.Threading.Tasks.Dataflow.ITargetBlock{`1})">
+      <summary>Called by a linked <see cref="T:System.Threading.Tasks.Dataflow.ITargetBlock`1" /> to reserve a previously offered <see cref="T:System.Threading.Tasks.Dataflow.DataflowMessageHeader" /> by this <see cref="T:System.Threading.Tasks.Dataflow.ISourceBlock`1" />.</summary>
+      <returns>true if the message was successfully reserved; otherwise, false.</returns>
+      <param name="messageHeader">The <see cref="T:System.Threading.Tasks.Dataflow.DataflowMessageHeader" /> of the message being reserved.</param>
+      <param name="target">The <see cref="T:System.Threading.Tasks.Dataflow.ITargetBlock`1" /> reserving the message.</param>
+      <exception cref="T:System.ArgumentException">The <paramref name="messageHeader" /> is not valid.</exception>
+      <exception cref="T:System.ArgumentNullException">The <paramref name="target" /> is null.</exception>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.TransformBlock`2.System#Threading#Tasks#Dataflow#ITargetBlock{TInput}#OfferMessage(System.Threading.Tasks.Dataflow.DataflowMessageHeader,`0,System.Threading.Tasks.Dataflow.ISourceBlock{`0},System.Boolean)">
+      <summary>Offers a message to the <see cref="T:System.Threading.Tasks.Dataflow.ITargetBlock`1" />, giving the target the opportunity to consume or postpone the message.</summary>
+      <returns>The status of the offered message. If the message was accepted by the target, <see cref="F:System.Threading.Tasks.Dataflow.DataflowMessageStatus.Accepted" /> is returned, and the source should no longer use the offered message, because it is now owned by the target. If the message was postponed by the target, <see cref="F:System.Threading.Tasks.Dataflow.DataflowMessageStatus.Postponed" /> is returned as a notification that the target may later attempt to consume or reserve the message; in the meantime, the source still owns the message and may offer it to other blocks. If the target would have otherwise postponed but source was null, <see cref="F:System.Threading.Tasks.Dataflow.DataflowMessageStatus.Declined" /> is instead returned.  If the target tried to accept the message but missed it due to the source delivering the message to another target or simply discarding it, <see cref="F:System.Threading.Tasks.Dataflow.DataflowMessageStatus.NotAvailable" /> is returned. If the target chose not to accept the message, <see cref="F:System.Threading.Tasks.Dataflow.DataflowMessageStatus.Declined" /> is returned. If the target chose not to accept the message and will never accept another message from this source, <see cref="F:System.Threading.Tasks.Dataflow.DataflowMessageStatus.DecliningPermanently" /> is returned.</returns>
+      <param name="messageHeader">A <see cref="T:System.Threading.Tasks.Dataflow.DataflowMessageHeader" /> instance that represents the header of the message being offered.</param>
+      <param name="messageValue">The value of the message being offered.</param>
+      <param name="source">The <see cref="T:System.Threading.Tasks.Dataflow.ISourceBlock`1" /> offering the message. This may be null.</param>
+      <param name="consumeToAccept">true if the target must call <see cref="M:System.Threading.Tasks.Dataflow.ISourceBlock`1.ConsumeMessage()" /> synchronously during the call to <see cref="M:System.Threading.Tasks.Dataflow.TransformBlock`2.System#Threading#Tasks#Dataflow#ITargetBlock{TInput}#OfferMessage()" />, prior to returning <see cref="F:System.Threading.Tasks.Dataflow.DataflowMessageStatus.Accepted" />, in order to consume the message.</param>
+      <exception cref="T:System.ArgumentException">The <paramref name="messageHeader" /> is not valid.-or-<paramref name="consumeToAccept" /> may only be true if provided with a non-null <paramref name="source" />.</exception>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.TransformBlock`2.ToString">
+      <summary>Returns a string that represents the formatted name of this <see cref="T:System.Threading.Tasks.Dataflow.IDataflowBlock" /> instance.</summary>
+      <returns>A string that represents the formatted name of this <see cref="T:System.Threading.Tasks.Dataflow.IDataflowBlock" /> instance.</returns>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.TransformBlock`2.TryReceive(System.Predicate{`1},`1@)">
+      <summary>Attempts to synchronously receive an available output item from the <see cref="T:System.Threading.Tasks.Dataflow.IReceivableSourceBlock`1" />.</summary>
+      <returns>true if an item could be received; otherwise, false.</returns>
+      <param name="filter">The predicate value must successfully pass in order for it to be received. <paramref name="filter" /> may be null, in which case all items will pass.</param>
+      <param name="item">The item received from the source.</param>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.TransformBlock`2.TryReceiveAll(System.Collections.Generic.IList{`1}@)">
+      <summary>Attempts to synchronously receive all available items from the <see cref="T:System.Threading.Tasks.Dataflow.IReceivableSourceBlock`1" />.</summary>
+      <returns>true if one or more items could be received; otherwise, false.</returns>
+      <param name="items">The items received from the source.</param>
+    </member>
+    <member name="T:System.Threading.Tasks.Dataflow.TransformManyBlock`2">
+      <summary>Provides a dataflow block that invokes a provided <see cref="T:System.Func`2" /> delegate for every data element received.</summary>
+      <typeparam name="TInput">Specifies the type of data received and operated on by this <see cref="T:System.Threading.Tasks.Dataflow.TransformManyBlock`2" />.</typeparam>
+      <typeparam name="TOutput">Specifies the type of data output by this <see cref="T:System.Threading.Tasks.Dataflow.TransformManyBlock`2" />.</typeparam>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.TransformManyBlock`2.#ctor(System.Func{`0,System.Collections.Generic.IEnumerable{`1}})">
+      <summary>Initializes a new <see cref="T:System.Threading.Tasks.Dataflow.TransformManyBlock`2" /> with the specified function.</summary>
+      <param name="transform">The function to invoke with each data element received. All of the data from the returned <see cref="T:System.Collections.Generic.IEnumerable`1" /> will be made available as output from this <see cref="T:System.Threading.Tasks.Dataflow.TransformManyBlock`2" />.</param>
+      <exception cref="T:System.ArgumentNullException">The <paramref name="transform" /> is null.</exception>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.TransformManyBlock`2.#ctor(System.Func{`0,System.Collections.Generic.IEnumerable{`1}},System.Threading.Tasks.Dataflow.ExecutionDataflowBlockOptions)">
+      <summary>Initializes a new <see cref="T:System.Threading.Tasks.Dataflow.TransformManyBlock`2" /> with the specified function and <see cref="T:System.Threading.Tasks.Dataflow.ExecutionDataflowBlockOptions" />.</summary>
+      <param name="transform">The function to invoke with each data element received. All of the data from the returned in the <see cref="T:System.Collections.Generic.IEnumerable`1" /> will be made available as output from this <see cref="T:System.Threading.Tasks.Dataflow.TransformManyBlock`2" />.</param>
+      <param name="dataflowBlockOptions">The options with which to configure this <see cref="T:System.Threading.Tasks.Dataflow.TransformManyBlock`2" />.</param>
+      <exception cref="T:System.ArgumentNullException">The <paramref name="transform" /> is null.-or-The <paramref name="dataflowBlockOptions" /> is null.</exception>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.TransformManyBlock`2.#ctor(System.Func{`0,System.Threading.Tasks.Task{System.Collections.Generic.IEnumerable{`1}}})">
+      <summary>Initializes a new <see cref="T:System.Threading.Tasks.Dataflow.TransformManyBlock`2" /> with the specified function.</summary>
+      <param name="transform">The function to invoke with each data element received. All of the data asynchronously returned in the <see cref="T:System.Collections.Generic.IEnumerable`1" /> will be made available as output from this <see cref="T:System.Threading.Tasks.Dataflow.TransformManyBlock`2" />.</param>
+      <exception cref="T:System.ArgumentNullException">The <paramref name="transform" /> is null.</exception>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.TransformManyBlock`2.#ctor(System.Func{`0,System.Threading.Tasks.Task{System.Collections.Generic.IEnumerable{`1}}},System.Threading.Tasks.Dataflow.ExecutionDataflowBlockOptions)">
+      <summary>Initializes a new <see cref="T:System.Threading.Tasks.Dataflow.TransformManyBlock`2" /> with the specified function and <see cref="T:System.Threading.Tasks.Dataflow.ExecutionDataflowBlockOptions" />.</summary>
+      <param name="transform">The function to invoke with each data element received. All of the data asynchronously returned in the <see cref="T:System.Collections.Generic.IEnumerable`1" /> will be made available as output from this <see cref="T:System.Threading.Tasks.Dataflow.TransformManyBlock`2" />.</param>
+      <param name="dataflowBlockOptions">The options with which to configure this <see cref="T:System.Threading.Tasks.Dataflow.TransformManyBlock`2" />.</param>
+      <exception cref="T:System.ArgumentNullException">The <paramref name="transform" /> is null.-or-The <paramref name="dataflowBlockOptions" /> is null.</exception>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.TransformManyBlock`2.Complete">
+      <summary>Signals to the <see cref="T:System.Threading.Tasks.Dataflow.IDataflowBlock" /> that it should not accept nor produce any more messages nor consume any more postponed messages.</summary>
+    </member>
+    <member name="P:System.Threading.Tasks.Dataflow.TransformManyBlock`2.Completion">
+      <summary>Gets a <see cref="T:System.Threading.Tasks.Task" /> that represents the asynchronous operation and completion of the dataflow block.</summary>
+      <returns>The task.</returns>
+    </member>
+    <member name="P:System.Threading.Tasks.Dataflow.TransformManyBlock`2.InputCount">
+      <summary>Gets the number of input items waiting to be processed by this block.</summary>
+      <returns>The number of input items.</returns>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.TransformManyBlock`2.LinkTo(System.Threading.Tasks.Dataflow.ITargetBlock{`1},System.Threading.Tasks.Dataflow.DataflowLinkOptions)">
+      <summary>Links the <see cref="T:System.Threading.Tasks.Dataflow.ISourceBlock`1" /> to the specified <see cref="T:System.Threading.Tasks.Dataflow.ITargetBlock`1" />.</summary>
+      <returns>An IDisposable that, upon calling Dispose, will unlink the source from the target.</returns>
+      <param name="target">The <see cref="T:System.Threading.Tasks.Dataflow.ITargetBlock`1" /> to which to connect this source.</param>
+      <param name="linkOptions">A <see cref="T:System.Threading.Tasks.Dataflow.DataflowLinkOptions" /> instance that configures the link.</param>
+      <exception cref="T:System.ArgumentNullException">
+        <paramref name="target" /> is null (Nothing in Visual Basic) or <paramref name="linkOptions" /> is null (Nothing in Visual Basic).</exception>
+    </member>
+    <member name="P:System.Threading.Tasks.Dataflow.TransformManyBlock`2.OutputCount">
+      <summary>Gets the number of output items available to be received from this block.</summary>
+      <returns>The number of output items.</returns>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.TransformManyBlock`2.System#Threading#Tasks#Dataflow#IDataflowBlock#Fault(System.Exception)">
+      <summary>Causes the <see cref="T:System.Threading.Tasks.Dataflow.IDataflowBlock" /> to complete in a <see cref="F:System.Threading.Tasks.TaskStatus.Faulted" /> state.</summary>
+      <param name="exception">The <see cref="T:System.Exception" /> that caused the faulting.</param>
+      <exception cref="T:System.ArgumentNullException">The <paramref name="exception" /> is null.</exception>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.TransformManyBlock`2.System#Threading#Tasks#Dataflow#ISourceBlock{TOutput}#ConsumeMessage(System.Threading.Tasks.Dataflow.DataflowMessageHeader,System.Threading.Tasks.Dataflow.ITargetBlock{`1},System.Boolean@)">
+      <summary>Called by a linked <see cref="T:System.Threading.Tasks.Dataflow.ITargetBlock`1" /> to accept and consume a <see cref="T:System.Threading.Tasks.Dataflow.DataflowMessageHeader" /> previously offered by this <see cref="T:System.Threading.Tasks.Dataflow.ISourceBlock`1" />.</summary>
+      <returns>The value of the consumed message. This may correspond to a different <see cref="T:System.Threading.Tasks.Dataflow.DataflowMessageHeader" /> instance than was previously reserved and passed as the <paramref name="messageHeader" /> to <see cref="M:System.Threading.Tasks.Dataflow.ISourceBlock`1.ConsumeMessage()" />. The consuming <see cref="T:System.Threading.Tasks.Dataflow.ITargetBlock`1" /> must use the returned value instead of the value passed as <paramref name="messageValue" /> through <see cref="M:System.Threading.Tasks.Dataflow.TransformManyBlock`2.System#Threading#Tasks#Dataflow#ITargetBlock{TInput}#OfferMessage()" />.If the message requested is not available, the return value will be null.</returns>
+      <param name="messageHeader">The <see cref="T:System.Threading.Tasks.Dataflow.DataflowMessageHeader" /> of the message being consumed.</param>
+      <param name="target">The <see cref="T:System.Threading.Tasks.Dataflow.ITargetBlock`1" /> consuming the message.</param>
+      <param name="messageConsumed">true if the message was successfully consumed; otherwise, false.</param>
+      <exception cref="T:System.ArgumentException">The <paramref name="messageHeader" /> is not valid.</exception>
+      <exception cref="T:System.ArgumentNullException">The <paramref name="target" /> is null.</exception>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.TransformManyBlock`2.System#Threading#Tasks#Dataflow#ISourceBlock{TOutput}#ReleaseReservation(System.Threading.Tasks.Dataflow.DataflowMessageHeader,System.Threading.Tasks.Dataflow.ITargetBlock{`1})">
+      <summary>Called by a linked <see cref="T:System.Threading.Tasks.Dataflow.ITargetBlock`1" /> to release a previously reserved <see cref="T:System.Threading.Tasks.Dataflow.DataflowMessageHeader" /> by this <see cref="T:System.Threading.Tasks.Dataflow.ISourceBlock`1" />.</summary>
+      <param name="messageHeader">The <see cref="T:System.Threading.Tasks.Dataflow.DataflowMessageHeader" /> of the reserved message being released.</param>
+      <param name="target">The <see cref="T:System.Threading.Tasks.Dataflow.ITargetBlock`1" /> releasing the message it previously reserved.</param>
+      <exception cref="T:System.ArgumentException">The <paramref name="messageHeader" /> is not valid.</exception>
+      <exception cref="T:System.ArgumentNullException">The <paramref name="target" /> is null.</exception>
+      <exception cref="T:System.InvalidOperationException">The <paramref name="target" /> did not have the message reserved.</exception>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.TransformManyBlock`2.System#Threading#Tasks#Dataflow#ISourceBlock{TOutput}#ReserveMessage(System.Threading.Tasks.Dataflow.DataflowMessageHeader,System.Threading.Tasks.Dataflow.ITargetBlock{`1})">
+      <summary>Called by a linked <see cref="T:System.Threading.Tasks.Dataflow.ITargetBlock`1" /> to reserve a previously offered <see cref="T:System.Threading.Tasks.Dataflow.DataflowMessageHeader" /> by this <see cref="T:System.Threading.Tasks.Dataflow.ISourceBlock`1" />.</summary>
+      <returns>true if the message was successfully reserved; otherwise, false.</returns>
+      <param name="messageHeader">The <see cref="T:System.Threading.Tasks.Dataflow.DataflowMessageHeader" /> of the message being reserved.</param>
+      <param name="target">The <see cref="T:System.Threading.Tasks.Dataflow.ITargetBlock`1" /> reserving the message.</param>
+      <exception cref="T:System.ArgumentException">The <paramref name="messageHeader" /> is not valid.</exception>
+      <exception cref="T:System.ArgumentNullException">The <paramref name="target" /> is null.</exception>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.TransformManyBlock`2.System#Threading#Tasks#Dataflow#ITargetBlock{TInput}#OfferMessage(System.Threading.Tasks.Dataflow.DataflowMessageHeader,`0,System.Threading.Tasks.Dataflow.ISourceBlock{`0},System.Boolean)">
+      <summary>Offers a message to the <see cref="T:System.Threading.Tasks.Dataflow.ITargetBlock`1" />, giving the target the opportunity to consume or postpone the message.</summary>
+      <returns>The status of the offered message. If the message was accepted by the target, <see cref="F:System.Threading.Tasks.Dataflow.DataflowMessageStatus.Accepted" /> is returned, and the source should no longer use the offered message, as it is now owned by the target. If the message was postponed by the target, <see cref="F:System.Threading.Tasks.Dataflow.DataflowMessageStatus.Postponed" /> is returned as a notification that the target may later attempt to consume or reserve the message; in the meantime, the source still owns the message and may offer it to other blocks. If the target would have otherwise postponed but source was null, <see cref="F:System.Threading.Tasks.Dataflow.DataflowMessageStatus.Declined" /> is instead returned.  If the target tried to accept the message but missed it due to the source delivering the message to another target or simply discarding it, <see cref="F:System.Threading.Tasks.Dataflow.DataflowMessageStatus.NotAvailable" /> is returned. If the target chose not to accept the message, <see cref="F:System.Threading.Tasks.Dataflow.DataflowMessageStatus.Declined" /> is returned. If the target chose not to accept the message and will never accept another message from this source, <see cref="F:System.Threading.Tasks.Dataflow.DataflowMessageStatus.DecliningPermanently" /> is returned.</returns>
+      <param name="messageHeader">A <see cref="T:System.Threading.Tasks.Dataflow.DataflowMessageHeader" /> instance that represents the header of the message being offered.</param>
+      <param name="messageValue">The value of the message being offered.</param>
+      <param name="source">The <see cref="T:System.Threading.Tasks.Dataflow.ISourceBlock`1" /> offering the message. This may be null.</param>
+      <param name="consumeToAccept">true if the target must call <see cref="M:System.Threading.Tasks.Dataflow.ISourceBlock`1.ConsumeMessage()" /> synchronously during the call to <see cref="M:System.Threading.Tasks.Dataflow.TransformManyBlock`2.System#Threading#Tasks#Dataflow#ITargetBlock{TInput}#OfferMessage()" />, prior to returning <see cref="F:System.Threading.Tasks.Dataflow.DataflowMessageStatus.Accepted" />, in order to consume the message.</param>
+      <exception cref="T:System.ArgumentException">The <paramref name="messageHeader" /> is not valid.-or-<paramref name="consumeToAccept" /> may only be true if provided with a non-null <paramref name="source" />.</exception>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.TransformManyBlock`2.ToString">
+      <summary>Returns a string that represents the formatted name of this <see cref="T:System.Threading.Tasks.Dataflow.IDataflowBlock" /> instance.</summary>
+      <returns>A string that represents the formatted name of this <see cref="T:System.Threading.Tasks.Dataflow.IDataflowBlock" /> instance.</returns>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.TransformManyBlock`2.TryReceive(System.Predicate{`1},`1@)">
+      <summary>Attempts to synchronously receive an available output item from the <see cref="T:System.Threading.Tasks.Dataflow.IReceivableSourceBlock`1" />.</summary>
+      <returns>true if an item could be received; otherwise, false.</returns>
+      <param name="filter">The predicate value must successfully pass in order for it to be received. <paramref name="filter" /> may be null, in which case all items will pass.</param>
+      <param name="item">The item received from the source.</param>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.TransformManyBlock`2.TryReceiveAll(System.Collections.Generic.IList{`1}@)">
+      <summary>Attempts to synchronously receive all available items from the <see cref="T:System.Threading.Tasks.Dataflow.IReceivableSourceBlock`1" />.</summary>
+      <returns>true if one or more items could be received; otherwise, false.</returns>
+      <param name="items">The items received from the source.</param>
+    </member>
+    <member name="T:System.Threading.Tasks.Dataflow.WriteOnceBlock`1">
+      <summary>Provides a buffer for receiving and storing at most one element in a network of dataflow blocks.</summary>
+      <typeparam name="T">Specifies the type of the data buffered by this dataflow block.</typeparam>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.WriteOnceBlock`1.#ctor(System.Func{`0,`0})">
+      <summary>Initializes a new <see cref="T:System.Threading.Tasks.Dataflow.WriteOnceBlock`1" />.</summary>
+      <param name="cloningFunction">The function to use to clone the data when offered to other blocks.</param>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.WriteOnceBlock`1.#ctor(System.Func{`0,`0},System.Threading.Tasks.Dataflow.DataflowBlockOptions)">
+      <summary>Initializes a new <see cref="T:System.Threading.Tasks.Dataflow.WriteOnceBlock`1" /> with the specified <see cref="T:System.Threading.Tasks.Dataflow.DataflowBlockOptions" />.</summary>
+      <param name="cloningFunction">The function to use to clone the data when offered to other blocks.</param>
+      <param name="dataflowBlockOptions">The options with which to configure this <see cref="T:System.Threading.Tasks.Dataflow.WriteOnceBlock`1" />.</param>
+      <exception cref="T:System.ArgumentNullException">The <paramref name="dataflowBlockOptions" /> is null.</exception>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.WriteOnceBlock`1.Complete">
+      <summary>Signals to the <see cref="T:System.Threading.Tasks.Dataflow.IDataflowBlock" /> that it should not accept nor produce any more messages nor consume any more postponed messages.</summary>
+    </member>
+    <member name="P:System.Threading.Tasks.Dataflow.WriteOnceBlock`1.Completion">
+      <summary>Gets a <see cref="T:System.Threading.Tasks.Task" /> that represents the asynchronous operation and completion of the dataflow block.</summary>
+      <returns>The task.</returns>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.WriteOnceBlock`1.LinkTo(System.Threading.Tasks.Dataflow.ITargetBlock{`0},System.Threading.Tasks.Dataflow.DataflowLinkOptions)">
+      <summary>Links the <see cref="T:System.Threading.Tasks.Dataflow.ISourceBlock`1" /> to the specified <see cref="T:System.Threading.Tasks.Dataflow.ITargetBlock`1" />.</summary>
+      <returns>An IDisposable that, upon calling Dispose, will unlink the source from the target.</returns>
+      <param name="target">The <see cref="T:System.Threading.Tasks.Dataflow.ITargetBlock`1" /> to which to connect this source.</param>
+      <param name="linkOptions">A <see cref="T:System.Threading.Tasks.Dataflow.DataflowLinkOptions" /> instance that configures the link.</param>
+      <exception cref="T:System.ArgumentNullException">
+        <paramref name="target" /> is null (Nothing in Visual Basic) or <paramref name="linkOptions" /> is null (Nothing in Visual Basic).</exception>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.WriteOnceBlock`1.System#Threading#Tasks#Dataflow#IDataflowBlock#Fault(System.Exception)">
+      <summary>Causes the <see cref="T:System.Threading.Tasks.Dataflow.IDataflowBlock" /> to complete in a <see cref="F:System.Threading.Tasks.TaskStatus.Faulted" /> state.</summary>
+      <param name="exception">The <see cref="T:System.Exception" /> that caused the faulting.</param>
+      <exception cref="T:System.ArgumentNullException">The <paramref name="exception" /> is null.</exception>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.WriteOnceBlock`1.System#Threading#Tasks#Dataflow#IReceivableSourceBlock{TOutput}#TryReceiveAll(System.Collections.Generic.IList{`0}@)">
+      <summary>Attempts to synchronously receive all available items from the <see cref="T:System.Threading.Tasks.Dataflow.IReceivableSourceBlock`1" />.</summary>
+      <returns>true if one or more items could be received; otherwise, false.</returns>
+      <param name="items">The items received from the source.</param>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.WriteOnceBlock`1.System#Threading#Tasks#Dataflow#ISourceBlock{TOutput}#ConsumeMessage(System.Threading.Tasks.Dataflow.DataflowMessageHeader,System.Threading.Tasks.Dataflow.ITargetBlock{`0},System.Boolean@)">
+      <summary>Called by a linked <see cref="T:System.Threading.Tasks.Dataflow.ITargetBlock`1" /> to accept and consume a <see cref="T:System.Threading.Tasks.Dataflow.DataflowMessageHeader" /> previously offered by this <see cref="T:System.Threading.Tasks.Dataflow.ISourceBlock`1" />.</summary>
+      <returns>The value of the consumed message. This may correspond to a different <see cref="T:System.Threading.Tasks.Dataflow.DataflowMessageHeader" /> instance than was previously reserved and passed as the <paramref name="messageHeader" /> to <see cref="M:System.Threading.Tasks.Dataflow.ISourceBlock`1.ConsumeMessage()" />. The consuming <see cref="T:System.Threading.Tasks.Dataflow.ITargetBlock`1" /> must use the returned value instead of the value passed as <paramref name="messageValue" /> through <see cref="M:System.Threading.Tasks.Dataflow.ITargetBlock`1.OfferMessage()" />.If the message requested is not available, the return value will be null.</returns>
+      <param name="messageHeader">The <see cref="T:System.Threading.Tasks.Dataflow.DataflowMessageHeader" /> of the message being consumed.</param>
+      <param name="target">The <see cref="T:System.Threading.Tasks.Dataflow.ITargetBlock`1" /> consuming the message.</param>
+      <param name="messageConsumed">true if the message was successfully consumed; otherwise, false.</param>
+      <exception cref="T:System.ArgumentException">The <paramref name="messageHeader" /> is not valid.</exception>
+      <exception cref="T:System.ArgumentNullException">The <paramref name="target" /> is null.</exception>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.WriteOnceBlock`1.System#Threading#Tasks#Dataflow#ISourceBlock{TOutput}#ReleaseReservation(System.Threading.Tasks.Dataflow.DataflowMessageHeader,System.Threading.Tasks.Dataflow.ITargetBlock{`0})">
+      <summary>Called by a linked <see cref="T:System.Threading.Tasks.Dataflow.ITargetBlock`1" /> to release a previously reserved <see cref="T:System.Threading.Tasks.Dataflow.DataflowMessageHeader" /> by this <see cref="T:System.Threading.Tasks.Dataflow.ISourceBlock`1" />.</summary>
+      <param name="messageHeader">The <see cref="T:System.Threading.Tasks.Dataflow.DataflowMessageHeader" /> of the reserved message being released.</param>
+      <param name="target">The <see cref="T:System.Threading.Tasks.Dataflow.ITargetBlock`1" /> releasing the message it previously reserved.</param>
+      <exception cref="T:System.ArgumentException">The <paramref name="messageHeader" /> is not valid.</exception>
+      <exception cref="T:System.ArgumentNullException">The <paramref name="target" /> is null.</exception>
+      <exception cref="T:System.InvalidOperationException">The <paramref name="target" /> did not have the message reserved.</exception>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.WriteOnceBlock`1.System#Threading#Tasks#Dataflow#ISourceBlock{TOutput}#ReserveMessage(System.Threading.Tasks.Dataflow.DataflowMessageHeader,System.Threading.Tasks.Dataflow.ITargetBlock{`0})">
+      <summary>Called by a linked <see cref="T:System.Threading.Tasks.Dataflow.ITargetBlock`1" /> to reserve a previously offered <see cref="T:System.Threading.Tasks.Dataflow.DataflowMessageHeader" /> by this <see cref="T:System.Threading.Tasks.Dataflow.ISourceBlock`1" />.</summary>
+      <returns>true if the message was successfully reserved; otherwise, false.</returns>
+      <param name="messageHeader">The <see cref="T:System.Threading.Tasks.Dataflow.DataflowMessageHeader" /> of the message being reserved.</param>
+      <param name="target">The <see cref="T:System.Threading.Tasks.Dataflow.ITargetBlock`1" /> reserving the message.</param>
+      <exception cref="T:System.ArgumentException">The <paramref name="messageHeader" /> is not valid.</exception>
+      <exception cref="T:System.ArgumentNullException">The <paramref name="target" /> is null.</exception>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.WriteOnceBlock`1.System#Threading#Tasks#Dataflow#ITargetBlock{TInput}#OfferMessage(System.Threading.Tasks.Dataflow.DataflowMessageHeader,`0,System.Threading.Tasks.Dataflow.ISourceBlock{`0},System.Boolean)">
+      <summary>Offers a message to the <see cref="T:System.Threading.Tasks.Dataflow.ITargetBlock`1" />, giving the target the opportunity to consume or postpone the message.</summary>
+      <returns>The status of the offered message. If the message was accepted by the target, <see cref="F:System.Threading.Tasks.Dataflow.DataflowMessageStatus.Accepted" /> is returned, and the source should no longer use the offered message, because it is now owned by the target. If the message was postponed by the target, <see cref="F:System.Threading.Tasks.Dataflow.DataflowMessageStatus.Postponed" /> is returned as a notification that the target may later attempt to consume or reserve the message; in the meantime, the source still owns the message and may offer it to other blocks.If the target would have otherwise postponed message, but <paramref name="source" /> was null, <see cref="F:System.Threading.Tasks.Dataflow.DataflowMessageStatus.Declined" /> is instead returned. If the target tried to accept the message but missed it due to the source delivering the message to another target or simply discarding it, <see cref="F:System.Threading.Tasks.Dataflow.DataflowMessageStatus.NotAvailable" /> is returned. If the target chose not to accept the message, <see cref="F:System.Threading.Tasks.Dataflow.DataflowMessageStatus.Declined" /> is returned. If the target chose not to accept the message and will never accept another message from this source, <see cref="F:System.Threading.Tasks.Dataflow.DataflowMessageStatus.DecliningPermanently" /> is returned.</returns>
+      <param name="messageHeader">A <see cref="T:System.Threading.Tasks.Dataflow.DataflowMessageHeader" /> instance that represents the header of the message being offered.</param>
+      <param name="messageValue">The value of the message being offered.</param>
+      <param name="source">The <see cref="T:System.Threading.Tasks.Dataflow.ISourceBlock`1" /> offering the message. This may be null.</param>
+      <param name="consumeToAccept">Set to true to instruct the target to call <see cref="M:System.Threading.Tasks.Dataflow.ISourceBlock`1.ConsumeMessage()" /> synchronously during the call to <see cref="M:System.Threading.Tasks.Dataflow.ITargetBlock`1.OfferMessage()" />, prior to returning <see cref="F:System.Threading.Tasks.Dataflow.DataflowMessageStatus.Accepted" />, in order to consume the message.</param>
+      <exception cref="T:System.ArgumentException">The <paramref name="messageHeader" /> is not valid.-or-<paramref name="consumeToAccept" /> may only be true if provided with a non-null <paramref name="source" />.</exception>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.WriteOnceBlock`1.ToString">
+      <summary>Returns a string that represents the formatted name of this <see cref="T:System.Threading.Tasks.Dataflow.IDataflowBlock" /> instance.</summary>
+      <returns>A string that represents the formatted name of this <see cref="T:System.Threading.Tasks.Dataflow.IDataflowBlock" /> instance.</returns>
+    </member>
+    <member name="M:System.Threading.Tasks.Dataflow.WriteOnceBlock`1.TryReceive(System.Predicate{`0},`0@)">
+      <summary>Attempts to synchronously receive an available output item from the <see cref="T:System.Threading.Tasks.Dataflow.IReceivableSourceBlock`1" />.</summary>
+      <returns>true if an item could be received; otherwise, false.</returns>
+      <param name="filter">The predicate value must successfully pass in order for it to be received. <paramref name="filter" /> may be null, in which case all items will pass.</param>
+      <param name="item">The item received from the source.</param>
+    </member>
+  </members>
+</doc>

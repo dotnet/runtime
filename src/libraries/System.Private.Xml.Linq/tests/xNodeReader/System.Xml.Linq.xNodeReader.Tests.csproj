@@ -1,0 +1,34 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <NoWarn>$(NoWarn);xUnit1013</NoWarn>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="ClassStamp.cs" />
+    <Compile Include="CommonTest.cs" />
+    <Compile Include="CXMLGeneralTest.cs" />
+    <Compile Include="CXMLReaderAttrTest.cs" />
+    <Compile Include="CXmlReaderReadEtc.cs" />
+    <Compile Include="ErrorConditions.cs" />
+    <Compile Include="FunctionalTests.cs" />
+    <Compile Include="IntegrityTest.cs" />
+    <Compile Include="ReadBase64.cs" />
+    <Compile Include="ReadBinHex.cs" />
+    <Compile Include="ReaderProperty.cs" />
+    <Compile Include="ReadOuterXml.cs" />
+    <Compile Include="ReadSubTree.cs" />
+    <Compile Include="ReadToDescendant.cs" />
+    <Compile Include="ReadToFollowing.cs" />
+    <Compile Include="ReadToNextSibling.cs" />
+    <Compile Include="ReadValue.cs" />
+    <Compile Include="XNodeReaderAPI.cs" />
+    <Compile Include="XNodeReaderAttributeTests.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(CommonTestPath)System\Xml\XmlCoreTest\XmlCoreTest.csproj" />
+    <ProjectReference Include="$(CommonTestPath)System\Xml\XmlDiff\XmlDiff.csproj" />
+    <ProjectReference Include="$(CommonTestPath)System\Xml\ModuleCore\ModuleCore.csproj" />
+    <ProjectReference Include="..\XDocument.Common\XDocument.Common.csproj" />
+    <ProjectReference Include="..\XDocument.Test.ModuleCore\XDocument.Test.ModuleCore.csproj" />
+  </ItemGroup>
+</Project>

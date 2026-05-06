@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="cattrbase.cs" />
+    <Compile Include="ccommon.cs" />
+    <Compile Include="cerror.cs" />
+    <Compile Include="cltmconsole.cs" />
+    <Compile Include="cmodinfo.cs" />
+    <Compile Include="cparser.cs" />
+    <Compile Include="ctestbase.cs" />
+    <Compile Include="ctestcase.cs" />
+    <Compile Include="ctestexception.cs" />
+    <Compile Include="ctestmodule.cs" />
+    <Compile Include="cvariation.cs" />
+    <Compile Include="interop.cs" />
+    <Compile Include="XunitRunner.cs" />
+    <Compile Include="XunitTestCase.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="xunit.extensibility.execution" Version="$(XUnitVersion)" />
+    <PackageReference Include="xunit.assert" Version="$(XUnitVersion)" />
+  </ItemGroup>
+</Project>

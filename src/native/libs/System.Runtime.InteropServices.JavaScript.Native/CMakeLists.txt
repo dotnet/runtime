@@ -1,0 +1,13 @@
+project(System.Runtime.InteropServices.JavaScript.Native C)
+
+set (BROWSER_INTEROP_SOURCES ${BROWSER_INTEROP_SOURCES} entrypoints.c)
+
+add_library(System.Runtime.InteropServices.JavaScript.Native-Static
+    STATIC
+    ${BROWSER_INTEROP_SOURCES}
+)
+add_dependencies(System.Runtime.InteropServices.JavaScript.Native-Static System.Native.Browser-Rollup)
+
+set_target_properties(System.Runtime.InteropServices.JavaScript.Native-Static PROPERTIES OUTPUT_NAME System.Runtime.InteropServices.JavaScript.Native CLEAN_DIRECT_OUTPUT 1)
+install(TARGETS System.Runtime.InteropServices.JavaScript.Native-Static DESTINATION ${STATIC_LIB_DESTINATION} COMPONENT libs)
+install(TARGETS System.Runtime.InteropServices.JavaScript.Native-Static DESTINATION sharedFramework COMPONENT runtime)

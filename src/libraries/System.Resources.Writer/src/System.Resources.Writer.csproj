@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <RootNamespace>System.Resources</RootNamespace>
+    <NoWarn>$(NoWarn);CA1510</NoWarn>
+    <UseCompilerGeneratedDocXmlFile>false</UseCompilerGeneratedDocXmlFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="System\Resources\__FastResourceComparer.cs" />
+    <Compile Include="System\Resources\IResourceWriter.cs" />
+    <Compile Include="System\Resources\ResourceWriter.core.cs" />
+    <Compile Include="$(CommonPath)System\Resources\ResourceWriter.cs"
+             Link="System\Resources\ResourceWriter.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Resources\ResourceTypeCode.cs"
+             Link="System\Resources\ResourceTypeCode.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Collections\src\System.Collections.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Memory\src\System.Memory.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime\src\System.Runtime.csproj" />
+  </ItemGroup>
+
+</Project>

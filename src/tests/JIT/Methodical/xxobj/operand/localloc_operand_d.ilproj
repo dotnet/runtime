@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk.IL">
+  <PropertyGroup>
+    <CLRTestPriority>1</CLRTestPriority>
+    <!-- #2444 -->
+    <DisableProjectBuild>true</DisableProjectBuild>
+  </PropertyGroup>
+  <PropertyGroup>
+    <DebugType>Full</DebugType>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="localloc_d.il" />
+    <Compile Include="localloc.il" />
+  </ItemGroup>
+</Project>

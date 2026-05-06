@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- Needed for GCStressIncompatible, UnloadabilityIncompatible, JitOptimizationSensitive -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <!-- Tracing tests routinely time out with jitstress and gcstress -->
+    <GCStressIncompatible>true</GCStressIncompatible>
+    <JitOptimizationSensitive>true</JitOptimizationSensitive>
+    <!-- This test has a secondary thread with an infinite loop -->
+    <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
+    <DisableProjectBuild Condition="'$(RuntimeFlavor)' == 'mono'">true</DisableProjectBuild>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="RuntimeEventSourceTest.cs" />
+    <ProjectReference Include="../common/tracing_common.csproj" />
+    <RuntimeHostConfigurationOption Include="RuntimeHostConfigSwitch" Value="true" />
+  </ItemGroup>
+</Project>

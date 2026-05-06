@@ -1,0 +1,93 @@
+name: Skill Validation
+
+on:
+  pull_request:
+    paths:
+      - '.github/skills/**'
+      - '.github/agents/**'
+      - '.github/workflows/skill-validation.yml'
+  push:
+    branches: [main]
+    paths:
+      - '.github/skills/**'
+      - '.github/agents/**'
+      - '.github/workflows/skill-validation.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: skill-validation-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: Validate skills and agents
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          sparse-checkout: |
+            .github/skills
+            .github/agents
+          persist-credentials: false
+
+      - name: Download skill-validator
+        shell: bash
+        run: |
+          curl -fsSL --retry 3 --retry-all-errors -o skill-validator.tar.gz \
+            https://github.com/dotnet/skills/releases/download/skill-validator-nightly/skill-validator-linux-x64.tar.gz
+          mkdir -p skill-validator-bin
+          tar -xzf skill-validator.tar.gz -C skill-validator-bin
+          if [ ! -f skill-validator-bin/skill-validator ]; then
+            echo "::error::skill-validator binary not found after extraction"
+            exit 1
+          fi
+          chmod +x skill-validator-bin/skill-validator
+
+      - name: Run skill-validator check
+        shell: bash
+        run: |
+          rc=0
+
+          if [ -d .github/skills ]; then
+            echo "::group::Validate skills"
+            set +e
+            skill-validator-bin/skill-validator check --skills .github/skills --allow-repo-traversal --verbose 2>&1 | tee skill-check-skills.txt
+            skills_rc=${PIPESTATUS[0]}
+            set -e
+            echo "::endgroup::"
+            if [ "$skills_rc" -ne 0 ]; then rc=1; fi
+          fi
+
+          if [ -d .github/agents ]; then
+            echo "::group::Validate agents"
+            set +e
+            skill-validator-bin/skill-validator check --agents .github/agents --allow-repo-traversal --verbose 2>&1 | tee skill-check-agents.txt
+            agents_rc=${PIPESTATUS[0]}
+            set -e
+            echo "::endgroup::"
+            if [ "$agents_rc" -ne 0 ]; then rc=1; fi
+          fi
+
+          # Write to step summary
+          {
+            echo "## skill-validator check"
+            echo ""
+            if [ "$rc" -eq 0 ]; then
+              echo "All checks passed."
+            else
+              for f in skill-check-skills.txt skill-check-agents.txt; do
+                if [ -f "$f" ]; then
+                  echo "### ${f}"
+                  echo '```'
+                  head -n 200 "$f"
+                  echo '```'
+                  echo ""
+                fi
+              done
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+          exit "$rc"

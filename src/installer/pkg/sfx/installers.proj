@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.Build.NoTargets">
+  <ItemGroup>
+    <InstallerProjectReference Include="Microsoft.NETCore.App/Microsoft.NETCore.App.Ref.sfxproj" />
+    <InstallerProjectReference Include="Microsoft.NETCore.App/Microsoft.NETCore.App.Host.sfxproj" />
+    <InstallerProjectReference Include="Microsoft.NETCore.App/Microsoft.NETCore.App.Runtime.$(PrimaryRuntimeFlavor).sfxproj" />
+    <InstallerProjectReference Include="installers/*.proj" />
+    <InstallerProjectReference Include="bundle/*.bundleproj" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetsLinuxGlibc)' == 'true'">
+    <InstallerProjectReference Include="installers/dotnet-runtime-deps/dotnet-runtime-deps-debian.proj" />
+    <InstallerProjectReference Include="installers/dotnet-runtime-deps/dotnet-runtime-deps-azl.3.proj" />
+    <InstallerProjectReference Include="installers/dotnet-runtime-deps/dotnet-runtime-deps-opensuse.15.proj" />
+    <InstallerProjectReference Include="installers/dotnet-runtime-deps/dotnet-runtime-deps-sles.15.proj" />
+  </ItemGroup>
+
+  <Target Name="BuildInstallerProjects" BeforeTargets="Build">
+    <MSBuild Projects="@(InstallerProjectReference)"
+             Targets="GenerateInstallers"
+             SkipNonexistentTargets="true" />
+  </Target>
+</Project>

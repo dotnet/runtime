@@ -1,0 +1,10 @@
+<Project>
+  <Import Project="..\Directory.Build.props" />
+  <PropertyGroup>
+    <StrongNameKeyId>Microsoft</StrongNameKeyId>
+    <IncludePlatformAttributes>true</IncludePlatformAttributes>
+    <!-- This exclusion list matches System.CodeDom. -->
+    <UnsupportedOSPlatforms>browser;wasi;ios;tvos;maccatalyst</UnsupportedOSPlatforms>
+    <IsAotCompatible>false</IsAotCompatible>
+  </PropertyGroup>
+</Project>

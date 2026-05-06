@@ -1,0 +1,12 @@
+<out>
+  <test1>2001.07.04 AD 12:08:56 GMT+02:00</test1>
+  <test2>Wed, Jul 4, 2001</test2>
+  <test3>12:08 PM</test3>
+  <test4>12 PM, GMT+02:00</test4>
+  <test5>0:08 PM, GMT+02:00</test5>
+  <test6>02001.July.04 AD 12:08 PM</test6>
+  <test7>Wed, 4 Jul 2001 12:08:56 +0200</test7>
+  <test8>010704120856+0200</test8>
+  <test9></test9>
+  <test10></test10>
+</out>

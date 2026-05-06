@@ -1,0 +1,40 @@
+<Project InitialTargets="FindInvalidSpecifiedSubsetNames;ReportValidSubsetList">
+  <!--
+    The imported file supports the '/p:Subset=<desired subset string>' dev build argument.
+
+    Each subset has its own '<subset>Project' items so that a project in the build can depend
+    on a whole subset, and the dependency on the subset is disregarded automatically when Subset
+    doesn't contain it.
+  -->
+
+  <Target Name="FindInvalidSpecifiedSubsetNames">
+    <ItemGroup>
+      <SpecifiedSubsetName Include="$([MSBuild]::Unescape($(Subset.Replace('+', ';').Replace('-', ';'))))" />
+
+      <!-- MSBuild Exclude is case-insensitive, which matches intended behavior. -->
+      <InvalidSpecifiedSubsetName Include="@(SpecifiedSubsetName)" Exclude="@(SubsetName)" />
+    </ItemGroup>
+
+    <PropertyGroup>
+      <UserRequestedHelp Condition="'%(InvalidSpecifiedSubsetName.Identity)' == 'help'">true</UserRequestedHelp>
+    </PropertyGroup>
+  </Target>
+
+  <Target Name="ReportValidSubsetList"
+          Condition="'@(InvalidSpecifiedSubsetName)' != ''">
+    <ItemGroup>
+      <SubsetName Text="- %(Identity)" />
+      <SubsetName Text="%(Text) [only runs on demand]" Condition="'%(SubsetName.OnDemand)' == 'true'" />
+      <SubsetName Text="%(Text)%0A    %(Description)" />
+    </ItemGroup>
+
+    <Message Text="%0AAccepted Subset values:%0A@(SubsetName->'%(Text)', '%0A')%0A" Importance="High" />
+
+    <Error Text="Subset not recognized: @(InvalidSpecifiedSubsetName, ' ')"
+           Condition="'$(UserRequestedHelp)' != 'true'" />
+
+    <Error Text="This is not an error. These are the available subsets. You can choose one or none at all for a full build."
+           Condition="'$(UserRequestedHelp)' == 'true'" />
+  </Target>
+
+</Project>

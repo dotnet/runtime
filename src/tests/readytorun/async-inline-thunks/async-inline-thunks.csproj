@@ -1,0 +1,105 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <ReferenceXUnitWrapperGenerator>false</ReferenceXUnitWrapperGenerator>
+    <CrossGenTest>false</CrossGenTest>
+    <IlasmRoundTripIncompatible>true</IlasmRoundTripIncompatible>
+    <Features>$(Features);runtime-async=on</Features>
+    <!-- This test launches crossgen2, skip when sanitizers are enabled. -->
+    <CLRTestTargetUnsupported Condition="'$(EnableNativeSanitizers)' != ''">true</CLRTestTargetUnsupported>
+    <!-- Disable on Mono which does not support runtime-async. -->
+    <CLRTestTargetUnsupported Condition="'$(RuntimeFlavor)' == 'mono'">true</CLRTestTargetUnsupported>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="helper/helper.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="$(MSBuildProjectName).cs" />
+    <Compile Include="RuntimeAsyncMethodGenerationAttribute.cs" />
+  </ItemGroup>
+  <PropertyGroup>
+    <CLRTestBatchPreCommands><![CDATA[
+$(CLRTestBatchPreCommands)
+
+REM Suppress some DOTNET variables for the duration of Crossgen2 execution
+setlocal
+set "DOTNET_GCName="
+set "DOTNET_GCStress="
+set "DOTNET_HeapVerify="
+set "DOTNET_ReadyToRun="
+
+md IL_DLLS 2>NUL
+copy /y async-inline-thunks.dll IL_DLLS\async-inline-thunks.dll
+if not exist IL_DLLS\async-inline-thunks.dll (
+    echo FAILED to copy async-inline-thunks.dll to IL_DLLS
+    exit /b 1
+)
+
+REM Crossgen2 the helper library
+%Core_Root%\crossgen2\crossgen2.exe -O -r:%Core_Root%\*.dll -r:%25CD%\IL_DLLS\async-inline-thunks.dll -o:helper.dll helper\helper\helper.dll
+
+set CrossGenStatus=!ERRORLEVEL!
+IF NOT !CrossGenStatus!==0 (
+    ECHO Crossgen of helper.dll failed with exitcode - !CrossGenStatus!
+    Exit /b 1
+)
+
+REM Crossgen2 the main test with cross-module inlining from helper
+%Core_Root%\crossgen2\crossgen2.exe -O --opt-cross-module:helper -r:%Core_Root%\*.dll -r:helper\helper\helper.dll -o:async-inline-thunks.dll IL_DLLS\async-inline-thunks.dll
+
+set CrossGenStatus=!ERRORLEVEL!
+IF NOT !CrossGenStatus!==0 (
+    ECHO Crossgen of async-inline-thunks.dll failed with exitcode - !CrossGenStatus!
+    Exit /b 1
+)
+
+endlocal
+]]></CLRTestBatchPreCommands>
+    <CLRTestBashPreCommands><![CDATA[
+$(CLRTestBashPreCommands)
+
+# Suppress some DOTNET variables for the duration of Crossgen2 execution
+export -n DOTNET_GCName DOTNET_GCStress DOTNET_HeapVerify DOTNET_ReadyToRun
+
+mkdir -p IL_DLLS
+
+cp async-inline-thunks.dll IL_DLLS/async-inline-thunks.dll
+if [ ! -f IL_DLLS/async-inline-thunks.dll ]
+then
+  echo Failed to copy async-inline-thunks.dll to IL_DLLS
+  exit 1
+fi
+
+# Crossgen2 the helper library
+"$CORE_ROOT"/crossgen2/crossgen2 -O -r:"$CORE_ROOT"/*.dll -r:IL_DLLS/async-inline-thunks.dll -o:helper.dll helper/helper/helper.dll
+
+__cgExitCode=$?
+if [ $__cgExitCode -ne 0 ]
+then
+  echo Crossgen of helper.dll failed with exitcode: $__cgExitCode
+  exit 1
+fi
+
+# Crossgen2 the main test with cross-module inlining from helper
+"$CORE_ROOT"/crossgen2/crossgen2 -O --opt-cross-module:helper -r:"$CORE_ROOT"/*.dll -r:helper/helper/helper.dll -o:async-inline-thunks.dll IL_DLLS/async-inline-thunks.dll
+
+__cgExitCode=$?
+if [ $__cgExitCode -ne 0 ]
+then
+  echo Crossgen of async-inline-thunks.dll failed with exitcode: $__cgExitCode
+  exit 1
+fi
+
+export DOTNET_GCName DOTNET_GCStress DOTNET_HeapVerify DOTNET_ReadyToRun
+]]></CLRTestBashPreCommands>
+  </PropertyGroup>
+
+  <Target Name="CopyHelperAssemblyToOutputs" AfterTargets="Build" Condition="'$(CLRTestTargetUnsupported)' != 'true'">
+    <PropertyGroup>
+      <HelperSourcePath>$(OutputPath)/../helper/helper/</HelperSourcePath>
+      <HelperTargetPath>$(OutputPath)/helper/helper</HelperTargetPath>
+    </PropertyGroup>
+    <MakeDir Directories="$(HelperTargetPath)" />
+    <Copy SourceFiles="$(HelperSourcePath)helper.dll" DestinationFolder="$(HelperTargetPath)" />
+  </Target>
+</Project>

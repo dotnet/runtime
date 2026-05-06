@@ -1,0 +1,5 @@
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+	<xsd:attributeGroup name="car">
+		<xsd:attribute name="attFix" type="xsd:int" fixed="37"/>
+	</xsd:attributeGroup>
+</xsd:schema>

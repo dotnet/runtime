@@ -1,0 +1,81 @@
+<Directives>
+  <Application>
+    <!-- xunit will reflect on these to process certain InlineDataAttributes -->
+    <Assembly Name="System.Linq">
+      <Type Name="System.Linq.Enumerable">
+        <Method Name="Cast">
+          <GenericArgument Name="System.Char, System.Private.CoreLib" />
+        </Method>
+        <Method Name="ToArray">
+          <GenericArgument Name="System.Char, System.Private.CoreLib" />
+        </Method>
+        <Method Name="Cast">
+          <GenericArgument Name="System.Boolean, System.Private.CoreLib" />
+        </Method>
+        <Method Name="ToArray">
+          <GenericArgument Name="System.Boolean, System.Private.CoreLib" />
+        </Method>
+        <Method Name="Cast">
+          <GenericArgument Name="System.Byte, System.Private.CoreLib" />
+        </Method>
+        <Method Name="ToArray">
+          <GenericArgument Name="System.Byte, System.Private.CoreLib" />
+        </Method>
+        <Method Name="Cast">
+          <GenericArgument Name="System.SByte, System.Private.CoreLib" />
+        </Method>
+        <Method Name="ToArray">
+          <GenericArgument Name="System.SByte, System.Private.CoreLib" />
+        </Method>
+        <Method Name="Cast">
+          <GenericArgument Name="System.Int16, System.Private.CoreLib" />
+        </Method>
+        <Method Name="ToArray">
+          <GenericArgument Name="System.Int16, System.Private.CoreLib" />
+        </Method>
+        <Method Name="Cast">
+          <GenericArgument Name="System.UInt16, System.Private.CoreLib" />
+        </Method>
+        <Method Name="ToArray">
+          <GenericArgument Name="System.UInt16, System.Private.CoreLib" />
+        </Method>
+        <Method Name="Cast">
+          <GenericArgument Name="System.Int32, System.Private.CoreLib" />
+        </Method>
+        <Method Name="ToArray">
+          <GenericArgument Name="System.Int32, System.Private.CoreLib" />
+        </Method>
+        <Method Name="Cast">
+          <GenericArgument Name="System.UInt32, System.Private.CoreLib" />
+        </Method>
+        <Method Name="ToArray">
+          <GenericArgument Name="System.UInt32, System.Private.CoreLib" />
+        </Method>
+        <Method Name="Cast">
+          <GenericArgument Name="System.Int64, System.Private.CoreLib" />
+        </Method>
+        <Method Name="ToArray">
+          <GenericArgument Name="System.Int64, System.Private.CoreLib" />
+        </Method>
+        <Method Name="Cast">
+          <GenericArgument Name="System.UInt64, System.Private.CoreLib" />
+        </Method>
+        <Method Name="ToArray">
+          <GenericArgument Name="System.UInt64, System.Private.CoreLib" />
+        </Method>
+        <Method Name="Cast">
+          <GenericArgument Name="System.Single, System.Private.CoreLib" />
+        </Method>
+        <Method Name="ToArray">
+          <GenericArgument Name="System.Single, System.Private.CoreLib" />
+        </Method>
+        <Method Name="Cast">
+          <GenericArgument Name="System.Double, System.Private.CoreLib" />
+        </Method>
+        <Method Name="ToArray">
+          <GenericArgument Name="System.Double, System.Private.CoreLib" />
+        </Method>
+      </Type>
+    </Assembly>
+  </Application>
+</Directives>

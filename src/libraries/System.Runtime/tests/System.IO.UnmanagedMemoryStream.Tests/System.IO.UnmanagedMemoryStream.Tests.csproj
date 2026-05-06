@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <TestRuntime>true</TestRuntime>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Uma.TestStructs.cs" />
+    <Compile Include="Uma.ReadWriteStruct.cs" />
+    <Compile Include="Uma.ReadWriteStructArray.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="ArrayHelpers.cs" />
+    <Compile Include="UmaTests.cs" />
+    <Compile Include="UmsCtorTests.cs" />
+    <Compile Include="HGlobalSafeBuffer.cs" />
+    <Compile Include="UmsSafeBuffer.cs" />
+    <Compile Include="UmaCtorTests.cs" />
+    <Compile Include="UmsTests.cs" />
+    <Compile Include="UmsManager.cs" />
+    <Compile Include="UmsSecurityTest.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(CommonTestPath)StreamConformanceTests\StreamConformanceTests.csproj" />
+  </ItemGroup>
+</Project>

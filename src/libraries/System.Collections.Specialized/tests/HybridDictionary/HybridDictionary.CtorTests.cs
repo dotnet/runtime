@@ -1,0 +1,68 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+using Xunit;
+
+namespace System.Collections.Specialized.Tests
+{
+    public class HybridDictionaryCtorTests
+    {
+        [Fact]
+        public void Ctor_Empty()
+        {
+            HybridDictionary hybridDictionary = new HybridDictionary();
+            VerifyCtor(hybridDictionary, caseInsensitive: false);
+        }
+
+        [Theory]
+        [InlineData(-1)]
+        [InlineData(0)]
+        [InlineData(5)]
+        [InlineData(50)]
+        public void Ctor_Int(int initialSize)
+        {
+            HybridDictionary hybridDictionary = new HybridDictionary(initialSize);
+            VerifyCtor(hybridDictionary, caseInsensitive: false);
+
+            Ctor_Int_Bool(initialSize, true);
+            Ctor_Int_Bool(initialSize, false);
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void Ctor_Bool(bool caseInsensitive)
+        {
+            HybridDictionary hybridDictionary = new HybridDictionary(caseInsensitive);
+            VerifyCtor(hybridDictionary, caseInsensitive: caseInsensitive);
+        }
+
+        private static void Ctor_Int_Bool(int initialSize, bool caseInsensitive)
+        {
+            HybridDictionary hybridDictionary = new HybridDictionary(initialSize, caseInsensitive);
+            VerifyCtor(hybridDictionary, caseInsensitive: caseInsensitive);
+        }
+
+        private static void VerifyCtor(HybridDictionary hybridDictionary, bool caseInsensitive)
+        {
+            Assert.Equal(0, hybridDictionary.Count);
+            Assert.Equal(0, hybridDictionary.Keys.Count);
+            Assert.Equal(0, hybridDictionary.Values.Count);
+
+            Assert.False(hybridDictionary.IsFixedSize);
+            Assert.False(hybridDictionary.IsReadOnly);
+            Assert.False(hybridDictionary.IsSynchronized);
+
+            if (caseInsensitive)
+            {
+                hybridDictionary["key"] = "value";
+                Assert.Equal("value", hybridDictionary["KEY"]);
+            }
+            else
+            {
+                hybridDictionary["key"] = "value";
+                Assert.Null(hybridDictionary["KEY"]);
+            }
+        }
+    }
+}

@@ -1,0 +1,6 @@
+<Directives>
+  <Application>
+    <!-- A test does Assembly.Load on this assembly -->
+    <Assembly Name="System.Reflection" />
+  </Application>
+</Directives>

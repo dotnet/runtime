@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk.IL">
+  <PropertyGroup>
+    <DebugType>PdbOnly</DebugType>
+    <Optimize>True</Optimize>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="bge_r4.il" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="ConvDLL.ilproj" />
+  </ItemGroup>
+</Project>

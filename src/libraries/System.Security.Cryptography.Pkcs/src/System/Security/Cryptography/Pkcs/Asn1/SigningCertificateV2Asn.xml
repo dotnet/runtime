@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<asn:Sequence
+  xmlns:asn="http://schemas.dot.net/asnxml/201808/"
+  name="SigningCertificateV2Asn"
+  namespace="System.Security.Cryptography.Pkcs.Asn1">
+
+  <!--
+    https://tools.ietf.org/html/rfc5035#section-3
+
+    SigningCertificateV2 ::= SEQUENCE {
+        certs        SEQUENCE OF ESSCertIDV2,
+        policies     SEQUENCE OF PolicyInformation OPTIONAL
+    }
+  -->
+  <asn:SequenceOf name="Certs">
+    <asn:AsnType typeName="System.Security.Cryptography.Pkcs.Asn1.EssCertIdV2" />
+  </asn:SequenceOf>
+  <asn:SequenceOf name="Policies" optional="true">
+    <asn:AsnType typeName="System.Security.Cryptography.Pkcs.Asn1.PolicyInformation" />
+  </asn:SequenceOf>
+</asn:Sequence>

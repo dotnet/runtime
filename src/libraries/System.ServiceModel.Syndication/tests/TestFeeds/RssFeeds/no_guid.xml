@@ -1,0 +1,16 @@
+<!--
+  Description:  valid item link (http)
+  Expect:       ValidURI{parent:item,element:link}
+-->
+
+<rss version="2.0">
+<channel>
+<title>Valid link</title>
+<description>valid item link (http)</description>
+<link>http://contoso.com/rss/2.0/</link>
+<item>
+<title>Valid link</title>
+<link>http://contoso.com/rss/2.0/#item</link>
+</item>
+</channel>
+</rss>

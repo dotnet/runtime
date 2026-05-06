@@ -1,0 +1,46 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <AssemblyName>dotnet-pgo</AssemblyName>
+    <OutputType>Exe</OutputType>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <OutputPath>$(RuntimeBinDir)/dotnet-pgo</OutputPath>
+    <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
+    <EnableDefaultEmbeddedResourceItems>false</EnableDefaultEmbeddedResourceItems>
+    <IsPackable>true</IsPackable>
+    <PackAsTool>true</PackAsTool>
+    <ToolCommandName>dotnet-pgo</ToolCommandName>
+    <PackAsToolShimRuntimeIdentifiers>win-x64;win-x86;osx-x64;linux-x64;linux-musl-x64</PackAsToolShimRuntimeIdentifiers>
+    <PackagedShimOutputRootDirectory>$(OutputPath)</PackagedShimOutputRootDirectory>
+    <IsShipping>false</IsShipping> <!-- This tool is not yet ready to ship, but may do so in the future -->
+    <Description>.NET Performance Guided Optimization Tool</Description>
+    <PackageTags>Optimization</PackageTags>
+    <PackageReleaseNotes>$(Description)</PackageReleaseNotes>
+    <RootNamespace>Microsoft.Diagnostics.Tools.Pgo</RootNamespace>
+    <RollForward>Major</RollForward>
+    <RunAnalyzers>false</RunAnalyzers>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="..\aot\ILCompiler.ReadyToRun\IBC\MIbcProfileParser.cs" Link="MIbcProfileParser.cs" />
+    <Compile Include="..\aot\ILCompiler.ReadyToRun\IBC\IBCProfileData.cs" Link="IBCProfileData.cs" />
+    <Compile Include="..\aot\ILCompiler.ReadyToRun\Compiler\ProfileData.cs" Link="ProfileData.cs" />
+    <Compile Include="..\Common\CommandLineHelpers.cs" Link="CommandLineHelpers.cs" />
+    <Compile Include="..\Common\Pgo\TypeSystemEntityOrUnknown.cs" Link="TypeSystemEntityOrUnknown.cs" />
+    <Compile Include="..\Common\TypeSystem\IL\FlowGraph.cs" Link="SPGO\FlowGraph.cs" />
+    <Compile Include="..\Common\TypeSystem\IL\ILReader.cs" Link="ILReader.cs" />
+    <Compile Include="..\Common\TypeSystem\MetadataEmitter\TypeSystemMetadataEmitter.cs" Link="TypeSystemMetadataEmitter" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\aot\ILCompiler.TypeSystem\ILCompiler.TypeSystem.csproj" />
+    <ProjectReference Include="..\aot\ILCompiler.Reflection.ReadyToRun\ILCompiler.Reflection.ReadyToRun.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent" Version="$(TraceEventVersion)" />
+    <PackageReference Include="System.CommandLine" Version="$(SystemCommandLineVersion)" />
+  </ItemGroup>
+</Project>

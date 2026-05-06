@@ -1,0 +1,12 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<ExampleRootNode>
+  <TestNode1>Text Node 1</TestNode1>
+  <TestNode1></TestNode1>
+  <TestNode1/>
+  <TestNode1>
+    <NestedNode1>Text Node 2</NestedNode1>
+    <NestedNode2></NestedNode2>
+    <NestedNode3/>
+  </TestNode1>
+  <TestNode2>Text Node 3</TestNode2>
+</ExampleRootNode>

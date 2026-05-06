@@ -1,0 +1,56 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <!--
+      Since many resource strings in this library are shown to an end-user,
+      always generate default resource string values which will be used when UseSystemResourceKeys is true in trimmed apps.
+    -->
+    <GenerateResxSourceIncludeDefaultValues>true</GenerateResxSourceIncludeDefaultValues>
+    <UseCompilerGeneratedDocXmlFile>false</UseCompilerGeneratedDocXmlFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="System\ComponentModel\ISynchronizeInvoke.cs" />
+    <Compile Include="System\ComponentModel\BrowsableAttribute.cs" />
+    <Compile Include="System\ComponentModel\CategoryAttribute.cs" />
+    <Compile Include="System\ComponentModel\Component.cs" />
+    <Compile Include="System\ComponentModel\ComponentCollection.cs" />
+    <Compile Include="System\ComponentModel\DescriptionAttribute.cs" />
+    <Compile Include="System\ComponentModel\DesignerAttribute.cs" />
+    <Compile Include="System\ComponentModel\DesignerCategoryAttribute.cs" />
+    <Compile Include="System\ComponentModel\DesignerSerializationVisibility.cs" />
+    <Compile Include="System\ComponentModel\DesignerSerializationVisibilityAttribute.cs" />
+    <Compile Include="System\ComponentModel\DesignOnlyAttribute.cs" />
+    <Compile Include="System\ComponentModel\Design\Serialization\DesignerSerializerAttribute.cs" />
+    <Compile Include="System\ComponentModel\DisplayNameAttribute.cs" />
+    <Compile Include="System\ComponentModel\EditorAttribute.cs" />
+    <Compile Include="System\ComponentModel\EventHandlerList.cs" />
+    <Compile Include="System\ComponentModel\IComponent.cs" />
+    <Compile Include="System\ComponentModel\IContainer.cs" />
+    <Compile Include="System\ComponentModel\ImmutableObjectAttribute.cs" />
+    <Compile Include="System\ComponentModel\InitializationEventAttribute.cs" />
+    <Compile Include="System\ComponentModel\InvalidAsynchronousStateException.cs" />
+    <Compile Include="System\ComponentModel\InvalidEnumArgumentException.cs" />
+    <Compile Include="System\ComponentModel\ISite.cs" />
+    <Compile Include="System\ComponentModel\ISupportInitialize.cs" />
+    <Compile Include="System\ComponentModel\LocalizableAttribute.cs" />
+    <Compile Include="System\ComponentModel\MergablePropertyAttribute.cs" />
+    <Compile Include="System\ComponentModel\NotifyParentPropertyAttribute.cs" />
+    <Compile Include="System\ComponentModel\ParenthesizePropertyNameAttribute.cs" />
+    <Compile Include="System\ComponentModel\ReadOnlyAttribute.cs" />
+    <Compile Include="System\ComponentModel\RefreshProperties.cs" />
+    <Compile Include="System\ComponentModel\RefreshPropertiesAttribute.cs" />
+    <Compile Include="$(CommonPath)System\Obsoletions.cs" Link="Common\System\Obsoletions.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Collections.NonGeneric\src\System.Collections.NonGeneric.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.ComponentModel\src\System.ComponentModel.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Memory\src\System.Memory.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.ObjectModel\src\System.ObjectModel.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime\src\System.Runtime.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Threading\src\System.Threading.csproj" />
+  </ItemGroup>
+
+</Project>

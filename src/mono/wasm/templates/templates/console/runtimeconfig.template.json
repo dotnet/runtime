@@ -1,0 +1,11 @@
+{
+    "wasmHostProperties": {
+        "perHostConfig": [
+            {
+                "name": "node",
+                "js-path": "main.mjs",
+                "host": "nodejs"
+            }
+        ]
+    }
+}

@@ -1,0 +1,2 @@
+[*.cs]
+dotnet_diagnostic.CA1516.severity = none    # these are the implementations of the intrinsics

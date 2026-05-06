@@ -1,0 +1,27 @@
+﻿<out>
+  <test1>
+Part 1 = http://www.bayes.co.uk/xml/index.xml?/xml/utils/rechecker.xml
+Part 2 = http
+Part 3 = www.bayes.co.uk
+Part 4 = 
+Part 5 = /xml/index.xml?/xml/utils/rechecker.xml</test1>
+  <test2>
+Part 1 = This
+Part 2 = is
+Part 3 = a
+Part 4 = test
+Part 5 = string</test2>
+  <test3>
+Part 1 = his 
+Part 2 = is 
+Part 3 = a 
+Part 4 = test </test3>
+  <test4>
+Part 1 = This 
+Part 2 = is 
+Part 3 = a 
+Part 4 = test </test4>
+  <test5>
+    <entry date="22/12/2003" time="21:00" application="AcmeService" message="DB updated" />
+  </test5>
+</out>

@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- Needed for GCStressIncompatible -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <CLRTestPriority>1</CLRTestPriority>
+    <!-- This test isn't technically incompatible with GCStress, but it ends up running very slowly
+         in some configurations, e.g. GCStress=3 on Linux/arm32 measured at 20 minutes.
+    -->
+    <GCStressIncompatible>true</GCStressIncompatible>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="437044.cs" />
+  </ItemGroup>
+</Project>

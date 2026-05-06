@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<xs:schema targetNamespace="http://foo"
+                    elementFormDefault="qualified"
+                    xmlns="http://foo"
+                    xmlns:x="http://tempuri.org/XMLSchema.xsd"
+                    xmlns:xs="http://www.w3.org/2001/XMLSchema"
+                    xmlns:vs="http://schemas.microsoft.com/Visual-Studio-Intellisense">
+    <xs:complexType name="test">
+     <xs:sequence>
+        <xs:element name="a" type="xs:int"/>
+     </xs:sequence>   
+    </xs:complexType>
+    <xs:complexType name="test2">      
+          <xs:choice minOccurs="0" vs:snippet="yes" >
+            <xs:element name="b" type="xs:string" />
+          </xs:choice>       
+    </xs:complexType>
+    <xs:element name="root">
+      <xs:complexType>
+        <xs:sequence maxOccurs="unbounded">
+          <xs:element name="foo" type="test2"/>
+        </xs:sequence>
+      </xs:complexType>
+    </xs:element>
+</xs:schema>
+
+

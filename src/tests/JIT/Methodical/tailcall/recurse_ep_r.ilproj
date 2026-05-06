@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk.IL">
+  <PropertyGroup>
+    <DebugType>PdbOnly</DebugType>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="recurse_ep_r.il" />
+    <Compile Include="recurse_ep.il" />
+  </ItemGroup>
+</Project>

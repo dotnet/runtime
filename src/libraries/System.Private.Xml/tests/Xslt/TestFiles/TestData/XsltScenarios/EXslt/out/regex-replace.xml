@@ -1,0 +1,6 @@
+﻿<out>
+  <test1>Bold and italics aren't allowed here.</test1>
+  <test2>Bold&lt;/b&gt; and &lt;i&gt;italics&lt;/i&gt; aren't allowed here.</test2>
+  <test3>fooBaz</test3>
+  <test4></test4>
+</out>

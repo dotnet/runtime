@@ -1,0 +1,77 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkCurrent)</TargetFrameworks>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <!-- This test library intentionally references an inbox P2P as it needs the implementation, instead of the contract.
+         Suppress the NU1511 warning in the whole project as putting it on a P2P doesn't work: https://github.com/NuGet/Home/issues/14121 -->
+    <NoWarn>$(NoWarn);NU1511</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="Infrastructure\BasePipeReader.cs" />
+    <Compile Include="Infrastructure\HeapBufferPool.cs" />
+    <Compile Include="Infrastructure\DisposeTrackingBufferPool.cs" />
+    <Compile Include="Infrastructure\ReadOnlyStream.cs" />
+    <Compile Include="Infrastructure\TestPipeReader.cs" />
+    <Compile Include="Infrastructure\ThrowingStream.cs" />
+    <Compile Include="Infrastructure\WriteCheckStream.cs" />
+    <Compile Include="Infrastructure\WriteOnlyStream.cs" />
+    <Compile Include="Infrastructure\CancelledWritesStream.cs" />
+    <Compile Include="Infrastructure\CancelledReadsStream.cs" />
+    <Compile Include="BackpressureTests.cs" />
+    <Compile Include="Infrastructure\ObserveDisposeStream.cs" />
+    <Compile Include="PipeReaderReadAtLeastAsyncTests.cs" />
+    <Compile Include="PipeReaderCopyToAsyncTests.cs" />
+    <Compile Include="FlushAsyncCancellationTests.cs" />
+    <Compile Include="FlushAsyncCompletionTests.cs" />
+    <Compile Include="FlushAsyncTests.cs" />
+    <Compile Include="FlushResultTests.cs" />
+    <Compile Include="PipeCompletionCallbacksTests.cs" />
+    <Compile Include="PipeOptionsTests.cs" />
+    <Compile Include="PipeReaderWriterFacts.cs" />
+    <Compile Include="PipeReaderStreamTests.cs" />
+    <Compile Include="PipePoolTests.cs" />
+    <Compile Include="PipeResetTests.cs" />
+    <Compile Include="PipeTest.cs" />
+    <Compile Include="PipeWriterCopyToAsyncTests.cs" />
+    <Compile Include="PipeWriterTests.cs" />
+    <Compile Include="ReadAsyncCancellationTests.cs" />
+    <Compile Include="ReadAsyncCompletionTests.cs" />
+    <Compile Include="ReadResultTests.cs" />
+    <Compile Include="SchedulerFacts.cs" />
+    <Compile Include="SequencePipeReaderTests.cs" />
+    <Compile Include="BasePipeReaderReadAtLeastAsyncTests.cs" />
+    <Compile Include="StreamPipeReaderReadAtLeastAsyncTests.cs" />
+    <Compile Include="StreamPipeReaderCopyToAsyncTests.cs" />
+    <Compile Include="StreamPipeReaderTests.cs" />
+    <Compile Include="Infrastructure\TestMemoryPool.cs" />
+    <Compile Include="StreamPipeWriterTests.cs" />
+    <Compile Include="Infrastructure\ThrowAfterNWritesStream.cs" />
+    <Compile Include="UnflushedBytesTests.cs" />
+    <Compile Include="PipeLengthTests.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
+    <Compile Include="BufferSegmentPoolTest.cs" />
+    <Compile Include="PipeReaderWriterFacts.nonnetstandard.cs" />
+    <Compile Include="PipeResetTests.nonnetstandard.cs" />
+    <Compile Include="PipePoolTests.nonnetstandard.cs" />
+    <Compile Include="PipeWriterStreamTests.nonnetstandard.cs" />
+    <Compile Include="PipeReaderWriterStreamTests.nonnetstandard.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Some internal types are needed, so we reference the implementation assembly, rather than the reference assembly. -->
+    <ProjectReference Include="..\src\System.IO.Pipelines.csproj" SkipUseReferenceAssembly="true" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
+    <ProjectReference Include="$(CommonTestPath)StreamConformanceTests\StreamConformanceTests.csproj" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
+    <PackageReference Include="System.Runtime.CompilerServices.Unsafe" Version="$(SystemRuntimeCompilerServicesUnsafeVersion)" />
+  </ItemGroup>
+
+</Project>

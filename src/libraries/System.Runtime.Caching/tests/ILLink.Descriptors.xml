@@ -1,0 +1,7 @@
+<linker>
+  <assembly fullname="System.Configuration.ConfigurationManager">
+    <type fullname="System.Configuration.ClientConfigurationHost">
+      <method signature="System.Void .ctor()" />
+    </type>
+  </assembly>
+</linker>

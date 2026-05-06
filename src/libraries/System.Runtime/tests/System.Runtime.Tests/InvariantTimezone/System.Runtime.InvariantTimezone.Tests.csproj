@@ -1,0 +1,29 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <TestRuntime>true</TestRuntime>
+    <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
+    <InvariantTimezone>true</InvariantTimezone>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <WithoutCategories>$(WithoutCategories);AdditionalTimezoneChecks</WithoutCategories>
+  </PropertyGroup>
+
+  <ItemGroup>
+
+    <!-- can be removed after https://github.com/dotnet/sdk/pull/45792/ -->
+    <RuntimeHostConfigurationOption Include="System.TimeZoneInfo.Invariant"
+                                        Condition="'$(InvariantTimezone)' != ''"
+                                        Value="$(InvariantTimezone)"
+                                        Trim="true" />
+
+    <Compile Include="..\System\TimeZoneInfoTests.Common.cs" />
+    <Compile Include="..\System\TimeZoneInfoTests.Invariant.cs" />
+    <Compile Include="..\System\TimeZoneTests.cs" />
+    <Compile Include="..\System\TimeZoneNotFoundExceptionTests.cs" />
+  </ItemGroup>
+</Project>

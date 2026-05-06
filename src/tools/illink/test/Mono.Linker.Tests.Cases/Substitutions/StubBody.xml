@@ -1,0 +1,40 @@
+<linker>
+  <assembly fullname="test, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
+    <type fullname="Mono.Linker.Tests.Cases.Substitutions.StubBody">
+      <method signature="System.String TestMethod_1()" body="stub">
+      </method>
+      <method signature="System.Byte TestMethod_2()" body="stub">
+      </method>
+      <method signature="System.Char TestMethod_3()" body="stub">
+      </method>
+      <method signature="System.Decimal TestMethod_4()" body="stub">
+      </method>
+      <method signature="System.Boolean TestMethod_5()" body="stub">
+      </method>
+      <method signature="System.Void TestMethod_6()" body="stub">
+      </method>
+      <method signature="System.Double TestMethod_7()" body="stub">
+      </method>
+      <method signature="T TestMethod_8`1(T)" body="stub">
+      </method>
+      <method signature="System.Single TestMethod_9()" body="stub">
+      </method>
+      <method signature="System.UInt64 TestMethod_10()" body="stub">
+      </method>
+      <method signature="System.Int64[] TestMethod_11()" body="stub">
+      </method>
+      <method signature="System.Object TestMethod_12()" body="stub">
+      </method>
+      <method signature="System.Collections.Generic.List`1&lt;System.Int32&gt; TestMethod_13()" body="stub">
+      </method>
+
+      <method signature="System.Void .ctor()" body="stub">
+      </method>
+    </type>
+
+    <type fullname="Mono.Linker.Tests.Cases.Substitutions.StubBody/NestedType">
+      <method signature="System.Void .ctor(System.Int32)" body="stub">
+      </method>
+    </type>
+  </assembly>
+</linker>

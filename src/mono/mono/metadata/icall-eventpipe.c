@@ -1,0 +1,821 @@
+#include <config.h>
+#include <glib.h>
+#include <mono/utils/mono-compiler.h>
+#include <mono/metadata/icall-decl.h>
+
+#if defined(ENABLE_PERFTRACING) && !defined(DISABLE_EVENTPIPE)
+#include <mono/metadata/components.h>
+#include <mono/metadata/assembly-internals.h>
+
+gconstpointer
+ves_icall_System_Diagnostics_Tracing_EventPipeInternal_CreateProvider (
+	MonoStringHandle provider_name,
+	gpointer callback_func,
+	gpointer callback_context,
+	MonoError *error)
+{
+	EventPipeProvider *provider = NULL;
+
+	if (MONO_HANDLE_IS_NULL (provider_name)) {
+		mono_error_set_argument_null (error, "providerName", "");
+		return NULL;
+	}
+
+	char *provider_name_utf8 = mono_string_handle_to_utf8 (provider_name, error);
+	if (is_ok (error) && provider_name_utf8) {
+		provider = mono_component_event_pipe ()->create_provider (provider_name_utf8, (EventPipeCallback)callback_func, callback_context);
+	}
+
+	g_free (provider_name_utf8);
+	return (gconstpointer)provider;
+}
+
+intptr_t
+ves_icall_System_Diagnostics_Tracing_EventPipeInternal_DefineEvent (
+	intptr_t provider_handle,
+	uint32_t event_id,
+	int64_t keywords,
+	uint32_t event_version,
+	uint32_t level,
+	const uint8_t *metadata,
+	uint32_t metadata_len)
+{
+	g_assert (provider_handle != 0);
+
+	EventPipeProvider *provider = (EventPipeProvider *)provider_handle;
+	EventPipeEvent *ep_event = mono_component_event_pipe ()->provider_add_event (provider, event_id, (uint64_t)keywords, event_version, (EventPipeEventLevel)level, /* needStack = */ true, metadata, metadata_len);
+
+	g_assert (ep_event != NULL);
+	return (intptr_t)ep_event;
+}
+
+void
+ves_icall_System_Diagnostics_Tracing_EventPipeInternal_DeleteProvider (intptr_t provider_handle)
+{
+	if (provider_handle)
+		mono_component_event_pipe ()->delete_provider ((EventPipeProvider *)provider_handle);
+}
+
+void
+ves_icall_System_Diagnostics_Tracing_EventPipeInternal_Disable (uint64_t session_id)
+{
+	mono_component_event_pipe ()->disable (session_id);
+}
+
+uint64_t
+ves_icall_System_Diagnostics_Tracing_EventPipeInternal_Enable (
+	const gunichar2 *output_file,
+	/* EventPipeSerializationFormat */int32_t format,
+	uint32_t circular_buffer_size_mb,
+	/* EventPipeProviderConfigurationNative[] */const void *providers,
+	uint32_t providers_len)
+{
+	ERROR_DECL (error);
+	EventPipeSessionID session_id = 0;
+	char *output_file_utf8 = NULL;
+
+	if (circular_buffer_size_mb == 0 || format > EP_SERIALIZATION_FORMAT_COUNT || providers_len == 0 || providers == NULL)
+		return 0;
+
+	if (output_file)
+		output_file_utf8 = mono_utf16_to_utf8 (output_file, g_utf16_len (output_file), error);
+
+	session_id = mono_component_event_pipe ()->enable (
+		output_file_utf8,
+		circular_buffer_size_mb,
+		(EventPipeProviderConfigurationNative *)providers,
+		providers_len,
+		output_file != NULL ? EP_SESSION_TYPE_FILE : EP_SESSION_TYPE_LISTENER,
+		(EventPipeSerializationFormat)format,
+		true,
+		NULL,
+		NULL);
+
+	mono_component_event_pipe ()->start_streaming (session_id);
+
+	g_free (output_file_utf8);
+	return (uint64_t)session_id;
+}
+
+int32_t
+ves_icall_System_Diagnostics_Tracing_EventPipeInternal_EventActivityIdControl (
+	uint32_t control_code,
+	/* GUID * */uint8_t *activity_id)
+{
+	return mono_component_event_pipe ()->thread_ctrl_activity_id ((EventPipeActivityControlCode)control_code, activity_id, EP_ACTIVITY_ID_SIZE) ? 0 : 1;
+}
+
+MonoBoolean
+ves_icall_System_Diagnostics_Tracing_EventPipeInternal_GetNextEvent (
+	uint64_t session_id,
+	/* EventPipeEventInstanceData * */void *instance)
+{
+	return mono_component_event_pipe ()->get_next_event ((EventPipeSessionID)session_id, (EventPipeEventInstanceData *)instance) ? TRUE : FALSE;
+}
+
+intptr_t
+ves_icall_System_Diagnostics_Tracing_EventPipeInternal_GetProvider (const gunichar2 *provider_name)
+{
+	ERROR_DECL (error);
+	char * provider_name_utf8 = NULL;
+	EventPipeProvider *provider = NULL;
+
+	if (provider_name) {
+		provider_name_utf8 = mono_utf16_to_utf8 (provider_name, g_utf16_len (provider_name), error);
+		provider = mono_component_event_pipe()->get_provider (provider_name_utf8);
+	}
+
+	g_free (provider_name_utf8);
+	return (intptr_t)provider;
+}
+
+MonoBoolean
+ves_icall_System_Diagnostics_Tracing_EventPipeInternal_GetSessionInfo (
+	uint64_t session_id,
+	/* EventPipeSessionInfo * */void *session_info)
+{
+	return mono_component_event_pipe()->get_session_info (session_id, (EventPipeSessionInfo *)session_info) ? TRUE : FALSE;
+}
+
+MonoBoolean
+ves_icall_System_Diagnostics_Tracing_EventPipeInternal_SignalSession (uint64_t session_id)
+{
+	return mono_component_event_pipe()->signal_session ((EventPipeSessionID)session_id) ? TRUE : FALSE;
+}
+
+MonoBoolean
+ves_icall_System_Diagnostics_Tracing_EventPipeInternal_WaitForSessionSignal (
+	uint64_t session_id,
+	int32_t timeout)
+{
+	return mono_component_event_pipe()->wait_for_session_signal ((EventPipeSessionID)session_id, (uint32_t)timeout) ? TRUE : FALSE;
+}
+
+void
+ves_icall_System_Diagnostics_Tracing_EventPipeInternal_WriteEventData (
+	intptr_t event_handle,
+	/* EventData[] */void *event_data,
+	uint32_t event_data_len,
+	/* GUID * */const uint8_t *activity_id,
+	/* GUID * */const uint8_t *related_activity_id)
+{
+	g_assert (event_handle);
+	EventPipeEvent *ep_event = (EventPipeEvent *)event_handle;
+	mono_component_event_pipe()->write_event_2 (ep_event, (EventData *)event_data, event_data_len, activity_id, related_activity_id);
+}
+
+// NOTE, keep in sync with EventPipe.Mono.cs, RuntimeCounters.
+typedef enum {
+	EP_RT_COUNTERS_ASSEMBLY_COUNT,
+	EP_RT_COUNTERS_EXCEPTION_COUNT,
+	EP_RT_COUNTERS_GC_NURSERY_SIZE_BYTES,
+	EP_RT_COUNTERS_GC_MAJOR_SIZE_BYTES,
+	EP_RT_COUNTERS_GC_LARGE_OBJECT_SIZE_BYTES,
+	EP_RT_COUNTERS_GC_LAST_PERCENT_TIME_IN_GC,
+	EP_RT_COUNTERS_JIT_IL_BYTES_JITTED,
+	EP_RT_COUNTERS_JIT_METHODS_JITTED,
+	EP_RT_COUNTERS_JIT_TICKS_IN_JIT
+} EventPipeRuntimeCounters;
+
+static
+inline
+int
+gc_last_percent_time_in_gc (void)
+{
+	guint64 time_last_gc_100ns = 0;
+	guint64 time_since_last_gc_100ns = 0;
+	guint64 time_max_gc_100ns = 0;
+	mono_gc_get_gctimeinfo (&time_last_gc_100ns, &time_since_last_gc_100ns, &time_max_gc_100ns);
+
+	// Calculate percent of time spend in this GC since end of last GC.
+	int percent_time_in_gc_since_last_gc = 0;
+	if (time_since_last_gc_100ns != 0)
+		percent_time_in_gc_since_last_gc = (int)(time_last_gc_100ns * 100 / time_since_last_gc_100ns);
+	return percent_time_in_gc_since_last_gc;
+}
+
+static
+inline
+gint64
+get_il_bytes_jitted (void)
+{
+	gint64 methods_compiled = 0;
+	gint64 cil_code_size_bytes = 0;
+	gint64 native_code_size_bytes = 0;
+	gint64 jit_time = 0;
+
+	if (mono_get_runtime_callbacks ()->get_jit_stats)
+		mono_get_runtime_callbacks ()->get_jit_stats (&methods_compiled, &cil_code_size_bytes, &native_code_size_bytes, &jit_time);
+	return cil_code_size_bytes;
+}
+
+static
+inline
+gint64
+get_methods_jitted (void)
+{
+	gint64 methods_compiled = 0;
+	gint64 cil_code_size_bytes = 0;
+	gint64 native_code_size_bytes = 0;
+	gint64 jit_time = 0;
+
+	if (mono_get_runtime_callbacks ()->get_jit_stats)
+		mono_get_runtime_callbacks ()->get_jit_stats (&methods_compiled, &cil_code_size_bytes, &native_code_size_bytes, &jit_time);
+	return methods_compiled;
+}
+
+static
+inline
+guint32
+get_exception_count (void)
+{
+	guint32 excepion_count = 0;
+	if (mono_get_runtime_callbacks ()->get_exception_stats)
+		mono_get_runtime_callbacks ()->get_exception_stats (&excepion_count);
+	return excepion_count;
+}
+
+static
+inline
+gint64
+get_ticks_in_jit (void)
+{
+	gint64 methods_compiled = 0;
+	gint64 cil_code_size_bytes = 0;
+	gint64 native_code_size_bytes = 0;
+	gint64 jit_time = 0;
+
+	if (mono_get_runtime_callbacks ()->get_jit_stats)
+		mono_get_runtime_callbacks ()->get_jit_stats (&methods_compiled, &cil_code_size_bytes, &native_code_size_bytes, &jit_time);
+	return jit_time;
+}
+
+guint64 ves_icall_System_Diagnostics_Tracing_EventPipeInternal_GetRuntimeCounterValue (gint32 id)
+{
+	EventPipeRuntimeCounters counterID = (EventPipeRuntimeCounters)id;
+	switch (counterID) {
+	case EP_RT_COUNTERS_ASSEMBLY_COUNT :
+		return (guint64)mono_assembly_get_count ();
+	case EP_RT_COUNTERS_EXCEPTION_COUNT :
+		return (guint64)get_exception_count ();
+	case EP_RT_COUNTERS_GC_NURSERY_SIZE_BYTES :
+		return (guint64)mono_gc_get_generation_size (0);
+	case EP_RT_COUNTERS_GC_MAJOR_SIZE_BYTES :
+		return (guint64)mono_gc_get_generation_size (1);
+	case EP_RT_COUNTERS_GC_LARGE_OBJECT_SIZE_BYTES :
+		return (guint64)mono_gc_get_generation_size (3);
+	case EP_RT_COUNTERS_GC_LAST_PERCENT_TIME_IN_GC :
+		return (guint64)gc_last_percent_time_in_gc ();
+	case EP_RT_COUNTERS_JIT_IL_BYTES_JITTED :
+		return (guint64)get_il_bytes_jitted ();
+	case EP_RT_COUNTERS_JIT_METHODS_JITTED :
+		return (guint64)get_methods_jitted ();
+	case EP_RT_COUNTERS_JIT_TICKS_IN_JIT :
+		return (gint64)get_ticks_in_jit ();
+	default:
+		return 0;
+	}
+}
+
+void
+ves_icall_System_Diagnostics_Tracing_NativeRuntimeEventSource_LogThreadPoolWorkerThreadStart (
+	uint32_t active_thread_count,
+	uint32_t retired_worker_thread_count,
+	uint16_t clr_instance_id)
+{
+	mono_component_event_pipe ()->write_event_threadpool_worker_thread_start (
+		active_thread_count,
+		retired_worker_thread_count,
+		clr_instance_id);
+}
+
+void
+ves_icall_System_Diagnostics_Tracing_NativeRuntimeEventSource_LogThreadPoolWorkerThreadStop (
+	uint32_t active_thread_count,
+	uint32_t retired_worker_thread_count,
+	uint16_t clr_instance_id)
+{
+	mono_component_event_pipe ()->write_event_threadpool_worker_thread_stop (
+		active_thread_count,
+		retired_worker_thread_count,
+		clr_instance_id);
+}
+
+void
+ves_icall_System_Diagnostics_Tracing_NativeRuntimeEventSource_LogThreadPoolWorkerThreadWait (
+	uint32_t active_thread_count,
+	uint32_t retired_worker_thread_count,
+	uint16_t clr_instance_id)
+{
+	mono_component_event_pipe ()->write_event_threadpool_worker_thread_wait (
+		active_thread_count,
+		retired_worker_thread_count,
+		clr_instance_id);
+}
+
+void
+ves_icall_System_Diagnostics_Tracing_NativeRuntimeEventSource_LogThreadPoolMinMaxThreads (
+	uint16_t min_worker_threads,
+	uint16_t max_worker_threads,
+	uint16_t min_io_completion_threads,
+	uint16_t max_io_completion_threads,
+	uint16_t clr_instance_id)
+{
+	mono_component_event_pipe ()->write_event_threadpool_min_max_threads (
+		min_worker_threads,
+		max_worker_threads,
+		min_io_completion_threads,
+		max_io_completion_threads,
+		clr_instance_id);
+}
+
+void
+ves_icall_System_Diagnostics_Tracing_NativeRuntimeEventSource_LogThreadPoolWorkerThreadAdjustmentSample (
+	double throughput,
+	uint16_t clr_instance_id)
+{
+	mono_component_event_pipe ()->write_event_threadpool_worker_thread_adjustment_sample (
+		throughput,
+		clr_instance_id);
+}
+
+void
+ves_icall_System_Diagnostics_Tracing_NativeRuntimeEventSource_LogThreadPoolWorkerThreadAdjustmentAdjustment (
+	double average_throughput,
+	uint32_t networker_thread_count,
+	/*NativeRuntimeEventSource.ThreadAdjustmentReasonMap*/ int32_t reason,
+	uint16_t clr_instance_id)
+{
+	mono_component_event_pipe ()->write_event_threadpool_worker_thread_adjustment_adjustment (
+		average_throughput,
+		networker_thread_count,
+		reason,
+		clr_instance_id);
+}
+
+void
+ves_icall_System_Diagnostics_Tracing_NativeRuntimeEventSource_LogThreadPoolWorkerThreadAdjustmentStats (
+	double duration,
+	double throughput,
+	double threadpool_worker_thread_wait,
+	double throughput_wave,
+	double throughput_error_estimate,
+	double average_throughput_error_estimate,
+	double throughput_ratio,
+	double confidence,
+	double new_control_setting,
+	uint16_t new_thread_wave_magnitude,
+	uint16_t clr_instance_id)
+{
+	mono_component_event_pipe ()->write_event_threadpool_worker_thread_adjustment_stats (
+		duration,
+		throughput,
+		threadpool_worker_thread_wait,
+		throughput_wave,
+		throughput_error_estimate,
+		average_throughput_error_estimate,
+		throughput_ratio,
+		confidence,
+		new_control_setting,
+		new_thread_wave_magnitude,
+		clr_instance_id);
+}
+
+void
+ves_icall_System_Diagnostics_Tracing_NativeRuntimeEventSource_LogThreadPoolIOEnqueue (
+	intptr_t native_overlapped,
+	intptr_t overlapped,
+	MonoBoolean multi_dequeues,
+	uint16_t clr_instance_id)
+{
+	mono_component_event_pipe ()->write_event_threadpool_io_enqueue (
+		native_overlapped,
+		overlapped,
+		multi_dequeues,
+		clr_instance_id);
+}
+
+void
+ves_icall_System_Diagnostics_Tracing_NativeRuntimeEventSource_LogThreadPoolIODequeue (
+	intptr_t native_overlapped,
+	intptr_t overlapped,
+	uint16_t clr_instance_id)
+{
+	mono_component_event_pipe ()->write_event_threadpool_io_dequeue (
+		native_overlapped,
+		overlapped,
+		clr_instance_id);
+}
+
+void
+ves_icall_System_Diagnostics_Tracing_NativeRuntimeEventSource_LogThreadPoolWorkingThreadCount (
+	uint16_t count,
+	uint16_t clr_instance_id)
+{
+	mono_component_event_pipe ()->write_event_threadpool_working_thread_count (
+		count,
+		clr_instance_id);
+}
+
+void
+ves_icall_System_Diagnostics_Tracing_NativeRuntimeEventSource_LogThreadPoolIOPack (
+	intptr_t native_overlapped,
+	intptr_t overlapped,
+	uint16_t clr_instance_id)
+{
+	mono_component_event_pipe ()->write_event_threadpool_io_pack (
+		native_overlapped,
+		overlapped,
+		clr_instance_id);
+}
+
+void
+ves_icall_System_Diagnostics_Tracing_NativeRuntimeEventSource_LogContentionLockCreated (
+	intptr_t lock_id,
+	intptr_t associated_object_id,
+	uint16_t clr_instance_id)
+{
+	mono_component_event_pipe ()->write_event_contention_lock_created (
+		lock_id,
+		associated_object_id,
+		clr_instance_id);
+}
+
+void
+ves_icall_System_Diagnostics_Tracing_NativeRuntimeEventSource_LogContentionStart (
+	uint8_t contention_flags,
+	uint16_t clr_instance_id,
+	intptr_t lock_id,
+	intptr_t associated_object_id,
+	uint64_t lock_owner_thread_id)
+{
+	mono_component_event_pipe ()->write_event_contention_start (
+		contention_flags,
+		clr_instance_id,
+		lock_id,
+		associated_object_id,
+		lock_owner_thread_id);
+}
+
+void
+ves_icall_System_Diagnostics_Tracing_NativeRuntimeEventSource_LogContentionStop (
+	uint8_t contention_flags,
+	uint16_t clr_instance_id,
+	double duration_ns)
+{
+	mono_component_event_pipe ()->write_event_contention_stop (
+		contention_flags,
+		clr_instance_id,
+		duration_ns);
+}
+
+void
+ves_icall_System_Diagnostics_Tracing_NativeRuntimeEventSource_LogWaitHandleWaitStart (
+	uint8_t wait_source,
+	intptr_t associated_object_id,
+	uint16_t clr_instance_id)
+{
+	mono_component_event_pipe ()->write_event_wait_handle_wait_start (
+		wait_source,
+		associated_object_id,
+		clr_instance_id);
+}
+
+void
+ves_icall_System_Diagnostics_Tracing_NativeRuntimeEventSource_LogWaitHandleWaitStop (
+	uint16_t clr_instance_id)
+{
+	mono_component_event_pipe ()->write_event_wait_handle_wait_stop (
+		clr_instance_id);
+}
+
+#else /* ENABLE_PERFTRACING */
+
+gconstpointer
+ves_icall_System_Diagnostics_Tracing_EventPipeInternal_CreateProvider (
+	MonoStringHandle provider_name,
+	gpointer callback_func,
+	gpointer callback_context,
+	MonoError *error)
+{
+	mono_error_set_not_implemented (error, "System.Diagnostics.Tracing.EventPipeInternal.CreateProvider");
+	return NULL;
+}
+
+intptr_t
+ves_icall_System_Diagnostics_Tracing_EventPipeInternal_DefineEvent (
+	intptr_t provider_handle,
+	uint32_t event_id,
+	int64_t keywords,
+	uint32_t event_version,
+	uint32_t level,
+	const uint8_t *metadata,
+	uint32_t metadata_len)
+{
+	ERROR_DECL (error);
+	mono_error_set_not_implemented (error, "System.Diagnostics.Tracing.EventPipeInternal.DefineEvent");
+	mono_error_set_pending_exception (error);
+	return 0;
+}
+
+void
+ves_icall_System_Diagnostics_Tracing_EventPipeInternal_DeleteProvider (intptr_t provider_handle)
+{
+	ERROR_DECL (error);
+	mono_error_set_not_implemented (error, "System.Diagnostics.Tracing.EventPipeInternal.DeleteProvider");
+	mono_error_set_pending_exception (error);
+}
+
+void
+ves_icall_System_Diagnostics_Tracing_EventPipeInternal_Disable (uint64_t session_id)
+{
+	ERROR_DECL (error);
+	mono_error_set_not_implemented (error, "System.Diagnostics.Tracing.EventPipeInternal.Disable");
+	mono_error_set_pending_exception (error);
+}
+
+uint64_t
+ves_icall_System_Diagnostics_Tracing_EventPipeInternal_Enable (
+	const gunichar2 *output_file,
+	/* EventPipeSerializationFormat */int32_t format,
+	uint32_t circular_buffer_size_mb,
+	/* EventPipeProviderConfigurationNative[] */const void *providers,
+	uint32_t providers_len)
+{
+	ERROR_DECL (error);
+	mono_error_set_not_implemented (error, "System.Diagnostics.Tracing.EventPipeInternal.Enable");
+	mono_error_set_pending_exception (error);
+	return 0;
+}
+
+int32_t
+ves_icall_System_Diagnostics_Tracing_EventPipeInternal_EventActivityIdControl (
+	uint32_t control_code,
+	/* GUID * */uint8_t *activity_id)
+{
+	ERROR_DECL (error);
+	mono_error_set_not_implemented (error, "System.Diagnostics.Tracing.EventPipeInternal.EventActivityIdControl");
+	mono_error_set_pending_exception (error);
+	return 0;
+}
+
+MonoBoolean
+ves_icall_System_Diagnostics_Tracing_EventPipeInternal_GetNextEvent (
+	uint64_t session_id,
+	/* EventPipeEventInstanceData * */void *instance)
+{
+	ERROR_DECL (error);
+	mono_error_set_not_implemented (error, "System.Diagnostics.Tracing.EventPipeInternal.GetNextEvent");
+	mono_error_set_pending_exception (error);
+	return FALSE;
+}
+
+intptr_t
+ves_icall_System_Diagnostics_Tracing_EventPipeInternal_GetProvider (const gunichar2 *provider_name)
+{
+	ERROR_DECL (error);
+	mono_error_set_not_implemented (error, "System.Diagnostics.Tracing.EventPipeInternal.GetProvider");
+	mono_error_set_pending_exception (error);
+	return 0;
+}
+
+MonoBoolean
+ves_icall_System_Diagnostics_Tracing_EventPipeInternal_GetSessionInfo (
+	uint64_t session_id,
+	/* EventPipeSessionInfo * */void *session_info)
+{
+	ERROR_DECL (error);
+	mono_error_set_not_implemented (error, "System.Diagnostics.Tracing.EventPipeInternal.GetSessionInfo");
+	mono_error_set_pending_exception (error);
+	return FALSE;
+}
+
+MonoBoolean
+ves_icall_System_Diagnostics_Tracing_EventPipeInternal_SignalSession (uint64_t session_id)
+{
+	ERROR_DECL (error);
+	mono_error_set_not_implemented (error, "System.Diagnostics.Tracing.EventPipeInternal.SignalSession");
+	mono_error_set_pending_exception (error);
+	return FALSE;
+}
+
+MonoBoolean
+ves_icall_System_Diagnostics_Tracing_EventPipeInternal_WaitForSessionSignal (
+	uint64_t session_id,
+	int32_t timeout)
+{
+	ERROR_DECL (error);
+	mono_error_set_not_implemented (error, "System.Diagnostics.Tracing.EventPipeInternal.WaitForSessionSignal");
+	mono_error_set_pending_exception (error);
+	return FALSE;
+}
+
+void
+ves_icall_System_Diagnostics_Tracing_EventPipeInternal_WriteEventData (
+	intptr_t event_handle,
+	/* EventData[] */void *event_data,
+	uint32_t event_data_len,
+	/* GUID * */const uint8_t *activity_id,
+	/* GUID * */const uint8_t *related_activity_id)
+{
+	ERROR_DECL (error);
+	mono_error_set_not_implemented (error, "System.Diagnostics.Tracing.EventPipeInternal.WriteEventData");
+	mono_error_set_pending_exception (error);
+}
+
+guint64
+ves_icall_System_Diagnostics_Tracing_EventPipeInternal_GetRuntimeCounterValue (gint32 id)
+{
+	ERROR_DECL (error);
+	mono_error_set_not_implemented (error, "System.Diagnostics.Tracing.EventPipeInternal.GetRuntimeCounterValue");
+	mono_error_set_pending_exception (error);
+	return 0;
+}
+
+void
+ves_icall_System_Diagnostics_Tracing_NativeRuntimeEventSource_LogThreadPoolWorkerThreadStart (
+	uint32_t active_thread_count,
+	uint32_t retired_worker_thread_count,
+	uint16_t clr_instance_id)
+{
+	ERROR_DECL (error);
+	mono_error_set_not_implemented (error, "System.Diagnostics.Tracing.NativeRuntimeEventSource.LogThreadPoolWorkerThreadStart");
+	mono_error_set_pending_exception (error);
+}
+
+void
+ves_icall_System_Diagnostics_Tracing_NativeRuntimeEventSource_LogThreadPoolWorkerThreadStop (
+	uint32_t active_thread_count,
+	uint32_t retired_worker_thread_count,
+	uint16_t clr_instance_id)
+{
+	ERROR_DECL (error);
+	mono_error_set_not_implemented (error, "System.Diagnostics.Tracing.NativeRuntimeEventSource.LogThreadPoolWorkerThreadStop");
+	mono_error_set_pending_exception (error);
+}
+
+void
+ves_icall_System_Diagnostics_Tracing_NativeRuntimeEventSource_LogThreadPoolWorkerThreadWait (
+	uint32_t active_thread_count,
+	uint32_t retired_worker_thread_count,
+	uint16_t clr_instance_id)
+{
+	ERROR_DECL (error);
+	mono_error_set_not_implemented (error, "System.Diagnostics.Tracing.NativeRuntimeEventSource.LogThreadPoolWorkerThreadWait");
+	mono_error_set_pending_exception (error);
+}
+
+void
+ves_icall_System_Diagnostics_Tracing_NativeRuntimeEventSource_LogThreadPoolMinMaxThreads (
+	uint16_t min_worker_threads,
+	uint16_t max_worker_threads,
+	uint16_t min_io_completion_threads,
+	uint16_t max_io_completion_threads,
+	uint16_t clr_instance_id)
+{
+	ERROR_DECL (error);
+	mono_error_set_not_implemented (error, "System.Diagnostics.Tracing.NativeRuntimeEventSource.LogThreadPoolMinMaxThreads");
+	mono_error_set_pending_exception (error);
+}
+
+void
+ves_icall_System_Diagnostics_Tracing_NativeRuntimeEventSource_LogThreadPoolWorkerThreadAdjustmentSample (
+	double throughput,
+	uint16_t clr_instance_id)
+{
+	ERROR_DECL (error);
+	mono_error_set_not_implemented (error, "System.Diagnostics.Tracing.NativeRuntimeEventSource.LogThreadPoolWorkerThreadAdjustmentSample");
+	mono_error_set_pending_exception (error);
+}
+
+void
+ves_icall_System_Diagnostics_Tracing_NativeRuntimeEventSource_LogThreadPoolWorkerThreadAdjustmentAdjustment (
+	double average_throughput,
+	uint32_t networker_thread_count,
+	/*NativeRuntimeEventSource.ThreadAdjustmentReasonMap*/ int32_t reason,
+	uint16_t clr_instance_id)
+{
+	ERROR_DECL (error);
+	mono_error_set_not_implemented (error, "System.Diagnostics.Tracing.NativeRuntimeEventSource.LogThreadPoolWorkerThreadAdjustmentAdjustment");
+	mono_error_set_pending_exception (error);
+}
+
+void
+ves_icall_System_Diagnostics_Tracing_NativeRuntimeEventSource_LogThreadPoolWorkerThreadAdjustmentStats (
+	double duration,
+	double throughput,
+	double threadpool_worker_thread_wait,
+	double throughput_wave,
+	double throughput_error_estimate,
+	double average_throughput_error_estimate,
+	double throughput_ratio,
+	double confidence,
+	double new_control_setting,
+	uint16_t new_thread_wave_magnitude,
+	uint16_t clr_instance_id)
+{
+	ERROR_DECL (error);
+	mono_error_set_not_implemented (error, "System.Diagnostics.Tracing.NativeRuntimeEventSource.LogThreadPoolWorkerThreadAdjustmentStats");
+	mono_error_set_pending_exception (error);
+}
+
+void
+ves_icall_System_Diagnostics_Tracing_NativeRuntimeEventSource_LogThreadPoolIOEnqueue (
+	intptr_t native_overlapped,
+	intptr_t overlapped,
+	MonoBoolean multi_dequeues,
+	uint16_t clr_instance_id)
+{
+	ERROR_DECL (error);
+	mono_error_set_not_implemented (error, "System.Diagnostics.Tracing.NativeRuntimeEventSource.LogThreadPoolIOEnqueue");
+	mono_error_set_pending_exception (error);
+}
+
+void
+ves_icall_System_Diagnostics_Tracing_NativeRuntimeEventSource_LogThreadPoolIODequeue (
+	intptr_t native_overlapped,
+	intptr_t overlapped,
+	uint16_t clr_instance_id)
+{
+	ERROR_DECL (error);
+	mono_error_set_not_implemented (error, "System.Diagnostics.Tracing.NativeRuntimeEventSource.LogThreadPoolIODequeue");
+	mono_error_set_pending_exception (error);
+}
+
+void
+ves_icall_System_Diagnostics_Tracing_NativeRuntimeEventSource_LogThreadPoolWorkingThreadCount (
+	uint16_t count,
+	uint16_t clr_instance_id)
+{
+	ERROR_DECL (error);
+	mono_error_set_not_implemented (error, "System.Diagnostics.Tracing.NativeRuntimeEventSource.LogThreadPoolWorkingThreadCount");
+	mono_error_set_pending_exception (error);
+}
+
+void
+ves_icall_System_Diagnostics_Tracing_NativeRuntimeEventSource_LogThreadPoolIOPack (
+	intptr_t native_overlapped,
+	intptr_t overlapped,
+	uint16_t clr_instance_id)
+{
+	ERROR_DECL (error);
+	mono_error_set_not_implemented (error, "System.Diagnostics.Tracing.NativeRuntimeEventSource.LogThreadPoolIOPack");
+	mono_error_set_pending_exception (error);
+}
+
+void
+ves_icall_System_Diagnostics_Tracing_NativeRuntimeEventSource_LogContentionLockCreated (
+	intptr_t lock_id,
+	intptr_t associated_object_id,
+	uint16_t clr_instance_id)
+{
+	ERROR_DECL (error);
+	mono_error_set_not_implemented (error, "System.Diagnostics.Tracing.NativeRuntimeEventSource.LogContentionLockCreated");
+	mono_error_set_pending_exception (error);
+}
+
+void
+ves_icall_System_Diagnostics_Tracing_NativeRuntimeEventSource_LogContentionStart (
+	uint8_t contention_flags,
+	uint16_t clr_instance_id,
+	intptr_t lock_id,
+	intptr_t associated_object_id,
+	uint64_t lock_owner_thread_id)
+{
+	ERROR_DECL (error);
+	mono_error_set_not_implemented (error, "System.Diagnostics.Tracing.NativeRuntimeEventSource.LogContentionStart");
+	mono_error_set_pending_exception (error);
+}
+
+void
+ves_icall_System_Diagnostics_Tracing_NativeRuntimeEventSource_LogContentionStop (
+	uint8_t contention_flags,
+	uint16_t clr_instance_id,
+	double duration_ns)
+{
+	ERROR_DECL (error);
+	mono_error_set_not_implemented (error, "System.Diagnostics.Tracing.NativeRuntimeEventSource.LogContentionStop");
+	mono_error_set_pending_exception (error);
+}
+
+void
+ves_icall_System_Diagnostics_Tracing_NativeRuntimeEventSource_LogWaitHandleWaitStart (
+	uint8_t wait_source,
+	intptr_t associated_object_id,
+	uint16_t clr_instance_id)
+{
+	ERROR_DECL (error);
+	mono_error_set_not_implemented (error, "System.Diagnostics.Tracing.NativeRuntimeEventSource.WaitHandleWaitStart");
+	mono_error_set_pending_exception (error);
+}
+
+void
+ves_icall_System_Diagnostics_Tracing_NativeRuntimeEventSource_LogWaitHandleWaitStop (
+	uint16_t clr_instance_id)
+{
+	ERROR_DECL (error);
+	mono_error_set_not_implemented (error, "System.Diagnostics.Tracing.NativeRuntimeEventSource.WaitHandleWaitStop");
+	mono_error_set_pending_exception (error);
+}
+
+#endif /* ENABLE_PERFTRACING */

@@ -1,0 +1,9 @@
+# By default, enforce LF line-endings on all files that are not considered binary files!
+* text=auto eol=lf
+
+crc32_braid_tbl.h hooks-max-size=1000000
+
+# Don't export git/github-related files in tar/zip archives
+/.github export-ignore
+.gitattributes export-ignore
+.gitignore export-ignore

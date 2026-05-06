@@ -1,0 +1,23 @@
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <!-- SDK Style projects auto-magically include this file. -->
+  <Import Project="..\Directory.Build.targets" />
+
+  <!-- Add the CoreCLRTestLibrary dependency -->
+  <ItemGroup Condition="'$(IgnoreCoreCLRTestLibraryDependency)' != 'true'">
+    <ProjectReference
+      Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
+
+  <Target Name="CopyInteropNativeRuntimeDependencies"
+    BeforeTargets="CopyAllNativeProjectReferenceBinaries"
+    Condition="'$(TargetsWindows)' == 'true' And ('$(Configuration)' == 'Debug' Or '$(Configuration)' == 'Checked') And '$(CopyDebugCRTDllsToOutputDirectory)' == 'true'" >
+    <Warning Text="Building C++/CLI tests requires a Visual Studio Dev Command Prompt" Condition="'$(VCToolsRedistDir)' == '' or '$(ExtensionSdkDir)' == ''" />
+    <!-- Required debug vcruntime and UCRT dlls -->
+    <ItemGroup Condition="'$(VCToolsRedistDir)' != '' and '$(ExtensionSdkDir)' != ''">
+      <InteropNativeRuntimeDependencies Include="$(VCToolsRedistDir)onecore/debug_nonredist/$(TargetArchitecture)/Microsoft.VC*.DebugCRT/vcruntime*d.dll" />
+      <InteropNativeRuntimeDependencies Include="$(VCToolsRedistDir)onecore/debug_nonredist/$(TargetArchitecture)/Microsoft.VC*.DebugCRT/msvcp*d.dll" />
+      <InteropNativeRuntimeDependencies Include="$(ExtensionSdkDir)/Microsoft.UniversalCRT.Debug/$(UCRTVersion)/Redist/Debug/$(TargetArchitecture)/ucrtbased.dll" />
+    </ItemGroup>
+    <Copy SourceFiles="@(InteropNativeRuntimeDependencies)" DestinationFolder="$(OutputPath)" />
+  </Target>
+</Project>

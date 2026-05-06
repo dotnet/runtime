@@ -1,0 +1,5 @@
+<Project>
+  <Import Project="$(RepositoryEngineeringDir)targetingpacks.targets" />
+
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets, $(MSBuildThisFileDirectory)..))" />
+</Project>

@@ -1,0 +1,45 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <PackageDescription>Provides the .NET app bootstrapper intended for use in the application directory</PackageDescription>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <NativeBinary Include="$(DotNetHostBinDir)/apphost$(ExeSuffix)" />
+    <NativeBinary Include="$(DotNetHostBinDir)/$(LibPrefix)nethost$(LibSuffix)" />
+    <NativeBinary Include="$(DotNetHostBinDir)/$(LibPrefix)nethost$(StaticLibSuffix)" />
+    <NativeBinary Include="$(DotNetHostBinDir)/coreclr_delegates.h" />
+    <NativeBinary Include="$(DotNetHostBinDir)/hostfxr.h" />
+    <NativeBinary Include="$(DotNetHostBinDir)/nethost.h" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(RuntimeFlavor)' != 'Mono' and '$(TargetsLinuxBionic)' != 'true'">
+    <NativeBinary Include="$(DotNetHostBinDir)/singlefilehost$(ExeSuffix)" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetOS)' == 'windows'">
+    <NativeBinary Include="$(DotNetHostBinDir)/comhost.dll" />
+    <NativeBinary Include="$(DotNetHostBinDir)/ijwhost.dll" />
+    <NativeBinary Include="$(DotNetHostBinDir)/ijwhost.lib" />
+    <!-- The libnethost.lib is a static library for the nethost scenario.
+        The symbols file is also shipped to enable users to fully debug
+        binaries that link against the static version. -->
+    <NativeBinary Include="$(DotNetHostBinDir)/libnethost.lib" />
+    <_SymbolsToIncludeAlways Include="$(DotNetHostBinDir)PDB/libnethost.pdb" />
+    <NativeBinary Include="$(DotNetHostBinDir)/libhostfxr.lib" />
+    <_SymbolsToIncludeAlways Include="$(DotNetHostBinDir)PDB/libhostfxr.pdb" />
+
+    <!-- By default, the packaging infrastructure excludes all PDBs from implementation packages.
+        Explicitly set the excludes such that we exclude symbols corresponding to our native binaries
+        except for the ones we explicitly want to include. -->
+    <LibPackageExcludes Include="@(NativeBinary -> '%2A%2A\%(Filename).pdb')" />
+    <LibPackageExcludes Remove="@(_SymbolsToIncludeAlways -> '%2A%2A\%(Filename).pdb')" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetOS)' != 'windows'">
+    <NativeBinary Include="$(DotNetHostBinDir)/$(LibPrefix)hostfxr$(StaticLibSuffix)" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(PackageTargetRuntime)' != ''">
+    <File Include="@(NativeBinary);@(_SymbolsToIncludeAlways)">
+      <TargetPath>runtimes/$(PackageTargetRuntime)/native</TargetPath>
+      <IsNative>true</IsNative>
+    </File>
+  </ItemGroup>
+</Project>

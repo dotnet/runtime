@@ -1,0 +1,22 @@
+<!--
+***********************************************************************************************
+Microsoft.NET.Sdk.WebAssembly.targets
+
+WARNING:  DO NOT MODIFY this file unless you are knowledgeable about MSBuild and have
+          created a backup copy.  Incorrect changes to this file will make it
+          impossible to load or build your projects from the command-line or the IDE.
+
+Copyright (c) .NET Foundation. All rights reserved.
+***********************************************************************************************
+-->
+<Project ToolsVersion="14.0">
+  <PropertyGroup Condition="'$(RuntimeIdentifier)' != 'wasi-wasm'">
+    <_WebAssemblyTargetsFile>$(MSBuildThisFileDirectory)\Microsoft.NET.Sdk.WebAssembly.Browser.targets</_WebAssemblyTargetsFile>
+  </PropertyGroup>
+
+  <!-- Library Mode defaults-->
+  <PropertyGroup Condition="'$(OutputType)' == 'Library'">
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+    <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
+  </PropertyGroup>
+</Project>

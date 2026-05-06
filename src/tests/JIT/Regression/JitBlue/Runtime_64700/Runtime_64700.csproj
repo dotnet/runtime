@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- Needed for CLRTestEnvironmentVariable -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <Optimize>True</Optimize>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(MSBuildProjectName).cs" />
+
+    <CLRTestEnvironmentVariable Include="DOTNET_JitEnableOptRepeat" Value="1" />
+    <CLRTestEnvironmentVariable Include="DOTNET_JitOptRepeat" Value="ProblemWithCopyProp" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,13 @@
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+  <Target Name="CreateManifestResourceNames" />
+  <Target Name="Compile" />
+  <Target Name="CoreCompile" />
+
+  <!-- if this is a RunOnly project that has been scheduled to build, make the output directory and build any dependent projects -->
+  <Target Name="Build" Condition="('$(CLRTestKind)'=='RunOnly') And '$(_WillCLRTestProjectBuild)' == 'true'">
+    <MSBuild Projects="@(ProjectReference)" />
+    <MakeDir ContinueOnError="false" Directories="$(OutputPath)" />
+  </Target>
+  
+</Project>

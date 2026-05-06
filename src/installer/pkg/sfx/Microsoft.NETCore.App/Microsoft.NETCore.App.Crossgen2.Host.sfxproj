@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <Sdk Name="Microsoft.DotNet.SharedFramework.Sdk" />
+
+  <PropertyGroup>
+    <CrossgenPublishProject>$(RepoRoot)src/coreclr/tools/aot/crossgen2/crossgen2_inbuild.csproj</CrossgenPublishProject>
+    <RuntimeIdentifier>$(NETCoreSdkRuntimeIdentifier)</RuntimeIdentifier>
+  </PropertyGroup>
+
+  <Import Project="$(MSBuildThisFileDirectory)Microsoft.NETCore.App.Crossgen2.props" />
+</Project>

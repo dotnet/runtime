@@ -1,0 +1,73 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppPrevious);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
+    <UseCompilerGeneratedDocXmlFile>false</UseCompilerGeneratedDocXmlFile>
+    <IsPackable>true</IsPackable>
+    <PackageDescription>Provides extension methods for System.Net.Http.HttpClient and System.Net.Http.HttpContent that perform automatic serialization and deserialization using System.Text.Json.
+
+Commonly Used Types:
+System.Net.Http.Json.HttpClientJsonExtensions
+System.Net.Http.Json.HttpContentJsonExtensions
+System.Net.Http.Json.JsonContent</PackageDescription>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="System\Net\Http\Json\HttpClientJsonExtensions.Get.AsyncEnumerable.cs" />
+    <Compile Include="System\Net\Http\Json\HttpClientJsonExtensions.cs" />
+    <Compile Include="System\Net\Http\Json\HttpContentJsonExtensions.AsyncEnumerable.cs" />
+    <Compile Include="System\Net\Http\Json\JsonHelpers.cs" />
+    <Compile Include="System\Net\Http\Json\HttpClientJsonExtensions.Delete.cs" />
+    <Compile Include="System\Net\Http\Json\HttpClientJsonExtensions.Get.cs" />
+    <Compile Include="System\Net\Http\Json\HttpClientJsonExtensions.Post.cs" />
+    <Compile Include="System\Net\Http\Json\HttpClientJsonExtensions.Put.cs" />
+    <Compile Include="System\Net\Http\Json\HttpClientJsonExtensions.Patch.cs" />
+    <Compile Include="System\Net\Http\Json\HttpContentJsonExtensions.cs" />
+    <Compile Include="System\Net\Http\Json\JsonContent.cs" />
+    <Compile Include="System\Net\Http\Json\LengthLimitReadStream.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
+    <Compile Include="System\Net\Http\Json\HttpContentJsonExtensions.netcoreapp.cs" />
+    <Compile Include="System\Net\Http\Json\JsonContent.netcoreapp.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
+    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\DynamicallyAccessedMembersAttribute.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\DynamicallyAccessedMemberTypes.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\RequiresDynamicCodeAttribute.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\RequiresUnreferencedCodeAttribute.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\StringSyntaxAttribute.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\UnconditionalSuppressMessageAttribute.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\CompilerLoweringPreserveAttribute.cs" />
+    <Compile Include="System\ArraySegmentExtensions.netstandard.cs" />
+    <Compile Include="System\Net\Http\Json\HttpClientJsonExtensions.netstandard.cs" />
+    <Compile Include="System\Net\Http\Json\HttpContentJsonExtensions.netstandard.cs" />
+    <Compile Include="System\Net\Http\Json\TranscodingReadStream.cs" />
+    <Compile Include="System\Net\Http\Json\TranscodingWriteStream.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Text.Json\src\System.Text.Json.csproj" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
+    <ProjectReference Include="$(LibrariesProjectRoot)System.IO.Pipelines\src\System.IO.Pipelines.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Memory\src\System.Memory.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Net.Http\src\System.Net.Http.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Net.Primitives\src\System.Net.Primitives.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime\src\System.Runtime.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Text.Json\src\System.Text.Json.csproj" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
+    <PackageReference Include="System.Buffers" Version="$(SystemBuffersVersion)" />
+    <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
+    <PackageReference Include="System.Threading.Tasks.Extensions" Version="$(SystemThreadingTasksExtensionsVersion)" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
+    <Reference Include="System.Net.Http" />
+  </ItemGroup>
+
+</Project>

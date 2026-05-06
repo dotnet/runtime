@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- Needed for GCStressIncompatible, HeapVerifyIncompatible -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <!-- NOTE: this test simply takes too long to complete under GC stress/heap verify; it is not fundamentally incompatible -->
+    <GCStressIncompatible>true</GCStressIncompatible>
+    <HeapVerifyIncompatible>true</HeapVerifyIncompatible>
+    <CLRTestPriority>1</CLRTestPriority>
+  </PropertyGroup>
+  <PropertyGroup>
+    <DebugType>Full</DebugType>
+    <Optimize>False</Optimize>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="bigvtbl.cs" />
+  </ItemGroup>
+</Project>

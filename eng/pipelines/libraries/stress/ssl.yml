@@ -1,0 +1,25 @@
+trigger: none
+
+schedules:
+- cron: "0 13 * * *" # 1PM UTC => 5 AM PST
+  displayName: SslStress nightly run
+  always: true
+  branches:
+    include:
+    - main
+    - release/*.0
+
+variables:
+  - template: ../variables.yml
+  - name: dockerfilesFolder
+    value: $(Build.SourcesDirectory)/eng/docker
+  - name: sslStressProject
+    value: $(sourcesRoot)/System.Net.Security/tests/StressTests/SslStress
+  - name: sdkBaseImage
+    value: dotnet-sdk-libraries-current
+
+extends:
+  template: /eng/pipelines/common/templates/pipeline-with-resources.yml
+  parameters:
+    stages:
+    - template: /eng/pipelines/libraries/stress/ssl-stages.yml

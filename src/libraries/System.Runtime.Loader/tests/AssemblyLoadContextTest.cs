@@ -1,0 +1,438 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+using System;
+using System.IO;
+using System.Reflection;
+using System.Reflection.Emit;
+using System.Runtime.CompilerServices;
+using Microsoft.DotNet.RemoteExecutor;
+using Xunit;
+
+namespace System.Runtime.Loader.Tests
+{
+    public partial class AssemblyLoadContextTest
+    {
+        private const string TestAssembly = "System.Runtime.Loader.Test.Assembly";
+        private const string TestAssembly2 = "System.Runtime.Loader.Test.Assembly2";
+
+        [Fact]
+        public static void GetAssemblyNameTest_ValidAssembly()
+        {
+            var expectedName = typeof(AssemblyLoadContextTest).Assembly.GetName();
+            var actualAsmName = AssemblyLoadContext.GetAssemblyName("System.Runtime.Loader.Tests.dll");
+            Assert.Equal(expectedName.FullName, actualAsmName.FullName);
+
+            // Verify that the AssemblyName returned by GetAssemblyName can be used to load an assembly. System.Runtime would
+            // already be loaded, but this is just verifying it does not throw some other unexpected exception.
+            var asm = Assembly.Load(actualAsmName);
+            Assert.NotNull(asm);
+            Assert.Equal(asm, typeof(AssemblyLoadContextTest).Assembly);
+        }
+
+        [Fact]
+        public static void GetAssemblyNameTest_AssemblyNotFound()
+        {
+            Assert.Throws<FileNotFoundException>(() => AssemblyLoadContext.GetAssemblyName("Non.Existing.Assembly.dll"));
+        }
+
+        [Fact]
+        public static void GetAssemblyNameTest_NullParameter()
+        {
+            Assert.Throws<ArgumentNullException>(() => AssemblyLoadContext.GetAssemblyName(null));
+        }
+
+        [Fact]
+        public static void LoadFromAssemblyPath_PartiallyQualifiedPath_ThrowsArgumentException()
+        {
+            string path = Path.Combine("foo", "bar.dll");
+            ArgumentException ex = AssertExtensions.Throws<ArgumentException>("assemblyPath", () => (new AssemblyLoadContext("alc")).LoadFromAssemblyPath(path));
+            Assert.Contains(path, ex.Message);
+        }
+
+        [Fact]
+        public static void LoadFromNativeImagePath_PartiallyQualifiedPath_ThrowsArgumentException()
+        {
+            string path = Path.Combine("foo", "bar.dll");
+            ArgumentException ex = AssertExtensions.Throws<ArgumentException>("nativeImagePath", () => (new AssemblyLoadContext("alc")).LoadFromNativeImagePath(path, null));
+            Assert.Contains(path, ex.Message);
+        }
+
+        [Fact]
+        public static void LoadFromNativeImagePath_PartiallyQualifiedPath_ThrowsArgumentException2()
+        {
+            string path = Path.Combine("foo", "bar.dll");
+            string rootedPath = Path.GetFullPath(Guid.NewGuid().ToString("N"));
+            ArgumentException ex = AssertExtensions.Throws<ArgumentException>("assemblyPath", () => (new AssemblyLoadContext("alc")).LoadFromNativeImagePath(rootedPath, path));
+            Assert.Contains(path, ex.Message);
+        }
+
+        [Fact]
+        [PlatformSpecific(~(TestPlatforms.iOS | TestPlatforms.tvOS))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51893", typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming), nameof(PlatformDetection.IsBrowser))]
+        public static void LoadAssemblyByPath_ValidUserAssembly()
+        {
+            var asmName = new AssemblyName(TestAssembly);
+            var loadContext = new ResourceAssemblyLoadContext();
+            loadContext.LoadBy = LoadBy.Path;
+
+            var asm = loadContext.LoadFromAssemblyName(asmName);
+
+            Assert.NotNull(asm);
+            Assert.Same(loadContext, AssemblyLoadContext.GetLoadContext(asm));
+            Assert.Contains(asm.DefinedTypes, t => t.Name == "TestClass");
+        }
+
+        [Fact]
+        [PlatformSpecific(~(TestPlatforms.iOS | TestPlatforms.tvOS))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51893", typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming), nameof(PlatformDetection.IsBrowser))]
+        public static void LoadAssemblyByStream_ValidUserAssembly()
+        {
+            var asmName = new AssemblyName(TestAssembly);
+            var loadContext = new ResourceAssemblyLoadContext();
+            loadContext.LoadBy = LoadBy.Stream;
+
+            var asm = loadContext.LoadFromAssemblyName(asmName);
+
+            Assert.NotNull(asm);
+            Assert.Same(loadContext, AssemblyLoadContext.GetLoadContext(asm));
+            Assert.Contains(asm.DefinedTypes, t => t.Name == "TestClass");
+        }
+
+        [Fact]
+        public static void LoadFromAssemblyName_AssemblyNotFound()
+        {
+            var asmName = new AssemblyName("Non.Existing.Assembly.dll");
+            var loadContext = new ResourceAssemblyLoadContext();
+            loadContext.LoadBy = LoadBy.Path;
+
+            Assert.Throws<FileNotFoundException>(() => loadContext.LoadFromAssemblyName(asmName));
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
+        public static void LoadFromAssemblyName_ValidTrustedPlatformAssembly()
+        {
+            var asmName = typeof(System.Linq.Enumerable).Assembly.GetName();
+            var loadContext = new CustomTPALoadContext();
+
+            // We should be able to override (and thus, load) assemblies that were
+            // loaded in TPA load context.
+            var asm = loadContext.LoadFromAssemblyName(asmName);
+            Assert.NotNull(asm);
+            var loadedContext = AssemblyLoadContext.GetLoadContext(asm);
+            Assert.NotNull(loadedContext);
+            Assert.Same(loadContext, loadedContext);
+        }
+
+        [Fact]
+        public static void LoadFromAssemblyName_FallbackToDefaultContext()
+        {
+            var asmName = typeof(System.Linq.Enumerable).Assembly.GetName();
+            var loadContext = new AssemblyLoadContext("FallbackToDefaultContextTest");
+
+            // This should not have any special handlers, so it should just find the version in the default context
+            var asm = loadContext.LoadFromAssemblyName(asmName);
+            Assert.NotNull(asm);
+            var loadedContext = AssemblyLoadContext.GetLoadContext(asm);
+            Assert.NotNull(loadedContext);
+            Assert.Same(AssemblyLoadContext.Default, loadedContext);
+            Assert.NotEqual(loadContext, loadedContext);
+            Assert.Same(typeof(System.Linq.Enumerable).Assembly, asm);
+        }
+
+        [Fact]
+        [PlatformSpecific(~(TestPlatforms.iOS | TestPlatforms.tvOS))]
+        public static void GetLoadContextTest_ValidUserAssembly()
+        {
+            var asmName = new AssemblyName(TestAssembly);
+            var expectedContext = new ResourceAssemblyLoadContext();
+            expectedContext.LoadBy = LoadBy.Stream;
+
+            var asm = expectedContext.LoadFromAssemblyName(asmName);
+            var actualContext = AssemblyLoadContext.GetLoadContext(asm);
+
+            Assert.Equal(expectedContext, actualContext);
+        }
+
+        [Fact]
+        public static void GetLoadContextTest_ValidTrustedPlatformAssembly()
+        {
+            var asm = typeof(System.Linq.Enumerable).GetTypeInfo().Assembly;
+            var context = AssemblyLoadContext.GetLoadContext(asm);
+
+            Assert.NotNull(context);
+            Assert.Same(AssemblyLoadContext.Default, context);
+        }
+
+        [Fact]
+        public static void GetLoadContextTest_SystemPrivateCorelibAssembly()
+        {
+            // System.Private.Corelib is a special case
+            // `int` is defined in S.P.C
+            var asm = typeof(int).Assembly;
+            var context = AssemblyLoadContext.GetLoadContext(asm);
+
+            Assert.NotNull(context);
+            Assert.Same(AssemblyLoadContext.Default, context);
+        }
+
+        [Fact]
+        public static void DefaultAssemblyLoadContext_Properties()
+        {
+            AssemblyLoadContext alc = AssemblyLoadContext.Default;
+
+            Assert.False(alc.IsCollectible);
+
+            Assert.Equal("Default", alc.Name);
+            Assert.Contains("\"Default\"", alc.ToString());
+            Assert.Contains("System.Runtime.Loader.DefaultAssemblyLoadContext", alc.ToString());
+            Assert.Contains(alc, AssemblyLoadContext.All);
+            Assert.Contains(typeof(int).Assembly, alc.Assemblies);
+        }
+
+        [Fact]
+        public static void PublicConstructor_Default()
+        {
+            AssemblyLoadContext alc = new AssemblyLoadContext("PublicConstructor");
+
+            Assert.False(alc.IsCollectible);
+
+            Assert.Equal("PublicConstructor", alc.Name);
+            Assert.Contains("PublicConstructor", alc.ToString());
+            Assert.Contains("System.Runtime.Loader.AssemblyLoadContext", alc.ToString());
+            Assert.Contains(alc, AssemblyLoadContext.All);
+            Assert.Empty(alc.Assemblies);
+        }
+
+        [Theory]
+        [InlineData("AssemblyLoadContextCollectible", true)]
+        [InlineData("AssemblyLoadContextNonCollectible", false)]
+        public static void PublicConstructor_Theory(string name, bool isCollectible)
+        {
+            AssemblyLoadContext alc = new AssemblyLoadContext(name, isCollectible);
+
+            Assert.Equal(isCollectible, alc.IsCollectible);
+
+            Assert.Equal(name, alc.Name);
+            Assert.Contains(name, alc.ToString());
+            Assert.Contains("System.Runtime.Loader.AssemblyLoadContext", alc.ToString());
+            Assert.Contains(alc, AssemblyLoadContext.All);
+            Assert.Empty(alc.Assemblies);
+        }
+
+        [Fact]
+        public static void SubclassAssemblyLoadContext_Properties()
+        {
+            AssemblyLoadContext alc = new ResourceAssemblyLoadContext();
+
+            Assert.False(alc.IsCollectible);
+            Assert.Null(alc.Name);
+            Assert.Contains("\"\"", alc.ToString());
+            Assert.Contains(typeof(ResourceAssemblyLoadContext).ToString(), alc.ToString());
+            Assert.Contains(alc, AssemblyLoadContext.All);
+            Assert.Empty(alc.Assemblies);
+        }
+
+        class RefEmitLoadContext : AssemblyLoadContext
+        {
+            protected override Assembly? Load(AssemblyName assemblyName)
+            {
+                return AssemblyBuilder.DefineDynamicAssembly(assemblyName, AssemblyBuilderAccess.Run);
+            }
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/31804", TestRuntimes.Mono)]
+        public static void LoadRefEmitAssembly()
+        {
+            RefEmitLoadContext alc = new();
+            alc.Resolving += (sender, assembly) => { Assert.Fail("Resolving event not expected"); return null; };
+            Exception error = Assert.Throws<FileLoadException>(() => alc.LoadFromAssemblyName(new AssemblyName("MyAssembly")));
+            Assert.IsType<InvalidOperationException>(error.InnerException);
+        }
+
+        class NonRuntimeAssemblyContext : AssemblyLoadContext
+        {
+            class NonRuntimeAssembly : Assembly
+            {
+                private AssemblyName _name;
+
+                public NonRuntimeAssembly(AssemblyName name) => _name = name;
+
+                public override AssemblyName GetName(bool copiedName) => _name;
+            }
+
+            protected override Assembly? Load(AssemblyName assemblyName)
+            {
+                return new NonRuntimeAssembly(assemblyName);
+            }
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsAssemblyLoadingSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/31804", TestRuntimes.Mono)]
+        public static void LoadNonRuntimeAssembly()
+        {
+            NonRuntimeAssemblyContext alc = new();
+            alc.Resolving += (sender, assembly) => { Assert.Fail("Resolving event not expected"); return null; };
+            Exception error = Assert.Throws<FileLoadException>(() => alc.LoadFromAssemblyName(new AssemblyName("MyAssembly")));
+            Assert.IsType<InvalidOperationException>(error.InnerException);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsCoreCLR))]
+        public static void MissingTransitiveDependency_ShowsRequestingAssemblyChain()
+        {
+            // MissingDependency.Root depends on MissingDependency.Mid which depends on MissingDependency.Leaf.
+            // MissingDependency.Leaf.dll is not deployed (via PrivateAssets=all in Mid's project reference).
+            // When Root calls Mid's method that uses Leaf types, the runtime throws FileNotFoundException
+            // for the missing Leaf assembly. The exception message should include the full requesting
+            // assembly chain (Mid and Root) so users can diagnose dependency loading issues.
+            FileNotFoundException ex = Assert.Throws<FileNotFoundException>(
+                () => MissingDependency.Root.RootClass.UseMiddle());
+
+            Assert.NotNull(ex.FileName);
+            Assert.Contains("MissingDependency.Leaf", ex.FileName);
+            string exString = ex.ToString();
+            Assert.Contains("MissingDependency.Mid", exString);
+            Assert.Contains(" --> ", exString);
+            Assert.Contains("MissingDependency.Root", exString);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsAssemblyLoadingSupported), nameof(PlatformDetection.IsCoreCLR), nameof(PlatformDetection.HasAssemblyFiles))]
+        public static void InvalidCastException_DifferentALC_ShowsAssemblyInfo()
+        {
+            var alc = new AssemblyLoadContext("TestALC");
+            Assembly alcAssembly = alc.LoadFromAssemblyPath(typeof(AssemblyLoadContextTest).Assembly.Location);
+
+            Type alcType = alcAssembly.GetType(typeof(InvalidCastSharedType).FullName!, throwOnError: true)!;
+            object instance = Activator.CreateInstance(alcType)!;
+
+            // Cast directly to InvalidCastSharedType from the Default ALC.
+            var ice = Assert.Throws<InvalidCastException>(() =>
+            {
+                InvalidCastSharedType _ = (InvalidCastSharedType)instance;
+            });
+
+            // The message should report both ALC contexts for the same-named type.
+            Assert.Contains(nameof(InvalidCastSharedType), ice.Message);
+            Assert.Contains("Default", ice.Message);
+            Assert.Contains("TestALC", ice.Message);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsAssemblyLoadingSupported), nameof(PlatformDetection.IsCoreCLR), nameof(PlatformDetection.HasAssemblyFiles))]
+        public static void InvalidCastException_GenericTypeArg_DifferentALC_ShowsAssemblyInfo()
+        {
+            var alc = new AssemblyLoadContext("TestALC");
+            Assembly alcAssembly = alc.LoadFromAssemblyPath(typeof(AssemblyLoadContextTest).Assembly.Location);
+
+            // The outer type (StrongBox<T>) is from CoreLib (same in all contexts),
+            // but the generic argument comes from a different ALC.
+            Type alcType = alcAssembly.GetType(typeof(InvalidCastSharedType).FullName!, throwOnError: true)!;
+            Type boxType = typeof(StrongBox<>).MakeGenericType(alcType);
+            object instance = Activator.CreateInstance(boxType)!;
+
+            var ice = Assert.Throws<InvalidCastException>(() =>
+            {
+                StrongBox<InvalidCastSharedType> _ = (StrongBox<InvalidCastSharedType>)instance;
+            });
+
+            // The message should include the types with the differing generic argument types
+            // and the ALC context names.
+            Assert.Contains(nameof(StrongBox<InvalidCastSharedType>), ice.Message);
+            Assert.Contains($"generic argument '{typeof(InvalidCastSharedType).FullName}", ice.Message);
+            Assert.Contains("Default", ice.Message);
+            Assert.Contains("TestALC", ice.Message);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsAssemblyLoadingSupported), nameof(PlatformDetection.IsCoreCLR), nameof(PlatformDetection.HasAssemblyFiles))]
+        public static void LoadFromAssemblyPath_CustomAlc_VersionMismatch()
+        {
+            string v1Path = ExtractEmbeddedAssembly("System.Runtime.Loader.Tests.AssemblyVersion1");
+            string v2Path = ExtractEmbeddedAssembly("System.Runtime.Loader.Tests.AssemblyVersion2");
+
+            try
+            {
+                var alc = new AssemblyLoadContext("TestALC");
+
+                Assembly loaded = alc.LoadFromAssemblyPath(v1Path);
+                string v1DisplayName = loaded.GetName().FullName;
+
+                var ex = Assert.Throws<FileLoadException>(() => alc.LoadFromAssemblyPath(v2Path));
+                Assert.Contains("'System.Runtime.Loader.Test.VersionDowngrade'", ex.Message);
+                Assert.Contains($"'{v1DisplayName}'", ex.Message);
+                Assert.Contains(v1Path, ex.Message);
+                Assert.Equal(HResults.COR_E_FILELOAD, ex.HResult);
+            }
+            finally
+            {
+                try { File.Delete(v1Path); } catch { }
+                try { File.Delete(v2Path); } catch { }
+            }
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsAssemblyLoadingSupported), nameof(PlatformDetection.IsCoreCLR), nameof(PlatformDetection.HasAssemblyFiles))]
+        public static void LoadFromAssemblyPath_DefaultAlc_Tpa_VersionMismatch()
+        {
+            Assembly referencedAssembly = typeof(ReferencedClassLib.Program).Assembly;
+            string tpaPath = referencedAssembly.Location;
+            string tpaDisplayName = referencedAssembly.GetName().FullName;
+            string v2Path = ExtractEmbeddedAssembly("System.Runtime.Loader.Tests.ReferencedClassLibVersion2");
+
+            try
+            {
+                var ex = Assert.Throws<FileLoadException>(() => AssemblyLoadContext.Default.LoadFromAssemblyPath(v2Path));
+                Assert.Contains("'ReferencedClassLib'", ex.Message);
+                Assert.Contains($"'{tpaDisplayName}'", ex.Message);
+                Assert.Contains(tpaPath, ex.Message);
+                Assert.Equal(HResults.FUSION_E_REF_DEF_MISMATCH, ex.HResult);
+            }
+            finally
+            {
+                try { File.Delete(v2Path); } catch { }
+            }
+        }
+
+        [ConditionalFact(typeof(AssemblyLoadContextTest), nameof(IsRemoteExecutorSupportedAndCoreCLR))]
+        public static void LoadFromAssemblyPath_DefaultAlc_NonTpaAssembly_MvidMismatch()
+        {
+            RemoteExecutor.Invoke(static () =>
+            {
+                string v1Path = ExtractEmbeddedAssembly("System.Runtime.Loader.Tests.AssemblyVersion1");
+                string v2Path = ExtractEmbeddedAssembly("System.Runtime.Loader.Tests.AssemblyVersion2");
+
+                try
+                {
+                    Assembly loaded = AssemblyLoadContext.Default.LoadFromAssemblyPath(v1Path);
+                    string v1DisplayName = loaded.GetName().FullName;
+
+                    var ex = Assert.Throws<FileLoadException>(() => AssemblyLoadContext.Default.LoadFromAssemblyPath(v2Path));
+                    Assert.Contains("'System.Runtime.Loader.Test.VersionDowngrade'", ex.Message);
+                    Assert.Contains($"'{v1DisplayName}'", ex.Message);
+                    Assert.Contains(v1Path, ex.Message);
+                    Assert.Equal(HResults.COR_E_FILELOAD, ex.HResult);
+                }
+                finally
+                {
+                    try { File.Delete(v1Path); } catch { }
+                    try { File.Delete(v2Path); } catch { }
+                }
+            }).Dispose();
+        }
+
+        private static bool IsRemoteExecutorSupportedAndCoreCLR => RemoteExecutor.IsSupported && PlatformDetection.IsAssemblyLoadingSupported && PlatformDetection.IsCoreCLR;
+
+        private static string ExtractEmbeddedAssembly(string name)
+        {
+            string tempPath = Path.Combine(Path.GetTempPath(), $"{Path.GetFileNameWithoutExtension(name)}_{Guid.NewGuid()}.dll");
+            using Stream resourceStream = typeof(AssemblyLoadContextTest).Assembly.GetManifestResourceStream($"{name}.dll");
+            Assert.NotNull(resourceStream);
+            using FileStream fileStream = File.Create(tempPath);
+            resourceStream.CopyTo(fileStream);
+
+            return tempPath;
+        }
+    }
+
+    public class InvalidCastSharedType
+    {
+    }
+}

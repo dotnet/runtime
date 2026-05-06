@@ -1,0 +1,65 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-linux;$(NetCoreAppCurrent)-osx;$(NetCoreAppCurrent)-maccatalyst;$(NetCoreAppCurrent)-freebsd</TargetFrameworks>
+    <IgnoreForCI Condition="'$(TargetOS)' == 'browser' or '$(TargetOS)' == 'iossimulator' or '$(TargetOS)' == 'ios' or '$(TargetOS)' == 'tvossimulator' or '$(TargetOS)' == 'tvos'">true</IgnoreForCI>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="AssemblyInfo.cs" />
+    <Compile Include="FileSystemWatcher.cs" />
+    <Compile Include="InternalBufferOverflowException.cs" />
+    <Compile Include="Args.ErrorEventArgs.cs" />
+    <Compile Include="Args.FileSystemEventArgs.cs" />
+    <Compile Include="Args.RenamedEventArgs.cs" />
+    <Compile Include="FileSystemWatcher.Directory.Changed.cs" />
+    <Compile Include="FileSystemWatcher.Directory.Create.cs" />
+    <Compile Include="FileSystemWatcher.Directory.Delete.cs" />
+    <Compile Include="FileSystemWatcher.Directory.Move.cs" />
+    <Compile Include="FileSystemWatcher.Directory.NotifyFilter.cs" />
+    <Compile Include="FileSystemWatcher.File.Changed.cs" />
+    <Compile Include="FileSystemWatcher.File.Create.cs" />
+    <Compile Include="FileSystemWatcher.File.Delete.cs" />
+    <Compile Include="FileSystemWatcher.File.Move.cs" />
+    <Compile Include="FileSystemWatcher.File.NotifyFilter.cs" />
+    <Compile Include="FileSystemWatcher.InternalBufferSize.cs" />
+    <Compile Include="FileSystemWatcher.MultipleWatchers.cs" />
+    <Compile Include="FileSystemWatcher.SymbolicLink.cs" />
+    <Compile Include="FileSystemWatcher.WaitForChanged.cs" />
+    <Compile Include="FileSystemWatcher.unit.cs" />
+    <!-- Helpers -->
+    <Compile Include="Utility\TestFileSystemWatcher.cs" />
+    <Compile Include="Utility\FileSystemWatcherTest.cs" />
+    <Compile Include="$(CommonPath)DisableRuntimeMarshalling.cs"
+             Link="Common\DisableRuntimeMarshalling.cs" />
+    <Compile Include="$(CommonTestPath)System\IO\TempFile.cs"
+             Link="Common\System\IO\TempFile.cs" />
+    <Compile Include="$(CommonTestPath)System\IO\TempDirectory.cs"
+             Link="Common\System\IO\TempDirectory.cs" />
+    <Compile Include="$(CommonTestPath)System\IO\ReparsePointUtilities.cs"
+             Link="Common\System\IO\ReparsePointUtilities.cs" />
+    <Compile Include="$(CommonTestPath)System\Threading\ThreadTestHelpers.cs"
+             Link="Common\System\Threading\ThreadTestHelpers.cs" />
+    <Compile Include="$(CommonTestPath)TestUtilities\System\DisableParallelization.cs"
+             Link="Common\TestUtilities\System\DisableParallelization.cs" />
+    <Compile Include="$(CommonPath)System\IO\PathInternal.cs"
+             Link="Common\System\IO\PathInternal.cs" />
+    <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs"
+             Link="Common\System\Text\ValueStringBuilder.cs" />
+  </ItemGroup>
+  <ItemGroup Condition=" '$(TargetPlatformIdentifier)' == 'windows'">
+    <Compile Include="$(CommonPath)System\IO\PathInternal.Windows.cs"
+             Link="Common\System\IO\PathInternal.Windows.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' != 'windows'">
+    <Compile Include="$(CommonPath)System\IO\PathInternal.Unix.cs"
+             Link="Common\System\IO\PathInternal.Unix.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'linux' or '$(TargetPlatformIdentifier)' == 'osx'">
+    <Compile Include="FileSystemWatcher.Unix.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs"
+             Link="Common\Interop\Unix\Interop.Libraries.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.ResourceLimits.cs"
+             Link="Common\Interop\Unix\System.Native\Interop.ResourceLimits.cs" />
+  </ItemGroup>
+</Project>

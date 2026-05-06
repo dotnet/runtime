@@ -1,0 +1,5 @@
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema"  elementFormDefault="qualified" attributeFormDefault="unqualified" targetNamespace="a" xmlns="a">
+
+<xsd:import namespace="http://www.w3.org/XML/1998/namespace" schemaLocation="bug264908_v1.xsd"/>
+
+</xsd:schema>

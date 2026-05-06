@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TestedRoslynVersion>3.11</TestedRoslynVersion>
+    <!-- https://github.com/dotnet/runtime/issues/126862 -->
+    <EnableTrimAnalyzer>false</EnableTrimAnalyzer>
+    <EnableAotAnalyzer>false</EnableAotAnalyzer>
+  </PropertyGroup>
+
+  <Import Project="System.Text.Json.SourceGeneration.Tests.targets" />
+
+  <ItemGroup>
+    <RdXmlFile Include="roslyn3.11.rd.xml" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(ContinuousIntegrationBuild)' == 'true'">
+    <HighAotMemoryUsageAssembly Include="System.Text.Json.SourceGeneration.Roslyn3.11.Tests.dll"/>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\gen\System.Text.Json.SourceGeneration.Roslyn3.11.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="..\System.Text.Json.SourceGeneration.TestLibrary\System.Text.Json.TestLibrary.Roslyn3.11.csproj" />
+  </ItemGroup>
+</Project>

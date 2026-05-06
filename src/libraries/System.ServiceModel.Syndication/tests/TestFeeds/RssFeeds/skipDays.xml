@@ -1,0 +1,15 @@
+<!--
+  Description:  skipDays contains 1 valid day
+  Expect:       ValidDay{parent:skipDays,element:day}
+-->
+
+<rss version="2.0">
+<channel>
+<title>RSS 2.0 test case</title>
+<link>http://www.contoso.com/testcases/rss20/</link>
+<description>skipDays contains 1 valid day</description>
+<skipDays>
+<day>Monday</day>
+</skipDays>
+</channel>
+</rss>

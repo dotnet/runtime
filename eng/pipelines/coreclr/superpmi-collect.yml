@@ -1,0 +1,30 @@
+# This job definition automates the SuperPMI collection process for the "production" pipeline.
+
+# Trigger this job if the JIT-EE GUID changes, which invalidates previous SuperPMI
+# collections.
+trigger:
+  batch: false
+  branches:
+    include:
+    - main
+  paths:
+    include:
+    - src/coreclr/inc/jiteeversionguid.h
+
+# This pipeline is supposed to be run only on merged changes
+# and should not be triggerable from a PR.
+pr: none
+
+schedules:
+- cron: "0 17 * * 0"
+  displayName: Sun at 9:00 AM (UTC-8:00)
+  branches:
+    include:
+    - main
+  always: true
+
+variables:
+  - template: /eng/pipelines/common/variables.yml
+
+extends:
+  template: /eng/pipelines/coreclr/templates/superpmi-collect-pipeline.yml

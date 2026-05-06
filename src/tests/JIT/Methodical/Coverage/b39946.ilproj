@@ -1,0 +1,7 @@
+<Project Sdk="Microsoft.NET.Sdk.IL">
+  <PropertyGroup>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="b39946.il" />
+  </ItemGroup>
+</Project>

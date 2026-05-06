@@ -1,0 +1,13 @@
+<!--
+  Description:  webMaster cannot include name and email in parentheses
+  Expect:       InvalidContact{parent:channel,element:webMaster}
+-->
+
+<rss version="2.0">
+<channel>
+<title>Invalid webMaster</title>
+<link>http://contoso.com/rss/2.0/</link>
+<description>webMaster must include email address</description>
+<webMaster>webmastere@contoso.com</webMaster>
+</channel>
+</rss>

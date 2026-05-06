@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.Build.Traversal">
+
+  <PropertyGroup>
+    <TargetFramework>$(NetCoreAppCurrent)-$(TargetOS)</TargetFramework>
+    <!-- By default, build the NetCoreAppCurrent vertical only. -->
+    <BuildTargetFramework Condition="'$(BuildAllConfigurations)' != 'true'">$(NetCoreAppCurrent)</BuildTargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(BuildTargetFramework)' == '$(NetCoreAppCurrent)' or '$(BuildTargetFramework)' == ''">
+    <ProjectReference Include="sfx-src.proj" />
+    <ProjectReference Include="oob-src.proj" />
+
+    <ProjectReference Include="apicompat\ApiCompat.proj"
+                      Condition="'$(DotNetBuildSourceOnly)' != 'true' and '$(ApiCompatValidateAssemblies)' != 'false'" />
+
+    <ProjectReference Include="oob-trim.proj" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(BuildTargetFramework)' != '$(NetCoreAppCurrent)' or '$(BuildTargetFramework)' == ''">
+    <ProjectReference Include="oob-all.proj" SkipGetTargetFrameworkProperties="true" />
+    <!-- Skip building all source generators when building from source as that would bring new prebuilts in. -->
+    <ProjectReference Include="oob-gen.proj" Condition="'$(DotNetBuildSourceOnly)' != 'true'" />
+  </ItemGroup>
+
+  <Target Name="SetAzureDevOpsVariableForBuiltPackages"
+          Condition="'$(ContinuousIntegrationBuild)' == 'true'"
+          AfterTargets="Build;Pack">
+    <Message Condition="Exists('$(ArtifactsDir)packages')" Importance="High" Text="##vso[task.setvariable variable=_librariesBuildProducedPackages]true" />
+  </Target>
+
+</Project>

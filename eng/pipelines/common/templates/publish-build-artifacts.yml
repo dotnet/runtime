@@ -1,0 +1,22 @@
+parameters:
+  - name: isOfficialBuild
+    type: boolean
+  - name: displayName
+    type: string
+  - name: inputs
+    type: object
+  - name: condition
+    type: string
+    default: ''
+
+steps:
+  - ${{ if parameters.isOfficialBuild }}:
+    - task: 1ES.PublishBuildArtifacts@1
+      displayName: ${{ parameters.displayName }}
+      inputs: ${{ parameters.inputs }}
+      condition: ${{ parameters.condition }}
+  - ${{ else }}:
+    - task: PublishBuildArtifacts@1
+      displayName: ${{ parameters.displayName }}
+      inputs: ${{ parameters.inputs }}
+      condition: ${{ parameters.condition }}

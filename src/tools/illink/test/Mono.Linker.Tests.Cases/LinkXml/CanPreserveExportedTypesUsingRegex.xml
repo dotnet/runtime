@@ -1,0 +1,6 @@
+<linker>
+  <assembly fullname="Forwarder, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
+    <type fullname="Can*" preserve="all">
+    </type>
+  </assembly>
+</linker>

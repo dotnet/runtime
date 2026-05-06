@@ -1,0 +1,49 @@
+<Project Sdk="Microsoft.Build.Traversal">
+
+  <PropertyGroup>
+    <TargetFramework>$(NetCoreAppCurrent)-$(TargetOS)</TargetFramework>
+    <!-- Filter ProjectReferences to build the best matching target framework only. -->
+    <FilterTraversalProjectReferences>true</FilterTraversalProjectReferences>
+    <!-- In non-official builds, build RID-specific projects -->
+    <BuildRidSpecificProjects Condition="'$(BuildingAnOfficialBuildLeg)' != 'true'">true</BuildRidSpecificProjects>
+    <!-- In the VMR, we're always in a RID-specific leg. -->
+    <BuildRidSpecificProjects Condition="'$(BuildRidSpecificProjects)' == '' and
+                                         '$(DotNetBuildFromVMR)' == 'true'">true</BuildRidSpecificProjects>
+    <!--
+      Outside the VMR, only RID-specific packages in official build legs when we're not building AllConfigurations,
+      but we're building everything for this RID target (ie don't build on specialized legs like Mono LLVMAOT).
+    -->
+    <BuildRidSpecificProjects Condition="'$(BuildRidSpecificProjects)' == '' and
+                                         '$(BuildAllConfigurations)' != 'true' and
+                                         '$(DotNetBuildAllRuntimePacks)' == 'true'">true</BuildRidSpecificProjects>
+  </PropertyGroup>
+
+  <!-- Reference all NetCoreAppCurrent out-of-band src projects. -->
+  <ItemGroup>
+    <ProjectReference Include="$(MSBuildThisFileDirectory)*\src\*.*proj"
+                      Exclude="@(ProjectExclusions);
+                               $(MSBuildThisFileDirectory)*\src\*.shproj;
+                               shims\src\*.csproj;
+                               @(NetCoreAppLibrary->'%(Identity)\src\%(Identity).csproj');
+                               Microsoft.VisualBasic.Core\src\Microsoft.VisualBasic.Core.vbproj" />
+
+    <!-- During an official Build, build the rid specific package matching the TargetRid only when building all runtime packs.
+         The limitation on DotNetBuildAllRuntimePacks avoids duplicate assets being publish. -->
+    <ProjectReference Include="$(MSBuildThisFileDirectory)*\pkg\runtime.$(TargetRid).*.proj"
+                      Condition="'$(SkipLibrariesNativeRuntimePackages)' != 'true' and
+                                 '$(BuildRidSpecificProjects)' == 'true'" />
+
+    <!-- Don't build task and tools project in the NetCoreAppCurrent vertical. -->
+    <ProjectReference Remove="Microsoft.XmlSerializer.Generator\src\Microsoft.XmlSerializer.Generator.csproj" />
+
+    <!-- Don't build meta-projects in the NetCoreAppCurrent vertical. -->
+    <ProjectReference Remove="Microsoft.Internal.Runtime.AspNetCore.Transport\src\Microsoft.Internal.Runtime.AspNetCore.Transport.proj;
+                              Microsoft.Internal.Runtime.WindowsDesktop.Transport\src\Microsoft.Internal.Runtime.WindowsDesktop.Transport.proj;
+                              Microsoft.Internal.Runtime.DotNetApiDocs.Transport\src\Microsoft.Internal.Runtime.DotNetApiDocs.Transport.proj" />
+
+    <!-- Skip these projects during source-build as they rely on external prebuilts. -->
+    <ProjectReference Remove="Microsoft.Extensions.DependencyInjection.Specification.Tests\src\Microsoft.Extensions.DependencyInjection.Specification.Tests.csproj"
+                      Condition="'$(DotNetBuildSourceOnly)' == 'true'" />
+  </ItemGroup>
+
+</Project>

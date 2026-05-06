@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <CLRTestPriority>1</CLRTestPriority>
+    <DefineConstants>$(DefineConstants);XASSEM</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup>
+    <Optimize>False</Optimize>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="test2.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="teststr.csproj" />
+    <ProjectReference Include="testgenstr.csproj" />
+  </ItemGroup>
+</Project>

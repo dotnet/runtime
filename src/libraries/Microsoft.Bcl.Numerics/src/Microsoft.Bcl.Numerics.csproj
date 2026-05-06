@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>netstandard2.0;$(NetFrameworkMinimum);netstandard2.1</TargetFrameworks>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <IsPackable>true</IsPackable>
+    <!-- This assembly should never be placed inbox as it is only for downlevel compatibility. -->
+    <PackageDescription>Provides the System.MathF for .NET Standard 2.0</PackageDescription>
+  </PropertyGroup>
+
+  <Choose>
+    <When Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'netstandard2.1'))">
+      <ItemGroup>
+        <Compile Include="Microsoft.Bcl.Numerics.Forwards.cs" />
+      </ItemGroup>
+    </When>
+  
+    <Otherwise>
+      <ItemGroup>
+        <Compile Include="System\MathF.cs" />
+      </ItemGroup>
+    </Otherwise>
+  </Choose>
+
+</Project>

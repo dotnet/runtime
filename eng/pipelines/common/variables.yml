@@ -1,0 +1,61 @@
+parameters:
+  - name: templatePath
+    type: string
+    default: 'templates'
+
+variables:
+
+# These values enable longer delays, configurable number of retries, and special understanding of TCP hang-up
+# See https://github.com/NuGet/Home/issues/11027 for details
+- name: NUGET_ENABLE_EXPERIMENTAL_HTTP_RETRY
+  value: true
+- name: NUGET_EXPERIMENTAL_MAX_NETWORK_TRY_COUNT
+  value: 6
+- name: NUGET_EXPERIMENTAL_NETWORK_RETRY_DELAY_MILLISECONDS
+  value: 1000
+
+# disable CodeQL if we're not in the dedicated pipeline for it
+- name: Codeql.Enabled
+  value: ${{ eq(variables['Build.DefinitionName'], 'dotnet-runtime-codeql') }}
+
+- name: isOfficialBuild
+  value: ${{ and(eq(variables['System.TeamProject'], 'internal'), eq(variables['Build.DefinitionName'], 'dotnet-runtime-official')) }}
+- name: isRollingBuild
+  value: ${{ ne(variables['Build.Reason'], 'PullRequest') }}
+- name: isExtraPlatformsBuild
+  value: ${{ eq(variables['Build.DefinitionName'], 'runtime-extra-platforms') }}
+- name: isNotExtraPlatformsBuild
+  value: ${{ ne(variables['Build.DefinitionName'], 'runtime-extra-platforms') }}
+- name: isWasmOnlyBuild
+  value: ${{ in(variables['Build.DefinitionName'], 'runtime-wasm', 'runtime-wasm-libtests', 'runtime-wasm-non-libtests', 'runtime-wasm-dbgtests', 'runtime-wasm-optional') }}
+- name: isiOSLikeOnlyBuild
+  value: ${{ in(variables['Build.DefinitionName'], 'runtime-ioslike') }}
+- name: isiOSLikeSimulatorOnlyBuild
+  value: ${{ in(variables['Build.DefinitionName'], 'runtime-ioslikesimulator') }}
+- name: isAndroidOnlyBuild
+  value: ${{ in(variables['Build.DefinitionName'], 'runtime-android') }}
+- name: isAndroidEmulatorOnlyBuild
+  value: ${{ in(variables['Build.DefinitionName'], 'runtime-androidemulator') }}
+- name: isMacCatalystOnlyBuild
+  value: ${{ in(variables['Build.DefinitionName'], 'runtime-maccatalyst') }}
+- name: isLinuxBionicOnlyBuild
+  value: ${{ in(variables['Build.DefinitionName'], 'runtime-linuxbionic') }}
+- name: isRunSmokeTestsOnly
+  value: ${{ notin(variables['Build.DefinitionName'], 'runtime-extra-platforms', 'runtime-wasm', 'runtime-wasm-libtests', 'runtime-wasm-non-libtests', 'runtime-ioslike', 'runtime-ioslikesimulator', 'runtime-android', 'runtime-androidemulator', 'runtime-maccatalyst', 'runtime-linuxbionic') }}
+- name: isNotSpecificPlatformOnlyBuild
+  value: ${{ notin(variables['Build.DefinitionName'], 'runtime-wasm', 'runtime-wasm-libtests', 'runtime-wasm-non-libtests', 'runtime-ioslike', 'runtime-ioslikesimulator', 'runtime-android', 'runtime-androidemulator', 'runtime-maccatalyst', 'runtime-linuxbionic') }}
+
+- name: debugOnPrReleaseOnRolling
+  ${{ if ne(variables['Build.Reason'], 'PullRequest') }}:
+    value: Release
+  ${{ if eq(variables['Build.Reason'], 'PullRequest') }}:
+    value: Debug
+
+- name: isDefaultPipeline
+  value: $[ and(
+              ne(variables['isWasmOnlyBuild'], true),
+              or(
+                ne(variables['isExtraPlatformsBuild'], true),
+                eq(variables['isRollingBuild'], true))) ]
+
+- template: /eng/common/${{ parameters.templatePath }}/variables/pool-providers.yml

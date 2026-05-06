@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppCurrent)-windows;$(NetFrameworkCurrent)</TargetFrameworks>
+    <EventSourceSupport>true</EventSourceSupport>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="AssemblyInfo.cs" />
+    <Compile Include="AdditionalCacheTests\AdditionalCacheTests.cs" />
+    <Compile Include="Common\PokerChangeMonitor.cs" />
+    <Compile Include="Common\PokerMemoryCache.cs" />
+    <Compile Include="Common\PokerObjectCache.cs" />
+    <Compile Include="Common\TestNotificationSystem.cs" />
+    <Compile Include="System.Runtime.Caching\HostFileChangeMonitorTest.cs" />
+    <Compile Include="System.Runtime.Caching\CountersTest.cs" />
+    <Compile Include="System.Runtime.Caching\ObjectCacheTest.cs" />
+    <Compile Include="System.Runtime.Caching\MemoryCacheTest.cs" />
+    <Compile Include="$(CommonTestPath)System\Diagnostics\Tracing\TestEventListener.cs" Link="Common\System\Diagnostics\Tracing\TestEventListener.cs" />
+
+    <TrimmerRootDescriptor Include="$(MSBuildThisFileDirectory)ILLink.Descriptors.xml" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
+    <ProjectReference Include="..\src\System.Runtime.Caching.csproj" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
+    <Reference Include="System.Runtime.Caching" />
+  </ItemGroup>
+</Project>

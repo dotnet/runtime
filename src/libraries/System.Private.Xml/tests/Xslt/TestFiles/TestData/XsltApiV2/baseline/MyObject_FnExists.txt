@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8" ?> 
+<result xmlns:myObj="urn:my-object">
+	<DoNothing>Test Pass</DoNothing> 
+	<Constructor /> 
+	<ReturnInt>Test Pass</ReturnInt> 
+	<ReturnString>Test Pass</ReturnString> 
+	<ReturnInt>Test Pass</ReturnInt> 
+	<Arguments>Test Pass</Arguments> 
+	<Public>Test Pass</Public> 
+	<Protected /> 
+	<Private /> 
+	<Default /> 
+</result>

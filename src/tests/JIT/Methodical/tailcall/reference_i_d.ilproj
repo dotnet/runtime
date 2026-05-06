@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk.IL">
+  <PropertyGroup>
+    <DebugType>Full</DebugType>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="reference_i_d.il" />
+    <Compile Include="reference_i.il" />
+  </ItemGroup>
+</Project>

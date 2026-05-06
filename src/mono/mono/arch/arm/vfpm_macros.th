@@ -1,0 +1,14 @@
+/* -- <Op> -- */
+
+
+/* Fd := <Op> Fm */
+
+#define ARM_<Op>D_COND(p,dreg,sreg,cond) \
+        ARM_EMIT((p), ARM_DEF_VFP_MONADIC((cond),ARM_VFP_COPROC_DOUBLE,ARM_VFP_<Op>,(dreg),(sreg)))
+#define ARM_<Op>D(p,dreg,sreg)      ARM_<Op>D_COND(p,dreg,sreg,ARMCOND_AL)
+
+#define ARM_<Op>S_COND(p,dreg,sreg,cond) \
+        ARM_EMIT((p), ARM_DEF_VFP_MONADIC((cond),ARM_VFP_COPROC_SINGLE,ARM_VFP_<Op>,(dreg),(sreg)))
+#define ARM_<Op>S(p,dreg,sreg)      ARM_<Op>S_COND(p,dreg,sreg,ARMCOND_AL)
+
+

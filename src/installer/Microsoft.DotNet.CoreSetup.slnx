@@ -1,0 +1,38 @@
+<Solution>
+  <Configurations>
+    <BuildType Name="Debug" />
+    <BuildType Name="MinSizeRel" />
+    <BuildType Name="Release" />
+    <BuildType Name="RelWithDebInfo" />
+    <Platform Name="Any CPU" />
+    <Platform Name="x64" />
+  </Configurations>
+  <Folder Name="/Solution Items/">
+    <File Path="global.json" />
+    <File Path="NuGet.Config" />
+  </Folder>
+  <Project Path="managed/Microsoft.NET.HostModel/Microsoft.NET.HostModel.csproj">
+    <BuildType Solution="MinSizeRel|*" Project="Debug" />
+    <BuildType Solution="RelWithDebInfo|*" Project="Release" />
+  </Project>
+  <Project Path="tests/AppHost.Bundle.Tests/AppHost.Bundle.Tests.csproj">
+    <BuildType Solution="MinSizeRel|*" Project="Debug" />
+    <BuildType Solution="RelWithDebInfo|*" Project="Release" />
+  </Project>
+  <Project Path="tests/HostActivation.Tests/HostActivation.Tests.csproj">
+    <BuildType Solution="MinSizeRel|*" Project="Debug" />
+    <BuildType Solution="RelWithDebInfo|*" Project="Release" />
+  </Project>
+  <Project Path="tests/Microsoft.DotNet.CoreSetup.Packaging.Tests/Microsoft.DotNet.CoreSetup.Packaging.Tests.csproj">
+    <BuildType Solution="MinSizeRel|*" Project="Debug" />
+    <BuildType Solution="RelWithDebInfo|*" Project="Release" />
+  </Project>
+  <Project Path="tests/Microsoft.NET.HostModel.Tests/Microsoft.NET.HostModel.Tests.csproj">
+    <BuildType Solution="MinSizeRel|*" Project="Debug" />
+    <BuildType Solution="RelWithDebInfo|*" Project="Release" />
+  </Project>
+  <Project Path="tests/TestUtils/TestUtils.csproj">
+    <BuildType Solution="MinSizeRel|*" Project="Debug" />
+    <BuildType Solution="RelWithDebInfo|*" Project="Release" />
+  </Project>
+</Solution>

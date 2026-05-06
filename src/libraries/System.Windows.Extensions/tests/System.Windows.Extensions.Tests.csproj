@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>$(NetCoreAppCurrent)-windows</TargetFramework>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="X509Certificate2UITests.cs" />
+    <Compile Include="X509Certificate2UIManualTests.cs" />
+    <Compile Include="XamlAccessLevelTests.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="$(CommonTestPath)System\Drawing\Helpers.cs"
+             Link="Common\System\Drawing\Helpers.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="System\Media\SoundPlayerTests.cs" />
+    <Compile Include="System\Media\SystemSoundTests.cs" />
+    <Compile Include="System\Media\SystemSoundsTests.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="System.ComponentModel.TypeConverter.TestData" Version="$(SystemComponentModelTypeConverterTestDataVersion)" />
+    <PackageReference Include="System.Drawing.Common" Version="$(SystemDrawingCommonVersion)" />
+    <PackageReference Include="System.Drawing.Common.TestData" Version="$(SystemDrawingCommonTestDataVersion)" />
+    <PackageReference Include="System.Windows.Extensions.TestData" Version="$(SystemWindowsExtensionsTestDataVersion)" />
+    <ProjectReference Include="..\src\System.Windows.Extensions.csproj" />
+  </ItemGroup>
+</Project>
