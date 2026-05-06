@@ -74,15 +74,27 @@
 
   <!-- ======================== Entry Points ======================== -->
 
-  <!-- Build entry point: runs after Build when WasmBuildNative is true -->
+  <!-- Auto-enable native relink based on project configuration. Mirrors a subset of
+       the Mono path's _SetWasmBuildNativeDefaults (WasmApp.Common.targets). -->
+  <Target Name="_CoreCLRSetWasmBuildNativeDefaults"
+          Condition="'$(IsBrowserWasmProject)' == 'true' and '$(IsCrossTargetingBuild)' != 'true'">
+    <PropertyGroup>
+      <!-- A project that references native files needs a relink to embed them.
+           NativeLibrary items are converted to NativeFileReference items later in the
+           flow (in _CoreCLRPrepareForNativeBuild) so we have to inspect both here. -->
+      <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and (@(NativeFileReference->Count()) &gt; 0 or @(NativeLibrary->Count()) &gt; 0)">true</WasmBuildNative>
+    </PropertyGroup>
+  </Target>
+
+  <!-- Build entry point: runs after Build. The inner _CoreCLRWasmBuildAppCore is
+       gated on WasmBuildNative='true', so when no relink is needed this is a no-op. -->
   <Target Name="WasmBuildApp"
           AfterTargets="$(WasmBuildAppAfterThisTarget)"
           Condition="'$(IsBrowserWasmProject)' == 'true' and
-                     '$(WasmBuildNative)' == 'true' and
                      '$(WasmBuildingForNestedPublish)' != 'true' and
                      '$(WasmBuildOnlyAfterPublish)' != 'true' and
                      '$(IsCrossTargetingBuild)' != 'true'"
-          DependsOnTargets="_CoreCLRWasmBuildAppCore" />
+          DependsOnTargets="_CoreCLRSetWasmBuildNativeDefaults;_CoreCLRWasmBuildAppCore" />
 
   <!-- Publish entry point: triggers nested publish for browser-wasm projects -->
   <Target Name="WasmTriggerPublishApp"
@@ -108,7 +120,7 @@
   <!-- Nested publish invocation -->
   <Target Name="WasmNestedPublishApp"
           Condition="'$(WasmBuildingForNestedPublish)' == 'true'"
-          DependsOnTargets="ResolveRuntimePackAssets;$(_WasmNestedPublishAppPreTarget);$(WasmNestedPublishAppDependsOn);_CoreCLRWasmBuildAppCore"
+          DependsOnTargets="ResolveRuntimePackAssets;$(_WasmNestedPublishAppPreTarget);$(WasmNestedPublishAppDependsOn);_CoreCLRSetWasmBuildNativeDefaults;_CoreCLRWasmBuildAppCore"
           Returns="@(WasmAssembliesFinal);@(WasmNativeAsset)" />
 
   <!-- ======================== Core Orchestrator ======================== -->
