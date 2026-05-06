@@ -4460,9 +4460,8 @@ do                                                                      \
                     callArgsOffset = pMethod->allocaSize;
                     // Pass argument to the target method
                     LOCAL_VAR(callArgsOffset, int32_t) = resumed;
-                    LOCAL_VAR(callArgsOffset + INTERP_STACK_SLOT_SIZE * 1, OBJECTREF) = thread;
-                    LOCAL_VAR(callArgsOffset + INTERP_STACK_SLOT_SIZE * 2, OBJECTREF) = executionContext;
-                    LOCAL_VAR(callArgsOffset + INTERP_STACK_SLOT_SIZE * 3, OBJECTREF) = syncContext;
+                    LOCAL_VAR(callArgsOffset + INTERP_STACK_SLOT_SIZE, OBJECTREF) = executionContext;
+                    LOCAL_VAR(callArgsOffset + INTERP_STACK_SLOT_SIZE * 2, OBJECTREF) = syncContext;
                     targetMethod = restoreContextsMethod;
                     ip += 6;
                     goto CALL_INTERP_METHOD;

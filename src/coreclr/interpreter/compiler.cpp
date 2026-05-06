@@ -6161,7 +6161,7 @@ void InterpCompiler::EmitSuspend(const CORINFO_CALL_INFO &callInfo, Continuation
         // Save the current execution context into the continuation
         AddIns(INTOP_RESTORE_CONTEXTS_ON_SUSPEND);
         m_pLastNewIns->data[0] = suspendDataIndex;
-        m_pLastNewIns->SetSVars3(varAllocatedContinuation, m_continuationArgIndex, m_threadObjVarIndex /* We know the contexts immediately follow */);
+        m_pLastNewIns->SetSVars3(varAllocatedContinuation, m_continuationArgIndex, m_execContextVarIndex /* We know the sync context immediately follows */);
         PushInterpType(InterpTypeO, NULL);
         varAllocatedContinuation = m_pStackPointer[-1].var;
         m_pStackPointer--;
@@ -8276,7 +8276,7 @@ void InterpCompiler::GenerateCode(CORINFO_METHOD_INFO* methodInfo)
         m_pLastNewIns->info.pCallInfo = new (getAllocator(IMK_CallInfo)) InterpCallInfo();
         int32_t numArgs = 3;
         int32_t *callArgs = getAllocator(IMK_CallInfo).allocate<int32_t>(numArgs + 1);
-        callArgs[1] = threadAddressVar;
+        callArgs[0] = threadAddressVar;
         callArgs[1] = execContextAddressVar;
         callArgs[2] = syncContextAddressVar;
         callArgs[3] = CALL_ARGS_TERMINATOR;
