@@ -883,7 +883,7 @@ void emitter::emitBegCG(Compiler* comp, COMP_HANDLE cmpHandle)
     m_compiler      = comp;
     emitCmpHandle   = cmpHandle;
     m_debugInfoSize = sizeof(instrDescDebugInfo*);
-#if !defined(DEBUG) && !defined(TARGET_WASM)
+#ifndef DEBUG
     if (!comp->opts.disAsm)
         m_debugInfoSize = 0;
 #endif
@@ -10590,7 +10590,7 @@ void emitter::emitRecordCallSite(ULONG                 instrOffset,  /* IN */
                                  CORINFO_SIG_INFO*     callSig,      /* IN */
                                  CORINFO_METHOD_HANDLE methodHandle) /* IN */
 {
-#if defined(DEBUG) || defined(TARGET_WASM)
+#if defined(DEBUG)
     // Since CORINFO_SIG_INFO is a heavyweight structure, in most cases we can
     // lazily obtain it here using the given method handle (we only save the sig
     // info when we explicitly need it, i.e. for CALLI calls, vararg calls, and

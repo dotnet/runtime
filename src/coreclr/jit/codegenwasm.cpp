@@ -2480,14 +2480,12 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
         params.debugInfo = di;
     }
 
-#if defined(DEBUG) || defined(TARGET_WASM)
+#ifdef DEBUG
     // Pass the call signature information down into the emitter so the emitter can associate
     // native call sites with the signatures they were generated from.
     if (!call->IsHelperCall())
     {
-        _ASSERTE(call->callSig == NULL || params.hasAsyncRet == call->callSig->isAsyncCall());
-        params.sigInfo         = call->callSig;
-        params.isUnmanagedCall = call->IsUnmanaged();
+        params.sigInfo = call->callSig;
     }
 #endif // DEBUG
 

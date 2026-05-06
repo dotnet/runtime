@@ -206,14 +206,11 @@ void emitter::emitIns_Call(const EmitCallParams& params)
             unreached();
     }
 
-    _ASSERTE(m_debugInfoSize > 0); // We always need the idCallSig so we can properly report the call sites to the R2R
-                                   // compiler
     if (m_debugInfoSize > 0)
     {
-        id->idDebugOnlyInfo()->idCallSig         = params.sigInfo;
-        id->idDebugOnlyInfo()->idIsUnmanagedCall = params.isUnmanagedCall;
-        id->idDebugOnlyInfo()->idMemCookie       = (size_t)params.methHnd; // method token
-        id->idDebugOnlyInfo()->idFlags           = GTF_ICON_METHOD_HDL;
+        INDEBUG(id->idDebugOnlyInfo()->idCallSig = params.sigInfo);
+        id->idDebugOnlyInfo()->idMemCookie = (size_t)params.methHnd; // method token
+        id->idDebugOnlyInfo()->idFlags     = GTF_ICON_METHOD_HDL;
     }
 
     dispIns(id);
@@ -856,41 +853,6 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         emitDispIns(id, false, 0, true, emitCurCodeOffs(*dp), *dp, (dst - *dp), ig);
     }
 #endif
-
-    if ((ins == INS_call) || (ins == INS_return_call) || (ins == INS_call_indirect) ||
-        (ins == INS_return_call_indirect))
-    {
-        CORINFO_SIG_INFO sigInfoLocal;
-
-        CORINFO_SIG_INFO*     sigInfoCall  = id->idDebugOnlyInfo()->idCallSig;
-        CORINFO_METHOD_HANDLE methodHandle = (CORINFO_METHOD_HANDLE)id->idDebugOnlyInfo()->idMemCookie;
-
-        if (sigInfoCall == nullptr)
-        {
-            // For certain calls whose target is non-containable (e.g. tls access targets), `methodHandle`
-            // will be nullptr, because the target is present in a register.
-            if ((methodHandle != nullptr) && (Compiler::eeGetHelperNum(methodHandle) == CORINFO_HELP_UNDEF))
-            {
-                m_compiler->eeGetMethodSig(methodHandle, &sigInfoLocal);
-                sigInfoCall = &sigInfoLocal;
-            }
-        }
-
-        if (id->idDebugOnlyInfo()->idIsUnmanagedCall)
-        {
-            _ASSERTE(sigInfoCall != NULL);
-            if (sigInfoCall != &sigInfoLocal)
-            {
-                sigInfoLocal = *sigInfoCall;
-            }
-            // Unmanaged calls need to be reported with the unmanaged calling convention so that the R2R compiler can
-            // ignore this report for the purpose of determining if a call site needs to have a R2R to interpreter thunk
-            // generated
-            sigInfoLocal.callConv = CORINFO_CALLCONV_UNMANAGED;
-            sigInfoCall           = &sigInfoLocal;
-        }
-        emitRecordCallSite(emitCurCodeOffs(*dp), sigInfoCall, methodHandle);
-    }
 
     *dp = dst;
     return sz;

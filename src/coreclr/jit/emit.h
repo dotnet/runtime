@@ -474,7 +474,7 @@ struct EmitCallParams
 {
     EmitCallType          callType = EC_COUNT;
     CORINFO_METHOD_HANDLE methHnd  = NO_METHOD_HANDLE;
-#if defined(DEBUG) || defined(TARGET_WASM)
+#ifdef DEBUG
     // Used to report call sites to the EE
     CORINFO_SIG_INFO* sigInfo = nullptr;
 #endif
@@ -494,9 +494,6 @@ struct EmitCallParams
     ssize_t   disp        = 0;
     bool      isJump      = false;
     bool      noSafePoint = false;
-#ifdef TARGET_WASM
-    bool isUnmanagedCall = false;
-#endif
 #ifdef TARGET_WASM
     CORINFO_WASM_TYPE_SYMBOL_HANDLE wasmSignature = nullptr;
 #endif
@@ -644,19 +641,16 @@ protected:
 
     struct instrDescDebugInfo
     {
-        unsigned     idNum         = 0;
-        size_t       idSize        = 0;         // size of the instruction descriptor
-        unsigned     idVarRefOffs  = 0;         // IL offset for LclVar reference
-        unsigned     idVarRefOffs2 = 0;         // IL offset for 2nd LclVar reference (in case this is a pair)
-        size_t       idMemCookie   = 0;         // compile time handle (check idFlags)
-        GenTreeFlags idFlags       = GTF_EMPTY; // for determining type of handle in idMemCookie
-        bool         idFinallyCall = false;     // Branch instruction is a call to finally
-        bool         idCatchRet    = false;     // Instruction is for a catch 'return'
-#ifdef TARGET_WASM
-        bool idIsUnmanagedCall = false; // Instruction is for an unmanaged call
-#endif
-        CORINFO_SIG_INFO* idCallSig     = nullptr; // Used to report native call site signatures to the EE
-        BasicBlock*       idTargetBlock = nullptr; // Target block for branches
+        unsigned          idNum         = 0;
+        size_t            idSize        = 0;         // size of the instruction descriptor
+        unsigned          idVarRefOffs  = 0;         // IL offset for LclVar reference
+        unsigned          idVarRefOffs2 = 0;         // IL offset for 2nd LclVar reference (in case this is a pair)
+        size_t            idMemCookie   = 0;         // compile time handle (check idFlags)
+        GenTreeFlags      idFlags       = GTF_EMPTY; // for determining type of handle in idMemCookie
+        bool              idFinallyCall = false;     // Branch instruction is a call to finally
+        bool              idCatchRet    = false;     // Instruction is for a catch 'return'
+        CORINFO_SIG_INFO* idCallSig     = nullptr;   // Used to report native call site signatures to the EE
+        BasicBlock*       idTargetBlock = nullptr;   // Target block for branches
 
 #ifdef TARGET_WASM
         int      lclBaseIndex = 0;           // Base index of the WASM locals being declared
