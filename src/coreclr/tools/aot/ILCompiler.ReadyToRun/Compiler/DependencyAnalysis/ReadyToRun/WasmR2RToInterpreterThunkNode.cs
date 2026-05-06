@@ -99,7 +99,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             bool hasThis = !methodSignature.IsStatic;
 
             int[] offsets = new int[methodSignature.Length];
-            bool[] isIndirectArg = new bool[methodSignature.Length];
+            bool[] isIndirectStructArg = new bool[methodSignature.Length];
 
             int argIndex = 0;
             int argOffset;
@@ -107,7 +107,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             while ((argOffset = argit.GetNextOffset()) != TransitionBlock.InvalidOffset)
             {
                 offsets[argIndex] = argOffset;
-                isIndirectArg[argIndex] = argit.IsArgPassedByRef() && argit.IsValueType();
+                isIndirectStructArg[argIndex] = argit.IsArgPassedByRef() && argit.IsValueType();
                 argIndex++;
             }
 
@@ -189,7 +189,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     expressions.Add(I32.Const(0));
                     expressions.Add(I32.Store((ulong)currentOffset));
                 }
-                else if (isIndirectArg[i])
+                else if (isIndirectStructArg[i])
                 {
                     // Indirect struct — copy the exact contents from the incoming pointer
                     int structSize = paramType.GetElementSize().AsInt;

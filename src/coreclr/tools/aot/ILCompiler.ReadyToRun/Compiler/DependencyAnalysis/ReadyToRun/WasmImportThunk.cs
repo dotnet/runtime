@@ -127,14 +127,14 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             (ArgIterator argit, TransitionBlock transitionBlock) = GCRefMapBuilder.BuildArgIterator(methodSignature, _context);
 
             int[] offsets = new int[methodSignature.Length];
-            bool[] isIndirectArg = new bool[methodSignature.Length];
+            bool[] isIndirectStructArg = new bool[methodSignature.Length];
 
             int argIndex = 0;
             int argOffset;
             while ((argOffset = argit.GetNextOffset()) != TransitionBlock.InvalidOffset)
             {
                 offsets[argIndex] = argOffset;
-                isIndirectArg[argIndex] = argit.IsArgPassedByRef() && argit.IsValueType();
+                isIndirectStructArg[argIndex] = argit.IsArgPassedByRef() && argit.IsValueType();
                 argIndex++;
             }
 
@@ -207,7 +207,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
                 int currentOffset = offsets[i];
 
-                if (isIndirectArg[i])
+                if (isIndirectStructArg[i])
                 {
                     // Indirect struct — zero-fill the transition block slot instead of copying the byref pointer.
                     int structSize = paramType.GetElementSize().AsInt;
@@ -312,7 +312,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     continue;
                 }
 
-                if (isIndirectArg[i])
+                if (isIndirectStructArg[i])
                 {
                     // Indirect struct — pass the original byref pointer from the caller
                     expressions.Add(Local.Get(wasmLocalIndex));

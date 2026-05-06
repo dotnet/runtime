@@ -95,14 +95,14 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             // the byte offset into pArgs.
             int sizeOfTransitionBlock = transitionBlock.SizeOfTransitionBlock;
             int[] interpOffsets = new int[methodSignature.Length];
-            bool[] isIndirectArg = new bool[methodSignature.Length];
+            bool[] isIndirectStructArg = new bool[methodSignature.Length];
 
             int argIndex = 0;
             int argOffset;
             while ((argOffset = argit.GetNextOffset()) != TransitionBlock.InvalidOffset)
             {
                 interpOffsets[argIndex] = argOffset - sizeOfTransitionBlock;
-                isIndirectArg[argIndex] = argit.IsArgPassedByRef() && argit.IsValueType();
+                isIndirectStructArg[argIndex] = argit.IsArgPassedByRef() && argit.IsValueType();
                 argIndex++;
             }
 
@@ -181,7 +181,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     continue;
                 }
 
-                if (isIndirectArg[i])
+                if (isIndirectStructArg[i])
                 {
                     // Byreference struct — pass a pointer into the incoming pArgs buffer
                     expressions.Add(Local.Get(LocalPArgs));
@@ -219,7 +219,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             // call_indirect with the target R2R function's type signature
             expressions.Add(Local.Get(LocalPortableEntrypoint));
-            expressions.Add(I32.Load(0)); // load the actual function index from the type node
+            expressions.Add(I32.Load(0)); // load the actual function index from the portable entrypoint
             expressions.Add(ControlFlow.CallIndirect(targetTypeIndex, 0));
 
             // Handle wasm return value — pRet is already on the stack under the return value

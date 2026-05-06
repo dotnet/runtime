@@ -1055,7 +1055,7 @@ it knows a hidden retbuf pointer argument is present in the Wasm parameter list.
 | `l` | `i64` parameter |
 | `f` | `f32` parameter |
 | `d` | `f64` parameter |
-| `S<N>` | struct parameter passed by reference, `N` is the struct size in bytes |
+| `S<N>` | struct parameter passed by reference, `<N>` is the struct size in bytes |
 | `e` | empty struct parameter — elided from Wasm args but present in the string |
 
 **Suffix**:
