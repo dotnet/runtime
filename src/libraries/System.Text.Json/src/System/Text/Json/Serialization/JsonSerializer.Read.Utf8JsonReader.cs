@@ -472,6 +472,8 @@ namespace System.Text.Json
             }
 
             Debug.Assert(!valueSpan.IsEmpty ^ !valueSequence.IsEmpty);
+            Debug.Assert(lineNumber >= 0);
+            Debug.Assert(bytePositionInLine >= 0);
 
             // Carry only the position information and reader options to the scoped reader
             // so that any JsonException it raises reports a position relative to the original input.

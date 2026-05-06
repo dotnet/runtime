@@ -950,6 +950,84 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(expectedLine, ex.LineNumber);
             Assert.Equal(expectedBytePosition, ex.BytePositionInLine);
         }
+
+        [Theory]
+        [InlineData("[ /* comment */ 42 ]", typeof(string), 0, 18)]
+        [InlineData("[ // comment\n42 ]", typeof(string), 1, 2)]
+        [InlineData("[ /* comment */ true ]", typeof(int), 0, 20)]
+        [InlineData("[ /* comment */ false ]", typeof(int), 0, 21)]
+        [InlineData("[ /* comment */ null ]", typeof(int), 0, 20)]
+        [InlineData("[ /* comment */ \"hello\" ]", typeof(int), 0, 23)]
+        [InlineData("[ /* comment */ {\"key\":1} ]", typeof(string), 0, 17)]
+        [InlineData("[ /* comment */ [1,2] ]", typeof(string), 0, 17)]
+        [InlineData("[ /*\nmultiline\ncomment\n*/ 42 ]", typeof(string), 3, 5)]
+        [InlineData("[ /*\n*/ 42 ]", typeof(string), 1, 5)]
+        [InlineData("[ /*\nmultiline\n*/ {\"key\":1} ]", typeof(string), 2, 4)]
+        [InlineData("[ /*\nmultiline\n*/ [1,2] ]", typeof(string), 2, 4)]
+        [InlineData("[ /*\nmultiline\n*/ \"hello\" ]", typeof(int), 2, 10)]
+        public static void ReaderPreservesPositionInfoWithSkippedComments(
+            string json, Type deserializeType, long expectedLine, long expectedBytePosition)
+        {
+            byte[] utf8 = Encoding.UTF8.GetBytes(json);
+            var options = new JsonReaderOptions { CommentHandling = JsonCommentHandling.Skip };
+
+            JsonException ex = Assert.Throws<JsonException>(() =>
+            {
+                var reader = new Utf8JsonReader(utf8, isFinalBlock: true, state: new JsonReaderState(options));
+                reader.Read();
+                reader.Read();
+
+                JsonSerializer.Deserialize(ref reader, deserializeType);
+            });
+
+            Assert.Equal(expectedLine, ex.LineNumber);
+            Assert.Equal(expectedBytePosition, ex.BytePositionInLine);
+        }
+
+        [Theory]
+        [InlineData("{\"val\": /* comment */ 42}", 0, 24)]
+        [InlineData("{\"val\": // comment\n42}", 1, 2)]
+        [InlineData("{\"val\":\n/* comment */\n42}", 2, 2)]
+        [InlineData("{\"val\": /* comment */ {\"k\":1}}", 0, 23)]
+        public static void ReaderPreservesPositionInfoPropertyNameWithSkippedComments(
+            string json, long expectedLine, long expectedBytePosition)
+        {
+            byte[] utf8 = Encoding.UTF8.GetBytes(json);
+            var options = new JsonReaderOptions { CommentHandling = JsonCommentHandling.Skip };
+
+            JsonException ex = Assert.Throws<JsonException>(() =>
+            {
+                var reader = new Utf8JsonReader(utf8, isFinalBlock: true, state: new JsonReaderState(options));
+                reader.Read();
+                reader.Read();
+                Assert.Equal(JsonTokenType.PropertyName, reader.TokenType);
+
+                JsonSerializer.Deserialize<string>(ref reader);
+            });
+
+            Assert.Equal(expectedLine, ex.LineNumber);
+            Assert.Equal(expectedBytePosition, ex.BytePositionInLine);
+        }
+
+        [Theory]
+        [InlineData("/* comment */ 42", 0, 16)]
+        [InlineData("/*\ncomment\n*/ 42", 2, 5)]
+        public static void ReaderPreservesPositionInfoWithCommentBeforeNoneToken(
+            string json, long expectedLine, long expectedBytePosition)
+        {
+            byte[] utf8 = Encoding.UTF8.GetBytes(json);
+            var options = new JsonReaderOptions { CommentHandling = JsonCommentHandling.Skip };
+
+            JsonException ex = Assert.Throws<JsonException>(() =>
+            {
+                var reader = new Utf8JsonReader(utf8, isFinalBlock: true, state: new JsonReaderState(options));
+
+                JsonSerializer.Deserialize<string>(ref reader);
+            });
+
+            Assert.Equal(expectedLine, ex.LineNumber);
+            Assert.Equal(expectedBytePosition, ex.BytePositionInLine);
+        }
     }
 
     // From https://github.com/dotnet/runtime/issues/882
