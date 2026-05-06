@@ -25,6 +25,7 @@ private:
         SplatScalar,
         UnaryOp,
         BinaryOp,
+        TernaryOp,
         CompareOp,
         Select,
     };
@@ -58,7 +59,7 @@ private:
     {
         static const unsigned MaxAddressUpdates = 4;
         static const unsigned MaxAccesses       = 16;
-        static const unsigned MaxLocalDefs      = 16;
+        static const unsigned MaxLocalDefs      = 32;
         static const unsigned MaxStores         = 12;
 
         struct ScalarAccess
@@ -167,6 +168,9 @@ private:
         LoopVectorizationPlan* plan, Statement* stmt, GenTree* value, var_types elementType, unsigned depth = 0);
     PackNode* TryBuildComparePack(
         LoopVectorizationPlan* plan, Statement* stmt, GenTree* value, var_types elementType, unsigned depth);
+    PackNode* TryBuildScalarHWINTRINSICPack(
+        LoopVectorizationPlan* plan, Statement* stmt, GenTreeHWIntrinsic* intrinsic, var_types elementType, unsigned depth);
+    bool TryGetScalarFromCreateScalar(LoopVectorizationPlan* plan, GenTree* tree, GenTree** scalar, unsigned depth = 0);
     bool        TryBuildSLPPlan(LoopVectorizationPlan* plan);
     bool        TryRewritePlan(LoopVectorizationPlan* plan);
     PackNode*   NewPackNode(SLPPlan* slpPlan, PackKind kind, var_types elementType, unsigned laneCount);

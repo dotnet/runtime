@@ -504,7 +504,8 @@ unsigned AutoVectorizer::EstimateVectorPressure(const LoopVectorizationPlan* pla
     {
         const PackNode& node = slpPlan.Nodes[i];
         if ((node.Kind == PackKind::SplatConstant) || (node.Kind == PackKind::SplatScalar) ||
-            (node.Kind == PackKind::BinaryOp) || (node.Kind == PackKind::CompareOp) || (node.Kind == PackKind::Select))
+            (node.Kind == PackKind::BinaryOp) || (node.Kind == PackKind::TernaryOp) ||
+            (node.Kind == PackKind::CompareOp) || (node.Kind == PackKind::Select))
         {
             pressure++;
         }
@@ -1290,6 +1291,14 @@ bool AutoVectorizer::TryAnalyzePostIVMemory(LoopVectorizationPlan* plan)
     BasicBlock* const block                = plan->Header;
     bool              foundTripCountUpdate = false;
 
+    for (BasicBlock* pred = plan->Preheader; pred != nullptr; pred = pred->GetUniquePred(m_compiler))
+    {
+        for (Statement* const stmt : pred->Statements())
+        {
+            RecordLocalDefs(plan, stmt->GetRootNode());
+        }
+    }
+
     for (Statement* const stmt : block->Statements())
     {
         GenTree* const root = stmt->GetRootNode();
@@ -1558,6 +1567,153 @@ AutoVectorizer::PackNode* AutoVectorizer::TryBuildComparePack(
     cmp->Operands[1] = op2;
     cmp->Cost        = op1->Cost + op2->Cost + 1;
     return cmp;
+}
+
+bool AutoVectorizer::TryGetScalarFromCreateScalar(LoopVectorizationPlan* plan,
+                                                  GenTree*               tree,
+                                                  GenTree**              scalar,
+                                                  unsigned               depth)
+{
+    if (depth > MaxPackDepth)
+    {
+        return false;
+    }
+
+    tree = UnwrapCommaValue(tree);
+    if (tree->OperIs(GT_LCL_VAR))
+    {
+        GenTree* def = nullptr;
+        if (TryGetLocalDef(plan, tree->AsLclVarCommon()->GetLclNum(), &def))
+        {
+            return TryGetScalarFromCreateScalar(plan, def, scalar, depth + 1);
+        }
+    }
+
+    if (!tree->OperIs(GT_HWINTRINSIC))
+    {
+        return false;
+    }
+
+    GenTreeHWIntrinsic* const create = tree->AsHWIntrinsic();
+    const NamedIntrinsic      id     = create->GetHWIntrinsicId();
+    if ((create->GetOperandCount() == 1) &&
+        ((id == NI_Vector128_CreateScalar) || (id == NI_Vector128_CreateScalarUnsafe)
+#if defined(TARGET_XARCH)
+         || (id == NI_Vector256_CreateScalar) || (id == NI_Vector256_CreateScalarUnsafe) ||
+         (id == NI_Vector512_CreateScalar) || (id == NI_Vector512_CreateScalarUnsafe)
+#elif defined(TARGET_ARM64)
+         || (id == NI_Vector64_CreateScalar) || (id == NI_Vector64_CreateScalarUnsafe)
+#endif
+             ))
+    {
+        *scalar = create->Op(1);
+        return true;
+    }
+
+    return false;
+}
+
+AutoVectorizer::PackNode* AutoVectorizer::TryBuildScalarHWINTRINSICPack(
+    LoopVectorizationPlan* plan, Statement* stmt, GenTreeHWIntrinsic* intrinsic, var_types elementType, unsigned depth)
+{
+    if (!varTypeIsFloating(elementType))
+    {
+        return nullptr;
+    }
+
+    const NamedIntrinsic intrinsicId = intrinsic->GetHWIntrinsicId();
+    if ((intrinsicId != NI_Vector128_ToScalar)
+#if defined(TARGET_XARCH)
+        && (intrinsicId != NI_Vector256_ToScalar) && (intrinsicId != NI_Vector512_ToScalar)
+#elif defined(TARGET_ARM64)
+        && (intrinsicId != NI_Vector64_ToScalar)
+#endif
+    )
+    {
+        return nullptr;
+    }
+
+    if ((intrinsic->GetOperandCount() != 1) || !intrinsic->Op(1)->OperIs(GT_HWINTRINSIC))
+    {
+        return nullptr;
+    }
+
+    GenTreeHWIntrinsic* const fma = intrinsic->Op(1)->AsHWIntrinsic();
+
+    GenTree* scalarOp1 = nullptr;
+    GenTree* scalarOp2 = nullptr;
+    GenTree* scalarOp3 = nullptr;
+
+    switch (fma->GetHWIntrinsicId())
+    {
+#if defined(TARGET_XARCH)
+        case NI_AVX2_MultiplyAddScalar:
+        case NI_AVX512_FusedMultiplyAddScalar:
+            if (fma->GetOperandCount() != 3)
+            {
+                return nullptr;
+            }
+
+            if (!TryGetScalarFromCreateScalar(plan, fma->Op(1), &scalarOp1) ||
+                !TryGetScalarFromCreateScalar(plan, fma->Op(2), &scalarOp2) ||
+                !TryGetScalarFromCreateScalar(plan, fma->Op(3), &scalarOp3))
+            {
+                return nullptr;
+            }
+            break;
+#elif defined(TARGET_ARM64)
+        case NI_AdvSimd_FusedMultiplyAddScalar:
+            if (fma->GetOperandCount() != 3)
+            {
+                return nullptr;
+            }
+
+            if (!TryGetScalarFromCreateScalar(plan, fma->Op(3), &scalarOp1) ||
+                !TryGetScalarFromCreateScalar(plan, fma->Op(2), &scalarOp2) ||
+                !TryGetScalarFromCreateScalar(plan, fma->Op(1), &scalarOp3))
+            {
+                return nullptr;
+            }
+            break;
+#endif
+
+        default:
+            return nullptr;
+    }
+
+    PackNode* const op1 = TryBuildPack(plan, stmt, scalarOp1, elementType, depth + 1);
+    if (op1 == nullptr)
+    {
+        return nullptr;
+    }
+
+    PackNode* const op2 = TryBuildPack(plan, stmt, scalarOp2, elementType, depth + 1);
+    if (op2 == nullptr)
+    {
+        return nullptr;
+    }
+
+    PackNode* const op3 = TryBuildPack(plan, stmt, scalarOp3, elementType, depth + 1);
+    if (op3 == nullptr)
+    {
+        return nullptr;
+    }
+
+    PackNode* const ternary = NewPackNode(&plan->BodyPlan, PackKind::TernaryOp, elementType, plan->VectorizationFactor);
+    if (ternary == nullptr)
+    {
+        JITDUMP("SLP node count=%u, max=%u\n", plan->BodyPlan.NodeCount, MaxPackNodes);
+        JITDUMP("SLP node budget exceeded, bail out\n");
+        return nullptr;
+    }
+
+    ternary->Oper          = GT_HWINTRINSIC;
+    ternary->IntrinsicName = NI_System_Math_FusedMultiplyAdd;
+    ternary->Operands[0]   = op1;
+    ternary->Operands[1]   = op2;
+    ternary->Operands[2]   = op3;
+    ternary->Cost          = op1->Cost + op2->Cost + op3->Cost + 1;
+    return ternary;
 }
 
 AutoVectorizer::PackNode* AutoVectorizer::TryBuildPack(
@@ -1836,6 +1992,20 @@ AutoVectorizer::PackNode* AutoVectorizer::TryBuildPack(
         selectPack->Operands[2] = falseValue;
         selectPack->Cost        = cond->Cost + trueValue->Cost + falseValue->Cost + 1;
         return selectPack;
+    }
+
+    if (value->OperIs(GT_HWINTRINSIC))
+    {
+        PackNode* const intrinsicPack =
+            TryBuildScalarHWINTRINSICPack(plan, stmt, value->AsHWIntrinsic(), elementType, depth + 1);
+        if (intrinsicPack != nullptr)
+        {
+            return intrinsicPack;
+        }
+
+        JITDUMPEXEC(m_compiler->gtDispTree(value));
+        JITDUMP("unsupported scalar hardware intrinsic, bail out\n");
+        return nullptr;
     }
 
     JITDUMPEXEC(m_compiler->gtDispTree(value));
@@ -2346,6 +2516,8 @@ const char* AutoVectorizer::PackKindName(PackKind kind) const
             return "unary";
         case PackKind::BinaryOp:
             return "binary";
+        case PackKind::TernaryOp:
+            return "ternary";
         case PackKind::CompareOp:
             return "compare";
         case PackKind::Select:
@@ -2366,7 +2538,8 @@ void AutoVectorizer::DumpSLPPlan(const LoopVectorizationPlan& plan) const
         JITDUMP("  N%02u %-17s lanes=%u elem=%s cost=%u", i, PackKindName(node.Kind), node.LaneCount,
                 varTypeName(node.ElementType), node.Cost);
 
-        if ((node.Kind == PackKind::UnaryOp) || (node.Kind == PackKind::BinaryOp) || (node.Kind == PackKind::CompareOp))
+        if ((node.Kind == PackKind::UnaryOp) || (node.Kind == PackKind::BinaryOp) ||
+            (node.Kind == PackKind::TernaryOp) || (node.Kind == PackKind::CompareOp))
         {
             JITDUMP(" op=%s", GenTree::OpName(node.Oper));
         }
@@ -2749,6 +2922,12 @@ GenTree* AutoVectorizer::BuildPackNode(LoopVectorizationPlan* plan, PackNode* no
 
             return m_compiler->gtNewSimdBinOpNode(node->Oper, simdType, op1, op2, node->ElementType, simdSize);
         }
+
+        case PackKind::TernaryOp:
+            assert(node->IntrinsicName == NI_System_Math_FusedMultiplyAdd);
+            return m_compiler->gtNewSimdFmaNode(simdType, BuildPackNode(plan, node->Operands[0]),
+                                                BuildPackNode(plan, node->Operands[1]),
+                                                BuildPackNode(plan, node->Operands[2]), node->ElementType, simdSize);
 
         case PackKind::CompareOp:
             return m_compiler->gtNewSimdCmpOpNode(node->Oper, simdType, BuildPackNode(plan, node->Operands[0]),
