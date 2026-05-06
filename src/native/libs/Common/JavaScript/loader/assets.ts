@@ -342,7 +342,8 @@ async function fetchBytes(asset: AssetEntryInternal): Promise<Uint8Array | null>
         response = await loadResource(asset);
     } catch (err: any) {
         // Strip .silent flag from download errors so they are properly reported via exit listeners
-        throw new Error(`Failed to load resource '${asset.name}' from '${asset.resolvedUrl}': ${err.message || err}`);
+        const message = err instanceof Error ? err.message : String(err);
+        throw new Error(`Failed to load resource '${asset.name}' from '${asset.resolvedUrl}': ${message}`, { cause: err });
     }
     if (!response.ok) {
         if (asset.isOptional) {
@@ -362,7 +363,8 @@ async function fetchText(asset: AssetEntryInternal): Promise<string | null> {
         response = await loadResource(asset);
     } catch (err: any) {
         // Strip .silent flag from download errors so they are properly reported via exit listeners
-        throw new Error(`Failed to load resource '${asset.name}' from '${asset.resolvedUrl}': ${err.message || err}`);
+        const message = err instanceof Error ? err.message : String(err);
+        throw new Error(`Failed to load resource '${asset.name}' from '${asset.resolvedUrl}': ${message}`, { cause: err });
     }
     if (!response.ok) {
         if (asset.isOptional) {

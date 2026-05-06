@@ -132,8 +132,8 @@ export async function createRuntime(downloadOnly: boolean, httpCacheOnly: boolea
         const corePDBsPromise = forEachResource(resources.corePdb, fetchPdb, () => isDebuggingSupported);
         const pdbsPromise = forEachResource(resources.pdb, fetchPdb, () => isDebuggingSupported);
 
-        // Signal that all first-attempt downloads have been queued.
-        // Retry logic waits on this before attempting second downloads.
+        // Signal that all first-attempt asset fetches queued above via forEachResource/fetch* have been queued.
+        // Retry logic waits on this before attempting second downloads for those asset fetches.
         resolveAllDownloadsQueued();
 
         // In download-only mode, just add prefetch hints for runtime-ready modules so create() loads them from cache.
