@@ -6769,8 +6769,8 @@ HRESULT Debugger::LaunchJitDebuggerAndNativeAttach(Thread * pThread, EXCEPTION_P
     CONTRACTL_END;
 
 #ifdef TARGET_UNIX
-    // JIT-attach via CreateProcess + waitable process handle is Windows-only. Returning a
-    // failing HRESULT lets the calling code fall back to the standard hosting failure path.
+    // JIT-attach via CreateProcess + waitable process handle is Windows-only.
+    // The caller treats a failing HRESULT as "no debugger attached" and unwinds via PostJitAttach.
     return E_NOTIMPL;
 #else
     // You need to have called PreJitAttach first to determine which thread gets to launch the debugger
