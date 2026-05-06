@@ -14,13 +14,9 @@ namespace System.Numerics.Tensors
             static abstract T Aggregate(Vector128<T> value);
             static abstract T Aggregate(Vector256<T> value);
             static abstract T Aggregate(Vector512<T> value);
-            /// <summary>Returns true if x precedes y.</summary>
             static abstract bool Compare(T x, T y);
-            /// <summary>Returns mask of all ones where x precedes y.</summary>
             static abstract Vector128<T> Compare(Vector128<T> x, Vector128<T> y);
-            /// <summary>Returns mask of all ones where x precedes y.</summary>
             static abstract Vector256<T> Compare(Vector256<T> x, Vector256<T> y);
-            /// <summary>Returns mask of all ones where x precedes y.</summary>
             static abstract Vector512<T> Compare(Vector512<T> x, Vector512<T> y);
         }
 
@@ -105,7 +101,7 @@ namespace System.Numerics.Tensors
             }
 
             // Initialize indices.
-            Vector128<TInt> indexIncrement = Vector128.Create(TInt.CreateChecked(Vector128<TInt>.Count));
+            Vector128<TInt> indexIncrement = Vector128.Create(TInt.CreateTruncating(Vector128<TInt>.Count));
             Vector128<TInt> resultIndex = Vector128<TInt>.Indices;
             Vector128<TInt> currentIndex = resultIndex + indexIncrement;
             ReadOnlySpan<T> span = x.Slice(Vector128<T>.Count);
@@ -123,7 +119,7 @@ namespace System.Numerics.Tensors
                     // Process a final back-shifted to cover remaining elements in x in one vector.
                     int start = x.Length - Vector128<T>.Count;
                     current = Vector128.Create(x.Slice(start));
-                    currentIndex = Vector128.Create(TInt.CreateChecked(start)) + Vector128<TInt>.Indices;
+                    currentIndex = Vector128.Create(TInt.CreateTruncating(start)) + Vector128<TInt>.Indices;
                     span = ReadOnlySpan<T>.Empty;
                 }
 
@@ -133,7 +129,7 @@ namespace System.Numerics.Tensors
                     Vector128<T> nanMask = IsNaN(current);
                     if (nanMask != Vector128<T>.Zero)
                     {
-                        return int.CreateChecked(currentIndex.ToScalar()) + IndexOfFirstMatch(nanMask);
+                        return int.CreateTruncating(currentIndex.ToScalar()) + IndexOfFirstMatch(nanMask);
                     }
                 }
 
@@ -151,7 +147,7 @@ namespace System.Numerics.Tensors
                 T aggResult = TOperator.Aggregate(result);
                 Vector128<TInt> aggMask = ~Vector128.Equals(result.As<T, TInt>(), Vector128.Create(aggResult).As<T, TInt>());
                 Vector128<TInt> aggIndex = resultIndex | aggMask;
-                return int.CreateChecked(HorizontalAggregate<TInt, MinOperator<TInt>>(aggIndex));
+                return int.CreateTruncating(HorizontalAggregate<TInt, MinOperator<TInt>>(aggIndex));
             }
         }
 
@@ -336,7 +332,7 @@ namespace System.Numerics.Tensors
             }
 
             // Initialize indices.
-            Vector256<TInt> indexIncrement = Vector256.Create(TInt.CreateChecked(Vector256<TInt>.Count));
+            Vector256<TInt> indexIncrement = Vector256.Create(TInt.CreateTruncating(Vector256<TInt>.Count));
             Vector256<TInt> resultIndex = Vector256<TInt>.Indices;
             Vector256<TInt> currentIndex = resultIndex + indexIncrement;
             ReadOnlySpan<T> span = x.Slice(Vector256<T>.Count);
@@ -354,7 +350,7 @@ namespace System.Numerics.Tensors
                     // Process a final back-shifted to cover remaining elements in x in one vector.
                     int start = x.Length - Vector256<T>.Count;
                     current = Vector256.Create(x.Slice(start));
-                    currentIndex = Vector256.Create(TInt.CreateChecked(start)) + Vector256<TInt>.Indices;
+                    currentIndex = Vector256.Create(TInt.CreateTruncating(start)) + Vector256<TInt>.Indices;
                     span = ReadOnlySpan<T>.Empty;
                 }
 
@@ -364,7 +360,7 @@ namespace System.Numerics.Tensors
                     Vector256<T> nanMask = IsNaN(current);
                     if (nanMask != Vector256<T>.Zero)
                     {
-                        return int.CreateChecked(currentIndex.ToScalar()) + IndexOfFirstMatch(nanMask);
+                        return int.CreateTruncating(currentIndex.ToScalar()) + IndexOfFirstMatch(nanMask);
                     }
                 }
 
@@ -382,7 +378,7 @@ namespace System.Numerics.Tensors
                 T aggResult = TOperator.Aggregate(result);
                 Vector256<TInt> aggMask = ~Vector256.Equals(result.As<T, TInt>(), Vector256.Create(aggResult).As<T, TInt>());
                 Vector256<TInt> aggIndex = resultIndex | aggMask;
-                return int.CreateChecked(HorizontalAggregate<TInt, MinOperator<TInt>>(aggIndex));
+                return int.CreateTruncating(HorizontalAggregate<TInt, MinOperator<TInt>>(aggIndex));
             }
         }
 
@@ -567,7 +563,7 @@ namespace System.Numerics.Tensors
             }
 
             // Initialize indices.
-            Vector512<TInt> indexIncrement = Vector512.Create(TInt.CreateChecked(Vector512<TInt>.Count));
+            Vector512<TInt> indexIncrement = Vector512.Create(TInt.CreateTruncating(Vector512<TInt>.Count));
             Vector512<TInt> resultIndex = Vector512<TInt>.Indices;
             Vector512<TInt> currentIndex = resultIndex + indexIncrement;
             ReadOnlySpan<T> span = x.Slice(Vector512<T>.Count);
@@ -585,7 +581,7 @@ namespace System.Numerics.Tensors
                     // Process a final back-shifted to cover remaining elements in x in one vector.
                     int start = x.Length - Vector512<T>.Count;
                     current = Vector512.Create(x.Slice(start));
-                    currentIndex = Vector512.Create(TInt.CreateChecked(start)) + Vector512<TInt>.Indices;
+                    currentIndex = Vector512.Create(TInt.CreateTruncating(start)) + Vector512<TInt>.Indices;
                     span = ReadOnlySpan<T>.Empty;
                 }
 
@@ -595,7 +591,7 @@ namespace System.Numerics.Tensors
                     Vector512<T> nanMask = IsNaN(current);
                     if (nanMask != Vector512<T>.Zero)
                     {
-                        return int.CreateChecked(currentIndex.ToScalar()) + IndexOfFirstMatch(nanMask);
+                        return int.CreateTruncating(currentIndex.ToScalar()) + IndexOfFirstMatch(nanMask);
                     }
                 }
 
@@ -613,7 +609,7 @@ namespace System.Numerics.Tensors
                 T aggResult = TOperator.Aggregate(result);
                 Vector512<TInt> aggMask = ~Vector512.Equals(result.As<T, TInt>(), Vector512.Create(aggResult).As<T, TInt>());
                 Vector512<TInt> aggIndex = resultIndex | aggMask;
-                return int.CreateChecked(HorizontalAggregate<TInt, MinOperator<TInt>>(aggIndex));
+                return int.CreateTruncating(HorizontalAggregate<TInt, MinOperator<TInt>>(aggIndex));
             }
         }
 
