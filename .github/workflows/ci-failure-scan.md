@@ -91,9 +91,11 @@ safe-outputs:
       - "src/native/**"
       - "eng/testing/**"
     labels: [agentic-workflows]
+    allowed-labels: [agentic-workflows]
   create-issue:
     max: 5
     labels: [agentic-workflows]
+    allowed-labels: ["Known Build Error", "blocking-clean-ci"]
 
 timeout-minutes: 90
 
@@ -189,7 +191,7 @@ For each actionable failure, in this order:
    - `search_pull_requests` for an open muting PR that already silences this test: `is:pr is:open in:title "<test-name>" "[ci-scan]"` and `is:pr is:open "<test-name>" ActiveIssue`.
    - `search_pull_requests` for an open small-fix PR: `is:pr is:open in:title "<short-failure-description>" "[ci-scan]"`.
    - If a KBE + muting PR already cover this failure, **skip** — record it in the coverage tally as `→ already-covered: KBE #<n> + PR #<n>` and move on. Do not duplicate.
-2. **No existing KBE → file one via safe-outputs `create_issue`**. Apply labels: `Known Build Error`, `blocking-clean-ci`, plus any verified `area-*` / `os-*` / `arch-*` (see "Never invent labels" below). Title prefix: `[ci-scan] `. Body: the KBE format described in "Known Build Error issue" below. The safe-outputs handler will create the issue ~1 minute after the agent finishes; the issue number is not available to the agent during this run.
+2. **No existing KBE → file one via safe-outputs `create_issue`**. The only labels permitted on KBE issues are `Known Build Error` and `blocking-clean-ci` (see "Outputs: title and labels" below). Title prefix: `[ci-scan] `. Body: the KBE format described in "Known Build Error issue" below. The safe-outputs handler will create the issue ~1 minute after the agent finishes; the issue number is not available to the agent during this run.
 3. **Existing KBE found AND failure still occurring AND no muting PR exists yet → open the muting PR via safe-outputs `create_pull_request`** with the existing KBE issue number hardcoded in the diff: `[ActiveIssue("https://github.com/dotnet/runtime/issues/<existing-N>", ...)]` for unit tests, `<GCStressIncompatible>true</GCStressIncompatible>` (with an inline `<!-- https://github.com/dotnet/runtime/issues/<existing-N> -->` comment) for stress-incompatible JIT csproj families. PR title prefix `[ci-scan] `; **the PR body MUST include a top-level "Linked KBE" line of the form `Linked KBE: #<existing-N>` so the link is unambiguous and machine-readable**, in addition to the prose "Linked KBE" section. This PR must change **only test annotations / csproj test-config flags** — no product code, no diagnosis, no logic. Aim for ≤ 5 lines of diff.
 4. **(Optional, alongside step 3) Open a small-fix PR via safe-outputs `create_pull_request`** if the failure satisfies the "small product fix opportunity" criteria above. Separate PR, separate branch, separate diff. PR body must (a) cite the failing test as evidence, (b) explain the root cause, (c) state explicitly why the fix is safe, (d) include `Linked KBE: #<existing-N>` as a top-level line, and (e) note "If this lands before #<muting-PR>, that PR can be closed". Do not bundle the fix into the muting PR — keep them separate so a maintainer can take one without the other.
 
@@ -214,7 +216,7 @@ The two-pass flow above applies to all classes below. "KBE + muting PR" means: K
   - `[ActiveIssue("https://github.com/dotnet/runtime/issues/<N>", TestPlatforms.<plat>)]` referencing the KBE.
   - For JIT/GC stress: `[ActiveIssue("...", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsStressTest))]` or `<GCStressIncompatible>true</GCStressIncompatible>` at the csproj level. **Tradeoff**: stress-guarded skips remove the test signal from the stress pipelines, so the bug becomes invisible in those pipelines until the JIT fix lands. The KBE filed in run N is what keeps the JIT team aware; without that KBE, the muting PR alone would silently lose the signal.
 - **Build break on a single leg** (`Build product` or similar failed; `Send to Helix` skipped) → if the compile error has a clear, mechanical root cause and the fix is **≤ 20 lines in a single file** (e.g., obvious typo, missing `#if`, wrong type cast, missing `using`), open a fix PR (no KBE — Build Analysis explicitly forbids KBEs for build breaks). If the fix is non-trivial, file a regular tracking issue and reference the failing source file and compile error.
-- **Anything else** — multi-assembly cluster, infrastructure (queue exhaustion / dead-letter / device-lost) — file a tracking issue (not a KBE). Group all infra failures from one run into a single issue. Before filing, `search_issues` for an open issue with the matching `area-*` + `os-*` label and skip silently if one already exists (do not duplicate, do not append a comment — the agent only has read permission on existing issues).
+- **Anything else** — multi-assembly cluster, infrastructure (queue exhaustion / dead-letter / device-lost) — file a tracking issue (not a KBE). Group all infra failures from one run into a single issue. Before filing, `search_issues` for an open issue whose title or body matches the same failure signature and skip silently if one already exists (do not duplicate, do not append a comment — the agent only has read permission on existing issues).
 
 For each failure compute a `(definition_id, work_item_or_phase, queue, stress_mode, [FAIL] or compile-error signature)` signature. Look back through ~10 completed builds in the same definition to build first-seen-in-window timestamp and occurrence count.
 
@@ -254,9 +256,9 @@ Five H2 sections, in this exact order:
 2. **Impact on platforms** — bullet list of `(pipeline + platform/arch + Helix queue + stress mode + exit code)` per affected occurrence.
 3. **Errors log** — sanitized excerpt from the Helix console log (the `[FAIL]` line, the assertion or exception, and the `Failed tests:` summary). Strip JWTs, bearer tokens, `ApplicationGatewayAffinity*=`, and per-user paths.
 4. **First build it occurred** — first build in the scanned window where this signature appeared: build link, finish time, commit SHA, occurrences-in-window count. State explicitly that this is computed within the scanned window and may not be the true origin.
-5. **Linked issue** (optional) — if an `ActiveIssue` reference is used, link the issue and quote the matching label set.
+5. **Linked issue** (optional) — if an `ActiveIssue` reference is used, link the issue.
 
-Branch from `origin/main`. Stage only the files you intend to change with `git add <specific path>`; never `git add -A`. Verify with `git diff --name-only --cached` before committing. Labels: at least one `os-*` (`os-android`, `os-ios`, `os-tvos`, `os-maccatalyst`, `os-browser`, `os-wasi`, `os-windows`, `os-linux`, `os-osx`) where applicable, plus the test's `area-*` label, plus `arch-*` for arch-specific failures, plus the relevant configuration label (`disabled-test`, `jit-stress`, `gc-stress`, `pgo`, `nativeaot`, …) when present.
+Branch from `origin/main`. Stage only the files you intend to change with `git add <specific path>`; never `git add -A`. Verify with `git diff --name-only --cached` before committing. Do not include any labels in the PR (see "Outputs: title and labels" below).
 
 ## Issue body
 
@@ -264,7 +266,7 @@ Use this when a PR is not the right tool — product regression, native crash, m
 
 5. **Recommended action** — concrete next step: which area owner, which file likely needs the fix, or what investigation would localize the root cause. For JIT/GC issues include the exact stress mode env vars and the JIT method-name from the log. Reference any related PR or issue you found via `search_issues`. The issue must be actionable — a checkbox-ready task list, not just "FYI".
 
-Same `os-*`, `area-*`, `arch-*` labels.
+Do not include any labels in the issue creation request (see "Outputs: title and labels" below).
 
 ### JIT pipeline issue template (definitions 109–160, 230, 235, 108, 137, 144–145, 150, 153)
 
@@ -298,7 +300,7 @@ For tracking issues filed against a JIT, GC, PGO, or stress pipeline, use this b
 (fenced code block with the relevant stack trace; trim noise but keep the failing frame)
 ```
 
-This format makes the issue immediately actionable for JIT/GC owners (@JulieLeeMSFT, @BruceForstall, @jakobbotsch, @dotnet/jit-contrib) without further drilldown. Apply the appropriate `area-CodeGen-coreclr` / `area-GC-coreclr` / `area-PGO-coreclr` / `area-Tools-ILVerification` label per the failing pipeline.
+This format makes the issue immediately actionable for JIT/GC owners (@JulieLeeMSFT, @BruceForstall, @jakobbotsch, @dotnet/jit-contrib) without further drilldown. Area triage (`area-CodeGen-coreclr` / `area-GC-coreclr` / `area-PGO-coreclr` / `area-Tools-ILVerification`) is added later by a human reviewer — do not propose any `area-*` label yourself.
 
 ## Outputs: title and labels
 
@@ -307,8 +309,7 @@ This format makes the issue immediately actionable for JIT/GC owners (@JulieLeeM
   - `[ci-scan] Known Build Error: <short description>`
   - `[ci-scan] Skip <test-or-family> under <stress-or-platform> (refs #<n>)`
 - **Do not use the word "Mute" or "Muting"** in titles. Use "Skip", "Disable", "Suppress", or "Exclude" depending on the mechanism. Examples: "Skip … under GCStress", "Disable … on tvOS", "Suppress … in MiniFull AOT mode".
-- **Never invent labels.** Only apply labels that already exist on dotnet/runtime. Before applying any `area-*` label, verify it exists by listing repository labels via `curl -s 'https://api.github.com/repos/dotnet/runtime/labels?per_page=100&page=N'` (with pre-bound URL variable) and grep for the candidate name. If the canonical owner label cannot be confirmed, omit the `area-*` label entirely and let triage assign it — do not invent a plausible-looking label like `area-Extensions-FileProviders` that does not exist. The same rule applies to `os-*`, `arch-*`, and any other label families. Stick to labels you have verified.
-- Labels are unchanged from the per-outcome rules above.
+- **Labels (hard restriction).** You **MUST NOT** propose any labels in your output. The workflow auto-applies `agentic-workflows` to every issue and PR, and additionally permits **only** `Known Build Error` and `blocking-clean-ci` on Known Build Error issues. Any other label — `os-*`, `area-*`, `arch-*`, `disabled-test`, `jit-stress`, `gc-stress`, `pgo`, `nativeaot`, `untriaged`, etc. — is rejected by `safe-outputs.allowed-labels` and **will be dropped**. Do not invent new labels under any name. Area, OS, and arch triage is performed by a human reviewer after the issue/PR is filed; do not attempt to pre-apply or guess them.
 
 ## Known Build Error issue
 
@@ -346,9 +347,32 @@ The pseudo-instructions `(open three backticks, then ...)` and `(close three bac
 
 Choose `ErrorMessage` (substring) by default. Use `ErrorPattern` only when a regex is genuinely needed and confirm it has no catastrophic backtracking. Set `BuildRetry: true` **only** for confirmed infra/queue-side flakes (dead-letter, device-lost, agent disconnect) where retrying is safe.
 
+### Signature specificity (mandatory)
+
+The `ErrorMessage` / `ErrorPattern` MUST uniquely identify **this specific failure mode**, not an entire category of crashes or build errors. A signature that would match unrelated future regressions is wrong and will mute legitimate failures.
+
+**Reject** signatures that consist only of:
+
+- A bare exit code or signal: `exitcode: 139`, `exit code 1`, `Segmentation fault`, `Aborted`, `SIGSEGV`, `SIGABRT`.
+- A generic tool name + failure verb: `Crossgen2 failed`, `ilasm failed`, `dotnet build failed`, `xharness exited`.
+- A bare exception type with no message: `BadImageFormatException`, `NullReferenceException`, `Fatal error. Invalid Program`, `Assertion failed`.
+- A bare `[FAIL]` line with only the test class name and no exception/assertion text.
+- Common infra strings: `Connection reset`, `Operation timed out`, `Resource temporarily unavailable`, `No space left on device`.
+
+**Prefer** signatures built from the most specific stable token in the log. In order of preference:
+
+1. The exact assertion text or exception **message** (not just the type), e.g. `Assertion failed 'comp->compHndBBtabCount == 0' in 'X' during 'Y'`.
+2. The fully-qualified failing test name combined with a specific exception message, e.g. `System.Text.Json.Tests.Utf8JsonReaderTests.TestFoo … System.InvalidOperationException: Cannot read value of type X`.
+3. A unique native stack frame or symbol from the crash dump excerpt, e.g. `coreclr!Compiler::fgMorphCall + 0x`.
+4. A specific JIT method-being-compiled marker plus the specific stress mode, when the crash is JIT/GC stress only.
+
+**Combining signature parts** — a JSON array in `ErrorMessage` is AND-matched (all substrings must be present in the failure log). Do not pad an array with generic tokens like `exitcode: 139` or `Crash` alongside the specific message — those tokens add no specificity and only risk false negatives if the log format changes. Include at most one supplementary token, and only when it is itself non-generic (e.g. a specific assembly name or test name).
+
+If you cannot produce a signature that meets the bar above, **do not file a Known Build Error**. File a regular tracking issue instead and call out in "Recommended action" that the failure needs a stable signature before it can be muted.
+
 Title: `[ci-scan] Test failure: <fully.qualified.TestName>` for test failures, or `[ci-scan] Known Build Error: <short description>` for non-test build errors. The `[ci-scan] ` prefix is mandatory on every issue and PR this workflow files (see "Outputs: title and labels" above).
 
-Labels: `Known Build Error`, `blocking-clean-ci`, plus the test's `area-*` label and any `os-*` / `arch-*` labels that apply.
+Labels: only `Known Build Error` and `blocking-clean-ci` are permitted on Known Build Error issues. Do not include any other label (no `area-*`, `os-*`, `arch-*`, etc.) — they will be rejected by `safe-outputs.allowed-labels`. Area and platform triage is added later by a human reviewer.
 
 Before filing, search for an existing Known Build Error issue with a matching `ErrorMessage` (`label:"Known Build Error" in:body "<signature>"`). If one exists and is open, **skip silently — do not duplicate, do not append a comment**. Build Analysis already counts the new occurrence in its hit-count summary on the issue body; piling on issue comments per occurrence creates noise on already-noisy KBEs (some have tens of hits per run). If `search_issues` returns no matches, proceed to file the new KBE.
 
