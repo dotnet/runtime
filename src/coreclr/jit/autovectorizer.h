@@ -58,8 +58,8 @@ private:
     {
         static const unsigned MaxAddressUpdates = 4;
         static const unsigned MaxAccesses       = 16;
-        static const unsigned MaxLocalDefs      = 8;
-        static const unsigned MaxStores         = 8;
+        static const unsigned MaxLocalDefs      = 16;
+        static const unsigned MaxStores         = 12;
 
         struct ScalarAccess
         {
@@ -101,6 +101,7 @@ private:
         BasicBlock* TestBlock                              = nullptr;
         genTreeOps  TestOper                               = GT_COUNT;
         int         Step                                   = 0;
+        bool        HasConstInit                           = false;
         int         ConstInitValue                         = 0;
         var_types   ElementType                            = TYP_UNDEF;
         unsigned    ElementSize                            = 0;
@@ -220,6 +221,8 @@ private:
                                        GenTreeArrAddr*                      arrAddr,
                                        unsigned                             ivLcl,
                                        LoopVectorizationPlan::ScalarAccess* access);
+    bool        TryProveRemainingBoundsChecks(LoopVectorizationPlan* plan);
+    bool        IsSameLimit(LoopVectorizationPlan* plan, GenTree* first, GenTree* second, unsigned depth = 0);
     void        RecordLocalDefs(LoopVectorizationPlan* plan, GenTree* tree, bool* foundBoundsCheck = nullptr);
     void        RecordLocalDef(LoopVectorizationPlan* plan, unsigned lclNum, GenTree* value);
     bool        TryGetLocalDef(LoopVectorizationPlan* plan, unsigned lclNum, GenTree** value);

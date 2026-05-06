@@ -459,7 +459,7 @@ bool AutoVectorizer::IsProfitableVectorSize(const LoopVectorizationPlan* plan, u
 
 bool AutoVectorizer::TryGetConstantTripCount(const LoopVectorizationPlan* plan, unsigned* tripCount) const
 {
-    if (plan->IsPostIV || (plan->End == nullptr) || !plan->End->IsCnsIntOrI())
+    if (plan->IsPostIV || !plan->HasConstInit || (plan->End == nullptr) || !plan->End->IsCnsIntOrI())
     {
         return false;
     }
@@ -607,14 +607,6 @@ bool AutoVectorizer::TryCreateLoopPlan(FlowGraphNaturalLoop* loop, LoopVectoriza
         JITDUMP("loop " FMT_LP " has guarded canonical iteration\n", loop->GetIndex());
     }
 
-    if (!iterInfo.HasConstInit || (iterInfo.ConstInitValue < 0))
-    {
-        JITDUMP("IV update:\n");
-        JITDUMPEXEC(m_compiler->gtDispTree(iterInfo.IterTree));
-        JITDUMP("IV init is not a non-negative constant, bail out\n");
-        return false;
-    }
-
     int step = iterInfo.IterConst();
     if (iterInfo.IterOper() == GT_SUB)
     {
@@ -633,7 +625,7 @@ bool AutoVectorizer::TryCreateLoopPlan(FlowGraphNaturalLoop* loop, LoopVectoriza
     }
 
     const bool isSupportedNotEqualLoop =
-        (testOper == GT_NE) && (step == 1) &&
+        (testOper == GT_NE) && iterInfo.HasConstInit && (step == 1) &&
         (iterInfo.HasArrayLengthLimit || iterInfo.HasInvariantLocalLimit ||
          (iterInfo.HasConstLimit && (iterInfo.ConstLimit() > iterInfo.ConstInitValue)));
     const bool isSupportedIncreasingLoop = iterInfo.IsIncreasingLoop() || isSupportedNotEqualLoop;
@@ -674,12 +666,21 @@ bool AutoVectorizer::TryCreateLoopPlan(FlowGraphNaturalLoop* loop, LoopVectoriza
     plan->TestBlock      = iterInfo.TestBlock;
     plan->TestOper       = isSupportedNotEqualLoop ? testOper : normalizedTestOper;
     plan->Step           = 1;
-    plan->ConstInitValue = static_cast<int>(iterInfo.ConstInitValue);
+    plan->HasConstInit   = iterInfo.HasConstInit;
+    plan->ConstInitValue = iterInfo.HasConstInit ? static_cast<int>(iterInfo.ConstInitValue) : 0;
     plan->ElementType    = TYP_UNDEF;
     plan->ElementSize    = 0;
 
-    JITDUMP("loop " FMT_LP " canonical IV V%02u, init=%d, step=1, test=%s\n", loop->GetIndex(), iterInfo.IterVar,
-            iterInfo.ConstInitValue, GenTree::OpName(testOper));
+    if (iterInfo.HasConstInit)
+    {
+        JITDUMP("loop " FMT_LP " canonical IV V%02u, init=%d, step=1, test=%s\n", loop->GetIndex(), iterInfo.IterVar,
+                iterInfo.ConstInitValue, GenTree::OpName(testOper));
+    }
+    else
+    {
+        JITDUMP("loop " FMT_LP " canonical IV V%02u, init=<unknown>, step=1, test=%s\n", loop->GetIndex(),
+                iterInfo.IterVar, GenTree::OpName(testOper));
+    }
 
     if (!TryAnalyzeMemory(plan))
     {
@@ -882,6 +883,17 @@ bool AutoVectorizer::TryCreateLocalLimitLoopPlan(FlowGraphNaturalLoop* loop, Loo
     for (Statement* const stmt : plan->Preheader->Statements())
     {
         RecordLocalDefs(plan, stmt->GetRootNode());
+    }
+
+    GenTree* initDef = nullptr;
+    if (TryGetLocalDef(plan, ivLcl, &initDef) && initDef->IsCnsIntOrI())
+    {
+        const ssize_t initValue = initDef->AsIntConCommon()->IconValue();
+        if ((initValue >= INT_MIN) && (initValue <= INT_MAX))
+        {
+            plan->HasConstInit   = true;
+            plan->ConstInitValue = static_cast<int>(initValue);
+        }
     }
 
     Statement* iterStmt = nullptr;
@@ -1113,6 +1125,13 @@ bool AutoVectorizer::ValidateMemoryDependences(LoopVectorizationPlan* plan)
             const LoopVectorizationPlan::ScalarAccess& load = plan->LoadAccesses[loadIndex];
             if (MayAlias(store, load) && (store.IndexOffset != load.IndexOffset))
             {
+                if (!plan->IsPostIV && (plan->Step > 0) && (load.IndexOffset > store.IndexOffset))
+                {
+                    JITDUMP("store offset=%d, load offset=%d; forward load is not loop-carried\n",
+                            store.IndexOffset, load.IndexOffset);
+                    continue;
+                }
+
                 if (plan->IsPostIV && (plan->StoreCount == 1) && (plan->LoadCount == 1))
                 {
                     plan->NeedsOverlapCheck = true;
@@ -1874,56 +1893,87 @@ bool AutoVectorizer::TryBuildSLPPlan(LoopVectorizationPlan* plan)
 
     if (plan->SawBoundsCheck)
     {
-        unsigned lengthLcls[LoopVectorizationPlan::MaxAccesses] = {};
-        int      endOffsets[LoopVectorizationPlan::MaxAccesses] = {};
-        unsigned lengthCount                                    = 0;
-        if (!TryCollectArrayLengthLimitLocals(plan, plan->End, lengthLcls, endOffsets,
-                                              LoopVectorizationPlan::MaxAccesses, &lengthCount))
+        if (!plan->HasConstInit || ((plan->ConstInitValue + plan->MinIndexOffset) < 0))
         {
-            JITDUMP("loop limit:\n");
-            JITDUMPEXEC(m_compiler->gtDispTree(plan->End));
-            JITDUMP("remaining bounds check without vector-limit proof for max offset %d, bail out\n",
-                    plan->MaxIndexOffset);
+            JITDUMP("hasConstInit=%s, init=%d, minIndexOffset=%d\n", dspBool(plan->HasConstInit),
+                    plan->ConstInitValue, plan->MinIndexOffset);
+            JITDUMP("remaining bounds check without lower-bound proof, bail out\n");
             return false;
         }
 
-        auto hasLimitForAccess = [=](const LoopVectorizationPlan::ScalarAccess& access) {
-            if (access.InvariantIndexLocal != BAD_VAR_NUM)
-            {
-                return false;
-            }
-
-            for (unsigned i = 0; i < lengthCount; i++)
-            {
-                const int accessOffset = access.IndexOffset;
-                if ((lengthLcls[i] == access.BaseLocalIfKnown) &&
-                    ((plan->TestOper == GT_LE) ? (endOffsets[i] <= -1 - accessOffset)
-                                               : (endOffsets[i] <= -accessOffset)))
-                {
-                    return true;
-                }
-            }
-
-            return false;
-        };
-
+        bool hasArrayAccess    = false;
+        bool hasNonArrayAccess = false;
         for (unsigned i = 0; i < plan->StoreCount; i++)
         {
-            if (plan->StoreAccesses[i].IsArray && !hasLimitForAccess(plan->StoreAccesses[i]))
-            {
-                JITDUMPEXEC(m_compiler->gtDispStmt(plan->StoreStmts[i]));
-                JITDUMP("store array does not match a proven loop limit, bail out\n");
-                return false;
-            }
+            hasArrayAccess |= plan->StoreAccesses[i].IsArray;
+            hasNonArrayAccess |= !plan->StoreAccesses[i].IsArray;
         }
 
         for (unsigned i = 0; i < plan->LoadCount; i++)
         {
-            if (plan->LoadAccesses[i].IsArray && !hasLimitForAccess(plan->LoadAccesses[i]))
+            hasArrayAccess |= plan->LoadAccesses[i].IsArray;
+            hasNonArrayAccess |= !plan->LoadAccesses[i].IsArray;
+        }
+
+        if (hasNonArrayAccess && !TryProveRemainingBoundsChecks(plan))
+        {
+            JITDUMP("remaining bounds check on byref/span access is not proven by loop limit, bail out\n");
+            return false;
+        }
+
+        if (hasArrayAccess)
+        {
+            unsigned lengthLcls[LoopVectorizationPlan::MaxAccesses] = {};
+            int      endOffsets[LoopVectorizationPlan::MaxAccesses] = {};
+            unsigned lengthCount                                    = 0;
+            if (!TryCollectArrayLengthLimitLocals(plan, plan->End, lengthLcls, endOffsets,
+                                                  LoopVectorizationPlan::MaxAccesses, &lengthCount))
             {
-                JITDUMPEXEC(m_compiler->gtDispTree(plan->LoadAccesses[i].Address));
-                JITDUMP("load array does not match a proven loop limit, bail out\n");
+                JITDUMP("loop limit:\n");
+                JITDUMPEXEC(m_compiler->gtDispTree(plan->End));
+                JITDUMP("remaining bounds check without vector-limit proof for max offset %d, bail out\n",
+                        plan->MaxIndexOffset);
                 return false;
+            }
+
+            auto hasLimitForAccess = [=](const LoopVectorizationPlan::ScalarAccess& access) {
+                if (access.InvariantIndexLocal != BAD_VAR_NUM)
+                {
+                    return false;
+                }
+
+                for (unsigned i = 0; i < lengthCount; i++)
+                {
+                    const int accessOffset = access.IndexOffset;
+                    if ((lengthLcls[i] == access.BaseLocalIfKnown) &&
+                        ((plan->TestOper == GT_LE) ? (endOffsets[i] <= -1 - accessOffset)
+                                                   : (endOffsets[i] <= -accessOffset)))
+                    {
+                        return true;
+                    }
+                }
+
+                return false;
+            };
+
+            for (unsigned i = 0; i < plan->StoreCount; i++)
+            {
+                if (plan->StoreAccesses[i].IsArray && !hasLimitForAccess(plan->StoreAccesses[i]))
+                {
+                    JITDUMPEXEC(m_compiler->gtDispStmt(plan->StoreStmts[i]));
+                    JITDUMP("store array does not match a proven loop limit, bail out\n");
+                    return false;
+                }
+            }
+
+            for (unsigned i = 0; i < plan->LoadCount; i++)
+            {
+                if (plan->LoadAccesses[i].IsArray && !hasLimitForAccess(plan->LoadAccesses[i]))
+                {
+                    JITDUMPEXEC(m_compiler->gtDispTree(plan->LoadAccesses[i].Address));
+                    JITDUMP("load array does not match a proven loop limit, bail out\n");
+                    return false;
+                }
             }
         }
     }
@@ -3540,6 +3590,131 @@ bool AutoVectorizer::TryAnalyzeArrayAddress(LoopVectorizationPlan*              
     return true;
 }
 
+bool AutoVectorizer::IsSameLimit(LoopVectorizationPlan* plan, GenTree* first, GenTree* second, unsigned depth)
+{
+    if (depth > MaxPackDepth)
+    {
+        return false;
+    }
+
+    first  = UnwrapCommaValue(first);
+    second = UnwrapCommaValue(second);
+
+    if (GenTree::Compare(first, second))
+    {
+        return true;
+    }
+
+    if (first->OperIs(GT_LCL_VAR))
+    {
+        GenTree* def = nullptr;
+        if (TryGetLocalDef(plan, first->AsLclVarCommon()->GetLclNum(), &def))
+        {
+            return IsSameLimit(plan, def, second, depth + 1);
+        }
+    }
+
+    if (second->OperIs(GT_LCL_VAR))
+    {
+        GenTree* def = nullptr;
+        if (TryGetLocalDef(plan, second->AsLclVarCommon()->GetLclNum(), &def))
+        {
+            return IsSameLimit(plan, first, def, depth + 1);
+        }
+    }
+
+    return false;
+}
+
+bool AutoVectorizer::TryProveRemainingBoundsChecks(LoopVectorizationPlan* plan)
+{
+    if (plan->IsPostIV || (plan->End == nullptr))
+    {
+        return false;
+    }
+
+    bool failed = false;
+
+    class Visitor final : public GenTreeVisitor<Visitor>
+    {
+    public:
+        enum
+        {
+            DoPreOrder = true,
+        };
+
+        Visitor(Compiler* compiler, AutoVectorizer* vectorizer, LoopVectorizationPlan* plan, bool* failed)
+            : GenTreeVisitor<Visitor>(compiler)
+            , m_vectorizer(vectorizer)
+            , m_plan(plan)
+            , m_failed(failed)
+        {
+        }
+
+        fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
+        {
+            GenTree* const tree = *use;
+            if (!tree->OperIs(GT_BOUNDS_CHECK))
+            {
+                return fgWalkResult::WALK_CONTINUE;
+            }
+
+            GenTreeBoundsChk* const boundsCheck = tree->AsBoundsChk();
+            int                     indexOffset = 0;
+            bool                    sawIv       = false;
+            if (!m_vectorizer->TryAnalyzeIndexExpr(m_plan, boundsCheck->GetIndex(), m_plan->InductionVar,
+                                                   &indexOffset, nullptr, &sawIv) ||
+                !sawIv)
+            {
+                JITDUMPEXEC(m_compiler->gtDispTree(tree));
+                JITDUMP("bounds-check index is not the loop IV, bail out\n");
+                *m_failed = true;
+                return fgWalkResult::WALK_ABORT;
+            }
+
+            if (indexOffset != 0)
+            {
+                JITDUMPEXEC(m_compiler->gtDispTree(tree));
+                JITDUMP("byref/span bounds-check index offset %d is not supported, bail out\n", indexOffset);
+                *m_failed = true;
+                return fgWalkResult::WALK_ABORT;
+            }
+
+            if (!m_vectorizer->IsSameLimit(m_plan, boundsCheck->GetArrayLength(), m_plan->End))
+            {
+                JITDUMPEXEC(m_compiler->gtDispTree(tree));
+                JITDUMP("bounds-check length does not match loop limit, bail out\n");
+                *m_failed = true;
+                return fgWalkResult::WALK_ABORT;
+            }
+
+            return fgWalkResult::WALK_CONTINUE;
+        }
+
+    private:
+        AutoVectorizer*        m_vectorizer;
+        LoopVectorizationPlan* m_plan;
+        bool*                  m_failed;
+    };
+
+    plan->Loop->VisitLoopBlocks([&](BasicBlock* block) {
+        for (Statement* const stmt : block->Statements())
+        {
+            GenTree* root = stmt->GetRootNode();
+            Visitor visitor(m_compiler, this, plan, &failed);
+            visitor.WalkTree(&root, nullptr);
+            if (failed)
+            {
+                return BasicBlockVisit::Abort;
+            }
+        }
+
+        return BasicBlockVisit::Continue;
+    });
+
+    return !failed;
+}
+
 void AutoVectorizer::RecordLocalDefs(LoopVectorizationPlan* plan, GenTree* tree, bool* foundBoundsCheck)
 {
     class Visitor final : public GenTreeVisitor<Visitor>
@@ -3668,6 +3843,34 @@ bool AutoVectorizer::TryCollectArrayLengthLimitLocals(LoopVectorizationPlan* pla
         offsets[*count] = offset;
         (*count)++;
         return true;
+    }
+
+    if (tree->OperIs(GT_SELECT))
+    {
+        GenTreeConditional* const select = tree->AsConditional();
+        GenTree* const            cond   = UnwrapCommaValue(select->gtCond);
+        GenTree* const            thenOp = UnwrapCommaValue(select->gtOp1);
+        GenTree* const            elseOp = UnwrapCommaValue(select->gtOp2);
+
+        if (cond->OperIsCompare())
+        {
+            GenTree* const cmpOp1 = UnwrapCommaValue(cond->AsOp()->gtOp1);
+            GenTree* const cmpOp2 = UnwrapCommaValue(cond->AsOp()->gtOp2);
+
+            const bool isMinSelect =
+                (GenTree::StaticOperIs(cond->OperGet(), GT_LT, GT_LE) && GenTree::Compare(cmpOp1, thenOp) &&
+                 GenTree::Compare(cmpOp2, elseOp)) ||
+                (GenTree::StaticOperIs(cond->OperGet(), GT_GT, GT_GE) && GenTree::Compare(cmpOp2, thenOp) &&
+                 GenTree::Compare(cmpOp1, elseOp));
+
+            if (isMinSelect)
+            {
+                return TryCollectArrayLengthLimitLocals(plan, thenOp, lclNums, offsets, maxCount, count, depth + 1) &&
+                       TryCollectArrayLengthLimitLocals(plan, elseOp, lclNums, offsets, maxCount, count, depth + 1);
+            }
+        }
+
+        return false;
     }
 
     if (!tree->OperIs(GT_INTRINSIC))
