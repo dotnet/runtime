@@ -879,7 +879,6 @@ namespace System.Threading
 
 #if CORECLR
         [System.Runtime.InteropServices.UnmanagedCallersOnly]
-        [RequiresUnsafe]
         private static unsafe void InitializeForMonitor(Lock* pLock, int managedThreadId, uint recursionCount, Exception* pException)
         {
             try

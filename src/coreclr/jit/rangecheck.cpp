@@ -208,7 +208,10 @@ bool RangeCheck::BetweenBounds(Range& range, GenTree* upper, int arrSize)
         if (range.LowerLimit().IsBinOpArray())
         {
             int lcns = range.LowerLimit().GetConstant();
-            if (lcns >= 0 || -lcns > arrSize)
+            // Use "lcns < -arrSize" rather than "-lcns > arrSize" to avoid signed
+            // overflow when lcns == INT_MIN.
+            assert(arrSize > 0);
+            if (lcns >= 0 || lcns < -arrSize)
             {
                 return false;
             }
@@ -236,8 +239,11 @@ bool RangeCheck::BetweenBounds(Range& range, GenTree* upper, int arrSize)
         if (range.LowerLimit().IsBinOpArray())
         {
             int lcns = range.LowerLimit().GetConstant();
-            // len + lcns, make sure we don't subtract too much from len.
-            if (lcns >= 0 || -lcns > arrSize)
+            // len + lcns, make sure we don't subtract too much from len. Use
+            // "lcns < -arrSize" rather than "-lcns > arrSize" to avoid signed
+            // overflow when lcns == INT_MIN.
+            assert(arrSize > 0);
+            if (lcns >= 0 || lcns < -arrSize)
             {
                 return false;
             }

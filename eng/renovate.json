@@ -37,7 +37,9 @@
         "eng/pipelines/libraries/helix-queues-setup.yml"
       ],
       "pinDigests": true,
-      "commitMessageTopic": "container image dependencies"
+      "groupName": "container image digests",
+      "groupSlug": "container-image-digests",
+      "commitMessageTopic": "container image digests"
     }
   ]
 }

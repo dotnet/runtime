@@ -77,8 +77,6 @@ void Compiler::unwindEmit(void* pHotCode, void* pColdCode)
     assert(!compGeneratingProlog);
     assert(!compGeneratingEpilog);
 
-    GetEmitter()->emitUpdateFuncletLocations();
-
     for (FuncInfoDsc* const func : Funcs())
     {
         unwindEmitFunc(func, pHotCode, pColdCode);

@@ -789,8 +789,7 @@ void DECLSPEC_NORETURN EEPolicy::HandleFatalStackOverflow(EXCEPTION_POINTERS *pE
             OBJECTHANDLE ohSO = CLRException::GetPreallocatedStackOverflowExceptionHandle();
             if (ohSO != NULL)
             {
-                pThread->SafeSetThrowables(ObjectFromHandle(ohSO)
-                                           DEBUG_ARG(ThreadExceptionState::STEC_CurrentTrackerEqualNullOkHackForFatalStackOverflow),
+                pThread->SafeSetThrowables(ObjectFromHandle(ohSO),
                                            TRUE);
             }
             else
@@ -912,7 +911,7 @@ int NOINLINE EEPolicy::HandleFatalError(UINT exitCode, UINT_PTR address, LPCWSTR
     return -1;
 }
 
-#ifdef HOST_ANDROID
+#if defined(HOST_ANDROID) || defined(HOST_IOS) || defined(HOST_TVOS) || defined(HOST_MACCATALYST)
 // Logs the managed callstack when a signal is received.
 void EEPolicy::LogManagedCallstackForSignal(LPCWSTR signalName)
 {
@@ -927,4 +926,4 @@ void EEPolicy::LogManagedCallstackForSignal(LPCWSTR signalName)
 
     LogInfoForFatalError(0, message.GetUnicode(), nullptr, nullptr, nullptr);
 }
-#endif // HOST_ANDROID
+#endif

@@ -809,9 +809,15 @@ PCODE MethodDesc::JitCompileCodeLockedEventWrapper(PrepareCodeConfig* pConfig, J
 #ifdef FEATURE_INTERPRETER
         if (isInterpreterCode)
         {
-            // If this is interpreter code, we need to get the native code start address from the interpreter Precode
+            // If this is interpreter code, get the native code start address from the
+            // interpreter entrypoint data: PortableEntryPoint interpreter data when
+            // FEATURE_PORTABLE_ENTRYPOINTS is enabled, otherwise the interpreter Precode.
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+            InterpByteCodeStart* interpreterCode = (InterpByteCodeStart*)PortableEntryPoint::GetInterpreterData(pCode);
+#else // !FEATURE_PORTABLE_ENTRYPOINTS
             InterpreterPrecode* pPrecode = InterpreterPrecode::FromEntryPoint(pCode);
             InterpByteCodeStart* interpreterCode = dac_cast<InterpByteCodeStart*>(pPrecode->GetData()->ByteCodeAddr);
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
             pNativeCodeStartAddress = PINSTRToPCODE(dac_cast<TADDR>(interpreterCode));
         }
 #endif // FEATURE_INTERPRETER
@@ -1929,7 +1935,7 @@ extern "C" PCODE STDCALL PreStubWorker(TransitionBlock* pTransitionBlock, Method
         {
             OBJECTHANDLE ohThrowable = CURRENT_THREAD->LastThrownObjectHandle();
             _ASSERTE(ohThrowable);
-            StackTraceInfo::AppendElement(ohThrowable, 0, (UINT_PTR)pTransitionBlock, pMD, NULL);
+            StackTraceInfo::AppendElement(ObjectFromHandle(ohThrowable), 0, (UINT_PTR)pTransitionBlock, pMD, NULL);
             EX_RETHROW;
         }
         EX_END_CATCH
@@ -2134,7 +2140,7 @@ void ExecuteInterpretedMethodWithArgs_PortableEntryPoint_Complex(PCODE portableE
             _ASSERTE(ohThrowable);
             if (finishedPrestubPortion)
             {
-                StackTraceInfo::AppendElement(ohThrowable, 0, (UINT_PTR)block, pMethod, NULL);
+                StackTraceInfo::AppendElement(ObjectFromHandle(ohThrowable), 0, (UINT_PTR)block, pMethod, NULL);
             }
             EX_RETHROW;
         }
@@ -2528,7 +2534,7 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
             // Check to see if the entrypoint is into the interpreter. If so, grab the interpreter codes from the stub and put that directly
             // into the MethodDesc
             TADDR functionAddress = GetOrCreatePrecode()->GetTarget();
-            TADDR byteCodeStartOrFunctionAddress = GetInterpreterCodeFromInterpreterPrecodeIfPresent(functionAddress);
+            TADDR byteCodeStartOrFunctionAddress = GetInterpreterCodeFromEntryPointIfPresent(functionAddress);
             if (byteCodeStartOrFunctionAddress != functionAddress)
             {
                 // Then we must have an InterpByteCodeStart

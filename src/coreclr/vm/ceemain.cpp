@@ -147,7 +147,6 @@
 #include "eventtrace.h"
 #include "corhost.h"
 #include "binder.h"
-#include "olevariant.h"
 #include "comcallablewrapper.h"
 #include "../dlls/mscorrc/resource.h"
 #include "util.hpp"
@@ -209,6 +208,10 @@
 #ifdef FEATURE_GDBJIT
 #include "gdbjit.h"
 #endif // FEATURE_GDBJIT
+
+#ifdef FEATURE_INPROC_CRASHREPORT
+#include "crashreportstackwalker.h"
+#endif // FEATURE_INPROC_CRASHREPORT
 
 #include "genanalysis.h"
 
@@ -706,9 +709,13 @@ void EEStartupHelper()
         PAL_SetShutdownCallback(EESocketCleanupHelper);
 #endif // TARGET_UNIX
 
-#ifdef HOST_ANDROID
+#if defined(HOST_ANDROID) || defined(HOST_IOS) || defined(HOST_TVOS) || defined(HOST_MACCATALYST)
         PAL_SetLogManagedCallstackForSignalCallback(EEPolicy::LogManagedCallstackForSignal);
-#endif // HOST_ANDROID
+#endif
+
+#ifdef FEATURE_INPROC_CRASHREPORT
+        CrashReportConfigure();
+#endif // FEATURE_INPROC_CRASHREPORT
 
 #ifdef STRESS_LOG
         if (CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_StressLog, g_pConfig->StressLog()) != 0) {

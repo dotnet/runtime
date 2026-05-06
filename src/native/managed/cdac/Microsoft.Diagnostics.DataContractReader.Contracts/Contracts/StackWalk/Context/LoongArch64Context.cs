@@ -36,10 +36,9 @@ internal struct LoongArch64Context : IPlatformContext
 
     public readonly uint Size => 0x320;
 
-    public readonly uint DefaultContextFlags => (uint)(ContextFlagsValues.CONTEXT_CONTROL |
-                                                       ContextFlagsValues.CONTEXT_INTEGER |
-                                                       ContextFlagsValues.CONTEXT_FLOATING_POINT |
-                                                       ContextFlagsValues.CONTEXT_DEBUG_REGISTERS);
+    public readonly uint FullContextFlags => (uint)ContextFlagsValues.CONTEXT_FULL;
+
+    public readonly uint AllContextFlags => (uint)ContextFlagsValues.CONTEXT_ALL;
 
     public readonly int StackPointerRegister => 3;
 
