@@ -183,6 +183,10 @@ endif()
 target_link_libraries(coreclr_static PUBLIC ${CORECLR_LIBRARIES} ${CORECLR_STATIC_CLRJIT_STATIC} ${CORECLR_STATIC_CLRINTERPRETER_STATIC} cee_wks_core ${CEE_WKS_STATIC} ${FOUNDATION})
 target_compile_definitions(coreclr_static PUBLIC CORECLR_EMBEDDED)
 
+if(FEATURE_INPROC_CRASHREPORT AND NOT CLR_CROSS_COMPONENTS_BUILD)
+    target_sources(coreclr_static PRIVATE $<TARGET_OBJECTS:inproccrashreport>)
+endif()
+
 if (CLR_CMAKE_HOST_ANDROID)
     target_link_libraries(coreclr PUBLIC log)
 endif()

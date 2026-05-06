@@ -117,12 +117,9 @@ inline LPVOID CORDbgGetFP(DT_CONTEXT* context)
     return (LPVOID)(UINT_PTR)0;
 }
 
-// compare the EIP, ESP, and EBP
 inline BOOL CompareControlRegisters(const DT_CONTEXT * pCtx1, const DT_CONTEXT * pCtx2)
 {
     LIMITED_METHOD_DAC_CONTRACT;
-
-    // @ARMTODO: Sort out frame registers
 
     if ((pCtx1->Pc == pCtx2->Pc) &&
         (pCtx1->Sp == pCtx2->Sp))

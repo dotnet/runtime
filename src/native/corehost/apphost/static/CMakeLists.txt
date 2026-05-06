@@ -266,6 +266,24 @@ endif()
 
 set_property(TARGET singlefilehost PROPERTY ENABLE_EXPORTS 1)
 
+# Force the linker to pull in symbols from coreclr_static even though nothing in
+# singlefilehost references them directly. Without this, the linker's dead code
+# elimination can drop object files and the exports are missing from the binary.
+# This should be kept in sync with singlefilehost_unixexports.src.
+if(CLR_CMAKE_TARGET_APPLE)
+    target_link_options(singlefilehost PRIVATE
+        -Wl,-u,_DotNetRuntimeInfo
+        -Wl,-u,_g_dacTable
+        -Wl,-u,_MetaDataGetDispenser
+        -Wl,-u,_DotNetRuntimeContractDescriptor)
+elseif(NOT CLR_CMAKE_TARGET_WIN32)
+    target_link_options(singlefilehost PRIVATE
+        -Wl,-u,DotNetRuntimeInfo
+        -Wl,-u,g_dacTable
+        -Wl,-u,MetaDataGetDispenser
+        -Wl,-u,DotNetRuntimeContractDescriptor)
+endif()
+
 target_link_libraries(
     singlefilehost
     PRIVATE

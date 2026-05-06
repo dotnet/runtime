@@ -101,6 +101,7 @@ public interface IExecutionManager : IContract
     List<ExceptionClauseInfo> GetExceptionClauses(CodeBlockHandle codeInfoHandle) => throw new NotImplementedException();
     JitManagerInfo GetEEJitManagerInfo() => throw new NotImplementedException();
     IEnumerable<ICodeHeapInfo> GetCodeHeapInfos() => throw new NotImplementedException();
+    TargetPointer FindReadyToRunModule(TargetPointer address) => throw new NotImplementedException();
 }
 
 public readonly struct ExecutionManager : IExecutionManager

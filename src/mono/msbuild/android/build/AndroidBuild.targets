@@ -137,7 +137,7 @@
     </PropertyGroup>
 
     <PropertyGroup>
-      <AndroidLibraryMinApiLevel Condition="'$(AndroidLibraryMinApiLevel)' == ''">21</AndroidLibraryMinApiLevel>
+      <AndroidLibraryMinApiLevel Condition="'$(AndroidLibraryMinApiLevel)' == ''">24</AndroidLibraryMinApiLevel>
     </PropertyGroup>
 
     <ItemGroup>
@@ -254,6 +254,7 @@
         DiagnosticPorts="$(DiagnosticPorts)"
         EnvironmentVariables="@(AndroidEnv)"
         ExtraLinkerArguments="@(ExtraAppLinkerArgs)"
+        ExtraNativeSources="@(ExtraAppNativeSources)"
         ForceAOT="$(RunAOTCompilation)"
         ForceFullAOT="$(ForceFullAOT)"
         ForceInterpreter="$(MonoForceInterpreter)"

@@ -29,7 +29,10 @@ function mergeConfigs(target: LoaderConfigInternal, source: Partial<LoaderConfig
     // no need to merge the same object
     if (target === source || source === undefined || source === null) return target;
 
+    // Merge collections: target values first, then source values appended/spread on top.
     mergeResources(target.resources!, source.resources!);
+    // For scalar fields with defaults, prefer source when defined, otherwise keep target default.
+    // We patch source so that Object.assign below copies the correct resolved value.
     source.appendElementOnExit = source.appendElementOnExit !== undefined ? source.appendElementOnExit : target.appendElementOnExit;
     source.logExitCode = source.logExitCode !== undefined ? source.logExitCode : target.logExitCode;
     source.exitOnUnhandledError = source.exitOnUnhandledError !== undefined ? source.exitOnUnhandledError : target.exitOnUnhandledError;
@@ -38,10 +41,17 @@ function mergeConfigs(target: LoaderConfigInternal, source: Partial<LoaderConfig
     source.virtualWorkingDirectory = source.virtualWorkingDirectory !== undefined ? source.virtualWorkingDirectory : target.virtualWorkingDirectory;
     source.debugLevel = source.debugLevel !== undefined ? source.debugLevel : target.debugLevel;
     source.diagnosticTracing = source.diagnosticTracing !== undefined ? source.diagnosticTracing : target.diagnosticTracing;
+    // Merge maps and arrays: target values first, source values merged on top.
     source.environmentVariables = { ...target.environmentVariables, ...source.environmentVariables };
     source.runtimeOptions = [...target.runtimeOptions!, ...source.runtimeOptions!];
     source.runtimeConfig!.runtimeOptions!.configProperties = { ...target.runtimeConfig!.runtimeOptions!.configProperties!, ...source.runtimeConfig!.runtimeOptions!.configProperties! };
+    // Copy all properties from source into target, including any simple properties
+    // (e.g. maxParallelDownloads, applicationCulture, disableIntegrityCheck, etc.)
+    // that don't need special merge logic.
+    const mergedResources = target.resources;
     Object.assign(target, source);
+    // Restore merged resources that Object.assign would have overwritten.
+    target.resources = mergedResources;
     return target;
 }
 
@@ -49,31 +59,28 @@ function mergeResources(target: Assets, source: Assets): Assets {
     // no need to merge the same object
     if (target === source || source === undefined || source === null) return target;
 
-    source.coreAssembly = [...target.coreAssembly!, ...source.coreAssembly!];
-    source.assembly = [...target.assembly!, ...source.assembly!];
-    source.lazyAssembly = [...target.lazyAssembly!, ...source.lazyAssembly!];
-    source.corePdb = [...target.corePdb!, ...source.corePdb!];
-    source.pdb = [...target.pdb!, ...source.pdb!];
-    source.jsModuleWorker = [...target.jsModuleWorker!, ...source.jsModuleWorker!];
-    source.jsModuleNative = [...target.jsModuleNative!, ...source.jsModuleNative!];
-    source.jsModuleDiagnostics = [...target.jsModuleDiagnostics!, ...source.jsModuleDiagnostics!];
-    source.jsModuleRuntime = [...target.jsModuleRuntime!, ...source.jsModuleRuntime!];
-    source.wasmSymbols = [...target.wasmSymbols!, ...source.wasmSymbols!];
-    source.wasmNative = [...target.wasmNative!, ...source.wasmNative!];
-    source.icu = [...target.icu!, ...source.icu!];
-    source.vfs = [...target.vfs!, ...source.vfs!];
-    source.modulesAfterConfigLoaded = [...target.modulesAfterConfigLoaded!, ...source.modulesAfterConfigLoaded!];
-    source.modulesAfterRuntimeReady = [...target.modulesAfterRuntimeReady!, ...source.modulesAfterRuntimeReady!];
-    source.extensions = { ...target.extensions!, ...source.extensions! };
-    for (const key in source.satelliteResources) {
-        source.satelliteResources![key] = [...target.satelliteResources![key] || [], ...source.satelliteResources![key] || []];
+    target.hash = source.hash ?? target.hash;
+    target.coreAssembly = [...target.coreAssembly!, ...source.coreAssembly || []];
+    target.assembly = [...target.assembly!, ...source.assembly || []];
+    target.lazyAssembly = [...target.lazyAssembly!, ...source.lazyAssembly || []];
+    target.corePdb = [...target.corePdb!, ...source.corePdb || []];
+    target.pdb = [...target.pdb!, ...source.pdb || []];
+    target.jsModuleWorker = [...target.jsModuleWorker!, ...source.jsModuleWorker || []];
+    target.jsModuleNative = [...target.jsModuleNative!, ...source.jsModuleNative || []];
+    target.jsModuleDiagnostics = [...target.jsModuleDiagnostics!, ...source.jsModuleDiagnostics || []];
+    target.jsModuleRuntime = [...target.jsModuleRuntime!, ...source.jsModuleRuntime || []];
+    target.wasmSymbols = [...target.wasmSymbols!, ...source.wasmSymbols || []];
+    target.wasmNative = [...target.wasmNative!, ...source.wasmNative || []];
+    target.icu = [...target.icu!, ...source.icu || []];
+    target.vfs = [...target.vfs!, ...source.vfs || []];
+    target.coreVfs = [...target.coreVfs!, ...source.coreVfs || []];
+    target.modulesAfterConfigLoaded = [...target.modulesAfterConfigLoaded!, ...source.modulesAfterConfigLoaded || []];
+    target.modulesAfterRuntimeReady = [...target.modulesAfterRuntimeReady!, ...source.modulesAfterRuntimeReady || []];
+    target.extensions = { ...target.extensions!, ...source.extensions || {} };
+    for (const key in source.satelliteResources || {}) {
+        target.satelliteResources![key] = [...target.satelliteResources![key] || [], ...source.satelliteResources![key] || []];
     }
-    for (const key in target.satelliteResources) {
-        if (!Object.prototype.hasOwnProperty.call(source.satelliteResources, key)) {
-            source.satelliteResources![key] = target.satelliteResources![key] || [];
-        }
-    }
-    return Object.assign(target, source);
+    return target;
 }
 
 function defaultConfig(target: LoaderConfigInternal) {
@@ -120,4 +127,5 @@ function normalizeResources(target: Assets) {
     if (!target.satelliteResources) target.satelliteResources = {};
     if (!target.extensions) target.extensions = {};
     if (!target.vfs) target.vfs = [];
+    if (!target.coreVfs) target.coreVfs = [];
 }

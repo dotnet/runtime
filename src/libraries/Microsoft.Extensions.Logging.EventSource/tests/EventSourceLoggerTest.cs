@@ -9,6 +9,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
+using Microsoft.DotNet.RemoteExecutor;
 using Microsoft.Extensions.Logging.EventSource;
 using Xunit;
 using Newtonsoft.Json;
@@ -758,6 +759,59 @@ namespace Microsoft.Extensions.Logging.Test
             {
                 Assert.True(eventJson.Contains(fragments[i]), $"Event data '{eventJson}' does not contain expected fragment {fragments[i]}");
             }
+        }
+
+        /// <summary>
+        /// Regression test for https://github.com/dotnet/runtime/issues/127681
+        /// Verifies that ParseFilterSpec correctly splits on semicolons when the
+        /// EventSource is first enabled during its own type initializer. This requires
+        /// a fresh process because LoggingEventSource.Instance is a singleton.
+        /// </summary>
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void FilterSpec_ParsedCorrectly_WhenEnabledDuringTypeInitializer()
+        {
+            RemoteExecutor.Invoke(static () =>
+            {
+                // Add a listener with a multi-rule FilterSpec BEFORE LoggingEventSource is created
+                // to test the reentrancy of ParseFilterSpec when LoggingEventSource is enabled
+                using var listener = new PreEnableListener("Cat1:Warning;Cat2:Error");
+
+                using ILoggerFactory factory = LoggerFactory.Create(b => b.AddEventSourceLogger());
+                ILogger cat1 = factory.CreateLogger("Cat1");
+                ILogger cat2 = factory.CreateLogger("Cat2");
+
+                Assert.True(cat1.IsEnabled(LogLevel.Warning), "Cat1 should be enabled at Warning");
+                Assert.False(cat1.IsEnabled(LogLevel.Information), "Cat1 should NOT be enabled at Information");
+                Assert.True(cat2.IsEnabled(LogLevel.Error), "Cat2 should be enabled at Error");
+                Assert.False(cat2.IsEnabled(LogLevel.Warning), "Cat2 should NOT be enabled at Warning");
+            }).Dispose();
+        }
+
+        /// <summary>
+        /// EventListener that enables LoggingEventSource with a given FilterSpec
+        /// as soon as it sees the source being created (via OnEventSourceCreated).
+        /// Used by the RemoteExecutor regression test to exercise the deferred-command
+        /// path during type initialization.
+        /// </summary>
+        private class PreEnableListener : EventListener
+        {
+            private readonly string _filterSpec;
+
+            public PreEnableListener(string filterSpec)
+            {
+                _filterSpec = filterSpec;
+            }
+
+            protected override void OnEventSourceCreated(System.Diagnostics.Tracing.EventSource eventSource)
+            {
+                if (eventSource.Name == "Microsoft-Extensions-Logging")
+                {
+                    var args = new Dictionary<string, string> { ["FilterSpecs"] = _filterSpec };
+                    EnableEvents(eventSource, EventLevel.Verbose, LoggingEventSource.Keywords.JsonMessage, args);
+                }
+            }
+
+            protected override void OnEventWritten(EventWrittenEventArgs eventData) { }
         }
 
         private class TestEventListener : EventListener

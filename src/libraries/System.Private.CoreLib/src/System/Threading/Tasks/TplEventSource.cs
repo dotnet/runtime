@@ -128,6 +128,11 @@ namespace System.Threading.Tasks
             /// Relatively Verbose logging meant for debugging the Task library itself.  Will probably be removed in the future
             /// </summary>
             public const EventKeywords DebugActivityId = (EventKeywords)0x40000;
+            /// <summary>
+            /// Enable async instrumentation to track async operations across await/async method boundaries.
+            /// Mainly used by debugger to track task and continuation chain execution.
+            /// </summary>
+            public const EventKeywords AsyncInstrumentation = (EventKeywords)0x80000;
         }
 
         //-----------------------------------------------------------------------------------
