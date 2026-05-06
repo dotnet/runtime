@@ -11501,8 +11501,7 @@ LPVOID CInterpreterJitInfo::GetCookieForInterpreterCalliSig(CORINFO_SIG_INFO* sz
     // When compiling a calli inside an IL stub for a P/Invoke, pass the target
     // P/Invoke MethodDesc so ComputeCallStub can detect the Swift calling convention.
     // Do not cache the cookie on pContextMD: MethodDesc::CalliCookie is shared with
-    // other writers that key on different signatures, which caused null PCODE
-    // dispatch on iOS arm64 (dotnet/runtime#127869).
+    // other writers that key on different signatures.
     MethodDesc* pContextMD = nullptr;
     if (m_pMethodBeingCompiled != nullptr && m_pMethodBeingCompiled->IsILStub())
     {
