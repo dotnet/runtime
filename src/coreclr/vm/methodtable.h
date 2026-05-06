@@ -3818,7 +3818,7 @@ private:
 
         enum_flag_ContainsGCPointers          = 0x01000000, // Contains object references. [cDAC] [RuntimeTypeSystem]: Contract depends on this value
         enum_flag_HasTypeEquivalence          = 0x02000000, // can be equivalent to another type
-        enum_flag_IsTrackedReferenceWithFinalizer = 0x04000000,
+        enum_flag_IsTrackedReferenceWithFinalizer = 0x04000000, // [cDAC] [RuntimeTypeSystem]: Contract depends on this value
         // unused                             = 0x08000000,
 
         enum_flag_IDynamicInterfaceCastable   = 0x10000000, // class implements IDynamicInterfaceCastable interface
