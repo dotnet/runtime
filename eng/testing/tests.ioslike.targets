@@ -14,7 +14,7 @@
     <CustomNativeMain>true</CustomNativeMain>
   </PropertyGroup>
 
-  <ItemGroup Condition="'$(UseNativeAOTRuntime)' == 'true' and '$(IncludesTestRunner)' != 'false'">
+  <ItemGroup Condition="'$(UseNativeAOTRuntime)' == 'true' and '$(IncludesTestRunner)' != 'false' and '$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
     <Compile Include="$(CommonTestPath)AppleTestRunner\AppleTestRunner.cs" Link="Common\AppleTestRunner\AppleTestRunner.cs" />
     <PackageReference Include="Microsoft.DotNet.XHarness.TestRunners.Xunit" Version="$(MicrosoftDotNetXHarnessTestRunnersXunitVersion)" />
 
