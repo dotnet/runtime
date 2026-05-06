@@ -880,9 +880,12 @@ bool AutoVectorizer::TryCreateLocalLimitLoopPlan(FlowGraphNaturalLoop* loop, Loo
         RecordLocalDefs(plan, stmt->GetRootNode());
     }
 
-    for (Statement* const stmt : plan->Preheader->Statements())
+    for (BasicBlock* block = plan->Preheader; block != nullptr; block = block->GetUniquePred(m_compiler))
     {
-        RecordLocalDefs(plan, stmt->GetRootNode());
+        for (Statement* const stmt : block->Statements())
+        {
+            RecordLocalDefs(plan, stmt->GetRootNode());
+        }
     }
 
     GenTree* initDef = nullptr;
@@ -2897,6 +2900,12 @@ GenTree* AutoVectorizer::BuildScalarRemainderTest(LoopVectorizationPlan* plan)
         }
 
         cmp = m_compiler->gtNewOperNode(op, TYP_INT, iv, end);
+    }
+
+    if (!plan->IsPostIV && (cmp->gtGetOp1()->TypeGet() != cmp->gtGetOp2()->TypeGet()))
+    {
+        cmp->AsOp()->gtOp1 = m_compiler->gtNewCastNode(TYP_LONG, cmp->gtGetOp1(), false, TYP_LONG);
+        cmp->AsOp()->gtOp2 = m_compiler->gtNewCastNode(TYP_LONG, cmp->gtGetOp2(), false, TYP_LONG);
     }
 
     return m_compiler->gtNewOperNode(GT_JTRUE, TYP_VOID, cmp);
