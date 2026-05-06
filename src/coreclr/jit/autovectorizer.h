@@ -71,6 +71,7 @@ private:
             unsigned   OffsetLocalIfKnown    = BAD_VAR_NUM;
             unsigned   InvariantIndexLocal   = BAD_VAR_NUM;
             int        IndexOffset           = 0;
+            int        PostIVOffset          = 0;
             unsigned   ElementSize           = 0;
             var_types  ElementType           = TYP_UNDEF;
             bool       IsLoad                = false;
@@ -249,6 +250,11 @@ private:
                                        LoopVectorizationPlan::ScalarAccess* access);
     bool        TryProveRemainingBoundsChecks(LoopVectorizationPlan* plan);
     bool        IsSameLimit(LoopVectorizationPlan* plan, GenTree* first, GenTree* second, unsigned depth = 0);
+    bool        IsLimitAtMost(LoopVectorizationPlan* plan,
+                              GenTree*               limit,
+                              GenTree*               length,
+                              int                    lengthOffset,
+                              unsigned               depth = 0);
     void        RecordLocalDefs(LoopVectorizationPlan* plan, GenTree* tree, bool* foundBoundsCheck = nullptr);
     void        RecordLocalDef(LoopVectorizationPlan* plan, unsigned lclNum, GenTree* value);
     bool        TryGetLocalDef(LoopVectorizationPlan* plan, unsigned lclNum, GenTree** value);

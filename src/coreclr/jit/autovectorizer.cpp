@@ -1103,8 +1103,9 @@ bool AutoVectorizer::AddLoad(LoopVectorizationPlan*                     plan,
         if ((existing.Address == access.Address) ||
             ((existing.BaseLocalIfKnown == access.BaseLocalIfKnown) &&
              (existing.OffsetLocalIfKnown == access.OffsetLocalIfKnown) &&
-             (existing.IndexOffset == access.IndexOffset) && (existing.ElementType == access.ElementType) &&
-             (existing.IsArray == access.IsArray) && (existing.IsByrefLocal == access.IsByrefLocal) &&
+             (existing.IndexOffset == access.IndexOffset) && (existing.PostIVOffset == access.PostIVOffset) &&
+             (existing.ElementType == access.ElementType) && (existing.IsArray == access.IsArray) &&
+             (existing.IsByrefLocal == access.IsByrefLocal) &&
              (existing.IsByrefBaseWithOffset == access.IsByrefBaseWithOffset) &&
              (existing.IsByrefWithIndex == access.IsByrefWithIndex)))
         {
@@ -2861,7 +2862,13 @@ GenTree* AutoVectorizer::BuildPostIVAddress(LoopVectorizationPlan*              
     LclVarDsc* const      arrayDsc   = m_compiler->lvaGetDesc(access.BaseLocalIfKnown);
     LclVarDsc* const      offsetDsc  = m_compiler->lvaGetDesc(access.OffsetLocalIfKnown);
     GenTree* const        arrRef     = m_compiler->gtNewLclvNode(access.BaseLocalIfKnown, arrayDsc->TypeGet());
-    GenTree* const        offset     = m_compiler->gtNewLclvNode(access.OffsetLocalIfKnown, offsetDsc->TypeGet());
+    GenTree*              offset     = m_compiler->gtNewLclvNode(access.OffsetLocalIfKnown, offsetDsc->TypeGet());
+    if (access.PostIVOffset != 0)
+    {
+        offset = m_compiler->gtNewOperNode(GT_ADD, offset->TypeGet(), offset,
+                                           m_compiler->gtNewIconNode(access.PostIVOffset, offset->TypeGet()));
+    }
+
     GenTree* const        addr = adjustForDescendingWalk(m_compiler->gtNewOperNode(GT_ADD, TYP_BYREF, arrRef, offset));
     GenTreeArrAddr* const arrAddr = new (m_compiler, GT_ARR_ADDR)
         GenTreeArrAddr(addr, access.ElementType, oldArrAddr->GetElemClassHandle(), oldArrAddr->GetFirstElemOffset());
@@ -3589,6 +3596,7 @@ bool AutoVectorizer::TryAnalyzePostIVArrayAddress(GenTreeArrAddr* arrAddr, LoopV
     {
         unsigned ArrayLcl  = BAD_VAR_NUM;
         unsigned OffsetLcl = BAD_VAR_NUM;
+        ssize_t  Offset    = 0;
     };
 
     AddressParts parts;
@@ -3617,6 +3625,7 @@ bool AutoVectorizer::TryAnalyzePostIVArrayAddress(GenTreeArrAddr* arrAddr, LoopV
 
             if (tree->IsCnsIntOrI())
             {
+                m_parts->Offset += tree->AsIntConCommon()->IconValue();
                 return true;
             }
 
@@ -3664,13 +3673,15 @@ bool AutoVectorizer::TryAnalyzePostIVArrayAddress(GenTreeArrAddr* arrAddr, LoopV
     };
 
     AddressVisitor visitor(&parts);
-    if (!visitor.Analyze(arrAddr->Addr()) || (parts.ArrayLcl == BAD_VAR_NUM) || (parts.OffsetLcl == BAD_VAR_NUM))
+    if (!visitor.Analyze(arrAddr->Addr()) || (parts.ArrayLcl == BAD_VAR_NUM) || (parts.OffsetLcl == BAD_VAR_NUM) ||
+        (parts.Offset < INT_MIN) || (parts.Offset > INT_MAX))
     {
         return false;
     }
 
     access->BaseLocalIfKnown   = parts.ArrayLcl;
     access->OffsetLocalIfKnown = parts.OffsetLcl;
+    access->PostIVOffset       = static_cast<int>(parts.Offset);
     access->ElementSize        = genTypeSize(arrAddr->GetElemType());
     access->ElementType        = arrAddr->GetElemType();
     access->IsArray            = true;
@@ -4002,6 +4013,105 @@ bool AutoVectorizer::IsSameLimit(LoopVectorizationPlan* plan, GenTree* first, Ge
     return false;
 }
 
+bool AutoVectorizer::IsLimitAtMost(
+    LoopVectorizationPlan* plan, GenTree* limit, GenTree* length, int lengthOffset, unsigned depth)
+{
+    if (depth > MaxPackDepth)
+    {
+        return false;
+    }
+
+    limit  = UnwrapCommaValue(limit);
+    length = UnwrapCommaValue(length);
+
+    if (limit->OperIs(GT_LCL_VAR))
+    {
+        GenTree* def = nullptr;
+        if (TryGetLocalDef(plan, limit->AsLclVarCommon()->GetLclNum(), &def))
+        {
+            return IsLimitAtMost(plan, def, length, lengthOffset, depth + 1);
+        }
+    }
+
+    if (length->OperIs(GT_LCL_VAR))
+    {
+        GenTree* def = nullptr;
+        if (TryGetLocalDef(plan, length->AsLclVarCommon()->GetLclNum(), &def))
+        {
+            return IsLimitAtMost(plan, limit, def, lengthOffset, depth + 1);
+        }
+    }
+
+    if (GenTree::Compare(limit, length))
+    {
+        return lengthOffset >= 0;
+    }
+
+    if (limit->OperIs(GT_ADD, GT_SUB))
+    {
+        GenTree* base = UnwrapCommaValue(limit->AsOp()->gtOp1);
+        GenTree* cns  = UnwrapCommaValue(limit->AsOp()->gtOp2);
+        if (limit->OperIs(GT_ADD) && base->IsCnsIntOrI())
+        {
+            std::swap(base, cns);
+        }
+
+        if (cns->IsCnsIntOrI() && IsSameLimit(plan, base, length, depth + 1))
+        {
+            ssize_t cnsVal = cns->AsIntConCommon()->IconValue();
+            if (limit->OperIs(GT_SUB))
+            {
+                cnsVal = -cnsVal;
+            }
+
+            return (cnsVal >= INT_MIN) && (cnsVal <= INT_MAX) && (static_cast<int>(cnsVal) <= lengthOffset);
+        }
+    }
+
+    if (limit->OperIs(GT_SELECT))
+    {
+        GenTreeConditional* const select = limit->AsConditional();
+        GenTree* const            cond   = UnwrapCommaValue(select->gtCond);
+        GenTree* const            thenOp = UnwrapCommaValue(select->gtOp1);
+        GenTree* const            elseOp = UnwrapCommaValue(select->gtOp2);
+
+        if (cond->OperIsCompare())
+        {
+            GenTree* const cmpOp1 = UnwrapCommaValue(cond->AsOp()->gtOp1);
+            GenTree* const cmpOp2 = UnwrapCommaValue(cond->AsOp()->gtOp2);
+
+            const bool isMinSelect = (GenTree::StaticOperIs(cond->OperGet(), GT_LT, GT_LE) &&
+                                      GenTree::Compare(cmpOp1, thenOp) && GenTree::Compare(cmpOp2, elseOp)) ||
+                                     (GenTree::StaticOperIs(cond->OperGet(), GT_GT, GT_GE) &&
+                                      GenTree::Compare(cmpOp2, thenOp) && GenTree::Compare(cmpOp1, elseOp));
+
+            if (isMinSelect)
+            {
+                return IsLimitAtMost(plan, thenOp, length, lengthOffset, depth + 1) ||
+                       IsLimitAtMost(plan, elseOp, length, lengthOffset, depth + 1);
+            }
+        }
+    }
+
+    if (limit->OperIs(GT_INTRINSIC))
+    {
+        GenTreeIntrinsic* const intrinsic = limit->AsIntrinsic();
+        switch (intrinsic->gtIntrinsicName)
+        {
+            case NI_System_Math_Min:
+            case NI_System_Math_MinNative:
+            case NI_System_Math_MinUnsigned:
+                return IsLimitAtMost(plan, intrinsic->gtGetOp1(), length, lengthOffset, depth + 1) ||
+                       IsLimitAtMost(plan, intrinsic->gtGetOp2(), length, lengthOffset, depth + 1);
+
+            default:
+                break;
+        }
+    }
+
+    return false;
+}
+
 bool AutoVectorizer::TryProveRemainingBoundsChecks(LoopVectorizationPlan* plan)
 {
     if (plan->IsPostIV || (plan->End == nullptr))
@@ -4048,18 +4158,17 @@ bool AutoVectorizer::TryProveRemainingBoundsChecks(LoopVectorizationPlan* plan)
                 return fgWalkResult::WALK_ABORT;
             }
 
-            if (indexOffset != 0)
+            int lengthOffset = -indexOffset;
+            if (m_plan->TestOper == GT_LE)
             {
-                JITDUMPEXEC(m_compiler->gtDispTree(tree));
-                JITDUMP("byref/span bounds-check index offset %d is not supported, bail out\n", indexOffset);
-                *m_failed = true;
-                return fgWalkResult::WALK_ABORT;
+                lengthOffset--;
             }
 
-            if (!m_vectorizer->IsSameLimit(m_plan, boundsCheck->GetArrayLength(), m_plan->End))
+            if (!m_vectorizer->IsLimitAtMost(m_plan, m_plan->End, boundsCheck->GetArrayLength(), lengthOffset))
             {
                 JITDUMPEXEC(m_compiler->gtDispTree(tree));
-                JITDUMP("bounds-check length does not match loop limit, bail out\n");
+                JITDUMP("bounds-check length does not dominate loop limit with index offset %d, bail out\n",
+                        indexOffset);
                 *m_failed = true;
                 return fgWalkResult::WALK_ABORT;
             }
@@ -4240,8 +4349,10 @@ bool AutoVectorizer::TryCollectArrayLengthLimitLocals(LoopVectorizationPlan* pla
 
             if (isMinSelect)
             {
-                return TryCollectArrayLengthLimitLocals(plan, thenOp, lclNums, offsets, maxCount, count, depth + 1) &&
-                       TryCollectArrayLengthLimitLocals(plan, elseOp, lclNums, offsets, maxCount, count, depth + 1);
+                const unsigned oldCount = *count;
+                (void)TryCollectArrayLengthLimitLocals(plan, thenOp, lclNums, offsets, maxCount, count, depth + 1);
+                (void)TryCollectArrayLengthLimitLocals(plan, elseOp, lclNums, offsets, maxCount, count, depth + 1);
+                return *count > oldCount;
             }
         }
 
@@ -4259,10 +4370,14 @@ bool AutoVectorizer::TryCollectArrayLengthLimitLocals(LoopVectorizationPlan* pla
         case NI_System_Math_Min:
         case NI_System_Math_MinNative:
         case NI_System_Math_MinUnsigned:
-            return TryCollectArrayLengthLimitLocals(plan, intrinsic->gtGetOp1(), lclNums, offsets, maxCount, count,
-                                                    depth + 1) &&
-                   TryCollectArrayLengthLimitLocals(plan, intrinsic->gtGetOp2(), lclNums, offsets, maxCount, count,
-                                                    depth + 1);
+        {
+            const unsigned oldCount = *count;
+            (void)TryCollectArrayLengthLimitLocals(plan, intrinsic->gtGetOp1(), lclNums, offsets, maxCount, count,
+                                                   depth + 1);
+            (void)TryCollectArrayLengthLimitLocals(plan, intrinsic->gtGetOp2(), lclNums, offsets, maxCount, count,
+                                                   depth + 1);
+            return *count > oldCount;
+        }
 
         default:
             return false;
