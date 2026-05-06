@@ -109,7 +109,7 @@ namespace System.Tests
         [MemberData(nameof(Parse_Preserve_TrailingZero_TestData))]
         public static void Parse_Preserve_TrailingZero(string value, string expected)
         {
-            Assert.Equal(expected, Decimal64.Parse(value).ToString());
+            Assert.Equal(expected, Decimal64.Parse(value).ToString(CultureInfo.InvariantCulture));
         }
 
         public static IEnumerable<object[]> Parse_Preserve_TrailingZero_TestData()
