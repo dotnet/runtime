@@ -7336,7 +7336,8 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optA
             // already handled above via fgMorphUModToAndSub.
             // This is done here in morph (rather than waiting for lowering) to expose CSE opportunities
             // when both `a / b` and `a % b` appear with the same constant divisor.
-            else if (tree->OperIs(GT_MOD, GT_UMOD) && op2->IsIntegralConst() && !op2->IsIntegralConstAbsPow2())
+            else if ((tree->OperIs(GT_MOD) && op2->IsIntegralConst() && !op2->IsIntegralConstAbsPow2()) ||
+                     (tree->OperIs(GT_UMOD) && op2->IsIntegralConst()))
 #endif
             {
                 // Transformation: a % b = a - (a / b) * b;
