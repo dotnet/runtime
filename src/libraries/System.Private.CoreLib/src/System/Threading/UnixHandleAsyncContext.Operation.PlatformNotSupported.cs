@@ -9,7 +9,7 @@ namespace System.Threading
     {
         public abstract class Operation : IThreadPoolWorkItem
         {
-            void IThreadPoolWorkItem.Execute() { }
+            void IThreadPoolWorkItem.Execute() => ExecuteThreadPoolWorkItem();
 
             protected virtual void ExecuteThreadPoolWorkItem() { }
 
