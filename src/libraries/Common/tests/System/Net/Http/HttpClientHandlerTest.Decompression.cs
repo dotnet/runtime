@@ -348,44 +348,34 @@ namespace System.Net.Http.Functional.Tests
                 $"Server sent {serverBytesWritten} compressed bytes, expected fewer than the {BufferLimit}-byte buffer limit");
         }
 
-        private sealed class ByteCountingStream : Stream
+        private sealed class ByteCountingStream : DelegatingStream
         {
-            private readonly Stream _inner;
-            private long _bytesWritten;
+            public ByteCountingStream(Stream inner) : base(inner) { }
 
-            public ByteCountingStream(Stream inner) => _inner = inner;
-
-            public long BytesWritten => _bytesWritten;
-
-            public override bool CanRead => _inner.CanRead;
-            public override bool CanSeek => false;
-            public override bool CanWrite => _inner.CanWrite;
-            public override long Length => throw new NotSupportedException();
-            public override long Position { get => throw new NotSupportedException(); set => throw new NotSupportedException(); }
-            public override void Flush() => _inner.Flush();
-            public override Task FlushAsync(CancellationToken cancellationToken) => _inner.FlushAsync(cancellationToken);
-            public override int Read(byte[] buffer, int offset, int count) => _inner.Read(buffer, offset, count);
-            public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken) => _inner.ReadAsync(buffer, offset, count, cancellationToken);
-            public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default) => _inner.ReadAsync(buffer, cancellationToken);
-            public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
-            public override void SetLength(long value) => throw new NotSupportedException();
+            public long BytesWritten { get; private set; }
 
             public override void Write(byte[] buffer, int offset, int count)
             {
-                _inner.Write(buffer, offset, count);
-                _bytesWritten += count;
+                base.Write(buffer, offset, count);
+                BytesWritten += count;
+            }
+
+            public override void Write(ReadOnlySpan<byte> buffer)
+            {
+                base.Write(buffer);
+                BytesWritten += buffer.Length;
             }
 
             public override async Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
             {
-                await _inner.WriteAsync(buffer, offset, count, cancellationToken);
-                _bytesWritten += count;
+                await base.WriteAsync(buffer, offset, count, cancellationToken);
+                BytesWritten += count;
             }
 
             public override async ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
             {
-                await _inner.WriteAsync(buffer, cancellationToken);
-                _bytesWritten += buffer.Length;
+                await base.WriteAsync(buffer, cancellationToken);
+                BytesWritten += buffer.Length;
             }
         }
 #endif
