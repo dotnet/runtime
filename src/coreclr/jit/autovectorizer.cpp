@@ -575,7 +575,12 @@ bool AutoVectorizer::TryCreateLoopPlan(FlowGraphNaturalLoop* loop, LoopVectoriza
     BasicBlock* const latch     = loop->BackEdge(0)->getSourceBlock();
     BasicBlock* const exit      = loop->ExitEdge(0)->getDestinationBlock();
 
-    if ((preheader == nullptr) || !preheader->KindIs(BBJ_ALWAYS) || !preheader->TargetIs(loop->GetHeader()))
+    const bool hasCanonicalPreheader =
+        (preheader != nullptr) && preheader->KindIs(BBJ_ALWAYS) && preheader->TargetIs(loop->GetHeader());
+    const bool hasConditionalPreheader =
+        (preheader != nullptr) && preheader->KindIs(BBJ_COND) &&
+        (preheader->TrueTargetIs(loop->GetHeader()) || preheader->FalseTargetIs(loop->GetHeader()));
+    if (!hasCanonicalPreheader && !hasConditionalPreheader)
     {
         JITDUMP("loop " FMT_LP " preheader candidate is " FMT_BB "\n", loop->GetIndex(),
                 preheader == nullptr ? 0 : preheader->bbNum);
@@ -621,6 +626,13 @@ bool AutoVectorizer::TryCreateLoopPlan(FlowGraphNaturalLoop* loop, LoopVectoriza
     {
         *plan = localLimitPlan;
         return true;
+    }
+
+    if (!hasCanonicalPreheader)
+    {
+        JITDUMP("loop " FMT_LP " has a conditional entry and no recognized local/post-IV form\n", loop->GetIndex());
+        JITDUMP("conditional-entry canonical analysis is not supported, bail out\n");
+        return false;
     }
 
     NaturalLoopIterInfo iterInfo;
@@ -871,6 +883,7 @@ bool AutoVectorizer::TryCreateLocalLimitLoopPlan(FlowGraphNaturalLoop* loop, Loo
 
     unsigned ivLcl = BAD_VAR_NUM;
     GenTree* limit = nullptr;
+    int      step  = 1;
     if (op1->OperIs(GT_LCL_VAR) && op2->OperIs(GT_LCL_VAR) && GenTree::StaticOperIs(testOper, GT_LT, GT_LE))
     {
         ivLcl = op1->AsLclVarCommon()->GetLclNum();
@@ -886,6 +899,19 @@ bool AutoVectorizer::TryCreateLocalLimitLoopPlan(FlowGraphNaturalLoop* loop, Loo
     {
         ivLcl = op1->AsLclVarCommon()->GetLclNum();
         limit = op2;
+    }
+    else if (op1->OperIs(GT_LCL_VAR) && op2->IsCnsIntOrI() && GenTree::StaticOperIs(testOper, GT_GT, GT_GE))
+    {
+        ivLcl = op1->AsLclVarCommon()->GetLclNum();
+        limit = op2;
+        step  = -1;
+    }
+    else if (op2->OperIs(GT_LCL_VAR) && op1->IsCnsIntOrI() && GenTree::StaticOperIs(testOper, GT_LT, GT_LE))
+    {
+        ivLcl    = op2->AsLclVarCommon()->GetLclNum();
+        limit    = op1;
+        testOper = (testOper == GT_LT) ? GT_GT : GT_GE;
+        step     = -1;
     }
     else if (testOper == GT_EQ)
     {
@@ -909,7 +935,7 @@ bool AutoVectorizer::TryCreateLocalLimitLoopPlan(FlowGraphNaturalLoop* loop, Loo
     plan->TestTree     = relop;
     plan->TestBlock    = header;
     plan->TestOper     = testOper;
-    plan->Step         = 1;
+    plan->Step         = step;
 
     for (Statement* const stmt : header->Statements())
     {
@@ -945,10 +971,10 @@ bool AutoVectorizer::TryCreateLocalLimitLoopPlan(FlowGraphNaturalLoop* loop, Loo
         }
 
         int offset = 0;
-        if (!TryAnalyzeIndexExpr(plan, root->AsLclVarCommon()->Data(), ivLcl, &offset) || (offset != 1))
+        if (!TryAnalyzeIndexExpr(plan, root->AsLclVarCommon()->Data(), ivLcl, &offset) || (offset != plan->Step))
         {
             JITDUMPEXEC(m_compiler->gtDispStmt(stmt));
-            JITDUMP("local-limit IV update is not +1, bail out\n");
+            JITDUMP("local-limit IV update is not %+d, bail out\n", plan->Step);
             return false;
         }
 
@@ -965,7 +991,7 @@ bool AutoVectorizer::TryCreateLocalLimitLoopPlan(FlowGraphNaturalLoop* loop, Loo
 
     plan->IterTree = iterStmt->GetRootNode();
 
-    JITDUMP("loop " FMT_LP " local-limit IV V%02u, step=1, test=%s\n", loop->GetIndex(), ivLcl,
+    JITDUMP("loop " FMT_LP " local-limit IV V%02u, step=%d, test=%s\n", loop->GetIndex(), ivLcl, plan->Step,
             GenTree::OpName(testOper));
     JITDUMP("loop test:\n");
     JITDUMPEXEC(m_compiler->gtDispTree(relop));
@@ -2469,7 +2495,24 @@ bool AutoVectorizer::TryRewritePlan(LoopVectorizationPlan* plan)
     JITDUMP("\n");
     JITDUMP("redirecting preheader " FMT_BB " to vector check " FMT_BB "\n", plan->Preheader->bbNum,
             vectorCheck->bbNum);
-    m_compiler->fgRedirectEdge(plan->Preheader->TargetEdgeRef(), vectorCheck);
+    if (plan->Preheader->KindIs(BBJ_ALWAYS))
+    {
+        assert(plan->Preheader->TargetIs(plan->Header));
+        m_compiler->fgRedirectEdge(plan->Preheader->TargetEdgeRef(), vectorCheck);
+    }
+    else
+    {
+        assert(plan->Preheader->KindIs(BBJ_COND));
+        if (plan->Preheader->TrueTargetIs(plan->Header))
+        {
+            m_compiler->fgRedirectEdge(plan->Preheader->TrueEdgeRef(), vectorCheck);
+        }
+        else
+        {
+            assert(plan->Preheader->FalseTargetIs(plan->Header));
+            m_compiler->fgRedirectEdge(plan->Preheader->FalseEdgeRef(), vectorCheck);
+        }
+    }
 
     FlowEdge* const vectorCheckToVectorBody =
         m_compiler->fgAddRefPred(needsOverlapCheck ? sameStartCheck : vectorBody, vectorCheck);
