@@ -31,6 +31,8 @@
   <ItemGroup>
     <!-- apphost and comhost template files are not signed, by design. -->
     <FileSignInfo Include="apphost.exe;singlefilehost.exe;comhost.dll" CertificateName="None" />
+    <!-- Sign the catalog file that provides integrity verification for the unsigned apphost templates. -->
+    <FileSignInfo Include="apphost-templates.cat" CertificateName="MicrosoftDotNet500" />
 
     <!--
       The DAC and the DBI must go through special signing provisioning using a system separate

@@ -88,4 +88,33 @@
     <HeatOutputFileElementToStabilize Include="native\singlefilehost.exe" ReplacementId="staticapphosttemplateapphostexe" />
     <HeatOutputFileElementToStabilize Include="native\comhost.dll" ReplacementId="comhosttemplatecomhostdll" />
   </ItemGroup>
+
+  <!--
+    Generate a catalog file (.cat) containing SHA256 hashes of the unsigned apphost template files.
+    These templates are intentionally unsigned because the .NET SDK modifies them at build time
+    via HostWriter.CreateAppHost(). The signed catalog provides integrity verification for
+    Visual Studio signing compliance without breaking the SDK workflow.
+    See https://github.com/dotnet/runtime/issues/3694
+  -->
+  <Target Name="GenerateAppHostTemplateCatalog"
+          BeforeTargets="GetFilesToPackage"
+          Condition="'$(TargetOS)' == 'windows'">
+    <PropertyGroup>
+      <_CatStagingDir>$(IntermediateOutputPath)apphost-catalog\</_CatStagingDir>
+      <_CatalogFilePath>$(DotNetHostBinDir)apphost-templates.cat</_CatalogFilePath>
+    </PropertyGroup>
+
+    <!-- Stage the unsigned template files in an isolated directory for catalog generation -->
+    <RemoveDir Directories="$(_CatStagingDir)" />
+    <MakeDir Directories="$(_CatStagingDir)" />
+    <Copy SourceFiles="$(DotNetHostBinDir)apphost.exe" DestinationFolder="$(_CatStagingDir)" Condition="Exists('$(DotNetHostBinDir)apphost.exe')" />
+    <Copy SourceFiles="$(DotNetHostBinDir)singlefilehost.exe" DestinationFolder="$(_CatStagingDir)" Condition="Exists('$(DotNetHostBinDir)singlefilehost.exe')" />
+    <Copy SourceFiles="$(DotNetHostBinDir)comhost.dll" DestinationFolder="$(_CatStagingDir)" Condition="Exists('$(DotNetHostBinDir)comhost.dll')" />
+
+    <Exec Command="powershell.exe -NoProfile -NonInteractive -Command &quot;New-FileCatalog -Path '$(_CatStagingDir)' -CatalogFilePath '$(_CatalogFilePath)' -CatalogVersion 2&quot;" />
+
+    <ItemGroup>
+      <FilesToPackage Include="$(_CatalogFilePath)" />
+    </ItemGroup>
+  </Target>
 </Project>
