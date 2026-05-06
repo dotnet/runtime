@@ -494,27 +494,319 @@ namespace R2RDump
         private string DecodeFDPrefixed()
         {
             uint subOpcode = ReadU32();
-            // SIMD instructions - just show the sub-opcode for now
-            // Full SIMD decode would add hundreds of entries
-            if (subOpcode == 0)
+            switch (subOpcode)
             {
-                // v128.load memarg
-                return $"v128.load {ReadMemArg()}";
+                // SIMD memory instructions
+                case 0: return $"v128.load {ReadMemArg()}";
+                case 1: return $"v128.load8x8_s {ReadMemArg()}";
+                case 2: return $"v128.load8x8_u {ReadMemArg()}";
+                case 3: return $"v128.load16x4_s {ReadMemArg()}";
+                case 4: return $"v128.load16x4_u {ReadMemArg()}";
+                case 5: return $"v128.load32x2_s {ReadMemArg()}";
+                case 6: return $"v128.load32x2_u {ReadMemArg()}";
+                case 7: return $"v128.load8_splat {ReadMemArg()}";
+                case 8: return $"v128.load16_splat {ReadMemArg()}";
+                case 9: return $"v128.load32_splat {ReadMemArg()}";
+                case 10: return $"v128.load64_splat {ReadMemArg()}";
+                case 11: return $"v128.store {ReadMemArg()}";
+                case 12:
+                {
+                    var bytes = new byte[16];
+                    for (int i = 0; i < 16; i++)
+                        bytes[i] = ReadByte();
+                    return $"v128.const 0x{BitConverter.ToString(bytes).Replace("-", "")}";
+                }
+
+                // i8x16.shuffle - 16 bytes of lane indices
+                case 13:
+                {
+                    var lanes = new byte[16];
+                    for (int i = 0; i < 16; i++)
+                        lanes[i] = ReadByte();
+                    return $"i8x16.shuffle {string.Join(" ", lanes)}";
+                }
+
+                // Swizzle and splat
+                case 14: return "i8x16.swizzle";
+                case 15: return "i8x16.splat";
+                case 16: return "i16x8.splat";
+                case 17: return "i32x4.splat";
+                case 18: return "i64x2.splat";
+                case 19: return "f32x4.splat";
+                case 20: return "f64x2.splat";
+
+                // Extract/replace lane instructions
+                case 21: return $"i8x16.extract_lane_s {ReadByte()}";
+                case 22: return $"i8x16.extract_lane_u {ReadByte()}";
+                case 23: return $"i8x16.replace_lane {ReadByte()}";
+                case 24: return $"i16x8.extract_lane_s {ReadByte()}";
+                case 25: return $"i16x8.extract_lane_u {ReadByte()}";
+                case 26: return $"i16x8.replace_lane {ReadByte()}";
+                case 27: return $"i32x4.extract_lane {ReadByte()}";
+                case 28: return $"i32x4.replace_lane {ReadByte()}";
+                case 29: return $"i64x2.extract_lane {ReadByte()}";
+                case 30: return $"i64x2.replace_lane {ReadByte()}";
+                case 31: return $"f32x4.extract_lane {ReadByte()}";
+                case 32: return $"f32x4.replace_lane {ReadByte()}";
+                case 33: return $"f64x2.extract_lane {ReadByte()}";
+                case 34: return $"f64x2.replace_lane {ReadByte()}";
+
+                // i8x16 comparison
+                case 35: return "i8x16.eq";
+                case 36: return "i8x16.ne";
+                case 37: return "i8x16.lt_s";
+                case 38: return "i8x16.lt_u";
+                case 39: return "i8x16.gt_s";
+                case 40: return "i8x16.gt_u";
+                case 41: return "i8x16.le_s";
+                case 42: return "i8x16.le_u";
+                case 43: return "i8x16.ge_s";
+                case 44: return "i8x16.ge_u";
+
+                // i16x8 comparison
+                case 45: return "i16x8.eq";
+                case 46: return "i16x8.ne";
+                case 47: return "i16x8.lt_s";
+                case 48: return "i16x8.lt_u";
+                case 49: return "i16x8.gt_s";
+                case 50: return "i16x8.gt_u";
+                case 51: return "i16x8.le_s";
+                case 52: return "i16x8.le_u";
+                case 53: return "i16x8.ge_s";
+                case 54: return "i16x8.ge_u";
+
+                // i32x4 comparison
+                case 55: return "i32x4.eq";
+                case 56: return "i32x4.ne";
+                case 57: return "i32x4.lt_s";
+                case 58: return "i32x4.lt_u";
+                case 59: return "i32x4.gt_s";
+                case 60: return "i32x4.gt_u";
+                case 61: return "i32x4.le_s";
+                case 62: return "i32x4.le_u";
+                case 63: return "i32x4.ge_s";
+                case 64: return "i32x4.ge_u";
+
+                // f32x4 comparison
+                case 65: return "f32x4.eq";
+                case 66: return "f32x4.ne";
+                case 67: return "f32x4.lt";
+                case 68: return "f32x4.gt";
+                case 69: return "f32x4.le";
+                case 70: return "f32x4.ge";
+
+                // f64x2 comparison
+                case 71: return "f64x2.eq";
+                case 72: return "f64x2.ne";
+                case 73: return "f64x2.lt";
+                case 74: return "f64x2.gt";
+                case 75: return "f64x2.le";
+                case 76: return "f64x2.ge";
+
+                // v128 bitwise operations
+                case 77: return "v128.not";
+                case 78: return "v128.and";
+                case 79: return "v128.andnot";
+                case 80: return "v128.or";
+                case 81: return "v128.xor";
+                case 82: return "v128.bitselect";
+                case 83: return "v128.any_true";
+
+                // Lane load/store with lane index
+                case 84: return $"v128.load8_lane {ReadMemArg()} {ReadByte()}";
+                case 85: return $"v128.load16_lane {ReadMemArg()} {ReadByte()}";
+                case 86: return $"v128.load32_lane {ReadMemArg()} {ReadByte()}";
+                case 87: return $"v128.load64_lane {ReadMemArg()} {ReadByte()}";
+                case 88: return $"v128.store8_lane {ReadMemArg()} {ReadByte()}";
+                case 89: return $"v128.store16_lane {ReadMemArg()} {ReadByte()}";
+                case 90: return $"v128.store32_lane {ReadMemArg()} {ReadByte()}";
+                case 91: return $"v128.store64_lane {ReadMemArg()} {ReadByte()}";
+
+                // v128.load zero
+                case 92: return $"v128.load32_zero {ReadMemArg()}";
+                case 93: return $"v128.load64_zero {ReadMemArg()}";
+
+                // Conversions
+                case 94: return "i32x4.trunc_sat_f32x4_s";
+                case 95: return "i32x4.trunc_sat_f32x4_u";
+
+                // i8x16 operations
+                case 96: return "i8x16.abs";
+                case 97: return "i8x16.neg";
+                case 98: return "i8x16.popcnt";
+                case 99: return "i8x16.all_true";
+                case 100: return "i8x16.bitmask";
+                case 101: return "i8x16.narrow_i16x8_s";
+                case 102: return "i8x16.narrow_i16x8_u";
+
+                // f32x4 rounding
+                case 103: return "f32x4.ceil";
+                case 104: return "f32x4.floor";
+                case 105: return "f32x4.trunc";
+                case 106: return "f32x4.nearest";
+
+                // i8x16 shift and arithmetic
+                case 107: return "i8x16.shl";
+                case 108: return "i8x16.shr_s";
+                case 109: return "i8x16.shr_u";
+                case 110: return "i8x16.add";
+                case 111: return "i8x16.add_sat_s";
+                case 112: return "i8x16.add_sat_u";
+                case 113: return "i8x16.sub";
+                case 114: return "i8x16.sub_sat_s";
+                case 115: return "i8x16.sub_sat_u";
+
+                // f64x2 rounding
+                case 116: return "f64x2.ceil";
+                case 117: return "f64x2.floor";
+
+                // i8x16 min/max/avgr
+                case 118: return "i8x16.min_s";
+                case 119: return "i8x16.min_u";
+                case 120: return "i8x16.max_s";
+                case 121: return "i8x16.max_u";
+                case 123: return "i8x16.avgr_u";
+
+                // i16x8 pairwise addition
+                case 124: return "i16x8.extadd_pairwise_i8x16_s";
+                case 125: return "i16x8.extadd_pairwise_i8x16_u";
+
+                // i32x4 pairwise addition
+                case 126: return "i32x4.extadd_pairwise_i16x8_s";
+                case 127: return "i32x4.extadd_pairwise_i16x8_u";
+
+                // i16x8 operations
+                case 128: return "i16x8.abs";
+                case 129: return "i16x8.neg";
+                case 130: return "i16x8.q15mulr_sat_s";
+                case 131: return "i16x8.all_true";
+                case 132: return "i16x8.bitmask";
+                case 133: return "i16x8.narrow_i32x4_s";
+                case 134: return "i16x8.narrow_i32x4_u";
+                case 135: return "i16x8.extend_low_i8x16_s";
+                case 136: return "i16x8.extend_high_i8x16_s";
+                case 137: return "i16x8.extend_low_i8x16_u";
+                case 138: return "i16x8.extend_high_i8x16_u";
+                case 139: return "i16x8.shl";
+                case 140: return "i16x8.shr_s";
+                case 141: return "i16x8.shr_u";
+                case 142: return "i16x8.add";
+                case 143: return "i16x8.add_sat_s";
+                case 144: return "i16x8.add_sat_u";
+                case 145: return "i16x8.sub";
+                case 146: return "i16x8.sub_sat_s";
+                case 147: return "i16x8.sub_sat_u";
+
+                // f64x2 rounding (continued)
+                case 148: return "f64x2.trunc";
+
+                // i16x8 multiply
+                case 149: return "i16x8.mul";
+                case 150: return "i16x8.min_s";
+                case 151: return "i16x8.min_u";
+                case 152: return "i16x8.max_s";
+                case 153: return "i16x8.max_u";
+
+                // f64x2 rounding (continued)
+                case 154: return "f64x2.nearest";
+
+                // i16x8 average and extended multiply
+                case 155: return "i16x8.avgr_u";
+                case 156: return "i16x8.extmul_low_i8x16_s";
+                case 157: return "i16x8.extmul_high_i8x16_s";
+                case 158: return "i16x8.extmul_low_i8x16_u";
+                case 159: return "i16x8.extmul_high_i8x16_u";
+
+                // i32x4 operations
+                case 160: return "i32x4.abs";
+                case 161: return "i32x4.neg";
+                case 163: return "i32x4.all_true";
+                case 164: return "i32x4.bitmask";
+                case 167: return "i32x4.extend_low_i16x8_s";
+                case 168: return "i32x4.extend_high_i16x8_s";
+                case 169: return "i32x4.extend_low_i16x8_u";
+                case 170: return "i32x4.extend_high_i16x8_u";
+                case 171: return "i32x4.shl";
+                case 172: return "i32x4.shr_s";
+                case 173: return "i32x4.shr_u";
+                case 174: return "i32x4.add";
+                case 177: return "i32x4.sub";
+                case 181: return "i32x4.mul";
+                case 182: return "i32x4.min_s";
+                case 183: return "i32x4.min_u";
+                case 184: return "i32x4.max_s";
+                case 185: return "i32x4.max_u";
+                case 186: return "i32x4.dot_i16x8_s";
+                case 188: return "i32x4.extmul_low_i16x8_s";
+                case 189: return "i32x4.extmul_high_i16x8_s";
+                case 190: return "i32x4.extmul_low_i16x8_u";
+                case 191: return "i32x4.extmul_high_i16x8_u";
+
+                // i64x2 operations
+                case 192: return "i64x2.abs";
+                case 193: return "i64x2.neg";
+                case 195: return "i64x2.all_true";
+                case 196: return "i64x2.bitmask";
+                case 199: return "i64x2.extend_low_i32x4_s";
+                case 200: return "i64x2.extend_high_i32x4_s";
+                case 201: return "i64x2.extend_low_i32x4_u";
+                case 202: return "i64x2.extend_high_i32x4_u";
+                case 203: return "i64x2.shl";
+                case 204: return "i64x2.shr_s";
+                case 205: return "i64x2.shr_u";
+                case 206: return "i64x2.add";
+                case 209: return "i64x2.sub";
+                case 213: return "i64x2.mul";
+                case 214: return "i64x2.eq";
+                case 215: return "i64x2.ne";
+                case 216: return "i64x2.lt_s";
+                case 217: return "i64x2.gt_s";
+                case 218: return "i64x2.le_s";
+                case 219: return "i64x2.ge_s";
+                case 220: return "i64x2.extmul_low_i32x4_s";
+                case 221: return "i64x2.extmul_high_i32x4_s";
+                case 222: return "i64x2.extmul_low_i32x4_u";
+                case 223: return "i64x2.extmul_high_i32x4_u";
+
+                // f32x4 operations
+                case 224: return "f32x4.abs";
+                case 225: return "f32x4.neg";
+                case 227: return "f32x4.sqrt";
+                case 228: return "f32x4.add";
+                case 229: return "f32x4.sub";
+                case 230: return "f32x4.mul";
+                case 231: return "f32x4.div";
+                case 232: return "f32x4.min";
+                case 233: return "f32x4.max";
+                case 234: return "f32x4.pmin";
+                case 235: return "f32x4.pmax";
+
+                // f64x2 operations
+                case 236: return "f64x2.abs";
+                case 237: return "f64x2.neg";
+                case 239: return "f64x2.sqrt";
+                case 240: return "f64x2.add";
+                case 241: return "f64x2.sub";
+                case 242: return "f64x2.mul";
+                case 243: return "f64x2.div";
+                case 244: return "f64x2.min";
+                case 245: return "f64x2.max";
+                case 246: return "f64x2.pmin";
+                case 247: return "f64x2.pmax";
+
+                // Conversion instructions
+                case 248: return "i32x4.trunc_sat_f64x2_s_zero";
+                case 249: return "i32x4.trunc_sat_f64x2_u_zero";
+                case 250: return "f32x4.convert_i32x4_s";
+                case 251: return "f32x4.convert_i32x4_u";
+                case 252: return "f64x2.convert_low_i32x4_s";
+                case 253: return "f64x2.convert_low_i32x4_u";
+                case 254: return "f32x4.demote_f64x2_zero";
+                case 255: return "f64x2.promote_low_f32x4";
+
+                default:
+                    return $"<unknown 0xFD sub-opcode {subOpcode}>";
             }
-            if (subOpcode == 11)
-            {
-                // v128.store memarg
-                return $"v128.store {ReadMemArg()}";
-            }
-            if (subOpcode == 12)
-            {
-                // v128.const - 16 bytes immediate
-                var bytes = new byte[16];
-                for (int i = 0; i < 16; i++)
-                    bytes[i] = ReadByte();
-                return $"v128.const 0x{BitConverter.ToString(bytes).Replace("-", "")}";
-            }
-            return $"<simd opcode 0xFD {subOpcode}>";
         }
 
         private byte ReadByte()
