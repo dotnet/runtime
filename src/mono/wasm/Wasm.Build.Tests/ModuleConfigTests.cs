@@ -50,7 +50,7 @@ public class ModuleConfigTests : WasmTemplateTestsBase
             "The download progress test did emit unexpected message about second download retry"
         );
         Assert.True(
-            result.TestOutput.Any(m => m.Contains("Throw error instead of downloading resource") == failAssemblyDownload),
+            result.TestOutput.Any(m => m.Contains("Throw error instead of downloading resource")) == failAssemblyDownload,
             failAssemblyDownload
                 ? "The download progress test didn't emit expected message about failing download"
                 : "The download progress test did emit unexpected message about failing download"
