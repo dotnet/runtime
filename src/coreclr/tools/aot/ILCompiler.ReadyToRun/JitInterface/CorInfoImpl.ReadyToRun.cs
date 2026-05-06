@@ -3567,5 +3567,36 @@ namespace Internal.JitInterface
                 }
             }
         }
+
+        private void recordWasmManagedCallSig(CORINFO_SIG_INFO* callSig)
+        {
+            if ((callSig != null) && _compilation.NodeFactory.Target.IsWasm)
+            {
+                var sig = HandleToObject(callSig->methodSignature);
+
+                WasmLowering.LoweringFlags flags = 0;
+                if (callSig->hasTypeArg())
+                {
+                    flags |= WasmLowering.LoweringFlags.HasGenericContextArg;
+                }
+                if (callSig->isAsyncCall())
+                {
+                    flags |= WasmLowering.LoweringFlags.IsAsyncCall;
+                }
+                if (((int)callSig->getCallConv() & 0xF) != 0)
+                {
+                    flags |= WasmLowering.LoweringFlags.IsUnmanagedCallersOnly;
+                }
+
+                WasmSignature wasmSig = WasmLowering.GetSignature(sig, flags);
+
+                // Only create R2R-to-interpreter thunks for managed calls.
+                // Unmanaged calls don't go through the interpreter transition.
+                if (!flags.HasFlag(WasmLowering.LoweringFlags.IsUnmanagedCallersOnly))
+                {
+                    AddAdditionalDependency(_compilation.NodeFactory.WasmR2RToInterpreterThunk(wasmSig), "R2R-to-interpreter thunk for call site");
+                }
+            }
+        }
     }
 }

@@ -15259,6 +15259,14 @@ void CEEInfo::recordCallSite(
     UNREACHABLE();      // only called on derived class.
 }
 
+void CEEInfo::recordWasmManagedCallSig(
+        CORINFO_SIG_INFO *    callSig       /* IN */
+        )
+{
+    LIMITED_METHOD_CONTRACT;
+    // No-op for the VM. Only meaningful for ReadyToRun Wasm compilation.
+}
+
 void CEEInfo::recordRelocation(
         void *                 location,   /* IN  */
         void *                 locationRW, /* IN  */
