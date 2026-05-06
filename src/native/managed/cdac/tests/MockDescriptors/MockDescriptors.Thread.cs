@@ -177,6 +177,7 @@ internal sealed class MockThread : TypedView
     private const string IdFieldName = "Id";
     private const string OSIdFieldName = "OSId";
     private const string StateFieldName = "State";
+    private const string StateNCFieldName = "StateNC";
     private const string PreemptiveGCDisabledFieldName = "PreemptiveGCDisabled";
     private const string RuntimeThreadLocalsFieldName = "RuntimeThreadLocals";
     private const string FrameFieldName = "Frame";
@@ -198,6 +199,7 @@ internal sealed class MockThread : TypedView
             .AddUInt32Field(IdFieldName)
             .AddPointerField(OSIdFieldName)
             .AddUInt32Field(StateFieldName)
+            .AddUInt32Field(StateNCFieldName)
             .AddUInt32Field(PreemptiveGCDisabledFieldName)
             .AddPointerField(RuntimeThreadLocalsFieldName)
             .AddPointerField(FrameFieldName)
@@ -226,6 +228,18 @@ internal sealed class MockThread : TypedView
     {
         get => ReadPointerField(OSIdFieldName);
         set => WritePointerField(OSIdFieldName, value);
+    }
+
+    public uint State
+    {
+        get => ReadUInt32Field(StateFieldName);
+        set => WriteUInt32Field(StateFieldName, value);
+    }
+
+    public uint StateNC
+    {
+        get => ReadUInt32Field(StateNCFieldName);
+        set => WriteUInt32Field(StateNCFieldName, value);
     }
 
     public ulong RuntimeThreadLocals

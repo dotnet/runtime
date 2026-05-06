@@ -27,7 +27,15 @@ internal readonly struct Thread_1 : IThread
         Unstarted = 0x400,
         Stopped = 0x10000,
         ThreadPoolWorker = 0x1000000,
+        Interruptible = 0x2000000,
         Detached = unchecked((int)0x80000000)
+    }
+
+    [Flags]
+    private enum ThreadStateNC_1
+    {
+        Unknown = 0,
+        DebuggerSleepWaitJoin = 0x4000000,
     }
 
     [Flags]
@@ -74,10 +82,20 @@ internal readonly struct Thread_1 : IThread
             result |= Contracts.ThreadState.Unstarted;
         if (state.HasFlag(ThreadState_1.Stopped))
             result |= Contracts.ThreadState.Stopped;
+        if (state.HasFlag(ThreadState_1.Interruptible))
+            result |= Contracts.ThreadState.Interruptible;
         if (state.HasFlag(ThreadState_1.ThreadPoolWorker))
             result |= Contracts.ThreadState.ThreadPoolWorker;
         if (state.HasFlag(ThreadState_1.Detached))
             result |= Contracts.ThreadState.Detached;
+        return result;
+    }
+
+    private static Contracts.ThreadStateNC GetThreadStateNC(ThreadStateNC_1 stateNC)
+    {
+        Contracts.ThreadStateNC result = Contracts.ThreadStateNC.Unknown;
+        if (stateNC.HasFlag(ThreadStateNC_1.DebuggerSleepWaitJoin))
+            result |= Contracts.ThreadStateNC.DebuggerSleepWaitJoin;
         return result;
     }
 
@@ -109,6 +127,7 @@ internal readonly struct Thread_1 : IThread
             thread.Id,
             thread.OSId,
             GetThreadState((ThreadState_1)thread.State),
+            GetThreadStateNC((ThreadStateNC_1)thread.StateNC),
             (thread.PreemptiveGCDisabled & 0x1) != 0,
             thread.RuntimeThreadLocals?.AllocContext.GCAllocationContext.Pointer ?? TargetPointer.Null,
             thread.RuntimeThreadLocals?.AllocContext.GCAllocationContext.Limit ?? TargetPointer.Null,

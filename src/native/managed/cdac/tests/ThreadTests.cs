@@ -97,6 +97,33 @@ public unsafe class ThreadTests
 
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
+    public void GetThreadData_MapsStateFlags(MockTarget.Architecture arch)
+    {
+        const uint id = 1;
+        const ulong osId = 1234;
+        const uint state = 0x02000200; // Interruptible | Background
+        const uint stateNC = 0x04000000; // DebuggerSleepWaitJoin
+        MockThread? thread = null;
+
+        TestPlaceholderTarget target = CreateTarget(
+            arch,
+            threadBuilder =>
+            {
+                thread = threadBuilder.AddThread(id, osId);
+                thread.State = state;
+                thread.StateNC = stateNC;
+            });
+
+        IThread contract = target.Contracts.Thread;
+        ThreadData data = contract.GetThreadData(new TargetPointer(thread!.Address));
+        Assert.True(data.State.HasFlag(ThreadState.Background));
+        Assert.True(data.State.HasFlag(ThreadState.Interruptible));
+        Assert.False(data.State.HasFlag(ThreadState.Stopped));
+        Assert.True(data.StateNC.HasFlag(ThreadStateNC.DebuggerSleepWaitJoin));
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
     public void IterateThreads(MockTarget.Architecture arch)
     {
         const uint expectedCount = 10;
