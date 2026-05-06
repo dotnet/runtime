@@ -7,6 +7,7 @@ using System.IO.Compression;
 using System.Linq;
 using System.Net.Test.Common;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 
 using Xunit;
@@ -286,6 +287,108 @@ namespace System.Net.Http.Functional.Tests
                 }
             });
         }
+
+#if !NETFRAMEWORK
+        [Fact]
+        [SkipOnPlatform(TestPlatforms.Browser, "AutomaticDecompression not supported on Browser")]
+        public async Task GetAsync_AutomaticBrotliDecompression_MaxResponseContentBufferSizeEnforced()
+        {
+            if (IsWinHttpHandler)
+            {
+                // Brotli not supported on WinHttpHandler
+                return;
+            }
+
+            const int ChunkSize = 1024 * 1024; // 1 MB of zeros per write
+            const long BufferLimit = 10 * 1024 * 1024; // 10 MB buffer limit
+
+            long serverBytesWritten = 0;
+
+            await LoopbackServer.CreateClientAndServerAsync(async uri =>
+            {
+                using HttpClientHandler handler = CreateHttpClientHandler();
+                handler.AutomaticDecompression = DecompressionMethods.Brotli;
+                using HttpClient client = CreateHttpClient(handler);
+                client.MaxResponseContentBufferSize = BufferLimit;
+
+                HttpRequestException ex = await Assert.ThrowsAsync<HttpRequestException>(
+                    () => client.GetByteArrayAsync(uri));
+                Assert.Equal(HttpRequestError.ConfigurationLimitExceeded, ex.HttpRequestError);
+            }, async server =>
+            {
+                await server.AcceptConnectionAsync(async connection =>
+                {
+                    await connection.ReadRequestHeaderAsync();
+                    await connection.WriteStringAsync("HTTP/1.1 200 OK\r\nContent-Encoding: br\r\n\r\n");
+
+                    var chunk = new byte[ChunkSize]; // zeros — highly compressible
+                    var countingStream = new ByteCountingStream(connection.Stream);
+                    try
+                    {
+                        using var brotliStream = new BrotliStream(countingStream, CompressionLevel.Optimal, leaveOpen: true);
+                        while (true)
+                        {
+                            await brotliStream.WriteAsync(chunk);
+                            await brotliStream.FlushAsync();
+                        }
+                    }
+                    catch (IOException) { }
+                    catch (OperationCanceledException) { }
+                    finally
+                    {
+                        serverBytesWritten = countingStream.BytesWritten;
+                    }
+                });
+            });
+
+            // The server should have sent far fewer compressed bytes than the decompressed buffer limit,
+            // demonstrating that a highly compressed payload can trigger the limit without the server
+            // needing to transmit anywhere near the full decompressed amount.
+            Assert.True(serverBytesWritten < BufferLimit,
+                $"Server sent {serverBytesWritten} compressed bytes, expected fewer than the {BufferLimit}-byte buffer limit");
+        }
+
+        private sealed class ByteCountingStream : Stream
+        {
+            private readonly Stream _inner;
+            private long _bytesWritten;
+
+            public ByteCountingStream(Stream inner) => _inner = inner;
+
+            public long BytesWritten => _bytesWritten;
+
+            public override bool CanRead => _inner.CanRead;
+            public override bool CanSeek => false;
+            public override bool CanWrite => _inner.CanWrite;
+            public override long Length => throw new NotSupportedException();
+            public override long Position { get => throw new NotSupportedException(); set => throw new NotSupportedException(); }
+            public override void Flush() => _inner.Flush();
+            public override Task FlushAsync(CancellationToken cancellationToken) => _inner.FlushAsync(cancellationToken);
+            public override int Read(byte[] buffer, int offset, int count) => _inner.Read(buffer, offset, count);
+            public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken) => _inner.ReadAsync(buffer, offset, count, cancellationToken);
+            public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default) => _inner.ReadAsync(buffer, cancellationToken);
+            public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
+            public override void SetLength(long value) => throw new NotSupportedException();
+
+            public override void Write(byte[] buffer, int offset, int count)
+            {
+                _inner.Write(buffer, offset, count);
+                _bytesWritten += count;
+            }
+
+            public override async Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+            {
+                await _inner.WriteAsync(buffer, offset, count, cancellationToken);
+                _bytesWritten += count;
+            }
+
+            public override async ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
+            {
+                await _inner.WriteAsync(buffer, cancellationToken);
+                _bytesWritten += buffer.Length;
+            }
+        }
+#endif
 
         [Theory]
 #if NET
