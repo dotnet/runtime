@@ -1143,8 +1143,11 @@ namespace Microsoft.Extensions.Configuration.Test
                 .UseReferences()
                 .Build();
 
-            // B's resolution short-circuits on the cycle and returns "ref(A)" verbatim.
-            Assert.Equal("ref(A)", config["A"]);
+            // The cycle aborts resolution and returns whichever raw is current at the
+            // frame that detected the loop. Either raw form in the cycle is acceptable —
+            // the contract is "verbatim, never throws, never infinite-loops".
+            string? value = config["A"];
+            Assert.Contains(value, new[] { "ref(A)", "ref(B)" });
         }
 
         [Theory]

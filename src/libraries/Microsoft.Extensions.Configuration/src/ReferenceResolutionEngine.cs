@@ -16,14 +16,19 @@ namespace Microsoft.Extensions.Configuration
     // is interpreted as a fallback chain: the first listed key whose own value resolves to a
     // non-null string supplies the result. Whitespace around each key is trimmed. Resolved
     // values are themselves run through the engine, so chains compose. All failure modes —
-    // missing keys, malformed expressions, max-depth, and detected cycles — degrade to the
-    // original raw string verbatim. The engine never throws.
+    // missing keys, malformed expressions, and detected cycles — degrade to the original raw
+    // string verbatim. The engine never throws.
     //
     // Anything that is not a strict whole-string match of the ref(...) shape is returned as
     // a literal: prefixes, suffixes, nested parens, and embedded references are all left alone.
     internal sealed class ReferenceResolutionEngine : IDisposable
     {
-        private const int MaxDepth = 32;
+        // Number of nested resolutions we will perform without any cycle tracking. Below this
+        // threshold the chain is assumed acyclic and we pay nothing for tracking. At/above the
+        // threshold a HashSet is allocated and every subsequent target key is added to it,
+        // so any cycle — regardless of period — is caught after at most one full revolution
+        // past the threshold and degrades to the verbatim raw value.
+        private const int CycleTrackingThreshold = 32;
         private const string RefOpen = "ref(";
         private const string EscapeOpen = @"\ref(";
 
@@ -63,8 +68,8 @@ namespace Microsoft.Extensions.Configuration
                 return false;
             }
 
-            var visited = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { key };
-            value = ResolveValue(raw, visited, depth: 0);
+            HashSet<string>? visited = null;
+            value = ResolveValue(raw, ref visited, count: 0);
             cache.TryAdd(key, value);
             return true;
         }
@@ -99,20 +104,17 @@ namespace Microsoft.Extensions.Configuration
             return false;
         }
 
-        // The recursive resolution step. `raw` is the unresolved value of some key; `visited`
-        // tracks keys currently being resolved on this call stack so we can break cycles.
-        // The depth guard handles long-but-non-cyclic chains the cycle set would otherwise miss
-        // (e.g. when a value re-enters via a key not in the visited set due to TryAdd skip).
-        private string? ResolveValue(string? raw, HashSet<string> visited, int depth)
+        // The recursive resolution step. `raw` is the unresolved value of some key; `count`
+        // is the number of nested resolutions performed so far. Below the cycle-tracking
+        // threshold we run unbounded with no tracking allocation; once count reaches the
+        // threshold we lazily allocate `visited` and start adding every target key. From
+        // that point on, a key already on the post-threshold path produces a cycle and we
+        // return the raw expression verbatim.
+        private string? ResolveValue(string? raw, ref HashSet<string>? visited, int count)
         {
             if (raw is null)
             {
                 return null;
-            }
-
-            if (depth >= MaxDepth)
-            {
-                return raw;
             }
 
             // Escape: a value starting with "\ref(" is treated as a literal whose leading '\'
@@ -131,12 +133,18 @@ namespace Microsoft.Extensions.Configuration
                 return raw;
             }
 
+            // Lazy escalation: only once we've consumed the grace budget do we pay for
+            // a tracking set. From here down every targetKey is added/removed in lockstep
+            // with the resolution path, and a re-encountered key terminates that branch
+            // verbatim.
+            if (visited is null && count >= CycleTrackingThreshold)
+            {
+                visited = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            }
+
             foreach (string targetKey in keys)
             {
-                // Skip keys already on the resolution stack — that's a cycle. Because the key
-                // is removed from `visited` after the recursive call, the same key may still
-                // appear as a sibling fallback for an unrelated outer ref.
-                if (!visited.Add(targetKey))
+                if (visited is not null && !visited.Add(targetKey))
                 {
                     continue;
                 }
@@ -148,11 +156,11 @@ namespace Microsoft.Extensions.Configuration
                         continue;
                     }
 
-                    return ResolveValue(targetRaw, visited, depth + 1);
+                    return ResolveValue(targetRaw, ref visited, count + 1);
                 }
                 finally
                 {
-                    visited.Remove(targetKey);
+                    visited?.Remove(targetKey);
                 }
             }
 
