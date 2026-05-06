@@ -692,6 +692,10 @@ HRESULT EEClass::AddMethod(MethodTable* pMT, mdMethodDef methodDef, MethodDesc**
     }
 
     // If the type is generic, then we need to update all existing instantiated types
+    //
+    // This code contains a race condition bug. Types that began loading before the metadata edit
+    // and are still loading at this point may not get updated. We assume that this issue does not
+    // have a meaningful impact on overall metadata update reliability.
     if (pMT->IsGenericTypeDefinition())
     {
         LOG((LF_ENC, LL_INFO100, "EEClass::AddMethod Looking for existing instantiations in all assemblies\n"));
