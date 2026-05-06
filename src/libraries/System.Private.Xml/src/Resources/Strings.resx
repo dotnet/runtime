@@ -2313,8 +2313,11 @@
   <data name="XmlInvalidFormUnqualified" xml:space="preserve">
     <value>The Form property may not be 'Unqualified' when an explicit Namespace property is present.</value>
   </data>
-  <data name="XmlInvalidSeparatorChar" xml:space="preserve">
-    <value>The Separator character '{0}' is not valid without escaping in both XML text content and attribute values and cannot be used as a separator for member '{1}'.</value>
+  <data name="XmlInvalidTextSeparatorChar" xml:space="preserve">
+    <value>The specified Separator character is not valid in XML text content and cannot be used as a separator for member '{0}'.</value>
+  </data>
+  <data name="XmlInvalidAttributeSeparatorChar" xml:space="preserve">
+    <value>The specified Separator character is not valid in an XML attribute value and cannot be used as a separator for member '{0}'.</value>
   </data>
   <data name="XmlDuplicateNamespace" xml:space="preserve">
     <value>The namespace, {0}, is a duplicate.</value>

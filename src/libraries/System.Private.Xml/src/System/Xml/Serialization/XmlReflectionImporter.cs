@@ -1615,7 +1615,7 @@ namespace System.Xml.Serialization
                     attribute.IsList = isList;
                     if (a.XmlAttribute.Separator != '\0')
                     {
-                        ValidateSeparatorChar(a.XmlAttribute.Separator, accessorName);
+                        ValidateAttributeSeparatorChar(a.XmlAttribute.Separator, accessorName);
                         attribute.Separator = a.XmlAttribute.Separator;
                     }
                     attribute.Default = GetDefaultValue(model.FieldTypeDesc, model.FieldType, a);
@@ -1644,7 +1644,7 @@ namespace System.Xml.Serialization
 
                         if (a.XmlText.Separator != '\0')
                         {
-                            ValidateSeparatorChar(a.XmlText.Separator, accessorName);
+                            ValidateTextSeparatorChar(a.XmlText.Separator, accessorName);
                             if (text.Mapping is SpecialMapping)
                                 throw new InvalidOperationException(SR.Format(SR.XmlIllegalArrayTextSeparator, accessorName));
 
@@ -2275,14 +2275,18 @@ namespace System.Xml.Serialization
             if (isQualified && form == XmlSchemaForm.Unqualified) throw new InvalidOperationException(SR.XmlInvalidFormUnqualified);
         }
 
-        private static void ValidateSeparatorChar(char separator, string memberName)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static void ValidateTextSeparatorChar(char separator, string memberName)
         {
-            if (XmlCharType.IsTextChar(separator) && XmlCharType.IsAttributeValueChar(separator))
-            {
-                return;
-            }
+            if (!XmlCharType.IsTextChar(separator))
+                throw new InvalidOperationException(SR.Format(SR.XmlInvalidTextSeparatorChar, memberName));
+        }
 
-            throw new InvalidOperationException(SR.Format(SR.XmlInvalidSeparatorChar, separator, memberName));
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static void ValidateAttributeSeparatorChar(char separator, string memberName)
+        {
+            if (!XmlCharType.IsAttributeValueChar(separator))
+                throw new InvalidOperationException(SR.Format(SR.XmlInvalidAttributeSeparatorChar, memberName));
         }
 
         private static void CheckNullable(bool isNullable, TypeDesc typeDesc, TypeMapping? mapping)

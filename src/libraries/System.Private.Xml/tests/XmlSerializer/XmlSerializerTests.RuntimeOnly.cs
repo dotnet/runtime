@@ -3783,11 +3783,33 @@ public static partial class XmlSerializerTests
         Assert.Equal(new string[] { "OnlyValue" }, actual.XmlAttributeForms);
     }
 
+    [Fact]
+    public static void XML_XmlTextSeparator_QuoteIsValidInText_RoundTrips()
+    {
+        // '"' is valid in XML text content but not in attribute values.
+        var original = new TypeWithXmlTextSeparatorQuote { Text = new string[] { "a", "b", "c" } };
+        var actual = SerializeAndDeserialize(original,
+            "<?xml version=\"1.0\"?><TypeWithXmlTextSeparatorQuote xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\">a\"b\"c</TypeWithXmlTextSeparatorQuote>");
+        Assert.NotNull(actual.Text);
+        Assert.Equal(new string[] { "a", "b", "c" }, actual.Text);
+    }
+
+    [Fact]
+    public static void XML_XmlAttributeSeparator_CloseBracketIsValidInAttribute_RoundTrips()
+    {
+        // ']' is valid in XML attribute values but not in text content.
+        var original = new TypeWithXmlAttributeSeparatorCloseBracket { Items = new string[] { "x", "y", "z" } };
+        var actual = SerializeAndDeserialize(original,
+            "<?xml version=\"1.0\"?><TypeWithXmlAttributeSeparatorCloseBracket xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" Items=\"x]y]z\" />");
+        Assert.NotNull(actual.Items);
+        Assert.Equal(new string[] { "x", "y", "z" }, actual.Items);
+    }
+
     [Theory]
     [InlineData(typeof(TypeWithXmlTextInvalidSeparator), "Text")]
     [InlineData(typeof(TypeWithXmlTextInvalidSeparatorAngleBracket), "Text")]
     [InlineData(typeof(TypeWithXmlTextInvalidSeparatorAmpersand), "Text")]
-    [InlineData(typeof(TypeWithXmlTextInvalidSeparatorQuote), "Text")]
+    [InlineData(typeof(TypeWithXmlTextInvalidSeparatorCloseBracket), "Text")]
     [InlineData(typeof(TypeWithXmlAttributeInvalidSeparatorQuote), "Items")]
     public static void XML_XmlSeparator_InvalidChar_ThrowsWithReflectingFieldMessage(Type type, string fieldName)
     {
