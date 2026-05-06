@@ -5294,8 +5294,8 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
                 continue;
             }
 
-            if ((lclNum == lvaMonAcquired) || (lclNum == lvaAsyncThreadObjectVar) || (lclNum == lvaAsyncExecutionContextVar) ||
-                (lclNum == lvaAsyncSynchronizationContextVar))
+            if ((lclNum == lvaMonAcquired) || (lclNum == lvaAsyncThreadObjectVar) ||
+                (lclNum == lvaAsyncExecutionContextVar) || (lclNum == lvaAsyncSynchronizationContextVar))
             {
                 continue;
             }

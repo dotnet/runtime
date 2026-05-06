@@ -10434,8 +10434,7 @@ bool Compiler::lvaIsOSRLocal(unsigned varNum)
         {
             // Sanity check for promoted fields of OSR locals.
             //
-            if ((varNum >= info.compLocalsCount) && (varNum != lvaMonAcquired) &&
-                (varNum != lvaAsyncThreadObjectVar) &&
+            if ((varNum >= info.compLocalsCount) && (varNum != lvaMonAcquired) && (varNum != lvaAsyncThreadObjectVar) &&
                 (varNum != lvaAsyncExecutionContextVar) && (varNum != lvaAsyncSynchronizationContextVar))
             {
                 assert(varDsc->lvIsStructField);

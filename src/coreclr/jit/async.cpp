@@ -100,7 +100,7 @@ PhaseStatus Compiler::SaveAsyncContexts()
 
     if (opts.IsOSR())
     {
-        lvaGetDesc(lvaAsyncThreadObjectVar)->lvIsOSRLocal       = true;
+        lvaGetDesc(lvaAsyncThreadObjectVar)->lvIsOSRLocal           = true;
         lvaGetDesc(lvaAsyncExecutionContextVar)->lvIsOSRLocal       = true;
         lvaGetDesc(lvaAsyncSynchronizationContextVar)->lvIsOSRLocal = true;
     }
@@ -195,7 +195,7 @@ PhaseStatus Compiler::SaveAsyncContexts()
                                       NewCallArg::Primitive(gtNewLclAddrNode(lvaAsyncSynchronizationContextVar, 0)));
         captureCall->gtArgs.PushFront(this, NewCallArg::Primitive(gtNewLclAddrNode(lvaAsyncExecutionContextVar, 0)));
         captureCall->gtArgs.PushFront(this, NewCallArg::Primitive(gtNewLclAddrNode(lvaAsyncThreadObjectVar, 0)));
-        lvaGetDesc(lvaAsyncThreadObjectVar)->lvHasLdAddrOp       = true;
+        lvaGetDesc(lvaAsyncThreadObjectVar)->lvHasLdAddrOp           = true;
         lvaGetDesc(lvaAsyncExecutionContextVar)->lvHasLdAddrOp       = true;
         lvaGetDesc(lvaAsyncSynchronizationContextVar)->lvHasLdAddrOp = true;
 
@@ -3053,8 +3053,7 @@ BasicBlock* AsyncTransformation::CreateSharedFinishContextHandlingBB(SuspensionC
         syncContextLclNum = m_compiler->lvaAsyncSynchronizationContextVar;
     }
 
-    InsertFinishContextHandlingCall(block, layout, helper,
-        m_compiler->gtNewLclvNode(execContextLclNum, TYP_REF),
+    InsertFinishContextHandlingCall(block, layout, helper, m_compiler->gtNewLclvNode(execContextLclNum, TYP_REF),
                                     m_compiler->gtNewLclvNode(syncContextLclNum, TYP_REF));
 
     return block;
