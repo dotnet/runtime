@@ -3,6 +3,7 @@
 
 #include "jitpch.h"
 #include "autovectorizer.h"
+#include "fgprofilesynthesis.h"
 
 AutoVectorizer::AutoVectorizer(Compiler* compiler)
     : m_compiler(compiler)
@@ -72,6 +73,12 @@ PhaseStatus AutoVectorizer::Run()
     {
         m_compiler->fgInvalidateDfsTree();
         return PhaseStatus::MODIFIED_NOTHING;
+    }
+
+    if (m_compiler->fgIsUsingProfileWeights())
+    {
+        JITDUMP("synthesizing profile after auto vectorization CFG rewrites\n");
+        ProfileSynthesis::Run(m_compiler, ProfileSynthesisOption::ResetAndSynthesize);
     }
 
     m_compiler->fgModified              = true;
@@ -4201,7 +4208,7 @@ bool AutoVectorizer::TryAnalyzeByrefAddress(LoopVectorizationPlan*              
                     std::swap(index, scale);
                 }
 
-                if (!scale->IsCnsIntOrI() || (scale->AsIntConCommon()->IconValue() != m_elemSize))
+                if (!scale->IsCnsIntOrI() || (scale->AsIntConCommon()->IconValue() != static_cast<ssize_t>(m_elemSize)))
                 {
                     return false;
                 }
@@ -4297,7 +4304,8 @@ bool AutoVectorizer::TryAnalyzeByrefAddress(LoopVectorizationPlan*              
     };
 
     AddressVisitor visitor(this, plan, ivLcl, elemSize, &parts);
-    if (!visitor.Analyze(addr) || (parts.BaseLcl == BAD_VAR_NUM) || (parts.IndexScale != elemSize))
+    if (!visitor.Analyze(addr) || (parts.BaseLcl == BAD_VAR_NUM) ||
+        (parts.IndexScale != static_cast<ssize_t>(elemSize)))
     {
         return false;
     }
@@ -4582,7 +4590,7 @@ bool AutoVectorizer::TryAnalyzeArrayAddress(LoopVectorizationPlan*              
                     std::swap(index, scale);
                 }
 
-                if (!scale->IsCnsIntOrI() || (scale->AsIntConCommon()->IconValue() != m_elemSize))
+                if (!scale->IsCnsIntOrI() || (scale->AsIntConCommon()->IconValue() != static_cast<ssize_t>(m_elemSize)))
                 {
                     return false;
                 }
@@ -4683,7 +4691,8 @@ bool AutoVectorizer::TryAnalyzeArrayAddress(LoopVectorizationPlan*              
         return false;
     }
 
-    if ((parts.ArrayLcl == BAD_VAR_NUM) || (parts.IndexScale != elemSize) || (parts.Offset < firstElemOffset))
+    if ((parts.ArrayLcl == BAD_VAR_NUM) || (parts.IndexScale != static_cast<ssize_t>(elemSize)) ||
+        (parts.Offset < firstElemOffset))
     {
         return false;
     }
