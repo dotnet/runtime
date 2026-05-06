@@ -1018,11 +1018,11 @@ bool AutoVectorizer::TryAddReduction(LoopVectorizationPlan* plan, Statement* stm
         }
     }
 
-    GenTree* const data         = UnwrapCommaValue(storeLcl->Data());
-    genTreeOps     reductionOp  = data->OperGet();
-    NamedIntrinsic reductionNI  = NI_Illegal;
-    GenTree*       op1          = nullptr;
-    GenTree*       op2          = nullptr;
+    GenTree* const data        = UnwrapCommaValue(storeLcl->Data());
+    genTreeOps     reductionOp = data->OperGet();
+    NamedIntrinsic reductionNI = NI_Illegal;
+    GenTree*       op1         = nullptr;
+    GenTree*       op2         = nullptr;
 
     if (data->OperIs(GT_ADD, GT_SUB))
     {
@@ -2330,7 +2330,7 @@ bool AutoVectorizer::TryRewritePlan(LoopVectorizationPlan* plan)
 
     for (unsigned i = 0; i < plan->ReductionCount; i++)
     {
-        const var_types simdType = Compiler::getSIMDTypeForSize(plan->VectorSizeBytes);
+        const var_types                       simdType  = Compiler::getSIMDTypeForSize(plan->VectorSizeBytes);
         LoopVectorizationPlan::ReductionInfo& reduction = plan->Reductions[i];
         reduction.VectorLcl = m_compiler->lvaGrabTemp(false DEBUGARG("auto vectorization reduction accumulator"));
         m_compiler->lvaTable[reduction.VectorLcl].lvType = simdType;
@@ -2410,7 +2410,8 @@ bool AutoVectorizer::TryRewritePlan(LoopVectorizationPlan* plan)
 
     for (unsigned i = 0; i < plan->ReductionCount; i++)
     {
-        Statement* const reductionFinalizeStmt = m_compiler->fgNewStmtAtEnd(scalarGuard, BuildReductionFinalize(plan, i));
+        Statement* const reductionFinalizeStmt =
+            m_compiler->fgNewStmtAtEnd(scalarGuard, BuildReductionFinalize(plan, i));
         m_compiler->gtSetStmtInfo(reductionFinalizeStmt);
         m_compiler->fgSetStmtSeq(reductionFinalizeStmt);
         JITDUMP("generated reduction finalize in " FMT_BB ":\n", scalarGuard->bbNum);
@@ -3011,13 +3012,14 @@ GenTree* AutoVectorizer::BuildReductionInit(LoopVectorizationPlan* plan, unsigne
 #if defined(FEATURE_HW_INTRINSICS) && (defined(TARGET_XARCH) || defined(TARGET_ARM64))
     const LoopVectorizationPlan::ReductionInfo& reduction = plan->Reductions[reductionIndex];
     const var_types                             simdType  = Compiler::getSIMDTypeForSize(plan->VectorSizeBytes);
-    GenTree* initValue;
+    GenTree*                                    initValue;
     if (reduction.Oper == GT_INTRINSIC)
     {
         LclVarDsc* const reductionDsc = m_compiler->lvaGetDesc(reduction.Lcl);
-        initValue = m_compiler->gtNewSimdCreateBroadcastNode(
-            simdType, m_compiler->gtNewLclvNode(reduction.Lcl, reductionDsc->TypeGet()), plan->ElementType,
-            plan->VectorSizeBytes);
+        initValue =
+            m_compiler->gtNewSimdCreateBroadcastNode(simdType,
+                                                     m_compiler->gtNewLclvNode(reduction.Lcl, reductionDsc->TypeGet()),
+                                                     plan->ElementType, plan->VectorSizeBytes);
     }
     else
     {
@@ -3036,9 +3038,9 @@ GenTree* AutoVectorizer::BuildReductionUpdate(LoopVectorizationPlan* plan, unsig
     const LoopVectorizationPlan::ReductionInfo& reduction = plan->Reductions[reductionIndex];
     const unsigned                              simdSize  = plan->VectorSizeBytes;
     const var_types                             simdType  = Compiler::getSIMDTypeForSize(simdSize);
-    GenTree* const                              current = m_compiler->gtNewLclvNode(reduction.VectorLcl, simdType);
-    GenTree* const                              value   = BuildPackNode(plan, reduction.Pack);
-    GenTree* const                              result  = BuildVectorReductionOp(plan, reduction, current, value);
+    GenTree* const                              current   = m_compiler->gtNewLclvNode(reduction.VectorLcl, simdType);
+    GenTree* const                              value     = BuildPackNode(plan, reduction.Pack);
+    GenTree* const                              result    = BuildVectorReductionOp(plan, reduction, current, value);
     return m_compiler->gtNewStoreLclVarNode(reduction.VectorLcl, result);
 #else
     unreached();
@@ -3048,16 +3050,16 @@ GenTree* AutoVectorizer::BuildReductionUpdate(LoopVectorizationPlan* plan, unsig
 GenTree* AutoVectorizer::BuildReductionFinalize(LoopVectorizationPlan* plan, unsigned reductionIndex)
 {
 #if defined(FEATURE_HW_INTRINSICS) && (defined(TARGET_XARCH) || defined(TARGET_ARM64))
-    const LoopVectorizationPlan::ReductionInfo& reduction   = plan->Reductions[reductionIndex];
-    const unsigned                              simdSize    = plan->VectorSizeBytes;
-    const var_types                             simdType    = Compiler::getSIMDTypeForSize(simdSize);
+    const LoopVectorizationPlan::ReductionInfo& reduction    = plan->Reductions[reductionIndex];
+    const unsigned                              simdSize     = plan->VectorSizeBytes;
+    const var_types                             simdType     = Compiler::getSIMDTypeForSize(simdSize);
     LclVarDsc* const                            reductionDsc = m_compiler->lvaGetDesc(reduction.Lcl);
 
     if (reduction.Oper == GT_INTRINSIC)
     {
-        GenTree* scalar = m_compiler->gtNewSimdToScalarNode(
-            reductionDsc->TypeGet(), m_compiler->gtNewLclvNode(reduction.VectorLcl, simdType), plan->ElementType,
-            simdSize);
+        GenTree* scalar = m_compiler->gtNewSimdToScalarNode(reductionDsc->TypeGet(),
+                                                            m_compiler->gtNewLclvNode(reduction.VectorLcl, simdType),
+                                                            plan->ElementType, simdSize);
 
         for (unsigned lane = 1; lane < plan->VectorizationFactor; lane++)
         {
@@ -3091,7 +3093,7 @@ GenTree* AutoVectorizer::BuildReductionIntrinsicNode(const LoopVectorizationPlan
         GenTreeIntrinsic(resultType, op1, op2, reduction.Intrinsic, nullptr R2RARG(CORINFO_CONST_LOOKUP{IAT_VALUE}));
 }
 
-GenTree* AutoVectorizer::BuildVectorReductionOp(LoopVectorizationPlan*                     plan,
+GenTree* AutoVectorizer::BuildVectorReductionOp(LoopVectorizationPlan*                      plan,
                                                 const LoopVectorizationPlan::ReductionInfo& reduction,
                                                 GenTree*                                    op1,
                                                 GenTree*                                    op2)
@@ -3103,12 +3105,10 @@ GenTree* AutoVectorizer::BuildVectorReductionOp(LoopVectorizationPlan*          
         return m_compiler->gtNewSimdBinOpNode(GT_ADD, simdType, op1, op2, plan->ElementType, plan->VectorSizeBytes);
     }
 
-    const bool isMax = (reduction.Intrinsic == NI_System_Math_Max) ||
-                       (reduction.Intrinsic == NI_System_Math_MaxNative) ||
-                       (reduction.Intrinsic == NI_System_Math_MaxUnsigned) ||
-                       (reduction.Intrinsic == NI_System_Math_MaxMagnitude) ||
-                       (reduction.Intrinsic == NI_System_Math_MaxMagnitudeNumber) ||
-                       (reduction.Intrinsic == NI_System_Math_MaxNumber);
+    const bool isMax =
+        (reduction.Intrinsic == NI_System_Math_Max) || (reduction.Intrinsic == NI_System_Math_MaxNative) ||
+        (reduction.Intrinsic == NI_System_Math_MaxUnsigned) || (reduction.Intrinsic == NI_System_Math_MaxMagnitude) ||
+        (reduction.Intrinsic == NI_System_Math_MaxMagnitudeNumber) || (reduction.Intrinsic == NI_System_Math_MaxNumber);
     const bool isMagnitude = (reduction.Intrinsic == NI_System_Math_MinMagnitude) ||
                              (reduction.Intrinsic == NI_System_Math_MaxMagnitude) ||
                              (reduction.Intrinsic == NI_System_Math_MinMagnitudeNumber) ||

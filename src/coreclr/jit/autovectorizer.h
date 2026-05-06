@@ -124,19 +124,19 @@ private:
 
         struct ReductionInfo
         {
-            Statement*     Stmt       = nullptr;
-            unsigned       Lcl        = BAD_VAR_NUM;
-            unsigned       VectorLcl  = BAD_VAR_NUM;
-            genTreeOps     Oper       = GT_COUNT;
-            NamedIntrinsic Intrinsic  = NI_Illegal;
-            GenTree*       Value      = nullptr;
-            PackNode*      Pack       = nullptr;
+            Statement*     Stmt      = nullptr;
+            unsigned       Lcl       = BAD_VAR_NUM;
+            unsigned       VectorLcl = BAD_VAR_NUM;
+            genTreeOps     Oper      = GT_COUNT;
+            NamedIntrinsic Intrinsic = NI_Illegal;
+            GenTree*       Value     = nullptr;
+            PackNode*      Pack      = nullptr;
         };
 
         ReductionInfo Reductions[MaxReductions];
         unsigned      ReductionCount = 0;
 
-        Statement*   StoreStmt                 = nullptr;
+        Statement*   StoreStmt = nullptr;
         ScalarAccess StoreAccess;
         ScalarAccess LoadAccess;
         SLPPlan      BodyPlan;
@@ -207,7 +207,7 @@ private:
                                             GenTree*                                    op1,
                                             GenTree*                                    op2,
                                             var_types                                   resultType);
-    GenTree*    BuildVectorReductionOp(LoopVectorizationPlan*                     plan,
+    GenTree*    BuildVectorReductionOp(LoopVectorizationPlan*                      plan,
                                        const LoopVectorizationPlan::ReductionInfo& reduction,
                                        GenTree*                                    op1,
                                        GenTree*                                    op2);
@@ -250,23 +250,20 @@ private:
                                        LoopVectorizationPlan::ScalarAccess* access);
     bool        TryProveRemainingBoundsChecks(LoopVectorizationPlan* plan);
     bool        IsSameLimit(LoopVectorizationPlan* plan, GenTree* first, GenTree* second, unsigned depth = 0);
-    bool        IsLimitAtMost(LoopVectorizationPlan* plan,
-                              GenTree*               limit,
-                              GenTree*               length,
-                              int                    lengthOffset,
-                              unsigned               depth = 0);
-    void        RecordLocalDefs(LoopVectorizationPlan* plan, GenTree* tree, bool* foundBoundsCheck = nullptr);
-    void        RecordLocalDef(LoopVectorizationPlan* plan, unsigned lclNum, GenTree* value);
-    bool        TryGetLocalDef(LoopVectorizationPlan* plan, unsigned lclNum, GenTree** value);
-    bool        TryCollectArrayLengthLimitLocals(LoopVectorizationPlan* plan,
-                                                 GenTree*               tree,
-                                                 unsigned*              lclNums,
-                                                 int*                   offsets,
-                                                 unsigned               maxCount,
-                                                 unsigned*              count,
-                                                 unsigned               depth = 0);
-    bool        TryGetArrayLengthLimitLocal(
-               LoopVectorizationPlan* plan, GenTree* tree, unsigned* lclNum, int* offset, unsigned depth = 0);
+    bool        IsLimitAtMost(
+               LoopVectorizationPlan* plan, GenTree* limit, GenTree* length, int lengthOffset, unsigned depth = 0);
+    void RecordLocalDefs(LoopVectorizationPlan* plan, GenTree* tree, bool* foundBoundsCheck = nullptr);
+    void RecordLocalDef(LoopVectorizationPlan* plan, unsigned lclNum, GenTree* value);
+    bool TryGetLocalDef(LoopVectorizationPlan* plan, unsigned lclNum, GenTree** value);
+    bool TryCollectArrayLengthLimitLocals(LoopVectorizationPlan* plan,
+                                          GenTree*               tree,
+                                          unsigned*              lclNums,
+                                          int*                   offsets,
+                                          unsigned               maxCount,
+                                          unsigned*              count,
+                                          unsigned               depth = 0);
+    bool TryGetArrayLengthLimitLocal(
+        LoopVectorizationPlan* plan, GenTree* tree, unsigned* lclNum, int* offset, unsigned depth = 0);
     bool TryGetArrayLengthLocal(GenTree* tree, unsigned* lclNum);
     bool IsCompatibleScalarType(GenTree* tree, var_types elementType) const;
     bool TryGetInvariantOperand(FlowGraphNaturalLoop* loop, unsigned ivLcl, GenTree* tree, var_types elementType);
