@@ -265,7 +265,7 @@ void TLSIndexToMethodTableMap::Clear(TLSIndex index, uint8_t whenCleared)
     {
         m_collectibleEntries--;
     }
-    VolatileStore(&pMap[index.GetIndexOffset()], (whenCleared << 2) | 0x3);
+    VolatileStore(&pMap[index.GetIndexOffset()], (TADDR)((whenCleared << 2) | 0x3));
     _ASSERTE(GetClearedMarker(pMap[index.GetIndexOffset()]) == whenCleared);
     _ASSERTE(IsClearedValue(pMap[index.GetIndexOffset()]));
 }
