@@ -5139,7 +5139,7 @@ HRESULT CordbNativeCode::GetInterpreterCallDvarOffset(ULONG32 ILoffset, ULONG32 
         memcpy(&interpOpcode, nativeBuffer, sizeof(int32_t));
         int interpSlots = GetInterpreterCallOpcodeLengthInSlots(interpOpcode);
         if (interpSlots <= 0)
-            return S_FALSE; // Not an interpreter call.
+            return E_UNEXPECTED;
 
         ULONG32 expectedPostCall = pMap->nativeStartOffset + interpSlots * (ULONG32)sizeof(int32_t);
         if (expectedPostCall != postCallNativeOffset)
@@ -5151,7 +5151,7 @@ HRESULT CordbNativeCode::GetInterpreterCallDvarOffset(ULONG32 ILoffset, ULONG32 
         return S_OK;
     }
 
-    return S_FALSE;
+    return E_UNEXPECTED;
 }
 #endif // FEATURE_INTERPRETER
 
