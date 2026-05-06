@@ -511,7 +511,7 @@ public:
         TS_DebugSuspendPending    = 0x00000008,    // Is the debugger suspending threads?
         TS_GCOnTransitions        = 0x00000010,    // Force a GC on stub transitions (GCStress only)
 
-        // unused                 = 0x00000020,
+        TS_SyncBlockCleanup       = 0x00000020,    // The synch block needs to be cleaned up.
 
         TS_ExecutingOnAltStack    = 0x00000040,    // Runtime is executing on an alternate stack located anywhere in the memory
 
@@ -570,17 +570,8 @@ public:
         TS_CatchAtSafePoint = (TS_AbortRequested | TS_DebugSuspendPending | TS_GCOnTransitions),
     };
 
-    // Thread flags that aren't really states in themselves but rather things the thread
-    // has to do.
-    enum ThreadTasks
-    {
-        TT_CleanupSyncBlock       = 0x00000001, // The synch block needs to be cleaned up.
-    };
-
     // Thread flags that have no concurrency issues (i.e., they are only manipulated by the owning thread). Use these
     // state flags when you have a new thread state that doesn't belong in the ThreadState enum above.
-    //
-    // <TODO>@TODO: its possible that the ThreadTasks from above and these flags should be merged.</TODO>
     enum ThreadStateNoConcurrency
     {
         TSNC_Unknown                    = 0x00000000, // threads are initialized this way
@@ -710,19 +701,19 @@ public:
     DWORD RequireSyncBlockCleanup()
     {
         LIMITED_METHOD_CONTRACT;
-        return (m_ThreadTasks & TT_CleanupSyncBlock);
+        return (m_State & TS_SyncBlockCleanup);
     }
 
     void SetSyncBlockCleanup()
     {
         LIMITED_METHOD_CONTRACT;
-        InterlockedOr((LONG*)&m_ThreadTasks, TT_CleanupSyncBlock);
+        InterlockedOr((LONG*)&m_State, TS_SyncBlockCleanup);
     }
 
     void ResetSyncBlockCleanup()
     {
         LIMITED_METHOD_CONTRACT;
-        InterlockedAnd((LONG*)&m_ThreadTasks, ~TT_CleanupSyncBlock);
+        InterlockedAnd((LONG*)&m_State, ~TS_SyncBlockCleanup);
     }
 
 #ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
@@ -914,9 +905,6 @@ public:
     inline void SetTHAllocContextObj(TypeHandle th) {LIMITED_METHOD_CONTRACT; m_thAllocContextObj = th; }
 
     inline TypeHandle GetTHAllocContextObj() {LIMITED_METHOD_CONTRACT; return m_thAllocContextObj; }
-
-    // Flags used to indicate tasks the thread has to do.
-    ThreadTasks          m_ThreadTasks;
 
     // Flags for thread states that have no concurrency issues.
     ThreadStateNoConcurrency m_StateNC;
