@@ -88,6 +88,50 @@ namespace R2RDump
                     if (indent > 0) indent--;
                     return "end";
                 case 0x0C: return $"br {ReadU32()}";
+                case 0x1F:
+                {
+                    string bt = ReadBlockType();
+                    uint catchCount = ReadU32();
+                    var sb = new StringBuilder($"try_table{bt}");
+                    for (uint i = 0; i < catchCount; i++)
+                    {
+                        byte catchKind = ReadByte();
+                        switch (catchKind)
+                        {
+                            case 0x00:
+                            {
+                                uint tagIdx = ReadU32();
+                                uint labelIdx = ReadU32();
+                                sb.Append($" (catch {tagIdx} {labelIdx})");
+                                break;
+                            }
+                            case 0x01:
+                            {
+                                uint tagIdx = ReadU32();
+                                uint labelIdx = ReadU32();
+                                sb.Append($" (catch_ref {tagIdx} {labelIdx})");
+                                break;
+                            }
+                            case 0x02:
+                            {
+                                uint labelIdx = ReadU32();
+                                sb.Append($" (catch_all {labelIdx})");
+                                break;
+                            }
+                            case 0x03:
+                            {
+                                uint labelIdx = ReadU32();
+                                sb.Append($" (catch_all_ref {labelIdx})");
+                                break;
+                            }
+                            default:
+                                sb.Append($" (<unknown catch kind 0x{catchKind:X2}>)");
+                                break;
+                        }
+                    }
+                    indent++;
+                    return sb.ToString();
+                }
                 case 0x0D: return $"br_if {ReadU32()}";
                 case 0x0E:
                 {
