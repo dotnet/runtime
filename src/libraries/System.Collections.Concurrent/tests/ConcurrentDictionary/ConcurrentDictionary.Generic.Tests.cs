@@ -49,7 +49,6 @@ namespace System.Collections.Concurrent.Tests
         [InlineData(true)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/81945", typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/81945", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst | TestPlatforms.Android)]
-        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst | TestPlatforms.Android, "Type.GetType fails to load nested ConcurrentDictionary+Tables type on mobile platforms")]
         public void NonRandomizedToRandomizedUpgrade_FunctionsCorrectly(bool ignoreCase)
         {
             List<string> strings = GenerateCollidingStrings(110); // higher than the collisions threshold
