@@ -4035,6 +4035,10 @@ CLR_BOOL SfiNextWorker(StackFrameIterator* pThis, uint* uExCollideClauseIdx, CLR
                 }
             }
 
+            _ASSERTE(pThis->GetFrameState() == StackFrameIterator::SFITER_NATIVE_MARKER_FRAME);
+            pThis->Next();
+            _ASSERTE(pThis->GetFrameState() == StackFrameIterator::SFITER_FRAME_FUNCTION);
+
             *pfIsExceptionIntercepted = FALSE;
 
             if (fUnwoundReversePInvoke)
