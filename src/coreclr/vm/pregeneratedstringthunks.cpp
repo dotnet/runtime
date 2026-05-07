@@ -50,7 +50,7 @@ void ProcessInjectStringThunksFixup(ReadyToRunInfo * pR2RInfo, PCCOR_SIGNATURE p
         _ASSERTE(existingTable != nullptr);
 
         // First pass: check if there are any new strings not already in the table.
-        bool hasNewEntries = false;
+        uint32_t newEntryCount = 0;
         {
             PCCOR_SIGNATURE pCurrent = pBlob;
             while (true)
@@ -67,13 +67,13 @@ void ProcessInjectStringThunksFixup(ReadyToRunInfo * pR2RInfo, PCCOR_SIGNATURE p
                 void* unused;
                 if (!existingTable->Lookup(str, &unused))
                 {
-                    hasNewEntries = true;
+                    newEntryCount++;
                     break;
                 }
             }
         }
 
-        if (!hasNewEntries)
+        if (newEntryCount == 0)
             return;
 
 #ifdef TARGET_WASM
@@ -86,7 +86,7 @@ void ProcessInjectStringThunksFixup(ReadyToRunInfo * pR2RInfo, PCCOR_SIGNATURE p
 
         // Build a new table with all existing entries plus new ones.
         StringToThunkHash* newTable = new StringToThunkHash();
-
+        newTable->Reallocate((existingTable->GetCount() + newEntryCount) * StringToThunkHash::s_density_factor_denominator / StringToThunkHash::s_density_factor_numerator + 1);
         // Copy existing entries
         for (auto iter = existingTable->Begin(); iter != existingTable->End(); ++iter)
         {
