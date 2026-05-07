@@ -7761,7 +7761,9 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
                 }
 
                 addGuardedDevirtualizationCandidate(call, exactMethod, exactCls, exactContext, exactMethodAttrs,
-                                                    clsAttrs, likelyHood, instParamLookup, baseMethod, originalContext);
+                                                    clsAttrs, likelyHood, instParamLookup,
+                                                    &dvInfo.resolvedTokenDevirtualizedMethod,
+                                                    &dvInfo.resolvedTokenDevirtualizedUnboxedMethod);
             }
 
             if (call->GetInlineCandidatesCount() == numExactClasses)
@@ -7784,13 +7786,16 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
     // Iterate over the guesses
     for (int candidateId = 0; candidateId < candidatesCount; candidateId++)
     {
-        CORINFO_CLASS_HANDLE  likelyClass  = likelyClasses[candidateId];
-        CORINFO_METHOD_HANDLE likelyMethod = likelyMethods[candidateId];
-        unsigned              likelihood   = likelihoods[candidateId];
-        CORINFO_LOOKUP        instParamLookup{};
-        const CORINFO_LOOKUP* pInstParamLookup = nullptr;
+        CORINFO_CLASS_HANDLE    likelyClass  = likelyClasses[candidateId];
+        CORINFO_METHOD_HANDLE   likelyMethod = likelyMethods[candidateId];
+        unsigned                likelihood   = likelihoods[candidateId];
+        CORINFO_LOOKUP          instParamLookup;
+        const CORINFO_LOOKUP*   pInstParamLookup      = nullptr;
+        CORINFO_RESOLVED_TOKEN* pResolvedToken        = nullptr;
+        CORINFO_RESOLVED_TOKEN* pUnboxedResolvedToken = nullptr;
 
-        CORINFO_CONTEXT_HANDLE likelyContext = originalContext;
+        CORINFO_CONTEXT_HANDLE        likelyContext = originalContext;
+        CORINFO_DEVIRTUALIZATION_INFO dvInfo;
 
         uint32_t likelyClassAttribs = 0;
         if (likelyClass != NO_CLASS_HANDLE)
@@ -7810,7 +7815,6 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
 
             // Figure out which method will be called.
             //
-            CORINFO_DEVIRTUALIZATION_INFO dvInfo;
             dvInfo.virtualMethod               = baseMethod;
             dvInfo.objClass                    = likelyClass;
             dvInfo.context                     = originalContext;
@@ -7831,8 +7835,10 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
                 break;
             }
 
-            likelyContext = dvInfo.exactContext;
-            likelyMethod  = dvInfo.devirtualizedMethod;
+            likelyContext         = dvInfo.exactContext;
+            likelyMethod          = dvInfo.devirtualizedMethod;
+            pResolvedToken        = &dvInfo.resolvedTokenDevirtualizedMethod;
+            pUnboxedResolvedToken = &dvInfo.resolvedTokenDevirtualizedUnboxedMethod;
             assert(!dvInfo.instParamLookup.lookupKind.needsRuntimeLookup);
 
             const bool needsInstParam = (dvInfo.instParamLookup.constLookup.accessType != IAT_VALUE) ||
@@ -7917,8 +7923,8 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
         // Add this as a potential candidate.
         //
         addGuardedDevirtualizationCandidate(call, likelyMethod, likelyClass, likelyContext, likelyMethodAttribs,
-                                            likelyClassAttribs, likelihood, pInstParamLookup, baseMethod,
-                                            originalContext);
+                                            likelyClassAttribs, likelihood, pInstParamLookup, pResolvedToken,
+                                            pUnboxedResolvedToken);
     }
 }
 
@@ -7944,19 +7950,19 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
 //    classAttr - attributes of the class
 //    likelihood - odds that this class is the class seen at runtime
 //    instParamLookup - lookup for the instantiation argument, or nullptr if none is needed
-//    originalMethodHandle - method handle of base method (before devirt)
-//    originalContextHandle - context for the original call
+//    pResolvedToken - resolved token for methodHandle, used to get R2R call info; nullptr when unavailable
+//    pUnboxedResolvedToken - resolved token for the unboxed entry, paired with pResolvedToken
 //
-void Compiler::addGuardedDevirtualizationCandidate(GenTreeCall*           call,
-                                                   CORINFO_METHOD_HANDLE  methodHandle,
-                                                   CORINFO_CLASS_HANDLE   classHandle,
-                                                   CORINFO_CONTEXT_HANDLE contextHandle,
-                                                   unsigned               methodAttr,
-                                                   unsigned               classAttr,
-                                                   unsigned               likelihood,
-                                                   const CORINFO_LOOKUP*  instParamLookup,
-                                                   CORINFO_METHOD_HANDLE  originalMethodHandle,
-                                                   CORINFO_CONTEXT_HANDLE originalContextHandle)
+void Compiler::addGuardedDevirtualizationCandidate(GenTreeCall*            call,
+                                                   CORINFO_METHOD_HANDLE   methodHandle,
+                                                   CORINFO_CLASS_HANDLE    classHandle,
+                                                   CORINFO_CONTEXT_HANDLE  contextHandle,
+                                                   unsigned                methodAttr,
+                                                   unsigned                classAttr,
+                                                   unsigned                likelihood,
+                                                   const CORINFO_LOOKUP*   instParamLookup,
+                                                   CORINFO_RESOLVED_TOKEN* pResolvedToken,
+                                                   CORINFO_RESOLVED_TOKEN* pUnboxedResolvedToken)
 {
     // This transformation only makes sense for delegate and virtual calls
     assert(call->IsDelegateInvoke() || call->IsVirtual());
@@ -8009,8 +8015,6 @@ void Compiler::addGuardedDevirtualizationCandidate(GenTreeCall*           call,
 
     // We're all set, proceed with candidate creation.
     //
-    const bool needsMethodContext = ((size_t)contextHandle & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_METHOD;
-
     CORINFO_METHOD_HANDLE instantiatingStub =
         instParamLookup != nullptr ? (CORINFO_METHOD_HANDLE)((size_t)contextHandle & ~CORINFO_CONTEXTFLAGS_MASK)
                                    : NO_METHOD_HANDLE;
@@ -8036,12 +8040,23 @@ void Compiler::addGuardedDevirtualizationCandidate(GenTreeCall*           call,
     pInfo->guardedMethodHandle                  = methodHandle;
     pInfo->guardedMethodUnboxedEntryHandle      = nullptr;
     pInfo->guardedMethodInstantiatedEntryHandle = nullptr;
+    pInfo->guardedMethodInstParamLookup         = {};
+    pInfo->guardedMethodResolvedToken           = {};
+    pInfo->guardedMethodUnboxedResolvedToken    = {};
     pInfo->guardedClassHandle                   = classHandle;
-    pInfo->originalMethodHandle                 = originalMethodHandle;
-    pInfo->originalContextHandle                = originalContextHandle;
     pInfo->likelihood                           = likelihood;
     pInfo->exactContextHandle                   = contextHandle;
-    pInfo->needsMethodContext                   = needsMethodContext;
+
+    if (instParamLookup != nullptr)
+    {
+        pInfo->guardedMethodInstParamLookup = *instParamLookup;
+    }
+
+    if (pResolvedToken != nullptr)
+    {
+        pInfo->guardedMethodResolvedToken        = *pResolvedToken;
+        pInfo->guardedMethodUnboxedResolvedToken = *pUnboxedResolvedToken;
+    }
 
     // If the guarded method is an instantiating stub, find the instantiated method
     //
@@ -9162,18 +9177,18 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
     }
 #endif // defined(DEBUG)
 
-    DevirtualizedCallInfo dcInfo{};
-    dcInfo.exactContext            = exactContext;
-    dcInfo.derivedClass            = derivedClass;
-    dcInfo.pResolvedToken          = pDerivedResolvedToken;
-    dcInfo.pUnboxedResolvedToken   = &dvInfo.resolvedTokenDevirtualizedUnboxedMethod;
-    dcInfo.objIsNonNull            = objIsNonNull;
-    dcInfo.hadImplicitNullCheck    = true;
-    dcInfo.isDelegateCall          = false;
-    dcInfo.isExplicitTailCall      = isExplicitTailCall;
-    dcInfo.objClassIsExact         = isExact;
-    dcInfo.objClassIsFinal         = objClassIsFinal;
-    dcInfo.ilOffset                = ilOffset;
+    DevirtualizedCallInfo dcInfo;
+    dcInfo.exactContext          = exactContext;
+    dcInfo.derivedClass          = derivedClass;
+    dcInfo.pResolvedToken        = pDerivedResolvedToken;
+    dcInfo.pUnboxedResolvedToken = &dvInfo.resolvedTokenDevirtualizedUnboxedMethod;
+    dcInfo.objIsNonNull          = objIsNonNull;
+    dcInfo.hadImplicitNullCheck  = true;
+    dcInfo.isDelegateCall        = false;
+    dcInfo.isExplicitTailCall    = isExplicitTailCall;
+    dcInfo.objClassIsExact       = isExact;
+    dcInfo.objClassIsFinal       = objClassIsFinal;
+    dcInfo.ilOffset              = ilOffset;
     impTransformDevirtualizedCall(call, &derivedMethod, &derivedMethodAttribs, &dcInfo, compCurBB, pContextHandle,
                                   pExactContextHandle);
 
@@ -9563,6 +9578,12 @@ void Compiler::impTransformDevirtualizedCall(GenTreeCall*            call,
         assert(block != nullptr);
         setMethodHasRecursiveTailcall();
         block->SetFlags(BBF_RECURSIVE_TAILCALL);
+        JITDUMP("[%06u] is a recursive call in tail position\n", dspTreeID(call));
+    }
+    else
+    {
+        JITDUMP("[%06u] is%s in tail position and is%s recursive\n", dspTreeID(call), call->CanTailCall() ? "" : " not",
+                gtIsRecursiveCall(derivedMethod) ? "" : " not");
     }
 
 #ifdef FEATURE_READYTORUN
@@ -10085,10 +10106,10 @@ void Compiler::impCheckCanInline(GenTreeCall*           call,
             pInfo->guardedMethodHandle                  = nullptr;
             pInfo->guardedMethodUnboxedEntryHandle      = nullptr;
             pInfo->guardedMethodInstantiatedEntryHandle = nullptr;
-            pInfo->originalMethodHandle                 = nullptr;
-            pInfo->originalContextHandle                = nullptr;
+            pInfo->guardedMethodInstParamLookup         = {};
+            pInfo->guardedMethodResolvedToken           = {};
+            pInfo->guardedMethodUnboxedResolvedToken    = {};
             pInfo->likelihood                           = 0;
-            pInfo->needsMethodContext                   = false;
         }
 
         pInfo->methInfo                       = methInfo;

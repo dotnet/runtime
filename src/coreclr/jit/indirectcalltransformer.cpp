@@ -968,76 +968,73 @@ private:
 
             JITDUMP("Direct call [%06u] in block " FMT_BB "\n", compiler->dspTreeID(call), block->bbNum);
 
-            CORINFO_METHOD_HANDLE  methodHnd = inlineInfo->guardedMethodHandle;
-            CORINFO_CONTEXT_HANDLE context   = inlineInfo->exactContextHandle;
-            if (clsHnd != NO_CLASS_HANDLE)
+            CORINFO_METHOD_HANDLE methodHnd = inlineInfo->guardedMethodHandle;
+            if (inlineInfo->guardedMethodInstantiatedEntryHandle != nullptr)
             {
-                // Pass the original method handle and original context handle to the devirtualizer if needed.
-                //
-                if (inlineInfo->needsMethodContext)
+                methodHnd = inlineInfo->guardedMethodInstantiatedEntryHandle;
+
+                assert(call->gtArgs.FindWellKnownArg(WellKnownArg::InstParam) == nullptr);
+
+                CORINFO_METHOD_HANDLE compileTimeHandle = methodHnd;
+                if (!inlineInfo->guardedMethodInstParamLookup.lookupKind.needsRuntimeLookup)
                 {
-                    methodHnd = inlineInfo->originalMethodHandle;
-                    context   = inlineInfo->originalContextHandle;
+                    compileTimeHandle = inlineInfo->guardedMethodHandle;
                 }
 
-                // Then invoke impDevirtualizeCall to actually transform the call for us,
-                // given the original (base) method and the exact guarded class. It should succeed.
-                //
-                unsigned   methodFlags            = compiler->info.compCompHnd->getMethodAttribs(methodHnd);
-                const bool isLateDevirtualization = true;
-                const bool explicitTailCall = (call->AsCall()->gtCallMoreFlags & GTF_CALL_M_EXPLICIT_TAILCALL) != 0;
-                CORINFO_CONTEXT_HANDLE contextInput = context;
-                compiler->impDevirtualizeCall(call, nullptr, &methodHnd, &methodFlags, &contextInput, &context,
-                                              isLateDevirtualization, explicitTailCall);
+                GenTree* instParamNode = compiler->getLookupTree(&inlineInfo->guardedMethodInstParamLookup,
+                                                                 GTF_ICON_METHOD_HDL, compileTimeHandle);
+
+                call->gtArgs.InsertInstParam(compiler, instParamNode);
+            }
+
+            bool objClassIsExact;
+            bool objIsNonNull;
+            // class-GDV uses the exact temp on the cloned call, method/delegate GDV uses newThisObj
+            GenTree* thisObj = (clsHnd != NO_CLASS_HANDLE) ? call->gtArgs.GetThisArg()->GetEarlyNode() : newThisObj;
+            compiler->gtGetClassHandle(thisObj, &objClassIsExact, &objIsNonNull);
+
+            unsigned derivedMethodAttribs = compiler->info.compCompHnd->getMethodAttribs(methodHnd);
+
+            // Transform the already-resolved GDV target into a direct call.
+            //
+            CORINFO_CONTEXT_HANDLE context      = nullptr;
+            CORINFO_CONTEXT_HANDLE exactContext = inlineInfo->exactContextHandle;
+            CORINFO_CLASS_HANDLE   derivedClass = NO_CLASS_HANDLE;
+            if (((size_t)exactContext & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_CLASS)
+            {
+                derivedClass = (CORINFO_CLASS_HANDLE)((size_t)exactContext & ~CORINFO_CONTEXTFLAGS_MASK);
             }
             else
             {
-                // Otherwise we know the exact method already, so just change
-                // the call as necessary here.
-                call->gtFlags &= ~GTF_CALL_VIRT_KIND_MASK;
-                call->gtCallMethHnd = methodHnd = inlineInfo->guardedMethodHandle;
-                call->gtCallType                = CT_USER_FUNC;
-                INDEBUG(call->gtCallDebugFlags |= GTF_CALL_MD_DEVIRTUALIZED);
-                call->gtCallMoreFlags &= ~GTF_CALL_M_DELEGATE_INV;
-                // TODO-GDV: To support R2R we need to get the entry point
-                // here. We should unify with the tail of impDevirtualizeCall.
-
-                if (origCall->IsVirtual())
-                {
-                    // Virtual calls include an implicit null check, which we may
-                    // now need to make explicit.
-                    bool isExact;
-                    bool objIsNonNull;
-                    compiler->gtGetClassHandle(newThisObj, &isExact, &objIsNonNull);
-
-                    if (!objIsNonNull)
-                    {
-                        call->gtFlags |= GTF_CALL_NULLCHECK;
-                    }
-                }
-
-                context = MAKE_METHODCONTEXT(methodHnd);
+                derivedClass = compiler->info.compCompHnd->getMethodClass(methodHnd);
             }
+
+            Compiler::DevirtualizedCallInfo dcInfo;
+            dcInfo.exactContext = exactContext;
+            dcInfo.derivedClass = derivedClass;
+
+            // only for class-based GDV in R2R
+            dcInfo.pResolvedToken = (clsHnd != NO_CLASS_HANDLE) ? &inlineInfo->guardedMethodResolvedToken : nullptr;
+            dcInfo.pUnboxedResolvedToken =
+                (clsHnd != NO_CLASS_HANDLE) ? &inlineInfo->guardedMethodUnboxedResolvedToken : nullptr;
+
+            dcInfo.objIsNonNull         = objIsNonNull;
+            dcInfo.hadImplicitNullCheck = origCall->IsVirtual();
+            dcInfo.isDelegateCall       = origCall->IsDelegateInvoke();
+            dcInfo.isExplicitTailCall   = (call->gtCallMoreFlags & GTF_CALL_M_EXPLICIT_TAILCALL) != 0;
+            dcInfo.objClassIsExact      = (clsHnd != NO_CLASS_HANDLE) && objClassIsExact;
+            dcInfo.objClassIsFinal      = false;
+            dcInfo.ilOffset             = BAD_IL_OFFSET;
+
+            compiler->impTransformDevirtualizedCall(call, &methodHnd, &derivedMethodAttribs, &dcInfo, block, &context,
+                                                    &exactContext);
+            context = exactContext;
 
             // We know this call can devirtualize or we would not have set up GDV here.
             // So above code should succeed in devirtualizing.
             //
             assert(!call->IsVirtual() && !call->IsDelegateInvoke());
 
-            // If this call is in tail position, see if we've created a recursive tail call
-            // candidate...
-            //
-            if (call->CanTailCall() && compiler->gtIsRecursiveCall(methodHnd))
-            {
-                compiler->setMethodHasRecursiveTailcall();
-                block->SetFlags(BBF_RECURSIVE_TAILCALL);
-                JITDUMP("[%06u] is a recursive call in tail position\n", compiler->dspTreeID(call));
-            }
-            else
-            {
-                JITDUMP("[%06u] is%s in tail position and is%s recursive\n", compiler->dspTreeID(call),
-                        call->CanTailCall() ? "" : " not", compiler->gtIsRecursiveCall(methodHnd) ? "" : " not");
-            }
 
             // If the devirtualizer was unable to transform the call to invoke the unboxed entry, the inline info
             // we set up may be invalid. We won't be able to inline anyways. So demote the call as an inline candidate.
