@@ -32,7 +32,7 @@ namespace System.Security.Cryptography
         ///   <paramref name="key"/> is <see langword="null"/>.
         /// </exception>
         /// <exception cref="ArgumentException">
-        ///   <paramref name="key"/> does not specify a X25519 Diffie-Hellman key.
+        ///   <paramref name="key"/> does not specify an X25519 Diffie-Hellman key.
         /// </exception>
         /// <exception cref="PlatformNotSupportedException">
         ///   Cryptography Next Generation (CNG) classes are not supported on this system.

@@ -3,7 +3,6 @@
 
 using System.Diagnostics;
 using System.Formats.Asn1;
-using System.Runtime.Versioning;
 using System.Security.Cryptography.Asn1;
 using Microsoft.Win32.SafeHandles;
 using Internal.Cryptography;
@@ -47,6 +46,8 @@ namespace System.Security.Cryptography
             // the Provider is the same. It's the caller's responsibility to ensure the providers match.
             if (otherParty is X25519DiffieHellmanCng x25519Cng)
             {
+                x25519Cng.ThrowIfDisposed();
+
                 using (SafeNCryptSecretHandle secretAgreement = Interop.NCrypt.DeriveSecretAgreement(
                     _key.HandleNoDuplicate,
                     x25519Cng._key.HandleNoDuplicate))
@@ -221,7 +222,7 @@ namespace System.Security.Cryptography
                             throw new CryptographicException(SR.Cryptography_NotValidPrivateKey);
                         }
 
-                        // X25519 on Windows exports currently exports X25519 keys as an explicit curve. However
+                        // Windows currently exports X25519 keys as an explicit curve. However
                         // since the constructor validates that the CngKey curve is curve25519 we can be reasonably sure
                         // that the key is for X25519, so we don't validate the parameters.
                         ValueECPrivateKey.Decode(key, AsnEncodingRules.BER, out ValueECPrivateKey ecKey);
