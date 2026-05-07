@@ -1035,7 +1035,6 @@ private:
             //
             assert(!call->IsVirtual() && !call->IsDelegateInvoke());
 
-
             // If the devirtualizer was unable to transform the call to invoke the unboxed entry, the inline info
             // we set up may be invalid. We won't be able to inline anyways. So demote the call as an inline candidate.
             //
