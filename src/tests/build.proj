@@ -173,6 +173,8 @@
 
     <PropertyGroup>
       <_RestoreProperties>MSBuildRestoreSessionId=$([System.Guid]::NewGuid());TargetOS=$(TargetOS);TargetArchitecture=$(TargetArchitecture);Configuration=$(Configuration);CrossBuild=$(CrossBuild);SetTFMForRestore=true;RuntimeIdentifier=$(RuntimeIdentifier)</_RestoreProperties>
+      <_RestoreProperties Condition="'$(UseLocalAppHostPack)' == 'true' or '$(TargetOS)' == 'browser'">$(_RestoreProperties);EnableAppHostPackDownload=false;EnableTargetingPackDownload=false;EnableRuntimePackDownload=false</_RestoreProperties>
+      <_RestoreProperties Condition="'$(TargetsAppleMobile)' == 'true'">$(_RestoreProperties);RestoreUseStaticGraphEvaluation=false</_RestoreProperties>
       <_RestoreProperties Condition="'$(UseBootstrap)' == 'true'">$(_RestoreProperties);UseBootstrap=true</_RestoreProperties>
     </PropertyGroup>
 
