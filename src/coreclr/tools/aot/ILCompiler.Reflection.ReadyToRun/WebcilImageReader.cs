@@ -139,6 +139,8 @@ namespace ILCompiler.Reflection.ReadyToRun
             public IReadOnlyList<byte> ResultTypes { get; init; }
         }
 
+        private WasmFunctionInfo[] _wasmFunctionCache;
+
         /// <summary>
         /// Gets the full function info for a WASM function by its index in the code section.
         /// Returns null if the image is not WASM-wrapped or the function index is out of range.
@@ -148,7 +150,16 @@ namespace ILCompiler.Reflection.ReadyToRun
             if (!IsWasmWrapped)
                 return null;
 
-            // First pass: collect type section (section 1) and function section (section 3)
+            _wasmFunctionCache ??= BuildWasmFunctionCache();
+
+            if ((uint)functionIndex >= (uint)_wasmFunctionCache.Length)
+                return null;
+
+            return _wasmFunctionCache[functionIndex];
+        }
+
+        private WasmFunctionInfo[] BuildWasmFunctionCache()
+        {
             List<(byte[] ParamTypes, byte[] ResultTypes)> types = null;
             List<uint> funcTypeIndices = null;
             int codeOffset = -1;
@@ -181,11 +192,12 @@ namespace ILCompiler.Reflection.ReadyToRun
             }
 
             if (codeOffset < 0)
-                return null;
+                return [];
 
-            // Parse the code section to find the target function body
             offset = codeOffset;
             uint funcCount = ReadLebU32(imageSpan, ref offset);
+            var cache = new WasmFunctionInfo[funcCount];
+
             for (uint i = 0; i < funcCount; i++)
             {
                 uint bodySize = ReadLebU32(imageSpan, ref offset);
@@ -194,48 +206,45 @@ namespace ILCompiler.Reflection.ReadyToRun
                 if (bodyEnd > imageSpan.Length)
                     throw new BadImageFormatException($"WASM function body size extends beyond image boundary");
 
-                if (i == (uint)functionIndex)
+                // Read local declarations
+                var locals = new List<(uint Count, byte ValType)>();
+                uint localDeclCount = ReadLebU32(imageSpan, ref offset);
+                for (uint j = 0; j < localDeclCount; j++)
                 {
-                    // Read local declarations
-                    var locals = new List<(uint Count, byte ValType)>();
-                    uint localDeclCount = ReadLebU32(imageSpan, ref offset);
-                    for (uint j = 0; j < localDeclCount; j++)
-                    {
-                        uint count = ReadLebU32(imageSpan, ref offset);
-                        byte valType = imageSpan[offset++];
-                        locals.Add((count, valType));
-                    }
-
-                    int instrLength = bodyEnd - offset;
-
-                    // Resolve type signature
-                    byte[] paramTypes = Array.Empty<byte>();
-                    byte[] resultTypes = Array.Empty<byte>();
-                    if (funcTypeIndices is not null && (uint)functionIndex < funcTypeIndices.Count)
-                    {
-                        uint typeIdx = funcTypeIndices[functionIndex];
-                        if (types is not null && typeIdx < types.Count)
-                        {
-                            paramTypes = types[(int)typeIdx].ParamTypes;
-                            resultTypes = types[(int)typeIdx].ResultTypes;
-                        }
-                    }
-
-                    return new WasmFunctionInfo
-                    {
-                        Image = _image,
-                        InstructionOffset = offset,
-                        InstructionLength = instrLength,
-                        Locals = locals,
-                        ParamTypes = paramTypes,
-                        ResultTypes = resultTypes
-                    };
+                    uint count = ReadLebU32(imageSpan, ref offset);
+                    byte valType = imageSpan[offset++];
+                    locals.Add((count, valType));
                 }
+
+                int instrLength = bodyEnd - offset;
+
+                // Resolve type signature
+                byte[] paramTypes = Array.Empty<byte>();
+                byte[] resultTypes = Array.Empty<byte>();
+                if (funcTypeIndices is not null && i < (uint)funcTypeIndices.Count)
+                {
+                    uint typeIdx = funcTypeIndices[(int)i];
+                    if (types is not null && typeIdx < (uint)types.Count)
+                    {
+                        paramTypes = types[(int)typeIdx].ParamTypes;
+                        resultTypes = types[(int)typeIdx].ResultTypes;
+                    }
+                }
+
+                cache[i] = new WasmFunctionInfo
+                {
+                    Image = _image,
+                    InstructionOffset = offset,
+                    InstructionLength = instrLength,
+                    Locals = locals,
+                    ParamTypes = paramTypes,
+                    ResultTypes = resultTypes
+                };
 
                 offset = bodyEnd;
             }
 
-            return null;
+            return cache;
         }
 
         private static List<(byte[] ParamTypes, byte[] ResultTypes)> ParseTypeSection(ReadOnlySpan<byte> data, ref int offset, int end)
