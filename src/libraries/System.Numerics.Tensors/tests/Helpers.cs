@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
 using Xunit;
+using Xunit.Sdk;
 
 namespace System.Numerics.Tensors.Tests
 {
@@ -25,13 +26,13 @@ namespace System.Numerics.Tensors.Tests
         public const float DefaultHalfTolerance = 3.90625e-03f;
         public const double DefaultToleranceForEstimates = 1.171875e-02;
 
-#if !NET
+#if NET
         private static class DefaultTolerance<T> where T : unmanaged, INumber<T>
         {
             public static readonly T Value = DetermineTolerance<T>(DefaultDoubleTolerance, DefaultFloatTolerance, Half.CreateTruncating(DefaultHalfTolerance)) ?? T.CreateTruncating(0);
         }
 
-        public static void AssertEqualWithTolerance<T>(T expected, T actual, T? tolerance = null) where T : unmanaged, INumber<T>
+        public static void AssertEqualWithTolerance<T>(T expected, T actual, T? tolerance = null, string? banner = null) where T : unmanaged, INumber<T>
         {
             T actualTolerance = tolerance ?? DefaultTolerance<T>.Value;
             if (!T.IsZero(actualTolerance))
@@ -42,31 +43,38 @@ namespace System.Numerics.Tensors.Tests
 
             if (typeof(T) == typeof(double))
             {
-                AssertExtensions.Equal((double)(object)expected, (double)(object)actual, (double)(object)actualTolerance);
+                AssertExtensions.Equal((double)(object)expected, (double)(object)actual, (double)(object)actualTolerance, banner);
             }
             else if (typeof(T) == typeof(float))
             {
-                AssertExtensions.Equal((float)(object)expected, (float)(object)actual, (float)(object)actualTolerance);
+                AssertExtensions.Equal((float)(object)expected, (float)(object)actual, (float)(object)actualTolerance, banner);
             }
             else if (typeof(T) == typeof(Half))
             {
-                AssertExtensions.Equal((Half)(object)expected, (Half)(object)actual, (Half)(object)actualTolerance);
+                AssertExtensions.Equal((Half)(object)expected, (Half)(object)actual, (Half)(object)actualTolerance, banner);
             }
             else if (typeof(T) == typeof(NFloat))
             {
-                AssertExtensions.Equal((NFloat)(object)expected, (NFloat)(object)actual, (NFloat)(object)actualTolerance);
+                if (NFloat.Size == 8)
+                {
+                    AssertExtensions.Equal((double)(NFloat)(object)expected, (double)(NFloat)(object)actual, (double)(NFloat)(object)actualTolerance, banner);
+                }
+                else
+                {
+                    AssertExtensions.Equal((float)(NFloat)(object)expected, (float)(NFloat)(object)actual, (float)(NFloat)(object)actualTolerance, banner);
+                }
             }
-            else
+            else if (T.Abs(expected - actual) > actualTolerance)
             {
-                Assert.Equal(expected, actual);
+                throw EqualException.ForMismatchedValues(expected.ToString(), actual.ToString(), banner);
             }
         }
 #else
-        public static void AssertEqualWithTolerance(float expected, float actual, float? tolerance = null)
+        public static void AssertEqualWithTolerance(float expected, float actual, float? tolerance = null, string? banner = null)
         {
             float scaledTolerance = MathF.Max(MathF.Abs(expected), MathF.Abs(actual)) * (tolerance ?? DefaultFloatTolerance);
             float actualTolerance = MathF.Max(scaledTolerance, tolerance ?? DefaultFloatTolerance);
-            AssertExtensions.Equal(expected, actual, actualTolerance);
+            AssertExtensions.Equal(expected, actual, actualTolerance, banner);
         }
 #endif
 
