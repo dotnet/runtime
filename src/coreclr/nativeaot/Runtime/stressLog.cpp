@@ -95,10 +95,7 @@ void StressLog::Initialize(unsigned facilities,  unsigned level, unsigned maxByt
         return;
     }
 
-    if (!minipal_mutex_init(&theLog.lock))
-    {
-        return;
-    }
+    _ASSERTE(minipal_mutex_init(&theLog.lock));
 
     g_pStressLog = &theLog;
     if (maxBytesPerThread < STRESSLOG_CHUNK_SIZE)
