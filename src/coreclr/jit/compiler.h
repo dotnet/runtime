@@ -5729,10 +5729,6 @@ public:
     //
     bool optLoopsCanonical = false;
 
-    // This bool tracks if any EH clauses have been removed after the last time we computed liveness.
-    // This is a likely indicator that LclVarDsc::IsLiveInOutOfHandler() may be overly conservative.
-    bool optRemovedEHClausesAfterLiveness = false;
-
     bool fgBBVarSetsInited = false;
 
     // Track how many artificial ref counts we've added to fgEntryBB (for OSR)

@@ -1687,8 +1687,6 @@ void Compiler::fgRemoveEHTableEntry(unsigned XTnum)
 
         JITDUMP("... done updating ACD entries after EH removal\n");
     }
-
-    optRemovedEHClausesAfterLiveness = true;
 }
 
 //------------------------------------------------------------------------
