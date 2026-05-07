@@ -4969,7 +4969,7 @@ CorElementType MethodTable::GetInternalCorElementType()
         ret = ELEMENT_TYPE_VALUETYPE;
         break;
 
-    case enum_flag_Category_Enum:
+    case enum_flag_Category_Primitive:
         // This path should only be taken for enums and true primitive CoreLib types.
         ret = GetClass()->GetInternalCorElementType();
         _ASSERTE((ret != ELEMENT_TYPE_CLASS) &&
@@ -5019,7 +5019,7 @@ CorElementType MethodTable::GetSignatureCorElementType()
         ret = ELEMENT_TYPE_VALUETYPE;
         break;
 
-    case enum_flag_Category_TruePrimitive:
+    case enum_flag_Category_Primitive:
         ret = GetClass()->GetInternalCorElementType();
         break;
 

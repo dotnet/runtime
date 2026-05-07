@@ -557,7 +557,7 @@ public class MethodTableTests
 
                 MockEEClass tpEEClass = rtsBuilder.AddEEClass("TruePrimitiveEEClass");
                 MockMethodTable tpMT = rtsBuilder.AddMethodTable("TruePrimitive");
-                tpMT.MTFlags = (uint)MethodTableFlags_1.WFLAGS_HIGH.Category_TruePrimitive;
+                tpMT.MTFlags = (uint)MethodTableFlags_1.WFLAGS_HIGH.Category_Primitive;
                 tpMT.BaseSize = rtsBuilder.Builder.TargetTestHelpers.ObjectBaseSize;
                 tpMT.ParentMethodTable = systemObjectMethodTablePtr;
                 tpMT.NumVirtuals = 3;
