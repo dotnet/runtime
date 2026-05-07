@@ -163,7 +163,7 @@ NESTED_END OnHijackTripThread, _TEXT
     LEAF_END PacStripPtr, _TEXT
 
 // void* PacSignPtr(void *, void *);
-// This function sign the input pointer using SP as salt.
+// This function signs the input pointer using x1 as salt.
 // To avoid failing on non-PAC enabled machines, we use pacia1716 which signs lr explicitly.
 // Thus we need to move input in lr, sign it and then copy it back to the result register.
 .arch_extension pauth

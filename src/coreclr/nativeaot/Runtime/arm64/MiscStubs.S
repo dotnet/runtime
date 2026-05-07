@@ -14,7 +14,7 @@
     LEAF_END PacStripPtr, _TEXT
 
 // void* PacSignPtr(void *, void *);
-// This function sign the input pointer using zero as salt.
+// This function signs the input pointer using x1 as salt.
 // Thus we need to move input in lr, sign it and then copy it back to the result register.
 .arch_extension pauth
     LEAF_ENTRY PacSignPtr, _TEXT

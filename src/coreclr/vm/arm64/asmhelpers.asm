@@ -327,25 +327,25 @@ NoFloatingPointRetVal
     LEAF_END PacStripPtr
 
 ; void* PacSignPtr(void *, void *);
-; This function sign the input pointer using zero as salt.
-; To avoid failing on non-PAC enabled machines, we use pacia1716 which signs lr explicitly.
+; This function signs the input pointer using x1 as salt.
+; To avoid failing on non-PAC enabled machines, we use pacib1716 which signs lr explicitly.
 ; Thus we need to move input in lr, sign it and then copy it back to the result register.
     LEAF_ENTRY PacSignPtr
         mov x17, x0
         mov x16, x1
-        DCD 0xD503211F  ; pacia1716 instruction in binary to avoid error while compiling with non-PAC enabled compilers
+        DCD 0xD503215F  ; pacib1716 instruction in binary to avoid error while compiling with non-PAC enabled compilers
         mov x0, x17
         ret
     LEAF_END PacSignPtr
 
 ; void* PacAuthPtr(void *, void *);
 ; This function authenticates the input signed-pointer using x1 as salt.
-; To avoid failing on non-PAC enabled machines, we use pacia1716 which authenticates lr explicitly.
+; To avoid failing on non-PAC enabled machines, we use autib1716 which authenticates lr explicitly.
 ; Thus we need to move input in lr, authenticate it and then copy it back to the result register.
     LEAF_ENTRY PacAuthPtr
         mov x17, x0
         mov x16, x1
-        DCD 0xD503219F  ; autia1716 instruction in binary to avoid error while compiling with non-PAC enabled compilers
+        DCD 0xD50321DF  ; autib1716 instruction in binary to avoid error while compiling with non-PAC enabled compilers
         mov x0, x17
         ret
     LEAF_END PacAuthPtr
