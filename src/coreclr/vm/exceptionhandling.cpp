@@ -3651,6 +3651,8 @@ static void NotifyExceptionPassStarted(StackFrameIterator *pThis, Thread *pThrea
             pExInfo->m_ExceptionFlags.SetUnwindHasStarted();
             EEToDebuggerExceptionInterfaceWrapper::ManagedExceptionUnwindBegin(pThread);
         }
+        else
+        {
     }
 }
 
