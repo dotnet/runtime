@@ -4970,7 +4970,7 @@ CorElementType MethodTable::GetInternalCorElementType()
         break;
 
     case enum_flag_Category_Primitive:
-        // This path should only be taken for enums and true primitive CoreLib types.
+        // enum_flag_Category_ElementTypeMask maps both Category_Primitive and Category_Enum here.
         ret = GetClass()->GetInternalCorElementType();
         _ASSERTE((ret != ELEMENT_TYPE_CLASS) &&
                     (ret != ELEMENT_TYPE_VALUETYPE));
