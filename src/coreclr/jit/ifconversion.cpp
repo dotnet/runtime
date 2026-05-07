@@ -148,7 +148,20 @@ bool OptIfConversionDsc::IfConvertCheckFlow()
         return false;
     }
 
+    // The Then/Else blocks will be removed by if-conversion, so they must be in the same
+    // EH region as m_startBlock. Otherwise they may be the start of a try/handler region
+    // (and thus marked BBF_DONT_REMOVE), or removing them could leave dangling EH state.
+    if (!BasicBlock::sameEHRegion(falseBb, m_startBlock))
+    {
+        return false;
+    }
+
     m_finalBlock = HasElseBlock() ? trueBb->GetUniqueSucc() : trueBb;
+
+    if (HasElseBlock() && !BasicBlock::sameEHRegion(trueBb, m_startBlock))
+    {
+        return false;
+    }
 
     // m_finalBlock is only allowed to be null if both return.
     // E.g: Then block exits by throwing an exception => we bail here.

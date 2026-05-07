@@ -20,6 +20,9 @@ bool GetBuiltInComData(TargetPointer address, out TargetPointer rcw, out TargetP
 // Try to get the runtime-assigned hash code for the object. Returns 0 if the runtime has not
 // assigned a default hash code. This will never be 0 for objects that have been hashed.
 int TryGetHashCode(TargetPointer address);
+
+// Returns the SyncBlock address for the object, or TargetPointer.Null if no sync block is associated with it.
+TargetPointer GetSyncBlockAddress(TargetPointer address);
 ```
 
 ## Version 1
@@ -119,17 +122,7 @@ bool GetBuiltInComData(TargetPointer address, out TargetPointer rcw, out TargetP
     ccw = TargetPointer.Null;
     ccf = TargetPointer.Null;
 
-    uint syncBlockValue = target.Read<uint>(address - target.ReadGlobal<ushort>("SyncBlockValueToObjectOffset"));
-
-    // Check if the sync block value represents a sync block index
-    if ((syncBlockValue & (target.ReadGlobal<uint>("SyncBlockIsHashCode") | target.ReadGlobal<uint>("SyncBlockIsHashOrSyncBlockIndex")))
-            != target.ReadGlobal<uint>("SyncBlockIsHashOrSyncBlockIndex"))
-        return false;
-
-    uint index = syncBlockValue & target.ReadGlobal<uint>("SyncBlockIndexMask");
-    ulong offsetInSyncTableEntries = index * /* SyncTableEntry size */;
-
-    TargetPointer syncBlockPtr = target.ReadPointer(_syncTableEntries + offsetInSyncTableEntries + /* SyncTableEntry::SyncBlock offset */);
+    TargetPointer syncBlockPtr = GetSyncBlockAddress(address);
     if (syncBlockPtr == TargetPointer.Null)
         return false;
 
@@ -153,11 +146,23 @@ int TryGetHashCode(TargetPointer address)
     }
 
     // Hash code is stored in the sync block
-    uint index = syncBlockValue & target.ReadGlobal<uint>("SyncBlockIndexMask");
-    TargetPointer syncBlock = target.Contracts.SyncBlock.GetSyncBlock(index);
+    TargetPointer syncBlock = GetSyncBlockAddress(address);
     if (syncBlock == TargetPointer.Null)
         return 0;
 
     return (int)target.Read<uint>(syncBlock + /* SyncBlock::HashCode offset */);
+}
+
+TargetPointer GetSyncBlockAddress(TargetPointer address)
+{
+    uint syncBlockValue = target.Read<uint>(address - target.ReadGlobal<ushort>("SyncBlockValueToObjectOffset"));
+
+    // Check if the sync block value represents a sync block index (not a hash code)
+    if ((syncBlockValue & (target.ReadGlobal<uint>("SyncBlockIsHashCode") | target.ReadGlobal<uint>("SyncBlockIsHashOrSyncBlockIndex")))
+            != target.ReadGlobal<uint>("SyncBlockIsHashOrSyncBlockIndex"))
+        return TargetPointer.Null;
+
+    uint index = syncBlockValue & target.ReadGlobal<uint>("SyncBlockIndexMask");
+    return target.Contracts.SyncBlock.GetSyncBlock(index);
 }
 ```
