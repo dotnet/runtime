@@ -124,7 +124,7 @@
                             GetUnixCrossBuildArgumentsForDNNE"
           BeforeTargets="DnneBuildNativeExports">
     <PropertyGroup>
-      <DnneNetHostDir>$(DotNetHostBinDir)</DnneNetHostDir>
+      <DnneNetHostDir>$(DotNetHostBinDir.TrimEnd('\/'))</DnneNetHostDir>
     </PropertyGroup>
   </Target>
 </Project>
