@@ -19675,8 +19675,8 @@ UINT64 GenTreeIntConCommon::UnsignedIntegralValue() const
 {
     uint64_t mask = (UINT64_MAX >> (64 - (genTypeSize(this) * BITS_PER_BYTE)));
 
-    INT64  signExtended = IntegralValue();
-    UINT64 zeroExtended = signExtended & mask;
+    int64_t  signExtended = IntegralValue();
+    uint64_t zeroExtended = signExtended & mask;
     return zeroExtended;
 }
 
