@@ -5046,13 +5046,9 @@ void MethodTable::SetInternalCorElementType(CorElementType elemType, bool isTrue
         break;
     case ELEMENT_TYPE_VALUETYPE:
         SetFlag(enum_flag_Category_ValueType);
-        _ASSERTE(GetFlag(enum_flag_Category_Mask) == enum_flag_Category_ValueType);
         break;
     default:
-    {
-        WFLAGS_HIGH_ENUM category = isTruePrimitive ? enum_flag_Category_TruePrimitive : enum_flag_Category_PrimitiveValueType;
-        SetFlag(category);
-        _ASSERTE(GetFlag(enum_flag_Category_Mask) == static_cast<DWORD>(category));
+        SetFlag(isTruePrimitive ? enum_flag_Category_TruePrimitive : enum_flag_Category_PrimitiveValueType);
         break;
     }
     }
