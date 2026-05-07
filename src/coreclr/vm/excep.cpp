@@ -6526,12 +6526,6 @@ bool GetPacSignInfo(PTR_CONTEXT pContextToCheck, EECodeInfo *pCodeInfo, TADDR re
 
         if (CurCode == 0xFC) // pac_sign_lr
         {
-            _ASSERTE(currentSpOffset == 0);
-            if (currentSpOffset != 0)
-            {
-                return false;
-            }
-
             hasPacSignLR = true;
             continue;
         }
