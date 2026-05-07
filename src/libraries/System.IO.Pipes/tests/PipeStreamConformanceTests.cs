@@ -499,7 +499,6 @@ namespace System.IO.Pipes.Tests
             Assert.Equal(0, await readTask);
         }
 
-        [PlatformSpecific(TestPlatforms.Windows)] // Unix named pipes are on sockets, where small writes with an empty buffer will succeed immediately
         [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets in our CI environment")]
         [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "iOS/tvOS blocks binding to UNIX sockets")]
         [Fact]
@@ -508,7 +507,9 @@ namespace System.IO.Pipes.Tests
             using StreamPair streams = await CreateConnectedStreamsAsync();
             (Stream writeable, Stream readable) = GetReadWritePair(streams);
 
-            Task writeTask = writeable.WriteAsync(new byte[1], 0, 1);
+            // Write more than the pipe buffer size to ensure the write blocks.
+            int pipeBufferSize = (writeable as PipeStream)?.OutBufferSize ?? (readable as PipeStream)?.InBufferSize ?? 1;
+            Task writeTask = writeable.WriteAsync(new byte[pipeBufferSize * 2], 0, pipeBufferSize * 2);
             readable.Dispose();
             await Assert.ThrowsAsync<IOException>(() => writeTask);
         }
