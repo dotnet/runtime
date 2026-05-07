@@ -247,7 +247,6 @@ namespace System.Diagnostics.Tracing
                     }
 
                     _counters.CopyTo(_onTimerCounters);
-                    Array.Clear(_onTimerCounters, counterCount, _onTimerCounters.Length - counterCount);
                 }
 
                 // MUST keep out of the scope of s_counterGroupLock because this will cause WritePayload
@@ -267,6 +266,8 @@ namespace System.Diagnostics.Tracing
                     // be an actual issue.
                     counter.WritePayload((float)elapsed.TotalSeconds, (int)pollingInterval.TotalMilliseconds);
                 }
+
+                Array.Clear(_onTimerCounters);
 
                 lock (s_counterGroupLock)
                 {
