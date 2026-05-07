@@ -8,6 +8,7 @@ using System.Runtime.InteropServices;
 using Xunit;
 using TestLibrary;
 
+[SkipOnCoreClr("GC assertion failure under interpreter (https://github.com/dotnet/runtime/issues/127855)", RuntimeTestModes.InterpreterActive)]
 public class MarshalStructTest
 {
     const int iNative = 11;//the value passed from Native side to Managed side

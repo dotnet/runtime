@@ -59,6 +59,7 @@
     <Compile Include="$(CommonTestPath)System\IO\DelegateDelegatingStream.cs" Link="Common\System\IO\DelegateDelegatingStream.cs" />
     <Compile Include="$(CommonTestPath)System\IO\DelegateStream.cs" Link="Common\System\IO\DelegateStream.cs" />
     <Compile Include="$(CommonPath)System\IO\DelegatingStream.cs" Link="Common\System\IO\DelegatingStream.cs" />
+    <Compile Include="AssemblyInfo.cs" />
     <Compile Include="AbortTest.cs" />
     <Compile Include="AbortTest.Loopback.cs" />
     <Compile Include="CancelTest.cs" />
