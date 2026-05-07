@@ -2775,7 +2775,7 @@ public:
     //   * code:TypeHandle.GetSignatureCorElementType()
     //   * code:TypeHandle.GetInternalCorElementType()
     CorElementType GetInternalCorElementType();
-    void SetInternalCorElementType(CorElementType _NormType, bool isTruePrimitive = false);
+    void SetInternalCorElementType(CorElementType elemType, bool isTruePrimitive = false);
 
     // See code:TypeHandle::GetSignatureCorElementType for description
     CorElementType GetSignatureCorElementType();

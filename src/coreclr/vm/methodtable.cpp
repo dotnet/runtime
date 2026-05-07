@@ -5034,11 +5034,11 @@ CorElementType MethodTable::GetSignatureCorElementType()
 #ifndef DACCESS_COMPILE
 
 //==========================================================================================
-void MethodTable::SetInternalCorElementType (CorElementType _NormType, bool isTruePrimitive)
+void MethodTable::SetInternalCorElementType(CorElementType elemType, bool isTruePrimitive)
 {
     WRAPPER_NO_CONTRACT;
 
-    switch (_NormType)
+    switch (elemType)
     {
     case ELEMENT_TYPE_CLASS:
         _ASSERTE(!IsArray());
@@ -5057,8 +5057,8 @@ void MethodTable::SetInternalCorElementType (CorElementType _NormType, bool isTr
     }
     }
 
-    GetClass()->SetInternalCorElementType(_NormType);
-    _ASSERTE(GetInternalCorElementType() == _NormType);
+    GetClass()->SetInternalCorElementType(elemType);
+    _ASSERTE(GetInternalCorElementType() == elemType);
 }
 
 #endif // !DACCESS_COMPILE
