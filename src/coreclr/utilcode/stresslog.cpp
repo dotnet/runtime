@@ -367,7 +367,7 @@ void StressLog::Terminate(BOOL fProcessDetach) {
     if (!fProcessDetach) {
         {
             minipal::MutexHolder lockh(theLog.lock);
-        }       // The Enter() Leave() forces a memory barrier on weak memory model systems
+        }       // Acquiring and releasing the lock forces a memory barrier on weak memory model systems
                 // we want all the other threads to notice that facilitiesToLog is now zero
 
                 // This is not strictly threadsafe, since there is no way of ensuring when all the
@@ -387,7 +387,8 @@ void StressLog::Terminate(BOOL fProcessDetach) {
         }
     }
     else {
-        // Free the log memory
+        // Free the log memory without taking the lock: during process detach, other threads
+        // have already been terminated and the lock state may be unreliable.
         ThreadStressLog* ptr = theLog.logs;
         theLog.logs = 0;
         while(ptr != 0) {
@@ -449,6 +450,9 @@ ThreadStressLog* StressLog::CreateThreadStressLog() {
         return NULL;
     }
 
+    // callerID is set before the lock so that re-entrant calls on the same thread can
+    // detect recursion (via the check at the top of this function) before attempting to
+    // take the lock again.
     callerID = ClrTeb::GetFiberPtrId();
     {
         minipal::MutexHolder lockh(theLog.lock);
