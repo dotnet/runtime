@@ -4969,7 +4969,7 @@ CorElementType MethodTable::GetInternalCorElementType()
         ret = ELEMENT_TYPE_VALUETYPE;
         break;
 
-    case enum_flag_Category_TruePrimitive:
+    case enum_flag_Category_PrimitiveValueType:
         // enum_flag_Category_ElementTypeMask maps both Category_TruePrimitive and Category_PrimitiveValueType here.
         ret = GetClass()->GetInternalCorElementType();
         _ASSERTE((ret != ELEMENT_TYPE_CLASS) &&
