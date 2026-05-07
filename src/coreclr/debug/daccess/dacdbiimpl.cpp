@@ -5691,8 +5691,6 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetPartialUserState(VMPTR_Thread 
             result |= USER_STOPPED;
         }
 
-        // Don't report Thread::TS_AbortRequested
-
         if (ts & Thread::TS_WaitSleepJoin)
         {
             result |= USER_WAIT_SLEEP_JOIN;
