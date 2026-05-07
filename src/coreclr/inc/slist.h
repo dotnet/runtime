@@ -79,7 +79,7 @@ struct SListTailBase<PTR_T, true>
 // field. Use SListTraits<T, SListMode::Tail> for O(1) tail insertion.
 // ---------------------------------------------------------------------------
 template <typename T, typename Traits = SListTraits<T>>
-struct EMPTY_BASES_DECL SList : public Traits, private SListTailBase<typename Traits::PTR_T, Traits::HasTail>
+struct EMPTY_BASES SList : public Traits, private SListTailBase<typename Traits::PTR_T, Traits::HasTail>
 {
     typedef typename Traits::PTR_T PTR_T;
     typedef typename Traits::PTR_PTR_T PTR_PTR_T;

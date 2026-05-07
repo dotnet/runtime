@@ -67,10 +67,10 @@
 
 #ifdef _MSC_VER
 #define DECLSPEC_ALIGN(x)   __declspec(align(x))
-#define EMPTY_BASES_DECL __declspec(empty_bases)
+#define EMPTY_BASES __declspec(empty_bases)
 #else
 #define DECLSPEC_ALIGN(x)   __attribute__((aligned(x)))
-#define EMPTY_BASES_DECL
+#define EMPTY_BASES
 #endif
 
 #if defined(_MSC_VER)
