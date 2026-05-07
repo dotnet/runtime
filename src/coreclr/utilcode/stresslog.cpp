@@ -137,6 +137,7 @@ const static uint64_t RECYCLE_AGE = 0x40000000L;        // after a billion cycle
 /*********************************************************************************/
 void StressLog::Enter(minipal_mutex* lock) {
     STATIC_CONTRACT_LEAF;
+    _ASSERTE(lock != nullptr);
 
     IncCantAllocCount();
     minipal_mutex_enter(lock);
@@ -145,6 +146,7 @@ void StressLog::Enter(minipal_mutex* lock) {
 
 void StressLog::Leave(minipal_mutex* lock) {
     STATIC_CONTRACT_LEAF;
+    _ASSERTE(lock != nullptr);
 
     IncCantAllocCount();
     minipal_mutex_leave(lock);
