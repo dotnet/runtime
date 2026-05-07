@@ -2045,8 +2045,8 @@ bool GenTreeCall::IsPure(Compiler* compiler) const
 }
 
 //------------------------------------------------------------------------------
-// getArrayLengthFromAllocation: Return the array length for an array allocation
-//                               helper call.
+// getArrayLengthFromAllocation: Return the length for an allocation whose length
+//                               is represented by GT_ARR_LENGTH.
 //
 // Arguments:
 //    tree - The array allocation helper call.
@@ -2085,6 +2085,13 @@ GenTree* Compiler::getArrayLengthFromAllocation(GenTree* tree)
             }
 
             assert((arrayLength == nullptr) || ((optMethodFlags & OMF_HAS_NEWARRAY) != 0));
+        }
+        else if (call->IsSpecialIntrinsic(this, NI_System_String_FastAllocateString))
+        {
+            // String characters start at a different offset than array data, but string length itself is a
+            // GT_ARR_LENGTH.
+            assert(call->gtArgs.CountUserArgs() == 2);
+            arrayLength = call->gtArgs.GetUserArgByIndex(1)->GetNode();
         }
     }
 
@@ -7890,7 +7897,7 @@ bool Compiler::gtTreeHasLocalRead(GenTree* tree, unsigned lclNum)
 //   lclNum - The local to look for.
 //
 // Returns:
-//   True if there is any GT_STORE_LCL_VAR or GT_STORE_LCL_FLD that affects "lclNum".
+//   True if there is any definition that affects "lclNum".
 //
 bool Compiler::gtTreeHasLocalStore(GenTree* tree, unsigned lclNum)
 {
@@ -7899,8 +7906,7 @@ bool Compiler::gtTreeHasLocalStore(GenTree* tree, unsigned lclNum)
     public:
         enum
         {
-            DoPreOrder    = true,
-            DoLclVarsOnly = true,
+            DoPreOrder = true,
         };
 
         unsigned   m_lclNum;
@@ -7922,25 +7928,26 @@ bool Compiler::gtTreeHasLocalStore(GenTree* tree, unsigned lclNum)
                 return WALK_SKIP_SUBTREES;
             }
 
-            if (node->OperIsLocalStore())
+            auto visit = [&](GenTreeLclVarCommon* lclVar) {
+                if (lclVar->GetLclNum() == m_lclNum)
+                {
+                    return GenTree::VisitResult::Abort;
+                }
+                if (m_lclDsc->lvIsStructField && (lclVar->GetLclNum() == m_lclDsc->lvParentLcl))
+                {
+                    return GenTree::VisitResult::Abort;
+                }
+                if (m_lclDsc->lvPromoted && (lclVar->GetLclNum() >= m_lclDsc->lvFieldLclStart) &&
+                    (lclVar->GetLclNum() < m_lclDsc->lvFieldLclStart + m_lclDsc->lvFieldCnt))
+                {
+                    return GenTree::VisitResult::Abort;
+                }
+                return GenTree::VisitResult::Continue;
+            };
+
+            if (node->VisitLocalDefNodes(m_compiler, visit) == GenTree::VisitResult::Abort)
             {
-                if (node->AsLclVarCommon()->GetLclNum() == m_lclNum)
-                {
-                    return WALK_ABORT;
-                }
-
-                if (m_lclDsc->lvIsStructField && (node->AsLclVarCommon()->GetLclNum() == m_lclDsc->lvParentLcl))
-                {
-                    // Store to parent local also affects the field
-                    return WALK_ABORT;
-                }
-
-                if (m_lclDsc->lvPromoted && (node->AsLclVarCommon()->GetLclNum() >= m_lclDsc->lvFieldLclStart) &&
-                    (node->AsLclVarCommon()->GetLclNum() < m_lclDsc->lvFieldLclStart + m_lclDsc->lvFieldCnt))
-                {
-                    // Store to field also affects the parent
-                    return WALK_ABORT;
-                }
+                return WALK_ABORT;
             }
 
             return WALK_CONTINUE;

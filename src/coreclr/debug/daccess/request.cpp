@@ -893,8 +893,19 @@ HRESULT ClrDataAccess::GetThreadData(CLRDATA_ADDRESS threadAddr, struct DacpThre
     // TEB is no longer provided by the runtime. Consumers should look up the TEB
     // from the OS thread ID via the debugger's native API (e.g., IDebuggerServices::GetThreadTeb).
     threadData->teb = (CLRDATA_ADDRESS)NULL;
-    threadData->lastThrownObjectHandle =
-        TO_CDADDR(thread->m_LastThrownObjectHandle);
+    // Prefer the active exception from ExInfo (pseudo-handle to m_exception field).
+    // After the removal of SetThrowable/m_hThrowable, m_LastThrownObjectHandle is only
+    // updated after exception dispatch completes, so during active dispatch it may be
+    // stale.  GetThrowableAsPseudoHandle returns the address of ExInfo::m_exception
+    // which has the same dereference semantics as a real GC handle.
+    {
+        OBJECTHANDLE ohException = thread->GetThrowableAsPseudoHandle();
+        if (ohException == (OBJECTHANDLE)NULL)
+        {
+            ohException = thread->m_LastThrownObjectHandle;
+        }
+        threadData->lastThrownObjectHandle = TO_CDADDR(ohException);
+    }
     threadData->nextThread =
         HOST_CDADDR(ThreadStore::s_pThreadStore->m_ThreadList.GetNext(thread));
     if (thread->m_ExceptionState.m_pCurrentTracker)

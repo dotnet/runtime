@@ -25,7 +25,6 @@ namespace System.Text
             return newCapacity;
         }
 
-        [RequiresUnsafe]
         internal unsafe void ReplaceBufferInternal(char* newBuffer, int newLength)
         {
             ArgumentOutOfRangeException.ThrowIfGreaterThan(newLength, m_MaxCapacity, "capacity");
@@ -56,7 +55,6 @@ namespace System.Text
             m_ChunkOffset = 0;
         }
 
-        [RequiresUnsafe]
         internal unsafe void ReplaceBufferAnsiInternal(sbyte* newBuffer, int newLength)
         {
             ArgumentOutOfRangeException.ThrowIfGreaterThan(newLength, m_MaxCapacity, "capacity");

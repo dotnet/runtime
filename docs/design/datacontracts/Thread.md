@@ -190,6 +190,23 @@ ThreadData GetThreadData(TargetPointer address)
         allocContextLimit = target.ReadPointer(threadLocals + /* RuntimeThreadLocals::AllocContext offset */ + /* GCAllocContext::Limit offset */);
     }
 
+    // Prefer the active exception from ExInfo (pseudo-handle to m_exception field).
+    // After the removal of SetThrowable/m_hThrowable, m_LastThrownObjectHandle is only
+    // updated after exception dispatch completes, so during active dispatch it may be stale.
+    TargetPointer lastThrownObjectHandle = TargetPointer.Null;
+    if (exceptionTrackerAddr != TargetPointer.Null)
+    {
+        TargetPointer thrownObject = target.ReadPointer(exceptionTrackerAddr + /* ExceptionInfo::ThrownObject offset */);
+        if (thrownObject != TargetPointer.Null)
+        {
+            lastThrownObjectHandle = exceptionTrackerAddr + /* ExceptionInfo::ThrownObject field offset */;
+        }
+    }
+    if (lastThrownObjectHandle == TargetPointer.Null)
+    {
+        lastThrownObjectHandle = target.ReadPointer(address + /* Thread::LastThrownObject offset */);
+    }
+
     ulong threadLinkoffset = ... // offset from Thread data descriptor
     return new ThreadData(
         Id: target.Read<uint>(address + /* Thread::Id offset */),
@@ -199,7 +216,7 @@ ThreadData GetThreadData(TargetPointer address)
         AllocContextPointer: allocContextPointer,
         AllocContextLimit: allocContextLimit,
         Frame: target.ReadPointer(address + /* Thread::Frame offset */),
-        LastThrownObjectHandle : target.ReadPointer(address + /* Thread::LastThrownObject offset */),
+        LastThrownObjectHandle : lastThrownObjectHandle,
         FirstNestedException : firstNestedException,
         NextThread: target.ReadPointer(address + /* Thread::LinkNext offset */) - threadLinkOffset;
     );
@@ -285,12 +302,14 @@ TargetPointer IThread.GetCurrentExceptionHandle(TargetPointer threadPointer)
     TargetPointer exceptionTrackerPtr = target.ReadPointer(threadPointer + /*Thread::ExceptionTracker offset */);
     if (exceptionTrackerPtr == TargetPointer.Null)
         return TargetPointer.Null;
-    TargetPointer thrownObjectHandle = target.ReadPointer(exceptionTrackerPtr + /* ExceptionInfo::ThrownObjectHandle offset */);
+    TargetPointer thrownObject = target.ReadPointer(exceptionTrackerPtr + /* ExceptionInfo::ThrownObject offset */);
 
-    if (thrownObjectHandle == TargetPointer.Null || target.ReadPointer(thrownObjectHandle) == TargetPointer.Null)
+    if (thrownObject == TargetPointer.Null)
         return TargetPointer.Null;
 
-    return thrownObjectHandle;
+    // Return the address of the ThrownObject field as a pseudo-handle.
+    // Callers dereference this address to read the exception Object*.
+    return exceptionTrackerPtr + /* ExceptionInfo::ThrownObject field offset */;
 }
 
 byte[] IThread.GetWatsonBuckets(TargetPointer threadPointer)

@@ -25,6 +25,7 @@
                        DumpTypes="$(DumpTypes)"
                        R2RModes="$(R2RModes)"
                        WindowsOnly="$(WindowsOnly)"
+                       MacOnly="$(MacOnly)"
                        ProjectPath="$(MSBuildProjectFullPath)" />
     </ItemGroup>
   </Target>
