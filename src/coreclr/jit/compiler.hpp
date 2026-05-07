@@ -2616,7 +2616,7 @@ inline bool Compiler::lvaKeepAliveAndReportThis()
     if (genericsContextIsThis)
     {
         const bool mustKeep      = (info.compMethodInfo->options & CORINFO_GENERICS_CTXT_KEEP_ALIVE) != 0;
-        const bool hasPatchpoint = doesMethodHavePatchpoints() || doesMethodHavePartialCompilationPatchpoints();
+        const bool hasPatchpoint = doesMethodHavePatchpoints();
 
         if (lvaGenericsContextInUse || mustKeep || hasPatchpoint)
         {
@@ -2656,7 +2656,7 @@ inline bool Compiler::lvaReportParamTypeArg()
 
         // Methoods that have patchpoints always report context as live
         //
-        if (doesMethodHavePatchpoints() || doesMethodHavePartialCompilationPatchpoints())
+        if (doesMethodHavePatchpoints())
         {
             return true;
         }
@@ -2721,6 +2721,7 @@ inline
     bool fConservative = false;
     if (varNum >= 0)
     {
+        assert(!lvaIsUnknownSizeLocal(varNum));
         LclVarDsc* varDsc          = lvaGetDesc(varNum);
         bool       isPrespilledArg = false;
 #if defined(TARGET_ARM) && defined(PROFILING_SUPPORTED)
@@ -2779,6 +2780,7 @@ inline
                 tmpDsc = codeGen->regSet.tmpFindNum(varNum, RegSet::TEMP_USAGE_USED);
             }
             assert(tmpDsc != nullptr);
+            assert(!varTypeHasUnknownSize(tmpDsc->tdTempType()));
             varOffset = tmpDsc->tdTempOffs();
         }
         else
@@ -2972,7 +2974,7 @@ inline unsigned Compiler::compMapILargNum(unsigned ILargNum)
     assert(ILargNum < info.compILargsCount);
 
 #if defined(TARGET_WASM)
-    if (ILargNum >= lvaWasmSpArg)
+    if ((ILargNum >= lvaWasmSpArg) && (lvaWasmSpArg != BAD_VAR_NUM) && lvaGetDesc(lvaWasmSpArg)->lvIsParam)
     {
         ILargNum++;
         assert(ILargNum < info.compLocalsCount); // compLocals count already adjusted.
@@ -3896,7 +3898,7 @@ inline bool Compiler::IsStaticHelperEligibleForExpansion(GenTree* tree, bool* is
     bool                    gc     = false;
     bool                    result = false;
     StaticHelperReturnValue retVal = {};
-    switch (eeGetHelperNum(tree->AsCall()->gtCallMethHnd))
+    switch (tree->AsCall()->GetHelperNum())
     {
         case CORINFO_HELP_READYTORUN_GCSTATIC_BASE:
         case CORINFO_HELP_GET_GCSTATIC_BASE:
@@ -3937,7 +3939,7 @@ inline bool Compiler::IsSharedStaticHelper(GenTree* tree)
         return false;
     }
 
-    CorInfoHelpFunc helper = eeGetHelperNum(tree->AsCall()->gtCallMethHnd);
+    CorInfoHelpFunc helper = tree->AsCall()->GetHelperNum();
 
     bool result1 =
         // More helpers being added to IsSharedStaticHelper (that have similar behaviors but are not true
@@ -4405,6 +4407,7 @@ GenTree::VisitResult GenTree::VisitOperandUses(TVisitor visitor)
         case GT_ASYNC_RESUME_INFO:
         case GT_LABEL:
         case GT_FTN_ADDR:
+        case GT_FTN_ENTRY:
         case GT_RET_EXPR:
         case GT_CNS_INT:
         case GT_CNS_LNG:
@@ -4478,6 +4481,8 @@ GenTree::VisitResult GenTree::VisitOperandUses(TVisitor visitor)
         case GT_KEEPALIVE:
         case GT_INC_SATURATE:
         case GT_RETURN_SUSPEND:
+        case GT_PATCHPOINT_FORCED:
+        case GT_NONLOCAL_JMP:
             return visitor(&this->AsUnOp()->gtOp1);
 
             // Variadic nodes
@@ -4536,11 +4541,6 @@ GenTree::VisitResult GenTree::VisitOperandUses(TVisitor visitor)
             for (CallArg& arg : call->gtArgs.LateArgs())
             {
                 RETURN_IF_ABORT(visitor(&arg.LateNodeRef()));
-            }
-
-            if (call->gtCallType == CT_INDIRECT)
-            {
-                RETURN_IF_ABORT(visitor(&call->gtCallAddr));
             }
             if (call->gtControlExpr != nullptr)
             {
@@ -5616,9 +5616,30 @@ Compiler::AssertVisit Compiler::optVisitReachingAssertions(ValueNum vn, TAssertV
         BitVecOps::AddElemD(&traits, actualPreds, pred->bbNum);
     }
 
+    // Fast opportunistic check: a block is considered unreachable if it has no normal
+    // preds and isn't the entry block. Note that bbPreds excludes EH flow, so
+    // handler-begin blocks may have no normal preds yet still be reachable via
+    // exception flow; conservatively treat them as reachable.
+    //
+    auto isUnreachableBlock = [this](BasicBlock* block) -> bool {
+        return (block->bbPreds == nullptr) && (block != fgFirstBB) && !bbIsHandlerBeg(block);
+    };
+
     for (GenTreePhi::Use& use : node->Data()->AsPhi()->Uses())
     {
         GenTreePhiArg* phiArg = use.GetNode()->AsPhiArg();
+
+        // Ignore phi-args coming from unreachable blocks.
+        if (isUnreachableBlock(phiArg->gtPredBB))
+        {
+            JITDUMP("... optVisitReachingAssertions in " FMT_BB ": phi-pred " FMT_BB " is unreachable, ignoring\n",
+                    ssaDef->GetBlock()->bbNum, phiArg->gtPredBB->bbNum);
+
+            // Mark as visited so the coverage check below doesn't fail if this block is
+            // still listed in ssaDef's pred list.
+            BitVecOps::AddElemD(&traits, visitedBlocks, phiArg->gtPredBB->bbNum);
+            continue;
+        }
 
         if (!BitVecOps::IsMember(&traits, actualPreds, phiArg->gtPredBB->bbNum))
         {
@@ -5631,8 +5652,13 @@ Compiler::AssertVisit Compiler::optVisitReachingAssertions(ValueNum vn, TAssertV
             return AssertVisit::Abort;
         }
 
-        const ValueNum phiArgVN   = vnStore->VNConservativeNormalValue(phiArg->gtVNPair);
-        ASSERT_TP      assertions = optGetEdgeAssertions(ssaDef->GetBlock(), phiArg->gtPredBB);
+        // fgValueNumberPhiDef may leave gtVNPair as NoVN when it refuses to back-patch
+        // a loop-varying SSA-def VN into the phi-arg slot (a hygiene constraint for general
+        // gtVNPair consumers that does not apply here, since we hand the VN to the visitor
+        // together with this edge's assertion set and never write it back into any tree).
+        LclSsaVarDsc* phiArgSsaDef = lvaGetDesc(phiArg)->GetPerSsaData(phiArg->GetSsaNum());
+        ValueNum      phiArgVN     = vnStore->VNConservativeNormalValue(phiArgSsaDef->m_vnPair);
+        ASSERT_TP     assertions   = optGetEdgeAssertions(ssaDef->GetBlock(), phiArg->gtPredBB);
         if (argVisitor(phiArgVN, assertions) == AssertVisit::Abort)
         {
             // The visitor wants to abort the walk.

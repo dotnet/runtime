@@ -406,9 +406,9 @@ extern "C" INT32 QCALLTYPE ThreadNative_GetThreadState(QCall::ThreadHandle threa
     INT32 res = 0;
 
     // grab a snapshot
-    Thread::ThreadState state = thread->GetSnapshotState();
+    Thread::ThreadState state = thread->GetState();
 
-    if (state & Thread::TS_Dead)
+    if (state & Thread::TS_Stopped)
         res |= ThreadNative::ThreadStopped;
 
     if (state & Thread::TS_Background)
@@ -630,7 +630,9 @@ FCIMPL1(void, ThreadNative::Finalize, ThreadBaseObject* pThisUNSAFE)
         }
 
         thread->SetThreadState(Thread::TS_Finalized);
+#ifdef FEATURE_MULTITHREADING
         Thread::SetCleanupNeededForFinalizedThread();
+#endif // FEATURE_MULTITHREADING
     }
 }
 FCIMPLEND

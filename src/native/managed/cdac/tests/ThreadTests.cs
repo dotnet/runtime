@@ -12,11 +12,10 @@ public unsafe class ThreadTests
 {
     private static TestPlaceholderTarget CreateTarget(
         MockTarget.Architecture arch,
-        Action<MockThreadBuilder> configure,
-        bool hasProfilingSupport = true)
+        Action<MockThreadBuilder> configure)
     {
         TestPlaceholderTarget.Builder targetBuilder = new(arch);
-        MockThreadBuilder threadBuilder = new(targetBuilder.MemoryBuilder, hasProfilingSupport: hasProfilingSupport);
+        MockThreadBuilder threadBuilder = new(targetBuilder.MemoryBuilder);
         configure(threadBuilder);
 
         TestPlaceholderTarget target = targetBuilder
@@ -25,7 +24,7 @@ public unsafe class ThreadTests
                 (nameof(Constants.Globals.ThreadStore), threadBuilder.ThreadStoreGlobalAddress),
                 (nameof(Constants.Globals.FinalizerThread), threadBuilder.FinalizerThreadGlobalAddress),
                 (nameof(Constants.Globals.GCThread), threadBuilder.GCThreadGlobalAddress))
-            .AddContract<IThread>(version: 1)
+            .AddContract<IThread>(version: "c1")
             .Build();
 
         return target;
@@ -222,17 +221,14 @@ public unsafe class ThreadTests
             {
                 thread = threadBuilder.AddThread(1, 1234);
                 exceptionInfo = threadBuilder.GetExceptionInfo(thread);
-                TargetTestHelpers helpers = threadBuilder.Builder.TargetTestHelpers;
-                MockMemorySpace.BumpAllocator allocator = threadBuilder.Builder.CreateAllocator(0x1_0000, 0x2_0000);
-                MockMemorySpace.HeapFragment handleFragment = allocator.Allocate((ulong)helpers.PointerSize, "ThrownObjectHandle");
-                helpers.WritePointer(handleFragment.Data, expectedObject);
-                threadBuilder.Builder.AddHeapFragment(handleFragment);
-                exceptionInfo!.ThrownObjectHandle = handleFragment.Address;
+                exceptionInfo!.ThrownObject = (ulong)expectedObject;
             });
 
         IThread contract = target.Contracts.Thread;
         TargetPointer thrownObjectHandle = contract.GetCurrentExceptionHandle(new TargetPointer(thread!.Address));
-        Assert.Equal(new TargetPointer(exceptionInfo!.ThrownObjectHandle), thrownObjectHandle);
+        // The handle is the address of the ThrownObject field - reading through it gives the object pointer
+        Assert.NotEqual(TargetPointer.Null, thrownObjectHandle);
+        Assert.Equal(expectedObject, target.ReadPointer(thrownObjectHandle));
     }
 
     [Theory]
@@ -267,12 +263,7 @@ public unsafe class ThreadTests
             {
                 thread = threadBuilder.AddThread(1, 1234);
                 exceptionInfo = threadBuilder.GetExceptionInfo(thread);
-                TargetTestHelpers helpers = threadBuilder.Builder.TargetTestHelpers;
-                MockMemorySpace.BumpAllocator allocator = threadBuilder.Builder.CreateAllocator(0x1_0000, 0x2_0000);
-                MockMemorySpace.HeapFragment handleFragment = allocator.Allocate((ulong)helpers.PointerSize, "ThrownObjectHandle");
-                helpers.WritePointer(handleFragment.Data, TargetPointer.Null);
-                threadBuilder.Builder.AddHeapFragment(handleFragment);
-                exceptionInfo!.ThrownObjectHandle = handleFragment.Address;
+                exceptionInfo!.ThrownObject = 0;
             });
 
         IThread contract = target.Contracts.Thread;
@@ -282,22 +273,57 @@ public unsafe class ThreadTests
 
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
-    public void GetThreadData_NoProfilerFilterContext(MockTarget.Architecture arch)
+    public void GetThreadData_LastThrownObjectHandle_ActiveException(MockTarget.Architecture arch)
     {
-        const uint id = 1;
-        const ulong osId = 1234;
+        // When an active exception is being dispatched (ExInfo has a non-null ThrownObject),
+        // GetThreadData should return a pseudo-handle to the ExInfo's ThrownObject field
+        // instead of the (potentially stale) m_LastThrownObjectHandle.
         MockThread? thread = null;
+        MockExceptionInfo? exceptionInfo = null;
+        TargetPointer activeException = new(0xBEEF_0001);
 
         TestPlaceholderTarget target = CreateTarget(
             arch,
-            threadBuilder => thread = threadBuilder.AddThread(id, osId),
-            hasProfilingSupport: false);
+            threadBuilder =>
+            {
+                thread = threadBuilder.AddThread(1, 1234);
+                exceptionInfo = threadBuilder.GetExceptionInfo(thread);
+                exceptionInfo!.ThrownObject = (ulong)activeException;
+                // Set a stale handle to verify it is NOT returned
+                thread.LastThrownObject = 0xDEAD_0001;
+            });
 
         IThread contract = target.Contracts.Thread;
-        Assert.NotNull(contract);
-
         ThreadData data = contract.GetThreadData(new TargetPointer(thread!.Address));
-        Assert.Equal(id, data.Id);
-        Assert.Equal(new TargetNUInt(osId), data.OSId);
+        // Should return the pseudo-handle (address of ThrownObject field), not the stale handle
+        Assert.NotEqual(TargetPointer.Null, data.LastThrownObjectHandle);
+        Assert.NotEqual(new TargetPointer(0xDEAD_0001), data.LastThrownObjectHandle);
+        // Dereferencing the pseudo-handle should yield the active exception object
+        Assert.Equal(activeException, target.ReadPointer(data.LastThrownObjectHandle));
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetThreadData_LastThrownObjectHandle_NoActiveException(MockTarget.Architecture arch)
+    {
+        // When no active exception is being dispatched (ExInfo ThrownObject is null),
+        // GetThreadData should fall back to m_LastThrownObjectHandle.
+        MockThread? thread = null;
+        MockExceptionInfo? exceptionInfo = null;
+        TargetPointer lastThrownHandle = new(0xCAFE_0001);
+
+        TestPlaceholderTarget target = CreateTarget(
+            arch,
+            threadBuilder =>
+            {
+                thread = threadBuilder.AddThread(1, 1234);
+                exceptionInfo = threadBuilder.GetExceptionInfo(thread);
+                exceptionInfo!.ThrownObject = 0;
+                thread.LastThrownObject = (ulong)lastThrownHandle;
+            });
+
+        IThread contract = target.Contracts.Thread;
+        ThreadData data = contract.GetThreadData(new TargetPointer(thread!.Address));
+        Assert.Equal(lastThrownHandle, data.LastThrownObjectHandle);
     }
 }

@@ -22,7 +22,6 @@ namespace System.Diagnostics.Tracing
         private static unsafe string GetClrConfig(string configName) => new string(EventSource_GetClrConfig(configName));
 
         [LibraryImport(RuntimeHelpers.QCall, StringMarshalling = StringMarshalling.Utf16)]
-        [RequiresUnsafe]
         private static unsafe partial char* EventSource_GetClrConfig(string configName);
 
         private static bool initializedPersistentListener;

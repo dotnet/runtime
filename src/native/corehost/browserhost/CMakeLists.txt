@@ -121,7 +121,7 @@ target_link_options(browserhost PRIVATE
     -sEXPORT_NAME=createDotnetRuntime
     -sENVIRONMENT=web,webview,worker,node,shell
     --emit-symbol-map
-    -Wl,-error-limit=0)
+    -Wl,--error-limit=0)
 
 target_link_libraries(browserhost PRIVATE
     BrowserHost-Static

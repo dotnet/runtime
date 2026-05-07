@@ -60,9 +60,12 @@ bool emitInsIsStore(instruction ins);
 insFormat emitInsFormat(instruction ins);
 
 size_t emitOutputULEB128(uint8_t* destination, uint64_t value);
+size_t emitOutputULEB128Padded(uint8_t* destination, uint64_t value);
 size_t emitOutputSLEB128(uint8_t* destination, int64_t value);
 size_t emitRawBytes(uint8_t* destination, const void* source, size_t count);
 size_t emitOutputOpcode(BYTE* dst, instruction ins);
 size_t emitOutputPaddedReloc(uint8_t* destination);
 size_t emitOutputConstant(uint8_t* destination, const instrDesc* id, bool isSigned, CorInfoReloc relocType);
 size_t emitOutputValtypeSig(uint8_t* destination, WasmValueType valtype);
+
+void emitUpdateFuncletLocations();

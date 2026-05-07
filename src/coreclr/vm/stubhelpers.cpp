@@ -21,6 +21,7 @@
 #ifdef FEATURE_COMINTEROP
 #include <oletls.h>
 #include "olecontexthelpers.h"
+#include "olevariant.h"
 #include "runtimecallablewrapper.h"
 #include "comcallablewrapper.h"
 #include "clrtocomcall.h"
@@ -476,7 +477,7 @@ extern "C" void QCALLTYPE InterfaceMarshaler_ValidateComVisibilityForIUnknown(IU
 
     if (pComMT->IsIClassX())
     {
-        pComMT->CheckParentComVisibility(FALSE);
+        pComMT->CheckParentComVisibility();
     }
 
     END_QCALL;

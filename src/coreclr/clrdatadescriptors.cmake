@@ -88,4 +88,16 @@ function(generate_data_descriptors)
   # Set include directories for the data descriptor targets, now that they are created.
   target_include_directories(${LIBRARY} PUBLIC ${DATA_DESCRIPTOR_SHARED_INCLUDE_DIR})
   target_include_directories(${LIBRARY} PRIVATE ${GENERATED_CDAC_DESCRIPTOR_DIR})
+
+  if(MSVC)
+    # Give this OBJECT library a deterministic, per-target compile PDB. Without this,
+    # MSVC writes debug info to the default `vc140.pdb`, which does not travel with
+    # the .obj files when they are archived into a static library (e.g.
+    # Runtime.ServerGC.lib). Downstream linkers - notably the NativeAOT publish
+    # of ILCompiler/crossgen2/ilasm - then emit LNK4099 ("PDB 'vc140.pdb' was not
+    # found"), which is fatal under /WX.
+    set_target_properties(${LIBRARY} PROPERTIES
+        COMPILE_PDB_NAME "${LIBRARY}"
+        COMPILE_PDB_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>")
+  endif()
 endfunction(generate_data_descriptors)

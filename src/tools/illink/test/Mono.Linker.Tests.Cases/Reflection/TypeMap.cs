@@ -28,6 +28,8 @@ using Mono.Linker.Tests.Cases.Reflection.Dependencies.Library;
 [assembly: TypeMap<UsedTypeMap>("Ldobj", typeof(LdobjTarget), typeof(LdobjType))]
 [assembly: TypeMap<UsedTypeMap>("ArrayElement", typeof(ArrayElementTarget), typeof(ArrayElement))]
 [assembly: TypeMap<UsedTypeMap>("TrimTargetIsAllocatedNoTypeCheckNoBoxStruct", typeof(ConstructedNoTypeCheckOrBoxTarget), typeof(ConstructedNoTypeCheckNoBoxStruct))]
+[assembly: TypeMap<UsedTypeMap>("TrimTargetIsUsedArrayType", typeof(ArrayTypeTrimTargetTarget), typeof(ArrayTypeTrimTargetClass[]))]
+[assembly: TypeMap<UsedTypeMap>("TrimTargetIsUnusedArrayType", typeof(ArrayTypeTrimTargetUnusedTarget), typeof(ArrayTypeTrimTargetUnusedClass[]))]
 [assembly: KeptAttributeAttribute(typeof(TypeMapAttribute<UsedTypeMap>), "TrimTargetIsTarget", typeof(TargetAndTrimTarget), typeof(TargetAndTrimTarget))]
 [assembly: KeptAttributeAttribute(typeof(TypeMapAttribute<UsedTypeMap>), "TrimTargetIsUnrelated", typeof(TargetType), typeof(TrimTarget))]
 [assembly: KeptAttributeAttribute(typeof(TypeMapAttribute<UsedTypeMap>), nameof(AllocatedNoTypeCheckClassTarget), typeof(AllocatedNoTypeCheckClassTarget), typeof(AllocatedNoTypeCheckClass))]
@@ -41,6 +43,7 @@ using Mono.Linker.Tests.Cases.Reflection.Dependencies.Library;
 [assembly: KeptAttributeAttribute(typeof(TypeMapAttribute<UsedTypeMap>), "Ldobj", typeof(LdobjTarget), typeof(LdobjType))]
 [assembly: KeptAttributeAttribute(typeof(TypeMapAttribute<UsedTypeMap>), "ArrayElement", typeof(ArrayElementTarget), typeof(ArrayElement))]
 [assembly: KeptAttributeAttribute(typeof(TypeMapAttribute<UsedTypeMap>), "TrimTargetIsAllocatedNoTypeCheckNoBoxStruct", typeof(ConstructedNoTypeCheckOrBoxTarget), typeof(ConstructedNoTypeCheckNoBoxStruct))]
+[assembly: KeptAttributeAttribute(typeof(TypeMapAttribute<UsedTypeMap>), "TrimTargetIsUsedArrayType", typeof(ArrayTypeTrimTargetTarget), typeof(ArrayTypeTrimTargetClass[]))]
 
 // The TypeMap Universes are kept separate such that Proxy attributes shouldn't be kept if only the External type map is needed.
 [assembly: TypeMap<UsedExternalTypeMap>("UsedOnlyForExternalTypeMap", typeof(UsedExternalTarget), typeof(UsedTrimTarget))] // Kept
@@ -81,6 +84,19 @@ using Mono.Linker.Tests.Cases.Reflection.Dependencies.Library;
 [assembly: TypeMapAssemblyTarget<UsedExternalTypeMap>("library")]
 [assembly: TypeMapAssemblyTarget<UsedTypeMapUniverse>("library")]
 [assembly: TypeMapAssemblyTarget<UnusedTypeMap2>("library")] // Should be removed
+
+// Verify that a type can be kept if it's used for both TypeMap and TypeMapAssociation
+[assembly: TypeMap<UsedTypeMap>("BothInExternalAndProxy", typeof(BothInExternalAndProxy), typeof(BothInExternalAndProxy))] // Kept
+[assembly: TypeMapAssociation<UsedTypeMap>(typeof(BothInExternalAndProxy), typeof(BothInExternalAndProxyTarget))] // Kept
+[assembly: KeptAttributeAttribute(typeof(TypeMapAttribute<UsedTypeMap>), "BothInExternalAndProxy", typeof(BothInExternalAndProxy), typeof(BothInExternalAndProxy))]
+[assembly: KeptAttributeAttribute(typeof(TypeMapAssociationAttribute<UsedTypeMap>), typeof(BothInExternalAndProxy), typeof(BothInExternalAndProxyTarget))]
+
+// Verify that a TypeMap entry with trimTarget=X is kept when X is also the proxy target of a TypeMapAssociation,
+// even when the proxy association's source type is instantiated before the trim target type.
+[assembly: TypeMap<UsedTypeMap>("ProxyTargetIsAlsoTrimTarget", typeof(ProxyTargetIsAlsoTrimTargetTarget), typeof(ProxyTargetIsAlsoTrimTarget))] // Kept
+[assembly: TypeMapAssociation<UsedTypeMap>(typeof(ProxyTargetIsAlsoTrimTargetSource), typeof(ProxyTargetIsAlsoTrimTarget))] // Kept
+[assembly: KeptAttributeAttribute(typeof(TypeMapAttribute<UsedTypeMap>), "ProxyTargetIsAlsoTrimTarget", typeof(ProxyTargetIsAlsoTrimTargetTarget), typeof(ProxyTargetIsAlsoTrimTarget))]
+[assembly: KeptAttributeAttribute(typeof(TypeMapAssociationAttribute<UsedTypeMap>), typeof(ProxyTargetIsAlsoTrimTargetSource), typeof(ProxyTargetIsAlsoTrimTarget))]
 
 namespace Mono.Linker.Tests.Cases.Reflection
 {
@@ -137,6 +153,8 @@ namespace Mono.Linker.Tests.Cases.Reflection
     [RemovedTypeInAssembly("library2.dll", typeof(Mono.Linker.Tests.Cases.Reflection.Dependencies.Library2.TargetTypeUnconditional2))]
     [RemovedTypeInAssembly("library2.dll", typeof(Mono.Linker.Tests.Cases.Reflection.Dependencies.Library2.TrimTarget1))]
     [RemovedTypeInAssembly("library2.dll", typeof(Mono.Linker.Tests.Cases.Reflection.Dependencies.Library2.TrimTarget2))]
+    [RemovedTypeInAssembly("test", typeof(ArrayTypeTrimTargetUnusedClass))]
+    [RemovedTypeInAssembly("test", typeof(ArrayTypeTrimTargetUnusedTarget))]
     class TypeMap
     {
         [Kept]
@@ -206,6 +224,8 @@ namespace Mono.Linker.Tests.Cases.Reflection
 
             Console.WriteLine(new ArrayElement[1]);
 
+            Console.WriteLine(new ArrayTypeTrimTargetClass[1] { new ArrayTypeTrimTargetClass() });
+
             Console.WriteLine(new ConstructedNoTypeCheckNoBoxStruct(42).Value);
 
             TypeMapReferencedAssembly.Run();
@@ -227,6 +247,14 @@ namespace Mono.Linker.Tests.Cases.Reflection
             _ = new int();
             _ = TypeMapping.GetOrCreateExternalTypeMapping<string>();
             _ = TypeMapping.GetOrCreateProxyTypeMapping<string>();
+
+            // Use BothInExternalAndProxy in a way that preserves any corresponding typemap entries.
+            Console.WriteLine(new BothInExternalAndProxy());
+
+            // Source must be instantiated BEFORE the trim target, so that the proxy association
+            // is processed first via MarkTypeMapAttribute → MarkRequirementsForInstantiatedTypes.
+            _ = new ProxyTargetIsAlsoTrimTargetSource();
+            Console.WriteLine(new ProxyTargetIsAlsoTrimTarget());
         }
 
         [ExpectBodyModified]
@@ -554,4 +582,30 @@ namespace Mono.Linker.Tests.Cases.Reflection
 
     [Kept]
     class PreservedTargetType;
+
+    [Kept]
+    [KeptMember(".ctor()")]
+    class BothInExternalAndProxy;
+    [Kept]
+    class BothInExternalAndProxyTarget;
+
+    [Kept]
+    class ArrayTypeTrimTargetTarget;
+
+    [Kept]
+    [KeptMember(".ctor()")]
+    class ArrayTypeTrimTargetClass;
+
+    class ArrayTypeTrimTargetUnusedTarget;
+
+    class ArrayTypeTrimTargetUnusedClass;
+
+    [Kept]
+    [KeptMember(".ctor()")]
+    class ProxyTargetIsAlsoTrimTarget;
+    [Kept]
+    class ProxyTargetIsAlsoTrimTargetTarget;
+    [Kept]
+    [KeptMember(".ctor()")]
+    class ProxyTargetIsAlsoTrimTargetSource;
 }

@@ -89,7 +89,7 @@ else()
                 -sEXPORTED_FUNCTIONS=_main,___stack_pointer,${CMAKE_EMCC_EXPORTED_FUNCTIONS}
                 -sEXPORT_NAME=createDotnetRuntime
                 -sENVIRONMENT=node,shell,web
-                -Wl,-error-limit=0)
+                -Wl,--error-limit=0)
 
             if (CORERUN_IN_BROWSER)
                 # Node.js doesn't have good support for WASM_BIGINT

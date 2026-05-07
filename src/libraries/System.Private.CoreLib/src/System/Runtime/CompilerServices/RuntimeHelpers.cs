@@ -181,10 +181,12 @@ namespace System.Runtime.CompilerServices
 
         /// <returns>true if the given type is a reference type or a value type that contains references or by-refs; otherwise, false.</returns>
         [Intrinsic]
-        public static bool IsReferenceOrContainsReferences<T>() where T: allows ref struct => IsReferenceOrContainsReferences<T>();
+        public static bool IsReferenceOrContainsReferences<T>() where T : allows ref struct => IsReferenceOrContainsReferences<T>();
 
         [Intrinsic]
-        [RequiresUnsafe]
+        internal static void WriteBarrier(ref object? dst, object? obj) => dst = obj;
+
+        [Intrinsic]
         internal static unsafe void SetNextCallGenericContext(void* value) => throw new UnreachableException(); // Unconditionally expanded intrinsic
 
         [Intrinsic]

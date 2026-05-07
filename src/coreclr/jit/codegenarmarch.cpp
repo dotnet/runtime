@@ -295,8 +295,9 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             break;
 #endif // SWIFT_SUPPORT
 
-        case GT_RETURN_SUSPEND:
-            genReturnSuspend(treeNode->AsUnOp());
+        case GT_PATCHPOINT:
+        case GT_PATCHPOINT_FORCED:
+            genPatchpoint(treeNode->AsOp());
             break;
 
         case GT_LEA:
@@ -500,14 +501,19 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             break;
 
         case GT_CATCH_ARG:
+            genCodeForCatchArg(treeNode);
+            break;
+        case GT_LABEL:
+            genPendingCallLabel = genCreateTempLabel();
+#if defined(TARGET_ARM)
+            genMov32RelocatableDisplacement(genPendingCallLabel, targetReg);
+#else
+            emit->emitIns_R_L(INS_adr, EA_PTRSIZE, genPendingCallLabel, targetReg);
+#endif
+            break;
 
-            noway_assert(handlerGetsXcptnObj(m_compiler->compCurBB->GetCatchType()));
-
-            /* Catch arguments get passed in a register. genCodeForBBlist()
-               would have marked it as holding a GC object, but not used. */
-
-            noway_assert(gcInfo.gcRegGCrefSetCur & RBM_EXCEPTION_OBJECT);
-            genConsumeReg(treeNode);
+        case GT_RETURN_SUSPEND:
+            genReturnSuspend(treeNode->AsUnOp());
             break;
 
         case GT_ASYNC_CONTINUATION:
@@ -518,13 +524,16 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             genAsyncResumeInfo(treeNode->AsVal());
             break;
 
-        case GT_LABEL:
-            genPendingCallLabel = genCreateTempLabel();
-#if defined(TARGET_ARM)
-            genMov32RelocatableDisplacement(genPendingCallLabel, targetReg);
-#else
-            emit->emitIns_R_L(INS_adr, EA_PTRSIZE, genPendingCallLabel, targetReg);
-#endif
+        case GT_RECORD_ASYNC_RESUME:
+            genRecordAsyncResume(treeNode->AsVal());
+            break;
+
+        case GT_FTN_ENTRY:
+            genFtnEntry(treeNode);
+            break;
+
+        case GT_NONLOCAL_JMP:
+            genNonLocalJmp(treeNode->AsUnOp());
             break;
 
         case GT_STORE_BLK:
@@ -548,10 +557,6 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 
         case GT_IL_OFFSET:
             // Do nothing; this node is a marker for debug info.
-            break;
-
-        case GT_RECORD_ASYNC_RESUME:
-            genRecordAsyncResume(treeNode->AsVal());
             break;
 
         default:
@@ -3069,7 +3074,6 @@ void CodeGen::genCall(GenTreeCall* call)
 
         if (target != nullptr)
         {
-            // Indirect fast tail calls materialize call target either in gtControlExpr or in gtCallAddr.
             genConsumeReg(target);
         }
 #ifdef FEATURE_READYTORUN
@@ -3114,7 +3118,7 @@ void CodeGen::genCall(GenTreeCall* call)
     regMaskTP killMask = RBM_CALLEE_TRASH;
     if (call->IsHelperCall())
     {
-        CorInfoHelpFunc helpFunc = m_compiler->eeGetHelperNum(call->gtCallMethHnd);
+        CorInfoHelpFunc helpFunc = call->GetHelperNum();
         killMask                 = m_compiler->compHelperCallKillSet(helpFunc);
     }
 
@@ -3147,7 +3151,7 @@ void CodeGen::genCall(GenTreeCall* call)
         else
         {
 #ifdef TARGET_ARM
-            if (call->IsHelperCall(m_compiler, CORINFO_HELP_INIT_PINVOKE_FRAME))
+            if (call->IsHelperCall(CORINFO_HELP_INIT_PINVOKE_FRAME))
             {
                 // The CORINFO_HELP_INIT_PINVOKE_FRAME helper uses a custom calling convention that returns with
                 // TCB in REG_PINVOKE_TCB. fgMorphCall() sets the correct argument registers.
@@ -3160,7 +3164,7 @@ void CodeGen::genCall(GenTreeCall* call)
             else
 #endif // TARGET_ARM
 #ifdef TARGET_ARM64
-                if (call->IsHelperCall(m_compiler, CORINFO_HELP_INTERFACELOOKUP_FOR_SLOT))
+                if (call->IsHelperCall(CORINFO_HELP_INTERFACELOOKUP_FOR_SLOT))
             {
                 returnReg = genFirstRegNumFromMask(RBM_INTERFACELOOKUP_FOR_SLOT_RETURN);
             }
@@ -3381,7 +3385,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
         // CORINFO_HELP_DISPATCH_INDIRECT_CALL in which case we still have the
         // indirection cell but we should not try to optimize.
         regNumber callThroughIndirReg = REG_NA;
-        if (!call->IsHelperCall(m_compiler, CORINFO_HELP_DISPATCH_INDIRECT_CALL))
+        if (!call->IsHelperCall(CORINFO_HELP_DISPATCH_INDIRECT_CALL))
         {
             callThroughIndirReg = getCallIndirectionCellReg(call);
         }
@@ -4286,16 +4290,12 @@ void CodeGen::genSIMDSplitReturn(GenTree* src, const ReturnTypeDesc* retTypeDesc
 //------------------------------------------------------------------------
 // genPushCalleeSavedRegisters: Push any callee-saved registers we have used.
 //
-// Arguments (arm64):
+// Arguments:
 //    initReg        - A scratch register (that gets set to zero on some platforms).
 //    pInitRegZeroed - OUT parameter. *pInitRegZeroed is set to 'true' if this method sets initReg register to zero,
 //                     'false' if initReg was set to a non-zero value, and left unchanged if initReg was not touched.
 //
-#if defined(TARGET_ARM64)
 void CodeGen::genPushCalleeSavedRegisters(regNumber initReg, bool* pInitRegZeroed)
-#else
-void CodeGen::genPushCalleeSavedRegisters()
-#endif
 {
     assert(m_compiler->compGeneratingProlog);
 
@@ -4779,6 +4779,7 @@ void CodeGen::genPushCalleeSavedRegisters()
             JITDUMP("    spAdjustment2=%d\n", spAdjustment2);
 
             genPrologSaveRegPair(REG_FP, REG_LR, alignmentAdjustment2, -spAdjustment2, false, initReg, pInitRegZeroed);
+
             offset += spAdjustment2;
 
             // Now subtract off the #outsz (or the rest of the #outsz if it was unaligned, and the above "sub"
@@ -4805,6 +4806,7 @@ void CodeGen::genPushCalleeSavedRegisters()
         {
             genPrologSaveRegPair(REG_FP, REG_LR, m_compiler->lvaOutgoingArgSpaceSize, -remainingFrameSz, false, initReg,
                                  pInitRegZeroed);
+
             offset += remainingFrameSz;
 
             offsetSpToSavedFp = m_compiler->lvaOutgoingArgSpaceSize;
@@ -4866,8 +4868,49 @@ void CodeGen::genPushCalleeSavedRegisters()
     m_compiler->compFrameInfo.calleeSaveSpOffset = calleeSaveSpOffset;
     m_compiler->compFrameInfo.calleeSaveSpDelta  = calleeSaveSpDelta;
     m_compiler->compFrameInfo.offsetSpToSavedFp  = offsetSpToSavedFp;
+
 #endif // TARGET_ARM64
 }
+
+#if defined(TARGET_ARM64)
+/*****************************************************************************
+ *
+ * Generates code for creating the UnknownSizeFrame stack space.
+ *
+ * See Compiler::UnknownSizeFrame for implementation details. The space contains
+ * stack allocations for Vector<T>.
+ */
+
+void CodeGen::genUnknownSizeFrame()
+{
+    assert(m_compiler->compLocallocUsed && m_compiler->compUsesUnknownSizeFrame);
+    assert(m_compiler->unkSizeFrame.isFinalized);
+    unsigned totalVectorCount = m_compiler->unkSizeFrame.FrameSizeInVectors();
+
+    // We reserve REG_UNKBASE for addressing SVE locals. This will always point at the top of
+    // of the UnknownSizeFrame and we index into it.
+    // TODO-SVE: We may want this to point into the middle of the frame to reduce address
+    // computations (we have a signed 9-bit indexing immediate).
+    inst_Mov(TYP_I_IMPL, REG_UNKBASE, REG_SP, false);
+
+    if (0 < totalVectorCount && totalVectorCount <= 32)
+    {
+        GetEmitter()->emitIns_R_R_I(INS_sve_addvl, EA_8BYTE, REG_SP, REG_SP, -(ssize_t)totalVectorCount);
+    }
+    else
+    {
+        // Generate `sp = sp - totalVectorCount * VL`
+        assert(totalVectorCount != 0);
+        regNumber rsvd = rsGetRsvdReg();
+        // mov   rsvd, #totalVectorCount
+        // rdvl  scratch, #1
+        // msub  sp, rsvd, scratch, sp
+        instGen_Set_Reg_To_Imm(EA_8BYTE, rsvd, totalVectorCount);
+        GetEmitter()->emitIns_R_I(INS_sve_rdvl, EA_8BYTE, REG_SCRATCH, 1);
+        GetEmitter()->emitIns_R_R_R_R(INS_msub, EA_8BYTE, REG_SP, rsvd, REG_SCRATCH, REG_SP);
+    }
+}
+#endif
 
 /*****************************************************************************
  *
