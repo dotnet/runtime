@@ -275,27 +275,104 @@ int LinearScan::BuildCall(GenTreeCall* call)
 
     int srcCount = 0;
     int dstCount = 0;
-
-    if (call->gtCallType == CT_HELPER)
+    if (call->TypeGet() != TYP_VOID)
     {
-	buildInternalIntRegisterDefForNode(call);
-
-	RegisterType registerType = call->TypeGet();
-
-	srcCount += BuildCallArgUses(call);
-
-	buildInternalRegisterUses();
-
-	regMaskTP killMask = getKillSetForCall(call);
-	BuildKills(call, killMask);
-
-	// No args are placed in registers anymore.
-    	placedArgRegs      = RBM_NONE;
-    	numPlacedArgLocals = 0;
-    	return srcCount;
+        hasMultiRegRetVal = call->HasMultiRegRetVal();
+        if (hasMultiRegRetVal)
+        {
+            // dst count = number of registers in which the value is returned by call
+            retTypeDesc = call->GetReturnTypeDesc();
+            dstCount    = retTypeDesc->GetReturnRegCount();
+        }
+        else
+        {
+            dstCount = 1;
+        }
     }
 
-    _ASSERTE(!"NYI"); 
+    GenTree*         ctrlExpr           = call->gtControlExpr;
+    SingleTypeRegSet ctrlExprCandidates = RBM_NONE;
+    if (call->gtCallType == CT_INDIRECT)
+    {
+        // either gtControlExpr != null or gtCallAddr != null.
+        // Both cannot be non-null at the same time.
+        assert(ctrlExpr == nullptr);
+        assert(call->gtCallAddr != nullptr);
+        ctrlExpr = call->gtCallAddr;
+    }
+
+    // set reg requirements on call target represented as control sequence.
+    if (ctrlExpr != nullptr)
+    {
+        // we should never see a gtControlExpr whose type is void.
+        assert(ctrlExpr->TypeGet() != TYP_VOID);
+
+        // In case of fast tail implemented as jmp, make sure that gtControlExpr is
+        // computed into a register.
+        if (call->IsFastTailCall())
+        {
+            // Fast tail call - make sure that call target is always computed in volatile registers
+            // that will not be overridden by epilog sequence.
+            ctrlExprCandidates = RBM_INT_CALLEE_TRASH.GetIntRegSet();
+            assert(ctrlExprCandidates != RBM_NONE);
+        }
+    }
+
+    RegisterType registerType = call->TypeGet();
+
+    // Set destination candidates for return value of the call.
+    if (!hasMultiRegRetVal)
+    {
+        if (varTypeUsesFloatArgReg(registerType))
+        {
+            singleDstCandidates = RBM_FLOATRET.GetFloatRegSet();
+        }
+        else if (registerType == TYP_LONG)
+        {
+            singleDstCandidates = RBM_LNGRET.GetIntRegSet();
+        }
+        else
+        {
+            singleDstCandidates = RBM_INTRET.GetIntRegSet();
+        }
+    }
+
+    srcCount += BuildCallArgUses(call);
+
+    if (ctrlExpr != nullptr)
+    {
+        BuildUse(ctrlExpr, ctrlExprCandidates);
+        srcCount++;
+    }
+
+    buildInternalRegisterUses();
+
+    // Now generate defs and kills.
+    regMaskTP killMask = getKillSetForCall(call);
+    if (dstCount > 0)
+    {
+        if (hasMultiRegRetVal)
+        {
+            assert(retTypeDesc != nullptr);
+            regMaskTP multiDstCandidates = retTypeDesc->GetABIReturnRegs(call->GetUnmanagedCallConv());
+            assert(genCountBits(multiDstCandidates) > 0);
+            BuildCallDefsWithKills(call, dstCount, multiDstCandidates, killMask);
+        }
+        else
+        {
+            assert(dstCount == 1);
+            BuildDefWithKills(call, dstCount, singleDstCandidates, killMask);
+        }
+    }
+    else
+    {
+        BuildKills(call, killMask);
+    }
+
+    // No args are placed in registers anymore.
+    placedArgRegs      = RBM_NONE;
+    numPlacedArgLocals = 0;
+    return srcCount;
 }
 
 //------------------------------------------------------------------------
