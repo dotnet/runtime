@@ -1,6 +1,7 @@
 """CI Pipeline Monitor — Issue Generator
 
 Generates github issues and comments from the contents of the ci pipeline monitor's database.
+You must have done `gh repo set-default` at least once on the current checkout for this to work.
 
 Usage (dry run):
     python update_github.py --db monitor.db
@@ -30,8 +31,14 @@ class IssueGenerator:
         self.conn.row_factory = sqlite3.Row
 
     def generate(self, go):
+        self.probe_configuration()
         self.generate_issues(go)
         self.conn.close()
+
+    def probe_configuration(self):
+        probe_result = subprocess.run(["gh", "repo", "set-default", "-v"], check=True, capture_output=True)
+        if (len(probe_result.stderr)):
+            raise Exception("You need to perform gh repo set-default")
 
     def generate_issues(self, go):
         cur = self.conn.cursor()
