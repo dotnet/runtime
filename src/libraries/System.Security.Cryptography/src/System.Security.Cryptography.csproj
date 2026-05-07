@@ -688,6 +688,7 @@
     <Compile Include="System\Security\Cryptography\UniversalCryptoDecryptor.cs" />
     <Compile Include="System\Security\Cryptography\UniversalCryptoOneShot.cs" />
     <Compile Include="System\Security\Cryptography\X25519DiffieHellman.cs" />
+    <Compile Include="System\Security\Cryptography\X25519DiffieHellmanCng.cs" />
     <Compile Include="System\Security\Cryptography\X25519DiffieHellmanOpenSsl.cs" />
     <Compile Include="System\Security\Cryptography\XmlKeyHelper.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\CertificateExtensionsCommon.cs" />
@@ -1948,6 +1949,8 @@
              Link="Common\System\Security\Cryptography\RSACng.SignVerify.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\SlhDsaImplementation.Windows.cs"
              Link="Common\System\Security\Cryptography\SlhDsaImplementation.Windows.cs" />
+    <Compile Include="$(CommonPath)\System\Security\Cryptography\X25519WindowsHelpers.cs"
+             Link="Common\System\Security\Cryptography\X25519WindowsHelpers.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\SP800108HmacCounterKdfImplementationCng.cs"
              Link="Common\System\Security\Cryptography\SP800108HmacCounterKdfImplementationCng.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\X509Certificates\CertificateHelpers.Windows.cs"
@@ -2035,6 +2038,7 @@
     <Compile Include="System\Security\Cryptography\TripleDESCng.Windows.cs" />
     <Compile Include="System\Security\Cryptography\TripleDESCryptoServiceProvider.Wrap.cs" />
     <Compile Include="System\Security\Cryptography\TripleDesImplementation.Windows.cs" />
+    <Compile Include="System\Security\Cryptography\X25519DiffieHellmanCng.Windows.cs" />
     <Compile Include="System\Security\Cryptography\X25519DiffieHellmanImplementation.Windows.cs" />
     <Compile Include="System\Security\Cryptography\X25519DiffieHellmanOpenSsl.NotSupported.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\CertificateHelpers.Windows.cs" />

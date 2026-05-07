@@ -255,6 +255,9 @@
   <data name="Cryptography_ArgMLKemRequiresMLKemKey" xml:space="preserve">
     <value>Keys used with the MLKemCng algorithm must have an algorithm group of MLKem.</value>
   </data>
+  <data name="Cryptography_ArgX25519RequiresX25519Key" xml:space="preserve">
+    <value>Keys used with the X25519DiffieHellmanCng algorithm must have an algorithm group of ECDiffieHellman using curve25519.</value>
+  </data>
   <data name="Cryptography_ArgRSARequiresRSAKey" xml:space="preserve">
     <value>Keys used with the RSACng algorithm must have an algorithm group of RSA.</value>
   </data>

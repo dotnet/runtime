@@ -13,6 +13,13 @@ namespace System.Security.Cryptography
     {
         internal delegate void KeyReader<TRet>(ReadOnlySpan<byte> key, in ValueAlgorithmIdentifierAsn algId, out TRet ret);
 
+        internal delegate void KeyReader<TRet, TState>(ReadOnlySpan<byte> key, TState state, in ValueAlgorithmIdentifierAsn algId, out TRet ret)
+#if NET
+        where TState : allows ref struct;
+#else
+        ;
+#endif
+
         internal static void ReadSubjectPublicKeyInfo<TRet>(
             string[] validOids,
             ReadOnlySpan<byte> source,
@@ -79,6 +86,26 @@ namespace System.Security.Cryptography
             out int bytesRead,
             out TRet ret)
         {
+            ReadPkcs8<TRet, KeyReader<TRet>>(
+                validOids,
+                source,
+                keyReader,
+                static (key, kr, in algId, out ret) => kr(key, algId, out ret),
+                out bytesRead,
+                out ret);
+        }
+
+        internal static void ReadPkcs8<TRet, TState>(
+            string[] validOids,
+            ReadOnlySpan<byte> source,
+            TState state,
+            KeyReader<TRet, TState> keyReader,
+            out int bytesRead,
+            out TRet ret)
+#if NET
+        where TState : allows ref struct
+#endif
+        {
             try
             {
                 ValueAsnReader reader = new ValueAsnReader(source, AsnEncodingRules.BER);
@@ -91,7 +118,7 @@ namespace System.Security.Cryptography
                 }
 
                 // Fails if there are unconsumed bytes.
-                keyReader(privateKeyInfo.PrivateKey, privateKeyInfo.PrivateKeyAlgorithm, out ret);
+                keyReader(privateKeyInfo.PrivateKey, state, privateKeyInfo.PrivateKeyAlgorithm, out ret);
                 bytesRead = read;
             }
             catch (AsnContentException e)
