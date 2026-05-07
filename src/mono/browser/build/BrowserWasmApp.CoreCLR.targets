@@ -241,9 +241,9 @@
       <EmccLinkOptimizationFlag Condition="'$(EmccLinkOptimizationFlag)' == ''">$(EmccCompileOptimizationFlag)</EmccLinkOptimizationFlag>
 
       <!-- Memory settings matching browserhost/CMakeLists.txt -->
-      <WasmInitialHeapSize Condition="'$(WasmInitialHeapSize)' == ''">134217728</WasmInitialHeapSize>
+      <WasmInitialHeapSize Condition="'$(WasmInitialHeapSize)' == ''">33554432</WasmInitialHeapSize>
       <EmccMaximumHeapSize Condition="'$(EmccMaximumHeapSize)' == ''">2147483648</EmccMaximumHeapSize>
-      <EmccStackSize Condition="'$(EmccStackSize)' == ''">5MB</EmccStackSize>
+      <EmccStackSize Condition="'$(EmccStackSize)' == ''">2MB</EmccStackSize>
 
       <DisableParallelEmccCompile Condition="'$(DisableParallelEmccCompile)' == ''">false</DisableParallelEmccCompile>
       <_WasmCompileOutputMessageImportance Condition="'$(EmccVerbose)' == 'true'">Normal</_WasmCompileOutputMessageImportance>
