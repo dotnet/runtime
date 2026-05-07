@@ -9010,9 +9010,9 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
         }
     }
 
-    DWORD derivedMethodAttribs = 0;
-    bool  derivedMethodIsFinal = false;
-    bool  canDevirtualize      = false;
+    unsigned derivedMethodAttribs = 0;
+    bool     derivedMethodIsFinal = false;
+    bool     canDevirtualize      = false;
 
 #if defined(DEBUG)
     const char* derivedMethodFullName = "?derivedMethod";
@@ -9151,9 +9151,74 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
     // All checks done. Time to transform the call.
     //
     assert(canDevirtualize);
-    Metrics.DevirtualizedCall++;
 
     JITDUMP("    %s; can devirtualize\n", note);
+
+#if defined(DEBUG)
+    if (doPrint)
+    {
+        printf("Devirtualized %s call to %s; now direct call to %s [%s]%s%s\n", callKind, baseMethodFullName,
+               derivedMethodFullName, note, needsInstParam ? ", instantiation: " : "", instArg);
+    }
+#endif // defined(DEBUG)
+
+    DevirtualizedCallInfo dcInfo{};
+    dcInfo.exactContext            = exactContext;
+    dcInfo.derivedClass            = derivedClass;
+    dcInfo.pResolvedToken          = pDerivedResolvedToken;
+    dcInfo.pUnboxedResolvedToken   = &dvInfo.resolvedTokenDevirtualizedUnboxedMethod;
+    dcInfo.objIsNonNull            = objIsNonNull;
+    dcInfo.hadImplicitNullCheck    = true;
+    dcInfo.isDelegateCall          = false;
+    dcInfo.isExplicitTailCall      = isExplicitTailCall;
+    dcInfo.objClassIsExact         = isExact;
+    dcInfo.objClassIsFinal         = objClassIsFinal;
+    dcInfo.ilOffset                = ilOffset;
+    impTransformDevirtualizedCall(call, &derivedMethod, &derivedMethodAttribs, &dcInfo, compCurBB, pContextHandle,
+                                  pExactContextHandle);
+
+    *method      = derivedMethod;
+    *methodFlags = derivedMethodAttribs;
+}
+
+//------------------------------------------------------------------------
+// impTransformDevirtualizedCall: transform a resolved virtual call target
+//    into a direct call.
+//
+// Arguments:
+//     call - call to transform
+//     method - [IN/OUT] method handle for call. Updated to the devirtualized target method
+//     methodFlags - [IN/OUT] flags for the method to call. Updated to the devirtualized target method's flags
+//     dcInfo - [IN] resolved target information for the call
+//     block - [IN] block that will contain the transformed call
+//     pContextHandle - [OUT] context handle for the transformed call
+//     pExactContextHandle - [OUT] exact context handle for the transformed call
+//
+void Compiler::impTransformDevirtualizedCall(GenTreeCall*            call,
+                                             CORINFO_METHOD_HANDLE*  method,
+                                             unsigned*               methodFlags,
+                                             DevirtualizedCallInfo*  dcInfo,
+                                             BasicBlock*             block,
+                                             CORINFO_CONTEXT_HANDLE* pContextHandle,
+                                             CORINFO_CONTEXT_HANDLE* pExactContextHandle)
+{
+    assert(call != nullptr);
+    assert(method != nullptr);
+    assert(methodFlags != nullptr);
+    assert(dcInfo != nullptr);
+    assert(pContextHandle != nullptr);
+
+    CORINFO_METHOD_HANDLE   derivedMethod         = *method;
+    unsigned                derivedMethodAttribs  = *methodFlags;
+    CORINFO_RESOLVED_TOKEN* pDerivedResolvedToken = dcInfo->pResolvedToken;
+
+    assert(derivedMethod != nullptr);
+    assert(call->gtArgs.HasThisPointer());
+
+    CallArg* thisArg = call->gtArgs.GetThisArg();
+    GenTree* thisObj = thisArg->GetEarlyNode()->gtEffectiveVal();
+
+    Metrics.DevirtualizedCall++;
 
     // Make the updates.
     call->gtFlags &= ~GTF_CALL_VIRT_VTABLE;
@@ -9163,9 +9228,14 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
     call->gtControlExpr = nullptr;
     INDEBUG(call->gtCallDebugFlags |= GTF_CALL_MD_DEVIRTUALIZED);
 
+    if (dcInfo->isDelegateCall)
+    {
+        call->gtCallMoreFlags &= ~GTF_CALL_M_DELEGATE_INV;
+    }
+
     // Virtual calls include an implicit null check, which we may
     // now need to make explicit.
-    if (!objIsNonNull)
+    if (dcInfo->hadImplicitNullCheck && !dcInfo->objIsNonNull)
     {
         call->gtFlags |= GTF_CALL_NULLCHECK;
     }
@@ -9182,12 +9252,6 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
         gtDispTree(call);
     }
 
-    if (doPrint)
-    {
-        printf("Devirtualized %s call to %s; now direct call to %s [%s]%s%s\n", callKind, baseMethodFullName,
-               derivedMethodFullName, note, needsInstParam ? ", instantiation: " : "", instArg);
-    }
-
     // If we successfully devirtualized based on an exact or final class,
     // and we have dynamic PGO data describing the likely class, make sure they agree.
     //
@@ -9196,17 +9260,17 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
     //
     // If method is an inlinee we may be specializing to a class that wasn't seen at runtime.
     //
-    const bool canSensiblyCheck =
-        (isExact || objClassIsFinal) && (fgPgoSource == ICorJitInfo::PgoSource::Dynamic) && !compIsForInlining();
+    const bool canSensiblyCheck = (dcInfo->objClassIsExact || dcInfo->objClassIsFinal) &&
+                                  (fgPgoSource == ICorJitInfo::PgoSource::Dynamic) && !compIsForInlining();
     if (JitConfig.JitCrossCheckDevirtualizationAndPGO() && canSensiblyCheck)
     {
         // We only can handle a single likely class for now
         const int               maxLikelyClasses = 1;
         LikelyClassMethodRecord likelyClasses[maxLikelyClasses];
 
-        UINT32 numberOfClasses =
-            getLikelyClasses(likelyClasses, maxLikelyClasses, fgPgoSchema, fgPgoSchemaCount, fgPgoData, ilOffset);
-        UINT32 likelihood = likelyClasses[0].likelihood;
+        UINT32 numberOfClasses = getLikelyClasses(likelyClasses, maxLikelyClasses, fgPgoSchema, fgPgoSchemaCount,
+                                                  fgPgoData, dcInfo->ilOffset);
+        UINT32 likelihood      = likelyClasses[0].likelihood;
 
         CORINFO_CLASS_HANDLE likelyClass = (CORINFO_CLASS_HANDLE)likelyClasses[0].handle;
 
@@ -9214,7 +9278,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
         {
             // PGO had better agree the class we devirtualized to is plausible.
             //
-            if (likelyClass != derivedClass)
+            if (likelyClass != dcInfo->derivedClass)
             {
                 // Managed type system may report different addresses for a class handle
                 // at different times....?
@@ -9231,7 +9295,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
                     CORINFO_CLASS_HANDLE parentClass = likelyClass;
                     while (parentClass != NO_CLASS_HANDLE)
                     {
-                        if (parentClass == derivedClass)
+                        if (parentClass == dcInfo->derivedClass)
                         {
                             mismatch = false;
                             break;
@@ -9243,8 +9307,8 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
                     if (mismatch || (numberOfClasses != 1) || (likelihood != 100))
                     {
                         printf("@@@ Likely %p (%s) != Derived %p (%s) [n=%u, l=%u, il=%u] in %s \n", likelyClass,
-                               eeGetClassName(likelyClass), derivedClass, eeGetClassName(derivedClass), numberOfClasses,
-                               likelihood, ilOffset, info.compFullName);
+                               eeGetClassName(likelyClass), dcInfo->derivedClass, eeGetClassName(dcInfo->derivedClass),
+                               numberOfClasses, likelihood, dcInfo->ilOffset, info.compFullName);
                     }
 
                     assert(!(mismatch || (numberOfClasses != 1) || (likelihood != 100)));
@@ -9263,9 +9327,9 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
     //
     // Note we may not have a derived class in some cases (eg interface call on an array)
     //
-    if (info.compCompHnd->isValueClass(derivedClass))
+    if (info.compCompHnd->isValueClass(dcInfo->derivedClass))
     {
-        if (isExplicitTailCall)
+        if (dcInfo->isExplicitTailCall)
         {
             JITDUMP("Have a direct explicit tail call to boxed entry point; can't optimize further\n");
         }
@@ -9285,7 +9349,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
                 // If the 'this' object is a local box, see if we can revise things
                 // to not require boxing.
                 //
-                if (thisObj->IsBoxedValue() && !isExplicitTailCall)
+                if (thisObj->IsBoxedValue() && !dcInfo->isExplicitTailCall)
                 {
                     // Since the call is the only consumer of the box, we know the box can't escape
                     // since it is being passed an interior pointer.
@@ -9327,7 +9391,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
 
                                 call->gtCallMethHnd   = unboxedEntryMethod;
                                 derivedMethod         = unboxedEntryMethod;
-                                pDerivedResolvedToken = &dvInfo.resolvedTokenDevirtualizedUnboxedMethod;
+                                pDerivedResolvedToken = dcInfo->pUnboxedResolvedToken;
 
                                 // Method attributes will differ because unboxed entry point is shared
                                 //
@@ -9362,7 +9426,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
                             call->gtCallMethHnd = unboxedEntryMethod;
                             INDEBUG(call->gtCallDebugFlags |= GTF_CALL_MD_UNBOXED);
                             derivedMethod         = unboxedEntryMethod;
-                            pDerivedResolvedToken = &dvInfo.resolvedTokenDevirtualizedUnboxedMethod;
+                            pDerivedResolvedToken = dcInfo->pUnboxedResolvedToken;
 
                             optimizedTheBox = true;
                         }
@@ -9440,7 +9504,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
                             JITDUMP("Updating method attribs from 0x%08x to 0x%08x\n", derivedMethodAttribs,
                                     unboxedMethodAttribs);
                             derivedMethod         = unboxedEntryMethod;
-                            pDerivedResolvedToken = &dvInfo.resolvedTokenDevirtualizedUnboxedMethod;
+                            pDerivedResolvedToken = dcInfo->pUnboxedResolvedToken;
                             derivedMethodAttribs  = unboxedMethodAttribs;
 
                             call->gtArgs.InsertInstParam(this, methodTableArg);
@@ -9459,7 +9523,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
                         call->gtCallMethHnd = unboxedEntryMethod;
                         INDEBUG(call->gtCallDebugFlags |= GTF_CALL_MD_UNBOXED);
                         derivedMethod         = unboxedEntryMethod;
-                        pDerivedResolvedToken = &dvInfo.resolvedTokenDevirtualizedUnboxedMethod;
+                        pDerivedResolvedToken = dcInfo->pUnboxedResolvedToken;
                         Metrics.DevirtualizedCallUnboxedEntry++;
                     }
                 }
@@ -9489,15 +9553,16 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
     //
     if (pExactContextHandle != nullptr)
     {
-        *pExactContextHandle = exactContext;
+        *pExactContextHandle = dcInfo->exactContext;
     }
 
     // We might have created a new recursive tail call candidate.
     //
     if (call->CanTailCall() && gtIsRecursiveCall(derivedMethod))
     {
+        assert(block != nullptr);
         setMethodHasRecursiveTailcall();
-        compCurBB->SetFlags(BBF_RECURSIVE_TAILCALL);
+        block->SetFlags(BBF_RECURSIVE_TAILCALL);
     }
 
 #ifdef FEATURE_READYTORUN
@@ -9505,6 +9570,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
     {
         // For R2R, getCallInfo triggers bookkeeping on the zap
         // side and acquires the actual symbol to call so we need to call it here.
+        assert(pDerivedResolvedToken != nullptr);
 
         // Look up the new call info.
         CORINFO_CALL_INFO derivedCallInfo;
