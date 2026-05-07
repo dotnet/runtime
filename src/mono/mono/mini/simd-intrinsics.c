@@ -6823,16 +6823,16 @@ emit_wasm_supported_intrinsics (
 
 				switch (arg0_type) {
 				case MONO_TYPE_I1:
-						c0 = INTRINS_WASM_SUB_SAT_SIGNED_V16;
+						c0 = INTRINS_SSE_SSUB_SATI8;
 						break;
 				case MONO_TYPE_I2:
-						c0 = INTRINS_WASM_SUB_SAT_SIGNED_V8;
+						c0 = INTRINS_SSE_SSUB_SATI16;
 						break;
 				case MONO_TYPE_U1:
-						c0 = INTRINS_WASM_SUB_SAT_UNSIGNED_V16;
+						c0 = INTRINS_SSE_USUB_SATI8;
 						break;
 				case MONO_TYPE_U2:
-						c0 = INTRINS_WASM_SUB_SAT_UNSIGNED_V8;
+						c0 = INTRINS_SSE_USUB_SATI16;
 						break;
 				}
 

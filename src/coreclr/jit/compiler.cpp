@@ -2687,7 +2687,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         }
 #endif // LATE_DISASM
 
-        if (JitConfig.JitDasmWithAddress() != 0)
+        if (JitConfig.JitDisasmWithAddress() != 0)
         {
             opts.disAddr = true;
         }
@@ -4857,6 +4857,18 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
                 // update the flowgraph if we modified it during the optimization phase
                 //
                 DoPhase(this, PHASE_OPT_UPDATE_FLOW_GRAPH, &Compiler::fgUpdateFlowGraphPhase);
+
+                // Clean up unreachable blocks.
+                // In opt-repeat builds, RecomputeFlowGraphAnnotations() will call
+                // fgDfsBlocksAndRemove() when resetting annotations between iterations.
+                // To avoid doing this expensive work twice per iteration, only run this
+                // phase on non-optRepeat builds or on the final optRepeat iteration.
+                //
+                if (!opts.optRepeat || (opts.optRepeatIteration == opts.optRepeatCount))
+                {
+                    DoPhase(this, PHASE_OPT_DFS_BLOCKS, &Compiler::fgDfsBlocksAndRemove);
+                    fgInvalidateDfsTree();
+                }
             }
 
             // Iterate if requested, resetting annotations first.
@@ -5017,6 +5029,13 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     StackLevelSetter stackLevelSetter(this);
     stackLevelSetter.Run();
     m_pLowering->FinalizeOutgoingArgSpace();
+
+#ifdef TARGET_WASM
+    // Determine if a Virtual IP is needed and add code as needed to
+    // keep the Virtual IP updated.
+    //
+    DoPhase(this, PHASE_WASM_VIRTUAL_IP, &Compiler::fgWasmVirtualIP);
+#endif
 
     FinalizeEH();
 
@@ -5580,7 +5599,7 @@ void Compiler::SplitTreesRemoveCommas()
 //
 void Compiler::generatePatchpointInfo()
 {
-    if (!doesMethodHavePatchpoints() && !doesMethodHavePartialCompilationPatchpoints())
+    if (!doesMethodHavePatchpoints())
     {
         // Nothing to report
         return;
@@ -5603,8 +5622,8 @@ void Compiler::generatePatchpointInfo()
     // offset.
 
 #if defined(TARGET_AMD64)
-    // We add +TARGET_POINTER_SIZE here is to account for the slot that Jit_Patchpoint
-    // creates when it simulates calling the OSR method (the "pseudo return address" slot).
+    // We add +TARGET_POINTER_SIZE here to account for the return address slot that the OSR method prolog
+    // pushes on entry (the "pseudo return address" slot) to make the stack unaligned.
     // This is effectively a new slot at the bottom of the Tier0 frame.
     //
     const int totalFrameSize = codeGen->genTotalFrameSize() + TARGET_POINTER_SIZE;
@@ -5712,17 +5731,30 @@ void Compiler::generatePatchpointInfo()
                 patchpointInfo->AsyncSynchronizationContextOffset());
     }
 
-#if defined(TARGET_AMD64)
     // Record callee save registers.
-    // Currently only needed for x64.
     //
     regMaskTP rsPushRegs = codeGen->regSet.rsGetModifiedCalleeSavedRegsMask();
     rsPushRegs |= RBM_FPBASE;
-    patchpointInfo->SetCalleeSaveRegisters((uint64_t)rsPushRegs);
-    JITDUMP("--OSR-- Tier0 callee saves: ");
-    JITDUMPEXEC(dspRegMask((regMaskTP)patchpointInfo->CalleeSaveRegisters()));
-    JITDUMP("\n");
+#if defined(TARGET_ARM64)
+    rsPushRegs |= RBM_LR;
+#elif defined(TARGET_LOONGARCH64)
+    rsPushRegs |= RBM_RA;
+#elif defined(TARGET_RISCV64)
+    rsPushRegs |= RBM_RA;
 #endif
+
+#ifdef TARGET_ARM64
+    // For arm64 we communicate whether fp/lr are stored with the callee saves in this mask.
+    if (!codeGen->IsSaveFpLrWithAllCalleeSavedRegisters())
+    {
+        rsPushRegs &= ~(RBM_FP | RBM_LR);
+    }
+#endif
+
+    patchpointInfo->SetCalleeSaveRegisters((uint64_t)rsPushRegs.getLow());
+    JITDUMP("--OSR-- Tier0 callee saves: ");
+    JITDUMPEXEC(dspRegMask(regMaskTP((regMaskSmall)patchpointInfo->CalleeSaveRegisters())));
+    JITDUMP("\n");
 
     // Register this with the runtime.
     info.compCompHnd->setPatchpointInfo(patchpointInfo);
@@ -6015,6 +6047,31 @@ int Compiler::compCompileAfterInit(CORINFO_MODULE_HANDLE classPtr,
         if (JitConfig.EnableArm64Sve2() != 0)
         {
             instructionSetFlags.AddInstructionSet(InstructionSet_Sve2);
+        }
+
+        if (JitConfig.EnableArm64Sha3() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_Sha3);
+        }
+
+        if (JitConfig.EnableArm64Sm4() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_Sm4);
+        }
+
+        if (JitConfig.EnableArm64SveAes() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_SveAes);
+        }
+
+        if (JitConfig.EnableArm64SveSha3() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_SveSha3);
+        }
+
+        if (JitConfig.EnableArm64SveSm4() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_SveSm4);
         }
 #elif defined(TARGET_XARCH)
         if (info.compMatchedVM)
@@ -6577,24 +6634,6 @@ void Compiler::compCompileFinish()
     }
 #endif // TRACK_ENREG_STATS
 
-    // Only call _DbgBreakCheck when we are jitting, not when we are generating AOT code.
-    // For AOT the int3 or breakpoint instruction will be right at the
-    // start of the AOT method and we will stop when we execute it.
-    //
-    if (!IsAot())
-    {
-        if (compJitHaltMethod())
-        {
-#if !defined(HOST_UNIX)
-            // TODO-UNIX: re-enable this when we have an OS that supports a pop-up dialog
-
-            // Don't do an assert, but just put up the dialog box so we get just-in-time debugger
-            // launching.  When you hit 'retry' it will continue and naturally stop at the INT 3
-            // that the JIT put in the code
-            _DbgBreakCheck(__FILE__, __LINE__, "JitHalt");
-#endif
-        }
-    }
 #else  // DEBUG
     if (JitConfig.JitReportMetrics())
     {
@@ -6629,7 +6668,7 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
     }
     else
     {
-        info.compFlags = info.compCompHnd->getMethodAttribs(info.compMethodHnd);
+        info.compFlags    = info.compCompHnd->getMethodAttribs(info.compMethodHnd);
         compInlineContext = m_inlineStrategy->GetRootContext();
     }
 
@@ -10351,7 +10390,7 @@ bool Compiler::killGCRefs(GenTree* tree)
             return true;
         }
 
-        if (call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_JIT_PINVOKE_BEGIN))
+        if (call->IsHelperCall(CORINFO_HELP_JIT_PINVOKE_BEGIN))
         {
             assert(opts.ShouldUsePInvokeHelpers());
             return true;
@@ -10699,6 +10738,10 @@ void Compiler::EnregisterStats::RecordLocal(const LclVarDsc* varDsc)
                 m_simdUserForcesDep++;
                 break;
 
+            case DoNotEnregisterReason::WasmGCVisibility:
+                m_wasmGcVisibility++;
+                break;
+
             default:
                 unreached();
                 break;
@@ -10827,6 +10870,7 @@ void Compiler::EnregisterStats::Dump(FILE* fout) const
     PRINT_STATS(m_swizzleArg, notEnreg);
     PRINT_STATS(m_blockOpRet, notEnreg);
     PRINT_STATS(m_returnSpCheck, notEnreg);
+    PRINT_STATS(m_wasmGcVisibility, notEnreg);
     PRINT_STATS(m_callSpCheck, notEnreg);
     PRINT_STATS(m_simdUserForcesDep, notEnreg);
 

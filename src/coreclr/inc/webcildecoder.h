@@ -36,16 +36,30 @@
 #define WEBCIL_MAGIC_I 'I'
 #define WEBCIL_MAGIC_L 'L'
 
-#define WEBCIL_VERSION_MAJOR 0
+#define WEBCIL_VERSION_MAJOR_0 0
+#define WEBCIL_VERSION_MAJOR_1 1
 #define WEBCIL_VERSION_MINOR 0
 
 #pragma pack(push, 1)
 
 // [cDAC] [Loader]: Contract depends on WebcilHeader layout (size and CoffSections field).
-struct WebcilHeader
+struct WebcilHeader // For version 0
 {
     uint8_t Id[4];           // 'W' 'b' 'I' 'L'
     uint16_t VersionMajor;   // 0
+    uint16_t VersionMinor;   // 0
+    uint16_t CoffSections;
+    uint16_t Reserved0;      // 1-based index of the base relocations section, or 0 if none
+    uint32_t PeCliHeaderRva;
+    uint32_t PeCliHeaderSize;
+    uint32_t PeDebugRva;
+    uint32_t PeDebugSize;
+};
+
+struct WebcilHeader_1  // For version 1
+{
+    uint8_t Id[4];           // 'W' 'b' 'I' 'L'
+    uint16_t VersionMajor;   // 1
     uint16_t VersionMinor;   // 0
     uint16_t CoffSections;
     uint16_t Reserved0;
@@ -53,6 +67,7 @@ struct WebcilHeader
     uint32_t PeCliHeaderSize;
     uint32_t PeDebugRva;
     uint32_t PeDebugSize;
+    uint32_t TableBase;
 };
 
 // [cDAC] [Loader]: Contract depends on WebcilSectionHeader layout (size and all fields).
@@ -67,6 +82,7 @@ struct WebcilSectionHeader
 #pragma pack(pop)
 
 static_assert(sizeof(WebcilHeader) == 28, "WebcilHeader must be 28 bytes");
+static_assert(sizeof(WebcilHeader_1) == 32, "WebcilHeader_1 must be 32 bytes");
 static_assert(sizeof(WebcilSectionHeader) == 16, "WebcilSectionHeader must be 16 bytes");
 
 // [cDAC] [Loader]: Contract depends on WEBCIL_MAX_SECTIONS value.
@@ -94,7 +110,6 @@ public:
 
     WebcilDecoder();
     void Init(void *flatBase, COUNT_T size);
-    void Reset();
 
     // ------------------------------------------------------------
     // COR header — public for CorDecoderHelpers access
@@ -137,7 +152,8 @@ private:
 
     // Webcil is always flat, never mapped in the PE sense
     BOOL IsMapped() const { return FALSE; }
-    BOOL IsRelocated() const { return FALSE; }
+    BOOL IsRelocated() const { return m_relocated; }
+    void SetRelocated() { m_relocated = TRUE; }
     BOOL IsFlat() const { return HasContents(); }
 
     // ------------------------------------------------------------
@@ -151,7 +167,7 @@ private:
     BOOL HasNTHeaders() const { return FALSE; }
     CHECK CheckNTHeaders() const;
     BOOL Has32BitNTHeaders() const { return FALSE; }
-    BOOL HasBaseRelocations() const { return FALSE; }
+    BOOL HasBaseRelocations() const;
     BOOL HasWriteableSections() const { return FALSE; }
     BOOL HasTls() const { return FALSE; }
 
@@ -180,15 +196,26 @@ private:
     void *GetNativeEntryPoint() const { return NULL; }
 
     // ------------------------------------------------------------
-    // R2R — not supported for Webcil
+    // R2R
     // ------------------------------------------------------------
 
-    BOOL HasReadyToRunHeader() const { return FALSE; }
+    BOOL HasReadyToRunHeader() const;
     BOOL IsComponentAssembly() const { return FALSE; }
-    READYTORUN_HEADER *GetReadyToRunHeader() const { return NULL; }
-    BOOL IsNativeMachineFormat() const { return FALSE; }
-    PTR_CVOID GetNativeManifestMetadata(COUNT_T *pSize = NULL) const;
+    READYTORUN_HEADER *GetReadyToRunHeader() const;
+    BOOL IsNativeMachineFormat() const { return true; } // This can only be loaded on a Wasm runtime which matches the necessary load environment, which means these are always in the native machine format.
+    PTR_CVOID GetNativeManifestMetadata(COUNT_T *pSize) const;
 
+    CHECK CheckDirectory(IMAGE_DATA_DIRECTORY *pDir, int forbiddenFlags = 0, IsNullOK ok = NULL_NOT_OK) const;
+    TADDR GetDirectoryData(IMAGE_DATA_DIRECTORY *pDir) const;
+    SSIZE_T GetTableBaseOffset() const
+    {
+        if (m_pHeader == NULL)
+            return 0;
+        return m_pHeader->VersionMajor >= WEBCIL_VERSION_MAJOR_1 ? ((const WebcilHeader_1 *)m_pHeader)->TableBase : 0;
+    }
+private:
+    READYTORUN_HEADER *FindReadyToRunHeader() const;
+public:
     // ------------------------------------------------------------
     // RVA operations (remaining private)
     // ------------------------------------------------------------
@@ -257,9 +284,14 @@ private:
     // Instance members
     TADDR                m_base;
     COUNT_T              m_size;
-    BOOL                 m_hasContents;
+    bool                 m_relocated = FALSE;
+    bool                 m_hasContents;
+    mutable bool         m_hasNoReadyToRunHeader;
     const WebcilHeader  *m_pHeader;
+    const WebcilSectionHeader *m_sections;
+
     mutable IMAGE_COR20_HEADER *m_pCorHeader;
+    mutable PTR_READYTORUN_HEADER m_pReadyToRunHeader;
 };
 
 #endif // FEATURE_WEBCIL

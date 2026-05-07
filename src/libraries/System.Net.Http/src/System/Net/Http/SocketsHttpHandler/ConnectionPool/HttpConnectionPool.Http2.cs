@@ -27,6 +27,7 @@ namespace System.Net.Http
         private RequestQueue<Http2Connection?> _http2RequestQueue;
 
         private bool _http2Enabled;
+        private bool _http2SessionAuthSeen;
         private byte[]? _http2AltSvcOriginUri;
         internal readonly byte[]? _http2EncodedAuthorityHostHeader;
 
@@ -184,7 +185,7 @@ namespace System.Net.Http
             CancellationTokenSource cts = GetConnectTimeoutCancellationTokenSource(waiter);
             try
             {
-                (Stream stream, TransportContext? transportContext, Activity? activity, IPEndPoint? remoteEndPoint) = await ConnectAsync(queueItem.Request, true, cts.Token).ConfigureAwait(false);
+                (Stream stream, TransportContext? transportContext, Activity? activity, IPEndPoint? remoteEndPoint) = await ConnectAsync(queueItem.Request, true, isForHttp2: true, cts.Token).ConfigureAwait(false);
 
                 if (IsSecure)
                 {
@@ -284,6 +285,18 @@ namespace System.Net.Http
 
                 CheckForHttp2ConnectionInjection();
             }
+        }
+
+        /// <summary>
+        /// Marks this pool as having seen a session-based authentication challenge on HTTP/2.
+        /// Future requests that can fall back to HTTP/1.1 (see <see cref="CanFallBackToHttp11"/>)
+        /// will skip HTTP/2 and go directly to HTTP/1.1.
+        /// Requests that require HTTP/2 (e.g., <see cref="HttpVersionPolicy.RequestVersionExact"/>
+        /// with <see cref="HttpRequestMessage.Version"/> >= 2.0) continue to use HTTP/2 as before.
+        /// </summary>
+        internal void OnSessionAuthenticationChallengeSeen()
+        {
+            _http2SessionAuthSeen = true;
         }
 
         private async Task HandleHttp11Downgrade(HttpRequestMessage request, Stream stream, TransportContext? transportContext, Activity? activity, IPEndPoint? remoteEndPoint, CancellationToken cancellationToken)

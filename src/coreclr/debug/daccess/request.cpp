@@ -443,14 +443,19 @@ ClrDataAccess::GetMethodTableSlotEnumerator(CLRDATA_ADDRESS mt, ISOSMethodEnum *
     else
     {
         DacMethodTableSlotEnumerator *methodTableSlotEnumerator = new (nothrow) DacMethodTableSlotEnumerator();
-        *enumerator = methodTableSlotEnumerator;
-        if (*enumerator == NULL)
+        if (methodTableSlotEnumerator == NULL)
         {
             hr = E_OUTOFMEMORY;
         }
         else
         {
             hr = methodTableSlotEnumerator->Init(mTable);
+
+            if (SUCCEEDED(hr))
+                hr = methodTableSlotEnumerator->QueryInterface(__uuidof(ISOSMethodEnum), (void**)enumerator);
+
+            if (FAILED(hr))
+                delete methodTableSlotEnumerator;
         }
     }
 
@@ -865,7 +870,6 @@ HRESULT ClrDataAccess::GetThreadData(CLRDATA_ADDRESS threadAddr, struct DacpThre
     ZeroMemory (threadData, sizeof(DacpThreadData));
     threadData->corThreadId = thread->m_ThreadId;
     threadData->osThreadId = (DWORD)thread->m_OSThreadId;
-    threadData->state = thread->m_State;
     threadData->preemptiveGCDisabled = thread->m_fPreemptiveGCDisabled;
 
     gc_alloc_context* allocContext = thread->GetAllocContext();
@@ -886,13 +890,22 @@ HRESULT ClrDataAccess::GetThreadData(CLRDATA_ADDRESS threadAddr, struct DacpThre
     threadData->context = PTR_CDADDR(AppDomain::GetCurrentDomain());
     threadData->domain = PTR_CDADDR(AppDomain::GetCurrentDomain());
     threadData->lockCount = (DWORD)-1;
-#ifndef TARGET_UNIX
-    threadData->teb = TO_CDADDR(thread->m_pTEB);
-#else
+    // TEB is no longer provided by the runtime. Consumers should look up the TEB
+    // from the OS thread ID via the debugger's native API (e.g., IDebuggerServices::GetThreadTeb).
     threadData->teb = (CLRDATA_ADDRESS)NULL;
-#endif
-    threadData->lastThrownObjectHandle =
-        TO_CDADDR(thread->m_LastThrownObjectHandle);
+    // Prefer the active exception from ExInfo (pseudo-handle to m_exception field).
+    // After the removal of SetThrowable/m_hThrowable, m_LastThrownObjectHandle is only
+    // updated after exception dispatch completes, so during active dispatch it may be
+    // stale.  GetThrowableAsPseudoHandle returns the address of ExInfo::m_exception
+    // which has the same dereference semantics as a real GC handle.
+    {
+        OBJECTHANDLE ohException = thread->GetThrowableAsPseudoHandle();
+        if (ohException == (OBJECTHANDLE)NULL)
+        {
+            ohException = thread->m_LastThrownObjectHandle;
+        }
+        threadData->lastThrownObjectHandle = TO_CDADDR(ohException);
+    }
     threadData->nextThread =
         HOST_CDADDR(ThreadStore::s_pThreadStore->m_ThreadList.GetNext(thread));
     if (thread->m_ExceptionState.m_pCurrentTracker)
@@ -909,7 +922,7 @@ HRESULT ClrDataAccess::GetThreadData(CLRDATA_ADDRESS threadAddr, struct DacpThre
 void CopyNativeCodeVersionToReJitData(NativeCodeVersion nativeCodeVersion, NativeCodeVersion activeCodeVersion, DacpReJitData * pReJitData)
 {
     pReJitData->rejitID = nativeCodeVersion.GetILCodeVersion().GetVersionId();
-    pReJitData->NativeCodeAddr = GetInterpreterCodeFromInterpreterPrecodeIfPresent(nativeCodeVersion.GetNativeCode());
+    pReJitData->NativeCodeAddr = GetInterpreterCodeFromEntryPointIfPresent(nativeCodeVersion.GetNativeCode());
 
     if (nativeCodeVersion != activeCodeVersion)
     {
@@ -1019,7 +1032,7 @@ HRESULT ClrDataAccess::GetMethodDescData(
         if (!requestedNativeCodeVersion.IsNull() && requestedNativeCodeVersion.GetNativeCode() != (PCODE)NULL)
         {
             methodDescData->bHasNativeCode = TRUE;
-            methodDescData->NativeCodeAddr = TO_CDADDR(PCODEToPINSTR(GetInterpreterCodeFromInterpreterPrecodeIfPresent(requestedNativeCodeVersion.GetNativeCode())));
+            methodDescData->NativeCodeAddr = TO_CDADDR(PCODEToPINSTR(GetInterpreterCodeFromEntryPointIfPresent(requestedNativeCodeVersion.GetNativeCode())));
         }
         else
         {
@@ -1243,7 +1256,7 @@ HRESULT ClrDataAccess::GetTieredVersions(
         int count = 0;
         for (NativeCodeVersionIterator iter = nativeCodeVersions.Begin(); iter != nativeCodeVersions.End(); iter++)
         {
-            TADDR pNativeCode = PCODEToPINSTR(GetInterpreterCodeFromInterpreterPrecodeIfPresent((*iter).GetNativeCode()));
+            TADDR pNativeCode = PCODEToPINSTR(GetInterpreterCodeFromEntryPointIfPresent((*iter).GetNativeCode()));
             nativeCodeAddrs[count].NativeCodeAddr = pNativeCode;
             PTR_NativeCodeVersionNode pNode = (*iter).AsNode();
             nativeCodeAddrs[count].NativeCodeVersionNodePtr = PTR_CDADDR(pNode);
@@ -1279,13 +1292,9 @@ HRESULT ClrDataAccess::GetTieredVersions(
                     break;
                 }
             }
-            else if (pMD->IsJitOptimizationDisabled())
-            {
-                nativeCodeAddrs[count].OptimizationTier = DacpTieredVersionData::OptimizationTier_MinOptJitted;
-            }
             else
             {
-                nativeCodeAddrs[count].OptimizationTier = DacpTieredVersionData::OptimizationTier_Optimized;
+                nativeCodeAddrs[count].OptimizationTier = DacpTieredVersionData::OptimizationTier_Unknown;
             }
 
             ++count;
@@ -3310,7 +3319,7 @@ ClrDataAccess::GetNestedExceptionData(CLRDATA_ADDRESS exception, CLRDATA_ADDRESS
     }
     else
     {
-        *exceptionObject = TO_CDADDR(*PTR_TADDR(pExData->m_hThrowable));
+        *exceptionObject = dac_cast<TADDR>(pExData->m_exception);
         *nextNestedException = PTR_HOST_TO_TADDR(pExData->m_pPrevNestedInfo);
     }
 
@@ -3577,7 +3586,7 @@ ClrDataAccess::TraverseLoaderHeap(CLRDATA_ADDRESS loaderHeapAddr, VISITHEAP pFun
 
     SOSDacEnter();
 
-    hr = TraverseLoaderHeapBlock(PTR_UnlockedLoaderHeapBase(TO_TADDR(loaderHeapAddr))->m_pFirstBlock, pFunc);
+    hr = TraverseLoaderHeapBlock(PTR_UnlockedLoaderHeapBaseTraversable(TO_TADDR(loaderHeapAddr))->m_pFirstBlock, pFunc);
 
     SOSDacLeave();
     return hr;
@@ -3593,20 +3602,7 @@ ClrDataAccess::TraverseLoaderHeap(CLRDATA_ADDRESS loaderHeapAddr, LoaderHeapKind
 
     SOSDacEnter();
 
-    switch (kind)
-    {
-        case LoaderHeapKindNormal:
-            hr = TraverseLoaderHeapBlock(PTR_UnlockedLoaderHeapBase(TO_TADDR(loaderHeapAddr))->m_pFirstBlock, pCallback);
-            break;
-
-        case LoaderHeapKindExplicitControl:
-            hr = TraverseLoaderHeapBlock(PTR_ExplicitControlLoaderHeap(TO_TADDR(loaderHeapAddr))->m_pFirstBlock, pCallback);
-            break;
-
-        default:
-            hr = E_NOTIMPL;
-            break;
-    }
+    hr = TraverseLoaderHeapBlock(PTR_UnlockedLoaderHeapBaseTraversable(TO_TADDR(loaderHeapAddr))->m_pFirstBlock, pCallback);
 
     SOSDacLeave();
     return hr;
@@ -3824,9 +3820,9 @@ ClrDataAccess::GetSyncBlockData(unsigned int SBNumber, struct DacpSyncBlockData 
                 // TODO: Microsoft, implement the wait list
                 pSyncBlockData->AdditionalThreadCount = 0;
 
-                if (pBlock->m_Link.m_pNext != NULL)
+                if (pBlock->m_pNext != NULL)
                 {
-                    PTR_SLink pLink = pBlock->m_Link.m_pNext;
+                    PTR_SyncBlock pLink = pBlock->m_pNext;
                     do
                     {
                         pSyncBlockData->AdditionalThreadCount++;
@@ -3857,7 +3853,7 @@ ClrDataAccess::GetSyncBlockCleanupData(CLRDATA_ADDRESS syncBlock, struct DacpSyn
     if (syncBlock == (CLRDATA_ADDRESS)NULL && SyncBlockCache::s_pSyncBlockCache->m_pCleanupBlockList)
     {
         pBlock = (SyncBlock *) PTR_SyncBlock(
-            PTR_HOST_TO_TADDR(SyncBlockCache::s_pSyncBlockCache->m_pCleanupBlockList) - offsetof(SyncBlock, m_Link));
+            PTR_HOST_TO_TADDR(SyncBlockCache::s_pSyncBlockCache->m_pCleanupBlockList));
     }
     else
     {
@@ -3867,10 +3863,10 @@ ClrDataAccess::GetSyncBlockCleanupData(CLRDATA_ADDRESS syncBlock, struct DacpSyn
     if (pBlock)
     {
         syncBlockCData->SyncBlockPointer = HOST_CDADDR(pBlock);
-        if (pBlock->m_Link.m_pNext)
+        if (pBlock->m_pNext)
         {
             syncBlockCData->nextSyncBlock = (CLRDATA_ADDRESS)
-                (PTR_HOST_TO_TADDR(pBlock->m_Link.m_pNext) - offsetof(SyncBlock, m_Link));
+                PTR_HOST_TO_TADDR(pBlock->m_pNext);
         }
 
 #ifdef FEATURE_COMINTEROP
@@ -3970,7 +3966,10 @@ ClrDataAccess::Request(IN ULONG32 reqCode,
             }
             else
             {
-                *(ULONG32*)outBuffer = 9;
+                // Revision 10: Fixed DefaultCOMImpl::Release() to use pre-decrement (--mRef).
+                // Consumers that previously compensated for the broken ref counting (e.g., ClrMD)
+                // should check this revision to avoid double-freeing.
+                *(ULONG32*)outBuffer = 10;
                 status = S_OK;
             }
             break;
@@ -4063,35 +4062,30 @@ HRESULT ClrDataAccess::GetClrWatsonBucketsWorker(Thread * pThread, GenericModeBl
     // By default, there are no buckets
     PTR_VOID pBuckets = NULL;
 
-    // Get the handle to the throwble
-    OBJECTHANDLE ohThrowable = pThread->GetThrowableAsHandle();
-    if (ohThrowable != NULL)
+    // Get the current throwable
+    OBJECTREF oThrowable = pThread->GetExceptionState()->GetThrowable();
+    if (oThrowable != NULL)
     {
-        // Get the object from handle and check if the throwable is preallocated or not
-        OBJECTREF oThrowable = ObjectFromHandle(ohThrowable);
-        if (oThrowable != NULL)
+        // Does the throwable have buckets?
+        U1ARRAYREF refWatsonBucketArray = ((EXCEPTIONREF)oThrowable)->GetWatsonBucketReference();
+        if (refWatsonBucketArray != NULL)
         {
-            // Does the throwable have buckets?
-            U1ARRAYREF refWatsonBucketArray = ((EXCEPTIONREF)oThrowable)->GetWatsonBucketReference();
-            if (refWatsonBucketArray != NULL)
+            // Get the watson buckets from the throwable for non-preallocated
+            // exceptions
+            pBuckets = dac_cast<PTR_VOID>(refWatsonBucketArray->GetDataPtr());
+        }
+        else
+        {
+            // This is a preallocated exception object - check if the UE Watson bucket tracker
+            // has any bucket details
+            pBuckets = pThread->GetExceptionState()->GetUEWatsonBucketTracker()->RetrieveWatsonBuckets();
+            if (pBuckets == NULL)
             {
-                // Get the watson buckets from the throwable for non-preallocated
-                // exceptions
-                pBuckets = dac_cast<PTR_VOID>(refWatsonBucketArray->GetDataPtr());
-            }
-            else
-            {
-                // This is a preallocated exception object - check if the UE Watson bucket tracker
-                // has any bucket details
-                pBuckets = pThread->GetExceptionState()->GetUEWatsonBucketTracker()->RetrieveWatsonBuckets();
-                if (pBuckets == NULL)
+                // Since the UE watson bucket tracker does not have them, look up the current
+                // exception tracker
+                if (pThread->GetExceptionState()->GetCurrentExceptionTracker() != NULL)
                 {
-                    // Since the UE watson bucket tracker does not have them, look up the current
-                    // exception tracker
-                    if (pThread->GetExceptionState()->GetCurrentExceptionTracker() != NULL)
-                    {
-                        pBuckets = pThread->GetExceptionState()->GetCurrentExceptionTracker()->GetWatsonBucketTracker()->RetrieveWatsonBuckets();
-                    }
+                    pBuckets = pThread->GetExceptionState()->GetCurrentExceptionTracker()->GetWatsonBucketTracker()->RetrieveWatsonBuckets();
                 }
             }
         }

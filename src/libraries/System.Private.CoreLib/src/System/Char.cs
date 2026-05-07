@@ -1214,6 +1214,9 @@ namespace System
         /// <inheritdoc cref="IBinaryInteger{TSelf}.LeadingZeroCount(TSelf)" />
         static char IBinaryInteger<char>.LeadingZeroCount(char value) => (char)(BitOperations.LeadingZeroCount(value) - 16);
 
+        /// <inheritdoc cref="IBinaryInteger{TSelf}.Log10(TSelf)" />
+        static char IBinaryInteger<char>.Log10(char value) => (char)uint.Log10(value);
+
         /// <inheritdoc cref="IBinaryInteger{TSelf}.PopCount(TSelf)" />
         static char IBinaryInteger<char>.PopCount(char value) => (char)BitOperations.PopCount(value);
 
@@ -1251,24 +1254,15 @@ namespace System
                     return false;
                 }
 
-                ref byte sourceRef = ref MemoryMarshal.GetReference(source);
-
                 if (source.Length >= sizeof(char))
                 {
-                    sourceRef = ref Unsafe.Add(ref sourceRef, source.Length - sizeof(char));
-
                     // We have at least 2 bytes, so just read the ones we need directly
-                    result = Unsafe.ReadUnaligned<char>(ref sourceRef);
-
-                    if (BitConverter.IsLittleEndian)
-                    {
-                        result = BinaryPrimitives.ReverseEndianness(result);
-                    }
+                    result = (char)BinaryPrimitives.ReadUInt16BigEndian(source.Slice(source.Length - sizeof(char)));
                 }
                 else
                 {
                     // We only have 1-byte so read it directly
-                    result = (char)sourceRef;
+                    result = (char)source[0];
                 }
             }
 

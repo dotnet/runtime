@@ -1126,7 +1126,7 @@ SplitName::CdStartField(_In_opt_ PCWSTR fullName,
             status = E_INVALIDARG;
             goto Fail;
         }
-         
+
         if (typeToken == mdTypeDefNil)
         {
             if (!split->FindType(mod->GetMDImport()))
@@ -5295,50 +5295,14 @@ ClrDataAccess::GetFullMethodName(
 }
 
 PCSTR
-ClrDataAccess::GetJitHelperName(
-    IN TADDR address,
-    IN bool dynamicHelpersOnly /*=false*/
-    )
+ClrDataAccess::GetJitHelperName(IN TADDR address)
 {
-    const static PCSTR s_rgHelperNames[] = {
-#define JITHELPER(code,fn,sig) #code,
-#include <jithelpers.h>
-    };
-    static_assert(ARRAY_SIZE(s_rgHelperNames) == CORINFO_HELP_COUNT);
-
-#ifdef TARGET_UNIX
-    if (!dynamicHelpersOnly)
-#else
-    if (!dynamicHelpersOnly && g_runtimeLoadedBaseAddress <= address &&
-            address < g_runtimeLoadedBaseAddress + g_runtimeVirtualSize)
-#endif // TARGET_UNIX
+    PCODE pCode = PINSTRToPCODE(address);
+    for (unsigned i = 0; i < g_auxiliarySymbolCount; i++)
     {
-        // Read the whole table from the target in one shot for better performance
-        VMHELPDEF * pTable = static_cast<VMHELPDEF *>(
-            PTR_READ(dac_cast<TADDR>(&hlpFuncTable), CORINFO_HELP_COUNT * sizeof(VMHELPDEF)));
-
-        for (int i = 0; i < CORINFO_HELP_COUNT; i++)
+        if (pCode == hlpAuxiliarySymbolTable[i].pfnAuxiliarySymbol)
         {
-            if (address == pTable[i].pfnHelper)
-                return s_rgHelperNames[i];
-        }
-    }
-
-    // Check if its a dynamically generated JIT helper
-    const static CorInfoHelpFunc s_rgDynamicHCallIds[] = {
-#define DYNAMICJITHELPER(code, fn, binderId) code,
-#define JITHELPER(code, fn, binderId)
-#include <jithelpers.h>
-    };
-
-    // Read the whole table from the target in one shot for better performance
-    VMHELPDEF * pDynamicTable = static_cast<VMHELPDEF *>(
-        PTR_READ(dac_cast<TADDR>(&hlpDynamicFuncTable), DYNAMIC_CORINFO_HELP_COUNT * sizeof(VMHELPDEF)));
-    for (unsigned d = 0; d < DYNAMIC_CORINFO_HELP_COUNT; d++)
-    {
-        if (address == pDynamicTable[d].pfnHelper)
-        {
-            return s_rgHelperNames[s_rgDynamicHCallIds[d]];
+            return hlpAuxiliarySymbolTable[i].name;
         }
     }
 
@@ -5461,7 +5425,7 @@ ClrDataAccess::RawGetMethodName(
     MethodDesc* methodDesc = NULL;
 
     {
-        EECodeInfo codeInfo(GetInterpreterCodeFromInterpreterPrecodeIfPresent(TO_TADDR(address)));
+        EECodeInfo codeInfo(GetInterpreterCodeFromEntryPointIfPresent(TO_TADDR(address)));
         if (codeInfo.IsValid())
         {
             if (displacement)
@@ -5528,29 +5492,6 @@ ClrDataAccess::RawGetMethodName(
                 EX_END_CATCH
             }
         }
-#ifdef FEATURE_DYNAMIC_CODE_COMPILED
-        else
-        if (pStubManager == JumpStubStubManager::g_pManager)
-        {
-            PCODE pTarget = decodeBackToBackJump(TO_TADDR(address));
-
-            HRESULT hr = GetRuntimeNameByAddress(pTarget, flags, bufLen, symbolLen, symbolBuf, NULL);
-            if (SUCCEEDED(hr))
-            {
-                return hr;
-            }
-
-            PCSTR pHelperName = GetJitHelperName(pTarget);
-            if (pHelperName != NULL)
-            {
-                hr = ConvertUtf8(pHelperName, bufLen, symbolLen, symbolBuf);
-                if (FAILED(hr))
-                    return S_FALSE;
-
-                return hr;
-            }
-        }
-#endif // FEATURE_DYNAMIC_CODE_COMPILED
 
         LPCWSTR wszStubManagerName = pStubManager->GetStubManagerName(TO_TADDR(address));
         _ASSERTE(wszStubManagerName != NULL);
@@ -5565,7 +5506,7 @@ ClrDataAccess::RawGetMethodName(
 
     // Do not waste time looking up name for static helper. Debugger can get the actual name from .pdb.
     PCSTR pHelperName;
-    pHelperName = GetJitHelperName(TO_TADDR(address), true /* dynamicHelpersOnly */);
+    pHelperName = GetJitHelperName(TO_TADDR(address));
     if (pHelperName != NULL)
     {
         if (displacement)
@@ -5664,11 +5605,11 @@ ClrDataAccess::GetMethodVarInfo(MethodDesc* methodDesc,
         {
             return E_INVALIDARG;
         }
-        nativeCodeStartAddr = PCODEToPINSTR(GetInterpreterCodeFromInterpreterPrecodeIfPresent(requestedNativeCodeVersion.GetNativeCode()));
+        nativeCodeStartAddr = PCODEToPINSTR(GetInterpreterCodeFromEntryPointIfPresent(requestedNativeCodeVersion.GetNativeCode()));
     }
     else
     {
-        nativeCodeStartAddr = PCODEToPINSTR(GetInterpreterCodeFromInterpreterPrecodeIfPresent(methodDesc->GetNativeCode()));
+        nativeCodeStartAddr = PCODEToPINSTR(GetInterpreterCodeFromEntryPointIfPresent(methodDesc->GetNativeCode()));
     }
 
     DebugInfoRequest request;
@@ -5723,11 +5664,11 @@ ClrDataAccess::GetMethodNativeMap(MethodDesc* methodDesc,
         {
             return E_INVALIDARG;
         }
-        nativeCodeStartAddr = PCODEToPINSTR(GetInterpreterCodeFromInterpreterPrecodeIfPresent(requestedNativeCodeVersion.GetNativeCode()));
+        nativeCodeStartAddr = PCODEToPINSTR(GetInterpreterCodeFromEntryPointIfPresent(requestedNativeCodeVersion.GetNativeCode()));
     }
     else
     {
-        nativeCodeStartAddr = PCODEToPINSTR(GetInterpreterCodeFromInterpreterPrecodeIfPresent(methodDesc->GetNativeCode()));
+        nativeCodeStartAddr = PCODEToPINSTR(GetInterpreterCodeFromEntryPointIfPresent(methodDesc->GetNativeCode()));
     }
 
     DebugInfoRequest request;
@@ -6078,7 +6019,7 @@ ClrDataAccess::GetHostJitNotificationTable()
     if (m_jitNotificationTable == NULL)
     {
         m_jitNotificationTable =
-            JITNotifications::InitializeNotificationTable(1000);
+            JITNotifications::InitializeNotificationTable(JIT_NOTIFICATION_TABLE_SIZE);
     }
 
     return m_jitNotificationTable;
@@ -6687,7 +6628,7 @@ CLRDataCreateInstance(REFIID iid,
 #endif
 
     // TODO: [cdac] Remove when cDAC deploys with SOS - https://github.com/dotnet/runtime/issues/108720
-    NonVMComHolder<IUnknown> cdacInterface = nullptr;
+    ReleaseHolder<IUnknown> cdacInterface = nullptr;
 #ifdef CAN_USE_CDAC
     CLRConfigNoCache enable = CLRConfigNoCache::Get("ENABLE_CDAC");
     if (enable.IsSet())
@@ -6703,7 +6644,7 @@ CLRDataCreateInstance(REFIID iid,
                 HRESULT qiRes = pClrDataAccess->QueryInterface(IID_IUnknown, (void**)&thisImpl);
                 _ASSERTE(SUCCEEDED(qiRes));
                 CDAC& cdac = pClrDataAccess->m_cdac;
-                cdac = CDAC::Create(contractDescriptorAddr, pClrDataAccess->m_pMutableTarget, thisImpl);
+                cdac = CDAC::Create(contractDescriptorAddr, pClrDataAccess->m_pTarget, thisImpl);
                 if (cdac.IsValid())
                 {
                     // Get SOS interfaces from the cDAC if available.

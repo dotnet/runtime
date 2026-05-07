@@ -62,6 +62,15 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
         RangeList = 0x04,
     }
 
+    // Mirrors the native CodeHeap::CodeHeapType enum in codeman.h.
+    // Used to interpret the raw byte stored in the target process.
+    private enum CodeHeapType : byte
+    {
+        LoaderCodeHeap  = 0,
+        HostCodeHeap    = 1,
+        UnknownCodeHeap = 0xff,
+    }
+
     private enum ExceptionClauseFlags_1 : uint
     {
         Filter = 0x1,
@@ -298,6 +307,36 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
         }
         return TargetPointer.Null;
     }
+
+    bool IExecutionManager.IsFunclet(CodeBlockHandle codeInfoHandle)
+    {
+        return ((IExecutionManager)this).GetStartAddress(codeInfoHandle) !=
+               ((IExecutionManager)this).GetFuncletStartAddress(codeInfoHandle);
+    }
+
+    bool IExecutionManager.IsFilterFunclet(CodeBlockHandle codeInfoHandle)
+    {
+        if (!_codeInfos.TryGetValue(codeInfoHandle.Address, out CodeBlock? info))
+            throw new InvalidOperationException($"{nameof(CodeBlock)} not found for {codeInfoHandle.Address}");
+
+        IExecutionManager eman = this;
+
+        if (!eman.IsFunclet(codeInfoHandle))
+            return false;
+
+        TargetPointer funcletStartAddress = eman.GetFuncletStartAddress(codeInfoHandle).AsTargetPointer;
+        uint funcletStartOffset = (uint)(funcletStartAddress - info.StartAddress);
+
+        List<ExceptionClauseInfo> clauses = eman.GetExceptionClauses(codeInfoHandle);
+        foreach (ExceptionClauseInfo clause in clauses)
+        {
+            if (clause.ClauseType == ExceptionClauseInfo.ExceptionClauseFlags.Filter && clause.FilterOffset == funcletStartOffset)
+                return true;
+        }
+
+        return false;
+    }
+
     TargetPointer IExecutionManager.GetUnwindInfo(CodeBlockHandle codeInfoHandle)
     {
         RangeSection range = RangeSectionFromCodeBlockHandle(codeInfoHandle);
@@ -351,6 +390,19 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
         return info.RelativeOffset;
     }
 
+    TargetPointer IExecutionManager.FindReadyToRunModule(TargetPointer address)
+    {
+        // Use the range section map to find the RangeSection containing the address.
+        // The R2R range section covers the entire PE image (code + data), so this
+        // works for import section addresses used by FindGCRefMap.
+        TargetCodePointer codeAddr = CodePointerUtils.CodePointerFromAddress(address, _target);
+        RangeSection range = RangeSection.Find(_target, _topRangeSectionMap, _rangeSectionMapLookup, codeAddr);
+        if (range.Data is null)
+            return TargetPointer.Null;
+
+        return range.Data.R2RModule;
+    }
+
     JitManagerInfo IExecutionManager.GetEEJitManagerInfo()
     {
         TargetPointer eeJitManagerPtr = _target.ReadGlobalPointer(Constants.Globals.EEJitManagerAddress);
@@ -364,6 +416,32 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
             CodeType = 0, // miManaged | miIL
             HeapListAddress = jitManager.AllCodeHeaps,
         };
+    }
+
+    private ICodeHeapInfo GetCodeHeapInfo(TargetPointer codeHeapAddress)
+    {
+        Data.CodeHeap codeHeap = _target.ProcessedData.GetOrAdd<Data.CodeHeap>(codeHeapAddress);
+        return (CodeHeapType)codeHeap.HeapType switch
+        {
+            CodeHeapType.LoaderCodeHeap => new Contracts.LoaderCodeHeapInfo(codeHeapAddress,
+                _target.ProcessedData.GetOrAdd<Data.LoaderCodeHeap>(codeHeapAddress).LoaderHeap),
+            CodeHeapType.HostCodeHeap => new Contracts.HostCodeHeapInfo(codeHeapAddress,
+                _target.ProcessedData.GetOrAdd<Data.HostCodeHeap>(codeHeapAddress).BaseAddress,
+                _target.ProcessedData.GetOrAdd<Data.HostCodeHeap>(codeHeapAddress).CurrentAddress),
+            _ => new Contracts.UnknownCodeHeapInfo(),
+        };
+    }
+
+    IEnumerable<ICodeHeapInfo> IExecutionManager.GetCodeHeapInfos()
+    {
+        TargetPointer heapListAddress = ((IExecutionManager)this).GetEEJitManagerInfo().HeapListAddress;
+        TargetPointer nodeAddr = heapListAddress;
+        while (nodeAddr != TargetPointer.Null)
+        {
+            Data.CodeHeapListNode node = _target.ProcessedData.GetOrAdd<Data.CodeHeapListNode>(nodeAddr);
+            yield return GetCodeHeapInfo(node.Heap);
+            nodeAddr = node.Next;
+        }
     }
 
     private RangeSection RangeSectionFromCodeBlockHandle(CodeBlockHandle codeInfoHandle)

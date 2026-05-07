@@ -119,7 +119,7 @@ The .NET Foundation licenses this file to you under the MIT license.
   </ItemDefinitionGroup>
 
   <!-- The properties below need to be defined only after we've found the correct runtime package reference -->
-  <Target Name="SetupProperties" DependsOnTargets="$(IlcSetupPropertiesDependsOn)" BeforeTargets="Publish">
+  <Target Name="SetupProperties" DependsOnTargets="$(IlcSetupPropertiesDependsOn)">
     <ItemGroup>
       <_NETCoreAppFrameworkReference Include="@(ResolvedFrameworkReference)" Condition="'%(ResolvedFrameworkReference.RuntimePackName)' == 'Microsoft.NETCore.App.Runtime.NativeAOT.$(RuntimeIdentifier)'" />
     </ItemGroup>
@@ -156,7 +156,7 @@ The .NET Foundation licenses this file to you under the MIT license.
     </ItemGroup>
   </Target>
 
-  <Target Name="ComputeIlcCompileInputs" DependsOnTargets="$(IlcDynamicBuildPropertyDependencies)" BeforeTargets="Publish">
+  <Target Name="ComputeIlcCompileInputs" DependsOnTargets="$(IlcDynamicBuildPropertyDependencies)">
     <ItemGroup>
       <ManagedBinary Condition="$(BuildingFrameworkLibrary) != 'true'" Include="@(IntermediateAssembly)" />
       <IlcCompileInput Include="@(ManagedBinary)" />
@@ -236,6 +236,8 @@ The .NET Foundation licenses this file to you under the MIT license.
       <IlcArg Condition="'$(ExportsFile)' != ''" Include="--exportsfile:$(ExportsFile)" />
       <IlcArg Condition="'$(_targetOS)' == 'win' and '$(DebuggerSupport)' != 'false'" Include="--export-dynamic-symbol:DotNetRuntimeDebugHeader,DATA" />
       <IlcArg Condition="'$(_targetOS)' != 'win' and '$(DebuggerSupport)' != 'false'" Include="--export-dynamic-symbol:DotNetRuntimeDebugHeader" />
+      <IlcArg Condition="'$(_targetOS)' == 'win' and '$(DebuggerSupport)' != 'false'" Include="--export-dynamic-symbol:DotNetRuntimeContractDescriptor,DATA" />
+      <IlcArg Condition="'$(_targetOS)' != 'win' and '$(_targetOS)' != 'browser' and '$(DebuggerSupport)' != 'false'" Include="--export-dynamic-symbol:DotNetRuntimeContractDescriptor" />
       <IlcArg Condition="'$(_targetOS)' == 'freebsd' and '$(IsNativeExecutable)' == 'true'" Include="--export-dynamic-symbol:__progname;--export-dynamic-symbol:environ" />
       <IlcArg Condition="'$(IlcExportUnmanagedEntrypoints)' == 'true'" Include="--export-unmanaged-entrypoints" />
       <IlcArg Include="@(AutoInitializedAssemblies->'--initassembly:%(Identity)')" />
@@ -392,6 +394,7 @@ The .NET Foundation licenses this file to you under the MIT license.
       Command="&quot;$(ObjCopyName)&quot; --add-gnu-debuglink=&quot;$(NativeBinary)$(NativeSymbolExt)&quot; &quot;$(NativeBinary)&quot;" />
 
     <Exec Condition="'$(StripSymbols)' == 'true' and '$(_IsApplePlatform)' == 'true' and '$(NativeLib)' != 'Static'"
+      IgnoreStandardErrorWarningFormat="true"
       Command="
         dsymutil $(DsymUtilOptions) &quot;$(NativeBinary)&quot; &amp;&amp;
         strip -no_code_signature_warning -x &quot;$(NativeBinary)&quot;" />

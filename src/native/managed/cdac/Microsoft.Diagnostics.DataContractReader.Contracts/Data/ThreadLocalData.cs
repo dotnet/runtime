@@ -11,11 +11,11 @@ internal sealed class ThreadLocalData : IData<ThreadLocalData>
     public ThreadLocalData(Target target, TargetPointer address)
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.ThreadLocalData);
-        CollectibleTlsArrayData = target.ReadPointer(address + (ulong)type.Fields[nameof(CollectibleTlsArrayData)].Offset);
-        NonCollectibleTlsArrayData = target.ReadPointer(address + (ulong)type.Fields[nameof(NonCollectibleTlsArrayData)].Offset);
-        CollectibleTlsDataCount = target.Read<int>(address + (ulong)type.Fields[nameof(CollectibleTlsDataCount)].Offset);
-        NonCollectibleTlsDataCount = target.Read<int>(address + (ulong)type.Fields[nameof(NonCollectibleTlsDataCount)].Offset);
-        InFlightData = target.ReadPointer(address + (ulong)type.Fields[nameof(InFlightData)].Offset);
+        CollectibleTlsArrayData = target.ReadPointerField(address, type, nameof(CollectibleTlsArrayData));
+        NonCollectibleTlsArrayData = target.ReadPointerField(address, type, nameof(NonCollectibleTlsArrayData));
+        CollectibleTlsDataCount = target.ReadField<int>(address, type, nameof(CollectibleTlsDataCount));
+        NonCollectibleTlsDataCount = target.ReadField<int>(address, type, nameof(NonCollectibleTlsDataCount));
+        InFlightData = target.ReadPointerField(address, type, nameof(InFlightData));
     }
     public TargetPointer CollectibleTlsArrayData { get; init; }
     public TargetPointer NonCollectibleTlsArrayData { get; init; }

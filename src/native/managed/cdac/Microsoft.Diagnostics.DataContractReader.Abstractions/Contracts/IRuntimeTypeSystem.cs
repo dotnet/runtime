@@ -78,6 +78,18 @@ public enum ArrayFunctionType
     Constructor = 3
 }
 
+public enum OptimizationTier : uint
+{
+    OptimizationTierUnknown,
+    OptimizationTier0,
+    OptimizationTier1,
+    OptimizationTier1OSR,
+    OptimizationTierOptimized,
+    OptimizationTier0Instrumented,
+    OptimizationTier1Instrumented,
+}
+
+
 public interface IRuntimeTypeSystem : IContract
 {
     static string IContract.Name => nameof(RuntimeTypeSystem);
@@ -105,8 +117,16 @@ public interface IRuntimeTypeSystem : IContract
     bool IsString(TypeHandle typeHandle) => throw new NotImplementedException();
     // True if the MethodTable represents a type that contains managed references
     bool ContainsGCPointers(TypeHandle typeHandle) => throw new NotImplementedException();
+    // True if the type requires 8-byte alignment on platforms that don't 8-byte align by default (FEATURE_64BIT_ALIGNMENT)
+    bool RequiresAlign8(TypeHandle typeHandle) => throw new NotImplementedException();
     // True if the MethodTable represents a continuation type used by the async continuation feature
     bool IsContinuation(TypeHandle typeHandle) => throw new NotImplementedException();
+    /// <summary>
+    /// Enumerates GC pointer runs from the CGCDesc stored before the method table.
+    /// Returns (offset, size) pairs normalized to actual byte lengths.
+    /// See RuntimeTypeSystem.md for the full GCDesc format documentation.
+    /// </summary>
+    IEnumerable<(uint Offset, uint Size)> GetGCDescSeries(TypeHandle typeHandle, uint numComponents = 0) => throw new NotImplementedException();
     bool IsDynamicStatics(TypeHandle typeHandle) => throw new NotImplementedException();
     ushort GetNumInterfaces(TypeHandle typeHandle) => throw new NotImplementedException();
 
@@ -121,6 +141,8 @@ public interface IRuntimeTypeSystem : IContract
     ushort GetNumStaticFields(TypeHandle typeHandle) => throw new NotImplementedException();
     ushort GetNumThreadStaticFields(TypeHandle typeHandle) => throw new NotImplementedException();
     TargetPointer GetFieldDescList(TypeHandle typeHandle) => throw new NotImplementedException();
+    // True if the MethodTable represents a type tracked as an Objective-C reference type with a finalizer
+    bool IsTrackedReferenceWithFinalizer(TypeHandle typeHandle) => throw new NotImplementedException();
     TargetPointer GetGCStaticsBasePointer(TypeHandle typeHandle) => throw new NotImplementedException();
     TargetPointer GetNonGCStaticsBasePointer(TypeHandle typeHandle) => throw new NotImplementedException();
     TargetPointer GetGCThreadStaticsBasePointer(TypeHandle typeHandle, TargetPointer threadPtr) => throw new NotImplementedException();
@@ -131,6 +153,7 @@ public interface IRuntimeTypeSystem : IContract
     public bool IsClassInited(TypeHandle typeHandle) => throw new NotImplementedException();
     public bool IsInitError(TypeHandle typeHandle) => throw new NotImplementedException();
     bool IsGenericTypeDefinition(TypeHandle typeHandle) => throw new NotImplementedException();
+    bool ContainsGenericVariables(TypeHandle typeHandle) => throw new NotImplementedException();
     bool IsCollectible(TypeHandle typeHandle) => throw new NotImplementedException();
 
     bool HasTypeParam(TypeHandle typeHandle) => throw new NotImplementedException();
@@ -139,6 +162,7 @@ public interface IRuntimeTypeSystem : IContract
     // If this returns CorElementType.ValueType it may be a normal valuetype or a "NATIVE" valuetype used to represent an interop view on a structure
     // HasTypeParam will return true for cases where this is the interop view
     CorElementType GetSignatureCorElementType(TypeHandle typeHandle) => throw new NotImplementedException();
+    bool IsValueType(TypeHandle typeHandle) => throw new NotImplementedException();
 
     // return true if the TypeHandle represents an enum type.
     bool IsEnum(TypeHandle typeHandle) => throw new NotImplementedException();
@@ -162,6 +186,14 @@ public interface IRuntimeTypeSystem : IContract
     // Return true for an uninstantiated generic method
     bool IsGenericMethodDefinition(MethodDescHandle methodDesc) => throw new NotImplementedException();
     ReadOnlySpan<TypeHandle> GetGenericMethodInstantiation(MethodDescHandle methodDesc) => throw new NotImplementedException();
+
+    // Return true if the method requires a hidden instantiation argument (generic context parameter).
+    // This corresponds to native MethodDesc::RequiresInstArg().
+    bool RequiresInstArg(MethodDescHandle methodDesc) => throw new NotImplementedException();
+
+    // Return true if the method uses the async calling convention (CORINFO_CALLCONV_ASYNCCALL).
+    // This corresponds to native MethodDesc::IsAsyncMethod().
+    bool IsAsyncMethod(MethodDescHandle methodDesc) => throw new NotImplementedException();
 
     // Return mdtMethodDef (0x06000000) if the method doesn't have a token, otherwise return the token of the method
     uint GetMethodToken(MethodDescHandle methodDesc) => throw new NotImplementedException();
@@ -207,6 +239,13 @@ public interface IRuntimeTypeSystem : IContract
     TargetPointer GetAddressOfNativeCodeSlot(MethodDescHandle methodDesc) => throw new NotImplementedException();
 
     TargetPointer GetGCStressCodeCopy(MethodDescHandle methodDesc) => throw new NotImplementedException();
+
+    OptimizationTier GetMethodDescOptimizationTier(MethodDescHandle methodDescHandle) => throw new NotImplementedException();
+    bool IsEligibleForTieredCompilation(MethodDescHandle methodDescHandle) => throw new NotImplementedException();
+
+    bool IsAsyncThunkMethod(MethodDescHandle methodDesc) => throw new NotImplementedException();
+
+    bool IsWrapperStub(MethodDescHandle methodDesc) => throw new NotImplementedException();
     #endregion MethodDesc inspection APIs
     #region FieldDesc inspection APIs
     TargetPointer GetMTOfEnclosingClass(TargetPointer fieldDescPointer) => throw new NotImplementedException();
@@ -217,6 +256,7 @@ public interface IRuntimeTypeSystem : IContract
     uint GetFieldDescOffset(TargetPointer fieldDescPointer, FieldDefinition fieldDef) => throw new NotImplementedException();
     TargetPointer GetFieldDescByName(TypeHandle typeHandle, string fieldName) => throw new NotImplementedException();
     TargetPointer GetFieldDescStaticAddress(TargetPointer fieldDescPointer) => throw new NotImplementedException();
+    TargetPointer GetFieldDescThreadStaticAddress(TargetPointer fieldDescPointer, TargetPointer thread) => throw new NotImplementedException();
     #endregion FieldDesc inspection APIs
     #region Other APIs
     void GetCoreLibFieldDescAndDef(string typeNamespace, string typeName, string fieldName, out TargetPointer fieldDescAddr, out FieldDefinition fieldDef) => throw new NotImplementedException();

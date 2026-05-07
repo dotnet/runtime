@@ -55,13 +55,6 @@ method or field of the class. 'beforeFieldInit' semantics guarantees only that t
 time before the first static field access (note that calling methods (static or instance) or accessing
 instance fields does not cause .cctors to be run).
 
-Next you need to know that there are two kinds of code generation that can happen in the JIT: appdomain
-neutral and appdomain specialized. The difference between these two kinds of code is how statics are handled.
-For appdomain specific code, the address of a particular static variable is embedded in the code. This makes
-it usable only for one appdomain (since every appdomain gets a own copy of its statics). Appdomain neutral
-code calls a helper that looks up static variables off of a thread local variable. Thus the same code can be
-used by multiple appdomains in the same process.
-
 Generics also introduce a similar issue. Code for generic classes might be specialized for a particular set
 of type arguments, or it could use helpers to access data that depends on type parameters and thus be shared
 across several instantiations of the generic type.
@@ -924,8 +917,12 @@ enum class CorInfoReloc
                                            //  e.g. directly loading from or storing to a C++ global.
     WASM_MEMORY_ADDR_SLEB,               // Wasm: a linear memory index encoded as a 5-byte varint32. Used for the immediate argument of a i32.const instruction,
                                            //  e.g. taking the address of a C++ global.
+    WASM_MEMORY_ADDR_REL_SLEB,          // Wasm: a relative linear memory index encoded as a 5-byte varint32. Used as the immediate argument of an i32.const instruction,
+                                           // e.g. in R2R scenarios as an offset from __image_base
     WASM_TYPE_INDEX_LEB,                 // Wasm: a type index encoded as a 5-byte varuint32, e.g. the type immediate in a call_indirect.
     WASM_GLOBAL_INDEX_LEB,               // Wasm: a global index encoded as a 5-byte varuint32, e.g. the index immediate in a get_global.
+    WASM_MEMORY_ADDR_REL_LEB,            // Wasm: a relative linear memory index encoded as a 5-byte varuint32. Used as the immediate argument of a load or store instruction,
+                                           // e.g. in R2R scenarios as an offset from __image_base
 };
 
 enum CorInfoGCType
@@ -1806,18 +1803,21 @@ enum CorInfoContinuationFlags
     // If the encoded index is 0, it means no such member is present.
     // Otherwise the exact offset of the member is computed as
     //   OFFSETOF__CORINFO_Continuation__data + (index - 1) * PointerSize
-    //
-    CORINFO_CONTINUATION_EXCEPTION_INDEX_FIRST_BIT = 3,
-    CORINFO_CONTINUATION_EXCEPTION_INDEX_NUM_BITS = 2,
+
+    CORINFO_CONTINUATION_EXECUTION_CONTEXT_INDEX_FIRST_BIT = 3,
+    CORINFO_CONTINUATION_EXECUTION_CONTEXT_INDEX_NUM_BITS = 2,
 
     CORINFO_CONTINUATION_CONTEXT_INDEX_FIRST_BIT = 5,
     CORINFO_CONTINUATION_CONTEXT_INDEX_NUM_BITS = 2,
 
+    CORINFO_CONTINUATION_EXCEPTION_INDEX_FIRST_BIT = 7,
+    CORINFO_CONTINUATION_EXCEPTION_INDEX_NUM_BITS = 3,
+
     // For JIT, the continuation stores space for every possible type of
     // async callee's result. We need to represent the offset to each of
     // these, so we allocate the rest of the bits for this.
-    CORINFO_CONTINUATION_RESULT_INDEX_FIRST_BIT = 7,
-    CORINFO_CONTINUATION_RESULT_INDEX_NUM_BITS = 25,
+    CORINFO_CONTINUATION_RESULT_INDEX_FIRST_BIT = 10,
+    CORINFO_CONTINUATION_RESULT_INDEX_NUM_BITS = 22,
 };
 
 struct CORINFO_ASYNC_INFO
@@ -1834,8 +1834,6 @@ struct CORINFO_ASYNC_INFO
     CORINFO_FIELD_HANDLE continuationFlagsFldHnd;
     // Method handle for AsyncHelpers.CaptureExecutionContext, used during suspension
     CORINFO_METHOD_HANDLE captureExecutionContextMethHnd;
-    // Method handle for AsyncHelpers.RestoreExecutionContext, used during resumption
-    CORINFO_METHOD_HANDLE restoreExecutionContextMethHnd;
     // Method handle for AsyncHelpers.CaptureContinuationContext, used during suspension
     CORINFO_METHOD_HANDLE captureContinuationContextMethHnd;
     // Method handle for AsyncHelpers.CaptureContexts, used at the beginning of async methods
@@ -1844,6 +1842,10 @@ struct CORINFO_ASYNC_INFO
     CORINFO_METHOD_HANDLE restoreContextsMethHnd;
     // Method handle for AsyncHelpers.RestoreContextsOnSuspension, used before suspending in async methods
     CORINFO_METHOD_HANDLE restoreContextsOnSuspensionMethHnd;
+    // Finish suspension without saving continuation context (i.e. custom awaiter or ConfigureAwait(false))
+    CORINFO_METHOD_HANDLE finishSuspensionNoContinuationContextMethHnd;
+    // Finish suspension with saving continuation context (i.e. normal task await)
+    CORINFO_METHOD_HANDLE finishSuspensionWithContinuationContextMethHnd;
 };
 
 // Flags passed from JIT to runtime.

@@ -494,7 +494,9 @@
     <Compile Include="Compiler\DependencyAnalysis\TrimmingDescriptorNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\VariantInterfaceMethodUseNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\CustomAttributeBasedDependencyAlgorithm.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\EventMetadataNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\FieldMetadataNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\PropertyMetadataNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ILScanNodeFactory.cs" />
     <Compile Include="Compiler\DictionaryLayoutProvider.cs" />
     <Compile Include="Compiler\Disassembler.cs" />
@@ -503,7 +505,8 @@
     <Compile Include="Compiler\DependencyAnalysis\ImportedNodeProvider.cs" />
     <Compile Include="Compiler\ExpectedIsaFeaturesRootProvider.cs" />
     <Compile Include="Compiler\ExternSymbolMappedField.cs" />
-    <Compile Include="Compiler\ObjectDataInterner.cs" />
+    <Compile Include="Compiler\MethodBodyDeduplicator.cs" />
+    <Compile Include="..\..\Common\Compiler\ObjectDataInterner.cs" Link="Compiler\ObjectDataInterner.cs" />
     <Compile Include="Compiler\ReachabilityInstrumentationFilter.cs" />
     <Compile Include="Compiler\ReachabilityInstrumentationProvider.cs" />
     <Compile Include="Compiler\SourceLinkWriter.cs" />
@@ -595,6 +598,7 @@
     <Compile Include="Compiler\DependencyAnalysis\TypeManagerIndirectionNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\TlsRootNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\BlobNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ManagedDataDescriptorNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\EETypeNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\CanonicalDefinitionEETypeNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ExternSymbolNode.cs" />
@@ -688,6 +692,7 @@
     <Compile Include="Compiler\RootingHelpers.cs" />
     <Compile Include="Compiler\RootingServiceProvider.cs" />
     <Compile Include="Compiler\RuntimeConfigurationRootProvider.cs" />
+    <Compile Include="Compiler\ManagedDataDescriptorProvider.cs" />
     <Compile Include="Compiler\SingleFileCompilationModuleGroup.cs" />
     <Compile Include="Compiler\SingleMethodCompilationModuleGroup.cs" />
     <Compile Include="Compiler\ILAssemblyGeneratingMethodDebugInfoProvider.cs" />

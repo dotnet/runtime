@@ -122,6 +122,19 @@ namespace System
             return Enum.InternalGetUnderlyingType(this);
         }
 
+        public override Type? GetNullableUnderlyingType()
+        {
+            MethodTable* pEEType = _pUnderlyingEEType;
+            if (pEEType != null)
+            {
+                if (!pEEType->IsNullable)
+                    return null;
+                if (!pEEType->IsGenericTypeDefinition)
+                    return GetTypeFromMethodTable(pEEType->NullableType);
+            }
+            return GetRuntimeTypeInfo().GetNullableUnderlyingType();
+        }
+
         public override bool IsEnumDefined(object value)
         {
             ArgumentNullException.ThrowIfNull(value);

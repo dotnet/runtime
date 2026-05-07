@@ -7,7 +7,8 @@
 #pragma hdrstop
 #endif
 
-#include "lower.h" // for LowerRange()
+#include "lower.h"            // for LowerRange()
+#include "jitstd/algorithm.h" // for sort()
 
 // Flowgraph Miscellany
 
@@ -615,7 +616,7 @@ bool Compiler::fgIsThrow(GenTree* tree)
         return false;
     }
     GenTreeCall* call = tree->AsCall();
-    if (call->IsHelperCall() && s_helperCallProperties.AlwaysThrow(eeGetHelperNum(call->gtCallMethHnd)))
+    if (call->IsHelperCall() && s_helperCallProperties.AlwaysThrow(call->GetHelperNum()))
     {
         assert(call->IsNoReturn());
         noway_assert(call->gtFlags & GTF_EXCEPT);
@@ -859,6 +860,11 @@ void Compiler::fgSetPreferredInitCctor()
 //
 GenTreeCall* Compiler::fgGetSharedCCtor(CORINFO_CLASS_HANDLE cls)
 {
+#if defined(TARGET_WASM)
+    // Wasm does not support dynamically created helpers
+    return fgGetStaticsCCtorHelper(cls, CORINFO_HELP_INITCLASS);
+#endif
+
 #ifdef FEATURE_READYTORUN
     if (IsAot())
     {
@@ -1044,7 +1050,7 @@ GenTree* Compiler::fgOptimizeDelegateConstructor(GenTreeCall*            call,
         fptrValTree->gtFptrDelegateTarget = true;
         targetMethodHnd                   = fptrValTree->gtFptrMethod;
     }
-    else if (oper == GT_CALL && targetMethod->AsCall()->gtCallMethHnd == eeFindHelper(CORINFO_HELP_VIRTUAL_FUNC_PTR))
+    else if (oper == GT_CALL && targetMethod->AsCall()->IsHelperCall(CORINFO_HELP_VIRTUAL_FUNC_PTR))
     {
         assert(targetMethod->AsCall()->gtArgs.CountArgs() == 3);
         GenTree* handleNode = targetMethod->AsCall()->gtArgs.GetArgByIndex(2)->GetNode();
@@ -1104,10 +1110,6 @@ GenTree* Compiler::fgOptimizeDelegateConstructor(GenTreeCall*            call,
 
         targetMethodHnd = ldftnToken->m_token.hMethod;
     }
-    else
-    {
-        assert(targetMethodHnd == nullptr);
-    }
 
 #ifdef FEATURE_READYTORUN
     if (IsAot())
@@ -1161,7 +1163,7 @@ GenTree* Compiler::fgOptimizeDelegateConstructor(GenTreeCall*            call,
 #ifndef TARGET_WASM // TODO-WASM: Wasm doesn't use the dynamically composed helpers yet. When we do, we probably will
                     // need to use a different set of arguments to construct the right helper call to avoid dynamically
                     // composing a helper
-        else if (oper == GT_FTN_ADDR)
+        else if ((oper == GT_FTN_ADDR) && (ldftnToken != nullptr))
         {
             JITDUMP("optimized\n");
 
@@ -1338,12 +1340,8 @@ bool Compiler::fgCastRequiresHelper(var_types fromType, var_types toType, bool o
     }
 
 #if defined(TARGET_X86) || defined(TARGET_ARM)
-    if (varTypeIsFloating(fromType) && varTypeIsLong(toType))
-    {
-        return true;
-    }
-
-    if (varTypeIsLong(fromType) && varTypeIsFloating(toType))
+    if ((varTypeIsLong(fromType) && varTypeIsFloating(toType)) ||
+        (varTypeIsFloating(fromType) && varTypeIsLong(toType)))
     {
 #if defined(TARGET_X86)
         return !compOpportunisticallyDependsOn(InstructionSet_AVX512);
@@ -3135,10 +3133,6 @@ PhaseStatus Compiler::fgCreateFunclets()
 {
     assert(!fgFuncletsCreated);
 
-    fgCreateFuncletPrologBlocks();
-
-    unsigned           XTnum;
-    EHblkDsc*          HBtab;
     const unsigned int funcCnt = ehFuncletCount() + 1;
 
     if (!FitsIn<unsigned short>(funcCnt))
@@ -3148,49 +3142,103 @@ PhaseStatus Compiler::fgCreateFunclets()
 
     FuncInfoDsc* funcInfo = new (this, CMK_BasicBlock) FuncInfoDsc[funcCnt];
 
-    unsigned short funcIdx;
-
     // Setup the root FuncInfoDsc and prepare to start associating
     // FuncInfoDsc's with their corresponding EH region
     memset((void*)funcInfo, 0, funcCnt * sizeof(FuncInfoDsc));
-    assert(funcInfo[0].funKind == FUNC_ROOT);
-    funcIdx = 1;
-
-    // Because we iterate from the top to the bottom of the compHndBBtab array, we are iterating
-    // from most nested (innermost) to least nested (outermost) EH region. It would be reasonable
-    // to iterate in the opposite order, but the order of funclets shouldn't matter.
-    //
-    // We move every handler region to the end of the function: each handler will become a funclet.
-    //
-    // Note that fgRelocateEHRange() can add new entries to the EH table. However, they will always
-    // be added *after* the current index, so our iteration here is not invalidated.
-    // It *can* invalidate the compHndBBtab pointer itself, though, if it gets reallocated!
-
-    for (XTnum = 0; XTnum < compHndBBtabCount; XTnum++)
+#if !HAS_FIXED_REGISTER_SET || defined(TARGET_WASM)
+    for (unsigned i = 0; i < funcCnt; i++)
     {
-        HBtab = ehGetDsc(XTnum); // must re-compute this every loop, since fgRelocateEHRange changes the table
-        if (HBtab->HasFilter())
+#if !HAS_FIXED_REGISTER_SET
+        funcInfo[i].funStackPointerReg = REG_NA;
+        funcInfo[i].funFramePointerReg = REG_NA;
+#endif
+#ifdef TARGET_WASM
+        funcInfo[i].funWasmLocalDecls = nullptr;
+#endif
+    }
+#endif
+    assert(funcInfo[0].funKind == FUNC_ROOT);
+
+    unsigned short* vmClauseOrderToEHTabOrder = nullptr;
+    unsigned short* ehTabOrderToVMClauseOrder = nullptr;
+    unsigned short  funcIdx                   = 1;
+
+    if (compHndBBtabCount > 0)
+    {
+        fgCreateFuncletPrologBlocks();
+
+        // We want to have the funclet order match the order of emission of EH clauses to the runtime.
+        // We cannot change the order of entries in the JIT's EH table, as there are many places
+        // in the JIT that depend on the current ordering.
+        //
+        // So, build mappings from vm order to EH table order and vice versa.
+        //
+        vmClauseOrderToEHTabOrder = new (this, CMK_BasicBlock) unsigned short[compHndBBtabCount];
+        ehTabOrderToVMClauseOrder = new (this, CMK_BasicBlock) unsigned short[compHndBBtabCount];
+
+        unsigned XTnum;
+
+        for (XTnum = 0; XTnum < compHndBBtabCount; XTnum++)
         {
-            assert(funcIdx < funcCnt);
-            funcInfo[funcIdx].funKind    = FUNC_FILTER;
-            funcInfo[funcIdx].funEHIndex = (unsigned short)XTnum;
-            funcIdx++;
+            vmClauseOrderToEHTabOrder[XTnum] = (unsigned short)XTnum;
         }
-        assert(funcIdx < funcCnt);
-        funcInfo[funcIdx].funKind    = FUNC_HANDLER;
-        funcInfo[funcIdx].funEHIndex = (unsigned short)XTnum;
-        HBtab->ebdFuncIndex          = funcIdx;
-        funcIdx++;
-        fgRelocateEHRange(XTnum, FG_RELOCATE_HANDLER);
+
+        // The JIT's ordering of EH clauses does not guarantee that clauses covering the same try region are contiguous.
+        // We need this property to hold true so the CORINFO_EH_CLAUSE_SAMETRY flag is accurate.
+        //
+        jitstd::sort(vmClauseOrderToEHTabOrder, vmClauseOrderToEHTabOrder + compHndBBtabCount,
+                     [this](const unsigned short& leftIndex, const unsigned short& rightIndex) {
+            const unsigned short leftTryIndex  = ehGetDsc(leftIndex)->ebdTryBeg->bbTryIndex;
+            const unsigned short rightTryIndex = ehGetDsc(rightIndex)->ebdTryBeg->bbTryIndex;
+
+            if (leftTryIndex == rightTryIndex)
+            {
+                // We have two clauses mapped to the same try region.
+                // Make sure we order the clause with the smaller index first.
+                return leftIndex < rightIndex;
+            }
+
+            return leftTryIndex < rightTryIndex;
+        });
+
+        // We move every handler region to the end of the function: each handler will become a funclet.
+        //
+        for (unsigned orderNum = 0; orderNum < compHndBBtabCount; orderNum++)
+        {
+            XTnum                 = vmClauseOrderToEHTabOrder[orderNum];
+            EHblkDsc* const HBtab = ehGetDsc(XTnum);
+            if (HBtab->HasFilter())
+            {
+                assert(funcIdx < funcCnt);
+                funcInfo[funcIdx].funKind    = FUNC_FILTER;
+                funcInfo[funcIdx].funEHIndex = (unsigned short)XTnum;
+                funcIdx++;
+            }
+            assert(funcIdx < funcCnt);
+            funcInfo[funcIdx].funKind    = FUNC_HANDLER;
+            funcInfo[funcIdx].funEHIndex = (unsigned short)XTnum;
+            HBtab->ebdFuncIndex          = funcIdx;
+            funcIdx++;
+            fgRelocateEHRange(XTnum, FG_RELOCATE_HANDLER);
+        }
+
+        // Fill in the inverse mapping.
+        //
+        for (unsigned i = 0; i < compHndBBtabCount; i++)
+        {
+            ehTabOrderToVMClauseOrder[vmClauseOrderToEHTabOrder[i]] = (unsigned short)i;
+        }
     }
 
     // We better have populated all of them by now
     assert(funcIdx == funcCnt);
 
     // Publish
-    compCurrFuncIdx   = 0;
-    compFuncInfos     = funcInfo;
-    compFuncInfoCount = (unsigned short)funcCnt;
+    compCurrFuncIdx               = 0;
+    compFuncInfos                 = funcInfo;
+    compFuncInfoCount             = (unsigned short)funcCnt;
+    compVMClauseOrderToEHTabOrder = vmClauseOrderToEHTabOrder;
+    compEHTabOrderToVMClauseOrder = ehTabOrderToVMClauseOrder;
 
     fgFuncletsCreated = true;
 
@@ -3600,14 +3648,6 @@ void Compiler::fgCreateThrowHelperBlock(AddCodeDsc* add)
     unsigned tryIndex = add->acdTryIndex;
     unsigned hndIndex = add->acdHndIndex;
 
-#if defined(TARGET_WASM)
-    // For wasm we put throw helpers in the main method region, or in a non-try
-    // region of a handler.
-    //
-    assert(add->acdKeyDsg != AcdKeyDesignator::KD_TRY);
-    tryIndex = 0;
-#endif
-
     BasicBlock* const newBlk = fgNewBBinRegion(jumpKinds[add->acdKind], tryIndex, hndIndex,
                                                /* nearBlk */ nullptr, putInFilter,
                                                /* runRarely */ true, /* insertAtEnd */ true);
@@ -3836,20 +3876,6 @@ unsigned Compiler::bbThrowIndex(BasicBlock* blk, AcdKeyDesignator* dsg)
 
     assert(inTry || inHnd);
 
-#if defined(TARGET_WASM)
-    // The current plan for Wasm: method regions or funclets with
-    // trys will have a single Wasm try handle all
-    // resumption from catches via virtual IPs.
-    //
-    // So we do not need to consider the nesting of the throw
-    // in try regions, just in handlers.
-    //
-    if (!inHnd)
-    {
-        *dsg = AcdKeyDesignator::KD_NONE;
-        return 0;
-    }
-#else
     if (inTry && (!inHnd || (tryIndex < hndIndex)))
     {
         // The most enclosing region is a try body, use it
@@ -3857,7 +3883,6 @@ unsigned Compiler::bbThrowIndex(BasicBlock* blk, AcdKeyDesignator* dsg)
         *dsg = AcdKeyDesignator::KD_TRY;
         return tryIndex;
     }
-#endif // !defined(TARGET_WASM)
 
     // The most enclosing region is a handler which will be a funclet
     // Now we have to figure out if blk is in the filter or handler
@@ -7552,15 +7577,19 @@ void BlockReachabilitySets::Dump()
 // FlowGraphTryRegions::FlowGraphTryRegions: Constructor for FlowGraphTryRegions.
 //
 // Arguments:
+//
 //    dfsTree    -- DFS tree for the flow graph
 //    numRegions -- Number of try regions in the method
 //
-FlowGraphTryRegions::FlowGraphTryRegions(FlowGraphDfsTree* dfsTree, unsigned numRegions)
-    : m_dfsTree(dfsTree)
-    , m_tryRegions(numRegions, nullptr, dfsTree->GetCompiler()->getAllocator(CMK_BasicBlock))
+FlowGraphTryRegions::FlowGraphTryRegions(Compiler* comp, FlowGraphDfsTree* dfsTree, unsigned numRegions)
+    : m_compiler(comp)
+    , m_dfsTree(dfsTree)
+    , m_tryRegions(numRegions, nullptr, comp->getAllocator(CMK_BasicBlock))
     , m_numRegions(0)
     , m_numTryCatchRegions(0)
     , m_tryRegionsIncludeHandlerBlocks(false)
+    , m_hasMultipleEntryTryRegions(false)
+    , m_traits((dfsTree == nullptr) ? comp->fgBBNumMax + 1 : dfsTree->GetPostOrderCount(), comp)
 {
 }
 
@@ -7603,10 +7632,12 @@ FlowGraphTryRegion::FlowGraphTryRegion(EHblkDsc* ehDsc, FlowGraphTryRegions* reg
     , m_parent(nullptr)
     , m_ehDsc(ehDsc)
     , m_blocks(BitVecOps::UninitVal())
+    , m_entryEdges(regions->GetCompiler()->getAllocator(CMK_BasicBlock))
     , m_requiresRuntimeResumption(false)
+    , m_hasSideEntry(false)
 {
-    BitVecTraits traits = regions->GetBlockBitVecTraits();
-    m_blocks            = BitVecOps::MakeEmpty(&traits);
+    BitVecTraits* const traits = regions->GetBlockBitVecTraits();
+    m_blocks                   = BitVecOps::MakeEmpty(traits);
 }
 
 //------------------------------------------------------------------------
@@ -7614,7 +7645,7 @@ FlowGraphTryRegion::FlowGraphTryRegion(EHblkDsc* ehDsc, FlowGraphTryRegions* reg
 //
 // Arguments:
 //    comp                 -- Compiler instance
-//    dfsTree              -- DFS tree for the flow graph
+//    dfsTree              -- DFS tree for the flow graph (optional, can be nullptr)
 //    includeHandlerBlocks -- include blocks in handlers inside the try
 //
 // Returns:
@@ -7626,7 +7657,7 @@ FlowGraphTryRegions* FlowGraphTryRegions::Build(Compiler* comp, FlowGraphDfsTree
     // collection if we've deleted some EH regions.
     //
     unsigned const       numTryRegions = comp->compEHID;
-    FlowGraphTryRegions* regions       = new (comp, CMK_BasicBlock) FlowGraphTryRegions(dfsTree, numTryRegions);
+    FlowGraphTryRegions* regions       = new (comp, CMK_BasicBlock) FlowGraphTryRegions(comp, dfsTree, numTryRegions);
     assert(numTryRegions >= comp->compHndBBtabCount);
 
     regions->m_tryRegionsIncludeHandlerBlocks = includeHandlerBlocks;
@@ -7661,9 +7692,7 @@ FlowGraphTryRegions* FlowGraphTryRegions::Build(Compiler* comp, FlowGraphDfsTree
         }
     }
 
-    // Collect the postorder numbers of each block in each region
-    //
-    BitVecTraits traits = regions->m_dfsTree->PostOrderTraits();
+    BitVecTraits* const traits = regions->GetBlockBitVecTraits();
 
     for (BasicBlock* block : comp->Blocks())
     {
@@ -7685,8 +7714,62 @@ FlowGraphTryRegions* FlowGraphTryRegions::Build(Compiler* comp, FlowGraphDfsTree
             //
             while (region != nullptr)
             {
-                BitVecOps::AddElemD(&traits, region->m_blocks, block->bbPostorderNum);
+                BitVecOps::AddElemD(traits, region->m_blocks, regions->GetBlockIndex(block));
+
+                // Enumerate block's pred edges to find the try entry edges.
+                //
+                for (FlowEdge* const edge : block->PredEdges())
+                {
+                    BasicBlock* const predBlock = edge->getSourceBlock();
+
+                    // Disregard catchret edges, these are modelled by
+                    // catch resumptions now.
+                    //
+                    if (predBlock->KindIs(BBJ_EHCATCHRET))
+                    {
+                        continue;
+                    }
+
+                    // Disregard edges from within the try region
+                    //
+                    if (comp->bbInTryRegions(tryIndex, predBlock))
+                    {
+                        continue;
+                    }
+
+                    // "Normal" entry edges.
+                    //
+                    if (block == dsc->ebdTryBeg)
+                    {
+                        region->AddEntryEdge(edge);
+                        continue;
+                    }
+
+                    // Async resumption and catch resumption entry edges
+                    //
+                    if (predBlock->HasAnyFlag(BBF_ASYNC_RESUMPTION | BBF_CATCH_RESUMPTION))
+                    {
+                        JITDUMP("Found %s resumption edge from " FMT_BB " to " FMT_BB "\n",
+                                predBlock->HasFlag(BBF_ASYNC_RESUMPTION) ? "async" : "catch", predBlock->bbNum,
+                                block->bbNum);
+
+                        region->AddEntryEdge(edge);
+                        region->SetHasSideEntry();
+                        regions->SetHasMultipleEntryTryRegions();
+                        continue;
+                    }
+
+                    JITDUMP("Unexpected try region entry edge from " FMT_BB " to " FMT_BB "\n", predBlock->bbNum,
+                            block->bbNum);
+                    assert(!"Unexpected try region entry edge");
+                }
+
                 region = region->m_parent;
+
+                if (region != nullptr)
+                {
+                    tryIndex = comp->ehGetIndex(region->m_ehDsc);
+                }
             }
         }
         else
@@ -7713,15 +7796,100 @@ FlowGraphTryRegions* FlowGraphTryRegions::Build(Compiler* comp, FlowGraphDfsTree
 }
 
 //------------------------------------------------------------------------
-// FlowGraphTryRegion::NumBlocks: Return the number of blocks in the try region.
+// FlowGraphTryRegions::AddMultipleEntryRegionEdges: Add temporary
+//    edges for multiple entry try regions.
 //
 // Arguments:
-//    region -- region of interest
+//    edges -- collection of temporary edges to augment
+//
+void FlowGraphTryRegions::AddMultipleEntryRegionEdges(ArrayStack<FlowEdge*>& edges)
+{
+    for (FlowGraphTryRegion* region : m_tryRegions)
+    {
+        if (region != nullptr && region->HasCatchHandler() && region->HasSideEntry())
+        {
+            BasicBlock* const headerBlock = region->GetHeaderBlock();
+
+            for (FlowEdge* edge : region->EntryEdges())
+            {
+                BasicBlock* const destBlock = edge->getDestinationBlock();
+
+                // Skip the normal entry edges.
+                //
+                if (destBlock == headerBlock)
+                {
+                    continue;
+                }
+
+                // We need an edge from dest to try header.
+                FlowEdge* const destheaderEdge = m_compiler->fgAddRefPred(headerBlock, destBlock);
+                edges.Push(destheaderEdge);
+
+                // And an edge from method entry to dest.
+                FlowEdge* const entryDestEdge = m_compiler->fgAddRefPred(destBlock, m_compiler->fgFirstBB);
+                edges.Push(entryDestEdge);
+            }
+        }
+    }
+}
+
+//------------------------------------------------------------------------
+// FlowGraphTryRegions::RemoveMultipleEntryRegionEdges: Remove temporary
+//    edges added for multiple entry try regions.
+//
+// Arguments:
+//    edges -- collection of edges to remove
+//
+void FlowGraphTryRegions::RemoveMultipleEntryRegionEdges(ArrayStack<FlowEdge*>& edges)
+{
+    for (FlowEdge* const edge : edges.BottomUpOrder())
+    {
+        m_compiler->fgRemoveRefPred(edge);
+    }
+}
+
+//------------------------------------------------------------------------
+// FlowGraphTryRegion::NumBlocks: Return the number of blocks in the try region.
+//
+// Returns:
+//    Number of blocks in the region at the time of FlowGraphTryRegions::Build
+//    Includes blocks in enclosed try regions. Includes blocks in enclosed
+//    handler regions, if FlowGraphTryRegions::Build was called with includeHandlerBlocks == true.
 //
 unsigned FlowGraphTryRegion::NumBlocks() const
 {
-    BitVecTraits traits = m_regions->GetBlockBitVecTraits();
-    return BitVecOps::Count(&traits, m_blocks);
+    BitVecTraits* const traits = m_regions->GetBlockBitVecTraits();
+    return BitVecOps::Count(traits, m_blocks);
+}
+
+//------------------------------------------------------------------------
+// FlowGraphTryRegion::EnclosingRegion: Return the enclosing non-mutual-protect
+//    region, or nullptr.
+//
+// Returns:
+//    Enclosing non-mutual-protect region, or nullptr if there is none.
+//    Note any enclosing region will have a distinct header block.
+//
+FlowGraphTryRegion* FlowGraphTryRegion::EnclosingRegion() const
+{
+    FlowGraphTryRegion* ancestor = m_parent;
+    while (ancestor != nullptr && IsMutualProtectWith(ancestor))
+    {
+        ancestor = ancestor->m_parent;
+    }
+    return ancestor;
+}
+
+//------------------------------------------------------------------------
+// FlowGraphTryRegion::CanEnumerateInReversePostOrder: check if the
+//   try region can be enumerated in reverse post order
+//
+// Returns:
+//    True if so.
+//
+bool FlowGraphTryRegion::CanEnumerateInReversePostOrder() const
+{
+    return m_regions->GetDfsTree() != nullptr;
 }
 
 #ifdef DEBUG
@@ -7754,10 +7922,42 @@ void FlowGraphTryRegion::Dump(FlowGraphTryRegion* region)
         printf(" [outermost]:");
     }
 
-    region->VisitTryRegionBlocksReversePostOrder([](BasicBlock* block) {
-        printf(" " FMT_BB, block->bbNum);
-        return BasicBlockVisit::Continue;
-    });
+    if (region->CanEnumerateInReversePostOrder())
+    {
+        printf(" [rpo]:");
+
+        region->VisitTryRegionBlocksReversePostOrder([](BasicBlock* block) {
+            printf(" " FMT_BB, block->bbNum);
+            return BasicBlockVisit::Continue;
+        });
+    }
+    else
+    {
+        printf(" [bbNum]:");
+
+        BitVecOps::Iter iterator(regions->GetBlockBitVecTraits(), region->m_blocks);
+        unsigned int    index;
+        while (iterator.NextElem(&index))
+        {
+            printf(" " FMT_BB, index);
+        }
+    }
+
+    printf(" [entries]: ");
+    for (FlowEdge* const edge : region->EntryEdges())
+    {
+        BasicBlock* const predBlock = edge->getSourceBlock();
+        BasicBlock* const succBlock = edge->getDestinationBlock();
+        printf(" " FMT_BB "->" FMT_BB, predBlock->bbNum, succBlock->bbNum);
+        if (predBlock->HasFlag(BBF_ASYNC_RESUMPTION))
+        {
+            printf("[async]");
+        }
+        if (predBlock->HasFlag(BBF_CATCH_RESUMPTION))
+        {
+            printf("[catch]");
+        }
+    }
 }
 
 //------------------------------------------------------------------------

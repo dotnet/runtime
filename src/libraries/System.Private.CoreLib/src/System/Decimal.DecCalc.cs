@@ -362,7 +362,6 @@ Div1Word:
             /// <param name="den">64-bit divisor</param>
             /// <returns>Returns quotient. Remainder overwrites lower 64-bits of dividend.</returns>
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            [RequiresUnsafe]
             private static unsafe ulong Div128By64(Buf16* bufNum, ulong den)
             {
                 Debug.Assert(den > bufNum->High64);
@@ -606,7 +605,6 @@ PosRem:
             /// <param name="hiRes">Index of last non-zero value in bufRes</param>
             /// <param name="scale">Scale factor for this value, range 0 - 2 * DEC_SCALE_MAX</param>
             /// <returns>Returns new scale factor. bufRes updated in place, always 3 uints.</returns>
-            [RequiresUnsafe]
             private static unsafe int ScaleResult(Buf24* bufRes, uint hiRes, int scale)
             {
                 Debug.Assert(hiRes < Buf24.Length);
@@ -768,7 +766,6 @@ ThrowOverflow:
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            [RequiresUnsafe]
             private static unsafe uint DivByConst(uint* result, uint hiRes, out uint quotient, out uint remainder, uint power)
             {
                 uint high = result[hiRes];
