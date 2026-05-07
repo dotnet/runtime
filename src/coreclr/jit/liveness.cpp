@@ -1332,7 +1332,8 @@ void Liveness<TLiveness>::DoLiveVarAnalysis()
 
 //------------------------------------------------------------------------
 // MarkMustInitAndEHVars:
-//   Set lvLiveInOutOfHndlr and lvMustInit for variables based on liveness results.
+//   Set lvLiveInOutOfHandler / IsLiveInOutOfHandler() state and lvMustInit
+//   for variables based on liveness results.
 //
 // Arguments:
 //    finallyVars - Locals live into finally blocks
