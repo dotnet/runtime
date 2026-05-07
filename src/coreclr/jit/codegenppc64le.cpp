@@ -1334,17 +1334,81 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
 
             assert(addr != nullptr);
 
-            // clang-format off
-            genEmitCall(emitter::EC_FUNC_TOKEN,
-                        methHnd,
-                        INDEBUG_LDISASM_COMMA(sigInfo)
-                        addr,
-                        retSize
-                        MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(secondRetSize),
-                        di,
-                        REG_NA,
-                        call->IsFastTailCall());
-            // clang-format on
+            // Check if we need a trampoline for long-distance calls
+            // PowerPC64 bl instruction has 24-bit signed offset (±32MB range)
+            if (!call->IsFastTailCall())
+            {
+                // Check if target is within range for direct bl
+                BYTE* currentPos = GetEmitter()->emitCodeBlock;
+                int offset = 0;
+                
+                if (currentPos != nullptr)
+                {
+                    offset = GetEmitter()->getBranchOffset(currentPos, addr);
+                }
+                
+                if (offset == 0 && currentPos != nullptr)
+                {
+                    // Offset out of range - emit trampoline sequence
+                    uint64_t targetAddr = (uint64_t)addr;
+                    
+                    // lis r12, target@highest
+                    GetEmitter()->emitIns_R_I(INS_lis, EA_8BYTE, REG_R12, (targetAddr >> 48) & 0xFFFF);
+                    // ori r12, r12, target@higher
+                    GetEmitter()->emitIns_R_I(INS_ori, EA_8BYTE, REG_R12, (targetAddr >> 32) & 0xFFFF);
+                    // sldi r12, r12, 32
+                    GetEmitter()->emitIns_R_I(INS_sldi, EA_8BYTE, REG_R12, 32);
+                    // oris r12, r12, target@h
+                    GetEmitter()->emitIns_R_I(INS_oris, EA_8BYTE, REG_R12, (targetAddr >> 16) & 0xFFFF);
+                    // ori r12, r12, target@l
+                    GetEmitter()->emitIns_R_I(INS_ori, EA_8BYTE, REG_R12, targetAddr & 0xFFFF);
+                    // mtctr r12
+                    GetEmitter()->emitIns_R(INS_mtctr, EA_8BYTE, REG_R12);
+                    
+                    // Now emit indirect call through CTR
+                    // clang-format off
+                    genEmitCall(emitter::EC_INDIR_R,
+                                methHnd,
+                                INDEBUG_LDISASM_COMMA(sigInfo)
+                                nullptr,  // addr is nullptr for indirect calls
+                                retSize
+                                MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(secondRetSize),
+                                di,
+                                REG_R12,  // ireg - indicates call through CTR
+                                false);   // Not a tail call
+                    // clang-format on
+                }
+                else
+                {
+                    // Direct call within range (or currentPos is null during early phases)
+                    // clang-format off
+                    genEmitCall(emitter::EC_FUNC_TOKEN,
+                                methHnd,
+                                INDEBUG_LDISASM_COMMA(sigInfo)
+                                addr,
+                                retSize
+                                MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(secondRetSize),
+                                di,
+                                REG_NA,
+                                false);
+                    // clang-format on
+                }
+            }
+            else
+            {
+                // Tail call - use direct branch
+                // clang-format off
+                genEmitCall(emitter::EC_FUNC_TOKEN,
+                            methHnd,
+                            INDEBUG_LDISASM_COMMA(sigInfo)
+                            addr,
+                            retSize
+                            MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(secondRetSize),
+                            di,
+                            REG_NA,
+                            true);
+                // clang-format on
+            }
         }
     }
 }

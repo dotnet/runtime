@@ -34,6 +34,7 @@ INST(pop,         "pop",          0,      IUM_WR, 	0x00008E)
 INST(blr,         "blr",          0,      IF_SN_0A,     0x4E800020)
 INST(mflr,        "mflr",         0,      XFX_FORM,     0x7C0802A6)
 INST(mtlr,        "mtlr",         0,      XFX_FORM,     0x7C0803A6)
+INST(mtctr,       "mtctr",        0,      XFX_FORM,     0x7C0903A6)  // Move to Count Register
 INST(bctr,        "bctr",         0,      XL_FORM,      0x4E800420)  // Branch to Count Register
 INST(bctrl,       "bctrl",        0,      XL_FORM,      0x4E800421)  // Branch to Count Register and Link
 INST(bl,          "bl",           0,      I_FORM,       0x48000001)  // Branch and Link

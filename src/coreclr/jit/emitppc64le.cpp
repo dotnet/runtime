@@ -483,6 +483,31 @@ void emitter::emitIns_Mov(
  *  Please consult the "debugger team notification" comment in genFnProlog().
  */
 
+/*****************************************************************************
+ *
+ *  Calculate the branch offset for a bl instruction
+ *  Returns the offset in instruction units (not bytes)
+ *  Returns 0 if the offset is out of range
+ */
+int emitter::getBranchOffset(BYTE* dst, void* target)
+{
+    // Calculate the byte offset from current instruction to target
+    ssize_t byteOffset = (ssize_t)target - (ssize_t)dst;
+    
+    // Convert to instruction offset (PowerPC instructions are 4 bytes)
+    ssize_t instrOffset = byteOffset >> 2;
+    
+    // Check if offset fits in 24 bits (signed)
+    // Range: -8388608 to 8388607 (0x800000 to 0x7FFFFF)
+    if (instrOffset >= -0x800000 && instrOffset <= 0x7FFFFF)
+    {
+        return (int)instrOffset;
+    }
+    
+    // Offset out of range
+    return 0;
+}
+
 void emitter::emitIns_Call(EmitCallType          callType,
                            CORINFO_METHOD_HANDLE methHnd,
                            INDEBUG_LDISASM_COMMA(CORINFO_SIG_INFO* sigInfo) // used to report call sites to the EE
@@ -711,6 +736,13 @@ void emitter::emitIns_R_I(instruction ins,
             break;
         case INS_cmpwi:
             fmt = IF_RRI_1A; // cmpwi crD, rA, imm16
+            break;
+        case INS_ori:
+        case INS_oris:
+        case INS_sldi:
+            // For ori/oris/sldi with same source and destination: ori rD, rD, imm
+            id->idReg2(reg);  // Set both source and destination to same register
+            fmt = IF_RI_1D;   // ori/oris/sldi rD, rA, imm16
             break;
         default:
             fmt = IF_RI_1C;  // Generic register-immediate (addi, etc.)
@@ -1164,6 +1196,11 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
            ppc_mtlr (dstRW, id->idReg1());
            break;
 
+       case INS_mtctr:
+           // mtctr rS - Move to Count Register
+           ppc_mtctr (dstRW, id->idReg1());
+           break;
+
        case INS_bctr:
            // bctr - Branch to Count Register (unconditional)
            ppc_bcctr (dstRW, 20, 0);
@@ -1175,13 +1212,18 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
            break;
 
        case INS_bl:
-
-	   //WORKAROUND: Helper call infrastructure not yet implemented
-           // bl instruction requires proper offset calculation to helper functions
-           // For now, replace with nop to avoid infinite loops
-           // TODO: Implement proper helper call mechanism
-           ppc_nop(dstRW);
-    	   break;
+           // bl instruction - Branch and Link (direct call within ±32MB)
+           {
+               void* target = (void*)id->idAddr()->iiaAddr;
+               int offset = getBranchOffset(dst, target);
+               
+               // At this point, offset should be valid because emitIns_Call
+               // should have chosen the trampoline path if needed
+               assert(offset != 0 && "bl offset out of range - should use trampoline");
+               
+               ppc_bl(dstRW, offset);
+           }
+           break;
        case INS_addi:
            // addi rD, rA, SIMM
            ppc_addi (dstRW, id->idReg1(), id->idReg2(), emitGetInsSC(id));

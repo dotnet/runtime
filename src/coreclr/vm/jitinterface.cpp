@@ -12428,7 +12428,12 @@ CorJitResult invokeCompileMethodHelper(EEJitManager *jitMgr,
     const char* ftnName = ftnDesc->GetName();
 
     forceInterpreter = true;
-    if (!strcmp(ftnName, "ppc64leHelloWorld"))
+    if (!strcmp(ftnName, "ppc64leHelloWorldCallee"))
+    {
+	printf ("Function name is %s\n", ftnName);
+	interpreterFallback = true;
+    }
+    else if (!strcmp(ftnName, "ppc64leHelloWorld"))
     {
 	printf ("Function name is %s\n", ftnName);
 	interpreterFallback = true;
