@@ -884,25 +884,13 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
     public bool IsEnum(TypeHandle typeHandle)
     {
         // Enums have Category_Enum in their MethodTable flags and their
-        // InternalCorElementType is a valid enum underlying type (I1, U1, I2, U2, I4, U4, I8, U8),
-        // not ELEMENT_TYPE_I (which is used for runtime handle types).
+        // InternalCorElementType is a primitive type (I1, U1, I2, U2, I4, U4, I8, U8),
+        // not ValueType.
         if (!typeHandle.IsMethodTable())
             return false;
 
         MethodTable methodTable = _methodTables[typeHandle.Address];
-        if (methodTable.Flags.GetFlag(MethodTableFlags_1.WFLAGS_HIGH.Category_Mask) != MethodTableFlags_1.WFLAGS_HIGH.Category_Enum)
-            return false;
-
-        // Check that the internal element type is a valid enum underlying type
-        CorElementType elementType = (CorElementType)GetClassData(typeHandle).InternalCorElementType;
-        return elementType == CorElementType.I1 ||
-               elementType == CorElementType.U1 ||
-               elementType == CorElementType.I2 ||
-               elementType == CorElementType.U2 ||
-               elementType == CorElementType.I4 ||
-               elementType == CorElementType.U4 ||
-               elementType == CorElementType.I8 ||
-               elementType == CorElementType.U8;
+        return methodTable.Flags.GetFlag(MethodTableFlags_1.WFLAGS_HIGH.Category_Mask) == MethodTableFlags_1.WFLAGS_HIGH.Category_Enum;
     }
 
     // return true if the TypeHandle represents an array, and set the rank to either 0 (if the type is not an array), or the rank number if it is.
