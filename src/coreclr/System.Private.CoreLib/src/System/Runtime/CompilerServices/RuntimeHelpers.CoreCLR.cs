@@ -851,7 +851,7 @@ namespace System.Runtime.CompilerServices
         private const uint enum_flag_Category_Nullable = 0x00050000;
         private const uint enum_flag_Category_IsPrimitiveMask = 0x000E0000;
         private const uint enum_flag_Category_Primitive = 0x00060000; // sub-category of ValueType, Primitive (ELEMENT_TYPE_I, etc.)
-        private const uint enum_flag_Category_Enum = 0x00070000; // sub-category of ValueType, Enum
+        // private const uint enum_flag_Category_Enum = 0x00070000; // sub-category of ValueType, Enum
         private const uint enum_flag_Category_Array = 0x00080000;
         private const uint enum_flag_Category_Array_Mask = 0x000C0000;
         private const uint enum_flag_Category_ValueType_Mask = 0x000C0000;
