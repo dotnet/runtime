@@ -132,14 +132,16 @@ struct ManagedMethodParam
 
 void InvokeManagedMethod(ManagedMethodParam *pParam);
 
+#ifdef FEATURE_INTERPRETER
 struct CalliStubParam
 {
     PCODE ftn;
-    void* cookie;
+    InterpreterCalliCookie cookie;
     int8_t *pArgs;
     int8_t *pRet;
     Object** pContinuationRet;
 };
+#endif // FEATURE_INTERPRETER
 
 struct DelegateInvokeMethodParam
 {

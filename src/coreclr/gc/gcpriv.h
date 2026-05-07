@@ -190,7 +190,9 @@ inline void FATAL_GC_ERROR()
 #define FEATURE_PREMORTEM_FINALIZATION
 #define GC_HISTORY
 
+#ifndef TARGET_WASM
 #define BACKGROUND_GC   //concurrent background GC (requires WRITE_WATCH)
+#endif //!TARGET_WASM
 
 // We need the lower 3 bits in the MT to do our bookkeeping so doubly linked free list is only for 64-bit
 #if defined(BACKGROUND_GC) && defined(HOST_64BIT)
@@ -2485,7 +2487,7 @@ private:
     PER_HEAP_METHOD void decommit_heap_segment (heap_segment* seg);
     PER_HEAP_ISOLATED_METHOD bool virtual_alloc_commit_for_heap (void* addr, size_t size, int h_number);
     PER_HEAP_ISOLATED_METHOD bool virtual_commit (void* address, size_t size, int bucket, int h_number=-1, bool* hard_limit_exceeded_p=NULL);
-    PER_HEAP_ISOLATED_METHOD bool virtual_decommit (void* address, size_t size, int bucket, int h_number=-1, void* end_of_data=nullptr);
+    PER_HEAP_ISOLATED_METHOD bool virtual_decommit (void* address, size_t size, int bucket, int h_number=-1);
     PER_HEAP_ISOLATED_METHOD void reduce_committed_bytes (void* address, size_t size, int bucket, int h_number, bool decommit_succeeded_p);
     friend void destroy_card_table (uint32_t*);
     PER_HEAP_ISOLATED_METHOD void destroy_card_table_helper (uint32_t* c_table);
@@ -5369,7 +5371,17 @@ private:
 #endif
 
     // Indicate to use large pages. This only works if hardlimit is also enabled.
+    // GCLargePages=1 uses real OS large pages, GCLargePages=2 emulates it for testing.
     PER_HEAP_ISOLATED_FIELD_INIT_ONLY bool use_large_pages_p;
+    PER_HEAP_ISOLATED_FIELD_INIT_ONLY bool large_pages_emulation_mode_p;
+
+    // Indicates that the underlying OS does not support decommitting memory.
+    // Implies that VirtualCommit/VirtualDecommit are no-ops on heap memory and
+    // that GC code paths that rely on returning memory to the OS must be skipped.
+    // Set unconditionally on WASM and whenever use_large_pages_p is set (large pages
+    // are pre-committed and cannot be decommitted). Code that wants to skip a
+    // decommit-related path should test this flag rather than use_large_pages_p.
+    PER_HEAP_ISOLATED_FIELD_INIT_ONLY bool never_decommit_p;
 
 #ifdef MULTIPLE_HEAPS
     // Init-ed in gc_heap::initialize_gc

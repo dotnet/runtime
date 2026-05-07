@@ -40,6 +40,7 @@ parameters:
   useCdac: false
   noFallback: false
   classFilter: ''
+  methodFilter: ''
 
 jobs:
 - template: /eng/common/${{ parameters.templatePath }}/job/job.yml
@@ -92,6 +93,7 @@ jobs:
       - _CdacArgs: ''
       - _NoFallbackArgs: ''
       - _ClassFilterArgs: ''
+      - _MethodFilterArgs: ''
 
       - _buildScript: $(Build.SourcesDirectory)$(dir)build$(scriptExt)
 
@@ -112,6 +114,9 @@ jobs:
 
       - ${{ if ne(parameters.classFilter, '') }}:
         - _ClassFilterArgs: '-classfilter ${{ parameters.classFilter }}'
+
+      - ${{ if ne(parameters.methodFilter, '') }}:
+        - _MethodFilterArgs: '-methodfilter ${{ parameters.methodFilter }}'
 
       # For testing msrc's and service releases. The RuntimeSourceVersion is either "default" or the service release version to test
       - _InternalInstallArgs: ''
@@ -212,6 +217,7 @@ jobs:
           $(_Cross)
           $(_InternalInstallArgs)
           $(_ClassFilterArgs)
+          $(_MethodFilterArgs)
           /p:OfficialBuildId=$(BUILD.BUILDNUMBER)
       ${{ if eq(parameters.testOnly, 'true') }}:
         displayName: Test

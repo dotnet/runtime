@@ -897,7 +897,14 @@ void Compiler::lvaInitVarDsc(LclVarDsc*              varDsc,
     }
 
 #ifdef DEBUG
-    varDsc->SetStackOffset(BAD_STK_OFFS);
+    if (varDsc->lvValueSize().IsExact())
+    {
+        varDsc->SetStackOffset(BAD_STK_OFFS);
+    }
+    else
+    {
+        varDsc->SetUnknownSizeFrameIndex(BAD_STK_OFFS);
+    }
 #endif
 }
 
@@ -1280,7 +1287,7 @@ unsigned Compiler::compMap2ILvarNum(unsigned varNum) const
     }
 
 #if defined(TARGET_WASM)
-    if (lvaWasmSpArg != BAD_VAR_NUM && originalVarNum > lvaWasmSpArg)
+    if (lvaWasmSpArg != BAD_VAR_NUM && originalVarNum > lvaWasmSpArg && lvaGetDesc(lvaWasmSpArg)->lvIsParam)
     {
         varNum--;
     }
@@ -2344,6 +2351,9 @@ void Compiler::lvaSetVarDoNotEnregister(unsigned varNum DEBUGARG(DoNotEnregister
             break;
         case DoNotEnregisterReason::LocalField:
             JITDUMP("was accessed as a local field\n");
+            break;
+        case DoNotEnregisterReason::WasmGCVisibility:
+            JITDUMP("Wasm GC needs to see it\n");
             break;
         case DoNotEnregisterReason::VMNeedsStackAddr:
             JITDUMP("VM needs stack addr\n");
@@ -4176,7 +4186,7 @@ unsigned Compiler::lvaGetMaxSpillTempSize()
  *
  *    Wasm leaf frame, no localloc
  *
- * 
+ *
  *      |     caller frame      |
  *      +=======================+ <---- Virtual '0'
  *      |                       |
@@ -4190,7 +4200,7 @@ unsigned Compiler::lvaGetMaxSpillTempSize()
  *              V
  *
  *   Wasm, leaf frame, localloc
- * 
+ *
  *      |     caller frame      |
  *      +=======================+ <---- Virtual '0'
  *      |                       |
@@ -4225,9 +4235,9 @@ unsigned Compiler::lvaGetMaxSpillTempSize()
  *      |       | Stack grows   |
  *              | downward
  *              V
- * 
+ *
  *   Wasm, non-leaf frame, localloc
- * 
+ *
  *      |     caller frame      |
  *      +=======================+ <---- Virtual '0'
  *      |                       |
@@ -4310,6 +4320,15 @@ void Compiler::lvaAssignFrameOffsets(FrameLayoutState curState)
 
     /*-------------------------------------------------------------------------
      *
+     * Initialize tracking information for locals with unknown size.
+     *
+     *-------------------------------------------------------------------------
+     */
+
+    lvaInitUnknownSizeFrame();
+
+    /*-------------------------------------------------------------------------
+     *
      * First process the arguments.
      *
      *-------------------------------------------------------------------------
@@ -4354,6 +4373,13 @@ void Compiler::lvaAssignFrameOffsets(FrameLayoutState curState)
     {
         codeGen->resetFramePointerUsedWritePhase();
     }
+#if defined(FEATURE_SIMD) && defined(TARGET_ARM64)
+    else
+    {
+        assert(curState == FINAL_FRAME_LAYOUT);
+        unkSizeFrame.Finalize();
+    }
+#endif
 }
 
 /*****************************************************************************
@@ -4464,6 +4490,11 @@ void Compiler::lvaFixVirtualFrameOffsets()
 
         // Can't be relative to EBP unless we have an EBP
         noway_assert(!varDsc->lvFramePointerBased || codeGen->doubleAlignOrFramePointerUsed());
+
+        if (lvaIsUnknownSizeLocal(lclNum))
+        {
+            continue;
+        }
 
         // Is this a non-param promoted struct field?
         //   if so then set doAssignStkOffs to false.
@@ -4660,6 +4691,8 @@ void Compiler::lvaAssignVirtualFrameOffsetsToArgs()
         int startOffset;
         if (lvaGetRelativeOffsetToCallerAllocatedSpaceForParameter(lclNum, &startOffset))
         {
+            assert(!lvaIsUnknownSizeLocal(lclNum));
+
             dsc->SetStackOffset(startOffset + relativeZero);
             JITDUMP("Set V%02u to offset %d\n", lclNum, startOffset);
 
@@ -5278,6 +5311,12 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
 
                 continue;
             }
+            else if (lvaIsUnknownSizeLocal(lclNum))
+            {
+                // Reserve dynamic stack space for this variable.
+                lvaAllocUnknownSizeLocal(lclNum);
+                continue;
+            }
 
             // These need to be located as the very first variables (highest memory address)
             // and so they have already been assigned an offset
@@ -5603,6 +5642,58 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
         codeGen->SetSaveFpLrWithAllCalleeSavedRegisters(true); // Force using new frames
     }
 #endif // TARGET_ARM64
+}
+
+void Compiler::lvaInitUnknownSizeFrame()
+{
+#if defined(FEATURE_SIMD) && defined(TARGET_ARM64)
+    compUsesUnknownSizeFrame = false;
+#ifdef DEBUG
+    unkSizeFrame.isFinalized = false;
+#endif
+    unkSizeFrame.nMask   = 0;
+    unkSizeFrame.nVector = 0;
+#endif
+}
+
+//-------------------------------------------------------------------------------
+// lvaAllocUnknownSizeLocal: Allocate stack space for a local with unknown size
+//
+// A local with unknown size has a size that is not precisely known at compile time,
+// but may be derived dynamically through code. These locals are allocated into
+// their own stack space categorized by JIT type.
+//
+// Ideally, locals are primitive types that can fit into a homogeneous space containing
+// objects with the same unknown size. In this case, we can identify them by a simple
+// index into the space.
+void Compiler::lvaAllocUnknownSizeLocal(unsigned varNum)
+{
+    LclVarDsc* const varDsc = lvaGetDesc(varNum);
+    assert(varTypeHasUnknownSize(varDsc));
+
+#if defined(FEATURE_SIMD) && defined(TARGET_ARM64)
+    if (varDsc->TypeIs(TYP_SIMD))
+    {
+        varDsc->SetUnknownSizeFrameIndex((int)unkSizeFrame.AllocVector());
+    }
+    else if (varDsc->TypeIs(TYP_MASK))
+    {
+        varDsc->SetUnknownSizeFrameIndex((int)unkSizeFrame.AllocMask());
+    }
+    else
+#endif
+    {
+        // The only types with unknown size should be SIMD at the moment.
+        unreached();
+    }
+
+    compUsesUnknownSizeFrame = true;
+
+    // Technically we're not using localalloc, but the space these locals use
+    // will be at the beginning of the alloca space on the stack frame. So we
+    // should set this and inherit all of its behaviour, e.g. guarantee we get
+    // a frame pointer.
+    compLocallocUsed = true;
 }
 
 //------------------------------------------------------------------------
@@ -6128,19 +6219,30 @@ void Compiler::lvaDumpFrameLocation(unsigned lclNum, int minLength)
 {
     int       offset;
     regNumber baseReg;
+    int       printed = 0;
 
+#ifdef TARGET_ARM64
+    if (lvaIsUnknownSizeLocal(lclNum))
+    {
+        LclVarDsc* varDsc = lvaGetDesc(lclNum);
+        offset            = unkSizeFrame.GetAddressingOffset(varDsc);
+        printed           = printf("[%2s%1s0x%02X*%s] ", getRegName(REG_UNKBASE), (offset < 0 ? "-" : "+"),
+                                   (offset < 0 ? -offset : offset), varDsc->TypeIs(TYP_MASK) ? "PL" : "VL");
+    }
+    else
+#endif
+    {
 #ifdef TARGET_ARM
-    offset = lvaFrameAddress(lclNum, compLocallocUsed, &baseReg, 0, /* isFloatUsage */ false);
+        offset = lvaFrameAddress(lclNum, compLocallocUsed, &baseReg, 0, /* isFloatUsage */ false);
 #else
-    bool EBPbased;
-    offset = lvaFrameAddress(lclNum, &EBPbased);
+        bool EBPbased;
+        offset  = lvaFrameAddress(lclNum, &EBPbased);
+        baseReg = EBPbased ? codeGen->GetFramePointerReg(ROOT_FUNC_IDX) : codeGen->GetStackPointerReg(ROOT_FUNC_IDX);
+#endif
+        printed =
+            printf("[%2s%1s0x%02X] ", getRegName(baseReg), (offset < 0 ? "-" : "+"), (offset < 0 ? -offset : offset));
+    }
 
-    // Use the sp/fp from the function region
-    baseReg = EBPbased ? codeGen->GetFramePointerReg(ROOT_FUNC_IDX) : codeGen->GetStackPointerReg(ROOT_FUNC_IDX);
-#endif // TARGET_ARM
-
-    int printed =
-        printf("[%2s%1s0x%02X] ", getRegName(baseReg), (offset < 0 ? "-" : "+"), (offset < 0 ? -offset : offset));
     if ((printed >= 0) && (printed < minLength))
     {
         printf("%*s", minLength - printed, "");

@@ -685,6 +685,12 @@ GenTree* Lowering::LowerNode(GenTree* node)
             LowerReturnSuspend(node);
             break;
 
+        case GT_PATCHPOINT:
+        case GT_PATCHPOINT_FORCED:
+            // This will generate a call in codegen
+            RequireOutgoingArgSpace(node, MIN_ARG_AREA_FOR_CALL);
+            break;
+
         case GT_NONLOCAL_JMP:
             ContainCheckNonLocalJmp(node->AsUnOp());
             break;
@@ -3022,6 +3028,15 @@ GenTree* Lowering::LowerCall(GenTree* node)
         }
     }
 
+#ifdef TARGET_WASM
+    // For any type of managed call, if we have portable entry points enabled, we need to lower
+    // the call according to the portable entrypoint abi
+    if (!call->IsUnmanaged() && m_compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PORTABLE_ENTRY_POINTS))
+    {
+        LowerPEPCall(call);
+    }
+#endif // TARGET_WASM
+
     if (varTypeIsStruct(call))
     {
         LowerCallStruct(call);
@@ -4846,34 +4861,6 @@ GenTree* Lowering::LowerSelect(GenTreeConditional* select)
     GenTree* cond     = select->gtCond;
     GenTree* trueVal  = select->gtOp1;
     GenTree* falseVal = select->gtOp2;
-
-    // Replace SELECT cond 1/0 0/1 with (perhaps reversed) cond
-    if (cond->OperIsCompare() && ((trueVal->IsIntegralConst(0) && falseVal->IsIntegralConst(1)) ||
-                                  (trueVal->IsIntegralConst(1) && falseVal->IsIntegralConst(0))))
-    {
-        assert(select->TypeIs(TYP_INT, TYP_LONG));
-
-        LIR::Use use;
-        if (BlockRange().TryGetUse(select, &use))
-        {
-            if (trueVal->IsIntegralConst(0))
-            {
-                GenTree* reversed = m_compiler->gtReverseCond(cond);
-                assert(reversed == cond);
-            }
-
-            // Codegen supports also TYP_LONG typed compares so we can just
-            // retype the compare instead of inserting a cast.
-            cond->gtType = select->TypeGet();
-
-            BlockRange().Remove(trueVal);
-            BlockRange().Remove(falseVal);
-            BlockRange().Remove(select);
-            use.ReplaceWith(cond);
-
-            return cond->gtNext;
-        }
-    }
 
     JITDUMP("Lowering select:\n");
     DISPTREERANGE(BlockRange(), select);
@@ -9931,6 +9918,12 @@ void Lowering::ContainCheckNode(GenTree* node)
             ContainCheckHWIntrinsic(node->AsHWIntrinsic());
             break;
 #endif // FEATURE_HW_INTRINSICS
+
+        case GT_PATCHPOINT:
+        case GT_PATCHPOINT_FORCED:
+            // No containment for patchpoint nodes
+            break;
+
         case GT_NONLOCAL_JMP:
             ContainCheckNonLocalJmp(node->AsUnOp());
             break;

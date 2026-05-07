@@ -28,17 +28,20 @@ namespace System.Runtime.CompilerServices
         // Otherwise the exact offset of the member is computed as
         //   DataOffset + (index - 1) * PointerSize
         //
-        ExceptionIndexFirstBit = 3,
-        ExceptionIndexNumBits = 2,
+        ExecutionContextIndexFirstBit = 3,
+        ExecutionContextIndexNumBits = 2,
 
         ContinuationContextIndexFirstBit = 5,
         ContinuationContextIndexNumBits = 2,
 
+        ExceptionIndexFirstBit = 7,
+        ExceptionIndexNumBits = 3,
+
         // For JIT, the continuation stores space for every possible type of
         // async callee's result. We need to represent the offset to each of
         // these, so we allocate the rest of the bits for this.
-        ResultIndexFirstBit = 7,
-        ResultIndexNumBits = 25,
+        ResultIndexFirstBit = 10,
+        ResultIndexNumBits = 22,
     }
 
     // Keep in sync with CORINFO_AsyncResumeInfo in corinfo.h
@@ -93,6 +96,16 @@ namespace System.Runtime.CompilerServices
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public unsafe ExecutionContext? GetExecutionContext()
+        {
+            const uint mask = (1u << (int)ContinuationFlags.ExecutionContextIndexNumBits) - 1;
+            uint index = ((uint)Flags >> (int)ContinuationFlags.ExecutionContextIndexFirstBit) & mask;
+            Debug.Assert(index != 0);
+            ref byte data = ref RuntimeHelpers.GetRawData(this);
+            return Unsafe.As<byte, ExecutionContext?>(ref Unsafe.Add(ref data, (DataOffset - PointerSize) + index * PointerSize));
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void SetException(Exception ex)
         {
             const uint mask = (1u << (int)ContinuationFlags.ExceptionIndexNumBits) - 1;
@@ -138,6 +151,13 @@ namespace System.Runtime.CompilerServices
         // This is used by debuggers in the case of nested dispatcher info (multiple runtime-async Tasks on the same thread)
         // to match an inflight Task to the corresponding Continuation chain.
         public Task? CurrentTask;
+
+#if TARGET_64BIT
+        [FieldOffset(24)]
+#else
+        [FieldOffset(12)]
+#endif
+        public AsyncProfiler.Info AsyncProfilerInfo;
 
         // Information about current task dispatching, to be used for async
         // stackwalking.
@@ -227,7 +247,7 @@ namespace System.Runtime.CompilerServices
             public Continuation? SentinelContinuation;
 
             // We cache the thread here to avoid unnecessary repeated TLS lookups.
-            public Thread CurrentThread;
+            public Thread? CurrentThread;
 
             public RuntimeAsyncStackState* StackState;
 
@@ -236,7 +256,7 @@ namespace System.Runtime.CompilerServices
                 // CaptureContext is called from leaf await helpers. We either just started a runtime async chain
                 // (from a thunk), or we came from DispatchContinuations (on resumption).
                 // Both cases have already initialized CurrentThread.
-                Thread curThread = CurrentThread;
+                Thread? curThread = CurrentThread;
                 Debug.Assert(curThread != null);
                 Debug.Assert(StackState != null);
                 // Here we get the execution context for presenting to the notifier,
@@ -269,15 +289,12 @@ namespace System.Runtime.CompilerServices
 
 #if !NATIVEAOT
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AsyncHelpers_AddContinuationToExInternal")]
-        [RequiresUnsafe]
         private static unsafe partial void AddContinuationToExInternal(void* diagnosticIP, ObjectHandleOnStack ex);
 
-        [RequiresUnsafe]
         internal static unsafe void AddContinuationToExInternal(void* diagnosticIP, Exception e)
             => AddContinuationToExInternal(diagnosticIP, ObjectHandleOnStack.Create(ref e));
 #endif
 
-        [RequiresUnsafe]
         private static unsafe Continuation AllocContinuation(Continuation prevContinuation, MethodTable* contMT)
         {
 #if NATIVEAOT
@@ -290,7 +307,6 @@ namespace System.Runtime.CompilerServices
         }
 
 #if !NATIVEAOT
-        [RequiresUnsafe]
         private static unsafe Continuation AllocContinuationMethod(Continuation prevContinuation, MethodTable* contMT, int keepAliveOffset, MethodDesc* method)
         {
             LoaderAllocator loaderAllocator = RuntimeMethodHandle.GetLoaderAllocator(new RuntimeMethodHandleInternal((IntPtr)method));
@@ -300,7 +316,6 @@ namespace System.Runtime.CompilerServices
             return newContinuation;
         }
 
-        [RequiresUnsafe]
         private static unsafe Continuation AllocContinuationClass(Continuation prevContinuation, MethodTable* contMT, int keepAliveOffset, MethodTable* methodTable)
         {
             IntPtr loaderAllocatorHandle = methodTable->GetLoaderAllocatorHandle();
@@ -394,7 +409,7 @@ namespace System.Runtime.CompilerServices
 
             internal unsafe bool HandleSuspended(ref RuntimeAsyncAwaitState state)
             {
-                Thread currentThread = state.CurrentThread;
+                Thread? currentThread = state.CurrentThread;
                 Debug.Assert(currentThread != null);
 
                 RuntimeAsyncStackState* stackState = state.StackState;
@@ -498,7 +513,7 @@ namespace System.Runtime.CompilerServices
             {
                 if (AsyncInstrumentation.IsEnabled.AsyncDebugger(flags))
                 {
-                    Continuation? nextContinuation = t_runtimeAsyncAwaitState.SentinelContinuation!.Next;
+                    Continuation? nextContinuation = state.SentinelContinuation!.Next;
 
                     AsyncDebugger.HandleSuspended(nextContinuation, newContinuation);
 
@@ -534,7 +549,10 @@ namespace System.Runtime.CompilerServices
                     }
                 }
 
-                RuntimeAsyncStackState stackState = default;
+                // Intentionally skip initialization for this state; the Push
+                // call below will initialize non-GC refs, and GC refs will be
+                // zeroed by prolog.
+                RuntimeAsyncStackState stackState;
 
                 ref RuntimeAsyncAwaitState awaitState = ref t_runtimeAsyncAwaitState;
                 awaitState.Push(&stackState);
@@ -555,6 +573,8 @@ namespace System.Runtime.CompilerServices
                         Continuation? nextContinuation = curContinuation.Next;
                         asyncDispatcherInfo.NextContinuation = nextContinuation;
 
+                        Debug.Assert(awaitState.CurrentThread != null);
+                        RestoreExecutionContext(awaitState.CurrentThread, curContinuation.GetExecutionContext());
                         ref byte resultLoc = ref nextContinuation != null ? ref nextContinuation.GetResultStorageOrNull() : ref GetResultStorage();
 
                         Continuation? newContinuation = curContinuation.ResumeInfo->Resume(curContinuation, ref resultLoc);
@@ -633,7 +653,10 @@ namespace System.Runtime.CompilerServices
             [StackTraceHidden]
             private unsafe void InstrumentedDispatchContinuations(AsyncInstrumentation.Flags flags)
             {
-                RuntimeAsyncStackState stackState = default;
+                // Intentionally skip initialization for this state; the Push
+                // call below will initialize non-GC refs, and GC refs will be
+                // zeroed by prolog.
+                RuntimeAsyncStackState stackState;
 
                 ref RuntimeAsyncAwaitState awaitState = ref t_runtimeAsyncAwaitState;
                 awaitState.Push(&stackState);
@@ -656,15 +679,18 @@ namespace System.Runtime.CompilerServices
                         Continuation? nextContinuation = curContinuation.Next;
                         asyncDispatcherInfo.NextContinuation = nextContinuation;
 
+                        Debug.Assert(awaitState.CurrentThread != null);
+                        RestoreExecutionContext(awaitState.CurrentThread, curContinuation.GetExecutionContext());
                         ref byte resultLoc = ref nextContinuation != null ? ref nextContinuation.GetResultStorageOrNull() : ref GetResultStorage();
 
                         RuntimeAsyncInstrumentationHelpers.ResumeRuntimeAsyncMethod(ref asyncDispatcherInfo, flags, curContinuation);
-                        Continuation? newContinuation = curContinuation.ResumeInfo->Resume(curContinuation, ref resultLoc);
+                        Continuation? newContinuation = RuntimeAsyncInstrumentationHelpers.ResumeContinuation(ref asyncDispatcherInfo, flags, curContinuation, ref resultLoc);
 
                         if (newContinuation != null)
                         {
                             newContinuation.Next = nextContinuation;
-                            RuntimeAsyncInstrumentationHelpers.SuspendRuntimeAsyncContext(flags, curContinuation, newContinuation);
+
+                            RuntimeAsyncInstrumentationHelpers.AwaitSuspendedRuntimeAsyncContext(ref asyncDispatcherInfo, flags, curContinuation, newContinuation, awaitState.SentinelContinuation!.Next);
                             InstrumentedHandleSuspended(flags, ref awaitState, newContinuation);
 
                             awaitState.Pop();
@@ -672,7 +698,7 @@ namespace System.Runtime.CompilerServices
                             return;
                         }
 
-                        RuntimeAsyncInstrumentationHelpers.CompleteRuntimeAsyncMethod(flags, curContinuation);
+                        RuntimeAsyncInstrumentationHelpers.CompleteRuntimeAsyncMethod(ref asyncDispatcherInfo, flags, curContinuation);
                     }
                     catch (Exception ex)
                     {
@@ -698,7 +724,7 @@ namespace System.Runtime.CompilerServices
                             return;
                         }
 
-                        RuntimeAsyncInstrumentationHelpers.UnwindRuntimeAsyncMethodHandledException(flags, curContinuation, unwindedFrames);
+                        RuntimeAsyncInstrumentationHelpers.UnwindRuntimeAsyncMethodHandledException(ref asyncDispatcherInfo, flags, curContinuation, unwindedFrames);
 
                         handlerContinuation.SetException(ex);
                         asyncDispatcherInfo.NextContinuation = handlerContinuation;
@@ -723,7 +749,7 @@ namespace System.Runtime.CompilerServices
 
                     if (QueueContinuationFollowUpActionIfNecessary(asyncDispatcherInfo.NextContinuation))
                     {
-                        RuntimeAsyncInstrumentationHelpers.SuspendRuntimeAsyncContext(ref asyncDispatcherInfo, flags, curContinuation);
+                        RuntimeAsyncInstrumentationHelpers.QueueSuspendedRuntimeAsyncContext(ref asyncDispatcherInfo, flags, curContinuation, asyncDispatcherInfo.NextContinuation);
 
                         awaitState.Pop();
                         refDispatcherInfo = asyncDispatcherInfo.Next;
@@ -837,6 +863,15 @@ namespace System.Runtime.CompilerServices
         {
             if (AsyncInstrumentation.IsEnabled.CreateAsyncContext(flags))
             {
+                if (AsyncInstrumentation.IsEnabled.AsyncProfiler(flags))
+                {
+                    Continuation? nextContinuation = state.SentinelContinuation!.Next;
+                    if (nextContinuation != null)
+                    {
+                        AsyncProfiler.CreateAsyncContext.Create((ulong)task.Id, nextContinuation);
+                    }
+                }
+
                 if (AsyncInstrumentation.IsEnabled.AsyncDebugger(flags))
                 {
                     task.NotifyDebuggerOfRuntimeAsyncState();
@@ -937,16 +972,10 @@ namespace System.Runtime.CompilerServices
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static void RestoreExecutionContext(ExecutionContext? previousExecCtx)
+        private static void RestoreExecutionContext(Thread thread, ExecutionContext? previousExecCtx)
         {
-            if (previousExecCtx == ExecutionContext.DefaultFlowSuppressed)
-            {
-                return;
-            }
-
-            Thread thread = Thread.CurrentThreadAssumedInitialized;
             ExecutionContext? currentExecCtx = thread._executionContext;
-            if (previousExecCtx != currentExecCtx)
+            if (previousExecCtx != currentExecCtx && previousExecCtx != ExecutionContext.DefaultFlowSuppressed)
             {
                 ExecutionContext.RestoreChangedContextToThread(thread, previousExecCtx, currentExecCtx);
             }
@@ -1026,6 +1055,113 @@ namespace System.Runtime.CompilerServices
             flags |= ContinuationFlags.ContinueOnThreadPool;
         }
 
+        // Finish suspension in the common case of a custom await or for a ConfigureAwait(false) task await:
+        // - Capture current ExecutionContext into the continuation
+        // - Restore ExecutionContext and SynchronizationContext to the current Thread object
+        private static void FinishSuspensionNoContinuationContext(ref ExecutionContext? execCtx, bool resumed, ExecutionContext? previousExecCtx, SynchronizationContext? previousSyncCtx)
+        {
+            Thread thread = Thread.CurrentThreadAssumedInitialized;
+
+            ExecutionContext? threadExecCtx = thread._executionContext;
+
+            // Commonly when we reuse a continuation we have already the right
+            // context saved, or we are saving null and it is already null.
+            if (threadExecCtx != execCtx)
+            {
+                if (threadExecCtx != null && threadExecCtx.InstanceIsFlowSuppressed)
+                {
+                    execCtx = ExecutionContext.DefaultFlowSuppressed;
+                }
+                else
+                {
+                    execCtx = threadExecCtx;
+                }
+            }
+            else
+            {
+                Debug.Assert(threadExecCtx == null || !threadExecCtx.InstanceIsFlowSuppressed || execCtx == ExecutionContext.DefaultFlowSuppressed);
+            }
+
+            if (!resumed)
+            {
+                if (previousSyncCtx != thread._synchronizationContext)
+                {
+                    thread._synchronizationContext = previousSyncCtx;
+                }
+
+                if (previousExecCtx != threadExecCtx)
+                {
+                    thread._executionContext = previousExecCtx;
+                }
+            }
+        }
+
+        // Finish suspension in the common case of a standard task await:
+        // - Record continuation context to determine where to continue on resumption
+        // - Capture current ExecutionContext into the continuation
+        // - Restore ExecutionContext and SynchronizationContext to the current Thread object
+        private static void FinishSuspensionWithContinuationContext(ref object continuationContext, ref ContinuationFlags flags, ref ExecutionContext? execCtx, bool resumed, ExecutionContext? previousExecCtx, SynchronizationContext? previousSyncCtx)
+        {
+            Thread thread = Thread.CurrentThreadAssumedInitialized;
+            SynchronizationContext? threadSyncCtx = thread._synchronizationContext;
+            if (threadSyncCtx != null && threadSyncCtx.GetType() != typeof(SynchronizationContext))
+            {
+                flags |= ContinuationFlags.ContinueOnCapturedSynchronizationContext;
+                if (continuationContext != threadSyncCtx)
+                {
+                    continuationContext = threadSyncCtx;
+                }
+            }
+            else
+            {
+                TaskScheduler? sched = TaskScheduler.InternalCurrent;
+                if (sched != null && sched != TaskScheduler.Default)
+                {
+                    flags |= ContinuationFlags.ContinueOnCapturedTaskScheduler;
+                    if (continuationContext != sched)
+                    {
+                        continuationContext = sched;
+                    }
+                }
+                else
+                {
+                    flags |= ContinuationFlags.ContinueOnThreadPool;
+                }
+            }
+
+            ExecutionContext? threadExecCtx = thread._executionContext;
+            // Commonly when we reuse a continuation we have already the right
+            // context saved, or we are saving null and it is already null.
+            if (threadExecCtx != execCtx)
+            {
+                if (threadExecCtx != null && threadExecCtx.InstanceIsFlowSuppressed)
+                {
+                    execCtx = ExecutionContext.DefaultFlowSuppressed;
+                }
+                else
+                {
+                    execCtx = threadExecCtx;
+                }
+            }
+            else
+            {
+                Debug.Assert(threadExecCtx == null || !threadExecCtx.InstanceIsFlowSuppressed || execCtx == ExecutionContext.DefaultFlowSuppressed);
+            }
+
+            if (!resumed)
+            {
+                if (previousSyncCtx != threadSyncCtx)
+                {
+                    thread._synchronizationContext = previousSyncCtx;
+                }
+
+                if (previousExecCtx != threadExecCtx)
+                {
+                    thread._executionContext = previousExecCtx;
+                }
+            }
+        }
+
         [StackTraceHidden]
         internal static T CompletedTaskResult<T>(Task<T> task)
         {
@@ -1053,21 +1189,32 @@ namespace System.Runtime.CompilerServices
             public static void ResumeRuntimeAsyncContext(Task task, ref AsyncDispatcherInfo info, AsyncInstrumentation.Flags flags)
             {
                 info.CurrentTask = task;
+                AsyncProfiler.InitInfo(ref info.AsyncProfilerInfo);
 
                 if (AsyncInstrumentation.IsEnabled.ResumeAsyncContext(flags))
                 {
+                    if (AsyncInstrumentation.IsEnabled.AsyncProfiler(flags))
+                    {
+                        AsyncProfiler.ResumeAsyncContext.Resume(ref info);
+                    }
+
                     if (AsyncInstrumentation.IsEnabled.AsyncDebugger(flags))
                     {
-                        AsyncDebugger.ResumeAsyncContext(task.Id);
+                        AsyncDebugger.ResumeAsyncContext(task);
                     }
                 }
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static void SuspendRuntimeAsyncContext(ref AsyncDispatcherInfo info, AsyncInstrumentation.Flags flags, Continuation curContinuation)
+            public static void QueueSuspendedRuntimeAsyncContext(ref AsyncDispatcherInfo info, AsyncInstrumentation.Flags flags, Continuation curContinuation, Continuation nextContinuation)
             {
                 if (AsyncInstrumentation.IsEnabled.SuspendAsyncContext(flags))
                 {
+                    if (AsyncInstrumentation.IsEnabled.AsyncProfiler(flags))
+                    {
+                        AsyncProfiler.SuspendAsyncContext.Suspend(ref info, nextContinuation);
+                    }
+
                     if (AsyncInstrumentation.IsEnabled.AsyncDebugger(flags))
                     {
                         AsyncDebugger.SuspendAsyncContext(ref info, curContinuation);
@@ -1076,10 +1223,15 @@ namespace System.Runtime.CompilerServices
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static void SuspendRuntimeAsyncContext(AsyncInstrumentation.Flags flags, Continuation curContinuation, Continuation newContinuation)
+            public static void AwaitSuspendedRuntimeAsyncContext(ref AsyncDispatcherInfo info, AsyncInstrumentation.Flags flags, Continuation curContinuation, Continuation newContinuation, Continuation? nextContinuation)
             {
                 if (AsyncInstrumentation.IsEnabled.SuspendAsyncContext(flags))
                 {
+                    if (AsyncInstrumentation.IsEnabled.AsyncProfiler(flags))
+                    {
+                        AsyncProfiler.SuspendAsyncContext.Suspend(ref info, nextContinuation ?? newContinuation);
+                    }
+
                     if (AsyncInstrumentation.IsEnabled.AsyncDebugger(flags))
                     {
                         AsyncDebugger.SuspendAsyncContext(curContinuation, newContinuation);
@@ -1092,6 +1244,11 @@ namespace System.Runtime.CompilerServices
             {
                 if (AsyncInstrumentation.IsEnabled.CompleteAsyncContext(flags))
                 {
+                    if (AsyncInstrumentation.IsEnabled.AsyncProfiler(flags))
+                    {
+                        AsyncProfiler.CompleteAsyncContext.Complete(ref info.AsyncProfilerInfo);
+                    }
+
                     if (AsyncInstrumentation.IsEnabled.AsyncDebugger(flags))
                     {
                         AsyncDebugger.CompleteAsyncContext(info.CurrentTask);
@@ -1099,10 +1256,20 @@ namespace System.Runtime.CompilerServices
                 }
             }
 
-            public static void UnwindRuntimeAsyncMethodUnhandledException(ref AsyncDispatcherInfo info, AsyncInstrumentation.Flags flags, Exception ex, Continuation curContinuation, uint _)
+            public static void UnwindRuntimeAsyncMethodUnhandledException(ref AsyncDispatcherInfo info, AsyncInstrumentation.Flags flags, Exception ex, Continuation curContinuation, uint unwindedFrames)
             {
+                if (AsyncInstrumentation.IsEnabled.AsyncProfiler(flags))
+                {
+                    AsyncProfiler.ContinuationWrapper.UnwindIndex(ref info.AsyncProfilerInfo, unwindedFrames);
+                }
+
                 if (AsyncInstrumentation.IsEnabled.UnwindAsyncException(flags))
                 {
+                    if (AsyncInstrumentation.IsEnabled.AsyncProfiler(flags))
+                    {
+                        AsyncProfiler.AsyncMethodException.Unhandled(ref info.AsyncProfilerInfo, unwindedFrames);
+                    }
+
                     if (AsyncInstrumentation.IsEnabled.AsyncDebugger(flags))
                     {
                         AsyncDebugger.AsyncMethodUnhandledException(info.CurrentTask, ex, curContinuation);
@@ -1110,10 +1277,20 @@ namespace System.Runtime.CompilerServices
                 }
             }
 
-            public static void UnwindRuntimeAsyncMethodHandledException(AsyncInstrumentation.Flags flags, Continuation curContinuation, uint unwindedFrames)
+            public static void UnwindRuntimeAsyncMethodHandledException(ref AsyncDispatcherInfo info, AsyncInstrumentation.Flags flags, Continuation curContinuation, uint unwindedFrames)
             {
+                if (AsyncInstrumentation.IsEnabled.AsyncProfiler(flags))
+                {
+                    AsyncProfiler.ContinuationWrapper.UnwindIndex(ref info.AsyncProfilerInfo, unwindedFrames);
+                }
+
                 if (AsyncInstrumentation.IsEnabled.UnwindAsyncException(flags))
                 {
+                    if (AsyncInstrumentation.IsEnabled.AsyncProfiler(flags))
+                    {
+                        AsyncProfiler.AsyncMethodException.Handled(ref info.AsyncProfilerInfo, unwindedFrames);
+                    }
+
                     if (AsyncInstrumentation.IsEnabled.AsyncDebugger(flags))
                     {
                         AsyncDebugger.AsyncMethodHandledException(curContinuation, unwindedFrames);
@@ -1126,6 +1303,11 @@ namespace System.Runtime.CompilerServices
             {
                 if (AsyncInstrumentation.IsEnabled.ResumeAsyncMethod(flags))
                 {
+                    if (AsyncInstrumentation.IsEnabled.AsyncProfiler(flags))
+                    {
+                        AsyncProfiler.ResumeAsyncMethod.Resume(ref info.AsyncProfilerInfo);
+                    }
+
                     if (AsyncInstrumentation.IsEnabled.AsyncDebugger(flags))
                     {
                         AsyncDebugger.ResumeAsyncMethod(ref info, curContinuation);
@@ -1134,14 +1316,38 @@ namespace System.Runtime.CompilerServices
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static void CompleteRuntimeAsyncMethod(AsyncInstrumentation.Flags flags, Continuation curContinuation)
+            public static void CompleteRuntimeAsyncMethod(ref AsyncDispatcherInfo info, AsyncInstrumentation.Flags flags, Continuation curContinuation)
             {
+                if (AsyncInstrumentation.IsEnabled.AsyncProfiler(flags))
+                {
+                    AsyncProfiler.ContinuationWrapper.IncrementIndex(ref info.AsyncProfilerInfo);
+                }
+
                 if (AsyncInstrumentation.IsEnabled.CompleteAsyncMethod(flags))
                 {
+                    if (AsyncInstrumentation.IsEnabled.AsyncProfiler(flags))
+                    {
+                        AsyncProfiler.CompleteAsyncMethod.Complete(ref info.AsyncProfilerInfo);
+                    }
+
                     if (AsyncInstrumentation.IsEnabled.AsyncDebugger(flags))
                     {
                         AsyncDebugger.CompleteAsyncMethod(curContinuation);
                     }
+                }
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static Continuation? ResumeContinuation(ref AsyncDispatcherInfo info, AsyncInstrumentation.Flags flags, Continuation curContinuation, ref byte resultLoc)
+            {
+                if (AsyncInstrumentation.IsEnabled.AsyncProfiler(flags))
+                {
+                    return AsyncProfiler.ContinuationWrapper.Dispatch(ref info, curContinuation, ref resultLoc);
+                }
+
+                unsafe
+                {
+                    return curContinuation.ResumeInfo->Resume(curContinuation, ref resultLoc);
                 }
             }
         }
@@ -1154,9 +1360,9 @@ namespace System.Runtime.CompilerServices
                 TplEventSource.Log.TraceOperationBegin(task.Id, "System.Runtime.CompilerServices.AsyncHelpers+RuntimeAsyncTask", 0);
             }
 
-            public static void ResumeAsyncContext(int id)
+            public static void ResumeAsyncContext(Task task)
             {
-                TplEventSource.Log.TraceSynchronousWorkBegin(id, CausalitySynchronousWork.Execution);
+                TplEventSource.Log.TraceSynchronousWorkBegin(task.Id, CausalitySynchronousWork.Execution);
             }
 
             public static void SuspendAsyncContext(ref AsyncDispatcherInfo info, Continuation curContinuation)
