@@ -182,11 +182,11 @@ namespace System.Numerics.Tensors
             return Vector512.IsPositive(vector);
         }
 
-            /// <remarks>
-            /// This is the same as <see cref="Aggregate{T, TTransformOperator, TAggregationOperator}(ReadOnlySpan{T})"/>
-            /// with an identity transform, except it early exits on NaN.
-            /// </remarks>
-            private static T MinMaxCore<T, TMinMaxOperator>(ReadOnlySpan<T> x)
+        /// <remarks>
+        /// This is the same as <see cref="Aggregate{T, TTransformOperator, TAggregationOperator}(ReadOnlySpan{T})"/>
+        /// with an identity transform, except it early exits on NaN.
+        /// </remarks>
+        private static T MinMaxCore<T, TMinMaxOperator>(ReadOnlySpan<T> x)
             where T : INumberBase<T>
             where TMinMaxOperator : struct, IAggregationOperator<T>
         {
