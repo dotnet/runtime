@@ -88,6 +88,99 @@ public class SafeArrayMarshallingTest
         return 100;
     }
 
+    [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsBuiltInComEnabled))]
+    public static void MultidimensionalIntArray()
+    {
+        const int rows = 3;
+        const int cols = 4;
+
+        SafeArrayNative.Create2DIntSafeArray(rows, cols, out int[,] result);
+
+        Assert.Equal(rows, result.GetLength(0));
+        Assert.Equal(cols, result.GetLength(1));
+
+        for (int r = 0; r < rows; r++)
+        {
+            for (int c = 0; c < cols; c++)
+            {
+                Assert.Equal(r * cols + c, result[r, c]);
+            }
+        }
+    }
+
+    [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsBuiltInComEnabled))]
+    public static void MultidimensionalIntArrayRoundTrip()
+    {
+        const int rows = 3;
+        const int cols = 4;
+
+        SafeArrayNative.Create2DIntSafeArray(rows, cols, out int[,] result);
+
+        SafeArrayNative.Verify2DIntSafeArray(result, rows, cols);
+    }
+
+    [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsBuiltInComEnabled))]
+    public static void MultidimensionalBoolArray()
+    {
+        const int rows = 2;
+        const int cols = 3;
+
+        SafeArrayNative.Create2DBoolSafeArray(rows, cols, out bool[,] result);
+
+        Assert.Equal(rows, result.GetLength(0));
+        Assert.Equal(cols, result.GetLength(1));
+
+        for (int r = 0; r < rows; r++)
+        {
+            for (int c = 0; c < cols; c++)
+            {
+                Assert.Equal((r + c) % 2 == 0, result[r, c]);
+            }
+        }
+    }
+
+    [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsBuiltInComEnabled))]
+    public static void MultidimensionalBoolArrayRoundTrip()
+    {
+        const int rows = 2;
+        const int cols = 3;
+
+        SafeArrayNative.Create2DBoolSafeArray(rows, cols, out bool[,] result);
+
+        SafeArrayNative.Verify2DBoolSafeArray(result, rows, cols);
+    }
+
+    [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsBuiltInComEnabled))]
+    public static void MultidimensionalStringArray()
+    {
+        const int rows = 2;
+        const int cols = 3;
+
+        SafeArrayNative.Create2DStringSafeArray(rows, cols, out string[,] result);
+
+        Assert.Equal(rows, result.GetLength(0));
+        Assert.Equal(cols, result.GetLength(1));
+
+        for (int r = 0; r < rows; r++)
+        {
+            for (int c = 0; c < cols; c++)
+            {
+                Assert.Equal($"{r},{c}", result[r, c]);
+            }
+        }
+    }
+
+    [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsBuiltInComEnabled))]
+    public static void MultidimensionalStringArrayRoundTrip()
+    {
+        const int rows = 2;
+        const int cols = 3;
+
+        SafeArrayNative.Create2DStringSafeArray(rows, cols, out string[,] result);
+
+        SafeArrayNative.Verify2DStringSafeArray(result, rows, cols);
+    }
+
     private static bool XorArray(bool[] values)
     {
         bool retVal = false;
@@ -221,4 +314,46 @@ class SafeArrayNative
 
     [DllImport(nameof(SafeArrayNative), PreserveSig = false)]
     public static extern void XorBoolArrayInStruct(StructWithSafeArray str, out bool result);
+
+    [DllImport(nameof(SafeArrayNative), PreserveSig = false)]
+    public static extern void Create2DIntSafeArray(
+        int rows,
+        int cols,
+        [MarshalAs(UnmanagedType.SafeArray, SafeArraySubType = VarEnum.VT_I4)] out int[,] result
+    );
+
+    [DllImport(nameof(SafeArrayNative), PreserveSig = false)]
+    public static extern void Verify2DIntSafeArray(
+        [MarshalAs(UnmanagedType.SafeArray, SafeArraySubType = VarEnum.VT_I4)] int[,] array,
+        int rows,
+        int cols
+    );
+
+    [DllImport(nameof(SafeArrayNative), PreserveSig = false)]
+    public static extern void Create2DBoolSafeArray(
+        int rows,
+        int cols,
+        [MarshalAs(UnmanagedType.SafeArray, SafeArraySubType = VarEnum.VT_BOOL)] out bool[,] result
+    );
+
+    [DllImport(nameof(SafeArrayNative), PreserveSig = false)]
+    public static extern void Verify2DBoolSafeArray(
+        [MarshalAs(UnmanagedType.SafeArray, SafeArraySubType = VarEnum.VT_BOOL)] bool[,] array,
+        int rows,
+        int cols
+    );
+
+    [DllImport(nameof(SafeArrayNative), PreserveSig = false)]
+    public static extern void Create2DStringSafeArray(
+        int rows,
+        int cols,
+        [MarshalAs(UnmanagedType.SafeArray, SafeArraySubType = VarEnum.VT_BSTR)] out string[,] result
+    );
+
+    [DllImport(nameof(SafeArrayNative), PreserveSig = false)]
+    public static extern void Verify2DStringSafeArray(
+        [MarshalAs(UnmanagedType.SafeArray, SafeArraySubType = VarEnum.VT_BSTR)] string[,] array,
+        int rows,
+        int cols
+    );
 }

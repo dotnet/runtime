@@ -281,8 +281,13 @@ namespace System.Diagnostics
         /// On Windows, this is implemented using Job Objects with the
         /// <see href="https://learn.microsoft.com/windows/win32/api/winnt/ns-winnt-jobobject_basic_limit_information">JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE</see> flag.
         /// </para>
+        /// <para>
+        /// On Linux and Android, this is implemented using <c>prctl(PR_SET_PDEATHSIG)</c>.
+        /// </para>
         /// </remarks>
         /// <value><see langword="true"/> to terminate the child process when the parent exits; otherwise, <see langword="false"/>. The default is <see langword="false"/>.</value>
+        [SupportedOSPlatform("android")]
+        [SupportedOSPlatform("linux")]
         [SupportedOSPlatform("windows")]
         public bool KillOnParentExit { get; set; }
 

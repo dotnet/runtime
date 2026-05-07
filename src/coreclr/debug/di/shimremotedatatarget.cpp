@@ -1,11 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-//*****************************************************************************
 
-//
-// File: ShimRemoteDataTarget.cpp
-//
-//*****************************************************************************
 #include "stdafx.h"
 #include "safewrap.h"
 
@@ -18,6 +13,12 @@
 
 #include "dbgtransportsession.h"
 #include "dbgtransportmanager.h"
+
+#ifdef __APPLE__
+#include <mach/mach.h>
+#else
+#include <fcntl.h>
+#endif
 
 class ShimRemoteDataTarget : public ShimDataTarget
 {
@@ -68,7 +69,7 @@ private:
     DbgTransportTarget  * m_pProxy;
     DbgTransportSession * m_pTransport;
 #ifdef FEATURE_REMOTE_PROC_MEM
-    DWORD m_memoryHandle;                   // PAL_ReadProcessMemory handle or UINT32_MAX if fallback
+    DWORD m_memoryHandle;                   // Remote-memory handle or UINT32_MAX if fallback
 #endif
 };
 
@@ -106,8 +107,23 @@ ShimRemoteDataTarget::ShimRemoteDataTarget(DWORD processId,
     m_pContinueStatusChangedUserData = NULL;
 
 #ifdef FEATURE_REMOTE_PROC_MEM
-    PAL_OpenProcessMemory(m_processId, &m_memoryHandle);
+    m_memoryHandle = UINT32_MAX;
+#ifdef __APPLE__
+    mach_port_name_t port;
+    if (::task_for_pid(mach_task_self(), (int)m_processId, &port) == KERN_SUCCESS)
+    {
+        m_memoryHandle = port;
+    }
+#else
+    char memPath[128];
+    snprintf(memPath, sizeof(memPath), "/proc/%lu/mem", (unsigned long)m_processId);
+    int fd = open(memPath, O_RDONLY);
+    if (fd != -1)
+    {
+        m_memoryHandle = (DWORD)fd;
+    }
 #endif
+#endif // FEATURE_REMOTE_PROC_MEM
 }
 
 //---------------------------------------------------------------------------------------
@@ -133,8 +149,15 @@ ShimRemoteDataTarget::~ShimRemoteDataTarget()
 void ShimRemoteDataTarget::Dispose()
 {
 #ifdef FEATURE_REMOTE_PROC_MEM
-    PAL_CloseProcessMemory(m_memoryHandle);
-    m_memoryHandle = UINT32_MAX;
+    if (m_memoryHandle != UINT32_MAX)
+    {
+#ifdef __APPLE__
+        ::mach_port_deallocate(mach_task_self(), (mach_port_name_t)m_memoryHandle);
+#else
+        close((int)m_memoryHandle);
+#endif
+        m_memoryHandle = UINT32_MAX;
+    }
 #endif
     if (m_pTransport != NULL)
     {
@@ -272,13 +295,65 @@ ShimRemoteDataTarget::ReadVirtual(
 #ifdef FEATURE_REMOTE_PROC_MEM
     if (m_memoryHandle != UINT32_MAX)
     {
-        if (!PAL_ReadProcessMemory(m_memoryHandle, (ULONG64)address, pBuffer, cbRequestSize, &read))
+        read = 0;
+#ifdef __APPLE__
+        // vm_read_overwrite usually requires the address be page-aligned and the size be a multiple
+        // of the page size, so we always page-align ourselves and copy out the relevant slice.
+        const size_t pageSize = (size_t)sysconf(_SC_PAGESIZE);
+        vm_address_t addressAligned = (vm_address_t)(address & ~(ULONG64)(pageSize - 1));
+        ssize_t offset = (ssize_t)(address & (pageSize - 1));
+        ssize_t bytesLeft = (ssize_t)cbRequestSize;
+
+        char * data = (char *)malloc(pageSize);
+        if (data != nullptr)
+        {
+            while (bytesLeft > 0)
+            {
+                vm_size_t bytesRead = pageSize;
+                if (::vm_read_overwrite((vm_map_t)m_memoryHandle, addressAligned, pageSize,
+                                         (vm_address_t)data, &bytesRead) != KERN_SUCCESS
+                    || bytesRead != pageSize)
+                {
+                    break;
+                }
+                ssize_t bytesToCopy = pageSize - offset;
+                if (bytesToCopy > bytesLeft)
+                {
+                    bytesToCopy = bytesLeft;
+                }
+                memcpy((LPSTR)pBuffer + read, data + offset, bytesToCopy);
+                addressAligned += pageSize;
+                read += bytesToCopy;
+                bytesLeft -= bytesToCopy;
+                offset = 0;
+            }
+            free(data);
+        }
+        if (cbRequestSize != 0 && read == 0)
         {
             hr = E_FAIL;
         }
+#else
+        // Android's heap allocator (scudo) uses ARM64 Top-Byte Ignore (TBI) for memory tagging.
+        // pread on /proc/<pid>/mem treats the offset as a file position, not a virtual address,
+        // so the kernel does not apply TBI -- tagged pointers cause EINVAL.
+        // See https://www.kernel.org/doc/html/latest/arch/arm64/tagged-address-abi.html
+#ifdef TARGET_ARM64
+        address &= 0x00FFFFFFFFFFFFFFULL;
+#endif
+        ssize_t r = pread((int)m_memoryHandle, pBuffer, cbRequestSize, (off_t)address);
+        if (r == -1)
+        {
+            hr = E_FAIL;
+        }
+        else
+        {
+            read = (size_t)r;
+        }
+#endif
     }
     else
-#endif
+#endif // FEATURE_REMOTE_PROC_MEM
     {
         hr = m_pTransport->ReadMemory(reinterpret_cast<BYTE *>(CORDB_ADDRESS_TO_PTR(address)), pBuffer, cbRequestSize);
     }

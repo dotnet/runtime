@@ -598,6 +598,7 @@
     <Compile Include="Compiler\DependencyAnalysis\TypeManagerIndirectionNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\TlsRootNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\BlobNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ManagedDataDescriptorNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\EETypeNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\CanonicalDefinitionEETypeNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ExternSymbolNode.cs" />
@@ -691,6 +692,7 @@
     <Compile Include="Compiler\RootingHelpers.cs" />
     <Compile Include="Compiler\RootingServiceProvider.cs" />
     <Compile Include="Compiler\RuntimeConfigurationRootProvider.cs" />
+    <Compile Include="Compiler\ManagedDataDescriptorProvider.cs" />
     <Compile Include="Compiler\SingleFileCompilationModuleGroup.cs" />
     <Compile Include="Compiler\SingleMethodCompilationModuleGroup.cs" />
     <Compile Include="Compiler\ILAssemblyGeneratingMethodDebugInfoProvider.cs" />
