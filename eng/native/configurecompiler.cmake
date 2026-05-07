@@ -870,6 +870,11 @@ if(CLR_CMAKE_HOST_UNIX_ARMV6)
    add_compile_options(-mfloat-abi=hard)
 endif(CLR_CMAKE_HOST_UNIX_ARMV6)
 
+if(CLR_CMAKE_HOST_UNIX_RISCV64)
+  add_compile_options(-march=rv64gc)
+  add_compile_options(-mabi=lp64d)
+endif(CLR_CMAKE_HOST_UNIX_RISCV64)
+
 if(CLR_CMAKE_HOST_UNIX_X86)
   add_compile_options(-msse2)
 endif()
