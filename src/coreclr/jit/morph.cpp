@@ -8732,16 +8732,13 @@ GenTree* Compiler::fgOptimizeCmp(GenTreeOp* cmp)
 {
     assert(cmp->OperIsCmpCompare());
 
-    if (!varTypeIsIntegralOrI(cmp))
+    if (cmp->gtGetOp1()->OperIs(GT_CAST) || cmp->gtGetOp2()->OperIs(GT_CAST))
     {
-        return cmp;
-    }
-
-    // TODO-CQ: This should be called for all comparisons
-    if (cmp->OperIs(GT_LT, GT_LE, GT_GE, GT_GT) &&
-        (cmp->gtGetOp1()->OperIs(GT_CAST) || cmp->gtGetOp2()->OperIs(GT_CAST)))
-    {
-        cmp = fgOptimizeCmpWithCasts(cmp)->AsOp();
+        // TODO-CQ: Remove this check, should be called for all
+        if (!cmp->OperIs(GT_EQ, GT_NE))
+        {
+            cmp = fgOptimizeCmpWithCasts(cmp)->AsOp();
+        }
     }
 
     if (cmp->gtGetOp2()->IsIntegralConst())
@@ -8756,7 +8753,7 @@ GenTree* Compiler::fgOptimizeCmp(GenTreeOp* cmp)
         }
     }
 
-    if (cmp->OperIs(GT_LT, GT_LE, GT_GE, GT_GT) && opts.OptimizationEnabled() && fgGlobalMorph)
+    if (opts.OptimizationEnabled() && fgGlobalMorph && cmp->OperIs(GT_LT, GT_LE, GT_GE, GT_GT))
     {
         // Normalize unsigned comparisons to signed if both operands a known to be never negative.
         if (cmp->IsUnsigned() && varTypeIsIntegral(cmp->gtGetOp1()) && cmp->gtGetOp1()->IsNeverNegative(this) &&
