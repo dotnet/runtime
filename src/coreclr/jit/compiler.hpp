@@ -2974,7 +2974,7 @@ inline unsigned Compiler::compMapILargNum(unsigned ILargNum)
     assert(ILargNum < info.compILargsCount);
 
 #if defined(TARGET_WASM)
-    if (ILargNum >= lvaWasmSpArg)
+    if ((ILargNum >= lvaWasmSpArg) && (lvaWasmSpArg != BAD_VAR_NUM) && lvaGetDesc(lvaWasmSpArg)->lvIsParam)
     {
         ILargNum++;
         assert(ILargNum < info.compLocalsCount); // compLocals count already adjusted.
