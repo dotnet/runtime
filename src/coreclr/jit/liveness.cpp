@@ -1354,7 +1354,7 @@ void Liveness<TLiveness>::MarkMustInitAndEHVars(VARSET_VALARG_TP finallyVars, VA
         }
 
         // Fields of dependently promoted structs may be tracked. We shouldn't set lvMustInit on them since
-        // the whole parent struct will be initialized; however, lvLiveInOutOfHndlr should be set on them
+        // the whole parent struct will be initialized; however, lvLiveInOutOfHandler should be set on them
         // as appropriate.
 
         bool fieldOfDependentlyPromotedStruct = m_compiler->lvaIsFieldOfDependentlyPromotedStruct(varDsc);
