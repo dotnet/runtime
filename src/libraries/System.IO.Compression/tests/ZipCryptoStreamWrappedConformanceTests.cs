@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.IO.Compression;
 using System.IO.Tests;
 using System.Reflection;
 using System.Threading;
@@ -20,8 +19,6 @@ namespace System.IO.Compression.Tests
         private const string TestPassword = "test-password";
         private const ushort PasswordVerifier = 0x1234;
 
-        private static readonly Type s_zipCryptoStreamType;
-        private static readonly Type s_zipCryptoKeysType;
         private delegate object CreateKeyDelegate(ReadOnlySpan<char> password);
         private static readonly CreateKeyDelegate s_createKey;
         private static readonly MethodInfo s_createEncryptionMethod;
@@ -30,17 +27,17 @@ namespace System.IO.Compression.Tests
 
         static ZipCryptoStreamWrappedConformanceTests()
         {
-            var assembly = typeof(ZipArchive).Assembly;
-            s_zipCryptoStreamType = assembly.GetType("System.IO.Compression.ZipCryptoStream", throwOnError: true)!;
-            s_zipCryptoKeysType = assembly.GetType("System.IO.Compression.ZipCryptoKeys", throwOnError: true)!;
+            Type zipCryptoStreamType = Type.GetType("System.IO.Compression.ZipCryptoStream, System.IO.Compression")!;
+            Type zipCryptoKeysType = Type.GetType("System.IO.Compression.ZipCryptoKeys, System.IO.Compression")!;
 
-            MethodInfo createKeyMethod = s_zipCryptoStreamType.GetMethod("CreateKey",
+            MethodInfo createKeyMethod = zipCryptoStreamType.GetMethod("CreateKey",
                 BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static,
                 null,
                 new[] { typeof(ReadOnlySpan<char>) },
                 null)!;
 
             // Use DynamicMethod to box the struct return value.
+#pragma warning disable IL3050 // RequiresDynamicCode: DynamicMethod is not supported in AOT; these tests are skipped under NativeAOT.
             var dm = new System.Reflection.Emit.DynamicMethod(
                 "CreateKeyWrapper",
                 typeof(object),
@@ -50,26 +47,27 @@ namespace System.IO.Compression.Tests
             var il = dm.GetILGenerator();
             il.Emit(System.Reflection.Emit.OpCodes.Ldarg_0);
             il.Emit(System.Reflection.Emit.OpCodes.Call, createKeyMethod);
-            il.Emit(System.Reflection.Emit.OpCodes.Box, s_zipCryptoKeysType);
+            il.Emit(System.Reflection.Emit.OpCodes.Box, zipCryptoKeysType);
             il.Emit(System.Reflection.Emit.OpCodes.Ret);
             s_createKey = dm.CreateDelegate<CreateKeyDelegate>();
+#pragma warning restore IL3050
 
-            s_createEncryptionMethod = s_zipCryptoStreamType.GetMethod("Create",
+            s_createEncryptionMethod = zipCryptoStreamType.GetMethod("Create",
                 BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static,
                 null,
-                new[] { typeof(Stream), s_zipCryptoKeysType, typeof(ushort), typeof(bool), typeof(uint?), typeof(bool) },
+                new[] { typeof(Stream), zipCryptoKeysType, typeof(ushort), typeof(bool), typeof(uint?), typeof(bool) },
                 null)!;
 
-            s_createDecryptionMethod = s_zipCryptoStreamType.GetMethod("Create",
+            s_createDecryptionMethod = zipCryptoStreamType.GetMethod("Create",
                 BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static,
                 null,
-                new[] { typeof(Stream), s_zipCryptoKeysType, typeof(byte), typeof(bool), typeof(bool) },
+                new[] { typeof(Stream), zipCryptoKeysType, typeof(byte), typeof(bool), typeof(bool) },
                 null)!;
 
-            s_createAsyncMethod = s_zipCryptoStreamType.GetMethod("CreateAsync",
+            s_createAsyncMethod = zipCryptoStreamType.GetMethod("CreateAsync",
                BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static,
                null,
-               new[] { typeof(Stream), s_zipCryptoKeysType, typeof(byte), typeof(bool), typeof(CancellationToken), typeof(bool) },
+               new[] { typeof(Stream), zipCryptoKeysType, typeof(byte), typeof(bool), typeof(CancellationToken), typeof(bool) },
                null);
         }
 
@@ -132,7 +130,9 @@ namespace System.IO.Compression.Tests
             await task.ConfigureAwait(false);
 
             // Get the Result property from the completed task
-            var resultProperty = task.GetType().GetProperty("Result")!;
+#pragma warning disable IL2075 // CreateAsync returns Task<ZipCryptoStream>; this test is skipped under NativeAOT.
+            var resultProperty = task.GetType().GetProperty(nameof(Task<object>.Result))!;
+#pragma warning restore IL2075
             return (Stream)resultProperty.GetValue(task)!;
 
         }

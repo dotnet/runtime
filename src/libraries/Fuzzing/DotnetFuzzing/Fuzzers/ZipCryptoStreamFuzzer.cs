@@ -28,22 +28,37 @@ internal sealed class ZipCryptoStreamFuzzer : IFuzzer
         TestStream(CopyToRentedArray(bytes), bytes.Length, async: true).GetAwaiter().GetResult();
     }
 
-#pragma warning disable IL2026 // RequiresUnreferencedCode
-    private static readonly Type _zipCryptoStreamType = typeof(ZipArchive).Assembly.GetType("System.IO.Compression.ZipCryptoStream", throwOnError: true)!;
-    private static readonly Type _zipCryptoKeysType = typeof(ZipArchive).Assembly.GetType("System.IO.Compression.ZipCryptoKeys", throwOnError: true)!;
-#pragma warning restore IL2026
-
     // ReadOnlySpan<char> is a ref struct and cannot be boxed for MethodInfo.Invoke,
     // and CreateDelegate cannot handle struct-to-object return covariance.
     // Use DynamicMethod to emit a wrapper that boxes the struct return value.
     private delegate object CreateKeyDelegate(ReadOnlySpan<char> password);
 
-#pragma warning disable IL2077 // dynamic access to non-public members
-    private static readonly CreateKeyDelegate _createKey = CreateBoxingDelegate();
+    private static readonly CreateKeyDelegate _createKey;
+    private static readonly MethodInfo _createMethod;
+    private static readonly object s_keys;
 
-    private static CreateKeyDelegate CreateBoxingDelegate()
+    static ZipCryptoStreamFuzzer()
     {
-        MethodInfo createKeyMethod = _zipCryptoStreamType.GetMethod(
+        Type zipCryptoStreamType = Type.GetType("System.IO.Compression.ZipCryptoStream, System.IO.Compression")!;
+        Type zipCryptoKeysType = Type.GetType("System.IO.Compression.ZipCryptoKeys, System.IO.Compression")!;
+
+#pragma warning disable IL3050 // RequiresDynamicCode: DynamicMethod is not AOT-compatible; fuzzers run under CoreCLR only.
+        _createKey = CreateBoxingDelegate(zipCryptoStreamType, zipCryptoKeysType);
+#pragma warning restore IL3050
+
+        _createMethod = zipCryptoStreamType.GetMethod(
+            "Create",
+            BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static,
+            binder: null,
+            types: [typeof(Stream), zipCryptoKeysType, typeof(byte), typeof(bool), typeof(bool)],
+            modifiers: null)!;
+
+        s_keys = _createKey("fuzz");
+    }
+
+    private static CreateKeyDelegate CreateBoxingDelegate(Type zipCryptoStreamType, Type zipCryptoKeysType)
+    {
+        MethodInfo createKeyMethod = zipCryptoStreamType.GetMethod(
             "CreateKey",
             BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static)!;
 
@@ -56,21 +71,10 @@ internal sealed class ZipCryptoStreamFuzzer : IFuzzer
         var il = dm.GetILGenerator();
         il.Emit(System.Reflection.Emit.OpCodes.Ldarg_0);
         il.Emit(System.Reflection.Emit.OpCodes.Call, createKeyMethod);
-        il.Emit(System.Reflection.Emit.OpCodes.Box, _zipCryptoKeysType);
+        il.Emit(System.Reflection.Emit.OpCodes.Box, zipCryptoKeysType);
         il.Emit(System.Reflection.Emit.OpCodes.Ret);
         return dm.CreateDelegate<CreateKeyDelegate>();
     }
-
-    private static readonly MethodInfo _createMethod = _zipCryptoStreamType.GetMethod(
-        "Create",
-        BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static,
-        binder: null,
-        types: [typeof(Stream), _zipCryptoKeysType, typeof(byte), typeof(bool), typeof(bool)],
-        modifiers: null)!;
-#pragma warning restore IL2077
-
-    // Derive keys from a fixed password so the key state is realistic.
-    private static readonly object s_keys = _createKey("fuzz");
 
     private static Stream CreateStream(byte[] bytes, int length)
     {

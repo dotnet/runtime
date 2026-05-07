@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.IO.Compression;
 using System.IO.Tests;
 using System.Reflection;
 using System.Runtime.Versioning;
@@ -37,8 +36,6 @@ namespace System.IO.Compression.Tests
     {
         private const string TestPassword = "test-password";
 
-        private static readonly Type s_winZipAesStreamType;
-        private static readonly Type s_winZipAesKeyMaterialType;
         private delegate object CreateKeyDelegate(ReadOnlySpan<char> password, byte[]? salt, int keySizeBits);
         private static readonly CreateKeyDelegate s_createKey;
         private static readonly MethodInfo s_createMethod;
@@ -48,11 +45,10 @@ namespace System.IO.Compression.Tests
 
         static WinZipAesStreamConformanceTests()
         {
-            var assembly = typeof(ZipArchive).Assembly;
-            s_winZipAesStreamType = assembly.GetType("System.IO.Compression.WinZipAesStream", throwOnError: true)!;
-            s_winZipAesKeyMaterialType = assembly.GetType("System.IO.Compression.WinZipAesKeyMaterial", throwOnError: true)!;
+            Type winZipAesStreamType = Type.GetType("System.IO.Compression.WinZipAesStream, System.IO.Compression")!;
+            Type winZipAesKeyMaterialType = Type.GetType("System.IO.Compression.WinZipAesKeyMaterial, System.IO.Compression")!;
 
-            MethodInfo createKeyMethod = s_winZipAesKeyMaterialType.GetMethod("Create",
+            MethodInfo createKeyMethod = winZipAesKeyMaterialType.GetMethod("Create",
                 BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static,
                 null,
                 new[] { typeof(ReadOnlySpan<char>), typeof(byte[]), typeof(int) },
@@ -60,6 +56,7 @@ namespace System.IO.Compression.Tests
 
             // CreateDelegate can't handle value-type return covariance (struct → object boxing).
             // Use DynamicMethod to emit a wrapper that calls the target and boxes the result.
+#pragma warning disable IL3050 // RequiresDynamicCode: DynamicMethod is not supported in AOT; these tests are skipped under NativeAOT.
             var dm = new System.Reflection.Emit.DynamicMethod(
                 "CreateKeyWrapper",
                 typeof(object),
@@ -71,14 +68,15 @@ namespace System.IO.Compression.Tests
             il.Emit(System.Reflection.Emit.OpCodes.Ldarg_1);
             il.Emit(System.Reflection.Emit.OpCodes.Ldarg_2);
             il.Emit(System.Reflection.Emit.OpCodes.Call, createKeyMethod);
-            il.Emit(System.Reflection.Emit.OpCodes.Box, s_winZipAesKeyMaterialType);
+            il.Emit(System.Reflection.Emit.OpCodes.Box, winZipAesKeyMaterialType);
             il.Emit(System.Reflection.Emit.OpCodes.Ret);
             s_createKey = dm.CreateDelegate<CreateKeyDelegate>();
+#pragma warning restore IL3050
 
-            s_createMethod = s_winZipAesStreamType.GetMethod("Create",
+            s_createMethod = winZipAesStreamType.GetMethod("Create",
                 BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static,
                 null,
-                new[] { typeof(Stream), s_winZipAesKeyMaterialType, typeof(long), typeof(bool), typeof(bool) },
+                new[] { typeof(Stream), winZipAesKeyMaterialType, typeof(long), typeof(bool), typeof(bool) },
                 null)!;
         }
 
