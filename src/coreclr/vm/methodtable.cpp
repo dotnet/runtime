@@ -5051,7 +5051,6 @@ void MethodTable::SetInternalCorElementType(CorElementType elemType, bool isTrue
         SetFlag(isTruePrimitive ? enum_flag_Category_TruePrimitive : enum_flag_Category_PrimitiveValueType);
         break;
     }
-    }
 
     GetClass()->SetInternalCorElementType(elemType);
     _ASSERTE(GetInternalCorElementType() == elemType);
