@@ -38,6 +38,7 @@ using std::nothrow;
 #include <stddef.h>
 #include <minipal/guid.h>
 #include <minipal/log.h>
+#include <minipal/ospagesize.h>
 #include <dn-u16.h>
 
 #include "clrnt.h"
@@ -576,8 +577,6 @@ int GetTotalProcessorCount();
 // Returns the number of processors that a process has been configured to run on
 //******************************************************************************
 int GetCurrentProcessCpuCount();
-
-uint32_t GetOsPageSize();
 
 
 //*****************************************************************************
