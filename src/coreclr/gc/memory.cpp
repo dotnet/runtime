@@ -98,8 +98,10 @@ bool gc_heap::virtual_commit (void* address, size_t size, int bucket, int h_numb
     }
 
     // If it's a valid heap number it means it's commiting for memory on the GC heap.
-    // In addition if large pages is enabled, we set commit_succeeded_p to true because memory is already committed.
-    bool commit_succeeded_p = ((h_number >= 0) ? (use_large_pages_p ? true :
+    // In addition if never-decommit is enabled (which is implied by large pages), we
+    // set commit_succeeded_p to true because memory is already committed (and
+    // VirtualCommit would be a no-op).
+    bool commit_succeeded_p = ((h_number >= 0) ? (never_decommit_p ? true :
                               virtual_alloc_commit_for_heap (address, size, h_number)) :
                               GCToOSInterface::VirtualCommit(address, size));
 
@@ -171,10 +173,11 @@ bool gc_heap::virtual_decommit (void* address, size_t size, int bucket, int h_nu
      * Case 3: This is for free - the bucket will be recorded_committed_free_bucket, and the h_number will be -1
      */
 
-    // With large pages, VirtualDecommit on heap memory is a no-op. All such callers
-    // should either skip the decommit or handle stale data themselves (decommit_region
-    // does the latter by calling reduce_committed_bytes directly and clearing memory).
-    assert (!use_large_pages_p || bucket == recorded_committed_bookkeeping_bucket);
+    // With never-decommit (implied by large pages), VirtualDecommit on heap memory is
+    // a no-op. All such callers should either skip the decommit or handle stale data
+    // themselves (decommit_region does the latter by calling reduce_committed_bytes
+    // directly and clearing memory).
+    assert (!never_decommit_p || bucket == recorded_committed_bookkeeping_bucket);
 
     bool decommit_succeeded_p = GCToOSInterface::VirtualDecommit (address, size);
 
@@ -202,7 +205,7 @@ void gc_heap::virtual_free (void* add, size_t allocated_size, heap_segment* sg)
 // distribute_free_regions where we are calling estimate_gen_growth.
 void gc_heap::decommit_ephemeral_segment_pages()
 {
-    if (settings.concurrent || use_large_pages_p || (settings.pause_mode == pause_no_gc))
+    if (settings.concurrent || never_decommit_p || (settings.pause_mode == pause_no_gc))
     {
         return;
     }
@@ -315,15 +318,15 @@ bool gc_heap::decommit_step (uint64_t step_milliseconds)
             }
         }
     }
-    if (use_large_pages_p)
+    if (never_decommit_p)
     {
         return (decommit_size != 0);
     }
 #endif //USE_REGIONS
 #ifdef MULTIPLE_HEAPS
-    // should never get here for large pages because decommit_ephemeral_segment_pages
-    // will not do anything if use_large_pages_p is true
-    assert(!use_large_pages_p);
+    // should never get here for never-decommit because decommit_ephemeral_segment_pages
+    // will not do anything if never_decommit_p is true
+    assert(!never_decommit_p);
 
     for (int i = 0; i < n_heaps; i++)
     {
@@ -345,10 +348,10 @@ size_t gc_heap::decommit_region (heap_segment* region, int bucket, int h_number)
     uint8_t* decommit_end = heap_segment_committed (region);
     size_t decommit_size = decommit_end - page_start;
     bool decommit_succeeded_p;
-    if (use_large_pages_p)
+    if (never_decommit_p)
     {
-        // VirtualDecommit is a no-op for large pages so skip it and update
-        // committed bookkeeping directly. Memory clearing is handled below.
+        // VirtualDecommit is a no-op when never_decommit_p is set, so skip it and
+        // update committed bookkeeping directly. Memory clearing is handled below.
         decommit_succeeded_p = true;
         reduce_committed_bytes (page_start, decommit_size, bucket, h_number, true);
     }
@@ -356,7 +359,7 @@ size_t gc_heap::decommit_region (heap_segment* region, int bucket, int h_number)
     {
         decommit_succeeded_p = virtual_decommit (page_start, decommit_size, bucket, h_number);
     }
-    bool require_clearing_memory_p = !decommit_succeeded_p || use_large_pages_p;
+    bool require_clearing_memory_p = !decommit_succeeded_p || never_decommit_p;
     dprintf (REGIONS_LOG, ("decommitted region %p(%p-%p) (%zu bytes) - success: %d",
         region,
         page_start,
@@ -365,7 +368,7 @@ size_t gc_heap::decommit_region (heap_segment* region, int bucket, int h_number)
         decommit_succeeded_p));
     if (require_clearing_memory_p)
     {
-        uint8_t* clear_end = use_large_pages_p ? heap_segment_used (region) : heap_segment_committed (region);
+        uint8_t* clear_end = never_decommit_p ? heap_segment_used (region) : heap_segment_committed (region);
         size_t clear_size = clear_end - page_start;
         memclr (page_start, clear_size);
         heap_segment_used (region) = heap_segment_mem (region);
@@ -397,7 +400,7 @@ size_t gc_heap::decommit_region (heap_segment* region, int bucket, int h_number)
     }
 #endif //BACKGROUND_GC
 
-    if (use_large_pages_p)
+    if (never_decommit_p)
     {
         assert (heap_segment_used (region) == heap_segment_mem (region));
     }

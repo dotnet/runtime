@@ -13,7 +13,6 @@ internal readonly struct Object_1 : IObject
     private readonly ulong _methodTableOffset;
     private readonly byte _objectToMethodTableUnmask;
     private readonly TargetPointer _stringMethodTable;
-    private readonly TargetPointer _syncTableEntries;
     private readonly uint _syncBlockIsHashOrSyncBlockIndex;
     private readonly uint _syncBlockIsHashCode;
     private readonly uint _syncBlockHashCodeMask;
@@ -25,7 +24,6 @@ internal readonly struct Object_1 : IObject
         _methodTableOffset = (ulong)target.GetTypeInfo(DataType.Object).Fields["m_pMethTab"].Offset;
         _objectToMethodTableUnmask = target.ReadGlobal<byte>(Constants.Globals.ObjectToMethodTableUnmask);
         _stringMethodTable = target.ReadPointer(target.ReadGlobalPointer(Constants.Globals.StringMethodTable));
-        _syncTableEntries = target.ReadPointer(target.ReadGlobalPointer(Constants.Globals.SyncTableEntries));
         _syncBlockIsHashOrSyncBlockIndex = target.ReadGlobal<uint>(Constants.Globals.SyncBlockIsHashOrSyncBlockIndex);
         _syncBlockIsHashCode = target.ReadGlobal<uint>(Constants.Globals.SyncBlockIsHashCode);
         _syncBlockHashCodeMask = target.ReadGlobal<uint>(Constants.Globals.SyncBlockHashCodeMask);
@@ -100,22 +98,11 @@ internal readonly struct Object_1 : IObject
         ccw = TargetPointer.Null;
         ccf = TargetPointer.Null;
 
-        ulong objectHeaderSize = _target.GetTypeInfo(DataType.ObjectHeader).Size!.Value;
-        Data.ObjectHeader header = _target.ProcessedData.GetOrAdd<Data.ObjectHeader>(address - objectHeaderSize);
-        uint syncBlockValue = header.SyncBlockValue;
-
-        // Check if the sync block value represents a sync block index
-        if ((syncBlockValue & (_syncBlockIsHashCode | _syncBlockIsHashOrSyncBlockIndex))
-                != _syncBlockIsHashOrSyncBlockIndex)
+        TargetPointer syncBlockPtr = GetSyncBlockAddress(address);
+        if (syncBlockPtr == TargetPointer.Null)
             return false;
 
-        uint index = syncBlockValue & _syncBlockIndexMask;
-        ulong offsetInSyncTableEntries = index * (ulong)_target.GetTypeInfo(DataType.SyncTableEntry).Size!;
-        Data.SyncTableEntry entry = _target.ProcessedData.GetOrAdd<Data.SyncTableEntry>(_syncTableEntries + offsetInSyncTableEntries);
-        if (entry.SyncBlock is not Data.SyncBlock syncBlock)
-            return false;
-
-        return _target.Contracts.SyncBlock.GetBuiltInComData(syncBlock.Address, out rcw, out ccw, out ccf);
+        return _target.Contracts.SyncBlock.GetBuiltInComData(syncBlockPtr, out rcw, out ccw, out ccf);
     }
 
     int IObject.TryGetHashCode(TargetPointer address)
@@ -132,8 +119,7 @@ internal readonly struct Object_1 : IObject
             }
             else
             {
-                uint index = syncBlockValue & _syncBlockIndexMask;
-                TargetPointer syncBlockPtr = _target.Contracts.SyncBlock.GetSyncBlock(index);
+                TargetPointer syncBlockPtr = GetSyncBlockAddress(address);
                 if (syncBlockPtr != TargetPointer.Null)
                 {
                     Data.SyncBlock syncBlock = _target.ProcessedData.GetOrAdd<Data.SyncBlock>(syncBlockPtr);
@@ -143,5 +129,20 @@ internal readonly struct Object_1 : IObject
         }
 
         return 0;
+    }
+
+    public TargetPointer GetSyncBlockAddress(TargetPointer address)
+    {
+        ulong objectHeaderSize = _target.GetTypeInfo(DataType.ObjectHeader).Size!.Value;
+        Data.ObjectHeader header = _target.ProcessedData.GetOrAdd<Data.ObjectHeader>(address - objectHeaderSize);
+        uint syncBlockValue = header.SyncBlockValue;
+
+        // Check if the sync block value represents a sync block index (not a hash code)
+        if ((syncBlockValue & (_syncBlockIsHashCode | _syncBlockIsHashOrSyncBlockIndex))
+                != _syncBlockIsHashOrSyncBlockIndex)
+            return TargetPointer.Null;
+
+        uint index = syncBlockValue & _syncBlockIndexMask;
+        return _target.Contracts.SyncBlock.GetSyncBlock(index);
     }
 }

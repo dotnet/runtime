@@ -44,6 +44,10 @@
 #endif
 #include <pthread.h>
 
+#if HAVE_PR_SET_PDEATHSIG
+#include <sys/prctl.h>
+#endif
+
 #if HAVE_SCHED_SETAFFINITY || HAVE_SCHED_GETAFFINITY
 #include <sched.h>
 #endif
@@ -325,6 +329,196 @@ static void RestrictHandleInheritance(int32_t* inheritedFds, int32_t inheritedFd
     }
 }
 
+// Forward declaration of the internal fork+exec function
+static int32_t ForkAndExecProcessInternal(
+    const char* filename, char* const argv[], char* const envp[], const char* cwd,
+    int32_t setCredentials, uint32_t userId, uint32_t groupId, uint32_t* groups, int32_t groupsLength,
+    int32_t* childPid, int32_t stdinFd, int32_t stdoutFd, int32_t stderrFd,
+    int32_t* inheritedFds, int32_t inheritedFdCount, int32_t startDetached, int32_t applyPDeathSig);
+
+#if HAVE_PR_SET_PDEATHSIG
+// Dedicated thread infrastructure for PR_SET_PDEATHSIG.
+//
+// On Linux, PR_SET_PDEATHSIG sends the death signal when the *thread* that called
+// prctl exits, not when the process exits. To ensure the signal is sent only when
+// the process truly exits, we use a long-lived dedicated thread that:
+// 1. Performs fork+exec for each request where killOnParentExit is set.
+// 2. Lives for the lifetime of the application.
+//
+// Because the forking thread does not exit until process exit, children forked from
+// it can use PR_SET_PDEATHSIG so the signal is delivered when the process exits.
+
+typedef struct
+{
+    const char* filename;
+    char* const* argv;
+    char* const* envp;
+    const char* cwd;
+    int32_t setCredentials;
+    uint32_t userId;
+    uint32_t groupId;
+    uint32_t* groups;
+    int32_t groupsLength;
+    int32_t stdinFd;
+    int32_t stdoutFd;
+    int32_t stderrFd;
+    int32_t* inheritedFds;
+    int32_t inheritedFdCount;
+    int32_t startDetached;
+
+    // Output
+    int32_t childPid;
+    int32_t result;
+    int32_t errnoValue;
+    int32_t done;
+} PDeathSigForkRequest;
+
+static pthread_mutex_t s_pdeathsig_mutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_cond_t s_pdeathsig_request_cond = PTHREAD_COND_INITIALIZER;
+static pthread_cond_t s_pdeathsig_done_cond = PTHREAD_COND_INITIALIZER;
+static PDeathSigForkRequest* s_pdeathsig_request = NULL;
+static bool s_pdeathsig_thread_started = false;
+
+static void* PDeathSigThreadFunc(void* arg)
+{
+    (void)arg;
+
+    pthread_mutex_lock(&s_pdeathsig_mutex);
+
+    while (1)
+    {
+        // Wait for a fork request
+        while (s_pdeathsig_request == NULL)
+        {
+            pthread_cond_wait(&s_pdeathsig_request_cond, &s_pdeathsig_mutex);
+        }
+
+        PDeathSigForkRequest* req = s_pdeathsig_request;
+
+        // Perform the fork+exec with applyPDeathSig=1 so prctl is called after fork in child
+        int32_t childPid = -1;
+        req->result = ForkAndExecProcessInternal(
+            req->filename, req->argv, req->envp, req->cwd,
+            req->setCredentials, req->userId, req->groupId, req->groups, req->groupsLength,
+            &childPid, req->stdinFd, req->stdoutFd, req->stderrFd,
+            req->inheritedFds, req->inheritedFdCount, req->startDetached, 1);
+        req->childPid = childPid;
+        req->errnoValue = errno;
+
+        // Mark this request as done and clear the global slot.
+        // Use broadcast because multiple callers may be waiting: the submitter waits for
+        // its done flag, and other callers wait for the slot to become free.
+        req->done = 1;
+        s_pdeathsig_request = NULL;
+        pthread_cond_broadcast(&s_pdeathsig_done_cond);
+    }
+
+    return NULL;
+}
+
+// Must be called while s_pdeathsig_mutex is held.
+static int EnsurePDeathSigThread(void)
+{
+    if (s_pdeathsig_thread_started)
+    {
+        return 0;
+    }
+
+    pthread_t thread;
+    pthread_attr_t attr;
+    int result = pthread_attr_init(&attr);
+    if (result != 0)
+    {
+        errno = result;
+        return -1;
+    }
+
+    result = pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
+    if (result != 0)
+    {
+        pthread_attr_destroy(&attr);
+        errno = result;
+        return -1;
+    }
+
+    result = pthread_create(&thread, &attr, PDeathSigThreadFunc, NULL);
+    pthread_attr_destroy(&attr);
+
+    if (result != 0)
+    {
+        errno = result;
+        return -1;
+    }
+
+    s_pdeathsig_thread_started = true;
+    return 0;
+}
+
+static int32_t ForkAndExecOnPDeathSigThread(
+    const char* filename, char* const argv[], char* const envp[], const char* cwd,
+    int32_t setCredentials, uint32_t userId, uint32_t groupId, uint32_t* groups, int32_t groupsLength,
+    int32_t* childPid, int32_t stdinFd, int32_t stdoutFd, int32_t stderrFd,
+    int32_t* inheritedFds, int32_t inheritedFdCount, int32_t startDetached)
+{
+    PDeathSigForkRequest req;
+    req.filename = filename;
+    req.argv = argv;
+    req.envp = envp;
+    req.cwd = cwd;
+    req.setCredentials = setCredentials;
+    req.userId = userId;
+    req.groupId = groupId;
+    req.groups = groups;
+    req.groupsLength = groupsLength;
+    req.stdinFd = stdinFd;
+    req.stdoutFd = stdoutFd;
+    req.stderrFd = stderrFd;
+    req.inheritedFds = inheritedFds;
+    req.inheritedFdCount = inheritedFdCount;
+    req.startDetached = startDetached;
+    req.childPid = -1;
+    req.result = -1;
+    req.errnoValue = 0;
+    req.done = 0;
+
+    pthread_mutex_lock(&s_pdeathsig_mutex);
+
+    if (EnsurePDeathSigThread() != 0)
+    {
+        pthread_mutex_unlock(&s_pdeathsig_mutex);
+        *childPid = -1;
+        return -1;
+    }
+
+    // Wait until no other request is being processed. This serializes
+    // concurrent callers so requests cannot overwrite each other.
+    while (s_pdeathsig_request != NULL)
+    {
+        pthread_cond_wait(&s_pdeathsig_done_cond, &s_pdeathsig_mutex);
+    }
+
+    // Submit request and signal the dedicated thread
+    assert(s_pdeathsig_request == NULL);
+    s_pdeathsig_request = &req;
+    pthread_cond_signal(&s_pdeathsig_request_cond);
+
+    // Wait for the dedicated thread to complete OUR fork+exec.
+    // We check req.done (not s_pdeathsig_request) so that a concurrent
+    // caller submitting the next request doesn't prevent us from seeing
+    // that our request has already completed.
+    while (!req.done)
+    {
+        pthread_cond_wait(&s_pdeathsig_done_cond, &s_pdeathsig_mutex);
+    }
+
+    pthread_mutex_unlock(&s_pdeathsig_mutex);
+
+    *childPid = req.childPid;
+    errno = req.errnoValue;
+    return req.result;
+}
+#endif // HAVE_PR_SET_PDEATHSIG
+
 int32_t SystemNative_ForkAndExecProcess(const char* filename,
                                       char* const argv[],
                                       char* const envp[],
@@ -340,11 +534,42 @@ int32_t SystemNative_ForkAndExecProcess(const char* filename,
                                       int32_t stderrFd,
                                       int32_t* inheritedFds,
                                       int32_t inheritedFdCount,
-                                      int32_t startDetached)
+                                      int32_t startDetached,
+                                      int32_t killOnParentExit)
+{
+#if HAVE_PR_SET_PDEATHSIG
+    if (killOnParentExit)
+    {
+        return ForkAndExecOnPDeathSigThread(
+            filename, argv, envp, cwd,
+            setCredentials, userId, groupId, groups, groupsLength,
+            childPid, stdinFd, stdoutFd, stderrFd,
+            inheritedFds, inheritedFdCount, startDetached);
+    }
+#else
+    (void)killOnParentExit;
+#endif
+
+    return ForkAndExecProcessInternal(
+        filename, argv, envp, cwd,
+        setCredentials, userId, groupId, groups, groupsLength,
+        childPid, stdinFd, stdoutFd, stderrFd,
+        inheritedFds, inheritedFdCount, startDetached, 0);
+}
+
+static int32_t ForkAndExecProcessInternal(
+    const char* filename, char* const argv[], char* const envp[], const char* cwd,
+    int32_t setCredentials, uint32_t userId, uint32_t groupId, uint32_t* groups, int32_t groupsLength,
+    int32_t* childPid, int32_t stdinFd, int32_t stdoutFd, int32_t stderrFd,
+    int32_t* inheritedFds, int32_t inheritedFdCount, int32_t startDetached, int32_t applyPDeathSig)
 {
 #if HAVE_FORK || defined(TARGET_OSX) || defined(TARGET_MACCATALYST)
     assert(NULL != filename && NULL != argv && NULL != envp && NULL != childPid &&
             (groupsLength == 0 || groups != NULL) && "null argument.");
+
+#if !HAVE_PR_SET_PDEATHSIG
+    (void)applyPDeathSig;
+#endif
 
     *childPid = -1;
 
@@ -513,6 +738,11 @@ int32_t SystemNative_ForkAndExecProcess(const char* filename,
     uint32_t* getGroupsBuffer = NULL;
     sigset_t signal_set;
     sigset_t old_signal_set;
+#if HAVE_PR_SET_PDEATHSIG
+    // Capture the parent PID before fork so the child can verify it hasn't been
+    // reparented (e.g., to a subreaper) between fork and prctl.
+    pid_t expectedParentPid = getpid();
+#endif
 
 #if HAVE_PTHREAD_SETCANCELSTATE
     int thread_cancel_state;
@@ -670,6 +900,27 @@ int32_t SystemNative_ForkAndExecProcess(const char* filename,
             RestrictHandleInheritance(inheritedFds, inheritedFdCount);
         }
 
+#if HAVE_PR_SET_PDEATHSIG
+        if (applyPDeathSig)
+        {
+            // Set the parent death signal on the child process. When the parent thread
+            // that forked this child exits, SIGKILL will be sent to this child.
+            // We fork from a dedicated long-lived thread to ensure the signal is only
+            // sent when the process (not an arbitrary thread) exits.
+            if (prctl(PR_SET_PDEATHSIG, (unsigned long)SIGKILL, 0, 0, 0) == -1)
+            {
+                ExitChild(waitForChildToExecPipe[WRITE_END_OF_PIPE], errno);
+            }
+
+            // If the parent died between fork and prctl, PR_SET_PDEATHSIG will not deliver the signal.
+            // Detect this by checking if the child process has been reparented.
+            if (getppid() != expectedParentPid)
+            {
+                ExitChild(waitForChildToExecPipe[WRITE_END_OF_PIPE], ESRCH);
+            }
+        }
+#endif
+
         // Finally, execute the new process.  execve will not return if it's successful.
         execve(filename, argv, envp);
         ExitChild(waitForChildToExecPipe[WRITE_END_OF_PIPE], errno); // execve failed
@@ -752,6 +1003,7 @@ done:;
     (void)inheritedFds;
     (void)inheritedFdCount;
     (void)startDetached;
+    (void)applyPDeathSig;
     return -1;
 #endif
 }
