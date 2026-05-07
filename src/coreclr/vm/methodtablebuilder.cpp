@@ -10803,6 +10803,12 @@ void MethodTableBuilder::CheckForSystemTypes()
 #error Unknown architecture
 #endif // TARGET_64BIT
         }
+        else
+        {
+            // For all other value types (including runtime handle types), set ELEMENT_TYPE_VALUETYPE
+            // to ensure they are correctly categorized as value types rather than reference types.
+            pMT->SetInternalCorElementType(ELEMENT_TYPE_VALUETYPE, false);
+        }
     }
     else
     {
