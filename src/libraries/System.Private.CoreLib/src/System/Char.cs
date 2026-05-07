@@ -1295,22 +1295,15 @@ namespace System
                     return false;
                 }
 
-                ref byte sourceRef = ref MemoryMarshal.GetReference(source);
-
                 if (source.Length >= sizeof(char))
                 {
                     // We have at least 2 bytes, so just read the ones we need directly
-                    result = Unsafe.ReadUnaligned<char>(ref sourceRef);
-
-                    if (!BitConverter.IsLittleEndian)
-                    {
-                        result = BinaryPrimitives.ReverseEndianness(result);
-                    }
+                    result = (char)BinaryPrimitives.ReadUInt16LittleEndian(source);
                 }
                 else
                 {
                     // We only have 1-byte so read it directly
-                    result = (char)sourceRef;
+                    result = (char)source[0];
                 }
             }
 

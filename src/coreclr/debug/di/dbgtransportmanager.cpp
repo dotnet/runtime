@@ -7,7 +7,63 @@
 
 #ifdef FEATURE_DBGIPC_TRANSPORT_DI
 
+#ifdef HOST_UNIX
+#include <errno.h>
+#include <signal.h>
+#include <sys/wait.h>
+#include <unistd.h>
+#endif
+
 DbgTransportTarget g_DbgTransportTarget{};
+
+#ifdef HOST_UNIX
+// Polling interval for the per-process exit poller thread.
+static const useconds_t s_processExitPollIntervalUsec = 250 * 1000;
+
+// Polls the target PID for exit. Uses waitpid(WNOHANG) for child processes
+// (immune to PID reuse) and falls back to kill(pid, 0) for non-children
+// (best-effort, racy under PID reuse). Signals m_hProcessExited on exit.
+/* static */
+void *DbgTransportTarget::ProcessExitPollerThread(void *arg)
+{
+    ProcessEntry *entry = static_cast<ProcessEntry *>(arg);
+
+    while (!entry->m_fStopPoller)
+    {
+        bool exited = false;
+
+        int status;
+        pid_t r;
+        do
+        {
+            r = waitpid(entry->m_dwPID, &status, WNOHANG);
+        } while (r == -1 && errno == EINTR);
+
+        if (r == (pid_t)entry->m_dwPID)
+        {
+            exited = true;
+        }
+        else if (r == -1 && errno == ECHILD)
+        {
+            // Not our child; fall back to kill(pid, 0).
+            if (kill(entry->m_dwPID, 0) != 0 && errno == ESRCH)
+            {
+                exited = true;
+            }
+        }
+
+        if (exited)
+        {
+            SetEvent(entry->m_hProcessExited);
+            break;
+        }
+
+        usleep(s_processExitPollIntervalUsec);
+    }
+
+    return NULL;
+}
+#endif // HOST_UNIX
 
 DbgTransportTarget::DbgTransportTarget()
     : m_pProcessList{}
@@ -68,26 +124,58 @@ HRESULT DbgTransportTarget::GetTransportForProcess(const ProcessDescriptor  *pPr
        }
 
 
-       HANDLE hProcess = OpenProcess(PROCESS_ALL_ACCESS, FALSE, dwPID);
-       if (hProcess == NULL)
+       // Probe the process to make sure it exists, then create a waitable handle that becomes
+       // signaled on process exit. On HOST_WINDOWS the process handle itself is waitable; on
+       // HOST_UNIX we create a manual-reset event and start a thread to poll for exit.
+#ifdef HOST_UNIX
+       if (kill(dwPID, 0) != 0)
+       {
+           transport->Shutdown();
+           return (errno == ESRCH) ? E_INVALIDARG : E_FAIL;
+       }
+
+       HANDLE hProcessExited = CreateEvent(NULL, TRUE, FALSE, NULL);
+       if (hProcessExited == NULL)
        {
            transport->Shutdown();
            return HRESULT_FROM_GetLastError();
        }
+#else // HOST_UNIX
+       HANDLE hProcessExited = OpenProcess(PROCESS_ALL_ACCESS, FALSE, dwPID);
+       if (hProcessExited == NULL)
+       {
+           transport->Shutdown();
+           return HRESULT_FROM_GetLastError();
+       }
+#endif // HOST_UNIX
+
+       newEntry->m_dwPID = dwPID;
+       newEntry->m_hProcessExited = hProcessExited;
+#ifdef HOST_UNIX
+       newEntry->m_fStopPoller = false;
+       newEntry->m_fPollerStarted = false;
+
+       if (pthread_create(&newEntry->m_pollerThread, NULL, &ProcessExitPollerThread, newEntry.GetValue()) != 0)
+       {
+           transport->Shutdown();
+           CloseHandle(hProcessExited);
+           newEntry->m_hProcessExited = NULL;
+           return E_FAIL;
+       }
+       newEntry->m_fPollerStarted = true;
+#endif // HOST_UNIX
 
        // Initialize it (this immediately starts the remote connection process).
-       hr = transport->Init(*pProcessDescriptor, hProcess);
+       hr = transport->Init(*pProcessDescriptor, hProcessExited);
        if (FAILED(hr))
        {
            transport->Shutdown();
-           CloseHandle(hProcess);
+           // ProcessEntry destructor stops the poller thread and closes the event handle.
            return hr;
        }
 
        entry = newEntry;
        newEntry.SuppressRelease();
-       entry->m_dwPID = dwPID;
-       entry->m_hProcess = hProcess;
        entry->m_transport = transport;
        transport.SuppressRelease();
        entry->m_cProcessRef = 0;
@@ -100,11 +188,11 @@ HRESULT DbgTransportTarget::GetTransportForProcess(const ProcessDescriptor  *pPr
     entry->m_cProcessRef++;
     _ASSERTE(entry->m_cProcessRef > 0);
     _ASSERTE(entry->m_transport != NULL);
-    _ASSERTE((intptr_t)entry->m_hProcess > 0);
+    _ASSERTE((intptr_t)entry->m_hProcessExited > 0);
 
     *ppTransport = entry->m_transport;
     if (!DuplicateHandle(GetCurrentProcess(),
-                         entry->m_hProcess,
+                         entry->m_hProcessExited,
                          GetCurrentProcess(),
                          phProcessHandle,
                          0,      // ignored since we are going to pass DUPLICATE_SAME_ACCESS
@@ -137,7 +225,7 @@ void DbgTransportTarget::ReleaseTransport(DbgTransportSession *pTransport)
 
         _ASSERTE(entry->m_cProcessRef > 0);
         _ASSERTE(entry->m_transport != NULL);
-        _ASSERTE((intptr_t)entry->m_hProcess > 0);
+        _ASSERTE((intptr_t)entry->m_hProcessExited > 0);
 
         if (entry->m_transport == pTransport)
         {
@@ -163,21 +251,40 @@ void DbgTransportTarget::ReleaseTransport(DbgTransportSession *pTransport)
 // Kill the process identified by PID.
 void DbgTransportTarget::KillProcess(DWORD dwPID)
 {
+#ifdef HOST_UNIX
+    kill(dwPID, SIGKILL);
+#else
     HANDLE hProcess = OpenProcess(PROCESS_TERMINATE, FALSE, dwPID);
     if (hProcess != NULL)
     {
         TerminateProcess(hProcess, 0);
         CloseHandle(hProcess);
     }
+#endif
 }
 
 DbgTransportTarget::ProcessEntry::~ProcessEntry()
 {
-    CloseHandle(m_hProcess);
-    m_hProcess = NULL;
+#ifdef HOST_UNIX
+    if (m_fPollerStarted)
+    {
+        m_fStopPoller = true;
+        pthread_join(m_pollerThread, NULL);
+        m_fPollerStarted = false;
+    }
+#endif
 
-    m_transport->Shutdown();
-    m_transport = NULL;
+    if (m_hProcessExited != NULL)
+    {
+        CloseHandle(m_hProcessExited);
+        m_hProcessExited = NULL;
+    }
+
+    if (m_transport != NULL)
+    {
+        m_transport->Shutdown();
+        m_transport = NULL;
+    }
 }
 
 // Locate a process entry by PID. Assumes the lock is already held.

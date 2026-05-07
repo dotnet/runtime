@@ -633,7 +633,12 @@ bool Compiler::optCanMoveNullCheckPastTree(GenTree* tree, bool isInsideTry, bool
             else if (isInsideTry)
             {
                 // Inside try we allow only stores to locals not live in handlers.
-                result = tree->OperIs(GT_STORE_LCL_VAR) && !lvaTable[tree->AsLclVar()->GetLclNum()].lvLiveInOutOfHndlr;
+                result = false;
+                if (tree->OperIs(GT_STORE_LCL_VAR))
+                {
+                    LclVarDsc* varDsc = lvaGetDesc(tree->AsLclVar());
+                    result            = varDsc->lvTracked && !varDsc->lvLiveInOutOfHndlr;
+                }
             }
             else
             {

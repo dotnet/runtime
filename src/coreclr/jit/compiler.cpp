@@ -5654,6 +5654,12 @@ void Compiler::generatePatchpointInfo()
         //
         unsigned varNum = lclNum;
 
+        // Variable-sized locals reside in a different part of the stack frame.
+        if (lvaIsUnknownSizeLocal(varNum))
+        {
+            continue;
+        }
+
         if (gsShadowVarInfo != nullptr)
         {
             unsigned const shadowNum = gsShadowVarInfo[lclNum].shadowCopy;

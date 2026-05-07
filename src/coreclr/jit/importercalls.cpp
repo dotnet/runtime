@@ -3144,6 +3144,7 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                 case NI_IsSupported_True:
                 {
                     assert(sig->numArgs == 0);
+                    impInlineRoot()->m_inlineStrategy->NoteHardwareIntrinsicCheckObserved();
                     return gtNewIconNode(true);
                 }
 
@@ -3155,6 +3156,7 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
 
                 case NI_IsSupported_Dynamic:
                 {
+                    impInlineRoot()->m_inlineStrategy->NoteHardwareIntrinsicCheckObserved();
                     break;
                 }
 
@@ -3162,6 +3164,8 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                 {
                     CORINFO_CLASS_HANDLE typeArgHnd;
                     CorInfoType          simdBaseJitType;
+
+                    impInlineRoot()->m_inlineStrategy->NoteHardwareIntrinsicCheckObserved();
 
                     typeArgHnd      = info.compCompHnd->getTypeInstantiationArgument(clsHnd, 0);
                     simdBaseJitType = info.compCompHnd->getTypeForPrimitiveNumericClass(typeArgHnd);
