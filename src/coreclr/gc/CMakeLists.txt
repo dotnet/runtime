@@ -25,7 +25,9 @@ set(GC_SOURCES
   gcbridge.cpp
   handletablecache.cpp)
 
-if(CLR_CMAKE_HOST_UNIX)
+if(CLR_CMAKE_TARGET_ARCH_WASM)
+  add_subdirectory(wasm)
+elseif(CLR_CMAKE_HOST_UNIX)
   add_subdirectory(unix)
   include(unix/configure.cmake)
 else()
@@ -33,7 +35,7 @@ else()
   set (GC_SOURCES
     ${GC_SOURCES}
     windows/Native.rc)
-endif(CLR_CMAKE_HOST_UNIX)
+endif()
 
 if (CLR_CMAKE_TARGET_ARCH_ARM64 OR CLR_CMAKE_TARGET_ARCH_AMD64)
   add_subdirectory(vxsort)

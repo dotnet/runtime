@@ -4940,33 +4940,8 @@ bool Compiler::optAssertionIsNonNull(GenTree* op, ASSERT_VALARG_TP assertions)
     // If local assertion prop use lcl comparison, else use VN comparison.
     if (!optLocalAssertionProp)
     {
-        // Look at both the top-level vn, and
-        // the vn we get by stripping off any constant adds.
-        //
         ValueNum vn = vnStore->VNConservativeNormalValue(op->gtVNPair);
-        if (vn == ValueNumStore::NoVN)
-        {
-            return false;
-        }
-
-        ValueNum       vnBase = vn;
-        target_ssize_t offset = 0;
-        vnStore->PeelOffsets(&vnBase, &offset);
-
-        // Check each assertion to find if we have a vn != null assertion.
-        //
-        BitVecOps::Iter iter(apTraits, assertions);
-        unsigned        index = 0;
-        while (iter.NextElem(&index))
-        {
-            AssertionIndex      assertionIndex = GetAssertionIndex(index);
-            const AssertionDsc& curAssertion   = optGetAssertion(assertionIndex);
-            if (curAssertion.CanPropNonNull() &&
-                ((curAssertion.GetOp1().GetVN() == vn) || (curAssertion.GetOp1().GetVN() == vnBase)))
-            {
-                return true;
-            }
-        }
+        return optAssertionVNIsNonNull(vn, assertions);
     }
     else
     {
@@ -5003,29 +4978,62 @@ bool Compiler::optAssertionIsNonNull(GenTree* op, ASSERT_VALARG_TP assertions)
 // Arguments:
 //   vn         - VN to check
 //   assertions - set of live assertions
+//   budget     - limits the depth of recursion when chasing assertions across VNs.
 //
 // Return Value:
 //   True if the VN could be proven non-null.
 //
-bool Compiler::optAssertionVNIsNonNull(ValueNum vn, ASSERT_VALARG_TP assertions)
+bool Compiler::optAssertionVNIsNonNull(ValueNum vn, ASSERT_VALARG_TP assertions, int budget)
 {
+    if (vn == ValueNumStore::NoVN)
+    {
+        return false;
+    }
+
     if (vnStore->IsKnownNonNull(vn))
     {
         return true;
     }
 
-    if (!BitVecOps::MayBeUninit(assertions) && optAssertionHasAssertionsForVN(vn))
+    ValueNum       vnBase = vn;
+    target_ssize_t offset = 0;
+    vnStore->PeelOffsets(&vnBase, &offset);
+
+    // Check each assertion to find if we have a vn != null assertion.
+    //
+    BitVecOps::Iter iter(apTraits, assertions);
+    unsigned        index = 0;
+    while (iter.NextElem(&index))
     {
-        BitVecOps::Iter iter(apTraits, assertions);
-        unsigned        index = 0;
-        while (iter.NextElem(&index))
+        AssertionIndex      assertionIndex = GetAssertionIndex(index);
+        const AssertionDsc& curAssertion   = optGetAssertion(assertionIndex);
+        if (curAssertion.CanPropNonNull() &&
+            ((curAssertion.GetOp1().GetVN() == vn) || (curAssertion.GetOp1().GetVN() == vnBase)))
         {
-            const AssertionDsc& curAssertion = optGetAssertion(GetAssertionIndex(index));
-            if (curAssertion.CanPropNonNull() && curAssertion.GetOp1().GetVN() == vn)
-            {
-                return true;
-            }
+            return true;
         }
+    }
+
+    if (budget <= 0)
+    {
+        return false;
+    }
+
+    // Inspect the reaching assertions for the vn and vnBase.
+    //
+    auto visitor = [this, budget](ValueNum reachingVN, ASSERT_TP reachingAssertions) {
+        return optAssertionVNIsNonNull(reachingVN, reachingAssertions, budget - 1) ? AssertVisit::Continue
+                                                                                   : AssertVisit::Abort;
+    };
+
+    if (optVisitReachingAssertions(vn, visitor) == AssertVisit::Continue)
+    {
+        return true;
+    }
+
+    if ((vnBase != vn) && (optVisitReachingAssertions(vnBase, visitor) == AssertVisit::Continue))
+    {
+        return true;
     }
 
     return false;
