@@ -405,16 +405,20 @@ namespace ILCompiler.Reflection.ReadyToRun
                     MethodDefinition methodDef = ComponentReader.MetadataReader.GetMethodDefinition((MethodDefinitionHandle)MethodHandle);
                     if (methodDef.RelativeVirtualAddress != 0)
                     {
-                        BlobReader sectionData = ComponentReader.GetSectionData(methodDef.RelativeVirtualAddress);
-                        if (sectionData.Length > 0)
+                        ImmutableArray<string> localSig = default;
+                        ComponentReader.GetSectionData(methodDef.RelativeVirtualAddress, (BlobReader sectionData) =>
                         {
-                            MethodBodyBlock mbb = MethodBodyBlock.Create(sectionData);
-                            if (!mbb.LocalSignature.IsNil)
+                            if (sectionData.Length > 0)
                             {
-                                StandaloneSignature ss = ComponentReader.MetadataReader.GetStandaloneSignature(mbb.LocalSignature);
-                                LocalSignature = ss.DecodeLocalSignature(typeProvider, genericContext);
+                                MethodBodyBlock mbb = MethodBodyBlock.Create(sectionData);
+                                if (!mbb.LocalSignature.IsNil)
+                                {
+                                    StandaloneSignature ss = ComponentReader.MetadataReader.GetStandaloneSignature(mbb.LocalSignature);
+                                    localSig = ss.DecodeLocalSignature(typeProvider, genericContext);
+                                }
                             }
-                        }
+                        });
+                        LocalSignature = localSig;
                     }
                     Name = ComponentReader.MetadataReader.GetString(methodDef.Name);
                     Signature = methodDef.DecodeSignature<string, DisassemblingGenericContext>(typeProvider, genericContext);

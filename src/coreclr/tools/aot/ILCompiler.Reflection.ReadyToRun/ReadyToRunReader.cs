@@ -9,7 +9,6 @@ using System.Linq;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Reflection.PortableExecutable;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 
@@ -111,6 +110,7 @@ namespace ILCompiler.Reflection.ReadyToRun
 
         // ManifestReferences
         private MetadataReader _manifestReader;
+        private MetadataReaderProvider _manifestReaderProvider;
         private List<AssemblyReferenceHandle> _manifestReferences;
         private Dictionary<string, int> _manifestReferenceAssemblies;
         private IAssemblyMetadata _manifestAssemblyMetadata;
@@ -507,13 +507,13 @@ namespace ILCompiler.Reflection.ReadyToRun
                     }
                     else
                     {
-                        CompositeReader = new PEImageReader(new PEReader(Unsafe.As<byte[], ImmutableArray<byte>>(ref image)));
+                        CompositeReader = new PEImageReader(new PEReader(ImmutableCollectionsMarshal.AsImmutableArray(image)));
                     }
                 }
                 else
                 {
                     ImmutableArray<byte> content = CompositeReader.GetEntireImage();
-                    Image = Unsafe.As<ImmutableArray<byte>, byte[]>(ref content);
+                    Image = ImmutableCollectionsMarshal.AsArray(content);
                     ImageReader = new NativeReader(new MemoryStream(Image));
                     ImagePin = new PinningReference(Image);
                 }
@@ -744,7 +744,7 @@ namespace ILCompiler.Reflection.ReadyToRun
             }
         }
 
-        private unsafe void EnsureManifestReferences()
+        private void EnsureManifestReferences()
         {
             if (_manifestReferences != null)
             {
@@ -753,17 +753,17 @@ namespace ILCompiler.Reflection.ReadyToRun
             _manifestReferences = new List<AssemblyReferenceHandle>();
             if (ReadyToRunHeader.Sections.TryGetValue(ReadyToRunSectionType.ManifestMetadata, out ReadyToRunSection manifestMetadata))
             {
-                fixed (byte* image = Image)
-                {
-                    _manifestReader = new MetadataReader(image + GetOffset(manifestMetadata.RelativeVirtualAddress), manifestMetadata.Size);
-                    _manifestAssemblyMetadata = CompositeReader.GetManifestAssemblyMetadata(_manifestReader);
+                int metadataOffset = GetOffset(manifestMetadata.RelativeVirtualAddress);
+                var metadataImage = ImmutableArray.Create(Image, metadataOffset, manifestMetadata.Size);
+                _manifestReaderProvider = MetadataReaderProvider.FromMetadataImage(metadataImage);
+                _manifestReader = _manifestReaderProvider.GetMetadataReader();
+                _manifestAssemblyMetadata = CompositeReader.GetManifestAssemblyMetadata(_manifestReader);
 
-                    int assemblyRefCount = _manifestReader.GetTableRowCount(TableIndex.AssemblyRef);
-                    for (int assemblyRefIndex = 1; assemblyRefIndex <= assemblyRefCount; assemblyRefIndex++)
-                    {
-                        AssemblyReferenceHandle asmRefHandle = MetadataTokens.AssemblyReferenceHandle(assemblyRefIndex);
-                        _manifestReferences.Add(asmRefHandle);
-                    }
+                int assemblyRefCount = _manifestReader.GetTableRowCount(TableIndex.AssemblyRef);
+                for (int assemblyRefIndex = 1; assemblyRefIndex <= assemblyRefCount; assemblyRefIndex++)
+                {
+                    AssemblyReferenceHandle asmRefHandle = MetadataTokens.AssemblyReferenceHandle(assemblyRefIndex);
+                    _manifestReferences.Add(asmRefHandle);
                 }
             }
         }

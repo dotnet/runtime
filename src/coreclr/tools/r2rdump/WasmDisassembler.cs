@@ -2,7 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Buffers.Binary;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Text;
 
 namespace R2RDump
@@ -14,12 +16,12 @@ namespace R2RDump
     /// </summary>
     internal sealed class WasmDisassembler
     {
-        private readonly byte[] _code;
+        private readonly ImmutableArray<byte> _code;
         private int _offset;
         private readonly int _baseOffset;
         private readonly int _endOffset;
 
-        public WasmDisassembler(byte[] code, int offset, int length)
+        public WasmDisassembler(ImmutableArray<byte> code, int offset, int length)
         {
             _code = code;
             _baseOffset = offset;
@@ -915,7 +917,7 @@ namespace R2RDump
                 _offset = _endOffset;
                 return 0;
             }
-            float val = BitConverter.ToSingle(_code, _offset);
+            float val = BinaryPrimitives.ReadSingleLittleEndian(_code.AsSpan().Slice(_offset));
             _offset += 4;
             return val;
         }
@@ -927,7 +929,7 @@ namespace R2RDump
                 _offset = _endOffset;
                 return 0;
             }
-            double val = BitConverter.ToDouble(_code, _offset);
+            double val = BinaryPrimitives.ReadDoubleLittleEndian(_code.AsSpan().Slice(_offset));
             _offset += 8;
             return val;
         }

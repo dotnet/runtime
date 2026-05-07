@@ -8,7 +8,7 @@ using System.Collections.Immutable;
 using System.IO;
 using System.Reflection.Metadata;
 using System.Reflection.PortableExecutable;
-using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 using Microsoft.NET.WebAssembly.Webcil;
 
@@ -20,7 +20,7 @@ namespace ILCompiler.Reflection.ReadyToRun
     /// </summary>
     public class WebcilImageReader : IBinaryImageReader
     {
-        private readonly byte[] _image;
+        private readonly ImmutableArray<byte> _image;
         private readonly WebcilHeader _header;
         private readonly ImmutableArray<WebcilSectionHeader> _sections;
         private readonly long _webcilOffset;
@@ -34,7 +34,7 @@ namespace ILCompiler.Reflection.ReadyToRun
 
         public WebcilImageReader(byte[] image)
         {
-            _image = image;
+            _image = ImmutableCollectionsMarshal.AsImmutableArray(image);
             _webcilOffset = 0;
 
             // Check for WASM wrapper
@@ -114,10 +114,9 @@ namespace ILCompiler.Reflection.ReadyToRun
             }
         }
 
-        public ImmutableArray<byte> GetEntireImage()
-            => Unsafe.As<byte[], ImmutableArray<byte>>(ref Unsafe.AsRef(in _image));
+        public ImmutableArray<byte> GetEntireImage() => _image;
 
-        internal byte[] GetImage() => _image;
+        internal ImmutableArray<byte> GetImage() => _image;
 
         /// <summary>
         /// Returns true if this Webcil image is wrapped inside a WASM module.
@@ -129,7 +128,7 @@ namespace ILCompiler.Reflection.ReadyToRun
         /// </summary>
         public readonly struct WasmFunctionInfo
         {
-            public byte[] Image { get; init; }
+            public ImmutableArray<byte> Image { get; init; }
             public int InstructionOffset { get; init; }
             public int InstructionLength { get; init; }
             /// <summary>Local variable declarations: (count, valtype byte) pairs.</summary>
@@ -238,7 +237,7 @@ namespace ILCompiler.Reflection.ReadyToRun
             return null;
         }
 
-        private static List<(byte[] ParamTypes, byte[] ResultTypes)> ParseTypeSection(byte[] data, ref int offset, int end)
+        private static List<(byte[] ParamTypes, byte[] ResultTypes)> ParseTypeSection(ImmutableArray<byte> data, ref int offset, int end)
         {
             var types = new List<(byte[], byte[])>();
             uint count = ReadLebU32(data, ref offset);
@@ -264,7 +263,7 @@ namespace ILCompiler.Reflection.ReadyToRun
             return types;
         }
 
-        private static List<uint> ParseFunctionSection(byte[] data, ref int offset, int end)
+        private static List<uint> ParseFunctionSection(ImmutableArray<byte> data, ref int offset, int end)
         {
             var indices = new List<uint>();
             uint count = ReadLebU32(data, ref offset);
@@ -275,7 +274,7 @@ namespace ILCompiler.Reflection.ReadyToRun
             return indices;
         }
 
-        private static uint ReadLebU32(byte[] data, ref int offset)
+        private static uint ReadLebU32(ImmutableArray<byte> data, ref int offset)
         {
             uint result = 0;
             int shift = 0;
@@ -347,7 +346,7 @@ namespace ILCompiler.Reflection.ReadyToRun
 
             int metadataOffset = GetOffset(_corHeaderMetadataDirectory.RelativeVirtualAddress);
             var metadataBytes = GC.AllocateArray<byte>(_corHeaderMetadataDirectory.Size, pinned: true);
-            Array.Copy(_image, metadataOffset, metadataBytes, 0, _corHeaderMetadataDirectory.Size);
+            _image.CopyTo(metadataOffset, metadataBytes, 0, _corHeaderMetadataDirectory.Size);
 
             return new WebcilAssemblyMetadata(metadataBytes, this);
         }
@@ -382,7 +381,7 @@ namespace ILCompiler.Reflection.ReadyToRun
             return sectionMap;
         }
 
-        private void ReadCorHeader(byte[] image, out CorFlags flags, out DirectoryEntry metadataDirectory, out DirectoryEntry managedNativeHeaderDirectory)
+        private void ReadCorHeader(ReadOnlySpan<byte> image, out CorFlags flags, out DirectoryEntry metadataDirectory, out DirectoryEntry managedNativeHeaderDirectory)
         {
             int corHeaderOffset = GetOffset((int)_header.PeCliHeaderRva);
 
@@ -405,11 +404,11 @@ namespace ILCompiler.Reflection.ReadyToRun
             offset += 2; // MajorRuntimeVersion
             offset += 2; // MinorRuntimeVersion
 
-            int metadataRva = BitConverter.ToInt32(image, offset); offset += 4;
-            int metadataSize = BitConverter.ToInt32(image, offset); offset += 4;
+            int metadataRva = BinaryPrimitives.ReadInt32LittleEndian(image.Slice(offset)); offset += 4;
+            int metadataSize = BinaryPrimitives.ReadInt32LittleEndian(image.Slice(offset)); offset += 4;
             metadataDirectory = new DirectoryEntry(metadataRva, metadataSize);
 
-            flags = (CorFlags)BitConverter.ToUInt32(image, offset); offset += 4;
+            flags = (CorFlags)BinaryPrimitives.ReadUInt32LittleEndian(image.Slice(offset)); offset += 4;
 
             offset += 4; // EntryPointTokenOrRelativeVirtualAddress
             offset += 8; // Resources
@@ -418,8 +417,8 @@ namespace ILCompiler.Reflection.ReadyToRun
             offset += 8; // VTableFixups
             offset += 8; // ExportAddressTableJumps
 
-            int managedNativeRva = BitConverter.ToInt32(image, offset); offset += 4;
-            int managedNativeSize = BitConverter.ToInt32(image, offset);
+            int managedNativeRva = BinaryPrimitives.ReadInt32LittleEndian(image.Slice(offset)); offset += 4;
+            int managedNativeSize = BinaryPrimitives.ReadInt32LittleEndian(image.Slice(offset));
             managedNativeHeaderDirectory = new DirectoryEntry(managedNativeRva, managedNativeSize);
         }
 
@@ -434,27 +433,16 @@ namespace ILCompiler.Reflection.ReadyToRun
             if (offset + V0HeaderSize > image.Length)
                 return false;
 
-            unsafe
-            {
-                fixed (byte* p = &image[(int)offset])
-                {
-                    WebcilHeader temp;
-                    Buffer.MemoryCopy(p, &temp, sizeof(WebcilHeader), V0HeaderSize);
-                    header = temp;
-                }
-            }
-
-            if (!BitConverter.IsLittleEndian)
-            {
-                header.Id = BinaryPrimitives.ReverseEndianness(header.Id);
-                header.VersionMajor = BinaryPrimitives.ReverseEndianness(header.VersionMajor);
-                header.VersionMinor = BinaryPrimitives.ReverseEndianness(header.VersionMinor);
-                header.CoffSections = BinaryPrimitives.ReverseEndianness(header.CoffSections);
-                header.PeCliHeaderRva = BinaryPrimitives.ReverseEndianness(header.PeCliHeaderRva);
-                header.PeCliHeaderSize = BinaryPrimitives.ReverseEndianness(header.PeCliHeaderSize);
-                header.PeDebugRva = BinaryPrimitives.ReverseEndianness(header.PeDebugRva);
-                header.PeDebugSize = BinaryPrimitives.ReverseEndianness(header.PeDebugSize);
-            }
+            ReadOnlySpan<byte> span = image.AsSpan((int)offset);
+            header.Id = BinaryPrimitives.ReadUInt32LittleEndian(span);
+            header.VersionMajor = BinaryPrimitives.ReadUInt16LittleEndian(span.Slice(4));
+            header.VersionMinor = BinaryPrimitives.ReadUInt16LittleEndian(span.Slice(6));
+            header.CoffSections = BinaryPrimitives.ReadUInt16LittleEndian(span.Slice(8));
+            // span[10..12] is Reserved0
+            header.PeCliHeaderRva = BinaryPrimitives.ReadUInt32LittleEndian(span.Slice(12));
+            header.PeCliHeaderSize = BinaryPrimitives.ReadUInt32LittleEndian(span.Slice(16));
+            header.PeDebugRva = BinaryPrimitives.ReadUInt32LittleEndian(span.Slice(20));
+            header.PeDebugSize = BinaryPrimitives.ReadUInt32LittleEndian(span.Slice(24));
 
             if (header.Id != WebcilConstants.WEBCIL_MAGIC)
                 return false;
@@ -470,11 +458,7 @@ namespace ILCompiler.Reflection.ReadyToRun
                 if (offset + V1HeaderSize > image.Length)
                     return false;
 
-                header.TableBase = BitConverter.ToUInt32(image, (int)offset + V0HeaderSize);
-                if (!BitConverter.IsLittleEndian)
-                {
-                    header.TableBase = BinaryPrimitives.ReverseEndianness(header.TableBase);
-                }
+                header.TableBase = BinaryPrimitives.ReadUInt32LittleEndian(span.Slice(V0HeaderSize));
             }
             else
             {
@@ -484,30 +468,21 @@ namespace ILCompiler.Reflection.ReadyToRun
             return true;
         }
 
-        private static unsafe ImmutableArray<WebcilSectionHeader> ReadSections(byte[] image, long webcilOffset, WebcilHeader header)
+        private static ImmutableArray<WebcilSectionHeader> ReadSections(byte[] image, long webcilOffset, WebcilHeader header)
         {
-            int sectionSize = sizeof(WebcilSectionHeader);
+            const int SectionSize = 16; // 4 uint32 fields
             long sectionDirectoryOffset = webcilOffset + (header.VersionMajor >= 1 ? 32 : 28);
             var sections = ImmutableArray.CreateBuilder<WebcilSectionHeader>(header.CoffSections);
 
             for (int i = 0; i < header.CoffSections; i++)
             {
-                long sectionOffset = sectionDirectoryOffset + (i * sectionSize);
-                WebcilSectionHeader sectionHeader;
-                fixed (byte* p = &image[(int)sectionOffset])
-                {
-                    sectionHeader = *(WebcilSectionHeader*)p;
-                }
-
-                if (!BitConverter.IsLittleEndian)
-                {
-                    sectionHeader = new WebcilSectionHeader(
-                        virtualSize: BinaryPrimitives.ReverseEndianness(sectionHeader.VirtualSize),
-                        virtualAddress: BinaryPrimitives.ReverseEndianness(sectionHeader.VirtualAddress),
-                        sizeOfRawData: BinaryPrimitives.ReverseEndianness(sectionHeader.SizeOfRawData),
-                        pointerToRawData: BinaryPrimitives.ReverseEndianness(sectionHeader.PointerToRawData)
-                    );
-                }
+                ReadOnlySpan<byte> span = image.AsSpan((int)(sectionDirectoryOffset + (i * SectionSize)));
+                var sectionHeader = new WebcilSectionHeader(
+                    virtualSize: BinaryPrimitives.ReadUInt32LittleEndian(span),
+                    virtualAddress: BinaryPrimitives.ReadUInt32LittleEndian(span.Slice(4)),
+                    sizeOfRawData: BinaryPrimitives.ReadUInt32LittleEndian(span.Slice(8)),
+                    pointerToRawData: BinaryPrimitives.ReadUInt32LittleEndian(span.Slice(12))
+                );
 
                 sections.Add(sectionHeader);
             }
@@ -561,22 +536,25 @@ namespace ILCompiler.Reflection.ReadyToRun
         public WebcilAssemblyMetadata(byte[] metadataBytes, WebcilImageReader webcilReader)
         {
             _webcilReader = webcilReader;
-            var immutableBytes = Unsafe.As<byte[], ImmutableArray<byte>>(ref metadataBytes);
+            var immutableBytes = ImmutableCollectionsMarshal.AsImmutableArray(metadataBytes);
             _metadataReaderProvider = MetadataReaderProvider.FromMetadataImage(immutableBytes);
             _metadataReader = _metadataReaderProvider.GetMetadataReader();
         }
 
-        public BlobReader GetSectionData(int relativeVirtualAddress)
+        public void GetSectionData(int relativeVirtualAddress, Action<BlobReader> action)
         {
             if (_webcilReader is null)
-                return default;
+            {
+                action(default);
+                return;
+            }
 
             int offset = _webcilReader.GetOffset(relativeVirtualAddress);
             int remaining = _webcilReader.GetSectionRemainingSize(relativeVirtualAddress);
-            byte[] image = _webcilReader.GetImage();
-            fixed (byte* p = image)
+            ImmutableArray<byte> image = _webcilReader.GetImage();
+            fixed (byte* p = ImmutableCollectionsMarshal.AsArray(image))
             {
-                return new BlobReader(p + offset, remaining);
+                action(new BlobReader(p + offset, remaining));
             }
         }
 
