@@ -136,7 +136,7 @@ namespace System.Reflection.TypeLoading
         protected abstract RoType? ComputeDeclaringType();
         internal RoType? GetRoDeclaringType() => _lazyDeclaringType ??= ComputeDeclaringType();
         internal RoType? Call_ComputeDeclaringType() => ComputeDeclaringType();
-        private volatile RoType? _lazyDeclaringType;
+        private RoType? _lazyDeclaringType;
 
         public abstract override MethodBase? DeclaringMethod { get; }
         // .NET Framework compat: For types, ReflectedType == DeclaringType. Nested types are always looked up as if BindingFlags.DeclaredOnly was passed.
@@ -167,7 +167,7 @@ namespace System.Reflection.TypeLoading
             }
             return baseType;
         }
-        private volatile RoType? _lazyBaseType = Sentinels.RoType;
+        private RoType? _lazyBaseType = Sentinels.RoType;
 
         //
         // This internal method implements BaseType without the following .NET Framework quirk:
@@ -239,7 +239,7 @@ namespace System.Reflection.TypeLoading
             return arr;
         }
 
-        private volatile RoType[]? _lazyInterfaces;
+        private RoType[]? _lazyInterfaces;
 
         public sealed override InterfaceMapping GetInterfaceMap(Type interfaceType) => throw new NotSupportedException(SR.NotSupported_InterfaceMapping);
 
@@ -324,8 +324,28 @@ namespace System.Reflection.TypeLoading
         // Enum methods
         public sealed override Type GetEnumUnderlyingType() => _lazyUnderlyingEnumType ??= ComputeEnumUnderlyingType();
         protected internal abstract RoType ComputeEnumUnderlyingType();
-        private volatile RoType? _lazyUnderlyingEnumType;
+        private RoType? _lazyUnderlyingEnumType;
         public sealed override Array GetEnumValues() => throw new InvalidOperationException(SR.Arg_InvalidOperation_Reflection);
+
+        // Nullable methods
+#if NET11_0_OR_GREATER
+        public override Type? GetNullableUnderlyingType()
+        {
+            if (IsGenericType)
+            {
+                RoType? nullableOfT = Loader.TryGetCoreType(CoreType.NullableT);
+                if (nullableOfT is not null && GetGenericTypeDefinition() == nullableOfT)
+                {
+                    // Use GetGenericArguments() to cover both constructed Nullable<T>
+                    // (returns T) and the generic type definition Nullable<>
+                    // (returns the generic type parameter).
+                    return GetGenericArguments()[0];
+                }
+            }
+
+            return null;
+        }
+#endif
 
 #if NET
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2085:UnrecognizedReflectionPattern",

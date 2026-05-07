@@ -5,6 +5,10 @@
 #ifndef __WASM_CALLHELPERS_HPP__
 #define __WASM_CALLHELPERS_HPP__
 
+// A sentinel value to indicate to the stack walker that this frame is NOT R2R generated managed code,
+// and it should look for the next Frame in the Frame chain to make further progress.
+#define TERMINATE_R2R_STACK_WALK 1
+
 struct StringToWasmSigThunk
 {
     const char* key;

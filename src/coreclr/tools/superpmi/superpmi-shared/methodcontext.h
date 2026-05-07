@@ -67,17 +67,17 @@ public:
     MethodContext();
 
 private:
-    void MethodInitHelper(unsigned char* buff, unsigned int totalLen);
-    void MethodInitHelperFile(FILE* fp);
+    void MethodInitHelper(unsigned char* buff, unsigned int totalLen, bool readCompileResults);
+    void MethodInitHelperFile(FILE* fp, bool readCompileResults);
 
-    bool Initialize(int mcIndex, unsigned char* buff, DWORD size);
-    bool Initialize(int mcIndex, FILE* fp);
+    bool Initialize(int mcIndex, unsigned char* buff, DWORD size, bool readCompileResults);
+    bool Initialize(int mcIndex, FILE* fp, bool readCompileResults);
 
     int dumpHashToBuffer(BYTE* pBuffer, int bufLen, char* buff, int len);
 
 public:
-    static bool Initialize(int mcIndex, unsigned char* buff, DWORD size, /* OUT */ MethodContext** ppmc);
-    static bool Initialize(int mcIndex, FILE* fp, /* OUT */ MethodContext** ppmc);
+    static bool Initialize(int mcIndex, unsigned char* buff, DWORD size, bool readCompileResults, /* OUT */ MethodContext** ppmc);
+    static bool Initialize(int mcIndex, FILE* fp, bool readCompileResults, /* OUT */ MethodContext** ppmc);
     ~MethodContext();
     void Destroy();
 

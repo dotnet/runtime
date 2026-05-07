@@ -20,14 +20,16 @@
     <Compile Include="System\Diagnostics\AsyncStreamReader.cs" />
     <Compile Include="System\Diagnostics\DataReceivedEventArgs.cs" />
     <Compile Include="System\Diagnostics\Process.cs" />
+    <Compile Include="System\Diagnostics\Process.Multiplexing.cs" />
+    <Compile Include="System\Diagnostics\Process.Scenarios.cs" />
     <Compile Include="System\Diagnostics\ProcessExitStatus.cs" />
+    <Compile Include="System\Diagnostics\ProcessOutputLine.cs" />
+    <Compile Include="System\Diagnostics\ProcessTextOutput.cs" />
     <Compile Include="System\Diagnostics\ProcessInfo.cs" />
-    <Compile Include="System\Diagnostics\ProcessManager.cs" />
     <Compile Include="System\Diagnostics\ProcessModule.cs" />
     <Compile Include="System\Diagnostics\ProcessModuleCollection.cs" />
     <Compile Include="System\Diagnostics\ProcessPriorityClass.cs" />
     <Compile Include="System\Diagnostics\ProcessStartInfo.cs" />
-    <Compile Include="System\Diagnostics\ProcessStartOptions.cs" />
     <Compile Include="System\Diagnostics\ProcessUtils.cs" />
     <Compile Include="System\Diagnostics\ProcessThread.cs" />
     <Compile Include="System\Diagnostics\ProcessThreadCollection.cs" />
@@ -105,10 +107,12 @@
              Link="Common\Interop\Windows\Kernel32\Interop.GetProcessTimes.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetThreadTimes.cs"
              Link="Common\Interop\Windows\Kernel32\Interop.GetThreadTimes.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetStdHandle.cs"
-             Link="Common\Interop\Windows\Kernel32\Interop.GetStdHandle.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.CreateProcess.cs"
              Link="Common\Interop\Windows\Kernel32\Interop.CreateProcess.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.JobObjects.cs"
+             Link="Common\Interop\Windows\Kernel32\Interop.JobObjects.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.ResumeThread.cs"
+             Link="Common\Interop\Windows\Kernel32\Interop.ResumeThread.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.TerminateProcess.cs"
              Link="Common\Interop\Windows\Kernel32\Interop.TerminateProcess.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetCurrentProcess.cs"
@@ -123,6 +127,8 @@
              Link="Common\Interop\Windows\Kernel32\Interop.GetModuleBaseName.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetModuleFileNameEx.cs"
              Link="Common\Interop\Windows\Kernel32\Interop.GetModuleFileNameEx.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.HandleInformation.cs"
+             Link="Common\Interop\Windows\Kernel32\Interop.HandleInformation.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.SetProcessWorkingSetSizeEx.cs"
              Link="Common\Interop\Windows\Kernel32\Interop.SetProcessWorkingSetSizeEx.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetProcessWorkingSetSizeEx.cs"
@@ -155,8 +161,8 @@
              Link="Common\Interop\Windows\Kernel32\Interop.GetPriorityClass.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.SetPriorityClass.cs"
              Link="Common\Interop\Windows\Kernel32\Interop.SetPriorityClass.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.DuplicateHandle_SafeFileHandle.cs"
-             Link="Common\Interop\Windows\kernel32\Interop.DuplicateHandle_SafeFileHandle.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.DuplicateHandle_IntPtr.cs"
+             Link="Common\Interop\Windows\kernel32\Interop.DuplicateHandle_IntPtr.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.DuplicateHandle_SafeWaitHandle.cs"
              Link="Common\Interop\Windows\kernel32\Interop.DuplicateHandle_SafeWaitHandle.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.ProcessWaitHandle.cs"
@@ -189,16 +195,12 @@
              Link="Common\Interop\Windows\Advapi32\Interop.TOKEN_PRIVILEGE.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.Constants.cs"
              Link="Common\Interop\Windows\Kernel32\Interop.Constants.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.CreatePipe_SafeFileHandle.cs"
-             Link="Common\Interop\Windows\kernel32\Interop.CreatePipe.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.ThreadOptions.cs"
              Link="Common\Interop\Windows\Kernel32\Interop.ThreadOptions.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.HandleTypes.cs"
-             Link="Common\Interop\Windows\Kernel32\Interop.HandleTypes.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.ProcessOptions.cs"
              Link="Common\Interop\Windows\Advapi32\Interop.ProcessOptions.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.HandleOptions.cs"
-             Link="Common\Interop\Windows\kernel32\Interop.ProcessOptions.cs" />
+             Link="Common\Interop\Windows\Kernel32\Interop.HandleOptions.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.MultiByteToWideChar.cs"
              Link="Common\Interop\Windows\Kernel32\Interop.MultiByteToWideChar.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Interop.UNICODE_STRING.cs"
@@ -226,16 +228,26 @@
     <Compile Include="Microsoft\Win32\SafeHandles\SafeProcessHandle.Windows.cs" />
     <Compile Include="System\Diagnostics\PerformanceCounterLib.cs" />
     <Compile Include="System\Diagnostics\Process.Windows.cs" />
+    <Compile Include="System\Diagnostics\Process.Multiplexing.Windows.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.ReadFile_SafeHandle_NativeOverlapped.cs"
+             Link="Common\Interop\Windows\Kernel32\Interop.ReadFile_SafeHandle_NativeOverlapped.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetOverlappedResult.cs"
+             Link="Common\Interop\Windows\Kernel32\Interop.GetOverlappedResult.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.CancelIoEx.cs"
+             Link="Common\Interop\Windows\Kernel32\Interop.CancelIoEx.cs" />
     <Compile Include="System\Diagnostics\ProcessManager.Windows.cs" />
     <Compile Include="System\Diagnostics\ProcessStartInfo.Windows.cs" />
     <Compile Include="System\Diagnostics\ProcessThread.Windows.cs" />
     <Compile Include="System\Diagnostics\ProcessThreadTimes.cs" />
     <Compile Include="System\Diagnostics\ProcessUtils.Windows.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Shell32\Interop.ShellExecuteExW.cs"
+             Link="Common\Interop\Windows\Shell32\Interop.ShellExecuteExW.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' != '' and '$(TargetPlatformIdentifier)' != 'windows'">
     <Compile Include="Microsoft\Win32\SafeHandles\SafeProcessHandle.Unix.cs" />
     <Compile Include="System\Diagnostics\Process.Unix.cs" />
+    <Compile Include="System\Diagnostics\Process.Multiplexing.Unix.cs" />
     <Compile Include="System\Diagnostics\ProcessManager.Unix.cs" />
     <Compile Include="System\Diagnostics\ProcessThread.Unix.cs" />
     <Compile Include="System\Diagnostics\ProcessStartInfo.Unix.cs" />
@@ -246,6 +258,14 @@
              Link="Common\Interop\Unix\Interop.Libraries.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Errors.cs"
              Link="Common\Interop\Unix\Interop.Errors.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\Interop.Poll.Structs.cs"
+             Link="Common\Interop\Unix\Interop.Poll.Structs.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Poll.cs"
+             Link="Common\Interop\Unix\System.Native\Interop.Poll.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Fcntl.cs"
+             Link="Common\Interop\Unix\System.Native\Interop.Fcntl.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Read.cs"
+             Link="Common\Interop\Unix\System.Native\Interop.Read.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Close.cs"
              Link="Common\Interop\Unix\Interop.Close.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\Interop.DefaultPathBufferSize.cs"
@@ -268,6 +288,8 @@
              Link="Common\Interop\Unix\Interop.InitializeTerminalAndSignalHandling.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Kill.cs"
              Link="Common\Interop\Unix\Interop.Kill.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.PosixSignal.cs"
+             Link="Common\Interop\Unix\Interop.PosixSignal.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.ReadLink.cs"
              Link="Common\Interop\Unix\Interop.ReadLink.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.RegisterForSigChld.cs"
@@ -292,24 +314,28 @@
              Link="Common\Interop\Unix\Interop.GetEUid.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.IsMemberOfGroup.cs"
              Link="Common\Interop\Unix\Interop.IsMemberOfGroup.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.IsAtomicNonInheritablePipeCreationSupported.cs"
+             Link="Common\Interop\Unix\Interop.IsAtomicNonInheritablePipeCreationSupported.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.IsATty.cs"
+             Link="Common\Interop\Unix\Interop.IsATty.cs" />
+    <Compile Include="$(CommonPath)System\NullableBool.cs"
+             Link="Common\System\NullableBool.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' != '' and '$(TargetPlatformIdentifier)' != 'windows' and '$(IsiOSLike)' != 'true'">
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.ConfigureTerminalForChildProcess.cs"
              Link="Common\Interop\Unix\Interop.ConfigureTerminalForChildProcess.cs" />
-    <Compile Include="System\Diagnostics\Process.ConfigureTerminalForChildProcesses.Unix.cs" />
+    <Compile Include="System\Diagnostics\ProcessUtils.ConfigureTerminalForChildProcesses.Unix.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' != '' and '$(TargetPlatformIdentifier)' != 'windows' and '$(IsiOSLike)' == 'true'">
-    <Compile Include="System\Diagnostics\Process.ConfigureTerminalForChildProcesses.iOS.cs" />
+    <Compile Include="System\Diagnostics\ProcessUtils.ConfigureTerminalForChildProcesses.iOS.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'linux'">
     <Compile Include="System\Diagnostics\Process.Linux.cs" />
     <Compile Include="System\Diagnostics\ProcessManager.Linux.cs" />
     <Compile Include="System\Diagnostics\ProcessThread.Linux.cs" />
-    <Compile Include="$(CommonPath)System\NullableBool.cs"
-             Link="Common\System\NullableBool.cs" />
     <Compile Include="$(CommonPath)Interop\Linux\cgroups\Interop.cgroups.cs"
              Link="Common\Interop\Linux\Interop.cgroups.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.MountPoints.FormatInfo.cs"
@@ -346,14 +372,6 @@
              Link="Common\Interop\OSX\Interop.Interop.libSystem.cs" />
     <Compile Include="$(CommonPath)Interop\OSX\Interop.Libraries.cs"
              Link="Common\Interop\OSX\Interop.Libraries.cs" />
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
-    <Compile Include="$(CommonPath)Interop\Windows\Shell32\Interop.ShellExecuteExW.cs"
-             Link="Common\Interop\Windows\Shell32\Interop.ShellExecuteExW.cs" />
-    <Compile Include="System\Diagnostics\Process.Win32.cs" />
-    <Compile Include="System\Diagnostics\ProcessManager.Win32.cs" />
-    <Compile Include="System\Diagnostics\ProcessStartInfo.Win32.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' != '' and '$(TargetPlatformIdentifier)' != 'ios' and '$(TargetPlatformIdentifier)' != 'tvos'">
@@ -399,6 +417,7 @@
     <ProjectReference Include="$(LibrariesProjectRoot)System.Collections.NonGeneric\src\System.Collections.NonGeneric.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Collections.Specialized\src\System.Collections.Specialized.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.ComponentModel.Primitives\src\System.ComponentModel.Primitives.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Console\src\System.Console.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Diagnostics.FileVersionInfo\src\System.Diagnostics.FileVersionInfo.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.IO.FileSystem.DriveInfo\src\System.IO.FileSystem.DriveInfo.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Memory\src\System.Memory.csproj" />
@@ -407,6 +426,8 @@
     <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.InteropServices\src\System.Runtime.InteropServices.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Text.Encoding.Extensions\src\System.Text.Encoding.Extensions.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Threading\src\System.Threading.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Threading.Channels\src\System.Threading.Channels.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Threading.Overlapped\src\System.Threading.Overlapped.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Threading.Thread\src\System.Threading.Thread.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Threading.ThreadPool\src\System.Threading.ThreadPool.csproj" />
   </ItemGroup>

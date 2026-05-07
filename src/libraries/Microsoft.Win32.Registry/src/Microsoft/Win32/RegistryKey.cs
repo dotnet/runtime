@@ -215,19 +215,11 @@ namespace Microsoft.Win32
                 }
             }
 
-            Interop.Kernel32.SECURITY_ATTRIBUTES secAttrs = default;
             byte[]? securityDescriptor = registrySecurity?.GetSecurityDescriptorBinaryForm();
 
             fixed (void* pSecurityDescriptor = securityDescriptor)
             {
-                if (pSecurityDescriptor is not null)
-                {
-                    secAttrs = new()
-                    {
-                        nLength = (uint)sizeof(Interop.Kernel32.SECURITY_ATTRIBUTES),
-                        lpSecurityDescriptor = pSecurityDescriptor
-                    };
-                }
+                Interop.Kernel32.SECURITY_ATTRIBUTES secAttrs = Interop.Kernel32.SECURITY_ATTRIBUTES.Create(pSecurityDescriptor);
 
                 // By default, the new key will be writable.
                 int ret = Interop.Advapi32.RegCreateKeyEx(_hkey,
@@ -1095,8 +1087,8 @@ namespace Microsoft.Win32
                         case Interop.Advapi32.RegistryValues.REG_QWORD:
                             return dataLength switch
                             {
-                                4 => MemoryMarshal.Read<int>(span),
-                                8 => MemoryMarshal.Read<long>(span),
+                                4 => BitConverter.ToInt32(span),
+                                8 => BitConverter.ToInt64(span),
                                 _ => span.Slice(0, dataLength).ToArray(), // This shouldn't happen, but the previous implementation included it defensively.
                             };
 

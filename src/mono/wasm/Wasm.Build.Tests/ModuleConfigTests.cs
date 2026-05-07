@@ -57,7 +57,7 @@ public class ModuleConfigTests : WasmTemplateTestsBase
         );
     }
 
-    [ConditionalFact(typeof(BuildTestBase), nameof(IsMonoRuntime)), TestCategory("bundler-friendly")]
+    [Fact, TestCategory("bundler-friendly")]
     public async Task OutErrOverrideWorks()
     {
         Configuration config = Configuration.Debug;
@@ -75,34 +75,6 @@ public class ModuleConfigTests : WasmTemplateTestsBase
         Assert.True(
             result.ConsoleOutput.Any(m => m.Contains("Emscripten err override works!")),
             "Emscripten err override doesn't work"
-        );
-    }
-
-    [ConditionalTheory(typeof(BuildTestBase), nameof(IsMonoRuntime))]
-    [InlineData(Configuration.Release, true)]
-    [InlineData(Configuration.Release, false)]
-    public async Task OverrideBootConfigName(Configuration config, bool isPublish)
-    {
-        ProjectInfo info = CopyTestAsset(config, false, TestAsset.WasmBasicTestApp, $"OverrideBootConfigName_{isPublish}");
-
-        if (isPublish)
-            PublishProject(info, config, new PublishOptions(BootConfigFileName: "boot.json", UseCache: false));
-        else
-            BuildProject(info, config, new BuildOptions(BootConfigFileName: "boot.json", UseCache: false));
-
-        var runOptions = new BrowserRunOptions(
-            Configuration: config,
-            TestScenario: "OverrideBootConfigName"
-        );
-        var result = await (isPublish
-            ? RunForPublishWithWebServer(runOptions)
-            : RunForBuildWithDotnetRun(runOptions)
-        );
-
-        Assert.Collection(
-            result.TestOutput,
-            m => Assert.Equal("ConfigSrc: boot.json", m),
-            m => Assert.Equal("Managed code has run", m)
         );
     }
 
@@ -148,11 +120,33 @@ public class ModuleConfigTests : WasmTemplateTestsBase
         else
             BuildProject(info, config, new BuildOptions(AssertAppBundle: false));
 
-        string frameworkDir = GetBinFrameworkDir(config, forPublish: isPublish);
-
-        // The file may be fingerprinted (e.g. dotnet.native.<hash>.js.symbols),
-        // so use a glob pattern to find it.
-        bool symbolsFileExists = Directory.EnumerateFiles(frameworkDir, "dotnet.native*.js.symbols").Any();
+        // Locate the emitted symbols file. With CopyToOutputDirectory=Never, framework files are
+        // no longer in bin/_framework during build: the native symbols file lives in
+        // obj/{config}/{tfm}/wasm/for-build/ (native rebuild) and the materialized copy ends up
+        // in obj/{config}/{tfm}/fx/{name}/_framework/. The publish path still has them in
+        // bin/{config}/{tfm}/publish/wwwroot/_framework/.
+        // The file may be fingerprinted (e.g. dotnet.native.<hash>.js.symbols), so use a glob.
+        const string symbolsPattern = "dotnet.native*.js.symbols";
+        bool symbolsFileExists;
+        if (isPublish)
+        {
+            string frameworkDir = GetBinFrameworkDir(config, forPublish: true);
+            symbolsFileExists = Directory.EnumerateFiles(frameworkDir, symbolsPattern).Any();
+        }
+        else
+        {
+            string objDir = Path.Combine(_projectDir, "obj", config.ToString(), DefaultTargetFramework);
+            string fxBaseDir = Path.Combine(objDir, "fx");
+            string[] searchDirs = [
+                Path.Combine(objDir, "wasm", "for-build"),
+                .. Directory.Exists(fxBaseDir)
+                    ? Directory.GetDirectories(fxBaseDir).Select(d => Path.Combine(d, "_framework"))
+                    : Array.Empty<string>()
+            ];
+            symbolsFileExists = searchDirs
+                .Where(Directory.Exists)
+                .Any(d => Directory.EnumerateFiles(d, symbolsPattern).Any());
+        }
         Assert.Equal(emitSymbolMap, symbolsFileExists);
     }
 }

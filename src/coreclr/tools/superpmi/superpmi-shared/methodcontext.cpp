@@ -90,11 +90,14 @@ void MethodContext::Destroy()
         break;                                                                                                         \
     }
 
-#define sparseReadFileCR(target, key, value)                                                                           \
+#define sparseReadFileCR(target, key, value, readCompileResults)                                                       \
     case PacketCR_##target:                                                                                            \
     {                                                                                                                  \
-        cr->target = new LightWeightMap<key, value>();                                                                 \
-        cr->target->ReadFromArray(&buff2[buffIndex], localsize);                                                       \
+        if (readCompileResults)                                                                                        \
+        {                                                                                                              \
+            cr->target = new LightWeightMap<key, value>();                                                             \
+            cr->target->ReadFromArray(&buff2[buffIndex], localsize);                                                   \
+        }                                                                                                              \
         break;                                                                                                         \
     }
 
@@ -106,11 +109,14 @@ void MethodContext::Destroy()
         break;                                                                                                         \
     }
 
-#define sparseReadFileCRDense(target, value)                                                                           \
+#define sparseReadFileCRDense(target, value, readCompileResults)                                                       \
     case PacketCR_##target:                                                                                            \
     {                                                                                                                  \
-        cr->target = new DenseLightWeightMap<value>();                                                                 \
-        cr->target->ReadFromArray(&buff2[buffIndex], localsize);                                                       \
+        if (readCompileResults)                                                                                        \
+        {                                                                                                              \
+            cr->target = new DenseLightWeightMap<value>();                                                             \
+            cr->target->ReadFromArray(&buff2[buffIndex], localsize);                                                   \
+        }                                                                                                              \
         break;                                                                                                         \
     }
 
@@ -174,24 +180,24 @@ unsigned int MethodContext::saveToFile(FILE* fp)
 // (and sets *ppmc with new MethodContext), false on failure.
 //
 // static
-bool MethodContext::Initialize(int mcIndex, unsigned char* buff, DWORD size, /* OUT */ MethodContext** ppmc)
+bool MethodContext::Initialize(int mcIndex, unsigned char* buff, DWORD size, bool readCompileResults, /* OUT */ MethodContext** ppmc)
 {
     MethodContext* mc = new MethodContext();
     mc->index         = mcIndex;
     *ppmc             = mc;
-    return mc->Initialize(mcIndex, buff, size);
+    return mc->Initialize(mcIndex, buff, size, readCompileResults);
 }
 
 // static
-bool MethodContext::Initialize(int mcIndex, FILE* fp, /* OUT */ MethodContext** ppmc)
+bool MethodContext::Initialize(int mcIndex, FILE* fp, bool readCompileResults, /* OUT */ MethodContext** ppmc)
 {
     MethodContext* mc = new MethodContext();
     mc->index         = mcIndex;
     *ppmc             = mc;
-    return mc->Initialize(mcIndex, fp);
+    return mc->Initialize(mcIndex, fp, readCompileResults);
 }
 
-bool MethodContext::Initialize(int mcIndex, unsigned char* buff, DWORD size)
+bool MethodContext::Initialize(int mcIndex, unsigned char* buff, DWORD size, bool readCompileResults)
 {
     bool result = true;
 
@@ -200,14 +206,15 @@ bool MethodContext::Initialize(int mcIndex, unsigned char* buff, DWORD size)
         unsigned char* buff;
         DWORD          size;
         MethodContext* pThis;
+        bool           readCompileResults;
     } param;
     param.buff  = buff;
     param.size  = size;
     param.pThis = this;
-
+    param.readCompileResults = readCompileResults;
     PAL_TRY(Param*, pParam, &param)
     {
-        pParam->pThis->MethodInitHelper(pParam->buff, pParam->size);
+        pParam->pThis->MethodInitHelper(pParam->buff, pParam->size, pParam->readCompileResults);
     }
     PAL_EXCEPT_FILTER(FilterSuperPMIExceptions_CatchMC)
     {
@@ -219,7 +226,7 @@ bool MethodContext::Initialize(int mcIndex, unsigned char* buff, DWORD size)
     return result;
 }
 
-bool MethodContext::Initialize(int mcIndex, FILE* fp)
+bool MethodContext::Initialize(int mcIndex, FILE* fp, bool readCompileResults)
 {
     bool result = true;
 
@@ -227,13 +234,15 @@ bool MethodContext::Initialize(int mcIndex, FILE* fp)
     {
         FILE*          fp;
         MethodContext* pThis;
+        bool           readCompileResults;
     } param;
     param.fp = fp;
     param.pThis = this;
+    param.readCompileResults = readCompileResults;
 
     PAL_TRY(Param*, pParam, &param)
     {
-        pParam->pThis->MethodInitHelperFile(pParam->fp);
+        pParam->pThis->MethodInitHelperFile(pParam->fp, pParam->readCompileResults);
     }
     PAL_EXCEPT_FILTER(FilterSuperPMIExceptions_CatchMC)
     {
@@ -245,7 +254,7 @@ bool MethodContext::Initialize(int mcIndex, FILE* fp)
     return result;
 }
 
-void MethodContext::MethodInitHelperFile(FILE* fp)
+void MethodContext::MethodInitHelperFile(FILE* fp, bool readCompileResults)
 {
     char         buff[512];
     unsigned int totalLen = 0;
@@ -257,10 +266,10 @@ void MethodContext::MethodInitHelperFile(FILE* fp)
     unsigned char* buff2 = new unsigned char[totalLen + 2]; // total + End Canary
     AssertCode(fread(buff2, 1, totalLen + 2, fp) == totalLen + 2, EXCEPTIONCODE_MC);
     AssertCodeMsg((buff2[totalLen] == '4') && (buff2[totalLen + 1] == '2'), EXCEPTIONCODE_MC, "Didn't find end canary");
-    MethodInitHelper(buff2, totalLen);
+    MethodInitHelper(buff2, totalLen, readCompileResults);
 }
 
-void MethodContext::MethodInitHelper(unsigned char* buff2, unsigned int totalLen)
+void MethodContext::MethodInitHelper(unsigned char* buff2, unsigned int totalLen, bool readCompileResults)
 {
     unsigned int   buffIndex = 0;
     unsigned int   localsize = 0;
@@ -281,8 +290,8 @@ void MethodContext::MethodInitHelper(unsigned char* buff2, unsigned int totalLen
 #define DENSELWM(map, value) sparseReadFileDense(map, value)
 #include "lwmlist.h"
 
-#define LWM(map, key, value) sparseReadFileCR(map, key, value)
-#define DENSELWM(map, value) sparseReadFileCRDense(map, value)
+#define LWM(map, key, value) sparseReadFileCR(map, key, value, readCompileResults)
+#define DENSELWM(map, value) sparseReadFileCRDense(map, value, readCompileResults)
 #include "crlwmlist.h"
 
             default:
@@ -1195,6 +1204,8 @@ const char* CorJitFlagToString(CORJIT_FLAGS::CorJitFlag flag)
         return "CORJIT_FLAG_ALT_JIT";
     case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_FROZEN_ALLOC_ALLOWED:
         return "CORJIT_FLAG_FROZEN_ALLOC_ALLOWED";
+    case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_PORTABLE_ENTRY_POINTS:
+        return "CORJIT_FLAG_PORTABLE_ENTRY_POINTS";
     case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_AOT:
         return "CORJIT_FLAG_AOT";
     case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_PROF_ENTERLEAVE:
@@ -1236,6 +1247,9 @@ const char* CorJitFlagToString(CORJIT_FLAGS::CorJitFlag flag)
     case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_SOFTFP_ABI:
         return "CORJIT_FLAG_SOFTFP_ABI";
 #endif // defined(TARGET_ARM)
+
+    case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_ASYNC:
+        return "CORJIT_FLAG_ASYNC";
 
     default:
         return "<unknown>";
@@ -4475,11 +4489,12 @@ void MethodContext::recGetAsyncInfo(const CORINFO_ASYNC_INFO* pAsyncInfo)
     value.continuationStateFldHnd = CastHandle(pAsyncInfo->continuationStateFldHnd);
     value.continuationFlagsFldHnd = CastHandle(pAsyncInfo->continuationFlagsFldHnd);
     value.captureExecutionContextMethHnd = CastHandle(pAsyncInfo->captureExecutionContextMethHnd);
-    value.restoreExecutionContextMethHnd = CastHandle(pAsyncInfo->restoreExecutionContextMethHnd);
     value.captureContinuationContextMethHnd = CastHandle(pAsyncInfo->captureContinuationContextMethHnd);
     value.captureContextsMethHnd = CastHandle(pAsyncInfo->captureContextsMethHnd);
     value.restoreContextsMethHnd = CastHandle(pAsyncInfo->restoreContextsMethHnd);
     value.restoreContextsOnSuspensionMethHnd = CastHandle(pAsyncInfo->restoreContextsOnSuspensionMethHnd);
+    value.finishSuspensionNoContinuationContextMethHnd = CastHandle(pAsyncInfo->finishSuspensionNoContinuationContextMethHnd);
+    value.finishSuspensionWithContinuationContextMethHnd = CastHandle(pAsyncInfo->finishSuspensionWithContinuationContextMethHnd);
 
     GetAsyncInfo->Add(0, value);
     DEBUG_REC(dmpGetAsyncInfo(0, value));
@@ -4500,11 +4515,12 @@ void MethodContext::repGetAsyncInfo(CORINFO_ASYNC_INFO* pAsyncInfoOut)
     pAsyncInfoOut->continuationStateFldHnd = (CORINFO_FIELD_HANDLE)value.continuationStateFldHnd;
     pAsyncInfoOut->continuationFlagsFldHnd = (CORINFO_FIELD_HANDLE)value.continuationFlagsFldHnd;
     pAsyncInfoOut->captureExecutionContextMethHnd = (CORINFO_METHOD_HANDLE)value.captureExecutionContextMethHnd;
-    pAsyncInfoOut->restoreExecutionContextMethHnd = (CORINFO_METHOD_HANDLE)value.restoreExecutionContextMethHnd;
     pAsyncInfoOut->captureContinuationContextMethHnd = (CORINFO_METHOD_HANDLE)value.captureContinuationContextMethHnd;
     pAsyncInfoOut->captureContextsMethHnd = (CORINFO_METHOD_HANDLE)value.captureContextsMethHnd;
     pAsyncInfoOut->restoreContextsMethHnd = (CORINFO_METHOD_HANDLE)value.restoreContextsMethHnd;
     pAsyncInfoOut->restoreContextsOnSuspensionMethHnd = (CORINFO_METHOD_HANDLE)value.restoreContextsOnSuspensionMethHnd;
+    pAsyncInfoOut->finishSuspensionNoContinuationContextMethHnd = (CORINFO_METHOD_HANDLE)value.finishSuspensionNoContinuationContextMethHnd;
+    pAsyncInfoOut->finishSuspensionWithContinuationContextMethHnd = (CORINFO_METHOD_HANDLE)value.finishSuspensionWithContinuationContextMethHnd;
     DEBUG_REP(dmpGetAsyncInfo(0, value));
 }
 

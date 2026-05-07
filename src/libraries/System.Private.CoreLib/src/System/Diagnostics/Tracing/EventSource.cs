@@ -1264,7 +1264,7 @@ namespace System.Diagnostics.Tracing
                 set => m_Reserved = value;
             }
 
-#region private
+            #region private
             /// <summary>
             /// Initializes the members of this EventData object to point at a previously-pinned
             /// tracelogging-compatible metadata blob.
@@ -1566,9 +1566,9 @@ namespace System.Diagnostics.Tracing
             // NOTE: we nop out this method body if !IsSupported using ILLink.Substitutions.
             this.Dispose(false);
         }
-#endregion
+        #endregion
 
-#region private
+        #region private
 
         private unsafe void WriteEventRaw(
             string? eventName,
@@ -3888,10 +3888,14 @@ namespace System.Diagnostics.Tracing
                 return;
             }
 
-// NOTE: this define is being used inconsistently. Most places mean just EventPipe support, but then a few places use
-// it to mean other aspects of tracing such as these EventSources.
+            // NOTE: this define is being used inconsistently. Most places mean just EventPipe support, but then a few places use
+            // it to mean other aspects of tracing such as these EventSources.
 #if FEATURE_PERFTRACING
             _ = NativeRuntimeEventSource.Log;
+            // ThreadPoolWorkQueue uses FrameworkEventSource during ThreadPool initialization. If that is the first time
+            // the FrameworkEventSource is being used, creating it on-demand will acquire the EventListener lock which can deadlock.
+            // See https://github.com/dotnet/runtime/issues/126591. We avoid that by pre-creating the FrameworkEventSource here.
+            _ = FrameworkEventSource.Log;
 #if !TARGET_BROWSER
             _ = RuntimeEventSource.Log;
 #endif

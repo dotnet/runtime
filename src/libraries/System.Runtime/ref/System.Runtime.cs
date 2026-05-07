@@ -18,6 +18,7 @@ namespace Microsoft.Win32.SafeHandles
     }
     public sealed partial class SafeFileHandle : Microsoft.Win32.SafeHandles.SafeHandleZeroOrMinusOneIsInvalid
     {
+        public static void CreateAnonymousPipe(out Microsoft.Win32.SafeHandles.SafeFileHandle readHandle, out Microsoft.Win32.SafeHandles.SafeFileHandle writeHandle, bool asyncRead = false, bool asyncWrite = false) { throw null; }
         public SafeFileHandle() : base (default(bool)) { }
         public SafeFileHandle(System.IntPtr preexistingHandle, bool ownsHandle) : base (default(bool)) { }
         public override bool IsInvalid { get { throw null; } }
@@ -961,6 +962,7 @@ namespace System
         public static bool IsOddInteger(byte value) { throw null; }
         public static bool IsPow2(byte value) { throw null; }
         public static byte LeadingZeroCount(byte value) { throw null; }
+        public static byte Log10(byte value) { throw null; }
         public static byte Log2(byte value) { throw null; }
         public static byte Max(byte x, byte y) { throw null; }
         public static byte Min(byte x, byte y) { throw null; }
@@ -1178,6 +1180,7 @@ namespace System
         int System.Numerics.IBinaryInteger<char>.GetByteCount() { throw null; }
         int System.Numerics.IBinaryInteger<char>.GetShortestBitLength() { throw null; }
         static char System.Numerics.IBinaryInteger<char>.LeadingZeroCount(char value) { throw null; }
+        static char System.Numerics.IBinaryInteger<char>.Log10(char value) { throw null; }
         static char System.Numerics.IBinaryInteger<char>.PopCount(char value) { throw null; }
         static char System.Numerics.IBinaryInteger<char>.RotateLeft(char value, int rotateAmount) { throw null; }
         static char System.Numerics.IBinaryInteger<char>.RotateRight(char value, int rotateAmount) { throw null; }
@@ -3608,6 +3611,7 @@ namespace System
         public static bool IsPositive(System.Int128 value) { throw null; }
         public static bool IsPow2(System.Int128 value) { throw null; }
         public static System.Int128 LeadingZeroCount(System.Int128 value) { throw null; }
+        public static System.Int128 Log10(System.Int128 value) { throw null; }
         public static System.Int128 Log2(System.Int128 value) { throw null; }
         public static System.Int128 Max(System.Int128 x, System.Int128 y) { throw null; }
         public static System.Int128 MaxMagnitude(System.Int128 x, System.Int128 y) { throw null; }
@@ -3795,6 +3799,7 @@ namespace System
         public static bool IsPositive(short value) { throw null; }
         public static bool IsPow2(short value) { throw null; }
         public static short LeadingZeroCount(short value) { throw null; }
+        public static short Log10(short value) { throw null; }
         public static short Log2(short value) { throw null; }
         public static short Max(short x, short y) { throw null; }
         public static short MaxMagnitude(short x, short y) { throw null; }
@@ -3936,6 +3941,7 @@ namespace System
         public static bool IsPositive(int value) { throw null; }
         public static bool IsPow2(int value) { throw null; }
         public static int LeadingZeroCount(int value) { throw null; }
+        public static int Log10(int value) { throw null; }
         public static int Log2(int value) { throw null; }
         public static int Max(int x, int y) { throw null; }
         public static int MaxMagnitude(int x, int y) { throw null; }
@@ -4077,6 +4083,7 @@ namespace System
         public static bool IsPositive(long value) { throw null; }
         public static bool IsPow2(long value) { throw null; }
         public static long LeadingZeroCount(long value) { throw null; }
+        public static long Log10(long value) { throw null; }
         public static long Log2(long value) { throw null; }
         public static long Max(long x, long y) { throw null; }
         public static long MaxMagnitude(long x, long y) { throw null; }
@@ -4224,6 +4231,7 @@ namespace System
         public static bool IsPositive(nint value) { throw null; }
         public static bool IsPow2(nint value) { throw null; }
         public static nint LeadingZeroCount(nint value) { throw null; }
+        public static nint Log10(nint value) { throw null; }
         public static nint Log2(nint value) { throw null; }
         public static nint Max(nint x, nint y) { throw null; }
         public static nint MaxMagnitude(nint x, nint y) { throw null; }
@@ -5033,12 +5041,16 @@ namespace System
         public virtual int Next() { throw null; }
         public virtual int Next(int maxValue) { throw null; }
         public virtual int Next(int minValue, int maxValue) { throw null; }
+        public T NextBinaryFloat<T>() where T : System.Numerics.IBinaryFloatingPointIeee754<T> { throw null; }
         public virtual void NextBytes(byte[] buffer) { }
         public virtual void NextBytes(System.Span<byte> buffer) { }
         public virtual double NextDouble() { throw null; }
         public virtual long NextInt64() { throw null; }
         public virtual long NextInt64(long maxValue) { throw null; }
         public virtual long NextInt64(long minValue, long maxValue) { throw null; }
+        public T NextInteger<T>() where T : System.Numerics.IBinaryInteger<T>, System.Numerics.IMinMaxValue<T> { throw null; }
+        public T NextInteger<T>(T maxValue) where T : System.Numerics.IBinaryInteger<T> { throw null; }
+        public T NextInteger<T>(T minValue, T maxValue) where T : System.Numerics.IBinaryInteger<T> { throw null; }
         public virtual float NextSingle() { throw null; }
         protected virtual double Sample() { throw null; }
         public void Shuffle<T>(System.Span<T> values) { }
@@ -5237,6 +5249,7 @@ namespace System
         public static bool IsPositive(sbyte value) { throw null; }
         public static bool IsPow2(sbyte value) { throw null; }
         public static sbyte LeadingZeroCount(sbyte value) { throw null; }
+        public static sbyte Log10(sbyte value) { throw null; }
         public static sbyte Log2(sbyte value) { throw null; }
         public static sbyte Max(sbyte x, sbyte y) { throw null; }
         public static sbyte MaxMagnitude(sbyte x, sbyte y) { throw null; }
@@ -6604,6 +6617,7 @@ namespace System
         public virtual string? GetEnumName(object value) { throw null; }
         public virtual string[] GetEnumNames() { throw null; }
         public virtual System.Type GetEnumUnderlyingType() { throw null; }
+        public virtual System.Type? GetNullableUnderlyingType() { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("It might not be possible to create an array of the enum type at runtime. Use Enum.GetValues<T> or the GetEnumValuesAsUnderlyingType method instead.")]
         public virtual System.Array GetEnumValues() { throw null; }
         public virtual System.Array GetEnumValuesAsUnderlyingType() { throw null; }
@@ -6890,6 +6904,7 @@ namespace System
         public static bool IsOddInteger(System.UInt128 value) { throw null; }
         public static bool IsPow2(System.UInt128 value) { throw null; }
         public static System.UInt128 LeadingZeroCount(System.UInt128 value) { throw null; }
+        public static System.UInt128 Log10(System.UInt128 value) { throw null; }
         public static System.UInt128 Log2(System.UInt128 value) { throw null; }
         public static System.UInt128 Max(System.UInt128 x, System.UInt128 y) { throw null; }
         public static System.UInt128 Min(System.UInt128 x, System.UInt128 y) { throw null; }
@@ -7083,6 +7098,7 @@ namespace System
         public static bool IsOddInteger(ushort value) { throw null; }
         public static bool IsPow2(ushort value) { throw null; }
         public static ushort LeadingZeroCount(ushort value) { throw null; }
+        public static ushort Log10(ushort value) { throw null; }
         public static ushort Log2(ushort value) { throw null; }
         public static ushort Max(ushort x, ushort y) { throw null; }
         public static ushort Min(ushort x, ushort y) { throw null; }
@@ -7224,6 +7240,7 @@ namespace System
         public static bool IsOddInteger(uint value) { throw null; }
         public static bool IsPow2(uint value) { throw null; }
         public static uint LeadingZeroCount(uint value) { throw null; }
+        public static uint Log10(uint value) { throw null; }
         public static uint Log2(uint value) { throw null; }
         public static uint Max(uint x, uint y) { throw null; }
         public static uint Min(uint x, uint y) { throw null; }
@@ -7365,6 +7382,7 @@ namespace System
         public static bool IsOddInteger(ulong value) { throw null; }
         public static bool IsPow2(ulong value) { throw null; }
         public static ulong LeadingZeroCount(ulong value) { throw null; }
+        public static ulong Log10(ulong value) { throw null; }
         public static ulong Log2(ulong value) { throw null; }
         public static ulong Max(ulong x, ulong y) { throw null; }
         public static ulong Min(ulong x, ulong y) { throw null; }
@@ -7511,6 +7529,7 @@ namespace System
         public static bool IsOddInteger(nuint value) { throw null; }
         public static bool IsPow2(nuint value) { throw null; }
         public static nuint LeadingZeroCount(nuint value) { throw null; }
+        public static nuint Log10(nuint value) { throw null; }
         public static nuint Log2(nuint value) { throw null; }
         public static nuint Max(nuint x, nuint y) { throw null; }
         public static nuint Min(nuint x, nuint y) { throw null; }
@@ -9109,6 +9128,11 @@ namespace System.Diagnostics.CodeAnalysis
         public string Message { get { throw null; } }
         public string? Url { get { throw null; } set { } }
     }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Constructor | System.AttributeTargets.Event | System.AttributeTargets.Method | System.AttributeTargets.Property, Inherited=false, AllowMultiple=false)]
+    public sealed partial class RequiresUnsafeAttribute : System.Attribute
+    {
+        public RequiresUnsafeAttribute() { }
+    }
     [System.AttributeUsageAttribute(System.AttributeTargets.Constructor, AllowMultiple=false, Inherited=false)]
     public sealed partial class SetsRequiredMembersAttribute : System.Attribute
     {
@@ -9805,6 +9829,7 @@ namespace System.Globalization
         Any = 511,
         AllowHexSpecifier = 512,
         HexNumber = 515,
+        HexFloat = 679,
         AllowBinarySpecifier = 1024,
         BinaryNumber = 1027,
     }
@@ -10283,6 +10308,13 @@ namespace System.IO
         protected DirectoryNotFoundException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public DirectoryNotFoundException(string? message) { }
         public DirectoryNotFoundException(string? message, System.Exception? innerException) { }
+        public DirectoryNotFoundException(string? message, string? directoryPath) { }
+        public DirectoryNotFoundException(string? message, string? directoryPath, System.Exception? innerException) { }
+        public string? DirectoryPath { get { throw null; } }
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId="SYSLIB0051", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        public override void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
+        public override string ToString() { throw null; }
     }
     public partial class EndOfStreamException : System.IO.IOException
     {
@@ -11600,6 +11632,7 @@ namespace System.Numerics
         static virtual TSelf Remainder(TSelf left, TSelf right, System.Numerics.DivisionRounding mode) { throw null; }
         int GetByteCount();
         int GetShortestBitLength();
+        static virtual TSelf Log10(TSelf value) { throw null; }
         static virtual TSelf LeadingZeroCount(TSelf value) { throw null; }
         static abstract TSelf PopCount(TSelf value);
         static virtual TSelf ReadBigEndian(byte[] source, bool isUnsigned) { throw null; }
@@ -13235,6 +13268,7 @@ namespace System.Reflection
         public override System.Type? GetNestedType(string name, System.Reflection.BindingFlags bindingAttr) { throw null; }
         [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicNestedTypes | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicNestedTypes)]
         public override System.Type[] GetNestedTypes(System.Reflection.BindingFlags bindingAttr) { throw null; }
+        public override System.Type? GetNullableUnderlyingType() { throw null; }
         [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicProperties | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicProperties)]
         public override System.Reflection.PropertyInfo[] GetProperties(System.Reflection.BindingFlags bindingAttr) { throw null; }
         [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicProperties | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicProperties)]
@@ -14021,11 +14055,22 @@ namespace System.Runtime.CompilerServices
         object? this[int index] { get; }
         int Length { get; }
     }
+    public partial interface IUnion
+    {
+        object? Value { get; }
+    }
     public enum LoadHint
     {
         Default = 0,
         Always = 1,
         Sometimes = 2,
+    }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Module, Inherited=false, AllowMultiple=false)]
+    [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+    public sealed partial class MemorySafetyRulesAttribute : System.Attribute
+    {
+        public MemorySafetyRulesAttribute(int version) { }
+        public int Version { get { throw null; } }
     }
     public enum MethodCodeType
     {
@@ -14429,6 +14474,11 @@ namespace System.Runtime.CompilerServices
     {
         public UnsafeValueTypeAttribute() { }
     }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Struct, AllowMultiple=false, Inherited=false)]
+    public sealed partial class UnionAttribute : System.Attribute
+    {
+        public UnionAttribute() { }
+    }
     public readonly partial struct ValueTaskAwaiter : System.Runtime.CompilerServices.ICriticalNotifyCompletion, System.Runtime.CompilerServices.INotifyCompletion
     {
         private readonly object _dummy;
@@ -14668,12 +14718,14 @@ namespace System.Runtime.InteropServices
     public static partial class MemoryMarshal
     {
         public static System.ReadOnlySpan<byte> AsBytes<T>(System.ReadOnlySpan<T> span) where T : struct { throw null; }
+        [System.Runtime.CompilerServices.OverloadResolutionPriorityAttribute(1)]
         public static System.Span<byte> AsBytes<T>(System.Span<T> span) where T : struct { throw null; }
         public static System.Memory<T> AsMemory<T>(System.ReadOnlyMemory<T> memory) { throw null; }
         public static ref readonly T AsRef<T>(System.ReadOnlySpan<byte> span) where T : struct { throw null; }
         [System.Runtime.CompilerServices.OverloadResolutionPriorityAttribute(1)]
         public static ref T AsRef<T>(System.Span<byte> span) where T : struct { throw null; }
         public static System.ReadOnlySpan<TTo> Cast<TFrom, TTo>(System.ReadOnlySpan<TFrom> span) where TFrom : struct where TTo : struct { throw null; }
+        [System.Runtime.CompilerServices.OverloadResolutionPriorityAttribute(1)]
         public static System.Span<TTo> Cast<TFrom, TTo>(System.Span<TFrom> span) where TFrom : struct where TTo : struct { throw null; }
         public static System.Memory<T> CreateFromPinnedArray<T>(T[]? array, int start, int length) { throw null; }
         [System.CLSCompliantAttribute(false)]
@@ -16177,6 +16229,7 @@ namespace System.Text
         public System.Text.StringBuilder AppendLine(string? value) { throw null; }
         public System.Text.StringBuilder AppendLine([System.Runtime.CompilerServices.InterpolatedStringHandlerArgumentAttribute("")] ref System.Text.StringBuilder.AppendInterpolatedStringHandler handler) { throw null; }
         public System.Text.StringBuilder Clear() { throw null; }
+        public static System.Text.StringBuilder MoveChunks(System.Text.StringBuilder source) { throw null; }
         public void CopyTo(int sourceIndex, char[] destination, int destinationIndex, int count) { }
         public void CopyTo(int sourceIndex, System.Span<char> destination, int count) { }
         public int EnsureCapacity(int capacity) { throw null; }
@@ -16280,9 +16333,15 @@ namespace System.Text
 }
 namespace System.Text.Unicode
 {
+    public static partial class Utf16
+    {
+        public static int IndexOfInvalidSubsequence(System.ReadOnlySpan<char> value) { throw null; }
+        public static bool IsValid(System.ReadOnlySpan<char> value) { throw null; }
+    }
     public static partial class Utf8
     {
         public static System.Buffers.OperationStatus FromUtf16(System.ReadOnlySpan<char> source, System.Span<byte> destination, out int charsRead, out int bytesWritten, bool replaceInvalidSequences = true, bool isFinalBlock = true) { throw null; }
+        public static int IndexOfInvalidSubsequence(System.ReadOnlySpan<byte> value) { throw null; }
         public static bool IsValid(System.ReadOnlySpan<byte> value) { throw null; }
         public static System.Buffers.OperationStatus ToUtf16(System.ReadOnlySpan<byte> source, System.Span<char> destination, out int bytesRead, out int charsWritten, bool replaceInvalidSequences = true, bool isFinalBlock = true) { throw null; }
         public static bool TryWrite(System.Span<byte> destination, System.IFormatProvider? provider, [System.Runtime.CompilerServices.InterpolatedStringHandlerArgumentAttribute(new string[]{ "destination", "provider"})] ref System.Text.Unicode.Utf8.TryWriteInterpolatedStringHandler handler, out int bytesWritten) { throw null; }

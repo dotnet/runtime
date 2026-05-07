@@ -5,6 +5,8 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Diagnostics.CodeAnalysis;
+
 #if NET
 using System.Runtime.Intrinsics.Arm;
 using System.Runtime.Intrinsics.X86;

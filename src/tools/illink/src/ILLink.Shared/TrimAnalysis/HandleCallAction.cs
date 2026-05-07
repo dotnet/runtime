@@ -1024,6 +1024,7 @@ namespace ILLink.Shared.TrimAnalysis
                                     : MultiValueLattice.Top, // This returns null at runtime, so return empty value
                             NullableSystemTypeValue nullableSystemType => nullableSystemType.UnderlyingTypeValue,
                             NullableValueWithDynamicallyAccessedMembers nullableDamValue => nullableDamValue.UnderlyingTypeValue,
+                            GenericParameterValue genericParam => new NullableUnwrappedGenericParameterValue(genericParam),
                             ValueWithDynamicallyAccessedMembers damValue => damValue,
                             _ => annotatedMethodReturnValue
                         });

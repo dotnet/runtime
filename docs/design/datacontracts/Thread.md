@@ -5,6 +5,13 @@ This contract is for reading and iterating the threads of the process.
 ## APIs of contract
 
 ``` csharp
+[Flags]
+enum ThreadContextSource
+{
+    None = 0,
+    Debugger = 1,
+}
+
 record struct ThreadStoreData (
     int ThreadCount,
     TargetPointer FirstThread,
@@ -23,8 +30,9 @@ enum ThreadState
     Hijacked            = 0x00000080,    // Return address has been hijacked
     Background          = 0x00000200,    // Thread is a background thread
     Unstarted           = 0x00000400,    // Thread has never been started
-    Dead                = 0x00000800,    // Thread is dead
+    Stopped             = 0x00010000,    // Thread has started to shut down
     ThreadPoolWorker    = 0x01000000,    // is this a threadpool worker thread?
+    Detached            = unchecked((int)0x80000000), // Thread was detached
 }
 
 record struct ThreadData (
@@ -36,8 +44,11 @@ record struct ThreadData (
     TargetPointer AllocContextLimit;
     TargetPointer Frame;
     TargetPointer FirstNestedException;
-    TargetPointer TEB;
+    TargetPointer ExposedObjectHandle;
     TargetPointer LastThrownObjectHandle;
+    TargetPointer CurrentCustomDebuggerNotificationHandle;
+    bool LastThrownObjectIsUnhandled;
+    bool HasUnhandledException;
     TargetPointer NextThread;
 );
 ```
@@ -48,7 +59,8 @@ ThreadStoreCounts GetThreadCounts();
 ThreadData GetThreadData(TargetPointer threadPointer);
 void GetStackLimitData(TargetPointer threadPointer, out TargetPointer stackBase, out TargetPointer stackLimit, out TargetPointer frameAddress);
 TargetPointer IdToThread(uint id);
-TargetPointer GetThreadLocalStaticBase(TargetPointer threadPointer, int indexOffset, int indexType);
+TargetPointer GetThreadLocalStaticBase(TargetPointer threadPointer, TargetPointer tlsIndexPtr);
+byte[] GetContext(TargetPointer threadPointer, ThreadContextSource contextSource, uint contextFlags);
 ```
 
 ## Version 1
@@ -97,10 +109,13 @@ The contract additionally depends on these data descriptors
 | `Thread` | `Frame` | Pointer to current frame |
 | `Thread` | `CachedStackBase` | Pointer to the base of the stack |
 | `Thread` | `CachedStackLimit` | Pointer to the limit of the stack |
-| `Thread` | `TEB` | Thread Environment Block pointer |
+| `Thread` | `ExposedObject` | Handle to the managed `Thread` object exposed to the debugger |
 | `Thread` | `LastThrownObject` | Handle to last thrown exception object |
+| `Thread` | `LastThrownObjectIsUnhandled` | Whether `LastThrownObject` should be treated as unhandled |
+| `Thread` | `CurrentCustomDebuggerNotification` | Handle to the current custom debugger notification object |
 | `Thread` | `LinkNext` | Pointer to get next thread |
 | `Thread` | `ExceptionTracker` | Pointer to exception tracking information |
+| `Thread` | `DebuggerFilterContext` | Pointer to the debugger filter context for the thread |
 | `Thread` | `RuntimeThreadLocals` | Pointer to some thread-local storage |
 | `Thread` | `ThreadLocalDataPtr` | Pointer to thread local data structure |
 | `Thread` | `UEWatsonBucketTrackerBuckets` | Pointer to thread Watson buckets data (optional, Windows only) |
@@ -175,17 +190,33 @@ ThreadData GetThreadData(TargetPointer address)
         allocContextLimit = target.ReadPointer(threadLocals + /* RuntimeThreadLocals::AllocContext offset */ + /* GCAllocContext::Limit offset */);
     }
 
+    // Prefer the active exception from ExInfo (pseudo-handle to m_exception field).
+    // After the removal of SetThrowable/m_hThrowable, m_LastThrownObjectHandle is only
+    // updated after exception dispatch completes, so during active dispatch it may be stale.
+    TargetPointer lastThrownObjectHandle = TargetPointer.Null;
+    if (exceptionTrackerAddr != TargetPointer.Null)
+    {
+        TargetPointer thrownObject = target.ReadPointer(exceptionTrackerAddr + /* ExceptionInfo::ThrownObject offset */);
+        if (thrownObject != TargetPointer.Null)
+        {
+            lastThrownObjectHandle = exceptionTrackerAddr + /* ExceptionInfo::ThrownObject field offset */;
+        }
+    }
+    if (lastThrownObjectHandle == TargetPointer.Null)
+    {
+        lastThrownObjectHandle = target.ReadPointer(address + /* Thread::LastThrownObject offset */);
+    }
+
     ulong threadLinkoffset = ... // offset from Thread data descriptor
     return new ThreadData(
         Id: target.Read<uint>(address + /* Thread::Id offset */),
         OSId: target.ReadNUInt(address + /* Thread::OSId offset */),
-        State: target.Read<uint>(address + /* Thread::State offset */),
+        State: target.Read<uint>(address + /* Thread::State offset */) /* -> convert to contract enum */,
         PreemptiveGCDisabled: (target.Read<uint>(address + /* Thread::PreemptiveGCDisabled offset */) & 0x1) != 0,
         AllocContextPointer: allocContextPointer,
         AllocContextLimit: allocContextLimit,
         Frame: target.ReadPointer(address + /* Thread::Frame offset */),
-        TEB : /* Has Thread::TEB offset */ ? target.ReadPointer(address + /* Thread::TEB offset */) : TargetPointer.Null,
-        LastThrownObjectHandle : target.ReadPointer(address + /* Thread::LastThrownObject offset */),
+        LastThrownObjectHandle : lastThrownObjectHandle,
         FirstNestedException : firstNestedException,
         NextThread: target.ReadPointer(address + /* Thread::LinkNext offset */) - threadLinkOffset;
     );
@@ -266,6 +297,21 @@ TargetPointer IThread.GetThreadLocalStaticBase(TargetPointer threadPointer, Targ
     return threadLocalStaticBase;
 }
 
+TargetPointer IThread.GetCurrentExceptionHandle(TargetPointer threadPointer)
+{
+    TargetPointer exceptionTrackerPtr = target.ReadPointer(threadPointer + /*Thread::ExceptionTracker offset */);
+    if (exceptionTrackerPtr == TargetPointer.Null)
+        return TargetPointer.Null;
+    TargetPointer thrownObject = target.ReadPointer(exceptionTrackerPtr + /* ExceptionInfo::ThrownObject offset */);
+
+    if (thrownObject == TargetPointer.Null)
+        return TargetPointer.Null;
+
+    // Return the address of the ThrownObject field as a pseudo-handle.
+    // Callers dereference this address to read the exception Object*.
+    return exceptionTrackerPtr + /* ExceptionInfo::ThrownObject field offset */;
+}
+
 byte[] IThread.GetWatsonBuckets(TargetPointer threadPointer)
 {
     TargetPointer readFrom;
@@ -309,6 +355,30 @@ byte[] IThread.GetWatsonBuckets(TargetPointer threadPointer)
 
     _target.ReadBuffer(readFrom, span);
     return span.ToArray();
+}
+
+byte[] IThread.GetContext(TargetPointer threadPointer, ThreadContextSource contextSource, uint contextFlags)
+{
+    // Allocate a context buffer for the target platform
+    IPlatformAgnosticContext context = IPlatformAgnosticContext.GetContextForPlatform(target);
+    byte[] bytes = new byte[context.Size];
+
+    TargetPointer filterContext = TargetPointer.Null;
+
+    if (contextSource.HasFlag(ThreadContextSource.Debugger))
+        filterContext = target.ReadPointer(threadPointer + /* Thread::DebuggerFilterContext offset */);
+
+    if (filterContext != TargetPointer.Null)
+    {
+        // Use the filter context directly
+        target.ReadBuffer(filterContext, bytes);
+        return bytes;
+    }
+
+    // Fall back to the OS thread context
+    ulong osId = target.ReadNUInt(threadPointer + /* Thread::OSId offset */);
+    target.GetThreadContext(osId, contextFlags, bytes);
+    return bytes;
 }
 
 ```

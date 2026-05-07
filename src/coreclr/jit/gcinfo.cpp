@@ -196,7 +196,7 @@ void GCInfo::gcMarkRegSetNpt(regMaskTP regMask DEBUGARG(bool forceOutput))
 
 void GCInfo::gcMarkRegPtrVal(regNumber reg, var_types type)
 {
-#if EMIT_GENERATE_GCINFO
+#if EMIT_GENERATE_GCINFO && HAS_FIXED_REGISTER_SET
     regMaskTP regMask = genRegMask(reg);
 
     switch (type)
@@ -211,7 +211,7 @@ void GCInfo::gcMarkRegPtrVal(regNumber reg, var_types type)
             gcMarkRegSetNpt(regMask);
             break;
     }
-#endif // EMIT_GENERATE_GCINFO
+#endif // EMIT_GENERATE_GCINFO && HAS_FIXED_REGISTER_SET
 }
 
 //------------------------------------------------------------------------
@@ -416,6 +416,7 @@ GCInfo::regPtrDsc* GCInfo::gcRegPtrAllocDsc()
 struct NoGCRegionCounter
 {
     unsigned noGCRegionCount;
+    unsigned lastEndOffs = -1;
 
     NoGCRegionCounter()
         : noGCRegionCount(0)
@@ -425,7 +426,11 @@ struct NoGCRegionCounter
     // This callback is called for each insGroup marked with IGF_NOGCINTERRUPT.
     bool operator()(unsigned igFuncIdx, unsigned igOffs, unsigned igSize, unsigned firstInstrSize, bool isInProlog)
     {
-        noGCRegionCount++;
+        if (lastEndOffs != igOffs)
+        {
+            noGCRegionCount++;
+        }
+        lastEndOffs = igOffs + igSize;
         return true;
     }
 };

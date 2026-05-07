@@ -29,14 +29,19 @@ features and then calls `Environment.FailFast()` to produce a crash dump.
 | BasicThreads | Thread management, thread store | Heap |
 | GCRoots | GC object graphs, pinned handles | Heap |
 | ServerGC | Server GC mode heap structures | Heap |
-| StackWalk | Deterministic call stack (Main→A→B→C→FailFast) | Full |
-| MultiModule | Multi-assembly metadata resolution | Full |
+| StackWalk | Deterministic call stack (Main→A→B→C→FailFast) | Heap |
+| MultiModule | Multi-assembly metadata resolution | Heap |
 | TypeHierarchy | Type inheritance, method tables | Heap |
 | PInvokeStub | P/Invoke with SetLastError ILStub | Full |
 | VarargPInvoke | Vararg P/Invoke via __arglist (sprintf) | Full |
-| SyncBlock | Sync block locks | Full |
-| CCWInterfaces | COM callable wrappers (CCW) on Windows | Full |
-| RCWCleanupList | STA-context RCW entries in g_pRCWCleanupList on Windows | Full |
+| SyncBlock | Sync block locks | Heap |
+| CCW | COM callable wrappers (CCW) on Windows | Heap |
+| RCWCleanupList | STA-context RCW entries in g_pRCWCleanupList on Windows | Heap |
+| RCW | COM RCW with populated interface entry cache on Windows | Heap |
+| ComWrappers | ComWrappers-based MOW and RCW | Heap |
+| ExceptionHandlingInfo | EH clause reading test | Heap |
+| LocalVariables | Info about local variables | Heap |
+| AsyncContinuation | Reading async continuation method tables | Heap |
 
 The dump type is configured per-debuggee via the `DumpTypes` property in each debuggee's
 `.csproj` (default: `Heap`, set in `Debuggees/Directory.Build.props`). Debuggees that
@@ -60,8 +65,10 @@ use. Tests are `[ConditionalTheory]` methods parameterized by `TestConfiguration
 | PInvokeStubDumpTests | StackWalk + RTS | PInvokeStub |
 | VarargPInvokeDumpTests | StackWalk + RTS | VarargPInvoke |
 | SyncBlockDumpTests | SyncBlock | SyncBlock |
-| BuiltInCOMDumpTests | BuiltInCOM | CCWInterfaces |
+| CCWDumpTests | BuiltInCOM | CCW |
 | RCWCleanupListDumpTests | BuiltInCOM | RCWCleanupList |
+| RCWDumpTests | BuiltInCOM | RCW |
+| ComWrappersDumpTests | ComWrappers | ComWrappers |
 
 ### Runtime Versions
 
@@ -114,7 +121,7 @@ If `dump-info.json` is not present, OS-based skipping is silently disabled.
 Dumps are written to:
 
 ```
-artifacts/dumps/cdac/{version}/{dumptype}/{debuggee}/{debuggee}.dmp
+artifacts/dumps/cdac/{version}/{dumptype}/{r2rmode}/{debuggee}/{debuggee}.dmp
 ```
 
 For example:
@@ -124,14 +131,18 @@ artifacts/dumps/cdac/
   local/
     dump-info.json
     heap/
-      BasicThreads/BasicThreads.dmp
+      r2r/
+        BasicThreads/BasicThreads.dmp
+      jit/
+        BasicThreads/BasicThreads.dmp
     full/
-      StackWalk/StackWalk.dmp
-      PInvokeStub/PInvokeStub.dmp
+      r2r/
+        PInvokeStub/PInvokeStub.dmp
   net10.0/
     dump-info.json
     full/
-      TypeHierarchy/TypeHierarchy.dmp
+      r2r/
+        TypeHierarchy/TypeHierarchy.dmp
 ```
 
 ## Running Locally (Windows)

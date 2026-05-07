@@ -1525,7 +1525,7 @@ void CordbReferenceValue::GetObjectData(CordbProcess *            pProcess,
     // make sure we don't end up with old garbage values in case the reference is bad
     PreInitObjectData(pInfo, objectAddress, type);
 
-    IfFailThrow(pInterface->GetBasicObjectInfo(objTargetAddr, type, vmAppdomain, pInfo));
+    IfFailThrow(pInterface->GetBasicObjectInfo(objTargetAddr, type, pInfo));
 
     if (!pInfo->objRefBad)
     {
@@ -1568,7 +1568,7 @@ void CordbReferenceValue::GetTypedByRefData(CordbProcess *            pProcess,
     // TypedByref objects, it is actually the address of the TypedByRef struct which  contains the
     // type and the object address.
 
-    IfFailThrow(pProcess->GetDAC()->GetTypedByRefInfo(pTypedByRef, vmAppDomain, pInfo));
+    IfFailThrow(pProcess->GetDAC()->GetTypedByRefInfo(pTypedByRef, pInfo));
 } // CordbReferenceValue::GetTypedByRefData
 
 //  get the address of the object referenced
@@ -2460,7 +2460,7 @@ HRESULT CordbObjectValue::EnumerateExceptionCallStack(ICorDebugExceptionObjectCa
 
     DacDbiArrayList<DacExceptionCallStackData> dacStackFrames;
 
-    IfFailThrow(pDAC->GetStackFramesFromException(vmObj, dacStackFrames));
+    IfFailThrow(pDAC->GetStackFramesFromException(vmObj, &dacStackFrames));
     int stackFramesLength = dacStackFrames.Count();
 
     if (stackFramesLength > 0)
@@ -2471,8 +2471,8 @@ HRESULT CordbObjectValue::EnumerateExceptionCallStack(ICorDebugExceptionObjectCa
             DacExceptionCallStackData& currentDacFrame = dacStackFrames[index];
             CorDebugExceptionObjectStackFrame& currentStackFrame = pStackFrames[index];
 
-            CordbAppDomain* pAppDomain = GetProcess()->LookupOrCreateAppDomain(currentDacFrame.vmAppDomain);
-            CordbModule* pModule = pAppDomain->LookupOrCreateModule(currentDacFrame.vmDomainAssembly);
+            CordbAppDomain* pAppDomain = GetProcess()->GetAppDomain();
+            CordbModule* pModule = pAppDomain->LookupOrCreateModule(currentDacFrame.vmAssembly);
 
             hr = pModule->QueryInterface(IID_ICorDebugModule, reinterpret_cast<void**>(&currentStackFrame.pModule));
             _ASSERTE(SUCCEEDED(hr));
@@ -2675,7 +2675,7 @@ HRESULT CordbObjectValue::GetTargetHelper(ICorDebugReferenceValue **ppTarget)
     }
 
     RSLockHolder lockHolder(GetProcess()->GetProcessLock());
-    RSSmartPtr<CordbAppDomain> pCordbAppDomForTarget(GetProcess()->LookupOrCreateAppDomain(pAppDomainOfTarget));
+    RSSmartPtr<CordbAppDomain> pCordbAppDomForTarget(GetProcess()->GetAppDomain());
     RSSmartPtr<CordbReferenceValue> targetObjRefVal(CordbValue::CreateHeapReferenceValue(pCordbAppDomForTarget, pDelegateTargetObj));
     *ppTarget = static_cast<ICorDebugReferenceValue*>(targetObjRefVal.GetValue());
     targetObjRefVal->ExternalAddRef();
@@ -2706,18 +2706,18 @@ HRESULT CordbObjectValue::GetFunctionHelper(ICorDebugFunction **ppFunction)
     {
         RSLockHolder lockHolder(GetProcess()->GetProcessLock());
 
-        VMPTR_DomainAssembly functionDomainAssembly;
+        VMPTR_Assembly functionAssembly;
         mdMethodDef functionMethodDef = 0;
-        hr = pDAC->GetDelegateFunctionData(delType, pDelegateObj, &functionDomainAssembly, &functionMethodDef);
+        hr = pDAC->GetDelegateFunctionData(delType, pDelegateObj, &functionAssembly, &functionMethodDef);
         if (hr != S_OK)
             return hr;
 
         // TODO: How to ensure results are sanitized?
         // Also, this is expensive. Do we really care that much about this?
         NativeCodeFunctionData nativeCodeForDelFunc;
-        IfFailThrow(pDAC->GetNativeCodeInfo(functionDomainAssembly, functionMethodDef, &nativeCodeForDelFunc));
+        IfFailThrow(pDAC->GetNativeCodeInfo(functionAssembly, functionMethodDef, &nativeCodeForDelFunc));
 
-        RSSmartPtr<CordbModule> funcModule(GetProcess()->LookupOrCreateModule(functionDomainAssembly));
+        RSSmartPtr<CordbModule> funcModule(GetAppDomain()->LookupOrCreateModule(functionAssembly));
         func.Assign(funcModule->LookupOrCreateFunction(functionMethodDef, nativeCodeForDelFunc.encVersion));
     }
 
@@ -2785,37 +2785,7 @@ HRESULT CordbObjectValue::GetCachedInterfaceTypes(
     EX_TRY
     {
         *ppInterfacesEnum = NULL;
-
-        NewArrayHolder<CordbType*> pItfs(NULL);
-
-        // retrieve interface types
-        DacDbiArrayList<DebuggerIPCE_ExpandedTypeData> dacInterfaces;
-
-        IDacDbiInterface* pDAC = GetProcess()->GetDAC();
-
-        CORDB_ADDRESS objAddr = m_valueHome.GetAddress();
-        VMPTR_Object vmObj;
-        IfFailThrow(pDAC->GetObject(objAddr, &vmObj));
-
-        // retrieve type info from LS
-        IfFailThrow(pDAC->GetRcwCachedInterfaceTypes(vmObj, m_appdomain->GetADToken(),
-                        bIInspectableOnly, &dacInterfaces));
-
-        // synthesize CordbType instances
-        int cItfs = dacInterfaces.Count();
-        if (cItfs > 0)
-        {
-            pItfs = new CordbType*[cItfs];
-            for (int n = 0; n < cItfs; ++n)
-            {
-                hr = CordbType::TypeDataToType(m_appdomain,
-                                               &(dacInterfaces[n]),
-                                               &pItfs[n]);
-            }
-        }
-
-        // build a type enumerator
-        CordbTypeEnum* pTypeEnum = CordbTypeEnum::Build(m_appdomain, GetProcess()->GetContinueNeuterList(), cItfs, pItfs);
+        CordbTypeEnum* pTypeEnum = CordbTypeEnum::Build(m_appdomain, GetProcess()->GetContinueNeuterList(), 0, (CordbType**)nullptr);
         if ( pTypeEnum == NULL )
         {
             IfFailThrow(E_OUTOFMEMORY);

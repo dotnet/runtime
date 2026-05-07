@@ -4,8 +4,12 @@
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkCurrent)</TargetFrameworks>
     <EnableDefaultItems>true</EnableDefaultItems>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
+    <NoWarn>$(NoWarn);NU1511</NoWarn>
     <!-- CS0436: DynamicallyAccessedMemberTypes conflicts with imported type -->
     <NoWarn Condition="$([MSBuild]::GetTargetFrameworkIdentifier('$(TargetFramework)')) == '.NETFramework'">$(NoWarn);CS0436</NoWarn>
+    <!-- https://github.com/dotnet/runtime/issues/126862 -->
+    <EnableTrimAnalyzer>false</EnableTrimAnalyzer>
+    <EnableAotAnalyzer>false</EnableAotAnalyzer>
   </PropertyGroup>
 
   <ItemGroup>

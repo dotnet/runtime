@@ -9,6 +9,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
@@ -310,6 +311,7 @@ namespace System
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_GetNextFinalizableObject")]
         private static unsafe partial void* GetNextFinalizeableObject(ObjectHandleOnStack target);
 
+        [UnmanagedCallersOnly]
         private static unsafe uint RunFinalizers()
         {
             Thread currentThread = Thread.CurrentThread;
@@ -334,6 +336,7 @@ namespace System
                 currentThread.ResetFinalizerThread();
                 count++;
             }
+
             return count;
         }
 

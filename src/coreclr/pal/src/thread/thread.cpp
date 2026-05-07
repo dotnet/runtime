@@ -347,7 +347,6 @@ CreateThread(
         lpStartAddress,
         lpParameter,
         dwCreationFlags,
-        UserCreatedThread,
         &osThreadId,
         &hNewThread
         );
@@ -405,7 +404,6 @@ PAL_CreateThread64(
         lpStartAddress,
         lpParameter,
         dwCreationFlags,
-        UserCreatedThread,
         pThreadId,
         &hNewThread
     );
@@ -429,15 +427,14 @@ CorUnix::InternalCreateThread(
     LPTHREAD_START_ROUTINE lpStartAddress,
     LPVOID lpParameter,
     DWORD dwCreationFlags,
-    PalThreadType eThreadType,
     SIZE_T* pThreadId,
     HANDLE *phThread
     )
 {
-#ifdef FEATURE_SINGLE_THREADED
+#ifndef FEATURE_MULTITHREADING
     ERROR("Threads are not supported in single-threaded mode.\n");
     return ERROR_NOT_SUPPORTED;
-#else // FEATURE_SINGLE_THREADED
+#else // !FEATURE_MULTITHREADING
     PAL_ERROR palError;
     CPalThread *pNewThread = NULL;
     CObjectAttributes oa;
@@ -506,7 +503,6 @@ CorUnix::InternalCreateThread(
     pNewThread->m_lpStartAddress = lpStartAddress;
     pNewThread->m_lpStartParameter = lpParameter;
     pNewThread->m_bCreateSuspended = (dwCreationFlags & CREATE_SUSPENDED) == CREATE_SUSPENDED;
-    pNewThread->m_eThreadType = eThreadType;
 
     if (0 != pthread_attr_init(&pthreadAttr))
     {
@@ -633,7 +629,7 @@ EXIT:
     }
 
     return palError;
-#endif // FEATURE_SINGLE_THREADED
+#endif // !FEATURE_MULTITHREADING
 }
 
 
@@ -1357,7 +1353,7 @@ SetThreadDescription(
     return HRESULT_FROM_WIN32(palError);
 }
 
-#ifndef FEATURE_SINGLE_THREADED
+#ifdef FEATURE_MULTITHREADING
 void *
 CPalThread::ThreadEntry(
     void *pvParam
@@ -1369,7 +1365,6 @@ CPalThread::ThreadEntry(
     LPVOID pvPar;
     DWORD retValue;
 #if HAVE_SCHED_GETAFFINITY && HAVE_SCHED_SETAFFINITY
-    cpu_set_t cpuSet;
     int st;
 #endif
 
@@ -1396,24 +1391,55 @@ CPalThread::ThreadEntry(
     // - https://github.com/dotnet/runtime/issues/1634
     // - https://forum.snapcraft.io/t/requesting-autoconnect-for-interfaces-in-pigmeat-process-control-home/17987/13
 
-    CPU_ZERO(&cpuSet);
-
-    st = sched_getaffinity(gPID, sizeof(cpu_set_t), &cpuSet);
-    if (st != 0)
     {
-        ASSERT("sched_getaffinity failed!\n");
-        // The sched_getaffinity should never fail for getting affinity of the current process
-        palError = ERROR_INTERNAL_ERROR;
-        goto fail;
-    }
+        int configuredCpuCount = sysconf(_SC_NPROCESSORS_CONF);
+        if (configuredCpuCount == -1)
+        {
+            // In the unlikely event that sysconf(_SC_NPROCESSORS_CONF) fails, just assume a reasonable default maximum number of CPUs to avoid failing thread creation.
+            configuredCpuCount = CPU_SETSIZE;
+        }
 
-    st = sched_setaffinity(0, sizeof(cpu_set_t), &cpuSet);
-    if (st != 0)
-    {
-        ASSERT("sched_setaffinity failed!\n");
-        // The sched_setaffinity should never fail when passed the mask extracted using sched_getaffinity
-        palError = ERROR_INTERNAL_ERROR;
-        goto fail;
+        cpu_set_t* pCpuSet = CPU_ALLOC(configuredCpuCount);
+        if (pCpuSet == nullptr)
+        {
+            ASSERT("CPU_ALLOC failed!\n");
+            palError = ERROR_OUTOFMEMORY;
+            goto fail;
+        }
+
+        size_t cpuSetSize = CPU_ALLOC_SIZE(configuredCpuCount);
+        CPU_ZERO_S(cpuSetSize, pCpuSet);
+
+        st = sched_getaffinity(gPID, cpuSetSize, pCpuSet);
+        if (st == 0)
+        {
+            st = sched_setaffinity(0, CPU_ALLOC_SIZE(configuredCpuCount), pCpuSet);
+            if (st != 0)
+            {
+                if (errno == EPERM || errno == EACCES)
+                {
+                    // Some sandboxed or restricted environments (snap strict confinement,
+                    // vendor-modified Android kernels with strict SELinux policy) block
+                    // sched_setaffinity even when passed a mask extracted via sched_getaffinity.
+                    // Treat this as non-fatal — the thread will continue running on any
+                    // available CPU rather than the originally affinitized one. 
+                    WARN("sched_setaffinity failed with EPERM/EACCES, ignoring\n");
+                }
+                else
+                {
+                    ASSERT("sched_setaffinity failed!\n");
+                    CPU_FREE(pCpuSet);
+                    palError = ERROR_INTERNAL_ERROR;
+                    goto fail;
+                }
+            }
+        }
+        else
+        {
+            // Treat failure to get the affinity mask in release build as non-fatal.
+            ASSERT("sched_getaffinity failed!\n");
+        }
+        CPU_FREE(pCpuSet);
     }
 #endif // HAVE_SCHED_GETAFFINITY && HAVE_SCHED_SETAFFINITY
 
@@ -1467,13 +1493,10 @@ CPalThread::ThreadEntry(
 
     pThread->synchronizationInfo.SetThreadState(TS_RUNNING);
 
-    if (UserCreatedThread == pThread->GetThreadType())
-    {
-        /* Inform all loaded modules that a thread has been created */
-        /* note : no need to take a critical section to serialize here; the loader
-           will take the module critical section */
-        LOADCallDllMain(DLL_THREAD_ATTACH, NULL);
-    }
+    /* Inform all loaded modules that a thread has been created */
+    /* note : no need to take a critical section to serialize here; the loader
+       will take the module critical section */
+    LOADCallDllMain(DLL_THREAD_ATTACH, NULL);
 
     /* call the startup routine */
     pfnStartRoutine = pThread->GetStartAddress();
@@ -1503,7 +1526,7 @@ fail:
        above should release all resources */
     return NULL;
 }
-#endif // !FEATURE_SINGLE_THREADED
+#endif // FEATURE_MULTITHREADING
 
 /*++
 Function:

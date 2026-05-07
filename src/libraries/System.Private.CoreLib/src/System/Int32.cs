@@ -300,6 +300,17 @@ namespace System
         [Intrinsic]
         public static int LeadingZeroCount(int value) => BitOperations.LeadingZeroCount((uint)value);
 
+        /// <inheritdoc cref="IBinaryInteger{TSelf}.Log10(TSelf)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static int Log10(int value)
+        {
+            if (value < 0)
+            {
+                ThrowHelper.ThrowValueArgumentOutOfRange_NeedNonNegNumException();
+            }
+            return (int)uint.Log10((uint)value);
+        }
+
         /// <inheritdoc cref="IBinaryInteger{TSelf}.PopCount(TSelf)" />
         [Intrinsic]
         public static int PopCount(int value) => BitOperations.PopCount((uint)value);
@@ -361,19 +372,10 @@ namespace System
                     }
                 }
 
-                ref byte sourceRef = ref MemoryMarshal.GetReference(source);
-
                 if (source.Length >= sizeof(int))
                 {
-                    sourceRef = ref Unsafe.Add(ref sourceRef, source.Length - sizeof(int));
-
                     // We have at least 4 bytes, so just read the ones we need directly
-                    result = Unsafe.ReadUnaligned<int>(ref sourceRef);
-
-                    if (BitConverter.IsLittleEndian)
-                    {
-                        result = BinaryPrimitives.ReverseEndianness(result);
-                    }
+                    result = BinaryPrimitives.ReadInt32BigEndian(source.Slice(source.Length - sizeof(int)));
                 }
                 else
                 {
@@ -384,7 +386,7 @@ namespace System
                     for (int i = 0; i < source.Length; i++)
                     {
                         result <<= 8;
-                        result |= Unsafe.Add(ref sourceRef, i);
+                        result |= source[i];
                     }
 
                     if (!isUnsigned)

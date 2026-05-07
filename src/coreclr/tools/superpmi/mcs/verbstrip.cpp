@@ -63,14 +63,9 @@ int verbStrip::DoWork(
             st1->Start();
         }
 
-        if (!MethodContext::Initialize(loadedCount, mcb.buff, mcb.size, &mc))
+        if (!MethodContext::Initialize(loadedCount, mcb.buff, mcb.size, !stripCR, &mc))
             return -1;
 
-        if (stripCR)
-        {
-            delete mc->cr;
-            mc->cr = new CompileResult();
-        }
         mc->saveToFile(fpOut);
         savedCount++;
         delete mc;
