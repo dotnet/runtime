@@ -172,6 +172,15 @@ public unsafe class LoaderTests
         [LoaderAllocatorHeapType.CacheEntryHeap] = new(0x9000),
     };
 
+    private const VCSHeapType VCSHeapTypeIndcell = VCSHeapType.IndcellHeap;
+    private const VCSHeapType VCSHeapTypeCacheEntry = VCSHeapType.CacheEntryHeap;
+    private const VCSHeapType InvalidVCSHeapType = (VCSHeapType)99;
+
+    [UnmanagedCallersOnly]
+    private static void VisitHeapNoOp(ulong address, nuint size, Interop.BOOL isCurrent)
+    {
+    }
+
     private static LoaderAllocatorHeapType HeapNameToType(string name) => Enum.Parse<LoaderAllocatorHeapType>(name);
 
     private static ISOSDacInterface13 CreateSOSDacInterface13ForHeapTests(MockTarget.Architecture arch)
@@ -212,6 +221,168 @@ public unsafe class LoaderTests
                 && l.GetGlobalLoaderAllocator() == new TargetPointer(0x100)))
             .Build();
         return new SOSDacImpl(target, null);
+    }
+
+    private static (ISOSDacInterface Interface, Mock<ILoader> Loader) CreateSOSDacInterfaceForVirtCallHeapTests(MockTarget.Architecture arch)
+    {
+        Mock<ILoader> loader = new(MockBehavior.Strict);
+        TargetPointer globalLoaderAllocator = new(0x100);
+        loader.Setup(l => l.GetGlobalLoaderAllocator()).Returns(globalLoaderAllocator);
+
+        var target = new TestPlaceholderTarget.Builder(arch)
+            .AddMockContract<ILoader>(loader.Object)
+            .Build();
+
+        return (new SOSDacImpl(target, null), loader);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void TraverseVirtCallStubHeap_IndcellHeap_Traverses(MockTarget.Architecture arch)
+    {
+        (ISOSDacInterface impl, Mock<ILoader> loader) = CreateSOSDacInterfaceForVirtCallHeapTests(arch);
+
+        TargetPointer indcellHeap = new(0x8000);
+        TargetPointer firstBlock = new(0x8100);
+        var heaps = new Dictionary<LoaderAllocatorHeapType, TargetPointer>
+        {
+            [LoaderAllocatorHeapType.IndcellHeap] = indcellHeap,
+        };
+        loader.Setup(l => l.GetLoaderAllocatorHeaps(new TargetPointer(0x100)))
+            .Returns((IReadOnlyDictionary<LoaderAllocatorHeapType, TargetPointer>)heaps);
+        loader.Setup(l => l.GetFirstLoaderHeapBlock(indcellHeap)).Returns(firstBlock);
+        loader.Setup(l => l.GetLoaderHeapBlockData(firstBlock)).Returns(new LoaderHeapBlockData
+        {
+            Address = new TargetPointer(0x9000),
+            Size = new TargetNUInt(0x40),
+            NextBlock = TargetPointer.Null,
+        });
+
+        delegate* unmanaged<ulong, nuint, Interop.BOOL, void> callback = &VisitHeapNoOp;
+        int hr = impl.TraverseVirtCallStubHeap(new ClrDataAddress(0x1), VCSHeapTypeIndcell, callback);
+
+        Assert.Equal(HResults.S_OK, hr);
+        loader.Verify(l => l.GetFirstLoaderHeapBlock(indcellHeap), Times.Once());
+        loader.Verify(l => l.GetLoaderHeapBlockData(firstBlock), Times.Once());
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void TraverseVirtCallStubHeap_CacheEntryHeap_Traverses(MockTarget.Architecture arch)
+    {
+        (ISOSDacInterface impl, Mock<ILoader> loader) = CreateSOSDacInterfaceForVirtCallHeapTests(arch);
+
+        TargetPointer cacheEntryHeap = new(0x9000);
+        TargetPointer firstBlock = new(0x9100);
+        var heaps = new Dictionary<LoaderAllocatorHeapType, TargetPointer>
+        {
+            [LoaderAllocatorHeapType.IndcellHeap] = new TargetPointer(0x8000),
+            [LoaderAllocatorHeapType.CacheEntryHeap] = cacheEntryHeap,
+        };
+        loader.Setup(l => l.GetLoaderAllocatorHeaps(new TargetPointer(0x100)))
+            .Returns((IReadOnlyDictionary<LoaderAllocatorHeapType, TargetPointer>)heaps);
+        loader.Setup(l => l.GetFirstLoaderHeapBlock(cacheEntryHeap)).Returns(firstBlock);
+        loader.Setup(l => l.GetLoaderHeapBlockData(firstBlock)).Returns(new LoaderHeapBlockData
+        {
+            Address = new TargetPointer(0xA000),
+            Size = new TargetNUInt(0x40),
+            NextBlock = TargetPointer.Null,
+        });
+
+        delegate* unmanaged<ulong, nuint, Interop.BOOL, void> callback = &VisitHeapNoOp;
+        int hr = impl.TraverseVirtCallStubHeap(new ClrDataAddress(0x1), VCSHeapTypeCacheEntry, callback);
+
+        Assert.Equal(HResults.S_OK, hr);
+        loader.Verify(l => l.GetFirstLoaderHeapBlock(cacheEntryHeap), Times.Once());
+        loader.Verify(l => l.GetLoaderHeapBlockData(firstBlock), Times.Once());
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void TraverseVirtCallStubHeap_NoVirtualCallStubManager_ReturnsEPointer(MockTarget.Architecture arch)
+    {
+        (ISOSDacInterface impl, Mock<ILoader> loader) = CreateSOSDacInterfaceForVirtCallHeapTests(arch);
+
+        loader.Setup(l => l.GetLoaderAllocatorHeaps(new TargetPointer(0x100)))
+            .Returns((IReadOnlyDictionary<LoaderAllocatorHeapType, TargetPointer>)new Dictionary<LoaderAllocatorHeapType, TargetPointer>());
+
+        delegate* unmanaged<ulong, nuint, Interop.BOOL, void> callback = &VisitHeapNoOp;
+        int hr = impl.TraverseVirtCallStubHeap(new ClrDataAddress(0x1), VCSHeapTypeIndcell, callback);
+
+        Assert.Equal(HResults.E_POINTER, hr);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void TraverseVirtCallStubHeap_CacheEntryMissing_ReturnsSOk(MockTarget.Architecture arch)
+    {
+        (ISOSDacInterface impl, Mock<ILoader> loader) = CreateSOSDacInterfaceForVirtCallHeapTests(arch);
+
+        TargetPointer indcellHeap = new(0x8000);
+        loader.Setup(l => l.GetLoaderAllocatorHeaps(new TargetPointer(0x100)))
+            .Returns((IReadOnlyDictionary<LoaderAllocatorHeapType, TargetPointer>)new Dictionary<LoaderAllocatorHeapType, TargetPointer>
+            {
+                [LoaderAllocatorHeapType.IndcellHeap] = indcellHeap,
+            });
+
+        delegate* unmanaged<ulong, nuint, Interop.BOOL, void> callback = &VisitHeapNoOp;
+        int hr = impl.TraverseVirtCallStubHeap(new ClrDataAddress(0x1), VCSHeapTypeCacheEntry, callback);
+
+        Assert.Equal(HResults.S_OK, hr);
+        loader.Verify(l => l.GetFirstLoaderHeapBlock(It.IsAny<TargetPointer>()), Times.Never());
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void TraverseVirtCallStubHeap_InvalidHeapType_ReturnsEInvalidArg(MockTarget.Architecture arch)
+    {
+        (ISOSDacInterface impl, Mock<ILoader> loader) = CreateSOSDacInterfaceForVirtCallHeapTests(arch);
+
+        loader.Setup(l => l.GetLoaderAllocatorHeaps(new TargetPointer(0x100)))
+            .Returns((IReadOnlyDictionary<LoaderAllocatorHeapType, TargetPointer>)new Dictionary<LoaderAllocatorHeapType, TargetPointer>
+            {
+                [LoaderAllocatorHeapType.IndcellHeap] = new TargetPointer(0x8000),
+            });
+
+        delegate* unmanaged<ulong, nuint, Interop.BOOL, void> callback = &VisitHeapNoOp;
+        int hr = impl.TraverseVirtCallStubHeap(new ClrDataAddress(0x1), InvalidVCSHeapType, callback);
+
+        Assert.Equal(HResults.E_INVALIDARG, hr);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void TraverseVirtCallStubHeap_InvalidArguments_ReturnsEInvalidArg(MockTarget.Architecture arch)
+    {
+        (ISOSDacInterface impl, Mock<ILoader> loader) = CreateSOSDacInterfaceForVirtCallHeapTests(arch);
+
+        loader.Setup(l => l.GetLoaderAllocatorHeaps(new TargetPointer(0x100)))
+            .Returns((IReadOnlyDictionary<LoaderAllocatorHeapType, TargetPointer>)new Dictionary<LoaderAllocatorHeapType, TargetPointer>
+            {
+                [LoaderAllocatorHeapType.IndcellHeap] = new TargetPointer(0x8000),
+            });
+
+        delegate* unmanaged<ulong, nuint, Interop.BOOL, void> callback = &VisitHeapNoOp;
+        int hr = impl.TraverseVirtCallStubHeap(new ClrDataAddress(0), VCSHeapTypeIndcell, callback);
+
+        Assert.Equal(HResults.E_INVALIDARG, hr);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void TraverseVirtCallStubHeap_NullCallback_ReturnsEInvalidArg(MockTarget.Architecture arch)
+    {
+        (ISOSDacInterface impl, Mock<ILoader> loader) = CreateSOSDacInterfaceForVirtCallHeapTests(arch);
+
+        loader.Setup(l => l.GetLoaderAllocatorHeaps(new TargetPointer(0x100)))
+            .Returns((IReadOnlyDictionary<LoaderAllocatorHeapType, TargetPointer>)new Dictionary<LoaderAllocatorHeapType, TargetPointer>
+            {
+                [LoaderAllocatorHeapType.IndcellHeap] = new TargetPointer(0x8000),
+            });
+
+        int hr = impl.TraverseVirtCallStubHeap(new ClrDataAddress(0x1), VCSHeapTypeIndcell, null);
+
+        Assert.Equal(HResults.E_INVALIDARG, hr);
     }
 
     [Theory]

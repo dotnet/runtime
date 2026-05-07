@@ -5,10 +5,10 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts.GCHelpers;
 
 internal interface IGCHeap
 {
-    TargetPointer MarkArray { get; }
-    TargetPointer NextSweepObj { get; }
-    TargetPointer BackgroundMinSavedAddr { get; }
-    TargetPointer BackgroundMaxSavedAddr { get; }
+    TargetPointer? MarkArray { get; }
+    TargetPointer? NextSweepObj { get; }
+    TargetPointer? BackgroundMinSavedAddr { get; }
+    TargetPointer? BackgroundMaxSavedAddr { get; }
     TargetPointer AllocAllocated { get; }
     TargetPointer EphemeralHeapSegment { get; }
     TargetPointer CardTable { get; }

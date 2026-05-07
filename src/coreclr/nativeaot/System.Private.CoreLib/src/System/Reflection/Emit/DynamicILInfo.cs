@@ -17,19 +17,16 @@ namespace System.Reflection.Emit
         public void SetCode(byte[] code, int maxStackSize) { }
 
         [CLSCompliant(false)]
-        [RequiresUnsafe]
         public unsafe void SetCode(byte* code, int codeSize, int maxStackSize) { }
 
         public void SetExceptions(byte[] exceptions) { }
 
         [CLSCompliant(false)]
-        [RequiresUnsafe]
         public unsafe void SetExceptions(byte* exceptions, int exceptionsSize) { }
 
         public void SetLocalSignature(byte[] localSignature) { }
 
         [CLSCompliant(false)]
-        [RequiresUnsafe]
         public unsafe void SetLocalSignature(byte* localSignature, int signatureSize) { }
 
         public int GetTokenFor(RuntimeMethodHandle method)

@@ -56,7 +56,6 @@ namespace System.Runtime.InteropServices.ObjectiveC
         /// The <paramref name="isReferencedCallback"/> should return 0 for not reference or 1 for
         /// referenced. Any other value has undefined behavior.
         /// </remarks>
-        [RequiresUnsafe]
         public static unsafe void Initialize(
             delegate* unmanaged<void> beginEndCallback,
             delegate* unmanaged<IntPtr, int> isReferencedCallback,
