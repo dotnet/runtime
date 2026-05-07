@@ -237,7 +237,7 @@ internal static class SignatureMapper
 
     /// <summary>
     /// Returns the number of INTERP_STACK_SLOT_SIZE slots consumed by a token.
-    /// Struct tokens (S&lt;N&gt;) consume max(size / 8, 1) slots; all others consume 1.
+    /// Struct tokens (S&lt;N&gt;) consume max((size + 7) / 8, 1) slots; all others consume 1.
     /// </summary>
     public static int TokenToSlotCount(string token)
     {

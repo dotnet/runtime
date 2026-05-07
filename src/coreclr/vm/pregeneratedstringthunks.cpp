@@ -68,7 +68,6 @@ void ProcessInjectStringThunksFixup(ReadyToRunInfo * pR2RInfo, PCCOR_SIGNATURE p
                 if (!existingTable->Lookup(str, &unused))
                 {
                     newEntryCount++;
-                    break;
                 }
             }
         }

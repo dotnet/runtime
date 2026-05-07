@@ -2499,7 +2499,8 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
 
         if (sigInfoCall == nullptr)
         {
-            if ((params.methHnd != NO_METHOD_HANDLE) && (Compiler::eeGetHelperNum(params.methHnd) == CORINFO_HELP_UNDEF))
+            if ((params.methHnd != NO_METHOD_HANDLE) &&
+                (Compiler::eeGetHelperNum(params.methHnd) == CORINFO_HELP_UNDEF))
             {
                 m_compiler->eeGetMethodSig(params.methHnd, &sigInfoLocal);
                 sigInfoCall = &sigInfoLocal;
