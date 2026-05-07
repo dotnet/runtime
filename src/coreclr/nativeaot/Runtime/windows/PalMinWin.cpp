@@ -220,8 +220,15 @@ UInt32_BOOL PalAllocateThunksFromTemplate(_In_ HANDLE hTemplateModule, uint32_t 
     success = ((*newThunksOut) != NULL);
 
 cleanup:
-    CloseHandle(hMap);
-    CloseHandle(hFile);
+    if (hMap != NULL)
+    {
+        CloseHandle(hMap);
+    }
+
+    if (hFile != INVALID_HANDLE_VALUE)
+    {
+        CloseHandle(hFile);
+    }
 
     return success;
 #endif
