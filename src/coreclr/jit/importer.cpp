@@ -6814,9 +6814,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                           (genActualType(lclTyp) == TYP_I_IMPL && (op1->TypeIs(TYP_BYREF) || op1->TypeIs(TYP_REF))) ||
                           (genActualType(op1->gtType) == TYP_I_IMPL && lclTyp == TYP_BYREF) ||
                           (varTypeIsFloating(lclTyp) && varTypeIsFloating(op1->TypeGet())) ||
-                          ((genActualType(lclTyp) == TYP_BYREF) && genActualType(op1->TypeGet()) == TYP_REF) ||
-                          (genActualType(lclTyp) == TYP_I_IMPL && op1->TypeIs(TYP_STRUCT) &&
-                           info.compCompHnd->getClassSize(op1->GetLayout(this)->GetClassHandle()) == TARGET_POINTER_SIZE));
+                          ((genActualType(lclTyp) == TYP_BYREF) && genActualType(op1->TypeGet()) == TYP_REF));
 
                 // If op1 is "&var" then its type is the transient "*" and it can
                 // be used either as BYREF or TYP_I_IMPL.
