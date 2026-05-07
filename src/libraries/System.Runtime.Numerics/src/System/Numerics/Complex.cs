@@ -684,48 +684,8 @@ namespace System.Numerics
         /// <inheritdoc cref="INumberBase{TSelf}.MaxMagnitudeNumber(TSelf, TSelf)" />
         static Complex INumberBase<Complex>.MaxMagnitudeNumber(Complex x, Complex y)
         {
-            double ax = Abs(x);
-            double ay = Abs(y);
-
-            if ((ax > ay) || double.IsNaN(ay))
-            {
-                return x;
-            }
-
-            if (ax == ay)
-            {
-                if (double.IsNegative(y.m_real))
-                {
-                    if (double.IsNegative(y.m_imaginary))
-                    {
-                        return x;
-                    }
-                    else
-                    {
-                        if (double.IsNegative(x.m_real))
-                        {
-                            return y;
-                        }
-                        else
-                        {
-                            return x;
-                        }
-                    }
-                }
-                else if (double.IsNegative(y.m_imaginary))
-                {
-                    if (double.IsNegative(x.m_real))
-                    {
-                        return y;
-                    }
-                    else
-                    {
-                        return x;
-                    }
-                }
-            }
-
-            return y;
+            Complex<double> result = Complex<double>.MaxMagnitudeNumber(new Complex<double>(x.m_real, x.m_imaginary), new Complex<double>(y.m_real, y.m_imaginary));
+            return new Complex(result.Real, result.Imaginary);
         }
 
         /// <inheritdoc cref="INumberBase{TSelf}.MinMagnitude(TSelf, TSelf)" />
@@ -738,69 +698,15 @@ namespace System.Numerics
         /// <inheritdoc cref="INumberBase{TSelf}.MinMagnitudeNumber(TSelf, TSelf)" />
         static Complex INumberBase<Complex>.MinMagnitudeNumber(Complex x, Complex y)
         {
-            double ax = Abs(x);
-            double ay = Abs(y);
-
-            if ((ax < ay) || double.IsNaN(ay))
-            {
-                return x;
-            }
-
-            if (ax == ay)
-            {
-                if (double.IsNegative(y.m_real))
-                {
-                    if (double.IsNegative(y.m_imaginary))
-                    {
-                        return y;
-                    }
-                    else
-                    {
-                        if (double.IsNegative(x.m_real))
-                        {
-                            return x;
-                        }
-                        else
-                        {
-                            return y;
-                        }
-                    }
-                }
-                else if (double.IsNegative(y.m_imaginary))
-                {
-                    if (double.IsNegative(x.m_real))
-                    {
-                        return x;
-                    }
-                    else
-                    {
-                        return y;
-                    }
-                }
-                else
-                {
-                    return x;
-                }
-            }
-
-            return y;
+            Complex<double> result = Complex<double>.MinMagnitudeNumber(new Complex<double>(x.m_real, x.m_imaginary), new Complex<double>(y.m_real, y.m_imaginary));
+            return new Complex(result.Real, result.Imaginary);
         }
 
         /// <inheritdoc cref="INumberBase{TSelf}.MultiplyAddEstimate(TSelf, TSelf, TSelf)" />
         static Complex INumberBase<Complex>.MultiplyAddEstimate(Complex left, Complex right, Complex addend)
         {
-            // Multiplication:  (a + bi)(c + di) = (ac - bd) + (bc + ad)i
-            // Addition:        (a + bi) + (c + di) = (a + c) + (b + d)i
-
-            double result_realpart = addend.m_real;
-            result_realpart = double.MultiplyAddEstimate(-left.m_imaginary, right.m_imaginary, result_realpart);
-            result_realpart = double.MultiplyAddEstimate(left.m_real, right.m_real, result_realpart);
-
-            double result_imaginarypart = addend.m_imaginary;
-            result_imaginarypart = double.MultiplyAddEstimate(left.m_real, right.m_imaginary, result_imaginarypart);
-            result_imaginarypart = double.MultiplyAddEstimate(left.m_imaginary, right.m_real, result_imaginarypart);
-
-            return new Complex(result_realpart, result_imaginarypart);
+            Complex<double> result = Complex<double>.MultiplyAddEstimate(new Complex<double>(left.m_real, left.m_imaginary), new Complex<double>(right.m_real, right.m_imaginary), new Complex<double>(addend.m_real, addend.m_imaginary));
+            return new Complex(result.Real, result.Imaginary);
         }
 
         /// <inheritdoc cref="INumberBase{TSelf}.Parse(ReadOnlySpan{char}, NumberStyles, IFormatProvider?)" />

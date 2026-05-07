@@ -960,8 +960,7 @@ namespace System.Numerics
             return y;
         }
 
-        /// <inheritdoc cref="INumberBase{TSelf}.MaxMagnitudeNumber(TSelf, TSelf)" />
-        static Complex<T> INumberBase<Complex<T>>.MaxMagnitudeNumber(Complex<T> x, Complex<T> y)
+        internal static Complex<T> MaxMagnitudeNumber(Complex<T> x, Complex<T> y)
         {
             // complex numbers are not normally comparable, however every complex
             // number has a real magnitude (absolute value) and so we can provide
@@ -1016,6 +1015,10 @@ namespace System.Numerics
 
             return y;
         }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.MaxMagnitudeNumber(TSelf, TSelf)" />
+        static Complex<T> INumberBase<Complex<T>>.MaxMagnitudeNumber(Complex<T> x, Complex<T> y)
+            => MaxMagnitudeNumber(x, y);
 
         /// <inheritdoc cref="INumberBase{TSelf}.MinMagnitude(TSelf, TSelf)" />
         public static Complex<T> MinMagnitude(Complex<T> x, Complex<T> y)
@@ -1078,8 +1081,7 @@ namespace System.Numerics
             return y;
         }
 
-        /// <inheritdoc cref="INumberBase{TSelf}.MinMagnitudeNumber(TSelf, TSelf)" />
-        static Complex<T> INumberBase<Complex<T>>.MinMagnitudeNumber(Complex<T> x, Complex<T> y)
+        internal static Complex<T> MinMagnitudeNumber(Complex<T> x, Complex<T> y)
         {
             // complex numbers are not normally comparable, however every complex
             // number has a real magnitude (absolute value) and so we can provide
@@ -1139,8 +1141,11 @@ namespace System.Numerics
             return y;
         }
 
-        /// <inheritdoc cref="INumberBase{TSelf}.MultiplyAddEstimate(TSelf, TSelf, TSelf)" />
-        static Complex<T> INumberBase<Complex<T>>.MultiplyAddEstimate(Complex<T> left, Complex<T> right, Complex<T> addend)
+        /// <inheritdoc cref="INumberBase{TSelf}.MinMagnitudeNumber(TSelf, TSelf)" />
+        static Complex<T> INumberBase<Complex<T>>.MinMagnitudeNumber(Complex<T> x, Complex<T> y)
+            => MinMagnitudeNumber(x, y);
+
+        internal static Complex<T> MultiplyAddEstimate(Complex<T> left, Complex<T> right, Complex<T> addend)
         {
             // Multiplication:  (a + bi)(c + di) = (ac - bd) + (bc + ad)i
             // Addition:        (a + bi) + (c + di) = (a + c) + (b + d)i
@@ -1155,6 +1160,10 @@ namespace System.Numerics
 
             return new Complex<T>(result_realpart, result_imaginarypart);
         }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.MultiplyAddEstimate(TSelf, TSelf, TSelf)" />
+        static Complex<T> INumberBase<Complex<T>>.MultiplyAddEstimate(Complex<T> left, Complex<T> right, Complex<T> addend)
+            => MultiplyAddEstimate(left, right, addend);
 
         /// <inheritdoc cref="INumberBase{TSelf}.Parse(ReadOnlySpan{char}, NumberStyles, IFormatProvider?)" />
         public static Complex<T> Parse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider)
