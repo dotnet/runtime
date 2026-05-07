@@ -3,6 +3,7 @@
 
 using System;
 using System.Diagnostics;
+using System.IO.Pipes;
 using System.Net.Sockets;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -133,7 +134,7 @@ namespace Microsoft.Win32.SafeHandles
             return error == Interop.Error.SUCCESS ? value : 0;
         }
 
-        internal unsafe (int BytesRead, Interop.ErrorInfo ErrorInfo) Read(Span<byte> buffer)
+        internal unsafe int Read(Span<byte> buffer, PipeStream? stream)
         {
             int sequenceNumber = 0;
             bool isBlocking = IsBlocking;
@@ -141,16 +142,18 @@ namespace Microsoft.Win32.SafeHandles
             bool doSync = isBlocking || AsyncContext.IsReadReady(out sequenceNumber);
             if (doSync)
             {
-                if (TryCompleteRead(buffer, out var result))
+                if (TryCompleteRead(buffer, stream, out var result))
                 {
-                    return result;
+                    CheckPipeCall(result.ErrorInfo);
+                    return result.BytesRead;
                 }
                 if (isBlocking)
                 {
                     // The handle changed to non-blocking due to a concurrent operation.
-                    if (AsyncContext.IsReadReady(out sequenceNumber) && TryCompleteRead(buffer, out result))
+                    if (AsyncContext.IsReadReady(out sequenceNumber) && TryCompleteRead(buffer, stream, out result))
                     {
-                        return result;
+                        CheckPipeCall(result.ErrorInfo);
+                        return result.BytesRead;
                     }
                 }
             }
@@ -158,51 +161,64 @@ namespace Microsoft.Win32.SafeHandles
             ReadOperation op = RentReadOperation();
             fixed (byte* bufPtr = &MemoryMarshal.GetReference(buffer))
             {
-                op.Init(bufPtr, buffer.Length);
+                op.Init(bufPtr, buffer.Length, stream);
 
                 SyncResult result = AsyncContext.ReadSync(op, sequenceNumber, timeout: -1);
 
                 if (result == SyncResult.Completed)
                 {
-                    var readResult = op.Result;
+                    int bytesRead = op.BytesRead;
+                    Exception? exception = op.Exception;
 
                     ReturnReadOperation(op);
 
-                    return readResult;
+                    if (exception != null)
+                    {
+                        throw exception;
+                    }
+                    return bytesRead;
                 }
 
-                return (-1, new Interop.ErrorInfo(Interop.Error.ECANCELED));
+                throw new OperationCanceledException();
             }
         }
 
-        internal ValueTask<(int BytesRead, Interop.ErrorInfo ErrorInfo)> ReadAsync(Memory<byte> destination, CancellationToken cancellationToken)
+        internal ValueTask<int> ReadAsync(Memory<byte> destination, CancellationToken cancellationToken, PipeStream? stream)
         {
             if (AsyncContext.IsReadReady(out int sequenceNumber) &&
-                TryCompleteRead(destination.Span, out var readResult))
+                TryCompleteRead(destination.Span, stream, out var readResult))
             {
-                return new ValueTask<(int, Interop.ErrorInfo)>(readResult);
+                CheckPipeCall(readResult.ErrorInfo);
+                return new ValueTask<int>(readResult.BytesRead);
             }
 
             ReadOperation op = RentReadOperation();
-            op.Init(destination, cancellationToken);
+            op.Init(destination, cancellationToken, stream);
 
             AsyncResult result = AsyncContext.ReadAsync(op, sequenceNumber, cancellationToken);
 
             if (result == AsyncResult.Pending)
             {
-                return new ValueTask<(int, Interop.ErrorInfo)>(op, op.Version);
+                return new ValueTask<int>(op, op.Version);
             }
             else if (result == AsyncResult.Completed)
             {
-                readResult = op.Result;
+                int bytesRead = op.BytesRead;
+                Exception? exception = op.Exception;
+
                 ReturnReadOperation(op);
-                return new ValueTask<(int, Interop.ErrorInfo)>(readResult);
+
+                if (exception != null)
+                {
+                    throw exception;
+                }
+                return new ValueTask<int>(bytesRead);
             }
 
-            return new ValueTask<(int, Interop.ErrorInfo)>((-1, new Interop.ErrorInfo(Interop.Error.ECANCELED)));
+            throw new OperationCanceledException();
         }
 
-        internal unsafe Interop.ErrorInfo Write(ReadOnlySpan<byte> buffer)
+        internal unsafe void Write(ReadOnlySpan<byte> buffer, PipeStream? stream)
         {
             int sequenceNumber = 0;
             bool isBlocking = IsBlocking;
@@ -210,9 +226,10 @@ namespace Microsoft.Win32.SafeHandles
             bool doSync = isBlocking || AsyncContext.IsWriteReady(out sequenceNumber);
             while (doSync)
             {
-                if (TryCompleteWrite(buffer, out int bytesWritten, out Interop.ErrorInfo errorInfo))
+                if (TryCompleteWrite(buffer, stream, out int bytesWritten, out Interop.ErrorInfo errorInfo))
                 {
-                    return errorInfo;
+                    CheckPipeCall(errorInfo);
+                    return;
                 }
 
                 buffer = buffer.Slice(bytesWritten); // Write may be partial.
@@ -229,59 +246,70 @@ namespace Microsoft.Win32.SafeHandles
             WriteOperation op = RentWriteOperation();
             fixed (byte* bufPtr = &MemoryMarshal.GetReference(buffer))
             {
-                op.Init(bufPtr, buffer.Length);
+                op.Init(bufPtr, buffer.Length, stream);
 
                 SyncResult result = AsyncContext.WriteSync(op, sequenceNumber, timeout: -1);
 
                 if (result == SyncResult.Completed)
                 {
-                    Interop.ErrorInfo errorInfo = op.WriteResult;
+                    Exception? exception = op.Exception;
 
                     ReturnWriteOperation(op);
 
-                    return errorInfo;
+                    if (exception != null)
+                    {
+                        throw exception;
+                    }
+                    return;
                 }
 
-                return new Interop.ErrorInfo(Interop.Error.ECANCELED);
+                throw new OperationCanceledException();
             }
         }
 
-        internal ValueTask<Interop.ErrorInfo> WriteAsync(ReadOnlyMemory<byte> source, CancellationToken cancellationToken)
+        internal ValueTask WriteAsync(ReadOnlyMemory<byte> source, CancellationToken cancellationToken, PipeStream? stream)
         {
             int bytesWritten = 0;
             if (AsyncContext.IsWriteReady(out int sequenceNumber) &&
-                TryCompleteWrite(source.Span, out bytesWritten, out Interop.ErrorInfo writeResult))
+                TryCompleteWrite(source.Span, stream, out bytesWritten, out Interop.ErrorInfo writeResult))
             {
-                return new ValueTask<Interop.ErrorInfo>(writeResult);
+                CheckPipeCall(writeResult);
+                return default;
             }
 
             WriteOperation op = RentWriteOperation();
-            op.Init(source.Slice(bytesWritten), cancellationToken);
+            op.Init(source.Slice(bytesWritten), cancellationToken, stream);
 
             AsyncResult result = AsyncContext.WriteAsync(op, sequenceNumber, cancellationToken);
 
             if (result == AsyncResult.Pending)
             {
-                return new ValueTask<Interop.ErrorInfo>(op, op.Version);
+                return new ValueTask(op, op.Version);
             }
             else if (result == AsyncResult.Completed)
             {
-                writeResult = op.WriteResult;
+                Exception? exception = op.Exception;
                 ReturnWriteOperation(op);
-                return new ValueTask<Interop.ErrorInfo>(writeResult);
+                if (exception != null)
+                {
+                    throw exception;
+                }
+                return default;
             }
 
-            return new ValueTask<Interop.ErrorInfo>(new Interop.ErrorInfo(Interop.Error.ECANCELED));
+            throw new OperationCanceledException();
         }
 
-        private sealed unsafe class ReadOperation : UnixHandleAsyncContext.Operation, IValueTaskSource<(int BytesRead, Interop.ErrorInfo ErrorInfo)>
+        private sealed unsafe class ReadOperation : UnixHandleAsyncContext.Operation, IValueTaskSource<int>
         {
             private readonly SafePipeHandle _owner;
-            internal (int BytesRead, Interop.ErrorInfo ErrorInfo) Result;
-            private ManualResetValueTaskSourceCore<(int, Interop.ErrorInfo)> _mrvtsc;
+            internal int BytesRead;
+            internal Exception? Exception;
+            private ManualResetValueTaskSourceCore<int> _mrvtsc;
             private Memory<byte> _buffer;
             private byte* _syncBuffer;
             private int _syncBufferLength;
+            private PipeStream? _stream;
             private CancellationToken _cancellationToken;
 
             internal ReadOperation(SafePipeHandle owner)
@@ -290,48 +318,76 @@ namespace Microsoft.Win32.SafeHandles
             internal short Version
                 => _mrvtsc.Version;
 
-            internal void Init(byte* syncBuffer, int syncBufferLength)
+            internal void Init(byte* syncBuffer, int syncBufferLength, PipeStream? stream)
             {
                 _syncBuffer = syncBuffer;
                 _syncBufferLength = syncBufferLength;
+                _stream = stream;
             }
 
-            internal void Init(Memory<byte> buffer, CancellationToken cancellationToken)
+            internal void Init(Memory<byte> buffer, CancellationToken cancellationToken, PipeStream? stream)
             {
                 _buffer = buffer;
                 _cancellationToken = cancellationToken;
+                _stream = stream;
             }
 
             internal void Reset()
             {
                 _buffer = default;
                 _syncBuffer = null;
+                _stream = null;
                 _cancellationToken = default;
+                Exception = null;
                 _mrvtsc.Reset();
             }
 
             protected override bool TryCompleteOperation(SafeHandle handle)
             {
+                (int BytesRead, Interop.ErrorInfo ErrorInfo) readResult;
+
                 if (_syncBuffer != null)
                 {
                     Debug.Assert(_syncBufferLength > 0);
-                    return _owner.TryCompleteRead(_syncBuffer, _syncBufferLength, out Result);
+                    if (!_owner.TryCompleteRead(_syncBuffer, _syncBufferLength, _stream, out readResult))
+                    {
+                        return false;
+                    }
                 }
-
-                Span<byte> span = _buffer.Span;
-                Debug.Assert(!span.IsEmpty);
-
-                fixed (byte* bufPtr = &MemoryMarshal.GetReference(span))
+                else
                 {
-                    return _owner.TryCompleteRead(bufPtr, span.Length, out Result);
+                    Span<byte> span = _buffer.Span;
+                    Debug.Assert(!span.IsEmpty);
+
+                    fixed (byte* bufPtr = &MemoryMarshal.GetReference(span))
+                    {
+                        if (!_owner.TryCompleteRead(bufPtr, span.Length, _stream, out readResult))
+                        {
+                            return false;
+                        }
+                    }
                 }
+
+                BytesRead = readResult.BytesRead;
+                if (readResult.ErrorInfo.Error != Interop.Error.SUCCESS)
+                {
+                    Exception = Interop.GetExceptionForIoErrno(readResult.ErrorInfo);
+                }
+                return true;
             }
 
             protected override void OnCompleted(OnCompletedResult result)
             {
                 if (result == OnCompletedResult.Completed)
                 {
-                    _mrvtsc.SetResult(Result);
+                    if (Exception != null)
+                    {
+                        _mrvtsc.SetException(Exception);
+                    }
+                    else
+                    {
+                        _mrvtsc.SetResult(BytesRead);
+                    }
                 }
                 else if (result == OnCompletedResult.Canceled)
                 {
@@ -344,13 +400,13 @@ namespace Microsoft.Win32.SafeHandles
                 }
             }
 
-            ValueTaskSourceStatus IValueTaskSource<(int BytesRead, Interop.ErrorInfo ErrorInfo)>.GetStatus(short token)
+            ValueTaskSourceStatus IValueTaskSource<int>.GetStatus(short token)
                 => _mrvtsc.GetStatus(token);
 
-            void IValueTaskSource<(int BytesRead, Interop.ErrorInfo ErrorInfo)>.OnCompleted(Action<object?> continuation, object? state, short token, ValueTaskSourceOnCompletedFlags flags)
+            void IValueTaskSource<int>.OnCompleted(Action<object?> continuation, object? state, short token, ValueTaskSourceOnCompletedFlags flags)
                 => _mrvtsc.OnCompleted(continuation, state, token, flags);
 
-            (int BytesRead, Interop.ErrorInfo ErrorInfo) IValueTaskSource<(int BytesRead, Interop.ErrorInfo ErrorInfo)>.GetResult(short token)
+            int IValueTaskSource<int>.GetResult(short token)
             {
                 bool canPool = _mrvtsc.GetStatus(token) != ValueTaskSourceStatus.Canceled;
                 try
@@ -367,14 +423,15 @@ namespace Microsoft.Win32.SafeHandles
             }
         }
 
-        private sealed unsafe class WriteOperation : UnixHandleAsyncContext.Operation, IValueTaskSource<Interop.ErrorInfo>
+        private sealed unsafe class WriteOperation : UnixHandleAsyncContext.Operation, IValueTaskSource
         {
             private readonly SafePipeHandle _owner;
-            internal Interop.ErrorInfo WriteResult;
-            private ManualResetValueTaskSourceCore<Interop.ErrorInfo> _mrvtsc;
+            internal Exception? Exception;
+            private ManualResetValueTaskSourceCore<bool> _mrvtsc;
             private ReadOnlyMemory<byte> _buffer;
             private byte* _syncBuffer;
             private int _syncRemaining;
+            private PipeStream? _stream;
             private CancellationToken _cancellationToken;
 
             internal WriteOperation(SafePipeHandle owner)
@@ -383,60 +440,79 @@ namespace Microsoft.Win32.SafeHandles
             internal short Version
                 => _mrvtsc.Version;
 
-            internal void Init(byte* syncBuffer, int syncRemaining)
+            internal void Init(byte* syncBuffer, int syncRemaining, PipeStream? stream)
             {
                 _syncBuffer = syncBuffer;
                 _syncRemaining = syncRemaining;
+                _stream = stream;
             }
 
-            internal void Init(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken)
+            internal void Init(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken, PipeStream? stream)
             {
                 _buffer = buffer;
                 _cancellationToken = cancellationToken;
+                _stream = stream;
             }
 
             internal void Reset()
             {
                 _buffer = default;
                 _syncBuffer = null;
+                _stream = null;
                 _cancellationToken = default;
+                Exception = null;
                 _mrvtsc.Reset();
             }
 
             protected override bool TryCompleteOperation(SafeHandle handle)
             {
+                Interop.ErrorInfo errorInfo;
+
                 if (_syncBuffer != null)
                 {
                     Debug.Assert(_syncRemaining > 0);
 
-                    if (_owner.TryCompleteWrite(_syncBuffer, _syncRemaining, out int bytesWritten, out WriteResult))
+                    if (!_owner.TryCompleteWrite(_syncBuffer, _syncRemaining, _stream, out int bytesWritten, out errorInfo))
                     {
-                        return true;
+                        _syncBuffer += bytesWritten;
+                        _syncRemaining -= bytesWritten;
+                        return false;
                     }
-                    _syncBuffer += bytesWritten;
-                    _syncRemaining -= bytesWritten;
-                    return false;
                 }
-
-                ReadOnlySpan<byte> span = _buffer.Span;
-                Debug.Assert(!span.IsEmpty);
-
-                fixed (byte* bufPtr = &MemoryMarshal.GetReference(span))
+                else
                 {
-                    if (_owner.TryCompleteWrite(bufPtr, span.Length, out int bytesWritten, out WriteResult))
+                    ReadOnlySpan<byte> span = _buffer.Span;
+                    Debug.Assert(!span.IsEmpty);
+
+                    fixed (byte* bufPtr = &MemoryMarshal.GetReference(span))
                     {
-                        return true;
+                        if (!_owner.TryCompleteWrite(bufPtr, span.Length, _stream, out int bytesWritten, out errorInfo))
+                        {
+                            _buffer = _buffer.Slice(bytesWritten);
+                            return false;
+                        }
                     }
-                    _buffer = _buffer.Slice(bytesWritten);
-                    return false;
                 }
+
+                if (errorInfo.Error != Interop.Error.SUCCESS)
+                {
+                    Exception = Interop.GetExceptionForIoErrno(errorInfo);
+                }
+                return true;
             }
 
             protected override void OnCompleted(OnCompletedResult result)
             {
                 if (result == OnCompletedResult.Completed)
                 {
-                    _mrvtsc.SetResult(WriteResult);
+                    if (Exception != null)
+                    {
+                        _mrvtsc.SetException(Exception);
+                    }
+                    else
+                    {
+                        _mrvtsc.SetResult(default);
+                    }
                 }
                 else if (result == OnCompletedResult.Canceled)
                 {
@@ -449,18 +525,18 @@ namespace Microsoft.Win32.SafeHandles
                 }
             }
 
-            ValueTaskSourceStatus IValueTaskSource<Interop.ErrorInfo>.GetStatus(short token)
+            ValueTaskSourceStatus IValueTaskSource.GetStatus(short token)
                 => _mrvtsc.GetStatus(token);
 
-            void IValueTaskSource<Interop.ErrorInfo>.OnCompleted(Action<object?> continuation, object? state, short token, ValueTaskSourceOnCompletedFlags flags)
+            void IValueTaskSource.OnCompleted(Action<object?> continuation, object? state, short token, ValueTaskSourceOnCompletedFlags flags)
                 => _mrvtsc.OnCompleted(continuation, state, token, flags);
 
-            Interop.ErrorInfo IValueTaskSource<Interop.ErrorInfo>.GetResult(short token)
+            void IValueTaskSource.GetResult(short token)
             {
                 bool canPool = _mrvtsc.GetStatus(token) != ValueTaskSourceStatus.Canceled;
                 try
                 {
-                    return _mrvtsc.GetResult(token);
+                    _mrvtsc.GetResult(token);
                 }
                 finally
                 {
@@ -472,15 +548,15 @@ namespace Microsoft.Win32.SafeHandles
             }
         }
 
-        private unsafe bool TryCompleteRead(Span<byte> buffer, out (int BytesRead, Interop.ErrorInfo ErrorInfo) result)
+        private unsafe bool TryCompleteRead(Span<byte> buffer, PipeStream? stream, out (int BytesRead, Interop.ErrorInfo ErrorInfo) result)
         {
             fixed (byte* bufPtr = &MemoryMarshal.GetReference(buffer))
             {
-                return TryCompleteRead(bufPtr, buffer.Length, out result);
+                return TryCompleteRead(bufPtr, buffer.Length, stream, out result);
             }
         }
 
-        private unsafe bool TryCompleteRead(byte* buffer, int length, out (int BytesRead, Interop.ErrorInfo ErrorInfo) result)
+        private unsafe bool TryCompleteRead(byte* buffer, int length, PipeStream? stream, out (int BytesRead, Interop.ErrorInfo ErrorInfo) result)
         {
             int bytesRead = Interop.Sys.Read(this, buffer, length);
             if (bytesRead < 0)
@@ -491,6 +567,7 @@ namespace Microsoft.Win32.SafeHandles
                     result = default;
                     return false;
                 }
+                SetPipeStreamBrokenOnEPIPE(stream, errorInfo);
                 result = (-1, errorInfo);
                 return true;
             }
@@ -499,15 +576,15 @@ namespace Microsoft.Win32.SafeHandles
             return true;
         }
 
-        private unsafe bool TryCompleteWrite(ReadOnlySpan<byte> buffer, out int bytesWritten, out Interop.ErrorInfo errorInfo)
+        private unsafe bool TryCompleteWrite(ReadOnlySpan<byte> buffer, PipeStream? stream, out int bytesWritten, out Interop.ErrorInfo errorInfo)
         {
             fixed (byte* bufPtr = &MemoryMarshal.GetReference(buffer))
             {
-                return TryCompleteWrite(bufPtr, buffer.Length, out bytesWritten, out errorInfo);
+                return TryCompleteWrite(bufPtr, buffer.Length, stream, out bytesWritten, out errorInfo);
             }
         }
 
-        private unsafe bool TryCompleteWrite(byte* buffer, int length, out int bytesWritten, out Interop.ErrorInfo errorInfo)
+        private unsafe bool TryCompleteWrite(byte* buffer, int length, PipeStream? stream, out int bytesWritten, out Interop.ErrorInfo errorInfo)
         {
             int totalBytesWritten = 0;
             while (true)
@@ -517,7 +594,12 @@ namespace Microsoft.Win32.SafeHandles
                 {
                     errorInfo = Interop.Sys.GetLastErrorInfo();
                     bytesWritten = totalBytesWritten;
-                    return !IsPending(errorInfo);
+                    if (!IsPending(errorInfo))
+                    {
+                        SetPipeStreamBrokenOnEPIPE(stream, errorInfo);
+                        return true;
+                    }
+                    return false;
                 }
 
                 totalBytesWritten += written;
@@ -530,6 +612,20 @@ namespace Microsoft.Win32.SafeHandles
                 }
 
                 buffer += written;
+            }
+        }
+
+        private static void SetPipeStreamBrokenOnEPIPE(PipeStream? stream, Interop.ErrorInfo errorInfo)
+        {
+            if (errorInfo.Error == Interop.Error.EPIPE && stream != null)
+                stream.State = PipeState.Broken;
+        }
+
+        private static void CheckPipeCall(Interop.ErrorInfo errorInfo)
+        {
+            if (errorInfo.Error != Interop.Error.SUCCESS)
+            {
+                throw Interop.GetExceptionForIoErrno(errorInfo);
             }
         }
 

@@ -231,7 +231,7 @@ namespace System.IO.Pipes
         internal void ValidateHandleIsPipe(SafePipeHandle safePipeHandle)
         {
             Interop.Sys.FileStatus status;
-            int result = CheckPipeCall(Interop.Sys.FStat(safePipeHandle, out status));
+            int result = Interop.CheckIo(Interop.Sys.FStat(safePipeHandle, out status));
             if (result == 0)
             {
                 if ((status.Mode & Interop.Sys.FileTypes.S_IFMT) != Interop.Sys.FileTypes.S_IFIFO &&
@@ -262,9 +262,7 @@ namespace System.IO.Pipes
                 return 0;
             }
 
-            var (bytesRead, errorInfo) = _handle.Read(buffer);
-            CheckPipeCall(bytesRead, errorInfo);
-            return bytesRead;
+            return _handle.Read(buffer, this);
         }
 
         private void WriteCore(ReadOnlySpan<byte> buffer)
@@ -272,23 +270,19 @@ namespace System.IO.Pipes
             Debug.Assert(_handle != null);
             DebugAssertHandleValid(_handle);
 
-            Interop.ErrorInfo errorInfo = _handle.Write(buffer);
-            CheckPipeCall(errorInfo);
+            _handle.Write(buffer, this);
         }
 
-        private async ValueTask<int> ReadAsyncCore(Memory<byte> destination, CancellationToken cancellationToken)
+        private ValueTask<int> ReadAsyncCore(Memory<byte> destination, CancellationToken cancellationToken)
         {
             Debug.Assert(_handle != null);
-            var (bytesRead, errorInfo) = await _handle.ReadAsync(destination, cancellationToken).ConfigureAwait(false);
-            CheckPipeCall(bytesRead, errorInfo);
-            return bytesRead;
+            return _handle.ReadAsync(destination, cancellationToken, this);
         }
 
-        private async ValueTask WriteAsyncCore(ReadOnlyMemory<byte> source, CancellationToken cancellationToken)
+        private ValueTask WriteAsyncCore(ReadOnlyMemory<byte> source, CancellationToken cancellationToken)
         {
             Debug.Assert(_handle != null);
-            Interop.ErrorInfo errorInfo = await _handle.WriteAsync(source, cancellationToken).ConfigureAwait(false);
-            CheckPipeCall(errorInfo);
+            return _handle.WriteAsync(source, cancellationToken, this);
         }
 
         // Blocks until the other end of the pipe has read in all written buffer.
@@ -409,35 +403,6 @@ namespace System.IO.Pipes
             writer.SetHandle(new IntPtr(fds[Interop.Sys.WriteEndOfPipe]));
         }
 
-        private int CheckPipeCall(int result)
-        {
-            if (result == -1)
-            {
-                CheckPipeCall(result, Interop.Sys.GetLastErrorInfo());
-            }
-
-            return result;
-        }
-
-        private void CheckPipeCall(int result, Interop.ErrorInfo errorInfo)
-        {
-            if (result == -1)
-            {
-                CheckPipeCall(errorInfo);
-            }
-        }
-
-        private void CheckPipeCall(Interop.ErrorInfo errorInfo)
-        {
-            if (errorInfo.Error != Interop.Error.SUCCESS)
-            {
-                if (errorInfo.Error == Interop.Error.EPIPE)
-                    State = PipeState.Broken;
-
-                throw Interop.GetExceptionForIoErrno(errorInfo);
-            }
-        }
-
         private int GetPipeBufferSize()
         {
             if (!Interop.Sys.Fcntl.CanGetSetPipeSz)
@@ -448,7 +413,7 @@ namespace System.IO.Pipes
             // If we have a handle, get the capacity of the pipe (there's no distinction between in/out direction).
             // If we don't, just return the buffer size that was passed to the constructor.
             return _handle != null ?
-                CheckPipeCall(Interop.Sys.Fcntl.GetPipeSz(_handle)) :
+                Interop.CheckIo(Interop.Sys.Fcntl.GetPipeSz(_handle)) :
                 (int)_outBufferSize;
         }
 
