@@ -821,7 +821,7 @@
     <ProjectReference
       Include="$(RepoRoot)src\tests\Common\XUnitLogChecker\XUnitLogChecker.csproj"
       Targets="Publish"
-      AdditionalProperties="%(AdditionalProperties);_IsPublishing=true;Configuration=Release;PublishDir=$(XUnitLogCheckerLibrariesOutDir);ROOTFS_DIR=$(ROOTFS_DIR);RuntimeIdentifier=$(TargetRid)" />
+      AdditionalProperties="%(AdditionalProperties);_IsPublishing=true;Configuration=Release;CoreCLRConfiguration=$(CoreCLRConfiguration);LibrariesConfiguration=$(LibrariesConfiguration);TasksConfiguration=$(TasksConfiguration);ToolsConfiguration=$(ToolsConfiguration);PublishDir=$(XUnitLogCheckerLibrariesOutDir);ROOTFS_DIR=$(ROOTFS_DIR);RuntimeIdentifier=$(TargetRid);UseBootstrap=$(UseBootstrap)" />
   </ItemGroup>
 
   <Target Name="GenerateMergedCoverageReport"
