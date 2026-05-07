@@ -1319,18 +1319,7 @@ namespace System.Numerics
                 return true;
             }
 
-            if (value.m_imaginary != T.Zero)
-            {
-                // A complex number with a non-zero imaginary part cannot be exactly represented as a real number.
-                // For floating-point types, we return NaN; for integer/decimal types, we throw.
-                if (!T.TryConvertToChecked(T.NaN, out result))
-                {
-                    ThrowHelper.ThrowOverflowException();
-                }
-                return result is not null;
-            }
-
-            return T.TryConvertToChecked(value.m_real, out result);
+            return TryConvertToCheckedCore(value, out result);
         }
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertToSaturating{TOther}(TSelf, out TOther)" />
@@ -1343,8 +1332,7 @@ namespace System.Numerics
                 return true;
             }
 
-            // For saturating conversion, ignore the imaginary part and just saturate the real part
-            return T.TryConvertToSaturating(value.m_real, out result);
+            return TryConvertToSaturatingCore(value, out result);
         }
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertToTruncating{TOther}(TSelf, out TOther)" />
@@ -1357,8 +1345,116 @@ namespace System.Numerics
                 return true;
             }
 
+            return TryConvertToTruncatingCore(value, out result);
+        }
+
+        internal static bool TryConvertToCheckedCore<TOther>(Complex<T> value, [MaybeNullWhen(false)] out TOther result)
+            where TOther : INumberBase<TOther>
+        {
+            if (typeof(TOther) == typeof(T))
+            {
+                // T is always IFloatingPointIeee754<T>, so NaN is valid for the imaginary case.
+                result = (TOther)(object)((value.m_imaginary != T.Zero) ? T.NaN : value.m_real);
+                return true;
+            }
+
+            if (typeof(TOther) == typeof(Complex))
+            {
+                result = (TOther)(object)new Complex(double.CreateChecked(value.m_real), double.CreateChecked(value.m_imaginary));
+                return true;
+            }
+
+            if (typeof(TOther) == typeof(BigInteger))
+            {
+                if (value.m_imaginary != T.Zero)
+                {
+                    ThrowHelper.ThrowOverflowException();
+                }
+
+                BigInteger actualResult = checked((BigInteger)double.CreateChecked(value.m_real));
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+
+            // A complex number with a non-zero imaginary part cannot be exactly represented as a real number.
+            // For floating-point types, we return NaN; for integer/decimal types, we throw.
+            if (value.m_imaginary != T.Zero)
+            {
+                if (!T.TryConvertToChecked(T.NaN, out result))
+                {
+                    ThrowHelper.ThrowOverflowException();
+                }
+                return result is not null;
+            }
+
+            if (T.TryConvertToChecked(value.m_real, out result))
+            {
+                return true;
+            }
+
+            return TOther.TryConvertFromChecked<T>(value.m_real, out result);
+        }
+
+        internal static bool TryConvertToSaturatingCore<TOther>(Complex<T> value, [MaybeNullWhen(false)] out TOther result)
+            where TOther : INumberBase<TOther>
+        {
+            if (typeof(TOther) == typeof(T))
+            {
+                result = (TOther)(object)value.m_real;
+                return true;
+            }
+
+            if (typeof(TOther) == typeof(Complex))
+            {
+                result = (TOther)(object)new Complex(double.CreateSaturating(value.m_real), double.CreateSaturating(value.m_imaginary));
+                return true;
+            }
+
+            if (typeof(TOther) == typeof(BigInteger))
+            {
+                BigInteger actualResult = (BigInteger)double.CreateSaturating(value.m_real);
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+
+            // For saturating conversion, ignore the imaginary part and just saturate the real part
+            if (T.TryConvertToSaturating(value.m_real, out result))
+            {
+                return true;
+            }
+
+            return TOther.TryConvertFromSaturating<T>(value.m_real, out result);
+        }
+
+        internal static bool TryConvertToTruncatingCore<TOther>(Complex<T> value, [MaybeNullWhen(false)] out TOther result)
+            where TOther : INumberBase<TOther>
+        {
+            if (typeof(TOther) == typeof(T))
+            {
+                result = (TOther)(object)value.m_real;
+                return true;
+            }
+
+            if (typeof(TOther) == typeof(Complex))
+            {
+                result = (TOther)(object)new Complex(double.CreateTruncating(value.m_real), double.CreateTruncating(value.m_imaginary));
+                return true;
+            }
+
+            if (typeof(TOther) == typeof(BigInteger))
+            {
+                BigInteger actualResult = (BigInteger)double.CreateTruncating(value.m_real);
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+
             // For truncating conversion, ignore the imaginary part and just truncate the real part
-            return T.TryConvertToTruncating(value.m_real, out result);
+            if (T.TryConvertToTruncating(value.m_real, out result))
+            {
+                return true;
+            }
+
+            return TOther.TryConvertFromTruncating<T>(value.m_real, out result);
         }
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryParse(ReadOnlySpan{char}, NumberStyles, IFormatProvider?, out TSelf)" />
