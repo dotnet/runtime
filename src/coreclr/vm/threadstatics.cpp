@@ -772,7 +772,7 @@ void GetTLSIndexForThreadStatic(MethodTable* pMT, bool gcStatic, TLSIndex* pInde
         pMT->GetLoaderAllocator()->GetTLSIndexList().Append(newTLSIndex);
     }
 
-    VolatileStore(pIndex, newTLSIndex); // Use a volatile store so that any other thread that sees the allocated index will also see the writes throughout this path.
+    pIndex->VolatileStore(newTLSIndex); // Use a volatile store so that any other thread that sees the allocated index will also see the writes throughout this path.
 }
 
 void FreeTLSIndicesForLoaderAllocator(LoaderAllocator *pLoaderAllocator)

@@ -63,7 +63,7 @@ struct TLSIndex
     static TLSIndex Unallocated() { LIMITED_METHOD_DAC_CONTRACT; return TLSIndex(0xFFFFFFFF); }
     bool operator == (TLSIndex index) const { LIMITED_METHOD_DAC_CONTRACT; return TLSIndexRawIndex == index.TLSIndexRawIndex; }
     bool operator != (TLSIndex index) const { LIMITED_METHOD_DAC_CONTRACT; return TLSIndexRawIndex != index.TLSIndexRawIndex; }
-    volatile TLSIndex & operator=(const TLSIndex &other) volatile { LIMITED_METHOD_CONTRACT; VolatileStore((uint32_t*)&TLSIndexRawIndex, other.TLSIndexRawIndex); return *this; }
+    void VolatileStore(const TLSIndex &other) { LIMITED_METHOD_CONTRACT; ::VolatileStore((uint32_t*)&TLSIndexRawIndex, other.TLSIndexRawIndex); }
 };
 
 // Used to store access to TLS data for a single index when the TLS is accessed while the class constructor is running
