@@ -442,7 +442,7 @@ void gc_heap::clear_unused_array (uint8_t* x, size_t size)
 
 void gc_heap::reset_memory (uint8_t* o, size_t sizeo)
 {
-    if (gc_heap::use_large_pages_p)
+    if (gc_heap::never_decommit_p)
         return;
 
     if (sizeo > 128 * 1024)

@@ -2045,8 +2045,8 @@ bool GenTreeCall::IsPure(Compiler* compiler) const
 }
 
 //------------------------------------------------------------------------------
-// getArrayLengthFromAllocation: Return the array length for an array allocation
-//                               helper call.
+// getArrayLengthFromAllocation: Return the length for an allocation whose length
+//                               is represented by GT_ARR_LENGTH.
 //
 // Arguments:
 //    tree - The array allocation helper call.
@@ -2085,6 +2085,13 @@ GenTree* Compiler::getArrayLengthFromAllocation(GenTree* tree)
             }
 
             assert((arrayLength == nullptr) || ((optMethodFlags & OMF_HAS_NEWARRAY) != 0));
+        }
+        else if (call->IsSpecialIntrinsic(this, NI_System_String_FastAllocateString))
+        {
+            // String characters start at a different offset than array data, but string length itself is a
+            // GT_ARR_LENGTH.
+            assert(call->gtArgs.CountUserArgs() == 2);
+            arrayLength = call->gtArgs.GetUserArgByIndex(1)->GetNode();
         }
     }
 

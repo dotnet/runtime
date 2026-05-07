@@ -322,7 +322,6 @@ namespace System.StubHelpers
         }
 
         [UnmanagedCallersOnly]
-        [RequiresUnsafe]
         private static unsafe IntPtr ConvertToNative(string* pStr, Exception* pException)
         {
             try
@@ -732,7 +731,6 @@ namespace System.StubHelpers
     internal static unsafe partial class MngdRefCustomMarshaler
     {
         [UnmanagedCallersOnly]
-        [RequiresUnsafe]
         internal static void ConvertContentsToNative(ICustomMarshaler* pMarshaler, object* pManagedHome, IntPtr* pNativeHome, Exception* pException)
         {
             try
@@ -745,7 +743,6 @@ namespace System.StubHelpers
             }
         }
 
-        [RequiresUnsafe]
         internal static void ConvertContentsToNative(ICustomMarshaler marshaler, in object pManagedHome, IntPtr* pNativeHome)
         {
             // COMPAT: We never pass null to MarshalManagedToNative.
@@ -759,7 +756,6 @@ namespace System.StubHelpers
         }
 
         [UnmanagedCallersOnly]
-        [RequiresUnsafe]
         internal static void ConvertContentsToManaged(ICustomMarshaler* pMarshaler, object* pManagedHome, IntPtr* pNativeHome, Exception* pException)
         {
             try
@@ -772,7 +768,6 @@ namespace System.StubHelpers
             }
         }
 
-        [RequiresUnsafe]
         internal static void ConvertContentsToManaged(ICustomMarshaler marshaler, ref object? pManagedHome, IntPtr* pNativeHome)
         {
             // COMPAT: We never pass null to MarshalNativeToManaged.
@@ -786,7 +781,6 @@ namespace System.StubHelpers
         }
 
         [UnmanagedCallersOnly]
-        [RequiresUnsafe]
         internal static void ClearNative(ICustomMarshaler* pMarshaler, object* pManagedHome, IntPtr* pNativeHome, Exception* pException)
         {
             try
@@ -799,7 +793,6 @@ namespace System.StubHelpers
             }
         }
 
-        [RequiresUnsafe]
         internal static void ClearNative(ICustomMarshaler marshaler, ref object _, IntPtr* pNativeHome)
         {
             // COMPAT: We never pass null to CleanUpNativeData.
@@ -819,7 +812,6 @@ namespace System.StubHelpers
         }
 
         [UnmanagedCallersOnly]
-        [RequiresUnsafe]
         internal static void ClearManaged(ICustomMarshaler* pMarshaler, object* pManagedHome, IntPtr* pNativeHome, Exception* pException)
         {
             try
@@ -832,7 +824,6 @@ namespace System.StubHelpers
             }
         }
 
-        [RequiresUnsafe]
         internal static void ClearManaged(ICustomMarshaler marshaler, in object pManagedHome, IntPtr* _)
         {
             // COMPAT: We never pass null to CleanUpManagedData.
@@ -846,7 +837,6 @@ namespace System.StubHelpers
 
         [UnmanagedCallersOnly]
         [UnconditionalSuppressMessage("Trimming", "IL2075", Justification = "Custom marshaler GetInstance method is preserved by ILLink (see MarkCustomMarshalerGetInstance).")]
-        [RequiresUnsafe]
         internal static void GetCustomMarshalerInstance(void* pMT, byte* pCookie, int cCookieBytes, object* pResult, Exception* pException)
         {
             try
@@ -2257,7 +2247,6 @@ namespace System.StubHelpers
 
         [SupportedOSPlatform("windows")]
         [UnmanagedCallersOnly]
-        [RequiresUnsafe]
         private static unsafe void GetIEnumeratorToEnumVariantMarshaler(object* pResult, Exception* pException)
         {
             try
@@ -2272,7 +2261,6 @@ namespace System.StubHelpers
 
         [SupportedOSPlatform("windows")]
         [UnmanagedCallersOnly]
-        [RequiresUnsafe]
         private static unsafe int CallICustomQueryInterface(ICustomQueryInterface* pObject, Guid* pIid, IntPtr* ppObject, Exception* pException)
         {
             try
@@ -2288,7 +2276,6 @@ namespace System.StubHelpers
 
         [SupportedOSPlatform("windows")]
         [UnmanagedCallersOnly]
-        [RequiresUnsafe]
         private static unsafe void InvokeConnectionPointProviderMethod(
             object* pProvider,
             delegate*<object, object?, void> providerMethodEntryPoint,
@@ -2385,11 +2372,9 @@ namespace System.StubHelpers
         // Profiler helpers
         //-------------------------------------------------------
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "StubHelpers_ProfilerBeginTransitionCallback")]
-        [RequiresUnsafe]
         internal static unsafe partial void* ProfilerBeginTransitionCallback(void* pTargetMD);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "StubHelpers_ProfilerEndTransitionCallback")]
-        [RequiresUnsafe]
         internal static unsafe partial void ProfilerEndTransitionCallback(void* pTargetMD);
 #endif // PROFILING_SUPPORTED
 
@@ -2412,7 +2397,6 @@ namespace System.StubHelpers
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "StubHelpers_CreateLayoutClassMarshalStubs")]
         internal static unsafe partial void CreateLayoutClassMarshalStubs(QCallTypeHandle th, out delegate*<ref byte, byte*, ref CleanupWorkListElement?, void> pConvertToUnmanaged, out delegate*<ref byte, byte*, ref CleanupWorkListElement?, void> pConvertToManaged, out delegate*<ref byte, byte*, ref CleanupWorkListElement?, void> pFree);
 
-        [RequiresUnsafe]
         internal static unsafe void LayoutTypeConvertToUnmanaged(object obj, byte* pNative, ref CleanupWorkListElement? pCleanupWorkList)
         {
             RuntimeType type = (RuntimeType)obj.GetType();
@@ -2422,7 +2406,6 @@ namespace System.StubHelpers
         }
 
         [UnmanagedCallersOnly]
-        [RequiresUnsafe]
         internal static unsafe void LayoutTypeConvertToUnmanaged(object* obj, byte* pNative, Exception* pException)
         {
             try
@@ -2435,7 +2418,6 @@ namespace System.StubHelpers
             }
         }
 
-        [RequiresUnsafe]
         internal static unsafe void LayoutTypeConvertToManaged(object obj, byte* pNative)
         {
             RuntimeType type = (RuntimeType)obj.GetType();
@@ -2445,7 +2427,6 @@ namespace System.StubHelpers
         }
 
         [UnmanagedCallersOnly]
-        [RequiresUnsafe]
         internal static unsafe void LayoutTypeConvertToManaged(object* obj, byte* pNative, Exception* pException)
         {
             try
@@ -2567,7 +2548,6 @@ namespace System.StubHelpers
     internal static class CultureInfoMarshaler
     {
         [UnmanagedCallersOnly]
-        [RequiresUnsafe]
         internal static unsafe void GetCurrentCulture(bool bUICulture, object* pResult, Exception* pException)
         {
             try
@@ -2583,7 +2563,6 @@ namespace System.StubHelpers
         }
 
         [UnmanagedCallersOnly]
-        [RequiresUnsafe]
         internal static unsafe void SetCurrentCulture(bool bUICulture, Globalization.CultureInfo* pValue, Exception* pException)
         {
             try
@@ -2600,7 +2579,6 @@ namespace System.StubHelpers
         }
 
         [UnmanagedCallersOnly]
-        [RequiresUnsafe]
         internal static unsafe void CreateCultureInfo(int culture, object* pResult, Exception* pException)
         {
             try
@@ -2646,7 +2624,6 @@ namespace System.StubHelpers
         }
 
         [UnmanagedCallersOnly]
-        [RequiresUnsafe]
         internal static unsafe void ConvertToManaged(int oleColor, object* pResult, Exception* pException)
         {
             try
@@ -2660,7 +2637,6 @@ namespace System.StubHelpers
         }
 
         [UnmanagedCallersOnly]
-        [RequiresUnsafe]
         internal static unsafe void ConvertToNative(object* pSrcObj, int* pResult, Exception* pException)
         {
             try
