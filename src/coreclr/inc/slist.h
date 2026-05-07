@@ -23,12 +23,10 @@
 #include "cdacdata.h"
 #include <utility> // std::forward (used by SListElem)
 
-#ifndef EMPTY_BASES_DECL
-  #ifdef _MSC_VER
-    #define EMPTY_BASES_DECL __declspec(empty_bases)
-  #else
-    #define EMPTY_BASES_DECL
-  #endif
+#ifdef _MSC_VER
+  #define SLIST_EMPTY_BASES_DECL __declspec(empty_bases)
+#else
+  #define SLIST_EMPTY_BASES_DECL
 #endif
 
 // ---------------------------------------------------------------------------
@@ -86,7 +84,7 @@ struct SListTailBase<PTR_T, true>
 // field. Use SListTraits<T, SListMode::Tail> for O(1) tail insertion.
 // ---------------------------------------------------------------------------
 template <typename T, typename Traits = SListTraits<T>>
-struct EMPTY_BASES_DECL SList : public Traits, private SListTailBase<typename Traits::PTR_T, Traits::HasTail>
+struct SLIST_EMPTY_BASES_DECL SList : public Traits, private SListTailBase<typename Traits::PTR_T, Traits::HasTail>
 {
     typedef typename Traits::PTR_T PTR_T;
     typedef typename Traits::PTR_PTR_T PTR_PTR_T;
@@ -451,5 +449,7 @@ struct SListElem
         , m_Value(std::forward<T1>(val1), std::forward<T2>(val2), std::forward<T3>(val3), std::forward<T4>(val4))
     { }
 };
+
+#undef SLIST_EMPTY_BASES_DECL
 
 #endif // _H_SLIST_
