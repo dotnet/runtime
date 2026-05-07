@@ -392,6 +392,14 @@ public:
 // ---------------------------------------------------------------------------
 template <typename T> using SListTail = SList<T, SListTraits<T, SListMode::Tail>>;
 
+struct SListLayoutValidationElem
+{
+    SListLayoutValidationElem* m_pNext;
+};
+
+static_assert(sizeof(SList<SListLayoutValidationElem>) == sizeof(SListTraits<SListLayoutValidationElem>::PTR_T));
+static_assert(sizeof(SListTail<SListLayoutValidationElem>) == 2 * sizeof(SListTraits<SListLayoutValidationElem>::PTR_T));
+
 // ---------------------------------------------------------------------------
 // SListElem — non-intrusive list element wrapper.
 // ---------------------------------------------------------------------------
