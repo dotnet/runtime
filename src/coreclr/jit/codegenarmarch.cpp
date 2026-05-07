@@ -4869,10 +4869,6 @@ void CodeGen::genPushCalleeSavedRegisters(regNumber initReg, bool* pInitRegZeroe
     m_compiler->compFrameInfo.calleeSaveSpDelta  = calleeSaveSpDelta;
     m_compiler->compFrameInfo.offsetSpToSavedFp  = offsetSpToSavedFp;
 
-    if (m_compiler->compUsesUnknownSizeFrame)
-    {
-        genUnknownSizeFrame();
-    }
 #endif // TARGET_ARM64
 }
 

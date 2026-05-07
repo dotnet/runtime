@@ -4629,7 +4629,11 @@ public:
     //
     bool lvaIsUnknownSizeLocal(unsigned varNum)
     {
+#ifdef TARGET_ARM64
         return !lvaLclValueSize(varNum).IsExact();
+#else
+        return false;
+#endif
     }
 
     bool lvaHaveManyLocals(float percent = 1.0f) const;

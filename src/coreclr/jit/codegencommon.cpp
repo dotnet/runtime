@@ -5562,6 +5562,13 @@ void CodeGen::genFnProlog()
     //
     //-------------------------------------------------------------------------
 
+#ifdef TARGET_ARM64
+    if (m_compiler->compUsesUnknownSizeFrame)
+    {
+        genUnknownSizeFrame();
+    }
+#endif
+
 #ifdef TARGET_ARM
     if (needToEstablishFP)
     {
