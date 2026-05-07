@@ -392,10 +392,8 @@ struct SListLayoutValidationElem
     SListLayoutValidationElem* m_pNext;
 };
 
-#ifdef _DEBUG
 static_assert(sizeof(SList<SListLayoutValidationElem>) == sizeof(SListTraits<SListLayoutValidationElem>::PTR_T));
 static_assert(sizeof(SListTail<SListLayoutValidationElem>) == 2 * sizeof(SListTraits<SListLayoutValidationElem>::PTR_T));
-#endif
 
 // ---------------------------------------------------------------------------
 // SListElem — non-intrusive list element wrapper.
