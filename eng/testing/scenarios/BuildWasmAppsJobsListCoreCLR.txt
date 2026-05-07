@@ -2,6 +2,10 @@ Wasm.Build.Tests.DebugLevelTests
 Wasm.Build.Tests.EnvVariablesTests
 Wasm.Build.Tests.FilesToIncludeInFileSystemTests
 Wasm.Build.Tests.HttpTests
+Wasm.Build.Tests.IcuShardingTests
+Wasm.Build.Tests.IcuShardingTests2
+Wasm.Build.Tests.IcuTests
+Wasm.Build.Tests.InvariantGlobalizationTests
 Wasm.Build.Tests.LazyLoadingTests
 Wasm.Build.Tests.ModuleConfigTests
 Wasm.Build.Tests.PreloadingTests

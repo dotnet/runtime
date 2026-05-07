@@ -20,6 +20,8 @@ public abstract class IcuTestsBase : WasmTemplateTestsBase
     private const string _fallbackSundayNameEnUS = "Sunday";
     protected static string[] templateTypes = { "wasmbrowser" };
     protected static bool[] boolOptions =  { false, true };
+    // CoreCLR WASM doesn't support AOT; filter to aot=false only for CoreCLR runs
+    protected static bool[] aotBoolOptions => IsCoreClrRuntime ? new[] { false } : new[] { false, true };
 
     protected record SundayNames
     {

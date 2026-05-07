@@ -17,6 +17,11 @@
     <!-- Set IsBrowserWasmProject for browser-wasm targets -->
     <IsBrowserWasmProject Condition="'$(IsBrowserWasmProject)' == '' and ('$(RuntimeIdentifier)' == 'browser-wasm' or '$(RuntimeIdentifiers)' == 'browser-wasm')">true</IsBrowserWasmProject>
 
+    <!-- Default to full globalization (ICU sharding). Mirrors Mono's WasmFeatures.props behavior.
+         Without this, the SDK defaults _WasmInvariantGlobalization=true when InvariantGlobalization is empty,
+         which excludes ICU .dat files from publish output and forces invariant mode. -->
+    <InvariantGlobalization Condition="'$(InvariantGlobalization)' == ''">false</InvariantGlobalization>
+
     <!-- Ensure TargetsBrowser is set so native.wasm.targets populates exported functions/methods -->
     <TargetsBrowser Condition="'$(TargetsBrowser)' == '' and '$(IsBrowserWasmProject)' == 'true'">true</TargetsBrowser>
 
@@ -271,9 +276,15 @@
       <_EmccCFlags Include="-DGEN_PINVOKE=1" />
       <_EmccCFlags Include="$(EmccExtraCFlags)" />
 
-      <!-- Include paths for ManagedToNativeGenerator output compilation -->
-      <_EmccCFlags Include="-I&quot;$(RepoRoot)src/coreclr/vm/wasm&quot;" Condition="Exists('$(RepoRoot)src/coreclr/vm/wasm/callhelpers.hpp')" />
-      <_EmccCFlags Include="-I&quot;$(RepoRoot)src/native&quot;" Condition="Exists('$(RepoRoot)src/native/minipal/entrypoints.h')" />
+      <!-- Include paths for ManagedToNativeGenerator output compilation.
+           Prefer the runtime pack's include directory (works for out-of-tree app builds);
+           fall back to repo source paths for in-tree dev builds before the pack is refreshed.
+           $(RepoRoot) is available in-tree; $(RepositoryEngineeringDir) is set by WBT test infrastructure. -->
+      <_EmccCFlags Include="-I&quot;$(MicrosoftNetCoreAppRuntimePackRidNativeDir)include&quot;" Condition="Exists('$(MicrosoftNetCoreAppRuntimePackRidNativeDir)include/callhelpers.hpp')" />
+      <_EmccCFlags Include="-I&quot;$(RepoRoot)src/coreclr/vm/wasm&quot;" Condition="!Exists('$(MicrosoftNetCoreAppRuntimePackRidNativeDir)include/callhelpers.hpp') and '$(RepoRoot)' != '' and Exists('$(RepoRoot)src/coreclr/vm/wasm/callhelpers.hpp')" />
+      <_EmccCFlags Include="-I&quot;$([MSBuild]::NormalizePath('$(RepositoryEngineeringDir)', '..', 'src', 'coreclr', 'vm', 'wasm'))&quot;" Condition="!Exists('$(MicrosoftNetCoreAppRuntimePackRidNativeDir)include/callhelpers.hpp') and '$(RepoRoot)' == '' and '$(RepositoryEngineeringDir)' != '' and Exists('$([MSBuild]::NormalizePath($(RepositoryEngineeringDir), .., src, coreclr, vm, wasm, callhelpers.hpp))')" />
+      <_EmccCFlags Include="-I&quot;$(RepoRoot)src/native&quot;" Condition="!Exists('$(MicrosoftNetCoreAppRuntimePackRidNativeDir)include/minipal/entrypoints.h') and '$(RepoRoot)' != '' and Exists('$(RepoRoot)src/native/minipal/entrypoints.h')" />
+      <_EmccCFlags Include="-I&quot;$([MSBuild]::NormalizePath('$(RepositoryEngineeringDir)', '..', 'src', 'native'))&quot;" Condition="!Exists('$(MicrosoftNetCoreAppRuntimePackRidNativeDir)include/minipal/entrypoints.h') and '$(RepoRoot)' == '' and '$(RepositoryEngineeringDir)' != '' and Exists('$([MSBuild]::NormalizePath($(RepositoryEngineeringDir), .., src, native, minipal, entrypoints.h))')" />
       <_EmccCFlags Include="-include &quot;$(_WasmIntermediateOutputPath)coreclr_compat.h&quot;" />
     </ItemGroup>
 
@@ -455,10 +466,10 @@
       <_CoreCLRNativeLibs Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libSystem.Native.Browser.a" />
       <_CoreCLRNativeLibs Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libSystem.Runtime.InteropServices.JavaScript.Native.a" />
       <_CoreCLRNativeLibs Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libSystem.Native.a" />
-      <_CoreCLRNativeLibs Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libSystem.Globalization.Native.a" Condition="'$(InvariantGlobalization)' != 'true'" />
-      <_CoreCLRNativeLibs Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libicuuc.a"                     Condition="'$(InvariantGlobalization)' != 'true'" />
-      <_CoreCLRNativeLibs Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libicui18n.a"                   Condition="'$(InvariantGlobalization)' != 'true'" />
-      <_CoreCLRNativeLibs Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libicudata.a"                   Condition="'$(InvariantGlobalization)' != 'true'" />
+      <_CoreCLRNativeLibs Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libSystem.Globalization.Native.a" />
+      <_CoreCLRNativeLibs Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libicuuc.a" />
+      <_CoreCLRNativeLibs Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libicui18n.a" />
+      <_CoreCLRNativeLibs Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libicudata.a" />
       <_CoreCLRNativeLibs Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libSystem.IO.Compression.Native.a" />
       <_CoreCLRNativeLibs Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libz.a" />
 

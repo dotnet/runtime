@@ -31,7 +31,7 @@ public class IcuShardingTests2 : IcuTestsBase
             { "icudt_no_CJK.dat", GetNocjkTestedLocales() }
         }; 
         return
-            from aot in boolOptions
+            from aot in aotBoolOptions
             from locale in locales
             select new object[] { config, aot, locale.Key, locale.Value };
     }

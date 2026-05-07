@@ -20,7 +20,7 @@ public class IcuTests : IcuTestsBase
         : base(output, buildContext) { }
 
     public static IEnumerable<object[]> FullIcuWithICustomIcuTestData(Configuration config) =>
-        from aot in boolOptions
+        from aot in aotBoolOptions
             from fullIcu in boolOptions
             select new object[] { config, aot, fullIcu };
 
@@ -34,7 +34,7 @@ public class IcuTests : IcuTestsBase
             new object[] { false, false, GetEfigsTestedLocales() },
             new object[] { false, true,  s_fullIcuTestedLocales }
         }; 
-        return from aot in boolOptions
+        return from aot in aotBoolOptions
             from locale in locales
             select new object[] { config, aot, locale[0], locale[1], locale[2] };
     }

@@ -278,6 +278,11 @@
     <PlatformManifestFileEntry Include="libSystem.Native.Browser.js.map" IsNative="true" />
     <PlatformManifestFileEntry Include="libSystem.Runtime.InteropServices.JavaScript.Native.js" IsNative="true" />
     <PlatformManifestFileEntry Include="libSystem.Runtime.InteropServices.JavaScript.Native.js.map" IsNative="true" />
+    <PlatformManifestFileEntry Include="libSystem.Native.Browser.extpost.js" IsNative="true" />
+    <PlatformManifestFileEntry Include="libBrowserHost.a" IsNative="true" />
+    <PlatformManifestFileEntry Include="callhelpers.hpp" IsNative="true" />
+    <PlatformManifestFileEntry Include="entrypoints.h" IsNative="true" />
+    <PlatformManifestFileEntry Include="utils.h" IsNative="true" />
     <!-- wasi specific -->
     <PlatformManifestFileEntry Include="main.c" IsNative="true" />
     <PlatformManifestFileEntry Include="driver.h" IsNative="true" />

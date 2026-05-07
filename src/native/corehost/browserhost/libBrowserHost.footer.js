@@ -18,8 +18,10 @@ function libBrowserHostFactory() {
     libBrowserHost(exports);
 
     // libBrowserHostFn is too complex for acorn-optimizer.mjs to find the dependencies
+    // NOTE: wasm_load_icu_data is NOT listed here because it's only available when
+    // InvariantGlobalization != true. The loadIcuData() JS code is only called when
+    // ICU data is present, so the symbol doesn't need to be a hard link-time dependency.
     let explicitDeps = [
-        "wasm_load_icu_data",
         "BrowserHost_CreateHostContract",
         "BrowserHost_InitializeDotnet",
         "BrowserHost_ExecuteAssembly",

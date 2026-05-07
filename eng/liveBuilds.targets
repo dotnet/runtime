@@ -233,22 +233,31 @@
 
       <LibrariesRuntimeFiles Condition="'$(TargetOS)' == 'browser' and '$(RuntimeFlavor)' == 'CoreCLR'"
                              Include="
-        $(CoreCLRSharedFrameworkDir)libcoreclr_static.a;
-        $(CoreCLRSharedFrameworkDir)libcoreclrminipal.a;
-        $(CoreCLRSharedFrameworkDir)libcoreclrpal.a;
-        $(CoreCLRSharedFrameworkDir)libgcinfo_unix_wasm.a;
-        $(CoreCLRSharedFrameworkDir)libnativeresourcestring.a;
         $(LibrariesSharedFrameworkDir)package.json;
         $(LibrariesSharedFrameworkDir)dotnet.d.ts;
         $(LibrariesSharedFrameworkDir)*.map;
         $(LibrariesSharedFrameworkDir)*.js;
-        $(LibrariesSharedFrameworkDir)*.a;
         $(LibrariesSharedFrameworkDir)*.dat;
         $(HostSharedFrameworkDir)libBrowserHost.a;
         $(HostSharedFrameworkDir)dotnet.native.js;
+        $(HostSharedFrameworkDir)dotnet.native.js.symbols;
         $(HostSharedFrameworkDir)dotnet.native.wasm;
+        $(RepoRoot)src\native\libs\System.Native.Browser\libSystem.Native.Browser.extpost.js;
         "
         IsNative="true" />
+      <!-- Include .a files from LibrariesSharedFrameworkDir, excluding those already in CoreCLRSharedFrameworkDir (added via RuntimeFiles) -->
+      <LibrariesRuntimeFiles Condition="'$(TargetOS)' == 'browser' and '$(RuntimeFlavor)' == 'CoreCLR'"
+                             Include="$(LibrariesSharedFrameworkDir)*.a"
+                             Exclude="
+        $(LibrariesSharedFrameworkDir)libminipal.a;
+        $(LibrariesSharedFrameworkDir)libSystem.IO.Compression.Native.a;
+        $(LibrariesSharedFrameworkDir)libz.a"
+                             IsNative="true" />
+
+      <LibrariesRuntimeFiles Condition="'$(TargetOS)' == 'browser' and '$(RuntimeFlavor)' == 'CoreCLR'"
+                             Include="$(HostSharedFrameworkDir)include\**"
+                             NativeSubDirectory="include\"
+                             IsNative="true" />
 
       <LibrariesRuntimeFiles Condition="'$(TargetOS)' == 'browser' and '$(RuntimeFlavor)' == 'Mono'"
                              Include="

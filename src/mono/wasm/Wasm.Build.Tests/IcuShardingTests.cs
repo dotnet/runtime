@@ -20,7 +20,7 @@ public class IcuShardingTests : IcuTestsBase
         : base(output, buildContext) { }
 
     public static IEnumerable<object[]> IcuExpectedAndMissingCustomShardTestData(Configuration config) =>
-        from aot in boolOptions
+        from aot in aotBoolOptions
             from onlyPredefinedCultures in boolOptions
             // isOnlyPredefinedCultures = true fails with wasmbrowser: https://github.com/dotnet/runtime/issues/108272
             where !(onlyPredefinedCultures)
@@ -34,7 +34,7 @@ public class IcuShardingTests : IcuTestsBase
             { "ja-JP", GetCjkTestedLocales(SundayNames.Japanese) },
             { "sk-SK", GetNocjkTestedLocales(SundayNames.Slovak) }
         }; 
-        return from aot in boolOptions
+        return from aot in aotBoolOptions
             from locale in locales
             select new object[] { config, aot, locale.Key, locale.Value };
     }

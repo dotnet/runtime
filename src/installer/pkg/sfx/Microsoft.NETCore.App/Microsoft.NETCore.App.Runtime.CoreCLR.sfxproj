@@ -14,6 +14,7 @@
     <VSInsertionShortComponentName>NetCore.SharedFramework</VSInsertionShortComponentName>
     <UseTemplatedPlatformManifest>true</UseTemplatedPlatformManifest>
     <UseRidGraph>true</UseRidGraph>
+    <IncludeStaticLibrariesInPack Condition="'$(TargetsMobile)' == 'true'">true</IncludeStaticLibrariesInPack>
   </PropertyGroup>
 
   <ItemGroup>

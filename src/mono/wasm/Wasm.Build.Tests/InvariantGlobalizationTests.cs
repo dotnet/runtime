@@ -45,6 +45,9 @@ namespace Wasm.Build.Tests
 
         private async Task TestInvariantGlobalization(Configuration config, bool aot, bool? invariantGlobalization, bool? isNativeBuild = null)
         {
+            if (aot && IsCoreClrRuntime)
+                return; // CoreCLR WASM doesn't support AOT
+
             string extraProperties = isNativeBuild == true ? "<WasmBuildNative>true</WasmBuildNative>" : "";
             if (invariantGlobalization != null)
             {
