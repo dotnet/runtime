@@ -8,7 +8,7 @@ import { exit, runtimeState } from "./exit";
 import { createPromiseCompletionSource } from "./promise-completion-source";
 import { getIcuResourceName } from "./icu";
 import { loaderConfig, validateLoaderConfig } from "./config";
-import { fetchAssembly, fetchIcu, fetchNativeSymbols, fetchPdb, fetchSatelliteAssemblies, fetchVfs, fetchMainWasm, loadDotnetModule, loadJSModule, nativeModulePromiseController, verifyAllAssetsDownloaded, callLibraryInitializerOnRuntimeReady, callLibraryInitializerOnRuntimeConfigLoaded, prefetchAllResources, prefetchJSModuleLinks } from "./assets";
+import { fetchAssembly, fetchIcu, fetchNativeSymbols, fetchPdb, fetchSatelliteAssemblies, fetchVfs, fetchMainWasm, loadDotnetModule, loadJSModule, nativeModulePromiseController, verifyAllAssetsDownloaded, callLibraryInitializerOnRuntimeReady, callLibraryInitializerOnRuntimeConfigLoaded, prefetchAllResources, prefetchJSModuleLinks, resolveAllDownloadsQueued } from "./assets";
 import { initPolyfills } from "./polyfills";
 import { validateEngineFeatures } from "./bootstrap";
 
@@ -131,6 +131,11 @@ export async function createRuntime(downloadOnly: boolean, httpCacheOnly: boolea
         const isDebuggingSupported = loaderConfig.debugLevel != 0;
         const corePDBsPromise = forEachResource(resources.corePdb, fetchPdb, () => isDebuggingSupported);
         const pdbsPromise = forEachResource(resources.pdb, fetchPdb, () => isDebuggingSupported);
+
+        // Signal that all first-attempt asset fetches queued above via forEachResource/fetch* have been queued.
+        // Retry logic waits on this before attempting second downloads for those asset fetches.
+        resolveAllDownloadsQueued();
+
         // In download-only mode, just add prefetch hints for runtime-ready modules so create() loads them from cache.
         // In create mode, load them now so onRuntimeReady can be called later.
         let modulesAfterRuntimeReadyPromises: [JsAsset, Promise<any>][] = [];
