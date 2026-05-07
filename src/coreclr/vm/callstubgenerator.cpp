@@ -2682,7 +2682,6 @@ CallStubGenerator::ReturnType CallStubGenerator::GetReturnType(ArgIteratorType *
             case ELEMENT_TYPE_STRING:
             case ELEMENT_TYPE_PTR:
             case ELEMENT_TYPE_BYREF:
-            case ELEMENT_TYPE_TYPEDBYREF:
             case ELEMENT_TYPE_ARRAY:
             case ELEMENT_TYPE_SZARRAY:
             case ELEMENT_TYPE_FNPTR:
@@ -2704,6 +2703,15 @@ CallStubGenerator::ReturnType CallStubGenerator::GetReturnType(ArgIteratorType *
             case ELEMENT_TYPE_VOID:
                 return ReturnTypeVoid;
                 break;
+            case ELEMENT_TYPE_TYPEDBYREF:
+#if defined(UNIX_AMD64_ABI)
+                return ReturnTypeI8I8;
+#elif defined(TARGET_ARM64) || defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
+                return ReturnType2I8;
+#else
+                _ASSERTE(!"Implement TypedByRef return support for this platform");
+                break;
+#endif
             case ELEMENT_TYPE_VALUETYPE:
 #ifdef TARGET_AMD64
 #ifdef TARGET_WINDOWS

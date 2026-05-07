@@ -6,6 +6,7 @@
 parameters:
   buildDebuggees: true
   skipDebuggeeCopy: false
+  runtimeConfiguration: 'Checked'
 
 steps:
 - ${{ if parameters.buildDebuggees }}:
@@ -14,6 +15,7 @@ steps:
       /t:BuildDebuggeesOnly
       /p:Configuration=$(_BuildConfig)
       /p:TargetArchitecture=$(archType)
+      /p:RuntimeConfiguration=${{ parameters.runtimeConfiguration }}
       -bl:$(Build.SourcesDirectory)/artifacts/log/BuildDebuggees.binlog
     displayName: 'Build Debuggees'
 

@@ -218,7 +218,7 @@ switch (testCase) {
         break;
 }
 
-const { setModuleImports, Module, getAssemblyExports, getConfig, INTERNAL } = await dotnet.create();
+const { setModuleImports, Module, getAssemblyExports, getConfig, INTERNAL, invokeLibraryInitializers } = await dotnet.create();
 const config = getConfig();
 const exports = await getAssemblyExports(config.mainAssemblyName);
 const assemblyExtension = Object.keys(config.resources.coreAssembly)[0].endsWith('.wasm') ? ".wasm" : ".dll";
@@ -261,6 +261,11 @@ try {
             }
             break;
         case "LibraryInitializerTest":
+            exit(0);
+            break;
+        case "InvokeLibraryInitializersTest":
+            await invokeLibraryInitializers("customHook", []);
+            testOutput(`customHookCalled=${globalThis.__customHookCalled === true}`);
             exit(0);
             break;
         case "ZipArchiveInteropTest":

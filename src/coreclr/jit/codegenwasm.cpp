@@ -9,6 +9,8 @@
 #include "codegen.h"
 #include "regallocwasm.h"
 #include "fgwasm.h"
+#include "gcinfo.h"
+#include "gcinfoencoder.h"
 
 static const int LINEAR_MEMORY_INDEX = 0;
 
@@ -101,6 +103,8 @@ void CodeGen::genMarkLabelsForCodegen()
 //
 void CodeGen::genBeginFnProlog()
 {
+    GetEmitter()->emitIns(INS_code_size);
+
     FuncInfoDsc* const func = m_compiler->funGetFunc(ROOT_FUNC_IDX);
     assert(func->funWasmLocalDecls != nullptr);
 
@@ -348,6 +352,8 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
 {
     assert(m_compiler->bbIsFuncletBeg(block));
     JITDUMP("*************** In genFuncletProlog()\n");
+
+    GetEmitter()->emitIns(INS_code_size);
 
     // Local sig for the funclet
     //
@@ -2302,8 +2308,9 @@ void CodeGen::genCodeForLclVar(GenTreeLclVar* tree)
     else
     {
         assert(genIsValidReg(varDsc->GetRegNum()));
-        unsigned wasmLclIndex = WasmRegToIndex(varDsc->GetRegNum());
-        GetEmitter()->emitIns_I(INS_local_get, emitTypeSize(tree), wasmLclIndex);
+        var_types type         = varDsc->GetRegisterType(tree);
+        unsigned  wasmLclIndex = WasmRegToIndex(varDsc->GetRegNum());
+        GetEmitter()->emitIns_I(INS_local_get, emitTypeSize(type), wasmLclIndex);
         // In this case, the resulting tree type may be different from the local var type where the value originates,
         // and so we need an explicit conversion since we can't "load"
         // the value with a different type like we can if the value is on the shadow stack.
@@ -2515,6 +2522,9 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
 
     params.wasmSignature = m_compiler->info.compCompHnd->getWasmTypeSymbol(typeStack.Data(), typeStack.Height());
 
+    // A non-null target expression always indicates an indirect call on Wasm,
+    // as currently the only possible result of the target expression would be a
+    // table index which must be used via call_indirect
     if (target != nullptr)
     {
         // Codegen should have already evaluated our target node (last) and pushed it onto the stack,
@@ -2526,52 +2536,28 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
     }
     else
     {
-        // If we have no target and this is a call with indirection cell then
-        // we do an optimization where we load the call address directly from
-        // the indirection cell instead of duplicating the tree. In BuildCall
-        // we ensure that get an extra register for the purpose. Note that for
-        // CFG the call might have changed to
-        // CORINFO_HELP_DISPATCH_INDIRECT_CALL in which case we still have the
-        // indirection cell but we should not try to optimize.
-        WellKnownArg indirectionCellArgKind = WellKnownArg::None;
-        if (!call->IsHelperCall(CORINFO_HELP_DISPATCH_INDIRECT_CALL))
-        {
-            indirectionCellArgKind = call->GetIndirectionCellArgKind();
-        }
+        // Generate a direct call to a non-virtual user defined or helper method
+        assert(call->IsHelperCall() || (call->gtCallType == CT_USER_FUNC));
 
-        if (indirectionCellArgKind != WellKnownArg::None)
-        {
-            assert(call->IsR2ROrVirtualStubRelativeIndir());
+        assert(call->gtEntryPoint.addr == NULL);
 
-            params.callType = EC_INDIR_R;
-            // params.ireg     = targetAddrReg;
-            genEmitCallWithCurrentGC(params);
+        if (call->IsHelperCall())
+        {
+            assert(!call->IsFastTailCall());
+            CorInfoHelpFunc helperNum = m_compiler->eeGetHelperNum(params.methHnd);
+            noway_assert(helperNum != CORINFO_HELP_UNDEF);
+            CORINFO_CONST_LOOKUP helperLookup = m_compiler->compGetHelperFtn(helperNum);
+            assert(helperLookup.accessType == IAT_VALUE);
+            params.addr = helperLookup.addr;
         }
         else
         {
-            // Generate a direct call to a non-virtual user defined or helper method
-            assert(call->IsHelperCall() || (call->gtCallType == CT_USER_FUNC));
-
-            assert(call->gtEntryPoint.addr == NULL);
-
-            if (call->IsHelperCall())
-            {
-                assert(!call->IsFastTailCall());
-                CorInfoHelpFunc helperNum = m_compiler->eeGetHelperNum(params.methHnd);
-                noway_assert(helperNum != CORINFO_HELP_UNDEF);
-                CORINFO_CONST_LOOKUP helperLookup = m_compiler->compGetHelperFtn(helperNum);
-                assert(helperLookup.accessType == IAT_VALUE);
-                params.addr = helperLookup.addr;
-            }
-            else
-            {
-                // Direct call to a non-virtual user function.
-                params.addr = call->gtDirectCallAddress;
-            }
-
-            params.callType = EC_FUNC_TOKEN;
-            genEmitCallWithCurrentGC(params);
+            // Direct call to a non-virtual user function.
+            params.addr = call->gtDirectCallAddress;
         }
+
+        params.callType = EC_FUNC_TOKEN;
+        genEmitCallWithCurrentGC(params);
     }
 }
 
@@ -2676,16 +2662,21 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
     if (helperIsManaged)
     {
         // Push PEP onto the stack because we are calling a managed helper that expects it as the last parameter.
+        // The helper function address is the address of an indirection cell, so we load from the cell to get the PEP
+        // address to push.
         assert(helperFunction.accessType == IAT_PVALUE);
         GetEmitter()->emitAddressConstant(helperFunction.addr);
+        GetEmitter()->emitIns_I(INS_I_load, EA_PTRSIZE, 0);
     }
 
     if (params.callType == EC_INDIR_R)
     {
-        // Push the call target onto the wasm evaluation stack by dereferencing the PEP.
+        // Push the call target onto the wasm evaluation stack by dereferencing the indirection cell
+        // and then the PEP pointed to by the indirection cell.
         assert(helperFunction.accessType == IAT_PVALUE);
         GetEmitter()->emitAddressConstant(helperFunction.addr);
-        GetEmitter()->emitIns_I(INS_i32_load, EA_PTRSIZE, 0);
+        GetEmitter()->emitIns_I(INS_I_load, EA_PTRSIZE, 0);
+        GetEmitter()->emitIns_I(INS_I_load, EA_PTRSIZE, 0);
     }
 
     genEmitCallWithCurrentGC(params);
@@ -3366,7 +3357,40 @@ void CodeGen::inst_JMP(emitJumpKind jmp, BasicBlock* tgtBlock)
 
 void CodeGen::genCreateAndStoreGCInfo(unsigned codeSize, unsigned prologSize, unsigned epilogSize DEBUGARG(void* code))
 {
-    // GCInfo not captured/created by codegen.
+    IAllocator*    allowZeroAlloc = new (m_compiler, CMK_GC) CompIAllocator(m_compiler->getAllocatorGC());
+    GcInfoEncoder* gcInfoEncoder  = new (m_compiler, CMK_GC)
+        GcInfoEncoder(m_compiler->info.compCompHnd, m_compiler->info.compMethodInfo, allowZeroAlloc, NOMEM);
+    assert(gcInfoEncoder != nullptr);
+
+    // Follow the code pattern of the x86 gc info encoder (genCreateAndStoreGCInfoJIT32).
+    gcInfo.gcInfoBlockHdrSave(gcInfoEncoder, codeSize, prologSize);
+
+    // We keep the call count for the second call to gcMakeRegPtrTable() below.
+    unsigned callCnt = 0;
+
+    // First we figure out the encoder ID's for the stack slots and registers.
+    gcInfo.gcMakeRegPtrTable(gcInfoEncoder, codeSize, prologSize, GCInfo::MAKE_REG_PTR_MODE_ASSIGN_SLOTS, &callCnt);
+
+    // Now we've requested all the slots we'll need; "finalize" these (make more compact data structures for them).
+    gcInfoEncoder->FinalizeSlotIds();
+
+    // Now we can actually use those slot ID's to declare live ranges.
+    gcInfo.gcMakeRegPtrTable(gcInfoEncoder, codeSize, prologSize, GCInfo::MAKE_REG_PTR_MODE_DO_WORK, &callCnt);
+
+    if (m_compiler->opts.IsReversePInvoke())
+    {
+        unsigned reversePInvokeFrameVarNumber = m_compiler->lvaReversePInvokeFrameVar;
+        assert(reversePInvokeFrameVarNumber != BAD_VAR_NUM);
+        const LclVarDsc* reversePInvokeFrameVar = m_compiler->lvaGetDesc(reversePInvokeFrameVarNumber);
+        gcInfoEncoder->SetReversePInvokeFrameSlot(reversePInvokeFrameVar->GetStackOffset());
+    }
+
+    gcInfoEncoder->Build();
+
+    // GC Encoder automatically puts the GC info in the right spot using ICorJitInfo::allocGCInfo(size_t)
+    // let's save the values anyway for debugging purposes
+    m_compiler->compInfoBlkAddr = gcInfoEncoder->Emit();
+    m_compiler->compInfoBlkSize = gcInfoEncoder->GetEncodedGCInfoSize();
 }
 
 //---------------------------------------------------------------------

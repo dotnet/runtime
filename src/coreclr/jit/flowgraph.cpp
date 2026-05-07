@@ -7,7 +7,8 @@
 #pragma hdrstop
 #endif
 
-#include "lower.h" // for LowerRange()
+#include "lower.h"            // for LowerRange()
+#include "jitstd/algorithm.h" // for sort()
 
 // Flowgraph Miscellany
 
@@ -3132,10 +3133,6 @@ PhaseStatus Compiler::fgCreateFunclets()
 {
     assert(!fgFuncletsCreated);
 
-    fgCreateFuncletPrologBlocks();
-
-    unsigned           XTnum;
-    EHblkDsc*          HBtab;
     const unsigned int funcCnt = ehFuncletCount() + 1;
 
     if (!FitsIn<unsigned short>(funcCnt))
@@ -3144,8 +3141,6 @@ PhaseStatus Compiler::fgCreateFunclets()
     }
 
     FuncInfoDsc* funcInfo = new (this, CMK_BasicBlock) FuncInfoDsc[funcCnt];
-
-    unsigned short funcIdx;
 
     // Setup the root FuncInfoDsc and prepare to start associating
     // FuncInfoDsc's with their corresponding EH region
@@ -3163,43 +3158,87 @@ PhaseStatus Compiler::fgCreateFunclets()
     }
 #endif
     assert(funcInfo[0].funKind == FUNC_ROOT);
-    funcIdx = 1;
 
-    // Because we iterate from the top to the bottom of the compHndBBtab array, we are iterating
-    // from most nested (innermost) to least nested (outermost) EH region. It would be reasonable
-    // to iterate in the opposite order, but the order of funclets shouldn't matter.
-    //
-    // We move every handler region to the end of the function: each handler will become a funclet.
-    //
-    // Note that fgRelocateEHRange() can add new entries to the EH table. However, they will always
-    // be added *after* the current index, so our iteration here is not invalidated.
-    // It *can* invalidate the compHndBBtab pointer itself, though, if it gets reallocated!
+    unsigned short* vmClauseOrderToEHTabOrder = nullptr;
+    unsigned short* ehTabOrderToVMClauseOrder = nullptr;
+    unsigned short  funcIdx                   = 1;
 
-    for (XTnum = 0; XTnum < compHndBBtabCount; XTnum++)
+    if (compHndBBtabCount > 0)
     {
-        HBtab = ehGetDsc(XTnum); // must re-compute this every loop, since fgRelocateEHRange changes the table
-        if (HBtab->HasFilter())
+        fgCreateFuncletPrologBlocks();
+
+        // We want to have the funclet order match the order of emission of EH clauses to the runtime.
+        // We cannot change the order of entries in the JIT's EH table, as there are many places
+        // in the JIT that depend on the current ordering.
+        //
+        // So, build mappings from vm order to EH table order and vice versa.
+        //
+        vmClauseOrderToEHTabOrder = new (this, CMK_BasicBlock) unsigned short[compHndBBtabCount];
+        ehTabOrderToVMClauseOrder = new (this, CMK_BasicBlock) unsigned short[compHndBBtabCount];
+
+        unsigned XTnum;
+
+        for (XTnum = 0; XTnum < compHndBBtabCount; XTnum++)
         {
-            assert(funcIdx < funcCnt);
-            funcInfo[funcIdx].funKind    = FUNC_FILTER;
-            funcInfo[funcIdx].funEHIndex = (unsigned short)XTnum;
-            funcIdx++;
+            vmClauseOrderToEHTabOrder[XTnum] = (unsigned short)XTnum;
         }
-        assert(funcIdx < funcCnt);
-        funcInfo[funcIdx].funKind    = FUNC_HANDLER;
-        funcInfo[funcIdx].funEHIndex = (unsigned short)XTnum;
-        HBtab->ebdFuncIndex          = funcIdx;
-        funcIdx++;
-        fgRelocateEHRange(XTnum, FG_RELOCATE_HANDLER);
+
+        // The JIT's ordering of EH clauses does not guarantee that clauses covering the same try region are contiguous.
+        // We need this property to hold true so the CORINFO_EH_CLAUSE_SAMETRY flag is accurate.
+        //
+        jitstd::sort(vmClauseOrderToEHTabOrder, vmClauseOrderToEHTabOrder + compHndBBtabCount,
+                     [this](const unsigned short& leftIndex, const unsigned short& rightIndex) {
+            const unsigned short leftTryIndex  = ehGetDsc(leftIndex)->ebdTryBeg->bbTryIndex;
+            const unsigned short rightTryIndex = ehGetDsc(rightIndex)->ebdTryBeg->bbTryIndex;
+
+            if (leftTryIndex == rightTryIndex)
+            {
+                // We have two clauses mapped to the same try region.
+                // Make sure we order the clause with the smaller index first.
+                return leftIndex < rightIndex;
+            }
+
+            return leftTryIndex < rightTryIndex;
+        });
+
+        // We move every handler region to the end of the function: each handler will become a funclet.
+        //
+        for (unsigned orderNum = 0; orderNum < compHndBBtabCount; orderNum++)
+        {
+            XTnum                 = vmClauseOrderToEHTabOrder[orderNum];
+            EHblkDsc* const HBtab = ehGetDsc(XTnum);
+            if (HBtab->HasFilter())
+            {
+                assert(funcIdx < funcCnt);
+                funcInfo[funcIdx].funKind    = FUNC_FILTER;
+                funcInfo[funcIdx].funEHIndex = (unsigned short)XTnum;
+                funcIdx++;
+            }
+            assert(funcIdx < funcCnt);
+            funcInfo[funcIdx].funKind    = FUNC_HANDLER;
+            funcInfo[funcIdx].funEHIndex = (unsigned short)XTnum;
+            HBtab->ebdFuncIndex          = funcIdx;
+            funcIdx++;
+            fgRelocateEHRange(XTnum, FG_RELOCATE_HANDLER);
+        }
+
+        // Fill in the inverse mapping.
+        //
+        for (unsigned i = 0; i < compHndBBtabCount; i++)
+        {
+            ehTabOrderToVMClauseOrder[vmClauseOrderToEHTabOrder[i]] = (unsigned short)i;
+        }
     }
 
     // We better have populated all of them by now
     assert(funcIdx == funcCnt);
 
     // Publish
-    compCurrFuncIdx   = 0;
-    compFuncInfos     = funcInfo;
-    compFuncInfoCount = (unsigned short)funcCnt;
+    compCurrFuncIdx               = 0;
+    compFuncInfos                 = funcInfo;
+    compFuncInfoCount             = (unsigned short)funcCnt;
+    compVMClauseOrderToEHTabOrder = vmClauseOrderToEHTabOrder;
+    compEHTabOrderToVMClauseOrder = ehTabOrderToVMClauseOrder;
 
     fgFuncletsCreated = true;
 
