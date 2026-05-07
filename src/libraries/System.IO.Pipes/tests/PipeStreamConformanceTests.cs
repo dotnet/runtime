@@ -508,8 +508,8 @@ namespace System.IO.Pipes.Tests
             (Stream writeable, Stream readable) = GetReadWritePair(streams);
 
             // Write more than the pipe buffer size to ensure the write blocks.
-            int pipeBufferSize = (writeable as PipeStream)?.OutBufferSize ?? (readable as PipeStream)?.InBufferSize ?? 1;
-            Task writeTask = writeable.WriteAsync(new byte[pipeBufferSize * 2], 0, pipeBufferSize * 2);
+            int writeSize = Math.Max(((writeable as PipeStream)?.OutBufferSize ?? (readable as PipeStream)?.InBufferSize ?? 1) * 2, 4);
+            Task writeTask = writeable.WriteAsync(new byte[writeSize], 0, writeSize);
             readable.Dispose();
             await Assert.ThrowsAsync<IOException>(() => writeTask);
         }
@@ -540,7 +540,7 @@ namespace System.IO.Pipes.Tests
             {
                 var ctx1 = new CancellationTokenSource();
                 // Write more than the pipe buffer size to ensure the write blocks and is cancellable.
-                var writeBuffer = new byte[server.OutBufferSize * 2];
+                var writeBuffer = new byte[Math.Max(server.OutBufferSize * 2, 4)];
                 Task serverWriteToken = server.WriteAsync(writeBuffer, 0, writeBuffer.Length, ctx1.Token);
                 ctx1.Cancel();
                 await Assert.ThrowsAnyAsync<OperationCanceledException>(() => serverWriteToken);
@@ -642,7 +642,7 @@ namespace System.IO.Pipes.Tests
             {
                 var ctx1 = new CancellationTokenSource();
                 // Write more than the pipe buffer size to ensure the write blocks and is cancellable.
-                var writeBuffer = new byte[client.OutBufferSize * 2];
+                var writeBuffer = new byte[Math.Max(client.OutBufferSize * 2, 4)];
                 Task serverWriteToken = client.WriteAsync(writeBuffer, 0, writeBuffer.Length, ctx1.Token);
                 ctx1.Cancel();
                 await Assert.ThrowsAnyAsync<OperationCanceledException>(() => serverWriteToken);
