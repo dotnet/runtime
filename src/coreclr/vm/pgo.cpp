@@ -7,7 +7,7 @@
 #include "versionresilienthashcode.h"
 #include "typestring.h"
 #include "pgo_formatprocessing.h"
-#include <dn-stdio.h>
+#include "dn-stdio.h"
 
 #ifdef FEATURE_PGO
 

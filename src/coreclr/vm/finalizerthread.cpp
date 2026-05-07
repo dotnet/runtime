@@ -10,7 +10,7 @@
 #include "genanalysis.h"
 #include "eventpipeadapter.h"
 #include "ebr.h"
-#include <dn-stdio.h>
+#include "dn-stdio.h"
 
 #ifdef FEATURE_COMINTEROP
 #include "runtimecallablewrapper.h"
