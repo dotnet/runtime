@@ -106,55 +106,13 @@ namespace System.Numerics.Tensors
             public static T Invoke(T x, T y) => T.Max(x, y);
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static Vector128<T> Invoke(Vector128<T> x, Vector128<T> y)
-            {
-#if !NET
-                if ((typeof(T) == typeof(float)) || (typeof(T) == typeof(double)))
-                {
-                    return Vector128.ConditionalSelect(
-                        Vector128.LessThan(y, x) | IsNaN(x) | (Vector128.Equals(x, y) & IsNegative(y)),
-                        x,
-                        y
-                    );
-                }
-#endif
-
-                return Vector128.Max(x, y);
-            }
+            public static Vector128<T> Invoke(Vector128<T> x, Vector128<T> y) => Vector128.Max(x, y);
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static Vector256<T> Invoke(Vector256<T> x, Vector256<T> y)
-            {
-#if !NET
-                if ((typeof(T) == typeof(float)) || (typeof(T) == typeof(double)))
-                {
-                    return Vector256.ConditionalSelect(
-                        Vector256.LessThan(y, x) | IsNaN(x) | (Vector256.Equals(x, y) & IsNegative(y)),
-                        x,
-                        y
-                    );
-                }
-#endif
-
-                return Vector256.Max(x, y);
-            }
+            public static Vector256<T> Invoke(Vector256<T> x, Vector256<T> y) => Vector256.Max(x, y);
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static Vector512<T> Invoke(Vector512<T> x, Vector512<T> y)
-            {
-#if !NET
-                if ((typeof(T) == typeof(float)) || (typeof(T) == typeof(double)))
-                {
-                    return Vector512.ConditionalSelect(
-                        Vector512.LessThan(y, x) | IsNaN(x) | (Vector512.Equals(x, y) & IsNegative(y)),
-                        x,
-                        y
-                    );
-                }
-#endif
-
-                return Vector512.Max(x, y);
-            }
+            public static Vector512<T> Invoke(Vector512<T> x, Vector512<T> y) => Vector512.Max(x, y);
 
             public static T Invoke(Vector128<T> x) => HorizontalAggregate<T, MaxOperator<T>>(x);
             public static T Invoke(Vector256<T> x) => HorizontalAggregate<T, MaxOperator<T>>(x);
