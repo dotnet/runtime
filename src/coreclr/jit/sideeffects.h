@@ -129,7 +129,7 @@ public:
 
             if ((m_flags & ALIAS_WRITES_LCL_VAR) != 0)
             {
-                // Stores to that may have uses in handlers cannot be reordered with
+                // Stores to locals live into handlers cannot be reordered with
                 // exception-throwing nodes so we conservatively consider them
                 // globally visible.
 
