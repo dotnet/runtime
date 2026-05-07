@@ -327,14 +327,14 @@ inline DWORD MethodTable::GetRank()
 inline bool MethodTable::IsTruePrimitive()
 {
     LIMITED_METHOD_DAC_CONTRACT;
-    return GetFlag(enum_flag_Category_Mask) == enum_flag_Category_Primitive;
+    return GetFlag(enum_flag_Category_Mask) == enum_flag_Category_TruePrimitive;
 }
 
 //==========================================================================================
 inline bool MethodTable::IsPrimitive()
 {
     LIMITED_METHOD_DAC_CONTRACT;
-    return GetFlag(enum_flag_Category_ElementTypeMask) == enum_flag_Category_Primitive;
+    return GetFlag(enum_flag_Category_ElementTypeMask) == enum_flag_Category_TruePrimitive;
 }
 
 //==========================================================================================

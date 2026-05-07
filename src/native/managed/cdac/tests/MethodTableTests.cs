@@ -547,7 +547,7 @@ public class MethodTableTests
 
                 MockEEClass enumEEClass = rtsBuilder.AddEEClass("EnumEEClass");
                 MockMethodTable enumMT = rtsBuilder.AddMethodTable("Enum");
-                enumMT.MTFlags = (uint)MethodTableFlags_1.WFLAGS_HIGH.Category_Enum;
+                enumMT.MTFlags = (uint)MethodTableFlags_1.WFLAGS_HIGH.Category_PrimitiveValueType;
                 enumMT.BaseSize = rtsBuilder.Builder.TargetTestHelpers.ObjectBaseSize;
                 enumMT.ParentMethodTable = systemObjectMethodTablePtr;
                 enumMT.NumVirtuals = 3;
@@ -557,7 +557,7 @@ public class MethodTableTests
 
                 MockEEClass tpEEClass = rtsBuilder.AddEEClass("TruePrimitiveEEClass");
                 MockMethodTable tpMT = rtsBuilder.AddMethodTable("TruePrimitive");
-                tpMT.MTFlags = (uint)MethodTableFlags_1.WFLAGS_HIGH.Category_Primitive;
+                tpMT.MTFlags = (uint)MethodTableFlags_1.WFLAGS_HIGH.Category_TruePrimitive;
                 tpMT.BaseSize = rtsBuilder.Builder.TargetTestHelpers.ObjectBaseSize;
                 tpMT.ParentMethodTable = systemObjectMethodTablePtr;
                 tpMT.NumVirtuals = 3;
