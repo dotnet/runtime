@@ -848,7 +848,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
                     return CorElementType.SzArray;
                 case MethodTableFlags_1.WFLAGS_HIGH.Category_ValueType:
                 case MethodTableFlags_1.WFLAGS_HIGH.Category_Nullable:
-                case MethodTableFlags_1.WFLAGS_HIGH.Category_PrimitiveValueType:
+                case MethodTableFlags_1.WFLAGS_HIGH.Category_Enum:
                     return CorElementType.ValueType;
                 case MethodTableFlags_1.WFLAGS_HIGH.Category_TruePrimitive:
                     return (CorElementType)GetClassData(typeHandle).InternalCorElementType;
@@ -883,9 +883,9 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
 
     public bool IsEnum(TypeHandle typeHandle)
     {
-        // Enums have Category_PrimitiveValueType in their MethodTable flags and their
+        // Enums have Category_Enum in their MethodTable flags and their
         // InternalCorElementType is a primitive type (I1, U1, I2, U2, I4, U4, I8, U8),
-        // not ValueType. Regular primitive value types (IntPtr/UIntPtr) have Category_TruePrimitive.
+        // not ValueType. IntPtr/UIntPtr continue to use Category_TruePrimitive.
         if (!typeHandle.IsMethodTable())
             return false;
 
