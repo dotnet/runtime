@@ -200,7 +200,6 @@ public:
     // This helper:
     // - Will return enums underlying type
     // - Will return underlying primitive for System.Int32 etc...
-    // - Will return the primitive used by the calling convention
     //
     // This will NOT convert E_T_ARRAY, E_T_SZARRAY etc. to E_T_CLASS (though it probably
     // should).  Use CorTypeInfo::IsObjRef for that.
