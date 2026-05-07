@@ -68,7 +68,7 @@ class IssueGenerator:
                 f"({issue_url}) — {fail['github_issue_state']}"
             )
             gh_issue_command.append('comment')
-            gh_issue_command.append(f'{issue_url}')
+            gh_issue_command.append(issue_url)
         else:
             print("GitHub Issue: NEW — creating new issue")
             gh_issue_command.append("create")
@@ -78,7 +78,7 @@ class IssueGenerator:
             if creating_new_issue:
                 for label in fail["labels"].split(','):
                     gh_issue_command.append('--label')
-                    gh_issue_command.append(f'{label.strip()}')
+                    gh_issue_command.append(label.strip())
 
         # Title / Labels / Milestone for issue filing
         test_name = fail["test_name"]
@@ -86,7 +86,7 @@ class IssueGenerator:
             gh_issue_command.append('--title')
             gh_issue_command.append(f'Test Failure: {test_name}')
             gh_issue_command.append('--milestone')
-            gh_issue_command.append(f'{fail['milestone']}')
+            gh_issue_command.append(fail['milestone'])
 
         # --- Body block ---
         # Summary
@@ -191,7 +191,7 @@ class IssueGenerator:
         temp_file.flush()
         temp_file.close()
         gh_issue_command.append("--body-file")
-        gh_issue_command.append(f'{body_path}')
+        gh_issue_command.append(body_path)
 
         print(gh_issue_command)
         if (go):
