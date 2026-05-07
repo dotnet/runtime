@@ -4065,12 +4065,6 @@ CorInfoType CEEInfo::getTypeForPrimitiveValueClass(
     {
         result = asCorInfoType(elementType);
     }
-    else if (!th.IsTypeDesc() && th.AsMethodTable()->IsValueType() && !th.AsMethodTable()->IsTruePrimitive())
-    {
-        // For non-primitive value types (e.g., runtime handle types), return CORINFO_TYPE_VALUECLASS
-        // so the JIT correctly types them as TYP_STRUCT instead of falling back to TYP_I_IMPL
-        result = CORINFO_TYPE_VALUECLASS;
-    }
     EE_TO_JIT_TRANSITION();
 
     return result;
