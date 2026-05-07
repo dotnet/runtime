@@ -1,0 +1,18 @@
+parameters:
+  archType: 'x64'
+  osGroup: 'linux'
+  buildConfig: ''
+  runtimeFlavor: ''
+  runtimeVariant: ''
+  helixQueues: ''
+  targetRid: ''
+  nameSuffix: ''
+  platform: ''
+  shouldContinueOnError: false
+  osSubgroup: ''
+
+steps:
+  - ${{ if and(eq(parameters.osGroup, 'linux'), eq(parameters.osSubgroup, ''), eq(parameters.archType, 'x64')) }}:
+    - script: sccache --show-stats || true
+      displayName: Sccache stats
+      condition: always()
