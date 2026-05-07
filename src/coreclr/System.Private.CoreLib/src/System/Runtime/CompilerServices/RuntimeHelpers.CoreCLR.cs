@@ -957,9 +957,7 @@ namespace System.Runtime.CompilerServices
         // Warning! UNLIKE the similarly named Reflection api, this method also returns "true" for Enums.
         public bool IsPrimitive => (Flags & enum_flag_Category_IsPrimitiveMask) == enum_flag_Category_Primitive;
 
-        public bool IsTruePrimitive =>
-            (Flags & enum_flag_Category_IsPrimitiveMask) == enum_flag_Category_Primitive &&
-            (Flags & enum_flag_Category_Mask) != enum_flag_Category_Enum;
+        public bool IsTruePrimitive => (Flags & enum_flag_Category_Mask) == enum_flag_Category_Primitive;
 
         public bool IsArray => (Flags & enum_flag_Category_Array_Mask) == enum_flag_Category_Array;
 
