@@ -16242,7 +16242,8 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             }
             break;
 
-        case IF_PC_0A: // autia1716, autiasp, autib1716, autibsp, autiaz, pacia1716, paciasp, pacib1716, pacibsp, pacibz, paciaz, xpaclri
+        case IF_PC_0A: // autia1716, autiasp, autib1716, autibsp, autiaz, pacia1716, paciasp, pacib1716, pacibsp,
+                       // pacibz, paciaz, xpaclri
         case IF_PC_1A: // autiza, paciza, xpacd, xpaci
         case IF_PC_2A: // autia, pacia
             switch (ins)
