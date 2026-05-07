@@ -1081,7 +1081,7 @@ Load_Ref A7, a7
 // a3 - stack arguments size (properly aligned)
 // a4 - address of continuation return value
 NESTED_ENTRY CallJittedMethodRetVoid, _TEXT, NoHandler
-    PROLOG_SAVE_REG_PAIR_INDEXED fp, ra, -32
+    PROLOG_SAVE_REG_PAIR_INDEXED fp, ra, 32
     sd a4, 16(fp)
     sub sp, sp, a3
     mv t2, a0
@@ -1102,7 +1102,7 @@ NESTED_END CallJittedMethodRetVoid, _TEXT
 // a3 - stack arguments size (properly aligned)
 // a4 - address of continuation return value
 NESTED_ENTRY CallJittedMethodRetBuff, _TEXT, NoHandler
-    PROLOG_SAVE_REG_PAIR_INDEXED fp, ra, -32
+    PROLOG_SAVE_REG_PAIR_INDEXED fp, ra, 32
     sd a4, 16(fp)
     sub sp, sp, a3
     mv t2, a0
@@ -1124,7 +1124,7 @@ NESTED_END CallJittedMethodRetBuff, _TEXT
 // a3 - stack arguments size (properly aligned)
 // a4 - address of continuation return value
 NESTED_ENTRY CallJittedMethodRetI1, _TEXT, NoHandler
-    PROLOG_SAVE_REG_PAIR_INDEXED fp, ra, -32
+    PROLOG_SAVE_REG_PAIR_INDEXED fp, ra, 32
     sd a2, 16(fp)
     sd a4, 24(fp)
     sub sp, sp, a3
@@ -1150,7 +1150,7 @@ NESTED_END CallJittedMethodRetI1, _TEXT
 // a3 - stack arguments size (properly aligned)
 // a4 - address of continuation return value
 NESTED_ENTRY CallJittedMethodRetI2, _TEXT, NoHandler
-    PROLOG_SAVE_REG_PAIR_INDEXED fp, ra, -32
+    PROLOG_SAVE_REG_PAIR_INDEXED fp, ra, 32
     sd a2, 16(fp)
     sd a4, 24(fp)
     sub sp, sp, a3
@@ -1176,7 +1176,7 @@ NESTED_END CallJittedMethodRetI2, _TEXT
 // a3 - stack arguments size (properly aligned)
 // a4 - address of continuation return value
 NESTED_ENTRY CallJittedMethodRetU1, _TEXT, NoHandler
-    PROLOG_SAVE_REG_PAIR_INDEXED fp, ra, -32
+    PROLOG_SAVE_REG_PAIR_INDEXED fp, ra, 32
     sd a2, 16(fp)
     sd a4, 24(fp)
     sub sp, sp, a3
@@ -1202,7 +1202,7 @@ NESTED_END CallJittedMethodRetU1, _TEXT
 // a3 - stack arguments size (properly aligned)
 // a4 - address of continuation return value
 NESTED_ENTRY CallJittedMethodRetU2, _TEXT, NoHandler
-    PROLOG_SAVE_REG_PAIR_INDEXED fp, ra, -32
+    PROLOG_SAVE_REG_PAIR_INDEXED fp, ra, 32
     sd a2, 16(fp)
     sd a4, 24(fp)
     sub sp, sp, a3
@@ -1228,7 +1228,7 @@ NESTED_END CallJittedMethodRetU2, _TEXT
 // a3 - stack arguments size (properly aligned)
 // a4 - address of continuation return value
 NESTED_ENTRY CallJittedMethodRetI8, _TEXT, NoHandler
-    PROLOG_SAVE_REG_PAIR_INDEXED fp, ra, -32
+    PROLOG_SAVE_REG_PAIR_INDEXED fp, ra, 32
     sd a2, 16(fp)
     sd a4, 24(fp)
     sub sp, sp, a3
@@ -1252,7 +1252,7 @@ NESTED_END CallJittedMethodRetI8, _TEXT
 // a3 - stack arguments size (properly aligned)
 // a4 - address of continuation return value
 NESTED_ENTRY CallJittedMethodRetDouble, _TEXT, NoHandler
-    PROLOG_SAVE_REG_PAIR_INDEXED fp, ra, -32
+    PROLOG_SAVE_REG_PAIR_INDEXED fp, ra, 32
     sd a2, 16(fp)
     sd a4, 24(fp)
     sub sp, sp, a3
@@ -1276,7 +1276,7 @@ NESTED_END CallJittedMethodRetDouble, _TEXT
 // a3 - stack arguments size (properly aligned)
 // a4 - address of continuation return value
 NESTED_ENTRY CallJittedMethodRetFloat, _TEXT, NoHandler
-    PROLOG_SAVE_REG_PAIR_INDEXED fp, ra, -32
+    PROLOG_SAVE_REG_PAIR_INDEXED fp, ra, 32
     sd a2, 16(fp)
     sd a4, 24(fp)
     sub sp, sp, a3
@@ -1300,7 +1300,7 @@ NESTED_END CallJittedMethodRetFloat, _TEXT
 // a3 - stack arguments size (properly aligned)
 // a4 - address of continuation return value
 NESTED_ENTRY CallJittedMethodRet2I8, _TEXT, NoHandler
-    PROLOG_SAVE_REG_PAIR_INDEXED fp, ra, -32
+    PROLOG_SAVE_REG_PAIR_INDEXED fp, ra, 32
     sd a2, 16(fp)
     sd a4, 24(fp)
     sub sp, sp, a3
@@ -1325,7 +1325,7 @@ NESTED_END CallJittedMethodRet2I8, _TEXT
 // a3 - stack arguments size (properly aligned)
 // a4 - address of continuation return value
 NESTED_ENTRY CallJittedMethodRet2Double, _TEXT, NoHandler
-    PROLOG_SAVE_REG_PAIR_INDEXED fp, ra, -32
+    PROLOG_SAVE_REG_PAIR_INDEXED fp, ra, 32
     sd a2, 16(fp)
     sd a4, 24(fp)
     sub sp, sp, a3
@@ -1350,7 +1350,7 @@ NESTED_END CallJittedMethodRet2Double, _TEXT
 // a3 - stack arguments size (properly aligned)
 // a4 - address of continuation return value
 NESTED_ENTRY CallJittedMethodRet2Float, _TEXT, NoHandler
-    PROLOG_SAVE_REG_PAIR_INDEXED fp, ra, -32
+    PROLOG_SAVE_REG_PAIR_INDEXED fp, ra, 32
     sd a2, 16(fp)
     sd a4, 24(fp)
     sub sp, sp, a3
@@ -1375,7 +1375,7 @@ NESTED_END CallJittedMethodRet2Float, _TEXT
 // a3 - stack arguments size (properly aligned)
 // a4 - address of continuation return value
 NESTED_ENTRY CallJittedMethodRetFloatInt, _TEXT, NoHandler
-    PROLOG_SAVE_REG_PAIR_INDEXED fp, ra, -32
+    PROLOG_SAVE_REG_PAIR_INDEXED fp, ra, 32
     sd a2, 16(fp)
     sd a4, 24(fp)
     sub sp, sp, a3
@@ -1400,7 +1400,7 @@ NESTED_END CallJittedMethodRetFloatInt, _TEXT
 // a3 - stack arguments size (properly aligned)
 // a4 - address of continuation return value
 NESTED_ENTRY CallJittedMethodRetIntFloat, _TEXT, NoHandler
-    PROLOG_SAVE_REG_PAIR_INDEXED fp, ra, -32
+    PROLOG_SAVE_REG_PAIR_INDEXED fp, ra, 32
     sd a2, 16(fp)
     sd a4, 24(fp)
     sub sp, sp, a3
@@ -1424,7 +1424,7 @@ NESTED_ENTRY InterpreterStub, _TEXT, NoHandler
     PROLOG_WITH_TRANSITION_BLOCK pushCalleeSavedFloatRegs=1
 
     // IR bytecode address
-    mv t6, METHODDESC_REGISTER
+    mv s1, METHODDESC_REGISTER
 
     INLINE_GETTHREAD t5 // thrashes a0
     beqz t5, LOCAL_LABEL(NoManagedThreadOrCallStub)
@@ -1436,7 +1436,7 @@ NESTED_ENTRY InterpreterStub, _TEXT, NoHandler
 
 LOCAL_LABEL(NoManagedThreadOrCallStub):
     addi a0, sp, __PWTB_TransitionBlock
-    mv a1, t6
+    mv a1, s1
     call C_FUNC(GetInterpThreadContextWithPossiblyMissingThreadOrCallStub)
     mv t4, a0
 
@@ -1445,12 +1445,12 @@ LOCAL_LABEL(HaveInterpThreadContext):
     RESTORE_ARGUMENT_REGISTERS sp, __PWTB_ArgumentRegisters
     RESTORE_FLOAT_ARGUMENT_REGISTERS sp, __PWTB_FloatArgumentRegisters
 
-    ld t3, 0(t6) // InterpMethod*
+    ld t3, 0(s1) // InterpMethod*
     ld t3, OFFSETOF__InterpMethod__pCallStub(t3)
     beqz t3, LOCAL_LABEL(NoManagedThreadOrCallStub)
     addi t2, t3, OFFSETOF__CallStubHeader__Routines
     ld t3, OFFSETOF__InterpThreadContext__pStackPointer(t4)
-    // t6 contains IR bytecode address
+    // s1 contains IR bytecode address
     // Copy the arguments to the interpreter stack, invoke the InterpExecMethod and load the return value
     ld t4, 0(t2)
     addi t2, t2, 8
@@ -1463,10 +1463,10 @@ LOCAL_LABEL(HaveInterpThreadContext):
 NESTED_END InterpreterStub, _TEXT
 
 NESTED_ENTRY InterpreterStubRetVoid, _TEXT, NoHandler
-    PROLOG_SAVE_REG_PAIR_INDEXED   fp, ra, -16
+    PROLOG_SAVE_REG_PAIR_INDEXED   fp, ra, 16
     // The +16 is for the fp, ra above
     addi a0, sp, __PWTB_TransitionBlock + 16
-    mv a1, t6 // the IR bytecode pointer
+    mv a1, s1 // the IR bytecode pointer
     mv a2, zero
     call C_FUNC(ExecuteInterpretedMethod)
     EPILOG_RESTORE_REG_PAIR_INDEXED   fp, ra,   16
@@ -1474,10 +1474,10 @@ NESTED_ENTRY InterpreterStubRetVoid, _TEXT, NoHandler
 NESTED_END InterpreterStubRetVoid, _TEXT
 
 NESTED_ENTRY InterpreterStubRetI8, _TEXT, NoHandler
-    PROLOG_SAVE_REG_PAIR_INDEXED   fp, ra, -16
+    PROLOG_SAVE_REG_PAIR_INDEXED   fp, ra, 16
     // The +16 is for the fp, ra above
     addi a0, sp, __PWTB_TransitionBlock + 16
-    mv a1, t6 // the IR bytecode pointer
+    mv a1, s1 // the IR bytecode pointer
     mv a2, zero
     call C_FUNC(ExecuteInterpretedMethod)
     ld a0, 0(a0)
@@ -1486,10 +1486,10 @@ NESTED_ENTRY InterpreterStubRetI8, _TEXT, NoHandler
 NESTED_END InterpreterStubRetI8, _TEXT
 
 NESTED_ENTRY InterpreterStubRetDouble, _TEXT, NoHandler
-    PROLOG_SAVE_REG_PAIR_INDEXED   fp, ra, -16
+    PROLOG_SAVE_REG_PAIR_INDEXED   fp, ra, 16
     // The +16 is for the fp, ra above
     addi a0, sp, __PWTB_TransitionBlock + 16
-    mv a1, t6 // the IR bytecode pointer
+    mv a1, s1 // the IR bytecode pointer
     mv a2, zero
     call C_FUNC(ExecuteInterpretedMethod)
     fld fa0, 0(a0)
@@ -1498,21 +1498,21 @@ NESTED_ENTRY InterpreterStubRetDouble, _TEXT, NoHandler
 NESTED_END InterpreterStubRetDouble, _TEXT
 
 NESTED_ENTRY InterpreterStubRetBuff, _TEXT, NoHandler
-    PROLOG_SAVE_REG_PAIR_INDEXED   fp, ra, -16
+    PROLOG_SAVE_REG_PAIR_INDEXED   fp, ra, 16
     // The +16 is for the fp, ra above
     mv   a2, a0        // save caller's return buffer in a2
     addi a0, sp, __PWTB_TransitionBlock + 16
-    mv   a1, t6        // the IR bytecode pointer (x19)
+    mv   a1, s1        // the IR bytecode pointer
     call C_FUNC(ExecuteInterpretedMethod)
     EPILOG_RESTORE_REG_PAIR_INDEXED   fp, ra, 16
     EPILOG_RETURN
 NESTED_END InterpreterStubRetBuff, _TEXT
 
 NESTED_ENTRY InterpreterStubRet2I8, _TEXT, NoHandler
-    PROLOG_SAVE_REG_PAIR_INDEXED   fp, ra, -16
+    PROLOG_SAVE_REG_PAIR_INDEXED   fp, ra, 16
     // The +16 is for the fp, ra above
     addi a0, sp, __PWTB_TransitionBlock + 16
-    mv a1, t6 // the IR bytecode pointer
+    mv a1, s1 // the IR bytecode pointer
     mv a2, zero
     call C_FUNC(ExecuteInterpretedMethod)
     ld a1, 8(a0)
@@ -1522,10 +1522,10 @@ NESTED_ENTRY InterpreterStubRet2I8, _TEXT, NoHandler
 NESTED_END InterpreterStubRet2I8, _TEXT
 
 NESTED_ENTRY InterpreterStubRet2Double, _TEXT, NoHandler
-    PROLOG_SAVE_REG_PAIR_INDEXED   fp, ra, -16
+    PROLOG_SAVE_REG_PAIR_INDEXED   fp, ra, 16
     // The +16 is for the fp, ra above
     addi a0, sp, __PWTB_TransitionBlock + 16
-    mv a1, t6 // the IR bytecode pointer
+    mv a1, s1 // the IR bytecode pointer
     mv a2, zero
     call C_FUNC(ExecuteInterpretedMethod)
     fld fa0, 0(a0)
@@ -1535,10 +1535,10 @@ NESTED_ENTRY InterpreterStubRet2Double, _TEXT, NoHandler
 NESTED_END InterpreterStubRet2Double, _TEXT
 
 NESTED_ENTRY InterpreterStubRetFloat, _TEXT, NoHandler
-    PROLOG_SAVE_REG_PAIR_INDEXED   fp, ra, -16
+    PROLOG_SAVE_REG_PAIR_INDEXED   fp, ra, 16
     // The +16 is for the fp, ra above
     addi a0, sp, __PWTB_TransitionBlock + 16
-    mv a1, t6 // the IR bytecode pointer
+    mv a1, s1 // the IR bytecode pointer
     mv a2, zero
     call C_FUNC(ExecuteInterpretedMethod)
     flw fa0, 0(a0)
@@ -1547,10 +1547,10 @@ NESTED_ENTRY InterpreterStubRetFloat, _TEXT, NoHandler
 NESTED_END InterpreterStubRetFloat, _TEXT
 
 NESTED_ENTRY InterpreterStubRet2Float, _TEXT, NoHandler
-    PROLOG_SAVE_REG_PAIR_INDEXED   fp, ra, -16
+    PROLOG_SAVE_REG_PAIR_INDEXED   fp, ra, 16
     // The +16 is for the fp, ra above
     addi a0, sp, __PWTB_TransitionBlock + 16
-    mv a1, t6 // the IR bytecode pointer
+    mv a1, s1 // the IR bytecode pointer
     mv a2, zero
     call C_FUNC(ExecuteInterpretedMethod)
     flw fa0, 0(a0)
@@ -1560,10 +1560,10 @@ NESTED_ENTRY InterpreterStubRet2Float, _TEXT, NoHandler
 NESTED_END InterpreterStubRet2Float, _TEXT
 
 NESTED_ENTRY InterpreterStubRetFloatInt, _TEXT, NoHandler
-    PROLOG_SAVE_REG_PAIR_INDEXED   fp, ra, -16
+    PROLOG_SAVE_REG_PAIR_INDEXED   fp, ra, 16
     // The +16 is for the fp, ra above
     addi a0, sp, __PWTB_TransitionBlock + 16
-    mv a1, t6 // the IR bytecode pointer
+    mv a1, s1 // the IR bytecode pointer
     mv a2, zero
     call C_FUNC(ExecuteInterpretedMethod)
     fld fa0, 0(a0)
@@ -1573,10 +1573,10 @@ NESTED_ENTRY InterpreterStubRetFloatInt, _TEXT, NoHandler
 NESTED_END InterpreterStubRetFloatInt, _TEXT
 
 NESTED_ENTRY InterpreterStubRetIntFloat, _TEXT, NoHandler
-    PROLOG_SAVE_REG_PAIR_INDEXED   fp, ra, -16
+    PROLOG_SAVE_REG_PAIR_INDEXED   fp, ra, 16
     // The +16 is for the fp, ra above
     addi a0, sp, __PWTB_TransitionBlock + 16
-    mv a1, t6 // the IR bytecode pointer
+    mv a1, s1 // the IR bytecode pointer
     mv a2, zero
     call C_FUNC(ExecuteInterpretedMethod)
     ld a1, 0(a0)
