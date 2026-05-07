@@ -68,6 +68,14 @@ EXTERN_C CODE_LOCATION RhpRethrow2;
 extern "C" void* PacStripPtr(void* ptr);
 #endif // TARGET_ARM64
 
+static TADDR ReturnAddressToCanonicalPC(TADDR returnAddress)
+{
+#if defined(TARGET_ARM64)
+    return (TADDR)PacStripPtr((void*)returnAddress);
+#endif // TARGET_ARM64
+    return returnAddress;
+}
+
 StackFrameIterator::StackFrameIterator(Thread * pThreadToWalk, PInvokeTransitionFrame* pInitialTransitionFrame)
 {
     STRESS_LOG0(LF_STACKWALK, LL_INFO10000, "----Init---- [ GC ]\n");
@@ -167,7 +175,7 @@ void StackFrameIterator::InternalInit(Thread * pThreadToWalk, PInvokeTransitionF
 
 #if !defined(FEATURE_PORTABLE_HELPERS) // @TODO: no portable version of regdisplay
     memset(&m_RegDisplay, 0, sizeof(m_RegDisplay));
-    m_RegDisplay.SetIP((PCODE)PCODEToPINSTR((PCODE)pFrame->m_RIP));
+    m_RegDisplay.SetIP(ReturnAddressToCanonicalPC(dac_cast<TADDR>(pFrame->m_RIP)));
     SetControlPC(dac_cast<PTR_VOID>(m_RegDisplay.GetIP()));
 
     PTR_uintptr_t pPreservedRegsCursor = (PTR_uintptr_t)PTR_HOST_MEMBER_TADDR(PInvokeTransitionFrame, pFrame, m_PreservedRegs);
@@ -410,14 +418,15 @@ void StackFrameIterator::InternalInit(Thread * pThreadToWalk, PTR_PAL_LIMITED_CO
 
     // This codepath is used by the hijack stackwalk and we can get arbitrary ControlPCs from there.  If this
     // context has a non-managed control PC, then we're done.
-    if (!m_pInstance->IsManaged(dac_cast<PTR_VOID>(pCtx->GetIp())))
+    TADDR controlPC = ReturnAddressToCanonicalPC(pCtx->GetIp());
+    if (!m_pInstance->IsManaged(dac_cast<PTR_VOID>(controlPC)))
         return;
 
     //
     // control state
     //
     m_RegDisplay.SP   = pCtx->GetSp();
-    m_RegDisplay.IP   = PCODEToPINSTR(pCtx->GetIp());
+    m_RegDisplay.IP   = controlPC;
     SetControlPC(dac_cast<PTR_VOID>(m_RegDisplay.GetIP()));
 
 #ifdef TARGET_ARM
@@ -630,14 +639,15 @@ void StackFrameIterator::InternalInit(Thread * pThreadToWalk, NATIVE_CONTEXT* pC
 
     // This codepath is used by the hijack stackwalk. The IP must be in managed code
     // or in a conservatively reported assembly thunk.
-    ASSERT(IsValidReturnAddress((void*)pCtx->GetIp()));
+    TADDR controlPC = ReturnAddressToCanonicalPC(pCtx->GetIp());
+    ASSERT(IsValidReturnAddress(dac_cast<PTR_VOID>(controlPC)));
 
     //
     // control state
     //
-    SetControlPC(dac_cast<PTR_VOID>(pCtx->GetIp()));
+    SetControlPC(dac_cast<PTR_VOID>(controlPC));
     m_RegDisplay.SP   = pCtx->GetSp();
-    m_RegDisplay.IP   = pCtx->GetIp();
+    m_RegDisplay.IP   = controlPC;
 
 #ifdef TARGET_UNIX
 #define PTR_TO_REG(ptr, reg) (&((ptr)->reg()))
@@ -1220,7 +1230,7 @@ void StackFrameIterator::UnwindFuncletInvokeThunk()
 
     m_RegDisplay.pFP  = SP++;
 
-    m_RegDisplay.SetIP(*SP++);
+    m_RegDisplay.SetIP(ReturnAddressToCanonicalPC(*SP++));
 
     m_RegDisplay.pX19 = SP++;
     m_RegDisplay.pX20 = SP++;
@@ -1633,7 +1643,7 @@ void StackFrameIterator::UnwindUniversalTransitionThunk()
     stackFrame->UnwindVolatileArgRegisters(&m_RegDisplay);
 
     PTR_uintptr_t addressOfPushedCallerIP = stackFrame->get_AddressOfPushedCallerIP();
-    m_RegDisplay.SetIP(PCODEToPINSTR(*addressOfPushedCallerIP));
+    m_RegDisplay.SetIP(ReturnAddressToCanonicalPC(*addressOfPushedCallerIP));
     m_RegDisplay.SetSP((uintptr_t)dac_cast<TADDR>(stackFrame->get_CallerSP()));
     SetControlPC(dac_cast<PTR_VOID>(m_RegDisplay.GetIP()));
 #if defined(TARGET_AMD64) && defined(TARGET_WINDOWS)
@@ -1764,7 +1774,7 @@ void StackFrameIterator::UnwindThrowSiteThunk()
     ASSERT_UNCONDITIONALLY("NYI for this arch");
 #endif
 
-    m_RegDisplay.SetIP(PCODEToPINSTR(pContext->IP));
+    m_RegDisplay.SetIP(ReturnAddressToCanonicalPC(pContext->IP));
     m_RegDisplay.SetSP(pContext->GetSp());
     SetControlPC(dac_cast<PTR_VOID>(m_RegDisplay.GetIP()));
 
@@ -1858,11 +1868,7 @@ UnwindOutOfCurrentManagedFrame:
         // if the thread is safe to walk, it better not have a hijack in place.
         ASSERT(!m_pThread->IsHijacked());
 
-#if defined(TARGET_ARM64)
-        SetControlPC(PacStripPtr(dac_cast<PTR_VOID>(PCODEToPINSTR(m_RegDisplay.GetIP()))));
-#else
-        SetControlPC(dac_cast<PTR_VOID>(PCODEToPINSTR(m_RegDisplay.GetIP())));
-#endif // TARGET_ARM64
+        SetControlPC(dac_cast<PTR_VOID>(m_RegDisplay.GetIP()));
 
         PTR_VOID collapsingTargetFrame = NULL;
 
@@ -2196,10 +2202,6 @@ void StackFrameIterator::CalculateCurrentMethodState()
         m_dwFlags |= MethodStateCalculated;
         return;
     }
-
-#if defined(TARGET_ARM64)
-    m_ControlPC = PacStripPtr(m_ControlPC);
-#endif // TARGET_ARM64
 
     // Assume that the caller is likely to be in the same module
     if (m_pCodeManager == NULL || !m_pCodeManager->FindMethodInfo(m_ControlPC, &m_methodInfo))

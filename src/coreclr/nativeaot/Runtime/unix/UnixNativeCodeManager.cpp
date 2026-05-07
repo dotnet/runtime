@@ -22,6 +22,10 @@
 
 #include "eventtracebase.h"
 
+#if defined(TARGET_ARM64)
+extern "C" void* PacStripPtr(void* ptr);
+#endif // TARGET_ARM64
+
 #define UBF_FUNC_KIND_MASK      0x03
 #define UBF_FUNC_KIND_ROOT      0x00
 #define UBF_FUNC_KIND_HANDLER   0x01
@@ -554,6 +558,10 @@ bool UnixNativeCodeManager::UnwindStackFrame(MethodInfo *    pMethodInfo,
     {
         return false;
     }
+
+#if defined(TARGET_ARM64)
+    pRegisterSet->SetIP((PCODE)PacStripPtr((void*)pRegisterSet->GetIP()));
+#endif // TARGET_ARM64
 
     return true;
 }

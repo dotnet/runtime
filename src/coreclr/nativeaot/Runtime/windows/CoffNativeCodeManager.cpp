@@ -22,6 +22,10 @@
 
 #include "eventtracebase.h"
 
+#if defined(TARGET_ARM64)
+extern "C" void* PacStripPtr(void* ptr);
+#endif // TARGET_ARM64
+
 #ifdef TARGET_X86
 
 // Disable contracts
@@ -812,7 +816,7 @@ bool CoffNativeCodeManager::UnwindStackFrame(MethodInfo *    pMethodInfo,
                     &contextPointers);
 
     pRegisterSet->SP = context.Sp;
-    pRegisterSet->IP = context.Pc;
+    pRegisterSet->IP = (PCODE)PacStripPtr((void*)context.Pc);
 
     if (!(flags & USFF_GcUnwind))
     {
