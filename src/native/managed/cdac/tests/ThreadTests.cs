@@ -101,7 +101,7 @@ public unsafe class ThreadTests
     {
         const uint id = 1;
         const ulong osId = 1234;
-        const uint state = 0x02000200; // WaitSleepJoin | Background
+        const uint state = (uint)(ThreadState.WaitSleepJoin | ThreadState.Background);
         MockThread? thread = null;
 
         TestPlaceholderTarget target = CreateTarget(
