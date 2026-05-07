@@ -2577,6 +2577,12 @@
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.PWriteV.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.PWriteV.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)Interop\Unix\Interop.Poll.Structs.cs">
+      <Link>Common\Interop\Unix\Interop.Poll.Structs.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Poll.cs">
+      <Link>Common\Interop\Unix\System.Native\Interop.Poll.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Read.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.Read.cs</Link>
     </Compile>

@@ -141,15 +141,14 @@ namespace Microsoft.Win32.SafeHandles
             bool doSync = isBlocking || AsyncContext.IsReadReady(out sequenceNumber);
             if (doSync)
             {
-                if (TryCompleteRead(buffer, out var result, out bool pending))
+                if (TryCompleteRead(buffer, out var result))
                 {
                     return result;
                 }
                 if (isBlocking)
                 {
                     // The handle changed to non-blocking due to a concurrent operation.
-                    Debug.Assert(pending);
-                    if (AsyncContext.IsReadReady(out sequenceNumber) && TryCompleteRead(buffer, out result, out _))
+                    if (AsyncContext.IsReadReady(out sequenceNumber) && TryCompleteRead(buffer, out result))
                     {
                         return result;
                     }
@@ -179,7 +178,7 @@ namespace Microsoft.Win32.SafeHandles
         internal ValueTask<(int BytesRead, Interop.ErrorInfo ErrorInfo)> ReadAsync(Memory<byte> destination, CancellationToken cancellationToken)
         {
             if (AsyncContext.IsReadReady(out int sequenceNumber) &&
-                TryCompleteRead(destination.Span, out var readResult, out _))
+                TryCompleteRead(destination.Span, out var readResult))
             {
                 return new ValueTask<(int, Interop.ErrorInfo)>(readResult);
             }
@@ -316,7 +315,7 @@ namespace Microsoft.Win32.SafeHandles
                 if (_syncBuffer != null)
                 {
                     Debug.Assert(_syncBufferLength > 0);
-                    return _owner.TryCompleteRead(_syncBuffer, _syncBufferLength, out Result, out _);
+                    return _owner.TryCompleteRead(_syncBuffer, _syncBufferLength, out Result);
                 }
 
                 Span<byte> span = _buffer.Span;
@@ -324,7 +323,7 @@ namespace Microsoft.Win32.SafeHandles
 
                 fixed (byte* bufPtr = &MemoryMarshal.GetReference(span))
                 {
-                    return _owner.TryCompleteRead(bufPtr, span.Length, out Result, out _);
+                    return _owner.TryCompleteRead(bufPtr, span.Length, out Result);
                 }
             }
 
@@ -473,15 +472,15 @@ namespace Microsoft.Win32.SafeHandles
             }
         }
 
-        private unsafe bool TryCompleteRead(Span<byte> buffer, out (int BytesRead, Interop.ErrorInfo ErrorInfo) result, out bool pending)
+        private unsafe bool TryCompleteRead(Span<byte> buffer, out (int BytesRead, Interop.ErrorInfo ErrorInfo) result)
         {
             fixed (byte* bufPtr = &MemoryMarshal.GetReference(buffer))
             {
-                return TryCompleteRead(bufPtr, buffer.Length, out result, out pending);
+                return TryCompleteRead(bufPtr, buffer.Length, out result);
             }
         }
 
-        private unsafe bool TryCompleteRead(byte* buffer, int length, out (int BytesRead, Interop.ErrorInfo ErrorInfo) result, out bool pending)
+        private unsafe bool TryCompleteRead(byte* buffer, int length, out (int BytesRead, Interop.ErrorInfo ErrorInfo) result)
         {
             int bytesRead = Interop.Sys.Read(this, buffer, length);
             if (bytesRead < 0)
@@ -489,16 +488,13 @@ namespace Microsoft.Win32.SafeHandles
                 Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
                 if (IsPending(errorInfo))
                 {
-                    pending = true;
                     result = default;
                     return false;
                 }
-                pending = false;
                 result = (-1, errorInfo);
                 return true;
             }
 
-            pending = false;
             result = (bytesRead, default);
             return true;
         }

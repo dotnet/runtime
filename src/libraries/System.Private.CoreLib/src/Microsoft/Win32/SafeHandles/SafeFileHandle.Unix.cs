@@ -84,7 +84,7 @@ namespace Microsoft.Win32.SafeHandles
         // Pipe and Socket support non-blocking and do not support random access.
         // Character devices may support non-blocking and may support random access.
         private bool SupportsNonBlocking
-            => UnixHandleAsyncContext.IsSupported // We can't handle non-blocking.
+            => UnixHandleAsyncContext.IsSupported // Needed for readiness notifications.
                 && Type is FileHandleType.Socket or FileHandleType.Pipe or FileHandleType.CharacterDevice;
         private bool UseThreadPoolForAsync
             => !SupportsNonBlocking;
@@ -691,14 +691,13 @@ namespace Microsoft.Win32.SafeHandles
             {
                 fixed (byte* bufPtr = &MemoryMarshal.GetReference(buffer))
                 {
-                    if (TryCompleteReadAt(offset, bufPtr, buffer.Length, out var result, out bool pending))
+                    if (TryCompleteReadAt(offset, bufPtr, buffer.Length, out var result))
                     {
                         return CheckFileCall(result.BytesRead, result.ErrorInfo);
                     }
                     if (isBlocking)
                     {
-                        Debug.Assert(pending);
-                        if (AsyncContext.IsReadReady(out sequenceNumber) && TryCompleteReadAt(offset, bufPtr, buffer.Length, out result, out _))
+                        if (AsyncContext.IsReadReady(out sequenceNumber) && TryCompleteReadAt(offset, bufPtr, buffer.Length, out result))
                         {
                             return CheckFileCall(result.BytesRead, result.ErrorInfo);
                         }
@@ -751,7 +750,7 @@ namespace Microsoft.Win32.SafeHandles
             {
                 fixed (byte* bufPtr = &MemoryMarshal.GetReference(destination.Span))
                 {
-                    if (TryCompleteReadAt(offset, bufPtr, destination.Length, out var readResult, out _))
+                    if (TryCompleteReadAt(offset, bufPtr, destination.Length, out var readResult))
                     {
                         UpdateFileStreamForAsyncRead(strategy, destination, readResult.BytesRead);
                         return new ValueTask<int>(CheckFileCall(readResult.BytesRead, readResult.ErrorInfo));
@@ -928,14 +927,13 @@ namespace Microsoft.Win32.SafeHandles
             bool doSync = isBlocking || AsyncContext.IsReadReady(out sequenceNumber);
             if (doSync)
             {
-                if (TryCompleteReadAt(offset, buffers, out var readResult, out bool pending))
+                if (TryCompleteReadAt(offset, buffers, out var readResult))
                 {
                     return CheckFileCall(readResult.BytesRead, readResult.ErrorInfo);
                 }
                 if (isBlocking)
                 {
-                    Debug.Assert(pending);
-                    if (AsyncContext.IsReadReady(out sequenceNumber) && TryCompleteReadAt(offset, buffers, out readResult, out _))
+                    if (AsyncContext.IsReadReady(out sequenceNumber) && TryCompleteReadAt(offset, buffers, out readResult))
                     {
                         return CheckFileCall(readResult.BytesRead, readResult.ErrorInfo);
                     }
@@ -981,7 +979,7 @@ namespace Microsoft.Win32.SafeHandles
         {
             int sequenceNumber;
             if (AsyncContext.IsReadReady(out sequenceNumber) &&
-                TryCompleteReadAt(offset, buffers, out var readResult, out _))
+                TryCompleteReadAt(offset, buffers, out var readResult))
             {
                 return new ValueTask<long>(CheckFileCall(readResult.BytesRead, readResult.ErrorInfo));
             }
@@ -1224,26 +1222,38 @@ namespace Microsoft.Win32.SafeHandles
 
                 if (_buffers != null)
                 {
-                    if (!_owner.TryCompleteReadAt(_offset, _buffers, out readResult, out _))
+                    if (!_owner.TryCompleteReadAt(_offset, _buffers, out readResult))
                     {
                         return false;
                     }
                 }
                 else if (_syncBuffer != null)
                 {
-                    Debug.Assert(_syncBufferLength > 0);
-                    if (!_owner.TryCompleteReadAt(_offset, _syncBuffer, _syncBufferLength, out readResult, out _))
+                    // Zero byte read is performed to know when data is available.
+                    if (_syncBufferLength == 0 && _owner.SupportsNonBlocking)
+                    {
+                        BytesRead = 0;
+                        return true;
+                    }
+                    if (!_owner.TryCompleteReadAt(_offset, _syncBuffer, _syncBufferLength, out readResult))
                     {
                         return false;
                     }
                 }
                 else
                 {
+                    // Zero byte read is performed to know when data is available.
+                    if (_buffer.Length == 0 && _owner.SupportsNonBlocking)
+                    {
+                        BytesRead = 0;
+                        return true;
+                    }
+
                     Span<byte> span = _buffer.Span;
 
                     fixed (byte* bufPtr = &MemoryMarshal.GetReference(span))
                     {
-                        if (!_owner.TryCompleteReadAt(_offset, bufPtr, span.Length, out readResult, out _))
+                        if (!_owner.TryCompleteReadAt(_offset, bufPtr, span.Length, out readResult))
                         {
                             return false;
                         }
@@ -1560,11 +1570,11 @@ namespace Microsoft.Win32.SafeHandles
             }
         }
 
-        private unsafe bool TryCompleteReadAt(long offset, IReadOnlyList<Memory<byte>> buffers, out (int BytesRead, Interop.ErrorInfo ErrorInfo) result, out bool pending)
+        private unsafe bool TryCompleteReadAt(long offset, IReadOnlyList<Memory<byte>> buffers, out (int BytesRead, Interop.ErrorInfo ErrorInfo) result)
         {
             if (SupportsRandomAccess)
             {
-                if (TryCompleteReadAt(useOffset: true, offset, buffers, out result, out pending))
+                if (TryCompleteReadAt(useOffset: true, offset, buffers, out result))
                 {
                     if (result.BytesRead == -1 && ShouldFallBackToNonOffsetSyscall(result.ErrorInfo))
                     {
@@ -1581,10 +1591,10 @@ namespace Microsoft.Win32.SafeHandles
                 }
             }
 
-            return TryCompleteReadAt(useOffset: false, offset, buffers, out result, out pending);
+            return TryCompleteReadAt(useOffset: false, offset, buffers, out result);
         }
 
-        private unsafe bool TryCompleteReadAt(bool useOffset, long offset, IReadOnlyList<Memory<byte>> buffers, out (int BytesRead, Interop.ErrorInfo ErrorInfo) result, out bool pending)
+        private unsafe bool TryCompleteReadAt(bool useOffset, long offset, IReadOnlyList<Memory<byte>> buffers, out (int BytesRead, Interop.ErrorInfo ErrorInfo) result)
         {
             int count = buffers.Count;
             MemoryHandle[] memHandles = new MemoryHandle[count];
@@ -1612,16 +1622,13 @@ namespace Microsoft.Win32.SafeHandles
                         Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
                         if (IsPending(errorInfo))
                         {
-                            pending = true;
                             result = default;
                             return false;
                         }
-                        pending = false;
                         result = (-1, errorInfo);
                         return true;
                     }
 
-                    pending = false;
                     result = ((int)bytesRead, default);
                     return true;
                 }
@@ -1635,11 +1642,11 @@ namespace Microsoft.Win32.SafeHandles
             }
         }
 
-        private unsafe bool TryCompleteReadAt(long offset, byte* buffer, int length, out (int BytesRead, Interop.ErrorInfo ErrorInfo) result, out bool pending)
+        private unsafe bool TryCompleteReadAt(long offset, byte* buffer, int length, out (int BytesRead, Interop.ErrorInfo ErrorInfo) result)
         {
             if (SupportsRandomAccess)
             {
-                if (TryCompleteReadAt(useOffset: true, offset, buffer, length, out result, out pending))
+                if (TryCompleteReadAt(useOffset: true, offset, buffer, length, out result))
                 {
                     if (result.BytesRead == -1 && ShouldFallBackToNonOffsetSyscall(result.ErrorInfo))
                     {
@@ -1656,11 +1663,28 @@ namespace Microsoft.Win32.SafeHandles
                 }
             }
 
-            return TryCompleteReadAt(useOffset: false, offset, buffer, length, out result, out pending);
+            return TryCompleteReadAt(useOffset: false, offset, buffer, length, out result);
         }
 
-        private unsafe bool TryCompleteReadAt(bool useOffset, long offset, byte* buffer, int length, out (int BytesRead, Interop.ErrorInfo ErrorInfo) result, out bool pending)
+        private unsafe bool TryCompleteReadAt(bool useOffset, long offset, byte* buffer, int length, out (int BytesRead, Interop.ErrorInfo ErrorInfo) result)
         {
+            if (length == 0 && SupportsNonBlocking)
+            {
+                // Zero byte read is performed to know when data is available.
+                // Use poll with a zero timeout to check readiness.
+                Interop.Error err = Interop.Sys.Poll(this, Interop.PollEvents.POLLIN, IsBlocking ? -1 : 0, out Interop.PollEvents events);
+                if (err != Interop.Error.SUCCESS)
+                {
+                    result = (-1, new Interop.ErrorInfo(err));
+                    return true;
+                }
+                if (events == Interop.PollEvents.POLLNONE)
+                {
+                    result = default;
+                    return false;
+                }
+            }
+
             int bytesRead = useOffset
                 ? Interop.Sys.PRead(this, buffer, length, offset)
                 : Interop.Sys.Read(this, buffer, length);
@@ -1669,16 +1693,13 @@ namespace Microsoft.Win32.SafeHandles
                 Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
                 if (IsPending(errorInfo))
                 {
-                    pending = true;
                     result = default;
                     return false;
                 }
-                pending = false;
                 result = (-1, errorInfo);
                 return true;
             }
 
-            pending = false;
             result = (bytesRead, default);
             return true;
         }

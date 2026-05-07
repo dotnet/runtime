@@ -62,7 +62,7 @@ namespace System.IO.Pipes.Tests
 
     public abstract class NamedPipeStreamConformanceTests : PipeStreamConformanceTests
     {
-        protected override bool BrokenPipePropagatedImmediately => OperatingSystem.IsWindows(); // On Unix, implemented on Sockets, where it won't propagate immediate
+        protected override bool BrokenPipePropagatedImmediately => true;
 
         protected abstract NamedPipeServerStream CreateServerStream(string pipeName, int maxInstances = 1);
         protected abstract NamedPipeClientStream CreateClientStream(string pipeName);
