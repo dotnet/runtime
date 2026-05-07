@@ -7131,6 +7131,11 @@ unsigned emitter::emitEndCodeGen(Compiler*             comp,
                 continue;
             }
 
+            if (m_compiler->lvaIsUnknownSizeLocal(num))
+            {
+                continue;
+            }
+
 #if FEATURE_FIXED_OUT_ARGS
             if (num == m_compiler->lvaOutgoingArgSpaceVar)
             {

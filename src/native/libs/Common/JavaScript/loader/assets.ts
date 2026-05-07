@@ -17,6 +17,11 @@ let totalAssetsToDownload = 0;
 let loadBootResourceCallback: LoadBootResourceCallback | undefined = undefined;
 const loadedLazyAssemblies = new Set<string>();
 let mainWasmAsset: WasmAsset | null = null;
+const allDownloadsQueuedPCS = createPromiseCompletionSource<void>();
+
+export function resolveAllDownloadsQueued(): void {
+    allDownloadsQueuedPCS.resolve();
+}
 
 export function setLoadBootResourceCallback(callback: LoadBootResourceCallback | undefined): void {
     loadBootResourceCallback = callback;
@@ -332,7 +337,14 @@ export async function fetchNativeSymbols(asset: SymbolsAsset): Promise<void> {
 
 async function fetchBytes(asset: AssetEntryInternal): Promise<Uint8Array | null> {
     dotnetAssert.check(asset && asset.resolvedUrl, "Bad asset.resolvedUrl");
-    const response = await loadResource(asset);
+    let response: Response;
+    try {
+        response = await loadResource(asset);
+    } catch (err: any) {
+        // Strip .silent flag from download errors so they are properly reported via exit listeners
+        const message = err instanceof Error ? err.message : String(err);
+        throw new Error(`Failed to load resource '${asset.name}' from '${asset.resolvedUrl}': ${message}`, { cause: err });
+    }
     if (!response.ok) {
         if (asset.isOptional) {
             dotnetLogger.warn(`Optional resource '${asset.name}' failed to load from '${asset.resolvedUrl}'. HTTP status: ${response.status} ${response.statusText}`);
@@ -346,7 +358,14 @@ async function fetchBytes(asset: AssetEntryInternal): Promise<Uint8Array | null>
 
 async function fetchText(asset: AssetEntryInternal): Promise<string | null> {
     dotnetAssert.check(asset && asset.resolvedUrl, "Bad asset.resolvedUrl");
-    const response = await loadResource(asset);
+    let response: Response;
+    try {
+        response = await loadResource(asset);
+    } catch (err: any) {
+        // Strip .silent flag from download errors so they are properly reported via exit listeners
+        const message = err instanceof Error ? err.message : String(err);
+        throw new Error(`Failed to load resource '${asset.name}' from '${asset.resolvedUrl}': ${message}`, { cause: err });
+    }
     if (!response.ok) {
         if (asset.isOptional) {
             dotnetLogger.warn(`Optional resource '${asset.name}' failed to load from '${asset.resolvedUrl}'. HTTP status: ${response.status} ${response.statusText}`);
@@ -377,15 +396,19 @@ async function loadResourceRetry(asset: AssetEntryInternal): Promise<Response> {
     if (response.ok || asset.isOptional || noRetryStatusCodes.has(response.status)) {
         return response;
     }
+    // second attempt only after all first attempts are queued
+    await allDownloadsQueuedPCS.promise;
     if (response.status === 429) {
         // Too Many Requests
         await delay(100);
     }
+    dotnetLogger.debug(`Retrying download '${asset.name}'`);
     response = await loadResourceAttempt();
     if (response.ok || noRetryStatusCodes.has(response.status)) {
         return response;
     }
     await delay(100); // wait 100ms before the last retry
+    dotnetLogger.debug(`Retrying download (2) '${asset.name}' after delay`);
     response = await loadResourceAttempt();
     if (response.ok) {
         return response;

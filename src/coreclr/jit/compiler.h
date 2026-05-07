@@ -982,16 +982,48 @@ private:
 public:
     int GetStackOffset() const
     {
+        assert(lvValueSize().IsExact());
         return lvStkOffs;
     }
 
     void SetStackOffset(int offset)
     {
+        assert(lvValueSize().IsExact());
         lvStkOffs = offset;
     }
 
     unsigned  lvExactSize() const;
     ValueSize lvValueSize() const;
+
+    // SetUnknownSizeFrameIndex: Set the index that has been assigned to this
+    //    local on the UnknownSizeFrame.
+    //
+    //    This is only used for locals that have an unknown size, such as TYP_SIMD/TYP_MASK.
+    //    These locals do not have an absolute stack offset.
+    //
+    // Arguments:
+    //     index -- The index on the UnknownSizeFrame to assign to this local.
+    //
+    void SetUnknownSizeFrameIndex(int index)
+    {
+        assert(!lvValueSize().IsExact());
+        lvStkOffs = index;
+    }
+
+    // GetUnknownSizeFrameIndex: Get the index that has been assigned to this
+    //    local on the UnknownSizeFrame.
+    //
+    //    This is only used for locals that have an unknown size, such as TYP_SIMD/TYP_MASK.
+    //    These locals do not have an absolute stack offset.
+    //
+    // Returns:
+    //     The index of this local on the UnknownSizeFrame.
+    //
+    int GetUnknownSizeFrameIndex() const
+    {
+        assert(!lvValueSize().IsExact());
+        return lvStkOffs;
+    }
 
     unsigned lvSlotNum; // original slot # (if remapped)
 
@@ -4322,6 +4354,185 @@ public:
 
     int lvaOSRLocalTier0FrameOffset(unsigned varNum);
 
+    //------------------------- UnknownSizeFrame ---------------------------------
+
+    void lvaInitUnknownSizeFrame();
+    void lvaAllocUnknownSizeLocal(unsigned varNum);
+
+    bool compUsesUnknownSizeFrame;
+
+#if defined(FEATURE_SIMD) && defined(TARGET_ARM64)
+    // For ARM64, the UnknownSizeFrame lives at the end of the statically
+    // allocated stack space. This means it belongs to the 'alloca' space on the
+    // frame, and it is essentially the first dynamically allocated stack
+    // variable.
+    //
+    // Currently, the only locals with unknown size are SIMD types supporting
+    // Vector<T>, TYP_SIMD and TYP_MASK. We do not know the size of these types
+    // at compile time, so we need to execute the rdvl/addvl instruction to
+    // learn this size and allocate the UnknownSizeFrame.
+    //
+    // We reserve the x19 register to point to the top of the UnknownSizeFrame
+    // and use this as the base address for local variables with unknown size.
+    // Reserving a register is simpler than using fp/sp, as fp may point
+    // to different locations depending on various properties of the frame, and
+    // the value of sp may change at runtime.
+    //
+    // Typically, a vector is loaded using a base address and some index which
+    // the instruction will scale by VL, for example: `ldr z0, [x19, #3 MUL VL]`.
+    // A mask is loaded with `ldr p0, [x19, #3 MUL VL]`, but in this case the
+    // `MUL VL` indicates we are scaling with the length of the predicate
+    // register rather than the vector. A predicate register is defined to have
+    // 1/8th the length of a vector register.
+    //
+    // We know that sizeof(TYP_SIMD) and sizeof(TYP_MASK) are invariant despite
+    // being unknown at compile time, so we allocate them in single homogeneous
+    // blocks per type. An individual local can be referenced from the start of
+    // its block by an index into the block.
+    //
+    // The difference in addressing-mode index scaling means we have to be
+    // careful where we place the mask locals block with respect to the vector
+    // locals block. If we place the mask locals after the vector locals, we'll
+    // need to offset the load index by (8 * nVector) to account for the vector
+    // locals.
+    //
+    // Instead, we choose to pad the mask locals block to VL and place it at the
+    // beginning of the frame (closest to fp). This way we'll need to offset
+    // vector load indices by `roundUp(nMask, 8) / 8`. This is less likely to
+    // put pressure on the immediate encoding range and result in requiring an
+    // address computation.
+    //
+    // The maximum wasted space from the padding is 7/8ths VL (224 bytes with
+    // the architectural maximum 256 byte vectors), which occurs when 1 mask
+    // local is spilled to the frame. Alternatively this is 28 bytes for 32 byte
+    // vectors, for an example closer to today's implementations.
+    //
+    // The padding also makes it simple to allocate the UnknownSizeFrame since
+    // the UnknownSizeFrame will be aligned to VL. The total number of vectors
+    // to allocate is `(roundUp(nMask, 8) / 8) + nVector`. The stack pointer
+    // can be adjusted with a single instruction `addvl sp, sp, #totalVectors`.
+    //
+    // See the diagram below for a visual representation of this scheme.
+    //
+    //                 ...
+    //  |          static space            |
+    //  |        (totalFrameSize)          |
+    //  +----------------------------------+ x19, begin UnknownSizeFrame
+    //  |         mask locals block        |                 ^
+    //  |          (nMask * VL/8)          |                 |
+    //  +----------------------------------+                 |
+    //  |      padding to VL alignment     |                 |
+    //  +----------------------------------+ (roundUp(nMask, 8)/8 + nVector)*VL
+    //  |                                  |                 |
+    //  |       vector locals block        |                 |
+    //  |         (nVector * VL)           |                 |
+    //  |                                  |                 v
+    //  +----------------------------------+ end UnknownSizeFrame
+    //  |                                  |
+    //  |       rest of alloca space       |
+    //                 ...                   sp
+    struct UnknownSizeFrame
+    {
+        // Number of allocated vectors/masks. These also represent the end of
+        // the allocation space for each block. The allocator for each block is
+        // a simple bump allocator.
+        unsigned nVector = 0;
+        unsigned nMask = 0;
+
+#ifdef DEBUG
+        bool isFinalized = false;
+#endif
+
+        // Returns the size of the mask block in number of vector lengths.
+        unsigned MaskBlockSizeInVectors()
+        {
+            assert(roundUp(0U, 8U) == 0);
+            return roundUp(nMask, 8) / 8;
+        }
+
+        // Returns the size of the vector block in number of vector lengths.
+        unsigned VectorBlockSize()
+        {
+            return nVector;
+        }
+
+        // Returns the size of the total UnknownSizeFrame in number of vector
+        // lengths.
+        unsigned FrameSizeInVectors()
+        {
+            return MaskBlockSizeInVectors() + VectorBlockSize();
+        }
+
+        // Allocate a mask, returning an index of the mask in the mask block.
+        unsigned AllocMask()
+        {
+            assert(!isFinalized);
+            unsigned idx = nMask;
+            nMask++;
+            return idx;
+        }
+
+        // Allocate a vector, returning an index of the vector in the vector
+        // block.
+        unsigned AllocVector()
+        {
+            assert(!isFinalized);
+            unsigned idx = nVector;
+            nVector++;
+            return idx;
+        }
+
+        // Returns a negative offset relative to the base of the UnknownSizeFrame
+        // for addressing an allocated vector or mask local.
+        // If `isMask == true`, given an index that was assigned to mask local,
+        // the returned offset is an index measured in units of VL/8.
+        // Otherwise given an index that was assigned to a vector local, the
+        // returned offset is measured in units of VL.
+        // The index parameter should have been obtained through AllocMask() or
+        // AllocVector().
+        int GetOffset(unsigned index, bool isMask = false)
+        {
+            // We can't compute addresses if we haven't finished allocating.
+            assert(isFinalized);
+
+            unsigned offset = UINT32_MAX;
+            if (isMask)
+            {
+                assert(index < nMask);
+                offset = index;
+            }
+            else
+            {
+                assert(index < nVector);
+                offset = MaskBlockSizeInVectors() + index;
+            }
+            assert(offset != UINT32_MAX);
+            // The index is always offset by 1 as we are writing from below fp
+            // upwards.
+            return -(int)(offset + 1);
+        }
+
+        // Given a local on the UnknownSizeFrame, compute the offset used for addressing
+        // this local relative to the base address of the UnknownSizeFrame. This offset
+        // can be used with addvl/addpl for TYP_SIMD/TYP_MASK respectively. The offset
+        // needs to be scaled by VL/PL to produce an absolute address value.
+        int GetAddressingOffset(LclVarDsc* varDsc)
+        {
+            return GetOffset(varDsc->GetUnknownSizeFrameIndex(), varDsc->TypeIs(TYP_MASK));
+        }
+
+        // This system ensures we don't try and generate an address on the frame
+        // without finishing all allocations.
+        void Finalize()
+        {
+#ifdef DEBUG
+            isFinalized = true;
+#endif
+        }
+
+    } unkSizeFrame;
+#endif
+
     //------------------------ For splitting types ----------------------------
 
     void lvaInitTypeRef();
@@ -4418,7 +4629,11 @@ public:
     //
     bool lvaIsUnknownSizeLocal(unsigned varNum)
     {
+#ifdef TARGET_ARM64
         return !lvaLclValueSize(varNum).IsExact();
+#else
+        return false;
+#endif
     }
 
     bool lvaHaveManyLocals(float percent = 1.0f) const;
