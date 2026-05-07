@@ -814,6 +814,11 @@ GenTree* OptIfConversionDsc::TrySelectToCnsOpCond(GenTreeConditional* select)
     GenTree* trueInput  = select->gtOp1;
     GenTree* falseInput = select->gtOp2;
 
+    if (!cond->OperIsCompare() || cond->TypeGet() != select->TypeGet())
+    {
+        return nullptr;
+    }
+
     if (!trueInput->IsIntegralConst() || !falseInput->IsIntegralConst())
     {
         return nullptr;
@@ -876,7 +881,7 @@ GenTree* OptIfConversionDsc::TrySelectToLclOpCond(GenTreeConditional* select)
     GenTree* oper = select->gtOp1;
     GenTree* lcl  = select->gtOp2;
 
-    if (!cond->OperIsCompare())
+    if (!cond->OperIsCompare() || cond->TypeGet() != select->TypeGet())
     {
         return nullptr;
     }
@@ -929,6 +934,11 @@ GenTree* OptIfConversionDsc::TrySelectToCondOpLcl(GenTreeConditional* select)
     GenTree* cond = select->gtCond;
     GenTree* oper = select->gtOp1;
     GenTree* zero = select->gtOp2;
+
+    if (!cond->OperIsCompare() || cond->TypeGet() != select->TypeGet())
+    {
+        return nullptr;
+    }
 
     bool isCondReversed = !zero->IsIntegralConst();
     if (isCondReversed)
