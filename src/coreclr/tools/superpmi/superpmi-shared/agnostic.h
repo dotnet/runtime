@@ -687,7 +687,7 @@ struct Agnostic_ResolveVirtualMethodResult
 {
     bool                            returnValue;
     DWORDLONG                       devirtualizedMethod;
-    DWORDLONG                       exactContext;
+    DWORDLONG                       tokenLookupContext;
     DWORD                           detail;
     Agnostic_CORINFO_RESOLVED_TOKEN resolvedTokenDevirtualizedMethod;
     Agnostic_CORINFO_RESOLVED_TOKEN resolvedTokenDevirtualizedUnboxedMethod;

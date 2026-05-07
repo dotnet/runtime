@@ -3259,7 +3259,7 @@ void MethodContext::recResolveVirtualMethod(CORINFO_DEVIRTUALIZATION_INFO * info
     Agnostic_ResolveVirtualMethodResult result;
     result.returnValue         = returnValue;
     result.devirtualizedMethod = CastHandle(info->devirtualizedMethod);
-    result.exactContext        = CastHandle(info->exactContext);
+    result.tokenLookupContext  = CastHandle(info->tokenLookupContext);
     result.detail              = (DWORD)info->detail;
     result.instParamLookup     = SpmiRecordsHelper::StoreAgnostic_CORINFO_LOOKUP(&info->instParamLookup);
 
@@ -3286,10 +3286,10 @@ void MethodContext::dmpResolveVirtualMethod(const Agnostic_ResolveVirtualMethodK
         key.context,
         key.pResolvedTokenVirtualMethodNonNull,
         key.pResolvedTokenVirtualMethodNonNull ? SpmiDumpHelper::DumpAgnostic_CORINFO_RESOLVED_TOKEN(key.pResolvedTokenVirtualMethod).c_str() : "???");
-    printf(", value returnValue-%s, devirtMethod-%016" PRIX64 ", exactContext-%016" PRIX64 ", detail-%d, tokDvMeth{%s}, tokDvUnboxMeth{%s}, instParamLookup{%s}",
+    printf(", value returnValue-%s, devirtMethod-%016" PRIX64 ", tokenLookupContext-%016" PRIX64 ", detail-%d, tokDvMeth{%s}, tokDvUnboxMeth{%s}, instParamLookup{%s}",
         result.returnValue ? "true" : "false",
         result.devirtualizedMethod,
-        result.exactContext,
+        result.tokenLookupContext,
         result.detail,
         result.returnValue ? SpmiDumpHelper::DumpAgnostic_CORINFO_RESOLVED_TOKEN(result.resolvedTokenDevirtualizedMethod).c_str() : "???",
         result.returnValue ? SpmiDumpHelper::DumpAgnostic_CORINFO_RESOLVED_TOKEN(result.resolvedTokenDevirtualizedUnboxedMethod).c_str() : "???",
@@ -3313,7 +3313,7 @@ bool MethodContext::repResolveVirtualMethod(CORINFO_DEVIRTUALIZATION_INFO * info
     DEBUG_REP(dmpResolveVirtualMethod(key, result));
 
     info->devirtualizedMethod = (CORINFO_METHOD_HANDLE) result.devirtualizedMethod;
-    info->exactContext = (CORINFO_CONTEXT_HANDLE) result.exactContext;
+    info->tokenLookupContext = (CORINFO_CONTEXT_HANDLE) result.tokenLookupContext;
     info->detail = (CORINFO_DEVIRTUALIZATION_DETAIL) result.detail;
     info->instParamLookup = SpmiRecordsHelper::RestoreCORINFO_LOOKUP(result.instParamLookup);
     if (result.returnValue)
@@ -4645,7 +4645,7 @@ size_t MethodContext::repGetClassModuleIdForStatics(CORINFO_CLASS_HANDLE   cls,
     DWORDLONG key = CastHandle(cls);
     Agnostic_GetClassModuleIdForStatics value = LookupByKeyOrMiss(GetClassModuleIdForStatics, key, ": key %016" PRIX64 "", key);
 
-	DEBUG_REP(dmpGetClassModuleIdForStatics(key, value));
+    DEBUG_REP(dmpGetClassModuleIdForStatics(key, value));
 
     if (pModule != nullptr)
         *pModule = (CORINFO_MODULE_HANDLE)value.Module;
@@ -4745,7 +4745,7 @@ DWORD MethodContext::repGetThreadTLSIndex(void** ppIndirection)
 {
     DLD value = LookupByKeyOrMissNoMessage(GetThreadTLSIndex, 0);
 
-	DEBUG_REP(dmpGetThreadTLSIndex(0, value));
+    DEBUG_REP(dmpGetThreadTLSIndex(0, value));
 
     if (ppIndirection != nullptr)
         *ppIndirection = (void*)value.A;
@@ -4870,7 +4870,7 @@ void MethodContext::repGetLocationOfThisType(CORINFO_METHOD_HANDLE context, CORI
 {
     DWORDLONG key = CastHandle(context);
     Agnostic_CORINFO_LOOKUP_KIND value = LookupByKeyOrMiss(GetLocationOfThisType, key, ": key %016" PRIX64 "", key);
-	DEBUG_REP(dmpGetLocationOfThisType(key, value));
+    DEBUG_REP(dmpGetLocationOfThisType(key, value));
     *pLookupKind = SpmiRecordsHelper::RestoreCORINFO_LOOKUP_KIND(value);
 }
 

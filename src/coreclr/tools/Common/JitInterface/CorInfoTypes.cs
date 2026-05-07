@@ -1185,13 +1185,13 @@ namespace Internal.JitInterface
         // [Out] results of resolveVirtualMethod.
         // - devirtualizedMethod is set to MethodDesc of devirt'ed method iff we were able to devirtualize.
         //      invariant is `resolveVirtualMethod(...) == (devirtualizedMethod != nullptr)`.
-        // - exactContext is set to wrapped CORINFO_CLASS_HANDLE of devirt'ed method table.
+        // - tokenLookupContext is set to the wrapped context handle to use for token lookups after devirtualization.
         // - detail describes the computation done by the jit host
         // - instParamLookup contains all the information necessary to pass the instantiation parameter for
         //   the devirtualized method.
         //
         public CORINFO_METHOD_STRUCT_* devirtualizedMethod;
-        public CORINFO_CONTEXT_STRUCT* exactContext;
+        public CORINFO_CONTEXT_STRUCT* tokenLookupContext;
         public CORINFO_DEVIRTUALIZATION_DETAIL detail;
         public CORINFO_RESOLVED_TOKEN resolvedTokenDevirtualizedMethod;
         public CORINFO_RESOLVED_TOKEN resolvedTokenDevirtualizedUnboxedMethod;

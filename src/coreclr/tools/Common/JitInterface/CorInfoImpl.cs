@@ -1349,7 +1349,7 @@ namespace Internal.JitInterface
         {
             // Initialize OUT fields
             info->devirtualizedMethod = null;
-            info->exactContext = null;
+            info->tokenLookupContext = null;
             info->detail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_UNKNOWN;
             info->instParamLookup = default(CORINFO_LOOKUP);
 
@@ -1496,7 +1496,7 @@ namespace Internal.JitInterface
 #endif
             info->detail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_SUCCESS;
             info->devirtualizedMethod = ObjectToHandle(impl);
-            info->exactContext = contextFromType(owningType);
+            info->tokenLookupContext = contextFromType(owningType);
 
             return true;
 

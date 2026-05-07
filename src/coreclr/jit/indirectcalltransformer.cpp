@@ -1010,8 +1010,8 @@ private:
             }
 
             Compiler::DevirtualizedCallInfo dcInfo;
-            dcInfo.exactContext = exactContext;
-            dcInfo.derivedClass = derivedClass;
+            dcInfo.tokenLookupContext = exactContext;
+            dcInfo.derivedClass       = derivedClass;
 
             // only for class-based GDV in R2R
             dcInfo.pResolvedToken = (clsHnd != NO_CLASS_HANDLE) ? &inlineInfo->guardedMethodResolvedToken : nullptr;

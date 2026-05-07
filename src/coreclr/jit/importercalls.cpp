@@ -7725,7 +7725,7 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
                 dvInfo.virtualMethod               = baseMethod;
                 dvInfo.objClass                    = exactCls;
                 dvInfo.context                     = originalContext;
-                dvInfo.exactContext                = originalContext;
+                dvInfo.tokenLookupContext          = originalContext;
                 dvInfo.pResolvedTokenVirtualMethod = nullptr;
 
                 JITDUMP("GDV exact: resolveVirtualMethod (method %p class %p context %p)\n", dvInfo.virtualMethod,
@@ -7739,7 +7739,7 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
                     break;
                 }
 
-                CORINFO_CONTEXT_HANDLE exactContext     = dvInfo.exactContext;
+                CORINFO_CONTEXT_HANDLE exactContext     = dvInfo.tokenLookupContext;
                 CORINFO_METHOD_HANDLE  exactMethod      = dvInfo.devirtualizedMethod;
                 uint32_t               exactMethodAttrs = info.compCompHnd->getMethodAttribs(exactMethod);
                 assert(!dvInfo.instParamLookup.lookupKind.needsRuntimeLookup);
@@ -7818,7 +7818,7 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
             dvInfo.virtualMethod               = baseMethod;
             dvInfo.objClass                    = likelyClass;
             dvInfo.context                     = originalContext;
-            dvInfo.exactContext                = originalContext;
+            dvInfo.tokenLookupContext          = originalContext;
             dvInfo.pResolvedTokenVirtualMethod = nullptr;
 
             JITDUMP("GDV likely: resolveVirtualMethod (method %p class %p context %p)\n", dvInfo.virtualMethod,
@@ -7835,7 +7835,7 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
                 break;
             }
 
-            likelyContext         = dvInfo.exactContext;
+            likelyContext         = dvInfo.tokenLookupContext;
             likelyMethod          = dvInfo.devirtualizedMethod;
             pResolvedToken        = &dvInfo.resolvedTokenDevirtualizedMethod;
             pUnboxedResolvedToken = &dvInfo.resolvedTokenDevirtualizedUnboxedMethod;
@@ -9001,7 +9001,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
     info.compCompHnd->resolveVirtualMethod(&dvInfo);
 
     CORINFO_METHOD_HANDLE   derivedMethod          = dvInfo.devirtualizedMethod;
-    CORINFO_CONTEXT_HANDLE  exactContext           = dvInfo.exactContext;
+    CORINFO_CONTEXT_HANDLE  exactContext           = dvInfo.tokenLookupContext;
     CORINFO_CLASS_HANDLE    derivedClass           = NO_CLASS_HANDLE;
     CORINFO_RESOLVED_TOKEN* pDerivedResolvedToken  = &dvInfo.resolvedTokenDevirtualizedMethod;
     const bool              needsRuntimeLookup     = dvInfo.instParamLookup.lookupKind.needsRuntimeLookup;
@@ -9181,7 +9181,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
 #endif // defined(DEBUG)
 
     DevirtualizedCallInfo dcInfo;
-    dcInfo.exactContext          = exactContext;
+    dcInfo.tokenLookupContext    = exactContext;
     dcInfo.derivedClass          = derivedClass;
     dcInfo.pResolvedToken        = pDerivedResolvedToken;
     dcInfo.pUnboxedResolvedToken = &dvInfo.resolvedTokenDevirtualizedUnboxedMethod;
@@ -9571,7 +9571,7 @@ void Compiler::impTransformDevirtualizedCall(GenTreeCall*            call,
     //
     if (pExactContextHandle != nullptr)
     {
-        *pExactContextHandle = dcInfo->exactContext;
+        *pExactContextHandle = dcInfo->tokenLookupContext;
     }
 
     // We might have created a new recursive tail call candidate.

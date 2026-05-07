@@ -4710,7 +4710,7 @@ public:
     // Information needed to turn a resolved devirtualization target into a direct call.
     struct DevirtualizedCallInfo
     {
-        CORINFO_CONTEXT_HANDLE  exactContext;
+        CORINFO_CONTEXT_HANDLE  tokenLookupContext;
         CORINFO_CLASS_HANDLE    derivedClass;
         CORINFO_RESOLVED_TOKEN* pResolvedToken;          // Resolved token for the target method, used by R2R.
         CORINFO_RESOLVED_TOKEN* pUnboxedResolvedToken;   // Resolved token for the unboxed entry, used by R2R.
