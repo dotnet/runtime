@@ -36,6 +36,7 @@
 #include "staticcontract.h"
 #include "mscoree.h"
 #include "clrinternal.h"
+#include "minipal/mutex.h"
 #ifdef STRESS_LOG_READONLY
 #include <stddef.h> // offsetof
 #else //STRESS_LOG_READONLY
@@ -224,7 +225,7 @@ public:
     Volatile<ThreadStressLog*> logs;        // the list of logs for every thread.
     unsigned padding;                       // Preserve the layout for SOS
     Volatile<LONG> deadCount;               // count of dead threads in the log
-    CRITSEC_COOKIE lock;                    // lock
+    minipal_mutex lock;                     // lock
     uint64_t tickFrequency;         // number of ticks per second
     uint64_t startTimeStamp;        // start time from when tick counter started
     uint64_t startTime;                     // time the application started in Windows FILETIME precision (100ns since 01 Jan 1601)
@@ -283,8 +284,8 @@ public:
     static thread_local ThreadStressLog* t_pCurrentThreadLog;
 
 // private:
-    static void Enter(CRITSEC_COOKIE dummy = NULL);
-    static void Leave(CRITSEC_COOKIE dummy = NULL);
+    static void Enter(minipal_mutex* lock);
+    static void Leave(minipal_mutex* lock);
     static ThreadStressLog* CreateThreadStressLog();
     static ThreadStressLog* CreateThreadStressLogHelper();
 
@@ -382,7 +383,7 @@ inline void* StressLog::ConvertArgument(int64_t arg)
 }
 #endif
 
-typedef Holder<CRITSEC_COOKIE, StressLog::Enter, StressLog::Leave, 0, CompareDefault<CRITSEC_COOKIE>> StressLogLockHolder;
+typedef Holder<minipal_mutex*, StressLog::Enter, StressLog::Leave, 0, CompareDefault<minipal_mutex*>> StressLogLockHolder;
 
 #if defined(DACCESS_COMPILE)
 inline BOOL StressLog::LogOn(unsigned facility, unsigned level)
