@@ -58,7 +58,7 @@ struct CodeBlockHandle
 
     // Classify a code address as a known code kind (jitted, ReadyToRun, stub, etc.).
     // Returns Unknown if the address is not recognized.
-    CodeKind GetCodeKind(TargetCodePointer jittedCodeAddress);
+    CodeKind GetCodeKind(TargetCodePointer codeAddress);
     // Finds the ReadyToRun module that contains the given address.
     TargetPointer FindReadyToRunModule(TargetPointer address);
 ```
