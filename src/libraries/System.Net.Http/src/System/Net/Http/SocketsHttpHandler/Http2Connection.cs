@@ -1137,8 +1137,8 @@ namespace System.Net.Http
             return (lastStreamId, errorCode);
         }
 
-        internal Task FlushAsync(CancellationToken cancellationToken) =>
-            PerformWriteAsync(0, 0, static (_, __) => true, cancellationToken);
+        internal async Task FlushAsync(CancellationToken cancellationToken) =>
+            await PerformWriteAsync(0, 0, static (_, __) => true, cancellationToken).ConfigureAwait(false);
 
         private abstract class WriteQueueEntry : TaskCompletionSource
         {
@@ -1287,20 +1287,20 @@ namespace System.Net.Http
             }
         }
 
-        private Task SendSettingsAckAsync() =>
-            PerformWriteAsync(FrameHeader.Size, this, static (thisRef, writeBuffer) =>
+        private async Task SendSettingsAckAsync() =>
+            await PerformWriteAsync(FrameHeader.Size, this, static (thisRef, writeBuffer) =>
             {
                 if (NetEventSource.Log.IsEnabled()) thisRef.Trace("Started writing.");
 
                 FrameHeader.WriteTo(writeBuffer.Span, 0, FrameType.Settings, FrameFlags.Ack, streamId: 0);
 
                 return true;
-            });
+            }).ConfigureAwait(false);
 
         /// <param name="pingContent">The 8-byte ping content to send, read as a big-endian integer.</param>
         /// <param name="isAck">Determine whether the frame is ping or ping ack.</param>
-        private Task SendPingAsync(long pingContent, bool isAck = false) =>
-            PerformWriteAsync(FrameHeader.Size + FrameHeader.PingLength, (thisRef: this, pingContent, isAck), static (state, writeBuffer) =>
+        private async Task SendPingAsync(long pingContent, bool isAck = false) =>
+            await PerformWriteAsync(FrameHeader.Size + FrameHeader.PingLength, (thisRef: this, pingContent, isAck), static (state, writeBuffer) =>
             {
                 if (NetEventSource.Log.IsEnabled()) state.thisRef.Trace($"Started writing. {nameof(pingContent)}={state.pingContent}");
 
@@ -1311,10 +1311,10 @@ namespace System.Net.Http
                 BinaryPrimitives.WriteInt64BigEndian(span.Slice(FrameHeader.Size), state.pingContent);
 
                 return true;
-            });
+            }).ConfigureAwait(false);
 
-        private Task SendRstStreamAsync(int streamId, Http2ProtocolErrorCode errorCode) =>
-            PerformWriteAsync(FrameHeader.Size + FrameHeader.RstStreamLength, (thisRef: this, streamId, errorCode), static (s, writeBuffer) =>
+        private async Task SendRstStreamAsync(int streamId, Http2ProtocolErrorCode errorCode) =>
+            await PerformWriteAsync(FrameHeader.Size + FrameHeader.RstStreamLength, (thisRef: this, streamId, errorCode), static (s, writeBuffer) =>
             {
                 if (NetEventSource.Log.IsEnabled()) s.thisRef.Trace(s.streamId, $"Started writing. {nameof(s.errorCode)}={s.errorCode}");
 
@@ -1323,7 +1323,7 @@ namespace System.Net.Http
                 BinaryPrimitives.WriteInt32BigEndian(span.Slice(FrameHeader.Size), (int)s.errorCode);
 
                 return true;
-            });
+            }).ConfigureAwait(false);
 
 
         internal void HeartBeat()
@@ -1758,21 +1758,21 @@ namespace System.Net.Http
             }
         }
 
-        private Task SendEndStreamAsync(int streamId) =>
-            PerformWriteAsync(FrameHeader.Size, (thisRef: this, streamId), static (s, writeBuffer) =>
+        private async Task SendEndStreamAsync(int streamId) =>
+            await PerformWriteAsync(FrameHeader.Size, (thisRef: this, streamId), static (s, writeBuffer) =>
             {
                 if (NetEventSource.Log.IsEnabled()) s.thisRef.Trace(s.streamId, "Started writing.");
 
                 FrameHeader.WriteTo(writeBuffer.Span, 0, FrameType.Data, FrameFlags.EndStream, s.streamId);
 
                 return true; // finished sending request body, so flush soon (but ok to wait for pending packets)
-            });
+            }).ConfigureAwait(false);
 
-        private Task SendWindowUpdateAsync(int streamId, int amount)
+        private async Task SendWindowUpdateAsync(int streamId, int amount)
         {
             // We update both the connection-level and stream-level windows at the same time
             Debug.Assert(amount > 0);
-            return PerformWriteAsync(FrameHeader.Size + FrameHeader.WindowUpdateLength, (thisRef: this, streamId, amount), static (s, writeBuffer) =>
+            await PerformWriteAsync(FrameHeader.Size + FrameHeader.WindowUpdateLength, (thisRef: this, streamId, amount), static (s, writeBuffer) =>
             {
                 if (NetEventSource.Log.IsEnabled()) s.thisRef.Trace(s.streamId, $"Started writing. {nameof(s.amount)}={s.amount}");
 
@@ -1781,7 +1781,7 @@ namespace System.Net.Http
                 BinaryPrimitives.WriteInt32BigEndian(span.Slice(FrameHeader.Size), s.amount);
 
                 return true;
-            });
+            }).ConfigureAwait(false);
         }
 
         private bool ExtendWindow(int amount)

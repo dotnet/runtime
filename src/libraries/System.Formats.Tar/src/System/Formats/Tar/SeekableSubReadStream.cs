@@ -67,15 +67,15 @@ namespace System.Formats.Tar
             return 0;
         }
 
-        public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
+        public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
         {
             if (cancellationToken.IsCancellationRequested)
             {
-                return ValueTask.FromCanceled<int>(cancellationToken);
+                return await ValueTask.FromCanceled<int>(cancellationToken).ConfigureAwait(false);
             }
             ThrowIfDisposed();
             VerifyPositionInSuperStream();
-            return ReadAsyncCore(buffer, cancellationToken);
+            return await ReadAsyncCore(buffer, cancellationToken).ConfigureAwait(false);
         }
 
         public override long Seek(long offset, SeekOrigin origin)

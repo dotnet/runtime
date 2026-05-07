@@ -91,9 +91,9 @@ namespace System.IO
         // No explicit locking is needed, as they all just delegate
         //
 
-        public override Task<string?> ReadLineAsync()
+        public override async Task<string?> ReadLineAsync()
         {
-            return Task.FromResult(ReadLine());
+            return ReadLine();
         }
 
         public override ValueTask<string?> ReadLineAsync(CancellationToken cancellationToken)
@@ -103,9 +103,9 @@ namespace System.IO
                 new ValueTask<string?>(ReadLine());
         }
 
-        public override Task<string> ReadToEndAsync()
+        public override async Task<string> ReadToEndAsync()
         {
-            return Task.FromResult(ReadToEnd());
+            return ReadToEnd();
         }
 
         public override Task<string> ReadToEndAsync(CancellationToken cancellationToken)
@@ -115,7 +115,7 @@ namespace System.IO
                 Task.FromResult(ReadToEnd());
         }
 
-        public override Task<int> ReadBlockAsync(char[] buffer, int index, int count)
+        public override async Task<int> ReadBlockAsync(char[] buffer, int index, int count)
         {
             ArgumentNullException.ThrowIfNull(buffer);
 
@@ -124,10 +124,10 @@ namespace System.IO
             if (buffer.Length - index < count)
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
 
-            return Task.FromResult(ReadBlock(buffer, index, count));
+            return ReadBlock(buffer, index, count);
         }
 
-        public override Task<int> ReadAsync(char[] buffer, int index, int count)
+        public override async Task<int> ReadAsync(char[] buffer, int index, int count)
         {
             ArgumentNullException.ThrowIfNull(buffer);
 
@@ -136,7 +136,7 @@ namespace System.IO
             if (buffer.Length - index < count)
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
 
-            return Task.FromResult(Read(buffer, index, count));
+            return Read(buffer, index, count);
         }
     }
 }

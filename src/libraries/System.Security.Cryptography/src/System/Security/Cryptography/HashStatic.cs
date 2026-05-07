@@ -87,7 +87,7 @@ namespace System.Security.Cryptography
             return LiteHashProvider.HashStream(THash.HashAlgorithmName, THash.HashSizeInBytes, source);
         }
 
-        internal static ValueTask<byte[]> HashDataAsync(Stream source, CancellationToken cancellationToken)
+        internal static async ValueTask<byte[]> HashDataAsync(Stream source, CancellationToken cancellationToken)
         {
             ArgumentNullException.ThrowIfNull(source);
 
@@ -95,10 +95,10 @@ namespace System.Security.Cryptography
                 throw new ArgumentException(SR.Argument_StreamNotReadable, nameof(source));
 
             CheckPlatformSupport();
-            return LiteHashProvider.HashStreamAsync(THash.HashAlgorithmName, source, cancellationToken);
+            return await LiteHashProvider.HashStreamAsync(THash.HashAlgorithmName, source, cancellationToken).ConfigureAwait(false);
         }
 
-        internal static ValueTask<int> HashDataAsync(
+        internal static async ValueTask<int> HashDataAsync(
             Stream source,
             Memory<byte> destination,
             CancellationToken cancellationToken)
@@ -112,11 +112,11 @@ namespace System.Security.Cryptography
                 throw new ArgumentException(SR.Argument_StreamNotReadable, nameof(source));
 
             CheckPlatformSupport();
-            return LiteHashProvider.HashStreamAsync(
+            return await LiteHashProvider.HashStreamAsync(
                 THash.HashAlgorithmName,
                 source,
                 destination,
-                cancellationToken);
+                cancellationToken).ConfigureAwait(false);
         }
 
         internal static void CheckPlatformSupport()

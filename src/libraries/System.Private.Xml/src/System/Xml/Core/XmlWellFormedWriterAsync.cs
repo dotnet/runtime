@@ -18,14 +18,14 @@ namespace System.Xml
 {
     internal sealed partial class XmlWellFormedWriter : XmlWriter
     {
-        public override Task WriteStartDocumentAsync()
+        public override async Task WriteStartDocumentAsync()
         {
-            return WriteStartDocumentImplAsync(XmlStandalone.Omit);
+            await WriteStartDocumentImplAsync(XmlStandalone.Omit).ConfigureAwait(false);
         }
 
-        public override Task WriteStartDocumentAsync(bool standalone)
+        public override async Task WriteStartDocumentAsync(bool standalone)
         {
-            return WriteStartDocumentImplAsync(standalone ? XmlStandalone.Yes : XmlStandalone.No);
+            await WriteStartDocumentImplAsync(standalone ? XmlStandalone.Yes : XmlStandalone.No).ConfigureAwait(false);
         }
 
         public override async Task WriteEndDocumentAsync()
@@ -148,15 +148,15 @@ namespace System.Xml
         }
 
         //call nextTaskFun after task finish. Check exception.
-        private Task SequenceRun<TArg>(Task task, Func<TArg, Task> nextTaskFun, TArg arg)
+        private async Task SequenceRun<TArg>(Task task, Func<TArg, Task> nextTaskFun, TArg arg)
         {
             if (task.IsSuccess())
             {
-                return TryReturnTask(nextTaskFun(arg));
+                await TryReturnTask(nextTaskFun(arg)).ConfigureAwait(false);
             }
             else
             {
-                return _SequenceRun(task, nextTaskFun, arg);
+                await _SequenceRun(task, nextTaskFun, arg).ConfigureAwait(false);
             }
         }
 
@@ -319,7 +319,7 @@ namespace System.Xml
             {
                 Task task = AdvanceStateAsync(Token.EndElement);
 
-                return SequenceRun(task, thisRef => thisRef.WriteEndElementAsync_NoAdvanceState(), this);
+                return SequenceRun(task, async thisRef => await thisRef.WriteEndElementAsync_NoAdvanceState().ConfigureAwait(false), this);
             }
             catch
             {
@@ -348,7 +348,7 @@ namespace System.Xml
                     task = _writer.WriteEndElementAsync();
                 }
 
-                return SequenceRun(task, thisRef => thisRef.WriteEndElementAsync_FinishWrite(), this);
+                return SequenceRun(task, async thisRef => await thisRef.WriteEndElementAsync_FinishWrite().ConfigureAwait(false), this);
             }
             catch
             {
@@ -398,7 +398,7 @@ namespace System.Xml
             {
                 Task task = AdvanceStateAsync(Token.EndElement);
 
-                return SequenceRun(task, thisRef => thisRef.WriteFullEndElementAsync_NoAdvanceState(), this);
+                return SequenceRun(task, async thisRef => await thisRef.WriteFullEndElementAsync_NoAdvanceState().ConfigureAwait(false), this);
             }
             catch
             {
@@ -427,7 +427,7 @@ namespace System.Xml
                     task = _writer.WriteFullEndElementAsync();
                 }
 
-                return SequenceRun(task, thisRef => thisRef.WriteEndElementAsync_FinishWrite(), this);
+                return SequenceRun(task, async thisRef => await thisRef.WriteEndElementAsync_FinishWrite().ConfigureAwait(false), this);
             }
             catch
             {
@@ -611,7 +611,7 @@ namespace System.Xml
             try
             {
                 Task task = AdvanceStateAsync(Token.EndAttribute);
-                return SequenceRun(task, thisRef => thisRef.WriteEndAttributeAsync_NoAdvance(), this);
+                return SequenceRun(task, async thisRef => await thisRef.WriteEndAttributeAsync_NoAdvance().ConfigureAwait(false), this);
             }
             catch
             {
@@ -620,17 +620,17 @@ namespace System.Xml
             }
         }
 
-        private Task WriteEndAttributeAsync_NoAdvance()
+        private async Task WriteEndAttributeAsync_NoAdvance()
         {
             try
             {
                 if (_specAttr != SpecialAttribute.No)
                 {
-                    return WriteEndAttributeAsync_SepcialAtt();
+                    await WriteEndAttributeAsync_SepcialAtt().ConfigureAwait(false);
                 }
                 else
                 {
-                    return TryReturnTask(_writer.WriteEndAttributeAsync());
+                    await TryReturnTask(_writer.WriteEndAttributeAsync()).ConfigureAwait(false);
                 }
             }
             catch
@@ -1245,16 +1245,16 @@ namespace System.Xml
             _currentState = newState;
         }
 
-        private Task AdvanceStateAsync_ContinueWhenFinish(Task task, State newState, Token token)
+        private async Task AdvanceStateAsync_ContinueWhenFinish(Task task, State newState, Token token)
         {
             if (task.IsSuccess())
             {
                 _currentState = newState;
-                return AdvanceStateAsync(token);
+                await AdvanceStateAsync(token).ConfigureAwait(false);
             }
             else
             {
-                return _AdvanceStateAsync_ContinueWhenFinish(task, newState, token);
+                await _AdvanceStateAsync_ContinueWhenFinish(task, newState, token).ConfigureAwait(false);
             }
         }
 
@@ -1308,14 +1308,14 @@ namespace System.Xml
                         return AdvanceStateAsync_ReturnWhenFinish(WriteStartDocumentAsync(), State.Element);
 
                     case State.EndAttrSEle:
-                        task = SequenceRun(WriteEndAttributeAsync(), thisRef => thisRef.StartElementContentAsync(), this);
+                        task = SequenceRun(WriteEndAttributeAsync(), async thisRef => await thisRef.StartElementContentAsync().ConfigureAwait(false), this);
                         return AdvanceStateAsync_ReturnWhenFinish(task, State.Element);
 
                     case State.EndAttrEEle:
-                        task = SequenceRun(WriteEndAttributeAsync(), thisRef => thisRef.StartElementContentAsync(), this);
+                        task = SequenceRun(WriteEndAttributeAsync(), async thisRef => await thisRef.StartElementContentAsync().ConfigureAwait(false), this);
                         return AdvanceStateAsync_ReturnWhenFinish(task, State.Content);
                     case State.EndAttrSCont:
-                        task = SequenceRun(WriteEndAttributeAsync(), thisRef => thisRef.StartElementContentAsync(), this);
+                        task = SequenceRun(WriteEndAttributeAsync(), async thisRef => await thisRef.StartElementContentAsync().ConfigureAwait(false), this);
                         return AdvanceStateAsync_ReturnWhenFinish(task, State.Content);
 
                     case State.EndAttrSAttr:

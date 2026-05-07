@@ -156,10 +156,10 @@ namespace System.Xml
             WriteByte((byte)ch);
         }
 
-        protected Task WriteByteAsync(char ch)
+        protected async Task WriteByteAsync(char ch)
         {
             Debug.Assert(ch < 0x80);
-            return WriteByteAsync((byte)ch);
+            await WriteByteAsync((byte)ch).ConfigureAwait(false);
         }
 
         protected void WriteBytes(byte b1, byte b2)
@@ -203,10 +203,10 @@ namespace System.Xml
             WriteBytes((byte)ch1, (byte)ch2);
         }
 
-        protected Task WriteBytesAsync(char ch1, char ch2)
+        protected async Task WriteBytesAsync(char ch1, char ch2)
         {
             Debug.Assert(ch1 < 0x80 && ch2 < 0x80);
-            return WriteBytesAsync((byte)ch1, (byte)ch2);
+            await WriteBytesAsync((byte)ch1, (byte)ch2).ConfigureAwait(false);
         }
 
         public void WriteBytes(byte[] byteBuffer, int byteOffset, int byteCount)

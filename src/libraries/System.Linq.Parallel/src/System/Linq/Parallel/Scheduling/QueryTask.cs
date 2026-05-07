@@ -76,12 +76,12 @@ namespace System.Linq.Parallel
             ((QueryTask)o).BaseWork(null);
         };
 
-        internal Task RunAsynchronously(TaskScheduler taskScheduler)
+        internal async Task RunAsynchronously(TaskScheduler taskScheduler)
         {
             Debug.Assert(taskScheduler == TaskScheduler.Default, "PLINQ queries can currently execute only on the default scheduler.");
 
             TraceHelpers.TraceInfo("[timing]: {0}: Queue work {1} to occur asynchronously", DateTime.Now.Ticks, _taskIndex);
-            return Task.Factory.StartNew(s_baseWorkDelegate, this, CancellationToken.None, TaskCreationOptions.AttachedToParent | TaskCreationOptions.PreferFairness, taskScheduler);
+            await Task.Factory.StartNew(s_baseWorkDelegate, this, CancellationToken.None, TaskCreationOptions.AttachedToParent | TaskCreationOptions.PreferFairness, taskScheduler).ConfigureAwait(false);
         }
 
         //-----------------------------------------------------------------------------------

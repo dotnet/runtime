@@ -17,25 +17,25 @@ namespace System.Xml
     internal sealed partial class XsdValidatingReader : XmlReader, IXmlSchemaInfo, IXmlLineInfo, IXmlNamespaceResolver
     {
         // Gets the text value of the current node.
-        public override Task<string> GetValueAsync()
+        public override async Task<string> GetValueAsync()
         {
             if ((int)_validationState < 0)
             {
                 Debug.Assert(_cachedNode != null);
-                return Task.FromResult(_cachedNode.RawValue);
+                return _cachedNode.RawValue;
             }
 
-            return _coreReader.GetValueAsync();
+            return await _coreReader.GetValueAsync().ConfigureAwait(false);
         }
 
-        public override Task<object> ReadContentAsObjectAsync()
+        public override async Task<object> ReadContentAsObjectAsync()
         {
             if (!CanReadContentAs(this.NodeType))
             {
                 throw CreateReadContentAsException(nameof(ReadContentAsObject));
             }
 
-            return InternalReadContentAsObjectAsync(true);
+            return await InternalReadContentAsObjectAsync(true).ConfigureAwait(false);
         }
 
         public override async Task<string> ReadContentAsStringAsync()
@@ -319,7 +319,7 @@ namespace System.Xml
                 case ValidatingReaderState.OnReadBinaryContent:
                     _validationState = _savedState;
                     Debug.Assert(_readBinaryHelper != null);
-                    return _readBinaryHelper.FinishAsync().CallBoolTaskFuncWhenFinishAsync(thisRef => thisRef.ReadAsync(), this);
+                    return _readBinaryHelper.FinishAsync().CallBoolTaskFuncWhenFinishAsync(async thisRef => await thisRef.ReadAsync().ConfigureAwait(false), this);
 
                 case ValidatingReaderState.Init:
                     _validationState = ValidatingReaderState.Read;
@@ -674,9 +674,9 @@ namespace System.Xml
             }
         }
 
-        private Task<object> InternalReadContentAsObjectAsync()
+        private async Task<object> InternalReadContentAsObjectAsync()
         {
-            return InternalReadContentAsObjectAsync(false);
+            return await InternalReadContentAsObjectAsync(false).ConfigureAwait(false);
         }
 
         private async Task<object> InternalReadContentAsObjectAsync(bool unwrapTypedValue)
@@ -756,9 +756,9 @@ namespace System.Xml
             }
         }
 
-        private Task<(XmlSchemaType, object)> InternalReadElementContentAsObjectAsync()
+        private async Task<(XmlSchemaType, object)> InternalReadElementContentAsObjectAsync()
         {
-            return InternalReadElementContentAsObjectAsync(false);
+            return await InternalReadElementContentAsObjectAsync(false).ConfigureAwait(false);
         }
 
         private async Task<(XmlSchemaType, object)> InternalReadElementContentAsObjectAsync(bool unwrapTypedValue)

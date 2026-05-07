@@ -29,6 +29,7 @@
     <StrongNameKeyId>Open</StrongNameKeyId>
     <!-- Microsoft.Extensions projects have a separate StrongNameKeyId -->
     <StrongNameKeyId Condition="$(MSBuildProjectName.StartsWith('Microsoft.Extensions.'))">MicrosoftAspNetCore</StrongNameKeyId>
+    <NoWarn>$(NoWarn);CA1835</NoWarn>
     <!-- We can't generate an apphost without restoring the targeting pack. -->
     <UseAppHost>false</UseAppHost>
     <EnableDefaultItems>false</EnableDefaultItems>

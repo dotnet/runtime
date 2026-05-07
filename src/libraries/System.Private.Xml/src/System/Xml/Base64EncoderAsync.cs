@@ -11,14 +11,14 @@ namespace System.Xml
     {
         internal abstract Task WriteCharsAsync(char[] chars, int index, int count);
 
-        internal Task EncodeAsync(byte[] buffer, int index, int count)
+        internal async Task EncodeAsync(byte[] buffer, int index, int count)
         {
             ArgumentNullException.ThrowIfNull(buffer);
             if (index < 0 || (uint)count > buffer.Length - index)
             {
                 throw new ArgumentOutOfRangeException(index < 0 ? nameof(index) : nameof(count));
             }
-            return Core(buffer, index, count);
+            await Core(buffer, index, count).ConfigureAwait(false);
 
             async Task Core(byte[] buffer, int index, int count)
             {
@@ -94,9 +94,9 @@ namespace System.Xml
 
     internal sealed partial class XmlRawWriterBase64Encoder : Base64Encoder
     {
-        internal override Task WriteCharsAsync(char[] chars, int index, int count)
+        internal override async Task WriteCharsAsync(char[] chars, int index, int count)
         {
-            return _rawWriter.WriteRawAsync(chars, index, count);
+            await _rawWriter.WriteRawAsync(chars, index, count).ConfigureAwait(false);
         }
     }
 }

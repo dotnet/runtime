@@ -110,10 +110,10 @@ namespace System.IO.Pipelines
         /// <param name="source">The read-only byte memory region to write.</param>
         /// <param name="cancellationToken">The token to monitor for cancellation requests. The default value is <see cref="System.Threading.CancellationToken.None" />.</param>
         /// <returns>A task that represents the asynchronous write operation, and wraps the flush asynchronous operation.</returns>
-        public virtual ValueTask<FlushResult> WriteAsync(ReadOnlyMemory<byte> source, CancellationToken cancellationToken = default)
+        public virtual async ValueTask<FlushResult> WriteAsync(ReadOnlyMemory<byte> source, CancellationToken cancellationToken = default)
         {
             this.Write(source.Span);
-            return FlushAsync(cancellationToken);
+            return await FlushAsync(cancellationToken).ConfigureAwait(false);
         }
 
         /// <summary>Asynchronously reads the bytes from the specified stream and writes them to the <see cref="System.IO.Pipelines.PipeWriter" />.</summary>

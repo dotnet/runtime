@@ -42,13 +42,13 @@ internal sealed partial class ZipGenericExtraField
 
 internal sealed partial class Zip64ExtraField
 {
-    public ValueTask WriteBlockAsync(Stream stream, CancellationToken cancellationToken)
+    public async ValueTask WriteBlockAsync(Stream stream, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
 
         byte[] extraFieldData = new byte[TotalSize];
         WriteBlockCore(extraFieldData);
-        return stream.WriteAsync(extraFieldData, cancellationToken);
+        await stream.WriteAsync(extraFieldData, cancellationToken).ConfigureAwait(false);
     }
 
 }
@@ -68,13 +68,13 @@ internal sealed partial class Zip64EndOfCentralDirectoryLocator
         return zip64EOCDLocator;
     }
 
-    public static ValueTask WriteBlockAsync(Stream stream, long zip64EOCDRecordStart, CancellationToken cancellationToken)
+    public static async ValueTask WriteBlockAsync(Stream stream, long zip64EOCDRecordStart, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
 
         byte[] blockContents = new byte[TotalSize];
         WriteBlockCore(blockContents, zip64EOCDRecordStart);
-        return stream.WriteAsync(blockContents, cancellationToken);
+        await stream.WriteAsync(blockContents, cancellationToken).ConfigureAwait(false);
     }
 }
 
@@ -95,14 +95,14 @@ internal sealed partial class Zip64EndOfCentralDirectoryRecord
         return zip64EOCDRecord;
     }
 
-    public static ValueTask WriteBlockAsync(Stream stream, long numberOfEntries, long startOfCentralDirectory, long sizeOfCentralDirectory, CancellationToken cancellationToken)
+    public static async ValueTask WriteBlockAsync(Stream stream, long numberOfEntries, long startOfCentralDirectory, long sizeOfCentralDirectory, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
 
         byte[] blockContents = new byte[BlockConstantSectionSize];
         WriteBlockCore(blockContents, numberOfEntries, startOfCentralDirectory, sizeOfCentralDirectory);
         // write Zip 64 EOCD record
-        return stream.WriteAsync(blockContents, cancellationToken);
+        await stream.WriteAsync(blockContents, cancellationToken).ConfigureAwait(false);
     }
 }
 

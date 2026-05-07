@@ -25,7 +25,7 @@ namespace System.Linq
         /// <returns>A <see cref="ILookup{TKey, TElement}"/> that contains keys and values.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="source"/> is <see langword="null"/>.</exception>
         /// <exception cref="ArgumentNullException"><paramref name="keySelector"/> is <see langword="null"/>.</exception>
-        public static ValueTask<ILookup<TKey, TSource>> ToLookupAsync<TSource, TKey>(
+        public static async ValueTask<ILookup<TKey, TSource>> ToLookupAsync<TSource, TKey>(
             this IAsyncEnumerable<TSource> source,
             Func<TSource, TKey> keySelector,
             IEqualityComparer<TKey>? comparer = null,
@@ -34,7 +34,7 @@ namespace System.Linq
             ArgumentNullException.ThrowIfNull(source);
             ArgumentNullException.ThrowIfNull(keySelector);
 
-            return Impl(source.WithCancellation(cancellationToken), keySelector, comparer);
+            return await Impl(source.WithCancellation(cancellationToken), keySelector, comparer).ConfigureAwait(false);
 
             static async ValueTask<ILookup<TKey, TSource>> Impl(
                 ConfiguredCancelableAsyncEnumerable<TSource> source,
@@ -73,7 +73,7 @@ namespace System.Linq
         /// <returns>A <see cref="ILookup{TKey, TElement}"/> that contains keys and values.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="source"/> is <see langword="null"/>.</exception>
         /// <exception cref="ArgumentNullException"><paramref name="keySelector"/> is <see langword="null"/>.</exception>
-        public static ValueTask<ILookup<TKey, TSource>> ToLookupAsync<TSource, TKey>(
+        public static async ValueTask<ILookup<TKey, TSource>> ToLookupAsync<TSource, TKey>(
             this IAsyncEnumerable<TSource> source,
             Func<TSource, CancellationToken, ValueTask<TKey>> keySelector,
             IEqualityComparer<TKey>? comparer = null,
@@ -82,7 +82,7 @@ namespace System.Linq
             ArgumentNullException.ThrowIfNull(source);
             ArgumentNullException.ThrowIfNull(keySelector);
 
-            return Impl(source, keySelector, comparer, cancellationToken);
+            return await Impl(source, keySelector, comparer, cancellationToken).ConfigureAwait(false);
 
             static async ValueTask<ILookup<TKey, TSource>> Impl(
                 IAsyncEnumerable<TSource> source,
@@ -124,7 +124,7 @@ namespace System.Linq
         /// <returns>A <see cref="ILookup{TKey, TElement}"/> that contains keys and values.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="source"/> is <see langword="null"/>.</exception>
         /// <exception cref="ArgumentNullException"><paramref name="keySelector"/> is <see langword="null"/>.</exception>
-        public static ValueTask<ILookup<TKey, TElement>> ToLookupAsync<TSource, TKey, TElement>(
+        public static async ValueTask<ILookup<TKey, TElement>> ToLookupAsync<TSource, TKey, TElement>(
             this IAsyncEnumerable<TSource> source,
             Func<TSource, TKey> keySelector,
             Func<TSource, TElement> elementSelector,
@@ -135,7 +135,7 @@ namespace System.Linq
             ArgumentNullException.ThrowIfNull(keySelector);
             ArgumentNullException.ThrowIfNull(elementSelector);
 
-            return Impl(source.WithCancellation(cancellationToken), keySelector, elementSelector, comparer);
+            return await Impl(source.WithCancellation(cancellationToken), keySelector, elementSelector, comparer).ConfigureAwait(false);
 
             static async ValueTask<ILookup<TKey, TElement>> Impl(
                 ConfiguredCancelableAsyncEnumerable<TSource> source,
@@ -177,7 +177,7 @@ namespace System.Linq
         /// <returns>A <see cref="ILookup{TKey, TElement}"/> that contains keys and values.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="source"/> is <see langword="null"/>.</exception>
         /// <exception cref="ArgumentNullException"><paramref name="keySelector"/> is <see langword="null"/>.</exception>
-        public static ValueTask<ILookup<TKey, TElement>> ToLookupAsync<TSource, TKey, TElement>(
+        public static async ValueTask<ILookup<TKey, TElement>> ToLookupAsync<TSource, TKey, TElement>(
             this IAsyncEnumerable<TSource> source,
             Func<TSource, CancellationToken, ValueTask<TKey>> keySelector,
             Func<TSource, CancellationToken, ValueTask<TElement>> elementSelector,
@@ -188,7 +188,7 @@ namespace System.Linq
             ArgumentNullException.ThrowIfNull(keySelector);
             ArgumentNullException.ThrowIfNull(elementSelector);
 
-            return Impl(source, keySelector, elementSelector, comparer, cancellationToken);
+            return await Impl(source, keySelector, elementSelector, comparer, cancellationToken).ConfigureAwait(false);
 
             static async ValueTask<ILookup<TKey, TElement>> Impl(
                 IAsyncEnumerable<TSource> source,

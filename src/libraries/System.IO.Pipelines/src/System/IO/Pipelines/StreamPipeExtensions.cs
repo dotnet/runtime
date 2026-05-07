@@ -14,7 +14,7 @@ namespace System.IO.Pipelines
         /// <param name="destination">The writer to which the contents of the source stream will be copied.</param>
         /// <param name="cancellationToken">The token to monitor for cancellation requests. The default value is <see cref="System.Threading.CancellationToken.None" />.</param>
         /// <returns>A task that represents the asynchronous copy operation.</returns>
-        public static Task CopyToAsync(this Stream source, PipeWriter destination, CancellationToken cancellationToken = default)
+        public static async Task CopyToAsync(this Stream source, PipeWriter destination, CancellationToken cancellationToken = default)
         {
             if (source is null)
             {
@@ -27,10 +27,10 @@ namespace System.IO.Pipelines
 
             if (cancellationToken.IsCancellationRequested)
             {
-                return Task.FromCanceled(cancellationToken);
+                await Task.FromCanceled(cancellationToken).ConfigureAwait(false);
             }
 
-            return destination.CopyFromAsync(source, cancellationToken);
+            await destination.CopyFromAsync(source, cancellationToken).ConfigureAwait(false);
         }
     }
 }

@@ -581,11 +581,11 @@ namespace System.Net.Http
             }
         }
 
-        private ValueTask FlushSendBufferAsync(bool endStream, CancellationToken cancellationToken)
+        private async ValueTask FlushSendBufferAsync(bool endStream, CancellationToken cancellationToken)
         {
             ReadOnlyMemory<byte> toSend = _sendBuffer.ActiveMemory;
             _sendBuffer.Discard(toSend.Length);
-            return _stream.WriteAsync(toSend, endStream, cancellationToken);
+            await _stream.WriteAsync(toSend, endStream, cancellationToken).ConfigureAwait(false);
         }
 
         private async ValueTask DrainContentLength0Frames(CancellationToken cancellationToken)
@@ -1514,17 +1514,17 @@ namespace System.Net.Http
                 return stream.ReadResponseContent(_response, buffer);
             }
 
-            public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken)
+            public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken)
             {
                 Http3RequestStream? stream = _stream;
 
                 if (stream is null)
                 {
-                    return ValueTask.FromException<int>(ExceptionDispatchInfo.SetCurrentStackTrace(new ObjectDisposedException(nameof(Http3RequestStream))));
+                    throw ExceptionDispatchInfo.SetCurrentStackTrace(new ObjectDisposedException(nameof(Http3RequestStream)));
                 }
 
                 Debug.Assert(_response != null);
-                return stream.ReadResponseContentAsync(_response, buffer, cancellationToken);
+                return await stream.ReadResponseContentAsync(_response, buffer, cancellationToken).ConfigureAwait(false);
             }
 
             public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken)
@@ -1565,30 +1565,24 @@ namespace System.Net.Http
                 throw new NotSupportedException();
             }
 
-            public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken)
+            public override async ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken)
             {
                 BytesWritten += buffer.Length;
 
                 Http3RequestStream? stream = _stream;
 
-                if (stream is null)
-                {
-                    return ValueTask.FromException(ExceptionDispatchInfo.SetCurrentStackTrace(new ObjectDisposedException(nameof(Http3WriteStream))));
-                }
+                ObjectDisposedException.ThrowIf(stream is null, typeof(Http3WriteStream));
 
-                return stream.WriteRequestContentAsync(buffer, cancellationToken);
+                await stream.WriteRequestContentAsync(buffer, cancellationToken).ConfigureAwait(false);
             }
 
-            public override Task FlushAsync(CancellationToken cancellationToken)
+            public override async Task FlushAsync(CancellationToken cancellationToken)
             {
                 Http3RequestStream? stream = _stream;
 
-                if (stream is null)
-                {
-                    return Task.FromException(ExceptionDispatchInfo.SetCurrentStackTrace(new ObjectDisposedException(nameof(Http3WriteStream))));
-                }
+                ObjectDisposedException.ThrowIf(stream is null, typeof(Http3WriteStream));
 
-                return stream.FlushSendBufferAsync(endStream: false, cancellationToken).AsTask();
+                await stream.FlushSendBufferAsync(endStream: false, cancellationToken).ConfigureAwait(false);
             }
         }
 

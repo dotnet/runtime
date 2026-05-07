@@ -48,10 +48,10 @@ namespace System.Net.Http
             return Read(buffer.AsSpan(offset, count));
         }
 
-        public sealed override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        public sealed override async Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
             ValidateBufferArguments(buffer, offset, count);
-            return ReadAsync(new Memory<byte>(buffer, offset, count), cancellationToken).AsTask();
+            return await ReadAsync(new Memory<byte>(buffer, offset, count), cancellationToken).ConfigureAwait(false);
         }
 
         public override void Write(byte[] buffer, int offset, int count)
@@ -66,15 +66,15 @@ namespace System.Net.Http
         public sealed override void WriteByte(byte value) =>
             Write(new ReadOnlySpan<byte>(in value));
 
-        public sealed override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        public sealed override async Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
             ValidateBufferArguments(buffer, offset, count);
-            return WriteAsync(new ReadOnlyMemory<byte>(buffer, offset, count), cancellationToken).AsTask();
+            await WriteAsync(new ReadOnlyMemory<byte>(buffer, offset, count), cancellationToken).ConfigureAwait(false);
         }
 
         public override void Flush() => FlushAsync(default).GetAwaiter().GetResult();
 
-        public override Task FlushAsync(CancellationToken cancellationToken) => NopAsync(cancellationToken);
+        public override async Task FlushAsync(CancellationToken cancellationToken) => await NopAsync(cancellationToken).ConfigureAwait(false);
 
         protected static Task NopAsync(CancellationToken cancellationToken) =>
             cancellationToken.IsCancellationRequested ? Task.FromCanceled(cancellationToken) :

@@ -176,7 +176,7 @@ namespace System.Linq.Parallel
                         QueryTask asyncTask = new OrderPreservingPipeliningSpoolingTask<TOutput, TKey>(
                             partitions[i], groupState, consumerWaiting, producerWaiting,
                             producerDone, i, buffers, bufferLocks[i], autoBuffered);
-                        asyncTask.RunAsynchronously(taskScheduler);
+                        _ = asyncTask.RunAsynchronously(taskScheduler);
                     }
                 });
 

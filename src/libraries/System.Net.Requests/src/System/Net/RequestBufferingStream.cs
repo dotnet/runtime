@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
@@ -75,17 +75,17 @@ namespace System.Net
             _buffer.Write(buffer, offset, count);
         }
 
-        public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        public override async Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
             ThrowIfDisposed();
             ValidateBufferArguments(buffer, offset, count);
-            return _buffer.WriteAsync(buffer, offset, count, cancellationToken);
+            await _buffer.WriteAsync(buffer, offset, count, cancellationToken).ConfigureAwait(false);
         }
 
-        public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
+        public override async ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
         {
             ThrowIfDisposed();
-            return _buffer.WriteAsync(buffer, cancellationToken);
+            await _buffer.WriteAsync(buffer, cancellationToken).ConfigureAwait(false);
         }
 
         public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback? asyncCallback, object? asyncState)

@@ -157,13 +157,13 @@ namespace System.Xml.Linq
         /// <param name="cancellationToken">
         /// A cancellation token.
         /// </param>
-        public override Task WriteToAsync(XmlWriter writer, CancellationToken cancellationToken)
+        public override async Task WriteToAsync(XmlWriter writer, CancellationToken cancellationToken)
         {
             ArgumentNullException.ThrowIfNull(writer);
 
             if (cancellationToken.IsCancellationRequested)
-                return Task.FromCanceled(cancellationToken);
-            return writer.WriteDocTypeAsync(_name, _publicId, _systemId, _internalSubset);
+                await Task.FromCanceled(cancellationToken).ConfigureAwait(false);
+            await writer.WriteDocTypeAsync(_name, _publicId, _systemId, _internalSubset).ConfigureAwait(false);
         }
 
         internal override XNode CloneNode()

@@ -131,10 +131,10 @@ namespace System.Xml
             }
         }
 
-        private Task ParseInternalSubsetAsync()
+        private async Task ParseInternalSubsetAsync()
         {
             Debug.Assert(ParsingInternalSubset);
-            return ParseSubsetAsync();
+            await ParseSubsetAsync().ConfigureAwait(false);
         }
 
         private async Task ParseExternalSubsetAsync()
@@ -2377,14 +2377,14 @@ namespace System.Xml
             }
         }
 
-        private Task ScanNameAsync()
+        private async Task ScanNameAsync()
         {
-            return ScanQNameAsync(false);
+            await ScanQNameAsync(false).ConfigureAwait(false);
         }
 
-        private Task ScanQNameAsync()
+        private async Task ScanQNameAsync()
         {
-            return ScanQNameAsync(SupportNamespaces);
+            await ScanQNameAsync(SupportNamespaces).ConfigureAwait(false);
         }
 
         private async Task ScanQNameAsync(bool isQName)
@@ -2569,12 +2569,12 @@ namespace System.Xml
         //
         // Entity handling
         //
-        private Task<bool> HandleEntityReferenceAsync(bool paramEntity, bool inLiteral, bool inAttribute)
+        private async Task<bool> HandleEntityReferenceAsync(bool paramEntity, bool inLiteral, bool inAttribute)
         {
             Debug.Assert(_chars[_curPos] == '&' || _chars[_curPos] == '%');
             _curPos++;
 
-            return HandleEntityReferenceAsync(ScanEntityName(), paramEntity, inLiteral, inAttribute);
+            return await HandleEntityReferenceAsync(ScanEntityName(), paramEntity, inLiteral, inAttribute).ConfigureAwait(false);
         }
 
         private async Task<bool> HandleEntityReferenceAsync(XmlQualifiedName entityName, bool paramEntity, bool inLiteral, bool inAttribute)

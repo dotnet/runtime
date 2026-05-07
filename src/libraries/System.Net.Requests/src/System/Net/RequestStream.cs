@@ -51,10 +51,10 @@ namespace System.Net
             _internalStream.Flush();
         }
 
-        public override Task FlushAsync(CancellationToken cancellationToken)
+        public override async Task FlushAsync(CancellationToken cancellationToken)
         {
             ThrowIfDisposed();
-            return _internalStream.FlushAsync(cancellationToken);
+            await _internalStream.FlushAsync(cancellationToken).ConfigureAwait(false);
         }
 
         public override long Length
@@ -99,17 +99,17 @@ namespace System.Net
             _internalStream.Write(new(buffer, offset, count));
         }
 
-        public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        public override async Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
             ThrowIfDisposed();
             ValidateBufferArguments(buffer, offset, count);
-            return _internalStream.WriteAsync(buffer.AsMemory(offset, count), cancellationToken).AsTask();
+            await _internalStream.WriteAsync(buffer.AsMemory(offset, count), cancellationToken).ConfigureAwait(false);
         }
 
-        public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
+        public override async ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
         {
             ThrowIfDisposed();
-            return _internalStream.WriteAsync(buffer, cancellationToken);
+            await _internalStream.WriteAsync(buffer, cancellationToken).ConfigureAwait(false);
         }
 
         public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback? asyncCallback, object? asyncState)

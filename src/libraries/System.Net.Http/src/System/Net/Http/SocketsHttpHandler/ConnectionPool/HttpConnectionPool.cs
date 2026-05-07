@@ -340,7 +340,7 @@ namespace System.Net.Http
         // we will remove it from the list of available connections, if it is present there.
         // If not, then it must be unavailable at the moment; we will detect this and ensure it is not added back to the available pool.
 
-        public ValueTask<HttpResponseMessage> SendAsync(HttpRequestMessage request, bool async, bool doRequestAuth, CancellationToken cancellationToken)
+        public async ValueTask<HttpResponseMessage> SendAsync(HttpRequestMessage request, bool async, bool doRequestAuth, CancellationToken cancellationToken)
         {
             // We need the User-Agent header when we send a CONNECT request to the proxy.
             // We must read the header early, before we return the ownership of the request back to the user.
@@ -353,40 +353,40 @@ namespace System.Net.Http
 
             if (doRequestAuth && Settings._credentials != null)
             {
-                return AuthenticationHelper.SendWithRequestAuthAsync(request, async, Settings._credentials, Settings._preAuthenticate, this, cancellationToken);
+                return await AuthenticationHelper.SendWithRequestAuthAsync(request, async, Settings._credentials, Settings._preAuthenticate, this, cancellationToken).ConfigureAwait(false);
             }
 
-            return SendWithProxyAuthAsync(request, async, doRequestAuth, cancellationToken);
+            return await SendWithProxyAuthAsync(request, async, doRequestAuth, cancellationToken).ConfigureAwait(false);
         }
 
-        public ValueTask<HttpResponseMessage> SendWithProxyAuthAsync(HttpRequestMessage request, bool async, bool doRequestAuth, CancellationToken cancellationToken)
+        public async ValueTask<HttpResponseMessage> SendWithProxyAuthAsync(HttpRequestMessage request, bool async, bool doRequestAuth, CancellationToken cancellationToken)
         {
             if (DoProxyAuth && ProxyCredentials is not null)
             {
-                return AuthenticationHelper.SendWithProxyAuthAsync(request, _proxyUri!, async, ProxyCredentials, doRequestAuth, this, cancellationToken);
+                return await AuthenticationHelper.SendWithProxyAuthAsync(request, _proxyUri!, async, ProxyCredentials, doRequestAuth, this, cancellationToken).ConfigureAwait(false);
             }
 
-            return SendWithVersionDetectionAndRetryAsync(request, async, doRequestAuth, cancellationToken);
+            return await SendWithVersionDetectionAndRetryAsync(request, async, doRequestAuth, cancellationToken).ConfigureAwait(false);
         }
 
-        private Task<HttpResponseMessage> SendWithNtConnectionAuthAsync(HttpConnection connection, HttpRequestMessage request, bool async, bool doRequestAuth, CancellationToken cancellationToken)
+        private async Task<HttpResponseMessage> SendWithNtConnectionAuthAsync(HttpConnection connection, HttpRequestMessage request, bool async, bool doRequestAuth, CancellationToken cancellationToken)
         {
             if (doRequestAuth && Settings._credentials != null)
             {
-                return AuthenticationHelper.SendWithNtConnectionAuthAsync(request, async, Settings._credentials, Settings._impersonationLevel, connection, this, cancellationToken);
+                return await AuthenticationHelper.SendWithNtConnectionAuthAsync(request, async, Settings._credentials, Settings._impersonationLevel, connection, this, cancellationToken).ConfigureAwait(false);
             }
 
-            return SendWithNtProxyAuthAsync(connection, request, async, cancellationToken);
+            return await SendWithNtProxyAuthAsync(connection, request, async, cancellationToken).ConfigureAwait(false);
         }
 
-        public Task<HttpResponseMessage> SendWithNtProxyAuthAsync(HttpConnection connection, HttpRequestMessage request, bool async, CancellationToken cancellationToken)
+        public async Task<HttpResponseMessage> SendWithNtProxyAuthAsync(HttpConnection connection, HttpRequestMessage request, bool async, CancellationToken cancellationToken)
         {
             if (DoProxyAuth && ProxyCredentials is not null)
             {
-                return AuthenticationHelper.SendWithNtProxyAuthAsync(request, ProxyUri!, async, ProxyCredentials, HttpHandlerDefaults.DefaultImpersonationLevel, connection, this, cancellationToken);
+                return await AuthenticationHelper.SendWithNtProxyAuthAsync(request, ProxyUri!, async, ProxyCredentials, HttpHandlerDefaults.DefaultImpersonationLevel, connection, this, cancellationToken).ConfigureAwait(false);
             }
 
-            return connection.SendAsync(request, async, cancellationToken);
+            return await connection.SendAsync(request, async, cancellationToken).ConfigureAwait(false);
         }
 
         public async ValueTask<HttpResponseMessage> SendWithVersionDetectionAndRetryAsync(HttpRequestMessage request, bool async, bool doRequestAuth, CancellationToken cancellationToken)

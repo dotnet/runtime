@@ -294,7 +294,7 @@ namespace System.Net.WebSockets
 
         public override string? SubProtocol => _subprotocol;
 
-        public override Task SendAsync(ArraySegment<byte> buffer, WebSocketMessageType messageType, bool endOfMessage, CancellationToken cancellationToken)
+        public override async Task SendAsync(ArraySegment<byte> buffer, WebSocketMessageType messageType, bool endOfMessage, CancellationToken cancellationToken)
         {
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Trace(this);
 
@@ -302,11 +302,11 @@ namespace System.Net.WebSockets
 
             WebSocketValidate.ValidateArraySegment(buffer, nameof(buffer));
 
-            return SendAsync(buffer, messageType, endOfMessage ? WebSocketMessageFlags.EndOfMessage : default, cancellationToken).AsTask();
+            await SendAsync(buffer, messageType, endOfMessage ? WebSocketMessageFlags.EndOfMessage : default, cancellationToken).ConfigureAwait(false);
         }
 
-        public override ValueTask SendAsync(ReadOnlyMemory<byte> buffer, WebSocketMessageType messageType, bool endOfMessage, CancellationToken cancellationToken) =>
-            SendAsync(buffer, messageType, endOfMessage ? WebSocketMessageFlags.EndOfMessage : default, cancellationToken);
+        public override async ValueTask SendAsync(ReadOnlyMemory<byte> buffer, WebSocketMessageType messageType, bool endOfMessage, CancellationToken cancellationToken) =>
+            await SendAsync(buffer, messageType, endOfMessage ? WebSocketMessageFlags.EndOfMessage : default, cancellationToken).ConfigureAwait(false);
 
         public override ValueTask SendAsync(ReadOnlyMemory<byte> buffer, WebSocketMessageType messageType, WebSocketMessageFlags messageFlags, CancellationToken cancellationToken)
         {
@@ -348,7 +348,7 @@ namespace System.Net.WebSockets
             return t;
         }
 
-        public override Task<WebSocketReceiveResult> ReceiveAsync(ArraySegment<byte> buffer, CancellationToken cancellationToken)
+        public override async Task<WebSocketReceiveResult> ReceiveAsync(ArraySegment<byte> buffer, CancellationToken cancellationToken)
         {
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Trace(this);
 
@@ -358,16 +358,16 @@ namespace System.Net.WebSockets
             {
                 ThrowIfInvalidState(WebSocketStateHelper.ValidReceiveStates);
 
-                return ReceiveAsyncPrivate<WebSocketReceiveResult>(buffer, cancellationToken).AsTask();
+                return await ReceiveAsyncPrivate<WebSocketReceiveResult>(buffer, cancellationToken).ConfigureAwait(false);
             }
             catch (Exception exc)
             {
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.TraceException(this, exc);
-                return Task.FromException<WebSocketReceiveResult>(exc);
+                throw exc;
             }
         }
 
-        public override ValueTask<ValueWebSocketReceiveResult> ReceiveAsync(Memory<byte> buffer, CancellationToken cancellationToken)
+        public override async ValueTask<ValueWebSocketReceiveResult> ReceiveAsync(Memory<byte> buffer, CancellationToken cancellationToken)
         {
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Trace(this);
 
@@ -375,16 +375,16 @@ namespace System.Net.WebSockets
             {
                 ThrowIfInvalidState(WebSocketStateHelper.ValidReceiveStates);
 
-                return ReceiveAsyncPrivate<ValueWebSocketReceiveResult>(buffer, cancellationToken);
+                return await ReceiveAsyncPrivate<ValueWebSocketReceiveResult>(buffer, cancellationToken).ConfigureAwait(false);
             }
             catch (Exception exc)
             {
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.TraceException(this, exc);
-                return ValueTask.FromException<ValueWebSocketReceiveResult>(exc);
+                throw exc;
             }
         }
 
-        public override Task CloseAsync(WebSocketCloseStatus closeStatus, string? statusDescription, CancellationToken cancellationToken)
+        public override async Task CloseAsync(WebSocketCloseStatus closeStatus, string? statusDescription, CancellationToken cancellationToken)
         {
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Trace(this);
 
@@ -397,18 +397,18 @@ namespace System.Net.WebSockets
             catch (Exception exc)
             {
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.TraceException(this, exc);
-                return Task.FromException(exc);
+                throw exc;
             }
 
-            return CloseAsyncPrivate(closeStatus, statusDescription, cancellationToken);
+            await CloseAsyncPrivate(closeStatus, statusDescription, cancellationToken).ConfigureAwait(false);
         }
 
-        public override Task CloseOutputAsync(WebSocketCloseStatus closeStatus, string? statusDescription, CancellationToken cancellationToken)
+        public override async Task CloseOutputAsync(WebSocketCloseStatus closeStatus, string? statusDescription, CancellationToken cancellationToken)
         {
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Trace(this);
 
             WebSocketValidate.ValidateCloseStatus(closeStatus, statusDescription);
-            return CloseOutputAsyncCore(closeStatus, statusDescription, cancellationToken);
+            await CloseOutputAsyncCore(closeStatus, statusDescription, cancellationToken).ConfigureAwait(false);
         }
 
         private async Task CloseOutputAsyncCore(WebSocketCloseStatus closeStatus, string? statusDescription, CancellationToken cancellationToken)

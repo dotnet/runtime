@@ -530,39 +530,39 @@ namespace System.Net.NetworkInformation
             }, AsyncOperationManager.CreateOperation(userToken), CancellationToken.None, TaskContinuationOptions.DenyChildAttach, TaskScheduler.Default);
         }
 
-        public Task<PingReply> SendPingAsync(IPAddress address)
+        public async Task<PingReply> SendPingAsync(IPAddress address)
         {
-            return SendPingAsync(address, DefaultTimeout, DefaultSendBuffer, null);
+            return await SendPingAsync(address, DefaultTimeout, DefaultSendBuffer, null).ConfigureAwait(false);
         }
 
-        public Task<PingReply> SendPingAsync(string hostNameOrAddress)
+        public async Task<PingReply> SendPingAsync(string hostNameOrAddress)
         {
-            return SendPingAsync(hostNameOrAddress, DefaultTimeout, DefaultSendBuffer, null);
+            return await SendPingAsync(hostNameOrAddress, DefaultTimeout, DefaultSendBuffer, null).ConfigureAwait(false);
         }
 
-        public Task<PingReply> SendPingAsync(IPAddress address, int timeout)
+        public async Task<PingReply> SendPingAsync(IPAddress address, int timeout)
         {
-            return SendPingAsync(address, timeout, DefaultSendBuffer, null);
+            return await SendPingAsync(address, timeout, DefaultSendBuffer, null).ConfigureAwait(false);
         }
 
-        public Task<PingReply> SendPingAsync(string hostNameOrAddress, int timeout)
+        public async Task<PingReply> SendPingAsync(string hostNameOrAddress, int timeout)
         {
-            return SendPingAsync(hostNameOrAddress, timeout, DefaultSendBuffer, null);
+            return await SendPingAsync(hostNameOrAddress, timeout, DefaultSendBuffer, null).ConfigureAwait(false);
         }
 
-        public Task<PingReply> SendPingAsync(IPAddress address, int timeout, byte[] buffer)
+        public async Task<PingReply> SendPingAsync(IPAddress address, int timeout, byte[] buffer)
         {
-            return SendPingAsync(address, timeout, buffer, null);
+            return await SendPingAsync(address, timeout, buffer, null).ConfigureAwait(false);
         }
 
-        public Task<PingReply> SendPingAsync(string hostNameOrAddress, int timeout, byte[] buffer)
+        public async Task<PingReply> SendPingAsync(string hostNameOrAddress, int timeout, byte[] buffer)
         {
-            return SendPingAsync(hostNameOrAddress, timeout, buffer, null);
+            return await SendPingAsync(hostNameOrAddress, timeout, buffer, null).ConfigureAwait(false);
         }
 
-        public Task<PingReply> SendPingAsync(IPAddress address, int timeout, byte[] buffer, PingOptions? options)
+        public async Task<PingReply> SendPingAsync(IPAddress address, int timeout, byte[] buffer, PingOptions? options)
         {
-            return SendPingAsync(address, timeout, buffer, options, CancellationToken.None);
+            return await SendPingAsync(address, timeout, buffer, options, CancellationToken.None).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -580,16 +580,16 @@ namespace System.Net.NetworkInformation
         /// <param name="options">A <see cref="PingOptions"/> object used to control fragmentation and Time-to-Live values for the ICMP echo message packet.</param>
         /// <param name="cancellationToken">The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None"/>.</param>
         /// <returns>The task object representing the asynchronous operation.</returns>
-        public Task<PingReply> SendPingAsync(IPAddress address, TimeSpan timeout, byte[]? buffer = null, PingOptions? options = null, CancellationToken cancellationToken = default)
+        public async Task<PingReply> SendPingAsync(IPAddress address, TimeSpan timeout, byte[]? buffer = null, PingOptions? options = null, CancellationToken cancellationToken = default)
         {
-            return SendPingAsync(address, ToTimeoutMilliseconds(timeout), buffer ?? DefaultSendBuffer, options, cancellationToken);
+            return await SendPingAsync(address, ToTimeoutMilliseconds(timeout), buffer ?? DefaultSendBuffer, options, cancellationToken).ConfigureAwait(false);
         }
 
-        private Task<PingReply> SendPingAsync(IPAddress address, int timeout, byte[] buffer, PingOptions? options, CancellationToken cancellationToken)
+        private async Task<PingReply> SendPingAsync(IPAddress address, int timeout, byte[] buffer, PingOptions? options, CancellationToken cancellationToken)
         {
             CheckArgs(address, timeout, buffer);
 
-            return SendPingAsyncInternal(
+            return await SendPingAsyncInternal(
                 // Need to snapshot the address here, so we're sure that it's not changed between now
                 // and the operation, and to be sure that IPAddress.ToString() is called and not some override.
                 GetAddressSnapshot(address),
@@ -597,12 +597,12 @@ namespace System.Net.NetworkInformation
                 timeout,
                 buffer,
                 options,
-                cancellationToken);
+                cancellationToken).ConfigureAwait(false);
         }
 
-        public Task<PingReply> SendPingAsync(string hostNameOrAddress, int timeout, byte[] buffer, PingOptions? options)
+        public async Task<PingReply> SendPingAsync(string hostNameOrAddress, int timeout, byte[] buffer, PingOptions? options)
         {
-            return SendPingAsync(hostNameOrAddress, timeout, buffer, options, CancellationToken.None);
+            return await SendPingAsync(hostNameOrAddress, timeout, buffer, options, CancellationToken.None).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -623,12 +623,12 @@ namespace System.Net.NetworkInformation
         /// <param name="options">A <see cref="PingOptions"/> object used to control fragmentation and Time-to-Live values for the ICMP echo message packet.</param>
         /// <param name="cancellationToken">The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None"/>.</param>
         /// <returns>The task object representing the asynchronous operation.</returns>
-        public Task<PingReply> SendPingAsync(string hostNameOrAddress, TimeSpan timeout, byte[]? buffer = null, PingOptions? options = null, CancellationToken cancellationToken = default)
+        public async Task<PingReply> SendPingAsync(string hostNameOrAddress, TimeSpan timeout, byte[]? buffer = null, PingOptions? options = null, CancellationToken cancellationToken = default)
         {
-            return SendPingAsync(hostNameOrAddress, ToTimeoutMilliseconds(timeout), buffer ?? DefaultSendBuffer, options, cancellationToken);
+            return await SendPingAsync(hostNameOrAddress, ToTimeoutMilliseconds(timeout), buffer ?? DefaultSendBuffer, options, cancellationToken).ConfigureAwait(false);
         }
 
-        private Task<PingReply> SendPingAsync(string hostNameOrAddress, int timeout, byte[] buffer, PingOptions? options, CancellationToken cancellationToken)
+        private async Task<PingReply> SendPingAsync(string hostNameOrAddress, int timeout, byte[] buffer, PingOptions? options, CancellationToken cancellationToken)
         {
             if (string.IsNullOrEmpty(hostNameOrAddress))
             {
@@ -637,19 +637,19 @@ namespace System.Net.NetworkInformation
 
             if (IPAddress.TryParse(hostNameOrAddress, out IPAddress? address))
             {
-                return SendPingAsync(address, timeout, buffer, options, cancellationToken);
+                return await SendPingAsync(address, timeout, buffer, options, cancellationToken).ConfigureAwait(false);
             }
 
             CheckArgs(timeout, buffer);
 
-            return SendPingAsyncInternal(
+            return await SendPingAsyncInternal(
                 hostNameOrAddress,
                 static async (hostName, cancellationToken) =>
                     (await Dns.GetHostAddressesAsync(hostName, cancellationToken).ConfigureAwait(false))[0],
                 timeout,
                 buffer,
                 options,
-                cancellationToken);
+                cancellationToken).ConfigureAwait(false);
         }
 
         private static int ToTimeoutMilliseconds(TimeSpan timeout)

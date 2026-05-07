@@ -40,7 +40,7 @@ namespace System.Text.Json
         /// </exception>
         [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
         [RequiresDynamicCode(SerializationRequiresDynamicCodeMessage)]
-        public static Task SerializeAsync<TValue>(
+        public static async Task SerializeAsync<TValue>(
             Stream utf8Json,
             TValue value,
             JsonSerializerOptions? options = null,
@@ -49,7 +49,7 @@ namespace System.Text.Json
             ArgumentNullException.ThrowIfNull(utf8Json);
 
             JsonTypeInfo<TValue> jsonTypeInfo = GetTypeInfo<TValue>(options);
-            return jsonTypeInfo.SerializeAsync(utf8Json, value, cancellationToken);
+            await jsonTypeInfo.SerializeAsync(utf8Json, value, cancellationToken).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -100,7 +100,7 @@ namespace System.Text.Json
         /// </exception>
         [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
         [RequiresDynamicCode(SerializationRequiresDynamicCodeMessage)]
-        public static Task SerializeAsync(
+        public static async Task SerializeAsync(
             Stream utf8Json,
             object? value,
             Type inputType,
@@ -111,7 +111,7 @@ namespace System.Text.Json
 
             ValidateInputType(value, inputType);
             JsonTypeInfo jsonTypeInfo = GetTypeInfo(options, inputType);
-            return jsonTypeInfo.SerializeAsObjectAsync(utf8Json, value, cancellationToken);
+            await jsonTypeInfo.SerializeAsObjectAsync(utf8Json, value, cancellationToken).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -158,7 +158,7 @@ namespace System.Text.Json
         /// <exception cref="ArgumentNullException">
         /// <paramref name="utf8Json"/> is <see langword="null"/>.
         /// </exception>
-        public static Task SerializeAsync<TValue>(
+        public static async Task SerializeAsync<TValue>(
             Stream utf8Json,
             TValue value,
             JsonTypeInfo<TValue> jsonTypeInfo,
@@ -168,7 +168,7 @@ namespace System.Text.Json
             ArgumentNullException.ThrowIfNull(jsonTypeInfo);
 
             jsonTypeInfo.EnsureConfigured();
-            return jsonTypeInfo.SerializeAsync(utf8Json, value, cancellationToken);
+            await jsonTypeInfo.SerializeAsync(utf8Json, value, cancellationToken).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -207,7 +207,7 @@ namespace System.Text.Json
         /// <exception cref="InvalidCastException">
         /// <paramref name="value"/> does not match the type of <paramref name="jsonTypeInfo"/>.
         /// </exception>
-        public static Task SerializeAsync(
+        public static async Task SerializeAsync(
             Stream utf8Json,
             object? value,
             JsonTypeInfo jsonTypeInfo,
@@ -217,7 +217,7 @@ namespace System.Text.Json
             ArgumentNullException.ThrowIfNull(jsonTypeInfo);
 
             jsonTypeInfo.EnsureConfigured();
-            return jsonTypeInfo.SerializeAsObjectAsync(utf8Json, value, cancellationToken);
+            await jsonTypeInfo.SerializeAsObjectAsync(utf8Json, value, cancellationToken).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -263,7 +263,7 @@ namespace System.Text.Json
         /// There is no compatible <see cref="System.Text.Json.Serialization.JsonConverter"/>
         /// for <paramref name="inputType"/>  or its serializable members.
         /// </exception>
-        public static Task SerializeAsync(
+        public static async Task SerializeAsync(
             Stream utf8Json,
             object? value,
             Type inputType,
@@ -275,7 +275,7 @@ namespace System.Text.Json
 
             ValidateInputType(value, inputType);
             JsonTypeInfo jsonTypeInfo = GetTypeInfo(context, inputType);
-            return jsonTypeInfo.SerializeAsObjectAsync(utf8Json, value, cancellationToken);
+            await jsonTypeInfo.SerializeAsObjectAsync(utf8Json, value, cancellationToken).ConfigureAwait(false);
         }
 
         /// <summary>

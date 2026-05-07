@@ -16,7 +16,7 @@ namespace System.Xml
     //
     internal sealed partial class XmlCharCheckingWriter : XmlWrappingWriter
     {
-        public override Task WriteDocTypeAsync(string name, string? pubid, string? sysid, string? subset)
+        public override async Task WriteDocTypeAsync(string name, string? pubid, string? sysid, string? subset)
         {
             if (_checkNames)
             {
@@ -52,10 +52,10 @@ namespace System.Xml
                 subset = ReplaceNewLines(subset);
             }
 
-            return writer.WriteDocTypeAsync(name, pubid, sysid, subset);
+            await writer.WriteDocTypeAsync(name, pubid, sysid, subset).ConfigureAwait(false);
         }
 
-        public override Task WriteStartElementAsync(string? prefix, string localName, string? ns)
+        public override async Task WriteStartElementAsync(string? prefix, string localName, string? ns)
         {
             if (_checkNames)
             {
@@ -68,10 +68,10 @@ namespace System.Xml
                     ValidateNCName(prefix);
                 }
             }
-            return writer.WriteStartElementAsync(prefix, localName, ns);
+            await writer.WriteStartElementAsync(prefix, localName, ns).ConfigureAwait(false);
         }
 
-        protected internal override Task WriteStartAttributeAsync(string? prefix, string localName, string? ns)
+        protected internal override async Task WriteStartAttributeAsync(string? prefix, string localName, string? ns)
         {
             if (_checkNames)
             {
@@ -85,7 +85,7 @@ namespace System.Xml
                 }
             }
 
-            return writer.WriteStartAttributeAsync(prefix, localName, ns);
+            await writer.WriteStartAttributeAsync(prefix, localName, ns).ConfigureAwait(false);
         }
 
         public override async Task WriteCDataAsync(string? text)
@@ -113,7 +113,7 @@ namespace System.Xml
             await writer.WriteCDataAsync(text).ConfigureAwait(false);
         }
 
-        public override Task WriteCommentAsync(string? text)
+        public override async Task WriteCommentAsync(string? text)
         {
             if (text != null)
             {
@@ -127,10 +127,10 @@ namespace System.Xml
                     text = ReplaceNewLines(text);
                 }
             }
-            return writer.WriteCommentAsync(text);
+            await writer.WriteCommentAsync(text).ConfigureAwait(false);
         }
 
-        public override Task WriteProcessingInstructionAsync(string name, string? text)
+        public override async Task WriteProcessingInstructionAsync(string name, string? text)
         {
             if (_checkNames)
             {
@@ -150,19 +150,19 @@ namespace System.Xml
                 }
             }
 
-            return writer.WriteProcessingInstructionAsync(name, text!);
+            await writer.WriteProcessingInstructionAsync(name, text!).ConfigureAwait(false);
         }
 
-        public override Task WriteEntityRefAsync(string name)
+        public override async Task WriteEntityRefAsync(string name)
         {
             if (_checkNames)
             {
                 ValidateQName(name);
             }
-            return writer.WriteEntityRefAsync(name);
+            await writer.WriteEntityRefAsync(name).ConfigureAwait(false);
         }
 
-        public override Task WriteWhitespaceAsync(string? ws)
+        public override async Task WriteWhitespaceAsync(string? ws)
         {
             ws ??= string.Empty;
 
@@ -181,10 +181,10 @@ namespace System.Xml
                 ws = ReplaceNewLines(ws);
             }
 
-            return writer.WriteWhitespaceAsync(ws);
+            await writer.WriteWhitespaceAsync(ws).ConfigureAwait(false);
         }
 
-        public override Task WriteStringAsync(string? text)
+        public override async Task WriteStringAsync(string? text)
         {
             if (text != null)
             {
@@ -199,15 +199,15 @@ namespace System.Xml
                 }
             }
 
-            return writer.WriteStringAsync(text);
+            await writer.WriteStringAsync(text).ConfigureAwait(false);
         }
 
-        public override Task WriteSurrogateCharEntityAsync(char lowChar, char highChar)
+        public override async Task WriteSurrogateCharEntityAsync(char lowChar, char highChar)
         {
-            return writer.WriteSurrogateCharEntityAsync(lowChar, highChar);
+            await writer.WriteSurrogateCharEntityAsync(lowChar, highChar).ConfigureAwait(false);
         }
 
-        public override Task WriteCharsAsync(char[] buffer, int index, int count)
+        public override async Task WriteCharsAsync(char[] buffer, int index, int count)
         {
             ArgumentNullException.ThrowIfNull(buffer);
 
@@ -225,40 +225,40 @@ namespace System.Xml
                 string? text = ReplaceNewLines(buffer, index, count);
                 if (text != null)
                 {
-                    return WriteStringAsync(text);
+                    await WriteStringAsync(text).ConfigureAwait(false);
                 }
             }
 
-            return writer.WriteCharsAsync(buffer, index, count);
+            await writer.WriteCharsAsync(buffer, index, count).ConfigureAwait(false);
         }
 
-        public override Task WriteNmTokenAsync(string name)
+        public override async Task WriteNmTokenAsync(string name)
         {
             if (_checkNames)
             {
                 ArgumentException.ThrowIfNullOrEmpty(name);
                 XmlConvert.VerifyNMTOKEN(name);
             }
-            return writer.WriteNmTokenAsync(name);
+            await writer.WriteNmTokenAsync(name).ConfigureAwait(false);
         }
 
-        public override Task WriteNameAsync(string name)
+        public override async Task WriteNameAsync(string name)
         {
             if (_checkNames)
             {
                 XmlConvert.VerifyQName(name, ExceptionType.XmlException);
             }
-            return writer.WriteNameAsync(name);
+            await writer.WriteNameAsync(name).ConfigureAwait(false);
         }
 
-        public override Task WriteQualifiedNameAsync(string localName, string? ns)
+        public override async Task WriteQualifiedNameAsync(string localName, string? ns)
         {
             if (_checkNames)
             {
                 ValidateNCName(localName);
             }
 
-            return writer.WriteQualifiedNameAsync(localName, ns);
+            await writer.WriteQualifiedNameAsync(localName, ns).ConfigureAwait(false);
         }
     }
 }

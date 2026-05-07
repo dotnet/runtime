@@ -25,7 +25,7 @@ namespace System.Security.Cryptography
             return result;
         }
 
-        internal static ValueTask<int> HashStreamAsync(
+        internal static async ValueTask<int> HashStreamAsync(
             string hashAlgorithmId,
             Stream source,
             Memory<byte> destination,
@@ -33,25 +33,25 @@ namespace System.Security.Cryptography
         {
             if (cancellationToken.IsCancellationRequested)
             {
-                return ValueTask.FromCanceled<int>(cancellationToken);
+                return await ValueTask.FromCanceled<int>(cancellationToken).ConfigureAwait(false);
             }
 
             LiteHash hash = CreateHash(hashAlgorithmId);
-            return ProcessStreamAsync(hash, source, destination, cancellationToken);
+            return await ProcessStreamAsync(hash, source, destination, cancellationToken).ConfigureAwait(false);
         }
 
-        internal static ValueTask<byte[]> HashStreamAsync(
+        internal static async ValueTask<byte[]> HashStreamAsync(
             string hashAlgorithmId,
             Stream source,
             CancellationToken cancellationToken)
         {
             if (cancellationToken.IsCancellationRequested)
             {
-                return ValueTask.FromCanceled<byte[]>(cancellationToken);
+                return await ValueTask.FromCanceled<byte[]>(cancellationToken).ConfigureAwait(false);
             }
 
             LiteHash hash = CreateHash(hashAlgorithmId);
-            return ProcessStreamAsync(hash, hash.HashSizeInBytes, source, cancellationToken);
+            return await ProcessStreamAsync(hash, hash.HashSizeInBytes, source, cancellationToken).ConfigureAwait(false);
         }
 
         internal static int HmacStream(

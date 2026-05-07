@@ -188,9 +188,9 @@ namespace System.Security.Cryptography
         /// <exception cref="PlatformNotSupportedException">
         /// The platform does not support SHA3-512.
         /// </exception>
-        public static ValueTask<byte[]> HashDataAsync(Stream source, CancellationToken cancellationToken = default)
+        public static async ValueTask<byte[]> HashDataAsync(Stream source, CancellationToken cancellationToken = default)
         {
-            return HashStatic<HashTrait>.HashDataAsync(source, cancellationToken);
+            return await HashStatic<HashTrait>.HashDataAsync(source, cancellationToken).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -219,12 +219,12 @@ namespace System.Security.Cryptography
         /// <exception cref="PlatformNotSupportedException">
         /// The platform does not support SHA3-512.
         /// </exception>
-        public static ValueTask<int> HashDataAsync(
+        public static async ValueTask<int> HashDataAsync(
             Stream source,
             Memory<byte> destination,
             CancellationToken cancellationToken = default)
         {
-            return HashStatic<HashTrait>.HashDataAsync(source, destination, cancellationToken);
+            return await HashStatic<HashTrait>.HashDataAsync(source, destination, cancellationToken).ConfigureAwait(false);
         }
 
         private sealed class Implementation : SHA3_512

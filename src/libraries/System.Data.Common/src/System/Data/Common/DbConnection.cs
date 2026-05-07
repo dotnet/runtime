@@ -81,11 +81,11 @@ namespace System.Data.Common
             }
         }
 
-        public ValueTask<DbTransaction> BeginTransactionAsync(CancellationToken cancellationToken = default)
-            => BeginDbTransactionAsync(IsolationLevel.Unspecified, cancellationToken);
+        public async ValueTask<DbTransaction> BeginTransactionAsync(CancellationToken cancellationToken = default)
+            => await BeginDbTransactionAsync(IsolationLevel.Unspecified, cancellationToken).ConfigureAwait(false);
 
-        public ValueTask<DbTransaction> BeginTransactionAsync(IsolationLevel isolationLevel, CancellationToken cancellationToken = default)
-            => BeginDbTransactionAsync(isolationLevel, cancellationToken);
+        public async ValueTask<DbTransaction> BeginTransactionAsync(IsolationLevel isolationLevel, CancellationToken cancellationToken = default)
+            => await BeginDbTransactionAsync(isolationLevel, cancellationToken).ConfigureAwait(false);
 
         public abstract void Close();
 
@@ -226,20 +226,20 @@ namespace System.Data.Common
         /// </summary>
         /// <param name="cancellationToken">The cancellation instruction.</param>
         /// <returns>A task representing the asynchronous operation.</returns>
-        public virtual Task<DataTable> GetSchemaAsync(CancellationToken cancellationToken = default)
+        public virtual async Task<DataTable> GetSchemaAsync(CancellationToken cancellationToken = default)
         {
             if (cancellationToken.IsCancellationRequested)
             {
-                return Task.FromCanceled<DataTable>(cancellationToken);
+                return await Task.FromCanceled<DataTable>(cancellationToken).ConfigureAwait(false);
             }
 
             try
             {
-                return Task.FromResult(GetSchema());
+                return GetSchema();
             }
             catch (Exception e)
             {
-                return Task.FromException<DataTable>(e);
+                return await Task.FromException<DataTable>(e).ConfigureAwait(false);
             }
         }
 
@@ -256,22 +256,22 @@ namespace System.Data.Common
         /// <param name="collectionName">Specifies the name of the schema to return.</param>
         /// <param name="cancellationToken">The cancellation instruction.</param>
         /// <returns>A task representing the asynchronous operation.</returns>
-        public virtual Task<DataTable> GetSchemaAsync(
+        public virtual async Task<DataTable> GetSchemaAsync(
             string collectionName,
             CancellationToken cancellationToken = default)
         {
             if (cancellationToken.IsCancellationRequested)
             {
-                return Task.FromCanceled<DataTable>(cancellationToken);
+                return await Task.FromCanceled<DataTable>(cancellationToken).ConfigureAwait(false);
             }
 
             try
             {
-                return Task.FromResult(GetSchema(collectionName));
+                return GetSchema(collectionName);
             }
             catch (Exception e)
             {
-                return Task.FromException<DataTable>(e);
+                return await Task.FromException<DataTable>(e).ConfigureAwait(false);
             }
         }
 
@@ -289,21 +289,21 @@ namespace System.Data.Common
         /// <param name="restrictionValues">Specifies a set of restriction values for the requested schema.</param>
         /// <param name="cancellationToken">The cancellation instruction.</param>
         /// <returns>A task representing the asynchronous operation.</returns>
-        public virtual Task<DataTable> GetSchemaAsync(string collectionName, string?[] restrictionValues,
+        public virtual async Task<DataTable> GetSchemaAsync(string collectionName, string?[] restrictionValues,
             CancellationToken cancellationToken = default)
         {
             if (cancellationToken.IsCancellationRequested)
             {
-                return Task.FromCanceled<DataTable>(cancellationToken);
+                return await Task.FromCanceled<DataTable>(cancellationToken).ConfigureAwait(false);
             }
 
             try
             {
-                return Task.FromResult(GetSchema(collectionName, restrictionValues));
+                return GetSchema(collectionName, restrictionValues);
             }
             catch (Exception e)
             {
-                return Task.FromException<DataTable>(e);
+                return await Task.FromException<DataTable>(e).ConfigureAwait(false);
             }
         }
 
@@ -319,7 +319,7 @@ namespace System.Data.Common
 
         public abstract void Open();
 
-        public Task OpenAsync() => OpenAsync(CancellationToken.None);
+        public async Task OpenAsync() => await OpenAsync(CancellationToken.None).ConfigureAwait(false);
 
         public virtual Task OpenAsync(CancellationToken cancellationToken)
         {

@@ -17,10 +17,10 @@ namespace System.Net.Http
             _doRequestAuth = doRequestAuth;
         }
 
-        internal override ValueTask<HttpResponseMessage> SendAsync(HttpRequestMessage request, bool async, CancellationToken cancellationToken)
+        internal override async ValueTask<HttpResponseMessage> SendAsync(HttpRequestMessage request, bool async, CancellationToken cancellationToken)
         {
             bool doRequestAuth = _doRequestAuth && !request.IsAuthDisabled();
-            return _poolManager.SendAsync(request, async, doRequestAuth, cancellationToken);
+            return await _poolManager.SendAsync(request, async, doRequestAuth, cancellationToken).ConfigureAwait(false);
         }
 
         protected override void Dispose(bool disposing)

@@ -64,7 +64,7 @@ namespace System.Net.Http
             }
         }
 
-        public virtual Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        public virtual async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
             ArgumentNullException.ThrowIfNull(request);
 
@@ -72,10 +72,10 @@ namespace System.Net.Http
 
             if (ShouldSendWithTelemetry(request))
             {
-                return SendAsyncWithTelemetry(_handler, request, cancellationToken);
+                return await SendAsyncWithTelemetry(_handler, request, cancellationToken).ConfigureAwait(false);
             }
 
-            return _handler.SendAsync(request, cancellationToken);
+            return await _handler.SendAsync(request, cancellationToken).ConfigureAwait(false);
 
             static async Task<HttpResponseMessage> SendAsyncWithTelemetry(HttpMessageHandler handler, HttpRequestMessage request, CancellationToken cancellationToken)
             {

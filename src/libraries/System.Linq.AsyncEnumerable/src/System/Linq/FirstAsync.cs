@@ -17,13 +17,13 @@ namespace System.Linq
         /// <returns>The first element in the specified sequence.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="source"/> is <see langword="null"/>.</exception>
         /// <exception cref="InvalidOperationException">The source sequence is empty (via the returned task).</exception>
-        public static ValueTask<TSource> FirstAsync<TSource>(
+        public static async ValueTask<TSource> FirstAsync<TSource>(
             this IAsyncEnumerable<TSource> source,
             CancellationToken cancellationToken = default)
         {
             ArgumentNullException.ThrowIfNull(source);
 
-            return Impl(source, cancellationToken);
+            return await Impl(source, cancellationToken).ConfigureAwait(false);
 
             static async ValueTask<TSource> Impl(
                 IAsyncEnumerable<TSource> source,
@@ -52,7 +52,7 @@ namespace System.Linq
         /// The source sequence is empty, or no element in the sequence satisfies
         /// the condition in predicate (via the returned task).
         /// </exception>
-        public static ValueTask<TSource> FirstAsync<TSource>(
+        public static async ValueTask<TSource> FirstAsync<TSource>(
             this IAsyncEnumerable<TSource> source,
             Func<TSource, bool> predicate,
             CancellationToken cancellationToken = default)
@@ -60,7 +60,7 @@ namespace System.Linq
             ArgumentNullException.ThrowIfNull(source);
             ArgumentNullException.ThrowIfNull(predicate);
 
-            return Impl(source.WithCancellation(cancellationToken), predicate);
+            return await Impl(source.WithCancellation(cancellationToken), predicate).ConfigureAwait(false);
 
             static async ValueTask<TSource> Impl(
                 ConfiguredCancelableAsyncEnumerable<TSource> source,
@@ -91,7 +91,7 @@ namespace System.Linq
         /// The source sequence is empty, or no element in the sequence satisfies
         /// the condition in predicate (via the returned task).
         /// </exception>
-        public static ValueTask<TSource> FirstAsync<TSource>(
+        public static async ValueTask<TSource> FirstAsync<TSource>(
             this IAsyncEnumerable<TSource> source,
             Func<TSource, CancellationToken, ValueTask<bool>> predicate,
             CancellationToken cancellationToken = default)
@@ -99,7 +99,7 @@ namespace System.Linq
             ArgumentNullException.ThrowIfNull(source);
             ArgumentNullException.ThrowIfNull(predicate);
 
-            return Impl(source, predicate, cancellationToken);
+            return await Impl(source, predicate, cancellationToken).ConfigureAwait(false);
 
             static async ValueTask<TSource> Impl(
                 IAsyncEnumerable<TSource> source,
@@ -137,14 +137,14 @@ namespace System.Linq
         /// <param name="cancellationToken">The <see cref="CancellationToken"/> to monitor for cancellation requests. The default is <see cref="CancellationToken.None"/>.</param>
         /// <returns><paramref name="defaultValue" /> if <paramref name="source" /> is empty; otherwise, the first element in <paramref name="source" />.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="source" /> is <see langword="null" />.</exception>
-        public static ValueTask<TSource> FirstOrDefaultAsync<TSource>(
+        public static async ValueTask<TSource> FirstOrDefaultAsync<TSource>(
             this IAsyncEnumerable<TSource> source,
             TSource defaultValue,
             CancellationToken cancellationToken = default)
         {
             ArgumentNullException.ThrowIfNull(source);
 
-            return Impl(source, defaultValue, cancellationToken);
+            return await Impl(source, defaultValue, cancellationToken).ConfigureAwait(false);
 
             static async ValueTask<TSource> Impl(
                 IAsyncEnumerable<TSource> source,
@@ -168,11 +168,11 @@ namespace System.Linq
         /// </returns>
         /// <exception cref="ArgumentNullException"><paramref name="source" /> is <see langword="null" />.</exception>
         /// <exception cref="ArgumentNullException"><paramref name="predicate" /> is <see langword="null" />.</exception>
-        public static ValueTask<TSource?> FirstOrDefaultAsync<TSource>(
+        public static async ValueTask<TSource?> FirstOrDefaultAsync<TSource>(
             this IAsyncEnumerable<TSource> source,
             Func<TSource, bool> predicate,
             CancellationToken cancellationToken = default) =>
-            FirstOrDefaultAsync(source, predicate!, default, cancellationToken);
+            await FirstOrDefaultAsync(source, predicate!, default, cancellationToken).ConfigureAwait(false);
 
         /// <summary>Returns the first element of the sequence that satisfies a condition or a default value if no such element is found.</summary>
         /// <typeparam name="TSource"></typeparam>
@@ -185,11 +185,11 @@ namespace System.Linq
         /// </returns>
         /// <exception cref="ArgumentNullException"><paramref name="source" /> is <see langword="null" />.</exception>
         /// <exception cref="ArgumentNullException"><paramref name="predicate" /> is <see langword="null" />.</exception>
-        public static ValueTask<TSource?> FirstOrDefaultAsync<TSource>(
+        public static async ValueTask<TSource?> FirstOrDefaultAsync<TSource>(
             this IAsyncEnumerable<TSource> source,
             Func<TSource, CancellationToken, ValueTask<bool>> predicate,
             CancellationToken cancellationToken = default) =>
-            FirstOrDefaultAsync(source, predicate!, default, cancellationToken);
+            await FirstOrDefaultAsync(source, predicate!, default, cancellationToken).ConfigureAwait(false);
 
         /// <summary>Returns the first element of the sequence that satisfies a condition or a default value if no such element is found.</summary>
         /// <typeparam name="TSource">The type of the elements of <paramref name="source" />.</typeparam>
@@ -200,7 +200,7 @@ namespace System.Linq
         /// <returns><paramref name="defaultValue" /> if <paramref name="source" /> is empty or if no element passes the test specified by <paramref name="predicate" />; otherwise, the first element in <paramref name="source" /> that passes the test specified by <paramref name="predicate" />.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="source" /> is <see langword="null" />.</exception>
         /// <exception cref="ArgumentNullException"><paramref name="predicate" /> is <see langword="null" />.</exception>
-        public static ValueTask<TSource> FirstOrDefaultAsync<TSource>(
+        public static async ValueTask<TSource> FirstOrDefaultAsync<TSource>(
             this IAsyncEnumerable<TSource> source,
             Func<TSource, bool> predicate,
             TSource defaultValue,
@@ -209,7 +209,7 @@ namespace System.Linq
             ArgumentNullException.ThrowIfNull(source);
             ArgumentNullException.ThrowIfNull(predicate);
 
-            return Impl(source.WithCancellation(cancellationToken), predicate, defaultValue);
+            return await Impl(source.WithCancellation(cancellationToken), predicate, defaultValue).ConfigureAwait(false);
 
             static async ValueTask<TSource> Impl(
                 ConfiguredCancelableAsyncEnumerable<TSource> source,
@@ -237,7 +237,7 @@ namespace System.Linq
         /// <returns><paramref name="defaultValue" /> if <paramref name="source" /> is empty or if no element passes the test specified by <paramref name="predicate" />; otherwise, the first element in <paramref name="source" /> that passes the test specified by <paramref name="predicate" />.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="source" /> is <see langword="null" />.</exception>
         /// <exception cref="ArgumentNullException"><paramref name="predicate" /> is <see langword="null" />.</exception>
-        public static ValueTask<TSource> FirstOrDefaultAsync<TSource>(
+        public static async ValueTask<TSource> FirstOrDefaultAsync<TSource>(
             this IAsyncEnumerable<TSource> source,
             Func<TSource, CancellationToken, ValueTask<bool>> predicate,
             TSource defaultValue,
@@ -246,7 +246,7 @@ namespace System.Linq
             ArgumentNullException.ThrowIfNull(source);
             ArgumentNullException.ThrowIfNull(predicate);
 
-            return Impl(source, predicate, defaultValue, cancellationToken);
+            return await Impl(source, predicate, defaultValue, cancellationToken).ConfigureAwait(false);
 
             static async ValueTask<TSource> Impl(
                 IAsyncEnumerable<TSource> source,

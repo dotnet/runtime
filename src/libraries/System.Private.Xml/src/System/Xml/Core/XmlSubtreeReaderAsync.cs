@@ -13,15 +13,15 @@ namespace System.Xml
 {
     internal sealed partial class XmlSubtreeReader : XmlWrappingReader, IXmlLineInfo, IXmlNamespaceResolver
     {
-        public override Task<string> GetValueAsync()
+        public override async Task<string> GetValueAsync()
         {
             if (_useCurNode)
             {
-                return Task.FromResult(_curNode.value);
+                return _curNode.value;
             }
             else
             {
-                return reader.GetValueAsync();
+                return await reader.GetValueAsync().ConfigureAwait(false);
             }
         }
 

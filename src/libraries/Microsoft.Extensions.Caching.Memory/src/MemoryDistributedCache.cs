@@ -57,11 +57,11 @@ namespace Microsoft.Extensions.Caching.Distributed
         /// <param name="key">The key of the item to get.</param>
         /// <param name="token">The <see cref="CancellationToken"/> to use to cancel operation.</param>
         /// <returns>The task for getting the byte array value associated with the specified key from the cache.</returns>
-        public Task<byte[]?> GetAsync(string key, CancellationToken token = default(CancellationToken))
+        public async Task<byte[]?> GetAsync(string key, CancellationToken token = default(CancellationToken))
         {
             ArgumentNullException.ThrowIfNull(key);
 
-            return Task.FromResult(Get(key));
+            return Get(key);
         }
 
         /// <summary>

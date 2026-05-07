@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
@@ -40,7 +40,7 @@ namespace System.Text.Json
         /// </exception>
         [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
         [RequiresDynamicCode(SerializationRequiresDynamicCodeMessage)]
-        public static ValueTask<TValue?> DeserializeAsync<TValue>(
+        public static async ValueTask<TValue?> DeserializeAsync<TValue>(
             PipeReader utf8Json,
             JsonSerializerOptions? options = null,
             CancellationToken cancellationToken = default)
@@ -48,7 +48,7 @@ namespace System.Text.Json
             ArgumentNullException.ThrowIfNull(utf8Json, nameof(utf8Json));
 
             JsonTypeInfo<TValue> jsonTypeInfo = GetTypeInfo<TValue>(options);
-            return jsonTypeInfo.DeserializeAsync(utf8Json, cancellationToken);
+            return await jsonTypeInfo.DeserializeAsync(utf8Json, cancellationToken).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -70,7 +70,7 @@ namespace System.Text.Json
         /// <typeparamref name="TValue"/> is not compatible with the JSON,
         /// or when there is remaining data in the PipeReader.
         /// </exception>
-        public static ValueTask<TValue?> DeserializeAsync<TValue>(
+        public static async ValueTask<TValue?> DeserializeAsync<TValue>(
                 PipeReader utf8Json,
                 JsonTypeInfo<TValue> jsonTypeInfo,
                 CancellationToken cancellationToken = default)
@@ -79,7 +79,7 @@ namespace System.Text.Json
             ArgumentNullException.ThrowIfNull(jsonTypeInfo, nameof(jsonTypeInfo));
 
             jsonTypeInfo.EnsureConfigured();
-            return jsonTypeInfo.DeserializeAsync(utf8Json, cancellationToken);
+            return await jsonTypeInfo.DeserializeAsync(utf8Json, cancellationToken).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -99,7 +99,7 @@ namespace System.Text.Json
         /// The JSON is invalid,
         /// or when there is remaining data in the PipeReader.
         /// </exception>
-        public static ValueTask<object?> DeserializeAsync(
+        public static async ValueTask<object?> DeserializeAsync(
                 PipeReader utf8Json,
                 JsonTypeInfo jsonTypeInfo,
                 CancellationToken cancellationToken = default)
@@ -108,7 +108,7 @@ namespace System.Text.Json
             ArgumentNullException.ThrowIfNull(jsonTypeInfo, nameof(jsonTypeInfo));
 
             jsonTypeInfo.EnsureConfigured();
-            return jsonTypeInfo.DeserializeAsObjectAsync(utf8Json, cancellationToken);
+            return await jsonTypeInfo.DeserializeAsObjectAsync(utf8Json, cancellationToken).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -138,7 +138,7 @@ namespace System.Text.Json
         /// The <see cref="JsonSerializerContext.GetTypeInfo(Type)"/> method on the provided <paramref name="context"/>
         /// did not return a compatible <see cref="JsonTypeInfo"/> for <paramref name="returnType"/>.
         /// </exception>
-        public static ValueTask<object?> DeserializeAsync(
+        public static async ValueTask<object?> DeserializeAsync(
                 PipeReader utf8Json,
                 Type returnType,
                 JsonSerializerContext context,
@@ -149,7 +149,7 @@ namespace System.Text.Json
             ArgumentNullException.ThrowIfNull(context, nameof(context));
 
             JsonTypeInfo jsonTypeInfo = GetTypeInfo(context, returnType);
-            return jsonTypeInfo.DeserializeAsObjectAsync(utf8Json, cancellationToken);
+            return await jsonTypeInfo.DeserializeAsObjectAsync(utf8Json, cancellationToken).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -177,7 +177,7 @@ namespace System.Text.Json
         /// </exception>
         [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
         [RequiresDynamicCode(SerializationRequiresDynamicCodeMessage)]
-        public static ValueTask<object?> DeserializeAsync(
+        public static async ValueTask<object?> DeserializeAsync(
                PipeReader utf8Json,
                Type returnType,
                JsonSerializerOptions? options = null,
@@ -187,7 +187,7 @@ namespace System.Text.Json
             ArgumentNullException.ThrowIfNull(returnType, nameof(returnType));
 
             JsonTypeInfo jsonTypeInfo = GetTypeInfo(options, returnType);
-            return jsonTypeInfo.DeserializeAsObjectAsync(utf8Json, cancellationToken);
+            return await jsonTypeInfo.DeserializeAsObjectAsync(utf8Json, cancellationToken).ConfigureAwait(false);
         }
 
         /// <summary>

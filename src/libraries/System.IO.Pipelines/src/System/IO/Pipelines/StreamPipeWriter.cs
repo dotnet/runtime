@@ -276,9 +276,9 @@ namespace System.IO.Pipelines
         /// <inheritdoc />
         public override long UnflushedBytes => _bytesBuffered;
 
-        public override ValueTask<FlushResult> WriteAsync(ReadOnlyMemory<byte> source, CancellationToken cancellationToken = default)
+        public override async ValueTask<FlushResult> WriteAsync(ReadOnlyMemory<byte> source, CancellationToken cancellationToken = default)
         {
-            return FlushAsyncInternal(writeToStream: true, data: source, cancellationToken);
+            return await FlushAsyncInternal(writeToStream: true, data: source, cancellationToken).ConfigureAwait(false);
         }
 
         private void Cancel()

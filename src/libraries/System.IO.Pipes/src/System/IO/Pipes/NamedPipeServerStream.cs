@@ -154,9 +154,9 @@ namespace System.IO.Pipes
             Dispose(false);
         }
 
-        public Task WaitForConnectionAsync()
+        public async Task WaitForConnectionAsync()
         {
-            return WaitForConnectionAsync(CancellationToken.None);
+            await WaitForConnectionAsync(CancellationToken.None).ConfigureAwait(false);
         }
 
         public IAsyncResult BeginWaitForConnection(AsyncCallback? callback, object? state) =>

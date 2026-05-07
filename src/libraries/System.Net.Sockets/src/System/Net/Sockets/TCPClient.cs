@@ -178,22 +178,22 @@ namespace System.Net.Sockets
             _active = true;
         }
 
-        public Task ConnectAsync(IPAddress address, int port) =>
-            CompleteConnectAsync(Client.ConnectAsync(address, port));
+        public async Task ConnectAsync(IPAddress address, int port) =>
+            await CompleteConnectAsync(Client.ConnectAsync(address, port)).ConfigureAwait(false);
 
-        public Task ConnectAsync(string host, int port) =>
-            CompleteConnectAsync(Client.ConnectAsync(host, port));
+        public async Task ConnectAsync(string host, int port) =>
+            await CompleteConnectAsync(Client.ConnectAsync(host, port)).ConfigureAwait(false);
 
-        public Task ConnectAsync(IPAddress[] addresses, int port) =>
-            CompleteConnectAsync(Client.ConnectAsync(addresses, port));
+        public async Task ConnectAsync(IPAddress[] addresses, int port) =>
+            await CompleteConnectAsync(Client.ConnectAsync(addresses, port)).ConfigureAwait(false);
 
         /// <summary>
         /// Connects the client to a remote TCP host using the specified endpoint as an asynchronous operation.
         /// </summary>
         /// <param name="remoteEP">The <see cref="IPEndPoint"/> to which you intend to connect.</param>
         /// <returns>A task representing the asynchronous operation.</returns>
-        public Task ConnectAsync(IPEndPoint remoteEP) =>
-            CompleteConnectAsync(Client.ConnectAsync(remoteEP));
+        public async Task ConnectAsync(IPEndPoint remoteEP) =>
+            await CompleteConnectAsync(Client.ConnectAsync(remoteEP)).ConfigureAwait(false);
 
         private async Task CompleteConnectAsync(Task task)
         {
@@ -201,14 +201,14 @@ namespace System.Net.Sockets
             _active = true;
         }
 
-        public ValueTask ConnectAsync(IPAddress address, int port, CancellationToken cancellationToken) =>
-            CompleteConnectAsync(Client.ConnectAsync(address, port, cancellationToken));
+        public async ValueTask ConnectAsync(IPAddress address, int port, CancellationToken cancellationToken) =>
+            await CompleteConnectAsync(Client.ConnectAsync(address, port, cancellationToken)).ConfigureAwait(false);
 
-        public ValueTask ConnectAsync(string host, int port, CancellationToken cancellationToken) =>
-            CompleteConnectAsync(Client.ConnectAsync(host, port, cancellationToken));
+        public async ValueTask ConnectAsync(string host, int port, CancellationToken cancellationToken) =>
+            await CompleteConnectAsync(Client.ConnectAsync(host, port, cancellationToken)).ConfigureAwait(false);
 
-        public ValueTask ConnectAsync(IPAddress[] addresses, int port, CancellationToken cancellationToken) =>
-            CompleteConnectAsync(Client.ConnectAsync(addresses, port, cancellationToken));
+        public async ValueTask ConnectAsync(IPAddress[] addresses, int port, CancellationToken cancellationToken) =>
+            await CompleteConnectAsync(Client.ConnectAsync(addresses, port, cancellationToken)).ConfigureAwait(false);
 
         /// <summary>
         /// Connects the client to a remote TCP host using the specified endpoint as an asynchronous operation.
@@ -216,8 +216,8 @@ namespace System.Net.Sockets
         /// <param name="remoteEP">The <see cref="IPEndPoint"/> to which you intend to connect.</param>
         /// <param name="cancellationToken">A cancellation token used to propagate notification that this operation should be canceled.</param>
         /// <returns>A task representing the asynchronous operation.</returns>
-        public ValueTask ConnectAsync(IPEndPoint remoteEP, CancellationToken cancellationToken) =>
-            CompleteConnectAsync(Client.ConnectAsync(remoteEP, cancellationToken));
+        public async ValueTask ConnectAsync(IPEndPoint remoteEP, CancellationToken cancellationToken) =>
+            await CompleteConnectAsync(Client.ConnectAsync(remoteEP, cancellationToken)).ConfigureAwait(false);
 
         private async ValueTask CompleteConnectAsync(ValueTask task)
         {

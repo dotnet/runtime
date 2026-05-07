@@ -526,8 +526,8 @@ namespace System.Net.Sockets
                 new IPv6MulticastOption(multicastAddr, ifindex));
         }
 
-        public Task<int> SendAsync(byte[] datagram, int bytes) =>
-            SendAsync(datagram, bytes, null);
+        public async Task<int> SendAsync(byte[] datagram, int bytes) =>
+            await SendAsync(datagram, bytes, null).ConfigureAwait(false);
 
         /// <summary>
         /// Sends a UDP datagram asynchronously to a remote host.
@@ -541,11 +541,11 @@ namespace System.Net.Sockets
         /// <returns>A <see cref="ValueTask{T}"/> that represents the asynchronous send operation. The value of its Result property contains the number of bytes sent.</returns>
         /// <exception cref="ObjectDisposedException">The <see cref="UdpClient"/> is closed.</exception>
         /// <exception cref="SocketException">An error occurred when accessing the socket.</exception>
-        public ValueTask<int> SendAsync(ReadOnlyMemory<byte> datagram, CancellationToken cancellationToken = default) =>
-            SendAsync(datagram, null, cancellationToken);
+        public async ValueTask<int> SendAsync(ReadOnlyMemory<byte> datagram, CancellationToken cancellationToken = default) =>
+            await SendAsync(datagram, null, cancellationToken).ConfigureAwait(false);
 
-        public Task<int> SendAsync(byte[] datagram, int bytes, string? hostname, int port) =>
-            SendAsync(datagram, bytes, GetEndpoint(hostname, port));
+        public async Task<int> SendAsync(byte[] datagram, int bytes, string? hostname, int port) =>
+            await SendAsync(datagram, bytes, GetEndpoint(hostname, port)).ConfigureAwait(false);
 
         /// <summary>
         /// Sends a UDP datagram asynchronously to a remote host.
@@ -566,21 +566,21 @@ namespace System.Net.Sockets
         /// <exception cref="InvalidOperationException">The <see cref="UdpClient"/> has already established a default remote host.</exception>
         /// <exception cref="ObjectDisposedException">The <see cref="UdpClient"/> is closed.</exception>
         /// <exception cref="SocketException">An error occurred when accessing the socket.</exception>
-        public ValueTask<int> SendAsync(ReadOnlyMemory<byte> datagram, string? hostname, int port, CancellationToken cancellationToken = default) =>
-            SendAsync(datagram, GetEndpoint(hostname, port), cancellationToken);
+        public async ValueTask<int> SendAsync(ReadOnlyMemory<byte> datagram, string? hostname, int port, CancellationToken cancellationToken = default) =>
+            await SendAsync(datagram, GetEndpoint(hostname, port), cancellationToken).ConfigureAwait(false);
 
-        public Task<int> SendAsync(byte[] datagram, int bytes, IPEndPoint? endPoint)
+        public async Task<int> SendAsync(byte[] datagram, int bytes, IPEndPoint? endPoint)
         {
             ValidateDatagram(datagram, bytes, endPoint);
 
             if (endPoint is null)
             {
-                return _clientSocket.SendAsync(new ArraySegment<byte>(datagram, 0, bytes), SocketFlags.None);
+                return await _clientSocket.SendAsync(new ArraySegment<byte>(datagram, 0, bytes), SocketFlags.None).ConfigureAwait(false);
             }
             else
             {
                 CheckForBroadcast(endPoint.Address);
-                return _clientSocket.SendToAsync(new ArraySegment<byte>(datagram, 0, bytes), SocketFlags.None, endPoint);
+                return await _clientSocket.SendToAsync(new ArraySegment<byte>(datagram, 0, bytes), SocketFlags.None, endPoint).ConfigureAwait(false);
             }
         }
 
@@ -600,13 +600,13 @@ namespace System.Net.Sockets
         /// <exception cref="InvalidOperationException"><see cref="UdpClient"/> has already established a default remote host and <paramref name="endPoint"/> is not <see langword="null"/>.</exception>
         /// <exception cref="ObjectDisposedException">The <see cref="UdpClient"/> is closed.</exception>
         /// <exception cref="SocketException">An error occurred when accessing the socket.</exception>
-        public ValueTask<int> SendAsync(ReadOnlyMemory<byte> datagram, IPEndPoint? endPoint, CancellationToken cancellationToken = default)
+        public async ValueTask<int> SendAsync(ReadOnlyMemory<byte> datagram, IPEndPoint? endPoint, CancellationToken cancellationToken = default)
         {
             ThrowIfDisposed();
 
             if (endPoint is null)
             {
-                return _clientSocket.SendAsync(datagram, SocketFlags.None, cancellationToken);
+                return await _clientSocket.SendAsync(datagram, SocketFlags.None, cancellationToken).ConfigureAwait(false);
             }
             if (_active)
             {
@@ -614,17 +614,17 @@ namespace System.Net.Sockets
                 throw new InvalidOperationException(SR.net_udpconnected);
             }
             CheckForBroadcast(endPoint.Address);
-            return _clientSocket.SendToAsync(datagram, SocketFlags.None, endPoint, cancellationToken);
+            return await _clientSocket.SendToAsync(datagram, SocketFlags.None, endPoint, cancellationToken).ConfigureAwait(false);
         }
 
-        public Task<UdpReceiveResult> ReceiveAsync()
+        public async Task<UdpReceiveResult> ReceiveAsync()
         {
             ThrowIfDisposed();
 
-            return WaitAndWrap(_clientSocket.ReceiveFromAsync(
+            return await WaitAndWrap(_clientSocket.ReceiveFromAsync(
                 new ArraySegment<byte>(_buffer, 0, MaxUDPSize),
                 SocketFlags.None,
-                _family == AddressFamily.InterNetwork ? IPEndPointStatics.Any : IPEndPointStatics.IPv6Any));
+                _family == AddressFamily.InterNetwork ? IPEndPointStatics.Any : IPEndPointStatics.IPv6Any)).ConfigureAwait(false);
 
             async Task<UdpReceiveResult> WaitAndWrap(Task<SocketReceiveFromResult> task)
             {
@@ -643,14 +643,14 @@ namespace System.Net.Sockets
         /// <returns>A <see cref="ValueTask{TResult}"/> representing the asynchronous operation.</returns>
         /// <exception cref="ObjectDisposedException">The underlying <see cref="Socket"/> has been closed.</exception>
         /// <exception cref="SocketException">An error occurred when accessing the socket.</exception>
-        public ValueTask<UdpReceiveResult> ReceiveAsync(CancellationToken cancellationToken)
+        public async ValueTask<UdpReceiveResult> ReceiveAsync(CancellationToken cancellationToken)
         {
             ThrowIfDisposed();
 
-            return WaitAndWrap(_clientSocket.ReceiveFromAsync(
+            return await WaitAndWrap(_clientSocket.ReceiveFromAsync(
                 _buffer,
                 SocketFlags.None,
-                _family == AddressFamily.InterNetwork ? IPEndPointStatics.Any : IPEndPointStatics.IPv6Any, cancellationToken));
+                _family == AddressFamily.InterNetwork ? IPEndPointStatics.Any : IPEndPointStatics.IPv6Any, cancellationToken)).ConfigureAwait(false);
 
             async ValueTask<UdpReceiveResult> WaitAndWrap(ValueTask<SocketReceiveFromResult> task)
             {

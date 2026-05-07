@@ -28,14 +28,14 @@ namespace System.Net.Mail
             _reader.Close(this);
         }
 
-        internal Task<LineInfo[]> ReadLinesAsync<TIOAdapter>(CancellationToken cancellationToken) where TIOAdapter : IReadWriteAdapter
+        internal async Task<LineInfo[]> ReadLinesAsync<TIOAdapter>(CancellationToken cancellationToken) where TIOAdapter : IReadWriteAdapter
         {
-            return _reader.ReadLinesAsync<TIOAdapter>(this, false, cancellationToken);
+            return await _reader.ReadLinesAsync<TIOAdapter>(this, false, cancellationToken).ConfigureAwait(false);
         }
 
-        internal Task<LineInfo> ReadLineAsync<TIOAdapter>(CancellationToken cancellationToken) where TIOAdapter : IReadWriteAdapter
+        internal async Task<LineInfo> ReadLineAsync<TIOAdapter>(CancellationToken cancellationToken) where TIOAdapter : IReadWriteAdapter
         {
-            return _reader.ReadLineAsync<TIOAdapter>(this, cancellationToken);
+            return await _reader.ReadLineAsync<TIOAdapter>(this, cancellationToken).ConfigureAwait(false);
         }
     }
 }

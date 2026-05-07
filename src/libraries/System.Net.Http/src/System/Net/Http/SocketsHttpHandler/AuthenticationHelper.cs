@@ -372,15 +372,15 @@ namespace System.Net.Http
             return response;
         }
 
-        public static ValueTask<HttpResponseMessage> SendWithProxyAuthAsync(HttpRequestMessage request, Uri proxyUri, bool async, ICredentials proxyCredentials, bool doRequestAuth, HttpConnectionPool pool, CancellationToken cancellationToken)
+        public static async ValueTask<HttpResponseMessage> SendWithProxyAuthAsync(HttpRequestMessage request, Uri proxyUri, bool async, ICredentials proxyCredentials, bool doRequestAuth, HttpConnectionPool pool, CancellationToken cancellationToken)
         {
-            return SendWithAuthAsync(request, proxyUri, async, proxyCredentials, preAuthenticate: GlobalHttpSettings.SocketsHttpHandler.ProxyPreAuthenticate, isProxyAuth: true, doRequestAuth, pool, cancellationToken);
+            return await SendWithAuthAsync(request, proxyUri, async, proxyCredentials, preAuthenticate: GlobalHttpSettings.SocketsHttpHandler.ProxyPreAuthenticate, isProxyAuth: true, doRequestAuth, pool, cancellationToken).ConfigureAwait(false);
         }
 
-        public static ValueTask<HttpResponseMessage> SendWithRequestAuthAsync(HttpRequestMessage request, bool async, ICredentials credentials, bool preAuthenticate, HttpConnectionPool pool, CancellationToken cancellationToken)
+        public static async ValueTask<HttpResponseMessage> SendWithRequestAuthAsync(HttpRequestMessage request, bool async, ICredentials credentials, bool preAuthenticate, HttpConnectionPool pool, CancellationToken cancellationToken)
         {
             Debug.Assert(request.RequestUri != null);
-            return SendWithAuthAsync(request, request.RequestUri, async, credentials, preAuthenticate, isProxyAuth: false, doRequestAuth: true, pool, cancellationToken);
+            return await SendWithAuthAsync(request, request.RequestUri, async, credentials, preAuthenticate, isProxyAuth: false, doRequestAuth: true, pool, cancellationToken).ConfigureAwait(false);
         }
     }
 }

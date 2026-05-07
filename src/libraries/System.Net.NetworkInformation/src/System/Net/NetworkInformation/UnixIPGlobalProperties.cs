@@ -51,10 +51,10 @@ namespace System.Net.NetworkInformation
             return TaskToAsyncResult.End<UnicastIPAddressInformationCollection>(asyncResult);
         }
 
-        public sealed override Task<UnicastIPAddressInformationCollection> GetUnicastAddressesAsync()
+        public sealed override async Task<UnicastIPAddressInformationCollection> GetUnicastAddressesAsync()
         {
-            return Task.Factory.StartNew(s => ((UnixIPGlobalProperties)s!).GetUnicastAddresses(), this,
-                CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
+            return await Task.Factory.StartNew(s => ((UnixIPGlobalProperties)s!).GetUnicastAddresses(), this,
+                CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default).ConfigureAwait(false);
         }
 
         private struct Context

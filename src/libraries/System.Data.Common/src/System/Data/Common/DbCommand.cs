@@ -116,13 +116,13 @@ namespace System.Data.Common
 
         IDataReader IDbCommand.ExecuteReader(CommandBehavior behavior) => ExecuteDbDataReader(behavior);
 
-        public Task<int> ExecuteNonQueryAsync() => ExecuteNonQueryAsync(CancellationToken.None);
+        public async Task<int> ExecuteNonQueryAsync() => await ExecuteNonQueryAsync(CancellationToken.None).ConfigureAwait(false);
 
-        public virtual Task<int> ExecuteNonQueryAsync(CancellationToken cancellationToken)
+        public virtual async Task<int> ExecuteNonQueryAsync(CancellationToken cancellationToken)
         {
             if (cancellationToken.IsCancellationRequested)
             {
-                return ADP.CreatedTaskWithCancellation<int>();
+                return await ADP.CreatedTaskWithCancellation<int>().ConfigureAwait(false);
             }
             else
             {
@@ -134,11 +134,11 @@ namespace System.Data.Common
 
                 try
                 {
-                    return Task.FromResult(ExecuteNonQuery());
+                    return ExecuteNonQuery();
                 }
                 catch (Exception e)
                 {
-                    return Task.FromException<int>(e);
+                    return await Task.FromException<int>(e).ConfigureAwait(false);
                 }
                 finally
                 {
@@ -147,23 +147,23 @@ namespace System.Data.Common
             }
         }
 
-        public Task<DbDataReader> ExecuteReaderAsync() =>
-            ExecuteReaderAsync(CommandBehavior.Default, CancellationToken.None);
+        public async Task<DbDataReader> ExecuteReaderAsync() =>
+            await ExecuteReaderAsync(CommandBehavior.Default, CancellationToken.None).ConfigureAwait(false);
 
-        public Task<DbDataReader> ExecuteReaderAsync(CancellationToken cancellationToken) =>
-            ExecuteReaderAsync(CommandBehavior.Default, cancellationToken);
+        public async Task<DbDataReader> ExecuteReaderAsync(CancellationToken cancellationToken) =>
+            await ExecuteReaderAsync(CommandBehavior.Default, cancellationToken).ConfigureAwait(false);
 
-        public Task<DbDataReader> ExecuteReaderAsync(CommandBehavior behavior) =>
-            ExecuteReaderAsync(behavior, CancellationToken.None);
+        public async Task<DbDataReader> ExecuteReaderAsync(CommandBehavior behavior) =>
+            await ExecuteReaderAsync(behavior, CancellationToken.None).ConfigureAwait(false);
 
-        public Task<DbDataReader> ExecuteReaderAsync(CommandBehavior behavior, CancellationToken cancellationToken) =>
-            ExecuteDbDataReaderAsync(behavior, cancellationToken);
+        public async Task<DbDataReader> ExecuteReaderAsync(CommandBehavior behavior, CancellationToken cancellationToken) =>
+            await ExecuteDbDataReaderAsync(behavior, cancellationToken).ConfigureAwait(false);
 
-        protected virtual Task<DbDataReader> ExecuteDbDataReaderAsync(CommandBehavior behavior, CancellationToken cancellationToken)
+        protected virtual async Task<DbDataReader> ExecuteDbDataReaderAsync(CommandBehavior behavior, CancellationToken cancellationToken)
         {
             if (cancellationToken.IsCancellationRequested)
             {
-                return ADP.CreatedTaskWithCancellation<DbDataReader>();
+                return await ADP.CreatedTaskWithCancellation<DbDataReader>().ConfigureAwait(false);
             }
             else
             {
@@ -175,11 +175,11 @@ namespace System.Data.Common
 
                 try
                 {
-                    return Task.FromResult<DbDataReader>(ExecuteReader(behavior));
+                    return ExecuteReader(behavior);
                 }
                 catch (Exception e)
                 {
-                    return Task.FromException<DbDataReader>(e);
+                    return await Task.FromException<DbDataReader>(e).ConfigureAwait(false);
                 }
                 finally
                 {
@@ -188,14 +188,14 @@ namespace System.Data.Common
             }
         }
 
-        public Task<object?> ExecuteScalarAsync() =>
-            ExecuteScalarAsync(CancellationToken.None);
+        public async Task<object?> ExecuteScalarAsync() =>
+            await ExecuteScalarAsync(CancellationToken.None).ConfigureAwait(false);
 
-        public virtual Task<object?> ExecuteScalarAsync(CancellationToken cancellationToken)
+        public virtual async Task<object?> ExecuteScalarAsync(CancellationToken cancellationToken)
         {
             if (cancellationToken.IsCancellationRequested)
             {
-                return ADP.CreatedTaskWithCancellation<object?>();
+                return await ADP.CreatedTaskWithCancellation<object?>().ConfigureAwait(false);
             }
             else
             {
@@ -207,11 +207,11 @@ namespace System.Data.Common
 
                 try
                 {
-                    return Task.FromResult<object?>(ExecuteScalar());
+                    return ExecuteScalar();
                 }
                 catch (Exception e)
                 {
-                    return Task.FromException<object?>(e);
+                    return await Task.FromException<object?>(e).ConfigureAwait(false);
                 }
                 finally
                 {

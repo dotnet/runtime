@@ -35,13 +35,13 @@ namespace System.Data.Common
 
         protected abstract DbDataReader ExecuteDbDataReader(CommandBehavior behavior);
 
-        public Task<DbDataReader> ExecuteReaderAsync(CancellationToken cancellationToken = default)
-            => ExecuteDbDataReaderAsync(CommandBehavior.Default, cancellationToken);
+        public async Task<DbDataReader> ExecuteReaderAsync(CancellationToken cancellationToken = default)
+            => await ExecuteDbDataReaderAsync(CommandBehavior.Default, cancellationToken).ConfigureAwait(false);
 
-        public Task<DbDataReader> ExecuteReaderAsync(
+        public async Task<DbDataReader> ExecuteReaderAsync(
             CommandBehavior behavior,
             CancellationToken cancellationToken = default)
-            => ExecuteDbDataReaderAsync(behavior, cancellationToken);
+            => await ExecuteDbDataReaderAsync(behavior, cancellationToken).ConfigureAwait(false);
 
         protected abstract Task<DbDataReader> ExecuteDbDataReaderAsync(
             CommandBehavior behavior,

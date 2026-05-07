@@ -206,7 +206,7 @@ namespace System.Xml
         }
 
         // Serialize a full element end tag: "</prefix:localName>"
-        internal override Task WriteFullEndElementAsync(string prefix, string localName, string ns)
+        internal override async Task WriteFullEndElementAsync(string prefix, string localName, string ns)
         {
             CheckAsyncCall();
             Debug.Assert(localName != null && localName.Length > 0);
@@ -217,11 +217,11 @@ namespace System.Xml
 
             if (!string.IsNullOrEmpty(prefix))
             {
-                return RawTextAsync(prefix, ":", localName, ">");
+                await RawTextAsync(prefix, ":", localName, ">").ConfigureAwait(false);
             }
             else
             {
-                return RawTextAsync(localName, ">");
+                await RawTextAsync(localName, ">").ConfigureAwait(false);
             }
         }
 
@@ -436,35 +436,35 @@ namespace System.Xml
 
         // Serialize a whitespace node.
 
-        public override Task WriteWhitespaceAsync(string? ws)
+        public override async Task WriteWhitespaceAsync(string? ws)
         {
             CheckAsyncCall();
             Debug.Assert(ws != null);
 
             if (_inAttributeValue)
             {
-                return WriteAttributeTextBlockAsync(ws);
+                await WriteAttributeTextBlockAsync(ws).ConfigureAwait(false);
             }
             else
             {
-                return WriteElementTextBlockAsync(ws);
+                await WriteElementTextBlockAsync(ws).ConfigureAwait(false);
             }
         }
 
         // Serialize either attribute or element text using XML rules.
 
-        public override Task WriteStringAsync(string? text)
+        public override async Task WriteStringAsync(string? text)
         {
             CheckAsyncCall();
             Debug.Assert(text != null);
 
             if (_inAttributeValue)
             {
-                return WriteAttributeTextBlockAsync(text);
+                await WriteAttributeTextBlockAsync(text).ConfigureAwait(false);
             }
             else
             {
-                return WriteElementTextBlockAsync(text);
+                await WriteElementTextBlockAsync(text).ConfigureAwait(false);
             }
         }
 
@@ -486,7 +486,7 @@ namespace System.Xml
         // Serialize either attribute or element text using XML rules.
         // Arguments are validated in the XmlWellformedWriter layer.
 
-        public override Task WriteCharsAsync(char[] buffer, int index, int count)
+        public override async Task WriteCharsAsync(char[] buffer, int index, int count)
         {
             CheckAsyncCall();
             Debug.Assert(buffer != null);
@@ -495,11 +495,11 @@ namespace System.Xml
 
             if (_inAttributeValue)
             {
-                return WriteAttributeTextBlockAsync(buffer, index, count);
+                await WriteAttributeTextBlockAsync(buffer, index, count).ConfigureAwait(false);
             }
             else
             {
-                return WriteElementTextBlockAsync(buffer, index, count);
+                await WriteElementTextBlockAsync(buffer, index, count).ConfigureAwait(false);
             }
         }
 
@@ -1859,11 +1859,11 @@ namespace System.Xml
             await base.WriteStartNamespaceDeclarationAsync(prefix).ConfigureAwait(false);
         }
 
-        public override Task WriteCDataAsync(string? text)
+        public override async Task WriteCDataAsync(string? text)
         {
             CheckAsyncCall();
             _mixedContent = true;
-            return base.WriteCDataAsync(text);
+            await base.WriteCDataAsync(text).ConfigureAwait(false);
         }
 
         public override async Task WriteCommentAsync(string? text)
@@ -1888,67 +1888,67 @@ namespace System.Xml
             await base.WriteProcessingInstructionAsync(target, text).ConfigureAwait(false);
         }
 
-        public override Task WriteEntityRefAsync(string name)
+        public override async Task WriteEntityRefAsync(string name)
         {
             CheckAsyncCall();
             _mixedContent = true;
-            return base.WriteEntityRefAsync(name);
+            await base.WriteEntityRefAsync(name).ConfigureAwait(false);
         }
 
-        public override Task WriteCharEntityAsync(char ch)
+        public override async Task WriteCharEntityAsync(char ch)
         {
             CheckAsyncCall();
             _mixedContent = true;
-            return base.WriteCharEntityAsync(ch);
+            await base.WriteCharEntityAsync(ch).ConfigureAwait(false);
         }
 
-        public override Task WriteSurrogateCharEntityAsync(char lowChar, char highChar)
+        public override async Task WriteSurrogateCharEntityAsync(char lowChar, char highChar)
         {
             CheckAsyncCall();
             _mixedContent = true;
-            return base.WriteSurrogateCharEntityAsync(lowChar, highChar);
+            await base.WriteSurrogateCharEntityAsync(lowChar, highChar).ConfigureAwait(false);
         }
 
-        public override Task WriteWhitespaceAsync(string? ws)
+        public override async Task WriteWhitespaceAsync(string? ws)
         {
             CheckAsyncCall();
             _mixedContent = true;
-            return base.WriteWhitespaceAsync(ws);
+            await base.WriteWhitespaceAsync(ws).ConfigureAwait(false);
         }
 
-        public override Task WriteStringAsync(string? text)
+        public override async Task WriteStringAsync(string? text)
         {
             CheckAsyncCall();
             _mixedContent = true;
-            return base.WriteStringAsync(text);
+            await base.WriteStringAsync(text).ConfigureAwait(false);
         }
 
-        public override Task WriteCharsAsync(char[] buffer, int index, int count)
+        public override async Task WriteCharsAsync(char[] buffer, int index, int count)
         {
             CheckAsyncCall();
             _mixedContent = true;
-            return base.WriteCharsAsync(buffer, index, count);
+            await base.WriteCharsAsync(buffer, index, count).ConfigureAwait(false);
         }
 
-        public override Task WriteRawAsync(char[] buffer, int index, int count)
+        public override async Task WriteRawAsync(char[] buffer, int index, int count)
         {
             CheckAsyncCall();
             _mixedContent = true;
-            return base.WriteRawAsync(buffer, index, count);
+            await base.WriteRawAsync(buffer, index, count).ConfigureAwait(false);
         }
 
-        public override Task WriteRawAsync(string data)
+        public override async Task WriteRawAsync(string data)
         {
             CheckAsyncCall();
             _mixedContent = true;
-            return base.WriteRawAsync(data);
+            await base.WriteRawAsync(data).ConfigureAwait(false);
         }
 
-        public override Task WriteBase64Async(byte[] buffer, int index, int count)
+        public override async Task WriteBase64Async(byte[] buffer, int index, int count)
         {
             CheckAsyncCall();
             _mixedContent = true;
-            return base.WriteBase64Async(buffer, index, count);
+            await base.WriteBase64Async(buffer, index, count).ConfigureAwait(false);
         }
 
         // Add indentation to output.  Write newline and then repeat IndentChars for each indent level.

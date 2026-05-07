@@ -17,9 +17,9 @@ namespace System.Xml
     internal sealed partial class XmlValidatingReaderImpl : XmlReader, IXmlLineInfo, IXmlNamespaceResolver
     {
         // Returns the text value of the current node.
-        public override Task<string> GetValueAsync()
+        public override async Task<string> GetValueAsync()
         {
-            return _coreReader.GetValueAsync();
+            return await _coreReader.GetValueAsync().ConfigureAwait(false);
         }
 
         // Reads and validated next node from the input data

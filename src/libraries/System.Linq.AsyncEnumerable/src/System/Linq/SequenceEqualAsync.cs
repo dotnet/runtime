@@ -19,7 +19,7 @@ namespace System.Linq
         /// <see langword="true"/> if the two source sequences are of equal length and their corresponding
         /// elements compare equal according to comparer; otherwise, <see langword="false"/>.
         /// </returns>
-        public static ValueTask<bool> SequenceEqualAsync<TSource>(
+        public static async ValueTask<bool> SequenceEqualAsync<TSource>(
             this IAsyncEnumerable<TSource> first,
             IAsyncEnumerable<TSource> second,
             IEqualityComparer<TSource>? comparer = null,
@@ -28,7 +28,7 @@ namespace System.Linq
             ArgumentNullException.ThrowIfNull(first);
             ArgumentNullException.ThrowIfNull(second);
 
-            return Impl(first, second, comparer ?? EqualityComparer<TSource>.Default, cancellationToken);
+            return await Impl(first, second, comparer ?? EqualityComparer<TSource>.Default, cancellationToken).ConfigureAwait(false);
 
             static async ValueTask<bool> Impl(
                 IAsyncEnumerable<TSource> first,

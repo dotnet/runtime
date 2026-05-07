@@ -164,10 +164,10 @@ namespace System.IO.Compression
         /// <exception cref="InvalidDataException">The data is in an invalid format.</exception>
         /// <exception cref="ObjectDisposedException">The stream is disposed.</exception>
         /// <exception cref="IOException">Failed to decompress data from the underlying stream.</exception>
-        public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        public override async Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
             ValidateBufferArguments(buffer, offset, count);
-            return ReadAsync(new Memory<byte>(buffer, offset, count), cancellationToken).AsTask();
+            return await ReadAsync(new Memory<byte>(buffer, offset, count), cancellationToken).ConfigureAwait(false);
         }
 
         /// <summary>Asynchronously reads decompressed bytes from the underlying stream and places them in the specified memory.</summary>

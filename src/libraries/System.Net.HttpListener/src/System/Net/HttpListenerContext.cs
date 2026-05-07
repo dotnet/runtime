@@ -22,14 +22,14 @@ namespace System.Net
 
         public HttpListenerResponse Response => _response ??= new HttpListenerResponse(this);
 
-        public Task<HttpListenerWebSocketContext> AcceptWebSocketAsync(string? subProtocol)
+        public async Task<HttpListenerWebSocketContext> AcceptWebSocketAsync(string? subProtocol)
         {
-            return AcceptWebSocketAsync(subProtocol, HttpWebSocket.DefaultReceiveBufferSize, WebSocket.DefaultKeepAliveInterval);
+            return await AcceptWebSocketAsync(subProtocol, HttpWebSocket.DefaultReceiveBufferSize, WebSocket.DefaultKeepAliveInterval).ConfigureAwait(false);
         }
 
-        public Task<HttpListenerWebSocketContext> AcceptWebSocketAsync(string? subProtocol, TimeSpan keepAliveInterval)
+        public async Task<HttpListenerWebSocketContext> AcceptWebSocketAsync(string? subProtocol, TimeSpan keepAliveInterval)
         {
-            return AcceptWebSocketAsync(subProtocol, HttpWebSocket.DefaultReceiveBufferSize, keepAliveInterval);
+            return await AcceptWebSocketAsync(subProtocol, HttpWebSocket.DefaultReceiveBufferSize, keepAliveInterval).ConfigureAwait(false);
         }
     }
 }

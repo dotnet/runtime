@@ -109,7 +109,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                 {
                     // sync over async, for the rare case that an object only implements IAsyncDisposable and may end up starving the thread pool.
                     object? localService = service; // copy to avoid closure on other paths
-                    Task.Run(() => ((IAsyncDisposable)localService).DisposeAsync().AsTask()).GetAwaiter().GetResult();
+                    Task.Run(async () => await ((IAsyncDisposable)localService).DisposeAsync().ConfigureAwait(false)).GetAwaiter().GetResult();
                 }
 
                 ThrowHelper.ThrowObjectDisposedException();

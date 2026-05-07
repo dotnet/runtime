@@ -29,7 +29,7 @@ namespace System.IO.Pipelines
             public override void OnReaderCompleted(Action<Exception?, object?> callback, object? state) => _pipe.OnReaderCompleted(callback, state);
 #pragma warning restore CS0672 // Member overrides obsolete member
 
-            public override ValueTask<FlushResult> FlushAsync(CancellationToken cancellationToken = default) => _pipe.FlushAsync(cancellationToken);
+            public override async ValueTask<FlushResult> FlushAsync(CancellationToken cancellationToken = default) => await _pipe.FlushAsync(cancellationToken).ConfigureAwait(false);
 
             public override void Advance(int bytes) => _pipe.Advance(bytes);
 
@@ -45,9 +45,9 @@ namespace System.IO.Pipelines
 
             public override long UnflushedBytes => _pipe.GetUnflushedBytes();
 
-            public override ValueTask<FlushResult> WriteAsync(ReadOnlyMemory<byte> source, CancellationToken cancellationToken = default)
+            public override async ValueTask<FlushResult> WriteAsync(ReadOnlyMemory<byte> source, CancellationToken cancellationToken = default)
             {
-                return _pipe.WriteAsync(source, cancellationToken);
+                return await _pipe.WriteAsync(source, cancellationToken).ConfigureAwait(false);
             }
         }
     }

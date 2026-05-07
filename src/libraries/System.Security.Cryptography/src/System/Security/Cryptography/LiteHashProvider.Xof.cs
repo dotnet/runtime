@@ -54,7 +54,7 @@ namespace System.Security.Cryptography
             return result;
         }
 
-        internal static ValueTask XofStreamAsync(
+        internal static async ValueTask XofStreamAsync(
             string hashAlgorithmId,
             Stream source,
             Memory<byte> destination,
@@ -62,14 +62,14 @@ namespace System.Security.Cryptography
         {
             if (cancellationToken.IsCancellationRequested)
             {
-                return ValueTask.FromCanceled(cancellationToken);
+                await ValueTask.FromCanceled(cancellationToken).ConfigureAwait(false);
             }
 
             LiteXof hash = CreateXof(hashAlgorithmId);
-            return ProcessStreamIndefiniteAsync(hash, source, destination, cancellationToken);
+            await ProcessStreamIndefiniteAsync(hash, source, destination, cancellationToken).ConfigureAwait(false);
         }
 
-        internal static ValueTask<byte[]> XofStreamAsync(
+        internal static async ValueTask<byte[]> XofStreamAsync(
             string hashAlgorithmId,
             int outputLength,
             Stream source,
@@ -77,11 +77,11 @@ namespace System.Security.Cryptography
         {
             if (cancellationToken.IsCancellationRequested)
             {
-                return ValueTask.FromCanceled<byte[]>(cancellationToken);
+                return await ValueTask.FromCanceled<byte[]>(cancellationToken).ConfigureAwait(false);
             }
 
             LiteXof hash = CreateXof(hashAlgorithmId);
-            return ProcessStreamAsync(hash, outputLength, source, cancellationToken);
+            return await ProcessStreamAsync(hash, outputLength, source, cancellationToken).ConfigureAwait(false);
         }
 
         internal static ValueTask KmacStreamAsync(

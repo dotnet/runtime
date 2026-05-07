@@ -40,8 +40,8 @@ namespace System.Net.Http
         protected override void SerializeToStream(Stream stream, TransportContext? context, CancellationToken cancellationToken) =>
             stream.Write(_content, _offset, _count);
 
-        protected override Task SerializeToStreamAsync(Stream stream, TransportContext? context) =>
-            SerializeToStreamAsyncCore(stream, default);
+        protected override async Task SerializeToStreamAsync(Stream stream, TransportContext? context) =>
+            await SerializeToStreamAsyncCore(stream, default).ConfigureAwait(false);
 
         protected override Task SerializeToStreamAsync(Stream stream, TransportContext? context, CancellationToken cancellationToken) =>
             // Only skip the original protected virtual SerializeToStreamAsync if this
@@ -49,8 +49,8 @@ namespace System.Net.Http
             GetType() == typeof(ByteArrayContent) ? SerializeToStreamAsyncCore(stream, cancellationToken) :
             base.SerializeToStreamAsync(stream, context, cancellationToken);
 
-        private protected Task SerializeToStreamAsyncCore(Stream stream, CancellationToken cancellationToken) =>
-            stream.WriteAsync(_content, _offset, _count, cancellationToken);
+        private protected async Task SerializeToStreamAsyncCore(Stream stream, CancellationToken cancellationToken) =>
+            await stream.WriteAsync(_content.AsMemory(_offset, _count), cancellationToken).ConfigureAwait(false);
 
         protected internal override bool TryComputeLength(out long length)
         {
@@ -61,8 +61,8 @@ namespace System.Net.Http
         protected override Stream CreateContentReadStream(CancellationToken cancellationToken) =>
             CreateMemoryStreamForByteArray();
 
-        protected override Task<Stream> CreateContentReadStreamAsync() =>
-            Task.FromResult<Stream>(CreateMemoryStreamForByteArray());
+        protected override async Task<Stream> CreateContentReadStreamAsync() =>
+            CreateMemoryStreamForByteArray();
 
         internal override Stream? TryCreateContentReadStream() =>
             GetType() == typeof(ByteArrayContent) ? CreateMemoryStreamForByteArray() : // type check ensures we use possible derived type's CreateContentReadStreamAsync override

@@ -100,20 +100,20 @@ namespace System.Data.Common
         /// </summary>
         /// <param name="cancellationToken">The cancellation instruction.</param>
         /// <returns>A task representing the asynchronous operation.</returns>
-        public virtual Task<DataTable?> GetSchemaTableAsync(CancellationToken cancellationToken = default)
+        public virtual async Task<DataTable?> GetSchemaTableAsync(CancellationToken cancellationToken = default)
         {
             if (cancellationToken.IsCancellationRequested)
             {
-                return Task.FromCanceled<DataTable?>(cancellationToken);
+                return await Task.FromCanceled<DataTable?>(cancellationToken).ConfigureAwait(false);
             }
 
             try
             {
-                return Task.FromResult(GetSchemaTable());
+                return GetSchemaTable();
             }
             catch (Exception e)
             {
-                return Task.FromException<DataTable?>(e);
+                return await Task.FromException<DataTable?>(e).ConfigureAwait(false);
             }
         }
 
@@ -129,21 +129,21 @@ namespace System.Data.Common
         /// </summary>
         /// <param name="cancellationToken">The cancellation instruction.</param>
         /// <returns>A task representing the asynchronous operation.</returns>
-        public virtual Task<ReadOnlyCollection<DbColumn>> GetColumnSchemaAsync(
+        public virtual async Task<ReadOnlyCollection<DbColumn>> GetColumnSchemaAsync(
             CancellationToken cancellationToken = default)
         {
             if (cancellationToken.IsCancellationRequested)
             {
-                return Task.FromCanceled<ReadOnlyCollection<DbColumn>>(cancellationToken);
+                return await Task.FromCanceled<ReadOnlyCollection<DbColumn>>(cancellationToken).ConfigureAwait(false);
             }
 
             try
             {
-                return Task.FromResult(this.GetColumnSchema());
+                return this.GetColumnSchema();
             }
             catch (Exception e)
             {
-                return Task.FromException<ReadOnlyCollection<DbColumn>>(e);
+                return await Task.FromException<ReadOnlyCollection<DbColumn>>(e).ConfigureAwait(false);
             }
         }
 
@@ -244,24 +244,24 @@ namespace System.Data.Common
 
         public virtual T GetFieldValue<T>(int ordinal) => (T)GetValue(ordinal);
 
-        public Task<T> GetFieldValueAsync<T>(int ordinal) =>
-            GetFieldValueAsync<T>(ordinal, CancellationToken.None);
+        public async Task<T> GetFieldValueAsync<T>(int ordinal) =>
+            await GetFieldValueAsync<T>(ordinal, CancellationToken.None).ConfigureAwait(false);
 
-        public virtual Task<T> GetFieldValueAsync<T>(int ordinal, CancellationToken cancellationToken)
+        public virtual async Task<T> GetFieldValueAsync<T>(int ordinal, CancellationToken cancellationToken)
         {
             if (cancellationToken.IsCancellationRequested)
             {
-                return ADP.CreatedTaskWithCancellation<T>();
+                return await ADP.CreatedTaskWithCancellation<T>().ConfigureAwait(false);
             }
             else
             {
                 try
                 {
-                    return Task.FromResult<T>(GetFieldValue<T>(ordinal));
+                    return GetFieldValue<T>(ordinal);
                 }
                 catch (Exception e)
                 {
-                    return Task.FromException<T>(e);
+                    return await Task.FromException<T>(e).ConfigureAwait(false);
                 }
             }
         }
@@ -270,7 +270,7 @@ namespace System.Data.Common
 
         public abstract bool IsDBNull(int ordinal);
 
-        public Task<bool> IsDBNullAsync(int ordinal) => IsDBNullAsync(ordinal, CancellationToken.None);
+        public async Task<bool> IsDBNullAsync(int ordinal) => await IsDBNullAsync(ordinal, CancellationToken.None).ConfigureAwait(false);
 
         public virtual Task<bool> IsDBNullAsync(int ordinal, CancellationToken cancellationToken)
         {
@@ -295,7 +295,7 @@ namespace System.Data.Common
 
         public abstract bool Read();
 
-        public Task<bool> ReadAsync() => ReadAsync(CancellationToken.None);
+        public async Task<bool> ReadAsync() => await ReadAsync(CancellationToken.None).ConfigureAwait(false);
 
         public virtual Task<bool> ReadAsync(CancellationToken cancellationToken)
         {
@@ -316,7 +316,7 @@ namespace System.Data.Common
             }
         }
 
-        public Task<bool> NextResultAsync() => NextResultAsync(CancellationToken.None);
+        public async Task<bool> NextResultAsync() => await NextResultAsync(CancellationToken.None).ConfigureAwait(false);
 
         public virtual Task<bool> NextResultAsync(CancellationToken cancellationToken)
         {

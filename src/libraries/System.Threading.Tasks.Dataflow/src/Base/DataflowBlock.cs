@@ -256,9 +256,9 @@ namespace System.Threading.Tasks.Dataflow
         /// never attempts to consume or release the message, the returned task will never complete.
         /// </returns>
         /// <exception cref="System.ArgumentNullException">The <paramref name="target"/> is null (Nothing in Visual Basic).</exception>
-        public static Task<bool> SendAsync<TInput>(this ITargetBlock<TInput> target, TInput item)
+        public static async Task<bool> SendAsync<TInput>(this ITargetBlock<TInput> target, TInput item)
         {
-            return SendAsync<TInput>(target, item, CancellationToken.None);
+            return await SendAsync<TInput>(target, item, CancellationToken.None).ConfigureAwait(false);
         }
 
         /// <summary>Asynchronously offers a message to the target message block, allowing for postponement.</summary>
@@ -781,11 +781,11 @@ namespace System.Threading.Tasks.Dataflow
         /// because the source is empty and completed, the returned task will be canceled.
         /// </returns>
         /// <exception cref="System.ArgumentNullException">The <paramref name="source"/> is null (Nothing in Visual Basic).</exception>
-        public static Task<TOutput> ReceiveAsync<TOutput>(
+        public static async Task<TOutput> ReceiveAsync<TOutput>(
             this ISourceBlock<TOutput> source)
         {
             // Argument validation handled by target method
-            return ReceiveAsync(source, Common.InfiniteTimeSpan, CancellationToken.None);
+            return await ReceiveAsync(source, Common.InfiniteTimeSpan, CancellationToken.None).ConfigureAwait(false);
         }
 
         /// <summary>Asynchronously receives a value from the specified source.</summary>
@@ -798,11 +798,11 @@ namespace System.Threading.Tasks.Dataflow
         /// either because cancellation is requested or the source is empty and completed, the returned task will be canceled.
         /// </returns>
         /// <exception cref="System.ArgumentNullException">The <paramref name="source"/> is null (Nothing in Visual Basic).</exception>
-        public static Task<TOutput> ReceiveAsync<TOutput>(
+        public static async Task<TOutput> ReceiveAsync<TOutput>(
             this ISourceBlock<TOutput> source, CancellationToken cancellationToken)
         {
             // Argument validation handled by target method
-            return ReceiveAsync(source, Common.InfiniteTimeSpan, cancellationToken);
+            return await ReceiveAsync(source, Common.InfiniteTimeSpan, cancellationToken).ConfigureAwait(false);
         }
 
         /// <summary>Asynchronously receives a value from the specified source.</summary>
@@ -818,11 +818,11 @@ namespace System.Threading.Tasks.Dataflow
         /// <exception cref="System.ArgumentOutOfRangeException">
         /// timeout is a negative number other than -1 milliseconds, which represents an infinite time-out -or- timeout is greater than <see cref="int.MaxValue"/>.
         /// </exception>
-        public static Task<TOutput> ReceiveAsync<TOutput>(
+        public static async Task<TOutput> ReceiveAsync<TOutput>(
             this ISourceBlock<TOutput> source, TimeSpan timeout)
         {
             // Argument validation handled by target method
-            return ReceiveAsync(source, timeout, CancellationToken.None);
+            return await ReceiveAsync(source, timeout, CancellationToken.None).ConfigureAwait(false);
         }
 
         /// <summary>Asynchronously receives a value from the specified source.</summary>
@@ -839,7 +839,7 @@ namespace System.Threading.Tasks.Dataflow
         /// <exception cref="System.ArgumentOutOfRangeException">
         /// timeout is a negative number other than -1 milliseconds, which represents an infinite time-out -or- timeout is greater than <see cref="int.MaxValue"/>.
         /// </exception>
-        public static Task<TOutput> ReceiveAsync<TOutput>(
+        public static async Task<TOutput> ReceiveAsync<TOutput>(
             this ISourceBlock<TOutput> source, TimeSpan timeout, CancellationToken cancellationToken)
         {
             ArgumentNullException.ThrowIfNull(source);
@@ -848,7 +848,7 @@ namespace System.Threading.Tasks.Dataflow
             if (!Common.IsValidTimeout(timeout)) throw new ArgumentOutOfRangeException(nameof(timeout), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
 
             // Return the task representing the core receive operation
-            return ReceiveCore(source, true, timeout, cancellationToken);
+            return await ReceiveCore(source, true, timeout, cancellationToken).ConfigureAwait(false);
         }
         #endregion
 
@@ -968,7 +968,7 @@ namespace System.Threading.Tasks.Dataflow
         /// <param name="timeout">A <see cref="System.TimeSpan"/> that represents the number of milliseconds to wait, or a TimeSpan that represents -1 milliseconds to wait indefinitely.</param>
         /// <param name="cancellationToken">The <see cref="System.Threading.CancellationToken"/> which may be used to cancel the receive operation.</param>
         /// <returns>A Task for the receive operation.</returns>
-        private static Task<TOutput> ReceiveCore<TOutput>(
+        private static async Task<TOutput> ReceiveCore<TOutput>(
             this ISourceBlock<TOutput> source, bool attemptTryReceive, TimeSpan timeout, CancellationToken cancellationToken)
         {
             Debug.Assert(source != null, "Need a source from which to receive.");
@@ -976,7 +976,7 @@ namespace System.Threading.Tasks.Dataflow
             // If cancellation has been requested, we're done before we've even started, cancel this receive.
             if (cancellationToken.IsCancellationRequested)
             {
-                return Common.CreateTaskFromCancellation<TOutput>(cancellationToken);
+                return await Common.CreateTaskFromCancellation<TOutput>(cancellationToken).ConfigureAwait(false);
             }
 
             if (attemptTryReceive)
@@ -990,12 +990,12 @@ namespace System.Threading.Tasks.Dataflow
                         TOutput? fastCheckedItem;
                         if (receivableSource.TryReceive(null, out fastCheckedItem))
                         {
-                            return Task.FromResult<TOutput>(fastCheckedItem);
+                            return fastCheckedItem;
                         }
                     }
                     catch (Exception exc)
                     {
-                        return Common.CreateTaskFromException<TOutput>(exc);
+                        return await Common.CreateTaskFromException<TOutput>(exc).ConfigureAwait(false);
                     }
                 }
             }
@@ -1003,10 +1003,10 @@ namespace System.Threading.Tasks.Dataflow
             int millisecondsTimeout = (int)timeout.TotalMilliseconds;
             if (millisecondsTimeout == 0)
             {
-                return Common.CreateTaskFromException<TOutput>(ReceiveTarget<TOutput>.CreateExceptionForTimeout());
+                return await Common.CreateTaskFromException<TOutput>(ReceiveTarget<TOutput>.CreateExceptionForTimeout()).ConfigureAwait(false);
             }
 
-            return ReceiveCoreByLinking<TOutput>(source, millisecondsTimeout, cancellationToken);
+            return await ReceiveCoreByLinking<TOutput>(source, millisecondsTimeout, cancellationToken).ConfigureAwait(false);
         }
 
         /// <summary>The reason for a ReceiveCoreByLinking call failing.</summary>
@@ -1379,9 +1379,9 @@ namespace System.Threading.Tasks.Dataflow
         /// If it returns false, more output is not and will never be available, due to the source
         /// completing prior to output being available.
         /// </returns>
-        public static Task<bool> OutputAvailableAsync<TOutput>(this ISourceBlock<TOutput> source)
+        public static async Task<bool> OutputAvailableAsync<TOutput>(this ISourceBlock<TOutput> source)
         {
-            return OutputAvailableAsync<TOutput>(source, CancellationToken.None);
+            return await OutputAvailableAsync<TOutput>(source, CancellationToken.None).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -1658,12 +1658,12 @@ namespace System.Threading.Tasks.Dataflow
         /// <exception cref="System.ArgumentNullException">The <paramref name="action1"/> is null (Nothing in Visual Basic).</exception>
         /// <exception cref="System.ArgumentNullException">The <paramref name="source2"/> is null (Nothing in Visual Basic).</exception>
         /// <exception cref="System.ArgumentNullException">The <paramref name="action2"/> is null (Nothing in Visual Basic).</exception>
-        public static Task<int> Choose<T1, T2>(
+        public static async Task<int> Choose<T1, T2>(
             ISourceBlock<T1> source1, Action<T1> action1,
             ISourceBlock<T2> source2, Action<T2> action2)
         {
             // All argument validation is handled by the delegated method
-            return Choose(source1, action1, source2, action2, DataflowBlockOptions.Default);
+            return await Choose(source1, action1, source2, action2, DataflowBlockOptions.Default).ConfigureAwait(false);
         }
 
         /// <summary>Monitors two dataflow sources, invoking the provided handler for whichever source makes data available first.</summary>
@@ -1696,7 +1696,7 @@ namespace System.Threading.Tasks.Dataflow
         /// <exception cref="System.ArgumentNullException">The <paramref name="source2"/> is null (Nothing in Visual Basic).</exception>
         /// <exception cref="System.ArgumentNullException">The <paramref name="action2"/> is null (Nothing in Visual Basic).</exception>
         /// <exception cref="System.ArgumentNullException">The <paramref name="dataflowBlockOptions"/> is null (Nothing in Visual Basic).</exception>
-        public static Task<int> Choose<T1, T2>(
+        public static async Task<int> Choose<T1, T2>(
             ISourceBlock<T1> source1, Action<T1> action1,
             ISourceBlock<T2> source2, Action<T2> action2,
             DataflowBlockOptions dataflowBlockOptions)
@@ -1708,7 +1708,7 @@ namespace System.Threading.Tasks.Dataflow
             ArgumentNullException.ThrowIfNull(dataflowBlockOptions);
 
             // Delegate to the shared implementation
-            return ChooseCore<T1, T2, VoidResult>(source1, action1, source2, action2, null, null, dataflowBlockOptions);
+            return await ChooseCore<T1, T2, VoidResult>(source1, action1, source2, action2, null, null, dataflowBlockOptions).ConfigureAwait(false);
         }
         #endregion
 
@@ -1742,13 +1742,13 @@ namespace System.Threading.Tasks.Dataflow
         /// <exception cref="System.ArgumentNullException">The <paramref name="action2"/> is null (Nothing in Visual Basic).</exception>
         /// <exception cref="System.ArgumentNullException">The <paramref name="source3"/> is null (Nothing in Visual Basic).</exception>
         /// <exception cref="System.ArgumentNullException">The <paramref name="action3"/> is null (Nothing in Visual Basic).</exception>
-        public static Task<int> Choose<T1, T2, T3>(
+        public static async Task<int> Choose<T1, T2, T3>(
             ISourceBlock<T1> source1, Action<T1> action1,
             ISourceBlock<T2> source2, Action<T2> action2,
             ISourceBlock<T3> source3, Action<T3> action3)
         {
             // All argument validation is handled by the delegated method
-            return Choose(source1, action1, source2, action2, source3, action3, DataflowBlockOptions.Default);
+            return await Choose(source1, action1, source2, action2, source3, action3, DataflowBlockOptions.Default).ConfigureAwait(false);
         }
 
         /// <summary>Monitors three dataflow sources, invoking the provided handler for whichever source makes data available first.</summary>
@@ -1785,7 +1785,7 @@ namespace System.Threading.Tasks.Dataflow
         /// <exception cref="System.ArgumentNullException">The <paramref name="source3"/> is null (Nothing in Visual Basic).</exception>
         /// <exception cref="System.ArgumentNullException">The <paramref name="action3"/> is null (Nothing in Visual Basic).</exception>
         /// <exception cref="System.ArgumentNullException">The <paramref name="dataflowBlockOptions"/> is null (Nothing in Visual Basic).</exception>
-        public static Task<int> Choose<T1, T2, T3>(
+        public static async Task<int> Choose<T1, T2, T3>(
             ISourceBlock<T1> source1, Action<T1> action1,
             ISourceBlock<T2> source2, Action<T2> action2,
             ISourceBlock<T3> source3, Action<T3> action3,
@@ -1800,7 +1800,7 @@ namespace System.Threading.Tasks.Dataflow
             ArgumentNullException.ThrowIfNull(dataflowBlockOptions);
 
             // Delegate to the shared implementation
-            return ChooseCore<T1, T2, T3>(source1, action1, source2, action2, source3, action3, dataflowBlockOptions);
+            return await ChooseCore<T1, T2, T3>(source1, action1, source2, action2, source3, action3, dataflowBlockOptions).ConfigureAwait(false);
         }
         #endregion
 
@@ -1998,7 +1998,7 @@ namespace System.Threading.Tasks.Dataflow
         /// <param name="source">The source with which this branch is associated.</param>
         /// <param name="action">The action to run for a single element received from the source.</param>
         /// <returns>A task representing the branch.</returns>
-        private static Task<int> CreateChooseBranch<T>(
+        private static async Task<int> CreateChooseBranch<T>(
             StrongBox<Task> boxedCompleted, CancellationTokenSource cts,
             TaskScheduler scheduler,
             int branchId, ISourceBlock<T> source, Action<T> action)
@@ -2006,7 +2006,7 @@ namespace System.Threading.Tasks.Dataflow
             // If the cancellation token is already canceled, there is no need to create and link a target.
             // Instead, directly return a canceled task.
             if (cts.IsCancellationRequested)
-                return Common.CreateTaskFromCancellation<int>(cts.Token);
+                return await Common.CreateTaskFromCancellation<int>(cts.Token).ConfigureAwait(false);
 
             // Proceed with creating and linking a hidden target. Also get the source's completion task,
             // as we need it to know when the source completes.  Both of these operations
@@ -2020,14 +2020,14 @@ namespace System.Threading.Tasks.Dataflow
             catch (Exception exc)
             {
                 cts.Cancel();
-                return Common.CreateTaskFromException<int>(exc);
+                return await Common.CreateTaskFromException<int>(exc).ConfigureAwait(false);
             }
 
             // The continuation task below is implicitly capturing the right execution context,
             // as CreateChooseBranch is called synchronously from Choose, so we
             // don't need to additionally capture and marshal an ExecutionContext.
 
-            return target.Task.ContinueWith(completed =>
+            return await target.Task.ContinueWith(completed =>
             {
                 try
                 {
@@ -2054,7 +2054,7 @@ namespace System.Threading.Tasks.Dataflow
                     // original action's exception if there was one.
                     unlink.Dispose();
                 }
-            }, CancellationToken.None, Common.GetContinuationOptions(), scheduler);
+            }, CancellationToken.None, Common.GetContinuationOptions(), scheduler).ConfigureAwait(false);
         }
 
         /// <summary>Provides a dataflow target used by Choose to receive data from a single source.</summary>
@@ -2567,9 +2567,9 @@ namespace System.Threading.Tasks.Dataflow
             /// <summary>Sends a value to the underlying target asynchronously.</summary>
             /// <param name="value">The value to send.</param>
             /// <returns>A Task{bool} to wait on.</returns>
-            internal Task<bool> SendAsyncToTarget(TInput value)
+            internal async Task<bool> SendAsyncToTarget(TInput value)
             {
-                return _target.SendAsync(value);
+                return await _target.SendAsync(value).ConfigureAwait(false);
             }
 
             /// <summary>The data to display in the debugger display attribute.</summary>

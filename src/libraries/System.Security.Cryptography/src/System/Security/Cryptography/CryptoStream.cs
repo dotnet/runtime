@@ -124,12 +124,12 @@ namespace System.Security.Cryptography
         /// </summary>
         /// <param name="cancellationToken">The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None"/>.</param>
         /// <returns>A task that represents the asynchronous flush operation.</returns>
-        public ValueTask FlushFinalBlockAsync(CancellationToken cancellationToken = default)
+        public async ValueTask FlushFinalBlockAsync(CancellationToken cancellationToken = default)
         {
             if (cancellationToken.IsCancellationRequested)
-                return ValueTask.FromCanceled(cancellationToken);
+                await ValueTask.FromCanceled(cancellationToken).ConfigureAwait(false);
 
-            return FlushFinalBlockAsync(useAsync: true, cancellationToken);
+            await FlushFinalBlockAsync(useAsync: true, cancellationToken).ConfigureAwait(false);
         }
 
         private async ValueTask FlushFinalBlockAsync(bool useAsync, CancellationToken cancellationToken)
@@ -214,19 +214,19 @@ namespace System.Security.Cryptography
             throw new NotSupportedException(SR.NotSupported_UnseekableStream);
         }
 
-        public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        public override async Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
             CheckReadArguments(buffer, offset, count);
-            return ReadAsyncInternal(buffer.AsMemory(offset, count), cancellationToken).AsTask();
+            return await ReadAsyncInternal(buffer.AsMemory(offset, count), cancellationToken).ConfigureAwait(false);
         }
 
         /// <inheritdoc/>
-        public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
+        public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
         {
             if (!CanRead)
-                return ValueTask.FromException<int>(new NotSupportedException(SR.NotSupported_UnreadableStream));
+                return await ValueTask.FromException<int>(new NotSupportedException(SR.NotSupported_UnreadableStream)).ConfigureAwait(false);
 
-            return ReadAsyncInternal(buffer, cancellationToken);
+            return await ReadAsyncInternal(buffer, cancellationToken).ConfigureAwait(false);
         }
 
         private async ValueTask<int> ReadAsyncInternal(Memory<byte> buffer, CancellationToken cancellationToken = default)
@@ -453,19 +453,19 @@ namespace System.Security.Cryptography
             }
         }
 
-        public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        public override async Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
             CheckWriteArguments(buffer, offset, count);
-            return WriteAsyncInternal(buffer.AsMemory(offset, count), cancellationToken).AsTask();
+            await WriteAsyncInternal(buffer.AsMemory(offset, count), cancellationToken).ConfigureAwait(false);
         }
 
         /// <inheritdoc/>
-        public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
+        public override async ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
         {
             if (!CanWrite)
-                return ValueTask.FromException(new NotSupportedException(SR.NotSupported_UnwritableStream));
+                await ValueTask.FromException(new NotSupportedException(SR.NotSupported_UnwritableStream)).ConfigureAwait(false);
 
-            return WriteAsyncInternal(buffer, cancellationToken);
+            await WriteAsyncInternal(buffer, cancellationToken).ConfigureAwait(false);
         }
 
         private async ValueTask WriteAsyncInternal(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
@@ -710,10 +710,10 @@ namespace System.Security.Cryptography
         }
 
         /// <inheritdoc/>
-        public override Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
+        public override async Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
         {
             CheckCopyToArguments(destination, bufferSize);
-            return CopyToAsyncInternal(destination, bufferSize, cancellationToken);
+            await CopyToAsyncInternal(destination, bufferSize, cancellationToken).ConfigureAwait(false);
         }
 
         private async Task CopyToAsyncInternal(Stream destination, int bufferSize, CancellationToken cancellationToken)

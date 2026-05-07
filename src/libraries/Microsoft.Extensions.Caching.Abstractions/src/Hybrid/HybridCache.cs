@@ -42,9 +42,9 @@ public abstract class HybridCache
     /// <param name="tags">The tags to associate with this cache item.</param>
     /// <param name="cancellationToken">The <see cref="CancellationToken"/> used to propagate notifications that the operation should be canceled.</param>
     /// <returns>The data, either from cache or the underlying data service.</returns>
-    public ValueTask<T> GetOrCreateAsync<T>(string key, Func<CancellationToken, ValueTask<T>> factory,
+    public async ValueTask<T> GetOrCreateAsync<T>(string key, Func<CancellationToken, ValueTask<T>> factory,
         HybridCacheEntryOptions? options = null, IEnumerable<string>? tags = null, CancellationToken cancellationToken = default)
-        => GetOrCreateAsync(key, factory, WrappedCallbackCache<T>.Instance, options, tags, cancellationToken);
+        => await GetOrCreateAsync(key, factory, WrappedCallbackCache<T>.Instance, options, tags, cancellationToken).ConfigureAwait(false);
 
 #if NET
     /// <summary>
@@ -144,7 +144,7 @@ public abstract class HybridCache
     private static class WrappedCallbackCache<T> // per-T memoized helper that allows GetOrCreateAsync<T> and GetOrCreateAsync<TState, T> to share an implementation
     {
         // for the simple usage scenario (no TState), pack the original callback as the "state", and use a wrapper function that just unrolls and invokes from the state
-        public static readonly Func<Func<CancellationToken, ValueTask<T>>, CancellationToken, ValueTask<T>> Instance = static (callback, ct) => callback(ct);
+        public static readonly Func<Func<CancellationToken, ValueTask<T>>, CancellationToken, ValueTask<T>> Instance = static async (callback, ct) => await callback(ct).ConfigureAwait(false);
     }
 
     /// <summary>

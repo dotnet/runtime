@@ -20,7 +20,7 @@ namespace System.Net.Http
 {
     internal static class WasiHttpInterop
     {
-        public static Task RegisterWasiPollable(IPoll.Pollable pollable, CancellationToken cancellationToken)
+        public static async Task RegisterWasiPollable(IPoll.Pollable pollable, CancellationToken cancellationToken)
         {
             var handle = pollable.Handle;
 
@@ -29,7 +29,7 @@ namespace System.Net.Http
             pollable.Handle = 0;
             GC.SuppressFinalize(pollable);
 
-            return CallRegisterWasiPollableHandle((Thread)null!, handle, true, cancellationToken);
+            await CallRegisterWasiPollableHandle((Thread)null!, handle, true, cancellationToken).ConfigureAwait(false);
 
             [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "RegisterWasiPollableHandle")]
             static extern Task CallRegisterWasiPollableHandle(Thread t, int handle, bool ownsPollable, CancellationToken cancellationToken);

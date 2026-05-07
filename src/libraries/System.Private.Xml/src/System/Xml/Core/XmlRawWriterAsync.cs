@@ -76,12 +76,12 @@ namespace System.Xml
         }
 
         // By default, convert base64 value to string and call WriteString.
-        public override Task WriteBase64Async(byte[] buffer, int index, int count)
+        public override async Task WriteBase64Async(byte[] buffer, int index, int count)
         {
             _base64Encoder ??= new XmlRawWriterBase64Encoder(this);
 
             // Encode will call WriteRaw to write out the encoded characters
-            return _base64Encoder.EncodeAsync(buffer, index, count);
+            await _base64Encoder.EncodeAsync(buffer, index, count).ConfigureAwait(false);
         }
 
         // Raw writers do not have to verify NmToken values.
@@ -103,45 +103,45 @@ namespace System.Xml
         }
 
         // Forward call to WriteString(string).
-        public override Task WriteCDataAsync(string? text)
+        public override async Task WriteCDataAsync(string? text)
         {
-            return WriteStringAsync(text);
+            await WriteStringAsync(text).ConfigureAwait(false);
         }
 
         // Forward call to WriteString(string).
-        public override Task WriteCharEntityAsync(char ch)
+        public override async Task WriteCharEntityAsync(char ch)
         {
-            return WriteStringAsync(char.ToString(ch));
+            await WriteStringAsync(char.ToString(ch)).ConfigureAwait(false);
         }
 
         // Forward call to WriteString(string).
-        public override Task WriteSurrogateCharEntityAsync(char lowChar, char highChar)
+        public override async Task WriteSurrogateCharEntityAsync(char lowChar, char highChar)
         {
-            return WriteStringAsync(new string([lowChar, highChar]));
+            await WriteStringAsync(new string([lowChar, highChar])).ConfigureAwait(false);
         }
 
         // Forward call to WriteString(string).
-        public override Task WriteWhitespaceAsync(string? ws)
+        public override async Task WriteWhitespaceAsync(string? ws)
         {
-            return WriteStringAsync(ws);
+            await WriteStringAsync(ws).ConfigureAwait(false);
         }
 
         // Forward call to WriteString(string).
-        public override Task WriteCharsAsync(char[] buffer, int index, int count)
+        public override async Task WriteCharsAsync(char[] buffer, int index, int count)
         {
-            return WriteStringAsync(new string(buffer, index, count));
+            await WriteStringAsync(new string(buffer, index, count)).ConfigureAwait(false);
         }
 
         // Forward call to WriteString(string).
-        public override Task WriteRawAsync(char[] buffer, int index, int count)
+        public override async Task WriteRawAsync(char[] buffer, int index, int count)
         {
-            return WriteStringAsync(new string(buffer, index, count));
+            await WriteStringAsync(new string(buffer, index, count)).ConfigureAwait(false);
         }
 
         // Forward call to WriteString(string).
-        public override Task WriteRawAsync(string data)
+        public override async Task WriteRawAsync(string data)
         {
-            return WriteStringAsync(data);
+            await WriteStringAsync(data).ConfigureAwait(false);
         }
 
         // Copying to XmlRawWriter is not currently supported.
@@ -183,9 +183,9 @@ namespace System.Xml
             throw new NotImplementedException();
         }
 
-        internal virtual Task WriteFullEndElementAsync(string prefix, string localName, string ns)
+        internal virtual async Task WriteFullEndElementAsync(string prefix, string localName, string ns)
         {
-            return WriteEndElementAsync(prefix, localName, ns);
+            await WriteEndElementAsync(prefix, localName, ns).ConfigureAwait(false);
         }
 
         internal virtual async Task WriteQualifiedNameAsync(string prefix, string localName, string? ns)
@@ -217,16 +217,16 @@ namespace System.Xml
         }
 
         // This is called when the remainder of a base64 value should be output.
-        internal virtual Task WriteEndBase64Async()
+        internal virtual async Task WriteEndBase64Async()
         {
             // The Flush will call WriteRaw to write out the rest of the encoded characters
             Debug.Assert(_base64Encoder != null);
-            return _base64Encoder.FlushAsync();
+            await _base64Encoder.FlushAsync().ConfigureAwait(false);
         }
 
-        internal virtual ValueTask DisposeAsyncCore(WriteState currentState)
+        internal virtual async ValueTask DisposeAsyncCore(WriteState currentState)
         {
-            return DisposeAsyncCore();
+            await DisposeAsyncCore().ConfigureAwait(false);
         }
     }
 }

@@ -48,14 +48,14 @@ namespace System.IO.Pipelines
         ///     examine at least <paramref name="minimumSize" /> bytes in order to avoid an <see cref="System.InvalidOperationException" />.
         ///     </para>
         /// </remarks>
-        public ValueTask<ReadResult> ReadAtLeastAsync(int minimumSize, CancellationToken cancellationToken = default)
+        public async ValueTask<ReadResult> ReadAtLeastAsync(int minimumSize, CancellationToken cancellationToken = default)
         {
             if (minimumSize < 0)
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.minimumSize);
             }
 
-            return ReadAtLeastAsyncCore(minimumSize, cancellationToken);
+            return await ReadAtLeastAsyncCore(minimumSize, cancellationToken).ConfigureAwait(false);
         }
 
         /// <summary>Asynchronously reads a sequence of bytes from the current <see cref="System.IO.Pipelines.PipeReader" />.</summary>
@@ -174,7 +174,7 @@ namespace System.IO.Pipelines
         /// <param name="destination">The pipe writer to which the contents of the current stream will be copied.</param>
         /// <param name="cancellationToken">The token to monitor for cancellation requests. The default value is <see cref="System.Threading.CancellationToken.None" />.</param>
         /// <returns>A task that represents the asynchronous copy operation.</returns>
-        public virtual Task CopyToAsync(PipeWriter destination, CancellationToken cancellationToken = default)
+        public virtual async Task CopyToAsync(PipeWriter destination, CancellationToken cancellationToken = default)
         {
             if (destination is null)
             {
@@ -183,20 +183,20 @@ namespace System.IO.Pipelines
 
             if (cancellationToken.IsCancellationRequested)
             {
-                return Task.FromCanceled(cancellationToken);
+                await Task.FromCanceled(cancellationToken).ConfigureAwait(false);
             }
 
-            return CopyToAsyncCore(
+            await CopyToAsyncCore(
                 destination,
-                (destination, memory, cancellationToken) => destination.WriteAsync(memory, cancellationToken),
-                cancellationToken);
+async (destination, memory, cancellationToken) => await destination.WriteAsync(memory, cancellationToken).ConfigureAwait(false),
+                cancellationToken).ConfigureAwait(false);
         }
 
         /// <summary>Asynchronously reads the bytes from the <see cref="System.IO.Pipelines.PipeReader" /> and writes them to the specified stream, using a specified cancellation token.</summary>
         /// <param name="destination">The stream to which the contents of the current stream will be copied.</param>
         /// <param name="cancellationToken">The token to monitor for cancellation requests. The default value is <see cref="System.Threading.CancellationToken.None" />.</param>
         /// <returns>A task that represents the asynchronous copy operation.</returns>
-        public virtual Task CopyToAsync(Stream destination, CancellationToken cancellationToken = default)
+        public virtual async Task CopyToAsync(Stream destination, CancellationToken cancellationToken = default)
         {
             if (destination is null)
             {
@@ -205,10 +205,10 @@ namespace System.IO.Pipelines
 
             if (cancellationToken.IsCancellationRequested)
             {
-                return Task.FromCanceled(cancellationToken);
+                await Task.FromCanceled(cancellationToken).ConfigureAwait(false);
             }
 
-            return CopyToAsyncCore(destination, (destination, memory, cancellationToken) =>
+            await CopyToAsyncCore(destination, (destination, memory, cancellationToken) =>
             {
                 ValueTask task = destination.WriteAsync(memory, cancellationToken);
 
@@ -226,7 +226,7 @@ namespace System.IO.Pipelines
 
                 return Awaited(task);
             },
-            cancellationToken);
+            cancellationToken).ConfigureAwait(false);
         }
 
         private async Task CopyToAsyncCore<TStream>(TStream destination, Func<TStream, ReadOnlyMemory<byte>, CancellationToken, ValueTask<FlushResult>> writeAsync, CancellationToken cancellationToken)

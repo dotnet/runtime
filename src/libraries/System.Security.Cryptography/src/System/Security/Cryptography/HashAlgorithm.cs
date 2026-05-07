@@ -114,7 +114,7 @@ namespace System.Security.Cryptography
             return CaptureHashCodeAndReinitialize();
         }
 
-        public Task<byte[]> ComputeHashAsync(
+        public async Task<byte[]> ComputeHashAsync(
             Stream inputStream,
             CancellationToken cancellationToken = default)
         {
@@ -122,7 +122,7 @@ namespace System.Security.Cryptography
 
             ObjectDisposedException.ThrowIf(_disposed, this);
 
-            return ComputeHashAsyncCore(inputStream, cancellationToken);
+            return await ComputeHashAsyncCore(inputStream, cancellationToken).ConfigureAwait(false);
         }
 
         private async Task<byte[]> ComputeHashAsyncCore(

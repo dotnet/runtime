@@ -183,15 +183,15 @@ namespace System.Formats.Tar
         /// <para>The entry will be created using the format specified in the <see cref="TarWriter(Stream, TarEntryFormat, bool)"/> constructor, or will use <see cref="TarEntryFormat.Pax"/> if other constructors are used.</para>
         /// <para>If the format is <see cref="TarEntryFormat.Pax"/>, the <c>atime</c> and <c>ctime</c> from the file will be stored in the <see cref="PaxTarEntry.ExtendedAttributes"/> dictionary. If the format is <see cref="TarEntryFormat.Gnu"/>, this method will not set a value for <see cref="GnuTarEntry.AccessTime"/> and <see cref="GnuTarEntry.ChangeTime"/> because most TAR tools do not support these fields for this format.</para>
         /// </remarks>
-        public Task WriteEntryAsync(string fileName, string? entryName, CancellationToken cancellationToken = default)
+        public async Task WriteEntryAsync(string fileName, string? entryName, CancellationToken cancellationToken = default)
         {
             if (cancellationToken.IsCancellationRequested)
             {
-                return Task.FromCanceled(cancellationToken);
+                await Task.FromCanceled(cancellationToken).ConfigureAwait(false);
             }
 
             (string fullPath, string actualEntryName) = ValidateWriteEntryArguments(fileName, entryName);
-            return ReadFileFromDiskAndWriteToArchiveStreamAsEntryAsync(fullPath, actualEntryName, cancellationToken);
+            await ReadFileFromDiskAndWriteToArchiveStreamAsEntryAsync(fullPath, actualEntryName, cancellationToken).ConfigureAwait(false);
         }
 
         // Reads an entry from disk and writes it into the archive stream.
@@ -299,18 +299,18 @@ namespace System.Formats.Tar
         /// <exception cref="ObjectDisposedException">The archive stream is disposed.</exception>
         /// <exception cref="ArgumentNullException"><paramref name="entry"/> is <see langword="null"/>.</exception>
         /// <exception cref="IOException">An I/O problem occurred.</exception>
-        public Task WriteEntryAsync(TarEntry entry, CancellationToken cancellationToken = default)
+        public async Task WriteEntryAsync(TarEntry entry, CancellationToken cancellationToken = default)
         {
             if (cancellationToken.IsCancellationRequested)
             {
-                return Task.FromCanceled(cancellationToken);
+                await Task.FromCanceled(cancellationToken).ConfigureAwait(false);
             }
 
             ObjectDisposedException.ThrowIf(_isDisposed, this);
             ArgumentNullException.ThrowIfNull(entry);
             ValidateEntryLinkName(entry._header._typeFlag, entry._header._linkName);
             ValidateStreamsSeekability(entry);
-            return WriteEntryAsyncInternal(entry, cancellationToken);
+            await WriteEntryAsyncInternal(entry, cancellationToken).ConfigureAwait(false);
         }
 
         // Portion of the WriteEntry(entry) method that rents a buffer and writes to the archive.

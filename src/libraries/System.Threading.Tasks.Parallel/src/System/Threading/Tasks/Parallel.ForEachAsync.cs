@@ -17,14 +17,14 @@ namespace System.Threading.Tasks
         /// <exception cref="ArgumentNullException">The <paramref name="body"/> argument is <see langword="null"/>.</exception>
         /// <returns>A task that represents the entire for each operation.</returns>
         /// <remarks>The operation will execute at most <see cref="Environment.ProcessorCount"/> operations in parallel.</remarks>
-        public static Task ForAsync<T>(T fromInclusive, T toExclusive, Func<T, CancellationToken, ValueTask> body)
+        public static async Task ForAsync<T>(T fromInclusive, T toExclusive, Func<T, CancellationToken, ValueTask> body)
             where T : notnull, IBinaryInteger<T>
         {
             ArgumentNullException.ThrowIfNull(fromInclusive);
             ArgumentNullException.ThrowIfNull(toExclusive);
             ArgumentNullException.ThrowIfNull(body);
 
-            return ForAsync(fromInclusive, toExclusive, DefaultDegreeOfParallelism, TaskScheduler.Default, default, body);
+            await ForAsync(fromInclusive, toExclusive, DefaultDegreeOfParallelism, TaskScheduler.Default, default, body).ConfigureAwait(false);
         }
 
         /// <summary>Executes a for loop in which iterations may run in parallel.</summary>
@@ -35,14 +35,14 @@ namespace System.Threading.Tasks
         /// <exception cref="ArgumentNullException">The <paramref name="body"/> argument is <see langword="null"/>.</exception>
         /// <returns>A task that represents the entire for each operation.</returns>
         /// <remarks>The operation will execute at most <see cref="Environment.ProcessorCount"/> operations in parallel.</remarks>
-        public static Task ForAsync<T>(T fromInclusive, T toExclusive, CancellationToken cancellationToken, Func<T, CancellationToken, ValueTask> body)
+        public static async Task ForAsync<T>(T fromInclusive, T toExclusive, CancellationToken cancellationToken, Func<T, CancellationToken, ValueTask> body)
             where T : notnull, IBinaryInteger<T>
         {
             ArgumentNullException.ThrowIfNull(fromInclusive);
             ArgumentNullException.ThrowIfNull(toExclusive);
             ArgumentNullException.ThrowIfNull(body);
 
-            return ForAsync(fromInclusive, toExclusive, DefaultDegreeOfParallelism, TaskScheduler.Default, cancellationToken, body);
+            await ForAsync(fromInclusive, toExclusive, DefaultDegreeOfParallelism, TaskScheduler.Default, cancellationToken, body).ConfigureAwait(false);
         }
 
         /// <summary>Executes a for loop in which iterations may run in parallel.</summary>
@@ -53,7 +53,7 @@ namespace System.Threading.Tasks
         /// <exception cref="ArgumentNullException">The <paramref name="body"/> argument is <see langword="null"/>.</exception>
         /// <returns>A task that represents the entire for each operation.</returns>
         /// <remarks>The operation will execute at most <see cref="Environment.ProcessorCount"/> operations in parallel.</remarks>
-        public static Task ForAsync<T>(T fromInclusive, T toExclusive, ParallelOptions parallelOptions, Func<T, CancellationToken, ValueTask> body)
+        public static async Task ForAsync<T>(T fromInclusive, T toExclusive, ParallelOptions parallelOptions, Func<T, CancellationToken, ValueTask> body)
             where T : notnull, IBinaryInteger<T>
         {
             ArgumentNullException.ThrowIfNull(fromInclusive);
@@ -61,7 +61,7 @@ namespace System.Threading.Tasks
             ArgumentNullException.ThrowIfNull(parallelOptions);
             ArgumentNullException.ThrowIfNull(body);
 
-            return ForAsync(fromInclusive, toExclusive, parallelOptions.EffectiveMaxConcurrencyLevel, parallelOptions.EffectiveTaskScheduler, parallelOptions.CancellationToken, body);
+            await ForAsync(fromInclusive, toExclusive, parallelOptions.EffectiveMaxConcurrencyLevel, parallelOptions.EffectiveTaskScheduler, parallelOptions.CancellationToken, body).ConfigureAwait(false);
         }
 
         /// <summary>Executes a for each operation on an <see cref="IEnumerable{TSource}"/> in which iterations may run in parallel.</summary>
@@ -195,12 +195,12 @@ namespace System.Threading.Tasks
         /// <exception cref="ArgumentNullException">The <paramref name="source"/> argument or <paramref name="body"/> argument is <see langword="null"/>.</exception>
         /// <returns>A task that represents the entire for each operation.</returns>
         /// <remarks>The operation will execute at most <see cref="Environment.ProcessorCount"/> operations in parallel.</remarks>
-        public static Task ForEachAsync<TSource>(IEnumerable<TSource> source, Func<TSource, CancellationToken, ValueTask> body)
+        public static async Task ForEachAsync<TSource>(IEnumerable<TSource> source, Func<TSource, CancellationToken, ValueTask> body)
         {
             ArgumentNullException.ThrowIfNull(source);
             ArgumentNullException.ThrowIfNull(body);
 
-            return ForEachAsync(source, DefaultDegreeOfParallelism, TaskScheduler.Default, default(CancellationToken), body);
+            await ForEachAsync(source, DefaultDegreeOfParallelism, TaskScheduler.Default, default(CancellationToken), body).ConfigureAwait(false);
         }
 
         /// <summary>Executes a for each operation on an <see cref="IEnumerable{TSource}"/> in which iterations may run in parallel.</summary>
@@ -211,12 +211,12 @@ namespace System.Threading.Tasks
         /// <exception cref="ArgumentNullException">The <paramref name="source"/> argument or <paramref name="body"/> argument is <see langword="null"/>.</exception>
         /// <returns>A task that represents the entire for each operation.</returns>
         /// <remarks>The operation will execute at most <see cref="Environment.ProcessorCount"/> operations in parallel.</remarks>
-        public static Task ForEachAsync<TSource>(IEnumerable<TSource> source, CancellationToken cancellationToken, Func<TSource, CancellationToken, ValueTask> body)
+        public static async Task ForEachAsync<TSource>(IEnumerable<TSource> source, CancellationToken cancellationToken, Func<TSource, CancellationToken, ValueTask> body)
         {
             ArgumentNullException.ThrowIfNull(source);
             ArgumentNullException.ThrowIfNull(body);
 
-            return ForEachAsync(source, DefaultDegreeOfParallelism, TaskScheduler.Default, cancellationToken, body);
+            await ForEachAsync(source, DefaultDegreeOfParallelism, TaskScheduler.Default, cancellationToken, body).ConfigureAwait(false);
         }
 
         /// <summary>Executes a for each operation on an <see cref="IEnumerable{TSource}"/> in which iterations may run in parallel.</summary>
@@ -226,13 +226,13 @@ namespace System.Threading.Tasks
         /// <param name="body">An asynchronous delegate that is invoked once per element in the data source.</param>
         /// <exception cref="ArgumentNullException">The <paramref name="source"/> argument or <paramref name="body"/> argument is <see langword="null"/>.</exception>
         /// <returns>A task that represents the entire for each operation.</returns>
-        public static Task ForEachAsync<TSource>(IEnumerable<TSource> source, ParallelOptions parallelOptions, Func<TSource, CancellationToken, ValueTask> body)
+        public static async Task ForEachAsync<TSource>(IEnumerable<TSource> source, ParallelOptions parallelOptions, Func<TSource, CancellationToken, ValueTask> body)
         {
             ArgumentNullException.ThrowIfNull(source);
             ArgumentNullException.ThrowIfNull(parallelOptions);
             ArgumentNullException.ThrowIfNull(body);
 
-            return ForEachAsync(source, parallelOptions.EffectiveMaxConcurrencyLevel, parallelOptions.EffectiveTaskScheduler, parallelOptions.CancellationToken, body);
+            await ForEachAsync(source, parallelOptions.EffectiveMaxConcurrencyLevel, parallelOptions.EffectiveTaskScheduler, parallelOptions.CancellationToken, body).ConfigureAwait(false);
         }
 
         /// <summary>Executes a for each operation on an <see cref="IEnumerable{TSource}"/> in which iterations may run in parallel.</summary>
@@ -350,12 +350,12 @@ namespace System.Threading.Tasks
         /// <exception cref="ArgumentNullException">The <paramref name="source"/> argument or <paramref name="body"/> argument is <see langword="null"/>.</exception>
         /// <returns>A task that represents the entire for each operation.</returns>
         /// <remarks>The operation will execute at most <see cref="Environment.ProcessorCount"/> operations in parallel.</remarks>
-        public static Task ForEachAsync<TSource>(IAsyncEnumerable<TSource> source, Func<TSource, CancellationToken, ValueTask> body)
+        public static async Task ForEachAsync<TSource>(IAsyncEnumerable<TSource> source, Func<TSource, CancellationToken, ValueTask> body)
         {
             ArgumentNullException.ThrowIfNull(source);
             ArgumentNullException.ThrowIfNull(body);
 
-            return ForEachAsync(source, DefaultDegreeOfParallelism, TaskScheduler.Default, default(CancellationToken), body);
+            await ForEachAsync(source, DefaultDegreeOfParallelism, TaskScheduler.Default, default(CancellationToken), body).ConfigureAwait(false);
         }
 
         /// <summary>Executes a for each operation on an <see cref="IAsyncEnumerable{TSource}"/> in which iterations may run in parallel.</summary>
@@ -366,12 +366,12 @@ namespace System.Threading.Tasks
         /// <exception cref="ArgumentNullException">The <paramref name="source"/> argument or <paramref name="body"/> argument is <see langword="null"/>.</exception>
         /// <returns>A task that represents the entire for each operation.</returns>
         /// <remarks>The operation will execute at most <see cref="Environment.ProcessorCount"/> operations in parallel.</remarks>
-        public static Task ForEachAsync<TSource>(IAsyncEnumerable<TSource> source, CancellationToken cancellationToken, Func<TSource, CancellationToken, ValueTask> body)
+        public static async Task ForEachAsync<TSource>(IAsyncEnumerable<TSource> source, CancellationToken cancellationToken, Func<TSource, CancellationToken, ValueTask> body)
         {
             ArgumentNullException.ThrowIfNull(source);
             ArgumentNullException.ThrowIfNull(body);
 
-            return ForEachAsync(source, DefaultDegreeOfParallelism, TaskScheduler.Default, cancellationToken, body);
+            await ForEachAsync(source, DefaultDegreeOfParallelism, TaskScheduler.Default, cancellationToken, body).ConfigureAwait(false);
         }
 
         /// <summary>Executes a for each operation on an <see cref="IAsyncEnumerable{TSource}"/> in which iterations may run in parallel.</summary>
@@ -381,13 +381,13 @@ namespace System.Threading.Tasks
         /// <param name="body">An asynchronous delegate that is invoked once per element in the data source.</param>
         /// <exception cref="ArgumentNullException">The <paramref name="source"/> argument or <paramref name="body"/> argument is <see langword="null"/>.</exception>
         /// <returns>A task that represents the entire for each operation.</returns>
-        public static Task ForEachAsync<TSource>(IAsyncEnumerable<TSource> source, ParallelOptions parallelOptions, Func<TSource, CancellationToken, ValueTask> body)
+        public static async Task ForEachAsync<TSource>(IAsyncEnumerable<TSource> source, ParallelOptions parallelOptions, Func<TSource, CancellationToken, ValueTask> body)
         {
             ArgumentNullException.ThrowIfNull(source);
             ArgumentNullException.ThrowIfNull(parallelOptions);
             ArgumentNullException.ThrowIfNull(body);
 
-            return ForEachAsync(source, parallelOptions.EffectiveMaxConcurrencyLevel, parallelOptions.EffectiveTaskScheduler, parallelOptions.CancellationToken, body);
+            await ForEachAsync(source, parallelOptions.EffectiveMaxConcurrencyLevel, parallelOptions.EffectiveTaskScheduler, parallelOptions.CancellationToken, body).ConfigureAwait(false);
         }
 
         /// <summary>Executes a for each operation on an <see cref="IAsyncEnumerable{TSource}"/> in which iterations may run in parallel.</summary>
@@ -588,7 +588,7 @@ namespace System.Threading.Tasks
             public bool SignalWorkerCompletedIterating() => Interlocked.Decrement(ref _completionRefCount) == 0;
 
             /// <summary>Asynchronously acquires exclusive access to the enumerator.</summary>
-            public Task AcquireLock()
+            public async Task AcquireLock()
             {
                 // We explicitly don't pass this.Cancellation to WaitAsync.  Doing so adds overhead, and it isn't actually
                 // necessary. All of the operations that monitor the lock are part of the same ForEachAsync operation, and the Task
@@ -599,7 +599,7 @@ namespace System.Threading.Tasks
                 // not being requested.  We want to optimize for the latter.  This also then avoids an exception throw / catch when
                 // cancellation is requested.
                 Debug.Assert(_lock is not null, "Should only be invoked when _lock is non-null");
-                return _lock.WaitAsync(CancellationToken.None);
+                await _lock.WaitAsync(CancellationToken.None).ConfigureAwait(false);
             }
 
             /// <summary>Relinquishes exclusive access to the enumerator.</summary>
@@ -718,10 +718,10 @@ namespace System.Threading.Tasks
                 Enumerator = source.GetAsyncEnumerator(Cancellation.Token) ?? throw new InvalidOperationException(SR.Parallel_ForEach_NullEnumerator);
             }
 
-            public ValueTask DisposeAsync()
+            public async ValueTask DisposeAsync()
             {
                 _registration.Dispose();
-                return Enumerator.DisposeAsync();
+                await Enumerator.DisposeAsync().ConfigureAwait(false);
             }
         }
 

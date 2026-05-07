@@ -379,8 +379,8 @@ public sealed partial class QuicStream
     }
 
     /// <inheritdoc />
-    public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
-        => WriteAsync(buffer, completeWrites: false, cancellationToken);
+    public override async ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
+        => await WriteAsync(buffer, completeWrites: false, cancellationToken).ConfigureAwait(false);
 
 
     /// <inheritdoc cref="WriteAsync(ReadOnlyMemory{byte}, CancellationToken)"/>

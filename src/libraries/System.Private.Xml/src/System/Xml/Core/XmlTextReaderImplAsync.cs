@@ -27,14 +27,14 @@ namespace System.Xml
             }
         }
 
-        public override Task<string> GetValueAsync()
+        public override async Task<string> GetValueAsync()
         {
             CheckAsyncCall();
             if (_parsingFunction >= ParsingFunction.PartialTextValue)
             {
-                return _GetValueAsync();
+                return await _GetValueAsync().ConfigureAwait(false);
             }
-            return Task.FromResult(_curNode.StringValue);
+            return _curNode.StringValue;
         }
 
         private async Task<string> _GetValueAsync()
@@ -158,7 +158,7 @@ namespace System.Xml
 
             if (_laterInitParam != null)
             {
-                return FinishInitAsync().CallBoolTaskFuncWhenFinishAsync(thisRef => thisRef.ReadAsync(), this);
+                return FinishInitAsync().CallBoolTaskFuncWhenFinishAsync(async thisRef => await thisRef.ReadAsync().ConfigureAwait(false), this);
             }
 
             while (true)
@@ -253,13 +253,13 @@ namespace System.Xml
                         ThrowWithoutLineInfo(SR.Xml_MissingRoot);
                         return AsyncHelper.DoneTaskFalse;
                     case ParsingFunction.PartialTextValue:
-                        return SkipPartialTextValueAsync().CallBoolTaskFuncWhenFinishAsync(thisRef => thisRef.ReadAsync(), this);
+                        return SkipPartialTextValueAsync().CallBoolTaskFuncWhenFinishAsync(async thisRef => await thisRef.ReadAsync().ConfigureAwait(false), this);
                     case ParsingFunction.InReadValueChunk:
-                        return FinishReadValueChunkAsync().CallBoolTaskFuncWhenFinishAsync(thisRef => thisRef.ReadAsync(), this);
+                        return FinishReadValueChunkAsync().CallBoolTaskFuncWhenFinishAsync(async thisRef => await thisRef.ReadAsync().ConfigureAwait(false), this);
                     case ParsingFunction.InReadContentAsBinary:
-                        return FinishReadContentAsBinaryAsync().CallBoolTaskFuncWhenFinishAsync(thisRef => thisRef.ReadAsync(), this);
+                        return FinishReadContentAsBinaryAsync().CallBoolTaskFuncWhenFinishAsync(async thisRef => await thisRef.ReadAsync().ConfigureAwait(false), this);
                     case ParsingFunction.InReadElementContentAsBinary:
-                        return FinishReadElementContentAsBinaryAsync().CallBoolTaskFuncWhenFinishAsync(thisRef => thisRef.ReadAsync(), this);
+                        return FinishReadElementContentAsBinaryAsync().CallBoolTaskFuncWhenFinishAsync(async thisRef => await thisRef.ReadAsync().ConfigureAwait(false), this);
                     default:
                         Debug.Fail($"Unexpected parsing function {_parsingFunction}");
                         break;
@@ -720,10 +720,10 @@ namespace System.Xml
             return readCount;
         }
 
-        internal Task<int> DtdParserProxy_ReadDataAsync()
+        internal async Task<int> DtdParserProxy_ReadDataAsync()
         {
             CheckAsyncCall();
-            return this.ReadDataAsync();
+            return await this.ReadDataAsync().ConfigureAwait(false);
         }
 
         internal async Task<int> DtdParserProxy_ParseNumericCharRefAsync(StringBuilder? internalSubsetBuilder)
@@ -734,10 +734,10 @@ namespace System.Xml
             return tuple_1.Item2;
         }
 
-        internal Task<int> DtdParserProxy_ParseNamedCharRefAsync(bool expand, StringBuilder? internalSubsetBuilder)
+        internal async Task<int> DtdParserProxy_ParseNamedCharRefAsync(bool expand, StringBuilder? internalSubsetBuilder)
         {
             CheckAsyncCall();
-            return this.ParseNamedCharRefAsync(expand, internalSubsetBuilder);
+            return await this.ParseNamedCharRefAsync(expand, internalSubsetBuilder).ConfigureAwait(false);
         }
 
         internal async Task DtdParserProxy_ParsePIAsync(StringBuilder? sb)
@@ -857,10 +857,10 @@ namespace System.Xml
             return true;
         }
 
-        private Task InitStreamInputAsync(Uri baseUri, Stream stream, Encoding? encoding)
+        private async Task InitStreamInputAsync(Uri baseUri, Stream stream, Encoding? encoding)
         {
             Debug.Assert(baseUri != null);
-            return InitStreamInputAsync(baseUri, baseUri.ToString(), stream, null, 0, encoding);
+            await InitStreamInputAsync(baseUri, baseUri.ToString(), stream, null, 0, encoding).ConfigureAwait(false);
         }
 
         private async Task InitStreamInputAsync(Uri? baseUri, string baseUriStr, Stream stream, byte[]? bytes, int byteCount, Encoding? encoding)
@@ -934,12 +934,12 @@ namespace System.Xml
             _ps.appendMode = true;
             await ReadDataAsync().ConfigureAwait(false);
         }
-        private Task<int> InitTextReaderInputAsync(string baseUriStr, TextReader input)
+        private async Task<int> InitTextReaderInputAsync(string baseUriStr, TextReader input)
         {
-            return InitTextReaderInputAsync(baseUriStr, null, input);
+            return await InitTextReaderInputAsync(baseUriStr, null, input).ConfigureAwait(false);
         }
 
-        private Task<int> InitTextReaderInputAsync(string baseUriStr, Uri? baseUri, TextReader input)
+        private async Task<int> InitTextReaderInputAsync(string baseUriStr, Uri? baseUri, TextReader input)
         {
             Debug.Assert(_ps.charPos == 0 && _ps.charsUsed == 0 && _ps.stream == null);
             Debug.Assert(baseUriStr != null);
@@ -969,7 +969,7 @@ namespace System.Xml
 
             // read first characters
             _ps.appendMode = true;
-            return ReadDataAsync();
+            return await ReadDataAsync().ConfigureAwait(false);
         }
 
         private Task ProcessDtdFromParserContextAsync(XmlParserContext context)
@@ -1010,9 +1010,9 @@ namespace System.Xml
             return Task.CompletedTask;
         }
 
-        private Task SwitchEncodingToUTF8Async()
+        private async Task SwitchEncodingToUTF8Async()
         {
-            return SwitchEncodingAsync(new UTF8Encoding(true, true));
+            await SwitchEncodingAsync(new UTF8Encoding(true, true)).ConfigureAwait(false);
         }
 
         // Reads more data to the character buffer, discarding already parsed chars / decoded bytes.
@@ -1466,7 +1466,7 @@ namespace System.Xml
 
 
         // Parses the document content, no async keyword for perf optimize
-        private Task<bool> ParseDocumentContentAsync()
+        private async Task<bool> ParseDocumentContentAsync()
         {
             while (true)
             {
@@ -1479,25 +1479,25 @@ namespace System.Xml
                 {
                     needMoreChars = true;
                     if (_ps.charsUsed - pos < 4) // minimum  "<a/>"
-                        return ParseDocumentContentAsync_ReadData(needMoreChars);
+                        return await ParseDocumentContentAsync_ReadData(needMoreChars).ConfigureAwait(false);
                     pos++;
                     switch (chars[pos])
                     {
                         // processing instruction
                         case '?':
                             _ps.charPos = pos + 1;
-                            return ParsePIAsync().ContinueBoolTaskFuncWhenFalseAsync(thisRef => thisRef.ParseDocumentContentAsync(), this);
+                            return await ParsePIAsync().ContinueBoolTaskFuncWhenFalseAsync(async thisRef => await thisRef.ParseDocumentContentAsync().ConfigureAwait(false), this).ConfigureAwait(false);
                         case '!':
                             pos++;
                             if (_ps.charsUsed - pos < 2) // minimum characters expected "--"
-                                return ParseDocumentContentAsync_ReadData(needMoreChars);
+                                return await ParseDocumentContentAsync_ReadData(needMoreChars).ConfigureAwait(false);
                             // comment
                             if (chars[pos] == '-')
                             {
                                 if (chars[pos + 1] == '-')
                                 {
                                     _ps.charPos = pos + 2;
-                                    return ParseCommentAsync().ContinueBoolTaskFuncWhenFalseAsync(thisRef => thisRef.ParseDocumentContentAsync(), this);
+                                    return await ParseCommentAsync().ContinueBoolTaskFuncWhenFalseAsync(async thisRef => await thisRef.ParseDocumentContentAsync().ConfigureAwait(false), this).ConfigureAwait(false);
                                 }
                                 else
                                 {
@@ -1512,12 +1512,12 @@ namespace System.Xml
                                     pos++;
                                     if (_ps.charsUsed - pos < 6)
                                     {
-                                        return ParseDocumentContentAsync_ReadData(needMoreChars);
+                                        return await ParseDocumentContentAsync_ReadData(needMoreChars).ConfigureAwait(false);
                                     }
                                     if (chars.AsSpan(pos).StartsWith("CDATA["))
                                     {
                                         _ps.charPos = pos + 6;
-                                        return ParseCDataAsync().CallBoolTaskFuncWhenFinishAsync(thisRef => thisRef.ParseDocumentContentAsync_CData(), this);
+                                        return await ParseCDataAsync().CallBoolTaskFuncWhenFinishAsync(async thisRef => await thisRef.ParseDocumentContentAsync_CData().ConfigureAwait(false), this).ConfigureAwait(false);
                                     }
                                     else
                                     {
@@ -1536,7 +1536,7 @@ namespace System.Xml
                                 {
                                     _fragmentType = XmlNodeType.Document;
                                     _ps.charPos = pos;
-                                    return ParseDoctypeDeclAsync().ContinueBoolTaskFuncWhenFalseAsync(thisRef => thisRef.ParseDocumentContentAsync(), this);
+                                    return await ParseDoctypeDeclAsync().ContinueBoolTaskFuncWhenFalseAsync(async thisRef => await thisRef.ParseDocumentContentAsync().ConfigureAwait(false), this).ConfigureAwait(false);
                                 }
                                 else
                                 {
@@ -1569,28 +1569,28 @@ namespace System.Xml
                             }
                             _ps.charPos = pos;
                             _rootElementParsed = true;
-                            return ParseElementAsync().ReturnTrueTaskWhenFinishAsync();
+                            return await ParseElementAsync().ReturnTrueTaskWhenFinishAsync().ConfigureAwait(false);
                     }
                 }
                 else if (chars[pos] == '&')
                 {
-                    return ParseDocumentContentAsync_ParseEntity();
+                    return await ParseDocumentContentAsync_ParseEntity().ConfigureAwait(false);
                 }
                 // end of buffer
                 else if (pos == _ps.charsUsed || (_v1Compat && chars[pos] == 0x0))
                 {
-                    return ParseDocumentContentAsync_ReadData(needMoreChars);
+                    return await ParseDocumentContentAsync_ReadData(needMoreChars).ConfigureAwait(false);
                 }
                 // something else -> root level whitespace
                 else
                 {
                     if (_fragmentType == XmlNodeType.Document)
                     {
-                        return ParseRootLevelWhitespaceAsync().ContinueBoolTaskFuncWhenFalseAsync(thisRef => thisRef.ParseDocumentContentAsync(), this);
+                        return await ParseRootLevelWhitespaceAsync().ContinueBoolTaskFuncWhenFalseAsync(async thisRef => await thisRef.ParseDocumentContentAsync().ConfigureAwait(false), this).ConfigureAwait(false);
                     }
                     else
                     {
-                        return ParseDocumentContentAsync_WhiteSpace();
+                        return await ParseDocumentContentAsync_WhiteSpace().ConfigureAwait(false);
                     }
                 }
 
@@ -1726,7 +1726,7 @@ namespace System.Xml
 
 
         // Parses element content
-        private Task<bool> ParseElementContentAsync()
+        private async Task<bool> ParseElementContentAsync()
         {
             while (true)
             {
@@ -1742,18 +1742,18 @@ namespace System.Xml
                             // processing instruction
                             case '?':
                                 _ps.charPos = pos + 2;
-                                return ParsePIAsync().ContinueBoolTaskFuncWhenFalseAsync(thisRef => thisRef.ParseElementContentAsync(), this);
+                                return await ParsePIAsync().ContinueBoolTaskFuncWhenFalseAsync(async thisRef => await thisRef.ParseElementContentAsync().ConfigureAwait(false), this).ConfigureAwait(false);
                             case '!':
                                 pos += 2;
                                 if (_ps.charsUsed - pos < 2)
-                                    return ParseElementContent_ReadData();
+                                    return await ParseElementContent_ReadData().ConfigureAwait(false);
                                 // comment
                                 if (chars[pos] == '-')
                                 {
                                     if (chars[pos + 1] == '-')
                                     {
                                         _ps.charPos = pos + 2;
-                                        return ParseCommentAsync().ContinueBoolTaskFuncWhenFalseAsync(thisRef => thisRef.ParseElementContentAsync(), this);
+                                        return await ParseCommentAsync().ContinueBoolTaskFuncWhenFalseAsync(async thisRef => await thisRef.ParseElementContentAsync().ConfigureAwait(false), this).ConfigureAwait(false);
                                     }
                                     else
                                     {
@@ -1766,12 +1766,12 @@ namespace System.Xml
                                     pos++;
                                     if (_ps.charsUsed - pos < 6)
                                     {
-                                        return ParseElementContent_ReadData();
+                                        return await ParseElementContent_ReadData().ConfigureAwait(false);
                                     }
                                     if (chars.AsSpan(pos).StartsWith("CDATA["))
                                     {
                                         _ps.charPos = pos + 6;
-                                        return ParseCDataAsync().ReturnTrueTaskWhenFinishAsync();
+                                        return await ParseCDataAsync().ReturnTrueTaskWhenFinishAsync().ConfigureAwait(false);
                                     }
                                     else
                                     {
@@ -1793,33 +1793,33 @@ namespace System.Xml
                             // element end tag
                             case '/':
                                 _ps.charPos = pos + 2;
-                                return ParseEndElementAsync().ReturnTrueTaskWhenFinishAsync();
+                                return await ParseEndElementAsync().ReturnTrueTaskWhenFinishAsync().ConfigureAwait(false);
                             default:
                                 // end of buffer
                                 if (pos + 1 == _ps.charsUsed)
                                 {
-                                    return ParseElementContent_ReadData();
+                                    return await ParseElementContent_ReadData().ConfigureAwait(false);
                                 }
                                 else
                                 {
                                     // element start tag
                                     _ps.charPos = pos + 1;
-                                    return ParseElementAsync().ReturnTrueTaskWhenFinishAsync();
+                                    return await ParseElementAsync().ReturnTrueTaskWhenFinishAsync().ConfigureAwait(false);
                                 }
                         }
                         break;
                     case '&':
-                        return ParseTextAsync().ContinueBoolTaskFuncWhenFalseAsync(thisRef => thisRef.ParseElementContentAsync(), this);
+                        return await ParseTextAsync().ContinueBoolTaskFuncWhenFalseAsync(async thisRef => await thisRef.ParseElementContentAsync().ConfigureAwait(false), this).ConfigureAwait(false);
                     default:
                         // end of buffer
                         if (pos == _ps.charsUsed)
                         {
-                            return ParseElementContent_ReadData();
+                            return await ParseElementContent_ReadData().ConfigureAwait(false);
                         }
                         else
                         {
                             // text node, whitespace or entity reference
-                            return ParseTextAsync().ContinueBoolTaskFuncWhenFalseAsync(thisRef => thisRef.ParseElementContentAsync(), this);
+                            return await ParseTextAsync().ContinueBoolTaskFuncWhenFalseAsync(async thisRef => await thisRef.ParseElementContentAsync().ConfigureAwait(false), this).ConfigureAwait(false);
                         }
                 }
             }
@@ -1923,18 +1923,18 @@ namespace System.Xml
             return ParseElementAsync_SetElement(colonPos, pos);
         }
 
-        private Task ParseElementAsync_ContinueWithSetElement(Task<(int, int)> task)
+        private async Task ParseElementAsync_ContinueWithSetElement(Task<(int, int)> task)
         {
             if (task.IsSuccess())
             {
                 var tuple_4 = task.Result;
                 int colonPos = tuple_4.Item1;
                 int pos = tuple_4.Item2;
-                return ParseElementAsync_SetElement(colonPos, pos);
+                await ParseElementAsync_SetElement(colonPos, pos).ConfigureAwait(false);
             }
             else
             {
-                return _ParseElementAsync_ContinueWithSetElement(task);
+                await _ParseElementAsync_ContinueWithSetElement(task).ConfigureAwait(false);
             }
         }
 
@@ -1946,7 +1946,7 @@ namespace System.Xml
             await ParseElementAsync_SetElement(colonPos, pos).ConfigureAwait(false);
         }
 
-        private Task ParseElementAsync_SetElement(int colonPos, int pos)
+        private async Task ParseElementAsync_SetElement(int colonPos, int pos)
         {
             char[] chars = _ps.chars;
 
@@ -1989,12 +1989,12 @@ namespace System.Xml
             _ps.charPos = pos;
             if (isWs)
             {
-                return ParseAttributesAsync();
+                await ParseAttributesAsync().ConfigureAwait(false);
             }
             // no attributes
             else
             {
-                return ParseElementAsync_NoAttributes();
+                await ParseElementAsync_NoAttributes().ConfigureAwait(false);
             }
         }
 
@@ -2057,7 +2057,7 @@ namespace System.Xml
             await ParseElementAsync_NoAttributes().ConfigureAwait(false);
         }
 
-        private Task ParseEndElementAsync()
+        private async Task ParseEndElementAsync()
         {
             NodeData startTagNode = _nodes[_index - 1];
 
@@ -2066,10 +2066,10 @@ namespace System.Xml
 
             if (_ps.charsUsed - _ps.charPos < prefLen + locLen + 1)
             {
-                return _ParseEndElmentAsync();
+                await _ParseEndElmentAsync().ConfigureAwait(false);
             }
 
-            return ParseEndElementAsync_CheckNameAndParse();
+            await ParseEndElementAsync_CheckNameAndParse().ConfigureAwait(false);
         }
 
         private async Task _ParseEndElmentAsync()
@@ -2095,7 +2095,7 @@ namespace System.Xml
             }
         }
 
-        private Task ParseEndElementAsync_CheckNameAndParse()
+        private async Task ParseEndElementAsync_CheckNameAndParse()
         {
             NodeData startTagNode = _nodes[_index - 1];
             int prefLen = startTagNode.prefix.Length;
@@ -2107,7 +2107,7 @@ namespace System.Xml
             {
                 if (!chars.AsSpan(_ps.charPos).StartsWith(startTagNode.localName))
                 {
-                    return ThrowTagMismatchAsync(startTagNode);
+                    await ThrowTagMismatchAsync(startTagNode).ConfigureAwait(false);
                 }
                 nameLen = locLen;
             }
@@ -2118,12 +2118,12 @@ namespace System.Xml
                         chars[colonPos] != ':' ||
                         !chars.AsSpan(colonPos + 1).StartsWith(startTagNode.localName))
                 {
-                    return ThrowTagMismatchAsync(startTagNode);
+                    await ThrowTagMismatchAsync(startTagNode).ConfigureAwait(false);
                 }
                 nameLen = locLen + prefLen + 1;
             }
             LineInfo endTagLineInfo = new LineInfo(_ps.lineNo, _ps.LinePos);
-            return ParseEndElementAsync_Finish(nameLen, startTagNode, endTagLineInfo);
+            await ParseEndElementAsync_Finish(nameLen, startTagNode, endTagLineInfo).ConfigureAwait(false);
         }
 
         private enum ParseEndElementParseFunction
@@ -3891,9 +3891,9 @@ namespace System.Xml
             }
         }
 
-        private Task<bool> ParsePIAsync()
+        private async Task<bool> ParsePIAsync()
         {
-            return ParsePIAsync(null);
+            return await ParsePIAsync(null).ConfigureAwait(false);
         }
 
         // Parses processing instruction; if piInDtdStringBuilder != null, the processing instruction is in DTD and
@@ -4186,9 +4186,9 @@ namespace System.Xml
             }
         }
 
-        private Task ParseCDataAsync()
+        private async Task ParseCDataAsync()
         {
-            return ParseCDataOrCommentAsync(XmlNodeType.CDATA);
+            await ParseCDataOrCommentAsync(XmlNodeType.CDATA).ConfigureAwait(false);
         }
 
         // Parses CDATA section or comment
@@ -4588,7 +4588,7 @@ namespace System.Xml
             _ps.charPos++;
         }
 
-        private Task SkipPublicOrSystemIdLiteralAsync()
+        private async Task SkipPublicOrSystemIdLiteralAsync()
         {
             // check quote char
             char quoteChar = _ps.chars[_ps.charPos];
@@ -4598,7 +4598,7 @@ namespace System.Xml
             }
 
             _ps.charPos++;
-            return SkipUntilAsync(quoteChar, false);
+            await SkipUntilAsync(quoteChar, false).ConfigureAwait(false);
         }
 
         private async Task SkipUntilAsync(char stopChar, bool recognizeLiterals)
@@ -4969,9 +4969,9 @@ namespace System.Xml
             return tuple_25.Item2;
         }
 
-        private Task<(int, int)> ParseQNameAsync()
+        private async Task<(int, int)> ParseQNameAsync()
         {
-            return ParseQNameAsync(true, 0);
+            return await ParseQNameAsync(true, 0).ConfigureAwait(false);
         }
 
         private async Task<(int, int)> ParseQNameAsync(bool isQName, int startOffset)

@@ -14,7 +14,7 @@ namespace System.Xml.Resolvers
     //
     public partial class XmlPreloadedResolver : XmlResolver
     {
-        public override Task<object> GetEntityAsync(Uri absoluteUri,
+        public override async Task<object> GetEntityAsync(Uri absoluteUri,
                                              string? role,
                                              Type? ofObjectToReturn)
         {
@@ -25,18 +25,18 @@ namespace System.Xml.Resolvers
             {
                 if (_fallbackResolver != null)
                 {
-                    return _fallbackResolver.GetEntityAsync(absoluteUri, role, ofObjectToReturn);
+                    return await _fallbackResolver.GetEntityAsync(absoluteUri, role, ofObjectToReturn).ConfigureAwait(false);
                 }
                 throw new XmlException(SR.Format(SR.Xml_CannotResolveUrl, absoluteUri));
             }
 
             if (ofObjectToReturn == null || ofObjectToReturn == typeof(Stream) || ofObjectToReturn == typeof(object))
             {
-                return Task.FromResult<object>(data.AsStream());
+                return data.AsStream();
             }
             else if (ofObjectToReturn == typeof(TextReader))
             {
-                return Task.FromResult<object>(data.AsTextReader());
+                return data.AsTextReader();
             }
             else
             {

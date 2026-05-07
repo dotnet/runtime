@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.IO;
@@ -38,8 +38,8 @@ namespace System.Net.Http.Json
         public override bool CanWrite => false;
 
 #if NET
-        public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken) =>
-            ReadAsync(new Memory<byte>(buffer, offset, count), cancellationToken).AsTask();
+        public override async Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken) =>
+            await ReadAsync(new Memory<byte>(buffer, offset, count), cancellationToken).ConfigureAwait(false);
 
         public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
         {
@@ -83,7 +83,7 @@ namespace System.Net.Http.Json
         }
 
         public override void Flush() => _innerStream.Flush();
-        public override Task FlushAsync(CancellationToken cancellationToken) => _innerStream.FlushAsync(cancellationToken);
+        public override async Task FlushAsync(CancellationToken cancellationToken) => await _innerStream.FlushAsync(cancellationToken).ConfigureAwait(false);
         public override long Seek(long offset, SeekOrigin origin) => _innerStream.Seek(offset, origin);
         public override void SetLength(long value) => _innerStream.SetLength(value);
         public override long Length => _innerStream.Length;

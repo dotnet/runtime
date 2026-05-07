@@ -576,10 +576,10 @@ namespace System.Xml
             return task;
         }
 
-        protected override ValueTask DisposeAsyncCore()
+        protected override async ValueTask DisposeAsyncCore()
         {
             CheckAsync();
-            return _coreWriter.DisposeAsync();
+            await _coreWriter.DisposeAsync().ConfigureAwait(false);
         }
 
         #endregion

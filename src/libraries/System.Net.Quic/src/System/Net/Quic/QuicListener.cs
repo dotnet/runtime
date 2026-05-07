@@ -50,7 +50,7 @@ public sealed partial class QuicListener : IAsyncDisposable
     /// <param name="options">Options for the listener.</param>
     /// <param name="cancellationToken">A cancellation token that can be used to cancel the asynchronous operation.</param>
     /// <returns>An asynchronous task that completes with the started listener.</returns>
-    public static ValueTask<QuicListener> ListenAsync(QuicListenerOptions options, CancellationToken cancellationToken = default)
+    public static async ValueTask<QuicListener> ListenAsync(QuicListenerOptions options, CancellationToken cancellationToken = default)
     {
         if (!IsSupported)
         {
@@ -67,7 +67,7 @@ public sealed partial class QuicListener : IAsyncDisposable
             NetEventSource.Info(listener, $"{listener} Listener listens on {listener.LocalEndPoint}");
         }
 
-        return ValueTask.FromResult(listener);
+        return listener;
     }
 
     /// <summary>

@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
@@ -241,19 +241,19 @@ namespace System.Formats.Tar
         /// <para>An I/O problem occurred.</para></exception>
         /// <exception cref="InvalidOperationException">Attempted to extract an unsupported entry type.</exception>
         /// <exception cref="UnauthorizedAccessException">Operation not permitted due to insufficient permissions.</exception>
-        public Task ExtractToFileAsync(string destinationFileName, bool overwrite, CancellationToken cancellationToken = default)
+        public async Task ExtractToFileAsync(string destinationFileName, bool overwrite, CancellationToken cancellationToken = default)
         {
             if (cancellationToken.IsCancellationRequested)
             {
-                return Task.FromCanceled(cancellationToken);
+                await Task.FromCanceled(cancellationToken).ConfigureAwait(false);
             }
             ArgumentException.ThrowIfNullOrEmpty(destinationFileName);
             if (EntryType is TarEntryType.SymbolicLink or TarEntryType.HardLink or TarEntryType.GlobalExtendedAttributes)
             {
-                return Task.FromException(new InvalidOperationException(SR.Format(SR.TarEntryTypeNotSupportedForExtracting, EntryType)));
+                await Task.FromException(new InvalidOperationException(SR.Format(SR.TarEntryTypeNotSupportedForExtracting, EntryType))).ConfigureAwait(false);
             }
             // HardLink entries are rejected above. hardLinkMode will not be used.
-            return ExtractToFileInternalAsync(destinationFileName, linkTargetPath: null, overwrite, TarHardLinkMode.PreserveLink, cancellationToken);
+            await ExtractToFileInternalAsync(destinationFileName, linkTargetPath: null, overwrite, TarHardLinkMode.PreserveLink, cancellationToken).ConfigureAwait(false);
         }
 
         /// <summary>

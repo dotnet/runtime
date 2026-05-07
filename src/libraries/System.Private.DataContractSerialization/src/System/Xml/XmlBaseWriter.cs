@@ -72,12 +72,12 @@ namespace System.Xml
             _writer.Flush();
         }
 
-        public override Task FlushAsync()
+        public override async Task FlushAsync()
         {
             if (IsClosed)
                 ThrowClosed();
 
-            return _writer.FlushAsync();
+            await _writer.FlushAsync().ConfigureAwait(false);
         }
 
         public override void Close()
@@ -361,7 +361,7 @@ namespace System.Xml
             }
         }
 
-        protected override Task WriteEndAttributeAsync()
+        protected override async Task WriteEndAttributeAsync()
         {
             if (IsClosed)
                 ThrowClosed();
@@ -369,7 +369,7 @@ namespace System.Xml
             if (_writeState != WriteState.Attribute)
                 throw new InvalidOperationException(SR.Format(SR.XmlInvalidWriteState, "WriteEndAttribute", WriteState.ToString()));
 
-            return WriteEndAttributeAsyncImpl();
+            await WriteEndAttributeAsyncImpl().ConfigureAwait(false);
         }
 
         private async Task WriteEndAttributeAsyncImpl()
@@ -588,10 +588,10 @@ namespace System.Xml
             _writer.WriteStartElement(prefix, localName);
         }
 
-        public override Task WriteStartElementAsync(string? prefix, string localName, string? namespaceUri)
+        public override async Task WriteStartElementAsync(string? prefix, string localName, string? namespaceUri)
         {
             PreStartElementAsyncCheck(localName);
-            return StartElementAndWriteStartElementAsync(prefix, localName, namespaceUri);
+            await StartElementAndWriteStartElementAsync(prefix, localName, namespaceUri).ConfigureAwait(false);
         }
 
         public override void WriteStartElement(string? prefix, XmlDictionaryString localName, XmlDictionaryString? namespaceUri)
@@ -627,7 +627,7 @@ namespace System.Xml
             _writeState = WriteState.Content;
         }
 
-        public override Task WriteEndElementAsync()
+        public override async Task WriteEndElementAsync()
         {
             if (IsClosed)
                 ThrowClosed();
@@ -635,7 +635,7 @@ namespace System.Xml
             if (_depth == 0)
                 throw new InvalidOperationException(SR.Format(SR.XmlInvalidDepth, "WriteEndElement", _depth.ToString(CultureInfo.InvariantCulture)));
 
-            return WriteEndElementAsyncImpl();
+            await WriteEndElementAsyncImpl().ConfigureAwait(false);
         }
 
         private async Task WriteEndElementAsyncImpl()
@@ -794,10 +794,10 @@ namespace System.Xml
             _writer.WriteEndStartElement(false);
         }
 
-        private Task EndStartElementAsync()
+        private async Task EndStartElementAsync()
         {
             _nsMgr.DeclareNamespaces(_writer);
-            return _writer.WriteEndStartElementAsync(false);
+            await _writer.WriteEndStartElementAsync(false).ConfigureAwait(false);
         }
 
         public override string? LookupPrefix(string ns)
@@ -1509,14 +1509,14 @@ namespace System.Xml
             }
         }
 
-        public override Task WriteBase64Async(byte[] buffer, int offset, int count)
+        public override async Task WriteBase64Async(byte[] buffer, int offset, int count)
         {
             if (IsClosed)
                 ThrowClosed();
 
             EnsureBufferBounds(buffer, offset, count);
 
-            return WriteBase64AsyncImpl(buffer, offset, count);
+            await WriteBase64AsyncImpl(buffer, offset, count).ConfigureAwait(false);
         }
 
         private async Task WriteBase64AsyncImpl(byte[] buffer, int offset, int count)

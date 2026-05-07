@@ -21,9 +21,9 @@ namespace System.IO.Pipelines
 
             public override bool TryRead(out ReadResult result) => _pipe.TryRead(out result);
 
-            public override ValueTask<ReadResult> ReadAsync(CancellationToken cancellationToken = default) => _pipe.ReadAsync(cancellationToken);
+            public override async ValueTask<ReadResult> ReadAsync(CancellationToken cancellationToken = default) => await _pipe.ReadAsync(cancellationToken).ConfigureAwait(false);
 
-            protected override ValueTask<ReadResult> ReadAtLeastAsyncCore(int minimumBytes, CancellationToken cancellationToken) => _pipe.ReadAtLeastAsync(minimumBytes, cancellationToken);
+            protected override async ValueTask<ReadResult> ReadAtLeastAsyncCore(int minimumBytes, CancellationToken cancellationToken) => await _pipe.ReadAtLeastAsync(minimumBytes, cancellationToken).ConfigureAwait(false);
 
             public override void AdvanceTo(SequencePosition consumed) => _pipe.AdvanceReader(consumed);
 

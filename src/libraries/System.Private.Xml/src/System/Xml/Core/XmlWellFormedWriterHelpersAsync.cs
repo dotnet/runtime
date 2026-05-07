@@ -13,14 +13,14 @@ namespace System.Xml
     {
         private partial struct ElementScope
         {
-            internal Task WriteEndElementAsync(XmlRawWriter rawWriter)
+            internal async Task WriteEndElementAsync(XmlRawWriter rawWriter)
             {
-                return rawWriter.WriteEndElementAsync(prefix, localName, namespaceUri);
+                await rawWriter.WriteEndElementAsync(prefix, localName, namespaceUri).ConfigureAwait(false);
             }
 
-            internal Task WriteFullEndElementAsync(XmlRawWriter rawWriter)
+            internal async Task WriteFullEndElementAsync(XmlRawWriter rawWriter)
             {
-                return rawWriter.WriteFullEndElementAsync(prefix, localName, namespaceUri);
+                await rawWriter.WriteFullEndElementAsync(prefix, localName, namespaceUri).ConfigureAwait(false);
             }
         }
 

@@ -12,114 +12,114 @@ namespace System.Xml
 {
     internal partial class XmlWrappingWriter : XmlWriter
     {
-        public override Task WriteStartDocumentAsync()
+        public override async Task WriteStartDocumentAsync()
         {
-            return writer.WriteStartDocumentAsync();
+            await writer.WriteStartDocumentAsync().ConfigureAwait(false);
         }
 
-        public override Task WriteStartDocumentAsync(bool standalone)
+        public override async Task WriteStartDocumentAsync(bool standalone)
         {
-            return writer.WriteStartDocumentAsync(standalone);
+            await writer.WriteStartDocumentAsync(standalone).ConfigureAwait(false);
         }
 
-        public override Task WriteEndDocumentAsync()
+        public override async Task WriteEndDocumentAsync()
         {
-            return writer.WriteEndDocumentAsync();
+            await writer.WriteEndDocumentAsync().ConfigureAwait(false);
         }
 
-        public override Task WriteDocTypeAsync(string name, string? pubid, string? sysid, string? subset)
+        public override async Task WriteDocTypeAsync(string name, string? pubid, string? sysid, string? subset)
         {
-            return writer.WriteDocTypeAsync(name, pubid, sysid, subset);
+            await writer.WriteDocTypeAsync(name, pubid, sysid, subset).ConfigureAwait(false);
         }
 
-        public override Task WriteStartElementAsync(string? prefix, string localName, string? ns)
+        public override async Task WriteStartElementAsync(string? prefix, string localName, string? ns)
         {
-            return writer.WriteStartElementAsync(prefix, localName, ns);
+            await writer.WriteStartElementAsync(prefix, localName, ns).ConfigureAwait(false);
         }
 
-        public override Task WriteEndElementAsync()
+        public override async Task WriteEndElementAsync()
         {
-            return writer.WriteEndElementAsync();
+            await writer.WriteEndElementAsync().ConfigureAwait(false);
         }
 
-        public override Task WriteFullEndElementAsync()
+        public override async Task WriteFullEndElementAsync()
         {
-            return writer.WriteFullEndElementAsync();
+            await writer.WriteFullEndElementAsync().ConfigureAwait(false);
         }
 
-        protected internal override Task WriteStartAttributeAsync(string? prefix, string localName, string? ns)
+        protected internal override async Task WriteStartAttributeAsync(string? prefix, string localName, string? ns)
         {
-            return writer.WriteStartAttributeAsync(prefix, localName, ns);
+            await writer.WriteStartAttributeAsync(prefix, localName, ns).ConfigureAwait(false);
         }
 
-        protected internal override Task WriteEndAttributeAsync()
+        protected internal override async Task WriteEndAttributeAsync()
         {
-            return writer.WriteEndAttributeAsync();
+            await writer.WriteEndAttributeAsync().ConfigureAwait(false);
         }
 
-        public override Task WriteCDataAsync(string? text)
+        public override async Task WriteCDataAsync(string? text)
         {
-            return writer.WriteCDataAsync(text);
+            await writer.WriteCDataAsync(text).ConfigureAwait(false);
         }
 
-        public override Task WriteCommentAsync(string? text)
+        public override async Task WriteCommentAsync(string? text)
         {
-            return writer.WriteCommentAsync(text);
+            await writer.WriteCommentAsync(text).ConfigureAwait(false);
         }
 
-        public override Task WriteProcessingInstructionAsync(string name, string? text)
+        public override async Task WriteProcessingInstructionAsync(string name, string? text)
         {
-            return writer.WriteProcessingInstructionAsync(name, text);
+            await writer.WriteProcessingInstructionAsync(name, text).ConfigureAwait(false);
         }
 
-        public override Task WriteEntityRefAsync(string name)
+        public override async Task WriteEntityRefAsync(string name)
         {
-            return writer.WriteEntityRefAsync(name);
+            await writer.WriteEntityRefAsync(name).ConfigureAwait(false);
         }
 
-        public override Task WriteCharEntityAsync(char ch)
+        public override async Task WriteCharEntityAsync(char ch)
         {
-            return writer.WriteCharEntityAsync(ch);
+            await writer.WriteCharEntityAsync(ch).ConfigureAwait(false);
         }
 
-        public override Task WriteWhitespaceAsync(string? ws)
+        public override async Task WriteWhitespaceAsync(string? ws)
         {
-            return writer.WriteWhitespaceAsync(ws);
+            await writer.WriteWhitespaceAsync(ws).ConfigureAwait(false);
         }
 
-        public override Task WriteStringAsync(string? text)
+        public override async Task WriteStringAsync(string? text)
         {
-            return writer.WriteStringAsync(text);
+            await writer.WriteStringAsync(text).ConfigureAwait(false);
         }
 
-        public override Task WriteSurrogateCharEntityAsync(char lowChar, char highChar)
+        public override async Task WriteSurrogateCharEntityAsync(char lowChar, char highChar)
         {
-            return writer.WriteSurrogateCharEntityAsync(lowChar, highChar);
+            await writer.WriteSurrogateCharEntityAsync(lowChar, highChar).ConfigureAwait(false);
         }
 
-        public override Task WriteCharsAsync(char[] buffer, int index, int count)
+        public override async Task WriteCharsAsync(char[] buffer, int index, int count)
         {
-            return writer.WriteCharsAsync(buffer, index, count);
+            await writer.WriteCharsAsync(buffer, index, count).ConfigureAwait(false);
         }
 
-        public override Task WriteRawAsync(char[] buffer, int index, int count)
+        public override async Task WriteRawAsync(char[] buffer, int index, int count)
         {
-            return writer.WriteRawAsync(buffer, index, count);
+            await writer.WriteRawAsync(buffer, index, count).ConfigureAwait(false);
         }
 
-        public override Task WriteRawAsync(string data)
+        public override async Task WriteRawAsync(string data)
         {
-            return writer.WriteRawAsync(data);
+            await writer.WriteRawAsync(data).ConfigureAwait(false);
         }
 
-        public override Task WriteBase64Async(byte[] buffer, int index, int count)
+        public override async Task WriteBase64Async(byte[] buffer, int index, int count)
         {
-            return writer.WriteBase64Async(buffer, index, count);
+            await writer.WriteBase64Async(buffer, index, count).ConfigureAwait(false);
         }
 
-        public override Task FlushAsync()
+        public override async Task FlushAsync()
         {
-            return writer.FlushAsync();
+            await writer.FlushAsync().ConfigureAwait(false);
         }
     }
 }

@@ -386,9 +386,9 @@ namespace Microsoft.Extensions.Hosting
         [UnsupportedOSPlatform("browser")]
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
-        public static Task RunConsoleAsync(this IHostBuilder hostBuilder, CancellationToken cancellationToken = default)
+        public static async Task RunConsoleAsync(this IHostBuilder hostBuilder, CancellationToken cancellationToken = default)
         {
-            return hostBuilder.UseConsoleLifetime().Build().RunAsync(cancellationToken);
+            await hostBuilder.UseConsoleLifetime().Build().RunAsync(cancellationToken).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -402,9 +402,9 @@ namespace Microsoft.Extensions.Hosting
         [UnsupportedOSPlatform("browser")]
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
-        public static Task RunConsoleAsync(this IHostBuilder hostBuilder, Action<ConsoleLifetimeOptions> configureOptions, CancellationToken cancellationToken = default)
+        public static async Task RunConsoleAsync(this IHostBuilder hostBuilder, Action<ConsoleLifetimeOptions> configureOptions, CancellationToken cancellationToken = default)
         {
-            return hostBuilder.UseConsoleLifetime(configureOptions).Build().RunAsync(cancellationToken);
+            await hostBuilder.UseConsoleLifetime(configureOptions).Build().RunAsync(cancellationToken).ConfigureAwait(false);
         }
 
         /// <summary>

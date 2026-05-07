@@ -32,13 +32,13 @@ namespace System.Xml
 
         // Concatenates values of textual nodes of the current content, ignoring comments and PIs, expanding entity references,
         // and returns the content as a string. Stops at start tags and end tags.
-        public virtual Task<string> ReadContentAsStringAsync()
+        public virtual async Task<string> ReadContentAsStringAsync()
         {
             if (!CanReadContentAs())
             {
                 throw CreateReadContentAsException(nameof(ReadContentAsString));
             }
-            return InternalReadContentAsStringAsync();
+            return await InternalReadContentAsStringAsync().ConfigureAwait(false);
         }
 
         // Concatenates values of textual nodes of the current content, ignoring comments and PIs, expanding entity references,
@@ -395,13 +395,13 @@ namespace System.Xml
             return true;
         }
 
-        private Task<bool> FinishReadElementContentAsXxxAsync()
+        private async Task<bool> FinishReadElementContentAsXxxAsync()
         {
             if (NodeType != XmlNodeType.EndElement)
             {
                 throw new XmlException(SR.Xml_InvalidNodeType, NodeType.ToString());
             }
-            return ReadAsync();
+            return await ReadAsync().ConfigureAwait(false);
         }
     }
 }

@@ -167,8 +167,8 @@ namespace System.Net.Http
                 decompressedStream.CopyTo(stream);
             }
 
-            protected override Task SerializeToStreamAsync(Stream stream, TransportContext? context) =>
-                SerializeToStreamAsync(stream, context, CancellationToken.None);
+            protected override async Task SerializeToStreamAsync(Stream stream, TransportContext? context) =>
+                await SerializeToStreamAsync(stream, context, CancellationToken.None).ConfigureAwait(false);
 
             protected override async Task SerializeToStreamAsync(Stream stream, TransportContext? context, CancellationToken cancellationToken)
             {
@@ -185,8 +185,8 @@ namespace System.Net.Http
                 return task.GetAwaiter().GetResult();
             }
 
-            protected override Task<Stream> CreateContentReadStreamAsync(CancellationToken cancellationToken) =>
-                CreateContentReadStreamAsyncCore(async: true, cancellationToken).AsTask();
+            protected override async Task<Stream> CreateContentReadStreamAsync(CancellationToken cancellationToken) =>
+                await CreateContentReadStreamAsyncCore(async: true, cancellationToken).ConfigureAwait(false);
 
             private async ValueTask<Stream> CreateContentReadStreamAsyncCore(bool async, CancellationToken cancellationToken)
             {
@@ -288,11 +288,11 @@ namespace System.Net.Http
                     return _decompressionStream.Read(buffer);
                 }
 
-                public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken)
+                public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken)
                 {
                     if (_decompressionStream is null)
                     {
-                        return CreateAndReadAsync(this, buffer, cancellationToken);
+                        return await CreateAndReadAsync(this, buffer, cancellationToken).ConfigureAwait(false);
 
                         static async ValueTask<int> CreateAndReadAsync(ZLibOrDeflateStream thisRef, Memory<byte> buffer, CancellationToken cancellationToken)
                         {
@@ -302,13 +302,13 @@ namespace System.Net.Http
                         }
                     }
 
-                    return _decompressionStream.ReadAsync(buffer, cancellationToken);
+                    return await _decompressionStream.ReadAsync(buffer, cancellationToken).ConfigureAwait(false);
                 }
 
-                public override Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
+                public override async Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
                 {
                     ValidateCopyToArguments(destination, bufferSize);
-                    return Core(destination, bufferSize, cancellationToken);
+                    await Core(destination, bufferSize, cancellationToken).ConfigureAwait(false);
                     async Task Core(Stream destination, int bufferSize, CancellationToken cancellationToken)
                     {
                         if (_decompressionStream is null)

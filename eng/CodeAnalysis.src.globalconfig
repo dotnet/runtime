@@ -1951,3 +1951,6 @@ dotnet_diagnostic.IDE2005.severity = silent
 
 # IDE2006: Blank line not allowed after arrow expression clause token
 dotnet_diagnostic.IDE2006.severity = silent
+
+# ASYNC0001: Method can be converted to async
+dotnet_diagnostic.ASYNC0001.severity = warning

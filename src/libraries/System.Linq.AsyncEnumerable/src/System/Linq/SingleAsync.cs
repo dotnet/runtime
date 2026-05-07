@@ -20,13 +20,13 @@ namespace System.Linq
         /// <exception cref="ArgumentNullException"><paramref name="source"/> is <see langword="null"/>.</exception>
         /// <exception cref="InvalidOperationException">The <paramref name="source"/> sequence is empty (via the returned task).</exception>
         /// <exception cref="InvalidOperationException">The <paramref name="source"/> sequence contains more than one element. (via the returned task).</exception>
-        public static ValueTask<TSource> SingleAsync<TSource>(
+        public static async ValueTask<TSource> SingleAsync<TSource>(
             this IAsyncEnumerable<TSource> source,
             CancellationToken cancellationToken = default)
         {
             ArgumentNullException.ThrowIfNull(source);
 
-            return Impl(source, cancellationToken);
+            return await Impl(source, cancellationToken).ConfigureAwait(false);
 
             static async ValueTask<TSource> Impl(
                 IAsyncEnumerable<TSource> source, CancellationToken cancellationToken)
@@ -62,7 +62,7 @@ namespace System.Linq
         /// <exception cref="InvalidOperationException">The <paramref name="source"/> sequence is empty (via the returned task).</exception>
         /// <exception cref="InvalidOperationException">No element satisfies the condition in <paramref name="predicate"/> (via the returned task).</exception>
         /// <exception cref="InvalidOperationException">More than one element satisfies the condition in <paramref name="predicate"/> (via the returned task).</exception>
-        public static ValueTask<TSource> SingleAsync<TSource>(
+        public static async ValueTask<TSource> SingleAsync<TSource>(
             this IAsyncEnumerable<TSource> source,
             Func<TSource, bool> predicate,
             CancellationToken cancellationToken = default)
@@ -70,7 +70,7 @@ namespace System.Linq
             ArgumentNullException.ThrowIfNull(source);
             ArgumentNullException.ThrowIfNull(predicate);
 
-            return Impl(source, predicate, cancellationToken);
+            return await Impl(source, predicate, cancellationToken).ConfigureAwait(false);
 
             static async ValueTask<TSource> Impl(
                 IAsyncEnumerable<TSource> source,
@@ -115,7 +115,7 @@ namespace System.Linq
         /// <exception cref="InvalidOperationException">The <paramref name="source"/> sequence is empty (via the returned task).</exception>
         /// <exception cref="InvalidOperationException">No element satisfies the condition in <paramref name="predicate"/> (via the returned task).</exception>
         /// <exception cref="InvalidOperationException">More than one element satisfies the condition in <paramref name="predicate"/> (via the returned task).</exception>
-        public static ValueTask<TSource> SingleAsync<TSource>(
+        public static async ValueTask<TSource> SingleAsync<TSource>(
             this IAsyncEnumerable<TSource> source,
             Func<TSource, CancellationToken, ValueTask<bool>> predicate,
             CancellationToken cancellationToken = default)
@@ -123,7 +123,7 @@ namespace System.Linq
             ArgumentNullException.ThrowIfNull(source);
             ArgumentNullException.ThrowIfNull(predicate);
 
-            return Impl(source, predicate, cancellationToken);
+            return await Impl(source, predicate, cancellationToken).ConfigureAwait(false);
 
             static async ValueTask<TSource> Impl(
                 IAsyncEnumerable<TSource> source,
@@ -167,10 +167,10 @@ namespace System.Linq
         /// </returns>
         /// <exception cref="ArgumentNullException"><paramref name="source"/> is <see langword="null"/>.</exception>
         /// <exception cref="InvalidOperationException">The <paramref name="source"/> sequence contains more than one element. (via the returned task).</exception>
-        public static ValueTask<TSource?> SingleOrDefaultAsync<TSource>(
+        public static async ValueTask<TSource?> SingleOrDefaultAsync<TSource>(
             this IAsyncEnumerable<TSource> source,
             CancellationToken cancellationToken = default) =>
-            SingleOrDefaultAsync(source, default(TSource), cancellationToken);
+            await SingleOrDefaultAsync(source, default(TSource), cancellationToken).ConfigureAwait(false);
 
         /// <summary>Returns the only element of a sequence, or a default value if the sequence is empty; this method throws an exception if there is more than one element in the sequence.</summary>
         /// <typeparam name="TSource">The type of the elements of <paramref name="source" />.</typeparam>
@@ -180,14 +180,14 @@ namespace System.Linq
         /// <returns>The single element of the input sequence, or <paramref name="defaultValue" /> if the sequence contains no elements.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="source" /> is <see langword="null" />.</exception>
         /// <exception cref="InvalidOperationException">The input sequence contains more than one element.</exception>
-        public static ValueTask<TSource> SingleOrDefaultAsync<TSource>(
+        public static async ValueTask<TSource> SingleOrDefaultAsync<TSource>(
             this IAsyncEnumerable<TSource> source,
             TSource defaultValue,
             CancellationToken cancellationToken = default)
         {
             ArgumentNullException.ThrowIfNull(source);
 
-            return Impl(source, defaultValue, cancellationToken);
+            return await Impl(source, defaultValue, cancellationToken).ConfigureAwait(false);
 
             static async ValueTask<TSource> Impl(
                 IAsyncEnumerable<TSource> source,
@@ -227,11 +227,11 @@ namespace System.Linq
         /// <exception cref="ArgumentNullException"><paramref name="source" /> is <see langword="null" />.</exception>
         /// <exception cref="ArgumentNullException"><paramref name="predicate" /> is <see langword="null" />.</exception>
         /// <exception cref="InvalidOperationException">The input sequence contains more than one element.</exception>
-        public static ValueTask<TSource?> SingleOrDefaultAsync<TSource>(
+        public static async ValueTask<TSource?> SingleOrDefaultAsync<TSource>(
             this IAsyncEnumerable<TSource> source,
             Func<TSource, bool> predicate,
             CancellationToken cancellationToken = default) =>
-            SingleOrDefaultAsync(source, predicate!, default, cancellationToken);
+            await SingleOrDefaultAsync(source, predicate!, default, cancellationToken).ConfigureAwait(false);
 
         /// <summary>
         /// Returns the only element of a sequence that satisfies a specified condition or
@@ -249,11 +249,11 @@ namespace System.Linq
         /// <exception cref="ArgumentNullException"><paramref name="source" /> is <see langword="null" />.</exception>
         /// <exception cref="ArgumentNullException"><paramref name="predicate" /> is <see langword="null" />.</exception>
         /// <exception cref="InvalidOperationException">The input sequence contains more than one element.</exception>
-        public static ValueTask<TSource?> SingleOrDefaultAsync<TSource>(
+        public static async ValueTask<TSource?> SingleOrDefaultAsync<TSource>(
             this IAsyncEnumerable<TSource> source,
             Func<TSource, CancellationToken, ValueTask<bool>> predicate,
             CancellationToken cancellationToken = default) =>
-            SingleOrDefaultAsync(source, predicate!, default, cancellationToken);
+            await SingleOrDefaultAsync(source, predicate!, default, cancellationToken).ConfigureAwait(false);
 
         /// <summary>Returns the only element of a sequence that satisfies a specified condition or a default value if no such element exists; this method throws an exception if more than one element satisfies the condition.</summary>
         /// <typeparam name="TSource">The type of the elements of <paramref name="source" />.</typeparam>
@@ -265,7 +265,7 @@ namespace System.Linq
         /// <exception cref="ArgumentNullException"><paramref name="source" /> is <see langword="null" />.</exception>
         /// <exception cref="ArgumentNullException"><paramref name="predicate" /> is <see langword="null" />.</exception>
         /// <exception cref="InvalidOperationException">More than one element satisfies the condition in <paramref name="predicate" />.</exception>
-        public static ValueTask<TSource> SingleOrDefaultAsync<TSource>(
+        public static async ValueTask<TSource> SingleOrDefaultAsync<TSource>(
             this IAsyncEnumerable<TSource> source,
             Func<TSource, bool> predicate,
             TSource defaultValue,
@@ -274,7 +274,7 @@ namespace System.Linq
             ArgumentNullException.ThrowIfNull(source);
             ArgumentNullException.ThrowIfNull(predicate);
 
-            return Impl(source, predicate, defaultValue, cancellationToken);
+            return await Impl(source, predicate, defaultValue, cancellationToken).ConfigureAwait(false);
 
             static async ValueTask<TSource> Impl(
                 IAsyncEnumerable<TSource> source,
@@ -315,7 +315,7 @@ namespace System.Linq
         /// <exception cref="ArgumentNullException"><paramref name="source" /> is <see langword="null" />.</exception>
         /// <exception cref="ArgumentNullException"><paramref name="predicate" /> is <see langword="null" />.</exception>
         /// <exception cref="InvalidOperationException">More than one element satisfies the condition in <paramref name="predicate" />.</exception>
-        public static ValueTask<TSource> SingleOrDefaultAsync<TSource>(
+        public static async ValueTask<TSource> SingleOrDefaultAsync<TSource>(
             this IAsyncEnumerable<TSource> source,
             Func<TSource, CancellationToken, ValueTask<bool>> predicate,
             TSource defaultValue,
@@ -324,7 +324,7 @@ namespace System.Linq
             ArgumentNullException.ThrowIfNull(source);
             ArgumentNullException.ThrowIfNull(predicate);
 
-            return Impl(source, predicate, defaultValue, cancellationToken);
+            return await Impl(source, predicate, defaultValue, cancellationToken).ConfigureAwait(false);
 
             static async ValueTask<TSource> Impl(
                 IAsyncEnumerable<TSource> source,

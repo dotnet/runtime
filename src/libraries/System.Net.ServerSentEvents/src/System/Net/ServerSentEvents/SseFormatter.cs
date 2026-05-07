@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
@@ -24,7 +24,7 @@ namespace System.Net.ServerSentEvents
         /// <param name="destination">The destination stream to write the events.</param>
         /// <param name="cancellationToken">The <see cref="CancellationToken"/> that can be used to cancel the write operation.</param>
         /// <returns>A task that represents the asynchronous write operation.</returns>
-        public static Task WriteAsync(IAsyncEnumerable<SseItem<string>> source, Stream destination, CancellationToken cancellationToken = default)
+        public static async Task WriteAsync(IAsyncEnumerable<SseItem<string>> source, Stream destination, CancellationToken cancellationToken = default)
         {
             if (source is null)
             {
@@ -36,7 +36,7 @@ namespace System.Net.ServerSentEvents
                 ThrowHelper.ThrowArgumentNullException(nameof(destination));
             }
 
-            return WriteAsyncCore(source, destination, static (item, writer) => writer.WriteUtf8String(item.Data), cancellationToken);
+            await WriteAsyncCore(source, destination, static (item, writer) => writer.WriteUtf8String(item.Data), cancellationToken).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -48,7 +48,7 @@ namespace System.Net.ServerSentEvents
         /// <param name="itemFormatter">The formatter for the data field of given event.</param>
         /// <param name="cancellationToken">The <see cref="CancellationToken"/> that can be used to cancel the write operation.</param>
         /// <returns>A task that represents the asynchronous write operation.</returns>
-        public static Task WriteAsync<T>(IAsyncEnumerable<SseItem<T>> source, Stream destination, Action<SseItem<T>, IBufferWriter<byte>> itemFormatter, CancellationToken cancellationToken = default)
+        public static async Task WriteAsync<T>(IAsyncEnumerable<SseItem<T>> source, Stream destination, Action<SseItem<T>, IBufferWriter<byte>> itemFormatter, CancellationToken cancellationToken = default)
         {
             if (source is null)
             {
@@ -65,7 +65,7 @@ namespace System.Net.ServerSentEvents
                 ThrowHelper.ThrowArgumentNullException(nameof(itemFormatter));
             }
 
-            return WriteAsyncCore(source, destination, itemFormatter, cancellationToken);
+            await WriteAsyncCore(source, destination, itemFormatter, cancellationToken).ConfigureAwait(false);
         }
 
         private static async Task WriteAsyncCore<T>(IAsyncEnumerable<SseItem<T>> source, Stream destination, Action<SseItem<T>, IBufferWriter<byte>> itemFormatter, CancellationToken cancellationToken)

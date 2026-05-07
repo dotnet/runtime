@@ -405,9 +405,9 @@ namespace System.Net
                 return readBytes;
             }
 
-            public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+            public override async Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
             {
-                return ReadAsync(new Memory<byte>(buffer, offset, count), cancellationToken).AsTask();
+                return await ReadAsync(new Memory<byte>(buffer, offset, count), cancellationToken).ConfigureAwait(false);
             }
 
             public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
@@ -422,7 +422,7 @@ namespace System.Net
             public override void SetLength(long value) => throw new NotSupportedException();
             public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
 
-            public override ValueTask DisposeAsync() => innerStream.DisposeAsync();
+            public override async ValueTask DisposeAsync() => await innerStream.DisposeAsync().ConfigureAwait(false);
 
             protected override void Dispose(bool disposing)
             {

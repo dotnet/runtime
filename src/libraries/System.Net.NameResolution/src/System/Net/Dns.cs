@@ -91,8 +91,8 @@ namespace System.Net
             return ipHostEntry;
         }
 
-        public static Task<IPHostEntry> GetHostEntryAsync(string hostNameOrAddress) =>
-            GetHostEntryAsync(hostNameOrAddress, AddressFamily.Unspecified, CancellationToken.None);
+        public static async Task<IPHostEntry> GetHostEntryAsync(string hostNameOrAddress) =>
+            await GetHostEntryAsync(hostNameOrAddress, AddressFamily.Unspecified, CancellationToken.None).ConfigureAwait(false);
 
         /// <summary>
         /// Resolves a host name or IP address to an <see cref="IPHostEntry"/> instance as an asynchronous operation.
@@ -103,8 +103,8 @@ namespace System.Net
         /// The task object representing the asynchronous operation. The <see cref="Task{TResult}.Result"/> property on the task object returns
         /// an <see cref="IPHostEntry"/> instance that contains the address information about the host specified in <paramref name="hostNameOrAddress"/>.
         /// </returns>
-        public static Task<IPHostEntry> GetHostEntryAsync(string hostNameOrAddress, CancellationToken cancellationToken) =>
-            GetHostEntryAsync(hostNameOrAddress, AddressFamily.Unspecified, cancellationToken);
+        public static async Task<IPHostEntry> GetHostEntryAsync(string hostNameOrAddress, CancellationToken cancellationToken) =>
+            await GetHostEntryAsync(hostNameOrAddress, AddressFamily.Unspecified, cancellationToken).ConfigureAwait(false);
 
         /// <summary>
         /// Resolves a host name or IP address to an <see cref="IPHostEntry"/> instance as an asynchronous operation.
@@ -149,7 +149,7 @@ namespace System.Net
             }
         }
 
-        public static Task<IPHostEntry> GetHostEntryAsync(IPAddress address)
+        public static async Task<IPHostEntry> GetHostEntryAsync(IPAddress address)
         {
             if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
 
@@ -161,13 +161,13 @@ namespace System.Net
                 throw new ArgumentException(SR.net_invalid_ip_addr, nameof(address));
             }
 
-            return RunAsync(static (s, activity) => {
+            return await RunAsync(static (s, activity) => {
                 if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
 
                 IPHostEntry ipHostEntry = GetHostEntryCore((IPAddress)s, AddressFamily.Unspecified, activity);
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Info((IPAddress)s, $"{ipHostEntry} with {ipHostEntry.AddressList.Length} entries");
                 return ipHostEntry;
-            }, address, CancellationToken.None);
+            }, address, CancellationToken.None).ConfigureAwait(false);
         }
 
         public static IAsyncResult BeginGetHostEntry(IPAddress address, AsyncCallback? requestCallback, object? stateObject) =>

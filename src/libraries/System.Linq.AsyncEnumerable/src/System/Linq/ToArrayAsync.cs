@@ -16,13 +16,13 @@ namespace System.Linq
         /// <param name="cancellationToken">The <see cref="CancellationToken"/> to monitor for cancellation requests. The default is <see cref="CancellationToken.None"/>.</param>
         /// <returns>An array that contains the elements from the input sequence.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="source" /> is <see langword="null" />.</exception>
-        public static ValueTask<TSource[]> ToArrayAsync<TSource>(
+        public static async ValueTask<TSource[]> ToArrayAsync<TSource>(
             this IAsyncEnumerable<TSource> source,
             CancellationToken cancellationToken = default)
         {
             ArgumentNullException.ThrowIfNull(source);
 
-            return Impl(source.WithCancellation(cancellationToken));
+            return await Impl(source.WithCancellation(cancellationToken)).ConfigureAwait(false);
 
             static async ValueTask<TSource[]> Impl(
                 ConfiguredCancelableAsyncEnumerable<TSource> source)

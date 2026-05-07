@@ -468,12 +468,12 @@ public partial class ZipArchiveEntry
         }
     }
 
-    private ValueTask WriteDataDescriptorAsync(CancellationToken cancellationToken)
+    private async ValueTask WriteDataDescriptorAsync(CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
         byte[] dataDescriptor = new byte[MaxSizeOfDataDescriptor];
         int bytesToWrite = PrepareToWriteDataDescriptor(dataDescriptor);
-        return _archive.ArchiveStream.WriteAsync(dataDescriptor.AsMemory(0, bytesToWrite), cancellationToken);
+        await _archive.ArchiveStream.WriteAsync(dataDescriptor.AsMemory(0, bytesToWrite), cancellationToken).ConfigureAwait(false);
     }
 
     internal async Task UnloadStreamsAsync()

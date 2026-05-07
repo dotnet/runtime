@@ -1533,8 +1533,8 @@ namespace System.Net
             AbortRequest(request);
         }
 
-        public Task<string> DownloadStringTaskAsync(string address) =>
-            DownloadStringTaskAsync(GetUri(address));
+        public async Task<string> DownloadStringTaskAsync(string address) =>
+            await DownloadStringTaskAsync(GetUri(address)).ConfigureAwait(false);
 
         public Task<string> DownloadStringTaskAsync(Uri address)
         {
@@ -1557,8 +1557,8 @@ namespace System.Net
             return tcs.Task;
         }
 
-        public Task<Stream> OpenReadTaskAsync(string address) =>
-            OpenReadTaskAsync(GetUri(address));
+        public async Task<Stream> OpenReadTaskAsync(string address) =>
+            await OpenReadTaskAsync(GetUri(address)).ConfigureAwait(false);
 
         public Task<Stream> OpenReadTaskAsync(Uri address)
         {
@@ -1582,14 +1582,14 @@ namespace System.Net
             return tcs.Task;
         }
 
-        public Task<Stream> OpenWriteTaskAsync(string address) =>
-            OpenWriteTaskAsync(GetUri(address), null);
+        public async Task<Stream> OpenWriteTaskAsync(string address) =>
+            await OpenWriteTaskAsync(GetUri(address), null).ConfigureAwait(false);
 
-        public Task<Stream> OpenWriteTaskAsync(Uri address) =>
-            OpenWriteTaskAsync(address, null);
+        public async Task<Stream> OpenWriteTaskAsync(Uri address) =>
+            await OpenWriteTaskAsync(address, null).ConfigureAwait(false);
 
-        public Task<Stream> OpenWriteTaskAsync(string address, string? method) =>
-            OpenWriteTaskAsync(GetUri(address), method);
+        public async Task<Stream> OpenWriteTaskAsync(string address, string? method) =>
+            await OpenWriteTaskAsync(GetUri(address), method).ConfigureAwait(false);
 
         public Task<Stream> OpenWriteTaskAsync(Uri address, string? method)
         {
@@ -1613,14 +1613,14 @@ namespace System.Net
             return tcs.Task;
         }
 
-        public Task<string> UploadStringTaskAsync(string address, string data) =>
-            UploadStringTaskAsync(address, null, data);
+        public async Task<string> UploadStringTaskAsync(string address, string data) =>
+            await UploadStringTaskAsync(address, null, data).ConfigureAwait(false);
 
-        public Task<string> UploadStringTaskAsync(Uri address, string data) =>
-            UploadStringTaskAsync(address, null, data);
+        public async Task<string> UploadStringTaskAsync(Uri address, string data) =>
+            await UploadStringTaskAsync(address, null, data).ConfigureAwait(false);
 
-        public Task<string> UploadStringTaskAsync(string address, string? method, string data) =>
-            UploadStringTaskAsync(GetUri(address), method, data);
+        public async Task<string> UploadStringTaskAsync(string address, string? method, string data) =>
+            await UploadStringTaskAsync(GetUri(address), method, data).ConfigureAwait(false);
 
         public Task<string> UploadStringTaskAsync(Uri address, string? method, string data)
         {
@@ -1644,8 +1644,8 @@ namespace System.Net
             return tcs.Task;
         }
 
-        public Task<byte[]> DownloadDataTaskAsync(string address) =>
-            DownloadDataTaskAsync(GetUri(address));
+        public async Task<byte[]> DownloadDataTaskAsync(string address) =>
+            await DownloadDataTaskAsync(GetUri(address)).ConfigureAwait(false);
 
         public Task<byte[]> DownloadDataTaskAsync(Uri address)
         {
@@ -1669,8 +1669,8 @@ namespace System.Net
             return tcs.Task;
         }
 
-        public Task DownloadFileTaskAsync(string address, string fileName) =>
-            DownloadFileTaskAsync(GetUri(address), fileName);
+        public async Task DownloadFileTaskAsync(string address, string fileName) =>
+            await DownloadFileTaskAsync(GetUri(address), fileName).ConfigureAwait(false);
 
         public Task DownloadFileTaskAsync(Uri address, string fileName)
         {
@@ -1694,14 +1694,14 @@ namespace System.Net
             return tcs.Task;
         }
 
-        public Task<byte[]> UploadDataTaskAsync(string address, byte[] data) =>
-            UploadDataTaskAsync(GetUri(address), null, data);
+        public async Task<byte[]> UploadDataTaskAsync(string address, byte[] data) =>
+            await UploadDataTaskAsync(GetUri(address), null, data).ConfigureAwait(false);
 
-        public Task<byte[]> UploadDataTaskAsync(Uri address, byte[] data) =>
-            UploadDataTaskAsync(address, null, data);
+        public async Task<byte[]> UploadDataTaskAsync(Uri address, byte[] data) =>
+            await UploadDataTaskAsync(address, null, data).ConfigureAwait(false);
 
-        public Task<byte[]> UploadDataTaskAsync(string address, string? method, byte[] data) =>
-            UploadDataTaskAsync(GetUri(address), method, data);
+        public async Task<byte[]> UploadDataTaskAsync(string address, string? method, byte[] data) =>
+            await UploadDataTaskAsync(GetUri(address), method, data).ConfigureAwait(false);
 
         public Task<byte[]> UploadDataTaskAsync(Uri address, string? method, byte[] data)
         {
@@ -1725,14 +1725,14 @@ namespace System.Net
             return tcs.Task;
         }
 
-        public Task<byte[]> UploadFileTaskAsync(string address, string fileName) =>
-            UploadFileTaskAsync(GetUri(address), null, fileName);
+        public async Task<byte[]> UploadFileTaskAsync(string address, string fileName) =>
+            await UploadFileTaskAsync(GetUri(address), null, fileName).ConfigureAwait(false);
 
-        public Task<byte[]> UploadFileTaskAsync(Uri address, string fileName) =>
-            UploadFileTaskAsync(address, null, fileName);
+        public async Task<byte[]> UploadFileTaskAsync(Uri address, string fileName) =>
+            await UploadFileTaskAsync(address, null, fileName).ConfigureAwait(false);
 
-        public Task<byte[]> UploadFileTaskAsync(string address, string? method, string fileName) =>
-            UploadFileTaskAsync(GetUri(address), method, fileName);
+        public async Task<byte[]> UploadFileTaskAsync(string address, string? method, string fileName) =>
+            await UploadFileTaskAsync(GetUri(address), method, fileName).ConfigureAwait(false);
 
         public Task<byte[]> UploadFileTaskAsync(Uri address, string? method, string fileName)
         {
@@ -1756,14 +1756,14 @@ namespace System.Net
             return tcs.Task;
         }
 
-        public Task<byte[]> UploadValuesTaskAsync(string address, NameValueCollection data) =>
-            UploadValuesTaskAsync(GetUri(address), null, data);
+        public async Task<byte[]> UploadValuesTaskAsync(string address, NameValueCollection data) =>
+            await UploadValuesTaskAsync(GetUri(address), null, data).ConfigureAwait(false);
 
-        public Task<byte[]> UploadValuesTaskAsync(string address, string? method, NameValueCollection data) =>
-            UploadValuesTaskAsync(GetUri(address), method, data);
+        public async Task<byte[]> UploadValuesTaskAsync(string address, string? method, NameValueCollection data) =>
+            await UploadValuesTaskAsync(GetUri(address), method, data).ConfigureAwait(false);
 
-        public Task<byte[]> UploadValuesTaskAsync(Uri address, NameValueCollection data) =>
-            UploadValuesTaskAsync(address, null, data);
+        public async Task<byte[]> UploadValuesTaskAsync(Uri address, NameValueCollection data) =>
+            await UploadValuesTaskAsync(address, null, data).ConfigureAwait(false);
 
         public Task<byte[]> UploadValuesTaskAsync(Uri address, string? method, NameValueCollection data)
         {

@@ -122,16 +122,16 @@ namespace System.Net.WebSockets
             Task.CompletedTask;
 
         /// <inheritdoc />
-        public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        public override async Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
             ValidateBufferArguments(buffer, offset, count);
 
-            return ReadAsync(buffer.AsMemory(offset, count), cancellationToken).AsTask();
+            return await ReadAsync(buffer.AsMemory(offset, count), cancellationToken).ConfigureAwait(false);
         }
 
         /// <inheritdoc />
-        public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default) =>
-            ValueTask.FromException<int>(ExceptionDispatchInfo.SetCurrentStackTrace(new NotSupportedException()));
+        public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default) =>
+            await ValueTask.FromException<int>(ExceptionDispatchInfo.SetCurrentStackTrace(new NotSupportedException())).ConfigureAwait(false);
 
         /// <inheritdoc />
         public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state) =>
@@ -142,16 +142,16 @@ namespace System.Net.WebSockets
             TaskToAsyncResult.End<int>(asyncResult);
 
         /// <inheritdoc />
-        public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        public override async Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
             ValidateBufferArguments(buffer, offset, count);
 
-            return WriteAsync(buffer.AsMemory(offset, count), cancellationToken).AsTask();
+            await WriteAsync(buffer.AsMemory(offset, count), cancellationToken).ConfigureAwait(false);
         }
 
         /// <inheritdoc />
-        public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default) =>
-            ValueTask.FromException(ExceptionDispatchInfo.SetCurrentStackTrace(new NotSupportedException()));
+        public override async ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default) =>
+            await ValueTask.FromException(ExceptionDispatchInfo.SetCurrentStackTrace(new NotSupportedException())).ConfigureAwait(false);
 
         /// <inheritdoc />
         public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state) =>
@@ -192,24 +192,24 @@ namespace System.Net.WebSockets
             private readonly TimeSpan? _closeTimeout = closeTimeout;
 
             /// <inheritdoc />
-            public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
+            public override async ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
             {
                 if (_disposed)
                 {
-                    return ValueTask.FromException(ExceptionDispatchInfo.SetCurrentStackTrace(new ObjectDisposedException(GetType().FullName)));
+                    await ValueTask.FromException(ExceptionDispatchInfo.SetCurrentStackTrace(new ObjectDisposedException(GetType().FullName))).ConfigureAwait(false);
                 }
 
                 if (!CanWrite)
                 {
-                    return ValueTask.FromException(ExceptionDispatchInfo.SetCurrentStackTrace(new NotSupportedException(SR.NotWriteableStream)));
+                    await ValueTask.FromException(ExceptionDispatchInfo.SetCurrentStackTrace(new NotSupportedException(SR.NotWriteableStream))).ConfigureAwait(false);
                 }
 
                 if (cancellationToken.IsCancellationRequested)
                 {
-                    return ValueTask.FromCanceled(cancellationToken);
+                    await ValueTask.FromCanceled(cancellationToken).ConfigureAwait(false);
                 }
 
-                return WebSocket.SendAsync(buffer, _messageType, endOfMessage: true, cancellationToken);
+                await WebSocket.SendAsync(buffer, _messageType, endOfMessage: true, cancellationToken).ConfigureAwait(false);
             }
 
             /// <inheritdoc />
@@ -294,24 +294,24 @@ namespace System.Net.WebSockets
             public override bool CanRead => false;
 
             /// <inheritdoc />
-            public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
+            public override async ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
             {
                 if (_disposed)
                 {
-                    return ValueTask.FromException(ExceptionDispatchInfo.SetCurrentStackTrace(new ObjectDisposedException(GetType().FullName)));
+                    await ValueTask.FromException(ExceptionDispatchInfo.SetCurrentStackTrace(new ObjectDisposedException(GetType().FullName))).ConfigureAwait(false);
                 }
 
                 if (!CanWrite)
                 {
-                    return ValueTask.FromException(ExceptionDispatchInfo.SetCurrentStackTrace(new NotSupportedException(SR.NotWriteableStream)));
+                    await ValueTask.FromException(ExceptionDispatchInfo.SetCurrentStackTrace(new NotSupportedException(SR.NotWriteableStream))).ConfigureAwait(false);
                 }
 
                 if (cancellationToken.IsCancellationRequested)
                 {
-                    return ValueTask.FromCanceled(cancellationToken);
+                    await ValueTask.FromCanceled(cancellationToken).ConfigureAwait(false);
                 }
 
-                return WebSocket.SendAsync(buffer, _messageType, endOfMessage: false, cancellationToken);
+                await WebSocket.SendAsync(buffer, _messageType, endOfMessage: false, cancellationToken).ConfigureAwait(false);
             }
 
             public override ValueTask DisposeAsync()

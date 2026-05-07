@@ -91,10 +91,10 @@ namespace System.IO.Compression
         /// <summary>Asynchronously clears all buffers for this stream, causes any buffered data to be written to the underlying device, and monitors cancellation requests.</summary>
         /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
         /// <returns>A task that represents the asynchronous flush operation.</returns>
-        public override Task FlushAsync(CancellationToken cancellationToken)
+        public override async Task FlushAsync(CancellationToken cancellationToken)
         {
             ThrowIfClosed();
-            return _deflateStream.FlushAsync(cancellationToken);
+            await _deflateStream.FlushAsync(cancellationToken).ConfigureAwait(false);
         }
 
         /// <summary>This method is not supported and always throws a <see cref="NotSupportedException"/>.</summary>
@@ -156,20 +156,20 @@ namespace System.IO.Compression
         /// <param name="count">The maximum number of bytes to read.</param>
         /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
         /// <returns>A task that represents the asynchronous completion of the operation.</returns>
-        public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        public override async Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
             ThrowIfClosed();
-            return _deflateStream.ReadAsync(buffer, offset, count, cancellationToken);
+            return await _deflateStream.ReadAsync(buffer, offset, count, cancellationToken).ConfigureAwait(false);
         }
 
         /// <summary>Asynchronously reads a sequence of bytes from the current stream, advances the position within the stream by the number of bytes read, and monitors cancellation requests.</summary>
         /// <param name="buffer">The byte span to read the data into.</param>
         /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
         /// <returns>A task that represents the asynchronous completion of the operation.</returns>
-        public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
+        public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
         {
             ThrowIfClosed();
-            return _deflateStream.ReadAsyncMemory(buffer, cancellationToken);
+            return await _deflateStream.ReadAsyncMemory(buffer, cancellationToken).ConfigureAwait(false);
         }
 
         /// <summary>Begins an asynchronous write operation.</summary>
@@ -214,20 +214,20 @@ namespace System.IO.Compression
         /// <param name="count">The maximum number of bytes to write.</param>
         /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
         /// <returns>A task that represents the asynchronous completion of the operation.</returns>
-        public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        public override async Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
             ThrowIfClosed();
-            return _deflateStream.WriteAsync(buffer, offset, count, cancellationToken);
+            await _deflateStream.WriteAsync(buffer, offset, count, cancellationToken).ConfigureAwait(false);
         }
 
         /// <summary>Asynchronously writes a sequence of bytes to the current stream, advances the current position within this stream by the number of bytes written, and monitors cancellation requests.</summary>
         /// <param name="buffer">The buffer to write data from.</param>
         /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
         /// <returns>A task that represents the asynchronous completion of the operation.</returns>
-        public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
+        public override async ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
         {
             ThrowIfClosed();
-            return _deflateStream.WriteAsyncMemory(buffer, cancellationToken);
+            await _deflateStream.WriteAsyncMemory(buffer, cancellationToken).ConfigureAwait(false);
         }
 
         /// <summary>Writes a byte to the current position in the stream and advances the position within the stream by one byte.</summary>
@@ -252,10 +252,10 @@ namespace System.IO.Compression
         /// <param name="bufferSize">The size, in bytes, of the buffer. This value must be greater than zero.</param>
         /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
         /// <returns>A task that represents the asynchronous copy operation.</returns>
-        public override Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
+        public override async Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
         {
             ThrowIfClosed();
-            return _deflateStream.CopyToAsync(destination, bufferSize, cancellationToken);
+            await _deflateStream.CopyToAsync(destination, bufferSize, cancellationToken).ConfigureAwait(false);
         }
 
         /// <summary>Releases all resources used by the <see cref="Stream"/>.</summary>

@@ -113,7 +113,7 @@ namespace Microsoft.Extensions.Hosting.Internal
                 if (_hostedLifecycleServices is not null)
                 {
                     await ForeachService(_hostedLifecycleServices, cancellationToken, concurrent, abortOnFirstException, exceptions,
-                        (service, token) => service.StartingAsync(token)).ConfigureAwait(false);
+async (service, token) => await service.StartingAsync(token).ConfigureAwait(false)).ConfigureAwait(false);
 
                     // Exceptions in StartingAsync cause startup to be aborted.
                     LogAndRethrow();
@@ -143,7 +143,7 @@ namespace Microsoft.Extensions.Hosting.Internal
                 if (_hostedLifecycleServices is not null)
                 {
                     await ForeachService(_hostedLifecycleServices, cancellationToken, concurrent, abortOnFirstException, exceptions,
-                        (service, token) => service.StartedAsync(token)).ConfigureAwait(false);
+async (service, token) => await service.StartedAsync(token).ConfigureAwait(false)).ConfigureAwait(false);
                 }
 
                 // Exceptions in StartedAsync cause startup to be aborted.
@@ -260,7 +260,7 @@ namespace Microsoft.Extensions.Hosting.Internal
                     if (reversedLifetimeServices is not null)
                     {
                         await ForeachService(reversedLifetimeServices, cancellationToken, concurrent, abortOnFirstException: false, exceptions,
-                            (service, token) => service.StoppingAsync(token)).ConfigureAwait(false);
+async (service, token) => await service.StoppingAsync(token).ConfigureAwait(false)).ConfigureAwait(false);
                     }
 
                     // Cancel IHostApplicationLifetime.ApplicationStopping.
@@ -268,14 +268,14 @@ namespace Microsoft.Extensions.Hosting.Internal
                     _applicationLifetime.StopApplication();
 
                     // Call StopAsync().
-                    await ForeachService(reversedServices, cancellationToken, concurrent, abortOnFirstException: false, exceptions, (service, token) =>
-                        service.StopAsync(token)).ConfigureAwait(false);
+                    await ForeachService(reversedServices, cancellationToken, concurrent, abortOnFirstException: false, exceptions, async (service, token) =>
+                        await service.StopAsync(token).ConfigureAwait(false)).ConfigureAwait(false);
 
                     // Call StoppedAsync().
                     if (reversedLifetimeServices is not null)
                     {
-                        await ForeachService(reversedLifetimeServices, cancellationToken, concurrent, abortOnFirstException: false, exceptions, (service, token) =>
-                            service.StoppedAsync(token)).ConfigureAwait(false);
+                        await ForeachService(reversedLifetimeServices, cancellationToken, concurrent, abortOnFirstException: false, exceptions, async (service, token) =>
+                            await service.StoppedAsync(token).ConfigureAwait(false)).ConfigureAwait(false);
                     }
                 }
 

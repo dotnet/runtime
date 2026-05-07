@@ -190,8 +190,8 @@ namespace System.Net.Http
         // write "--" + boundary + "--"
         // Can't be canceled directly by the user.  If the overall request is canceled
         // then the stream will be closed an exception thrown.
-        protected override Task SerializeToStreamAsync(Stream stream, TransportContext? context) =>
-            SerializeToStreamAsyncCore(stream, context, default);
+        protected override async Task SerializeToStreamAsync(Stream stream, TransportContext? context) =>
+            await SerializeToStreamAsyncCore(stream, context, default).ConfigureAwait(false);
 
         protected override Task SerializeToStreamAsync(Stream stream, TransportContext? context, CancellationToken cancellationToken) =>
             // Only skip the original protected virtual SerializeToStreamAsync if this
@@ -239,8 +239,8 @@ namespace System.Net.Http
             return task.GetAwaiter().GetResult();
         }
 
-        protected override Task<Stream> CreateContentReadStreamAsync() =>
-            CreateContentReadStreamAsyncCore(async: true, CancellationToken.None).AsTask();
+        protected override async Task<Stream> CreateContentReadStreamAsync() =>
+            await CreateContentReadStreamAsyncCore(async: true, CancellationToken.None).ConfigureAwait(false);
 
         protected override Task<Stream> CreateContentReadStreamAsync(CancellationToken cancellationToken) =>
             // Only skip the original protected virtual CreateContentReadStreamAsync if this
@@ -507,14 +507,14 @@ namespace System.Net.Http
                 }
             }
 
-            public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+            public override async Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
             {
                 ValidateBufferArguments(buffer, offset, count);
-                return ReadAsyncPrivate(new Memory<byte>(buffer, offset, count), cancellationToken).AsTask();
+                return await ReadAsyncPrivate(new Memory<byte>(buffer, offset, count), cancellationToken).ConfigureAwait(false);
             }
 
-            public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default) =>
-                ReadAsyncPrivate(buffer, cancellationToken);
+            public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default) =>
+                await ReadAsyncPrivate(buffer, cancellationToken).ConfigureAwait(false);
 
             public override IAsyncResult BeginRead(byte[] array, int offset, int count, AsyncCallback? asyncCallback, object? asyncState) =>
                 TaskToAsyncResult.Begin(ReadAsync(array, offset, count, CancellationToken.None), asyncCallback, asyncState);

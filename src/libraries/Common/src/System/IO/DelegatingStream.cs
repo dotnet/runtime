@@ -75,9 +75,9 @@ namespace System.IO
             base.Dispose(disposing);
         }
 
-        public override ValueTask DisposeAsync()
+        public override async ValueTask DisposeAsync()
         {
-            return _innerStream.DisposeAsync();
+            await _innerStream.DisposeAsync().ConfigureAwait(false);
         }
 
         #region Read
@@ -102,14 +102,16 @@ namespace System.IO
             return _innerStream.ReadByte();
         }
 
-        public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        public override async Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
-            return _innerStream.ReadAsync(buffer, offset, count, cancellationToken);
+#pragma warning disable CA1835
+            return await _innerStream.ReadAsync(buffer, offset, count, cancellationToken).ConfigureAwait(false);
+#pragma warning restore CA1835
         }
 
-        public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
+        public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
         {
-            return _innerStream.ReadAsync(buffer, cancellationToken);
+            return await _innerStream.ReadAsync(buffer, cancellationToken).ConfigureAwait(false);
         }
 
         public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state)
@@ -127,9 +129,9 @@ namespace System.IO
             _innerStream.CopyTo(destination, bufferSize);
         }
 
-        public override Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
+        public override async Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
         {
-            return _innerStream.CopyToAsync(destination, bufferSize, cancellationToken);
+            await _innerStream.CopyToAsync(destination, bufferSize, cancellationToken).ConfigureAwait(false);
         }
 
         #endregion Read
@@ -141,9 +143,9 @@ namespace System.IO
             _innerStream.Flush();
         }
 
-        public override Task FlushAsync(CancellationToken cancellationToken)
+        public override async Task FlushAsync(CancellationToken cancellationToken)
         {
-            return _innerStream.FlushAsync(cancellationToken);
+            await _innerStream.FlushAsync(cancellationToken).ConfigureAwait(false);
         }
 
         public override void SetLength(long value)
@@ -166,14 +168,16 @@ namespace System.IO
             _innerStream.WriteByte(value);
         }
 
-        public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        public override async Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
-            return _innerStream.WriteAsync(buffer, offset, count, cancellationToken);
+#pragma warning disable CA1835
+            await _innerStream.WriteAsync(buffer, offset, count, cancellationToken).ConfigureAwait(false);
+#pragma warning restore CA1835
         }
 
-        public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
+        public override async ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
         {
-            return _innerStream.WriteAsync(buffer, cancellationToken);
+            await _innerStream.WriteAsync(buffer, cancellationToken).ConfigureAwait(false);
         }
 
         public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state)

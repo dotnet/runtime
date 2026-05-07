@@ -19,7 +19,7 @@ namespace System.Linq
         /// <exception cref="ArgumentNullException"><paramref name="source"/> is <see langword="null"/>.</exception>
         /// <exception cref="ArgumentNullException"><paramref name="func"/> is <see langword="null"/>.</exception>
         /// <exception cref="InvalidOperationException"><paramref name="source"/> contains no elements.</exception>
-        public static ValueTask<TSource> AggregateAsync<TSource>(
+        public static async ValueTask<TSource> AggregateAsync<TSource>(
             this IAsyncEnumerable<TSource> source,
             Func<TSource, TSource, TSource> func,
             CancellationToken cancellationToken = default)
@@ -27,7 +27,7 @@ namespace System.Linq
             ArgumentNullException.ThrowIfNull(source);
             ArgumentNullException.ThrowIfNull(func);
 
-            return Impl(source, func, cancellationToken);
+            return await Impl(source, func, cancellationToken).ConfigureAwait(false);
 
             static async ValueTask<TSource> Impl(
                 IAsyncEnumerable<TSource> source,
@@ -60,7 +60,7 @@ namespace System.Linq
         /// <exception cref="ArgumentNullException"><paramref name="source"/> is <see langword="null"/>.</exception>
         /// <exception cref="ArgumentNullException"><paramref name="func"/> is <see langword="null"/>.</exception>
         /// <exception cref="InvalidOperationException"><paramref name="source"/> contains no elements.</exception>
-        public static ValueTask<TSource> AggregateAsync<TSource>(
+        public static async ValueTask<TSource> AggregateAsync<TSource>(
             this IAsyncEnumerable<TSource> source,
             Func<TSource, TSource, CancellationToken, ValueTask<TSource>> func,
             CancellationToken cancellationToken = default)
@@ -68,7 +68,7 @@ namespace System.Linq
             ArgumentNullException.ThrowIfNull(source);
             ArgumentNullException.ThrowIfNull(func);
 
-            return Impl(source, func, cancellationToken);
+            return await Impl(source, func, cancellationToken).ConfigureAwait(false);
 
             static async ValueTask<TSource> Impl(
                 IAsyncEnumerable<TSource> source,
@@ -102,7 +102,7 @@ namespace System.Linq
         /// <returns>The final accumulator value.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="source"/> is <see langword="null"/>.</exception>
         /// <exception cref="ArgumentNullException"><paramref name="func"/> is <see langword="null"/>.</exception>
-        public static ValueTask<TAccumulate> AggregateAsync<TSource, TAccumulate>(
+        public static async ValueTask<TAccumulate> AggregateAsync<TSource, TAccumulate>(
             this IAsyncEnumerable<TSource> source,
             TAccumulate seed,
             Func<TAccumulate, TSource, TAccumulate> func,
@@ -111,7 +111,7 @@ namespace System.Linq
             ArgumentNullException.ThrowIfNull(source);
             ArgumentNullException.ThrowIfNull(func);
 
-            return Impl(source.WithCancellation(cancellationToken), seed, func);
+            return await Impl(source.WithCancellation(cancellationToken), seed, func).ConfigureAwait(false);
 
             static async ValueTask<TAccumulate> Impl(
                 ConfiguredCancelableAsyncEnumerable<TSource> source,
@@ -139,7 +139,7 @@ namespace System.Linq
         /// <returns>The final accumulator value.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="source"/> is <see langword="null"/>.</exception>
         /// <exception cref="ArgumentNullException"><paramref name="func"/> is <see langword="null"/>.</exception>
-        public static ValueTask<TAccumulate> AggregateAsync<TSource, TAccumulate>(
+        public static async ValueTask<TAccumulate> AggregateAsync<TSource, TAccumulate>(
             this IAsyncEnumerable<TSource> source, TAccumulate seed,
             Func<TAccumulate, TSource, CancellationToken, ValueTask<TAccumulate>> func,
             CancellationToken cancellationToken = default)
@@ -147,7 +147,7 @@ namespace System.Linq
             ArgumentNullException.ThrowIfNull(source);
             ArgumentNullException.ThrowIfNull(func);
 
-            return Impl(source, seed, func, cancellationToken);
+            return await Impl(source, seed, func, cancellationToken).ConfigureAwait(false);
 
             static async ValueTask<TAccumulate> Impl(
                 IAsyncEnumerable<TSource> source, TAccumulate seed,
@@ -182,7 +182,7 @@ namespace System.Linq
         /// <exception cref="ArgumentNullException"><paramref name="source"/> is <see langword="null"/>.</exception>
         /// <exception cref="ArgumentNullException"><paramref name="func"/> is <see langword="null"/>.</exception>
         /// <exception cref="ArgumentNullException"><paramref name="resultSelector"/> is <see langword="null"/>.</exception>
-        public static ValueTask<TResult> AggregateAsync<TSource, TAccumulate, TResult>(
+        public static async ValueTask<TResult> AggregateAsync<TSource, TAccumulate, TResult>(
             this IAsyncEnumerable<TSource> source,
             TAccumulate seed,
             Func<TAccumulate, TSource, TAccumulate> func,
@@ -193,7 +193,7 @@ namespace System.Linq
             ArgumentNullException.ThrowIfNull(func);
             ArgumentNullException.ThrowIfNull(resultSelector);
 
-            return Impl(source.WithCancellation(cancellationToken), seed, func, resultSelector);
+            return await Impl(source.WithCancellation(cancellationToken), seed, func, resultSelector).ConfigureAwait(false);
 
             static async ValueTask<TResult> Impl(
                 ConfiguredCancelableAsyncEnumerable<TSource> source,
@@ -229,7 +229,7 @@ namespace System.Linq
         /// <exception cref="ArgumentNullException"><paramref name="source"/> is <see langword="null"/>.</exception>
         /// <exception cref="ArgumentNullException"><paramref name="func"/> is <see langword="null"/>.</exception>
         /// <exception cref="ArgumentNullException"><paramref name="resultSelector"/> is <see langword="null"/>.</exception>
-        public static ValueTask<TResult> AggregateAsync<TSource, TAccumulate, TResult>(
+        public static async ValueTask<TResult> AggregateAsync<TSource, TAccumulate, TResult>(
             this IAsyncEnumerable<TSource> source,
             TAccumulate seed,
             Func<TAccumulate, TSource, CancellationToken, ValueTask<TAccumulate>> func,
@@ -240,7 +240,7 @@ namespace System.Linq
             ArgumentNullException.ThrowIfNull(func);
             ArgumentNullException.ThrowIfNull(resultSelector);
 
-            return Impl(source, seed, func, resultSelector, cancellationToken);
+            return await Impl(source, seed, func, resultSelector, cancellationToken).ConfigureAwait(false);
 
             static async ValueTask<TResult> Impl(
                 IAsyncEnumerable<TSource> source,

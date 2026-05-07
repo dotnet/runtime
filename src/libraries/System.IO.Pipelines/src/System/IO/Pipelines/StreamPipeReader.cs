@@ -200,14 +200,14 @@ namespace System.IO.Pipelines
         }
 
         /// <inheritdoc />
-        public override ValueTask<ReadResult> ReadAsync(CancellationToken cancellationToken = default)
+        public override async ValueTask<ReadResult> ReadAsync(CancellationToken cancellationToken = default)
         {
-            return ReadInternalAsync(null, cancellationToken);
+            return await ReadInternalAsync(null, cancellationToken).ConfigureAwait(false);
         }
 
-        protected override ValueTask<ReadResult> ReadAtLeastAsyncCore(int minimumSize, CancellationToken cancellationToken)
+        protected override async ValueTask<ReadResult> ReadAtLeastAsyncCore(int minimumSize, CancellationToken cancellationToken)
         {
-            return ReadInternalAsync(minimumSize, cancellationToken);
+            return await ReadInternalAsync(minimumSize, cancellationToken).ConfigureAwait(false);
         }
 
         private ValueTask<ReadResult> ReadInternalAsync(int? minimumSize, CancellationToken cancellationToken)

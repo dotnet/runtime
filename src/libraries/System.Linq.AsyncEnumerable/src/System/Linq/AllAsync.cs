@@ -21,7 +21,7 @@ namespace System.Linq
         /// </returns>
         /// <exception cref="ArgumentNullException"><paramref name="source"/> is <see langword="null"/>.</exception>
         /// <exception cref="ArgumentNullException"><paramref name="predicate"/> is <see langword="null"/>.</exception>
-        public static ValueTask<bool> AllAsync<TSource>(
+        public static async ValueTask<bool> AllAsync<TSource>(
             this IAsyncEnumerable<TSource> source,
             Func<TSource, bool> predicate,
             CancellationToken cancellationToken = default)
@@ -29,7 +29,7 @@ namespace System.Linq
             ArgumentNullException.ThrowIfNull(source);
             ArgumentNullException.ThrowIfNull(predicate);
 
-            return Impl(source.WithCancellation(cancellationToken), predicate);
+            return await Impl(source.WithCancellation(cancellationToken), predicate).ConfigureAwait(false);
 
             static async ValueTask<bool> Impl(
                 ConfiguredCancelableAsyncEnumerable<TSource> source,
@@ -58,7 +58,7 @@ namespace System.Linq
         /// </returns>
         /// <exception cref="ArgumentNullException"><paramref name="source"/> is <see langword="null"/>.</exception>
         /// <exception cref="ArgumentNullException"><paramref name="predicate"/> is <see langword="null"/>.</exception>
-        public static ValueTask<bool> AllAsync<TSource>(
+        public static async ValueTask<bool> AllAsync<TSource>(
             this IAsyncEnumerable<TSource> source,
             Func<TSource, CancellationToken,
             ValueTask<bool>> predicate,
@@ -67,7 +67,7 @@ namespace System.Linq
             ArgumentNullException.ThrowIfNull(source);
             ArgumentNullException.ThrowIfNull(predicate);
 
-            return Impl(source, predicate, cancellationToken);
+            return await Impl(source, predicate, cancellationToken).ConfigureAwait(false);
 
             static async ValueTask<bool> Impl(
                 IAsyncEnumerable<TSource> source,

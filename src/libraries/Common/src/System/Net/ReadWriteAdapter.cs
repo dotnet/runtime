@@ -20,16 +20,16 @@ namespace System.Net
 
     internal readonly struct AsyncReadWriteAdapter : IReadWriteAdapter
     {
-        public static ValueTask<int> ReadAsync(Stream stream, Memory<byte> buffer, CancellationToken cancellationToken) =>
-            stream.ReadAsync(buffer, cancellationToken);
+        public static async ValueTask<int> ReadAsync(Stream stream, Memory<byte> buffer, CancellationToken cancellationToken) =>
+            await stream.ReadAsync(buffer, cancellationToken).ConfigureAwait(false);
 
-        public static ValueTask<int> ReadAtLeastAsync(Stream stream, Memory<byte> buffer, int minimumBytes, bool throwOnEndOfStream, CancellationToken cancellationToken) =>
-            stream.ReadAtLeastAsync(buffer, minimumBytes, throwOnEndOfStream, cancellationToken);
+        public static async ValueTask<int> ReadAtLeastAsync(Stream stream, Memory<byte> buffer, int minimumBytes, bool throwOnEndOfStream, CancellationToken cancellationToken) =>
+            await stream.ReadAtLeastAsync(buffer, minimumBytes, throwOnEndOfStream, cancellationToken).ConfigureAwait(false);
 
-        public static ValueTask WriteAsync(Stream stream, ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken) =>
-            stream.WriteAsync(buffer, cancellationToken);
+        public static async ValueTask WriteAsync(Stream stream, ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken) =>
+            await stream.WriteAsync(buffer, cancellationToken).ConfigureAwait(false);
 
-        public static Task FlushAsync(Stream stream, CancellationToken cancellationToken) => stream.FlushAsync(cancellationToken);
+        public static async Task FlushAsync(Stream stream, CancellationToken cancellationToken) => await stream.FlushAsync(cancellationToken).ConfigureAwait(false);
 
         public static Task WaitAsync(TaskCompletionSource<bool> waiter) => waiter.Task;
         public static Task WaitAsync(Task task) => task;
@@ -68,9 +68,9 @@ namespace System.Net
             return Task.CompletedTask;
         }
 
-        public static ValueTask<T> WaitAsync<T>(ValueTask<T> task)
+        public static async ValueTask<T> WaitAsync<T>(ValueTask<T> task)
         {
-            return ValueTask.FromResult(task.AsTask().GetAwaiter().GetResult());
+            return await task.ConfigureAwait(false);
         }
     }
 }

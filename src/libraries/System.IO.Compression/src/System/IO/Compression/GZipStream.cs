@@ -208,60 +208,61 @@ namespace System.IO.Compression
             }
         }
 
-        public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        public override async Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
             CheckDeflateStream();
-            return _deflateStream.ReadAsync(buffer, offset, count, cancellationToken);
+            ValidateBufferArguments(buffer, offset, count);
+            return await _deflateStream.ReadAsyncMemory(new Memory<byte>(buffer, offset, count), cancellationToken).ConfigureAwait(false);
         }
 
-        public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default(CancellationToken))
+        public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default(CancellationToken))
         {
             if (GetType() != typeof(GZipStream))
             {
                 // GZipStream is not sealed, and a derived type may have overridden ReadAsync(byte[], int, int) prior
                 // to this ReadAsync(Memory<byte>) overload being introduced.  In that case, this ReadAsync(Memory<byte>) overload
                 // should use the behavior of ReadAsync(byte[],int,int) overload.
-                return base.ReadAsync(buffer, cancellationToken);
+                return await base.ReadAsync(buffer, cancellationToken).ConfigureAwait(false);
             }
             else
             {
                 CheckDeflateStream();
-                return _deflateStream.ReadAsyncMemory(buffer, cancellationToken);
+                return await _deflateStream.ReadAsyncMemory(buffer, cancellationToken).ConfigureAwait(false);
             }
         }
 
-        public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        public override async Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
             CheckDeflateStream();
-            return _deflateStream.WriteAsync(buffer, offset, count, cancellationToken);
+            await _deflateStream.WriteAsync(buffer, offset, count, cancellationToken).ConfigureAwait(false);
         }
 
-        public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default(CancellationToken))
+        public override async ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default(CancellationToken))
         {
             if (GetType() != typeof(GZipStream))
             {
                 // GZipStream is not sealed, and a derived type may have overridden WriteAsync(byte[], int, int) prior
                 // to this WriteAsync(ReadOnlyMemory<byte>) overload being introduced.  In that case, this
                 // WriteAsync(ReadOnlyMemory<byte>) overload should use the behavior of Write(byte[],int,int) overload.
-                return base.WriteAsync(buffer, cancellationToken);
+                await base.WriteAsync(buffer, cancellationToken).ConfigureAwait(false);
             }
             else
             {
                 CheckDeflateStream();
-                return _deflateStream.WriteAsyncMemory(buffer, cancellationToken);
+                await _deflateStream.WriteAsyncMemory(buffer, cancellationToken).ConfigureAwait(false);
             }
         }
 
-        public override Task FlushAsync(CancellationToken cancellationToken)
+        public override async Task FlushAsync(CancellationToken cancellationToken)
         {
             CheckDeflateStream();
-            return _deflateStream.FlushAsync(cancellationToken);
+            await _deflateStream.FlushAsync(cancellationToken).ConfigureAwait(false);
         }
 
-        public override Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
+        public override async Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
         {
             CheckDeflateStream();
-            return _deflateStream.CopyToAsync(destination, bufferSize, cancellationToken);
+            await _deflateStream.CopyToAsync(destination, bufferSize, cancellationToken).ConfigureAwait(false);
         }
 
         private void CheckDeflateStream()

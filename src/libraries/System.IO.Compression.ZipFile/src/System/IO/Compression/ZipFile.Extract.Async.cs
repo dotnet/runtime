@@ -41,8 +41,8 @@ public static partial class ZipFile
     /// <param name="destinationDirectoryName">The path to the directory in which to place the extracted files, specified as a relative or absolute path. A relative path is interpreted as relative to the current working directory.</param>
     /// <param name="cancellationToken">The cancellation token to monitor for cancellation requests.</param>
     /// <returns>A task that represents the asynchronous extract operation. The task completes when all entries have been extracted or an error occurs.</returns>
-    public static Task ExtractToDirectoryAsync(string sourceArchiveFileName, string destinationDirectoryName, CancellationToken cancellationToken = default) =>
-        ExtractToDirectoryAsync(sourceArchiveFileName, destinationDirectoryName, entryNameEncoding: null, overwriteFiles: false, cancellationToken);
+    public static async Task ExtractToDirectoryAsync(string sourceArchiveFileName, string destinationDirectoryName, CancellationToken cancellationToken = default) =>
+        await ExtractToDirectoryAsync(sourceArchiveFileName, destinationDirectoryName, entryNameEncoding: null, overwriteFiles: false, cancellationToken).ConfigureAwait(false);
 
     /// <summary>
     /// Asynchronously extracts all of the files in the specified archive to a directory on the file system.
@@ -77,8 +77,8 @@ public static partial class ZipFile
     /// <param name="overwriteFiles">True to indicate overwrite.</param>
     /// <param name="cancellationToken">The cancellation token to monitor for cancellation requests.</param>
     /// <returns>A task that represents the asynchronous extract operation. The task completes when all entries have been extracted or an error occurs.</returns>
-    public static Task ExtractToDirectoryAsync(string sourceArchiveFileName, string destinationDirectoryName, bool overwriteFiles, CancellationToken cancellationToken = default) =>
-        ExtractToDirectoryAsync(sourceArchiveFileName, destinationDirectoryName, entryNameEncoding: null, overwriteFiles: overwriteFiles, cancellationToken);
+    public static async Task ExtractToDirectoryAsync(string sourceArchiveFileName, string destinationDirectoryName, bool overwriteFiles, CancellationToken cancellationToken = default) =>
+        await ExtractToDirectoryAsync(sourceArchiveFileName, destinationDirectoryName, entryNameEncoding: null, overwriteFiles: overwriteFiles, cancellationToken).ConfigureAwait(false);
 
     /// <summary>
     /// Asynchronously extracts all of the files in the specified archive to a directory on the file system.
@@ -134,8 +134,8 @@ public static partial class ZipFile
     /// </param>
     /// <param name="cancellationToken">The cancellation token to monitor for cancellation requests.</param>
     /// <returns>A task that represents the asynchronous extract operation. The task completes when all entries have been extracted or an error occurs.</returns>
-    public static Task ExtractToDirectoryAsync(string sourceArchiveFileName, string destinationDirectoryName, Encoding? entryNameEncoding, CancellationToken cancellationToken = default) =>
-        ExtractToDirectoryAsync(sourceArchiveFileName, destinationDirectoryName, entryNameEncoding: entryNameEncoding, overwriteFiles: false, cancellationToken);
+    public static async Task ExtractToDirectoryAsync(string sourceArchiveFileName, string destinationDirectoryName, Encoding? entryNameEncoding, CancellationToken cancellationToken = default) =>
+        await ExtractToDirectoryAsync(sourceArchiveFileName, destinationDirectoryName, entryNameEncoding: entryNameEncoding, overwriteFiles: false, cancellationToken).ConfigureAwait(false);
 
     /// <summary>
     /// Asynchronously extracts all of the files in the specified archive to a directory on the file system.
@@ -233,8 +233,8 @@ public static partial class ZipFile
     /// An archive entry was compressed by using a compression method that is not supported.</exception>
     /// <exception cref="OperationCanceledException">An asynchronous operation is cancelled.</exception>
     /// <returns>A task that represents the asynchronous extract operation. The task completes when all entries have been extracted or an error occurs.</returns>
-    public static Task ExtractToDirectoryAsync(Stream source, string destinationDirectoryName, CancellationToken cancellationToken = default) =>
-        ExtractToDirectoryAsync(source, destinationDirectoryName, entryNameEncoding: null, overwriteFiles: false, cancellationToken);
+    public static async Task ExtractToDirectoryAsync(Stream source, string destinationDirectoryName, CancellationToken cancellationToken = default) =>
+        await ExtractToDirectoryAsync(source, destinationDirectoryName, entryNameEncoding: null, overwriteFiles: false, cancellationToken).ConfigureAwait(false);
 
     /// <summary>
     /// Asynchronously extracts all the files from the zip archive stored in the specified stream and places them in the specified destination directory on the file system, and optionally allows choosing if the files in the destination directory should be overwritten.
@@ -265,8 +265,8 @@ public static partial class ZipFile
     /// An archive entry was compressed by using a compression method that is not supported.</exception>
     /// <exception cref="OperationCanceledException">An asynchronous operation is cancelled.</exception>
     /// <returns>A task that represents the asynchronous extract operation. The task completes when all entries have been extracted or an error occurs.</returns>
-    public static Task ExtractToDirectoryAsync(Stream source, string destinationDirectoryName, bool overwriteFiles, CancellationToken cancellationToken = default) =>
-        ExtractToDirectoryAsync(source, destinationDirectoryName, entryNameEncoding: null, overwriteFiles: overwriteFiles, cancellationToken);
+    public static async Task ExtractToDirectoryAsync(Stream source, string destinationDirectoryName, bool overwriteFiles, CancellationToken cancellationToken = default) =>
+        await ExtractToDirectoryAsync(source, destinationDirectoryName, entryNameEncoding: null, overwriteFiles: overwriteFiles, cancellationToken).ConfigureAwait(false);
 
     /// <summary>
     /// Asynchronously extracts all the files from the zip archive stored in the specified stream and places them in the specified destination directory on the file system and uses the specified character encoding for entry names.
@@ -305,8 +305,8 @@ public static partial class ZipFile
     /// An archive entry was compressed by using a compression method that is not supported.</exception>
     /// <exception cref="OperationCanceledException">An asynchronous operation is cancelled.</exception>
     /// <returns>A task that represents the asynchronous extract operation. The task completes when all entries have been extracted or an error occurs.</returns>
-    public static Task ExtractToDirectoryAsync(Stream source, string destinationDirectoryName, Encoding? entryNameEncoding, CancellationToken cancellationToken = default) =>
-        ExtractToDirectoryAsync(source, destinationDirectoryName, entryNameEncoding: entryNameEncoding, overwriteFiles: false, cancellationToken);
+    public static async Task ExtractToDirectoryAsync(Stream source, string destinationDirectoryName, Encoding? entryNameEncoding, CancellationToken cancellationToken = default) =>
+        await ExtractToDirectoryAsync(source, destinationDirectoryName, entryNameEncoding: entryNameEncoding, overwriteFiles: false, cancellationToken).ConfigureAwait(false);
 
     /// <summary>
     /// Asynchronously extracts all the files from the zip archive stored in the specified stream and places them in the specified destination directory on the file system, uses the specified character encoding for entry names, and optionally allows choosing if the files in the destination directory should be overwritten.

@@ -27,11 +27,11 @@ namespace System.Net.Http.Json
         /// <returns>The task object representing the asynchronous operation.</returns>
         [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
         [RequiresDynamicCode(SerializationDynamicCodeMessage)]
-        public static Task<object?> ReadFromJsonAsync(this HttpContent content, Type type, JsonSerializerOptions? options, CancellationToken cancellationToken = default)
+        public static async Task<object?> ReadFromJsonAsync(this HttpContent content, Type type, JsonSerializerOptions? options, CancellationToken cancellationToken = default)
         {
             ArgumentNullException.ThrowIfNull(content);
 
-            return ReadFromJsonAsyncCore(content, type, options, cancellationToken);
+            return await ReadFromJsonAsyncCore(content, type, options, cancellationToken).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -43,9 +43,9 @@ namespace System.Net.Http.Json
         /// <returns>The task object representing the asynchronous operation.</returns>
         [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
         [RequiresDynamicCode(SerializationDynamicCodeMessage)]
-        public static Task<object?> ReadFromJsonAsync(this HttpContent content, Type type, CancellationToken cancellationToken = default)
+        public static async Task<object?> ReadFromJsonAsync(this HttpContent content, Type type, CancellationToken cancellationToken = default)
         {
-            return ReadFromJsonAsync(content, type, options: null, cancellationToken: cancellationToken);
+            return await ReadFromJsonAsync(content, type, options: null, cancellationToken: cancellationToken).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -58,11 +58,11 @@ namespace System.Net.Http.Json
         /// <returns>The task object representing the asynchronous operation.</returns>
         [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
         [RequiresDynamicCode(SerializationDynamicCodeMessage)]
-        public static Task<T?> ReadFromJsonAsync<T>(this HttpContent content, JsonSerializerOptions? options, CancellationToken cancellationToken = default)
+        public static async Task<T?> ReadFromJsonAsync<T>(this HttpContent content, JsonSerializerOptions? options, CancellationToken cancellationToken = default)
         {
             ArgumentNullException.ThrowIfNull(content);
 
-            return ReadFromJsonAsyncCore<T>(content, options, cancellationToken);
+            return await ReadFromJsonAsyncCore<T>(content, options, cancellationToken).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -74,9 +74,9 @@ namespace System.Net.Http.Json
         /// <returns>The task object representing the asynchronous operation.</returns>
         [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
         [RequiresDynamicCode(SerializationDynamicCodeMessage)]
-        public static Task<T?> ReadFromJsonAsync<T>(this HttpContent content, CancellationToken cancellationToken = default)
+        public static async Task<T?> ReadFromJsonAsync<T>(this HttpContent content, CancellationToken cancellationToken = default)
         {
-            return ReadFromJsonAsync<T>(content, options: null, cancellationToken: cancellationToken);
+            return await ReadFromJsonAsync<T>(content, options: null, cancellationToken: cancellationToken).ConfigureAwait(false);
         }
 
         [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
@@ -99,18 +99,18 @@ namespace System.Net.Http.Json
             }
         }
 
-        public static Task<object?> ReadFromJsonAsync(this HttpContent content, Type type, JsonSerializerContext context, CancellationToken cancellationToken = default)
+        public static async Task<object?> ReadFromJsonAsync(this HttpContent content, Type type, JsonSerializerContext context, CancellationToken cancellationToken = default)
         {
             ArgumentNullException.ThrowIfNull(content);
 
-            return ReadFromJsonAsyncCore(content, type, context, cancellationToken);
+            return await ReadFromJsonAsyncCore(content, type, context, cancellationToken).ConfigureAwait(false);
         }
 
-        public static Task<T?> ReadFromJsonAsync<T>(this HttpContent content, JsonTypeInfo<T> jsonTypeInfo, CancellationToken cancellationToken = default)
+        public static async Task<T?> ReadFromJsonAsync<T>(this HttpContent content, JsonTypeInfo<T> jsonTypeInfo, CancellationToken cancellationToken = default)
         {
             ArgumentNullException.ThrowIfNull(content);
 
-            return ReadFromJsonAsyncCore(content, jsonTypeInfo, cancellationToken);
+            return await ReadFromJsonAsyncCore(content, jsonTypeInfo, cancellationToken).ConfigureAwait(false);
         }
 
         private static async Task<object?> ReadFromJsonAsyncCore(HttpContent content, Type type, JsonSerializerContext context, CancellationToken cancellationToken)

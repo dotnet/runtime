@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
@@ -245,7 +245,7 @@ namespace System.Security.Cryptography.Cose
         ///     One or more of the labels specified in a <see cref="CoseHeaderLabel.CriticalHeaders"/> header is missing.
         ///   </para>
         /// </exception>
-        public static Task<byte[]> SignDetachedAsync(
+        public static async Task<byte[]> SignDetachedAsync(
             Stream detachedContent,
             CoseSigner signer,
             CoseHeaderMap? protectedHeaders = null,
@@ -265,7 +265,7 @@ namespace System.Security.Cryptography.Cose
             ValidateBeforeSign(signer, protectedHeaders, unprotectedHeaders);
 
             int expectedSize = ComputeEncodedSize(signer, protectedHeaders, unprotectedHeaders, contentLength: 0, isDetached: true);
-            return SignAsyncCore(expectedSize, detachedContent, signer, protectedHeaders, unprotectedHeaders, associatedData, cancellationToken);
+            return await SignAsyncCore(expectedSize, detachedContent, signer, protectedHeaders, unprotectedHeaders, associatedData, cancellationToken).ConfigureAwait(false);
         }
 
         private static async Task<byte[]> SignAsyncCore(
@@ -824,7 +824,7 @@ namespace System.Security.Cryptography.Cose
         ///   </para>
         /// </exception>
         /// <exception cref="InvalidOperationException">The content is embedded on this message, use an overload that uses embedded content.</exception>
-        public Task AddSignatureForDetachedAsync(Stream detachedContent, CoseSigner signer, ReadOnlyMemory<byte> associatedData = default, CancellationToken cancellationToken = default)
+        public async Task AddSignatureForDetachedAsync(Stream detachedContent, CoseSigner signer, ReadOnlyMemory<byte> associatedData = default, CancellationToken cancellationToken = default)
         {
             ArgumentNullException.ThrowIfNull(detachedContent);
 
@@ -833,7 +833,7 @@ namespace System.Security.Cryptography.Cose
                 throw new InvalidOperationException(SR.ContentWasEmbedded);
             }
 
-            return AddSignatureCoreAsync(detachedContent, signer, associatedData, cancellationToken);
+            await AddSignatureCoreAsync(detachedContent, signer, associatedData, cancellationToken).ConfigureAwait(false);
         }
 
         private async Task AddSignatureCoreAsync(Stream content, CoseSigner signer, ReadOnlyMemory<byte> associatedData, CancellationToken cancellationToken)

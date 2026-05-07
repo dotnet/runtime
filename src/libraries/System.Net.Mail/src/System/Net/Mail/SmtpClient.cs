@@ -636,21 +636,21 @@ namespace System.Net.Mail
 
 
         //************* Task-based async public methods *************************
-        public Task SendMailAsync(string from, string recipients, string? subject, string? body)
+        public async Task SendMailAsync(string from, string recipients, string? subject, string? body)
         {
             var message = new MailMessage(from, recipients, subject, body);
-            return SendMailAsync(message, cancellationToken: default);
+            await SendMailAsync(message, cancellationToken: default).ConfigureAwait(false);
         }
 
-        public Task SendMailAsync(MailMessage message)
+        public async Task SendMailAsync(MailMessage message)
         {
-            return SendMailAsync(message, cancellationToken: default);
+            await SendMailAsync(message, cancellationToken: default).ConfigureAwait(false);
         }
 
-        public Task SendMailAsync(string from, string recipients, string? subject, string? body, CancellationToken cancellationToken)
+        public async Task SendMailAsync(string from, string recipients, string? subject, string? body, CancellationToken cancellationToken)
         {
             var message = new MailMessage(from, recipients, subject, body);
-            return SendMailAsync(message, cancellationToken);
+            await SendMailAsync(message, cancellationToken).ConfigureAwait(false);
         }
 
         public Task SendMailAsync(MailMessage message, CancellationToken cancellationToken)

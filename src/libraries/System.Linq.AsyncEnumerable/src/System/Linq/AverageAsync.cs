@@ -17,13 +17,13 @@ namespace System.Linq
         /// <exception cref="ArgumentNullException"><paramref name="source"/> is <see langword="null"/>.</exception>
         /// <exception cref="OverflowException">The sum of the elements in the sequence is larger than <see cref="long.MaxValue"/> (via the returned task).</exception>
         /// <exception cref="InvalidOperationException"><paramref name="source"/> contains no elements (via the returned task).</exception>
-        public static ValueTask<double> AverageAsync(
+        public static async ValueTask<double> AverageAsync(
             this IAsyncEnumerable<int> source,
             CancellationToken cancellationToken = default)
         {
             ArgumentNullException.ThrowIfNull(source);
 
-            return Impl(source.WithCancellation(cancellationToken));
+            return await Impl(source.WithCancellation(cancellationToken)).ConfigureAwait(false);
 
             static async ValueTask<double> Impl(
                 ConfiguredCancelableAsyncEnumerable<int> source)
@@ -52,13 +52,13 @@ namespace System.Linq
         /// <exception cref="ArgumentNullException"><paramref name="source"/> is <see langword="null"/>.</exception>
         /// <exception cref="OverflowException">The sum of the elements in the sequence is larger than <see cref="long.MaxValue"/> (via the returned task).</exception>
         /// <exception cref="InvalidOperationException"><paramref name="source"/> contains no elements (via the returned task).</exception>
-        public static ValueTask<double> AverageAsync(
+        public static async ValueTask<double> AverageAsync(
             this IAsyncEnumerable<long> source,
             CancellationToken cancellationToken = default)
         {
             ArgumentNullException.ThrowIfNull(source);
 
-            return Impl(source.WithCancellation(cancellationToken));
+            return await Impl(source.WithCancellation(cancellationToken)).ConfigureAwait(false);
 
             static async ValueTask<double> Impl(
                 ConfiguredCancelableAsyncEnumerable<long> source)
@@ -86,12 +86,12 @@ namespace System.Linq
         /// <returns>The average of the sequence of values.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="source"/> is <see langword="null"/>.</exception>
         /// <exception cref="InvalidOperationException"><paramref name="source"/> contains no elements (via the returned task).</exception>
-        public static ValueTask<float> AverageAsync(
+        public static async ValueTask<float> AverageAsync(
             this IAsyncEnumerable<float> source, CancellationToken cancellationToken = default)
         {
             ArgumentNullException.ThrowIfNull(source);
 
-            return Impl(source.WithCancellation(cancellationToken));
+            return await Impl(source.WithCancellation(cancellationToken)).ConfigureAwait(false);
 
             static async ValueTask<float> Impl(
                 ConfiguredCancelableAsyncEnumerable<float> source)
@@ -119,12 +119,12 @@ namespace System.Linq
         /// <returns>The average of the sequence of values.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="source"/> is <see langword="null"/>.</exception>
         /// <exception cref="InvalidOperationException"><paramref name="source"/> contains no elements (via the returned task).</exception>
-        public static ValueTask<double> AverageAsync(
+        public static async ValueTask<double> AverageAsync(
             this IAsyncEnumerable<double> source, CancellationToken cancellationToken = default)
         {
             ArgumentNullException.ThrowIfNull(source);
 
-            return Impl(source.WithCancellation(cancellationToken));
+            return await Impl(source.WithCancellation(cancellationToken)).ConfigureAwait(false);
 
             static async ValueTask<double> Impl(
                 ConfiguredCancelableAsyncEnumerable<double> source)
@@ -152,12 +152,12 @@ namespace System.Linq
         /// <returns>The average of the sequence of values.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="source"/> is <see langword="null"/>.</exception>
         /// <exception cref="InvalidOperationException"><paramref name="source"/> contains no elements (via the returned task).</exception>
-        public static ValueTask<decimal> AverageAsync(
+        public static async ValueTask<decimal> AverageAsync(
             this IAsyncEnumerable<decimal> source, CancellationToken cancellationToken = default)
         {
             ArgumentNullException.ThrowIfNull(source);
 
-            return Impl(source.WithCancellation(cancellationToken));
+            return await Impl(source.WithCancellation(cancellationToken)).ConfigureAwait(false);
 
             static async ValueTask<decimal> Impl(
                 ConfiguredCancelableAsyncEnumerable<decimal> source)
@@ -186,12 +186,12 @@ namespace System.Linq
         /// <exception cref="ArgumentNullException"><paramref name="source"/> is <see langword="null"/>.</exception>
         /// <exception cref="OverflowException">The sum of the elements in the sequence is larger than <see cref="long.MaxValue"/> (via the returned task).</exception>
         /// <exception cref="InvalidOperationException"><paramref name="source"/> contains no elements (via the returned task).</exception>
-        public static ValueTask<double?> AverageAsync(
+        public static async ValueTask<double?> AverageAsync(
             this IAsyncEnumerable<int?> source, CancellationToken cancellationToken = default)
         {
             ArgumentNullException.ThrowIfNull(source);
 
-            return Impl(source.WithCancellation(cancellationToken));
+            return await Impl(source.WithCancellation(cancellationToken)).ConfigureAwait(false);
 
             static async ValueTask<double?> Impl(
                 ConfiguredCancelableAsyncEnumerable<int?> source)
@@ -218,12 +218,12 @@ namespace System.Linq
         /// <exception cref="ArgumentNullException"><paramref name="source"/> is <see langword="null"/>.</exception>
         /// <exception cref="OverflowException">The sum of the elements in the sequence is larger than <see cref="long.MaxValue"/> (via the returned task).</exception>
         /// <exception cref="InvalidOperationException"><paramref name="source"/> contains no elements (via the returned task).</exception>
-        public static ValueTask<double?> AverageAsync(
+        public static async ValueTask<double?> AverageAsync(
             this IAsyncEnumerable<long?> source, CancellationToken cancellationToken = default)
         {
             ArgumentNullException.ThrowIfNull(source);
 
-            return Impl(source.WithCancellation(cancellationToken));
+            return await Impl(source.WithCancellation(cancellationToken)).ConfigureAwait(false);
 
             static async ValueTask<double?> Impl(
                 ConfiguredCancelableAsyncEnumerable<long?> source)
@@ -249,12 +249,12 @@ namespace System.Linq
         /// <returns>The average of the sequence of values, or null if the source sequence is empty or contains only values that are null.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="source"/> is <see langword="null"/>.</exception>
         /// <exception cref="InvalidOperationException"><paramref name="source"/> contains no elements (via the returned task).</exception>
-        public static ValueTask<float?> AverageAsync(
+        public static async ValueTask<float?> AverageAsync(
             this IAsyncEnumerable<float?> source, CancellationToken cancellationToken = default)
         {
             ArgumentNullException.ThrowIfNull(source);
 
-            return Impl(source.WithCancellation(cancellationToken));
+            return await Impl(source.WithCancellation(cancellationToken)).ConfigureAwait(false);
 
             static async ValueTask<float?> Impl(
                 ConfiguredCancelableAsyncEnumerable<float?> source)
@@ -280,12 +280,12 @@ namespace System.Linq
         /// <returns>The average of the sequence of values, or null if the source sequence is empty or contains only values that are null.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="source"/> is <see langword="null"/>.</exception>
         /// <exception cref="InvalidOperationException"><paramref name="source"/> contains no elements (via the returned task).</exception>
-        public static ValueTask<double?> AverageAsync(
+        public static async ValueTask<double?> AverageAsync(
             this IAsyncEnumerable<double?> source, CancellationToken cancellationToken = default)
         {
             ArgumentNullException.ThrowIfNull(source);
 
-            return Impl(source.WithCancellation(cancellationToken));
+            return await Impl(source.WithCancellation(cancellationToken)).ConfigureAwait(false);
 
             static async ValueTask<double?> Impl(
                 ConfiguredCancelableAsyncEnumerable<double?> source)
@@ -311,12 +311,12 @@ namespace System.Linq
         /// <returns>The average of the sequence of values, or null if the source sequence is empty or contains only values that are null.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="source"/> is <see langword="null"/>.</exception>
         /// <exception cref="InvalidOperationException"><paramref name="source"/> contains no elements (via the returned task).</exception>
-        public static ValueTask<decimal?> AverageAsync(
+        public static async ValueTask<decimal?> AverageAsync(
             this IAsyncEnumerable<decimal?> source, CancellationToken cancellationToken = default)
         {
             ArgumentNullException.ThrowIfNull(source);
 
-            return Impl(source.WithCancellation(cancellationToken));
+            return await Impl(source.WithCancellation(cancellationToken)).ConfigureAwait(false);
 
             static async ValueTask<decimal?> Impl(
                 ConfiguredCancelableAsyncEnumerable<decimal?> source)

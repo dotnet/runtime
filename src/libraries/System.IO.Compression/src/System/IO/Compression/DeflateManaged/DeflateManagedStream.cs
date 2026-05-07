@@ -245,7 +245,7 @@ namespace System.IO.Compression
             }
         }
 
-        public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        public override async Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
             // We use this checking order for compat to earlier versions:
             if (_asyncOperations != 0)
@@ -254,10 +254,10 @@ namespace System.IO.Compression
             ValidateBufferArguments(buffer, offset, count);
             EnsureNotDisposed();
 
-            return ReadAsyncInternal(buffer.AsMemory(offset, count), cancellationToken).AsTask();
+            return await ReadAsyncInternal(buffer.AsMemory(offset, count), cancellationToken).ConfigureAwait(false);
         }
 
-        public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
+        public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
         {
             // We use this checking order for compat to earlier versions:
             if (_asyncOperations != 0)
@@ -265,7 +265,7 @@ namespace System.IO.Compression
 
             EnsureNotDisposed();
 
-            return ReadAsyncInternal(buffer, cancellationToken);
+            return await ReadAsyncInternal(buffer, cancellationToken).ConfigureAwait(false);
         }
 
         public override void Write(byte[] buffer, int offset, int count)

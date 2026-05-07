@@ -39,12 +39,12 @@ namespace Microsoft.Extensions.Caching.Distributed
         /// <param name="token">Optional. A <see cref="CancellationToken" /> to cancel the operation.</param>
         /// <returns>A task that represents the asynchronous set operation.</returns>
         /// <exception cref="System.ArgumentNullException"><paramref name="key"/> or <paramref name="value"/> is null.</exception>
-        public static Task SetAsync(this IDistributedCache cache, string key, byte[] value, CancellationToken token = default(CancellationToken))
+        public static async Task SetAsync(this IDistributedCache cache, string key, byte[] value, CancellationToken token = default(CancellationToken))
         {
             ArgumentNullException.ThrowIfNull(key);
             ArgumentNullException.ThrowIfNull(value);
 
-            return cache.SetAsync(key, value, DefaultOptions, token);
+            await cache.SetAsync(key, value, DefaultOptions, token).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -84,9 +84,9 @@ namespace Microsoft.Extensions.Caching.Distributed
         /// <param name="token">Optional. A <see cref="CancellationToken" /> to cancel the operation.</param>
         /// <returns>A task that represents the asynchronous set operation.</returns>
         /// <exception cref="System.ArgumentNullException"><paramref name="key"/> or <paramref name="value"/> is null.</exception>
-        public static Task SetStringAsync(this IDistributedCache cache, string key, string value, CancellationToken token = default(CancellationToken))
+        public static async Task SetStringAsync(this IDistributedCache cache, string key, string value, CancellationToken token = default(CancellationToken))
         {
-            return cache.SetStringAsync(key, value, DefaultOptions, token);
+            await cache.SetStringAsync(key, value, DefaultOptions, token).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -99,12 +99,12 @@ namespace Microsoft.Extensions.Caching.Distributed
         /// <param name="token">Optional. A <see cref="CancellationToken" /> to cancel the operation.</param>
         /// <returns>A task that represents the asynchronous set operation.</returns>
         /// <exception cref="System.ArgumentNullException"><paramref name="key"/> or <paramref name="value"/> is null.</exception>
-        public static Task SetStringAsync(this IDistributedCache cache, string key, string value, DistributedCacheEntryOptions options, CancellationToken token = default(CancellationToken))
+        public static async Task SetStringAsync(this IDistributedCache cache, string key, string value, DistributedCacheEntryOptions options, CancellationToken token = default(CancellationToken))
         {
             ArgumentNullException.ThrowIfNull(key);
             ArgumentNullException.ThrowIfNull(value);
 
-            return cache.SetAsync(key, Encoding.UTF8.GetBytes(value), options, token);
+            await cache.SetAsync(key, Encoding.UTF8.GetBytes(value), options, token).ConfigureAwait(false);
         }
 
         /// <summary>

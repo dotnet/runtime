@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
@@ -79,9 +79,9 @@ namespace System.Threading.RateLimiting
             return GetRateLimiter(resource).AttemptAcquire(permitCount);
         }
 
-        protected override ValueTask<RateLimitLease> AcquireAsyncCore(TResource resource, int permitCount, CancellationToken cancellationToken)
+        protected override async ValueTask<RateLimitLease> AcquireAsyncCore(TResource resource, int permitCount, CancellationToken cancellationToken)
         {
-            return GetRateLimiter(resource).AcquireAsync(permitCount, cancellationToken);
+            return await GetRateLimiter(resource).AcquireAsync(permitCount, cancellationToken).ConfigureAwait(false);
         }
 
         private RateLimiter GetRateLimiter(TResource resource)

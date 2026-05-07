@@ -38,7 +38,6 @@
          to avoid issues with multitargeting.
     -->
     <NoWarn Condition="$(TargetFrameworks.Contains('net4')) or $(TargetFrameworks.Contains('netstandard'))">$(NoWarn);CA1510;CA1511;CA1512;CA1513;CA1845;CA1846;CA1847</NoWarn>
-
     <!-- Microsoft.NET.Sdk enables some warnings as errors out of the box.
          We want to remove some items from this list so they don't fail the build.
          Can't use 'WarningsNotAsErrors' element because vbproj doesn't honor it.
@@ -144,6 +143,14 @@
     and '$(RuntimeAsyncSupported)' == 'true'">
     <Features>$(Features);runtime-async=on</Features>
   </PropertyGroup>
+
+  <!-- Wire in the PreferAsyncAwait analyzer for all library source projects -->
+  <ItemGroup Condition="'$(IsSourceProject)' == 'true'
+    and $([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net11.0'))">
+    <ProjectReference Include="$(LibrariesProjectRoot)..\tools\PreferAsyncAwait\PreferAsyncAwait.csproj"
+                      OutputItemType="Analyzer"
+                      ReferenceOutputAssembly="false" />
+  </ItemGroup>
 
   <Import Project="$(RepositoryEngineeringDir)codeOptimization.targets" />
   <Import Project="$(RepositoryEngineeringDir)references.targets" />
