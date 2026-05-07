@@ -24,7 +24,7 @@ FCIMPL1(INT32, ArrayNative::GetCorElementTypeOfElementType, ArrayBase* arrayUNSA
 
     _ASSERTE(arrayUNSAFE != NULL);
 
-    return arrayUNSAFE->GetArrayElementTypeHandle().GetVerifierCorElementType();
+    return arrayUNSAFE->GetArrayElementTypeHandle().GetInternalCorElementType();
 }
 FCIMPLEND
 

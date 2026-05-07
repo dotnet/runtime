@@ -4067,7 +4067,7 @@ CorInfoType CEEInfo::getTypeForPrimitiveValueClass(
     TypeHandle th(clsHnd);
     _ASSERTE (!th.IsGenericVariable());
 
-    CorElementType elementType = th.GetVerifierCorElementType();
+    CorElementType elementType = th.GetInternalCorElementType();
     if (CorIsPrimitiveType(elementType))
     {
         result = asCorInfoType(elementType);
@@ -4445,7 +4445,7 @@ static bool isExactTypeHelper(TypeHandle th)
         th = pMT->GetArrayElementTypeHandle();
 
         // Arrays of primitives are interchangeable with arrays of enums of the same underlying type.
-        if (CorTypeInfo::IsPrimitiveType(th.GetVerifierCorElementType()))
+        if (CorTypeInfo::IsPrimitiveType(th.GetInternalCorElementType()))
             return false;
     }
 
@@ -5052,7 +5052,7 @@ void CEEInfo::getCallInfo(
             if (pMD->GetSlot() == CoreLibBinder::GetMethod(METHOD__OBJECT__GET_HASH_CODE)->GetSlot())
             {
                 // Pretend this was a "constrained. UnderlyingType" instruction prefix
-                constrainedType = TypeHandle(CoreLibBinder::GetElementType(constrainedType.GetVerifierCorElementType()));
+                constrainedType = TypeHandle(CoreLibBinder::GetElementType(constrainedType.GetInternalCorElementType()));
 
                 constrainedResolvedTokenCopy = *pConstrainedResolvedToken;
                 pConstrainedResolvedToken = &constrainedResolvedTokenCopy;
@@ -7232,7 +7232,7 @@ static bool getILIntrinsicImplementationForInterlocked(MethodDesc * ftn,
     }
     else
     {
-        CorElementType elementType = typeHandle.GetVerifierCorElementType();
+        CorElementType elementType = typeHandle.GetInternalCorElementType();
         if (!CorTypeInfo::IsPrimitiveType(elementType) ||
             elementType == ELEMENT_TYPE_R4 ||
             elementType == ELEMENT_TYPE_R8)
@@ -7401,7 +7401,7 @@ static bool getILIntrinsicImplementationForRuntimeHelpers(
         Instantiation inst = ftn->GetMethodInstantiation();
 
         _ASSERTE(inst.GetNumArgs() == 1);
-        CorElementType et = inst[0].GetVerifierCorElementType();
+        CorElementType et = inst[0].GetInternalCorElementType();
         if (et == ELEMENT_TYPE_I4 ||
             et == ELEMENT_TYPE_U4 ||
             et == ELEMENT_TYPE_I2 ||
@@ -7430,7 +7430,7 @@ static bool getILIntrinsicImplementationForRuntimeHelpers(
         Instantiation inst = ftn->GetMethodInstantiation();
 
         _ASSERTE(inst.GetNumArgs() == 1);
-        CorElementType et = inst[0].GetVerifierCorElementType();
+        CorElementType et = inst[0].GetInternalCorElementType();
         if (et == ELEMENT_TYPE_I4 ||
             et == ELEMENT_TYPE_U4 ||
             et == ELEMENT_TYPE_I2 ||

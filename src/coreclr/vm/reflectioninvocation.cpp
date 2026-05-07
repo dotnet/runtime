@@ -63,7 +63,7 @@ extern "C" void QCALLTYPE RuntimeFieldHandle_SetValue(FieldDesc* fieldDesc, QCal
     GCPROTECT_BEGIN(gc);
 
     TypeHandle fieldTypeHandle = fieldType.AsTypeHandle();
-    InvokeUtil::SetValidField(fieldTypeHandle.GetVerifierCorElementType(), fieldTypeHandle, fieldDesc, &gc.target, &gc.value, declaringType.AsTypeHandle(), pIsClassInitialized);
+    InvokeUtil::SetValidField(fieldTypeHandle.GetInternalCorElementType(), fieldTypeHandle, fieldDesc, &gc.target, &gc.value, declaringType.AsTypeHandle(), pIsClassInitialized);
 
     GCPROTECT_END();
     END_QCALL;

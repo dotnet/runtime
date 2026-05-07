@@ -200,25 +200,14 @@ public:
     // This helper:
     // - Will return enums underlying type
     // - Will return underlying primitive for System.Int32 etc...
-    // - Will return underlying primitive as will be used in the calling convention
-    //      For example
-    //              struct t
-    //              {
-    //                  public int i;
-    //              }
-    //      will return ELEMENT_TYPE_I4 in x86 instead of ELEMENT_TYPE_VALUETYPE. We
-    //      call this type of value type a primitive value type
+    // - Will return the primitive used by the calling convention
     //
-    // Internal representation is used among another things for the calling convention
-    // (jit benefits of primitive value types) or optimizing marshalling.
+    // Internal representation is used among other things for the calling convention
+    // and optimizing marshalling.
     //
     // This will NOT convert E_T_ARRAY, E_T_SZARRAY etc. to E_T_CLASS (though it probably
     // should).  Use CorTypeInfo::IsObjRef for that.
     CorElementType GetInternalCorElementType() const;
-
-    // This helper will return the same as GetSignatureCorElementType except:
-    // - Will return enums underlying type
-    CorElementType GetVerifierCorElementType() const;
 
     //-------------------------------------------------------------------
     // CASTING
