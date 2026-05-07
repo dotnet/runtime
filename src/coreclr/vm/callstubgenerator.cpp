@@ -2888,7 +2888,6 @@ CallStubGenerator::ReturnType CallStubGenerator::GetReturnType(ArgIteratorType *
                     else
                     {
                         _ASSERTE(info.flags == FpStruct::UseIntCallConv);
-                        _ASSERTE(thReturnValueType.AsMethodTable()->IsRegPassedStruct());
                         unsigned size = thReturnValueType.GetSize();
                         if (size <= 8)
                         {
