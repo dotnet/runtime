@@ -111,7 +111,7 @@ if(CLR_CMAKE_HOST_UNIX)
 
     add_subdirectory(pal)
 else()
-    if(CLR_CMAKE_TARGET_UNIX)
+    if(CLR_CMAKE_TARGET_UNIX AND NOT CLR_CMAKE_TARGET_ARCH_WASM)
         add_subdirectory(${CLR_SRC_NATIVE_DIR}/external/libunwind_extras ${CLR_ARTIFACTS_OBJ_DIR}/external/libunwind)
     endif()
 endif()
@@ -149,9 +149,9 @@ endif()
 include_directories("pal/prebuilt/inc")
 include_directories(${CLR_ARTIFACTS_OBJ_DIR})
 
-if (NOT CLR_CMAKE_TARGET_BROWSER)
+if (NOT CLR_CMAKE_TARGET_BROWSER OR CLR_CROSS_COMPONENTS_BUILD)
   add_subdirectory(tools/aot/jitinterface)
-endif (NOT CLR_CMAKE_TARGET_BROWSER)
+endif ()
 
 if(NOT CLR_CROSS_COMPONENTS_BUILD)
   # NativeAOT only buildable for a subset of CoreCLR-supported configurations
@@ -183,6 +183,17 @@ include(clrdatadescriptors.cmake)
 if(FEATURE_STANDALONE_GC)
   add_definitions(-DFEATURE_STANDALONE_GC)
 endif(FEATURE_STANDALONE_GC)
+
+# For wasm cross-component builds, only the JIT and jitinterface are needed.
+# Skip subsystems (GC, VM, debug, etc.) that don't support wasm as a target.
+if(CLR_CROSS_COMPONENTS_BUILD AND CLR_CMAKE_TARGET_ARCH_WASM)
+  include_directories("inc")
+  include_directories("minipal")
+  add_subdirectory(utilcode)
+  add_subdirectory(gcinfo)
+  add_subdirectory(jit)
+  return()
+endif()
 
 add_subdirectory(gc)
 

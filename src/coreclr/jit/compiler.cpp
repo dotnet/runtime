@@ -3113,10 +3113,12 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         printf("OPTIONS: compProcedureSplittingEH = %s\n", dspBool(opts.compProcedureSplittingEH));
 
         // This is rare; don't clutter up the dump with it normally.
+#ifdef PROFILING_SUPPORTED
         if (compProfilerHookNeeded)
         {
             printf("OPTIONS: compProfilerHookNeeded   = %s\n", dspBool(compProfilerHookNeeded));
         }
+#endif
 
         if (jitFlags->IsSet(JitFlags::JIT_FLAG_BBOPT))
         {
