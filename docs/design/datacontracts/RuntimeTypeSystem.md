@@ -837,7 +837,7 @@ Contracts used:
 
     // Enums have Category_PrimitiveValueType in their MethodTable flags and their
     // InternalCorElementType is a primitive type (I1, U1, I2, U2, I4, U4, I8, U8),
-    // not ValueType.
+    // not ValueType. Regular primitive value types (Int32, etc.) have Category_TruePrimitive.
     public bool IsEnum(TypeHandle typeHandle)
     {
         if (!typeHandle.IsMethodTable())
