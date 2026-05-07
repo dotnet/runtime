@@ -1393,8 +1393,6 @@ void Liveness<TLiveness>::MarkMustInitAndEHVars(VARSET_VALARG_TP finallyVars, VA
             }
         }
     }
-
-    m_compiler->optRemovedEHClausesAfterLiveness = false;
 }
 
 template <typename TLiveness>
