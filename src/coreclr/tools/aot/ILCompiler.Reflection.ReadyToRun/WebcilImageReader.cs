@@ -153,23 +153,24 @@ namespace ILCompiler.Reflection.ReadyToRun
             List<uint> funcTypeIndices = null;
             int codeOffset = -1;
 
+            ReadOnlySpan<byte> imageSpan = _image.AsSpan();
             int offset = 8; // Skip WASM magic + version
-            while (offset < _image.Length)
+            while (offset < imageSpan.Length)
             {
-                byte sectionId = _image[offset++];
-                uint sectionSize = ReadLebU32(_image, ref offset);
+                byte sectionId = imageSpan[offset++];
+                uint sectionSize = ReadLebU32(imageSpan, ref offset);
                 int sectionEnd = offset + (int)sectionSize;
 
-                if (sectionEnd > _image.Length)
+                if (sectionEnd > imageSpan.Length)
                     throw new BadImageFormatException($"WASM section {sectionId} size extends beyond image boundary");
 
                 switch (sectionId)
                 {
                     case 1: // Type section
-                        types = ParseTypeSection(_image, ref offset, sectionEnd);
+                        types = ParseTypeSection(imageSpan, ref offset, sectionEnd);
                         break;
                     case 3: // Function section
-                        funcTypeIndices = ParseFunctionSection(_image, ref offset, sectionEnd);
+                        funcTypeIndices = ParseFunctionSection(imageSpan, ref offset, sectionEnd);
                         break;
                     case 10: // Code section
                         codeOffset = offset;
@@ -184,24 +185,24 @@ namespace ILCompiler.Reflection.ReadyToRun
 
             // Parse the code section to find the target function body
             offset = codeOffset;
-            uint funcCount = ReadLebU32(_image, ref offset);
+            uint funcCount = ReadLebU32(imageSpan, ref offset);
             for (uint i = 0; i < funcCount; i++)
             {
-                uint bodySize = ReadLebU32(_image, ref offset);
+                uint bodySize = ReadLebU32(imageSpan, ref offset);
                 int bodyEnd = offset + (int)bodySize;
 
-                if (bodyEnd > _image.Length)
+                if (bodyEnd > imageSpan.Length)
                     throw new BadImageFormatException($"WASM function body size extends beyond image boundary");
 
                 if (i == (uint)functionIndex)
                 {
                     // Read local declarations
                     var locals = new List<(uint Count, byte ValType)>();
-                    uint localDeclCount = ReadLebU32(_image, ref offset);
+                    uint localDeclCount = ReadLebU32(imageSpan, ref offset);
                     for (uint j = 0; j < localDeclCount; j++)
                     {
-                        uint count = ReadLebU32(_image, ref offset);
-                        byte valType = _image[offset++];
+                        uint count = ReadLebU32(imageSpan, ref offset);
+                        byte valType = imageSpan[offset++];
                         locals.Add((count, valType));
                     }
 
@@ -237,7 +238,7 @@ namespace ILCompiler.Reflection.ReadyToRun
             return null;
         }
 
-        private static List<(byte[] ParamTypes, byte[] ResultTypes)> ParseTypeSection(ImmutableArray<byte> data, ref int offset, int end)
+        private static List<(byte[] ParamTypes, byte[] ResultTypes)> ParseTypeSection(ReadOnlySpan<byte> data, ref int offset, int end)
         {
             var types = new List<(byte[], byte[])>();
             uint count = ReadLebU32(data, ref offset);
@@ -263,7 +264,7 @@ namespace ILCompiler.Reflection.ReadyToRun
             return types;
         }
 
-        private static List<uint> ParseFunctionSection(ImmutableArray<byte> data, ref int offset, int end)
+        private static List<uint> ParseFunctionSection(ReadOnlySpan<byte> data, ref int offset, int end)
         {
             var indices = new List<uint>();
             uint count = ReadLebU32(data, ref offset);
@@ -274,7 +275,7 @@ namespace ILCompiler.Reflection.ReadyToRun
             return indices;
         }
 
-        private static uint ReadLebU32(ImmutableArray<byte> data, ref int offset)
+        private static uint ReadLebU32(ReadOnlySpan<byte> data, ref int offset)
         {
             uint result = 0;
             int shift = 0;
@@ -504,23 +505,93 @@ namespace ILCompiler.Reflection.ReadyToRun
         {
             webcilOffset = 0;
 
-            // Simple scan: look for the Webcil magic in the WASM module
-            // The Webcil payload is embedded as a custom section in the WASM module
-            for (int i = 8; i <= image.Length - 4; i++)
+            // Parse WASM module structure to find the data section (id=11)
+            // which contains the Webcil payload as a passive data segment.
+            int offset = 8; // Skip WASM magic + version
+            while (offset < image.Length)
             {
-                uint candidate = BitConverter.ToUInt32(image, i);
-                if (candidate == WebcilConstants.WEBCIL_MAGIC)
+                if (offset >= image.Length)
+                    return false;
+
+                byte sectionId = image[offset++];
+                uint sectionSize = ReadLebU32(image, ref offset);
+                int sectionEnd = offset + (int)sectionSize;
+
+                if (sectionEnd > image.Length)
+                    return false;
+
+                if (sectionId == 11) // Data section
                 {
-                    // Verify this is a valid Webcil header
-                    if (TryReadHeader(image, i, out _))
+                    // Data section contains: count(LEB128) then count segments.
+                    // Each passive segment: kind=1(byte) + size(LEB128) + bytes
+                    // The Webcil payload is in the second passive data segment.
+                    uint segmentCount = ReadLebU32(image, ref offset);
+                    for (uint i = 0; i < segmentCount && offset < sectionEnd; i++)
                     {
-                        webcilOffset = i;
-                        return true;
+                        byte kind = image[offset++];
+                        if (kind == 1) // Passive segment
+                        {
+                            uint dataSize = ReadLebU32(image, ref offset);
+                            // Check if this segment starts with the Webcil magic
+                            if (dataSize >= 4 && offset + dataSize <= image.Length)
+                            {
+                                uint magic = BinaryPrimitives.ReadUInt32LittleEndian(image.AsSpan(offset));
+                                if (magic == WebcilConstants.WEBCIL_MAGIC && TryReadHeader(image, offset, out _))
+                                {
+                                    webcilOffset = offset;
+                                    return true;
+                                }
+                            }
+                            offset += (int)dataSize;
+                        }
+                        else if (kind == 0) // Active segment (memory 0)
+                        {
+                            // Skip the init expression + data
+                            SkipConstExpr(image, ref offset);
+                            uint dataSize = ReadLebU32(image, ref offset);
+                            offset += (int)dataSize;
+                        }
+                        else if (kind == 2) // Active segment (explicit memory index)
+                        {
+                            ReadLebU32(image, ref offset); // memory index
+                            SkipConstExpr(image, ref offset);
+                            uint dataSize = ReadLebU32(image, ref offset);
+                            offset += (int)dataSize;
+                        }
+                        else
+                        {
+                            return false; // Unknown segment kind
+                        }
                     }
+                    return false;
                 }
+
+                offset = sectionEnd;
             }
 
             return false;
+        }
+
+        private static void SkipConstExpr(ReadOnlySpan<byte> data, ref int offset)
+        {
+            // Skip a WASM constant expression (terminated by 0x0B = end)
+            while (offset < data.Length)
+            {
+                byte opcode = data[offset++];
+                if (opcode == 0x0B) // end
+                    return;
+
+                switch (opcode)
+                {
+                    case 0x41: // i32.const
+                    case 0x23: // global.get
+                        ReadLebU32(data, ref offset); // skip LEB128 operand
+                        break;
+                    case 0x42: // i64.const
+                        ReadLebU32(data, ref offset); // skip LEB128 operand (simplified)
+                        break;
+                }
+            }
         }
     }
 
