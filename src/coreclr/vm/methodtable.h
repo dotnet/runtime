@@ -2785,10 +2785,10 @@ public:
     //      ELEMENT_TYPE_I4,
     //      ELEMENT_TYPE_TYPEDBYREF etc.
     //  Note that IsTruePrimitive returns false for enum types.
-    BOOL IsTruePrimitive();
+    bool IsTruePrimitive();
 
     // Like IsTruePrimitive but also returns true for enum types.
-    BOOL IsPrimitive();
+    bool IsPrimitive();
 
     // Is this delegate? Returns false for System.Delegate and System.MulticastDelegate.
     inline BOOL IsDelegate()
