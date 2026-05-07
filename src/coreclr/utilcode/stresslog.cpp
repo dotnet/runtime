@@ -12,6 +12,7 @@
 #include "switches.h"
 #include "stresslog.h"
 #include "clrhost.h"
+#include "ex.h"
 #define DONOT_DEFINE_ETW_CALLBACK
 #include "eventtracebase.h"
 #include "minipal/time.h"
@@ -132,6 +133,25 @@ uint64_t getTickFrequency()
 
 StressLog StressLog::theLog = { 0, 0, 0, 0, 0, 0, TLS_OUT_OF_INDEXES, 0, {}, 0 };
 const static uint64_t RECYCLE_AGE = 0x40000000L;        // after a billion cycles, we can discard old threads
+
+/*********************************************************************************/
+void StressLog::Enter(minipal_mutex* lock) {
+    STATIC_CONTRACT_LEAF;
+    _ASSERTE(lock != nullptr);
+
+    IncCantAllocCount();
+    minipal_mutex_enter(lock);
+    DecCantAllocCount();
+}
+
+void StressLog::Leave(minipal_mutex* lock) {
+    STATIC_CONTRACT_LEAF;
+    _ASSERTE(lock != nullptr);
+
+    IncCantAllocCount();
+    minipal_mutex_leave(lock);
+    DecCantAllocCount();
+}
 
 void ReplacePid(LPCWSTR original, LPWSTR replaced, size_t replacedLength)
 {
@@ -364,38 +384,30 @@ void StressLog::Terminate(BOOL fProcessDetach) {
 
     theLog.facilitiesToLog = 0;
 
+    StressLogLockHolder lockh(&theLog.lock, FALSE);
     if (!fProcessDetach) {
-        {
-            minipal::MutexHolder lockh(theLog.lock);
-        }       // Acquiring and releasing the lock forces a memory barrier on weak memory model systems
-                // we want all the other threads to notice that facilitiesToLog is now zero
+        lockh.Acquire(); lockh.Release();       // The Enter() Leave() forces a memory barrier on weak memory model systems
+                                // we want all the other threads to notice that facilitiesToLog is now zero
 
                 // This is not strictly threadsafe, since there is no way of ensuring when all the
                 // threads are out of logMsg.  In practice, since they can no longer enter logMsg
                 // and there are no blocking operations in logMsg, simply sleeping will ensure
                 // that everyone gets out.
         ClrSleepEx(2, FALSE);
-
-        minipal::MutexHolder lockh(theLog.lock);
-        // Free the log memory
-        ThreadStressLog* ptr = theLog.logs;
-        theLog.logs = 0;
-        while(ptr != 0) {
-            ThreadStressLog* tmp = ptr;
-            ptr = ptr->next;
-            delete tmp;
-        }
+        lockh.Acquire();
     }
-    else {
-        // Free the log memory without taking the lock: during process detach, other threads
-        // have already been terminated and the lock state may be unreliable.
-        ThreadStressLog* ptr = theLog.logs;
-        theLog.logs = 0;
-        while(ptr != 0) {
-            ThreadStressLog* tmp = ptr;
-            ptr = ptr->next;
-            delete tmp;
-        }
+
+    // Free the log memory
+    ThreadStressLog* ptr = theLog.logs;
+    theLog.logs = 0;
+    while(ptr != 0) {
+        ThreadStressLog* tmp = ptr;
+        ptr = ptr->next;
+        delete tmp;
+    }
+
+    if (!fProcessDetach) {
+        lockh.Release();
     }
 
 #if !defined (STRESS_LOG_READONLY) && defined(HOST_WINDOWS)
@@ -450,16 +462,57 @@ ThreadStressLog* StressLog::CreateThreadStressLog() {
         return NULL;
     }
 
-    // callerID is set before the lock so that re-entrant calls on the same thread can
-    // detect recursion (via the check at the top of this function) before attempting to
-    // take the lock again.
-    callerID = ClrTeb::GetFiberPtrId();
+    StressLogLockHolder lockh(&theLog.lock, FALSE);
+
+    class NestedCaller
     {
-        minipal::MutexHolder lockh(theLog.lock);
-        if (theLog.facilitiesToLog != 0)
-            msgs = CreateThreadStressLogHelper();
+    public:
+        NestedCaller()
+        {
+        }
+        ~NestedCaller()
+        {
+            callerID = NULL;
+        }
+        void Mark()
+        {
+            callerID = ClrTeb::GetFiberPtrId();
+        }
+    };
+
+    NestedCaller nested;
+
+    BOOL noFLSNow = FALSE;
+
+    PAL_CPP_TRY
+    {
+        // Acquiring the lack can throw an OOM exception the first time its called on a thread. We go
+        // ahead and try to provoke that now, before we've altered the list of available stress logs, and bail if
+        // we fail.
+        lockh.Acquire();
+        nested.Mark();
+
+        // ClrFlsSetValue can throw an OOM exception the first time its called on a thread for a given slot. We go
+        // ahead and try to provoke that now, before we've altered the list of available stress logs, and bail if
+        // we fail.
+        t_pCurrentThreadLog = NULL;
     }
-    callerID = NULL;
+#pragma warning(suppress: 4101)
+    PAL_CPP_CATCH_NON_DERIVED(const std::bad_alloc&, obj)
+    {
+        // Just leave on any exception. Note: can't goto or return from within EX_CATCH...
+        noFLSNow = TRUE;
+    }
+#pragma warning(suppress: 4101)
+    PAL_CPP_CATCH_DERIVED(OutOfMemoryException, obj)
+    {
+        // Just leave on any exception. Note: can't goto or return from within EX_CATCH...
+        noFLSNow = TRUE;
+    }
+    PAL_CPP_ENDTRY;
+
+    if (noFLSNow == FALSE && theLog.facilitiesToLog != 0)
+        msgs = CreateThreadStressLogHelper();
 
     return msgs;
 }

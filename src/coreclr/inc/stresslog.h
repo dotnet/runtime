@@ -284,6 +284,8 @@ public:
     static thread_local ThreadStressLog* t_pCurrentThreadLog;
 
 // private:
+    static void Enter(minipal_mutex* lock);
+    static void Leave(minipal_mutex* lock);
     static ThreadStressLog* CreateThreadStressLog();
     static ThreadStressLog* CreateThreadStressLogHelper();
 
@@ -380,6 +382,8 @@ inline void* StressLog::ConvertArgument(int64_t arg)
     return (void*)(size_t)arg;
 }
 #endif
+
+typedef Holder<minipal_mutex*, StressLog::Enter, StressLog::Leave, 0, CompareDefault<minipal_mutex*>> StressLogLockHolder;
 
 #if defined(DACCESS_COMPILE)
 inline BOOL StressLog::LogOn(unsigned facility, unsigned level)
