@@ -255,9 +255,10 @@ public sealed unsafe partial class ClrDataMethodInstance : IXCLRDataMethodInstan
                     validateIlOffsets ? localIlOffsetsPtr : null);
             }
 
-            Debug.ValidateHResult(hr, hrLocal);
+            // AllowCdacSuccess: the DAC fails on interpreted code.
+            Debug.ValidateHResult(hr, hrLocal, HResultValidationMode.AllowCdacSuccess);
 
-            if (hr == HResults.S_OK)
+            if (hr == HResults.S_OK && hrLocal == HResults.S_OK)
             {
                 if (validateOffsetsNeeded)
                 {
