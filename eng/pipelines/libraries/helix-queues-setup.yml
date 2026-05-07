@@ -61,6 +61,7 @@ jobs:
         # CoreCLR path
           - ${{ if and(eq(parameters.jobParameters.isExtraPlatformsBuild, true), ne(parameters.jobParameters.testScope, 'outerloop'))}}:
             # extra-platforms CoreCLR (inner loop only)
+            - (AzureLinux.4.0.Amd64.Open)AzureLinux.3.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-4.0-helix-amd64@sha256:d86d3499ccba1cc92ad045fbd3e055fdde21ed5c757f25d1245fea978711b3a6
             - (Debian.13.Amd64.Open)AzureLinux.3.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-13-helix-amd64@sha256:4bf6a0a32b1e4dbe3e0cc0b453d0bea775d9898336cdb3c92c84862c05d822ea
             - (Fedora.44.Amd64.Open)AzureLinux.3.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:fedora-44-helix-amd64@sha256:d61f2b7f64797109f37109b55183751847b62eb23734698c9b056cb25194577e
             - (openSUSE.16.0.Amd64.Open)AzureLinux.3.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:opensuse-16.0-helix-amd64@sha256:010211f9ab9e8238ffb0656edee4c8a411e5a4a9fb4718037614c8c94350e45c
