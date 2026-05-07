@@ -49,9 +49,9 @@ jobs:
     # Android arm
     - ${{ if in(parameters.platform, 'android_arm') }}:
       - ${{ if eq(variables['System.TeamProject'], 'public') }}:
-        - Windows.11.Amd64.Android.Open
+        - Windows.11.Amd64.Android.Arm32.Open
       - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
-        - Windows.11.Amd64.Android
+        - Windows.11.Amd64.Android.Arm32
 
     # Android arm64
     - ${{ if in(parameters.platform, 'android_arm64') }}:
