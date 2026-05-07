@@ -1287,7 +1287,7 @@ unsigned Compiler::compMap2ILvarNum(unsigned varNum) const
     }
 
 #if defined(TARGET_WASM)
-    if (lvaWasmSpArg != BAD_VAR_NUM && originalVarNum > lvaWasmSpArg)
+    if (lvaWasmSpArg != BAD_VAR_NUM && originalVarNum > lvaWasmSpArg && lvaGetDesc(lvaWasmSpArg)->lvIsParam)
     {
         varNum--;
     }
