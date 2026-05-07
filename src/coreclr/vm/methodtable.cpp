@@ -5049,9 +5049,12 @@ void MethodTable::SetInternalCorElementType (CorElementType _NormType, bool isTr
         _ASSERTE(GetFlag(enum_flag_Category_Mask) == enum_flag_Category_ValueType);
         break;
     default:
-        SetFlag(isTruePrimitive ? enum_flag_Category_Primitive : enum_flag_Category_Enum);
-        _ASSERTE(GetFlag(enum_flag_Category_Mask) == (isTruePrimitive ? enum_flag_Category_Primitive : enum_flag_Category_Enum));
+    {
+        WFLAGS_HIGH_ENUM category = isTruePrimitive ? enum_flag_Category_Primitive : enum_flag_Category_Enum;
+        SetFlag(category);
+        _ASSERTE(GetFlag(enum_flag_Category_Mask) == category);
         break;
+    }
     }
 
     GetClass()->SetInternalCorElementType(_NormType);
