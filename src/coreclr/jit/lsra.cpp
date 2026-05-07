@@ -191,7 +191,7 @@ weight_t LinearScan::getWeight(RefPosition* refPos)
             if (refPos->getInterval()->isSpilled)
             {
                 // Decrease the weight if the interval has already been spilled.
-                if (varDsc->lvLiveInOutOfHndlr || refPos->getInterval()->firstRefPosition->singleDefSpill)
+                if (varDsc->IsLiveInOutOfHandler() || refPos->getInterval()->firstRefPosition->singleDefSpill)
                 {
                     // An EH-var/single-def is always spilled at defs, and we'll decrease the weight by half,
                     // since only the reload is needed.
@@ -1580,7 +1580,7 @@ void LinearScan::identifyCandidatesExceptionDataflow()
         unsigned   varNum = m_compiler->lvaTrackedIndexToLclNum(varIndex);
         LclVarDsc* varDsc = m_compiler->lvaGetDesc(varNum);
 
-        assert(varDsc->lvLiveInOutOfHndlr);
+        assert(varDsc->IsLiveInOutOfHandler());
 
         if (varTypeIsGC(varDsc) && VarSetOps::IsMember(m_compiler, finallyVars, varIndex) && !varDsc->lvIsParam &&
             !varDsc->lvIsParamRegTarget)
@@ -1759,6 +1759,8 @@ void LinearScan::identifyCandidates()
         // the same register assignment throughout
         varDsc->lvRegister = false;
 
+        checkForDNER(lclNum, varDsc);
+
         if (!isRegCandidate(varDsc))
         {
             varDsc->lvLRACandidate = 0;
@@ -1819,7 +1821,7 @@ void LinearScan::identifyCandidates()
                 newInt->isStructField = true;
             }
 
-            if (varDsc->lvLiveInOutOfHndlr)
+            if (varDsc->IsLiveInOutOfHandler())
             {
                 newInt->isWriteThru = varDsc->lvSingleDefRegCandidate;
                 setIntervalAsSpilled(newInt);

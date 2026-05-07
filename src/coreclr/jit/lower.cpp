@@ -8926,6 +8926,12 @@ PhaseStatus Lowering::DoPhase()
         // The main reason why this flag is not set is that we are running in minOpts.
         m_compiler->lvSetMinOptsDoNotEnreg();
     }
+    else
+    {
+        // By this point tracked locals live into EH clauses are _very_ likely to not be enregistered.
+        // DNER this for the same reason above, so that we can contain these locals.
+        m_compiler->lvSetEHVarsDoNotEnreg();
+    }
 
     if (m_compiler->opts.OptimizationEnabled() && !m_compiler->opts.IsOSR())
     {

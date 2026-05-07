@@ -5000,7 +5000,7 @@ bool Compiler::gtIsLikelyRegVar(GenTree* tree)
 
     // If this is an EH-live var, return false if it is a def,
     // as it will have to go to memory.
-    if (varDsc->lvTracked && varDsc->lvLiveInOutOfHndlr && ((tree->gtFlags & GTF_VAR_DEF) != 0))
+    if (varDsc->lvTracked && varDsc->IsLiveInOutOfHandler() && ((tree->gtFlags & GTF_VAR_DEF) != 0))
     {
         return false;
     }
@@ -5027,6 +5027,22 @@ bool Compiler::gtIsLikelyRegVar(GenTree* tree)
 #endif
 
     return true;
+}
+
+//------------------------------------------------------------------------
+// IsEHVarARegCandidate:
+//   Check if a local is a candidate to go in a register even though it is live
+//   into EH.
+//
+// Arguments:
+//   varDsc - Info about the local
+//
+// Returns:
+//   True if so.
+//
+bool Compiler::IsEHVarARegCandidate(LclVarDsc* varDsc)
+{
+    return lvaEnregEHVars && varDsc->lvSingleDefRegCandidate && varDsc->lvRefCnt() > 1;
 }
 
 //------------------------------------------------------------------------

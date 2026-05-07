@@ -251,7 +251,7 @@ void CodeGen::genHomeRegisterParamsOutsideProlog()
             return;
         }
 
-        if (varDsc->lvOnFrame && (!varDsc->lvIsInReg() || varDsc->lvLiveInOutOfHndlr))
+        if (varDsc->lvOnFrame && (!varDsc->lvIsInReg() || varDsc->IsLiveInOutOfHandler()))
         {
             LclVarDsc* paramVarDsc = m_compiler->lvaGetDesc(paramLclNum);
             var_types  storeType   = genParamStackType(paramVarDsc, segment);

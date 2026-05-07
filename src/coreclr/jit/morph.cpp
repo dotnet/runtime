@@ -15359,7 +15359,6 @@ PhaseStatus Compiler::fgRetypeImplicitByRefArgs()
                 // Propagate address-taken-ness and do-not-enregister-ness.
                 newVarDsc->SetAddressExposed(varDsc->IsAddressExposed() DEBUGARG(varDsc->GetAddrExposedReason()));
                 newVarDsc->lvDoNotEnregister       = varDsc->lvDoNotEnregister;
-                newVarDsc->lvLiveInOutOfHndlr      = varDsc->lvLiveInOutOfHndlr;
                 newVarDsc->lvSingleDef             = varDsc->lvSingleDef;
                 newVarDsc->lvSingleDefRegCandidate = varDsc->lvSingleDefRegCandidate;
                 newVarDsc->lvSpillAtSingleDef      = varDsc->lvSpillAtSingleDef;

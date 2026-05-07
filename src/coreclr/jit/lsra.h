@@ -987,6 +987,8 @@ public:
 
     bool isContainableMemoryOp(GenTree* node);
 
+    void checkForDNER(unsigned lclNum, LclVarDsc* varDsc);
+
 private:
     // Determine which locals are candidates for allocation
     template <bool localVarsEnregistered>

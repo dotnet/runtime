@@ -170,11 +170,13 @@ void WasmRegAlloc::IdentifyCandidates()
         LclVarDsc* varDsc = m_compiler->lvaGetDesc(lclNum);
         varDsc->SetRegNum(REG_STK);
 
+        checkForDNER(lclNum, varDsc);
+
         bool varIsRegCandidate = isRegCandidate(varDsc);
 
         // Wasm RA currently does not support EH write-thru, so any local live in or out
         // of a handler must be located only on the stack.
-        if (varDsc->lvLiveInOutOfHndlr)
+        if (varDsc->lvTracked && varDsc->IsLiveInOutOfHandler())
         {
             m_compiler->lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::LiveInOutOfHandler));
             varIsRegCandidate = false;

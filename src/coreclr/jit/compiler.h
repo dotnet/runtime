@@ -476,9 +476,7 @@ enum class DoNotEnregisterReason
 #if !defined(TARGET_64BIT)
     LongParamField, // It is a decomposed field of a long parameter.
 #endif
-#ifdef JIT32_GCENCODER
     PinningRef,
-#endif
     LclAddrNode, // the local is accessed with LCL_ADDR_VAR/FLD.
     CastTakesAddr,
     StoreBlkSrc,           // the local is used as STORE_BLK source.
@@ -513,6 +511,9 @@ enum class AddressExposedReason
 
 class LclVarDsc
 {
+    template <typename TLiveness>
+    friend class Liveness;
+
 public:
     // note this only packs because var_types is a typedef of unsigned char
     var_types lvType : 5; // TYP_INT/LONG/FLOAT/DOUBLE/REF
@@ -542,12 +543,11 @@ private:
     bool m_addrExposed : 1; // The address of this variable is "exposed" -- passed as an argument, stored in a
                             // global location, etc.
                             // We cannot reason reliably about the value of the variable.
+    unsigned char lvLiveInOutOfHandler : 1; // The variable is live in or out of an exception handler.
 public:
     unsigned char lvDoNotEnregister : 1; // Do not enregister this variable.
     unsigned char lvFieldAccessed   : 1; // The var is a struct local, and a field of the variable is accessed.  Affects
                                          // struct promotion.
-    unsigned char lvLiveInOutOfHndlr : 1; // The variable is live in or out of an exception handler, and therefore must
-                                          // be on the stack (at least at those boundaries.)
 
     unsigned char lvInSsa       : 1; // The variable is in SSA form (set by SsaBuilder)
     unsigned char lvIsCSE       : 1; // Indicates if this LclVar is a CSE variable.
@@ -1157,6 +1157,12 @@ public:
         return IsEnregisterableType();
     }
 
+    bool IsLiveInOutOfHandler() const
+    {
+        assert(lvTracked);
+        return lvLiveInOutOfHandler != 0;
+    }
+
     //-----------------------------------------------------------------------------
     //  IsAlwaysAliveInMemory: Determines if this variable's value is always
     //     up-to-date on stack. This is possible if this is an EH-var or
@@ -1164,7 +1170,7 @@ public:
     //
     bool IsAlwaysAliveInMemory() const
     {
-        return lvLiveInOutOfHndlr || lvSpillAtSingleDef;
+        return IsLiveInOutOfHandler() || lvSpillAtSingleDef;
     }
 
     bool CanBeReplacedWithItsField(Compiler* comp) const;
@@ -3870,6 +3876,8 @@ public:
     bool gtGetIndNodeCost(GenTreeIndir* node, int* pCostEx, int* pCostSz);
     bool gtGetAddrNodeCost(GenTree* addr, var_types type, bool isVolatile, int* pCostEx, int* pCostSz);
 
+    bool IsEHVarARegCandidate(LclVarDsc* varDsc);
+
     // Returns true iff the secondNode can be swapped with firstNode.
     bool gtCanSwapOrder(GenTree* firstNode, GenTree* secondNode);
 
@@ -4183,10 +4191,10 @@ public:
     bool lvaVarAddrExposed(unsigned varNum) const;
     void lvaSetVarAddrExposed(unsigned varNum DEBUGARG(AddressExposedReason reason));
     void lvaSetHiddenBufferStructArg(unsigned varNum);
-    void lvaSetVarLiveInOutOfHandler(unsigned varNum);
     bool lvaVarDoNotEnregister(unsigned varNum);
 
     void lvSetMinOptsDoNotEnreg();
+    void lvSetEHVarsDoNotEnreg();
 
     bool lvaEnregEHVars;
     bool lvaEnregMultiRegVars;
@@ -5720,6 +5728,10 @@ public:
     // 2. All loop exits where bbIsHandlerBeg(exit) is false have only loop predecessors.
     //
     bool optLoopsCanonical = false;
+
+    // This bool tracks if any EH clauses have been removed after the last time we computed liveness.
+    // This is a likely indicator that LclVarDsc::IsLiveInOutOfHandler() may be overly conservative.
+    bool optRemovedEHClausesAfterLiveness = false;
 
     bool fgBBVarSetsInited = false;
 
@@ -11978,9 +11990,7 @@ public:
         unsigned m_depField;
         unsigned m_noRegVars;
         unsigned m_wasmGcVisibility;
-#ifdef JIT32_GCENCODER
         unsigned m_PinningRef;
-#endif // JIT32_GCENCODER
 #if !defined(TARGET_64BIT)
         unsigned m_longParamField;
 #endif // !TARGET_64BIT

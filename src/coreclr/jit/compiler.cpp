@@ -10707,11 +10707,9 @@ void Compiler::EnregisterStats::RecordLocal(const LclVarDsc* varDsc)
                 m_longParamField++;
                 break;
 #endif
-#ifdef JIT32_GCENCODER
             case DoNotEnregisterReason::PinningRef:
                 m_PinningRef++;
                 break;
-#endif
             case DoNotEnregisterReason::LclAddrNode:
                 m_lclAddrNode++;
                 break;

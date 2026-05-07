@@ -134,9 +134,10 @@ public:
                 // globally visible.
 
                 LclVarDsc* const varDsc = m_compiler->lvaGetDesc(LclNum());
+
                 if (varDsc->lvTracked)
                 {
-                    return varDsc->lvLiveInOutOfHndlr != 0;
+                    return varDsc->IsLiveInOutOfHandler();
                 }
 
                 return m_compiler->compHndBBtabCount > 0;
