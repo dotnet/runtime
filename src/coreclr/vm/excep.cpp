@@ -6415,6 +6415,7 @@ bool GetPacSignInfo(PTR_CONTEXT pContextToCheck, EECodeInfo *pCodeInfo, TADDR re
 
     SSIZE_T currentSpOffset = 0;
     SSIZE_T lrSlotOffset = SSIZE_T_MIN;
+    SSIZE_T pacSpOffset = 0;
     BOOL hasPacSignLR = false;
     constexpr SSIZE_T PtrSize = 8;
 
@@ -6526,6 +6527,7 @@ bool GetPacSignInfo(PTR_CONTEXT pContextToCheck, EECodeInfo *pCodeInfo, TADDR re
 
         if (CurCode == 0xFC) // pac_sign_lr
         {
+            pacSpOffset = currentSpOffset;
             hasPacSignLR = true;
             continue;
         }
@@ -6543,7 +6545,7 @@ bool GetPacSignInfo(PTR_CONTEXT pContextToCheck, EECodeInfo *pCodeInfo, TADDR re
         return false;
     }
 
-    *pSpForPacSign = (TADDR)((SSIZE_T)retAddrLocation - lrSlotOffset);
+    *pSpForPacSign = (TADDR)((SSIZE_T)retAddrLocation - (lrSlotOffset - pacSpOffset));
     return true;
 }
 #endif // TARGET_ARM64
