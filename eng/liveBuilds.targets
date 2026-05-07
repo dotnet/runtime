@@ -247,7 +247,8 @@
         "
         IsNative="true" />
 
-      <LibrariesRuntimeFiles Condition="'$(TargetOS)' == 'browser' and '$(RuntimeFlavor)' == 'CoreCLR' and Exists('$(HostSharedFrameworkDir)libBrowserHost.a')"
+      <!-- Runtime tests for Helix are built without the host subset, so browser host files are excluded from the runtime tests build -->
+      <LibrariesRuntimeFiles Condition="'$(TargetOS)' == 'browser' and '$(RuntimeFlavor)' == 'CoreCLR' and '$(IsTestsCommonProject)' != 'true'"
                              Include="
         $(HostSharedFrameworkDir)libBrowserHost.a;
         $(HostSharedFrameworkDir)dotnet.native.js;
