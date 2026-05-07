@@ -6,6 +6,7 @@ using System.Linq;
 using System.Text;
 using System.IO;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
@@ -128,6 +129,8 @@ public class SimpleTestRunner : iOSApplicationEntryPoint, IDevice
         }
     }
 
+    [UnconditionalSuppressMessage("Trimming", "IL2026:RequiresUnreferencedCode",
+        Justification = "On NativeAOT s_testAssemblies is populated from AppDomain.CurrentDomain.GetAssemblies() and the Assembly.LoadFrom branch is never taken.")]
     protected override IEnumerable<TestAssemblyInfo> GetTestAssemblies()
     {
         if (s_testAssemblies is not null)
