@@ -2784,7 +2784,7 @@ public:
     //      ELEMENT_TYPE_I,
     //      ELEMENT_TYPE_I4,
     //      ELEMENT_TYPE_TYPEDBYREF etc.
-    // And not enum.
+    // Note that IsTruePrimitive returns false for enum types.
     BOOL IsTruePrimitive();
     void SetIsTruePrimitive();
 
