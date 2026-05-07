@@ -10744,8 +10744,7 @@ void MethodTableBuilder::CheckForSystemTypes()
         CorElementType type = CorTypeInfo::FindPrimitiveType(name);
         if (type != ELEMENT_TYPE_END)
         {
-            pMT->SetInternalCorElementType(type);
-            pMT->SetIsTruePrimitive();
+            pMT->SetInternalCorElementType(type, true);
 
 #if defined(TARGET_X86) && defined(UNIX_X86_ABI)
             switch (type)
@@ -10777,18 +10776,6 @@ void MethodTableBuilder::CheckForSystemTypes()
         else if (strcmp(name, g_NullableName) == 0)
         {
             pMT->SetIsNullable();
-        }
-        else if (strcmp(name, g_RuntimeArgumentHandleName) == 0)
-        {
-            pMT->SetInternalCorElementType (ELEMENT_TYPE_I);
-        }
-        else if (strcmp(name, g_RuntimeMethodHandleInternalName) == 0)
-        {
-            pMT->SetInternalCorElementType (ELEMENT_TYPE_I);
-        }
-        else if (strcmp(name, g_RuntimeFieldHandleInternalName) == 0)
-        {
-            pMT->SetInternalCorElementType (ELEMENT_TYPE_I);
         }
         else if ((strcmp(name, g_Int128Name) == 0) || (strcmp(name, g_UInt128Name) == 0))
         {

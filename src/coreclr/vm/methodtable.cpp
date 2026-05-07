@@ -5034,7 +5034,7 @@ CorElementType MethodTable::GetSignatureCorElementType()
 #ifndef DACCESS_COMPILE
 
 //==========================================================================================
-void MethodTable::SetInternalCorElementType (CorElementType _NormType)
+void MethodTable::SetInternalCorElementType (CorElementType _NormType, bool isTruePrimitive)
 {
     WRAPPER_NO_CONTRACT;
 
@@ -5049,8 +5049,8 @@ void MethodTable::SetInternalCorElementType (CorElementType _NormType)
         _ASSERTE(GetFlag(enum_flag_Category_Mask) == enum_flag_Category_ValueType);
         break;
     default:
-        SetFlag(enum_flag_Category_Enum);
-        _ASSERTE(GetFlag(enum_flag_Category_Mask) == enum_flag_Category_Enum);
+        SetFlag(isTruePrimitive ? enum_flag_Category_Primitive : enum_flag_Category_Enum);
+        _ASSERTE(GetFlag(enum_flag_Category_Mask) == (isTruePrimitive ? enum_flag_Category_Primitive : enum_flag_Category_Enum));
         break;
     }
 

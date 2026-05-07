@@ -331,10 +331,10 @@ inline BOOL MethodTable::IsTruePrimitive()
 }
 
 //==========================================================================================
-inline void MethodTable::SetIsTruePrimitive()
+inline BOOL MethodTable::IsPrimitive()
 {
     LIMITED_METHOD_DAC_CONTRACT;
-    m_dwFlags = (m_dwFlags & ~(DWORD)enum_flag_Category_Mask) | (DWORD)enum_flag_Category_Primitive;
+    return GetFlag(enum_flag_Category_ElementTypeMask) == enum_flag_Category_Primitive;
 }
 
 //==========================================================================================

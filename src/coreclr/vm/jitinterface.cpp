@@ -338,14 +338,7 @@ CorInfoType CEEInfo::asCorInfoType(CorElementType eeType,
         // Enums are exactly like primitives, even from a verification standpoint,
         // so we zap the type handle in this case.
         //
-        // However RuntimeTypeHandle etc. are reported as E_T_INT (or something like that)
-        // but don't count as primitives as far as verification is concerned...
-        //
-        // To make things stranger, TypedReference returns true for "IsTruePrimitive".
-        // However the JIT likes us to report the type handle in that case.
-        if (!typeHnd.IsTypeDesc() && (
-                (typeHnd.AsMethodTable()->IsTruePrimitive() && typeHnd != TypeHandle(g_TypedReferenceMT))
-                    || typeHnd.AsMethodTable()->IsEnum()) )
+        if (!typeHnd.IsTypeDesc() && typeHnd.AsMethodTable()->IsPrimitive())
         {
             typeHndUpdated = TypeHandle();
         }

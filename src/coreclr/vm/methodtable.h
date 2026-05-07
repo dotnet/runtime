@@ -2775,7 +2775,7 @@ public:
     //   * code:TypeHandle.GetSignatureCorElementType()
     //   * code:TypeHandle.GetInternalCorElementType()
     CorElementType GetInternalCorElementType();
-    void SetInternalCorElementType(CorElementType _NormType);
+    void SetInternalCorElementType(CorElementType _NormType, bool isTruePrimitive = false);
 
     // See code:TypeHandle::GetSignatureCorElementType for description
     CorElementType GetSignatureCorElementType();
@@ -2784,9 +2784,11 @@ public:
     //      ELEMENT_TYPE_I,
     //      ELEMENT_TYPE_I4,
     //      ELEMENT_TYPE_TYPEDBYREF etc.
-    // Note that IsTruePrimitive returns false for enum types.
+    // And not enum.
     BOOL IsTruePrimitive();
-    void SetIsTruePrimitive();
+
+    // Like IsTruePrimitive but also returns true for enum types.
+    BOOL IsPrimitive();
 
     // Is this delegate? Returns false for System.Delegate and System.MulticastDelegate.
     inline BOOL IsDelegate()
