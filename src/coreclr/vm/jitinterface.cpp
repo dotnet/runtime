@@ -11500,6 +11500,9 @@ LPVOID CInterpreterJitInfo::GetCookieForInterpreterCalliSig(CORINFO_SIG_INFO* sz
 
     // When compiling a calli inside an IL stub for a P/Invoke, pass the target
     // P/Invoke MethodDesc so ComputeCallStub can detect the Swift calling convention.
+    // Do not cache the cookie on pContextMD: MethodDesc::CalliCookie is for
+    // calling the target via managed calling convention. The stub we are about
+    // to generate calls the target via unmanaged calling convention.
     MethodDesc* pContextMD = nullptr;
     if (m_pMethodBeingCompiled != nullptr && m_pMethodBeingCompiled->IsILStub())
     {
@@ -11507,32 +11510,22 @@ LPVOID CInterpreterJitInfo::GetCookieForInterpreterCalliSig(CORINFO_SIG_INFO* sz
         if (pTargetMD != nullptr)
         {
             pContextMD = pTargetMD;
-            result = pTargetMD->GetCalliCookie();
         }
     }
 
-    if (result == NULL)
-    {
-        Instantiation classInst = Instantiation((TypeHandle*) szMetaSig->sigInst.classInst, szMetaSig->sigInst.classInstCount);
-        Instantiation methodInst = Instantiation((TypeHandle*) szMetaSig->sigInst.methInst, szMetaSig->sigInst.methInstCount);
-        SigTypeContext typeContext = SigTypeContext(classInst, methodInst);
-        Module* mod = GetModule(szMetaSig->scope);
+    Instantiation classInst = Instantiation((TypeHandle*) szMetaSig->sigInst.classInst, szMetaSig->sigInst.classInstCount);
+    Instantiation methodInst = Instantiation((TypeHandle*) szMetaSig->sigInst.methInst, szMetaSig->sigInst.methInstCount);
+    SigTypeContext typeContext = SigTypeContext(classInst, methodInst);
+    Module* mod = GetModule(szMetaSig->scope);
 
-        MetaSig sig(szMetaSig->pSig, szMetaSig->cbSig, mod, &typeContext);
+    MetaSig sig(szMetaSig->pSig, szMetaSig->cbSig, mod, &typeContext);
 
-        if (szMetaSig->isAsyncCall())
-            sig.SetIsAsyncCall();
+    if (szMetaSig->isAsyncCall())
+        sig.SetIsAsyncCall();
 
-        _ASSERTE(szMetaSig->isAsyncCall() == sig.IsAsyncCall());
+    _ASSERTE(szMetaSig->isAsyncCall() == sig.IsAsyncCall());
 
-        result = GetCookieForCalliSig(sig, pContextMD);
-
-        if (pContextMD != nullptr)
-        {
-            pContextMD->SetCalliCookie(result);
-            result = pContextMD->GetCalliCookie();
-        }
-    }
+    result = GetCookieForCalliSig(sig, pContextMD);
 
     EE_TO_JIT_TRANSITION();
     return (void*)result;
