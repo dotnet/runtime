@@ -50,7 +50,7 @@ The type system is generally a service provided to many parts of the CLR, and mo
 The primary dependencies of the type system follow:
 
 - The **loader** needed to get the correct metadata to work with.
-- The **metadata system** provides a metadata API to gather information.
+- The **[metadata system](metadata-overview.md)** provides a metadata API to gather information.
 - The **security system** informs the type system whether or not certain type system structures are permitted (e.g. inheritance).
 - The **AppDomain** provides a LoaderAllocator to handle allocation behavior for the type system data structures.
 

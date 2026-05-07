@@ -14,6 +14,7 @@ Below is a table of contents.
 - [Threading](threading.md)
 - [RyuJIT Overview](../jit/ryujit-overview.md)
   - [Porting RyuJIT to other platforms](../jit/porting-ryujit.md)
+- [Metadata Overview](metadata-overview.md)
 - [Type System](type-system.md)
 - [Type Loader](type-loader.md)
 - [Method Descriptor](method-descriptor.md)

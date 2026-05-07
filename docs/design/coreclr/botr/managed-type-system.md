@@ -31,9 +31,11 @@ The type system in its purest form (i.e. without any partial class extensions) t
 
 ## Relationship with metadata
 
-While metadata (such as the file formats described in the ECMA-335 specification) has a close relationship with the type system, there is a clear distinction between these two: the metadata describes physical shape of the type (e.g. what is the base class of the type; or what fields does it have), but the type system builds higher level concepts on top of the shape (e.g. how many bytes are required to store an instance of the type at runtime; what interfaces does the type implement, including the inherited ones).
+While [metadata](metadata-overview.md) (such as the file formats described in the ECMA-335 specification) has a close relationship with the type system, there is a clear distinction between these two: the metadata describes physical shape of the type (e.g. what is the base class of the type; or what fields does it have), but the type system builds higher level concepts on top of the shape (e.g. how many bytes are required to store an instance of the type at runtime; what interfaces does the type implement, including the inherited ones).
 
-The type system provides access to most of the underlying metadata, but abstracts the way it was obtained. This allows types and members that are backed by metadata in other formats, or in no physical format at all (such as methods on array types), to be representable within the same type system context.
+The type system provides access to most of the underlying metadata, but abstracts the way it was obtained. This allows types and members that are backed by metadata in other formats, or not backed at all, to be representable within the same type system context.
+
+A notable example of members with no backed metadata are the methods on array types. For instance, an `int[]` array has methods such as `Get(int)`, `Set(int, int)`, `Address(int)`, and a constructor — none of which appear in any assembly's metadata tables. Instead, these methods are synthesized by the type system based on the array's element type and rank. Similarly, constructed generic instantiations like `List<int>` have no dedicated metadata — only the open definition `List<T>` exists in the metadata, and the type system constructs the instantiated type on demand.
 
 ## Type system class hierarchy
 
@@ -43,7 +45,9 @@ The classes that represent types within the type system are:
 
 Most of the classes in this hierarchy are not supposed to be derived by the type system user and many of them are sealed to prevent that.
 
-The classes that are extensible (and are actually abstract classes) are shown with dark background above. The concrete class should provide implementation of the abstract and virtual methods based on some logic, such as reading metadata from an ECMA-335 module file (the type system already provides such implementation of `MetadataType` in its `EcmaType`, for example). Ideally, the type system consumers should operate on the abstract classes and use the concrete class only when creating a new instance. Casting to the concrete implementation type such as `EcmaType` is discouraged.
+The classes that are extensible (and are actually abstract classes) are shown with dark background above. The concrete class should provide implementation of the abstract and virtual methods based on some logic, such as reading metadata from an ECMA-335 module file (the type system already provides such implementation of `MetadataType` in its derived `EcmaType`, for example).
+
+The type system is designed so that consumers work through the abstract types, which provide all the information needed regardless of whether the type came from an ECMA-335 module, was synthesized by the compiler, represents a generic instantiation, etc. Therefore, the type system consumers should ideally operate on the abstract classes and use the concrete class only when creating a new instance. Casting to the concrete implementation type such as `EcmaType` is discouraged.
 
 ## Type system classes
 
@@ -77,11 +81,17 @@ Note for readers familiar with the .NET reflection type system: while the .NET r
 
 Signature variables represent variables that can be substituted by other types within the system. They differ from generic parameters (because e.g. they don't have constraints or variance). They are simply placeholders to be replaced by other types as part of a process called instantiation. Signature variables have an index that refers to a position within the instantiation context.
 
+Consider a class `Foo<T>` that has a method `Bar<U>(T x, U y)`. In the type system, `T` and `U` are GenericParameters — they carry a name, constraints, and variance. However, when IL references this method in a signature, it uses positional placeholders instead: `T` becomes `!0` (a SignatureTypeVariable meaning "the first type argument of the enclosing type") and `U` becomes `!!0` (a SignatureMethodVariable meaning "the first type argument of the method"). These signature variables carry nothing but their index and are replaced with concrete types during instantiation.
+
 ## Other type system classes
 
 Each use of a type system starts with creating a type system context. A type system context represents a type universe across which all types share reference identity (two `TypeDesc` objects represent identical types if and only if they are the same object instance). Type system context is used to resolve all modules and constructed types within the universe. It's not legal to create new instances of constructed types outside of the type system context.
 
-Other important classes within the type system are a `MethodDesc` (represents a method within the type system) and `FieldDesc` (represents a field within the type system). A `ModuleDesc` describes a single module which can optionally implement `IAssemblyDesc` interface if the module is an assembly. `ModuleDesc` is typically the owner of the type/method/field definitions within the module. It's the responsibility of the `ModuleDesc` to maintain the reference identity of those.
+The type system contexts all share the same base (`TypeSystemContext`), but each configures different pluggable algorithms, loads assemblies differently, and may support different synthetic types. For example, the NativeAOT compiler context and the ReadyToRun (crossgen2) compiler context use different field layout algorithms — NativeAOT has full control over type layouts since it produces the final binary, while ReadyToRun must match the layout decisions that the CoreCLR runtime will make at load time.
+
+Other important classes within the type system are a `MethodDesc` (represents a method within the type system) and `FieldDesc` (represents a field within the type system). Similar to `TypeDesc`, `MethodDesc` follows the same extensible hierarchy pattern and represents all methods in the type system, including methods not backed by metadata. Some of its subclasses include `EcmaMethod` (methods read from ECMA-335 metadata), `ArrayMethod` (synthesized array methods), `InstantiatedMethod` (generic method instantiations like `Foo<int>`), and `ILStubMethod` (compiler-generated stubs for scenarios like P/Invoke marshalling).
+
+A `ModuleDesc` describes a single module which can optionally implement `IAssemblyDesc` interface if the module is an assembly. `ModuleDesc` is typically the owner of the type/method/field definitions within the module. It's the responsibility of the `ModuleDesc` to maintain the reference identity of those.
 
 ## Pluggable algorithms
 
