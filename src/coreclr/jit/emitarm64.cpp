@@ -8199,134 +8199,143 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int va
     emitAttr  size         = EA_SIZE(attr);
     insFormat fmt          = IF_NONE;
     insOpts   opt          = INS_OPTS_NONE;
+    regNumber reg2         = REG_NA;
     regNumber reg3         = REG_NA;
     unsigned  scale        = 0;
     bool      isLdrStr     = false;
     bool      isSimple     = true;
     bool      useRegForImm = false;
+    ssize_t   imm          = 0;
 
     assert(offs >= 0);
 
-    /* Figure out the variable's frame position */
-    bool    FPbased;
-    int     base = m_compiler->lvaFrameAddress(varx, &FPbased);
-    int     disp = base + offs;
-    ssize_t imm  = disp;
-
-    regNumber reg2 = encodingSPtoZR(FPbased ? REG_FPBASE : REG_SPBASE);
-
-    // TODO-ARM64-CQ: use unscaled loads?
-    /* Figure out the encoding format of the instruction */
-    switch (ins)
+    if (varx >= 0 && m_compiler->lvaIsUnknownSizeLocal(varx))
     {
-        case INS_strb:
-        case INS_ldrb:
-        case INS_ldrsb:
-            scale = 0;
-            break;
+        // SVE locals are TYP_SIMD or TYP_MASK, both should be placed on the UnknownSizeFrame.
+        // The base address of these locals should be REG_UNKBASE (x19).
+        assert(offs == 0);
+        isSimple = false;
+        reg2     = REG_UNKBASE;
+        imm      = m_compiler->unkSizeFrame.GetAddressingOffset(m_compiler->lvaGetDesc(varx));
 
-        case INS_strh:
-        case INS_ldrh:
-        case INS_ldrsh:
-            scale = 1;
-            break;
+        switch (ins)
+        {
+            case INS_lea:
+                // We shouldn't be materializing the address of a mask.
+                assert(m_compiler->lvaGetActualType(varx) != TYP_MASK);
+                // addvl reg1, x19, #imm
+                emitIns_R_R_I(INS_sve_addvl, EA_8BYTE, reg1, REG_UNKBASE, imm);
+                return;
 
-        case INS_ldrsw:
-            scale = 2;
-            break;
+            case INS_sve_ldr:
+                // TODO-SVE: Handle generation of base address for large immediate scaled by VL/PL.
+                assert(isValidSimm<9>(imm));
+                fmt = isPredicateRegister(reg1) ? IF_SVE_ID_2A : IF_SVE_IE_2A;
+                break;
 
-        case INS_str:
-        case INS_ldr:
-            assert(isValidGeneralDatasize(size) || isValidVectorDatasize(size));
-            scale    = genLog2(EA_SIZE_IN_BYTES(size));
-            isLdrStr = true;
-            break;
+            default:
+                NYI("emitIns_R_S");
+                return;
+        }
+    }
+    else
+    {
+        /* Figure out the variable's frame position */
+        bool FPbased;
+        int  base = m_compiler->lvaFrameAddress(varx, &FPbased);
+        int  disp = base + offs;
+        imm       = disp;
+        reg2      = encodingSPtoZR(FPbased ? REG_FPBASE : REG_SPBASE);
 
-        case INS_lea:
-            assert(size == EA_8BYTE);
-            isSimple = false;
-            scale    = 0;
+        // TODO-ARM64-CQ: use unscaled loads?
+        /* Figure out the encoding format of the instruction */
+        switch (ins)
+        {
+            case INS_strb:
+            case INS_ldrb:
+            case INS_ldrsb:
+                scale = 0;
+                break;
 
-            if (disp >= 0)
-            {
-                ins = INS_add;
-            }
-            else
-            {
-                ins = INS_sub;
-                imm = -disp;
-            }
+            case INS_strh:
+            case INS_ldrh:
+            case INS_ldrsh:
+                scale = 1;
+                break;
 
-            if (imm <= 0x0fff)
-            {
-                fmt = IF_DI_2A; // add reg1,reg2,#disp
-            }
-            else
-            {
-                regNumber rsvdReg = codeGen->rsGetRsvdReg();
-                codeGen->instGen_Set_Reg_To_Imm(EA_PTRSIZE, rsvdReg, imm);
-                imm = 0;
-                if (encodingZRtoSP(reg2) == REG_SP)
+            case INS_ldrsw:
+                scale = 2;
+                break;
+
+            case INS_str:
+            case INS_ldr:
+                assert(isValidGeneralDatasize(size) || isValidVectorDatasize(size));
+                scale    = genLog2(EA_SIZE_IN_BYTES(size));
+                isLdrStr = true;
+                break;
+
+            case INS_lea:
+                assert(size == EA_8BYTE);
+                isSimple = false;
+                scale    = 0;
+
+                if (disp >= 0)
                 {
-                    fmt  = IF_DR_3C; // add reg1,sp,rsvdReg
-                    opt  = INS_OPTS_LSL;
-                    reg3 = rsvdReg;
+                    ins = INS_add;
                 }
                 else
                 {
-                    fmt = IF_DR_3A; // add reg1,reg2,rsvdReg
+                    ins = INS_sub;
+                    imm = -disp;
                 }
-            }
-            break;
 
-        case INS_sve_ldr:
-        {
-            isSimple = false;
-            size     = EA_SCALABLE;
-            attr     = size;
-            if (isPredicateRegister(reg1))
+                if (imm <= 0x0fff)
+                {
+                    fmt = IF_DI_2A; // add reg1,reg2,#disp
+                }
+                else
+                {
+                    regNumber rsvdReg = codeGen->rsGetRsvdReg();
+                    codeGen->instGen_Set_Reg_To_Imm(EA_PTRSIZE, rsvdReg, imm);
+                    imm = 0;
+                    if (encodingZRtoSP(reg2) == REG_SP)
+                    {
+                        fmt  = IF_DR_3C; // add reg1,sp,rsvdReg
+                        opt  = INS_OPTS_LSL;
+                        reg3 = rsvdReg;
+                    }
+                    else
+                    {
+                        fmt = IF_DR_3A; // add reg1,reg2,rsvdReg
+                    }
+                }
+                break;
+
+            case INS_sve_ldr:
             {
-                assert(offs == 0);
-                // For predicate, generate based off rsGetRsvdReg()
-                regNumber rsvdReg = codeGen->rsGetRsvdReg();
+                assert(isPredicateRegister(reg1) || isVectorRegister(reg1));
+                assert(FPbased);
 
-                // add rsvd, fp, #imm
-                emitIns_R_R_Imm(INS_add, EA_8BYTE, rsvdReg, encodingZRtoSP(reg2), imm);
-                // str p0, [rsvd, #0, mul vl]
-                emitIns_R_R_I(ins, attr, reg1, rsvdReg, 0);
+                isSimple = false;
+                size     = EA_SCALABLE;
+                attr     = size;
+                fmt      = isPredicateRegister(reg1) ? IF_SVE_ID_2A : IF_SVE_IE_2A;
 
-                return;
-            }
-
-            assert(isVectorRegister(reg1));
-            fmt = IF_SVE_IE_2A;
-
-            // TODO-SVE: Don't assume 128bit vectors
-            // Predicate size is vector length / 8
-            scale        = NaturalScale_helper(isVectorRegister(reg1) ? EA_16BYTE : EA_2BYTE);
-            ssize_t mask = (1 << scale) - 1; // the mask of low bits that must be zero to encode the immediate
-
-            if (((imm & mask) == 0) && (isValidSimm<9>(imm >> scale)))
-            {
-                imm >>= scale; // The immediate is scaled by the size of the ld/st
-            }
-            else
-            {
                 useRegForImm      = true;
                 regNumber rsvdReg = codeGen->rsGetRsvdReg();
-                // For larger imm values (> 9 bits), calculate base + imm in a reserved register first.
-                codeGen->instGen_Set_Reg_To_Base_Plus_Imm(EA_PTRSIZE, rsvdReg, reg2, imm);
+                codeGen->instGen_Set_Reg_To_Base_Plus_Imm(EA_PTRSIZE, rsvdReg, REG_FP, imm);
+
                 reg2 = rsvdReg;
                 imm  = 0;
             }
-        }
-        break;
+            break;
 
-        default:
-            NYI("emitIns_R_S"); // FP locals?
-            return;
+            default:
+                NYI("emitIns_R_S"); // FP locals?
+                return;
 
-    } // end switch (ins)
+        } // end switch (ins)
+    }
 
     assert((scale >= 0) && (scale <= 4));
 
@@ -8510,96 +8519,90 @@ void emitter::emitIns_S_R(instruction ins, emitAttr attr, regNumber reg1, int va
     bool      isStr         = false;
     bool      isSimple      = true;
     bool      useRegForImm  = false;
+    regNumber reg2          = REG_NA;
+    ssize_t   imm           = 0;
 
-    /* Figure out the variable's frame position */
-    bool    FPbased;
-    int     base = m_compiler->lvaFrameAddress(varx, &FPbased);
-    int     disp = base + offs;
-    ssize_t imm  = disp;
-
-    // TODO-ARM64-CQ: with compLocallocUsed, should we use REG_SAVED_LOCALLOC_SP instead?
-    regNumber reg2 = encodingSPtoZR(FPbased ? REG_FPBASE : REG_SPBASE);
-
-    // TODO-ARM64-CQ: use unscaled loads?
-    /* Figure out the encoding format of the instruction */
-    switch (ins)
+    if (varx >= 0 && m_compiler->lvaIsUnknownSizeLocal(varx))
     {
-        case INS_strb:
-            scale = 0;
-            assert(isGeneralRegisterOrZR(reg1));
-            break;
+        // SVE locals are TYP_SIMD or TYP_MASK, both should be placed on the UnknownSizeFrame.
+        // The base address of these locals should be REG_UNKBASE (x19).
+        assert(ins == INS_sve_str);
+        assert(offs == 0);
+        assert(attr == EA_SCALABLE);
 
-        case INS_strh:
-            scale = 1;
-            assert(isGeneralRegisterOrZR(reg1));
-            break;
+        reg2     = REG_UNKBASE;
+        imm      = m_compiler->unkSizeFrame.GetAddressingOffset(m_compiler->lvaGetDesc(varx));
+        fmt      = isPredicateRegister(reg1) ? IF_SVE_JG_2A : IF_SVE_JH_2A;
+        isSimple = false;
 
-        case INS_str:
-            if (isGeneralRegisterOrZR(reg1))
-            {
-                assert(isValidGeneralDatasize(size));
-                scale = (size == EA_8BYTE) ? 3 : 2;
-            }
-            else
-            {
-                assert(isVectorRegister(reg1));
-                assert(isValidVectorLSDatasize(size));
-                scale         = NaturalScale_helper(size);
-                isVectorStore = true;
-            }
-            isStr = true;
-            break;
+        // TODO-SVE: Handle generation of base address for large immediate scaled by VL/PL.
+        assert(isValidSimm<9>(imm));
+    }
+    else
+    {
+        /* Figure out the variable's frame position */
+        bool FPbased;
+        int  base = m_compiler->lvaFrameAddress(varx, &FPbased);
+        int  disp = base + offs;
 
-        case INS_sve_str:
+        imm = disp;
+
+        // TODO-ARM64-CQ: with compLocallocUsed, should we use REG_SAVED_LOCALLOC_SP instead?
+        reg2 = encodingSPtoZR(FPbased ? REG_FPBASE : REG_SPBASE);
+
+        // TODO-ARM64-CQ: use unscaled loads?
+        /* Figure out the encoding format of the instruction */
+        switch (ins)
         {
-            isSimple = false;
-            size     = EA_SCALABLE;
-            attr     = size;
+            case INS_strb:
+                scale = 0;
+                assert(isGeneralRegisterOrZR(reg1));
+                break;
 
-            if (isPredicateRegister(reg1))
+            case INS_strh:
+                scale = 1;
+                assert(isGeneralRegisterOrZR(reg1));
+                break;
+
+            case INS_str:
+                if (isGeneralRegisterOrZR(reg1))
+                {
+                    assert(isValidGeneralDatasize(size));
+                    scale = (size == EA_8BYTE) ? 3 : 2;
+                }
+                else
+                {
+                    assert(isVectorRegister(reg1));
+                    assert(isValidVectorLSDatasize(size));
+                    scale         = NaturalScale_helper(size);
+                    isVectorStore = true;
+                }
+                isStr = true;
+                break;
+
+            case INS_sve_str:
             {
-                assert(offs == 0);
+                assert(isVectorRegister(reg1) || isPredicateRegister(reg1));
+                assert(FPbased);
+                isSimple = false;
+                size     = EA_SCALABLE;
+                attr     = size;
+                fmt      = isPredicateRegister(reg1) ? IF_SVE_JG_2A : IF_SVE_JH_2A;
 
-                // For predicate, generate based off rsGetRsvdReg()
-                regNumber rsvdReg = codeGen->rsGetRsvdReg();
-
-                // add rsvd, fp, #imm
-                emitIns_R_R_Imm(INS_add, EA_8BYTE, rsvdReg, encodingZRtoSP(reg2), imm);
-                // str p0, [rsvd, #0, mul vl]
-                emitIns_R_R_I(ins, attr, reg1, rsvdReg, 0);
-
-                return;
-            }
-
-            assert(isVectorRegister(reg1));
-            fmt = IF_SVE_JH_2A;
-
-            // TODO-SVE: Don't assume 128bit vectors
-            // Predicate size is vector length / 8
-            scale        = NaturalScale_helper(isVectorRegister(reg1) ? EA_16BYTE : EA_2BYTE);
-            ssize_t mask = (1 << scale) - 1; // the mask of low bits that must be zero to encode the immediate
-
-            if (((imm & mask) == 0) && (isValidSimm<9>(imm >> scale)))
-            {
-                imm >>= scale; // The immediate is scaled by the size of the ld/st
-            }
-            else
-            {
                 useRegForImm      = true;
                 regNumber rsvdReg = codeGen->rsGetRsvdReg();
-                // For larger imm values (> 9 bits), calculate base + imm in a reserved register first.
-                codeGen->instGen_Set_Reg_To_Base_Plus_Imm(EA_PTRSIZE, rsvdReg, reg2, imm);
+                codeGen->instGen_Set_Reg_To_Base_Plus_Imm(EA_PTRSIZE, rsvdReg, REG_FP, imm);
                 reg2 = rsvdReg;
                 imm  = 0;
             }
-        }
-        break;
+            break;
 
-        default:
-            NYI("emitIns_S_R"); // FP locals?
-            return;
+            default:
+                NYI("emitIns_S_R"); // FP locals?
+                return;
 
-    } // end switch (ins)
+        } // end switch (ins)
+    }
 
     if (isVectorStore || !isSimple)
     {

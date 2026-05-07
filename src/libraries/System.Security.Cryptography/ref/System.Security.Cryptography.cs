@@ -676,6 +676,7 @@ namespace System.Security.Cryptography
     }
     public static partial class CryptographicOperations
     {
+        public static bool FixedTimeEquals(System.ReadOnlySpan<byte> source, byte value) { throw null; }
         public static bool FixedTimeEquals(System.ReadOnlySpan<byte> left, System.ReadOnlySpan<byte> right) { throw null; }
         public static byte[] HashData(System.Security.Cryptography.HashAlgorithmName hashAlgorithm, byte[] source) { throw null; }
         public static byte[] HashData(System.Security.Cryptography.HashAlgorithmName hashAlgorithm, System.IO.Stream source) { throw null; }

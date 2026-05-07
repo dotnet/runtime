@@ -2721,6 +2721,7 @@ inline
     bool fConservative = false;
     if (varNum >= 0)
     {
+        assert(!lvaIsUnknownSizeLocal(varNum));
         LclVarDsc* varDsc          = lvaGetDesc(varNum);
         bool       isPrespilledArg = false;
 #if defined(TARGET_ARM) && defined(PROFILING_SUPPORTED)
@@ -2779,6 +2780,7 @@ inline
                 tmpDsc = codeGen->regSet.tmpFindNum(varNum, RegSet::TEMP_USAGE_USED);
             }
             assert(tmpDsc != nullptr);
+            assert(!varTypeHasUnknownSize(tmpDsc->tdTempType()));
             varOffset = tmpDsc->tdTempOffs();
         }
         else
@@ -2972,7 +2974,7 @@ inline unsigned Compiler::compMapILargNum(unsigned ILargNum)
     assert(ILargNum < info.compILargsCount);
 
 #if defined(TARGET_WASM)
-    if (ILargNum >= lvaWasmSpArg)
+    if ((ILargNum >= lvaWasmSpArg) && (lvaWasmSpArg != BAD_VAR_NUM) && lvaGetDesc(lvaWasmSpArg)->lvIsParam)
     {
         ILargNum++;
         assert(ILargNum < info.compLocalsCount); // compLocals count already adjusted.

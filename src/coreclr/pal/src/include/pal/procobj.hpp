@@ -25,14 +25,6 @@ namespace CorUnix
 {
     extern CObjectType otProcess;
 
-    typedef enum
-    {
-        PS_IDLE,
-        PS_STARTING,
-        PS_RUNNING,
-        PS_DONE
-    } PROCESS_STATE;
-
     //
     // Ideally dwProcessId would be part of the process object's immutable
     // data. Doing so, though, creates complications in CreateProcess. The
@@ -57,10 +49,7 @@ namespace CorUnix
     public:
         CProcProcessLocalData()
             :
-            dwProcessId(0),
-            ps(PS_IDLE),
-            dwExitCode(0),
-            lAttachCount(0)
+            dwProcessId(0)
         {
         };
 
@@ -69,9 +58,6 @@ namespace CorUnix
         };
 
         DWORD dwProcessId;
-        PROCESS_STATE ps;
-        DWORD dwExitCode;
-        LONG lAttachCount;
     };
 
     PAL_ERROR
