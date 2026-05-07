@@ -163,6 +163,7 @@ namespace ILCompiler.Reflection.ReadyToRun
             List<(byte[] ParamTypes, byte[] ResultTypes)> types = null;
             List<uint> funcTypeIndices = null;
             int codeOffset = -1;
+            int codeSectionEnd = -1;
 
             ReadOnlySpan<byte> imageSpan = _image.AsSpan();
             int offset = 8; // Skip WASM magic + version
@@ -185,6 +186,7 @@ namespace ILCompiler.Reflection.ReadyToRun
                         break;
                     case 10: // Code section
                         codeOffset = offset;
+                        codeSectionEnd = sectionEnd;
                         break;
                 }
 
@@ -203,15 +205,21 @@ namespace ILCompiler.Reflection.ReadyToRun
                 uint bodySize = ReadLebU32(imageSpan, ref offset);
                 int bodyEnd = offset + (int)bodySize;
 
-                if (bodyEnd > imageSpan.Length)
-                    throw new BadImageFormatException($"WASM function body size extends beyond image boundary");
+                if (bodyEnd > codeSectionEnd)
+                {
+                    // Truncate cache to the functions we could successfully parse
+                    Array.Resize(ref cache, (int)i);
+                    break;
+                }
 
                 // Read local declarations
                 var locals = new List<(uint Count, byte ValType)>();
                 uint localDeclCount = ReadLebU32(imageSpan, ref offset);
-                for (uint j = 0; j < localDeclCount; j++)
+                for (uint j = 0; j < localDeclCount && offset < bodyEnd; j++)
                 {
                     uint count = ReadLebU32(imageSpan, ref offset);
+                    if (offset >= bodyEnd)
+                        break;
                     byte valType = imageSpan[offset++];
                     locals.Add((count, valType));
                 }
