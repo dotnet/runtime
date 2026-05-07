@@ -119,69 +119,6 @@ namespace System.Numerics.Tensors
             public static T Invoke(Vector512<T> x) => HorizontalAggregate<T, MaxOperator<T>>(x);
         }
 
-        /// <summary>Gets whether each specified <see cref="float"/> is NaN.</summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static Vector128<T> IsNaN<T>(Vector128<T> vector)
-        {
-            return Vector128.IsNaN(vector);
-        }
-
-        /// <summary>Gets whether each specified <see cref="float"/> is NaN.</summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static Vector256<T> IsNaN<T>(Vector256<T> vector)
-        {
-            return Vector256.IsNaN(vector);
-        }
-
-        /// <summary>Gets whether each specified <see cref="float"/> is NaN.</summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static Vector512<T> IsNaN<T>(Vector512<T> vector)
-        {
-            return Vector512.IsNaN(vector);
-        }
-
-        /// <summary>Gets whether each specified <see cref="float"/> is negative.</summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static Vector128<T> IsNegative<T>(Vector128<T> vector)
-        {
-            return Vector128.IsNegative(vector);
-        }
-
-        /// <summary>Gets whether each specified <see cref="float"/> is negative.</summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static Vector256<T> IsNegative<T>(Vector256<T> vector)
-        {
-            return Vector256.IsNegative(vector);
-        }
-
-        /// <summary>Gets whether each specified <see cref="float"/> is negative.</summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static Vector512<T> IsNegative<T>(Vector512<T> vector)
-        {
-            return Vector512.IsNegative(vector);
-        }
-
-        /// <summary>Gets whether each specified <see cref="float"/> is positive.</summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static Vector128<T> IsPositive<T>(Vector128<T> vector)
-        {
-            return Vector128.IsPositive(vector);
-        }
-
-        /// <summary>Gets whether each specified <see cref="float"/> is positive.</summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static Vector256<T> IsPositive<T>(Vector256<T> vector)
-        {
-            return Vector256.IsPositive(vector);
-        }
-
-        /// <summary>Gets whether each specified <see cref="float"/> is positive.</summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static Vector512<T> IsPositive<T>(Vector512<T> vector)
-        {
-            return Vector512.IsPositive(vector);
-        }
-
         /// <remarks>
         /// This is the same as <see cref="Aggregate{T, TTransformOperator, TAggregationOperator}(ReadOnlySpan{T})"/>
         /// with an identity transform, except it early exits on NaN.
@@ -213,7 +150,7 @@ namespace System.Numerics.Tensors
                 if (typeof(T) == typeof(float) || typeof(T) == typeof(double))
                 {
                     // Check for NaNs
-                    nanMask = IsNaN(result);
+                    nanMask = Vector512.IsNaN(result);
                     if (nanMask != Vector512<T>.Zero)
                     {
                         return result.GetElement(IndexOfFirstMatch(nanMask));
@@ -344,7 +281,7 @@ namespace System.Numerics.Tensors
                 if (typeof(T) == typeof(float) || typeof(T) == typeof(double))
                 {
                     // Check for NaNs
-                    nanMask = IsNaN(result);
+                    nanMask = Vector128.IsNaN(result);
                     if (nanMask != Vector128<T>.Zero)
                     {
                         return result.GetElement(IndexOfFirstMatch(nanMask));
@@ -363,7 +300,7 @@ namespace System.Numerics.Tensors
                     if (typeof(T) == typeof(float) || typeof(T) == typeof(double))
                     {
                         // Check for NaNs
-                        nanMask = IsNaN(current);
+                        nanMask = Vector128.IsNaN(current);
                         if (nanMask != Vector128<T>.Zero)
                         {
                             return current.GetElement(IndexOfFirstMatch(nanMask));
@@ -382,7 +319,7 @@ namespace System.Numerics.Tensors
                     if (typeof(T) == typeof(float) || typeof(T) == typeof(double))
                     {
                         // Check for NaNs
-                        nanMask = IsNaN(current);
+                        nanMask = Vector128.IsNaN(current);
                         if (nanMask != Vector128<T>.Zero)
                         {
                             return current.GetElement(IndexOfFirstMatch(nanMask));
