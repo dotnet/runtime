@@ -3789,7 +3789,7 @@ private:
         enum_flag_Category_ValueType        = 0x00040000, // [cDAC] [RuntimeTypeSystem]: Contract depends on this value
         enum_flag_Category_ValueType_Mask   = 0x000C0000,
         enum_flag_Category_Nullable         = 0x00050000, // sub-category of ValueType. [cDAC] [RuntimeTypeSystem]: Contract depends on this value
-        enum_flag_Category_PrimitiveValueType=0x00060000, // sub-category of ValueType, Enum or primitive value type. [cDAC] [RuntimeTypeSystem]: Contract depends on this value
+        enum_flag_Category_PrimitiveValueType=0x00060000, // sub-category of ValueType, Enum or true primitive. [cDAC] [RuntimeTypeSystem]: Contract depends on this value
         enum_flag_Category_TruePrimitive    = 0x00070000, // sub-category of PrimitiveValueType. Regular primitive value types (Int32, etc.). [cDAC] [RuntimeTypeSystem]: Contract depends on this value
 
         enum_flag_Category_Array            = 0x00080000, // [cDAC] [RuntimeTypeSystem]: Contract depends on this value
