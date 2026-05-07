@@ -221,7 +221,7 @@ namespace R2RDump
                     OperatingSystem.Apple => TargetOS.OSX,
                     OperatingSystem.FreeBSD => TargetOS.FreeBSD,
                     OperatingSystem.NetBSD => TargetOS.FreeBSD,
-                    OperatingSystem.Unknown => TargetOS.Linux, // Webcil/WASM images don't encode OS; use Linux as fallback
+                    OperatingSystem.Unknown => TargetOS.Unknown, // Webcil/WASM images don't encode OS
                     _ => throw new NotImplementedException(r2r.OperatingSystem.ToString()),
                 };
                 TargetDetails details = new(architecture, os, TargetAbi.NativeAot);

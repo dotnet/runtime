@@ -102,7 +102,7 @@ namespace ILCompiler.Reflection.ReadyToRun
                     // Read the full file to check for Webcil inside WASM
                     stream.Seek(0, SeekOrigin.Begin);
                     byte[] fullImage = GC.AllocateArray<byte>((int)stream.Length, pinned: true);
-                    stream.Read(fullImage, 0, fullImage.Length);
+                    stream.ReadExactly(fullImage, 0, fullImage.Length);
                     return TryFindWebcilInWasm(fullImage, out _);
                 }
 
@@ -161,6 +161,9 @@ namespace ILCompiler.Reflection.ReadyToRun
                 uint sectionSize = ReadLebU32(_image, ref offset);
                 int sectionEnd = offset + (int)sectionSize;
 
+                if (sectionEnd > _image.Length)
+                    throw new BadImageFormatException($"WASM section {sectionId} size extends beyond image boundary");
+
                 switch (sectionId)
                 {
                     case 1: // Type section
@@ -187,6 +190,9 @@ namespace ILCompiler.Reflection.ReadyToRun
             {
                 uint bodySize = ReadLebU32(_image, ref offset);
                 int bodyEnd = offset + (int)bodySize;
+
+                if (bodyEnd > _image.Length)
+                    throw new BadImageFormatException($"WASM function body size extends beyond image boundary");
 
                 if (i == (uint)functionIndex)
                 {
@@ -297,6 +303,23 @@ namespace ILCompiler.Reflection.ReadyToRun
                         throw new BadImageFormatException($"RVA 0x{rva:X} maps beyond section raw data");
                     }
                     return (int)(section.PointerToRawData + offset + _webcilOffset);
+                }
+            }
+            throw new BadImageFormatException($"RVA 0x{rva:X} not found in any Webcil section");
+        }
+
+        public int GetSectionRemainingSize(int rva)
+        {
+            foreach (var section in _sections)
+            {
+                if ((uint)rva >= section.VirtualAddress && (uint)rva < section.VirtualAddress + section.VirtualSize)
+                {
+                    uint offset = (uint)rva - section.VirtualAddress;
+                    if (offset >= section.SizeOfRawData)
+                    {
+                        throw new BadImageFormatException($"RVA 0x{rva:X} maps beyond section raw data");
+                    }
+                    return (int)(section.SizeOfRawData - offset);
                 }
             }
             throw new BadImageFormatException($"RVA 0x{rva:X} not found in any Webcil section");
@@ -532,17 +555,15 @@ namespace ILCompiler.Reflection.ReadyToRun
     internal sealed unsafe class WebcilAssemblyMetadata : IAssemblyMetadata
     {
         private readonly MetadataReader _metadataReader;
+        private readonly MetadataReaderProvider _metadataReaderProvider;
         private readonly WebcilImageReader _webcilReader;
-        private readonly byte[] _metadataBytes;
 
         public WebcilAssemblyMetadata(byte[] metadataBytes, WebcilImageReader webcilReader)
         {
             _webcilReader = webcilReader;
-            _metadataBytes = metadataBytes;
-            fixed (byte* p = metadataBytes)
-            {
-                _metadataReader = new MetadataReader(p, metadataBytes.Length);
-            }
+            var immutableBytes = Unsafe.As<byte[], ImmutableArray<byte>>(ref metadataBytes);
+            _metadataReaderProvider = MetadataReaderProvider.FromMetadataImage(immutableBytes);
+            _metadataReader = _metadataReaderProvider.GetMetadataReader();
         }
 
         public BlobReader GetSectionData(int relativeVirtualAddress)
@@ -551,8 +572,8 @@ namespace ILCompiler.Reflection.ReadyToRun
                 return default;
 
             int offset = _webcilReader.GetOffset(relativeVirtualAddress);
+            int remaining = _webcilReader.GetSectionRemainingSize(relativeVirtualAddress);
             byte[] image = _webcilReader.GetImage();
-            int remaining = image.Length - offset;
             fixed (byte* p = image)
             {
                 return new BlobReader(p + offset, remaining);
