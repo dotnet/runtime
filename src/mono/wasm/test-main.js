@@ -84,8 +84,12 @@ async function getArgs() {
             console.debug(`could not load /runArgs.json: ${response.status}. Ignoring`);
         }
     }
-    if (!runArgsJson)
-        runArgsJson = initRunArgs({});
+    if (!runArgsJson) {
+        // Older xharness/browser test paths on release/8.0 don't always emit
+        // runArgs.json. Keep the memory snapshot dry-run opt-in on that fallback
+        // path to avoid the relink/native hangs seen in CI.
+        runArgsJson = initRunArgs({ memorySnapshot: false });
+    }
     return processArguments(queryArguments, runArgsJson);
 }
 
@@ -164,6 +168,15 @@ function processArguments(incomingArguments, runArgs) {
     }
 
     runArgs.applicationArguments = incomingArguments;
+
+    // xharness appends its own control arguments here; keep them from reaching Main(string[] args).
+    for (let i = 0; i < runArgs.applicationArguments.length; i++) {
+        if (runArgs.applicationArguments[i] === "-verbosity") {
+            runArgs.applicationArguments.splice(i, 2);
+            i--;
+        }
+    }
+
     // cheap way to let the testing infrastructure know we're running in a browser context (or not)
     runArgs.environmentVariables["IsBrowserDomSupported"] = is_browser.toString().toLowerCase();
     runArgs.environmentVariables["IsNodeJS"] = is_node.toString().toLowerCase();

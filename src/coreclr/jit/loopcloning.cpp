@@ -1283,17 +1283,17 @@ bool Compiler::optDeriveLoopCloningConditions(unsigned loopNum, LoopCloneContext
     // GT_LE loop test: (start <= end) ==> (end < arrLen)
     //
     // Decreasing loops
-    // GT_GT loop test: (end > start) ==> (end <= arrLen)
-    // GT_GE loop test: (end >= start) ==> (end < arrLen)
+    // Always check if iter var is less than array length.
     genTreeOps opLimitCondition;
     switch (loop->lpTestOper())
     {
         case GT_LT:
-        case GT_GT:
+
             opLimitCondition = GT_LE;
             break;
         case GT_LE:
         case GT_GE:
+        case GT_GT:
             opLimitCondition = GT_LT;
             break;
         default:
