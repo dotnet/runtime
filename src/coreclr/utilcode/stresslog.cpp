@@ -131,25 +131,23 @@ uint64_t getTickFrequency()
 
 #ifdef STRESS_LOG
 
-StressLog StressLog::theLog = { 0, 0, 0, 0, 0, 0, TLS_OUT_OF_INDEXES, 0, {}, 0 };
+StressLog StressLog::theLog = { 0, 0, 0, 0, 0, 0, TLS_OUT_OF_INDEXES, 0, 0, 0 };
 const static uint64_t RECYCLE_AGE = 0x40000000L;        // after a billion cycles, we can discard old threads
 
 /*********************************************************************************/
-void StressLog::Enter(minipal_mutex* lock) {
+void StressLog::Enter(CRITSEC_COOKIE) {
     STATIC_CONTRACT_LEAF;
-    _ASSERTE(lock != nullptr);
 
     IncCantAllocCount();
-    minipal_mutex_enter(lock);
+    ClrEnterCriticalSection(theLog.lock);
     DecCantAllocCount();
 }
 
-void StressLog::Leave(minipal_mutex* lock) {
+void StressLog::Leave(CRITSEC_COOKIE) {
     STATIC_CONTRACT_LEAF;
-    _ASSERTE(lock != nullptr);
 
     IncCantAllocCount();
-    minipal_mutex_leave(lock);
+    ClrLeaveCriticalSection(theLog.lock);
     DecCantAllocCount();
 }
 
@@ -229,8 +227,7 @@ void StressLog::Initialize(unsigned facilities, unsigned level, unsigned maxByte
         return;
     }
 
-    bool success = minipal_mutex_init(&theLog.lock);
-    _ASSERTE(success);
+    theLog.lock = ClrCreateCriticalSection(CrstStressLog, (CrstFlags)(CRST_UNSAFE_ANYMODE | CRST_DEBUGGER_THREAD | CRST_TAKEN_DURING_SHUTDOWN));
     // StressLog::Terminate is going to free memory.
     size_t maxBytesPerThread = maxBytesPerThreadArg;
     if (maxBytesPerThread < STRESSLOG_CHUNK_SIZE)
@@ -384,7 +381,7 @@ void StressLog::Terminate(BOOL fProcessDetach) {
 
     theLog.facilitiesToLog = 0;
 
-    StressLogLockHolder lockh(&theLog.lock, FALSE);
+    StressLogLockHolder lockh(theLog.lock, FALSE);
     if (!fProcessDetach) {
         lockh.Acquire(); lockh.Release();       // The Enter() Leave() forces a memory barrier on weak memory model systems
                                 // we want all the other threads to notice that facilitiesToLog is now zero
@@ -462,7 +459,7 @@ ThreadStressLog* StressLog::CreateThreadStressLog() {
         return NULL;
     }
 
-    StressLogLockHolder lockh(&theLog.lock, FALSE);
+    StressLogLockHolder lockh(theLog.lock, FALSE);
 
     class NestedCaller
     {
