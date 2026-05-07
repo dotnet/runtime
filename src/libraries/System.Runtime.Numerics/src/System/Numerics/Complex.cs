@@ -760,122 +760,21 @@ namespace System.Numerics
         private static bool TryConvertFrom<TOther>(TOther value, out Complex result)
             where TOther : INumberBase<TOther>
         {
-            // We don't want to defer to `double.Create*(value)` because some type might have its own
-            // `TOther.ConvertTo*(value, out Complex result)` handling that would end up bypassed.
+            if (typeof(TOther) == typeof(Complex<double>))
+            {
+                Complex<double> actualValue = (Complex<double>)(object)value;
+                result = new Complex(actualValue.Real, actualValue.Imaginary);
+                return true;
+            }
 
-            if (typeof(TOther) == typeof(byte))
+            if (Complex<double>.TryConvertFromCheckedCore(value, out Complex<double> intermediate))
             {
-                byte actualValue = (byte)(object)value;
-                result = actualValue;
+                result = new Complex(intermediate.Real, intermediate.Imaginary);
                 return true;
             }
-            else if (typeof(TOther) == typeof(char))
-            {
-                char actualValue = (char)(object)value;
-                result = actualValue;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(decimal))
-            {
-                decimal actualValue = (decimal)(object)value;
-                result = (Complex)actualValue;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(double))
-            {
-                double actualValue = (double)(object)value;
-                result = actualValue;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(Half))
-            {
-                Half actualValue = (Half)(object)value;
-                result = actualValue;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(BFloat16))
-            {
-                BFloat16 actualValue = (BFloat16)(object)value;
-                result = actualValue;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(short))
-            {
-                short actualValue = (short)(object)value;
-                result = actualValue;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(int))
-            {
-                int actualValue = (int)(object)value;
-                result = actualValue;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(long))
-            {
-                long actualValue = (long)(object)value;
-                result = actualValue;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(Int128))
-            {
-                Int128 actualValue = (Int128)(object)value;
-                result = (Complex)actualValue;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(nint))
-            {
-                nint actualValue = (nint)(object)value;
-                result = actualValue;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(sbyte))
-            {
-                sbyte actualValue = (sbyte)(object)value;
-                result = actualValue;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(float))
-            {
-                float actualValue = (float)(object)value;
-                result = actualValue;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(ushort))
-            {
-                ushort actualValue = (ushort)(object)value;
-                result = actualValue;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(uint))
-            {
-                uint actualValue = (uint)(object)value;
-                result = actualValue;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(ulong))
-            {
-                ulong actualValue = (ulong)(object)value;
-                result = actualValue;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(UInt128))
-            {
-                UInt128 actualValue = (UInt128)(object)value;
-                result = (Complex)actualValue;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(nuint))
-            {
-                nuint actualValue = (nuint)(object)value;
-                result = actualValue;
-                return true;
-            }
-            else
-            {
-                result = default;
-                return false;
-            }
+
+            result = default;
+            return false;
         }
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertToChecked{TOther}(TSelf, out TOther)" />

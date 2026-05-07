@@ -1213,25 +1213,31 @@ namespace System.Numerics
             return TryConvertFromTruncatingCore(value, out result);
         }
 
-        private static bool TryConvertFromCheckedCore<TOther>(TOther value, out Complex<T> result)
+        internal static bool TryConvertFromCheckedCore<TOther>(TOther value, out Complex<T> result)
             where TOther : INumberBase<TOther>
         {
+            if (typeof(TOther) == typeof(T))
+            {
+                result = new Complex<T>((T)(object)value, T.Zero);
+                return true;
+            }
+
+            if (typeof(TOther) == typeof(Complex))
+            {
+                Complex actualValue = (Complex)(object)value;
+                result = new Complex<T>(T.CreateChecked(actualValue.Real), T.CreateChecked(actualValue.Imaginary));
+                return true;
+            }
+
             if (T.TryConvertFromChecked(value, out T? realResult) && realResult is not null)
             {
                 result = new Complex<T>(realResult, T.Zero);
                 return true;
             }
 
-            result = default;
-            return false;
-        }
-
-        private static bool TryConvertFromSaturatingCore<TOther>(TOther value, out Complex<T> result)
-            where TOther : INumberBase<TOther>
-        {
-            if (T.TryConvertFromSaturating(value, out T? realResult) && realResult is not null)
+            if (TOther.TryConvertToChecked<T>(value, out T? realResult2) && realResult2 is not null)
             {
-                result = new Complex<T>(realResult, T.Zero);
+                result = new Complex<T>(realResult2, T.Zero);
                 return true;
             }
 
@@ -1239,12 +1245,63 @@ namespace System.Numerics
             return false;
         }
 
-        private static bool TryConvertFromTruncatingCore<TOther>(TOther value, out Complex<T> result)
+        internal static bool TryConvertFromSaturatingCore<TOther>(TOther value, out Complex<T> result)
             where TOther : INumberBase<TOther>
         {
+            if (typeof(TOther) == typeof(T))
+            {
+                result = new Complex<T>((T)(object)value, T.Zero);
+                return true;
+            }
+
+            if (typeof(TOther) == typeof(Complex))
+            {
+                Complex actualValue = (Complex)(object)value;
+                result = new Complex<T>(T.CreateSaturating(actualValue.Real), T.CreateSaturating(actualValue.Imaginary));
+                return true;
+            }
+
+            if (T.TryConvertFromSaturating(value, out T? realResult) && realResult is not null)
+            {
+                result = new Complex<T>(realResult, T.Zero);
+                return true;
+            }
+
+            if (TOther.TryConvertToSaturating<T>(value, out T? realResult2) && realResult2 is not null)
+            {
+                result = new Complex<T>(realResult2, T.Zero);
+                return true;
+            }
+
+            result = default;
+            return false;
+        }
+
+        internal static bool TryConvertFromTruncatingCore<TOther>(TOther value, out Complex<T> result)
+            where TOther : INumberBase<TOther>
+        {
+            if (typeof(TOther) == typeof(T))
+            {
+                result = new Complex<T>((T)(object)value, T.Zero);
+                return true;
+            }
+
+            if (typeof(TOther) == typeof(Complex))
+            {
+                Complex actualValue = (Complex)(object)value;
+                result = new Complex<T>(T.CreateTruncating(actualValue.Real), T.CreateTruncating(actualValue.Imaginary));
+                return true;
+            }
+
             if (T.TryConvertFromTruncating(value, out T? realResult) && realResult is not null)
             {
                 result = new Complex<T>(realResult, T.Zero);
+                return true;
+            }
+
+            if (TOther.TryConvertToTruncating<T>(value, out T? realResult2) && realResult2 is not null)
+            {
+                result = new Complex<T>(realResult2, T.Zero);
                 return true;
             }
 
