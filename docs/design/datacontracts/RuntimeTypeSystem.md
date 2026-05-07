@@ -835,7 +835,7 @@ Contracts used:
         // if typedesc: check for CorElementType.ValueType
     }
 
-    // Enums have Category_PrimitiveValueType in their MethodTable flags and their
+    // Enums have Category_Enum in their MethodTable flags and their
     // InternalCorElementType is a primitive type (I1, U1, I2, U2, I4, U4, I8, U8),
     // not ValueType. Regular primitive value types (Int32, etc.) have Category_TruePrimitive.
     public bool IsEnum(TypeHandle typeHandle)
@@ -844,7 +844,7 @@ Contracts used:
             return false;
 
         MethodTable methodTable = _methodTables[typeHandle.Address];
-        return methodTable.Flags.GetFlag(WFLAGS_HIGH.Category_Mask) == WFLAGS_HIGH.Category_PrimitiveValueType;
+        return methodTable.Flags.GetFlag(WFLAGS_HIGH.Category_Mask) == WFLAGS_HIGH.Category_Enum;
     }
 
     // return true if the TypeHandle represents an array, and set the rank to either 0 (if the type is not an array), or the rank number if it is.

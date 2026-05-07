@@ -4969,8 +4969,8 @@ CorElementType MethodTable::GetInternalCorElementType()
         ret = ELEMENT_TYPE_VALUETYPE;
         break;
 
-    case enum_flag_Category_PrimitiveValueType:
-        // enum_flag_Category_ElementTypeMask maps both Category_TruePrimitive and Category_PrimitiveValueType here.
+    case enum_flag_Category_Enum:
+        // enum_flag_Category_ElementTypeMask maps both Category_TruePrimitive and Category_Enum here.
         ret = GetClass()->GetInternalCorElementType();
         _ASSERTE((ret != ELEMENT_TYPE_CLASS) &&
                     (ret != ELEMENT_TYPE_VALUETYPE));
@@ -5015,7 +5015,7 @@ CorElementType MethodTable::GetSignatureCorElementType()
 
     case enum_flag_Category_ValueType:
     case enum_flag_Category_Nullable:
-    case enum_flag_Category_PrimitiveValueType:
+    case enum_flag_Category_Enum:
         ret = ELEMENT_TYPE_VALUETYPE;
         break;
 
@@ -5048,7 +5048,7 @@ void MethodTable::SetInternalCorElementType(CorElementType elemType, bool isTrue
         SetFlag(enum_flag_Category_ValueType);
         break;
     default:
-        SetFlag(isTruePrimitive ? enum_flag_Category_TruePrimitive : enum_flag_Category_PrimitiveValueType);
+        SetFlag(isTruePrimitive ? enum_flag_Category_TruePrimitive : enum_flag_Category_Enum);
         break;
     }
 

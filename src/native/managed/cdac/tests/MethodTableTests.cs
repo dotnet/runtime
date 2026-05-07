@@ -547,7 +547,7 @@ public class MethodTableTests
 
                 MockEEClass enumEEClass = rtsBuilder.AddEEClass("EnumEEClass");
                 MockMethodTable enumMT = rtsBuilder.AddMethodTable("Enum");
-                enumMT.MTFlags = (uint)MethodTableFlags_1.WFLAGS_HIGH.Category_PrimitiveValueType;
+                enumMT.MTFlags = (uint)MethodTableFlags_1.WFLAGS_HIGH.Category_Enum;
                 enumMT.BaseSize = rtsBuilder.Builder.TargetTestHelpers.ObjectBaseSize;
                 enumMT.ParentMethodTable = systemObjectMethodTablePtr;
                 enumMT.NumVirtuals = 3;

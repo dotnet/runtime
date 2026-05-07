@@ -334,7 +334,7 @@ inline bool MethodTable::IsTruePrimitive()
 inline bool MethodTable::IsPrimitive()
 {
     LIMITED_METHOD_DAC_CONTRACT;
-    return GetFlag(enum_flag_Category_ElementTypeMask) == enum_flag_Category_PrimitiveValueType;
+    return GetFlag(enum_flag_Category_ElementTypeMask) == enum_flag_Category_Enum;
 }
 
 //==========================================================================================
