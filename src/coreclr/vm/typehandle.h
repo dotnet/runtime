@@ -201,8 +201,7 @@ public:
     // - Will return enums underlying type
     // - Will return underlying primitive for System.Int32 etc...
     //
-    // This will NOT convert E_T_ARRAY, E_T_SZARRAY etc. to E_T_CLASS (though it probably
-    // should).  Use CorTypeInfo::IsObjRef for that.
+    // This will NOT convert E_T_ARRAY, E_T_SZARRAY etc. to E_T_CLASS. Use CorTypeInfo::IsObjRef for that.
     CorElementType GetInternalCorElementType() const;
 
     //-------------------------------------------------------------------
