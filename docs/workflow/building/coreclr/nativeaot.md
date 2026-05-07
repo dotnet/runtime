@@ -83,7 +83,11 @@ The workflow looks like this:
 * Open the ilc.slnx solution described above. This solution contains the compiler, but also an unrelated project named "repro". This repro project is a small Hello World. You can place any piece of C# you would like to compile in it. Building the project will compile the source code into IL, but also generate a response file that is suitable to pass to the AOT compiler.
 * Make sure you set the solution configuration in VS to the configuration you just built (e.g. x64 Debug).
 * In the ILCompiler project properties, on the Debug tab, set the "Application arguments" to `@$(ArtifactsBinDir)repro\$(TargetArchitecture)\$(Configuration)\compile-with-Release-libs.rsp`. The `@` at the front of the argument indicates that this is the path to the response file generated when "repro" was built. Adjust the "compile-with-Release-libs" part to "compile-with-Debug-libs" depending on how you built the libraries (the `-lc` argument to `build.cmd`). Visual Studio will expand the path to something like `@C:\runtime\artifacts\bin\repro\x64\Debug\compile-with-Release-libs.rsp`.
+
+> **Note:** The compiler is multithreaded by default, which can make debugging complicated. To make it single-threaded, add `--parallelism:1` after the response file argument in the project Debug options (e.g., `@...\compile-with-Release-libs.rsp --parallelism:1`).
+
 * Build & run ILCompiler using **F5**. This will compile the repro project into an `.obj` file. You can debug the compiler and set breakpoints in it at this point.
+
 * The last step is linking the object file into an executable so that we can launch the result of the AOT compilation.
 * Open the src\coreclr\tools\aot\ILCompiler\reproNative\reproNative.vcxproj project in Visual Studio. This project is configured to pick up the `.obj` file we just compiled and link it with the rest of the runtime.
 * Set the solution configuration to the tuple you've been using so far (e.g. x64 Debug)
