@@ -494,6 +494,7 @@ public static class Program
             (address, buffer) => ReadFromMemoryMappedLog(address, buffer, header),
             (address, buffer) => throw new NotImplementedException("StressLogAnalyzer does not provide WriteToTarget implementation"),
             (threadId, contextFlags, bufferToFill) => throw new NotImplementedException("StressLogAnalyzer does not provide GetTargetThreadContext implementation"),
+            (ulong size, out ulong allocatedAddress) => throw new NotImplementedException("StressLogAnalyzer does not provide AllocVirtual implementation"),
             true,
             nuint.Size,
             [CoreCLRContracts.Register]);

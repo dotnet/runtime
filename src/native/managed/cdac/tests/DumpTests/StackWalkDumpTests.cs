@@ -18,7 +18,6 @@ namespace Microsoft.Diagnostics.DataContractReader.DumpTests;
 public class StackWalkDumpTests : DumpTestBase
 {
     protected override string DebuggeeName => "StackWalk";
-    protected override string DumpType => "full";
 
     // ========== StackWalk debuggee ==========
 
@@ -331,5 +330,26 @@ public class StackWalkDumpTests : DumpTestBase
         }
 
         Assert.Fail("Expected to find a frame with a valid entry point");
+    }
+
+    // ========== GetContext API tests ==========
+
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
+    [SkipOnVersion("net10.0", "InlinedCallFrame.Datum was added after net10.0")]
+    public void GetContext_ReturnsNonEmptyContext(TestConfiguration config)
+    {
+        InitializeDumpTest(config);
+
+        ThreadData crashingThread = DumpTestHelpers.FindFailFastThread(Target);
+        uint allFlags = Contracts.StackWalkHelpers.IPlatformAgnosticContext.GetContextForPlatform(Target).AllContextFlags;
+        byte[] context = Target.Contracts.Thread.GetContext(crashingThread.ThreadAddress, ThreadContextSource.None, allFlags);
+
+        Assert.NotNull(context);
+        Assert.True(context.Length > 0, "Expected non-empty context");
+
+        var ctx = Contracts.StackWalkHelpers.IPlatformAgnosticContext.GetContextForPlatform(Target);
+        ctx.FillFromBuffer(context);
+        Assert.NotEqual(TargetPointer.Null, ctx.InstructionPointer);
     }
 }

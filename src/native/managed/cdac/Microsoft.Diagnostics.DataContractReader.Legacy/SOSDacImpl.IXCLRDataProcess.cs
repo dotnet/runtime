@@ -682,22 +682,48 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
         => LegacyFallbackHelper.CanFallback() && _legacyProcess is not null ? _legacyProcess.SetAllTypeNotifications(mod, flags) : HResults.E_NOTIMPL;
 
     int IXCLRDataProcess.SetAllCodeNotifications(IXCLRDataModule? mod, uint flags)
-        => LegacyFallbackHelper.CanFallback() && _legacyProcess is not null ? _legacyProcess.SetAllCodeNotifications(mod, flags) : HResults.E_NOTIMPL;
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            if (!CodeNotificationFlagsConverter.IsValid(flags))
+                throw new ArgumentException("Invalid code notification flags");
+
+            TargetPointer moduleAddr = TargetPointer.Null;
+            if (mod is not null)
+            {
+                if (mod is not ClrDataModule cdm)
+                    throw new ArgumentException();
+                moduleAddr = cdm.Address;
+            }
+
+            _target.Contracts.CodeNotifications.SetAllCodeNotifications(moduleAddr, CodeNotificationFlagsConverter.FromCom(flags));
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+        // No #if DEBUG validation: SetAllCodeNotifications is a write operation.
+        // Both the cDAC and legacy DAC independently write to g_pNotificationTable.
+
+        return hr;
+    }
 
     int IXCLRDataProcess.GetTypeNotifications(
         uint numTokens,
         /*IXCLRDataModule*/ void** mods,
         IXCLRDataModule? singleMod,
-        [In, MarshalUsing(CountElementName = nameof(numTokens))] /*mdTypeDef*/ uint[] tokens,
-        [In, Out, MarshalUsing(CountElementName = nameof(numTokens))] uint[] flags)
+        [In, MarshalUsing(CountElementName = nameof(numTokens))] /*mdTypeDef*/ uint[]? tokens,
+        [In, Out, MarshalUsing(CountElementName = nameof(numTokens))] uint[]? flags)
         => LegacyFallbackHelper.CanFallback() && _legacyProcess is not null ? _legacyProcess.GetTypeNotifications(numTokens, mods, singleMod, tokens, flags) : HResults.E_NOTIMPL;
 
     int IXCLRDataProcess.SetTypeNotifications(
         uint numTokens,
         /*IXCLRDataModule*/ void** mods,
         IXCLRDataModule? singleMod,
-        [In, MarshalUsing(CountElementName = nameof(numTokens))] /*mdTypeDef*/ uint[] tokens,
-        [In, MarshalUsing(CountElementName = nameof(numTokens))] uint[] flags,
+        [In, MarshalUsing(CountElementName = nameof(numTokens))] /*mdTypeDef*/ uint[]? tokens,
+        [In, MarshalUsing(CountElementName = nameof(numTokens))] uint[]? flags,
         uint singleFlags)
         => LegacyFallbackHelper.CanFallback() && _legacyProcess is not null ? _legacyProcess.SetTypeNotifications(numTokens, mods, singleMod, tokens, flags, singleFlags) : HResults.E_NOTIMPL;
 
@@ -705,18 +731,115 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
         uint numTokens,
         /*IXCLRDataModule*/ void** mods,
         IXCLRDataModule? singleMod,
-        [In, MarshalUsing(CountElementName = nameof(numTokens))] /*mdMethodDef*/ uint[] tokens,
-        [In, Out, MarshalUsing(CountElementName = nameof(numTokens))] uint[] flags)
-        => LegacyFallbackHelper.CanFallback() && _legacyProcess is not null ? _legacyProcess.GetCodeNotifications(numTokens, mods, singleMod, tokens, flags) : HResults.E_NOTIMPL;
+        [In, MarshalUsing(CountElementName = nameof(numTokens))] /*mdMethodDef*/ uint[]? tokens,
+        [In, Out, MarshalUsing(CountElementName = nameof(numTokens))] uint[]? flags)
+    {
+        int hr = HResults.S_OK;
+        ICodeNotifications codeNotif = _target.Contracts.CodeNotifications;
+
+        try
+        {
+            // Match legacy DAC (daccess.cpp ClrDataAccess::GetCodeNotifications):
+            // tokens and flags are both required; exactly one of mods/singleMod must be non-null.
+            if (tokens is null || flags is null ||
+                (mods is null && singleMod is null) ||
+                (mods is not null && singleMod is not null))
+                throw new ArgumentException();
+
+            TargetPointer moduleAddr = TargetPointer.Null;
+            if (singleMod is not null)
+            {
+                if (singleMod is not ClrDataModule singleCdm)
+                    throw new ArgumentException();
+                moduleAddr = singleCdm.Address;
+            }
+
+            for (uint i = 0; i < numTokens; i++)
+            {
+                if (singleMod is null)
+                    moduleAddr = GetModuleAddress(mods[i]);
+
+                flags[i] = CodeNotificationFlagsConverter.ToCom(codeNotif.GetCodeNotification(moduleAddr, tokens[i]));
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+        // No #if DEBUG validation: GetCodeNotifications is a read, but both cDAC and
+        // legacy DAC allocate the table on-demand when called, which would cause
+        // dual-allocation. Validation is safe at a higher layer when a dump is used.
+
+        return hr;
+    }
 
     int IXCLRDataProcess.SetCodeNotifications(
         uint numTokens,
         /*IXCLRDataModule*/ void** mods,
         IXCLRDataModule? singleMod,
-        [In, MarshalUsing(CountElementName = nameof(numTokens))] /*mdMethodDef */ uint[] tokens,
-        [In, MarshalUsing(CountElementName = nameof(numTokens))] uint[] flags,
+        [In, MarshalUsing(CountElementName = nameof(numTokens))] /*mdMethodDef */ uint[]? tokens,
+        [In, MarshalUsing(CountElementName = nameof(numTokens))] uint[]? flags,
         uint singleFlags)
-        => LegacyFallbackHelper.CanFallback() && _legacyProcess is not null ? _legacyProcess.SetCodeNotifications(numTokens, mods, singleMod, tokens, flags, singleFlags) : HResults.E_NOTIMPL;
+    {
+        // Behavior difference from the legacy DAC: the legacy DAC performs an upfront
+        // capacity check (numTokens > table size returns E_OUTOFMEMORY with no writes
+        // performed). The cDAC's CodeNotifications contract does not expose a capacity
+        // check, so this batch wrapper writes entries one at a time. If the in-target
+        // table fills up part-way through, entries written before the overflow remain
+        // set and the first failing per-entry SetCodeNotification surfaces a COMException
+        // with HResult == E_FAIL, which is mapped to the returned hr below. Callers that
+        // depend on atomic batch semantics should size their batches conservatively.
+        int hr = HResults.S_OK;
+
+        try
+        {
+            if (tokens is null ||
+                (mods is null && singleMod is null) ||
+                (mods is not null && singleMod is not null))
+                throw new ArgumentException();
+
+            // Validate flags.
+            if (flags is not null)
+            {
+                for (uint check = 0; check < numTokens; check++)
+                {
+                    if (!CodeNotificationFlagsConverter.IsValid(flags[check]))
+                        throw new ArgumentException("Invalid code notification flags");
+                }
+            }
+            else if (!CodeNotificationFlagsConverter.IsValid(singleFlags))
+            {
+                throw new ArgumentException("Invalid code notification flags");
+            }
+
+            TargetPointer moduleAddr = TargetPointer.Null;
+            if (singleMod is not null)
+            {
+                if (singleMod is not ClrDataModule singleCdm)
+                    throw new ArgumentException();
+                moduleAddr = singleCdm.Address;
+            }
+
+            for (uint i = 0; i < numTokens; i++)
+            {
+                if (singleMod is null)
+                    moduleAddr = GetModuleAddress(mods[i]);
+
+                uint f = flags is not null ? flags[i] : singleFlags;
+                _target.Contracts.CodeNotifications.SetCodeNotification(moduleAddr, tokens[i], CodeNotificationFlagsConverter.FromCom(f));
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+        // No #if DEBUG validation: SetCodeNotifications is a write operation.
+        // Both the cDAC and legacy DAC independently write to g_pNotificationTable.
+
+        return hr;
+    }
 
     int IXCLRDataProcess.GetOtherNotificationFlags(uint* flags)
     {
@@ -862,5 +985,15 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
         }
 #endif
         return hr;
+    }
+
+    private static TargetPointer GetModuleAddress(void* comModulePtr)
+    {
+        if (System.Runtime.InteropServices.ComWrappers.TryGetObject((nint)comModulePtr, out object? obj))
+        {
+            if (obj is ClrDataModule cdm)
+                return cdm.Address;
+        }
+        throw new ArgumentException("Could not resolve module address from COM pointer");
     }
 }

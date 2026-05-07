@@ -36,6 +36,7 @@ cached mapping table).
 | runtime-coreclr pgo | |
 | runtime-coreclr libraries-pgo | |
 | runtime-coreclr pgostress | |
+| runtime-coreclr jit-cfg | Sat-Sun 22:00 UTC | Control flow guard. |
 
 ## Cached Definition ID Mapping
 
@@ -62,6 +63,7 @@ entries via the AzDO Definitions API, and adds new rows here.
 | runtime-coreclr libraries-pgo | 145 | |
 | runtime-coreclr superpmi-replay | 150 | |
 | runtime-coreclr superpmi-asmdiffs-checked-release | 153 | |
+| runtime-coreclr jit-cfg | 155 | |
 | runtime-coreclr jitstress-random | 159 | |
 | runtime-coreclr libraries-jitstress-random | 160 | |
 | runtime-coreclr pgostress | 230 | |

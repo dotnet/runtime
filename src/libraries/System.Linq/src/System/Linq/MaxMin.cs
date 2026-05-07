@@ -3,9 +3,8 @@
 
 using System.Collections.Generic;
 using System.Numerics;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
+using System.Runtime.CompilerServices;
 
 namespace System.Linq
 {
@@ -47,77 +46,68 @@ namespace System.Linq
                             value = span[i];
                         }
                     }
+                    return value;
                 }
-                else if (!Vector256.IsHardwareAccelerated || !Vector256<T>.IsSupported || span.Length < Vector256<T>.Count)
+
+                // All vectorized paths reduce to 128-bit, so we can use that as our accumulator
+                // regardless of the maximum supported vector size.
+                Vector128<T> best128;
+
+                if (!Vector256.IsHardwareAccelerated || span.Length < Vector256<T>.Count)
                 {
-                    ref T current = ref MemoryMarshal.GetReference(span);
-                    ref T lastVectorStart = ref Unsafe.Add(ref current, span.Length - Vector128<T>.Count);
+                    ReadOnlySpan<T> data = span;
+                    Vector128<T> best = Vector128.Create(data);
+                    data = data.Slice(Vector128<T>.Count);
 
-                    Vector128<T> best = Vector128.LoadUnsafe(ref current);
-                    current = ref Unsafe.Add(ref current, Vector128<T>.Count);
-
-                    while (Unsafe.IsAddressLessThan(ref current, ref lastVectorStart))
+                    while (data.Length > Vector128<T>.Count)
                     {
-                        best = TMinMax.Compare(best, Vector128.LoadUnsafe(ref current));
-                        current = ref Unsafe.Add(ref current, Vector128<T>.Count);
+                        best = TMinMax.Compare(best, Vector128.Create(data));
+                        data = data.Slice(Vector128<T>.Count);
                     }
-                    best = TMinMax.Compare(best, Vector128.LoadUnsafe(ref lastVectorStart));
-
-                    value = best[0];
-                    for (int i = 1; i < Vector128<T>.Count; i++)
-                    {
-                        if (TMinMax.Compare(best[i], value))
-                        {
-                            value = best[i];
-                        }
-                    }
+                    best128 = TMinMax.Compare(best, Vector128.Create(span.Slice(span.Length - Vector128<T>.Count)));
                 }
-                else if (!Vector512.IsHardwareAccelerated || !Vector512<T>.IsSupported || span.Length < Vector512<T>.Count)
+                else if (!Vector512.IsHardwareAccelerated || span.Length < Vector512<T>.Count)
                 {
-                    ref T current = ref MemoryMarshal.GetReference(span);
-                    ref T lastVectorStart = ref Unsafe.Add(ref current, span.Length - Vector256<T>.Count);
+                    ReadOnlySpan<T> data = span;
+                    Vector256<T> best = Vector256.Create(data);
+                    data = data.Slice(Vector256<T>.Count);
 
-                    Vector256<T> best = Vector256.LoadUnsafe(ref current);
-                    current = ref Unsafe.Add(ref current, Vector256<T>.Count);
-
-                    while (Unsafe.IsAddressLessThan(ref current, ref lastVectorStart))
+                    while (data.Length > Vector256<T>.Count)
                     {
-                        best = TMinMax.Compare(best, Vector256.LoadUnsafe(ref current));
-                        current = ref Unsafe.Add(ref current, Vector256<T>.Count);
+                        best = TMinMax.Compare(best, Vector256.Create(data));
+                        data = data.Slice(Vector256<T>.Count);
                     }
-                    best = TMinMax.Compare(best, Vector256.LoadUnsafe(ref lastVectorStart));
+                    best = TMinMax.Compare(best, Vector256.Create(span.Slice(span.Length - Vector256<T>.Count)));
 
-                    value = best[0];
-                    for (int i = 1; i < Vector256<T>.Count; i++)
-                    {
-                        if (TMinMax.Compare(best[i], value))
-                        {
-                            value = best[i];
-                        }
-                    }
+                    // Reduce to 128-bit
+                    best128 = TMinMax.Compare(best.GetLower(), best.GetUpper());
                 }
                 else
                 {
-                    ref T current = ref MemoryMarshal.GetReference(span);
-                    ref T lastVectorStart = ref Unsafe.Add(ref current, span.Length - Vector512<T>.Count);
+                    ReadOnlySpan<T> data = span;
+                    Vector512<T> best = Vector512.Create(data);
+                    data = data.Slice(Vector512<T>.Count);
 
-                    Vector512<T> best = Vector512.LoadUnsafe(ref current);
-                    current = ref Unsafe.Add(ref current, Vector512<T>.Count);
-
-                    while (Unsafe.IsAddressLessThan(ref current, ref lastVectorStart))
+                    while (data.Length > Vector512<T>.Count)
                     {
-                        best = TMinMax.Compare(best, Vector512.LoadUnsafe(ref current));
-                        current = ref Unsafe.Add(ref current, Vector512<T>.Count);
+                        best = TMinMax.Compare(best, Vector512.Create(data));
+                        data = data.Slice(Vector512<T>.Count);
                     }
-                    best = TMinMax.Compare(best, Vector512.LoadUnsafe(ref lastVectorStart));
+                    best = TMinMax.Compare(best, Vector512.Create(span.Slice(span.Length - Vector512<T>.Count)));
 
-                    value = best[0];
-                    for (int i = 1; i < Vector512<T>.Count; i++)
+                    // Reduce to 128-bit
+                    Vector256<T> best256 = TMinMax.Compare(best.GetLower(), best.GetUpper());
+                    best128 = TMinMax.Compare(best256.GetLower(), best256.GetUpper());
+                }
+
+                // Reduce to single value
+                // NOTE: this can be optimized further with shuffles.
+                value = best128[0];
+                for (int i = 1; i < Vector128<T>.Count; i++)
+                {
+                    if (TMinMax.Compare(best128[i], value))
                     {
-                        if (TMinMax.Compare(best[i], value))
-                        {
-                            value = best[i];
-                        }
+                        value = best128[i];
                     }
                 }
             }

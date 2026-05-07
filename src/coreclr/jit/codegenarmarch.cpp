@@ -295,8 +295,9 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             break;
 #endif // SWIFT_SUPPORT
 
-        case GT_RETURN_SUSPEND:
-            genReturnSuspend(treeNode->AsUnOp());
+        case GT_PATCHPOINT:
+        case GT_PATCHPOINT_FORCED:
+            genPatchpoint(treeNode->AsOp());
             break;
 
         case GT_LEA:
@@ -502,6 +503,18 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
         case GT_CATCH_ARG:
             genCodeForCatchArg(treeNode);
             break;
+        case GT_LABEL:
+            genPendingCallLabel = genCreateTempLabel();
+#if defined(TARGET_ARM)
+            genMov32RelocatableDisplacement(genPendingCallLabel, targetReg);
+#else
+            emit->emitIns_R_L(INS_adr, EA_PTRSIZE, genPendingCallLabel, targetReg);
+#endif
+            break;
+
+        case GT_RETURN_SUSPEND:
+            genReturnSuspend(treeNode->AsUnOp());
+            break;
 
         case GT_ASYNC_CONTINUATION:
             genCodeForAsyncContinuation(treeNode);
@@ -511,13 +524,16 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             genAsyncResumeInfo(treeNode->AsVal());
             break;
 
-        case GT_LABEL:
-            genPendingCallLabel = genCreateTempLabel();
-#if defined(TARGET_ARM)
-            genMov32RelocatableDisplacement(genPendingCallLabel, targetReg);
-#else
-            emit->emitIns_R_L(INS_adr, EA_PTRSIZE, genPendingCallLabel, targetReg);
-#endif
+        case GT_RECORD_ASYNC_RESUME:
+            genRecordAsyncResume(treeNode->AsVal());
+            break;
+
+        case GT_FTN_ENTRY:
+            genFtnEntry(treeNode);
+            break;
+
+        case GT_NONLOCAL_JMP:
+            genNonLocalJmp(treeNode->AsUnOp());
             break;
 
         case GT_STORE_BLK:
@@ -541,10 +557,6 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 
         case GT_IL_OFFSET:
             // Do nothing; this node is a marker for debug info.
-            break;
-
-        case GT_RECORD_ASYNC_RESUME:
-            genRecordAsyncResume(treeNode->AsVal());
             break;
 
         default:
@@ -4856,8 +4868,49 @@ void CodeGen::genPushCalleeSavedRegisters(regNumber initReg, bool* pInitRegZeroe
     m_compiler->compFrameInfo.calleeSaveSpOffset = calleeSaveSpOffset;
     m_compiler->compFrameInfo.calleeSaveSpDelta  = calleeSaveSpDelta;
     m_compiler->compFrameInfo.offsetSpToSavedFp  = offsetSpToSavedFp;
+
 #endif // TARGET_ARM64
 }
+
+#if defined(TARGET_ARM64)
+/*****************************************************************************
+ *
+ * Generates code for creating the UnknownSizeFrame stack space.
+ *
+ * See Compiler::UnknownSizeFrame for implementation details. The space contains
+ * stack allocations for Vector<T>.
+ */
+
+void CodeGen::genUnknownSizeFrame()
+{
+    assert(m_compiler->compLocallocUsed && m_compiler->compUsesUnknownSizeFrame);
+    assert(m_compiler->unkSizeFrame.isFinalized);
+    unsigned totalVectorCount = m_compiler->unkSizeFrame.FrameSizeInVectors();
+
+    // We reserve REG_UNKBASE for addressing SVE locals. This will always point at the top of
+    // of the UnknownSizeFrame and we index into it.
+    // TODO-SVE: We may want this to point into the middle of the frame to reduce address
+    // computations (we have a signed 9-bit indexing immediate).
+    inst_Mov(TYP_I_IMPL, REG_UNKBASE, REG_SP, false);
+
+    if (0 < totalVectorCount && totalVectorCount <= 32)
+    {
+        GetEmitter()->emitIns_R_R_I(INS_sve_addvl, EA_8BYTE, REG_SP, REG_SP, -(ssize_t)totalVectorCount);
+    }
+    else
+    {
+        // Generate `sp = sp - totalVectorCount * VL`
+        assert(totalVectorCount != 0);
+        regNumber rsvd = rsGetRsvdReg();
+        // mov   rsvd, #totalVectorCount
+        // rdvl  scratch, #1
+        // msub  sp, rsvd, scratch, sp
+        instGen_Set_Reg_To_Imm(EA_8BYTE, rsvd, totalVectorCount);
+        GetEmitter()->emitIns_R_I(INS_sve_rdvl, EA_8BYTE, REG_SCRATCH, 1);
+        GetEmitter()->emitIns_R_R_R_R(INS_msub, EA_8BYTE, REG_SP, rsvd, REG_SCRATCH, REG_SP);
+    }
+}
+#endif
 
 /*****************************************************************************
  *

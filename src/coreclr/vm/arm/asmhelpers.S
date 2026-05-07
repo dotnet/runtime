@@ -971,11 +971,22 @@ LEAF_ENTRY Load_R0_R1_4B
     EPILOG_BRANCH_REG r5
 LEAF_END Load_R0_R1_4B
 
+LEAF_ENTRY Load_R0_R1_R2_4B
+    ldr r0, [r7], #4
+ALTERNATE_ENTRY Load_R1_R2_4B
+    ldr r1, [r7], #4
+    ldr r2, [r7], #4
+    ldr r5, [r6], #4
+    EPILOG_BRANCH_REG r5
+LEAF_END Load_R0_R1_R2_4B
+
 LEAF_ENTRY Load_R0_R1_R2_R3_4B
     ldr r0, [r7], #4
+ALTERNATE_ENTRY Load_R1_R2_R3_4B
     ldr r1, [r7], #4
 ALTERNATE_ENTRY Load_R2_R3_4B
     ldr r2, [r7], #4
+ALTERNATE_ENTRY Load_R3_4B
     ldr r3, [r7], #4
     ldr r5, [r6], #4
     EPILOG_BRANCH_REG r5
@@ -1024,11 +1035,22 @@ LEAF_ENTRY Store_R0_R1_4B
     EPILOG_BRANCH_REG r5
 LEAF_END Store_R0_R1_4B
 
+LEAF_ENTRY Store_R0_R1_R2_4B
+    str r0, [r7], #4
+ALTERNATE_ENTRY Store_R1_R2_4B
+    str r1, [r7], #4
+    str r2, [r7], #4
+    ldr r5, [r6], #4
+    EPILOG_BRANCH_REG r5
+LEAF_END Store_R0_R1_R2_4B
+
 LEAF_ENTRY Store_R0_R1_R2_R3_4B
     str r0, [r7], #4
+ALTERNATE_ENTRY Store_R1_R2_R3_4B
     str r1, [r7], #4
 ALTERNATE_ENTRY Store_R2_R3_4B
     str r2, [r7], #4
+ALTERNATE_ENTRY Store_R3_4B
     str r3, [r7], #4
     ldr r5, [r6], #4
     EPILOG_BRANCH_REG r5
@@ -1066,34 +1088,6 @@ LOCAL_LABEL(CopyLoop_4B):
     EPILOG_BRANCH_REG r5
 LEAF_END Load_Stack_4B
 
-LEAF_ENTRY Store_Stack
-    ldr r9, [r6], #4 // SP offset
-    ldr r8, [r6], #4 // number of stack slots
-    add r9, sp, r9
-    add r9, r9, #__PWTB_TransitionBlock + SIZEOF__TransitionBlock
-LOCAL_LABEL(StoreCopyLoop):
-    ldr r5, [r9], #4
-    str r5, [r7], #8
-    subs r8, r8, #4
-    bne LOCAL_LABEL(StoreCopyLoop)
-    ldr r5, [r6], #4
-    EPILOG_BRANCH_REG r5
-LEAF_END Store_Stack
-
-LEAF_ENTRY Store_Stack_4B
-    ldr r9, [r6], #4 // SP offset
-    ldr r8, [r6], #4 // number of stack slots
-    add r9, sp, r9
-    add r9, r9, #__PWTB_TransitionBlock + SIZEOF__TransitionBlock
-LOCAL_LABEL(StoreCopyLoop_4B):
-    ldr r5, [r9], #4
-    str r5, [r7], #4
-    subs r8, r8, #4
-    bne LOCAL_LABEL(StoreCopyLoop_4B)
-    ldr r5, [r6], #4
-    EPILOG_BRANCH_REG r5
-LEAF_END Store_Stack_4B
-
 NESTED_ENTRY CallJittedMethodRetVoid, _TEXT, NoHandler
     PROLOG_PUSH "{r4-r10,lr}"
     mov r4, sp
@@ -1104,6 +1098,8 @@ NESTED_ENTRY CallJittedMethodRetVoid, _TEXT, NoHandler
     CHECK_STACK_ALIGNMENT
     blx r5
     mov sp, r4
+    ldr r4, [r4, 32]
+    str r2, [r4]
     EPILOG_POP "{r4-r10,pc}"
 NESTED_END CallJittedMethodRetVoid, _TEXT
 
@@ -1119,6 +1115,8 @@ NESTED_ENTRY CallJittedMethodRetI4, _TEXT, NoHandler
     blx r5
     mov sp, r4
     str r0, [r10]
+    ldr r4, [r4, 32]
+    str r2, [r4]
     EPILOG_POP "{r4-r10,pc}"
 NESTED_END CallJittedMethodRetI4, _TEXT
 
@@ -1135,6 +1133,8 @@ NESTED_ENTRY CallJittedMethodRetI8, _TEXT, NoHandler
     mov sp, r4
     str r0, [r10]
     str r1, [r10, 4]
+    ldr r4, [r4, 32]
+    str r2, [r4]
     EPILOG_POP "{r4-r10,pc}"
 NESTED_END CallJittedMethodRetI8, _TEXT
 
@@ -1157,6 +1157,8 @@ NESTED_ENTRY CallJittedMethodRetBuffR0, _TEXT, NoHandler
     CHECK_STACK_ALIGNMENT
     blx r5
     mov sp, r4
+    ldr r4, [r4, 32]
+    str r2, [r4]
     EPILOG_POP "{r4-r10,pc}"
 NESTED_END CallJittedMethodRetBuffR0, _TEXT
 
@@ -1171,6 +1173,8 @@ NESTED_ENTRY CallJittedMethodRetBuffR1, _TEXT, NoHandler
     CHECK_STACK_ALIGNMENT
     blx r5
     mov sp, r4
+    ldr r4, [r4, 32]
+    str r2, [r4]
     EPILOG_POP "{r4-r10,pc}"
 NESTED_END CallJittedMethodRetBuffR1, _TEXT
 
@@ -1187,6 +1191,8 @@ NESTED_ENTRY CallJittedMethodRetI1, _TEXT, NoHandler
     mov sp, r4
     sxtb r0, r0
     str r0, [r10]
+    ldr r4, [r4, 32]
+    str r2, [r4]
     EPILOG_POP "{r4-r10,pc}"
 NESTED_END CallJittedMethodRetI1, _TEXT
 
@@ -1203,6 +1209,8 @@ NESTED_ENTRY CallJittedMethodRetI2, _TEXT, NoHandler
     mov sp, r4
     sxth r0, r0
     str r0, [r10]
+    ldr r4, [r4, 32]
+    str r2, [r4]
     EPILOG_POP "{r4-r10,pc}"
 NESTED_END CallJittedMethodRetI2, _TEXT
 
@@ -1219,6 +1227,8 @@ NESTED_ENTRY CallJittedMethodRetU1, _TEXT, NoHandler
     mov sp, r4
     uxtb r0, r0
     str r0, [r10]
+    ldr r4, [r4, 32]
+    str r2, [r4]
     EPILOG_POP "{r4-r10,pc}"
 NESTED_END CallJittedMethodRetU1, _TEXT
 
@@ -1235,6 +1245,8 @@ NESTED_ENTRY CallJittedMethodRetU2, _TEXT, NoHandler
     mov sp, r4
     uxth r0, r0
     str r0, [r10]
+    ldr r4, [r4, 32]
+    str r2, [r4]
     EPILOG_POP "{r4-r10,pc}"
 NESTED_END CallJittedMethodRetU2, _TEXT
 
@@ -1268,12 +1280,15 @@ LOCAL_LABEL(HaveInterpThreadContext):
     cmp r7, #0
     beq LOCAL_LABEL(NoManagedThreadOrCallStub)
     add r6, r7, #OFFSETOF__CallStubHeader__Routines
-    ldr r7, [r5, #OFFSETOF__InterpThreadContext__pStackPointer] // HERE
+    ldr r7, [r5, #OFFSETOF__InterpThreadContext__pStackPointer]
     ldr r5, [r6], 4 // InterpThreadContext
 
     EPILOG_POP "{r0-r3}"
     CHECK_STACK_ALIGNMENT
     blx r5
+
+    // Fill in the ContinuationContext register
+    ldr r2, [sp, #__PWTB_ArgumentRegisters + 8]
 
     EPILOG_WITH_TRANSITION_BLOCK_RETURN
 
@@ -1353,6 +1368,35 @@ NESTED_ENTRY InterpreterStubRetBuffR1, _TEXT, NoHandler
     EPILOG_POP {pc}
 NESTED_END InterpreterStubRetBuffR1, _TEXT
 
+LEAF_ENTRY Store_Stack
+    ldr r9, [r6], #4 // SP offset
+    ldr r8, [r6], #4 // number of stack slots
+    add r9, sp, r9
+    add r9, r9, #__PWTB_TransitionBlock + SIZEOF__TransitionBlock
+LOCAL_LABEL(StoreCopyLoop):
+    ldr r5, [r9], #4
+    str r5, [r7], #8
+    subs r8, r8, #4
+    bne LOCAL_LABEL(StoreCopyLoop)
+    ldr r5, [r6], #4
+    EPILOG_BRANCH_REG r5
+LEAF_END Store_Stack
+
+LEAF_ENTRY Store_Stack_4B
+    ldr r9, [r6], #4 // SP offset
+    ldr r8, [r6], #4 // number of stack slots
+    add r9, sp, r9
+    add r9, r9, #__PWTB_TransitionBlock + SIZEOF__TransitionBlock
+LOCAL_LABEL(StoreCopyLoop_4B):
+    ldr r5, [r9], #4
+    str r5, [r7], #4
+    subs r8, r8, #4
+    bne LOCAL_LABEL(StoreCopyLoop_4B)
+    ldr r5, [r6], #4
+    EPILOG_BRANCH_REG r5
+LEAF_END Store_Stack_4B
+
+
 // ------------------------------------------------------------------
 // Create a real TransitionBlock and call CallInterpreterFuncletWorker
 // to execute an interpreter funclet (catch/finally/filter handler).
@@ -1381,9 +1425,9 @@ NESTED_ENTRY CallInterpreterFunclet, _TEXT, NoHandler
     str         r12, [sp, #4]
 
     // Load isFilter from original stack location and store as 5th param (1st stack arg)
-    // After PROLOG_WITH_TRANSITION_BLOCK, original stack args are at __PWTB_TransitionBlock offset
+    // After PROLOG_WITH_TRANSITION_BLOCK, original stack args are past the ArgumentRegisters
     // The 5th param (isFilter) was pushed before our stack allocation
-    ldr         r12, [sp, #8 + __PWTB_TransitionBlock + SIZEOF__ArgumentRegisters]
+    ldr         r12, [sp, #8 + __PWTB_ArgumentRegisters + SIZEOF__ArgumentRegisters]
     str         r12, [sp, #0]
 
     // r0-r3 remain unchanged
