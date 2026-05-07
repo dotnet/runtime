@@ -331,6 +331,9 @@ internal sealed class MockReadyToRunInfo : TypedView
     private const string LoadedImageBaseFieldName = "LoadedImageBase";
     private const string CompositeFieldName = "Composite";
 
+    private const string ImportSectionsFieldName = "ImportSections";
+    private const string NumImportSectionsFieldName = "NumImportSections";
+
     public static Layout<MockReadyToRunInfo> CreateLayout(MockTarget.Architecture architecture, int hashMapStride)
         => new SequentialLayoutBuilder("ReadyToRunInfo", architecture)
             .AddPointerField(ReadyToRunHeaderFieldName)
@@ -342,6 +345,8 @@ internal sealed class MockReadyToRunInfo : TypedView
             .AddPointerField(DelayLoadMethodCallThunksFieldName)
             .AddPointerField(DebugInfoSectionFieldName)
             .AddPointerField(ExceptionInfoSectionFieldName)
+            .AddPointerField(ImportSectionsFieldName)
+            .AddUInt32Field(NumImportSectionsFieldName)
             .AddField(EntryPointToMethodDescMapFieldName, hashMapStride)
             .AddPointerField(LoadedImageBaseFieldName)
             .AddPointerField(CompositeFieldName)
@@ -488,7 +493,7 @@ internal sealed class MockExecutionManagerBuilder
         public ulong RangeSize => RangeEnd - RangeStart;
     }
 
-    internal int Version { get; }
+    internal string Version { get; }
     internal MockMemorySpace.Builder Builder { get; }
     internal Layout<MockRangeSectionMap> RangeSectionMapLayout { get; }
     internal Layout<MockRangeSectionFragment> RangeSectionFragmentLayout { get; }
@@ -518,12 +523,12 @@ internal sealed class MockExecutionManagerBuilder
     private readonly int _rangeSectionMapLevelsCount;
     private readonly int _rangeSectionMapMaxSetBit;
 
-    internal MockExecutionManagerBuilder(int version, MockTarget.Architecture arch, AllocationRange allocationRange, ulong allCodeHeaps = 0)
+    internal MockExecutionManagerBuilder(string version, MockTarget.Architecture arch, AllocationRange allocationRange, ulong allCodeHeaps = 0)
         : this(version, new MockMemorySpace.Builder(new TargetTestHelpers(arch)), allocationRange, allCodeHeaps)
     {
     }
 
-    internal MockExecutionManagerBuilder(int version, MockMemorySpace.Builder builder, AllocationRange allocationRange, ulong allCodeHeaps = 0)
+    internal MockExecutionManagerBuilder(string version, MockMemorySpace.Builder builder, AllocationRange allocationRange, ulong allCodeHeaps = 0)
     {
         ArgumentNullException.ThrowIfNull(builder);
 
@@ -579,9 +584,9 @@ internal sealed class MockExecutionManagerBuilder
     {
         NibbleMapTestBuilderBase nibBuilder = Version switch
         {
-            1 => new NibbleMapTestBuilder_1(codeRangeStart, codeRangeSize, _nibbleMapAllocator, Builder.TargetTestHelpers.Arch),
-            2 => new NibbleMapTestBuilder_2(codeRangeStart, codeRangeSize, _nibbleMapAllocator, Builder.TargetTestHelpers.Arch),
-            _ => throw new InvalidOperationException("Unknown version"),
+            "c1" => new NibbleMapTestBuilder_1(codeRangeStart, codeRangeSize, _nibbleMapAllocator, Builder.TargetTestHelpers.Arch),
+            "c2" => new NibbleMapTestBuilder_2(codeRangeStart, codeRangeSize, _nibbleMapAllocator, Builder.TargetTestHelpers.Arch),
+            _ => throw new InvalidOperationException($"Unknown version '{Version}'"),
         };
 
         return nibBuilder;

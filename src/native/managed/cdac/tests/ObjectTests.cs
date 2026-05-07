@@ -44,9 +44,9 @@ public unsafe class ObjectTests
         else
         {
             targetBuilder
-                .AddContract<IObject>(version: 1)
-                .AddContract<IRuntimeTypeSystem>(version: 1)
-                .AddContract<ISyncBlock>(version: 1);
+                .AddContract<IObject>(version: "c1")
+                .AddContract<IRuntimeTypeSystem>(version: "c1")
+                .AddContract<ISyncBlock>(version: "c1");
         }
 
         return targetBuilder.Build();

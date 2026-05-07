@@ -70,8 +70,12 @@ export interface DotnetHostBuilder {
     withResourceLoader(loadBootResource?: LoadBootResourceCallback): DotnetHostBuilder;
     /**
      * Downloads all the assets but doesn't create the runtime instance.
+     * @param httpCacheOnly If true, resources are only fetched into the browser HTTP cache
+     *   and discarded. A subsequent create() call will re-fetch from cache and do full init.
+     *   If false (default), resources are downloaded and loaded into WASM memory, so that
+     *   a subsequent create() call only needs to initialize the managed runtime.
      */
-    download(): Promise<void>;
+    download(httpCacheOnly?: boolean): Promise<void>;
     /**
      * Starts the runtime and returns promise of the API object.
      */
@@ -658,7 +662,7 @@ export type DiagnosticsAPIType = {
 export type DiagnosticCommandProviderV2 = {
     keywords: [number, number];
     logLevel: number;
-    provider_name: string;
+    providerName: string;
     arguments: string | null;
 };
 

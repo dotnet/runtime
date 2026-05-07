@@ -4,6 +4,9 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 include_directories(BEFORE ${CMAKE_CURRENT_SOURCE_DIR})
 include_directories(${ARCH_SOURCES_DIR})
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../interop/inc)
+if(FEATURE_INPROC_CRASHREPORT)
+    include_directories(${CLR_DIR}/debug/crashreport)
+endif(FEATURE_INPROC_CRASHREPORT)
 include_directories(${CLR_SRC_NATIVE_DIR})
 include_directories(${RUNTIME_DIR})
 
@@ -17,10 +20,6 @@ add_definitions(-D_UNICODE)
 if(CLR_CMAKE_TARGET_ANDROID)
     add_definitions(-DFEATURE_EMULATED_TLS)
 endif(CLR_CMAKE_TARGET_ANDROID)
-
-if(FEATURE_AUTO_TRACE)
-    add_definitions(-DFEATURE_AUTO_TRACE)
-endif(FEATURE_AUTO_TRACE)
 
 foreach (Config DEBUG CHECKED)
     add_compile_definitions($<$<CONFIG:${Config}>:WRITE_BARRIER_CHECK>)
@@ -68,7 +67,6 @@ set(VM_SOURCES_DAC_AND_WKS_COMMON
     debuginfostore.cpp
     decodemd.cpp
     disassembler.cpp
-    domainassembly.cpp
     dynamicmethod.cpp
     ebr.cpp
     ecall.cpp
@@ -169,7 +167,6 @@ set(VM_HEADERS_DAC_AND_WKS_COMMON
     debuginfostore.h
     decodemd.h
     disassembler.h
-    domainassembly.h
     dynamicmethod.h
     ebr.h
     ecall.h
@@ -315,7 +312,6 @@ set(VM_SOURCES_WKS
     corelib.cpp # <DisablePrecompiledHeaders>true</DisablePrecompiledHeaders>
     customattribute.cpp
     custommarshalerinfo.cpp
-    autotrace.cpp
     divmodint.cpp
     dllimport.cpp
     dllimportcallback.cpp
@@ -357,7 +353,6 @@ set(VM_SOURCES_WKS
     nativeeventsource.cpp
     nativelibrary.cpp
     nativelibrarynative.cpp
-    olevariant.cpp
     pendingload.cpp
     pinvokeoverride.cpp
     profdetach.cpp
@@ -412,7 +407,6 @@ set(VM_HEADERS_WKS
     cachelinealloc.h
     callhelpers.h
     callconvbuilder.hpp
-    cdacdata.h
     ceemain.h
     clrconfignative.h
     clrex.h
@@ -426,7 +420,6 @@ set(VM_HEADERS_WKS
     comutilnative.h
     customattribute.h
     custommarshalerinfo.h
-    autotrace.h
     diagnosticserveradapter.h
     divmodint.h
     dllimport.h
@@ -466,7 +459,6 @@ set(VM_HEADERS_WKS
     multicorejit.h
     multicorejitimpl.h
     nativeeventsource.h
-    olevariant.h
     pendingload.h
     profdetach.h
     profilingenumerators.h
@@ -563,6 +555,12 @@ if(FEATURE_OBJCMARSHAL)
     )
 endif(FEATURE_OBJCMARSHAL)
 
+if(FEATURE_INPROC_CRASHREPORT AND NOT CLR_CROSS_COMPONENTS_BUILD)
+    list(APPEND VM_SOURCES_WKS
+        crashreportstackwalker.cpp
+    )
+endif(FEATURE_INPROC_CRASHREPORT AND NOT CLR_CROSS_COMPONENTS_BUILD)
+
 list(APPEND VM_SOURCES_WKS
     interoplibinterface_java.cpp
 )
@@ -606,6 +604,7 @@ if(CLR_CMAKE_TARGET_WIN32)
         dispatchinfo.cpp
         dispparammarshaler.cpp
         olecontexthelpers.cpp
+        olevariant.cpp
         runtimecallablewrapper.cpp
         stdinterfaces.cpp
         stdinterfaces_wrapper.cpp
@@ -622,6 +621,7 @@ if(CLR_CMAKE_TARGET_WIN32)
         dispatchinfo.h
         dispparammarshaler.h
         olecontexthelpers.h
+        olevariant.h
         runtimecallablewrapper.h
         stdinterfaces.h
         stdinterfaces_internal.h

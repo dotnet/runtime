@@ -129,7 +129,6 @@ class     PInvoke;
 class     Frame;
 class     ThreadBaseObject;
 class     AppDomainStack;
-class     DomainAssembly;
 class     DeadlockAwareLock;
 class     EECodeInfo;
 class     DebuggerPatchSkip;
@@ -512,7 +511,7 @@ public:
         TS_DebugSuspendPending    = 0x00000008,    // Is the debugger suspending threads?
         TS_GCOnTransitions        = 0x00000010,    // Force a GC on stub transitions (GCStress only)
 
-        // unused                 = 0x00000020,
+        TS_SyncBlockCleanup       = 0x00000020,    // The synch block needs to be cleaned up.
 
         TS_ExecutingOnAltStack    = 0x00000040,    // Runtime is executing on an alternate stack located anywhere in the memory
 
@@ -571,17 +570,8 @@ public:
         TS_CatchAtSafePoint = (TS_AbortRequested | TS_DebugSuspendPending | TS_GCOnTransitions),
     };
 
-    // Thread flags that aren't really states in themselves but rather things the thread
-    // has to do.
-    enum ThreadTasks
-    {
-        TT_CleanupSyncBlock       = 0x00000001, // The synch block needs to be cleaned up.
-    };
-
     // Thread flags that have no concurrency issues (i.e., they are only manipulated by the owning thread). Use these
     // state flags when you have a new thread state that doesn't belong in the ThreadState enum above.
-    //
-    // <TODO>@TODO: its possible that the ThreadTasks from above and these flags should be merged.</TODO>
     enum ThreadStateNoConcurrency
     {
         TSNC_Unknown                    = 0x00000000, // threads are initialized this way
@@ -711,19 +701,19 @@ public:
     DWORD RequireSyncBlockCleanup()
     {
         LIMITED_METHOD_CONTRACT;
-        return (m_ThreadTasks & TT_CleanupSyncBlock);
+        return (m_State & TS_SyncBlockCleanup);
     }
 
     void SetSyncBlockCleanup()
     {
         LIMITED_METHOD_CONTRACT;
-        InterlockedOr((LONG*)&m_ThreadTasks, TT_CleanupSyncBlock);
+        InterlockedOr((LONG*)&m_State, TS_SyncBlockCleanup);
     }
 
     void ResetSyncBlockCleanup()
     {
         LIMITED_METHOD_CONTRACT;
-        InterlockedAnd((LONG*)&m_ThreadTasks, ~TT_CleanupSyncBlock);
+        InterlockedAnd((LONG*)&m_State, ~TS_SyncBlockCleanup);
     }
 
 #ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
@@ -915,9 +905,6 @@ public:
     inline void SetTHAllocContextObj(TypeHandle th) {LIMITED_METHOD_CONTRACT; m_thAllocContextObj = th; }
 
     inline TypeHandle GetTHAllocContextObj() {LIMITED_METHOD_CONTRACT; return m_thAllocContextObj; }
-
-    // Flags used to indicate tasks the thread has to do.
-    ThreadTasks          m_ThreadTasks;
 
     // Flags for thread states that have no concurrency issues.
     ThreadStateNoConcurrency m_StateNC;
@@ -1434,8 +1421,6 @@ public:
     //---------------------------------------------------------------
     // Last exception to be thrown
     //---------------------------------------------------------------
-    inline void SetThrowable(OBJECTREF pThrowable
-                             DEBUG_ARG(ThreadExceptionState::SetThrowableErrorChecking stecFlags = ThreadExceptionState::STEC_All));
 
     OBJECTREF GetThrowable()
     {
@@ -1444,25 +1429,25 @@ public:
         return m_ExceptionState.GetThrowable();
     }
 
-    // An unmnaged thread can check if a managed is processing an exception
     BOOL HasException()
     {
         LIMITED_METHOD_CONTRACT;
-        OBJECTHANDLE pThrowable = m_ExceptionState.GetThrowableAsHandle();
-        return pThrowable && *PTR_UNCHECKED_OBJECTREF(pThrowable);
+        return !IsThrowableNull();
     }
 
-    OBJECTHANDLE GetThrowableAsHandle()
+    // See ExInfo::GetThrowableAsPseudoHandle for details on the pseudo-handle.
+    OBJECTHANDLE GetThrowableAsPseudoHandle()
     {
-        LIMITED_METHOD_CONTRACT;
-        return m_ExceptionState.GetThrowableAsHandle();
+        LIMITED_METHOD_DAC_CONTRACT;
+
+        return m_ExceptionState.GetThrowableAsPseudoHandle();
     }
 
     // special null test (for use when we're in the wrong GC mode)
     BOOL IsThrowableNull()
     {
         WRAPPER_NO_CONTRACT;
-        return IsHandleNullUnchecked(m_ExceptionState.GetThrowableAsHandle());
+        return m_ExceptionState.IsThrowableNull();
     }
 
     BOOL IsExceptionInProgress()
@@ -2225,10 +2210,9 @@ public:
     {
         return m_PreventAbort != 0;
     }
-    // The ThreadStore manages a list of all the threads in the system.  I
-    // can't figure out how to expand the ThreadList template type without
-    // making m_Link public.
-    SLink       m_Link;
+    // The ThreadStore manages a list of all the threads in the system.
+    // Next pointer for SList linkage (ThreadStore::m_ThreadList).
+    PTR_Thread  m_pNext = NULL;
 
     // Debugger per-thread flag for enabling notification on "manual"
     // method calls,  for stepping logic
@@ -2676,8 +2660,7 @@ public:
     }
 
     void SafeUpdateLastThrownObject(void);
-    OBJECTREF SafeSetThrowables(OBJECTREF pThrowable
-                                DEBUG_ARG(ThreadExceptionState::SetThrowableErrorChecking stecFlags = ThreadExceptionState::STEC_All),
+    OBJECTREF SafeSetThrowables(OBJECTREF pThrowable,
                                 BOOL isUnhandled = FALSE);
 
     bool IsLastThrownObjectStackOverflowException()
@@ -3761,16 +3744,15 @@ struct cdac_data<Thread>
     static constexpr size_t CachedStackLimit = offsetof(Thread, m_CacheStackLimit);
     static constexpr size_t ExposedObject = offsetof(Thread, m_ExposedObject);
     static constexpr size_t LastThrownObject = offsetof(Thread, m_LastThrownObjectHandle);
-    static constexpr size_t Link = offsetof(Thread, m_Link);
+    static constexpr size_t LastThrownObjectIsUnhandled = offsetof(Thread, m_ltoIsUnhandled);
+    static constexpr size_t Link = offsetof(Thread, m_pNext);
     static constexpr size_t ThreadLocalDataPtr = offsetof(Thread, m_ThreadLocalDataPtr);
+    static constexpr size_t CurrentCustomDebuggerNotification = offsetof(Thread, m_hCurrNotification);
 
     static_assert(std::is_same<decltype(std::declval<Thread>().m_ExceptionState), ThreadExceptionState>::value,
         "Thread::m_ExceptionState is of type ThreadExceptionState");
     static constexpr size_t ExceptionTracker = offsetof(Thread, m_ExceptionState) + offsetof(ThreadExceptionState, m_pCurrentTracker);
     static constexpr size_t DebuggerFilterContext = offsetof(Thread, m_debuggerFilterContext);
-#ifdef PROFILING_SUPPORTED
-    static constexpr size_t ProfilerFilterContext = offsetof(Thread, m_pProfilerFilterContext);
-#endif // PROFILING_SUPPORTED
 #ifndef TARGET_UNIX
     static constexpr size_t UEWatsonBucketTrackerBuckets = offsetof(Thread, m_ExceptionState) + offsetof(ThreadExceptionState, m_UEWatsonBucketTracker)
     + offsetof(EHWatsonBucketTracker, m_WatsonUnhandledInfo.m_pUnhandledBuckets);
@@ -3794,7 +3776,7 @@ void UndoRevert(BOOL bReverted, HANDLE hToken);
 // ThreadStore::m_pThreadStore.
 // ---------------------------------------------------------------------------
 
-typedef SList<Thread, false, PTR_Thread> ThreadList;
+typedef SListTail<Thread> ThreadList;
 
 
 // The ThreadStore is a singleton class
@@ -4033,7 +4015,7 @@ public:
 template<>
 struct cdac_data<ThreadStore>
 {
-    static constexpr size_t FirstThreadLink = offsetof(ThreadStore, m_ThreadList) + offsetof(ThreadList, m_link);
+    static constexpr size_t FirstThreadLink = offsetof(ThreadStore, m_ThreadList) + offsetof(ThreadList, m_pHead);
     static constexpr size_t ThreadCount = offsetof(ThreadStore, m_ThreadCount);
     static constexpr size_t UnstartedCount = offsetof(ThreadStore, m_UnstartedThreadCount);
     static constexpr size_t BackgroundCount = offsetof(ThreadStore, m_BackgroundThreadCount);
@@ -4045,7 +4027,6 @@ typedef StateHolder<ThreadStore::LockThreadStore,ThreadStore::UnlockThreadStore>
 
 
 // This class dispenses small thread ids for the thin lock mechanism.
-// Recently we started using this class to dispense domain neutral module IDs as well.
 class IdDispenser
 {
 private:

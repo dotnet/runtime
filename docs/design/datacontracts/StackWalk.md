@@ -28,6 +28,10 @@ TargetPointer GetMethodDescPtr(IStackDataFrameHandle stackDataFrameHandle);
 
 // Gets the instruction pointer from the current frame's context.
 TargetPointer GetInstructionPointer(IStackDataFrameHandle stackDataFrameHandle);
+
+// Walks the stack and returns all GC references found on each frame.
+// This is the primary API for GC reference enumeration, used by SOSDacImpl.GetStackReferences.
+IReadOnlyList<StackReferenceData> WalkStackReferences(ThreadData threadData);
 ```
 
 ## Version 1
@@ -60,12 +64,19 @@ This contract depends on the following descriptors:
 | `StubDispatchFrame` | `MethodDescPtr` | Pointer to Frame's method desc |
 | `StubDispatchFrame` | `RepresentativeMTPtr` | Pointer to Frame's method table pointer |
 | `StubDispatchFrame` | `RepresentativeSlot` | Frame's method table slot |
+| `StubDispatchFrame` | `Indirection` | Import slot pointer for GCRefMap resolution via `FindReadyToRunModule` |
+| `ExternalMethodFrame` | `Indirection` | Import slot pointer for GCRefMap resolution via `FindReadyToRunModule` |
+| `DynamicHelperFrame` | `DynamicHelperFrameFlags` | Flags indicating which argument registers contain GC references |
 | `TransitionBlock` | `ReturnAddress` | Return address associated with the TransitionBlock |
 | `TransitionBlock` | `CalleeSavedRegisters` | Platform specific CalleeSavedRegisters struct associated with the TransitionBlock |
-| `TransitionBlock` (arm) | `ArgumentRegisters` | ARM specific `ArgumentRegisters` struct |
+| `TransitionBlock` | `OffsetOfArgs` | Byte offset of stack arguments (first arg after registers) = `sizeof(TransitionBlock)` |
+| `TransitionBlock` | `ArgumentRegisters` | Byte offset of the argument registers area within the TransitionBlock |
+| `TransitionBlock` | `FirstGCRefMapSlot` | Byte offset where GCRefMap slot enumeration begins. ARM64: RetBuffArgReg offset; others: ArgumentRegisters offset |
+| `ReadyToRunInfo` | `ImportSections` | Pointer to array of `READYTORUN_IMPORT_SECTION` structs for GCRefMap resolution |
+| `ReadyToRunInfo` | `NumImportSections` | Count of import sections in the array |
 | `FuncEvalFrame` | `DebuggerEvalPtr` | Pointer to the Frame's DebuggerEval object |
 | `DebuggerEval` | `TargetContext` | Context saved inside DebuggerEval |
-| `DebuggerEval` | `EvalDuringException` | Flag used in processing FuncEvalFrame |
+| `DebuggerEval` | `EvalUsesHijack` | Flag used in processing FuncEvalFrame |
 | `ResumableFrame` | `TargetContextPtr` | Pointer to the Frame's Target Context |
 | `FaultingExceptionFrame` | `TargetContext` | Frame's Target Context |
 | `HijackFrame` | `ReturnAddress` | Frame's stored instruction pointer |
@@ -85,6 +96,8 @@ This contract depends on the following descriptors:
 | `ExceptionInfo` | `CallerOfActualHandlerFrame` | Stack frame of the caller of the catch handler |
 | `ExceptionInfo` | `PreviousNestedInfo` | Pointer to previous nested ExInfo |
 | `ExceptionInfo` | `PassNumber` | Exception handling pass (1 or 2) |
+| `ExceptionInfo` | `ClauseForCatchHandlerStartPC` | Start PC offset of the catch handler clause, used for interruptible offset override |
+| `ExceptionInfo` | `ClauseForCatchHandlerEndPC` | End PC offset of the catch handler clause, used for interruptible offset override |
 
 Global variables used:
 | Global Name | Type | Purpose |
@@ -102,6 +115,7 @@ Contracts used:
 | `ExecutionManager` |
 | `Thread` |
 | `RuntimeTypeSystem` |
+| `GCInfo` |
 
 
 ### Stackwalk Algorithm
@@ -277,9 +291,13 @@ InlinedCallFrames store and update only the IP, SP, and FP of a given context. I
 
 * On ARM, the InlinedCallFrame stores the value of the SP after the prolog (`SPAfterProlog`) to allow unwinding for functions with stackalloc. When a function uses stackalloc, the CallSiteSP can already have been adjusted. This value should be placed in R9.
 
+**Return Address**: `CallerReturnAddress`, but only when the frame has an active call (i.e., `CallerReturnAddress != 0`). Returns null otherwise.
+
 #### SoftwareExceptionFrame
 
 SoftwareExceptionFrames store a copy of the context struct. The IP, SP, and all ABI specified (platform specific) callee-saved registers are copied from the stored context to the working context.
+
+**Return Address**: Read from the `ReturnAddress` field on the frame.
 
 #### TransitionFrame
 
@@ -288,6 +306,8 @@ TransitionFrames hold a pointer to a `TransitionBlock`. The TransitionBlock hold
 When updating the context from a TransitionFrame, the IP, SP, and all ABI specified callee-saved registers are copied over.
 
 * On ARM, the additional register values stored in `ArgumentRegisters` are copied over. The `TransitionBlock` holds a pointer to the `ArgumentRegister` struct containing these values.
+
+**Return Address**: Read from `TransitionBlock.ReturnAddress`. This applies to all frame types that use the TransitionFrame mechanism.
 
 The following Frame types also use this mechanism:
 * FramedMethodFrame
@@ -302,11 +322,15 @@ The following Frame types also use this mechanism:
 
 FuncEvalFrames hold a pointer to a `DebuggerEval`. The DebuggerEval holds a full context which is completely copied over to the working context when updating.
 
+**Return Address**: Returns null when using hijack evaluation (`EvalUsesHijack`). Otherwise, read from `TransitionBlock.ReturnAddress` like other TransitionFrame types.
+
 #### ResumableFrame
 
 ResumableFrames hold a pointer to a context object (Note this is different from SoftwareExceptionFrames which hold the context directly). The entire context object is copied over to the working context when updating.
 
 RedirectedThreadFrames also use this mechanism.
+
+**Return Address**: Extracted from the saved context's instruction pointer (`TargetContextPtr` -> context IP).
 
 #### FaultingExceptionFrame
 
@@ -316,9 +340,13 @@ Given the cDAC does not yet support Windows x86, this version is not supported.
 
 The other version stores a context struct. To update the working context, the entire stored context is copied over. In addition the `ContextFlags` are updated to ensure the `CONTEXT_XSTATE` bit is not set given the debug version of the contexts can not store extended state. This bit is architecture specific.
 
+**Return Address**: Extracted from the saved context's instruction pointer (`TargetContext` -> context IP).
+
 #### HijackFrame
 
 HijackFrames carry a IP (ReturnAddress) and a pointer to `HijackArgs`. All platforms update the IP and use the platform specific HijackArgs to update further registers. The following details currently implemented platforms.
+
+**Return Address**: Read from the `ReturnAddress` field directly.
 
 * x64 - On x64, HijackArgs contains a CalleeSavedRegister struct. The saved registers values contained in the struct are copied over to the working context.
     * Windows - On Windows, HijackArgs also contains the SP value directly which is copied over to the working context.
@@ -330,6 +358,8 @@ HijackFrames carry a IP (ReturnAddress) and a pointer to `HijackArgs`. All platf
 #### TailCallFrame
 
 TailCallFrames only appear on x86 Windows. They hold a `CalleeSavedRegisters` struct as well as a `ReturnAddress`. While the stack pointer is not directly contained in the TailCallFrame structure, it will be on the stack immediately following the Frame (found at the address of the Frame + size of the Frame). To process these Frames, update all of the registers in `CalleeSavedRegisters`, the instruction pointer from the stored return address, and the stack pointer from the address saved on the stack.
+
+**Return Address**: Read from the `ReturnAddress` field directly.
 
 ### APIs
 
@@ -398,6 +428,78 @@ TargetPointer GetMethodDescPtr(IStackDataFrameHandle stackDataFrameHandle)
 ```csharp
 TargetPointer GetInstructionPointer(IStackDataFrameHandle stackDataFrameHandle)
 ```
+
+`WalkStackReferences` walks the entire managed stack and enumerates all live GC references at each frame. It returns a list of `StackReferenceData` describing each GC-tracked slot (its address, whether it's an interior pointer, and the register/stack location). This API is the primary consumer for `SOSDacImpl.GetStackReferences`.
+
+```csharp
+IReadOnlyList<StackReferenceData> WalkStackReferences(ThreadData threadData)
+```
+
+The implementation uses the same stack walk algorithm as `CreateStackWalk`, but integrates the GC-aware `Filter` directly (rather than consuming pre-generated frames) and performs GC reference enumeration at each frame. See [GC Stack Reference Scanning](#gc-stack-reference-scanning) for details.
+
+### GC Stack Reference Scanning
+
+`WalkStackReferences` scans the stack for GC references by walking through each frame and reporting live object references and interior pointers. The native equivalent is `DacStackReferenceWalker` which calls `GcStackCrawlCallBack` at each frame.
+
+#### Stack Walk Integration
+
+The GC reference walk uses the `Filter` function to drive the stack walk. `Filter` is a port of native `StackFrameIterator::Filter` (with `GC_FUNCLET_REFERENCE_REPORTING` mode) that handles funclet-to-parent frame transitions, exception tracker correlation, and determines whether each frame should report GC references. Unlike `CreateStackWalk` which yields all frames, `Filter` calls `Next()` directly and may skip frames that don't contribute GC roots.
+
+Key state tracked during the walk:
+
+- **IsInterrupted**: Set when transitioning to a managed frame from a `FaultingExceptionFrame` or `SoftwareExceptionFrame` (frames with `FRAME_ATTR_EXCEPTION`). When true, the managed frame's GC enumeration uses `ExecutionAborted` mode, which causes the GcInfoDecoder to skip live slot reporting at non-interruptible offsets.
+- **LastProcessedFrameType**: Records the frame type when processing `SW_FRAME` state, so `UpdateState` can detect exception frames during the transition to `SW_FRAMELESS`.
+- **IsFirst**: Preserved during skipped frame processing (native `SFITER_SKIPPED_FRAME_FUNCTION` does not modify `IsFirst`), ensuring the subsequent managed frame is still treated as the leaf/active frame.
+- **GetReturnAddress gating**: In `SW_FRAME` state, `UpdateContextFromFrame` is only called when `GetReturnAddress()` returns a non-null value. This matches native behavior where the context is only updated when the frame has a valid return address.
+
+#### Per-Frame GC Enumeration
+
+At each frame yielded by `Filter`, the walk determines whether to scan for GC references:
+
+**Managed (frameless) frames** use `EnumGcRefsForManagedFrame`:
+
+1. Get the code block handle and relative offset from the `ExecutionManager` contract.
+2. Decode the GCInfo for the code block via the `GCInfo` contract.
+3. Determine `GcSlotEnumerationOptions`: set `IsActiveFrame` if this is the leaf frame (`IsFirst`), `IsExecutionAborted` if the frame was interrupted, `IsParentOfFuncletStackFrame` if funclet GC reporting was delegated to the parent, `SuppressUntrackedSlots` if the code block is a filter funclet.
+4. **Catch handler offset override**: When `ShouldParentFrameUseUnwindTargetPCforGCReporting` is set (parent frame resuming from a catch handler), the GC liveness offset is overridden to the first interruptible point within the catch handler clause range. This uses `GetInterruptibleRanges` from the `GCInfo` contract. See [How EH affects GC info/reporting](../coreclr/botr/clr-abi.md#how-eh-affects-gc-inforeporting) for background on why this override is needed.
+5. Call `GcInfoDecoder.EnumerateLiveSlots` with the computed offset and flags to report all live register and stack slots. See the [GCInfo contract — EnumerateLiveSlots](./GCInfo.md#enumerateliveslots) for details on the algorithm.
+
+**Capital "F" Frames** use `GcScanRoots`, which dispatches based on frame type:
+
+- **StubDispatchFrame / ExternalMethodFrame**: Resolve GCRefMap via `FindGCRefMap` using the frame's `Indirection` pointer, otherwise fall back to signature-based scanning.
+- **DynamicHelperFrame**: Use flag-based scanning (`DynamicHelperFrameFlags`).
+- **PrestubMethodFrame / CallCountingHelperFrame**: Use signature-based scanning.
+- Other frame types: No GC roots to report.
+
+See [GCRefMap Format and Resolution](#gcrefmap-format-and-resolution) for the GCRefMap scanning path details.
+
+### GCRefMap Format and Resolution
+
+A **GCRefMap** is a compact per-callsite encoding that describes which stack slots in a `TransitionBlock` contain GC references. GCRefMaps are pre-computed by the ReadyToRun compiler and stored in the PE image's import section auxiliary data.
+
+The GCRefMap encoding format — including token values, bit encoding, lookup table structure, and per-architecture position semantics — is documented in the [ReadyToRun format specification](../coreclr/botr/readytorun-format.md#readytorun_import_sectionsauxiliarydata).
+
+#### Resolution Flow
+
+GCRefMap resolution from a frame's `Indirection` pointer proceeds as follows:
+
+1. Call `FindReadyToRunModule(indirection)` (see [ExecutionManager contract](./ExecutionManager.md)) to find the ReadyToRun module containing the import slot.
+2. Load the module's `ReadyToRunInfo` to access the import section array.
+3. Compute the RVA of the indirection address: `rva = indirection - imageBase`.
+4. Search through `READYTORUN_IMPORT_SECTION` entries to find the section containing the RVA.
+5. Compute the slot index within the section: `index = (rva - sectionVA) / entrySize`.
+6. Use the section's `AuxiliaryData` RVA to locate the GCRefMap lookup table.
+7. Use stride-based lookup (stride = 1024) plus linear scan to find the specific GCRefMap entry.
+
+#### Slot Mapping
+
+GCRefMap positions map to `TransitionBlock` offsets using the formula:
+
+```csharp
+slotAddress = transitionBlockPtr + FirstGCRefMapSlot + (position * pointerSize)
+```
+
+Where `FirstGCRefMapSlot` is the byte offset in the `TransitionBlock` where GCRefMap slot enumeration begins (platform-dependent: on ARM64 it is the return buffer argument register offset; on other platforms it is the argument registers offset).
 
 ### x86 Specifics
 

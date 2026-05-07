@@ -29,7 +29,7 @@ public class GCMemoryRegionTests
             .AddTypes(types)
             .AddGlobals(globals)
             .AddGlobalStrings(globalStrings)
-            .AddContract<IGC>(version: 1)
+            .AddContract<IGC>(version: "c1")
             .Build();
         return target.Contracts.GC;
     }

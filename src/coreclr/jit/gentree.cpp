@@ -2045,8 +2045,8 @@ bool GenTreeCall::IsPure(Compiler* compiler) const
 }
 
 //------------------------------------------------------------------------------
-// getArrayLengthFromAllocation: Return the array length for an array allocation
-//                               helper call.
+// getArrayLengthFromAllocation: Return the length for an allocation whose length
+//                               is represented by GT_ARR_LENGTH.
 //
 // Arguments:
 //    tree - The array allocation helper call.
@@ -2085,6 +2085,13 @@ GenTree* Compiler::getArrayLengthFromAllocation(GenTree* tree)
             }
 
             assert((arrayLength == nullptr) || ((optMethodFlags & OMF_HAS_NEWARRAY) != 0));
+        }
+        else if (call->IsSpecialIntrinsic(this, NI_System_String_FastAllocateString))
+        {
+            // String characters start at a different offset than array data, but string length itself is a
+            // GT_ARR_LENGTH.
+            assert(call->gtArgs.CountUserArgs() == 2);
+            arrayLength = call->gtArgs.GetUserArgByIndex(1)->GetNode();
         }
     }
 
@@ -2395,6 +2402,34 @@ bool GenTreeCall::IsDevirtualizationCandidate(Compiler* compiler) const
 bool GenTreeCall::IsHelperCall(unsigned helper) const
 {
     return IsHelperCall(Compiler::eeFindHelper(helper));
+}
+
+//-------------------------------------------------------------------------
+// IsHelperCallOrUserEquivalent: Determine if this GT_CALL node is a specific helper call
+//     or its CT_USER equivalent.
+//
+// Arguments:
+//     compiler - the compiler instance so that we can call eeFindHelper
+//
+// Return Value:
+//     Returns true if this GT_CALL node is a call to the specified helper.
+//
+bool GenTreeCall::IsHelperCallOrUserEquivalent(Compiler* compiler, unsigned helper) const
+{
+    CORINFO_METHOD_HANDLE helperCallHnd = Compiler::eeFindHelper(helper);
+    if (IsHelperCall())
+    {
+        return helperCallHnd == gtCallMethHnd;
+    }
+
+    if (gtCallType == CT_USER_FUNC)
+    {
+        CORINFO_METHOD_HANDLE userCallHnd = NO_METHOD_HANDLE;
+        return compiler->impInlineRoot()->HelperToManagedMapLookup(helperCallHnd, &userCallHnd) &&
+               (userCallHnd == gtCallMethHnd);
+    }
+
+    return false;
 }
 
 //-------------------------------------------------------------------------
@@ -2741,9 +2776,12 @@ AGAIN:
                 }
                 return true;
 
+            case GT_ASYNC_RESUME_INFO:
+                return op1->AsVal()->gtVal1 == op2->AsVal()->gtVal1;
+
             case GT_NOP:
             case GT_LABEL:
-            case GT_ASYNC_RESUME_INFO:
+            case GT_FTN_ENTRY:
             case GT_SWIFT_ERROR:
             case GT_GCPOLL:
             case GT_WASM_THROW_REF:
@@ -3925,123 +3963,825 @@ unsigned Compiler::gtSetCallArgsOrder(CallArgs* args, bool lateArgs, int* callCo
 unsigned Compiler::gtSetMultiOpOrder(GenTreeMultiOp* multiOp)
 {
     // Most HWI nodes are simple arithmetic operations.
-    //
     int      costEx = 1;
     int      costSz = 1;
     unsigned level  = 0;
 
-    bool optsEnabled = opts.OptimizationEnabled();
+    bool     optsEnabled = opts.OptimizationEnabled();
+    int      opCount     = static_cast<int>(multiOp->GetOperandCount());
+    GenTree* addrOp      = nullptr;
 
 #if defined(FEATURE_HW_INTRINSICS)
     if (multiOp->OperIs(GT_HWINTRINSIC) && optsEnabled)
     {
-        GenTreeHWIntrinsic* hwTree = multiOp->AsHWIntrinsic();
+        GenTreeHWIntrinsic* hwTree       = multiOp->AsHWIntrinsic();
+        NamedIntrinsic      intrinsicId  = hwTree->GetHWIntrinsicId();
+        var_types           retType      = hwTree->TypeGet();
+        var_types           simdBaseType = hwTree->GetSimdBaseType();
+        unsigned            simdSize     = hwTree->GetSimdSize();
+
 #if defined(TARGET_XARCH)
-        if ((hwTree->GetOperandCount() == 1) && hwTree->OperIsMemoryLoadOrStore())
+        if ((retType == TYP_SIMD64) || (simdSize == 64))
         {
-            costEx = IND_COST_EX;
-            costSz = 2;
+            costSz = 6;
+        }
+        else
+        {
+            costSz = 4;
+        }
 
-            GenTree* const addrNode = hwTree->Op(1);
-            level                   = gtSetEvalOrder(addrNode);
-            GenTree* const addr     = addrNode->gtEffectiveVal();
+        bool isLoad = hwTree->OperIsMemoryLoad(&addrOp);
 
-            // See if we can form a complex addressing mode.
-            if (addr->OperIs(GT_ADD) && gtMarkAddrMode(addr, &costEx, &costSz, hwTree->TypeGet()))
+        if (isLoad || hwTree->OperIsMemoryStore(&addrOp))
+        {
+            costEx = FLT_IND_COST_EX;
+
+            if (simdSize != 16)
             {
-                // Nothing to do, costs have been set.
+                if (simdSize == 32)
+                {
+                    costEx += 1;
+                }
+                else
+                {
+                    costEx += 2;
+                }
+            }
+
+            if (!isLoad)
+            {
+                costEx += 2;
+            }
+
+            switch (intrinsicId)
+            {
+                case NI_X86Base_StoreAlignedNonTemporal:
+                case NI_X86Base_StoreNonTemporal:
+                case NI_X86Base_X64_StoreNonTemporal:
+                case NI_AVX_StoreAlignedNonTemporal:
+                case NI_AVX512_StoreAlignedNonTemporal:
+                {
+                    costEx += 38;
+                    break;
+                }
+
+                case NI_AVX_MaskStore:
+                case NI_AVX2_MaskStore:
+                {
+                    costEx += 5;
+                    break;
+                }
+
+                case NI_AVX2_GatherVector128:
+                case NI_AVX2_GatherVector256:
+                case NI_AVX2_GatherMaskVector128:
+                case NI_AVX2_GatherMaskVector256:
+                {
+                    if (varTypeIsLong(simdBaseType))
+                    {
+                        costEx += (simdSize == 16) ? 13 : 14;
+                    }
+                    else
+                    {
+                        costEx += (simdSize == 16) ? 15 : 16;
+                    }
+                    break;
+                }
+
+                case NI_AVX2_MultiplyNoFlags:
+                case NI_AVX2_X64_MultiplyNoFlags:
+                {
+                    costEx = 4 + IND_COST_EX;
+                    break;
+                }
+
+                case NI_AVX512_CompressStoreMask:
+                case NI_AVX512_ExpandLoadMask:
+                case NI_AVX512_MaskLoadMask:
+                case NI_AVX512_MaskLoadAlignedMask:
+                case NI_AVX512_MaskStoreMask:
+                case NI_AVX512_MaskStoreAlignedMask:
+                {
+                    costEx += 3;
+                    break;
+                }
+
+                default:
+                {
+                    // The default costing is correct
+                    break;
+                }
+            }
+
+            // Can we form an addressing mode with this indirection?
+            level = gtSetEvalOrder(addrOp);
+
+            int addrCostEx = 0;
+            int addrCostSz = 0;
+
+            if (gtGetAddrNodeCost(addrOp, retType, false, &addrCostEx, &addrCostSz))
+            {
+                costEx += addrCostEx;
+                costSz += addrCostSz;
             }
             else
             {
-                costEx += addr->GetCostEx();
-                costSz += addr->GetCostSz();
+                addrOp = nullptr;
+            }
+        }
+        else
+        {
+            if (varTypeUsesIntReg(simdBaseType))
+            {
+                costEx = HWIntrinsicInfo::lookupIntCost(intrinsicId);
+            }
+            else
+            {
+                costEx = HWIntrinsicInfo::lookupFltCost(intrinsicId);
             }
 
-            hwTree->SetCosts(costEx, costSz);
-            return level;
-        }
-#endif
-        switch (hwTree->GetHWIntrinsicId())
-        {
-            case NI_Vector128_Create:
-            case NI_Vector128_CreateScalar:
-            case NI_Vector128_CreateScalarUnsafe:
-#if defined(TARGET_XARCH)
-            case NI_Vector256_Create:
-            case NI_Vector256_CreateScalar:
-            case NI_Vector256_CreateScalarUnsafe:
-            case NI_Vector512_Create:
-            case NI_Vector512_CreateScalar:
-            case NI_Vector512_CreateScalarUnsafe:
-#elif defined(TARGET_ARM64)
-            case NI_Vector64_Create:
-            case NI_Vector64_CreateScalar:
-            case NI_Vector64_CreateScalarUnsafe:
-#endif
+            if (costEx == -1)
             {
-                if ((hwTree->GetOperandCount() == 1) && hwTree->Op(1)->OperIsConst())
+                switch (intrinsicId)
                 {
-                    // Vector.Create(cns) is cheap but not that cheap to be (1,1)
-                    costEx = IND_COST_EX;
-                    costSz = 2;
-                    level  = gtSetEvalOrder(hwTree->Op(1));
-                    hwTree->SetCosts(costEx, costSz);
-                    return level;
+                    case NI_Vector128_ConditionalSelect:
+                    case NI_Vector256_ConditionalSelect:
+                    case NI_Vector512_ConditionalSelect:
+                    {
+                        // We either become `(o2 & op1) | (op3 & ~op1)`
+                        // or we get optimized into some kind of single
+                        // instruction variant, so average the cost at 2
+
+                        costEx = 2;
+                        costSz *= 2;
+                        break;
+                    }
+
+                    case NI_Vector128_Create:
+                    case NI_Vector256_Create:
+                    case NI_Vector512_Create:
+                    {
+                        // We shouldn't have "all constants" as they get transformed to CNS_VEC
+
+                        if (opCount == 1)
+                        {
+                            // We will end up as a broadcast
+                            costEx = (simdSize == 16) ? 1 : 3;
+                        }
+                        else
+                        {
+                            // We will end up as a sequence of opCount inserts
+
+                            costEx = opCount;
+                            costSz *= opCount;
+
+                            if (varTypeIsIntegral(simdBaseType))
+                            {
+                                costEx *= 4;
+                            }
+                        }
+                        break;
+                    }
+
+                    case NI_Vector128_CreateScalar:
+                    case NI_Vector128_CreateScalarUnsafe:
+                    case NI_Vector256_CreateScalar:
+                    case NI_Vector256_CreateScalarUnsafe:
+                    case NI_Vector512_CreateScalar:
+                    case NI_Vector512_CreateScalarUnsafe:
+                    {
+                        // We shouldn't have "all constants" as they get transformed to CNS_VEC
+
+                        if (varTypeIsIntegral(simdBaseType))
+                        {
+                            costEx = 3;
+
+#if defined(TARGET_X86)
+                            if (varTypeIsLong(simdBaseType))
+                            {
+                                costEx += 4;
+                                costSz *= 2;
+                            }
+#endif // TARGET_X86
+                        }
+                        else
+                        {
+                            costEx = 1;
+                        }
+                        break;
+                    }
+
+                    case NI_Vector128_Dot:
+                    case NI_Vector256_Dot:
+                    case NI_Vector512_Dot:
+                    {
+                        uint32_t elementCount = static_cast<uint32_t>(16 / genTypeSize(simdBaseType));
+
+                        if (varTypeIsIntegral(simdBaseType))
+                        {
+                            // We have a multiply, 0-2 additions to reduce down to
+                            // V128 and then log2(V128<T>.Count) add operations
+
+                            costEx = 5 + (3 * BitOperations::Log2(elementCount));
+                            costSz = costSz + (costSz * BitOperations::Log2(elementCount));
+                        }
+                        else
+                        {
+                            costEx = (simdBaseType == TYP_DOUBLE) ? 9 : 13;
+                        }
+
+                        if (simdSize != 16)
+                        {
+                            if (simdSize == 32)
+                            {
+                                costEx += 1;
+                            }
+                            else
+                            {
+                                costEx += 2;
+                            }
+                        }
+                        break;
+                    }
+
+                    case NI_Vector128_ExtractMostSignificantBits:
+                    case NI_Vector256_ExtractMostSignificantBits:
+                    case NI_Vector512_ExtractMostSignificantBits:
+                    {
+                        costEx = 3;
+
+                        if (simdSize != 16)
+                        {
+                            if (simdSize == 32)
+                            {
+                                costEx += 2;
+                            }
+                            else
+                            {
+                                // Convert vector to mask, then extract
+                                costEx += 3;
+                                costSz += 6;
+                            }
+                        }
+                        break;
+                    }
+
+                    case NI_Vector128_GetElement:
+                    case NI_Vector256_GetElement:
+                    case NI_Vector512_GetElement:
+                    {
+                        GenTree* op2 = hwTree->Op(2);
+
+                        if (op2->OperIsConst())
+                        {
+                            // We can extract the value, possibly
+                            // after extracting a particular V128
+
+                            if (varTypeIsIntegral(simdBaseType))
+                            {
+                                costEx = 4;
+                            }
+                            else
+                            {
+                                costEx = 1;
+                            }
+
+                            if (op2->AsIntCon()->IconValue() >= static_cast<ssize_t>(16 / genTypeSize(simdBaseType)))
+                            {
+                                costEx += 3;
+                                costSz *= 2;
+                            }
+                        }
+                        else
+                        {
+                            // We need a spill + load
+                            costEx = FLT_IND_COST_EX;
+
+                            if (simdSize != 16)
+                            {
+                                if (simdSize == 32)
+                                {
+                                    costEx += 1;
+                                }
+                                else
+                                {
+                                    costEx += 2;
+                                }
+                            }
+
+                            if (varTypeIsIntegral(simdBaseType))
+                            {
+                                costEx += IND_COST_EX + 1;
+                                costSz += 4;
+
+                                if (varTypeIsSmall(simdBaseType))
+                                {
+                                    costEx += 1;
+                                    costSz += 1;
+                                }
+                            }
+                            else
+                            {
+                                costEx = FLT_IND_COST_EX + 2;
+                                costSz += 6;
+                            }
+                        }
+                        break;
+                    }
+
+                    case NI_Vector256_GetLower:
+                    case NI_Vector512_GetLower:
+                    case NI_Vector512_GetLower128:
+                    {
+                        costEx = 1;
+                        break;
+                    }
+
+                    case NI_Vector256_GetUpper:
+                    case NI_Vector512_GetUpper:
+                    {
+                        costEx = 3;
+                        break;
+                    }
+
+                    case NI_Vector128_Shuffle:
+                    case NI_Vector128_ShuffleNative:
+                    case NI_Vector128_ShuffleNativeFallback:
+                    case NI_Vector256_Shuffle:
+                    case NI_Vector256_ShuffleNative:
+                    case NI_Vector256_ShuffleNativeFallback:
+                    case NI_Vector512_Shuffle:
+                    case NI_Vector512_ShuffleNative:
+                    case NI_Vector512_ShuffleNativeFallback:
+                    {
+                        // These are likely becoming calls
+                        costEx = 5 + (3 * IND_COST_EX);
+                        costSz = 5;
+                        break;
+                    }
+
+                    case NI_Vector128_ToScalar:
+                    case NI_Vector256_ToScalar:
+                    case NI_Vector512_ToScalar:
+                    {
+                        costEx = varTypeIsIntegral(simdBaseType) ? 3 : 1;
+                        break;
+                    }
+
+                    case NI_Vector128_ToVector512:
+                    case NI_Vector256_ToVector512:
+                    case NI_Vector128_ToVector256:
+                    case NI_Vector128_ToVector256Unsafe:
+                    case NI_Vector256_ToVector512Unsafe:
+                    {
+                        costEx = 1;
+                        break;
+                    }
+
+                    case NI_Vector128_WithElement:
+                    case NI_Vector256_WithElement:
+                    case NI_Vector512_WithElement:
+                    {
+                        GenTree* op2 = hwTree->Op(2);
+
+                        if (op2->OperIsConst())
+                        {
+                            // We can insert the value, possibly
+                            // after extracting a particular V128,
+                            // and then reinserting the V128 as well
+
+                            if (varTypeIsIntegral(simdBaseType))
+                            {
+                                costEx = 4;
+                            }
+                            else
+                            {
+                                costEx = 1;
+                            }
+
+                            if (op2->AsIntCon()->IconValue() >= static_cast<ssize_t>(16 / genTypeSize(simdBaseType)))
+                            {
+                                costEx += 6;
+                                costSz *= 3;
+                            }
+                        }
+                        else
+                        {
+                            // We need a spill + write + load
+                            costEx = FLT_IND_COST_EX;
+
+                            if (simdSize != 16)
+                            {
+                                if (simdSize == 32)
+                                {
+                                    costEx += 1;
+                                }
+                                else
+                                {
+                                    costEx += 2;
+                                }
+                            }
+
+                            if (varTypeIsIntegral(simdBaseType))
+                            {
+                                costEx += IND_COST_EX + IND_COST_EX + 1;
+                                costSz += 8;
+
+                                if (varTypeIsSmall(simdBaseType))
+                                {
+                                    costEx += 2;
+                                    costSz += 2;
+                                }
+                            }
+                            else
+                            {
+                                costEx = FLT_IND_COST_EX + FLT_IND_COST_EX + 2;
+                                costSz += 12;
+                            }
+                        }
+                        break;
+                    }
+
+                    case NI_Vector256_WithLower:
+                    case NI_Vector256_WithUpper:
+                    case NI_Vector512_WithLower:
+                    case NI_Vector512_WithUpper:
+                    {
+                        costEx = 3;
+                        break;
+                    }
+
+                    case NI_Vector128_op_Division:
+                    case NI_Vector256_op_Division:
+                    case NI_Vector512_op_Division:
+                    {
+                        // We generate a fairly complex sequence involving
+                        // comparisons, two branches, conversions, and a fp
+                        // division
+
+                        costEx = 46;
+                        costSz = (costSz * 11) + 4;
+                        break;
+                    }
+
+                    case NI_Vector128_op_Equality:
+                    case NI_Vector128_op_Inequality:
+                    case NI_Vector256_op_Equality:
+                    case NI_Vector256_op_Inequality:
+                    case NI_Vector512_op_Equality:
+                    case NI_Vector512_op_Inequality:
+                    {
+                        // We emit a simd compare, get mask, integer compare,
+                        // and a branch or setcc
+
+                        if (varTypeIsIntegral(simdBaseType))
+                        {
+                            costEx = 6;
+                            costSz = (costSz * 2) + 3;
+                        }
+                        else
+                        {
+                            costEx = 9;
+                            costSz = (costSz * 2) + 3;
+                        }
+                        break;
+                    }
+
+                    case NI_X86Base_Divide:
+                    case NI_X86Base_DivideScalar:
+                    case NI_AVX_Divide:
+                    case NI_AVX512_Divide:
+                    case NI_AVX512_DivideScalar:
+                    {
+                        costEx = (simdBaseType == TYP_DOUBLE) ? 14 : 11;
+                        break;
+                    }
+
+                    case NI_X86Base_DotProduct:
+                    {
+                        costEx = (simdBaseType == TYP_DOUBLE) ? 9 : 13;
+                        break;
+                    }
+
+                    case NI_X86Base_LoadFence:
+                    {
+                        costEx = 4;
+                        break;
+                    }
+
+                    case NI_X86Base_MemoryFence:
+                    {
+                        costEx = 33;
+                        break;
+                    }
+
+                    case NI_X86Base_MultiplyLow:
+                    case NI_AVX2_MultiplyLow:
+                    {
+                        costEx = varTypeIsInt(simdBaseType) ? 10 : 5;
+                        break;
+                    }
+
+                    case NI_X86Base_Pause:
+                    {
+                        costEx = 140;
+                        break;
+                    }
+
+                    case NI_X86Base_Prefetch0:
+                    case NI_X86Base_Prefetch1:
+                    case NI_X86Base_Prefetch2:
+                    case NI_X86Base_PrefetchNonTemporal:
+                    {
+                        costEx = 1;
+                        break;
+                    }
+
+                    case NI_X86Base_Sqrt:
+                    case NI_X86Base_SqrtScalar:
+                    case NI_AVX_Sqrt:
+                    case NI_AVX512_Sqrt:
+                    case NI_AVX512_SqrtScalar:
+                    {
+                        costEx = (simdBaseType == TYP_DOUBLE) ? 16 : 12;
+                        break;
+                    }
+
+                    case NI_X86Base_StoreFence:
+                    {
+                        costEx = 6;
+                        break;
+                    }
+
+                    case NI_AVX_TestC:
+                    case NI_AVX_TestNotZAndNotC:
+                    case NI_AVX_TestZ:
+                    {
+                        costEx = (simdSize == 16) ? 3 : 5;
+                        break;
+                    }
+
+                    case NI_AVX512_AlignRight32:
+                    case NI_AVX512_AlignRight64:
+                    {
+                        costEx = (simdSize == 16) ? 1 : 3;
+                        break;
+                    }
+
+                    case NI_AVX512_ConvertToVector128Byte:
+                    case NI_AVX512_ConvertToVector128ByteWithSaturation:
+                    case NI_AVX512_ConvertToVector128Int16:
+                    case NI_AVX512_ConvertToVector128Int16WithSaturation:
+                    case NI_AVX512_ConvertToVector128Int32WithSaturation:
+                    case NI_AVX512_ConvertToVector128SByte:
+                    case NI_AVX512_ConvertToVector128SByteWithSaturation:
+                    case NI_AVX512_ConvertToVector128UInt16:
+                    case NI_AVX512_ConvertToVector128UInt16WithSaturation:
+                    case NI_AVX512_ConvertToVector128UInt32WithSaturation:
+                    case NI_AVX512_ConvertToVector256Byte:
+                    case NI_AVX512_ConvertToVector256ByteWithSaturation:
+                    case NI_AVX512_ConvertToVector256Int16:
+                    case NI_AVX512_ConvertToVector256Int16WithSaturation:
+                    case NI_AVX512_ConvertToVector256Int32WithSaturation:
+                    case NI_AVX512_ConvertToVector256SByte:
+                    case NI_AVX512_ConvertToVector256SByteWithSaturation:
+                    case NI_AVX512_ConvertToVector256UInt16:
+                    case NI_AVX512_ConvertToVector256UInt16WithSaturation:
+                    case NI_AVX512_ConvertToVector256UInt32WithSaturation:
+                    {
+                        costEx = (simdSize == 16) ? 2 : 4;
+                        break;
+                    }
+
+                    case NI_AVX512_ConvertToVector128Int32:
+                    {
+                        costEx = (simdSize == 16) ? 1 : 3;
+                        break;
+                    }
+
+                    case NI_AVX512_ConvertToVector128Double:
+                    case NI_AVX512_ConvertToVector256Double:
+                    case NI_AVX512_ConvertToVector512Double:
+                    {
+                        if (varTypeIsLong(simdBaseType))
+                        {
+                            costEx = 4;
+                        }
+                        else
+                        {
+                            costEx = (retType == TYP_SIMD16) ? 5 : 7;
+                        }
+                        break;
+                    }
+
+                    case NI_AVX512_ConvertToVector128Int64:
+                    case NI_AVX512_ConvertToVector128Int64WithTruncation:
+                    {
+                        if (simdBaseType == TYP_DOUBLE)
+                        {
+                            costEx = 4;
+                        }
+                        else
+                        {
+                            costEx = (retType == TYP_SIMD16) ? 5 : 7;
+                        }
+                        break;
+                    }
+
+                    case NI_AVX512_ConvertToVector128Single:
+                    case NI_AVX512_ConvertToVector256Single:
+                    case NI_AVX512_ConvertToVector512Single:
+                    {
+                        if (varTypeIsLong(simdBaseType))
+                        {
+                            costEx = (simdSize == 16) ? 5 : 7;
+                        }
+                        else
+                        {
+                            costEx = 4;
+                        }
+                        break;
+                    }
+
+                    case NI_AVX512_ConvertToVector128UInt32:
+                    case NI_AVX512_ConvertToVector128UInt32WithTruncation:
+                    case NI_AVX512_ConvertToVector256Int32:
+                    case NI_AVX512_ConvertToVector256Int32WithTruncation:
+                    case NI_AVX512_ConvertToVector256UInt32:
+                    case NI_AVX512_ConvertToVector256UInt32WithTruncation:
+                    case NI_AVX10v2_ConvertToVectorInt32WithTruncatedSaturation:
+                    case NI_AVX10v2_ConvertToVectorUInt32WithTruncatedSaturation:
+                    {
+                        if (varTypeIsIntegral(simdBaseType))
+                        {
+                            costEx = (simdSize == 16) ? 1 : 3;
+                        }
+                        else if (simdBaseType == TYP_DOUBLE)
+                        {
+                            costEx = (simdSize == 16) ? 5 : 7;
+                        }
+                        else
+                        {
+                            costEx = 4;
+                        }
+                        break;
+                    }
+
+                    case NI_AVX512_ConvertToVector128UInt64:
+                    case NI_AVX512_ConvertToVector128UInt64WithTruncation:
+                    case NI_AVX512_ConvertToVector256Int64:
+                    case NI_AVX512_ConvertToVector256Int64WithTruncation:
+                    case NI_AVX512_ConvertToVector256UInt64:
+                    case NI_AVX512_ConvertToVector256UInt64WithTruncation:
+                    case NI_AVX512_ConvertToVector512Int64:
+                    case NI_AVX512_ConvertToVector512Int64WithTruncation:
+                    case NI_AVX512_ConvertToVector512UInt64:
+                    case NI_AVX512_ConvertToVector512UInt64WithTruncation:
+                    case NI_AVX10v2_ConvertToVectorInt64WithTruncatedSaturation:
+                    case NI_AVX10v2_ConvertToVectorUInt64WithTruncatedSaturation:
+                    {
+                        if (simdBaseType == TYP_FLOAT)
+                        {
+                            costEx = (retType == TYP_SIMD16) ? 5 : 7;
+                        }
+                        else
+                        {
+                            costEx = 4;
+                        }
+                        break;
+                    }
+
+                    case NI_AVX512_DetectConflicts:
+                    {
+                        if (simdSize == 16)
+                        {
+                            costEx = varTypeIsLong(simdBaseType) ? 4 : 11;
+                        }
+                        else if (simdSize == 32)
+                        {
+                            costEx = varTypeIsLong(simdBaseType) ? 13 : 16;
+                        }
+                        else
+                        {
+                            costEx = varTypeIsLong(simdBaseType) ? 17 : 26;
+                        }
+                        break;
+                    }
+
+                    case NI_AVX512_Reciprocal14:
+                    case NI_AVX512_Reciprocal14Scalar:
+                    case NI_AVX512_ReciprocalSqrt14:
+                    case NI_AVX512_ReciprocalSqrt14Scalar:
+                    {
+                        if (simdBaseType == TYP_FLOAT)
+                        {
+                            costEx = (simdSize == 64) ? 7 : 4;
+                        }
+                        else
+                        {
+                            costEx = 4;
+                        }
+                        break;
+                    }
+
+                    case NI_X86Serialize_Serialize:
+                    {
+                        costEx = 105;
+                        break;
+                    }
+
+                    case NI_AVX_PTEST:
+                    {
+                        if (varTypeIsIntegral(simdBaseType))
+                        {
+                            costEx = (simdSize == 16) ? 4 : 6;
+                        }
+                        else
+                        {
+                            costEx = (simdSize == 16) ? 3 : 5;
+                        }
+                        break;
+                    }
+
+                    case NI_AVX512_ConvertMaskToVector:
+                    {
+                        costEx = varTypeIsSmall(simdBaseType) ? 3 : 1;
+                        break;
+                    }
+
+                    default:
+                    {
+                        assert(!"Unhandled costing for HWIntrinsic");
+                        costEx = varTypeIsIntegral(simdBaseType) ? 1 : 4;
+                        break;
+                    }
                 }
-                break;
             }
-            default:
-                break;
         }
+#endif // TARGET_XARCH
     }
-#endif // defined(FEATURE_SIMD) || defined(FEATURE_HW_INTRINSICS)
+#endif // FEATURE_HW_INTRINSICS
 
     // The binary case is special because of GTF_REVERSE_OPS.
-    if (multiOp->GetOperandCount() == 2)
+    if (opCount == 2)
     {
         unsigned lvl2 = 0;
 
+        GenTree* op1 = multiOp->Op(1);
+        GenTree* op2 = multiOp->Op(2);
+
+        unsigned addrLevel = level;
+
+        if (op1 != addrOp)
+        {
+            level = gtSetEvalOrder(op1);
+
+            if (optsEnabled)
+            {
+                costEx += op1->GetCostEx();
+                costSz += op1->GetCostSz();
+            }
+        }
+
+        if (op2 != addrOp)
+        {
+            lvl2 = gtSetEvalOrder(op2);
+
+            if (optsEnabled)
+            {
+                costEx += op2->GetCostEx();
+                costSz += op2->GetCostSz();
+            }
+        }
+        else
+        {
+            lvl2 = addrLevel;
+        }
+
         // This way we have "level" be the complexity of the
         // first tree to be evaluated, and "lvl2" - the second.
+
         if (multiOp->IsReverseOp())
         {
             assert(!multiOp->AsHWIntrinsic()->IsUserCall());
 
-            level = gtSetEvalOrder(multiOp->Op(2));
-            lvl2  = gtSetEvalOrder(multiOp->Op(1));
-        }
-        else
-        {
-            level = gtSetEvalOrder(multiOp->Op(1));
-            lvl2  = gtSetEvalOrder(multiOp->Op(2));
+            std::swap(op1, op2);
+            std::swap(level, lvl2);
         }
 
         // We want the more complex tree to be evaluated first.
-        if (level < lvl2)
+        if ((level < lvl2) && !multiOp->AsHWIntrinsic()->IsUserCall() && gtCanSwapOrder(op1, op2))
         {
-            bool canSwap = false;
-
-            if (!multiOp->AsHWIntrinsic()->IsUserCall())
+            if (multiOp->IsReverseOp())
             {
-                canSwap = multiOp->IsReverseOp() ? gtCanSwapOrder(multiOp->Op(2), multiOp->Op(1))
-                                                 : gtCanSwapOrder(multiOp->Op(1), multiOp->Op(2));
+                multiOp->ClearReverseOp();
+            }
+            else
+            {
+                multiOp->SetReverseOp();
             }
 
-            if (canSwap)
-            {
-                assert(!multiOp->AsHWIntrinsic()->IsUserCall());
-
-                if (multiOp->IsReverseOp())
-                {
-                    multiOp->ClearReverseOp();
-                }
-                else
-                {
-                    multiOp->SetReverseOp();
-                }
-
-                std::swap(level, lvl2);
-            }
+            std::swap(level, lvl2);
         }
 
         if (level < 1)
@@ -4052,22 +4792,34 @@ unsigned Compiler::gtSetMultiOpOrder(GenTreeMultiOp* multiOp)
         {
             level += 1;
         }
+    }
+    else if (opCount == 1)
+    {
+        GenTree* op1 = multiOp->Op(1);
 
-        if (optsEnabled)
+        if (op1 != addrOp)
         {
-            // We don't need/have costs in MinOpts
-            costEx += (multiOp->Op(1)->GetCostEx() + multiOp->Op(2)->GetCostEx());
-            costSz += (multiOp->Op(1)->GetCostSz() + multiOp->Op(2)->GetCostSz());
+            level = gtSetEvalOrder(op1);
+
+            if (optsEnabled)
+            {
+                costEx += op1->GetCostEx();
+                costSz += op1->GetCostSz();
+            }
         }
     }
     else
     {
         for (size_t i = multiOp->GetOperandCount(); i >= 1; i--)
         {
-            GenTree* op  = multiOp->Op(i);
-            unsigned lvl = gtSetEvalOrder(op);
+            GenTree* op = multiOp->Op(i);
 
-            level = max(lvl, level + 1);
+            if (op == addrOp)
+            {
+                continue;
+            }
+
+            level = max(gtSetEvalOrder(op), level + 1);
 
             if (optsEnabled)
             {
@@ -4383,9 +5135,8 @@ bool Compiler::gtGetIndNodeCost(GenTreeIndir* node, int* pCostEx, int* pCostSz)
     assert(node->isIndir());
 
     // Indirections have a costEx of IND_COST_EX.
-    int  costEx           = IND_COST_EX;
-    int  costSz           = 2;
-    bool includesAddrCost = false;
+    int costEx = IND_COST_EX;
+    int costSz = 2;
 
     // If we have to sign-extend or zero-extend, bump the cost.
     if (varTypeIsSmall(node))
@@ -4393,30 +5144,96 @@ bool Compiler::gtGetIndNodeCost(GenTreeIndir* node, int* pCostEx, int* pCostSz)
         costEx += 1;
         costSz += 1;
     }
+#if defined(TARGET_XARCH)
+    else if (!varTypeUsesIntReg(node))
+    {
+        assert(varTypeIsFloating(node) || varTypeIsSIMD(node) || varTypeIsMask(node));
 
-#ifdef TARGET_ARM
-    if (varTypeIsFloating(node))
+        if (node->TypeIs(TYP_SIMD64))
+        {
+            costEx = FLT_IND_COST_EX + 2;
+            costSz = 6;
+        }
+        else if (node->TypeIs(TYP_SIMD32))
+        {
+            costEx = FLT_IND_COST_EX + 1;
+            costSz = 4;
+        }
+        else
+        {
+            costEx = FLT_IND_COST_EX;
+            costSz = 4;
+        }
+    }
+#elif defined(TARGET_ARM)
+    else if (varTypeIsFloating(node))
     {
         costSz += 2;
     }
-#endif // TARGET_ARM
+#endif
 
     // Can we form an addressing mode with this indirection?
-    GenTree* addr = node->Addr();
+
+    int addrCostEx = 0;
+    int addrCostSz = 0;
+
+    bool includesAddrCost =
+        gtGetAddrNodeCost(node->Addr(), node->TypeGet(), node->IsVolatile(), &addrCostEx, &addrCostSz);
+
+    if (includesAddrCost)
+    {
+        costEx += addrCostEx;
+        costSz += addrCostSz;
+    }
+
+    *pCostEx = costEx;
+    *pCostSz = costSz;
+
+    return includesAddrCost;
+}
+
+//------------------------------------------------------------------------
+// gtGetAddrNodeCost: Calculate the cost for the address of an indirection node.
+//
+// Used for both loads and stores.
+//
+// Arguments:
+//    addr           - The address node in question
+//    type           - The type of the indirection
+//    isVolatile     - true if the indirection is volatile
+//    pCostEx        - [out] parameter for the execution cost
+//    pCostSz        - [out] parameter for the size cost
+//
+// Return Value:
+//    Whether the cost calculated includes that of address.
+//
+bool Compiler::gtGetAddrNodeCost(GenTree* addr, var_types type, bool isVolatile, int* pCostEx, int* pCostSz)
+{
+    assert(addr != nullptr);
+
+    assert(pCostEx != nullptr);
+    assert(pCostSz != nullptr);
+
+    int costEx = 0;
+    int costSz = 0;
+
+    bool includesAddrCost = false;
 
     if (addr->gtEffectiveVal()->OperIs(GT_ADD))
     {
         // See if we can form a complex addressing mode.
         bool doAddrMode = true;
+
 #ifdef TARGET_ARM64
-        if (node->IsVolatile())
+        if (isVolatile)
         {
             // For volatile store/loads when address is contained we always emit `dmb`
             // if it's not - we emit one-way barriers i.e. ldar/stlr
             doAddrMode = false;
         }
 #endif // TARGET_ARM64
-        if (doAddrMode && gtMarkAddrMode(addr, &costEx, &costSz, node->TypeGet()))
+
+        if (doAddrMode && gtMarkAddrMode(addr, &costEx, &costSz, type))
         {
             includesAddrCost = true;
         }
@@ -4438,6 +5255,7 @@ bool Compiler::gtGetIndNodeCost(GenTreeIndir* node, int* pCostEx, int* pCostSz)
 
     *pCostEx = costEx;
     *pCostSz = costSz;
+
     return includesAddrCost;
 }
 
@@ -5273,20 +6091,19 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
 #if defined(TARGET_XARCH)
                 if (tree->IsFloatPositiveZero() || tree->IsFloatAllBitsSet())
                 {
-                    // We generate `xorp* tgtReg, tgtReg` for PositiveZero and
-                    // `pcmpeqd tgtReg, tgtReg` for AllBitsSet which is 3-5 bytes
-                    // but which can be elided by the instruction decoder.
+                    // Zero:       vxorps   xmm0, xmm0, xmm0
+                    // AllBitsSet: vpcmpeqd xmm0, xmm0, xmm0
 
                     costEx = 1;
-                    costSz = 2;
+                    costSz = 4;
                 }
                 else
                 {
-                    // We generate `movs* tgtReg, [mem]` which is 4-6 bytes
-                    // and which has the same cost as an indirection.
+                    // float:  vmovss xmm0, [reloc @RWD00]
+                    // double: vmovsd xmm0, [reloc @RWD00]
 
-                    costEx = IND_COST_EX;
-                    costSz = 2;
+                    costEx = FLT_IND_COST_EX;
+                    costSz = 8;
                 }
 #elif defined(TARGET_ARM)
                 var_types targetType = tree->TypeGet();
@@ -5339,24 +6156,61 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
             {
                 level = 0;
 
-                if (tree->AsVecCon()->IsAllBitsSet() || tree->AsVecCon()->IsZero())
-                {
-                    // We generate `cmpeq* tgtReg, tgtReg`, which is 4-5 bytes, for AllBitsSet
-                    // and generate `xorp* tgtReg, tgtReg`, which is 3-5 bytes, for Zero
-                    // both of which can be elided by the instruction decoder.
+                GenTreeVecCon* vecCon = tree->AsVecCon();
 
+#if defined(TARGET_XARCH)
+                if (vecCon->IsZero())
+                {
+                    // vxorps xmm0, xmm0, xmm0
+                    costEx = 1;
+                    costSz = 4;
+                }
+                else if (vecCon->IsAllBitsSet())
+                {
+                    if (vecCon->TypeIs(TYP_SIMD64))
+                    {
+                        // vpternlogd xmm0, xmm0, xmm0, -1
+                        costEx = 1;
+                        costSz = 7;
+                    }
+                    else
+                    {
+                        // vpcmpeqd xmm0, xmm0, xmm0
+                        costEx = 1;
+                        costSz = 4;
+                    }
+                }
+                else
+                {
+                    // vmovups xmm0, [reloc @RWD00]
+
+                    costEx = FLT_IND_COST_EX;
+                    costSz = 8;
+
+                    if (tree->TypeIs(TYP_SIMD32))
+                    {
+                        costEx += 1;
+                    }
+                    else if (tree->TypeIs(TYP_SIMD64))
+                    {
+                        costEx += 2;
+                        costSz += 2;
+                    }
+                }
+                break;
+#else
+                if (vecCon->IsAllBitsSet() || vecCon->IsZero())
+                {
                     costEx = 1;
                     costSz = 2;
                 }
                 else
                 {
-                    // We generate `movup* tgtReg, [mem]` which is 4-6 bytes
-                    // and which has the same cost as an indirection.
-
                     costEx = IND_COST_EX;
                     costSz = 2;
                 }
                 break;
+#endif
             }
 #endif // FEATURE_SIMD
 
@@ -5365,7 +6219,26 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
             {
                 level = 0;
 
-                if (tree->AsMskCon()->IsAllBitsSet() || tree->AsMskCon()->IsZero())
+                GenTreeMskCon* mskCon = tree->AsMskCon();
+
+#if defined(TARGET_XARCH)
+                if (mskCon->IsZero() || mskCon->IsAllBitsSet())
+                {
+                    // Zero:       kxorq  k1, k1, k1
+                    // AllBitsSet: kxnorq k1, k1, k1
+
+                    costEx = 1;
+                    costSz = 5;
+                }
+                else
+                {
+                    // kmovq k1, [reloc @RWD00]
+                    costEx = IND_COST_EX;
+                    costSz = 9;
+                }
+                break;
+#else
+                if (mskCon->IsAllBitsSet() || mskCon->IsZero())
                 {
                     costEx = 1;
                     costSz = 2;
@@ -5376,6 +6249,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                     costSz = 2;
                 }
                 break;
+#endif
             }
 #endif // FEATURE_MASKED_HW_INTRINSICS
 
@@ -5476,6 +6350,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                     break;
 
                 case GT_CAST:
+                {
 #if defined(TARGET_ARM)
                     costEx = 1;
                     costSz = 1;
@@ -5496,11 +6371,337 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                     costEx = 1;
                     costSz = 2;
 
-                    if (isflt || varTypeIsFloating(op1->TypeGet()))
+                    var_types op1Type  = op1->TypeGet();
+                    bool      isOp1Flt = varTypeIsFloating(op1Type);
+
+                    if (isflt)
                     {
-                        /* cast involving floats always go through memory */
-                        costEx = IND_COST_EX * 2;
-                        costSz = 6;
+                        if (isOp1Flt)
+                        {
+                            // float:  vcvtss2sd xmm0, xmm1
+                            // double: vcvtsd2ss xmm0, xmm1
+
+                            costEx = 4;
+                            costSz = 4;
+                        }
+                        else if (varTypeIsLong(op1Type))
+                        {
+#if defined(TARGET_AMD64)
+                            if (tree->IsUnsigned())
+                            {
+                                if (compOpportunisticallyDependsOn(InstructionSet_AVX512))
+                                {
+                                    // vxorps     xmm0, xmm0, xmm0
+                                    // vcvtusi2s* xmm0, xmm0, rcx
+
+                                    costEx = 1 + 5; // 6
+                                    costSz = 4 + 6; // 10
+                                }
+                                else
+                                {
+                                    // vxorps    xmm0, xmm0, xmm0
+                                    // mov       rdx, rcx
+                                    // shr       rdx, 1
+                                    // mov       eax, ecx
+                                    // and       eax, 1
+                                    // or        rax, rdx
+                                    // test      rcx, rcx
+                                    // cmovns    rax, rcx
+                                    // vcvtsi2s* xmm0, rax
+                                    // jns       LABEL
+                                    // vadds*    xmm0, xmm0
+
+                                    costEx = 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 5 + 2 + 4; // 19
+                                    costSz = 4 + 3 + 3 + 2 + 3 + 3 + 3 + 4 + 5 + 2 + 4; // 36
+                                }
+                            }
+                            else
+                            {
+                                // vxorps    xmm0, xmm0, xmm0
+                                // vcvtsi2s* xmm0, xmm0, rcx
+
+                                costEx = 1 + 5; // 6
+                                costSz = 4 + 5; // 9
+                            }
+#else
+                            if (compOpportunisticallyDependsOn(InstructionSet_AVX512))
+                            {
+                                // unsigned: vmovq      xmm0, [mem]
+                                //           vcvtuqq2p* xmm0, xmm0
+                                //
+                                // signed:   vmovq      xmm0, [mem]
+                                //           vcvtqq2p*  xmm0, xmm0
+
+                                costEx = FLT_IND_COST_EX + 4; // 4 + FLT_IND_COST_EX
+                                costSz = 6 + 6;               // 12
+                            }
+                            else if (tree->IsUnsigned())
+                            {
+                                // unsigned float:  call CORINFO_HELP_ULNG2FLT
+                                //          double: call CORINFO_HELP_ULNG2DBL
+                                //
+                                // signed   float:  call CORINFO_HELP_LNG2FLT
+                                //          double: call CORINFO_HELP_LNG2DBL
+
+                                costEx = 5 + (3 * IND_COST_EX); // CALL
+                                costSz = 5;                     // 5
+
+                                level++;
+                            }
+#endif
+                        }
+                        else if (tree->IsUnsigned())
+                        {
+                            if (compOpportunisticallyDependsOn(InstructionSet_AVX512))
+                            {
+                                // vxorps     xmm0, xmm0, xmm0
+                                // vcvtusi2s* xmm0, xmm0, ecx
+
+                                costEx = 1 + 5; // 6
+                                costSz = 4 + 6; // 10
+                            }
+                            else
+                            {
+#if defined(TARGET_AMD64)
+                                // vxorps    xmm0, xmm0, xmm0
+                                // vcvtsi2s* xmm0, xmm0, rax
+
+                                costEx = 1 + 5; // 6
+                                costSz = 4 + 5; // 9
+#else
+                                // vxorps    xmm0, xmm0, xmm0
+                                // vcvtsi2sd xmm0, xmm0, ecx
+                                // vaddsd    xmm1, xmm0, [@RWD00]
+                                // vblendvpd xmm0, xmm0, xmm1, xmm0
+                                // ...
+
+                                costEx = 1 + 5 + (4 + FLT_IND_COST_EX) + 1; // 10 + FLT_IND_COST_EX
+                                costSz = 4 + 4 + 8 + 6;                     // 22
+
+                                if (tree->TypeIs(TYP_FLOAT))
+                                {
+                                    // ...
+                                    // vcvtpd2ps xmm0, xmm0
+
+                                    costEx += 5; // 15 + FLT_IND_COST_EX
+                                    costSz += 4; // 26
+                                }
+#endif
+                            }
+                        }
+                        else
+                        {
+                            // vxorps    xmm0, xmm0, xmm0
+                            // vcvtsi2s* xmm0, xmm0, ecx
+
+                            costEx = 1 + 5; // 6
+                            costSz = 4 + 4; // 8
+                        }
+                    }
+                    else if (isOp1Flt)
+                    {
+                        var_types dstType = tree->AsCast()->CastToType();
+
+                        if (compOpportunisticallyDependsOn(InstructionSet_AVX10v2))
+                        {
+#if defined(TARGET_X86)
+                            if (varTypeIsLong(dstType))
+                            {
+                                // unsigned: vcvttp*2uqqs xmm0, xmm0
+                                //           vmovq        [mem], xmm0
+                                //
+                                // signed:   vcvttp*2qqs  xmm0, xmm0
+                                //           vmovq        [mem], xmm0
+
+                                costEx = 4 + FLT_IND_COST_EX; // 4 + FLT_IND_COST_EX
+                                costSz = 6 + 6;               // 12
+
+                                if (op1Type == TYP_FLOAT)
+                                {
+                                    // vector widening float->long instructions take 1 extra cycle
+                                    // compared to same-size conversion
+                                    costEx += 1;
+                                }
+                            }
+                            else
+#endif
+                            {
+                                // unsigned: vcvtts*2usis eax, xmm0
+                                // signed:   vcvtts*2sis  eax, xmm0
+
+                                costEx = 7;
+                                costSz = 6;
+                            }
+                        }
+                        else if (varTypeIsLong(dstType))
+                        {
+#if defined(TARGET_AMD64)
+                            if (varTypeIsUnsigned(dstType))
+                            {
+                                if (compOpportunisticallyDependsOn(InstructionSet_AVX512))
+                                {
+                                    // vxorps      xmm1, xmm1, xmm1
+                                    // vmaxs*      xmm0, xmm0, xmm1
+                                    // vcvtts*2usi rax, xmm0
+
+                                    costEx = 1 + 4 + 7; // 12
+                                    costSz = 4 + 4 + 6; // 14
+                                }
+                                else
+                                {
+                                    // vxorps     xmm1, xmm1, xmm1
+                                    // vmaxs*     xmm1, xmm0, xmm1
+                                    // vmovs*     xmm2, [reloc @RWD00]
+                                    // vsubs*     xmm3, xmm0, xmm2
+                                    // vcvtts*2si rax, xmm1
+                                    // vcvtts*2si rcx, xmm3
+                                    // mov        rdx, rax
+                                    // sar        rdx, 63
+                                    // and        rcx, rdx
+                                    // mov        rdx, -1
+                                    // or         rax, rcx
+                                    // vucomis*   xmm0, xmm2
+                                    // cmovae     rax, rdx
+
+                                    costEx = 1 + 4 + FLT_IND_COST_EX + 4 + 7 + 7 + 1 + 1 + 1 + 1 + 1 + 3 +
+                                             1;                                                  // 32 + FLT_IND_COST_EX
+                                    costSz = 4 + 4 + 8 + 4 + 5 + 5 + 3 + 4 + 3 + 10 + 3 + 4 + 4; // 61
+                                }
+                            }
+                            else
+                            {
+                                // vcmpords*  xmm1, xmm0, xmm0
+                                // vandp*     xmm1, xmm1, xmm0
+                                // mov        rax, 0x7FFFFFFFFFFFFFFF
+                                // vcvtts*2si rcx, xmm1
+                                // vucomis*   xmm0, [reloc @RWD00]
+                                // cmovb      rax, rcx
+
+                                costEx = 4 + 1 + 1 + 7 + (3 + FLT_IND_COST_EX) + 1; // 17 + FLT_IND_COST_EX
+                                costSz = 5 + 4 + 10 + 5 + 8 + 4;                    // 36
+                            }
+#else
+                            if (compOpportunisticallyDependsOn(InstructionSet_AVX512))
+                            {
+                                if (varTypeIsUnsigned(dstType))
+                                {
+                                    // vxorps       xmm1, xmm1, xmm1
+                                    // vmaxs*       xmm0, xmm0, xmm1
+                                    // vcvttp*2uqq  xmm0, xmm0
+                                    // vmovq        [mem], xmm0
+
+                                    costEx = 1 + 4 + 4 + FLT_IND_COST_EX; // 9 + FLT_IND_COST_EX
+                                    costSz = 4 + 4 + 6 + 6;               // 20
+                                }
+                                else
+                                {
+                                    // vcmpords*    k1, xmm0, xmm0
+                                    // vcmpge_oqs*  k2, xmm0, qword ptr [@RWD00]
+                                    // vcvttp*2qq   xmm0 {k1}{z}, xmm0
+                                    // vpblendmq    xmm0 {k2}, xmm0, qword ptr [@RWD08] {1to2}
+                                    // vmovq        [mem], xmm0
+
+                                    costEx = 4 + (4 + FLT_IND_COST_EX) + 4 + (1 + FLT_IND_COST_EX) +
+                                             FLT_IND_COST_EX;     // 13 + (3 * FLT_IND_COST_EX)
+                                    costSz = 7 + 11 + 6 + 10 + 6; // 40
+                                }
+
+                                if (op1Type == TYP_FLOAT)
+                                {
+                                    // vector widening float->long instructions take 1 extra cycle
+                                    // compared to same-size conversion
+                                    costEx += 1;
+                                }
+                            }
+                            else
+                            {
+                                // unsigned: ...
+                                //           call CORINFO_HELP_DBL2ULNG
+                                //
+                                // signed:   ...
+                                //           call CORINFO_HELP_DBL2ULNG
+
+                                costEx = 5 + (3 * IND_COST_EX); // CALL
+                                costSz = 5;                     // 5
+
+                                level++;
+
+                                if (op1Type == TYP_FLOAT)
+                                {
+                                    // vcvtss2sd xmm0, xmm0, xmm0
+                                    // ...
+
+                                    costEx += 4; // 4 + CALL
+                                    costSz += 4; // 9
+                                }
+                            }
+#endif
+                        }
+                        else if (varTypeIsUnsigned(dstType))
+                        {
+                            if (compOpportunisticallyDependsOn(InstructionSet_AVX512))
+                            {
+                                // vxorps      xmm1, xmm1, xmm1
+                                // vmaxs*      xmm0, xmm0, xmm1
+                                // vcvtts*2usi eax, xmm0
+
+                                costEx = 1 + 4 + 7; // 12
+                                costSz = 4 + 4 + 6; // 14
+                            }
+                            else
+                            {
+#if defined(TARGET_AMD64)
+                                // vxorps     xmm1, xmm1, xmm1
+                                // vmaxss     xmm1, xmm0, xmm1
+                                // mov        eax, 0xFFFFFFFF
+                                // vcvtts*2si rcx, xmm1
+                                // vucomis*   xmm0, [reloc @RWD00]
+                                // cmovb      eax, ecx
+
+                                costEx = 1 + 4 + 1 + 7 + (3 + FLT_IND_COST_EX) + 1; // 17 + FLT_IND_COST_EX
+                                costSz = 4 + 4 + 5 + 5 + 8 + 3;                     // 29
+#else
+                                // vxorps     xmm1, xmm1, xmm1
+                                // vmaxs*     xmm1, xmm0, xmm1
+                                // vmovs*     xmm2, [@RWD00]
+                                // ...
+                                // vsubs*     xmm3, xmm0, xmm2
+                                // vcvttp*2dq xmm1, xmm1
+                                // vcvttp*2dq xmm3, xmm3
+                                // vblendvp*  xmm1, xmm1, xmm3, xmm1
+                                // mov        eax, 0xFFFFFFFF
+                                // vmovd      edx, xmm1
+                                // vucomis*   xmm0, xmm2
+                                // cmovb      eax, edx
+
+                                costEx =
+                                    1 + 4 + FLT_IND_COST_EX + 4 + 4 + 4 + 1 + 1 + 3 + 3 + 1; // 26 + FLT_IND_COST_EX
+                                costSz = 4 + 4 + 8 + 4 + 4 + 4 + 6 + 5 + 4 + 4 + 3;          // 50
+
+                                if (op1Type == TYP_DOUBLE)
+                                {
+                                    // ...
+                                    // vroundsd xmm3, xmm0, xmm0, 3
+                                    // ...
+
+                                    costEx += 8; // 34 + FLT_IND_COST_EX
+                                    costSz += 6; // 56
+                                }
+#endif
+                            }
+                        }
+                        else
+                        {
+                            // vcmpords*  xmm1, xmm0, xmm0
+                            // vandp*     xmm1, xmm1, xmm0
+                            // mov        eax, 0x7FFFFFFF
+                            // vcvtts*2si ecx, xmm1
+                            // vucomis*   xmm0, [reloc @RWD00]
+                            // cmovb      eax, ecx
+
+                            costEx = 4 + 1 + 1 + 7 + (3 + FLT_IND_COST_EX) + 1; // 17 + FLT_IND_COST_EX
+                            costSz = 5 + 4 + 5 + 4 + 8 + 3;                     // 29
+                        }
                     }
 #elif defined(TARGET_LOONGARCH64)
                     // TODO-LoongArch64-CQ: tune the costs.
@@ -5528,6 +6729,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                     }
 
                     break;
+                }
 
                 case GT_INTRINSIC:
                     intrinsic = tree->AsIntrinsic();
@@ -5546,9 +6748,18 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                             break;
 
                         case NI_System_Math_Abs:
+                        {
+#if defined(TARGET_XARCH)
+                            // vandp* xmm0, xmm0, [reloc @RWD00]
+                            costEx = 1 + FLT_IND_COST_EX;
+                            costSz = 8;
+                            break;
+#else
                             costEx = 5;
                             costSz = 15;
                             break;
+#endif
+                        }
 
                         case NI_System_Math_Acos:
                         case NI_System_Math_Acosh:
@@ -5556,27 +6767,16 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                         case NI_System_Math_Asinh:
                         case NI_System_Math_Atan:
                         case NI_System_Math_Atanh:
-                        case NI_System_Math_Atan2:
                         case NI_System_Math_Cbrt:
                         case NI_System_Math_Ceiling:
                         case NI_System_Math_Cos:
                         case NI_System_Math_Cosh:
                         case NI_System_Math_Exp:
                         case NI_System_Math_Floor:
-                        case NI_System_Math_FusedMultiplyAdd:
                         case NI_System_Math_ILogB:
                         case NI_System_Math_Log:
                         case NI_System_Math_Log2:
                         case NI_System_Math_Log10:
-#if defined(TARGET_RISCV64)
-                        case NI_System_Math_Max:
-                        case NI_System_Math_MaxUnsigned:
-                        case NI_System_Math_MaxNative:
-                        case NI_System_Math_Min:
-                        case NI_System_Math_MinUnsigned:
-                        case NI_System_Math_MinNative:
-#endif // TARGET_RISCV64
-                        case NI_System_Math_Pow:
                         case NI_System_Math_Round:
                         case NI_System_Math_Sin:
                         case NI_System_Math_Sinh:
@@ -5600,8 +6800,44 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                             }
                             else
                             {
+#if defined(TARGET_XARCH)
+                                switch (intrinsic->gtIntrinsicName)
+                                {
+                                    case NI_System_Math_Ceiling:
+                                    case NI_System_Math_Floor:
+                                    case NI_System_Math_Round:
+                                    case NI_System_Math_Truncate:
+                                    {
+                                        // Ceiling:  vrounds* xmm0, xmm0, xmm0, 10
+                                        // Floor:    vrounds* xmm0, xmm0, xmm0,  9
+                                        // Round:    vrounds* xmm0, xmm0, xmm0,  4
+                                        // Truncate: vrounds* xmm0, xmm0, xmm0, 11
+
+                                        costEx = 8;
+                                        costSz = 6;
+                                        break;
+                                    }
+
+                                    case NI_System_Math_Sqrt:
+                                    {
+                                        // vsqrts* xmm0, xmm0, xmm0
+                                        costEx = tree->TypeIs(TYP_FLOAT) ? 12 : 16;
+                                        costSz = 4;
+                                        break;
+                                    }
+
+                                    default:
+                                    {
+                                        // There are other non user call intrinsics, but they are
+                                        // specially imported as HWIntrinsic nodes or are non unary,
+                                        // so should never be encountered here.
+                                        unreached();
+                                    }
+                                }
+#else
                                 costEx = 3;
                                 costSz = 4;
+#endif
                             }
                             break;
                         }
@@ -5618,6 +6854,14 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                         case NI_SIMD_UpperRestore:
                         case NI_SIMD_UpperSave:
                         {
+#if defined(TARGET_XARCH)
+                            // UpperSave:    vextractf128 xmm0, ymm1, 1
+                            // UpperRestore: vinsertf128  ymm1, xmm0, 1
+
+                            costEx = 3;
+                            costSz = 6;
+                            break;
+#else
                             // TODO-CQ: 1 Ex/Sz isn't necessarily "accurate" but it is what the previous
                             // cost was computed as, in gtSetMultiOpOrder, when this was handled by the
                             // older SIMD intrinsic support.
@@ -5625,6 +6869,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                             costEx = 1;
                             costSz = 1;
                             break;
+#endif
                         }
 #endif // FEATURE_SIMD
                     }
@@ -5633,6 +6878,14 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
 
                 case GT_NOT:
                 case GT_NEG:
+#if defined(TARGET_XARCH)
+                    if (isflt)
+                    {
+                        // vxorp* xmm0, xmm0, [reloc @RWD00]
+                        costEx = 1 + FLT_IND_COST_EX;
+                        costSz = 8;
+                    }
+#endif
                     // We need to ensure that -x is evaluated before x or else
                     // we get burned while adjusting genFPstkLevel in x*-x where
                     // the rhs x is the last use of the enregistered x.
@@ -5784,9 +7037,15 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
 
                 if (isflt)
                 {
+#if defined(TARGET_XARCH)
+                    // vdivs* xmm0, xmm0, xmm0
+                    costEx = tree->TypeIs(TYP_FLOAT) ? 11 : 14;
+                    costSz = 4;
+#else
                     /* fp division is very expensive to execute */
                     costEx = 36; // TYP_DOUBLE
                     costSz += 3;
+#endif
                 }
                 else
                 {
@@ -5803,9 +7062,15 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
 
                 if (isflt)
                 {
+#if defined(TARGET_XARCH)
+                    // vmuls* xmm0, xmm0, xmm0
+                    costEx = 4;
+                    costSz = 4;
+#else
                     /* FP multiplication instructions are more expensive */
                     costEx += 4;
                     costSz += 3;
+#endif
                 }
                 else
                 {
@@ -5838,10 +7103,19 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
             case GT_SUB:
                 if (isflt)
                 {
+#if defined(TARGET_XARCH)
+                    // add: vadds* xmm0, xmm0, xmm0
+                    // sub: vsubs* xmm0, xmm0, xmm0
+
+                    costEx = 4;
+                    costSz = 4;
+                    break;
+#else
                     /* FP instructions are a bit more expensive */
                     costEx += 4;
                     costSz += 3;
                     break;
+#endif
                 }
 
                 /* Overflow check are more expensive */
@@ -5882,13 +7156,18 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
             case GT_LE:
             case GT_GE:
             case GT_GT:
-                /* Float compares remove both operands from the FP stack */
-                /* Also FP comparison uses EAX for flags */
-
                 if (varTypeIsFloating(op1->TypeGet()))
                 {
+#if defined(TARGET_XARCH)
+                    // vucomis* xmm0, xmm1
+                    costEx = 3;
+                    costSz = 4;
+#else
+                    // TODO-CQ: This is a historical artifact from when the x87 FPU was used
+                    // it should be properly adjusted for all platforms
                     level++;
                     lvl2++;
+#endif
                 }
                 if ((tree->gtFlags & GTF_RELOP_JMP_USED) == 0)
                 {
@@ -6618,7 +7897,7 @@ bool Compiler::gtTreeHasLocalRead(GenTree* tree, unsigned lclNum)
 //   lclNum - The local to look for.
 //
 // Returns:
-//   True if there is any GT_STORE_LCL_VAR or GT_STORE_LCL_FLD that affects "lclNum".
+//   True if there is any definition that affects "lclNum".
 //
 bool Compiler::gtTreeHasLocalStore(GenTree* tree, unsigned lclNum)
 {
@@ -6627,8 +7906,7 @@ bool Compiler::gtTreeHasLocalStore(GenTree* tree, unsigned lclNum)
     public:
         enum
         {
-            DoPreOrder    = true,
-            DoLclVarsOnly = true,
+            DoPreOrder = true,
         };
 
         unsigned   m_lclNum;
@@ -6650,25 +7928,26 @@ bool Compiler::gtTreeHasLocalStore(GenTree* tree, unsigned lclNum)
                 return WALK_SKIP_SUBTREES;
             }
 
-            if (node->OperIsLocalStore())
+            auto visit = [&](GenTreeLclVarCommon* lclVar) {
+                if (lclVar->GetLclNum() == m_lclNum)
+                {
+                    return GenTree::VisitResult::Abort;
+                }
+                if (m_lclDsc->lvIsStructField && (lclVar->GetLclNum() == m_lclDsc->lvParentLcl))
+                {
+                    return GenTree::VisitResult::Abort;
+                }
+                if (m_lclDsc->lvPromoted && (lclVar->GetLclNum() >= m_lclDsc->lvFieldLclStart) &&
+                    (lclVar->GetLclNum() < m_lclDsc->lvFieldLclStart + m_lclDsc->lvFieldCnt))
+                {
+                    return GenTree::VisitResult::Abort;
+                }
+                return GenTree::VisitResult::Continue;
+            };
+
+            if (node->VisitLocalDefNodes(m_compiler, visit) == GenTree::VisitResult::Abort)
             {
-                if (node->AsLclVarCommon()->GetLclNum() == m_lclNum)
-                {
-                    return WALK_ABORT;
-                }
-
-                if (m_lclDsc->lvIsStructField && (node->AsLclVarCommon()->GetLclNum() == m_lclDsc->lvParentLcl))
-                {
-                    // Store to parent local also affects the field
-                    return WALK_ABORT;
-                }
-
-                if (m_lclDsc->lvPromoted && (node->AsLclVarCommon()->GetLclNum() >= m_lclDsc->lvFieldLclStart) &&
-                    (node->AsLclVarCommon()->GetLclNum() < m_lclDsc->lvFieldLclStart + m_lclDsc->lvFieldCnt))
-                {
-                    // Store to field also affects the parent
-                    return WALK_ABORT;
-                }
+                return WALK_ABORT;
             }
 
             return WALK_CONTINUE;
@@ -6797,236 +8076,175 @@ bool GenTree::TryGetUse(GenTree* operand, GenTree*** pUse)
     assert(operand != nullptr);
     assert(pUse != nullptr);
 
-    switch (OperGet())
+    if (OperIsLeaf())
     {
-        // Leaf nodes
-        case GT_LCL_VAR:
-        case GT_LCL_FLD:
-        case GT_LCL_ADDR:
-        case GT_CATCH_ARG:
-        case GT_ASYNC_CONTINUATION:
-        case GT_ASYNC_RESUME_INFO:
-        case GT_LABEL:
-        case GT_FTN_ADDR:
-        case GT_RET_EXPR:
-        case GT_CNS_INT:
-        case GT_CNS_LNG:
-        case GT_CNS_DBL:
-        case GT_CNS_STR:
-#if defined(FEATURE_SIMD)
-        case GT_CNS_VEC:
-#endif // FEATURE_SIMD
-#if defined(FEATURE_MASKED_HW_INTRINSICS)
-        case GT_CNS_MSK:
-#endif // FEATURE_MASKED_HW_INTRINSICS
-        case GT_MEMORYBARRIER:
-        case GT_JMP:
-        case GT_JCC:
-        case GT_SETCC:
-        case GT_NO_OP:
-        case GT_START_NONGC:
-        case GT_START_PREEMPTGC:
-        case GT_PROF_HOOK:
-        case GT_PHI_ARG:
-        case GT_JMPTABLE:
-        case GT_PHYSREG:
-        case GT_IL_OFFSET:
-        case GT_RECORD_ASYNC_RESUME:
-        case GT_NOP:
-        case GT_SWIFT_ERROR:
-        case GT_GCPOLL:
-        case GT_WASM_THROW_REF:
-        case GT_WASM_JEXCEPT:
-            return false;
+        return false;
+    }
 
-        // Standard unary operators
-        case GT_STORE_LCL_VAR:
-        case GT_STORE_LCL_FLD:
-        case GT_NOT:
-        case GT_NEG:
-        case GT_COPY:
-        case GT_RELOAD:
-        case GT_ARR_LENGTH:
-        case GT_MDARR_LENGTH:
-        case GT_MDARR_LOWER_BOUND:
-        case GT_CAST:
-        case GT_BITCAST:
-        case GT_CKFINITE:
-        case GT_LCLHEAP:
-        case GT_IND:
-        case GT_BLK:
-        case GT_BOX:
-        case GT_ALLOCOBJ:
-        case GT_RUNTIMELOOKUP:
-        case GT_ARR_ADDR:
-        case GT_INIT_VAL:
-        case GT_JTRUE:
-        case GT_SWITCH:
-        case GT_NULLCHECK:
-        case GT_PUTARG_REG:
-        case GT_PUTARG_STK:
-        case GT_RETURNTRAP:
-        case GT_RETURN:
-        case GT_RETFILT:
-        case GT_RETURN_SUSPEND:
-        case GT_BSWAP:
-        case GT_BSWAP16:
-        case GT_KEEPALIVE:
-        case GT_INC_SATURATE:
-            if (operand == this->AsUnOp()->gtOp1)
-            {
-                *pUse = &this->AsUnOp()->gtOp1;
-                return true;
-            }
-            return false;
-
+    if (OperIsSpecial())
+    {
+        switch (OperGet())
+        {
 #if defined(FEATURE_HW_INTRINSICS)
-        case GT_HWINTRINSIC:
-            for (GenTree** opUse : this->AsMultiOp()->UseEdges())
-            {
-                if (*opUse == operand)
+            case GT_HWINTRINSIC:
+                for (GenTree** opUse : AsMultiOp()->UseEdges())
                 {
-                    *pUse = opUse;
-                    return true;
+                    if (*opUse == operand)
+                    {
+                        *pUse = opUse;
+                        return true;
+                    }
                 }
-            }
-            return false;
+                return false;
 #endif // FEATURE_HW_INTRINSICS
 
-        // Special nodes
-        case GT_PHI:
-            for (GenTreePhi::Use& phiUse : AsPhi()->Uses())
+            // Special nodes
+            case GT_PHI:
             {
-                if (phiUse.GetNode() == operand)
+                for (GenTreePhi::Use& phiUse : AsPhi()->Uses())
                 {
-                    *pUse = &phiUse.NodeRef();
-                    return true;
+                    if (phiUse.GetNode() == operand)
+                    {
+                        *pUse = &phiUse.NodeRef();
+                        return true;
+                    }
                 }
+                return false;
             }
-            return false;
 
-        case GT_FIELD_LIST:
-            for (GenTreeFieldList::Use& fieldUse : AsFieldList()->Uses())
+            case GT_FIELD_LIST:
             {
-                if (fieldUse.GetNode() == operand)
+                for (GenTreeFieldList::Use& fieldUse : AsFieldList()->Uses())
                 {
-                    *pUse = &fieldUse.NodeRef();
-                    return true;
+                    if (fieldUse.GetNode() == operand)
+                    {
+                        *pUse = &fieldUse.NodeRef();
+                        return true;
+                    }
                 }
+                return false;
             }
-            return false;
 
-        case GT_CMPXCHG:
-        {
-            GenTreeCmpXchg* const cmpXchg = this->AsCmpXchg();
-            if (operand == cmpXchg->Addr())
+            case GT_CMPXCHG:
             {
-                *pUse = &cmpXchg->Addr();
-                return true;
-            }
-            if (operand == cmpXchg->Data())
-            {
-                *pUse = &cmpXchg->Data();
-                return true;
-            }
-            if (operand == cmpXchg->Comparand())
-            {
-                *pUse = &cmpXchg->Comparand();
-                return true;
-            }
-            return false;
-        }
+                GenTreeCmpXchg* const cmpXchg = AsCmpXchg();
 
-        case GT_ARR_ELEM:
-        {
-            GenTreeArrElem* const arrElem = this->AsArrElem();
-            if (operand == arrElem->gtArrObj)
-            {
-                *pUse = &arrElem->gtArrObj;
-                return true;
-            }
-            for (unsigned i = 0; i < arrElem->gtArrRank; i++)
-            {
-                if (operand == arrElem->gtArrInds[i])
+                if (operand == cmpXchg->Addr())
                 {
-                    *pUse = &arrElem->gtArrInds[i];
+                    *pUse = &cmpXchg->Addr();
                     return true;
                 }
-            }
-            return false;
-        }
 
-        case GT_CALL:
-        {
-            GenTreeCall* const call = this->AsCall();
-            if (operand == call->gtControlExpr)
-            {
-                *pUse = &call->gtControlExpr;
-                return true;
-            }
-            for (CallArg& arg : call->gtArgs.Args())
-            {
-                if (arg.GetEarlyNode() == operand)
+                if (operand == cmpXchg->Data())
                 {
-                    *pUse = &arg.EarlyNodeRef();
+                    *pUse = &cmpXchg->Data();
                     return true;
                 }
-                if (arg.GetLateNode() == operand)
+
+                if (operand == cmpXchg->Comparand())
                 {
-                    *pUse = &arg.LateNodeRef();
+                    *pUse = &cmpXchg->Comparand();
                     return true;
                 }
+                return false;
             }
-            return false;
-        }
+
+            case GT_ARR_ELEM:
+            {
+                GenTreeArrElem* const arrElem = AsArrElem();
+
+                if (operand == arrElem->gtArrObj)
+                {
+                    *pUse = &arrElem->gtArrObj;
+                    return true;
+                }
+
+                for (unsigned i = 0; i < arrElem->gtArrRank; i++)
+                {
+                    if (operand == arrElem->gtArrInds[i])
+                    {
+                        *pUse = &arrElem->gtArrInds[i];
+                        return true;
+                    }
+                }
+                return false;
+            }
+
+            case GT_CALL:
+            {
+                GenTreeCall* const call = AsCall();
+
+                if (operand == call->gtControlExpr)
+                {
+                    *pUse = &call->gtControlExpr;
+                    return true;
+                }
+
+                for (CallArg& arg : call->gtArgs.Args())
+                {
+                    if (arg.GetEarlyNode() == operand)
+                    {
+                        *pUse = &arg.EarlyNodeRef();
+                        return true;
+                    }
+                    if (arg.GetLateNode() == operand)
+                    {
+                        *pUse = &arg.LateNodeRef();
+                        return true;
+                    }
+                }
+                return false;
+            }
+
 #ifdef TARGET_ARM64
-        case GT_SELECT_NEG:
-        case GT_SELECT_INV:
-        case GT_SELECT_INC:
+            case GT_SELECT_NEG:
+            case GT_SELECT_INV:
+            case GT_SELECT_INC:
 #endif
-        case GT_SELECT:
-        {
-            GenTreeConditional* const conditional = this->AsConditional();
-            if (operand == conditional->gtCond)
+            case GT_SELECT:
             {
-                *pUse = &conditional->gtCond;
-                return true;
+                GenTreeConditional* const conditional = AsConditional();
+
+                if (operand == conditional->gtCond)
+                {
+                    *pUse = &conditional->gtCond;
+                    return true;
+                }
+
+                if (operand == conditional->gtOp1)
+                {
+                    *pUse = &conditional->gtOp1;
+                    return true;
+                }
+
+                if (operand == conditional->gtOp2)
+                {
+                    *pUse = &conditional->gtOp2;
+                    return true;
+                }
+                return false;
             }
-            if (operand == conditional->gtOp1)
+
+            default:
             {
-                *pUse = &conditional->gtOp1;
-                return true;
+                assert(!"unhandled special oper");
+                return false;
             }
-            if (operand == conditional->gtOp2)
-            {
-                *pUse = &conditional->gtOp2;
-                return true;
-            }
-            return false;
         }
-
-        // Binary nodes
-        default:
-            assert(this->OperIsBinary());
-            return TryGetUseBinOp(operand, pUse);
     }
-}
 
-bool GenTree::TryGetUseBinOp(GenTree* operand, GenTree*** pUse)
-{
-    assert(operand != nullptr);
-    assert(pUse != nullptr);
-    assert(this->OperIsBinary());
+    assert(OperIsUnary() || OperIsBinary());
+    GenTreeOp* const opNode = AsOp();
 
-    GenTreeOp* const binOp = this->AsOp();
-    if (operand == binOp->gtOp1)
+    if (operand == opNode->gtOp1)
     {
-        *pUse = &binOp->gtOp1;
+        *pUse = &opNode->gtOp1;
         return true;
     }
-    if (operand == binOp->gtOp2)
+
+    if (OperIsBinary() && (operand == opNode->gtOp2))
     {
-        *pUse = &binOp->gtOp2;
+        *pUse = &opNode->gtOp2;
         return true;
     }
     return false;
@@ -7140,6 +8358,9 @@ bool GenTree::OperRequiresCallFlag(Compiler* comp) const
         case GT_KEEPALIVE:
         case GT_ASYNC_CONTINUATION:
         case GT_RETURN_SUSPEND:
+        case GT_PATCHPOINT:
+        case GT_PATCHPOINT_FORCED:
+        case GT_NONLOCAL_JMP:
             return true;
 
         case GT_SWIFT_ERROR:
@@ -7483,6 +8704,9 @@ bool GenTree::OperRequiresGlobRefFlag(Compiler* comp) const
         case GT_KEEPALIVE:
         case GT_ASYNC_CONTINUATION:
         case GT_RETURN_SUSPEND:
+        case GT_PATCHPOINT:
+        case GT_PATCHPOINT_FORCED:
+        case GT_NONLOCAL_JMP:
         case GT_SWIFT_ERROR:
         case GT_GCPOLL:
             return true;
@@ -7548,6 +8772,9 @@ bool GenTree::OperSupportsOrderingSideEffect() const
         case GT_CATCH_ARG:
         case GT_ASYNC_CONTINUATION:
         case GT_RETURN_SUSPEND:
+        case GT_PATCHPOINT:
+        case GT_PATCHPOINT_FORCED:
+        case GT_NONLOCAL_JMP:
         case GT_SWIFT_ERROR:
             return true;
         default:
@@ -8565,6 +9792,7 @@ GenTreeCall* Compiler::gtNewCallNode(gtCallTypes           callType,
     if (callType == CT_INDIRECT)
     {
         node->gtCallCookie  = nullptr;
+        node->gtCallMethHnd = NO_METHOD_HANDLE;
         node->gtControlExpr = (GenTree*)callHnd;
     }
     else
@@ -9708,6 +10936,7 @@ GenTree* Compiler::gtCloneExpr(GenTree* tree)
             case GT_NO_OP:
             case GT_NOP:
             case GT_LABEL:
+            case GT_FTN_ENTRY:
             case GT_SWIFT_ERROR:
             case GT_GCPOLL:
             case GT_WASM_THROW_REF:
@@ -9968,7 +11197,7 @@ GenTree* Compiler::gtCloneExpr(GenTree* tree)
                 GenTreeHWIntrinsic(tree->TypeGet(), IntrinsicNodeBuilder(getAllocator(CMK_ASTNode), tree->AsMultiOp()),
                                    tree->AsHWIntrinsic()->GetHWIntrinsicId(), tree->AsHWIntrinsic()->GetSimdBaseType(),
                                    tree->AsHWIntrinsic()->GetSimdSize());
-            copy->AsHWIntrinsic()->SetAuxiliaryJitType(tree->AsHWIntrinsic()->GetAuxiliaryJitType());
+            copy->AsHWIntrinsic()->SetAuxiliaryType(tree->AsHWIntrinsic()->GetAuxiliaryType());
 
             if (tree->AsHWIntrinsic()->IsUserCall())
             {
@@ -10171,7 +11400,8 @@ GenTreeCall* Compiler::gtCloneExprCallHelper(GenTreeCall* tree)
     /* Copy the union */
     if (tree->gtCallType == CT_INDIRECT)
     {
-        copy->gtCallCookie = tree->gtCallCookie;
+        copy->gtCallCookie  = tree->gtCallCookie;
+        copy->gtCallMethHnd = NO_METHOD_HANDLE;
     }
     else
     {
@@ -10458,6 +11688,7 @@ GenTreeUseEdgeIterator::GenTreeUseEdgeIterator(GenTree* node)
         case GT_ASYNC_RESUME_INFO:
         case GT_LABEL:
         case GT_FTN_ADDR:
+        case GT_FTN_ENTRY:
         case GT_RET_EXPR:
         case GT_CNS_INT:
         case GT_CNS_LNG:
@@ -10522,6 +11753,8 @@ GenTreeUseEdgeIterator::GenTreeUseEdgeIterator(GenTree* node)
         case GT_INC_SATURATE:
         case GT_RETURNTRAP:
         case GT_RETURN_SUSPEND:
+        case GT_PATCHPOINT_FORCED:
+        case GT_NONLOCAL_JMP:
             m_edge = &m_node->AsUnOp()->gtOp1;
             assert(*m_edge != nullptr);
             m_advance = &GenTreeUseEdgeIterator::Terminate;
@@ -12495,6 +13728,7 @@ void Compiler::gtDispLeaf(GenTree* tree, IndentStack* indentStack)
         case GT_PROF_HOOK:
         case GT_CATCH_ARG:
         case GT_ASYNC_CONTINUATION:
+        case GT_FTN_ENTRY:
         case GT_MEMORYBARRIER:
         case GT_JMPTABLE:
         case GT_SWIFT_ERROR:
@@ -12971,6 +14205,9 @@ void Compiler::gtDispTree(GenTree*                    tree,
                     break;
                 case NI_System_Runtime_CompilerServices_RuntimeHelpers_IsKnownConstant:
                     printf(" isKnownConst");
+                    break;
+                case NI_System_Runtime_CompilerServices_RuntimeHelpers_WriteBarrier:
+                    printf(" WriteBarrier");
                     break;
 #if defined(FEATURE_SIMD)
                 case NI_SIMD_UpperRestore:
@@ -20318,17 +21555,6 @@ void GenTreeJitIntrinsic::SetMethodHandle(Compiler*                          com
 #endif // FEATURE_READYTORUN
 }
 
-var_types GenTreeJitIntrinsic::GetAuxiliaryType() const
-{
-    CorInfoType auxiliaryJitType = GetAuxiliaryJitType();
-
-    if (auxiliaryJitType == CORINFO_TYPE_UNDEF)
-    {
-        return TYP_UNKNOWN;
-    }
-    return JitType2PreciseVarType(auxiliaryJitType);
-}
-
 var_types GenTreeJitIntrinsic::GetSimdBaseType() const
 {
     return (var_types)gtSimdBaseType;
@@ -21988,8 +23214,8 @@ GenTree* Compiler::gtNewSimdCvtNode(
         // mask1 contains the output either 0xFFFFFFFF or 0.
         // FixupVal zeros out any NaN values in the input by ANDing input with mask1.
         GenTree* op1Clone1 = fgMakeMultiUse(&op1);
-        GenTree* mask1     = gtNewSimdIsNaNNode(type, op1, simdSourceBaseType, simdSize);
-        fixupVal           = gtNewSimdBinOpNode(GT_AND_NOT, type, op1Clone1, mask1, simdSourceBaseType, simdSize);
+        GenTree* mask1     = gtNewSimdIsNaNNode(type, op1Clone1, simdSourceBaseType, simdSize);
+        fixupVal           = gtNewSimdBinOpNode(GT_AND_NOT, type, op1, mask1, simdSourceBaseType, simdSize);
     }
 
     if (varTypeIsSigned(simdTargetBaseType))
@@ -26979,74 +28205,40 @@ GenTree* Compiler::gtNewSimdSumNode(var_types type, GenTree* op1, var_types simd
 
 #if defined(TARGET_XARCH)
 
-    if (simdSize == 64)
-    {
-        GenTree* op1Dup = fgMakeMultiUse(&op1);
-
-        op1    = gtNewSimdGetLowerNode(TYP_SIMD32, op1, simdBaseType, simdSize);
-        op1Dup = gtNewSimdGetUpperNode(TYP_SIMD32, op1Dup, simdBaseType, simdSize);
-
-        if (varTypeIsFloating(simdBaseType))
-        {
-            // We need to ensure deterministic results which requires
-            // consistently adding values together. Since many operations
-            // end up operating on 128-bit lanes, we break sum the same way.
-
-            op1    = gtNewSimdSumNode(type, op1, simdBaseType, 32);
-            op1Dup = gtNewSimdSumNode(type, op1Dup, simdBaseType, 32);
-
-            return gtNewOperNode(GT_ADD, type, op1, op1Dup);
-        }
-
-        simdSize = 32;
-        op1      = gtNewSimdBinOpNode(GT_ADD, TYP_SIMD32, op1, op1Dup, simdBaseType, 32);
-    }
-
-    if (simdSize == 32)
-    {
-        GenTree* op1Dup = fgMakeMultiUse(&op1);
-
-        op1    = gtNewSimdGetLowerNode(TYP_SIMD16, op1, simdBaseType, simdSize);
-        op1Dup = gtNewSimdGetUpperNode(TYP_SIMD16, op1Dup, simdBaseType, simdSize);
-
-        if (varTypeIsFloating(simdBaseType))
-        {
-            // We need to ensure deterministic results which requires
-            // consistently adding values together. Since many operations
-            // end up operating on 128-bit lanes, we break sum the same way.
-
-            op1    = gtNewSimdSumNode(type, op1, simdBaseType, 16);
-            op1Dup = gtNewSimdSumNode(type, op1Dup, simdBaseType, 16);
-
-            return gtNewOperNode(GT_ADD, type, op1, op1Dup);
-        }
-
-        simdSize = 16;
-        op1      = gtNewSimdBinOpNode(GT_ADD, TYP_SIMD16, op1, op1Dup, simdBaseType, 16);
-    }
-
-    assert(simdSize == 16);
-
     if (varTypeIsFloating(simdBaseType))
     {
+        // For floating-point we first run the horizontal permute+add sequence
+        // at the full simd width. vpermilps/vpermilpd permute WITHIN each
+        // 128-bit lane, so this is effectively 2x (V256) or 4x (V512) V128
+        // reductions running in parallel with no duplicated work.
+        //
+        // After that, each 128-bit lane of op1 holds the sum of its elements
+        // broadcast across the lane. We then reduce the lanes by combining
+        // upper/lower halves step-by-step down to a single V128. Floating-
+        // point addition is not associative, so the halve-combine grouping
+        // below deliberately preserves the prior recursive
+        // `Sum(lower) + Sum(upper)` shape.
+
         if (simdBaseType == TYP_FLOAT)
         {
-            GenTree* op1Shuffled = fgMakeMultiUse(&op1);
+            GenTree*       op1Shuffled   = fgMakeMultiUse(&op1);
+            NamedIntrinsic permIntrinsic = (simdSize == 64) ? NI_AVX512_Permute4x32 : NI_AVX_Permute;
 
-            if (compOpportunisticallyDependsOn(InstructionSet_AVX))
+            if ((simdSize > 16) || compOpportunisticallyDependsOn(InstructionSet_AVX))
             {
-                // The permute below gives us  [0, 1, 2, 3] -> [1, 0, 3, 2]
-                op1 = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, gtNewIconNode((int)0b10110001, TYP_INT), NI_AVX_Permute,
+                // Per lane, the permute below gives us  [0, 1, 2, 3] -> [1, 0, 3, 2]
+                op1 = gtNewSimdHWIntrinsicNode(simdType, op1, gtNewIconNode((int)0b10110001, TYP_INT), permIntrinsic,
                                                simdBaseType, simdSize);
-                // The add below now results in [0 + 1, 1 + 0, 2 + 3, 3 + 2]
-                op1         = gtNewSimdBinOpNode(GT_ADD, TYP_SIMD16, op1, op1Shuffled, simdBaseType, simdSize);
+                // Per lane, the add below now results in [0 + 1, 1 + 0, 2 + 3, 3 + 2]
+                op1         = gtNewSimdBinOpNode(GT_ADD, simdType, op1, op1Shuffled, simdBaseType, simdSize);
                 op1Shuffled = fgMakeMultiUse(&op1);
-                // The permute below gives us  [0 + 1, 1 + 0, 2 + 3, 3 + 2] -> [2 + 3, 3 + 2, 0 + 1, 1 + 0]
-                op1 = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, gtNewIconNode((int)0b01001110, TYP_INT), NI_AVX_Permute,
+                // Per lane, the permute below gives us [0 + 1, 1 + 0, 2 + 3, 3 + 2] -> [2 + 3, 3 + 2, 0 + 1, 1 + 0]
+                op1 = gtNewSimdHWIntrinsicNode(simdType, op1, gtNewIconNode((int)0b01001110, TYP_INT), permIntrinsic,
                                                simdBaseType, simdSize);
             }
             else
             {
+                assert(simdSize == 16);
                 // The shuffle below gives us  [0, 1, 2, 3] -> [1, 0, 3, 2]
                 op1 = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op1Shuffled, gtNewIconNode((int)0b10110001, TYP_INT),
                                                NI_X86Base_Shuffle, simdBaseType, simdSize);
@@ -27059,33 +28251,110 @@ GenTree* Compiler::gtNewSimdSumNode(var_types type, GenTree* op1, var_types simd
                                                NI_X86Base_Shuffle, simdBaseType, simdSize);
                 op1Shuffled = fgMakeMultiUse(&op1Shuffled);
             }
-            // Finally adding the results gets us [(0 + 1) + (2 + 3), (1 + 0) + (3 + 2), (2 + 3) + (0 + 1), (3 + 2) + (1
-            // + 0)]
-            op1 = gtNewSimdBinOpNode(GT_ADD, TYP_SIMD16, op1, op1Shuffled, simdBaseType, simdSize);
-            return gtNewSimdToScalarNode(type, op1, simdBaseType, simdSize);
+            // Per lane, adding the results gets us [(0 + 1) + (2 + 3), (1 + 0) + (3 + 2), (2 + 3) + (0 + 1),
+            // (3 + 2) + (1 + 0)]
+            op1 = gtNewSimdBinOpNode(GT_ADD, simdType, op1, op1Shuffled, simdBaseType, simdSize);
         }
         else
         {
-            GenTree* op1Shuffled = fgMakeMultiUse(&op1);
+            GenTree*       op1Shuffled   = fgMakeMultiUse(&op1);
+            NamedIntrinsic permIntrinsic = (simdSize == 64) ? NI_AVX512_Permute2x64 : NI_AVX_Permute;
 
-            if (compOpportunisticallyDependsOn(InstructionSet_AVX))
+            if ((simdSize > 16) || compOpportunisticallyDependsOn(InstructionSet_AVX))
             {
-                // The permute below gives us  [0, 1] -> [1, 0]
-                op1 = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, gtNewIconNode((int)0b0001, TYP_INT), NI_AVX_Permute,
+                // Per lane, the permute below gives us  [0, 1] -> [1, 0]
+                // vpermilpd uses one imm bit per double element (2 for V128, 4 for V256,
+                // 8 for V512); 0b01010101 swaps within each 128-bit lane at all widths.
+                op1 = gtNewSimdHWIntrinsicNode(simdType, op1, gtNewIconNode((int)0b01010101, TYP_INT), permIntrinsic,
                                                simdBaseType, simdSize);
             }
             else
             {
+                assert(simdSize == 16);
                 // The shuffle below gives us  [0, 1] -> [1, 0]
                 op1 = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op1Shuffled, gtNewIconNode((int)0b0001, TYP_INT),
                                                NI_X86Base_Shuffle, simdBaseType, simdSize);
                 op1Shuffled = fgMakeMultiUse(&op1Shuffled);
             }
-            // Finally adding the results gets us [0 + 1, 1 + 0]
-            op1 = gtNewSimdBinOpNode(GT_ADD, TYP_SIMD16, op1, op1Shuffled, simdBaseType, simdSize);
-            return gtNewSimdToScalarNode(type, op1, simdBaseType, simdSize);
+            // Per lane, adding the results gets us [0 + 1, 1 + 0]
+            op1 = gtNewSimdBinOpNode(GT_ADD, simdType, op1, op1Shuffled, simdBaseType, simdSize);
         }
+
+        // At this point every 128-bit lane of op1 contains that lane's reduced
+        // sum broadcast across the lane. Combine the lanes into a single V128
+        // by reducing upper/lower halves step-by-step. Floating-point addition
+        // is not associative, so the grouping used here deliberately matches
+        // the prior recursive shape:
+        //     V512: Sum = Sum(v512.GetLower()) + Sum(v512.GetUpper())
+        //     V256: Sum = (v256.GetLower() + v256.GetUpper()).ToScalar()
+        //     V128: Sum = v128.ToScalar()
+
+        if (simdSize == 64)
+        {
+            // Extract each of the four 128-bit lanes directly from the V512
+            // using GetLower128 (lane 0) and AVX512 ExtractVector128 (lanes
+            // 1-3), then combine as `(s0 + s1) + (s2 + s3)` to preserve the
+            // prior recursive `Sum(lower256) + Sum(upper256)` grouping.
+            GenTree* op1Lane1 = fgMakeMultiUse(&op1);
+            GenTree* op1Lane2 = fgMakeMultiUse(&op1);
+            GenTree* op1Lane3 = fgMakeMultiUse(&op1);
+
+            GenTree* op1Lane0 = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, NI_Vector512_GetLower128, simdBaseType, 64);
+            op1Lane1 = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1Lane1, gtNewIconNode(1), NI_AVX512_ExtractVector128,
+                                                simdBaseType, 64);
+            op1Lane2 = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1Lane2, gtNewIconNode(2), NI_AVX512_ExtractVector128,
+                                                simdBaseType, 64);
+            op1Lane3 = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1Lane3, gtNewIconNode(3), NI_AVX512_ExtractVector128,
+                                                simdBaseType, 64);
+
+            GenTree* lowerSum = gtNewSimdBinOpNode(GT_ADD, TYP_SIMD16, op1Lane0, op1Lane1, simdBaseType, 16);
+            GenTree* upperSum = gtNewSimdBinOpNode(GT_ADD, TYP_SIMD16, op1Lane2, op1Lane3, simdBaseType, 16);
+
+            simdSize = 16;
+            op1      = gtNewSimdBinOpNode(GT_ADD, TYP_SIMD16, lowerSum, upperSum, simdBaseType, 16);
+        }
+        else if (simdSize == 32)
+        {
+            GenTree* op1Dup = fgMakeMultiUse(&op1);
+
+            op1    = gtNewSimdGetLowerNode(TYP_SIMD16, op1, simdBaseType, 32);
+            op1Dup = gtNewSimdGetUpperNode(TYP_SIMD16, op1Dup, simdBaseType, 32);
+
+            simdSize = 16;
+            op1      = gtNewSimdBinOpNode(GT_ADD, TYP_SIMD16, op1, op1Dup, simdBaseType, 16);
+        }
+
+        assert(simdSize == 16);
+        return gtNewSimdToScalarNode(type, op1, simdBaseType, 16);
     }
+
+    // Integer: integer addition is associative, so we can safely reduce the
+    // upper/lower halves element-wise down to a single V128 before running
+    // the V128 reduction.
+
+    if (simdSize == 64)
+    {
+        GenTree* op1Dup = fgMakeMultiUse(&op1);
+
+        op1    = gtNewSimdGetLowerNode(TYP_SIMD32, op1, simdBaseType, simdSize);
+        op1Dup = gtNewSimdGetUpperNode(TYP_SIMD32, op1Dup, simdBaseType, simdSize);
+
+        simdSize = 32;
+        op1      = gtNewSimdBinOpNode(GT_ADD, TYP_SIMD32, op1, op1Dup, simdBaseType, 32);
+    }
+
+    if (simdSize == 32)
+    {
+        GenTree* op1Dup = fgMakeMultiUse(&op1);
+
+        op1    = gtNewSimdGetLowerNode(TYP_SIMD16, op1, simdBaseType, simdSize);
+        op1Dup = gtNewSimdGetUpperNode(TYP_SIMD16, op1Dup, simdBaseType, simdSize);
+
+        simdSize = 16;
+        op1      = gtNewSimdBinOpNode(GT_ADD, TYP_SIMD16, op1, op1Dup, simdBaseType, 16);
+    }
+
+    assert(simdSize == 16);
 
     unsigned vectorLength = getSIMDVectorLength(simdSize, simdBaseType);
     int      shiftCount   = genLog2(vectorLength);
@@ -28291,13 +29560,13 @@ bool GenTreeHWIntrinsic::OperIsMemoryLoad(GenTree** pAddr) const
                 case NI_AVX2_ConvertToVector256Int16:
                 case NI_AVX2_ConvertToVector256Int32:
                 case NI_AVX2_ConvertToVector256Int64:
-                    if (GetAuxiliaryJitType() == CORINFO_TYPE_PTR)
+                    if (GetAuxiliaryType() == TYP_U_IMPL)
                     {
                         addr = Op(1);
                     }
                     else
                     {
-                        assert(GetAuxiliaryJitType() == CORINFO_TYPE_UNDEF);
+                        assert(GetAuxiliaryType() == TYP_UNKNOWN);
                     }
                     break;
 
@@ -32649,14 +33918,13 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
                             }
                         }
 #elif defined(TARGET_ARM64)
-                        CorInfoType auxJitType = tree->GetAuxiliaryJitType();
-                        if (auxJitType != CORINFO_TYPE_UNDEF &&
-                            genTypeSize(JITtype2varType(auxJitType)) != genTypeSize(simdBaseType))
+                        var_types auxType = tree->GetAuxiliaryType();
+                        if (auxType != TYP_UNKNOWN && genTypeSize(auxType) != genTypeSize(simdBaseType))
                         {
                             // Handle the "wide elements" variant of shift, where otherNode is a vector of ulongs,
                             // which is looped over to read the shift values. The values can safely be narrowed
                             // to the result type.
-                            assert(auxJitType == CORINFO_TYPE_ULONG);
+                            assert(auxType == TYP_ULONG);
                             assert(tree->TypeIs(TYP_SIMD16));
 
                             simd16_t result = {};
@@ -33740,8 +35008,8 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
                     break;
                 }
 
-                bool maskIsZero    = false;
-                bool maskIsAllOnes = false;
+                bool maskIsZero       = false;
+                bool maskIsAllBitsSet = false;
 
                 if (op3->IsCnsMsk())
                 {
@@ -33752,7 +35020,7 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
                         GenTreeMskCon* mask      = op3->AsMskCon();
                         uint32_t       elemCount = simdSize / genTypeSize(simdBaseType);
 
-                        maskIsAllOnes = mask->gtSimdMaskVal.GetRawBits() == simdmask_t::GetBitMask(elemCount);
+                        maskIsAllBitsSet = mask->gtSimdMaskVal.GetRawBits() == simdmask_t::GetBitMask(elemCount);
                     }
                 }
                 else
@@ -33763,11 +35031,11 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
 
                     if (!maskIsZero)
                     {
-                        maskIsAllOnes = op3->IsVectorAllBitsSet();
+                        maskIsAllBitsSet = op3->IsVectorAllBitsSet();
                     }
                 }
 
-                if (maskIsAllOnes)
+                if (maskIsAllBitsSet)
                 {
                     if ((op1->gtFlags & GTF_SIDE_EFFECT) != 0)
                     {

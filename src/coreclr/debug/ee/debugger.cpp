@@ -28,10 +28,6 @@
 #include "dbgtransportsession.h"
 #endif // FEATURE_DBGIPC_TRANSPORT_VM
 
-#ifdef TEST_DATA_CONSISTENCY
-#include "datatest.h"
-#endif // TEST_DATA_CONSISTENCY
-
 #include "dbgenginemetrics.h"
 
 #include "../../vm/rejit.h"
@@ -453,102 +449,6 @@ void Debugger::DoNotCallDirectlyPrivateUnlock(void)
 
     }
 }
-
-#ifdef TEST_DATA_CONSISTENCY
-
-// ---------------------------------------------------------------------------------
-// Implementations for DataTest member functions
-// ---------------------------------------------------------------------------------
-
-// Send an event to the RS to signal that it should test to determine if a crst is held.
-// This is for testing purposes only.
-// Arguments:
-//     input:  pCrst     - the lock to test
-//             fOkToTake - true iff the LS does NOT currently hold the lock
-//     output: none
-// Notes: The RS will throw if the lock is held. The code that tests the lock will catch the
-//        exception and assert if throwing was not the correct thing to do (determined via the
-//        boolean). See the case for DB_IPCE_TEST_CRST in code:CordbProcess::RawDispatchEvent.
-//
-void DataTest::SendDbgCrstEvent(Crst * pCrst, bool fOkToTake)
-{
-    DebuggerIPCEvent * pLockEvent = g_pDebugger->m_pRCThread->GetIPCEventSendBuffer();
-
-    g_pDebugger->InitIPCEvent(pLockEvent, DB_IPCE_TEST_CRST);
-
-    pLockEvent->TestCrstData.vmCrst.SetRawPtr(pCrst);
-    pLockEvent->TestCrstData.fOkToTake = fOkToTake;
-
-    g_pDebugger->SendRawEvent(pLockEvent);
-
-} // DataTest::SendDbgCrstEvent
-
-// Send an event to the RS to signal that it should test to determine if a SimpleRWLock is held.
-// This is for testing purposes only.
-// Arguments:
-//     input:  pRWLock   - the lock to test
-//             fOkToTake - true iff the LS does NOT currently hold the lock
-//     output: none
-// Note:  The RS will throw if the lock is held. The code that tests the lock will catch the
-//        exception and assert if throwing was not the correct thing to do (determined via the
-//        boolean). See the case for DB_IPCE_TEST_RWLOCK in code:CordbProcess::RawDispatchEvent.
-//
-void DataTest::SendDbgRWLockEvent(SimpleRWLock * pRWLock, bool okToTake)
-{
-    DebuggerIPCEvent * pLockEvent = g_pDebugger->m_pRCThread->GetIPCEventSendBuffer();
-
-    g_pDebugger->InitIPCEvent(pLockEvent, DB_IPCE_TEST_RWLOCK);
-
-    pLockEvent->TestRWLockData.vmRWLock.SetRawPtr(pRWLock);
-    pLockEvent->TestRWLockData.fOkToTake = okToTake;
-
-    g_pDebugger->SendRawEvent(pLockEvent);
-} // DataTest::SendDbgRWLockEvent
-
-// Takes a series of locks in various ways and signals the RS to test the locks at interesting
-// points to ensure we reliably detect when the LS holds a lock. If in the course of inspection, the
-// DAC needs to execute a code path where the LS holds a lock, we assume that the locked data is in
-// an inconsistent state. In this situation, we don't want to report information about this data, so
-// we throw an exception.
-// This is for testing purposes only.
-//
-// Arguments: none
-// Return Value: none
-// Notes: See code:CordbProcess::RawDispatchEvent for the RS part of this test and code:Debugger::Startup
-//        for the LS invocation of the test.
-//        The environment variable TestDataConsistency must be set to 1 to make this test run.
-void DataTest::TestDataSafety()
-{
-    const bool okToTake = true;
-
-    SendDbgCrstEvent(&m_crst1, okToTake);
-    {
-        CrstHolder ch1(&m_crst1);
-        SendDbgCrstEvent(&m_crst1, !okToTake);
-        {
-            CrstHolder ch2(&m_crst2);
-            SendDbgCrstEvent(&m_crst2, !okToTake);
-            SendDbgCrstEvent(&m_crst1, !okToTake);
-        }
-        SendDbgCrstEvent(&m_crst2, okToTake);
-        SendDbgCrstEvent(&m_crst1, !okToTake);
-    }
-    SendDbgCrstEvent(&m_crst1, okToTake);
-
-    {
-        SendDbgRWLockEvent(&m_rwLock, okToTake);
-        SimpleReadLockHolder readLock(&m_rwLock);
-        SendDbgRWLockEvent(&m_rwLock, okToTake);
-    }
-    SendDbgRWLockEvent(&m_rwLock, okToTake);
-    {
-        SimpleWriteLockHolder readLock(&m_rwLock);
-        SendDbgRWLockEvent(&m_rwLock, !okToTake);
-    }
-
-} // DataTest::TestDataSafety
-
-#endif // TEST_DATA_CONSISTENCY
 
 #if _DEBUG
 static DebugEventCounter g_debugEventCounter;
@@ -1313,31 +1213,39 @@ ULONG DebuggerMethodInfoTable::CheckDmiTable(void)
 // Arguments:
 //      pContext - The context to return to when done with this eval.
 //      pEvalInfo - Contains all the important information, such as parameters, type args, method.
-//      fInException - TRUE if the thread for the eval is currently in an exception notification.
-//      bpInfoSegmentRX - bpInfoSegmentRX is an InteropSafe allocation allocated by the caller.
-//                        (Caller allocated as there is no way to fail the allocation without
-//                        throwing, and this function is called in a NOTHROW region)
+//      bpInfoSegmentRX - Non-NULL only when the eval hijacks the native CPU context through
+//                        FuncEvalHijack. NULL for non-hijack evals (exception-time or interpreter),
+//                        which complete via the pending-eval queue instead of a native breakpoint
+//                        trap. Caller-allocated because this function is NOTHROW.
 //
-DebuggerEval::DebuggerEval(CONTEXT * pContext, DebuggerIPCE_FuncEvalInfo * pEvalInfo, bool fInException, DebuggerEvalBreakpointInfoSegment* bpInfoSegmentRX)
+DebuggerEval::DebuggerEval(CONTEXT * pContext, DebuggerIPCE_FuncEvalInfo * pEvalInfo, DebuggerEvalBreakpointInfoSegment* bpInfoSegmentRX)
 {
     WRAPPER_NO_CONTRACT;
 
+    if (bpInfoSegmentRX != NULL)
+    {
 #if !defined(DBI_COMPILE) && !defined(DACCESS_COMPILE) && defined(HOST_OSX) && defined(HOST_ARM64)
-    ExecutableWriterHolder<DebuggerEvalBreakpointInfoSegment> bpInfoSegmentWriterHolder(bpInfoSegmentRX, sizeof(DebuggerEvalBreakpointInfoSegment));
-    DebuggerEvalBreakpointInfoSegment *bpInfoSegmentRW = bpInfoSegmentWriterHolder.GetRW();
+        ExecutableWriterHolder<DebuggerEvalBreakpointInfoSegment> bpInfoSegmentWriterHolder(bpInfoSegmentRX, sizeof(DebuggerEvalBreakpointInfoSegment));
+        DebuggerEvalBreakpointInfoSegment *bpInfoSegmentRW = bpInfoSegmentWriterHolder.GetRW();
 #else // !DBI_COMPILE && !DACCESS_COMPILE && HOST_OSX && HOST_ARM64
-    DebuggerEvalBreakpointInfoSegment *bpInfoSegmentRW = bpInfoSegmentRX;
+        DebuggerEvalBreakpointInfoSegment *bpInfoSegmentRW = bpInfoSegmentRX;
 #endif // !DBI_COMPILE && !DACCESS_COMPILE && HOST_OSX && HOST_ARM64
-    new (bpInfoSegmentRW) DebuggerEvalBreakpointInfoSegment(this);
-    m_bpInfoSegment = bpInfoSegmentRX;
+        new (bpInfoSegmentRW) DebuggerEvalBreakpointInfoSegment(this);
+        m_bpInfoSegment = bpInfoSegmentRX;
 
-    // This must be non-zero so that the saved opcode is non-zero, and on IA64 we want it to be 0x16
-    // so that we can have a breakpoint instruction in any slot in the bundle.
-    bpInfoSegmentRW->m_breakpointInstruction[0] = 0x16;
+        // This must be non-zero so that the saved opcode is non-zero, and on IA64 we want it to be 0x16
+        // so that we can have a breakpoint instruction in any slot in the bundle.
+        bpInfoSegmentRW->m_breakpointInstruction[0] = 0x16;
 #if defined(TARGET_ARM)
-    USHORT *bp = (USHORT*)&m_bpInfoSegment->m_breakpointInstruction;
-    *bp = CORDbg_BREAK_INSTRUCTION;
+        USHORT *bp = (USHORT*)&m_bpInfoSegment->m_breakpointInstruction;
+        *bp = CORDbg_BREAK_INSTRUCTION;
 #endif // TARGET_ARM
+    }
+    else
+    {
+        m_bpInfoSegment = NULL;
+    }
+
     m_thread = pEvalInfo->vmThreadToken.GetRawPtr();
     m_evalType = pEvalInfo->funcEvalType;
     m_methodToken = pEvalInfo->funcMetadataToken;
@@ -1347,7 +1255,7 @@ DebuggerEval::DebuggerEval(CONTEXT * pContext, DebuggerIPCE_FuncEvalInfo * pEval
     // could get unloaded between now and when the funceval actually starts.  So we stash an
     // AppDomain ID which is safe to use after the AD is unloaded.  It's only safe to
     // use the DebuggerModule* after we've verified the ADID is still valid (i.e. by entering that domain).
-    m_debuggerModule = g_pDebugger->LookupOrCreateModule(pEvalInfo->vmDomainAssembly);
+    m_debuggerModule = g_pDebugger->LookupOrCreateModule(pEvalInfo->vmAssembly);
     m_funcEvalKey = pEvalInfo->funcEvalKey;
     m_argCount = pEvalInfo->argCount;
     m_targetCodeAddr = (TADDR)NULL;
@@ -1363,7 +1271,10 @@ DebuggerEval::DebuggerEval(CONTEXT * pContext, DebuggerIPCE_FuncEvalInfo * pEval
     m_aborting = FE_ABORT_NONE;
     m_aborted = false;
     m_completed = false;
-    m_evalDuringException = fInException;
+    // Hijacked evals redirect the native CPU context through FuncEvalHijack; non-hijack
+    // evals (exception-time and interpreter) complete via the pending-eval queue. The
+    // presence of the breakpoint info segment is the single source of truth.
+    m_evalUsesHijack = (bpInfoSegmentRX != NULL);
     m_retValueBoxing = Debugger::NoValueTypeBoxing;
     m_vmObjectHandle = VMPTR_OBJECTHANDLE::NullPtr();
 
@@ -1991,15 +1902,6 @@ HRESULT Debugger::Startup(void)
             LOG((LF_CORDB, LL_EVERYTHING, "Start was successful\n"));
         }
 
-#ifdef TEST_DATA_CONSISTENCY
-        // if we have set the environment variable TestDataConsistency, run the data consistency test.
-        // See code:DataTest::TestDataSafety for more information
-        if (g_pConfig != NULL && g_pConfig->TestDataConsistency())
-        {
-            DataTest dt;
-            dt.TestDataSafety();
-        }
-#endif // TEST_DATA_CONSISTENCY
     }
 
     startup.WaitForContinueNotification();
@@ -5081,49 +4983,24 @@ void Debugger::SendSyncCompleteIPCEvent(bool isEESuspendedForGC)
     }
 }
 
-//
-// Lookup or create a DebuggerModule for the given pDomainAssembly.
-//
-// Arguments:
-//    pDomainAssembly - non-null domain file.
-//
-// Returns:
-//   DebuggerModule instance for the given domain file. May be lazily created.
-//
-// Notes:
-//  @dbgtodo JMC - this should go away when we get rid of DebuggerModule.
-//
-
-DebuggerModule * Debugger::LookupOrCreateModule(DomainAssembly * pDomainAssembly)
-{
-    _ASSERTE(pDomainAssembly != NULL);
-    LOG((LF_CORDB, LL_INFO1000, "D::LOCM df=%p\n", pDomainAssembly));
-    DebuggerModule * pDModule = LookupOrCreateModule(pDomainAssembly->GetAssembly()->GetModule());
-    LOG((LF_CORDB, LL_INFO1000, "D::LOCM m=%p ad=%p -> dm=%p\n", pDomainAssembly->GetAssembly()->GetModule(), AppDomain::GetCurrentDomain(), pDModule));
-    _ASSERTE(pDModule != NULL);
-    _ASSERTE(pDModule->GetDomainAssembly() == pDomainAssembly);
-
-    return pDModule;
-}
-
-// Overloaded Wrapper around for VMPTR_DomainAssembly-->DomainAssembly*
+// Wrapper around VMPTR_Assembly to LookupOrCreateModule(Module*).
 //
 // Arguments:
-//    vmDomainAssembly - VMPTR cookie for a domain file. This can be NullPtr().
+//    vmAssembly - VMPTR cookie for an assembly. This can be NullPtr().
 //
 // Returns:
-//    Debugger Module instance for the given domain file. May be lazily created.
+//    Debugger Module instance for the given assembly. May be lazily created.
 //
 // Notes:
 //    VMPTR comes from IPC events
-DebuggerModule * Debugger::LookupOrCreateModule(VMPTR_DomainAssembly vmDomainAssembly)
+DebuggerModule * Debugger::LookupOrCreateModule(VMPTR_Assembly vmAssembly)
 {
-    DomainAssembly * pDomainAssembly = vmDomainAssembly.GetRawPtr();
-    if (pDomainAssembly == NULL)
+    Assembly * pAssembly = vmAssembly.GetRawPtr();
+    if (pAssembly == NULL)
     {
         return NULL;
     }
-    return LookupOrCreateModule(pDomainAssembly);
+    return LookupOrCreateModule(pAssembly->GetModule());
 }
 
 // Lookup or create a DebuggerModule for the given (Module, AppDomain) pair.
@@ -5132,7 +5009,7 @@ DebuggerModule * Debugger::LookupOrCreateModule(VMPTR_DomainAssembly vmDomainAss
 //    pModule - required runtime module. May be domain netural.
 //
 // Returns:
-//    Debugger Module isntance for the given domain file. May be lazily created.
+//    Debugger Module isntance for the given assembly. May be lazily created.
 //
 DebuggerModule* Debugger::LookupOrCreateModule(Module* pModule)
 {
@@ -5166,28 +5043,28 @@ DebuggerModule* Debugger::LookupOrCreateModule(Module* pModule)
         HRESULT hr = S_OK;
         EX_TRY
         {
-            DomainAssembly * pDomainAssembly = pModule->GetDomainAssembly();
-            SIMPLIFYING_ASSUMPTION(pDomainAssembly != NULL);
-            dmod = AddDebuggerModule(pDomainAssembly); // throws
+            Assembly * pAssembly = pModule->GetAssembly();
+            SIMPLIFYING_ASSUMPTION(pAssembly != NULL);
+            dmod = AddDebuggerModule(pAssembly); // throws
         }
         EX_CATCH_HRESULT(hr);
         SIMPLIFYING_ASSUMPTION(dmod != NULL); // may not be true in OOM cases; but LS doesn't handle OOM.
     }
 
-    LOG((LF_CORDB, LL_INFO1000, "D::LOCM m=%p -> dm=%p(Mod=%p, DomFile=%p)\n",
-        pModule, dmod, dmod->GetRuntimeModule(), dmod->GetDomainAssembly()));
+    LOG((LF_CORDB, LL_INFO1000, "D::LOCM m=%p -> dm=%p(Mod=%p, Asm=%p)\n",
+        pModule, dmod, dmod->GetRuntimeModule(), dmod->GetAssembly()));
     return dmod;
 }
 
 // Create a new DebuggerModule object
 //
 // Arguments:
-//    pDomainAssembly-  runtime domain file to create debugger module object around
+//    pAssembly - runtime assembly to create debugger module object around
 //
 // Returns:
-//    New instnace of a DebuggerModule. Throws on failure.
+//    New instance of a DebuggerModule. Throws on failure.
 //
-DebuggerModule* Debugger::AddDebuggerModule(DomainAssembly * pDomainAssembly)
+DebuggerModule* Debugger::AddDebuggerModule(Assembly * pAssembly)
 {
     CONTRACTL
     {
@@ -5196,15 +5073,15 @@ DebuggerModule* Debugger::AddDebuggerModule(DomainAssembly * pDomainAssembly)
     }
     CONTRACTL_END;
 
-    LOG((LF_CORDB, LL_INFO1000, "D::ADM df=0x%x\n", pDomainAssembly));
+    LOG((LF_CORDB, LL_INFO1000, "D::ADM asm=0x%x\n", pAssembly));
     DebuggerDataLockHolder chInfo(this);
 
-    Module *     pRuntimeModule = pDomainAssembly->GetAssembly()->GetModule();
+    Module *     pRuntimeModule = pAssembly->GetModule();
 
     HRESULT hr = CheckInitModuleTable();
     IfFailThrow(hr);
 
-    DebuggerModule* pModule = new (interopsafe) DebuggerModule(pRuntimeModule, pDomainAssembly);
+    DebuggerModule* pModule = new (interopsafe) DebuggerModule(pRuntimeModule, pAssembly);
     _ASSERTE(pModule != NULL); // throws on oom
 
     TRACE_ALLOC(pModule);
@@ -5213,7 +5090,7 @@ DebuggerModule* Debugger::AddDebuggerModule(DomainAssembly * pDomainAssembly)
     // @dbgtodo  inspection/exceptions - this may leak module in OOM case. LS is not OOM resilient; and we
     // expect to get rid of DebuggerModule anyways.
 
-    LOG((LF_CORDB, LL_INFO1000, "D::ADM df=0x%x -> dm=0x%x\n", pDomainAssembly, pModule));
+    LOG((LF_CORDB, LL_INFO1000, "D::ADM asm=0x%x -> dm=0x%x\n", pAssembly, pModule));
     return pModule;
 }
 
@@ -6132,7 +6009,7 @@ void Debugger::LockAndSendEnCRemapEvent(DebuggerJitInfo * dji, SIZE_T currentIP,
     Module *pRuntimeModule = pMD->GetModule();
 
     DebuggerModule * pDModule = LookupOrCreateModule(pRuntimeModule);
-    ipce->EnCRemap.vmDomainAssembly.SetRawPtr((pDModule ? pDModule->GetDomainAssembly() : NULL));
+    ipce->EnCRemap.vmAssembly.SetRawPtr((pDModule ? pDModule->GetAssembly() : NULL));
 
     LOG((LF_CORDB, LL_INFO10000, "D::LASEnCRE: %s::%s dmod:%p\n",
         pMD->m_pszDebugClassName, pMD->m_pszDebugMethodName, pDModule));
@@ -6176,7 +6053,7 @@ void Debugger::LockAndSendEnCRemapCompleteEvent(MethodDesc *pMD)
     Module *pRuntimeModule = pMD->GetModule();
 
     DebuggerModule * pDModule = LookupOrCreateModule(pRuntimeModule);
-    ipce->EnCRemapComplete.vmDomainAssembly.SetRawPtr((pDModule ? pDModule->GetDomainAssembly() : NULL));
+    ipce->EnCRemapComplete.vmAssembly.SetRawPtr((pDModule ? pDModule->GetAssembly() : NULL));
 
     LOG((LF_CORDB, LL_INFO10000, "D::LASEnCRE: %s::%s dmod:%p, methodDef:0x%08x \n",
         pMD->m_pszDebugClassName, pMD->m_pszDebugMethodName,
@@ -6238,7 +6115,7 @@ void Debugger::SendEnCUpdateEvent(DebuggerIPCEventType eventType,
     _ASSERTE(pModule);
 
     DebuggerModule * pDModule = LookupOrCreateModule(pModule);
-    event->EnCUpdate.vmDomainAssembly.SetRawPtr((pDModule ? pDModule->GetDomainAssembly() : NULL));
+    event->EnCUpdate.vmAssembly.SetRawPtr((pDModule ? pDModule->GetAssembly() : NULL));
 
     m_pRCThread->SendIPCEvent();
 
@@ -6891,6 +6768,11 @@ HRESULT Debugger::LaunchJitDebuggerAndNativeAttach(Thread * pThread, EXCEPTION_P
     }
     CONTRACTL_END;
 
+#ifdef TARGET_UNIX
+    // JIT-attach via CreateProcess + waitable process handle is Windows-only.
+    // The caller treats a failing HRESULT as "no debugger attached" and unwinds via PostJitAttach.
+    return E_NOTIMPL;
+#else
     // You need to have called PreJitAttach first to determine which thread gets to launch the debugger
     _ASSERTE(m_jitAttachInProgress);
 
@@ -6970,7 +6852,7 @@ HRESULT Debugger::LaunchJitDebuggerAndNativeAttach(Thread * pThread, EXCEPTION_P
     _ASSERTE((res == WAIT_OBJECT_0) && "WaitForMultipleObjectsEx failed!");
     LOG( (LF_CORDB, LL_INFO10000, "D::LJDANA: Leaving\n") );
     return S_OK;
-
+#endif // TARGET_UNIX
 }
 
 // Blocks until the debugger completes jit attach
@@ -7690,7 +7572,7 @@ void Debugger::ProcessAnyPendingEvals(Thread *pThread)
     {
         DebuggerEval *pDE = pfe->pDE;
 
-        _ASSERTE(pDE->m_evalDuringException);
+        _ASSERTE(!pDE->m_evalUsesHijack);
         _ASSERTE(pDE->m_thread == GetThreadNULLOk());
 
         // Remove the pending eval from the hash. This ensures that if we take a first chance exception during the eval
@@ -8001,8 +7883,8 @@ BOOL Debugger::ShouldSendCatchHandlerFound(Thread* pThread)
     else
     {
         BOOL forceSendCatchHandlerFound = FALSE;
-        OBJECTHANDLE objHandle = pThread->GetThrowableAsHandle();
-        OBJECTHANDLE retrievedHandle = m_pForceCatchHandlerFoundEventsTable->Lookup(objHandle); //destroy handle
+        OBJECTHANDLE objHandle = pThread->GetThrowableAsPseudoHandle();
+        OBJECTHANDLE retrievedHandle = m_pForceCatchHandlerFoundEventsTable->Lookup(objHandle);
         if (retrievedHandle != NULL)
         {
             forceSendCatchHandlerFound = TRUE;
@@ -8011,7 +7893,7 @@ BOOL Debugger::ShouldSendCatchHandlerFound(Thread* pThread)
     }
 }
 
-BOOL Debugger::ShouldSendCustomNotification(DomainAssembly *pAssembly, mdTypeDef typeDef)
+BOOL Debugger::ShouldSendCustomNotification(Assembly *pAssembly, mdTypeDef typeDef)
 {
     CONTRACTL
     {
@@ -8021,7 +7903,7 @@ BOOL Debugger::ShouldSendCustomNotification(DomainAssembly *pAssembly, mdTypeDef
     }
     CONTRACTL_END;
 
-    Module *pModule = pAssembly->GetAssembly()->GetModule();
+    Module *pModule = pAssembly->GetModule();
     TypeInModule tim(pModule, typeDef);
     return !(m_pCustomNotificationTable->Lookup(tim).IsNull());
 }
@@ -9229,7 +9111,7 @@ void Debugger::AppDomainCreated(AppDomain * pRuntimeAppDomain)
 //
 // UnloadAssembly is called when a Runtime thread unloads an assembly.
 //
-void Debugger::UnloadAssembly(DomainAssembly * pDomainAssembly)
+void Debugger::UnloadAssembly(Assembly * pAssembly)
 {
     CONTRACTL
     {
@@ -9242,7 +9124,7 @@ void Debugger::UnloadAssembly(DomainAssembly * pDomainAssembly)
         return;
 
     LOG((LF_CORDB, LL_INFO100, "D::UA: Unload Assembly Asy:0x%p AD:0x%p which:%s\n",
-         pDomainAssembly, AppDomain::GetCurrentDomain(), pDomainAssembly->GetAssembly()->GetDebugName() ));
+         pAssembly, AppDomain::GetCurrentDomain(), pAssembly->GetDebugName() ));
 
     Thread *thread = g_pEEInterface->GetThread();
     // Note that the debugger lock is reentrant, so we may or may not hold it already.
@@ -9254,7 +9136,7 @@ void Debugger::UnloadAssembly(DomainAssembly * pDomainAssembly)
     InitIPCEvent(ipce,
                  DB_IPCE_UNLOAD_ASSEMBLY,
                  thread);
-    ipce->AssemblyData.vmDomainAssembly.SetRawPtr(pDomainAssembly);
+    ipce->AssemblyData.vmAssembly.SetRawPtr(pAssembly);
 
     SendSimpleIPCEventAndBlock();
 
@@ -9271,7 +9153,6 @@ void Debugger::LoadModule(Module* pRuntimeModule,
                           LPCWSTR pszModuleName, // module file name.
                           DWORD dwModuleName, // length of pszModuleName in chars, not including null.
                           Assembly *pAssembly,
-                          DomainAssembly *  pDomainAssembly,
                           BOOL fAttaching)
 {
 
@@ -9302,7 +9183,7 @@ void Debugger::LoadModule(Module* pRuntimeModule,
     // The RS has logic to ignore duplicate ModuleLoad events. We have to send what could possibly be a dup, though,
     // due to some really nasty issues with getting proper assembly and module load events from the loader when dealing
     // with shared assemblies.
-    module = LookupOrCreateModule(pDomainAssembly);
+    module = LookupOrCreateModule(pAssembly->GetModule());
     _ASSERTE(module != NULL);
 
 
@@ -9312,17 +9193,14 @@ void Debugger::LoadModule(Module* pRuntimeModule,
     module->SetCanChangeJitFlags(true);
 
 
-    // @dbgtodo  inspection - Check whether the DomainAssembly we get is consistent with the Module and AppDomain we get.
-    // We should simply things when we actually get rid of DebuggerModule, possibly by just passing the
-    // DomainAssembly around.
-    _ASSERTE(module->GetDomainAssembly()    == pDomainAssembly);
-    _ASSERTE(module->GetRuntimeModule() == pDomainAssembly->GetAssembly()->GetModule());
+    _ASSERTE(module->GetAssembly()    == pAssembly);
+    _ASSERTE(module->GetRuntimeModule() == pAssembly->GetModule());
 
     // Send a load module event to the Right Side.
     ipce = m_pRCThread->GetIPCEventSendBuffer();
     InitIPCEvent(ipce,DB_IPCE_LOAD_MODULE, pThread);
 
-    ipce->LoadModuleData.vmDomainAssembly.SetRawPtr(pDomainAssembly);
+    ipce->LoadModuleData.vmAssembly.SetRawPtr(pAssembly);
 
     m_pRCThread->SendIPCEvent();
 
@@ -9346,7 +9224,7 @@ void Debugger::LoadModule(Module* pRuntimeModule,
 // Send the raw event for Updating symbols. Debugger must query for contents from out-of-process
 //
 // Arguments:
-//   pRuntimeModule - required, module to send symbols for. May be domain neutral.
+//   pRuntimeModule - required, module to send symbols for.
 //
 // Notes:
 //   This is just a ping event. Debugger must query for actual symbol contents.
@@ -9388,7 +9266,7 @@ void Debugger::SendRawUpdateModuleSymsEvent(Module *pRuntimeModule)
     InitIPCEvent(ipce, DB_IPCE_UPDATE_MODULE_SYMS,
                  g_pEEInterface->GetThread());
 
-    ipce->UpdateModuleSymsData.vmDomainAssembly.SetRawPtr((module ? module->GetDomainAssembly() : NULL));
+    ipce->UpdateModuleSymsData.vmAssembly.SetRawPtr((module ? module->GetAssembly() : NULL));
 
     m_pRCThread->SendIPCEvent();
 }
@@ -9398,7 +9276,7 @@ void Debugger::SendRawUpdateModuleSymsEvent(Module *pRuntimeModule)
 // sent to the Right Side because they've changed.
 //
 // Arguments:
-//   pRuntimeModule - required, module to send symbols for. May be domain neutral.
+//   pRuntimeModule - required, module to send symbols for.
 //
 // Notes:
 //    This will send the event (via code:Debugger.SendRawUpdateModuleSymsEvent) and then synchronize
@@ -9482,13 +9360,13 @@ void Debugger::UnloadModule(Module* pRuntimeModule)
 
         STRESS_LOG6(LF_CORDB, LL_INFO10000,
             "D::UM: Unloading RTMod:%#08x (DomFile: %#08x, IsISStream:%#08x); DMod:%#08x(RTMod:%#08x DomFile: %#08x)\n",
-            pRuntimeModule, pRuntimeModule->GetDomainAssembly(), false,
-            module, module->GetRuntimeModule(), module->GetDomainAssembly());
+            pRuntimeModule, pRuntimeModule->GetAssembly(), false,
+            module, module->GetRuntimeModule(), module->GetAssembly());
 
         // Send the unload module event to the Right Side.
         DebuggerIPCEvent* ipce = m_pRCThread->GetIPCEventSendBuffer();
         InitIPCEvent(ipce, DB_IPCE_UNLOAD_MODULE, thread);
-        ipce->UnloadModuleData.vmDomainAssembly.SetRawPtr((module ? module->GetDomainAssembly() : NULL));
+        ipce->UnloadModuleData.vmAssembly.SetRawPtr((module ? module->GetAssembly() : NULL));
         ipce->UnloadModuleData.debuggerAssemblyToken.Set(pRuntimeModule->GetClassLoader()->GetAssembly());
         m_pRCThread->SendIPCEvent();
 
@@ -9544,10 +9422,8 @@ LExit:
     SENDIPCEVENT_END;
 }
 
-// Called when this module is completely gone from ALL AppDomains, regardless of
+// Called when this module is completely gone from the AppDomain, regardless of
 // whether a debugger is attached.
-// This is normally not called only domain-neutral assemblies because they can't be unloaded.
-// However, it may be called if the loader fails to completely load a domain-neutral assembly.
 void Debugger::DestructModule(Module *pModule)
 {
     CONTRACTL
@@ -9593,10 +9469,6 @@ void Debugger::RemoveModuleReferences( Module* pModule )
     // will be re-loaded at the exact same address, and in that case,
     // we'll have piles of entries in our DJI table that mistakenly
     // match this new module.
-    // Note that this doesn't apply to domain neutral assemblies, that only
-    // get unloaded when the process dies.  We won't be reclaiming their
-    // DJIs/patches b/c the process is going to die, so we'll reclaim
-    // the memory when the various hashtables are unloaded.
 
     if (m_pMethodInfos != NULL)
     {
@@ -9659,7 +9531,7 @@ void Debugger::SendClassLoadUnloadEvent (mdTypeDef classMetadataToken,
         InitIPCEvent(pEvent, DB_IPCE_LOAD_CLASS, g_pEEInterface->GetThread());
 
         pEvent->LoadClass.classMetadataToken = classMetadataToken;
-        pEvent->LoadClass.vmDomainAssembly.SetRawPtr((pClassDebuggerModule ? pClassDebuggerModule->GetDomainAssembly() : NULL));
+        pEvent->LoadClass.vmAssembly.SetRawPtr((pClassDebuggerModule ? pClassDebuggerModule->GetAssembly() : NULL));
         pEvent->LoadClass.classDebuggerAssemblyToken.Set(pAssembly);
 
 
@@ -9671,7 +9543,7 @@ void Debugger::SendClassLoadUnloadEvent (mdTypeDef classMetadataToken,
         InitIPCEvent(pEvent, DB_IPCE_UNLOAD_CLASS, g_pEEInterface->GetThread());
 
         pEvent->UnloadClass.classMetadataToken = classMetadataToken;
-        pEvent->UnloadClass.vmDomainAssembly.SetRawPtr((pClassDebuggerModule ? pClassDebuggerModule->GetDomainAssembly() : NULL));
+        pEvent->UnloadClass.vmAssembly.SetRawPtr((pClassDebuggerModule ? pClassDebuggerModule->GetAssembly() : NULL));
         pEvent->UnloadClass.classDebuggerAssemblyToken.Set(pAssembly);
     }
 
@@ -9713,12 +9585,8 @@ BOOL Debugger::SendSystemClassLoadUnloadEvent(mdTypeDef classMetadataToken,
     AppDomain *pAppDomain = GetAppDomain();
     _ASSERTE(pAppDomain != NULL);
 
-    // Only notify for app domains where the module has been fully loaded already
-    // We used to make a different check here domain->ContainsAssembly() but that
-    // triggers too early in the loading process. FindDomainAssembly will not become
-    // non-NULL until the module is fully loaded into the domain which is what we
-    // want.
-    if (classModule->GetDomainAssembly() != NULL )
+    // Only notify for app domains where the module has been fully loaded already.
+    if (classModule->GetAssembly() != NULL )
     {
         // Find the Left Side module that this class belongs in.
         DebuggerModule* pModule = LookupOrCreateModule(classModule);
@@ -9876,10 +9744,6 @@ void Debugger::FuncEvalComplete(Thread* pThread, DebuggerEval *pDE)
 
     //
     // Get the domain that the result is valid in. The RS will cache this in the ICorDebugValue
-    // Note: it's possible that the AppDomain has (or is about to be) unloaded, which could lead to a
-    // crash when we use the DebuggerModule.  Ideally we'd only be using AppDomain IDs here.
-    // We can't easily convert our ADID to an AppDomain* (SystemDomain::GetAppDomainFromId)
-    // because we can't prove that the AppDomain* would be valid (not unloaded).
     //
     AppDomain *pDomain = AppDomain::GetCurrentDomain();
 
@@ -10352,7 +10216,7 @@ bool Debugger::HandleIPCEvent(DebuggerIPCEvent * pEvent)
             _ASSERTE(hr == S_OK);
             DebuggerBreakpoint * pDebuggerBP = NULL;
 
-            DebuggerModule * pDebuggerModule = LookupOrCreateModule(pEvent->BreakpointData.vmDomainAssembly);
+            DebuggerModule * pDebuggerModule = LookupOrCreateModule(pEvent->BreakpointData.vmAssembly);
             Module * pModule = pDebuggerModule->GetRuntimeModule();
             DebuggerMethodInfo * pDMI = GetOrCreateMethodInfo(pModule, pEvent->BreakpointData.funcMetadataToken);
             MethodDesc * pMethodDesc = pEvent->BreakpointData.nativeCodeMethodDescToken.UnWrap();
@@ -10667,7 +10531,7 @@ bool Debugger::HandleIPCEvent(DebuggerIPCEvent * pEvent)
         {
             LOG((LF_ENC, LL_INFO100, "D::HIPCE: DB_IPCE_APPLY_CHANGES 1\n"));
 
-            DebuggerModule * pDebuggerModule = LookupOrCreateModule(pEvent->ApplyChanges.vmDomainAssembly);
+            DebuggerModule * pDebuggerModule = LookupOrCreateModule(pEvent->ApplyChanges.vmAssembly);
             //
             // @todo handle error.
             //
@@ -10684,7 +10548,7 @@ bool Debugger::HandleIPCEvent(DebuggerIPCEvent * pEvent)
 
     case DB_IPCE_SET_CLASS_LOAD_FLAG:
         {
-            DebuggerModule *pDebuggerModule = LookupOrCreateModule(pEvent->SetClassLoad.vmDomainAssembly);
+            DebuggerModule *pDebuggerModule = LookupOrCreateModule(pEvent->SetClassLoad.vmAssembly);
 
             _ASSERTE(pDebuggerModule != NULL);
 
@@ -10734,7 +10598,7 @@ bool Debugger::HandleIPCEvent(DebuggerIPCEvent * pEvent)
                 // unexpected in an OOM situation.  Quickly just sanity check them.
                 //
                 Thread * pThread = pEvent->SetIP.vmThreadToken.GetRawPtr();
-                Module * pModule = pEvent->SetIP.vmDomainAssembly.GetRawPtr()->GetAssembly()->GetModule();
+                Module * pModule = pEvent->SetIP.vmAssembly.GetRawPtr()->GetModule();
 
                 // Get the DJI for this function
                 DebuggerMethodInfo * pDMI = GetOrCreateMethodInfo(pModule, pEvent->SetIP.mdMethod);
@@ -11066,7 +10930,7 @@ bool Debugger::HandleIPCEvent(DebuggerIPCEvent * pEvent)
     case DB_IPCE_SET_METHOD_JMC_STATUS:
         {
             // Get the info out of the event
-            DebuggerModule * pDebuggerModule = LookupOrCreateModule(pEvent->SetJMCFunctionStatus.vmDomainAssembly);
+            DebuggerModule * pDebuggerModule = LookupOrCreateModule(pEvent->SetJMCFunctionStatus.vmAssembly);
             Module * pModule = pDebuggerModule->GetRuntimeModule();
 
             bool fStatus = (pEvent->SetJMCFunctionStatus.dwStatus != 0);
@@ -11114,7 +10978,7 @@ bool Debugger::HandleIPCEvent(DebuggerIPCEvent * pEvent)
     case DB_IPCE_GET_METHOD_JMC_STATUS:
         {
             // Get the method
-            DebuggerModule * pDebuggerModule = LookupOrCreateModule(pEvent->SetJMCFunctionStatus.vmDomainAssembly);
+            DebuggerModule * pDebuggerModule = LookupOrCreateModule(pEvent->SetJMCFunctionStatus.vmAssembly);
 
             Module * pModule = pDebuggerModule->GetRuntimeModule();
 
@@ -11148,7 +11012,7 @@ bool Debugger::HandleIPCEvent(DebuggerIPCEvent * pEvent)
     case DB_IPCE_SET_MODULE_JMC_STATUS:
         {
             // Get data out of event
-            DebuggerModule * pDebuggerModule = LookupOrCreateModule(pEvent->SetJMCFunctionStatus.vmDomainAssembly);
+            DebuggerModule * pDebuggerModule = LookupOrCreateModule(pEvent->SetJMCFunctionStatus.vmAssembly);
 
             bool fStatus = (pEvent->SetJMCFunctionStatus.dwStatus != 0);
 
@@ -11627,9 +11491,8 @@ void Debugger::TypeHandleToBasicTypeInfo(AppDomain *pAppDomain, TypeHandle th, D
     case ELEMENT_TYPE_BYREF:
         res->vmTypeHandle = WrapTypeHandle(th);
         res->metadataToken = mdTokenNil;
-        res->vmDomainAssembly.SetRawPtr(NULL);
-        res->vmModule.SetRawPtr(NULL);
-        break;
+        res->vmAssembly.SetRawPtr(NULL);
+                break;
 
     case ELEMENT_TYPE_CLASS:
     case ELEMENT_TYPE_VALUETYPE:
@@ -11639,17 +11502,15 @@ void Debugger::TypeHandleToBasicTypeInfo(AppDomain *pAppDomain, TypeHandle th, D
                                                                              // only set if instantiated
             res->metadataToken = th.GetCl();
             DebuggerModule * pDModule = LookupOrCreateModule(th.GetModule());
-            res->vmDomainAssembly.SetRawPtr((pDModule ? pDModule->GetDomainAssembly() : NULL));
-            res->vmModule.SetRawPtr(NULL);
-            break;
+            res->vmAssembly.SetRawPtr((pDModule ? pDModule->GetAssembly() : NULL));
+                        break;
         }
 
     default:
         res->vmTypeHandle = VMPTR_TypeHandle::NullPtr();
         res->metadataToken = mdTokenNil;
-        res->vmDomainAssembly.SetRawPtr(NULL);
-        res->vmModule.SetRawPtr(NULL);
-        break;
+        res->vmAssembly.SetRawPtr(NULL);
+                break;
     }
     return;
 }
@@ -11721,9 +11582,8 @@ treatAllValuesAsBoxed:
             res->ClassTypeData.typeHandle = th.HasInstantiation() ? WrapTypeHandle(th) : VMPTR_TypeHandle::NullPtr(); // only set if instantiated
             res->ClassTypeData.metadataToken = th.GetCl();
             DebuggerModule * pModule = LookupOrCreateModule(th.GetModule());
-            res->ClassTypeData.vmDomainAssembly.SetRawPtr((pModule ? pModule->GetDomainAssembly() : NULL));
-            res->ClassTypeData.vmModule.SetRawPtr(NULL);
-            _ASSERTE(!res->ClassTypeData.vmDomainAssembly.IsNull());
+            res->ClassTypeData.vmAssembly.SetRawPtr((pModule ? pModule->GetAssembly() : NULL));
+            _ASSERTE(!res->ClassTypeData.vmAssembly.IsNull());
             break;
         }
 
@@ -11783,7 +11643,7 @@ HRESULT Debugger::BasicTypeInfoToTypeHandle(DebuggerIPCE_BasicTypeData *data, Ty
             }
             else
             {
-                DebuggerModule *pDebuggerModule = g_pDebugger->LookupOrCreateModule(data->vmDomainAssembly);
+                DebuggerModule *pDebuggerModule = g_pDebugger->LookupOrCreateModule(data->vmAssembly);
 
                 th = g_pEEInterface->FindLoadedClass(pDebuggerModule->GetRuntimeModule(), data->metadataToken);
             if (th.IsNull())
@@ -11885,7 +11745,7 @@ TypeHandle Debugger::TypeDataWalk::ReadTypeHandle()
     case ELEMENT_TYPE_CLASS:
     case ELEMENT_TYPE_VALUETYPE:
         {
-            DebuggerModule *pDebuggerModule = g_pDebugger->LookupOrCreateModule(data->data.ClassTypeData.vmDomainAssembly);
+            DebuggerModule *pDebuggerModule = g_pDebugger->LookupOrCreateModule(data->data.ClassTypeData.vmAssembly);
             th = ReadInstantiation(pDebuggerModule->GetRuntimeModule(), data->data.ClassTypeData.metadataToken, data->numTypeArgs);
             break;
         }
@@ -12850,6 +12710,25 @@ HRESULT Debugger::UpdateFunction(MethodDesc* pMD, SIZE_T encVersion)
 
     // This is called before the MethodDesc is updated to point to the new function.
     // So this call will get the most recent old function.
+    //
+    // Task-returning methods have two MethodDescs: a primary and an async variant.
+    // If the primary is a thunk (i.e. the type loader created it as a wrapper that
+    // packages the result into a Task), the user code lives in the async variant.
+    // Switch to that variant so we plant remap breakpoints on the user code, not
+    // the thunk.
+    if (pMD->IsAsyncThunkMethod() && pMD->ReturnsTaskOrValueTask())
+    {
+        MethodDesc* pAsyncVariant = pMD->GetAsyncVariantNoCreate();
+        if (pAsyncVariant == NULL)
+        {
+            LOG((LF_CORDB, LL_INFO10000, "D::UF: async variant not found for %s::%s encVersion %zx\n",
+                pMD->m_pszDebugClassName, pMD->m_pszDebugMethodName, encVersion));
+            return S_OK;
+        }
+        LOG((LF_CORDB, LL_INFO10000, "D::UF: switching from async thunk to user-code variant %p\n", pAsyncVariant));
+        pMD = pAsyncVariant;
+    }
+
     DebuggerJitInfo *pJitInfo = GetLatestJitInfoFromMethodDesc(pMD);
 
     // We only place the patches if we have jit info for this
@@ -14216,10 +14095,10 @@ void Debugger::SendLogSwitchSetting(int iLevel,
 // send a custom debugger notification to the RS
 // Arguments:
 //     input: pThread    - thread on which the notification occurred
-//            pDomain    - domain file for the domain in which the notification occurred
+//            pAssembly  - assembly in which the notification occurred
 //            classToken - metadata token for the type of the notification object
 void Debugger::SendCustomDebuggerNotification(Thread * pThread,
-                                              DomainAssembly * pDomain,
+                                              Assembly * pAssembly,
                                               mdTypeDef classToken)
 {
     CONTRACTL
@@ -14242,17 +14121,17 @@ void Debugger::SendCustomDebuggerNotification(Thread * pThread,
     Thread *curThread = g_pEEInterface->GetThread();
     SENDIPCEVENT_BEGIN(this, curThread);
 
-    if (CORDebuggerAttached() && ShouldSendCustomNotification(pDomain, classToken))
+    if (CORDebuggerAttached() && ShouldSendCustomNotification(pAssembly, classToken))
     {
         DebuggerIPCEvent* ipce = m_pRCThread->GetIPCEventSendBuffer();
         InitIPCEvent(ipce,
                      DB_IPCE_CUSTOM_NOTIFICATION,
                      curThread);
 
-        VMPTR_DomainAssembly vmDomainAssembly = VMPTR_DomainAssembly::MakePtr(pDomain);
+        VMPTR_Assembly vmAssembly = VMPTR_Assembly::MakePtr(pAssembly);
 
         ipce->CustomNotification.classToken = classToken;
-        ipce->CustomNotification.vmDomainAssembly = vmDomainAssembly;
+        ipce->CustomNotification.vmAssembly = vmAssembly;
 
 
         m_pRCThread->SendIPCEvent();
@@ -14335,29 +14214,57 @@ HRESULT Debugger::FuncEvalSetup(DebuggerIPCE_FuncEvalInfo *pEvalInfo,
         return CORDBG_E_ILLEGAL_AT_GC_UNSAFE_POINT;
     }
 
-    if (filterContext != NULL && ::GetSP(filterContext) != ALIGN_DOWN(::GetSP(filterContext), STACK_ALIGN_SIZE))
+    // A func eval uses a CONTEXT hijack (redirects the native CPU context through FuncEvalHijack)
+    // only when the thread is stopped at a breakpoint or single-step in JIT-compiled code. For
+    // exception-time evals and interpreter evals we cannot hijack the native context — those paths
+    // queue the DebuggerEval into the pending-eval table and let the suspend-resume logic dispatch
+    // it: for exceptions via Debugger::ProcessAnyPendingEvals on continue, for the interpreter via
+    // INTOP_BREAKPOINT after the debugger callback returns.
+    bool funcEvalUsesHijack = !fInException;
+#ifdef FEATURE_INTERPRETER
+    if (funcEvalUsesHijack && filterContext != NULL)
     {
-        // SP is not aligned, we cannot do a FuncEval here
-        LOG((LF_CORDB, LL_INFO1000, "D::FES SP is unaligned"));
-        return CORDBG_E_FUNC_EVAL_BAD_START_POINT;
+        EECodeInfo codeInfo((PCODE)GetIP(filterContext));
+        if (codeInfo.IsInterpretedCode())
+            funcEvalUsesHijack = false;
+    }
+#endif // FEATURE_INTERPRETER
+
+    if (funcEvalUsesHijack)
+    {
+        _ASSERTE(filterContext != NULL);
+        if (::GetSP(filterContext) != ALIGN_DOWN(::GetSP(filterContext), STACK_ALIGN_SIZE))
+        {
+            // SP is not aligned, we cannot do a FuncEval here
+            LOG((LF_CORDB, LL_INFO1000, "D::FES SP is unaligned"));
+            return CORDBG_E_FUNC_EVAL_BAD_START_POINT;
+        }
     }
 
-    // Allocate the breakpoint instruction info for the debugger info in executable memory.
-    DebuggerHeap *pHeap = g_pDebugger->GetInteropSafeExecutableHeap_NoThrow();
-    if (pHeap == NULL)
+    // Allocate the breakpoint instruction info only for hijacked evals. Non-hijack paths
+    // (exception-time and interpreter) signal completion via FuncEvalComplete on the pending-eval
+    // queue, not via a native breakpoint trap, so the segment would never be used. Avoiding the
+    // allocation also means we don't require executable memory on platforms where it's unavailable
+    // (e.g. iOS).
+    DebuggerEvalBreakpointInfoSegment *bpInfoSegmentRX = NULL;
+    if (funcEvalUsesHijack)
     {
-        return E_OUTOFMEMORY;
-    }
+        DebuggerHeap *pHeap = g_pDebugger->GetInteropSafeExecutableHeap_NoThrow();
+        if (pHeap == NULL)
+        {
+            return E_OUTOFMEMORY;
+        }
 
-    DebuggerEvalBreakpointInfoSegment *bpInfoSegmentRX = (DebuggerEvalBreakpointInfoSegment*)pHeap->Alloc(sizeof(DebuggerEvalBreakpointInfoSegment));
-    if (bpInfoSegmentRX == NULL)
-    {
-        return E_OUTOFMEMORY;
+        bpInfoSegmentRX = (DebuggerEvalBreakpointInfoSegment*)pHeap->Alloc(sizeof(DebuggerEvalBreakpointInfoSegment));
+        if (bpInfoSegmentRX == NULL)
+        {
+            return E_OUTOFMEMORY;
+        }
     }
 
     // Create a DebuggerEval to hold info about this eval while its in progress. Constructor copies the thread's
     // CONTEXT.
-    DebuggerEval *pDE = new (interopsafe, nothrow) DebuggerEval(filterContext, pEvalInfo, fInException, bpInfoSegmentRX);
+    DebuggerEval *pDE = new (interopsafe, nothrow) DebuggerEval(filterContext, pEvalInfo, bpInfoSegmentRX);
 
     if (pDE == NULL)
     {
@@ -14396,9 +14303,9 @@ HRESULT Debugger::FuncEvalSetup(DebuggerIPCE_FuncEvalInfo *pEvalInfo,
         *argDataArea = pDE->m_argData;
     }
 
-    // Set the thread's IP (in the filter context) to our hijack function if we're stopped due to a breakpoint or single
-    // step.
-    if (!fInException)
+    // Hijacked evals rewrite the thread's native context to enter FuncEvalHijack when execution resumes.
+    // Non-hijack evals are queued in the pending-eval table and dispatched from the resume path.
+    if (funcEvalUsesHijack)
     {
         _ASSERTE(filterContext != NULL);
 
@@ -14446,9 +14353,15 @@ HRESULT Debugger::FuncEvalSetup(DebuggerIPCE_FuncEvalInfo *pEvalInfo,
             DeleteInteropSafeExecutable(pDE);  // Note this runs the destructor for DebuggerEval, which releases its internal buffers
             return (hr);
         }
-        // If we're in an exception, then add a pending eval for this thread. This will cause us to perform the func
-        // eval when the user continues the process after the current exception event.
+
+        // Queue the eval. Exception-time evals run from Debugger::ProcessAnyPendingEvals when
+        // the process continues. Interpreter evals run from the INTOP_BREAKPOINT handler after
+        // the debugger callback returns — no context modification and no IncThreadsAtUnsafePlaces
+        // needed because the stack remains walkable.
         GetPendingEvals()->AddPendingEval(pDE->m_thread, pDE);
+
+        LOG((LF_CORDB, LL_INFO1000, "D::FES: Non-hijack func eval setup for pDE:%p on thread %p (fInException=%d)\n",
+             pDE, pThread, fInException));
     }
 
 
@@ -16100,7 +16013,7 @@ unsigned FuncEvalFrame::GetFrameAttribs_Impl(void)
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
-    if (GetDebuggerEval()->m_evalDuringException)
+    if (!GetDebuggerEval()->m_evalUsesHijack)
     {
         return FRAME_ATTR_NONE;
     }
@@ -16114,7 +16027,7 @@ TADDR FuncEvalFrame::GetReturnAddressPtr_Impl()
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
-    if (GetDebuggerEval()->m_evalDuringException)
+    if (!GetDebuggerEval()->m_evalUsesHijack)
     {
         return (TADDR)NULL;
     }
@@ -16132,8 +16045,9 @@ void FuncEvalFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloa
     SUPPORTS_DAC;
     DebuggerEval * pDE = GetDebuggerEval();
 
-    // No context to update if we're doing a func eval from within exception processing.
-    if (pDE->m_evalDuringException)
+    // No context to update if we're doing a func eval from within exception processing
+    // or from interpreter code (both skip the hijack path).
+    if (!pDE->m_evalUsesHijack)
     {
         return;
     }

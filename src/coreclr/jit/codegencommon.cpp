@@ -854,7 +854,9 @@ bool CodeGen::genIsSameLocalVar(GenTree* op1, GenTree* op2)
 // inline
 void CodeGenInterface::genUpdateRegLife(const LclVarDsc* varDsc, bool isBorn, bool isDying DEBUGARG(GenTree* tree))
 {
-#if EMIT_GENERATE_GCINFO // The regset being updated here is only needed for codegen-level GCness tracking
+    // Targets like Wasm do not have a fixed set of registers so the regset logic in this method is unnecessary.
+#if EMIT_GENERATE_GCINFO && HAS_FIXED_REGISTER_SET
+    // The regset being updated here is only needed for codegen-level GCness tracking.
     regMaskTP regMask = genGetRegMask(varDsc);
 
 #ifdef DEBUG
@@ -884,7 +886,7 @@ void CodeGenInterface::genUpdateRegLife(const LclVarDsc* varDsc, bool isBorn, bo
         assert(varDsc->IsAlwaysAliveInMemory() || ((regSet.GetMaskVars() & regMask) == 0));
         regSet.AddMaskVars(regMask);
     }
-#endif // EMIT_GENERATE_GCINFO
+#endif // EMIT_GENERATE_GCINFO && HAS_FIXED_REGISTER_SET
 }
 
 #ifndef TARGET_WASM
@@ -1032,6 +1034,7 @@ void Compiler::compChangeLife(VARSET_VALARG_TP newLife)
         bool isByRef    = varDsc->TypeIs(TYP_BYREF);
         bool isInReg    = varDsc->lvIsInReg();
         bool isInMemory = !isInReg || varDsc->IsAlwaysAliveInMemory();
+#ifndef TARGET_WASM
         if (isInReg)
         {
             // TODO-Cleanup: Move the code from compUpdateLifeVar to genUpdateRegLife that updates the
@@ -1047,7 +1050,8 @@ void Compiler::compChangeLife(VARSET_VALARG_TP newLife)
             }
             codeGen->genUpdateRegLife(varDsc, false /*isBorn*/, true /*isDying*/ DEBUGARG(nullptr));
         }
-        // Update the gcVarPtrSetCur if it is in memory.
+#endif // !TARGET_WASM
+       // Update the gcVarPtrSetCur if it is in memory.
         if (isInMemory && (isGCRef || isByRef))
         {
             VarSetOps::RemoveElemD(this, codeGen->gcInfo.gcVarPtrSetCur, deadVarIndex);
@@ -1070,6 +1074,7 @@ void Compiler::compChangeLife(VARSET_VALARG_TP newLife)
         bool isByRef = varDsc->TypeIs(TYP_BYREF);
         if (varDsc->lvIsInReg())
         {
+#ifndef TARGET_WASM
             // If this variable is going live in a register, it is no longer live on the stack,
             // unless it is an EH/"spill at single-def" var, which always remains live on the stack.
             if (!varDsc->IsAlwaysAliveInMemory())
@@ -1092,6 +1097,7 @@ void Compiler::compChangeLife(VARSET_VALARG_TP newLife)
             {
                 codeGen->gcInfo.gcRegByrefSetCur |= regMask;
             }
+#endif // !TARGET_WASM
         }
         else if (lvaIsGCTracked(varDsc))
         {
@@ -1769,7 +1775,7 @@ void CodeGen::genExitCode(BasicBlock* block)
 
     genIPmappingAdd(IPmappingDscKind::Epilog, DebugInfo(), true);
 
-#if EMIT_GENERATE_GCINFO && defined(DEBUG)
+#if EMIT_GENERATE_GCINFO && defined(DEBUG) && !defined(TARGET_WASM)
     // For returnining epilogs do some validation that the GC info looks right.
     if (!block->HasFlag(BBF_HAS_JMP))
     {
@@ -1791,7 +1797,7 @@ void CodeGen::genExitCode(BasicBlock* block)
             }
         }
     }
-#endif // EMIT_GENERATE_GCINFO && defined(DEBUG)
+#endif // EMIT_GENERATE_GCINFO && defined(DEBUG) && !defined(TARGET_WASM)
 
     if (m_compiler->getNeedsGSSecurityCookie())
     {
@@ -1967,6 +1973,22 @@ void CodeGen::genUpdateCurrentFunclet(BasicBlock* block)
 //
 void CodeGen::genGenerateCode(void** codePtr, uint32_t* nativeSizeOfCode)
 {
+#if defined(TARGET_WASM)
+    // Fail at this point for any method with funclets, since the Wasm we produce
+    // for such methods requires post-processing by the host before it can be validated.
+    // This must be done BEFORE codegen, because of the edge case of a method
+    // which only needs funclets if compiled with optimizations (e.g., if we inline a method that has EH into a method
+    // that does not). In these cases, if we fail compilation of the optimized method AFTER codegen and then go to
+    // recompile the same method with minopts and succeed, we may be leaving stale relocs on the host side that only
+    // applied to the optimized version, which will cause unexpected behavior.
+    // TODO-WASM: Remove this once the host can do the processing.
+    //
+    if ((JitConfig.JitWasmFunclets() == 0) && (m_compiler->compFuncCount() > 1))
+    {
+        JITDUMP("Failing R2R codegen because method has funclets.\n");
+        implReadyToRunUnsupported();
+    }
+#endif
 
 #ifdef DEBUG
     if (verbose)
@@ -2014,18 +2036,6 @@ void CodeGen::genGenerateCode(void** codePtr, uint32_t* nativeSizeOfCode)
     }
 #endif // defined(TARGET_WASM)
 #endif // DEBUG
-
-#if defined(TARGET_WASM)
-    // Also fail at this point for any method with funclets, since the Wasm we produce
-    // for such methods requires post-processing by the host before it can be validated.
-    // TODO-WASM: Remove this once the host can do the processing.
-    //
-    if ((JitConfig.JitWasmFunclets() == 0) && (m_compiler->compFuncCount() > 1))
-    {
-        JITDUMP("Failing R2R codegen because method has funclets.\n");
-        implReadyToRunUnsupported();
-    }
-#endif
 }
 
 //----------------------------------------------------------------------
@@ -2300,6 +2310,12 @@ void CodeGen::genEmitMachineCode()
 
     m_compiler->unwindReserve();
 
+#if defined(TARGET_WASM)
+    // For Wasm we know know the exact size of each function and funclet.
+    //
+    GetEmitter()->emitUpdateFuncletLocations();
+#endif
+
     bool trackedStackPtrsContig; // are tracked stk-ptrs contiguous ?
 
 #ifdef TARGET_64BIT
@@ -2418,11 +2434,6 @@ void CodeGen::genEmitMachineCode()
 //
 void CodeGen::genEmitUnwindDebugGCandEH()
 {
-#ifdef TARGET_WASM
-    // TODO-WASM: Fix this phase causing an assertion failure even for methods with no GC locals or EH clauses
-    return;
-#endif
-
     /* Now that the code is issued, we can finalize and emit the unwind data */
 
     m_compiler->unwindEmit(*codePtr, coldCodePtr);
@@ -2529,11 +2540,9 @@ void CodeGen::genEmitUnwindDebugGCandEH()
 }
 
 #ifndef TARGET_WASM
-/*****************************************************************************
- *
- *  Report EH clauses to the VM
- */
-
+//----------------------------------------------------------------------
+// genReportEH: create and report EH info to the VM
+//
 void CodeGen::genReportEH()
 {
     if (m_compiler->compHndBBtabCount == 0)
@@ -2545,14 +2554,6 @@ void CodeGen::genReportEH()
     if (m_compiler->opts.dspEHTable)
     {
         printf("*************** EH table for %s\n", m_compiler->info.compFullName);
-    }
-#endif // DEBUG
-
-    unsigned XTnum;
-
-#ifdef DEBUG
-    if (m_compiler->opts.dspEHTable)
-    {
         printf("%d EH table entries\n", m_compiler->compHndBBtabCount);
     }
 #endif // DEBUG
@@ -2561,19 +2562,14 @@ void CodeGen::genReportEH()
     m_compiler->eeSetEHcount(m_compiler->compHndBBtabCount);
     m_compiler->Metrics.EHClauseCount = (int)m_compiler->compHndBBtabCount;
 
-    struct EHClauseInfo
-    {
-        CORINFO_EH_CLAUSE clause;
-        EHblkDsc*         HBtab;
-    };
-
     EHClauseInfo* clauses = new (m_compiler, CMK_Codegen) EHClauseInfo[m_compiler->compHndBBtabCount];
 
     // Set up EH clause table, but don't report anything to the VM, yet.
-    XTnum = 0;
-    for (EHblkDsc* const HBtab : EHClauses(m_compiler))
+    //
+    for (unsigned int XTnum = 0; XTnum < m_compiler->compHndBBtabCount; XTnum++)
     {
-        UNATIVE_OFFSET tryBeg, tryEnd, hndBeg, hndEnd, hndTyp;
+        EHblkDsc* const HBtab = &m_compiler->compHndBBtab[XTnum];
+        UNATIVE_OFFSET  tryBeg, tryEnd, hndBeg, hndEnd, hndTyp;
 
         tryBeg = m_compiler->ehCodeOffset(HBtab->ebdTryBeg);
         hndBeg = m_compiler->ehCodeOffset(HBtab->ebdHndBeg);
@@ -2602,42 +2598,58 @@ void CodeGen::genReportEH()
         clause.TryLength     = tryEnd;
         clause.HandlerOffset = hndBeg;
         clause.HandlerLength = hndEnd;
-        clauses[XTnum++]     = {clause, HBtab};
+
+        unsigned const vmIndex = m_compiler->compEHTabOrderToVMClauseOrder[XTnum];
+
+        clauses[vmIndex] = {clause, HBtab};
     }
 
-    // The JIT's ordering of EH clauses does not guarantee that clauses covering the same try region are contiguous.
-    // We need this property to hold true so the CORINFO_EH_CLAUSE_SAMETRY flag is accurate.
-    jitstd::sort(clauses, clauses + m_compiler->compHndBBtabCount,
-                 [this](const EHClauseInfo& left, const EHClauseInfo& right) {
-        const unsigned short leftTryIndex  = left.HBtab->ebdTryBeg->bbTryIndex;
-        const unsigned short rightTryIndex = right.HBtab->ebdTryBeg->bbTryIndex;
+    genReportEHClauses(clauses);
+}
 
-        if (leftTryIndex == rightTryIndex)
-        {
-            // We have two clauses mapped to the same try region.
-            // Make sure we report the clause with the smaller index first.
-            const ptrdiff_t leftIndex  = left.HBtab - this->m_compiler->compHndBBtab;
-            const ptrdiff_t rightIndex = right.HBtab - this->m_compiler->compHndBBtab;
-            return leftIndex < rightIndex;
-        }
+#endif // !defined(TARGET_WASM)
 
-        return leftTryIndex < rightTryIndex;
-    });
+//----------------------------------------------------------------------
+// genReportEH: create and report EH info to the VM
+//
+// Arguments:
+//    clauses -- eh clause data to fill in and report
+//
+void CodeGen::genReportEHClauses(EHClauseInfo* clauses)
+{
+    // Now, report EH clauses to the VM
+    //
+    INDEBUG(unsigned lastFuncletIndex = 0);
 
-    // Now, report EH clauses to the VM in order of increasing try region index.
-    for (XTnum = 0; XTnum < m_compiler->compHndBBtabCount; XTnum++)
+    for (unsigned vmIndex = 0; vmIndex < m_compiler->compHndBBtabCount; vmIndex++)
     {
-        CORINFO_EH_CLAUSE& clause = clauses[XTnum].clause;
-        EHblkDsc* const    HBtab  = clauses[XTnum].HBtab;
+        CORINFO_EH_CLAUSE& clause = clauses[vmIndex].clause;
+        unsigned const     XTnum  = m_compiler->compVMClauseOrderToEHTabOrder[vmIndex];
+        EHblkDsc* const    HBtab  = &m_compiler->compHndBBtab[XTnum];
 
-        if (XTnum > 0)
+#ifdef DEBUG
+        // We should be seeing funclet numbers increase predictably
+        // as we go through the EH table in VM order.
+        //
+        if (HBtab->HasFilter())
+        {
+            assert(HBtab->ebdFuncIndex == (lastFuncletIndex + 2));
+        }
+        else
+        {
+            assert(HBtab->ebdFuncIndex == (lastFuncletIndex + 1));
+        }
+        lastFuncletIndex = HBtab->ebdFuncIndex;
+#endif
+
+        if (vmIndex > 0)
         {
             // CORINFO_EH_CLAUSE_SAMETRY flag means that the current clause covers same
             // try block as the previous one. The runtime cannot reliably infer this information from
             // native code offsets because of different try blocks can have same offsets. Alternative
             // solution to this problem would be inserting extra nops to ensure that different try
             // blocks have different offsets.
-            if (EHblkDsc::ebdIsSameTry(HBtab, clauses[XTnum - 1].HBtab))
+            if (EHblkDsc::ebdIsSameTry(HBtab, clauses[vmIndex - 1].HBtab))
             {
                 // The SAMETRY bit should only be set on catch clauses. This is ensured in IL, where only 'catch' is
                 // allowed to be mutually-protect. E.g., the C# "try {} catch {} catch {} finally {}" actually exists in
@@ -2647,11 +2659,11 @@ void CodeGen::genReportEH()
             }
         }
 
-        m_compiler->eeSetEHinfo(XTnum, &clause);
+        m_compiler->eeSetEHinfo(vmIndex, &clause);
     }
-
-    assert(XTnum == m_compiler->compHndBBtabCount);
 }
+
+#ifndef TARGET_WASM
 
 //----------------------------------------------------------------------
 // genUseOptimizedWriteBarriers: Determine if an optimized write barrier
@@ -4135,11 +4147,7 @@ void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, 
 //    initReg -- scratch register to use if needed
 //    pInitRegZeroed -- [IN,OUT] if init reg is zero (on entry/exit)
 //
-#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 void CodeGen::genEnregisterOSRArgsAndLocals(regNumber initReg, bool* pInitRegZeroed)
-#else
-void CodeGen::genEnregisterOSRArgsAndLocals()
-#endif
 {
     assert(m_compiler->opts.IsOSR());
     PatchpointInfo* const patchpointInfo = m_compiler->info.compPatchpointInfo;
@@ -5053,23 +5061,6 @@ void CodeGen::genFnProlog()
 
     genBeginFnProlog();
 
-#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-    // For arm64 OSR, emit a "phantom prolog" to account for the actions taken
-    // in the tier0 frame that impact FP and SP on entry to the OSR method.
-    //
-    // x64 handles this differently; the phantom prolog unwind is emitted in
-    // genOSRRecordTier0CalleeSavedRegistersAndFrame.
-    //
-    if (m_compiler->opts.IsOSR())
-    {
-        PatchpointInfo* patchpointInfo = m_compiler->info.compPatchpointInfo;
-        const int       tier0FrameSize = patchpointInfo->TotalFrameSize();
-
-        // SP is tier0 method's SP.
-        m_compiler->unwindAllocStack(tier0FrameSize);
-    }
-#endif // defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-
 #ifdef DEBUG
 
     if (m_compiler->compJitHaltMethod())
@@ -5320,11 +5311,7 @@ void CodeGen::genFnProlog()
 
     const bool isRoot = (m_compiler->funCurrentFunc()->funKind == FuncKind::FUNC_ROOT);
 
-#ifdef TARGET_AMD64
-    const bool isOSRx64Root = isRoot && m_compiler->opts.IsOSR();
-#else
-    const bool isOSRx64Root = false;
-#endif // TARGET_AMD64
+    const bool inheritsCalleeSaves = isRoot && m_compiler->opts.IsOSR();
 
     regMaskTP tempMask = initRegs & RBM_ALLINT & ~excludeMask & ~regSet.rsMaskResvd;
 
@@ -5348,37 +5335,16 @@ void CodeGen::genFnProlog()
         }
     }
 
-#if defined(TARGET_AMD64)
-    // For x64 OSR root frames, we can't use any as of yet unsaved
+    // For OSR root frames, we can't use any as of yet unsaved
     // callee save as initReg, as we defer saving these until later in
     // the prolog, and we don't have normal arg regs.
-    if (isOSRx64Root)
-    {
-        initReg = REG_SCRATCH; // REG_EAX
-    }
-#elif defined(TARGET_ARM64)
-    // For arm64 OSR root frames, we may need a scratch register for large
-    // offset addresses. Use a register that won't be allocated.
-    //
-    if (isRoot && m_compiler->opts.IsOSR())
-    {
-        initReg = REG_IP1;
-    }
-#elif defined(TARGET_LOONGARCH64)
-    // For LoongArch64 OSR root frames, we may need a scratch register for large
-    // offset addresses. Use a register that won't be allocated.
-    if (isRoot && m_compiler->opts.IsOSR())
+    if (inheritsCalleeSaves)
     {
         initReg = REG_SCRATCH;
-    }
-#elif defined(TARGET_RISCV64)
-    // For RISC-V64 OSR root frames, we may need a scratch register for large
-    // offset addresses. Use a register that won't be allocated.
-    if (isRoot && m_compiler->opts.IsOSR())
-    {
-        initReg = REG_SCRATCH; // REG_T0
-    }
+#if defined(TARGET_ARM64)
+        initReg = REG_IP1;
 #endif
+    }
 
 #if defined(TARGET_AMD64)
     // If we are a varargs call, in order to set up the arguments correctly this
@@ -5412,30 +5378,33 @@ void CodeGen::genFnProlog()
     }
 #endif // TARGET_ARM
 #else  // TARGET_WASM
-    regNumber initReg       = REG_NA;
-    bool      initRegZeroed = false;
-    bool      isOSRx64Root  = false;
+    regNumber initReg             = REG_NA;
+    bool      initRegZeroed       = false;
+    bool      inheritsCalleeSaves = false;
 #endif // TARGET_WASM
 
     unsigned extraFrameSize = 0;
 
-#ifdef TARGET_XARCH
-
-#ifdef TARGET_AMD64
-    if (isOSRx64Root)
+    if (inheritsCalleeSaves)
     {
         // Account for the Tier0 callee saves
         //
-        genOSRRecordTier0CalleeSavedRegistersAndFrame();
+        genOSRHandleTier0CalleeSavedRegistersAndFrame();
 
+#ifdef TARGET_AMD64
         // We don't actually push any callee saves on the OSR frame,
         // but we still reserve space, so account for this when
         // allocating the local frame.
         //
         extraFrameSize = m_compiler->compCalleeRegsPushed * REGSIZE_BYTES;
-    }
-#endif // TARGET_AMD64
 
+        // Simulate a return address being pushed by a call to get expected misalignment on entry.
+        GetEmitter()->emitIns_R(INS_push, EA_PTRSIZE, REG_EAX);
+        m_compiler->unwindAllocStack(REGSIZE_BYTES);
+#endif
+    }
+
+#ifdef TARGET_XARCH
     if (doubleAlignOrFramePointerUsed())
     {
         // OSR methods handle "saving" FP specially.
@@ -5444,7 +5413,7 @@ void CodeGen::genFnProlog()
         // Tier0 method. The save we do here is just to set up a
         // proper RBP-based frame chain link.
         //
-        if (isOSRx64Root && isFramePointerUsed())
+        if (inheritsCalleeSaves && isFramePointerUsed())
         {
             GetEmitter()->emitIns_R_AR(INS_mov, EA_8BYTE, initReg, REG_FPBASE, 0);
             inst_RV(INS_push, initReg, TYP_REF);
@@ -5460,9 +5429,10 @@ void CodeGen::genFnProlog()
             inst_RV(INS_push, REG_FPBASE, TYP_REF);
             m_compiler->unwindPush(REG_FPBASE);
         }
-#ifndef TARGET_AMD64 // On AMD64, establish the frame pointer after the "sub rsp"
+#ifdef TARGET_X86
+        // On x86 establish frame pointer now. For x64 we establish it after the "sub rsp".
         genEstablishFramePointer(0, /*reportUnwindData*/ true);
-#endif // !TARGET_AMD64
+#endif // TARGET_X86
 
 #if DOUBLE_ALIGN
         if (m_compiler->genDoubleAlign())
@@ -5476,16 +5446,20 @@ void CodeGen::genFnProlog()
     }
 #endif // TARGET_XARCH
 
-#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-    genPushCalleeSavedRegisters(initReg, &initRegZeroed);
+    bool pushesCalleeSaves = true;
+#ifdef TARGET_AMD64
+    // For OSR x64 we need canonical epilogs (sequence of pops). Hence we do
+    // not push any register in the prolog, we rather store them in the area
+    // allocated by the tier0 method. For OSR on other platforms we have no
+    // such requirement, instead we restore tier0 saved callee saves from its
+    // area on entry and then run the prolog as normal.
+    pushesCalleeSaves = !inheritsCalleeSaves;
+#endif
 
-#else  // !TARGET_ARM64 && !TARGET_LOONGARCH64 && !TARGET_RISCV64
-
-    if (!isOSRx64Root)
+    if (pushesCalleeSaves)
     {
-        genPushCalleeSavedRegisters();
+        genPushCalleeSavedRegisters(initReg, &initRegZeroed);
     }
-#endif // !TARGET_ARM64 && !TARGET_LOONGARCH64 && !TARGET_RISCV64
 
 #ifdef TARGET_ARM
     bool needToEstablishFP        = false;
@@ -5530,14 +5504,14 @@ void CodeGen::genFnProlog()
     }
 #endif // !TARGET_ARM64 && !TARGET_LOONGARCH64 && !TARGET_RISCV64
 
-#ifdef TARGET_AMD64
-    // For x64 OSR we have to finish saving int callee saves.
+    // For x64 OSR we have to finish saving callee saves.
     //
-    if (isOSRx64Root)
+#ifdef TARGET_AMD64
+    if (inheritsCalleeSaves)
     {
         genOSRSaveRemainingCalleeSavedRegisters();
     }
-#endif // TARGET_AMD64
+#endif
 
     //-------------------------------------------------------------------------
 
@@ -5667,12 +5641,7 @@ void CodeGen::genFnProlog()
         // we've set the live-in regs with values from the Tier0 frame.
         //
         // Otherwise we'll do some of these fetches twice.
-
-#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
         genEnregisterOSRArgsAndLocals(initReg, &initRegZeroed);
-#else
-        genEnregisterOSRArgsAndLocals();
-#endif
         // OSR functions take no parameters in registers. Ensure no mappings
         // are present.
         assert((m_compiler->m_paramRegLocalMappings == nullptr) || m_compiler->m_paramRegLocalMappings->Empty());
@@ -7245,12 +7214,12 @@ void CodeGen::genReturn(GenTree* treeNode)
         }
     }
 
-#if EMIT_GENERATE_GCINFO
+#if EMIT_GENERATE_GCINFO && HAS_FIXED_REGISTER_SET
     if (treeNode->OperIs(GT_RETURN, GT_SWIFT_ERROR_RET))
     {
         genMarkReturnGCInfo();
     }
-#endif // EMIT_GENERATE_GCINFO
+#endif // EMIT_GENERATE_GCINFO && HAS_FIXED_REGISTER_SET
 
 #ifdef PROFILING_SUPPORTED
 
@@ -7337,6 +7306,61 @@ void CodeGen::genReturnSuspend(GenTreeUnOp* treeNode)
     }
 
     genMarkReturnGCInfo();
+}
+
+//------------------------------------------------------------------------
+// genPatchpoint:
+//   Generate code for GT_PATCHPOINT / GT_PATCHPOINT_FORCED nodes.
+//   Emits a call to the patchpoint helper followed by an unconditional jump
+//   to the returned address.
+//
+// Arguments:
+//   treeNode - The patchpoint node (GT_PATCHPOINT or GT_PATCHPOINT_FORCED)
+//
+void CodeGen::genPatchpoint(GenTreeOp* treeNode)
+{
+    assert(treeNode->OperIs(GT_PATCHPOINT, GT_PATCHPOINT_FORCED));
+
+    genConsumeOperands(treeNode);
+
+    // Move operands into the expected argument registers if needed.
+    genCopyRegIfNeeded(treeNode->gtGetOp1(), REG_ARG_0);
+    if (treeNode->OperIs(GT_PATCHPOINT))
+    {
+        genCopyRegIfNeeded(treeNode->gtGetOp2(), REG_ARG_1);
+    }
+
+    CorInfoHelpFunc helper = treeNode->OperIs(GT_PATCHPOINT) ? CORINFO_HELP_PATCHPOINT : CORINFO_HELP_PATCHPOINT_FORCED;
+
+    genEmitHelperCall(helper, 0, EA_UNKNOWN);
+
+    // On non-x64 targets, mark the method as having tail calls so that
+    // return-address hijacking is disabled — after the jump the return
+    // address may have moved in the frame and unhijacking will write
+    // to the wrong slot.
+    // On x64 this is unnecessary because the return address is always at
+    // the same stack slot regardless of tail calls.
+#ifndef TARGET_XARCH
+    SetHasTailCalls(true);
+#endif
+
+    // Jump to the address returned by the patchpoint helper.
+    // Must not use INS_tail_i_jmp: it is a REX-prefixed jump that the
+    // win-x64 unwinder detects as an epilog instruction, which would
+    // incorrectly signal that callee saves / RSP have been restored.
+#ifdef TARGET_XARCH
+    GetEmitter()->emitIns_R(INS_i_jmp, EA_PTRSIZE, REG_INTRET);
+#elif defined(TARGET_ARM64)
+    GetEmitter()->emitIns_R(INS_br, EA_PTRSIZE, REG_INTRET);
+#elif defined(TARGET_ARM)
+    GetEmitter()->emitIns_R(INS_bx, EA_PTRSIZE, REG_INTRET);
+#elif defined(TARGET_LOONGARCH64)
+    GetEmitter()->emitIns_R_R_I(INS_jirl, EA_PTRSIZE, REG_R0, REG_INTRET, 0);
+#elif defined(TARGET_RISCV64)
+    GetEmitter()->emitIns_R_R_I(INS_jalr, EA_PTRSIZE, REG_R0, REG_INTRET, 0);
+#else
+#error "Unsupported target architecture for GT_PATCHPOINT"
+#endif
 }
 
 //------------------------------------------------------------------------

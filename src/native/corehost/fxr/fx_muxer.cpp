@@ -63,6 +63,70 @@ namespace
 
         g_context_initializing_cv.notify_all();
     }
+
+    // Try to load and invoke the AOT-ed SDK from the resolved SDK directory.
+    // Returns true if the AOT entry point was found and invoked, with the result in exit_code.
+    // Returns false if the AOT library is not available or cannot be used.
+    bool try_invoke_aot_sdk(
+        const host_startup_info_t& host_info,
+        const pal::string_t& sdk_dir,
+        const pal::string_t& sdk_root,
+        int argc,
+        const pal::char_t* argv[],
+        int* exit_code)
+    {
+        pal::string_t sdk_aot_path(sdk_dir);
+        append_path(&sdk_aot_path, LIB_FILE_NAME_X("dotnet-aot"));
+        if (!pal::file_exists(sdk_aot_path))
+            return false;
+
+        trace::verbose(_X("Found AOT-ed SDK [%s]"), sdk_aot_path.c_str());
+
+        pal::dll_t aot_dll = nullptr;
+        if (!pal::load_library(&sdk_aot_path, &aot_dll))
+            return false;
+
+        // See docs/design/features/sharedfx-lookup.md#sdk-search
+        typedef int (__cdecl *dotnet_execute_fn)(
+            const pal::char_t* host_path,
+            const pal::char_t* dotnet_root,
+            const pal::char_t* sdk_dir,
+            const pal::char_t* hostfxr_path,
+            int argc,
+            const pal::char_t** argv);
+
+        auto dotnet_execute = reinterpret_cast<dotnet_execute_fn>(pal::get_symbol(aot_dll, "dotnet_execute"));
+        if (dotnet_execute == nullptr)
+        {
+            trace::info(_X("AOT-ed SDK [%s] does not contain 'dotnet_execute' entry point."), sdk_aot_path.c_str());
+            pal::unload_library(aot_dll);
+            return false;
+        }
+
+        pal::string_t hostfxr_path;
+        if (!pal::get_own_module_path(&hostfxr_path))
+        {
+            trace::info(_X("Failed to determine hostfxr path."));
+            pal::unload_library(aot_dll);
+            return false;
+        }
+
+        const pal::char_t* dotnet_root = sdk_root.empty()
+            ? host_info.dotnet_root.c_str()
+            : sdk_root.c_str();
+
+        trace::info(_X("Using AOT-ed SDK=[%s]"), sdk_aot_path.c_str());
+
+        *exit_code = dotnet_execute(
+            host_info.host_path.c_str(),
+            dotnet_root,
+            sdk_dir.c_str(),
+            hostfxr_path.c_str(),
+            argc - 1, // skip 'dotnet' (first argument)
+            argv + 1);
+
+        return true;
+    }
 }
 
 int load_hostpolicy(
@@ -1116,6 +1180,18 @@ int fx_muxer_t::handle_cli(
         resolver.print_resolution_error(host_info.dotnet_root, _X("      "));
 
         return StatusCode::SdkResolveFailure;
+    }
+
+    // Try to use the AOT-ed SDK if available in the resolved SDK directory
+    int aot_exit_code;
+    if (try_invoke_aot_sdk(host_info, sdk_dotnet, sdk_root, argc, argv, &aot_exit_code))
+    {
+        if (pal::strcasecmp(_X("--info"), argv[1]) == 0)
+        {
+            command_line::print_muxer_info(host_info.dotnet_root, resolver.global_file(), aot_exit_code == 0 /*skip_sdk_info_output*/);
+        }
+
+        return aot_exit_code;
     }
 
     append_path(&sdk_dotnet, SDK_DOTNET_DLL);

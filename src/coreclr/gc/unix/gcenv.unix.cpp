@@ -108,11 +108,6 @@ typedef cpuset_t cpu_set_t;
 #define SYSCONF_GET_NUMPROCS _SC_NPROCESSORS_ONLN
 #endif
 
-#ifdef __EMSCRIPTEN__
-#include <emscripten/heap.h>
-#endif // __EMSCRIPTEN__
-
-
 // The cached total number of CPUs that can be used in the OS.
 uint32_t g_totalCpuCount = 0;
 
@@ -208,7 +203,7 @@ bool GCToOSInterface::Initialize()
 
 #else // HAVE_SCHED_GETAFFINITY
 
-    for (size_t i = 0; i < configuredCpuCount; i++)
+    for (int i = 0; i < configuredCpuCount; i++)
     {
         g_processAffinitySet.Add(i);
     }
@@ -347,7 +342,7 @@ void GCToOSInterface::Sleep(uint32_t sleepMSec)
     requested.tv_nsec = (sleepMSec - requested.tv_sec * tccSecondsToMilliSeconds) * tccMilliSecondsToNanoSeconds;
 
     timespec remaining;
-    while (nanosleep(&requested, &remaining) == EINTR)
+    while (nanosleep(&requested, &remaining) == -1 && errno == EINTR)
     {
         requested = remaining;
     }
@@ -405,7 +400,7 @@ static void* VirtualReserveInner(size_t size, size_t alignment, uint32_t flags, 
         }
 
         pRetVal = pAlignedRetVal;
-#if defined(MADV_DONTDUMP) && !defined(TARGET_WASM)
+#if defined(MADV_DONTDUMP)
         // Do not include reserved uncommitted memory in coredump.
         if (!committing)
         {
@@ -453,13 +448,9 @@ bool GCToOSInterface::VirtualRelease(void* address, size_t size)
 //  true if it has succeeded, false if it has failed
 static bool VirtualCommitInner(void* address, size_t size, uint16_t node, bool newMemory)
 {
-#ifndef TARGET_WASM
     bool success = mprotect(address, size, PROT_WRITE | PROT_READ) == 0;
-#else
-    bool success = true;
-#endif // !TARGET_WASM
 
-#if defined(MADV_DONTDUMP) && !defined(TARGET_WASM)
+#if defined(MADV_DONTDUMP)
     if (success && !newMemory)
     {
         // Include committed memory in coredump. New memory is included by default.
@@ -544,13 +535,13 @@ bool GCToOSInterface::VirtualDecommit(void* address, size_t size)
 #endif
     bool bRetVal = mmap(address, size, PROT_NONE, mmapFlags, -1, 0) != MAP_FAILED;
 
-#if defined(MADV_DONTDUMP) && !defined(TARGET_WASM)
+#if defined(MADV_DONTDUMP)
     if (bRetVal)
     {
         // Do not include freed memory in coredump.
         madvise(address, size, MADV_DONTDUMP);
     }
-#endif // defined(MADV_DONTDUMP) && !defined(TARGET_WASM)
+#endif // defined(MADV_DONTDUMP)
 
     return  bRetVal;
 }
@@ -565,39 +556,24 @@ bool GCToOSInterface::VirtualDecommit(void* address, size_t size)
 //  true if it has succeeded, false if it has failed
 bool GCToOSInterface::VirtualReset(void * address, size_t size, bool unlock)
 {
-#ifdef TARGET_WASM
-    return true;
-#else // !TARGET_WASM
     int st = EINVAL;
-
-#if defined(MADV_DONTDUMP) || defined(HAVE_MADV_FREE)
-
-    int madviseFlags = 0;
 
 #ifdef MADV_DONTDUMP
     // Do not include reset memory in coredump.
-    madviseFlags |= MADV_DONTDUMP;
+    st = madvise(address, size, MADV_DONTDUMP);
 #endif
 
-#ifdef HAVE_MADV_FREE
+#ifdef MADV_FREE
     // Tell the kernel that the application doesn't need the pages in the range.
     // Freeing the pages can be delayed until a memory pressure occurs.
-    madviseFlags |= MADV_FREE;
-#endif
-
-    st = madvise(address, size, madviseFlags);
-
-#endif // defined(MADV_DONTDUMP) || defined(HAVE_MADV_FREE)
-
-#if defined(HAVE_POSIX_MADVISE) && !defined(MADV_DONTDUMP)
+    st = madvise(address, size, MADV_FREE);
+#elif defined(HAVE_POSIX_MADVISE)
     // DONTNEED is the nearest posix equivalent of FREE.
     // Prefer FREE as, since glibc2.6 DONTNEED is a nop.
     st = posix_madvise(address, size, POSIX_MADV_DONTNEED);
-
-#endif // defined(HAVE_POSIX_MADVISE) && !defined(MADV_DONTDUMP)
+#endif // MADV_FREE
 
     return (st == 0);
-#endif // !TARGET_WASM
 }
 
 // Check if the OS supports write watching
@@ -847,7 +823,7 @@ static uint64_t GetMemorySizeMultiplier(char units)
     return 1;
 }
 
-#if !defined(__APPLE__) && !defined(__HAIKU__) && !defined(__EMSCRIPTEN__)
+#if !defined(__APPLE__) && !defined(__HAIKU__)
 // Try to read the MemAvailable entry from /proc/meminfo.
 // Return true if the /proc/meminfo existed, the entry was present and we were able to parse it.
 static bool ReadMemAvailable(uint64_t* memAvailable)
@@ -1115,8 +1091,6 @@ uint64_t GetAvailablePhysicalMemory()
     {
         available = info.free_memory;
     }
-#elif defined(__EMSCRIPTEN__)
-    available = emscripten_get_heap_max() - emscripten_get_heap_size();
 #else // Linux
     static volatile bool tryReadMemInfo = true;
 
