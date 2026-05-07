@@ -10379,11 +10379,12 @@ void CEEInfo::getAsyncInfo(CORINFO_ASYNC_INFO* pAsyncInfoOut)
     pAsyncInfoOut->continuationStateFldHnd = CORINFO_FIELD_HANDLE(CoreLibBinder::GetField(FIELD__CONTINUATION__STATE));
     pAsyncInfoOut->continuationFlagsFldHnd = CORINFO_FIELD_HANDLE(CoreLibBinder::GetField(FIELD__CONTINUATION__FLAGS));
     pAsyncInfoOut->captureExecutionContextMethHnd = CORINFO_METHOD_HANDLE(CoreLibBinder::GetMethod(METHOD__ASYNC_HELPERS__CAPTURE_EXECUTION_CONTEXT));
-    pAsyncInfoOut->restoreExecutionContextMethHnd = CORINFO_METHOD_HANDLE(CoreLibBinder::GetMethod(METHOD__ASYNC_HELPERS__RESTORE_EXECUTION_CONTEXT));
     pAsyncInfoOut->captureContinuationContextMethHnd = CORINFO_METHOD_HANDLE(CoreLibBinder::GetMethod(METHOD__ASYNC_HELPERS__CAPTURE_CONTINUATION_CONTEXT));
     pAsyncInfoOut->captureContextsMethHnd = CORINFO_METHOD_HANDLE(CoreLibBinder::GetMethod(METHOD__ASYNC_HELPERS__CAPTURE_CONTEXTS));
     pAsyncInfoOut->restoreContextsMethHnd = CORINFO_METHOD_HANDLE(CoreLibBinder::GetMethod(METHOD__ASYNC_HELPERS__RESTORE_CONTEXTS));
     pAsyncInfoOut->restoreContextsOnSuspensionMethHnd = CORINFO_METHOD_HANDLE(CoreLibBinder::GetMethod(METHOD__ASYNC_HELPERS__RESTORE_CONTEXTS_ON_SUSPENSION));
+    pAsyncInfoOut->finishSuspensionNoContinuationContextMethHnd = CORINFO_METHOD_HANDLE(CoreLibBinder::GetMethod(METHOD__ASYNC_HELPERS__FINISH_SUSPENSION_NO_CONTINUATION_CONTEXT));
+    pAsyncInfoOut->finishSuspensionWithContinuationContextMethHnd = CORINFO_METHOD_HANDLE(CoreLibBinder::GetMethod(METHOD__ASYNC_HELPERS__FINISH_SUSPENSION_WITH_CONTINUATION_CONTEXT));
 
     EE_TO_JIT_TRANSITION();
 }
@@ -11490,24 +11491,12 @@ LPVOID CEEInfo::GetCookieForInterpreterCalliSig(CORINFO_SIG_INFO* szMetaSig)
 #ifdef FEATURE_INTERPRETER
 
 // Forward declare the function for mapping MetaSig to a cookie.
-void* GetCookieForCalliSig(MetaSig metaSig, MethodDesc *pContextMD);
+InterpreterCalliCookie GetCookieForCalliSig(MetaSig metaSig, MethodDesc *pContextMD);
 
 LPVOID CInterpreterJitInfo::GetCookieForInterpreterCalliSig(CORINFO_SIG_INFO* szMetaSig)
 {
-    void* result = NULL;
+    InterpreterCalliCookie result = NULL;
     JIT_TO_EE_TRANSITION();
-
-    Instantiation classInst = Instantiation((TypeHandle*) szMetaSig->sigInst.classInst, szMetaSig->sigInst.classInstCount);
-    Instantiation methodInst = Instantiation((TypeHandle*) szMetaSig->sigInst.methInst, szMetaSig->sigInst.methInstCount);
-    SigTypeContext typeContext = SigTypeContext(classInst, methodInst);
-    Module* mod = GetModule(szMetaSig->scope);
-
-    MetaSig sig(szMetaSig->pSig, szMetaSig->cbSig, mod, &typeContext);
-
-    if (szMetaSig->isAsyncCall())
-        sig.SetIsAsyncCall();
-
-    _ASSERTE(szMetaSig->isAsyncCall() == sig.IsAsyncCall());
 
     // When compiling a calli inside an IL stub for a P/Invoke, pass the target
     // P/Invoke MethodDesc so ComputeCallStub can detect the Swift calling convention.
@@ -11518,12 +11507,35 @@ LPVOID CInterpreterJitInfo::GetCookieForInterpreterCalliSig(CORINFO_SIG_INFO* sz
         if (pTargetMD != nullptr)
         {
             pContextMD = pTargetMD;
+            result = pTargetMD->GetCalliCookie();
         }
     }
-    result = GetCookieForCalliSig(sig, pContextMD);
+
+    if (result == NULL)
+    {
+        Instantiation classInst = Instantiation((TypeHandle*) szMetaSig->sigInst.classInst, szMetaSig->sigInst.classInstCount);
+        Instantiation methodInst = Instantiation((TypeHandle*) szMetaSig->sigInst.methInst, szMetaSig->sigInst.methInstCount);
+        SigTypeContext typeContext = SigTypeContext(classInst, methodInst);
+        Module* mod = GetModule(szMetaSig->scope);
+
+        MetaSig sig(szMetaSig->pSig, szMetaSig->cbSig, mod, &typeContext);
+
+        if (szMetaSig->isAsyncCall())
+            sig.SetIsAsyncCall();
+
+        _ASSERTE(szMetaSig->isAsyncCall() == sig.IsAsyncCall());
+
+        result = GetCookieForCalliSig(sig, pContextMD);
+
+        if (pContextMD != nullptr)
+        {
+            pContextMD->SetCalliCookie(result);
+            result = pContextMD->GetCalliCookie();
+        }
+    }
 
     EE_TO_JIT_TRANSITION();
-    return result;
+    return (void*)result;
 }
 
 void CInterpreterJitInfo::allocMem(AllocMemArgs *pArgs)

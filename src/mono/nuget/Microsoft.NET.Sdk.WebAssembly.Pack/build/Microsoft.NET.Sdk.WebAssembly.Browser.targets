@@ -482,9 +482,22 @@ Copyright (c) .NET Foundation. All rights reserved.
     </ItemGroup>
   </Target>
 
-  <Target Name="_AddWasmDiagnosticPortsEnvironmentVariable">
+  <Target Name="_AddWasmDiagnosticPortsEnvironmentVariable" Condition="'$(EnableDiagnostics)' == 'true'">
+    <PropertyGroup>
+      <_WasmPerfInstFilter>$(WasmPerformanceInstrumentation)</_WasmPerfInstFilter>
+      <_WasmPerfInstInterval></_WasmPerfInstInterval>
+      <_WasmPerfInstDescriptor></_WasmPerfInstDescriptor>
+      <_WasmPerfInstInterval Condition="$(WasmPerformanceInstrumentation.Contains(',interval='))">$(WasmPerformanceInstrumentation.Substring($([MSBuild]::Add($(WasmPerformanceInstrumentation.IndexOf(',interval=')), 10))))</_WasmPerfInstInterval>
+      <_WasmPerfInstFilter Condition="$(WasmPerformanceInstrumentation.Contains(',interval='))">$(WasmPerformanceInstrumentation.Substring(0, $(WasmPerformanceInstrumentation.IndexOf(',interval='))))</_WasmPerfInstFilter>
+      <_WasmPerfInstInterval Condition="'$(_WasmPerfInstInterval)' != '' and $(_WasmPerfInstInterval.Contains(','))">$(_WasmPerfInstInterval.Substring(0, $(_WasmPerfInstInterval.IndexOf(','))))</_WasmPerfInstInterval>
+      <_WasmPerfInstDescriptor Condition="'$(_WasmPerfInstFilter)' != '' and '$(UseMonoRuntime)' != 'false'">eventpipe,callspec=$(_WasmPerfInstFilter)</_WasmPerfInstDescriptor>
+      <_WasmPerfInstFilter Condition="'$(_WasmPerfInstFilter)' == 'all' and '$(UseMonoRuntime)' == 'false'">*</_WasmPerfInstFilter>
+      <_WasmPerfInstDescriptor Condition="'$(_WasmPerfInstFilter)' != '' and '$(UseMonoRuntime)' == 'false'">$(_WasmPerfInstFilter)</_WasmPerfInstDescriptor>
+    </PropertyGroup>
     <ItemGroup>
       <WasmEnvironmentVariable Include="DOTNET_DiagnosticPorts" Value="$(DiagnosticPorts)" Condition="'$(DiagnosticPorts)' != ''"/>
+      <WasmEnvironmentVariable Include="DOTNET_WasmPerformanceInstrumentation" Value="$(_WasmPerfInstDescriptor)" Condition="'$(_WasmPerfInstDescriptor)' != ''" />
+      <WasmEnvironmentVariable Condition="'$(_WasmPerfInstInterval)' != ''" Include="DOTNET_EventPipeThreadSamplingRate" Value="$(_WasmPerfInstInterval)" />
     </ItemGroup>
   </Target>
 

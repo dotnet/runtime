@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using ILCompiler.ReadyToRun.Tests.TestCasesRunner;
 using ILCompiler.Reflection.ReadyToRun;
+using Internal.ReadyToRunConstants;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 using Xunit.Abstractions;
@@ -270,7 +271,8 @@ public class R2RTestSuites
 
         static void Validate(ReadyToRunReader reader)
         {
-            R2RAssert.HasAsyncVariant(reader, "GetValueAsync");
+            R2RAssert.HasAsyncVariant(reader, "OpenImpl.GetValueAsync(");
+            R2RAssert.HasAsyncVariant(reader, "SealedImpl.GetValueAsync(");
         }
     }
 
@@ -305,6 +307,49 @@ public class R2RTestSuites
         {
             R2RAssert.HasAsyncVariant(reader, "AsyncButNoAwait");
             R2RAssert.HasAsyncVariant(reader, "AsyncWithConditionalAwait");
+        }
+    }
+
+    /// <summary>
+    /// Validates that ResumptionStubEntryPoint fixups are deduplicated for a method:
+    /// even with multiple suspension points and forced compilation retries (via
+    /// --determinism-stress), each compiled method should have exactly one
+    /// ResumptionStubEntryPoint fixup.
+    /// </summary>
+    [Fact]
+    public void RuntimeAsyncResumptionStubFixupDedup()
+    {
+        var asm = new CompiledAssembly
+        {
+            AssemblyName = nameof(RuntimeAsyncResumptionStubFixupDedup),
+            SourceResourceNames =
+            [
+                "RuntimeAsync/AsyncMultipleSuspensionPoints.cs",
+                "RuntimeAsync/RuntimeAsyncMethodGenerationAttribute.cs",
+            ],
+            Features = { RuntimeAsyncFeature },
+        };
+
+        new R2RTestRunner(_output).Run(new R2RTestCase(
+            nameof(RuntimeAsyncResumptionStubFixupDedup),
+            [
+                new(nameof(RuntimeAsyncResumptionStubFixupDedup), [new CrossgenAssembly(asm)])
+                {
+                    // Force each method to be compiled multiple times so that
+                    // any non-deduplicated fixup additions become observable.
+                    AdditionalArgs = { "--determinism-stress=2" },
+                    Validate = Validate,
+                },
+            ]));
+
+        static void Validate(ReadyToRunReader reader)
+        {
+            R2RAssert.HasAsyncVariant(reader, ".MultipleAwaits(");
+            R2RAssert.HasAsyncVariant(reader, ".MultipleAwaitsWithRefs(");
+            R2RAssert.HasResumptionStubFixup(reader, ".MultipleAwaits(");
+            R2RAssert.HasResumptionStubFixup(reader, ".MultipleAwaitsWithRefs(");
+            R2RAssert.HasFixupKindCountOnMethod(reader, ReadyToRunFixupKind.ResumptionStubEntryPoint, ".MultipleAwaits(", 1);
+            R2RAssert.HasFixupKindCountOnMethod(reader, ReadyToRunFixupKind.ResumptionStubEntryPoint, ".MultipleAwaitsWithRefs(", 1);
         }
     }
 

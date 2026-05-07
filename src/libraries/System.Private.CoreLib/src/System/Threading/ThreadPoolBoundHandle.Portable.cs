@@ -57,7 +57,6 @@ namespace System.Threading
             }
         }
 
-        [RequiresUnsafe]
         private unsafe void FreeNativeOverlappedPortableCore(NativeOverlapped* overlapped)
         {
             ArgumentNullException.ThrowIfNull(overlapped);
@@ -75,7 +74,6 @@ namespace System.Threading
                 Overlapped.Free(overlapped);
         }
 
-        [RequiresUnsafe]
         private static unsafe object? GetNativeOverlappedStatePortableCore(NativeOverlapped* overlapped)
         {
             ArgumentNullException.ThrowIfNull(overlapped);
@@ -85,7 +83,6 @@ namespace System.Threading
             return wrapper._userState;
         }
 
-        [RequiresUnsafe]
         private static unsafe ThreadPoolBoundHandleOverlapped GetOverlappedWrapper(NativeOverlapped* overlapped)
         {
             ThreadPoolBoundHandleOverlapped wrapper;

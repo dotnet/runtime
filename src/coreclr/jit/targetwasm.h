@@ -50,7 +50,7 @@
 #define CSE_CONSTS               1       // Enable if we want to CSE constants
 #define LOWER_DECOMPOSE_LONGS    0       // Decompose TYP_LONG operations into (typically two) TYP_INT ones
 #define EMIT_TRACK_STACK_DEPTH   0       // No need to track arg pushes/pops
-#define EMIT_GENERATE_GCINFO     0       // Codegen and emit not responsible for GC liveness tracking and GCInfo generation
+#define EMIT_GENERATE_GCINFO     1       // Codegen and emit generate GC info; on WASM this enables stack slot GC info encoding without fixed-register GC tracking
 
 // Since we don't have a fixed register set on WASM, we set most of the following register defines to 'none'-like values.
 #define REG_FP_FIRST             REG_NA
