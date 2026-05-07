@@ -202,9 +202,6 @@ public:
     // - Will return underlying primitive for System.Int32 etc...
     // - Will return the primitive used by the calling convention
     //
-    // Internal representation is used among other things for the calling convention
-    // and optimizing marshalling.
-    //
     // This will NOT convert E_T_ARRAY, E_T_SZARRAY etc. to E_T_CLASS (though it probably
     // should).  Use CorTypeInfo::IsObjRef for that.
     CorElementType GetInternalCorElementType() const;

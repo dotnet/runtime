@@ -334,8 +334,7 @@ inline BOOL MethodTable::IsTruePrimitive()
 inline void MethodTable::SetIsTruePrimitive()
 {
     LIMITED_METHOD_DAC_CONTRACT;
-    ClearFlag(enum_flag_Category_Mask);
-    SetFlag(enum_flag_Category_Primitive);
+    m_dwFlags = (m_dwFlags & ~(DWORD)enum_flag_Category_Mask) | (DWORD)enum_flag_Category_Primitive;
 }
 
 //==========================================================================================

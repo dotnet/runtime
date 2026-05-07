@@ -2769,7 +2769,7 @@ public:
     //
     // #KindsOfElementTypes
     // GetInternalCorElementType() retrieves the internal representation of the type. It's not always
-    // appropriate to use this. For example, we treat enums as their underlying type. To get the signature
+    // appropriate to use this. It treats enums as their underlying type. To get the signature
     // type, use the APIs in Typehandle.h.
     //
     //   * code:TypeHandle.GetSignatureCorElementType()
@@ -2784,7 +2784,7 @@ public:
     //      ELEMENT_TYPE_I,
     //      ELEMENT_TYPE_I4,
     //      ELEMENT_TYPE_TYPEDBYREF etc.
-    // Note that GetInternalCorElementType might return these same values for enums.
+    // And not enum.
     BOOL IsTruePrimitive();
     void SetIsTruePrimitive();
 
