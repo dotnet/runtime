@@ -95,7 +95,8 @@ void StressLog::Initialize(unsigned facilities,  unsigned level, unsigned maxByt
         return;
     }
 
-    bool success = minipal_mutex_init(&theLog.lock)
+    bool success;
+    success = minipal_mutex_init(&theLog.lock);
     _ASSERTE(success);
 
     g_pStressLog = &theLog;
