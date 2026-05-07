@@ -612,6 +612,10 @@ struct InlineCandidateInfo : public HandleHistogramProfileCandidateInfo
     //
     CORINFO_CONTEXT_HANDLE exactContextHandle;
 
+    // Method handle of the call before any GDV/Inlining evaluation.
+    //
+    CORINFO_METHOD_HANDLE originalMethodHandle;
+
     // The GT_RET_EXPR node linking back to the inline candidate.
     GenTreeRetExpr* retExpr;
 

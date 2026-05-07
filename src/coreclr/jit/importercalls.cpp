@@ -7761,7 +7761,7 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
                 }
 
                 addGuardedDevirtualizationCandidate(call, exactMethod, exactCls, exactContext, exactMethodAttrs,
-                                                    clsAttrs, likelyHood, instParamLookup,
+                                                    clsAttrs, likelyHood, instParamLookup, baseMethod,
                                                     &dvInfo.resolvedTokenDevirtualizedMethod,
                                                     &dvInfo.resolvedTokenDevirtualizedUnboxedMethod);
             }
@@ -7923,8 +7923,8 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
         // Add this as a potential candidate.
         //
         addGuardedDevirtualizationCandidate(call, likelyMethod, likelyClass, likelyContext, likelyMethodAttribs,
-                                            likelyClassAttribs, likelihood, pInstParamLookup, pResolvedToken,
-                                            pUnboxedResolvedToken);
+                                            likelyClassAttribs, likelihood, pInstParamLookup, baseMethod,
+                                            pResolvedToken, pUnboxedResolvedToken);
     }
 }
 
@@ -7950,6 +7950,7 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
 //    classAttr - attributes of the class
 //    likelihood - odds that this class is the class seen at runtime
 //    instParamLookup - lookup for the instantiation argument, or nullptr if none is needed
+//    originalMethodHandle - method handle of base method (before devirt)
 //    pResolvedToken - resolved token for methodHandle, used to get R2R call info; nullptr when unavailable
 //    pUnboxedResolvedToken - resolved token for the unboxed entry, paired with pResolvedToken
 //
@@ -7961,6 +7962,7 @@ void Compiler::addGuardedDevirtualizationCandidate(GenTreeCall*            call,
                                                    unsigned                classAttr,
                                                    unsigned                likelihood,
                                                    const CORINFO_LOOKUP*   instParamLookup,
+                                                   CORINFO_METHOD_HANDLE   originalMethodHandle,
                                                    CORINFO_RESOLVED_TOKEN* pResolvedToken,
                                                    CORINFO_RESOLVED_TOKEN* pUnboxedResolvedToken)
 {
@@ -8046,6 +8048,7 @@ void Compiler::addGuardedDevirtualizationCandidate(GenTreeCall*            call,
     pInfo->guardedClassHandle                   = classHandle;
     pInfo->likelihood                           = likelihood;
     pInfo->exactContextHandle                   = contextHandle;
+    pInfo->originalMethodHandle                 = originalMethodHandle;
 
     if (instParamLookup != nullptr)
     {
@@ -10109,6 +10112,7 @@ void Compiler::impCheckCanInline(GenTreeCall*           call,
             pInfo->guardedMethodInstParamLookup         = {};
             pInfo->guardedMethodResolvedToken           = {};
             pInfo->guardedMethodUnboxedResolvedToken    = {};
+            pInfo->originalMethodHandle                 = nullptr;
             pInfo->likelihood                           = 0;
         }
 

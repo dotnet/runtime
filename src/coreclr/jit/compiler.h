@@ -7788,6 +7788,7 @@ public:
                                              unsigned                classAttr,
                                              unsigned                likelihood,
                                              const CORINFO_LOOKUP*   instParamLookup,
+                                             CORINFO_METHOD_HANDLE   originalMethodHandle,
                                              CORINFO_RESOLVED_TOKEN* pResolvedToken,
                                              CORINFO_RESOLVED_TOKEN* pUnboxedResolvedToken);
 
