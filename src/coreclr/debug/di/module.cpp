@@ -424,7 +424,7 @@ public:
                 true,
                 pModule->GetAppDomain()->GetADToken());
 
-            event.MetadataUpdateRequest.pMetadataStart = CORDB_ADDRESS_TO_PTR(bufferMetaData.pAddress);
+            event.MetadataUpdateRequest.pMetadataStart = bufferMetaData.pAddress;
 
             // Note: two-way event here...
             IfFailThrow(pProcess->SendIPCEvent(&event, sizeof(DebuggerIPCEvent)));

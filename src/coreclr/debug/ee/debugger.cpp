@@ -5769,6 +5769,7 @@ void Debugger::SendDataBreakpoint(Thread *thread, CONTEXT *context,
     // Send a breakpoint event to the Right Side
     DebuggerIPCEvent* ipce = m_pRCThread->GetIPCEventSendBuffer();
     memcpy(&(ipce->DataBreakpointData.context), context, sizeof(CONTEXT));
+    ipce->DataBreakpointData.contextSize = sizeof(CONTEXT);
     InitIPCEvent(ipce,
         DB_IPCE_DATA_BREAKPOINT,
         thread);
@@ -6000,7 +6001,7 @@ void Debugger::LockAndSendEnCRemapEvent(DebuggerJitInfo * dji, SIZE_T currentIP,
     ipce->EnCRemap.currentVersionNumber = dji->m_encVersion;
     ipce->EnCRemap.resumeVersionNumber = dji->m_methodInfo->GetCurrentEnCVersion();;
     ipce->EnCRemap.currentILOffset = currentIP;
-    ipce->EnCRemap.resumeILOffset = resumeIP;
+    ipce->EnCRemap.resumeILOffset = PTR_TO_CORDB_ADDRESS(resumeIP);
     ipce->EnCRemap.funcMetadataToken = pMD->GetMemberDef();
 
     LOG((LF_CORDB, LL_INFO10000, "D::LASEnCRE: methodDef 0x%x, from version %zx to %zx\n",
@@ -7154,7 +7155,7 @@ HRESULT Debugger::SendExceptionHelperAndBlock(
 
     ipce->ExceptionCallback2.framePointer = framePointer;
     ipce->ExceptionCallback2.eventType = eventType;
-    ipce->ExceptionCallback2.nOffset = nOffset;
+    ipce->ExceptionCallback2.nOffset = (UINT)nOffset;
     ipce->ExceptionCallback2.dwFlags = dwFlags;
     ipce->ExceptionCallback2.vmExceptionHandle.SetRawPtr(exceptionHandle);
 
@@ -7307,7 +7308,7 @@ void Debugger::SendExceptionEventsWorker(
 
             ipce->ExceptionCallback2.framePointer = framePointer;
             ipce->ExceptionCallback2.eventType = DEBUG_EXCEPTION_USER_FIRST_CHANCE;
-            ipce->ExceptionCallback2.nOffset = nOffset;
+            ipce->ExceptionCallback2.nOffset = (UINT)nOffset;
             ipce->ExceptionCallback2.dwFlags = fIsInterceptable ? DEBUG_EXCEPTION_CAN_BE_INTERCEPTED : 0;
             ipce->ExceptionCallback2.vmExceptionHandle.SetRawPtr(g_pEEInterface->GetThreadException(pThread));
 
@@ -7966,7 +7967,7 @@ void Debugger::SendCatchHandlerFound(
 
                 ipce->ExceptionCallback2.framePointer = fp;
                 ipce->ExceptionCallback2.eventType = DEBUG_EXCEPTION_CATCH_HANDLER_FOUND;
-                ipce->ExceptionCallback2.nOffset = nOffset;
+                ipce->ExceptionCallback2.nOffset = (UINT)nOffset;
                 ipce->ExceptionCallback2.dwFlags = dwFlags;
                 ipce->ExceptionCallback2.vmExceptionHandle.SetRawPtr(g_pEEInterface->GetThreadException(pThread));
 
@@ -9749,7 +9750,7 @@ void Debugger::FuncEvalComplete(Thread* pThread, DebuggerEval *pDE)
     ipce->FuncEvalComplete.funcEvalKey = pDE->m_funcEvalKey;
     ipce->FuncEvalComplete.successful = pDE->m_successful;
     ipce->FuncEvalComplete.aborted = pDE->m_aborted;
-    ipce->FuncEvalComplete.resultAddr = pDE->m_result;
+    ipce->FuncEvalComplete.resultAddr = (CORDB_ADDRESS)(pDE->m_result);
     ipce->FuncEvalComplete.vmAppDomain.SetRawPtr(pDomain);
     ipce->FuncEvalComplete.vmObjectHandle = pDE->m_vmObjectHandle;
 
@@ -9763,11 +9764,11 @@ void Debugger::FuncEvalComplete(Thread* pThread, DebuggerEval *pDE)
     _ASSERTE(ipce->FuncEvalComplete.resultType.elementType != ELEMENT_TYPE_VALUETYPE);
 
     // We must adjust the result address to point to the right place
-    ipce->FuncEvalComplete.resultAddr = ArgSlotEndiannessFixup((ARG_SLOT*)ipce->FuncEvalComplete.resultAddr,
-        GetSizeForCorElementType(ipce->FuncEvalComplete.resultType.elementType));
+    ipce->FuncEvalComplete.resultAddr = (CORDB_ADDRESS)(ArgSlotEndiannessFixup((ARG_SLOT*)(CORDB_ADDRESS_TO_PTR(ipce->FuncEvalComplete.resultAddr)),
+        GetSizeForCorElementType(ipce->FuncEvalComplete.resultType.elementType)));
 
     LOG((LF_CORDB, LL_INFO1000, "D::FEC: returned el %04x resultAddr %p\n",
-        ipce->FuncEvalComplete.resultType.elementType, ipce->FuncEvalComplete.resultAddr));
+        ipce->FuncEvalComplete.resultType.elementType, (CORDB_ADDRESS_TO_PTR(ipce->FuncEvalComplete.resultAddr))));
 
     m_pRCThread->SendIPCEvent();
 
@@ -10477,39 +10478,6 @@ bool Debugger::HandleIPCEvent(DebuggerIPCEvent * pEvent)
         }
         break;
 
-    case DB_IPCE_GET_GCHANDLE_INFO:
-        // Given an unvalidated GC-handle, find out all the info about it to view the object
-        // at the other end
-        {
-            OBJECTHANDLE objectHandle = pEvent->GetGCHandleInfo.GCHandle.GetRawPtr();
-
-            DebuggerIPCEvent * pIPCResult = m_pRCThread->GetIPCEventReceiveBuffer();
-
-            _ASSERTE(pIPCResult != NULL);
-
-            InitIPCEvent(pIPCResult, DB_IPCE_GET_GCHANDLE_INFO_RESULT, NULL);
-
-            bool fValid = SUCCEEDED(ValidateGCHandle(objectHandle));
-
-            AppDomain * pAppDomain = NULL;
-
-            if(fValid)
-            {
-                // Get the appdomain
-                pAppDomain = AppDomain::GetCurrentDomain();
-
-                _ASSERTE(pAppDomain != NULL);
-            }
-
-            pIPCResult->hr = S_OK;
-            pIPCResult->GetGCHandleInfoResult.vmAppDomain.SetRawPtr(pAppDomain);
-            pIPCResult->GetGCHandleInfoResult.fValid = fValid;
-
-            m_pRCThread->SendIPCReply();
-
-        }
-        break;
-
     case DB_IPCE_GET_BUFFER:
         {
             GetAndSendBuffer(m_pRCThread, pEvent->GetBuffer.bufSize);
@@ -10518,7 +10486,7 @@ bool Debugger::HandleIPCEvent(DebuggerIPCEvent * pEvent)
 
     case DB_IPCE_RELEASE_BUFFER:
         {
-            SendReleaseBuffer(m_pRCThread, pEvent->ReleaseBuffer.pBuffer);
+            SendReleaseBuffer(m_pRCThread, (CORDB_ADDRESS_TO_PTR(pEvent->ReleaseBuffer.pBuffer)));
         }
         break;
 #ifdef FEATURE_METADATA_UPDATER
@@ -10557,13 +10525,7 @@ bool Debugger::HandleIPCEvent(DebuggerIPCEvent * pEvent)
         break;
 
     case DB_IPCE_IS_TRANSITION_STUB:
-        GetAndSendTransitionStubInfo((CORDB_ADDRESS_TYPE*)pEvent->IsTransitionStub.address);
-        break;
-
-    case DB_IPCE_MODIFY_LOGSWITCH:
-        g_pEEInterface->DebuggerModifyingLogSwitch (pEvent->LogSwitchSettingMessage.iLevel,
-                                                    pEvent->LogSwitchSettingMessage.szSwitchName.GetString());
-
+        GetAndSendTransitionStubInfo((CORDB_ADDRESS_TYPE*)(CORDB_ADDRESS_TO_PTR(pEvent->IsTransitionStub.address)));
         break;
 
     case DB_IPCE_ENABLE_LOG_MESSAGES:
@@ -10617,7 +10579,7 @@ bool Debugger::HandleIPCEvent(DebuggerIPCEvent * pEvent)
                                           pModule,
                                                pEvent->SetIP.mdMethod,
                                                pDJI,
-                                               pEvent->SetIP.offset,
+                                               (SIZE_T)pEvent->SetIP.offset,
                                                pEvent->SetIP.fIsIL
                                                );
                     }
@@ -10746,9 +10708,9 @@ bool Debugger::HandleIPCEvent(DebuggerIPCEvent * pEvent)
 
             InitIPCReply(pEvent, DB_IPCE_SET_REFERENCE_RESULT);
 
-            pEvent->hr = SetReference(pEvent->SetReference.objectRefAddress,
+            pEvent->hr = SetReference(CORDB_ADDRESS_TO_PTR(pEvent->SetReference.objectRefAddress),
                                       pEvent->SetReference.vmObjectHandle,
-                                      pEvent->SetReference.newReference);
+                                      CORDB_ADDRESS_TO_PTR(pEvent->SetReference.newReference));
 
             // Send the result of how the set reference went.
             m_pRCThread->SendIPCReply();
@@ -10762,8 +10724,8 @@ bool Debugger::HandleIPCEvent(DebuggerIPCEvent * pEvent)
 
             InitIPCReply(pEvent, DB_IPCE_SET_VALUE_CLASS_RESULT);
 
-            pEvent->hr = SetValueClass(pEvent->SetValueClass.oldData,
-                                       pEvent->SetValueClass.newData,
+            pEvent->hr = SetValueClass(CORDB_ADDRESS_TO_PTR(pEvent->SetValueClass.oldData),
+                                       CORDB_ADDRESS_TO_PTR(pEvent->SetValueClass.newData),
                                        &pEvent->SetValueClass.type);
 
             // Send the result of how the set reference went.
@@ -10771,25 +10733,9 @@ bool Debugger::HandleIPCEvent(DebuggerIPCEvent * pEvent)
         }
         break;
 
-    case DB_IPCE_GET_THREAD_FOR_TASKID:
-        {
-             Thread *pThreadRet = NULL;
-
-             // This is a synchronous event (reply required)
-             pEvent = m_pRCThread->GetIPCEventReceiveBuffer();
-
-             InitIPCReply(pEvent, DB_IPCE_GET_THREAD_FOR_TASKID_RESULT);
-
-             pEvent->GetThreadForTaskIdResult.vmThreadToken.SetRawPtr(pThreadRet);
-             pEvent->hr = S_OK;
-
-             m_pRCThread->SendIPCReply();
-        }
-        break;
-
     case DB_IPCE_CREATE_HANDLE:
         {
-             Object * pObject = (Object*)pEvent->CreateHandle.objectToken;
+             Object * pObject = (Object*)(CORDB_ADDRESS_TO_PTR(pEvent->CreateHandle.objectToken));
              OBJECTREF objref = ObjectToOBJECTREF(pObject);
              AppDomain * pAppDomain = pEvent->vmAppDomain.GetRawPtr();
              CorDebugHandleType handleType = pEvent->CreateHandle.handleType;
@@ -10928,7 +10874,7 @@ bool Debugger::HandleIPCEvent(DebuggerIPCEvent * pEvent)
             DebuggerModule * pDebuggerModule = LookupOrCreateModule(pEvent->SetJMCFunctionStatus.vmAssembly);
             Module * pModule = pDebuggerModule->GetRuntimeModule();
 
-            bool fStatus = (pEvent->SetJMCFunctionStatus.dwStatus != 0);
+            bool fStatus = (pEvent->SetJMCFunctionStatus.dwStatus != (DWORD)0);
 
             mdMethodDef token = pEvent->SetJMCFunctionStatus.funcMetadataToken;
 
@@ -11009,7 +10955,7 @@ bool Debugger::HandleIPCEvent(DebuggerIPCEvent * pEvent)
             // Get data out of event
             DebuggerModule * pDebuggerModule = LookupOrCreateModule(pEvent->SetJMCFunctionStatus.vmAssembly);
 
-            bool fStatus = (pEvent->SetJMCFunctionStatus.dwStatus != 0);
+            bool fStatus = (pEvent->SetJMCFunctionStatus.dwStatus != (DWORD)0);
 
             // Prepare reply
             pEvent = m_pRCThread->GetIPCEventReceiveBuffer();
@@ -11073,7 +11019,7 @@ bool Debugger::HandleIPCEvent(DebuggerIPCEvent * pEvent)
             DebuggerIPCEvent * pResult = m_pRCThread->GetIPCEventReceiveBuffer();
             InitIPCEvent(pResult, DB_IPCE_RESOLVE_UPDATE_METADATA_1_RESULT, NULL);
 
-            pResult->MetadataUpdateRequest.pMetadataStart = pData;
+            pResult->MetadataUpdateRequest.pMetadataStart = (CORDB_ADDRESS)pData;
             pResult->MetadataUpdateRequest.nMetadataSize = countBytes;
             pResult->hr = hr;
             LOG((LF_CORDB, LL_INFO1000000, "D::HIPCE metadataStart=0x%x, nMetadataSize=0x%x\n", pData, countBytes));
@@ -11086,7 +11032,7 @@ bool Debugger::HandleIPCEvent(DebuggerIPCEvent * pEvent)
     case DB_IPCE_RESOLVE_UPDATE_METADATA_2:
         {
             // Delete memory allocated with DB_IPCE_RESOLVE_UPDATE_METADATA_1.
-            BYTE * pData = (BYTE *) pEvent->MetadataUpdateRequest.pMetadataStart;
+            BYTE * pData = (BYTE *)(CORDB_ADDRESS_TO_PTR(pEvent->MetadataUpdateRequest.pMetadataStart));
             DeleteInteropSafe(pData);
 
             DebuggerIPCEvent * pResult = m_pRCThread->GetIPCEventReceiveBuffer();
@@ -11718,7 +11664,7 @@ TypeHandle Debugger::TypeDataWalk::ReadTypeHandle()
     case ELEMENT_TYPE_SZARRAY:
     case ELEMENT_TYPE_PTR:
     case ELEMENT_TYPE_BYREF:
-        if(data->numTypeArgs == 1)
+        if(data->numTypeArgs == (UINT)1)
         {
             TypeHandle typar = ReadTypeHandle();
             switch (et)
@@ -11825,7 +11771,9 @@ HRESULT Debugger::GetAndSendBuffer(DebuggerRCThread* rcThread, ULONG bufSize)
     InitIPCEvent(event, DB_IPCE_GET_BUFFER_RESULT, NULL);
 
     // Allocate the buffer
-    event->GetBufferResult.hr = AllocateRemoteBuffer( bufSize, &event->GetBufferResult.pBuffer );
+    void* pBuffer = NULL;
+    event->GetBufferResult.hr = AllocateRemoteBuffer( bufSize, &pBuffer );
+    event->GetBufferResult.pBuffer = (CORDB_ADDRESS)pBuffer;
 
     // Send the result
     return rcThread->SendIPCReply();
@@ -13457,9 +13405,9 @@ LONG Debugger::FirstChanceSuspendHijackWorker(CONTEXT *pContext,
         // Signal the RS to tell us what to do
         SPEW(fprintf(stderr, "0x%x D::FCHF: Signaling hijack started.\n", tid));
         SignalHijackStarted();
-        SPEW(fprintf(stderr, "0x%x D::FCHF: Signaling hijack started complete. DebugCounter=0x%x\n", tid, pFcd->debugCounter));
+        SPEW(fprintf(stderr, "0x%x D::FCHF: Signaling hijack started complete. DebugCounter=0x%x\n", tid, (UINT)const_cast<Portable<UINT>&>(pFcd->debugCounter)));
 
-        if (pFcd->action == HIJACK_ACTION_WAIT)
+        if ((HijackAction)const_cast<Portable<HijackAction>&>(pFcd->action) == HIJACK_ACTION_WAIT)
         {
             // This exception does NOT belong to the CLR.
             // If we belong to the CLR, then we either:
@@ -13508,10 +13456,10 @@ LONG Debugger::FirstChanceSuspendHijackWorker(CONTEXT *pContext,
 
         SPEW(fprintf(stderr, "0x%x D::FCHF: signaling HijackComplete.\n", tid));
         SignalHijackComplete();
-        SPEW(fprintf(stderr, "0x%x D::FCHF: done signaling HijackComplete. DebugCounter=0x%x\n", tid, pFcd->debugCounter));
+        SPEW(fprintf(stderr, "0x%x D::FCHF: done signaling HijackComplete. DebugCounter=0x%x\n", tid, (UINT)const_cast<Portable<UINT>&>(pFcd->debugCounter)));
 
         // we should know what we are about to do now
-        _ASSERTE(pFcd->action != HIJACK_ACTION_WAIT);
+        _ASSERTE((HijackAction)const_cast<Portable<HijackAction>&>(pFcd->action) != HIJACK_ACTION_WAIT);
 
         // cleanup from above
         SPEW(fprintf(stderr, "0x%x D::FCHF: set debugger word = NULL.\n", tid));
@@ -13519,7 +13467,7 @@ LONG Debugger::FirstChanceSuspendHijackWorker(CONTEXT *pContext,
 
     } // end can't stop region
 
-    if (pFcd->action == HIJACK_ACTION_EXIT_HANDLED)
+    if ((HijackAction)const_cast<Portable<HijackAction>&>(pFcd->action) == HIJACK_ACTION_EXIT_HANDLED)
     {
         SPEW(fprintf(stderr, "0x%x D::FCHF: exiting with CONTINUE_EXECUTION\n", tid));
 #if defined(OUT_OF_PROCESS_SETTHREADCONTEXT) && !defined(DACCESS_COMPILE)
@@ -13533,7 +13481,7 @@ LONG Debugger::FirstChanceSuspendHijackWorker(CONTEXT *pContext,
     else
     {
         SPEW(fprintf(stderr, "0x%x D::FCHF: exiting with CONTINUE_SEARCH\n", tid));
-        _ASSERTE(pFcd->action == HIJACK_ACTION_EXIT_UNHANDLED);
+        _ASSERTE((HijackAction)const_cast<Portable<HijackAction>&>(pFcd->action) == HIJACK_ACTION_EXIT_UNHANDLED);
         return EXCEPTION_CONTINUE_SEARCH;
     }
 }
@@ -14017,74 +13965,10 @@ void Debugger::SendRawLogMessage(
                  pThread);
 
     ipce->FirstLogMessage.iLevel = iLevel;
-    ipce->FirstLogMessage.szCategory.SetString(pCategory->GetUnicode());
-    SetLSBufferFromSString(&ipce->FirstLogMessage.szContent, *pMessage);
+    ipce->FirstLogMessage.szCategory = PTR_TO_CORDB_ADDRESS(pCategory->GetUnicode());
+    ipce->FirstLogMessage.szContent = PTR_TO_CORDB_ADDRESS(pMessage->GetUnicode());
 
     m_pRCThread->SendIPCEvent();
-}
-
-
-// This function sends a message to the right side informing it about
-// the creation/modification of a LogSwitch
-void Debugger::SendLogSwitchSetting(int iLevel,
-                                    int iReason,
-                                    _In_z_ LPCWSTR pLogSwitchName,
-                                    _In_z_ LPCWSTR pParentSwitchName)
-{
-    CONTRACTL
-    {
-        MAY_DO_HELPER_THREAD_DUTY_THROWS_CONTRACT;
-        MAY_DO_HELPER_THREAD_DUTY_GC_TRIGGERS_CONTRACT;
-    }
-    CONTRACTL_END;
-
-#ifdef LOGGING
-    MAKE_UTF8PTR_FROMWIDE(pLogSwitchNameUtf8, pLogSwitchName);
-    MAKE_UTF8PTR_FROMWIDE(pParentSwitchNameUtf8, pParentSwitchName);
-    LOG((LF_CORDB, LL_INFO1000, "D::SLSS: Sending log switch message switch=%s parent=%s.\n",
-        pLogSwitchNameUtf8, pParentSwitchNameUtf8));
-#endif // LOGGING
-
-    // Send the message only if the debugger is attached to this appdomain.
-    if (!CORDebuggerAttached())
-    {
-        return;
-    }
-
-    Thread *pThread = g_pEEInterface->GetThread();
-    SENDIPCEVENT_BEGIN(this, pThread);
-
-    if (CORDebuggerAttached())
-    {
-        DebuggerIPCEvent* ipce = m_pRCThread->GetIPCEventSendBuffer();
-        InitIPCEvent(ipce,
-                     DB_IPCE_LOGSWITCH_SET_MESSAGE,
-                     pThread);
-
-        ipce->LogSwitchSettingMessage.iLevel = iLevel;
-        ipce->LogSwitchSettingMessage.iReason = iReason;
-
-
-        ipce->LogSwitchSettingMessage.szSwitchName.SetString(pLogSwitchName);
-
-        if (pParentSwitchName == NULL)
-        {
-            pParentSwitchName = W("");
-        }
-
-        ipce->LogSwitchSettingMessage.szParentSwitchName.SetString(pParentSwitchName);
-
-        m_pRCThread->SendIPCEvent();
-
-        // Stop all Runtime threads
-        TrapAllRuntimeThreads();
-    }
-    else
-    {
-        LOG((LF_CORDB,LL_INFO1000, "D::SLSS: Skipping SendIPCEvent because RS detached."));
-    }
-
-    SENDIPCEVENT_END;
 }
 
 // send a custom debugger notification to the RS
@@ -15101,130 +14985,6 @@ BOOL Debugger::IsThreadContextInvalid(Thread *pThread, CONTEXT *pCtx)
 
     return invalid;
 }
-
-
-// notification when a SQL connection begins
-void Debugger::CreateConnection(CONNID dwConnectionId, _In_z_ WCHAR *wzName)
-{
-    CONTRACTL
-    {
-        MAY_DO_HELPER_THREAD_DUTY_THROWS_CONTRACT;
-        MAY_DO_HELPER_THREAD_DUTY_GC_TRIGGERS_CONTRACT;
-    }
-    CONTRACTL_END;
-
-    LOG((LF_CORDB,LL_INFO1000, "D::CreateConnection %d\n.", dwConnectionId));
-
-    if (CORDBUnrecoverableError(this))
-        return;
-
-    Thread *pThread = g_pEEInterface->GetThread();
-    SENDIPCEVENT_BEGIN(this, pThread);
-
-    if (CORDebuggerAttached())
-    {
-        DebuggerIPCEvent* ipce;
-
-        // Send a update module syns event to the Right Side.
-        ipce = m_pRCThread->GetIPCEventSendBuffer();
-        InitIPCEvent(ipce, DB_IPCE_CREATE_CONNECTION,
-                     pThread);
-        ipce->CreateConnection.connectionId = dwConnectionId;
-        _ASSERTE(wzName != NULL);
-        ipce->CreateConnection.wzConnectionName.SetString(wzName);
-
-        m_pRCThread->SendIPCEvent();
-    }
-    else
-    {
-        LOG((LF_CORDB,LL_INFO1000, "D::CreateConnection: Skipping SendIPCEvent because RS detached."));
-    }
-
-    // Stop all Runtime threads if we actually sent an event
-    if (CORDebuggerAttached())
-    {
-        TrapAllRuntimeThreads();
-    }
-
-    SENDIPCEVENT_END;
-}
-
-// notification when a SQL connection ends
-void Debugger::DestroyConnection(CONNID dwConnectionId)
-{
-    CONTRACTL
-    {
-        MAY_DO_HELPER_THREAD_DUTY_THROWS_CONTRACT;
-        MAY_DO_HELPER_THREAD_DUTY_GC_TRIGGERS_CONTRACT;
-    }
-    CONTRACTL_END;
-
-    LOG((LF_CORDB,LL_INFO1000, "D::DestroyConnection %d\n.", dwConnectionId));
-
-    if (CORDBUnrecoverableError(this))
-        return;
-
-    Thread *thread = g_pEEInterface->GetThread();
-    // Note that the debugger lock is reentrant, so we may or may not hold it already.
-    SENDIPCEVENT_BEGIN(this, thread);
-
-    // Send a update module syns event to the Right Side.
-    DebuggerIPCEvent* ipce = m_pRCThread->GetIPCEventSendBuffer();
-    InitIPCEvent(ipce, DB_IPCE_DESTROY_CONNECTION,
-                 thread);
-    ipce->ConnectionChange.connectionId = dwConnectionId;
-
-    // IPC event is now initialized, so we can send it over.
-    SendSimpleIPCEventAndBlock();
-
-    // This will block on the continue
-    SENDIPCEVENT_END;
-
-}
-
-// notification for SQL connection changes
-void Debugger::ChangeConnection(CONNID dwConnectionId)
-{
-    CONTRACTL
-    {
-        MAY_DO_HELPER_THREAD_DUTY_THROWS_CONTRACT;
-        MAY_DO_HELPER_THREAD_DUTY_GC_TRIGGERS_CONTRACT;
-    }
-    CONTRACTL_END;
-
-    LOG((LF_CORDB,LL_INFO1000, "D::ChangeConnection %d\n.", dwConnectionId));
-
-    if (CORDBUnrecoverableError(this))
-        return;
-
-    Thread *pThread = g_pEEInterface->GetThread();
-    SENDIPCEVENT_BEGIN(this, pThread);
-
-    if (CORDebuggerAttached())
-    {
-        DebuggerIPCEvent* ipce;
-
-        // Send a update module syns event to the Right Side.
-        ipce = m_pRCThread->GetIPCEventSendBuffer();
-        InitIPCEvent(ipce, DB_IPCE_CHANGE_CONNECTION,
-                     pThread);
-        ipce->ConnectionChange.connectionId = dwConnectionId;
-        m_pRCThread->SendIPCEvent();
-    }
-    else
-    {
-        LOG((LF_CORDB,LL_INFO1000, "D::ChangeConnection: Skipping SendIPCEvent because RS detached."));
-    }
-
-    // Stop all Runtime threads if we actually sent an event
-    if (CORDebuggerAttached())
-    {
-        TrapAllRuntimeThreads();
-    }
-
-    SENDIPCEVENT_END;
-}
-
 
 //
 // Are we the helper thread?

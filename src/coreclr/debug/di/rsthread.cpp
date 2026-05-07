@@ -2509,7 +2509,7 @@ HRESULT CordbThread::SetRemapIP(SIZE_T offset)
     }
 
     // Write the value of the remap offset into the left side
-    HRESULT hr = GetProcess()->SafeWriteStruct(PTR_TO_CORDB_ADDRESS(m_EnCRemapFunctionIP), &offset);
+    HRESULT hr = GetProcess()->SafeWriteStruct(m_EnCRemapFunctionIP, &offset);
 
     // Prevent SetRemapIP from being called twice for the same RemapOpportunity
     // If we don't get any calls to RemapFunction, this member will be cleared in
@@ -9096,7 +9096,7 @@ CordbEval::CordbEval(CordbThread *pThread)
       m_complete(false),
       m_successful(false),
       m_aborted(false),
-      m_resultAddr(NULL),
+      m_resultAddr((CORDB_ADDRESS)0),
       m_evalDuringException(false)
 {
     m_vmObjectHandle = VMPTR_OBJECTHANDLE::NullPtr();
@@ -9274,7 +9274,7 @@ HRESULT CordbEval::GatherArgInfo(ICorDebugValue *pValue,
 
     pValue->GetAddress(&addr);
 
-    argData->argAddr = CORDB_ADDRESS_TO_PTR(addr);
+    argData->argAddr = addr;
     argData->argElementType = ty;
 
     argData->argIsHandleValue = false;
@@ -9308,7 +9308,7 @@ HRESULT CordbEval::GatherArgInfo(ICorDebugValue *pValue,
                 // buffer area so the left side can get it.
                 CordbReferenceValue *rv;
                 rv = static_cast<CordbReferenceValue*>(pValue);
-                argData->argIsLiteral = rv->CopyLiteralData(argData->argLiteralData);
+                argData->argIsLiteral = rv->CopyLiteralData(reinterpret_cast<BYTE *>(argData->argLiteralData));
                 if (rv->GetValueHome())
                 {
                     rv->GetValueHome()->CopyToIPCEType(&(argData->argHome));
@@ -9352,7 +9352,7 @@ HRESULT CordbEval::GatherArgInfo(ICorDebugValue *pValue,
             void *buffer = NULL;
             IfFailRet(m_thread->GetProcess()->GetAndWriteRemoteBuffer(m_thread->GetAppDomain(), bufferSize, bufferFrom, &buffer));
 
-            argData->fullArgType = buffer;
+            argData->fullArgType = (CORDB_ADDRESS)buffer;
             argData->fullArgTypeNodeCount = fullArgTypeNodeCount;
             // Is it enregistered?
             if ((addr == (CORDB_ADDRESS)NULL) && (pVCObjVal->GetValueHome() != NULL))
@@ -9371,7 +9371,7 @@ HRESULT CordbEval::GatherArgInfo(ICorDebugValue *pValue,
         // Is this a literal value? If, we'll copy the data to the
         // buffer area so the left side can get it.
         CordbGenericValue *gv = (CordbGenericValue*)pValue;
-        argData->argIsLiteral = gv->CopyLiteralData(argData->argLiteralData);
+        argData->argIsLiteral = gv->CopyLiteralData(reinterpret_cast<BYTE *>(argData->argLiteralData));
         // Is it enregistered?
         if ((addr == (CORDB_ADDRESS)NULL) && (gv->GetValueHome() != NULL))
         {
@@ -10160,7 +10160,7 @@ HRESULT CordbEval::NewStringWithLength(LPCWSTR wszString, UINT iLength)
 
 
     // Length of the string? Don't account for null as COMString::NewString is length-based
-    SIZE_T cbString = iLength * sizeof(WCHAR);
+    UINT cbString = (UINT)(iLength * sizeof(WCHAR));
 
     // Remember that we're doing a func eval for a new string.
     m_function = NULL;

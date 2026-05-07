@@ -1317,17 +1317,6 @@ void EEDbgInterfaceImpl::GetRuntimeOffsets(SIZE_T *pTLSIndex,
     *pEEIsManagedExceptionStateMask = Thread::TSNC_DebuggerIsManagedException;
 }
 
-void EEDbgInterfaceImpl::DebuggerModifyingLogSwitch (int iNewLevel,
-                                                     const WCHAR *pLogSwitchName)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-}
-
 
 HRESULT EEDbgInterfaceImpl::SetIPFromSrcToDst(Thread *pThread,
                                               SLOT addrStart,

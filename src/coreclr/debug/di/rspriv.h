@@ -2743,9 +2743,6 @@ const int DEBUG_EVENTQUEUE_SIZE = 30;
 const int DEBUG_EVENTQUEUE_SIZE = 10;
 #endif
 
-void DeleteIPCEventHelper(DebuggerIPCEvent *pDel);
-
-
 // Private interface on CordbProcess that ShimProcess needs to emulate V2 functionality.
 // The fact that we need private hooks means that V3 is not sufficiently finished to allow building
 // a V2 debugger. This interface should shrink over time (and eventually go away) as the functionality gets exposed
@@ -3225,8 +3222,9 @@ public:
     // Queue the RC event.
     void QueueRCEvent(DebuggerIPCEvent * pManagedEvent);
 
-    // This marshals a managed debug event from the
-    void MarshalManagedEvent(DebuggerIPCEvent * pManagedEvent);
+    // Read a null-terminated WCHAR string from the target process.
+    // Caller owns the returned buffer (use NewArrayHolder for RAII cleanup).
+    _Ret_maybenull_ WCHAR * ReadTargetNullTerminatedString(CORDB_ADDRESS targetAddr);
 
     // This copies a managed debug event from the IPC block and to pManagedEvent.
     // The event still needs to be marshalled.
@@ -3423,9 +3421,7 @@ public:
         memset( ipce, 0, sizeof(DebuggerIPCEvent) );
 
         _ASSERTE((!vmAppDomain.IsNull()) ||
-                 type == DB_IPCE_GET_GCHANDLE_INFO ||
                  type == DB_IPCE_ENABLE_LOG_MESSAGES ||
-                 type == DB_IPCE_MODIFY_LOGSWITCH ||
                  type == DB_IPCE_ASYNC_BREAK ||
                  type == DB_IPCE_CONTINUE ||
                  type == DB_IPCE_GET_BUFFER ||
@@ -3436,11 +3432,8 @@ public:
                  type == DB_IPCE_CONTROL_C_EVENT_RESULT ||
                  type == DB_IPCE_SET_REFERENCE ||
                  type == DB_IPCE_SET_ALL_DEBUG_STATE ||
-                 type == DB_IPCE_GET_THREAD_FOR_TASKID ||
                  type == DB_IPCE_DETACH_FROM_PROCESS ||
                  type == DB_IPCE_INTERCEPT_EXCEPTION ||
-                 type == DB_IPCE_GET_NGEN_COMPILER_FLAGS ||
-                 type == DB_IPCE_SET_NGEN_COMPILER_FLAGS ||
                  type == DB_IPCE_SET_VALUE_CLASS);
 
         ipce->type = type;
@@ -3450,7 +3443,6 @@ public:
         ipce->vmThread = VMPTR_Thread::NullPtr();
         ipce->replyRequired = twoWay;
         ipce->asyncSend = false;
-        ipce->next = NULL;
     }
 
     // Looks up a previously constructed CordbClass instance without creating. May return NULL if the
@@ -6255,7 +6247,7 @@ public:
     // we need to communicate the IP back to LS. So we stash the address of where
     // to store the IP here and stuff it in on RemapFunction.
     // If we're not at an outstanding RemapOpportunity, this will be NULL
-    REMOTE_PTR            m_EnCRemapFunctionIP;
+    CORDB_ADDRESS            m_EnCRemapFunctionIP;
 
 private:
     void ClearStackFrameCache();
@@ -9926,7 +9918,7 @@ public:
     bool                       m_complete;
     bool                       m_successful;
     bool                       m_aborted;
-    void                      *m_resultAddr;
+    CORDB_ADDRESS              m_resultAddr;
 
     // This is an OBJECTHANDLE on the LS if func-eval creates a strong handle.
     // This is a resource in the left-side and must be cleaned up in the left-side.

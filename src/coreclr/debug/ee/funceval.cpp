@@ -258,7 +258,7 @@ static void ValidateFuncEvalReturnType(DebuggerIPCE_FuncEvalType evalType, Metho
 //
 // Given a register, return the value.
 //
-static SIZE_T GetRegisterValue(DebuggerEval *pDE, CorDebugRegister reg, void *regAddr, SIZE_T regValue)
+static SIZE_T GetRegisterValue(DebuggerEval *pDE, CorDebugRegister reg, CORDB_ADDRESS regAddr, ULONG64 regValue)
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -267,9 +267,9 @@ static SIZE_T GetRegisterValue(DebuggerEval *pDE, CorDebugRegister reg, void *re
     // Check whether the register address is the marker value for a register in a non-leaf frame.
     // This is related to the funceval breaking change.
     //
-    if (regAddr == CORDB_ADDRESS_TO_PTR(kNonLeafFrameRegAddr))
+    if (regAddr == kNonLeafFrameRegAddr)
     {
-        ret = regValue;
+        ret = (SIZE_T)regValue;
     }
     else
     {
@@ -472,7 +472,7 @@ static SIZE_T GetRegisterValue(DebuggerEval *pDE, CorDebugRegister reg, void *re
 //
 // Given a register, set its value.
 //
-static void SetRegisterValue(DebuggerEval *pDE, CorDebugRegister reg, void *regAddr, SIZE_T newValue)
+static void SetRegisterValue(DebuggerEval *pDE, CorDebugRegister reg, CORDB_ADDRESS regAddr, SIZE_T newValue)
 {
     CONTRACTL
     {
@@ -482,7 +482,7 @@ static void SetRegisterValue(DebuggerEval *pDE, CorDebugRegister reg, void *regA
 
     // Check whether the register address is the marker value for a register in a non-leaf frame.
     // If so, then we can't update the register.  Throw an exception to communicate this error.
-    if (regAddr == CORDB_ADDRESS_TO_PTR(kNonLeafFrameRegAddr))
+    if (regAddr == kNonLeafFrameRegAddr)
     {
         COMPlusThrowHR(CORDBG_E_FUNC_EVAL_CANNOT_UPDATE_REGISTER_IN_NONLEAF_FRAME);
         return;
@@ -1444,7 +1444,7 @@ static void GCProtectAllPassedArgs(DebuggerEval *pDE,
         // we need to GC protect their addresses as well.
         if (pFEAD->argAddr != NULL)
         {
-            pByRefMaybeInteriorPtrArray[currArgIndex] = pFEAD->argAddr;
+            pByRefMaybeInteriorPtrArray[currArgIndex] = CORDB_ADDRESS_TO_PTR(pFEAD->argAddr);
         }
 
         switch (pFEAD->argElementType)
@@ -1822,7 +1822,7 @@ void BoxFuncEvalThisParameter(DebuggerEval *pDE,
                 //
                 // A buffer should have been allocated for the full struct type
                 _ASSERTE(argData[0].fullArgType != NULL);
-                Debugger::TypeDataWalk walk((DebuggerIPCE_TypeArgData *) argData[0].fullArgType, argData[0].fullArgTypeNodeCount);
+                Debugger::TypeDataWalk walk((DebuggerIPCE_TypeArgData *) CORDB_ADDRESS_TO_PTR(argData[0].fullArgType), argData[0].fullArgTypeNodeCount);
 
                 TypeHandle typeHandle = walk.ReadTypeHandle();
 
@@ -2509,7 +2509,7 @@ void CopyArgsToBuffer(DebuggerEval *pDE,
                     else
                     {
                         GetAndSetLiteralValue(pDest, pFEArgInfo[currArgIndex].argSigType,
-                                              pFEAD->argAddr, pFEAD->argElementType);
+                                              CORDB_ADDRESS_TO_PTR(pFEAD->argAddr), pFEAD->argElementType);
                     }
 #ifdef _DEBUG
                     if (currArgIndex < MAX_DATA_LOCATIONS_TRACKED)
@@ -2533,7 +2533,7 @@ void CopyArgsToBuffer(DebuggerEval *pDE,
                         // be bashing memory right next to the source value as the function being called acts upon some
                         // bigger value.
                         GetAndSetLiteralValue(pDest, pFEArgInfo[currArgIndex].byrefArgSigType,
-                                              pFEAD->argAddr, pFEAD->argElementType);
+                                              CORDB_ADDRESS_TO_PTR(pFEAD->argAddr), pFEAD->argElementType);
                     }
 #ifdef _DEBUG
                     if (currArgIndex < MAX_DATA_LOCATIONS_TRACKED)
@@ -2566,7 +2566,7 @@ void CopyArgsToBuffer(DebuggerEval *pDE,
 
                 CorElementType relevantType = (isByRef ? pFEArgInfo[currArgIndex].byrefArgSigType : pFEArgInfo[currArgIndex].argSigType);
 
-                GetAndSetLiteralValue(pDest, relevantType, pFEAD->argLiteralData, pFEAD->argElementType);
+                GetAndSetLiteralValue(pDest, relevantType, CORDB_ADDRESS_TO_PTR(pFEAD->argLiteralData), pFEAD->argElementType);
 #ifdef _DEBUG
                 if (currArgIndex < MAX_DATA_LOCATIONS_TRACKED)
                 {

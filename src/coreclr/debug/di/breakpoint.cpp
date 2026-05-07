@@ -202,12 +202,12 @@ HRESULT CordbFunctionBreakpoint::Activate(BOOL fActivate)
 
         pEvent->BreakpointData.funcMetadataToken = m_code->GetMetadataToken();
         pEvent->BreakpointData.vmAssembly = m_code->GetModule()->GetRuntimeAssembly();
-        pEvent->BreakpointData.encVersion = m_code->GetVersion();
+        pEvent->BreakpointData.encVersion = (UINT)(m_code->GetVersion());
 
         BOOL codeIsIL = m_code->IsIL();
 
         pEvent->BreakpointData.isIL = m_offsetIsIl ? true : false;
-        pEvent->BreakpointData.offset = m_offset;
+        pEvent->BreakpointData.offset = (UINT)m_offset;
         if (codeIsIL)
         {
             pEvent->BreakpointData.nativeCodeMethodDescToken = pEvent->BreakpointData.nativeCodeMethodDescToken.NullPtr();
