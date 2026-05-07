@@ -104,8 +104,10 @@ namespace ILCompiler.ObjectWriter.WasmInstructions
 
         public int EncodeRelocations(Span<Relocation> buffer)
         {
+            uint bodySize = (uint)BodyContentSize();
+            int bodySizePrefixLength = (int)DwarfHelper.SizeOfULEB128(bodySize);
             int relocsEncoded = _body.EncodeRelocations(buffer);
-            WasmExpr.OffsetRelocationsByOffset(buffer.Slice(0, relocsEncoded), _locals.Length);
+            WasmExpr.OffsetRelocationsByOffset(buffer.Slice(0, relocsEncoded), bodySizePrefixLength + _locals.Length);
             return relocsEncoded;
         }
     }
