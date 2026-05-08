@@ -8732,42 +8732,42 @@ GenTree* Compiler::fgOptimizeCmp(GenTreeOp* cmp)
 {
     assert(cmp->OperIsCmpCompare());
 
-    if (cmp->gtGetOp1()->OperIs(GT_CAST) || cmp->gtGetOp2()->OperIs(GT_CAST))
+    if (cmp->OperIs(GT_EQ, GT_NE))
     {
-        // TODO-CQ: Remove this check, should be called for all
-        if (!cmp->OperIs(GT_EQ, GT_NE))
-        {
-            cmp = fgOptimizeCmpWithCasts(cmp)->AsOp();
-        }
-    }
-
-    if (cmp->gtGetOp2()->IsIntegralConst())
-    {
-        if (cmp->OperIs(GT_LT, GT_LE, GT_GE, GT_GT))
-        {
-            cmp = fgOptimizeCmpLtLeGeGtWithConst(cmp)->AsOp();
-        }
-        else if (cmp->OperIs(GT_EQ, GT_NE))
+        if (cmp->gtGetOp2()->IsIntegralConst())
         {
             cmp = fgOptimizeCmpEqNeWithConst(cmp)->AsOp();
         }
     }
-
-    if (opts.OptimizationEnabled() && fgGlobalMorph && cmp->OperIs(GT_LT, GT_LE, GT_GE, GT_GT))
+    else
     {
-        // Normalize unsigned comparisons to signed if both operands a known to be never negative.
-        if (cmp->IsUnsigned() && varTypeIsIntegral(cmp->gtGetOp1()) && cmp->gtGetOp1()->IsNeverNegative(this) &&
-            cmp->gtGetOp2()->IsNeverNegative(this))
+        if (cmp->gtGetOp1()->OperIs(GT_CAST) || cmp->gtGetOp2()->OperIs(GT_CAST))
         {
-            cmp->ClearUnsigned();
+            // TODO-CQ: Should be called for all comparisons
+            cmp = fgOptimizeCmpWithCasts(cmp)->AsOp();
         }
 
-        if (cmp->gtGetOp1()->IsIntegralConst() || cmp->gtGetOp2()->IsIntegralConst())
+        if (cmp->gtGetOp2()->IsIntegralConst())
         {
-            GenTree* optTree = fgOptimizeCmpLtLeGeGtFullRangeConst(cmp);
-            if (optTree->OperIs(GT_CNS_INT))
+            cmp = fgOptimizeCmpLtLeGeGtWithConst(cmp)->AsOp();
+        }
+
+        if (opts.OptimizationEnabled() && fgGlobalMorph)
+        {
+            // Normalize unsigned comparisons to signed if both operands a known to be never negative.
+            if (cmp->IsUnsigned() && varTypeIsIntegral(cmp->gtGetOp1()) && cmp->gtGetOp1()->IsNeverNegative(this) &&
+                cmp->gtGetOp2()->IsNeverNegative(this))
             {
-                return optTree;
+                cmp->ClearUnsigned();
+            }
+
+            if (cmp->gtGetOp1()->IsIntegralConst() || cmp->gtGetOp2()->IsIntegralConst())
+            {
+                GenTree* optTree = fgOptimizeCmpLtLeGeGtFullRangeConst(cmp);
+                if (optTree->OperIs(GT_CNS_INT))
+                {
+                    return optTree;
+                }
             }
         }
     }
