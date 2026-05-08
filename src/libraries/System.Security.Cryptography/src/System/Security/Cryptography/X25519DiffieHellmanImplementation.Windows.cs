@@ -165,8 +165,6 @@ namespace System.Security.Cryptography
                 requiredReduction ? source.ToArray() : null);
         }
 
-
-
         private void ExportKey(bool privateKey, Span<byte> destination)
         {
             string blobType = privateKey ?

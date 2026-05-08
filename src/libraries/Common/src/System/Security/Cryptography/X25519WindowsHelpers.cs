@@ -44,9 +44,11 @@ namespace System.Security.Cryptography
                         throw new CryptographicException(SR.Cryptography_NotValidPublicOrPrivateKey);
                     }
 
-                    // x
+                    // The key material after the blob is { x || y }, and optionally d if there is a private key.
+                    // y should always be zero as it is not used for Curve25519 keys.
+
+                    // Check y is zero, skip over the blob header and x.
                     ReadOnlySpan<byte> y = new(pExportedSpan + blobHeaderSize + ElementSize, ElementSize);
-                    // d
 
                     // y shouldn't have a value.
                     if (y.IndexOfAnyExcept((byte)0) >= 0)
@@ -96,12 +98,19 @@ namespace System.Security.Cryptography
 
                 if (privateKey)
                 {
+                    // This builds a blob of { x || y || d }. x is the public key, and we leave it as all zeros
+                    // and CNG will reconstruct the public key from the private key.
+                    // y is not used for Curve25519 so we leave it as zeros.
+                    // d follows y. Since we zeroed the whole blob, skip over the header, x, and y and write d.
                     Span<byte> destination = lease.Span.Slice(blobHeaderSize + ElementSize * 2, ElementSize);
                     key.CopyTo(destination);
+
+                    // Any fixup of the key is done in-place in the rented blob, which gets zeroed later.
                     preservation = FixupPrivateScalar(destination);
                 }
                 else
                 {
+                    // Otherwise if we are importing the public key, write x after the header.
                     Span<byte> destination = lease.Span.Slice(blobHeaderSize, ElementSize);
                     key.CopyTo(destination);
                     preservation = 0;

@@ -39,84 +39,63 @@ namespace System.Security.Cryptography
 
         protected override partial void DeriveRawSecretAgreementCore(X25519DiffieHellman otherParty, Span<byte> destination)
         {
-            bool success;
-            int bytesWritten;
+            // We intentionally don't special case otherParty being an instance of X25519DiffieHellmanCng and always
+            // export the public key into the current instance's provider.
+            Span<byte> publicKeyBuffer = stackalloc byte[PublicKeySizeInBytes * 2];
+            Span<byte> publicKeyBytes = publicKeyBuffer.Slice(0, PublicKeySizeInBytes);
+            Span<byte> reducedPublicKey = publicKeyBuffer.Slice(PublicKeySizeInBytes, PublicKeySizeInBytes);
+            otherParty.ExportPublicKey(publicKeyBytes);
+            X25519WindowsHelpers.ReducePublicKey(publicKeyBytes, reducedPublicKey);
 
-            // Assume that if key agreement is being done between two different X25519DiffieHellmanCng instances then
-            // the Provider is the same. It's the caller's responsibility to ensure the providers match.
-            if (otherParty is X25519DiffieHellmanCng x25519Cng)
+            // CNG does not permit cross-provider key agreements. Import the public key in to the same provider
+            // as the current key.
+            CngProvider provider = _key.Provider ?? CngProvider.MicrosoftSoftwareKeyStorageProvider;
+
+            using (CryptoPoolLease lease = X25519WindowsHelpers.CreateCngBlob(reducedPublicKey, privateKey: false, out _))
+            using (SafeNCryptProviderHandle providerHandle = provider.OpenStorageProvider())
             {
-                x25519Cng.ThrowIfDisposed();
+                int flags = 0;
 
+                if (provider == CngProvider.MicrosoftSoftwareKeyStorageProvider)
+                {
+                    const int NCRYPT_NO_KEY_VALIDATION = (int)Interop.BCrypt.BCryptImportKeyPairFlags.BCRYPT_NO_KEY_VALIDATION;
+                    flags |= NCRYPT_NO_KEY_VALIDATION;
+                }
+
+                SafeNCryptKeyHandle keyHandle = ECCng.ImportKeyBlob(
+                    CngKeyBlobFormat.EccPublicBlob.Format,
+                    lease.Span,
+                    X25519WindowsHelpers.BCRYPT_ECC_CURVE_25519,
+                    providerHandle,
+                    flags);
+
+                using (keyHandle)
                 using (SafeNCryptSecretHandle secretAgreement = Interop.NCrypt.DeriveSecretAgreement(
                     _key.HandleNoDuplicate,
-                    x25519Cng._key.HandleNoDuplicate))
+                    keyHandle))
                 {
-                    success = Interop.NCrypt.TryDeriveKeyMaterialTruncate(
+                    bool success = Interop.NCrypt.TryDeriveKeyMaterialTruncate(
                         secretAgreement,
                         Interop.NCrypt.SecretAgreementFlags.None,
                         destination,
-                        out bytesWritten);
-                }
-            }
-            else
-            {
-                Span<byte> publicKeyBytes = stackalloc byte[PublicKeySizeInBytes];
-                otherParty.ExportPublicKey(publicKeyBytes);
-                Span<byte> reducedPublicKey = stackalloc byte[PublicKeySizeInBytes];
-                X25519WindowsHelpers.ReducePublicKey(publicKeyBytes, reducedPublicKey);
+                        out int bytesWritten);
 
-                using (CryptoPoolLease lease = X25519WindowsHelpers.CreateCngBlob(reducedPublicKey, privateKey: false, out _))
-                {
-                    // CNG does not permit cross-provider key agreements. Import the public key in to the same provider
-                    // as the current key.
-                    CngProvider provider = _key.Provider ?? CngProvider.MicrosoftSoftwareKeyStorageProvider;
-
-                    using (SafeNCryptProviderHandle providerHandle = provider.OpenStorageProvider())
+                    if (!success || bytesWritten != SecretAgreementSizeInBytes)
                     {
-                        int flags = 0;
+                        // The destination should have already been pre-sized to a well-behaving X25519 implementation
+                        // but a provider could be implemented incorrectly. Zero whatever was written since it is
+                        // incorrect.
+                        CryptographicOperations.ZeroMemory(destination);
+                        throw new CryptographicException();
+                    }
 
-                        if (provider == CngProvider.MicrosoftSoftwareKeyStorageProvider)
-                        {
-                            const int NCRYPT_NO_KEY_VALIDATION = (int)Interop.BCrypt.BCryptImportKeyPairFlags.BCRYPT_NO_KEY_VALIDATION;
-                            flags |= NCRYPT_NO_KEY_VALIDATION;
-                        }
-
-                        SafeNCryptKeyHandle keyHandle = ECCng.ImportKeyBlob(
-                            CngKeyBlobFormat.EccPublicBlob.Format,
-                            lease.Span,
-                            X25519WindowsHelpers.BCRYPT_ECC_CURVE_25519,
-                            providerHandle,
-                            flags);
-
-                        using (keyHandle)
-                        using (SafeNCryptSecretHandle secretAgreement = Interop.NCrypt.DeriveSecretAgreement(
-                            _key.HandleNoDuplicate,
-                            keyHandle))
-                        {
-                            success = Interop.NCrypt.TryDeriveKeyMaterialTruncate(
-                                secretAgreement,
-                                Interop.NCrypt.SecretAgreementFlags.None,
-                                destination,
-                                out bytesWritten);
-                        }
+                    // If the CngKey was created with NCRYPT_NO_KEY_VALIDATION then low-order public keys can be imported.
+                    // Block low-order key agreements that result in an all-zero secret.
+                    if (CryptographicOperations.FixedTimeEquals(destination, 0))
+                    {
+                        throw new CryptographicException();
                     }
                 }
-            }
-
-            if (!success || bytesWritten != SecretAgreementSizeInBytes)
-            {
-                // The destination should have already been pre-sized to a well-behaving X25519 implementation
-                // but a provider could be implemented incorrectly. Zero whatever was written since it is incorrect.
-                CryptographicOperations.ZeroMemory(destination);
-                throw new CryptographicException();
-            }
-
-            // If the CngKey was created with NCRYPT_NO_KEY_VALIDATION then low-order public keys can be imported.
-            // Block low-order key agreements that result in an all-zero secret.
-            if (CryptographicOperations.FixedTimeEquals(destination, 0))
-            {
-                throw new CryptographicException();
             }
         }
 
