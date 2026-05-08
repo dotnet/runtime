@@ -414,7 +414,7 @@ internal sealed class FrameHelpers
     /// interpreted method in the call chain. If pParent is null, the interpreter
     /// chain under the current InterpreterFrame is exhausted, we apply the
     /// InterpreterFrame's transition-block state to restore the context to the
-    /// native caller of InterpExecMethod. 
+    /// native caller of InterpExecMethod.
     /// </summary>
     public void InterpreterVirtualUnwind(IPlatformAgnosticContext context)
     {

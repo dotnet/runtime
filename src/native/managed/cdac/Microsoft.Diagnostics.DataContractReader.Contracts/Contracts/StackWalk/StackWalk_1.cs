@@ -145,6 +145,19 @@ internal partial class StackWalk_1 : IStackWalk
         StackWalkState state = IsManaged(context.InstructionPointer, out _) ? StackWalkState.SW_FRAMELESS : StackWalkState.SW_FRAME;
         FrameIterator frameIterator = new(_target, threadData);
 
+        // Skip the head InterpreterFrame when entering with a context already
+        // inside an interpreter execution (e.g. a managed-debugger breakpoint
+        // synthesized callback context). Without this, SW_FRAME would later
+        // re-process it and re-walk the same InterpMethodContextFrame chain.
+        // Mirrors the native walker fix in dotnet/runtime#126953.
+        if (state == StackWalkState.SW_FRAMELESS
+            && IsInterpreterCode(context.InstructionPointer)
+            && frameIterator.IsValid()
+            && frameIterator.GetCurrentFrameType() == FrameType.InterpreterFrame)
+        {
+            frameIterator.Next();
+        }
+
         // if the next Frame is not valid and we are not in managed code, there is nothing to return
         if (state == StackWalkState.SW_FRAME && !frameIterator.IsValid())
         {
@@ -179,6 +192,16 @@ internal partial class StackWalk_1 : IStackWalk
         FillContextFromThread(context, threadData, context.FullContextFlags);
         StackWalkState state = IsManaged(context.InstructionPointer, out _) ? StackWalkState.SW_FRAMELESS : StackWalkState.SW_FRAME;
         FrameIterator frameIterator = new(_target, threadData);
+
+        // See CreateStackWalk: skip the head InterpreterFrame when entering
+        // already inside an interpreter execution to avoid double-walking.
+        if (state == StackWalkState.SW_FRAMELESS
+            && IsInterpreterCode(context.InstructionPointer)
+            && frameIterator.IsValid()
+            && frameIterator.GetCurrentFrameType() == FrameType.InterpreterFrame)
+        {
+            frameIterator.Next();
+        }
 
         if (state == StackWalkState.SW_FRAME && !frameIterator.IsValid())
             return [];
