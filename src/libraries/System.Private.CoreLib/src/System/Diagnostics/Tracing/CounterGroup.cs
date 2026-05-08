@@ -242,6 +242,8 @@ namespace System.Diagnostics.Tracing
                     elapsed = nowOffset - _timeSinceCollectionStarted;
                     pollingInterval = _pollingInterval;
 
+                    // Safe to reuse _onTimerCounters: OnTimer is the only reader/writer,
+                    // and runs only on the single s_pollingThread (see PollForValues).
                     counterCount = _counters.Count;
                     if (_onTimerCounters.Length < counterCount)
                     {
