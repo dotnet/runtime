@@ -3667,131 +3667,65 @@ public static partial class XmlSerializerTests
         Assert.Equal(value.Number, actual.Number);
     }
 
-    [Fact]
-    public static void XML_XmlTextNoSeparator_StringArray_ConcatenatesWithoutDelimiter()
+    // Positive [XmlText] round-trip cases for string[] members, parameterised by the
+    // wrapper type (which fixes the Separator). A single [XmlText] per type is the
+    // XmlSerializer's hard rule, so each separator needs its own wrapper class --
+    // only the array shape and the expected inner text varies per row.
+    //
+    // The Quote case (last row) verifies a separator that is valid in XML text but
+    // illegal as an XmlAttribute value -- the XmlText path must not reject it.
+    //
+    // Without a separator the wire format concatenates and deserialization returns a
+    // single-element array (legacy behavior); the single-element row locks in the
+    // unchanged wire format when only one item is present.
+    [Theory]
+    [InlineData(typeof(TypeWithXmlTextSeparatorCommaOnStringArray), new[] { "a", "b", "c" }, "a,b,c", new[] { "a", "b", "c" })]
+    [InlineData(typeof(TypeWithXmlTextSeparatorCommaOnStringArray), new[] { "only" }, "only", new[] { "only" })]
+    [InlineData(typeof(TypeWithXmlTextSeparatorCommaOnStringArray), new[] { "a", "", "c" }, "a,,c", new[] { "a", "", "c" })]
+    [InlineData(typeof(TypeWithXmlTextSeparatorSpaceOnStringArray), new[] { "a", "b", "c" }, "a b c", new[] { "a", "b", "c" })]
+    [InlineData(typeof(TypeWithXmlTextSeparatorSpaceOnStringArray), new[] { "a", "", "c" }, "a  c", new[] { "a", "", "c" })]
+    [InlineData(typeof(TypeWithXmlTextNoSeparatorOnStringArray), new[] { "abc", "def", "ghi" }, "abcdefghi", new[] { "abcdefghi" })]
+    [InlineData(typeof(TypeWithXmlTextNoSeparatorOnStringArray), new[] { "only" }, "only", new[] { "only" })]
+    [InlineData(typeof(TypeWithXmlTextSeparatorQuote), new[] { "a", "b", "c" }, "a\"b\"c", new[] { "a", "b", "c" })]
+    public static void XML_XmlText_StringArray_RoundTrips(Type type, string[] input, string expectedInner, string[] expected)
     {
-        var original = new TypeWithXmlTextNoSeparatorOnStringArray { Text = new string[] { "abc", "def", "ghi" } };
-        var actual = SerializeAndDeserialize(original,
-            "<?xml version=\"1.0\"?><TypeWithXmlTextNoSeparatorOnStringArray xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\">abcdefghi</TypeWithXmlTextNoSeparatorOnStringArray>");
-        Assert.NotNull(actual.Text);
-        // Without a separator, deserialization returns the concatenated text as a single element
-        Assert.Single(actual.Text);
-        Assert.Equal("abcdefghi", actual.Text[0]);
+        FieldInfo field = type.GetField("Text");
+        object original = Activator.CreateInstance(type);
+        field.SetValue(original, input);
+
+        string baseline = $"<?xml version=\"1.0\"?><{type.Name} xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\">{expectedInner}</{type.Name}>";
+        object actual = SerializeAndDeserialize<object>(original, baseline, () => new XmlSerializer(type));
+
+        string[] actualText = (string[])field.GetValue(actual);
+        Assert.NotNull(actualText);
+        Assert.Equal(expected, actualText);
     }
 
-    [Fact]
-    public static void XML_XmlTextSeparator_SpaceSeparatedArray_RoundTrips()
+    [Theory]
+    [InlineData(new[] { "x", "y", "z" }, "x,y,z", new[] { "x", "y", "z" })]
+    [InlineData(new[] { "only" }, "only", new[] { "only" })]
+    [InlineData(new[] { "a", "", "c" }, "a,,c", new[] { "a", "", "c" })]
+    public static void XML_XmlAttributeSeparator_Comma_StringArray_RoundTrips(string[] input, string expectedAttrValue, string[] expected)
     {
-        var original = new TypeWithXmlTextSeparatorSpaceOnStringArray { Text = new string[] { "a", "b", "c" } };
+        var original = new TypeWithXmlAttributeWithSeparatorComma { Items = input };
         var actual = SerializeAndDeserialize(original,
-            "<?xml version=\"1.0\"?><TypeWithXmlTextSeparatorSpaceOnStringArray xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\">a b c</TypeWithXmlTextSeparatorSpaceOnStringArray>");
-        Assert.NotNull(actual.Text);
-        Assert.Equal(new string[] { "a", "b", "c" }, actual.Text);
-    }
-
-    [Fact]
-    public static void XML_XmlTextSeparator_CommaSeparatedArray_RoundTrips()
-    {
-        var original = new TypeWithXmlTextSeparatorCommaOnStringArray { Text = new string[] { "a", "b", "c" } };
-        var actual = SerializeAndDeserialize(original,
-            "<?xml version=\"1.0\"?><TypeWithXmlTextSeparatorCommaOnStringArray xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\">a,b,c</TypeWithXmlTextSeparatorCommaOnStringArray>");
-        Assert.NotNull(actual.Text);
-        Assert.Equal(new string[] { "a", "b", "c" }, actual.Text);
-    }
-
-    [Fact]
-    public static void XML_XmlTextSeparator_SingleElement_HasNoSeparator()
-    {
-        var original = new TypeWithXmlTextSeparatorCommaOnStringArray { Text = new string[] { "only" } };
-        var actual = SerializeAndDeserialize(original,
-            "<?xml version=\"1.0\"?><TypeWithXmlTextSeparatorCommaOnStringArray xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\">only</TypeWithXmlTextSeparatorCommaOnStringArray>");
-        Assert.NotNull(actual.Text);
-        Assert.Equal(new string[] { "only" }, actual.Text);
-    }
-
-    [Fact]
-    public static void XML_XmlTextSeparator_EmbeddedEmptyStrings_RoundTrip()
-    {
-        var original = new TypeWithXmlTextSeparatorCommaOnStringArray { Text = new string[] { "a", "", "c" } };
-        var actual = SerializeAndDeserialize(original,
-            "<?xml version=\"1.0\"?><TypeWithXmlTextSeparatorCommaOnStringArray xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\">a,,c</TypeWithXmlTextSeparatorCommaOnStringArray>");
-        Assert.NotNull(actual.Text);
-        Assert.Equal(new string[] { "a", "", "c" }, actual.Text);
-    }
-
-    [Fact]
-    public static void XML_XmlTextSeparator_EmbeddedEmptyWithSpaces_RoundTrip()
-    {
-        var original = new TypeWithXmlTextSeparatorSpaceOnStringArray { Text = new string[] { "a", "", "c" } };
-        var actual = SerializeAndDeserialize(original,
-            "<?xml version=\"1.0\"?><TypeWithXmlTextSeparatorSpaceOnStringArray xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\">a  c</TypeWithXmlTextSeparatorSpaceOnStringArray>");
-        Assert.NotNull(actual.Text);
-        Assert.Equal(new string[] { "a", "", "c" }, actual.Text);
-    }
-
-    [Fact]
-    public static void XML_XmlAttributeSeparator_CommaSeparatedStringArray_RoundTrips()
-    {
-        var original = new TypeWithXmlAttributeWithSeparatorComma { Items = new string[] { "x", "y", "z" } };
-        var actual = SerializeAndDeserialize(original,
-            "<?xml version=\"1.0\"?><MyXmlType xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" Items=\"x,y,z\" />");
+            $"<?xml version=\"1.0\"?><MyXmlType xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" Items=\"{expectedAttrValue}\" />");
         Assert.NotNull(actual.Items);
-        Assert.Equal(new string[] { "x", "y", "z" }, actual.Items);
+        Assert.Equal(expected, actual.Items);
     }
 
-    [Fact]
-    public static void XML_XmlAttributeSeparator_SingleElement_HasNoSeparator()
-    {
-        var original = new TypeWithXmlAttributeWithSeparatorComma { Items = new string[] { "only" } };
-        var actual = SerializeAndDeserialize(original,
-            "<?xml version=\"1.0\"?><MyXmlType xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" Items=\"only\" />");
-        Assert.NotNull(actual.Items);
-        Assert.Equal(new string[] { "only" }, actual.Items);
-    }
-
-    [Fact]
-    public static void XML_XmlAttributeSeparator_EmbeddedEmptyStrings_RoundTrip()
-    {
-        var original = new TypeWithXmlAttributeWithSeparatorComma { Items = new string[] { "a", "", "c" } };
-        var actual = SerializeAndDeserialize(original,
-            "<?xml version=\"1.0\"?><MyXmlType xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" Items=\"a,,c\" />");
-        Assert.NotNull(actual.Items);
-        Assert.Equal(new string[] { "a", "", "c" }, actual.Items);
-    }
-
-    // The following tests lock in that, when no Separator is specified for [XmlText] or [XmlAttribute],
-    // the wire format and round-trip behavior are exactly the same as before the Separator property was added.
-    [Fact]
-    public static void XML_XmlTextNoSeparator_SingleElement_ProducesUnchangedWireFormat()
-    {
-        var original = new TypeWithXmlTextNoSeparatorOnStringArray { Text = new string[] { "only" } };
-        var actual = SerializeAndDeserialize(original,
-            "<?xml version=\"1.0\"?><TypeWithXmlTextNoSeparatorOnStringArray xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\">only</TypeWithXmlTextNoSeparatorOnStringArray>");
-        Assert.NotNull(actual.Text);
-        Assert.Equal(new string[] { "only" }, actual.Text);
-    }
-
+    // Locks in that, when no Separator is specified for [XmlAttribute], the wire format
+    // and round-trip behavior are exactly the same as before the Separator property was
+    // added. Mirrors XML_TypeWithArrayLikeXmlAttribute (which covers the 2-element case)
+    // for the single-element edge case.
     [Fact]
     public static void XML_XmlAttributeNoSeparator_SingleElement_ProducesUnchangedWireFormat()
     {
-        // Mirrors the existing XML_TypeWithArrayLikeXmlAttribute test (which covers the 2-element case)
-        // to lock in the no-separator wire format for the single-element edge case.
         var original = new TypeWithStringArrayAsXmlAttribute { XmlAttributeForms = new string[] { "OnlyValue" } };
         var actual = SerializeAndDeserialize(original,
             "<?xml version=\"1.0\" encoding=\"utf-8\"?>\r\n<MyXmlType xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" XmlAttributeForms=\"OnlyValue\" />");
         Assert.NotNull(actual.XmlAttributeForms);
         Assert.Equal(new string[] { "OnlyValue" }, actual.XmlAttributeForms);
-    }
-
-    [Fact]
-    public static void XML_XmlTextSeparator_QuoteIsValidInText_RoundTrips()
-    {
-        // '"' is valid in XML text content but not in attribute values.
-        var original = new TypeWithXmlTextSeparatorQuote { Text = new string[] { "a", "b", "c" } };
-        var actual = SerializeAndDeserialize(original,
-            "<?xml version=\"1.0\"?><TypeWithXmlTextSeparatorQuote xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\">a\"b\"c</TypeWithXmlTextSeparatorQuote>");
-        Assert.NotNull(actual.Text);
-        Assert.Equal(new string[] { "a", "b", "c" }, actual.Text);
     }
 
     [Fact]
@@ -3828,79 +3762,60 @@ public static partial class XmlSerializerTests
         AssertXmlMappingException(ex, type.Name, fieldName);
     }
 
-    [Fact]
-    public static void XML_XmlTextSeparator_MixedContent_RoundTrips()
+    public static IEnumerable<object[]> MixedContentRoundTripData() => new[]
     {
-        var original = new TypeWithXmlTextSeparatorOnMixedContentWithElement
+        // Full mixed content with separator: every text run is bounded by elements on at least one side,
+        // so the separator only appears between adjacent text items (One,Plus,One).
+        new object[]
         {
-            All = new object[] { 321, "One", "Plus", "One", 2, 3.14, "Two" }
-        };
-        var actual = SerializeAndDeserialize(original,
-            "<?xml version=\"1.0\"?><TypeWithXmlTextSeparatorOnMixedContentWithElement xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\"><int>321</int>One,Plus,One<int>2</int><double>3.14</double>Two</TypeWithXmlTextSeparatorOnMixedContentWithElement>");
-        Assert.NotNull(actual.All);
-        Assert.Equal(7, actual.All.Length);
-        Assert.Equal(321, actual.All[0]);
-        Assert.Equal("One", actual.All[1]);
-        Assert.Equal("Plus", actual.All[2]);
-        Assert.Equal("One", actual.All[3]);
-        Assert.Equal(2, actual.All[4]);
-        Assert.Equal(3.14, actual.All[5]);
-        Assert.Equal("Two", actual.All[6]);
-    }
-
-    [Fact]
-    public static void XML_XmlTextNoSeparator_MixedContent_RoundTrips()
-    {
+            typeof(TypeWithXmlTextSeparatorOnMixedContentWithElement),
+            new object[] { 321, "One", "Plus", "One", 2, 3.14, "Two" },
+            "<int>321</int>One,Plus,One<int>2</int><double>3.14</double>Two",
+            new object[] { 321, "One", "Plus", "One", 2, 3.14, "Two" }
+        },
+        // A null item produces no XML output. It must not write a stray separator and must
+        // preserve the lastWasText status quo so surrounding text items are still correctly
+        // separated. (Null doesn't survive the round-trip; the separated text becomes two items.)
+        new object[]
+        {
+            typeof(TypeWithXmlTextSeparatorOnMixedContentWithElement),
+            new object?[] { "a", null, "b" },
+            "a,b",
+            new object[] { "a", "b" }
+        },
+        // When a null item follows an element, the status quo (lastWasText = false) must be
+        // preserved so the following text item does not get a leading separator.
+        new object[]
+        {
+            typeof(TypeWithXmlTextSeparatorOnMixedContentWithElement),
+            new object?[] { 1, null, "a" },
+            "<int>1</int>a",
+            new object[] { 1, "a" }
+        },
         // Mixed content without a Separator: consecutive text items concatenate
         // (matching the non-mixed string-array behavior) and elements remain separate.
-        var original = new TypeWithXmlTextNoSeparatorOnMixedContentWithElement
+        new object[]
         {
-            All = new object[] { 321, "One", "Plus", "One", 2, 3.14, "Two" }
-        };
-        var actual = SerializeAndDeserialize(original,
-            "<?xml version=\"1.0\"?><TypeWithXmlTextNoSeparatorOnMixedContentWithElement xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\"><int>321</int>OnePlusOne<int>2</int><double>3.14</double>Two</TypeWithXmlTextNoSeparatorOnMixedContentWithElement>");
-        Assert.NotNull(actual.All);
-        Assert.Equal(5, actual.All.Length);
-        Assert.Equal(321, actual.All[0]);
-        Assert.Equal("OnePlusOne", actual.All[1]);
-        Assert.Equal(2, actual.All[2]);
-        Assert.Equal(3.14, actual.All[3]);
-        Assert.Equal("Two", actual.All[4]);
-    }
+            typeof(TypeWithXmlTextNoSeparatorOnMixedContentWithElement),
+            new object[] { 321, "One", "Plus", "One", 2, 3.14, "Two" },
+            "<int>321</int>OnePlusOne<int>2</int><double>3.14</double>Two",
+            new object[] { 321, "OnePlusOne", 2, 3.14, "Two" }
+        },
+    };
 
-    [Fact]
-    public static void XML_XmlTextSeparator_MixedContent_NullBetweenText_NoStraySeparator()
+    [Theory]
+    [MemberData(nameof(MixedContentRoundTripData))]
+    public static void XML_XmlText_MixedContent_RoundTrips(Type type, object[] input, string expectedInner, object[] expected)
     {
-        // A null item produces no XML output. It must not write a stray separator
-        // and must preserve the lastWasText status quo so surrounding text items
-        // are still correctly separated.
-        var original = new TypeWithXmlTextSeparatorOnMixedContentWithElement
-        {
-            All = new object[] { "a", null, "b" }
-        };
-        var actual = SerializeAndDeserialize(original,
-            "<?xml version=\"1.0\"?><TypeWithXmlTextSeparatorOnMixedContentWithElement xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\">a,b</TypeWithXmlTextSeparatorOnMixedContentWithElement>");
-        // Null doesn't survive the round-trip; the separated text becomes two items.
-        Assert.NotNull(actual.All);
-        Assert.Equal(2, actual.All.Length);
-        Assert.Equal("a", actual.All[0]);
-        Assert.Equal("b", actual.All[1]);
-    }
+        FieldInfo field = type.GetField("All");
+        object original = Activator.CreateInstance(type);
+        field.SetValue(original, input);
 
-    [Fact]
-    public static void XML_XmlTextSeparator_MixedContent_NullAfterElement_NoLeadingSeparator()
-    {
-        // When a null item follows an element, the status quo (lastWasText = false)
-        // must be preserved so the following text item does not get a leading separator.
-        var original = new TypeWithXmlTextSeparatorOnMixedContentWithElement
-        {
-            All = new object[] { 1, null, "a" }
-        };
-        var actual = SerializeAndDeserialize(original,
-            "<?xml version=\"1.0\"?><TypeWithXmlTextSeparatorOnMixedContentWithElement xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\"><int>1</int>a</TypeWithXmlTextSeparatorOnMixedContentWithElement>");
-        Assert.NotNull(actual.All);
-        Assert.Equal(2, actual.All.Length);
-        Assert.Equal(1, actual.All[0]);
-        Assert.Equal("a", actual.All[1]);
+        string baseline = $"<?xml version=\"1.0\"?><{type.Name} xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\">{expectedInner}</{type.Name}>";
+        object actual = SerializeAndDeserialize<object>(original, baseline, () => new XmlSerializer(type));
+
+        object[] actualAll = (object[])field.GetValue(actual);
+        Assert.NotNull(actualAll);
+        Assert.Equal(expected, actualAll);
     }
 }
