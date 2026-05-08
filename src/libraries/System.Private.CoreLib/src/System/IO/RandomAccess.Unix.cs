@@ -15,27 +15,27 @@ namespace System.IO
             FileStreamHelpers.CheckFileCall(Interop.Sys.FTruncate(handle, length), handle.Path);
 
         internal static unsafe int ReadAtOffset(SafeFileHandle handle, Span<byte> buffer, long fileOffset)
-            => handle.Read(fileOffset, buffer);
+            => handle.ReadAt(fileOffset, buffer);
 
         internal static unsafe long ReadScatterAtOffset(SafeFileHandle handle, IReadOnlyList<Memory<byte>> buffers, long fileOffset)
-            => handle.Read(fileOffset, buffers);
+            => handle.ReadAt(fileOffset, buffers);
 
         internal static ValueTask<int> ReadAtOffsetAsync(SafeFileHandle handle, Memory<byte> buffer, long fileOffset, CancellationToken cancellationToken, OSFileStreamStrategy? strategy = null)
-            => handle.ReadAsync(fileOffset, buffer, cancellationToken, strategy);
+            => handle.ReadAtAsync(fileOffset, buffer, cancellationToken, strategy);
 
         private static ValueTask<long> ReadScatterAtOffsetAsync(SafeFileHandle handle, IReadOnlyList<Memory<byte>> buffers, long fileOffset, CancellationToken cancellationToken)
-            => handle.ReadAsync(fileOffset, buffers, cancellationToken);
+            => handle.ReadAtAsync(fileOffset, buffers, cancellationToken);
 
         internal static unsafe void WriteAtOffset(SafeFileHandle handle, ReadOnlySpan<byte> buffer, long fileOffset, OSFileStreamStrategy? strategy = null)
-            => handle.Write(fileOffset, buffer, strategy);
+            => handle.WriteAt(fileOffset, buffer, strategy);
 
         internal static unsafe void WriteGatherAtOffset(SafeFileHandle handle, IReadOnlyList<ReadOnlyMemory<byte>> buffers, long fileOffset)
-            => handle.Write(fileOffset, buffers);
+            => handle.WriteAt(fileOffset, buffers);
 
         internal static ValueTask WriteAtOffsetAsync(SafeFileHandle handle, ReadOnlyMemory<byte> buffer, long fileOffset, CancellationToken cancellationToken, OSFileStreamStrategy? strategy = null)
-            => handle.WriteAsync(fileOffset, buffer, cancellationToken, strategy);
+            => handle.WriteAtAsync(fileOffset, buffer, cancellationToken, strategy);
 
         private static ValueTask WriteGatherAtOffsetAsync(SafeFileHandle handle, IReadOnlyList<ReadOnlyMemory<byte>> buffers, long fileOffset, CancellationToken cancellationToken)
-            => handle.WriteAsync(fileOffset, buffers, cancellationToken);
+            => handle.WriteAtAsync(fileOffset, buffers, cancellationToken);
     }
 }
