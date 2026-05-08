@@ -374,12 +374,23 @@ Pull request: <link to the PR if the build was a PR build, otherwise omit this l
 
 ## Error Message
 
-<!-- Use ErrorMessage for String.Contains matches. Use ErrorPattern for regex (single line / no backtracking). Set BuildRetry to `true` only for clear infra flakes. ExcludeConsoleLog skips helix log scanning. -->
+<!-- Populate EXACTLY ONE of ErrorMessage or ErrorPattern, never both. ErrorMessage is a literal String.Contains substring; ErrorPattern is a single-line regex. Delete the field you don't use — do not leave it as "". Set BuildRetry to `true` only for clear infra flakes. ExcludeConsoleLog skips helix log scanning. -->
+
+For a literal substring match (default — pick this when the failure log contains a stable, specific assertion or exception message line):
 
 ```json
 {
-  "ErrorMessage": "<the exact substring from the failure log; prefer the assertion / exception message text, NOT the bare test name>",
-  "ErrorPattern": "",
+  "ErrorMessage": "<exact substring from the failure log; the assertion or exception message text — never a bare test name>",
+  "BuildRetry": false,
+  "ExcludeConsoleLog": false
+}
+```
+
+For a regex match (only when no single literal line is specific enough — anchored, no unbounded `.*`, no catastrophic backtracking):
+
+```json
+{
+  "ErrorPattern": "<single-line anchored regex; use `[^\\n]*` instead of `.*`>",
   "BuildRetry": false,
   "ExcludeConsoleLog": false
 }
@@ -394,10 +405,10 @@ Build Analysis is strict: a malformed JSON block or an over-broad signature mean
 2. **Exactly one fenced JSON block.** Multiple skeletons yield zero matches.
 3. **The opening fence is exactly three backticks followed by `json`**, lowercase, with nothing else on the line. Four backticks, missing lang tag, or trailing whitespace causes the parser to skip the issue.
 4. **The closing fence is exactly three backticks**, same length as the open.
-5. **`ErrorMessage` (or `ErrorPattern`) is non-empty.** Empty signatures match nothing.
-6. **The signature is not a bare identifier.** A fully-qualified test name, a stack-frame line, or a bare exception type all appear in `[PASS]` and `[SKIP]` lines for the same test, so the signature would match every passing run going forward.
-7. **Negative-match before submitting.** Would `String.Contains("<your-signature>")` accidentally match (a) `[PASS]` / `[SKIP]` lines for the same test, (b) other tests in the same assembly, or (c) build-time output (Crossgen2, ilasm, MSBuild)? If yes, narrow it.
-8. **Single-line, no escapes.** Build Analysis is `String.Contains`, case-sensitive, single-line — newlines, ANSI escapes (`\u001b[`), and time-prefixes (`[12:34:56.789]`) are not stripped. Use `ErrorPattern` with an anchored regex (no unbounded `.*`) when multi-line is genuinely needed.
+5. **Exactly one of `ErrorMessage` or `ErrorPattern` is present and non-empty.** Populating both is undefined behavior — Build Analysis may apply only one and you don't control which. Do not leave the unused field as `""` either; delete it. Empty signatures match nothing.
+6. **The signature is not a bare identifier.** A fully-qualified test name, a stack-frame line, or a bare exception type all appear in `[PASS]` and `[SKIP]` lines for the same test, so the signature would match every passing run going forward. This applies to BOTH `ErrorMessage` and `ErrorPattern` — a regex like `TestMethodName` or `Some\\.Class\\.TestMethod` is just as broken as the literal.
+7. **Negative-match before submitting.** Would `String.Contains("<your-signature>")` (or your regex) accidentally match (a) `[PASS]` / `[SKIP]` lines for the same test, (b) other tests in the same assembly, or (c) build-time output (Crossgen2, ilasm, MSBuild)? If yes, narrow it.
+8. **Single-line, no escapes.** Build Analysis is `String.Contains`, case-sensitive, single-line — newlines, ANSI escapes (`\u001b[`), and time-prefixes (`[12:34:56.789]`) are not stripped. Use `ErrorPattern` with an anchored regex (no unbounded `.*`, prefer `[^\\n]*`) when multi-line is genuinely needed.
 
 #### Signature examples — Bad → Good
 
@@ -409,7 +420,7 @@ Build Analysis is strict: a malformed JSON block or an over-broad signature mean
 | `"BadImageFormatException"` | bare exception type; matches infra hiccups too | `"System.BadImageFormatException: Could not load file or assembly 'System.Private.CoreLib'"` |
 | `"Operation timed out"` | matches transient network failures everywhere | `"xharness exec android test ... Operation timed out after 3600s"` paired with `BuildRetry: false` |
 
-Choose `ErrorMessage` (substring) by default. Use `ErrorPattern` only when a regex is genuinely needed and confirm it has no catastrophic backtracking. Set `BuildRetry: true` **only** for confirmed infra/queue-side flakes (dead-letter, device-lost, agent disconnect) where retrying is safe.
+Choose `ErrorMessage` (literal substring) by default. Use `ErrorPattern` only when no single literal line is specific enough — and confirm the regex is anchored and has no catastrophic backtracking. **Populate exactly one of the two fields per JSON block; never both.** Set `BuildRetry: true` **only** for confirmed infra/queue-side flakes (dead-letter, device-lost, agent disconnect) where retrying is safe.
 
 ### Signature specificity (mandatory)
 
