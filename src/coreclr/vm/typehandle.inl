@@ -38,7 +38,7 @@ inline TypeHandle TypeHandle::UpCastTypeIfNeeded() const
 
     if (IsTypeDesc())
         return *this;
-    if (AsMethodTable()->IsContinuation())
+    if (AsMethodTable()->IsContinuation() && !AsMethodTable()->IsContinuationWithMetadata())
     {
         return TypeHandle(g_pContinuationClassIfSubTypeCreated);
     }

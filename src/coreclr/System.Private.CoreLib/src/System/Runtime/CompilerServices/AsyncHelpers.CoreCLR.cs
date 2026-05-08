@@ -125,6 +125,16 @@ namespace System.Runtime.CompilerServices
             ref byte data = ref RuntimeHelpers.GetRawData(this);
             return ref Unsafe.Add(ref data, (DataOffset - PointerSize) + index * PointerSize);
         }
+
+        protected void EncodeFieldOffsetInFlags(ref byte field, ContinuationFlags firstBit, ContinuationFlags numBits)
+        {
+            int offset = (int)Unsafe.ByteOffset(ref RuntimeHelpers.GetRawData(this), ref field);
+            offset -= DataOffset;
+            Debug.Assert(offset >= 0 && offset % PointerSize == 0);
+            uint index = 1 + (uint)offset / PointerSize;
+            Debug.Assert(index < (1 << (int)numBits));
+            Flags |= (ContinuationFlags)((uint)index << (int)firstBit);
+        }
     }
 
     [StructLayout(LayoutKind.Explicit)]
@@ -202,7 +212,7 @@ namespace System.Runtime.CompilerServices
             // to one of these notifiers.
             public ICriticalNotifyCompletion? CriticalNotifier;
             public INotifyCompletion? Notifier;
-            public ValueTaskSourceNotifier? ValueTaskSourceNotifier;
+            public ValueTaskContinuation? ValueTaskContinuation;
             public Task? TaskNotifier;
 
             // When we suspend in the leaf, the contexts are captured into these fields.
@@ -245,6 +255,7 @@ namespace System.Runtime.CompilerServices
         private unsafe struct RuntimeAsyncAwaitState
         {
             public Continuation? SentinelContinuation;
+            public ValueTaskContinuation? CachedValueTaskContinuation;
 
             // We cache the thread here to avoid unnecessary repeated TLS lookups.
             public Thread? CurrentThread;
@@ -330,6 +341,200 @@ namespace System.Runtime.CompilerServices
         }
 #endif
 
+        private sealed unsafe class ValueTaskContinuation : Continuation
+        {
+            // Currently all continuations are expected to capture and restore
+            // ExecutionContext, even though we do not actually need it here.
+            public ExecutionContext? ExecutionContext;
+            private object? _source;
+            private short _token;
+            private delegate* managed<object, Action<object?>, object?, short, ValueTaskSourceOnCompletedFlags, void> _onCompleted;
+            private delegate* managed<object, short, ref byte, void> _getResult;
+
+            public ValueTaskContinuation()
+            {
+                ResumeInfo = (ResumeInfo*)Unsafe.AsPointer(ref ValueTaskContinuationResume.ResumeInfo);
+
+                EncodeFieldOffsetInFlags(
+                    ref Unsafe.As<ExecutionContext?, byte>(ref ExecutionContext),
+                    ContinuationFlags.ExecutionContextIndexFirstBit,
+                    ContinuationFlags.ExecutionContextIndexNumBits);
+            }
+
+            public void OnCompleted(Action<object?> continuation, object? state, ValueTaskSourceOnCompletedFlags flags)
+            {
+                Debug.Assert(_source != null);
+                _onCompleted(_source, continuation, state, _token, flags);
+            }
+
+            public void GetResult(ref byte returnValue)
+            {
+                Debug.Assert(_source != null);
+
+                // Avoid retaining source. The call below may throw.
+                object source = _source;
+                _source = null;
+
+                _getResult(source, _token, ref returnValue);
+            }
+
+            public void Initialize(object source, short token)
+            {
+                _source = source;
+                _token = token;
+                _onCompleted = &OnCompleted;
+                _getResult = &GetResult;
+            }
+
+            public void Initialize<T>(object source, short token)
+            {
+                _source = source;
+                _token = token;
+                _onCompleted = &OnCompleted<T>;
+                _getResult = &GetResult<T>;
+            }
+
+            private static void OnCompleted(object source, Action<object?> continuation, object? state, short token, ValueTaskSourceOnCompletedFlags flags)
+            {
+                if (source is Task t)
+                {
+                    Debug.Assert(state is ITaskCompletionAction);
+                    if (!t.TryAddCompletionAction(Unsafe.As<object, ITaskCompletionAction>(ref state)))
+                    {
+                        ThreadPool.UnsafeQueueUserWorkItemInternal(state, preferLocal: true);
+                    }
+                }
+                else
+                {
+                    Debug.Assert(source is IValueTaskSource);
+                    IValueTaskSource typedSource = Unsafe.As<object, IValueTaskSource>(ref source);
+                    typedSource.OnCompleted(continuation, state, token, flags);
+                }
+            }
+
+            private static void GetResult(object source, short token, ref byte result)
+            {
+                if (source is Task t)
+                {
+                    TaskAwaiter.ValidateEnd(t);
+                }
+                else
+                {
+                    Debug.Assert(source is IValueTaskSource);
+                    IValueTaskSource typedSource = Unsafe.As<object, IValueTaskSource>(ref source);
+                    typedSource.GetResult(token);
+                }
+            }
+
+            private static void OnCompleted<T>(object source, Action<object?> continuation, object? state, short token, ValueTaskSourceOnCompletedFlags flags)
+            {
+                if (source is Task t)
+                {
+                    Debug.Assert(state is ITaskCompletionAction);
+                    if (!t.TryAddCompletionAction(Unsafe.As<object, ITaskCompletionAction>(ref state)))
+                    {
+                        ThreadPool.UnsafeQueueUserWorkItemInternal(state, preferLocal: true);
+                    }
+                }
+                else
+                {
+                    Debug.Assert(source is IValueTaskSource<T>);
+                    IValueTaskSource<T> typedSource = Unsafe.As<object, IValueTaskSource<T>>(ref source);
+                    typedSource.OnCompleted(continuation, state, token, flags);
+                }
+            }
+
+            private static void GetResult<T>(object source, short token, ref byte result)
+            {
+                if (source is Task<T> t)
+                {
+                    TaskAwaiter.ValidateEnd(t);
+                    Unsafe.As<byte, T>(ref result) = t.ResultOnSuccess;
+                }
+                else
+                {
+                    Debug.Assert(source is IValueTaskSource<T>);
+                    IValueTaskSource<T> typedSource = Unsafe.As<object, IValueTaskSource<T>>(ref source);
+                    Unsafe.As<byte, T>(ref result) = typedSource.GetResult(token);
+                }
+            }
+
+            private static class ValueTaskContinuationResume
+            {
+                [FixedAddressValueType]
+                public static ResumeInfo ResumeInfo = new ResumeInfo
+                {
+                    DiagnosticIP = null,
+                    Resume = &ResumeValueTaskContinuation,
+                };
+
+                public static Continuation? ResumeValueTaskContinuation(Continuation cont, ref byte result)
+                {
+                    var vtsCont = (ValueTaskContinuation)cont;
+                    t_runtimeAsyncAwaitState.CachedValueTaskContinuation = vtsCont;
+
+                    vtsCont.GetResult(ref result);
+                    return null;
+                }
+            }
+        }
+
+        [BypassReadyToRun]
+        [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.Async)]
+        private static unsafe void TransparentAwaitValueTask(ValueTask valueTask)
+        {
+            ref RuntimeAsyncAwaitState state = ref t_runtimeAsyncAwaitState;
+            Continuation? sentinelContinuation = state.SentinelContinuation ??= new Continuation();
+
+            ValueTaskContinuation? vtsCont = state.CachedValueTaskContinuation;
+            if (vtsCont != null)
+            {
+                state.CachedValueTaskContinuation = null;
+            }
+            else
+            {
+                vtsCont = new ValueTaskContinuation();
+            }
+
+            Debug.Assert(valueTask._obj != null);
+            vtsCont.Initialize(valueTask._obj, valueTask._token);
+            vtsCont.ExecutionContext = ExecutionContext.CaptureForSuspension(state.CurrentThread!);
+
+            sentinelContinuation.Next = vtsCont;
+            state.StackState->ValueTaskContinuation = vtsCont;
+
+            state.CaptureContexts();
+            AsyncSuspend(vtsCont);
+        }
+
+        [BypassReadyToRun]
+        [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.Async)]
+        private static unsafe void TransparentAwaitValueTaskOfT<T>(ValueTask<T?> valueTask)
+        {
+            ref RuntimeAsyncAwaitState state = ref t_runtimeAsyncAwaitState;
+            Continuation? sentinelContinuation = state.SentinelContinuation ??= new Continuation();
+
+            ValueTaskContinuation? vtsCont = state.CachedValueTaskContinuation;
+            if (vtsCont != null)
+            {
+                state.CachedValueTaskContinuation = null;
+            }
+            else
+            {
+                vtsCont = new ValueTaskContinuation();
+            }
+
+            Debug.Assert(valueTask._obj != null);
+            vtsCont.Initialize<T>(valueTask._obj, valueTask._token);
+            vtsCont.ExecutionContext = ExecutionContext.CaptureForSuspension(state.CurrentThread!);
+
+            sentinelContinuation.Next = vtsCont;
+            state.StackState->ValueTaskContinuation = vtsCont;
+
+            state.CaptureContexts();
+            AsyncSuspend(vtsCont);
+        }
+
         /// <summary>
         /// Used by internal thunks that implement awaiting on Task or a ValueTask.
         /// A ValueTask may wrap:
@@ -353,7 +558,7 @@ namespace System.Runtime.CompilerServices
             }
             else
             {
-                state.StackState->ValueTaskSourceNotifier = (ValueTaskSourceNotifier)o;
+                Debug.Fail("Unexpected");
             }
 
             state.CaptureContexts();
@@ -456,8 +661,9 @@ namespace System.Runtime.CompilerServices
                             ThreadPool.UnsafeQueueUserWorkItemInternal(this, preferLocal: true);
                         }
                     }
-                    else if (stackState->ValueTaskSourceNotifier is { } valueTaskSourceNotifier)
+                    else if (stackState->ValueTaskContinuation is { } valueTaskSourceCont)
                     {
+                        Debug.Assert(headContinuation == valueTaskSourceCont);
                         // The awaiter must inform the ValueTaskSource on whether the continuation
                         // wants to run on a context, although the source may decide to ignore the suggestion.
                         // Since the behavior of the source takes precedence, we clear the context flags of
@@ -491,7 +697,7 @@ namespace System.Runtime.CompilerServices
 
                         // Clear continuation flags, so that continuation runs transparently
                         nextUserContinuation.Flags &= ~continueFlags;
-                        valueTaskSourceNotifier.OnCompleted(s_runContinuationAction, this, configFlags);
+                        valueTaskSourceCont.OnCompleted(s_runContinuationAction, this, configFlags);
                     }
                     else
                     {

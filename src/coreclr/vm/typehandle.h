@@ -444,6 +444,7 @@ public:
 
     // Continuation sub types
     BOOL IsContinuation() const;
+    BOOL IsContinuationWithMetadata() const;
 
     // True if this type *is* a formal generic type parameter or any component of it is a formal generic type parameter
     BOOL ContainsGenericVariables(BOOL methodOnly=FALSE) const;

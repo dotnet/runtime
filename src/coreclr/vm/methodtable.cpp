@@ -421,7 +421,7 @@ WORD MethodTable::GetNumMethods()
 PTR_MethodTable MethodTable::GetTypicalMethodTable()
 {
     LIMITED_METHOD_DAC_CONTRACT;
-    if (IsArray() || IsContinuation())
+    if (IsArray() || (IsContinuation() && !IsContinuationWithMetadata()))
         return (PTR_MethodTable)this;
 
     PTR_MethodTable methodTableMaybe = GetModule()->LookupTypeDef(GetCl()).AsMethodTable();
@@ -1297,7 +1297,7 @@ BOOL MethodTable::CanCastToClass(MethodTable *pTargetMT, TypeHandlePairList *pVi
         PRECONDITION(CheckPointer(pTargetMT));
         PRECONDITION(!pTargetMT->IsArray());
         PRECONDITION(!pTargetMT->IsInterface());
-        PRECONDITION(!pTargetMT->IsContinuation());
+        PRECONDITION(!pTargetMT->IsContinuation() || pTargetMT->IsContinuationWithMetadata());
     }
     CONTRACTL_END
 
@@ -6399,6 +6399,11 @@ BOOL MethodTable::SanityCheck()
         return (pCanonMT == this) || IsArray() || IsContinuation();
 }
 
+BOOL MethodTable::IsContinuationWithMetadata()
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+    return IsContinuation() && (GetClass() != g_singletonContinuationEEClass);
+}
 
 //==========================================================================================
 void MethodTable::SetCl(mdTypeDef token)
@@ -7642,7 +7647,7 @@ CHECK MethodTable::CheckInstanceActivated()
 {
     WRAPPER_NO_CONTRACT;
 
-    if (IsArray() || IsContinuation())
+    if (IsArray() || (IsContinuation() && !IsContinuationWithMetadata()))
         CHECK_OK;
 
 

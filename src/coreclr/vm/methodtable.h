@@ -985,7 +985,7 @@ public:
     PTR_Module GetModule()
     {
         LIMITED_METHOD_CONTRACT;
-        _ASSERTE(!IsContinuation());
+        _ASSERTE(!IsContinuation() || IsContinuationWithMetadata());
         return m_pModule;
     }
 
@@ -2853,6 +2853,7 @@ public:
     }
 
     inline BOOL IsContinuation();
+    inline BOOL IsContinuationWithMetadata();
 
     // The following methods are only valid for the method tables for array types.
     CorElementType GetArrayElementType()

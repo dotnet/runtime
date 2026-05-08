@@ -98,6 +98,13 @@ BOOL TypeHandle::IsContinuation() const
     return !IsTypeDesc() && AsMethodTable()->IsContinuation();
 }
 
+BOOL TypeHandle::IsContinuationWithMetadata() const
+{
+    LIMITED_METHOD_CONTRACT;
+
+    return !IsTypeDesc() && AsMethodTable()->IsContinuationWithMetadata();
+}
+
 BOOL TypeHandle::IsGenericVariable() const {
     LIMITED_METHOD_DAC_CONTRACT;
 
@@ -333,7 +340,7 @@ void TypeHandle::AllocateManagedClassObject(RUNTIMETYPEHANDLE* pDest)
     }
     CONTRACTL_END
 
-    if (IsContinuation())
+    if (IsContinuation() && !IsContinuationWithMetadata())
     {
         COMPlusThrow(kNotSupportedException, W("NotSupported_Continuation"));
         return;
