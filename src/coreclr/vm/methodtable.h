@@ -2853,7 +2853,7 @@ public:
     }
 
     inline BOOL IsContinuation();
-    inline BOOL IsContinuationWithMetadata();
+    BOOL IsContinuationWithMetadata();
 
     // The following methods are only valid for the method tables for array types.
     CorElementType GetArrayElementType()

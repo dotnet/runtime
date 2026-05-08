@@ -471,6 +471,8 @@ namespace System.Runtime.CompilerServices
                 public static Continuation? ResumeValueTaskContinuation(Continuation cont, ref byte result)
                 {
                     var vtsCont = (ValueTaskContinuation)cont;
+                    vtsCont.Next = null;
+                    vtsCont.ExecutionContext = null;
                     t_runtimeAsyncAwaitState.CachedValueTaskContinuation = vtsCont;
 
                     vtsCont.GetResult(ref result);
@@ -544,22 +546,15 @@ namespace System.Runtime.CompilerServices
         /// Therefore, when we are awaiting a ValueTask completion we are really
         /// awaiting a completion of an underlying Task or ValueTaskSource.
         /// </summary>
-        /// <param name="o"> Task or a ValueTaskNotifier whose completion we are awaiting.</param>
+        /// <param name="t"> Task whose completion we are awaiting.</param>
         [BypassReadyToRun]
         [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.Async)]
-        private static unsafe void TransparentAwait(object o)
+        private static unsafe void TransparentAwait(Task t)
         {
             ref RuntimeAsyncAwaitState state = ref t_runtimeAsyncAwaitState;
             Continuation? sentinelContinuation = state.SentinelContinuation ??= new Continuation();
 
-            if (o is Task t)
-            {
-                state.StackState->TaskNotifier = t;
-            }
-            else
-            {
-                Debug.Fail("Unexpected");
-            }
+            state.StackState->TaskNotifier = t;
 
             state.CaptureContexts();
             AsyncSuspend(sentinelContinuation);
