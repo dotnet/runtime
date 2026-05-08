@@ -1265,6 +1265,8 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
                 default:
                     throw Marshal.GetExceptionForHR(CorDbgHResults.CORDBG_E_CLASS_NOT_LOADED)!;
             }
+            if (*pRetVal == 0)
+                throw Marshal.GetExceptionForHR(CorDbgHResults.CORDBG_E_CLASS_NOT_LOADED)!;
         }
         catch (System.Exception ex)
         {
