@@ -35,12 +35,17 @@ namespace System.Numerics.Tensors.Tests
         public static void AssertEqualWithTolerance<T>(T expected, T actual, T? tolerance = null, string? banner = null) where T : unmanaged, INumber<T>
         {
             T actualTolerance = tolerance ?? DefaultTolerance<T>.Value;
-            if (!T.IsZero(actualTolerance))
+            try
             {
                 T scaledTolerance = T.Max(T.Abs(expected), T.Abs(actual)) * actualTolerance;
-                actualTolerance = T.Max(scaledTolerance, actualTolerance);
+                if (T.IsFinite(scaledTolerance))
+                {
+                    actualTolerance = T.Max(scaledTolerance, actualTolerance);
+                }
             }
+            catch (OverflowException) { } // T.Abs throws for int.Max, just keep the original tolerance in that case.
 
+            // Delegate to AssertExtensions.Equal for special value comparisons (NaN, +-inf, +-0)
             if (typeof(T) == typeof(double))
             {
                 AssertExtensions.Equal((double)(object)expected, (double)(object)actual, (double)(object)actualTolerance, banner);
@@ -64,7 +69,7 @@ namespace System.Numerics.Tensors.Tests
                     AssertExtensions.Equal((float)(NFloat)(object)expected, (float)(NFloat)(object)actual, (float)(NFloat)(object)actualTolerance, banner);
                 }
             }
-            else if (T.Abs(expected - actual) > actualTolerance)
+            else if (!(T.Abs(expected - actual) <= actualTolerance)) // Invert comparison to handle NaN variance case, which should always fail the comparison
             {
                 throw EqualException.ForMismatchedValues(expected.ToString(), actual.ToString(), banner);
             }
@@ -72,8 +77,13 @@ namespace System.Numerics.Tensors.Tests
 #else
         public static void AssertEqualWithTolerance(float expected, float actual, float? tolerance = null, string? banner = null)
         {
+            float actualTolerance = tolerance ?? DefaultFloatTolerance;
             float scaledTolerance = MathF.Max(MathF.Abs(expected), MathF.Abs(actual)) * (tolerance ?? DefaultFloatTolerance);
-            float actualTolerance = MathF.Max(scaledTolerance, tolerance ?? DefaultFloatTolerance);
+            if (!float.IsNaN(scaledTolerance) && !float.IsInfinity(scaledTolerance))
+            {
+                actualTolerance = MathF.Max(actualTolerance, scaledTolerance);
+            }
+
             AssertExtensions.Equal(expected, actual, actualTolerance, banner);
         }
 #endif
