@@ -1416,7 +1416,13 @@ void RangeCheck::MergeEdgeAssertionsWorker(Compiler*                        comp
                 cmpOper = GenTree::SwapRelop(cmpOper);
             }
 
-            Range otherRange = GetRangeFromAssertionsWorker(comp, otherVN, assertions, budget - 1, visited);
+            if (budget <= 0)
+            {
+                continue;
+            }
+
+            budget--;
+            Range otherRange = GetRangeFromAssertionsWorker(comp, otherVN, assertions, budget, visited);
             if (!otherRange.IsConstantRange())
             {
                 continue;
