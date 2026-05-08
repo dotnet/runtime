@@ -2,7 +2,7 @@
 # Determines the .NET version context for a merged PR using the GitHub CLI (gh).
 #
 # Usage:
-#   pwsh .github/skills/breaking-change-doc/Get-VersionInfo.ps1 -PrNumber 114929
+#   pwsh .github/skills/breaking-change-doc/scripts/Get-VersionInfo.ps1 -PrNumber 114929
 #
 # Output: JSON object with LastTagBeforeMerge, FirstTagWithChange, EstimatedVersion
 

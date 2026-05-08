@@ -7,7 +7,7 @@
 #   - An email reminder
 #
 # Usage:
-#   pwsh .github/skills/breaking-change-doc/Build-IssueComment.ps1 `
+#   pwsh .github/skills/breaking-change-doc/scripts/Build-IssueComment.ps1 `
 #       -IssueDraftPath issue-draft.md `
 #       -Title "[Breaking change]: Something changed" `
 #       -Assignees "@user1 @user2" `
