@@ -9,6 +9,8 @@
     <!-- Tracing tests routinely time out with jitstress and gcstress -->
     <GCStressIncompatible>true</GCStressIncompatible>
     <JitOptimizationSensitive>true</JitOptimizationSensitive>
+    <!-- Test hangs on linux-arm NativeAOT: SampleProfiler never fires, work item times out. See https://github.com/dotnet/runtime/issues/127937 -->
+    <NativeAotIncompatible>true</NativeAotIncompatible>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="SampleProfilerSampleType.cs" />
