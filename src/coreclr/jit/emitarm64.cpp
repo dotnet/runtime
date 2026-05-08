@@ -1440,11 +1440,7 @@ void emitter::emitPacInProlog()
     {
         return;
     }
-#ifdef TARGET_WINDOWS
-    emitIns(INS_pacibsp);
-#else
-    emitIns(INS_paciasp);
-#endif
+    emitIns(TargetOS::IsWindows ? INS_pacibsp : INS_paciasp);
     m_compiler->unwindPacSignLR();
 }
 
@@ -1457,11 +1453,7 @@ void emitter::emitPacInEpilog()
     {
         return;
     }
-#ifdef TARGET_WINDOWS
-    emitIns(INS_autibsp);
-#else
-    emitIns(INS_autiasp);
-#endif
+    emitIns(TargetOS::IsWindows ? INS_autibsp : INS_autiasp);
     m_compiler->unwindPacSignLR();
 }
 
