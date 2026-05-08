@@ -971,8 +971,6 @@ namespace Internal.JitInterface
         public CORINFO_FIELD_STRUCT_* continuationFlagsFldHnd;
         // Method handle for AsyncHelpers.CaptureExecutionContext
         public CORINFO_METHOD_STRUCT_* captureExecutionContextMethHnd;
-        // Method handle for AsyncHelpers.RestoreExecutionContext
-        public CORINFO_METHOD_STRUCT_* restoreExecutionContextMethHnd;
         public CORINFO_METHOD_STRUCT_* captureContinuationContextMethHnd;
         public CORINFO_METHOD_STRUCT_* captureContextsMethHnd;
         public CORINFO_METHOD_STRUCT_* restoreContextsMethHnd;

@@ -266,23 +266,6 @@ public:
     virtual HRESULT STDMETHODCALLTYPE GetAppDomainId(VMPTR_AppDomain vmAppDomain, OUT ULONG * pRetVal) = 0;
 
     //
-    // Get the managed AppDomain object for an AppDomain.
-    //
-    // Arguments:
-    //  vmAppDomain  - VM pointer to the AppDomain object of interest
-    //  pRetVal - [out] Objecthandle for the managed app domain object or the Null VMPTR if there is no object created yet.
-    //
-    // Return Value:
-    //    S_OK on success; otherwise, an appropriate failure HRESULT.
-    //
-    // Notes:
-    //   The AppDomain managed object is lazily constructed on the AppDomain the first time
-    //   it is requested. It may be NULL.
-    //
-    virtual HRESULT STDMETHODCALLTYPE GetAppDomainObject(VMPTR_AppDomain vmAppDomain, OUT VMPTR_OBJECTHANDLE * pRetVal) = 0;
-
-
-    //
     // Get the full AD friendly name for the given EE AppDomain.
     //
     // Arguments:

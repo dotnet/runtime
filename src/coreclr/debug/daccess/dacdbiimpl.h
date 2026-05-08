@@ -87,9 +87,6 @@ public:
     // Get the AppDomain ID for an AppDomain.
     HRESULT STDMETHODCALLTYPE GetAppDomainId(VMPTR_AppDomain vmAppDomain, OUT ULONG * pRetVal);
 
-    // Get the managed AppDomain object for an AppDomain.
-    HRESULT STDMETHODCALLTYPE GetAppDomainObject(VMPTR_AppDomain vmAppDomain, OUT VMPTR_OBJECTHANDLE * pRetVal);
-
     // Get the full AD friendly name for the appdomain.
     HRESULT STDMETHODCALLTYPE GetAppDomainFullName(VMPTR_AppDomain vmAppDomain, IStringHolder * pStrName);
 

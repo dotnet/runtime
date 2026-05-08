@@ -2226,20 +2226,6 @@ public:
     // Methods not exposed via a COM interface.
     //-----------------------------------------------------------
 
-    HRESULT CreateProcessCommon(ICorDebugRemoteTarget * pRemoteTarget,
-                                LPCWSTR lpApplicationName,
-                                _In_z_ LPWSTR lpCommandLine,
-                                LPSECURITY_ATTRIBUTES lpProcessAttributes,
-                                LPSECURITY_ATTRIBUTES lpThreadAttributes,
-                                BOOL bInheritHandles,
-                                DWORD dwCreationFlags,
-                                PVOID lpEnvironment,
-                                LPCWSTR lpCurrentDirectory,
-                                LPSTARTUPINFOW lpStartupInfo,
-                                LPPROCESS_INFORMATION lpProcessInformation,
-                                CorDebugCreateProcessFlags debuggingFlags,
-                                ICorDebugProcess **ppProcess);
-
     HRESULT DebugActiveProcessCommon(ICorDebugRemoteTarget * pRemoteTarget, DWORD id, BOOL win32Attach, ICorDebugProcess **ppProcess);
 
     void EnsureCanLaunchOrAttach(BOOL fWin32DebuggingEnabled);
@@ -2291,7 +2277,6 @@ public:
     HMODULE GetTargetCLR() { return m_targetCLR; }
 
 private:
-    bool IsCreateProcessSupported();
     bool IsInteropDebuggingSupported();
     void CheckCompatibility();
 
@@ -10007,19 +9992,6 @@ public:
     HRESULT Start();
     HRESULT Stop();
 
-    HRESULT SendCreateProcessEvent(MachineInfo machineInfo,
-                                   LPCWSTR programName,
-                                   _In_z_ LPWSTR  programArgs,
-                                   LPSECURITY_ATTRIBUTES lpProcessAttributes,
-                                   LPSECURITY_ATTRIBUTES lpThreadAttributes,
-                                   BOOL bInheritHandles,
-                                   DWORD dwCreationFlags,
-                                   PVOID lpEnvironment,
-                                   LPCWSTR lpCurrentDirectory,
-                                   LPSTARTUPINFOW lpStartupInfo,
-                                   LPPROCESS_INFORMATION lpProcessInformation,
-                                   CorDebugCreateProcessFlags corDebugFlags);
-
     HRESULT SendDebugActiveProcessEvent(MachineInfo machineInfo,
                                         const ProcessDescriptor *pProcessDescriptor,
                                         bool fWin32Attach,
@@ -10070,8 +10042,6 @@ private:
     void ThreadProc();
     static DWORD WINAPI ThreadProc(LPVOID parameter);
 
-    void CreateProcess();
-
 
     INativeEventPipeline * m_pNativePipeline;
 
@@ -10110,22 +10080,6 @@ private:
     HRESULT              m_actionResult;
     union
     {
-        struct
-        {
-            MachineInfo machineInfo;
-            LPCWSTR programName;
-            LPWSTR  programArgs;
-            LPSECURITY_ATTRIBUTES lpProcessAttributes;
-            LPSECURITY_ATTRIBUTES lpThreadAttributes;
-            BOOL bInheritHandles;
-            DWORD dwCreationFlags;
-            PVOID lpEnvironment;
-            LPCWSTR lpCurrentDirectory;
-            LPSTARTUPINFOW lpStartupInfo;
-            LPPROCESS_INFORMATION lpProcessInformation;
-            CorDebugCreateProcessFlags corDebugFlags;
-        } createData;
-
         struct
         {
             MachineInfo machineInfo;

@@ -55,46 +55,53 @@ internal sealed class ClrMdDumpHost : IDisposable
     /// </summary>
     public int ReadFromTarget(ulong address, Span<byte> buffer)
     {
-        int bytesRead = _dataTarget.DataReader.Read(address, buffer);
-        if (bytesRead == buffer.Length)
-            return 0; // success
-
-        // If we couldn't read the full buffer, maybe it's in a PE image
-        ModuleInfo? info = GetModuleForAddress(address);
-        if (info is null || info.FileName is null)
+        try
         {
-            return -1;
-        }
+            int bytesRead = _dataTarget.DataReader.Read(address, buffer);
+            if (bytesRead == buffer.Length)
+                return 0; // success
 
-        string? foundFile = FindFileOnDisk(info.FileName);
-        if (foundFile is null)
-        {
-            return -1;
-        }
-
-        using FileStream fs = File.OpenRead(foundFile);
-        using PEReader peReader = new PEReader(fs);
-
-        int filled = bytesRead;
-        ulong current = address + (ulong)bytesRead;
-        while (filled < buffer.Length)
-        {
-            PEMemoryBlock block = peReader.GetSectionData((int)(current - info.ImageBase));
-            if (block.Length == 0)
+            // If we couldn't read the full buffer, maybe it's in a PE image
+            ModuleInfo? info = GetModuleForAddress(address);
+            if (info is null || info.FileName is null)
             {
                 return -1;
             }
 
-            int toCopy = Math.Min(block.Length, buffer.Length - filled);
-            unsafe
+            string? foundFile = FindFileOnDisk(info.FileName);
+            if (foundFile is null)
             {
-                new ReadOnlySpan<byte>(block.Pointer, toCopy).CopyTo(buffer.Slice(filled));
+                return -1;
             }
-            filled += toCopy;
-            current += (ulong)toCopy;
-        }
 
-        return 0;
+            using FileStream fs = File.OpenRead(foundFile);
+            using PEReader peReader = new PEReader(fs);
+
+            int filled = bytesRead;
+            ulong current = address + (ulong)bytesRead;
+            while (filled < buffer.Length)
+            {
+                PEMemoryBlock block = peReader.GetSectionData((int)(current - info.ImageBase));
+                if (block.Length == 0)
+                {
+                    return -1;
+                }
+
+                int toCopy = Math.Min(block.Length, buffer.Length - filled);
+                unsafe
+                {
+                    new ReadOnlySpan<byte>(block.Pointer, toCopy).CopyTo(buffer.Slice(filled));
+                }
+                filled += toCopy;
+                current += (ulong)toCopy;
+            }
+
+            return 0;
+        }
+        catch
+        {
+            return -1;
+        }
     }
 
     /// <summary>

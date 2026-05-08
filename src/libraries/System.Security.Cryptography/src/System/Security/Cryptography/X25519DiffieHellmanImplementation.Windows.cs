@@ -89,13 +89,7 @@ namespace System.Security.Cryptography
             // derive time per RFC 7748 6.1.
             // We still need BCRYPT_NO_KEY_VALIDATION though because there are small subgroup keys that work, which do
             // not produce all zero shared secrets.
-            ReadOnlySpan<byte> zeros = [
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            ];
-
-            Debug.Assert(zeros.Length == SecretAgreementSizeInBytes);
-
-            if (CryptographicOperations.FixedTimeEquals(destination, zeros))
+            if (CryptographicOperations.FixedTimeEquals(destination, 0))
             {
                 throw new CryptographicException();
             }

@@ -162,6 +162,9 @@ public enum DataType
     HijackFrame,
     TailCallFrame,
     StubDispatchFrame,
+    ExternalMethodFrame,
+    DynamicHelperFrame,
+
     ComCallWrapper,
     SimpleComCallWrapper,
     ComMethodTable,

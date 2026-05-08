@@ -123,7 +123,7 @@ configuration:
         - payloadType: Pull_Request
       - or:
         - labelAdded:
-            label: area-assemblyloading
+            label: area-AssemblyLoader
         - labelAdded:
             label: area-AssemblyLoader-mono
         - labelAdded:
@@ -335,7 +335,7 @@ configuration:
       then:
       - if:
         - hasLabel:
-            label: area-assemblyloading
+            label: area-AssemblyLoader
         then:
         - mentionUsers:
             mentionees:

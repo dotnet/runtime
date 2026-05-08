@@ -1623,6 +1623,11 @@ public:
         return ((OperKind(gtOper) & GTK_KINDMASK) == GTK_SPECIAL);
     }
 
+    bool OperIsSpecial() const
+    {
+        return OperIsSpecial(gtOper);
+    }
+
     bool OperIsSimple() const
     {
         return OperIsSimple(gtOper);
@@ -1986,9 +1991,6 @@ public:
         GenTree** unusedUse = nullptr;
         return TryGetUse(operand, &unusedUse);
     }
-
-private:
-    bool TryGetUseBinOp(GenTree* operand, GenTree*** pUse);
 
 public:
     GenTree* gtGetParent(GenTree*** pUse);

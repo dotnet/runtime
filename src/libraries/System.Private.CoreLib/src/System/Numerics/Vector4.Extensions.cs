@@ -43,7 +43,6 @@ namespace System.Numerics
         /// <param name="source">The vector that will be stored.</param>
         /// <param name="destination">The destination at which <paramref name="source" /> will be stored.</param>
         [CLSCompliant(false)]
-        [RequiresUnsafe]
         public static void Store(this Vector4 source, float* destination) => source.AsVector128().Store(destination);
 
         /// <summary>Stores a vector at the given 16-byte aligned destination.</summary>
@@ -52,7 +51,6 @@ namespace System.Numerics
         /// <exception cref="AccessViolationException"><paramref name="destination" /> is not 16-byte aligned.</exception>
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [RequiresUnsafe]
         public static void StoreAligned(this Vector4 source, float* destination) => source.AsVector128().StoreAligned(destination);
 
         /// <summary>Stores a vector at the given 16-byte aligned destination.</summary>
@@ -61,7 +59,6 @@ namespace System.Numerics
         /// <exception cref="AccessViolationException"><paramref name="destination" /> is not 16-byte aligned.</exception>
         /// <remarks>This method may bypass the cache on certain platforms.</remarks>
         [CLSCompliant(false)]
-        [RequiresUnsafe]
         public static void StoreAlignedNonTemporal(this Vector4 source, float* destination) => source.AsVector128().StoreAlignedNonTemporal(destination);
 
         /// <summary>Stores a vector at the given destination.</summary>
