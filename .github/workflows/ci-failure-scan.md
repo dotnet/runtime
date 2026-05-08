@@ -372,7 +372,9 @@ File one when **all** of the following hold:
 - No fix PR is currently open (verify via `search_pull_requests`).
 - The failure is **not** a build break or an infrastructure failure — only test failures or hangs are eligible for a KBE. Build breaks and infra failures (for example dead-letter, device-lost, or agent-disconnect issues) must use a regular tracking issue.
 
-Required structure: match the headings exactly. The literal body MUST look exactly like the example below. The outer fence in this prompt uses `~~~` (tildes) only so the inner ` ``` ` fences stay literal; in the issue you emit, do **not** use tildes anywhere — emit only the inner content between (but not including) the `~~~` lines. Walk the "Verify the body before submitting" checks below before committing to the issue body.
+Required structure: match the headings exactly. The literal body MUST look like one of the two templates below — pick exactly one (literal substring is the default; regex only if no single literal line is specific enough). Do not emit both blocks. The outer fence in this prompt uses `~~~` (tildes) only so the inner ` ``` ` fences stay literal; in the issue you emit, do **not** use tildes anywhere — emit only the inner content between (but not including) the `~~~` lines for the template you chose. Walk the "Verify the body before submitting" checks below before committing to the issue body.
+
+**Template A — literal substring match (default).** Pick this when the failure log contains a stable, specific assertion or exception message line.
 
 ~~~
 ## Build Information
@@ -382,9 +384,7 @@ Pull request: <link to the PR if the build was a PR build, otherwise omit this l
 
 ## Error Message
 
-<!-- Populate EXACTLY ONE of ErrorMessage or ErrorPattern, never both. ErrorMessage is a literal String.Contains substring; ErrorPattern is a regex (the JSON value is a single-line string with no real newlines — for multi-line matching use the array form below or the regex `\n` escape inside that single-line string). Delete the field you don't use — do not leave it as "". Set BuildRetry to `true` only for clear infra flakes. ExcludeConsoleLog skips helix log scanning. -->
-
-For a literal substring match (default — pick this when the failure log contains a stable, specific assertion or exception message line):
+<!-- ErrorMessage is a literal String.Contains substring (case-sensitive, ordinal). Set BuildRetry to `true` only for clear infra flakes. ExcludeConsoleLog skips helix log scanning. -->
 
 ```json
 {
@@ -393,8 +393,19 @@ For a literal substring match (default — pick this when the failure log contai
   "ExcludeConsoleLog": false
 }
 ```
+~~~
 
-For a regex match (only when no single literal line is specific enough — anchored, prefer `[^\\n]*` over `.*`, no catastrophic backtracking; the JSON value itself must be a single-line string, but you can match across log lines via the `\n` escape or the array form):
+**Template B — regex match.** Pick this only when no single literal line is specific enough. Anchored, prefer `[^\\n]*` over `.*`, no catastrophic backtracking. The JSON value itself must be a single-line string with no real newlines, but you can match across log lines via the regex `\n` escape inside that string or via the array form.
+
+~~~
+## Build Information
+Build: <link to the dev.azure.com build that first hit this in window>
+Build error leg or test failing: <AzDO leg name>-<assembly or test name>
+Pull request: <link to the PR if the build was a PR build, otherwise omit this line>
+
+## Error Message
+
+<!-- ErrorPattern is a regex with .NET options Singleline | IgnoreCase | NonBacktracking and a 50ms-per-line timeout. Set BuildRetry to `true` only for clear infra flakes. ExcludeConsoleLog skips helix log scanning. -->
 
 ```json
 {
