@@ -152,7 +152,7 @@ namespace System.Net.Security
         // SECURITY: we open a private key container on behalf of the caller
         // and we require the caller to have permission associated with that operation.
         //
-        internal static X509Certificate2? FindCertificateWithPrivateKey(object instance, bool isServer, X509Certificate certificate)
+        internal static unsafe X509Certificate2? FindCertificateWithPrivateKey(object instance, bool isServer, X509Certificate certificate)
         {
             if (certificate == null)
             {

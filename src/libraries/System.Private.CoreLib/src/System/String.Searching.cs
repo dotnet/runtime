@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
@@ -425,7 +425,7 @@ namespace System
         /// The zero-based index position of <paramref name="value"/> from the start of the current instance
         /// if that rune is found, or a negative value (e.g. -1) if it is not.
         /// </returns>
-        public int IndexOf(Rune value, int startIndex, int count, StringComparison comparisonType)
+        public unsafe int IndexOf(Rune value, int startIndex, int count, StringComparison comparisonType)
         {
             ArgumentOutOfRangeException.ThrowIfLessThan(startIndex, 0);
             ArgumentOutOfRangeException.ThrowIfLessThan(count, 0);
@@ -754,7 +754,7 @@ namespace System
         /// The zero-based index position of <paramref name="value"/> from the end of the current instance
         /// if that rune is found, or a negative value (e.g. -1) if it is not.
         /// </returns>
-        public int LastIndexOf(Rune value, int startIndex, int count, StringComparison comparisonType)
+        public unsafe int LastIndexOf(Rune value, int startIndex, int count, StringComparison comparisonType)
         {
             if (Length == 0)
             {

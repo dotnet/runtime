@@ -42,7 +42,7 @@ namespace System.Security.Cryptography
         [MemberNotNullWhen(true, nameof(s_algHandle))]
         internal static new bool IsSupported => s_algHandle is not null;
 
-        protected override void DeriveRawSecretAgreementCore(X25519DiffieHellman otherParty, Span<byte> destination)
+        protected override unsafe void DeriveRawSecretAgreementCore(X25519DiffieHellman otherParty, Span<byte> destination)
         {
             Debug.Assert(destination.Length == SecretAgreementSizeInBytes);
             ThrowIfPrivateNeeded();
@@ -159,7 +159,7 @@ namespace System.Security.Cryptography
             return new X25519DiffieHellmanImplementation(key, hasPrivate: true, privatePreservation: preservation);
         }
 
-        internal static X25519DiffieHellmanImplementation ImportPublicKeyImpl(ReadOnlySpan<byte> source)
+        internal static unsafe X25519DiffieHellmanImplementation ImportPublicKeyImpl(ReadOnlySpan<byte> source)
         {
             // RFC 7748 Section 5: "implementations of X25519 MUST mask the most significant
             // bit in the final byte" and "Implementations MUST accept non-canonical values and

@@ -326,7 +326,7 @@ namespace System.Buffers
             return result;
         }
 
-        private static void SurrogateToUpperNLS(char h, char l, out char hr, out char lr)
+        private static unsafe void SurrogateToUpperNLS(char h, char l, out char hr, out char lr)
         {
             Debug.Assert(char.IsHighSurrogate(h));
             Debug.Assert(char.IsLowSurrogate(l));

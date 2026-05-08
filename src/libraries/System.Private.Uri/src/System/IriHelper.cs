@@ -71,7 +71,7 @@ namespace System
 
         // IRI normalization for strings containing characters that are not allowed or
         // escaped characters that should be unescaped in the context of the specified Uri component.
-        public static void EscapeUnescapeIri(ref ValueStringBuilder dest, scoped ReadOnlySpan<char> span, bool isQuery)
+        public static unsafe void EscapeUnescapeIri(ref ValueStringBuilder dest, scoped ReadOnlySpan<char> span, bool isQuery)
         {
             Span<byte> maxUtf8EncodedSpan = stackalloc byte[4];
 

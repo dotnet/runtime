@@ -249,7 +249,7 @@ namespace System.Numerics
             AssertValid();
         }
 
-        public BigInteger(decimal value)
+        public unsafe BigInteger(decimal value)
         {
             // First truncate to get scale to 0 and extract bits
             Span<int> bits = stackalloc int[4];

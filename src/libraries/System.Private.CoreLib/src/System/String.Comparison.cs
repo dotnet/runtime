@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
@@ -532,7 +532,7 @@ namespace System
         /// <param name="value">The character to compare to the character at the end of this instance.</param>
         /// <param name="comparisonType">One of the enumeration values that specifies the rules to use in the comparison.</param>
         /// <returns><see langword="true"/> if <paramref name="value"/> matches the end of this instance; otherwise, <see langword="false"/>.</returns>
-        public bool EndsWith(Rune value, StringComparison comparisonType)
+        public unsafe bool EndsWith(Rune value, StringComparison comparisonType)
         {
             // Convert value to span
             ReadOnlySpan<char> valueChars = value.AsSpan(stackalloc char[Rune.MaxUtf16CharsPerRune]);
@@ -1143,7 +1143,7 @@ namespace System
         /// <param name="value">The rune to compare.</param>
         /// <param name="comparisonType">One of the enumeration values that determines how this string and <paramref name="value"/> are compared.</param>
         /// <returns><see langword="true"/> if value matches the beginning of this string; otherwise, <see langword="false"/>.</returns>
-        public bool StartsWith(Rune value, StringComparison comparisonType)
+        public unsafe bool StartsWith(Rune value, StringComparison comparisonType)
         {
             // Convert value to span
             ReadOnlySpan<char> valueChars = value.AsSpan(stackalloc char[Rune.MaxUtf16CharsPerRune]);

@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
@@ -148,7 +148,7 @@ namespace System
         public static string Concat<T>(IEnumerable<T> values) =>
             JoinCore(ReadOnlySpan<char>.Empty, values);
 
-        public static string Concat(IEnumerable<string?> values)
+        public static unsafe string Concat(IEnumerable<string?> values)
         {
             ArgumentNullException.ThrowIfNull(values);
 
@@ -530,7 +530,7 @@ namespace System
             return FormatHelper(provider, format, args);
         }
 
-        private static string FormatHelper(IFormatProvider? provider, string format, ReadOnlySpan<object?> args)
+        private static unsafe string FormatHelper(IFormatProvider? provider, string format, ReadOnlySpan<object?> args)
         {
             ArgumentNullException.ThrowIfNull(format);
 
@@ -641,7 +641,7 @@ namespace System
             };
         }
 
-        private static string Format<TArg0, TArg1, TArg2>(IFormatProvider? provider, CompositeFormat format, TArg0 arg0, TArg1 arg1, TArg2 arg2, ReadOnlySpan<object?> args)
+        private static unsafe string Format<TArg0, TArg1, TArg2>(IFormatProvider? provider, CompositeFormat format, TArg0 arg0, TArg1 arg1, TArg2 arg2, ReadOnlySpan<object?> args)
         {
             // If there's no formatting to be done and no brace escaping in the format string, we can just return
             // the original format string as the result. If there is brace escaping, we need to process the segments
@@ -780,7 +780,7 @@ namespace System
             return JoinCore(separator, new ReadOnlySpan<string?>(value, startIndex, count));
         }
 
-        public static string Join(string? separator, IEnumerable<string?> values)
+        public static unsafe string Join(string? separator, IEnumerable<string?> values)
         {
             if (values is List<string?> valuesList)
             {
@@ -874,7 +874,7 @@ namespace System
         public static string Join(string? separator, params ReadOnlySpan<object?> values) =>
             JoinCore(separator.AsSpan(), values);
 
-        private static string JoinCore(ReadOnlySpan<char> separator, ReadOnlySpan<object?> values)
+        private static unsafe string JoinCore(ReadOnlySpan<char> separator, ReadOnlySpan<object?> values)
         {
             if (values.IsEmpty)
             {
@@ -911,7 +911,7 @@ namespace System
         public static string Join<T>(string? separator, IEnumerable<T> values) =>
             JoinCore(separator.AsSpan(), values);
 
-        private static string JoinCore<T>(ReadOnlySpan<char> separator, IEnumerable<T> values)
+        private static unsafe string JoinCore<T>(ReadOnlySpan<char> separator, IEnumerable<T> values)
         {
             if (values is null)
             {
@@ -1215,7 +1215,7 @@ namespace System
                 ?? this;
         }
 
-        private static string? ReplaceCore(ReadOnlySpan<char> searchSpace, ReadOnlySpan<char> oldValue, ReadOnlySpan<char> newValue, CompareInfo compareInfo, CompareOptions options)
+        private static unsafe string? ReplaceCore(ReadOnlySpan<char> searchSpace, ReadOnlySpan<char> oldValue, ReadOnlySpan<char> newValue, CompareInfo compareInfo, CompareOptions options)
         {
             Debug.Assert(!oldValue.IsEmpty);
             Debug.Assert(compareInfo != null);
@@ -1322,7 +1322,7 @@ namespace System
             return result;
         }
 
-        public string Replace(string oldValue, string? newValue)
+        public unsafe string Replace(string oldValue, string? newValue)
         {
             ArgumentException.ThrowIfNullOrEmpty(oldValue);
 
@@ -1454,7 +1454,7 @@ namespace System
         /// A string that is equivalent to this instance except that all instances of <paramref name="oldRune"/> are replaced with <paramref name="newRune"/>.
         /// If <paramref name="oldRune"/> is not found in the current instance, the method returns the current instance unchanged.
         /// </returns>
-        public string Replace(Rune oldRune, Rune newRune)
+        public unsafe string Replace(Rune oldRune, Rune newRune)
         {
             if (Length == 0)
             {
@@ -1528,7 +1528,7 @@ namespace System
                 : ReplaceLineEndingsCore(replacementText);
         }
 
-        private string ReplaceLineEndingsCore(string replacementText)
+        private unsafe string ReplaceLineEndingsCore(string replacementText)
         {
             ArgumentNullException.ThrowIfNull(replacementText);
 
@@ -1621,7 +1621,7 @@ namespace System
             }
         }
 
-        private string ReplaceLineEndingsWithLineFeed()
+        private unsafe string ReplaceLineEndingsWithLineFeed()
         {
             // If we are going to replace the new line with a line feed ('\n'),
             // we can skip looking for it to avoid breaking out of the vectorized path unnecessarily.
@@ -1682,7 +1682,7 @@ namespace System
         /// <param name="count">The maximum number of elements expected in the array.</param>
         /// <param name="options">A bitwise combination of the enumeration values that specifies whether to trim substrings and include empty substrings.</param>
         /// <returns>An array whose elements contain the substrings from this instance that are delimited by <paramref name="separator"/>.</returns>
-        public string[] Split(Rune separator, int count, StringSplitOptions options = StringSplitOptions.None)
+        public unsafe string[] Split(Rune separator, int count, StringSplitOptions options = StringSplitOptions.None)
         {
             ReadOnlySpan<char> separatorSpan = separator.AsSpan(stackalloc char[Rune.MaxUtf16CharsPerRune]);
 
@@ -1749,7 +1749,7 @@ namespace System
             return SplitInternal(separator, count, options);
         }
 
-        private string[] SplitInternal(ReadOnlySpan<char> separators, int count, StringSplitOptions options)
+        private unsafe string[] SplitInternal(ReadOnlySpan<char> separators, int count, StringSplitOptions options)
         {
             ArgumentOutOfRangeException.ThrowIfNegative(count);
 
@@ -1811,7 +1811,7 @@ namespace System
             return SplitInternal(null, separator, count, options);
         }
 
-        private string[] SplitInternal(string? separator, string?[]? separators, int count, StringSplitOptions options)
+        private unsafe string[] SplitInternal(string? separator, string?[]? separators, int count, StringSplitOptions options)
         {
             ArgumentOutOfRangeException.ThrowIfNegative(count);
 
@@ -1894,7 +1894,7 @@ namespace System
         private string[] SplitInternal(string separator, int count, StringSplitOptions options)
             => Split(separator.AsSpan(), count, options);
 
-        private string[] Split(ReadOnlySpan<char> separator, int count, StringSplitOptions options)
+        private unsafe string[] Split(ReadOnlySpan<char> separator, int count, StringSplitOptions options)
         {
             var sepListBuilder = new ValueListBuilder<int>(stackalloc int[StackallocIntBufferSizeLimit]);
 
@@ -2411,7 +2411,7 @@ namespace System
         /// The string that remains after all instances of the <paramref name="trimRune"/> rune are removed from the start and end of the
         /// current string. If no runes can be trimmed from the current instance, the method returns the current instance unchanged.
         /// </returns>
-        public string Trim(Rune trimRune)
+        public unsafe string Trim(Rune trimRune)
         {
             if (Length == 0)
             {
@@ -2497,7 +2497,7 @@ namespace System
         /// The string that remains after all instances of the <paramref name="trimRune"/> rune are removed from the start of the
         /// current string. If no runes can be trimmed from the current instance, the method returns the current instance unchanged.
         /// </returns>
-        public string TrimStart(Rune trimRune)
+        public unsafe string TrimStart(Rune trimRune)
         {
             if (Length == 0)
             {
@@ -2571,7 +2571,7 @@ namespace System
         /// The string that remains after all instances of the <paramref name="trimRune"/> rune are removed from the end of the
         /// current string. If no runes can be trimmed from the current instance, the method returns the current instance unchanged.
         /// </returns>
-        public string TrimEnd(Rune trimRune)
+        public unsafe string TrimEnd(Rune trimRune)
         {
             if (Length == 0)
             {

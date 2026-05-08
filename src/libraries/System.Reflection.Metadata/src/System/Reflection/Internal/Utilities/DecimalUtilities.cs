@@ -5,7 +5,7 @@ namespace System.Reflection.Internal
 {
     internal static class DecimalUtilities
     {
-        public static int GetScale(this decimal value)
+        public static unsafe int GetScale(this decimal value)
         {
 #if NET
             Span<int> bits = stackalloc int[4];
@@ -16,7 +16,7 @@ namespace System.Reflection.Internal
 #endif
         }
 
-        public static void GetBits(this decimal value, out bool isNegative, out byte scale, out uint low, out uint mid, out uint high)
+        public static unsafe void GetBits(this decimal value, out bool isNegative, out byte scale, out uint low, out uint mid, out uint high)
         {
 #if NET
             Span<int> bits = stackalloc int[4];

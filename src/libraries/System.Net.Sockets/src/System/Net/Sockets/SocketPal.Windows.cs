@@ -199,7 +199,7 @@ namespace System.Net.Sockets
             return errorCode == SocketError.SocketError ? GetLastSocketError() : SocketError.Success;
         }
 
-        public static SocketError Send(SafeSocketHandle handle, IList<ArraySegment<byte>> buffers, SocketFlags socketFlags, out int bytesTransferred)
+        public static unsafe SocketError Send(SafeSocketHandle handle, IList<ArraySegment<byte>> buffers, SocketFlags socketFlags, out int bytesTransferred)
         {
             const int StackThreshold = 16; // arbitrary limit to avoid too much space on stack (note: may be over-sized, that's OK - length passed separately)
             int count = buffers.Count;
@@ -367,7 +367,7 @@ namespace System.Net.Sockets
             return SocketError.Success;
         }
 
-        public static SocketError Receive(SafeSocketHandle handle, IList<ArraySegment<byte>> buffers, SocketFlags socketFlags, out int bytesTransferred)
+        public static unsafe SocketError Receive(SafeSocketHandle handle, IList<ArraySegment<byte>> buffers, SocketFlags socketFlags, out int bytesTransferred)
         {
             const int StackThreshold = 16; // arbitrary limit to avoid too much space on stack (note: may be over-sized, that's OK - length passed separately)
             int count = buffers.Count;
@@ -927,7 +927,7 @@ namespace System.Net.Sockets
         public static unsafe SocketError Select(IList? checkRead, IList? checkWrite, IList? checkError, int microseconds)
         {
             const int StackThreshold = 64; // arbitrary limit to avoid too much space on stack
-            static bool ShouldStackAlloc(IList? list, scoped ref IntPtr[]? lease, out Span<IntPtr> span)
+            static unsafe bool ShouldStackAlloc(IList? list, scoped ref IntPtr[]? lease, out Span<IntPtr> span)
             {
                 int count;
                 if (list == null || (count = list.Count) == 0)

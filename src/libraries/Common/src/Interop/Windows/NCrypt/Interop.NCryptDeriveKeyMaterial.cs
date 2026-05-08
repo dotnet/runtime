@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
@@ -29,7 +29,7 @@ internal static partial class Interop
         ///     Derive key material from a hash or HMAC KDF
         /// </summary>
         /// <returns></returns>
-        private static byte[] DeriveKeyMaterial(
+        private static unsafe byte[] DeriveKeyMaterial(
             SafeNCryptSecretHandle secretAgreement,
             string kdf,
             string hashAlgorithm,

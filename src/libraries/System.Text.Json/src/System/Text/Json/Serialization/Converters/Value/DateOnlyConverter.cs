@@ -28,7 +28,7 @@ namespace System.Text.Json.Serialization.Converters
             return ReadCore(ref reader);
         }
 
-        private static DateOnly ReadCore(ref Utf8JsonReader reader)
+        private static unsafe DateOnly ReadCore(ref Utf8JsonReader reader)
         {
             if (!JsonHelpers.IsInRangeInclusive(reader.ValueLength, FormatLength, MaxEscapedFormatLength))
             {
@@ -62,7 +62,7 @@ namespace System.Text.Json.Serialization.Converters
             return value;
         }
 
-        public override void Write(Utf8JsonWriter writer, DateOnly value, JsonSerializerOptions options)
+        public override unsafe void Write(Utf8JsonWriter writer, DateOnly value, JsonSerializerOptions options)
         {
             Span<byte> buffer = stackalloc byte[FormatLength];
             bool formattedSuccessfully = value.TryFormat(buffer, out int charsWritten, "O", CultureInfo.InvariantCulture);
@@ -70,7 +70,7 @@ namespace System.Text.Json.Serialization.Converters
             writer.WriteStringValue(buffer);
         }
 
-        internal override void WriteAsPropertyNameCore(Utf8JsonWriter writer, DateOnly value, JsonSerializerOptions options, bool isWritingExtensionDataProperty)
+        internal override unsafe void WriteAsPropertyNameCore(Utf8JsonWriter writer, DateOnly value, JsonSerializerOptions options, bool isWritingExtensionDataProperty)
         {
             Span<byte> buffer = stackalloc byte[FormatLength];
             bool formattedSuccessfully = value.TryFormat(buffer, out int charsWritten, "O", CultureInfo.InvariantCulture);

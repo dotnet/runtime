@@ -35,7 +35,7 @@ namespace System.Security.Cryptography
             return _key.DuplicateHandle();
         }
 
-        protected override void DeriveRawSecretAgreementCore(X25519DiffieHellman otherParty, Span<byte> destination)
+        protected override unsafe void DeriveRawSecretAgreementCore(X25519DiffieHellman otherParty, Span<byte> destination)
         {
             Debug.Assert(destination.Length == SecretAgreementSizeInBytes);
             ThrowIfPrivateNeeded();

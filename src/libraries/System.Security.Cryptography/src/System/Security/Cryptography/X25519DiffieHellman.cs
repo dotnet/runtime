@@ -291,7 +291,7 @@ namespace System.Security.Cryptography
         /// <exception cref="CryptographicException">
         ///   An error occurred while exporting the key.
         /// </exception>
-        public string ExportSubjectPublicKeyInfoPem()
+        public unsafe string ExportSubjectPublicKeyInfoPem()
         {
             ThrowIfDisposed();
             Span<byte> spki = stackalloc byte[SpkiSizeInBytes];

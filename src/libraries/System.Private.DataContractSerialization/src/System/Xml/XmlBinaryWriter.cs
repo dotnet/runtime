@@ -766,7 +766,7 @@ namespace System.Xml
             }
         }
 
-        public override void WriteDecimalText(decimal d)
+        public override unsafe void WriteDecimalText(decimal d)
         {
             if (BitConverter.IsLittleEndian)
             {
@@ -946,7 +946,7 @@ namespace System.Xml
             }
         }
 
-        public void WriteDecimalArray(ReadOnlySpan<decimal> items)
+        public unsafe void WriteDecimalArray(ReadOnlySpan<decimal> items)
         {
             if (BitConverter.IsLittleEndian)
             {

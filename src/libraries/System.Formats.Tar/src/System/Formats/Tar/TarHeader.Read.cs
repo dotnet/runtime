@@ -19,7 +19,7 @@ namespace System.Formats.Tar
         // Attempts to retrieve the next header from the specified tar archive stream.
         // Throws if end of stream is reached or if any data type conversion fails.
         // Returns a valid TarHeader object if the attributes were read successfully, null otherwise.
-        internal static TarHeader? TryGetNextHeader(Stream archiveStream, bool copyData, TarEntryFormat initialFormat, bool processDataBlock)
+        internal static unsafe TarHeader? TryGetNextHeader(Stream archiveStream, bool copyData, TarEntryFormat initialFormat, bool processDataBlock)
         {
             // The four supported formats have a header that fits in the default record size
             Span<byte> buffer = stackalloc byte[TarHelpers.RecordSize];

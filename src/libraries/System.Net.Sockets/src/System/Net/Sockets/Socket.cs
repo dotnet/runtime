@@ -291,7 +291,7 @@ namespace System.Net.Sockets
         }
 
         // Gets the local end point.
-        public EndPoint? LocalEndPoint
+        public unsafe EndPoint? LocalEndPoint
         {
             get
             {
@@ -339,7 +339,7 @@ namespace System.Net.Sockets
         }
 
         // Gets the remote end point.
-        public EndPoint? RemoteEndPoint
+        public unsafe EndPoint? RemoteEndPoint
         {
             get
             {

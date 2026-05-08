@@ -1832,7 +1832,7 @@ namespace System.Net.Sockets
             }
         }
 
-        private static SocketError SelectViaSelect(IList? checkRead, IList? checkWrite, IList? checkError, int microseconds)
+        private static unsafe SocketError SelectViaSelect(IList? checkRead, IList? checkWrite, IList? checkError, int microseconds)
         {
             const int MaxStackAllocCount = 20;      // this is just arbitrary limit 3x 20 -> 60 e.g. close to 64 we have in some other places
             Span<int> readFDs = checkRead?.Count > MaxStackAllocCount ? new int[checkRead.Count] : stackalloc int[checkRead?.Count ?? 0];

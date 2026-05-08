@@ -234,7 +234,7 @@ namespace System.Diagnostics
         ///  - '|a000b421-5d183ab6.1.8e2d4c28_' - Id of the grand child activity. It was started in another process and ends with '_'<para />
         /// 'a000b421-5d183ab6' is a <see cref="RootId"/> for the first Activity and all its children
         /// </example>
-        public string? Id
+        public unsafe string? Id
         {
             get
             {
@@ -266,7 +266,7 @@ namespace System.Diagnostics
         /// <para/>
         /// See <see href="https://github.com/dotnet/runtime/blob/main/src/libraries/System.Diagnostics.DiagnosticSource/src/ActivityUserGuide.md#id-format"/> for more details
         /// </summary>
-        public string? ParentId
+        public unsafe string? ParentId
         {
             get
             {
@@ -1952,7 +1952,7 @@ namespace System.Diagnostics
         /// <summary>
         /// Create a new TraceId with at random number in it (very likely to be unique)
         /// </summary>
-        public static ActivityTraceId CreateRandom()
+        public static unsafe ActivityTraceId CreateRandom()
         {
             Span<byte> span = stackalloc byte[sizeof(ulong) * 2];
             SetToRandomBytes(span);
@@ -2019,7 +2019,7 @@ namespace System.Diagnostics
         /// This is exposed as CreateFromUtf8String, but we are modifying fields, so the code needs to be in a constructor.
         /// </summary>
         /// <param name="idData"></param>
-        private ActivityTraceId(ReadOnlySpan<byte> idData)
+        private unsafe ActivityTraceId(ReadOnlySpan<byte> idData)
         {
             if (idData.Length != 32)
                 throw new ArgumentOutOfRangeException(nameof(idData));

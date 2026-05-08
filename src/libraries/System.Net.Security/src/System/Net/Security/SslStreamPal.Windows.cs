@@ -112,7 +112,7 @@ namespace System.Net.Security
             throw new PlatformNotSupportedException(nameof(SelectApplicationProtocol));
         }
 
-        public static ProtocolToken AcceptSecurityContext(
+        public static unsafe ProtocolToken AcceptSecurityContext(
             ref SafeFreeCredentials? credentialsHandle,
             ref SafeDeleteSslContext? context,
             ReadOnlySpan<byte> inputBuffer,
@@ -163,7 +163,7 @@ namespace System.Net.Security
             return false;
         }
 
-        public static ProtocolToken InitializeSecurityContext(
+        public static unsafe ProtocolToken InitializeSecurityContext(
             ref SafeFreeCredentials? credentialsHandle,
             ref SafeDeleteSslContext? context,
             string? targetName,

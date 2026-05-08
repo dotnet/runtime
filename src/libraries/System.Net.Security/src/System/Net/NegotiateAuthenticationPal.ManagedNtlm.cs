@@ -416,7 +416,7 @@ namespace System.Net
             // Define NTOWFv2(Passwd, User, UserDom) as HMAC_MD5(MD4(UNICODE(Passwd)), UNICODE(ConcatenationOf(Uppercase(User),
             // UserDom ) ) )
             // EndDefine
-            private static void makeNtlm2Hash(string domain, string userName, ReadOnlySpan<char> password, Span<byte> hash)
+            private static unsafe void makeNtlm2Hash(string domain, string userName, ReadOnlySpan<char> password, Span<byte> hash)
             {
                 // Maximum password length for Windows authentication is 128 characters, we enforce
                 // the limit early to prevent allocating large buffers on stack.
@@ -764,7 +764,7 @@ namespace System.Net
                 _serverSeal = new RC4(_serverSealingKey);
             }
 
-            private void CalculateSignature(
+            private unsafe void CalculateSignature(
                 ReadOnlySpan<byte> message,
                 uint sequenceNumber,
                 ReadOnlySpan<byte> signingKey,
@@ -783,7 +783,7 @@ namespace System.Net
                 }
             }
 
-            public override bool VerifyMIC(ReadOnlySpan<byte> message, ReadOnlySpan<byte> signature)
+            public override unsafe bool VerifyMIC(ReadOnlySpan<byte> message, ReadOnlySpan<byte> signature)
             {
                 // Check length and version
                 if (signature.Length != SignatureLength ||

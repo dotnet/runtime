@@ -1379,7 +1379,7 @@ namespace System.Text.RegularExpressions
             // by sets that can be merged.  Third, it reduces the amount of duplicated comparisons required
             // if we end up backtracking into subsequent branches.
             // e.g. abc|ade => a(?bc|de)
-            static RegexNode ExtractCommonPrefixText(RegexNode alternation)
+            static unsafe RegexNode ExtractCommonPrefixText(RegexNode alternation)
             {
                 Debug.Assert(alternation.Kind == RegexNodeKind.Alternate);
                 Debug.Assert(alternation.Children is List<RegexNode> { Count: >= 2 });
@@ -1567,7 +1567,7 @@ namespace System.Text.RegularExpressions
         /// <remarks>
         /// This method is used to determine if an alternation can be optimized using a switch on the first character.
         /// </remarks>
-        public bool TryGetAlternationStartingChars([NotNullWhen(true)] out HashSet<char>? seenChars)
+        public unsafe bool TryGetAlternationStartingChars([NotNullWhen(true)] out HashSet<char>? seenChars)
         {
             Debug.Assert(Kind is RegexNodeKind.Alternate);
             Debug.Assert((Options & RegexOptions.RightToLeft) == 0);
@@ -1668,7 +1668,7 @@ namespace System.Text.RegularExpressions
         /// A tuple of data about the literal: only one of the Char/String/SetChars fields is relevant.
         /// The Negated value indicates whether the Char/SetChars should be considered exclusionary.
         /// </returns>
-        public StartingLiteralData? FindStartingLiteral()
+        public unsafe StartingLiteralData? FindStartingLiteral()
         {
             if (FindStartingLiteralNode() is RegexNode node)
             {
@@ -3100,7 +3100,7 @@ namespace System.Text.RegularExpressions
         /// characters the group's content matches at that position.
         /// </param>
         /// <returns>true if a sequence was found; otherwise, false.</returns>
-        public bool TryGetOrdinalCaseInsensitiveString(int childIndex, int exclusiveChildBound, out int nodesConsumed, [NotNullWhen(true)] out string? caseInsensitiveString, bool consumeZeroWidthNodes = false, bool forPrefixAnalysis = false)
+        public unsafe bool TryGetOrdinalCaseInsensitiveString(int childIndex, int exclusiveChildBound, out int nodesConsumed, [NotNullWhen(true)] out string? caseInsensitiveString, bool consumeZeroWidthNodes = false, bool forPrefixAnalysis = false)
         {
             Debug.Assert(Kind == RegexNodeKind.Concatenate, $"Expected Concatenate, got {Kind}");
 

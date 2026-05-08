@@ -370,7 +370,7 @@ namespace System.Text.Json
             throw new JsonException(SR.Format(SR.DuplicatePropertiesNotAllowed_NameSpan, Truncate(name)));
         }
 
-        private static string Truncate(ReadOnlySpan<char> str)
+        private static unsafe string Truncate(ReadOnlySpan<char> str)
         {
             const int MaxLength = 15;
 

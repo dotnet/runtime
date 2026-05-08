@@ -75,7 +75,7 @@ namespace System.Buffers
         /// </summary>
         /// <param name="values">The set of values.</param>
         /// <returns>The optimized representation of <paramref name="values"/> used for efficient searching.</returns>
-        public static SearchValues<char> Create(params ReadOnlySpan<char> values)
+        public static unsafe SearchValues<char> Create(params ReadOnlySpan<char> values)
         {
             if (values.IsEmpty)
             {
