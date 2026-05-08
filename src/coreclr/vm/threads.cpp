@@ -1053,7 +1053,7 @@ void InitThreadManager()
     // All patched helpers should fit into one page.
     // If you hit this assert on retail build, there is most likely problem with BBT script.
     _ASSERTE_ALL_BUILDS((BYTE*)JIT_PatchedCodeLast - (BYTE*)JIT_PatchedCodeStart > (ptrdiff_t)0);
-    _ASSERTE_ALL_BUILDS((BYTE*)JIT_PatchedCodeLast - (BYTE*)JIT_PatchedCodeStart < (ptrdiff_t)minipal_getpagesize());
+    _ASSERTE_ALL_BUILDS((BYTE*)JIT_PatchedCodeLast - (BYTE*)JIT_PatchedCodeStart < minipal_getpagesize());
 
     if (IsWriteBarrierCopyEnabled())
     {
@@ -5045,7 +5045,7 @@ HRESULT Thread::CLRSetThreadStackGuarantee(SetThreadStackGuaranteeScope fScope)
         INDEBUG(EXTRA_PAGES += 1);
 
         int ThreadGuardPages = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_ThreadGuardPages, EXTRA_PAGES);
-        uGuardSize += (ThreadGuardPages * (uint32_t)minipal_getpagesize());
+        uGuardSize += (ThreadGuardPages * minipal_getpagesize());
 
         LOG((LF_EH, LL_INFO10000, "STACKOVERFLOW: setting thread stack guarantee to 0x%x\n", uGuardSize));
 

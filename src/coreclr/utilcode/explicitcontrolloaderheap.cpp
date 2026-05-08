@@ -64,7 +64,7 @@ ExplicitControlLoaderHeap::ExplicitControlLoaderHeap(bool fMakeExecutable) :
     m_pEndReservedRegion         = NULL;
     m_pAllocPtr                  = NULL;
 
-    m_dwCommitBlockSize          = (uint32_t)minipal_getpagesize();
+    m_dwCommitBlockSize          = minipal_getpagesize();
 
 #ifdef _DEBUG
     m_dwDebugWastedBytes         = 0;

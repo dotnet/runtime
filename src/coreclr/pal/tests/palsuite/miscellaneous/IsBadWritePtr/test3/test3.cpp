@@ -29,7 +29,7 @@ PALTEST(miscellaneous_IsBadWritePtr_test3_paltest_isbadwriteptr_test3, "miscella
     */
     
     PageOne = VirtualAlloc(NULL, 
-			   (uint32_t)minipal_getpagesize(), 
+			   minipal_getpagesize(), 
 			   MEM_COMMIT, 
 			   PAGE_READONLY);
 
@@ -38,7 +38,7 @@ PALTEST(miscellaneous_IsBadWritePtr_test3_paltest_isbadwriteptr_test3, "miscella
 	Fail("ERROR: VirtualAlloc failed to commit the required memory.\n");
     }
 
-    if(IsBadWritePtr(PageOne,(uint32_t)minipal_getpagesize()) == 0)
+    if(IsBadWritePtr(PageOne,minipal_getpagesize()) == 0)
     {
 	VirtualFree(PageOne,0,MEM_RELEASE);
 

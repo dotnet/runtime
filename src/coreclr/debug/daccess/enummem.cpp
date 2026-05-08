@@ -112,7 +112,7 @@ HRESULT ClrDataAccess::EnumMemCollectImages()
                     // MethodHeader MethodDesc::GetILHeader. Without this RVA,
                     // all locals are broken. In case, you are asked about this question again.
                     //
-                    ulSizeBlock = ulSize > (uint32_t)minipal_getpagesize() ? (uint32_t)minipal_getpagesize() : ulSize;
+                    ulSizeBlock = ulSize > minipal_getpagesize() ? minipal_getpagesize() : ulSize;
                     ReportMem(pStartAddr, ulSizeBlock, false);
                     pStartAddr += ulSizeBlock;
                     ulSize -= ulSizeBlock;
