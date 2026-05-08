@@ -1833,12 +1833,17 @@ GenTree* Compiler::impProfileLclHeap(GenTree* lclHeap, IL_OFFSET ilOffset)
         }
 
         // The fast path is profitable only when the constant-size LCLHEAP zero-init can
-        // actually be unrolled by Lowering. Outside that window the cmp/jne guard adds
-        // overhead with no codegen win.
+        // actually be unrolled by Lowering. Skip very small popular values, since the
+        // cmp/jne guard plus contained-constant LCLHEAP codegen overhead (stack probe,
+        // outgoing-arg-area dance) costs more than the variable-size path saves at this
+        // size. Skip very large values for the symmetric reason: above the unroll
+        // threshold there is no constant-size codegen win to offset the guard.
+        const ssize_t minValue = (ssize_t)DEFAULT_MAX_LOCALLOC_TO_LOCAL_SIZE;
         const ssize_t maxValue = (ssize_t)getUnrollThreshold(UnrollKind::Memset);
-        if ((profiledValue < 0) || (profiledValue > maxValue))
+        if ((profiledValue <= minValue) || (profiledValue > maxValue))
         {
-            JITDUMP("Profiled LCLHEAP size %zd is out of range [0, %zd] - skipping\n", profiledValue, maxValue);
+            JITDUMP("Profiled LCLHEAP size %zd is out of range (%zd, %zd] - skipping\n", profiledValue, minValue,
+                    maxValue);
             return lclHeap;
         }
         assert(FitsIn<int>(profiledValue));
@@ -1849,34 +1854,8 @@ GenTree* Compiler::impProfileLclHeap(GenTree* lclHeap, IL_OFFSET ilOffset)
         GenTree* profiledValueNode = gtNewIconNode(profiledValue, size->TypeGet());
         GenTree* fallback          = gtNewLclHeapNode(clonedSizeNode, ilOffset);
 
-        GenTree* fastpath;
-        if (profiledValue == 0)
-        {
-            // Just nullptr.
-            fastpath = gtNewIconNode(0, TYP_I_IMPL);
-        }
-        else if (profiledValue <= DEFAULT_MAX_LOCALLOC_TO_LOCAL_SIZE)
-        {
-            // For tiny popular sizes, route the fast path through a fixed-size
-            // zero-init local (the same trick the importer uses for constant
-            // stackalloc). This avoids the LCLHEAP codegen overhead (stack
-            // probing, outgoing-arg-area dance, etc.) that dominates for very
-            // small allocations.
-            //
-            // The local is zeroed at function entry by must-init even when the
-            // fallback path is taken; that cost is negligible at this size.
-            const unsigned stackallocAsLocal = lvaGrabTemp(false DEBUGARG("profiled stackallocLocal"));
-            lvaSetStruct(stackallocAsLocal, typGetBlkLayout((unsigned)profiledValue), false);
-            lvaTable[stackallocAsLocal].lvHasLdAddrOp    = true;
-            lvaTable[stackallocAsLocal].lvIsUnsafeBuffer = true;
-            fastpath                                     = gtNewLclVarAddrNode(stackallocAsLocal);
-        }
-        else
-        {
-            // For larger popular sizes, keep an actual LCLHEAP so Lowering can
-            // unroll the zero-init via STORE_BLK.
-            fastpath = gtNewLclHeapNode(profiledValueNode, ilOffset);
-        }
+        // Fast path: a constant-size LCLHEAP that Lowering will unroll into STORE_BLK.
+        GenTree* fastpath = gtNewLclHeapNode(profiledValueNode, ilOffset);
 
         GenTreeColon* colon = new (this, GT_COLON) GenTreeColon(TYP_I_IMPL, fastpath, fallback);
         GenTreeOp*    cond  = gtNewOperNode(GT_EQ, TYP_INT, sizeNode, gtCloneExpr(profiledValueNode));
