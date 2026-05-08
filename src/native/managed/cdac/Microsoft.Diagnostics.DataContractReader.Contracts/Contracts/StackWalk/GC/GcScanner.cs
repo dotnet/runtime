@@ -360,10 +360,10 @@ internal class GcScanner
             else
             {
                 uint methodToken = rts.GetMethodToken(mdh);
-                if (methodToken == 0x06000000)
+                if (methodToken == (uint)EcmaMetadataUtils.TokenType.mdtMethodDef)
                     return;
 
-                MethodDefinitionHandle methodDefHandle = MetadataTokens.MethodDefinitionHandle((int)(methodToken & 0x00FFFFFF));
+                MethodDefinitionHandle methodDefHandle = MetadataTokens.MethodDefinitionHandle((int)EcmaMetadataUtils.GetRowId(methodToken));
                 MethodDefinition methodDef = mdReader.GetMethodDefinition(methodDefHandle);
 
                 BlobReader blobReader = mdReader.GetBlobReader(methodDef.Signature);
