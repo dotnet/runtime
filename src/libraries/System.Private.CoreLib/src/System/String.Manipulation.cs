@@ -1691,10 +1691,14 @@ namespace System
 
             CheckStringSplitOptions(options);
 
-            ReadOnlySpan<char> separatorSpan = separator.AsSpan(stackalloc char[Rune.MaxUtf16CharsPerRune]);
-
             // Ensure matching the string separator overload.
-            return (count <= 1 || Length == 0) ? CreateSplitArrayOfThisAsSoleValue(options, count) : Split(separatorSpan, count, options);
+            if (count <= 1 || Length == 0)
+            {
+                return CreateSplitArrayOfThisAsSoleValue(options, count);
+            }
+
+            ReadOnlySpan<char> separatorSpan = separator.AsSpan(stackalloc char[Rune.MaxUtf16CharsPerRune]);
+            return Split(separatorSpan, count, options);
         }
 
         // Creates an array of strings by splitting this string at each
