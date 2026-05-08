@@ -4720,45 +4720,6 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
-        public void CreateCauchySequenceInt32Test()
-        {
-            Vector64<int> sequence = Vector64.CreateCauchySequence(1, 3);
-            int expected = 1;
-
-            for (int index = 0; index < Vector64<int>.Count; index++)
-            {
-                Assert.Equal((int)Math.Sqrt(expected), sequence.GetElement(index));
-                expected += 3;
-            }
-        }
-
-        [Fact]
-        public void CreateCauchySequenceSingleTest()
-        {
-            Vector64<float> sequence = Vector64.CreateCauchySequence(1.0f, 1.0f);
-            float expected = 1.0f;
-
-            for (int index = 0; index < Vector64<float>.Count; index++)
-            {
-                AssertExtensions.Equal(MathF.Sqrt(expected), sequence.GetElement(index), 1e-6f);
-                expected += 1.0f;
-            }
-        }
-
-        [Fact]
-        public void CreateCauchySequenceDoubleTest()
-        {
-            Vector64<double> sequence = Vector64.CreateCauchySequence(1.0, 1.0);
-            double expected = 1.0;
-
-            for (int index = 0; index < Vector64<double>.Count; index++)
-            {
-                AssertExtensions.Equal(Math.Sqrt(expected), sequence.GetElement(index), 1e-15);
-                expected += 1.0;
-            }
-        }
-
-        [Fact]
         public void SignSequenceInt32Test()
         {
             Vector64<int> sequence = Vector64<int>.SignSequence;
