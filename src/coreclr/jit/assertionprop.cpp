@@ -1946,6 +1946,20 @@ AssertionInfo Compiler::optAssertionGenJtrue(GenTree* tree)
         }
     }
 
+    // Handle "VN ==/!= class handle" pattern. T
+    if (!optLocalAssertionProp && relop->OperIs(GT_EQ, GT_NE) && op2->TypeIs(TYP_I_IMPL))
+    {
+        ValueNum op1VN = optConservativeNormalVN(op1);
+        ValueNum hndVN = optConservativeNormalVN(op2);
+        if ((op1VN != ValueNumStore::NoVN) && vnStore->IsVNTypeHandle(hndVN))
+        {
+            AssertionDsc   dsc = AssertionDsc::CreateConstVNAssertion(this, op1VN, hndVN, relop->OperIs(GT_EQ), GTF_ICON_CLASS_HDL);
+            AssertionIndex idx = optAddAssertion(dsc);
+            optCreateComplementaryAssertion(idx);
+            return idx;
+        }
+    }
+
     // Check for op1 or op2 to be lcl var and if so, keep it in op1.
     if (!op1->OperIs(GT_LCL_VAR) && op2->OperIs(GT_LCL_VAR))
     {
@@ -2413,6 +2427,49 @@ AssertionIndex Compiler::optAssertionIsSubtype(GenTree* tree, GenTree* methodTab
         }
     }
     return NO_ASSERTION_INDEX;
+}
+
+//------------------------------------------------------------------------------
+// optAssertionGetVNHandleClass:
+//    Look for an assertion of the form "VN(tree) == handle_const_class" among
+//    the live assertions and, if found, return the recorded class handle.
+//
+// Arguments:
+//    tree       - tree whose VN we look up
+//    assertions - the live assertion set
+//
+// Return Value:
+//    The asserted class handle, or NO_CLASS_HANDLE if no such assertion exists.
+//
+CORINFO_CLASS_HANDLE Compiler::optAssertionGetVNHandleClass(GenTree* tree, ASSERT_VALARG_TP assertions)
+{
+    assert(!optLocalAssertionProp);
+
+    const ValueNum treeVN = vnStore->VNConservativeNormalValue(tree->gtVNPair);
+    if ((treeVN == ValueNumStore::NoVN) || !optAssertionHasAssertionsForVN(treeVN))
+    {
+        return NO_CLASS_HANDLE;
+    }
+
+    if (IsAot())
+    {
+        // todo: fix
+        return NO_CLASS_HANDLE;
+    }
+
+    BitVecOps::Iter iter(apTraits, assertions);
+    unsigned        bvIndex = 0;
+    while (iter.NextElem(&bvIndex))
+    {
+        const AssertionDsc& curAssertion = optGetAssertion(GetAssertionIndex(bvIndex));
+        if (curAssertion.KindIs(OAK_EQUAL) && curAssertion.GetOp1().KindIs(O1K_VN) &&
+            (curAssertion.GetOp1().GetVN() == treeVN) && curAssertion.GetOp2().KindIs(O2K_CONST_INT) &&
+            (curAssertion.GetOp2().GetIconFlag() == GTF_ICON_CLASS_HDL))
+        {
+            return reinterpret_cast<CORINFO_CLASS_HANDLE>(curAssertion.GetOp2().GetIntConstant());
+        }
+    }
+    return NO_CLASS_HANDLE;
 }
 
 //------------------------------------------------------------------------------
@@ -5286,6 +5343,30 @@ GenTree* Compiler::optAssertionProp_Call(ASSERT_VALARG_TP assertions, GenTreeCal
                 objArg = fgMakeMultiUse(&objCallArg->NodeRef());
                 objArg = gtWrapWithSideEffects(objArg, call, GTF_SIDE_EFFECT, true);
                 return optAssertionProp_Update(objArg, call, stmt);
+            }
+
+            // If castToArg is not a constant class handle (e.g., it's a shared-generic runtime lookup),
+            // see if we have an assertion of the form "castToArg.VN == handle_const" that lets us treat
+            // it as a constant for cast-folding purposes.
+            if (!castToArg->IsIconHandle(GTF_ICON_CLASS_HDL))
+            {
+                CORINFO_CLASS_HANDLE assertedClass = optAssertionGetVNHandleClass(castToArg, assertions);
+                if (assertedClass != NO_CLASS_HANDLE)
+                {
+                    bool                 isExact;
+                    bool                 isNonNull;
+                    CORINFO_CLASS_HANDLE objClass = gtGetClassHandle(objArg, &isExact, &isNonNull);
+                    if ((objClass != NO_CLASS_HANDLE) &&
+                        (info.compCompHnd->compareTypesForCast(objClass, assertedClass) == TypeCompareState::Must))
+                    {
+                        JITDUMP("\nDid VN based runtime-lookup cast prop in " FMT_BB ":\n", compCurBB->bbNum);
+                        DISPTREE(call);
+
+                        objArg = fgMakeMultiUse(&objCallArg->NodeRef());
+                        objArg = gtWrapWithSideEffects(objArg, call, GTF_SIDE_EFFECT, true);
+                        return optAssertionProp_Update(objArg, call, stmt);
+                    }
+                }
             }
 
             // Leave a hint for fgLateCastExpansion that obj is never null.

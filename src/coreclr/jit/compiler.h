@@ -8740,6 +8740,29 @@ public:
             dsc.m_op2.m_icon.m_iconVal = cns;
             return dsc;
         }
+
+        // Create "O1K_VN(op1VN) ==/!= constant" assertion where the constant is identified by its VN.
+        static AssertionDsc CreateConstVNAssertion(const Compiler* comp,
+                                                   ValueNum        op1VN,
+                                                   ValueNum        cnsVN,
+                                                   bool            equals,
+                                                   GenTreeFlags    iconFlags = GTF_EMPTY,
+                                                   FieldSeq*       fieldSeq  = nullptr)
+        {
+            assert(!comp->optLocalAssertionProp);
+            assert(op1VN != ValueNumStore::NoVN);
+            assert(cnsVN != ValueNumStore::NoVN);
+
+            AssertionDsc dsc           = CreateEmptyAssertion(comp);
+            dsc.m_assertionKind        = equals ? OAK_EQUAL : OAK_NOT_EQUAL;
+            dsc.m_op1.m_kind           = O1K_VN;
+            dsc.m_op1.m_vn             = op1VN;
+            dsc.m_op2.m_kind           = O2K_CONST_INT;
+            dsc.m_op2.m_vn             = cnsVN;
+            dsc.m_op2.m_icon.m_iconVal = comp->vnStore->CoercedConstantValue<ssize_t>(cnsVN);
+            dsc.m_op2.SetIconFlag(iconFlags, fieldSeq);
+            return dsc;
+        }
     };
 
 protected:
@@ -8823,10 +8846,11 @@ public:
     AssertionIndex optAddAssertion(const AssertionDsc& assertion);
 
     // Used for respective assertion propagations.
-    AssertionIndex optAssertionIsSubrange(GenTree* tree, IntegralRange range, ASSERT_VALARG_TP assertions);
-    AssertionIndex optAssertionIsSubtype(GenTree* tree, GenTree* methodTableArg, ASSERT_VALARG_TP assertions);
-    bool           optAssertionVNIsNonNull(ValueNum vn, ASSERT_VALARG_TP assertions, int budget = 10);
-    bool           optAssertionIsNonNull(GenTree* op, ASSERT_VALARG_TP assertions);
+    AssertionIndex       optAssertionIsSubrange(GenTree* tree, IntegralRange range, ASSERT_VALARG_TP assertions);
+    AssertionIndex       optAssertionIsSubtype(GenTree* tree, GenTree* methodTableArg, ASSERT_VALARG_TP assertions);
+    CORINFO_CLASS_HANDLE optAssertionGetVNHandleClass(GenTree* tree, ASSERT_VALARG_TP assertions);
+    bool                 optAssertionVNIsNonNull(ValueNum vn, ASSERT_VALARG_TP assertions, int budget = 10);
+    bool                 optAssertionIsNonNull(GenTree* op, ASSERT_VALARG_TP assertions);
 
     AssertionIndex optGlobalAssertionIsEqualOrNotEqual(ASSERT_VALARG_TP assertions, GenTree* op1, GenTree* op2);
     AssertionIndex optLocalAssertionIsEqualOrNotEqual(
