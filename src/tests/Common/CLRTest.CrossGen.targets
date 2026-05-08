@@ -79,6 +79,7 @@ if [ ! -z ${RunCrossGen2+x} ]%3B then
 
       __cg2ExitCode=0
       __r2rDumpExitCode=0
+      __CrossGen2OutputFormat="${CrossGen2OutputFormat:-$(CrossGen2OutputFormat)}"
 
       RunCrossgen2OnFiles() {
         date +%H:%M:%S
@@ -101,8 +102,8 @@ if [ ! -z ${RunCrossGen2+x} ]%3B then
         __Command="$_DebuggerFullPath $CORE_ROOT/crossgen2/crossgen2"
         __Command+=" @$__ResponseFile"
         __Command+=" $ExtraCrossGen2Args"
-        if [ -n "$(CrossGen2OutputFormat)" ]; then
-            __Command+=" -f $(CrossGen2OutputFormat)"
+        if [ -n "${__CrossGen2OutputFormat}" ]; then
+            __Command+=" -f ${__CrossGen2OutputFormat}"
         fi
 
         # Expand glob or multiple filenames into array
@@ -151,7 +152,7 @@ if [ ! -z ${RunCrossGen2+x} ]%3B then
         __cg2ExitCode=$?
 
         __linkExitCode=0
-        if [ "$(CrossGen2OutputFormat)" == "macho" ]; then
+        if [ "${__CrossGen2OutputFormat}" == "macho" ]; then
             echo "Linking: $(basename "$__OutputFile") -> $(basename "$__OutputFileFinal")"
             echo  clang -dynamiclib -o "$__OutputFileFinal" "$__OutputFile" -install_name "@rpath/`basename "$__OutputFileFinal"`" -Wl,-dead_strip
             clang -dynamiclib -o "$__OutputFileFinal" "$__OutputFile" -install_name "@rpath/`basename "$__OutputFileFinal"`" -Wl,-dead_strip
@@ -171,7 +172,7 @@ if [ ! -z ${RunCrossGen2+x} ]%3B then
           shopt -s nullglob
           __CompositeExt=".dll"
           __CompositeExtFinal=".dll"
-          if [ "$(CrossGen2OutputFormat)" == "macho" ]; then
+          if [ "${__CrossGen2OutputFormat}" == "macho" ]; then
               __CompositeExt=".o"
               __CompositeExtFinal=".dylib"
           fi
