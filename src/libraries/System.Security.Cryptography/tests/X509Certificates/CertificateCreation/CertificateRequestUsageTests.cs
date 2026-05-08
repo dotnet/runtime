@@ -5,6 +5,7 @@ using System.Globalization;
 using RsaTestData = System.Security.Cryptography.Rsa.Tests.TestData;
 using Test.Cryptography;
 using Xunit;
+using System.Formats.Asn1;
 
 namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreation
 {
@@ -303,6 +304,34 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                 Assert.True(
                     pub.VerifyData(pubParams.Q.X, sig, HashAlgorithmName.SHA384),
                     "Cert signature validates with public key");
+            }
+        }
+
+        [ConditionalTheory(typeof(PlatformSupport), nameof(PlatformSupport.AreCustomSaltLengthsSupportedWithPss))]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(RSASignaturePadding.PssSaltLengthMax)]
+        [InlineData(RSASignaturePadding.PssSaltLengthIsHashLength)]
+        public static void SelfSign_RSA_PssPadding_CustomSaltLength(int customSaltLength)
+        {
+            using (RSA rsa = RSA.Create())
+            {
+                var requestBuilder = new CertificateRequest("CN=Test", rsa, HashAlgorithmName.SHA256, RSASignaturePadding.CreatePss(customSaltLength));
+                X509Certificate2 cert = requestBuilder.CreateSelfSigned(DateTime.Now, DateTime.Now.AddYears(1));
+
+                var reader = new AsnReader(cert.RawData, AsnEncodingRules.DER);
+                AsnReader sequence = reader.ReadSequence();
+                ReadOnlyMemory<byte> tbsCertificate = sequence.ReadEncodedValue();
+                ReadOnlyMemory<byte> signatureAlgorithm = sequence.ReadEncodedValue();
+                byte[] signature = sequence.ReadBitString(out _);
+
+                int testSaltLength = customSaltLength switch
+                {
+                    RSASignaturePadding.PssSaltLengthMax => 222,
+                    RSASignaturePadding.PssSaltLengthIsHashLength => 32,
+                    _ => customSaltLength
+                };
+                Assert.True(rsa.VerifyData(tbsCertificate.Span, signature, HashAlgorithmName.SHA256, RSASignaturePadding.CreatePss(testSaltLength)));
             }
         }
 
