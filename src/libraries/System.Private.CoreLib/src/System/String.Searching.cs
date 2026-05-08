@@ -52,6 +52,11 @@ namespace System
         /// <returns><see langword="true"/> if <paramref name="value"/> occurs within this string; otherwise, <see langword="false"/>.</returns>
         public bool Contains(Rune value)
         {
+            if (value.IsBmp)
+            {
+                return Contains((char)value.Value);
+            }
+
             return Contains(value, StringComparison.Ordinal);
         }
 
