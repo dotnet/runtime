@@ -8568,7 +8568,7 @@ ExceptionSetFlags GenTree::OperExceptions(Compiler* comp)
             return ExceptionSetFlags::NullReferenceException | ExceptionSetFlags::IndexOutOfRangeException;
 
         case GT_LCLHEAP:
-            // Stack overflow on a localloc with a large or unknown size.
+            // Localloc may always overflow the stack; model unconditionally.
             return ExceptionSetFlags::UnknownException;
 
         case GT_CKFINITE:

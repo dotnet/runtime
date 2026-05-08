@@ -1844,11 +1844,10 @@ GenTree* Compiler::impProfileLclHeap(GenTree* lclHeap, IL_OFFSET ilOffset)
         ssize_t  profiledValue = 0;
         uint32_t likelihood    = 0;
         if (!pickProfiledValue(ilOffset, &likelihood, &profiledValue) || (likelihood < 50) ||
-            ((uint32_t)profiledValue > INT_MAX))
+            !FitsIn<int>(profiledValue))
         {
             return lclHeap;
         }
-        assert(FitsIn<int>(profiledValue));
 
         GenTree* sizeNode = size;
         GenTree* clonedSizeNode =
@@ -7241,7 +7240,7 @@ void Compiler::addFatPointerCandidate(GenTreeCall* call)
 // pickProfiledValue: Use profile information to pick a value candidate for the given IL offset.
 //
 // Arguments:
-//    ilOffset    - exact IL offset of the call
+//    ilOffset    - exact IL offset of the value-profile probe site
 //    pLikelihood - [out] likelihood of the picked value
 //    pValue      - [out] the picked value
 //
@@ -7260,12 +7259,11 @@ bool Compiler::pickProfiledValue(IL_OFFSET ilOffset, uint32_t* pLikelihood, ssiz
     UINT32 valuesCount = getLikelyValues(likelyValues, MaxLikelyValues, fgPgoSchema, fgPgoSchemaCount, fgPgoData,
                                          static_cast<int>(ilOffset));
 
-    LikelyValueRecord likelyValue = likelyValues[0];
 #if DEBUG
     JITDUMP("%u likely values:\n", valuesCount);
     for (UINT32 i = 0; i < valuesCount; i++)
     {
-        JITDUMP("  %u) %u - %u%%\n", i, likelyValues[i].value, likelyValues[i].likelihood)
+        JITDUMP("  %u) %zd - %u%%\n", i, likelyValues[i].value, likelyValues[i].likelihood)
     }
 
     // Re-use JitRandomGuardedDevirtualization for stress-testing.
@@ -7273,9 +7271,12 @@ bool Compiler::pickProfiledValue(IL_OFFSET ilOffset, uint32_t* pLikelihood, ssiz
     {
         CLRRandom* random = impInlineRoot()->m_inlineStrategy->GetRandom(JitConfig.JitRandomGuardedDevirtualization());
 
-        valuesCount            = 1;
-        likelyValue.value      = random->Next(256);
-        likelyValue.likelihood = 100;
+        if (valuesCount < 1)
+        {
+            valuesCount = 1;
+        }
+        likelyValues[0].value      = random->Next(256);
+        likelyValues[0].likelihood = 100;
     }
 #endif
 
@@ -7284,8 +7285,8 @@ bool Compiler::pickProfiledValue(IL_OFFSET ilOffset, uint32_t* pLikelihood, ssiz
         return false;
     }
 
-    *pValue      = likelyValue.value;
-    *pLikelihood = likelyValue.likelihood;
+    *pValue      = likelyValues[0].value;
+    *pLikelihood = likelyValues[0].likelihood;
     return true;
 }
 
