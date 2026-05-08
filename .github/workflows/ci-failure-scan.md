@@ -204,11 +204,17 @@ Search broadly — not only `[ci-scan]` PRs — by test name, file path, and ass
 
 #### Step 5 — Verify every issue number you're about to write actually exists.
 
-For every `<n>` you plan to embed in source (`[ActiveIssue("...issues/<n>")]`, `Linked KBE: #<n>`, the inline `<!-- ...issues/<n> -->` comment), call `get_issue dotnet/runtime#<n>` and confirm it returns an open issue. If it doesn't, stop — a dead-link annotation in source requires a follow-up PR to remove.
+For every `<n>` you plan to embed in source (`[ActiveIssue("...issues/<n>")]`, `Linked KBE: #<n>`, the inline `<!-- ...issues/<n> -->` comment), call the github tool `issue_read` with method `get` (`{"method": "get", "owner": "dotnet", "repo": "runtime", "issue_number": <n>}`) and confirm it returns an open issue. If it doesn't, stop — a dead-link annotation in source requires a follow-up PR to remove.
 
 #### Step 6 — Confirm muting is welcome on this issue.
 
-Read the candidate KBE / tracker's labels and its most recent comment. If you see `do-not-mute`, `investigation-active`, or `keep-failing`, or the most recent area-owner comment objects to muting (e.g. "please don't disable these tests"), record `→ skipped: do-not-mute on issue #<n>` and stop.
+Read the candidate KBE / tracker's body and its most recent area-owner comment. Skip muting (record `→ skipped: do-not-mute on issue #<n>` and stop) if any of the following holds:
+
+- The body or a recent comment from an area owner explicitly says not to mute, disable, or skip — e.g. "please don't disable these tests", "do not mute", "keep failing", "investigation in progress".
+- The issue is labeled with anything semantically equivalent (verify the label exists in `dotnet/runtime` before relying on it; do not invent labels).
+- The most recent area-owner comment (within the last 14 days) actively opposes muting on procedural grounds — e.g. requesting a fix-forward, awaiting a JIT/GC repro.
+
+When in doubt, skip muting and let the next run revisit; over-muting against an active investigation is the failure mode this step exists to prevent.
 
 #### What action to take
 
@@ -376,7 +382,7 @@ Pull request: <link to the PR if the build was a PR build, otherwise omit this l
 
 ## Error Message
 
-<!-- Populate EXACTLY ONE of ErrorMessage or ErrorPattern, never both. ErrorMessage is a literal String.Contains substring; ErrorPattern is a single-line regex. Delete the field you don't use — do not leave it as "". Set BuildRetry to `true` only for clear infra flakes. ExcludeConsoleLog skips helix log scanning. -->
+<!-- Populate EXACTLY ONE of ErrorMessage or ErrorPattern, never both. ErrorMessage is a literal String.Contains substring; ErrorPattern is a regex (the JSON value is a single-line string with no real newlines — for multi-line matching use the array form below or the regex `\n` escape inside that single-line string). Delete the field you don't use — do not leave it as "". Set BuildRetry to `true` only for clear infra flakes. ExcludeConsoleLog skips helix log scanning. -->
 
 For a literal substring match (default — pick this when the failure log contains a stable, specific assertion or exception message line):
 
@@ -388,7 +394,7 @@ For a literal substring match (default — pick this when the failure log contai
 }
 ```
 
-For a regex match (only when no single literal line is specific enough — anchored, no unbounded `.*`, no catastrophic backtracking):
+For a regex match (only when no single literal line is specific enough — anchored, prefer `[^\\n]*` over `.*`, no catastrophic backtracking; the JSON value itself must be a single-line string, but you can match across log lines via the `\n` escape or the array form):
 
 ```json
 {
@@ -444,13 +450,15 @@ Rules: each element matches one line (the elements are NOT concatenated and matc
 
 #### Signature examples — Bad → Good
 
-| ❌ Bad | Why bad | ✅ Good (use as `ErrorMessage`, or `ErrorPattern` if marked) |
+`ErrorMessage` is matched as an exact literal substring — `...` in the value is matched as three literal dots, not "anything". Use the array form (above) when you need to span variable text between two anchors. The "Good" column below shows the form to use; values shown as plain strings go in `ErrorMessage`, values prefixed `ErrorPattern:` go in `ErrorPattern`, and values shown as a JSON array go in `ErrorMessage` array form.
+
+| ❌ Bad | Why bad | ✅ Good |
 |---|---|---|
-| `"Some.Test.Class.TestMethodName"` | bare test name; matches `[PASS]` lines for the same test | `"Some.Test.Class.TestMethodName ... System.SocketException: Try again"` |
+| `"Some.Test.Class.TestMethodName"` | bare test name; matches `[PASS]` lines for the same test | array: `["Some.Test.Class.TestMethodName", "System.Net.Sockets.SocketException : Try again"]` |
 | `"SomeTests.Prefix_"` (trailing `_`) | truncated prefix; trailing `_`/`*`/`.` is literal not glob | `ErrorPattern: "^SomeTests\\.Prefix_[A-Za-z]+\\b[^\\n]*Xunit\\.Sdk\\."` |
 | `"Some.Type.Method"` (bare type/method) | matches stack scans of unrelated tests | `ErrorPattern: "^System\\.NullReferenceException\\b[^\\n]*\\n\\s+at Some\\.Type\\.Method\\b"` |
 | `"BadImageFormatException"` | bare exception type; matches infra hiccups too | `"System.BadImageFormatException: Could not load file or assembly 'System.Private.CoreLib'"` |
-| `"Operation timed out"` | matches transient network failures everywhere | `"xharness exec android test ... Operation timed out after 3600s"` paired with `BuildRetry: false` |
+| `"Operation timed out"` | matches transient network failures everywhere | array: `["xharness exec android test", "Operation timed out after 3600s"]` paired with `BuildRetry: false` |
 
 Choose `ErrorMessage` (literal substring) by default. Use `ErrorPattern` only when no single literal line is specific enough — and confirm the regex is anchored and has no catastrophic backtracking. **Populate exactly one of the two fields per JSON block; never both.** Pattern length doesn't matter; specificity does — don't shorten a unique multi-line signature into a pithy one-liner. Set `BuildRetry: true` **only** for confirmed infra/queue-side flakes (dead-letter, device-lost, agent disconnect) where retrying is safe.
 
