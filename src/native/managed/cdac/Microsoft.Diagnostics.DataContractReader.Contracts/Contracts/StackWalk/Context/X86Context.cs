@@ -38,7 +38,9 @@ public struct X86Context : IPlatformContext
     }
 
     public readonly uint Size => 0x2cc;
-    public readonly uint DefaultContextFlags => (uint)ContextFlagsValues.CONTEXT_ALL;
+    public readonly uint FullContextFlags => (uint)ContextFlagsValues.CONTEXT_FULL;
+
+    public readonly uint AllContextFlags => (uint)ContextFlagsValues.CONTEXT_ALL;
 
     public readonly int StackPointerRegister => 4;
 

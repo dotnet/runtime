@@ -57,20 +57,14 @@ CordbModule::CordbModule(
     m_fDynamic  = modInfo.fIsDynamic;
     m_fInMemory = modInfo.fInMemory;
     m_vmPEFile = modInfo.vmPEAssembly;
+    m_pAppDomain = pProcess->GetAppDomain();
 
     if (!vmAssembly.IsNull())
     {
-        AssemblyInfo dfInfo;
-
-        IfFailThrow(pProcess->GetDAC()->GetAssemblyInfo(vmAssembly, &dfInfo)); // throws
-
-        m_pAppDomain = pProcess->LookupOrCreateAppDomain(dfInfo.vmAppDomain);
-        _ASSERTE(m_pAppDomain == pProcess->GetAppDomain());
-        m_pAssembly  = m_pAppDomain->LookupOrCreateAssembly(dfInfo.vmAssembly);
+        m_pAssembly  = m_pAppDomain->LookupOrCreateAssembly(vmAssembly);
     }
     else
     {
-        m_pAppDomain = pProcess->GetAppDomain();
         m_pAssembly = m_pAppDomain->LookupOrCreateAssembly(modInfo.vmAssembly);
     }
 #ifdef _DEBUG
@@ -430,7 +424,7 @@ public:
                 true,
                 pModule->GetAppDomain()->GetADToken());
 
-            event.MetadataUpdateRequest.pMetadataStart = CORDB_ADDRESS_TO_PTR(bufferMetaData.pAddress);
+            event.MetadataUpdateRequest.pMetadataStart = bufferMetaData.pAddress;
 
             // Note: two-way event here...
             IfFailThrow(pProcess->SendIPCEvent(&event, sizeof(DebuggerIPCEvent)));
@@ -554,7 +548,7 @@ void CordbModule::RefreshMetaData()
         //
         // Update it on the RS
         //
-        bufferMetaData.Init(PTR_TO_CORDB_ADDRESS(event.MetadataUpdateRequest.pMetadataStart), (ULONG) event.MetadataUpdateRequest.nMetadataSize);
+        bufferMetaData.Init(event.MetadataUpdateRequest.pMetadataStart, (ULONG) event.MetadataUpdateRequest.nMetadataSize);
 
         // init the cleanup object to ensure the buffer gets destroyed later
         cleanup.bufferMetaData = bufferMetaData;
@@ -2223,7 +2217,7 @@ HRESULT CordbModule::ApplyChangesInternal(ULONG  cbMetaData,
                      retEvent->type == DB_IPCE_ENC_ADD_FUNCTION)
                 {
                     // Update the function collection to reflect this edit
-                    hr = pModule->UpdateFunction(retEvent->EnCUpdate.memberMetadataToken, retEvent->EnCUpdate.newVersionNumber, NULL);
+                    hr = pModule->UpdateFunction(retEvent->EnCUpdate.memberMetadataToken, (SIZE_T)(ULONG64)retEvent->EnCUpdate.newVersionNumber, NULL);
 
                 }
                 // mark the class and relevant type as old so we update it next time we try to query it

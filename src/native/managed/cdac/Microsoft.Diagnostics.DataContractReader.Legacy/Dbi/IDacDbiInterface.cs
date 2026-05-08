@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
 
@@ -145,6 +146,16 @@ public enum DynamicMethodType
     kLCGMethod = 2,
 }
 
+[Flags]
+public enum CorDebugUserState
+{
+    USER_BACKGROUND = 0x04,
+    USER_UNSTARTED = 0x08,
+    USER_STOPPED = 0x10,
+    USER_WAIT_SLEEP_JOIN = 0x20,
+    USER_THREADPOOL = 0x100,
+}
+
 // Name-surface projection of IDacDbiInterface in native method order for COM binding validation.
 // Parameter shapes are intentionally coarse placeholders and will be refined with method implementation work.
 [GeneratedComInterface]
@@ -165,9 +176,6 @@ public unsafe partial interface IDacDbiInterface
 
     [PreserveSig]
     int GetAppDomainId(ulong vmAppDomain, uint* pRetVal);
-
-    [PreserveSig]
-    int GetAppDomainObject(ulong vmAppDomain, ulong* pRetVal);
 
     [PreserveSig]
     int GetAppDomainFullName(ulong vmAppDomain, nint pStrName);
@@ -194,9 +202,6 @@ public unsafe partial interface IDacDbiInterface
     int GetModuleData(ulong vmModule, DacDbiModuleInfo* pData);
 
     [PreserveSig]
-    int GetAssemblyInfo(ulong vmAssembly, DacDbiAssemblyInfo* pData);
-
-    [PreserveSig]
     int GetModuleForAssembly(ulong vmAssembly, ulong* pModule);
 
     [PreserveSig]
@@ -209,7 +214,7 @@ public unsafe partial interface IDacDbiInterface
     int SetCompilerFlags(ulong vmAssembly, Interop.BOOL fAllowJitOpts, Interop.BOOL fEnableEnC);
 
     [PreserveSig]
-    int EnumerateAssembliesInAppDomain(ulong vmAppDomain, nint fpCallback, nint pUserData);
+    int EnumerateAssembliesInAppDomain(ulong vmAppDomain, delegate* unmanaged<ulong, nint, void> fpCallback, nint pUserData);
 
     [PreserveSig]
     int EnumerateModulesInAssembly(ulong vmAssembly, nint fpCallback, nint pUserData);
@@ -254,7 +259,7 @@ public unsafe partial interface IDacDbiInterface
     int GetUserState(ulong vmThread, int* pRetVal);
 
     [PreserveSig]
-    int GetPartialUserState(ulong vmThread, int* pRetVal);
+    int GetPartialUserState(ulong vmThread, CorDebugUserState* pRetVal);
 
     [PreserveSig]
     int GetConnectionID(ulong vmThread, uint* pRetVal);
@@ -323,10 +328,10 @@ public unsafe partial interface IDacDbiInterface
     int GetFramePointer(nuint pSFIHandle, ulong* pRetVal);
 
     [PreserveSig]
-    int IsLeafFrame(ulong vmThread, nint pContext, Interop.BOOL* pResult);
+    int IsLeafFrame(ulong vmThread, byte* pContext, Interop.BOOL* pResult);
 
     [PreserveSig]
-    int GetContext(ulong vmThread, nint pContextBuffer);
+    int GetContext(ulong vmThread, byte* pContextBuffer);
 
     [PreserveSig]
     int ConvertContextToDebuggerRegDisplay(nint pInContext, nint pOutDRD, Interop.BOOL fActive);

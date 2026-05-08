@@ -436,6 +436,10 @@ protected:
     void genSaveCalleeSavedRegistersHelp(regMaskTP regsToSaveMask, int lowestCalleeSavedOffset, int spDelta);
     void genRestoreCalleeSavedRegistersHelp(regMaskTP regsToRestoreMask, int lowestCalleeSavedOffset, int spDelta);
 
+#if defined(TARGET_ARM64)
+    void genUnknownSizeFrame();
+#endif
+
 #elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     bool genInstrWithConstant(instruction ins,
                               emitAttr    attr,
@@ -1304,6 +1308,7 @@ protected:
 
     void genReturn(GenTree* treeNode);
     void genReturnSuspend(GenTreeUnOp* treeNode);
+    void genPatchpoint(GenTreeOp* treeNode);
     void genMarkReturnGCInfo();
 
 #ifdef SWIFT_SUPPORT

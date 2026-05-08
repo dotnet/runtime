@@ -488,6 +488,7 @@ enum class DoNotEnregisterReason
     CallSpCheck,           // the local is used to do SP check on every call
     SimdUserForcesDep,     // a promoted struct was used by a SIMD/HWI node; it must be dependently promoted
     HiddenBufferStructArg, // the argument is a hidden return buffer passed to a method.
+    WasmGCVisibility,
 };
 
 enum class AddressExposedReason
@@ -981,16 +982,48 @@ private:
 public:
     int GetStackOffset() const
     {
+        assert(lvValueSize().IsExact());
         return lvStkOffs;
     }
 
     void SetStackOffset(int offset)
     {
+        assert(lvValueSize().IsExact());
         lvStkOffs = offset;
     }
 
     unsigned  lvExactSize() const;
     ValueSize lvValueSize() const;
+
+    // SetUnknownSizeFrameIndex: Set the index that has been assigned to this
+    //    local on the UnknownSizeFrame.
+    //
+    //    This is only used for locals that have an unknown size, such as TYP_SIMD/TYP_MASK.
+    //    These locals do not have an absolute stack offset.
+    //
+    // Arguments:
+    //     index -- The index on the UnknownSizeFrame to assign to this local.
+    //
+    void SetUnknownSizeFrameIndex(int index)
+    {
+        assert(!lvValueSize().IsExact());
+        lvStkOffs = index;
+    }
+
+    // GetUnknownSizeFrameIndex: Get the index that has been assigned to this
+    //    local on the UnknownSizeFrame.
+    //
+    //    This is only used for locals that have an unknown size, such as TYP_SIMD/TYP_MASK.
+    //    These locals do not have an absolute stack offset.
+    //
+    // Returns:
+    //     The index of this local on the UnknownSizeFrame.
+    //
+    int GetUnknownSizeFrameIndex() const
+    {
+        assert(!lvValueSize().IsExact());
+        return lvStkOffs;
+    }
 
     unsigned lvSlotNum; // original slot # (if remapped)
 
@@ -1342,6 +1375,10 @@ public:
     }
     void tdAdjustTempOffs(int offs)
     {
+#ifdef TARGET_ARM64
+        // Cannot adjust temporary offsets on the UnknownSizeFrame.
+        assert(!varTypeHasUnknownSize(tdType));
+#endif
         tdOffs += offs;
         assert(tdLegalOffset());
     }
@@ -4287,6 +4324,7 @@ public:
     void lvaAlignFrame();
     void lvaAssignFrameOffsetsToPromotedStructs();
     int lvaAllocateTemps(int stkOffs, bool mustDoubleAlign);
+    void lvaAllocateUnknownSizeTemp(TempDsc* temp);
 
 #ifdef DEBUG
     void lvaDumpRegLocation(unsigned lclNum);
@@ -4320,6 +4358,192 @@ public:
     bool lvaIsOSRLocal(unsigned varNum);
 
     int lvaOSRLocalTier0FrameOffset(unsigned varNum);
+
+    //------------------------- UnknownSizeFrame ---------------------------------
+
+    void lvaInitUnknownSizeFrame();
+    void lvaAllocUnknownSizeLocal(unsigned varNum);
+
+    bool compUsesUnknownSizeFrame;
+
+#if defined(FEATURE_SIMD) && defined(TARGET_ARM64)
+    // For ARM64, the UnknownSizeFrame lives at the end of the statically
+    // allocated stack space. This means it belongs to the 'alloca' space on the
+    // frame, and it is essentially the first dynamically allocated stack
+    // variable.
+    //
+    // Currently, the only locals with unknown size are SIMD types supporting
+    // Vector<T>, TYP_SIMD and TYP_MASK. We do not know the size of these types
+    // at compile time, so we need to execute the rdvl/addvl instruction to
+    // learn this size and allocate the UnknownSizeFrame.
+    //
+    // We reserve the x19 register to point to the top of the UnknownSizeFrame
+    // and use this as the base address for local variables with unknown size.
+    // Reserving a register is simpler than using fp/sp, as fp may point
+    // to different locations depending on various properties of the frame, and
+    // the value of sp may change at runtime.
+    //
+    // Typically, a vector is loaded using a base address and some index which
+    // the instruction will scale by VL, for example: `ldr z0, [x19, #3 MUL VL]`.
+    // A mask is loaded with `ldr p0, [x19, #3 MUL VL]`, but in this case the
+    // `MUL VL` indicates we are scaling with the length of the predicate
+    // register rather than the vector. A predicate register is defined to have
+    // 1/8th the length of a vector register.
+    //
+    // We know that sizeof(TYP_SIMD) and sizeof(TYP_MASK) are invariant despite
+    // being unknown at compile time, so we allocate them in single homogeneous
+    // blocks per type. An individual local can be referenced from the start of
+    // its block by an index into the block.
+    //
+    // The difference in addressing-mode index scaling means we have to be
+    // careful where we place the mask locals block with respect to the vector
+    // locals block. If we place the mask locals after the vector locals, we'll
+    // need to offset the load index by (8 * nVector) to account for the vector
+    // locals.
+    //
+    // Instead, we choose to pad the mask locals block to VL and place it at the
+    // beginning of the frame (closest to fp). This way we'll need to offset
+    // vector load indices by `roundUp(nMask, 8) / 8`. This is less likely to
+    // put pressure on the immediate encoding range and result in requiring an
+    // address computation.
+    //
+    // The maximum wasted space from the padding is 7/8ths VL (224 bytes with
+    // the architectural maximum 256 byte vectors), which occurs when 1 mask
+    // local is spilled to the frame. Alternatively this is 28 bytes for 32 byte
+    // vectors, for an example closer to today's implementations.
+    //
+    // The padding also makes it simple to allocate the UnknownSizeFrame since
+    // the UnknownSizeFrame will be aligned to VL. The total number of vectors
+    // to allocate is `(roundUp(nMask, 8) / 8) + nVector`. The stack pointer
+    // can be adjusted with a single instruction `addvl sp, sp, #totalVectors`.
+    //
+    // See the diagram below for a visual representation of this scheme.
+    //
+    //                 ...
+    //  |          static space            |
+    //  |        (totalFrameSize)          |
+    //  +----------------------------------+ x19, begin UnknownSizeFrame
+    //  |         mask locals block        |                 ^
+    //  |          (nMask * VL/8)          |                 |
+    //  +----------------------------------+                 |
+    //  |      padding to VL alignment     |                 |
+    //  +----------------------------------+ (roundUp(nMask, 8)/8 + nVector)*VL
+    //  |                                  |                 |
+    //  |       vector locals block        |                 |
+    //  |         (nVector * VL)           |                 |
+    //  |                                  |                 v
+    //  +----------------------------------+ end UnknownSizeFrame
+    //  |                                  |
+    //  |       rest of alloca space       |
+    //                 ...                   sp
+    struct UnknownSizeFrame
+    {
+        // Number of allocated vectors/masks. These also represent the end of
+        // the allocation space for each block. The allocator for each block is
+        // a simple bump allocator.
+        unsigned nVector = 0;
+        unsigned nMask = 0;
+
+#ifdef DEBUG
+        bool isFinalized = false;
+#endif
+
+        // Returns the size of the mask block in number of vector lengths.
+        unsigned MaskBlockSizeInVectors()
+        {
+            assert(roundUp(0U, 8U) == 0);
+            return roundUp(nMask, 8) / 8;
+        }
+
+        // Returns the size of the vector block in number of vector lengths.
+        unsigned VectorBlockSize()
+        {
+            return nVector;
+        }
+
+        // Returns the size of the total UnknownSizeFrame in number of vector
+        // lengths.
+        unsigned FrameSizeInVectors()
+        {
+            return MaskBlockSizeInVectors() + VectorBlockSize();
+        }
+
+        // Allocate a mask, returning an index of the mask in the mask block.
+        unsigned AllocMask()
+        {
+            assert(!isFinalized);
+            unsigned idx = nMask;
+            nMask++;
+            return idx;
+        }
+
+        // Allocate a vector, returning an index of the vector in the vector
+        // block.
+        unsigned AllocVector()
+        {
+            assert(!isFinalized);
+            unsigned idx = nVector;
+            nVector++;
+            return idx;
+        }
+
+        // Returns a negative offset relative to the base of the UnknownSizeFrame
+        // for addressing an allocated vector or mask local.
+        // If `isMask == true`, given an index that was assigned to mask local,
+        // the returned offset is an index measured in units of VL/8.
+        // Otherwise given an index that was assigned to a vector local, the
+        // returned offset is measured in units of VL.
+        // The index parameter should have been obtained through AllocMask() or
+        // AllocVector().
+        int GetOffset(unsigned index, bool isMask = false)
+        {
+            // We can't compute addresses if we haven't finished allocating.
+            assert(isFinalized);
+
+            unsigned offset = UINT32_MAX;
+            if (isMask)
+            {
+                assert(index < nMask);
+                offset = index;
+            }
+            else
+            {
+                assert(index < nVector);
+                offset = MaskBlockSizeInVectors() + index;
+            }
+            assert(offset != UINT32_MAX);
+            // The index is always offset by 1 as we are writing from below fp
+            // upwards.
+            return -(int)(offset + 1);
+        }
+
+        // Given a local on the UnknownSizeFrame, compute the offset used for addressing
+        // this local relative to the base address of the UnknownSizeFrame. This offset
+        // can be used with addvl/addpl for TYP_SIMD/TYP_MASK respectively. The offset
+        // needs to be scaled by VL/PL to produce an absolute address value.
+        int GetAddressingOffset(LclVarDsc* varDsc)
+        {
+            return GetOffset(varDsc->GetUnknownSizeFrameIndex(), varDsc->TypeIs(TYP_MASK));
+        }
+
+        int GetAddressingOffset(TempDsc* tmpDsc)
+        {
+            assert(tmpDsc->tdTempOffs() >= 0);
+            assert(varTypeHasUnknownSize(tmpDsc->tdTempType()));
+            return GetOffset((unsigned)tmpDsc->tdTempOffs(), tmpDsc->tdTempType() == TYP_MASK);
+        }
+
+        // This system ensures we don't try and generate an address on the frame
+        // without finishing all allocations.
+        void Finalize()
+        {
+#ifdef DEBUG
+            isFinalized = true;
+#endif
+        }
+
+    } unkSizeFrame;
+#endif
 
     //------------------------ For splitting types ----------------------------
 
@@ -4417,7 +4641,11 @@ public:
     //
     bool lvaIsUnknownSizeLocal(unsigned varNum)
     {
+#ifdef TARGET_ARM64
         return !lvaLclValueSize(varNum).IsExact();
+#else
+        return false;
+#endif
     }
 
     bool lvaHaveManyLocals(float percent = 1.0f) const;
@@ -6932,6 +7160,8 @@ private:
     GenTree* fgMorphSmpOpOptional(GenTreeOp* tree, bool* optAssertionPropDone);
     GenTree* fgMorphConst(GenTree* tree);
 
+    void fgPushConstantsRight(GenTreeOp* tree);
+
     GenTreeOp* fgMorphCommutative(GenTreeOp* tree);
 
     GenTree* fgMorphReduceAddOps(GenTree* tree);
@@ -8041,15 +8271,19 @@ public:
             INDEBUG(const Compiler* m_compiler);
             optOp2Kind m_kind;
             bool       m_checkedBoundIsNeverNegative; // only meaningful for O2K_CHECKED_BOUND_ADD_CNS kind
-            uint16_t   m_encodedIconFlags;            // encoded icon gtFlags
-            ValueNum   m_vn;
+            union
+            {
+                uint16_t m_encodedIconFlags; // encoded icon gtFlags; only meaningful for O2K_CONST_INT.
+                uint8_t  m_simdSize;         // SIMD constant size in bytes; only meaningful for O2K_CONST_VEC.
+            };
+            ValueNum m_vn;
             union
             {
                 unsigned      m_lclNum;
                 double        m_dconVal;
                 IntegralRange m_range;
-                simd16_t m_simdVal; // for O2K_CONST_VEC (TYP_SIMD8/12/16 only). TODO-CQ: support wider SIMD via heap
-                                    // allocation.
+                simd16_t      m_simdVal;    // for O2K_CONST_VEC, inline storage for TYP_SIMD8/12/16.
+                simd_t*       m_bigSimdVal; // for O2K_CONST_VEC, heap-allocated storage for TYP_SIMD32/64.
                 struct
                 {
                     ssize_t   m_iconVal;
@@ -8082,10 +8316,22 @@ public:
                 return m_dconVal;
             }
 
-            const simd16_t& GetSimdConstant() const
+            // Returns a pointer to the SIMD constant payload. The valid byte length is GetSimdSize().
+            // For TYP_SIMD8/12/16 the storage is inline; for TYP_SIMD32/64 it is heap-allocated.
+            const void* GetSimdConstant() const
             {
                 assert(KindIs(O2K_CONST_VEC));
-                return m_simdVal;
+                if (m_simdSize <= sizeof(simd16_t))
+                {
+                    return &m_simdVal;
+                }
+                return m_bigSimdVal;
+            }
+
+            unsigned GetSimdSize() const
+            {
+                assert(KindIs(O2K_CONST_VEC));
+                return m_simdSize;
             }
 
             ssize_t GetIntConstant() const
@@ -8441,7 +8687,12 @@ public:
 
                 case O2K_CONST_VEC:
                     // memcmp the full stored payload; GenTreeVecCon zero-inits gtSimdVal before populating.
-                    return (memcmp(&GetOp2().m_simdVal, &that.GetOp2().m_simdVal, sizeof(simd16_t)) == 0);
+                    if (GetOp2().GetSimdSize() != that.GetOp2().GetSimdSize())
+                    {
+                        return false;
+                    }
+                    return (memcmp(GetOp2().GetSimdConstant(), that.GetOp2().GetSimdConstant(),
+                                   GetOp2().GetSimdSize()) == 0);
 
                 case O2K_ZEROOBJ:
                     return true;
@@ -8482,14 +8733,14 @@ public:
 
         // Create a generic "lclNum ==/!= constant" or "vn ==/!= constant" assertion
         template <typename T>
-        static AssertionDsc CreateConstLclVarAssertion(const Compiler* comp,
-                                                       unsigned        lclNum,
-                                                       ValueNum        vn,
-                                                       const T&        cns,
-                                                       ValueNum        cnsVN,
-                                                       bool            equals,
-                                                       GenTreeFlags    iconFlags = GTF_EMPTY,
-                                                       FieldSeq*       fldSeq    = nullptr)
+        static AssertionDsc CreateConstLclVarAssertion(Compiler*    comp,
+                                                       unsigned     lclNum,
+                                                       ValueNum     vn,
+                                                       const T&     cns,
+                                                       ValueNum     cnsVN,
+                                                       bool         equals,
+                                                       GenTreeFlags iconFlags = GTF_EMPTY,
+                                                       FieldSeq*    fldSeq    = nullptr)
         {
             AssertionDsc dsc    = CreateEmptyAssertion(comp);
             dsc.m_assertionKind = equals ? OAK_EQUAL : OAK_NOT_EQUAL;
@@ -8534,14 +8785,33 @@ public:
                 assert(iconFlags == GTF_EMPTY); // no flags expected for double constants
                 assert(fldSeq == nullptr);      // no fieldSeq expected for double constants
             }
-            else if constexpr (std::is_same_v<T, simd16_t>)
+#if defined(FEATURE_SIMD)
+            else if constexpr (std::is_same_v<T, GenTreeVecCon*>)
             {
-                dsc.m_op2.m_kind    = O2K_CONST_VEC;
-                dsc.m_op2.m_simdVal = {};
-                memcpy(&dsc.m_op2.m_simdVal, &cns, sizeof(simd16_t));
+                dsc.m_op2.m_kind = O2K_CONST_VEC;
+
+                assert(varTypeIsSIMD(cns));
+                const unsigned simdSize = genTypeSize(cns->TypeGet());
+                dsc.m_op2.m_simdSize    = static_cast<uint8_t>(simdSize);
+
+                if (simdSize <= sizeof(simd16_t))
+                {
+                    dsc.m_op2.m_simdVal = {};
+                    memcpy(&dsc.m_op2.m_simdVal, &cns->gtSimdVal, simdSize);
+                }
+                else
+                {
+                    // Heap-allocate storage for SIMD32/SIMD64 constants. The AssertionProp allocator uses the
+                    // compiler arena, so the lifetime matches the assertion table.
+                    simd_t* heapVal = new (comp, CMK_AssertionProp) simd_t();
+                    memset(heapVal, 0, sizeof(simd_t));
+                    memcpy(heapVal, &cns->gtSimdVal, simdSize);
+                    dsc.m_op2.m_bigSimdVal = heapVal;
+                }
                 assert(iconFlags == GTF_EMPTY); // no flags expected for vector constants
                 assert(fldSeq == nullptr);      // no fieldSeq expected for vector constants
             }
+#endif // FEATURE_SIMD
             else if constexpr (std::is_same_v<T, optOp2Kind>)
             {
                 dsc.m_op2.m_kind           = static_cast<optOp2Kind>(cns);
@@ -8558,7 +8828,7 @@ public:
         }
 
         // Create "lclNum != null" assertion
-        static AssertionDsc CreateLclNonNullAssertion(const Compiler* comp, unsigned lclNum)
+        static AssertionDsc CreateLclNonNullAssertion(Compiler* comp, unsigned lclNum)
         {
             assert(comp->optLocalAssertionProp);
             return CreateConstLclVarAssertion(comp, lclNum, ValueNumStore::NoVN, 0, ValueNumStore::VNForNull(),
@@ -8566,7 +8836,7 @@ public:
         }
 
         // Create "vn != null" assertion
-        static AssertionDsc CreateVNNonNullAssertion(const Compiler* comp, ValueNum vn)
+        static AssertionDsc CreateVNNonNullAssertion(Compiler* comp, ValueNum vn)
         {
             assert(!comp->optLocalAssertionProp);
             return CreateConstLclVarAssertion(comp, BAD_VAR_NUM, vn, 0, ValueNumStore::VNForNull(),
@@ -8782,7 +9052,7 @@ public:
     // Used for respective assertion propagations.
     AssertionIndex optAssertionIsSubrange(GenTree* tree, IntegralRange range, ASSERT_VALARG_TP assertions);
     AssertionIndex optAssertionIsSubtype(GenTree* tree, GenTree* methodTableArg, ASSERT_VALARG_TP assertions);
-    bool           optAssertionVNIsNonNull(ValueNum vn, ASSERT_VALARG_TP assertions);
+    bool           optAssertionVNIsNonNull(ValueNum vn, ASSERT_VALARG_TP assertions, int budget = 10);
     bool           optAssertionIsNonNull(GenTree* op, ASSERT_VALARG_TP assertions);
 
     AssertionIndex optGlobalAssertionIsEqualOrNotEqual(ASSERT_VALARG_TP assertions, GenTree* op1, GenTree* op2);
@@ -9419,9 +9689,11 @@ public:
     }
 
     // Things that MAY belong either in CodeGen or CodeGenContext
-    FuncInfoDsc*   compFuncInfos;
-    unsigned short compCurrFuncIdx;
-    unsigned short compFuncInfoCount;
+    FuncInfoDsc*    compFuncInfos;
+    unsigned short  compCurrFuncIdx;
+    unsigned short  compFuncInfoCount;
+    unsigned short* compVMClauseOrderToEHTabOrder;
+    unsigned short* compEHTabOrderToVMClauseOrder;
 
     unsigned short compFuncCount()
     {
@@ -9812,13 +10084,6 @@ private:
     var_types getBaseTypeOfSIMDType(CORINFO_CLASS_HANDLE typeHnd)
     {
         return getBaseTypeAndSizeOfSIMDType(typeHnd, nullptr);
-    }
-
-    CorInfoType getBaseJitTypeAndSizeOfSIMDType(CORINFO_CLASS_HANDLE typeHnd, unsigned* sizeBytes = nullptr);
-
-    CorInfoType getBaseJitTypeOfSIMDType(CORINFO_CLASS_HANDLE typeHnd)
-    {
-        return getBaseJitTypeAndSizeOfSIMDType(typeHnd, nullptr);
     }
 
     GenTree* impSIMDPopStack();
@@ -11724,6 +11989,7 @@ public:
         unsigned m_liveInOutHndlr;
         unsigned m_depField;
         unsigned m_noRegVars;
+        unsigned m_wasmGcVisibility;
 #ifdef JIT32_GCENCODER
         unsigned m_PinningRef;
 #endif // JIT32_GCENCODER
@@ -11964,7 +12230,7 @@ public:
 
         static bool mayNeedShadowCopy(LclVarDsc* varDsc)
         {
-#if defined(TARGET_AMD64)
+#if defined(WINDOWS_AMD64_ABI)
             // GS cookie logic to create shadow slots, create trees to copy reg args to shadow
             // slots and update all trees to refer to shadow slots is done immediately after
             // fgMorph().  Lsra could potentially mark a param as DoNotEnregister after JIT determines
@@ -11990,7 +12256,7 @@ public:
             //   - Whenever a parameter passed in an argument register needs to be spilled by LSRA, we
             //     create a new spill temp if the method needs GS cookie check.
             return varDsc->lvIsParam;
-#else // !defined(TARGET_AMD64)
+#else // !defined(WINDOWS_AMD64_ABI)
             return varDsc->lvIsParam && !varDsc->lvIsRegArg;
 #endif
         }
@@ -12532,6 +12798,7 @@ public:
             case GT_FIELD_ADDR:
             case GT_RETURN:
             case GT_RETURN_SUSPEND:
+            case GT_PATCHPOINT_FORCED:
             case GT_NONLOCAL_JMP:
             case GT_RETFILT:
             case GT_RUNTIMELOOKUP:

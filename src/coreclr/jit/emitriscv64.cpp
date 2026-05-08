@@ -5605,7 +5605,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
     insExecutionCharacteristics result;
     result.insThroughput       = PERFSCORE_LATENCY_1C;
     result.insLatency          = PERFSCORE_THROUGHPUT_1C;
-    result.insMemoryAccessKind = PERFSCORE_MEMORY_NONE;
+    result.insMemoryAccessKind = PerfScoreMemoryAccessKind::None;
 
     unsigned codeSize = id->idCodeSize();
     assert((codeSize >= 2) && ((codeSize % 2) == 0));
@@ -5713,7 +5713,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
 
         case MajorOpcode::Amo:
             result.insLatency = result.insThroughput = PERFSCORE_LATENCY_5C;
-            result.insMemoryAccessKind               = PERFSCORE_MEMORY_READ_WRITE;
+            result.insMemoryAccessKind               = PerfScoreMemoryAccessKind::ReadWrite;
             break;
 
         case MajorOpcode::Branch:
@@ -5765,7 +5765,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
                 result.insLatency += PERFSCORE_LATENCY_1C; // assume non-stack load/stores are more likely to cache-miss
 
             result.insThroughput += immediateBuildingCost;
-            result.insMemoryAccessKind = isLoad ? PERFSCORE_MEMORY_READ : PERFSCORE_MEMORY_WRITE;
+            result.insMemoryAccessKind = isLoad ? PerfScoreMemoryAccessKind::Read : PerfScoreMemoryAccessKind::Write;
             break;
         }
 

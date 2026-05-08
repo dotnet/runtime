@@ -7,10 +7,14 @@ internal sealed class GCHeapWKS : IGCHeap
 {
     public GCHeapWKS(Target target)
     {
-        MarkArray = target.ReadPointer(target.ReadGlobalPointer(Constants.Globals.GCHeapMarkArray));
-        NextSweepObj = target.ReadPointer(target.ReadGlobalPointer(Constants.Globals.GCHeapNextSweepObj));
-        BackgroundMinSavedAddr = target.ReadPointer(target.ReadGlobalPointer(Constants.Globals.GCHeapBackgroundMinSavedAddr));
-        BackgroundMaxSavedAddr = target.ReadPointer(target.ReadGlobalPointer(Constants.Globals.GCHeapBackgroundMaxSavedAddr));
+        if (target.TryReadGlobalPointer(Constants.Globals.GCHeapMarkArray, out TargetPointer? markArrayPtr))
+            MarkArray = target.ReadPointer(markArrayPtr.Value);
+        if (target.TryReadGlobalPointer(Constants.Globals.GCHeapNextSweepObj, out TargetPointer? nextSweepObjPtr))
+            NextSweepObj = target.ReadPointer(nextSweepObjPtr.Value);
+        if (target.TryReadGlobalPointer(Constants.Globals.GCHeapBackgroundMinSavedAddr, out TargetPointer? bgMinPtr))
+            BackgroundMinSavedAddr = target.ReadPointer(bgMinPtr.Value);
+        if (target.TryReadGlobalPointer(Constants.Globals.GCHeapBackgroundMaxSavedAddr, out TargetPointer? bgMaxPtr))
+            BackgroundMaxSavedAddr = target.ReadPointer(bgMaxPtr.Value);
         AllocAllocated = target.ReadPointer(target.ReadGlobalPointer(Constants.Globals.GCHeapAllocAllocated));
         EphemeralHeapSegment = target.ReadPointer(target.ReadGlobalPointer(Constants.Globals.GCHeapEphemeralHeapSegment));
         CardTable = target.ReadPointer(target.ReadGlobalPointer(Constants.Globals.GCHeapCardTable));
@@ -41,10 +45,10 @@ internal sealed class GCHeapWKS : IGCHeap
             FreeRegions = freeRegionsPtr.Value;
     }
 
-    public TargetPointer MarkArray { get; }
-    public TargetPointer NextSweepObj { get; }
-    public TargetPointer BackgroundMinSavedAddr { get; }
-    public TargetPointer BackgroundMaxSavedAddr { get; }
+    public TargetPointer? MarkArray { get; }
+    public TargetPointer? NextSweepObj { get; }
+    public TargetPointer? BackgroundMinSavedAddr { get; }
+    public TargetPointer? BackgroundMaxSavedAddr { get; }
     public TargetPointer AllocAllocated { get; }
     public TargetPointer EphemeralHeapSegment { get; }
     public TargetPointer CardTable { get; }
