@@ -290,6 +290,9 @@ if(CLR_CMAKE_TARGET_ARCH_I386 OR CLR_CMAKE_TARGET_ARCH_ARM)
   add_definitions(-DINTERFACE_DISPATCH_CACHE_HAS_CELL_BACKPOINTER)
 endif()
 add_definitions(-D_LIB)
+if(NOT CLR_CMAKE_TARGET_ARCH_WASM)
+  add_definitions(-DGC_DESCRIPTOR)
+endif()
 
 # there is a problem with undefined symbols when this is set
 # add_definitions(-DSTRESS_HEAP)
@@ -345,4 +348,14 @@ endif()
 
 if(FEATURE_PERFTRACING)
   add_subdirectory(eventpipe)
+endif()
+
+if(NOT CLR_CMAKE_TARGET_ARCH_WASM)
+  # Create an interface library that captures the Runtime's include directories
+  # for use by the datadescriptor intermediary compilation.
+  add_library(nativeaot_runtime_includes INTERFACE)
+  get_property(_runtime_includes DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY INCLUDE_DIRECTORIES)
+  target_include_directories(nativeaot_runtime_includes INTERFACE ${_runtime_includes})
+
+  add_subdirectory(datadescriptor)
 endif()

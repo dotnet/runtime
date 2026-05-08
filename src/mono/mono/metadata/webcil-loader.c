@@ -13,7 +13,8 @@
 
 /* keep in sync with webcil-writer */
 enum {
-	MONO_WEBCIL_VERSION_MAJOR = 0,
+	MONO_WEBCIL_VERSION_MAJOR_0 = 0,
+	MONO_WEBCIL_VERSION_MAJOR_1 = 1,
 	MONO_WEBCIL_VERSION_MINOR = 0,
 };
 
@@ -35,6 +36,13 @@ typedef struct MonoWebcilHeader {
 	uint32_t pe_debug_size;
 	// 28 bytes
 } MonoWebcilHeader;
+
+// Version 1 adds a TableBase field after the V0 header
+typedef struct MonoWebcilHeader_1 {
+	MonoWebcilHeader base;
+	uint32_t table_base;
+	// 32 bytes
+} MonoWebcilHeader_1;
 
 static gboolean
 find_webcil_in_wasm (const uint8_t *ptr, const uint8_t *boundp, const uint8_t **webcil_payload_start);
@@ -84,7 +92,8 @@ do_load_header (const char *raw_data, uint32_t raw_data_len, int32_t offset, Mon
 	memcpy (&wcheader, raw_data + offset, sizeof (wcheader));
 
 	if (!(wcheader.id [0] == 'W' && wcheader.id [1] == 'b' && wcheader.id[2] == 'I' && wcheader.id[3] == 'L' &&
-	      GUINT16_FROM_LE (wcheader.version_major) == MONO_WEBCIL_VERSION_MAJOR && GUINT16_FROM_LE (wcheader.version_minor) == MONO_WEBCIL_VERSION_MINOR))
+	      (GUINT16_FROM_LE (wcheader.version_major) == MONO_WEBCIL_VERSION_MAJOR_0 || GUINT16_FROM_LE (wcheader.version_major) == MONO_WEBCIL_VERSION_MAJOR_1) &&
+	      GUINT16_FROM_LE (wcheader.version_minor) == MONO_WEBCIL_VERSION_MINOR))
 		return -1;
 
 	memset (header, 0, sizeof(MonoDotNetHeader));
@@ -94,7 +103,13 @@ do_load_header (const char *raw_data, uint32_t raw_data_len, int32_t offset, Mon
 	header->datadir.pe_debug.rva = GUINT32_FROM_LE (wcheader.pe_debug_rva);
 	header->datadir.pe_debug.size = GUINT32_FROM_LE (wcheader.pe_debug_size);
 
-	offset += sizeof (wcheader);
+	// V1 header is larger (32 bytes vs 28)
+	if (GUINT16_FROM_LE (wcheader.version_major) >= MONO_WEBCIL_VERSION_MAJOR_1) {
+		if (offset + sizeof (MonoWebcilHeader_1) > raw_data_len)
+			return -1;
+		offset += sizeof (MonoWebcilHeader_1);
+	} else
+		offset += sizeof (wcheader);
 	return offset;
 }
 

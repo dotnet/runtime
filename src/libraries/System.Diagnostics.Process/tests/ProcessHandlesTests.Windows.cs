@@ -5,9 +5,9 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
 using System.IO.Pipes;
-using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
+using Microsoft.DotNet.XUnitExtensions;
 using Microsoft.Win32.SafeHandles;
 using Xunit;
 
@@ -15,7 +15,7 @@ namespace System.Diagnostics.Tests
 {
     public partial class ProcessHandlesTests
     {
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void ProcessStartedWithInvalidHandles_ConsoleReportsInvalidHandles()
         {
             using Process process = CreateProcess(() =>
@@ -30,12 +30,14 @@ namespace System.Diagnostics.Tests
             Assert.Equal(RemoteExecutor.SuccessExitCode, RunWithInvalidHandles(process.StartInfo));
         }
 
-        [Theory]
-        [InlineData(false)]
-        [InlineData(true)]
-        public void ProcessStartedWithInvalidHandles_CanStartChildProcessWithDerivedInvalidHandles(bool restrictHandles)
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(false, false)]
+        [InlineData(false, true)]
+        [InlineData(true, false)]
+        [InlineData(true, true)]
+        public void ProcessStartedWithInvalidHandles_CanStartChildProcessWithDerivedInvalidHandles(bool restrictHandles, bool killOnParentExit)
         {
-            using Process process = CreateProcess(arg =>
+            using Process process = CreateProcess((inheritanceArg, killArg) =>
             {
                 using (Process childProcess = CreateProcess(() =>
                 {
@@ -46,7 +48,8 @@ namespace System.Diagnostics.Tests
                     return RemoteExecutor.SuccessExitCode;
                 }))
                 {
-                    childProcess.StartInfo.InheritedHandles = bool.Parse(arg) ? [] : null;
+                    childProcess.StartInfo.InheritedHandles = bool.Parse(inheritanceArg) ? [] : null;
+                    childProcess.StartInfo.KillOnParentExit = bool.Parse(killArg);
                     childProcess.Start();
 
                     try
@@ -59,12 +62,12 @@ namespace System.Diagnostics.Tests
                         childProcess.Kill();
                     }
                 }
-            }, restrictHandles.ToString());
+            }, restrictHandles.ToString(), killOnParentExit.ToString());
 
             Assert.Equal(RemoteExecutor.SuccessExitCode, RunWithInvalidHandles(process.StartInfo));
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData(false)]
         [InlineData(true)]
         public void ProcessStartedWithInvalidHandles_CanRedirectOutput(bool restrictHandles)
@@ -105,7 +108,6 @@ namespace System.Diagnostics.Tests
         private unsafe int RunWithInvalidHandles(ProcessStartInfo startInfo)
         {
             const nint INVALID_HANDLE_VALUE = -1;
-            const int CREATE_SUSPENDED = 4;
 
             // RemoteExector has provided us with the right path and arguments,
             // we just need to add the terminating null character.
@@ -132,7 +134,7 @@ namespace System.Diagnostics.Tests
                     ref unused_SecAttrs,
                     ref unused_SecAttrs,
                     bInheritHandles: false,
-                    CREATE_SUSPENDED | Interop.Kernel32.EXTENDED_STARTUPINFO_PRESENT,
+                    Interop.Kernel32.EXTENDED_STARTUPINFO_PRESENT,
                     null,
                     null,
                     &startupInfoEx,
@@ -149,28 +151,14 @@ namespace System.Diagnostics.Tests
             {
                 using SafeProcessHandle safeProcessHandle = new(processInfo.hProcess, ownsHandle: true);
 
-                // We have started a suspended process, so we can get process by Id before it exits.
-                // As soon as SafeProcessHandle.WaitForExit* are implemented (#126293), we can use them instead.
-                using Process process = Process.GetProcessById(processInfo.dwProcessId);
-
-                if (ResumeThread(processInfo.hThread) == -1)
-                {
-                    throw new Win32Exception();
-                }
-
                 try
                 {
-                    process.WaitForExit(WaitInMS);
-
-                    // To avoid "Process was not started by this object, so requested information cannot be determined."
-                    // we fetch the exit code directly here.
-                    Assert.True(Interop.Kernel32.GetExitCodeProcess(safeProcessHandle, out int exitCode));
-
-                    return exitCode;
+                    ProcessExitStatus exitStatus = safeProcessHandle.WaitForExitOrKillOnTimeout(TimeSpan.FromMilliseconds(WaitInMS));
+                    return exitStatus.ExitCode;
                 }
                 finally
                 {
-                    process.Kill();
+                    safeProcessHandle.Kill();
                 }
             }
             finally
@@ -179,7 +167,22 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [LibraryImport(Interop.Libraries.Kernel32)]
-        private static partial int ResumeThread(nint hThread);
+        private static unsafe string GetSafeFileHandleId(SafeFileHandle handle)
+        {
+            const int MaxPath = 32_767;
+            char[] buffer = new char[MaxPath];
+            uint result;
+            fixed (char* ptr = buffer)
+            {
+                result = Interop.Kernel32.GetFinalPathNameByHandle(handle, ptr, (uint)MaxPath, Interop.Kernel32.FILE_NAME_NORMALIZED);
+            }
+
+            if (result == 0)
+            {
+                throw new Win32Exception();
+            }
+
+            return new string(buffer, 0, (int)result);
+        }
     }
 }

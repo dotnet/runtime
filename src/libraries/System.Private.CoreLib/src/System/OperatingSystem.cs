@@ -40,6 +40,8 @@ namespace System
         "ILLUMOS"
 #elif TARGET_SOLARIS
         "SOLARIS"
+#elif TARGET_HAIKU
+        "HAIKU"
 #else
 #error Unknown OS, add a corresponding TARGET_* constant to System.Private.CoreLib.Shared.projitems
 #endif
@@ -202,6 +204,17 @@ namespace System
         [NonVersionable]
         internal static bool IsOpenBSD() =>
 #if TARGET_OPENBSD
+            true;
+#else
+            false;
+#endif
+
+        /// <summary>
+        /// Indicates whether the current application is running on Haiku.
+        /// </summary>
+        [NonVersionable]
+        internal static bool IsHaiku() =>
+#if TARGET_HAIKU
             true;
 #else
             false;

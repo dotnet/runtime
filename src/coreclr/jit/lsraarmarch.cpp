@@ -148,18 +148,9 @@ int LinearScan::BuildCall(GenTreeCall* call)
         }
     }
 
+    // set reg requirements on call target represented as control sequence.
     GenTree*         ctrlExpr           = call->gtControlExpr;
     SingleTypeRegSet ctrlExprCandidates = RBM_NONE;
-    if (call->gtCallType == CT_INDIRECT)
-    {
-        // either gtControlExpr != null or gtCallAddr != null.
-        // Both cannot be non-null at the same time.
-        assert(ctrlExpr == nullptr);
-        assert(call->gtCallAddr != nullptr);
-        ctrlExpr = call->gtCallAddr;
-    }
-
-    // set reg requirements on call target represented as control sequence.
     if (ctrlExpr != nullptr)
     {
         // we should never see a gtControlExpr whose type is void.
@@ -223,7 +214,7 @@ int LinearScan::BuildCall(GenTreeCall* call)
     // Set destination candidates for return value of the call.
 
 #ifdef TARGET_ARM
-    if (call->IsHelperCall(m_compiler, CORINFO_HELP_INIT_PINVOKE_FRAME))
+    if (call->IsHelperCall(CORINFO_HELP_INIT_PINVOKE_FRAME))
     {
         // The ARM CORINFO_HELP_INIT_PINVOKE_FRAME helper uses a custom calling convention that returns with
         // TCB in REG_PINVOKE_TCB. fgMorphCall() sets the correct argument registers.
@@ -232,7 +223,7 @@ int LinearScan::BuildCall(GenTreeCall* call)
     else
 #endif // TARGET_ARM
 #ifdef TARGET_ARM64
-        if (call->IsHelperCall(m_compiler, CORINFO_HELP_INTERFACELOOKUP_FOR_SLOT))
+        if (call->IsHelperCall(CORINFO_HELP_INTERFACELOOKUP_FOR_SLOT))
     {
         singleDstCandidates = RBM_INTERFACELOOKUP_FOR_SLOT_RETURN.GetIntRegSet();
     }

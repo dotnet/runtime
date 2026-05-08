@@ -549,6 +549,7 @@ namespace ILCompiler
             }
             componentGraph.ComputeMarkedNodes();
             componentFactory.Header.Add(Internal.Runtime.ReadyToRunSectionType.OwnerCompositeExecutable, ownerExecutableNode);
+            componentFactory.SetMarkingComplete();
             ReadyToRunObjectWriter.EmitObject(
                 outputFile,
                 componentModule: inputModule,
@@ -1021,11 +1022,12 @@ namespace ILCompiler
             [
                 // For CorInfoImpl.getAsyncInfo
                 asyncHelpers.GetKnownMethod("CaptureExecutionContext"u8, null),
-                asyncHelpers.GetKnownMethod("RestoreExecutionContext"u8, null),
                 asyncHelpers.GetKnownMethod("CaptureContinuationContext"u8, null),
                 asyncHelpers.GetKnownMethod("CaptureContexts"u8, null),
                 asyncHelpers.GetKnownMethod("RestoreContexts"u8, null),
                 asyncHelpers.GetKnownMethod("RestoreContextsOnSuspension"u8, null),
+                asyncHelpers.GetKnownMethod("FinishSuspensionNoContinuationContext"u8, null),
+                asyncHelpers.GetKnownMethod("FinishSuspensionWithContinuationContext"u8, null),
 
                 // R2R Helpers
                 asyncHelpers.GetKnownMethod("AllocContinuation"u8, null),

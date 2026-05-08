@@ -56,8 +56,9 @@ internal struct ComWrappers_1 : IComWrappers
         if (!GetComWrappersCCWVTableQIAddress(ccw, out _, out TargetPointer qiAddress))
             return false;
 
-        TargetPointer comWrappersVtablePtrs = _target.ReadGlobalPointer(Constants.Globals.ComWrappersVtablePtrs);
-        Data.ComWrappersVtablePtrs comWrappersVtableStruct = _target.ProcessedData.GetOrAdd<Data.ComWrappersVtablePtrs>(comWrappersVtablePtrs);
+        if (!_target.TryReadGlobalPointer(Constants.Globals.ComWrappersVtablePtrs, out TargetPointer? comWrappersVtablePtrs))
+            return false;
+        Data.ComWrappersVtablePtrs comWrappersVtableStruct = _target.ProcessedData.GetOrAdd<Data.ComWrappersVtablePtrs>(comWrappersVtablePtrs.Value);
         return comWrappersVtableStruct.ComWrappersInterfacePointers.Contains(CodePointerUtils.CodePointerFromAddress(qiAddress, _target));
     }
 
@@ -72,8 +73,7 @@ internal struct ComWrappers_1 : IComWrappers
 
     public TargetPointer GetComWrappersObjectFromMOW(TargetPointer mow)
     {
-        TargetPointer objHandle = _target.ReadPointer(mow);
-        Data.ObjectHandle handle = _target.ProcessedData.GetOrAdd<Data.ObjectHandle>(objHandle);
+        Data.ObjectHandle handle = _target.ProcessedData.GetOrAdd<Data.ObjectHandle>(mow);
         Data.ManagedObjectWrapperHolderObject mowHolderObject = _target.ProcessedData.GetOrAdd<Data.ManagedObjectWrapperHolderObject>(handle.Object);
         return mowHolderObject.WrappedObject;
     }

@@ -154,6 +154,36 @@ namespace System.Formats.Tar
                 _size = size;
             }
 
+            // GNU sparse format 1.0 (encoded via PAX) uses RegularFile type flag ('0') and stores sparse metadata in
+            // PAX extended attributes. Process all GNU sparse 1.0 attributes together in this block.
+            if (_typeFlag is TarEntryType.RegularFile or TarEntryType.V7RegularFile)
+            {
+                // 'GNU.sparse.name' overrides the placeholder path (e.g. 'GNUSparseFile.0/...') in the header's 'path' field.
+                if (ExtendedAttributes.TryGetValue(PaxEaGnuSparseName, out string? gnuSparseName))
+                {
+                    _name = gnuSparseName;
+                }
+
+                // 'GNU.sparse.realsize' is the expanded (virtual) file size; stored separately from _size so that
+                // _size retains the archive data section length needed for correct stream positioning.
+                if (TarHelpers.TryGetStringAsBaseTenLong(ExtendedAttributes, PaxEaGnuSparseRealSize, out long gnuSparseRealSize))
+                {
+                    if (gnuSparseRealSize < 0)
+                    {
+                        throw new InvalidDataException(SR.TarSizeFieldNegative);
+                    }
+                    _gnuSparseRealSize = gnuSparseRealSize;
+                }
+
+                // 'GNU.sparse.major=1' and 'GNU.sparse.minor=0' identify format 1.0, where the data section begins
+                // with an embedded text-format sparse map followed by the packed non-zero data segments.
+                if (ExtendedAttributes.TryGetValue(PaxEaGnuSparseMajor, out string? gnuSparseMajor) && gnuSparseMajor == "1" &&
+                    ExtendedAttributes.TryGetValue(PaxEaGnuSparseMinor, out string? gnuSparseMinor) && gnuSparseMinor == "0")
+                {
+                    _isGnuSparse10 = true;
+                }
+            }
+
             // The 'uid' header field only fits 8 bytes, or the user could've stored an override in the extended attributes
             if (TarHelpers.TryGetStringAsBaseTenInteger(ExtendedAttributes, PaxEaUid, out int uid))
             {
@@ -230,6 +260,17 @@ namespace System.Formats.Tar
                 case TarEntryType.TapeVolume: // Might contain data
                 default: // Unrecognized entry types could potentially have a data section
                     _dataStream = GetDataStream(archiveStream, copyData);
+
+                    // GNU sparse format 1.0 PAX entries embed a sparse map at the start of the
+                    // data section. Create a GnuSparseStream wrapper that presents the expanded
+                    // virtual file content. The sparse map is parsed lazily on first Read, so
+                    // _dataStream remains unconsumed here — TarWriter can copy the raw condensed
+                    // data, and AdvanceDataStreamIfNeeded can advance past it normally.
+                    if (_isGnuSparse10 && _gnuSparseRealSize > 0 && _dataStream is not null)
+                    {
+                        _gnuSparseDataStream = new GnuSparseStream(_dataStream, _gnuSparseRealSize);
+                    }
+
                     if (_dataStream is SeekableSubReadStream)
                     {
                         TarHelpers.AdvanceStream(archiveStream, _size);
@@ -292,6 +333,12 @@ namespace System.Formats.Tar
                 case TarEntryType.TapeVolume: // Might contain data
                 default: // Unrecognized entry types could potentially have a data section
                     _dataStream = await GetDataStreamAsync(archiveStream, copyData, _size, cancellationToken).ConfigureAwait(false);
+
+                    if (_isGnuSparse10 && _gnuSparseRealSize > 0 && _dataStream is not null)
+                    {
+                        _gnuSparseDataStream = new GnuSparseStream(_dataStream, _gnuSparseRealSize);
+                    }
+
                     if (_dataStream is SeekableSubReadStream)
                     {
                         await TarHelpers.AdvanceStreamAsync(archiveStream, _size, cancellationToken).ConfigureAwait(false);

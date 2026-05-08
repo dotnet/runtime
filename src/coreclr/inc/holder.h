@@ -618,54 +618,8 @@ FORCEINLINE void DoNothing()
 {
 }
 
-// Prefast stuff.We should have DoNothing<type*> in the holder declaration, but currently
-// prefast doesnt support, it, so im stuffing all these here so if we need to change the template you can change
-// everything here. When prefast works, remove the following functions
-struct ConnectionCookie;
-FORCEINLINE void ConnectionCookieDoNothing(ConnectionCookie* p)
-{
-}
-
-class ComCallWrapper;
-FORCEINLINE void CCWHolderDoNothing(ComCallWrapper* p)
-{
-}
-
-
-FORCEINLINE void DispParamHolderDoNothing(VARIANT* p)
-{
-}
-
-FORCEINLINE void VariantPtrDoNothing(VARIANT* p)
-{
-}
-
-FORCEINLINE void VariantDoNothing(VARIANT)
-{
-}
-
-FORCEINLINE void ZeroDoNothing(VOID* p)
-{
-}
-
-class CtxEntry;
-FORCEINLINE void CtxEntryDoNothing(CtxEntry* p)
-{
-}
-
-struct RCW;
-FORCEINLINE void NewRCWHolderDoNothing(RCW*)
-{
-}
-
-// Prefast stuff.We should have DoNothing<SafeArray*> in the holder declaration
-FORCEINLINE void SafeArrayDoNothing(SAFEARRAY* p)
-{
-}
-
-
 //-----------------------------------------------------------------------------
-// Holder/Wrapper are the simplest way to define holders - they synthesizes a base class out of
+// Holder/Wrapper are the simplest way to define holders - they synthesize a base class from
 // function pointers
 //-----------------------------------------------------------------------------
 
@@ -1145,7 +1099,24 @@ public:
     }
 
     operator Type() const { STATIC_CONTRACT_LEAF; return m_value; }
-    Type* operator&() { STATIC_CONTRACT_LEAF; _ASSERTE(m_value == T::Default()); return &m_value; }
+
+    Type* operator&()
+    {
+        STATIC_CONTRACT_LEAF;
+#ifdef _DEBUG
+        Type tmp = T::Default();
+        _ASSERTE(memcmp(&m_value, &tmp, sizeof(Type)) == 0 && "Taking address of non-empty holder");
+#endif // _DEBUG
+        return &m_value;
+    }
+
+    template <typename U = Type, typename = std::enable_if_t<std::is_pointer<U>::value>>
+    U operator->() const
+    {
+        STATIC_CONTRACT_LEAF;
+        _ASSERTE(m_value != NULL);
+        return m_value;
+    }
 
     void Free()
     {

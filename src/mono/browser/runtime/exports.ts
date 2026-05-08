@@ -44,7 +44,7 @@ function initializeExports (globalObjects: GlobalObjects): RuntimeAPI {
         utf8ToString,
         SystemJS_GetCurrentProcessId,
         mono_background_exec: () => tcwraps.mono_background_exec(),
-        mono_wasm_ds_exec: () => tcwraps.mono_wasm_ds_exec(),
+        SystemJS_ExecuteDiagnosticServerCallback: () => tcwraps.SystemJS_ExecuteDiagnosticServerCallback(),
     };
     if (WasmEnableThreads) {
         rh.dumpThreads = mono_wasm_dump_threads;

@@ -511,8 +511,8 @@ struct TernaryLogicInfo
 
 struct HWIntrinsicInfo
 {
-    // 32-bit: 36-bytes (34+2 trailing padding)
-    // 64-bit: 40-bytes (38+2 trailing padding)
+    // 32-bit: 36-bytes (36 + 0 trailing padding)
+    // 64-bit: 40-bytes (40 + 0 trailing padding)
 
     const char*         name;     // 4 or 8-bytes
     HWIntrinsicFlag     flags;    // 4-bytes
@@ -521,6 +521,8 @@ struct HWIntrinsicInfo
     uint8_t             isa;      // 1-byte
     int8_t              simdSize; // 1-byte
     int8_t              numArgs;  // 1-byte
+    int8_t              intCost;  // 1-byte
+    int8_t              fltCost;  // 1-byte
     HWIntrinsicCategory category; // 1-byte
 
     static const HWIntrinsicInfo& lookup(NamedIntrinsic id);
@@ -611,6 +613,16 @@ struct HWIntrinsicInfo
     static int lookupNumArgs(NamedIntrinsic id)
     {
         return lookup(id).numArgs;
+    }
+
+    static int lookupIntCost(NamedIntrinsic id)
+    {
+        return lookup(id).intCost;
+    }
+
+    static int lookupFltCost(NamedIntrinsic id)
+    {
+        return lookup(id).fltCost;
     }
 
     static instruction lookupIns(NamedIntrinsic id, var_types type, Compiler* comp);

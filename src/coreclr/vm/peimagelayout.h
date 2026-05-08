@@ -77,9 +77,7 @@ public:
     void ApplyBaseRelocations(bool relocationMustWriteCopy);
 
 #ifdef FEATURE_WEBCIL
-// TODO-WASM: These can be removed very soon, and we can fetch this from the webcil header itself
-    void SetTableBaseOffset(SSIZE_T tableBaseOffset) { m_tableBaseOffset = tableBaseOffset; }
-    SSIZE_T GetTableBaseOffset() const { return m_tableBaseOffset; }
+    SSIZE_T GetTableBaseOffset() const;
 #endif
 
     // ------------------------------------------------------------
@@ -244,7 +242,6 @@ protected:
     PEDecoder m_peDecoder;
 #ifdef FEATURE_WEBCIL
     WebcilDecoder m_webcilDecoder;
-    SSIZE_T m_tableBaseOffset;
 #endif
 
 public:

@@ -11,7 +11,7 @@ internal sealed class RegionFreeList : IData<RegionFreeList>
     public RegionFreeList(Target target, TargetPointer address)
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.RegionFreeList);
-        HeadFreeRegion = target.ReadPointer(address + (ulong)type.Fields[nameof(HeadFreeRegion)].Offset);
+        HeadFreeRegion = target.ReadPointerField(address, type, nameof(HeadFreeRegion));
     }
 
     public TargetPointer HeadFreeRegion { get; init; }

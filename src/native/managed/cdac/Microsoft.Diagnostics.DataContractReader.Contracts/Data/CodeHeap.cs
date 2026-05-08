@@ -11,7 +11,7 @@ internal sealed class CodeHeap : IData<CodeHeap>
     public CodeHeap(Target target, TargetPointer address)
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.CodeHeap);
-        HeapType = target.Read<byte>(address + (ulong)type.Fields[nameof(HeapType)].Offset);
+        HeapType = target.ReadField<byte>(address, type, nameof(HeapType));
     }
 
     public byte HeapType { get; init; }

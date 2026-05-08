@@ -31,7 +31,8 @@ namespace BINDER_SPACE
         static HRESULT BindAssembly(/* in */  AssemblyBinder      *pBinder,
                                     /* in */  AssemblyName        *pAssemblyName,
                                     /* in */  bool                 excludeAppPaths,
-                                    /* out */ Assembly           **ppAssembly);
+                                    /* out */ Assembly           **ppAssembly,
+                                    /* [out, optional] */ Assembly **ppExistingAssemblyOnFailure = nullptr);
 
         static HRESULT BindToSystem(/* in */ SString    &systemDirectory,
                                     /* out */ Assembly **ppSystemAssembly);
@@ -57,7 +58,8 @@ namespace BINDER_SPACE
                                         /* in */  BINDER_SPACE::AssemblyName *pAssemblyName,
                                         /* in */  PEImage            *pPEImage,
                                         /* in */  bool              excludeAppPaths,
-                                        /* [retval] [out] */  Assembly **ppAssembly);
+                                        /* [retval] [out] */  Assembly **ppAssembly,
+                                        /* [out, optional] */ Assembly **ppExistingAssemblyOnConflict = nullptr);
 #endif // !defined(DACCESS_COMPILE)
 
         static HRESULT TranslatePEToArchitectureType(DWORD  *pdwPAFlags, PEKIND *PeKind);
@@ -72,13 +74,15 @@ namespace BINDER_SPACE
                                   /* in */  bool                skipFailureCaching,
                                   /* in */  bool                skipVersionCompatibilityCheck,
                                   /* in */  bool                excludeAppPaths,
-                                  /* out */ BindResult         *pBindResult);
+                                  /* out */ BindResult         *pBindResult,
+                                  /* [out, optional] */ Assembly **ppExistingAssemblyOnFailure = nullptr);
 
         static HRESULT BindLocked(/* in */  ApplicationContext *pApplicationContext,
                                   /* in */  AssemblyName       *pAssemblyName,
                                   /* in */  bool                skipVersionCompatibilityCheck,
                                   /* in */  bool                excludeAppPaths,
-                                  /* out */ BindResult         *pBindResult);
+                                  /* out */ BindResult         *pBindResult,
+                                  /* [out, optional] */ Assembly **ppExistingAssemblyOnFailure = nullptr);
 
         static HRESULT FindInExecutionContext(/* in */  ApplicationContext  *pApplicationContext,
                                               /* in */  AssemblyName        *pAssemblyName,

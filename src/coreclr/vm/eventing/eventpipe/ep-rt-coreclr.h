@@ -444,9 +444,9 @@ ep_rt_provider_config_init (EventPipeProviderConfiguration *provider_config)
 // This function is auto-generated from /src/scripts/genEventPipe.py
 #ifdef TARGET_UNIX
 extern "C" void InitProvidersAndEvents ();
-#else
+#else // TARGET_UNIX
 extern void InitProvidersAndEvents ();
-#endif
+#endif // TARGET_UNIX
 
 static
 void
@@ -532,7 +532,7 @@ ep_rt_config_value_get_config (void)
 {
 	STATIC_CONTRACT_NOTHROW;
 	CLRConfigStringHolder value(CLRConfig::GetConfigValue (CLRConfig::INTERNAL_EventPipeConfig));
-	return ep_rt_utf16_to_utf8_string (reinterpret_cast<ep_char16_t *>(value.GetValue ()));
+	return ep_rt_utf16_to_utf8_string (reinterpret_cast<ep_char16_t *>(static_cast<LPWSTR>(value)));
 }
 
 static
@@ -542,7 +542,7 @@ ep_rt_config_value_get_output_path (void)
 {
 	STATIC_CONTRACT_NOTHROW;
 	CLRConfigStringHolder value(CLRConfig::GetConfigValue (CLRConfig::INTERNAL_EventPipeOutputPath));
-	return ep_rt_utf16_to_utf8_string (reinterpret_cast<ep_char16_t *>(value.GetValue ()));
+	return ep_rt_utf16_to_utf8_string (reinterpret_cast<ep_char16_t *>(static_cast<LPWSTR>(value)));
 }
 
 static
@@ -570,6 +570,15 @@ ep_rt_config_value_get_enable_stackwalk (void)
 {
 	STATIC_CONTRACT_NOTHROW;
 	return CLRConfig::GetConfigValue(CLRConfig::INTERNAL_EventPipeEnableStackwalk) != 0;
+}
+
+static
+inline
+uint32_t
+ep_rt_config_value_get_sampling_rate (void)
+{
+	STATIC_CONTRACT_NOTHROW;
+	return CLRConfig::GetConfigValue(CLRConfig::INTERNAL_EventPipeThreadSamplingRate);
 }
 
 /*
@@ -622,13 +631,12 @@ void
 ep_rt_notify_profiler_provider_created (EventPipeProvider *provider)
 {
 	STATIC_CONTRACT_NOTHROW;
-
-#ifndef DACCESS_COMPILE
+#if !defined(DACCESS_COMPILE) && defined(PROFILING_SUPPORTED)
 		// Let the profiler know the provider has been created so it can register if it wants to
 		BEGIN_PROFILER_CALLBACK (CORProfilerTrackEventPipe ());
 		(&g_profControlBlock)->EventPipeProviderCreated (provider);
 		END_PROFILER_CALLBACK ();
-#endif // DACCESS_COMPILE
+#endif // !DACCESS_COMPILE && PROFILING_SUPPORTED
 }
 
 /*

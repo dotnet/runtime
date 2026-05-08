@@ -64,6 +64,9 @@ namespace Microsoft.Extensions
         [ConfigurationKeyName("Named_Property")]
         public string NamedProperty { get; set; }
 
+        [ConfigurationIgnore]
+        public string IgnoredProperty { get; set; } = "Default";
+
         protected string ProtectedPrivateSet { get; private set; }
 
         private string PrivateReadOnly { get; }

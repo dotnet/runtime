@@ -749,7 +749,7 @@ namespace System.Diagnostics
         /// This state is useful, for example, when your application needs to wait for a starting process
         /// to finish creating its main window before the application communicates with that window.
         /// </remarks>
-        public bool WaitForInputIdle(TimeSpan timeout) => WaitForInputIdle(ToTimeoutMilliseconds(timeout));
+        public bool WaitForInputIdle(TimeSpan timeout) => WaitForInputIdle(ProcessUtils.ToTimeoutMilliseconds(timeout));
 
         public ISynchronizeInvoke? SynchronizingObject { get; set; }
 
@@ -1209,10 +1209,6 @@ namespace System.Diagnostics
                         {
                             SafeFileHandle.CreateAnonymousPipe(out childInputHandle, out parentInputPipeHandle);
                         }
-                        else if (ProcessUtils.PlatformSupportsConsole)
-                        {
-                            childInputHandle = Console.OpenStandardInputHandle();
-                        }
 
                         if (startInfo.StandardOutputHandle is not null)
                         {
@@ -1221,10 +1217,6 @@ namespace System.Diagnostics
                         else if (startInfo.RedirectStandardOutput)
                         {
                             SafeFileHandle.CreateAnonymousPipe(out parentOutputPipeHandle, out childOutputHandle, asyncRead: OperatingSystem.IsWindows());
-                        }
-                        else if (ProcessUtils.PlatformSupportsConsole)
-                        {
-                            childOutputHandle = Console.OpenStandardOutputHandle();
                         }
 
                         if (startInfo.StandardErrorHandle is not null)
@@ -1235,10 +1227,6 @@ namespace System.Diagnostics
                         {
                             SafeFileHandle.CreateAnonymousPipe(out parentErrorPipeHandle, out childErrorHandle, asyncRead: OperatingSystem.IsWindows());
                         }
-                        else if (ProcessUtils.PlatformSupportsConsole)
-                        {
-                            childErrorHandle = Console.OpenStandardErrorHandle();
-                        }
                     }
                     finally
                     {
@@ -1246,6 +1234,25 @@ namespace System.Diagnostics
                         {
                             ProcessUtils.s_processStartLock.ExitWriteLock();
                         }
+                    }
+
+                    // After releasing the lock, open the null device handle once (if needed for StartDetached)
+                    // or fall back to the console handles. The null device handle will be disposed in the finally block below.
+                    if (startInfo.StartDetached)
+                    {
+                        if (childInputHandle is null || childOutputHandle is null || childErrorHandle is null)
+                        {
+                            SafeFileHandle nullDeviceHandle = File.OpenNullHandle();
+                            childInputHandle ??= nullDeviceHandle;
+                            childOutputHandle ??= nullDeviceHandle;
+                            childErrorHandle ??= nullDeviceHandle;
+                        }
+                    }
+                    else if (ProcessUtils.PlatformSupportsConsole)
+                    {
+                        childInputHandle ??= Console.OpenStandardInputHandle();
+                        childOutputHandle ??= Console.OpenStandardOutputHandle();
+                        childErrorHandle ??= Console.OpenStandardErrorHandle();
                     }
 
                     ProcessStartInfo.ValidateInheritedHandles(childInputHandle, childOutputHandle, childErrorHandle, inheritedHandles);
@@ -1462,17 +1469,7 @@ namespace System.Diagnostics
         /// Instructs the Process component to wait the specified number of milliseconds for
         /// the associated process to exit.
         /// </summary>
-        public bool WaitForExit(TimeSpan timeout) => WaitForExit(ToTimeoutMilliseconds(timeout));
-
-        private static int ToTimeoutMilliseconds(TimeSpan timeout)
-        {
-            long totalMilliseconds = (long)timeout.TotalMilliseconds;
-
-            ArgumentOutOfRangeException.ThrowIfLessThan(totalMilliseconds, -1, nameof(timeout));
-            ArgumentOutOfRangeException.ThrowIfGreaterThan(totalMilliseconds, int.MaxValue, nameof(timeout));
-
-            return (int)totalMilliseconds;
-        }
+        public bool WaitForExit(TimeSpan timeout) => WaitForExit(ProcessUtils.ToTimeoutMilliseconds(timeout));
 
         /// <summary>
         /// Instructs the Process component to wait for the associated process to exit, or

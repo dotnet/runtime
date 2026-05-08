@@ -1,0 +1,125 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Platforms>x64;x86</Platforms>
+    <!-- Suppress analyzer warnings in old prototype code -->
+    <NoWarn>$(NoWarn);SA1400;SA1121;IDE0074;IDE0059;CA1859;SA1028;SA1205;CA1805;IDE0036;SA1000;SA1206;IDE0200;IDE0054;IDE0060;CA1822;SA1129;CA1852;IDE0005;CS8600;CS8601;CS8602;CS8603;CS8604;CS8618;CS8625;CS8765;CS8769;CA2208;CS0436;CA1866;CS8620</NoWarn>
+    <Nullable>annotations</Nullable>
+    <ToolsCommonPath>$(MSBuildThisFileDirectory)..\Common\</ToolsCommonPath>
+    <TypeSystemPath>$(ToolsCommonPath)TypeSystem\</TypeSystemPath>
+    <DefineConstants>$(DefineConstants);ILTRIM</DefineConstants>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="System.Reflection.Metadata" Version="$(SystemReflectionMetadataVersion)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../aot/ILCompiler.DependencyAnalysisFramework/ILCompiler.DependencyAnalysisFramework.csproj" />
+    <ProjectReference Include="../aot/ILCompiler.TypeSystem/ILCompiler.TypeSystem.csproj" />
+  </ItemGroup>
+
+  <!-- TypeSystem files compiled directly (needed for internal member access by dataflow/ILTrim code).
+       These shadow the same types from ILCompiler.TypeSystem.dll (CS0436 suppressed). -->
+  <ItemGroup>
+    <Compile Include="..\Common\TypeSystem\IL\ILProvider.cs" Link="IL\ILProvider.cs" />
+    <Compile Include="..\Common\TypeSystem\IL\ILReader.cs" Link="IL\ILReader.cs" />
+    <Compile Include="..\Common\TypeSystem\IL\HelperExtensions.cs" Link="IL\HelperExtensions.cs" />
+    <Compile Include="..\Common\TypeSystem\Interop\InteropTypes.cs" Link="Interop\InteropTypes.cs" />
+  </ItemGroup>
+
+  <!-- Common/Compiler shared files -->
+  <ItemGroup>
+    <Compile Include="..\Common\Compiler\DisplayNameHelpers.cs" Link="Shared\DisplayNameHelpers.cs" />
+    <Compile Include="..\Common\Compiler\EventPseudoDesc.cs" Link="Shared\EventPseudoDesc.cs" />
+    <Compile Include="..\Common\Compiler\PropertyPseudoDesc.cs" Link="Shared\PropertyPseudoDesc.cs" />
+    <Compile Include="..\Common\Compiler\PseudoDescExtensions.cs" Link="Shared\PseudoDescExtensions.cs" />
+    <Compile Include="..\Common\Compiler\Dataflow\DynamicallyAccessedMembersBinder.cs" Link="Shared\Dataflow\DynamicallyAccessedMembersBinder.cs" />
+    <Compile Include="..\Common\Compiler\Dataflow\EcmaExtensions.cs" Link="Shared\Dataflow\EcmaExtensions.cs" />
+    <Compile Include="..\Common\Compiler\Dataflow\GenericParameterProxy.cs" Link="Shared\Dataflow\GenericParameterProxy.cs" />
+    <Compile Include="..\Common\Compiler\Dataflow\MethodProxy.cs" Link="Shared\Dataflow\MethodProxy.cs" />
+    <Compile Include="..\Common\Compiler\Dataflow\ParameterProxy.cs" Link="Shared\Dataflow\ParameterProxy.cs" />
+    <Compile Include="..\Common\Compiler\Dataflow\TypeProxy.cs" Link="Shared\Dataflow\TypeProxy.cs" />
+    <Compile Include="..\Common\Compiler\Dataflow\TypeExtensions.cs" Link="Shared\Dataflow\TypeExtensions.cs" />
+    <Compile Include="..\Common\Compiler\DependencyAnalysis\INodeWithRuntimeDeterminedDependencies.cs" Link="Shared\INodeWithRuntimeDeterminedDependencies.cs" />
+    <Compile Include="..\Common\Compiler\ProcessLinkerXmlBase.cs" Link="Shared\ProcessLinkerXmlBase.cs" />
+    <Compile Include="..\Common\Compiler\FeatureSettings.cs" Link="Shared\FeatureSettings.cs" />
+    <Compile Include="..\Common\Compiler\TypeExtensions.cs" Link="Shared\TypeExtensions.cs" />
+    <Compile Include="..\Common\Compiler\TypePreserve.cs" Link="Shared\TypePreserve.cs" />
+    <Compile Include="..\Common\Compiler\DependencyTrackingLevel.cs" Link="Shared\DependencyTrackingLevel.cs" />
+    <Compile Include="..\Common\System\Collections\Generic\ArrayBuilder.cs" Link="Shared\ArrayBuilder.cs" />
+    <Compile Include="..\aot\ILCompiler.Compiler\Compiler\DescriptorMarker.cs" Link="Shared\DescriptorMarker.cs"/>
+    <Compile Include="..\aot\ILCompiler.Compiler\Compiler\DependencyAnalysis\ObjectGetTypeCalledNode.cs" Link="DependencyAnalysis\ObjectGetTypeCalledNode.cs" />
+    <Compile Include="..\aot\ILCompiler.Compiler\Compiler\DependencyAnalysis\ObjectGetTypeFlowDependenciesNode.cs" Link="DependencyAnalysis\ObjectGetTypeFlowDependenciesNode.cs" />
+    <Compile Include="..\aot\ILCompiler.Compiler\Compiler\DependencyAnalysis\TrimmingDescriptorNode.cs" Link="DependencyAnalysis\TrimmingDescriptorNode.cs" />
+  </ItemGroup>
+
+  <!-- ILCompiler.Compiler shared extension method files -->
+  <ItemGroup>
+    <Compile Include="..\aot\ILCompiler.Compiler\Compiler\CustomAttributeExtensions.cs" Link="Shared\CustomAttributeExtensions.cs" />
+    <Compile Include="..\aot\ILCompiler.Compiler\Compiler\AssemblyExtensions.cs" Link="Shared\AssemblyExtensions.cs" />
+    <Compile Include="..\aot\ILCompiler.Compiler\Compiler\Logging\NativeAotFatalErrorException.cs" Link="Logging\NativeAotFatalErrorException.cs" />
+  </ItemGroup>
+
+  <!-- ILCompiler.Compiler shared Dataflow files -->
+  <ItemGroup>
+    <Compile Include="..\aot\ILCompiler.Compiler\Compiler\Dataflow\ArrayValue.cs" Link="Dataflow\ArrayValue.cs" />
+    <Compile Include="..\aot\ILCompiler.Compiler\Compiler\Dataflow\AttributeDataFlow.cs" Link="Dataflow\AttributeDataFlow.cs" />
+    <Compile Include="..\aot\ILCompiler.Compiler\Compiler\Dataflow\CompilerGeneratedCallGraph.cs" Link="Dataflow\CompilerGeneratedCallGraph.cs" />
+    <Compile Include="..\aot\ILCompiler.Compiler\Compiler\Dataflow\CompilerGeneratedState.cs" Link="Dataflow\CompilerGeneratedState.cs" />
+    <Compile Include="..\aot\ILCompiler.Compiler\Compiler\Dataflow\DiagnosticContext.cs" Link="Dataflow\DiagnosticContext.cs" />
+    <Compile Include="..\aot\ILCompiler.Compiler\Compiler\Dataflow\DiagnosticUtilities.cs" Link="Dataflow\DiagnosticUtilities.cs" />
+    <Compile Include="..\aot\ILCompiler.Compiler\Compiler\Dataflow\FieldReferenceValue.cs" Link="Dataflow\FieldReferenceValue.cs" />
+    <Compile Include="..\aot\ILCompiler.Compiler\Compiler\Dataflow\FieldValue.cs" Link="Dataflow\FieldValue.cs" />
+    <Compile Include="..\aot\ILCompiler.Compiler\Compiler\Dataflow\FlowAnnotations.cs" Link="Dataflow\FlowAnnotations.cs" />
+    <Compile Include="..\aot\ILCompiler.Compiler\Compiler\Dataflow\GenericArgumentDataFlow.cs" Link="Dataflow\GenericArgumentDataFlow.cs" />
+    <Compile Include="..\aot\ILCompiler.Compiler\Compiler\Dataflow\GenericParameterValue.cs" Link="Dataflow\GenericParameterValue.cs" />
+    <Compile Include="..\aot\ILCompiler.Compiler\Compiler\Dataflow\HandleCallAction.cs" Link="Dataflow\HandleCallAction.cs" />
+    <Compile Include="..\aot\ILCompiler.Compiler\Compiler\Dataflow\HoistedLocalKey.cs" Link="Dataflow\HoistedLocalKey.cs" />
+    <Compile Include="..\aot\ILCompiler.Compiler\Compiler\Dataflow\InterproceduralState.cs" Link="Dataflow\InterproceduralState.cs" />
+    <Compile Include="..\aot\ILCompiler.Compiler\Compiler\Dataflow\LocalVariableReferenceValue.cs" Link="Dataflow\LocalVariableReferenceValue.cs" />
+    <Compile Include="..\aot\ILCompiler.Compiler\Compiler\Dataflow\MethodBodyScanner.cs" Link="Dataflow\MethodBodyScanner.cs" />
+    <Compile Include="..\aot\ILCompiler.Compiler\Compiler\Dataflow\MethodParameterValue.cs" Link="Dataflow\MethodParameterValue.cs" />
+    <Compile Include="..\aot\ILCompiler.Compiler\Compiler\Dataflow\MethodReturnValue.cs" Link="Dataflow\MethodReturnValue.cs" />
+    <Compile Include="..\aot\ILCompiler.Compiler\Compiler\Dataflow\ParameterReferenceValue.cs" Link="Dataflow\ParameterReferenceValue.cs" />
+    <Compile Include="..\aot\ILCompiler.Compiler\Compiler\Dataflow\ReferenceValue.cs" Link="Dataflow\ReferenceValue.cs" />
+    <Compile Include="..\aot\ILCompiler.Compiler\Compiler\Dataflow\ReflectionMarker.cs" Link="Dataflow\ReflectionMarker.cs" />
+    <Compile Include="..\aot\ILCompiler.Compiler\Compiler\Dataflow\ReflectionMethodBodyScanner.cs" Link="Dataflow\ReflectionMethodBodyScanner.cs" />
+    <Compile Include="..\aot\ILCompiler.Compiler\Compiler\Dataflow\RequireDynamicallyAccessedMembersAction.cs" Link="Dataflow\RequireDynamicallyAccessedMembersAction.cs" />
+    <Compile Include="..\aot\ILCompiler.Compiler\Compiler\Dataflow\ScannerExtensions.cs" Link="Dataflow\ScannerExtensions.cs" />
+    <Compile Include="..\aot\ILCompiler.Compiler\Compiler\Dataflow\TrimAnalysisAssignmentPattern.cs" Link="Dataflow\TrimAnalysisAssignmentPattern.cs" />
+    <Compile Include="..\aot\ILCompiler.Compiler\Compiler\Dataflow\TrimAnalysisFieldAccessPattern.cs" Link="Dataflow\TrimAnalysisFieldAccessPattern.cs" />
+    <Compile Include="..\aot\ILCompiler.Compiler\Compiler\Dataflow\TrimAnalysisGenericInstantiationAccessPattern.cs" Link="Dataflow\TrimAnalysisGenericInstantiationAccessPattern.cs" />
+    <Compile Include="..\aot\ILCompiler.Compiler\Compiler\Dataflow\TrimAnalysisMethodCallPattern.cs" Link="Dataflow\TrimAnalysisMethodCallPattern.cs" />
+    <Compile Include="..\aot\ILCompiler.Compiler\Compiler\Dataflow\TrimAnalysisPatternStore.cs" Link="Dataflow\TrimAnalysisPatternStore.cs" />
+    <Compile Include="..\aot\ILCompiler.Compiler\Compiler\Dataflow\TrimAnalysisTokenAccessPattern.cs" Link="Dataflow\TrimAnalysisTokenAccessPattern.cs" />
+    <Compile Include="..\aot\ILCompiler.Compiler\Compiler\Dataflow\ValueNode.cs" Link="Dataflow\ValueNode.cs" />
+  </ItemGroup>
+
+  <!-- ILCompiler.Compiler shared Logger/Logging files -->
+  <ItemGroup>
+    <Compile Include="..\aot\ILCompiler.Compiler\Compiler\Logger.cs" Link="Logging\Logger.cs" />
+    <Compile Include="..\aot\ILCompiler.Compiler\Compiler\ILogWriter.cs" Link="Logging\ILogWriter.cs" />
+    <Compile Include="..\aot\ILCompiler.Compiler\Compiler\TextLogWriter.cs" Link="Logging\TextLogWriter.cs" />
+    <Compile Include="..\aot\ILCompiler.Compiler\Compiler\Logging\DocumentationSignatureGenerator.PartVisitor.cs" Link="Logging\DocumentationSignatureGenerator.PartVisitor.cs" />
+    <Compile Include="..\aot\ILCompiler.Compiler\Compiler\Logging\DocumentationSignatureParser.cs" Link="Logging\DocumentationSignatureParser.cs" />
+    <Compile Include="..\aot\ILCompiler.Compiler\Compiler\Logging\MessageContainer.cs" Link="Logging\MessageContainer.cs" />
+    <Compile Include="..\aot\ILCompiler.Compiler\Compiler\Logging\MessageOrigin.cs" Link="Logging\MessageOrigin.cs" />
+    <Compile Include="..\aot\ILCompiler.Compiler\Compiler\Logging\SuppressMessageInfo.cs" Link="Logging\SuppressMessageInfo.cs" />
+    <Compile Include="..\aot\ILCompiler.Compiler\Compiler\Logging\UnconditionalSuppressMessageAttributeState.cs" Link="Logging\UnconditionalSuppressMessageAttributeState.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="..\..\..\tools\illink\src\linker\Linker\AssemblyAction.cs" Link="Mono\AssemblyAction.cs" />
+    <Compile Include="..\..\..\tools\illink\src\linker\Linker\AssemblyRootMode.cs" Link="Mono\AssemblyRootMode.cs" />
+    <Compile Include="..\..\..\tools\illink\src\linker\Linker\Driver.cs" Link="Mono\Driver.cs" />
+    <Compile Include="..\..\..\tools\illink\src\linker\Linker\LinkContext.cs" Link="Mono\LinkContext.cs" />
+    <Compile Include="..\..\..\tools\illink\src\linker\Linker\LinkerEventSource.cs" Link="Mono\LinkerEventSource.cs" />
+    <Compile Include="..\..\..\tools\illink\src\linker\Linker\MetadataTrimming.cs" Link="Mono\MetadataTrimming.cs" />
+    <Compile Include="..\..\..\tools\illink\src\linker\Linker\PInvokeInfo.cs" Link="Mono\PInvokeInfo.cs" />
+    <Compile Include="..\..\..\tools\illink\src\linker\Linker\WarnVersion.cs" Link="Mono\WarnVersion.cs" />
+  </ItemGroup>
+
+  <!-- ILLink.Shared shared items project -->
+  <Import Project="..\..\..\tools\illink\src\ILLink.Shared\ILLink.Shared.projitems" Label="Shared" />
+</Project>

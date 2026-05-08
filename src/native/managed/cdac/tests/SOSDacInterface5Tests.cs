@@ -104,15 +104,13 @@ public unsafe class SOSDacInterface5Tests
             .Setup(c => c.GetNativeCodeVersions(s_methodDescAddr, It.IsAny<ILCodeVersionHandle>()))
             .Returns(nativeVersionHandles);
 
-        var target = new TestPlaceholderTarget(
-            arch,
-            (_, _) => -1,
-            types: []);
-        target.SetContracts(Mock.Of<ContractRegistry>(
-            c => c.CodeVersions == mockCodeVersions.Object
-                && c.RuntimeTypeSystem == mockRts.Object
-                && c.Loader == mockLoader.Object
-                && c.ReJIT == mockReJIT.Object));
+        var target = new TestPlaceholderTarget.Builder(arch)
+            .UseReader((_, _) => -1)
+            .AddMockContract(mockCodeVersions)
+            .AddMockContract(mockRts)
+            .AddMockContract(mockLoader)
+            .AddMockContract(mockReJIT)
+            .Build();
 
         return new SOSDacImpl(target, legacyObj: null);
     }

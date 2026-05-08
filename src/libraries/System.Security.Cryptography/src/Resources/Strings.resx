@@ -543,6 +543,9 @@
   <data name="Cryptography_KemInvalidAlgorithmHandle" xml:space="preserve">
     <value>The specified EVP_PKEY handle is not a known ML-KEM algorithm.</value>
   </data>
+  <data name="Cryptography_X25519InvalidAlgorithmHandle" xml:space="preserve">
+    <value>The specified EVP_PKEY handle is not an X25519 Diffie-Hellman key.</value>
+  </data>
   <data name="Cryptography_KemNoDecapsulationKey" xml:space="preserve">
     <value>The current instance does not contain a decapsulation key.</value>
   </data>

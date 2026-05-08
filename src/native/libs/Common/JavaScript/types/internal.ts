@@ -46,6 +46,8 @@ export type EmscriptenInternals = {
 export type EmscriptenModuleInternal = EmscriptenModule & DotnetModuleConfig & {
     runtimeKeepalivePush(): void;
     runtimeKeepalivePop(): void;
+    print(message: string): void;
+    printErr(message: string): void;
     instantiateWasm?: InstantiateWasmCallBack;
     onAbort?: (reason: any, extraJson?: string) => void;
     onExit?: (code: number) => void;
@@ -55,7 +57,6 @@ export type EmscriptenModuleInternal = EmscriptenModule & DotnetModuleConfig & {
 }
 
 export interface AssetEntryInternal extends AssetEntry {
-    integrity?: string
     cache?: RequestCache
     useCredentials?: boolean
     culture?: string

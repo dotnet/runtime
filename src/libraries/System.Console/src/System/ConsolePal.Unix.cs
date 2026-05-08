@@ -939,6 +939,20 @@ namespace System
             }
         }
 
+        /// <summary>Reads data from the file descriptor into the buffer.</summary>
+        /// <param name="fd">The file descriptor.</param>
+        /// <param name="buffer">The buffer to read into.</param>
+        /// <returns>The number of bytes read, or an exception if there's an error.</returns>
+        private static unsafe int Read(SafeFileHandle fd, Span<byte> buffer)
+        {
+            fixed (byte* bufPtr = buffer)
+            {
+                int result = Interop.CheckIo(Interop.Sys.Read(fd, bufPtr, buffer.Length));
+                Debug.Assert(result <= buffer.Length);
+                return result;
+            }
+        }
+
         internal static void WriteToTerminal(ReadOnlySpan<byte> buffer, SafeFileHandle? handle = null, bool mayChangeCursorPosition = true)
         {
             handle ??= s_terminalHandle;
@@ -964,35 +978,65 @@ namespace System
         /// <param name="fd">The file descriptor.</param>
         /// <param name="buffer">The buffer from which to write data.</param>
         /// <param name="mayChangeCursorPosition">Writing this buffer may change the cursor position.</param>
-        private static void Write(SafeFileHandle fd, ReadOnlySpan<byte> buffer, bool mayChangeCursorPosition = true)
+        private static unsafe void Write(SafeFileHandle fd, ReadOnlySpan<byte> buffer, bool mayChangeCursorPosition = true)
         {
-            int cursorVersion = mayChangeCursorPosition ? Volatile.Read(ref s_cursorVersion) : -1;
+            fixed (byte* p = buffer)
+            {
+                byte* bufPtr = p;
+                int count = buffer.Length;
+                while (count > 0)
+                {
+                    int cursorVersion = mayChangeCursorPosition ? Volatile.Read(ref s_cursorVersion) : -1;
 
-            try
-            {
-                RandomAccess.Write(fd, buffer, fileOffset: 0);
-            }
-            catch (IOException ex) when (Interop.Sys.ConvertErrorPlatformToPal(ex.HResult) == Interop.Error.EPIPE)
-            {
-                // Broken pipe... likely due to being redirected to a program
-                // that ended, so simply pretend we were successful.
-                return;
-            }
+                    int bytesWritten = Interop.Sys.Write(fd, bufPtr, count);
+                    if (bytesWritten < 0)
+                    {
+                        Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
+                        if (errorInfo.Error == Interop.Error.EPIPE)
+                        {
+                            // Broken pipe... likely due to being redirected to a program
+                            // that ended, so simply pretend we were successful.
+                            return;
+                        }
+                        else if (errorInfo.Error == Interop.Error.EAGAIN) // aka EWOULDBLOCK
+                        {
+                            // May happen if the file handle is configured as non-blocking.
+                            // In that case, we need to wait to be able to write and then
+                            // try again. We poll, but don't actually care about the result,
+                            // only the blocking behavior, and thus ignore any poll errors
+                            // and loop around to do another write (which may correctly fail
+                            // if something else has gone wrong).
+                            Interop.Sys.Poll(fd, Interop.PollEvents.POLLOUT, Timeout.Infinite, out Interop.PollEvents triggered);
+                            continue;
+                        }
+                        else
+                        {
+                            // Something else... fail.
+                            throw Interop.GetExceptionForIoErrno(errorInfo);
+                        }
+                    }
+                    else
+                    {
+                        if (mayChangeCursorPosition)
+                        {
+                            UpdatedCachedCursorPosition(bufPtr, bytesWritten, cursorVersion);
+                        }
+                    }
 
-            if (mayChangeCursorPosition)
-            {
-                UpdatedCachedCursorPosition(buffer, cursorVersion);
+                    count -= bytesWritten;
+                    bufPtr += bytesWritten;
+                }
             }
         }
 
-        private static void UpdatedCachedCursorPosition(ReadOnlySpan<byte> buffer, int cursorVersion)
+        private static unsafe void UpdatedCachedCursorPosition(byte* bufPtr, int count, int cursorVersion)
         {
             lock (Console.Out)
             {
                 int left, top;
                 if (cursorVersion != s_cursorVersion               ||  // the cursor was changed during the write by another operation
                     !TryGetCachedCursorPosition(out left, out top) ||  // we don't have a cursor position
-                    buffer.Length > InteractiveBufferSize)              // limit the amount of bytes we are willing to inspect
+                    count > InteractiveBufferSize)                     // limit the amount of bytes we are willing to inspect
                 {
                     InvalidateCachedCursorPosition();
                     return;
@@ -1000,8 +1044,9 @@ namespace System
 
                 GetWindowSize(out int width, out int height);
 
-                foreach (byte c in buffer)
+                for (int i = 0; i < count; i++)
                 {
+                    byte c = bufPtr[i];
                     if (c < 127 && c >= 32) // ASCII/UTF-8 characters that take up a single position
                     {
                         left++;

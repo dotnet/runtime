@@ -36,14 +36,23 @@ using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using ILLink.Shared;
 using ILLink.Shared.TypeSystemProxy;
+
+#if ILTRIM
+using ILCompiler;
+using ILCompiler.Dataflow;
+using ILCompiler.Logging;
+using ILogger = ILCompiler.ILogWriter;
+#else
 using Mono.Cecil;
 using Mono.Cecil.Cil;
 using Mono.Linker.Dataflow;
 using Mono.Linker.Steps;
+#endif
 
 namespace Mono.Linker
 {
 
+#if !ILTRIM
     public class UnintializedContextFactory
     {
         public virtual AnnotationStore CreateAnnotationStore(LinkContext context) => new AnnotationStore(context);
@@ -52,6 +61,7 @@ namespace Mono.Linker
         public virtual EmbeddedXmlInfo CreateEmbeddedXmlInfo() => new();
         public virtual AssemblyResolver CreateResolver(LinkContext context) => new AssemblyResolver(context, new ReaderParameters());
     }
+#endif
 
     public static class TargetRuntimeVersion
     {
@@ -59,12 +69,17 @@ namespace Mono.Linker
         public const int NET6 = 6;
     }
 
-    public class LinkContext : IMetadataResolver, ITryResolveMetadata, ITryResolveAssemblyName, IDisposable
+    public partial class LinkContext
+#if !ILTRIM
+        : IMetadataResolver, ITryResolveMetadata, ITryResolveAssemblyName, IDisposable
+#endif
     {
-
+#if !ILTRIM
         readonly Pipeline _pipeline;
+#endif
         readonly Dictionary<string, AssemblyAction> _actions;
         readonly Dictionary<string, string> _parameters;
+#if !ILTRIM
         int? _targetRuntime;
 
         readonly AssemblyResolver _resolver;
@@ -73,8 +88,10 @@ namespace Mono.Linker
         readonly AnnotationStore _annotations;
         readonly CustomAttributeSource _customAttributes;
         readonly CompilerGeneratedState _compilerGeneratedState;
+#endif
         readonly List<MessageContainer> _cachedWarningMessageContainers;
         readonly ILogger _logger;
+#if !ILTRIM
         readonly Dictionary<AssemblyDefinition, bool> _isTrimmable;
         readonly UnreachableBlocksOptimizer _unreachableBlocksOptimizer;
 
@@ -88,6 +105,7 @@ namespace Mono.Linker
         public CompilerGeneratedState CompilerGeneratedState => _compilerGeneratedState;
 
         public AnnotationStore Annotations => _annotations;
+#endif
 
         public bool DeterministicOutput { get; set; }
 
@@ -148,6 +166,7 @@ namespace Mono.Linker
             get { return _actions; }
         }
 
+#if !ILTRIM
         public AssemblyResolver Resolver
         {
             get { return _resolver; }
@@ -157,14 +176,18 @@ namespace Mono.Linker
             => _typeNameResolver ??= new TypeNameResolver(this, this);
 
         public ISymbolReaderProvider SymbolReaderProvider { get; set; }
+#endif
 
         public bool LogMessages { get; set; }
+
+#if !ILTRIM
 
         public MarkingHelpers MarkingHelpers { get; private set; }
 
         public KnownMembers MarkedKnownMembers { get; private set; }
 
         public WarningSuppressionWriter? WarningSuppressionWriter { get; set; }
+#endif
 
         public HashSet<int> NoWarn { get; set; }
 
@@ -176,13 +199,17 @@ namespace Mono.Linker
 
         public WarnVersion WarnVersion { get; set; }
 
+#if !ILTRIM
         public UnconditionalSuppressMessageAttributeState Suppressions { get; set; }
 
         public Tracer Tracer { get; private set; }
+#endif
 
         internal HashSet<string>? TraceAssembly { get; set; }
 
+#if !ILTRIM
         public EmbeddedXmlInfo EmbeddedXmlInfo { get; private set; }
+#endif
 
         public CodeOptimizationsSettings Optimizations { get; set; }
 
@@ -190,7 +217,9 @@ namespace Mono.Linker
 
         public string? AssemblyListFile { get; set; }
 
+#if !ILTRIM
         public List<IMarkHandler> MarkHandlers { get; }
+#endif
 
         public Dictionary<string, bool> SingleWarn { get; set; }
 
@@ -198,6 +227,7 @@ namespace Mono.Linker
 
         public HashSet<string> AssembliesWithGeneratedSingleWarning { get; set; }
 
+#if !ILTRIM
         public SerializationMarker SerializationMarker { get; }
 
         public LinkContext(Pipeline pipeline, ILogger logger, string outputDirectory)
@@ -260,6 +290,7 @@ namespace Mono.Linker
 
             Optimizations = new CodeOptimizationsSettings(defaultOptimizations);
         }
+#endif
 
         public void SetFeatureValue(string feature, bool value)
         {
@@ -272,6 +303,7 @@ namespace Mono.Linker
             return FeatureSettings.TryGetValue(feature, out bool fvalue) && value == fvalue;
         }
 
+#if !ILTRIM
         public TypeDefinition? GetType(string fullName)
         {
             int pos = fullName.IndexOf(',');
@@ -391,12 +423,14 @@ namespace Mono.Linker
 
             return reference;
         }
+#endif
 
         public void RegisterAssemblyAction(string assemblyName, AssemblyAction action)
         {
             _actions[assemblyName] = action;
         }
 
+#if !ILTRIM
 #if !FEATURE_ILLINK
         public void SetAction(AssemblyDefinition assembly, AssemblyAction defaultAction)
         {
@@ -1064,6 +1098,7 @@ namespace Mono.Linker
             if (unresolved_exported_types_reported.Add(et))
                 LogError(string.Format(SharedStrings.FailedToResolveTypeElementMessage, et.Name), (int)DiagnosticId.FailedToResolveMetadataElement);
         }
+#endif
     }
 
     public class CodeOptimizationsSettings
@@ -1089,10 +1124,12 @@ namespace Mono.Linker
 
         public CodeOptimizations Global { get; private set; }
 
+#if !ILTRIM
         internal bool IsEnabled(CodeOptimizations optimizations, AssemblyDefinition? context)
         {
             return IsEnabled(optimizations, context?.Name.Name);
         }
+#endif
 
         public bool IsEnabled(CodeOptimizations optimizations, string? assemblyName)
         {

@@ -13,6 +13,7 @@ namespace Microsoft.Diagnostics.DataContractReader.DumpTests;
 public class DacDbiObjectDumpTests : DumpTestBase
 {
     protected override string DebuggeeName => "BasicThreads";
+    protected override string DumpType => "full";
 
     private DacDbiImpl CreateDacDbi() => new DacDbiImpl(Target, legacyObj: null);
 
@@ -44,29 +45,4 @@ public class DacDbiObjectDumpTests : DumpTestBase
         Assert.Equal(testAddr, result);
     }
 
-    [ConditionalTheory]
-    [MemberData(nameof(TestConfigurations))]
-    public unsafe void GetAppDomainIdFromVmObjectHandle_ReturnsOneForNonZero(TestConfiguration config)
-    {
-        InitializeDumpTest(config);
-        DacDbiImpl dbi = CreateDacDbi();
-
-        uint id;
-        int hr = dbi.GetAppDomainIdFromVmObjectHandle(0x12345678, &id);
-        Assert.Equal(System.HResults.S_OK, hr);
-        Assert.Equal(1u, id);
-    }
-
-    [ConditionalTheory]
-    [MemberData(nameof(TestConfigurations))]
-    public unsafe void GetAppDomainIdFromVmObjectHandle_ReturnsZeroForNull(TestConfiguration config)
-    {
-        InitializeDumpTest(config);
-        DacDbiImpl dbi = CreateDacDbi();
-
-        uint id;
-        int hr = dbi.GetAppDomainIdFromVmObjectHandle(0, &id);
-        Assert.Equal(System.HResults.S_OK, hr);
-        Assert.Equal(0u, id);
-    }
 }

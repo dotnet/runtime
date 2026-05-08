@@ -2957,44 +2957,34 @@ static void DoIUInvokeDispMethod(IDispatchEx* pDispEx, IDispatch* pDisp, DISPID 
     GCPROTECT_END();
 }
 
-
-FORCEINLINE void DispParamHolderRelease(VARIANT* value)
+struct DispParamHolderTraits final
 {
-    CONTRACTL
+    using Type = VARIANT*;
+    static constexpr Type Default() { return NULL; }
+    static void Free(Type value)
     {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
+        CONTRACTL
+        {
+            THROWS;
+            GC_TRIGGERS;
+            MODE_ANY;
+        }
+        CONTRACTL_END;
 
-    if (value)
-    {
-       if (V_VT(value) & VT_BYREF)
-       {
-           VariantHolder TmpVar;
-           OleVariant::ExtractContentsFromByrefVariant(value, &TmpVar);
-       }
+        if (value)
+        {
+            if (V_VT(value) & VT_BYREF)
+            {
+                VariantHolder TmpVar;
+                OleVariant::ExtractContentsFromByrefVariant(value, &TmpVar);
+            }
 
-       SafeVariantClear(value);
-    }
-}
-
-class DispParamHolder : public Wrapper<VARIANT*, DispParamHolderDoNothing, DispParamHolderRelease, 0>
-{
-public:
-    DispParamHolder(VARIANT* p = NULL)
-        : Wrapper<VARIANT*, DispParamHolderDoNothing, DispParamHolderRelease, 0>(p)
-    {
-        WRAPPER_NO_CONTRACT;
-    }
-
-    FORCEINLINE void operator=(VARIANT* p)
-    {
-        WRAPPER_NO_CONTRACT;
-        Wrapper<VARIANT*, DispParamHolderDoNothing, DispParamHolderRelease, 0>::operator=(p);
+            SafeVariantClear(value);
+        }
     }
 };
+
+using DispParamHolder = LifetimeHolder<DispParamHolderTraits>;
 
 //--------------------------------------------------------------------------------
 // This methods converts an IEnumVARIANT to a managed IEnumerator.
@@ -3058,7 +3048,7 @@ void IUInvokeDispMethod(
     SafeComHolder<IUnknown> pUnk            = NULL;
     SafeComHolder<IDispatch> pDisp          = NULL;
     SafeComHolder<IDispatchEx> pDispEx      = NULL;
-    VariantPtrHolder    pVarResult          = NULL;
+    VariantPtrHolder    pVarResult;
     NewArrayHolder<DispParamHolder> params  = NULL;
 
     //

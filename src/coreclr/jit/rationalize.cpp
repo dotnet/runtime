@@ -638,7 +638,8 @@ void Rationalizer::RewriteHWIntrinsicBlendv(GenTree** use, Compiler::GenTreeStac
         return;
     }
 
-    GenTree* op2 = node->Op(2);
+    GenTree*  op2 = node->Op(2);
+    GenTree*& op3 = node->Op(3);
 
     // We're in the post-order visit and are traversing in execution order, so
     // everything between op2 and node will have already been rewritten to LIR
@@ -648,7 +649,47 @@ void Rationalizer::RewriteHWIntrinsicBlendv(GenTree** use, Compiler::GenTreeStac
     // variant
     SideEffectSet scratchSideEffects;
 
-    if (scratchSideEffects.IsLirInvariantInRange(m_compiler, op2, node))
+    // If the mask was originally a vector, we don't want to create a mask solely for
+    // the purpose of embedding it. vpmov*2m is relatively costly compared to blendvp*.
+    if (op3->OperIsConvertVectorToMask())
+    {
+        // The non-mask blend instructions only come in byte (pblendvb) or floating
+        // (blendvp[sd]) forms. We can use the byte variant as long as we have a
+        // per-element mask, or we can simply use the equivalent-sized floating type.
+        GenTree* maskVector = op3->AsHWIntrinsic()->Op(1);
+
+        if (!maskVector->IsVectorPerElementMask(simdBaseType, simdSize))
+        {
+            switch (simdBaseType)
+            {
+                case TYP_SHORT:
+                case TYP_USHORT:
+                {
+                    return;
+                }
+
+                case TYP_INT:
+                case TYP_UINT:
+                {
+                    simdBaseType = TYP_FLOAT;
+                    break;
+                }
+
+                case TYP_LONG:
+                case TYP_ULONG:
+                {
+                    simdBaseType = TYP_DOUBLE;
+                    break;
+                }
+
+                default:
+                {
+                    break;
+                }
+            }
+        }
+    }
+    else if (scratchSideEffects.IsLirInvariantInRange(m_compiler, op2, node))
     {
         unsigned  tgtMaskSize     = simdSize / genTypeSize(simdBaseType);
         var_types tgtSimdBaseType = TYP_UNDEF;
@@ -666,8 +707,6 @@ void Rationalizer::RewriteHWIntrinsicBlendv(GenTree** use, Compiler::GenTreeStac
             return;
         }
     }
-
-    GenTree*& op3 = node->Op(3);
 
     if (!ShouldRewriteToNonMaskHWIntrinsic(op3))
     {
@@ -694,6 +733,7 @@ void Rationalizer::RewriteHWIntrinsicBlendv(GenTree** use, Compiler::GenTreeStac
         intrinsic = NI_X86Base_BlendVariable;
     }
 
+    node->SetSimdBaseType(simdBaseType);
     node->ChangeHWIntrinsicId(intrinsic);
 }
 

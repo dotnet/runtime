@@ -25,6 +25,12 @@ public abstract class DumpTestBase : IDisposable
     private DumpInfo? _dumpInfo;
 
     /// <summary>
+    /// The runtime version identifiers tested by <see cref="TestConfigurations"/> and
+    /// searched by <see cref="GetDumpSource"/>. Centralised here so both share the same list.
+    /// </summary>
+    private static readonly string[] RuntimeVersions = ["local", "net10.0"];
+
+    /// <summary>
     /// The set of runtime versions and R2R modes to test against.
     /// Each entry produces a separate test invocation via <c>[MemberData]</c>.
     /// R2R modes are provided by <see cref="GetR2RModes"/>, which currently yields
@@ -34,13 +40,14 @@ public abstract class DumpTestBase : IDisposable
     {
         get
         {
+            string? dumpSource = GetDumpSource();
             foreach (string r2rMode in GetR2RModes())
             {
-                if (!IsVersionSkipped("local"))
-                    yield return [new TestConfiguration("local", r2rMode)];
-
-                if (!IsVersionSkipped("net10.0"))
-                    yield return [new TestConfiguration("net10.0", r2rMode)];
+                foreach (string version in RuntimeVersions)
+                {
+                    if (!IsVersionSkipped(version))
+                        yield return [new TestConfiguration(version, r2rMode, dumpSource)];
+                }
             }
         }
     }
@@ -98,7 +105,7 @@ public abstract class DumpTestBase : IDisposable
             throw new SkipTestException($"No {config.R2RMode} dump for {debuggeeName}: {dumpPath}");
         }
 
-        _host = ClrMdDumpHost.Open(dumpPath);
+        _host = ClrMdDumpHost.Open(dumpPath, GetSymbolPaths(debuggeeName, versionDir));
         ulong contractDescriptor = _host.FindContractDescriptorAddress();
 
         bool created = ContractDescriptorTarget.TryCreate(
@@ -106,7 +113,8 @@ public abstract class DumpTestBase : IDisposable
             _host.ReadFromTarget,
             writeToTarget: static (_, _) => -1,
             _host.GetThreadContext,
-            additionalFactories: [],
+            allocVirtual: static (ulong _, out ulong _) => throw new NotImplementedException("Dump tests do not provide AllocVirtual"),
+            [Contracts.CoreCLRContracts.Register],
             out _target);
 
         Assert.True(created, $"Failed to create ContractDescriptorTarget from dump: {dumpPath}");
@@ -177,6 +185,28 @@ public abstract class DumpTestBase : IDisposable
     }
 
     /// <summary>
+    /// Returns the dump source platform from dump-info.json (e.g., "windows_x64"),
+    /// or null for local runs where CDAC_DUMP_ROOT is not set.
+    /// </summary>
+    private static string? GetDumpSource()
+    {
+        string? dumpRoot = Environment.GetEnvironmentVariable("CDAC_DUMP_ROOT");
+        if (string.IsNullOrEmpty(dumpRoot))
+            return null;
+
+        // Try loading dump-info.json from any version directory to get OS/Arch
+        foreach (string versionDir in RuntimeVersions)
+        {
+            DumpInfo? info = DumpInfo.TryLoad(Path.Combine(dumpRoot, versionDir));
+            if (info is not null)
+                return $"{info.Os}_{info.Arch}";
+        }
+
+        // Fall back to the directory name if dump-info.json isn't available
+        return Path.GetFileName(dumpRoot.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar));
+    }
+
+    /// <summary>
     /// Returns the R2R modes to test against. Both modes are always tested;
     /// dumps that don't exist for a given mode are skipped via <see cref="SkipTestException"/>.
     /// </summary>
@@ -202,6 +232,30 @@ public abstract class DumpTestBase : IDisposable
         }
 
         return false;
+    }
+
+    /// <summary>
+    /// Collects local symbol paths for ClrMD to resolve modules in the dump.
+    /// Checks <c>symbols/</c> directories in the helix payload (Helix and xplat dumps)
+    /// </summary>
+    private static List<string> GetSymbolPaths(string debuggeeName, string versionDir)
+    {
+        List<string> paths = [];
+
+        // Symbols directory in the dump tree (populated by Helix commands before tarring)
+        string symbolsDir = Path.Combine(versionDir, "symbols");
+        if (Directory.Exists(symbolsDir))
+        {
+            string runtimeSymbols = Path.Combine(symbolsDir, "runtime");
+            if (Directory.Exists(runtimeSymbols))
+                paths.Add(runtimeSymbols);
+
+            string debuggeeSymbols = Path.Combine(symbolsDir, "debuggees", debuggeeName);
+            if (Directory.Exists(debuggeeSymbols))
+                paths.Add(debuggeeSymbols);
+        }
+
+        return paths;
     }
 
     private static string? FindRepoRoot()
