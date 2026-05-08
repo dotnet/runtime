@@ -192,15 +192,15 @@ Search `is:issue is:open label:"Known Build Error" in:body "<error-signature>"`.
 
 #### Step 2 — Look for an area-team tracker without the KBE label.
 
-Some teams track recurring failures in plain issues. Search `is:issue is:open in:title "<test-name>"` together with `in:body "<test-file-path>"`. On a hit, record it as `linked-tracker` and reuse its number via `[ActiveIssue("...issues/<n>")]` rather than filing a parallel KBE.
+Some teams track recurring failures in plain issues. Search `is:issue is:open in:title "<test-name>"` together with `in:body "<test-file-path>"`. On a hit, record it as `linked-tracker` — but **do not** treat the tracker as a substitute for a KBE. Build Analysis only matches against issues that carry the `Known Build Error` label and a valid JSON body, so a plain tracker won't unblock PR CI on its own. File a new KBE for Build Analysis to match against, and cross-link the tracker (`Tracking: dotnet/runtime#<n>`) inside the KBE body and the muting PR body.
 
 #### Step 3 — Look for an existing muting PR.
 
-Search `is:pr is:open in:title "<test-name>" "[ci-scan]"` and `is:pr is:open "<test-name>" ActiveIssue`. On a hit, record `→ already-covered: muting PR #<n>` and stop.
+Search `is:pr is:open in:title "<test-name>" "[ci-scan]"` and `is:pr is:open "<test-name>" ActiveIssue`. On a hit, record `→ existing-PR #<n>` (muting) and stop.
 
 #### Step 4 — Look for an in-flight fix PR by anyone.
 
-Search broadly — not only `[ci-scan]` PRs — by test name, file path, and assembly: `is:pr is:open "<test-name>"`, `is:pr is:open "<test-file-path>"`, `is:pr is:open "<assembly>" in:title`. For each candidate, fetch the PR body; if it claims to fix this failure (or links the same KBE), stop and record `→ already-covered: in-flight fix PR #<n>`.
+Search broadly — not only `[ci-scan]` PRs — by test name, file path, and assembly: `is:pr is:open "<test-name>"`, `is:pr is:open "<test-file-path>"`, `is:pr is:open "<assembly>" in:title`. For each candidate, fetch the PR body; if it claims to fix this failure (or links the same KBE), stop and record `→ existing-PR #<n>` (in-flight fix).
 
 #### Step 5 — Verify every issue number you're about to write actually exists.
 
@@ -212,8 +212,8 @@ Read the candidate KBE / tracker's labels and its most recent comment. If you se
 
 #### What action to take
 
-- **Steps 1 and 2 both empty** → file a new KBE via safe-outputs `create_issue` with the body template below, title prefix `[ci-scan] `, and only the labels `Known Build Error` and `blocking-clean-ci`. The issue number isn't visible during this run, so the muting PR is deferred to the next run.
-- **Step 1 or 2 found one, AND steps 3–6 are clean** → open the muting PR via safe-outputs `create_pull_request`. Diff ≤ 5 lines, only test annotations or csproj flags. The body must include `Linked KBE: #<n>` as a top-level line plus the four-question verification block below.
+- **Step 1 found nothing** → file a new KBE via safe-outputs `create_issue` with the body template below, title prefix `[ci-scan] `, and only the labels `Known Build Error` and `blocking-clean-ci`. If Step 2 found a tracker, cross-link it as `Tracking: dotnet/runtime#<tracker>` in the KBE body. The issue number isn't visible during this run, so the muting PR is deferred to the next run.
+- **Step 1 found a valid KBE, AND steps 3–6 are clean** → open the muting PR via safe-outputs `create_pull_request`. Diff ≤ 5 lines, only test annotations or csproj flags. The body must include `Linked KBE: #<n>` as a top-level line plus the four-question verification block below. If Step 2 also found a tracker, cite it as `Tracking: dotnet/runtime#<tracker>` alongside `Linked KBE`.
 - **Plus, if the failure satisfies the "small product fix opportunity" criteria above** → open a separate fix PR on its own branch. Body cites (a) the failing test as evidence, (b) the root cause, (c) why the fix is safe, (d) `Linked KBE: #<n>`, and (e) "If this lands before #<muting-PR>, that PR can be closed." Kept separate so a maintainer can take one without the other.
 
 #### Before you link a KBE, verify it actually matches
@@ -235,7 +235,7 @@ Before stopping, confirm each failure is handled:
 
 - **No existing KBE** → KBE filed?
 - **Existing KBE, no muting PR yet** → muting PR opened (and the optional fix PR if criteria are met)?
-- **Existing KBE plus existing muting PR or in-flight fix** → `→ already-covered` recorded?
+- **Existing KBE plus existing muting PR or in-flight fix** → `→ existing-PR #<n>` recorded?
 
 If the answer is no for any failure, the run is incomplete.
 
@@ -404,8 +404,8 @@ Build Analysis is strict: a malformed JSON block or an over-broad signature mean
 | ❌ Bad | Why bad | ✅ Good (use as `ErrorMessage`, or `ErrorPattern` if marked) |
 |---|---|---|
 | `"Some.Test.Class.TestMethodName"` | bare test name; matches `[PASS]` lines for the same test | `"Some.Test.Class.TestMethodName ... System.SocketException: Try again"` |
-| `"SomeTests.Prefix_"` (trailing `_`) | truncated prefix; trailing `_`/`*`/`.` is literal not glob | `ErrorPattern: "SomeTests\\.Prefix_[A-Za-z]+ .*Xunit\\.Sdk\\."` |
-| `"Some.Type.Method"` (bare type/method) | matches stack scans of unrelated tests | `ErrorPattern: "System\\.NullReferenceException.*\\n\\s+at Some\\.Type\\.Method"` |
+| `"SomeTests.Prefix_"` (trailing `_`) | truncated prefix; trailing `_`/`*`/`.` is literal not glob | `ErrorPattern: "^SomeTests\\.Prefix_[A-Za-z]+\\b[^\\n]*Xunit\\.Sdk\\."` |
+| `"Some.Type.Method"` (bare type/method) | matches stack scans of unrelated tests | `ErrorPattern: "^System\\.NullReferenceException\\b[^\\n]*\\n\\s+at Some\\.Type\\.Method\\b"` |
 | `"BadImageFormatException"` | bare exception type; matches infra hiccups too | `"System.BadImageFormatException: Could not load file or assembly 'System.Private.CoreLib'"` |
 | `"Operation timed out"` | matches transient network failures everywhere | `"xharness exec android test ... Operation timed out after 3600s"` paired with `BuildRetry: false` |
 
