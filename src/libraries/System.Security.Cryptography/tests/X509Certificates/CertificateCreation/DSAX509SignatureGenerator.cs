@@ -87,22 +87,15 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
         {
             int length = count;
             int realOffset = offset;
-            bool paddingByte = false;
 
-            if (count == 0 || data[offset] >= 0x80)
+            while (length > 1 && data[realOffset] == 0)
             {
-                paddingByte = true;
-            }
-            else
-            {
-                while (length > 1 && data[realOffset] == 0)
-                {
-                    realOffset++;
-                    length--;
-                }
+                realOffset++;
+                length--;
             }
 
-            byte encodedLength = (byte)length;
+            bool paddingByte = count == 0 || data[realOffset] >= 0x80;
+            int encodedLength = length;
 
             if (paddingByte)
             {
