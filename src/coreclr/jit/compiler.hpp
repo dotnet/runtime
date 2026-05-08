@@ -2773,13 +2773,7 @@ inline
         FPbased = isFramePointerUsed();
         if (lvaDoneFrameLayout == Compiler::FINAL_FRAME_LAYOUT)
         {
-            TempDsc* tmpDsc = codeGen->regSet.tmpFindNum(varNum);
-            // The temp might be in use, since this might be during code generation.
-            if (tmpDsc == nullptr)
-            {
-                tmpDsc = codeGen->regSet.tmpFindNum(varNum, RegSet::TEMP_USAGE_USED);
-            }
-            assert(tmpDsc != nullptr);
+            TempDsc* tmpDsc = codeGen->regSet.tmpGetNum(varNum);
             assert(!varTypeHasUnknownSize(tmpDsc->tdTempType()));
             varOffset = tmpDsc->tdTempOffs();
         }
@@ -3449,14 +3443,34 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 /*****************************************************************************/
 
-/* static */ inline unsigned RegSet::tmpSlot(unsigned size)
+/* static */ inline unsigned RegSet::tmpSlot(var_types type)
 {
-    noway_assert(size >= sizeof(int));
-    noway_assert(size <= TEMP_MAX_SIZE);
-    assert((size % sizeof(int)) == 0);
-
-    assert(size < UINT32_MAX);
-    return size / sizeof(int) - 1;
+    unsigned slot = UINT32_MAX;
+    switch (type)
+    {
+#if defined(FEATURE_SIMD) && defined(TARGET_ARM64)
+        // Special slots are allocated for TYP_SIMD and TYP_MASK, because they
+        // have unknown size and therefore can't share slots with other types.
+        case TYP_SIMD:
+            slot = TEMP_SLOT_COUNT - 1;
+            break;
+        case TYP_MASK:
+            slot = TEMP_SLOT_COUNT - 2;
+            break;
+#endif
+        default:
+        {
+            assert(!varTypeHasUnknownSize(type));
+            unsigned size = genTypeSize(type);
+            noway_assert(size >= sizeof(int));
+            noway_assert(size <= TEMP_MAX_SIZE);
+            assert((size % sizeof(int)) == 0);
+            slot = size / sizeof(int) - 1;
+        }
+        break;
+    }
+    assert(slot < TEMP_SLOT_COUNT);
+    return slot;
 }
 
 /*****************************************************************************
