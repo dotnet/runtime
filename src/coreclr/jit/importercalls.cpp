@@ -1848,7 +1848,12 @@ GenTree* Compiler::impProfileLclHeap(GenTree* lclHeap, IL_OFFSET ilOffset)
             JITDUMP("Profiled LCLHEAP size %zd is smaller than %zd - skipping\n", profiledValue, minProfitableSize);
             return lclHeap;
         }
-        assert(FitsIn<int>(profiledValue));
+
+        if (!FitsIn<int>(profiledValue))
+        {
+            JITDUMP("Profiled LCLHEAP size %zd does not fit in int - skipping\n", profiledValue);
+            return lclHeap;
+        }
 
         GenTree* sizeNode = size;
         GenTree* clonedSizeNode =
