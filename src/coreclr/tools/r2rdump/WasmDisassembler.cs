@@ -40,7 +40,7 @@ namespace R2RDump
             while (_offset < _endOffset)
             {
                 int instrOffset = _offset - _baseOffset;
-                string instr = DecodeInstruction(ref indent);
+                string instr = DecodeInstruction(ref indent, out int postAdjust);
 
                 sb.Append($"    {instrOffset:X4}: ");
                 if (indent > 0)
@@ -48,13 +48,15 @@ namespace R2RDump
                     sb.Append(' ', indent * 2);
                 }
                 sb.AppendLine(instr);
+                indent += postAdjust;
             }
 
             return sb.ToString();
         }
 
-        private string DecodeInstruction(ref int indent)
+        private string DecodeInstruction(ref int indent, out int postAdjust)
         {
+            postAdjust = 0;
             byte opcode = ReadByte();
 
             switch (opcode)
@@ -65,22 +67,24 @@ namespace R2RDump
                 case 0x02:
                 {
                     string bt = ReadBlockType();
-                    indent++;
+                    postAdjust = 1;
                     return $"block{bt}";
                 }
                 case 0x03:
                 {
                     string bt = ReadBlockType();
-                    indent++;
+                    postAdjust = 1;
                     return $"loop{bt}";
                 }
                 case 0x04:
                 {
                     string bt = ReadBlockType();
-                    indent++;
+                    postAdjust = 1;
                     return $"if{bt}";
                 }
                 case 0x05:
+                    if (indent > 0) indent--;
+                    postAdjust = 1;
                     return "else";
                 case 0x08:
                     return $"throw {ReadU32()}";
@@ -131,7 +135,7 @@ namespace R2RDump
                                 break;
                         }
                     }
-                    indent++;
+                    postAdjust = 1;
                     return sb.ToString();
                 }
                 case 0x0D: return $"br_if {ReadU32()}";
