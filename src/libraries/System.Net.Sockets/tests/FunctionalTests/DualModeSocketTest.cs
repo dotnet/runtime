@@ -334,6 +334,7 @@ namespace System.Net.Sockets.Tests
     {
         [ConditionalTheory(typeof(DualModeConnectToHostString), nameof(LocalhostIsBothIPv4AndIPv6))]
         [MemberData(nameof(DualMode_Connect_IPAddress_DualMode_Data))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/127565", TestPlatforms.Android)]
         public void DualModeConnect_LoopbackDnsToHost_Helper(IPAddress listenOn, bool dualModeServer)
         {
             using (Socket socket = new Socket(SocketType.Stream, ProtocolType.Tcp))
@@ -353,6 +354,7 @@ namespace System.Net.Sockets.Tests
     {
         [ConditionalTheory(typeof(DualModeConnectToDnsEndPoint), nameof(LocalhostIsBothIPv4AndIPv6))]
         [MemberData(nameof(DualMode_Connect_IPAddress_DualMode_Data))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/127565", TestPlatforms.Android)]
         public void DualModeConnect_DnsEndPointToHost_Helper(IPAddress listenOn, bool dualModeServer)
         {
             using (Socket socket = new Socket(SocketType.Stream, ProtocolType.Tcp))
@@ -613,6 +615,7 @@ namespace System.Net.Sockets.Tests
 
         [ConditionalTheory(typeof(DualModeConnectAsync), nameof(LocalhostIsBothIPv4AndIPv6))]
         [MemberData(nameof(DualMode_Connect_IPAddress_DualMode_Data))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/127565", TestPlatforms.Android)]
         public void DualModeConnectAsync_DnsEndPointToHost_Helper(IPAddress listenOn, bool dualModeServer)
         {
             using (Socket socket = new Socket(SocketType.Stream, ProtocolType.Tcp))
