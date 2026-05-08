@@ -5407,7 +5407,21 @@ ClrDataAccess::RawGetMethodName(
         if (u16_strcmp(wszStubManagerName, W("ThePreStub")) != 0 && u16_strcmp(wszStubManagerName, W("InteropDispatchStub")) != 0 && u16_strcmp(wszStubManagerName, W("TailCallStub")) != 0)
         {
             // Skip the stubs that are just assembly helpers.
-            wcscpy_s(symbolBuf, bufLen, wszStubManagerName);
+            size_t nameLen = u16_strlen(wszStubManagerName) + 1; // include null terminator
+            if (symbolLen)
+            {
+                if (!FitsIn<ULONG32>(nameLen))
+                    return COR_E_OVERFLOW;
+                *symbolLen = (ULONG32)nameLen;
+            }
+            if (symbolBuf && bufLen >= nameLen)
+            {
+                wcscpy_s(symbolBuf, bufLen, wszStubManagerName);
+            }
+            else if (symbolBuf)
+            {
+                return S_FALSE;
+            }
             if (displacement)
             {
                 *displacement = 0;

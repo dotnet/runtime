@@ -142,11 +142,11 @@ internal partial class ExecutionManagerCore<T> : IExecutionManager
             return imageBase + debugInfoOffset;
         }
 
-        public override CodeKind GetStubCodeBlockKind(RangeSection rangeSection, TargetCodePointer jittedCodeAddress)
+        public override CodeKind GetCodeKind(RangeSection rangeSection, TargetCodePointer jittedCodeAddress)
         {
             if (rangeSection.Data == null)
                 return CodeKind.Unknown;
-            return IsStubCodeBlockThunk(rangeSection.Data, GetReadyToRunInfo(rangeSection), jittedCodeAddress) ? CodeKind.MethodCallThunk : CodeKind.Unknown;
+            return IsStubCodeBlockThunk(rangeSection.Data, GetReadyToRunInfo(rangeSection), jittedCodeAddress) ? CodeKind.MethodCallThunk : CodeKind.ReadyToRun;
         }
 
         public override void GetGCInfo(RangeSection rangeSection, TargetCodePointer jittedCodeAddress, out TargetPointer gcInfo, out uint gcVersion)

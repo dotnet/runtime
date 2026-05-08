@@ -54,10 +54,9 @@ public enum CodeKind : uint
     VSD_LookupStub = 7,
     VSD_VTableStub = 8,
     CallCountingStub = 9,
-    StubLinkStub = 10,
-    MethodCallThunk = 11,
-    Jitted = 12,
-    ReadyToRun = 13
+    MethodCallThunk = 10,
+    Jitted = 11,
+    ReadyToRun = 12
 }
 
 public interface ICodeHeapInfo

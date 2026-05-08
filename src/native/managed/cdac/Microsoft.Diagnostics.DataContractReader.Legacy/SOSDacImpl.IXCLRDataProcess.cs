@@ -128,7 +128,7 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
                 if (methodDesc != TargetPointer.Null)
                 {
                     if (displacement is not null)
-                        *displacement = codeAddr.AsTargetPointer - entryPoint;
+                        *displacement = codeAddr.ToAddress(_target).Value - entryPoint;
                     IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
                     MethodDescHandle mdh = rts.GetMethodDescHandle(methodDesc);
                     StringBuilder sb = new StringBuilder();
@@ -158,9 +158,9 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
                 throw new InvalidCastException();
             }
 
-            OutputBufferHelpers.CopyStringToBuffer(nameBuf, bufLen, nameLen, resultName);
+            OutputBufferHelpers.CopyStringToBuffer(nameBuf, bufLen, nameLen, resultName, out bool truncated);
 
-            if (nameBuf is not null && bufLen < resultName.Length + 1)
+            if (truncated)
                 hr = HResults.S_FALSE;
         }
         catch (System.Exception ex)
@@ -179,7 +179,7 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
             {
                 hrLocal = _legacyProcess.GetRuntimeNameByAddress(
                     address, flags, bufLen,
-                    &nameLenLocal,
+                    nameLen is null ? null : &nameLenLocal,
                     nameBuf is null ? null : pNameBufLocal,
                     displacement is null ? null : &displacementLocal);
             }
