@@ -114,10 +114,11 @@ struct PacFrameInfo
     bool hasPac;
     int cfaOffset;
     int lrOffset;
+    int pacCfaOffset;
 };
 
 static bool TryGetPacFrameInfo(UnixNativeMethodInfo *pNativeMethodInfo,
-                                    PacFrameInfo *pPacFrameInfo)
+                               PacFrameInfo *pPacFrameInfo)
 {
     const uint8_t* p = (const uint8_t*)pNativeMethodInfo->unwind_info;
     uint32_t fdeLength = *dac_cast<PTR_uint32_t>((uint8_t*)p);
@@ -141,6 +142,7 @@ static bool TryGetPacFrameInfo(UnixNativeMethodInfo *pNativeMethodInfo,
 
     int cfaOffset = 0;
     int lrOffset = INT_MIN;
+    int pacCfaOffset = 0;
     bool hasPac = false;
 
     while (p < end)
@@ -149,6 +151,7 @@ static bool TryGetPacFrameInfo(UnixNativeMethodInfo *pNativeMethodInfo,
 
         if (op == DW_CFA_AARCH64_negate_ra_state)
         {
+            pacCfaOffset = cfaOffset;
             hasPac = true;
             continue;
         }
@@ -238,6 +241,7 @@ static bool TryGetPacFrameInfo(UnixNativeMethodInfo *pNativeMethodInfo,
     pPacFrameInfo->hasPac = hasPac;
     pPacFrameInfo->cfaOffset = cfaOffset;
     pPacFrameInfo->lrOffset = lrOffset;
+    pPacFrameInfo->pacCfaOffset = pacCfaOffset;
     return true;
 }
 
@@ -251,10 +255,11 @@ static bool TryGetSpForPacSigning(const PacFrameInfo& pacFrameInfo,
         return true;
     }
 
-    if (ppvRetAddrLocation == NULL || pacFrameInfo.lrOffset == INT_MIN || pacFrameInfo.cfaOffset < pacFrameInfo.lrOffset)
+    if (ppvRetAddrLocation == NULL || pacFrameInfo.lrOffset == INT_MIN)
         return false;
 
-    *pSpForPacSign = dac_cast<TADDR>(ppvRetAddrLocation) + (pacFrameInfo.cfaOffset - pacFrameInfo.lrOffset);
+    *pSpForPacSign = dac_cast<TADDR>(ppvRetAddrLocation) +
+        (pacFrameInfo.cfaOffset - pacFrameInfo.lrOffset - pacFrameInfo.pacCfaOffset);
     return true;
 }
 #endif // TARGET_ARM64
