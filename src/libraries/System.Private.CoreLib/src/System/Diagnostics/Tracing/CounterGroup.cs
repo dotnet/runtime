@@ -3,6 +3,8 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using System.Threading;
 
@@ -147,7 +149,17 @@ namespace System.Diagnostics.Tracing
         private TimeSpan _timeSinceCollectionStarted;
         private TimeSpan _pollingInterval;
         private TimeSpan _nextPollingOffset;
-        private DiagnosticCounter[] _onTimerCounters = [];
+
+        /// <summary>
+        /// Stack scratch sized for the largest counter set known to the BCL today <see cref="RuntimeEventSource"/>
+        /// This is used to avoid heap allocations in the hot path of polling for counter values.
+        /// Extra buffer is left, in case if more counters are added in the future
+        /// </summary>
+        [InlineArray(32)]
+        private struct CounterScratch
+        {
+            private DiagnosticCounter? _element0;
+        }
 
         private void EnableTimer(float pollingIntervalInSeconds)
         {
@@ -233,27 +245,25 @@ namespace System.Diagnostics.Tracing
                 TimeSpan nowOffset;
                 TimeSpan elapsed;
                 TimeSpan pollingInterval;
-                int counterCount;
+
+                CounterScratch scratch = default;
+                using var builder = new ValueListBuilder<DiagnosticCounter>(scratch);
+
                 lock (s_counterGroupLock)
                 {
                     nowOffset = Stopwatch.GetElapsedTime(_baseTimestamp);
                     elapsed = nowOffset - _timeSinceCollectionStarted;
                     pollingInterval = _pollingInterval;
 
-                    counterCount = _counters.Count;
-                    if (_onTimerCounters.Length < counterCount)
-                    {
-                        _onTimerCounters = new DiagnosticCounter[counterCount];
-                    }
-
-                    _counters.CopyTo(_onTimerCounters);
+                    Span<DiagnosticCounter> dst = builder.AppendSpan(_counters.Count);
+                    CollectionsMarshal.AsSpan(_counters).CopyTo(dst);
                 }
 
                 // MUST keep out of the scope of s_counterGroupLock because this will cause WritePayload
                 // callback can be re-entrant to CounterGroup (i.e. it's possible it calls back into EnableTimer()
                 // above, since WritePayload callback can contain user code that can invoke EventSource constructor
                 // and lead to a deadlock. (See https://github.com/dotnet/runtime/issues/40190 for details)
-                foreach (DiagnosticCounter counter in _onTimerCounters.AsSpan(0, counterCount))
+                foreach (DiagnosticCounter counter in builder.AsSpan())
                 {
                     // NOTE: It is still possible for a race condition to occur here. An example is if the session
                     // that subscribed to these batch of counters was disabled and it was immediately enabled in
@@ -266,8 +276,6 @@ namespace System.Diagnostics.Tracing
                     // be an actual issue.
                     counter.WritePayload((float)elapsed.TotalSeconds, (int)pollingInterval.TotalMilliseconds);
                 }
-
-                Array.Clear(_onTimerCounters);
 
                 lock (s_counterGroupLock)
                 {
