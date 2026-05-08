@@ -179,6 +179,9 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [BuildAndRun()]
+        // The test fetches WasmAppBuilder.dll from the Microsoft.NET.Runtime.WebAssembly.Sdk
+        // workload pack, which is not present in the NoWorkload (CoreCLR-Wasm) Helix payload.
+        [TestCategory("mono")]
         public void IcallWithOverloadedParametersAndEnum(Configuration config, bool aot)
         {
             string appendToTheEnd =
