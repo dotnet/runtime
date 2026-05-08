@@ -1729,24 +1729,30 @@ GenTree* ObjectAllocator::MorphAllocObjNodeIntoHelperCall(GenTreeAllocObj* alloc
 // Arguments:
 //    newArr       - GT_CALL that will be replaced by helper call.
 //    clsHnd       - class representing the type of the array
-//    len          - tree representing length of the array (must be a constant)
+//    length       - length of the array
+//    blockSize    - size of the layout
 //    block        - a basic block where newArr is
 //    stmt         - a statement where newArr is
+//
+// Return Value:
+//    local num for the new stack allocated local
 //
 // Notes:
 //    This function can insert additional statements before stmt.
 //
-void ObjectAllocator::MorphNewArrNodeIntoStackAlloc(
-    GenTreeCall* newArr, CORINFO_CLASS_HANDLE clsHnd, GenTree* len, BasicBlock* block, Statement* stmt)
+unsigned int ObjectAllocator::MorphNewArrNodeIntoStackAlloc(GenTreeCall*         newArr,
+                                                            CORINFO_CLASS_HANDLE clsHnd,
+                                                            unsigned int         length,
+                                                            unsigned int         blockSize,
+                                                            BasicBlock*          block,
+                                                            Statement*           stmt)
 {
     assert(newArr != nullptr);
     assert(m_AnalysisDone);
     assert(clsHnd != NO_CLASS_HANDLE);
     assert(newArr->IsHelperCall());
     assert(newArr->GetHelperNum() != CORINFO_HELP_NEWARR_1_MAYBEFROZEN);
-    assert(len->IsCnsIntOrI());
 
-    const unsigned     length        = (unsigned int)len->AsIntCon()->IconValue();
     const bool         shortLifetime = false;
     const bool         alignTo8      = newArr->GetHelperNum() == CORINFO_HELP_NEWARR_1_ALIGN8;
     const unsigned int lclNum        = m_compiler->lvaGrabTemp(shortLifetime DEBUGARG("stack allocated array temp"));
