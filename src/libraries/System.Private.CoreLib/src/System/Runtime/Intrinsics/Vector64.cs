@@ -1566,19 +1566,7 @@ namespace System.Runtime.Intrinsics
         /// <inheritdoc cref="Vector.ZipLower{T}(Vector{T}, Vector{T})" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector64<T> ZipLower<T>(Vector64<T> left, Vector64<T> right) => Zip(left, right, upper: false);
-
-        /// <inheritdoc cref="Vector.ZipUpper{T}(Vector{T}, Vector{T})" />
-        [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector64<T> ZipUpper<T>(Vector64<T> left, Vector64<T> right) => Zip(left, right, upper: true);
-
-        /// <inheritdoc cref="Vector.Zip{T}(Vector{T}, Vector{T})" />
-        [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static (Vector64<T> Lower, Vector64<T> Upper) Zip<T>(Vector64<T> left, Vector64<T> right) => (ZipLower(left, right), ZipUpper(left, right));
-
-        private static Vector64<T> Zip<T>(Vector64<T> left, Vector64<T> right, bool upper)
+        public static Vector64<T> ZipLower<T>(Vector64<T> left, Vector64<T> right)
         {
             if (Vector64<T>.Count == 1)
             {
@@ -1589,13 +1577,38 @@ namespace System.Runtime.Intrinsics
 
             for (int index = 0; index < Vector64<T>.Count; index += 2)
             {
-                int elementIndex = (upper ? Vector64<T>.Count / 2 : 0) + (index / 2);
-                result.SetElementUnsafe(index, left.GetElementUnsafe(elementIndex));
-                result.SetElementUnsafe(index + 1, right.GetElementUnsafe(elementIndex));
+                result.SetElementUnsafe(index, left.GetElementUnsafe(index / 2));
+                result.SetElementUnsafe(index + 1, right.GetElementUnsafe(index / 2));
             }
 
             return result;
         }
+
+        /// <inheritdoc cref="Vector.ZipUpper{T}(Vector{T}, Vector{T})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector64<T> ZipUpper<T>(Vector64<T> left, Vector64<T> right)
+        {
+            if (Vector64<T>.Count == 1)
+            {
+                return left;
+            }
+
+            Unsafe.SkipInit(out Vector64<T> result);
+
+            for (int index = 0; index < Vector64<T>.Count; index += 2)
+            {
+                result.SetElementUnsafe(index, left.GetElementUnsafe(Vector64<T>.Count / 2 + index / 2));
+                result.SetElementUnsafe(index + 1, right.GetElementUnsafe(Vector64<T>.Count / 2 + index / 2));
+            }
+
+            return result;
+        }
+
+        /// <inheritdoc cref="Vector.Zip{T}(Vector{T}, Vector{T})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static (Vector64<T> Lower, Vector64<T> Upper) Zip<T>(Vector64<T> left, Vector64<T> right) => (ZipLower(left, right), ZipUpper(left, right));
 
         /// <inheritdoc cref="Vector.UnzipEven{T}(Vector{T}, Vector{T})" />
         [Intrinsic]
