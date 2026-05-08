@@ -11491,12 +11491,27 @@ LPVOID CEEInfo::GetCookieForInterpreterCalliSig(CORINFO_SIG_INFO* szMetaSig)
 #ifdef FEATURE_INTERPRETER
 
 // Forward declare the function for mapping MetaSig to a cookie.
-void* GetCookieForCalliSig(MetaSig metaSig, MethodDesc *pContextMD);
+InterpreterCalliCookie GetCookieForCalliSig(MetaSig metaSig, MethodDesc *pContextMD);
 
 LPVOID CInterpreterJitInfo::GetCookieForInterpreterCalliSig(CORINFO_SIG_INFO* szMetaSig)
 {
-    void* result = NULL;
+    InterpreterCalliCookie result = NULL;
     JIT_TO_EE_TRANSITION();
+
+    // When compiling a calli inside an IL stub for a P/Invoke, pass the target
+    // P/Invoke MethodDesc so ComputeCallStub can detect the Swift calling convention.
+    // Do not cache the cookie on pContextMD: MethodDesc::CalliCookie is for
+    // calling the target via managed calling convention. The stub we are about
+    // to generate calls the target via unmanaged calling convention.
+    MethodDesc* pContextMD = nullptr;
+    if (m_pMethodBeingCompiled != nullptr && m_pMethodBeingCompiled->IsILStub())
+    {
+        MethodDesc* pTargetMD = m_pMethodBeingCompiled->AsDynamicMethodDesc()->GetILStubResolver()->GetStubTargetMethodDesc();
+        if (pTargetMD != nullptr)
+        {
+            pContextMD = pTargetMD;
+        }
+    }
 
     Instantiation classInst = Instantiation((TypeHandle*) szMetaSig->sigInst.classInst, szMetaSig->sigInst.classInstCount);
     Instantiation methodInst = Instantiation((TypeHandle*) szMetaSig->sigInst.methInst, szMetaSig->sigInst.methInstCount);
@@ -11510,21 +11525,10 @@ LPVOID CInterpreterJitInfo::GetCookieForInterpreterCalliSig(CORINFO_SIG_INFO* sz
 
     _ASSERTE(szMetaSig->isAsyncCall() == sig.IsAsyncCall());
 
-    // When compiling a calli inside an IL stub for a P/Invoke, pass the target
-    // P/Invoke MethodDesc so ComputeCallStub can detect the Swift calling convention.
-    MethodDesc* pContextMD = nullptr;
-    if (m_pMethodBeingCompiled != nullptr && m_pMethodBeingCompiled->IsILStub())
-    {
-        MethodDesc* pTargetMD = m_pMethodBeingCompiled->AsDynamicMethodDesc()->GetILStubResolver()->GetStubTargetMethodDesc();
-        if (pTargetMD != nullptr)
-        {
-            pContextMD = pTargetMD;
-        }
-    }
     result = GetCookieForCalliSig(sig, pContextMD);
 
     EE_TO_JIT_TRANSITION();
-    return result;
+    return (void*)result;
 }
 
 void CInterpreterJitInfo::allocMem(AllocMemArgs *pArgs)

@@ -413,17 +413,10 @@ namespace System
                     return false;
                 }
 
-                ref byte sourceRef = ref MemoryMarshal.GetReference(source);
-
                 if (source.Length >= sizeof(uint))
                 {
                     // We have at least 4 bytes, so just read the ones we need directly
-                    result = Unsafe.ReadUnaligned<uint>(ref sourceRef);
-
-                    if (!BitConverter.IsLittleEndian)
-                    {
-                        result = BinaryPrimitives.ReverseEndianness(result);
-                    }
+                    result = BinaryPrimitives.ReadUInt32LittleEndian(source);
                 }
                 else
                 {
@@ -435,7 +428,7 @@ namespace System
 
                     for (int i = 0; i < source.Length; i++)
                     {
-                        uint part = Unsafe.Add(ref sourceRef, i);
+                        uint part = source[i];
                         part <<= (i * 8);
                         result |= part;
                     }
