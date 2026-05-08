@@ -4564,6 +4564,11 @@ void Compiler::lvaFixVirtualFrameOffsets()
     assert(codeGen->regSet.tmpAllFree());
     for (TempDsc* temp = codeGen->regSet.tmpListBeg(); temp != nullptr; temp = codeGen->regSet.tmpListNxt(temp))
     {
+        if (varTypeHasUnknownSize(temp->tdTempType()))
+        {
+            continue;
+        }
+
         temp->tdAdjustTempOffs(delta + frameLocalsDelta);
     }
 
@@ -6126,6 +6131,13 @@ int Compiler::lvaAllocateTemps(int stkOffs, bool mustDoubleAlign)
             var_types tempType = temp->tdTempType();
             unsigned  size     = temp->tdTempSize();
 
+            if (varTypeHasUnknownSize(tempType))
+            {
+                // This temp will be allocated on the unknown size frame, get the offset from there.
+                lvaAllocateUnknownSizeTemp(temp);
+                continue;
+            }
+
             /* Figure out and record the stack offset of the temp */
 
             /* Need to align the offset? */
@@ -6181,6 +6193,35 @@ int Compiler::lvaAllocateTemps(int stkOffs, bool mustDoubleAlign)
     }
 
     return stkOffs;
+}
+
+//-------------------------------------------------------------------------------
+// lvaAllocateUnknownSizeTemp: Allocate a slot for a temp on the UnknownSizeFrame
+//
+// Arguments:
+//     temp - The temp to allocate. varTypeHasUnknownSize() must be true for this
+//            temp.
+void Compiler::lvaAllocateUnknownSizeTemp(TempDsc* temp)
+{
+    assert(varTypeHasUnknownSize(temp->tdTempType()));
+
+    int offset = 0;
+    switch (temp->tdTempType())
+    {
+#if defined(TARGET_ARM64) && defined(FEATURE_SIMD)
+        case TYP_SIMD:
+            offset = unkSizeFrame.AllocVector();
+            break;
+        case TYP_MASK:
+            offset = unkSizeFrame.AllocMask();
+            break;
+#endif
+        default:
+            unreached();
+    }
+    assert(offset >= 0);
+
+    temp->tdSetTempOffs(offset);
 }
 
 #ifdef DEBUG

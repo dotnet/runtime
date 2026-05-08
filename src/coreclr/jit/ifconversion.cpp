@@ -814,7 +814,7 @@ GenTree* OptIfConversionDsc::TrySelectToCnsOpCond(GenTreeConditional* select)
     GenTree* trueInput  = select->gtOp1;
     GenTree* falseInput = select->gtOp2;
 
-    if (!trueInput->IsIntegralConst() || !falseInput->IsIntegralConst())
+    if (!cond->OperIsCompare() || !trueInput->IsIntegralConst() || !falseInput->IsIntegralConst())
     {
         return nullptr;
     }
@@ -822,13 +822,14 @@ GenTree* OptIfConversionDsc::TrySelectToCnsOpCond(GenTreeConditional* select)
     int64_t trueVal  = trueInput->AsIntConCommon()->IntegralValue();
     int64_t falseVal = falseInput->AsIntConCommon()->IntegralValue();
 
-    if (trueVal == 1 && falseVal == 0)
+    if ((trueVal == 1 && falseVal == 0) || (trueVal == 0 && falseVal == 1))
     {
-        return cond;
-    }
-    else if (trueVal == 0 && falseVal == 1)
-    {
-        return m_compiler->gtReverseCond(cond);
+        GenTree* retCond = (trueVal == 1) ? cond : m_compiler->gtReverseCond(cond);
+        if (retCond->TypeGet() != select->TypeGet())
+        {
+            retCond = m_compiler->gtNewCastNode(select->TypeGet(), retCond, true, select->TypeGet());
+        }
+        return retCond;
     }
 
 #ifdef TARGET_RISCV64
@@ -929,6 +930,11 @@ GenTree* OptIfConversionDsc::TrySelectToCondOpLcl(GenTreeConditional* select)
     GenTree* cond = select->gtCond;
     GenTree* oper = select->gtOp1;
     GenTree* zero = select->gtOp2;
+
+    if (!cond->OperIsCompare())
+    {
+        return nullptr;
+    }
 
     bool isCondReversed = !zero->IsIntegralConst();
     if (isCondReversed)

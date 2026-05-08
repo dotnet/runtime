@@ -4862,7 +4862,7 @@ void CordbProcess::RawDispatchEvent(
 
             {
                 PUBLIC_CALLBACK_IN_THIS_SCOPE(this, pLockHolder, pEvent);
-                pCallback4->DataBreakpoint(static_cast<ICorDebugProcess*>(this), pThread, reinterpret_cast<BYTE*>(&(pEvent->DataBreakpointData.context)), sizeof(CONTEXT));
+                pCallback4->DataBreakpoint(static_cast<ICorDebugProcess*>(this), pThread, reinterpret_cast<BYTE*>(&(pEvent->DataBreakpointData.context)), pEvent->DataBreakpointData.contextSize);
             }
             break;
         }
@@ -5039,42 +5039,6 @@ void CordbProcess::RawDispatchEvent(
         }
         break;
 
-    case DB_IPCE_CREATE_CONNECTION:
-        {
-            STRESS_LOG1(LF_CORDB, LL_INFO100,
-                "RCET::HRCE: Connection change %d \n",
-                pEvent->CreateConnection.connectionId);
-
-            // pass back the connection id and the connection name.
-            PUBLIC_CALLBACK_IN_THIS_SCOPE(this, pLockHolder, pEvent);
-            pCallback2->CreateConnection(
-                this,
-                pEvent->CreateConnection.connectionId,
-                const_cast<WCHAR*> (pEvent->CreateConnection.wzConnectionName.GetString()));
-        }
-        break;
-
-    case DB_IPCE_DESTROY_CONNECTION:
-        {
-            STRESS_LOG1(LF_CORDB, LL_INFO100,
-                 "RCET::HRCE: Connection destroyed %d \n",
-                 pEvent->ConnectionChange.connectionId);
-            PUBLIC_CALLBACK_IN_THIS_SCOPE(this, pLockHolder, pEvent);
-            pCallback2->DestroyConnection(this, pEvent->ConnectionChange.connectionId);
-        }
-        break;
-
-    case DB_IPCE_CHANGE_CONNECTION:
-        {
-            STRESS_LOG1(LF_CORDB, LL_INFO100,
-                 "RCET::HRCE: Connection changed %d \n",
-                 pEvent->ConnectionChange.connectionId);
-
-            PUBLIC_CALLBACK_IN_THIS_SCOPE(this, pLockHolder, pEvent);
-            pCallback2->ChangeConnection(this, pEvent->ConnectionChange.connectionId);
-        }
-        break;
-
     case DB_IPCE_UNLOAD_MODULE:
         {
             STRESS_LOG3(LF_CORDB, LL_INFO100, "RCET::HRCE: unload module on thread %#x Mod:0x%x AD:0x%08x\n",
@@ -5206,49 +5170,48 @@ void CordbProcess::RawDispatchEvent(
             _ASSERTE(pThread != NULL);
             _ASSERTE(pAppDomain != NULL);
 
-            const WCHAR * pszContent = pEvent->FirstLogMessage.szContent.GetString();
+            // Read category and content strings from target memory using
+            // the address and character count provided in the event.
+            ULONG cchCategory = pEvent->FirstLogMessage.cchCategory;
+            ULONG cchContent = pEvent->FirstLogMessage.cchContent;
+
+            const ULONG cchMax = 0x10000;
+            if (cchCategory > cchMax || cchContent > cchMax)
+            {
+                IfFailThrow(E_UNEXPECTED);
+            }
+
+            NewArrayHolder<WCHAR> wszCategory(new WCHAR[cchCategory + 1]);
+            ULONG32 cbRead;
+            ULONG32 cbExpected = cchCategory * sizeof(WCHAR);
+            IfFailThrow(m_pDACDataTarget->ReadVirtual(
+                pEvent->FirstLogMessage.szCategory,
+                reinterpret_cast<BYTE *>((WCHAR *)wszCategory),
+                cbExpected,
+                &cbRead));
+            wszCategory[cchCategory] = W('\0');
+
+            NewArrayHolder<WCHAR> wszContent(new WCHAR[cchContent + 1]);
+            cbExpected = cchContent * sizeof(WCHAR);
+            IfFailThrow(m_pDACDataTarget->ReadVirtual(
+                pEvent->FirstLogMessage.szContent,
+                reinterpret_cast<BYTE *>((WCHAR *)wszContent),
+                cbExpected,
+                &cbRead));
+            wszContent[cchContent] = W('\0');
+
             {
                 PUBLIC_CALLBACK_IN_THIS_SCOPE(this, pLockHolder, pEvent);
                 pCallback1->LogMessage(
                    pAppDomain,
                    pThread,
                    pEvent->FirstLogMessage.iLevel,
-                   const_cast<WCHAR*> (pEvent->FirstLogMessage.szCategory.GetString()),
-                   const_cast<WCHAR*> (pszContent));
+                   wszCategory,
+                   wszContent);
             }
         }
         break;
 
-    case DB_IPCE_LOGSWITCH_SET_MESSAGE:
-        {
-
-            LOG((LF_CORDB, LL_INFO10000,
-                "[%x] RCET::DRCE: Log Switch Setting Message.\n",
-                 GetCurrentThreadId()));
-
-            _ASSERTE(pThread != NULL);
-
-            const WCHAR *pstrLogSwitchName = pEvent->LogSwitchSettingMessage.szSwitchName.GetString();
-            const WCHAR *pstrParentName = pEvent->LogSwitchSettingMessage.szParentSwitchName.GetString();
-
-            // from the thread object get the appdomain object
-            _ASSERTE(pAppDomain == pThread->m_pAppDomain);
-            _ASSERTE (pAppDomain != NULL);
-
-            {
-                PUBLIC_CALLBACK_IN_THIS_SCOPE(this, pLockHolder, pEvent);
-                pCallback1->LogSwitch(
-                    pAppDomain,
-                    pThread,
-                    pEvent->LogSwitchSettingMessage.iLevel,
-                    pEvent->LogSwitchSettingMessage.iReason,
-                    const_cast<WCHAR*> (pstrLogSwitchName),
-                    const_cast<WCHAR*> (pstrParentName));
-
-            }
-        }
-
-        break;
     case DB_IPCE_CUSTOM_NOTIFICATION:
         {
             _ASSERTE(pThread != NULL);
@@ -5507,12 +5470,12 @@ void CordbProcess::RawDispatchEvent(
             // lookup the version of the function that we are mapping from
             // this is the one that is currently running
             pCurFunction = pModule->LookupOrCreateFunction(
-                pEvent->EnCRemap.funcMetadataToken, pEvent->EnCRemap.currentVersionNumber);
+                pEvent->EnCRemap.funcMetadataToken, (SIZE_T)(ULONG64)pEvent->EnCRemap.currentVersionNumber);
 
             // lookup the version of the function that we are mapping to
             // it will always be the most recent
             pResumeFunction = pModule->LookupOrCreateFunction(
-                    pEvent->EnCRemap.funcMetadataToken, pEvent->EnCRemap.resumeVersionNumber);
+                    pEvent->EnCRemap.funcMetadataToken, (SIZE_T)(ULONG64)pEvent->EnCRemap.resumeVersionNumber);
 
             _ASSERTE(pCurFunction->GetEnCVersionNumber() < pResumeFunction->GetEnCVersionNumber());
 
@@ -5525,7 +5488,7 @@ void CordbProcess::RawDispatchEvent(
             // We want to be absolutely sure we don't accidentally keep a stale pointer
             // around because it would point to arbitrary stack space in the CLR potentially
             // leading to stack corruption.
-            _ASSERTE( pThread->m_EnCRemapFunctionIP == NULL );
+            _ASSERTE( pThread->m_EnCRemapFunctionIP == (CORDB_ADDRESS)0 );
 
             // Stash the address of the remap IP buffer.  This indicates that calling
             // RemapFunction is valid and provides a communications channel between the RS
@@ -6027,7 +5990,7 @@ HRESULT CordbProcess::IsTransitionStub(CORDB_ADDRESS address, BOOL *pfTransition
 
         InitIPCEvent(&eventData, DB_IPCE_IS_TRANSITION_STUB, true, VMPTR_AppDomain::NullPtr());
 
-        eventData.IsTransitionStub.address = CORDB_ADDRESS_TO_PTR(address);
+        eventData.IsTransitionStub.address = address;
 
         hr = SendIPCEvent(&eventData, sizeof(eventData));
         hr = WORST_HR(hr, eventData.hr);
@@ -8377,20 +8340,6 @@ COM_METHOD CordbProcess::ModifyLogSwitch(_In_z_ WCHAR *pLogSwitchName, LONG lLev
     ATT_REQUIRE_STOPPED_MAY_FAIL(this);
 
     HRESULT hr = S_OK;
-
-    _ASSERTE (pLogSwitchName != NULL);
-
-    DebuggerIPCEvent *event = (DebuggerIPCEvent*) _alloca(CorDBIPC_BUFFER_SIZE);
-    InitIPCEvent(event, DB_IPCE_MODIFY_LOGSWITCH, false, VMPTR_AppDomain::NullPtr());
-    event->LogSwitchSettingMessage.iLevel = lLevel;
-    event->LogSwitchSettingMessage.szSwitchName.SetStringTruncate(pLogSwitchName);
-
-    hr = m_cordb->SendIPCEvent(this, event, CorDBIPC_BUFFER_SIZE);
-    hr = WORST_HR(hr, event->hr);
-
-    LOG((LF_CORDB, LL_INFO10000, "[%x] CP::ModifyLogSwitch: ModifyLogSwitch sent.\n",
-         GetCurrentThreadId()));
-
     return hr;
 }
 
@@ -9262,65 +9211,6 @@ void Ls_Rs_StringBuffer::CopyLSDataToRS(ICorDebugDataTarget * pTarget)
 }
 
 //---------------------------------------------------------------------------------------
-// Marshals the arguments in a managed-debug event.
-//
-// Arguments:
-//    pManagedEvent - (IN/OUT) debug event to marshal. Events are not usable in the host process
-//       until they are marshalled. This will marshal the event in-place, and may convert
-//       some target addresses to host addresses.
-//
-// Return Value:
-//    S_OK on success. Else Error.
-//
-// Assumptions:
-//    Target is currently stopped and inspectable.
-//    After the event is marshalled, it has resources that must be cleaned up
-//    by calling code:DeleteIPCEventHelper.
-//
-// Notes:
-//     Call a Copy function (CopyManagedEventFromTarget, CopyRCEventFromIPCBlock)to
-//     get the event to marshal.
-//     This will marshal args from the target into the host.
-//     The debug event is fixed size. But since the debuggee is stopped, this can copy
-//     arbitrary-length buffers out of of the debuggee.
-//
-//     This could be rolled into code:CordbProcess::RawDispatchEvent
-//---------------------------------------------------------------------------------------
-void CordbProcess::MarshalManagedEvent(DebuggerIPCEvent * pManagedEvent)
-{
-    CONTRACTL
-    {
-        THROWS;
-
-        // Event has already been copied, now we do some quick Marshalling.
-        // Thsi should be a private local copy, and not the one in the IPC block or Target.
-        PRECONDITION(CheckPointer(pManagedEvent));
-    }
-    CONTRACTL_END;
-
-    IfFailThrow(pManagedEvent->hr);
-
-    // This may throw part way through marshalling. But that's ok because
-    // code:DeleteIPCEventHelper can cleanup a partially-marshalled event.
-
-    // Do a pre-processing on the event
-    switch (pManagedEvent->type & DB_IPCE_TYPE_MASK)
-    {
-        case DB_IPCE_FIRST_LOG_MESSAGE:
-        {
-            pManagedEvent->FirstLogMessage.szContent.CopyLSDataToRS(this->m_pDACDataTarget);
-            break;
-        }
-
-        default:
-            break;
-    }
-
-
-}
-
-
-//---------------------------------------------------------------------------------------
 // Copy a managed debug event from the target process into this local process
 //
 // Arguments:
@@ -9333,7 +9223,6 @@ void CordbProcess::MarshalManagedEvent(DebuggerIPCEvent * pManagedEvent)
 //    * False if this does not belong to this instance of ICorDebug. (perhaps it's an event
 //    intended for another instance of the CLR in the target, or some rogue user code happening
 //    to use our exception code).
-//    In either case, the event can still be cleaned up via code:DeleteIPCEventHelper.
 //
 //    Throws on error. In the error case, the contents of pLocalManagedEvent are undefined.
 //    They may have been partially copied from the target. The local managed event does not own
@@ -9347,7 +9236,6 @@ void CordbProcess::MarshalManagedEvent(DebuggerIPCEvent * pManagedEvent)
 //    This should always succeed in the well-behaved case. However, A bad debuggee can
 //    always send a poor-formed debug event.
 //    We don't distinguish between a badly formed event and an event that's not ours.
-//    The event still needs to be Marshaled before being used. (see code:CordbProcess::MarshalManagedEvent)
 //
 //---------------------------------------------------------------------------------------
 bool CordbProcess::CopyManagedEventFromTarget(
@@ -9357,7 +9245,6 @@ bool CordbProcess::CopyManagedEventFromTarget(
     _ASSERTE(pRecord != NULL);
     _ASSERTE(pLocalManagedEvent != NULL);
 
-    // Initialize the event enough such backout code can call code:DeleteIPCEventHelper.
     pLocalManagedEvent->type = DB_IPCE_DEBUGGER_INVALID;
 
     // Ensure we have a CLR instance ID by now.  Either we had one already, or we're in
@@ -9460,7 +9347,6 @@ HRESULT CordbProcess::EnsureClrInstanceIdSet()
 //    This is copying from a shared-memory block, which is treated as local memory.
 //    This just does a raw Byte copy, but does not do any Marshalling.
 //    This does no validation on the event.
-//    The event still needs to be Marshaled before being used. (see code:CordbProcess::MarshalManagedEvent)
 //
 //---------------------------------------------------------------------------------------
 void inline CordbProcess::CopyRCEventFromIPCBlock(DebuggerIPCEvent * pLocalManagedEvent)
@@ -9972,8 +9858,7 @@ void CordbProcess::HandleRCEvent(
         return;
     }
 
-    // Marshals over some standard data from event.
-    MarshalManagedEvent(pManagedEvent);
+    IfFailThrow(pManagedEvent->hr);
 
     STRESS_LOG4(LF_CORDB, LL_INFO1000, "RCET::TP: Got %s for AD 0x%x, proc 0x%x(%d)\n",
         IPCENames::GetName(pManagedEvent->type), VmPtrToCookie(pManagedEvent->vmAppDomain), this->m_id, this->m_id);
@@ -10385,7 +10270,7 @@ HRESULT CordbRCEventThread::WaitForIPCEventFromProcess(CordbProcess * pProcess,
 
         EX_TRY
         {
-            pProcess->MarshalManagedEvent(pEvent);
+            IfFailThrow(pEvent->hr);
 
             STRESS_LOG4(LF_CORDB, LL_INFO1000, "CRCET::SIPCE: Got %s for AD 0x%x, proc 0x%x(%d)\n",
                         IPCENames::GetName(pEvent->type),
@@ -10609,44 +10494,6 @@ void CordbWin32EventThread::ThreadProc()
     // The win32 ET conceptually holds a lock (all threads do).
     DbgRSThread::GetThread()->ReleaseVirtualLock(RSLock::LL_WIN32_EVENT_THREAD);
 #endif
-}
-
-// Define a holder that calls code:DeleteIPCEventHelper
-using DeleteIPCEventHolder = SpecializedWrapper<DebuggerIPCEvent, DeleteIPCEventHelper>;
-
-//---------------------------------------------------------------------------------------
-//
-// Helper to clean up IPCEvent before deleting it.
-// This must be called after an event is marshalled via code:CordbProcess::MarshalManagedEvent
-//
-// Arguments:
-//     pManagedEvent - managed event to delete.
-//
-// Notes:
-//     This can delete a partially marshalled event.
-//
-void DeleteIPCEventHelper(DebuggerIPCEvent *pManagedEvent)
-{
-    CONTRACTL
-    {
-        // This is backout code that shouldn't need to throw.
-        NOTHROW;
-    }
-    CONTRACTL_END;
-    if (pManagedEvent == NULL)
-    {
-        return;
-    }
-    switch (pManagedEvent->type & DB_IPCE_TYPE_MASK)
-    {
-        case DB_IPCE_FIRST_LOG_MESSAGE:
-            pManagedEvent->FirstLogMessage.szContent.CleanUp();
-            break;
-
-        default:
-            break;
-    }
-    delete [] (BYTE *)pManagedEvent;
 }
 
 //---------------------------------------------------------------------------------------
@@ -11406,8 +11253,8 @@ HRESULT CordbProcess::Filter(
             // 2. Notifications may come on unmanaged threads if they're coming from MDAs or CLR internal events
             //    fired before the thread is created.
             //
-            BYTE * pManagedEventBuffer = new BYTE[CorDBIPC_BUFFER_SIZE];
-            DeleteIPCEventHolder pManagedEvent(reinterpret_cast<DebuggerIPCEvent *>(pManagedEventBuffer));
+            NewArrayHolder<BYTE> pManagedEventBuffer(new BYTE[CorDBIPC_BUFFER_SIZE]);
+            DebuggerIPCEvent * pManagedEvent = reinterpret_cast<DebuggerIPCEvent *>(pManagedEventBuffer.GetValue());
 
             bool fOwner = CopyManagedEventFromTarget(pRecord, pManagedEvent);
             if (fOwner)
@@ -11421,8 +11268,6 @@ HRESULT CordbProcess::Filter(
                 // up exceptions for the CLR.
                 *pContinueStatus = DBG_CONTINUE;
             }
-
-            // holder will invoke DeleteIPCEventHelper(pManagedEvent).
         }
 #ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
         else if (dwFirstChance && pRecord->ExceptionCode == STATUS_BREAKPOINT)
@@ -13186,7 +13031,7 @@ void CordbProcess::HandleDebugEventForInteropDebugging(const DEBUG_EVENT * pEven
 
                 fcd.debugCounter = 0;
                 SafeReadStruct(PTR_TO_CORDB_ADDRESS(pDebuggerWord), &fcd);
-                _ASSERTE(fcd.debugCounter == 1);
+                _ASSERTE(fcd.debugCounter == (UINT)1);
 
                 DequeueUnmanagedEvent(pUnmanagedThread);
             }
@@ -14724,7 +14569,7 @@ HRESULT CordbProcess::ReleaseRemoteBuffer(void **ppBuffer)
                  VMPTR_AppDomain::NullPtr());
 
     // Indicate the buffer to release
-    event.ReleaseBuffer.pBuffer = (*ppBuffer);
+    event.ReleaseBuffer.pBuffer = (CORDB_ADDRESS)(*ppBuffer);
 
     // Make the request, which is synchronous
     HRESULT hr = SendIPCEvent(&event, sizeof(event));

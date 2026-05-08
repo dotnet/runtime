@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
 
@@ -145,6 +146,16 @@ public enum DynamicMethodType
     kLCGMethod = 2,
 }
 
+[Flags]
+public enum CorDebugUserState
+{
+    USER_BACKGROUND = 0x04,
+    USER_UNSTARTED = 0x08,
+    USER_STOPPED = 0x10,
+    USER_WAIT_SLEEP_JOIN = 0x20,
+    USER_THREADPOOL = 0x100,
+}
+
 // Name-surface projection of IDacDbiInterface in native method order for COM binding validation.
 // Parameter shapes are intentionally coarse placeholders and will be refined with method implementation work.
 [GeneratedComInterface]
@@ -248,7 +259,7 @@ public unsafe partial interface IDacDbiInterface
     int GetUserState(ulong vmThread, int* pRetVal);
 
     [PreserveSig]
-    int GetPartialUserState(ulong vmThread, int* pRetVal);
+    int GetPartialUserState(ulong vmThread, CorDebugUserState* pRetVal);
 
     [PreserveSig]
     int GetConnectionID(ulong vmThread, uint* pRetVal);
