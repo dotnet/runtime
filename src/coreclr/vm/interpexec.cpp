@@ -4449,9 +4449,8 @@ do                                                                      \
                         break;
                     }
 
-                    OBJECTREF thread = LOCAL_VAR(ip[4], OBJECTREF);
-                    OBJECTREF executionContext = LOCAL_VAR(ip[4] + INTERP_STACK_SLOT_SIZE, OBJECTREF);
-                    OBJECTREF syncContext = LOCAL_VAR(ip[4] + 2 * INTERP_STACK_SLOT_SIZE, OBJECTREF);
+                    OBJECTREF executionContext = LOCAL_VAR(ip[4], OBJECTREF);
+                    OBJECTREF syncContext = LOCAL_VAR(ip[4] + INTERP_STACK_SLOT_SIZE, OBJECTREF);
 
                     InterpAsyncSuspendData *pAsyncSuspendData = (InterpAsyncSuspendData*)pMethod->pDataItems[ip[5]];
                     MethodDesc *restoreContextsMethod = pAsyncSuspendData->restoreContextsOnSuspensionMethod;
