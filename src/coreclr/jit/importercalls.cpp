@@ -1766,10 +1766,10 @@ GenTree* Compiler::impDuplicateWithProfiledArg(GenTreeCall* call, IL_OFFSET ilOf
             GenTree* profiledValueNode = gtNewIconNode(profiledValue, argClone->TypeGet());
             *argRef                    = profiledValueNode;
 
-            // TODO: Specify weights for the branches in the Qmark node.
             GenTreeColon* colon = new (this, GT_COLON) GenTreeColon(call->TypeGet(), call, fallbackCall);
             GenTreeOp*    cond  = gtNewOperNode(GT_EQ, TYP_INT, argClone, gtCloneExpr(profiledValueNode));
             GenTreeQmark* qmark = gtNewQmarkNode(call->TypeGet(), cond, colon);
+            qmark->SetThenNodeLikelihood(likelihood);
 
             JITDUMP("\n\nResulting tree:\n")
             DISPTREE(qmark)
@@ -1878,10 +1878,10 @@ GenTree* Compiler::impProfileLclHeap(GenTree* lclHeap, IL_OFFSET ilOffset)
             fastpath = gtNewLclHeapNode(profiledValueNode, ilOffset);
         }
 
-        // TODO: Specify weights for the branches in the Qmark node.
         GenTreeColon* colon = new (this, GT_COLON) GenTreeColon(TYP_I_IMPL, fastpath, fallback);
         GenTreeOp*    cond  = gtNewOperNode(GT_EQ, TYP_INT, sizeNode, gtCloneExpr(profiledValueNode));
         GenTreeQmark* qmark = gtNewQmarkNode(TYP_I_IMPL, cond, colon);
+        qmark->SetThenNodeLikelihood(likelihood);
 
         // QMARK has to be a root node.
         unsigned tmp = lvaGrabTemp(true DEBUGARG("Grabbing temp for Qmark"));
