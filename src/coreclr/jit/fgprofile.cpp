@@ -2363,9 +2363,12 @@ public:
 
         if (!lengthNode->TypeIs(TYP_I_IMPL))
         {
-            // CORINFO_HELP_VALUEPROFILE always expects nint.
+            // CORINFO_HELP_VALUEPROFILE always expects nint. Use an unsigned widening
+            // because the operands we profile here (Memmove/SequenceEqual length and
+            // LCLHEAP size) are non-negative; sign-extending values with the high bit
+            // set would produce huge negative ssize_t and skew the histogram.
             assert(genActualType(lengthNode) == TYP_INT);
-            lengthNode = compiler->gtNewCastNode(TYP_I_IMPL, lengthNode, /* isUnsigned */ false, TYP_I_IMPL);
+            lengthNode = compiler->gtNewCastNode(TYP_I_IMPL, lengthNode, /* isUnsigned */ true, TYP_I_IMPL);
         }
 
         GenTreeCall* helperCallNode = compiler->gtNewHelperCallNode(helper, TYP_VOID, lengthNode, histNode);
