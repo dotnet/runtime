@@ -318,28 +318,6 @@ internal sealed class FrameHelpers
     }
 
     /// <summary>
-    /// Resolves the MethodDesc from a specific InterpMethodContextFrame by following:
-    /// InterpMethodContextFrame.StartIp -> InterpByteCodeStart.Method -> InterpMethod.MethodDesc
-    /// </summary>
-    public TargetPointer ResolveMethodDescFromInterpFrame(TargetPointer interpMethodFramePtr)
-    {
-        if (interpMethodFramePtr == TargetPointer.Null)
-            return TargetPointer.Null;
-
-        Data.InterpMethodContextFrame contextFrame = _target.ProcessedData.GetOrAdd<Data.InterpMethodContextFrame>(interpMethodFramePtr);
-        if (contextFrame.StartIp == TargetPointer.Null)
-            return TargetPointer.Null;
-
-        Data.InterpByteCodeStart byteCodeStart = _target.ProcessedData.GetOrAdd<Data.InterpByteCodeStart>(contextFrame.StartIp);
-        if (byteCodeStart.Method == TargetPointer.Null)
-            return TargetPointer.Null;
-
-        Data.InterpMethod interpMethod = _target.ProcessedData.GetOrAdd<Data.InterpMethod>(byteCodeStart.Method);
-
-        return interpMethod.MethodDesc;
-    }
-
-    /// <summary>
     /// Resolves the actual top InterpMethodContextFrame from the hint stored in InterpreterFrame,
     /// replicating InterpreterFrame::GetTopInterpMethodContextFrame() from frames.cpp.
     /// The stored TopInterpMethodContextFrame is only an approximate hint; during dump or native
@@ -404,12 +382,6 @@ internal sealed class FrameHelpers
     // on Linux/macOS use the same bit so a single constant is sufficient across platforms.
     private const uint CONTEXT_EXCEPTION_ACTIVE = 0x8000000;
 
-    public void ApplyInterpreterFrameTransition(IPlatformAgnosticContext context, TargetPointer interpreterFrameAddress)
-    {
-        Data.FramedMethodFrame framedMethodFrame = _target.ProcessedData.GetOrAdd<Data.FramedMethodFrame>(interpreterFrameAddress);
-        GetFrameHandler(context).HandleTransitionFrame(framedMethodFrame);
-    }
-
     /// <summary>
     /// Mirrors native <c>InterpreterFrame::SetContextToInterpMethodContextFrame</c> (frames.cpp).
     /// </summary>
@@ -434,11 +406,32 @@ internal sealed class FrameHelpers
     }
 
     /// <summary>
-    /// Mirrors native <c>VirtualUnwindInterpreterCallFrame</c> (eetwain.cpp).
-    /// Returns false when the interpreter chain is exhausted (either no parent, or the
-    /// parent has no active IP).
+    /// Performs interpreter virtual unwind, matching the native
+    /// <c>VirtualUnwindInterpreterCallFrame</c> in eetwain.cpp.
+    ///
+    /// When unwinding from a frameless interpreter frame, the SP points to the
+    /// current InterpMethodContextFrame. We follow pParent to get to the next
+    /// interpreted method in the call chain. If pParent is null, the interpreter
+    /// chain under the current InterpreterFrame is exhausted, we apply the
+    /// InterpreterFrame's transition-block state to restore the context to the
+    /// native caller of InterpExecMethod. 
     /// </summary>
-    public bool VirtualUnwindInterpreterCallFrame(IPlatformAgnosticContext context)
+    public void InterpreterVirtualUnwind(IPlatformAgnosticContext context)
+    {
+        if (VirtualUnwindInterpreterCallFrame(context))
+            return;
+
+        // No active parent: interpreter chain under this InterpreterFrame is exhausted.
+        // The owning InterpreterFrame address lives in the first-argument register --
+        // populated by SetContextToInterpMethodContextFrame
+        TargetPointer interpreterFrame = GetFirstArgRegister(context);
+        if (interpreterFrame != TargetPointer.Null)
+        {
+            ApplyInterpreterFrameTransition(context, interpreterFrame);
+        }
+    }
+
+    private bool VirtualUnwindInterpreterCallFrame(IPlatformAgnosticContext context)
     {
         TargetPointer currentFramePtr = context.StackPointer;
         Data.InterpMethodContextFrame currentFrame = _target.ProcessedData.GetOrAdd<Data.InterpMethodContextFrame>(currentFramePtr);
@@ -455,6 +448,23 @@ internal sealed class FrameHelpers
         context.FramePointer = parentFrame.Stack;
         context.RawContextFlags = context.FullContextFlags;
         return true;
+    }
+
+    private void ApplyInterpreterFrameTransition(IPlatformAgnosticContext context, TargetPointer interpreterFrameAddress)
+    {
+        Data.FramedMethodFrame framedMethodFrame = _target.ProcessedData.GetOrAdd<Data.FramedMethodFrame>(interpreterFrameAddress);
+        GetFrameHandler(context).HandleTransitionFrame(framedMethodFrame);
+    }
+
+    private TargetPointer GetFirstArgRegister(IPlatformAgnosticContext context)
+    {
+        string registerName = GetFirstArgRegisterName();
+        if (!context.TryReadRegister(registerName, out TargetNUInt value))
+        {
+            throw new InvalidOperationException(
+                $"Failed to read first argument register '{registerName}' from the context.");
+        }
+        return new TargetPointer(value.Value);
     }
 
     private void SetFirstArgRegister(IPlatformAgnosticContext context, TargetPointer value)

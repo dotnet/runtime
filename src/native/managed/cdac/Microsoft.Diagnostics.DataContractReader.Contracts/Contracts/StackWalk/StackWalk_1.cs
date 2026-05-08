@@ -49,8 +49,7 @@ internal partial class StackWalk_1 : IStackWalk
         TargetPointer FrameAddress,
         ThreadData ThreadData,
         bool IsResumableFrame = false,
-        bool IsActiveFrame = false,
-        TargetPointer InterpContextFramePtr = default) : IStackDataFrameHandle
+        bool IsActiveFrame = false) : IStackDataFrameHandle
     { }
 
     private class StackWalkData(IPlatformAgnosticContext context, StackWalkState state, FrameIterator frameIter, ThreadData threadData)
@@ -77,12 +76,6 @@ internal partial class StackWalk_1 : IStackWalk
         // Used by UpdateState to detect exception frames (FRAME_ATTR_EXCEPTION) and
         // set IsInterrupted when transitioning to a managed frame.
         public FrameType? LastProcessedFrameType { get; set; }
-
-        // The address of the InterpreterFrame that we're currently walking via virtual
-        // unwind. Saved when UpdateContextFromFrame transitions from SW_FRAME to
-        // SW_FRAMELESS, used by InterpreterVirtualUnwind for FMF transition when the
-        // interpreter chain is exhausted. In native, this is stored in FirstArgReg.
-        public TargetPointer CurrentInterpreterFrameAddress { get; set; }
 
         public bool IsCurrentFrameResumable()
         {
@@ -130,11 +123,11 @@ internal partial class StackWalk_1 : IStackWalk
             }
         }
 
-        public StackDataFrameHandle ToDataFrame(TargetPointer interpContextFramePtr = default)
+        public StackDataFrameHandle ToDataFrame()
         {
             bool isResumable = IsCurrentFrameResumable();
             bool isActiveFrame = IsFirst && State == StackWalkState.SW_FRAMELESS;
-            return new(Context.Clone(), State, FrameIter.CurrentFrameAddress, ThreadData, isResumable, isActiveFrame, interpContextFramePtr);
+            return new(Context.Clone(), State, FrameIter.CurrentFrameAddress, ThreadData, isResumable, isActiveFrame);
         }
     }
 
@@ -675,7 +668,7 @@ internal partial class StackWalk_1 : IStackWalk
                 // This mirrors VirtualUnwindInterpreterCallFrame in eetwain.cpp.
                 if (IsInterpreterCode(handle.Context.InstructionPointer))
                 {
-                    InterpreterVirtualUnwind(handle);
+                    _frameHelpers.InterpreterVirtualUnwind(handle.Context);
                 }
                 else
                 {
@@ -701,17 +694,6 @@ internal partial class StackWalk_1 : IStackWalk
                 // pInlinedFrame is set only for active InlinedCallFrames.
                 {
                     var frameType = handle.FrameIter.GetCurrentFrameType();
-
-                    // Save the InterpreterFrame address before advancing the frame iterator.
-                    // InterpreterVirtualUnwind needs this for the FMF transition when the
-                    // interpreter chain is exhausted.
-                    TargetPointer savedInterpreterFrameAddress = TargetPointer.Null;
-                    if (frameType == FrameType.InterpreterFrame)
-                    {
-                        savedInterpreterFrameAddress = handle.FrameIter.CurrentFrameAddress;
-                        handle.CurrentInterpreterFrameAddress = savedInterpreterFrameAddress;
-                    }
-
                     TargetPointer returnAddress = handle.FrameIter.GetCurrentReturnAddress();
                     bool isActiveICF = frameType == FrameType.InlinedCallFrame
                                        && returnAddress != TargetPointer.Null;
@@ -732,22 +714,6 @@ internal partial class StackWalk_1 : IStackWalk
                     if (!isActiveICF)
                     {
                         handle.FrameIter.Next();
-                    }
-
-                    // After advancing past an InterpreterFrame, the next frame must NOT be
-                    // the same InterpreterFrame. The native walker (PR #126953) prevents this
-                    // via ResetRegDisp dedup; our UpdateContextFromFrame + Next() achieves
-                    // the same by advancing the frame iterator past the InterpreterFrame
-                    // before the interpreter virtual unwind exhausts the chain and triggers
-                    // the FMF transition back to SW_FRAME.
-                    if (savedInterpreterFrameAddress != TargetPointer.Null
-                        && handle.FrameIter.IsValid()
-                        && handle.FrameIter.GetCurrentFrameType() == FrameType.InterpreterFrame
-                        && handle.FrameIter.CurrentFrameAddress == savedInterpreterFrameAddress)
-                    {
-                        Debug.Fail(
-                            $"InterpreterFrame at {savedInterpreterFrameAddress} was not advanced past — " +
-                            "this would cause doubled interpreter frames in the stack walk.");
                     }
                 }
                 break;
@@ -853,12 +819,6 @@ internal partial class StackWalk_1 : IStackWalk
     {
         StackDataFrameHandle handle = AssertCorrectHandle(stackDataFrameHandle);
 
-        // If this is a synthetic interpreter chain frame, resolve directly from the specific context frame
-        if (handle.InterpContextFramePtr != TargetPointer.Null)
-        {
-            return _frameHelpers.ResolveMethodDescFromInterpFrame(handle.InterpContextFramePtr);
-        }
-
         // if we are at a capital F Frame, we can get the method desc from the frame
         TargetPointer framePtr = ((IStackWalk)this).GetFrameAddress(handle);
         if (framePtr != TargetPointer.Null)
@@ -956,33 +916,6 @@ internal partial class StackWalk_1 : IStackWalk
     private bool IsInterpreterCode(TargetPointer ip)
     {
         return _eman.GetCodeKind(new TargetCodePointer(ip)) == CodeKind.Interpreter;
-    }
-
-    /// <summary>
-    /// Performs interpreter virtual unwind, matching the native
-    /// VirtualUnwindInterpreterCallFrame in eetwain.cpp.
-    ///
-    /// When unwinding from a frameless interpreter frame, the SP points to the
-    /// current InterpMethodContextFrame. We follow pParent to get to the next
-    /// interpreted method in the call chain. If pParent is null, the interpreter
-    /// chain under the current InterpreterFrame is exhausted -- we advance the
-    /// frame iterator past the InterpreterFrame and transition to SW_FRAME.
-    /// </summary>
-    private void InterpreterVirtualUnwind(StackWalkData handle)
-    {
-        if (_frameHelpers.VirtualUnwindInterpreterCallFrame(handle.Context))
-            return;
-
-        // No active parent: interpreter chain under this InterpreterFrame is exhausted.
-        // Apply the InterpreterFrame's transition-block state to restore the context to
-        // the native caller of InterpExecMethod. This is the cDAC equivalent of the
-        // native DummyCallerIP -> UpdateRegDisplay path in stackwalk.cpp.
-        if (handle.CurrentInterpreterFrameAddress != TargetPointer.Null)
-        {
-            _frameHelpers.ApplyInterpreterFrameTransition(handle.Context, handle.CurrentInterpreterFrameAddress);
-            handle.CurrentInterpreterFrameAddress = TargetPointer.Null;
-        }
-        // UpdateState (called by Next) will see the IP and determine next state.
     }
 
     #endregion Interpreter

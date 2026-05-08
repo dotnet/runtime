@@ -707,7 +707,7 @@ public class MethodDescTests
         }, mockExecutionManager, mockPrecodeStubs);
 
         mockExecutionManager.Setup(em => em.GetCodeBlockHandle(nativeCode)).Returns((CodeBlockHandle?)null);
-        mockPrecodeStubs.Setup(ps => ps.GetMethodDescFromStubAddress(nativeCode)).Returns(methodDescAddress);
+        mockExecutionManager.Setup(em => em.NonVirtualEntry2MethodDesc(nativeCode)).Returns(methodDescAddress);
 
         MethodDescHandle handle = rts.GetMethodDescHandle(methodDescAddress);
         Assert.NotEqual(TargetPointer.Null, handle.Address);
@@ -768,7 +768,7 @@ public class MethodDescTests
         }, mockExecutionManager, mockPrecodeStubs);
 
         mockExecutionManager.Setup(em => em.GetCodeBlockHandle(nativeCode)).Returns((CodeBlockHandle?)null);
-        mockPrecodeStubs.Setup(ps => ps.GetMethodDescFromStubAddress(nativeCode)).Returns(wrongMethodDescAddress);
+        mockExecutionManager.Setup(em => em.NonVirtualEntry2MethodDesc(nativeCode)).Returns(wrongMethodDescAddress);
 
         Assert.Throws<ArgumentException>(() => rts.GetMethodDescHandle(methodDescAddress));
     }
