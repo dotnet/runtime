@@ -147,6 +147,8 @@ namespace System.Diagnostics.Tracing
         private TimeSpan _timeSinceCollectionStarted;
         private TimeSpan _pollingInterval;
         private TimeSpan _nextPollingOffset;
+
+        // Accessed only from OnTimer, which runs only on the single s_pollingThread.
         private DiagnosticCounter[] _onTimerCounters = [];
 
         private void EnableTimer(float pollingIntervalInSeconds)
