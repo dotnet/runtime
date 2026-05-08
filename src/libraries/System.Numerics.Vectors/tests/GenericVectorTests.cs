@@ -4710,17 +4710,6 @@ namespace System.Numerics.Tests
         }
 
         [Fact]
-        public void SignSequenceUInt32Test()
-        {
-            Vector<uint> sequence = Vector<uint>.SignSequence;
-
-            for (int index = 0; index < Vector<uint>.Count; index++)
-            {
-                Assert.Equal(((index & 1) == 0) ? 1u : uint.MaxValue, sequence.GetElement(index));
-            }
-        }
-
-        [Fact]
         public void SignSequenceSingleTest()
         {
             Vector<float> sequence = Vector<float>.SignSequence;

@@ -315,7 +315,6 @@ namespace System.Numerics
         public static System.Numerics.Vector<T> CreateGeometricSequence<T>(T initial, [System.Diagnostics.CodeAnalysis.ConstantExpected] T multiplier) { throw null; }
         public static System.Numerics.Vector<T> CreateAlternatingSequence<T>(T even, T odd) { throw null; }
         public static System.Numerics.Vector<T> CreateHarmonicSequence<T>(T start, T step) { throw null; }
-        public static System.Numerics.Vector<T> CreateCauchySequence<T>(T start, T step) { throw null; }
         public static System.Numerics.Vector<T> ZipLower<T>(System.Numerics.Vector<T> left, System.Numerics.Vector<T> right) { throw null; }
         public static System.Numerics.Vector<T> ZipUpper<T>(System.Numerics.Vector<T> left, System.Numerics.Vector<T> right) { throw null; }
         public static (System.Numerics.Vector<T> Lower, System.Numerics.Vector<T> Upper) Zip<T>(System.Numerics.Vector<T> left, System.Numerics.Vector<T> right) { throw null; }
@@ -620,6 +619,7 @@ namespace System.Numerics
         extension<T>(Vector<T>) where T : System.Numerics.ISignedNumber<T>
         {
             public static System.Numerics.Vector<T> NegativeOne { get { throw null; } }
+            public static System.Numerics.Vector<T> SignSequence { get { throw null; } }
         }
     }
     public partial struct Vector2 : System.IEquatable<System.Numerics.Vector2>, System.IFormattable
@@ -1146,7 +1146,6 @@ namespace System.Numerics
         public static System.Numerics.Vector<T> AllBitsSet { get { throw null; } }
         public static int Count { get { throw null; } }
         public static System.Numerics.Vector<T> Indices { get { throw null; } }
-        public static System.Numerics.Vector<T> SignSequence { get { throw null; } }
         public static bool IsSupported { get { throw null; } }
         public T this[int index] { get { throw null; } }
         public static System.Numerics.Vector<T> One { get { throw null; } }

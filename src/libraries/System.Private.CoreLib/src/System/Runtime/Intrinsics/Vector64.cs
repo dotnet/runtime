@@ -102,6 +102,14 @@ namespace System.Runtime.Intrinsics
                 [Intrinsic]
                 get => Create(T.NegativeOne);
             }
+
+            /// <inheritdoc cref="Vector128.get_SignSequence{T}" />
+            public static Vector64<T> SignSequence
+            {
+                [Intrinsic]
+                [MethodImpl(MethodImplOptions.AggressiveInlining)]
+                get => CreateAlternatingSequence(T.One, T.NegativeOne);
+            }
         }
 
         /// <summary>Computes the absolute value of each element in a vector.</summary>
@@ -1396,12 +1404,11 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector64<T> CreateGeometricSequence<T>(T initial, [ConstantExpected] T multiplier)
         {
-            int count = Vector64<T>.Count;
             Unsafe.SkipInit(out Vector64<T> result);
 
             T value = initial;
 
-            for (int index = 0; index < count; index++)
+            for (int index = 0; index < Vector64<T>.Count; index++)
             {
                 result.SetElementUnsafe(index, value);
                 value = Scalar<T>.Multiply(value, multiplier);
@@ -1420,12 +1427,18 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector64<T> CreateAlternatingSequence<T>(T even, T odd)
         {
-            int count = Vector64<T>.Count;
             Unsafe.SkipInit(out Vector64<T> result);
 
-            for (int index = 0; index < count; index++)
+            if (Vector64<T>.Count == 1)
             {
-                result.SetElementUnsafe(index, ((index & 1) == 0) ? even : odd);
+                result.SetElementUnsafe(0, even);
+                return result;
+            }
+
+            for (int index = 0; index < Vector64<T>.Count; index += 2)
+            {
+                result.SetElementUnsafe(index, even);
+                result.SetElementUnsafe(index + 1, odd);
             }
 
             return result;
@@ -1441,35 +1454,89 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector64<T> CreateHarmonicSequence<T>(T start, T step) => Vector64<T>.One / CreateSequence(start, step);
 
-        /// <summary>Creates a new <see cref="Vector64{T}" /> instance whose elements are the square root of an arithmetic sequence.</summary>
-        /// <typeparam name="T">The type of the elements in the vector.</typeparam>
-        /// <param name="start">The value that element 0 of the arithmetic sequence will be initialized to.</param>
-        /// <param name="step">The value that indicates how far apart each element of the arithmetic sequence should be from the previous.</param>
-        /// <returns>A new <see cref="Vector64{T}" /> instance whose elements are initialized to the square root of the corresponding element of the arithmetic sequence.</returns>
-        /// <exception cref="NotSupportedException">The type of <paramref name="start"/> and <paramref name="step"/> (<typeparamref name="T" />) is not supported.</exception>
-        [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector64<T> CreateCauchySequence<T>(T start, T step) => Sqrt(CreateSequence(start, step));
-
         /// <inheritdoc cref="Vector.ConcatLowerLower{T}(Vector{T}, Vector{T})" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector64<T> ConcatLowerLower<T>(Vector64<T> left, Vector64<T> right) => ConcatHalves(left, right, leftUpper: false, rightUpper: false);
+        public static Vector64<T> ConcatLowerLower<T>(Vector64<T> left, Vector64<T> right)
+        {
+            if (Vector64<T>.Count == 1)
+            {
+                return left;
+            }
+
+            Unsafe.SkipInit(out Vector64<T> result);
+
+            for (int index = 0; index < Vector64<T>.Count / 2; index++)
+            {
+                result.SetElementUnsafe(index, left.GetElementUnsafe(index));
+                result.SetElementUnsafe(index + (Vector64<T>.Count / 2), right.GetElementUnsafe(index));
+            }
+
+            return result;
+        }
 
         /// <inheritdoc cref="Vector.ConcatUpperLower{T}(Vector{T}, Vector{T})" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector64<T> ConcatUpperLower<T>(Vector64<T> left, Vector64<T> right) => ConcatHalves(left, right, leftUpper: true, rightUpper: false);
+        public static Vector64<T> ConcatUpperLower<T>(Vector64<T> left, Vector64<T> right)
+        {
+            if (Vector64<T>.Count == 1)
+            {
+                return left;
+            }
+
+            Unsafe.SkipInit(out Vector64<T> result);
+
+            for (int index = 0; index < Vector64<T>.Count / 2; index++)
+            {
+                result.SetElementUnsafe(index, left.GetElementUnsafe(index + (Vector64<T>.Count / 2)));
+                result.SetElementUnsafe(index + (Vector64<T>.Count / 2), right.GetElementUnsafe(index));
+            }
+
+            return result;
+        }
 
         /// <inheritdoc cref="Vector.ConcatUpperUpper{T}(Vector{T}, Vector{T})" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector64<T> ConcatUpperUpper<T>(Vector64<T> left, Vector64<T> right) => ConcatHalves(left, right, leftUpper: true, rightUpper: true);
+        public static Vector64<T> ConcatUpperUpper<T>(Vector64<T> left, Vector64<T> right)
+        {
+            if (Vector64<T>.Count == 1)
+            {
+                return left;
+            }
+
+            Unsafe.SkipInit(out Vector64<T> result);
+
+            for (int index = 0; index < Vector64<T>.Count / 2; index++)
+            {
+                result.SetElementUnsafe(index, left.GetElementUnsafe(index + (Vector64<T>.Count / 2)));
+                result.SetElementUnsafe(index + (Vector64<T>.Count / 2), right.GetElementUnsafe(index + (Vector64<T>.Count / 2)));
+            }
+
+            return result;
+        }
 
         /// <inheritdoc cref="Vector.ConcatLowerUpper{T}(Vector{T}, Vector{T})" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector64<T> ConcatLowerUpper<T>(Vector64<T> left, Vector64<T> right) => ConcatHalves(left, right, leftUpper: false, rightUpper: true);
+        public static Vector64<T> ConcatLowerUpper<T>(Vector64<T> left, Vector64<T> right)
+        {
+            if (Vector64<T>.Count == 1)
+            {
+                return left;
+            }
+
+            Unsafe.SkipInit(out Vector64<T> result);
+
+            for (int index = 0; index < Vector64<T>.Count / 2; index++)
+            {
+                result.SetElementUnsafe(index, left.GetElementUnsafe(index));
+                result.SetElementUnsafe(index + (Vector64<T>.Count / 2), right.GetElementUnsafe(index + (Vector64<T>.Count / 2)));
+            }
+
+            return result;
+        }
 
         /// <inheritdoc cref="Vector.ZipLower{T}(Vector{T}, Vector{T})" />
         [Intrinsic]
@@ -1488,20 +1555,18 @@ namespace System.Runtime.Intrinsics
 
         private static Vector64<T> Zip<T>(Vector64<T> left, Vector64<T> right, bool upper)
         {
-            int count = Vector64<T>.Count;
-            int lowerCount = (count + 1) / 2;
-            int start = upper ? count - lowerCount : 0;
+            if (Vector64<T>.Count == 1)
+            {
+                return left;
+            }
 
             Unsafe.SkipInit(out Vector64<T> result);
 
-            for (int index = 0; index < count; index++)
+            for (int index = 0; index < Vector64<T>.Count; index += 2)
             {
-                int elementIndex = start + (index / 2);
-                T value = ((index & 1) == 0)
-                    ? left.GetElementUnsafe(elementIndex)
-                    : right.GetElementUnsafe(elementIndex);
-
-                result.SetElementUnsafe(index, value);
+                int elementIndex = (upper ? Vector64<T>.Count / 2 : 0) + (index / 2);
+                result.SetElementUnsafe(index, left.GetElementUnsafe(elementIndex));
+                result.SetElementUnsafe(index + 1, right.GetElementUnsafe(elementIndex));
             }
 
             return result;
@@ -1510,75 +1575,60 @@ namespace System.Runtime.Intrinsics
         /// <inheritdoc cref="Vector.UnzipEven{T}(Vector{T}, Vector{T})" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector64<T> UnzipEven<T>(Vector64<T> left, Vector64<T> right) => Unzip(left, right, odd: false);
+        public static Vector64<T> UnzipEven<T>(Vector64<T> left, Vector64<T> right)
+        {
+            if (Vector64<T>.Count == 1)
+            {
+                return left;
+            }
+
+            Unsafe.SkipInit(out Vector64<T> result);
+
+            for (int index = 0; index < Vector64<T>.Count / 2; index++)
+            {
+                result.SetElementUnsafe(index, left.GetElementUnsafe(index * 2));
+                result.SetElementUnsafe(index + (Vector64<T>.Count / 2), right.GetElementUnsafe(index * 2));
+            }
+
+            return result;
+        }
 
         /// <inheritdoc cref="Vector.UnzipOdd{T}(Vector{T}, Vector{T})" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector64<T> UnzipOdd<T>(Vector64<T> left, Vector64<T> right) => Unzip(left, right, odd: true);
-
-        /// <inheritdoc cref="Vector.Unzip{T}(Vector{T}, Vector{T})" />
-        [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static (Vector64<T> Even, Vector64<T> Odd) Unzip<T>(Vector64<T> left, Vector64<T> right) => (UnzipEven(left, right), UnzipOdd(left, right));
-
-        private static Vector64<T> Unzip<T>(Vector64<T> left, Vector64<T> right, bool odd)
+        public static Vector64<T> UnzipOdd<T>(Vector64<T> left, Vector64<T> right)
         {
-            int count = Vector64<T>.Count;
-            int start = odd ? 1 : 0;
-            int lowerCount = (count - start + 1) / 2;
-
-            if (lowerCount == 0)
+            if (Vector64<T>.Count == 1)
             {
                 return Vector64<T>.Zero;
             }
 
             Unsafe.SkipInit(out Vector64<T> result);
 
-            for (int index = 0; index < count; index++)
+            for (int index = 0; index < Vector64<T>.Count / 2; index++)
             {
-                T value = (index < lowerCount)
-                    ? left.GetElementUnsafe(start + (index * 2))
-                    : right.GetElementUnsafe(start + ((index - lowerCount) * 2));
-
-                result.SetElementUnsafe(index, value);
+                result.SetElementUnsafe(index, left.GetElementUnsafe((index * 2) + 1));
+                result.SetElementUnsafe(index + (Vector64<T>.Count / 2), right.GetElementUnsafe((index * 2) + 1));
             }
 
             return result;
         }
+
+        /// <inheritdoc cref="Vector.Unzip{T}(Vector{T}, Vector{T})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static (Vector64<T> Even, Vector64<T> Odd) Unzip<T>(Vector64<T> left, Vector64<T> right) => (UnzipEven(left, right), UnzipOdd(left, right));
 
         /// <inheritdoc cref="Vector.Reverse{T}(Vector{T})" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector64<T> Reverse<T>(Vector64<T> vector)
         {
-            int count = Vector64<T>.Count;
             Unsafe.SkipInit(out Vector64<T> result);
 
-            for (int index = 0; index < count; index++)
+            for (int index = 0; index < Vector64<T>.Count; index++)
             {
-                result.SetElementUnsafe(index, vector.GetElementUnsafe(count - 1 - index));
-            }
-
-            return result;
-        }
-
-        private static Vector64<T> ConcatHalves<T>(Vector64<T> left, Vector64<T> right, bool leftUpper, bool rightUpper)
-        {
-            int count = Vector64<T>.Count;
-            int lowerCount = (count + 1) / 2;
-            int leftStart = leftUpper ? count - lowerCount : 0;
-            int rightStart = rightUpper ? count - lowerCount : 0;
-
-            Unsafe.SkipInit(out Vector64<T> result);
-
-            for (int index = 0; index < count; index++)
-            {
-                T value = (index < lowerCount)
-                    ? left.GetElementUnsafe(leftStart + index)
-                    : right.GetElementUnsafe(rightStart + index - lowerCount);
-
-                result.SetElementUnsafe(index, value);
+                result.SetElementUnsafe(index, vector.GetElementUnsafe(Vector64<T>.Count - 1 - index));
             }
 
             return result;

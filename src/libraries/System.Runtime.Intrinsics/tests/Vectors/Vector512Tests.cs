@@ -6443,17 +6443,6 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
-        public void SignSequenceUInt32Test()
-        {
-            Vector512<uint> sequence = Vector512<uint>.SignSequence;
-
-            for (int index = 0; index < Vector512<uint>.Count; index++)
-            {
-                Assert.Equal(((index & 1) == 0) ? 1u : uint.MaxValue, sequence.GetElement(index));
-            }
-        }
-
-        [Fact]
         public void SignSequenceSingleTest()
         {
             Vector512<float> sequence = Vector512<float>.SignSequence;

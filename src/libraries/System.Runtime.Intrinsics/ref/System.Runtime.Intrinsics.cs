@@ -174,7 +174,6 @@ namespace System.Runtime.Intrinsics
         public static System.Runtime.Intrinsics.Vector128<T> CreateGeometricSequence<T>(T initial, [System.Diagnostics.CodeAnalysis.ConstantExpected] T multiplier) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<T> CreateAlternatingSequence<T>(T even, T odd) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<T> CreateHarmonicSequence<T>(T start, T step) { throw null; }
-        public static System.Runtime.Intrinsics.Vector128<T> CreateCauchySequence<T>(T start, T step) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<T> ZipLower<T>(System.Runtime.Intrinsics.Vector128<T> left, System.Runtime.Intrinsics.Vector128<T> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<T> ZipUpper<T>(System.Runtime.Intrinsics.Vector128<T> left, System.Runtime.Intrinsics.Vector128<T> right) { throw null; }
         public static (System.Runtime.Intrinsics.Vector128<T> Lower, System.Runtime.Intrinsics.Vector128<T> Upper) Zip<T>(System.Runtime.Intrinsics.Vector128<T> left, System.Runtime.Intrinsics.Vector128<T> right) { throw null; }
@@ -451,6 +450,7 @@ namespace System.Runtime.Intrinsics
         extension<T>(System.Runtime.Intrinsics.Vector128<T>) where T : System.Numerics.ISignedNumber<T>
         {
             public static System.Runtime.Intrinsics.Vector128<T> NegativeOne { get { throw null; } }
+            public static System.Runtime.Intrinsics.Vector128<T> SignSequence { get { throw null; } }
         }
     }
     public readonly partial struct Vector128<T> : System.IEquatable<System.Runtime.Intrinsics.Vector128<T>>
@@ -459,7 +459,6 @@ namespace System.Runtime.Intrinsics
         public static System.Runtime.Intrinsics.Vector128<T> AllBitsSet { get { throw null; } }
         public static int Count { get { throw null; } }
         public static System.Runtime.Intrinsics.Vector128<T> Indices { get { throw null; } }
-        public static System.Runtime.Intrinsics.Vector128<T> SignSequence { get { throw null; } }
         public static bool IsSupported { get { throw null; } }
         public static System.Runtime.Intrinsics.Vector128<T> One { get { throw null; } }
         public static System.Runtime.Intrinsics.Vector128<T> Zero { get { throw null; } }
@@ -641,7 +640,6 @@ namespace System.Runtime.Intrinsics
         public static System.Runtime.Intrinsics.Vector256<T> CreateGeometricSequence<T>(T initial, [System.Diagnostics.CodeAnalysis.ConstantExpected] T multiplier) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<T> CreateAlternatingSequence<T>(T even, T odd) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<T> CreateHarmonicSequence<T>(T start, T step) { throw null; }
-        public static System.Runtime.Intrinsics.Vector256<T> CreateCauchySequence<T>(T start, T step) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<T> ZipLower<T>(System.Runtime.Intrinsics.Vector256<T> left, System.Runtime.Intrinsics.Vector256<T> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<T> ZipUpper<T>(System.Runtime.Intrinsics.Vector256<T> left, System.Runtime.Intrinsics.Vector256<T> right) { throw null; }
         public static (System.Runtime.Intrinsics.Vector256<T> Lower, System.Runtime.Intrinsics.Vector256<T> Upper) Zip<T>(System.Runtime.Intrinsics.Vector256<T> left, System.Runtime.Intrinsics.Vector256<T> right) { throw null; }
@@ -919,6 +917,7 @@ namespace System.Runtime.Intrinsics
         extension<T>(System.Runtime.Intrinsics.Vector256<T>) where T : System.Numerics.ISignedNumber<T>
         {
             public static System.Runtime.Intrinsics.Vector256<T> NegativeOne { get { throw null; } }
+            public static System.Runtime.Intrinsics.Vector256<T> SignSequence { get { throw null; } }
         }
     }
     public readonly partial struct Vector256<T> : System.IEquatable<System.Runtime.Intrinsics.Vector256<T>>
@@ -927,7 +926,6 @@ namespace System.Runtime.Intrinsics
         public static System.Runtime.Intrinsics.Vector256<T> AllBitsSet { get { throw null; } }
         public static int Count { get { throw null; } }
         public static System.Runtime.Intrinsics.Vector256<T> Indices { get { throw null; } }
-        public static System.Runtime.Intrinsics.Vector256<T> SignSequence { get { throw null; } }
         public static bool IsSupported { get { throw null; } }
         public static System.Runtime.Intrinsics.Vector256<T> One { get { throw null; } }
         public static System.Runtime.Intrinsics.Vector256<T> Zero { get { throw null; } }
@@ -1109,7 +1107,6 @@ namespace System.Runtime.Intrinsics
         public static System.Runtime.Intrinsics.Vector512<T> CreateGeometricSequence<T>(T initial, [System.Diagnostics.CodeAnalysis.ConstantExpected] T multiplier) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<T> CreateAlternatingSequence<T>(T even, T odd) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<T> CreateHarmonicSequence<T>(T start, T step) { throw null; }
-        public static System.Runtime.Intrinsics.Vector512<T> CreateCauchySequence<T>(T start, T step) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<T> ZipLower<T>(System.Runtime.Intrinsics.Vector512<T> left, System.Runtime.Intrinsics.Vector512<T> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<T> ZipUpper<T>(System.Runtime.Intrinsics.Vector512<T> left, System.Runtime.Intrinsics.Vector512<T> right) { throw null; }
         public static (System.Runtime.Intrinsics.Vector512<T> Lower, System.Runtime.Intrinsics.Vector512<T> Upper) Zip<T>(System.Runtime.Intrinsics.Vector512<T> left, System.Runtime.Intrinsics.Vector512<T> right) { throw null; }
@@ -1386,6 +1383,7 @@ namespace System.Runtime.Intrinsics
         extension<T>(System.Runtime.Intrinsics.Vector512<T>) where T : System.Numerics.ISignedNumber<T>
         {
             public static System.Runtime.Intrinsics.Vector512<T> NegativeOne { get { throw null; } }
+            public static System.Runtime.Intrinsics.Vector512<T> SignSequence { get { throw null; } }
         }
     }
     public readonly partial struct Vector512<T> : System.IEquatable<System.Runtime.Intrinsics.Vector512<T>>
@@ -1394,7 +1392,6 @@ namespace System.Runtime.Intrinsics
         public static System.Runtime.Intrinsics.Vector512<T> AllBitsSet { get { throw null; } }
         public static int Count { get { throw null; } }
         public static System.Runtime.Intrinsics.Vector512<T> Indices { get { throw null; } }
-        public static System.Runtime.Intrinsics.Vector512<T> SignSequence { get { throw null; } }
         public static bool IsSupported { get { throw null; } }
         public static System.Runtime.Intrinsics.Vector512<T> One { get { throw null; } }
         public static System.Runtime.Intrinsics.Vector512<T> Zero { get { throw null; } }
@@ -1553,7 +1550,6 @@ namespace System.Runtime.Intrinsics
         public static System.Runtime.Intrinsics.Vector64<T> CreateGeometricSequence<T>(T initial, [System.Diagnostics.CodeAnalysis.ConstantExpected] T multiplier) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<T> CreateAlternatingSequence<T>(T even, T odd) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<T> CreateHarmonicSequence<T>(T start, T step) { throw null; }
-        public static System.Runtime.Intrinsics.Vector64<T> CreateCauchySequence<T>(T start, T step) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<T> ZipLower<T>(System.Runtime.Intrinsics.Vector64<T> left, System.Runtime.Intrinsics.Vector64<T> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<T> ZipUpper<T>(System.Runtime.Intrinsics.Vector64<T> left, System.Runtime.Intrinsics.Vector64<T> right) { throw null; }
         public static (System.Runtime.Intrinsics.Vector64<T> Lower, System.Runtime.Intrinsics.Vector64<T> Upper) Zip<T>(System.Runtime.Intrinsics.Vector64<T> left, System.Runtime.Intrinsics.Vector64<T> right) { throw null; }
@@ -1816,6 +1812,7 @@ namespace System.Runtime.Intrinsics
         extension<T>(System.Runtime.Intrinsics.Vector64<T>) where T : System.Numerics.ISignedNumber<T>
         {
             public static System.Runtime.Intrinsics.Vector64<T> NegativeOne { get { throw null; } }
+            public static System.Runtime.Intrinsics.Vector64<T> SignSequence { get { throw null; } }
         }
     }
     public readonly partial struct Vector64<T> : System.IEquatable<System.Runtime.Intrinsics.Vector64<T>>
@@ -1824,7 +1821,6 @@ namespace System.Runtime.Intrinsics
         public static System.Runtime.Intrinsics.Vector64<T> AllBitsSet { get { throw null; } }
         public static int Count { get { throw null; } }
         public static System.Runtime.Intrinsics.Vector64<T> Indices { get { throw null; } }
-        public static System.Runtime.Intrinsics.Vector64<T> SignSequence { get { throw null; } }
         public static bool IsSupported { get { throw null; } }
         public static System.Runtime.Intrinsics.Vector64<T> One { get { throw null; } }
         public static System.Runtime.Intrinsics.Vector64<T> Zero { get { throw null; } }

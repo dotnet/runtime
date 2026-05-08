@@ -6660,17 +6660,6 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
-        public void SignSequenceUInt32Test()
-        {
-            Vector256<uint> sequence = Vector256<uint>.SignSequence;
-
-            for (int index = 0; index < Vector256<uint>.Count; index++)
-            {
-                Assert.Equal(((index & 1) == 0) ? 1u : uint.MaxValue, sequence.GetElement(index));
-            }
-        }
-
-        [Fact]
         public void SignSequenceSingleTest()
         {
             Vector256<float> sequence = Vector256<float>.SignSequence;

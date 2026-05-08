@@ -74,18 +74,6 @@ namespace System.Runtime.Intrinsics
             }
         }
 
-        /// <summary>
-        /// Gets a new <see cref="Vector128{T}" /> with elements that alternate between one and negative one, starting with one;
-        /// for unsigned element types, the negative-one value is represented as all bits set.
-        /// </summary>
-        /// <exception cref="NotSupportedException">The type of the vector (<typeparamref name="T" />) is not supported.</exception>
-        public static Vector128<T> SignSequence
-        {
-            [Intrinsic]
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => Vector128.CreateAlternatingSequence(Scalar<T>.One, Scalar<T>.Subtract(default!, Scalar<T>.One));
-        }
-
         /// <summary>Gets <c>true</c> if <typeparamref name="T" /> is supported; otherwise, <c>false</c>.</summary>
         /// <returns><c>true</c> if <typeparamref name="T" /> is supported; otherwise, <c>false</c>.</returns>
         public static bool IsSupported

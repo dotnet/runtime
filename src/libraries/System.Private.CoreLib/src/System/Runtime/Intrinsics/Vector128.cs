@@ -135,6 +135,15 @@ namespace System.Runtime.Intrinsics
                 [Intrinsic]
                 get => Create(T.NegativeOne);
             }
+
+            /// <summary>Gets a new vector with elements that alternate between <see cref="INumberBase{TSelf}.One" /> and <see cref="ISignedNumber{TSelf}.NegativeOne" />, starting with one.</summary>
+            /// <exception cref="NotSupportedException">The type of the vector (<typeparamref name="T" />) is not supported.</exception>
+            public static Vector128<T> SignSequence
+            {
+                [Intrinsic]
+                [MethodImpl(MethodImplOptions.AggressiveInlining)]
+                get => CreateAlternatingSequence(T.One, T.NegativeOne);
+            }
         }
 
         /// <summary>Computes the absolute value of each element in a vector.</summary>
@@ -1588,18 +1597,9 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector128<T> CreateGeometricSequence<T>(T initial, [ConstantExpected] T multiplier)
         {
-            int count = Vector128<T>.Count;
-            Unsafe.SkipInit(out Vector128<T> result);
-
-            T value = initial;
-
-            for (int index = 0; index < count; index++)
-            {
-                result.SetElementUnsafe(index, value);
-                value = Scalar<T>.Multiply(value, multiplier);
-            }
-
-            return result;
+            var lower = Vector64.CreateGeometricSequence(initial, multiplier);
+            var upper = Vector64.CreateGeometricSequence(Scalar<T>.Multiply(lower.GetElementUnsafe(Vector64<T>.Count - 1), multiplier), multiplier);
+            return Create(lower, upper);
         }
 
         /// <summary>Creates a new <see cref="Vector128{T}" /> instance whose elements alternate between two specified values.</summary>
@@ -1612,15 +1612,13 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector128<T> CreateAlternatingSequence<T>(T even, T odd)
         {
-            int count = Vector128<T>.Count;
-            Unsafe.SkipInit(out Vector128<T> result);
-
-            for (int index = 0; index < count; index++)
+            if (Vector64<T>.Count == 1)
             {
-                result.SetElementUnsafe(index, ((index & 1) == 0) ? even : odd);
+                return Create(Vector64.Create(even), Vector64.Create(odd));
             }
 
-            return result;
+            Vector64<T> sequence = Vector64.CreateAlternatingSequence(even, odd);
+            return Create(sequence, sequence);
         }
 
         /// <summary>Creates a new <see cref="Vector128{T}" /> instance whose elements are the reciprocal of an arithmetic sequence.</summary>
@@ -1633,81 +1631,86 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector128<T> CreateHarmonicSequence<T>(T start, T step) => Vector128<T>.One / CreateSequence(start, step);
 
-        /// <summary>Creates a new <see cref="Vector128{T}" /> instance whose elements are the square root of an arithmetic sequence.</summary>
-        /// <typeparam name="T">The type of the elements in the vector.</typeparam>
-        /// <param name="start">The value that element 0 of the arithmetic sequence will be initialized to.</param>
-        /// <param name="step">The value that indicates how far apart each element of the arithmetic sequence should be from the previous.</param>
-        /// <returns>A new <see cref="Vector128{T}" /> instance whose elements are initialized to the square root of the corresponding element of the arithmetic sequence.</returns>
-        /// <exception cref="NotSupportedException">The type of <paramref name="start"/> and <paramref name="step"/> (<typeparamref name="T" />) is not supported.</exception>
-        [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector128<T> CreateCauchySequence<T>(T start, T step) => Sqrt(CreateSequence(start, step));
-
         /// <inheritdoc cref="Vector.ConcatLowerLower{T}(Vector{T}, Vector{T})" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector128<T> ConcatLowerLower<T>(Vector128<T> left, Vector128<T> right) => ConcatHalves(left, right, leftUpper: false, rightUpper: false);
+        public static Vector128<T> ConcatLowerLower<T>(Vector128<T> left, Vector128<T> right) => Create(left.GetLower(), right.GetLower());
 
         /// <inheritdoc cref="Vector.ConcatUpperLower{T}(Vector{T}, Vector{T})" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector128<T> ConcatUpperLower<T>(Vector128<T> left, Vector128<T> right) => ConcatHalves(left, right, leftUpper: true, rightUpper: false);
+        public static Vector128<T> ConcatUpperLower<T>(Vector128<T> left, Vector128<T> right) => Create(left.GetUpper(), right.GetLower());
 
         /// <inheritdoc cref="Vector.ConcatUpperUpper{T}(Vector{T}, Vector{T})" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector128<T> ConcatUpperUpper<T>(Vector128<T> left, Vector128<T> right) => ConcatHalves(left, right, leftUpper: true, rightUpper: true);
+        public static Vector128<T> ConcatUpperUpper<T>(Vector128<T> left, Vector128<T> right) => Create(left.GetUpper(), right.GetUpper());
 
         /// <inheritdoc cref="Vector.ConcatLowerUpper{T}(Vector{T}, Vector{T})" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector128<T> ConcatLowerUpper<T>(Vector128<T> left, Vector128<T> right) => ConcatHalves(left, right, leftUpper: false, rightUpper: true);
+        public static Vector128<T> ConcatLowerUpper<T>(Vector128<T> left, Vector128<T> right) => Create(left.GetLower(), right.GetUpper());
 
         /// <inheritdoc cref="Vector.ZipLower{T}(Vector{T}, Vector{T})" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector128<T> ZipLower<T>(Vector128<T> left, Vector128<T> right) => Zip(left, right, upper: false);
+        public static Vector128<T> ZipLower<T>(Vector128<T> left, Vector128<T> right)
+        {
+            if (Vector64<T>.Count == 1)
+            {
+                return Create(left.GetLower(), right.GetLower());
+            }
+
+            return Create(
+                Vector64.ZipLower(left.GetLower(), right.GetLower()),
+                Vector64.ZipUpper(left.GetLower(), right.GetLower())
+            );
+        }
 
         /// <inheritdoc cref="Vector.ZipUpper{T}(Vector{T}, Vector{T})" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector128<T> ZipUpper<T>(Vector128<T> left, Vector128<T> right) => Zip(left, right, upper: true);
+        public static Vector128<T> ZipUpper<T>(Vector128<T> left, Vector128<T> right)
+        {
+            if (Vector64<T>.Count == 1)
+            {
+                return Create(left.GetUpper(), right.GetUpper());
+            }
+
+            return Create(
+                Vector64.ZipLower(left.GetUpper(), right.GetUpper()),
+                Vector64.ZipUpper(left.GetUpper(), right.GetUpper())
+            );
+        }
 
         /// <inheritdoc cref="Vector.Zip{T}(Vector{T}, Vector{T})" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static (Vector128<T> Lower, Vector128<T> Upper) Zip<T>(Vector128<T> left, Vector128<T> right) => (ZipLower(left, right), ZipUpper(left, right));
 
-        private static Vector128<T> Zip<T>(Vector128<T> left, Vector128<T> right, bool upper)
-        {
-            int count = Vector128<T>.Count;
-            int lowerCount = (count + 1) / 2;
-            int start = upper ? count - lowerCount : 0;
-
-            Unsafe.SkipInit(out Vector128<T> result);
-
-            for (int index = 0; index < count; index++)
-            {
-                int elementIndex = start + (index / 2);
-                T value = ((index & 1) == 0)
-                    ? left.GetElementUnsafe(elementIndex)
-                    : right.GetElementUnsafe(elementIndex);
-
-                result.SetElementUnsafe(index, value);
-            }
-
-            return result;
-        }
-
         /// <inheritdoc cref="Vector.UnzipEven{T}(Vector{T}, Vector{T})" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector128<T> UnzipEven<T>(Vector128<T> left, Vector128<T> right) => Unzip(left, right, odd: false);
+        public static Vector128<T> UnzipEven<T>(Vector128<T> left, Vector128<T> right) => Create(
+            Vector64.UnzipEven(left.GetLower(), left.GetUpper()),
+            Vector64.UnzipEven(right.GetLower(), right.GetUpper())
+        );
 
         /// <inheritdoc cref="Vector.UnzipOdd{T}(Vector{T}, Vector{T})" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector128<T> UnzipOdd<T>(Vector128<T> left, Vector128<T> right) => Unzip(left, right, odd: true);
+        public static Vector128<T> UnzipOdd<T>(Vector128<T> left, Vector128<T> right)
+        {
+            if (Vector64<T>.Count == 1)
+            {
+                return Create(left.GetUpper(), right.GetUpper());
+            }
+
+            return Create(
+                Vector64.UnzipOdd(left.GetLower(), left.GetUpper()),
+                Vector64.UnzipOdd(right.GetLower(), right.GetUpper())
+            );
+        }
 
         /// <inheritdoc cref="Vector.Unzip{T}(Vector{T}, Vector{T})" />
         [Intrinsic]
@@ -1716,9 +1719,8 @@ namespace System.Runtime.Intrinsics
 
         private static Vector128<T> Unzip<T>(Vector128<T> left, Vector128<T> right, bool odd)
         {
-            int count = Vector128<T>.Count;
             int start = odd ? 1 : 0;
-            int lowerCount = (count - start + 1) / 2;
+            int lowerCount = (Vector128<T>.Count - start + 1) / 2;
 
             if (lowerCount == 0)
             {
@@ -1727,7 +1729,7 @@ namespace System.Runtime.Intrinsics
 
             Unsafe.SkipInit(out Vector128<T> result);
 
-            for (int index = 0; index < count; index++)
+            for (int index = 0; index < Vector128<T>.Count; index++)
             {
                 T value = (index < lowerCount)
                     ? left.GetElementUnsafe(start + (index * 2))
@@ -1742,39 +1744,10 @@ namespace System.Runtime.Intrinsics
         /// <inheritdoc cref="Vector.Reverse{T}(Vector{T})" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector128<T> Reverse<T>(Vector128<T> vector)
-        {
-            int count = Vector128<T>.Count;
-            Unsafe.SkipInit(out Vector128<T> result);
-
-            for (int index = 0; index < count; index++)
-            {
-                result.SetElementUnsafe(index, vector.GetElementUnsafe(count - 1 - index));
-            }
-
-            return result;
-        }
-
-        private static Vector128<T> ConcatHalves<T>(Vector128<T> left, Vector128<T> right, bool leftUpper, bool rightUpper)
-        {
-            int count = Vector128<T>.Count;
-            int lowerCount = (count + 1) / 2;
-            int leftStart = leftUpper ? count - lowerCount : 0;
-            int rightStart = rightUpper ? count - lowerCount : 0;
-
-            Unsafe.SkipInit(out Vector128<T> result);
-
-            for (int index = 0; index < count; index++)
-            {
-                T value = (index < lowerCount)
-                    ? left.GetElementUnsafe(leftStart + index)
-                    : right.GetElementUnsafe(rightStart + index - lowerCount);
-
-                result.SetElementUnsafe(index, value);
-            }
-
-            return result;
-        }
+        public static Vector128<T> Reverse<T>(Vector128<T> vector) => Create(
+            Vector64.Reverse(vector.GetUpper()),
+            Vector64.Reverse(vector.GetLower())
+        );
 
         /// <inheritdoc cref="Vector64.DegreesToRadians(Vector64{double})" />
         [Intrinsic]
