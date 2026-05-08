@@ -2874,6 +2874,7 @@ AGAIN:
                     break;
 
                 // For the ones below no extra argument matters for comparison.
+                case GT_LCLHEAP:
                 case GT_BOX:
                 case GT_RUNTIMELOOKUP:
                 case GT_ARR_ADDR:
@@ -3447,6 +3448,7 @@ AGAIN:
                     break;
 
                 // For the ones below no extra argument matters for comparison.
+                case GT_LCLHEAP:
                 case GT_BOX:
                 case GT_ARR_ADDR:
                     break;
@@ -8565,6 +8567,10 @@ ExceptionSetFlags GenTree::OperExceptions(Compiler* comp)
         case GT_INDEX_ADDR:
             return ExceptionSetFlags::NullReferenceException | ExceptionSetFlags::IndexOutOfRangeException;
 
+        case GT_LCLHEAP:
+            // Stack overflow on a localloc with a large or unknown size.
+            return ExceptionSetFlags::UnknownException;
+
         case GT_CKFINITE:
             return ExceptionSetFlags::ArithmeticException;
 
@@ -9029,6 +9035,16 @@ GenTreeQmark* Compiler::gtNewQmarkNode(var_types type, GenTree* cond, GenTreeCol
     GenTreeQmark* result = new (this, GT_QMARK) GenTreeQmark(type, cond, colon);
     assert(!compQmarkRationalized && "QMARKs are illegal to create after QMARK-rationalization");
     return result;
+}
+
+GenTreeOpWithILOffset* Compiler::gtNewLclHeapNode(GenTree* size, IL_OFFSET ilOffset)
+{
+    assert(size != nullptr);
+    GenTreeOpWithILOffset* node =
+        new (this, GT_LCLHEAP) GenTreeOpWithILOffset(GT_LCLHEAP, TYP_I_IMPL, size, nullptr, ilOffset);
+    // May throw a stack overflow exception. Obviously, we don't want locallocs to be CSE'd.
+    node->gtFlags |= (GTF_EXCEPT | GTF_DONT_CSE);
+    return node;
 }
 
 GenTreeIntCon* Compiler::gtNewIconNode(ssize_t value, var_types type)
@@ -11142,6 +11158,11 @@ GenTree* Compiler::gtCloneExpr(GenTree* tree)
                 copy = new (this, oper) GenTreeCopyOrReload(oper, tree->TypeGet(), tree->gtGetOp1());
             }
             break;
+
+            case GT_LCLHEAP:
+                copy = new (this, GT_LCLHEAP) GenTreeOpWithILOffset(GT_LCLHEAP, tree->TypeGet(), tree->gtGetOp1(),
+                                                                    nullptr, tree->AsOpWithILOffset()->GetILOffset());
+                break;
 
             case GT_SWIFT_ERROR_RET:
                 copy = new (this, oper) GenTreeOp(oper, tree->TypeGet(), tree->gtGetOp1(), tree->gtGetOp2());

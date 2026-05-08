@@ -1806,6 +1806,92 @@ GenTree* Compiler::impDuplicateWithProfiledArg(GenTreeCall* call, IL_OFFSET ilOf
     return call;
 }
 
+//------------------------------------------------------------------------
+// impProfileLclHeap: Apply PGO value-profiling to a non-constant GT_LCLHEAP.
+//
+// Arguments:
+//    lclHeap  - the GT_LCLHEAP node to profile/specialize
+//    ilOffset - IL offset of the LOCALLOC opcode
+//
+// Return Value:
+//    Either the original `lclHeap` node, or a fresh tree that produces the
+//    same value but is specialized via a profiled-size guard:
+//
+//        size == popularSize ? LCLHEAP(popularSize) : LCLHEAP(size)
+//
+// Notes:
+//    The constant-size LCLHEAP fast path is unrolled by Lowering (efficient
+//    zero-init via STORE_BLK), so specializing for a popular size avoids the
+//    slow per-stack-alignment zeroing loop in the non-constant LCLHEAP codegen.
+//
+//    We don't need that optimization if SkipInitLocals is set as even
+//    non-constant locallocs are cheap in that case; we only want to speed up
+//    zeroing.
+//
+GenTree* Compiler::impProfileLclHeap(GenTree* lclHeap, IL_OFFSET ilOffset)
+{
+    assert(lclHeap->OperIs(GT_LCLHEAP));
+
+    GenTree* size = lclHeap->AsOp()->gtOp1;
+    if (!info.compInitMem || size->IsIntegralConst())
+    {
+        return lclHeap;
+    }
+
+    // Consuming the existing profile (optimizing).
+    if (opts.IsOptimizedWithProfile())
+    {
+        ssize_t  profiledValue = 0;
+        uint32_t likelihood    = 0;
+        if (!pickProfiledValue(ilOffset, &likelihood, &profiledValue) || (likelihood < 50) ||
+            ((uint32_t)profiledValue > INT_MAX))
+        {
+            return lclHeap;
+        }
+        assert(FitsIn<int>(profiledValue));
+
+        GenTree* sizeNode = size;
+        GenTree* clonedSizeNode =
+            impCloneExpr(sizeNode, &sizeNode, CHECK_SPILL_ALL, nullptr DEBUGARG("spilling sizeNode"));
+        GenTree* profiledValueNode = gtNewIconNode(profiledValue, size->TypeGet());
+        GenTree* fallback          = gtNewLclHeapNode(clonedSizeNode, ilOffset);
+
+        GenTree* fastpath;
+        if (profiledValue == 0)
+        {
+            // Just nullptr.
+            fastpath = gtNewIconNode(0, TYP_I_IMPL);
+        }
+        else
+        {
+            // NOTE: we don't want to convert the fastpath stackalloc to a local like we
+            // normally do, because it would be additional overhead for the fallback path
+            // (a redundant local to clear).
+            fastpath = gtNewLclHeapNode(profiledValueNode, ilOffset);
+        }
+
+        // TODO: Specify weights for the branches in the Qmark node.
+        GenTreeColon* colon = new (this, GT_COLON) GenTreeColon(TYP_I_IMPL, fastpath, fallback);
+        GenTreeOp*    cond  = gtNewOperNode(GT_EQ, TYP_INT, sizeNode, gtCloneExpr(profiledValueNode));
+        GenTreeQmark* qmark = gtNewQmarkNode(TYP_I_IMPL, cond, colon);
+
+        // QMARK has to be a root node.
+        unsigned tmp = lvaGrabTemp(true DEBUGARG("Grabbing temp for Qmark"));
+        impStoreToTemp(tmp, qmark, CHECK_SPILL_ALL);
+        return gtNewLclvNode(tmp, qmark->TypeGet());
+    }
+
+    // Instrumenting LCLHEAP for value profile.
+    if (opts.IsInstrumented() && !compIsForInlining())
+    {
+        JITDUMP("\n ... marking [%06u] in " FMT_BB " for value profile instrumentation\n", dspTreeID(lclHeap),
+                compCurBB->bbNum);
+        compCurBB->SetFlags(BBF_HAS_VALUE_PROFILE);
+    }
+
+    return lclHeap;
+}
+
 #ifdef DEBUG
 //
 var_types Compiler::impImportJitTestLabelMark(int numArgs)
@@ -7149,6 +7235,58 @@ void Compiler::addFatPointerCandidate(GenTreeCall* call)
     call->SetFatPointerCandidate();
     SpillRetExprHelper helper(this);
     helper.StoreRetExprResultsInArgs(call);
+}
+
+//------------------------------------------------------------------------
+// pickProfiledValue: Use profile information to pick a value candidate for the given IL offset.
+//
+// Arguments:
+//    ilOffset    - exact IL offset of the call
+//    pLikelihood - [out] likelihood of the picked value
+//    pValue      - [out] the picked value
+//
+// Return Value:
+//    true if a value was picked, false otherwise
+//
+bool Compiler::pickProfiledValue(IL_OFFSET ilOffset, uint32_t* pLikelihood, ssize_t* pValue)
+{
+#if DEBUG
+    const unsigned MaxLikelyValues = 8;
+#else
+    const unsigned MaxLikelyValues = 1;
+#endif
+
+    LikelyValueRecord likelyValues[MaxLikelyValues];
+    UINT32 valuesCount = getLikelyValues(likelyValues, MaxLikelyValues, fgPgoSchema, fgPgoSchemaCount, fgPgoData,
+                                         static_cast<int>(ilOffset));
+
+    LikelyValueRecord likelyValue = likelyValues[0];
+#if DEBUG
+    JITDUMP("%u likely values:\n", valuesCount);
+    for (UINT32 i = 0; i < valuesCount; i++)
+    {
+        JITDUMP("  %u) %u - %u%%\n", i, likelyValues[i].value, likelyValues[i].likelihood)
+    }
+
+    // Re-use JitRandomGuardedDevirtualization for stress-testing.
+    if (JitConfig.JitRandomGuardedDevirtualization() != 0)
+    {
+        CLRRandom* random = impInlineRoot()->m_inlineStrategy->GetRandom(JitConfig.JitRandomGuardedDevirtualization());
+
+        valuesCount            = 1;
+        likelyValue.value      = random->Next(256);
+        likelyValue.likelihood = 100;
+    }
+#endif
+
+    if (valuesCount < 1)
+    {
+        return false;
+    }
+
+    *pValue      = likelyValue.value;
+    *pLikelihood = likelyValue.likelihood;
+    return true;
 }
 
 //------------------------------------------------------------------------

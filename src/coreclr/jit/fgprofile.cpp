@@ -1894,6 +1894,64 @@ public:
 };
 
 //------------------------------------------------------------------------
+// IsValueHistogramProbeCandidate: Determine if a node is a value-histogram
+//   probe candidate, and report the IL offset and operand to profile.
+//
+// Arguments:
+//    compiler      - the compiler instance
+//    node          - the node to inspect
+//    ilOffset      - [out, optional] IL offset associated with the candidate
+//    operandUseRef - [out, optional] pointer to the operand use (for instrumentation)
+//
+// Return Value:
+//    true if the node is a value-histogram probe candidate.
+//
+// Notes:
+//    Centralized so the visitor/schema-builder/instrument-inserter all agree on
+//    which trees are value-probe candidates and where their profiled operand
+//    lives. To extend value profiling to a new node kind, add a case here.
+//
+static bool IsValueHistogramProbeCandidate(Compiler*  compiler,
+                                           GenTree*   node,
+                                           IL_OFFSET* ilOffset      = nullptr,
+                                           GenTree*** operandUseRef = nullptr)
+{
+    if (node->OperIs(GT_LCLHEAP))
+    {
+        if (ilOffset != nullptr)
+        {
+            *ilOffset = node->AsOpWithILOffset()->GetILOffset();
+        }
+        if (operandUseRef != nullptr)
+        {
+            *operandUseRef = &node->AsOp()->gtOp1;
+        }
+        return true;
+    }
+
+    if (node->IsCall() && node->AsCall()->IsSpecialIntrinsic())
+    {
+        const NamedIntrinsic ni = compiler->lookupNamedIntrinsic(node->AsCall()->gtCallMethHnd);
+        if ((ni == NI_System_SpanHelpers_Memmove) || (ni == NI_System_SpanHelpers_SequenceEqual))
+        {
+            if (ilOffset != nullptr)
+            {
+                assert(node->AsCall()->gtHandleHistogramProfileCandidateInfo != nullptr);
+                *ilOffset = node->AsCall()->gtHandleHistogramProfileCandidateInfo->ilOffset;
+            }
+            if (operandUseRef != nullptr)
+            {
+                // Memmove(dst, src, len) and SequenceEqual(left, right, len) -- profile len.
+                *operandUseRef = &node->AsCall()->gtArgs.GetUserArgByIndex(2)->EarlyNodeRef();
+            }
+            return true;
+        }
+    }
+
+    return false;
+}
+
+//------------------------------------------------------------------------
 // ValueHistogramProbeVisitor: invoke functor on each node requiring a generic value probe
 //
 template <class TFunctor>
@@ -1918,13 +1976,9 @@ public:
     Compiler::fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
     {
         GenTree* const node = *use;
-        if (node->IsCall() && node->AsCall()->IsSpecialIntrinsic())
+        if (IsValueHistogramProbeCandidate(m_compiler, node))
         {
-            const NamedIntrinsic ni = m_compiler->lookupNamedIntrinsic(node->AsCall()->gtCallMethHnd);
-            if ((ni == NI_System_SpanHelpers_Memmove) || (ni == NI_System_SpanHelpers_SequenceEqual))
-            {
-                m_functor(m_compiler, node);
-            }
+            m_functor(m_compiler, node);
         }
         return Compiler::WALK_CONTINUE;
     }
@@ -2009,14 +2063,18 @@ public:
     {
     }
 
-    void operator()(Compiler* compiler, GenTree* call)
+    void operator()(Compiler* compiler, GenTree* tree)
     {
+        IL_OFFSET ilOffset    = 0;
+        bool      isCandidate = IsValueHistogramProbeCandidate(compiler, tree, &ilOffset);
+        assert(isCandidate);
+
         ICorJitInfo::PgoInstrumentationSchema schemaElem = {};
         schemaElem.Count                                 = 1;
         schemaElem.InstrumentationKind                   = compiler->opts.compCollect64BitCounts
                                                                ? ICorJitInfo::PgoInstrumentationKind::ValueHistogramLongCount
                                                                : ICorJitInfo::PgoInstrumentationKind::ValueHistogramIntCount;
-        schemaElem.ILOffset = (int32_t)call->AsCall()->gtHandleHistogramProfileCandidateInfo->ilOffset;
+        schemaElem.ILOffset                              = static_cast<int32_t>(ilOffset);
         m_schema.push_back(schemaElem);
         m_schemaCount++;
 
@@ -2250,12 +2308,13 @@ public:
             return;
         }
 
-        assert(node->AsCall()->IsSpecialIntrinsic(compiler, NI_System_SpanHelpers_Memmove) ||
-               node->AsCall()->IsSpecialIntrinsic(compiler, NI_System_SpanHelpers_SequenceEqual));
+        IL_OFFSET candidateIlOffset = 0;
+        GenTree** operandUseRef     = nullptr;
+        bool      isCandidate = IsValueHistogramProbeCandidate(compiler, node, &candidateIlOffset, &operandUseRef);
+        assert(isCandidate);
 
         const ICorJitInfo::PgoInstrumentationSchema& countEntry = m_schema[*m_currentSchemaIndex];
-        if (countEntry.ILOffset !=
-            static_cast<int32_t>(node->AsCall()->gtHandleHistogramProfileCandidateInfo->ilOffset))
+        if (countEntry.ILOffset != static_cast<int32_t>(candidateIlOffset))
         {
             return;
         }
@@ -2275,9 +2334,8 @@ public:
 
         *m_currentSchemaIndex += 2;
 
-        GenTree** lenArgRef = &node->AsCall()->gtArgs.GetUserArgByIndex(2)->EarlyNodeRef();
-
-        // We have Memmove(dst, src, len) and we want to insert a call to CORINFO_HELP_VALUEPROFILE for the len:
+        // We have either Memmove(dst, src, len)/SequenceEqual(...,len) or LCLHEAP(len) and we want to insert a
+        // call to CORINFO_HELP_VALUEPROFILE for the profiled operand:
         //
         //  \--*  COMMA     long
         //     +--*  CALL help void   CORINFO_HELP_VALUEPROFILE
@@ -2288,17 +2346,22 @@ public:
         //     |  \--*  CNS_INT   long   <hist>
         //     \--*  LCL_VAR   long   tmp
         //
-
         const unsigned lenTmpNum      = compiler->lvaGrabTemp(true DEBUGARG("length histogram profile tmp"));
-        GenTree*       storeLenToTemp = compiler->gtNewTempStore(lenTmpNum, *lenArgRef);
-        GenTree*       lengthLocal    = compiler->gtNewLclvNode(lenTmpNum, genActualType(*lenArgRef));
-        GenTreeOp* lengthNode = compiler->gtNewOperNode(GT_COMMA, lengthLocal->TypeGet(), storeLenToTemp, lengthLocal);
-        GenTree*   histNode   = compiler->gtNewIconNode(reinterpret_cast<ssize_t>(hist), TYP_I_IMPL);
-        unsigned   helper     = is32 ? CORINFO_HELP_VALUEPROFILE32 : CORINFO_HELP_VALUEPROFILE64;
+        GenTree*       storeLenToTemp = compiler->gtNewTempStore(lenTmpNum, *operandUseRef);
+        GenTree*       lengthLocal    = compiler->gtNewLclvNode(lenTmpNum, genActualType(*operandUseRef));
+        GenTree* lengthNode = compiler->gtNewOperNode(GT_COMMA, lengthLocal->TypeGet(), storeLenToTemp, lengthLocal);
+        GenTree* histNode   = compiler->gtNewIconNode(reinterpret_cast<ssize_t>(hist), TYP_I_IMPL);
+        unsigned helper     = is32 ? CORINFO_HELP_VALUEPROFILE32 : CORINFO_HELP_VALUEPROFILE64;
+
+        if (!lengthNode->TypeIs(TYP_I_IMPL))
+        {
+            lengthNode = compiler->gtNewCastNode(TYP_I_IMPL, lengthNode, /* isUnsigned */ false, TYP_I_IMPL);
+        }
+
         GenTreeCall* helperCallNode = compiler->gtNewHelperCallNode(helper, TYP_VOID, lengthNode, histNode);
 
-        *lenArgRef = compiler->gtNewOperNode(GT_COMMA, lengthLocal->TypeGet(), helperCallNode,
-                                             compiler->gtCloneExpr(lengthLocal));
+        *operandUseRef = compiler->gtNewOperNode(GT_COMMA, lengthLocal->TypeGet(), helperCallNode,
+                                                 compiler->gtCloneExpr(lengthLocal));
         m_instrCount++;
     }
 };

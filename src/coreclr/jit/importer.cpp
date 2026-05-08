@@ -10134,10 +10134,11 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                             return;
                         }
 
-                        op1 = gtNewOperNode(GT_LCLHEAP, TYP_I_IMPL, op2);
-                        // We do not model stack overflow from localloc as an exception side effect.
-                        // Obviously, we don't want locallocs to be CSE'd.
-                        op1->gtFlags |= GTF_DONT_CSE;
+                        op1 = gtNewLclHeapNode(op2, opcodeOffs);
+
+                        // PGO value-profiling for non-constant zero-init stackalloc:
+                        // optimize / instrument based on the most likely size.
+                        op1 = impProfileLclHeap(op1, opcodeOffs);
 
                         // Request stack security for this method.
                         setNeedsGSSecurityCookie();

@@ -3249,7 +3249,6 @@ struct GenTreeOp : public GenTreeUnOp
         // Unary operators with optional arguments:
         assert(oper == GT_RETURN || oper == GT_RETFILT || OperIsBlk(oper));
     }
-
     // returns true if we will use the division by constant optimization for this node.
     bool UsesDivideByConstOptimized(Compiler* comp);
 
@@ -3310,6 +3309,49 @@ struct GenTreeOp : public GenTreeUnOp
     GenTreeOp()
         : GenTreeUnOp()
         , gtOp2(nullptr)
+    {
+    }
+#endif
+};
+
+// GenTreeOpWithILOffset - a GenTreeOp that additionally carries an IL offset.
+//
+// Used by JIT phases that need to associate a node with a specific IL offset
+// independently of any debug-info side tables. In particular, it allows
+// non-call value-profile probe candidates (e.g. GT_LCLHEAP) to participate
+// in the same value-histogram instrumentation pipeline as calls without a
+// side hash table.
+//
+struct GenTreeOpWithILOffset : public GenTreeOp
+{
+private:
+    IL_OFFSET gtILOffset;
+
+public:
+    IL_OFFSET GetILOffset() const
+    {
+        return gtILOffset;
+    }
+
+    void SetILOffset(IL_OFFSET ilOffset)
+    {
+        gtILOffset = ilOffset;
+    }
+
+    GenTreeOpWithILOffset(genTreeOps         oper,
+                          var_types          type,
+                          GenTree*           op1,
+                          GenTree*           op2,
+                          IL_OFFSET ilOffset DEBUGARG(bool largeNode = false))
+        : GenTreeOp(oper, type, op1, op2 DEBUGARG(largeNode))
+        , gtILOffset(ilOffset)
+    {
+    }
+
+#if DEBUGGABLE_GENTREE
+    GenTreeOpWithILOffset()
+        : GenTreeOp()
+        , gtILOffset(0)
     {
     }
 #endif
