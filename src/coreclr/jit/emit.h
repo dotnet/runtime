@@ -694,6 +694,9 @@ protected:
         // TODO-LoongArch64: not include SIMD-vector.
         static_assert(INS_count <= 512);
         instruction _idIns : 9;
+#elif defined(TARGET_WASM)
+        static_assert(INS_count <= 512);
+        instruction _idIns : 9;
 #else
         static_assert(INS_count <= 256);
         instruction _idIns : 8;
@@ -2416,6 +2419,76 @@ protected:
         void idImm(unsigned int i)
         {
             imm = i;
+        }
+    };
+
+    struct instrDescV128Const : instrDesc
+    {
+        instrDescV128Const() = delete;
+
+        uint8_t v128Bytes[16];
+
+        void idV128Const(const uint8_t* bytes)
+        {
+            assert(bytes != nullptr);
+            memcpy(v128Bytes, bytes, 16);
+        }
+
+        const uint8_t* idV128Const() const
+        {
+            return v128Bytes;
+        }
+    };
+
+    struct instrDescShuffle : instrDesc
+    {
+        instrDescShuffle() = delete;
+
+        uint8_t shuffleLanes[16];
+
+        void idShuffleLanes(const uint8_t* lanes)
+        {
+            assert(lanes != nullptr);
+            memcpy(shuffleLanes, lanes, 16);
+        }
+
+        const uint8_t* idShuffleLanes() const
+        {
+            return shuffleLanes;
+        }
+    };
+
+    struct instrDescLane : instrDesc
+    {
+        instrDescLane() = delete;
+
+        uint8_t lane;
+
+        void idLaneIdx(uint8_t idx)
+        {
+            lane = idx;
+        }
+
+        uint8_t idLaneIdx() const
+        {
+            return lane;
+        }
+    };
+
+    struct instrDescMemargLane : instrDescCns
+    {
+        instrDescMemargLane() = delete;
+
+        uint8_t lane;
+
+        void idLaneIdx(uint8_t idx)
+        {
+            lane = idx;
+        }
+
+        uint8_t idLaneIdx() const
+        {
+            return lane;
         }
     };
 #endif // TARGET_WASM

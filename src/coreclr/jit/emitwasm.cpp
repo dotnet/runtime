@@ -366,6 +366,89 @@ unsigned int emitter::emitGetValTypeImmImm(const instrDesc* id)
     return static_cast<const instrDescValTypeImm*>(id)->imm;
 }
 
+//------------------------------------------------------------------------
+// Packed SIMD instruction emit functions
+//------------------------------------------------------------------------
+
+//------------------------------------------------------------------------
+// emitIns_V128Const: Emit a v128.const instruction with 16 raw bytes.
+//
+// Arguments:
+//   ins   - instruction (INS_v128_const)
+//   bytes - pointer to 16 bytes of constant data
+//
+void emitter::emitIns_V128Const(instruction ins, const uint8_t* bytes)
+{
+    assert(bytes != nullptr);
+    instrDescV128Const* id = static_cast<instrDescV128Const*>(emitAllocAnyInstr(sizeof(instrDescV128Const), EA_16BYTE));
+    id->idIns(ins);
+    id->idInsFmt(IF_V128_CONST);
+    id->idV128Const(bytes);
+
+    dispIns(id);
+    appendToCurIG(id);
+}
+
+//------------------------------------------------------------------------
+// emitIns_Lane: Emit a SIMD extract/replace lane instruction.
+//
+// Arguments:
+//   ins     - instruction (e.g., INS_i8x16_extract_lane_s)
+//   attr    - emit attribute indicating the lane element size
+//   laneIdx - lane index byte
+//
+void emitter::emitIns_Lane(instruction ins, emitAttr attr, uint8_t laneIdx)
+{
+    instrDescLane* id = static_cast<instrDescLane*>(emitAllocAnyInstr(sizeof(instrDescLane), attr));
+    id->idIns(ins);
+    id->idInsFmt(IF_LANE);
+    id->idLaneIdx(laneIdx);
+
+    dispIns(id);
+    appendToCurIG(id);
+}
+
+//------------------------------------------------------------------------
+// emitIns_MemargLane: Emit a SIMD load/store lane instruction with memarg + lane index.
+//
+// Arguments:
+//   ins     - instruction (e.g., INS_v128_load8_lane)
+//   attr    - emit attribute indicating the memory access size
+//   offset  - memory offset for the memarg
+//   laneIdx - lane index byte
+//
+void emitter::emitIns_MemargLane(instruction ins, emitAttr attr, cnsval_ssize_t offset, uint8_t laneIdx)
+{
+    instrDescMemargLane* id =
+        static_cast<instrDescMemargLane*>(emitAllocAnyInstr(sizeof(instrDescMemargLane), attr));
+    id->idIns(ins);
+    id->idInsFmt(IF_MEMARG_LANE);
+    id->idcCnsVal = offset;
+    id->idLaneIdx(laneIdx);
+
+    dispIns(id);
+    appendToCurIG(id);
+}
+
+//------------------------------------------------------------------------
+// emitIns_Shuffle: Emit an i8x16.shuffle instruction with 16 lane-index bytes.
+//
+// Arguments:
+//   ins         - instruction (INS_i8x16_shuffle)
+//   laneIndices - pointer to 16 lane index bytes
+//
+void emitter::emitIns_Shuffle(instruction ins, const uint8_t* laneIndices)
+{
+    assert(laneIndices != nullptr);
+    instrDescShuffle* id = static_cast<instrDescShuffle*>(emitAllocAnyInstr(sizeof(instrDescShuffle), EA_16BYTE));
+    id->idIns(ins);
+    id->idInsFmt(IF_SHUFFLE);
+    id->idShuffleLanes(laneIndices);
+
+    dispIns(id);
+    appendToCurIG(id);
+}
+
 emitter::insFormat emitter::emitInsFormat(instruction ins)
 {
     static_assert(IF_COUNT < 255);
@@ -432,6 +515,20 @@ size_t emitter::emitSizeOfInsDsc(instrDesc* id) const
     if (id->idIsValTypeImm())
     {
         return sizeof(instrDescValTypeImm);
+    }
+
+    switch (id->idInsFmt())
+    {
+        case IF_V128_CONST:
+            return sizeof(instrDescV128Const);
+        case IF_SHUFFLE:
+            return sizeof(instrDescShuffle);
+        case IF_LANE:
+            return sizeof(instrDescLane);
+        case IF_MEMARG_LANE:
+            return sizeof(instrDescMemargLane);
+        default:
+            break;
     }
 
     return sizeof(instrDesc);
@@ -564,6 +661,23 @@ unsigned emitter::instrDesc::idCodeSize() const
             size += SizeOfULEB128(emitGetInsSC(this)); // control flow stack offset
             break;
         }
+        case IF_V128_CONST:
+            size += 16; // 16 raw bytes for the v128 constant
+            break;
+        case IF_LANE:
+            size += 1; // 1 byte lane index
+            break;
+        case IF_MEMARG_LANE:
+        {
+            uint64_t align = emitGetAlignHintLog2(this);
+            size += SizeOfULEB128(align);
+            size += idIsCnsReloc() ? PADDED_RELOC_SIZE : SizeOfULEB128(emitGetInsSC(this));
+            size += 1; // 1 byte lane index
+            break;
+        }
+        case IF_SHUFFLE:
+            size += 16; // 16 lane-index bytes
+            break;
         default:
             unreached();
     }
@@ -865,6 +979,40 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             assert(endOffset >= (startOffset + PADDED_RELOC_SIZE));
             unsigned const size = endOffset - startOffset - PADDED_RELOC_SIZE;
             dst += emitOutputULEB128Padded(dst, (int64_t)size);
+            break;
+        }
+        case IF_V128_CONST:
+        {
+            dst += emitOutputOpcode(dst, ins);
+            const instrDescV128Const* idConst = static_cast<const instrDescV128Const*>(id);
+            dst += emitRawBytes(dst, idConst->idV128Const(), 16);
+            break;
+        }
+        case IF_LANE:
+        {
+            dst += emitOutputOpcode(dst, ins);
+            const instrDescLane* idLane = static_cast<const instrDescLane*>(id);
+            dst += emitOutputByte(dst, idLane->idLaneIdx());
+            break;
+        }
+        case IF_MEMARG_LANE:
+        {
+            dst += emitOutputOpcode(dst, ins);
+            const instrDescMemargLane* idMemLane = static_cast<const instrDescMemargLane*>(id);
+            uint64_t align  = emitGetAlignHintLog2(id);
+            uint64_t offset = emitGetInsSC(id);
+            assert(align <= UINT32_MAX);
+            assert(align < 64);
+            dst += emitOutputULEB128(dst, align);
+            dst += emitOutputULEB128(dst, offset);
+            dst += emitOutputByte(dst, idMemLane->idLaneIdx());
+            break;
+        }
+        case IF_SHUFFLE:
+        {
+            dst += emitOutputOpcode(dst, ins);
+            const instrDescShuffle* idShuf = static_cast<const instrDescShuffle*>(id);
+            dst += emitRawBytes(dst, idShuf->idShuffleLanes(), 16);
             break;
         }
         default:
