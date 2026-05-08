@@ -421,6 +421,20 @@ public class WasmTemplateTestsBase : BuildTestBase
         }
     }
 
+    /// <summary>
+    /// Replaces the project's wwwroot/main.js with a minimal version that just calls
+    /// runMainAndExit, without any JS interop calls (no setModuleImports / getAssemblyExports).
+    /// This is needed for tests whose managed program does not use JS interop, because on
+    /// CoreCLR-Wasm the trimmer drops System.Runtime.InteropServices.JavaScript when nothing
+    /// roots it, causing the template main.js to fail at startup with
+    /// Arg_TargetInvocationException out of JSHostImplementation.BindAssemblyExports.
+    /// </summary>
+    protected void ReplaceMainJsWithMinimalRunMain()
+    {
+        string mainJsPath = Path.Combine(_projectDir, "wwwroot", "main.js");
+        File.Copy(Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", "icu_main.js"), mainJsPath, overwrite: true);
+    }
+
     protected void UpdateBrowserMainJs(string? targetFramework = null, string runtimeAssetsRelativePath = DefaultRuntimeAssetsRelativePath, bool forwardConsole = false)
     {
         targetFramework ??= DefaultTargetFramework;

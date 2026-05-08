@@ -287,6 +287,10 @@ namespace Wasm.Build.Tests
             ReplaceFile(programRelativePath, Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", "PInvoke", "BuildNative.cs"));
             string cCodeFilename = "simple.c";
             File.Copy(Path.Combine(BuildEnvironment.TestAssetsPath, "native-libs", cCodeFilename), Path.Combine(_projectDir, cCodeFilename));
+            // The BuildNative test program does not use JS interop, so the JS interop assembly
+            // would be linked away by the trimmer (CoreCLR-Wasm) and the template main.js (which
+            // calls getAssemblyExports) would fail at startup.
+            ReplaceMainJsWithMinimalRunMain();
 
             var extraEnvVars = new Dictionary<string, string> {
                 { "LANG", culture },
@@ -382,6 +386,10 @@ namespace Wasm.Build.Tests
             ReplaceFile(Path.Combine("Common", "Program.cs"), Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", "PInvoke", "UnmanagedCallback.cs"));
             string cCodeFilename = "local.c";
             File.Copy(Path.Combine(BuildEnvironment.TestAssetsPath, "native-libs", cCodeFilename), Path.Combine(_projectDir, cCodeFilename));
+            // The UnmanagedCallback test program does not use JS interop, so the JS interop assembly
+            // would be linked away by the trimmer (CoreCLR-Wasm) and the template main.js (which
+            // calls getAssemblyExports) would fail at startup.
+            ReplaceMainJsWithMinimalRunMain();
 
             PublishProject(info, config, new PublishOptions(AOT: aot), isNativeBuild: true);
             RunResult result = await RunForPublishWithWebServer(new BrowserRunOptions(

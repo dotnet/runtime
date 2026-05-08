@@ -32,7 +32,10 @@ namespace Wasm.Build.Tests
                 extraProperties: "<WasmBuildNative>true</WasmBuildNative>");
             
             UpdateBrowserProgramFile();
-            UpdateBrowserMainJs();
+            // The replacement program does not use JS interop, so the JS interop assembly would be
+            // linked away by the trimmer (CoreCLR-Wasm) and the template main.js (which calls
+            // getAssemblyExports) would fail at startup.
+            ReplaceMainJsWithMinimalRunMain();
 
             (string _, string buildOutput) = PublishProject(info, config, isNativeBuild: true);
             await RunForPublishWithWebServer(new BrowserRunOptions(config, ExpectedExitCode: 42));

@@ -39,6 +39,10 @@ namespace Wasm.Build.Tests
             File.Copy(Path.Combine(BuildEnvironment.TestAssetsPath, "native-libs", objectFilename), Path.Combine(_projectDir, objectFilename));
             Utils.DirectoryCopy(Path.Combine(BuildEnvironment.TestAssetsPath, "AppUsingNativeLib"), _projectDir, overwrite: true);
             DeleteFile(Path.Combine(_projectDir, "Common", "Program.cs"));
+            // The AppUsingNativeLib program does not use JS interop, so the JS interop assembly
+            // would be linked away by the trimmer (CoreCLR-Wasm) and the template main.js (which
+            // calls getAssemblyExports) would fail at startup.
+            ReplaceMainJsWithMinimalRunMain();
 
             (string _, string buildOutput) = PublishProject(info, config, new PublishOptions(AOT: aot), isNativeBuild: true);
             RunResult output = await RunForPublishWithWebServer(new BrowserRunOptions(config, TestScenario: "DotnetRun"));
@@ -120,6 +124,10 @@ namespace Wasm.Build.Tests
             Utils.DirectoryCopy(Path.Combine(BuildEnvironment.TestAssetsPath, "AppUsingNativeLib"), _projectDir, overwrite: true);
             DeleteFile(Path.Combine(_projectDir, "Common", "Program.cs"));
             File.Copy(Path.Combine(BuildEnvironment.TestAssetsPath, "native-libs", "native-lib.o"), Path.Combine(_projectDir, "native-lib.o"));
+            // The AppUsingNativeLib program does not use JS interop, so the JS interop assembly
+            // would be linked away by the trimmer (CoreCLR-Wasm) and the template main.js (which
+            // calls getAssemblyExports) would fail at startup.
+            ReplaceMainJsWithMinimalRunMain();
 
             (string _, string buildOutput) = PublishProject(info, config, new PublishOptions(AOT: aot), isNativeBuild: true);
             RunResult output = await RunForPublishWithWebServer(new BrowserRunOptions(config, TestScenario: "DotnetRun", ExpectedExitCode: 0));
