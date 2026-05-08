@@ -2355,6 +2355,8 @@ public:
 
         if (!lengthNode->TypeIs(TYP_I_IMPL))
         {
+            // CORINFO_HELP_VALUEPROFILE always expects nint.
+            assert(genActualType(lengthNode) == TYP_INT);
             lengthNode = compiler->gtNewCastNode(TYP_I_IMPL, lengthNode, /* isUnsigned */ false, TYP_I_IMPL);
         }
 

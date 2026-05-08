@@ -3351,7 +3351,7 @@ public:
 #if DEBUGGABLE_GENTREE
     GenTreeOpWithILOffset()
         : GenTreeOp()
-        , gtILOffset(0)
+        , gtILOffset(BAD_IL_OFFSET)
     {
     }
 #endif

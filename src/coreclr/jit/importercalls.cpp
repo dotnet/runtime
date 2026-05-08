@@ -1836,14 +1836,12 @@ GenTree* Compiler::impProfileLclHeap(GenTree* lclHeap, IL_OFFSET ilOffset)
         // actually be unrolled by Lowering. Skip very small popular values, since the
         // cmp/jne guard plus contained-constant LCLHEAP codegen overhead (stack probe,
         // outgoing-arg-area dance) costs more than the variable-size path saves at this
-        // size. Skip very large values for the symmetric reason: above the unroll
-        // threshold there is no constant-size codegen win to offset the guard.
+        // size. We don't need the upper bound because for constant-sized LCLHEAPs of large size we
+        // emit memzero call which is a lot faster than the loop we would get for variable sized LCLHEAP.
         const ssize_t minValue = (ssize_t)DEFAULT_MAX_LOCALLOC_TO_LOCAL_SIZE;
-        const ssize_t maxValue = (ssize_t)getUnrollThreshold(UnrollKind::Memset);
-        if ((profiledValue <= minValue) || (profiledValue > maxValue))
+        if (profiledValue <= minValue)
         {
-            JITDUMP("Profiled LCLHEAP size %zd is out of range (%zd, %zd] - skipping\n", profiledValue, minValue,
-                    maxValue);
+            JITDUMP("Profiled LCLHEAP size %zd is smaller than %zd - skipping\n", profiledValue, minValue);
             return lclHeap;
         }
         assert(FitsIn<int>(profiledValue));
