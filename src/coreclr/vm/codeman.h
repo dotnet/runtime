@@ -89,8 +89,8 @@ typedef struct
 } EH_CLAUSE_ENUMERATOR;
 class EECodeInfo;
 
-#define ROUND_DOWN_TO_PAGE(x)   ( (size_t) (x)                        & ~(minipal_getpagesize()-1))
-#define ROUND_UP_TO_PAGE(x)     (((size_t) (x) + (minipal_getpagesize()-1)) & ~(minipal_getpagesize()-1))
+#define ROUND_DOWN_TO_PAGE(x)   ( (size_t) (x)                        & ~((size_t)minipal_getpagesize()-1))
+#define ROUND_UP_TO_PAGE(x)     (((size_t) (x) + (minipal_getpagesize()-1)) & ~((size_t)minipal_getpagesize()-1))
 
 
 enum StubCodeBlockKind : int
