@@ -2,8 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include "stdafx.h"
-#include "dbgtransportmanager.h"
 #include "dbgtransportsession.h"
+#include "dbgtransportmanager.h"
 
 #ifdef FEATURE_DBGIPC_TRANSPORT_DI
 

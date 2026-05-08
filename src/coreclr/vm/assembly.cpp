@@ -1917,6 +1917,7 @@ void Assembly::EnsureLoadLevel(FileLoadLevel targetLevel)
     RETURN;
 }
 
+#include <optdefault.h>
 CHECK Assembly::CheckLoadLevel(FileLoadLevel requiredLevel, BOOL deadlockOK)
 {
     CONTRACTL
