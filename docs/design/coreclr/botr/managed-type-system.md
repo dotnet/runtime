@@ -35,7 +35,7 @@ While [metadata](metadata-overview.md) (such as the file formats described in th
 
 The type system provides access to most of the underlying metadata, but abstracts the way it was obtained. This allows types and members that are backed by metadata in other formats, or not backed at all, to be representable within the same type system context.
 
-A notable example of members with no backed metadata are the methods on array types. For instance, an `int[]` array has methods such as `Get(int)`, `Set(int, int)`, `Address(int)`, and a constructor — none of which appear in any assembly's metadata tables. Instead, these methods are synthesized by the type system based on the array's element type and rank. Similarly, constructed generic instantiations like `List<int>` have no dedicated metadata — only the open definition `List<T>` exists in the metadata, and the type system constructs the instantiated type on demand.
+A notable example of members with no backed metadata are the methods on array types. For instance, an array of integers has methods such as `Get(int)`, `Set(int, int)`, `Address(int)`, and a constructor — none of which appear in any assembly's metadata tables. Instead, these methods are synthesized by the type system.
 
 ## Type system class hierarchy
 
@@ -81,7 +81,7 @@ Note for readers familiar with the .NET reflection type system: while the .NET r
 
 Signature variables represent variables that can be substituted by other types within the system. They differ from generic parameters (because e.g. they don't have constraints or variance). They are simply placeholders to be replaced by other types as part of a process called instantiation. Signature variables have an index that refers to a position within the instantiation context.
 
-Consider a class `Foo<T>` that has a method `Bar<U>(T x, U y)`. In the type system, `T` and `U` are GenericParameters — they carry a name, constraints, and variance. However, when IL references this method in a signature, it uses positional placeholders instead: `T` becomes `!0` (a SignatureTypeVariable meaning "the first type argument of the enclosing type") and `U` becomes `!!0` (a SignatureMethodVariable meaning "the first type argument of the method"). These signature variables carry nothing but their index and are replaced with concrete types during instantiation.
+Consider a class `Foo<T>` that has a method `Bar<U>(T x, U y)`. When IL references this method in a signature,`T` becomes `!0` (a SignatureTypeVariable meaning "the first type argument of the enclosing type") and `U` becomes `!!0` (a SignatureMethodVariable meaning "the first type argument of the method").
 
 ## Other type system classes
 
@@ -89,9 +89,30 @@ Each use of a type system starts with creating a type system context. A type sys
 
 The type system contexts all share the same base (`TypeSystemContext`), but each configures different pluggable algorithms, loads assemblies differently, and may support different synthetic types. For example, the NativeAOT compiler context and the ReadyToRun (crossgen2) compiler context use different field layout algorithms — NativeAOT has full control over type layouts since it produces the final binary, while ReadyToRun must match the layout decisions that the CoreCLR runtime will make at load time.
 
-Other important classes within the type system are a `MethodDesc` (represents a method within the type system) and `FieldDesc` (represents a field within the type system). Similar to `TypeDesc`, `MethodDesc` follows the same extensible hierarchy pattern and represents all methods in the type system, including methods not backed by metadata. Some of its subclasses include `EcmaMethod` (methods read from ECMA-335 metadata), `ArrayMethod` (synthesized array methods), `InstantiatedMethod` (generic method instantiations like `Foo<int>`), and `ILStubMethod` (compiler-generated stubs for scenarios like P/Invoke marshalling).
+Similar to `TypeDesc` hierarchy mentioned some sections above, `MethodDesc` follows the same extensible hierarchy pattern and represents all methods in the type system. Some of its subclasses include `EcmaMethod` (methods that read from ECMA-335 metadata), `ArrayMethod` (synthesized array methods), `InstantiatedMethod` (generic method instantiations like `Foo<int>`), and `ILStubMethod` (compiler-generated stubs for scenarios like p/invoke marshalling).
 
 A `ModuleDesc` describes a single module which can optionally implement `IAssemblyDesc` interface if the module is an assembly. `ModuleDesc` is typically the owner of the type/method/field definitions within the module. It's the responsibility of the `ModuleDesc` to maintain the reference identity of those.
+
+## Accessing ECMA-335 metadata
+
+While the type system classes backed by ECMA-335 metadata (`EcmaMethod`, `EcmaType`, `EcmaField`) expose commonly needed information through their properties, compiler code frequently needs to access metadata that the type system doesn't project — custom attributes, parameter details, generic constraints, and so on. To achieve that, there is the following pattern:
+
+```csharp
+// Example for an EcmaMethod method. This pattern is used for other Ecma types as well.
+MetadataReader reader = method.MetadataReader;
+MethodDefinitionHandle methodHandle = method.Handle;
+MethodDefinition methodDef = reader.GetMethodDefinition(methodHandle);
+```
+
+Each step in this pattern serves a distinct purpose.
+
+`MetadataReader` is the cursor over the metadata tables of a single module/assembly. It holds a pointer to the underlying metadata blob. Every `EcmaModule` carries one `MetadataReader`, and the `Ecma*` type system classes expose it through a property.
+
+A handle (such as `MethodDefinitionHandle`, `TypeDefinitionHandle`, or `FieldDefinitionHandle`) is just a 4-byte value that identifies a specific row but carries no data on its own. To get information you must combine it with a `MetadataReader`. The `Ecma*` type system classes expose their handle through the `Handle` property.
+
+A definition struct (such as `MethodDefinition`, `TypeDefinition`, or `FieldDefinition`) is a decoded view of a single metadata table row. After passing the handle to the reader, the resulting struct provides access to the row's columns. Everything a definition struct returns (attributes, name, signature, etc.) is either a primitive, a flags enum, or another handle that must be decoded through the same reader.
+
+This lazy, zero-allocation pattern is what allows the `Ecma*` types to remain thin wrappers that decode metadata on demand rather than caching it eagerly.
 
 ## Pluggable algorithms
 
