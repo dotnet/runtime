@@ -40,6 +40,11 @@ public:
 
             RegOptional = 0x04, // Set on a node if it produces a value, but does not
                                 // require a register (i.e. it can be used from memory).
+
+#ifdef TARGET_WASM
+            MultiplyUsed = 0x08, // Set by lowering on nodes that the RA should allocate into
+                                 // a dedicated register (WASM local), for multiple uses.
+#endif                           // TARGET_WASM
         };
     };
 
@@ -283,6 +288,20 @@ public:
 
         void InsertAtBeginning(Range&& range);
         void InsertAtEnd(Range&& range);
+
+        template <typename... Trees>
+        void InsertAtBeginning(GenTree* tree, Trees&&... rest)
+        {
+            InsertAtBeginning(std::forward<Trees>(rest)...);
+            InsertAtBeginning(tree);
+        }
+
+        template <typename... Trees>
+        void InsertAtEnd(GenTree* tree, Trees&&... rest)
+        {
+            InsertAtEnd(tree);
+            InsertAtEnd(std::forward<Trees>(rest)...);
+        }
 
         void  Remove(GenTree* node, bool markOperandsUnused = false);
         Range Remove(GenTree* firstNode, GenTree* lastNode);

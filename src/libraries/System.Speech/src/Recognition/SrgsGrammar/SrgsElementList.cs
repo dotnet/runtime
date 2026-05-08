@@ -13,7 +13,7 @@ namespace System.Speech.Recognition.SrgsGrammar
 
         protected override void InsertItem(int index, SrgsElement element)
         {
-            Helpers.ThrowIfNull(element, nameof(element));
+            ArgumentNullException.ThrowIfNull(element);
 
             base.InsertItem(index, element);
         }

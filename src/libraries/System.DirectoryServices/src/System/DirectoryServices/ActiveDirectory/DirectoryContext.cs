@@ -121,10 +121,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 throw new InvalidEnumArgumentException(nameof(contextType), (int)contextType, typeof(DirectoryContextType));
             }
 
-            if (name == null)
-            {
-                throw new ArgumentNullException(nameof(name));
-            }
+            ArgumentNullException.ThrowIfNull(name);
 
             if (name.Length == 0)
             {
@@ -155,10 +152,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 throw new InvalidEnumArgumentException(nameof(contextType), (int)contextType, typeof(DirectoryContextType));
             }
 
-            if (name == null)
-            {
-                throw new ArgumentNullException(nameof(name));
-            }
+            ArgumentNullException.ThrowIfNull(name);
 
             if (name.Length == 0)
             {

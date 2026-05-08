@@ -16,7 +16,7 @@ namespace System.Formats.Asn1.Tests.Writer
             Assert.Equal(expectedHex, encoded.ByteArrayToHex());
             Assert.Equal(expectedSize, encoded.Length);
 
-#if NET9_0_OR_GREATER
+#if NET
             string hexEncoded = writer.Encode(Convert.ToHexString);
             Assert.Equal(expectedHex, hexEncoded);
 
@@ -26,6 +26,11 @@ namespace System.Formats.Asn1.Tests.Writer
                 return Convert.ToHexString(encoded);
             });
             Assert.Equal(expectedHex, hexEncoded);
+
+            writer.Encode(state, (object callbackState, ReadOnlySpan<byte> encoded) => {
+                Assert.Same(state, callbackState);
+                Assert.Equal(expectedHex, Convert.ToHexString(encoded));
+            });
 #endif
 
             // Now verify TryEncode's boundary conditions.

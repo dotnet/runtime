@@ -120,10 +120,7 @@ namespace System.Dynamic.Utils
                         newArgs[j] = arguments[j];
                     }
                 }
-                if (newArgs != null)
-                {
-                    newArgs[i] = arg;
-                }
+                newArgs?[i] = arg;
             }
             if (newArgs != null)
             {

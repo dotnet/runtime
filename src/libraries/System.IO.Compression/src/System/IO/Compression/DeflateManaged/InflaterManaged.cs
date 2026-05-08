@@ -615,10 +615,8 @@ namespace System.IO.Compression
                                     throw new InvalidDataException();
                                 }
 
-                                for (int j = 0; j < repeatCount; j++)
-                                {
-                                    _codeList[_loopCounter++] = previousCode;
-                                }
+                                _codeList.AsSpan(_loopCounter, repeatCount).Fill(previousCode);
+                                _loopCounter += repeatCount;
                             }
                             else if (_lengthCode == 17)
                             {
@@ -635,10 +633,8 @@ namespace System.IO.Compression
                                     throw new InvalidDataException();
                                 }
 
-                                for (int j = 0; j < repeatCount; j++)
-                                {
-                                    _codeList[_loopCounter++] = 0;
-                                }
+                                _codeList.AsSpan(_loopCounter, repeatCount).Clear();
+                                _loopCounter += repeatCount;
                             }
                             else
                             {
@@ -656,10 +652,8 @@ namespace System.IO.Compression
                                     throw new InvalidDataException();
                                 }
 
-                                for (int j = 0; j < repeatCount; j++)
-                                {
-                                    _codeList[_loopCounter++] = 0;
-                                }
+                                _codeList.AsSpan(_loopCounter, repeatCount).Clear();
+                                _loopCounter += repeatCount;
                             }
                         }
                         _state = InflaterState.ReadingTreeCodesBefore; // we want to read the next code.

@@ -22,40 +22,13 @@ namespace System.Net.Test.Common
             public static readonly Uri RemoteEchoHeadersServer = new Uri("ws://" + Host + "/" + EchoHeadersHandler);
             public static readonly Uri SecureRemoteEchoHeadersServer = new Uri("wss://" + SecureHost + "/" + EchoHeadersHandler);
 
-            public static object[][] GetEchoServers()
-            {
-                if (PlatformDetection.IsFirefox)
-                {
-                    // https://github.com/dotnet/runtime/issues/101115
-                    return new object[][] {
-                        // [ActiveIssue("https://github.com/dotnet/runtime/issues/110578)]
-                        // new object[] { RemoteEchoServer },
+            public static Uri[] GetEchoServers() => PlatformDetection.IsFirefox
+                ? [ RemoteEchoServer ] // https://github.com/dotnet/runtime/issues/101115
+                : [ RemoteEchoServer, SecureRemoteEchoServer ];
 
-                    };
-                }
-                return new object[][] {
-                    // [ActiveIssue("https://github.com/dotnet/runtime/issues/110578)]
-                    // new object[] { RemoteEchoServer },
-                    new object[] { SecureRemoteEchoServer },
-                };
-            }
-
-            public static object[][] GetEchoHeadersServers()
-            {
-                if (PlatformDetection.IsFirefox)
-                {
-                    // https://github.com/dotnet/runtime/issues/101115
-                    return new object[][] {
-                        // [ActiveIssue("https://github.com/dotnet/runtime/issues/110578)]
-                        // new object[] { RemoteEchoHeadersServer },
-                    };
-                }
-                return new object[][] {
-                    // [ActiveIssue("https://github.com/dotnet/runtime/issues/110578)]
-                    // new object[] { RemoteEchoHeadersServer },
-                    new object[] { SecureRemoteEchoHeadersServer },
-                };
-            }
+            public static Uri[] GetEchoHeadersServers() => PlatformDetection.IsFirefox
+                ? [ RemoteEchoHeadersServer ] // https://github.com/dotnet/runtime/issues/101115
+                : [ RemoteEchoHeadersServer, SecureRemoteEchoHeadersServer ];
         }
     }
 }

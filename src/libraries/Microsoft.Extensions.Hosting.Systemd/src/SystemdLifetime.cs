@@ -31,10 +31,10 @@ namespace Microsoft.Extensions.Hosting.Systemd
         /// <param name="loggerFactory">The <see cref="ILoggerFactory"/> used to instantiate the lifetime logger.</param>
         public SystemdLifetime(IHostEnvironment environment, IHostApplicationLifetime applicationLifetime, ISystemdNotifier systemdNotifier, ILoggerFactory loggerFactory)
         {
-            ThrowHelper.ThrowIfNull(environment);
-            ThrowHelper.ThrowIfNull(applicationLifetime);
-            ThrowHelper.ThrowIfNull(systemdNotifier);
-            ThrowHelper.ThrowIfNull(loggerFactory);
+            ArgumentNullException.ThrowIfNull(environment);
+            ArgumentNullException.ThrowIfNull(applicationLifetime);
+            ArgumentNullException.ThrowIfNull(systemdNotifier);
+            ArgumentNullException.ThrowIfNull(loggerFactory);
 
             Environment = environment;
             ApplicationLifetime = applicationLifetime;
@@ -92,8 +92,11 @@ namespace Microsoft.Extensions.Hosting.Systemd
 
         private void OnApplicationStarted()
         {
-            Logger.LogInformation("Application started. Hosting environment: {EnvironmentName}; Content root path: {ContentRoot}",
-                Environment.EnvironmentName, Environment.ContentRootPath);
+            if (Logger.IsEnabled(LogLevel.Information))
+            {
+                Logger.LogInformation("Application started. Hosting environment: {EnvironmentName}; Content root path: {ContentRoot}",
+                    Environment.EnvironmentName, Environment.ContentRootPath);
+            }
 
             SystemdNotifier.Notify(ServiceState.Ready);
         }

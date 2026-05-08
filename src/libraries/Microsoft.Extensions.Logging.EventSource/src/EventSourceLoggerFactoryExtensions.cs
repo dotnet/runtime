@@ -24,7 +24,7 @@ namespace Microsoft.Extensions.Logging
         [Obsolete("This method is retained only for compatibility. The recommended alternative is AddEventSourceLogger(this ILoggingBuilder builder).", error: true)]
         public static ILoggerFactory AddEventSourceLogger(this ILoggerFactory factory)
         {
-            ThrowHelper.ThrowIfNull(factory);
+            ArgumentNullException.ThrowIfNull(factory);
 
             factory.AddProvider(new EventSourceLoggerProvider(LoggingEventSource.Instance));
 
@@ -36,9 +36,15 @@ namespace Microsoft.Extensions.Logging
         /// </summary>
         /// <param name="builder">The extension method argument.</param>
         /// <returns>The <see cref="ILoggingBuilder"/> so that additional calls can be chained.</returns>
+        /// <remarks>
+        /// The <see cref="EventSourceLoggerProvider"/> does not cache logger instances. A new logger instance
+        /// is created for each call to <see cref="ILoggerProvider.CreateLogger(string)"/>. Consumers should
+        /// cache loggers obtained from <see cref="ILoggerFactory"/> if the same category name will be used
+        /// multiple times.
+        /// </remarks>
         public static ILoggingBuilder AddEventSourceLogger(this ILoggingBuilder builder)
         {
-            ThrowHelper.ThrowIfNull(builder);
+            ArgumentNullException.ThrowIfNull(builder);
 
             builder.Services.TryAddSingleton(LoggingEventSource.Instance);
             builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<ILoggerProvider, EventSourceLoggerProvider>());

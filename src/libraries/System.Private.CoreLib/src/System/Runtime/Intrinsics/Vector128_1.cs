@@ -342,11 +342,11 @@ namespace System.Runtime.Intrinsics
         {
             if (typeof(T) == typeof(float))
             {
-                return vector ^ Vector128.Create(-0.0f).As<float, T>();
+                return vector ^ Vector128<float>.NegativeZero.As<float, T>();
             }
             else if (typeof(T) == typeof(double))
             {
-                return vector ^ Vector128.Create(-0.0).As<double, T>();
+                return vector ^ Vector128<double>.NegativeZero.As<double, T>();
             }
             else
             {

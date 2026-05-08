@@ -1671,7 +1671,7 @@ RedimAndExit:
                     NumberFormat = NumberFormat & "." & New String("0"c, NumDigitsAfterDecimal)
                 End If
 
-                If System.String.CompareOrdinal("$", nfi.CurrencySymbol) <> 0 Then
+                If Not System.String.Equals("$", nfi.CurrencySymbol, System.StringComparison.Ordinal) Then
                     'Replace the '$' sign with the locale specific symbol
                     'Note, the currency symbol in the FormatString is surrounded by the literal symbol ', e.g. '$'
                     'We do this to guard against the case where the currency symbol is the literal symbol \  This was causing problems on Japanese
@@ -1748,7 +1748,7 @@ RedimAndExit:
             End If
 
             FormatString = "n;" & NumberNegativeFormatStrings(NumberNegativePattern)
-            If System.String.CompareOrdinal("-", nfi.NegativeSign) <> 0 Then
+            If Not System.String.Equals("-", nfi.NegativeSign, System.StringComparison.Ordinal) Then
                 'Replace the "-" sign with the actual locale-specific symbol (escaped with quotes).
                 '  Note: there appears to be no performance benefit in using a StringBuilder over simple concats.
                 FormatString = FormatString.Replace("-", """" & nfi.NegativeSign & """")

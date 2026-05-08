@@ -3,44 +3,44 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.OnReferenceType
 {
-	[SetupLinkerDescriptorFile ("UnusedExplicitInterfaceHasMethodPreservedViaXml.xml")]
-	public class UnusedExplicitInterfaceHasMethodPreservedViaXml
-	{
-		public static void Main ()
-		{
-			IFoo i = new A ();
-			i.Foo ();
-		}
+    [SetupLinkerDescriptorFile("UnusedExplicitInterfaceHasMethodPreservedViaXml.xml")]
+    public class UnusedExplicitInterfaceHasMethodPreservedViaXml
+    {
+        public static void Main()
+        {
+            IFoo i = new A();
+            i.Foo();
+        }
 
-		[Kept]
-		interface IFoo
-		{
-			[Kept]
-			void Foo ();
-		}
+        [Kept]
+        interface IFoo
+        {
+            [Kept]
+            void Foo();
+        }
 
-		[Kept]
-		interface IBar
-		{
-			[Kept]
-			void Bar ();
-		}
+        [Kept]
+        interface IBar
+        {
+            [Kept]
+            void Bar();
+        }
 
-		[Kept]
-		[KeptMember (".ctor()")]
-		[KeptInterface (typeof (IFoo))]
-		[KeptInterface (typeof (IBar))]
-		class A : IBar, IFoo
-		{
-			[Kept]
-			void IFoo.Foo ()
-			{
-			}
+        [Kept]
+        [KeptMember(".ctor()")]
+        [KeptInterface(typeof(IFoo))]
+        [KeptInterface(typeof(IBar))]
+        class A : IBar, IFoo
+        {
+            [Kept]
+            void IFoo.Foo()
+            {
+            }
 
-			[Kept]
-			void IBar.Bar ()
-			{
-			}
-		}
-	}
+            [Kept]
+            void IBar.Bar()
+            {
+            }
+        }
+    }
 }

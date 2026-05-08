@@ -15,8 +15,8 @@ struct FakeEEJitManager
 {
     LPVOID      __VFN_table;
     LPVOID      m_runtimeSupport;
-    LPVOID      m_pCodeHeap;
-    // Nothing after this point matters: we only need the correct offset of m_pCodeHeap.
+    LPVOID      m_pAllCodeHeaps;
+    // Nothing after this point matters: we only need the correct offset of m_pAllCodeHeaps.
 };
 
 struct FakeHeapList
@@ -30,13 +30,13 @@ struct FakeHeapList
     size_t              maxCodeHeapSize;
     size_t              reserveForJumpStubs;
     DWORD_PTR           pLoaderAllocator;
-#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
+#if defined(TARGET_64BIT)
     DWORD_PTR           CLRPersonalityRoutine;
 #endif
 
     DWORD_PTR GetModuleBase()
     {
-#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
+#if defined(TARGET_64BIT)
         return CLRPersonalityRoutine;
 #else
         return mapBase;
@@ -74,9 +74,9 @@ typedef struct _FakeHpCodeHdr
 //
 class CheckDuplicatedStructLayouts
 {
-#define CHECK_OFFSET(cls, fld) CPP_ASSERT(cls##fld, offsetof(Fake##cls, fld) == offsetof(cls, fld))
+#define CHECK_OFFSET(cls, fld) static_assert(offsetof(Fake##cls, fld) == offsetof(cls, fld))
 
-    CHECK_OFFSET(EEJitManager, m_pCodeHeap);
+    CHECK_OFFSET(EEJitManager, m_pAllCodeHeaps);
 
     CHECK_OFFSET(HeapList, hpNext);
     CHECK_OFFSET(HeapList, startAddress);
@@ -94,8 +94,6 @@ class CheckDuplicatedStructLayouts
 
 #else // CHECK_DUPLICATED_STRUCT_LAYOUTS
 
-BOOL WINAPI             DllMain(HINSTANCE hDLL, DWORD dwReason, LPVOID pReserved);
-//NTSTATUS                OutOfProcessFindHeader(HANDLE hProcess, DWORD_PTR pMapIn, DWORD_PTR addr, DWORD_PTR &codeHead);
 extern "C" NTSTATUS     OutOfProcessFunctionTableCallback(IN HANDLE hProcess, IN PVOID TableAddress, OUT PULONG pnEntries, OUT PT_RUNTIME_FUNCTION* ppFunctions);
 
 

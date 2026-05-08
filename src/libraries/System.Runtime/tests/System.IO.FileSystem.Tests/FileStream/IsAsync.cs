@@ -15,7 +15,7 @@ namespace System.IO.Tests
         {
             using (FileStream fs = new FileStream(GetTestFilePath(), FileMode.Create, FileAccess.ReadWrite, FileShare.Read, 4096, true))
             {
-                Assert.True(fs.IsAsync);
+                Assert.Equal(IsAsyncIoSupportedForRegularFiles, fs.IsAsync);
             }
 
             using (FileStream fs = new FileStream(GetTestFilePath(), FileMode.Create, FileAccess.ReadWrite, FileShare.Read, 4096, false))
@@ -29,7 +29,7 @@ namespace System.IO.Tests
         {
             using (FileStream fs = new FileStream(GetTestFilePath(), FileMode.Create, FileAccess.ReadWrite, FileShare.Read, 4096, FileOptions.Asynchronous))
             {
-                Assert.True(fs.IsAsync);
+                Assert.Equal(IsAsyncIoSupportedForRegularFiles, fs.IsAsync);
             }
 
             using (FileStream fs = new FileStream(GetTestFilePath(), FileMode.Create, FileAccess.ReadWrite, FileShare.Read, 4096, FileOptions.None))
@@ -44,7 +44,7 @@ namespace System.IO.Tests
             using (FileStream fs = new FileStream(GetTestFilePath(), FileMode.Create, FileAccess.ReadWrite, FileShare.Read, 4096, true))
             using (FileStream fsh = new FileStream(fs.SafeFileHandle, FileAccess.ReadWrite))
             {
-                Assert.True(fsh.IsAsync);
+                Assert.Equal(IsAsyncIoSupportedForRegularFiles, fsh.IsAsync);
             }
 
             using (FileStream fs = new FileStream(GetTestFilePath(), FileMode.Create, FileAccess.ReadWrite, FileShare.Read, 4096, false))

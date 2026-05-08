@@ -34,8 +34,8 @@ enum GCRefKind : unsigned char
 
 #if defined(TARGET_X86)
 // Verify that we can use bitwise shifts to convert from GCRefKind to PInvokeTransitionFrameFlags and back
-C_ASSERT(PTFF_RAX_IS_GCREF == ((uint64_t)GCRK_Object << 16));
-C_ASSERT(PTFF_RAX_IS_BYREF == ((uint64_t)GCRK_Byref << 16));
+static_assert(PTFF_RAX_IS_GCREF == ((uint64_t)GCRK_Object << 16));
+static_assert(PTFF_RAX_IS_BYREF == ((uint64_t)GCRK_Byref << 16));
 
 inline uintptr_t ReturnKindToTransitionFrameFlags(GCRefKind returnKind)
 {
@@ -99,18 +99,16 @@ enum class ClasslibFunctionId
 {
     GetRuntimeException = 0,
     FailFast = 1,
-    UnhandledExceptionHandler = 2,
+    ThreadEntryPoint = 2,
     AppendExceptionStackFrame = 3,
     // unused = 4,
     GetSystemArrayEEType = 5,
     OnFirstChanceException = 6,
     OnUnhandledException = 7,
-    IDynamicCastableIsInterfaceImplemented = 8,
-    IDynamicCastableGetInterfaceImplementation = 9,
-    ObjectiveCMarshalTryGetTaggedMemory = 10,
-    ObjectiveCMarshalGetIsTrackedReferenceCallback = 11,
-    ObjectiveCMarshalGetOnEnteredFinalizerQueueCallback = 12,
-    ObjectiveCMarshalGetUnhandledExceptionPropagationHandler = 13,
+    ObjectiveCMarshalTryGetTaggedMemory = 8,
+    ObjectiveCMarshalGetIsTrackedReferenceCallback = 9,
+    ObjectiveCMarshalGetOnEnteredFinalizerQueueCallback = 10,
+    ObjectiveCMarshalGetUnhandledExceptionPropagationHandler = 11,
 };
 
 enum class AssociatedDataFlags : unsigned char

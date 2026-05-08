@@ -20,7 +20,7 @@ namespace System.Linq
                 return [];
             }
 
-            return IsSizeOptimized ? SizeOptimizedTakeIterator(source, count) : SpeedOptimizedTakeIterator(source, count);
+            return SpeedOptimizedTakeIterator(source, count);
         }
 
         /// <summary>Returns a specified range of contiguous elements from a sequence.</summary>
@@ -68,7 +68,7 @@ namespace System.Linq
                     return [];
                 }
 
-                return IsSizeOptimized ? SizeOptimizedTakeRangeIterator(source, startIndex, endIndex) : SpeedOptimizedTakeRangeIterator(source, startIndex, endIndex);
+                return SpeedOptimizedTakeRangeIterator(source, startIndex, endIndex);
             }
 
             return TakeRangeFromEndIterator(source, isStartIndexFromEnd, startIndex, isEndIndexFromEnd, endIndex);
@@ -94,9 +94,7 @@ namespace System.Linq
 
                 if (startIndex < endIndex)
                 {
-                    IEnumerable<TSource> rangeIterator = IsSizeOptimized
-                        ? SizeOptimizedTakeRangeIterator(source, startIndex, endIndex)
-                        : SpeedOptimizedTakeRangeIterator(source, startIndex, endIndex);
+                    IEnumerable<TSource> rangeIterator = SpeedOptimizedTakeRangeIterator(source, startIndex, endIndex);
                     foreach (TSource element in rangeIterator)
                     {
                         yield return element;

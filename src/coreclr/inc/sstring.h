@@ -572,8 +572,8 @@ private:
     void AppendVPrintf(const CHAR *format, va_list args);
 
 public:
-    BOOL LoadResource(CCompRC::ResourceCategory eCategory, int resourceID);
-    HRESULT LoadResourceAndReturnHR(CCompRC::ResourceCategory eCategory, int resourceID);
+    BOOL LoadResource(int resourceID);
+    HRESULT LoadResourceAndReturnHR(int resourceID);
     BOOL FormatMessage(DWORD dwFlags, LPCVOID lpSource, DWORD dwMessageId, DWORD dwLanguageId,
                        const SString &arg1 = Empty(), const SString &arg2 = Empty(),
                        const SString &arg3 = Empty(), const SString &arg4 = Empty(),
@@ -646,8 +646,6 @@ public:
     // Internal helpers:
 
     static const BYTE s_EmptyBuffer[2];
-
-    static UINT s_ACP;
 
     SPTR_DECL(SString,s_Empty);
 

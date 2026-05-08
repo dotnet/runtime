@@ -76,7 +76,7 @@ namespace System.Reflection.Emit.Tests
             Assert.Equal(FieldAttributes.Public | FieldAttributes.SpecialName | FieldAttributes.RTSpecialName, createdUnderlyingField.Attributes);
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
         [MemberData(nameof(DefineEnum_TestData))]
         public void DefineEnumPersistedAssembly(string name, TypeAttributes visibility, Type underlyingType)
         {
@@ -103,7 +103,7 @@ namespace System.Reflection.Emit.Tests
                 ab.Save(stream);
                 Assembly assemblyFromStream = mlc.LoadFromStream(stream);
                 Type createdEnum = assemblyFromStream.GetType(name);
-                if (createdEnum != null) // null when name = "a\0b\0c" 
+                if (createdEnum != null) // null when name = "a\0b\0c"
                 {
                     Assert.True(createdEnum.IsEnum);
                     Assert.Equal(Helpers.GetFullName(name), createdEnum.Name);
@@ -178,7 +178,7 @@ namespace System.Reflection.Emit.Tests
         [InlineData(TypeAttributes.NestedFamORAssem, null)]
         [InlineData(TypeAttributes.NestedPrivate, null)]
         [InlineData(TypeAttributes.NestedPublic, null)]
-        public void DefineEnum_IncorrectVisibilityAttributes_ThrowsArgumentException(TypeAttributes visibility, string paramName)
+        public void DefineEnum_IncorrectVisibilityAttributes_ThrowsArgumentException(TypeAttributes visibility, string? paramName)
         {
             ModuleBuilder module = Helpers.DynamicModule();
             AssertExtensions.Throws<ArgumentException>(paramName, () => module.DefineEnum("Enum", visibility, typeof(int)));

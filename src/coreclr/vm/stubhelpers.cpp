@@ -21,6 +21,7 @@
 #ifdef FEATURE_COMINTEROP
 #include <oletls.h>
 #include "olecontexthelpers.h"
+#include "olevariant.h"
 #include "runtimecallablewrapper.h"
 #include "comcallablewrapper.h"
 #include "clrtocomcall.h"
@@ -171,6 +172,7 @@ void StubHelpers::Init()
 
 #ifdef FEATURE_COMINTEROP
 
+// Clears FP state on x86 for compatibility with VB6.
 FORCEINLINE static void GetCOMIPFromRCW_ClearFP()
 {
     LIMITED_METHOD_CONTRACT;
@@ -190,42 +192,74 @@ NoNeedToClear:
 #endif // TARGET_X86
 }
 
-FORCEINLINE static SOleTlsData *GetOrCreateOleTlsData()
+FORCEINLINE static SOleTlsData* TryGetOleTlsData()
 {
     LIMITED_METHOD_CONTRACT;
 
-    SOleTlsData *pOleTlsData;
 #ifdef TARGET_X86
     // This saves 1 memory instruction over NtCurretTeb()->ReservedForOle because
     // NtCurrentTeb() reads _TEB.NtTib.Self which is the same as what FS:0 already
     // points to.
-    pOleTlsData = (SOleTlsData *)(ULONG_PTR)__readfsdword(offsetof(TEB, ReservedForOle));
+    return (SOleTlsData*)(ULONG_PTR)__readfsdword(offsetof(TEB, ReservedForOle));
 #else // TARGET_X86
-    pOleTlsData = (SOleTlsData *)NtCurrentTeb()->ReservedForOle;
+    return (SOleTlsData*)ClrTeb::GetOleReservedPtr();
 #endif // TARGET_X86
-    if (pOleTlsData == NULL)
+}
+
+static SOleTlsData* GetOrCreateOleTlsData()
+{
+    CONTRACTL
     {
-        pOleTlsData = (SOleTlsData *)SetupOleContext();
+        NOTHROW;
+        GC_TRIGGERS;
+        MODE_COOPERATIVE;
     }
+    CONTRACT_END;
+
+    SOleTlsData* pOleTlsData = TryGetOleTlsData();
+    if (pOleTlsData == NULL)
+        pOleTlsData = (SOleTlsData*)SetupOleContext();
+
     return pOleTlsData;
 }
 
-FORCEINLINE static IUnknown *GetCOMIPFromRCW_GetIUnknownFromRCWCache(RCW *pRCW, MethodTable * pItfMT)
+FORCEINLINE static void* GetCOMIPFromRCW_GetTarget(IUnknown *pUnk, CLRToCOMCallInfo *pComInfo)
 {
     LIMITED_METHOD_CONTRACT;
 
-    // The code in this helper is the "fast path" that used to be generated directly
-    // to compiled ML stubs. The idea is to aim for an efficient RCW cache hit.
-    SOleTlsData * pOleTlsData = GetOrCreateOleTlsData();
+    LPVOID* lpVtbl = *(LPVOID **)pUnk;
+    LPVOID tgt = lpVtbl[pComInfo->m_cachedComSlot];
+    if (tgt != NULL)
+        GetCOMIPFromRCW_ClearFP();
+
+    return tgt;
+}
+
+FORCEINLINE static IUnknown* GetCOMIPFromRCW_GetTargetFromRCWCache(SOleTlsData* pOleTlsData, RCW* pRCW, CLRToCOMCallInfo* pComInfo, void** ppTarget)
+{
+    LIMITED_METHOD_CONTRACT;
+    _ASSERTE(pOleTlsData != NULL);
+    _ASSERTE(pRCW != NULL);
+    _ASSERTE(pComInfo != NULL);
+    _ASSERTE(ppTarget != NULL);
 
     // test for free-threaded after testing for context match to optimize for apartment-bound objects
     if (pOleTlsData->pCurrentCtx == pRCW->GetWrapperCtxCookie() || pRCW->IsFreeThreaded())
     {
         for (int i = 0; i < INTERFACE_ENTRY_CACHE_SIZE; i++)
         {
-            if (pRCW->m_aInterfaceEntries[i].m_pMT == pItfMT)
+            if (pRCW->m_aInterfaceEntries[i].m_pMT == pComInfo->m_pInterfaceMT)
             {
-                return pRCW->m_aInterfaceEntries[i].m_pUnknown;
+                IUnknown* pUnk = pRCW->m_aInterfaceEntries[i].m_pUnknown;
+                if (pUnk != NULL)
+                {
+                    void* targetMaybe = GetCOMIPFromRCW_GetTarget(pUnk, pComInfo);
+                    if (targetMaybe != NULL)
+                    {
+                        *ppTarget = targetMaybe;
+                        return pUnk;
+                    }
+                }
             }
         }
     }
@@ -233,48 +267,45 @@ FORCEINLINE static IUnknown *GetCOMIPFromRCW_GetIUnknownFromRCWCache(RCW *pRCW, 
     return NULL;
 }
 
-FORCEINLINE static void *GetCOMIPFromRCW_GetTarget(IUnknown *pUnk, CLRToCOMCallInfo *pComInfo)
+FCIMPL1(MethodTable*, StubHelpers::GetComInterfaceFromMethodDesc, MethodDesc* pMD)
 {
-    LIMITED_METHOD_CONTRACT;
-
-    LPVOID *lpVtbl = *(LPVOID **)pUnk;
-    return lpVtbl[pComInfo->m_cachedComSlot];
+    FCALL_CONTRACT;
+    _ASSERTE(pMD != NULL);
+    return CLRToCOMCallInfo::FromMethodDesc(pMD)->m_pInterfaceMT;
 }
+FCIMPLEND
 
 //==================================================================================================================
 // The GetCOMIPFromRCW helper exists in four specialized versions to optimize CLR->COM perf. Please be careful when
 // changing this code as one of these methods is executed as part of every CLR->COM call so every instruction counts.
 //==================================================================================================================
 
-
 #include <optsmallperfcritical.h>
 
-// This helper can handle any CLR->COM call, it supports hosting,
-// and clears FP state on x86 for compatibility with VB6.
-FCIMPL3(IUnknown*, StubHelpers::GetCOMIPFromRCW, Object* pSrcUNSAFE, MethodDesc* pMD, void **ppTarget)
+// This helper can handle any CLR->COM call.
+FCIMPL3(IUnknown*, StubHelpers::GetCOMIPFromRCW, Object* pSrcUNSAFE, MethodDesc* pMD, void** ppTarget)
 {
     CONTRACTL
     {
         FCALL_CHECK;
-        PRECONDITION(pMD->IsCLRToCOMCall() || pMD->IsEEImpl());
+        PRECONDITION(pSrcUNSAFE != NULL);
+        PRECONDITION(pMD != NULL && (pMD->IsCLRToCOMCall() || pMD->IsEEImpl()));
+        PRECONDITION(ppTarget != NULL);
     }
     CONTRACTL_END;
 
+    // See the slow path as well, StubHelpers_GetCOMIPFromRCWSlow. The first part of that
+    // function is identical to this one, but it handles the case where the OLE TLS
+    // data hasn't been created yet.
     OBJECTREF pSrc = ObjectToOBJECTREF(pSrcUNSAFE);
-    CLRToCOMCallInfo *pComInfo = CLRToCOMCallInfo::FromMethodDesc(pMD);
-    RCW *pRCW = pSrc->PassiveGetSyncBlock()->GetInteropInfoNoCreate()->GetRawRCW();
+    CLRToCOMCallInfo* pComInfo = CLRToCOMCallInfo::FromMethodDesc(pMD);
+    RCW* pRCW = pSrc->PassiveGetSyncBlock()->GetInteropInfoNoCreate()->GetRawRCW();
     if (pRCW != NULL)
     {
-        IUnknown * pUnk = GetCOMIPFromRCW_GetIUnknownFromRCWCache(pRCW, pComInfo->m_pInterfaceMT);
-        if (pUnk != NULL)
-        {
-            *ppTarget = GetCOMIPFromRCW_GetTarget(pUnk, pComInfo);
-            if (*ppTarget != NULL)
-            {
-                GetCOMIPFromRCW_ClearFP();
-                return pUnk;
-            }
-        }
+        // This is the "fast path" for compiled ML stubs. The idea is to aim for an efficient RCW cache hit.
+        SOleTlsData* pOleTlsData = TryGetOleTlsData();
+        if (pOleTlsData != NULL)
+            return GetCOMIPFromRCW_GetTargetFromRCWCache(pOleTlsData, pRCW, pComInfo, ppTarget);
     }
     return NULL;
 }
@@ -282,11 +313,12 @@ FCIMPLEND
 
 #include <optdefault.h>
 
-extern "C" IUnknown* QCALLTYPE StubHelpers_GetCOMIPFromRCWSlow(QCall::ObjectHandleOnStack pSrc, MethodDesc* pMD, void** ppTarget)
+extern "C" IUnknown* QCALLTYPE StubHelpers_GetCOMIPFromRCWSlow(QCall::ObjectHandleOnStack pSrc, MethodDesc* pMD, void** ppTarget, BOOL* pfNeedsRelease)
 {
     QCALL_CONTRACT;
     _ASSERTE(pMD != NULL);
     _ASSERTE(ppTarget != NULL);
+    _ASSERTE(pfNeedsRelease != NULL);
 
     IUnknown *pIntf = NULL;
     BEGIN_QCALL;
@@ -296,13 +328,30 @@ extern "C" IUnknown* QCALLTYPE StubHelpers_GetCOMIPFromRCWSlow(QCall::ObjectHand
     OBJECTREF objRef = pSrc.Get();
     GCPROTECT_BEGIN(objRef);
 
-    CLRToCOMCallInfo* pComInfo = CLRToCOMCallInfo::FromMethodDesc(pMD);
-    SafeComHolder<IUnknown> pRetUnk = ComObject::GetComIPFromRCWThrowing(&objRef, pComInfo->m_pInterfaceMT);
-    *ppTarget = GetCOMIPFromRCW_GetTarget(pRetUnk, pComInfo);
-    _ASSERTE(*ppTarget != NULL);
+    *pfNeedsRelease = FALSE;
 
-    GetCOMIPFromRCW_ClearFP();
-    pIntf = pRetUnk.Extract();
+    // This snippet exists to enable OLE TLS data creation that isn't possible on the fast path.
+    // It is practically identical to the StubHelpers::GetCOMIPFromRCW FCALL, but in the event the OLE TLS
+    // data on this thread hasn't occurred yet, we will create it. Since this is the slow path, trying the
+    // cache again isn't a problem.
+    SOleTlsData* pOleTlsData = GetOrCreateOleTlsData(); // Ensure OLE TLS data is created.
+    CLRToCOMCallInfo* pComInfo = CLRToCOMCallInfo::FromMethodDesc(pMD);
+    RCW* pRCW = objRef->PassiveGetSyncBlock()->GetInteropInfoNoCreate()->GetRawRCW();
+    if (pRCW != NULL)
+    {
+        pIntf = GetCOMIPFromRCW_GetTargetFromRCWCache(pOleTlsData, pRCW, pComInfo, ppTarget);
+    }
+
+    if (pIntf == NULL)
+    {
+        // Still not in the cache and we've ensured the OLE TLS data was created.
+        SafeComHolder<IUnknown> pRetUnk = ComObject::GetComIPFromRCWThrowing(&objRef, pComInfo->m_pInterfaceMT);
+        *ppTarget = GetCOMIPFromRCW_GetTarget(pRetUnk, pComInfo);
+        _ASSERTE(*ppTarget != NULL);
+
+        pIntf = pRetUnk.Extract();
+        *pfNeedsRelease = TRUE;
+    }
 
     GCPROTECT_END();
 
@@ -405,6 +454,35 @@ extern "C" void QCALLTYPE InterfaceMarshaler_ConvertToManaged(IUnknown** ppUnk, 
 }
 #include <optdefault.h>
 
+extern "C" void QCALLTYPE InterfaceMarshaler_GetObjectForComCallableWrapperIUnknown(IUnknown* unk, QCall::ObjectHandleOnStack retObject)
+{
+    QCALL_CONTRACT;
+
+    BEGIN_QCALL;
+
+    GCX_COOP();
+
+    retObject.Set(ComCallWrapper::GetWrapperFromIP(unk)->GetObjectRef());
+
+    END_QCALL;
+}
+
+extern "C" void QCALLTYPE InterfaceMarshaler_ValidateComVisibilityForIUnknown(IUnknown* unk)
+{
+    QCALL_CONTRACT;
+
+    BEGIN_QCALL;
+
+    ComMethodTable* pComMT = ComMethodTable::ComMethodTableFromIP(unk);
+
+    if (pComMT->IsIClassX())
+    {
+        pComMT->CheckParentComVisibility();
+    }
+
+    END_QCALL;
+}
+
 #endif // FEATURE_COMINTEROP
 
 FCIMPL0(void, StubHelpers::ClearLastError)
@@ -420,7 +498,7 @@ FCIMPL1(void*, StubHelpers::GetDelegateTarget, DelegateObject *pThisUNSAFE)
     PCODE pEntryPoint = (PCODE)NULL;
 
 #ifdef _DEBUG
-    BEGIN_PRESERVE_LAST_ERROR;
+    PreserveLastErrorHolder preserveLastError;
 #endif
 
     CONTRACTL
@@ -442,36 +520,9 @@ FCIMPL1(void*, StubHelpers::GetDelegateTarget, DelegateObject *pThisUNSAFE)
 
     pEntryPoint = orefThis->GetMethodPtrAux();
 
-#ifdef _DEBUG
-    END_PRESERVE_LAST_ERROR;
-#endif
-
     return (PVOID)pEntryPoint;
 }
 FCIMPLEND
-
-#include <optsmallperfcritical.h>
-FCIMPL2(FC_BOOL_RET, StubHelpers::TryGetStringTrailByte, StringObject* thisRefUNSAFE, UINT8 *pbData)
-{
-    FCALL_CONTRACT;
-
-    STRINGREF thisRef = ObjectToSTRINGREF(thisRefUNSAFE);
-    FC_RETURN_BOOL(thisRef->GetTrailByte(pbData));
-}
-FCIMPLEND
-#include <optdefault.h>
-
-extern "C" void QCALLTYPE StubHelpers_SetStringTrailByte(QCall::StringHandleOnStack str, UINT8 bData)
-{
-    QCALL_CONTRACT;
-
-    BEGIN_QCALL;
-
-    GCX_COOP();
-    str.Get()->SetTrailByte(bData);
-
-    END_QCALL;
-}
 
 extern "C" void QCALLTYPE StubHelpers_ThrowInteropParamException(INT resID, INT paramIdx)
 {
@@ -485,7 +536,7 @@ extern "C" void QCALLTYPE StubHelpers_ThrowInteropParamException(INT resID, INT 
 #ifdef PROFILING_SUPPORTED
 extern "C" void* QCALLTYPE StubHelpers_ProfilerBeginTransitionCallback(MethodDesc* pTargetMD)
 {
-    BEGIN_PRESERVE_LAST_ERROR;
+    PreserveLastErrorHolder preserveLastError;
 
     QCALL_CONTRACT;
 
@@ -495,14 +546,12 @@ extern "C" void* QCALLTYPE StubHelpers_ProfilerBeginTransitionCallback(MethodDes
 
     END_QCALL;
 
-    END_PRESERVE_LAST_ERROR;
-
     return pTargetMD;
 }
 
 extern "C" void QCALLTYPE StubHelpers_ProfilerEndTransitionCallback(MethodDesc* pTargetMD)
 {
-    BEGIN_PRESERVE_LAST_ERROR;
+    PreserveLastErrorHolder preserveLastError;
 
     QCALL_CONTRACT;
 
@@ -511,85 +560,8 @@ extern "C" void QCALLTYPE StubHelpers_ProfilerEndTransitionCallback(MethodDesc* 
     ProfilerUnmanagedToManagedTransitionMD(pTargetMD, COR_PRF_TRANSITION_RETURN);
 
     END_QCALL;
-
-    END_PRESERVE_LAST_ERROR;
 }
 #endif // PROFILING_SUPPORTED
-
-extern "C" void QCALLTYPE StubHelpers_GetHRExceptionObject(HRESULT hr, QCall::ObjectHandleOnStack result)
-{
-    QCALL_CONTRACT;
-
-    BEGIN_QCALL;
-
-    GCX_COOP();
-
-    OBJECTREF oThrowable = NULL;
-    GCPROTECT_BEGIN(oThrowable);
-
-    // GetExceptionForHR uses equivalant logic as COMPlusThrowHR
-    GetExceptionForHR(hr, &oThrowable);
-    result.Set(oThrowable);
-
-    GCPROTECT_END();
-
-    END_QCALL;
-}
-
-#ifdef FEATURE_COMINTEROP
-extern "C" void QCALLTYPE StubHelpers_GetCOMHRExceptionObject(
-    HRESULT hr,
-    MethodDesc* pMD,
-    QCall::ObjectHandleOnStack pThis,
-    QCall::ObjectHandleOnStack result)
-{
-    QCALL_CONTRACT;
-
-    BEGIN_QCALL;
-
-    GCX_COOP();
-
-    struct
-    {
-        OBJECTREF oThrowable;
-        OBJECTREF oref;
-    } gc;
-    gc.oThrowable = NULL;
-    gc.oref = NULL;
-    GCPROTECT_BEGIN(gc);
-
-    IErrorInfo* pErrorInfo = NULL;
-    if (pMD != NULL)
-    {
-        // Retrieve the interface method table.
-        MethodTable* pItfMT = CLRToCOMCallInfo::FromMethodDesc(pMD)->m_pInterfaceMT;
-
-        // get 'this'
-        gc.oref = ObjectToOBJECTREF(pThis.Get());
-
-        // Get IUnknown pointer for this interface on this object
-        IUnknown* pUnk = ComObject::GetComIPFromRCW(&gc.oref, pItfMT);
-        if (pUnk != NULL)
-        {
-            // Check to see if the component supports error information for this interface.
-            IID ItfIID;
-            pItfMT->GetGuid(&ItfIID, TRUE);
-            pErrorInfo = GetSupportedErrorInfo(pUnk, ItfIID);
-
-            DWORD cbRef = SafeRelease(pUnk);
-            LogInteropRelease(pUnk, cbRef, "IUnk to QI for ISupportsErrorInfo");
-        }
-    }
-
-    // GetExceptionForHR will handle lifetime of IErrorInfo.
-    GetExceptionForHR(hr, pErrorInfo, &gc.oThrowable);
-    result.Set(gc.oThrowable);
-
-    GCPROTECT_END();
-
-    END_QCALL;
-}
-#endif // FEATURE_COMINTEROP
 
 extern "C" void QCALLTYPE StubHelpers_MarshalToManagedVaList(va_list va, VARARGS* pArgIterator)
 {
@@ -697,15 +669,6 @@ extern "C" void QCALLTYPE StubHelpers_ValidateByref(void *pByref, MethodDesc *pM
     END_QCALL;
 }
 
-FCIMPL0(void*, StubHelpers::GetStubContext)
-{
-    FCALL_CONTRACT;
-
-    FCUnique(0xa0);
-    UNREACHABLE_MSG_RET("This is a JIT intrinsic!");
-}
-FCIMPLEND
-
 FCIMPL2(void, StubHelpers::LogPinnedArgument, MethodDesc *target, Object *pinnedArg)
 {
     FCALL_CONTRACT;
@@ -750,9 +713,15 @@ extern "C" void QCALLTYPE StubHelpers_MulticastDebuggerTraceHelper(QCall::Object
     END_QCALL;
 }
 
-FCIMPL0(void*, StubHelpers::NextCallReturnAddress)
+extern "C" void QCALLTYPE StubHelpers_CreateLayoutClassMarshalStubs(QCall::TypeHandle th, PCODE* pConvertToUnmanaged, PCODE* pConvertToManaged, PCODE* pFree)
 {
-    FCALL_CONTRACT;
-    UNREACHABLE_MSG("This is a JIT intrinsic!");
+    QCALL_CONTRACT;
+
+    BEGIN_QCALL;
+
+    *pConvertToUnmanaged = PInvoke::CreateLayoutClassMarshalILStub(th.AsTypeHandle().GetMethodTable(), MarshalOperation::ConvertToUnmanaged)->GetMultiCallableAddrOfCode();
+    *pConvertToManaged = PInvoke::CreateLayoutClassMarshalILStub(th.AsTypeHandle().GetMethodTable(), MarshalOperation::ConvertToManaged)->GetMultiCallableAddrOfCode();
+    *pFree = PInvoke::CreateLayoutClassMarshalILStub(th.AsTypeHandle().GetMethodTable(), MarshalOperation::Free)->GetMultiCallableAddrOfCode();
+
+    END_QCALL;
 }
-FCIMPLEND

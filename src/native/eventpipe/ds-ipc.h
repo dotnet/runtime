@@ -33,6 +33,9 @@ void
 ds_ipc_stream_factory_resume_current_port (void);
 
 bool
+ds_ipc_stream_factory_any_listen_ports (void);
+
+bool
 ds_ipc_stream_factory_any_suspended_ports (void);
 
 bool

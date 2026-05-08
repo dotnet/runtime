@@ -1,20 +1,22 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetFrameworkCurrent)</TargetFrameworks>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
-    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetFrameworkMinimum)</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="PerformanceCounterTests.cs" />
-    <Compile Include="PerformanceCounterCategoryTests.cs" />
-    <Compile Include="ValidationTests.cs" Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'" />
-    <Compile Include="CounterSampleTests.cs" />
-    <Compile Include="CounterSampleCalculatorTests.cs" />
-    <Compile Include="CounterCreationDataTests.cs" />
     <Compile Include="CounterCreationDataCollectionTests.cs" />
-    <Compile Include="InstanceDataTests.cs" />
-    <Compile Include="Helpers.cs" />
-    <Compile Include="$(CommonTestPath)System\ShouldNotBeInvokedException.cs" Link="Common\System\ShouldNotBeInvokedException.cs" />
+    <Compile Include="CounterCreationDataTests.cs" />
+    <Compile Include="CounterSampleCalculatorTests.cs" />
+    <Compile Include="CounterSampleTests.cs" />
+    <Compile Include="PerformanceCounterCategoryTests.cs" />
+    <Compile Include="PerformanceCounterTests.cs" />
     <Compile Include="PerformanceDataTests.cs" />
+    <Compile Include="Helpers.cs" />
+    <Compile Include="InstanceDataTests.cs" />
+    <Compile Include="MutexTests.cs" Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'" />
+    <Compile Include="ValidationTests.cs" Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'" />
+    <Compile Include="$(CommonPath)System\Diagnostics\NetFrameworkUtils.cs" Link="Common\System\Diagnostics\NetFrameworkUtils.cs" Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'" />
+    <Compile Include="$(CommonTestPath)System\ShouldNotBeInvokedException.cs" Link="Common\System\ShouldNotBeInvokedException.cs" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="provider.man" CopyToOutputDirectory="Always" />

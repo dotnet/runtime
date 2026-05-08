@@ -326,7 +326,7 @@ namespace System.Text.Json
                     if (propertyName.AsSpan().ContainsSpecialCharacters())
                     {
                         sb.Append(@"['");
-                        sb.Append(propertyName);
+                        sb.AppendEscapedPropertyName(propertyName);
                         sb.Append(@"']");
                     }
                     else
@@ -361,7 +361,7 @@ namespace System.Text.Json
 
                 if (utf8PropertyName != null)
                 {
-                    propertyName = JsonHelpers.Utf8GetString(utf8PropertyName);
+                    propertyName = Encoding.UTF8.GetString(utf8PropertyName);
                 }
 
                 return propertyName;

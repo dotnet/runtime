@@ -36,7 +36,7 @@ namespace System.IO.Tests
             Assert.Throws<ArgumentOutOfRangeException>(() => new MemoryStream(-1));
             if (PlatformDetection.IsNotIntMaxValueArrayIndexSupported)
             {
-                Assert.Throws<OutOfMemoryException>(() => new MemoryStream(int.MaxValue));
+                Assert.Throws<ArgumentOutOfRangeException>(() => new MemoryStream(int.MaxValue));
             }
         }
     }

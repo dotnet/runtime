@@ -9,6 +9,11 @@ using System.Security.Cryptography.Asn1.Pkcs7;
 using System.Security.Cryptography.X509Certificates;
 using Internal.Cryptography;
 
+using NestedSafeContentsStack = System.Collections.Generic.Stack<(
+    System.ReadOnlyMemory<byte> Serialized,
+    System.Security.Cryptography.Pkcs.Pkcs12SafeContentsBag Bag,
+    System.Collections.Generic.List<System.Security.Cryptography.Pkcs.Pkcs12SafeBag> Container)>;
+
 namespace System.Security.Cryptography.Pkcs
 {
 #if BUILDING_PKCS
@@ -27,6 +32,12 @@ namespace System.Security.Cryptography.Pkcs
 
         public Pkcs12SafeContents()
         {
+            ConfidentialityMode = Pkcs12ConfidentialityMode.None;
+        }
+
+        private Pkcs12SafeContents(bool isReadOnly)
+        {
+            IsReadOnly = isReadOnly;
             ConfidentialityMode = Pkcs12ConfidentialityMode.None;
         }
 
@@ -62,10 +73,7 @@ namespace System.Security.Cryptography.Pkcs
 
         public void AddSafeBag(Pkcs12SafeBag safeBag)
         {
-            if (safeBag is null)
-            {
-                throw new ArgumentNullException(nameof(safeBag));
-            }
+            ArgumentNullException.ThrowIfNull(safeBag);
 
             if (IsReadOnly)
                 throw new InvalidOperationException(SR.Cryptography_Pkcs12_SafeContentsIsReadOnly);
@@ -77,10 +85,7 @@ namespace System.Security.Cryptography.Pkcs
 
         public Pkcs12CertBag AddCertificate(X509Certificate2 certificate)
         {
-            if (certificate is null)
-            {
-                throw new ArgumentNullException(nameof(certificate));
-            }
+            ArgumentNullException.ThrowIfNull(certificate);
 
             if (IsReadOnly)
                 throw new InvalidOperationException(SR.Cryptography_Pkcs12_SafeContentsIsReadOnly);
@@ -92,10 +97,7 @@ namespace System.Security.Cryptography.Pkcs
 
         public Pkcs12KeyBag AddKeyUnencrypted(AsymmetricAlgorithm key)
         {
-            if (key is null)
-            {
-                throw new ArgumentNullException(nameof(key));
-            }
+            ArgumentNullException.ThrowIfNull(key);
 
             if (IsReadOnly)
                 throw new InvalidOperationException(SR.Cryptography_Pkcs12_SafeContentsIsReadOnly);
@@ -108,10 +110,7 @@ namespace System.Security.Cryptography.Pkcs
 
         public Pkcs12SafeContentsBag AddNestedContents(Pkcs12SafeContents safeContents)
         {
-            if (safeContents is null)
-            {
-                throw new ArgumentNullException(nameof(safeContents));
-            }
+            ArgumentNullException.ThrowIfNull(safeContents);
 
             if (safeContents.ConfidentialityMode != Pkcs12ConfidentialityMode.None)
                 throw new ArgumentException(SR.Cryptography_Pkcs12_CannotProcessEncryptedSafeContents, nameof(safeContents));
@@ -140,10 +139,7 @@ namespace System.Security.Cryptography.Pkcs
             ReadOnlySpan<byte> passwordBytes,
             PbeParameters pbeParameters)
         {
-            if (key is null)
-            {
-                throw new ArgumentNullException(nameof(key));
-            }
+            ArgumentNullException.ThrowIfNull(key);
 
             if (IsReadOnly)
                 throw new InvalidOperationException(SR.Cryptography_Pkcs12_SafeContentsIsReadOnly);
@@ -171,10 +167,7 @@ namespace System.Security.Cryptography.Pkcs
             ReadOnlySpan<char> password,
             PbeParameters pbeParameters)
         {
-            if (key is null)
-            {
-                throw new ArgumentNullException(nameof(key));
-            }
+            ArgumentNullException.ThrowIfNull(key);
 
             if (IsReadOnly)
                 throw new InvalidOperationException(SR.Cryptography_Pkcs12_SafeContentsIsReadOnly);
@@ -187,10 +180,7 @@ namespace System.Security.Cryptography.Pkcs
 
         public Pkcs12SecretBag AddSecret(Oid secretType, ReadOnlyMemory<byte> secretValue)
         {
-            if (secretType is null)
-            {
-                throw new ArgumentNullException(nameof(secretType));
-            }
+            ArgumentNullException.ThrowIfNull(secretType);
 
             // Read to ensure that there is precisely one legally encoded value.
             PkcsHelpers.EnsureSingleBerValue(secretValue.Span);
@@ -300,12 +290,56 @@ namespace System.Security.Cryptography.Pkcs
 
         private static List<Pkcs12SafeBag> ReadBags(ReadOnlyMemory<byte> serialized)
         {
+            NestedSafeContentsStack pendingContents = new NestedSafeContentsStack();
+            List<Pkcs12SafeBag> result = ReadBagsCore(serialized, pendingContents);
+
+            while (pendingContents.Count > 0)
+            {
+                (ReadOnlyMemory<byte> nestedSerialized, Pkcs12SafeContentsBag bag, List<Pkcs12SafeBag> container) = pendingContents.Pop();
+                bool replace = true;
+
+                try
+                {
+                    Pkcs12SafeContents? target = bag.SafeContents;
+                    Debug.Assert(target is not null);
+                    target._bags = ReadBagsCore(nestedSerialized, pendingContents);
+                    replace = false;
+                }
+                catch (AsnContentException)
+                {
+                }
+                catch (CryptographicException)
+                {
+                }
+
+                if (replace)
+                {
+                    // Replace the deferred bag with an unknown bag, since the contents couldn't be parsed.
+                    Pkcs12SafeBag.UnknownBag unknownBag = new(Oids.Pkcs12SafeContentsBag, nestedSerialized)
+                    {
+                        Attributes = bag.Attributes,
+                    };
+
+                    int idx = container.IndexOf(bag);
+                    Debug.Assert(idx != -1);
+
+                    container[idx] = unknownBag;
+                }
+            }
+
+            return result;
+        }
+
+        private static List<Pkcs12SafeBag> ReadBagsCore(
+            ReadOnlyMemory<byte> serialized,
+            NestedSafeContentsStack pendingSafeContents)
+        {
             List<SafeBagAsn> serializedBags = new List<SafeBagAsn>();
 
             try
             {
-                AsnValueReader reader = new AsnValueReader(serialized.Span, AsnEncodingRules.BER);
-                AsnValueReader sequenceReader = reader.ReadSequence();
+                ValueAsnReader reader = new ValueAsnReader(serialized.Span, AsnEncodingRules.BER);
+                ValueAsnReader sequenceReader = reader.ReadSequence();
 
                 reader.ThrowIfNotEmpty();
                 while (sequenceReader.HasData)
@@ -351,8 +385,14 @@ namespace System.Security.Cryptography.Pkcs
                             bag = Pkcs12SecretBag.DecodeValue(bagValue);
                             break;
                         case Oids.Pkcs12SafeContentsBag:
-                            bag = Pkcs12SafeContentsBag.Decode(bagValue);
+                        {
+                            Pkcs12SafeContents deferredContents = new(isReadOnly: true);
+                            Pkcs12SafeContentsBag nested;
+                            nested = Pkcs12SafeContentsBag.CreateWithDeferredContents(bagValue, deferredContents);
+                            bag = nested;
+                            pendingSafeContents.Push((bagValue, nested, bags));
                             break;
+                        }
                     }
                 }
                 catch (AsnContentException)

@@ -58,6 +58,14 @@ void SetSuperPmiTargetArchitecture(const char* targetArchitecture)
         {
             SetSpmiTargetArchitecture(SPMI_TARGET_ARCHITECTURE_LOONGARCH64);
         }
+        else if (0 == _stricmp(targetArchitecture, "riscv64"))
+        {
+            SetSpmiTargetArchitecture(SPMI_TARGET_ARCHITECTURE_RISCV64);
+        }
+        else if (0 == _stricmp(targetArchitecture, "wasm") || (0 == _stricmp(targetArchitecture, "wasm32")))
+        {
+            SetSpmiTargetArchitecture(SPMI_TARGET_ARCHITECTURE_WASM32);
+        }
         else
         {
             LogError("Illegal target architecture '%s'", targetArchitecture);
@@ -398,7 +406,7 @@ int __cdecl main(int argc, char* argv[])
         loadedCount++;
         const int mcIndex = reader->GetMethodContextIndex();
         MethodContext* mc = nullptr;
-        if (!MethodContext::Initialize(mcIndex, mcb.buff, mcb.size, &mc))
+        if (!MethodContext::Initialize(mcIndex, mcb.buff, mcb.size, /* readCompileResults */ false, &mc))
         {
             return (int)SpmiResult::GeneralFailure;
         }

@@ -464,7 +464,7 @@ namespace System
         public char[] ToCharArray()
         {
             if (Length == 0)
-                return Array.Empty<char>();
+                return [];
 
             char[] chars = new char[Length];
 
@@ -487,7 +487,7 @@ namespace System
             if (length <= 0)
             {
                 ArgumentOutOfRangeException.ThrowIfNegative(length);
-                return Array.Empty<char>();
+                return [];
             }
 
             char[] chars = new char[length];
@@ -525,6 +525,7 @@ namespace System
         public ref readonly char GetPinnableReference() => ref _firstChar;
 
         internal ref char GetRawStringData() => ref _firstChar;
+        internal ref byte GetRawStringDataAsUInt8() => ref Unsafe.As<char, byte>(ref _firstChar);
         internal ref ushort GetRawStringDataAsUInt16() => ref Unsafe.As<char, ushort>(ref _firstChar);
 
         // Helper for encodings so they can talk to our buffer directly

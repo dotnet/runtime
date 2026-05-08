@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
 
@@ -9,6 +10,16 @@ namespace System.Numerics
 {
     public static unsafe partial class Vector
     {
+        /// <summary>Reinterprets a <see cref="Vector2" /> to a new <see cref="Vector3" /> with the new elements zeroed.</summary>
+        /// <param name="value">The vector to reinterpret.</param>
+        /// <returns><paramref name="value" /> reinterpreted to a new <see cref="Vector3" /> with the new elements zeroed.</returns>
+        public static Vector3 AsVector3(this Vector2 value) => value.AsVector128().AsVector3();
+
+        /// <summary>Reinterprets a <see cref="Vector2" /> to a new <see cref="Vector3" /> with the new elements undefined.</summary>
+        /// <param name="value">The vector to reinterpret.</param>
+        /// <returns><paramref name="value" /> reinterpreted to a new <see cref="Vector3" /> with the new elements undefined.</returns>
+        public static Vector3 AsVector3Unsafe(this Vector2 value) => value.AsVector128Unsafe().AsVector3();
+
         /// <summary>Reinterprets a <see cref="Vector2" /> to a new <see cref="Vector4" /> with the new elements zeroed.</summary>
         /// <param name="value">The vector to reinterpret.</param>
         /// <returns><paramref name="value" /> reinterpreted to a new <see cref="Vector4" /> with the new elements zeroed.</returns>

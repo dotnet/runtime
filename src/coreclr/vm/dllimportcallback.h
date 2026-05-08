@@ -4,11 +4,10 @@
 // File: DllImportCallback.h
 //
 
-//
-
-
 #ifndef __dllimportcallback_h__
 #define __dllimportcallback_h__
+
+#ifndef FEATURE_PORTABLE_ENTRYPOINTS
 
 #include "object.h"
 #include "stublink.h"
@@ -36,23 +35,8 @@ typedef DPTR(class UMEntryThunk) PTR_UMEntryThunk;
 class UMThunkMarshInfo
 {
     friend class CheckAsmOffsets;
-
-private:
-    enum
-    {
-        kLoadTimeInited = 0x4c55544d,   //'LUTM'
-        kRunTimeInited  = 0x5255544d,   //'RUTM'
-    };
-
 public:
-    //----------------------------------------------------------
-    // This initializer can be called during load time.
-    // It does not do any ML stub initialization or sigparsing.
-    // The RunTimeInit() must be called subsequently before this
-    // can safely be used.
-    //----------------------------------------------------------
-    VOID LoadTimeInit(MethodDesc* pMD);
-    VOID LoadTimeInit(Signature sig, Module * pModule, MethodDesc * pMD = NULL);
+    ~UMThunkMarshInfo();
 
     //----------------------------------------------------------
     // This initializer finishes the init started by LoadTimeInit.
@@ -62,34 +46,13 @@ public:
     // It can safely be called multiple times and by concurrent
     // threads.
     //----------------------------------------------------------
-    VOID RunTimeInit();
-
-    // Destructor.
-    //----------------------------------------------------------
-    ~UMThunkMarshInfo();
+    virtual PCODE RunTimeInit(bool* pCanSkipPreStub) = 0;
 
     //----------------------------------------------------------
     // Accessor functions
     //----------------------------------------------------------
-    Signature GetSignature()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_sig;
-    }
 
-    Module* GetModule()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_pModule;
-    }
-
-    MethodDesc * GetMethod()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_pMD;
-    }
-
-    PCODE GetExecStubEntryPoint();
+    virtual PCODE GetPreStubEntryPoint() = 0;
 
     BOOL IsCompletelyInited()
     {
@@ -97,22 +60,59 @@ public:
         return (m_pILStub != (PCODE)1);
     }
 
-    static MethodDesc* GetILStubMethodDesc(MethodDesc* pInvokeMD, PInvokeStaticSigInfo* pSigInfo, DWORD dwStubFlags);
-
     static UINT32 GetOffsetOfStub()
     {
         LIMITED_METHOD_CONTRACT;
         return (UINT32)offsetof(UMThunkMarshInfo, m_pILStub);
     }
 
+protected:
+    UMThunkMarshInfo()
+        : m_pILStub((PCODE)1)
+    {
+        LIMITED_METHOD_CONTRACT;
+    }
+
+    PCODE SetILStubEntry(PCODE pILStub)
+    {
+        // Must be the last thing we set!
+        InterlockedCompareExchangeT<PCODE>(&m_pILStub, pILStub, (PCODE)1);
+        return m_pILStub;
+    }
+
+    PCODE GetILStubEntry()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_pILStub;
+    }
+
 private:
     PCODE             m_pILStub;            // IL stub for marshaling
                                             // On non-x86, the managed entrypoint for no-delegate no-marshal signatures
+};
+
+class DelegateUMThunkMarshInfo final : public UMThunkMarshInfo
+{
+public:
+    DelegateUMThunkMarshInfo(MethodDesc* pMD);
+    DelegateUMThunkMarshInfo(Signature sig, Module* pModule, MethodDesc* pMD = NULL);
+
+    static MethodDesc* GetILStubMethodDesc(MethodDesc* pInvokeMD, PInvokeStaticSigInfo* pSigInfo, DWORD dwStubFlags);
+
+    PCODE RunTimeInit(bool* pCanSkipPreStub) override;
+
+    PCODE GetPreStubEntryPoint() override
+    {
+        return TheUMThunkPreStub();
+    };
+
+private:
     MethodDesc *      m_pMD;                // maybe null
     Module *          m_pModule;
     Signature         m_sig;
 };
 
+typedef DPTR(class UMEntryThunkData) PTR_UMEntryThunkData;
 
 //----------------------------------------------------------------------
 // This structure contains the minimal information required to
@@ -123,28 +123,75 @@ private:
 // front end of the thunk. A pointer to the m_code[] byte array is
 // what is actually handed to unmanaged client code.
 //----------------------------------------------------------------------
-class UMEntryThunk
+class UMEntryThunk : private StubPrecode
 {
-    friend class CheckAsmOffsets;
-    friend class NDirectStubLinker;
-    friend class UMEntryThunkFreeList;
+    friend class UMEntryThunkData;
 
-private:
+    static const int Type = PRECODE_UMENTRY_THUNK;
+
+public:
+    PTR_UMEntryThunkData GetData() const
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        return dac_cast<PTR_UMEntryThunkData>(GetSecretParam());
+    }
+};
+
+class UMEntryThunkData
+{
+    friend class UMEntryThunkFreeList;
+    friend class PInvokeStubLinker;
+
+    // The start of the managed code.
+    // if m_pObjectHandle is non-NULL, this field is still set to help with diagnostic of call on collected delegate crashes
+    // but it may not have the correct value.
+    PCODE                   m_pManagedTarget;
+
+#ifdef FEATURE_INTERPRETER
+    // InterpreterPrecode to tailcall if the target is interpreted. This allows TheUMEntryPrestubWorker
+    // stash the hidden argument in a thread static and avoid collision with the hidden argument
+    // used by InterpreterPrecode.
+    Volatile<PCODE>         m_pInterpretedTarget;
+#endif
+
+    // This is used for debugging and profiling.
+    PTR_MethodDesc          m_pMD;
+
+    // Object handle holding "this" reference. May be a strong or weak handle.
+    // Field is NULL for a static method.
+    // Field is (OBJECHANDLE)-1 for collected delegates
+    OBJECTHANDLE            m_pObjectHandle;
+
+    union
+    {
+        // Pointer to the shared structure containing everything else
+        PTR_UMThunkMarshInfo    m_pUMThunkMarshInfo;
+        // Pointer to the next UMEntryThunk in the free list. Used when it is freed.
+        UMEntryThunkData *m_pNextFreeThunk;
+    };
+
+    PTR_UMEntryThunk m_pUMEntryThunk;
+
 #ifdef _DEBUG
     enum
     {
         kLoadTimeInited = 0x4c554554,   //'LUET'
         kRunTimeInited  = 0x52554554,   //'RUET'
     };
+
+    DWORD                   m_state;        // the initialization state
 #endif
 
 public:
-    static UMEntryThunk* CreateUMEntryThunk();
-    static VOID FreeUMEntryThunk(UMEntryThunk* p);
+    static UMEntryThunkData* CreateUMEntryThunk();
+
+    static UMEntryThunkData* CreateUMEntryThunk(LoaderAllocator* pLoaderAllocator, AllocMemTracker* pamTracker);
+
+    static VOID FreeUMEntryThunk(UMEntryThunkData* p);
 
 #ifndef DACCESS_COMPILE
-    VOID LoadTimeInit(UMEntryThunk           *pUMEntryThunkRX,
-                      PCODE                   pManagedTarget,
+    VOID LoadTimeInit(PCODE                   pManagedTarget,
                       OBJECTHANDLE            pObjectHandle,
                       UMThunkMarshInfo       *pUMThunkMarshInfo,
                       MethodDesc             *pMD)
@@ -155,44 +202,87 @@ public:
             GC_NOTRIGGER;
             MODE_ANY;
             PRECONDITION(CheckPointer(pUMThunkMarshInfo));
-            PRECONDITION(pMD != NULL);
         }
         CONTRACTL_END;
 
         m_pManagedTarget = pManagedTarget;
         m_pObjectHandle     = pObjectHandle;
         m_pUMThunkMarshInfo = pUMThunkMarshInfo;
+#ifdef FEATURE_INTERPRETER
+        m_pInterpretedTarget = (PCODE)0;
+#endif
 
-        m_pMD = pMD;    // For debugging and profiling, so they can identify the target
+        m_pMD = pMD;
 
-        m_code.Encode(&pUMEntryThunkRX->m_code, (BYTE*)TheUMThunkPreStub(), pUMEntryThunkRX);
+        m_pUMEntryThunk->SetTargetUnconditional(pUMThunkMarshInfo->GetPreStubEntryPoint());
 
 #ifdef _DEBUG
         m_state = kLoadTimeInited;
 #endif
+
+        FlushCacheForDynamicMappedStub(m_pUMEntryThunk, sizeof(UMEntryThunk));
     }
 
     void Terminate();
 
-    VOID RunTimeInit(UMEntryThunk *pUMEntryThunkRX)
+#ifdef FEATURE_INTERPRETER
+    PCODE GetInterpreterTarget()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_pInterpretedTarget;
+    }
+#endif
+
+    PCODE RunTimeInit(bool* pTargetIsPrecode)
     {
         STANDARD_VM_CONTRACT;
 
         // Ensure method's module is activate in app domain
-        m_pMD->EnsureActive();
+        if (m_pMD != NULL)
+        {
+            m_pMD->EnsureActive();
+        }
 
-        ExecutableWriterHolder<UMThunkMarshInfo> uMThunkMarshInfoWriterHolder(m_pUMThunkMarshInfo, sizeof(UMThunkMarshInfo));
-        uMThunkMarshInfoWriterHolder.GetRW()->RunTimeInit();
+        bool setTarget;
+        PCODE entryPoint = m_pUMThunkMarshInfo->RunTimeInit(&setTarget);
 
         // Ensure that we have either the managed target or the delegate.
-        if (m_pObjectHandle == NULL && m_pManagedTarget == (TADDR)0)
+        if (m_pObjectHandle == NULL && m_pManagedTarget == (TADDR)0 && m_pMD != NULL)
             m_pManagedTarget = m_pMD->GetMultiCallableAddrOfCode();
 
-        m_code.Encode(&pUMEntryThunkRX->m_code, (BYTE*)m_pUMThunkMarshInfo->GetExecStubEntryPoint(), pUMEntryThunkRX);
+#if defined(FEATURE_INTERPRETER)
+        // For interpreted stubs we need to ensure that TheUMEntryPrestubWorker runs for every
+        // unmanaged-to-managed invocation in order to populate the TLS variable every time.
+        auto stubKind = RangeSectionStubManager::GetStubKind(entryPoint);
+        if (stubKind == STUB_CODE_BLOCK_STUBPRECODE)
+        {
+            StubPrecode* pPrecode = Precode::GetPrecodeFromEntryPoint(entryPoint)->AsStubPrecode();
+            if (pPrecode->GetType() == PRECODE_INTERPRETER)
+            {
+                m_pInterpretedTarget = entryPoint;
+                setTarget = false;
+            }
+        }
+#endif // FEATURE_INTERPRETER
+
+        if (setTarget)
+        {
+            m_pUMEntryThunk->SetTargetUnconditional(entryPoint);
+        }
 
 #ifdef _DEBUG
         m_state = kRunTimeInited;
 #endif // _DEBUG
+
+        // If we set the target in the precode,
+        // then we are going to re-execute the call via the precode.
+        // Otherwise, we're going to tail-call directly to the entry point
+        // and the calling code needs to ensure that the secret argument is set up correctly.
+        *pTargetIsPrecode = setTarget;
+
+        // If we set the target in the thunk, then we can re-execute the call directly.
+        // Otherwise we're going to tail-call to the prestub which will then call back into us to get the right target.
+        return setTarget ? GetCode() : entryPoint;
     }
 
     PCODE GetManagedTarget() const
@@ -203,7 +293,6 @@ public:
             GC_TRIGGERS;
             MODE_ANY;
             PRECONDITION(m_state == kRunTimeInited || m_state == kLoadTimeInited);
-            POSTCONDITION(RETVAL != NULL);
         }
         CONTRACT_END;
 
@@ -221,16 +310,17 @@ public:
             // otherwise debugger would fail to step in.
             RETURN orDelegate->GetMethodPtr();
         }
+        else if (m_pManagedTarget != (PCODE)NULL)
+        {
+            RETURN m_pManagedTarget;
+        }
+        else if (m_pMD != NULL)
+        {
+            RETURN m_pMD->GetMultiCallableAddrOfCode();
+        }
         else
         {
-            if (m_pManagedTarget != (TADDR)0)
-            {
-                RETURN m_pManagedTarget;
-            }
-            else
-            {
-                RETURN m_pMD->GetMultiCallableAddrOfCode();
-            }
+            RETURN (PCODE)NULL;
         }
     }
 #endif // !DACCESS_COMPILE
@@ -254,6 +344,13 @@ public:
         RETURN m_pObjectHandle;
     }
 
+    bool IsCollectedDelegate() const
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        return m_pObjectHandle == (OBJECTHANDLE)-1;
+    }
+
     UMThunkMarshInfo* GetUMThunkMarshInfo() const
     {
         CONTRACT (UMThunkMarshInfo*)
@@ -270,28 +367,20 @@ public:
         RETURN m_pUMThunkMarshInfo;
     }
 
-
-    const BYTE* GetCode() const
+    PCODE GetCode() const
     {
-        CONTRACT (const BYTE*)
+        CONTRACT (PCODE)
         {
             NOTHROW;
             GC_NOTRIGGER;
             MODE_ANY;
             PRECONDITION(m_state == kRunTimeInited || m_state == kLoadTimeInited);
-            POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
+            POSTCONDITION(CheckPointer(dac_cast<BYTE*>(RETVAL), NULL_OK));
         }
         CONTRACT_END;
 
-        RETURN m_code.GetEntryPoint();
+        RETURN PINSTRToPCODE(dac_cast<TADDR>(m_pUMEntryThunk));
     }
-
-    static UMEntryThunk* RecoverUMEntryThunk(const VOID* pCode)
-    {
-        LIMITED_METHOD_CONTRACT;
-        return (UMEntryThunk*)( ((LPBYTE)pCode) - offsetof(UMEntryThunk, m_code) );
-    }
-
 
     MethodDesc* GetMethod() const
     {
@@ -307,43 +396,6 @@ public:
 
         RETURN m_pMD;
     }
-
-    static DWORD GetCodeOffset()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return offsetof(UMEntryThunk, m_code);
-    }
-
-    static UMEntryThunk* Decode(LPVOID pCallback);
-
-    static VOID __fastcall ReportViolation(UMEntryThunk* p);
-
-private:
-    // The start of the managed code.
-    // if m_pObjectHandle is non-NULL, this field is still set to help with diagnostic of call on collected delegate crashes
-    // but it may not have the correct value.
-    PCODE                   m_pManagedTarget;
-
-    // This is used for profiling.
-    PTR_MethodDesc          m_pMD;
-
-    // Object handle holding "this" reference. May be a strong or weak handle.
-    // Field is NULL for a static method.
-    OBJECTHANDLE            m_pObjectHandle;
-
-    union
-    {
-        // Pointer to the shared structure containing everything else
-        PTR_UMThunkMarshInfo    m_pUMThunkMarshInfo;
-        // Pointer to the next UMEntryThunk in the free list. Used when it is freed.
-        UMEntryThunk *m_pNextFreeThunk;
-    };
-
-#ifdef _DEBUG
-    DWORD                   m_state;        // the initialization state
-#endif
-
-    UMEntryThunkCode        m_code;
 };
 
 // Cache to hold UMEntryThunk/UMThunkMarshInfo instances associated with MethodDescs.
@@ -354,37 +406,22 @@ public:
     UMEntryThunkCache(AppDomain *pDomain);
     ~UMEntryThunkCache();
 
-    UMEntryThunk *GetUMEntryThunk(MethodDesc *pMD);
+    UMEntryThunkData *GetUMEntryThunk(MethodDesc *pMD);
 
 private:
-    struct CacheElement
-    {
-        CacheElement()
-        {
-            LIMITED_METHOD_CONTRACT;
-            m_pMD = NULL;
-            m_pThunk = NULL;
-        }
-
-        MethodDesc   *m_pMD;
-        UMEntryThunk *m_pThunk;
-    };
-
-    class ThunkSHashTraits : public NoRemoveSHashTraits< DefaultSHashTraits<CacheElement> >
+    class ThunkSHashTraits : public NoRemoveSHashTraits< DefaultSHashTraits<UMEntryThunkData *> >
     {
     public:
         typedef MethodDesc *key_t;
-        static key_t GetKey(element_t e)       { LIMITED_METHOD_CONTRACT; return e.m_pMD; }
+        static key_t GetKey(element_t e)       { LIMITED_METHOD_CONTRACT; return e->GetMethod(); }
         static BOOL Equals(key_t k1, key_t k2) { LIMITED_METHOD_CONTRACT; return (k1 == k2); }
         static count_t Hash(key_t k)           { LIMITED_METHOD_CONTRACT; return (count_t)(size_t)k; }
-        static const element_t Null()          { LIMITED_METHOD_CONTRACT; return CacheElement(); }
-        static bool IsNull(const element_t &e) { LIMITED_METHOD_CONTRACT; return (e.m_pMD == NULL); }
     };
 
     static void DestroyMarshInfo(UMThunkMarshInfo *pMarshInfo)
     {
         WRAPPER_NO_CONTRACT;
-        pMarshInfo->~UMThunkMarshInfo();
+        pMarshInfo->UMThunkMarshInfo::~UMThunkMarshInfo();
     }
 
     SHash<ThunkSHashTraits> m_hash;
@@ -392,15 +429,13 @@ private:
     AppDomain *m_pDomain;
 };
 
-#ifndef FEATURE_EH_FUNCLETS
-EXCEPTION_HANDLER_DECL(FastNExportExceptHandler);
-#endif // FEATURE_EH_FUNCLETS
-
 extern "C" void TheUMEntryPrestub(void);
-extern "C" PCODE TheUMEntryPrestubWorker(UMEntryThunk * pUMEntryThunk);
+extern "C" PCODE TheUMEntryPrestubWorker(UMEntryThunkData * pUMEntryThunk);
 
-#ifdef _DEBUG
-void STDCALL LogUMTransition(UMEntryThunk* thunk);
-#endif
+#if defined(FEATURE_INTERPRETER)
+UMEntryThunkData* GetMostRecentUMEntryThunkData();
+UMEntryThunkData* GetMostRecentUMEntryThunkDataNonDestructive();
+#endif // FEATURE_INTERPRETER
+#endif // !FEATURE_PORTABLE_ENTRYPOINTS
 
 #endif //__dllimportcallback_h__

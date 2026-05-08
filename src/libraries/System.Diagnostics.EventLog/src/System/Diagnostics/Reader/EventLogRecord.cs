@@ -12,17 +12,17 @@ namespace System.Diagnostics.Eventing.Reader
         private readonly EventLogSession _session;
 
         private readonly NativeWrapper.SystemProperties _systemProperties;
-        private string _containerChannel;
-        private int[] _matchedQueryIds;
+        private string? _containerChannel;
+        private int[]? _matchedQueryIds;
 
         // A dummy object which is used only for the locking.
         private readonly object _syncObject;
 
         // Cached DisplayNames for each instance
-        private string _levelName;
-        private string _taskName;
-        private string _opcodeName;
-        private IEnumerable<string> _keywordsNames;
+        private string? _levelName;
+        private string? _taskName;
+        private string? _opcodeName;
+        private IEnumerable<string>? _keywordsNames;
 
         // Cached DisplayNames for each instance
         private bool _levelNameReady;
@@ -55,7 +55,7 @@ namespace System.Diagnostics.Eventing.Reader
 
             lock (_syncObject)
             {
-                if (_systemProperties.filled == false)
+                if (!_systemProperties.filled)
                 {
                     NativeWrapper.EvtRenderBufferWithContextSystem(_session.renderContextHandleSystem, Handle, UnsafeNativeMethods.EvtRenderFlags.EvtRenderEventValues, _systemProperties);
                     _systemProperties.filled = true;
@@ -142,7 +142,7 @@ namespace System.Diagnostics.Eventing.Reader
             get
             {
                 PrepareSystemData();
-                return _systemProperties.ProviderName;
+                return _systemProperties.ProviderName!;
             }
         }
 
@@ -155,7 +155,7 @@ namespace System.Diagnostics.Eventing.Reader
             }
         }
 
-        public override string LogName
+        public override string? LogName
         {
             get
             {
@@ -182,7 +182,7 @@ namespace System.Diagnostics.Eventing.Reader
             }
         }
 
-        public override string MachineName
+        public override string? MachineName
         {
             get
             {
@@ -191,7 +191,7 @@ namespace System.Diagnostics.Eventing.Reader
             }
         }
 
-        public override System.Security.Principal.SecurityIdentifier UserId
+        public override System.Security.Principal.SecurityIdentifier? UserId
         {
             get
             {
@@ -227,7 +227,7 @@ namespace System.Diagnostics.Eventing.Reader
             }
         }
 
-        public string ContainerLog
+        public string? ContainerLog
         {
             get
             {
@@ -235,12 +235,12 @@ namespace System.Diagnostics.Eventing.Reader
                     return _containerChannel;
                 lock (_syncObject)
                 {
-                    return _containerChannel ??= (string)NativeWrapper.EvtGetEventInfo(this.Handle, UnsafeNativeMethods.EvtEventPropertyId.EvtEventPath);
+                    return _containerChannel ??= (string?)NativeWrapper.EvtGetEventInfo(this.Handle, UnsafeNativeMethods.EvtEventPropertyId.EvtEventPath);
                 }
             }
         }
 
-        public IEnumerable<int> MatchedQueryIds
+        public IEnumerable<int>? MatchedQueryIds
         {
             get
             {
@@ -248,7 +248,7 @@ namespace System.Diagnostics.Eventing.Reader
                     return _matchedQueryIds;
                 lock (_syncObject)
                 {
-                    return _matchedQueryIds ??= (int[])NativeWrapper.EvtGetEventInfo(this.Handle, UnsafeNativeMethods.EvtEventPropertyId.EvtEventQueryIDs);
+                    return _matchedQueryIds ??= (int[]?)NativeWrapper.EvtGetEventInfo(this.Handle, UnsafeNativeMethods.EvtEventPropertyId.EvtEventQueryIDs);
                 }
             }
         }
@@ -267,18 +267,18 @@ namespace System.Diagnostics.Eventing.Reader
             }
         }
 
-        public override string FormatDescription()
+        public override string? FormatDescription()
         {
             return _cachedMetadataInformation.GetFormatDescription(this.ProviderName, Handle);
         }
 
-        public override string FormatDescription(IEnumerable<object> values)
+        public override string? FormatDescription(IEnumerable<object>? values)
         {
             if (values == null)
                 return this.FormatDescription();
 
             // Copy the value IEnumerable to an array.
-            string[] theValues = Array.Empty<string>();
+            string?[] theValues = Array.Empty<string>();
             int i = 0;
             foreach (object o in values)
             {
@@ -286,7 +286,7 @@ namespace System.Diagnostics.Eventing.Reader
                     Array.Resize(ref theValues, i + 1);
                 if (o is EventProperty elp)
                 {
-                    theValues[i] = elp.Value.ToString();
+                    theValues[i] = elp.Value?.ToString();
                 }
                 else
                 {
@@ -298,7 +298,7 @@ namespace System.Diagnostics.Eventing.Reader
             return _cachedMetadataInformation.GetFormatDescription(this.ProviderName, Handle, theValues);
         }
 
-        public override string LevelDisplayName
+        public override string? LevelDisplayName
         {
             get
             {
@@ -306,7 +306,7 @@ namespace System.Diagnostics.Eventing.Reader
                     return _levelName;
                 lock (_syncObject)
                 {
-                    if (_levelNameReady == false)
+                    if (!_levelNameReady)
                     {
                         _levelNameReady = true;
                         _levelName = _cachedMetadataInformation.GetLevelDisplayName(this.ProviderName, Handle);
@@ -316,13 +316,13 @@ namespace System.Diagnostics.Eventing.Reader
             }
         }
 
-        public override string OpcodeDisplayName
+        public override string? OpcodeDisplayName
         {
             get
             {
                 lock (_syncObject)
                 {
-                    if (_opcodeNameReady == false)
+                    if (!_opcodeNameReady)
                     {
                         _opcodeNameReady = true;
                         _opcodeName = _cachedMetadataInformation.GetOpcodeDisplayName(this.ProviderName, Handle);
@@ -332,7 +332,7 @@ namespace System.Diagnostics.Eventing.Reader
             }
         }
 
-        public override string TaskDisplayName
+        public override string? TaskDisplayName
         {
             get
             {
@@ -368,9 +368,9 @@ namespace System.Diagnostics.Eventing.Reader
             get
             {
                 _session.SetupUserContext();
-                IList<object> properties = NativeWrapper.EvtRenderBufferWithContextUserOrValues(_session.renderContextHandleUser, Handle);
+                IList<object?> properties = NativeWrapper.EvtRenderBufferWithContextUserOrValues(_session.renderContextHandleUser, Handle);
                 List<EventProperty> list = new List<EventProperty>();
-                foreach (object value in properties)
+                foreach (object? value in properties)
                 {
                     list.Add(new EventProperty(value));
                 }
@@ -378,7 +378,7 @@ namespace System.Diagnostics.Eventing.Reader
             }
         }
 
-        public IList<object> GetPropertyValues(EventLogPropertySelector propertySelector)
+        public IList<object?> GetPropertyValues(EventLogPropertySelector propertySelector)
         {
             ArgumentNullException.ThrowIfNull(propertySelector);
 
@@ -404,7 +404,7 @@ namespace System.Diagnostics.Eventing.Reader
             }
         }
 
-        internal static EventLogHandle GetBookmarkHandleFromBookmark(EventBookmark bookmark)
+        internal static EventLogHandle GetBookmarkHandleFromBookmark(EventBookmark? bookmark)
         {
             if (bookmark == null)
                 return EventLogHandle.Zero;

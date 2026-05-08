@@ -20,7 +20,6 @@ Abstract:
 #define _PAL_THREAD_HPP_
 
 #include "corunix.hpp"
-#include "cs.hpp"
 
 #include <pthread.h>
 #if HAVE_MACH_EXCEPTIONS
@@ -32,16 +31,10 @@ Abstract:
 #include "synchobjects.hpp"
 #include <errno.h>
 #include <minipal/thread.h>
+#include <minipal/mutex.h>
 
 namespace CorUnix
 {
-    enum PalThreadType
-    {
-        UserCreatedThread,
-        PalWorkerThread,
-        SignalHandlerThread
-    };
-
     PAL_ERROR
     InternalCreateThread(
         CPalThread *pThread,
@@ -50,7 +43,6 @@ namespace CorUnix
         LPTHREAD_START_ROUTINE lpStartAddress,
         LPVOID lpParameter,
         DWORD dwCreationFlags,
-        PalThreadType eThreadType,
         SIZE_T* pThreadId,
         HANDLE *phThread
         );
@@ -162,7 +154,6 @@ namespace CorUnix
                 LPTHREAD_START_ROUTINE,
                 LPVOID,
                 DWORD,
-                PalThreadType,
                 SIZE_T*,
                 HANDLE*
                 );
@@ -203,7 +194,7 @@ namespace CorUnix
         CPalThread *m_pNext;
         DWORD m_dwExitCode;
         BOOL m_fExitCodeSet;
-        CRITICAL_SECTION m_csLock;
+        minipal_mutex m_mtxLock;
         bool m_fLockInitialized;
         bool m_fIsDummy;
 
@@ -253,7 +244,6 @@ namespace CorUnix
         BOOL m_bCreateSuspended;
 
         int m_iThreadPriority;
-        PalThreadType m_eThreadType;
 
         //
         // pthread mutex / condition variable for gating thread startup.
@@ -300,7 +290,6 @@ namespace CorUnix
 
         CThreadSynchronizationInfo synchronizationInfo;
         CThreadSuspensionInfo suspensionInfo;
-        CThreadApcInfo apcInfo;
 
         CPalThread()
             :
@@ -322,7 +311,6 @@ namespace CorUnix
             m_lpStartParameter(NULL),
             m_bCreateSuspended(FALSE),
             m_iThreadPriority(THREAD_PRIORITY_NORMAL),
-            m_eThreadType(UserCreatedThread),
             m_fStartItemsInitialized(FALSE),
             m_fStartStatus(FALSE),
             m_fStartStatusSet(FALSE),
@@ -372,7 +360,7 @@ namespace CorUnix
             CPalThread *pThread
             )
         {
-            InternalEnterCriticalSection(pThread, &m_csLock);
+            minipal_mutex_enter(&m_mtxLock);
         };
 
         void
@@ -380,7 +368,7 @@ namespace CorUnix
             CPalThread *pThread
             )
         {
-            InternalLeaveCriticalSection(pThread, &m_csLock);
+            minipal_mutex_leave(&m_mtxLock);
         };
 
         //
@@ -524,14 +512,6 @@ namespace CorUnix
             return m_bCreateSuspended;
         };
 
-        PalThreadType
-        GetThreadType(
-            void
-            )
-        {
-            return m_eThreadType;
-        };
-
         int
         GetThreadPriority(
             void
@@ -572,7 +552,7 @@ namespace CorUnix
             m_pNext = pNext;
         };
 
-#if !HAVE_MACH_EXCEPTIONS
+#if !HAVE_MACH_EXCEPTIONS && HAVE_SIGALTSTACK
         BOOL
         EnsureSignalAlternateStack(
             void

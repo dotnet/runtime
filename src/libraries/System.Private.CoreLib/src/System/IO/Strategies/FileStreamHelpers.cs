@@ -8,10 +8,13 @@ namespace System.IO.Strategies
 {
     internal static partial class FileStreamHelpers
     {
+        internal const FileOptions NoBuffering = (FileOptions)0x20000000;
+        internal const FileOptions BackupOrRestore = (FileOptions)0x02000000;
+
         // NOTE: any change to FileOptions enum needs to be matched here as it's used in the error validation
         private const FileOptions ValidFileOptions = FileOptions.WriteThrough | FileOptions.Asynchronous | FileOptions.RandomAccess
             | FileOptions.DeleteOnClose | FileOptions.SequentialScan | FileOptions.Encrypted
-            | (FileOptions)0x20000000 /* NoBuffering */ | (FileOptions)0x02000000 /* BackupOrRestore */;
+            | NoBuffering | BackupOrRestore;
 
         /// <summary>Caches whether Serialization Guard has been disabled for file writes</summary>
         private static int s_cachedSerializationSwitch;

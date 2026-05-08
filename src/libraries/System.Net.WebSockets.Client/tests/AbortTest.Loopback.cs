@@ -1,10 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections.Generic;
-using System.IO;
-using System.Net.Sockets;
-using System.Net.Test.Common;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
@@ -14,16 +10,38 @@ namespace System.Net.WebSockets.Client.Tests
 {
     [ConditionalClass(typeof(ClientWebSocketTestBase), nameof(WebSocketsSupported))]
     [SkipOnPlatform(TestPlatforms.Browser, "System.Net.Sockets are not supported on browser")]
-    public abstract class AbortTest_Loopback : ClientWebSocketTestBase
+    public abstract class AbortTest_LoopbackBase(ITestOutputHelper output) : AbortTestBase(output)
     {
-        public AbortTest_Loopback(ITestOutputHelper output) : base(output) { }
+        #region Common (Echo Server) tests
 
-        protected virtual Version HttpVersion => Net.HttpVersion.Version11;
+        [Theory, MemberData(nameof(UseSsl))]
+        public Task Abort_ConnectAndAbort_ThrowsWebSocketExceptionWithMessage(bool useSsl) => RunEchoAsync(
+            RunClient_Abort_ConnectAndAbort_ThrowsWebSocketExceptionWithMessage, useSsl);
 
-        public static object[][] AbortClient_MemberData = ToMemberData(Enum.GetValues<AbortType>(), UseSsl_Values, /* verifySendReceive */ Bool_Values);
+        [Theory, MemberData(nameof(UseSsl))]
+        public Task Abort_SendAndAbort_Success(bool useSsl) => RunEchoAsync(
+            RunClient_Abort_SendAndAbort_Success, useSsl);
+
+        [Theory, MemberData(nameof(UseSsl))]
+        public Task Abort_ReceiveAndAbort_Success(bool useSsl) => RunEchoAsync(
+            RunClient_Abort_ReceiveAndAbort_Success, useSsl);
+
+        [Theory, MemberData(nameof(UseSsl))]
+        public Task Abort_CloseAndAbort_Success(bool useSsl) => RunEchoAsync(
+            RunClient_Abort_CloseAndAbort_Success, useSsl);
+
+        [Theory, MemberData(nameof(UseSsl))]
+        public Task ClientWebSocket_Abort_CloseOutputAsync(bool useSsl) => RunEchoAsync(
+            RunClient_ClientWebSocket_Abort_CloseOutputAsync, useSsl);
+
+        #endregion
+
+        #region Loopback-only tests
+
+        public static object[][] AbortTypeAndUseSslAndBoolean = ToMemberData(Enum.GetValues<AbortType>(), UseSsl_Values, Bool_Values);
 
         [Theory]
-        [MemberData(nameof(AbortClient_MemberData))]
+        [MemberData(nameof(AbortTypeAndUseSslAndBoolean))]
         public Task AbortClient_ServerGetsCorrectException(AbortType abortType, bool useSsl, bool verifySendReceive)
         {
             var clientMsg = new byte[] { 1, 2, 3, 4, 5, 6 };
@@ -34,11 +52,13 @@ namespace System.Net.WebSockets.Client.Tests
             var timeoutCts = new CancellationTokenSource(TimeOutMilliseconds);
 
             return LoopbackWebSocketServer.RunAsync(
-                async (clientWebSocket, token) =>
+                async uri =>
                 {
+                    ClientWebSocket clientWebSocket = await GetConnectedWebSocket(uri);
+
                     if (verifySendReceive)
                     {
-                        await VerifySendReceiveAsync(clientWebSocket, clientMsg, serverMsg, clientAckTcs, serverAckTcs.Task, token);
+                        await VerifySendReceiveAsync(clientWebSocket, clientMsg, serverMsg, clientAckTcs, serverAckTcs.Task, timeoutCts.Token);
                     }
 
                     switch (abortType)
@@ -65,14 +85,14 @@ namespace System.Net.WebSockets.Client.Tests
                     Assert.Equal(WebSocketError.ConnectionClosedPrematurely, exception.WebSocketErrorCode);
                     Assert.Equal(WebSocketState.Aborted, serverWebSocket.State);
                 },
-                new LoopbackWebSocketServer.Options(HttpVersion, useSsl, GetInvoker()),
+                new LoopbackWebSocketServer.Options(HttpVersion, useSsl) { DisposeServerWebSocket = true },
                 timeoutCts.Token);
         }
 
-        public static object[][] ServerPrematureEos_MemberData = ToMemberData(Enum.GetValues<ServerEosType>(), UseSsl_Values);
+        public static object[][] ServerEosTypeAndUseSsl = ToMemberData(Enum.GetValues<ServerEosType>(), UseSsl_Values);
 
         [Theory]
-        [MemberData(nameof(ServerPrematureEos_MemberData))]
+        [MemberData(nameof(ServerEosTypeAndUseSsl))]
         public Task ServerPrematureEos_ClientGetsCorrectException(ServerEosType serverEosType, bool useSsl)
         {
             var clientMsg = new byte[] { 1, 2, 3, 4, 5, 6 };
@@ -82,12 +102,6 @@ namespace System.Net.WebSockets.Client.Tests
 
             var timeoutCts = new CancellationTokenSource(TimeOutMilliseconds);
 
-            var globalOptions = new LoopbackWebSocketServer.Options(HttpVersion, useSsl, HttpInvoker: null)
-            {
-                DisposeServerWebSocket = false,
-                ManualServerHandshakeResponse = true
-            };
-
             var serverReceivedEosTcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
             var clientReceivedEosTcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
 
@@ -95,8 +109,7 @@ namespace System.Net.WebSockets.Client.Tests
                 async uri =>
                 {
                     var token = timeoutCts.Token;
-                    var clientOptions = globalOptions with { HttpInvoker = GetInvoker() };
-                    var clientWebSocket = await LoopbackWebSocketServer.GetConnectedClientAsync(uri, clientOptions, token).ConfigureAwait(false);
+                    ClientWebSocket clientWebSocket = await GetConnectedWebSocket(uri);
 
                     if (serverEosType == ServerEosType.AfterSomeData)
                     {
@@ -121,7 +134,7 @@ namespace System.Net.WebSockets.Client.Tests
                         (wsData, ct) =>
                         {
                             var wsOptions = new WebSocketCreationOptions { IsServer = true };
-                            serverWebSocket = WebSocket.CreateFromStream(wsData.WebSocketStream, wsOptions);
+                            serverWebSocket = WebSocket.CreateFromStream(wsData.TransportStream, wsOptions);
 
                             return serverEosType == ServerEosType.AfterSomeData
                                 ? VerifySendReceiveAsync(serverWebSocket, serverMsg, clientMsg, serverAckTcs, clientAckTcs.Task, ct)
@@ -146,12 +159,11 @@ namespace System.Net.WebSockets.Client.Tests
 
                     serverWebSocket.Dispose();
                 },
-                globalOptions,
+                new LoopbackWebSocketServer.Options(HttpVersion, useSsl) { SkipServerHandshakeResponse = true },
                 timeoutCts.Token);
         }
 
-        protected virtual Task SendServerResponseAndEosAsync(WebSocketRequestData requestData, ServerEosType serverEosType, Func<WebSocketRequestData, CancellationToken, Task> serverFunc, CancellationToken cancellationToken)
-            => WebSocketHandshakeHelper.SendHttp11ServerResponseAndEosAsync(requestData, serverFunc, cancellationToken); // override for HTTP/2
+        protected abstract Task SendServerResponseAndEosAsync(WebSocketRequestData data, ServerEosType eos, Func<WebSocketRequestData, CancellationToken, Task> callback, CancellationToken ct);
 
         public enum AbortType
         {
@@ -184,42 +196,51 @@ namespace System.Net.WebSockets.Client.Tests
             await sendTask.ConfigureAwait(false);
             await remoteAck.WaitAsync(cancellationToken).ConfigureAwait(false);
         }
+
+        #endregion
     }
 
-    // --- HTTP/1.1 WebSocket loopback tests ---
-
-    public class AbortTest_Invoker_Loopback : AbortTest_Loopback
+    public abstract class AbortTest_Loopback(ITestOutputHelper output) : AbortTest_LoopbackBase(output)
     {
-        public AbortTest_Invoker_Loopback(ITestOutputHelper output) : base(output) { }
+        protected override Task SendServerResponseAndEosAsync(WebSocketRequestData data, ServerEosType eos, Func<WebSocketRequestData, CancellationToken, Task> callback, CancellationToken ct)
+            => WebSocketHandshakeHelper.SendHttp11ServerResponseAndEosAsync(data, callback, ct);
+    }
+
+    public abstract class AbortTest_Http2Loopback(ITestOutputHelper output) : AbortTest_LoopbackBase(output)
+    {
+        internal override Version HttpVersion => Net.HttpVersion.Version20;
+
+        protected override Task SendServerResponseAndEosAsync(WebSocketRequestData data, ServerEosType eos, Func<WebSocketRequestData, CancellationToken, Task> callback, CancellationToken ct)
+            => WebSocketHandshakeHelper.SendHttp2ServerResponseAndEosAsync(data, eosInHeadersFrame: eos == ServerEosType.WithHeaders, callback, ct);
+    }
+
+    #region Runnable test classes: HTTP/1.1 Loopback
+
+    public sealed class AbortTest_SharedHandler_Loopback(ITestOutputHelper output) : AbortTest_Loopback(output) { }
+
+    public sealed class AbortTest_Invoker_Loopback(ITestOutputHelper output) : AbortTest_Loopback(output)
+    {
         protected override bool UseCustomInvoker => true;
     }
 
-    public class AbortTest_HttpClient_Loopback : AbortTest_Loopback
+    public sealed class AbortTest_HttpClient_Loopback(ITestOutputHelper output) : AbortTest_Loopback(output)
     {
-        public AbortTest_HttpClient_Loopback(ITestOutputHelper output) : base(output) { }
         protected override bool UseHttpClient => true;
     }
 
-    public class AbortTest_SharedHandler_Loopback : AbortTest_Loopback
+    #endregion
+
+    #region Runnable test classes: HTTP/2 Loopback
+
+    public sealed class AbortTest_Invoker_Http2Loopback(ITestOutputHelper output) : AbortTest_Http2Loopback(output)
     {
-        public AbortTest_SharedHandler_Loopback(ITestOutputHelper output) : base(output) { }
+        protected override bool UseCustomInvoker => true;
     }
 
-    // --- HTTP/2 WebSocket loopback tests ---
-
-    public class AbortTest_Invoker_Http2 : AbortTest_Invoker_Loopback
+    public sealed class AbortTest_HttpClient_Http2Loopback(ITestOutputHelper output) : AbortTest_Http2Loopback(output)
     {
-        public AbortTest_Invoker_Http2(ITestOutputHelper output) : base(output) { }
-        protected override Version HttpVersion => Net.HttpVersion.Version20;
-        protected override Task SendServerResponseAndEosAsync(WebSocketRequestData rd, ServerEosType eos, Func<WebSocketRequestData, CancellationToken, Task> callback, CancellationToken ct)
-            => WebSocketHandshakeHelper.SendHttp2ServerResponseAndEosAsync(rd, eosInHeadersFrame: eos == ServerEosType.WithHeaders, callback, ct);
+        protected override bool UseHttpClient => true;
     }
 
-    public class AbortTest_HttpClient_Http2 : AbortTest_HttpClient_Loopback
-    {
-        public AbortTest_HttpClient_Http2(ITestOutputHelper output) : base(output) { }
-        protected override Version HttpVersion => Net.HttpVersion.Version20;
-        protected override Task SendServerResponseAndEosAsync(WebSocketRequestData rd, ServerEosType eos, Func<WebSocketRequestData, CancellationToken, Task> callback, CancellationToken ct)
-            => WebSocketHandshakeHelper.SendHttp2ServerResponseAndEosAsync(rd, eosInHeadersFrame: eos == ServerEosType.WithHeaders, callback, ct);
-    }
+    #endregion
 }

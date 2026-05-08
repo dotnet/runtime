@@ -15,7 +15,8 @@ namespace System.Net.Security
 {
     public partial class SslStream
     {
-        private readonly SslAuthenticationOptions _sslAuthenticationOptions = new SslAuthenticationOptions();
+        internal readonly SslAuthenticationOptions _sslAuthenticationOptions = new SslAuthenticationOptions();
+        internal new Stream InnerStream => base.InnerStream;
         private NestedState _nestedAuth;
         private bool _isRenego;
 
@@ -295,6 +296,30 @@ namespace System.Net.Security
             }
             try
             {
+#if TARGET_APPLE
+                if (SslStreamPal.ShouldUseAsyncSecurityContext(_sslAuthenticationOptions))
+                {
+                    Debug.Assert(_sslAuthenticationOptions.IsClient);
+                    byte[]? dummy = null;
+                    AcquireClientCredentials(ref dummy, true);
+
+                    Task<Exception?> handshakeTask = SslStreamPal.AsyncHandshakeAsync(ref _securityContext, this, cancellationToken);
+                    await TIOAdapter.WaitAsync(handshakeTask).ConfigureAwait(false);
+                    if (await handshakeTask.ConfigureAwait(false) is Exception ex)
+                    {
+                        if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, ex, "Async handshake failed");
+                        if (ex is ArgumentException or IOException)
+                        {
+                            throw ex;
+                        }
+                        throw new AuthenticationException(SR.net_auth_SSPI, ex);
+                    }
+
+                    CompleteHandshake(_sslAuthenticationOptions);
+                    return;
+                }
+#endif // TARGET_APPLE
+
                 if (!receiveFirst)
                 {
                     token = NextMessage(reAuthenticationData, out int consumed);
@@ -481,6 +506,21 @@ namespace System.Net.Security
 
             }
 
+            // Per TLS spec, the first message from the client must be ClientHello.
+            // If we are the server and haven't started the security context yet
+            // (_securityContext == null), reject any frame that is not a ClientHello.
+            if (_sslAuthenticationOptions!.IsServer && _securityContext == null)
+            {
+#pragma warning disable CS0618
+                bool isClientHello = _lastFrame.Header.Type == TlsContentType.Handshake &&
+                    _buffer.EncryptedReadOnlySpan[_lastFrame.Header.Version == SslProtocols.Ssl2 ? HandshakeTypeOffsetSsl2 : HandshakeTypeOffsetTls] == (byte)TlsHandshakeType.ClientHello;
+#pragma warning restore CS0618
+                if (!isClientHello)
+                {
+                    throw new AuthenticationException(SR.net_ssl_io_frame);
+                }
+            }
+
             return frameSize;
         }
 
@@ -576,11 +616,35 @@ namespace System.Net.Security
             }
 #endif
 
-            if (!VerifyRemoteCertificate(_sslAuthenticationOptions.CertValidationDelegate, _sslAuthenticationOptions.CertificateContext?.Trust, ref alertToken, out sslPolicyErrors, out chainStatus))
+#pragma warning disable CS0162 // unreachable code on some platforms
+            if (!SslStreamPal.CertValidationInCallback)
             {
-                _handshakeCompleted = false;
-                return false;
+                if (!VerifyRemoteCertificate(_sslAuthenticationOptions.CertificateContext?.Trust, ref alertToken, out sslPolicyErrors, out chainStatus))
+                {
+                    _handshakeCompleted = false;
+                    return false;
+                }
             }
+            else if (_remoteCertificate is null)
+            {
+                // CertVerifyCallback was not called during the handshake. This happens when:
+                // 1. The session was resumed — the cert is available from the SSL handle
+                //    but OpenSSL skips the verify callback.
+                // 2. The peer didn't provide a certificate at all.
+                // In both cases, run VerifyRemoteCertificate to invoke the user's callback
+                // and perform full validation.
+                if (!VerifyRemoteCertificate(_sslAuthenticationOptions.CertificateContext?.Trust, ref alertToken, out sslPolicyErrors, out chainStatus))
+                {
+                    _handshakeCompleted = false;
+                    return false;
+                }
+            }
+            else
+            {
+                sslPolicyErrors = SslPolicyErrors.None;
+                chainStatus = X509ChainStatusFlags.NoError;
+            }
+#pragma warning restore CS0162 // unreachable code on some platforms
 
             _handshakeCompleted = true;
             return true;
@@ -591,21 +655,26 @@ namespace System.Net.Security
             ProtocolToken alertToken = default;
             if (!CompleteHandshake(ref alertToken, out SslPolicyErrors sslPolicyErrors, out X509ChainStatusFlags chainStatus))
             {
-                if (sslAuthenticationOptions!.CertValidationDelegate != null)
-                {
-                    // there may be some chain errors but the decision was made by custom callback. Details should be tracing if enabled.
-                    SendAuthResetSignal(new ReadOnlySpan<byte>(alertToken.Payload), ExceptionDispatchInfo.Capture(new AuthenticationException(SR.net_ssl_io_cert_custom_validation, null)));
-                }
-                else if (sslPolicyErrors == SslPolicyErrors.RemoteCertificateChainErrors && chainStatus != X509ChainStatusFlags.NoError)
-                {
-                    // We failed only because of chain and we have some insight.
-                    SendAuthResetSignal(new ReadOnlySpan<byte>(alertToken.Payload), ExceptionDispatchInfo.Capture(new AuthenticationException(SR.Format(SR.net_ssl_io_cert_chain_validation, chainStatus), null)));
-                }
-                else
-                {
-                    // Simple add sslPolicyErrors as crude info.
-                    SendAuthResetSignal(new ReadOnlySpan<byte>(alertToken.Payload), ExceptionDispatchInfo.Capture(new AuthenticationException(SR.Format(SR.net_ssl_io_cert_validation, sslPolicyErrors), null)));
-                }
+                SendAuthResetSignal(new ReadOnlySpan<byte>(alertToken.Payload), ExceptionDispatchInfo.Capture(CreateCertificateValidationException(sslAuthenticationOptions, sslPolicyErrors, chainStatus)));
+            }
+        }
+
+        internal static Exception CreateCertificateValidationException(SslAuthenticationOptions options, SslPolicyErrors sslPolicyErrors, X509ChainStatusFlags chainStatus)
+        {
+            if (options.CertValidationDelegate != null)
+            {
+                // there may be some chain errors but the decision was made by custom callback. Details should be tracing if enabled.
+                return ExceptionDispatchInfo.SetCurrentStackTrace(new AuthenticationException(SR.net_ssl_io_cert_custom_validation, null));
+            }
+            else if (sslPolicyErrors == SslPolicyErrors.RemoteCertificateChainErrors && chainStatus != X509ChainStatusFlags.NoError)
+            {
+                // We failed only because of chain and we have some insight.
+                return ExceptionDispatchInfo.SetCurrentStackTrace(new AuthenticationException(SR.Format(SR.net_ssl_io_cert_chain_validation, chainStatus), null));
+            }
+            else
+            {
+                // Simple add sslPolicyErrors as crude info.
+                return ExceptionDispatchInfo.SetCurrentStackTrace(new AuthenticationException(SR.Format(SR.net_ssl_io_cert_validation, sslPolicyErrors), null));
             }
         }
 
@@ -820,7 +889,6 @@ namespace System.Net.Security
         private async ValueTask<int> ReadAsyncInternal<TIOAdapter>(Memory<byte> buffer, CancellationToken cancellationToken)
             where TIOAdapter : IReadWriteAdapter
         {
-
             // Throw first if we already have exception.
             // Check for disposal is not atomic so we will check again below.
             ThrowIfExceptionalOrNotAuthenticated();
@@ -833,6 +901,15 @@ namespace System.Net.Security
 
             try
             {
+
+#if TARGET_APPLE
+                if (SslStreamPal.IsAsyncSecurityContext(_securityContext!))
+                {
+                    ValueTask<int> task = SslStreamPal.AsyncReadAsync(_securityContext!, buffer, cancellationToken);
+                    return await TIOAdapter.WaitAsync(task).ConfigureAwait(false);
+                }
+#endif // TARGET_APPLE
+
                 int processedLength = 0;
                 int nextTlsFrameLength = UnknownTlsFrameLength;
 
@@ -974,6 +1051,15 @@ namespace System.Net.Security
 
             try
             {
+#if TARGET_APPLE
+                if (SslStreamPal.IsAsyncSecurityContext(_securityContext!))
+                {
+                    Task task = SslStreamPal.AsyncWriteAsync(_securityContext!, buffer, cancellationToken);
+                    await TIOAdapter.WaitAsync(task).ConfigureAwait(false);
+                    return;
+                }
+#endif // TARGET_APPLE
+
                 ValueTask t = buffer.Length < MaxDataSize ?
                     WriteSingleChunk<TIOAdapter>(buffer, cancellationToken) :
                     WriteAsyncChunked<TIOAdapter>(buffer, cancellationToken);

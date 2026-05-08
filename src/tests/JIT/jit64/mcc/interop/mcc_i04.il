@@ -5,11 +5,10 @@
 .assembly extern System.Runtime.Extensions { auto }
 .assembly extern xunit.core {}
 .assembly extern mscorlib { auto }
+.assembly extern TestLibrary { .ver 0:0:0:0 }
+.assembly extern Microsoft.DotNet.XUnitExtensions { .publickeytoken = (31 BF 38 56 AD 36 4E 35 ) }
 
-.assembly 'mcc_i04' {}
-
-
-.namespace MCCTest
+.namespace mcc_i04
 {
   .class public MyClass
   {
@@ -19,10 +18,21 @@
 
     .method public static int32 Main()
     {
-      .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
           01 00 00 00
       )
-      .entrypoint
+      .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.PlatformSpecificAttribute::.ctor(valuetype [Microsoft.DotNet.XUnitExtensions]Xunit.TestPlatforms) = {
+            int32 (1) // TestPlatforms.Windows
+        }
+      .maxstack  1
+
+    DoTest:
+      call       int32 mcc_i04.MyClass::Test()
+      ret
+    }
+
+    .method public static int32 Test()
+    {
       .maxstack  64
       .locals init	(
         [0] valuetype MCCTest.VType0 res,
@@ -41,7 +51,7 @@
       ldc.i8 10
       ldc.i8 11
       ldc.i8 12
-      call       valuetype MCCTest.VType0 MCCTest.MyClass::Sum(unsigned int64,
+      call       valuetype MCCTest.VType0 mcc_i04.MyClass::Sum(unsigned int64,
                                                                 unsigned int64,
                                                                 unsigned int64,
                                                                 unsigned int64,
@@ -64,8 +74,11 @@
 
       ldloc.s    rc
       ret
-    } // end of method MyClass::Main
+    } // end of method MyClass::Test
 
   } // end of class MyClass
 
-} // end of namespace MCCTest
+} // end of namespace mcc_i04
+
+
+

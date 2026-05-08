@@ -11,45 +11,6 @@ namespace System.Net
         private const string Gzip = "gzip";
         private const string Deflate = "deflate";
 
-        /// <summary>
-        /// Gets a known header name string from a matching char[] array segment, using a case-sensitive
-        /// ordinal comparison. Used to avoid allocating new strings for known header names.
-        /// </summary>
-        public static bool TryGetHeaderName(char[] array, int startIndex, int length, [NotNullWhen(true)] out string? name)
-        {
-            CharArrayHelpers.DebugAssertArrayInputs(array, startIndex, length);
-
-            return TryGetHeaderName(
-                array, startIndex, length,
-                static (arr, index) => arr[index],
-                static (known, arr, start, len) => known.AsSpan().SequenceEqual(arr.AsSpan(start, len)),
-                out name);
-        }
-
-        /// <summary>
-        /// Gets a known header name string from a matching IntPtr buffer, using a case-sensitive
-        /// ordinal comparison. Used to avoid allocating new strings for known header names.
-        /// </summary>
-        public static unsafe bool TryGetHeaderName(IntPtr buffer, int length, out string? name)
-        {
-            Debug.Assert(length >= 0);
-
-            if (buffer == IntPtr.Zero)
-            {
-                name = null;
-                return false;
-            }
-
-            // We always pass 0 for the startIndex, as buffer should already point to the start.
-            const int startIndex = 0;
-
-            return TryGetHeaderName(
-                buffer, startIndex, length,
-                static (buf, index) => (char)((byte*)buf)[index],
-                static (known, buf, start, len) => EqualsOrdinal(known, buf, len),
-                out name);
-        }
-
         public static string GetHeaderValue(string name, ReadOnlySpan<char> value)
         {
             Debug.Assert(name != null);
@@ -80,18 +41,12 @@ namespace System.Net
             return value.ToString();
         }
 
-        private static bool TryGetHeaderName<T>(
-            T key, int startIndex, int length,
-            Func<T, int, char> charAt,
-            Func<string, T, int, int, bool> equals,
-            [NotNullWhen(true)] out string? name)
+        /// <summary>
+        /// Gets a known header name string from a matching span segment, using a case-sensitive
+        /// ordinal comparison. Used to avoid allocating new strings for known header names.
+        /// </summary>
+        public static bool TryGetHeaderName(ReadOnlySpan<char> nameSpan, [NotNullWhen(true)] out string? name)
         {
-            Debug.Assert(key != null);
-            Debug.Assert(startIndex >= 0);
-            Debug.Assert(length >= 0);
-            Debug.Assert(charAt != null);
-            Debug.Assert(equals != null);
-
             // When adding a new constant, add it to HttpKnownHeaderNames.cs as well.
 
             // The lookup works as follows: first switch on the length of the passed-in key.
@@ -112,13 +67,13 @@ namespace System.Net
 
             string potentialHeader;
 
-            switch (length)
+            switch (nameSpan.Length)
             {
                 case 2:
                     potentialHeader = TE; goto TryMatch; // TE
 
                 case 3:
-                    switch (charAt(key, startIndex))
+                    switch (nameSpan[0])
                     {
                         case 'A': potentialHeader = Age; goto TryMatch; // [A]ge
                         case 'P': potentialHeader = P3P; goto TryMatch; // [P]3P
@@ -128,7 +83,7 @@ namespace System.Net
                     break;
 
                 case 4:
-                    switch (charAt(key, startIndex))
+                    switch (nameSpan[0])
                     {
                         case 'D': potentialHeader = Date; goto TryMatch; // [D]ate
                         case 'E': potentialHeader = ETag; goto TryMatch; // [E]Tag
@@ -140,7 +95,7 @@ namespace System.Net
                     break;
 
                 case 5:
-                    switch (charAt(key, startIndex))
+                    switch (nameSpan[0])
                     {
                         case 'A': potentialHeader = Allow; goto TryMatch; // [A]llow
                         case 'R': potentialHeader = Range; goto TryMatch; // [R]ange
@@ -148,7 +103,7 @@ namespace System.Net
                     break;
 
                 case 6:
-                    switch (charAt(key, startIndex))
+                    switch (nameSpan[0])
                     {
                         case 'A': potentialHeader = Accept; goto TryMatch; // [A]ccept
                         case 'C': potentialHeader = Cookie; goto TryMatch; // [C]ookie
@@ -160,7 +115,7 @@ namespace System.Net
                     break;
 
                 case 7:
-                    switch (charAt(key, startIndex))
+                    switch (nameSpan[0])
                     {
                         case 'A': potentialHeader = AltSvc; goto TryMatch;  // [A]lt-Svc
                         case 'C': potentialHeader = Cookie2; goto TryMatch; // [C]ookie2
@@ -173,7 +128,7 @@ namespace System.Net
                     break;
 
                 case 8:
-                    switch (charAt(key, startIndex + 3))
+                    switch (nameSpan[3])
                     {
                         case 'M': potentialHeader = IfMatch; goto TryMatch;  // If-[M]atch
                         case 'R': potentialHeader = IfRange; goto TryMatch;  // If-[R]ange
@@ -182,7 +137,7 @@ namespace System.Net
                     break;
 
                 case 10:
-                    switch (charAt(key, startIndex))
+                    switch (nameSpan[0])
                     {
                         case 'C': potentialHeader = Connection; goto TryMatch; // [C]onnection
                         case 'K': potentialHeader = KeepAlive; goto TryMatch;  // [K]eep-Alive
@@ -192,7 +147,7 @@ namespace System.Net
                     break;
 
                 case 11:
-                    switch (charAt(key, startIndex))
+                    switch (nameSpan[0])
                     {
                         case 'C': potentialHeader = ContentMD5; goto TryMatch; // [C]ontent-MD5
                         case 'R': potentialHeader = RetryAfter; goto TryMatch; // [R]etry-After
@@ -201,7 +156,7 @@ namespace System.Net
                     break;
 
                 case 12:
-                    switch (charAt(key, startIndex + 2))
+                    switch (nameSpan[2])
                     {
                         case 'c': potentialHeader = AcceptPatch; goto TryMatch; // Ac[c]ept-Patch
                         case 'n': potentialHeader = ContentType; goto TryMatch; // Co[n]tent-Type
@@ -213,7 +168,7 @@ namespace System.Net
                     break;
 
                 case 13:
-                    switch (charAt(key, startIndex + 6))
+                    switch (nameSpan[6])
                     {
                         case '-': potentialHeader = AcceptRanges; goto TryMatch;  // Accept[-]Ranges
                         case 'i': potentialHeader = Authorization; goto TryMatch; // Author[i]zation
@@ -225,7 +180,7 @@ namespace System.Net
                     break;
 
                 case 14:
-                    switch (charAt(key, startIndex))
+                    switch (nameSpan[0])
                     {
                         case 'A': potentialHeader = AcceptCharset; goto TryMatch; // [A]ccept-Charset
                         case 'C': potentialHeader = ContentLength; goto TryMatch; // [C]ontent-Length
@@ -233,7 +188,7 @@ namespace System.Net
                     break;
 
                 case 15:
-                    switch (charAt(key, startIndex + 7))
+                    switch (nameSpan[7])
                     {
                         case '-': potentialHeader = XFrameOptions; goto TryMatch;  // X-Frame[-]Options
                         case 'm': potentialHeader = XUACompatible; goto TryMatch;  // X-UA-Co[m]patible
@@ -244,7 +199,7 @@ namespace System.Net
                     break;
 
                 case 16:
-                    switch (charAt(key, startIndex + 11))
+                    switch (nameSpan[11])
                     {
                         case 'o': potentialHeader = ContentEncoding; goto TryMatch; // Content-Enc[o]ding
                         case 'g': potentialHeader = ContentLanguage; goto TryMatch; // Content-Lan[g]uage
@@ -256,7 +211,7 @@ namespace System.Net
                     break;
 
                 case 17:
-                    switch (charAt(key, startIndex))
+                    switch (nameSpan[0])
                     {
                         case 'I': potentialHeader = IfModifiedSince; goto TryMatch;  // [I]f-Modified-Since
                         case 'S': potentialHeader = SecWebSocketKey; goto TryMatch;  // [S]ec-WebSocket-Key
@@ -265,7 +220,7 @@ namespace System.Net
                     break;
 
                 case 18:
-                    switch (charAt(key, startIndex))
+                    switch (nameSpan[0])
                     {
                         case 'P': potentialHeader = ProxyAuthenticate; goto TryMatch; // [P]roxy-Authenticate
                         case 'X': potentialHeader = XContentDuration; goto TryMatch;  // [X]-Content-Duration
@@ -273,7 +228,7 @@ namespace System.Net
                     break;
 
                 case 19:
-                    switch (charAt(key, startIndex))
+                    switch (nameSpan[0])
                     {
                         case 'C': potentialHeader = ContentDisposition; goto TryMatch; // [C]ontent-Disposition
                         case 'I': potentialHeader = IfUnmodifiedSince; goto TryMatch;  // [I]f-Unmodified-Since
@@ -288,7 +243,7 @@ namespace System.Net
                     potentialHeader = SecWebSocketVersion; goto TryMatch; // Sec-WebSocket-Version
 
                 case 22:
-                    switch (charAt(key, startIndex))
+                    switch (nameSpan[0])
                     {
                         case 'A': potentialHeader = AccessControlMaxAge; goto TryMatch;  // [A]ccess-Control-Max-Age
                         case 'S': potentialHeader = SecWebSocketProtocol; goto TryMatch; // [S]ec-WebSocket-Protocol
@@ -303,7 +258,7 @@ namespace System.Net
                     potentialHeader = SecWebSocketExtensions; goto TryMatch; // Sec-WebSocket-Extensions
 
                 case 25:
-                    switch (charAt(key, startIndex))
+                    switch (nameSpan[0])
                     {
                         case 'S': potentialHeader = StrictTransportSecurity; goto TryMatch; // [S]trict-Transport-Security
                         case 'U': potentialHeader = UpgradeInsecureRequests; goto TryMatch; // [U]pgrade-Insecure-Requests
@@ -314,7 +269,7 @@ namespace System.Net
                     potentialHeader = AccessControlAllowOrigin; goto TryMatch; // Access-Control-Allow-Origin
 
                 case 28:
-                    switch (charAt(key, startIndex + 21))
+                    switch (nameSpan[21])
                     {
                         case 'H': potentialHeader = AccessControlAllowHeaders; goto TryMatch; // Access-Control-Allow-[H]eaders
                         case 'M': potentialHeader = AccessControlAllowMethods; goto TryMatch; // Access-Control-Allow-[M]ethods
@@ -331,57 +286,17 @@ namespace System.Net
             name = null;
             return false;
 
-            TryMatch:
+        TryMatch:
             Debug.Assert(potentialHeader != null);
-            return TryMatch(potentialHeader, key, startIndex, length, equals, out name);
-        }
 
-        /// <summary>
-        /// Returns true if <paramref name="known"/> matches the <paramref name="key"/> char[] array segment,
-        /// using an ordinal comparison.
-        /// </summary>
-        private static bool TryMatch<T>(string known, T key, int startIndex, int length, Func<string, T, int, int, bool> equals, [NotNullWhen(true)] out string? name)
-        {
-            Debug.Assert(known != null);
-            Debug.Assert(known.Length > 0);
-            Debug.Assert(startIndex >= 0);
-            Debug.Assert(length > 0);
-            Debug.Assert(equals != null);
-
-            // The lengths should be equal because this method is only called
-            // from within a "switch (length) { ... }".
-            Debug.Assert(known.Length == length);
-
-            if (equals(known, key, startIndex, length))
+            if (nameSpan.SequenceEqual(potentialHeader.AsSpan()))
             {
-                name = known;
+                name = potentialHeader;
                 return true;
             }
 
             name = null;
             return false;
-        }
-
-        private static unsafe bool EqualsOrdinal(string left, IntPtr right, int rightLength)
-        {
-            Debug.Assert(left != null);
-            Debug.Assert(right != IntPtr.Zero);
-            Debug.Assert(rightLength > 0);
-
-            // At this point the lengths have already been determined to be equal.
-            Debug.Assert(left.Length == rightLength);
-
-            byte* pRight = (byte*)right;
-
-            for (int i = 0; i < left.Length; i++)
-            {
-                if (left[i] != pRight[i])
-                {
-                    return false;
-                }
-            }
-
-            return true;
         }
     }
 }

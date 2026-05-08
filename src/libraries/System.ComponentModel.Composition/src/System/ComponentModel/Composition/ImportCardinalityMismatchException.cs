@@ -80,7 +80,7 @@ namespace System.ComponentModel.Composition
         /// <exception cref="InvalidCastException">
         ///     <paramref name="info"/> contains a value that cannot be cast to the correct type.
         /// </exception>
-#if NET8_0_OR_GREATER
+#if NET
         [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         [EditorBrowsable(EditorBrowsableState.Never)]
 #endif

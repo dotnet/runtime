@@ -3,14 +3,13 @@
  */
 
 #include "zbuild.h"
+#include "zmemory.h"
 
 #if defined(X86_SSSE3)
 #include <immintrin.h>
 #include "../generic/chunk_permute_table.h"
 
 typedef __m128i chunk_t;
-
-#define CHUNK_SIZE 16
 
 #define HAVE_CHUNKMEMSET_2
 #define HAVE_CHUNKMEMSET_4
@@ -35,21 +34,15 @@ static const lut_rem_pair perm_idx_lut[13] = {
 
 
 static inline void chunkmemset_2(uint8_t *from, chunk_t *chunk) {
-    int16_t tmp;
-    memcpy(&tmp, from, sizeof(tmp));
-    *chunk = _mm_set1_epi16(tmp);
+    *chunk = _mm_set1_epi16(zng_memread_2(from));
 }
 
 static inline void chunkmemset_4(uint8_t *from, chunk_t *chunk) {
-    int32_t tmp;
-    memcpy(&tmp, from, sizeof(tmp));
-    *chunk = _mm_set1_epi32(tmp);
+    *chunk = _mm_set1_epi32(zng_memread_4(from));
 }
 
 static inline void chunkmemset_8(uint8_t *from, chunk_t *chunk) {
-    int64_t tmp;
-    memcpy(&tmp, from, sizeof(tmp));
-    *chunk = _mm_set1_epi64x(tmp);
+    *chunk = _mm_set1_epi64x(zng_memread_8(from));
 }
 
 static inline void loadchunk(uint8_t const *s, chunk_t *chunk) {

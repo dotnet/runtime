@@ -10,11 +10,6 @@ namespace System.Linq
 {
     public static partial class AsyncEnumerable
     {
-        // TODO https://github.com/dotnet/runtime/issues/111717:
-        // Consider before shipping .NET 10 whether this can instead use extension everything to support any IAsyncEnumerable<T> source.
-        // Right now it's limited because you can't cast an IAsyncEnumerable<TValueType> to IAsyncEnumerable<object>. But the method with this
-        // shape is necessary to support query comprehensions with explicit types, e.g. `from string s in asyncEnumerable`.
-
         /// <summary>
         /// Casts the elements of an <see cref="IAsyncEnumerable{Object}"/> to the specified type.
         /// </summary>
@@ -24,7 +19,7 @@ namespace System.Linq
         public static IAsyncEnumerable<TResult> Cast<TResult>( // satisfies the C# query-expression pattern
             this IAsyncEnumerable<object?> source)
         {
-            ThrowHelper.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(source);
 
             return
                 source.IsKnownEmpty() ? Empty<TResult>() :
@@ -35,7 +30,7 @@ namespace System.Linq
                 IAsyncEnumerable<object?> source,
                 [EnumeratorCancellation] CancellationToken cancellationToken)
             {
-                await foreach (object? item in source.WithCancellation(cancellationToken).ConfigureAwait(false))
+                await foreach (object? item in source.WithCancellation(cancellationToken))
                 {
                     yield return (TResult)item!;
                 }

@@ -15,5 +15,10 @@ namespace Microsoft.Extensions.Logging.Generators.Tests.TestClasses
 
         [LoggerMessage(EventId = 1, Level = LogLevel.Information, Message = "UseRefParameter {s}")]
         internal static partial void UseRefParameter(ILogger logger, ref S s);
+
+#if ROSLYN4_8_OR_GREATER
+        [LoggerMessage(EventId = 2, Level = LogLevel.Information, Message = "UseRefReadOnlyParameter {s}")]
+        internal static partial void UseRefReadOnlyParameter(ILogger logger, ref readonly S s);
+#endif
     }
 }

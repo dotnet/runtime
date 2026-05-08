@@ -15,13 +15,14 @@ add_library(
     SHARED
     %MONODROID_SOURCE%
     %AotModulesSource%
+    %ExtraSources%
 )
 
 %AotSources%
 
 %Defines%
 
-include_directories("%RuntimeInclude%")
+include_directories(%RuntimeInclude%)
 
 target_link_libraries(
     monodroid

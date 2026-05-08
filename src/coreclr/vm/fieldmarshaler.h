@@ -11,7 +11,9 @@
 #include "util.hpp"
 #include "mlinfo.h"
 #include "eeconfig.h"
-#include "olevariant.h"
+
+VARTYPE GetVarTypeForTypeHandle(TypeHandle typeHnd);
+MethodTable* GetNativeMethodTableForVarType(VARTYPE vt, MethodTable* pManagedMT);
 
 // Forward references
 class EEClassLayoutInfo;
@@ -187,26 +189,6 @@ VOID ParseNativeType(Module* pModule,
     LPCUTF8                     szFieldName
 #endif
 );
-
-//=======================================================================
-// The classloader stores an intermediate representation of the layout
-// metadata in an array of these structures. The dual-pass nature
-// is a bit extra overhead but building this structure requiring loading
-// other classes (for nested structures) and I'd rather keep this
-// next to the other places where we load other classes (e.g. the superclass
-// and implemented interfaces.)
-//
-// Each redirected field gets one entry in LayoutRawFieldInfo.
-// The array is terminated by one dummy record whose m_MD == mdMemberDefNil.
-//=======================================================================
-struct LayoutRawFieldInfo
-{
-    mdFieldDef  m_MD;             // mdMemberDefNil for end of array
-    ULONG       m_sequence;       // sequence # from metadata
-    RawFieldPlacementInfo m_placement;
-    NativeFieldDescriptor m_nfd;
-};
-
 
 class EEClassNativeLayoutInfo
 {

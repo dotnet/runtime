@@ -60,7 +60,7 @@ namespace Microsoft.Extensions.DependencyModel
             bool? emitEntryPoint,
             bool? generateXmlDocumentation)
         {
-            ThrowHelper.ThrowIfNull(defines);
+            ArgumentNullException.ThrowIfNull(defines);
 
             Defines = defines.ToArray();
             LanguageVersion = languageVersion;

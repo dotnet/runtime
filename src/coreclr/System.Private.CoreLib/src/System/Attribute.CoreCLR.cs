@@ -170,7 +170,7 @@ namespace System
             {
                 rtAdd = rtAdd.GetParentDefinition();
                 if (rtAdd != null)
-                    return rtAdd.DeclaringType!.GetEvent(ev.Name!);
+                    return rtAdd.DeclaringType!.GetEvent(ev.Name);
             }
             return null;
         }
@@ -391,7 +391,7 @@ namespace System
                 return indexParamTypes;
             }
 
-            return Type.EmptyTypes;
+            return [];
         }
 
         private static void AddAttributesToList(List<Attribute> attributeList, Attribute[] attributes, Dictionary<Type, AttributeUsageAttribute> types)

@@ -1,7 +1,7 @@
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 
   <PropertyGroup>
-    <CompileDependsOn Condition="'$(DesignTimeBuild)' != 'true'">$(CompileDependsOn);_CreateILLinkRuntimeRootDescriptorFile</CompileDependsOn>
+    <CoreCompileDependsOn Condition="'$(DesignTimeBuild)' != 'true'">$(CoreCompileDependsOn);_CreateILLinkRuntimeRootDescriptorFile</CoreCompileDependsOn>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -34,7 +34,7 @@
              TaskFactory="TaskHostFactory"
              Condition="'$(ILLinkTasksAssembly)' != ''" />
   <Target Name="_CreateILLinkRuntimeRootDescriptorFile"
-          DependsOnTargets="_CombineILLinkTrimXmlFilePaths"
+          DependsOnTargets="_CombineILLinkTrimXmlFilePaths;ResolveProjectReferences"
           Inputs="$(_NamespaceFilePath);$(_MscorlibFilePath);$(_CortypeFilePath);$(_RexcepFilePath);$(_ILLinkDescriptorsIntermediatePath)"
           Outputs="$(_ILLinkRuntimeRootDescriptorFilePath)">
     <Message Text="Generating ILLink roots file: $(_ILLinkRuntimeRootDescriptorFilePath)" />
@@ -52,9 +52,9 @@
              TaskFactory="TaskHostFactory"
              Condition="'$(ILLinkTasksAssembly)' != ''" />
   <Target Name="_CombineILLinkTrimXmlFilePaths"
+          DependsOnTargets="ResolveProjectReferences"
           Inputs="@(_ILLinkDescriptorsFilePaths)"
           Outputs="$(_ILLinkDescriptorsIntermediatePath)">
-
     <CombineLinkerXmlFiles LinkerXmlFiles="@(_ILLinkDescriptorsFilePaths)"
                            CombinedLinkerXmlFile="$(_ILLinkDescriptorsIntermediatePath)" />
 

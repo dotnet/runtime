@@ -123,7 +123,7 @@ namespace Microsoft.VisualBasic.Tests
         [Theory]
         [InlineData(null, null)]
         [InlineData("", null)]
-        public void CTypeDynamic_ArgumentException(object expression, Type targetType)
+        public void CTypeDynamic_ArgumentException(object? expression, Type? targetType)
         {
             Assert.Throws<ArgumentException>(() => Conversion.CTypeDynamic(expression, targetType));
         }
@@ -222,7 +222,7 @@ namespace Microsoft.VisualBasic.Tests
 
         [Theory]
         [InlineData(null)]
-        public void Fix_ArgumentNullException(object value)
+        public void Fix_ArgumentNullException(object? value)
         {
             Assert.Throws<ArgumentNullException>(() => Conversion.Fix(value));
         }
@@ -399,7 +399,7 @@ namespace Microsoft.VisualBasic.Tests
 
         [Theory]
         [InlineData(null)]
-        public void Hex_ArgumentNullException(object value)
+        public void Hex_ArgumentNullException(object? value)
         {
             Assert.Throws<ArgumentNullException>(() => Conversion.Hex(value));
         }
@@ -565,7 +565,7 @@ namespace Microsoft.VisualBasic.Tests
 
         [Theory]
         [InlineData(null)]
-        public void Int_ArgumentNullException(object value)
+        public void Int_ArgumentNullException(object? value)
         {
             Assert.Throws<ArgumentNullException>(() => Conversion.Int(value));
         }
@@ -737,7 +737,7 @@ namespace Microsoft.VisualBasic.Tests
 
         [Theory]
         [InlineData(null)]
-        public void Oct_ArgumentNullException(object value)
+        public void Oct_ArgumentNullException(object? value)
         {
             Assert.Throws<ArgumentNullException>(() => Conversion.Oct(value));
         }
@@ -846,7 +846,7 @@ namespace Microsoft.VisualBasic.Tests
 
         [Theory]
         [InlineData(null)]
-        public void Str_ArgumentNullException(object value)
+        public void Str_ArgumentNullException(object? value)
         {
             Assert.Throws<ArgumentNullException>(() => Conversion.Str(value));
         }

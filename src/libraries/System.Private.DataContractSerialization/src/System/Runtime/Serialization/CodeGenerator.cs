@@ -94,8 +94,7 @@ namespace System.Runtime.Serialization
 
         private Type _delegateType = null!; // initialized in BeginMethod
 
-        private static Module? s_serializationModule;
-        private static Module SerializationModule => s_serializationModule ??= typeof(CodeGenerator).Module;   // could to be replaced by different dll that has SkipVerification set to false
+        private static Module SerializationModule => field ??= typeof(CodeGenerator).Module;   // could to be replaced by different dll that has SkipVerification set to false
 
         private DynamicMethod _dynamicMethod = null!; // initialized in BeginMethod
 

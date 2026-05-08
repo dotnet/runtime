@@ -3,7 +3,8 @@
 //
 
 using Xunit;
-namespace Test
+using TestLibrary;
+namespace b41852
 {
     using System;
 
@@ -17,7 +18,7 @@ namespace Test
         {
             param2.Method1(ref param2.m_aulField4);
         }
-        [Fact]
+        [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsVarArgSupported))]
         public static void TestEntryPoint()
         {
             Method1(new BB(), __arglist());

@@ -43,7 +43,7 @@ namespace System.Net.Http.Headers
 
             idx += alpnProtocolNameLength;
 
-            if (alpnProtocolName == "clear")
+            if (alpnProtocolName == AltSvcHeaderValue.ClearString)
             {
                 if (idx != value.Length)
                 {
@@ -190,9 +190,9 @@ namespace System.Net.Http.Headers
 
             if (tokenLength == 0)
             {
-                result = null;
+                result = "";
                 readLength = 0;
-                return false;
+                return true;
             }
 
             ReadOnlySpan<char> span = value.AsSpan(startIndex, tokenLength);
@@ -259,14 +259,14 @@ namespace System.Net.Http.Headers
                     builder.Append(value.Slice(0, idx));
                 }
 
-                if ((value.Length - idx) < 3 || !TryReadAlpnHexDigit(value[1], out int hi) || !TryReadAlpnHexDigit(value[2], out int lo))
+                if ((value.Length - idx) < 3 || !TryReadAlpnHexDigit(value[idx + 1], out int hi) || !TryReadAlpnHexDigit(value[idx + 2], out int lo))
                 {
                     builder.Dispose();
                     result = null;
                     return false;
                 }
 
-                builder.Append((char)((hi << 8) | lo));
+                builder.Append((char)((hi << 4) | lo));
 
                 value = value.Slice(idx + 3);
                 idx = value.IndexOf('%');
@@ -279,7 +279,7 @@ namespace System.Net.Http.Headers
             }
 
             result = builder.ToString();
-            return true;
+            return !HttpRuleParser.ContainsNewLineOrNull(result);
         }
 
         /// <summary>

@@ -344,7 +344,6 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [SkipOnPlatform(TestPlatforms.Windows, "currently on Windows these operations async-over-sync on Windows")]
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public async Task ReadAsync_OutputStreams_Cancel_RespondsQuickly()
         {

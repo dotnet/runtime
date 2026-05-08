@@ -66,6 +66,7 @@ namespace ILCompiler
         {
             devirtualizationDetail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_UNKNOWN;
 
+            MethodDesc originalDeclMethod = declMethod;
             MethodDesc impl;
 
             if (declMethod.OwningType.IsInterface)
@@ -100,9 +101,19 @@ namespace ILCompiler
                 }
 
                 impl = implType.ResolveInterfaceMethodTargetWithVariance(declMethod);
+
                 if (impl != null)
                 {
                     impl = implType.FindVirtualFunctionTargetMethodOnObjectType(impl);
+
+                    // We need to bring the original instantiation back so that we can still try devirtualizing
+                    // when the method is a generic virtual method
+                    if (impl != null && originalDeclMethod.HasInstantiation)
+                    {
+                        // We may end up with a method that has substituted type parameters, so we need to instantiate
+                        // on the method definition
+                        impl = impl.GetMethodDefinition().MakeInstantiatedMethod(originalDeclMethod.Instantiation);
+                    }
                 }
                 else
                 {
@@ -178,9 +189,19 @@ namespace ILCompiler
                 }
 
                 impl = implType.FindVirtualFunctionTargetMethodOnObjectType(declMethod);
+
+                // We need to bring the original instantiation back so that we can still try devirtualizing
+                // when the method is a generic virtual method
+                if (impl != null && originalDeclMethod.HasInstantiation)
+                {
+                    // We may end up with a method that has substituted type parameters, so we need to instantiate
+                    // on the method definition
+                    impl = impl.GetMethodDefinition().MakeInstantiatedMethod(originalDeclMethod.Instantiation);
+                }
+
                 if (impl != null && (impl != declMethod))
                 {
-                    MethodDesc slotDefiningMethodImpl = MetadataVirtualMethodAlgorithm.FindSlotDefiningMethodForVirtualMethod(impl);
+                    MethodDesc slotDefiningMethodImpl = MetadataVirtualMethodAlgorithm.FindSlotDefiningMethodForVirtualMethod(impl.GetMethodDefinition());
                     MethodDesc slotDefiningMethodDecl = MetadataVirtualMethodAlgorithm.FindSlotDefiningMethodForVirtualMethod(declMethod);
 
                     if (slotDefiningMethodImpl != slotDefiningMethodDecl)
@@ -198,15 +219,30 @@ namespace ILCompiler
                 }
             }
 
+            if (impl != null && impl.HasInstantiation && impl.GetCanonMethodTarget(CanonicalFormKind.Specific).IsCanonicalMethod(CanonicalFormKind.Specific))
+            {
+                // We don't support devirtualization of shared generic virtual methods yet.
+                devirtualizationDetail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_FAILED_CANON;
+                impl = null;
+            }
+
             return impl;
         }
 
 #if !READYTORUN
+        public virtual bool IsGenericDefinitionMethodTableReflectionVisible(TypeDesc type) => true;
+
         /// <summary>
         /// Gets a value indicating whether it might be possible to obtain a constructed type data structure for the given type
         /// in this compilation (i.e. is it possible to reference a constructed MethodTable symbol for this).
         /// </summary>
         public virtual bool CanReferenceConstructedMethodTable(TypeDesc type) => true;
+
+        /// <summary>
+        /// Gets a value indicating whether it might be possible to obtain a metadata type data structure for the given type
+        /// in this compilation (i.e. is it possible to reference a metadata MethodTable symbol for this).
+        /// </summary>
+        public virtual bool CanReferenceMetadataMethodTable(TypeDesc type) => true;
 
         /// <summary>
         /// Gets a value indicating whether a (potentially canonically-equlivalent) constructed MethodTable could
@@ -216,6 +252,8 @@ namespace ILCompiler
         public virtual bool CanReferenceConstructedTypeOrCanonicalFormOfType(TypeDesc type) => true;
 
         public virtual TypeDesc[] GetImplementingClasses(TypeDesc type) => null;
+
+        public virtual bool CanHaveDynamicInterfaceImplementations(TypeDesc type) => true;
 #endif
     }
 }

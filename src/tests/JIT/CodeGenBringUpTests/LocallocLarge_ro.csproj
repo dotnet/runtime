@@ -9,4 +9,7 @@
   <ItemGroup>
     <Compile Include="LocallocLarge.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
 </Project>

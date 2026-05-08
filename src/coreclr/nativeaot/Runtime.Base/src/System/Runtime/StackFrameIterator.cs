@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 #if !NATIVEAOT
 using System.Runtime.ExceptionServices;
@@ -60,6 +61,7 @@ namespace System.Runtime
 #pragma warning restore CA1822
 #endif // NATIVEAOT
 
+        [StackTraceHidden]
         internal bool Init(EH.PAL_LIMITED_CONTEXT* pStackwalkCtx, bool instructionFault = false, bool* fIsExceptionIntercepted = null)
         {
             return InternalCalls.RhpSfiInit(ref this, pStackwalkCtx, instructionFault, fIsExceptionIntercepted);

@@ -479,7 +479,7 @@ namespace System.Management
         private bool GenerateAndWriteCode(CodeLanguage lang)
         {
 
-            if (InitializeCodeGenerator(lang) == false)
+            if (!InitializeCodeGenerator(lang))
             {
                 return false;
             }
@@ -787,7 +787,7 @@ namespace System.Management
             bool bCollision = true;
             int k = -1;
             string strToAdd = "";
-            if (bCheckthisFirst == false)
+            if (!bCheckthisFirst)
             {
                 k++;
                 strTemp = strTemp + strToAdd + k.ToString((IFormatProvider)CultureInfo.InvariantCulture.GetFormat(typeof(int)));
@@ -870,7 +870,7 @@ namespace System.Management
             }
 
             // Check if the name of the class starts with a charachter. If not add "C" to the beginning of the name
-            if (char.IsLetter(strClass[0]) == false)
+            if (!char.IsLetter(strClass[0]))
             {
                 strClass = "C" + strClass;
             }
@@ -1251,7 +1251,7 @@ namespace System.Management
                 string description = ProcessPropertyQualifiers(prop, ref bRead, ref bWrite, ref bStatic, bDynamicClass, out bNullable);
 
                 // If the property is not readable and not writable then don't generate the property
-                if (bRead == false && bWrite == false)
+                if (!bRead && !bWrite)
                 {
                     continue;
                 }
@@ -1276,7 +1276,7 @@ namespace System.Management
 
                 if (bRead)
                 {
-                    if (IsPropertyValueType(prop.Type) && prop.IsArray == false)
+                    if (IsPropertyValueType(prop.Type) && !prop.IsArray)
                     {
 
                         /*
@@ -1610,7 +1610,7 @@ namespace System.Management
                 }
                 else if (string.Equals(q.Name, "read", StringComparison.OrdinalIgnoreCase))
                 {
-                    if ((bool)q.Value == false)
+                    if (!(bool)q.Value)
                     {
                         bRead = false;
                     }
@@ -1633,7 +1633,7 @@ namespace System.Management
                 }
                 // check for ValueMap/Values and BitMap/BitValues pair and create
                 // Enum Accordingly
-                else if (string.Equals(q.Name, "ValueMap", StringComparison.OrdinalIgnoreCase) && bMapsFailed == false)
+                else if (string.Equals(q.Name, "ValueMap", StringComparison.OrdinalIgnoreCase) && !bMapsFailed)
                 {
                     try
                     {
@@ -1669,7 +1669,7 @@ namespace System.Management
                         ValueMap.Clear();
                     }
                 }
-                else if (string.Equals(q.Name, "Values", StringComparison.OrdinalIgnoreCase) && bMapsFailed == false)
+                else if (string.Equals(q.Name, "Values", StringComparison.OrdinalIgnoreCase) && !bMapsFailed)
                 {
                     try
                     {
@@ -1702,7 +1702,7 @@ namespace System.Management
                     }
 
                 }
-                else if (string.Equals(q.Name, "BitMap", StringComparison.OrdinalIgnoreCase) && bMapsFailed == false)
+                else if (string.Equals(q.Name, "BitMap", StringComparison.OrdinalIgnoreCase) && !bMapsFailed)
                 {
                     try
                     {
@@ -1731,7 +1731,7 @@ namespace System.Management
                         BitMap.Clear();
                     }
                 }
-                else if (string.Equals(q.Name, "BitValues", StringComparison.OrdinalIgnoreCase) && bMapsFailed == false)
+                else if (string.Equals(q.Name, "BitValues", StringComparison.OrdinalIgnoreCase) && !bMapsFailed)
                 {
                     try
                     {
@@ -1839,7 +1839,7 @@ namespace System.Management
                         long test = System.Convert.ToInt64(ValueMap[i], (IFormatProvider)CultureInfo.InvariantCulture.GetFormat(typeof(ulong)));
                         if (test > maxValue) maxValue = test;
 
-                        if (bZeroFieldInEnum == false)
+                        if (!bZeroFieldInEnum)
                         {
                             if (System.Convert.ToInt64(
                                 ValueMap[i],
@@ -1954,7 +1954,7 @@ namespace System.Management
                         bitValue <<= 1;
                     }
 
-                    if (bZeroFieldInEnum == false)
+                    if (!bZeroFieldInEnum)
                     {
                         if ((System.Convert.ToInt64(BitMap[i], (IFormatProvider)CultureInfo.InvariantCulture.GetFormat(typeof(ulong))) == 0))
                         {
@@ -3105,7 +3105,7 @@ namespace System.Management
 
 
                                 //Now for each out params generate the statement if it is an embedded instance
-                                if (prop.Type == CimType.DateTime && prop.IsArray == false)
+                                if (prop.Type == CimType.DateTime && !prop.IsArray)
                                 {
                                     if (bIsCimDateTimeInterval)
                                     {
@@ -3128,7 +3128,7 @@ namespace System.Management
 
                                 }
                                 else
-                                    if (IsPropertyValueType(prop.Type) && prop.IsArray == false)
+                                    if (IsPropertyValueType(prop.Type) && !prop.IsArray)
                                 {
                                     cmie2 = new CodeMethodInvokeExpression();
                                     cmie2.Parameters.Add(new CodePrimitiveExpression(0));
@@ -3147,7 +3147,7 @@ namespace System.Management
                     }
                 }
 
-                if (bInvoke == false)
+                if (!bInvoke)
                 {
                     //Now there is no out parameters to invoke the function
                     //So just call Invoke.
@@ -4559,7 +4559,7 @@ namespace System.Management
                     }
                 case CimType.UInt16:
                     {
-                        if (bUnsignedSupported == false)
+                        if (!bUnsignedSupported)
                         {
                             strType = "System.Int16";
                         }
@@ -4576,7 +4576,7 @@ namespace System.Management
                     }
                 case CimType.UInt32:
                     {
-                        if (bUnsignedSupported == false)
+                        if (!bUnsignedSupported)
                         {
                             strType = "System.Int32";
                         }
@@ -4593,7 +4593,7 @@ namespace System.Management
                     }
                 case CimType.UInt64:
                     {
-                        if (bUnsignedSupported == false)
+                        if (!bUnsignedSupported)
                         {
                             strType = "System.Int64";
                         }
@@ -4731,7 +4731,7 @@ namespace System.Management
 
             char[] arrString = str.ToCharArray();
             // First character
-            if (char.IsLetter(arrString[0]) == false)
+            if (!char.IsLetter(arrString[0]))
             {
                 strRet = "Val_";
                 strToAdd = "l";
@@ -4740,7 +4740,7 @@ namespace System.Management
             for (int i = 0; i < str.Length; i++)
             {
                 bAdd = true;
-                if (char.IsLetterOrDigit(arrString[i]) == false)
+                if (!char.IsLetterOrDigit(arrString[i]))
                 {
                     // if the previous character added is "_" then
                     // don't add that to the output string again
@@ -5047,7 +5047,7 @@ namespace System.Management
                     break;
 
                 case CimType.UInt16:
-                    if (bUnsignedSupported == false)
+                    if (!bUnsignedSupported)
                     {
                         retFunctionName = "ToInt16";
                     }
@@ -5064,7 +5064,7 @@ namespace System.Management
 
                 case CimType.UInt32:
                     {
-                        if (bUnsignedSupported == false)
+                        if (!bUnsignedSupported)
                         {
                             retFunctionName = "ToInt32";
                         }
@@ -5081,7 +5081,7 @@ namespace System.Management
                     }
                 case CimType.UInt64:
                     {
-                        if (bUnsignedSupported == false)
+                        if (!bUnsignedSupported)
                         {
                             retFunctionName = "ToInt64";
                         }
@@ -5588,7 +5588,7 @@ namespace System.Management
         private void GenerateCodeForRefAndDateTimeTypes(CodeIndexerExpression prop, bool bArray, CodeStatementCollection statColl, string strType, CodeVariableReferenceExpression varToAssign, bool bIsValueProprequired)
         {
 
-            if (bArray == false)
+            if (!bArray)
             {
 
                 CodeConditionStatement cis1 = new CodeConditionStatement();
@@ -5777,7 +5777,7 @@ namespace System.Management
         {
             varValue ??= new CodeVariableReferenceExpression("value");
 
-            if (bArray == false)
+            if (!bArray)
             {
                 statColl.Add(new CodeAssignStatement(prop,
                     ConvertPropertyToString(strType, varValue)));
@@ -6145,7 +6145,7 @@ namespace System.Management
 
             if (isTimeInterval)
             {
-                if (bTimeSpanConversionFunctionsAdded == false)
+                if (!bTimeSpanConversionFunctionsAdded)
                 {
                     cc.Comments.Add(new CodeCommentStatement(SR.CommentTimeSpanConversionFunction));
                     bTimeSpanConversionFunctionsAdded = true;
@@ -6155,7 +6155,7 @@ namespace System.Management
             }
             else
             {
-                if (bDateConversionFunctionsAdded == false)
+                if (!bDateConversionFunctionsAdded)
                 {
                     cc.Comments.Add(new CodeCommentStatement(SR.CommentDateConversionFunction));
                     bDateConversionFunctionsAdded = true;

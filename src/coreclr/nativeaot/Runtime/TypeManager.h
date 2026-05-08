@@ -27,12 +27,8 @@ private:
     struct ModuleInfoRow
     {
         int32_t SectionId;
-        int32_t Flags;
+        int32_t Length;
         void * Start;
-        void * End;
-
-        bool HasEndPointer();
-        int GetLength();
     };
 };
 

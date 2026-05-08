@@ -62,10 +62,7 @@ namespace System.Threading.Tasks.Dataflow
         /// <exception cref="System.ArgumentNullException">The <paramref name="dataflowBlockOptions"/> is null (Nothing in Visual Basic).</exception>
         public WriteOnceBlock(Func<T, T>? cloningFunction, DataflowBlockOptions dataflowBlockOptions)
         {
-            if (dataflowBlockOptions is null)
-            {
-                throw new ArgumentNullException(nameof(dataflowBlockOptions));
-            }
+            ArgumentNullException.ThrowIfNull(dataflowBlockOptions);
 
             // Store the option
             _cloningFunction = cloningFunction;
@@ -208,10 +205,7 @@ namespace System.Threading.Tasks.Dataflow
         /// <include file='XmlDocs/CommonXmlDocComments.xml' path='CommonXmlDocComments/Blocks/Member[@name="Fault"]/*' />
         void IDataflowBlock.Fault(Exception exception)
         {
-            if (exception is null)
-            {
-                throw new ArgumentNullException(nameof(exception));
-            }
+            ArgumentNullException.ThrowIfNull(exception);
 
             CompleteCore(exception, storeExceptionEvenIfAlreadyCompleting: false);
         }
@@ -302,14 +296,8 @@ namespace System.Threading.Tasks.Dataflow
         /// <include file='XmlDocs/CommonXmlDocComments.xml' path='CommonXmlDocComments/Sources/Member[@name="LinkTo"]/*' />
         public IDisposable LinkTo(ITargetBlock<T> target, DataflowLinkOptions linkOptions)
         {
-            if (target is null)
-            {
-                throw new ArgumentNullException(nameof(target));
-            }
-            if (linkOptions is null)
-            {
-                throw new ArgumentNullException(nameof(linkOptions));
-            }
+            ArgumentNullException.ThrowIfNull(target);
+            ArgumentNullException.ThrowIfNull(linkOptions);
 
             bool hasValue;
             bool isCompleted;
@@ -365,9 +353,14 @@ namespace System.Threading.Tasks.Dataflow
                     if (!consumed) return DataflowMessageStatus.NotAvailable;
                 }
 
-                // Update the header and the value
-                _header = Common.SingleMessageHeader;
+                // Update the value and then the header.
+                // The header is used to determine whether a value is available, so it's important
+                // to set the value before the header to avoid a race condition where another thread
+                // sees HasValue as true but reads a default value because _value hasn't been set yet.
+                // The memory barrier ensures the write to _value is visible before _header.IsValid becomes true.
                 _value = messageValue;
+                Interlocked.MemoryBarrier();
+                _header = Common.SingleMessageHeader;
 
                 // We got what we needed. Start declining permanently.
                 _decliningPermanently = true;

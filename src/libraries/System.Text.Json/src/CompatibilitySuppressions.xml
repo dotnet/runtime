@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- https://learn.microsoft.com/dotnet/fundamentals/package-validation/diagnostic-ids -->
+<Suppressions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <Suppression>
+    <DiagnosticId>CP0015</DiagnosticId>
+    <Target>T:System.Text.Json.Serialization.JsonIgnoreAttribute:[T:System.AttributeUsageAttribute]</Target>
+    <Left>lib/net10.0/System.Text.Json.dll</Left>
+    <Right>lib/net10.0/System.Text.Json.dll</Right>
+    <IsBaselineSuppression>true</IsBaselineSuppression>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0015</DiagnosticId>
+    <Target>T:System.Text.Json.Serialization.JsonIgnoreAttribute:[T:System.AttributeUsageAttribute]</Target>
+    <Left>lib/net462/System.Text.Json.dll</Left>
+    <Right>lib/net462/System.Text.Json.dll</Right>
+    <IsBaselineSuppression>true</IsBaselineSuppression>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0015</DiagnosticId>
+    <Target>T:System.Text.Json.Serialization.JsonIgnoreAttribute:[T:System.AttributeUsageAttribute]</Target>
+    <Left>lib/netstandard2.0/System.Text.Json.dll</Left>
+    <Right>lib/netstandard2.0/System.Text.Json.dll</Right>
+    <IsBaselineSuppression>true</IsBaselineSuppression>
+  </Suppression>
+</Suppressions>

@@ -44,12 +44,12 @@ Consider following example where `tlens` can show suggestion for the code to be 
 ```c#
 interface IOperation
 {
-    void Run ();
+    void Run();
 }
 
 class CommonOperation : IOperation
 {
-    void IOperation.Run ()
+    void IOperation.Run()
     {
         // Pulls complex dependencies
     }
@@ -57,12 +57,12 @@ class CommonOperation : IOperation
 
 class RareOperation : IOperation
 {
-    void IOperation.Run ()
+    void IOperation.Run()
     {
         // Pulls complex dependencies
     }
 
-    public void Run (IOperation operation)
+    public void Run(IOperation operation)
     {
         operation.Run();
     }
@@ -70,10 +70,10 @@ class RareOperation : IOperation
 
 class App
 {
-    public static void Main ()
+    public static void Main()
     {
-        var rare = new RareOperation ();
-        rare.Run (rare);
+        var rare = new RareOperation();
+        rare.Run(rare);
     }
 }
 ```

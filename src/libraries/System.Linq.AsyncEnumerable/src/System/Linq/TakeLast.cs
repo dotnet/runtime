@@ -16,7 +16,7 @@ namespace System.Linq
             this IAsyncEnumerable<TSource> source,
             int count)
         {
-            ThrowHelper.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(source);
 
             return
                 source.IsKnownEmpty() || count <= 0 ? Empty<TSource>() :

@@ -1,0 +1,22 @@
+<Solution>
+  <Configurations>
+    <BuildType Name="Checked" />
+    <BuildType Name="Debug" />
+    <BuildType Name="Release" />
+    <Platform Name="Any CPU" />
+    <Platform Name="x64" />
+    <Platform Name="x86" />
+  </Configurations>
+  <Project Path="../aot/ILCompiler.Reflection.ReadyToRun/ILCompiler.Reflection.ReadyToRun.csproj">
+    <BuildType Solution="Checked|*" Project="Release" />
+    <Platform Solution="*|x64" Project="x64" />
+  </Project>
+  <Project Path="../aot/ILCompiler.TypeSystem/ILCompiler.TypeSystem.csproj">
+    <Platform Solution="*|Any CPU" Project="x64" />
+    <Platform Solution="*|x64" Project="x64" />
+    <Platform Solution="*|x86" Project="x86" />
+  </Project>
+  <Project Path="dotnet-pgo.csproj">
+    <BuildType Solution="Checked|*" Project="Release" />
+  </Project>
+</Solution>

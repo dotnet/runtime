@@ -18,7 +18,7 @@ namespace System.Linq
         public static IAsyncEnumerable<(int Index, TSource Item)> Index<TSource>(
             this IAsyncEnumerable<TSource> source)
         {
-            ThrowHelper.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(source);
 
             return
                 source.IsKnownEmpty() ? Empty<(int Index, TSource Item)>() :
@@ -29,7 +29,7 @@ namespace System.Linq
                 [EnumeratorCancellation] CancellationToken cancellationToken)
             {
                 int index = -1;
-                await foreach (TSource element in source.WithCancellation(cancellationToken).ConfigureAwait(false))
+                await foreach (TSource element in source.WithCancellation(cancellationToken))
                 {
                     yield return (checked(++index), element);
                 }

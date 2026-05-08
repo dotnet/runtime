@@ -23,8 +23,8 @@ namespace System.Linq
             IAsyncEnumerable<TSource> second,
             IEqualityComparer<TSource>? comparer = null)
         {
-            ThrowHelper.ThrowIfNull(first);
-            ThrowHelper.ThrowIfNull(second);
+            ArgumentNullException.ThrowIfNull(first);
+            ArgumentNullException.ThrowIfNull(second);
 
             return
                 first.IsKnownEmpty() && second.IsKnownEmpty() ? Empty<TSource>() :
@@ -38,7 +38,7 @@ namespace System.Linq
             {
                 HashSet<TSource> set = new(comparer);
 
-                await foreach (TSource element in first.WithCancellation(cancellationToken).ConfigureAwait(false))
+                await foreach (TSource element in first.WithCancellation(cancellationToken))
                 {
                     if (set.Add(element))
                     {
@@ -46,7 +46,7 @@ namespace System.Linq
                     }
                 }
 
-                await foreach (TSource element in second.WithCancellation(cancellationToken).ConfigureAwait(false))
+                await foreach (TSource element in second.WithCancellation(cancellationToken))
                 {
                     if (set.Add(element))
                     {

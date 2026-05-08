@@ -49,7 +49,7 @@ namespace System.Formats.Asn1.Tests.Writer
             Assert.Equal(0, written);
             Assert.True(writer.EncodedValueEquals(ReadOnlySpan<byte>.Empty));
 
-#if NET9_0_OR_GREATER
+#if NET
             writer.Encode<object>(encoded => {
                 Assert.Equal(0, encoded.Length);
                 return null;
@@ -58,6 +58,10 @@ namespace System.Formats.Asn1.Tests.Writer
             writer.Encode<object, object>(null, (_, encoded) => {
                 Assert.Equal(0, encoded.Length);
                 return null;
+            });
+
+            writer.Encode<object>(null, (_, encoded) => {
+                Assert.Equal(0, encoded.Length);
             });
 #endif
 
@@ -247,7 +251,7 @@ namespace System.Formats.Asn1.Tests.Writer
             Assert.Equal(1024, buffer?.Length);
         }
 
-#if NET9_0_OR_GREATER
+#if NET
         [Fact]
         public static void Encode_Callback_NoModifications()
         {
@@ -275,6 +279,16 @@ namespace System.Formats.Asn1.Tests.Writer
 
                 Assert.Throws<InvalidOperationException>(() => writer.Reset());
                 return (object)null;
+            });
+
+            writer.Encode(writer, static (writer, encoded) =>
+            {
+                writer.Encode(writer, static (writer, encoded) =>
+                {
+                    Assert.Throws<InvalidOperationException>(() => writer.Reset());
+                });
+
+                Assert.Throws<InvalidOperationException>(() => writer.Reset());
             });
         }
 #endif

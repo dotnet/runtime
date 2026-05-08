@@ -384,7 +384,7 @@ namespace System.IO.Pipelines.Tests
             _pipe.Reader.AdvanceTo(reader.Start, reader.Start);
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [InlineData(true)]
         [InlineData(false)]
         public async Task ReadAsyncOnCompletedCapturesTheExecutionContext(bool useSynchronizationContext)
@@ -437,7 +437,7 @@ namespace System.IO.Pipelines.Tests
             }
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [InlineData(true)]
         [InlineData(false)]
         public async Task FlushAsyncOnCompletedCapturesTheExecutionContextAndSyncContext(bool useSynchronizationContext)
@@ -491,7 +491,7 @@ namespace System.IO.Pipelines.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public async Task ReadingCanBeCanceled()
         {
             var cts = new CancellationTokenSource();

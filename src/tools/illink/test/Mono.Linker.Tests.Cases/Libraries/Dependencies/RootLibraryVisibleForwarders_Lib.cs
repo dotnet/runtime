@@ -1,6 +1,6 @@
 public class ExternalPublic
 {
-	protected void ProtectedMethod ()
-	{
-	}
+    protected void ProtectedMethod()
+    {
+    }
 }

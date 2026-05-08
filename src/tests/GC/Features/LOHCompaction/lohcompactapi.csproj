@@ -9,4 +9,7 @@
   <ItemGroup>
     <Compile Include="lohcompactapi.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
 </Project>

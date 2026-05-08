@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 
 using Internal.Text;
 using Internal.TypeSystem;
@@ -19,7 +20,11 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         private readonly bool _useVirtualCall;
         private readonly bool _useJumpableStub;
 
-        private readonly ImportThunk _delayLoadHelper;
+        private readonly ISymbolNode _delayLoadHelper;
+
+        public bool UseVirtualCall => _useVirtualCall;
+        public bool UseJumpableStub => _useJumpableStub;
+        public ReadyToRunHelper HelperId => _helper;
 
         public DelayLoadHelperImport(
             NodeFactory factory, 
@@ -34,7 +39,14 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             _helper = helper;
             _useVirtualCall = useVirtualCall;
             _useJumpableStub = useJumpableStub;
-            _delayLoadHelper = factory.ImportThunk(helper, importSectionNode, useVirtualCall, useJumpableStub);
+            if (factory.Target.Architecture == TargetArchitecture.Wasm32)
+            {
+                _delayLoadHelper = factory.WasmImportThunkPortableEntrypoint(this);
+            }
+            else
+            {
+                _delayLoadHelper = factory.ImportThunk(helper, importSectionNode, useVirtualCall, useJumpableStub);
+            }
         }
 
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
@@ -66,6 +78,15 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             // when loaded by CoreCLR
             dataBuilder.EmitReloc(_delayLoadHelper,
                 factory.Target.PointerSize == 4 ? RelocType.IMAGE_REL_BASED_HIGHLOW : RelocType.IMAGE_REL_BASED_DIR64, factory.Target.CodeDelta);
+
+            if (Table.EntrySize == (factory.Target.PointerSize * 2))
+            {
+                dataBuilder.EmitNaturalInt(0);
+            }
+            else
+            {
+                Debug.Assert(Table.EntrySize == factory.Target.PointerSize);
+            }
         }
 
         public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)

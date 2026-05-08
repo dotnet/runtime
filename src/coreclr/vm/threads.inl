@@ -27,24 +27,25 @@ EXTERN_C UINT32 _tls_index;
 #endif
 
 #ifdef _MSC_VER
-__declspec(selectany) __declspec(thread) ThreadLocalInfo gCurrentThreadInfo;
+__declspec(selectany)
 #else
-EXTERN_C __thread ThreadLocalInfo gCurrentThreadInfo;
+EXTERN_C
 #endif
+PLATFORM_THREAD_LOCAL ThreadLocalInfo t_CurrentThreadInfo;
 
 inline Thread* GetThreadNULLOk()
 {
-    return gCurrentThreadInfo.m_pThread;
+    return t_CurrentThreadInfo.m_pThread;
 }
 
 inline Thread* GetThread()
 {
-    Thread* pThread = gCurrentThreadInfo.m_pThread;
+    Thread* pThread = t_CurrentThreadInfo.m_pThread;
     _ASSERTE(pThread);
     return pThread;
 }
 
-EXTERN_C inline AppDomain* STDCALL GetAppDomain()
+inline AppDomain* GetAppDomain()
 {
     return AppDomain::GetCurrentDomain();
 }
@@ -62,13 +63,6 @@ Frame* Thread::FindFrame(SIZE_T StackPointer)
     }
 
     return pFrame;
-}
-
-inline void Thread::SetThrowable(OBJECTREF pThrowable DEBUG_ARG(ThreadExceptionState::SetThrowableErrorChecking stecFlags))
-{
-    WRAPPER_NO_CONTRACT;
-
-    m_ExceptionState.SetThrowable(pThrowable DEBUG_ARG(stecFlags));
 }
 
 // get the current notification (if any) from this thread

@@ -1,0 +1,23 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+using System;
+
+namespace Microsoft.Diagnostics.DataContractReader.Data;
+
+internal sealed class AppDomain : IData<AppDomain>
+{
+    static AppDomain IData<AppDomain>.Create(Target target, TargetPointer address) => new AppDomain(target, address);
+    public AppDomain(Target target, TargetPointer address)
+    {
+        Target.TypeInfo type = target.GetTypeInfo(DataType.AppDomain);
+
+        RootAssembly = target.ReadPointerField(address, type, nameof(RootAssembly));
+        AssemblyList = address + (ulong)type.Fields[nameof(AssemblyList)].Offset;
+        FriendlyName = target.ReadPointerField(address, type, nameof(FriendlyName));
+    }
+
+    public TargetPointer RootAssembly { get; init; }
+    public TargetPointer AssemblyList { get; init; }
+    public TargetPointer FriendlyName { get; init; }
+}

@@ -40,31 +40,6 @@ PALAPI
 GetConsoleOutputCP(
        VOID)
 {
-    UINT nRet = 0;
-    PERF_ENTRY(GetConsoleOutputCP);
-    ENTRY("GetConsoleOutputCP()\n");
-    nRet = GetACP();
-    LOGEXIT("GetConsoleOutputCP returns UINT %d \n", nRet );
-    PERF_EXIT(GetConsoleOutputCP);
-    return nRet;
-}
-
-/*++
-Function:
-GetACP
-
-See MSDN doc.
---*/
-UINT
-PALAPI
-GetACP(VOID)
-{
-    PERF_ENTRY(GetACP);
-    ENTRY("GetACP(VOID)\n");
-
-    LOGEXIT("GetACP returning UINT %d\n", CP_UTF8);
-    PERF_EXIT(GetACP);
-
     return CP_UTF8;
 }
 

@@ -6,22 +6,22 @@
 #include <xplatform.h>
 #include "Servers.h"
 
-class MiscTypesTesting : public UnknownImpl, public IMiscTypesTesting
+class MiscTypesTesting : public UnknownImpl, public IMiscTypesTesting, public IInterface1
 {
-    struct InterfaceImpl : public UnknownImpl, public IInterface2
+    struct InterfaceImpl : public UnknownImpl, public IInterface1
     {
         public: // IInterface1
-        public: // IInterface2
         public: // IUnknown
             STDMETHOD(QueryInterface)(
                 /* [in] */ REFIID riid,
                 /* [iid_is][out] */ _COM_Outptr_ void __RPC_FAR *__RPC_FAR *ppvObject)
             {
-                return DoQueryInterface(riid, ppvObject, static_cast<IInterface1 *>(this), static_cast<IInterface2 *>(this));
+                return DoQueryInterface(riid, ppvObject, static_cast<IInterface1 *>(this));
             }
 
         DEFINE_REF_COUNTING();
     };
+public: // IInterface1
 public: // IMiscTypesTesting
     DEF_FUNC(Marshal_Variant)(_In_ VARIANT obj, _Out_ VARIANT* result)
     {
@@ -38,18 +38,18 @@ public: // IMiscTypesTesting
         return E_NOTIMPL;
     }
 
-    DEF_FUNC(Marshal_Interface)(_In_ IUnknown* input, _Outptr_ IInterface2** value)
+    DEF_FUNC(Marshal_Interface)(_In_ IUnknown* input, _Outptr_ IInterface1** value)
     {
         HRESULT hr;
 
-        IInterface2* ifaceMaybe = nullptr;
-        hr = input->QueryInterface(__uuidof(IInterface2), (void**)&ifaceMaybe);
+        IInterface1* ifaceMaybe = nullptr;
+        hr = input->QueryInterface(__uuidof(IInterface1), (void**)&ifaceMaybe);
         if (FAILED(hr))
             return hr;
         (void)ifaceMaybe->Release();
 
         InterfaceImpl* inst = new InterfaceImpl();
-        hr = inst->QueryInterface(__uuidof(IInterface2), (void**)value);
+        hr = inst->QueryInterface(__uuidof(IInterface1), (void**)value);
         (void)inst->Release();
         return hr;
     }
@@ -59,7 +59,7 @@ public: // IUnknown
         /* [in] */ REFIID riid,
         /* [iid_is][out] */ _COM_Outptr_ void __RPC_FAR *__RPC_FAR *ppvObject)
     {
-        return DoQueryInterface(riid, ppvObject, static_cast<IMiscTypesTesting *>(this));
+        return DoQueryInterface(riid, ppvObject, static_cast<IMiscTypesTesting *>(this), static_cast<IInterface1 *>(this));
     }
 
     DEFINE_REF_COUNTING();

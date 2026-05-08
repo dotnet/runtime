@@ -15,9 +15,13 @@
 // - Don't bother catching the exception in the outer method as the test
 //   infrastructure will handle it.
 
+
+namespace b08046cs;
+
 using System;
 using System.Runtime.CompilerServices;
 using System.Threading;
+using TestLibrary;
 using Xunit;
 
 class ExternalClass
@@ -38,7 +42,8 @@ public class ExternalException : Exception
     public static int ExitCode { get; set; }
     public static int Ignored { get; set; }
 
-    [Fact]
+    [OuterLoop]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public static int TestEntryPoint()
     {
         ExitCode = 100;

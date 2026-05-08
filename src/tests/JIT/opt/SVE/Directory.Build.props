@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project>
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props, $(MSBuildThisFileDirectory)..))" />
+  <PropertyGroup>
+    <NoWarn>$(NoWarn);SYSLIB5003</NoWarn>
+    <CLRTestTargetUnsupported Condition="'$(TargetArchitecture)' != 'arm64' or '$(TargetOS)' == 'osx' or '$(RuntimeFlavor)' == 'mono'">true</CLRTestTargetUnsupported>
+  </PropertyGroup>
+  <ItemGroup>
+      <CLRTestEnvironmentVariable Include="DOTNET_EnableHWIntrinsic" Value="1" />
+  </ItemGroup>
+</Project>

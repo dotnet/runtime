@@ -8,6 +8,7 @@ using System.Linq;
 using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysis.ReadyToRun;
 using ILCompiler.DependencyAnalysisFramework;
+using ILCompiler.Reflection.ReadyToRun;
 using ILCompiler.Win32Resources;
 using Internal.IL;
 using Internal.JitInterface;
@@ -34,8 +35,8 @@ namespace ILCompiler
         Func<MethodDesc, string> _printReproInstructions;
         private InstructionSetSupport _instructionSetSupport;
         private ProfileDataManager _profileData;
-        private ReadyToRunMethodLayoutAlgorithm _r2rMethodLayoutAlgorithm;
-        private ReadyToRunFileLayoutAlgorithm _r2rFileLayoutAlgorithm;
+        private MethodLayoutAlgorithm _r2rMethodLayoutAlgorithm;
+        private FileLayoutAlgorithm _r2rFileLayoutAlgorithm;
         private int _customPESectionAlignment;
         private bool _verifyTypeAndFieldLayout;
         private bool _hotColdSplitting;
@@ -44,6 +45,7 @@ namespace ILCompiler
         private NodeFactoryOptimizationFlags _nodeFactoryOptimizationFlags = new NodeFactoryOptimizationFlags();
         private int _genericCycleDetectionDepthCutoff = -1;
         private int _genericCycleDetectionBreadthCutoff = -1;
+        private ReadyToRunContainerFormat _format = ReadyToRunContainerFormat.PE;
 
         private string _jitPath;
         private string _outputFile;
@@ -118,7 +120,7 @@ namespace ILCompiler
             return this;
         }
 
-        public ReadyToRunCodegenCompilationBuilder FileLayoutAlgorithms(ReadyToRunMethodLayoutAlgorithm r2rMethodLayoutAlgorithm, ReadyToRunFileLayoutAlgorithm r2rFileLayoutAlgorithm)
+        public ReadyToRunCodegenCompilationBuilder FileLayoutAlgorithms(MethodLayoutAlgorithm r2rMethodLayoutAlgorithm, FileLayoutAlgorithm r2rFileLayoutAlgorithm)
         {
             _r2rMethodLayoutAlgorithm = r2rMethodLayoutAlgorithm;
             _r2rFileLayoutAlgorithm = r2rFileLayoutAlgorithm;
@@ -219,6 +221,12 @@ namespace ILCompiler
             return this;
         }
 
+        public ReadyToRunCodegenCompilationBuilder UseContainerFormat(ReadyToRunContainerFormat format)
+        {
+            _format = format;
+            return this;
+        }
+
         public override ICompilation ToCompilation()
         {
             // TODO: only copy COR headers for single-assembly build and for composite build with embedded MSIL
@@ -226,7 +234,7 @@ namespace ILCompiler
             EcmaModule singleModule = _compilationGroup.IsCompositeBuildMode ? null : inputModules.First();
             CopiedCorHeaderNode corHeaderNode = new CopiedCorHeaderNode(singleModule);
             // TODO: proper support for multiple input files
-            DebugDirectoryNode debugDirectoryNode = new DebugDirectoryNode(singleModule, _outputFile, _generatePdbFile, _generatePerfMapFile);
+            DebugDirectoryNode debugDirectoryNode = new DebugDirectoryNode(singleModule, _outputFile, _generatePdbFile, _generatePerfMapFile, _perfMapFormatVersion);
 
             // Produce a ResourceData where the IBC PROFILE_DATA entry has been filtered out
             // TODO: proper support for multiple input files
@@ -247,7 +255,7 @@ namespace ILCompiler
             });
 
             ReadyToRunFlags flags = ReadyToRunFlags.READYTORUN_FLAG_NonSharedPInvokeStubs;
-            if (inputModules.All(module => module.IsPlatformNeutral))
+            if (inputModules.All(module => module.IsPlatformNeutral || module.PEReader.IsReadyToRunPlatformNeutralSource()))
             {
                 flags |= ReadyToRunFlags.READYTORUN_FLAG_PlatformNeutralSource;
             }
@@ -268,6 +276,7 @@ namespace ILCompiler
                 win32Resources,
                 flags,
                 _nodeFactoryOptimizationFlags,
+                _format,
                 _imageBase,
                 automaticTypeValidation ? singleModule : null,
                 genericCycleDepthCutoff: _genericCycleDetectionDepthCutoff,
@@ -343,7 +352,8 @@ namespace ILCompiler
                 _r2rMethodLayoutAlgorithm,
                 _r2rFileLayoutAlgorithm,
                 _customPESectionAlignment,
-                _verifyTypeAndFieldLayout);
+                _verifyTypeAndFieldLayout,
+                _format);
         }
     }
 }

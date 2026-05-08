@@ -13,7 +13,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 public const string CannotBindToConstructorParameter = "Cannot create instance of type '{0}' because one or more parameters cannot be bound to. Constructor parameters cannot be declared as in, out, or ref. Invalid parameters are: '{1}'";
                 public const string CannotSpecifyBindNonPublicProperties = "The configuration binding source generator does not support 'BinderOptions.BindNonPublicProperties'.";
                 public const string ConstructorParametersDoNotMatchProperties = "Cannot create instance of type '{0}' because one or more parameters cannot be bound to. Constructor parameters must have corresponding properties. Fields are not supported. Missing properties are: '{1}'";
-                public const string FailedBinding = "Failed to convert configuration value at '{0}' to type '{1}'.";
+                public const string FailedBinding = "Failed to convert configuration value '{0}' at '{1}' to type '{2}'.";
                 public const string MissingConfig = "'{0}' was set on the provided {1}, but the following properties were not found on the instance of {2}: {3}";
                 public const string MissingPublicInstanceConstructor = "Cannot create instance of type '{0}' because it is missing a public instance constructor.";
                 public const string MultipleParameterizedConstructors = "Cannot create instance of type '{0}' because it has multiple public parameterized constructors.";

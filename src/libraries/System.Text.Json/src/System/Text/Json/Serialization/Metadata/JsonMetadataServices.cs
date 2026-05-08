@@ -22,14 +22,8 @@ namespace System.Text.Json.Serialization.Metadata
         /// <remarks>This API is for use by the output of the System.Text.Json source generator and should not be called directly.</remarks>
         public static JsonPropertyInfo CreatePropertyInfo<T>(JsonSerializerOptions options, JsonPropertyInfoValues<T> propertyInfo)
         {
-            if (options is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(options));
-            }
-            if (propertyInfo is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(propertyInfo));
-            }
+            ArgumentNullException.ThrowIfNull(options);
+            ArgumentNullException.ThrowIfNull(propertyInfo);
 
             Type? declaringType = propertyInfo.DeclaringType;
             if (declaringType == null)
@@ -62,14 +56,8 @@ namespace System.Text.Json.Serialization.Metadata
         /// <remarks>This API is for use by the output of the System.Text.Json source generator and should not be called directly.</remarks>
         public static JsonTypeInfo<T> CreateObjectInfo<T>(JsonSerializerOptions options, JsonObjectInfoValues<T> objectInfo) where T : notnull
         {
-            if (options is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(options));
-            }
-            if (objectInfo is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(objectInfo));
-            }
+            ArgumentNullException.ThrowIfNull(options);
+            ArgumentNullException.ThrowIfNull(objectInfo);
 
             return CreateCore(options, objectInfo);
         }
@@ -82,14 +70,8 @@ namespace System.Text.Json.Serialization.Metadata
         /// <remarks>This API is for use by the output of the System.Text.Json source generator and should not be called directly.</remarks>
         public static JsonTypeInfo<T> CreateValueInfo<T>(JsonSerializerOptions options, JsonConverter converter)
         {
-            if (options is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(options));
-            }
-            if (converter is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(converter));
-            }
+            ArgumentNullException.ThrowIfNull(options);
+            ArgumentNullException.ThrowIfNull(converter);
 
             JsonTypeInfo<T> info = CreateCore<T>(converter, options);
             return info;

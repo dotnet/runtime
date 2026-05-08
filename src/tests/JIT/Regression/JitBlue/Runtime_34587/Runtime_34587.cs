@@ -11,13 +11,12 @@ using System.Runtime.CompilerServices;
 
 using ArmAes = System.Runtime.Intrinsics.Arm.Aes;
 using X86Aes = System.Runtime.Intrinsics.X86.Aes;
-using TestLibrary;
 using Xunit;
 
 public class Runtime_34587
 {
     [Fact]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/91923", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile))]
+    [ActiveIssue("needs triage", TestRuntimes.Mono)]
     public static int TestEntryPoint()
     {
         TestLibrary.TestFramework.LogInformation("Supported x86 ISAs:");
@@ -715,7 +714,9 @@ public class Runtime_34587
             if (Avx2IsSupported)
             {
                 succeeded &= VectorIsHardwareAccelerated;
-                succeeded &= VectorByteCount == 32;
+                // MaxVectorTBitWidth env variable can be used to change Vector<T> size.
+                // We can only assume it is at least 16 bytes.
+                succeeded &= VectorByteCount >= 16;
             }
             else if (Sse2IsSupported)
             {

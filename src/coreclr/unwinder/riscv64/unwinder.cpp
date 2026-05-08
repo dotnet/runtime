@@ -25,6 +25,8 @@
 #define MEMORY_READ_DWORD(params, addr)      (*dac_cast<PTR_DWORD>(addr))
 #define MEMORY_READ_QWORD(params, addr)      (*dac_cast<PTR_UINT64>(addr))
 
+#define WORDS_TO_HALFWORDS(value)            ((value) << 1)
+
 typedef struct _RISCV64_UNWIND_PARAMS
 {
     PT_KNONVOLATILE_CONTEXT_POINTERS ContextPointers;
@@ -127,7 +129,7 @@ Arguments:
 
 Return Value:
 
-    The size of the scope described by the unwind codes, in halfword units.
+    The size of the scope described by the unwind codes, in word units.
 
 --*/
 
@@ -148,6 +150,9 @@ Return Value:
             break;
         }
 
+        // TODO-RISCV64-RVC: Once we support RVC code in prolog / epilog,
+        // need to create table for mapping CurCode to OpSize.
+        // See arm/unwinder.cpp.
         UnwindCodePtr += UnwindCodeSizeTable[Opcode];
         ScopeSize++;
     }
@@ -386,7 +391,7 @@ Return Value:
     ULONG ScopeNum;
     ULONG ScopeSize;
     ULONG ScopeStart;
-    DWORD64 SkipWords;
+    DWORD64 SkipHalfWords;
     NTSTATUS Status;
     ULONG_PTR UnwindCodePtr;
     ULONG_PTR UnwindCodesEndPtr;
@@ -428,7 +433,7 @@ Return Value:
     }
 
     FunctionLength = HeaderWord & 0x3ffff;
-    OffsetInFunction = (ControlPcRva - FunctionEntry->BeginAddress) / 4;
+    OffsetInFunction = (ControlPcRva - FunctionEntry->BeginAddress) / 2;
 
     //
     // Determine the number of epilog scope records and the maximum number
@@ -467,7 +472,7 @@ Return Value:
 
     UnwindCodePtr = UnwindDataPtr + 4 * EpilogScopeCount;
     UnwindCodesEndPtr = UnwindCodePtr + 4 * UnwindWords;
-    SkipWords = 0;
+    SkipHalfWords = 0;
 
     //
     // If we're near the start of the function, and this function has a prolog,
@@ -483,11 +488,11 @@ Return Value:
     //      in the body of the function.
     //
 
-    if (OffsetInFunction < 4 * UnwindWords) {
-        ScopeSize = RtlpComputeScopeSize(UnwindCodePtr, UnwindCodesEndPtr, FALSE, UnwindParams);
+    if (OffsetInFunction < WORDS_TO_HALFWORDS(4 * UnwindWords)) {
+        ScopeSize = WORDS_TO_HALFWORDS(RtlpComputeScopeSize(UnwindCodePtr, UnwindCodesEndPtr, FALSE, UnwindParams));
 
         if (OffsetInFunction < ScopeSize) {
-            SkipWords = ScopeSize - OffsetInFunction;
+            SkipHalfWords = ScopeSize - OffsetInFunction;
             ExceptionHandler = NULL;
             ExceptionHandlerData = NULL;
             goto ExecuteCodes;
@@ -511,13 +516,13 @@ Return Value:
     //
 
     if ((HeaderWord & (1 << 21)) != 0) {
-        if (OffsetInFunction + (4 * UnwindWords - UnwindIndex) >= FunctionLength) {
-            ScopeSize = RtlpComputeScopeSize(UnwindCodePtr + UnwindIndex, UnwindCodesEndPtr, TRUE, UnwindParams);
+        if (OffsetInFunction + WORDS_TO_HALFWORDS(4 * UnwindWords - UnwindIndex) >= FunctionLength) {
+            ScopeSize = WORDS_TO_HALFWORDS(RtlpComputeScopeSize(UnwindCodePtr + UnwindIndex, UnwindCodesEndPtr, TRUE, UnwindParams));
             ScopeStart = FunctionLength - ScopeSize;
 
             if (OffsetInFunction >= ScopeStart) {
                 UnwindCodePtr += UnwindIndex;
-                SkipWords = OffsetInFunction - ScopeStart;
+                SkipHalfWords = OffsetInFunction - ScopeStart;
                 ExceptionHandler = NULL;
                 ExceptionHandlerData = NULL;
             }
@@ -547,13 +552,13 @@ Return Value:
             }
 
             UnwindIndex = HeaderWord >> 22;
-            if (OffsetInFunction < ScopeStart + (4 * UnwindWords - UnwindIndex)) {
-                ScopeSize = RtlpComputeScopeSize(UnwindCodePtr + UnwindIndex, UnwindCodesEndPtr, TRUE, UnwindParams);
+            if (OffsetInFunction < ScopeStart + WORDS_TO_HALFWORDS(4 * UnwindWords - UnwindIndex)) {
+                ScopeSize = WORDS_TO_HALFWORDS(RtlpComputeScopeSize(UnwindCodePtr + UnwindIndex, UnwindCodesEndPtr, TRUE, UnwindParams));
 
                 if (OffsetInFunction < ScopeStart + ScopeSize) {
 
                     UnwindCodePtr += UnwindIndex;
-                    SkipWords = OffsetInFunction - ScopeStart;
+                    SkipHalfWords = OffsetInFunction - ScopeStart;
                     ExceptionHandler = NULL;
                     ExceptionHandlerData = NULL;
                     break;
@@ -569,13 +574,16 @@ ExecuteCodes:
     // to skip.
     //
 
-    while (UnwindCodePtr < UnwindCodesEndPtr && SkipWords > 0) {
+    while (UnwindCodePtr < UnwindCodesEndPtr && SkipHalfWords > 0) {
         CurCode = MEMORY_READ_BYTE(UnwindParams, UnwindCodePtr);
         if (OPCODE_IS_END(CurCode)) {
             break;
         }
         UnwindCodePtr += UnwindCodeSizeTable[CurCode];
-        SkipWords--;
+        // TODO-RISCV64-RVC: Once we support RVC code in prolog / epilog,
+        // need to create table for mapping CurCode to OpSize.
+        // See arm/unwinder.cpp.
+        SkipHalfWords -= 2;
     }
 
     //

@@ -105,11 +105,11 @@ export function mono_wasm_stringify_as_error_with_stack (reason: any): string {
 }
 
 export function mono_wasm_trace_logger (log_domain_ptr: CharPtr, log_level_ptr: CharPtr, message_ptr: CharPtr, fatal: number, user_data: VoidPtr): void {
-    const origMessage = utf8ToString(message_ptr);
+    const origMessage = message_ptr ? utf8ToString(message_ptr) : "<no message>";
     const isFatal = !!fatal;
-    const domain = utf8ToString(log_domain_ptr);
+    const domain = log_domain_ptr ? utf8ToString(log_domain_ptr) : "";
     const dataPtr = user_data;
-    const log_level = utf8ToString(log_level_ptr);
+    const log_level = log_level_ptr ? utf8ToString(log_level_ptr) : "";
 
     const message = `[MONO] ${origMessage}`;
 
@@ -185,7 +185,7 @@ function performDeferredSymbolMapParsing () {
 
     //# chrome
     //# at http://127.0.0.1:63817/dotnet.wasm:wasm-function[8963]:0x1e23f4
-    regexes.push(/(?<replaceSection>[a-z]+:\/\/[^ )]*:wasm-function\[(?<funcNum>\d+)\]:0x[a-fA-F\d]+)/);
+    regexes.push(/(?<replaceSection>[a-z]+:\/\/[a-zA-Z0-9.:/_]*:wasm-function\[(?<funcNum>\d+)\]:0x[a-fA-F\d]+)/);
 
     //# <?>.wasm-function[8962]
     regexes.push(/(?<replaceSection><[^ >]+>[.:]wasm-function\[(?<funcNum>[0-9]+)\])/);
@@ -212,6 +212,6 @@ export function mono_wasm_get_func_id_to_name_mappings () {
     return [...wasm_func_map.values()];
 }
 
-export function mono_wasm_console_clear () {
+export function SystemJS_ConsoleClear () {
     console.clear();
 }

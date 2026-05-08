@@ -171,10 +171,7 @@ namespace System.Net.Http
 
         public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken token)
         {
-            if (buffer is null)
-            {
-                throw new ArgumentNullException(nameof(buffer));
-            }
+            ArgumentNullException.ThrowIfNull(buffer);
 
             if (offset < 0)
             {

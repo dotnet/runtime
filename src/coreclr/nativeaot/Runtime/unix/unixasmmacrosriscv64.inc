@@ -96,9 +96,8 @@ C_FUNC(\Name):
 .endm
 
 .macro PROLOG_SAVE_REG_PAIR_INDEXED reg1, reg2, ssize, __def_cfa_save=1
-    addi  sp, sp, \ssize
-    .cfi_adjust_cfa_offset  -\ssize
-    .cfi_def_cfa  sp, \ssize
+    addi  sp, sp, -\ssize
+    .cfi_adjust_cfa_offset  \ssize
 
     sd  \reg1, 0(sp)
     sd  \reg2, 8(sp)
@@ -113,8 +112,7 @@ C_FUNC(\Name):
 
 .macro PROLOG_SAVE_REG_PAIR_NO_FP_INDEXED reg1, reg2, ssize
     addi  sp, sp, -\ssize
-    //.cfi_adjust_cfa_offset  \ssize
-    .cfi_def_cfa  sp, \ssize
+    .cfi_adjust_cfa_offset  \ssize
 
     sd  \reg1, 0(sp)
     sd  \reg2, 8(sp)
@@ -156,69 +154,18 @@ C_FUNC(\Name):
         jalr \reg
 .endm
 
-// Loads the address of a thread-local variable into the target register.
-// The target register cannot be a0.
-.macro INLINE_GET_TLS_VAR target, var
-    .ifc \target, a0
-        .error "target cannot be a0"
-    .endif
-
-    addi sp, sp, -48
-    sd ra,  40(sp)
-    sd t1,  32(sp)
-    sd a1,  24(sp)
-    sd a2,  16(sp)
-    sd a3,   8(sp)
-    sd a4,   0(sp)
-
-    // global dynamic TLS, see https://github.com/riscv-non-isa/riscv-elf-psabi-doc/blob/eb2b2962/riscv-elf.adoc#global-dynamic
-    la.tls.gd a0, \var
-    call C_FUNC(__tls_get_addr)
-
-    ld ra,  40(sp)
-    ld t1,  32(sp)
-    ld a1,  24(sp)
-    ld a2,  16(sp)
-    ld a3,   8(sp)
-    ld a4,   0(sp)
-    addi sp, sp, 48
-
-    mv \target, a0
-
-    /*
-    In the future we should switch to TLS descriptors. The support was added in 2024 in glibc, musl, llvm, gcc and binutils,
-    so its support is currently unavailable on majority devices. See https://maskray.me/blog/2024-01-23-riscv-tlsdesc-works
-
-    When the support for TLS descriptors is available in NativeAOT baseline, actions to perform:
-    * Apply this patch:
-        ```
-        --- a/src/coreclr/nativeaot/CMakeLists.txt
-        +++ b/src/coreclr/nativeaot/CMakeLists.txt
-        @@ -30,6 +30,8 @@ endif (CLR_CMAKE_HOST_UNIX)
-
-        if(CLR_CMAKE_TARGET_ANDROID)
-            add_definitions(-DFEATURE_EMULATED_TLS)
-        +elseif(CLR_CMAKE_TARGET_ARCH_RISCV64)
-        +    add_definitions(-mtls-dialect=desc)
-        endif()
-
-        add_subdirectory(Bootstrap)
-        ```
-    * Uncomment the following code and remove these comments.
-
-    // TLS descriptor, see https://github.com/riscv-non-isa/riscv-elf-psabi-doc/blob/eb2b2962/riscv-elf.adoc#tls-descriptors
-    auipc  a0, %tlsdesc_hi(\var)
-    lw     t0, %tlsdesc_load_lo(\var)(a0)
-    addi   a0, a0, %tlsdesc_add_lo(\var)
-    jalr   t0, 0(t0), %tlsdesc_call(\var)
-    add    \target, tp, a0
-
-    */
-.endm
+#include <riscv64/InlineTls.inc>
 
 // Inlined version of RhpGetThread. Target cannot be x0.
 .macro INLINE_GETTHREAD target
     INLINE_GET_TLS_VAR \target, C_FUNC(tls_CurrentThread)
+.endm
+
+// Caller must have an established frame, trashes volatile registers
+.macro INLINE_GET_ALLOC_CONTEXT_BASE
+    // global dynamic TLS, see https://github.com/riscv-non-isa/riscv-elf-psabi-doc/blob/eb2b2962/riscv-elf.adoc#global-dynamic
+    la.tls.gd a0, C_FUNC(tls_CurrentThread)
+    call C_FUNC(__tls_get_addr)
 .endm
 
 .macro InterlockedOperationBarrier
@@ -243,13 +190,14 @@ C_FUNC(\Name):
 #define PTFF_SAVE_SP            0x00000800
 #define PTFF_SAVE_A0            0x00004000
 #define PTFF_SAVE_A1            0x00008000
+#define PTFF_SAVE_A2            0x00010000
 #define PTFF_SAVE_ALL_PRESERVED 0x000007FF  // NOTE: S1-S11
-#define PTFF_THREAD_HIJACK_HI   0x00000002  // upper 32 bits of the PTFF_THREAD_HIJACK
+#define PTFF_THREAD_HIJACK      0x80000000
 
 #define DEFAULT_FRAME_SAVE_FLAGS PTFF_SAVE_ALL_PRESERVED + PTFF_SAVE_SP
 
 .macro PUSH_COOP_PINVOKE_FRAME trashReg
-    PROLOG_SAVE_REG_PAIR_INDEXED   s0, ra, -128      // Push down stack pointer and store s0 (fp) and RA
+    PROLOG_SAVE_REG_PAIR_INDEXED   s0, ra, 128      // Push down stack pointer and store s0 (fp) and RA
 
     // 16 bytes reserved for Thread* and flags
 
@@ -259,10 +207,11 @@ C_FUNC(\Name):
     PROLOG_SAVE_REG_PAIR   s5, s6, 64
     PROLOG_SAVE_REG_PAIR   s7, s8, 80
     PROLOG_SAVE_REG_PAIR   s9, s10, 96
+    PROLOG_SAVE_REG        s11, 112
 
     // Save the value of SP before stack allocation to the last slot in the frame (slot #15)
     add \trashReg, sp, 128
-    sd \trashReg, 112(sp)
+    sd \trashReg, 120(sp)
 
     // Record the bitmask of saved registers in the frame (slot #3)
     li \trashReg, DEFAULT_FRAME_SAVE_FLAGS
@@ -278,11 +227,9 @@ C_FUNC(\Name):
     EPILOG_RESTORE_REG_PAIR   s5, s6, 64
     EPILOG_RESTORE_REG_PAIR   s7, s8, 80
     EPILOG_RESTORE_REG_PAIR   s9, s10, 96
+    EPILOG_RESTORE_REG        s11, 112
     EPILOG_RESTORE_REG_PAIR_INDEXED   s0, ra, 128
 .endm
-
-// Bit position for the flags above, to be used with tbz / tbnz instructions
-#define PTFF_THREAD_ABORT_BIT 31
 
 //
 // CONSTANTS -- INTEGER
@@ -293,10 +240,8 @@ C_FUNC(\Name):
 #define TSF_SuppressGcStress__OR__TSF_DoNotTriggerGC 0x18
 
 // Bit position for the flags above, to be used with tbz / tbnz instructions
-#define TrapThreadsFlags_AbortInProgress_Bit 0
-#define TrapThreadsFlags_TrapThreads_Bit     1
+#define TrapThreadsFlags_TrapThreads_Bit     0
 
 // These must match the TrapThreadsFlags enum
 #define TrapThreadsFlags_None            0
-#define TrapThreadsFlags_AbortInProgress 1
-#define TrapThreadsFlags_TrapThreads     2
+#define TrapThreadsFlags_TrapThreads     1

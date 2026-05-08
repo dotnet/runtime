@@ -400,7 +400,7 @@ namespace Internal.TypeSystem.Ecma
             }
             throw new ArgumentException("Invalid UserStringHandle passed to MutableModule.GetObject");
         }
-        public override object GetType(string nameSpace, string name, NotFoundBehavior notFoundBehavior) => throw new NotImplementedException();
+        public override object GetType(ReadOnlySpan<byte> nameSpace, ReadOnlySpan<byte> name, NotFoundBehavior notFoundBehavior) => throw new NotImplementedException();
         public TypeDesc GetType(EntityHandle handle)
         {
             TypeDesc type = GetObject(handle, NotFoundBehavior.Throw) as TypeDesc;

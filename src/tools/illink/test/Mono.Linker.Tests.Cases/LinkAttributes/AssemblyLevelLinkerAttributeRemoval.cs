@@ -6,17 +6,17 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.LinkAttributes
 {
-	[SetupLinkAttributesFile ("AssemblyLevelLinkerAttributeRemoval.xml")]
-	[IgnoreLinkAttributes (false)]
+    [SetupLinkAttributesFile("AssemblyLevelLinkerAttributeRemoval.xml")]
+    [IgnoreLinkAttributes(false)]
 
-	[SetupCompileBefore ("library.dll", new[] { "Dependencies/AssemblyLevelLinkerAttributeRemoval_Lib.cs" })]
+    [SetupCompileBefore("library.dll", new[] { "Dependencies/AssemblyLevelLinkerAttributeRemoval_Lib.cs" })]
 
-	[RemovedTypeInAssembly ("library.dll", "Mono.Linker.Tests.Cases.TestAttributeLib.MyAttribute")]
-	class AssemblyLevelLinkerAttributeRemoval
-	{
-		public static void Main ()
-		{
-			new Mono.Linker.Tests.Cases.TestAttributeLib.Foo ();
-		}
-	}
+    [RemovedTypeInAssembly("library.dll", "Mono.Linker.Tests.Cases.TestAttributeLib.MyAttribute")]
+    class AssemblyLevelLinkerAttributeRemoval
+    {
+        public static void Main()
+        {
+            new Mono.Linker.Tests.Cases.TestAttributeLib.Foo();
+        }
+    }
 }

@@ -69,7 +69,6 @@ namespace TestLibrary
         public static bool IsLinux => OperatingSystem.IsLinux();
         public static bool IsFreeBSD => OperatingSystem.IsFreeBSD();
         public static bool IsMacOSX => OperatingSystem.IsMacOS();
-        public static bool IsWindows7 => IsWindows && Environment.OSVersion.Version.Major == 6 && Environment.OSVersion.Version.Minor == 1;
         public static bool IsWindowsNanoServer => (!IsWindowsIoTCore && GetInstallationType().Equals("Nano Server", StringComparison.OrdinalIgnoreCase));
 
         // Windows 10 October 2018 Update
@@ -93,11 +92,22 @@ namespace TestLibrary
 
         // return whether or not the OS is a 64 bit OS
         public static bool Is64 => (IntPtr.Size == 8);
+        public static bool Is32 => (IntPtr.Size == 4);
 
         public static bool IsMonoRuntime => Type.GetType("Mono.RuntimeStructs") != null;
         public static bool IsNotMonoRuntime => !IsMonoRuntime;
         public static bool IsNativeAot => IsNotMonoRuntime && !IsReflectionEmitSupported;
         public static bool IsNotNativeAot => !IsNativeAot;
+
+        public static bool IsCoreClrInterpreter
+        {
+            get
+            {
+                if (RuntimeFeature.IsDynamicCodeSupported && !RuntimeFeature.IsDynamicCodeCompiled)
+                    return true;
+                return CoreClrConfigurationDetection.IsCoreClrInterpreter;
+            }
+        }
 
         public static bool HasAssemblyFiles => !string.IsNullOrEmpty(typeof(Utilities).Assembly.Location);
         public static bool IsSingleFile => !HasAssemblyFiles;
@@ -108,7 +118,6 @@ namespace TestLibrary
 #else
         public static bool IsReflectionEmitSupported => true;
 #endif
-        public static bool SupportsExceptionInterop => IsWindows && IsNotMonoRuntime && !IsNativeAot; // matches definitions in clr.featuredefines.props
         public static bool IsGCStress => (Environment.GetEnvironmentVariable("DOTNET_GCStress") != null);
 
         public static string ByteArrayToString(byte[] bytes)
@@ -487,6 +496,38 @@ namespace TestLibrary
             }
 
             Assert.False(alcWeakRef.IsAlive);
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        public struct RLimit
+        {
+            public ulong rlim_cur; // Soft limit
+            public ulong rlim_max; // Hard limit
+        }
+
+        public const int RLIMIT_CORE = 4; // Core file size
+
+        [DllImport("libc", SetLastError = true)]
+        public static extern int setrlimit(int resource, ref RLimit rlim);
+
+        // Ensure that the OS doesn't generate core dump for the current process
+        public static void DisableOSCoreDump()
+        {
+            // At present, RLimit is defined in a way where the fields are always 64-bit.
+            // Before adding support for a new platform, its definition of rlimit should be confirmed.
+            if (OperatingSystem.IsLinux() || OperatingSystem.IsMacOS())
+            {
+                RLimit rlimit = new RLimit
+                {
+                    rlim_cur = 0,
+                    rlim_max = 0
+                };
+
+                if (setrlimit(RLIMIT_CORE, ref rlimit) != 0)
+                {
+                    throw new Exception($"Failed to disable core dump, error {Marshal.GetLastPInvokeError()} - {Marshal.GetLastPInvokeErrorMessage()}.");
+                }
+            }
         }
     }
 }

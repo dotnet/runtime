@@ -15,7 +15,7 @@ namespace System.Net.Mime.Tests
         {
             var s = new Base64Stream(new Base64WriteStateInfo());
             var testHeaderBytes = Encoding.UTF8.GetBytes(testHeader);
-            s.EncodeBytes(testHeaderBytes, 0, testHeaderBytes.Length);
+            s.EncodeBytes(testHeaderBytes);
 
             string encodedString = s.GetEncodedString();
             for (int i = 0; i < encodedString.Length; i++)
@@ -24,7 +24,7 @@ namespace System.Net.Mime.Tests
             }
 
             byte[] stringToDecode = Encoding.ASCII.GetBytes(encodedString);
-            int result = s.DecodeBytes(stringToDecode, 0, encodedString.Length);
+            int result = s.DecodeBytes(stringToDecode.AsSpan(0, encodedString.Length));
             Assert.Equal(testHeader, Encoding.UTF8.GetString(stringToDecode, 0, result));
         }
 
@@ -43,7 +43,7 @@ namespace System.Net.Mime.Tests
             }
 
             byte[] stringToDecode = Encoding.ASCII.GetBytes(encodedString);
-            int result = s.DecodeBytes(stringToDecode, 0, encodedString.Length);
+            int result = s.DecodeBytes(stringToDecode.AsSpan(0, encodedString.Length));
             Assert.Equal(testHeader, Encoding.UTF8.GetString(stringToDecode, 0, result));
         }
 
@@ -55,13 +55,13 @@ namespace System.Net.Mime.Tests
             const string TestString = "0123456789abcdef";
 
             byte[] buffer = Encoding.UTF8.GetBytes(TestString);
-            s.EncodeBytes(buffer, 0, buffer.Length);
+            s.EncodeBytes(buffer);
             string encodedString = s.GetEncodedString();
 
             Assert.Equal("MDEyMzQ1Njc4OWFiY2RlZg==", encodedString);
 
             byte[] stringToDecode = Encoding.ASCII.GetBytes(encodedString);
-            int result = s.DecodeBytes(stringToDecode, 0, encodedString.Length);
+            int result = s.DecodeBytes(stringToDecode.AsSpan(0, encodedString.Length));
 
             Assert.Equal(TestString, Encoding.UTF8.GetString(stringToDecode, 0, result));
         }
@@ -79,7 +79,7 @@ namespace System.Net.Mime.Tests
             Assert.Equal("MDEyMzQ1Njc4OWFiY2RlZg==", encodedString);
 
             byte[] stringToDecode = Encoding.ASCII.GetBytes(encodedString);
-            int result = s.DecodeBytes(stringToDecode, 0, encodedString.Length);
+            int result = s.DecodeBytes(stringToDecode.AsSpan(0, encodedString.Length));
 
             Assert.Equal(TestString, Encoding.UTF8.GetString(stringToDecode, 0, result));
         }
@@ -91,11 +91,11 @@ namespace System.Net.Mime.Tests
             var s = new Base64Stream(writeStateInfo);
 
             byte[] buffer = Encoding.UTF8.GetBytes(LongString);
-            s.EncodeBytes(buffer, 0, buffer.Length);
+            s.EncodeBytes(buffer);
             string encodedString = s.GetEncodedString();
 
             byte[] stringToDecode = Encoding.ASCII.GetBytes(encodedString);
-            int result = s.DecodeBytes(stringToDecode, 0, encodedString.Length);
+            int result = s.DecodeBytes(stringToDecode.AsSpan(0, encodedString.Length));
 
             Assert.Equal(LongString, Encoding.UTF8.GetString(stringToDecode, 0, result));
         }
@@ -110,7 +110,7 @@ namespace System.Net.Mime.Tests
             string encodedString = s.GetEncodedString();
 
             byte[] stringToDecode = Encoding.ASCII.GetBytes(encodedString);
-            int result = s.DecodeBytes(stringToDecode, 0, encodedString.Length);
+            int result = s.DecodeBytes(stringToDecode.AsSpan(0, encodedString.Length));
 
             Assert.Equal(LongString, Encoding.UTF8.GetString(stringToDecode, 0, result));
         }

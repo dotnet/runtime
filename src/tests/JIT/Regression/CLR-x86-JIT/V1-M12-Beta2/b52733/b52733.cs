@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Xunit;
-namespace Test
+namespace b52733
 {
     using System;
 
@@ -13,6 +13,7 @@ namespace Test
 
         private static float[] Method1() { return s_af = new float[5]; }
 
+        [OuterLoop]
         [Fact]
         public static void TestEntryPoint()
         {

@@ -3,7 +3,7 @@
 
 namespace Mono.Linker.Tests.Cases.Libraries.Dependencies
 {
-	public class RootAllLibrary_ExportedType
-	{
-	}
+    public class RootAllLibrary_ExportedType
+    {
+    }
 }

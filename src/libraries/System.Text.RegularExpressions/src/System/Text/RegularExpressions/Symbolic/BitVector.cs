@@ -17,7 +17,7 @@ namespace System.Text.RegularExpressions.Symbolic
     {
         /// <summary>Stores the bits in an array of 64-bit integers.</summary>
         /// <remarks>
-        /// If Length is not evenly divisible by 64 then the remainingbits are
+        /// If Length is not evenly divisible by 64 then the remaining bits are
         /// in the least significant bits of the last element.
         /// </remarks>
         private readonly ulong[] _blocks;

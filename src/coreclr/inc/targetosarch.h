@@ -95,6 +95,14 @@ public:
     static const bool IsArmArch = false;
     static const bool IsLoongArch64 = false;
     static const bool IsRiscV64 = true;
+#elif defined(TARGET_WASM)
+    static const bool IsX86 = false;
+    static const bool IsX64 = false;
+    static const bool IsArm64 = false;
+    static const bool IsArm32 = false;
+    static const bool IsArmArch = false;
+    static const bool IsLoongArch64 = false;
+    static const bool IsRiscV64 = false;
 #else
 #error Unknown architecture
 #endif

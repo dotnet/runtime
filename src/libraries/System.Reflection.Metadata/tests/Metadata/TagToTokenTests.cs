@@ -3,10 +3,9 @@
 
 using System.Collections.Generic;
 using System.Linq;
+using System.Numerics;
 using System.Reflection.Metadata.Ecma335;
 using Xunit;
-
-using BitArithmetic = System.Reflection.Internal.BitArithmetic;
 
 namespace System.Reflection.Metadata.Tests
 {
@@ -161,7 +160,7 @@ namespace System.Reflection.Metadata.Tests
                         tag.Name + " did not round trip coded index -> handle -> coded index");
                 }
 
-                Assert.True(badTagCount == (1 << tag.GetNumberOfBits()) - BitArithmetic.CountBits((ulong)tag.GetTablesReferenced()),
+                Assert.True(badTagCount == (1 << tag.GetNumberOfBits()) - BitOperations.PopCount((ulong)tag.GetTablesReferenced()),
                     tag.Name + " did not find the correct number of bad tags.");
 
                 Assert.True(tablesNotUsed == 0,

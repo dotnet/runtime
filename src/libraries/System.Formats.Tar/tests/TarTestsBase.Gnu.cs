@@ -56,33 +56,10 @@ namespace System.Formats.Tar.Tests
 
         protected void SetGnuProperties(GnuTarEntry entry)
         {
-            // The octal format limits the representable range.
-            bool formatIsOctalOnly = entry.Format is not TarEntryFormat.Pax and not TarEntryFormat.Gnu;
-
-            DateTimeOffset approxNow = DateTimeOffset.UtcNow.Subtract(TimeSpan.FromHours(6));
-
-            // ATime: Verify the default value was approximately "now"
-            Assert.True(entry.AccessTime > approxNow);
-            if (formatIsOctalOnly)
-            {
-                Assert.Throws<ArgumentOutOfRangeException>(() => entry.AccessTime = DateTimeOffset.MinValue);
-            }
-            else
-            {
-                entry.AccessTime = DateTimeOffset.MinValue;
-            }
+            Assert.Equal(default, entry.AccessTime);
             entry.AccessTime = TestAccessTime;
 
-            // CTime: Verify the default value was approximately "now"
-            Assert.True(entry.ChangeTime > approxNow);
-            if (formatIsOctalOnly)
-            {
-                Assert.Throws<ArgumentOutOfRangeException>(() => entry.ChangeTime = DateTimeOffset.MinValue);
-            }
-            else
-            {
-                entry.ChangeTime = DateTimeOffset.MinValue;
-            }
+            Assert.Equal(default, entry.ChangeTime);
             entry.ChangeTime = TestChangeTime;
         }
 
@@ -136,8 +113,8 @@ namespace System.Formats.Tar.Tests
 
         protected void VerifyGnuTimestamps(GnuTarEntry gnu)
         {
-            AssertExtensions.GreaterThanOrEqualTo(gnu.AccessTime, DateTimeOffset.UnixEpoch);
-            AssertExtensions.GreaterThanOrEqualTo(gnu.ChangeTime, DateTimeOffset.UnixEpoch);
+            Assert.Equal(default, gnu.AccessTime);
+            Assert.Equal(default, gnu.ChangeTime);
         }
     }
 }

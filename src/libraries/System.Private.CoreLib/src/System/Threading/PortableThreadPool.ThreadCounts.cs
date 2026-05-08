@@ -44,6 +44,65 @@ namespace System.Threading
                 }
             }
 
+            // Returns "true" if adding NumProcessingWork has reached the limit.
+            // Note: it is possible to be in Saturated state while NumProcessingWork is under
+            // the limit if the limit has been changed after the state was set. That is ok.
+            // While changes in NumProcessingWork need to be matched with semaphore Wait/Signal,
+            // the redundantly set Saturated is mostly harmless and should self-correct when
+            // a worker that sees no work calls TryDecrementProcessingWork, possibly at a cost of
+            // redundant check for work.
+            public bool IsSaturated
+            {
+                get
+                {
+                    return (long)_data < 0;
+                }
+            }
+
+            /// <summary>
+            /// Tries to increase the number of threads processing work items by one.
+            /// If at or above goal, returns false and sets Saturated flag instead.
+            /// Note: only if "true" is returned the NumProcessingWork is incremented.
+            /// </summary>
+            public bool TryIncrementProcessingWork()
+            {
+                Debug.Assert(NumProcessingWork >= 0);
+                if (NumProcessingWork < NumThreadsGoal)
+                {
+                    NumProcessingWork++;
+                    // This should never overflow
+                    Debug.Assert(NumProcessingWork > 0);
+                    return true;
+                }
+                else
+                {
+                    _data |= (1ul << 63);
+                    return false;
+                }
+            }
+
+            /// <summary>
+            /// Tries to reduce the number of threads processing work items by one.
+            /// If in a Saturated state, clears the Saturated state and returns false.
+            /// Note: only if "true" is returned the NumProcessingWork is decremented.
+            /// </summary>
+            public bool TryDecrementProcessingWork()
+            {
+                Debug.Assert(NumProcessingWork > 0);
+                if (IsSaturated)
+                {
+                    _data &= ~(1ul << 63);
+                    return false;
+                }
+                else
+                {
+                    NumProcessingWork--;
+                    // This should never underflow
+                    Debug.Assert(NumProcessingWork >= 0);
+                    return true;
+                }
+            }
+
             /// <summary>
             /// Number of thread pool threads that currently exist.
             /// </summary>

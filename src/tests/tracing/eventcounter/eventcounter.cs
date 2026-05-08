@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics.Tracing;
 using System.Threading;
 using Xunit;
+using TestLibrary;
 
 namespace BasicEventSourceTests
 {
@@ -105,6 +106,8 @@ namespace BasicEventSourceTests
             }
         }
 
+        [ActiveIssue(" needs triage ", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoAnyAOT))]
+        [ActiveIssue("System.Threading.Thread.UnsafeStart not supported", TestPlatforms.Browser)]
         [Fact]
         public static int TestEntryPoint()
         {

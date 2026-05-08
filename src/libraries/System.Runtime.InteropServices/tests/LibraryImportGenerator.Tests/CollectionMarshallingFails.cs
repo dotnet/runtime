@@ -110,7 +110,8 @@ namespace LibraryImportGenerator.IntegrationTests
     public class CollectionMarshallingFails
     {
         [Fact]
-        public void UTFStringConversionFailures()
+        [SkipOnCI("Allocates enough memory that the OOM killer can kill the process on our Helix machines.")]
+        public void BigUTFStringConversionFailures()
         {
             bool threw = false;
             try

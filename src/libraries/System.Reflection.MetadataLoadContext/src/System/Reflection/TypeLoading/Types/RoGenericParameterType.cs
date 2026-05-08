@@ -50,12 +50,12 @@ namespace System.Reflection.TypeLoading
 
         public sealed override int GenericParameterPosition => (_lazyPosition == -1) ? (_lazyPosition = ComputePosition()) : _lazyPosition;
         protected abstract int ComputePosition();
-        private volatile int _lazyPosition = -1;
+        private int _lazyPosition = -1;
 
         public sealed override Type[] GetGenericParameterConstraints() => GetGenericParameterConstraintsNoCopy().CloneArray<Type>();
         private RoType[] GetGenericParameterConstraintsNoCopy() => _lazyConstraints ??= ComputeGenericParameterConstraints();
         protected abstract RoType[] ComputeGenericParameterConstraints();
-        private volatile RoType[]? _lazyConstraints;
+        private RoType[]? _lazyConstraints;
 
         public sealed override Type GetFunctionPointerReturnType() => throw new InvalidOperationException(SR.InvalidOperation_NotFunctionPointer);
         public sealed override Type[] GetFunctionPointerParameterTypes() => throw new InvalidOperationException(SR.InvalidOperation_NotFunctionPointer);

@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Text.Json.Tests;
 using System.Text.RegularExpressions;
 using Newtonsoft.Json;
@@ -227,6 +228,11 @@ namespace System.Text.Json
                 sequences.Add(sequence);
             }
             return sequences;
+        }
+
+        public static ReadOnlySequence<byte> GetSequence(IEnumerable<byte[]> json)
+        {
+            return BufferFactory.Create(json.ToArray());
         }
 
         internal static ReadOnlySequence<byte> SegmentInto(ReadOnlyMemory<byte> data, int segmentCount)
@@ -795,8 +801,10 @@ namespace System.Text.Json
         // This is needed due to the fact that git might normalize line endings when checking-out files
         public static string NormalizeLineEndings(this string value) => value.ReplaceLineEndings();
 #else
-        private const string CompiledNewline = @"
-";
+        private const string CompiledNewline = """
+
+
+            """;
 
         private static readonly bool s_replaceNewlines =
             !StringComparer.Ordinal.Equals(CompiledNewline, Environment.NewLine);

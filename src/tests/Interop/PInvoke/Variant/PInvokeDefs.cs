@@ -196,4 +196,11 @@ class VariantNative
     public static extern bool Marshal_Struct_ByRef_Empty(ref ObjectWrapper wrapper);
     [DllImport(nameof(VariantNative))]
     public static extern bool Marshal_Struct_ByRef_Null(ref ObjectWrapper wrapper);
+
+    [DllImport(nameof(VariantNative))]
+    public static extern void GetBSTRWithTrailingByteInVariant(out object variant);
+
+    [DllImport(nameof(VariantNative))]
+    [return: MarshalAs(UnmanagedType.U1)]
+    public static extern bool VerifyBSTRWithTrailingByteInVariant(object variant);
 }

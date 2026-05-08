@@ -207,7 +207,7 @@ namespace System.IO.Tests
             Assert.NotEqual(testDir.FullName, IOServices.RemoveTrailingSlash(result.FullName));
         }
 
-        [ConditionalFact(nameof(UsingNewNormalization))]
+        [Fact]
         [PlatformSpecific(TestPlatforms.Windows)]  // Extended windows path
         public void ExtendedPathSubdirectory()
         {
@@ -216,6 +216,41 @@ namespace System.IO.Tests
             DirectoryInfo subDir = testDir.CreateSubdirectory("Foo");
             Assert.True(subDir.Exists);
             Assert.StartsWith(IOInputs.ExtendedPrefix, subDir.FullName);
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public void CreateSubdirectory_RootDriveSubfolder_Windows()
+        {
+            string rootDrive = Path.GetPathRoot(Environment.SystemDirectory);
+            DirectoryInfo rootDirectory = new DirectoryInfo(rootDrive);
+            string testFolderName = GetTestFileName();
+
+            try
+            {
+                DirectoryInfo subDirectory = rootDirectory.CreateSubdirectory(testFolderName);
+
+                Assert.True(subDirectory.Exists);
+                Assert.Equal(Path.Combine(rootDrive, testFolderName), subDirectory.FullName);
+            }
+            finally
+            {
+                string testFolderPath = Path.Combine(rootDrive, testFolderName);
+                if (Directory.Exists(testFolderPath))
+                {
+                    Directory.Delete(testFolderPath, recursive: true);
+                }
+            }
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Linux)]
+        public void CreateSubdirectory_RootDriveSubfolder_ThrowsUnauthorizedAccessException_Linux()
+        {
+            DirectoryInfo rootDirectory = new DirectoryInfo("/");
+            string testFolderName = GetTestFileName();
+
+            Assert.Throws<UnauthorizedAccessException>(() => rootDirectory.CreateSubdirectory(testFolderName));
         }
 
         [Fact]

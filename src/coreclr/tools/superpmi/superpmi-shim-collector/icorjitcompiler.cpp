@@ -68,7 +68,7 @@ CorJitResult interceptor_ICJC::compileMethod(ICorJitInfo*                comp,  
     auto* mc = new MethodContext();
     interceptor_ICJI our_ICorJitInfo(this, comp, mc);
 
-    mc->cr->recProcessName(GetCommandLineA());
+    mc->cr->recProcessName(GetProcessCommandLine().c_str());
 
     mc->recCompileMethod(info, flags, currentOs);
 

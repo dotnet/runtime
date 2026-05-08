@@ -436,7 +436,6 @@ void ShimStackWalk::Populate()
                                 // These frame types are tracked specially.
                                 break;
 
-                            case STUBFRAME_APPDOMAIN_TRANSITION:    // fall through
                             case STUBFRAME_LIGHTWEIGHT_FUNCTION:    // fall through
                             case STUBFRAME_INTERNALCALL:
                                 // These frame types don't correspond to chains.
@@ -1202,7 +1201,7 @@ BOOL ShimStackWalk::CheckInternalFrame(ICorDebugFrame *     pNextStackFrame,
     // Special handling for the case where a managed method contains a M2U internal frame.
     // Normally only IL stubs contain M2U internal frames, but we may have inlined pinvoke calls in
     // optimized code.  In that case, we would have an InlinedCallFrame in a normal managed method on x86.
-    // On WIN64, we would have a normal NDirectMethodFrame* in a normal managed method.
+    // On WIN64, we would have a normal PInvokeMethodFrame* in a normal managed method.
     if (pStackWalkInfo->m_internalFrameType == STUBFRAME_M2U)
     {
         // create a temporary ICDStackWalk
@@ -1399,8 +1398,7 @@ void ShimStackWalk::TrackUMChain(ChainInfo * pChainInfo, StackWalkInfo * pStackW
             // Sometimes we may not want to show an UM chain b/c we know it's just
             // code inside of mscorwks. (Eg: Funcevals & AD transitions both fall into this category).
             // These are perfectly valid UM chains and we could give them if we wanted to.
-            if ((pStackWalkInfo->m_internalFrameType == STUBFRAME_APPDOMAIN_TRANSITION) ||
-                (pStackWalkInfo->m_internalFrameType == STUBFRAME_FUNC_EVAL))
+            if (pStackWalkInfo->m_internalFrameType == STUBFRAME_FUNC_EVAL)
             {
                 pChainInfo->CancelUMChain();
             }

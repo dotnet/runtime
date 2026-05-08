@@ -9,6 +9,9 @@
 #include <contract.h>
 #include <stddef.h> // offsetof
 
+// Forward Declarations
+template<typename T> struct cdac_data;
+
 //
 // ArrayList is a simple class which is used to contain a growable
 // list of pointers, stored in chunks.  Modification is by appending
@@ -263,7 +266,20 @@ class ArrayListBase
         return BlockIterator((ArrayListBlock *) &m_firstBlock, m_count);
     }
 
+    friend struct cdac_data<ArrayListBase>;
 };
+
+template<>
+struct cdac_data<ArrayListBase>
+{
+    static constexpr size_t Count = offsetof(ArrayListBase, m_count);
+    static constexpr size_t FirstBlock = offsetof(ArrayListBase, m_firstBlock);
+
+    static constexpr size_t Next = offsetof(ArrayListBase::ArrayListBlock, m_next);
+    static constexpr size_t Size = offsetof(ArrayListBase::ArrayListBlock, m_blockSize);
+    static constexpr size_t ArrayStart = offsetof(ArrayListBase::ArrayListBlock, m_array);
+};
+
 
 class ArrayList : public ArrayListBase
 {

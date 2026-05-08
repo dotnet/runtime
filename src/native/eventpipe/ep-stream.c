@@ -538,6 +538,18 @@ ep_ipc_stream_close_vcall (IpcStream *ipc_stream)
 	return vtable->close_func (ipc_stream);
 }
 
+IpcPollEvents
+ep_ipc_stream_poll_vcall (IpcStream *ipc_stream, uint32_t timeout_ms)
+{
+	EP_ASSERT (ipc_stream != NULL);
+
+	EP_ASSERT (ipc_stream->vtable != NULL);
+	IpcStreamVtable *vtable = ipc_stream->vtable;
+
+	EP_ASSERT (vtable->poll_func != NULL);
+	return vtable->poll_func (ipc_stream, timeout_ms);
+}
+
 /*
  * IpcStreamWriter.
  */

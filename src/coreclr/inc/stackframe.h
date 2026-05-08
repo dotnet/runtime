@@ -114,13 +114,11 @@ struct CallerStackFrame : StackFrame
     {
     }
 
-#ifdef FEATURE_EH_FUNCLETS
     static inline CallerStackFrame FromRegDisplay(REGDISPLAY* pRD)
     {
         _ASSERTE(pRD->IsCallerSPValid || pRD->IsCallerContextValid);
         return CallerStackFrame(GetSP(pRD->pCallerContext));
     }
-#endif // FEATURE_EH_FUNCLETS
 };
 
 #endif  // __STACKFRAME_H

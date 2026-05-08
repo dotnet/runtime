@@ -17,27 +17,41 @@ namespace Microsoft.Extensions.FileSystemGlobbing
     {
         private static readonly char[] DirectorySeparators = new[] { Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar };
         private readonly IEnumerable<string> _files;
+        private readonly StringComparison _comparisonType;
 
         /// <summary>
-        /// Creates a new InMemoryDirectoryInfo with the root directory and files given.
+        /// Initializes a new instance of the <see cref="InMemoryDirectoryInfo" /> class with the root directory and files given.
         /// </summary>
         /// <param name="rootDir">The root directory that this FileSystem will use.</param>
         /// <param name="files">Collection of file names. If relative paths <paramref name="rootDir"/> will be prepended to the paths.</param>
         public InMemoryDirectoryInfo(string rootDir, IEnumerable<string>? files)
-            : this(rootDir, files, false)
+            : this(rootDir, files, false, StringComparison.Ordinal)
         {
         }
 
-        private InMemoryDirectoryInfo(string rootDir, IEnumerable<string>? files, bool normalized)
+        /// <summary>
+        /// Initializes a new instance of the <see cref="InMemoryDirectoryInfo" /> class with the root directory and files given.
+        /// </summary>
+        /// <param name="rootDir">The root directory that this FileSystem will use.</param>
+        /// <param name="files">Collection of file names. If relative paths <paramref name="rootDir"/> will be prepended to the paths.</param>
+        /// <param name="comparisonType">The comparison type for the root directory. When files are enumerated they will be compared with the root directory using this comparison type.</param>
+        internal InMemoryDirectoryInfo(string rootDir, IEnumerable<string>? files, StringComparison comparisonType)
+            : this(rootDir, files, false, comparisonType)
+        {
+        }
+
+        private InMemoryDirectoryInfo(string rootDir, IEnumerable<string>? files, bool normalized, StringComparison comparisonType, bool isParentPath = false)
         {
             if (string.IsNullOrEmpty(rootDir))
             {
                 throw new ArgumentNullException(nameof(rootDir));
             }
 
+            _comparisonType = comparisonType;
+
             files ??= new List<string>();
 
-            Name = Path.GetFileName(rootDir);
+            Name = isParentPath ? ".." : Path.GetFileName(rootDir);
             if (normalized)
             {
                 _files = files;
@@ -75,8 +89,8 @@ namespace Microsoft.Extensions.FileSystemGlobbing
         public override string Name { get; }
 
         /// <inheritdoc />
-        public override DirectoryInfoBase? ParentDirectory =>
-            new InMemoryDirectoryInfo(Path.GetDirectoryName(FullName)!, _files, true);
+        public override DirectoryInfoBase ParentDirectory =>
+            new InMemoryDirectoryInfo(Path.GetDirectoryName(FullName)!, _files, true, _comparisonType);
 
         /// <inheritdoc />
         public override IEnumerable<FileSystemInfoBase> EnumerateFileSystemInfos()
@@ -113,15 +127,15 @@ namespace Microsoft.Extensions.FileSystemGlobbing
 
             foreach (KeyValuePair<string, List<string>> item in dict)
             {
-                yield return new InMemoryDirectoryInfo(item.Key, item.Value, true);
+                yield return new InMemoryDirectoryInfo(item.Key, item.Value, true, _comparisonType);
             }
         }
 
-        private static bool IsRootDirectory(string rootDir, string filePath)
+        private bool IsRootDirectory(string rootDir, string filePath)
         {
             int rootDirLength = rootDir.Length;
 
-            return filePath.StartsWith(rootDir, StringComparison.Ordinal) &&
+            return filePath.StartsWith(rootDir, _comparisonType) &&
                 (rootDir[rootDirLength - 1] == Path.DirectorySeparatorChar ||
                 filePath.IndexOf(Path.DirectorySeparatorChar, rootDirLength) == rootDirLength);
         }
@@ -129,15 +143,21 @@ namespace Microsoft.Extensions.FileSystemGlobbing
         /// <inheritdoc />
         public override DirectoryInfoBase GetDirectory(string path)
         {
-            if (string.Equals(path, "..", StringComparison.Ordinal))
+            bool isParentPath = string.Equals(path, "..", StringComparison.Ordinal);
+
+            string normPath;
+
+            if (isParentPath)
             {
-                return new InMemoryDirectoryInfo(Path.Combine(FullName, path), _files, true);
+                normPath = Path.GetDirectoryName(FullName) ?? FullName;
             }
             else
             {
-                string normPath = Path.GetFullPath(path.Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar));
-                return new InMemoryDirectoryInfo(normPath, _files, true);
+                string combinedPath = Path.Combine(FullName, path);
+                normPath = Path.GetFullPath(combinedPath.Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar));
             }
+
+            return new InMemoryDirectoryInfo(normPath, _files, true, _comparisonType, isParentPath);
         }
 
         /// <summary>
@@ -147,7 +167,8 @@ namespace Microsoft.Extensions.FileSystemGlobbing
         /// <returns>Instance of <see cref="FileInfoBase"/> if the file exists, null otherwise.</returns>
         public override FileInfoBase? GetFile(string path)
         {
-            string normPath = Path.GetFullPath(path.Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar));
+            string combinedPath = Path.Combine(FullName, path);
+            string normPath = Path.GetFullPath(combinedPath.Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar));
             foreach (string file in _files)
             {
                 if (string.Equals(file, normPath))

@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics.Tracing;
+using System.Globalization;
 using System.Reflection;
 using System.Text;
 using System.Threading;
@@ -57,7 +58,7 @@ namespace System.Diagnostics.Tests
                     Assert.Equal(++eventsCount, eventSourceListener.EventCount);
                     ValidateActivityEvents(eventSourceListener, "ActivityStart", sources[i].Name, activities[i].OperationName);
                     Assert.True(activities[i].IsAllDataRequested);
-                    Assert.Equal(ActivityTraceFlags.Recorded, activities[i].ActivityTraceFlags);
+                    Assert.Equal(ActivityTraceFlags.Recorded | ActivityTraceFlags.RandomTraceId, activities[i].ActivityTraceFlags);
                 }
 
                 for (int i = 0; i < 10; i++)
@@ -105,7 +106,7 @@ namespace System.Diagnostics.Tests
                     }
                     Assert.Equal(eventsCount, eventSourceListener.EventCount);
                     Assert.True(activities[i].IsAllDataRequested);
-                    Assert.Equal(ActivityTraceFlags.Recorded, activities[i].ActivityTraceFlags);
+                    Assert.Equal(ActivityTraceFlags.Recorded | ActivityTraceFlags.RandomTraceId, activities[i].ActivityTraceFlags);
                 }
 
                 for (int i = 0; i < 10; i++)
@@ -125,12 +126,12 @@ namespace System.Diagnostics.Tests
         }
 
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        [InlineData("Propagate", false, ActivityTraceFlags.None)]
-        [InlineData("PROPAGATE", false, ActivityTraceFlags.None)]
-        [InlineData("Record", true, ActivityTraceFlags.None)]
-        [InlineData("recorD", true, ActivityTraceFlags.None)]
-        [InlineData("", true, ActivityTraceFlags.Recorded)]
-        public void TestEnableAllActivitySourcesWithSpeciifcSamplingResult(string samplingResult, bool alldataRequested, ActivityTraceFlags activityTraceFlags)
+        [InlineData("Propagate", false, ActivityTraceFlags.RandomTraceId)]
+        [InlineData("PROPAGATE", false, ActivityTraceFlags.RandomTraceId)]
+        [InlineData("Record", true, ActivityTraceFlags.RandomTraceId)]
+        [InlineData("recorD", true, ActivityTraceFlags.RandomTraceId)]
+        [InlineData("", true, ActivityTraceFlags.Recorded | ActivityTraceFlags.RandomTraceId)]
+        public void TestEnableAllActivitySourcesWithSpecificSamplingResult(string samplingResult, bool alldataRequested, ActivityTraceFlags activityTraceFlags)
         {
             RemoteExecutor.Invoke((result, dataRequested, traceFlags) =>
             {
@@ -180,8 +181,8 @@ namespace System.Diagnostics.Tests
                 Assert.NotNull(a);
                 Assert.Equal(bool.Parse(allDataRequested), a.IsAllDataRequested);
 
-                // All Activities created with "new Activity(...)" will have ActivityTraceFlags is `None`;
-                Assert.Equal(samplingResult.Length == 0 ? ActivityTraceFlags.Recorded : ActivityTraceFlags.None, a.ActivityTraceFlags);
+                // Activities created via ActivitySource with the default random trace ID generator will have RandomTraceId set.
+                Assert.Equal(samplingResult.Length == 0 ? ActivityTraceFlags.Recorded | ActivityTraceFlags.RandomTraceId : ActivityTraceFlags.RandomTraceId, a.ActivityTraceFlags);
 
                 a.Dispose();
 
@@ -1353,7 +1354,6 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/72801", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public void NoExceptionThrownWhenProcessingStaticActivityProperties()
         {
             // Ensures that no exception is thrown when static properties on the Activity type are passed to EventListener.
@@ -1439,6 +1439,52 @@ namespace System.Diagnostics.Tests
 
                 Assert.Equal(1, eventSourceListener.EventCount);
             }, spec, errorMessage).Dispose();
+        }
+
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(1)]
+        [InlineData(5)]
+        [InlineData(50)]
+        [InlineData(100)]
+        public void TestRateLimitingSampler(int maxOperationPerSecond)
+        {
+            RemoteExecutor.Invoke((maxOpPerSecond) =>
+            {
+                // Test RateLimitingSampler behavior
+                using TestDiagnosticSourceEventListener eventSourceListener = new TestDiagnosticSourceEventListener();
+                Activity a = new Activity(""); // we need this to ensure DiagnosticSourceEventSource.Logger creation.
+                Assert.Equal("", a.Source.Name);
+
+                Assert.Equal(0, eventSourceListener.EventCount);
+
+                Stopwatch sw = new Stopwatch();
+                sw.Start();
+
+                eventSourceListener.Enable($"[AS]*/-ParentRateLimitingSampler({maxOpPerSecond})");
+
+                while (sw.ElapsedMilliseconds < 3000)  // run for 3 seconds
+                {
+                    // ensure we are creating a root activity
+                    Activity.Current = null;
+                    using var nextRoot = a.Source.StartActivity("NextRoot");
+                }
+
+                int maxOps = int.Parse(maxOpPerSecond, CultureInfo.InvariantCulture);
+                // maxOperationPerSecond sampling allowed per second
+                // 2 events for every sampling (activity start and stop)
+                // 3 seconds of sampling
+                // tolerance of extra sample can be done if the second turn after the loop check sw.ElapsedMilliseconds. 2 extra events (start and stop).
+                Assert.True(maxOps * 2 * 3 + 2 >= eventSourceListener.EventCount, $"{eventSourceListener.EventCount} events were recorded, while maxOpPerSecond is {maxOpPerSecond}");
+
+                Thread.Sleep(1000); // ensure new allowance for root creation
+                Activity.Current = null;
+                using var root = a.Source.StartActivity("root");
+                Assert.NotNull(root);
+                Assert.True(root.Recorded);
+
+                using var child = a.Source.StartActivity("child");
+                Assert.NotNull(child); // Child should be created as the parent is recorded.
+            },  maxOperationPerSecond.ToString(CultureInfo.InvariantCulture)).Dispose();
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]

@@ -25,14 +25,7 @@ class StgIO;
 #include "pdbheap.h"
 #endif
 
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable:28718)    // public header missing SAL annotations
-#endif // _PREFAST_
 class TiggerStorage;
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif // _PREFAST_
 
 //*****************************************************************************
 // This class provides common definitions for heap segments.  It is both the
@@ -106,8 +99,6 @@ public:
         m_pImage = NULL;
         m_dwImageSize = 0;
         m_dwPEKind = (DWORD)(-1);
-        m_dwDatabaseLFS = 0;
-        m_dwDatabaseLFT = 0;
 #ifdef FEATURE_METADATA_EMIT_PORTABLE_PDB
         m_pPdbHeap = NULL;
 #endif
@@ -238,8 +229,6 @@ public:
 private:
     FILETYPE m_eFileType;
     WCHAR *  m_wszFileName;     // Database file name (NULL or non-empty string)
-    DWORD    m_dwDatabaseLFT;   // Low bytes of the database file's last write time
-    DWORD    m_dwDatabaseLFS;   // Low bytes of the database file's size
     StgIO *  m_pStgIO;          // For file i/o.
 #ifdef FEATURE_METADATA_EMIT_PORTABLE_PDB
     PdbHeap *m_pPdbHeap;

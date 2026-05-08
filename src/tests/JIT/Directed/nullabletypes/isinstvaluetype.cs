@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using TestLibrary;
 #pragma warning disable 0184
 
 
@@ -19702,6 +19703,7 @@ public class Program
         }
     }  // end of test case 0036
 
+    [ActiveIssue(" needs triage ", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoLLVMAOT))]
     [Fact]
     public static int TestEntryPoint()
     {

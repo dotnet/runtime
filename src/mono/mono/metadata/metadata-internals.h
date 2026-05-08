@@ -362,6 +362,7 @@ struct _MonoImage {
 	MonoMemPool         *mempool; /*protected by the image lock*/
 
 	char                *raw_metadata;
+	guint32              raw_metadata_len;
 
 	MonoStreamHeader     heap_strings;
 	MonoStreamHeader     heap_us;
@@ -1068,8 +1069,6 @@ mono_metadata_get_corresponding_property_from_generic_type_definition (MonoPrope
 
 guint32
 mono_metadata_signature_size (MonoMethodSignature *sig);
-
-guint mono_metadata_str_hash (gconstpointer v1);
 
 gboolean mono_image_load_pe_data (MonoImage *image);
 

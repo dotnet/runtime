@@ -106,6 +106,41 @@ public partial class VectorTest
                 if (!CheckValue(A[30], value)) returnVal = Fail;
                 if (!CheckValue(A[31], value)) returnVal = Fail;
             }
+            if (Vector<T>.Count >= 64)
+            {
+                if (!CheckValue(A[32], value)) returnVal = Fail;
+                if (!CheckValue(A[33], value)) returnVal = Fail;
+                if (!CheckValue(A[34], value)) returnVal = Fail;
+                if (!CheckValue(A[35], value)) returnVal = Fail;
+                if (!CheckValue(A[36], value)) returnVal = Fail;
+                if (!CheckValue(A[37], value)) returnVal = Fail;
+                if (!CheckValue(A[38], value)) returnVal = Fail;
+                if (!CheckValue(A[39], value)) returnVal = Fail;
+                if (!CheckValue(A[40], value)) returnVal = Fail;
+                if (!CheckValue(A[41], value)) returnVal = Fail;
+                if (!CheckValue(A[42], value)) returnVal = Fail;
+                if (!CheckValue(A[43], value)) returnVal = Fail;
+                if (!CheckValue(A[44], value)) returnVal = Fail;
+                if (!CheckValue(A[45], value)) returnVal = Fail;
+                if (!CheckValue(A[46], value)) returnVal = Fail;
+                if (!CheckValue(A[47], value)) returnVal = Fail;
+                if (!CheckValue(A[48], value)) returnVal = Fail;
+                if (!CheckValue(A[49], value)) returnVal = Fail;
+                if (!CheckValue(A[50], value)) returnVal = Fail;
+                if (!CheckValue(A[51], value)) returnVal = Fail;
+                if (!CheckValue(A[52], value)) returnVal = Fail;
+                if (!CheckValue(A[53], value)) returnVal = Fail;
+                if (!CheckValue(A[54], value)) returnVal = Fail;
+                if (!CheckValue(A[55], value)) returnVal = Fail;
+                if (!CheckValue(A[56], value)) returnVal = Fail;
+                if (!CheckValue(A[57], value)) returnVal = Fail;
+                if (!CheckValue(A[58], value)) returnVal = Fail;
+                if (!CheckValue(A[59], value)) returnVal = Fail;
+                if (!CheckValue(A[60], value)) returnVal = Fail;
+                if (!CheckValue(A[61], value)) returnVal = Fail;
+                if (!CheckValue(A[62], value)) returnVal = Fail;
+                if (!CheckValue(A[63], value)) returnVal = Fail;
+            }
 
             return returnVal;
         }
@@ -129,6 +164,7 @@ public partial class VectorTest
                     case 8: check = A[8]; break;
                     case 16: check = A[16]; break;
                     case 32: check = A[32]; break;
+                    case 64: check = A[64]; break;
                 }
             }
             catch (ArgumentOutOfRangeException)

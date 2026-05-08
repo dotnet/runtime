@@ -71,6 +71,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/124344", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile), nameof(PlatformDetection.IsCoreCLR))]
         [MemberData(nameof(Create_OpenDelegate_TestData))]
         public void Create_OpenDelegate(Delegate del, string expectedName, string expectedTypeName)
         {
@@ -192,6 +193,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/117165", TestPlatforms.Browser)]
         public unsafe void Create_StackFrame()
         {
             StackTrace tr = NonGenericStackTraceClass.TestNonGeneric();

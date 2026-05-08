@@ -119,8 +119,6 @@ static size_t server_loop_tick (void* data) {
 	if (!stream)
 		return 0; // continue
 
-	ds_rt_auto_trace_signal ();
-
 	DiagnosticsIpcMessage message;
 	if (!ds_ipc_message_init (&message))
 		return 0; // continue
@@ -145,17 +143,17 @@ static size_t server_loop_tick (void* data) {
 	DS_LOG_INFO_2 ("DiagnosticServer - received IPC message with command set (%d) and command id (%d)", ds_ipc_header_get_commandset (ds_ipc_message_get_header_ref (&message)), ds_ipc_header_get_commandid (ds_ipc_message_get_header_ref (&message)));
 
 	switch ((DiagnosticsServerCommandSet)ds_ipc_header_get_commandset (ds_ipc_message_get_header_ref (&message))) {
-	case DS_SERVER_COMMANDSET_EVENTPIPE:
-		ds_eventpipe_protocol_helper_handle_ipc_message (&message, stream);
-		break;
 	case DS_SERVER_COMMANDSET_DUMP:
 		ds_dump_protocol_helper_handle_ipc_message (&message, stream);
 		break;
-	case DS_SERVER_COMMANDSET_PROCESS:
-		ds_process_protocol_helper_handle_ipc_message (&message, stream);
+	case DS_SERVER_COMMANDSET_EVENTPIPE:
+		ds_eventpipe_protocol_helper_handle_ipc_message (&message, stream);
 		break;
 	case DS_SERVER_COMMANDSET_PROFILER:
 		ds_profiler_protocol_helper_handle_ipc_message (&message, stream);
+		break;
+	case DS_SERVER_COMMANDSET_PROCESS:
+		ds_process_protocol_helper_handle_ipc_message (&message, stream);
 		break;
 	default:
 		server_protocol_helper_unknown_command (&message, stream);
@@ -223,9 +221,6 @@ ds_server_init (void)
 	}
 
 	if (ds_ipc_stream_factory_has_active_ports ()) {
-		ds_rt_auto_trace_init ();
-		ds_rt_auto_trace_launch ();
-
 #ifndef PERFTRACING_DISABLE_THREADS
 		ep_rt_thread_id_t thread_id = ep_rt_uint64_t_to_thread_id_t (0);
 
@@ -234,8 +229,6 @@ ds_server_init (void)
 			ds_ipc_stream_factory_close_ports (NULL);
 			DS_LOG_ERROR_1 ("Failed to create diagnostic server thread (%d).", ep_rt_get_last_error ());
 			ep_raise_error ();
-		} else {
-			ds_rt_auto_trace_wait ();
 		}
 #else
 		ep_rt_queue_job ((void *)server_loop_tick, NULL);

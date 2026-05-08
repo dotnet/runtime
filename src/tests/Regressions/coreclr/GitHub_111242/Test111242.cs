@@ -45,7 +45,7 @@ public static class Test111242
         Assert.Fail("Should not reach here");
     }
 
-    [Fact]
+    [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsExceptionInteropSupported))] 
     public static unsafe void TestEntryPoint()
     {
         TestSetJmp(&ManagedCallback);

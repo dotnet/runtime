@@ -9,21 +9,12 @@
 #include "CommonMacros.h"
 #include "daccess.h"
 #include "rhassert.h"
-#include "RedhawkWarnings.h"
-#include "PalRedhawkCommon.h"
-#include "PalRedhawk.h"
+#include "PalLimitedContext.h"
+#include "Pal.h"
 #include "TargetPtrs.h"
 #include "MethodTable.h"
 #include "ObjectLayout.h"
 #include "MethodTable.inl"
-
-#ifndef DACCESS_COMPILE
-void Object::InitEEType(MethodTable * pEEType)
-{
-    ASSERT(NULL == m_pEEType);
-    m_pEEType = pEEType;
-}
-#endif
 
 uint32_t Array::GetArrayLength()
 {
@@ -38,7 +29,7 @@ void* Array::GetArrayData()
 }
 
 #ifndef DACCESS_COMPILE
-void Array::InitArrayLength(uint32_t length)
+void Array::SetNumComponents(uint32_t length)
 {
     m_Length = length;
 }

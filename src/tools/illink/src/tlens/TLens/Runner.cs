@@ -8,39 +8,41 @@ using TLens.Analyzers;
 
 namespace TLens
 {
-	sealed class Runner
-	{
-		readonly List<Analyzer> analyzers = new List<Analyzer> ();
+    sealed class Runner
+    {
+        readonly List<Analyzer> analyzers = new List<Analyzer>();
 
-		public void AddAnalyzer (Analyzer analyzer)
-		{
-			analyzers.Add (analyzer);
-		}
+        public void AddAnalyzer(Analyzer analyzer)
+        {
+            analyzers.Add(analyzer);
+        }
 
-		public void AddAnalyzers (IEnumerable<Analyzer> analyzers)
-		{
-			this.analyzers.AddRange (analyzers);
-		}
+        public void AddAnalyzers(IEnumerable<Analyzer> analyzers)
+        {
+            this.analyzers.AddRange(analyzers);
+        }
 
-		public int MaxAnalyzerResults { get; set; } = 30;
+        public int MaxAnalyzerResults { get; set; } = 30;
 
-		public void Process (List<AssemblyDefinition> assemblies)
-		{
-			if (assemblies.Count == 0)
-				return;
+        public void Process(List<AssemblyDefinition> assemblies)
+        {
+            if (assemblies.Count == 0)
+                return;
 
-			bool first = true;
-			foreach (var a in analyzers) {
-				foreach (var assembly in assemblies) {
-					a.ProcessAssembly (assembly);
-				}
+            bool first = true;
+            foreach (var a in analyzers)
+            {
+                foreach (var assembly in assemblies)
+                {
+                    a.ProcessAssembly(assembly);
+                }
 
-				if (!first)
-					Console.WriteLine ();
+                if (!first)
+                    Console.WriteLine();
 
-				a.PrintResults (MaxAnalyzerResults);
-				first = false;
-			}
-		}
-	}
+                a.PrintResults(MaxAnalyzerResults);
+                first = false;
+            }
+        }
+    }
 }

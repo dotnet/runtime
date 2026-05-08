@@ -295,14 +295,12 @@ extern "C" INT32 QCALLTYPE ModuleBuilder_GetMemberRefOfMethodInfo(QCall::ModuleH
     if (!pMeth)
         COMPlusThrow(kArgumentNullException);
 
-    // Otherwise, we want to return memberref token.
-    if (pMeth->IsArray())
-    {
-        _ASSERTE(!"Should not have come here!");
-        COMPlusThrow(kNotSupportedException);
-    }
+    // Should not have come here.
+    _ASSERTE(!pMeth->IsArray());
+    // Async variants should be hidden from reflection.
+    _ASSERTE(!pMeth->IsAsyncVariantMethod());
 
-    if (pMeth->GetMethodTable()->GetModule() == pModule)
+    if ((pMeth->GetMethodTable()->GetModule() == pModule))
     {
         // If the passed in method is defined in the same module, just return the MethodDef token
         memberRefE = pMeth->GetMemberDef();
@@ -680,7 +678,7 @@ extern "C" HINSTANCE QCALLTYPE MarshalNative_GetHINSTANCE(QCall::ModuleHandle pM
 
 // Get class will return an array contain all of the classes
 //  that are defined within this Module.
-extern "C" void QCALLTYPE RuntimeModule_GetTypes(QCall::ModuleHandle pModule, QCall::ObjectHandleOnStack retTypes)
+extern "C" void QCALLTYPE RuntimeModule_GetTypes(QCall::ModuleHandle pModule, QCall::ObjectHandleOnStack retTypes, QCall::ObjectHandleOnStack retExceptions)
 {
     QCALL_CONTRACT;
 
@@ -743,7 +741,7 @@ extern "C" void QCALLTYPE RuntimeModule_GetTypes(QCall::ModuleHandle pModule, QC
         _ASSERTE("LoadClass failed." && !curClass.IsNull());
 
         MethodTable* pMT = curClass.GetMethodTable();
-        PREFIX_ASSUME(pMT != NULL);
+        _ASSERTE(pMT != NULL);
 
         // Get the CLR Class object
         OBJECTREF refCurClass = pMT->GetManagedClassObject();
@@ -753,19 +751,20 @@ extern "C" void QCALLTYPE RuntimeModule_GetTypes(QCall::ModuleHandle pModule, QC
         gc.refArrClasses->SetAt(curPos++, refCurClass);
     }
 
-    // check if there were exceptions thrown
-    if (cXcept > 0) {
-
+    // Return exceptions to managed side for throwing
+    if (cXcept > 0)
+    {
         gc.xceptRet = (PTRARRAYREF) AllocateObjectArray(cXcept,g_pExceptionClass);
         for (DWORD i=0;i<cXcept;i++) {
             gc.xceptRet->SetAt(i, gc.xcept->GetAt(i));
         }
-        OBJECTREF except = InvokeUtil::CreateClassLoadExcept((OBJECTREF*) &gc.refArrClasses,(OBJECTREF*) &gc.xceptRet);
-        COMPlusThrow(except);
+        retExceptions.Set(gc.xceptRet);
     }
-
-    // We should have filled the array exactly.
-    _ASSERTE(curPos == dwNumTypeDefs);
+    else
+    {
+        // We should have filled the array exactly.
+        _ASSERTE(curPos == dwNumTypeDefs);
+    }
 
     // Assign the return value to the CLR array
     retTypes.Set(gc.refArrClasses);

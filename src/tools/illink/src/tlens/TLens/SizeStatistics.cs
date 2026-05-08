@@ -6,16 +6,16 @@ using Mono.Cecil;
 
 namespace TLens
 {
-	static class SizeStatistics
-	{
-		public static int GetEstimatedSize (this TypeDefinition type)
-		{
-			return type.Methods.Sum (l => l.GetEstimatedSize ());
-		}
+    static class SizeStatistics
+    {
+        public static int GetEstimatedSize(this TypeDefinition type)
+        {
+            return type.Methods.Sum(l => l.GetEstimatedSize());
+        }
 
-		public static int GetEstimatedSize (this MethodDefinition method)
-		{
-			return method.HasBody ? method.Body.CodeSize : 0;
-		}
-	}
+        public static int GetEstimatedSize(this MethodDefinition method)
+        {
+            return method.HasBody ? method.Body.CodeSize : 0;
+        }
+    }
 }

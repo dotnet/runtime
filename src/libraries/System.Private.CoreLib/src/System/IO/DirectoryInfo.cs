@@ -83,7 +83,10 @@ namespace System.IO
             string newPath = Path.GetFullPath(Path.Combine(FullPath, path));
 
             ReadOnlySpan<char> trimmedNewPath = Path.TrimEndingDirectorySeparator(newPath.AsSpan());
-            ReadOnlySpan<char> trimmedCurrentPath = Path.TrimEndingDirectorySeparator(FullPath.AsSpan());
+
+            // Trim any trailing separator, including from a root path for proper boundary checking.
+            // TrimEndingDirectorySeparator does not trim the character from path roots.
+            ReadOnlySpan<char> trimmedCurrentPath = FullPath.TrimEnd(Path.DirectorySeparatorChar);
 
             // We want to make sure the requested directory is actually under the subdirectory.
             if (trimmedNewPath.StartsWith(trimmedCurrentPath, PathInternal.StringComparison)
@@ -183,19 +186,20 @@ namespace System.IO
             string path,
             string searchPattern,
             SearchTarget searchTarget,
-            EnumerationOptions options)
+            EnumerationOptions enumerationOptions)
         {
             ArgumentNullException.ThrowIfNull(searchPattern);
+            ArgumentNullException.ThrowIfNull(enumerationOptions);
 
             Debug.Assert(path != null);
 
-            _isNormalized &= FileSystemEnumerableFactory.NormalizeInputs(ref path, ref searchPattern, options.MatchType);
+            _isNormalized &= FileSystemEnumerableFactory.NormalizeInputs(ref path, ref searchPattern, enumerationOptions.MatchType);
 
             return searchTarget switch
             {
-                SearchTarget.Directories => FileSystemEnumerableFactory.DirectoryInfos(path, searchPattern, options, _isNormalized),
-                SearchTarget.Files => FileSystemEnumerableFactory.FileInfos(path, searchPattern, options, _isNormalized),
-                SearchTarget.Both => FileSystemEnumerableFactory.FileSystemInfos(path, searchPattern, options, _isNormalized),
+                SearchTarget.Directories => FileSystemEnumerableFactory.DirectoryInfos(path, searchPattern, enumerationOptions, _isNormalized),
+                SearchTarget.Files => FileSystemEnumerableFactory.FileInfos(path, searchPattern, enumerationOptions, _isNormalized),
+                SearchTarget.Both => FileSystemEnumerableFactory.FileSystemInfos(path, searchPattern, enumerationOptions, _isNormalized),
                 _ => throw new ArgumentException(SR.ArgumentOutOfRange_Enum, nameof(searchTarget)),
             };
         }

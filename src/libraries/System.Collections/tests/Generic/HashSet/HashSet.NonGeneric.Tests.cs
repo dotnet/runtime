@@ -10,6 +10,7 @@ namespace System.Collections.Tests
 {
     public static class HashSet_NonGeneric_Tests
     {
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         [Fact]
         public static void HashSet_CopyConstructor_ShouldWorkWithRandomizedEffectiveComparer()
         {
@@ -33,6 +34,26 @@ namespace System.Collections.Tests
                 HashSet<string> copiedSet = (HashSet<string>)Activator.CreateInstance(typeof(HashSet<string>), BindingFlags.NonPublic | BindingFlags.Instance, null, [info, context], null);
                 copiedSet.OnDeserialization(null);
                 return copiedSet;
+            }
+        }
+
+        [Theory]
+        [InlineData(10)]
+        [InlineData(1000)]
+        [InlineData(1000_000)]
+        public static void InsertionOpsOnly_Enumeration_PreservesInsertionOrder(int count)
+        {
+            var set = new HashSet<string>();
+            for (int i = 0; i < count; i++)
+            {
+                set.Add(i.ToString());
+            }
+
+            int j = 0;
+            foreach (string elem in set)
+            {
+                Assert.Equal(j.ToString(), elem);
+                j++;
             }
         }
     }

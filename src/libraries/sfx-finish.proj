@@ -4,6 +4,7 @@
 
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppCurrent)-$(TargetOS)</TargetFramework>
+    <NoDefaultSlnGenSolutionFolder>true</NoDefaultSlnGenSolutionFolder>
     <FrameworkListOutputPath>$(MicrosoftNetCoreAppRefPackDataDir)FrameworkList.xml</FrameworkListOutputPath>
     <!-- Import the illink file which contains some of the logic required to illink the shared framework assemblies. -->
     <ExplicitlyImportCustomILLinkTargets>true</ExplicitlyImportCustomILLinkTargets>
@@ -37,7 +38,6 @@
   </Target>
 
   <!-- Generate the targeting pack's framework list so that out-of-band projects can leverage it. -->
-  <UsingTask TaskName="CreateFrameworkListFile" AssemblyFile="$(DotNetSharedFrameworkTaskFile)" Condition="'$(DotNetSharedFrameworkTaskFile)' != ''" />
   <Target Name="GenerateFrameworkListFile"
           DependsOnTargets="GetGenerateFrameworkListFileInputs"
           AfterTargets="Build"
@@ -119,7 +119,7 @@
           DependsOnTargets="ResolveProjectReferences;GetTrimSharedFrameworkAssembliesInputs;PrepareForAssembliesTrim"
           Inputs="@(SharedFrameworkAssembly);@(SharedFrameworkSuppressionsXml);$(ILLinkTasksAssembly)"
           Outputs="$(SharedFrameworkAssembliesTrimMarkerFile)">
-    <Message Text="$(MSBuildProjectName) -> Trimming $(OutputRID) shared framework assemblies with ILLinker..." Importance="high" />
+    <Message Text="$(MSBuildProjectName) -> Trimming $(TargetRid) shared framework assemblies with ILLinker..." Importance="high" />
 
     <PropertyGroup>
       <SharedFrameworkILLinkArgs>$(ILLinkArgs)</SharedFrameworkILLinkArgs>
@@ -130,11 +130,14 @@
 
     <ItemGroup>
       <SharedFrameworkAssembly RootMode="library" />
+      <_SharedFrameworkRootAssemblyName Include="@(SharedFrameworkAssembly->'%(Filename)')">
+        <RootMode>library</RootMode>
+      </_SharedFrameworkRootAssemblyName>
     </ItemGroup>
 
     <MakeDir Directories="$(SharedFrameworkAssembliesTrimDir)" />
-    <ILLink AssemblyPaths=""
-        RootAssemblyNames="@(SharedFrameworkAssembly)"
+    <ILLink AssemblyPaths="@(SharedFrameworkAssembly)"
+        RootAssemblyNames="@(_SharedFrameworkRootAssemblyName)"
         OutputDirectory="$(SharedFrameworkAssembliesTrimDir)"
         ExtraArgs="$(SharedFrameworkILLinkArgs)"
         ToolExe="$(_DotNetHostFileName)"

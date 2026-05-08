@@ -8,10 +8,15 @@
 
   <ItemGroup>
     <Compile Include="System\IO\Compression\ZipFile.Create.cs" />
+    <Compile Include="System\IO\Compression\ZipFile.Create.Async.cs" />
     <Compile Include="System\IO\Compression\ZipFile.Extract.cs" />
+    <Compile Include="System\IO\Compression\ZipFile.Extract.Async.cs" />
     <Compile Include="System\IO\Compression\ZipFileExtensions.ZipArchive.Create.cs" />
+    <Compile Include="System\IO\Compression\ZipFileExtensions.ZipArchive.Create.Async.cs" />
     <Compile Include="System\IO\Compression\ZipFileExtensions.ZipArchive.Extract.cs" />
+    <Compile Include="System\IO\Compression\ZipFileExtensions.ZipArchive.Extract.Async.cs" />
     <Compile Include="System\IO\Compression\ZipFileExtensions.ZipArchiveEntry.Extract.cs" />
+    <Compile Include="System\IO\Compression\ZipFileExtensions.ZipArchiveEntry.Extract.Async.cs" />
     <Compile Include="$(CommonPath)DisableRuntimeMarshalling.cs"
              Link="Common\DisableRuntimeMarshalling.cs" />
     <Compile Include="$(CommonPath)System\IO\Archiving.Utils.cs"
@@ -45,10 +50,10 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Reference Include="System.IO.Compression" />
-    <Reference Include="System.Memory" />
-    <Reference Include="System.Runtime" />
-    <Reference Include="System.Runtime.InteropServices" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.IO.Compression\src\System.IO.Compression.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Memory\src\System.Memory.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime\src\System.Runtime.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.InteropServices\src\System.Runtime.InteropServices.csproj" />
   </ItemGroup>
 
 </Project>

@@ -203,7 +203,8 @@ namespace System.Threading.RateLimiting.Tests
 
         public override bool IsAutoReplenishing => false;
 
-        public override TimeSpan ReplenishmentPeriod => throw new NotImplementedException();
+        public Func<TimeSpan> ReplenishmentPeriodImpl { get; set; } = () => TimeSpan.Zero;
+        public override TimeSpan ReplenishmentPeriod => ReplenishmentPeriodImpl();
 
         public Func<bool> TryReplenishImpl { get; set; } = () => true;
         public override bool TryReplenish() => TryReplenishImpl();
@@ -236,5 +237,16 @@ namespace System.Threading.RateLimiting.Tests
 
         public Action<bool> DisposeImpl = _ => { };
         protected override void Dispose(bool disposing) => DisposeImpl(disposing);
+    }
+
+    internal sealed class ThrowDisposeLease : RateLimitLease
+    {
+        public override bool IsAcquired => true;
+
+        public override IEnumerable<string> MetadataNames => throw new NotImplementedException();
+
+        public override bool TryGetMetadata(string metadataName, out object? metadata) => throw new NotImplementedException();
+
+        protected override void Dispose(bool disposing) => throw new NotImplementedException();
     }
 }

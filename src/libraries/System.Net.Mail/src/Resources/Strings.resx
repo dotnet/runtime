@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <root>
   <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
     <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
@@ -181,8 +181,17 @@
   <data name="SmtpCommandParameterNotImplemented" xml:space="preserve">
     <value>Command parameter not implemented.</value>
   </data>
+  <data name="SmtpCannotVerifyUserWillAttemptDelivery" xml:space="preserve">
+    <value>Cannot verify user, but will attempt delivery.</value>
+  </data>
   <data name="SmtpCommandUnrecognized" xml:space="preserve">
     <value>Syntax error, command unrecognized.</value>
+  </data>
+  <data name="SmtpGeneralFailure" xml:space="preserve">
+    <value>General failure.</value>
+  </data>
+  <data name="SmtpUnknownStatusCode" xml:space="preserve">
+    <value>Unknown SMTP status code.</value>
   </data>
   <data name="SmtpExceededStorageAllocation" xml:space="preserve">
     <value>Exceeded storage allocation.</value>

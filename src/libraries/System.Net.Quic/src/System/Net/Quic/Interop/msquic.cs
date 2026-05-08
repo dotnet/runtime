@@ -121,20 +121,20 @@ namespace Microsoft.Quic
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    internal unsafe struct QuicAddrIn
+    internal struct QuicAddrIn
     {
         public QuicAddrFamilyAndLen sin_family;
         public ushort sin_port;
-        public fixed byte sin_addr[4];
+        public InlineArray4<byte> sin_addr;
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    internal unsafe struct QuicAddrIn6
+    internal struct QuicAddrIn6
     {
         public QuicAddrFamilyAndLen sin6_family;
         public ushort sin6_port;
         public uint sin6_flowinfo;
-        public fixed byte sin6_addr[16];
+        public InlineArray16<byte> sin6_addr;
         public uint sin6_scope_id;
     }
 
@@ -148,7 +148,7 @@ namespace Microsoft.Quic
         [FieldOffset(0)]
         public QuicAddrFamilyAndLen FamilyLen;
 
-        public static bool SockaddrHasLength => OperatingSystem.IsFreeBSD() || OperatingSystem.IsIOS() || OperatingSystem.IsMacOS() || OperatingSystem.IsMacCatalyst() || OperatingSystem.IsTvOS() || OperatingSystem.IsWatchOS();
+        public static bool SockaddrHasLength => OperatingSystem.IsFreeBSD() || OperatingSystem.IsIOS() || OperatingSystem.IsMacOS() || OperatingSystem.IsMacCatalyst() || OperatingSystem.IsTvOS();
 
         public int Family
         {

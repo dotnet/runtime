@@ -29,7 +29,7 @@ namespace System.Buffers
             if (span.Length < sizeof(T))
                 return TryReadMultisegment(ref reader, out value);
 
-            value = Unsafe.ReadUnaligned<T>(ref MemoryMarshal.GetReference(span));
+            value = MemoryMarshal.Read<T>(span);
             reader.Advance(sizeof(T));
             return true;
         }
@@ -48,7 +48,7 @@ namespace System.Buffers
                 return false;
             }
 
-            value = Unsafe.ReadUnaligned<T>(ref MemoryMarshal.GetReference(tempSpan));
+            value = MemoryMarshal.Read<T>(tempSpan);
             reader.Advance(sizeof(T));
             return true;
         }

@@ -1,9 +1,12 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TestRuntime>true</TestRuntime>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
+    <!-- https://github.com/dotnet/runtime/issues/126862 -->
+    <EnableTrimAnalyzer>false</EnableTrimAnalyzer>
+    <EnableAotAnalyzer>false</EnableAotAnalyzer>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="..\Common.cs" />
@@ -14,7 +17,6 @@
     <Compile Include="..\MethodInfoTests.cs" />
     <Compile Include="..\MethodInvokerTests.cs" />
     <Compile Include="..\PropertyInfoTests.cs" />
-    <Compile Include="$(CommonTestPath)\System\Reflection\InvokeEmitTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\TestAssembly\TestAssembly.csproj" />

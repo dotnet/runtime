@@ -14,13 +14,21 @@ namespace System.Runtime.CompilerServices
         // In coreclr the table is allocated and written to on the native side.
         internal static int[]? s_table;
 
-        [LibraryImport(RuntimeHelpers.QCall)]
-        internal static partial void ThrowInvalidCastException(void* fromTypeHnd, void* toTypeHnd);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThrowInvalidCastException")]
+        private static partial void ThrowInvalidCastExceptionInternal(void* fromTypeHnd, void* toTypeHnd);
+
+        [DoesNotReturn]
+        internal static void ThrowInvalidCastException(void* fromTypeHnd, void* toTypeHnd)
+        {
+            ThrowInvalidCastExceptionInternal(fromTypeHnd, toTypeHnd);
+            throw null!; // Provide hint to the inliner that this method does not return
+        }
 
         [DoesNotReturn]
         internal static void ThrowInvalidCastException(object fromType, void* toTypeHnd)
         {
-            ThrowInvalidCastException(RuntimeHelpers.GetMethodTable(fromType), toTypeHnd);
+            ThrowInvalidCastExceptionInternal(RuntimeHelpers.GetMethodTable(fromType), toTypeHnd);
+            GC.KeepAlive(fromType);
             throw null!; // Provide hint to the inliner that this method does not return
         }
 
@@ -44,9 +52,6 @@ namespace System.Runtime.CompilerServices
             IsInstanceOf_NoCacheLookup(toTypeHnd, true, ObjectHandleOnStack.Create(ref obj));
             return obj;
         }
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern void WriteBarrier(ref object? dst, object? obj);
 
         // IsInstanceOf test used for unusual cases (naked type parameters, variant generic types)
         // Unlike the IsInstanceOfInterface and IsInstanceOfClass functions,
@@ -446,7 +451,7 @@ namespace System.Runtime.CompilerServices
                 goto notExactMatch;
 
             doWrite:
-                WriteBarrier(ref element, obj);
+                RuntimeHelpers.WriteBarrier(ref element, obj);
                 return;
 
             assigningNull:
@@ -467,7 +472,7 @@ namespace System.Runtime.CompilerServices
             CastResult result = CastCache.TryGet(s_table!, (nuint)RuntimeHelpers.GetMethodTable(obj), (nuint)elementType);
             if (result == CastResult.CanCast)
             {
-                WriteBarrier(ref element, obj);
+                RuntimeHelpers.WriteBarrier(ref element, obj);
                 return;
             }
 
@@ -485,7 +490,7 @@ namespace System.Runtime.CompilerServices
                 ThrowArrayMismatchException();
             }
 
-            WriteBarrier(ref element, obj2);
+            RuntimeHelpers.WriteBarrier(ref element, obj2);
         }
 
         [DebuggerHidden]
@@ -515,6 +520,45 @@ namespace System.Runtime.CompilerServices
             {
                 ThrowArrayMismatchException();
             }
+        }
+
+        // Helpers for boxing
+        [DebuggerHidden]
+        internal static object? Box_Nullable(MethodTable* srcMT, ref byte nullableData)
+        {
+            Debug.Assert(srcMT->IsNullable);
+
+            if (nullableData == 0)
+                return null;
+
+            // Allocate a new instance of the T in Nullable<T>.
+            MethodTable* dstMT = srcMT->InstantiationArg0();
+            ref byte srcValue = ref Unsafe.Add(ref nullableData, srcMT->NullableValueAddrOffset);
+
+            // Delegate to non-nullable boxing implementation
+            return Box(dstMT, ref srcValue);
+        }
+
+        [DebuggerHidden]
+        internal static object Box(MethodTable* typeMT, ref byte unboxedData)
+        {
+            Debug.Assert(typeMT != null);
+            Debug.Assert(typeMT->IsValueType);
+
+            // A null can be passed for boxing of a null ref.
+            _ = Unsafe.ReadUnaligned<byte>(ref unboxedData);
+
+            object boxed = RuntimeTypeHandle.InternalAllocNoChecks(typeMT);
+            if (typeMT->ContainsGCPointers)
+            {
+                Buffer.BulkMoveWithWriteBarrier(ref boxed.GetRawData(), ref unboxedData, typeMT->GetNumInstanceFieldBytesIfContainsGCPointers());
+            }
+            else
+            {
+                SpanHelpers.Memmove(ref boxed.GetRawData(), ref unboxedData, typeMT->GetNumInstanceFieldBytes());
+            }
+
+            return boxed;
         }
 
         // Helpers for Unboxing
@@ -615,27 +659,8 @@ namespace System.Runtime.CompilerServices
         [DebuggerHidden]
         internal static object? ReboxFromNullable(MethodTable* srcMT, object src)
         {
-            Debug.Assert(srcMT->IsNullable);
-
             ref byte nullableData = ref src.GetRawData();
-
-            // If 'hasValue' is false, return null.
-            if (!Unsafe.As<byte, bool>(ref nullableData))
-                return null;
-
-            // Allocate a new instance of the T in Nullable<T>.
-            MethodTable* dstMT = srcMT->InstantiationArg0();
-            object dst = RuntimeTypeHandle.InternalAlloc(dstMT);
-
-            // Copy data from the Nullable<T>.
-            ref byte srcData = ref Unsafe.Add(ref nullableData, srcMT->NullableValueAddrOffset);
-            ref byte dstData = ref RuntimeHelpers.GetRawData(dst);
-            if (dstMT->ContainsGCPointers)
-                Buffer.BulkMoveWithWriteBarrier(ref dstData, ref srcData, dstMT->GetNumInstanceFieldBytesIfContainsGCPointers());
-            else
-                SpanHelpers.Memmove(ref dstData, ref srcData, dstMT->GetNumInstanceFieldBytes());
-
-            return dst;
+            return Box_Nullable(srcMT, ref nullableData);
         }
 
         [DebuggerHidden]

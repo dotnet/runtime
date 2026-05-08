@@ -15,7 +15,7 @@ namespace System.Runtime.InteropServices.JavaScript
 #if !DEBUG
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
 #endif
-        public unsafe void ToManaged(out char value)
+        public void ToManaged(out char value)
         {
             if (slot.Type == MarshalerType.None)
             {
@@ -47,7 +47,7 @@ namespace System.Runtime.InteropServices.JavaScript
 #if !DEBUG
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
 #endif
-        public unsafe void ToManaged(out char? value)
+        public void ToManaged(out char? value)
         {
             if (slot.Type == MarshalerType.None)
             {

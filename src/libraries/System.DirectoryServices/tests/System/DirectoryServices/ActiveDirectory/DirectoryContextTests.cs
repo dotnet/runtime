@@ -23,7 +23,7 @@ namespace System.DirectoryServices.ActiveDirectory.Tests
         [Theory]
         [InlineData(DirectoryContextType.Domain, null, null)]
         [InlineData(DirectoryContextType.Forest, "UserName", "Password")]
-        public void Ctor_ContextType_UserName_Password(DirectoryContextType contextType, string userName, string password)
+        public void Ctor_ContextType_UserName_Password(DirectoryContextType contextType, string? userName, string? password)
         {
             var context = new DirectoryContext(contextType, userName, password);
             Assert.Equal(contextType, context.ContextType);
@@ -61,7 +61,7 @@ namespace System.DirectoryServices.ActiveDirectory.Tests
         [InlineData(DirectoryContextType.DirectoryServer, "Name", "UserName", "Password")]
         [InlineData(DirectoryContextType.Domain, "Name", "UserName", "Password")]
         [InlineData(DirectoryContextType.Forest, "Name", "UserName", "Password")]
-        public void Ctor_ContextType_Name_UserName_Password(DirectoryContextType contextType, string name, string userName, string password)
+        public void Ctor_ContextType_Name_UserName_Password(DirectoryContextType contextType, string name, string? userName, string? password)
         {
             var context = new DirectoryContext(contextType, name, userName, password);
             Assert.Equal(contextType, context.ContextType);

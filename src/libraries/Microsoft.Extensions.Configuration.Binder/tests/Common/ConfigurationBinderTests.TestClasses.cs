@@ -157,6 +157,13 @@ namespace Microsoft.Extensions
             public int Length { get; } = length;
         }
 
+        public class ClassWithPrimaryCtorAndIgnoredProperty(string color, int length)
+        {
+            [ConfigurationIgnore]
+            public string Color { get; } = color;
+            public int Length { get; } = length;
+        }
+
         public class ClassWithPrimaryCtorDefaultValues(string color = "blue", int length = 15, decimal height = 5.946238490567943927384M, EditorBrowsableState eb = EditorBrowsableState.Never)
         {
             public string Color { get; } = color;
@@ -1130,6 +1137,75 @@ namespace Microsoft.Extensions
             public TimeSpan? TimeSpanValue { get; set; }
             public Guid? GuidValue { get; set; }
             public StringComparison? StringComparisonValue { get; set; }
+        }
+
+        public class OptionsWithCollectionsWithNullableEnum
+        {
+            // uses MyValue? dictionary values
+            public Dictionary<string, MyValue?> Dictionary { get; set; } = new();
+
+            // uses MyValue? List values
+            public List<MyValue?> List { get; set; } = new();
+        }
+
+        public enum MyValue
+        {
+            Value1,
+            Value2,
+            Value3
+        }
+
+        public class NullConfiguration
+        {
+            public NullConfiguration()
+            {
+                // Initialize with non-default value to ensure binding will override these values
+                StringProperty1 = "Initial Value 1";
+                StringProperty2 = "Initial Value 2";
+                StringProperty3 = "Initial Value 3";
+
+                IntProperty1 = 123;
+                IntProperty2 = 456;
+            }
+            public string? StringProperty1 { get; set; }
+            public string? StringProperty2 { get; set; }
+            public string? StringProperty3 { get; set; }
+
+            public int? IntProperty1 { get; set; }
+            public int? IntProperty2 { get; set; }
+        }
+
+        public class ArraysContainer
+        {
+            public string[] StringArray1 { get; set; }
+            public string[] StringArray2 { get; set; }
+            public string[] StringArray3 { get; set; }
+
+            public byte[] ByteArray1 { get; set; }
+            public byte[] ByteArray2 { get; set; }
+            public byte[] ByteArray3 { get; set; }
+        }
+
+        public class MyOptionsWithNullableEnumerable
+        {
+            public IEnumerable<int>? IEnumerableProperty { get; set; }
+            public string[] StringArray { get; set; }
+        }
+
+        internal sealed record ContainingIEnumerable
+        {
+            public NestedWithIEnumerable? Source { get; set; }
+        }
+        internal sealed record NestedWithIEnumerable(string Name, IEnumerable<string> Addresses);
+
+        public class ClassWithArrayConstructorParameter
+        {
+            public ClassWithArrayConstructorParameter(string[] arrayField = null)
+            {
+                ArrayField = arrayField;
+            }
+
+            public string[] ArrayField { get; }
         }
     }
 }

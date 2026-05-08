@@ -391,8 +391,7 @@ namespace System.Diagnostics.Tests
             // To mimic this behaviour, we can't use Environment.SetEnvironmentVariable here as it's case-insensitive on Windows.
             // We also can't use p.StartInfo.Environment as it's comparer is set to OrdinalIgnoreCAse.
             // But we can overwrite it using reflection to mimic the CreateProcess behaviour and avoid having this test call CreateProcess directly.
-            p.StartInfo.Environment
-                .GetType()
+            Type.GetType("System.Collections.Specialized.DictionaryWrapper, System.Diagnostics.Process")!
                 .GetField("_contents", Reflection.BindingFlags.NonPublic | Reflection.BindingFlags.Instance)
                 .SetValue(p.StartInfo.Environment, envVars);
 
@@ -448,6 +447,17 @@ namespace System.Diagnostics.Tests
             Assert.Equal("-arg3 -arg4", psi.Arguments);
         }
 
+        [Fact]
+        public void TestArgumentsNullProperty()
+        {
+            string? args = null;
+            ProcessStartInfo psi = new ProcessStartInfo("filename", args);
+            Assert.Equal(string.Empty, psi.Arguments);
+
+            psi.Arguments = null;
+            Assert.Equal(string.Empty, psi.Arguments);
+        }
+
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported)), InlineData(true), InlineData(false)]
         public void TestCreateNoWindowProperty(bool value)
         {
@@ -489,14 +499,17 @@ namespace System.Diagnostics.Tests
             }, workingDirectory, new RemoteInvokeOptions { StartInfo = psi }).Dispose();
         }
 
-        [ConditionalFact(nameof(IsAdmin_IsNotNano_RemoteExecutorIsSupported))] // Nano has no "netapi32.dll", Admin rights are required
+        [ConditionalTheory(typeof(ProcessStartInfoTests), nameof(IsAdmin_IsNotNano_RemoteExecutorIsSupported))] // Nano has no "netapi32.dll", Admin rights are required
         [PlatformSpecific(TestPlatforms.Windows)]
         [OuterLoop("Requires admin privileges")]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/80019", TestRuntimes.Mono)]
-        public void TestUserCredentialsPropertiesOnWindows()
+        [InlineData(true)]
+        [InlineData(false)]
+        public void TestUserCredentialsPropertiesOnWindows(bool killOnParentExit)
         {
             using Process longRunning = CreateProcessLong();
             longRunning.StartInfo.LoadUserProfile = true;
+            longRunning.StartInfo.KillOnParentExit = killOnParentExit;
 
             using TestProcessState testAccountCleanup = CreateUserAndExecute(longRunning, Setup, Cleanup);
 
@@ -905,12 +918,35 @@ namespace System.Diagnostics.Tests
             });
         }
 
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public void CreateNewProcessGroup_SetWindows_GetReturnsExpected()
+        {
+            ProcessStartInfo psi = new ProcessStartInfo();
+            Assert.False(psi.CreateNewProcessGroup);
+
+            psi.CreateNewProcessGroup = true;
+            Assert.True(psi.CreateNewProcessGroup);
+
+            psi.CreateNewProcessGroup = false;
+            Assert.False(psi.CreateNewProcessGroup);
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        public void CreateNewProcessGroup_GetSetUnix_ThrowsPlatformNotSupportedException()
+        {
+            var info = new ProcessStartInfo();
+            Assert.Throws<PlatformNotSupportedException>(() => info.CreateNewProcessGroup);
+            Assert.Throws<PlatformNotSupportedException>(() => info.CreateNewProcessGroup = true);
+        }
+
         [Theory]
         [InlineData(null)]
         [InlineData("")]
         [InlineData("domain")]
         [PlatformSpecific(TestPlatforms.Windows)]
-        public void Domain_SetWindows_GetReturnsExpected(string domain)
+        public void Domain_SetWindows_GetReturnsExpected(string? domain)
         {
             var info = new ProcessStartInfo { Domain = domain };
             Assert.Equal(domain ?? string.Empty, info.Domain);
@@ -929,7 +965,7 @@ namespace System.Diagnostics.Tests
         [InlineData(null)]
         [InlineData("")]
         [InlineData("filename")]
-        public void FileName_Set_GetReturnsExpected(string fileName)
+        public void FileName_Set_GetReturnsExpected(string? fileName)
         {
             var info = new ProcessStartInfo { FileName = fileName };
             Assert.Equal(fileName ?? string.Empty, info.FileName);
@@ -978,7 +1014,7 @@ namespace System.Diagnostics.Tests
         [InlineData("")]
         [InlineData("passwordInClearText")]
         [PlatformSpecific(TestPlatforms.Windows)]
-        public void PasswordInClearText_SetWindows_GetReturnsExpected(string passwordInClearText)
+        public void PasswordInClearText_SetWindows_GetReturnsExpected(string? passwordInClearText)
         {
             var info = new ProcessStartInfo { PasswordInClearText = passwordInClearText };
             Assert.Equal(passwordInClearText, info.PasswordInClearText);
@@ -1018,7 +1054,7 @@ namespace System.Diagnostics.Tests
         [InlineData(null)]
         [InlineData("")]
         [InlineData("domain")]
-        public void UserName_Set_GetReturnsExpected(string userName)
+        public void UserName_Set_GetReturnsExpected(string? userName)
         {
             var info = new ProcessStartInfo { UserName = userName };
             Assert.Equal(userName ?? string.Empty, info.UserName);
@@ -1028,7 +1064,7 @@ namespace System.Diagnostics.Tests
         [InlineData(null)]
         [InlineData("")]
         [InlineData("verb")]
-        public void Verb_Set_GetReturnsExpected(string verb)
+        public void Verb_Set_GetReturnsExpected(string? verb)
         {
             var info = new ProcessStartInfo { Verb = verb };
             Assert.Equal(verb ?? string.Empty, info.Verb);
@@ -1058,7 +1094,7 @@ namespace System.Diagnostics.Tests
         [InlineData(null)]
         [InlineData("")]
         [InlineData("workingdirectory")]
-        public void WorkingDirectory_Set_GetReturnsExpected(string workingDirectory)
+        public void WorkingDirectory_Set_GetReturnsExpected(string? workingDirectory)
         {
             var info = new ProcessStartInfo { WorkingDirectory = workingDirectory };
             Assert.Equal(workingDirectory ?? string.Empty, info.WorkingDirectory);
@@ -1409,6 +1445,17 @@ namespace System.Diagnostics.Tests
                     Assert.False(process != null, $"Process started despite incompatible options {nameof(info.LoadUserProfile)} and {nameof(info.UseCredentialsForNetworkingOnly)} were enabled");
                 }
             });
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst, "Process.Start is not supported on iOS, tvOS, and MacCatalyst.")]
+        public void UserNameCantBeCombinedWithInheritedHandles()
+        {
+            using Process longRunning = CreateProcessLong();
+            longRunning.StartInfo.UserName = nameof(ProcessStartInfo.UserName);
+            longRunning.StartInfo.InheritedHandles = [];
+
+            Assert.Throws<InvalidOperationException>(() => longRunning.Start());
         }
 
         private static TestProcessState CreateUserAndExecute(

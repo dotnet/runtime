@@ -10,9 +10,11 @@ using System.Runtime;
 using System.Text;
 
 using Xunit;
+using TestLibrary;
 
 public class TestConfigTester
 {
+    [ActiveIssue("Test expects being run with corerun", typeof(Utilities), nameof(Utilities.IsNativeAot))]
     [Fact]
     public static void RunTests()
     {

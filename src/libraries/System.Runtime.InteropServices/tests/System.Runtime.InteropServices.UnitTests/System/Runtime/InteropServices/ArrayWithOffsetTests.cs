@@ -43,7 +43,7 @@ namespace System.Runtime.InteropServices.Tests
         [InlineData(null, 1)]
         [InlineData(new int[] { 1 }, 5)]
         [InlineData(new int[] { 2 }, -1)]
-        public void Ctor_InvalidOffset_ThrowsIndexOutOfRangeException(object array, int offset)
+        public void Ctor_InvalidOffset_ThrowsIndexOutOfRangeException(object? array, int offset)
         {
             Assert.Throws<IndexOutOfRangeException>(() => new ArrayWithOffset(array, offset));
         }

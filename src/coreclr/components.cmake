@@ -1,5 +1,6 @@
 # Define all the individually buildable components of the CoreCLR build and their respective targets
 add_component(jit)
+add_component(wasmjit)
 add_component(alljits)
 add_component(hosts)
 add_component(runtime)
@@ -8,6 +9,7 @@ add_component(iltools)
 add_component(nativeaot)
 add_component(spmi)
 add_component(debug)
+add_component(cdac)
 
 # Define coreclr_all as the fallback component and make every component depend on this component.
 # iltools and paltests should be minimal subsets, so don't add a dependency on coreclr_misc

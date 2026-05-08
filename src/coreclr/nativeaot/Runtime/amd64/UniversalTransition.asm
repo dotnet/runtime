@@ -3,8 +3,6 @@
 
 include AsmMacros.inc
 
-ifdef FEATURE_DYNAMIC_CODE
-
 ifdef _DEBUG
 TRASH_SAVED_ARGUMENT_REGISTERS equ 1
 else
@@ -84,7 +82,7 @@ DISTANCE_FROM_CHILDSP_TO_CALLERSP               equ DISTANCE_FROM_CHILDSP_TO_RET
 ; everything between the base of the ReturnBlock and the top of the StackPassedArgs.
 ;
 
-UNIVERSAL_TRANSITION macro FunctionName
+UNIVERSAL_TRANSITION macro FunctionName, ExitSequence
 
 NESTED_ENTRY Rhp&FunctionName, _TEXT
 
@@ -146,18 +144,13 @@ ALTERNATE_ENTRY ReturnFrom&FunctionName
         ; Pop the space that was allocated between the ChildSP and the caller return address.
         add             rsp, DISTANCE_FROM_CHILDSP_TO_RETADDR
 
-        TAILJMP_RAX
+        ExitSequence
 
 NESTED_END Rhp&FunctionName, _TEXT
 
         endm
 
-        ; To enable proper step-in behavior in the debugger, we need to have two instances
-        ; of the thunk. For the first one, the debugger steps into the call in the function,
-        ; for the other, it steps over it.
-        UNIVERSAL_TRANSITION UniversalTransition
-        UNIVERSAL_TRANSITION UniversalTransition_DebugStepTailCall
-
-endif
+        UNIVERSAL_TRANSITION UniversalTransitionTailCall, TAILJMP_RAX
+        UNIVERSAL_TRANSITION UniversalTransitionReturnResult, ret
 
 end

@@ -58,7 +58,7 @@ namespace System.Speech.Synthesis
         }
         public void SelectVoiceByHints(VoiceGender gender, VoiceAge age, int voiceAlternate, CultureInfo culture)
         {
-            Helpers.ThrowIfNull(culture, nameof(culture));
+            ArgumentNullException.ThrowIfNull(culture);
 
             if (voiceAlternate < 0)
             {
@@ -85,7 +85,7 @@ namespace System.Speech.Synthesis
         }
         public Prompt SpeakAsync(string textToSpeak)
         {
-            Helpers.ThrowIfNull(textToSpeak, nameof(textToSpeak));
+            ArgumentNullException.ThrowIfNull(textToSpeak);
 
             Prompt prompt = new(textToSpeak, SynthesisTextFormat.Text);
             SpeakAsync(prompt);
@@ -93,14 +93,14 @@ namespace System.Speech.Synthesis
         }
         public void SpeakAsync(Prompt prompt)
         {
-            Helpers.ThrowIfNull(prompt, nameof(prompt));
+            ArgumentNullException.ThrowIfNull(prompt);
 
             prompt.Synthesizer = this;
             VoiceSynthesizer.SpeakAsync(prompt);
         }
         public Prompt SpeakSsmlAsync(string textToSpeak)
         {
-            Helpers.ThrowIfNull(textToSpeak, nameof(textToSpeak));
+            ArgumentNullException.ThrowIfNull(textToSpeak);
 
             Prompt prompt = new(textToSpeak, SynthesisTextFormat.Ssml);
             SpeakAsync(prompt);
@@ -108,7 +108,7 @@ namespace System.Speech.Synthesis
         }
         public Prompt SpeakAsync(PromptBuilder promptBuilder)
         {
-            Helpers.ThrowIfNull(promptBuilder, nameof(promptBuilder));
+            ArgumentNullException.ThrowIfNull(promptBuilder);
 
             Prompt prompt = new(promptBuilder);
             SpeakAsync(prompt);
@@ -120,7 +120,7 @@ namespace System.Speech.Synthesis
         }
         public void Speak(Prompt prompt)
         {
-            Helpers.ThrowIfNull(prompt, nameof(prompt));
+            ArgumentNullException.ThrowIfNull(prompt);
 
             // Avoid a dead lock if the synthesizer is Paused
             if (State == SynthesizerState.Paused)
@@ -171,7 +171,7 @@ namespace System.Speech.Synthesis
         /// </summary>
         public void SpeakAsyncCancel(Prompt prompt)
         {
-            Helpers.ThrowIfNull(prompt, nameof(prompt));
+            ArgumentNullException.ThrowIfNull(prompt);
 
             VoiceSynthesizer.Abort(prompt);
         }
@@ -195,21 +195,21 @@ namespace System.Speech.Synthesis
         public void SetOutputToWaveFile(string path, SpeechAudioFormatInfo formatInfo)
         {
             Helpers.ThrowIfEmptyOrNull(path, nameof(path));
-            Helpers.ThrowIfNull(formatInfo, nameof(formatInfo));
+            ArgumentNullException.ThrowIfNull(formatInfo);
 
             SetOutputToNull();
             SetOutputStream(new FileStream(path, FileMode.Create, FileAccess.Write), formatInfo, true, true);
         }
         public void SetOutputToWaveStream(Stream audioDestination)
         {
-            Helpers.ThrowIfNull(audioDestination, nameof(audioDestination));
+            ArgumentNullException.ThrowIfNull(audioDestination);
 
             SetOutputStream(audioDestination, null, true, false);
         }
         public void SetOutputToAudioStream(Stream audioDestination, SpeechAudioFormatInfo formatInfo)
         {
-            Helpers.ThrowIfNull(audioDestination, nameof(audioDestination));
-            Helpers.ThrowIfNull(formatInfo, nameof(formatInfo));
+            ArgumentNullException.ThrowIfNull(audioDestination);
+            ArgumentNullException.ThrowIfNull(formatInfo);
 
             SetOutputStream(audioDestination, formatInfo, false, false);
         }
@@ -236,7 +236,7 @@ namespace System.Speech.Synthesis
             _outputStream = Stream.Null;
         }
         // Dynamic content, use a method instead of a property to denote that fact
-        public Prompt GetCurrentlySpokenPrompt()
+        public Prompt? GetCurrentlySpokenPrompt()
         {
             return VoiceSynthesizer.Prompt;
         }
@@ -246,7 +246,7 @@ namespace System.Speech.Synthesis
         }
         public ReadOnlyCollection<InstalledVoice> GetInstalledVoices(CultureInfo culture)
         {
-            Helpers.ThrowIfNull(culture, nameof(culture));
+            ArgumentNullException.ThrowIfNull(culture);
 
             if (culture.Equals(CultureInfo.InvariantCulture))
             {
@@ -257,139 +257,139 @@ namespace System.Speech.Synthesis
         }
         public void AddLexicon(Uri uri, string mediaType)
         {
-            Helpers.ThrowIfNull(uri, nameof(uri));
+            ArgumentNullException.ThrowIfNull(uri);
 
             VoiceSynthesizer.AddLexicon(uri, mediaType);
         }
         public void RemoveLexicon(Uri uri)
         {
-            Helpers.ThrowIfNull(uri, nameof(uri));
+            ArgumentNullException.ThrowIfNull(uri);
 
             VoiceSynthesizer.RemoveLexicon(uri);
         }
 
         #region public Events
-        public event EventHandler<SpeakStartedEventArgs> SpeakStarted
+        public event EventHandler<SpeakStartedEventArgs>? SpeakStarted
         {
             [MethodImplAttribute(MethodImplOptions.Synchronized)]
             add
             {
-                Helpers.ThrowIfNull(value, nameof(value));
+                ArgumentNullException.ThrowIfNull(value);
                 VoiceSynthesizer._speakStarted += value;
             }
             [MethodImplAttribute(MethodImplOptions.Synchronized)]
             remove
             {
-                Helpers.ThrowIfNull(value, nameof(value));
+                ArgumentNullException.ThrowIfNull(value);
                 VoiceSynthesizer._speakStarted -= value;
             }
         }
-        public event EventHandler<SpeakCompletedEventArgs> SpeakCompleted
+        public event EventHandler<SpeakCompletedEventArgs>? SpeakCompleted
         {
             [MethodImplAttribute(MethodImplOptions.Synchronized)]
             add
             {
-                Helpers.ThrowIfNull(value, nameof(value));
+                ArgumentNullException.ThrowIfNull(value);
                 VoiceSynthesizer._speakCompleted += value;
             }
             [MethodImplAttribute(MethodImplOptions.Synchronized)]
             remove
             {
-                Helpers.ThrowIfNull(value, nameof(value));
+                ArgumentNullException.ThrowIfNull(value);
                 VoiceSynthesizer._speakCompleted -= value;
             }
         }
-        public event EventHandler<SpeakProgressEventArgs> SpeakProgress
+        public event EventHandler<SpeakProgressEventArgs>? SpeakProgress
         {
             [MethodImplAttribute(MethodImplOptions.Synchronized)]
             add
             {
-                Helpers.ThrowIfNull(value, nameof(value));
+                ArgumentNullException.ThrowIfNull(value);
                 VoiceSynthesizer.AddEvent<SpeakProgressEventArgs>(TtsEventId.WordBoundary, ref VoiceSynthesizer._speakProgress, value);
             }
             [MethodImplAttribute(MethodImplOptions.Synchronized)]
             remove
             {
-                Helpers.ThrowIfNull(value, nameof(value));
+                ArgumentNullException.ThrowIfNull(value);
                 VoiceSynthesizer.RemoveEvent<SpeakProgressEventArgs>(TtsEventId.WordBoundary, ref VoiceSynthesizer._speakProgress, value);
             }
         }
-        public event EventHandler<BookmarkReachedEventArgs> BookmarkReached
+        public event EventHandler<BookmarkReachedEventArgs>? BookmarkReached
         {
             [MethodImplAttribute(MethodImplOptions.Synchronized)]
             add
             {
-                Helpers.ThrowIfNull(value, nameof(value));
+                ArgumentNullException.ThrowIfNull(value);
                 VoiceSynthesizer.AddEvent<BookmarkReachedEventArgs>(TtsEventId.Bookmark, ref VoiceSynthesizer._bookmarkReached, value);
             }
             [MethodImplAttribute(MethodImplOptions.Synchronized)]
             remove
             {
-                Helpers.ThrowIfNull(value, nameof(value));
+                ArgumentNullException.ThrowIfNull(value);
                 VoiceSynthesizer.RemoveEvent<BookmarkReachedEventArgs>(TtsEventId.Bookmark, ref VoiceSynthesizer._bookmarkReached, value);
             }
         }
-        public event EventHandler<VoiceChangeEventArgs> VoiceChange
+        public event EventHandler<VoiceChangeEventArgs>? VoiceChange
         {
             [MethodImplAttribute(MethodImplOptions.Synchronized)]
             add
             {
-                Helpers.ThrowIfNull(value, nameof(value));
+                ArgumentNullException.ThrowIfNull(value);
                 VoiceSynthesizer.AddEvent<VoiceChangeEventArgs>(TtsEventId.VoiceChange, ref VoiceSynthesizer._voiceChange, value);
             }
             [MethodImplAttribute(MethodImplOptions.Synchronized)]
             remove
             {
-                Helpers.ThrowIfNull(value, nameof(value));
+                ArgumentNullException.ThrowIfNull(value);
                 VoiceSynthesizer.RemoveEvent<VoiceChangeEventArgs>(TtsEventId.VoiceChange, ref VoiceSynthesizer._voiceChange, value);
             }
         }
 
         #region WinFx
-        public event EventHandler<PhonemeReachedEventArgs> PhonemeReached
+        public event EventHandler<PhonemeReachedEventArgs>? PhonemeReached
         {
             [MethodImplAttribute(MethodImplOptions.Synchronized)]
             add
             {
-                Helpers.ThrowIfNull(value, nameof(value));
+                ArgumentNullException.ThrowIfNull(value);
                 VoiceSynthesizer.AddEvent<PhonemeReachedEventArgs>(TtsEventId.Phoneme, ref VoiceSynthesizer._phonemeReached, value);
             }
             [MethodImplAttribute(MethodImplOptions.Synchronized)]
             remove
             {
-                Helpers.ThrowIfNull(value, nameof(value));
+                ArgumentNullException.ThrowIfNull(value);
                 VoiceSynthesizer.RemoveEvent<PhonemeReachedEventArgs>(TtsEventId.Phoneme, ref VoiceSynthesizer._phonemeReached, value);
             }
         }
-        public event EventHandler<VisemeReachedEventArgs> VisemeReached
+        public event EventHandler<VisemeReachedEventArgs>? VisemeReached
         {
             [MethodImplAttribute(MethodImplOptions.Synchronized)]
             add
             {
-                Helpers.ThrowIfNull(value, nameof(value));
+                ArgumentNullException.ThrowIfNull(value);
                 VoiceSynthesizer.AddEvent<VisemeReachedEventArgs>(TtsEventId.Viseme, ref VoiceSynthesizer._visemeReached, value);
             }
             [MethodImplAttribute(MethodImplOptions.Synchronized)]
             remove
             {
-                Helpers.ThrowIfNull(value, nameof(value));
+                ArgumentNullException.ThrowIfNull(value);
                 VoiceSynthesizer.RemoveEvent<VisemeReachedEventArgs>(TtsEventId.Viseme, ref VoiceSynthesizer._visemeReached, value);
             }
         }
 
         #endregion
-        public event EventHandler<StateChangedEventArgs> StateChanged
+        public event EventHandler<StateChangedEventArgs>? StateChanged
         {
             [MethodImplAttribute(MethodImplOptions.Synchronized)]
             add
             {
-                Helpers.ThrowIfNull(value, nameof(value));
+                ArgumentNullException.ThrowIfNull(value);
                 VoiceSynthesizer._stateChanged += value;
             }
             [MethodImplAttribute(MethodImplOptions.Synchronized)]
             remove
             {
-                Helpers.ThrowIfNull(value, nameof(value));
+                ArgumentNullException.ThrowIfNull(value);
                 VoiceSynthesizer._stateChanged -= value;
             }
         }
@@ -452,7 +452,7 @@ namespace System.Speech.Synthesis
         #endregion
 
         #region Private Methods
-        private void SetOutputStream(Stream stream, SpeechAudioFormatInfo formatInfo, bool headerInfo, bool closeStreamOnExit)
+        private void SetOutputStream(Stream? stream, SpeechAudioFormatInfo? formatInfo, bool headerInfo, bool closeStreamOnExit)
         {
             SetOutputToNull();
             _outputStream = stream;
@@ -520,7 +520,7 @@ namespace System.Speech.Synthesis
         #region Private Fields
 
         // SpVoice for this synthesizer
-        private VoiceSynthesis _voiceSynthesis;
+        private VoiceSynthesis? _voiceSynthesis;
 
         // Is the object disposed?
         private bool _isDisposed;
@@ -529,7 +529,7 @@ namespace System.Speech.Synthesis
         private bool _paused;
 
         // .NET Stream - keep a reference to it to avoid it to be GC
-        private Stream _outputStream;
+        private Stream? _outputStream;
 
         // If stream were created in SpeechFx then close it, otherwise it should remain open.
         private bool _closeStreamOnExit;

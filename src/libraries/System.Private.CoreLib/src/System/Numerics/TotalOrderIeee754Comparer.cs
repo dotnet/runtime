@@ -220,7 +220,7 @@ namespace System.Numerics
         /// <returns>A hash code for the specified number.</returns>
         public int GetHashCode([DisallowNull] T obj)
         {
-            ArgumentNullException.ThrowIfNull(obj, nameof(obj));
+            ArgumentNullException.ThrowIfNull(obj);
             return obj.GetHashCode();
         }
 

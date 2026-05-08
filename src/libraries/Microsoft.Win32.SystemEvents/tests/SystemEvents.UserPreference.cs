@@ -128,17 +128,23 @@ namespace Microsoft.Win32.SystemEventsTests
             UserPreferenceChangingEventArgs changingArgs = null;
             UserPreferenceChangingEventHandler changingHandler = (o, e) =>
             {
-                changingArgs = e;
-                changing.Set();
+                if (e.Category == expectedCategory)
+                {
+                    changingArgs = e;
+                    changing.Set();
+                }
             };
 
             UserPreferenceChangedEventArgs changedArgs = null;
             UserPreferenceChangingEventArgs changingDuringChanged = null;
             UserPreferenceChangedEventHandler changedHandler = (o, e) =>
             {
-                changedArgs = e;
-                changingDuringChanged = changingArgs;
-                changed.Set();
+                if (e.Category == expectedCategory)
+                {
+                    changedArgs = e;
+                    changingDuringChanged = changingArgs;
+                    changed.Set();
+                }
             };
 
             SystemEvents.UserPreferenceChanging += changingHandler;

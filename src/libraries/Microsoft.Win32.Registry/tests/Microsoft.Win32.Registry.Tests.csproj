@@ -20,6 +20,7 @@
     <Compile Include="RegistryKey\RegistryKey_Close.cs" />
     <Compile Include="RegistryKey\RegistryKey_CreateSubKey_str.cs" />
     <Compile Include="RegistryKey\RegistryKey_CreateSubKey_str_rkpc.cs" />
+    <Compile Include="RegistryKey\RegistryKey_CreateSubKey_str_rkpc_rs.cs" />
     <Compile Include="RegistryKey\RegistryKey_DeleteSubKeyTree.cs" />
     <Compile Include="RegistryKey\RegistryKey_DeleteSubKeyTree_str.cs" />
     <Compile Include="RegistryKey\RegistryKey_DeleteSubKey_str.cs" />

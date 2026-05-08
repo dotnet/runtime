@@ -61,7 +61,6 @@ BOOL ETW::GCLog::ShouldTrackMovementForEtw()
 BOOL ETW::GCLog::ShouldWalkStaticsAndCOMForEtw()
 {
     LIMITED_METHOD_CONTRACT;
-
     return s_forcedGCInProgress &&
         ETW_TRACING_CATEGORY_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context,
                                      TRACE_LEVEL_INFORMATION,
@@ -496,8 +495,7 @@ HRESULT ETW::GCLog::ForceGCForDiagnostics()
 
 #ifndef FEATURE_NATIVEAOT
     }
-    EX_CATCH { }
-    EX_END_CATCH(RethrowTerminalExceptions);
+    EX_SWALLOW_NONTERMINAL
 #endif // FEATURE_NATIVEAOT
 
     return hr;
@@ -506,7 +504,6 @@ HRESULT ETW::GCLog::ForceGCForDiagnostics()
 //---------------------------------------------------------------------------------------
 // WalkStaticsAndCOMForETW walks both CCW/RCW objects and static variables.
 //---------------------------------------------------------------------------------------
-
 VOID ETW::GCLog::WalkStaticsAndCOMForETW()
 {
     CONTRACTL
@@ -520,9 +517,11 @@ VOID ETW::GCLog::WalkStaticsAndCOMForETW()
     {
         BulkTypeEventLogger typeLogger;
 
+#ifdef FEATURE_COMINTEROP
         // Walk RCWs/CCWs
         BulkComLogger comLogger(&typeLogger);
         comLogger.LogAllComObjects();
+#endif // FEATURE_COMINTEROP
 
         // Walk static variables
         BulkStaticsLogger staticLogger(&typeLogger);
@@ -530,14 +529,16 @@ VOID ETW::GCLog::WalkStaticsAndCOMForETW()
 
         // Ensure all loggers have written all events, fire type logger last to batch events
         // (FireBulkComEvent or FireBulkStaticsEvent may queue up additional types).
+#ifdef FEATURE_COMINTEROP
         comLogger.FireBulkComEvent();
+#endif // FEATURE_COMINTEROP
         staticLogger.FireBulkStaticsEvent();
         typeLogger.FireBulkTypeEvent();
     }
     EX_CATCH
     {
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 }
 
 

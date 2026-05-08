@@ -26,7 +26,7 @@ namespace System.Net.Tests
         [Theory]
         [InlineData(null)]
         [InlineData("")]
-        public void Ctor_TokenNullOrEmpty_ExpectMessageNull(string token)
+        public void Ctor_TokenNullOrEmpty_ExpectMessageNull(string? token)
         {
             Authorization authorization = new Authorization(token);
             Assert.Null(authorization.Message);
@@ -35,7 +35,7 @@ namespace System.Net.Tests
         [Theory]
         [InlineData(null)]
         [InlineData("")]
-        public void Ctor_ConnectionGroupIdNullOrEmpty_ExpectConnectionGroupIdNull(string connectionGroupId)
+        public void Ctor_ConnectionGroupIdNullOrEmpty_ExpectConnectionGroupIdNull(string? connectionGroupId)
         {
             Authorization authorization = new Authorization(null, true, connectionGroupId);
             Assert.Null(authorization.ConnectionGroupId);
@@ -44,7 +44,7 @@ namespace System.Net.Tests
         [Theory]
         [InlineData(null)]
         [InlineData(new object[] { new string[0] { } })]
-        public void ProtectionRealm_SetNullOrEmptyGet_ExpectNullValue(string[] protectionRealm)
+        public void ProtectionRealm_SetNullOrEmptyGet_ExpectNullValue(string[]? protectionRealm)
         {
             Authorization authorization = new Authorization(null);
             authorization.ProtectionRealm = protectionRealm;

@@ -26,7 +26,7 @@ namespace System.Reflection.Emit.Tests
         [InlineData("method", typeof(string), new Type[] { typeof(char?) })]
         [InlineData("Method", typeof(string), new Type[] { typeof(GenericClass2<,>), typeof(GenericClass2<,>) })]
         [InlineData("Method", typeof(string), new Type[] { typeof(TestInterface) })]
-        public void String_Type_TypeArray_Module(string name, Type returnType, Type[] parameterTypes)
+        public void String_Type_TypeArray_Module(string name, Type? returnType, Type[]? parameterTypes)
         {
             Module module = typeof(TestClass).GetTypeInfo().Module;
 
@@ -52,7 +52,7 @@ namespace System.Reflection.Emit.Tests
         [InlineData("Method", typeof(string), null, typeof(TestClass))]
         [InlineData("Method", typeof(string), new Type[] { typeof(int), typeof(string) }, typeof(TestClass))]
         [InlineData("", typeof(string), new Type[] { typeof(int), typeof(string) }, typeof(TestClass))]
-        public void String_Type_TypeArray_Type(string name, Type returnType, Type[] parameterTypes, Type owner)
+        public void String_Type_TypeArray_Type(string name, Type returnType, Type[]? parameterTypes, Type owner)
         {
             DynamicMethod method1 = new DynamicMethod(name, returnType, parameterTypes, owner);
             Helpers.VerifyMethod(method1, name, MethodAttributes.Public | MethodAttributes.Static, CallingConventions.Standard, returnType, parameterTypes, owner.GetTypeInfo().Module);

@@ -1,6 +1,8 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections;
+using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 
@@ -170,10 +172,11 @@ namespace System.Text.RegularExpressions
         }
 
         /// <summary>
-        /// Represents an enumerator containing the set of splits around successful matches found by iteratively applying a regular expression pattern to the input span.
+        /// Represents an enumerator containing the set of splits around successful matches found by iteratively
+        /// applying a regular expression pattern to the input span.
         /// </summary>
         [StructLayout(LayoutKind.Auto)]
-        public ref struct ValueSplitEnumerator
+        public ref struct ValueSplitEnumerator : IEnumerator<Range>
         {
             private readonly Regex _regex;
             private readonly ReadOnlySpan<char> _input;
@@ -266,10 +269,17 @@ namespace System.Text.RegularExpressions
                 return true;
             }
 
-            /// <summary>
-            /// Gets a <see cref="Range"/> for the split at the current position of the enumerator.
-            /// </summary>
+            /// <summary>Gets the <see cref="Range"/> element at the current position of the enumerator.</summary>
             public readonly Range Current => _currentSplit;
+
+            /// <inheritdoc />
+            object IEnumerator.Current => Current;
+
+            /// <inheritdoc />
+            void IEnumerator.Reset() => throw new NotSupportedException();
+
+            /// <inheritdoc />
+            void IDisposable.Dispose() { }
         }
     }
 }

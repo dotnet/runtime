@@ -212,8 +212,8 @@ namespace System.Text.Json.Nodes.Tests
         [InlineData("{ }", " {    }")]
         [InlineData("""{ "x" : 1, "y" : 2 }""", """{ "x" : 1, "y" : 2 }""")]
         [InlineData("""{ "x" : 1, "y" : 2 }""", """{ "y" : 2, "x" : 1 }""")]
-        [InlineData("""[]""", """ [ ]""")]
-        [InlineData("""[1, 2, 3]""", """ [1,  2,  3  ]""")]
+        [InlineData("[]", " [ ]")]
+        [InlineData("[1, 2, 3]", " [1,  2,  3  ]")]
         [InlineData("""[null, false, 3.14, "ABC", { "x" : 1, "y" : 2 }, []]""",
             """[null, false, 314e-2, "\u0041\u0042\u0043", { "y" : 2, "x" : 1 }, [ ] ]""")]
         public static void DeepEquals_EqualValuesReturnTrue(string value1, string value2)
@@ -302,6 +302,42 @@ namespace System.Text.Json.Nodes.Tests
             JsonNode obj2 = JsonNode.Parse(value2);
 
             AssertNotDeepEqual(obj1, obj2);
+        }
+
+        [Fact]
+        public static void JsonNode_ReplaceWith()
+        {
+            JsonObject obj = new JsonObject();
+            obj["name"] = "test";
+            JsonNode node = obj["name"];
+            
+            node.ReplaceWith(JsonValue.Create("replaced"));
+            Assert.Equal("replaced", obj["name"].GetValue<string>());
+        }
+
+        [Fact]
+        public static void JsonArray_Replace()
+        {
+            JsonArray arr = new JsonArray(1, 2, 3);
+            arr[1] = JsonValue.Create(99);
+            Assert.Equal(99, arr[1].GetValue<int>());
+        }
+
+        [Fact]
+        public static void JsonObject_SetProperty()
+        {
+            JsonObject obj = new JsonObject();
+            obj["key"] = "value";
+            obj["key"] = "newValue";
+            Assert.Equal("newValue", obj["key"].GetValue<string>());
+        }
+
+        [Fact]
+        public static void JsonValue_AsValue()
+        {
+            JsonNode node = JsonValue.Create(42);
+            JsonValue value = node.AsValue();
+            Assert.Equal(42, value.GetValue<int>());
         }
     }
 }

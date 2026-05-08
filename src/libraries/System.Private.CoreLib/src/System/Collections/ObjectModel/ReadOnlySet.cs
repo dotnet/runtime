@@ -35,7 +35,7 @@ namespace System.Collections.ObjectModel
 
         /// <inheritdoc/>
         public IEnumerator<T> GetEnumerator() =>
-            _set.Count == 0 ? ((IEnumerable<T>)Array.Empty<T>()).GetEnumerator() :
+            _set.Count == 0 ? ((IEnumerable<T>)[]).GetEnumerator() :
             _set.GetEnumerator();
 
         /// <inheritdoc/>

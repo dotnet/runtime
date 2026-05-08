@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Microsoft.Extensions.Options
@@ -31,7 +32,7 @@ namespace Microsoft.Extensions.Options
         /// <param name="name">The default name of the <typeparamref name="TOptions"/> instance; if <see langword="null"/>, <see cref="Options.DefaultName"/> is used.</param>
         public OptionsBuilder(IServiceCollection services, string? name)
         {
-            ThrowHelper.ThrowIfNull(services);
+            ArgumentNullException.ThrowIfNull(services);
 
             Services = services;
             Name = name ?? Options.DefaultName;
@@ -47,7 +48,7 @@ namespace Microsoft.Extensions.Options
         /// </remarks>
         public virtual OptionsBuilder<TOptions> Configure(Action<TOptions> configureOptions)
         {
-            ThrowHelper.ThrowIfNull(configureOptions);
+            ArgumentNullException.ThrowIfNull(configureOptions);
 
             Services.AddSingleton<IConfigureOptions<TOptions>>(new ConfigureNamedOptions<TOptions>(Name, configureOptions));
             return this;
@@ -65,7 +66,7 @@ namespace Microsoft.Extensions.Options
         public virtual OptionsBuilder<TOptions> Configure<TDep>(Action<TOptions, TDep> configureOptions)
             where TDep : class
         {
-            ThrowHelper.ThrowIfNull(configureOptions);
+            ArgumentNullException.ThrowIfNull(configureOptions);
 
             Services.AddTransient<IConfigureOptions<TOptions>>(sp =>
                 new ConfigureNamedOptions<TOptions, TDep>(Name, sp.GetRequiredService<TDep>(), configureOptions));
@@ -86,7 +87,7 @@ namespace Microsoft.Extensions.Options
             where TDep1 : class
             where TDep2 : class
         {
-            ThrowHelper.ThrowIfNull(configureOptions);
+            ArgumentNullException.ThrowIfNull(configureOptions);
 
             Services.AddTransient<IConfigureOptions<TOptions>>(sp =>
                 new ConfigureNamedOptions<TOptions, TDep1, TDep2>(Name, sp.GetRequiredService<TDep1>(), sp.GetRequiredService<TDep2>(), configureOptions));
@@ -109,7 +110,7 @@ namespace Microsoft.Extensions.Options
             where TDep2 : class
             where TDep3 : class
         {
-            ThrowHelper.ThrowIfNull(configureOptions);
+            ArgumentNullException.ThrowIfNull(configureOptions);
 
             Services.AddTransient<IConfigureOptions<TOptions>>(
                 sp => new ConfigureNamedOptions<TOptions, TDep1, TDep2, TDep3>(
@@ -139,7 +140,7 @@ namespace Microsoft.Extensions.Options
             where TDep3 : class
             where TDep4 : class
         {
-            ThrowHelper.ThrowIfNull(configureOptions);
+            ArgumentNullException.ThrowIfNull(configureOptions);
 
             Services.AddTransient<IConfigureOptions<TOptions>>(
                 sp => new ConfigureNamedOptions<TOptions, TDep1, TDep2, TDep3, TDep4>(
@@ -172,7 +173,7 @@ namespace Microsoft.Extensions.Options
             where TDep4 : class
             where TDep5 : class
         {
-            ThrowHelper.ThrowIfNull(configureOptions);
+            ArgumentNullException.ThrowIfNull(configureOptions);
 
             Services.AddTransient<IConfigureOptions<TOptions>>(
                 sp => new ConfigureNamedOptions<TOptions, TDep1, TDep2, TDep3, TDep4, TDep5>(
@@ -196,7 +197,7 @@ namespace Microsoft.Extensions.Options
         /// </remarks>
         public virtual OptionsBuilder<TOptions> PostConfigure(Action<TOptions> configureOptions)
         {
-            ThrowHelper.ThrowIfNull(configureOptions);
+            ArgumentNullException.ThrowIfNull(configureOptions);
 
             Services.AddSingleton<IPostConfigureOptions<TOptions>>(new PostConfigureOptions<TOptions>(Name, configureOptions));
             return this;
@@ -214,7 +215,7 @@ namespace Microsoft.Extensions.Options
         public virtual OptionsBuilder<TOptions> PostConfigure<TDep>(Action<TOptions, TDep> configureOptions)
             where TDep : class
         {
-            ThrowHelper.ThrowIfNull(configureOptions);
+            ArgumentNullException.ThrowIfNull(configureOptions);
 
             Services.AddTransient<IPostConfigureOptions<TOptions>>(sp =>
                 new PostConfigureOptions<TOptions, TDep>(Name, sp.GetRequiredService<TDep>(), configureOptions));
@@ -235,7 +236,7 @@ namespace Microsoft.Extensions.Options
             where TDep1 : class
             where TDep2 : class
         {
-            ThrowHelper.ThrowIfNull(configureOptions);
+            ArgumentNullException.ThrowIfNull(configureOptions);
 
             Services.AddTransient<IPostConfigureOptions<TOptions>>(sp =>
                 new PostConfigureOptions<TOptions, TDep1, TDep2>(Name, sp.GetRequiredService<TDep1>(), sp.GetRequiredService<TDep2>(), configureOptions));
@@ -258,7 +259,7 @@ namespace Microsoft.Extensions.Options
             where TDep2 : class
             where TDep3 : class
         {
-            ThrowHelper.ThrowIfNull(configureOptions);
+            ArgumentNullException.ThrowIfNull(configureOptions);
 
             Services.AddTransient<IPostConfigureOptions<TOptions>>(
                 sp => new PostConfigureOptions<TOptions, TDep1, TDep2, TDep3>(
@@ -288,7 +289,7 @@ namespace Microsoft.Extensions.Options
             where TDep3 : class
             where TDep4 : class
         {
-            ThrowHelper.ThrowIfNull(configureOptions);
+            ArgumentNullException.ThrowIfNull(configureOptions);
 
             Services.AddTransient<IPostConfigureOptions<TOptions>>(
                 sp => new PostConfigureOptions<TOptions, TDep1, TDep2, TDep3, TDep4>(
@@ -321,7 +322,7 @@ namespace Microsoft.Extensions.Options
             where TDep4 : class
             where TDep5 : class
         {
-            ThrowHelper.ThrowIfNull(configureOptions);
+            ArgumentNullException.ThrowIfNull(configureOptions);
 
             Services.AddTransient<IPostConfigureOptions<TOptions>>(
                 sp => new PostConfigureOptions<TOptions, TDep1, TDep2, TDep3, TDep4, TDep5>(
@@ -332,6 +333,24 @@ namespace Microsoft.Extensions.Options
                     sp.GetRequiredService<TDep4>(),
                     sp.GetRequiredService<TDep5>(),
                     configureOptions));
+            return this;
+        }
+
+        /// <summary>
+        /// Registers an <see cref="IValidateOptions{TOptions}"/> type for an options type.
+        /// </summary>
+        /// <typeparam name="TValidateOptions">The validation type.</typeparam>
+        /// <returns>The current <see cref="OptionsBuilder{TOptions}"/>.</returns>
+        /// <remarks>
+        /// Validation is scoped to the options name associated with this builder.
+        /// Dependencies required by <typeparamref name="TValidateOptions"/>
+        /// are resolved from the service provider.
+        /// </remarks>
+        public virtual OptionsBuilder<TOptions> Validate<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TValidateOptions>()
+            where TValidateOptions : class, IValidateOptions<TOptions>
+        {
+            Services.AddTransient<IValidateOptions<TOptions>>(sp =>
+                new NamedValidateOptionsFilter<TOptions, TValidateOptions>(Name, ActivatorUtilities.GetServiceOrCreateInstance<TValidateOptions>(sp)));
             return this;
         }
 
@@ -351,7 +370,7 @@ namespace Microsoft.Extensions.Options
         /// <returns>The current <see cref="OptionsBuilder{TOptions}"/>.</returns>
         public virtual OptionsBuilder<TOptions> Validate(Func<TOptions, bool> validation, string failureMessage)
         {
-            ThrowHelper.ThrowIfNull(validation);
+            ArgumentNullException.ThrowIfNull(validation);
 
             Services.AddSingleton<IValidateOptions<TOptions>>(new ValidateOptions<TOptions>(Name, validation, failureMessage));
             return this;
@@ -375,7 +394,7 @@ namespace Microsoft.Extensions.Options
         /// <returns>The current <see cref="OptionsBuilder{TOptions}"/>.</returns>
         public virtual OptionsBuilder<TOptions> Validate<TDep>(Func<TOptions, TDep, bool> validation, string failureMessage) where TDep : notnull
         {
-            ThrowHelper.ThrowIfNull(validation);
+            ArgumentNullException.ThrowIfNull(validation);
 
             Services.AddTransient<IValidateOptions<TOptions>>(sp =>
                 new ValidateOptions<TOptions, TDep>(Name, sp.GetRequiredService<TDep>(), validation, failureMessage));
@@ -406,7 +425,7 @@ namespace Microsoft.Extensions.Options
             where TDep1 : notnull
             where TDep2 : notnull
         {
-            ThrowHelper.ThrowIfNull(validation);
+            ArgumentNullException.ThrowIfNull(validation);
 
             Services.AddTransient<IValidateOptions<TOptions>>(sp =>
                 new ValidateOptions<TOptions, TDep1, TDep2>(Name,
@@ -445,7 +464,7 @@ namespace Microsoft.Extensions.Options
             where TDep2 : notnull
             where TDep3 : notnull
         {
-            ThrowHelper.ThrowIfNull(validation);
+            ArgumentNullException.ThrowIfNull(validation);
 
             Services.AddTransient<IValidateOptions<TOptions>>(sp =>
                 new ValidateOptions<TOptions, TDep1, TDep2, TDep3>(Name,
@@ -489,7 +508,7 @@ namespace Microsoft.Extensions.Options
             where TDep3 : notnull
             where TDep4 : notnull
         {
-            ThrowHelper.ThrowIfNull(validation);
+            ArgumentNullException.ThrowIfNull(validation);
 
             Services.AddTransient<IValidateOptions<TOptions>>(sp =>
                 new ValidateOptions<TOptions, TDep1, TDep2, TDep3, TDep4>(Name,
@@ -538,7 +557,7 @@ namespace Microsoft.Extensions.Options
             where TDep4 : notnull
             where TDep5 : notnull
         {
-            ThrowHelper.ThrowIfNull(validation);
+            ArgumentNullException.ThrowIfNull(validation);
 
             Services.AddTransient<IValidateOptions<TOptions>>(sp =>
                 new ValidateOptions<TOptions, TDep1, TDep2, TDep3, TDep4, TDep5>(Name,

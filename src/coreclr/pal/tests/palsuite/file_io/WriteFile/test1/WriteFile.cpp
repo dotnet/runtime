@@ -75,9 +75,8 @@ PALTEST(file_io_WriteFile_test1_paltest_writefile_test1, "file_io/WriteFile/test
             last_error, szReadOnlyFile);
     }
     
-    if (!SetFileAttributesA(szReadOnlyFile, FILE_ATTRIBUTE_READONLY))
+    if ((last_error = chmod(szReadOnlyFile, S_IRUSR | S_IRGRP | S_IROTH)) != 0)
     {
-		last_error = GetLastError();
 		Trace("WriteFile: ERROR[%ld] -> Unable to make the file read-only.\n", last_error);
 		do_cleanup_WriteFile_test1();
         Fail("WriteFile: ERROR[%ld] -> Unable to make the file read-only.\n", last_error);
@@ -102,9 +101,8 @@ PALTEST(file_io_WriteFile_test1_paltest_writefile_test1, "file_io/WriteFile/test
     }
 
 	//To delete file need to make it normal
-	if(!SetFileAttributesA(szReadOnlyFile,FILE_ATTRIBUTE_NORMAL))
+	if ((last_error = chmod(szReadOnlyFile, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH)) != 0)
 	{
-		last_error = GetLastError();
 	    Fail("WriteFile: ERROR[%ld] -> Unable to make the file attribute NORMAL.\n", last_error);
 
 	}

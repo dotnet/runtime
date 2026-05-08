@@ -388,7 +388,7 @@ InteropMethodTableData *MethodTableBuilder::BuildInteropVTable(AllocMemTracker *
     // the interfaces will be listed in the identical order).
     if (bmtParent.wNumParentInterfaces > 0)
     {
-        PREFIX_ASSUME(pParentMethodTable != NULL); // We have to have parent to have parent interfaces
+        _ASSERTE(pParentMethodTable != NULL); // We have to have parent to have parent interfaces
 
         _ASSERTE(pParentMethodTable->LookupComInteropData());
         _ASSERTE(bmtParent.wNumParentInterfaces == pParentMethodTable->LookupComInteropData()->cInterfaceMap);
@@ -499,15 +499,15 @@ InteropMethodTableData *MethodTableBuilder::BuildInteropVTable(AllocMemTracker *
         PCCOR_SIGNATURE pSig;
         ULONG           cbSig;
 
-        printf("InteropMethodTable\n--------------\n");
-        printf("VTable\n------\n");
+        minipal_log_print_info("InteropMethodTable\n--------------\nVTable\n------\n");
 
+        StackSString message;
         for (DWORD i = 0; i < pInteropMT->cVTable; i++)
         {
             // Print the method name
             InteropMethodTableSlotData *pInteropMD = &pInteropMT->pVTable[i];
-            printf(pInteropMD->pMD->GetName());
-            printf(" ");
+            message.AppendUTF8(pInteropMD->pMD->GetName());
+            message.AppendUTF8(" ");
 
             // Print the sig
             if (FAILED(pInteropMD->pMD->GetMDImport()->GetSigOfMethodDef(pInteropMD->pMD->GetMemberDef(), &cbSig, &pSig)))
@@ -515,9 +515,13 @@ InteropMethodTableData *MethodTableBuilder::BuildInteropVTable(AllocMemTracker *
                 pSig = NULL;
                 cbSig = 0;
             }
+
             PrettyPrintSigInternalLegacy(pSig, cbSig, "", &qb, pInteropMD->pMD->GetMDImport());
-            printf((LPCUTF8) qb.Ptr());
-            printf("\n");
+            message.AppendUTF8((LPCUTF8) qb.Ptr());
+            message.AppendUTF8("\n");
+
+            minipal_log_print_info("%s", message.GetUTF8());
+            message.Clear();
         }
     }
 #endif // _DEBUG
@@ -666,11 +670,6 @@ VOID MethodTableBuilder::BuildInteropVTable_InterfaceList(
 //
 // Determine vtable placement for each member in this class
 //
-
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable:21000) // Suppress PREFast warning about overly large function
-#endif
 VOID MethodTableBuilder::BuildInteropVTable_PlaceMembers(
     bmtTypeInfo* bmtType,
                            DWORD numDeclaredInterfaces,
@@ -1015,10 +1014,6 @@ VOID MethodTableBuilder::BuildInteropVTable_PlaceMembers(
         }
     } /* end ... for each member */
 }
-
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif
 
 //---------------------------------------------------------------------------------------
 // Resolve unresolved interfaces, determine an upper bound on the size of the interface map,
@@ -2283,10 +2278,6 @@ VOID    MethodTableBuilder::EnumerateMethodImpls()
 //
 // Enumerate this class's members
 //
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable:21000) // Suppress PREFast warning about overly large function
-#endif
 VOID    MethodTableBuilder::EnumerateClassMethods()
 {
     CONTRACTL
@@ -2439,7 +2430,7 @@ VOID    MethodTableBuilder::EnumerateClassMethods()
 
         if (IsMdRTSpecialName(dwMemberAttrs))
         {
-            PREFIX_ASSUME(strMethodName != NULL); // if we've gotten here we've called GetNameOfMethodDef
+            _ASSERTE(strMethodName != NULL); // if we've gotten here we've called GetNameOfMethodDef
 
             // The slot is special, but it might not be a vtable spacer. To
             // determine that we must look at the name.
@@ -2672,7 +2663,7 @@ VOID    MethodTableBuilder::EnumerateClassMethods()
 
         if (IsReallyMdPinvokeImpl(dwMemberAttrs) || IsMiInternalCall(dwImplFlags))
         {
-            hr = NDirect::HasNAT_LAttribute(pMDInternalImport, tok, dwMemberAttrs);
+            hr = PInvoke::HasNAT_LAttribute(pMDInternalImport, tok, dwMemberAttrs);
 
             // There was a problem querying for the attribute
             if (FAILED(hr))
@@ -2707,7 +2698,7 @@ VOID    MethodTableBuilder::EnumerateClassMethods()
                 else
                     Classification = mcPInvoke;
             }
-            // The NAT_L attribute is present, marking this method as NDirect
+            // The NAT_L attribute is present, marking this method as PInvoke
             else
             {
                 CONSISTENCY_CHECK(hr == S_OK);
@@ -2916,10 +2907,6 @@ VOID    MethodTableBuilder::EnumerateClassMethods()
     }
 #endif // FEATURE_COMINTEROP
 }
-
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif
 
 //*******************************************************************************
 //

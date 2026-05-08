@@ -33,19 +33,19 @@ namespace System.IO.Ports.Tests
 
         #region Test Cases
 
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(typeof(Write_byte_int_int), nameof(HasOneSerialPort))]
         public void Buffer_Null()
         {
             VerifyWriteException(null, 0, 1, typeof(ArgumentNullException));
         }
 
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(typeof(Write_byte_int_int), nameof(HasOneSerialPort))]
         public void Offset_NEG1()
         {
             VerifyWriteException(new byte[DEFAULT_BUFFER_SIZE], -1, DEFAULT_BUFFER_COUNT, typeof(ArgumentOutOfRangeException));
         }
 
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(typeof(Write_byte_int_int), nameof(HasOneSerialPort))]
         public void Offset_NEGRND()
         {
             Random rndGen = new Random(-55);
@@ -53,19 +53,19 @@ namespace System.IO.Ports.Tests
             VerifyWriteException(new byte[DEFAULT_BUFFER_SIZE], rndGen.Next(int.MinValue, 0), DEFAULT_BUFFER_COUNT, typeof(ArgumentOutOfRangeException));
         }
 
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(typeof(Write_byte_int_int), nameof(HasOneSerialPort))]
         public void Offset_MinInt()
         {
             VerifyWriteException(new byte[DEFAULT_BUFFER_SIZE], int.MinValue, DEFAULT_BUFFER_COUNT, typeof(ArgumentOutOfRangeException));
         }
 
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(typeof(Write_byte_int_int), nameof(HasOneSerialPort))]
         public void Count_NEG1()
         {
             VerifyWriteException(new byte[DEFAULT_BUFFER_SIZE], DEFAULT_BUFFER_OFFSET, -1, typeof(ArgumentOutOfRangeException));
         }
 
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(typeof(Write_byte_int_int), nameof(HasOneSerialPort))]
         public void Count_NEGRND()
         {
             Random rndGen = new Random(-55);
@@ -73,13 +73,13 @@ namespace System.IO.Ports.Tests
             VerifyWriteException(new byte[DEFAULT_BUFFER_SIZE], DEFAULT_BUFFER_OFFSET, rndGen.Next(int.MinValue, 0), typeof(ArgumentOutOfRangeException));
         }
 
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(typeof(Write_byte_int_int), nameof(HasOneSerialPort))]
         public void Count_MinInt()
         {
             VerifyWriteException(new byte[DEFAULT_BUFFER_SIZE], DEFAULT_BUFFER_OFFSET, int.MinValue, typeof(ArgumentOutOfRangeException));
         }
 
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(typeof(Write_byte_int_int), nameof(HasOneSerialPort))]
         public void OffsetCount_EQ_Length_Plus_1()
         {
             Random rndGen = new Random(-55);
@@ -91,7 +91,7 @@ namespace System.IO.Ports.Tests
             VerifyWriteException(new byte[bufferLength], offset, count, expectedException);
         }
 
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(typeof(Write_byte_int_int), nameof(HasOneSerialPort))]
         public void OffsetCount_GT_Length()
         {
             Random rndGen = new Random(-55);
@@ -103,7 +103,7 @@ namespace System.IO.Ports.Tests
             VerifyWriteException(new byte[bufferLength], offset, count, expectedException);
         }
 
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(typeof(Write_byte_int_int), nameof(HasOneSerialPort))]
         public void Offset_GT_Length()
         {
             Random rndGen = new Random(-55);
@@ -115,7 +115,7 @@ namespace System.IO.Ports.Tests
             VerifyWriteException(new byte[bufferLength], offset, count, expectedException);
         }
 
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(typeof(Write_byte_int_int), nameof(HasOneSerialPort))]
         public void Count_GT_Length()
         {
             Random rndGen = new Random(-55);
@@ -127,7 +127,7 @@ namespace System.IO.Ports.Tests
             VerifyWriteException(new byte[bufferLength], offset, count, expectedException);
         }
 
-        [ConditionalFact(nameof(HasLoopbackOrNullModem))]
+        [ConditionalFact(typeof(Write_byte_int_int), nameof(HasLoopbackOrNullModem))]
         public void OffsetCount_EQ_Length()
         {
             Random rndGen = new Random(-55);
@@ -138,7 +138,7 @@ namespace System.IO.Ports.Tests
             VerifyWrite(new byte[bufferLength], offset, count);
         }
 
-        [ConditionalFact(nameof(HasLoopbackOrNullModem))]
+        [ConditionalFact(typeof(Write_byte_int_int), nameof(HasLoopbackOrNullModem))]
         public void Offset_EQ_Length_Minus_1()
         {
             Random rndGen = new Random(-55);
@@ -149,7 +149,7 @@ namespace System.IO.Ports.Tests
             VerifyWrite(new byte[bufferLength], offset, count);
         }
 
-        [ConditionalFact(nameof(HasLoopbackOrNullModem))]
+        [ConditionalFact(typeof(Write_byte_int_int), nameof(HasLoopbackOrNullModem))]
         public void Count_EQ_Length()
         {
             Random rndGen = new Random(-55);
@@ -160,7 +160,7 @@ namespace System.IO.Ports.Tests
             VerifyWrite(new byte[bufferLength], offset, count);
         }
 
-        [ConditionalFact(nameof(HasLoopbackOrNullModem))]
+        [ConditionalFact(typeof(Write_byte_int_int), nameof(HasLoopbackOrNullModem))]
         public void Count_EQ_Zero()
         {
             int bufferLength = 0;
@@ -170,7 +170,7 @@ namespace System.IO.Ports.Tests
             VerifyWrite(new byte[bufferLength], offset, count);
         }
 
-        [ConditionalFact(nameof(HasLoopbackOrNullModem))]
+        [ConditionalFact(typeof(Write_byte_int_int), nameof(HasLoopbackOrNullModem))]
         public void ASCIIEncoding()
         {
             Random rndGen = new Random(-55);
@@ -181,7 +181,7 @@ namespace System.IO.Ports.Tests
             VerifyWrite(new byte[bufferLength], offset, count, new ASCIIEncoding());
         }
 
-        [ConditionalFact(nameof(HasLoopbackOrNullModem))]
+        [ConditionalFact(typeof(Write_byte_int_int), nameof(HasLoopbackOrNullModem))]
         public void UTF8Encoding()
         {
             Random rndGen = new Random(-55);
@@ -192,7 +192,7 @@ namespace System.IO.Ports.Tests
             VerifyWrite(new byte[bufferLength], offset, count, new UTF8Encoding());
         }
 
-        [ConditionalFact(nameof(HasLoopbackOrNullModem))]
+        [ConditionalFact(typeof(Write_byte_int_int), nameof(HasLoopbackOrNullModem))]
         public void UTF32Encoding()
         {
             Random rndGen = new Random(-55);
@@ -203,7 +203,7 @@ namespace System.IO.Ports.Tests
             VerifyWrite(new byte[bufferLength], offset, count, new UTF32Encoding());
         }
 
-        [ConditionalFact(nameof(HasLoopbackOrNullModem))]
+        [ConditionalFact(typeof(Write_byte_int_int), nameof(HasLoopbackOrNullModem))]
         public void UnicodeEncoding()
         {
             Random rndGen = new Random(-55);
@@ -215,7 +215,7 @@ namespace System.IO.Ports.Tests
         }
 
 
-        [ConditionalFact(nameof(HasLoopbackOrNullModem))]
+        [ConditionalFact(typeof(Write_byte_int_int), nameof(HasLoopbackOrNullModem))]
         public void LargeBuffer()
         {
             int bufferLength = LARGE_BUFFER_SIZE;

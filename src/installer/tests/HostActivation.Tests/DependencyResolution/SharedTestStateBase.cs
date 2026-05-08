@@ -22,7 +22,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
 
         public DotNetBuilder DotNet(string name)
         {
-            return new DotNetBuilder(_baseDirectory.Location, TestContext.BuiltDotNet.BinPath, name);
+            return new DotNetBuilder(_baseDirectory.Location, HostTestContext.BuiltDotNet.BinPath, name);
         }
 
         public TestApp CreateFrameworkReferenceApp(string fxName, string fxVersion, Action<NetCoreAppBuilder> customizer = null)

@@ -548,7 +548,7 @@ namespace System.Text.Json
             {
                 _bytePositionInLine += FindMismatch(span, literal);
 
-                int amountToWrite = Math.Min(span.Length, (int)_bytePositionInLine + 1);
+                int amountToWrite = AmountToWrite(span, _bytePositionInLine, readSoFar, written);
                 span.Slice(0, amountToWrite).CopyTo(readSoFar);
                 written += amountToWrite;
                 goto Throw;
@@ -558,7 +558,7 @@ namespace System.Text.Json
                 if (!literal.StartsWith(span))
                 {
                     _bytePositionInLine += FindMismatch(span, literal);
-                    int amountToWrite = Math.Min(span.Length, (int)_bytePositionInLine + 1);
+                    int amountToWrite = AmountToWrite(span, _bytePositionInLine, readSoFar, written);
                     span.Slice(0, amountToWrite).CopyTo(readSoFar);
                     written += amountToWrite;
                     goto Throw;
@@ -605,7 +605,7 @@ namespace System.Text.Json
                     {
                         _bytePositionInLine += FindMismatch(span, leftToMatch);
 
-                        amountToWrite = Math.Min(span.Length, (int)_bytePositionInLine + 1);
+                        amountToWrite = AmountToWrite(span, _bytePositionInLine, readSoFar, written);
                         span.Slice(0, amountToWrite).CopyTo(readSoFar.Slice(written));
                         written += amountToWrite;
 
@@ -615,6 +615,13 @@ namespace System.Text.Json
                     leftToMatch = leftToMatch.Slice(span.Length);
                     alreadyMatched = span.Length;
                 }
+            }
+
+            static int AmountToWrite(ReadOnlySpan<byte> span, long bytePositionInLine, ReadOnlySpan<byte> readSoFar, int written)
+            {
+                return Math.Min(
+                    readSoFar.Length - written,
+                    Math.Min(span.Length, (int)bytePositionInLine + 1));
             }
         Throw:
             _totalConsumed = prevTotalConsumed;
@@ -694,7 +701,7 @@ namespace System.Text.Json
             Debug.Assert(
                 ((_consumed < _buffer.Length) &&
                 !_isNotPrimitive &&
-                JsonConstants.Delimiters.IndexOf(_buffer[_consumed]) >= 0)
+                JsonConstants.Delimiters.Contains(_buffer[_consumed]))
                 || (_isNotPrimitive ^ (_consumed >= (uint)_buffer.Length)));
 
             return true;
@@ -1299,7 +1306,7 @@ namespace System.Text.Json
             if (i < data.Length)
             {
                 nextByte = data[i];
-                if (JsonConstants.Delimiters.IndexOf(nextByte) >= 0)
+                if (JsonConstants.Delimiters.Contains(nextByte))
                 {
                     return ConsumeNumberResult.Success;
                 }
@@ -1328,7 +1335,7 @@ namespace System.Text.Json
                 i = 0;
                 data = _buffer;
                 nextByte = data[i];
-                if (JsonConstants.Delimiters.IndexOf(nextByte) >= 0)
+                if (JsonConstants.Delimiters.Contains(nextByte))
                 {
                     return ConsumeNumberResult.Success;
                 }
@@ -1415,7 +1422,7 @@ namespace System.Text.Json
                 _bytePositionInLine += counter;
             }
 
-            if (JsonConstants.Delimiters.IndexOf(nextByte) >= 0)
+            if (JsonConstants.Delimiters.Contains(nextByte))
             {
                 return ConsumeNumberResult.Success;
             }

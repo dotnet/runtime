@@ -26,6 +26,7 @@
 #include "sdk_resolver.h"
 #include "roll_fwd_on_no_candidate_fx_option.h"
 #include "bundle/info.h"
+#include "install_info.h"
 
 namespace
 {
@@ -61,6 +62,70 @@ namespace
             hostpolicy_contract->unload();
 
         g_context_initializing_cv.notify_all();
+    }
+
+    // Try to load and invoke the AOT-ed SDK from the resolved SDK directory.
+    // Returns true if the AOT entry point was found and invoked, with the result in exit_code.
+    // Returns false if the AOT library is not available or cannot be used.
+    bool try_invoke_aot_sdk(
+        const host_startup_info_t& host_info,
+        const pal::string_t& sdk_dir,
+        const pal::string_t& sdk_root,
+        int argc,
+        const pal::char_t* argv[],
+        int* exit_code)
+    {
+        pal::string_t sdk_aot_path(sdk_dir);
+        append_path(&sdk_aot_path, LIB_FILE_NAME_X("dotnet-aot"));
+        if (!pal::file_exists(sdk_aot_path))
+            return false;
+
+        trace::verbose(_X("Found AOT-ed SDK [%s]"), sdk_aot_path.c_str());
+
+        pal::dll_t aot_dll = nullptr;
+        if (!pal::load_library(&sdk_aot_path, &aot_dll))
+            return false;
+
+        // See docs/design/features/sharedfx-lookup.md#sdk-search
+        typedef int (__cdecl *dotnet_execute_fn)(
+            const pal::char_t* host_path,
+            const pal::char_t* dotnet_root,
+            const pal::char_t* sdk_dir,
+            const pal::char_t* hostfxr_path,
+            int argc,
+            const pal::char_t** argv);
+
+        auto dotnet_execute = reinterpret_cast<dotnet_execute_fn>(pal::get_symbol(aot_dll, "dotnet_execute"));
+        if (dotnet_execute == nullptr)
+        {
+            trace::info(_X("AOT-ed SDK [%s] does not contain 'dotnet_execute' entry point."), sdk_aot_path.c_str());
+            pal::unload_library(aot_dll);
+            return false;
+        }
+
+        pal::string_t hostfxr_path;
+        if (!pal::get_own_module_path(&hostfxr_path))
+        {
+            trace::info(_X("Failed to determine hostfxr path."));
+            pal::unload_library(aot_dll);
+            return false;
+        }
+
+        const pal::char_t* dotnet_root = sdk_root.empty()
+            ? host_info.dotnet_root.c_str()
+            : sdk_root.c_str();
+
+        trace::info(_X("Using AOT-ed SDK=[%s]"), sdk_aot_path.c_str());
+
+        *exit_code = dotnet_execute(
+            host_info.host_path.c_str(),
+            dotnet_root,
+            sdk_dir.c_str(),
+            hostfxr_path.c_str(),
+            argc - 1, // skip 'dotnet' (first argument)
+            argv + 1);
+
+        return true;
     }
 }
 
@@ -490,7 +555,7 @@ namespace
         trace::verbose(_X("Executing as a %s app as per config file [%s]"),
             (is_framework_dependent ? _X("framework-dependent") : _X("self-contained")), app_config.get_path().c_str());
 
-        if (!hostpolicy_resolver::try_get_dir(mode, host_info.dotnet_root, fx_definitions, app_candidate, deps_file, probe_fullpaths, &hostpolicy_dir))
+        if (!hostpolicy_resolver::try_get_dir(mode, host_info.dotnet_root, fx_definitions, app_candidate, deps_file, &hostpolicy_dir))
         {
             return StatusCode::CoreHostLibMissingFailure;
         }
@@ -628,7 +693,7 @@ namespace
         trace::verbose(_X("Libhost loading occurring for a framework-dependent component per config file [%s]"), app_config.get_path().c_str());
 
         const pal::string_t deps_file;
-        if (!hostpolicy_resolver::try_get_dir(mode, host_info.dotnet_root, fx_definitions, host_info.app_path, deps_file, probe_fullpaths, &hostpolicy_dir))
+        if (!hostpolicy_resolver::try_get_dir(mode, host_info.dotnet_root, fx_definitions, host_info.app_path, deps_file, &hostpolicy_dir))
         {
             return StatusCode::CoreHostLibMissingFailure;
         }
@@ -1018,21 +1083,67 @@ int fx_muxer_t::handle_exec_host_command(
         required_buffer_size);
 }
 
+namespace
+{
+    pal::architecture get_requested_architecture(int argc, const pal::char_t* argv[])
+    {
+        // Expected format: --arch <arch>
+        // Default to current architecture if architecture is not specified in the expected format
+        if (argc < 2 || pal::strcasecmp(_X("--arch"), argv[0]) != 0)
+            return get_current_arch();
+
+        pal::string_t arch_arg = argv[1];
+        for (int i = 0; i < static_cast<int>(pal::architecture::__last); ++i)
+        {
+            pal::architecture arch = static_cast<pal::architecture>(i);
+            if (pal::strcasecmp(get_arch_name(arch), arch_arg.c_str())  == 0)
+                return arch;
+        }
+
+        trace::error(_X("Unknown architecture: %s"), arch_arg.c_str());
+        return pal::architecture::__last;
+    }
+}
+
 int fx_muxer_t::handle_cli(
     const host_startup_info_t& host_info,
     int argc,
     const pal::char_t* argv[],
     const pal::string_t& app_candidate)
 {
+    // Should have already checked for and bailed out on no args
+    assert(argc > 1);
+
     // Check for commands that don't depend on the CLI SDK to be loaded
-    if (pal::strcasecmp(_X("--list-sdks"), argv[1]) == 0)
+    bool list_sdks = pal::strcasecmp(_X("--list-sdks"), argv[1]) == 0;
+    bool list_runtimes = !list_sdks && pal::strcasecmp(_X("--list-runtimes"), argv[1]) == 0;
+
+    if (list_sdks || list_runtimes)
     {
-        sdk_info::print_all_sdks(host_info.dotnet_root, _X(""));
-        return StatusCode::Success;
-    }
-    else if (pal::strcasecmp(_X("--list-runtimes"), argv[1]) == 0)
-    {
-        framework_info::print_all_frameworks(host_info.dotnet_root, _X(""));
+        // Skip over first two args: <executable> --list-sdks|--list-runtimes
+        pal::architecture arch = get_requested_architecture(argc - 2, argv + 2);
+        if (arch == pal::architecture::__last)
+            return StatusCode::InvalidArgFailure;
+
+        pal::string_t dotnet_root = host_info.dotnet_root;
+        if (arch != get_current_arch())
+        {
+            if (!install_info::try_get_install_location(arch, dotnet_root))
+            {
+                // No install found for the specified architecture
+                return StatusCode::Success;
+            }
+        }
+
+        if (list_sdks)
+        {
+            sdk_info::print_all_sdks(dotnet_root, _X(""));
+        }
+        else if (list_runtimes)
+        {
+            framework_info::print_all_frameworks(dotnet_root, _X(""));
+        }
+
         return StatusCode::Success;
     }
 
@@ -1041,7 +1152,8 @@ int fx_muxer_t::handle_cli(
     //
 
     sdk_resolver resolver = sdk_resolver::from_nearest_global_file();
-    auto sdk_dotnet = resolver.resolve(host_info.dotnet_root, false /*print_errors*/);
+    pal::string_t sdk_root;
+    pal::string_t sdk_dotnet = resolver.resolve(host_info.dotnet_root, false /*print_errors*/, &sdk_root);
     if (sdk_dotnet.empty())
     {
         assert(argc > 1);
@@ -1055,7 +1167,7 @@ int fx_muxer_t::handle_cli(
         }
         else if (pal::strcasecmp(_X("--info"), argv[1]) == 0)
         {
-            command_line::print_muxer_info(host_info.dotnet_root, resolver.global_file_path(), false /*skip_sdk_info_output*/);
+            command_line::print_muxer_info(host_info.dotnet_root, resolver.global_file(), false /*skip_sdk_info_output*/);
             return StatusCode::Success;
         }
 
@@ -1070,8 +1182,25 @@ int fx_muxer_t::handle_cli(
         return StatusCode::SdkResolveFailure;
     }
 
+    // Try to use the AOT-ed SDK if available in the resolved SDK directory
+    int aot_exit_code;
+    if (try_invoke_aot_sdk(host_info, sdk_dotnet, sdk_root, argc, argv, &aot_exit_code))
+    {
+        if (pal::strcasecmp(_X("--info"), argv[1]) == 0)
+        {
+            command_line::print_muxer_info(host_info.dotnet_root, resolver.global_file(), aot_exit_code == 0 /*skip_sdk_info_output*/);
+        }
+
+        return aot_exit_code;
+    }
+
     append_path(&sdk_dotnet, SDK_DOTNET_DLL);
     assert(pal::file_exists(sdk_dotnet));
+
+    // Use the root path from the resolved SDK to run the SDK dll
+    host_startup_info_t host_info_local = pal::strcmp(sdk_root.c_str(), host_info.dotnet_root.c_str()) == 0
+        ? host_info
+        : host_startup_info_t(host_info.host_path.c_str(), sdk_root.c_str(), host_info.app_path.c_str());
 
     // Transform dotnet [command] [args] -> dotnet dotnet.dll [command] [args]
 
@@ -1086,13 +1215,13 @@ int fx_muxer_t::handle_cli(
     int new_argoff;
     pal::string_t sdk_app_candidate;
     opt_map_t opts;
-    int result = command_line::parse_args_for_sdk_command(host_info, (int32_t)new_argv.size(), new_argv.data(), &new_argoff, sdk_app_candidate, opts);
+    int result = command_line::parse_args_for_sdk_command(host_info_local, (int32_t)new_argv.size(), new_argv.data(), &new_argoff, sdk_app_candidate, opts);
     if (!result)
     {
         // Transform dotnet [exec] [--additionalprobingpath path] [--depsfile file] [dll] [args] -> dotnet [dll] [args]
         result = handle_exec_host_command(
             pal::string_t{} /*host_command*/,
-            host_info,
+            host_info_local,
             sdk_app_candidate,
             opts,
             (int32_t)new_argv.size(),
@@ -1107,7 +1236,7 @@ int fx_muxer_t::handle_cli(
 
     if (pal::strcasecmp(_X("--info"), argv[1]) == 0)
     {
-        command_line::print_muxer_info(host_info.dotnet_root, resolver.global_file_path(), result == 0 /*skip_sdk_info_output*/);
+        command_line::print_muxer_info(host_info.dotnet_root, resolver.global_file(), result == 0 /*skip_sdk_info_output*/);
     }
 
     return result;

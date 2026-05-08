@@ -135,6 +135,9 @@ namespace Internal.TypeSystem
 
                 foreach (FieldDesc field in fieldType.GetFields())
                 {
+                    if (field.IsStatic)
+                        continue;
+
                     int fieldOffset = offset + field.Offset.AsInt;
                     AddToFieldLayout(fieldLayout, fieldOffset, field.FieldType);
                 }

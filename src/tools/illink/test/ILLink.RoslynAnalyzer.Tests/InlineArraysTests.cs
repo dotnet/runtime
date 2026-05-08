@@ -6,15 +6,15 @@ using Xunit;
 
 namespace ILLink.RoslynAnalyzer.Tests
 {
-	public sealed partial class InlineArraysTests : LinkerTestBase
-	{
-		protected override string TestSuiteName => "InlineArrays";
+    public sealed partial class InlineArraysTests : LinkerTestBase
+    {
+        protected override string TestSuiteName => "InlineArrays";
 
-		[Fact]
-		public Task InlineArray ()
-		{
-			return RunTest (nameof (InlineArray));
-		}
+        [Fact]
+        public Task InlineArray()
+        {
+            return RunTest(nameof(InlineArray));
+        }
 
-	}
+    }
 }

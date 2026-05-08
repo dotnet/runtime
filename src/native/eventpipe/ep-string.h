@@ -60,5 +60,9 @@ ep_rt_utf16le_to_utf8_string_n (
 	const ep_char16_t *str,
 	size_t len);
 
+// Allocates a new UTF-8 string and formats it according to the specified format and arguments.	
+ep_char8_t *
+ep_rt_utf8_string_printf_alloc (const ep_char8_t *format, ...);
+
 #endif /* ENABLE_PERFTRACING */
 #endif /* EVENTPIPE_STRING_H */

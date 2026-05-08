@@ -56,6 +56,7 @@ namespace System.Xml.XslCompiledTransformApiTests
 
     //[TestCase(Name = "Same instance testing: XsltArgList - GetParam", Desc = "GetParam test cases")]
     [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/124344", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile), nameof(PlatformDetection.IsCoreCLR))]
     public class CSameInstanceXsltArgumentListGetParam : CSameInstanceXsltArgTestCase2
     {
         private ITestOutputHelper _output;
@@ -104,7 +105,7 @@ namespace System.Xml.XslCompiledTransformApiTests
         }
 
         //[Variation("Multiple GetParam for same parameter name")]
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void proc1()
         {
             CThreads rThreads = new CThreads(_output);
@@ -122,7 +123,7 @@ namespace System.Xml.XslCompiledTransformApiTests
         }
 
         //[Variation("Multiple GetParam for different parameter name")]
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void proc2()
         {
             CThreads rThreads = new CThreads(_output);
@@ -142,6 +143,7 @@ namespace System.Xml.XslCompiledTransformApiTests
 
     //[TestCase(Name = "Same instance testing: XsltArgList - GetExtensionObject", Desc = "GetExtensionObject test cases")]
     [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/124344", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile), nameof(PlatformDetection.IsCoreCLR))]
     public class CSameInstanceXsltArgumentListGetExtnObject : CSameInstanceXsltArgTestCase2
     {
         private ITestOutputHelper _output;
@@ -189,7 +191,7 @@ namespace System.Xml.XslCompiledTransformApiTests
         }
 
         //[Variation("Multiple GetExtensionObject for same namespace System.Xml.Tests")]
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void proc1()
         {
             CThreads rThreads = new CThreads(_output);
@@ -207,7 +209,7 @@ namespace System.Xml.XslCompiledTransformApiTests
         }
 
         //[Variation("Multiple GetExtensionObject for different namespace System.Xml.Tests")]
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void proc2()
         {
             CThreads rThreads = new CThreads(_output);
@@ -227,6 +229,7 @@ namespace System.Xml.XslCompiledTransformApiTests
 
     //[TestCase(Name = "Same instance testing: XsltArgList - Transform", Desc = "Multiple transforms")]
     [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/124344", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile), nameof(PlatformDetection.IsCoreCLR))]
     public class CSameInstanceXsltArgumentListTransform : CSameInstanceXsltArgTestCase2
     {
         private ITestOutputHelper _output;
@@ -275,7 +278,7 @@ namespace System.Xml.XslCompiledTransformApiTests
         // Multiple Transform() using shared ArgumentList
         ////////////////////////////////////////////////////////////////
         //[Variation("Multiple transforms using shared ArgumentList")]
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void proc1()
         {
             CThreads rThreads = new CThreads(_output);

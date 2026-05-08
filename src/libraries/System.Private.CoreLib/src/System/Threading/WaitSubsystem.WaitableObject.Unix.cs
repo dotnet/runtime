@@ -13,7 +13,7 @@ namespace System.Threading
         ///
         /// Used by the wait subsystem on Unix, so this class cannot have any dependencies on the wait subsystem.
         /// </summary>
-        public sealed class WaitableObject
+        public sealed class WaitableObject : IWaitableObject
         {
             /// <summary>
             /// Dictionary to look up named waitable objects.  This implementation only supports in-process
@@ -298,30 +298,6 @@ namespace System.Threading
                         Debug.Assert(_ownershipInfo!.Thread == null);
                         _ownershipInfo.AssignOwnership(this, waitInfo);
                         return;
-                }
-            }
-
-            public int Wait(ThreadWaitInfo waitInfo, int timeoutMilliseconds, bool interruptible, bool prioritize)
-            {
-                Debug.Assert(waitInfo != null);
-                Debug.Assert(waitInfo.Thread == Thread.CurrentThread);
-
-                Debug.Assert(timeoutMilliseconds >= -1);
-
-                var lockHolder = new LockHolder(s_lock);
-                try
-                {
-                    if (interruptible && waitInfo.CheckAndResetPendingInterrupt)
-                    {
-                        lockHolder.Dispose();
-                        throw new ThreadInterruptedException();
-                    }
-
-                    return Wait_Locked(waitInfo, timeoutMilliseconds, interruptible, prioritize, ref lockHolder);
-                }
-                finally
-                {
-                    lockHolder.Dispose();
                 }
             }
 

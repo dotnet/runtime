@@ -31,10 +31,15 @@ typedef struct _EventPipeProvider EventPipeProvider;
 typedef struct _EventPipeProviderCallbackData EventPipeProviderCallbackData;
 typedef struct _EventPipeProviderCallbackDataQueue EventPipeProviderCallbackDataQueue;
 typedef struct _EventPipeProviderConfiguration EventPipeProviderConfiguration;
+typedef struct _EventPipeProviderEventFilter EventPipeProviderEventFilter;
+typedef struct _EventPipeProviderTracepointConfiguration EventPipeProviderTracepointConfiguration;
+typedef struct _EventPipeProviderTracepointSet EventPipeProviderTracepointSet;
 typedef struct _EventPipeExecutionCheckpoint EventPipeExecutionCheckpoint;
 typedef struct _EventPipeSession EventPipeSession;
 typedef struct _EventPipeSessionProvider EventPipeSessionProvider;
+typedef struct _EventPipeSessionProviderEventFilter EventPipeSessionProviderEventFilter;
 typedef struct _EventPipeSessionProviderList EventPipeSessionProviderList;
+typedef struct _EventPipeSessionProviderTracepointConfiguration EventPipeSessionProviderTracepointConfiguration;
 typedef struct _EventPipeSequencePoint EventPipeSequencePoint;
 typedef struct _EventPipeSequencePointBlock EventPipeSequencePointBlock;
 typedef struct _EventPipeStackBlock EventPipeStackBlock;
@@ -44,6 +49,7 @@ typedef struct _EventPipeSystemTime EventPipeSystemTime;
 typedef struct _EventPipeThread EventPipeThread;
 typedef struct _EventPipeThreadHolder EventPipeThreadHolder;
 typedef struct _EventPipeThreadSessionState EventPipeThreadSessionState;
+typedef struct _EventPipeSessionProviderTracepoint EventPipeSessionProviderTracepoint;
 typedef struct _FastSerializableObject FastSerializableObject;
 typedef struct _FastSerializableObjectVtable FastSerializableObjectVtable;
 typedef struct _FastSerializer FastSerializer;
@@ -147,7 +153,8 @@ typedef enum {
 	EP_SESSION_TYPE_LISTENER,
 	EP_SESSION_TYPE_IPCSTREAM,
 	EP_SESSION_TYPE_SYNCHRONOUS,
-	EP_SESSION_TYPE_FILESTREAM
+	EP_SESSION_TYPE_FILESTREAM,
+	EP_SESSION_TYPE_USEREVENTS
 } EventPipeSessionType ;
 
 typedef enum {

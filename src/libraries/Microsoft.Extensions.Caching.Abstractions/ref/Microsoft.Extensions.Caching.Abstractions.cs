@@ -142,6 +142,7 @@ namespace Microsoft.Extensions.Caching.Memory
         public long? CurrentEstimatedSize { get { throw null; } init { } }
         public long TotalHits { get { throw null; } init { } }
         public long TotalMisses { get { throw null; } init { } }
+        public long TotalEvictions { get { throw null; } init { } }
     }
     public partial class PostEvictionCallbackRegistration
     {
@@ -193,7 +194,7 @@ namespace Microsoft.Extensions.Caching.Hybrid
         DisableUnderlyingData = 1 << 4,
         DisableCompression = 1 << 5,
     }
-    public abstract class HybridCache
+    public abstract partial class HybridCache
     {
         public abstract System.Threading.Tasks.ValueTask<T> GetOrCreateAsync<TState, T>(string key, TState state, System.Func<TState, System.Threading.CancellationToken, System.Threading.Tasks.ValueTask<T>> factory,
             HybridCacheEntryOptions? options = null, System.Collections.Generic.IEnumerable<string>? tags = null, System.Threading.CancellationToken cancellationToken = default);

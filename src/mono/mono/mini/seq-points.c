@@ -272,12 +272,12 @@ mono_get_seq_points (MonoMethod *method)
 	// FIXME:
 	jit_mm = get_default_jit_mm ();
 	jit_mm_lock (jit_mm);
-	dn_simdhash_ght_try_get_value (jit_mm->seq_points, method, (void **)&seq_points);
+	seq_points = dn_simdhash_ght_get_value_or_default (jit_mm->seq_points, method);
 	if (!seq_points && method->is_inflated) {
 		/* generic sharing + aot */
-		dn_simdhash_ght_try_get_value (jit_mm->seq_points, declaring_generic_method, (void **)&seq_points);
+		seq_points = dn_simdhash_ght_get_value_or_default (jit_mm->seq_points, declaring_generic_method);
 		if (!seq_points)
-			dn_simdhash_ght_try_get_value (jit_mm->seq_points, shared_method, (void **)&seq_points);
+			seq_points = dn_simdhash_ght_get_value_or_default (jit_mm->seq_points, shared_method);
 	}
 	jit_mm_unlock (jit_mm);
 

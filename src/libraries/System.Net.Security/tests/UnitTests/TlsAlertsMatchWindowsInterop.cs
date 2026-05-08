@@ -32,11 +32,11 @@ namespace System.Net.Security.Tests
             Assert.Equal((int)TlsAlertMessage.DecryptError, Interop.SChannel.TLS1_ALERT_DECRYPT_ERROR);
             Assert.Equal((int)TlsAlertMessage.ExportRestriction, Interop.SChannel.TLS1_ALERT_EXPORT_RESTRICTION);
             Assert.Equal((int)TlsAlertMessage.ProtocolVersion, Interop.SChannel.TLS1_ALERT_PROTOCOL_VERSION);
-            Assert.Equal((int)TlsAlertMessage.InsuffientSecurity, Interop.SChannel.TLS1_ALERT_INSUFFIENT_SECURITY);
+            Assert.Equal((int)TlsAlertMessage.InsufficientSecurity, Interop.SChannel.TLS1_ALERT_INSUFFIENT_SECURITY);
             Assert.Equal((int)TlsAlertMessage.InternalError, Interop.SChannel.TLS1_ALERT_INTERNAL_ERROR);
             Assert.Equal((int)TlsAlertMessage.UserCanceled, Interop.SChannel.TLS1_ALERT_USER_CANCELED);
             Assert.Equal((int)TlsAlertMessage.NoRenegotiation, Interop.SChannel.TLS1_ALERT_NO_RENEGOTIATION);
-            Assert.Equal((int)TlsAlertMessage.UnsupportedExt, Interop.SChannel.TLS1_ALERT_UNSUPPORTED_EXT);
+            Assert.Equal((int)TlsAlertMessage.UnsupportedExtension, Interop.SChannel.TLS1_ALERT_UNSUPPORTED_EXT);
         }
     }
 }

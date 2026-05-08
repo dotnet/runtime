@@ -7,8 +7,6 @@ namespace System.CodeDom
 {
     public class CodeTypeDelegate : CodeTypeDeclaration
     {
-        private CodeTypeReference _returnType;
-
         public CodeTypeDelegate()
         {
             TypeAttributes &= ~TypeAttributes.ClassSemanticsMask;
@@ -24,8 +22,8 @@ namespace System.CodeDom
 
         public CodeTypeReference ReturnType
         {
-            get => _returnType ??= new CodeTypeReference("");
-            set => _returnType = value;
+            get => field ??= new CodeTypeReference("");
+            set => field = value;
         }
 
         public CodeParameterDeclarationExpressionCollection Parameters { get; } = new CodeParameterDeclarationExpressionCollection();

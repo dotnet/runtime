@@ -7,8 +7,9 @@
 #define PROBE_FRAME_SIZE 0xB0  // 4 * 8  for fixed part of PInvokeTransitionFrame (fp, ra, m_pThread, m_Flags) +
                                // 11 * 8 for callee saved registers +
                                // 1 * 8  for caller SP +
-                               // 2 * 8  for int returns +
-                               // 4 * 8  for FP returns
+                               // 3 * 8  for int returns (a0, a1, a2) +
+                               // 2 * 8  for FP returns (fa0, fa1) +
+                               // 1 * 8  for alignment padding
 
 // Define the prolog for setting up the PInvokeTransitionFrame
 .macro PUSH_PROBE_FRAME threadReg, trashReg, BITMASK
@@ -32,26 +33,25 @@
 
     # Slot at sp+0x78 is reserved for caller sp
 
-    # Save the integer return registers
+    # Save the integer return registers, a2 might contain an objectref (async continuation)
     sd  a0, 0x80(sp)
     sd  a1, 0x88(sp)
+    sd  a2, 0x90(sp)
 
     # Save the FP return registers
-    fsd  fa0, 0x90(sp)
-    fsd  fa1, 0x98(sp)
-    fsd  fa2, 0xa0(sp)
-    fsd  fa3, 0xa8(sp)
+    fsd  fa0, 0x98(sp)
+    fsd  fa1, 0xa0(sp)
+    # Slot at sp+0xa8 is alignment padding
 
     # Perform the rest of the PInvokeTransitionFrame initialization.
     sd  \threadReg, OFFSETOF__PInvokeTransitionFrame__m_pThread(sp)        # Thread * (unused by stackwalker)
-    sd  \BITMASK, (OFFSETOF__PInvokeTransitionFrame__m_pThread + 8)(sp)    # Save the register bitmask passed in by caller
+    sd  \BITMASK, OFFSETOF__PInvokeTransitionFrame__m_Flags(sp)            # Save the register bitmask passed in by caller
 
     addi  \trashReg, sp, PROBE_FRAME_SIZE                                  # Recover value of caller's SP
     sd  \trashReg, 0x78(sp)                                                # Save caller's SP
 
     # Link the frame into the Thread
-    mv  \trashReg, sp
-    sd  \trashReg, OFFSETOF__Thread__m_pDeferredTransitionFrame(\threadReg)
+    sd  sp, OFFSETOF__Thread__m_pDeferredTransitionFrame(\threadReg)
 
 .endm
 
@@ -61,12 +61,11 @@
     // Restore the integer return registers
     ld  a0, 0x80(sp)
     ld  a1, 0x88(sp)
+    ld  a2, 0x90(sp)
 
     // Restore the FP return registers
-    fld  fa0, 0x90(sp)
-    fld  fa1, 0x98(sp)
-    fld  fa2, 0xa0(sp)
-    fld  fa3, 0xa8(sp)
+    fld  fa0, 0x98(sp)
+    fld  fa1, 0xa0(sp)
 
     // Restore callee saved registers
     EPILOG_RESTORE_REG_PAIR s1, s2,  0x20
@@ -83,15 +82,17 @@
 // Fix up the hijacked callstack
 .macro FixupHijackedCallstack
 
-    // a2 <- GetThread()
-    INLINE_GETTHREAD a2
+    // a4 <- GetThread()
+    mv  t1, a0
+    INLINE_GETTHREAD a4
+    mv  a0, t1
 
     // Fix the stack by restoring the original return address
-    ld  ra, OFFSETOF__Thread__m_pvHijackedReturnAddress(a2)
+    ld  ra, OFFSETOF__Thread__m_pvHijackedReturnAddress(a4)
 
     // Clear hijack state
-    sd  zero, OFFSETOF__Thread__m_ppvHijackedReturnAddressLocation(a2)
-    sd  zero, OFFSETOF__Thread__m_pvHijackedReturnAddress(a2)
+    sd  zero, OFFSETOF__Thread__m_ppvHijackedReturnAddressLocation(a4)
+    sd  zero, OFFSETOF__Thread__m_pvHijackedReturnAddress(a4)
 .endm
 
 //
@@ -100,14 +101,13 @@
 NESTED_ENTRY RhpGcProbeHijack, _TEXT, NoHandler
     FixupHijackedCallstack
 
-    PREPARE_EXTERNAL_VAR_INDIRECT_W RhpTrapThreads, a3
-    andi  t3, a3, 1 << TrapThreadsFlags_TrapThreads_Bit
+    PREPARE_EXTERNAL_VAR_INDIRECT_W RhpTrapThreads, t3
+    andi  t3, t3, 1 << TrapThreadsFlags_TrapThreads_Bit
     bnez  t3, LOCAL_LABEL(WaitForGC)
     jr  ra
 
 LOCAL_LABEL(WaitForGC):
-    li  t6, (DEFAULT_FRAME_SAVE_FLAGS + PTFF_SAVE_A0 + PTFF_SAVE_A1 + PTFF_THREAD_HIJACK_HI)
-    or  t3, t3, t6
+    li  t3, (DEFAULT_FRAME_SAVE_FLAGS + PTFF_SAVE_A0 + PTFF_SAVE_A1 + PTFF_SAVE_A2 + PTFF_THREAD_HIJACK)
     tail  C_FUNC(RhpWaitForGC)
 NESTED_END RhpGcProbeHijack
 
@@ -115,28 +115,13 @@ NESTED_END RhpGcProbeHijack
 
 // Wait for GC function
 NESTED_ENTRY RhpWaitForGC, _TEXT, NoHandler
-    PUSH_PROBE_FRAME a2, a3, t3
+    PUSH_PROBE_FRAME a4, a3, t3
 
-    ld  a0, OFFSETOF__Thread__m_pDeferredTransitionFrame(a2)
+    ld  a0, OFFSETOF__Thread__m_pDeferredTransitionFrame(a4)
     call  C_FUNC(RhpWaitForGC2)
 
-    ld  a2, OFFSETOF__PInvokeTransitionFrame__m_Flags(sp)
-
-    # Load PTFF_THREAD_ABORT_BIT into a register, using t2 if needed
-    slli  t2, a2, (63-PTFF_THREAD_ABORT_BIT)
-    srli  t2, t2, 63
-    bnez  t2, LOCAL_LABEL(ThrowThreadAbort)
-
-    .cfi_remember_state
     POP_PROBE_FRAME
     EPILOG_RETURN
-
-    .cfi_restore_state
-LOCAL_LABEL(ThrowThreadAbort):
-    POP_PROBE_FRAME
-    li  a0, STATUS_REDHAWK_THREAD_ABORT
-    mv  a1, ra      # Set return address as exception PC
-    call  C_FUNC(RhpThrowHwEx)
 NESTED_END RhpWaitForGC
 
 .global C_FUNC(RhpGcPoll2)

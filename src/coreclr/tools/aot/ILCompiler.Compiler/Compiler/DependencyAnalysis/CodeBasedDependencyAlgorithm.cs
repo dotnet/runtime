@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
+
 using Internal.IL;
 using Internal.TypeSystem;
 
@@ -25,7 +27,7 @@ namespace ILCompiler.DependencyAnalysis
             {
                 if (method.OwningType is MetadataType owningType)
                 {
-                    string name = method.Name;
+                    string name = method.GetName();
 
                     switch (name)
                     {
@@ -34,16 +36,16 @@ namespace ILCompiler.DependencyAnalysis
                         case "Create":
                             if (method.IsSharedByGenericInstantiations
                                 && owningType.Module == factory.TypeSystemContext.SystemModule
-                                && owningType.Namespace == "System.Collections.Generic")
+                                && owningType.Namespace.SequenceEqual("System.Collections.Generic"u8))
                             {
                                 TypeDesc[] templateDependencies = null;
 
-                                if (owningType.Name == "Comparer`1")
+                                if (owningType.Name.SequenceEqual("Comparer`1"u8))
                                 {
                                     templateDependencies = Internal.IL.Stubs.ComparerIntrinsics.GetPotentialComparersForType(
                                         owningType.Instantiation[0]);
                                 }
-                                else if (owningType.Name == "EqualityComparer`1")
+                                else if (owningType.Name.SequenceEqual("EqualityComparer`1"u8))
                                 {
                                     templateDependencies = Internal.IL.Stubs.ComparerIntrinsics.GetPotentialEqualityComparersForType(
                                         owningType.Instantiation[0]);

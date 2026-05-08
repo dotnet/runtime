@@ -22,10 +22,7 @@ namespace System.Security.Cryptography.Pkcs
         CmsRecipient(X509Certificate2 certificate, RSAEncryptionPadding rsaEncryptionPadding)
             : this(certificate)
         {
-            if (rsaEncryptionPadding is null)
-            {
-                throw new ArgumentNullException(nameof(rsaEncryptionPadding));
-            }
+            ArgumentNullException.ThrowIfNull(rsaEncryptionPadding);
 
             ValidateRSACertificate(certificate);
             RSAEncryptionPadding = rsaEncryptionPadding;
@@ -39,10 +36,7 @@ namespace System.Security.Cryptography.Pkcs
         CmsRecipient(SubjectIdentifierType recipientIdentifierType, X509Certificate2 certificate, RSAEncryptionPadding rsaEncryptionPadding)
             : this(recipientIdentifierType, certificate)
         {
-            if (rsaEncryptionPadding is null)
-            {
-                throw new ArgumentNullException(nameof(rsaEncryptionPadding));
-            }
+            ArgumentNullException.ThrowIfNull(rsaEncryptionPadding);
 
             ValidateRSACertificate(certificate);
             RSAEncryptionPadding = rsaEncryptionPadding;
@@ -50,10 +44,7 @@ namespace System.Security.Cryptography.Pkcs
 
         public CmsRecipient(SubjectIdentifierType recipientIdentifierType, X509Certificate2 certificate)
         {
-            if (certificate is null)
-            {
-                throw new ArgumentNullException(nameof(certificate));
-            }
+            ArgumentNullException.ThrowIfNull(certificate);
 
             switch (recipientIdentifierType)
             {

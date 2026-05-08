@@ -5,20 +5,27 @@ using System;
 using System.Runtime.Intrinsics.X86;
 using System.Numerics;
 using Xunit;
+using TestLibrary;
 
 namespace IntelHardwareIntrinsicTest.General
 {
     public partial class Program
     {
         [Xunit.ActiveIssue("https://github.com/dotnet/runtime/issues/91392", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsMonoLLVMAOT))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/75767", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoLLVMAOT))]
         [Fact]
         public static void IsSupported()
         {
             bool result = true;
 
-            if (Sse.IsSupported && int.TryParse(Environment.GetEnvironmentVariable("DOTNET_EnableIncompleteISAClass"), out var enableIncompleteIsa) && (enableIncompleteIsa != 0))
+            if (Sse.IsSupported)
             {
                 // X86 platforms
+                if (Vector<byte>.Count == 64 && !Avx512F.IsSupported)
+                {
+                    result = false;
+                }
+
                 if (Vector<byte>.Count == 32 && !Avx2.IsSupported)
                 {
                     result = false;

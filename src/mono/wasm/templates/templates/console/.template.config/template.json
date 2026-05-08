@@ -4,7 +4,7 @@
   "classifications": [ "Web", "WebAssembly", "Console" ],
   "groupIdentity": "WebAssembly.Console",
   "precedence": 9000,
-  "identity": "WebAssembly.Console.10.0",
+  "identity": "WebAssembly.Console.11.0",
   "name": "WebAssembly Console App",
   "description": "A project template for creating a .NET app that runs on WebAssembly on Node JS or V8",
   "shortName": "wasmconsole",
@@ -21,12 +21,12 @@
       "datatype": "choice",
       "choices": [
         {
-          "choice": "net10.0",
-          "description": "Target net10.0",
-          "displayName": ".NET 10.0"
+          "choice": "net11.0",
+          "description": "Target net11.0",
+          "displayName": ".NET 11.0"
         }
       ],
-      "defaultValue": "net10.0",
+      "defaultValue": "net11.0",
       "replaces": "netX.0",
       "displayName": "framework"
     }

@@ -62,6 +62,34 @@ namespace System.Security.Cryptography.Tests
             Stream source,
             CancellationToken cancellationToken) => HMACSHA256.HashDataAsync(key, source, cancellationToken);
 
+        protected override bool Verify(ReadOnlySpan<byte> key, ReadOnlySpan<byte> source, ReadOnlySpan<byte> hash) =>
+            HMACSHA256.Verify(key, source, hash);
+
+        protected override bool Verify(byte[] key, byte[] source, byte[] hash) => HMACSHA256.Verify(key, source, hash);
+
+        protected override bool Verify(ReadOnlySpan<byte> key, Stream source, ReadOnlySpan<byte> hash) =>
+            HMACSHA256.Verify(key, source, hash);
+
+        protected override bool Verify(byte[] key, Stream source, byte[] hash) => HMACSHA256.Verify(key, source, hash);
+
+        protected override ValueTask<bool> VerifyAsync(
+            ReadOnlyMemory<byte> key,
+            Stream source,
+            ReadOnlyMemory<byte> hash,
+            CancellationToken cancellationToken)
+        {
+            return HMACSHA256.VerifyAsync(key, source, hash, cancellationToken);
+        }
+
+        protected override ValueTask<bool> VerifyAsync(
+            byte[] key,
+            Stream source,
+            byte[] hash,
+            CancellationToken cancellationToken)
+        {
+            return HMACSHA256.VerifyAsync(key, source, hash, cancellationToken);
+        }
+
         private static byte[][] s_testMacs4231 =
         {
             null,

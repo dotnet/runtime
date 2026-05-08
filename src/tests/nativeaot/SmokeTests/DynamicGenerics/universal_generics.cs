@@ -461,9 +461,7 @@ namespace UniversalGen
         [MethodImpl(MethodImplOptions.NoInlining)]
         public unsafe void TestAsPointer(T x)
         {
-#pragma warning disable CS8500 // takes address of managed type
             IntPtr unsafeValuePtr = (IntPtr)&x;
-#pragma warning restore CS8500
             GC.Collect();
             GC.Collect();
             GC.Collect();

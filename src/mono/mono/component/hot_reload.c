@@ -344,13 +344,13 @@ gboolean
 hot_reload_update_enabled (int *modifiable_assemblies_out)
 {
 	static gboolean inited = FALSE;
-	static int modifiable = MONO_MODIFIABLE_ASSM_NONE;
+	static int modifiable = MONO_MODIFIABLE_ASSM_UNSET;
 
-	gboolean result = FALSE;
+	static gboolean result = FALSE;
 	if (!inited) {
 		modifiable = hot_reload_update_enabled_slow_check (NULL);
 		inited = TRUE;
-		result = (modifiable != MONO_MODIFIABLE_ASSM_NONE);
+		result = (modifiable == MONO_MODIFIABLE_ASSM_DEBUG);
 		if (result) {
 			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "Metadata update enabled for debuggable assemblies");
 		}
@@ -362,16 +362,20 @@ hot_reload_update_enabled (int *modifiable_assemblies_out)
 
 /**
  * checks the DOTNET_MODIFIABLE_ASSEMBLIES environment value.  if it is recognized returns the
- * aporporiate MONO_MODIFIABLE_ASSM_ enum value.  if it is unset or uncrecognized returns
- * MONO_MODIFIABLE_ASSM_NONE and writes the value to \c env_invalid_val_out, if it is non-NULL;
+ * appropriate MONO_MODIFIABLE_ASSM_ enum value.  if it is unset or unrecognized returns
+ * MONO_MODIFIABLE_ASSM_UNSET and writes the value to \c env_invalid_val_out, if it is non-NULL;
  */
 static int
 hot_reload_update_enabled_slow_check (char **env_invalid_val_out)
 {
-	int modifiable = MONO_MODIFIABLE_ASSM_NONE;
+	int modifiable = MONO_MODIFIABLE_ASSM_UNSET;
 	char *val = g_getenv (DOTNET_MODIFIABLE_ASSEMBLIES);
 	if (val && !g_strcasecmp (val, "debug")) {
 		modifiable = MONO_MODIFIABLE_ASSM_DEBUG;
+		g_free (val);
+	} else if (val && !g_strcasecmp (val, "none")) {
+		modifiable = MONO_MODIFIABLE_ASSM_NONE;
+		g_free (val);
 	} else {
 		/* unset or unrecognized value */
 		if (env_invalid_val_out != NULL) {
@@ -389,9 +393,17 @@ assembly_update_supported (MonoImage *image_base, MonoError *error)
 	int modifiable = 0;
 	char *invalid_env_val = NULL;
 	modifiable = hot_reload_update_enabled_slow_check (&invalid_env_val);
-	if (modifiable == MONO_MODIFIABLE_ASSM_NONE) {
-		mono_error_set_invalid_operation (error, "The assembly '%s' cannot be edited or changed, because environment variable DOTNET_MODIFIABLE_ASSEMBLIES is set to '%s', not 'Debug'", image_base->name, invalid_env_val);
+	if (modifiable == MONO_MODIFIABLE_ASSM_UNSET) {
+		if (invalid_env_val == NULL)
+		{
+			mono_error_set_invalid_operation (error, "The assembly '%s' cannot be edited or changed, because environment variable DOTNET_MODIFIABLE_ASSEMBLIES is not set", image_base->name);
+		} else {
+			mono_error_set_invalid_operation (error, "The assembly '%s' cannot be edited or changed, because environment variable DOTNET_MODIFIABLE_ASSEMBLIES is set to '%s', not 'Debug'", image_base->name, invalid_env_val);
+		}
 		g_free (invalid_env_val);
+		return FALSE;
+	} else if (modifiable == MONO_MODIFIABLE_ASSM_NONE) {
+		mono_error_set_invalid_operation (error, "The assembly '%s' cannot be edited or changed, because environment variable DOTNET_MODIFIABLE_ASSEMBLIES is set to 'none', not 'Debug'", image_base->name);
 		return FALSE;
 	} else if (!mono_assembly_is_jit_optimizer_disabled (image_base->assembly)) {
 		mono_error_set_invalid_operation (error, "The assembly '%s' cannot be edited or changed, because it does not have a System.Diagnostics.DebuggableAttribute with the DebuggingModes.DisableOptimizations flag (editing Release build assemblies is not supported)", image_base->name);
@@ -924,9 +936,7 @@ delta_info_initialize_mutants (const MonoImage *base, const BaselineInfo *base_i
 		g_assert (prev_table != NULL);
 
 		MonoTableInfo *tbl = &delta->mutants [i];
-		if (prev_table->rows_ == 0) {
-			/* table was empty in the baseline and it was empty in the prior generation, but now we have some rows. Use the format of the mutant table. */
-			g_assert (prev_table->row_size == 0);
+		if (delta->delta_image->tables [i].row_size != 0 || prev_table->rows_ == 0) {
 			tbl->row_size = delta->delta_image->tables [i].row_size;
 			tbl->size_bitfield = delta->delta_image->tables [i].size_bitfield;
 		} else {
@@ -940,8 +950,60 @@ delta_info_initialize_mutants (const MonoImage *base, const BaselineInfo *base_i
 		tbl->base = mono_mempool_alloc (delta->pool, tbl->row_size * rows);
 		g_assert (table_info_get_rows (prev_table) == count->prev_gen_rows);
 
-		/* copy the old rows  and zero out the new ones */
-		memcpy ((char*)tbl->base, prev_table->base, count->prev_gen_rows * tbl->row_size);
+		/* copy the old rows and zero out the new ones */
+		/* we need to copy following the new format (uncompressed one)*/
+		for (guint32 j = 0 ; j < count->prev_gen_rows; j++)
+		{
+			guint32 src_offset = 0, dst_offset = 0;
+			guint32 dst_bitfield = tbl->size_bitfield;
+			guint32 src_bitfield = prev_table->size_bitfield;
+			const char *src_base = (char*)prev_table->base + j *  prev_table->row_size;
+			char *dst_base = (char*)tbl->base + j * tbl->row_size;
+			for (guint col = 0; col < mono_metadata_table_count (dst_bitfield); ++col) {
+				guint32 dst_col_size = mono_metadata_table_size (dst_bitfield, col);
+				guint32 src_col_size = mono_metadata_table_size (src_bitfield, col);
+				{
+					const char *src = src_base + src_offset;
+					char *dst = dst_base + dst_offset;
+
+					/* copy src to dst, via a temporary to adjust for size differences */
+					/* FIXME: unaligned access, endianness */
+					guint32 tmp;
+
+					switch (src_col_size) {
+					case 1:
+						tmp = *(guint8*)src;
+						break;
+					case 2:
+						tmp = *(guint16*)src;
+						break;
+					case 4:
+						tmp = *(guint32*)src;
+						break;
+					default:
+						g_assert_not_reached ();
+					}
+
+					/* FIXME: unaligned access, endianness */
+					switch (dst_col_size) {
+					case 1:
+						*(guint8*)dst = (guint8)tmp;
+						break;
+					case 2:
+						*(guint16*)dst = (guint16)tmp;
+						break;
+					case 4:
+						*(guint32*)dst = tmp;
+						break;
+					default:
+						g_assert_not_reached ();
+					}
+				}
+				src_offset += src_col_size;
+				dst_offset += dst_col_size;
+			}
+			g_assert (dst_offset == tbl->row_size);
+		}
 		memset (((char*)tbl->base) + count->prev_gen_rows * tbl->row_size, 0, count->inserted_rows * tbl->row_size);
 	}
 }
@@ -1386,8 +1448,8 @@ delta_info_mutate_row (MonoImage *image_dmeta, DeltaInfo *cur_delta, guint32 log
 
 	/* The complication here is that we want the mutant table to look like the table in
 	 * the baseline image with respect to column widths, but the delta tables are generally coming in
-	 * uncompressed (4-byte columns).  So we have to copy one column at a time and adjust the
-	 * widths as we go.
+	 * uncompressed (4-byte columns).  And we have already adjusted the baseline image column widths
+	 * so we can use memcpy here.
 	 */
 
 	guint32 dst_bitfield = cur_delta->mutants [token_table].size_bitfield;
@@ -1401,41 +1463,10 @@ delta_info_mutate_row (MonoImage *image_dmeta, DeltaInfo *cur_delta, guint32 log
 		guint32 dst_col_size = mono_metadata_table_size (dst_bitfield, col);
 		guint32 src_col_size = mono_metadata_table_size (src_bitfield, col);
 		if ((m_SuppressedDeltaColumns [token_table] & (1 << col)) == 0) {
+			g_assert(src_col_size <= dst_col_size);
 			const char *src = src_base + src_offset;
 			char *dst = dst_base + dst_offset;
-
-			/* copy src to dst, via a temporary to adjust for size differences */
-			/* FIXME: unaligned access, endianness */
-			guint32 tmp;
-
-			switch (src_col_size) {
-			case 1:
-				tmp = *(guint8*)src;
-				break;
-			case 2:
-				tmp = *(guint16*)src;
-				break;
-			case 4:
-				tmp = *(guint32*)src;
-				break;
-			default:
-				g_assert_not_reached ();
-			}
-
-			/* FIXME: unaligned access, endianness */
-			switch (dst_col_size) {
-			case 1:
-				*(guint8*)dst = (guint8)tmp;
-				break;
-			case 2:
-				*(guint16*)dst = (guint16)tmp;
-				break;
-			case 4:
-				*(guint32*)dst = tmp;
-				break;
-			default:
-				g_assert_not_reached ();
-			}
+			memcpy(dst, src, src_col_size);
 		}
 		src_offset += src_col_size;
 		dst_offset += dst_col_size;
@@ -2362,9 +2393,11 @@ hot_reload_apply_changes (int origin, MonoImage *image_base, gconstpointer dmeta
 	if (!assembly_update_supported (image_base, error)) {
 		return;
 	}
-
+	if (dmeta_bytes == 0 && dil_bytes_orig == 0) // we may receive empty updates
+	{
+		return;
+	}
         static int first_origin = -1;
-
         if (first_origin < 0) {
                 first_origin = origin;
         }

@@ -34,8 +34,13 @@ namespace Microsoft.Extensions.DependencyInjection
         private const int FixedArgumentThreshold = 4;
 #endif
 
-        private static readonly MethodInfo GetServiceInfo =
-            new Func<IServiceProvider, Type, Type, bool, object?, object?>(GetService).Method;
+        // Nested class to defer the expensive Delegate.Method reflection call
+        // until the MethodInfo is actually needed.
+        private static class MethodInfoHolder
+        {
+            internal static readonly MethodInfo s_getServiceInfo =
+                new Func<IServiceProvider, Type, Type, bool, object?, object?>(GetService).Method;
+        }
 
         /// <summary>
         /// Instantiates a type with constructor arguments provided directly and/or from an <see cref="IServiceProvider"/>.
@@ -49,10 +54,7 @@ namespace Microsoft.Extensions.DependencyInjection
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type instanceType,
             params object[] parameters)
         {
-            if (provider == null)
-            {
-                throw new ArgumentNullException(nameof(provider));
-            }
+            ArgumentNullException.ThrowIfNull(provider);
 
             if (instanceType.IsAbstract)
             {
@@ -172,7 +174,7 @@ namespace Microsoft.Extensions.DependencyInjection
             Type?[] argumentTypes;
             if (parameters.Length == 0)
             {
-                argumentTypes = Type.EmptyTypes;
+                argumentTypes = [];
             }
             else
             {
@@ -419,7 +421,7 @@ namespace Microsoft.Extensions.DependencyInjection
                         Expression.Constant(constructor.DeclaringType, typeof(Type)),
                         Expression.Constant(hasDefaultValue),
                         Expression.Constant(keyAttribute?.Key, typeof(object)) };
-                    constructorArguments[i] = Expression.Call(GetServiceInfo, parameterTypeExpression);
+                    constructorArguments[i] = Expression.Call(MethodInfoHolder.s_getServiceInfo, parameterTypeExpression);
                 }
 
                 // Support optional constructor arguments by passing in the default value
@@ -438,12 +440,6 @@ namespace Microsoft.Extensions.DependencyInjection
         }
 
 #if NETSTANDARD2_1_OR_GREATER || NET
-        [DoesNotReturn]
-        private static void ThrowHelperArgumentNullExceptionServiceProvider()
-        {
-            throw new ArgumentNullException("serviceProvider");
-        }
-
         private static ObjectFactory CreateFactoryReflection(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type instanceType,
             Type?[] argumentTypes)
@@ -932,8 +928,7 @@ namespace Microsoft.Extensions.DependencyInjection
             Debug.Assert(parameters.Length >= 1 && parameters.Length <= FixedArgumentThreshold);
             Debug.Assert(FixedArgumentThreshold == 4);
 
-            if (serviceProvider is null)
-                ThrowHelperArgumentNullExceptionServiceProvider();
+            ArgumentNullException.ThrowIfNull(serviceProvider);
 
             switch (parameters.Length)
             {
@@ -969,8 +964,7 @@ namespace Microsoft.Extensions.DependencyInjection
             Type declaringType,
             IServiceProvider serviceProvider)
         {
-            if (serviceProvider is null)
-                ThrowHelperArgumentNullExceptionServiceProvider();
+            ArgumentNullException.ThrowIfNull(serviceProvider);
 
             object?[] arguments = new object?[parameters.Length];
             for (int i = 0; i < parameters.Length; i++)
@@ -991,8 +985,7 @@ namespace Microsoft.Extensions.DependencyInjection
             Debug.Assert(parameters.Length >= 1 && parameters.Length <= FixedArgumentThreshold);
             Debug.Assert(FixedArgumentThreshold == 4);
 
-            if (serviceProvider is null)
-                ThrowHelperArgumentNullExceptionServiceProvider();
+            ArgumentNullException.ThrowIfNull(serviceProvider);
 
             ref FactoryParameterContext parameter1 = ref parameters[0];
 
@@ -1124,8 +1117,7 @@ namespace Microsoft.Extensions.DependencyInjection
             IServiceProvider serviceProvider,
             object?[]? arguments)
         {
-            if (serviceProvider is null)
-                ThrowHelperArgumentNullExceptionServiceProvider();
+            ArgumentNullException.ThrowIfNull(serviceProvider);
 
             object?[] constructorArguments = new object?[parameters.Length];
             for (int i = 0; i < parameters.Length; i++)
@@ -1150,8 +1142,7 @@ namespace Microsoft.Extensions.DependencyInjection
             IServiceProvider serviceProvider,
             object?[]? arguments)
         {
-            if (serviceProvider is null)
-                ThrowHelperArgumentNullExceptionServiceProvider();
+            ArgumentNullException.ThrowIfNull(serviceProvider);
 
             if (arguments is null)
                 ThrowHelperNullReferenceException(); //AsSpan() will not throw NullReferenceException.
@@ -1175,8 +1166,7 @@ namespace Microsoft.Extensions.DependencyInjection
             IServiceProvider serviceProvider,
             object?[]? arguments)
         {
-            if (serviceProvider is null)
-                ThrowHelperArgumentNullExceptionServiceProvider();
+            ArgumentNullException.ThrowIfNull(serviceProvider);
 
             object?[] constructorArguments = new object?[parameters.Length];
             for (int i = 0; i < parameters.Length; i++)
@@ -1221,7 +1211,7 @@ namespace Microsoft.Extensions.DependencyInjection
 
         private static object? GetKeyedService(IServiceProvider provider, Type type, object? serviceKey)
         {
-            ThrowHelper.ThrowIfNull(provider);
+            ArgumentNullException.ThrowIfNull(provider);
 
             if (provider is IKeyedServiceProvider keyedServiceProvider)
             {

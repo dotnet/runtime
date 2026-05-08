@@ -21,6 +21,7 @@ jobs:
     - linux_arm64
     - linux_musl_x64
     - osx_x64
+    - osx_arm64
     - windows_x64
     - windows_x86
     - windows_arm64
@@ -40,7 +41,7 @@ jobs:
           eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
           eq(variables['isRollingBuild'], true))
 
-# Run net48 tests on win-x64
+# Run net481 tests on win-x64
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
     jobTemplate: /eng/pipelines/common/global-build-job.yml
@@ -49,16 +50,16 @@ jobs:
     - windows_x64
     helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
     jobParameters:
-      framework: net48
-      buildArgs: -s tools+libs+libs.tests -framework net48 -c $(_BuildConfig) -testscope innerloop /p:ArchiveTests=true
-      nameSuffix: Libraries_NET48
+      framework: net481
+      buildArgs: -s tools+libs+libs.tests -framework net481 -c $(_BuildConfig) -testscope innerloop /p:ArchiveTests=true
+      nameSuffix: Libraries_NET481
       timeoutInMinutes: 150
       postBuildSteps:
         - template: /eng/pipelines/libraries/helix.yml
           parameters:
             creator: dotnet-bot
-            testRunNamePrefixSuffix: NET48_$(_BuildConfig)
-            extraHelixArguments: /p:BuildTargetFramework=net48
+            testRunNamePrefixSuffix: NET481_$(_BuildConfig)
+            extraHelixArguments: /p:BuildTargetFramework=net481
       isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
       condition: >-
         or(

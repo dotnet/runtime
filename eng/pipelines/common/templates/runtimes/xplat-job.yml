@@ -18,7 +18,6 @@ parameters:
   displayName: ''
   timeoutInMinutes: ''
   enableMicrobuild: ''
-  gatherAssetManifests: false
   disableComponentGovernance: ''
   templatePath: 'templates'
 
@@ -69,11 +68,6 @@ jobs:
     ${{ else }}:
       disableComponentGovernance: ${{ parameters.disableComponentGovernance }}
 
-    # Setting this results in the arcade job template including a step
-    # that gathers asset manifests and publishes them to pipeline
-    # storage. Only relevant for build jobs.
-    enablePublishBuildAssets: ${{ parameters.gatherAssetManifests }}
-
     artifacts:
       publish:
         ${{ if ne(parameters.logsName, '') }}:
@@ -113,5 +107,8 @@ jobs:
     - checkout: self
       clean: true
       fetchDepth: $(checkoutFetchDepth)
+      fetchTags: false
+
+    - template: /eng/common/${{ parameters.templatePath }}/steps/enable-internal-sources.yml
 
     - ${{ parameters.steps }}

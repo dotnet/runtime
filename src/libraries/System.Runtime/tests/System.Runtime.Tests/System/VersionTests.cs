@@ -283,6 +283,63 @@ namespace System.Tests
             Assert.Null(version);
         }
 
+        [Theory]
+        [InlineData(".")]
+        [InlineData("1.")]
+        [InlineData("1.0.")]
+        [InlineData("1.0.0.")]
+        public static void Parse_TrailingDot_ThrowsFormatExceptionWithOriginalInput(string input)
+        {
+            FormatException ex = Assert.Throws<FormatException>(() => Version.Parse(input));
+            Assert.Contains(input, ex.Message);
+
+            Assert.False(Version.TryParse(input, out Version version));
+            Assert.Null(version);
+        }
+
+        [Theory]
+        [InlineData(".")]
+        [InlineData("1.")]
+        [InlineData("1.0.")]
+        [InlineData("1.0.0.")]
+        public static void Parse_Span_TrailingDot_ThrowsFormatExceptionWithOriginalInput(string input)
+        {
+            FormatException ex = Assert.Throws<FormatException>(() => Version.Parse(input.AsSpan()));
+            Assert.Contains(input, ex.Message);
+
+            Assert.False(Version.TryParse(input.AsSpan(), out Version version));
+            Assert.Null(version);
+        }
+
+        [Theory]
+        [InlineData(".")]
+        [InlineData("1.")]
+        [InlineData("1.0.")]
+        [InlineData("1.0.0.")]
+        public static void Parse_Utf8_TrailingDot_ThrowsFormatExceptionWithOriginalInput(string input)
+        {
+            byte[] utf8Bytes = Encoding.UTF8.GetBytes(input);
+
+            FormatException ex = Assert.Throws<FormatException>(() => Version.Parse(utf8Bytes));
+            Assert.Contains(input, ex.Message);
+
+            Assert.False(Version.TryParse(utf8Bytes, out Version version));
+            Assert.Null(version);
+        }
+
+        [Theory]
+        [InlineData(new byte[] { 0xFF, 0x2E, 0x30 })] // Invalid UTF8 start byte followed by ".0"
+        [InlineData(new byte[] { 0x31, 0x2E, 0xFF })] // "1." followed by invalid UTF8 byte
+        [InlineData(new byte[] { 0xC0, 0x80, 0x2E, 0x30 })] // Overlong encoding of null followed by ".0"
+        [InlineData(new byte[] { 0x31, 0x2E, 0x30, 0x2E, 0xED, 0xA0, 0x80 })] // "1.0." followed by invalid UTF8 surrogate
+        public static void Parse_Utf8_InvalidUtf8Bytes_ThrowsFormatException(byte[] invalidUtf8Bytes)
+        {
+            Assert.Throws<FormatException>(() => Version.Parse(invalidUtf8Bytes));
+
+            Assert.False(Version.TryParse(invalidUtf8Bytes, out Version version));
+            Assert.Null(version);
+        }
+
         public static IEnumerable<object[]> Parse_ValidWithOffsetCount_TestData()
         {
             foreach (object[] inputs in Parse_Valid_TestData())

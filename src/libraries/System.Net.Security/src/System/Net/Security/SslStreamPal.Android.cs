@@ -20,7 +20,13 @@ namespace System.Net.Security
         }
 
         internal const bool StartMutualAuthAsAnonymous = false;
+        internal const bool CertValidationInCallback = false;
         internal const bool CanEncryptEmptyMessage = false;
+
+        // There is no API to generate custom alerts on Android, but the interop layer currently
+        // depends on SslStream calling HandshakeInternal one last time when tearing down the connection
+        // due to handshake failures.
+        internal const bool CanGenerateCustomAlerts = true;
 
         public static void VerifyPackageInfo()
         {

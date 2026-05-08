@@ -4,13 +4,15 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
-using System.Numerics.Tensors;
 using Xunit;
 
 namespace System.Numerics.Tensors.Tests
 {
     public static class Helpers
     {
+        public static int SizeGreaterThanByte => 260;
+        public static int SizeGreaterThanInt16 => 65540;
+
         public static IEnumerable<int> TensorLengthsIncluding0 => Enumerable.Range(0, 257);
 
         public static IEnumerable<int> TensorLengths => Enumerable.Range(1, 256);
@@ -93,7 +95,7 @@ namespace System.Numerics.Tensors.Tests
             return null;
         }
 
-#if NETCOREAPP
+#if NET
         public delegate void AssertThrowsAction<T>(TensorSpan<T> span);
 
         // Cannot use standard Assert.Throws() when testing Span - Span and closures don't get along.

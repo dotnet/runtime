@@ -254,7 +254,7 @@ namespace System.Security.Cryptography.Encryption.Des.Tests
             }
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
+        [Theory]
         [InlineData(PaddingMode.None)]
         [InlineData(PaddingMode.Zeros)]
         public static void VerifyKnownTransform_CFB8_NoOrZeroPadding_0(PaddingMode paddingMode)
@@ -272,7 +272,7 @@ namespace System.Security.Cryptography.Encryption.Des.Tests
             );
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
+        [Theory]
         [InlineData(PaddingMode.None)]
         [InlineData(PaddingMode.Zeros)]
         public static void VerifyKnownTransform_CFB8_NoOrZeroPadding_1(PaddingMode paddingMode)
@@ -290,7 +290,7 @@ namespace System.Security.Cryptography.Encryption.Des.Tests
             );
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
+        [Theory]
         [InlineData(PaddingMode.None)]
         [InlineData(PaddingMode.Zeros)]
         public static void VerifyKnownTransform_CFB8_NoOrZeroPadding_2(PaddingMode paddingMode)
@@ -308,7 +308,7 @@ namespace System.Security.Cryptography.Encryption.Des.Tests
             );
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
+        [Theory]
         [InlineData(CipherMode.CBC, 0)]
         [InlineData(CipherMode.CFB, 8)]
         [InlineData(CipherMode.ECB, 0)]
@@ -337,7 +337,7 @@ namespace System.Security.Cryptography.Encryption.Des.Tests
             }
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
+        [Theory]
         [InlineData(CipherMode.CBC, 0)]
         [InlineData(CipherMode.CFB, 8)]
         [InlineData(CipherMode.ECB, 0)]
@@ -371,7 +371,7 @@ namespace System.Security.Cryptography.Encryption.Des.Tests
             }
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
+        [Theory]
         [InlineData(PaddingMode.None)]
         [InlineData(PaddingMode.Zeros)]
         public static void VerifyKnownTransform_CFB8_NoOrZeroPadding_3(PaddingMode paddingMode)
@@ -389,7 +389,7 @@ namespace System.Security.Cryptography.Encryption.Des.Tests
             );
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
+        [Fact]
         public static void VerifyKnownTransform_CFB8_PKCS7_3()
         {
             // NIST CAVS TDESMMT.ZIP TCFB8MMT2.rsp, [DECRYPT] COUNT=3
@@ -405,7 +405,7 @@ namespace System.Security.Cryptography.Encryption.Des.Tests
             );
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
+        [Theory]
         [InlineData(PaddingMode.None)]
         [InlineData(PaddingMode.Zeros)]
         public static void VerifyKnownTransform_CFB8_NoOrZeroPadding_4(PaddingMode paddingMode)
@@ -423,7 +423,7 @@ namespace System.Security.Cryptography.Encryption.Des.Tests
             );
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
+        [Theory]
         [InlineData(PaddingMode.None)]
         [InlineData(PaddingMode.Zeros)]
         public static void VerifyKnownTransform_CFB8_NoOrZeroPadding_5(PaddingMode paddingMode)
@@ -441,7 +441,7 @@ namespace System.Security.Cryptography.Encryption.Des.Tests
             );
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
+        [Theory]
         [InlineData(PaddingMode.None)]
         [InlineData(PaddingMode.Zeros)]
         public static void VerifyKnownTransform_CFB8_NoOrZeroPadding_6(PaddingMode paddingMode)
@@ -459,7 +459,7 @@ namespace System.Security.Cryptography.Encryption.Des.Tests
             );
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
+        [Theory]
         [InlineData(PaddingMode.None)]
         [InlineData(PaddingMode.Zeros)]
         public static void VerifyKnownTransform_CFB8_NoOrZeroPadding_7(PaddingMode paddingMode)
@@ -477,7 +477,7 @@ namespace System.Security.Cryptography.Encryption.Des.Tests
             );
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
+        [Theory]
         [InlineData(PaddingMode.None)]
         [InlineData(PaddingMode.Zeros)]
         public static void VerifyKnownTransform_CFB8_NoOrZeroPadding_8(PaddingMode paddingMode)
@@ -495,7 +495,7 @@ namespace System.Security.Cryptography.Encryption.Des.Tests
             );
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
+        [Theory]
         [InlineData(PaddingMode.None)]
         [InlineData(PaddingMode.Zeros)]
         public static void VerifyKnownTransform_CFB8_NoOrZeroPadding_9(PaddingMode paddingMode)
@@ -650,6 +650,35 @@ namespace System.Security.Cryptography.Encryption.Des.Tests
 
             string decrypted = Encoding.ASCII.GetString(outputBytes, 0, outputOffset);
             Assert.Equal(ExpectedOutput, decrypted);
+        }
+
+        [Fact]
+        public static void SetKey_Sanity()
+        {
+            using (DES one = DESFactory.Create())
+            using (DES two = DESFactory.Create())
+            {
+                byte[] key = new byte[one.KeySize / 8];
+                RandomNumberGenerator.Fill(key);
+                one.SetKey(key);
+                two.Key = key;
+                two.IV = one.IV;
+
+                using (ICryptoTransform e1 = one.CreateEncryptor())
+                using (ICryptoTransform e2 = two.CreateEncryptor())
+                using (ICryptoTransform d1 = one.CreateDecryptor())
+                using (ICryptoTransform d2 = two.CreateDecryptor())
+                {
+                    byte[] c1 = e1.TransformFinalBlock(key, 0, key.Length);
+                    byte[] c2 = e2.TransformFinalBlock(key, 0, key.Length);
+                    Assert.Equal(c1, c2);
+
+                    byte[] p1 = d1.TransformFinalBlock(c1, 0, c1.Length);
+                    byte[] p2 = d2.TransformFinalBlock(c2, 0, c2.Length);
+                    Assert.Equal(p1, p2);
+                    Assert.Equal(key, p1);
+                }
+            }
         }
     }
 }

@@ -205,15 +205,15 @@ namespace ComInterfaceGenerator.Unit.Tests
             partial interface INativeAPI
             {
 
-                {{UnmanagedCallConv(CallConvs: new[] { typeof(CallConvCdecl) })}}
+                {{UnmanagedCallConv(CallConvs: [typeof(CallConvCdecl)])}}
                 {{VirtualMethodIndex(0)}}
                 void Method();
-                {{UnmanagedCallConv(CallConvs: new[] { typeof(CallConvCdecl), typeof(CallConvMemberFunction) })}}
+                {{UnmanagedCallConv(CallConvs: [typeof(CallConvCdecl), typeof(CallConvMemberFunction)])}}
                 {{VirtualMethodIndex(1)}}
                 void Method1();
 
                 [SuppressGCTransition]
-                {{UnmanagedCallConv(CallConvs: new[] { typeof(CallConvCdecl), typeof(CallConvMemberFunction) })}}
+                {{UnmanagedCallConv(CallConvs: [typeof(CallConvCdecl), typeof(CallConvMemberFunction)])}}
                 {{VirtualMethodIndex(2)}}
                 void Method2();
 
@@ -701,6 +701,25 @@ namespace ComInterfaceGenerator.Unit.Tests
             }
             """;
 
+        public string DerivedComInterfaceTypeWithUnsafeBaseMethod => $$"""
+            using System.Runtime.CompilerServices;
+            using System.Runtime.InteropServices;
+            using System.Runtime.InteropServices.Marshalling;
+
+            [assembly:DisableRuntimeMarshalling]
+
+            {{GeneratedComInterface()}}
+            partial interface IComInterfaceBase
+            {
+                unsafe void Method(void* pBuffer);
+            }
+            {{GeneratedComInterface()}}
+            partial interface IComInterfaceDerived : IComInterfaceBase
+            {
+                void Method2();
+            }
+            """;
+
         public class ManagedToUnmanaged : IVirtualMethodIndexSignatureProvider
         {
             public MarshalDirection Direction => MarshalDirection.ManagedToUnmanaged;
@@ -751,5 +770,21 @@ namespace ComInterfaceGenerator.Unit.Tests
 
             public IComInterfaceAttributeProvider AttributeProvider { get; }
         }
+
+        public string ComInterfaceWithNativeMarshalling => $$"""
+            using System;
+            using System.Runtime.CompilerServices;
+            using System.Runtime.InteropServices;
+            using System.Runtime.InteropServices.Marshalling;
+
+            [assembly:DisableRuntimeMarshalling]
+
+            {{GeneratedComInterface()}}
+            [NativeMarshalling(typeof(UniqueComInterfaceMarshaller<IFoo>))]
+            partial interface IFoo
+            {
+                void DoWorkTogether(IFoo foo);
+            }
+            """;
     }
 }

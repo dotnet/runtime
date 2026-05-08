@@ -157,6 +157,7 @@ mono_hwcap_arch_init (void)
 
 	mono_hwcap_s390x_has_fpe  = facs.fpe;
 	mono_hwcap_s390x_has_vec  = facs.vec;
+	mono_hwcap_s390x_has_ve1  = facs.ve1;
 	mono_hwcap_s390x_has_mlt  = facs.multi;
 	mono_hwcap_s390x_has_ia   = facs.ia;
 	mono_hwcap_s390x_has_gie  = facs.gie;

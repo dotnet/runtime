@@ -1,9 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 /* ------------------------------------------------------------------------- *
  * DbgIPCEvents.h -- header file for private Debugger data shared by various
-//
-
  *                   debugger components.
  * ------------------------------------------------------------------------- */
 
@@ -204,10 +203,7 @@ struct MSLAYOUT DebuggerIPCControlBlock
 
     // This next stuff fits in a  DWORD.
     bool                       m_checkedBuild;      // CLR build type for the Left Side.
-    // using the first padding byte to indicate if hosted in fiber mode.
-    // We actually just need one bit. So if needed, can turn this to a bit.
-    // BYTE padding1;
-    bool                       m_bHostingInFiber;
+    BYTE padding1;
     BYTE padding2;
     BYTE padding3;
 
@@ -304,10 +300,7 @@ struct MSLAYOUT DebuggerIPCControlBlockTransport
 
     // This next stuff fits in a  DWORD.
     bool                       m_checkedBuild;      // CLR build type for the Left Side.
-    // using the first padding byte to indicate if hosted in fiber mode.
-    // We actually just need one bit. So if needed, can turn this to a bit.
-    // BYTE padding1;
-    bool                       m_bHostingInFiber;
+    BYTE padding1;
     BYTE padding2;
     BYTE padding3;
 
@@ -435,18 +428,9 @@ public:
 
     static LsPointer<T> MakePtr(T* p)
     {
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable:6001) // PREfast warning: Using uninitialize memory 't'
-#endif // _PREFAST_
-
         LsPointer<T> t;
         t.Set(p);
         return t;
-
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif // _PREFAST_
     }
 
     bool operator!= (void * p) { return m_ptr != p; }
@@ -536,18 +520,9 @@ public:
 
     static LsPointer<T> MakePtr(T * p)
     {
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable:6001) // PREfast warning: Using uninitialize memory 't'
-#endif // _PREFAST_
-
         LsPointer<T> t;
         t.Set(p);
         return t;
-
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif // _PREFAST_
     }
 
     bool operator!= (void * p) { return m_ptr != p; }
@@ -596,9 +571,9 @@ public:
 #endif // !RIGHT_SIDE_COMPILE
 
 // We must be binary compatible w/ a pointer.
-static_assert_no_msg(sizeof(LsPointer<void>) == sizeof(GeneralLsPointer));
+static_assert(sizeof(LsPointer<void>) == sizeof(GeneralLsPointer));
 
-static_assert_no_msg(sizeof(void*) == sizeof(GeneralLsPointer));
+static_assert(sizeof(void*) == sizeof(GeneralLsPointer));
 
 
 
@@ -734,18 +709,9 @@ public:
     // Convenience for converting TTargetPtr --> VMPTR
     static VMPTR_This MakePtr(TTargetPtr * ptr)
     {
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable:6001) // PREfast warning: Using uninitialize memory 't'
-#endif // _PREFAST_
-
         VMPTR_This t;
         t.SetRawPtr(ptr);
         return t;
-
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif // _PREFAST_
     }
 
 
@@ -776,18 +742,9 @@ public:
     {
         SUPPORTS_DAC;
 
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable:6001) // PREfast warning: Using uninitialize memory 't'
-#endif // _PREFAST_
-
         VMPTR_This dummy;
         dummy.m_addr = (TADDR)NULL;
         return dummy;
-
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif // _PREFAST_
     }
 
     bool operator!= (VMPTR_This vmOther) const { SUPPORTS_DAC; return this->m_addr != vmOther.m_addr; }
@@ -825,11 +782,6 @@ typedef VMPTR_Base<DT_CONTEXT, PTR_CONTEXT> VMPTR_CONTEXT;
 typedef VMPTR_Base<DT_CONTEXT, void > VMPTR_CONTEXT;
 #endif
 
-// DomainAssembly is a base-class for a CLR module, with app-domain affinity.
-// For domain-neutral modules (like CoreLib), there is a DomainAssembly instance
-// for each appdomain the module lives in.
-// This is the canonical handle ICorDebug uses to a CLR module.
-DEFINE_VMPTR(class DomainAssembly,  PTR_DomainAssembly, VMPTR_DomainAssembly);
 DEFINE_VMPTR(class Module,          PTR_Module,         VMPTR_Module);
 
 DEFINE_VMPTR(class Assembly,        PTR_Assembly,       VMPTR_Assembly);
@@ -856,8 +808,10 @@ DEFINE_VMPTR(class SimpleRWLock,    PTR_SimpleRWLock,   VMPTR_SimpleRWLock);
 DEFINE_VMPTR(class SimpleRWLock,    PTR_SimpleRWLock,   VMPTR_RWLock);
 DEFINE_VMPTR(struct ReJitInfo,       PTR_ReJitInfo,      VMPTR_ReJitInfo);
 DEFINE_VMPTR(struct SharedReJitInfo, PTR_SharedReJitInfo, VMPTR_SharedReJitInfo);
+#ifdef FEATURE_CODE_VERSIONING
 DEFINE_VMPTR(class NativeCodeVersionNode, PTR_NativeCodeVersionNode, VMPTR_NativeCodeVersionNode);
 DEFINE_VMPTR(class ILCodeVersionNode, PTR_ILCodeVersionNode, VMPTR_ILCodeVersionNode);
+#endif // FEATURE_CODE_VERSIONING
 
 typedef CORDB_ADDRESS GENERICS_TYPE_TOKEN;
 
@@ -1286,7 +1240,7 @@ private:
 #define LEAF_MOST_FRAME FramePointer::MakeFramePointer((LPVOID)NULL)
 #define ROOT_MOST_FRAME FramePointer::MakeFramePointer((LPVOID)-1)
 
-static_assert_no_msg(sizeof(FramePointer) == sizeof(void*));
+static_assert(sizeof(FramePointer) == sizeof(void*));
 
 
 inline bool IsCloserToLeaf(FramePointer fp1, FramePointer fp2)
@@ -1329,7 +1283,7 @@ inline bool IsEqualOrCloserToRoot(FramePointer fp1, FramePointer fp2)
 struct MSLAYOUT DebuggerIPCE_FuncData
 {
     mdMethodDef funcMetadataToken;
-    VMPTR_DomainAssembly vmDomainAssembly;
+    VMPTR_Assembly vmAssembly;
 
     mdTypeDef   classMetadataToken;
 
@@ -1390,11 +1344,9 @@ struct MSLAYOUT DebuggerIPCE_JITFuncData
     LSPTR_DJI   nativeCodeJITInfoToken;
     VMPTR_MethodDesc vmNativeCodeMethodDescToken;
 
-#ifdef FEATURE_EH_FUNCLETS
     BOOL         fIsFilterFrame;
     SIZE_T       parentNativeOffset;
     FramePointer fpParentOrSelf;
-#endif // FEATURE_EH_FUNCLETS
 
     // indicates if the MethodDesc is a generic function or a method inside a generic class (or
     // both!).
@@ -1469,7 +1421,7 @@ struct MSLAYOUT DebuggerIPCE_STRData
         struct MSLAYOUT
         {
             mdMethodDef funcMetadataToken;
-            VMPTR_DomainAssembly vmDomainAssembly;
+            VMPTR_Assembly vmAssembly;
             VMPTR_MethodDesc vmMethodDesc;
             CorDebugInternalFrameType frameType;
         } stubFrame;
@@ -1512,8 +1464,7 @@ struct MSLAYOUT DebuggerIPCE_BasicTypeData
 {
     CorElementType  elementType;
     mdTypeDef       metadataToken;
-    VMPTR_Module     vmModule;
-    VMPTR_DomainAssembly vmDomainAssembly;
+    VMPTR_Assembly  vmAssembly;
     VMPTR_TypeHandle vmTypeHandle;
 };
 
@@ -1548,8 +1499,7 @@ struct MSLAYOUT DebuggerIPCE_ExpandedTypeData
         struct MSLAYOUT
          {
             mdTypeDef       metadataToken;
-            VMPTR_Module vmModule;
-            VMPTR_DomainAssembly vmDomainAssembly;
+            VMPTR_Assembly  vmAssembly;
             VMPTR_TypeHandle typeHandle; // if non-null then further fetches will be needed to get type arguments
         } ClassTypeData;
 
@@ -1723,7 +1673,7 @@ struct MSLAYOUT DebuggerIPCE_FuncEvalInfo
     DebuggerIPCE_FuncEvalType  funcEvalType;
     mdMethodDef                funcMetadataToken;
     mdTypeDef                  funcClassMetadataToken;
-    VMPTR_DomainAssembly       vmDomainAssembly;
+    VMPTR_Assembly             vmAssembly;
     RSPTR_CORDBEVAL            funcEvalKey;
     bool                       evalDuringException;
 
@@ -1900,44 +1850,47 @@ struct MSLAYOUT DebuggerMDANotification
 #define DBG_TARGET_REGNUM_SP 4
 #define DBG_TARGET_REGNUM_AMBIENT_SP 9
 #ifdef TARGET_X86
-static_assert_no_msg(DBG_TARGET_REGNUM_SP == ICorDebugInfo::REGNUM_SP);
-static_assert_no_msg(DBG_TARGET_REGNUM_AMBIENT_SP == ICorDebugInfo::REGNUM_AMBIENT_SP);
+static_assert(DBG_TARGET_REGNUM_SP == ICorDebugInfo::REGNUM_SP);
+static_assert(DBG_TARGET_REGNUM_AMBIENT_SP == ICorDebugInfo::REGNUM_AMBIENT_SP);
 #endif // TARGET_X86
 #elif defined(TARGET_AMD64)
 #define DBG_TARGET_REGNUM_SP 4
 #define DBG_TARGET_REGNUM_AMBIENT_SP 17
 #ifdef TARGET_AMD64
-static_assert_no_msg(DBG_TARGET_REGNUM_SP == ICorDebugInfo::REGNUM_SP);
-static_assert_no_msg(DBG_TARGET_REGNUM_AMBIENT_SP == ICorDebugInfo::REGNUM_AMBIENT_SP);
+static_assert(DBG_TARGET_REGNUM_SP == ICorDebugInfo::REGNUM_SP);
+static_assert(DBG_TARGET_REGNUM_AMBIENT_SP == ICorDebugInfo::REGNUM_AMBIENT_SP);
 #endif // TARGET_AMD64
 #elif defined(TARGET_ARM)
 #define DBG_TARGET_REGNUM_SP 13
 #define DBG_TARGET_REGNUM_AMBIENT_SP 17
 #ifdef TARGET_ARM
-C_ASSERT(DBG_TARGET_REGNUM_SP == ICorDebugInfo::REGNUM_SP);
-C_ASSERT(DBG_TARGET_REGNUM_AMBIENT_SP == ICorDebugInfo::REGNUM_AMBIENT_SP);
+static_assert(DBG_TARGET_REGNUM_SP == ICorDebugInfo::REGNUM_SP);
+static_assert(DBG_TARGET_REGNUM_AMBIENT_SP == ICorDebugInfo::REGNUM_AMBIENT_SP);
 #endif // TARGET_ARM
 #elif defined(TARGET_ARM64)
 #define DBG_TARGET_REGNUM_SP 31
 #define DBG_TARGET_REGNUM_AMBIENT_SP 34
 #ifdef TARGET_ARM64
-C_ASSERT(DBG_TARGET_REGNUM_SP == ICorDebugInfo::REGNUM_SP);
-C_ASSERT(DBG_TARGET_REGNUM_AMBIENT_SP == ICorDebugInfo::REGNUM_AMBIENT_SP);
+static_assert(DBG_TARGET_REGNUM_SP == ICorDebugInfo::REGNUM_SP);
+static_assert(DBG_TARGET_REGNUM_AMBIENT_SP == ICorDebugInfo::REGNUM_AMBIENT_SP);
 #endif // TARGET_ARM64
 #elif defined(TARGET_LOONGARCH64)
 #define DBG_TARGET_REGNUM_SP 3
 #define DBG_TARGET_REGNUM_AMBIENT_SP 34
 #ifdef TARGET_LOONGARCH64
-C_ASSERT(DBG_TARGET_REGNUM_SP == ICorDebugInfo::REGNUM_SP);
-C_ASSERT(DBG_TARGET_REGNUM_AMBIENT_SP == ICorDebugInfo::REGNUM_AMBIENT_SP);
+static_assert(DBG_TARGET_REGNUM_SP == ICorDebugInfo::REGNUM_SP);
+static_assert(DBG_TARGET_REGNUM_AMBIENT_SP == ICorDebugInfo::REGNUM_AMBIENT_SP);
 #endif
 #elif defined(TARGET_RISCV64)
 #define DBG_TARGET_REGNUM_SP 2
 #define DBG_TARGET_REGNUM_AMBIENT_SP 34
 #ifdef TARGET_RISCV64
-C_ASSERT(DBG_TARGET_REGNUM_SP == ICorDebugInfo::REGNUM_SP);
-C_ASSERT(DBG_TARGET_REGNUM_AMBIENT_SP == ICorDebugInfo::REGNUM_AMBIENT_SP);
+static_assert(DBG_TARGET_REGNUM_SP == ICorDebugInfo::REGNUM_SP);
+static_assert(DBG_TARGET_REGNUM_AMBIENT_SP == ICorDebugInfo::REGNUM_AMBIENT_SP);
 #endif
+#elif defined(TARGET_WASM)
+#define DBG_TARGET_REGNUM_SP 0
+#define DBG_TARGET_REGNUM_AMBIENT_SP 0
 #else
 #error Target registers are not defined for this platform
 #endif
@@ -1975,7 +1928,7 @@ struct MSLAYOUT DebuggerIPCEvent
         {
             // Module whose metadata is being updated
             // This tells the RS that the metadata for that module has become invalid.
-            VMPTR_DomainAssembly vmDomainAssembly;
+            VMPTR_Assembly vmAssembly;
 
         } MetadataUpdateData;
 
@@ -1987,44 +1940,20 @@ struct MSLAYOUT DebuggerIPCEvent
 
         struct MSLAYOUT
         {
-            VMPTR_DomainAssembly vmDomainAssembly;
+            VMPTR_Assembly vmAssembly;
         } AssemblyData;
-
-#ifdef TEST_DATA_CONSISTENCY
-        // information necessary for testing whether the LS holds a lock on data
-        // the RS needs to inspect. See code:DataTest::TestDataSafety and
-        // code:IDacDbiInterface::TestCrst for more information
-        struct MSLAYOUT
-        {
-            // the lock to be tested
-            VMPTR_Crst vmCrst;
-            // indicates whether the LS holds the lock
-            bool       fOkToTake;
-        } TestCrstData;
-
-        // information necessary for testing whether the LS holds a lock on data
-        // the RS needs to inspect. See code:DataTest::TestDataSafety and
-        // code:IDacDbiInterface::TestCrst for more information
-        struct MSLAYOUT
-        {
-            // the lock to be tested
-            VMPTR_SimpleRWLock vmRWLock;
-            // indicates whether the LS holds the lock
-            bool               fOkToTake;
-        } TestRWLockData;
-#endif // TEST_DATA_CONSISTENCY
 
         // Debug event that a module has been loaded
         struct MSLAYOUT
         {
             // Module that was just loaded.
-            VMPTR_DomainAssembly vmDomainAssembly;
+            VMPTR_Assembly vmAssembly;
         }LoadModuleData;
 
 
         struct MSLAYOUT
         {
-            VMPTR_DomainAssembly vmDomainAssembly;
+            VMPTR_Assembly vmAssembly;
             LSPTR_ASSEMBLY debuggerAssemblyToken;
         } UnloadModuleData;
 
@@ -2033,7 +1962,7 @@ struct MSLAYOUT DebuggerIPCEvent
         // Queury PDB from OOP
         struct MSLAYOUT
         {
-            VMPTR_DomainAssembly vmDomainAssembly;
+            VMPTR_Assembly vmAssembly;
         } UpdateModuleSymsData;
 
         DebuggerMDANotification MDANotification;
@@ -2042,7 +1971,7 @@ struct MSLAYOUT DebuggerIPCEvent
         {
             LSPTR_BREAKPOINT breakpointToken;
             mdMethodDef  funcMetadataToken;
-            VMPTR_DomainAssembly vmDomainAssembly;
+            VMPTR_Assembly vmAssembly;
             bool         isIL;
             SIZE_T       offset;
             SIZE_T       encVersion;
@@ -2142,7 +2071,7 @@ struct MSLAYOUT DebuggerIPCEvent
         // Apply an EnC edit
         struct MSLAYOUT
         {
-            VMPTR_DomainAssembly vmDomainAssembly;      // Module to edit
+            VMPTR_Assembly vmAssembly;      // Module to edit
             DWORD cbDeltaMetadata;              // size of blob pointed to by pDeltaMetadata
             CORDB_ADDRESS pDeltaMetadata;       // pointer to delta metadata in debuggee
                                                 // it's the RS's responsibility to allocate and free
@@ -2159,20 +2088,20 @@ struct MSLAYOUT DebuggerIPCEvent
         struct MSLAYOUT
         {
             mdTypeDef   classMetadataToken;
-            VMPTR_DomainAssembly vmDomainAssembly;
+            VMPTR_Assembly vmAssembly;
             LSPTR_ASSEMBLY classDebuggerAssemblyToken;
         } LoadClass;
 
         struct MSLAYOUT
         {
             mdTypeDef   classMetadataToken;
-            VMPTR_DomainAssembly vmDomainAssembly;
+            VMPTR_Assembly vmAssembly;
             LSPTR_ASSEMBLY classDebuggerAssemblyToken;
         } UnloadClass;
 
         struct MSLAYOUT
         {
-            VMPTR_DomainAssembly vmDomainAssembly;
+            VMPTR_Assembly vmAssembly;
             bool  flag;
         } SetClassLoad;
 
@@ -2203,7 +2132,7 @@ struct MSLAYOUT DebuggerIPCEvent
             CORDB_ADDRESS    startAddress;
             bool             fCanSetIPOnly;
             VMPTR_Thread     vmThreadToken;
-            VMPTR_DomainAssembly vmDomainAssembly;
+            VMPTR_Assembly vmAssembly;
             mdMethodDef      mdMethod;
             VMPTR_MethodDesc vmMethodDesc;
             SIZE_T           offset;
@@ -2231,8 +2160,8 @@ struct MSLAYOUT DebuggerIPCEvent
         // information needed to send to the RS as part of a custom notification from the target
         struct MSLAYOUT
         {
-            // Domain file for the domain in which the notification occurred
-            VMPTR_DomainAssembly vmDomainAssembly;
+            // assembly for the domain in which the notification occurred
+            VMPTR_Assembly vmAssembly;
 
             // metadata token for the type of the CustomNotification object's type
             mdTypeDef    classToken;
@@ -2297,7 +2226,7 @@ struct MSLAYOUT DebuggerIPCEvent
 
         struct MSLAYOUT
         {
-            VMPTR_DomainAssembly vmDomainAssembly;
+            VMPTR_Assembly vmAssembly;
             BOOL             fAllowJitOpts;
             BOOL             fEnableEnC;
         } JitDebugInfo;
@@ -2305,7 +2234,7 @@ struct MSLAYOUT DebuggerIPCEvent
         // EnC Remap opportunity
         struct MSLAYOUT
         {
-            VMPTR_DomainAssembly vmDomainAssembly;
+            VMPTR_Assembly vmAssembly;
             mdMethodDef funcMetadataToken ;        // methodDef of function with remap opportunity
             SIZE_T          currentVersionNumber;  // version currently executing
             SIZE_T          resumeVersionNumber;   // latest version
@@ -2317,7 +2246,7 @@ struct MSLAYOUT DebuggerIPCEvent
         // EnC Remap has taken place
         struct MSLAYOUT
         {
-            VMPTR_DomainAssembly vmDomainAssembly;
+            VMPTR_Assembly vmAssembly;
             mdMethodDef funcMetadataToken;         // methodDef of function that was remapped
         } EnCRemapComplete;
 
@@ -2325,7 +2254,7 @@ struct MSLAYOUT DebuggerIPCEvent
         // specific edit made by EnC (function add/update or field add).
         struct MSLAYOUT
         {
-            VMPTR_DomainAssembly vmDomainAssembly;
+            VMPTR_Assembly vmAssembly;
             mdToken         memberMetadataToken;   // Either a methodDef token indicating the function that
                                                    // was updated/added, or a fieldDef token indicating the
                                                    // field which was added.
@@ -2346,7 +2275,7 @@ struct MSLAYOUT DebuggerIPCEvent
         // @todo - Perhaps we can bundle these up so we can set multiple funcs w/ 1 event?
         struct MSLAYOUT
         {
-            VMPTR_DomainAssembly vmDomainAssembly;
+            VMPTR_Assembly vmAssembly;
             mdMethodDef     funcMetadataToken;
             DWORD           dwStatus;
         } SetJMCFunctionStatus;
@@ -2428,8 +2357,8 @@ struct MSLAYOUT DebuggerIPCEvent
 #define CorDBIPC_TRANSPORT_BUFFER_SIZE (((sizeof(DebuggerIPCEvent) + 7) / 8) * 8)
 
 // A DebuggerIPCEvent must fit in the send & receive buffers, which are CorDBIPC_BUFFER_SIZE bytes.
-static_assert_no_msg(sizeof(DebuggerIPCEvent) <= CorDBIPC_BUFFER_SIZE);
-static_assert_no_msg(CorDBIPC_TRANSPORT_BUFFER_SIZE <= CorDBIPC_BUFFER_SIZE);
+static_assert(sizeof(DebuggerIPCEvent) <= CorDBIPC_BUFFER_SIZE);
+static_assert(CorDBIPC_TRANSPORT_BUFFER_SIZE <= CorDBIPC_BUFFER_SIZE);
 
 // 2*sizeof(WCHAR) for the two string terminating characters in the FirstLogMessage
 #define LOG_MSG_PADDING         4

@@ -7,6 +7,8 @@
     <!-- Tracing tests routinely time out with jitstress and gcstress -->
     <GCStressIncompatible>true</GCStressIncompatible>
     <JitOptimizationSensitive>true</JitOptimizationSensitive>
+    <!--  We expect to see events from the portable threadpool, AOT defaults to Windows threadpool -->
+    <UseWindowsThreadPool Condition="'$(TestBuildMode)' == 'nativeaot'">false</UseWindowsThreadPool>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="EventListenerThreadPool.cs" />

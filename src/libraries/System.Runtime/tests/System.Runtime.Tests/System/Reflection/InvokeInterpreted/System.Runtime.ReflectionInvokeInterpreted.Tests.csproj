@@ -4,13 +4,14 @@
     <TestRuntime>true</TestRuntime>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
+    <!-- https://github.com/dotnet/runtime/issues/126862 -->
+    <EnableTrimAnalyzer>false</EnableTrimAnalyzer>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="..\BindingFlagsDoNotWrap.cs" />
     <Compile Include="..\InvokeRefReturn.cs" />
     <Compile Include="..\InvokeWithRefLikeArgs.cs" />
     <Compile Include="..\PointerTests.cs" />
-    <Compile Include="$(CommonTestPath)\System\Reflection\InvokeInterpretedTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Moq" Version="$(MoqVersion)" />

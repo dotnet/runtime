@@ -99,7 +99,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
 
             CommandResult result = SharedState.DotNetWithNetCoreApp.Exec(Constants.AdditionalDeps.CommandLineArgument, additionalDepsFile, app.AppDll)
                 .EnableTracingAndCaptureOutputs()
-                .Execute(expectedToFail: !dependencyExists);
+                .Execute();
 
             result.Should().HaveUsedAdditionalDeps(additionalDepsFile);
             if (dependencyExists)
@@ -126,7 +126,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
 
                 SharedState.DotNetWithNetCoreApp.Exec(Constants.AdditionalDeps.CommandLineArgument, invalidDepsFile, SharedState.FrameworkReferenceApp.AppDll)
                     .EnableTracingAndCaptureOutputs()
-                    .Execute(expectedToFail: true)
+                    .Execute()
                     .Should().Fail()
                     .And.HaveUsedAdditionalDeps(invalidDepsFile)
                     .And.HaveStdErrContaining($"Error initializing the dependency resolver: An error occurred while parsing: {invalidDepsFile}");

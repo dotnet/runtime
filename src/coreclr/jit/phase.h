@@ -35,7 +35,7 @@ public:
 
 protected:
     Phase(Compiler* _compiler, Phases _phase)
-        : comp(_compiler)
+        : m_compiler(_compiler)
         , m_name(nullptr)
         , m_phase(_phase)
     {
@@ -46,7 +46,7 @@ protected:
     virtual PhaseStatus DoPhase() = 0;
     virtual void        PostPhase(PhaseStatus status);
 
-    Compiler*   comp;
+    Compiler*   m_compiler;
     const char* m_name;
     Phases      m_phase;
 };
@@ -97,7 +97,7 @@ public:
 protected:
     virtual PhaseStatus DoPhase() override
     {
-        (comp->*action)();
+        (m_compiler->*action)();
         return PhaseStatus::MODIFIED_EVERYTHING;
     }
 
@@ -128,7 +128,7 @@ public:
 protected:
     virtual PhaseStatus DoPhase() override
     {
-        return (comp->*action)();
+        return (m_compiler->*action)();
     }
 
 private:

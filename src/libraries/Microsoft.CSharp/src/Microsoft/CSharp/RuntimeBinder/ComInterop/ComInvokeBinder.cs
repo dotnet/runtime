@@ -13,6 +13,7 @@ using ComTypes = System.Runtime.InteropServices.ComTypes;
 
 namespace Microsoft.CSharp.RuntimeBinder.ComInterop
 {
+    [RequiresDynamicCode(Binder.DynamicCodeWarning)]
     internal sealed class ComInvokeBinder
     {
         private readonly ComMethodDesc _methodDesc;

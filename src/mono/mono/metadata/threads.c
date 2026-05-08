@@ -60,7 +60,6 @@
 #include <mono/metadata/mono-config.h>
 #include <mono/metadata/jit-info.h>
 #include <mono/utils/mono-tls-inline.h>
-#include <mono/utils/lifo-semaphore.h>
 #include <mono/utils/w32subset.h>
 
 #ifdef HAVE_SYS_WAIT_H
@@ -205,7 +204,7 @@ static MonoThreadAttachCB mono_thread_attach_cb = NULL;
 static MonoThreadCleanupFunc mono_thread_cleanup_fn = NULL;
 
 /* The default stack size for each thread */
-static guint32 default_stacksize = 0;
+static guint32 default_stacksize = ~0;
 
 static void mono_free_static_data (gpointer* static_data);
 static void mono_init_static_data_info (StaticDataInfo *static_data);
@@ -1372,7 +1371,7 @@ create_thread (MonoThread *thread, MonoInternalThread *internal, MonoThreadStart
 	mono_coop_sem_init (&start_info->registered, 0);
 
 	if (flags != MONO_THREAD_CREATE_FLAGS_SMALL_STACK)
-		stack_set_size = stack_size ? stack_size : default_stacksize;
+		stack_set_size = stack_size ? stack_size : mono_threads_get_default_stacksize();
 	else
 		stack_set_size = 0;
 
@@ -1446,6 +1445,21 @@ mono_threads_set_default_stacksize (guint32 stacksize)
 guint32
 mono_threads_get_default_stacksize (void)
 {
+	if (default_stacksize == ~0)
+	{
+		unsigned long stacksize = 0;
+
+		const char *value = g_getenv ("DOTNET_Thread_DefaultStackSize");
+		if (value) {
+			errno = 0;
+			stacksize = strtoul (value, NULL, 16);
+			if (errno != 0 || stacksize >= UINT_MAX)
+				stacksize = 0;
+		}
+
+		default_stacksize = (guint32)stacksize;
+	}
+
 	return default_stacksize;
 }
 
@@ -1757,6 +1771,12 @@ MonoThread *
 ves_icall_System_Threading_Thread_GetCurrentThread (void)
 {
 	return mono_thread_current ();
+}
+
+MonoBoolean
+ves_icall_System_Threading_Thread_CurrentThreadIsFinalizerThread (void)
+{
+	return mono_gc_is_finalizer_internal_thread (mono_thread_internal_current ()) ? TRUE : FALSE;
 }
 
 static MonoInternalThread*
@@ -2941,20 +2961,13 @@ collect_frame (MonoStackFrameInfo *frame, MonoContext *ctx, gpointer data)
 	return FALSE;
 }
 
-/* This needs to be async safe */
 static SuspendThreadResult
 get_thread_dump (MonoThreadInfo *info, gpointer ud)
 {
 	ThreadDumpUserData *user_data = (ThreadDumpUserData *)ud;
 	MonoInternalThread *thread = user_data->thread;
 
-#if 0
-/* This no longer works with remote unwinding */
-	g_string_append_printf (text, " tid=0x%p this=0x%p ", (gpointer)(gsize)thread->tid, thread);
-	mono_thread_internal_describe (thread, text);
-	g_string_append (text, "\n");
-#endif
-
+	/* This needs to be async safe */
 	if (thread == mono_thread_internal_current ())
 		mono_get_eh_callbacks ()->mono_walk_stack_with_ctx (collect_frame, NULL, MONO_UNWIND_SIGNAL_SAFE, ud);
 	else
@@ -3045,7 +3058,7 @@ dump_thread (MonoInternalThread *thread, ThreadDumpUserData *ud, FILE* output_fi
 		MonoStackFrameInfo *frame = &ud->frames [i];
 		MonoMethod *method = NULL;
 
-		if (frame->type == FRAME_TYPE_MANAGED)
+		if (frame->type == FRAME_TYPE_MANAGED && frame->ji && !frame->ji->async)
 			method = mono_jit_info_get_method (frame->ji);
 
 		if (method) {
@@ -4107,9 +4120,8 @@ mono_thread_info_get_last_managed (MonoThreadInfo *info)
 	 * The suspended thread might be holding runtime locks. Make sure we don't try taking
 	 * any runtime locks while unwinding.
 	 */
-	mono_thread_info_set_is_async_context (TRUE);
 	mono_get_eh_callbacks ()->mono_walk_stack_with_state (last_managed, mono_thread_info_get_suspend_state (info), MONO_UNWIND_SIGNAL_SAFE, &ji);
-	mono_thread_info_set_is_async_context (FALSE);
+
 	return ji;
 }
 
@@ -4884,31 +4896,4 @@ guint64
 ves_icall_System_Threading_Thread_GetCurrentOSThreadId (MonoError *error)
 {
 	return mono_native_thread_os_id_get ();
-}
-
-gpointer
-ves_icall_System_Threading_LowLevelLifoSemaphore_InitInternal (void)
-{
-	return (gpointer)mono_lifo_semaphore_init ();
-}
-
-void
-ves_icall_System_Threading_LowLevelLifoSemaphore_DeleteInternal (gpointer sem_ptr)
-{
-	LifoSemaphore *sem = (LifoSemaphore *)sem_ptr;
-	mono_lifo_semaphore_delete (sem);
-}
-
-gint32
-ves_icall_System_Threading_LowLevelLifoSemaphore_TimedWaitInternal (gpointer sem_ptr, gint32 timeout_ms)
-{
-	LifoSemaphore *sem = (LifoSemaphore *)sem_ptr;
-	return mono_lifo_semaphore_timed_wait (sem, timeout_ms);
-}
-
-void
-ves_icall_System_Threading_LowLevelLifoSemaphore_ReleaseInternal (gpointer sem_ptr, gint32 count)
-{
-	LifoSemaphore *sem = (LifoSemaphore *)sem_ptr;
-	mono_lifo_semaphore_release (sem, count);
 }

@@ -31,4 +31,7 @@
     <Compile Include="MultipleSumAbsoluteDifferences.cs" />
     <Compile Include="Multiply.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
 </Project>

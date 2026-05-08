@@ -3,6 +3,7 @@
 
 using System;
 using System.Net.NetworkInformation;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Microsoft.Win32.SafeHandles;
 
@@ -54,14 +55,14 @@ internal static partial class Interop
         }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
-        internal unsafe struct IPV6_ADDRESS_EX
+        internal struct IPV6_ADDRESS_EX
         {
             internal ushort port;
             internal uint flowinfo;
 
             // Replying address.
-            private fixed byte _Address[16];
-            internal byte[] Address => MemoryMarshal.CreateReadOnlySpan(ref _Address[0], 16).ToArray();
+            private InlineArray16<byte> _Address;
+            internal byte[] Address => ((ReadOnlySpan<byte>)_Address).ToArray();
 
             internal uint ScopeID;
         }

@@ -60,7 +60,7 @@ namespace System.Security.Cryptography.Xml.Tests
         }
 
         // https://github.com/dotnet/runtime/issues/21481
-        [ConditionalTheory(nameof(SupportsSha2Algorithms))]
+        [ConditionalTheory(typeof(SigningAndVerifyingWithCustomSignatureMethod), nameof(SupportsSha2Algorithms))]
         [InlineData("http://www.w3.org/2001/04/xmldsig-more#rsa-sha256", "http://www.w3.org/2001/04/xmlenc#sha256")]
         [InlineData("http://www.w3.org/2001/04/xmldsig-more#rsa-sha384", "http://www.w3.org/2001/04/xmldsig-more#sha384")]
         [InlineData("http://www.w3.org/2001/04/xmldsig-more#rsa-sha512", "http://www.w3.org/2001/04/xmlenc#sha512")]

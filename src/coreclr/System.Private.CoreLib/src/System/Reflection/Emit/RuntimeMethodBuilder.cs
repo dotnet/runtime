@@ -657,8 +657,6 @@ namespace System.Reflection.Emit
 
             m_dwMethodImplFlags = attributes;
 
-            m_canBeRuntimeImpl = true;
-
             RuntimeModuleBuilder module = m_module;
             RuntimeTypeBuilder.SetMethodImpl(new QCallModule(ref module), MetadataToken, attributes);
         }
@@ -703,38 +701,10 @@ namespace System.Reflection.Emit
                 m_module.GetMethodMetadataToken(con),
                 binaryAttribute);
 
-            if (IsKnownCA(con))
-                ParseCA(con);
-        }
-
-        // this method should return true for any and every ca that requires more work
-        // than just setting the ca
-        private static bool IsKnownCA(ConstructorInfo con)
-        {
-            Type? caType = con.DeclaringType;
-            return caType == typeof(MethodImplAttribute) || caType == typeof(DllImportAttribute);
-        }
-
-        private void ParseCA(ConstructorInfo con)
-        {
-            Type? caType = con.DeclaringType;
-            if (caType == typeof(MethodImplAttribute))
-            {
-                // dig through the blob looking for the MethodImplAttributes flag
-                // that must be in the MethodCodeType field
-
-                // for now we simply set a flag that relaxes the check when saving and
-                // allows this method to have no body when any kind of MethodImplAttribute is present
-                m_canBeRuntimeImpl = true;
-            }
-            else if (caType == typeof(DllImportAttribute))
-            {
-                m_canBeRuntimeImpl = true;
+            if (con.DeclaringType == typeof(DllImportAttribute))
                 m_isDllImport = true;
-            }
         }
 
-        internal bool m_canBeRuntimeImpl;
         internal bool m_isDllImport;
 
         #endregion
@@ -746,7 +716,7 @@ namespace System.Reflection.Emit
         // and namespace information with a given active lexical scope.
 
         #region Internal Data Members
-        internal string[] m_strName = null!;  // All these arrys initialized in helper method
+        internal string[] m_strName = null!;  // All these arrays initialized in helper method
         internal byte[][] m_ubSignature = null!;
         internal int[] m_iLocalSlot = null!;
         internal int[] m_iStartOffset = null!;

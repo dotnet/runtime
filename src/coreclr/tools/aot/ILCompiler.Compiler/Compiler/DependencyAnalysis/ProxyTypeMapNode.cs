@@ -1,0 +1,105 @@
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+using System;
+using System.Collections.Generic;
+using System.Collections.Immutable;
+using System.Diagnostics;
+using System.Text;
+using ILCompiler.DependencyAnalysis;
+using ILCompiler.DependencyAnalysisFramework;
+using Internal.NativeFormat;
+using Internal.TypeSystem;
+
+namespace ILCompiler.DependencyAnalysis
+{
+    internal sealed class ProxyTypeMapNode : SortableDependencyNode, IProxyTypeMapNode
+    {
+        private readonly IEnumerable<KeyValuePair<TypeDesc, TypeDesc>> _mapEntries;
+
+        public ProxyTypeMapNode(TypeDesc typeMapGroup, IEnumerable<KeyValuePair<TypeDesc, TypeDesc>> mapEntries)
+        {
+            _mapEntries = mapEntries;
+            TypeMapGroup = typeMapGroup;
+        }
+
+        public TypeDesc TypeMapGroup { get; }
+
+        public IEnumerable<KeyValuePair<TypeDesc, TypeDesc>> MapEntries => _mapEntries;
+        public override bool InterestingForDynamicDependencyAnalysis => false;
+
+        public override bool HasDynamicDependencies => false;
+
+        public override bool HasConditionalStaticDependencies => true;
+
+        public override bool StaticDependenciesAreComputed => true;
+
+        public override int ClassCode => 779513676;
+
+        public override int CompareToImpl(ISortableNode other, CompilerComparer comparer) => comparer.Compare(TypeMapGroup, ((ProxyTypeMapNode)other).TypeMapGroup);
+
+        public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory context)
+        {
+            foreach (var (key, value) in _mapEntries)
+            {
+                yield return new CombinedDependencyListEntry(
+                    context.MetadataTypeSymbol(value),
+                    context.MaximallyConstructableType(key),
+                    "Proxy type map entry");
+
+                // If the key type has a canonical form, it could be created at runtime by the type loader.
+                // If there is a type loader template for it, create the generic type instantiation eagerly.
+                TypeDesc canonKey = key.ConvertToCanonForm(CanonicalFormKind.Specific);
+                if (canonKey != key && GenericTypesTemplateMap.IsEligibleToHaveATemplate(canonKey))
+                {
+                    yield return new CombinedDependencyListEntry(
+                        context.MaximallyConstructableType(key),
+                        context.NativeLayout.TemplateTypeLayout(canonKey),
+                        "Proxy map entry that could be loaded at runtime");
+                }
+            }
+        }
+
+        public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory context) => Array.Empty<DependencyListEntry>();
+        public override IEnumerable<CombinedDependencyListEntry> SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, NodeFactory context) => Array.Empty<CombinedDependencyListEntry>();
+        protected override string GetName(NodeFactory context) => $"Proxy type map: {TypeMapGroup}";
+
+        private IEnumerable<(IEETypeNode key, IEETypeNode value)> GetMarkedEntries(NodeFactory factory)
+        {
+            foreach (var (key, value) in MapEntries)
+            {
+                IEETypeNode keyNode = factory.MaximallyConstructableType(key);
+                if (keyNode.Marked)
+                {
+                    IEETypeNode valueNode = factory.MetadataTypeSymbol(value);
+                    Debug.Assert(valueNode.Marked);
+                    yield return (keyNode, valueNode);
+                }
+            }
+        }
+
+        public Vertex CreateTypeMap(NodeFactory factory, NativeWriter writer, Section section, INativeFormatTypeReferenceProvider externalReferences)
+        {
+            VertexHashtable typeMapHashTable = new VertexHashtable();
+
+            foreach ((IEETypeNode keyNode, IEETypeNode valueNode) in GetMarkedEntries(factory))
+            {
+                Vertex keyVertex = externalReferences.EncodeReferenceToType(writer, keyNode.Type);
+                Vertex valueVertex = externalReferences.EncodeReferenceToType(writer, valueNode.Type);
+                Vertex entry = writer.GetTuple(keyVertex, valueVertex);
+                typeMapHashTable.Append((uint)keyNode.Type.GetHashCode(), section.Place(entry));
+            }
+
+            Vertex typeMapStateVertex = writer.GetUnsignedConstant(1); // Valid type map state
+            Vertex typeMapGroupVertex = externalReferences.EncodeReferenceToType(writer, TypeMapGroup);
+            Vertex tuple = writer.GetTuple(typeMapGroupVertex, typeMapStateVertex, typeMapHashTable);
+            return section.Place(tuple);
+        }
+
+        public IProxyTypeMapNode ToAnalysisBasedNode(NodeFactory factory)
+            => new AnalyzedProxyTypeMapNode(
+                TypeMapGroup,
+                GetMarkedEntries(factory)
+                .ToImmutableDictionary(p => p.key.Type, p => p.value.Type));
+    }
+}

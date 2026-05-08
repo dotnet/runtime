@@ -30,8 +30,15 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static void Cosh<T>(ReadOnlySpan<T> x, Span<T> destination)
-            where T : IHyperbolicFunctions<T> =>
+            where T : IHyperbolicFunctions<T>
+        {
+            if (typeof(T) == typeof(Half) && TryUnaryInvokeHalfAsInt16<T, CoshOperator<float>>(x, destination))
+            {
+                return;
+            }
+
             InvokeSpanIntoSpan<T, CoshOperator<T>>(x, destination);
+        }
 
         /// <summary>T.Cosh(x)</summary>
         internal readonly struct CoshOperator<T> : IUnaryOperator<T, T>

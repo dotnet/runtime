@@ -18,7 +18,21 @@ namespace System.Net.Test.Common
                 (OperatingSystem.IsLinux() && RuntimeInformation.RuntimeIdentifier.StartsWith("linux-bionic-", StringComparison.Ordinal)) ||
                 // GSS on Linux does not work with OpenSSL 3.0. Fix was submitted to gss-ntlm but it will take a while to make to
                 // all supported distributions. The second part of the check should be removed when it does.
-                Interop.NetSecurityNative.IsNtlmInstalled() && (!PlatformDetection.IsOpenSslSupported || PlatformDetection.OpenSslVersion.Major < 3);
+                CheckHasSystemNetSecurityNative() && (!PlatformDetection.IsOpenSslSupported || PlatformDetection.OpenSslVersion.Major < 3);
+        }
+
+        private static bool CheckHasSystemNetSecurityNative()
+        {
+            try
+            {
+                _ = Interop.NetSecurityNative.IsNtlmInstalled();
+                return true;
+            }
+            catch (Exception e) when (e is EntryPointNotFoundException || e is DllNotFoundException || e is TypeInitializationException)
+            {
+                // libSystem.Net.Security.Native is not available
+                return false;
+            }
         }
     }
 }

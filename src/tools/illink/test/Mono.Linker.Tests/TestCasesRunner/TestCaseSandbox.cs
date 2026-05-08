@@ -9,18 +9,18 @@ using Mono.Linker.Tests.TestCases;
 
 namespace Mono.Linker.Tests.TestCasesRunner
 {
-	partial class TestCaseSandbox
-	{
+    partial class TestCaseSandbox
+    {
 
-		static readonly string _linkerAssemblyPath = typeof (Driver).Assembly.Location;
+        static readonly string _linkerAssemblyPath = typeof(Driver).Assembly.Location;
 
-		private static partial NPath GetArtifactsTestPath ()
-		{
-			// Converts paths like /root-folder/linker/artifacts/bin/Mono.Linker.Tests/Debug/<tfm>/illink.dll
-			// to /root-folder/linker/artifacts/testcases/
-			string artifacts = Path.GetFullPath (Path.Combine (Path.GetDirectoryName (_linkerAssemblyPath), "..", "..", "..", ".."));
-			string tests = Path.Combine (artifacts, "testcases");
-			return new NPath (tests);
-		}
-	}
+        private static partial NPath GetArtifactsTestPath()
+        {
+            // Converts paths like /root-folder/linker/artifacts/bin/Mono.Linker.Tests/Debug/<tfm>/illink.dll
+            // to /root-folder/linker/artifacts/testcases/
+            string artifacts = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(_linkerAssemblyPath), "..", "..", "..", ".."));
+            string tests = Path.Combine(artifacts, "testcases");
+            return new NPath(tests);
+        }
+    }
 }

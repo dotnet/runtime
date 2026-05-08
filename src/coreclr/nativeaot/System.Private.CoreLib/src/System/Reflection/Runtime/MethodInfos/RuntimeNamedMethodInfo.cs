@@ -144,7 +144,9 @@ namespace System.Reflection.Runtime.MethodInfos
             if (typeArguments.Length != GenericTypeParameters.Length)
                 throw new ArgumentException(SR.Format(SR.Argument_NotEnoughGenArguments, typeArguments.Length, GenericTypeParameters.Length));
             RuntimeMethodInfo methodInfo = (RuntimeMethodInfo)RuntimeConstructedGenericMethodInfo.GetRuntimeConstructedGenericMethodInfo(this, genericTypeArguments);
-            MethodBaseInvoker _ = methodInfo.MethodInvoker; // For compatibility with other Make* apis, trigger any missing metadata exceptions now rather than later.
+
+            ReflectionCoreExecution.ExecutionEnvironment.ValidateGenericMethodConstraints(methodInfo);
+
             return methodInfo;
         }
 
@@ -220,7 +222,7 @@ namespace System.Reflection.Runtime.MethodInfos
 
         public sealed override int GetHashCode()
         {
-            return _common.GetHashCode();
+            return HashCode.Combine(_common, _reflectedType);
         }
 
         public sealed override RuntimeMethodHandle MethodHandle => GetRuntimeMethodHandle(null);

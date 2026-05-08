@@ -75,15 +75,12 @@ namespace System.Security.Cryptography.Pkcs
 
         private static byte[] Encode(string documentName)
         {
-            if (documentName is null)
-            {
-                throw new ArgumentNullException(nameof(documentName));
-            }
+            ArgumentNullException.ThrowIfNull(documentName);
 
             byte[] octets = documentName.UnicodeToOctetString();
             return PkcsHelpers.EncodeOctetString(octets);
         }
 
-        private volatile string? _lazyDocumentName;
+        private string? _lazyDocumentName;
     }
 }

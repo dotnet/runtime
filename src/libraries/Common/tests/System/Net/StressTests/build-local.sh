@@ -48,7 +48,7 @@ fi
 if [[ ! -d $daily_dotnet_root ]]; then
     echo "Downloading daily SDK to $daily_dotnet_root"
     mkdir $daily_dotnet_root
-    wget https://dot.net/v1/dotnet-install.sh -O $daily_dotnet_root/dotnet-install.sh
+    wget https://builds.dotnet.microsoft.com/dotnet/scripts/v1/dotnet-install.sh -O $daily_dotnet_root/dotnet-install.sh
     bash $daily_dotnet_root/dotnet-install.sh --no-path --channel $version --quality daily --install-dir $daily_dotnet_root
 else
     echo "Daily SDK found in $daily_dotnet_root"
@@ -56,7 +56,6 @@ fi
 
 export DOTNET_ROOT=$daily_dotnet_root
 export PATH=$DOTNET_ROOT:$PATH
-export DOTNET_MULTILEVEL_LOOKUP=0
 
 if [[ ! -d "$testhost_root/shared/Microsoft.AspNetCore.App" ]]; then
     echo "Copying Microsoft.AspNetCore.App bits from daily SDK to testhost: $testhost_root"

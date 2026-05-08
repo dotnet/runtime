@@ -9,10 +9,6 @@ The [IL Trimmer](src/linker/README.md) is the developer's tool that can be used 
 
 The trimmer is always enabled for all size sensitive .NET workloads like Blazor WebAssembly, Xamarin or .NET mobile and can be manually enabled for other project types. The default apps trimming setting can be further customized by using a number of [msbuild properties](https://learn.microsoft.com/dotnet/core/deploying/trimming-options).
 
-## Dependencies Analyzer
-
-The [analyzer](src/analyzer/README.md) is a tool to analyze dependencies which were recorded during trimmer processing. It tracks details about reasons and connection between elements to keep it in the resulting linked assembly. It can be used to better understand the dependencies between different types and members to help further reduce the linked output.
-
 ## Trimming Lens
 
 The [tlens](src/tlens/README.md) is another tool for developers which can be used to explore ways to reduce the size of trimmed apps or exploring libraries readiness for trimming. The tool produces a recommendation where the compiled source could be improved to produce even smaller outputs when trimmed using the trimmer.

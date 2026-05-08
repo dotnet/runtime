@@ -5,16 +5,16 @@ using Mono.Cecil;
 
 namespace Mono.Linker.Tests.TestCasesRunner
 {
-	struct TestAssemblyNameResolver : ITryResolveAssemblyName
-	{
-		readonly BaseAssemblyResolver _assemblyResolver;
+    struct TestAssemblyNameResolver : ITryResolveAssemblyName
+    {
+        readonly BaseAssemblyResolver _assemblyResolver;
 
-		public TestAssemblyNameResolver (BaseAssemblyResolver resolver)
-		{
-			_assemblyResolver = resolver;
-		}
+        public TestAssemblyNameResolver(BaseAssemblyResolver resolver)
+        {
+            _assemblyResolver = resolver;
+        }
 
-		public AssemblyDefinition TryResolve (string assemblyName)
-			=> _assemblyResolver.Resolve (new AssemblyNameReference (assemblyName, null), new ReaderParameters ());
-	}
+        public AssemblyDefinition TryResolve(string assemblyName)
+            => _assemblyResolver.Resolve(new AssemblyNameReference(assemblyName, null), new ReaderParameters());
+    }
 }

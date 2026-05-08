@@ -68,10 +68,7 @@ namespace System.Text.Json
         /// </exception>
         public static JsonNode? SerializeToNode<TValue>(TValue value, JsonTypeInfo<TValue> jsonTypeInfo)
         {
-            if (jsonTypeInfo is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(jsonTypeInfo));
-            }
+            ArgumentNullException.ThrowIfNull(jsonTypeInfo);
 
             jsonTypeInfo.EnsureConfigured();
             return WriteNode(value, jsonTypeInfo);
@@ -91,10 +88,7 @@ namespace System.Text.Json
         /// </exception>
         public static JsonNode? SerializeToNode(object? value, JsonTypeInfo jsonTypeInfo)
         {
-            if (jsonTypeInfo is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(jsonTypeInfo));
-            }
+            ArgumentNullException.ThrowIfNull(jsonTypeInfo);
 
             jsonTypeInfo.EnsureConfigured();
             return WriteNodeAsObject(value, jsonTypeInfo);
@@ -120,10 +114,7 @@ namespace System.Text.Json
         /// </exception>
         public static JsonNode? SerializeToNode(object? value, Type inputType, JsonSerializerContext context)
         {
-            if (context is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(context));
-            }
+            ArgumentNullException.ThrowIfNull(context);
 
             ValidateInputType(value, inputType);
             JsonTypeInfo jsonTypeInfo = GetTypeInfo(context, inputType);

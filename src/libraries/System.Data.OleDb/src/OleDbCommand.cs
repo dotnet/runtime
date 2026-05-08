@@ -14,6 +14,7 @@ namespace System.Data.OleDb
 {
     [Designer("Microsoft.VSDesigner.Data.VS.OleDbCommandDesigner, Microsoft.VSDesigner, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
     [ToolboxItem(true)]
+    [RequiresDynamicCode(OleDbConnection.TrimWarning)]
     public sealed class OleDbCommand : DbCommand, ICloneable, IDbCommand
     {
         // command data

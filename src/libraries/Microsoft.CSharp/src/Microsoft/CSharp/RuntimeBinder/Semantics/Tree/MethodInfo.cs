@@ -8,6 +8,7 @@ using System.Reflection;
 
 namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
+    [RequiresDynamicCode(Binder.DynamicCodeWarning)]
     internal sealed class ExprMethodInfo : ExprWithType
     {
         public ExprMethodInfo(CType type, MethodSymbol method, AggregateType methodType, TypeArray methodParameters)

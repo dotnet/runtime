@@ -23,15 +23,6 @@ CreateFileA(
 PALIMPORT
 BOOL
 PALAPI
-CopyFileA(
-      IN LPCSTR lpExistingFileName,
-      IN LPCSTR lpNewFileName,
-      IN BOOL bFailIfExists);
-
-
-PALIMPORT
-BOOL
-PALAPI
 DeleteFileA(
         IN LPCSTR lpFileName);
 
@@ -52,40 +43,11 @@ CreateDirectoryW(
 PALIMPORT
 DWORD
 PALAPI
-GetFileAttributesA(
-           IN LPCSTR lpFileName);
-
-PALIMPORT
-BOOL
-PALAPI
-SetFileAttributesA(
-           IN LPCSTR lpFileName,
-           IN DWORD dwFileAttributes);
-
-PALIMPORT
-BOOL
-PALAPI
-SetFileAttributesW(
-           IN LPCWSTR lpFileName,
-           IN DWORD dwFileAttributes);
-
-PALIMPORT
-DWORD
-PALAPI
 GetFullPathNameA(
          IN LPCSTR lpFileName,
          IN DWORD nBufferLength,
          OUT LPSTR lpBuffer,
          OUT LPSTR *lpFilePart);
-
-PALIMPORT
-UINT
-PALAPI
-GetTempFileNameA(
-         IN LPCSTR lpPathName,
-         IN LPCSTR lpPrefixString,
-         IN UINT uUnique,
-         OUT LPSTR lpTempFileName);
 
 PALIMPORT
 DWORD
@@ -150,13 +112,6 @@ BOOL
 PALAPI
 RemoveDirectoryW(
                  IN LPCWSTR lpPathName);
-
-PALIMPORT
-LONG
-PALAPI
-CompareFileTime(
-        IN CONST FILETIME *lpFileTime1,
-        IN CONST FILETIME *lpFileTime2);
 
 #ifdef  __cplusplus
 }

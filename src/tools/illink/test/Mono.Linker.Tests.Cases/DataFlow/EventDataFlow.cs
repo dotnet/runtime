@@ -8,69 +8,69 @@ using Mono.Linker.Tests.Cases.Expectations.Assertions;
 
 namespace Mono.Linker.Tests.Cases.DataFlow
 {
-	[SkipKeptItemsValidation]
-	[ExpectedNoWarnings]
-	public class EventDataFlow
-	{
-		public static void Main ()
-		{
-			AssignToEvent.Test ();
-		}
+    [SkipKeptItemsValidation]
+    [ExpectedNoWarnings]
+    public class EventDataFlow
+    {
+        public static void Main()
+        {
+            AssignToEvent.Test();
+        }
 
-		class AssignToEvent
-		{
-			static event EventHandler MyEvent;
+        class AssignToEvent
+        {
+            static event EventHandler MyEvent;
 
-			static void HandleMyEvent (object sender, EventArgs args) => throw null;
+            static void HandleMyEvent(object sender, EventArgs args) => throw null;
 
-			static void HandleMyEvent2 (object sender, EventArgs args) => throw null;
+            static void HandleMyEvent2(object sender, EventArgs args) => throw null;
 
-			public static void TestAssignEvent ()
-			{
-				MyEvent = HandleMyEvent;
-			}
+            public static void TestAssignEvent()
+            {
+                MyEvent = HandleMyEvent;
+            }
 
-			public static void TestAssignCapturedEvent (bool b = false)
-			{
-				MyEvent = b ? HandleMyEvent : HandleMyEvent2;
-			}
+            public static void TestAssignCapturedEvent(bool b = false)
+            {
+                MyEvent = b ? HandleMyEvent : HandleMyEvent2;
+            }
 
-			delegate void TypeEventHandler(Type t);
+            delegate void TypeEventHandler(Type t);
 
-			static event TypeEventHandler TypeEvent;
+            static event TypeEventHandler TypeEvent;
 
-			[ExpectedWarning ("IL2111", nameof (DynamicallyAccessedMembersAttribute))]
-			public static void TestAssignEventMismatchingAnnotations ()
-			{
-				TypeEvent =
-					([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] Type t)
-						=> throw new Exception ();
-			}
+            [ExpectedWarning("IL2111", nameof(DynamicallyAccessedMembersAttribute))]
+            public static void TestAssignEventMismatchingAnnotations()
+            {
+                TypeEvent =
+                    ([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] Type t)
+                        => throw new Exception();
+            }
 
-			delegate void AnnotatedTypeEventHandler([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.All)] Type t);
+            delegate void AnnotatedTypeEventHandler([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type t);
 
-			static event AnnotatedTypeEventHandler AnnotatedTypeEvent;
+            static event AnnotatedTypeEventHandler AnnotatedTypeEvent;
 
-			// It doesn't matter whether the assigned lambda has annotations that match the
-			// delegate type - we treat the delegate creation as reflection access to the
-			// lambda method, and warn that it has annotations.
-			[ExpectedWarning ("IL2111", nameof (DynamicallyAccessedMembersAttribute))]
-			public static void TestAssignEventMatchingAnnotations ()
-			{
-				AnnotatedTypeEvent =
-					([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.All)] Type t)
-						=> throw new Exception ();
-			}
+            // It doesn't matter whether the assigned lambda has annotations that match the
+            // delegate type - we treat the delegate creation as reflection access to the
+            // lambda method, and warn that it has annotations.
+            [ExpectedWarning("IL2111", nameof(DynamicallyAccessedMembersAttribute))]
+            public static void TestAssignEventMatchingAnnotations()
+            {
+                AnnotatedTypeEvent =
+                    ([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type t)
+                        => throw new Exception();
+            }
 
-			// No dataflow warnings are involved, but the event assignment should not
-			// crash the analyzer.
-			public static void Test ()
-			{
-				TestAssignEvent ();
-				TestAssignCapturedEvent ();
-				TestAssignEventMismatchingAnnotations ();
-				TestAssignEventMatchingAnnotations ();
-			}
-		}
-	}
+            // No dataflow warnings are involved, but the event assignment should not
+            // crash the analyzer.
+            public static void Test()
+            {
+                TestAssignEvent();
+                TestAssignCapturedEvent();
+                TestAssignEventMismatchingAnnotations();
+                TestAssignEventMatchingAnnotations();
+            }
+        }
+    }
 }

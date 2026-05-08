@@ -156,7 +156,7 @@ inline CHECK CheckAligned(UINT64 value, UINT alignment)
     CHECK_OK;
 }
 
-#ifdef __APPLE__
+#if defined(__APPLE__) || defined(__wasm__)
 inline CHECK CheckAligned(SIZE_T value, UINT alignment)
 {
     STATIC_CONTRACT_WRAPPER;
@@ -237,7 +237,7 @@ inline CHECK CheckOverflow(const void *address, UINT64 offset)
     CHECK_OK;
 }
 
-#ifdef __APPLE__
+#if defined(__APPLE__) || defined(__wasm__)
 inline CHECK CheckOverflow(const void *address, SIZE_T offset)
 {
     CHECK((UINT64) address + offset >= (UINT64) address);
@@ -316,10 +316,11 @@ inline CHECK CheckUnderflow(const void *address, UINT64 offset)
     CHECK_OK;
 }
 
-#ifdef __APPLE__
+#if defined(__APPLE__) || defined(__wasm__)
 inline CHECK CheckUnderflow(const void *address, SIZE_T offset)
 {
-#if POINTER_BITS == 32
+    // SIZE_T is 32bit on wasm32
+#if !defined(__wasm__) && POINTER_BITS == 32
     CHECK(offset >> 32 == 0);
     CHECK((UINT) (SIZE_T) address - (UINT) offset <= (UINT) (SIZE_T) address);
 #else

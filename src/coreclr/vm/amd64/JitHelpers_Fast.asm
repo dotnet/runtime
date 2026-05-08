@@ -29,7 +29,7 @@ EXTERN g_card_bundle_table:QWORD
 endif
 
 ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
-EXTERN  g_sw_ww_table:QWORD
+EXTERN  g_write_watch_table:QWORD
 EXTERN  g_sw_ww_enabled_for_gc_heap:BYTE
 endif
 
@@ -141,7 +141,7 @@ ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
         je      CheckCardTable
         mov     rax, rdi
         shr     rax, 0Ch ; SoftwareWriteWatch::AddressToTableByteIndexShift
-        add     rax, qword ptr [g_sw_ww_table]
+        add     rax, qword ptr [g_write_watch_table]
         cmp     byte ptr [rax], 0h
         jne     CheckCardTable
         mov     byte ptr [rax], 0FFh
@@ -264,11 +264,6 @@ Section segment para 'DATA'
         public  JIT_WriteBarrier_Loc
 JIT_WriteBarrier_Loc:
         dq 0
-
-LEAF_ENTRY  JIT_WriteBarrier_Callable, _TEXT
-        ; JIT_WriteBarrier(Object** dst, Object* src)
-        jmp     QWORD PTR [JIT_WriteBarrier_Loc]
-LEAF_END JIT_WriteBarrier_Callable, _TEXT
 
 ; There is an even more optimized version of these helpers possible which takes
 ; advantage of knowledge of which way the ephemeral heap is growing to only do 1/2

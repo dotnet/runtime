@@ -67,10 +67,7 @@ namespace System.Text.Json
         /// </exception>
         public static JsonDocument SerializeToDocument<TValue>(TValue value, JsonTypeInfo<TValue> jsonTypeInfo)
         {
-            if (jsonTypeInfo is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(jsonTypeInfo));
-            }
+            ArgumentNullException.ThrowIfNull(jsonTypeInfo);
 
             jsonTypeInfo.EnsureConfigured();
             return WriteDocument(value, jsonTypeInfo);
@@ -90,10 +87,7 @@ namespace System.Text.Json
         /// </exception>
         public static JsonDocument SerializeToDocument(object? value, JsonTypeInfo jsonTypeInfo)
         {
-            if (jsonTypeInfo is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(jsonTypeInfo));
-            }
+            ArgumentNullException.ThrowIfNull(jsonTypeInfo);
 
             jsonTypeInfo.EnsureConfigured();
             return WriteDocumentAsObject(value, jsonTypeInfo);
@@ -119,10 +113,7 @@ namespace System.Text.Json
         /// </exception>
         public static JsonDocument SerializeToDocument(object? value, Type inputType, JsonSerializerContext context)
         {
-            if (context is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(context));
-            }
+            ArgumentNullException.ThrowIfNull(context);
 
             ValidateInputType(value, inputType);
             return WriteDocumentAsObject(value, GetTypeInfo(context, inputType));

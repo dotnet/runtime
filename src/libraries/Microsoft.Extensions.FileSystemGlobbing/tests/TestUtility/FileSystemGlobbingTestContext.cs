@@ -9,21 +9,18 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Tests.TestUtility
     internal class FileSystemGlobbingTestContext
     {
         private readonly string _basePath;
-        private readonly FileSystemOperationRecorder _recorder;
         private readonly Matcher _patternMatching;
 
         private MockDirectoryInfo _directoryInfo;
 
         public PatternMatchingResult Result { get; private set; }
 
-        public FileSystemGlobbingTestContext(string basePath, Matcher matcher)
+        public FileSystemGlobbingTestContext(string basePath, bool preserveFilterOrder)
         {
             _basePath = basePath;
-            _recorder = new FileSystemOperationRecorder();
-            _patternMatching = matcher;
+            _patternMatching = new Matcher(preserveFilterOrder: preserveFilterOrder);
 
             _directoryInfo = new MockDirectoryInfo(
-                recorder: _recorder,
                 parentDirectory: null,
                 fullName: _basePath,
                 name: ".",
@@ -53,7 +50,6 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Tests.TestUtility
         public FileSystemGlobbingTestContext Files(params string[] files)
         {
             _directoryInfo = new MockDirectoryInfo(
-                _directoryInfo.Recorder,
                 _directoryInfo.ParentDirectory,
                 _directoryInfo.FullName,
                 _directoryInfo.Name,

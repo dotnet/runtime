@@ -534,7 +534,7 @@ namespace System
 
         public static decimal Parse(ReadOnlySpan<char> s, NumberStyles style = NumberStyles.Number, IFormatProvider? provider = null)
         {
-            NumberFormatInfo.ValidateParseStyleFloatingPoint(style);
+            NumberFormatInfo.ValidateParseStyleDecimal(style);
             return Number.ParseDecimal(s, style, NumberFormatInfo.GetInstance(provider));
         }
 
@@ -550,7 +550,7 @@ namespace System
 
         public static bool TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out decimal result)
         {
-            NumberFormatInfo.ValidateParseStyleFloatingPoint(style);
+            NumberFormatInfo.ValidateParseStyleDecimal(style);
 
             if (s == null)
             {
@@ -562,7 +562,7 @@ namespace System
 
         public static bool TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out decimal result)
         {
-            NumberFormatInfo.ValidateParseStyleFloatingPoint(style);
+            NumberFormatInfo.ValidateParseStyleDecimal(style);
             return Number.TryParseDecimal(s, style, NumberFormatInfo.GetInstance(provider), out result) == Number.ParsingStatus.OK;
         }
 
@@ -627,7 +627,7 @@ namespace System
 
         internal static void GetBytes(in decimal d, Span<byte> buffer)
         {
-            Debug.Assert(buffer.Length >= 16);
+            buffer = buffer.Slice(0, 16);
 
             BinaryPrimitives.WriteInt32LittleEndian(buffer, (int)d.Low);
             BinaryPrimitives.WriteInt32LittleEndian(buffer.Slice(4), (int)d.Mid);
@@ -637,7 +637,8 @@ namespace System
 
         internal static decimal ToDecimal(ReadOnlySpan<byte> span)
         {
-            Debug.Assert(span.Length >= 16);
+            span = span.Slice(0, 16);
+
             int lo = BinaryPrimitives.ReadInt32LittleEndian(span);
             int mid = BinaryPrimitives.ReadInt32LittleEndian(span.Slice(4));
             int hi = BinaryPrimitives.ReadInt32LittleEndian(span.Slice(8));
@@ -1833,14 +1834,14 @@ namespace System
         /// <inheritdoc cref="INumberBase{TSelf}.Parse(ReadOnlySpan{byte}, NumberStyles, IFormatProvider?)" />
         public static decimal Parse(ReadOnlySpan<byte> utf8Text, NumberStyles style = NumberStyles.Number, IFormatProvider? provider = null)
         {
-            NumberFormatInfo.ValidateParseStyleInteger(style);
+            NumberFormatInfo.ValidateParseStyleDecimal(style);
             return Number.ParseDecimal(utf8Text, style, NumberFormatInfo.GetInstance(provider));
         }
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryParse(ReadOnlySpan{byte}, NumberStyles, IFormatProvider?, out TSelf)" />
         public static bool TryParse(ReadOnlySpan<byte> utf8Text, NumberStyles style, IFormatProvider? provider, out decimal result)
         {
-            NumberFormatInfo.ValidateParseStyleInteger(style);
+            NumberFormatInfo.ValidateParseStyleDecimal(style);
             return Number.TryParseDecimal(utf8Text, style, NumberFormatInfo.GetInstance(provider), out result) == Number.ParsingStatus.OK;
         }
 

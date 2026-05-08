@@ -1,9 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Debug = System.Diagnostics.Debug;
+using System;
 using System.Collections.Generic;
+
 using Internal.TypeSystem.Ecma;
+
+using Debug = System.Diagnostics.Debug;
 
 namespace Internal.TypeSystem
 {
@@ -125,10 +128,10 @@ namespace Internal.TypeSystem
                 if (!data1.Equals(data2))
                     return false;
 
-                if (type1.Name != type2.Name)
+                if (!type1.Name.SequenceEqual(type2.Name))
                     return false;
 
-                if (type1.Namespace != type2.Namespace)
+                if (!type1.Namespace.SequenceEqual(type2.Namespace))
                     return false;
 
                 var containingType1 = (MetadataType)type1.ContainingType;
@@ -176,8 +179,8 @@ namespace Internal.TypeSystem
 
             static bool CompareDelegatesForEquivalence(MetadataType type1, MetadataType type2, StackOverflowProtect visited)
             {
-                var invoke1 = type1.GetMethod("Invoke", null);
-                var invoke2 = type2.GetMethod("Invoke", null);
+                var invoke1 = type1.GetMethod("Invoke"u8, null);
+                var invoke2 = type2.GetMethod("Invoke"u8, null);
 
                 if (invoke1 == null)
                     return false;
@@ -200,6 +203,15 @@ namespace Internal.TypeSystem
                 {
                     // If there are any methods, then it isn't actually a type-equivalent type
                     return false;
+                }
+
+                bool explicitLayout = false;
+                if (!enumMode)
+                {
+                    if (!CompareTypeLayout(type1, type2, out explicitLayout))
+                    {
+                        return false;
+                    }
                 }
 
                 // Compare field types for equivalence
@@ -249,20 +261,22 @@ namespace Internal.TypeSystem
                     {
                         return false;
                     }
-                }
 
-                // At this point we know that the set of fields is the same, and have the same types
-                if (!enumMode)
-                {
-                    if (!CompareTypeLayout(type1, type2))
+                    // If we are in explicit layout mode, we need to compare the offsets
+                    if (explicitLayout)
                     {
-                        return false;
+                        if (field1.MetadataOffset != field2.MetadataOffset)
+                        {
+                            return false;
+                        }
                     }
                 }
+
                 return true;
 
-                static bool CompareTypeLayout(MetadataType type1, MetadataType type2)
+                static bool CompareTypeLayout(MetadataType type1, MetadataType type2, out bool explicitLayout)
                 {
+                    explicitLayout = false;
                     // Types must either be Sequential or Explicit layout
                     if (type1.IsSequentialLayout != type2.IsSequentialLayout)
                     {
@@ -279,7 +293,7 @@ namespace Internal.TypeSystem
                         return false;
                     }
 
-                    bool explicitLayout = type1.IsExplicitLayout;
+                    explicitLayout = type1.IsExplicitLayout;
 
                     // they must have the same charset
                     if (type1.PInvokeStringFormat != type2.PInvokeStringFormat)
@@ -292,21 +306,6 @@ namespace Internal.TypeSystem
                     if ((layoutMetadata1.PackingSize != layoutMetadata2.PackingSize) ||
                         (layoutMetadata1.Size != layoutMetadata2.Size))
                         return false;
-
-                    if ((explicitLayout) && !(layoutMetadata1.Offsets == null && layoutMetadata2.Offsets == null))
-                    {
-                        if (layoutMetadata1.Offsets == null)
-                            return false;
-
-                        if (layoutMetadata2.Offsets == null)
-                            return false;
-
-                        for (int index = 0; index < layoutMetadata1.Offsets.Length; index++)
-                        {
-                            if (layoutMetadata1.Offsets[index].Offset != layoutMetadata2.Offsets[index].Offset)
-                                return false;
-                        }
-                    }
 
                     return true;
                 }

@@ -4,6 +4,7 @@
 #pragma once
 
 #include "codeversion.h"
+#include "loaderallocator.hpp"
 
 #ifdef FEATURE_TIERED_COMPILATION
 
@@ -101,6 +102,8 @@ public:
     static const SIZE_T CodeSize = 40;
 #elif defined(TARGET_RISCV64)
     static const SIZE_T CodeSize = 40;
+#elif defined(TARGET_WASM)
+    static const SIZE_T CodeSize = 0;
 #endif
 
 private:
@@ -148,7 +151,7 @@ public:
     static void StaticInitialize();
 #endif // !DACCESS_COMPILE
 
-    static void GenerateCodePage(BYTE* pageBase, BYTE* pageBaseRX, SIZE_T size);
+    static void GenerateCodePage(uint8_t* pageBase, uint8_t* pageBaseRX, size_t size);
 
     PTR_CallCount GetRemainingCallCountCell() const;
     PCODE GetTargetForMethod() const;
@@ -189,9 +192,6 @@ private:
 
             // Stub is not active and will not become active, call counting complete, promoted, stub may be deleted
             Complete,
-
-            // Call counting is disabled, only used for the default code version to indicate that it is to be optimized
-            Disabled
         };
 
     private:
@@ -201,10 +201,7 @@ private:
         Stage m_stage;
 
     #ifndef DACCESS_COMPILE
-    private:
-        CallCountingInfo(NativeCodeVersion codeVersion);
     public:
-        static CallCountingInfo *CreateWithCallCountingDisabled(NativeCodeVersion codeVersion);
         CallCountingInfo(NativeCodeVersion codeVersion, CallCount callCountThreshold);
         ~CallCountingInfo();
     #endif
@@ -259,8 +256,8 @@ private:
     private:
         // LoaderHeap cannot be constructed when DACCESS_COMPILE is defined (at the time, its destructor was private). Working
         // around that by controlling creation/destruction using a pointer.
-        LoaderHeap *m_heap;
-        RangeList m_heapRangeList;
+        InterleavedLoaderHeap *m_heap;
+        CodeRangeMapRangeList m_heapRangeList;
 
     public:
         CallCountingStubAllocator();
@@ -271,16 +268,10 @@ private:
         void Reset();
         const CallCountingStub *AllocateStub(CallCount *remainingCallCountCell, PCODE targetForMethod);
     private:
-        LoaderHeap *AllocateHeap();
+        InterleavedLoaderHeap *AllocateHeap();
     #endif // !DACCESS_COMPILE
 
     public:
-        bool IsStub(TADDR entryPoint);
-
-    #ifdef DACCESS_COMPILE
-        void EnumerateHeapRanges(CLRDataEnumMemoryFlags flags);
-    #endif
-
         DISABLE_COPY(CallCountingStubAllocator);
     };
 
@@ -306,32 +297,16 @@ private:
     typedef SHash<MethodDescForwarderStubHashTraits> MethodDescForwarderStubHash;
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // CallCountingManager::CallCountingManagerHashTraits
-
-private:
-    class CallCountingManagerHashTraits : public DefaultSHashTraits<PTR_CallCountingManager>
-    {
-    private:
-        typedef DefaultSHashTraits<PTR_CallCountingManager> Base;
-    public:
-        typedef Base::element_t element_t;
-        typedef Base::count_t count_t;
-        typedef PTR_CallCountingManager key_t;
-
-    public:
-        static key_t GetKey(const element_t &e);
-        static BOOL Equals(const key_t &k1, const key_t &k2);
-        static count_t Hash(const key_t &k);
-    };
-
-    typedef SHash<CallCountingManagerHashTraits> CallCountingManagerHash;
-    typedef DPTR(CallCountingManagerHash) PTR_CallCountingManagerHash;
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // CallCountingManager members
 
+public:
+    // Next pointer for SList linkage.
+    DPTR(CallCountingManager) m_pNext;
+
 private:
-    static PTR_CallCountingManagerHash s_callCountingManagers;
+    typedef SListTail<CallCountingManager> CallCountingManagerList;
+
+    static CallCountingManagerList s_callCountingManagers;
     static COUNT_T s_callCountingStubCount;
     static COUNT_T s_activeCallCountingStubCount;
     static COUNT_T s_completedCallCountingStubCount;
@@ -347,17 +322,6 @@ public:
     ~CallCountingManager();
 
 #ifndef DACCESS_COMPILE
-public:
-    static void StaticInitialize();
-#endif // !DACCESS_COMPILE
-
-public:
-    bool IsCallCountingEnabled(NativeCodeVersion codeVersion);
-
-#ifndef DACCESS_COMPILE
-public:
-    void DisableCallCounting(NativeCodeVersion codeVersion);
-
 public:
     static bool SetCodeEntryPoint(
         NativeCodeVersion activeCodeVersion,
@@ -381,11 +345,7 @@ private:
 #endif // !DACCESS_COMPILE
 
 public:
-    static bool IsCallCountingStub(PCODE entryPoint);
     static PCODE GetTargetForMethod(PCODE callCountingStubEntryPoint);
-#ifdef DACCESS_COMPILE
-    static void DacEnumerateCallCountingStubHeapRanges(CLRDataEnumMemoryFlags flags);
-#endif
 
     DISABLE_COPY(CallCountingManager);
 };
@@ -418,51 +378,6 @@ inline PCODE CallCountingStub::GetTargetForMethod() const
     WRAPPER_NO_CONTRACT;
     return GetData()->TargetForMethod;
 }
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// CallCountingManager::CallCountingStubManager
-
-class CallCountingStubManager;
-typedef VPTR(CallCountingStubManager) PTR_CallCountingStubManager;
-
-class CallCountingStubManager : public StubManager
-{
-    VPTR_VTABLE_CLASS(CallCountingStubManager, StubManager);
-
-private:
-    SPTR_DECL(CallCountingStubManager, g_pManager);
-
-#ifndef DACCESS_COMPILE
-public:
-    CallCountingStubManager();
-
-public:
-    static void Init();
-#endif
-
-#ifdef _DEBUG
-public:
-    virtual const char *DbgGetName(); // override
-#endif
-
-#ifdef DACCESS_COMPILE
-public:
-    virtual LPCWSTR GetStubManagerName(PCODE addr);
-#endif
-
-protected:
-    virtual BOOL CheckIsStub_Internal(PCODE entryPoint); // override
-    virtual BOOL DoTraceStub(PCODE callCountingStubEntryPoint, TraceDestination *trace); // override
-
-#ifdef DACCESS_COMPILE
-protected:
-    virtual void DoEnumMemoryRegions(CLRDataEnumMemoryFlags flags); // override
-#endif
-
-    DISABLE_COPY(CallCountingStubManager);
-};
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #undef DISABLE_COPY
 

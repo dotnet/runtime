@@ -37,8 +37,8 @@ namespace Microsoft.Extensions.Caching.Memory
 
         internal CacheEntry(object key, MemoryCache memoryCache)
         {
-            ThrowHelper.ThrowIfNull(key);
-            ThrowHelper.ThrowIfNull(memoryCache);
+            ArgumentNullException.ThrowIfNull(key);
+            ArgumentNullException.ThrowIfNull(memoryCache);
 
             Key = key;
             _cache = memoryCache;
@@ -84,7 +84,7 @@ namespace Microsoft.Extensions.Caching.Memory
                 {
                     DateTimeOffset expiration = value.GetValueOrDefault();
                     _absoluteExpirationTicks = expiration.UtcTicks;
-                    _absoluteExpirationOffsetMinutes = (short)(expiration.Offset.Ticks / TimeSpan.TicksPerMinute);
+                    _absoluteExpirationOffsetMinutes = (short)expiration.TotalOffsetMinutes;
                 }
             }
         }

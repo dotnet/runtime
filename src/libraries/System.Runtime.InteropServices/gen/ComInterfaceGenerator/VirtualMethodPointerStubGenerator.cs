@@ -4,24 +4,24 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Diagnostics;
 using System.Linq;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 using static Microsoft.Interop.SyntaxFactoryExtensions;
-using Microsoft.CodeAnalysis;
-using System.Diagnostics;
 
 namespace Microsoft.Interop
 {
     internal static class VirtualMethodPointerStubGenerator
     {
-        private const string NativeThisParameterIdentifier = "__this";
-        private const string VirtualMethodTableIdentifier = "__vtable";
-        private const string VirtualMethodTarget = "__target";
+        internal const string NativeThisParameterIdentifier = "__this";
+        internal const string VirtualMethodTableIdentifier = "__vtable";
+        internal const string VirtualMethodTarget = "__target";
 
         public static (MethodDeclarationSyntax, ImmutableArray<DiagnosticInfo>) GenerateManagedToNativeStub(
-            IncrementalMethodStubGenerationContext methodStub,
+            SourceAvailableIncrementalMethodStubGenerationContext methodStub,
             Func<EnvironmentFlags, MarshalDirection, IMarshallingGeneratorResolver> generatorResolverCreator)
         {
             var diagnostics = new GeneratorDiagnosticsBag(new DiagnosticDescriptorProvider(), methodStub.DiagnosticLocation, SR.ResourceManager, typeof(FxResources.Microsoft.Interop.ComInterfaceGenerator.SR));
@@ -128,7 +128,7 @@ namespace Microsoft.Interop
         private const string ManagedThisParameterIdentifier = "@this";
 
         public static (MethodDeclarationSyntax, ImmutableArray<DiagnosticInfo>) GenerateNativeToManagedStub(
-            IncrementalMethodStubGenerationContext methodStub,
+            SourceAvailableIncrementalMethodStubGenerationContext methodStub,
             Func<EnvironmentFlags, MarshalDirection, IMarshallingGeneratorResolver> generatorResolverCreator)
         {
             var diagnostics = new GeneratorDiagnosticsBag(new DiagnosticDescriptorProvider(), methodStub.DiagnosticLocation, SR.ResourceManager, typeof(FxResources.Microsoft.Interop.ComInterfaceGenerator.SR));
@@ -174,7 +174,7 @@ namespace Microsoft.Interop
                 methodStub.Diagnostics.Array.AddRange(diagnostics.Diagnostics));
         }
 
-        private static ImmutableArray<TypePositionInfo> AddManagedToUnmanagedImplicitThis(IncrementalMethodStubGenerationContext methodStub)
+        private static ImmutableArray<TypePositionInfo> AddManagedToUnmanagedImplicitThis(SourceAvailableIncrementalMethodStubGenerationContext methodStub)
         {
             ImmutableArray<TypePositionInfo> originalElements = methodStub.SignatureContext.ElementTypeInformation;
 
@@ -231,33 +231,7 @@ namespace Microsoft.Interop
             return elements.ToImmutable();
         }
 
-        public static BlockSyntax GenerateVirtualMethodTableSlotAssignments(
-            IEnumerable<IncrementalMethodStubGenerationContext> vtableMethods,
-            string vtableIdentifier,
-            Func<EnvironmentFlags, MarshalDirection, IMarshallingGeneratorResolver> generatorResolverCreator)
-        {
-            List<StatementSyntax> statements = new();
-            foreach (var method in vtableMethods)
-            {
-                FunctionPointerTypeSyntax functionPointerType = GenerateUnmanagedFunctionPointerTypeForMethod(method, generatorResolverCreator);
-
-                // <vtableParameter>[<index>] = (void*)(<functionPointerType>)&ABI_<methodIdentifier>;
-                statements.Add(
-                    ExpressionStatement(
-                        AssignmentExpression(SyntaxKind.SimpleAssignmentExpression,
-                            ElementAccessExpression(
-                                IdentifierName(vtableIdentifier))
-                            .AddArgumentListArguments(Argument(LiteralExpression(SyntaxKind.NumericLiteralExpression, Literal(method.VtableIndexData.Index)))),
-                            CastExpression(PointerType(PredefinedType(Token(SyntaxKind.VoidKeyword))),
-                                CastExpression(functionPointerType,
-                                    PrefixUnaryExpression(SyntaxKind.AddressOfExpression,
-                                        IdentifierName($"ABI_{method.StubMethodSyntaxTemplate.Identifier}")))))));
-            }
-
-            return Block(statements);
-        }
-
-        private static FunctionPointerTypeSyntax GenerateUnmanagedFunctionPointerTypeForMethod(
+        public static FunctionPointerTypeSyntax GenerateUnmanagedFunctionPointerTypeForMethod(
             IncrementalMethodStubGenerationContext method,
             Func<EnvironmentFlags, MarshalDirection, IMarshallingGeneratorResolver> generatorResolverCreator)
         {

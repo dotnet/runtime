@@ -91,7 +91,7 @@ namespace System.Net.Security.Tests
             {
                 EnabledSslProtocols = sslProtocol,
                 CertificateRevocationCheckMode = X509RevocationMode.NoCheck,
-                ServerCertificateContext = SslStreamCertificateContext.Create(_certificates.serverCert, _certificates.serverChain),
+                ServerCertificateContext = _certificates.CreateSslStreamCertificateContext(),
                 RemoteCertificateValidationCallback = (sender, cert, chain, errors) => true,
                 ClientCertificateRequired = clientCertScenario == ClientCertScenario.InHandshake,
             };
@@ -102,7 +102,7 @@ namespace System.Net.Security.Tests
                 EnabledSslProtocols = sslProtocol,
                 CertificateRevocationCheckMode = X509RevocationMode.NoCheck,
                 ClientCertificates = clientCertScenario != ClientCertScenario.None
-                    ? new X509CertificateCollection { _certificates.serverCert }
+                    ? new X509CertificateCollection { _certificates.ServerCert }
                     : new X509CertificateCollection(),
                 RemoteCertificateValidationCallback = (sender, cert, chain, errors) => true,
             };

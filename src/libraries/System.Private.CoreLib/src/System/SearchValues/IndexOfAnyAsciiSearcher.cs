@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
@@ -321,7 +322,7 @@ namespace System.Buffers
                     // As packing two Vector256<short>s into a Vector256<byte> is cheap compared to the lookup, we can effectively double the throughput.
                     // If the input length is a multiple of 32, don't consume the last 32 characters in this loop.
                     // Let the fallback below handle it instead. This is why the condition is
-                    // ">" instead of ">=" above, and why "IsAddressLessThan" is used instead of "!IsAddressGreaterThan".
+                    // ">" instead of ">=" above, and why "IsAddressLessThan" is used instead of "IsAddressLessThanOrEqualTo".
                     ref short twoVectorsAwayFromEnd = ref Unsafe.Add(ref searchSpace, searchSpaceLength - (2 * Vector256<short>.Count));
 
                     do
@@ -374,7 +375,7 @@ namespace System.Buffers
                 // As packing two Vector128<short>s into a Vector128<byte> is cheap compared to the lookup, we can effectively double the throughput.
                 // If the input length is a multiple of 16, don't consume the last 16 characters in this loop.
                 // Let the fallback below handle it instead. This is why the condition is
-                // ">" instead of ">=" above, and why "IsAddressLessThan" is used instead of "!IsAddressGreaterThan".
+                // ">" instead of ">=" above, and why "IsAddressLessThan" is used instead of "IsAddressLessThanOrEqualTo".
                 ref short twoVectorsAwayFromEnd = ref Unsafe.Add(ref searchSpace, searchSpaceLength - (2 * Vector128<short>.Count));
 
                 do
@@ -453,7 +454,7 @@ namespace System.Buffers
                     // As packing two Vector256<short>s into a Vector256<byte> is cheap compared to the lookup, we can effectively double the throughput.
                     // If the input length is a multiple of 32, don't consume the last 32 characters in this loop.
                     // Let the fallback below handle it instead. This is why the condition is
-                    // ">" instead of ">=" above, and why "IsAddressGreaterThan" is used instead of "!IsAddressLessThan".
+                    // ">" instead of ">=" above, and why "IsAddressGreaterThan" is used instead of "IsAddressGreaterThanOrEqualTo".
                     ref short twoVectorsAfterStart = ref Unsafe.Add(ref searchSpace, 2 * Vector256<short>.Count);
 
                     do
@@ -504,7 +505,7 @@ namespace System.Buffers
                 // As packing two Vector128<short>s into a Vector128<byte> is cheap compared to the lookup, we can effectively double the throughput.
                 // If the input length is a multiple of 16, don't consume the last 16 characters in this loop.
                 // Let the fallback below handle it instead. This is why the condition is
-                // ">" instead of ">=" above, and why "IsAddressGreaterThan" is used instead of "!IsAddressLessThan".
+                // ">" instead of ">=" above, and why "IsAddressGreaterThan" is used instead of "IsAddressGreaterThanOrEqualTo".
                 ref short twoVectorsAfterStart = ref Unsafe.Add(ref searchSpace, 2 * Vector128<short>.Count);
 
                 do
@@ -604,7 +605,7 @@ namespace System.Buffers
                     // Process the input in chunks of 32 bytes.
                     // If the input length is a multiple of 32, don't consume the last 32 characters in this loop.
                     // Let the fallback below handle it instead. This is why the condition is
-                    // ">" instead of ">=" above, and why "IsAddressLessThan" is used instead of "!IsAddressGreaterThan".
+                    // ">" instead of ">=" above, and why "IsAddressLessThan" is used instead of "IsAddressLessThanOrEqualTo".
                     ref byte vectorAwayFromEnd = ref Unsafe.Add(ref searchSpace, searchSpaceLength - Vector256<byte>.Count);
 
                     do
@@ -653,7 +654,7 @@ namespace System.Buffers
                 // Process the input in chunks of 16 bytes.
                 // If the input length is a multiple of 16, don't consume the last 16 characters in this loop.
                 // Let the fallback below handle it instead. This is why the condition is
-                // ">" instead of ">=" above, and why "IsAddressLessThan" is used instead of "!IsAddressGreaterThan".
+                // ">" instead of ">=" above, and why "IsAddressLessThan" is used instead of "IsAddressLessThanOrEqualTo".
                 ref byte vectorAwayFromEnd = ref Unsafe.Add(ref searchSpace, searchSpaceLength - Vector128<byte>.Count);
 
                 do
@@ -729,7 +730,7 @@ namespace System.Buffers
                     // Process the input in chunks of 32 bytes.
                     // If the input length is a multiple of 32, don't consume the last 32 characters in this loop.
                     // Let the fallback below handle it instead. This is why the condition is
-                    // ">" instead of ">=" above, and why "IsAddressGreaterThan" is used instead of "!IsAddressLessThan".
+                    // ">" instead of ">=" above, and why "IsAddressGreaterThan" is used instead of "IsAddressGreaterThanOrEqualTo".
                     ref byte vectorAfterStart = ref Unsafe.Add(ref searchSpace, Vector256<byte>.Count);
 
                     do
@@ -778,7 +779,7 @@ namespace System.Buffers
                 // Process the input in chunks of 16 bytes.
                 // If the input length is a multiple of 16, don't consume the last 16 characters in this loop.
                 // Let the fallback below handle it instead. This is why the condition is
-                // ">" instead of ">=" above, and why "IsAddressGreaterThan" is used instead of "!IsAddressLessThan".
+                // ">" instead of ">=" above, and why "IsAddressGreaterThan" is used instead of "IsAddressGreaterThanOrEqualTo".
                 ref byte vectorAfterStart = ref Unsafe.Add(ref searchSpace, Vector128<byte>.Count);
 
                 do
@@ -876,7 +877,7 @@ namespace System.Buffers
                     // Process the input in chunks of 32 bytes.
                     // If the input length is a multiple of 32, don't consume the last 32 characters in this loop.
                     // Let the fallback below handle it instead. This is why the condition is
-                    // ">" instead of ">=" above, and why "IsAddressLessThan" is used instead of "!IsAddressGreaterThan".
+                    // ">" instead of ">=" above, and why "IsAddressLessThan" is used instead of "IsAddressLessThanOrEqualTo".
                     ref byte vectorAwayFromEnd = ref Unsafe.Add(ref searchSpace, searchSpaceLength - Vector256<byte>.Count);
 
                     do
@@ -928,7 +929,7 @@ namespace System.Buffers
                 // Process the input in chunks of 16 bytes.
                 // If the input length is a multiple of 16, don't consume the last 16 characters in this loop.
                 // Let the fallback below handle it instead. This is why the condition is
-                // ">" instead of ">=" above, and why "IsAddressLessThan" is used instead of "!IsAddressGreaterThan".
+                // ">" instead of ">=" above, and why "IsAddressLessThan" is used instead of "IsAddressLessThanOrEqualTo".
                 ref byte vectorAwayFromEnd = ref Unsafe.Add(ref searchSpace, searchSpaceLength - Vector128<byte>.Count);
 
                 do
@@ -1004,7 +1005,7 @@ namespace System.Buffers
                     // Process the input in chunks of 32 bytes.
                     // If the input length is a multiple of 32, don't consume the last 32 characters in this loop.
                     // Let the fallback below handle it instead. This is why the condition is
-                    // ">" instead of ">=" above, and why "IsAddressGreaterThan" is used instead of "!IsAddressLessThan".
+                    // ">" instead of ">=" above, and why "IsAddressGreaterThan" is used instead of "IsAddressGreaterThanOrEqualTo".
                     ref byte vectorAfterStart = ref Unsafe.Add(ref searchSpace, Vector256<byte>.Count);
 
                     do
@@ -1056,7 +1057,7 @@ namespace System.Buffers
                 // Process the input in chunks of 16 bytes.
                 // If the input length is a multiple of 16, don't consume the last 16 characters in this loop.
                 // Let the fallback below handle it instead. This is why the condition is
-                // ">" instead of ">=" above, and why "IsAddressGreaterThan" is used instead of "!IsAddressLessThan".
+                // ">" instead of ">=" above, and why "IsAddressGreaterThan" is used instead of "IsAddressGreaterThanOrEqualTo".
                 ref byte vectorAfterStart = ref Unsafe.Add(ref searchSpace, Vector128<byte>.Count);
 
                 do
@@ -1135,7 +1136,7 @@ namespace System.Buffers
 
                 // We use a shuffle to look up potential matches for each byte based on its low nibble.
                 // Since all values have a unique low nibble, there's at most one potential match per nibble.
-                Vector128<byte> values = Vector128.ShuffleUnsafe(bitmapLookup, lowNibbles);
+                Vector128<byte> values = SearchValues.ShuffleNativeModified(bitmapLookup, lowNibbles);
 
                 // Compare potential matches with the source to rule out false positives that have a different high nibble.
                 return Vector128.Equals(source, values);
@@ -1152,15 +1153,15 @@ namespace System.Buffers
                 // The shift will map values above 127 to values above 16, which the shuffle will then map to 0.
                 // On X86 and WASM, use a logical right shift instead.
                 Vector128<byte> highNibbles = AdvSimd.IsSupported
-                    ? AdvSimd.ShiftRightArithmetic(source.AsSByte(), 4).AsByte()
+                    ? (source.AsSByte() >> 4).AsByte()
                     : source >>> 4;
 
                 // The bitmapLookup represents a 8x16 table of bits, indicating whether a character is present in the needle.
                 // Lookup the rows via the lower nibble and the column via the higher nibble.
-                Vector128<byte> bitMask = Vector128.ShuffleUnsafe(bitmapLookup, lowNibbles);
+                Vector128<byte> bitMask = SearchValues.ShuffleNativeModified(bitmapLookup, lowNibbles);
 
                 // For values above 127, the high nibble will be above 7. We construct the positions vector for the shuffle such that those values map to 0.
-                Vector128<byte> bitPositions = Vector128.ShuffleUnsafe(Vector128.Create(0x8040201008040201, 0).AsByte(), highNibbles);
+                Vector128<byte> bitPositions = SearchValues.ShuffleNativeModified(Vector128.Create(0x8040201008040201, 0).AsByte(), highNibbles);
 
                 return bitMask & bitPositions;
             }
@@ -1212,10 +1213,10 @@ namespace System.Buffers
             Vector128<byte> lowNibbles = source & Vector128.Create((byte)0xF);
             Vector128<byte> highNibbles = source >>> 4;
 
-            Vector128<byte> row0 = Vector128.ShuffleUnsafe(bitmapLookup0, lowNibbles);
-            Vector128<byte> row1 = Vector128.ShuffleUnsafe(bitmapLookup1, lowNibbles);
+            Vector128<byte> row0 = Vector128.ShuffleNative(bitmapLookup0, lowNibbles);
+            Vector128<byte> row1 = Vector128.ShuffleNative(bitmapLookup1, lowNibbles);
 
-            Vector128<byte> bitmask = Vector128.ShuffleUnsafe(Vector128.Create(0x8040201008040201).AsByte(), highNibbles);
+            Vector128<byte> bitmask = Vector128.ShuffleNative(Vector128.Create(0x8040201008040201).AsByte(), highNibbles);
 
             Vector128<byte> mask = Vector128.GreaterThan(highNibbles.AsSByte(), Vector128.Create((sbyte)0x7)).AsByte();
             Vector128<byte> bitsets = Vector128.ConditionalSelect(mask, row1, row0);
@@ -1252,8 +1253,7 @@ namespace System.Buffers
         private static unsafe int ComputeLastIndex<T, TNegator>(ref T searchSpace, ref T current, Vector128<byte> result)
             where TNegator : struct, INegator
         {
-            uint mask = TNegator.ExtractMask(result) & 0xFFFF;
-            int offsetInVector = 31 - BitOperations.LeadingZeroCount(mask);
+            int offsetInVector = TNegator.IndexOfLastMatch(result);
             return offsetInVector + (int)((nuint)Unsafe.ByteOffset(ref searchSpace, ref current) / (nuint)sizeof(T));
         }
 
@@ -1261,8 +1261,8 @@ namespace System.Buffers
         private static unsafe int ComputeLastIndexOverlapped<T, TNegator>(ref T searchSpace, ref T secondVector, Vector128<byte> result)
             where TNegator : struct, INegator
         {
-            uint mask = TNegator.ExtractMask(result) & 0xFFFF;
-            int offsetInVector = 31 - BitOperations.LeadingZeroCount(mask);
+            int offsetInVector = TNegator.IndexOfLastMatch(result);
+
             if (offsetInVector < Vector128<short>.Count)
             {
                 return offsetInVector;
@@ -1282,9 +1282,7 @@ namespace System.Buffers
                 result = PackedSpanHelpers.FixUpPackedVector256Result(result);
             }
 
-            uint mask = TNegator.ExtractMask(result);
-
-            int offsetInVector = 31 - BitOperations.LeadingZeroCount(mask);
+            int offsetInVector = TNegator.IndexOfLastMatch(result);
             return offsetInVector + (int)((nuint)Unsafe.ByteOffset(ref searchSpace, ref current) / (nuint)sizeof(T));
         }
 
@@ -1298,9 +1296,8 @@ namespace System.Buffers
                 result = PackedSpanHelpers.FixUpPackedVector256Result(result);
             }
 
-            uint mask = TNegator.ExtractMask(result);
+            int offsetInVector = TNegator.IndexOfLastMatch(result);
 
-            int offsetInVector = 31 - BitOperations.LeadingZeroCount(mask);
             if (offsetInVector < Vector256<short>.Count)
             {
                 return offsetInVector;
@@ -1315,8 +1312,10 @@ namespace System.Buffers
             static abstract bool NegateIfNeeded(bool result);
             static abstract Vector128<byte> NegateIfNeeded(Vector128<byte> result);
             static abstract Vector256<byte> NegateIfNeeded(Vector256<byte> result);
-            static abstract uint ExtractMask(Vector128<byte> result);
-            static abstract uint ExtractMask(Vector256<byte> result);
+            static abstract int IndexOfFirstMatch(Vector128<byte> result);
+            static abstract int IndexOfFirstMatch(Vector256<byte> result);
+            static abstract int IndexOfLastMatch(Vector128<byte> result);
+            static abstract int IndexOfLastMatch(Vector256<byte> result);
         }
 
         internal readonly struct DontNegate : INegator
@@ -1325,13 +1324,21 @@ namespace System.Buffers
             public static Vector128<byte> NegateIfNeeded(Vector128<byte> result) => result;
             public static Vector256<byte> NegateIfNeeded(Vector256<byte> result) => result;
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static uint ExtractMask(Vector128<byte> result) => ~Vector128.Equals(result, Vector128<byte>.Zero).ExtractMostSignificantBits();
+            public static int IndexOfFirstMatch(Vector128<byte> result) => Vector128.IndexOfFirstMatch(~Vector128.Equals(result, Vector128<byte>.Zero));
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static uint ExtractMask(Vector256<byte> result) => ~Vector256.Equals(result, Vector256<byte>.Zero).ExtractMostSignificantBits();
+            public static int IndexOfFirstMatch(Vector256<byte> result) => Vector256.IndexOfFirstMatch(~Vector256.Equals(result, Vector256<byte>.Zero));
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static int IndexOfLastMatch(Vector128<byte> result) => Vector128.IndexOfLastMatch(~Vector128.Equals(result, Vector128<byte>.Zero));
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static int IndexOfLastMatch(Vector256<byte> result) => Vector256.IndexOfLastMatch(~Vector256.Equals(result, Vector256<byte>.Zero));
         }
 
         internal readonly struct Negate : INegator
         {
+            // AdvSimd expects that a given element is strictly Zero or AllBitsSet
+            // so we need to ensure that we normalize the input prior to calling
+            // IndexOfFirstMatch or IndexOfLastMatch
+
             public static bool NegateIfNeeded(bool result) => !result;
             // This is intentionally testing for equality with 0 instead of "~result".
             // We want to know if any character didn't match, as that means it should be treated as a match for the -Except method.
@@ -1340,9 +1347,27 @@ namespace System.Buffers
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static Vector256<byte> NegateIfNeeded(Vector256<byte> result) => Vector256.Equals(result, Vector256<byte>.Zero);
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static uint ExtractMask(Vector128<byte> result) => result.ExtractMostSignificantBits();
+            public static int IndexOfFirstMatch(Vector128<byte> result)
+            {
+                if (AdvSimd.IsSupported)
+                {
+                    result = (result.AsSByte() >> 7).AsByte();
+                }
+                return Vector128.IndexOfFirstMatch(result);
+            }
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static uint ExtractMask(Vector256<byte> result) => result.ExtractMostSignificantBits();
+            public static int IndexOfFirstMatch(Vector256<byte> result) => Vector256.IndexOfFirstMatch(result);
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static int IndexOfLastMatch(Vector128<byte> result)
+            {
+                if (AdvSimd.IsSupported)
+                {
+                    result = (result.AsSByte() >> 7).AsByte();
+                }
+                return Vector128.IndexOfLastMatch(result);
+            }
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static int IndexOfLastMatch(Vector256<byte> result) => Vector256.IndexOfLastMatch(result);
         }
 
         internal interface IOptimizations
@@ -1467,8 +1492,7 @@ namespace System.Buffers
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static int FirstIndex<TNegator>(ref T searchSpace, ref T current, Vector128<byte> result) where TNegator : struct, INegator
             {
-                uint mask = TNegator.ExtractMask(result);
-                int offsetInVector = BitOperations.TrailingZeroCount(mask);
+                int offsetInVector = TNegator.IndexOfFirstMatch(result);
                 return offsetInVector + (int)((nuint)Unsafe.ByteOffset(ref searchSpace, ref current) / (nuint)sizeof(T));
             }
 
@@ -1481,17 +1505,15 @@ namespace System.Buffers
                     result = PackedSpanHelpers.FixUpPackedVector256Result(result);
                 }
 
-                uint mask = TNegator.ExtractMask(result);
-
-                int offsetInVector = BitOperations.TrailingZeroCount(mask);
+                int offsetInVector = TNegator.IndexOfFirstMatch(result);
                 return offsetInVector + (int)((nuint)Unsafe.ByteOffset(ref searchSpace, ref current) / (nuint)sizeof(T));
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static int FirstIndexOverlapped<TNegator>(ref T searchSpace, ref T current0, ref T current1, Vector128<byte> result) where TNegator : struct, INegator
             {
-                uint mask = TNegator.ExtractMask(result);
-                int offsetInVector = BitOperations.TrailingZeroCount(mask);
+                int offsetInVector = TNegator.IndexOfFirstMatch(result);
+
                 if (offsetInVector >= Vector128<short>.Count)
                 {
                     // We matched within the second vector
@@ -1510,9 +1532,8 @@ namespace System.Buffers
                     result = PackedSpanHelpers.FixUpPackedVector256Result(result);
                 }
 
-                uint mask = TNegator.ExtractMask(result);
+                int offsetInVector = TNegator.IndexOfFirstMatch(result);
 
-                int offsetInVector = BitOperations.TrailingZeroCount(mask);
                 if (offsetInVector >= Vector256<short>.Count)
                 {
                     // We matched within the second vector

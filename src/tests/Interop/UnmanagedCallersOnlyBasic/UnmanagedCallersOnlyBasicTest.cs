@@ -9,6 +9,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
 using Xunit;
+using TestLibrary;
 
 public unsafe class UnmanagedCallersOnlyBasicTest
 {
@@ -44,6 +45,10 @@ public unsafe class UnmanagedCallersOnlyBasicTest
         return DoubleImpl(n);
     }
 
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/64127", typeof(PlatformDetection), nameof(PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
+    [ActiveIssue("Needs coreclr build", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoFULLAOT))]
+    [ActiveIssue("needs triage", TestPlatforms.Android)]
+    [ActiveIssue("needs triage", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
     [Fact]
     [ActiveIssue("https://github.com/dotnet/runtime/issues/91388", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
     public static void TestUnmanagedCallersOnlyValid()
@@ -55,12 +60,16 @@ public unsafe class UnmanagedCallersOnlyBasicTest
         Assert.Equal(expected, UnmanagedCallersOnlyDll.CallManagedProc((IntPtr)(delegate* unmanaged<int, int>)&ManagedDoubleCallback, n));
     }
 
-   [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvStdcall) })]
+   [UnmanagedCallersOnly(CallConvs = [typeof(CallConvStdcall)])]
     public static int ManagedDoubleCallback_Stdcall(int n)
     {
         return DoubleImpl(n);
     }
 
+    [ActiveIssue("Needs coreclr build", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoFULLAOT))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/64127", typeof(PlatformDetection), nameof(PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
+    [ActiveIssue("needs triage", TestPlatforms.Android)]
+    [ActiveIssue("needs triage", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
     [Fact]
     public static void TestUnmanagedCallersOnlyValid_CallConvStdcall()
     {
@@ -73,12 +82,16 @@ public unsafe class UnmanagedCallersOnlyBasicTest
         Assert.Equal(expected, actual);
     }
 
-    [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvCdecl) })]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     public static int ManagedDoubleCallback_Cdecl(int n)
     {
         return DoubleImpl(n);
     }
 
+    [ActiveIssue("Needs coreclr build", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoFULLAOT))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/64127", typeof(PlatformDetection), nameof(PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
+    [ActiveIssue("needs triage", TestPlatforms.Android)]
+    [ActiveIssue("needs triage", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
     [Fact]
     public static void TestUnmanagedCallersOnlyValid_CallConvCdecl()
     {
@@ -91,6 +104,10 @@ public unsafe class UnmanagedCallersOnlyBasicTest
         Assert.Equal(expected, actual);
     }
 
+    [ActiveIssue("Needs coreclr build", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoFULLAOT))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/64127", typeof(PlatformDetection), nameof(PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
+    [ActiveIssue("needs triage", TestPlatforms.Android)]
+    [ActiveIssue("needs triage", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
     [Fact]
     public static void TestUnmanagedCallersOnlyValid_OnNewNativeThread()
     {
@@ -107,6 +124,10 @@ public unsafe class UnmanagedCallersOnlyBasicTest
         return DoubleImpl(n);
     }
 
+    [ActiveIssue("Needs coreclr build", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoFULLAOT))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/64127", typeof(PlatformDetection), nameof(PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
+    [ActiveIssue("needs triage", TestPlatforms.Android)]
+    [ActiveIssue("needs triage", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
     [Fact]
     // This test is about the interaction between Tiered Compilation and the UnmanagedCallersOnlyAttribute.
     public static void TestUnmanagedCallersOnlyValid_PrepareMethod()
@@ -137,6 +158,10 @@ public unsafe class UnmanagedCallersOnlyBasicTest
         return UnmanagedCallersOnlyDll.DoubleImplNative(n);
     }
 
+    [ActiveIssue("Needs coreclr build", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoFULLAOT))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/64127", typeof(PlatformDetection), nameof(PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
+    [ActiveIssue("needs triage", TestPlatforms.Android)]
+    [ActiveIssue("needs triage", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
     [Fact]
     public static void TestUnmanagedCallersOnlyMultipleTimesValid()
     {

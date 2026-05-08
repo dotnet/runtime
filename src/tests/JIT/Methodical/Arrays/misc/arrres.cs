@@ -13,7 +13,7 @@ namespace GCTest_arrres_cs
         public bool m_die;
         private static Test[] s_arr = new Test[50];
 
-        public Test(int indx) { _indx = indx; }
+        private Test(int indx) { _indx = indx; }
 
         internal virtual void CheckValid()
         {

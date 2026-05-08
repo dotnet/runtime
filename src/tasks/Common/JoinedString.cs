@@ -118,7 +118,7 @@ internal sealed class JoinedStringStreamWriter : StreamWriter
         NewLine = CompileTimeNewLine;
     }
 
-#if NET8_0_OR_GREATER
+#if NET
 #pragma warning disable  CA1822 // Mark members as static
 #pragma warning disable  IDE0060 // Remove unused parameter
     public void Write([InterpolatedStringHandlerArgument("")] StringSegmentStreamWriterHandler builder)
@@ -147,7 +147,7 @@ internal sealed class JoinedStringStreamWriter : StreamWriter
     }
 }
 
-#if NET8_0_OR_GREATER
+#if NET
 [InterpolatedStringHandler]
 internal ref struct StringSegmentStreamWriterHandler
 {

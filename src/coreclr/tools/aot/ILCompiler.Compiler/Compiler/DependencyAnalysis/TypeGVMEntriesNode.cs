@@ -46,6 +46,7 @@ namespace ILCompiler.DependencyAnalysis
         public TypeGVMEntriesNode(TypeDesc associatedType)
         {
             Debug.Assert(associatedType.IsTypeDefinition);
+            Debug.Assert(!associatedType.IsInterface);
             _associatedType = associatedType;
         }
 
@@ -70,8 +71,6 @@ namespace ILCompiler.DependencyAnalysis
 
                 foreach (var entry in ScanForInterfaceGenericVirtualMethodEntries())
                     InterfaceGenericVirtualMethodTableNode.GetGenericVirtualMethodImplementationDependencies(ref _staticDependencies, context, entry.CallingMethod, entry.ImplementationType, entry.ImplementationMethod);
-
-                Debug.Assert(_staticDependencies.Count > 0);
             }
 
             return _staticDependencies;
@@ -83,6 +82,11 @@ namespace ILCompiler.DependencyAnalysis
             {
                 // Non-Generic virtual methods are tracked by an orthogonal mechanism.
                 if (!decl.HasInstantiation)
+                    continue;
+
+                // We don't need to emit async variants since this is just a copy
+                // of the metadata
+                if (decl.IsAsyncVariant())
                     continue;
 
                 MethodDesc impl = _associatedType.FindVirtualFunctionTargetMethodOnObjectType(decl);
@@ -99,6 +103,11 @@ namespace ILCompiler.DependencyAnalysis
                 foreach (var method in iface.GetVirtualMethods())
                 {
                     if (!method.HasInstantiation)
+                        continue;
+
+                    // We don't need to emit async variants since this is just a copy
+                    // of the metadata
+                    if (method.IsAsyncVariant())
                         continue;
 
                     DefaultInterfaceMethodResolution resolution = DefaultInterfaceMethodResolution.None;

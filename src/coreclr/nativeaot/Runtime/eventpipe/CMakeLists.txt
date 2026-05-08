@@ -128,31 +128,23 @@ list(APPEND AOT_EVENTPIPE_SHIM_HEADERS
 
 
 list(APPEND AOT_EVENTPIPE_MANAGED_TO_NATIVE_SOURCES
-   ${RUNTIME_DIR}/eventpipeinternal.cpp
-   ${RUNTIME_DIR}/EnabledEventPipeInterface.cpp
-   ${RUNTIME_DIR}/runtimeeventinternal.cpp
+   ${NATIVEAOT_RUNTIME_DIR}/eventpipeinternal.cpp
+   ${NATIVEAOT_RUNTIME_DIR}/EnabledEventPipeInterface.cpp
+   ${NATIVEAOT_RUNTIME_DIR}/runtimeeventinternal.cpp
 )
 
 if (FEATURE_EVENT_TRACE)
   list(APPEND AOT_EVENTTRACE_SOURCES
-    ${RUNTIME_DIR}/eventtrace.cpp
-    ${RUNTIME_DIR}/profheapwalkhelper.cpp
+    ${NATIVEAOT_RUNTIME_DIR}/eventtrace.cpp
+    ${NATIVEAOT_RUNTIME_DIR}/eventtrace_bulktype.cpp
+    ${NATIVEAOT_RUNTIME_DIR}/eventtrace_gcheap.cpp
+    ${NATIVEAOT_RUNTIME_DIR}/profheapwalkhelper.cpp
   )
 
-  # These are carry-overs from .NET Native and only included for ETW currently
-  #   bulktype : directly emits via ETW with EventWrite
-  #   gcheap : GCHeapDump, GCHeapSurvivalAndMovement - not prioritizing for nativeaot yet
-  if (FEATURE_ETW)
-    list(APPEND AOT_EVENTTRACE_SOURCES
-      ${RUNTIME_DIR}/eventtrace_bulktype.cpp
-      ${RUNTIME_DIR}/eventtrace_gcheap.cpp
-    )
-  endif()
-
   if(CLR_CMAKE_TARGET_WIN32)
-    set_source_files_properties(${GEN_EVENTPIPE_PROVIDER_SOURCES} PROPERTIES COMPILE_FLAGS "/FI\"${RUNTIME_DIR}/eventpipe/NativeaotEventPipeSupport.h\"")
-    set_source_files_properties(${GEN_EVENTPIPE_PLAT_AGNOSTIC_SOURCES} PROPERTIES COMPILE_FLAGS "/FI\"${RUNTIME_DIR}/eventpipe/NativeaotEventPipeSupport.h\"")
-    set_source_files_properties(${AOT_EVENTTRACE_SOURCES} PROPERTIES COMPILE_FLAGS "/FI\"${RUNTIME_DIR}/eventpipe/NativeaotEventPipeSupport.h\"")
+    set_source_files_properties(${GEN_EVENTPIPE_PROVIDER_SOURCES} PROPERTIES COMPILE_FLAGS "/FI\"${NATIVEAOT_RUNTIME_DIR}/eventpipe/NativeaotEventPipeSupport.h\"")
+    set_source_files_properties(${GEN_EVENTPIPE_PLAT_AGNOSTIC_SOURCES} PROPERTIES COMPILE_FLAGS "/FI\"${NATIVEAOT_RUNTIME_DIR}/eventpipe/NativeaotEventPipeSupport.h\"")
+    set_source_files_properties(${AOT_EVENTTRACE_SOURCES} PROPERTIES COMPILE_FLAGS "/FI\"${NATIVEAOT_RUNTIME_DIR}/eventpipe/NativeaotEventPipeSupport.h\"")
   endif()
 endif()
 
@@ -174,7 +166,7 @@ set_target_properties(eventpipe-shared-objects PROPERTIES
 )
 if (CLR_CMAKE_TARGET_WIN32)
     target_compile_options(eventpipe-shared-objects PRIVATE
-        "/FI${RUNTIME_DIR}/eventpipe/NativeaotEventPipeSupport.h")
+        "/FI${NATIVEAOT_RUNTIME_DIR}/eventpipe/NativeaotEventPipeSupport.h")
 
     # Install the compile PDB for the eventpipe unity builds.
     install(FILES "${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/eventpipe-shared-objects.pdb" DESTINATION aotsdk COMPONENT nativeaot)
@@ -194,10 +186,10 @@ list(APPEND EVENTPIPE_SOURCES
 )
 
 list(APPEND AOT_EVENTPIPE_DISABLED_SOURCES
-  ${RUNTIME_DIR}/DisabledEventPipeInterface.cpp
-  ${RUNTIME_DIR}/disabledeventpipeinternal.cpp
-  ${RUNTIME_DIR}/disabledeventtrace.cpp
-  ${RUNTIME_DIR}/disabledruntimeeventinternal.cpp
+  ${NATIVEAOT_RUNTIME_DIR}/DisabledEventPipeInterface.cpp
+  ${NATIVEAOT_RUNTIME_DIR}/disabledeventpipeinternal.cpp
+  ${NATIVEAOT_RUNTIME_DIR}/disabledeventtrace.cpp
+  ${NATIVEAOT_RUNTIME_DIR}/disabledruntimeeventinternal.cpp
   ${GEN_EVENTPIPE_PLAT_AGNOSTIC_DISABLED_SOURCES}
 )
 

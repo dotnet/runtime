@@ -24,11 +24,6 @@ namespace R2RTest
             "mscordbi",
         };
 
-        private static string[] s_runtimeWindowsOnlyLibraries =
-        {
-            "mscorrc",
-        };
-
         private List<string> _compilationInputFiles;
 
         private List<string> _mainExecutables;
@@ -172,14 +167,7 @@ namespace R2RTest
                 {
                     passThroughFiles.Add(Path.Combine(options.CoreRootDirectory.FullName, (libraryPrefix + lib).AppendOSDllSuffix()));
                 }
-                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-                {
-                    foreach (string lib in s_runtimeWindowsOnlyLibraries)
-                    {
-                        passThroughFiles.Add(Path.Combine(options.CoreRootDirectory.FullName, lib.AppendOSDllSuffix()));
-                    }
-                }
-                else
+                if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                 {
                     // Several native lib*.so / dylib are needed by the runtime
                     foreach (string nativeLib in Directory.EnumerateFiles(options.CoreRootDirectory.FullName, "lib*".AppendOSDllSuffix()))

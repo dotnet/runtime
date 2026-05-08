@@ -19,9 +19,13 @@
 {
   .ver 0:0:0:0
 }
+.assembly extern Microsoft.DotNet.XUnitExtensions { .publickeytoken = (31 BF 38 56 AD 36 4E 35 ) }
+.assembly extern TestLibrary { .ver 0:0:0:0 }
+.assembly extern System.Runtime { .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A ) }
+
 .assembly nopiatestil
 {
-  .custom instance void [mscorlib]System.Runtime.CompilerServices.CompilationRelaxationsAttribute::.ctor(int32) = ( 01 00 08 00 00 00 00 00 ) 
+  .custom instance void [mscorlib]System.Runtime.CompilerServices.CompilationRelaxationsAttribute::.ctor(int32) = ( 01 00 08 00 00 00 00 00 )
   .custom instance void [mscorlib]System.Runtime.CompilerServices.RuntimeCompatibilityAttribute::.ctor() = ( 01 00 01 00 54 02 16 57 72 61 70 4E 6F 6E 45 78   // ....T..WrapNonEx
                                                                                                              63 65 70 74 69 6F 6E 54 68 72 6F 77 73 01 )       // ceptionThrows.
   .hash algorithm 0x00008004
@@ -313,7 +317,7 @@
 {
   .custom instance void [mscorlib]System.Runtime.InteropServices.TypeIdentifierAttribute::.ctor(string,
                                                                                                 string) = ( 01 00 09 49 6E 74 65 72 66 61 63 65 01 33 00 00 ) // ...Interface.3..
-  .method public hidebysig newslot abstract virtual 
+  .method public hidebysig newslot abstract virtual
           instance valuetype Struct6  InterfaceFunction(valuetype Struct7 param) cil managed
   {
   } // end of method EquivalentInterface3::InterfaceFunction
@@ -324,26 +328,26 @@
 .class public auto ansi sealed Test13Delegate
        extends [mscorlib]System.MulticastDelegate
 {
-  .method public hidebysig specialname rtspecialname 
+  .method public hidebysig specialname rtspecialname
           instance void  .ctor(object 'object',
                                native int 'method') runtime managed
   {
   } // end of method Test13Delegate::.ctor
 
-  .method public hidebysig newslot virtual 
+  .method public hidebysig newslot virtual
           instance valuetype Struct26  Invoke(valuetype Struct27 param) runtime managed
   {
   } // end of method Test13Delegate::Invoke
 
-  .method public hidebysig newslot virtual 
-          instance class [mscorlib]System.IAsyncResult 
+  .method public hidebysig newslot virtual
+          instance class [mscorlib]System.IAsyncResult
           BeginInvoke(valuetype Struct27 param,
                       class [mscorlib]System.AsyncCallback callback,
                       object 'object') runtime managed
   {
   } // end of method Test13Delegate::BeginInvoke
 
-  .method public hidebysig newslot virtual 
+  .method public hidebysig newslot virtual
           instance valuetype Struct26  EndInvoke(class [mscorlib]System.IAsyncResult result) runtime managed
   {
   } // end of method Test13Delegate::EndInvoke
@@ -353,26 +357,26 @@
 .class public auto ansi sealed Test14Delegate
        extends [mscorlib]System.MulticastDelegate
 {
-  .method public hidebysig specialname rtspecialname 
+  .method public hidebysig specialname rtspecialname
           instance void  .ctor(object 'object',
                                native int 'method') runtime managed
   {
   } // end of method Test14Delegate::.ctor
 
-  .method public hidebysig newslot virtual 
+  .method public hidebysig newslot virtual
           instance valuetype Struct28  Invoke(valuetype Struct29 param) runtime managed
   {
   } // end of method Test14Delegate::Invoke
 
-  .method public hidebysig newslot virtual 
-          instance class [mscorlib]System.IAsyncResult 
+  .method public hidebysig newslot virtual
+          instance class [mscorlib]System.IAsyncResult
           BeginInvoke(valuetype Struct29 param,
                       class [mscorlib]System.AsyncCallback callback,
                       object 'object') runtime managed
   {
   } // end of method Test14Delegate::BeginInvoke
 
-  .method public hidebysig newslot virtual 
+  .method public hidebysig newslot virtual
           instance valuetype Struct28  EndInvoke(class [mscorlib]System.IAsyncResult result) runtime managed
   {
   } // end of method Test14Delegate::EndInvoke
@@ -422,7 +426,7 @@
     IL_0022:  ret
   } // end of method Program::Test1_1
 
-  .method private hidebysig static class [testclassesil]TargetClassTest2 
+  .method private hidebysig static class [testclassesil]TargetClassTest2
           GetTest2Object() cil managed noinlining
   {
     // Code size       11 (0xb)
@@ -459,7 +463,7 @@
     IL_0022:  ret
   } // end of method Program::Test2
 
-  .method private hidebysig static class [testclassesil]TargetClassTest3 
+  .method private hidebysig static class [testclassesil]TargetClassTest3
           GetTest3Object() cil managed noinlining
   {
     // Code size       11 (0xb)
@@ -516,7 +520,7 @@
     IL_0020:  ret
   } // end of method Program::Test4
 
-  .method private hidebysig static class [testclassesil]TargetClassTest5 
+  .method private hidebysig static class [testclassesil]TargetClassTest5
           GetTest5Object() cil managed noinlining
   {
     // Code size       11 (0xb)
@@ -555,7 +559,7 @@
     IL_0023:  ret
   } // end of method Program::Test5
 
-  .method private hidebysig static class [testclassesil]TargetClassTest6 
+  .method private hidebysig static class [testclassesil]TargetClassTest6
           GetTest6Object() cil managed noinlining
   {
     // Code size       11 (0xb)
@@ -594,7 +598,7 @@
     IL_0027:  ret
   } // end of method Program::Test6
 
-  .method private hidebysig static class [testclassesil]TargetClassTest7 
+  .method private hidebysig static class [testclassesil]TargetClassTest7
           GetTest7Object() cil managed noinlining
   {
     // Code size       11 (0xb)
@@ -633,7 +637,7 @@
     IL_0027:  ret
   } // end of method Program::Test7
 
-  .method private hidebysig static class [testclassesil]TargetClassTest8 
+  .method private hidebysig static class [testclassesil]TargetClassTest8
           GetTest8Object() cil managed noinlining
   {
     // Code size       11 (0xb)
@@ -672,7 +676,7 @@
     IL_0027:  ret
   } // end of method Program::Test8
 
-  .method private hidebysig static class [testclassesil]TargetClassTest9 
+  .method private hidebysig static class [testclassesil]TargetClassTest9
           GetTest9Object() cil managed noinlining
   {
     // Code size       11 (0xb)
@@ -725,7 +729,7 @@
     IL_0045:  ret
   } // end of method Program::Test9
 
-  .method private hidebysig static class [testclassesil]TargetClassTest10 
+  .method private hidebysig static class [testclassesil]TargetClassTest10
           GetTest10Object() cil managed noinlining
   {
     // Code size       11 (0xb)
@@ -778,7 +782,7 @@
     IL_0045:  ret
   } // end of method Program::Test10
 
-  .method private hidebysig static class [testclassesil]TargetClassTest11`1<object> 
+  .method private hidebysig static class [testclassesil]TargetClassTest11`1<object>
           GetTest11Object() cil managed noinlining
   {
     // Code size       11 (0xb)
@@ -819,7 +823,7 @@
     IL_002d:  ret
   } // end of method Program::Test11
 
-  .method private hidebysig static class [testclassesil]TargetClassTest12`1<int32> 
+  .method private hidebysig static class [testclassesil]TargetClassTest12`1<int32>
           GetTest12Object() cil managed noinlining
   {
     // Code size       11 (0xb)
@@ -898,7 +902,7 @@
     IL_0043:  ret
   } // end of method Program::Test13
 
-  .method private hidebysig static class [testclassesil]TargetClassTest14 
+  .method private hidebysig static class [testclassesil]TargetClassTest14
           GetTest14Object() cil managed noinlining
   {
     // Code size       11 (0xb)
@@ -955,9 +959,10 @@
 
   .method public hidebysig static int32 Main(string[] args) cil managed noinlining
   {
-  .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
-      01 00 00 00
-  )
+    .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ConditionalFactAttribute::.ctor(class [System.Runtime]System.Type, string[]) = {
+        type([TestLibrary]TestLibrary.PlatformDetection)
+        string[1] ('IsTypeEquivalenceSupported')
+    }
   .entrypoint
   // Code size       249 (0xf9)
   .maxstack  2
@@ -995,7 +1000,7 @@
   IL_0025:  ldloc.2
   IL_0026:  stloc.s    CS$4$0001
   IL_0028:  ldloc.s    CS$4$0001
-  IL_002a:  switch     ( 
+  IL_002a:  switch     (
                         IL_006d,
                         IL_0075,
                         IL_007d,
@@ -1011,52 +1016,60 @@
                         IL_00cd,
                         IL_00d5,
                         IL_00dd)
-  IL_006b:  br.s       IL_00e5
+  IL_006b:  br       IL_00e5
   IL_006d:  call       void NoPIATest.Program::Test1_0()
   IL_0072:  nop
-  IL_0073:  br.s       IL_00e5
+  IL_0073:  br       IL_00e5
   IL_0075:  call       void NoPIATest.Program::Test1_1()
   IL_007a:  nop
-  IL_007b:  br.s       IL_00e5
+  IL_007b:  br       IL_00e5
   IL_007d:  call       void NoPIATest.Program::Test2()
   IL_0082:  nop
-  IL_0083:  br.s       IL_00e5
+  IL_0083:  br       IL_00e5
   IL_0085:  call       void NoPIATest.Program::Test3()
   IL_008a:  nop
-  IL_008b:  br.s       IL_00e5
+  IL_008b:  br       IL_00e5
   IL_008d:  call       void NoPIATest.Program::Test4()
   IL_0092:  nop
-  IL_0093:  br.s       IL_00e5
+  IL_0093:  br       IL_00e5
   IL_0095:  call       void NoPIATest.Program::Test5()
   IL_009a:  nop
-  IL_009b:  br.s       IL_00e5
+  IL_009b:  br       IL_00e5
   IL_009d:  call       void NoPIATest.Program::Test6()
   IL_00a2:  nop
-  IL_00a3:  br.s       IL_00e5
+  IL_00a3:  br       IL_00e5
   IL_00a5:  call       void NoPIATest.Program::Test7()
   IL_00aa:  nop
-  IL_00ab:  br.s       IL_00e5
+  IL_00ab:  br       IL_00e5
   IL_00ad:  call       void NoPIATest.Program::Test8()
   IL_00b2:  nop
-  IL_00b3:  br.s       IL_00e5
-  IL_00b5:  call       void NoPIATest.Program::Test9()
-  IL_00ba:  nop
-  IL_00bb:  br.s       IL_00e5
-  IL_00bd:  call       void NoPIATest.Program::Test10()
-  IL_00c2:  nop
-  IL_00c3:  br.s       IL_00e5
+  IL_00b3:  br       IL_00e5
+
+  IL_00b5:
+  call bool [TestLibrary]TestLibrary.PlatformDetection::get_IsVarArgSupported()
+  brfalse.s IL_SkipVarArgsTests_9
+
+            call       void NoPIATest.Program::Test9()
+  IL_SkipVarArgsTests_9:  nop
+  IL_00bb:  br       IL_00e5
+  IL_00bd:
+  call bool [TestLibrary]TestLibrary.PlatformDetection::get_IsVarArgSupported()
+  brfalse.s IL_SkipVarArgsTests_10
+           call       void NoPIATest.Program::Test10()
+  IL_SkipVarArgsTests_10:  nop
+  IL_00c3:  br       IL_00e5
   IL_00c5:  call       void NoPIATest.Program::Test11()
   IL_00ca:  nop
-  IL_00cb:  br.s       IL_00e5
+  IL_00cb:  br       IL_00e5
   IL_00cd:  call       void NoPIATest.Program::Test12()
   IL_00d2:  nop
-  IL_00d3:  br.s       IL_00e5
+  IL_00d3:  br       IL_00e5
   IL_00d5:  call       void NoPIATest.Program::Test13()
   IL_00da:  nop
-  IL_00db:  br.s       IL_00e5
+  IL_00db:  br       IL_00e5
   IL_00dd:  call       void NoPIATest.Program::Test14()
   IL_00e2:  nop
-  IL_00e3:  br.s       IL_00e5
+  IL_00e3:  br       IL_00e5
   IL_00e5:  nop
   IL_00e6:  ldloc.2
   IL_00e7:  ldc.i4.1
@@ -1075,7 +1088,7 @@
 
   } // end of method Program::Main
 
-  .method public hidebysig specialname rtspecialname 
+  .method public hidebysig specialname rtspecialname
           instance void  .ctor() cil managed
   {
     // Code size       7 (0x7)

@@ -10,5 +10,8 @@
   <ItemGroup>
     <Compile Include="stackoverflow.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
 </Project>
 

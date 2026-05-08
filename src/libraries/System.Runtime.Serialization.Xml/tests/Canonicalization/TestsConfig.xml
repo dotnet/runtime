@@ -98,18 +98,18 @@
   <testcase name="ReaderWriter_C14N_DifferentReadersWriters_ParamGroup2">
     <!--another set-->
     <input>
-      <argu name="XmlInput" value="ReaderWriter_C14N_BaselineXML_OnlyLF.xml" />
-      <argu name="BaselineFile" value="ReaderWriter_C14N_BaselineXML_OnlyLF.xml" />
+      <argu name="XmlInput" value="baselines/ReaderWriter_C14N_BaselineXML_OnlyLF.xml" />
+      <argu name="BaselineFile" value="baselines/ReaderWriter_C14N_BaselineXML_OnlyLF.xml" />
       <argu name="NiceName" value="with LFs" />
     </input>
     <input>
-      <argu name="XmlInput" value="ReaderWriter_C14N_BaselineXML.xml" />
-      <argu name="BaselineFile" value="ReaderWriter_C14N_BaselineXML_OnlyLF.xml" />
+      <argu name="XmlInput" value="baselines/ReaderWriter_C14N_BaselineXML.xml" />
+      <argu name="BaselineFile" value="baselines/ReaderWriter_C14N_BaselineXML_OnlyLF.xml" />
       <argu name="NiceName" value="with CRLFs" />
     </input>
     <input>
-      <argu name="XmlInput" value="ReaderWriter_C14N_BaselineXML_NoCRLF.xml" />
-      <argu name="BaselineFile" value="ReaderWriter_C14N_BaselineXML_NoCRLF.xml" />
+      <argu name="XmlInput" value="baselines/ReaderWriter_C14N_BaselineXML_NoCRLF.xml" />
+      <argu name="BaselineFile" value="baselines/ReaderWriter_C14N_BaselineXML_NoCRLF.xml" />
       <argu name="NiceName" value="without CRLFs" />
     </input>
   </testcase>
@@ -130,18 +130,18 @@
       <argu name="ReaderWriterType" value="Text" />
       <argu name="Encoding" value="utf-8" />
       <argu name="MustSupportC14N" value="true" />
-      <argu name="XmlInput" value="ReaderWriter_C14N_BaselineXML_UTF8.xml" />
+      <argu name="XmlInput" value="baselines/ReaderWriter_C14N_BaselineXML_UTF8.xml" />
     </input>
     <input>
       <argu name="ReaderWriterType" value="Binary" />
       <argu name="Encoding" value="utf-8" />
       <argu name="MustSupportC14N" value="true" />
-      <argu name="XmlInput" value="ReaderWriter_C14N_BaselineXML_Binary.xml" />
+      <argu name="XmlInput" value="baselines/ReaderWriter_C14N_BaselineXML_Binary.xml" />
     </input>
   </testcase>
   <testcase name="CryptoCanonicalization">
     <input>
-      <argu name="FilePath" value="Boundary.xml" />
+      <argu name="FilePath" value="baselines/Boundary.xml" />
       <argu name="IncludeComments" value="False" />
       <argu name="InclusivePrefixes" value="" />
       <argu name="StartAtElement" value="" />
@@ -150,7 +150,7 @@
       <argu name="Result3" value="True" />
     </input>
     <input>
-      <argu name="FilePath" value="Boundary.xml" />
+      <argu name="FilePath" value="baselines/Boundary.xml" />
       <argu name="IncludeComments" value="True" />
       <argu name="InclusivePrefixes" value="" />
       <argu name="StartAtElement" value="" />
@@ -159,7 +159,7 @@
       <argu name="Result3" value="True" />
     </input>
     <input>
-      <argu name="FilePath" value="InclusiveImport.xml" />
+      <argu name="FilePath" value="baselines/InclusiveImport.xml" />
       <argu name="IncludeComments" value="True" />
       <argu name="InclusivePrefixes" value="" />
       <argu name="StartAtElement" value="" />
@@ -168,7 +168,7 @@
       <argu name="Result3" value="True" />
     </input>
     <input>
-      <argu name="FilePath" value="InclusiveImport.xml" />
+      <argu name="FilePath" value="baselines/InclusiveImport.xml" />
       <argu name="IncludeComments" value="False" />
       <argu name="InclusivePrefixes" value="n3" />
       <argu name="StartAtElement" value="" />
@@ -177,7 +177,7 @@
       <argu name="Result3" value="True" />
     </input>
     <input>
-      <argu name="FilePath" value="InclusiveImport.xml" />
+      <argu name="FilePath" value="baselines/InclusiveImport.xml" />
       <argu name="IncludeComments" value="True" />
       <argu name="InclusivePrefixes" value="#default n3" />
       <argu name="StartAtElement" value="y3" />
@@ -186,7 +186,7 @@
       <argu name="Result3" value="False" />
     </input>
     <input>
-      <argu name="FilePath" value="InclusiveImport.xml" />
+      <argu name="FilePath" value="baselines/InclusiveImport.xml" />
       <argu name="IncludeComments" value="True" />
       <argu name="InclusivePrefixes" value="#default" />
       <argu name="StartAtElement" value="n1:y5" />
@@ -195,7 +195,7 @@
       <argu name="Result3" value="True" />
     </input>
     <input>
-      <argu name="FilePath" value="AttrNorm.xml" />
+      <argu name="FilePath" value="baselines/AttrNorm.xml" />
       <argu name="IncludeComments" value="False" />
       <argu name="InclusivePrefixes" value="" />
       <argu name="StartAtElement" value="" />
@@ -204,7 +204,7 @@
       <argu name="Result3" value="True" />
     </input>
     <input>
-      <argu name="FilePath" value="LineFeedNorm.xml" />
+      <argu name="FilePath" value="baselines/LineFeedNorm.xml" />
       <argu name="IncludeComments" value="False" />
       <argu name="InclusivePrefixes" value="" />
       <argu name="StartAtElement" value="" />
@@ -213,7 +213,7 @@
       <argu name="Result3" value="True" />
     </input>
     <input>
-      <argu name="FilePath" value="ExcC14nSpecExample1.xml" />
+      <argu name="FilePath" value="baselines/ExcC14nSpecExample1.xml" />
       <argu name="IncludeComments" value="False" />
       <argu name="InclusivePrefixes" value="" />
       <argu name="StartAtElement" value="" />
@@ -222,7 +222,7 @@
       <argu name="Result3" value="True" />     
     </input>
     <input>
-      <argu name="FilePath" value="ExcC14nSpecExample2.xml" />
+      <argu name="FilePath" value="baselines/ExcC14nSpecExample2.xml" />
       <argu name="IncludeComments" value="False" />
       <argu name="InclusivePrefixes" value="" />
       <argu name="StartAtElement" value="" />
@@ -231,7 +231,7 @@
       <argu name="Result3" value="True" />
     </input>
     <input>
-      <argu name="FilePath" value="AttrSort.xml" />
+      <argu name="FilePath" value="baselines/AttrSort.xml" />
       <argu name="IncludeComments" value="False" />
       <argu name="InclusivePrefixes" value="" />
       <argu name="StartAtElement" value="" />
@@ -240,7 +240,7 @@
       <argu name="Result3" value="True" />      
     </input>
     <input>
-      <argu name="FilePath" value="SoapMessage1.xml" />
+      <argu name="FilePath" value="baselines/SoapMessage1.xml" />
       <argu name="IncludeComments" value="False" />
       <argu name="InclusivePrefixes" value="wsse" />
       <argu name="StartAtElement" value="ds:SignedInfo" />
@@ -249,7 +249,7 @@
       <argu name="Result3" value="False" />
     </input>
     <input>
-      <argu name="FilePath" value="CharEntities.xml" />
+      <argu name="FilePath" value="baselines/CharEntities.xml" />
       <argu name="IncludeComments" value="True" />
       <argu name="InclusivePrefixes" value="#default" />
       <argu name="StartAtElement" value="" />

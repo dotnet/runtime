@@ -47,7 +47,7 @@ namespace Internal.Reflection.Extensions.NonPortable
                         callTryGetMethod = false;
                         methodHandle = QMethodDefinition.FromObjectAndInt(resolver->Reader, resolver->Handle);
 
-                        if (!TypeLoaderEnvironment.Instance.TryGetRuntimeMethodHandleComponents(resolver->GVMMethodHandle, out _, out _, out genericMethodTypeArgumentHandles))
+                        if (!TypeLoaderEnvironment.Instance.TryGetRuntimeMethodHandleComponents(resolver->GVMMethodHandle, out _, out QMethodDefinition dummy, out genericMethodTypeArgumentHandles))
                             throw new NotSupportedException(SR.DelegateGetMethodInfo_NoInstantiation);
                     }
                 }
@@ -57,13 +57,9 @@ namespace Internal.Reflection.Extensions.NonPortable
             {
                 if (!ReflectionExecution.ExecutionEnvironment.TryGetMethodForOriginalLdFtnResult(originalLdFtnResult, ref typeOfFirstParameterIfInstanceDelegate, out methodHandle, out genericMethodTypeArgumentHandles))
                 {
-                    ReflectionExecution.ExecutionEnvironment.GetFunctionPointerAndInstantiationArgumentForOriginalLdFtnResult(originalLdFtnResult, out IntPtr ip, out IntPtr _);
-
-                    string methodDisplayString = RuntimeAugments.TryGetMethodDisplayStringFromIp(ip);
-                    if (methodDisplayString == null)
-                        throw new NotSupportedException(SR.DelegateGetMethodInfo_NoDynamic);
-                    else
-                        throw new NotSupportedException(SR.Format(SR.DelegateGetMethodInfo_NoDynamic_WithDisplayString, methodDisplayString));
+                    // If this is reached, it's a compiler bug - it should not be possible to get a delegate that points
+                    // to managed code that doesn't have MethodInfo
+                    throw new NotSupportedException(SR.DelegateGetMethodInfo_NoDynamic);
                 }
             }
             return (MethodInfo)ExecutionDomain.GetMethod(typeOfFirstParameterIfInstanceDelegate, methodHandle, genericMethodTypeArgumentHandles);

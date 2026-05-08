@@ -57,7 +57,7 @@ public:
     //
     //--------------------------------------------------------------------------------------------
     static TypeHandle GetTypeReferencedByCustomAttribute(LPCUTF8 szTypeName, Assembly *pRequestingAssembly);
-    static TypeHandle GetTypeReferencedByCustomAttribute(LPCWSTR szTypeName, Assembly *pRequestingAssembly);
+    static TypeHandle GetTypeReferencedByCustomAttribute(LPCWSTR szTypeName, Assembly *pRequestingAssembly, MethodDesc* unsafeAccessorMethod = NULL);
 };
 
 #endif

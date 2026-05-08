@@ -47,28 +47,6 @@ namespace LibraryImportGenerator.UnitTests
             => CustomElementMarshalling(type, marshallerType, preDeclaration);
 
         /// <summary>
-        /// Partially define attribute for pre-.NET 7.0
-        /// </summary>
-        public static readonly string LibraryImportAttributeDeclaration = """
-            namespace System.Runtime.InteropServices
-            {
-                internal enum StringMarshalling
-                {
-                    Custom = 0,
-                    Utf8,
-                    Utf16,
-                }
-
-                sealed class LibraryImportAttribute : System.Attribute
-                {
-                    public LibraryImportAttribute(string a) { }
-                    public StringMarshalling StringMarshalling { get; set; }
-                    public Type StringMarshallingCustomType { get; set; }
-                }
-            }
-            """;
-
-        /// <summary>
         /// Trivial declaration of LibraryImport usage
         /// </summary>
         public static readonly string TrivialClassDeclarations = """
@@ -1438,5 +1416,113 @@ namespace LibraryImportGenerator.UnitTests
 
             public static string TypeUsage(string attr) => MarshalUsingParametersAndModifiers("S", "Marshaller", attr);
         }
+
+        public const string ImproperCollectionWithMarshalUsingOnElements = """
+            using System;
+            using System.Collections.Generic;
+            using System.Runtime.InteropServices;
+            using System.Runtime.InteropServices.Marshalling;
+
+            class MyList<T>
+            {
+            }
+
+            class NotMyList {}
+
+            class Example
+            {
+                public int Value;
+            }
+
+            internal static partial class PInvoke
+            {
+                [LibraryImport("NativeLibrary", EntryPoint = "ProcessExample")]
+                public static partial int ProcessExample([MarshalUsing(typeof(ListMarshaller<,>), CountElementName = nameof(exampleCount)), MarshalUsing(typeof(ExampleMarshaller), ElementIndirectionDepth = 1)] MyList<Example> examples, ref int exampleCount);
+            }
+
+            [ContiguousCollectionMarshaller]
+            [CustomMarshaller(typeof(MyList<>), MarshalMode.Default, typeof(ListMarshaller<,>.Marshaller))]
+            public unsafe static class ListMarshaller<T, TUnmanagedElement> where TUnmanagedElement : unmanaged
+            {
+                public static class Marshaller
+                {
+                    public static byte* AllocateContainerForUnmanagedElements(NotMyList managed, out int numElements)
+                    {
+                        numElements = default;
+                        return default;
+                    }
+
+                    public static ReadOnlySpan<T> GetManagedValuesSource(NotMyList managed)
+                        => default;
+
+                    public static Span<TUnmanagedElement> GetUnmanagedValuesDestination(byte* unmanaged, int numElements)
+                        => new Span<TUnmanagedElement>((TUnmanagedElement*)unmanaged, numElements);
+
+                    public static List<T> AllocateContainerForManagedElements(byte* unmanaged, int length)
+                        => new List<T>(length);
+
+                    public static Span<T> GetManagedValuesDestination(NotMyList managed)
+                        => default;
+
+                    public static ReadOnlySpan<TUnmanagedElement> GetUnmanagedValuesSource(byte* nativeValue, int numElements)
+                        => new ReadOnlySpan<TUnmanagedElement>((TUnmanagedElement*)nativeValue, numElements);
+
+                    public static void Free(byte* unmanaged)
+                        => NativeMemory.Free(unmanaged);
+                }
+            }
+
+            [CustomMarshaller(typeof(Example), MarshalMode.ManagedToUnmanagedIn, typeof(ManagedToNative))]
+            [CustomMarshaller(typeof(Example), MarshalMode.ManagedToUnmanagedOut, typeof(ManagedToNativeOutFinally))]
+            static class ExampleMarshaller
+            {
+                public static class ManagedToNativeOutFinally
+                {
+                    public static Example ConvertToManagedFinally(int managed)
+                    {
+                        return default;
+                    }
+
+                    public static void Free(int unmanaged)
+                    {
+                    }
+                }
+
+                public struct ManagedToNative
+                {
+                    Example managed;
+
+                    public static int BufferSize => sizeof(int);
+
+                    public void FromManaged(Example managed, Span<int> buffer) => this.managed = managed;
+
+                    public int ToUnmanaged() => managed.Value;
+
+                    public void OnInvoked() { }
+
+                    public void Free() { }
+                }
+            }
+            """;
+
+        public static string ComInterfaceWithNativeMarshallingInLibraryImport => """
+            using System.Runtime.InteropServices;
+            using System.Runtime.InteropServices.Marshalling;
+
+            [GeneratedComInterface]
+            [Guid("0E7204B5-4B61-4E06-B872-82BA652F2ECA")]
+            [NativeMarshalling(typeof(UniqueComInterfaceMarshaller<IFoo>))]
+            partial interface IFoo
+            {
+                void DoWork();
+            }
+
+            static partial class PInvokes
+            {
+                [LibraryImport("lib")]
+                [return: MarshalAs(UnmanagedType.I1)]
+                public static partial bool TryGetFoo(out IFoo foo);
+            }
+            """;
     }
 }

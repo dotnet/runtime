@@ -9,7 +9,7 @@
 
 using ManagedToNativeExceptionCallback = Interop::ManagedToNativeExceptionCallback;
 
-bool Interop::ShouldCheckForPendingException(_In_ NDirectMethodDesc* md)
+bool Interop::ShouldCheckForPendingException(_In_ PInvokeMethodDesc* md)
 {
     CONTRACTL
     {
@@ -34,13 +34,13 @@ bool Interop::ShouldCheckForPendingException(_In_ NDirectMethodDesc* md)
 
 ManagedToNativeExceptionCallback Interop::GetPropagatingExceptionCallback(
     _In_ EECodeInfo* codeInfo,
-    _In_ OBJECTHANDLE throwable,
+    _In_ OBJECTREF throwable,
     _Outptr_ void** context)
 {
     CONTRACT(ManagedToNativeExceptionCallback)
     {
         NOTHROW;
-        MODE_PREEMPTIVE;
+        MODE_COOPERATIVE;
         PRECONDITION(codeInfo != NULL);
         PRECONDITION(throwable != NULL);
         PRECONDITION(context != NULL);
@@ -145,7 +145,7 @@ void Interop::OnAfterGCScanRoots(_In_ bool isConcurrent)
     CONTRACTL_END;
 
 #ifdef FEATURE_COMWRAPPERS
-    ComWrappersNative::AfterRefCountedHandleCallbacks();
+    ComWrappersNative::OnAfterGCScanRoots();
 #endif // FEATURE_COMWRAPPERS
 
 #ifdef FEATURE_OBJCMARSHAL

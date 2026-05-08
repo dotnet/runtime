@@ -258,7 +258,7 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
             }
         }
 
-        [ConditionalFact(nameof(ECDsa224Available))]
+        [ConditionalFact(typeof(ECDiffieHellmanTests), nameof(ECDsa224Available))]
         public static void TestNamedImportValidationNegative()
         {
             if (!ECDiffieHellmanFactory.ExplicitCurvesSupported)
@@ -343,7 +343,7 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
             }
         }
 
-        [ConditionalFact(nameof(ECDsa224Available))]
+        [ConditionalFact(typeof(ECDiffieHellmanTests), nameof(ECDsa224Available))]
         public static void TestNamedCurveWithExplicitKey()
         {
             if (!ECDiffieHellmanFactory.ExplicitCurvesSupported)
@@ -393,7 +393,7 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
             }
         }
 
-        [ConditionalFact(nameof(CanDeriveNewPublicKey))]
+        [ConditionalFact(typeof(ECDiffieHellmanTests), nameof(CanDeriveNewPublicKey))]
         public static void ImportFromPrivateOnlyKey()
         {
             byte[] expectedX = "00d45615ed5d37fde699610a62cd43ba76bedd8f85ed31005fe00d6450fbbd101291abd96d4945a8b57bc73b3fe9f4671105309ec9b6879d0551d930dac8ba45d255".HexToByteArray();

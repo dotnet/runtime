@@ -63,6 +63,8 @@ public class Interfaces
         TestDefaultDynamicStaticGeneric.Run();
         TestDynamicStaticGenericVirtualMethods.Run();
         TestRuntime109496Regression.Run();
+        TestRuntime113664Regression.Run();
+        TestRuntime125577Regression.Run();
 
         return Pass;
     }
@@ -1977,4 +1979,98 @@ public class Interfaces
                 throw new Exception();
         }
     }
+
+    class TestRuntime113664Regression
+    {
+        class Unit;
+        class Atom1;
+        class Atom2;
+
+        class Gen<T>;
+
+        interface IFoo<T>
+        {
+            static abstract string Frob<U>();
+        }
+
+        class ImplementedDirectly<T> : IFoo<T>
+        {
+            static string IFoo<T>.Frob<U>() => $"ImplementedDirectly: {typeof(T).Name}-{typeof(U).Name}";
+        }
+
+        class Base<T>
+        {
+            public static string Frob<U>() => $"Base: {typeof(T).Name}<{typeof(T).GetGenericArguments()[0].Name}>-{typeof(U).Name}";
+        }
+
+        class ImplementedInBase<T> : Base<Gen<T>>, IFoo<T>
+        {
+        }
+
+        public static void Run()
+        {
+            if (Frob<ImplementedDirectly<Atom1>, Atom1, Unit>() != "ImplementedDirectly: Atom1-Unit")
+                throw new Exception();
+
+            if (Frob<ImplementedInBase<Atom1>, Atom1, Unit>() != "Base: Gen`1<Atom1>-Unit")
+                throw new Exception();
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static Type GetAtom2() => typeof(Atom2);
+
+            {
+                MethodInfo mi = typeof(TestRuntime113664Regression).GetMethod(nameof(FrobDirectWrapper)).MakeGenericMethod(GetAtom2(), typeof(Unit));
+                if ((string)mi.Invoke(null, []) != "ImplementedDirectly: Atom2-Unit")
+                    throw new Exception();
+            }
+
+            {
+                MethodInfo mi = typeof(TestRuntime113664Regression).GetMethod(nameof(FrobBaseWrapper)).MakeGenericMethod(GetAtom2(), typeof(Unit));
+                if ((string)mi.Invoke(null, []) != "Base: Gen`1<Atom2>-Unit")
+                    throw new Exception();
+            }
+        }
+
+        public static string FrobDirectWrapper<T, U>() where T : class where U : class
+        {
+            return Frob<ImplementedDirectly<T>, T, U>();
+        }
+
+        public static string FrobBaseWrapper<T, U>() where T : class where U : class
+        {
+            return Frob<ImplementedInBase<T>, T, U>();
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static string Frob<T, U, V>() where T : class, IFoo<U> where U : class where V : class
+        {
+            return T.Frob<V>();
+        }
+    }
+
+    class TestRuntime125577Regression
+    {
+        class Shapeshifter : IDynamicInterfaceCastable
+        {
+            bool _result;
+            public Shapeshifter(bool result) => _result = result;
+
+            public RuntimeTypeHandle GetInterfaceImplementation(RuntimeTypeHandle interfaceType) => throw new NotImplementedException();
+            public bool IsInterfaceImplemented(RuntimeTypeHandle interfaceType, bool throwIfNotImplemented) => _result;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static bool Is(object o, bool expected) => o is IEnumerable<object> == expected;
+
+        public static void Run()
+        {
+            // Call multiple times in case we just flushed the cast cache (when we flush we don't store).
+            if (!Is(new Shapeshifter(true), true)
+                || !Is(new Shapeshifter(false), false)
+                || !Is(new Shapeshifter(true), true)
+                || !Is(new Shapeshifter(false), false))
+                throw new Exception();
+        }
+    }
+
 }

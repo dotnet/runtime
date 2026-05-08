@@ -4,6 +4,9 @@
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <!-- disabled due to https://github.com/dotnet/runtime/issues/65671 -->
     <XUnitUseRandomizedTestOrderer>false</XUnitUseRandomizedTestOrderer>
+    <!-- https://github.com/dotnet/runtime/issues/126862 -->
+    <EnableTrimAnalyzer>false</EnableTrimAnalyzer>
+    <EnableAotAnalyzer>false</EnableAotAnalyzer>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="BigInteger\absolutevalue.cs" />
@@ -42,10 +45,12 @@
     <Compile Include="BigInteger\op_multiply.cs" />
     <Compile Include="BigInteger\op_not.cs" />
     <Compile Include="BigInteger\op_or.cs" />
+    <Compile Include="BigInteger\Rotate.cs" />
     <Compile Include="BigInteger\op_rightshift.cs" />
     <Compile Include="BigInteger\op_xor.cs" />
     <Compile Include="BigInteger\parse.cs" />
     <Compile Include="BigInteger\pow.cs" />
+    <Compile Include="BigInteger\BigIntegerPropertyTests.cs" />
     <Compile Include="BigInteger\properties.cs" />
     <Compile Include="BigInteger\remainder.cs" />
     <Compile Include="BigInteger\SampleGeneration.cs" />

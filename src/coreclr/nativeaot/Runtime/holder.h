@@ -3,7 +3,7 @@
 
 // -----------------------------------------------------------------------------------------------------------
 // Cut down versions of the Holder and Wrapper template classes used in the CLR. If this coding pattern is
-// also common in the Redhawk code then it might be worth investigating pulling the whole holder.h header file
+// also common in the NativeAOT code then it might be worth investigating pulling the whole holder.h header file
 // over (a quick look indicates it might not drag in too many extra dependencies).
 //
 

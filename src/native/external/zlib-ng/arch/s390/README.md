@@ -222,56 +222,44 @@ need for constantly changing the patch.
 ## Configuring the builder.
 
 ### Install prerequisites.
-
 ```
 sudo dnf install podman
 ```
 
-### Add actions-runner service.
+### Create a config file, needs github personal access token.
+Access token needs permissions; Repo Admin RW, Org Self-hosted runners RW.
+For details, consult
+https://docs.github.com/en/rest/actions/self-hosted-runners?apiVersion=2022-11-28#create-a-registration-token-for-a-repository
 
+#### Create file /etc/actions-runner:
+```
+REPO=<owner>/<name>
+PAT_TOKEN=<github_pat_***>
+```
+
+#### Set permissions on /etc/actions-runner:
+```
+chmod 600 /etc/actions-runner
+```
+
+### Add actions-runner service.
 ```
 sudo cp self-hosted-builder/actions-runner.service /etc/systemd/system/
 sudo systemctl daemon-reload
 ```
 
-### Create a config file, needs github personal access token.
-
-```
-# Create file /etc/actions-runner
-repo=<owner>/<name>
-access_token=<ghp_***>
-```
-
-Access token should have the repo scope, consult
-https://docs.github.com/en/rest/reference/actions#create-a-registration-token-for-a-repository
-for details.
-
 ### Autostart actions-runner.
-
 ```
 $ sudo systemctl enable --now actions-runner
 ```
 
-## Rebuilding the container
-
-In order to update the `gaplib-actions-runner` podman container, e.g. to get the
-latest OS security fixes, follow these steps:
+### Add auto-rebuild cronjob
 ```
-# Stop actions-runner service
-sudo systemctl stop actions-runner
+sudo cp self-hosted-builder/actions-runner-rebuild.sh /etc/cron.weekly/
+chmod +x /etc/cron.weekly/actions-runner-rebuild.sh
+```
 
-# Delete old container
-sudo podman container rm gaplib-actions-runner
-
-# Delete old image
-sudo podman image rm localhost/zlib-ng/actions-runner
-
-# Build image
-sudo podman build --squash -f Dockerfile.zlib-ng --tag zlib-ng/actions-runner --build-arg .
-
-# Build container
-sudo podman create --name=gaplib-actions-runner --env-file=/etc/actions-runner --init --interactive --volume=actions-runner-temp:/home/actions-runner zlib-ng/actions-runner
-
-# Start actions-runner service
-sudo systemctl start actions-runner
+## Building / Rebuilding the container
+```
+sudo /etc/cron.weekly/actions-runner-rebuild.sh
 ```

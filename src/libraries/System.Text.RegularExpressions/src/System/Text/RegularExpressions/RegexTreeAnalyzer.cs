@@ -44,13 +44,9 @@ namespace System.Text.RegularExpressions
                     // Certain kinds of nodes incur backtracking logic themselves: add them to the backtracking collection.
                     // We may later find that a node contains another that has backtracking; we'll add nodes based on that
                     // after examining the children.
-                    switch (node.Kind)
+                    if (node.IsBacktrackingConstruct)
                     {
-                        case RegexNodeKind.Alternate:
-                        case RegexNodeKind.Loop or RegexNodeKind.Lazyloop when node.M != node.N:
-                        case RegexNodeKind.Oneloop or RegexNodeKind.Notoneloop or RegexNodeKind.Setloop or RegexNodeKind.Onelazy or RegexNodeKind.Notonelazy or RegexNodeKind.Setlazy when node.M != node.N:
-                            (results._mayBacktrack ??= new HashSet<RegexNode>()).Add(node);
-                            break;
+                        (results._mayBacktrack ??= new HashSet<RegexNode>()).Add(node);
                     }
                 }
 
@@ -158,7 +154,7 @@ namespace System.Text.RegularExpressions
         internal readonly HashSet<RegexNode> _isAtomicByAncestor = new(); // since the root is implicitly atomic, every tree will contain atomic-by-ancestor nodes
         /// <summary>Set of nodes that directly or indirectly contain capture groups.</summary>
         internal readonly HashSet<RegexNode> _containsCapture = new(); // the root is a capture, so this will always contain at least the root node
-        /// <summary>Set of nodes that directly or indirectly contain backtracking constructs that aren't hidden internaly by atomic constructs.</summary>
+        /// <summary>Set of nodes that directly or indirectly contain backtracking constructs that aren't hidden internally by atomic constructs.</summary>
         internal HashSet<RegexNode>? _mayBacktrack;
         /// <summary>Set of nodes contained inside loops.</summary>
         internal HashSet<RegexNode>? _inLoops;

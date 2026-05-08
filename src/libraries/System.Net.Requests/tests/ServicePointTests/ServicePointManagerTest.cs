@@ -9,6 +9,7 @@ using Xunit;
 
 namespace System.Net.Tests
 {
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
     public class ServicePointManagerTest
     {
         [Fact]
@@ -284,7 +285,6 @@ namespace System.Net.Tests
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/36217", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoInterpreter))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/64674", typeof(PlatformDetection), nameof(PlatformDetection.IsArmv6Process))]
         public static async Task FindServicePoint_Collectible()
         {
             await RemoteExecutor.Invoke(() =>

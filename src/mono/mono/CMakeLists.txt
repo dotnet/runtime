@@ -1,6 +1,7 @@
 project(mono)
 
 set(subdirs
+  minipal
   eglib
   utils
   sgen

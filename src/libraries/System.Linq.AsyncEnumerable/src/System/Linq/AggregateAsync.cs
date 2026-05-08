@@ -24,8 +24,8 @@ namespace System.Linq
             Func<TSource, TSource, TSource> func,
             CancellationToken cancellationToken = default)
         {
-            ThrowHelper.ThrowIfNull(source);
-            ThrowHelper.ThrowIfNull(func);
+            ArgumentNullException.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(func);
 
             return Impl(source, func, cancellationToken);
 
@@ -34,28 +34,20 @@ namespace System.Linq
                 Func<TSource, TSource, TSource> func,
                 CancellationToken cancellationToken)
             {
-                TSource result;
+                await using IAsyncEnumerator<TSource> e = source.GetAsyncEnumerator(cancellationToken);
 
-                IAsyncEnumerator<TSource> e = source.GetAsyncEnumerator(cancellationToken);
-                try
+                if (!await e.MoveNextAsync())
                 {
-                    if (!await e.MoveNextAsync().ConfigureAwait(false))
-                    {
-                        ThrowHelper.ThrowNoElementsException();
-                    }
-
-                    result = e.Current;
-                    while (await e.MoveNextAsync().ConfigureAwait(false))
-                    {
-                        result = func(result, e.Current);
-                    }
-
-                    return result;
+                    ThrowHelper.ThrowNoElementsException();
                 }
-                finally
+
+                TSource result = e.Current;
+                while (await e.MoveNextAsync())
                 {
-                    await e.DisposeAsync().ConfigureAwait(false);
+                    result = func(result, e.Current);
                 }
+
+                return result;
             }
         }
 
@@ -73,8 +65,8 @@ namespace System.Linq
             Func<TSource, TSource, CancellationToken, ValueTask<TSource>> func,
             CancellationToken cancellationToken = default)
         {
-            ThrowHelper.ThrowIfNull(source);
-            ThrowHelper.ThrowIfNull(func);
+            ArgumentNullException.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(func);
 
             return Impl(source, func, cancellationToken);
 
@@ -83,28 +75,20 @@ namespace System.Linq
                 Func<TSource, TSource, CancellationToken, ValueTask<TSource>> func,
                 CancellationToken cancellationToken)
             {
-                TSource result;
+                await using IAsyncEnumerator<TSource> e = source.GetAsyncEnumerator(cancellationToken);
 
-                IAsyncEnumerator<TSource> e = source.GetAsyncEnumerator(cancellationToken);
-                try
+                if (!await e.MoveNextAsync())
                 {
-                    if (!await e.MoveNextAsync().ConfigureAwait(false))
-                    {
-                        ThrowHelper.ThrowNoElementsException();
-                    }
-
-                    result = e.Current;
-                    while (await e.MoveNextAsync().ConfigureAwait(false))
-                    {
-                        result = await func(result, e.Current, cancellationToken).ConfigureAwait(false);
-                    }
-
-                    return result;
+                    ThrowHelper.ThrowNoElementsException();
                 }
-                finally
+
+                TSource result = e.Current;
+                while (await e.MoveNextAsync())
                 {
-                    await e.DisposeAsync().ConfigureAwait(false);
+                    result = await func(result, e.Current, cancellationToken);
                 }
+
+                return result;
             }
         }
 
@@ -124,10 +108,10 @@ namespace System.Linq
             Func<TAccumulate, TSource, TAccumulate> func,
             CancellationToken cancellationToken = default)
         {
-            ThrowHelper.ThrowIfNull(source);
-            ThrowHelper.ThrowIfNull(func);
+            ArgumentNullException.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(func);
 
-            return Impl(source.WithCancellation(cancellationToken).ConfigureAwait(false), seed, func);
+            return Impl(source.WithCancellation(cancellationToken), seed, func);
 
             static async ValueTask<TAccumulate> Impl(
                 ConfiguredCancelableAsyncEnumerable<TSource> source,
@@ -160,8 +144,8 @@ namespace System.Linq
             Func<TAccumulate, TSource, CancellationToken, ValueTask<TAccumulate>> func,
             CancellationToken cancellationToken = default)
         {
-            ThrowHelper.ThrowIfNull(source);
-            ThrowHelper.ThrowIfNull(func);
+            ArgumentNullException.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(func);
 
             return Impl(source, seed, func, cancellationToken);
 
@@ -172,9 +156,9 @@ namespace System.Linq
             {
                 TAccumulate result = seed;
 
-                await foreach (TSource element in source.WithCancellation(cancellationToken).ConfigureAwait(false))
+                await foreach (TSource element in source.WithCancellation(cancellationToken))
                 {
-                    result = await func(result, element, cancellationToken).ConfigureAwait(false);
+                    result = await func(result, element, cancellationToken);
                 }
 
                 return result;
@@ -205,11 +189,11 @@ namespace System.Linq
             Func<TAccumulate, TResult> resultSelector,
             CancellationToken cancellationToken = default)
         {
-            ThrowHelper.ThrowIfNull(source);
-            ThrowHelper.ThrowIfNull(func);
-            ThrowHelper.ThrowIfNull(resultSelector);
+            ArgumentNullException.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(func);
+            ArgumentNullException.ThrowIfNull(resultSelector);
 
-            return Impl(source.WithCancellation(cancellationToken).ConfigureAwait(false), seed, func, resultSelector);
+            return Impl(source.WithCancellation(cancellationToken), seed, func, resultSelector);
 
             static async ValueTask<TResult> Impl(
                 ConfiguredCancelableAsyncEnumerable<TSource> source,
@@ -252,9 +236,9 @@ namespace System.Linq
             Func<TAccumulate, CancellationToken, ValueTask<TResult>> resultSelector,
             CancellationToken cancellationToken = default)
         {
-            ThrowHelper.ThrowIfNull(source);
-            ThrowHelper.ThrowIfNull(func);
-            ThrowHelper.ThrowIfNull(resultSelector);
+            ArgumentNullException.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(func);
+            ArgumentNullException.ThrowIfNull(resultSelector);
 
             return Impl(source, seed, func, resultSelector, cancellationToken);
 
@@ -267,12 +251,12 @@ namespace System.Linq
             {
                 TAccumulate result = seed;
 
-                await foreach (TSource element in source.WithCancellation(cancellationToken).ConfigureAwait(false))
+                await foreach (TSource element in source.WithCancellation(cancellationToken))
                 {
-                    result = await func(result, element, cancellationToken).ConfigureAwait(false);
+                    result = await func(result, element, cancellationToken);
                 }
 
-                return await resultSelector(result, cancellationToken).ConfigureAwait(false);
+                return await resultSelector(result, cancellationToken);
             }
         }
     }

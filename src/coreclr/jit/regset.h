@@ -36,7 +36,7 @@ class RegSet
     friend class CodeGenInterface;
 
 private:
-    Compiler* m_rsCompiler;
+    Compiler* m_compiler;
     GCInfo&   m_rsGCInfo;
 
 public:

@@ -2,9 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Data.Common;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Data.OleDb
 {
+    [RequiresDynamicCode(OleDbConnection.TrimWarning)]
     public sealed class OleDbFactory : DbProviderFactory
     {
         public static readonly OleDbFactory Instance = new OleDbFactory();

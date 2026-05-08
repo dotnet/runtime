@@ -25,7 +25,7 @@ namespace System.ComponentModel.Tests
         [InlineData(null)]
         [InlineData("")]
         [InlineData("message")]
-        public void Ctor_Message(string message)
+        public void Ctor_Message(string? message)
         {
             var exception = new InvalidEnumArgumentException(message);
             if (message == null)
@@ -68,7 +68,7 @@ namespace System.ComponentModel.Tests
         [InlineData(null, 0, typeof(int))]
         [InlineData("", 1, typeof(int))]
         [InlineData("argumentName", int.MaxValue, typeof(int))]
-        public void Ctor_ArgumentName_InvalidValue_EnumClass(string argumentName, int invalidValue, Type enumClass)
+        public void Ctor_ArgumentName_InvalidValue_EnumClass(string? argumentName, int invalidValue, Type enumClass)
         {
             var exception = new InvalidEnumArgumentException(argumentName, invalidValue, enumClass);
             if (argumentName != null)

@@ -4,8 +4,6 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace System.Formats.Tar
 {
@@ -14,6 +12,7 @@ namespace System.Formats.Tar
     {
         private readonly Dictionary<uint, string> _userIdentifiers = new Dictionary<uint, string>();
         private readonly Dictionary<uint, string> _groupIdentifiers = new Dictionary<uint, string>();
+        private Dictionary<(long, long), string>? _hardLinkTargets;
 
         // Creates an entry for writing using the specified path and entryName. If this is being called from an async method, FileOptions should contain Asynchronous.
         private TarEntry ConstructEntryForWriting(string fullPath, string entryName, FileOptions fileOptions)
@@ -25,18 +24,41 @@ namespace System.Formats.Tar
             status.Dev = default;
             Interop.CheckIo(Interop.Sys.LStat(fullPath, out status));
 
-            TarEntryType entryType = (status.Mode & (uint)Interop.Sys.FileTypes.S_IFMT) switch
+            int fileType = status.Mode & Interop.Sys.FileTypes.S_IFMT;
+
+            // Track files that have more than one hard link.
+            // If we encounter the file again, we'll add a TarEntryType.HardLink.
+            string? hardLinkTarget = null;
+            if (_hardLinkMode == TarHardLinkMode.PreserveLink && (fileType == Interop.Sys.FileTypes.S_IFREG) && status.HardLinkCount > 1)
             {
-                // Hard links are treated as regular files.
-                // Unix socket files do not get added to tar files.
-                Interop.Sys.FileTypes.S_IFBLK => TarEntryType.BlockDevice,
-                Interop.Sys.FileTypes.S_IFCHR => TarEntryType.CharacterDevice,
-                Interop.Sys.FileTypes.S_IFIFO => TarEntryType.Fifo,
-                Interop.Sys.FileTypes.S_IFLNK => TarEntryType.SymbolicLink,
-                Interop.Sys.FileTypes.S_IFREG => Format is TarEntryFormat.V7 ? TarEntryType.V7RegularFile : TarEntryType.RegularFile,
-                Interop.Sys.FileTypes.S_IFDIR => TarEntryType.Directory,
-                _ => throw new IOException(SR.Format(SR.TarUnsupportedFile, fullPath)),
-            };
+                _hardLinkTargets ??= new Dictionary<(long, long), string>();
+
+                (long, long) fileId = (status.Dev, status.Ino);
+                if (!_hardLinkTargets.TryGetValue(fileId, out hardLinkTarget))
+                {
+                    _hardLinkTargets.Add(fileId, entryName);
+                }
+            }
+
+            TarEntryType entryType;
+            if (hardLinkTarget != null)
+            {
+                entryType = TarEntryType.HardLink;
+            }
+            else
+            {
+                entryType = fileType switch
+                {
+                    // Unix socket files do not get added to tar files.
+                    Interop.Sys.FileTypes.S_IFBLK => TarEntryType.BlockDevice,
+                    Interop.Sys.FileTypes.S_IFCHR => TarEntryType.CharacterDevice,
+                    Interop.Sys.FileTypes.S_IFIFO => TarEntryType.Fifo,
+                    Interop.Sys.FileTypes.S_IFLNK => TarEntryType.SymbolicLink,
+                    Interop.Sys.FileTypes.S_IFREG => TarHelpers.GetRegularFileEntryTypeForFormat(Format),
+                    Interop.Sys.FileTypes.S_IFDIR => TarEntryType.Directory,
+                    _ => throw new IOException(SR.Format(SR.TarUnsupportedFile, fullPath)),
+                };
+            }
 
             FileSystemInfo info = entryType is TarEntryType.Directory ? new DirectoryInfo(fullPath) : new FileInfo(fullPath);
 
@@ -63,8 +85,11 @@ namespace System.Formats.Tar
             }
 
             entry._header._mTime = TarHelpers.GetDateTimeOffsetFromSecondsSinceEpoch(status.MTime);
-            entry._header._aTime = TarHelpers.GetDateTimeOffsetFromSecondsSinceEpoch(status.ATime);
-            entry._header._cTime = TarHelpers.GetDateTimeOffsetFromSecondsSinceEpoch(status.CTime);
+            // We do not set atime and ctime by default because many external tools are unable to read GNU entries
+            // that have these fields set to non-zero values. This is because the GNU format writes atime and ctime in the same
+            // location where other formats expect the prefix field to be written.
+            // If the user wants to set atime and ctime, they can do so by constructing the entry manually from the file and
+            // then setting the values.
 
             // This mask only keeps the least significant 12 bits valid for UnixFileModes
             entry._header._mode = status.Mode & (int)TarHelpers.ValidUnixFileModes;
@@ -92,6 +117,12 @@ namespace System.Formats.Tar
             if (entry.EntryType == TarEntryType.SymbolicLink)
             {
                 entry.LinkName = info.LinkTarget ?? string.Empty;
+            }
+
+            if (entry.EntryType == TarEntryType.HardLink)
+            {
+                Debug.Assert(hardLinkTarget is not null);
+                entry.LinkName = hardLinkTarget;
             }
 
             if (entry.EntryType is TarEntryType.RegularFile or TarEntryType.V7RegularFile)

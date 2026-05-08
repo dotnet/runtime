@@ -177,7 +177,7 @@ Returns 1 on success, 0 on failure, other values for invalid state.
 Output:
 pOSStatus: Receives the value from SSLSetALPNData()
 */
-PALEXPORT int32_t AppleCryptoNative_SSLSetALPNProtocol(SSLContextRef sslContext, void* protocol, int length, int32_t* pOSStatus);
+PALEXPORT int32_t AppleCryptoNative_SSLSetALPNProtocol(SSLContextRef sslContext, const void* protocol, int length, int32_t* pOSStatus);
 
 /*
 Get negotiated protocol value from ServerHello.
@@ -225,17 +225,6 @@ written: Receives the number of bytes written into buf
 */
 PALEXPORT PAL_TlsIo
 AppleCryptoNative_SslRead(SSLContextRef sslContext, uint8_t* buf, uint32_t bufLen, uint32_t* written);
-
-/*
-Check to see if the server identity certificate for this connection matches the requested hostname.
-
-notBefore: Specify the EE/leaf certificate's notBefore value to prevent a false negative due to
-the certificate being expired (or not yet valid).
-
-Returns 1 on match, 0 on mismatch, any other value indicates an invalid state.
-*/
-PALEXPORT int32_t
-AppleCryptoNative_SslIsHostnameMatch(SSLContextRef sslContext, CFStringRef cfHostname, CFDateRef notBefore, int32_t* pOSStatus);
 
 /*
 Generate a TLS Close alert to terminate the session.

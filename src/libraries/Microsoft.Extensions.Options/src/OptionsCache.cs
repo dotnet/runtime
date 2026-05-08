@@ -30,7 +30,7 @@ namespace Microsoft.Extensions.Options
         /// <returns>The options instance.</returns>
         public virtual TOptions GetOrAdd(string? name, Func<TOptions> createOptions)
         {
-            ThrowHelper.ThrowIfNull(createOptions);
+            ArgumentNullException.ThrowIfNull(createOptions);
 
             name ??= Options.DefaultName;
             Lazy<TOptions> value;
@@ -95,7 +95,7 @@ namespace Microsoft.Extensions.Options
         /// <returns><see langword="true"/> if the option was added; <see langword="false"/> if the name already exists.</returns>
         public virtual bool TryAdd(string? name, TOptions options)
         {
-            ThrowHelper.ThrowIfNull(options);
+            ArgumentNullException.ThrowIfNull(options);
 
             return _cache.TryAdd(name ?? Options.DefaultName, new Lazy<TOptions>(
 #if !(NET || NETSTANDARD2_1)

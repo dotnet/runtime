@@ -6,7 +6,7 @@
 #include "asmconstants.h"
 
 //
-// METHODDESC_REGISTER: UMEntryThunk*
+// METHODDESC_REGISTER: UMEntryThunkData*
 //
 NESTED_ENTRY TheUMEntryPrestub, _TEXT, UnhandledExceptionHandlerUnix
     PUSH_ARGUMENT_REGISTERS

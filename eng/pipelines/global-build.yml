@@ -119,7 +119,7 @@ extends:
                 eq(variables['isRollingBuild'], true))
 
       #
-      # Build Portable SourceBuild
+      # Build Repo SourceBuild
       #
       - template: /eng/common/templates/jobs/source-build.yml
         parameters:

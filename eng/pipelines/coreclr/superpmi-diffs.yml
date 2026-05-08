@@ -20,10 +20,13 @@ pr:
     # If you are changing these and start including eng/common, adjust the Maestro subscriptions
     # so that this build can block dependency auto-updates (this build is currently ignored)
     include:
+    - eng/pipelines/coreclr/superpmi-diffs.yml
     - src/coreclr/jit/*
+    - src/coreclr/gcinfo/*
 
 variables:
   - template: /eng/pipelines/common/variables.yml
+  - template: /eng/pipelines/helix-platforms.yml
 
 extends:
   template:  /eng/pipelines/common/templates/pipeline-with-resources.yml
@@ -54,7 +57,7 @@ extends:
           - windows_x64
           - windows_x86
           jobParameters:
-            buildArgs: -s clr.alljits+clr.spmi -c $(_BuildConfig)
+            buildArgs: -s clr.alljitscommunity+clr.spmi -c $(_BuildConfig)
             postBuildSteps:
               - template: /eng/pipelines/common/upload-artifact-step.yml
                 parameters:
@@ -96,7 +99,7 @@ extends:
           platforms:
           - windows_x64
           - windows_x86
-          helixQueueGroup: ci
+          helixQueueGroup: superpmi-diffs
           helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
           jobParameters:
             condition: not(eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_jiteeversionguid.containsChange'], true))
@@ -112,10 +115,26 @@ extends:
           - windows_x64
           - windows_x86
           - linux_x64
-          helixQueueGroup: ci
+          helixQueueGroup: superpmi-diffs
           helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
           jobParameters:
             condition: not(eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_jiteeversionguid.containsChange'], true))
             diffType: tpdiff
+            baseJitOptions: ${{ parameters.spmi_jitoptions_base }}
+            diffJitOptions: ${{ parameters.spmi_jitoptions_diff }}
+
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/coreclr/templates/superpmi-diffs-job.yml
+          buildConfig: checked
+          platforms:
+          - windows_x64
+          - windows_x86
+          - linux_x64
+          helixQueueGroup: superpmi-diffs
+          helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+          jobParameters:
+            condition: not(eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_jiteeversionguid.containsChange'], true))
+            diffType: metricdiff
             baseJitOptions: ${{ parameters.spmi_jitoptions_base }}
             diffJitOptions: ${{ parameters.spmi_jitoptions_diff }}

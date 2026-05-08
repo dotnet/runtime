@@ -188,7 +188,7 @@ bool runtime_config_t::parse_opts(const json_parser_t::value_t& opts)
         m_is_framework_dependent = true;
 
         fx_reference_t fx_out;
-        if (!parse_framework(framework->value, fx_out))
+        if (!parse_framework(framework->value, /*name_and_version_only*/ false, fx_out))
         {
             return false;
         }
@@ -201,7 +201,7 @@ bool runtime_config_t::parse_opts(const json_parser_t::value_t& opts)
     {
         m_is_framework_dependent = true;
 
-        if (!read_framework_array(iter->value, m_frameworks))
+        if (!read_framework_array(iter->value, /*name_and_version_only*/ false, m_frameworks))
         {
             return false;
         }
@@ -216,7 +216,7 @@ bool runtime_config_t::parse_opts(const json_parser_t::value_t& opts)
             return false;
         }
 
-        if (!read_framework_array(includedFrameworks->value, m_included_frameworks, /*name_and_version_only*/ true))
+        if (!read_framework_array(includedFrameworks->value, /*name_and_version_only*/ true, m_included_frameworks))
         {
             return false;
         }
@@ -241,7 +241,7 @@ namespace
     }
 }
 
-bool runtime_config_t::parse_framework(const json_parser_t::value_t& fx_obj, fx_reference_t& fx_out, bool name_and_version_only)
+bool runtime_config_t::parse_framework(const json_parser_t::value_t& fx_obj, bool name_and_version_only, fx_reference_t& fx_out)
 {
     if (!name_and_version_only)
     {
@@ -249,27 +249,37 @@ bool runtime_config_t::parse_framework(const json_parser_t::value_t& fx_obj, fx_
     }
 
     const auto& fx_name = fx_obj.FindMember(_X("name"));
-    if (fx_name != fx_obj.MemberEnd())
+    if (fx_name == fx_obj.MemberEnd())
     {
-        fx_out.set_fx_name(fx_name->value.GetString());
+        using string_buffer_t = rapidjson::GenericStringBuffer<json_parser_t::internal_encoding_type_t>;
+        string_buffer_t sb;
+        rapidjson::Writer<string_buffer_t, json_parser_t::internal_encoding_type_t,
+            json_parser_t::internal_encoding_type_t> writer{sb};
+        fx_obj.Accept(writer);
+
+        trace::error(_X("No framework name specified: %s"), sb.GetString());
+        return false;
     }
+
+    fx_out.set_fx_name(fx_name->value.GetString());
 
     const auto& fx_ver = fx_obj.FindMember(_X("version"));
-    if (fx_ver != fx_obj.MemberEnd())
+    if (fx_ver == fx_obj.MemberEnd())
     {
-        fx_out.set_fx_version(fx_ver->value.GetString());
-
-        // Release version should prefer release versions, unless the rollForwardToPrerelease is set
-        // in which case no preference should be applied.
-        if (!name_and_version_only && !fx_out.get_fx_version_number().is_prerelease() && !m_roll_forward_to_prerelease)
-        {
-            fx_out.set_prefer_release(true);
-        }
+        trace::error(_X("Framework '%s' is missing a version."), fx_out.get_fx_name().c_str());
+        return false;
     }
 
+    fx_out.set_fx_version(fx_ver->value.GetString());
+
     if (name_and_version_only)
-    {
         return true;
+
+    // Release version should prefer release versions, unless the rollForwardToPrerelease is set
+    // in which case no preference should be applied.
+    if (!fx_out.get_fx_version_number().is_prerelease() && !m_roll_forward_to_prerelease)
+    {
+        fx_out.set_prefer_release(true);
     }
 
     const auto& roll_forward = fx_obj.FindMember(_X("rollForward"));
@@ -357,25 +367,13 @@ bool runtime_config_t::ensure_dev_config_parsed()
     return true;
 }
 
-bool runtime_config_t::read_framework_array(const json_parser_t::value_t& frameworks_json, fx_reference_vector_t& frameworks_out, bool name_and_version_only)
+bool runtime_config_t::read_framework_array(const json_parser_t::value_t& frameworks_json, bool name_and_version_only, fx_reference_vector_t& frameworks_out)
 {
-    bool rc = true;
-
     for (const auto& fx_json : frameworks_json.GetArray())
     {
         fx_reference_t fx_out;
-        rc = parse_framework(fx_json, fx_out, name_and_version_only);
-        if (!rc)
-        {
-            break;
-        }
-
-        if (fx_out.get_fx_name().length() == 0)
-        {
-            trace::verbose(_X("No framework name specified."));
-            rc = false;
-            break;
-        }
+        if (!parse_framework(fx_json, name_and_version_only, fx_out))
+            return false;
 
         if (std::find_if(
                 frameworks_out.begin(),
@@ -384,14 +382,13 @@ bool runtime_config_t::read_framework_array(const json_parser_t::value_t& framew
             != frameworks_out.end())
         {
             trace::verbose(_X("Framework %s already specified."), fx_out.get_fx_name().c_str());
-            rc = false;
-            break;
+            return false;
         }
 
         frameworks_out.push_back(fx_out);
     }
 
-    return rc;
+    return true;
 }
 
 bool runtime_config_t::ensure_parsed()
@@ -412,6 +409,7 @@ bool runtime_config_t::ensure_parsed()
     json_parser_t json;
     if (!json.parse_file(m_path))
     {
+        trace::error(_X("Failed to parse file [%s]. %s"), m_path.c_str(), json.get_error_message().c_str());
         return false;
     }
 

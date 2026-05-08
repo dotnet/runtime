@@ -368,7 +368,7 @@ namespace System.Net.Sockets
             return sent;
         }
 
-        private static unsafe long SendFile(SafeSocketHandle socket, SafeFileHandle fileHandle, ref long offset, ref long count, out Interop.Error errno)
+        private static long SendFile(SafeSocketHandle socket, SafeFileHandle fileHandle, ref long offset, ref long count, out Interop.Error errno)
         {
             long bytesSent;
             errno = Interop.Sys.SendFile(socket, fileHandle, offset, count, out bytesSent);
@@ -666,7 +666,7 @@ namespace System.Net.Sockets
             return false;
         }
 
-        public static unsafe bool TryStartConnect(SafeSocketHandle socket, Memory<byte> socketAddress, out SocketError errorCode) => TryStartConnect(socket, socketAddress, out errorCode, Span<byte>.Empty, false, out int _ );
+        public static bool TryStartConnect(SafeSocketHandle socket, Memory<byte> socketAddress, out SocketError errorCode) => TryStartConnect(socket, socketAddress, out errorCode, Span<byte>.Empty, false, out int _ );
 
         public static unsafe bool TryStartConnect(SafeSocketHandle socket, Memory<byte> socketAddress, out SocketError errorCode, Span<byte> data, bool tfo, out int sent)
         {
@@ -900,7 +900,7 @@ namespace System.Net.Sockets
             }
         }
 
-        public static unsafe bool TryCompleteReceiveMessageFrom(SafeSocketHandle socket, Span<byte> buffer, IList<ArraySegment<byte>>? buffers, SocketFlags flags, Memory<byte> socketAddress, out int receivedSocketAddressLength, bool isIPv4, bool isIPv6, out int bytesReceived, out SocketFlags receivedFlags, out IPPacketInformation ipPacketInformation, out SocketError errorCode)
+        public static bool TryCompleteReceiveMessageFrom(SafeSocketHandle socket, Span<byte> buffer, IList<ArraySegment<byte>>? buffers, SocketFlags flags, Memory<byte> socketAddress, out int receivedSocketAddressLength, bool isIPv4, bool isIPv6, out int bytesReceived, out SocketFlags receivedFlags, out IPPacketInformation ipPacketInformation, out SocketError errorCode)
         {
             try
             {
@@ -1117,7 +1117,7 @@ namespace System.Net.Sockets
             return err == Interop.Error.SUCCESS ? SocketError.Success : GetSocketErrorForErrorCode(err);
         }
 
-        public static unsafe SocketError Bind(SafeSocketHandle handle, ProtocolType socketProtocolType, ReadOnlySpan<byte> buffer)
+        public static SocketError Bind(SafeSocketHandle handle, ProtocolType socketProtocolType, ReadOnlySpan<byte> buffer)
         {
             Interop.Error err = Interop.Sys.Bind(handle, socketProtocolType, buffer);
 
@@ -1759,7 +1759,7 @@ namespace System.Net.Sockets
             return SocketError.Success;
         }
 
-        public static unsafe SocketError Poll(SafeSocketHandle handle, int microseconds, SelectMode mode, out bool status)
+        public static SocketError Poll(SafeSocketHandle handle, int microseconds, SelectMode mode, out bool status)
         {
             Interop.PollEvents inEvent = Interop.PollEvents.POLLNONE;
             switch (mode)
@@ -2164,7 +2164,7 @@ namespace System.Net.Sockets
                 SocketError.Success;
         }
 
-        internal static unsafe SafeSocketHandle CreateSocket(IntPtr fileDescriptor)
+        internal static SafeSocketHandle CreateSocket(IntPtr fileDescriptor)
         {
             var res = new SafeSocketHandle(fileDescriptor, ownsHandle: true);
 

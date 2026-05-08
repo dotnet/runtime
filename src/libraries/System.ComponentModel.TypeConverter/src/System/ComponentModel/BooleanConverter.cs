@@ -10,7 +10,7 @@ namespace System.ComponentModel
     /// </summary>
     public class BooleanConverter : TypeConverter
     {
-        private static volatile StandardValuesCollection? s_values;
+        private static StandardValuesCollection? s_values;
 
         /// <summary>
         /// Gets a value indicating whether this converter can convert an object

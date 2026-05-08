@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.Serialization;
 using System.Xml;
 using System.Xml.Serialization;
@@ -45,11 +46,15 @@ namespace System.ServiceModel.Syndication
             return new TextSyndicationContent(content, TextSyndicationContentKind.XHtml);
         }
 
+        [RequiresUnreferencedCode(SyndicationFeedFormatter.RequiresUnreferencedCodeWarning)]
+        [RequiresDynamicCode(SyndicationFeedFormatter.RequiresDynamicCodeWarning)]
         public static XmlSyndicationContent CreateXmlContent(object dataContractObject)
         {
             return new XmlSyndicationContent(Atom10Constants.XmlMediaType, dataContractObject, (DataContractSerializer)null);
         }
 
+        [RequiresUnreferencedCode(SyndicationFeedFormatter.RequiresUnreferencedCodeWarning)]
+        [RequiresDynamicCode(SyndicationFeedFormatter.RequiresDynamicCodeWarning)]
         public static XmlSyndicationContent CreateXmlContent(object dataContractObject, XmlObjectSerializer dataContractSerializer)
         {
             return new XmlSyndicationContent(Atom10Constants.XmlMediaType, dataContractObject, dataContractSerializer);
@@ -60,6 +65,8 @@ namespace System.ServiceModel.Syndication
             return new XmlSyndicationContent(xmlReader);
         }
 
+        [RequiresUnreferencedCode(SyndicationFeedFormatter.RequiresUnreferencedCodeWarning)]
+        [RequiresDynamicCode(SyndicationFeedFormatter.RequiresDynamicCodeWarning)]
         public static XmlSyndicationContent CreateXmlContent(object xmlSerializerObject, XmlSerializer serializer)
         {
             return new XmlSyndicationContent(Atom10Constants.XmlMediaType, xmlSerializerObject, serializer);
@@ -69,10 +76,7 @@ namespace System.ServiceModel.Syndication
 
         public void WriteTo(XmlWriter writer, string outerElementName, string outerElementNamespace)
         {
-            if (writer is null)
-            {
-                throw new ArgumentNullException(nameof(writer));
-            }
+            ArgumentNullException.ThrowIfNull(writer);
 
             if (string.IsNullOrEmpty(outerElementName))
             {
@@ -99,10 +103,7 @@ namespace System.ServiceModel.Syndication
 
         internal void CopyAttributeExtensions(SyndicationContent source)
         {
-            if (source is null)
-            {
-                throw new ArgumentNullException(nameof(source));
-            }
+            ArgumentNullException.ThrowIfNull(source);
 
             if (source._attributeExtensions != null)
             {

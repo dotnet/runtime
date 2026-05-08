@@ -42,9 +42,15 @@ namespace System.Reflection
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern RuntimeAssembly GetExecutingAssembly(ref StackCrawlMark stackMark);
 
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [System.Security.DynamicSecurityMethod] // Methods doing stack walks has to be marked DynamicSecurityMethod
-        public static extern Assembly GetCallingAssembly();
+        public static Assembly GetCallingAssembly()
+        {
+            StackCrawlMark stackMark = StackCrawlMark.LookForMyCallersCaller;
+            return GetCallingAssembly(ref stackMark);
+        }
+
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        internal static extern RuntimeAssembly GetCallingAssembly(ref StackCrawlMark stackMark);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern Assembly GetEntryAssemblyNative();

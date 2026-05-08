@@ -160,26 +160,10 @@ struct MSLAYOUT TargetBuffer
     ULONG         cbSize;
 };
 
-//===================================================================================
 // Module properties, retrieved by DAC.
-// Describes a VMPTR_DomainAssembly representing a module.
-// In the VM, a raw Module may be domain neutral and shared by many appdomains.
-// Whereas a DomainAssembly is like a { AppDomain, Module} pair. DomainAssembly corresponds
-// much more to ICorDebugModule (which also has appdomain affinity).
-//===================================================================================
-struct MSLAYOUT DomainAssemblyInfo
-{
-    // The appdomain that the DomainAssembly is associated with.
-    // Although VMPTR_Module may be shared across multiple domains, a DomainAssembly has appdomain affinity.
-    VMPTR_AppDomain vmAppDomain;
-
-    // The assembly this module belongs to. All modules live in an assembly.
-    VMPTR_DomainAssembly vmDomainAssembly;
-};
-
 struct MSLAYOUT ModuleInfo
 {
-    // The non-domain specific assembly which this module resides in.
+    // The assembly which this module resides in.
     VMPTR_Assembly vmAssembly;
 
     // The PE Base address and size of the module. These may be 0 if there is no image
@@ -468,6 +452,18 @@ public:
     bool                                   m_fInitialized;
 }; // class SequencePoints
 
+//===================================================================================
+// AsyncLocalData serves as the Dbi equivalent of ICorDebugInfo::AsyncContinuationVarInfo.
+// It maps the offset of an async variable within a continuation to its ILVarNum.
+//===================================================================================
+struct MSLAYOUT AsyncLocalData
+{
+    // offset within a continuation object where the variable is stored
+    ULONG offset;
+    // IL variable number corresponding to the async local
+    ULONG ilVarNum;
+};
+
 //----------------------------------------------------------------------------------
 // declarations needed for getting native code regions
 //----------------------------------------------------------------------------------
@@ -623,7 +619,7 @@ public:
               mdFieldDef       fieldToken,
               CorElementType   elementType,
               mdTypeDef        metadataToken,
-              VMPTR_DomainAssembly vmDomainAssembly);
+              VMPTR_Assembly vmAssembly);
 
     DebuggerIPCE_BasicTypeData GetObjectTypeData() const { return m_objectTypeData; };
     mdFieldDef GetFieldToken() const { return m_fldToken; };
@@ -658,8 +654,8 @@ enum AreValueTypesBoxed { NoValueTypeBoxing, OnlyPrimitivesUnboxed, AllBoxed };
 // code:DacDbiInterfaceImpl::ResolveTypeReference) to store relevant information about the type
 typedef struct MSLAYOUT
 {
-    // domain file for the type
-    VMPTR_DomainAssembly vmDomainAssembly;
+    // assembly for the type
+    VMPTR_Assembly vmAssembly;
     // metadata token for the type. This may be a typeRef (for requests) or a typeDef (for responses).
     mdToken          typeToken;
 } TypeRefData;
@@ -699,22 +695,6 @@ struct DbiVersion
     DWORD m_dwReservedMustBeZero1;  // reserved for future use
 };
 
-// The way in which a thread is blocking on an object
-enum DacBlockingReason
-{
-    DacBlockReason_MonitorCriticalSection,
-    DacBlockReason_MonitorEvent
-};
-
-// Information about an object which is blocking a managed thread
-struct DacBlockingObject
-{
-    VMPTR_Object      vmBlockingObject;
-    VMPTR_AppDomain   vmAppDomain;
-    DWORD             dwTimeout;
-    DacBlockingReason blockingReason;
-};
-
 // Opaque user defined data used in callbacks
 typedef void* CALLBACK_DATA;
 
@@ -745,7 +725,7 @@ struct MSLAYOUT DacGcReference
 struct MSLAYOUT DacExceptionCallStackData
 {
     VMPTR_AppDomain vmAppDomain;
-    VMPTR_DomainAssembly vmDomainAssembly;
+    VMPTR_Assembly vmAssembly;
     CORDB_ADDRESS ip;
     mdMethodDef methodDef;
     BOOL isLastForeignExceptionFrame;

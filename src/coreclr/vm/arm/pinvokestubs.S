@@ -24,7 +24,7 @@
         PROLOG_PUSH         {\VASigCookieReg}
 
         // get the stub
-        ldr                 \VASigCookieReg, [\VASigCookieReg,#VASigCookie__pNDirectILStub]
+        ldr                 \VASigCookieReg, [\VASigCookieReg,#VASigCookie__pPInvokeILStub]
 
         // if null goto stub generation
         cbz                 \VASigCookieReg, \__PInvokeStubFuncName\()Label
@@ -153,6 +153,42 @@ LOCAL_LABEL(RarePath):
         b       C_FUNC(JIT_PInvokeEndRarePath)
 
     LEAF_END JIT_PInvokeEnd, _TEXT
+
+// ------------------------------------------------------------------
+// IN:
+// InlinedCallFrame (r4) = pointer to the InlinedCallFrame data
+// OUT:
+// Thread (r5) = pointer to Thread
+//
+//
+    LEAF_ENTRY JIT_InitPInvokeFrame, _TEXT
+
+        PROLOG_PUSH  "{r0-r4, lr}"
+
+        bl      C_FUNC(GetThreadHelper)
+        mov     r5, r0
+
+        // set first slot to the value of InlinedCallFrame identifier (checked by runtime code)
+        mov     r6, #FRAMETYPE_InlinedCallFrame
+        str     r6, [r4]
+
+        // pFrame->m_Next = pThread->m_pFrame;
+        ldr     r6, [r5, #Thread_m_pFrame]
+        str     r6, [r4, #Frame__m_Next]
+
+        str     r11, [r4, #InlinedCallFrame__m_pCalleeSavedFP]
+        str     r9, [r4, #InlinedCallFrame__m_pSPAfterProlog]
+        mov     r6, 0
+        str     r6, [r4, #InlinedCallFrame__m_pCallerReturnAddress]
+        add     r6, sp, 24
+        str     r6, [r4, #InlinedCallFrame__m_pCallSiteSP]
+
+        // pThread->m_pFrame = pFrame;
+        str     r4, [r5, #Thread_m_pFrame]
+
+        EPILOG_POP   "{r0-r4, pc}"
+
+    LEAF_END JIT_InitPInvokeFrame, _TEXT
 
 // ------------------------------------------------------------------
 // VarargPInvokeStub & VarargPInvokeGenILStub

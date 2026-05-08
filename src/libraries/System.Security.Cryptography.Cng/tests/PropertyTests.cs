@@ -160,5 +160,104 @@ namespace System.Security.Cryptography.Cng.Tests
             CngProperty property = new CngProperty("banana", null, CngPropertyOptions.CustomProperty);
             Assert.Null(property.GetValue());
         }
+
+        [Fact]
+        public static void NullArrayAndNullSpanDiffer()
+        {
+            CngProperty fromNullArray = new CngProperty("test", (byte[]?)null, CngPropertyOptions.CustomProperty);
+            CngProperty fromNullSpan = new CngProperty("test", (ReadOnlySpan<byte>)(byte[]?)null, CngPropertyOptions.CustomProperty);
+
+            Assert.Null(fromNullArray.GetValue());
+            Assert.Empty(fromNullSpan.GetValue());
+            Assert.NotEqual(fromNullArray, fromNullSpan);
+        }
+
+        [Fact]
+        public static void SpanCtorDefaultAndEmptyAreEquivalent()
+        {
+            CngProperty fromDefault = new CngProperty("test", default(ReadOnlySpan<byte>), CngPropertyOptions.CustomProperty);
+            CngProperty fromEmpty = new CngProperty("test", ReadOnlySpan<byte>.Empty, CngPropertyOptions.CustomProperty);
+            CngProperty fromArrayEmpty = new CngProperty("test", Array.Empty<byte>(), CngPropertyOptions.CustomProperty);
+            CngProperty fromArrayAsSpan = new CngProperty("test", Array.Empty<byte>().AsSpan(), CngPropertyOptions.CustomProperty);
+
+            Assert.Equal(fromDefault, fromEmpty);
+            Assert.Equal(fromDefault, fromArrayEmpty);
+            Assert.Equal(fromDefault, fromArrayAsSpan);
+            Assert.Empty(fromDefault.GetValue());
+            Assert.Empty(fromEmpty.GetValue());
+        }
+
+        [Fact]
+        public static void SpanCtorValueEquivalence()
+        {
+            byte[] value = [1, 2, 3];
+            CngProperty fromArray = new CngProperty("test", value, CngPropertyOptions.CustomProperty);
+            CngProperty fromSpan = new CngProperty("test", value.AsSpan(), CngPropertyOptions.CustomProperty);
+
+            Assert.Equal(fromArray, fromSpan);
+            Assert.Equal<byte>(value, fromArray.GetValue());
+            Assert.Equal<byte>(value, fromSpan.GetValue());
+        }
+
+        [Fact]
+        public static void SpanCtorEmptyHasAndGetPropertyEquivalence()
+        {
+            using (CngKey key = CngKey.Import(TestData.Key_ECDiffieHellmanP256, CngKeyBlobFormat.GenericPublicBlob))
+            {
+                // HasProperty gives the same answer when the key doesn't already have the property.
+                AssertExtensions.FalseExpression(key.HasProperty("DefaultSpanProp", CngPropertyOptions.CustomProperty));
+                AssertExtensions.FalseExpression(key.HasProperty("EmptyArrayProp", CngPropertyOptions.CustomProperty));
+
+                // default(ReadOnlySpan<byte>) and Array.Empty<byte>() both succeed on SetProperty.
+                key.SetProperty(new CngProperty("DefaultSpanProp", default(ReadOnlySpan<byte>), CngPropertyOptions.CustomProperty));
+                key.SetProperty(new CngProperty("EmptyArrayProp", Array.Empty<byte>(), CngPropertyOptions.CustomProperty));
+
+                // HasProperty gives the same answer after setting.
+                AssertExtensions.TrueExpression(key.HasProperty("DefaultSpanProp", CngPropertyOptions.CustomProperty));
+                AssertExtensions.TrueExpression(key.HasProperty("EmptyArrayProp", CngPropertyOptions.CustomProperty));
+
+                // GetProperty gives identical answers.
+                // CNG transforms zero-length values to null on retrieval.
+                Assert.Null(key.GetProperty("DefaultSpanProp", CngPropertyOptions.CustomProperty).GetValue());
+                Assert.Null(key.GetProperty("EmptyArrayProp", CngPropertyOptions.CustomProperty).GetValue());
+            }
+        }
+
+        [Fact]
+        public static void SpanCtorValueHasAndGetPropertyEquivalence()
+        {
+            using (CngKey key = CngKey.Import(TestData.Key_ECDiffieHellmanP256, CngKeyBlobFormat.GenericPublicBlob))
+            {
+                byte[] value = [1, 2, 3];
+
+                // HasProperty gives the same answer when the key doesn't already have the property.
+                AssertExtensions.FalseExpression(key.HasProperty("SpanProp", CngPropertyOptions.CustomProperty));
+                AssertExtensions.FalseExpression(key.HasProperty("ArrayProp", CngPropertyOptions.CustomProperty));
+
+                key.SetProperty(new CngProperty("SpanProp", value.AsSpan(), CngPropertyOptions.CustomProperty));
+                key.SetProperty(new CngProperty("ArrayProp", value, CngPropertyOptions.CustomProperty));
+
+                // HasProperty gives the same answer for the same value in both ctors.
+                AssertExtensions.TrueExpression(key.HasProperty("SpanProp", CngPropertyOptions.CustomProperty));
+                AssertExtensions.TrueExpression(key.HasProperty("ArrayProp", CngPropertyOptions.CustomProperty));
+
+                // GetProperty gives identical answers.
+                Assert.Equal<byte>(value, key.GetProperty("SpanProp", CngPropertyOptions.CustomProperty).GetValue());
+                Assert.Equal<byte>(value, key.GetProperty("ArrayProp", CngPropertyOptions.CustomProperty).GetValue());
+
+                // Overwrite existing non-empty value.
+                byte[] value2 = [5, 6, 7];
+                key.SetProperty(new CngProperty("SpanProp", value2.AsSpan(), CngPropertyOptions.CustomProperty));
+                key.SetProperty(new CngProperty("ArrayProp", value2, CngPropertyOptions.CustomProperty));
+
+                // HasProperty gives the same answer when overwriting an existing non-empty value.
+                AssertExtensions.TrueExpression(key.HasProperty("SpanProp", CngPropertyOptions.CustomProperty));
+                AssertExtensions.TrueExpression(key.HasProperty("ArrayProp", CngPropertyOptions.CustomProperty));
+
+                // GetProperty gives identical answers after overwrite.
+                Assert.Equal<byte>(value2, key.GetProperty("SpanProp", CngPropertyOptions.CustomProperty).GetValue());
+                Assert.Equal<byte>(value2, key.GetProperty("ArrayProp", CngPropertyOptions.CustomProperty).GetValue());
+            }
+        }
     }
 }

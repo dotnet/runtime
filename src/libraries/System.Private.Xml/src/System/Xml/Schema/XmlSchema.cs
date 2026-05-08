@@ -35,24 +35,16 @@ namespace System.Xml.Schema
         private bool _isPreprocessed;
         private bool _isRedefined;
         private int _errorCount;
-        private XmlSchemaObjectTable? _attributes;
-        private XmlSchemaObjectTable _attributeGroups = new XmlSchemaObjectTable();
-        private XmlSchemaObjectTable _elements = new XmlSchemaObjectTable();
-        private XmlSchemaObjectTable _types = new XmlSchemaObjectTable();
         private readonly XmlSchemaObjectTable _groups = new XmlSchemaObjectTable();
         private readonly XmlSchemaObjectTable _notations = new XmlSchemaObjectTable();
         private readonly XmlSchemaObjectTable _identityConstraints = new XmlSchemaObjectTable();
 
         private static int s_globalIdCounter = -1;
-        private ArrayList? _importedSchemas;
-        private ArrayList? _importedNamespaces;
 
         private int _schemaId = -1; //Not added to a set
         private Uri? _baseUri;
         private bool _isChameleon;
         private readonly Hashtable _ids = new Hashtable();
-        private XmlDocument? _document;
-        private XmlNameTable? _nameTable;
 
         public XmlSchema() { }
 
@@ -330,16 +322,16 @@ namespace System.Xml.Schema
         }
 
         [XmlIgnore]
-        public XmlSchemaObjectTable Attributes => _attributes ??= new XmlSchemaObjectTable();
+        public XmlSchemaObjectTable Attributes => field ??= new XmlSchemaObjectTable();
 
         [XmlIgnore]
-        public XmlSchemaObjectTable AttributeGroups => _attributeGroups ??= new XmlSchemaObjectTable();
+        public XmlSchemaObjectTable AttributeGroups => field ??= new XmlSchemaObjectTable();
 
         [XmlIgnore]
-        public XmlSchemaObjectTable SchemaTypes => _types ??= new XmlSchemaObjectTable();
+        public XmlSchemaObjectTable SchemaTypes => field ??= new XmlSchemaObjectTable();
 
         [XmlIgnore]
-        public XmlSchemaObjectTable Elements => _elements ??= new XmlSchemaObjectTable();
+        public XmlSchemaObjectTable Elements => field ??= new XmlSchemaObjectTable();
 
         [XmlAttribute("id", DataType = "ID")]
         public string? Id
@@ -416,7 +408,7 @@ namespace System.Xml.Schema
         }
 
         [XmlIgnore]
-        internal XmlDocument Document => _document ??= new XmlDocument();
+        internal XmlDocument Document => field ??= new XmlDocument();
 
         [XmlIgnore]
         internal int ErrorCount
@@ -518,11 +510,11 @@ namespace System.Xml.Schema
             _items.Add(annotation);
         }
 
-        internal XmlNameTable NameTable => _nameTable ??= new System.Xml.NameTable();
+        internal XmlNameTable NameTable => field ??= new System.Xml.NameTable();
 
-        internal ArrayList ImportedSchemas => _importedSchemas ??= new ArrayList();
+        internal ArrayList ImportedSchemas => field ??= new ArrayList();
 
-        internal ArrayList ImportedNamespaces => _importedNamespaces ??= new ArrayList();
+        internal ArrayList ImportedNamespaces => field ??= new ArrayList();
 
         internal static void GetExternalSchemasList(IList extList, XmlSchema schema)
         {

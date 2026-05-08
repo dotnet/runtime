@@ -6,9 +6,6 @@ using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 #if NET
 using System.Runtime.Intrinsics;
-using System.Runtime.Intrinsics.Arm;
-using System.Runtime.Intrinsics.X86;
-using System.Runtime.Intrinsics.Wasm;
 #endif
 
 namespace System.Buffers.Text
@@ -159,27 +156,6 @@ namespace System.Buffers.Text
             // If a non-ASCII bit is set in any WORD of the vector, we have seen non-ASCII data.
             return zeroIsAscii != Vector512<ushort>.Zero;
         }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static Vector128<byte> ShuffleUnsafe(Vector128<byte> vector, Vector128<byte> indices)
-        {
-            if (Ssse3.IsSupported)
-            {
-                return Ssse3.Shuffle(vector, indices);
-            }
-
-            if (AdvSimd.Arm64.IsSupported)
-            {
-                return AdvSimd.Arm64.VectorTableLookup(vector, indices);
-            }
-
-            if (PackedSimd.IsSupported)
-            {
-                return PackedSimd.Swizzle(vector, indices);
-            }
-
-            return Vector128.Shuffle(vector, indices);
-        }
 #endif
 
         [DoesNotReturn]
@@ -211,10 +187,8 @@ namespace System.Buffers.Text
             unsafe void StoreVector512ToDestination(T* dest, T* destStart, int destLength, Vector512<byte> str);
             unsafe void StoreVector256ToDestination(T* dest, T* destStart, int destLength, Vector256<byte> str);
             unsafe void StoreVector128ToDestination(T* dest, T* destStart, int destLength, Vector128<byte> str);
-#if NET9_0_OR_GREATER
             unsafe void StoreArmVector128x4ToDestination(T* dest, T* destStart, int destLength, Vector128<byte> res1,
                 Vector128<byte> res2, Vector128<byte> res3, Vector128<byte> res4);
-#endif // NET9_0_OR_GREATER
 #endif // NET
         }
 
@@ -259,10 +233,8 @@ namespace System.Buffers.Text
             unsafe bool TryLoadVector512(T* src, T* srcStart, int sourceLength, out Vector512<sbyte> str);
             unsafe bool TryLoadAvxVector256(T* src, T* srcStart, int sourceLength, out Vector256<sbyte> str);
             unsafe bool TryLoadVector128(T* src, T* srcStart, int sourceLength, out Vector128<byte> str);
-#if NET9_0_OR_GREATER
             unsafe bool TryLoadArmVector128x4(T* src, T* srcStart, int sourceLength,
                 out Vector128<byte> str1, out Vector128<byte> str2, out Vector128<byte> str3, out Vector128<byte> str4);
-#endif // NET9_0_OR_GREATER
 #endif // NET
             unsafe int DecodeFourElements(T* source, ref sbyte decodingMap);
             unsafe int DecodeRemaining(T* srcEnd, ref sbyte decodingMap, long remaining, out uint t2, out uint t3);

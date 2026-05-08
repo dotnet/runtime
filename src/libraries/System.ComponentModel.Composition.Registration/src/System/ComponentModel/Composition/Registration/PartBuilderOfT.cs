@@ -41,10 +41,7 @@ namespace System.ComponentModel.Composition.Registration
 
             private static PropertyInfo SelectProperties(Expression<Func<T, object>> propertyFilter)
             {
-                if (propertyFilter is null)
-                {
-                    throw new ArgumentNullException(nameof(propertyFilter));
-                }
+                ArgumentNullException.ThrowIfNull(propertyFilter);
 
                 Expression expr = Reduce(propertyFilter).Body;
                 if (expr.NodeType == ExpressionType.MemberAccess)
@@ -96,10 +93,7 @@ namespace System.ComponentModel.Composition.Registration
 
             private void ParseSelectConstructor(Expression<Func<ParameterImportBuilder, T>> constructorFilter)
             {
-                if (constructorFilter is null)
-                {
-                    throw new ArgumentNullException(nameof(constructorFilter));
-                }
+                ArgumentNullException.ThrowIfNull(constructorFilter);
 
                 Expression expr = Reduce(constructorFilter).Body;
                 if (expr.NodeType != ExpressionType.New)
@@ -153,10 +147,7 @@ namespace System.ComponentModel.Composition.Registration
 
         public PartBuilder<T> SelectConstructor(Expression<Func<ParameterImportBuilder, T>> constructorFilter)
         {
-            if (constructorFilter is null)
-            {
-                throw new ArgumentNullException(nameof(constructorFilter));
-            }
+            ArgumentNullException.ThrowIfNull(constructorFilter);
 
             var adapter = new ConstructorExpressionAdapter(constructorFilter);
             SelectConstructor(adapter.SelectConstructor, adapter.ConfigureConstructorImports);
@@ -174,10 +165,7 @@ namespace System.ComponentModel.Composition.Registration
             Expression<Func<T, object>> propertyFilter,
             Action<ExportBuilder> exportConfiguration)
         {
-            if (propertyFilter is null)
-            {
-                throw new ArgumentNullException(nameof(propertyFilter));
-            }
+            ArgumentNullException.ThrowIfNull(propertyFilter);
 
             var adapter = new PropertyExpressionAdapter(propertyFilter, null, exportConfiguration);
             ExportProperties(adapter.VerifyPropertyInfo, adapter.ConfigureExport);
@@ -193,10 +181,7 @@ namespace System.ComponentModel.Composition.Registration
         public PartBuilder<T> ExportProperty<TContract>(Expression<Func<T, object>> propertyFilter,
             Action<ExportBuilder> exportConfiguration)
         {
-            if (propertyFilter is null)
-            {
-                throw new ArgumentNullException(nameof(propertyFilter));
-            }
+            ArgumentNullException.ThrowIfNull(propertyFilter);
 
             var adapter = new PropertyExpressionAdapter(propertyFilter, null, exportConfiguration);
             ExportProperties<TContract>(adapter.VerifyPropertyInfo, adapter.ConfigureExport);
@@ -212,10 +197,7 @@ namespace System.ComponentModel.Composition.Registration
         public PartBuilder<T> ImportProperty(Expression<Func<T, object>> propertyFilter,
             Action<ImportBuilder> importConfiguration)
         {
-            if (propertyFilter is null)
-            {
-                throw new ArgumentNullException(nameof(propertyFilter));
-            }
+            ArgumentNullException.ThrowIfNull(propertyFilter);
 
             var adapter = new PropertyExpressionAdapter(propertyFilter, importConfiguration, null);
             ImportProperties(adapter.VerifyPropertyInfo, adapter.ConfigureImport);
@@ -231,10 +213,7 @@ namespace System.ComponentModel.Composition.Registration
         public PartBuilder<T> ImportProperty<TContract>(Expression<Func<T, object>> propertyFilter,
             Action<ImportBuilder> importConfiguration)
         {
-            if (propertyFilter is null)
-            {
-                throw new ArgumentNullException(nameof(propertyFilter));
-            }
+            ArgumentNullException.ThrowIfNull(propertyFilter);
 
             var adapter = new PropertyExpressionAdapter(propertyFilter, importConfiguration, null);
             ImportProperties<TContract>(adapter.VerifyPropertyInfo, adapter.ConfigureImport);

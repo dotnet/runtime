@@ -1,13 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// EEConfig.CPP
-//
 
+// EEConfig.CPP
 //
 // Fetched configuration data from the registry (should we Jit, run GC checks ...)
 //
-//
-
 
 #include "common.h"
 #include "eeconfig.h"
@@ -103,7 +100,6 @@ HRESULT EEConfig::Init()
     dwSpinLimitProcFactor = 0x4E20;
     dwSpinLimitConstant = 0x0;
     dwSpinRetryCount = 0xA;
-    dwMonitorSpinCount = 0;
 
     dwJitHostMaxSlabCache = 0;
 
@@ -112,14 +108,15 @@ HRESULT EEConfig::Init()
     fJitMinOpts = false;
     fJitEnableOptionalRelocs = false;
     fDisableOptimizedThreadStaticAccess = false;
+    fIsWriteBarrierCopyEnabled = false;
     fPInvokeRestoreEsp = (DWORD)-1;
 
     fStressLog = false;
-    fForceEnc = false;
 
     INDEBUG(fStressLog = true;)
 
     fDebuggable = false;
+    modifiableAssemblies = MODIFIABLE_ASSM_UNSET;
 
 #ifdef _DEBUG
     fExpandAllOnLoad = false;
@@ -133,7 +130,6 @@ HRESULT EEConfig::Init()
     pszBreakOnComToClrNativeInfoInit = 0;
     pszBreakOnStructMarshalSetup = 0;
     fJitVerificationDisable= false;
-    fVerifierOff           = false;
 
 #ifdef ENABLE_STARTUP_DELAY
     iStartupDelayMS = 0;
@@ -143,12 +139,6 @@ HRESULT EEConfig::Init()
     pPerfTypesToLog = NULL;
     iFastGCStress = 0;
     iInjectFatalError = 0;
-#ifdef TEST_DATA_CONSISTENCY
-    // indicates whether to run the self test to determine that we are detecting when a lock is held by the
-    // LS in DAC builds. Initialized via the environment variable TestDataConsistency
-    fTestDataConsistency = false;
-#endif
-
     // In Thread::SuspendThread(), default the timeout to 2 seconds.  If the suspension
     // takes longer, assert (but keep trying).
     m_SuspendThreadDeadlockTimeoutMs = 2000;
@@ -171,11 +161,6 @@ HRESULT EEConfig::Init()
 
     fSuppressChecks = false;
     fConditionalContracts = false;
-    fEnableFullDebug = false;
-#endif
-
-#ifdef FEATURE_DOUBLE_ALIGNMENT_HINT
-    DoubleArrayToLargeObjectHeapThreshold = 1000;
 #endif
 
 #ifdef _DEBUG
@@ -191,7 +176,7 @@ HRESULT EEConfig::Init()
     m_fInteropValidatePinnedObjects = false;
     m_fInteropLogArguments = false;
 
-#if defined(_DEBUG) && defined(FEATURE_EH_FUNCLETS)
+#if defined(_DEBUG)
     fSuppressLockViolationsOnReentryFromOS = false;
 #endif
 
@@ -446,19 +431,64 @@ HRESULT EEConfig::sync()
     }
 #endif
     fStressLog        =  CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_StressLog, fStressLog) != 0;
-    fForceEnc         =  CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_ForceEnc) != 0;
 
     {
         NewArrayHolder<WCHAR> wszModifiableAssemblies;
         IfFailRet(CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_DOTNET_MODIFIABLE_ASSEMBLIES, &wszModifiableAssemblies));
         if (wszModifiableAssemblies)
-            fDebugAssembliesModifiable = _wcsicmp(wszModifiableAssemblies, W("debug")) == 0;
+        {
+            if (_wcsicmp(wszModifiableAssemblies, W("debug")) == 0)
+            {
+                modifiableAssemblies = MODIFIABLE_ASSM_DEBUG;
+            }
+            else if (_wcsicmp(wszModifiableAssemblies, W("none")) == 0)
+            {
+                modifiableAssemblies = MODIFIABLE_ASSM_NONE;
+            }
+        }
     }
 
     pReadyToRunExcludeList = NULL;
 
+#ifdef FEATURE_INTERPRETER
+#ifdef FEATURE_DYNAMIC_CODE_COMPILED
+    LPWSTR interpreterConfig;
+    IfFailThrow(CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_Interpreter, &interpreterConfig));
+    if (interpreterConfig == NULL)
+    {
+        if ((CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_InterpMode) != 0))
+        {
+            enableInterpreter = true;
+        }
+    }
+    else
+    {
+        enableInterpreter = true;
+    }
+#else
+    enableInterpreter = true;
+#endif // FEATURE_DYNAMIC_CODE_COMPILED
+#endif // FEATURE_INTERPRETER
+
+    enableHWIntrinsic = (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableHWIntrinsic) != 0);
+#ifdef FEATURE_INTERPRETER
+    if (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_InterpMode) == 3)
+    {
+        // InterpMode 3 disables all hw intrinsics
+        enableHWIntrinsic = false;
+    }
+#endif // FEATURE_INTERPRETER
+
 #if defined(FEATURE_READYTORUN)
     fReadyToRun = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_ReadyToRun);
+#if defined(FEATURE_INTERPRETER)
+    if (fReadyToRun && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_InterpMode) >= 2)
+    {
+        // ReadyToRun and Interpreter modes 2 and 3 are mutually exclusive.
+        // If both are set, Interpreter wins.
+        fReadyToRun = false;
+    }
+#endif // defined(FEATURE_INTERPRETER)
 
     if (fReadyToRun)
     {
@@ -468,10 +498,6 @@ HRESULT EEConfig::sync()
             pReadyToRunExcludeList = new AssemblyNamesList(wszReadyToRunExcludeList);
     }
 #endif // defined(FEATURE_READYTORUN)
-
-#ifdef FEATURE_DOUBLE_ALIGNMENT_HINT
-    DoubleArrayToLargeObjectHeapThreshold = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_DoubleArrayToLargeObjectHeap, DoubleArrayToLargeObjectHeapThreshold);
-#endif
 
 #ifdef _DEBUG
     IfFailRet (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_BreakOnClassLoad, (LPWSTR*) &pszBreakOnClassLoad));
@@ -492,7 +518,6 @@ HRESULT EEConfig::sync()
     dwSpinLimitProcFactor = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_SpinLimitProcFactor);
     dwSpinLimitConstant = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_SpinLimitConstant);
     dwSpinRetryCount = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_SpinRetryCount);
-    dwMonitorSpinCount = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_Monitor_SpinCount);
 
     dwJitHostMaxSlabCache = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_JitHostMaxSlabCache);
 
@@ -503,6 +528,8 @@ HRESULT EEConfig::sync()
     if (iJitOptimizeType > OPT_RANDOM)     iJitOptimizeType = OPT_DEFAULT;
 
     fDisableOptimizedThreadStaticAccess = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_DisableOptimizedThreadStaticAccess) != 0;
+
+    fIsWriteBarrierCopyEnabled = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_UseGCWriteBarrierCopy) != 0;
 
 #ifdef TARGET_X86
     fPInvokeRestoreEsp = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_Jit_NetFx40PInvokeStackResilience);
@@ -557,10 +584,6 @@ HRESULT EEConfig::sync()
     Contract::SetUnconditionalContractEnforcement(!fConditionalContracts);
 #endif
 
-    fEnableFullDebug = (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_EnableFullDebug) != 0);
-
-    fVerifierOff    = (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_VerifierOff) != 0);
-
     fJitVerificationDisable = (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_JitVerificationDisable) != 0);
 #endif
 
@@ -596,10 +619,6 @@ HRESULT EEConfig::sync()
 
 #ifdef _DEBUG
 
-#ifdef TEST_DATA_CONSISTENCY
-    fTestDataConsistency = (CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_TestDataConsistency) !=0);
-#endif
-
     m_SuspendThreadDeadlockTimeoutMs = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_SuspendThreadDeadlockTimeoutMs);
     m_SuspendDeadlockTimeout = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_SuspendDeadlockTimeout);
 #endif // _DEBUG
@@ -627,7 +646,7 @@ HRESULT EEConfig::sync()
     m_fInteropValidatePinnedObjects = (CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_InteropValidatePinnedObjects) != 0);
     m_fInteropLogArguments = (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_InteropLogArguments) != 0);
 
-#if defined(_DEBUG) && defined(FEATURE_EH_FUNCLETS)
+#if defined(_DEBUG)
     fSuppressLockViolationsOnReentryFromOS = (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_SuppressLockViolationsOnReentryFromOS) != 0);
 #endif
 
@@ -644,6 +663,25 @@ HRESULT EEConfig::sync()
 
 #if defined(FEATURE_TIERED_COMPILATION)
     fTieredCompilation = Configuration::GetKnobBooleanValue(W("System.Runtime.TieredCompilation"), CLRConfig::EXTERNAL_TieredCompilation);
+
+#if defined(FEATURE_INTERPRETER)
+    if (fTieredCompilation)
+    {
+        // Disable tiered compilation for interpreter testing. Tiered compilation and interpreter
+        // do not work well together currently.
+        LPWSTR pwzInterpreterMaybe;
+        IfFailThrow(CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_Interpreter, &pwzInterpreterMaybe));
+        if (pwzInterpreterMaybe && pwzInterpreterMaybe[0] != 0)
+        {
+            fTieredCompilation = false;
+        }
+        else if (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_InterpMode) != 0)
+        {
+            fTieredCompilation = false;
+        }
+    }
+#endif
+
     if (fTieredCompilation)
     {
         fTieredCompilation_QuickJit =
@@ -739,11 +777,35 @@ HRESULT EEConfig::sync()
         }
     #endif
 
+#ifdef FEATURE_PGO
+        if (fTieredPGO)
+        {
+            // Initial tier for R2R is always just OptimizationTier0
+            // For ILOnly it depends on TieredPGO_InstrumentOnlyHotCode:
+            // OptimizationTier0 as we don't want to instrument the initial version (will only instrument hot Tier0)
+            // OptimizationTier0Instrumented - instrument all ILOnly code
+            if (g_pConfig->TieredPGO_InstrumentOnlyHotCode())
+            {
+                tieredCompilation_DefaultTier = (DWORD)NativeCodeVersion::OptimizationTier0;
+            }
+            else
+            {
+                tieredCompilation_DefaultTier = (DWORD)NativeCodeVersion::OptimizationTier0Instrumented;
+            }
+        }
+        else
+#endif
+        {
+            tieredCompilation_DefaultTier = (DWORD)NativeCodeVersion::OptimizationTier0;
+        }
+
         if (ETW::CompilationLog::TieredCompilation::Runtime::IsEnabled())
         {
             ETW::CompilationLog::TieredCompilation::Runtime::SendSettings();
         }
     }
+#else // !FEATURE_TIERED_COMPILATION
+    tieredCompilation_DefaultTier = (DWORD)NativeCodeVersion::OptimizationTierOptimized;
 #endif
 
 #if defined(FEATURE_ON_STACK_REPLACEMENT)
@@ -769,6 +831,11 @@ HRESULT EEConfig::sync()
 #if defined(FEATURE_GDBJIT_FRAME)
     fGDBJitEmitDebugFrame = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_GDBJitEmitDebugFrame) != 0;
 #endif
+
+#if defined(FEATURE_CACHED_INTERFACE_DISPATCH) && defined(FEATURE_VIRTUAL_STUB_DISPATCH)
+    fUseCachedInterfaceDispatch = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_UseCachedInterfaceDispatch) != 0;
+#endif // defined(FEATURE_CACHED_INTERFACE_DISPATCH) && defined(FEATURE_VIRTUAL_STUB_DISPATCH)
+
     return hr;
 }
 
@@ -999,7 +1066,6 @@ HRESULT TypeNamesList::Init(_In_z_ LPCWSTR str)
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
-        MODE_ANY;
         PRECONDITION(CheckPointer(str));
         INJECT_FAULT(return E_OUTOFMEMORY);
     } CONTRACTL_END;

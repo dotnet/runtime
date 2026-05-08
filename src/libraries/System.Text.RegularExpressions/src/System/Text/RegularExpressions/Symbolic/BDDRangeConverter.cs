@@ -69,7 +69,7 @@ namespace System.Text.RegularExpressions.Symbolic
             uint maximal = ((uint)1 << fromBits) - 1;
             if (ranges[0].Item1 == 0 && ranges[ranges.Length - 1].Item2 == maximal)
             {
-                // merge consequtive ranges, we know that res has at least two elements here
+                // merge consecutive ranges, we know that res has at least two elements here
                 var merged = new List<(uint, uint)>();
                 uint from = result[0].Item1;
                 uint to = result[0].Item2;

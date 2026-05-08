@@ -74,18 +74,12 @@ namespace System.Transactions
     [EventSource(
         Name = "System.Transactions.TransactionsEventSource",
         Guid = "8ac2d80a-1f1a-431b-ace4-bff8824aef0b")]
-    internal sealed class TransactionsEtwProvider : EventSource
+    internal sealed partial class TransactionsEtwProvider : EventSource
     {
         /// <summary>
         /// Defines the singleton instance for the Transactions ETW provider.
-        /// The Transactions provider GUID is {8ac2d80a-1f1a-431b-ace4-bff8824aef0b}.
         /// </summary>
-        ///
-
-
         internal static readonly TransactionsEtwProvider Log = new TransactionsEtwProvider();
-        /// <summary>Prevent external instantiation.  All logging should go through the Log instance.</summary>
-        private TransactionsEtwProvider() { }
 
         /// <summary>Enabled for all keywords.</summary>
         private const EventKeywords ALL_KEYWORDS = (EventKeywords)(-1);
@@ -197,7 +191,7 @@ namespace System.Transactions
         /// <summary>The event ID for the transaction deserialized event.</summary>
         private const int TRANSACTION_DESERIALIZED_EVENTID = 50;
         /// <summary>The event ID for when we encounter a new Transactions object that hasn't had its name traced to the trace file.</summary>
-        private const int TRANSACTION_CREATED_OLETX_EVENTID = 11;
+        private const int TRANSACTION_CREATED_OLETX_EVENTID = 51;
 
         /// <summary>The event ID for the enlistment status.</summary>
         private const int ENLISTMENT_OLETX_EVENTID = 52;

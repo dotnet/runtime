@@ -44,6 +44,7 @@ internal static partial class Interop
             {
                 return keySize;
             }
+
             throw Interop.Crypto.CreateOpenSslCryptographicException();
         }
 
@@ -52,34 +53,41 @@ internal static partial class Interop
 
         internal static string EcKeyGetCurveName(SafeEcKeyHandle key)
         {
-            int nidCurveName;
-            int rc = CryptoNative_EcKeyGetCurveName(key, out nidCurveName);
+            int rc = CryptoNative_EcKeyGetCurveName(key, out int nidCurveName);
             if (rc == 1)
             {
-                if (nidCurveName == Interop.Crypto.NID_undef)
-                {
-                    Debug.Fail("Key is invalid or doesn't have a curve");
-                    return string.Empty;
-                }
-
-                IntPtr objCurveName = Interop.Crypto.ObjNid2Obj(nidCurveName);
-                if (objCurveName != IntPtr.Zero)
-                {
-                    return Interop.Crypto.GetOidValue(objCurveName);
-                }
+                return CurveNidToOidValue(nidCurveName);
             }
+
             throw Interop.Crypto.CreateOpenSslCryptographicException();
         }
 
         internal static bool EcKeyHasCurveName(SafeEcKeyHandle key)
         {
-            int nidCurveName;
-            int rc = CryptoNative_EcKeyGetCurveName(key, out nidCurveName);
+            int rc = CryptoNative_EcKeyGetCurveName(key, out int nidCurveName);
             if (rc == 1)
             {
                 // Key is invalid or doesn't have a curve
                 return (nidCurveName != Interop.Crypto.NID_undef);
             }
+
+            throw Interop.Crypto.CreateOpenSslCryptographicException();
+        }
+
+        internal static string CurveNidToOidValue(int nidCurveName)
+        {
+            if (nidCurveName == Interop.Crypto.NID_undef)
+            {
+                Debug.Fail("Key is invalid or doesn't have a curve");
+                return string.Empty;
+            }
+
+            IntPtr objCurveName = Interop.Crypto.ObjNid2Obj(nidCurveName);
+            if (objCurveName != IntPtr.Zero)
+            {
+                return Interop.Crypto.GetOidValue(objCurveName);
+            }
+
             throw Interop.Crypto.CreateOpenSslCryptographicException();
         }
     }

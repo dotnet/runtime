@@ -115,6 +115,8 @@ namespace System.DirectoryServices.Protocols
 
         internal static int SetReferralOption(ConnectionHandle ldapHandle, LdapOption option, ref LdapReferralCallback outValue) => Interop.Ldap.ldap_set_option_referral(ldapHandle, option, ref outValue);
 
+        internal static int SetTimevalOption(ConnectionHandle ldapHandle, LdapOption option, ref LDAP_TIMEVAL inValue) => Interop.Ldap.ldap_set_option_timeval(ldapHandle, option, ref inValue);
+
         // This option is not supported in Linux, so it would most likely throw.
         internal static int SetServerCertOption(ConnectionHandle ldapHandle, LdapOption option, VERIFYSERVERCERT outValue) => Interop.Ldap.ldap_set_option_servercert(ldapHandle, option, outValue);
 

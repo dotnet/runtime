@@ -56,8 +56,8 @@ public static class Program
 
     public static async Task<int> Main(string[] args)
     {
-        CliConfiguration configuration = new(CreateRootCommand());
-        ParseResult parsedArguments = configuration.Parse(args);
+        RootCommand rootCommand = CreateRootCommand();
+        ParseResult parsedArguments = rootCommand.Parse(args);
 
         while (true)
         {
@@ -79,32 +79,33 @@ public static class Program
                 {
                     // Parse the remaining string as new arguments for the analyzer.
                     FileInfo inputFileArgument = parsedArguments.GetValue(InputFileArgument)!;
-                    parsedArguments = configuration.Parse($"\"{inputFileArgument.FullName}\" {command[1..]}");
+                    parsedArguments = rootCommand.Parse($"\"{inputFileArgument.FullName}\" {command[1..]}");
                     break;
                 }
             }
-        };
+        }
+        ;
     }
 
-    private static readonly CliArgument<FileInfo> InputFileArgument = new CliArgument<FileInfo>("log file")
+    private static readonly Argument<FileInfo> InputFileArgument = new Argument<FileInfo>("log file")
     {
         Description = "The memory-mapped stress log file to analyze",
     };
 
-    private static readonly CliOption<bool> SingleRunOption = new CliOption<bool>("--single-run")
+    private static readonly Option<bool> SingleRunOption = new Option<bool>("--single-run")
     {
         Description = "Run the analyzer only once",
     };
 
-    public static CliRootCommand CreateRootCommand()
+    public static RootCommand CreateRootCommand()
     {
-        var outputFile = new CliOption<FileInfo>("-output", "-o")
+        var outputFile = new Option<FileInfo>("-output", "-o")
         {
             Description = "Write output to a text file instead of the console",
             HelpName = "output file",
         };
 
-        var valueRanges = new CliOption<IntegerRange[]>("-values", "-v")
+        var valueRanges = new Option<IntegerRange[]>("-values", "-v")
         {
             Arity = ArgumentArity.OneOrMore,
             DefaultValueFactory = argument => [],
@@ -142,7 +143,7 @@ public static class Program
             HelpName = "hex value or range",
         };
 
-        var timeRanges = new CliOption<TimeRange>("--time", "-t")
+        var timeRanges = new Option<TimeRange>("--time", "-t")
         {
             Arity = ArgumentArity.OneOrMore,
             DefaultValueFactory = argument => new TimeRange(0, double.MaxValue),
@@ -168,24 +169,24 @@ public static class Program
             HelpName = "start time or range",
         };
 
-        var allMessagesOption = new CliOption<bool>("--all", "-a")
+        var allMessagesOption = new Option<bool>("--all", "-a")
         {
             Description = "Print all messages from all threads"
         };
 
-        var defaultMessagesOption = new CliOption<bool>("--defaultMessages", "-d")
+        var defaultMessagesOption = new Option<bool>("--defaultMessages", "-d")
         {
             Description = "Suppress default messages"
         };
 
-        var levelFilter = new CliOption<IReadOnlyList<IntegerRange>>("--level", "-l")
+        var levelFilter = new Option<IReadOnlyList<IntegerRange>>("--level", "-l")
         {
             Arity = ArgumentArity.OneOrMore,
             DefaultValueFactory = argument => [],
             CustomParser = argument =>
             {
                 List<IntegerRange> levels = [];
-                foreach (CliToken token in argument.Tokens)
+                foreach (Token token in argument.Tokens)
                 {
                     foreach (string value in token.Value.Split(','))
                     {
@@ -215,13 +216,13 @@ public static class Program
             AllowMultipleArgumentsPerToken = true,
         };
 
-        var prefixOption = new CliOption<string[]>("--prefix", "-p")
+        var prefixOption = new Option<string[]>("--prefix", "-p")
         {
             Description = "Search for all format strings with a specific prefix",
             HelpName = "format string"
         };
 
-        var gcIndex = new CliOption<IntegerRange?>("--gc", "-g")
+        var gcIndex = new Option<IntegerRange?>("--gc", "-g")
         {
             Arity = ArgumentArity.OneOrMore,
             DefaultValueFactory = argument => null,
@@ -242,7 +243,7 @@ public static class Program
             HelpName = "gc index or range",
         };
 
-        var ignoreFacilityOption = new CliOption<ulong?>("--ignore", "-i")
+        var ignoreFacilityOption = new Option<ulong?>("--ignore", "-i")
         {
             CustomParser = argument =>
             {
@@ -252,7 +253,7 @@ public static class Program
             HelpName = "facility bitmap in hex",
         };
 
-        var earliestOption = new CliOption<ThreadFilter>("--earliest", "-e")
+        var earliestOption = new Option<ThreadFilter>("--earliest", "-e")
         {
             Arity = ArgumentArity.ZeroOrMore,
             CustomParser = argument =>
@@ -263,7 +264,7 @@ public static class Program
             HelpName = "thread id or GC heap number",
         };
 
-        var threadFilter = new CliOption<ThreadFilter?>("--threads", "-tid")
+        var threadFilter = new Option<ThreadFilter?>("--threads", "-tid")
         {
             Arity = ArgumentArity.ZeroOrMore,
             DefaultValueFactory = argument => null,
@@ -275,26 +276,26 @@ public static class Program
             HelpName = "thread id or GC heap number",
         };
 
-        var hexThreadId = new CliOption<bool?>("--hexThreadId", "--hex")
+        var hexThreadId = new Option<bool?>("--hexThreadId", "--hex")
         {
             DefaultValueFactory = argument => null,
             Description = "Print hex thread ids, e.g. 2a08 instead of GC12",
         };
 
-        var formatFilter = new CliOption<string[]>("--format", "-f")
+        var formatFilter = new Option<string[]>("--format", "-f")
         {
             Arity = ArgumentArity.ZeroOrMore,
             Description = "Print the raw format strings along with the message. Use -f:<format string> to search for a specific format string",
             HelpName = "format string",
         };
 
-        var printFormatStrings = new CliOption<bool?>("--printFormatStrings", "-pf")
+        var printFormatStrings = new Option<bool?>("--printFormatStrings", "-pf")
         {
             DefaultValueFactory = argument => null,
             Description = "Print the raw format strings along with the message",
         };
 
-        var rootCommand = new CliRootCommand
+        var rootCommand = new RootCommand
         {
             InputFileArgument,
             outputFile,
@@ -353,12 +354,11 @@ public static class Program
         }
         try
         {
-            (Func<Target> targetFactory, StressLogHeader.ModuleTable moduleTable, int contractVersion, TargetPointer logs) = CreateTarget(accessor.SafeMemoryMappedViewHandle);
+            (Func<Target> targetFactory, StressLogHeader.ModuleTable moduleTable, TargetPointer logs) = CreateTarget(accessor.SafeMemoryMappedViewHandle);
 
             Target globalTarget = targetFactory();
 
-            StressLogFactory factory = new();
-            IStressLog globalStressLogContract = factory.CreateContract(globalTarget, contractVersion);
+            IStressLog globalStressLogContract = globalTarget.Contracts.GetContract<IStressLog>();
 
             using TextWriter? outputFile = options.OutputFile is not null ? File.CreateText(options.OutputFile.FullName) : null;
 
@@ -374,7 +374,7 @@ public static class Program
             TimeTracker timeTracker = CreateTimeTracker(accessor.SafeMemoryMappedViewHandle, options);
 
             var analyzer = new StressLogAnalyzer(
-                () => factory.CreateContract(globalTarget, contractVersion),
+                globalTarget.Contracts.GetContract<IStressLog>,
                 stringFinder,
                 messageFilter,
                 options.ThreadFilter,
@@ -471,7 +471,7 @@ public static class Program
         return filter;
     }
 
-    private static unsafe (Func<Target> targetFactory, StressLogHeader.ModuleTable table, int contractVersion, TargetPointer logs) CreateTarget(SafeMemoryMappedViewHandle handle)
+    private static unsafe (Func<Target> targetFactory, StressLogHeader.ModuleTable table, TargetPointer logs) CreateTarget(SafeMemoryMappedViewHandle handle)
     {
         byte* buffer = null;
         handle.AcquirePointer(ref buffer);
@@ -484,16 +484,20 @@ public static class Program
             throw new InvalidOperationException("Invalid memory-mapped stress log.");
         }
 
-        int contractVersion = (int)(header->version & 0xFFFF);
+        string contractVersion = $"c{(int)(header->version & 0xFFFF)}";
 
-        return (CreateTarget, header->moduleTable, contractVersion, header->logs);
+        return (CreateTarget, header->moduleTable, header->logs);
 
         ContractDescriptorTarget CreateTarget() => ContractDescriptorTarget.Create(
             GetDescriptor(contractVersion),
             [TargetPointer.Null, new TargetPointer(header->memoryBase + (nuint)((byte*)&header->moduleTable - (byte*)header))],
             (address, buffer) => ReadFromMemoryMappedLog(address, buffer, header),
+            (address, buffer) => throw new NotImplementedException("StressLogAnalyzer does not provide WriteToTarget implementation"),
+            (threadId, contextFlags, bufferToFill) => throw new NotImplementedException("StressLogAnalyzer does not provide GetTargetThreadContext implementation"),
+            (ulong size, out ulong allocatedAddress) => throw new NotImplementedException("StressLogAnalyzer does not provide AllocVirtual implementation"),
             true,
-            nuint.Size);
+            nuint.Size,
+            [CoreCLRContracts.Register]);
     }
 
     private static unsafe TimeTracker CreateTimeTracker(SafeMemoryMappedViewHandle handle, Options options)
@@ -511,13 +515,13 @@ public static class Program
         }
     }
 
-    private static ContractDescriptorParser.ContractDescriptor GetDescriptor(int stressLogVersion)
+    private static ContractDescriptorParser.ContractDescriptor GetDescriptor(string stressLogVersion)
     {
         return new ContractDescriptorParser.ContractDescriptor
         {
             Baseline = BaseContractDescriptor.Baseline,
             Version = BaseContractDescriptor.Version,
-            Contracts = new(){ { "StressLog", stressLogVersion } },
+            Contracts = new() { { "StressLog", stressLogVersion } },
             Types = BaseContractDescriptor.Types,
             Globals = BaseContractDescriptor.Globals,
         };
@@ -539,7 +543,8 @@ public static class Program
                         "Logs": 24,
                         "TickFrequency": 48,
                         "StartTimestamp": 56,
-                        "ModuleOffset": 72
+                        "ModuleOffset": 72,
+                        "Modules": 80
                     },
                     "StressLogModuleDesc": {
                         "!": 16,

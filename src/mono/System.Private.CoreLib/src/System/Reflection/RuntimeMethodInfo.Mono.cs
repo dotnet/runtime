@@ -181,6 +181,8 @@ namespace System.Reflection
             }
         }
 
+        public override bool IsCollectible => false;
+
         private string FormatNameAndSig()
         {
             // Serialization uses ToString to resolve MethodInfo overloads.
@@ -703,6 +705,8 @@ namespace System.Reflection
         }
 
         public sealed override bool HasSameMetadataDefinitionAs(MemberInfo other) => HasSameMetadataDefinitionAsCore<RuntimeMethodInfo>(other);
+
+        private static bool IsDisallowedAsyncHelper => false;
     }
 #region Sync with _MonoReflectionMethod in object-internals.h
     [StructLayout(LayoutKind.Sequential)]
@@ -746,6 +750,8 @@ namespace System.Reflection
                 return GetRuntimeModule();
             }
         }
+
+        public override bool IsCollectible => false;
 
         internal RuntimeModule GetRuntimeModule()
         {

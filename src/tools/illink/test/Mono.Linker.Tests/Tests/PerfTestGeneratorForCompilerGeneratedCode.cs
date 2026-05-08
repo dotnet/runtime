@@ -14,24 +14,25 @@ using System.Linq;
 /// </summary>
 static class PerfTestGeneratorForCompilerGeneratedCode
 {
-	const int FuncNumber = 10000;
-	public static void Run ()
-	{
-		using var fstream = File.Create ("GeneratedLinkerTests.cs");
-		using var writer = new StreamWriter (fstream);
-		writer.WriteLine ($$"""
+    const int FuncNumber = 10000;
+    public static void Run()
+    {
+        using var fstream = File.Create("GeneratedLinkerTests.cs");
+        using var writer = new StreamWriter(fstream);
+        writer.WriteLine($$"""
 class C {
     public static async void Main()
     {
         int x = 0;
-        {{string.Join (@"
-        ", Enumerable.Range (0, FuncNumber).Select (i => $"x += await N{i}<int>.M();"))}}
+        {{string.Join(@"
+        ", Enumerable.Range(0, FuncNumber).Select(i => $"x += await N{i}<int>.M();"))}}
         Console.WriteLine(x);
     }
 }
 """);
-		for (int i = 0; i < FuncNumber; i++) {
-			writer.WriteLine ($$"""
+        for (int i = 0; i < FuncNumber; i++)
+        {
+            writer.WriteLine($$"""
 public static class N{{i}}<T>
 {
     public static async ValueTask<int> M()
@@ -42,6 +43,6 @@ public static class N{{i}}<T>
     }
 }
 """);
-		}
-	}
+        }
+    }
 }

@@ -14,6 +14,8 @@
   .ver 4:0:0:0
 }
 
+.assembly extern System.Diagnostics.StackTrace { }
+
 .assembly PositiveCases
 {
 }
@@ -178,8 +180,8 @@
     IL_00c7:  newobj     instance void [mscorlib]System.Diagnostics.StackTrace::.ctor()
     IL_00cc:  ldc.i4.0
     IL_00cd:  callvirt   instance class [mscorlib]System.Diagnostics.StackFrame [mscorlib]System.Diagnostics.StackTrace::GetFrame(int32)
-    IL_00d2:  callvirt   instance class [mscorlib]System.Reflection.MethodBase [mscorlib]System.Diagnostics.StackFrame::GetMethod()
-    IL_00d7:  callvirt   instance string [mscorlib]System.Reflection.MemberInfo::get_Name()
+    IL_00d2:  call       class [System.Diagnostics.StackTrace]System.Diagnostics.DiagnosticMethodInfo [System.Diagnostics.StackTrace]System.Diagnostics.DiagnosticMethodInfo::Create(class [mscorlib]System.Diagnostics.StackFrame)
+    IL_00d7:  callvirt   instance string [System.Diagnostics.StackTrace]System.Diagnostics.DiagnosticMethodInfo::get_Name()
     IL_00dc:  stloc.0
     IL_00dd:  ldloc.0
     IL_00de:  ldstr      "A1"
@@ -326,8 +328,8 @@
     IL_00c7:  newobj     instance void [mscorlib]System.Diagnostics.StackTrace::.ctor()
     IL_00cc:  ldc.i4.0
     IL_00cd:  callvirt   instance class [mscorlib]System.Diagnostics.StackFrame [mscorlib]System.Diagnostics.StackTrace::GetFrame(int32)
-    IL_00d2:  callvirt   instance class [mscorlib]System.Reflection.MethodBase [mscorlib]System.Diagnostics.StackFrame::GetMethod()
-    IL_00d7:  callvirt   instance string [mscorlib]System.Reflection.MemberInfo::get_Name()
+    IL_00d2:  call       class [System.Diagnostics.StackTrace]System.Diagnostics.DiagnosticMethodInfo [System.Diagnostics.StackTrace]System.Diagnostics.DiagnosticMethodInfo::Create(class [mscorlib]System.Diagnostics.StackFrame)
+    IL_00d7:  callvirt   instance string [System.Diagnostics.StackTrace]System.Diagnostics.DiagnosticMethodInfo::get_Name()
     IL_00dc:  stloc.0
     IL_00dd:  ldloc.0
     IL_00de:  ldstr      "A2"
@@ -354,8 +356,8 @@
     IL_000d:  newobj     instance void [mscorlib]System.Diagnostics.StackTrace::.ctor()
     IL_0012:  ldc.i4.0
     IL_0013:  callvirt   instance class [mscorlib]System.Diagnostics.StackFrame [mscorlib]System.Diagnostics.StackTrace::GetFrame(int32)
-    IL_0018:  callvirt   instance class [mscorlib]System.Reflection.MethodBase [mscorlib]System.Diagnostics.StackFrame::GetMethod()
-    IL_001d:  callvirt   instance string [mscorlib]System.Reflection.MemberInfo::get_Name()
+    IL_0018:  call       class [System.Diagnostics.StackTrace]System.Diagnostics.DiagnosticMethodInfo [System.Diagnostics.StackTrace]System.Diagnostics.DiagnosticMethodInfo::Create(class [mscorlib]System.Diagnostics.StackFrame)
+    IL_001d:  callvirt   instance string [System.Diagnostics.StackTrace]System.Diagnostics.DiagnosticMethodInfo::get_Name()
     IL_0022:  stloc.0
     IL_0023:  ldloc.0
     IL_0024:  ldstr      "A3"
@@ -382,8 +384,8 @@
     IL_000d:  newobj     instance void [mscorlib]System.Diagnostics.StackTrace::.ctor()
     IL_0012:  ldc.i4.0
     IL_0013:  callvirt   instance class [mscorlib]System.Diagnostics.StackFrame [mscorlib]System.Diagnostics.StackTrace::GetFrame(int32)
-    IL_0018:  callvirt   instance class [mscorlib]System.Reflection.MethodBase [mscorlib]System.Diagnostics.StackFrame::GetMethod()
-    IL_001d:  callvirt   instance string [mscorlib]System.Reflection.MemberInfo::get_Name()
+    IL_0018:  call       class [System.Diagnostics.StackTrace]System.Diagnostics.DiagnosticMethodInfo [System.Diagnostics.StackTrace]System.Diagnostics.DiagnosticMethodInfo::Create(class [mscorlib]System.Diagnostics.StackFrame)
+    IL_001d:  callvirt   instance string [System.Diagnostics.StackTrace]System.Diagnostics.DiagnosticMethodInfo::get_Name()
     IL_0022:  stloc.0
     IL_0023:  ldloc.0
     IL_0024:  ldstr      "A4"

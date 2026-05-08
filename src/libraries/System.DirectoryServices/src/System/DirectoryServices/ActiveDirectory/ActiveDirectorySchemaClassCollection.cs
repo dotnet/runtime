@@ -56,10 +56,7 @@ namespace System.DirectoryServices.ActiveDirectory
             get => (ActiveDirectorySchemaClass)List[index]!;
             set
             {
-                if (value == null)
-                {
-                    throw new ArgumentNullException(nameof(value));
-                }
+                ArgumentNullException.ThrowIfNull(value);
 
                 if (!value.isBound)
                 {

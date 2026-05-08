@@ -88,6 +88,7 @@ namespace System.Threading.RateLimiting
     }
     public abstract partial class RateLimiter : System.IAsyncDisposable, System.IDisposable
     {
+        public static System.Threading.RateLimiting.RateLimiter CreateChained(params System.Threading.RateLimiting.RateLimiter[] limiters) { throw null; }
         protected RateLimiter() { }
         public abstract System.TimeSpan? IdleDuration { get; }
         public System.Threading.Tasks.ValueTask<System.Threading.RateLimiting.RateLimitLease> AcquireAsync(int permitCount = 1, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }

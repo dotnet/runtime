@@ -3,15 +3,15 @@
 
 namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.BaseProvidesInterfaceEdgeCase.Dependencies
 {
-	public interface IFoo
-	{
-		void Method ();
-	}
-	public interface IBar
-	{
-		void Method ();
-	}
-	public class Derived2 : Base, IBar
-	{
-	}
+    public interface IFoo
+    {
+        void Method();
+    }
+    public interface IBar
+    {
+        void Method();
+    }
+    public class Derived2 : Base, IBar
+    {
+    }
 }

@@ -156,24 +156,10 @@ namespace System.Security.Cryptography
         /// <exception cref="CryptographicException">The encryption operation failed.</exception>
         public void Encrypt(byte[] nonce, byte[] plaintext, byte[] ciphertext, byte[] tag, byte[]? associatedData = null)
         {
-#if NET
             ArgumentNullException.ThrowIfNull(nonce);
             ArgumentNullException.ThrowIfNull(plaintext);
             ArgumentNullException.ThrowIfNull(ciphertext);
             ArgumentNullException.ThrowIfNull(tag);
-#else
-            if (nonce is null)
-                throw new ArgumentNullException(nameof(nonce));
-
-            if (plaintext is null)
-                throw new ArgumentNullException(nameof(plaintext));
-
-            if (ciphertext is null)
-                throw new ArgumentNullException(nameof(ciphertext));
-
-            if (tag is null)
-                throw new ArgumentNullException(nameof(tag));
-#endif
 
             Encrypt((ReadOnlySpan<byte>)nonce, plaintext, ciphertext, tag, associatedData);
         }
@@ -249,24 +235,10 @@ namespace System.Security.Cryptography
         /// <exception cref="AuthenticationTagMismatchException">The tag value could not be verified.</exception>
         public void Decrypt(byte[] nonce, byte[] ciphertext, byte[] tag, byte[] plaintext, byte[]? associatedData = null)
         {
-#if NET
             ArgumentNullException.ThrowIfNull(nonce);
             ArgumentNullException.ThrowIfNull(ciphertext);
             ArgumentNullException.ThrowIfNull(tag);
             ArgumentNullException.ThrowIfNull(plaintext);
-#else
-            if (nonce is null)
-                throw new ArgumentNullException(nameof(nonce));
-
-            if (ciphertext is null)
-                throw new ArgumentNullException(nameof(ciphertext));
-
-            if (tag is null)
-                throw new ArgumentNullException(nameof(tag));
-
-            if (plaintext is null)
-                throw new ArgumentNullException(nameof(plaintext));
-#endif
 
             Decrypt((ReadOnlySpan<byte>)nonce, ciphertext, tag, plaintext, associatedData);
         }

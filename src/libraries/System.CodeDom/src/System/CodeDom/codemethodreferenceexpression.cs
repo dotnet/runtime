@@ -5,9 +5,6 @@ namespace System.CodeDom
 {
     public class CodeMethodReferenceExpression : CodeExpression
     {
-        private string _methodName;
-        private CodeTypeReferenceCollection _typeArguments;
-
         public CodeMethodReferenceExpression() { }
 
         public CodeMethodReferenceExpression(CodeExpression targetObject, string methodName)
@@ -30,10 +27,10 @@ namespace System.CodeDom
 
         public string MethodName
         {
-            get => _methodName ?? string.Empty;
-            set => _methodName = value;
+            get => field ?? string.Empty;
+            set => field = value;
         }
 
-        public CodeTypeReferenceCollection TypeArguments => _typeArguments ??= new CodeTypeReferenceCollection();
+        public CodeTypeReferenceCollection TypeArguments => field ??= new CodeTypeReferenceCollection();
     }
 }

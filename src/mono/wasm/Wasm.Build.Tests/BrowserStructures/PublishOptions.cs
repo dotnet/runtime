@@ -16,7 +16,7 @@ public record PublishOptions : MSBuildOptions
         bool IsPublish                                              = true,
         bool AOT                                                    = false,
         NativeFilesType ExpectedFileType                            = NativeFilesType.FromRuntimePack,
-        string TargetFramework                                      = BuildTestBase.DefaultTargetFramework,
+        string? TargetFramework                                     = null,
         GlobalizationMode GlobalizationMode                         = GlobalizationMode.Sharded,
         string CustomIcuFile                                        = "",
         bool UseCache                                               = true,
@@ -26,16 +26,16 @@ public record PublishOptions : MSBuildOptions
         bool WarnAsError                                            = true,
         RuntimeVariant RuntimeType                                  = RuntimeVariant.SingleThreaded,
         IDictionary<string, string>? ExtraBuildEnvironmentVariables = null,
-        string BootConfigFileName                                   = "blazor.boot.json",
         string NonDefaultFrameworkDir                               = "",
         string ExtraMSBuildArgs                                     = "",
         bool BuildOnlyAfterPublish                                  = true,
-        bool ExpectRelinkDirWhenPublishing                          = false
+        bool ExpectRelinkDirWhenPublishing                          = false,
+        bool EnableDiagnostics                                      = false
     ) : base(
         IsPublish,
+        TargetFramework ?? BuildTestBase.DefaultTargetFramework,
         AOT,
         ExpectedFileType,
-        TargetFramework,
         GlobalizationMode,
         CustomIcuFile,
         UseCache,
@@ -45,9 +45,9 @@ public record PublishOptions : MSBuildOptions
         WarnAsError,
         RuntimeType,
         ExtraBuildEnvironmentVariables,
-        BootConfigFileName,
         NonDefaultFrameworkDir,
-        ExtraMSBuildArgs
+        ExtraMSBuildArgs,
+        EnableDiagnostics
     )
     {
         this.IsPublish = IsPublish;

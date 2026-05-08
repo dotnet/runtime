@@ -21,7 +21,14 @@ namespace System.Text.Json.Serialization.Converters
         protected override void Add(string key, in object? value, JsonSerializerOptions options, ref ReadStack state)
         {
             TDictionary collection = (TDictionary)state.Current.ReturnValue!;
+
+            if (!options.AllowDuplicateProperties && collection.Contains(key))
+            {
+                ThrowHelper.ThrowJsonException_DuplicatePropertyNotAllowed(key);
+            }
+
             collection[key] = value;
+
             if (IsValueType)
             {
                 state.Current.ReturnValue = collection;

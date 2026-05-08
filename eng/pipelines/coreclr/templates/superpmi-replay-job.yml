@@ -9,12 +9,14 @@ parameters:
   variables: {}
   helixQueues: ''
   runJobTemplate: '/eng/pipelines/coreclr/templates/run-superpmi-replay-job.yml'
+  replayType: 'standard'
+  unifiedArtifactsName: ''
 
 jobs:
 - template: ${{ parameters.runJobTemplate }}
   parameters:
-    jobName: ${{ format('superpmi_replay_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
-    displayName: ${{ format('SuperPMI replay {0}{1} {2} {3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+    jobName: ${{ format('superpmi_replay_{0}_{1}{2}_{3}_{4}', parameters.replayType, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+    displayName: ${{ format('SuperPMI replay {0} {1}{2} {3} {4}', parameters.replayType, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
     pool: ${{ parameters.pool }}
     buildConfig: ${{ parameters.buildConfig }}
     archType: ${{ parameters.archType }}
@@ -23,6 +25,7 @@ jobs:
     condition: ${{ parameters.condition }}
     timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
     helixQueues: ${{ parameters.helixQueues }}
+    replayType: ${{ parameters.replayType }}
     dependsOn:
       - 'build_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ parameters.buildConfig }}_'
 
@@ -30,11 +33,11 @@ jobs:
 
     steps:
 
-    # Download jit builds
+    # Download builds
     - template: /eng/pipelines/common/download-artifact-step.yml
       parameters:
         unpackFolder: $(Build.SourcesDirectory)/artifacts/bin/coreclr
-        artifactFileName: 'CheckedJIT_$(osGroup)$(osSubgroup)_$(archType)$(archiveExtension)'
-        artifactName: 'CheckedJIT_$(osGroup)$(osSubgroup)_$(archType)'
-        displayName: 'JIT checked build'
+        artifactFileName: '${{ parameters.unifiedArtifactsName }}$(archiveExtension)'
+        artifactName: '${{ parameters.unifiedArtifactsName }}'
+        displayName: 'unified artifacts'
         cleanUnpackFolder: false

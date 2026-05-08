@@ -6,4 +6,7 @@
   <ItemGroup>
     <Compile Include="MyDep3.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
 </Project>

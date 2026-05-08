@@ -62,7 +62,7 @@ namespace Microsoft.Extensions.Hosting
         /// <returns>The same instance of the <see cref="IHostBuilder"/> for chaining.</returns>
         public IHostBuilder ConfigureHostConfiguration(Action<IConfigurationBuilder> configureDelegate)
         {
-            ThrowHelper.ThrowIfNull(configureDelegate);
+            ArgumentNullException.ThrowIfNull(configureDelegate);
 
             _configureHostConfigActions.Add(configureDelegate);
             return this;
@@ -78,7 +78,7 @@ namespace Microsoft.Extensions.Hosting
         /// <returns>The same instance of the <see cref="IHostBuilder"/> for chaining.</returns>
         public IHostBuilder ConfigureAppConfiguration(Action<HostBuilderContext, IConfigurationBuilder> configureDelegate)
         {
-            ThrowHelper.ThrowIfNull(configureDelegate);
+            ArgumentNullException.ThrowIfNull(configureDelegate);
 
             _configureAppConfigActions.Add(configureDelegate);
             return this;
@@ -92,7 +92,7 @@ namespace Microsoft.Extensions.Hosting
         /// <returns>The same instance of the <see cref="IHostBuilder"/> for chaining.</returns>
         public IHostBuilder ConfigureServices(Action<HostBuilderContext, IServiceCollection> configureDelegate)
         {
-            ThrowHelper.ThrowIfNull(configureDelegate);
+            ArgumentNullException.ThrowIfNull(configureDelegate);
 
             _configureServicesActions.Add(configureDelegate);
             return this;
@@ -106,7 +106,7 @@ namespace Microsoft.Extensions.Hosting
         /// <returns>The same instance of the <see cref="IHostBuilder"/> for chaining.</returns>
         public IHostBuilder UseServiceProviderFactory<TContainerBuilder>(IServiceProviderFactory<TContainerBuilder> factory) where TContainerBuilder : notnull
         {
-            ThrowHelper.ThrowIfNull(factory);
+            ArgumentNullException.ThrowIfNull(factory);
 
             _serviceProviderFactory = new ServiceFactoryAdapter<TContainerBuilder>(factory);
             _defaultProviderFactoryUsed = false;
@@ -121,7 +121,7 @@ namespace Microsoft.Extensions.Hosting
         /// <returns>The same instance of the <see cref="IHostBuilder"/> for chaining.</returns>
         public IHostBuilder UseServiceProviderFactory<TContainerBuilder>(Func<HostBuilderContext, IServiceProviderFactory<TContainerBuilder>> factory) where TContainerBuilder : notnull
         {
-            ThrowHelper.ThrowIfNull(factory);
+            ArgumentNullException.ThrowIfNull(factory);
 
             _serviceProviderFactory = new ServiceFactoryAdapter<TContainerBuilder>(() => _hostBuilderContext!, factory);
             _defaultProviderFactoryUsed = false;
@@ -138,7 +138,7 @@ namespace Microsoft.Extensions.Hosting
         /// <returns>The same instance of the <see cref="IHostBuilder"/> for chaining.</returns>
         public IHostBuilder ConfigureContainer<TContainerBuilder>(Action<HostBuilderContext, TContainerBuilder> configureDelegate)
         {
-            ThrowHelper.ThrowIfNull(configureDelegate);
+            ArgumentNullException.ThrowIfNull(configureDelegate);
 
             _configureContainerActions.Add(new ConfigureContainerAdapter<TContainerBuilder>(configureDelegate));
             return this;
@@ -277,7 +277,7 @@ namespace Microsoft.Extensions.Hosting
         private void InitializeAppConfiguration()
         {
             IConfigurationBuilder configBuilder = new ConfigurationBuilder()
-                .SetBasePath(_hostingEnvironment!.ContentRootPath)
+                .SetFileProvider(_hostingEnvironment!.ContentRootFileProvider)
                 .AddConfiguration(_hostConfiguration!, shouldDisposeConfiguration: true);
 
             foreach (Action<HostBuilderContext, IConfigurationBuilder> buildAction in _configureAppConfigActions)

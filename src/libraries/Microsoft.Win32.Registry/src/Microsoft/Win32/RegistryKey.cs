@@ -185,17 +185,17 @@ namespace Microsoft.Win32
             return CreateSubKey(subkey, permissionCheck, RegistryOptions.None);
         }
 
-        public RegistryKey CreateSubKey(string subkey, RegistryKeyPermissionCheck permissionCheck, RegistryOptions registryOptions, RegistrySecurity? registrySecurity)
-        {
-            return CreateSubKey(subkey, permissionCheck, registryOptions);
-        }
-
         public RegistryKey CreateSubKey(string subkey, RegistryKeyPermissionCheck permissionCheck, RegistrySecurity? registrySecurity)
         {
-            return CreateSubKey(subkey, permissionCheck, RegistryOptions.None);
+            return CreateSubKey(subkey, permissionCheck, RegistryOptions.None, registrySecurity);
         }
 
         public RegistryKey CreateSubKey(string subkey, RegistryKeyPermissionCheck permissionCheck, RegistryOptions registryOptions)
+        {
+            return CreateSubKey(subkey, permissionCheck, registryOptions, registrySecurity: null);
+        }
+
+        public unsafe RegistryKey CreateSubKey(string subkey, RegistryKeyPermissionCheck permissionCheck, RegistryOptions registryOptions, RegistrySecurity? registrySecurity)
         {
             ValidateKeyOptions(registryOptions);
             ValidateKeyName(subkey);
@@ -215,44 +215,49 @@ namespace Microsoft.Win32
                 }
             }
 
-            Interop.Kernel32.SECURITY_ATTRIBUTES secAttrs = default;
+            byte[]? securityDescriptor = registrySecurity?.GetSecurityDescriptorBinaryForm();
 
-            // By default, the new key will be writable.
-            int ret = Interop.Advapi32.RegCreateKeyEx(_hkey,
-                subkey,
-                0,
-                null,
-                (int)registryOptions /* specifies if the key is volatile */,
-                GetRegistryKeyAccess(permissionCheck != RegistryKeyPermissionCheck.ReadSubTree) | (int)_regView,
-                ref secAttrs,
-                out SafeRegistryHandle result,
-                out int _);
-
-            if (ret == 0 && !result.IsInvalid)
+            fixed (void* pSecurityDescriptor = securityDescriptor)
             {
-                RegistryKey key = new RegistryKey(result, (permissionCheck != RegistryKeyPermissionCheck.ReadSubTree), false, _remoteKey, false, _regView);
-                key._checkMode = permissionCheck;
+                Interop.Kernel32.SECURITY_ATTRIBUTES secAttrs = Interop.Kernel32.SECURITY_ATTRIBUTES.Create(pSecurityDescriptor);
 
-                if (subkey.Length == 0)
+                // By default, the new key will be writable.
+                int ret = Interop.Advapi32.RegCreateKeyEx(_hkey,
+                    subkey,
+                    0,
+                    null,
+                    (int)registryOptions /* specifies if the key is volatile */,
+                    GetRegistryKeyAccess(permissionCheck != RegistryKeyPermissionCheck.ReadSubTree) | (int)_regView,
+                    ref secAttrs,
+                    out SafeRegistryHandle result,
+                    out int _);
+
+                if (ret == 0 && !result.IsInvalid)
                 {
-                    key._keyName = _keyName;
+                    RegistryKey key = new RegistryKey(result, (permissionCheck != RegistryKeyPermissionCheck.ReadSubTree), false, _remoteKey, false, _regView);
+                    key._checkMode = permissionCheck;
+
+                    if (subkey.Length == 0)
+                    {
+                        key._keyName = _keyName;
+                    }
+                    else
+                    {
+                        key._keyName = _keyName + "\\" + subkey;
+                    }
+                    return key;
                 }
-                else
+
+                result.Dispose();
+
+                if (ret != 0) // syscall failed, ret is an error code.
                 {
-                    key._keyName = _keyName + "\\" + subkey;
+                    Win32Error(ret, _keyName + "\\" + subkey);  // Access denied?
                 }
-                return key;
+
+                Debug.Fail("Unexpected code path in RegistryKey::CreateSubKey");
+                return null;
             }
-
-            result.Dispose();
-
-            if (ret != 0) // syscall failed, ret is an error code.
-            {
-                Win32Error(ret, _keyName + "\\" + subkey);  // Access denied?
-            }
-
-            Debug.Fail("Unexpected code path in RegistryKey::CreateSubKey");
-            return null;
         }
 
         /// <summary>
@@ -1082,8 +1087,8 @@ namespace Microsoft.Win32
                         case Interop.Advapi32.RegistryValues.REG_QWORD:
                             return dataLength switch
                             {
-                                4 => MemoryMarshal.Read<int>(span),
-                                8 => MemoryMarshal.Read<long>(span),
+                                4 => BitConverter.ToInt32(span),
+                                8 => BitConverter.ToInt64(span),
                                 _ => span.Slice(0, dataLength).ToArray(), // This shouldn't happen, but the previous implementation included it defensively.
                             };
 

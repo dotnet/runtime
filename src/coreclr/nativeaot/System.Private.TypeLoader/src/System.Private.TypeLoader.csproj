@@ -1,11 +1,9 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <Nullable>disable</Nullable>
     <DefineConstants>TYPE_LOADER_IMPLEMENTATION;$(DefineConstants)</DefineConstants>
     <DefineConstants Condition="'$(TYPE_LOADER_TRACE)' != ''">TYPE_LOADER_TRACE;$(DefineConstants)</DefineConstants>
     <DefineConstants Condition="'$(GVM_RESOLUTION_TRACE)' != ''">GVM_RESOLUTION_TRACE;$(DefineConstants)</DefineConstants>
-    <DefineConstants Condition="'$(CCCONVERTER_TRACE)' != ''">CCCONVERTER_TRACE;$(DefineConstants)</DefineConstants>
-    <DefineConstants Condition="'$(GENERICS_FORCE_USG)' != ''">GENERICS_FORCE_USG;$(DefineConstants)</DefineConstants>
     <!-- we access a lot of internals of System.Private.CoreLib, disable compiling against the ref assembly for now so we don't need to update it -->
     <CompileUsingReferenceAssemblies>false</CompileUsingReferenceAssemblies>
   </PropertyGroup>
@@ -25,6 +23,9 @@
     <Compile Include="$(AotCommonPath)\Internal\Runtime\MethodTable.cs">
       <Link>MethodTable.cs</Link>
     </Compile>
+    <Compile Include="$(LibrariesProjectRoot)\Common\src\Internal\VersionResilientHashCode.cs">
+      <Link>TypeSystem\Common\VersionResilientHashCode.cs</Link>
+    </Compile>
     <Compile Include="$(CompilerCommonPath)\Internal\Runtime\MethodTable.Constants.cs">
       <Link>MethodTable.Constants.cs</Link>
     </Compile>
@@ -36,9 +37,6 @@
     </Compile>
     <Compile Include="$(AotCommonPath)\Internal\Runtime\TransitionBlock.cs">
       <Link>TransitionBlock.cs</Link>
-    </Compile>
-    <Compile Include="$(AotCommonPath)\System\Collections\Generic\LowLevelList.cs">
-      <Link>LowLevelList.cs</Link>
     </Compile>
     <Compile Include="$(CompilerCommonPath)\Internal\Runtime\MetadataBlob.cs">
       <Link>MetadataBlob.cs</Link>
@@ -206,6 +204,9 @@
     <Compile Include="$(CompilerCommonPath)\TypeSystem\Common\Utilities\TypeNameFormatter.cs">
       <Link>TypeNameFormatter.cs</Link>
     </Compile>
+    <Compile Include="$(CompilerCommonPath)\TypeSystem\Common\VersionResilientHashCode.TypeSystem.cs">
+      <Link>TypeSystem\Common\VersionResilientHashCode.TypeSystem.cs</Link>
+    </Compile>
     <Compile Include="$(CompilerCommonPath)\TypeSystem\Common\VirtualMethodAlgorithm.cs">
       <Link>Internal\TypeSystem\VirtualMethodAlgorithm.cs</Link>
     </Compile>
@@ -218,7 +219,6 @@
     <Compile Include="Internal\Runtime\TypeLoader\EETypeCreator.cs" />
     <Compile Include="Internal\Reflection\Execution\AssemblyBinderImplementation.cs" />
     <Compile Include="$(CompilerCommonPath)\Internal\Metadata\NativeFormat\MetadataTypeHashingAlgorithms.cs" />
-    <Compile Include="$(CompilerCommonPath)\TypeSystem\Common\TypeHashingAlgorithms.cs" />
     <Compile Include="$(AotCommonPath)\Internal\Runtime\TypeLoader\ExternalReferencesTable.cs" />
     <Compile Include="Internal\Runtime\TypeLoader\ExternalReferencesTable.NativeFormatModuleInfo.cs" />
     <Compile Include="Internal\Runtime\TypeLoader\GenericDictionary.cs" />
@@ -241,14 +241,12 @@
     <Compile Include="Internal\Runtime\TypeLoader\TypeLoaderEnvironment.GVMResolution.cs" />
     <Compile Include="Internal\Runtime\TypeLoader\TypeLoaderEnvironment.LdTokenResultLookup.cs" />
     <Compile Include="Internal\Runtime\TypeLoader\TypeLoaderEnvironment.Metadata.cs" />
-    <Compile Include="Internal\Runtime\TypeLoader\TypeLoaderEnvironment.MetadataSignatureParsing.cs" />
     <Compile Include="Internal\Runtime\TypeLoader\TypeLoaderEnvironment.SignatureParsing.cs" />
     <Compile Include="Internal\Runtime\TypeLoader\TypeLoaderEnvironment.StaticsLookup.cs" />
     <Compile Include="Internal\Runtime\TypeLoader\TypeLoaderLogger.cs" />
     <Compile Include="Internal\Runtime\TypeLoader\TypeLoaderTypeSystemContext.cs" />
     <Compile Include="Internal\Runtime\TypeLoader\TypeSystemContextFactory.cs" />
     <Compile Include="Internal\Runtime\TypeLoader\TypeSystemExtensions.cs" />
-    <Compile Include="Internal\Runtime\TypeLoader\WellKnownTypeExtensions.cs" />
     <Compile Include="Internal\TypeSystem\AssemblyNameInfo.Dummy.cs" />
     <Compile Include="Internal\TypeSystem\ArrayMethod.Runtime.cs" />
     <Compile Include="Internal\TypeSystem\CanonTypes.Runtime.cs" />

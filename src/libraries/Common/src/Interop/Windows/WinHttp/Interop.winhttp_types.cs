@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 #if NET
 using System.Runtime.InteropServices.Marshalling;
@@ -336,6 +337,27 @@ internal static partial class Interop
             public uint dwError;
         }
 
+        [StructLayout(LayoutKind.Sequential)]
+        public struct WINHTTP_CONNECTION_INFO
+        {
+            // This field is actually 4 bytes, but we use nuint to avoid alignment issues for x64.
+            // If we want to read this field in the future, we need to change type and make sure
+            // alignment is correct for necessary archs.
+            public nuint cbSize;
+#if NET
+            public AddressBuffer LocalAddress;
+            public AddressBuffer RemoteAddress;
+
+            [InlineArray(128)]
+            public struct AddressBuffer
+            {
+                private byte _element0;
+            }
+#else
+            public unsafe fixed byte LocalAddress[128];
+            public unsafe fixed byte RemoteAddress[128];
+#endif
+        }
 
         [StructLayout(LayoutKind.Sequential)]
         public struct tcp_keepalive

@@ -1,3 +1,5 @@
+if(NOT CLR_CMAKE_HOST_BROWSER)
+
 if(CLR_CMAKE_HOST_UNIX)
     add_definitions(-DFEATURE_ENABLE_HARDWARE_EXCEPTIONS)
 endif(CLR_CMAKE_HOST_UNIX)
@@ -95,3 +97,5 @@ install (TARGETS paltest_pal_sxs_test1 DESTINATION paltests/exception_handling/p
 install (TARGETS paltest_pal_sxs_test1_dll1 DESTINATION paltests/exception_handling/pal_sxs/test1 COMPONENT paltests EXCLUDE_FROM_ALL)
 install (TARGETS paltest_pal_sxs_test1_dll2 DESTINATION paltests/exception_handling/pal_sxs/test1 COMPONENT paltests EXCLUDE_FROM_ALL)
 add_dependencies(paltests_install paltest_pal_sxs_test1 paltest_pal_sxs_test1_dll1 paltest_pal_sxs_test1_dll2)
+
+endif(NOT CLR_CMAKE_HOST_BROWSER)

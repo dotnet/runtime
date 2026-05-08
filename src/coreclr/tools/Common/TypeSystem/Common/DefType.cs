@@ -1,6 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+
 namespace Internal.TypeSystem
 {
     /// <summary>
@@ -12,12 +16,24 @@ namespace Internal.TypeSystem
         /// <summary>
         /// Gets the namespace of the type.
         /// </summary>
-        public virtual string Namespace => null;
+        public virtual ReadOnlySpan<byte> Namespace => [];
+
+        public string GetNamespace() => System.Text.Encoding.UTF8.GetString(Namespace
+#if NETSTANDARD
+            .ToArray()
+#endif
+            );
 
         /// <summary>
         /// Gets the name of the type as represented in the metadata.
         /// </summary>
-        public virtual string Name => null;
+        public virtual ReadOnlySpan<byte> Name => [];
+
+        public string GetName() => System.Text.Encoding.UTF8.GetString(Name
+#if NETSTANDARD
+            .ToArray()
+#endif
+            );
 
         /// <summary>
         /// Gets the containing type of this type or null if the type is not nested.

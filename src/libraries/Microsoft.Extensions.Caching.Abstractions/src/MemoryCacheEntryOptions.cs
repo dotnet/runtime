@@ -16,6 +16,8 @@ namespace Microsoft.Extensions.Caching.Memory
         private TimeSpan? _absoluteExpirationRelativeToNow;
         private TimeSpan? _slidingExpiration;
         private long? _size;
+        private List<IChangeToken>? _expirationTokens;
+        private List<PostEvictionCallbackRegistration>? _postEvictionCallbacks;
 
         /// <summary>
         /// Gets or sets an absolute expiration date for the cache entry.
@@ -81,13 +83,16 @@ namespace Microsoft.Extensions.Caching.Memory
         /// <summary>
         /// Gets the <see cref="IChangeToken"/> instances which cause the cache entry to expire.
         /// </summary>
-        public IList<IChangeToken> ExpirationTokens { get; } = new List<IChangeToken>();
+        public IList<IChangeToken> ExpirationTokens => _expirationTokens ??= [];
+
+        internal List<IChangeToken>? ExpirationTokensDirect => _expirationTokens;
 
         /// <summary>
         /// Gets or sets the callbacks will be fired after the cache entry is evicted from the cache.
         /// </summary>
-        public IList<PostEvictionCallbackRegistration> PostEvictionCallbacks { get; }
-            = new List<PostEvictionCallbackRegistration>();
+        public IList<PostEvictionCallbackRegistration> PostEvictionCallbacks => _postEvictionCallbacks ??= [];
+
+        internal List<PostEvictionCallbackRegistration>? PostEvictionCallbacksDirect => _postEvictionCallbacks;
 
         /// <summary>
         /// Gets or sets the priority for keeping the cache entry in the cache during a

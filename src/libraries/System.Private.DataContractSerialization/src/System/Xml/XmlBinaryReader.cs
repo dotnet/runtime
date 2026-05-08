@@ -1234,7 +1234,7 @@ namespace System.Xml
                 throw new ArgumentOutOfRangeException(nameof(count), SR.Format(SR.SizeExceedsRemainingBufferSpace, array.Length - offset));
         }
 
-        private unsafe int ReadArray(bool[] array, int offset, int count)
+        private int ReadArray(bool[] array, int offset, int count)
         {
             CheckArray(array, offset, count);
             int actual = Math.Min(count, _arrayCount);
@@ -1257,7 +1257,7 @@ namespace System.Xml
             return base.ReadArray(localName, namespaceUri, array, offset, count);
         }
 
-        private unsafe int ReadArray(short[] array, int offset, int count)
+        private int ReadArray(short[] array, int offset, int count)
         {
             CheckArray(array, offset, count);
             int actual = Math.Min(count, _arrayCount);
@@ -1280,7 +1280,7 @@ namespace System.Xml
             return base.ReadArray(localName, namespaceUri, array, offset, count);
         }
 
-        private unsafe int ReadArray(int[] array, int offset, int count)
+        private int ReadArray(int[] array, int offset, int count)
         {
             CheckArray(array, offset, count);
             int actual = Math.Min(count, _arrayCount);
@@ -1303,7 +1303,7 @@ namespace System.Xml
             return base.ReadArray(localName, namespaceUri, array, offset, count);
         }
 
-        private unsafe int ReadArray(long[] array, int offset, int count)
+        private int ReadArray(long[] array, int offset, int count)
         {
             CheckArray(array, offset, count);
             int actual = Math.Min(count, _arrayCount);
@@ -1326,7 +1326,7 @@ namespace System.Xml
             return base.ReadArray(localName, namespaceUri, array, offset, count);
         }
 
-        private unsafe int ReadArray(float[] array, int offset, int count)
+        private int ReadArray(float[] array, int offset, int count)
         {
             CheckArray(array, offset, count);
             int actual = Math.Min(count, _arrayCount);
@@ -1349,7 +1349,7 @@ namespace System.Xml
             return base.ReadArray(localName, namespaceUri, array, offset, count);
         }
 
-        private unsafe int ReadArray(double[] array, int offset, int count)
+        private int ReadArray(double[] array, int offset, int count)
         {
             CheckArray(array, offset, count);
             int actual = Math.Min(count, _arrayCount);
@@ -1372,7 +1372,7 @@ namespace System.Xml
             return base.ReadArray(localName, namespaceUri, array, offset, count);
         }
 
-        private unsafe int ReadArray(decimal[] array, int offset, int count)
+        private int ReadArray(decimal[] array, int offset, int count)
         {
             CheckArray(array, offset, count);
             int actual = Math.Min(count, _arrayCount);

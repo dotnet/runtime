@@ -1,0 +1,4 @@
+{
+  "workloads/wasm-tools-net10/description": "Ferramentas de build para .NET 10.0 WebAssembly",
+  "workloads/wasm-experimental-net10/description": "Ferramentas experimentais para .NET 10.0 WebAssembly"
+}

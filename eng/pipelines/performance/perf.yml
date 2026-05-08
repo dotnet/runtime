@@ -8,12 +8,12 @@ trigger:
   branches:
     include:
     - main
+    - release/10.0
     - release/9.0
     - release/8.0
   paths:
     include:
     - '*'
-    - src/libraries/System.Private.CoreLib/*
     exclude:
     - '**.md'
     - .devcontainer/*

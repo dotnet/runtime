@@ -3,6 +3,7 @@
 
 using System;
 using Xunit;
+using TestLibrary;
 
 // Run under DOTNET_GCStress=3
 
@@ -13,6 +14,7 @@ public class PinnedLocal
         return (int) c;
     }
 
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/70820", TestRuntimes.Mono)]
     [Fact]
     public static unsafe int TestEntryPoint()
     {

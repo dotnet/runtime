@@ -73,7 +73,7 @@ namespace System.Globalization
 
         public string SubstringByTextElements(int startingTextElement, int lengthInTextElements)
         {
-            int[] indexes = Indexes ?? Array.Empty<int>();
+            int[] indexes = Indexes ?? [];
 
             if ((uint)startingTextElement >= (uint)indexes.Length)
             {

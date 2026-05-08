@@ -6,6 +6,7 @@ using System.Formats.Asn1;
 using System.IO;
 using System.Security.Cryptography.Asn1;
 using Microsoft.Win32.SafeHandles;
+using Internal.Cryptography;
 
 namespace System.Security.Cryptography.X509Certificates
 {
@@ -28,7 +29,7 @@ namespace System.Security.Cryptography.X509Certificates
         }
 
 
-        public AsymmetricAlgorithm DecodePublicKey(Oid oid, byte[] encodedKeyValue, byte[] encodedParameters, ICertificatePal? certificatePal)
+        public AsymmetricAlgorithm DecodePublicKey(Oid oid, byte[] encodedKeyValue, byte[]? encodedParameters, ICertificatePal? certificatePal)
         {
             switch (oid.Value)
             {
@@ -167,11 +168,15 @@ namespace System.Security.Cryptography.X509Certificates
             return rsa;
         }
 
-        private static DSAOpenSsl BuildDsaPublicKey(byte[] encodedKeyValue, byte[] encodedParameters)
+        private static DSAOpenSsl BuildDsaPublicKey(byte[] encodedKeyValue, byte[]? encodedParameters)
         {
             SubjectPublicKeyInfoAsn spki = new SubjectPublicKeyInfoAsn
             {
-                Algorithm = new AlgorithmIdentifierAsn { Algorithm = Oids.Dsa, Parameters = encodedParameters },
+                Algorithm = new AlgorithmIdentifierAsn
+                {
+                    Algorithm = Oids.Dsa,
+                    Parameters = encodedParameters.ToNullableMemory(),
+                },
                 SubjectPublicKey = encodedKeyValue,
             };
 

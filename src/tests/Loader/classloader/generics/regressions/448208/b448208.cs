@@ -7,6 +7,7 @@
 
 using System;
 using Xunit;
+using TestLibrary;
 
 public class GenType1<T>
 {
@@ -21,6 +22,7 @@ public class GenType1<T>
 
 public class Test_b448208
 {
+    [ActiveIssue("needs triage", typeof(PlatformDetection), nameof(PlatformDetection.IsSimulator))]
     [Fact]
     public static void TestEntryPoint()
     {

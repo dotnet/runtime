@@ -172,7 +172,7 @@ internal static partial class Interop
         /// <summary>
         /// Return the maximum value in the array; assumes non-negative values.
         /// </summary>
-        private static int GetMax(int[] values)
+        private static int GetMax(ReadOnlySpan<int> values)
         {
             int max = 0;
 

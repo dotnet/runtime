@@ -9,6 +9,10 @@ VPTR_CLASS(EEJitManager)
 #ifdef FEATURE_READYTORUN
 VPTR_CLASS(ReadyToRunJitManager)
 #endif
+#ifdef FEATURE_INTERPRETER
+VPTR_CLASS(InterpreterJitManager)
+VPTR_CLASS(InterpreterCodeManager)
+#endif
 VPTR_CLASS(EECodeManager)
 
 VPTR_CLASS(RangeList)
@@ -24,21 +28,21 @@ VPTR_CLASS(ReflectionModule)
 VPTR_CLASS(PrecodeStubManager)
 VPTR_CLASS(StubLinkStubManager)
 VPTR_CLASS(ThePreStubManager)
-VPTR_CLASS(ThunkHeapStubManager)
 VPTR_CLASS(VirtualCallStubManager)
 VPTR_CLASS(VirtualCallStubManagerManager)
-VPTR_CLASS(JumpStubStubManager)
 VPTR_CLASS(RangeSectionStubManager)
 VPTR_CLASS(ILStubManager)
+VPTR_CLASS(PInvokeStubManager)
 VPTR_CLASS(InteropDispatchStubManager)
 #if defined(TARGET_X86) && !defined(UNIX_X86_ABI)
 VPTR_CLASS(TailCallStubManager)
 #endif
-VPTR_CLASS(CallCountingStubManager)
+VPTR_CLASS(AsyncThunkStubManager)
 
 VPTR_CLASS(PEImageLayout)
 VPTR_CLASS(ConvertedImageLayout)
 VPTR_CLASS(LoadedImageLayout)
+VPTR_CLASS(NativeImageLayout)
 VPTR_CLASS(FlatImageLayout)
 
 #ifdef DEBUGGING_SUPPORTED

@@ -57,5 +57,27 @@ namespace Common.Tests
             Assert.Equal(expectedRss, result.rss);
             Assert.Equal(expectedRsslim, result.rsslim);
         }
+
+        [Theory]
+        [InlineData("37 79 0:6 / /dev rw,nosuid shared:2 - devtmpfs devtmpfs rw,seclabel,size=4096k,nr_inodes=4070495,mode=755,inode64", "/", "/dev", "devtmpfs", "rw,seclabel,size=4096k,nr_inodes=4070495,mode=755,inode64")]
+        [InlineData("42 40 0:28 / /sys/fs/cgroup rw,nosuid,nodev,noexec,relatime shared:7 - cgroup2 cgroup2 rw,seclabel,nsdelegate,memory_recursiveprot", "/", "/sys/fs/cgroup", "cgroup2", "rw,seclabel,nsdelegate,memory_recursiveprot")]
+        [InlineData("34 28 0:28 / /sys/fs/cgroup/cpu,cpuacct rw,nosuid,nodev,noexec,relatime shared:16 - cgroup cgroup rw,cpu,cpuacct", "/", "/sys/fs/cgroup/cpu,cpuacct", "cgroup", "rw,cpu,cpuacct")]
+        [InlineData("396 394 0:21 /kubepods/besteffort/pod9a18ffb8-8513-11e7-b26e-7e29fbe2a5a3/d28e0087cf8f3f0429f755d60b0de415b20fcf76736ded7bab6e30e7b739ee36 /sys/fs/cgroup/cpu ro,nosuid,nodev,noexec,relatime - cgroup cgroup rw,cpu", "/kubepods/besteffort/pod9a18ffb8-8513-11e7-b26e-7e29fbe2a5a3/d28e0087cf8f3f0429f755d60b0de415b20fcf76736ded7bab6e30e7b739ee36", "/sys/fs/cgroup/cpu", "cgroup", "rw,cpu")]
+        [InlineData("55 79 259:2 / /boot rw,relatime shared:111 - ext4 /dev/nvme0n1p2 rw,seclabel", "/", "/boot", "ext4", "rw,seclabel")]
+        public void ParseMountInfoLine_Success(
+            string line,
+            string expectedRoot,
+            string expectedMountPoint,
+            string expectedFileSystemType,
+            string expectedSuperOptions)
+        {
+            Interop.procfs.ParsedMount result;
+            Assert.True(Interop.procfs.TryParseMountInfoLine(line, out result));
+
+            Assert.Equal(expectedRoot, result.Root);
+            Assert.Equal(expectedMountPoint, result.MountPoint);
+            Assert.Equal(expectedFileSystemType, result.FileSystemType);
+            Assert.Equal(expectedSuperOptions, result.SuperOptions);
+        }
     }
 }

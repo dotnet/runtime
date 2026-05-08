@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Text;
 
 namespace System.Text.Json
 {
@@ -132,17 +133,14 @@ namespace System.Text.Json
         /// </exception>
         public JsonElement GetProperty(string propertyName)
         {
-            if (propertyName is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(propertyName));
-            }
+            ArgumentNullException.ThrowIfNull(propertyName);
 
             if (TryGetProperty(propertyName, out JsonElement property))
             {
                 return property;
             }
 
-            throw new KeyNotFoundException();
+            throw new KeyNotFoundException(SR.Format(SR.Arg_KeyNotFoundWithKey, propertyName));
         }
 
         /// <summary>
@@ -180,7 +178,7 @@ namespace System.Text.Json
                 return property;
             }
 
-            throw new KeyNotFoundException();
+            throw new KeyNotFoundException(SR.Format(SR.Arg_KeyNotFoundWithKey, propertyName.ToString()));
         }
 
         /// <summary>
@@ -220,7 +218,7 @@ namespace System.Text.Json
                 return property;
             }
 
-            throw new KeyNotFoundException();
+            throw new KeyNotFoundException(SR.Format(SR.Arg_KeyNotFoundWithKey, Encoding.UTF8.GetString(utf8PropertyName)));
         }
 
         /// <summary>
@@ -255,10 +253,7 @@ namespace System.Text.Json
         /// <seealso cref="EnumerateObject"/>
         public bool TryGetProperty(string propertyName, out JsonElement value)
         {
-            if (propertyName is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(propertyName));
-            }
+            ArgumentNullException.ThrowIfNull(propertyName);
 
             return TryGetProperty(propertyName.AsSpan(), out value);
         }
@@ -478,12 +473,12 @@ namespace System.Text.Json
         [CLSCompliant(false)]
         public sbyte GetSByte()
         {
-            if (TryGetSByte(out sbyte value))
+            if (!TryGetSByte(out sbyte value))
             {
-                return value;
+                ThrowHelper.ThrowFormatException();
             }
 
-            throw new FormatException();
+            return value;
         }
 
         /// <summary>
@@ -528,12 +523,12 @@ namespace System.Text.Json
         /// </exception>
         public byte GetByte()
         {
-            if (TryGetByte(out byte value))
+            if (!TryGetByte(out byte value))
             {
-                return value;
+                ThrowHelper.ThrowFormatException();
             }
 
-            throw new FormatException();
+            return value;
         }
 
         /// <summary>
@@ -575,12 +570,12 @@ namespace System.Text.Json
         /// </exception>
         public short GetInt16()
         {
-            if (TryGetInt16(out short value))
+            if (!TryGetInt16(out short value))
             {
-                return value;
+                ThrowHelper.ThrowFormatException();
             }
 
-            throw new FormatException();
+            return value;
         }
 
         /// <summary>
@@ -627,12 +622,12 @@ namespace System.Text.Json
         [CLSCompliant(false)]
         public ushort GetUInt16()
         {
-            if (TryGetUInt16(out ushort value))
+            if (!TryGetUInt16(out ushort value))
             {
-                return value;
+                ThrowHelper.ThrowFormatException();
             }
 
-            throw new FormatException();
+            return value;
         }
 
         /// <summary>
@@ -1262,7 +1257,7 @@ namespace System.Text.Json
         /// </remarks>
         public static bool DeepEquals(JsonElement element1, JsonElement element2)
         {
-            if (!StackHelper.TryEnsureSufficientExecutionStack())
+            if (!RuntimeHelpers.TryEnsureSufficientExecutionStack())
             {
                 ThrowHelper.ThrowInsufficientExecutionStackException_JsonElementDeepEqualsInsufficientExecutionStack();
             }
@@ -1476,7 +1471,9 @@ namespace System.Text.Json
             if (TokenType == JsonTokenType.Null)
             {
                 // This is different than Length == 0, in that it tests true for null, but false for ""
-                return Unsafe.IsNullRef(ref MemoryMarshal.GetReference(utf8Text));
+#pragma warning disable CA2265
+                return utf8Text.Slice(0, 0) == default;
+#pragma warning restore CA2265
             }
 
             return TextEqualsHelper(utf8Text, isPropertyName: false, shouldUnescape: true);
@@ -1504,7 +1501,9 @@ namespace System.Text.Json
             if (TokenType == JsonTokenType.Null)
             {
                 // This is different than Length == 0, in that it tests true for null, but false for ""
-                return Unsafe.IsNullRef(ref MemoryMarshal.GetReference(text));
+#pragma warning disable CA2265
+                return text.Slice(0, 0) == default;
+#pragma warning restore CA2265
             }
 
             return TextEqualsHelper(text, isPropertyName: false);
@@ -1546,10 +1545,7 @@ namespace System.Text.Json
         /// </exception>
         public void WriteTo(Utf8JsonWriter writer)
         {
-            if (writer is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(writer));
-            }
+            ArgumentNullException.ThrowIfNull(writer);
 
             CheckValidInstance();
 
@@ -1713,6 +1709,8 @@ namespace System.Text.Json
                 throw new InvalidOperationException();
             }
         }
+
+        internal readonly int MetadataDbIndex => _idx;
 
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         private string DebuggerDisplay => $"ValueKind = {ValueKind} : \"{ToString()}\"";

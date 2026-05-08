@@ -54,7 +54,7 @@ int __cdecl main(int argc, char *argv[])
     {
         return PrintTests(argc, argv);
     }
-    
+
     PALTest *testCur = PALTest::s_tests;
     for (;testCur != 0; testCur = testCur->_next)
     {

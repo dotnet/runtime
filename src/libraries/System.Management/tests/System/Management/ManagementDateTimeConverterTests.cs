@@ -1,15 +1,23 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 
 namespace System.Management.Tests
 {
     public class ManagementDateTimeConverterTests
     {
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/118321", TargetFrameworkMonikers.NetFramework)]
         [ConditionalFact(typeof(WmiTestHelper), nameof(WmiTestHelper.IsWmiSupported))]
         public void DateTime_RoundTrip()
         {
+            // Additional skip if the testing platform does not support ActiveIssue
+            if (PlatformDetection.IsNetFramework)
+            {
+                throw new SkipTestException("Incorrect logic for corefx implementation");
+            }
+
             var date = new DateTime(2002, 4, 8, 14, 18, 35, 978, DateTimeKind.Utc).AddMinutes(150);
             var dmtfDate = "20020408141835.978000-150";
             var dmtfDateExpected = "20020408164835.978000+000";

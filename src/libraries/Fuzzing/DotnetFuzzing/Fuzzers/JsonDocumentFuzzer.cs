@@ -34,7 +34,7 @@ internal sealed class JsonDocumentFuzzer : IFuzzer
 
         try
         {
-            JsonDocument.Parse(poisonAfter.Memory, options);
+            JsonDocument.Parse(poisonAfter.Memory, options).Dispose();
         }
         catch (JsonException) { }
     }

@@ -13,8 +13,6 @@ namespace Microsoft.Extensions.Hosting.Systemd
     [UnsupportedOSPlatform("browser")]
     public class SystemdNotifier : ISystemdNotifier
     {
-        private const string NOTIFY_SOCKET = "NOTIFY_SOCKET";
-
         private readonly string? _socketPath;
 
         /// <summary>
@@ -42,7 +40,7 @@ namespace Microsoft.Extensions.Hosting.Systemd
             }
 
 #if !NETSTANDARD2_1 && !NETSTANDARD2_0 && !NETFRAMEWORK // TODO remove with https://github.com/dotnet/runtime/pull/107185
-            if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException();
+            if (OperatingSystem.IsWasi() || OperatingSystem.IsBrowser()) throw new PlatformNotSupportedException();
 #else
             #pragma warning disable CA1416
 #endif
@@ -60,7 +58,7 @@ namespace Microsoft.Extensions.Hosting.Systemd
 
         private static string? GetNotifySocketPath()
         {
-            string? socketPath = Environment.GetEnvironmentVariable(NOTIFY_SOCKET);
+            string? socketPath = Environment.GetEnvironmentVariable(SystemdConstants.NotifySocket);
 
             if (string.IsNullOrEmpty(socketPath))
             {

@@ -55,7 +55,7 @@ namespace System.Net.Http.Functional.Tests
                 {
                     await server.AcceptConnectionAsync(async connection =>
                     {
-                        server.ListenSocket.Close(); // Shut down the listen socket so attempts at additional connections would fail on the client
+                        await server.ListenSocket.CloseAsync(); // Shut down the listen socket so attempts at additional connections would fail on the client
 
                         string response = LoopbackServer.GetContentModeResponse(mode, simpleContent);
                         await connection.ReadRequestHeaderAndSendCustomResponseAsync(response);

@@ -9,6 +9,7 @@ using System.IO;
 using System.Net.Http.Headers;
 using System.Net.Http.HPack;
 using System.Runtime.CompilerServices;
+using System.Runtime.ExceptionServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Channels;
@@ -193,9 +194,11 @@ namespace System.Net.Http
         {
             try
             {
-                _outgoingBuffer.EnsureAvailableSpace(Http2ConnectionPreface.Length +
-                    FrameHeader.Size + FrameHeader.SettingLength +
-                    FrameHeader.Size + FrameHeader.WindowUpdateLength);
+                int requiredSpace = Http2ConnectionPreface.Length +
+                    FrameHeader.Size + (2 * FrameHeader.SettingLength) +
+                    FrameHeader.Size + FrameHeader.WindowUpdateLength;
+
+                _outgoingBuffer.EnsureAvailableSpace(requiredSpace);
 
                 // Send connection preface
                 Http2ConnectionPreface.CopyTo(_outgoingBuffer.AvailableSpan);
@@ -222,6 +225,8 @@ namespace System.Net.Http
                 _outgoingBuffer.Commit(FrameHeader.Size);
                 BinaryPrimitives.WriteUInt32BigEndian(_outgoingBuffer.AvailableSpan, windowUpdateAmount);
                 _outgoingBuffer.Commit(4);
+
+                Debug.Assert(requiredSpace == _outgoingBuffer.ActiveLength);
 
                 // Processing the incoming frames before sending the client preface and SETTINGS is necessary when using a NamedPipe as a transport.
                 // If the preface and SETTINGS coming from the server are not read first the below WriteAsync and the ProcessIncomingFramesAsync fall into a deadlock.
@@ -250,8 +255,10 @@ namespace System.Net.Http
                     throw;
                 }
 
-                // TODO: Review this case!
-                throw new IOException(SR.net_http_http2_connection_not_established, e);
+                // Use _abortException if available, as it contains the real reason for the connection failure.
+                // For example, when ProcessIncomingFramesAsync detects a server-initiated disconnect and calls Abort(),
+                // _abortException will have the original IOException, while 'e' here may be an uninformative ObjectDisposedException.
+                throw new IOException(SR.net_http_http2_connection_not_established, _abortException ?? e);
             }
 
             // Avoid capturing the initial request's ExecutionContext for the entire lifetime of the new connection.
@@ -1193,7 +1200,7 @@ namespace System.Net.Http
                 // As such, it should not matter that we were not able to actually send the frame.
                 // But just in case, throw ObjectDisposedException. Asynchronous callers will ignore the failure.
                 Debug.Assert(_shutdown && _streamsInUse == 0);
-                return Task.FromException(new ObjectDisposedException(nameof(Http2Connection)));
+                return Task.FromException(ExceptionDispatchInfo.SetCurrentStackTrace(new ObjectDisposedException(nameof(Http2Connection))));
             }
 
             return writeEntry.Task;
@@ -1371,7 +1378,7 @@ namespace System.Net.Http
 
         private void WriteLiteralHeader(string name, ReadOnlySpan<string> values, Encoding? valueEncoding, ref ArrayBuffer headerBuffer)
         {
-            if (NetEventSource.Log.IsEnabled()) Trace($"{nameof(name)}={name}, {nameof(values)}={string.Join(", ", values.ToArray())}");
+            if (NetEventSource.Log.IsEnabled()) Trace($"{nameof(name)}={name}, {nameof(values)}={string.Join(", ", values)}");
 
             int bytesWritten;
             while (!HPackEncoder.EncodeLiteralHeaderFieldWithoutIndexingNewName(name, values, HttpHeaderParser.DefaultSeparatorBytes, valueEncoding, headerBuffer.AvailableSpan, out bytesWritten))
@@ -1384,7 +1391,7 @@ namespace System.Net.Http
 
         private void WriteLiteralHeaderValues(ReadOnlySpan<string> values, byte[]? separator, Encoding? valueEncoding, ref ArrayBuffer headerBuffer)
         {
-            if (NetEventSource.Log.IsEnabled()) Trace($"{nameof(values)}={string.Join(Encoding.ASCII.GetString(separator ?? []), values.ToArray())}");
+            if (NetEventSource.Log.IsEnabled()) Trace($"{nameof(values)}={string.Join(Encoding.ASCII.GetString(separator ?? []), values)}");
 
             int bytesWritten;
             while (!HPackEncoder.EncodeStringLiterals(values, separator, valueEncoding, headerBuffer.AvailableSpan, out bytesWritten))
@@ -2024,7 +2031,7 @@ namespace System.Net.Http
                 // our built-in content types do), then we can just proceed to wait for the request body content to
                 // complete before worrying about response headers completing.
                 if (requestBodyTask.IsCompleted ||
-                    duplex == false ||
+                    !duplex ||
                     await Task.WhenAny(requestBodyTask, responseHeadersTask).ConfigureAwait(false) == requestBodyTask ||
                     requestBodyTask.IsCompleted ||
                     http2Stream.SendRequestFinished)
@@ -2056,7 +2063,35 @@ namespace System.Net.Http
                 // Wait for the response headers to complete if they haven't already, propagating any exceptions.
                 await responseHeadersTask.ConfigureAwait(false);
 
-                return http2Stream.GetAndClearResponse();
+                HttpResponseMessage response = http2Stream.GetAndClearResponse();
+
+                // Check if this is a session-based authentication challenge (Negotiate/NTLM) on HTTP/2.
+                // These authentication schemes require a persistent connection and don't work properly over HTTP/2.
+                if (AuthenticationHelper.IsSessionAuthenticationChallenge(response))
+                {
+                    // Mark the pool so future requests that can use HTTP/1.1 go directly to HTTP/1.1.
+                    // This is set regardless of whether we can retry this particular request,
+                    // so that subsequent requests benefit from the downgrade.
+                    _pool.OnSessionAuthenticationChallengeSeen();
+
+                    // We can only safely retry if there's no request content, as we cannot guarantee
+                    // that we can rewind arbitrary content streams.
+                    // Additionally, we only retry if the version negotiation allows the request to fall back to HTTP/1.1.
+                    if (request.Content is null &&
+                        HttpConnectionPool.CanFallBackToHttp11(request) &&
+                        !request.IsAuthDisabled())
+                    {
+                        if (NetEventSource.Log.IsEnabled())
+                        {
+                            Trace($"Received session-based authentication challenge on HTTP/2, request will be retried on HTTP/1.1.");
+                        }
+
+                        response.Dispose();
+                        throw new HttpRequestException(HttpRequestError.UserAuthenticationError, SR.net_http_authconnectionfailure, null, RequestRetryType.RetryOnSessionAuthenticationChallenge);
+                    }
+                }
+
+                return response;
             }
             catch (HttpIOException e)
             {
@@ -2169,7 +2204,7 @@ namespace System.Net.Http
             throw new HttpRequestException((innerException as HttpIOException)?.HttpRequestError ?? HttpRequestError.Unknown, message, innerException, RequestRetryType.RetryOnConnectionFailure);
 
         private static Exception GetRequestAbortedException(Exception? innerException = null) =>
-            innerException as HttpIOException ?? new IOException(SR.net_http_request_aborted, innerException);
+            innerException as HttpIOException ?? ExceptionDispatchInfo.SetCurrentStackTrace(new IOException(SR.net_http_request_aborted, innerException));
 
         [DoesNotReturn]
         private static void ThrowRequestAborted(Exception? innerException = null) =>

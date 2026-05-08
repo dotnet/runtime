@@ -18,10 +18,4 @@
         </ExcludeList>
     </ItemGroup>
 
-    <ItemGroup Condition="'$(TargetOS)' == 'osx'">
-        <ExcludeList Include="miscellaneous/queryperformancecounter/test1/paltest_queryperformancecounter_test1">
-            <Issue>https://github.com/dotnet/runtime/issues/7639</Issue>
-        </ExcludeList>
-    </ItemGroup>
-
 </Project>

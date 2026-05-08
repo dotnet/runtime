@@ -18,8 +18,15 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static void OnesComplement<T>(ReadOnlySpan<T> x, Span<T> destination)
-            where T : IBitwiseOperators<T, T, T> =>
+            where T : IBitwiseOperators<T, T, T>
+        {
+            if (typeof(T) == typeof(Half) && TryUnaryBitwiseInvokeHalfAsInt16<T, OnesComplementOperator<short>>(x, destination))
+            {
+                return;
+            }
+
             InvokeSpanIntoSpan<T, OnesComplementOperator<T>>(x, destination);
+        }
 
         /// <summary>~x</summary>
         private readonly struct OnesComplementOperator<T> : IUnaryOperator<T, T> where T : IBitwiseOperators<T, T, T>

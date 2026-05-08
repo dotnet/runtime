@@ -11,6 +11,9 @@
 //     File: D:\a\_work\1\s\src\coreclr\jit\morph.cpp Line: 12664
 // 
 
+
+namespace Runtime_106278;
+
 using System;
 using Xunit;
 

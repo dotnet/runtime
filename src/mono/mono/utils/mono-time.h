@@ -11,11 +11,6 @@
 #include <sys/time.h>
 #endif
 
-/* Returns the number of milliseconds from boot time: this should be monotonic
- *
- * Prefer to use mono_msec_ticks for elapsed time calculation. */
-gint64 mono_msec_boottime (void);
-
 /* Returns the number of milliseconds ticks from unspecified time: this should be monotonic */
 MONO_COMPONENT_API gint64 mono_msec_ticks (void);
 

@@ -73,7 +73,7 @@ namespace System.ComponentModel.DataAnnotations
         /// </summary>
         private protected ValidationAttribute(bool populateErrorMessageResourceAccessor)
         {
-            Debug.Assert(populateErrorMessageResourceAccessor is false, "Use the default constructor instead");
+            Debug.Assert(!populateErrorMessageResourceAccessor, "Use the default constructor instead");
         }
 
         #endregion

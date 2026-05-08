@@ -81,15 +81,15 @@ namespace Microsoft.Extensions.DependencyInjection
             },
             {
                 new ServiceDescriptor(typeof(IFakeService), CreateFakeService, ServiceLifetime.Scoped),
-                "ServiceType: Microsoft.Extensions.DependencyInjection.Specification.Fakes.IFakeService Lifetime: Scoped ImplementationFactory: Microsoft.Extensions.DependencyInjection.Specification.Fakes.FakeService CreateFakeService(System.IServiceProvider)"
+                "ServiceType: Microsoft.Extensions.DependencyInjection.Specification.Fakes.IFakeService Lifetime: Scoped ImplementationFactory: Microsoft.Extensions.DependencyInjection.ServiceCollectionDescriptorExtensionsTest.CreateFakeService"
             },
             {
                 new ServiceDescriptor(typeof(IFakeService), CreateFakeService, ServiceLifetime.Singleton),
-                "ServiceType: Microsoft.Extensions.DependencyInjection.Specification.Fakes.IFakeService Lifetime: Singleton ImplementationFactory: Microsoft.Extensions.DependencyInjection.Specification.Fakes.FakeService CreateFakeService(System.IServiceProvider)"
+                "ServiceType: Microsoft.Extensions.DependencyInjection.Specification.Fakes.IFakeService Lifetime: Singleton ImplementationFactory: Microsoft.Extensions.DependencyInjection.ServiceCollectionDescriptorExtensionsTest.CreateFakeService"
             },
             {
                 new ServiceDescriptor(typeof(IFakeService), CreateFakeService, ServiceLifetime.Transient),
-                "ServiceType: Microsoft.Extensions.DependencyInjection.Specification.Fakes.IFakeService Lifetime: Transient ImplementationFactory: Microsoft.Extensions.DependencyInjection.Specification.Fakes.FakeService CreateFakeService(System.IServiceProvider)"
+                "ServiceType: Microsoft.Extensions.DependencyInjection.Specification.Fakes.IFakeService Lifetime: Transient ImplementationFactory: Microsoft.Extensions.DependencyInjection.ServiceCollectionDescriptorExtensionsTest.CreateFakeService"
             },
         };
 

@@ -26,7 +26,7 @@ namespace System.IO.Ports.Tests
 
         #region Test Cases
 
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(typeof(DataBits_Property), nameof(HasNullModem))]
         public void DataBits_Default()
         {
             using (SerialPort com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
@@ -47,84 +47,84 @@ namespace System.IO.Ports.Tests
             }
         }
 
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(typeof(DataBits_Property), nameof(HasNullModem))]
         public void DataBits_7_BeforeOpen()
         {
             Debug.WriteLine("Verifying 7 DataBits before open");
             VerifyDataBitsBeforeOpen(7, DEFAULT_BYTE_SIZE);
         }
 
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(typeof(DataBits_Property), nameof(HasNullModem))]
         public void DataBits_8_BeforeOpen()
         {
             Debug.WriteLine("Verifying 8 DataBits before open");
             VerifyDataBitsBeforeOpen(8, DEFAULT_BYTE_SIZE);
         }
 
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(typeof(DataBits_Property), nameof(HasNullModem))]
         public void DataBits_7_AfterOpen()
         {
             Debug.WriteLine("Verifying 7 DataBits after open");
             VerifyDataBitsAfterOpen(7, DEFAULT_BYTE_SIZE);
         }
 
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(typeof(DataBits_Property), nameof(HasNullModem))]
         public void DataBits_8_AfterOpen()
         {
             Debug.WriteLine("Verifying 8 DataBits after open");
             VerifyDataBitsAfterOpen(8, DEFAULT_BYTE_SIZE);
         }
 
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(typeof(DataBits_Property), nameof(HasOneSerialPort))]
         public void DataBits_Int32MinValue()
         {
             Debug.WriteLine("Verifying Int32.MinValue DataBits");
             VerifyException(int.MinValue, ThrowAt.Set, typeof(ArgumentOutOfRangeException));
         }
 
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(typeof(DataBits_Property), nameof(HasOneSerialPort))]
         public void DataBits_Neg8()
         {
             Debug.WriteLine("Verifying -8 DataBits");
             VerifyException(-8, ThrowAt.Set, typeof(ArgumentOutOfRangeException));
         }
 
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(typeof(DataBits_Property), nameof(HasOneSerialPort))]
         public void DataBits_Neg1()
         {
             Debug.WriteLine("Verifying -1 DataBits");
             VerifyException(-1, ThrowAt.Set, typeof(ArgumentOutOfRangeException));
         }
 
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(typeof(DataBits_Property), nameof(HasOneSerialPort))]
         public void DataBits_0()
         {
             Debug.WriteLine("Verifying 0 DataBits");
             VerifyException(0, ThrowAt.Set, typeof(ArgumentOutOfRangeException));
         }
 
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(typeof(DataBits_Property), nameof(HasOneSerialPort))]
         public void DataBits_1()
         {
             Debug.WriteLine("Verifying 1 DataBits");
             VerifyException(1, ThrowAt.Set, typeof(ArgumentOutOfRangeException));
         }
 
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(typeof(DataBits_Property), nameof(HasOneSerialPort))]
         public void DataBits_4()
         {
             Debug.WriteLine("Verifying 4 DataBits");
             VerifyException(4, ThrowAt.Set, typeof(ArgumentOutOfRangeException));
         }
 
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(typeof(DataBits_Property), nameof(HasOneSerialPort))]
         public void DataBits_9()
         {
             Debug.WriteLine("Verifying 9 DataBits");
             VerifyException(9, ThrowAt.Set, typeof(ArgumentOutOfRangeException));
         }
 
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(typeof(DataBits_Property), nameof(HasOneSerialPort))]
         public void DataBits_Int32MaxValue()
         {
             Debug.WriteLine("Verifying Int32.MaxValue DataBits");

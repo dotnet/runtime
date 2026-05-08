@@ -26,7 +26,7 @@ namespace Microsoft.Extensions.Http.Logging
         /// <exception cref="ArgumentNullException"><paramref name="logger"/> is <see langword="null"/>.</exception>
         public LoggingHttpMessageHandler(ILogger logger)
         {
-            ThrowHelper.ThrowIfNull(logger);
+            ArgumentNullException.ThrowIfNull(logger);
 
             _logger = logger;
         }
@@ -39,8 +39,8 @@ namespace Microsoft.Extensions.Http.Logging
         /// <exception cref="ArgumentNullException"><paramref name="logger"/> or <paramref name="options"/> is <see langword="null"/>.</exception>
         public LoggingHttpMessageHandler(ILogger logger, HttpClientFactoryOptions options)
         {
-            ThrowHelper.ThrowIfNull(logger);
-            ThrowHelper.ThrowIfNull(options);
+            ArgumentNullException.ThrowIfNull(logger);
+            ArgumentNullException.ThrowIfNull(options);
 
             _logger = logger;
             _options = options;
@@ -48,7 +48,7 @@ namespace Microsoft.Extensions.Http.Logging
 
         private Task<HttpResponseMessage> SendCoreAsync(HttpRequestMessage request, bool useAsync, CancellationToken cancellationToken)
         {
-            ThrowHelper.ThrowIfNull(request);
+            ArgumentNullException.ThrowIfNull(request);
             return Core(request, useAsync, cancellationToken);
 
             async Task<HttpResponseMessage> Core(HttpRequestMessage request, bool useAsync, CancellationToken cancellationToken)

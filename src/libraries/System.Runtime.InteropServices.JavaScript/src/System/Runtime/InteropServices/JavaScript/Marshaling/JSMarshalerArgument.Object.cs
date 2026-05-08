@@ -21,7 +21,7 @@ namespace System.Runtime.InteropServices.JavaScript
 #if !DEBUG
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
 #endif
-        public unsafe void ToManaged(out object? value)
+        public void ToManaged(out object? value)
         {
             if (slot.Type == MarshalerType.None)
             {
@@ -39,6 +39,11 @@ namespace System.Runtime.InteropServices.JavaScript
             else if (slot.Type == MarshalerType.Double)
             {
                 ToManaged(out double v);
+                value = v;
+            }
+            else if (slot.Type == MarshalerType.Single)
+            {
+                ToManaged(out float v);
                 value = v;
             }
             else if (slot.Type == MarshalerType.JSObject)
@@ -76,6 +81,11 @@ namespace System.Runtime.InteropServices.JavaScript
                 else if (slot.ElementType == MarshalerType.Double)
                 {
                     ToManaged(out double[]? val);
+                    value = val;
+                }
+                else if (slot.ElementType == MarshalerType.Single)
+                {
+                    ToManaged(out float[]? val);
                     value = val;
                 }
                 else if (slot.ElementType == MarshalerType.Int32)
@@ -287,6 +297,11 @@ namespace System.Runtime.InteropServices.JavaScript
                 int[] val = (int[])value;
                 ToJS(val);
             }
+            else if (typeof(float[]) == type)
+            {
+                float[] val = (float[])value;
+                ToJS(val);
+            }
             else if (typeof(double[]) == type)
             {
                 double[] val = (double[])value;
@@ -354,7 +369,7 @@ namespace System.Runtime.InteropServices.JavaScript
 #if !ENABLE_JS_INTEROP_BY_VALUE
             Interop.Runtime.DeregisterGCRoot(slot.IntPtrValue);
 #endif
-            Marshal.FreeHGlobal(slot.IntPtrValue);
+            NativeMemory.Free((void*)slot.IntPtrValue);
         }
 
         /// <summary>
@@ -375,7 +390,7 @@ namespace System.Runtime.InteropServices.JavaScript
             slot.Length = value.Length;
             int bytes = value.Length * sizeof(JSMarshalerArgument);
             slot.Type = MarshalerType.Array;
-            JSMarshalerArgument* payload = (JSMarshalerArgument*)Marshal.AllocHGlobal(bytes);
+            JSMarshalerArgument* payload = (JSMarshalerArgument*)NativeMemory.Alloc((nuint)bytes);
             Unsafe.InitBlock(payload, 0, (uint)bytes);
 #if !ENABLE_JS_INTEROP_BY_VALUE
             Interop.Runtime.RegisterGCRoot(payload, bytes, IntPtr.Zero);

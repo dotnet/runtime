@@ -134,6 +134,34 @@ namespace pal
         return INVALID_FILE_ATTRIBUTES != ::GetFileAttributesW(file_path.c_str());
     }
 
+    inline bool try_map_file_readonly(const char* path, void** mapped, int64_t* size)
+    {
+        HANDLE file = ::CreateFileA(path, GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
+        if (file == INVALID_HANDLE_VALUE)
+            return false;
+
+        HANDLE file_mapping = ::CreateFileMappingA(file, nullptr, PAGE_READONLY, 0, 0, nullptr);
+        if (file_mapping  == nullptr)
+        {
+            ::CloseHandle(file);
+            return false;
+        }
+
+        void* mapped_local = ::MapViewOfFile(file_mapping, FILE_MAP_READ, 0, 0, 0);
+        if (mapped_local == nullptr)
+        {
+            ::CloseHandle(file);
+            ::CloseHandle(file_mapping);
+            return false;
+        }
+
+        *size = ::GetFileSize(file, nullptr);
+        *mapped = mapped_local;
+        ::CloseHandle(file_mapping);
+        ::CloseHandle(file);
+        return true;
+    }
+
     // Forward declaration
     void ensure_trailing_delimiter(pal::string_t& dir);
 
@@ -193,6 +221,39 @@ namespace pal
         assert(bytes_req == written);
 
         return { buffer.get() };
+    }
+
+    inline string_t convert_from_utf8(const char* str)
+    {
+        int wchar_req = ::MultiByteToWideChar(CP_UTF8, 0, str, -1, nullptr, 0);
+
+        malloc_ptr<wchar_t> buffer{ (wchar_t*)::malloc(wchar_req * sizeof(wchar_t)) };
+        assert(buffer != nullptr);
+
+        int written = ::MultiByteToWideChar(CP_UTF8, 0, str, -1, buffer.get(), wchar_req);
+        assert(wchar_req == written);
+
+        return { buffer.get() };
+    }
+
+    inline void* get_image_base(mod_t m, void* sym)
+    {
+        // On Windows, the HMODULE is the base address
+        return (void*)m;
+    }
+
+    inline size_t get_image_size(void* base_address)
+    {
+        IMAGE_DOS_HEADER* dos_header = (IMAGE_DOS_HEADER*)base_address;
+        if (dos_header->e_magic == IMAGE_DOS_SIGNATURE)
+        {
+            IMAGE_NT_HEADERS* nt_headers = (IMAGE_NT_HEADERS*)((BYTE*)base_address + dos_header->e_lfanew);
+            if (nt_headers->Signature == IMAGE_NT_SIGNATURE)
+            {
+                return nt_headers->OptionalHeader.SizeOfImage;
+            }
+        }
+        return 0;
     }
 
     inline bool try_load_hostpolicy(pal::string_t mock_hostpolicy_value)
@@ -300,18 +361,30 @@ public:
 #else // !TARGET_WINDOWS
 #include <dirent.h>
 #include <dlfcn.h>
+#include <fcntl.h>
 #include <limits.h>
+#include <sys/mman.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include <cstddef>
 
 // Needed for detecting the debugger attach scenario
 #if defined(__APPLE__)
 #include <sys/sysctl.h>
 #include <sys/types.h>
 #else // !__APPLE__
-#include <fcntl.h>
 #include <ctype.h>
 #endif // !__APPLE__
+
+// For getting image size
+#if defined(TARGET_APPLE)
+#include <mach-o/dyld.h>
+#include <mach-o/loader.h>
+#elif !defined(TARGET_WASM)
+#include <link.h>
+#include <elf.h>
+#include <cstring>
+#endif
 
 // CMake generated
 #include <config.h>
@@ -346,12 +419,14 @@ namespace pal
     const char_t dir_delim = W('/');
     const char_t env_path_delim = W(':');
 
+#ifndef TARGET_WASM
 #if defined(__APPLE__)
     const char_t nativelib_ext[] = W(".dylib");
 #else // Various Linux-related OS-es
     const char_t nativelib_ext[] = W(".so");
 #endif
     const char_t coreclr_lib[] = W("libcoreclr");
+#endif // !TARGET_WASM
 
     inline int strcmp(const char_t* str1, const char_t* str2) { return ::strcmp(str1, str2); }
     inline size_t strlen(const char_t* str) { return ::strlen(str); }
@@ -434,6 +509,33 @@ namespace pal
         return true;
     }
 
+    inline bool try_map_file_readonly(const char* path, void** mapped, int64_t* size)
+    {
+        int fd = open(path, O_RDONLY);
+        if (fd == -1)
+            return false;
+
+        struct stat buf;
+        if (fstat(fd, &buf) == -1)
+        {
+            close(fd);
+            return false;
+        }
+
+        int64_t size_local = buf.st_size;
+        void* mapped_local = mmap(NULL, size_local, PROT_READ, MAP_PRIVATE, fd, 0);
+        if (mapped == MAP_FAILED)
+        {
+            close(fd);
+            return false;
+        }
+
+        *mapped = mapped_local;
+        *size = size_local;
+        close(fd);
+        return true;
+    }
+
     // Forward declaration
     template<size_t LEN>
     bool string_ends_with(const string_t& str, const char_t(&suffix)[LEN]);
@@ -510,8 +612,92 @@ namespace pal
         return { str };
     }
 
+    inline string_t convert_from_utf8(const char* str)
+    {
+        return { str };
+    }
+
+    inline void* get_image_base(mod_t m, void* sym)
+    {
+#ifndef TARGET_WASM
+        Dl_info info;
+        if (dladdr(sym, &info) != 0)
+        {
+            return info.dli_fbase;
+        }
+#endif
+        return nullptr;
+    }
+
+    inline size_t get_image_size(void* base_address)
+    {
+        if (base_address == nullptr)
+            return 0;
+
+#if defined(TARGET_APPLE)
+        uint32_t image_count = _dyld_image_count();
+        for (uint32_t i = 0; i < image_count; ++i)
+        {
+            const struct mach_header_64* header =
+                reinterpret_cast<const struct mach_header_64*>(_dyld_get_image_header(i));
+            if (reinterpret_cast<const void*>(header) != base_address)
+                continue;
+
+            const struct load_command* cmd =
+                reinterpret_cast<const struct load_command*>(
+                    reinterpret_cast<const char*>(header) + sizeof(struct mach_header_64));
+
+            size_t image_size = 0;
+            for (uint32_t j = 0; j < header->ncmds; ++j)
+            {
+                if (cmd->cmd == LC_SEGMENT_64)
+                {
+                    const struct segment_command_64* seg =
+                        reinterpret_cast<const struct segment_command_64*>(cmd);
+                    size_t end_addr = static_cast<size_t>(seg->vmaddr + seg->vmsize);
+                    if (end_addr > image_size)
+                        image_size = end_addr;
+                }
+
+                cmd = reinterpret_cast<const struct load_command*>(
+                    reinterpret_cast<const char*>(cmd) + cmd->cmdsize);
+            }
+
+            return image_size;
+        }
+#elif !defined(TARGET_WASM)
+        ElfW(Ehdr)* ehdr = reinterpret_cast<ElfW(Ehdr)*>(base_address);
+        if (std::memcmp(ehdr->e_ident, ELFMAG, SELFMAG) != 0)
+            return 0;
+
+        ElfW(Phdr)* phdr = reinterpret_cast<ElfW(Phdr)*>(
+            reinterpret_cast<char*>(base_address) + ehdr->e_phoff);
+
+        size_t max_addr = 0;
+        size_t min_addr = static_cast<size_t>(-1);
+
+        for (int i = 0; i < ehdr->e_phnum; ++i)
+        {
+            if (phdr[i].p_type == PT_LOAD)
+            {
+                size_t seg_start = phdr[i].p_vaddr;
+                size_t seg_end   = phdr[i].p_vaddr + phdr[i].p_memsz;
+                if (seg_start < min_addr)
+                    min_addr = seg_start;
+                if (seg_end > max_addr)
+                    max_addr = seg_end;
+            }
+        }
+
+        if (max_addr > min_addr)
+            return max_addr - min_addr;
+#endif
+        return 0;
+    }
+
     inline bool try_load_hostpolicy(pal::string_t mock_hostpolicy_value)
     {
+#ifndef TARGET_WASM
         if (!string_ends_with(mock_hostpolicy_value, pal::nativelib_ext))
             mock_hostpolicy_value.append(pal::nativelib_ext);
 
@@ -520,6 +706,9 @@ namespace pal
             pal::fprintf(stderr, W("Failed to load mock hostpolicy at path '%s'. Error: %s\n"), mock_hostpolicy_value.c_str(), dlerror());
 
         return hMod != nullptr;
+#else // !TARGET_WASM
+        return false;
+#endif // !TARGET_WASM
     }
 
     inline bool try_load_library(const pal::string_t& path, pal::mod_t& hMod)
@@ -536,6 +725,7 @@ namespace pal
 
     inline bool try_load_coreclr(const pal::string_t& core_root, pal::mod_t& hMod)
     {
+#ifndef TARGET_WASM
         pal::string_t coreclr_path = core_root;
         pal::ensure_trailing_delimiter(coreclr_path);
         coreclr_path.append(pal::coreclr_lib);
@@ -547,7 +737,7 @@ namespace pal
             pal::fprintf(stderr, W("Failed to load: '%s'. Error: %s\n"), coreclr_path.c_str(), dlerror());
             return false;
         }
-
+#endif // !TARGET_WASM
         return true;
     }
 }

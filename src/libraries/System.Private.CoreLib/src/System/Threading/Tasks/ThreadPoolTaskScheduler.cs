@@ -12,6 +12,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 
 namespace System.Threading.Tasks
 {
@@ -42,13 +43,13 @@ namespace System.Threading.Tasks
         protected internal override void QueueTask(Task task)
         {
             TaskCreationOptions options = task.Options;
-            if (Thread.IsThreadStartSupported && (options & TaskCreationOptions.LongRunning) != 0)
+            if (RuntimeFeature.IsMultithreadingSupported && (options & TaskCreationOptions.LongRunning) != 0)
             {
                 // Run LongRunning tasks on their own dedicated thread.
                 new Thread(s_longRunningThreadWork)
                 {
                     IsBackground = true,
-                    Name = ".NET Long Running Task"
+                    Name = ".NET Long Task"
                 }.UnsafeStart(task);
             }
             else
@@ -114,11 +115,5 @@ namespace System.Threading.Tasks
         {
             ThreadPool.NotifyWorkItemProgress();
         }
-
-        /// <summary>
-        /// This is the only scheduler that returns false for this property, indicating that the task entry codepath is unsafe (CAS free)
-        /// since we know that the underlying scheduler already takes care of atomic transitions from queued to non-queued.
-        /// </summary>
-        internal override bool RequiresAtomicStartTransition => false;
     }
 }

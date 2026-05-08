@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 
+using Internal.Text;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 using Internal.IL.Stubs.StartupCode;
@@ -40,7 +41,7 @@ namespace ILCompiler
             TypeDesc owningType = _module.GetGlobalModuleType();
             var startupCodeMain = new StartupCodeMainMethod(owningType, mainMethod, _libraryInitializers, _generateLibraryAndModuleInitializers);
 
-            rootProvider.AddCompilationRoot(startupCodeMain, "Startup Code Main Method", ManagedEntryPointMethodName);
+            rootProvider.AddCompilationRoot(startupCodeMain, "Startup Code Main Method", new Utf8String(ManagedEntryPointMethodName));
         }
     }
 }

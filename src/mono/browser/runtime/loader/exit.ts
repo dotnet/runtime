@@ -3,7 +3,7 @@
 
 import WasmEnableThreads from "consts:wasmEnableThreads";
 
-import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_WEB, ENVIRONMENT_IS_WORKER, INTERNAL, emscriptenModule, loaderHelpers, mono_assert, runtimeHelpers } from "./globals";
+import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_WEB, ENVIRONMENT_IS_WORKER, emscriptenModule, loaderHelpers, mono_assert, runtimeHelpers } from "./globals";
 import { mono_log_debug, mono_log_error, mono_log_info_no_prefix, mono_log_warn, teardown_proxy_console } from "./logging";
 
 export function is_exited () {
@@ -15,7 +15,7 @@ export function is_runtime_running () {
 }
 
 export function assert_runtime_running () {
-    mono_assert(!is_exited(), () => `.NET runtime already exited with ${loaderHelpers.exitCode} ${loaderHelpers.exitReason}. You can use runtime.runMain() which doesn't exit the runtime.`);
+    mono_assert(!is_exited(), () => `.NET runtime already exited with ${loaderHelpers.exitCode} ${loaderHelpers.exitReason}. You can use dotnet.runMain() which doesn't exit the runtime.`);
     if (WasmEnableThreads && ENVIRONMENT_IS_WORKER) {
         mono_assert(runtimeHelpers.runtimeReady, "The WebWorker is not attached to the runtime. See https://github.com/dotnet/runtime/blob/main/src/mono/wasm/threads.md#JS-interop-on-dedicated-threads");
     } else {
@@ -194,8 +194,8 @@ function set_exit_code_and_quit_now (exit_code: number, reason?: any): void {
     }
     // just in case mono_wasm_exit didn't exit or throw
     if (exit_code !== 0 || !ENVIRONMENT_IS_WEB) {
-        if (ENVIRONMENT_IS_NODE && INTERNAL.process) {
-            INTERNAL.process.exit(exit_code);
+        if (ENVIRONMENT_IS_NODE) {
+            process.exit(exit_code);
         } else if (runtimeHelpers.quit) {
             runtimeHelpers.quit(exit_code, reason);
         }
@@ -236,8 +236,6 @@ function abort_promises (reason: any) {
     if (runtimeHelpers.dotnetReady) {
         runtimeHelpers.dotnetReady.promise_control.reject(reason);
         runtimeHelpers.afterInstantiateWasm.promise_control.reject(reason);
-        runtimeHelpers.beforePreInit.promise_control.reject(reason);
-        runtimeHelpers.afterPreInit.promise_control.reject(reason);
         runtimeHelpers.afterPreRun.promise_control.reject(reason);
         runtimeHelpers.beforeOnRuntimeInitialized.promise_control.reject(reason);
         runtimeHelpers.afterOnRuntimeInitialized.promise_control.reject(reason);
@@ -245,6 +243,7 @@ function abort_promises (reason: any) {
     }
 }
 
+// https://github.com/dotnet/xharness/blob/799df8d4c86ff50c83b7a57df9e3691eeab813ec/src/Microsoft.DotNet.XHarness.CLI/Commands/WASM/Browser/WasmBrowserTestRunner.cs#L122-L141
 function appendElementOnExit (exit_code: number) {
     if (ENVIRONMENT_IS_WEB && !ENVIRONMENT_IS_WORKER && loaderHelpers.config && loaderHelpers.config.appendElementOnExit && document) {
         //Tell xharness WasmBrowserTestRunner what was the exit code
@@ -281,12 +280,12 @@ function logOnExit (exit_code: number, reason: any) {
     }
     if (!ENVIRONMENT_IS_WORKER && loaderHelpers.config) {
         if (loaderHelpers.config.logExitCode) {
-            if (loaderHelpers.config.forwardConsoleLogsToWS) {
+            if (loaderHelpers.config.forwardConsole) {
                 teardown_proxy_console("WASM EXIT " + exit_code);
             } else {
                 mono_log_info_no_prefix("WASM EXIT " + exit_code);
             }
-        } else if (loaderHelpers.config.forwardConsoleLogsToWS) {
+        } else if (loaderHelpers.config.forwardConsole) {
             teardown_proxy_console();
         }
     }
@@ -314,7 +313,7 @@ function fatal_handler (event: any, reason: any, type: string) {
             mono_exit(1, reason);
         }
     } catch (err) {
-        // no not re-throw from the fatal handler
+        // do not re-throw from the fatal handler
     }
 }
 

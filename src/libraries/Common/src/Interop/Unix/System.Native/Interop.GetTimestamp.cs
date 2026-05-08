@@ -9,6 +9,6 @@ internal static partial class Interop
     {
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetTimestamp")]
         [SuppressGCTransition]
-        internal static partial ulong GetTimestamp();
+        internal static partial long GetTimestamp();
     }
 }

@@ -29,39 +29,32 @@ internal static partial class Interop
             internal byte* Name;
             internal int NameLength;
             internal NodeType InodeType;
-            internal const int NameBufferSize = 256; // sizeof(dirent->d_name) == NAME_MAX + 1
 
             internal ReadOnlySpan<char> GetName(Span<char> buffer)
             {
-                // -1 for null terminator (buffer will not include one),
-                //  and -1 because GetMaxCharCount pessimistically assumes the buffer may start with a partial surrogate
-                Debug.Assert(buffer.Length >= Encoding.UTF8.GetMaxCharCount(NameBufferSize - 1 - 1));
-
                 Debug.Assert(Name != null, "should not have a null name");
 
                 ReadOnlySpan<byte> nameBytes = (NameLength == -1)
-                    // In this case the struct was allocated via struct dirent *readdir(DIR *dirp);
-                    ? new ReadOnlySpan<byte>(Name, new ReadOnlySpan<byte>(Name, NameBufferSize).IndexOf<byte>(0))
+                    ? MemoryMarshal.CreateReadOnlySpanFromNullTerminated(Name)
                     : new ReadOnlySpan<byte>(Name, NameLength);
 
                 Debug.Assert(nameBytes.Length > 0, "we shouldn't have gotten a garbage value from the OS");
 
-                int charCount = Encoding.UTF8.GetChars(nameBytes, buffer);
-                ReadOnlySpan<char> value = buffer.Slice(0, charCount);
-                Debug.Assert(NameLength != -1 || !value.Contains('\0'), "should not have embedded nulls if we parsed the end of string");
-                return value;
+                ReadOnlySpan<char> result = !Encoding.UTF8.TryGetChars(nameBytes, buffer, out int charsWritten)
+                    ? Encoding.UTF8.GetString(nameBytes) // Fallback to allocation since this is a rare case
+                    : buffer.Slice(0, charsWritten);
+
+                Debug.Assert(!result.Contains('\0'), "should not have embedded nulls");
+
+                return result;
             }
         }
 
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_OpenDir", StringMarshalling = StringMarshalling.Utf8, SetLastError = true)]
         internal static partial IntPtr OpenDir(string path);
 
-        [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetReadDirRBufferSize", SetLastError = false)]
-        [SuppressGCTransition]
-        internal static partial int GetReadDirRBufferSize();
-
-        [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_ReadDirR")]
-        internal static unsafe partial int ReadDirR(IntPtr dir, byte* buffer, int bufferSize, DirectoryEntry* outputEntry);
+        [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_ReadDir")]
+        internal static unsafe partial int ReadDir(IntPtr dir, DirectoryEntry* outputEntry);
 
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_CloseDir", SetLastError = true)]
         internal static partial int CloseDir(IntPtr dir);

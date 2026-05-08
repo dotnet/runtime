@@ -17,6 +17,13 @@ namespace System.Security.Cryptography
 
     public class HMACSHA256 : HMAC
     {
+        private sealed class HMACTrait : IHMACStatic
+        {
+            static int IHMACStatic.HashSizeInBytes => HashSizeInBytes;
+            static string IHMACStatic.HashAlgorithmName => HashAlgorithmNames.SHA256;
+            static bool IHMACStatic.IsSupported => true;
+        }
+
         /// <summary>
         /// The hash size produced by the HMAC SHA256 algorithm, in bits.
         /// </summary>
@@ -85,10 +92,7 @@ namespace System.Security.Cryptography
         /// </exception>
         public static byte[] HashData(byte[] key, byte[] source)
         {
-            ArgumentNullException.ThrowIfNull(key);
-            ArgumentNullException.ThrowIfNull(source);
-
-            return HashData(new ReadOnlySpan<byte>(key), new ReadOnlySpan<byte>(source));
+            return HMACStatic<HMACTrait>.HashData(key, source);
         }
 
         /// <summary>
@@ -99,12 +103,7 @@ namespace System.Security.Cryptography
         /// <returns>The HMAC of the data.</returns>
         public static byte[] HashData(ReadOnlySpan<byte> key, ReadOnlySpan<byte> source)
         {
-            byte[] buffer = new byte[HashSizeInBytes];
-
-            int written = HashData(key, source, buffer.AsSpan());
-            Debug.Assert(written == buffer.Length);
-
-            return buffer;
+            return HMACStatic<HMACTrait>.HashData(key, source);
         }
 
         /// <summary>
@@ -120,12 +119,7 @@ namespace System.Security.Cryptography
         /// </exception>
         public static int HashData(ReadOnlySpan<byte> key, ReadOnlySpan<byte> source, Span<byte> destination)
         {
-            if (!TryHashData(key, source, destination, out int bytesWritten))
-            {
-                throw new ArgumentException(SR.Argument_DestinationTooShort, nameof(destination));
-            }
-
-            return bytesWritten;
+            return HMACStatic<HMACTrait>.HashData(key, source, destination);
         }
 
         /// <summary>
@@ -143,16 +137,7 @@ namespace System.Security.Cryptography
         /// </returns>
         public static bool TryHashData(ReadOnlySpan<byte> key, ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten)
         {
-            if (destination.Length < HashSizeInBytes)
-            {
-                bytesWritten = 0;
-                return false;
-            }
-
-            bytesWritten = HashProviderDispenser.OneShotHashProvider.MacData(HashAlgorithmNames.SHA256, key, source, destination);
-            Debug.Assert(bytesWritten == HashSizeInBytes);
-
-            return true;
+            return HMACStatic<HMACTrait>.TryHashData(key, source, destination, out bytesWritten);
         }
 
         /// <summary>
@@ -177,15 +162,7 @@ namespace System.Security.Cryptography
         /// </exception>
         public static int HashData(ReadOnlySpan<byte> key, Stream source, Span<byte> destination)
         {
-            ArgumentNullException.ThrowIfNull(source);
-
-            if (destination.Length < HashSizeInBytes)
-                throw new ArgumentException(SR.Argument_DestinationTooShort, nameof(destination));
-
-            if (!source.CanRead)
-                throw new ArgumentException(SR.Argument_StreamNotReadable, nameof(source));
-
-            return LiteHashProvider.HmacStream(HashAlgorithmNames.SHA256, key, source, destination);
+            return HMACStatic<HMACTrait>.HashData(key, source, destination);
         }
 
         /// <summary>
@@ -202,12 +179,7 @@ namespace System.Security.Cryptography
         /// </exception>
         public static byte[] HashData(ReadOnlySpan<byte> key, Stream source)
         {
-            ArgumentNullException.ThrowIfNull(source);
-
-            if (!source.CanRead)
-                throw new ArgumentException(SR.Argument_StreamNotReadable, nameof(source));
-
-            return LiteHashProvider.HmacStream(HashAlgorithmNames.SHA256, HashSizeInBytes, key, source);
+            return HMACStatic<HMACTrait>.HashData(key, source);
         }
 
         /// <summary>
@@ -224,9 +196,7 @@ namespace System.Security.Cryptography
         /// </exception>
         public static byte[] HashData(byte[] key, Stream source)
         {
-            ArgumentNullException.ThrowIfNull(key);
-
-            return HashData(new ReadOnlySpan<byte>(key), source);
+            return HMACStatic<HMACTrait>.HashData(key, source);
         }
 
         /// <summary>
@@ -247,12 +217,7 @@ namespace System.Security.Cryptography
         /// </exception>
         public static ValueTask<byte[]> HashDataAsync(ReadOnlyMemory<byte> key, Stream source, CancellationToken cancellationToken = default)
         {
-            ArgumentNullException.ThrowIfNull(source);
-
-            if (!source.CanRead)
-                throw new ArgumentException(SR.Argument_StreamNotReadable, nameof(source));
-
-            return LiteHashProvider.HmacStreamAsync(HashAlgorithmNames.SHA256, key.Span, source, cancellationToken);
+            return HMACStatic<HMACTrait>.HashDataAsync(key, source, cancellationToken);
         }
 
         /// <summary>
@@ -273,9 +238,7 @@ namespace System.Security.Cryptography
         /// </exception>
         public static ValueTask<byte[]> HashDataAsync(byte[] key, Stream source, CancellationToken cancellationToken = default)
         {
-            ArgumentNullException.ThrowIfNull(key);
-
-            return HashDataAsync(new ReadOnlyMemory<byte>(key), source, cancellationToken);
+            return HMACStatic<HMACTrait>.HashDataAsync(key, source, cancellationToken);
         }
 
         /// <summary>
@@ -308,20 +271,122 @@ namespace System.Security.Cryptography
             Memory<byte> destination,
             CancellationToken cancellationToken = default)
         {
-            ArgumentNullException.ThrowIfNull(source);
+            return HMACStatic<HMACTrait>.HashDataAsync(key, source, destination, cancellationToken);
+        }
 
-            if (destination.Length < HashSizeInBytes)
-                throw new ArgumentException(SR.Argument_DestinationTooShort, nameof(destination));
+        /// <summary>
+        ///   Verifies the HMAC of data using the SHA256 algorithm.
+        /// </summary>
+        /// <param name="key">The HMAC key.</param>
+        /// <param name="source">The data to HMAC.</param>
+        /// <param name="hash">The HMAC to compare against.</param>
+        /// <returns>
+        ///   <see langword="true" /> if the computed HMAC of <paramref name="source"/> is equal to
+        ///   <paramref name="hash" />; otherwise <see langword="false" />.
+        /// </returns>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="hash"/> has a length not equal to <see cref="HashSizeInBytes" />.
+        /// </exception>
+        /// <remarks>
+        ///   This API performs a fixed-time comparison of the derived HMAC against a known HMAC to prevent leaking
+        ///   timing information.
+        /// </remarks>
+        public static bool Verify(ReadOnlySpan<byte> key, ReadOnlySpan<byte> source, ReadOnlySpan<byte> hash)
+        {
+            return HMACStatic<HMACTrait>.Verify(key, source, hash);
+        }
 
-            if (!source.CanRead)
-                throw new ArgumentException(SR.Argument_StreamNotReadable, nameof(source));
+        /// <inheritdoc cref="Verify(ReadOnlySpan{byte}, ReadOnlySpan{byte}, ReadOnlySpan{byte})" />
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="key" />, <paramref name="source" />, or <paramref name="hash" /> is <see langword="null" />.
+        /// </exception>
+        public static bool Verify(byte[] key, byte[] source, byte[] hash)
+        {
+            return HMACStatic<HMACTrait>.Verify(key, source, hash);
+        }
 
-            return LiteHashProvider.HmacStreamAsync(
-                HashAlgorithmNames.SHA256,
-                key.Span,
-                source,
-                destination,
-                cancellationToken);
+        /// <summary>
+        ///   Verifies the HMAC of a stream using the SHA256 algorithm.
+        /// </summary>
+        /// <param name="key">The HMAC key.</param>
+        /// <param name="source">The stream to HMAC.</param>
+        /// <param name="hash">The HMAC to compare against.</param>
+        /// <returns>
+        ///   <see langword="true" /> if the computed HMAC of <paramref name="source"/> is equal to
+        ///   <paramref name="hash" />; otherwise <see langword="false" />.
+        /// </returns>
+        /// <exception cref="ArgumentException">
+        ///   <para><paramref name="hash"/> has a length not equal to <see cref="HashSizeInBytes" />.</para>
+        ///   <para> -or- </para>
+        ///   <para><paramref name="source" /> does not support reading.</para>
+        /// </exception>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="source" /> is <see langword="null" />.
+        /// </exception>
+        /// <remarks>
+        ///   This API performs a fixed-time comparison of the derived HMAC against a known HMAC to prevent leaking
+        ///   timing information.
+        /// </remarks>
+        public static bool Verify(ReadOnlySpan<byte> key, Stream source, ReadOnlySpan<byte> hash)
+        {
+            return HMACStatic<HMACTrait>.Verify(key, source, hash);
+        }
+
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="key" />, <paramref name="source" />, or <paramref name="hash" /> is <see langword="null" />.
+        /// </exception>
+        /// <inheritdoc cref="Verify(ReadOnlySpan{byte}, Stream, ReadOnlySpan{byte})" />
+        public static bool Verify(byte[] key, Stream source, byte[] hash)
+        {
+            return HMACStatic<HMACTrait>.Verify(key, source, hash);
+        }
+
+        /// <summary>
+        ///   Asynchronously verifies the HMAC of a stream using the SHA256 algorithm.
+        /// </summary>
+        /// <param name="key">The HMAC key.</param>
+        /// <param name="source">The stream to HMAC.</param>
+        /// <param name="hash">The HMAC to compare against.</param>
+        /// <param name="cancellationToken">
+        ///   The token to monitor for cancellation requests.
+        ///   The default value is <see cref="System.Threading.CancellationToken.None" />.
+        /// </param>
+        /// <returns>
+        ///   A task that, when awaited, produces <see langword="true" /> if the computed HMAC of
+        ///   <paramref name="source"/> is equal to <paramref name="hash" />; otherwise <see langword="false" />.
+        /// </returns>
+        /// <exception cref="ArgumentException">
+        ///   <para><paramref name="hash"/> has a length not equal to <see cref="HashSizeInBytes" />.</para>
+        ///   <para> -or- </para>
+        ///   <para><paramref name="source" /> does not support reading.</para>
+        /// </exception>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="source" /> is <see langword="null" />.
+        /// </exception>
+        /// <remarks>
+        ///   This API performs a fixed-time comparison of the derived HMAC against a known HMAC to prevent leaking
+        ///   timing information.
+        /// </remarks>
+        public static ValueTask<bool> VerifyAsync(
+            ReadOnlyMemory<byte> key,
+            Stream source,
+            ReadOnlyMemory<byte> hash,
+            CancellationToken cancellationToken = default)
+        {
+            return HMACStatic<HMACTrait>.VerifyAsync(key, source, hash, cancellationToken);
+        }
+
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="key" />, <paramref name="source" />, or <paramref name="hash" /> is <see langword="null" />.
+        /// </exception>
+        /// <inheritdoc cref="VerifyAsync(ReadOnlyMemory{byte}, Stream, ReadOnlyMemory{byte}, CancellationToken)" />
+        public static ValueTask<bool> VerifyAsync(
+            byte[] key,
+            Stream source,
+            byte[] hash,
+            CancellationToken cancellationToken = default)
+        {
+            return HMACStatic<HMACTrait>.VerifyAsync(key, source, hash, cancellationToken);
         }
 
         protected override void Dispose(bool disposing)

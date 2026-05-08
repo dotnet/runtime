@@ -10,7 +10,6 @@ endif
 
 DOTNET=$(TOP)/dotnet.sh
 
-WASI_SDK_PATH?=$(TOP)/src/mono/wasi/wasi-sdk
 CONFIG?=Release
 BINDIR?=$(TOP)/artifacts/bin
 OBJDIR?=$(TOP)/artifacts/obj
@@ -56,7 +55,7 @@ build-tasks:
 
 build-packages:
 	rm -f $(TOP)/artifacts/packages/$(CONFIG)/Shipping/*.nupkg
-	WASI_SDK_PATH=$(WASI_SDK_PATH) $(TOP)/build.sh mono.packages+mono.manifests+packs.product -os wasi -c $(CONFIG) --binaryLog /p:ContinueOnError=false /p:StopOnFirstFailure=true $(MSBUILD_ARGS)
+	$(TOP)/build.sh mono.packages+mono.manifests+packs.product -os wasi -c $(CONFIG) --binaryLog /p:ContinueOnError=false /p:StopOnFirstFailure=true $(MSBUILD_ARGS)
 
 clean:
 	$(RM) -rf $(BUILDS_OBJ_DIR)
@@ -65,18 +64,12 @@ run-tests-%:
 	$(DOTNET) build $(TOP)/src/libraries/$*/tests/ /t:Test $(_MSBUILD_WASM_BUILD_ARGS) $(MSBUILD_ARGS)
 
 run-build-tests:
-	WASI_SDK_PATH=$(WASI_SDK_PATH) $(DOTNET) build $(TOP)/src/mono/wasi//Wasi.Build.Tests/ /t:Test /bl $(_MSBUILD_WASM_BUILD_ARGS) $(MSBUILD_ARGS)
-
-build-debugger-tests-helix:
-	$(DOTNET) build -restore -bl:$(TOP)/artifacts/log/$(CONFIG)/Wasm.Debugger.Tests.binlog \
-	/p:ContinuousIntegrationBuild=true /p:ArchiveTests=true \
-	$(TOP)/src/mono/browser/debugger/Wasm.Debugger.Tests/Wasm.Debugger.Tests.csproj \
-	$(_MSBUILD_WASM_BUILD_ARGS) $(MSBUILD_ARGS)
+	$(DOTNET) build $(TOP)/src/mono/wasi//Wasi.Build.Tests/ /t:Test /bl $(_MSBUILD_WASM_BUILD_ARGS) $(MSBUILD_ARGS)
 
 submit-wbt-helix:
 	PATH="$(JSVU):$(PATH)" \
 		$(DOTNET) build $(TOP)/src/mono/wasi/Wasi.Build.Tests/ /v:m /p:ArchiveTests=true /t:ArchiveTests $(_MSBUILD_WASM_BUILD_ARGS) $(MSBUILD_ARGS) && \
-	WASI_SDK_PATH=$(WASI_SDK_PATH) BUILD_REASON=wasm-test SYSTEM_TEAMPROJECT=public BUILD_REPOSITORY_NAME=dotnet/runtime BUILD_SOURCEBRANCH=main \
+	    BUILD_REASON=wasm-test SYSTEM_TEAMPROJECT=public BUILD_REPOSITORY_NAME=dotnet/runtime BUILD_SOURCEBRANCH=main \
 		$(TOP)/eng/common/msbuild.sh --ci -restore $(TOP)/src/libraries/sendtohelix.proj \
 		/p:TestRunNamePrefixSuffix=WasiBuildTests /p:HelixBuild=`date "+%Y%m%d.%H%M"` /p:Creator=`whoami` \
 		/bl:$(TOP)/artifacts/log/$(CONFIG)/SendToHelix.binlog -v:m -p:HelixTargetQueue=$(HELIX_TARGET_QUEUE) \
@@ -95,17 +88,7 @@ submit-tests-helix:
 		$(_MSBUILD_WASM_BUILD_ARGS) \
 		$(MSBUILD_ARGS)
 
-run-debugger-tests:
-	rm -f $(TOP)/artifacts/bin/DebuggerTestSuite/x64/Debug/*log; \
-	if [ ! -z "$(TEST_FILTER)" ]; then \
-	$(DOTNET) test  $(TOP)/src/mono/browser/debugger/DebuggerTestSuite $(MSBUILD_ARGS) "-l:trx;LogFileName=DebuggerTestsResults.xml" --results-directory $(TOP)/artifacts/log/$(CONFIG) --filter "category!=failing&FullyQualifiedName$(TEST_FILTER)" $(TEST_ARGS); \
-	else \
-		$(DOTNET) test  $(TOP)/src/mono/browser/debugger/DebuggerTestSuite $(MSBUILD_ARGS) "-l:trx;LogFileName=DebuggerTestsResults.xml" --results-directory $(TOP)/artifacts/log/$(CONFIG) --filter "category!=failing" $(TEST_ARGS); \
-	fi
-
 build-dbg-proxy:
 	$(DOTNET) build $(TOP)/src/mono/browser/debugger/wasiDebugHost $(MSBUILD_ARGS)
-build-dbg-testsuite:
-	$(DOTNET) build $(TOP)/src/mono/browser/debugger/DebuggerTestSuite $(MSBUILD_ARGS)
 build-app-host:
 	$(DOTNET) build $(TOP)/src/mono/wasm/host $(_MSBUILD_WASM_BUILD_ARGS) $(MSBUILD_ARGS)

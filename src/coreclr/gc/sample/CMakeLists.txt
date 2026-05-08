@@ -39,12 +39,25 @@ if (CLR_CMAKE_TARGET_ARCH_AMD64 AND CLR_CMAKE_TARGET_WIN32)
 )
 endif (CLR_CMAKE_TARGET_ARCH_AMD64 AND CLR_CMAKE_TARGET_WIN32)
 
+if(CLR_CMAKE_TARGET_ARCH_ARM64 AND CLR_CMAKE_TARGET_WIN32)
+  set ( SOURCES
+    ${SOURCES}
+    ../vxsort/isa_detection.cpp
+    ../vxsort/do_vxsort_neon.cpp
+    ../vxsort/machine_traits.neon.cpp
+    ../vxsort/smallsort/bitonic_sort.NEON.uint32_t.generated.cpp
+    ../vxsort/smallsort/bitonic_sort.scalar.uint64_t.generated.cpp
+)
+endif(CLR_CMAKE_TARGET_ARCH_ARM64 AND CLR_CMAKE_TARGET_WIN32)
+
 if(CLR_CMAKE_TARGET_WIN32)
   set (GC_LINK_LIBRARIES
     ${STATIC_MT_CRT_LIB}
     ${STATIC_MT_VCRT_LIB}
     kernel32.lib
-    advapi32.lib)
+    advapi32.lib
+    minipal
+  )
 endif(CLR_CMAKE_TARGET_WIN32)
 
 add_definitions(-DVERIFY_HEAP)

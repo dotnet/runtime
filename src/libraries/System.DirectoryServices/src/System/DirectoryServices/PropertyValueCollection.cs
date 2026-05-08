@@ -136,10 +136,7 @@ namespace System.DirectoryServices
         /// </devdoc>
         public void AddRange(object?[] value)
         {
-            if (value == null)
-            {
-                throw new ArgumentNullException(nameof(value));
-            }
+            ArgumentNullException.ThrowIfNull(value);
             for (int i = 0; ((i) < (value.Length)); i = ((i) + (1)))
             {
                 this.Add(value[i]);
@@ -151,10 +148,7 @@ namespace System.DirectoryServices
         /// </devdoc>
         public void AddRange(PropertyValueCollection value)
         {
-            if (value == null)
-            {
-                throw new ArgumentNullException(nameof(value));
-            }
+            ArgumentNullException.ThrowIfNull(value);
             int currentCount = value.Count;
             for (int i = 0; i < currentCount; i = ((i) + (1)))
             {

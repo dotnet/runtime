@@ -346,7 +346,7 @@ namespace System.Threading.Tests
             return func();
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static async Task AsyncMethodNotifications()
         {
             //

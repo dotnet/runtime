@@ -1,4 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+      <!-- disable building for mono until https://github.com/dotnet/xharness/pull/1416 is merged -->
+      <DisableProjectBuild Condition="'$(RuntimeFlavor)' == 'mono' and '$(TargetsWindows)' != 'true'">true</DisableProjectBuild>    
+  </PropertyGroup>
+
   <ItemGroup>
     <MergedWrapperProjectReference Include="*/**/*.??proj" />
   </ItemGroup>

@@ -75,10 +75,7 @@ namespace System.Text.Json.Serialization.Metadata
             object? createObjectWithArgs = null,
             object? addFunc = null)
         {
-            if (collectionInfo is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(collectionInfo));
-            }
+            ArgumentNullException.ThrowIfNull(collectionInfo);
 
             converter = collectionInfo.SerializeHandler != null
                 ? new JsonMetadataServicesConverter<T>(converter)
@@ -151,11 +148,21 @@ namespace System.Text.Json.Serialization.Metadata
                 {
                     if (jsonPropertyInfo.SrcGen_HasJsonInclude)
                     {
-                        Debug.Assert(jsonPropertyInfo.MemberName != null, "MemberName is not set by source gen");
-                        ThrowHelper.ThrowInvalidOperationException_JsonIncludeOnInaccessibleProperty(jsonPropertyInfo.MemberName, jsonPropertyInfo.DeclaringType);
-                    }
+                        if (jsonPropertyInfo.Get is null && jsonPropertyInfo.Set is null)
+                        {
+                            // [JsonInclude] property is inaccessible and the source generator
+                            // did not provide getter/setter delegates (e.g. older generator).
+                            Debug.Assert(jsonPropertyInfo.MemberName != null, "MemberName is not set by source gen");
+                            ThrowHelper.ThrowInvalidOperationException_JsonIncludeOnInaccessibleProperty(jsonPropertyInfo.MemberName, jsonPropertyInfo.DeclaringType);
+                        }
 
-                    continue;
+                        // Non-public [JsonInclude] property with getter/setter delegates provided
+                        // via UnsafeAccessor or reflection fallback — treat it as a valid property.
+                    }
+                    else
+                    {
+                        continue;
+                    }
                 }
 
                 if (jsonPropertyInfo.MemberType == MemberTypes.Field && !jsonPropertyInfo.SrcGen_HasJsonInclude && !typeInfo.Options.IncludeFields)

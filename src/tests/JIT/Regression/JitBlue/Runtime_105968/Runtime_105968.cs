@@ -1,6 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+
+namespace Runtime_105968;
+
 using System;
 using System.Runtime.CompilerServices;
 using System.Numerics;
@@ -20,24 +23,21 @@ using Xunit;
 
 public class Runtime_105968
 {
-    [Fact]
+    [ConditionalFact(typeof(Avx512F), nameof(Avx512F.IsSupported))]
     public static void TestEntryPoint()
     {
-        if (Avx512F.IsSupported)
-        {
-            var vr11 = (double)0;
-            var vr12 = Vector128.CreateScalar(vr11);
-            var vr13 = Vector128.Create<double>(0);
-            Vector128<double> vr23 = default(Vector128<double>);
-            var vr15 = Vector128.CreateScalar(0d);
-            var vr16 = Avx512F.RoundScaleScalar(vr23, vr15, 0);
-            var vr17 = Sse2.DivideScalar(vr13, vr16);
-            var vr18 = (double)0;
-            var vr19 = Vector128.CreateScalar(vr18);
-            var vr20 = Vector128.CreateScalar(-1829879552908856156L);
-            var vr21 = Avx512F.FixupScalar(vr17, vr19, vr20, 0);
-            bool vr22 = Sse2.CompareScalarUnorderedLessThanOrEqual(vr12, vr21);
-            Assert.False(vr22);
-        }
+        var vr11 = (double)0;
+        var vr12 = Vector128.CreateScalar(vr11);
+        var vr13 = Vector128.Create<double>(0);
+        Vector128<double> vr23 = default(Vector128<double>);
+        var vr15 = Vector128.CreateScalar(0d);
+        var vr16 = Avx512F.RoundScaleScalar(vr23, vr15, 0);
+        var vr17 = Sse2.DivideScalar(vr13, vr16);
+        var vr18 = (double)0;
+        var vr19 = Vector128.CreateScalar(vr18);
+        var vr20 = Vector128.CreateScalar(-1829879552908856156L);
+        var vr21 = Avx512F.FixupScalar(vr17, vr19, vr20, 0);
+        bool vr22 = Sse2.CompareScalarUnorderedLessThanOrEqual(vr12, vr21);
+        Assert.False(vr22);
     }
 }

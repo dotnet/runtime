@@ -12,6 +12,12 @@ namespace System.Text.Json.Serialization.Converters
     /// <summary>
     /// Default base class implementation of <cref>JsonObjectConverter{T}</cref>.
     /// </summary>
+    /// <remarks>
+    /// Aspects of the property reading and deserialization logic in this converter are
+    /// duplicated in <see cref="FSharpUnionConverter{T}"/>. If any behavior is changed here
+    /// (e.g. unmapped member handling, required properties, metadata processing),
+    /// the union converter should also be updated for parity.
+    /// </remarks>
     internal class ObjectDefaultConverter<T> : JsonObjectConverter<T> where T : notnull
     {
         internal override bool CanHaveMetadata => true;
@@ -134,7 +140,7 @@ namespace System.Text.Json.Serialization.Converters
 
                     state.Current.ReturnValue = obj;
                     state.Current.ObjectState = StackFrameObjectState.CreatedObject;
-                    state.Current.InitializeRequiredPropertiesValidationState(jsonTypeInfo);
+                    state.Current.InitializePropertiesValidationState(jsonTypeInfo);
                 }
                 else
                 {
@@ -271,7 +277,7 @@ namespace System.Text.Json.Serialization.Converters
         internal static void PopulatePropertiesFastPath(object obj, JsonTypeInfo jsonTypeInfo, JsonSerializerOptions options, ref Utf8JsonReader reader, scoped ref ReadStack state)
         {
             jsonTypeInfo.OnDeserializing?.Invoke(obj);
-            state.Current.InitializeRequiredPropertiesValidationState(jsonTypeInfo);
+            state.Current.InitializePropertiesValidationState(jsonTypeInfo);
 
             // Process all properties.
             while (true)

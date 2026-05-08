@@ -246,7 +246,7 @@ namespace System.Reflection
 
         private static bool TryParseVersion(string attributeValue, ref Version? version)
         {
-#if NET8_0_OR_GREATER
+#if NET
             ReadOnlySpan<char> attributeValueSpan = attributeValue;
             Span<Range> parts = stackalloc Range[5];
             parts = parts.Slice(0, attributeValueSpan.Split(parts, '.'));
@@ -262,7 +262,7 @@ namespace System.Reflection
             for (int i = 0; i < parts.Length; i++)
             {
                 if (!ushort.TryParse(
-#if NET8_0_OR_GREATER
+#if NET
                     attributeValueSpan[parts[i]],
 #else
                     parts[i],
@@ -303,7 +303,7 @@ namespace System.Reflection
         {
             if (attributeValue.Equals("null", StringComparison.OrdinalIgnoreCase) || attributeValue == string.Empty)
             {
-                result = Array.Empty<byte>();
+                result = [];
                 return true;
             }
 
@@ -333,7 +333,6 @@ namespace System.Reflection
                 _ when attributeValue.Equals("ia64", StringComparison.OrdinalIgnoreCase) => ProcessorArchitecture.IA64,
                 _ when attributeValue.Equals("amd64", StringComparison.OrdinalIgnoreCase) => ProcessorArchitecture.Amd64,
                 _ when attributeValue.Equals("arm", StringComparison.OrdinalIgnoreCase) => ProcessorArchitecture.Arm,
-                _ when attributeValue.Equals("msil", StringComparison.OrdinalIgnoreCase) => ProcessorArchitecture.MSIL,
                 _ => ProcessorArchitecture.None
             };
             return result != ProcessorArchitecture.None;

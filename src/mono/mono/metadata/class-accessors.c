@@ -31,6 +31,7 @@ typedef enum {
 	PROP_FIELD_DEF_VALUES_8BYTESWIZZLE = 13, /* MonoFieldDefaultValue* with default values swizzled at 8 byte boundaries*/
 	PROP_METADATA_UPDATE_INFO = 14, /* MonoClassMetadataUpdateInfo* */
 	PROP_INLINEARRAY_VALUE = 15, /* System.Runtime.CompilerServices.InlineArrayAttribute length value */
+	PROP_EXTENDEDLAYOUT_VALUE = 16, /* System.Runtime.CompilerServices.ExtendedLayoutAttribute value */
 }  InfrequentDataKind;
 
 /* Accessors based on class kind*/
@@ -570,6 +571,23 @@ mono_class_set_failure (MonoClass *klass, MonoErrorBoxed *boxed_error)
 }
 
 /**
+ * mono_class_set_skip_generic_constraints:
+ * \param klass class that should not validate generic constraints
+ *
+ * LOCKING: Acquires the loader lock.
+ */
+void
+mono_class_set_skip_generic_constraints (MonoClass *klass)
+{
+	if (klass->skip_generic_constraints)
+		return;
+
+	mono_loader_lock ();
+	klass->skip_generic_constraints = 1;
+	mono_loader_unlock ();
+}
+
+/**
  * mono_class_set_deferred_failure:
  * \param klass class in which the failure was detected
  
@@ -698,6 +716,22 @@ mono_class_set_inlinearray_value (MonoClass *klass, gint32 value)
     Uint32Property *prop = (Uint32Property*)mono_class_alloc (klass, sizeof (Uint32Property));
     prop->head.tag = PROP_INLINEARRAY_VALUE;
     prop->value = value;
+    mono_property_bag_add (m_class_get_infrequent_data (klass), prop);
+}
+
+gint32
+mono_class_get_extendedlayout_value (MonoClass *klass)
+{
+    Uint32Property *prop = (Uint32Property*)mono_property_bag_get (m_class_get_infrequent_data (klass), PROP_EXTENDEDLAYOUT_VALUE);
+    return prop ? prop->value : 0;
+}
+
+void
+mono_class_set_extendedlayout_value (MonoClass *klass, gint32 kind)
+{
+    Uint32Property *prop = (Uint32Property*)mono_class_alloc (klass, sizeof (Uint32Property));
+    prop->head.tag = PROP_EXTENDEDLAYOUT_VALUE;
+    prop->value = kind;
     mono_property_bag_add (m_class_get_infrequent_data (klass), prop);
 }
 

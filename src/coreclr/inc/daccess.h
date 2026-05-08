@@ -1,9 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 //*****************************************************************************
 // File: daccess.h
-//
-
 //
 // Support for external access of runtime data structures.  These
 // macros and templates hide the details of pointer and data handling
@@ -239,20 +238,10 @@
 // instance pointers should be held across a Flush().
 //
 // Accessing into an object can lead to some unusual behavior.  For
-// example, the SList class relies on objects to contain an SLink
-// instance that it uses for list maintenance.  This SLink can be
-// embedded anywhere in the larger object.  The SList access is always
-// purely to an SLink, so when using the access layer it will only
-// retrieve an SLink's worth of data.  The SList template will then
-// do some address arithmetic to determine the start of the real
-// object and cast the resulting pointer to the final object type.
-// When using the access layer this results in a new ?PTR being
-// created and used, so a new instance will result.  The internal
-// SLink instance will have no relation to the new object instance
-// even though in target address terms one is embedded in the other.
-// The assumption of data stability means that this won't cause
-// a problem, but care must be taken with the address arithmetic,
-// as laid out in rules #2 and #3.
+// example, the SList class uses an intrusive m_pNext pointer
+// embedded in each object for list maintenance.  The SList access is
+// always to the object itself, so when using the access layer it will
+// retrieve the full object's data.
 //
 // 4.  Global address references cannot be used.  Any reference to a
 //     global piece of code or data, such as a function address, global
@@ -290,9 +279,9 @@
 //
 //     SystemDomain::m_appDomainIndexList;
 //
-//     extern DWORD gThreadTLSIndex;
+//     extern DWORD g_TlsIndex;
 //
-//     DWORD gThreadTLSIndex = TLS_OUT_OF_INDEXES;
+//     DWORD g_TlsIndex = TLS_OUT_OF_INDEXES;
 //
 // Modified Code:
 //
@@ -312,9 +301,9 @@
 //
 //     SVAL_IMPL(ArrayListStatic, SystemDomain, m_appDomainIndexList);
 //
-//     GVAL_DECL(DWORD, gThreadTLSIndex);
+//     GVAL_DECL(DWORD, g_TlsIndex);
 //
-//     GVAL_IMPL_INIT(DWORD, gThreadTLSIndex, TLS_OUT_OF_INDEXES);
+//     GVAL_IMPL_INIT(DWORD, g_TlsIndex, TLS_OUT_OF_INDEXES);
 //
 // When declaring the variable, the first argument declares the
 // variable's type and the second argument declares the variable's
@@ -554,7 +543,6 @@
 //
 //*****************************************************************************
 
-
 #ifndef __daccess_h__
 #define __daccess_h__
 
@@ -708,15 +696,15 @@ bool DacUpdateMemoryRegion(TADDR addr, TSIZE_T bufferSize, BYTE* buffer);
 
 HRESULT DacWriteHostInstance(PVOID host, bool throwEx);
 
-// This is meant to mimic the RethrowTerminalExceptions/
-// SwallowAllExceptions/RethrowTransientExceptions macros to allow minidump
+// This is meant to mimic the RethrowTerminalExceptions()/
+// RethrowTransientExceptions() macros to allow minidump
 // gathering cancelation for details see
 // code:ClrDataAccess.EnumMemoryRegionsWrapper
 
 extern void DacLogMessage(LPCSTR format, ...);
 
-// This is usable in EX_TRY exactly how RethrowTerminalExceptions et cetera
-#define RethrowCancelExceptions                                         \
+// This is usable in EX_TRY exactly how RethrowTerminalExceptions() et cetera
+#define RethrowCancelExceptions()                                       \
     if (GET_EXCEPTION()->GetHR() == COR_E_OPERATIONCANCELED)            \
     {                                                                   \
         EX_RETHROW;                                                     \
@@ -822,17 +810,10 @@ interface IMDInternalImport* DacGetMDImport(const ReflectionModule* reflectionMo
 
 int DacGetIlMethodSize(TADDR methAddr);
 struct COR_ILMETHOD* DacGetIlMethod(TADDR methAddr);
-#ifdef FEATURE_EH_FUNCLETS
 struct _UNWIND_INFO * DacGetUnwindInfo(TADDR taUnwindInfo);
 
 // virtually unwind a CONTEXT out-of-process
 BOOL DacUnwindStackFrame(T_CONTEXT * pContext, T_KNONVOLATILE_CONTEXT_POINTERS* pContextPointers);
-#endif // FEATURE_EH_FUNCLETS
-
-#if defined(TARGET_UNIX)
-// call back through data target to unwind out-of-process
-HRESULT DacVirtualUnwind(ULONG32 threadId, PT_CONTEXT context, PT_KNONVOLATILE_CONTEXT_POINTERS contextPointers);
-#endif // TARGET_UNIX
 
 #ifdef FEATURE_MINIMETADATA_IN_TRIAGEDUMPS
 class SString;
@@ -2446,7 +2427,7 @@ typedef DPTR(IMAGE_TLS_DIRECTORY)   PTR_IMAGE_TLS_DIRECTORY;
 #endif
 
 #ifndef NATIVEAOT
-#if defined(TARGET_X86) && defined(FEATURE_EH_FUNCLETS)
+#if defined(TARGET_X86)
 typedef DPTR(struct _UNWIND_INFO)      PTR_UNWIND_INFO;
 #endif
 

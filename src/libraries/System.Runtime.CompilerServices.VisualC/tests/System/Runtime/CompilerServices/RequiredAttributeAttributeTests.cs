@@ -10,7 +10,7 @@ namespace System.Runtime.CompilerServices.Tests
         [Theory]
         [InlineData(null)]
         [InlineData(typeof(int))]
-        public void Ctor_RequiredContract(Type requiredContract)
+        public void Ctor_RequiredContract(Type? requiredContract)
         {
             var attribute = new RequiredAttributeAttribute(requiredContract);
             Assert.Equal(requiredContract, attribute.RequiredContract);

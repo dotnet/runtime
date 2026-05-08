@@ -23,6 +23,8 @@ namespace System.Runtime.InteropServices.JavaScript
         // they have negative values, so that they don't collide with JSHandles.
         private nint NextJSVHandle = -2;
         private readonly List<nint> JSVHandleFreeList = new();
+        internal Dictionary<int, Action<IntPtr>> JSExportByHandle = new Dictionary<int, Action<IntPtr>>();
+        internal int NextJSExportHandle = 1;
 
 #if !FEATURE_WASM_MANAGED_THREADS
         private JSProxyContext()
@@ -277,7 +279,9 @@ namespace System.Runtime.InteropServices.JavaScript
 
         public nint AllocJSVHandle()
         {
+#if FEATURE_WASM_MANAGED_THREADS
             lock (this)
+#endif
             {
                 ObjectDisposedException.ThrowIf(_isDisposed, this);
 
@@ -293,7 +297,9 @@ namespace System.Runtime.InteropServices.JavaScript
 
         public void FreeJSVHandle(nint jsvHandle)
         {
+#if FEATURE_WASM_MANAGED_THREADS
             lock (this)
+#endif
             {
                 JSVHandleFreeList.Add(jsvHandle);
             }
@@ -313,7 +319,9 @@ namespace System.Runtime.InteropServices.JavaScript
                 return IntPtr.Zero;
             }
 
+#if FEATURE_WASM_MANAGED_THREADS
             lock (this)
+#endif
             {
                 if (ThreadJsOwnedObjects.TryGetValue(obj, out IntPtr gcHandle))
                 {
@@ -328,7 +336,9 @@ namespace System.Runtime.InteropServices.JavaScript
 
         public PromiseHolder CreatePromiseHolder()
         {
+#if FEATURE_WASM_MANAGED_THREADS
             lock (this)
+#endif
             {
                 return new PromiseHolder(this);
             }
@@ -336,7 +346,9 @@ namespace System.Runtime.InteropServices.JavaScript
 
         public PromiseHolder GetPromiseHolder(nint gcHandle)
         {
+#if FEATURE_WASM_MANAGED_THREADS
             lock (this)
+#endif
             {
                 PromiseHolder? holder;
                 if (IsGCVHandle(gcHandle))
@@ -355,9 +367,11 @@ namespace System.Runtime.InteropServices.JavaScript
             }
         }
 
-        public unsafe void ReleasePromiseHolder(nint holderGCHandle)
+        public void ReleasePromiseHolder(nint holderGCHandle)
         {
+#if FEATURE_WASM_MANAGED_THREADS
             lock (this)
+#endif
             {
                 PromiseHolder? holder;
                 if (IsGCVHandle(holderGCHandle))
@@ -384,8 +398,11 @@ namespace System.Runtime.InteropServices.JavaScript
                     handle.Free();
                 }
 #if FEATURE_WASM_MANAGED_THREADS
-                Marshal.FreeHGlobal((IntPtr)holder.State);
-                holder.State = null;
+                unsafe
+                {
+                    NativeMemory.Free(holder.State);
+                    holder.State = null;
+                }
 #endif
             }
         }
@@ -393,7 +410,9 @@ namespace System.Runtime.InteropServices.JavaScript
         public unsafe void ReleaseJSOwnedObjectByGCHandle(nint gcHandle)
         {
             ToManagedCallback? holderCallback = null;
+#if FEATURE_WASM_MANAGED_THREADS
             lock (this)
+#endif
             {
                 PromiseHolder? holder = null;
                 if (IsGCVHandle(gcHandle))
@@ -425,7 +444,7 @@ namespace System.Runtime.InteropServices.JavaScript
                     holderCallback = holder.Callback;
                     holder.IsDisposed = true;
 #if FEATURE_WASM_MANAGED_THREADS
-                    Marshal.FreeHGlobal((IntPtr)holder.State);
+                    NativeMemory.Free(holder.State);
                     holder.State = null;
 #endif
                 }
@@ -435,7 +454,9 @@ namespace System.Runtime.InteropServices.JavaScript
 
         public JSObject CreateCSOwnedProxy(nint jsHandle)
         {
+#if FEATURE_WASM_MANAGED_THREADS
             lock (this)
+#endif
             {
                 JSObject? res;
                 if (!ThreadCsOwnedObjects.TryGetValue(jsHandle, out WeakReference<JSObject>? reference) ||
@@ -457,7 +478,9 @@ namespace System.Runtime.InteropServices.JavaScript
             }
             var ctx = jso.ProxyContext;
 
+#if FEATURE_WASM_MANAGED_THREADS
             lock (ctx)
+#endif
             {
                 if (jso.IsDisposed || ctx._isDisposed)
                 {
@@ -470,7 +493,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 if (!ctx.ThreadCsOwnedObjects.Remove(jsHandle))
                 {
                     Environment.FailFast($"ReleaseCSOwnedObject expected to find registration for JSHandle: {jsHandle}, ManagedThreadId: {Environment.CurrentManagedThreadId}. {Environment.NewLine} {Environment.StackTrace}");
-                };
+                }
                 if (!skipJS)
                 {
 #if FEATURE_WASM_MANAGED_THREADS
@@ -506,7 +529,9 @@ namespace System.Runtime.InteropServices.JavaScript
 
         private void Dispose(bool disposing)
         {
+#if FEATURE_WASM_MANAGED_THREADS
             lock (this)
+#endif
             {
                 if (!_isDisposed)
                 {

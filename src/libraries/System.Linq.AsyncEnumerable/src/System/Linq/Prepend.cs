@@ -2,9 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.Runtime.CompilerServices;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace System.Linq
 {
@@ -20,22 +17,11 @@ namespace System.Linq
             this IAsyncEnumerable<TSource> source,
             TSource element)
         {
-            ThrowHelper.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(source);
 
-            return Impl(source, element, default);
-
-            static async IAsyncEnumerable<TSource> Impl(
-                IAsyncEnumerable<TSource> source,
-                TSource element,
-                [EnumeratorCancellation] CancellationToken cancellationToken)
-            {
-                yield return element;
-
-                await foreach (TSource item in source.WithCancellation(cancellationToken).ConfigureAwait(false))
-                {
-                    yield return item;
-                }
-            }
+            return source is AppendPrependAsyncIterator<TSource> appendable
+                ? appendable.Prepend(element)
+                : new AppendPrepend1AsyncIterator<TSource>(source, element, appending: false);
         }
     }
 }

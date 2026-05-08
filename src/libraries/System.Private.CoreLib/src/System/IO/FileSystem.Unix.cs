@@ -418,7 +418,7 @@ namespace System.IO
                 // Throw if the source doesn't exist.
                 if (Interop.Sys.LStat(srcNoDirectorySeparator, out Interop.Sys.FileStatus sourceFileStatus) < 0)
                 {
-                    throw new DirectoryNotFoundException(SR.Format(SR.IO_PathNotFound_Path, sourceFullPath));
+                    throw new DirectoryNotFoundException(SR.Format(SR.IO_PathNotFound_Path, sourceFullPath), sourceFullPath);
                 }
                 // Source and destination must not be the same file unless it is a case-sensitive rename.
                 else if (sourceFileStatus.Dev == destFileStatus.Dev &&
@@ -454,7 +454,7 @@ namespace System.IO
                     case Interop.Error.EACCES: // match Win32 exception
                         throw new IOException(SR.Format(SR.UnauthorizedAccess_IODenied_Path, sourceFullPath), errorInfo.RawErrno);
                     case Interop.Error.ENOENT:
-                        throw new DirectoryNotFoundException(SR.Format(SR.IO_PathNotFound_Path, sourceFullPath));
+                        throw new DirectoryNotFoundException(SR.Format(SR.IO_PathNotFound_Path, sourceFullPath), sourceFullPath);
                     case Interop.Error.ENOTDIR: // sourceFullPath exists and it's not a directory
                         throw new IOException(SR.Format(SR.IO_PathNotFound_Path, sourceFullPath));
                     default:
@@ -667,16 +667,21 @@ namespace System.IO
         }
 #pragma warning restore IDE0060
 
+        internal static void CreateHardLink(string path, string pathToTarget)
+        {
+            Interop.CheckIo(Interop.Sys.Link(pathToTarget, path), path);
+        }
+
         internal static FileSystemInfo? ResolveLinkTarget(string linkPath, bool returnFinalTarget, bool isDirectory)
         {
-            ValueStringBuilder sb = new(Interop.DefaultPathBufferSize);
+            ValueStringBuilder sb = new(stackalloc char[Interop.DefaultPathBufferSize]);
             sb.Append(linkPath);
 
             string? linkTarget = Interop.Sys.ReadLink(linkPath);
             if (linkTarget == null)
             {
-                sb.Dispose();
                 Interop.Error error = Interop.Sys.GetLastError();
+                sb.Dispose();
                 // Not a link, return null
                 if (error == Interop.Error.EINVAL)
                 {

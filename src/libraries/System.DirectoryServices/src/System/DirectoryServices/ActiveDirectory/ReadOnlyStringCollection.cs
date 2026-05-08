@@ -28,10 +28,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public bool Contains(string value)
         {
-            if (value == null)
-            {
-                throw new ArgumentNullException(nameof(value));
-            }
+            ArgumentNullException.ThrowIfNull(value);
 
             for (int i = 0; i < InnerList.Count; i++)
             {
@@ -46,10 +43,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public int IndexOf(string value)
         {
-            if (value == null)
-            {
-                throw new ArgumentNullException(nameof(value));
-            }
+            ArgumentNullException.ThrowIfNull(value);
 
             for (int i = 0; i < InnerList.Count; i++)
             {

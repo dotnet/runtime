@@ -22,6 +22,54 @@ static bool Dbg_ShouldUseCookies()
 }
 #endif
 
+
+static uint32_t u32_min(uint32_t a, uint32_t b)
+{
+    return a < b ? a : b;
+}
+
+static int32_t i32_max(int32_t a, int32_t b)
+{
+    return a > b ? a : b;
+}
+
+static uint32_t u32_max(uint32_t a, uint32_t b)
+{
+    return a > b ? a : b;
+}
+
+static uint64_t ReadFromBitOffsets(PTR_UINT64 pArray, uint32_t bitStart, uint32_t bitCount)
+{
+    uint32_t elementBitSize = (sizeof(uint64_t) * 8);
+    _ASSERTE(bitCount <= elementBitSize);
+    uint32_t lowOffset = bitStart / elementBitSize;
+
+    uint64_t low = pArray[lowOffset];
+
+    uint32_t bitOffsetInLow = bitStart - lowOffset * elementBitSize;
+    uint32_t bitsInLow = u32_min(elementBitSize - bitOffsetInLow, bitCount);
+
+
+    // Extract LowBits from low
+    uint64_t lowShift1 = (low >> (int32_t)bitOffsetInLow);
+
+    uint64_t loBitMask = ((1ULL << (bitsInLow)) - 1);
+    uint64_t result = (lowShift1 & loBitMask);
+
+    if (bitsInLow < bitCount)
+    {
+        uint64_t high = pArray[lowOffset + 1];
+        int32_t bitsInHigh = bitCount - bitsInLow;
+        uint64_t hiBitMask = ((1ULL << (bitsInHigh)) - 1);
+        uint64_t BitsFromHigh = high & hiBitMask;
+        uint64_t resultBitsFromHigh = BitsFromHigh << bitsInLow;
+
+        result = result | resultBitsFromHigh;
+    }
+
+    return result;
+}
+
 //-----------------------------------------------------------------------------
 // We have "Transfer" objects that sit on top of the streams.
 // The objects look identical, but one serializes and the other deserializes.
@@ -158,7 +206,7 @@ public:
     void DoEncodedU32(uint32_t & dw)
     {
         SUPPORTS_DAC;
-        dw = m_r.ReadEncodedU32();
+        dw = m_r.ReadEncodedU32_NoThrow();
     }
 
     // Use to decode a monotonically increasing delta.
@@ -166,7 +214,7 @@ public:
     void DoEncodedDeltaU32(uint32_t & dw, uint32_t dwLast)
     {
         SUPPORTS_DAC;
-        uint32_t dwDelta = m_r.ReadEncodedU32();
+        uint32_t dwDelta = m_r.ReadEncodedU32_NoThrow();
         dw = dwLast + dwDelta;
     }
 
@@ -174,7 +222,7 @@ public:
     {
         SUPPORTS_DAC;
         //_ASSERTE(dwAdjust < 0);
-        dw = m_r.ReadEncodedU32() + dwAdjust;
+        dw = m_r.ReadEncodedU32_NoThrow() + dwAdjust;
     }
 
     void DoEncodedDeltaU32NonMonotonic(uint32_t& dw, uint32_t dwLast)
@@ -187,19 +235,19 @@ public:
     void DoEncodedSourceType(ICorDebugInfo::SourceTypes & dw)
     {
         SUPPORTS_DAC;
-        dw = (ICorDebugInfo::SourceTypes) m_r.ReadEncodedU32();
+        dw = (ICorDebugInfo::SourceTypes) m_r.ReadEncodedU32_NoThrow();
     }
 
     void DoEncodedVarLocType(ICorDebugInfo::VarLocType & dw)
     {
         SUPPORTS_DAC;
-        dw = (ICorDebugInfo::VarLocType) m_r.ReadEncodedU32();
+        dw = (ICorDebugInfo::VarLocType) m_r.ReadEncodedU32_NoThrow();
     }
 
     void DoEncodedUnsigned(unsigned & dw)
     {
         SUPPORTS_DAC;
-        dw = (unsigned) m_r.ReadEncodedU32();
+        dw = (unsigned) m_r.ReadEncodedU32_NoThrow();
     }
 
 
@@ -208,27 +256,27 @@ public:
     {
         SUPPORTS_DAC;
 #ifdef TARGET_X86
-        dwOffset = m_r.ReadEncodedI32() * sizeof(DWORD);
+        dwOffset = m_r.ReadEncodedI32_NoThrow() * sizeof(DWORD);
 #else
         // Non x86 platforms don't need it to be dword aligned.
-        dwOffset = m_r.ReadEncodedI32();
+        dwOffset = m_r.ReadEncodedI32_NoThrow();
 #endif
     }
 
     void DoEncodedRegIdx(ICorDebugInfo::RegNum & reg)
     {
         SUPPORTS_DAC;
-        reg = (ICorDebugInfo::RegNum) m_r.ReadEncodedU32();
+        reg = (ICorDebugInfo::RegNum) m_r.ReadEncodedU32_NoThrow();
     }
 
     void DoMethodHandle(CORINFO_METHOD_HANDLE& p)
     {
 #ifdef TARGET_64BIT
-        uint32_t lo = m_r.ReadUnencodedU32();
-        uint32_t hi = m_r.ReadUnencodedU32();
+        uint32_t lo = m_r.ReadUnencodedU32_NoThrow();
+        uint32_t hi = m_r.ReadUnencodedU32_NoThrow();
         p = reinterpret_cast<CORINFO_METHOD_HANDLE>(uintptr_t(lo) | (uintptr_t(hi) << 32));
 #else
-        uint32_t val = m_r.ReadUnencodedU32();
+        uint32_t val = m_r.ReadUnencodedU32_NoThrow();
         p = reinterpret_cast<CORINFO_METHOD_HANDLE>(static_cast<uintptr_t>(val));
 #endif
     }
@@ -241,7 +289,7 @@ public:
 #ifdef _DEBUG
         if (Dbg_ShouldUseCookies())
         {
-            BYTE b2 = m_r.ReadNibble();
+            BYTE b2 = m_r.ReadNibble_NoThrow();
             _ASSERTE(b == b2);
         }
 #endif
@@ -264,53 +312,10 @@ static int g_CDI_bVarsTotalCompress     = 0;
 
 static int g_CDI_bRichDebugInfoTotalUncompress = 0;
 static int g_CDI_bRichDebugInfoTotalCompress = 0;
+
+static int g_CDI_bAsyncDebugInfoTotalUncompress = 0;
+static int g_CDI_bAsyncDebugInfoTotalCompress = 0;
 #endif
-
-//-----------------------------------------------------------------------------
-// Serialize Bounds info.
-//-----------------------------------------------------------------------------
-template <class T>
-static void DoBounds(
-    T trans, // transfer object.
-    ULONG32                       cMap,
-    ICorDebugInfo::OffsetMapping *pMap
-)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        SUPPORTS_DAC;
-    }
-    CONTRACTL_END;
-
-
-    // Bounds info contains (Native Offset, IL Offset, flags)
-    // - Sorted by native offset (so use a delta encoding for that).
-    // - IL offsets aren't sorted, but they should be close to each other (so a signed delta encoding)
-    //   They may also include a sentinel value from MappingTypes.
-    // - flags is 3 independent bits.
-
-    // Loop through and transfer each Entry in the Mapping.
-    uint32_t dwLastNativeOffset = 0;
-    for(uint32_t i = 0; i < cMap; i++)
-    {
-        ICorDebugInfo::OffsetMapping * pBound = &pMap[i];
-
-        trans.DoEncodedDeltaU32(pBound->nativeOffset, dwLastNativeOffset);
-        dwLastNativeOffset = pBound->nativeOffset;
-
-
-        trans.DoEncodedAdjustedU32(pBound->ilOffset, (DWORD) ICorDebugInfo::MAX_MAPPING_VALUE);
-
-        trans.DoEncodedSourceType(pBound->source);
-
-        trans.DoCookie(0xA);
-    }
-}
-
-
 
 // Helper to write a compressed Native Var Info
 template<class T>
@@ -455,15 +460,53 @@ static void DoRichOffsetMappings(
     }
 }
 
-enum EXTRA_DEBUG_INFO_FLAGS
+template<typename T>
+static void DoAsyncSuspensionPoints(
+    T trans,
+    ULONG32 cSuspensionPoints,
+    ICorDebugInfo::AsyncSuspensionPoint* suspensionPoints)
 {
-    // Debug info contains patchpoint information
-    EXTRA_DEBUG_INFO_PATCHPOINT = 1,
-    // Debug info contains rich information
-    EXTRA_DEBUG_INFO_RICH = 2,
-};
+    unsigned lastDiagnosticNativeOffset = 0;
+    for (uint32_t i = 0; i < cSuspensionPoints; i++)
+    {
+        ICorDebugInfo::AsyncSuspensionPoint* sp = &suspensionPoints[i];
+        trans.DoEncodedDeltaU32NonMonotonic(sp->DiagnosticNativeOffset, lastDiagnosticNativeOffset);
+        lastDiagnosticNativeOffset = sp->DiagnosticNativeOffset;
+
+        trans.DoEncodedU32(sp->NumContinuationVars);
+    }
+}
+
+template<typename T>
+static void DoAsyncVars(
+    T trans,
+    ULONG32 cSuspensionPoints,
+    ICorDebugInfo::AsyncSuspensionPoint* suspensionPoints,
+    ULONG32 cVars,
+    ICorDebugInfo::AsyncContinuationVarInfo* vars)
+{
+    for (uint32_t i = 0; i < cVars; i++)
+    {
+        ICorDebugInfo::AsyncContinuationVarInfo* var = &vars[i];
+        trans.DoEncodedAdjustedU32(var->VarNumber, (DWORD) ICorDebugInfo::MAX_ILNUM);
+        trans.DoEncodedU32(var->Offset);
+    }
+}
+
+static constexpr int BITS_FOR_SOURCE_TYPE = 3;
 
 #ifndef DACCESS_COMPILE
+
+BYTE* DecompressNew(void*, size_t cBytes)
+{
+    BYTE* p = (BYTE *)malloc(cBytes);
+    return p;
+}
+
+void DecompressDelete(void* p)
+{
+    free(p);
+}
 
 void CompressDebugInfo::CompressBoundaries(
     IN ULONG32                       cMap,
@@ -484,17 +527,117 @@ void CompressDebugInfo::CompressBoundaries(
 
     if (cMap != 0)
     {
+        // Get max IL offset and native offsets
+        uint32_t maxNativeOffsetDelta = 0;
+        uint32_t maxILOffset = 0;
+        for (ULONG32 i = 0; i < cMap; i++)
+        {
+            maxILOffset = u32_max(maxILOffset, (uint32_t)((int32_t)pMap[i].ilOffset - (int32_t)ICorDebugInfo::MAX_MAPPING_VALUE));
+            uint32_t prevNativeOffset = 0;
+            if (i > 0)
+            {
+                prevNativeOffset = pMap[i - 1].nativeOffset;
+            }   
+            uint32_t nativeOffsetDelta = pMap[i].nativeOffset - prevNativeOffset;
+            maxNativeOffsetDelta = u32_max(nativeOffsetDelta, maxNativeOffsetDelta);
+        }
+        uint32_t ilOffsetBits = 0;
+        if (maxILOffset == 0)
+        {
+            ilOffsetBits = 1; // always have at least 1 bit
+        }
+        else
+        {
+            BitScanReverse((DWORD*)&ilOffsetBits, maxILOffset);
+            ilOffsetBits++; // BitScanReverse finds the index of the highest set bit, which is one less than the number of bits needed.
+        }
+        uint32_t nativeOffsetBits = 0;
+        if (maxNativeOffsetDelta == 0)
+        {
+            nativeOffsetBits = 1; // always have at least 1 bit
+        }
+        else
+        {
+            BitScanReverse((DWORD*)&nativeOffsetBits, maxNativeOffsetDelta);
+            nativeOffsetBits++; // BitScanReverse finds the index of the highest set bit, which is one less than the number of bits needed.
+        }
+        
         pWriter->WriteEncodedU32(cMap);
+        pWriter->WriteEncodedU32(nativeOffsetBits - 1);
+        pWriter->WriteEncodedU32(ilOffsetBits - 1);
 
-        TransferWriter t(*pWriter);
-        DoBounds(t, cMap, pMap);
+        uint32_t bitWidth = BITS_FOR_SOURCE_TYPE + nativeOffsetBits + ilOffsetBits;
 
+        uint8_t bitsInProgress = 0;
+        uint8_t bitsInProgressCount = 0;
+
+        for (uint32_t i = 0; i < cMap; i++)
+        {
+            uint32_t prevNativeOffset = 0;
+            if (i > 0)
+            {
+                prevNativeOffset = pMap[i - 1].nativeOffset;
+            }   
+            uint32_t nativeOffsetDelta = pMap[i].nativeOffset - prevNativeOffset;
+
+            ICorDebugInfo::OffsetMapping * pBound = &pMap[i];
+
+            // We only expect to see some source types
+            _ASSERTE((pBound->source & ~(ICorDebugInfo::CALL_INSTRUCTION | ICorDebugInfo::STACK_EMPTY | ICorDebugInfo::ASYNC)) == 0);
+
+            uint32_t sourceBits = 0;
+            if ((pBound->source & ICorDebugInfo::CALL_INSTRUCTION) != 0)
+                sourceBits |= 1;
+            if ((pBound->source & ICorDebugInfo::STACK_EMPTY) != 0)
+                sourceBits |= 2;
+            if ((pBound->source & ICorDebugInfo::ASYNC) != 0)
+                sourceBits |= 4;
+
+            // Should be encodable in BITS_FOR_SOURCE_TYPE bits
+            _ASSERTE((sourceBits & ~((1u << BITS_FOR_SOURCE_TYPE) - 1)) == 0);
+
+            uint64_t mappingDataEncoded = sourceBits | 
+                ((uint64_t)nativeOffsetDelta << BITS_FOR_SOURCE_TYPE) | 
+                ((uint64_t)((int32_t)pBound->ilOffset - (int32_t)ICorDebugInfo::MAX_MAPPING_VALUE) << (BITS_FOR_SOURCE_TYPE + nativeOffsetBits));
+
+            for (uint8_t bitsToWrite = (uint8_t)bitWidth; bitsToWrite > 0;)
+            {
+                // Figure out next bits to write if we need to combine with a previous byte.
+                if (bitsInProgressCount > 0)
+                {
+                    uint8_t bitsToAddFromNewEncoding = 8 - bitsInProgressCount;
+                    uint8_t bitsToAddOnToInProgress = (mappingDataEncoded & ((1ULL << bitsToAddFromNewEncoding) - 1)) << bitsInProgressCount;
+                    pWriter->WriteRawByte(bitsToAddOnToInProgress | bitsInProgress);
+                    mappingDataEncoded >>= bitsToAddFromNewEncoding;
+                    bitsToWrite -= bitsToAddFromNewEncoding;
+                    bitsInProgressCount = 0;
+                }
+                else if (bitsToWrite >= 8)
+                {
+                    pWriter->WriteRawByte((uint8_t)mappingDataEncoded);
+                    mappingDataEncoded >>= 8;
+                    bitsToWrite -= 8;
+                }
+                else
+                {
+                    bitsInProgress = (uint8_t)mappingDataEncoded;
+                    bitsInProgressCount = bitsToWrite;
+                    bitsToWrite = 0;
+                }
+            }
+        }
+        if (bitsInProgressCount > 0)
+        {
+            _ASSERTE(bitsInProgressCount < 8);
+            pWriter->WriteRawByte(bitsInProgress);
+        }
         pWriter->Flush();
     }
 
 #ifdef _DEBUG
     DWORD cbBlob;
     PVOID pBlob = pWriter->GetBlob(&cbBlob);
+
 
     // Track perf #s for compression...
     g_CDI_TotalMethods++;
@@ -573,22 +716,173 @@ void CompressDebugInfo::CompressRichDebugInfo(
     PVOID pBlob = pWriter->GetBlob(&cbBlob);
 
     g_CDI_bRichDebugInfoTotalUncompress += 8 + cInlineTree * sizeof(ICorDebugInfo::InlineTreeNode) + cRichOffsetMappings * sizeof(ICorDebugInfo::RichOffsetMapping);
-    g_CDI_bRichDebugInfoTotalCompress   += 4 + cbBlob;
+    g_CDI_bRichDebugInfoTotalCompress   += cbBlob;
 #endif
 }
 
-PTR_BYTE CompressDebugInfo::CompressBoundariesAndVars(
-    IN ICorDebugInfo::OffsetMapping*     pOffsetMapping,
-    IN ULONG                             iOffsetMapping,
-    IN ICorDebugInfo::NativeVarInfo*     pNativeVarInfo,
-    IN ULONG                             iNativeVarInfo,
-    IN PatchpointInfo*                   patchpointInfo,
-    IN ICorDebugInfo::InlineTreeNode*    pInlineTree,
-    IN ULONG                             iInlineTree,
-    IN ICorDebugInfo::RichOffsetMapping* pRichOffsetMappings,
-    IN ULONG                             iRichOffsetMappings,
-    IN BOOL                              writeFlagByte,
-    IN LoaderHeap*                       pLoaderHeap
+void CompressDebugInfo::CompressAsyncDebugInfo(
+    IN ICorDebugInfo::AsyncInfo*                asyncInfo,
+    IN ICorDebugInfo::AsyncSuspensionPoint*     pSuspensionPoints,
+    IN ICorDebugInfo::AsyncContinuationVarInfo* pAsyncVars,
+    IN ULONG                                    iAsyncVars,
+    IN OUT NibbleWriter*                        pWriter)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    _ASSERTE(pWriter != NULL);
+    _ASSERTE((asyncInfo->NumSuspensionPoints > 0) && (pSuspensionPoints != NULL));
+    pWriter->WriteEncodedU32(asyncInfo->NumSuspensionPoints);
+    pWriter->WriteEncodedU32(iAsyncVars);
+
+    TransferWriter t(*pWriter);
+    DoAsyncSuspensionPoints(t, asyncInfo->NumSuspensionPoints, pSuspensionPoints);
+    DoAsyncVars(t, asyncInfo->NumSuspensionPoints, pSuspensionPoints, iAsyncVars, pAsyncVars);
+
+    pWriter->Flush();
+
+#ifdef _DEBUG
+    DWORD cbBlob;
+    PVOID pBlob = pWriter->GetBlob(&cbBlob);
+
+    g_CDI_bAsyncDebugInfoTotalUncompress += 8 + asyncInfo->NumSuspensionPoints * sizeof(ICorDebugInfo::AsyncSuspensionPoint) + iAsyncVars * sizeof(ICorDebugInfo::AsyncContinuationVarInfo);
+    g_CDI_bAsyncDebugInfoTotalCompress   += cbBlob;
+#endif
+}
+
+// ----------------------------------------------------------------------------
+// DacDbiInterfaceImpl::TranslateInstrumentedILOffsetToOriginal
+//
+// Description:
+//    Helper function to convert an instrumented IL offset to the corresponding original IL offset.
+//
+// Arguments:
+//    * ilOffset - offset to be translated
+//    * pMapping - the profiler-provided mapping between original IL offsets and instrumented IL offsets
+//
+// Return Value:
+//    Return the translated offset.
+//
+
+
+static ULONG TranslateInstrumentedILOffsetToOriginal(ULONG                               ilOffset,
+                                                     const InstrumentedILOffsetMapping * pMapping)
+{
+    SIZE_T               cMap  = pMapping->GetCount();
+    ARRAY_PTR_COR_IL_MAP rgMap = pMapping->GetOffsets();
+
+    _ASSERTE((cMap == 0) == (rgMap == NULL));
+
+    // Early out if there is no mapping, or if we are dealing with a special IL offset such as
+    // prolog, epilog, etc.
+    if ((cMap == 0) || ((int)ilOffset < 0))
+    {
+        return ilOffset;
+    }
+
+    SIZE_T i = 0;
+    for (i = 1; i < cMap; i++)
+    {
+        if (ilOffset < rgMap[i].newOffset)
+        {
+            return rgMap[i - 1].oldOffset;
+        }
+    }
+    return rgMap[i - 1].oldOffset;
+}
+
+//-----------------------------------------------------------------------------
+// Given a instrumented IL map from the profiler that maps:
+//   Original offset IL_A -> Instrumentend offset IL_B
+// And a native mapping from the JIT that maps:
+//   Instrumented offset IL_B -> native offset Native_C
+// This function merges the two maps and stores the result back into the nativeMap.
+// The nativeMap now maps:
+//   Original offset IL_A -> native offset Native_C
+// pEntryCount is the number of valid entries in nativeMap, and it may be adjusted downwards
+// as part of the composition.
+//-----------------------------------------------------------------------------
+static void ComposeMapping(const InstrumentedILOffsetMapping * pProfilerILMap, ICorDebugInfo::OffsetMapping nativeMap[], ULONG32* pEntryCount)
+{
+    // Translate the IL offset if the profiler has provided us with a mapping.
+    // The ICD public API should always expose the original IL offsets, but GetBoundaries()
+    // directly accesses the debug info, which stores the instrumented IL offsets.
+
+    ULONG32 entryCount = *pEntryCount;
+    // The map pointer could be NULL or there could be no entries in the map, in either case no work to do
+    if (pProfilerILMap && !pProfilerILMap->IsNull())
+    {
+        // If we did instrument, then we can't have any sequence points that
+        // are "in-between" the old-->new map that the profiler gave us.
+        // Ex, if map is:
+        // (6 old -> 36 new)
+        // (8 old -> 50 new)
+        // And the jit gives us an entry for 44 new, that will map back to 6 old.
+        // Since the map can only have one entry for 6 old, we remove 44 new.
+
+        // First Pass: invalidate all the duplicate entries by setting their IL offset to MAX_ILNUM
+        ULONG32 cDuplicate = 0;
+        ULONG32 prevILOffset = (ULONG32)(ICorDebugInfo::MAX_ILNUM);
+        for (ULONG32 i = 0; i < entryCount; i++)
+        {
+            ULONG32 origILOffset = TranslateInstrumentedILOffsetToOriginal(nativeMap[i].ilOffset, pProfilerILMap);
+
+            if (origILOffset == prevILOffset)
+            {
+                // mark this sequence point as invalid; refer to the comment above
+                nativeMap[i].ilOffset = (ULONG32)(ICorDebugInfo::MAX_ILNUM);
+                cDuplicate += 1;
+            }
+            else
+            {
+                // overwrite the instrumented IL offset with the original IL offset
+                nativeMap[i].ilOffset = origILOffset;
+                prevILOffset = origILOffset;
+            }
+        }
+
+        // Second Pass: move all the valid entries up front
+        ULONG32 realIndex = 0;
+        for (ULONG32 curIndex = 0; curIndex < entryCount; curIndex++)
+        {
+            if (nativeMap[curIndex].ilOffset != (ULONG32)(ICorDebugInfo::MAX_ILNUM))
+            {
+                // This is a valid entry.  Move it up front.
+                nativeMap[realIndex] = nativeMap[curIndex];
+                realIndex += 1;
+            }
+        }
+
+        // make sure we have done the bookkeeping correctly
+        _ASSERTE((realIndex + cDuplicate) == entryCount);
+
+        // Final Pass: derecement entryCount
+        entryCount -= cDuplicate;
+        *pEntryCount = entryCount;
+    }
+}
+
+PTR_BYTE CompressDebugInfo::Compress(
+    IN ICorDebugInfo::OffsetMapping*            pOffsetMapping,
+    IN ULONG                                    iOffsetMapping,
+    const InstrumentedILOffsetMapping *         pInstrumentedILBounds,
+    IN ICorDebugInfo::NativeVarInfo*            pNativeVarInfo,
+    IN ULONG                                    iNativeVarInfo,
+    IN PatchpointInfo*                          patchpointInfo,
+    IN ICorDebugInfo::InlineTreeNode*           pInlineTree,
+    IN ULONG                                    iInlineTree,
+    IN ICorDebugInfo::RichOffsetMapping*        pRichOffsetMappings,
+    IN ULONG                                    iRichOffsetMappings,
+    IN ICorDebugInfo::AsyncInfo*                asyncInfo,
+    IN ICorDebugInfo::AsyncSuspensionPoint*     pSuspensionPoints,
+    IN ICorDebugInfo::AsyncContinuationVarInfo* pAsyncVars,
+    IN ULONG                                    iAsyncVars,
+    IN LoaderHeap*                              pLoaderHeap
     )
 {
     CONTRACTL {
@@ -597,7 +891,8 @@ PTR_BYTE CompressDebugInfo::CompressBoundariesAndVars(
         PRECONDITION((iNativeVarInfo == 0) == (pNativeVarInfo == NULL));
         PRECONDITION((iInlineTree == 0) || (pInlineTree != NULL));
         PRECONDITION((iRichOffsetMappings == 0) || (pRichOffsetMappings != NULL));
-        PRECONDITION(writeFlagByte || ((patchpointInfo == NULL) && (iInlineTree == 0) && (iRichOffsetMappings == 0)));
+        PRECONDITION((asyncInfo->NumSuspensionPoints == 0) || (pSuspensionPoints != NULL));
+        PRECONDITION((iAsyncVars == 0) || (pAsyncVars != NULL));
         PRECONDITION(pLoaderHeap != NULL);
     } CONTRACTL_END;
 
@@ -623,6 +918,23 @@ PTR_BYTE CompressDebugInfo::CompressBoundariesAndVars(
         pBounds = boundsBuffer.GetBlob(&cbBounds);
     }
 
+    NibbleWriter instrumentedILBoundsBuffer;
+    DWORD cbUninstrumentedBounds = 0;
+    PVOID pUninstrumentedBounds = NULL;
+    if (pInstrumentedILBounds != NULL)
+    {
+        NewArrayHolder<ICorDebugInfo::OffsetMapping> pInstrumentedILBoundsArray(
+            new ICorDebugInfo::OffsetMapping[iOffsetMapping]);
+
+        memcpy(pInstrumentedILBoundsArray, pOffsetMapping, iOffsetMapping * sizeof(ICorDebugInfo::OffsetMapping));
+
+        uint32_t instrumentedEntryCount = iOffsetMapping;
+        ComposeMapping(pInstrumentedILBounds, pInstrumentedILBoundsArray, &instrumentedEntryCount);
+
+        CompressDebugInfo::CompressBoundaries(instrumentedEntryCount, pInstrumentedILBoundsArray, &instrumentedILBoundsBuffer);
+        pUninstrumentedBounds = instrumentedILBoundsBuffer.GetBlob(&cbUninstrumentedBounds);
+    }
+
     NibbleWriter varsBuffer;
     DWORD cbVars = 0;
     PVOID pVars = NULL;
@@ -641,51 +953,60 @@ PTR_BYTE CompressDebugInfo::CompressBoundariesAndVars(
         pRichDebugInfo = richDebugInfoBuffer.GetBlob(&cbRichDebugInfo);
     }
 
+    NibbleWriter asyncInfoBuffer;
+    DWORD cbAsyncInfo = 0;
+    PVOID pAsyncInfoBlob = NULL;
+    if (asyncInfo->NumSuspensionPoints > 0)
+    {
+        CompressDebugInfo::CompressAsyncDebugInfo(asyncInfo, pSuspensionPoints, pAsyncVars, iAsyncVars, &asyncInfoBuffer);
+        pAsyncInfoBlob = asyncInfoBuffer.GetBlob(&cbAsyncInfo);
+    }
+
     // Now write it all out to the buffer in a compact fashion.
     NibbleWriter w;
-    w.WriteEncodedU32(cbBounds);
-    w.WriteEncodedU32(cbVars);
+
+    bool isFat =
+        (cbBounds == DebugInfoFat) ||
+        (cbPatchpointInfo > 0) ||
+        (cbRichDebugInfo > 0) ||
+        (cbAsyncInfo > 0) ||
+        (cbUninstrumentedBounds > 0);
+
+    if (isFat)
+    {
+        w.WriteEncodedU32(DebugInfoFat); // Indicator that this is a fat header
+        w.WriteEncodedU32(cbBounds);
+        w.WriteEncodedU32(cbVars);
+        w.WriteEncodedU32(cbUninstrumentedBounds);
+        w.WriteEncodedU32(cbPatchpointInfo);
+        w.WriteEncodedU32(cbRichDebugInfo);
+        w.WriteEncodedU32(cbAsyncInfo);
+    }
+    else
+    {
+        w.WriteEncodedU32(cbBounds);
+        w.WriteEncodedU32(cbVars);
+    }
+
     w.Flush();
 
     DWORD cbHeader;
     PVOID pHeader = w.GetBlob(&cbHeader);
 
     S_UINT32 cbFinalSize(0);
-    if (writeFlagByte)
-        cbFinalSize += 1;
-
+    cbFinalSize += cbHeader;
+    cbFinalSize += cbBounds;
+    cbFinalSize += cbVars;
+    cbFinalSize += cbUninstrumentedBounds;
     cbFinalSize += cbPatchpointInfo;
-    cbFinalSize += S_UINT32(4) + S_UINT32(cbRichDebugInfo);
-    cbFinalSize += S_UINT32(cbHeader) + S_UINT32(cbBounds) + S_UINT32(cbVars);
+    cbFinalSize += cbRichDebugInfo;
+    cbFinalSize += cbAsyncInfo;
 
     if (cbFinalSize.IsOverflow())
         ThrowHR(COR_E_OVERFLOW);
 
     BYTE *ptrStart = (BYTE *)(void *)pLoaderHeap->AllocMem(S_SIZE_T(cbFinalSize.Value()));
     BYTE *ptr = ptrStart;
-
-    if (writeFlagByte)
-    {
-        BYTE flagByte = 0;
-        if (cbPatchpointInfo > 0)
-            flagByte |= EXTRA_DEBUG_INFO_PATCHPOINT;
-        if (cbRichDebugInfo > 0)
-            flagByte |= EXTRA_DEBUG_INFO_RICH;
-
-        *ptr++ = flagByte;
-    }
-
-    if (cbPatchpointInfo > 0)
-        memcpy(ptr, (BYTE*) patchpointInfo, cbPatchpointInfo);
-    ptr += cbPatchpointInfo;
-
-    if (cbRichDebugInfo > 0)
-    {
-        memcpy(ptr, &cbRichDebugInfo, 4);
-        ptr += 4;
-        memcpy(ptr, pRichDebugInfo, cbRichDebugInfo);
-        ptr += cbRichDebugInfo;
-    }
 
     memcpy(ptr, pHeader, cbHeader);
     ptr += cbHeader;
@@ -698,24 +1019,171 @@ PTR_BYTE CompressDebugInfo::CompressBoundariesAndVars(
         memcpy(ptr, pVars, cbVars);
     ptr += cbVars;
 
+    if (cbUninstrumentedBounds > 0)
+        memcpy(ptr, pUninstrumentedBounds, cbUninstrumentedBounds);
+    ptr += cbUninstrumentedBounds;
+
+    if (cbPatchpointInfo > 0)
+        memcpy(ptr, (BYTE*) patchpointInfo, cbPatchpointInfo);
+    ptr += cbPatchpointInfo;
+
+    if (cbRichDebugInfo > 0)
+        memcpy(ptr, pRichDebugInfo, cbRichDebugInfo);
+    ptr += cbRichDebugInfo;
+
+    if (cbAsyncInfo > 0)
+        memcpy(ptr, pAsyncInfoBlob, cbAsyncInfo);
+    ptr += cbAsyncInfo;
+
+#ifdef _DEBUG
+    ULONG32 cNewBounds = 0;
+    ULONG32 cNewVars = 0;
+    ICorDebugInfo::OffsetMapping *pNewMap = NULL;
+    ICorDebugInfo::NativeVarInfo *pNewVars = NULL;
+    RestoreBoundariesAndVars(
+        DecompressNew, NULL, BoundsType::Instrumented, ptrStart, &cNewBounds, &pNewMap, &cNewVars, &pNewVars);
+
+    _ASSERTE(cNewBounds == iOffsetMapping);
+    _ASSERTE(cNewBounds == 0 || pNewMap != NULL);
+    for (ULONG32 i = 0; i < cNewBounds; i++)
+    {
+        _ASSERTE(pNewMap[i].nativeOffset == pOffsetMapping[i].nativeOffset);
+        _ASSERTE(pNewMap[i].ilOffset == pOffsetMapping[i].ilOffset);
+        _ASSERTE(pNewMap[i].source == pOffsetMapping[i].source);
+    }
+
+    _ASSERTE(cNewVars == iNativeVarInfo);
+    _ASSERTE(cNewVars == 0 || pNewVars != NULL);
+
+    for (ULONG32 i = 0; i < iNativeVarInfo; i++)
+    {
+        _ASSERTE(pNewVars[i].startOffset == pNativeVarInfo[i].startOffset);
+        _ASSERTE(pNewVars[i].endOffset == pNativeVarInfo[i].endOffset);
+        _ASSERTE(pNewVars[i].varNumber == pNativeVarInfo[i].varNumber);
+        _ASSERTE(pNewVars[i].loc == pNativeVarInfo[i].loc);
+    }
+
+    if (pNewMap != NULL)
+    {
+        DecompressDelete(pNewMap);
+    }
+    if (pNewVars != NULL)
+    {
+        DecompressDelete(pNewVars);
+    }
+#endif // _DEBUG
+
     return ptrStart;
 }
 
 #endif // DACCESS_COMPILE
 
+template <typename TNumBounds, typename TPerBound>
+static void DoBounds(PTR_BYTE addrBounds, uint32_t cbBounds, TNumBounds countHandler, TPerBound boundHandler)
+{
+    NibbleReader r(addrBounds, cbBounds);
+    uint32_t cNumEntries = r.ReadEncodedU32_NoThrow();//            writer2.WriteUInt((uint)offsetMapping.Length); // We need the total count
+    uint32_t bitsForNativeDelta = r.ReadEncodedU32_NoThrow() + 1; // Number of bits needed for native deltas
+    uint32_t bitsForILOffsets = r.ReadEncodedU32_NoThrow() + 1; // How many bits needed for IL offsets
+
+    uint32_t bitsPerEntry = bitsForNativeDelta + bitsForILOffsets + BITS_FOR_SOURCE_TYPE;
+    TADDR addrBoundsArray = dac_cast<TADDR>(addrBounds) + r.GetNextByteIndex();
+    TADDR addrBoundsArrayForReads = AlignDown(addrBoundsArray, sizeof(uint64_t));
+    uint32_t bitOffsetForReads = (uint32_t)((addrBoundsArray - addrBoundsArrayForReads) * 8); // We want to read using aligned 64bit reads, but we want to start at the right bit offset.
+    uint32_t currentNativeOffset = 0;
+    ICorDebugInfo::OffsetMapping bound;
+
+    _ASSERTE(cNumEntries > 0);
+
+    if (countHandler(cNumEntries))
+    {
+        for (uint32_t iEntry = 0; iEntry < cNumEntries; iEntry++, bitOffsetForReads += bitsPerEntry)
+        {
+            uint64_t mappingDataEncoded = ReadFromBitOffsets(dac_cast<PTR_UINT64>(addrBoundsArrayForReads), bitOffsetForReads, bitsPerEntry);
+            uint32_t sourceTypes = 0;
+            if ((mappingDataEncoded & 1) != 0)
+                sourceTypes |= ICorDebugInfo::CALL_INSTRUCTION;
+            if ((mappingDataEncoded & 2) != 0)
+                sourceTypes |= ICorDebugInfo::STACK_EMPTY;
+            if ((mappingDataEncoded & 4) != 0)
+                sourceTypes |= ICorDebugInfo::ASYNC;
+
+            bound.source = (ICorDebugInfo::SourceTypes)sourceTypes;
+
+            mappingDataEncoded = mappingDataEncoded >> BITS_FOR_SOURCE_TYPE; // Remove source type bits
+            uint32_t nativeOffsetDelta = (uint32_t)(mappingDataEncoded & ((1ULL << bitsForNativeDelta) - 1));
+            currentNativeOffset += nativeOffsetDelta;
+            bound.nativeOffset = currentNativeOffset;
+
+            mappingDataEncoded = mappingDataEncoded >> bitsForNativeDelta; // Remove native offset delta bits
+            bound.ilOffset = (uint32_t)((uint32_t)mappingDataEncoded + (uint32_t)ICorDebugInfo::MAX_MAPPING_VALUE);
+            if (!boundHandler(bound))
+                return;
+        }
+    }
+}
+
 //-----------------------------------------------------------------------------
 // Uncompression (restore) routines
 //-----------------------------------------------------------------------------
 
+DebugInfoChunks CompressDebugInfo::DecodeChunks(IN PTR_BYTE pDebugInfo)
+{
+    CONTRACTL
+    {
+        THROWS; // reading from nibble stream may throw on invalid data.
+        GC_NOTRIGGER;
+        MODE_ANY;
+        SUPPORTS_DAC;
+    }
+    CONTRACTL_END;
+
+    NibbleReader r(pDebugInfo, 42 /* maximum size of compressed 7 UINT32s */);
+
+    ULONG cbBoundsOrFatMarker = r.ReadEncodedU32();
+
+    DebugInfoChunks chunks;
+
+    if (cbBoundsOrFatMarker == DebugInfoFat)
+    {
+        // Fat header
+        chunks.cbBounds = r.ReadEncodedU32();
+        chunks.cbVars = r.ReadEncodedU32();
+        chunks.cbUninstrumentedBounds = r.ReadEncodedU32();
+        chunks.cbPatchpointInfo = r.ReadEncodedU32();
+        chunks.cbRichDebugInfo = r.ReadEncodedU32();
+        chunks.cbAsyncInfo = r.ReadEncodedU32();
+    }
+    else
+    {
+        chunks.cbBounds = cbBoundsOrFatMarker;
+        chunks.cbVars = r.ReadEncodedU32();
+        chunks.cbUninstrumentedBounds = 0;
+        chunks.cbPatchpointInfo = 0;
+        chunks.cbRichDebugInfo = 0;
+        chunks.cbAsyncInfo = 0;
+    }
+
+    chunks.pBounds = pDebugInfo + r.GetNextByteIndex();
+    chunks.pVars = chunks.pBounds + chunks.cbBounds;
+    chunks.pUninstrumentedBounds = chunks.pVars + chunks.cbVars;
+    chunks.pPatchpointInfo = chunks.pUninstrumentedBounds + chunks.cbUninstrumentedBounds;
+    chunks.pRichDebugInfo = chunks.pPatchpointInfo + chunks.cbPatchpointInfo;
+    chunks.pAsyncInfo = chunks.pRichDebugInfo + chunks.cbRichDebugInfo;
+    chunks.pEnd = chunks.pAsyncInfo + chunks.cbAsyncInfo;
+    return chunks;
+}
+
 // Uncompress data supplied by Compress functions.
 void CompressDebugInfo::RestoreBoundariesAndVars(
-    IN FP_IDS_NEW fpNew, IN void * pNewData,
+    IN FP_IDS_NEW fpNew,
+    IN void * pNewData,
+    BoundsType boundsType,
     IN PTR_BYTE                         pDebugInfo,
     OUT ULONG32                       * pcMap, // number of entries in ppMap
     OUT ICorDebugInfo::OffsetMapping **ppMap, // pointer to newly allocated array
     OUT ULONG32                         *pcVars,
-    OUT ICorDebugInfo::NativeVarInfo    **ppVars,
-    BOOL hasFlagByte
+    OUT ICorDebugInfo::NativeVarInfo    **ppVars
     )
 {
     CONTRACTL
@@ -732,67 +1200,50 @@ void CompressDebugInfo::RestoreBoundariesAndVars(
     if (pcVars != NULL) *pcVars = 0;
     if (ppVars != NULL) *ppVars = NULL;
 
-    if (hasFlagByte)
+    DebugInfoChunks chunks = DecodeChunks(pDebugInfo);
+
+    PTR_BYTE addrBounds = chunks.pBounds;
+    unsigned cbBounds = chunks.cbBounds;
+
+    if ((boundsType == BoundsType::Uninstrumented) && chunks.cbUninstrumentedBounds != 0)
     {
-        // Check flag byte and skip over any patchpoint info
-        BYTE flagByte = *pDebugInfo;
-        pDebugInfo++;
-
-        if ((flagByte & EXTRA_DEBUG_INFO_PATCHPOINT) != 0)
-        {
-            PTR_PatchpointInfo patchpointInfo = dac_cast<PTR_PatchpointInfo>(pDebugInfo);
-            pDebugInfo += patchpointInfo->PatchpointInfoSize();
-            flagByte &= ~EXTRA_DEBUG_INFO_PATCHPOINT;
-        }
-
-        if ((flagByte & EXTRA_DEBUG_INFO_RICH) != 0)
-        {
-            UINT32 cbRichDebugInfo = *PTR_UINT32(pDebugInfo);
-            pDebugInfo += 4;
-            pDebugInfo += cbRichDebugInfo;
-            flagByte &= ~EXTRA_DEBUG_INFO_RICH;
-        }
-
-        _ASSERTE(flagByte == 0);
+        // If we have uninstrumented bounds, we will use them instead of the regular bounds.
+        addrBounds = chunks.pUninstrumentedBounds;
+        cbBounds = chunks.cbUninstrumentedBounds;
     }
-
-    NibbleReader r(pDebugInfo, 12 /* maximum size of compressed 2 UINT32s */);
-
-    ULONG cbBounds = r.ReadEncodedU32();
-    ULONG cbVars   = r.ReadEncodedU32();
-
-    PTR_BYTE addrBounds = pDebugInfo + r.GetNextByteIndex();
-    PTR_BYTE addrVars   = addrBounds + cbBounds;
 
     if ((pcMap != NULL || ppMap != NULL) && (cbBounds != 0))
     {
-        NibbleReader r(addrBounds, cbBounds);
-        TransferReader t(r);
-
-        UINT32 cNumEntries = r.ReadEncodedU32();
-        _ASSERTE(cNumEntries > 0);
-
-        if (pcMap != NULL)
-            *pcMap = cNumEntries;
-
-        if (ppMap != NULL)
-        {
-            ICorDebugInfo::OffsetMapping * pMap = reinterpret_cast<ICorDebugInfo::OffsetMapping *>
-                (fpNew(pNewData, cNumEntries * sizeof(ICorDebugInfo::OffsetMapping)));
-            if (pMap == NULL)
+        uint32_t iEntry = 0;
+        DoBounds(addrBounds, cbBounds,
+            [fpNew, pNewData, &pcMap, &ppMap](uint32_t cNumEntries) 
             {
-                ThrowOutOfMemory();
-            }
-            *ppMap = pMap;
+                if (pcMap != NULL)
+                    *pcMap = cNumEntries;
 
-            // Main decompression routine.
-            DoBounds(t, cNumEntries, pMap);
-        }
+                if (ppMap != NULL)
+                {
+                    ICorDebugInfo::OffsetMapping * pMap = reinterpret_cast<ICorDebugInfo::OffsetMapping *>
+                        (fpNew(pNewData, cNumEntries * sizeof(ICorDebugInfo::OffsetMapping)));
+                    if (pMap == NULL)
+                    {
+                        ThrowOutOfMemory();
+                    }
+                    *ppMap = pMap;
+                    return true;
+                }
+                return false;
+            },
+            [&iEntry, &ppMap](ICorDebugInfo::OffsetMapping bound) 
+            {
+                (*ppMap)[iEntry++] = bound;
+                return true;
+            });
     }
 
-    if ((pcVars != NULL || ppVars != NULL) && (cbVars != 0))
+    if ((pcVars != NULL || ppVars != NULL) && (chunks.cbVars != 0))
     {
-        NibbleReader r(addrVars, cbVars);
+        NibbleReader r(chunks.pVars, chunks.cbVars);
         TransferReader t(r);
 
         UINT32 cNumEntries = r.ReadEncodedU32();
@@ -819,27 +1270,84 @@ void CompressDebugInfo::RestoreBoundariesAndVars(
     }
 }
 
-#ifdef FEATURE_ON_STACK_REPLACEMENT
-
-PatchpointInfo * CompressDebugInfo::RestorePatchpointInfo(IN PTR_BYTE pDebugInfo)
+size_t CompressDebugInfo::WalkILOffsets(
+    IN PTR_BYTE pDebugInfo,
+    BoundsType boundsType,
+    void* pContext,
+    size_t (* pfnWalkILOffsets)(ICorDebugInfo::OffsetMapping *pOffsetMapping, void *pContext)
+)
 {
     CONTRACTL
     {
-        NOTHROW;
+        THROWS; // reading from nibble stream may throw on invalid data.
         GC_NOTRIGGER;
         MODE_ANY;
         SUPPORTS_DAC;
     }
     CONTRACTL_END;
 
-    // Check flag byte.
-    BYTE flagByte = *pDebugInfo;
-    pDebugInfo++;
+    DebugInfoChunks chunks = DecodeChunks(pDebugInfo);
 
-    if ((flagByte & EXTRA_DEBUG_INFO_PATCHPOINT) == 0)
+    PTR_BYTE addrBounds = chunks.pBounds;
+    unsigned cbBounds = chunks.cbBounds;
+
+    if ((boundsType == BoundsType::Uninstrumented) && chunks.cbUninstrumentedBounds != 0)
+    {
+        // If we have uninstrumented bounds, we will use them instead of the regular bounds.
+        addrBounds = chunks.pUninstrumentedBounds;
+        cbBounds = chunks.cbUninstrumentedBounds;
+    }
+
+    if (cbBounds != 0)
+    {
+        size_t callbackResult = 0;
+        DoBounds(addrBounds, cbBounds,
+            [](uint32_t cNumEntries) 
+            {
+                return true;
+            },
+            [&callbackResult, pfnWalkILOffsets, pContext](ICorDebugInfo::OffsetMapping bound) 
+            {
+                callbackResult = pfnWalkILOffsets(&bound, pContext);
+                return callbackResult == 0;
+            }
+            );
+        if (callbackResult != 0)
+        {
+            // We have a callback that wants to stop the walk.
+            return callbackResult;
+        }
+
+        ICorDebugInfo::OffsetMapping bound;
+        bound.nativeOffset = 0xFFFFFFFF;
+        bound.ilOffset = ICorDebugInfo::NO_MAPPING;
+        bound.source = ICorDebugInfo::SOURCE_TYPE_INVALID;
+
+        return pfnWalkILOffsets(&bound, pContext);
+    }
+
+    return 0;
+}
+
+#ifdef FEATURE_ON_STACK_REPLACEMENT
+
+PatchpointInfo * CompressDebugInfo::RestorePatchpointInfo(IN PTR_BYTE pDebugInfo)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_NOTRIGGER;
+        MODE_ANY;
+        SUPPORTS_DAC;
+    }
+    CONTRACTL_END;
+
+    DebugInfoChunks chunks = DecodeChunks(pDebugInfo);
+
+    if (chunks.cbPatchpointInfo == 0)
         return NULL;
 
-    return static_cast<PatchpointInfo*>(PTR_READ(dac_cast<TADDR>(pDebugInfo), dac_cast<PTR_PatchpointInfo>(pDebugInfo)->PatchpointInfoSize()));
+    return static_cast<PatchpointInfo*>(PTR_READ(dac_cast<TADDR>(chunks.pPatchpointInfo), chunks.cbPatchpointInfo));
 }
 
 #endif
@@ -861,8 +1369,9 @@ void CompressDebugInfo::RestoreRichDebugInfo(
     }
     CONTRACTL_END;
 
-    BYTE flagByte = *pDebugInfo;
-    if ((flagByte & EXTRA_DEBUG_INFO_RICH) == 0)
+    DebugInfoChunks chunks = DecodeChunks(pDebugInfo);
+
+    if (chunks.cbRichDebugInfo == 0)
     {
         *ppInlineTree = NULL;
         *pNumInlineTree = 0;
@@ -871,19 +1380,7 @@ void CompressDebugInfo::RestoreRichDebugInfo(
         return;
     }
 
-    pDebugInfo++;
-
-#ifdef FEATURE_ON_STACK_REPLACEMENT
-    if ((flagByte & EXTRA_DEBUG_INFO_PATCHPOINT) != 0)
-    {
-        PTR_PatchpointInfo patchpointInfo = dac_cast<PTR_PatchpointInfo>(pDebugInfo);
-        pDebugInfo += patchpointInfo->PatchpointInfoSize();
-    }
-#endif
-
-    UINT32 cbRichDebugInfo = *PTR_UINT32(pDebugInfo);
-    pDebugInfo += 4;
-    NibbleReader r(pDebugInfo, cbRichDebugInfo);
+    NibbleReader r(chunks.pRichDebugInfo, chunks.cbRichDebugInfo);
 
     *pNumInlineTree = r.ReadEncodedU32();
     *pNumRichMappings = r.ReadEncodedU32();
@@ -903,8 +1400,55 @@ void CompressDebugInfo::RestoreRichDebugInfo(
     DoRichOffsetMappings(t, *pNumRichMappings, *ppRichMappings);
 }
 
+void CompressDebugInfo::RestoreAsyncDebugInfo(
+    IN FP_IDS_NEW                          fpNew,
+    IN void*                               pNewData,
+    IN PTR_BYTE                            pDebugInfo,
+    OUT ICorDebugInfo::AsyncInfo*                pAsyncInfo,
+    OUT ICorDebugInfo::AsyncSuspensionPoint**    ppSuspensionPoints,
+    OUT ICorDebugInfo::AsyncContinuationVarInfo** ppAsyncVars,
+    OUT ULONG32*                                  pNumAsyncVars)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    DebugInfoChunks chunks = DecodeChunks(pDebugInfo);
+
+    if (chunks.cbAsyncInfo == 0)
+    {
+        *pAsyncInfo = {};
+        *ppSuspensionPoints = NULL;
+        *ppAsyncVars = NULL;
+        *pNumAsyncVars = 0;
+        return;
+    }
+
+    NibbleReader r(chunks.pAsyncInfo, chunks.cbAsyncInfo);
+    pAsyncInfo->NumSuspensionPoints = r.ReadEncodedU32();
+    *pNumAsyncVars = r.ReadEncodedU32();
+
+    UINT32 cbSuspPoints = pAsyncInfo->NumSuspensionPoints * sizeof(ICorDebugInfo::AsyncSuspensionPoint);
+    *ppSuspensionPoints = reinterpret_cast<ICorDebugInfo::AsyncSuspensionPoint*>(fpNew(pNewData, cbSuspPoints));
+    if (*ppSuspensionPoints == NULL)
+        ThrowOutOfMemory();
+
+    UINT32 cbAsyncVars = *pNumAsyncVars * sizeof(ICorDebugInfo::AsyncContinuationVarInfo);
+    *ppAsyncVars = reinterpret_cast<ICorDebugInfo::AsyncContinuationVarInfo*>(fpNew(pNewData, cbAsyncVars));
+    if (*ppAsyncVars == NULL)
+        ThrowOutOfMemory();
+
+    TransferReader t(r);
+    DoAsyncSuspensionPoints(t, pAsyncInfo->NumSuspensionPoints, *ppSuspensionPoints);
+    DoAsyncVars(t, pAsyncInfo->NumSuspensionPoints, *ppSuspensionPoints, *pNumAsyncVars, *ppAsyncVars);
+}
+
 #ifdef DACCESS_COMPILE
-void CompressDebugInfo::EnumMemoryRegions(CLRDataEnumMemoryFlags flags, PTR_BYTE pDebugInfo, BOOL hasFlagByte)
+void CompressDebugInfo::EnumMemoryRegions(CLRDataEnumMemoryFlags flags, PTR_BYTE pDebugInfo)
 {
     CONTRACTL
     {
@@ -916,38 +1460,13 @@ void CompressDebugInfo::EnumMemoryRegions(CLRDataEnumMemoryFlags flags, PTR_BYTE
 
     PTR_BYTE pStart = pDebugInfo;
 
-    if (hasFlagByte)
-    {
-        // Check flag byte and skip over any patchpoint info
-        BYTE flagByte = *pDebugInfo;
-        pDebugInfo++;
+    DebugInfoChunks chunks = DecodeChunks(pDebugInfo);
 
-        if ((flagByte & EXTRA_DEBUG_INFO_PATCHPOINT) != 0)
-        {
-            PTR_PatchpointInfo patchpointInfo = dac_cast<PTR_PatchpointInfo>(pDebugInfo);
-            pDebugInfo += patchpointInfo->PatchpointInfoSize();
-            flagByte &= ~EXTRA_DEBUG_INFO_PATCHPOINT;
-        }
+    // NibbleReader reads in units of sizeof(NibbleChunkType)
+    // So we need to account for any partial chunk at the end.
+    PTR_BYTE pEnd = AlignUp(dac_cast<TADDR>(chunks.pEnd), sizeof(NibbleReader::NibbleChunkType));
 
-        if ((flagByte & EXTRA_DEBUG_INFO_RICH) != 0)
-        {
-            UINT32 cbRichDebugInfo = *PTR_UINT32(pDebugInfo);
-            pDebugInfo += 4;
-            pDebugInfo += cbRichDebugInfo;
-            flagByte &= ~EXTRA_DEBUG_INFO_RICH;
-        }
-
-        _ASSERTE(flagByte == 0);
-    }
-
-    NibbleReader r(pDebugInfo, 12 /* maximum size of compressed 2 UINT32s */);
-
-    ULONG cbBounds = r.ReadEncodedU32();
-    ULONG cbVars   = r.ReadEncodedU32();
-
-    pDebugInfo += r.GetNextByteIndex() + cbBounds + cbVars;
-
-    DacEnumMemoryRegion(dac_cast<TADDR>(pStart), pDebugInfo - pStart);
+    DacEnumMemoryRegion(dac_cast<TADDR>(pStart), pEnd - pStart);
 }
 #endif // DACCESS_COMPILE
 
@@ -976,7 +1495,9 @@ void DebugInfoRequest::InitFromStartingAddr(MethodDesc * pMD, PCODE addrCode)
 //-----------------------------------------------------------------------------
 BOOL DebugInfoManager::GetBoundariesAndVars(
     const DebugInfoRequest & request,
-    IN FP_IDS_NEW fpNew, IN void * pNewData,
+    IN FP_IDS_NEW fpNew,
+    IN void * pNewData,
+    BoundsType boundsType,
     OUT ULONG32 * pcMap,
     OUT ICorDebugInfo::OffsetMapping ** ppMap,
     OUT ULONG32 * pcVars,
@@ -996,7 +1517,7 @@ BOOL DebugInfoManager::GetBoundariesAndVars(
         return FALSE; // no info available.
     }
 
-    return pJitMan->GetBoundariesAndVars(request, fpNew, pNewData, pcMap, ppMap, pcVars, ppVars);
+    return pJitMan->GetBoundariesAndVars(request, fpNew, pNewData, boundsType, pcMap, ppMap, pcVars, ppVars);
 }
 
 BOOL DebugInfoManager::GetRichDebugInfo(
@@ -1024,8 +1545,33 @@ BOOL DebugInfoManager::GetRichDebugInfo(
     return pJitMan->GetRichDebugInfo(request, fpNew, pNewData, ppInlineTree, pNumInlineTree, ppRichMappings, pNumRichMappings);
 }
 
+BOOL DebugInfoManager::GetAsyncDebugInfo(
+    const DebugInfoRequest & request,
+    IN FP_IDS_NEW fpNew, IN void * pNewData,
+    OUT ICorDebugInfo::AsyncInfo* pAsyncInfo,
+    OUT ICorDebugInfo::AsyncSuspensionPoint** ppSuspensionPoints,
+    OUT ICorDebugInfo::AsyncContinuationVarInfo** ppAsyncVars,
+    OUT ULONG32* pcAsyncVars)
+{
+    CONTRACTL
+    {
+        THROWS;
+        WRAPPER(GC_TRIGGERS); // depends on fpNew
+        SUPPORTS_DAC;
+    }
+    CONTRACTL_END;
+
+    IJitManager* pJitMan = ExecutionManager::FindJitMan(request.GetStartAddress());
+    if (pJitMan == NULL)
+    {
+        return FALSE; // no info available.
+    }
+
+    return pJitMan->GetAsyncDebugInfo(request, fpNew, pNewData, pAsyncInfo, ppSuspensionPoints, ppAsyncVars, pcAsyncVars);
+}
+
 #ifdef DACCESS_COMPILE
-void DebugInfoManager::EnumMemoryRegionsForMethodDebugInfo(CLRDataEnumMemoryFlags flags, MethodDesc * pMD)
+void DebugInfoManager::EnumMemoryRegionsForMethodDebugInfo(CLRDataEnumMemoryFlags flags, EECodeInfo * pCodeInfo)
 {
     CONTRACTL
     {
@@ -1035,18 +1581,23 @@ void DebugInfoManager::EnumMemoryRegionsForMethodDebugInfo(CLRDataEnumMemoryFlag
     }
     CONTRACTL_END;
 
-    PCODE addrCode = pMD->GetNativeCode();
+    if (!pCodeInfo->IsValid())
+    {
+        return;
+    }
+
+    PCODE addrCode = pCodeInfo->GetStartAddress();
     if (addrCode == (PCODE)NULL)
     {
         return;
     }
 
-    IJitManager* pJitMan = ExecutionManager::FindJitMan(addrCode);
+    IJitManager* pJitMan = pCodeInfo->GetJitManager();
     if (pJitMan == NULL)
     {
         return; // no info available.
     }
 
-    pJitMan->EnumMemoryRegionsForMethodDebugInfo(flags, pMD);
+    pJitMan->EnumMemoryRegionsForMethodDebugInfo(flags, pCodeInfo);
 }
 #endif

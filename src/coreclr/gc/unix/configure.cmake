@@ -89,20 +89,6 @@ check_symbol_exists(
     time.h
     HAVE_CLOCK_GETTIME_NSEC_NP)
 
-check_cxx_source_runs("
-#include <stdlib.h>
-#include <time.h>
-#include <sys/time.h>
-
-int main()
-{
-  int ret;
-  struct timespec ts;
-  ret = clock_gettime(CLOCK_MONOTONIC, &ts);
-
-  exit(ret);
-}" HAVE_CLOCK_MONOTONIC)
-
 check_symbol_exists(
     posix_madvise
     sys/mman.h
@@ -162,7 +148,7 @@ int main(int argc, char **argv)
 check_struct_has_member(
     "struct statfs"
     f_fstypename
-    "sys/mount.h"
+    "sys/types.h;sys/mount.h"
     HAVE_STATFS_FSTYPENAME)
 
 check_struct_has_member(

@@ -71,7 +71,7 @@ namespace System.Security.Cryptography.Tests
 
         [Theory]
         [InlineData("DoesntExist")]
-        [InlineData("DSA")]
+        [InlineData("RSA")]
         public static void GenerateMask_InvalidHashName_Throws(string hashName)
         {
             PKCS1MaskGenerationMethod pkcs1 = new PKCS1MaskGenerationMethod();

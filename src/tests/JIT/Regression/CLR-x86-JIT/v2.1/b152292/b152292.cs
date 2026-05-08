@@ -10,6 +10,9 @@
  much smaller, 0-4 KB, and if the field offset is above 2 KB we are adding this additional code again.
 */
 
+
+namespace b152292;
+
 using System;
 using Xunit;
 

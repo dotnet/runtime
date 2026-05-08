@@ -14,6 +14,7 @@ using Xunit.Abstractions;
 
 namespace Wasm.Build.Tests
 {
+    [TestCategory("native")]
     public class DllImportTests : PInvokeTableGeneratorTestsBase
     {
         public DllImportTests(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
@@ -23,7 +24,7 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [BuildAndRun(aot: false)]
-        public async void NativeLibraryWithVariadicFunctions(Configuration config, bool aot)
+        public async Task NativeLibraryWithVariadicFunctions(Configuration config, bool aot)
         {
             ProjectInfo info = PrepareProjectForVariadicFunction(config, aot, "variadic");
             ReplaceFile(Path.Combine("Common", "Program.cs"), Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", "PInvoke", "VariadicFunctions.cs"));
@@ -43,7 +44,7 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [BuildAndRun()]
-        public async void DllImportWithFunctionPointersCompilesWithoutWarning(Configuration config, bool aot)
+        public async Task DllImportWithFunctionPointersCompilesWithoutWarning(Configuration config, bool aot)
         {
             ProjectInfo info = PrepareProjectForVariadicFunction(config, aot, "fnptr");
             ReplaceFile(Path.Combine("Common", "Program.cs"), Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", "PInvoke", "DllImportNoWarning.cs"));
@@ -62,7 +63,7 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [BuildAndRun()]
-        public async void DllImportWithFunctionPointers_ForVariadicFunction_CompilesWithWarning(Configuration config, bool aot)
+        public async Task DllImportWithFunctionPointers_ForVariadicFunction_CompilesWithWarning(Configuration config, bool aot)
         {
             ProjectInfo info = PrepareProjectForVariadicFunction(config, aot, "fnptr_variadic");
             ReplaceFile(Path.Combine("Common", "Program.cs"), Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", "PInvoke", "DllImportWarning.cs"));
@@ -81,7 +82,7 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [BuildAndRun()]
-        public async void DllImportWithFunctionPointers_WarningsAsMessages(Configuration config, bool aot)
+        public async Task DllImportWithFunctionPointers_WarningsAsMessages(Configuration config, bool aot)
         {
             string extraProperties = "<MSBuildWarningsAsMessages>$(MSBuildWarningsAsMessage);WASM0001</MSBuildWarningsAsMessages>";
             ProjectInfo info = CopyTestAsset(config, aot, TestAsset.WasmBasicTestApp, "fnptr", extraProperties: extraProperties);
@@ -117,7 +118,7 @@ namespace Wasm.Build.Tests
                 "with.per.iod",
                 "with🚀unicode#"
             } })]
-        public async void CallIntoLibrariesWithNonAlphanumericCharactersInTheirNames(Configuration config, bool aot, string[] libraryNames)
+        public async Task CallIntoLibrariesWithNonAlphanumericCharactersInTheirNames(Configuration config, bool aot, string[] libraryNames)
         {
             var extraItems = @"<NativeFileReference Include=""*.c"" />";
             string extraProperties = aot ? string.Empty : "<WasmBuildNative>true</WasmBuildNative>";

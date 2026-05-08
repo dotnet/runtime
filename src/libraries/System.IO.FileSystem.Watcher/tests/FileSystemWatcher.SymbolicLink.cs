@@ -58,7 +58,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/103584", TestPlatforms.Windows)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/53366", TestPlatforms.Windows)]
         public void FileSystemWatcher_SymbolicLink_TargetsDirectory_Create()
         {
             // Arrange
@@ -79,27 +79,37 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/103584", TestPlatforms.Windows)]
         public void FileSystemWatcher_SymbolicLink_TargetsDirectory_Create_IncludeSubdirectories()
         {
             FileSystemWatcherTest.Execute(() =>
             {
                 // Arrange
+                // Layout on disk:
+                //   tempDir/             <- real directory
+                //   tempDir/subDir/      <- tempSubDir  (real path)
+                //   linkPath -> tempDir  <- symbolic link watched by FileSystemWatcher
+                //
+                // Paths used in assertions are expressed via the link so that they match
+                // the paths the watcher reports (e.g. linkPath/subDir/subDirLv2).
                 const string subDir = "subDir";
                 const string subDirLv2 = "subDirLv2";
                 string tempDir = GetTestFilePath();
-                string tempSubDir = CreateTestDirectory(tempDir, subDir);
+                string tempSubDir = CreateTestDirectory(tempDir, subDir);   // tempDir/subDir/
 
-                string linkPath = CreateSymbolicLinkToTarget(tempDir, isDirectory: true);
+                string linkPath = CreateSymbolicLinkToTarget(tempDir, isDirectory: true); // linkPath -> tempDir
                 using var watcher = new FileSystemWatcher(linkPath);
                 watcher.NotifyFilter = NotifyFilters.DirectoryName;
 
-                string subDirLv2Path = Path.Combine(tempSubDir, subDirLv2);
+                string subDirLv2Path = Path.Combine(tempSubDir, subDirLv2); // tempDir/subDir/subDirLv2 (real path for I/O)
 
                 // Act - Assert
+                // Only check for events at the specific nested path (linkPath/subDir/subDirLv2);
+                // spurious events at other paths (e.g. linkPath/subDir from directory setup) should
+                // not cause the test to fail.
                 ExpectNoEvent(watcher, WatcherChangeTypes.Created,
                     action: () => Directory.CreateDirectory(subDirLv2Path),
-                    cleanup: () => Directory.Delete(subDirLv2Path));
+                    cleanup: () => Directory.Delete(subDirLv2Path),
+                    expectedPath: Path.Combine(linkPath, subDir, subDirLv2)); // linkPath/subDir/subDirLv2
 
                 // Turn include subdirectories on.
                 watcher.IncludeSubdirectories = true;
@@ -107,13 +117,13 @@ namespace System.IO.Tests
                 ExpectEvent(watcher, WatcherChangeTypes.Created,
                     action: () => Directory.CreateDirectory(subDirLv2Path),
                     cleanup: () => Directory.Delete(subDirLv2Path),
-                    expectedPath: Path.Combine(linkPath, subDir, subDirLv2));
+                    expectedPath: Path.Combine(linkPath, subDir, subDirLv2)); // linkPath/subDir/subDirLv2
             }, maxAttempts: DefaultAttemptsForExpectedEvent, backoffFunc: (iteration) => RetryDelayMilliseconds, retryWhen: e => e is XunitException);
         }
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/70450", TestPlatforms.OSX)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/103584", TestPlatforms.Windows)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/53366", TestPlatforms.Windows)]
         public void FileSystemWatcher_SymbolicLink_IncludeSubdirectories_DoNotDereferenceChildLink()
         {
             // Arrange

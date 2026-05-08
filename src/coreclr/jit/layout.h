@@ -34,14 +34,20 @@ public:
     ClassLayoutBuilder(Compiler* compiler, unsigned size);
 
     void SetGCPtrType(unsigned slot, var_types type);
-    void CopyInfoFrom(unsigned offset, ClassLayout* layout, bool copyPadding);
+    void CopyGCInfoFrom(unsigned offset, ClassLayout* layout);
+    void CopyPaddingFrom(unsigned offset, ClassLayout* layout);
     void AddPadding(const SegmentList::Segment& padding);
     void RemovePadding(const SegmentList::Segment& nonPadding);
 
 #ifdef DEBUG
     void SetName(const char* name, const char* shortName);
+    void CopyNameFrom(ClassLayout* layout, const char* prefix);
 #endif
 
+    static bool               IsArrayTooLarge(Compiler*            compiler,
+                                              CORINFO_CLASS_HANDLE arrayHandle,
+                                              unsigned             length,
+                                              unsigned             maxByteSize);
     static ClassLayoutBuilder BuildArray(Compiler* compiler, CORINFO_CLASS_HANDLE arrayType, unsigned length);
 };
 
@@ -192,7 +198,7 @@ public:
                 return TYP_USHORT;
             case 4:
                 return TYP_INT;
-#ifdef TARGET_64BIT
+#if defined(TARGET_64BIT) || defined(TARGET_WASM)
             case 8:
                 return TYP_LONG;
 #endif
@@ -221,6 +227,8 @@ public:
     {
         return m_gcPtrCount != 0;
     }
+
+    bool HasGCByRef() const;
 
     bool IsStackOnly(Compiler* comp) const;
 
@@ -259,6 +267,8 @@ public:
     const SegmentList& GetNonPadding(Compiler* comp);
 
     static bool AreCompatible(const ClassLayout* layout1, const ClassLayout* layout2);
+
+    bool CanAssignFrom(const ClassLayout* sourceLayout);
 
 private:
     const BYTE* GetGCPtrs() const

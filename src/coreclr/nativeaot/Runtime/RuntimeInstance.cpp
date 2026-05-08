@@ -1,11 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 #include "common.h"
 #include "CommonTypes.h"
 #include "CommonMacros.h"
 #include "daccess.h"
-#include "PalRedhawkCommon.h"
-#include "PalRedhawk.h"
+#include "PalLimitedContext.h"
+#include "Pal.h"
 #include "rhassert.h"
 #include "slist.h"
 #include "holder.h"
@@ -21,10 +22,8 @@
 #include "shash.h"
 #include "TypeManager.h"
 #include "MethodTable.h"
-#include "varint.h"
 
 #include "CommonMacros.inl"
-#include "slist.inl"
 #include "MethodTable.inl"
 #include "../../inc/clrversion.h"
 
@@ -40,7 +39,7 @@ uint8_t g_CrashInfoBuffer[MAX_CRASHINFOBUFFER_SIZE] = { 0 };
 
 ThreadStore *   RuntimeInstance::GetThreadStore()
 {
-    return m_pThreadStore;
+    return ThreadStore::s_pThreadStore;
 }
 
 FCIMPL1(uint8_t *, RhGetCrashInfoBuffer, int32_t* pcbMaxSize)
@@ -180,7 +179,6 @@ RuntimeInstance::OsModuleList* RuntimeInstance::GetOsModuleList()
 #ifndef DACCESS_COMPILE
 
 RuntimeInstance::RuntimeInstance() :
-    m_pThreadStore(NULL),
     m_CodeManager(NULL),
     m_conservativeStackReportingEnabled(false),
     m_pUnboxingStubsRegion(NULL)
@@ -189,10 +187,10 @@ RuntimeInstance::RuntimeInstance() :
 
 RuntimeInstance::~RuntimeInstance()
 {
-    if (NULL != m_pThreadStore)
+    if (NULL != ThreadStore::s_pThreadStore)
     {
-        delete m_pThreadStore;
-        m_pThreadStore = NULL;
+        delete ThreadStore::s_pThreadStore;
+        ThreadStore::s_pThreadStore = NULL;
     }
 }
 
@@ -216,7 +214,7 @@ void RuntimeInstance::RegisterCodeManager(ICodeManager * pCodeManager, PTR_VOID 
     m_cbManagedCodeRange = cbRange;
 }
 
-extern "C" void __stdcall RegisterCodeManager(ICodeManager * pCodeManager, PTR_VOID pvStartRange, uint32_t cbRange)
+extern "C" void RegisterCodeManager(ICodeManager * pCodeManager, PTR_VOID pvStartRange, uint32_t cbRange)
 {
     GetRuntimeInstance()->RegisterCodeManager(pCodeManager, pvStartRange, cbRange);
 }
@@ -256,7 +254,7 @@ bool RuntimeInstance::IsUnboxingStub(uint8_t* pCode)
     return false;
 }
 
-extern "C" bool __stdcall RegisterUnboxingStubs(PTR_VOID pvStartRange, uint32_t cbRange)
+extern "C" bool RegisterUnboxingStubs(PTR_VOID pvStartRange, uint32_t cbRange)
 {
     return GetRuntimeInstance()->RegisterUnboxingStubs(pvStartRange, cbRange);
 }
@@ -268,7 +266,7 @@ bool RuntimeInstance::RegisterTypeManager(TypeManager * pTypeManager)
         return false;
 
     pEntry->m_pTypeManager = pTypeManager;
-    m_TypeManagerList.PushHeadInterlocked(pEntry);
+    m_TypeManagerList.InsertHead(pEntry);
 
     return true;
 }
@@ -290,7 +288,7 @@ FCIMPL1(void*, RhpRegisterOsModule, HANDLE hOsModule)
 
     pEntry->m_osModule = hOsModule;
     RuntimeInstance *pRuntimeInstance = GetRuntimeInstance();
-    pRuntimeInstance->GetOsModuleList()->PushHeadInterlocked(pEntry);
+    pRuntimeInstance->GetOsModuleList()->InsertHead(pEntry);
 
     return hOsModule; // Return non-null on success
 }
@@ -315,11 +313,11 @@ bool RuntimeInstance::Initialize(HANDLE hPalInstance)
     pThreadStore.SuppressRelease();
     pRuntimeInstance.SuppressRelease();
 
-    pRuntimeInstance->m_pThreadStore = pThreadStore;
     pRuntimeInstance->m_hPalInstance = hPalInstance;
 
     ASSERT_MSG(g_pTheRuntimeInstance == NULL, "multi-instances are not supported");
     g_pTheRuntimeInstance = pRuntimeInstance;
+    ThreadStore::s_pThreadStore = pThreadStore;
 
     return true;
 }

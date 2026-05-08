@@ -33,7 +33,7 @@ namespace Tests.System.IO
            InlineData(@"a\\", @"a\\"),
            ]
         [PlatformSpecific(TestPlatforms.AnyUnix)]
-        public void NormalizeDirectorySeparatorTests(string path, string expected)
+        public void NormalizeDirectorySeparatorTests(string? path, string? expected)
         {
             string result = PathInternal.NormalizeDirectorySeparators(path);
             Assert.Equal(expected, result);

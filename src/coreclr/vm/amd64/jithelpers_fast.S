@@ -98,7 +98,7 @@ LEAF_ENTRY JIT_ByRefWriteBarrier, _TEXT
         je      LOCAL_LABEL(CheckCardTable_ByRefWriteBarrier)
         mov     rax, rdi
         shr     rax, 0xC // SoftwareWriteWatch::AddressToTableByteIndexShift
-        add     rax, qword ptr [C_VAR(g_sw_ww_table)]
+        add     rax, qword ptr [C_VAR(g_write_watch_table)]
         cmp     byte ptr [rax], 0x0
         jne     LOCAL_LABEL(CheckCardTable_ByRefWriteBarrier)
         mov     byte ptr [rax], 0xFF
@@ -223,14 +223,6 @@ LEAF_END_MARKED JIT_ByRefWriteBarrier, _TEXT
         .quad 0
         .text
 #endif
-
-// ------------------------------------------------------------------
-// __declspec(naked) void F_CALL_CONV JIT_WriteBarrier_Callable(Object **dst, Object* val)
-.balign 16
-LEAF_ENTRY  JIT_WriteBarrier_Callable, _TEXT
-    // JIT_WriteBarrier(Object** dst, Object* src)
-    jmp     [rip + C_FUNC(JIT_WriteBarrier_Loc)]
-LEAF_END JIT_WriteBarrier_Callable, _TEXT
 
 
 // The following helper will access ("probe") a word on each page of the stack

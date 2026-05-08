@@ -46,7 +46,7 @@ internal static class MsQuicHelpers
         return IPEndPointExtensions.CreateIPEndPoint(addressBytes);
     }
 
-    internal static unsafe QuicAddr ToQuicAddr(this IPEndPoint ipEndPoint)
+    internal static QuicAddr ToQuicAddr(this IPEndPoint ipEndPoint)
     {
         QuicAddr result = default;
         Span<byte> rawAddress = MemoryMarshal.AsBytes(MemoryMarshal.CreateSpan(ref result, 1));

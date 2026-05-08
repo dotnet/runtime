@@ -14,8 +14,11 @@
     <!--
       By default, we link libstdc++compat.a, This property is set to exercise code
       with system C++ runtime library (-lstdc++).
+
+      Disable this for Android because test infra doesn't bundle libc++_shared.so in apk:
+      https://github.com/dotnet/runtime/issues/121210
     -->
-    <LinkStandardCPlusPlusLibrary>true</LinkStandardCPlusPlusLibrary>
+    <LinkStandardCPlusPlusLibrary Condition="'$(TargetsAndroid)' != 'true'">true</LinkStandardCPlusPlusLibrary>
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <ReferenceXUnitWrapperGenerator>false</ReferenceXUnitWrapperGenerator>
   </PropertyGroup>
