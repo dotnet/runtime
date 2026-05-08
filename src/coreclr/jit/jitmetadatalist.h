@@ -95,6 +95,9 @@ JITMETADATAMETRIC(MorphTrackedLocals,                    int,              0)
 JITMETADATAMETRIC(MorphLocals,                           int,              0)
 JITMETADATAMETRIC(EnumeratorGDVProvisionalNoEscape,      int,              0)
 JITMETADATAMETRIC(EnumeratorGDVCanCloneToEnsureNoEscape, int,              0)
+JITMETADATAMETRIC(ValueProfiledLclHeap,                  int,              JIT_METADATA_HIGHER_IS_BETTER)
+JITMETADATAMETRIC(ValueProfiledMemmove,                  int,              JIT_METADATA_HIGHER_IS_BETTER)
+JITMETADATAMETRIC(ValueProfiledSequenceEqual,            int,              JIT_METADATA_HIGHER_IS_BETTER)
 
 #undef JITMETADATA
 #undef JITMETADATAINFO

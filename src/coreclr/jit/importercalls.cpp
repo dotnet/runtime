@@ -1800,6 +1800,16 @@ GenTree* Compiler::impDuplicateWithProfiledArg(GenTreeCall* call, IL_OFFSET ilOf
             JITDUMP("\n\nResulting tree:\n")
             DISPTREE(qmark)
 
+            if (call->IsSpecialIntrinsic(this, NI_System_SpanHelpers_Memmove))
+            {
+                Metrics.ValueProfiledMemmove++;
+            }
+            else
+            {
+                assert(call->IsSpecialIntrinsic(this, NI_System_SpanHelpers_SequenceEqual));
+                Metrics.ValueProfiledSequenceEqual++;
+            }
+
             return qmark;
         }
     }
@@ -1843,11 +1853,21 @@ GenTree* Compiler::impProfileLclHeap(GenTree* lclHeap, IL_OFFSET ilOffset)
     {
         ssize_t  profiledValue = 0;
         uint32_t likelihood    = 0;
-        if (!pickProfiledValue(ilOffset, &likelihood, &profiledValue) || (likelihood < 50) ||
-            !FitsIn<int>(profiledValue))
+        if (!pickProfiledValue(ilOffset, &likelihood, &profiledValue) || (likelihood < 50))
         {
             return lclHeap;
         }
+
+        // The fast path is profitable only when the constant-size LCLHEAP zero-init can
+        // actually be unrolled by Lowering. Outside that window the cmp/jne guard adds
+        // overhead with no codegen win.
+        const ssize_t maxValue = (ssize_t)getUnrollThreshold(UnrollKind::Memset);
+        if ((profiledValue < 0) || (profiledValue > maxValue))
+        {
+            JITDUMP("Profiled LCLHEAP size %zd is out of range [0, %zd] - skipping\n", profiledValue, maxValue);
+            return lclHeap;
+        }
+        assert(FitsIn<int>(profiledValue));
 
         GenTree* sizeNode = size;
         GenTree* clonedSizeNode =
@@ -1877,6 +1897,7 @@ GenTree* Compiler::impProfileLclHeap(GenTree* lclHeap, IL_OFFSET ilOffset)
         // QMARK has to be a root node.
         unsigned tmp = lvaGrabTemp(true DEBUGARG("Grabbing temp for Qmark"));
         impStoreToTemp(tmp, qmark, CHECK_SPILL_ALL);
+        Metrics.ValueProfiledLclHeap++;
         return gtNewLclvNode(tmp, qmark->TypeGet());
     }
 
@@ -7250,14 +7271,16 @@ void Compiler::addFatPointerCandidate(GenTreeCall* call)
 bool Compiler::pickProfiledValue(IL_OFFSET ilOffset, uint32_t* pLikelihood, ssize_t* pValue)
 {
 #if DEBUG
+    // Request 8 likely values in debug to get more information in JitDump.
     const unsigned MaxLikelyValues = 8;
 #else
     const unsigned MaxLikelyValues = 1;
 #endif
 
-    LikelyValueRecord likelyValues[MaxLikelyValues];
+    LikelyValueRecord likelyValues[MaxLikelyValues] = {};
     UINT32 valuesCount = getLikelyValues(likelyValues, MaxLikelyValues, fgPgoSchema, fgPgoSchemaCount, fgPgoData,
                                          static_cast<int>(ilOffset));
+    assert(valuesCount <= MaxLikelyValues);
 
 #if DEBUG
     JITDUMP("%u likely values:\n", valuesCount);
@@ -7270,24 +7293,19 @@ bool Compiler::pickProfiledValue(IL_OFFSET ilOffset, uint32_t* pLikelihood, ssiz
     if (JitConfig.JitRandomGuardedDevirtualization() != 0)
     {
         CLRRandom* random = impInlineRoot()->m_inlineStrategy->GetRandom(JitConfig.JitRandomGuardedDevirtualization());
-
-        if (valuesCount < 1)
-        {
-            valuesCount = 1;
-        }
+        valuesCount       = max(valuesCount, 1u);
         likelyValues[0].value      = random->Next(256);
         likelyValues[0].likelihood = 100;
     }
 #endif
 
-    if (valuesCount < 1)
+    if (valuesCount >= 1)
     {
-        return false;
+        *pValue      = likelyValues[0].value;
+        *pLikelihood = likelyValues[0].likelihood;
+        return true;
     }
-
-    *pValue      = likelyValues[0].value;
-    *pLikelihood = likelyValues[0].likelihood;
-    return true;
+    return false;
 }
 
 //------------------------------------------------------------------------
