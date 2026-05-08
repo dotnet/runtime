@@ -1855,11 +1855,26 @@ GenTree* Compiler::impProfileLclHeap(GenTree* lclHeap, IL_OFFSET ilOffset)
             // Just nullptr.
             fastpath = gtNewIconNode(0, TYP_I_IMPL);
         }
+        else if (profiledValue <= DEFAULT_MAX_LOCALLOC_TO_LOCAL_SIZE)
+        {
+            // For tiny popular sizes, route the fast path through a fixed-size
+            // zero-init local (the same trick the importer uses for constant
+            // stackalloc). This avoids the LCLHEAP codegen overhead (stack
+            // probing, outgoing-arg-area dance, etc.) that dominates for very
+            // small allocations.
+            //
+            // The local is zeroed at function entry by must-init even when the
+            // fallback path is taken; that cost is negligible at this size.
+            const unsigned stackallocAsLocal = lvaGrabTemp(false DEBUGARG("profiled stackallocLocal"));
+            lvaSetStruct(stackallocAsLocal, typGetBlkLayout((unsigned)profiledValue), false);
+            lvaTable[stackallocAsLocal].lvHasLdAddrOp    = true;
+            lvaTable[stackallocAsLocal].lvIsUnsafeBuffer = true;
+            fastpath                                     = gtNewLclVarAddrNode(stackallocAsLocal);
+        }
         else
         {
-            // NOTE: we don't want to convert the fastpath stackalloc to a local like we
-            // normally do, because it would be additional overhead for the fallback path
-            // (a redundant local to clear).
+            // For larger popular sizes, keep an actual LCLHEAP so Lowering can
+            // unroll the zero-init via STORE_BLK.
             fastpath = gtNewLclHeapNode(profiledValueNode, ilOffset);
         }
 
