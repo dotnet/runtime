@@ -5698,11 +5698,11 @@ void CodeGen::genOSRHandleTier0CalleeSavedRegistersAndFrame()
     {
         // Tier0 signed LR with the Tier0 caller SP before allocating its frame.
         // Recreate that SP from the current Tier0 body SP so we can authenticate
-        // LR before the OSR prolog later re-signs it with the OSR SP via PACIASP.
+        // LR before the OSR prolog later re-signs it with the OSR SP.
         genInstrWithConstant(INS_add, EA_PTRSIZE, REG_IP0, REG_SPBASE, patchpointInfo->TotalFrameSize(), REG_IP0,
                              /* inUnwindRegion */ false);
         GetEmitter()->emitIns_Mov(INS_mov, EA_PTRSIZE, REG_IP1, REG_LR, /* canSkip */ false);
-        GetEmitter()->emitIns(INS_autia1716);
+        GetEmitter()->emitIns(TargetOS::IsWindows ? INS_autib1716 : INS_autia1716);
         GetEmitter()->emitIns_Mov(INS_mov, EA_PTRSIZE, REG_LR, REG_IP1, /* canSkip */ false);
     }
 

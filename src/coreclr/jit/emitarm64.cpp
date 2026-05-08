@@ -1440,7 +1440,7 @@ void emitter::emitPacInProlog()
     {
         return;
     }
-    emitIns(INS_paciasp);
+    emitIns(TargetOS::IsWindows ? INS_pacibsp : INS_paciasp);
     m_compiler->unwindPacSignLR();
 }
 
@@ -1453,7 +1453,7 @@ void emitter::emitPacInEpilog()
     {
         return;
     }
-    emitIns(INS_autiasp);
+    emitIns(TargetOS::IsWindows ? INS_autibsp : INS_autiasp);
     m_compiler->unwindPacSignLR();
 }
 
@@ -3756,9 +3756,14 @@ void emitter::emitIns(instruction ins)
             case INS_autia1716:
             case INS_autiasp:
             case INS_autiaz:
+            case INS_autib1716:
+            case INS_autibsp:
             case INS_pacia1716:
             case INS_paciasp:
             case INS_paciaz:
+            case INS_pacib1716:
+            case INS_pacibsp:
+            case INS_pacibz:
             case INS_xpaclri:
                 assert(fmt == IF_PC_0A);
                 break;
@@ -16229,7 +16234,8 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             }
             break;
 
-        case IF_PC_0A: // autia1716, autiasp, autiaz, pacia1716, paciasp, paciaz, xpaclri
+        case IF_PC_0A: // autia1716, autiasp, autib1716, autibsp, autiaz, pacia1716, paciasp, pacib1716, pacibsp,
+                       // pacibz, paciaz, xpaclri
         case IF_PC_1A: // autiza, paciza, xpacd, xpaci
         case IF_PC_2A: // autia, pacia
             switch (ins)

@@ -9143,10 +9143,15 @@ void CodeGen::genArm64EmitterUnitTestsPac()
     // IF_PC_0A
     theEmitter->emitIns(INS_autia1716); // AUTIA1716
     theEmitter->emitIns(INS_autiasp);   // AUTIASP
+    theEmitter->emitIns(INS_autib1716); // AUTIB1716
+    theEmitter->emitIns(INS_autibsp);   // AUTIBSP
     theEmitter->emitIns(INS_autiaz);    // AUTIAZ
     theEmitter->emitIns(INS_pacia1716); // PACIA1716
     theEmitter->emitIns(INS_paciasp);   // PACIASP
     theEmitter->emitIns(INS_paciaz);    // PACIAZ
+    theEmitter->emitIns(INS_pacib1716); // PACIB1716
+    theEmitter->emitIns(INS_pacibsp);   // PACIBSP
+    theEmitter->emitIns(INS_pacibz);    // PACIBZ
     theEmitter->emitIns(INS_xpaclri);   // XPACLRI
 
     // IF_PC_1A

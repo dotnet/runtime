@@ -658,7 +658,7 @@ void Compiler::unwindPacSignLR()
     }
 #endif // FEATURE_CFI_SUPPORT
 
-    // pac_sign_lr: 11111100: sign the return address in lr with paciasp
+    // pac_sign_lr: 11111100: sign the return address in lr with the platform PAC key
     funCurrentFunc()->uwi.AddCode(0xFC);
 }
 
@@ -1110,7 +1110,7 @@ void DumpUnwindInfo(Compiler*         comp,
         }
         else if (b1 == 0xFC)
         {
-            // pac_sign_lr: 11111100 : sign the return address in lr with paciasp.
+            // pac_sign_lr: 11111100 : sign the return address in lr with the platform PAC key.
 
             printf("    %02X          pac_sign_lr\n", b1);
         }
