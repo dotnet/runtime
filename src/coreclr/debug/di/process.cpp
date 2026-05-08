@@ -13022,7 +13022,7 @@ void CordbProcess::HandleDebugEventForInteropDebugging(const DEBUG_EVENT * pEven
 
                 fcd.debugCounter = 0;
                 SafeReadStruct(PTR_TO_CORDB_ADDRESS(pDebuggerWord), &fcd);
-                _ASSERTE(fcd.debugCounter == 1);
+                _ASSERTE(fcd.debugCounter == (UINT)1);
 
                 DequeueUnmanagedEvent(pUnmanagedThread);
             }

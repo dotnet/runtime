@@ -1821,7 +1821,7 @@ void BoxFuncEvalThisParameter(DebuggerEval *pDE,
                 // type yet).
                 //
                 // A buffer should have been allocated for the full struct type
-                _ASSERTE(argData[0].fullArgType != NULL);
+                _ASSERTE(argData[0].fullArgType != (CORDB_ADDRESS)0);
                 Debugger::TypeDataWalk walk((DebuggerIPCE_TypeArgData *) CORDB_ADDRESS_TO_PTR(argData[0].fullArgType), argData[0].fullArgTypeNodeCount);
 
                 TypeHandle typeHandle = walk.ReadTypeHandle();

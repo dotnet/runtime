@@ -1383,10 +1383,13 @@ HRESULT ShimProxyCallback::DataBreakpoint(ICorDebugProcess* pProcess, ICorDebugT
             this->m_pProcess.Assign(pProcess);
             this->m_pThread.Assign(pThread);
 
-            this->m_contextSize = contextSize;
-            m_context = new (nothrow) BYTE[this->m_contextSize];
-            if (m_context != NULL)
-                memcpy(m_context, pContext, this->m_contextSize);
+            this->m_contextSize = min(contextSize, (ULONG32)0x1000);
+            if (pContext != NULL && this->m_contextSize > 0)
+            {
+                m_context = new (nothrow) BYTE[this->m_contextSize];
+                if (m_context != NULL)
+                    memcpy(m_context, pContext, this->m_contextSize);
+            }
         }
 
         HRESULT Dispatch(DispatchArgs args)
