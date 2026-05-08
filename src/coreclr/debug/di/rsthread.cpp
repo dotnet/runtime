@@ -80,7 +80,7 @@ CordbThread::CordbThread(CordbProcess * pProcess, VMPTR_Thread vmThread) :
     m_fFloatStateValid(false),
     m_floatStackTop(0),
     m_fException(false),
-    m_EnCRemapFunctionIP(NULL),
+    m_EnCRemapFunctionIP(0),
     m_userState(kInvalidUserState),
     m_hCachedThread(INVALID_HANDLE_VALUE),
     m_hCachedOutOfProcThread(INVALID_HANDLE_VALUE)
@@ -1340,7 +1340,7 @@ void CordbThread::MarkStackFramesDirty()
     // Clear the stashed EnC remap IP address if any
     // This is important to ensure we don't try to write into LS memory which is no longer
     // being used to hold the remap IP.
-    m_EnCRemapFunctionIP = NULL;
+    m_EnCRemapFunctionIP = 0;
 
     m_fContextFresh = false;        // invalidate the cached active CONTEXT
     m_vmLeftSideContext = VMPTR_CONTEXT::NullPtr(); // set the LS pointer to the active CONTEXT to NULL
@@ -2514,7 +2514,7 @@ HRESULT CordbThread::SetRemapIP(SIZE_T offset)
     // Prevent SetRemapIP from being called twice for the same RemapOpportunity
     // If we don't get any calls to RemapFunction, this member will be cleared in
     // code:CordbThread::MarkStackFramesDirty when Continue is called
-    m_EnCRemapFunctionIP = NULL;
+    m_EnCRemapFunctionIP = 0;
 
     return hr;
 }
@@ -9279,7 +9279,7 @@ HRESULT CordbEval::GatherArgInfo(ICorDebugValue *pValue,
 
     argData->argIsHandleValue = false;
     argData->argIsLiteral = false;
-    argData->fullArgType = NULL;
+    argData->fullArgType = (CORDB_ADDRESS)0;
     argData->fullArgTypeNodeCount = 0;
 
     // We have to have knowledge of our value implementation here,
