@@ -1428,6 +1428,20 @@ namespace System.Threading
             }
         };
 
+        internal static readonly Action<object?> s_dispatchRuntimeAsyncContinuationsCallback = static state =>
+        {
+            if (state is Task t)
+            {
+                // We know RuntimeAsyncTask overrides this and calls
+                // DispatchContinuation without looking at the Thread.
+                t.ExecuteFromThreadPool(null!);
+            }
+            else
+            {
+                ThrowHelper.ThrowUnexpectedStateForKnownCallback(state);
+            }
+        };
+
         internal static bool EnableWorkerTracking => IsWorkerTrackingEnabledInConfig && EventSource.IsSupported;
 
 #if !FEATURE_WASM_MANAGED_THREADS
@@ -1640,6 +1654,20 @@ namespace System.Threading
                 if (state is not IAsyncStateMachineBox)
                 {
                     // The provided state must be the internal IAsyncStateMachineBox (Task) type
+                    ThrowHelper.ThrowUnexpectedStateForKnownCallback(state);
+                }
+
+                UnsafeQueueUserWorkItemInternal((object)state, preferLocal);
+                return true;
+            }
+
+            // Similarly, for runtime async, user code may call with the
+            // runtime async callback directly.
+            if (ReferenceEquals(callBack, AsyncHelpers.s_dispatchRuntimeAsyncContinuationsCallback))
+            {
+                if (state is not Task)
+                {
+                    // The provided state must be the internal RuntimeAsyncTask (Task)
                     ThrowHelper.ThrowUnexpectedStateForKnownCallback(state);
                 }
 
