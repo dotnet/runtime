@@ -8567,15 +8567,6 @@ ExceptionSetFlags GenTree::OperExceptions(Compiler* comp)
         case GT_INDEX_ADDR:
             return ExceptionSetFlags::NullReferenceException | ExceptionSetFlags::IndexOutOfRangeException;
 
-        case GT_LCLHEAP:
-            // Localloc may always overflow the stack; model unconditionally.
-            //
-            // The JIT historically did not model StackOverflow on GT_LCLHEAP. We model
-            // it now because impProfileLclHeap places two GT_LCLHEAP nodes in QMARK
-            // arms; without GTF_EXCEPT, if-conversion (see ifconversion.cpp) collapses
-            // the QMARK into a SELECT/CMOV that executes both LCLHEAPs unconditionally.
-            return ExceptionSetFlags::UnknownException;
-
         case GT_CKFINITE:
             return ExceptionSetFlags::ArithmeticException;
 
@@ -8787,6 +8778,7 @@ bool GenTree::OperSupportsOrderingSideEffect() const
         case GT_PATCHPOINT_FORCED:
         case GT_NONLOCAL_JMP:
         case GT_SWIFT_ERROR:
+        case GT_LCLHEAP:
             return true;
         default:
             return false;
@@ -9047,8 +9039,11 @@ GenTreeOpWithILOffset* Compiler::gtNewLclHeapNode(GenTree* size, IL_OFFSET ilOff
     assert(size != nullptr);
     GenTreeOpWithILOffset* node =
         new (this, GT_LCLHEAP) GenTreeOpWithILOffset(GT_LCLHEAP, TYP_I_IMPL, size, nullptr, ilOffset);
-    // May throw a stack overflow exception. Obviously, we don't want locallocs to be CSE'd.
-    node->gtFlags |= (GTF_EXCEPT | GTF_DONT_CSE);
+    // GTF_ORDER_SIDEEFF prevents reordering / if-conversion across LCLHEAP without
+    // making OperMayThrow true (stack overflow on localloc is process-fatal, not a
+    // catchable C# exception, so we don't want the broader GTF_EXCEPT pessimizations).
+    // GTF_DONT_CSE keeps CSE from sharing locallocs.
+    node->gtFlags |= (GTF_ORDER_SIDEEFF | GTF_DONT_CSE);
     return node;
 }
 
