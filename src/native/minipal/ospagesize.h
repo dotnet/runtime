@@ -12,9 +12,9 @@ extern "C" {
 
 // Returns the OS page size in bytes.
 //
-// On WASM the page size is a compile-time constant (16KB) and is defined inline so
-// callers see a constant. This matters for the GC, which expects GetPageSize to fold
-// into a constant for alignment math.
+// On platforms where the page size is fixed (Windows: 4KB, WASM: 16KB) this is
+// defined inline so callers see a compile-time constant. This matters for the GC,
+// which expects GetPageSize to fold into a constant for alignment math.
 //
 // On other platforms the value is queried from the OS once and cached; the
 // definition lives in ospagesize.c so there is exactly one cache per process.
@@ -25,6 +25,12 @@ static inline uint32_t minipal_getpagesize(void)
     // which is too coarse for GC alignment and thresholds. Reduce the OS page size used
     // by the runtime on WASM to 16KB.
     return 16 * 1024;
+}
+#elif defined(HOST_WINDOWS)
+static inline uint32_t minipal_getpagesize(void)
+{
+    // The page size on Windows is 4KB and is not going to change.
+    return 4 * 1024;
 }
 #else
 uint32_t minipal_getpagesize(void);
