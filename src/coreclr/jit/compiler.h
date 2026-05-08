@@ -6913,7 +6913,7 @@ private:
     GenTree* fgOptimizeCmpWithCasts(GenTreeOp* cmp);
     GenTree* fgOptimizeCmpEqNeWithConst(GenTreeOp* cmp);
     GenTree* fgOptimizeCmpLtLeGeGtWithConst(GenTreeOp* cmp);
-    GenTree* fgOptimizeCmpLtLeGeGtFullRangeConst(GenTreeOp* cmp);
+    GenTree* fgOptimizeCmpFullRangeConst(GenTreeOp* cmp);
 #if defined(FEATURE_HW_INTRINSICS)
     GenTree* fgMorphHWIntrinsic(GenTreeHWIntrinsic* tree);
     GenTree* fgMorphHWIntrinsicRequired(GenTreeHWIntrinsic* tree);

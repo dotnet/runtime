@@ -8763,7 +8763,7 @@ GenTree* Compiler::fgOptimizeCmp(GenTreeOp* cmp)
 
             if (cmp->gtGetOp1()->IsIntegralConst() || cmp->gtGetOp2()->IsIntegralConst())
             {
-                GenTree* optTree = fgOptimizeCmpLtLeGeGtFullRangeConst(cmp);
+                GenTree* optTree = fgOptimizeCmpFullRangeConst(cmp);
                 if (optTree->OperIs(GT_CNS_INT))
                 {
                     return optTree;
@@ -9062,7 +9062,7 @@ SKIP:
 }
 
 //------------------------------------------------------------------------
-// fgOptimizeCmpLtLeGeGtFullRangeConst: optimizes a comparison operation.
+// fgOptimizeCmpFullRangeConst: optimizes a comparison operation.
 //
 // Recognizes "Always false"/"Always true" comparisons against various full range constant operands and morphs
 // them into zero/one.
@@ -9077,8 +9077,10 @@ SKIP:
 // Assumptions:
 //   The second operand is an integral constant or the first operand is an integral constant.
 //
-GenTree* Compiler::fgOptimizeCmpLtLeGeGtFullRangeConst(GenTreeOp* cmp)
+GenTree* Compiler::fgOptimizeCmpFullRangeConst(GenTreeOp* cmp)
 {
+    assert(cmp->OperIsCmpCompare());
+
     if (gtTreeHasSideEffects(cmp, GTF_SIDE_EFFECT))
     {
         return cmp;
