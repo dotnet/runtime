@@ -549,7 +549,7 @@ public:
         // unused                 = 0x00800000,
         TS_TPWorkerThread         = 0x01000000,    // is this a threadpool worker thread? [cDAC] [Thread]: Contract depends on this value.
 
-        TS_Interruptible          = 0x02000000,    // sitting in a Sleep(), Wait(), Join()
+        TS_WaitSleepJoin          = 0x02000000,    // sitting in a Sleep(), Wait(), Join(). [cDAC] [Thread]: Contract depends on this value.
         TS_Interrupted            = 0x04000000,    // was awakened by an interrupt APC. !!! This can be moved to TSNC
 
         // unused
@@ -614,9 +614,7 @@ public:
                                                       //
                                                       // Once we are completely independent of the OS UEF, we could remove this.
         TSNC_SkipManagedPersonalityRoutine = 0x02000000, // Ignore the ProcessCLRException calls when propagating exception to external native code
-        TSNC_DebuggerSleepWaitJoin      = 0x04000000, // Indicates to the debugger that this thread is in a sleep wait or join state
-                                                      // This almost mirrors the TS_Interruptible state however that flag can change
-                                                      // during GC-preemptive mode whereas this one cannot.
+        // unused                       = 0x04000000,
         // unused                       = 0x08000000,
         TSNC_TSLTakenForStartup         = 0x10000000, // The ThreadStoreLock (TSL) is held by another mechanism during
                                                       // thread startup so can be skipped.

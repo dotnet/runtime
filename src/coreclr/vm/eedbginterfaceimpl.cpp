@@ -1437,7 +1437,7 @@ CorDebugUserState EEDbgInterfaceImpl::GetPartialUserState(Thread *pThread)
         ret |= (unsigned)USER_STOPPED;
     }
 
-    if (ts & Thread::TS_Interruptible)
+    if (ts & Thread::TS_WaitSleepJoin)
     {
         ret |= (unsigned)USER_WAIT_SLEEP_JOIN;
     }

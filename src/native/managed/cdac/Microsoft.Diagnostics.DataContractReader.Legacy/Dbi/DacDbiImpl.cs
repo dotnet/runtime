@@ -744,8 +744,50 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     public int GetUserState(ulong vmThread, int* pRetVal)
         => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetUserState(vmThread, pRetVal) : HResults.E_NOTIMPL;
 
-    public int GetPartialUserState(ulong vmThread, int* pRetVal)
-        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetPartialUserState(vmThread, pRetVal) : HResults.E_NOTIMPL;
+    public int GetPartialUserState(ulong vmThread, CorDebugUserState* pRetVal)
+    {
+        *pRetVal = default;
+        int hr = HResults.S_OK;
+        try
+        {
+            TargetPointer threadPtr = new TargetPointer(vmThread);
+            Contracts.ThreadData threadData = _target.Contracts.Thread.GetThreadData(threadPtr);
+            Contracts.ThreadState threadState = threadData.State;
+
+            CorDebugUserState result = default;
+            if ((threadState & Contracts.ThreadState.Background) != 0)
+                result |= CorDebugUserState.USER_BACKGROUND;
+
+            if ((threadState & Contracts.ThreadState.Unstarted) != 0)
+                result |= CorDebugUserState.USER_UNSTARTED;
+
+            if ((threadState & Contracts.ThreadState.Stopped) != 0)
+                result |= CorDebugUserState.USER_STOPPED;
+
+            if ((threadState & Contracts.ThreadState.WaitSleepJoin) != 0)
+                result |= CorDebugUserState.USER_WAIT_SLEEP_JOIN;
+
+            if ((threadState & Contracts.ThreadState.ThreadPoolWorker) != 0)
+                result |= CorDebugUserState.USER_THREADPOOL;
+
+            *pRetVal = result;
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacy is not null)
+        {
+            CorDebugUserState retValLocal;
+            int hrLocal = _legacy.GetPartialUserState(vmThread, &retValLocal);
+            Debug.ValidateHResult(hr, hrLocal);
+            if (hr == HResults.S_OK)
+                Debug.Assert(*pRetVal == retValLocal, $"cDAC: {*pRetVal}, DAC: {retValLocal}");
+        }
+#endif
+        return hr;
+    }
 
     public int GetConnectionID(ulong vmThread, uint* pRetVal)
     {
@@ -2034,4 +2076,5 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
 
     public int GetGenericArgTokenIndex(ulong vmMethod, uint* pIndex)
         => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetGenericArgTokenIndex(vmMethod, pIndex) : HResults.E_NOTIMPL;
+
 }

@@ -5040,6 +5040,15 @@ void Compiler::fgValidateIRForTailCall(GenTreeCall* call)
             {
                 assert(ValidateUse(tree) && "Expected use of local to be tailcall value");
             }
+            else if (tree->OperIs(GT_CAST))
+            {
+                // The inliner can insert small-type-normalizing casts before the return
+                // (int -> ubyte -> int for bool-return-calls, for example)
+                // In the jit the callee is responsible for normalizing, so a tailcall
+                // can freely bypass this extra cast
+                assert(!m_compiler->fgCastNeeded(m_tailcall, tree->AsCast()->CastToType()) &&
+                       ValidateUse(tree->AsCast()->CastOp()) && "Expected normalizing cast of tailcall result");
+            }
             else if (IsCommaNop(tree))
             {
                 // COMMA(NOP,NOP)
@@ -5065,6 +5074,11 @@ void Compiler::fgValidateIRForTailCall(GenTreeCall* call)
 
         bool ValidateUse(GenTree* node)
         {
+            if (node->OperIs(GT_CAST))
+            {
+                node = node->AsCast()->CastOp();
+            }
+
             if (m_lclNum != BAD_VAR_NUM)
             {
                 return node->OperIs(GT_LCL_VAR) && (node->AsLclVar()->GetLclNum() == m_lclNum);
