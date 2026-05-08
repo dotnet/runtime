@@ -178,6 +178,13 @@ namespace Wasm.Build.Tests
             string extraItems = $"<NativeFileReference Include=\"{objectFilename}\" />";
             ProjectInfo info = CopyTestAsset(config, aot, TestAsset.WasmBasicTestApp, prefix, extraItems: extraItems, extraProperties: extraProperties);
             File.Copy(Path.Combine(BuildEnvironment.TestAssetsPath, "native-libs", objectFilename), Path.Combine(_projectDir, objectFilename));
+
+            // The WasmBasicTestApp main.js calls JS interop APIs (setModuleImports, getAssemblyExports)
+            // which the variadic-function test program does not use. Replace it with a minimal version,
+            // otherwise the JS interop assembly would be linked away by the trimmer (CoreCLR-Wasm) and
+            // BindAssemblyExports would fail at startup.
+            string mainJsPath = Path.Combine(_projectDir, "wwwroot", "main.js");
+            File.Copy(Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", "icu_main.js"), mainJsPath, overwrite: true);
             return info;
         }
     }
