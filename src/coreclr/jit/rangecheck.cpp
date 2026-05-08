@@ -940,7 +940,7 @@ Range RangeCheck::GetRangeFromAssertionsWorker(
 
     // MergeEdgeAssertionsWorker may recursively call back to GetRangeFromAssertionsWorker for other VN-to-VN assertion
     // lookups.
-    int edgeAssertionsBudget = min(2, budget);
+    int edgeAssertionsBudget = min(4, budget);
     MergeEdgeAssertionsWorker(comp, num, ValueNumStore::NoVN, assertions, &result, /* canUseCheckedBounds */ false,
                               edgeAssertionsBudget, visited);
 
@@ -1054,7 +1054,7 @@ void RangeCheck::MergeEdgeAssertions(Compiler*        comp,
     // budget for VN-to-VN assertion lookups.
     ValueNumStore::SmallValueNumSet visited;
     MergeEdgeAssertionsWorker(comp, normalLclVN, preferredBoundVN, assertions, pRange, canUseCheckedBounds,
-                              /* budget */ 2, &visited);
+                              /* budget */ 4, &visited);
 }
 
 //------------------------------------------------------------------------
