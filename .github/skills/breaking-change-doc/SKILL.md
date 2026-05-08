@@ -102,7 +102,7 @@ include the actual area label in the description.
 Run the helper script to determine the .NET version context:
 
 ```
-pwsh .github/skills/breaking-change-doc/scripts/Get-VersionInfo.ps1 -PrNumber <number>
+pwsh scripts/Get-VersionInfo.ps1 -PrNumber <number>
 ```
 
 **You MUST display the complete script output.** The script outputs JSON that includes:
@@ -239,7 +239,7 @@ Pass the PR assignees so they are `@`-mentioned in the comment and receive a
 GitHub notification:
 
 ```bash
-pwsh .github/skills/breaking-change-doc/scripts/Build-IssueComment.ps1 \
+pwsh scripts/Build-IssueComment.ps1 \
   -IssueDraftPath artifacts/docs/breakingChanges/issue-draft.md \
   -Title "<the [Breaking change]: ... title from Step 5>" \
   -Assignees "@user1 @user2" \
