@@ -2286,7 +2286,7 @@ MDInternalRW::GetSigOfMethodDef(
     _ASSERTE(TypeFromToken(methoddef) == mdtMethodDef);
 
     HRESULT hr;
-    // We don't change MethodDef signature. No need to lock.
+    LOCKREADIFFAILRET();
 
     MethodRec *pMethodRec;
     *ppSig = NULL;
@@ -2311,7 +2311,7 @@ MDInternalRW::GetSigOfFieldDef(
     _ASSERTE(TypeFromToken(fielddef) == mdtFieldDef);
 
     HRESULT hr;
-    // We don't change Field's signature. No need to lock.
+    LOCKREADIFFAILRET();
 
     FieldRec *pFieldRec;
     *ppSig = NULL;
@@ -2333,7 +2333,6 @@ MDInternalRW::GetSigFromToken(
     PCCOR_SIGNATURE * ppSig)
 {
     HRESULT hr;
-    // We don't change token's signature. Thus no need to lock.
 
     *ppSig = NULL;
     *pcbSig = 0;
@@ -2341,26 +2340,28 @@ MDInternalRW::GetSigFromToken(
     {
     case mdtSignature:
         {
+            LOCKREADIFFAILRET();
             StandAloneSigRec *pRec;
-            IfFailGo(m_pStgdb->m_MiniMd.GetStandAloneSigRecord(RidFromToken(tk), &pRec));
-            IfFailGo(m_pStgdb->m_MiniMd.getSignatureOfStandAloneSig(pRec, ppSig, pcbSig));
+            IfFailRet(m_pStgdb->m_MiniMd.GetStandAloneSigRecord(RidFromToken(tk), &pRec));
+            IfFailRet(m_pStgdb->m_MiniMd.getSignatureOfStandAloneSig(pRec, ppSig, pcbSig));
             return S_OK;
         }
     case mdtTypeSpec:
         {
+            LOCKREADIFFAILRET();
             TypeSpecRec *pRec;
-            IfFailGo(m_pStgdb->m_MiniMd.GetTypeSpecRecord(RidFromToken(tk), &pRec));
-            IfFailGo(m_pStgdb->m_MiniMd.getSignatureOfTypeSpec(pRec, ppSig, pcbSig));
+            IfFailRet(m_pStgdb->m_MiniMd.GetTypeSpecRecord(RidFromToken(tk), &pRec));
+            IfFailRet(m_pStgdb->m_MiniMd.getSignatureOfTypeSpec(pRec, ppSig, pcbSig));
             return S_OK;
         }
     case mdtMethodDef:
         {
-            IfFailGo(GetSigOfMethodDef(tk, pcbSig, ppSig));
+            IfFailRet(GetSigOfMethodDef(tk, pcbSig, ppSig));
             return S_OK;
         }
     case mdtFieldDef:
         {
-            IfFailGo(GetSigOfFieldDef(tk, pcbSig, ppSig));
+            IfFailRet(GetSigOfFieldDef(tk, pcbSig, ppSig));
             return S_OK;
         }
     }
@@ -2371,10 +2372,7 @@ MDInternalRW::GetSigFromToken(
             _ASSERTE(!"Unexpected token type");
 #endif
     *pcbSig = 0;
-    hr = META_E_INVALID_TOKEN_TYPE;
-
-ErrExit:
-    return hr;
+    return META_E_INVALID_TOKEN_TYPE;
 } // MDInternalRW::GetSigFromToken
 
 
@@ -2670,8 +2668,7 @@ MDInternalRW::GetNameAndSigOfMemberRef( // meberref's name
     LPCSTR          *pszMemberRefName)
 {
     HRESULT hr;
-
-    // MemberRef's name and sig won't change. Don't need to lock this.
+    LOCKREADIFFAILRET();
 
     _ASSERTE(TypeFromToken(memberref) == mdtMemberRef);
 
@@ -2689,6 +2686,7 @@ MDInternalRW::GetNameAndSigOfMemberRef( // meberref's name
         IfFailRet(m_pStgdb->m_MiniMd.getSignatureOfMemberRef(pMemberRefRec, ppvSigBlob, pcbSigBlob));
     }
     IfFailRet(m_pStgdb->m_MiniMd.getNameOfMemberRef(pMemberRefRec, pszMemberRefName));
+
     return S_OK;
 } // MDInternalRW::GetNameAndSigOfMemberRef
 
