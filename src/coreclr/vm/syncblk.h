@@ -383,6 +383,9 @@ struct cdac_data<InteropSyncBlockInfo>
     static constexpr size_t RCW = offsetof(InteropSyncBlockInfo, m_pRCW);
     static constexpr size_t CCF = offsetof(InteropSyncBlockInfo, m_pCCF);
 #endif // FEATURE_COMINTEROP
+#ifdef FEATURE_OBJCMARSHAL
+    static constexpr size_t TaggedMemory = offsetof(InteropSyncBlockInfo, m_taggedMemory);
+#endif // FEATURE_OBJCMARSHAL
 };
 
 typedef DPTR(InteropSyncBlockInfo) PTR_InteropSyncBlockInfo;

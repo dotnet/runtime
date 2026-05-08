@@ -2884,8 +2884,7 @@ AGAIN:
         assert(lastSJ == nullptr || lastIG != jmp->idjIG || lastSJ->idjOffs < (jmp->idjOffs + adjSJ));
         lastSJ = (lastIG == jmp->idjIG) ? jmp : nullptr;
 
-        assert(lastIG == nullptr || lastIG->igNum <= jmp->idjIG->igNum || jmp->idjIG == prologIG ||
-               emitNxtIGnum > unsigned(0xFFFF)); // igNum might overflow
+        assert(lastIG == nullptr || lastIG->IsBeforeOrEqual(jmp->idjIG) || jmp->idjIG == prologIG);
         lastIG = jmp->idjIG;
 #endif // DEBUG
 
@@ -2914,8 +2913,8 @@ AGAIN:
 #ifdef DEBUG
                     if (EMITVERBOSE)
                     {
-                        printf("Adjusted offset of " FMT_BB " from %04X to %04X\n", lstIG->igNum, lstIG->igOffs,
-                               lstIG->igOffs + adjIG);
+                        printf("Adjusted offset of " FMT_BB " from %04X to %04X\n", lstIG->GetDisplayId(),
+                               lstIG->igOffs, lstIG->igOffs + adjIG);
                     }
 #endif // DEBUG
                     lstIG->igOffs += adjIG;
@@ -2999,7 +2998,7 @@ AGAIN:
 
         srcEncodingOffs = srcInstrOffs + ssz; // Encoding offset of relative offset for small branch
 
-        if (jmpIG->igNum < tgtIG->igNum)
+        if (jmpIG->IsBefore(tgtIG))
         {
             /* Forward jump */
 
@@ -3200,7 +3199,7 @@ AGAIN:
 #ifdef DEBUG
             if (EMITVERBOSE)
             {
-                printf("Adjusted offset of " FMT_BB " from %04X to %04X\n", lstIG->igNum, lstIG->igOffs,
+                printf("Adjusted offset of " FMT_BB " from %04X to %04X\n", lstIG->GetDisplayId(), lstIG->igOffs,
                        lstIG->igOffs + adjIG);
             }
 #endif // DEBUG

@@ -30,6 +30,7 @@ IF_DEF(NONE,          IS_NONE, NONE)
 IF_DEF(OPCODE,        IS_NONE, NONE) // <opcode>
 IF_DEF(BLOCK,         IS_NONE, NONE) // <opcode> <sig = 0x40>
 IF_DEF(RAW_ULEB128,   IS_NONE, NONE) // <ULEB128 immediate>
+IF_DEF(CODE_SIZE,     IS_NONE, NONE)
 IF_DEF(ULEB128,       IS_NONE, NONE) // <opcode> <ULEB128 immediate>
 IF_DEF(FUNCIDX,       IS_NONE, NONE) // <opcode> <ULEB128 immediate (function index reloc)>
 IF_DEF(SLEB128,       IS_NONE, NONE) // <opcode> <LEB128 immediate (signed)>

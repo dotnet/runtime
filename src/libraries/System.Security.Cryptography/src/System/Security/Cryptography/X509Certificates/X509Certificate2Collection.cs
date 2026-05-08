@@ -777,7 +777,7 @@ namespace System.Security.Cryptography.X509Certificates
             return FindByThumbprintCore(hashAlgorithm, thumbprintBytes);
         }
 
-        private X509Certificate2Collection FindByThumbprintCore(HashAlgorithmName hashAlgorithm, ReadOnlySpan<byte> thumbprintBytes)
+        private unsafe X509Certificate2Collection FindByThumbprintCore(HashAlgorithmName hashAlgorithm, ReadOnlySpan<byte> thumbprintBytes)
         {
             const int MaxThumbprintStackAlloc = 64; // SHA-2/3-512 is the largest thumbprint currently known.
             Span<byte> thumbprintBuffer = stackalloc byte[MaxThumbprintStackAlloc];

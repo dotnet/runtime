@@ -116,12 +116,14 @@ public:
 
     friend struct ::cdac_data<PortableEntryPoint>;
 };
+
 template<>
 struct cdac_data<PortableEntryPoint>
 {
     static constexpr size_t MethodDesc = offsetof(PortableEntryPoint, _pMD);
-};
 
+    static_assert(offsetof(PortableEntryPoint, _pActualCode) == 0, "CLR ABI requires _pActualCode to be at offset 0 of PortableEntryPoint");
+};
 
 extern InterleavedLoaderHeapConfig s_stubPrecodeHeapConfig;
 
