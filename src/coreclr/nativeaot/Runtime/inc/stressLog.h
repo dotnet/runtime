@@ -208,7 +208,6 @@ enum LogFacilitiesEnum: unsigned int {
 //
 // forward declarations:
 //
-class CrstStatic;
 class Thread;
 typedef DPTR(Thread) PTR_Thread;
 class StressLog;
@@ -235,7 +234,7 @@ public:
     int32_t totalChunk;                       // current number of total chunks allocated
     PTR_ThreadStressLog logs;               // the list of logs for every thread.
     int32_t deadCount;                        // count of dead threads in the log
-    CrstStatic *pLock;                      // lock
+    minipal_mutex lock;                     // lock
     uint64_t tickFrequency;         // number of ticks per second
     uint64_t startTimeStamp;        // start time from when tick counter started
     uint64_t startTime;                     // time the application started in Windows FILETIME precision (100ns since 01 Jan 1601)

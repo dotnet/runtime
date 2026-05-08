@@ -382,6 +382,44 @@ namespace System.Text
         }
 
         /// <summary>
+        /// Creates a new <see cref="StringBuilder"/> instance initialized to the same state as
+        /// <paramref name="source"/>, and resets <paramref name="source"/> to an empty, usable state
+        /// with no allocated buffers.
+        /// </summary>
+        /// <param name="source">The <see cref="StringBuilder"/> whose chunks should be moved to the
+        /// returned instance.</param>
+        /// <returns>A new <see cref="StringBuilder"/> instance that owns the chunks previously held
+        /// by <paramref name="source"/>.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="source"/> is <see langword="null"/>.</exception>
+        /// <remarks>
+        /// <para>
+        /// In contrast to <see cref="Clear"/>, which retains the existing internal buffer,
+        /// this method releases all internal buffers from <paramref name="source"/>. Ownership of
+        /// the chunks is transferred in O(1) to the returned <see cref="StringBuilder"/>; the
+        /// underlying character data is not copied.
+        /// </para>
+        /// <para>
+        /// After the call, <paramref name="source"/> has <see cref="Length"/> and
+        /// <see cref="Capacity"/> of zero but retains its original <see cref="MaxCapacity"/>.
+        /// It remains fully usable; subsequent append or insert operations will allocate new
+        /// buffers as needed.
+        /// </para>
+        /// </remarks>
+        public static StringBuilder MoveChunks(StringBuilder source)
+        {
+            ArgumentNullException.ThrowIfNull(source);
+
+            StringBuilder destination = new StringBuilder(source);
+
+            source.m_ChunkChars = [];
+            source.m_ChunkPrevious = null;
+            source.m_ChunkLength = 0;
+            source.m_ChunkOffset = 0;
+
+            return destination;
+        }
+
+        /// <summary>
         /// Gets or sets the length of this builder.
         /// </summary>
         public int Length

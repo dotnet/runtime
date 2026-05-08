@@ -18,6 +18,10 @@
 #include <ucontext.h>
 #include <minipal/getexepath.h>
 #include <minipal/thread.h>
+#ifdef __APPLE__
+#include <mach/mach.h>
+#include <sys/sysctl.h>
+#endif
 
 // Include the .NET version string instead of linking because it is "static".
 #if __has_include("_version.c")
@@ -25,6 +29,27 @@
 #else
 static char sccsid[] = "@(#)Version N/A";
 #endif
+
+#ifdef __APPLE__
+// Query a sysctl by name into a caller-supplied buffer. Called from Initialize, NOT from the
+// signal handler -- sysctl/sysctlbyname is not on POSIX's async-signal-safe list, so the
+// queried values are cached for use during crash reporting (mirrors the m_hostName /
+// gethostname pattern).
+static void CacheSysctlString(const char* sysctlName, char* buffer, size_t bufferSize)
+{
+    buffer[0] = '\0';
+    size_t size = bufferSize;
+    if (sysctlbyname(sysctlName, buffer, &size, nullptr, 0) == 0 && size > 0)
+    {
+        size_t terminatorIndex = (size < bufferSize) ? size : bufferSize - 1;
+        buffer[terminatorIndex] = '\0';
+    }
+    else
+    {
+        buffer[0] = '\0';
+    }
+}
+#endif // __APPLE__
 
 class ThreadEnumerationContext
 {
@@ -276,6 +301,17 @@ InProcCrashReporter::CreateReport(
 
     m_jsonWriter.OpenObject("parameters");
     m_jsonWriter.WriteSignedDecimalAsString("signal", static_cast<int64_t>(signal));
+#ifdef __APPLE__
+    if (m_osVersion[0] != '\0')
+    {
+        m_jsonWriter.WriteString("OSVersion", m_osVersion);
+    }
+    if (m_systemModel[0] != '\0')
+    {
+        m_jsonWriter.WriteString("SystemModel", m_systemModel);
+    }
+    m_jsonWriter.WriteString("SystemManufacturer", "apple");
+#endif
     m_jsonWriter.CloseObject(); // parameters
 
     m_jsonWriter.CloseObject(); // root
@@ -349,6 +385,13 @@ InProcCrashReporter::Initialize(
     {
         m_hostName[0] = '\0';
     }
+
+#ifdef __APPLE__
+    // Cache sysctl values at Initialize because sysctl/sysctlbyname is not on POSIX's
+    // async-signal-safe list; CreateReport reads these from the signal-handler path.
+    CacheSysctlString("kern.osproductversion", m_osVersion, sizeof(m_osVersion));
+    CacheSysctlString("hw.model", m_systemModel, sizeof(m_systemModel));
+#endif
 }
 
 void
@@ -667,7 +710,11 @@ CrashReportHelpers::GetInstructionPointer(
     }
 
     ucontext_t* ucontext = reinterpret_cast<ucontext_t*>(context);
-#if defined(__x86_64__)
+#if defined(__APPLE__) && defined(__x86_64__)
+    return static_cast<uint64_t>(ucontext->uc_mcontext->__ss.__rip);
+#elif defined(__APPLE__) && defined(__aarch64__)
+    return reinterpret_cast<uint64_t>(arm_thread_state64_get_pc_fptr(ucontext->uc_mcontext->__ss));
+#elif defined(__x86_64__)
     return static_cast<uint64_t>(ucontext->uc_mcontext.gregs[REG_RIP]);
 #elif defined(__aarch64__)
     return static_cast<uint64_t>(ucontext->uc_mcontext.pc);
@@ -688,7 +735,11 @@ CrashReportHelpers::GetStackPointer(
     }
 
     ucontext_t* ucontext = reinterpret_cast<ucontext_t*>(context);
-#if defined(__x86_64__)
+#if defined(__APPLE__) && defined(__x86_64__)
+    return static_cast<uint64_t>(ucontext->uc_mcontext->__ss.__rsp);
+#elif defined(__APPLE__) && defined(__aarch64__)
+    return static_cast<uint64_t>(arm_thread_state64_get_sp(ucontext->uc_mcontext->__ss));
+#elif defined(__x86_64__)
     return static_cast<uint64_t>(ucontext->uc_mcontext.gregs[REG_RSP]);
 #elif defined(__aarch64__)
     return static_cast<uint64_t>(ucontext->uc_mcontext.sp);
@@ -709,7 +760,11 @@ CrashReportHelpers::GetFramePointer(
     }
 
     ucontext_t* ucontext = reinterpret_cast<ucontext_t*>(context);
-#if defined(__x86_64__)
+#if defined(__APPLE__) && defined(__x86_64__)
+    return static_cast<uint64_t>(ucontext->uc_mcontext->__ss.__rbp);
+#elif defined(__APPLE__) && defined(__aarch64__)
+    return static_cast<uint64_t>(arm_thread_state64_get_fp(ucontext->uc_mcontext->__ss));
+#elif defined(__x86_64__)
     return static_cast<uint64_t>(ucontext->uc_mcontext.gregs[REG_RBP]);
 #elif defined(__aarch64__)
     return static_cast<uint64_t>(ucontext->uc_mcontext.regs[29]);

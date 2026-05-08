@@ -626,7 +626,7 @@ TempDsc* RegSet::tmpGetTemp(var_types type)
     unsigned size = genTypeSize(type);
 
     // If TYP_STRUCT ever gets in here we do bad things (tmpSlot returns -1)
-    noway_assert(size >= sizeof(int));
+    noway_assert(size >= sizeof(int) && size != SIZE_UNKNOWN);
 
     /* Find the slot to search for a free temp of the right size */
 
@@ -688,7 +688,7 @@ void RegSet::tmpPreAllocateTemps(var_types type, unsigned count)
     unsigned size = genTypeSize(type);
 
     // If TYP_STRUCT ever gets in here we do bad things (tmpSlot returns -1)
-    noway_assert(size >= sizeof(int));
+    noway_assert(size >= sizeof(int) && size != SIZE_UNKNOWN);
 
     // Find the slot to search for a free temp of the right size.
     // Note that slots are shared by types of the identical size (e.g., TYP_REF and TYP_LONG on AMD64),

@@ -634,7 +634,7 @@ namespace System
             format.ValidateNumberOfArgs(args.Length);
             return args.Length switch
             {
-                0 => format.Format,
+                0 => format._literalLength == format.Format.Length ? format.Format : Format(provider, format, (object?)null, 0, 0, args),
                 1 => Format(provider, format, args[0], 0, 0, args),
                 2 => Format(provider, format, args[0], args[1], 0, args),
                 _ => Format(provider, format, args[0], args[1], args[2], args),
@@ -643,8 +643,10 @@ namespace System
 
         private static string Format<TArg0, TArg1, TArg2>(IFormatProvider? provider, CompositeFormat format, TArg0 arg0, TArg1 arg1, TArg2 arg2, ReadOnlySpan<object?> args)
         {
-            // If there's no formatting to be done, we can just return the original format string as the result.
-            if (format._formattedCount == 0)
+            // If there's no formatting to be done and no brace escaping in the format string, we can just return
+            // the original format string as the result. If there is brace escaping, we need to process the segments
+            // so that the escaped braces are properly unescaped in the result.
+            if (format._formattedCount == 0 && format._literalLength == format.Format.Length)
             {
                 return format.Format;
             }

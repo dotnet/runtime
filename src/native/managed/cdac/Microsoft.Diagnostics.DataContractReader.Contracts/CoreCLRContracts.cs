@@ -27,6 +27,7 @@ public static class CoreCLRContracts
         registry.Register<ICodeNotifications>("c1", static t => new CodeNotifications_1(t));
         registry.Register<ISignatureDecoder>("c1", static t => new SignatureDecoder_1(t));
         registry.Register<IBuiltInCOM>("c1", static t => new BuiltInCOM_1(t));
+        registry.Register<IObjectiveCMarshal>("c1", static t => new ObjectiveCMarshal_1(t));
         registry.Register<IConditionalWeakTable>("c1", static t => new ConditionalWeakTable_1(t));
         registry.Register<IAuxiliarySymbols>("c1", static t => new AuxiliarySymbols_1(t));
         registry.Register<IDebugger>("c1", static t => new Debugger_1(t));

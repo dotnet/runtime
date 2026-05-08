@@ -477,6 +477,7 @@ namespace System.Net.NameResolution.Tests
         [Theory]
         [InlineData("foo.localhost.")]
         [InlineData("bar.test.localhost.")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/126456", TestPlatforms.Android)]
         public async Task DnsGetHostEntry_LocalhostSubdomainWithTrailingDot_ReturnsLoopback(string hostName)
         {
             IPHostEntry entry = Dns.GetHostEntry(hostName);

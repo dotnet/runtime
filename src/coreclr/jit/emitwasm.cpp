@@ -599,7 +599,7 @@ size_t emitter::emitOutputULEB128(uint8_t* destination, uint64_t value)
 size_t emitter::emitOutputULEB128Padded(uint8_t* destination, uint64_t value)
 {
     uint8_t* buffer = destination + writeableOffset;
-    int      i      = 0;
+    unsigned i      = 0;
 
     for (; i < PADDED_RELOC_SIZE - 1; i++)
     {
