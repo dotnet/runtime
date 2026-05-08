@@ -43,9 +43,9 @@
     <NoWarn>$(NoWarn),0419,0649</NoWarn>
     <!-- https://github.com/dotnet/dotnet/issues/5640 -->
     <NoWarn>$(NoWarn);CS9368</NoWarn>
-    <WarningsNotAsErrors>$(WarningsNotAsErrors);CS9362;CS9377</WarningsNotAsErrors>
     <Nullable>enable</Nullable>
-    <Features>$(Features);runtime-async=on;updated-memory-safety-rules</Features>
+    <UnsafeV2Features Condition="'$(EnableUpdatedMemorySafetyRules)' == 'true'">;updated-memory-safety-rules</UnsafeV2Features>
+    <Features>$(Features);runtime-async=on$(UnsafeV2Features)</Features>
 
     <!-- Ignore all previous constants since SPCL is sensitive to what is defined and the Sdk adds some by default -->
     <DefineConstants>CORECLR;NETCOREAPP;SYSTEM_PRIVATE_CORELIB</DefineConstants>
