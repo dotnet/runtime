@@ -177,7 +177,7 @@ The following section types are defined and described later in this document:
 | ProfileDataInfo           |   111 | Image (added in V2.2)
 | ManifestMetadata          |   112 | Image (added in V2.3)
 | AttributePresence         |   113 | Assembly (added in V3.1)
-| InliningInfo2             |   114 | Image (added in V4.1)
+| InliningInfo2             |   114 | Image (non-composite, added in V4.1), Assembly (composite, added in V6.3)
 | ComponentAssemblies       |   115 | Image (added in V4.1)
 | OwnerCompositeExecutable  |   116 | Image (added in V4.1)
 | PgoInstrumentationData    |   117 | Image (added in V5.2)
@@ -588,6 +588,15 @@ The entry of the hashtable is a counted sequence of compressed unsigned integers
 * RIDs of the inliners follow. They are encoded similarly to the way the inlinee is encoded (shifted left with the lowest bit indicating foreign RID). Instead of encoding the RID directly, RID delta (the difference between the previous RID and the current RID) is encoded. This allows better integer compression.
 
 Foreign RIDs are only present if a fragile inlining was allowed at compile time.
+
+**Note:** In single-file (non-composite) R2R files, this section is image-wide and is
+referenced directly by the main R2R header. In composite R2R files (v6.3+), this section
+is instead emitted per component assembly and is referenced by the
+`READYTORUN_SECTION_ASSEMBLIES_ENTRY` core header of each component; inlinee/inliner RIDs
+without a module override flag refer to methods in the owning component assembly. The
+image-wide [`CrossModuleInlineInfo`](#readytorunsectiontypecrossmoduleinlineinfo-v63)
+section supersedes the image-wide use of `InliningInfo2` for cross-module inlines in
+composite images and may be emitted alongside the per-assembly `InliningInfo2` sections.
 
 **TODO:** It remains to be seen whether `DelayLoadMethodCallThunks` and / or
 `InliningInfo` also require changes specific to the composite R2R file format.

@@ -83,6 +83,18 @@ public class ElidedBoundsChecks
         return false;
     }
 
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static bool TryStripFirstChar(ref ReadOnlySpan<char> span, char value)
+    {
+        // X64-NOT: CORINFO_HELP_RNGCHKFAIL
+        // ARM64-NOT: CORINFO_HELP_RNGCHKFAIL
+        if (!span.IsEmpty && span[0] == value)
+        {
+            return true;
+        }
+        return false;
+    }
+
     [Fact]
     public static int TestEntryPoint()
     {
@@ -117,6 +129,14 @@ public class ElidedBoundsChecks
             return 0;
 
         if (IndexPlusConstLessThanLen("hello".AsSpan()) != false)
+            return 0;
+
+        ReadOnlySpan<char> chars = "hello".AsSpan();
+        if (TryStripFirstChar(ref chars, 'h') != true)
+            return 0;
+
+        chars = ReadOnlySpan<char>.Empty;
+        if (TryStripFirstChar(ref chars, 'h') != false)
             return 0;
 
         return 100;

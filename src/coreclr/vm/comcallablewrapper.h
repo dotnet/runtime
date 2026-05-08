@@ -226,8 +226,7 @@ public:
     ComMethodTable* GetBasicComMT();
     ULONG           GetNumInterfaces();
     SLOT*           GetVTableSlot(ULONG index);
-    void            CheckParentComVisibility(BOOL fForIDispatch);
-    BOOL            CheckParentComVisibilityNoThrow(BOOL fForIDispatch);
+    void            CheckParentComVisibility();
 
     // Calls GetDefaultInterfaceForClassInternal and caches the result.
     DefaultInterfaceType GetDefaultInterface(MethodTable **ppDefaultItf);
@@ -330,18 +329,7 @@ private:
     SLOT*                                   m_rgpIPtr[1];
 };
 
-inline void ComCallWrapperTemplateRelease(ComCallWrapperTemplate *value)
-{
-    WRAPPER_NO_CONTRACT;
-
-    if (value)
-    {
-        value->Release();
-    }
-}
-
-typedef Wrapper<ComCallWrapperTemplate *, DoNothing<ComCallWrapperTemplate *>, ComCallWrapperTemplateRelease, 0> ComCallWrapperTemplateHolder;
-
+using ComCallWrapperTemplateHolder = ReleaseHolder<ComCallWrapperTemplate>;
 
 //--------------------------------------------------------------------------------
 // Header on top of Vtables that we create for COM callable interfaces
@@ -672,18 +660,11 @@ struct ComMethodTable
     }
 #endif // DACCESS_COMPILE
 
-    void CheckParentComVisibility(BOOL fForIDispatch)
+    void CheckParentComVisibility()
     {
         WRAPPER_NO_CONTRACT;
 
-        ((ComCallWrapperTemplate*)m_pMT->GetComCallWrapperTemplate())->CheckParentComVisibility(fForIDispatch);
-    }
-
-    BOOL CheckParentComVisibilityNoThrow(BOOL fForIDispatch)
-    {
-        WRAPPER_NO_CONTRACT;
-
-        return ((ComCallWrapperTemplate*)m_pMT->GetComCallWrapperTemplate())->CheckParentComVisibilityNoThrow(fForIDispatch);
+        ((ComCallWrapperTemplate*)m_pMT->GetComCallWrapperTemplate())->CheckParentComVisibility();
     }
 
 private:
@@ -1054,29 +1035,7 @@ struct cdac_data<ComCallWrapper>
     static constexpr uintptr_t ThisMask = (uintptr_t)ComCallWrapper::enum_ThisMask;
 };
 
-FORCEINLINE void CCWRelease(ComCallWrapper* p)
-{
-    WRAPPER_NO_CONTRACT;
-
-    p->Release();
-}
-
-class CCWHolder : public Wrapper<ComCallWrapper*, CCWHolderDoNothing, CCWRelease, 0>
-{
-public:
-    CCWHolder(ComCallWrapper* p = NULL)
-        : Wrapper<ComCallWrapper*, CCWHolderDoNothing, CCWRelease, 0>(p)
-    {
-        WRAPPER_NO_CONTRACT;
-    }
-
-    FORCEINLINE void operator=(ComCallWrapper* p)
-    {
-        WRAPPER_NO_CONTRACT;
-
-        Wrapper<ComCallWrapper*, CCWHolderDoNothing, CCWRelease, 0>::operator=(p);
-    }
-};
+using CCWHolder = ReleaseHolder<ComCallWrapper>;
 //
 // Uncommonly used data on Simple CCW
 // Created on-demand

@@ -361,6 +361,7 @@ namespace System.IO.Tests
             InlineData("::$DATA", ":bar"),
             InlineData("::$DATA", ":bar:$DATA")]
         [PlatformSpecific(TestPlatforms.Windows)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/83659", typeof(PlatformDetection), nameof(PlatformDetection.IsWindows), nameof(PlatformDetection.IsArm64Process))]
         public void WindowsAlternateDataStreamOverwrite(string defaultStream, string alternateStream)
         {
             DirectoryInfo testDirectory = Directory.CreateDirectory(GetTestFilePath());

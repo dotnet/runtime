@@ -269,9 +269,6 @@ FCFuncStart(gMonitorFuncs)
     FCFuncElement("GetLockHandleIfExists", Monitor_GetLockHandleIfExists)
 FCFuncEnd()
 
-FCFuncStart(gCastHelpers)
-    FCFuncElement("WriteBarrier", ::WriteBarrier_Helper)
-FCFuncEnd()
 
 FCFuncStart(gArrayFuncs)
     FCFuncElement("GetCorElementTypeOfElementType", ArrayNative::GetCorElementTypeOfElementType)
@@ -395,7 +392,6 @@ FCClassElement("AssemblyLoadContext", "System.Runtime.Loader", gAssemblyLoadCont
 FCClassElement("AsyncHelpers", "System.Runtime.CompilerServices", gAsyncHelpers)
 #endif
 FCClassElement("Buffer", "System", gBufferFuncs)
-FCClassElement("CastHelpers", "System.Runtime.CompilerServices", gCastHelpers)
 FCClassElement("Delegate", "System", gDelegateFuncs)
 FCClassElement("DependentHandle", "System.Runtime", gDependentHandleFuncs)
 FCClassElement("Environment", "System", gEnvironmentFuncs)

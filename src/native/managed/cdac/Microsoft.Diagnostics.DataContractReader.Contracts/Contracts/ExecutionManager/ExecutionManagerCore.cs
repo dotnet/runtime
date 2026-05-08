@@ -390,6 +390,19 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
         return info.RelativeOffset;
     }
 
+    TargetPointer IExecutionManager.FindReadyToRunModule(TargetPointer address)
+    {
+        // Use the range section map to find the RangeSection containing the address.
+        // The R2R range section covers the entire PE image (code + data), so this
+        // works for import section addresses used by FindGCRefMap.
+        TargetCodePointer codeAddr = CodePointerUtils.CodePointerFromAddress(address, _target);
+        RangeSection range = RangeSection.Find(_target, _topRangeSectionMap, _rangeSectionMapLookup, codeAddr);
+        if (range.Data is null)
+            return TargetPointer.Null;
+
+        return range.Data.R2RModule;
+    }
+
     JitManagerInfo IExecutionManager.GetEEJitManagerInfo()
     {
         TargetPointer eeJitManagerPtr = _target.ReadGlobalPointer(Constants.Globals.EEJitManagerAddress);

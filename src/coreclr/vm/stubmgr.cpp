@@ -1434,57 +1434,6 @@ BOOL StubLinkStubManager::TraceManager(Thread *thread,
 
 #endif // #ifndef DACCESS_COMPILE
 
-#ifdef FEATURE_DYNAMIC_CODE_COMPILED
-// -------------------------------------------------------
-// JumpStub stubs
-//
-// Stub manager for jump stubs created by ExecutionManager::jumpStub()
-// These are currently used only on the 64-bit targets IA64 and AMD64
-//
-// -------------------------------------------------------
-
-SPTR_IMPL(JumpStubStubManager, JumpStubStubManager, g_pManager);
-
-#ifndef DACCESS_COMPILE
-/* static */
-void JumpStubStubManager::Init()
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END
-
-    g_pManager = new JumpStubStubManager();
-    StubManager::AddStubManager(g_pManager);
-}
-#endif // #ifndef DACCESS_COMPILE
-
-BOOL JumpStubStubManager::CheckIsStub_Internal(PCODE stubStartAddress)
-{
-    WRAPPER_NO_CONTRACT;
-    SUPPORTS_DAC;
-
-    // Forwarded to from RangeSectionStubManager
-    return FALSE;
-}
-
-BOOL JumpStubStubManager::DoTraceStub(PCODE stubStartAddress,
-                                     TraceDestination *trace)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    PCODE jumpTarget = decodeBackToBackJump(stubStartAddress);
-    trace->InitForStub(jumpTarget);
-
-    LOG_TRACE_DESTINATION(trace, stubStartAddress, "JumpStubStubManager::DoTraceStub");
-
-    return TRUE;
-}
-#endif // FEATURE_DYNAMIC_CODE_COMPILED
-
 //
 // Stub manager for code sections. It forwards the query to the more appropriate
 // stub manager, or handles the query itself.
@@ -1519,6 +1468,9 @@ BOOL RangeSectionStubManager::CheckIsStub_Internal(PCODE stubStartAddress)
     case STUB_CODE_BLOCK_JUMPSTUB:
     case STUB_CODE_BLOCK_STUBLINK:
     case STUB_CODE_BLOCK_METHOD_CALL_THUNK:
+#ifdef FEATURE_TIERED_COMPILATION
+    case STUB_CODE_BLOCK_CALLCOUNTING:
+#endif // FEATURE_TIERED_COMPILATION
 #ifdef FEATURE_VIRTUAL_STUB_DISPATCH
     case STUB_CODE_BLOCK_VSD_DISPATCH_STUB:
     case STUB_CODE_BLOCK_VSD_RESOLVE_STUB:
@@ -1549,11 +1501,22 @@ BOOL RangeSectionStubManager::DoTraceStub(PCODE stubStartAddress, TraceDestinati
     {
 #ifdef FEATURE_DYNAMIC_CODE_COMPILED
     case STUB_CODE_BLOCK_JUMPSTUB:
-        return JumpStubStubManager::g_pManager->DoTraceStub(stubStartAddress, trace);
+    {
+        PCODE jumpTarget = decodeBackToBackJump(stubStartAddress);
+        trace->InitForStub(jumpTarget);
+        return TRUE;
+    }
 #endif // FEATURE_DYNAMIC_CODE_COMPILED
 
     case STUB_CODE_BLOCK_STUBLINK:
         return StubLinkStubManager::g_pManager->DoTraceStub(stubStartAddress, trace);
+#ifdef FEATURE_TIERED_COMPILATION
+    case STUB_CODE_BLOCK_CALLCOUNTING:
+    {
+        trace->InitForStub(CallCountingManager::GetTargetForMethod(stubStartAddress));
+        return TRUE;
+    }
+#endif // FEATURE_TIERED_COMPILATION
 
 #ifdef FEATURE_VIRTUAL_STUB_DISPATCH
     case STUB_CODE_BLOCK_VSD_DISPATCH_STUB:
@@ -1593,6 +1556,10 @@ LPCWSTR RangeSectionStubManager::GetStubManagerName(PCODE addr)
 
     case STUB_CODE_BLOCK_METHOD_CALL_THUNK:
         return W("MethodCallThunk");
+#ifdef FEATURE_TIERED_COMPILATION
+    case STUB_CODE_BLOCK_CALLCOUNTING:
+        return W("CallCountingStub");
+#endif // FEATURE_TIERED_COMPILATION
 
 #ifdef FEATURE_VIRTUAL_STUB_DISPATCH
     case STUB_CODE_BLOCK_VSD_DISPATCH_STUB:
@@ -2330,17 +2297,6 @@ StubLinkStubManager::DoEnumMemoryRegions(CLRDataEnumMemoryFlags flags)
     EMEM_OUT(("MEM: %p StubLinkStubManager\n", dac_cast<TADDR>(this)));
     GetRangeList()->EnumMemoryRegions(flags);
 }
-
-#ifdef FEATURE_DYNAMIC_CODE_COMPILED
-void
-JumpStubStubManager::DoEnumMemoryRegions(CLRDataEnumMemoryFlags flags)
-{
-    SUPPORTS_DAC;
-    WRAPPER_NO_CONTRACT;
-    DAC_ENUM_VTHIS();
-    EMEM_OUT(("MEM: %p JumpStubStubManager\n", dac_cast<TADDR>(this)));
-}
-#endif // FEATURE_DYNAMIC_CODE_COMPILED
 
 void
 RangeSectionStubManager::DoEnumMemoryRegions(CLRDataEnumMemoryFlags flags)

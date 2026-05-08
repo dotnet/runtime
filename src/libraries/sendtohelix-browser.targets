@@ -41,10 +41,15 @@
                                       '$(Scenario)' == 'WasmTestOnChrome' or 
                                       '$(Scenario)' == 'WasmTestOnFirefox'">true</IsRunningLibraryTests>
 
+    <WasmBatchLibraryTests Condition="'$(WasmBatchLibraryTests)' == '' and '$(RuntimeFlavor)' == 'CoreCLR' and '$(Scenario)' == 'WasmTestOnChrome'">true</WasmBatchLibraryTests>
+    <WasmBatchLibraryTests Condition="'$(WasmBatchLibraryTests)' == ''">false</WasmBatchLibraryTests>
+    <_WasmBatchLargeThreshold Condition="'$(_WasmBatchLargeThreshold)' == ''">52428800</_WasmBatchLargeThreshold>
+
     <HelixExtensionTargets />
     <PrepareForBuildHelixWorkItems_WasmDependsOn>
         PrepareHelixCorrelationPayload_Wasm;
         _AddWorkItemsForLibraryTests;
+        _AddBatchedWorkItemsForLibraryTests;
         _AddWorkItemsForBuildWasmApps
     </PrepareForBuildHelixWorkItems_WasmDependsOn>
 
@@ -57,6 +62,8 @@
 
     <NeedsWorkload Condition="'$(Scenario)' == 'BuildWasmApps'">true</NeedsWorkload>
     <NeedsEMSDK Condition="'$(NeedsToBuildWasmAppsOnHelix)' == 'true'">true</NeedsEMSDK>
+    <!-- CoreCLR WBT re-links dotnet.native.wasm per-app via emcc, so it needs the full EMSDK payload too. -->
+    <NeedsEMSDK Condition="'$(RuntimeFlavor)' == 'CoreCLR' and '$(Scenario)' == 'BuildWasmApps'">true</NeedsEMSDK>
     <NeedsEMSDKNode Condition="'$(Scenario)' == 'BuildWasmApps'">false</NeedsEMSDKNode>
     <NeedsToRunOnChrome Condition="'$(Scenario)' == 'WasmTestOnChrome' or '$(Scenario)' == 'BuildWasmApps'">true</NeedsToRunOnChrome>
     <NeedsToRunOnFirefox Condition="'$(Scenario)' == 'WasmTestOnFirefox'">true</NeedsToRunOnFirefox>
@@ -83,13 +90,22 @@
     <_HelixLocalNodePath Condition="'$(NeedsEMSDK)' == 'true' and '$(WindowsShell)' == 'true'">%HELIX_CORRELATION_PAYLOAD%\build\emsdk\node</_HelixLocalNodePath>
   </PropertyGroup>
 
-  <ItemGroup>
+  <!--
+    Stage emsdk as a Helix dependency so it ends up at $(EmSdkDirForHelixPayload) and can be
+    packaged into the correlation payload. This is needed for CoreCLR WBT agents, which do not
+    build the wasm runtime locally and therefore do not pre-populate emsdk at $(ProvisionEmscriptenDir).
+    Those agents provision emsdk in a separate pipeline step before sendtohelix runs, at which
+    point AcquireEmscriptenSdk.props/targets set $(EMSDK_PATH) during project evaluation.
+
+    This ItemGroup must be at project-evaluation scope (not inside a target), because
+    StageDependenciesForHelix guards its body with a condition over @(HelixDependenciesToStage)
+    that is evaluated before any BeforeTargets hook can populate the item.
+  -->
+  <ItemGroup Condition="('$(NeedsEMSDK)' == 'true' or '$(IncludeNodePayload)' == 'true') and '$(EMSDK_PATH)' != ''">
     <HelixDependenciesToStage
           Name="emsdk"
           Include="$(EmSdkDirForHelixPayload)"
-          Condition="'$(NeedsEMSDK)' == 'true' or '$(IncludeNodePayload)' == 'true'"
-          SourcePath="$(EMSDK_PATH)"
-    />
+          SourcePath="$(EMSDK_PATH)" />
   </ItemGroup>
 
   <ItemGroup>
@@ -128,6 +144,27 @@
   <ItemGroup Condition="'$(NeedsEMSDKNode)' == 'true' and '$(WindowsShell)' == 'true'">
     <HelixPreCommand Include="for /f %%i in ('dir $(_HelixLocalNodePath) /b') do $(EnvVarCommand) _HELIX_NODEJS_VERSION=%%i" />
     <HelixPreCommand Include="$(EnvVarCommand) PATH=$(_HelixLocalNodePath)/%_HELIX_NODEJS_VERSION%/bin%3B%PATH%" />
+  </ItemGroup>
+
+  <!--
+    CoreCLR WBT (BuildWasmApps) needs BrowserWasmApp.CoreCLR.targets and its import chain on Helix.
+    The NeedsEMSDK payload already ships BrowserBuildTargetsDir (build/wasm), WasmAppBuilderDir
+    (build/WasmAppBuilder) and EmSdk (build/emsdk); eng/native.wasm.targets + AcquireEmscriptenSdk.targets
+    are shipped as build/eng. These env vars bridge those payload locations to the MSBuild properties
+    consumed by BrowserWasmApp.CoreCLR.targets when the test-created project imports it.
+  -->
+  <ItemGroup Condition="'$(RuntimeFlavor)' == 'CoreCLR' and '$(Scenario)' == 'BuildWasmApps' and '$(WindowsShell)' != 'true'">
+    <HelixPreCommand Include="$(EnvVarCommand) REPOSITORY_ENGINEERING_DIR=$HELIX_CORRELATION_PAYLOAD/build/eng/" />
+    <HelixPreCommand Include="$(EnvVarCommand) BROWSER_BUILD_TARGETS_DIR=$HELIX_CORRELATION_PAYLOAD/build/wasm/" />
+    <HelixPreCommand Include="$(EnvVarCommand) WASM_APP_BUILDER_TASKS_ASSEMBLY_PATH=$HELIX_CORRELATION_PAYLOAD/build/WasmAppBuilder/WasmAppBuilder.dll" />
+    <HelixPreCommand Include="$(EnvVarCommand) EMSDK_PATH=$HELIX_CORRELATION_PAYLOAD/build/emsdk/" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(RuntimeFlavor)' == 'CoreCLR' and '$(Scenario)' == 'BuildWasmApps' and '$(WindowsShell)' == 'true'">
+    <HelixPreCommand Include="$(EnvVarCommand) REPOSITORY_ENGINEERING_DIR=%HELIX_CORRELATION_PAYLOAD%\build\eng\" />
+    <HelixPreCommand Include="$(EnvVarCommand) BROWSER_BUILD_TARGETS_DIR=%HELIX_CORRELATION_PAYLOAD%\build\wasm\" />
+    <HelixPreCommand Include="$(EnvVarCommand) WASM_APP_BUILDER_TASKS_ASSEMBLY_PATH=%HELIX_CORRELATION_PAYLOAD%\build\WasmAppBuilder\WasmAppBuilder.dll" />
+    <HelixPreCommand Include="$(EnvVarCommand) EMSDK_PATH=%HELIX_CORRELATION_PAYLOAD%\build\emsdk\" />
   </ItemGroup>
 
   <PropertyGroup Condition="'$(Scenario)' == 'BuildWasmApps'">
@@ -172,6 +209,11 @@
 
   <Import Project="$(RepositoryEngineeringDir)testing\wasm-provisioning.targets" />
 
+  <UsingTask TaskName="Microsoft.DotNet.HelixTestTasks.GroupWorkItems"
+             AssemblyFile="$(HelixTestTasksAssemblyPath)" />
+  <UsingTask TaskName="Microsoft.DotNet.HelixTestTasks.ComputeBatchTimeout"
+             AssemblyFile="$(HelixTestTasksAssemblyPath)" />
+
   <Target Name="PrepareHelixCorrelationPayload_Wasm">
     <Error Condition="'$(Scenario)' != 'WasmTestOnV8' and 
                       '$(Scenario)' != 'WasmTestOnChrome' and 
@@ -204,15 +246,41 @@
     <ItemGroup Condition="'$(NeedsEMSDK)' == 'true'">
       <HelixCorrelationPayload Include="$(EmSdkDirForHelixPayload)"              Destination="build/emsdk" />
       <HelixCorrelationPayload Include="$(WasmAppBuilderDir)"                    Destination="build/WasmAppBuilder" />
-      <HelixCorrelationPayload Include="$(MonoAOTCompilerDir)"                   Destination="build/MonoAOTCompiler" />
-      <HelixCorrelationPayload Include="$(MicrosoftNetCoreAppRuntimePackDir)"    Destination="build/microsoft.netcore.app.runtime.browser-wasm" />
       <HelixCorrelationPayload Include="$(BrowserBuildTargetsDir)"               Destination="build/wasm" />
+
+      <!-- WebAssembly SDK pack is required by the `dotnet new wasmbrowser` template regardless of runtime flavor. -->
+      <HelixCorrelationPayload Include="$(MonoProjectRoot)\nuget\Microsoft.NET.Sdk.WebAssembly.Pack\build\" Destination="build/WasmSdkTargets" />
+      <HelixCorrelationPayload Include="$(ArtifactsBinDir)\Microsoft.NET.Sdk.WebAssembly.Pack.Tasks\$(RuntimeConfiguration)\" Destination="build/WasmSdkTools" />
+    </ItemGroup>
+
+    <!-- Mono-only build-tooling payloads. CoreCLR per-app relink does not use MonoAOT / Mono build tasks,
+         and acquires the runtime pack on the Helix worker via the downloaded nupkg instead of shipping
+         the raw pack layout as a correlation payload. -->
+    <ItemGroup Condition="'$(NeedsEMSDK)' == 'true' and '$(RuntimeFlavor)' != 'CoreCLR'">
+      <HelixCorrelationPayload Include="$(MicrosoftNetCoreAppRuntimePackDir)"    Destination="build/microsoft.netcore.app.runtime.browser-wasm" />
+      <HelixCorrelationPayload Include="$(MonoAOTCompilerDir)"                   Destination="build/MonoAOTCompiler" />
       <HelixCorrelationPayload Include="$(WasmBuildTargetsDir)"                  Destination="build/wasm-shared" />
       <HelixCorrelationPayload Include="$(MonoAotCrossDir)"                      Destination="build/cross" />
       <HelixCorrelationPayload Include="$(MonoTargetsTasksDir)"                  Destination="build/MonoTargetsTasks" />
+    </ItemGroup>
 
-      <HelixCorrelationPayload Include="$(MonoProjectRoot)\nuget\Microsoft.NET.Sdk.WebAssembly.Pack\build\" Destination="build/WasmSdkTargets" />
-      <HelixCorrelationPayload Include="$(ArtifactsBinDir)\Microsoft.NET.Sdk.WebAssembly.Pack.Tasks\$(RuntimeConfiguration)\" Destination="build/WasmSdkTools" />
+    <!-- CoreCLR WBT needs eng/native.wasm.targets + eng/AcquireEmscriptenSdk.targets (the import chain
+         of BrowserWasmApp.CoreCLR.targets) shipped alongside BrowserBuildTargetsDir. Stage them into
+         a directory first — HelixCorrelationPayload on individual files causes the Helix client to
+         try unzipping them as archives. -->
+    <PropertyGroup Condition="'$(NeedsEMSDK)' == 'true' and '$(RuntimeFlavor)' == 'CoreCLR'">
+      <_CoreCLRWbtEngPayloadDir>$(ArtifactsObjDir)helix-staging\coreclr-wbt-eng\</_CoreCLRWbtEngPayloadDir>
+    </PropertyGroup>
+    <ItemGroup Condition="'$(NeedsEMSDK)' == 'true' and '$(RuntimeFlavor)' == 'CoreCLR'">
+      <_CoreCLRWbtEngFiles Include="$(RepositoryEngineeringDir)native.wasm.targets" />
+      <_CoreCLRWbtEngFiles Include="$(RepositoryEngineeringDir)AcquireEmscriptenSdk.targets" />
+    </ItemGroup>
+    <Copy Condition="'$(NeedsEMSDK)' == 'true' and '$(RuntimeFlavor)' == 'CoreCLR'"
+          SourceFiles="@(_CoreCLRWbtEngFiles)"
+          DestinationFolder="$(_CoreCLRWbtEngPayloadDir)"
+          SkipUnchangedFiles="true" />
+    <ItemGroup Condition="'$(NeedsEMSDK)' == 'true' and '$(RuntimeFlavor)' == 'CoreCLR'">
+      <HelixCorrelationPayload Include="$(_CoreCLRWbtEngPayloadDir)" Destination="build/eng" />
     </ItemGroup>
 
     <!-- copy node separately only if EMSDK is not being included -->
@@ -228,7 +296,7 @@
   <Target Name="PrepareForBuildHelixWorkItems_Wasm"
           DependsOnTargets="$(PrepareForBuildHelixWorkItems_WasmDependsOn);$(HelixExtensionTargets)" />
 
-  <Target Name="_AddWorkItemsForLibraryTests" Condition="'$(IsRunningLibraryTests)' == 'true'">
+  <Target Name="_AddWorkItemsForLibraryTests" Condition="'$(IsRunningLibraryTests)' == 'true' and '$(WasmBatchLibraryTests)' != 'true'">
     <ItemGroup Label="Add samples">
       <_WasmWorkItem Include="$(TestArchiveRoot)browseronly/**/*.zip"     Condition="'$(Scenario)' == 'WasmTestOnChrome' or '$(Scenario)' == 'WasmTestOnFirefox'" />
       <_WasmWorkItem Include="$(TestArchiveRoot)chromeonly/**/*.zip"      Condition="'$(Scenario)' == 'WasmTestOnChrome'" />
@@ -271,6 +339,80 @@
         <Timeout Condition="'%(FileName)' == 'System.Private.Xml.Tests' and '$(WasmEnableThreads)' == 'true'">01:20:00</Timeout>
       </HelixWorkItem>
 
+    </ItemGroup>
+  </Target>
+
+  <Target Name="_AddBatchedWorkItemsForLibraryTests"
+          Condition="'$(IsRunningLibraryTests)' == 'true' and '$(WasmBatchLibraryTests)' == 'true'">
+
+    <!-- Collect all test ZIPs (batching only runs for Chrome, see WasmBatchLibraryTests condition) -->
+    <ItemGroup>
+      <_WasmBatchWorkItem Include="$(TestArchiveRoot)browseronly/**/*.zip" />
+      <_WasmBatchWorkItem Include="$(TestArchiveRoot)chromeonly/**/*.zip" />
+    </ItemGroup>
+
+    <!-- Sample apps have different runners (no RunTests.sh), keep them as individual work items -->
+    <ItemGroup>
+      <_WasmBatchSampleZip Include="$(TestArchiveRoot)runonly/**/*.Browser.*.Sample.zip" />
+
+      <HelixWorkItem Include="@(_WasmBatchSampleZip -> '$(WorkItemPrefix)%(FileName)')">
+        <PayloadArchive>%(Identity)</PayloadArchive>
+        <Command>$(HelixCommand)</Command>
+        <Timeout>$(_workItemTimeout)</Timeout>
+      </HelixWorkItem>
+    </ItemGroup>
+
+    <ItemGroup>
+      <_WasmBatchDefaultItems Include="$(WorkItemArchiveWildCard)" Exclude="$(HelixCorrelationPayload)" />
+    </ItemGroup>
+
+    <!-- Batch only test suites (not sample apps) -->
+    <ItemGroup>
+      <_WasmBatchAllItems Include="@(_WasmBatchWorkItem)" />
+      <_WasmBatchAllItems Include="@(_WasmBatchDefaultItems)" />
+    </ItemGroup>
+
+    <!-- Assign batch IDs via greedy bin-packing -->
+    <GroupWorkItems Items="@(_WasmBatchAllItems)" BatchSize="20" LargeThreshold="$(_WasmBatchLargeThreshold)">
+      <Output TaskParameter="GroupedItems" ItemName="_WasmGroupedItem" />
+    </GroupWorkItems>
+
+    <!-- Determine unique batch IDs -->
+    <ItemGroup>
+      <_WasmBatchId Include="@(_WasmGroupedItem -> '%(BatchId)')" />
+      <_WasmUniqueBatchId Include="@(_WasmBatchId->Distinct())" />
+    </ItemGroup>
+
+    <!-- Clean stale batch staging from previous runs, then create fresh directories -->
+    <RemoveDir Directories="$(IntermediateOutputPath)helix-batches/" />
+    <MakeDir Directories="$(IntermediateOutputPath)helix-batches/batch-%(_WasmUniqueBatchId.Identity)/" />
+    <Copy SourceFiles="@(_WasmGroupedItem)" DestinationFolder="$(IntermediateOutputPath)helix-batches/batch-%(BatchId)/" />
+    <Copy SourceFiles="$(RepositoryEngineeringDir)testing/WasmBatchRunner.sh"
+          DestinationFolder="$(IntermediateOutputPath)helix-batches/batch-%(_WasmUniqueBatchId.Identity)/" />
+
+    <!-- Compute per-batch timeout: 20 minutes per suite, minimum 30 minutes -->
+    <ComputeBatchTimeout GroupedItems="@(_WasmGroupedItem)" BatchIds="@(_WasmUniqueBatchId)"
+                          ItemPrefix="$(WorkItemPrefix)" BatchOutputDir="$(IntermediateOutputPath)helix-batches/">
+      <Output TaskParameter="TimedItems" ItemName="_WasmTimedBatchItem" />
+    </ComputeBatchTimeout>
+
+    <!-- Create ZIP archives from batch directories (sendtohelixhelp.proj requires PayloadArchive) -->
+    <ZipDirectory SourceDirectory="%(_WasmTimedBatchItem.BatchDir)"
+                  DestinationFile="$(IntermediateOutputPath)helix-batches/%(_WasmTimedBatchItem.Identity).zip"
+                  Overwrite="true" />
+
+    <!-- Build a batch-specific HelixCommand that runs WasmBatchRunner.sh instead of RunTests.sh -->
+    <Error Condition="!$(HelixCommand.Contains('./RunTests.sh'))"
+           Text="WasmBatchLibraryTests: expected HelixCommand to contain './RunTests.sh'. Got: $(HelixCommand)" />
+    <PropertyGroup>
+      <_WasmBatchHelixCommand>$(HelixCommand.Replace('./RunTests.sh', 'chmod +x WasmBatchRunner.sh &amp;&amp; ./WasmBatchRunner.sh'))</_WasmBatchHelixCommand>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <HelixWorkItem Include="@(_WasmTimedBatchItem)">
+        <PayloadArchive>$(IntermediateOutputPath)helix-batches/%(Identity).zip</PayloadArchive>
+        <Command>$(_WasmBatchHelixCommand)</Command>
+      </HelixWorkItem>
     </ItemGroup>
   </Target>
 </Project>

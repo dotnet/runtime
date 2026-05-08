@@ -11,8 +11,8 @@ internal sealed class ManagedObjectWrapperHolderObject : IData<ManagedObjectWrap
     public ManagedObjectWrapperHolderObject(Target target, TargetPointer address)
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.ManagedObjectWrapperHolderObject);
-        WrappedObject = target.ReadPointer(address + (ulong)type.Fields[nameof(WrappedObject)].Offset);
-        Wrapper = target.ReadPointer(address + (ulong)type.Fields[nameof(Wrapper)].Offset);
+        WrappedObject = target.ReadPointerField(address, type, nameof(WrappedObject));
+        Wrapper = target.ReadPointerField(address, type, nameof(Wrapper));
     }
 
     public TargetPointer WrappedObject { get; init; }

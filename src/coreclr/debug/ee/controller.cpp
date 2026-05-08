@@ -6767,11 +6767,18 @@ bool DebuggerStepper::IsInterestingFrame(FrameInfo * pFrame)
 {
     LIMITED_METHOD_CONTRACT;
 
-    // Ignore managed exception handling frames
     if (pFrame->md != NULL)
     {
         MethodTable *pMT = pFrame->md->GetMethodTable();
+
+        // Ignore managed exception handling frames
         if ((pMT == g_pEHClass) || (pMT == g_pExceptionServicesInternalCallsClass))
+        {
+            return false;
+        }
+
+        // Ignore the runtime helper that invokes the main program entrypoint
+        if (pFrame->md == g_pEnvironmentCallEntryPointMethodDesc)
         {
             return false;
         }
@@ -8072,14 +8079,15 @@ bool DebuggerStepper::TriggerSingleStep(Thread *thread, const BYTE *ip)
     StackTraceTicket ticket(ip);
     info.GetStackInfo(ticket, GetThread(), LEAF_MOST_FRAME, NULL);
 
-    // This is a special case where we return from a managed method back to an interop stub.  This can
-    // only happen if there's no more managed method frames closer to the root and we want to perform
-    // a step out, or if we step-next off the end of a method called by an interop stub.  In either case,
-    // we'll get a single step in an interop stub, which we want to ignore.  We also want to enable trace
-    // call here, just in case this stub is about to call the managed target (in the reverse interop case).
-    if (fd->IsInteropStub())
+    // This is a special case where we return from a managed method back to the helper that invokes
+    // the main program entrypoint (Environment.CallEntryPoint) or an interop stub.  These are not
+    // interesting frames for the debugger - single-stepping into them should be treated like stepping
+    // into native code. Disable the single step and enable trace call / method enter so the stepper can
+    // catch the next interesting transition or, if stepping out through Environment.CallEntryPoint,
+    // let the process exit naturally.
+    if (fd == g_pEnvironmentCallEntryPointMethodDesc || fd->IsInteropStub())
     {
-        LOG((LF_CORDB,LL_INFO10000, "DS::TSS: not in managed code, Returning false (case 0)!\n"));
+        LOG((LF_CORDB,LL_INFO10000, "DS::TSS: in CallEntryPoint or interop stub, Returning false (case 0)!\n"));
         if (this->GetDCType() == DEBUGGER_CONTROLLER_STEPPER)
         {
             EnableTraceCall(info.m_activeFrame.fp);
@@ -9701,7 +9709,8 @@ bool DebuggerContinuableExceptionBreakpoint::SendEvent(Thread *thread, bool fIpC
             {
                 LOG((LF_CORDB, LL_INFO10000, "D::DDBP: HIT DATA BREAKPOINT INSIDE WRITE BARRIER...\n"));
                 DebuggerDataBreakpoint *pDataBreakpoint = new (interopsafe) DebuggerDataBreakpoint(thread);
-                pDataBreakpoint->AddAndActivateNativePatchForAddress((CORDB_ADDRESS_TYPE*)GetIP(&contextToAdjust), FramePointer::MakeFramePointer(GetFP(&contextToAdjust)), true, DPT_DEFAULT_TRACE_TYPE);
+                // Use LEAF_MOST_FRAME to bypass the frame pointer check in MatchPatch.
+                pDataBreakpoint->AddAndActivateNativePatchForAddress((CORDB_ADDRESS_TYPE*)GetIP(&contextToAdjust), LEAF_MOST_FRAME, true, DPT_DEFAULT_TRACE_TYPE);
             }
             else
             {

@@ -39,22 +39,28 @@ public class WebcilConverter
     );
 
     private const int SectionAlignment = 16;
+    private const int V0HeaderSize = 28;
+    private const int V1HeaderSize = 32;
 
     private readonly string _inputPath;
     private readonly string _outputPath;
+    private readonly int _webcilVersion;
 
     private string InputPath => _inputPath;
 
     public bool WrapInWebAssembly { get; set; } = true;
 
-    private WebcilConverter(string inputPath, string outputPath)
+    private WebcilConverter(string inputPath, string outputPath, int webcilVersion)
     {
+        if (webcilVersion != 0 && webcilVersion != 1)
+            throw new ArgumentOutOfRangeException(nameof(webcilVersion), webcilVersion, "Only webcil version 0 and 1 are supported");
         _inputPath = inputPath;
         _outputPath = outputPath;
+        _webcilVersion = webcilVersion;
     }
 
-    public static WebcilConverter FromPortableExecutable(string inputPath, string outputPath)
-        => new WebcilConverter(inputPath, outputPath);
+    public static WebcilConverter FromPortableExecutable(string inputPath, string outputPath, int webcilVersion = 0)
+        => new WebcilConverter(inputPath, outputPath, webcilVersion);
 
     public void ConvertToWebcil()
     {
@@ -104,9 +110,9 @@ public class WebcilConverter
         public static FilePosition operator +(FilePosition left, int right) => new(left.Position + right);
     }
 
-    private static unsafe int SizeOfHeader()
+    private int SizeOfHeader()
     {
-        return sizeof(WebcilHeader);
+        return _webcilVersion >= 1 ? V1HeaderSize : V0HeaderSize;
     }
 
     public unsafe void GatherInfo(PEReader peReader, out WCFileInfo wcInfo, out PEFileInfo peInfo)
@@ -117,7 +123,7 @@ public class WebcilConverter
         var sections = headers.SectionHeaders;
         WebcilHeader header = default;
         header.Id = WebcilConstants.WEBCIL_MAGIC;
-        header.VersionMajor = WebcilConstants.WC_VERSION_MAJOR;
+        header.VersionMajor = (ushort)_webcilVersion;
         header.VersionMinor = WebcilConstants.WC_VERSION_MINOR;
         header.CoffSections = (ushort)coffHeader.NumberOfSections;
         header.Reserved0 = 0;
@@ -125,6 +131,10 @@ public class WebcilConverter
         header.PeCliHeaderSize = (uint)peHeader.CorHeaderTableDirectory.Size;
         header.PeDebugRva = (uint)peHeader.DebugTableDirectory.RelativeVirtualAddress;
         header.PeDebugSize = (uint)peHeader.DebugTableDirectory.Size;
+        if (_webcilVersion >= 1)
+        {
+            header.TableBase = uint.MaxValue;
+        }
 
         // current logical position in the output file
         FilePosition pos = SizeOfHeader();
@@ -174,7 +184,7 @@ public class WebcilConverter
                                 SectionStart: firstWCSection);
     }
 
-    private static void WriteHeader(Stream s, WebcilHeader webcilHeader)
+    private void WriteHeader(Stream s, WebcilHeader webcilHeader)
     {
         if (!BitConverter.IsLittleEndian)
         {
@@ -186,8 +196,12 @@ public class WebcilConverter
             webcilHeader.PeCliHeaderSize = BinaryPrimitives.ReverseEndianness(webcilHeader.PeCliHeaderSize);
             webcilHeader.PeDebugRva = BinaryPrimitives.ReverseEndianness(webcilHeader.PeDebugRva);
             webcilHeader.PeDebugSize = BinaryPrimitives.ReverseEndianness(webcilHeader.PeDebugSize);
+            if (_webcilVersion >= 1)
+            {
+                webcilHeader.TableBase = BinaryPrimitives.ReverseEndianness(webcilHeader.TableBase);
+            }
         }
-        WriteStructure(s, webcilHeader);
+        WriteStructure(s, webcilHeader, SizeOfHeader());
     }
 
     private static void WriteSectionHeaders(Stream s, ImmutableArray<WebcilSectionHeader> sectionsHeaders)
@@ -223,6 +237,18 @@ public class WebcilConverter
             s.Write(new ReadOnlySpan<byte>(p, sizeof(T)));
         }
     }
+
+    private static void WriteStructure<T>(Stream s, T structure, int size)
+        where T : unmanaged
+    {
+        unsafe
+        {
+            if (size > sizeof(T))
+                throw new ArgumentOutOfRangeException(nameof(size), size, $"size exceeds struct size {sizeof(T)}");
+            byte* p = (byte*)&structure;
+            s.Write(new ReadOnlySpan<byte>(p, size));
+        }
+    }
 #else
     private static void WriteStructure<T>(Stream s, T structure)
         where T : unmanaged
@@ -235,6 +261,27 @@ public class WebcilConverter
             ptr = Marshal.AllocHGlobal(size);
             Marshal.StructureToPtr(structure, ptr, false);
             Marshal.Copy(ptr, buffer, 0, size);
+        }
+        finally
+        {
+            Marshal.FreeHGlobal(ptr);
+        }
+        s.Write(buffer, 0, size);
+    }
+
+    private static void WriteStructure<T>(Stream s, T structure, int size)
+        where T : unmanaged
+    {
+        int fullSize = Marshal.SizeOf<T>();
+        if (size > fullSize)
+            throw new ArgumentOutOfRangeException(nameof(size), size, $"size exceeds struct size {fullSize}");
+        byte[] buffer = new byte[fullSize];
+        IntPtr ptr = IntPtr.Zero;
+        try
+        {
+            ptr = Marshal.AllocHGlobal(fullSize);
+            Marshal.StructureToPtr(structure, ptr, false);
+            Marshal.Copy(ptr, buffer, 0, fullSize);
         }
         finally
         {

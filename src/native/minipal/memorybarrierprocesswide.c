@@ -44,7 +44,7 @@
 static bool CanFlushUsingMembarrier(void)
 {
 #ifdef TARGET_ANDROID
-    // Avoid calling membarrier on older Android versions where membarrier
+    // Avoid calling membarrier on older Android versions (older than API 29) where membarrier
     // may be barred by seccomp causing the process to be killed.
     int apiLevel = android_get_device_api_level();
     if (apiLevel < __ANDROID_API_Q__)

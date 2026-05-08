@@ -109,7 +109,7 @@ class OffsetsTool:
 		self.sys_includes=[]
 		self.target = None
 		self.target_args = []
-		android_api_level = "-D__ANDROID_API=21"
+		android_api_level = "-D__ANDROID_API=24"
 
 		if args.libclang_headers:
 			self.sys_includes+= [args.libclang_headers]

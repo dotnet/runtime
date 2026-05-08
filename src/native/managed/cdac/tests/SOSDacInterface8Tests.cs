@@ -12,7 +12,7 @@ public unsafe class SOSDacInterface8Tests
     private const int S_FALSE = 1;
     private const int E_FAIL = unchecked((int)0x80004005);
 
-    private static readonly GCHeapBuilder.GenerationInput[] s_generations =
+    private static readonly MockGCBuilder.Generation[] s_generations =
     [
         new() { StartSegment = 0x1A00_0000, AllocationStart = 0x1A00_1000, AllocContextPointer = 0x1A00_2000, AllocContextLimit = 0x1A00_3000 },
         new() { StartSegment = 0x1B00_0000, AllocationStart = 0x1B00_1000, AllocContextPointer = 0, AllocContextLimit = 0 },
@@ -72,7 +72,7 @@ public unsafe class SOSDacInterface8Tests
     [ClassData(typeof(MockTarget.StdArch))]
     public void GetNumberGenerations_WithFiveGenerations(MockTarget.Architecture arch)
     {
-        var fiveGenerations = new GCHeapBuilder.GenerationInput[]
+        var fiveGenerations = new MockGCBuilder.Generation[]
         {
             new() { StartSegment = 0xA000_0000, AllocationStart = 0xA000_1000, AllocContextPointer = 0xA000_2000, AllocContextLimit = 0xA000_3000 },
             new() { StartSegment = 0xB000_0000, AllocationStart = 0xB000_1000, AllocContextPointer = 0, AllocContextLimit = 0 },

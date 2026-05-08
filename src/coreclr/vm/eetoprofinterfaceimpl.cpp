@@ -599,8 +599,7 @@ HRESULT EEToProfInterfaceImpl::Init(
 
     m_pProfToEE = pProfToEE;
 
-    m_csGCRefDataFreeList = csGCRefDataFreeList.Extract();
-    csGCRefDataFreeList = NULL;
+    m_csGCRefDataFreeList = csGCRefDataFreeList.Detach();
 
     m_pFunctionIDHashTable = pFunctionIDHashTable.Extract();
     pFunctionIDHashTable = NULL;

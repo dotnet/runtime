@@ -3258,23 +3258,23 @@ int UnwindCursor<A, R>::stepThroughSigReturn() {
   pint_t bp = this->getReg(UNW_X86_64_RBP);
   vregs *regs = (vregs *)(bp + 0x70);
 
-  _registers.setRegister(UNW_REG_IP, regs->rip);
-  _registers.setRegister(UNW_REG_SP, regs->rsp);
-  _registers.setRegister(UNW_X86_64_RAX, regs->rax);
-  _registers.setRegister(UNW_X86_64_RDX, regs->rdx);
-  _registers.setRegister(UNW_X86_64_RCX, regs->rcx);
-  _registers.setRegister(UNW_X86_64_RBX, regs->rbx);
-  _registers.setRegister(UNW_X86_64_RSI, regs->rsi);
-  _registers.setRegister(UNW_X86_64_RDI, regs->rdi);
-  _registers.setRegister(UNW_X86_64_RBP, regs->rbp);
-  _registers.setRegister(UNW_X86_64_R8, regs->r8);
-  _registers.setRegister(UNW_X86_64_R9, regs->r9);
-  _registers.setRegister(UNW_X86_64_R10, regs->r10);
-  _registers.setRegister(UNW_X86_64_R11, regs->r11);
-  _registers.setRegister(UNW_X86_64_R12, regs->r12);
-  _registers.setRegister(UNW_X86_64_R13, regs->r13);
-  _registers.setRegister(UNW_X86_64_R14, regs->r14);
-  _registers.setRegister(UNW_X86_64_R15, regs->r15);
+  _registers.setRegister(UNW_REG_IP, regs->rip, 0);
+  _registers.setRegister(UNW_REG_SP, regs->rsp, 0);
+  _registers.setRegister(UNW_X86_64_RAX, regs->rax, 0);
+  _registers.setRegister(UNW_X86_64_RDX, regs->rdx, 0);
+  _registers.setRegister(UNW_X86_64_RCX, regs->rcx, 0);
+  _registers.setRegister(UNW_X86_64_RBX, regs->rbx, 0);
+  _registers.setRegister(UNW_X86_64_RSI, regs->rsi, 0);
+  _registers.setRegister(UNW_X86_64_RDI, regs->rdi, 0);
+  _registers.setRegister(UNW_X86_64_RBP, regs->rbp, 0);
+  _registers.setRegister(UNW_X86_64_R8, regs->r8, 0);
+  _registers.setRegister(UNW_X86_64_R9, regs->r9, 0);
+  _registers.setRegister(UNW_X86_64_R10, regs->r10, 0);
+  _registers.setRegister(UNW_X86_64_R11, regs->r11, 0);
+  _registers.setRegister(UNW_X86_64_R12, regs->r12, 0);
+  _registers.setRegister(UNW_X86_64_R13, regs->r13, 0);
+  _registers.setRegister(UNW_X86_64_R14, regs->r14, 0);
+  _registers.setRegister(UNW_X86_64_R15, regs->r15, 0);
   // TODO: XMM
 #endif // defined(_LIBUNWIND_TARGET_X86_64)
 

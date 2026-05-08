@@ -504,46 +504,6 @@ class StubLinkStubManager : public StubManager
 #endif
 } ;
 
-#ifdef FEATURE_DYNAMIC_CODE_COMPILED
-//
-// Stub manager for jump stubs created by ExecutionManager::jumpStub()
-//
-typedef VPTR(class JumpStubStubManager) PTR_JumpStubStubManager;
-
-class JumpStubStubManager : public StubManager
-{
-    VPTR_VTABLE_CLASS(JumpStubStubManager, StubManager)
-
-  public:
-
-    SPTR_DECL(JumpStubStubManager, g_pManager);
-
-    static void Init();
-
-#ifndef DACCESS_COMPILE
-    JumpStubStubManager() {LIMITED_METHOD_CONTRACT;}
-    ~JumpStubStubManager() {WRAPPER_NO_CONTRACT;}
-
-#endif
-
-#ifdef _DEBUG
-    virtual const char * DbgGetName() { LIMITED_METHOD_CONTRACT; return "JumpStubStubManager"; }
-#endif
-
-    virtual BOOL CheckIsStub_Internal(PCODE stubStartAddress);
-
-    virtual BOOL DoTraceStub(PCODE stubStartAddress, TraceDestination *trace);
-
-#ifdef DACCESS_COMPILE
-    virtual void DoEnumMemoryRegions(CLRDataEnumMemoryFlags flags);
-
-  protected:
-    virtual LPCWSTR GetStubManagerName(PCODE addr)
-        { LIMITED_METHOD_CONTRACT; return W("JumpStub"); }
-#endif
-};
-#endif // FEATURE_DYNAMIC_CODE_COMPILED
-
 //
 // Stub manager for code sections. It forwards the query to the more appropriate
 // stub manager, or handles the query itself.

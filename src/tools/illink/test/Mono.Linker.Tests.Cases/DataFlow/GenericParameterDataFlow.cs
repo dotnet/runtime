@@ -202,10 +202,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
         {
         }
 
-        [ExpectedWarning("IL2091", nameof(GenericBaseTypeWithRequirements<T>))]
         class DerivedTypeWithOpenGenericOnBase<T> : GenericBaseTypeWithRequirements<T>
         {
-            // Analyzer does not see the base class constructor
             [ExpectedWarning("IL2091", nameof(GenericBaseTypeWithRequirements<T>))]
             public DerivedTypeWithOpenGenericOnBase() { }
         }
@@ -215,11 +213,10 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             new DerivedTypeWithOpenGenericOnBaseWithRUCOnBase<TestType>();
         }
 
-        [ExpectedWarning("IL2091", nameof(BaseTypeWithOpenGenericDAMTAndRUC<T>))]
         [ExpectedWarning("IL2091", nameof(IGenericInterfaceTypeWithRequirements<T>))]
         class DerivedTypeWithOpenGenericOnBaseWithRUCOnBase<T> : BaseTypeWithOpenGenericDAMTAndRUC<T>, IGenericInterfaceTypeWithRequirements<T>
         {
-            [ExpectedWarning("IL2091", nameof(DerivedTypeWithOpenGenericOnBaseWithRUCOnBase<T>))]
+            [ExpectedWarning("IL2091", nameof(BaseTypeWithOpenGenericDAMTAndRUC<T>))]
             [ExpectedWarning("IL2026", nameof(BaseTypeWithOpenGenericDAMTAndRUC<T>))]
             public DerivedTypeWithOpenGenericOnBaseWithRUCOnBase() { }
         }
@@ -233,7 +230,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
         {
             new DerivedTypeWithOpenGenericOnBaseWithRUCOnDerived<TestType>();
         }
-        [ExpectedWarning("IL2091", nameof(BaseTypeWithOpenGenericDAMT<T>))]
+
         [ExpectedWarning("IL2091", nameof(IGenericInterfaceTypeWithRequirements<T>))]
         [RequiresUnreferencedCode("RUC")]
         class DerivedTypeWithOpenGenericOnBaseWithRUCOnDerived<T> : BaseTypeWithOpenGenericDAMT<T>, IGenericInterfaceTypeWithRequirements<T>
@@ -467,7 +464,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
         {
         }
 
-        [ExpectedWarning("IL2091", nameof(BaseForPartialInstantiation<TestType, TOuter>), "'TMethods'")]
         class PartialyInstantiatedMethods<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)] TOuter>
             : BaseForPartialInstantiation<TestType, TOuter>
         {
@@ -905,7 +901,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                     new GenericTypeArgument<GenericRequires<T>.Nested>();
                 }
 
-                [ExpectedWarning("IL2091")]
                 public class DerivedFromNestedType : GenericRequires<T>.Nested
                 {
                     [ExpectedWarning("IL2091")]

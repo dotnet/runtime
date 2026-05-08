@@ -118,13 +118,16 @@ bool CodeGen::genStackPointerAdjustment(ssize_t spDelta, regNumber tmpReg)
 }
 
 //------------------------------------------------------------------------
-// genCallFinally: Generate a call to the finally block.
+// genCallFinally: Generate a call to a finally.
 //
-BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
+// Arguments:
+//   block - callfinally block
+//
+void CodeGen::genCallFinally(BasicBlock* block)
 {
     assert(block->KindIs(BBJ_CALLFINALLY));
 
-    BasicBlock* nextBlock = block->Next();
+    BasicBlock* const nextBlock = block->Next();
 
     if (block->HasFlag(BBF_RETLESS_CALL))
     {
@@ -135,7 +138,7 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
             instGen(INS_BREAKPOINT);
         }
 
-        return block;
+        return;
     }
     else
     {
@@ -163,8 +166,6 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
         }
 
         GetEmitter()->emitEnableGC();
-
-        return nextBlock;
     }
 }
 
@@ -643,6 +644,17 @@ void CodeGen::genTableBasedSwitch(GenTree* treeNode)
 }
 
 //------------------------------------------------------------------------
+// genNonLocalJmp: Not supported for arm32.
+//
+// Parameters:
+//   tree - the GT_NONLOCAL_JMP node
+//
+void CodeGen::genNonLocalJmp(GenTreeUnOp* tree)
+{
+    NYI_ARM("GT_NONLOCAL_JMP is not supported on arm32");
+}
+
+//------------------------------------------------------------------------
 // genJumpTable: emits the table and an instruction to get the address of the first element
 //
 void CodeGen::genJumpTable(GenTree* treeNode)
@@ -666,6 +678,17 @@ void CodeGen::genAsyncResumeInfo(GenTreeVal* treeNode)
     genMov32RelocatableDataLabel(m_compiler->eeGetJitDataOffs(fieldOffs), treeNode->GetRegNum());
 
     genProduceReg(treeNode);
+}
+
+//------------------------------------------------------------------------
+// genFtnEntry: Not supported for arm32.
+//
+// Parameters:
+//   treeNode - the GT_FTN_ENTRY node
+//
+void CodeGen::genFtnEntry(GenTree* treeNode)
+{
+    NYI_ARM("GT_FTN_ENTRY is not supported on arm32");
 }
 
 //------------------------------------------------------------------------
@@ -1853,6 +1876,15 @@ void CodeGen::genProfilingLeaveCallback(unsigned helper)
 #endif // PROFILING_SUPPORTED
 
 //------------------------------------------------------------------------
+// genOSRHandleTier0CalleeSavedRegistersAndFrame:
+//   Not called for arm without OSR support.
+//
+void CodeGen::genOSRHandleTier0CalleeSavedRegistersAndFrame()
+{
+    unreached();
+}
+
+//------------------------------------------------------------------------
 // genEstablishFramePointer: Set up the frame pointer by adding an offset to the stack pointer.
 //
 // Arguments:
@@ -2370,7 +2402,7 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
  *  Generates code for an EH funclet epilog.
  */
 
-void CodeGen::genFuncletEpilog()
+void CodeGen::genFuncletEpilog(BasicBlock* /* block */)
 {
 #ifdef DEBUG
     if (verbose)

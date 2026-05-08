@@ -12,11 +12,11 @@ internal sealed class ILCodeVersioningState : IData<ILCodeVersioningState>
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.ILCodeVersioningState);
 
-        FirstVersionNode = target.ReadPointer(address + (ulong)type.Fields[nameof(FirstVersionNode)].Offset);
-        ActiveVersionKind = target.Read<uint>(address + (ulong)type.Fields[nameof(ActiveVersionKind)].Offset);
-        ActiveVersionNode = target.ReadPointer(address + (ulong)type.Fields[nameof(ActiveVersionNode)].Offset);
-        ActiveVersionModule = target.ReadPointer(address + (ulong)type.Fields[nameof(ActiveVersionModule)].Offset);
-        ActiveVersionMethodDef = target.Read<uint>(address + (ulong)type.Fields[nameof(ActiveVersionMethodDef)].Offset);
+        FirstVersionNode = target.ReadPointerField(address, type, nameof(FirstVersionNode));
+        ActiveVersionKind = target.ReadField<uint>(address, type, nameof(ActiveVersionKind));
+        ActiveVersionNode = target.ReadPointerField(address, type, nameof(ActiveVersionNode));
+        ActiveVersionModule = target.ReadPointerField(address, type, nameof(ActiveVersionModule));
+        ActiveVersionMethodDef = target.ReadField<uint>(address, type, nameof(ActiveVersionMethodDef));
     }
 
     public TargetPointer FirstVersionNode { get; set; }

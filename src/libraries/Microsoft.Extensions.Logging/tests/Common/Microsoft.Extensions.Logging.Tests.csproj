@@ -3,6 +3,9 @@
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent);$(NetFrameworkCurrent)</TargetFrameworks>
     <EnableDefaultItems>true</EnableDefaultItems>
+    <NoWarn>$(NoWarn);NU1511</NoWarn>
+    <!-- https://github.com/dotnet/runtime/issues/126862 -->
+    <EnableAotAnalyzer>false</EnableAotAnalyzer>
   </PropertyGroup>
 
   <ItemGroup>

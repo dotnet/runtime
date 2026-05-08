@@ -32,6 +32,7 @@ DEFINE_INTERFACE_DISPATCH_STUB macro entries
 
 StubName textequ @CatStr( _RhpInterfaceDispatch, entries, <@0> )
 StubAVLocation textequ @CatStr( _RhpInterfaceDispatchAVLocation, entries )
+RaceRetryLabel textequ @CatStr( RaceRetry, entries )
 
     StubName proc public
 
@@ -43,13 +44,24 @@ StubAVLocation textequ @CatStr( _RhpInterfaceDispatchAVLocation, entries )
     ALTERNATE_ENTRY StubAVLocation
         cmp     dword ptr [ecx], ecx
 
+        ;; Save cell address on the stack before overwriting eax.
+        push    eax
+
         ;; eax currently contains the indirection cell address. We need to update it to point to the cache
         ;; block instead.
         mov     eax, [eax + OFFSETOF__InterfaceDispatchCell__m_pCache]
 
-        ;; Cache pointer is already loaded in the only scratch register we have so far, eax. We need
-        ;; another scratch register to hold the instance type so save the value of ebx and use that.
-        push    ebx
+        ;; Validate eax is a cache pointer matching the expected cache size.
+        ;; This compensates for a race where the stub was updated to expect a larger cache
+        ;; but we loaded a stale (smaller or non-cache) m_pCache value.
+        test    eax, IDC_CACHE_POINTER_MASK
+        jnz     RaceRetryLabel
+        cmp     dword ptr [eax + OFFSETOF__InterfaceDispatchCache__m_cEntries], entries
+        jne     RaceRetryLabel
+
+        ;; Cache pointer is validated. Replace saved cell address with ebx for the normal
+        ;; save/restore flow.
+        mov     dword ptr [esp], ebx
 
         ;; Load the MethodTable from the object instance in ebx.
         mov     ebx, [ecx]
@@ -65,6 +77,11 @@ CurrentEntry = CurrentEntry + 1
         mov     eax, [eax + OFFSETOF__InterfaceDispatchCache__m_pCell]
         pop     ebx
         jmp     RhpInterfaceDispatchSlow
+
+    RaceRetryLabel:
+        ;; Race detected: restore cell address and re-dispatch through the indirection cell
+        pop     eax
+        jmp     dword ptr [eax]
 
     StubName endp
 

@@ -293,4 +293,82 @@ public class RuntimeTypeSystemDumpTests : DumpTestBase
         bool isLoaded = loader.TryGetLoadedImageContents(moduleHandle, out _, out _, out _);
         Assert.True(isLoaded, "System.String's module should have loaded image contents");
     }
+
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
+    public void RuntimeTypeSystem_ConcreteTypesDoNotContainGenericVariables(TestConfiguration config)
+    {
+        InitializeDumpTest(config);
+        IRuntimeTypeSystem rts = Target.Contracts.RuntimeTypeSystem;
+
+        string[] globalNames = ["ObjectMethodTable", "StringMethodTable", "FreeObjectMethodTable"];
+        foreach (string globalName in globalNames)
+        {
+            TargetPointer mtGlobal = Target.ReadGlobalPointer(globalName);
+            TargetPointer mt = Target.ReadPointer(mtGlobal);
+            TypeHandle handle = rts.GetTypeHandle(mt);
+            Assert.False(rts.ContainsGenericVariables(handle),
+                $"{globalName} should not contain generic variables");
+        }
+    }
+
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
+    public void RuntimeTypeSystem_IsValueType(TestConfiguration config)
+    {
+        InitializeDumpTest(config);
+        IRuntimeTypeSystem rts = Target.Contracts.RuntimeTypeSystem;
+        ILoader loader = Target.Contracts.Loader;
+
+        // Object and String are not value types
+        TargetPointer objectMTGlobal = Target.ReadGlobalPointer("ObjectMethodTable");
+        TargetPointer objectMT = Target.ReadPointer(objectMTGlobal);
+        Assert.False(rts.IsValueType(rts.GetTypeHandle(objectMT)));
+
+        TargetPointer stringMTGlobal = Target.ReadGlobalPointer("StringMethodTable");
+        TargetPointer stringMT = Target.ReadPointer(stringMTGlobal);
+        Assert.False(rts.IsValueType(rts.GetTypeHandle(stringMT)));
+
+        // Int32 is a value type (TruePrimitive category)
+        TargetPointer systemAssembly = loader.GetSystemAssembly();
+        ModuleHandle coreLibModule = loader.GetModuleHandleFromAssemblyPtr(systemAssembly);
+        TypeHandle int32Type = rts.GetTypeByNameAndModule(
+            "Int32",
+            "System",
+            coreLibModule);
+        Assert.True(int32Type.Address != 0, "Could not find Int32 type in CoreLib");
+        Assert.True(rts.IsValueType(int32Type));
+
+        // Nullable<> is a value type (Category_Nullable) — loaded because Container<int>.Value is int?
+        TypeHandle nullableType = rts.GetTypeByNameAndModule(
+            "Nullable`1",
+            "System",
+            coreLibModule);
+        Assert.True(nullableType.Address != 0, "Could not find Nullable<> type in CoreLib");
+        Assert.True(rts.IsValueType(nullableType));
+    }
+
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
+    public void RuntimeTypeSystem_GenericTypeDefinitionContainsGenericVariables(TestConfiguration config)
+    {
+        InitializeDumpTest(config);
+        IRuntimeTypeSystem rts = Target.Contracts.RuntimeTypeSystem;
+        ILoader loader = Target.Contracts.Loader;
+
+        // Look up the generic type definition List<> in System.Private.CoreLib.
+        // The debuggee instantiates List<int>, so the runtime has loaded
+        // both the closed List<int> MT and the open List<T> type definition MT.
+        TargetPointer systemAssembly = loader.GetSystemAssembly();
+        ModuleHandle coreLibModule = loader.GetModuleHandleFromAssemblyPtr(systemAssembly);
+        TypeHandle listTypeDef = rts.GetTypeByNameAndModule(
+            "List`1",
+            "System.Collections.Generic",
+            coreLibModule);
+        Assert.True(listTypeDef.Address != 0, "Could not find List<> type definition in CoreLib");
+
+        Assert.True(rts.IsGenericTypeDefinition(listTypeDef));
+        Assert.True(rts.ContainsGenericVariables(listTypeDef),
+            "List<> generic type definition should contain generic variables");
+    }
 }
