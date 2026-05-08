@@ -62,7 +62,7 @@ namespace Wasm.Build.Tests
         public static BuildEnvironment s_buildEnv;
         private const string s_nugetInsertionTag = "<!-- TEST_RESTORE_SOURCES_INSERTION_LINE -->";
 
-        public static bool IsUsingWorkloads => s_buildEnv.IsWorkload;
+        public static bool IsUsingWorkloads => IsCoreClrRuntime || s_buildEnv.IsWorkload;
         public static bool IsNotUsingWorkloads => !s_buildEnv.IsWorkload;
         public static bool IsWorkloadWithMultiThreadingForDefaultFramework => s_buildEnv.IsWorkloadWithMultiThreadingForDefaultFramework;
         public static bool IsMonoRuntime => s_buildEnv.IsMonoRuntime;
