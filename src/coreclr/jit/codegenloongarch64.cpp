@@ -1461,7 +1461,7 @@ void CodeGen::genLclHeap(GenTree* tree)
     noway_assert(isFramePointerUsed()); // localloc requires Frame Pointer to be established since SP changes
     noway_assert(genStackLevel == 0);   // Can't have anything on the stack
 
-    bool const initMem = m_compiler->info.compInitMem || (tree->gtFlags & GTF_LCLHEAP_MUSTINIT);
+    bool const initMem = m_compiler->gtMustZeroLocalloc(tree);
 
     // compute the amount of memory to allocate to properly STACK_ALIGN.
     size_t amount = 0;

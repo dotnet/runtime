@@ -391,7 +391,7 @@ void CodeGen::genLclHeap(GenTree* tree)
     GenTree* size = tree->AsOp()->gtOp1;
     noway_assert((genActualType(size->gtType) == TYP_INT) || (genActualType(size->gtType) == TYP_I_IMPL));
 
-    bool const initMem = m_compiler->info.compInitMem || (tree->gtFlags & GTF_LCLHEAP_MUSTINIT);
+    bool const initMem = m_compiler->gtMustZeroLocalloc(tree);
 
     // Result of localloc will be returned in regCnt.
     // Also it used as temporary register in code generation

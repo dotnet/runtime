@@ -1867,7 +1867,7 @@ int LinearScan::BuildLclHeap(GenTree* tree)
     }
     else
     {
-        if (!(m_compiler->info.compInitMem || (tree->gtFlags & GTF_LCLHEAP_MUSTINIT)))
+        if (!m_compiler->gtMustZeroLocalloc(tree))
         {
             // For regCnt
             buildInternalIntRegisterDefForNode(tree);

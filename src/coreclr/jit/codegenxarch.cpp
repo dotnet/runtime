@@ -2767,7 +2767,7 @@ void CodeGen::genLclHeap(GenTree* tree)
     target_size_t stackAdjustment     = 0;
     target_size_t locAllocStackOffset = 0;
 
-    bool const initMem = m_compiler->info.compInitMem || (tree->gtFlags & GTF_LCLHEAP_MUSTINIT);
+    bool const initMem = m_compiler->gtMustZeroLocalloc(tree);
 
     // compute the amount of memory to allocate to properly STACK_ALIGN.
     size_t amount = 0;
