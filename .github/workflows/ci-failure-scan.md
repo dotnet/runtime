@@ -409,7 +409,21 @@ Build Analysis is strict: a malformed JSON block or an over-broad signature mean
 4. **The closing fence is exactly three backticks**, same length as the open.
 5. **Exactly one of `ErrorMessage` or `ErrorPattern` is present and non-empty.** Populating both is undefined behavior — Build Analysis may apply only one and you don't control which. Do not leave the unused field as `""` either; delete it. Empty signatures match nothing.
 6. **The signature is not a bare identifier.** A fully-qualified test name, a stack-frame line, or a bare exception type all appear in `[PASS]` and `[SKIP]` lines for the same test, so the signature would match every passing run going forward. This applies to BOTH `ErrorMessage` and `ErrorPattern` — a regex like `TestMethodName` or `Some\\.Class\\.TestMethod` is just as broken as the literal.
-7. **Negative-match before submitting.** Would `String.Contains("<your-signature>")` (or your regex) accidentally match (a) `[PASS]` / `[SKIP]` lines for the same test, (b) other tests in the same assembly, or (c) build-time output (Crossgen2, ilasm, MSBuild)? If yes, narrow it.
+7. **Negative-match before submitting.** If you have the failing log on disk (Helix work-item console, AzDO step log), run a smoke test against it — eyeballing the signature catches roughly nothing. Build Analysis's `ErrorMessage` matcher is `String.Contains` ordinal case-sensitive, which `grep -F` reproduces exactly:
+
+   ```bash
+   grep -Fc "<your ErrorMessage value>" failure.log                                # > 0 = matches the failure
+   grep -F  "<your ErrorMessage value>" failure.log | grep -E '^\[(PASS|SKIP)\]'   # MUST be empty
+   ```
+
+   For `ErrorPattern`, use `grep -E` — different regex flavor than .NET's `NonBacktracking`, but close enough to flag over-broad patterns:
+
+   ```bash
+   grep -Ec '<your ErrorPattern>' failure.log
+   grep -E  '<your ErrorPattern>' failure.log | grep -E '^\[(PASS|SKIP)\]'         # MUST be empty
+   ```
+
+   If the second command in either pair prints anything, the signature also matches `[PASS]` / `[SKIP]` lines for this test and will mute future passing runs. Narrow it. Also mentally check whether the signature would match (a) other tests in the same assembly, or (b) build-time output (Crossgen2, ilasm, MSBuild). The canonical validator is [`Test-KnownIssuePattern.ps1`](https://github.com/dotnet/arcade-skills/blob/main/plugins/dotnet-dnceng/skills/ci-analysis/scripts/Test-KnownIssuePattern.ps1) (uses the exact regex flavor, emits a validated JSON block); pwsh isn't in this workflow's tool allowlist today, so the `grep -F` / `grep -E` smoke test above is the in-band substitute.
 8. **Single-line, no escapes.** Build Analysis runs `String.Contains` (case-sensitive, ordinal) for `ErrorMessage` and `Regex` with `Singleline | IgnoreCase | NonBacktracking` and a 50ms-per-line timeout for `ErrorPattern`. Newlines, ANSI escapes (`\u001b[`), and time-prefixes (`[12:34:56.789]`) are not stripped from log lines before matching. Use the array form (below) for multi-line; use `[^\\n]*` instead of `.*` in regexes.
 9. **JSON escaping is correct.** Inside the JSON string value: `"` → `\"`, `\` → `\\`, real newlines → `\n`. For regex patterns this means **double escape**: a literal dot is `\\.` in JSON (the JSON parser consumes one backslash, leaving `\.` for the regex engine). A `\d` you actually want regex to see has to be written `\\d` in JSON. GitHub's issue Preview tab will flag invalid JSON — use it.
 
@@ -427,27 +441,6 @@ Both `ErrorMessage` and `ErrorPattern` accept an **array of strings**: each elem
 ```
 
 Rules: each element matches one line (the elements are NOT concatenated and matched as a single multi-line string). All elements must match in order. Don't mix `ErrorMessage` and `ErrorPattern` in the same array. Don't pad the array with generic tokens like `exitcode: 139` or `Crash` — they add no specificity and risk false negatives if the log format changes.
-
-##### Validate before filing
-
-If you have the failing log on disk (Helix work-item console, AzDO step log), run a literal-match smoke test before filing — this catches invisible-character / whitespace / time-prefix mismatches that defeat the eyeball check. Build Analysis's matcher is `String.Contains`, ordinal, case-sensitive, so `grep -F` (literal, case-sensitive) reproduces it for `ErrorMessage`:
-
-```bash
-# ErrorMessage — literal match; should print the offending failure line(s) at least once.
-grep -Fc "<your ErrorMessage value>" failure.log   # count > 0 = matches at least once
-grep -F  "<your ErrorMessage value>" failure.log | grep -E '^\[(PASS|SKIP)\]'   # MUST be empty
-```
-
-If the second command prints anything, the signature also matches `[PASS]` / `[SKIP]` lines for this test and will mute future passing runs. Narrow it.
-
-For `ErrorPattern` (regex), `grep -E` is a different flavor than .NET's `NonBacktracking` engine but is close enough to flag obviously over-broad patterns:
-
-```bash
-grep -Ec  '<your ErrorPattern>' failure.log
-grep -E   '<your ErrorPattern>' failure.log | grep -E '^\[(PASS|SKIP)\]'   # MUST be empty
-```
-
-The canonical validator is [`Test-KnownIssuePattern.ps1`](https://github.com/dotnet/arcade-skills/blob/main/plugins/dotnet-dnceng/skills/ci-analysis/scripts/Test-KnownIssuePattern.ps1) (uses the exact Build-Analysis regex flavor and produces a validated JSON block); pwsh isn't currently in this workflow's tool allowlist, so the `grep -F` / `grep -E` smoke test above is the in-band substitute.
 
 #### Signature examples — Bad → Good
 
