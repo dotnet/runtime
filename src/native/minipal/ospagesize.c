@@ -17,7 +17,7 @@ uint32_t minipal_getpagesize(void)
     uint32_t page_size = cached_page_size;
     if (page_size == 0)
     {
-        page_size = (uint32_t)getpagesize();
+        page_size = (uint32_t)sysconf(_SC_PAGESIZE);
         cached_page_size = page_size;
     }
     return page_size;

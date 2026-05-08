@@ -1084,7 +1084,7 @@ uint64_t GetAvailablePhysicalMemory()
     sz = sizeof(free_count);
     sysctlbyname("vm.stats.vm.v_free_count", &free_count, &sz, NULL, 0);
 
-    available = (inactive_count + laundry_count + free_count) * sysconf(_SC_PAGESIZE);
+    available = (inactive_count + laundry_count + free_count) * minipal_getpagesize();
 #elif defined(__HAIKU__)
     system_info info;
     if (get_system_info(&info) == B_OK)
@@ -1140,7 +1140,7 @@ uint64_t GetAvailablePageFile()
     rc = sysctlnametomib("vm.swap_info", mib, &length);
     if (rc == 0)
     {
-        int pagesize = getpagesize();
+        uint32_t pagesize = minipal_getpagesize();
         // Aggregate the information for all swap files on the system
         for (mib[2] = 0; ; mib[2]++)
         {
@@ -1161,7 +1161,7 @@ uint64_t GetAvailablePageFile()
     struct anoninfo ai;
     if (swapctl(SC_AINFO, &ai) != -1)
     {
-        int pagesize = getpagesize();
+        uint32_t pagesize = minipal_getpagesize();
         available = ai.ani_free * pagesize;
     }
 #elif HAVE_SYSINFO
