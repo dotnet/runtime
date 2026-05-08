@@ -359,8 +359,6 @@ namespace ILCompiler.ObjectWriter
             byte[] data = new byte[codeSize];
             body.Encode(data);
 
-            // We must emit the length prefix explicitly
-            codeWriter.WriteULEB128((ulong)codeSize);
             codeWriter.EmitData(data);
             _uniqueSymbols.Add(name.ToString(), _methodCount);
             _methodCount++;

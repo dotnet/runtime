@@ -25,12 +25,8 @@ namespace ILCompiler.DependencyAnalysis.Wasm
         public ObjectNode.ObjectData Encode(ISymbolDefinitionNode symbolDefinitionNode)
         {
 #if READYTORUN
-            int bodySize = FunctionBody.EncodeSize();
-            int sizePrefixLength = (int)DwarfHelper.SizeOfULEB128((ulong)bodySize);
-            byte[] encodedThunk = new byte[bodySize + sizePrefixLength];
-
-            DwarfHelper.WriteULEB128(encodedThunk, (ulong)bodySize);
-            FunctionBody.Encode(encodedThunk.AsSpan(sizePrefixLength));
+            byte[] encodedThunk = new byte[FunctionBody.EncodeSize()];
+            FunctionBody.Encode(encodedThunk);
 
             Relocation[] relocs = new Relocation[FunctionBody.EncodeRelocationCount()];
             FunctionBody.EncodeRelocations(relocs.AsSpan());
