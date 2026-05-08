@@ -3501,7 +3501,7 @@ public:
             if (argData[i].fullArgType != (CORDB_ADDRESS)0)
             {
                 _ASSERTE(g_pDebugger != NULL);
-                g_pDebugger->ReleaseRemoteBuffer((BYTE*)(CORDB_ADDRESS)argData[i].fullArgType, true);
+                g_pDebugger->ReleaseRemoteBuffer((BYTE*)CORDB_ADDRESS_TO_PTR(argData[i].fullArgType), true);
             }
         }
 

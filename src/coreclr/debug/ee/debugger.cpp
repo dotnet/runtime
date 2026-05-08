@@ -11019,7 +11019,7 @@ bool Debugger::HandleIPCEvent(DebuggerIPCEvent * pEvent)
             DebuggerIPCEvent * pResult = m_pRCThread->GetIPCEventReceiveBuffer();
             InitIPCEvent(pResult, DB_IPCE_RESOLVE_UPDATE_METADATA_1_RESULT, NULL);
 
-            pResult->MetadataUpdateRequest.pMetadataStart = (CORDB_ADDRESS)pData;
+            pResult->MetadataUpdateRequest.pMetadataStart = PTR_TO_CORDB_ADDRESS(pData);
             pResult->MetadataUpdateRequest.nMetadataSize = countBytes;
             pResult->hr = hr;
             LOG((LF_CORDB, LL_INFO1000000, "D::HIPCE metadataStart=0x%x, nMetadataSize=0x%x\n", pData, countBytes));
@@ -13405,9 +13405,9 @@ LONG Debugger::FirstChanceSuspendHijackWorker(CONTEXT *pContext,
         // Signal the RS to tell us what to do
         SPEW(fprintf(stderr, "0x%x D::FCHF: Signaling hijack started.\n", tid));
         SignalHijackStarted();
-        SPEW(fprintf(stderr, "0x%x D::FCHF: Signaling hijack started complete. DebugCounter=0x%x\n", tid, (UINT)const_cast<Portable<UINT>&>(pFcd->debugCounter)));
+        SPEW(fprintf(stderr, "0x%x D::FCHF: Signaling hijack started complete. DebugCounter=0x%x\n", tid, (UINT)pFcd->debugCounter));
 
-        if ((HijackAction)const_cast<Portable<HijackAction>&>(pFcd->action) == HIJACK_ACTION_WAIT)
+        if ((HijackAction)pFcd->action == HIJACK_ACTION_WAIT)
         {
             // This exception does NOT belong to the CLR.
             // If we belong to the CLR, then we either:
@@ -13456,10 +13456,10 @@ LONG Debugger::FirstChanceSuspendHijackWorker(CONTEXT *pContext,
 
         SPEW(fprintf(stderr, "0x%x D::FCHF: signaling HijackComplete.\n", tid));
         SignalHijackComplete();
-        SPEW(fprintf(stderr, "0x%x D::FCHF: done signaling HijackComplete. DebugCounter=0x%x\n", tid, (UINT)const_cast<Portable<UINT>&>(pFcd->debugCounter)));
+        SPEW(fprintf(stderr, "0x%x D::FCHF: done signaling HijackComplete. DebugCounter=0x%x\n", tid, (UINT)pFcd->debugCounter));
 
         // we should know what we are about to do now
-        _ASSERTE((HijackAction)const_cast<Portable<HijackAction>&>(pFcd->action) != HIJACK_ACTION_WAIT);
+        _ASSERTE((HijackAction)pFcd->action != HIJACK_ACTION_WAIT);
 
         // cleanup from above
         SPEW(fprintf(stderr, "0x%x D::FCHF: set debugger word = NULL.\n", tid));
@@ -13467,7 +13467,7 @@ LONG Debugger::FirstChanceSuspendHijackWorker(CONTEXT *pContext,
 
     } // end can't stop region
 
-    if ((HijackAction)const_cast<Portable<HijackAction>&>(pFcd->action) == HIJACK_ACTION_EXIT_HANDLED)
+    if ((HijackAction)pFcd->action == HIJACK_ACTION_EXIT_HANDLED)
     {
         SPEW(fprintf(stderr, "0x%x D::FCHF: exiting with CONTINUE_EXECUTION\n", tid));
 #if defined(OUT_OF_PROCESS_SETTHREADCONTEXT) && !defined(DACCESS_COMPILE)
@@ -13481,7 +13481,7 @@ LONG Debugger::FirstChanceSuspendHijackWorker(CONTEXT *pContext,
     else
     {
         SPEW(fprintf(stderr, "0x%x D::FCHF: exiting with CONTINUE_SEARCH\n", tid));
-        _ASSERTE((HijackAction)const_cast<Portable<HijackAction>&>(pFcd->action) == HIJACK_ACTION_EXIT_UNHANDLED);
+        _ASSERTE((HijackAction)pFcd->action == HIJACK_ACTION_EXIT_UNHANDLED);
         return EXCEPTION_CONTINUE_SEARCH;
     }
 }
@@ -13862,24 +13862,6 @@ Debugger::InsertToMethodInfoList( DebuggerMethodInfo *dmi )
     return hr;
 }
 
-//-----------------------------------------------------------------------------
-// Helper to get an SString through the IPC buffer.
-// We do this by putting the SString data into a LS_RS_buffer object,
-// and then the RS reads it out as soon as it's queued.
-// It's very very important that the SString's buffer is around while we send the event.
-// So we pass the SString by reference in case there's an implicit conversion (because
-// we don't want to do the conversion on a temporary object and then lose that object).
-//-----------------------------------------------------------------------------
-void SetLSBufferFromSString(Ls_Rs_StringBuffer * pBuffer, SString & str)
-{
-    // Copy string contents (+1 for null terminator) into a LS_RS_Buffer.
-    // Then the RS can pull it out as a null-terminated string.
-    pBuffer->SetLsData(
-        (BYTE*) str.GetUnicode(),
-        (str.GetCount() +1)* sizeof(WCHAR)
-    );
-}
-
 //*************************************************************
 // This method sends a log message over to the right side for the debugger to log it.
 //
@@ -13966,7 +13948,9 @@ void Debugger::SendRawLogMessage(
 
     ipce->FirstLogMessage.iLevel = iLevel;
     ipce->FirstLogMessage.szCategory = PTR_TO_CORDB_ADDRESS(pCategory->GetUnicode());
+    ipce->FirstLogMessage.cchCategory = (ULONG)pCategory->GetCount();
     ipce->FirstLogMessage.szContent = PTR_TO_CORDB_ADDRESS(pMessage->GetUnicode());
+    ipce->FirstLogMessage.cchContent = (ULONG)pMessage->GetCount();
 
     m_pRCThread->SendIPCEvent();
 }

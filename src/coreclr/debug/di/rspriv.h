@@ -3222,10 +3222,6 @@ public:
     // Queue the RC event.
     void QueueRCEvent(DebuggerIPCEvent * pManagedEvent);
 
-    // Read a null-terminated WCHAR string from the target process.
-    // Caller owns the returned buffer (use NewArrayHolder for RAII cleanup).
-    _Ret_maybenull_ WCHAR * ReadTargetNullTerminatedString(CORDB_ADDRESS targetAddr);
-
     // This copies a managed debug event from the IPC block and to pManagedEvent.
     // The event still needs to be marshalled.
     void CopyRCEventFromIPCBlock(DebuggerIPCEvent * pManagedEvent);

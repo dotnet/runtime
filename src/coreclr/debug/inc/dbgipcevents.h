@@ -1644,7 +1644,7 @@ enum NameChangeType
 struct MSLAYOUT DebuggerIPCE_FuncEvalArgData
 {
     RemoteAddress argHome;  // enregistered variable home
-    CORDB_ADDRESS argAddr;  // address if not enregistered
+    Portable<CORDB_ADDRESS> argAddr;  // address if not enregistered
     Portable<CorElementType> argElementType;
     Portable<UINT> fullArgTypeNodeCount; // Pointer to LS (DebuggerIPCE_TypeArgData *) buffer holding full description of the argument type (if needed - only needed for struct types)
     Portable<CORDB_ADDRESS> fullArgType; // Pointer to LS (DebuggerIPCE_TypeArgData *) buffer holding full description of the argument type (if needed - only needed for struct types)
@@ -2079,10 +2079,12 @@ struct MSLAYOUT DebuggerIPCEvent
 
         struct MSLAYOUT
         {
-            int iLevel;
+            Portable<int> iLevel;
 
             Portable<CORDB_ADDRESS> szCategory;
+            Portable<ULONG> cchCategory;
             Portable<CORDB_ADDRESS> szContent;
+            Portable<ULONG> cchContent;
         } FirstLogMessage;
 
         struct MSLAYOUT
@@ -2264,8 +2266,5 @@ struct MSLAYOUT DebuggerIPCEvent
 // A DebuggerIPCEvent must fit in the send & receive buffers, which are CorDBIPC_BUFFER_SIZE bytes.
 static_assert(sizeof(DebuggerIPCEvent) <= CorDBIPC_BUFFER_SIZE);
 static_assert(CorDBIPC_TRANSPORT_BUFFER_SIZE <= CorDBIPC_BUFFER_SIZE);
-
-// 2*sizeof(WCHAR) for the two string terminating characters in the FirstLogMessage
-#define LOG_MSG_PADDING         4
 
 #endif /* _DbgIPCEvents_h_ */

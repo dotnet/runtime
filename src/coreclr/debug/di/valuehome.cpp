@@ -440,7 +440,7 @@ void MemRegValueHome::GetEnregisteredValue(MemoryRange valueOutBuffer)
 void FloatRegValueHome::CopyToIPCEType(RemoteAddress * pRegAddr)
 {
     pRegAddr->kind = RAK_FLOAT;
-    pRegAddr->reg1Addr = NULL;
+    pRegAddr->reg1Addr = (CORDB_ADDRESS)0;
     pRegAddr->floatIndex = m_floatIndex;
 } // FloatRegValueHome::CopyToIPCEType
 
@@ -915,7 +915,7 @@ void HandleValueHome::SetValue(MemoryRange src, CordbType * pType)
 
     m_pProcess->InitIPCEvent(&event, DB_IPCE_SET_REFERENCE, true, VMPTR_AppDomain::NullPtr());
 
-    event.SetReference.objectRefAddress = NULL;
+    event.SetReference.objectRefAddress = (CORDB_ADDRESS)0;
     event.SetReference.vmObjectHandle = m_vmObjectHandle;
     event.SetReference.newReference = PTR_TO_CORDB_ADDRESS(*((void **)src.StartAddress()));
 

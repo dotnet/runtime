@@ -5170,13 +5170,26 @@ void CordbProcess::RawDispatchEvent(
             _ASSERTE(pThread != NULL);
             _ASSERTE(pAppDomain != NULL);
 
-            // szCategory and szContent are CORDB_ADDRESS pointers into the target.
-            // Read the null-terminated strings via ReadVirtual. The NewArrayHolders
-            // ensure cleanup when this block exits.
-            NewArrayHolder<WCHAR> wszCategory(
-                ReadTargetNullTerminatedString(pEvent->FirstLogMessage.szCategory));
-            NewArrayHolder<WCHAR> wszContent(
-                ReadTargetNullTerminatedString(pEvent->FirstLogMessage.szContent));
+            // Read category and content strings from target memory using
+            // the address and character count provided in the event.
+            ULONG cchCategory = pEvent->FirstLogMessage.cchCategory;
+            NewArrayHolder<WCHAR> wszCategory(new WCHAR[cchCategory + 1]);
+            ULONG32 cbRead;
+            IfFailThrow(m_pDACDataTarget->ReadVirtual(
+                pEvent->FirstLogMessage.szCategory,
+                reinterpret_cast<BYTE *>((WCHAR *)wszCategory),
+                cchCategory * sizeof(WCHAR),
+                &cbRead));
+            wszCategory[cchCategory] = W('\0');
+
+            ULONG cchContent = pEvent->FirstLogMessage.cchContent;
+            NewArrayHolder<WCHAR> wszContent(new WCHAR[cchContent + 1]);
+            IfFailThrow(m_pDACDataTarget->ReadVirtual(
+                pEvent->FirstLogMessage.szContent,
+                reinterpret_cast<BYTE *>((WCHAR *)wszContent),
+                cchContent * sizeof(WCHAR),
+                &cbRead));
+            wszContent[cchContent] = W('\0');
 
             {
                 PUBLIC_CALLBACK_IN_THIS_SCOPE(this, pLockHolder, pEvent);
@@ -5448,12 +5461,12 @@ void CordbProcess::RawDispatchEvent(
             // lookup the version of the function that we are mapping from
             // this is the one that is currently running
             pCurFunction = pModule->LookupOrCreateFunction(
-                pEvent->EnCRemap.funcMetadataToken, pEvent->EnCRemap.currentVersionNumber);
+                pEvent->EnCRemap.funcMetadataToken, (SIZE_T)(ULONG64)pEvent->EnCRemap.currentVersionNumber);
 
             // lookup the version of the function that we are mapping to
             // it will always be the most recent
             pResumeFunction = pModule->LookupOrCreateFunction(
-                    pEvent->EnCRemap.funcMetadataToken, pEvent->EnCRemap.resumeVersionNumber);
+                    pEvent->EnCRemap.funcMetadataToken, (SIZE_T)(ULONG64)pEvent->EnCRemap.resumeVersionNumber);
 
             _ASSERTE(pCurFunction->GetEnCVersionNumber() < pResumeFunction->GetEnCVersionNumber());
 
@@ -9185,73 +9198,6 @@ void Ls_Rs_StringBuffer::CopyLSDataToRS(ICorDebugDataTarget * pTarget)
     if (dwActualLenWithNull != dwExpectedLenWithNull)
     {
         ThrowHR(CORDBG_E_TARGET_INCONSISTENT);
-    }
-}
-
-//---------------------------------------------------------------------------------------
-// Read a null-terminated WCHAR string from the target process.
-// The caller owns the returned buffer and should free it with delete[] (or wrap
-// it in a NewArrayHolder<WCHAR> for automatic cleanup).
-//
-// Arguments:
-//    targetAddr - CORDB_ADDRESS of the null-terminated WCHAR string in the target.
-//
-// Returns:
-//    A heap-allocated WCHAR* copy of the string, or NULL if targetAddr is 0.
-//
-// Throws on ReadVirtual failure.
-//---------------------------------------------------------------------------------------
-WCHAR * CordbProcess::ReadTargetNullTerminatedString(CORDB_ADDRESS targetAddr)
-{
-    if (targetAddr == 0)
-    {
-        return NULL;
-    }
-
-    // Read the string in chunks to find the null terminator, similar to DacInstantiateStringW.
-    const ULONG32 chunkSize = 256;
-    const ULONG32 maxChars = 512 * 1024; // 1 MB cap to prevent unbounded allocation from corrupt targets
-    NewArrayHolder<WCHAR> buffer(NULL);
-    ULONG32 totalChars = 0;
-
-    for (;;)
-    {
-        if (totalChars >= maxChars)
-        {
-            ThrowHR(CORDBG_E_TARGET_INCONSISTENT);
-        }
-
-        ULONG32 newSize = totalChars + chunkSize;
-        WCHAR * newBuffer = new WCHAR[newSize];
-        if (buffer != NULL)
-        {
-            memcpy(newBuffer, (WCHAR *)buffer, totalChars * sizeof(WCHAR));
-        }
-        buffer = newBuffer;
-
-        ULONG32 cbRead;
-        HRESULT hr = m_pDACDataTarget->ReadVirtual(
-            targetAddr + totalChars * sizeof(WCHAR),
-            reinterpret_cast<BYTE *>(buffer.GetValue() + totalChars),
-            chunkSize * sizeof(WCHAR),
-            &cbRead);
-        IfFailThrow(hr);
-
-        ULONG32 charsRead = cbRead / sizeof(WCHAR);
-        for (ULONG32 i = 0; i < charsRead; i++)
-        {
-            if (buffer[totalChars + i] == W('\0'))
-            {
-                buffer.SuppressRelease();
-                return (WCHAR *)buffer;
-            }
-        }
-        totalChars += charsRead;
-
-        if (charsRead < chunkSize)
-        {
-            ThrowHR(CORDBG_E_TARGET_INCONSISTENT);
-        }
     }
 }
 
