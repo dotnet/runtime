@@ -4413,6 +4413,18 @@ GenTree::VisitResult GenTree::VisitOperandUses(TVisitor visitor)
             {
                 return visitor(&op->gtOp2);
             }
+            else
+            {
+                assert(NullOp2Legal());
+            }
+        }
+        else
+        {
+            assert(NullOp1Legal());
+            assert(NullOp2Legal());
+
+            // we should never have a null op1 and non-null op2
+            assert(op->gtOp2 == nullptr);
         }
         return VisitResult::Continue;
     }
@@ -4424,6 +4436,10 @@ GenTree::VisitResult GenTree::VisitOperandUses(TVisitor visitor)
         if (unOp->gtOp1 != nullptr)
         {
             return visitor(&unOp->gtOp1);
+        }
+        else
+        {
+            assert(NullOp1Legal());
         }
         return VisitResult::Continue;
     }
