@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <DumpTypes>Full</DumpTypes>
+    <DumpTypes>Heap</DumpTypes>
     <R2RModes>Jit</R2RModes>
     <!-- Selectively interpret MethodA/B/C while Main and CoreLib remain JIT'd,
          producing a mixed stack with InterpreterFrame transition boundaries.
