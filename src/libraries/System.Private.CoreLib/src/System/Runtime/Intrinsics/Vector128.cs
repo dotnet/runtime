@@ -1598,7 +1598,24 @@ namespace System.Runtime.Intrinsics
         public static Vector128<T> CreateGeometricSequence<T>(T initial, [ConstantExpected] T multiplier)
         {
             var lower = Vector64.CreateGeometricSequence(initial, multiplier);
-            var upper = Vector64.CreateGeometricSequence(Scalar<T>.Multiply(lower.GetElementUnsafe(Vector64<T>.Count - 1), multiplier), multiplier);
+            T upperMultiplier = multiplier;
+
+            if (Vector128<T>.Count >= 4)
+            {
+                upperMultiplier = Scalar<T>.Multiply(upperMultiplier, upperMultiplier);
+            }
+
+            if (Vector128<T>.Count >= 8)
+            {
+                upperMultiplier = Scalar<T>.Multiply(upperMultiplier, upperMultiplier);
+            }
+
+            if (Vector128<T>.Count >= 16)
+            {
+                upperMultiplier = Scalar<T>.Multiply(upperMultiplier, upperMultiplier);
+            }
+
+            var upper = Vector64.CreateGeometricSequence(Scalar<T>.Multiply(initial, upperMultiplier), multiplier);
             return Create(lower, upper);
         }
 

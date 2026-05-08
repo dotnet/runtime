@@ -897,17 +897,19 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<T> CreateGeometricSequence<T>(T initial, [ConstantExpected] T multiplier)
         {
-            Unsafe.SkipInit(out Vector<T> result);
-
-            T value = initial;
-
-            for (int index = 0; index < Vector<T>.Count; index++)
+            if (Vector<T>.Count == Vector512<T>.Count)
             {
-                result.SetElementUnsafe(index, value);
-                value = Scalar<T>.Multiply(value, multiplier);
+                return Vector512.CreateGeometricSequence(initial, multiplier).AsVector();
             }
-
-            return result;
+            else if (Vector<T>.Count == Vector256<T>.Count)
+            {
+                return Vector256.CreateGeometricSequence(initial, multiplier).AsVector();
+            }
+            else
+            {
+                Debug.Assert(Vector<T>.Count == Vector128<T>.Count);
+                return Vector128.CreateGeometricSequence(initial, multiplier).AsVector();
+            }
         }
 
         /// <summary>Creates a new <see cref="Vector{T}" /> instance whose elements alternate between two specified values.</summary>

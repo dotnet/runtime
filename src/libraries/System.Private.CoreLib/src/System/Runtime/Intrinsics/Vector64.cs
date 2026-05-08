@@ -1407,11 +1407,36 @@ namespace System.Runtime.Intrinsics
             Unsafe.SkipInit(out Vector64<T> result);
 
             T value = initial;
+            result.SetElementUnsafe(0, value);
 
-            for (int index = 0; index < Vector64<T>.Count; index++)
+            if (Vector64<T>.Count >= 2)
             {
-                result.SetElementUnsafe(index, value);
                 value = Scalar<T>.Multiply(value, multiplier);
+                result.SetElementUnsafe(1, value);
+            }
+
+            if (Vector64<T>.Count >= 4)
+            {
+                value = Scalar<T>.Multiply(value, multiplier);
+                result.SetElementUnsafe(2, value);
+
+                value = Scalar<T>.Multiply(value, multiplier);
+                result.SetElementUnsafe(3, value);
+            }
+
+            if (Vector64<T>.Count >= 8)
+            {
+                value = Scalar<T>.Multiply(value, multiplier);
+                result.SetElementUnsafe(4, value);
+
+                value = Scalar<T>.Multiply(value, multiplier);
+                result.SetElementUnsafe(5, value);
+
+                value = Scalar<T>.Multiply(value, multiplier);
+                result.SetElementUnsafe(6, value);
+
+                value = Scalar<T>.Multiply(value, multiplier);
+                result.SetElementUnsafe(7, value);
             }
 
             return result;

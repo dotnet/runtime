@@ -1344,14 +1344,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 break;
             }
 
-            if (varTypeIsFloating(simdBaseType) && !impStackTop(1).val->OperIsConst() &&
-                (getSIMDVectorLength(simdSize, simdBaseType) > 2))
-            {
-                // Floating-point multiplication is not associative. For a non-constant initial value and more than
-                // two elements, use the fallback to preserve recurrence order.
-                break;
-            }
-
             if (varTypeIsLong(simdBaseType) && !impStackTop(1).val->OperIsConst() && (simdSize != 8))
             {
                 // TODO-ARM64-CQ: We should support long/ulong multiplication.
