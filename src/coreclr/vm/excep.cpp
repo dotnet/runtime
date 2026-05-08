@@ -6350,7 +6350,7 @@ bool GetPacSignInfo(PTR_CONTEXT pContextToCheck, EECodeInfo *pCodeInfo, TADDR re
     // For unwind info layout details refer https://learn.microsoft.com/en-us/cpp/build/arm64-exception-handling?view=msvc-170#arm64-exception-handling-information
     // Read the header word.
     DWORD HeaderWord = *(DWORD*)UnwindDataPtr;
-    UnwindDataPtr += 4;
+    UnwindDataPtr += sizeof(DWORD);
 
     _ASSERTE(((HeaderWord >> 18) & 3) == 0); // Version 0 is the only supported version.
 
@@ -6358,10 +6358,10 @@ bool GetPacSignInfo(PTR_CONTEXT pContextToCheck, EECodeInfo *pCodeInfo, TADDR re
     ULONG EpilogScopeCount = (HeaderWord >> 22) & 31;
     if (EpilogScopeCount == 0 && UnwindWords == 0)
     {
-        EpilogScopeCount = *(DWORD*)UnwindDataPtr;
-        UnwindDataPtr += 4;
-        UnwindWords = (EpilogScopeCount >> 16) & 0xFF;
-        EpilogScopeCount &= 0xFFFF;
+        DWORD extendedCounts = *(DWORD*)UnwindDataPtr;
+        UnwindDataPtr += sizeof(DWORD);
+        UnwindWords = (extendedCounts >> 16) & 0xFF;
+        EpilogScopeCount = extendedCounts & 0xFFFF;
     }
 
     if ((HeaderWord & (1 << 21)) != 0)
@@ -6369,8 +6369,8 @@ bool GetPacSignInfo(PTR_CONTEXT pContextToCheck, EECodeInfo *pCodeInfo, TADDR re
         EpilogScopeCount = 0;
     }
 
-    ULONG_PTR UnwindCodePtr = UnwindDataPtr + 4 * EpilogScopeCount;
-    ULONG_PTR UnwindCodesEndPtr = UnwindCodePtr + 4 * UnwindWords;
+    ULONG_PTR UnwindCodePtr = UnwindDataPtr + sizeof(DWORD) * EpilogScopeCount;
+    ULONG_PTR UnwindCodesEndPtr = UnwindCodePtr + sizeof(DWORD) * UnwindWords;
 
     auto GetUnwindOpSize = [](BYTE unwindCode) -> SIZE_T
     {
@@ -6420,7 +6420,7 @@ bool GetPacSignInfo(PTR_CONTEXT pContextToCheck, EECodeInfo *pCodeInfo, TADDR re
     constexpr SSIZE_T PtrSize = 8;
 
     // ARM64 prolog unwind codes are stored in reverse prolog order. Replay them in prolog order so
-    // PACIASP captures the SP that was live when LR was originally signed.
+    // PACIASP/PACIBSP captures the SP that was live when LR was originally signed.
     while (unwindOpIndex != 0)
     {
         UnwindCodePtr = unwindOpStarts[--unwindOpIndex];

@@ -844,31 +844,66 @@ bool CoffNativeCodeManager::IsUnwindable(PTR_VOID pvAddress)
 }
 
 #if defined(TARGET_ARM64)
-static bool HasPacInUnwindInfo(PTR_VOID pUnwindDataBlob, size_t unwindDataBlobSize)
+static bool TryGetSpForPacSigning(PTR_VOID pUnwindDataBlob,
+                                  size_t unwindDataBlobSize,
+                                  PTR_PTR_VOID ppvRetAddrLocation,
+                                  TADDR *pSpForPacSign)
 {
-    PTR_uint8_t UnwindCodePtr = dac_cast<PTR_uint8_t>(pUnwindDataBlob);
-    PTR_uint8_t UnwindCodesEndPtr = dac_cast<PTR_uint8_t>(pUnwindDataBlob) + unwindDataBlobSize;
+    ASSERT(pSpForPacSign != nullptr);
 
-    while (UnwindCodePtr < UnwindCodesEndPtr)
+    *pSpForPacSign = 0;
+
+    //TODO-PAC: Bail out in prolog and epilog for consistency with GetPacSignInfo() in JIT
+
+    ASSERT(unwindDataBlobSize >= sizeof(DWORD));
+
+    PTR_uint8_t unwindDataPtr = dac_cast<PTR_uint8_t>(pUnwindDataBlob);
+    PTR_uint8_t unwindDataEndPtr = unwindDataPtr + unwindDataBlobSize;
+
+    // For unwind info layout details refer https://learn.microsoft.com/en-us/cpp/build/arm64-exception-handling?view=msvc-170#arm64-exception-handling-information
+    // Read the header word.
+    DWORD HeaderWord = *dac_cast<PTR_uint32_t>((uint8_t*)unwindDataPtr);
+    unwindDataPtr += sizeof(DWORD);
+
+    ASSERT(((HeaderWord >> 18) & 3) == 0); // Version 0 is the only supported version.
+
+    ULONG UnwindWords = (HeaderWord >> 27) & 31;
+    ULONG EpilogScopeCount = (HeaderWord >> 22) & 31;
+    if (EpilogScopeCount == 0 && UnwindWords == 0)
     {
-        uint8_t CurCode = *UnwindCodePtr;
-        if (CurCode == 0xe4)   // The last unwind code
+        if ((unwindDataPtr + sizeof(DWORD)) > unwindDataEndPtr)
         {
-            break;
+            return false;
         }
 
-        if (CurCode == 0xFC) // Unwind code for PAC (pac_sign_lr)
-        {
-            return true;
-        }
+        DWORD extendedCounts = *dac_cast<PTR_uint32_t>((uint8_t*)unwindDataPtr);
+        unwindDataPtr += sizeof(DWORD);
+        UnwindWords = (extendedCounts >> 16) & 0xFF;
+        EpilogScopeCount = extendedCounts & 0xFFFF;
+    }
 
-        if (CurCode < 0xC0)
+    if ((HeaderWord & (1 << 21)) != 0)
+    {
+        EpilogScopeCount = 0;
+    }
+
+    if ((unwindDataPtr + (EpilogScopeCount * sizeof(DWORD)) + (UnwindWords * sizeof(DWORD))) > unwindDataEndPtr)
+    {
+        return false;
+    }
+
+    PTR_uint8_t UnwindCodePtr = unwindDataPtr + (EpilogScopeCount * sizeof(DWORD));
+    PTR_uint8_t UnwindCodesEndPtr = UnwindCodePtr + (UnwindWords * sizeof(DWORD));
+
+    auto GetUnwindOpSize = [](BYTE unwindCode) -> SIZE_T
+    {
+        if (unwindCode < 0xC0)
         {
-            UnwindCodePtr += 1;
+            return 1;
         }
-        else if (CurCode < 0xE0)
+        else if (unwindCode < 0xE0)
         {
-            UnwindCodePtr += 2;
+            return 2;
         }
         else
         {
@@ -877,11 +912,164 @@ static bool HasPacInUnwindInfo(PTR_VOID pUnwindDataBlob, size_t unwindDataBlobSi
                 4,1,2,1,1,1,1,3, 1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,1, 2,3,4,5,1,1,1,1
             };
 
-            UnwindCodePtr += UnwindCodeSizeTable[CurCode - 0xE0];
+            return UnwindCodeSizeTable[unwindCode - 0xE0];
         }
+    };
+
+    TADDR* unwindOpStarts = (TADDR*)_alloca((UnwindCodesEndPtr - UnwindCodePtr) * sizeof(TADDR));
+    ULONG unwindOpIndex = 0;
+    for (PTR_uint8_t unwindOpPtr = UnwindCodePtr; unwindOpPtr < UnwindCodesEndPtr;)
+    {
+        BYTE curCode = *unwindOpPtr;
+        if (curCode == 0xE4) // end
+        {
+            break;
+        }
+
+        SIZE_T unwindOpSize = GetUnwindOpSize(curCode);
+        if ((unwindOpPtr + unwindOpSize) > UnwindCodesEndPtr)
+        {
+            return false;
+        }
+
+        unwindOpStarts[unwindOpIndex++] = dac_cast<TADDR>(unwindOpPtr);
+        unwindOpPtr += unwindOpSize;
     }
 
-    return false;
+    SSIZE_T currentSpOffset = 0;
+    SSIZE_T lrSlotOffset = SSIZE_T_MIN;
+    SSIZE_T pacSpOffset = 0;
+    bool hasPacSignLR = false;
+    constexpr SSIZE_T PtrSize = 8;
+
+    // ARM64 prolog unwind codes are stored in reverse prolog order. Replay them in prolog order so
+    // PACIASP/PACIBSP captures the SP that was live when LR was originally signed.
+    while (unwindOpIndex != 0)
+    {
+        UnwindCodePtr = dac_cast<PTR_uint8_t>(unwindOpStarts[--unwindOpIndex]);
+        BYTE CurCode = *UnwindCodePtr;
+
+        if (((CurCode & 0xFC) == 0xC8) || // save_regp
+            ((CurCode & 0xFE) == 0xD8) || // save_fregp
+            ((CurCode & 0xFE) == 0xDC) || // save_freg
+            CurCode == 0xE1 ||            // set_fp
+            CurCode == 0xE2 ||            // add_fp
+            CurCode == 0xE3 ||            // nop
+            CurCode == 0xE5 ||            // end_c
+            CurCode == 0xE6)              // save_next
+        {
+            continue;
+        }
+
+        if ((CurCode & 0xE0) == 0x00) // alloc_s
+        {
+            currentSpOffset -= (CurCode & 0x1F) * 16;
+            continue;
+        }
+
+        if ((CurCode & 0xE0) == 0x20) // save_r19r20_x
+        {
+            currentSpOffset -= (CurCode & 0x1F) * 8;
+            continue;
+        }
+
+        if ((CurCode & 0xC0) == 0x40) // save_fplr
+        {
+            lrSlotOffset = currentSpOffset + ((CurCode & 0x3F) * 8) + PtrSize;
+            continue;
+        }
+
+        if ((CurCode & 0xC0) == 0x80) // save_fplr_x
+        {
+            currentSpOffset -= ((CurCode & 0x3F) + 1) * 8;
+            lrSlotOffset = currentSpOffset + PtrSize;
+            continue;
+        }
+
+        if ((CurCode & 0xF8) == 0xC0) // alloc_m
+        {
+            ULONG x = ((CurCode & 0x7) << 8) | *(UnwindCodePtr + 1);
+            currentSpOffset -= x * 16;
+            continue;
+        }
+
+        if (((CurCode & 0xFC) == 0xCC) || // save_regp_x
+            ((CurCode & 0xFE) == 0xDA))   // save_fregp_x
+        {
+            ULONG z = *(UnwindCodePtr + 1) & 0x3F;
+            currentSpOffset -= (z + 1) * 8;
+            continue;
+        }
+
+        if ((CurCode & 0xFC) == 0xD0) // save_reg
+        {
+            BYTE nextCode = *(UnwindCodePtr + 1);
+            ULONG x = ((CurCode & 0x3) << 2) | (nextCode >> 6);
+            ULONG z = nextCode & 0x3F;
+            if (x == 11) // R30 / LR is the 12th GP register in the save_reg encodings
+            {
+                lrSlotOffset = currentSpOffset + z * 8;
+            }
+
+            continue;
+        }
+
+        if ((CurCode & 0xFE) == 0xD4) // save_reg_x
+        {
+            BYTE nextCode = *(UnwindCodePtr + 1);
+            ULONG x = ((CurCode & 0x1) << 3) | (nextCode >> 5);
+            currentSpOffset -= ((nextCode & 0x1F) + 1) * 8;
+            if (x == 11) // R30 / LR is the 12th GP register in the save_reg encodings
+            {
+                lrSlotOffset = currentSpOffset;
+            }
+
+            continue;
+        }
+
+        if ((CurCode & 0xFE) == 0xD6) // save_lrpair
+        {
+            ULONG z = *(UnwindCodePtr + 1) & 0x3F;
+            lrSlotOffset = currentSpOffset + z * 8 + PtrSize;
+            continue;
+        }
+
+        if (CurCode == 0xDE) // save_freg_x
+        {
+            ULONG z = *(UnwindCodePtr + 1) & 0x1F;
+            currentSpOffset -= (z + 1) * 8;
+            continue;
+        }
+
+        if (CurCode == 0xE0) // alloc_l
+        {
+            ULONG x = (*(UnwindCodePtr + 1) << 16) | (*(UnwindCodePtr + 2) << 8) | *(UnwindCodePtr + 3);
+            currentSpOffset -= x * 16;
+            continue;
+        }
+
+        if (CurCode == 0xFC) // pac_sign_lr
+        {
+            pacSpOffset = currentSpOffset;
+            hasPacSignLR = true;
+            continue;
+        }
+
+        return false;
+    }
+
+    if (!hasPacSignLR)
+    {
+        return true;
+    }
+
+    if (lrSlotOffset == SSIZE_T_MIN)
+    {
+        return false;
+    }
+
+    *pSpForPacSign = (TADDR)((SSIZE_T)dac_cast<TADDR>(ppvRetAddrLocation) - (lrSlotOffset - pacSpOffset));
+    return true;
 }
 #endif //TARGET_ARM64
 
@@ -961,11 +1149,6 @@ bool CoffNativeCodeManager::GetReturnAddressHijackInfo(MethodInfo *    pMethodIn
         return false;
     }
 
-    if (HasPacInUnwindInfo(pUnwindDataBlob, unwindDataBlobSize))
-    {
-        *pSpForArm64PacSign = pRegisterSet->GetSP();
-    }
-
     context.Sp = pRegisterSet->GetSP();
     context.Fp = pRegisterSet->GetFP();
     context.Pc = pRegisterSet->GetIP();
@@ -997,6 +1180,11 @@ bool CoffNativeCodeManager::GetReturnAddressHijackInfo(MethodInfo *    pMethodIn
     }
 
     *ppvRetAddrLocation = (PTR_PTR_VOID)contextPointers.Lr;
+    if (!TryGetSpForPacSigning(pUnwindDataBlob, unwindDataBlobSize, *ppvRetAddrLocation, pSpForArm64PacSign))
+    {
+        return false;
+    }
+
     return true;
 #else
     *pSpForArm64PacSign = 0;
