@@ -1848,11 +1848,15 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
         case GT_OR:
         case GT_XOR:
         {
-            GenTree* replacement = m_compiler->fgSimpleLowerSmpOpCasts(BlockRange(), node->AsOp());
-            if (replacement != nullptr)
+            GenTree* parent = parentStack.Height() > 0 ? parentStack.Top() : nullptr;
+            if ((parent == nullptr) || !parent->OperIs(GT_CAST))
             {
-                use.ReplaceWith(replacement);
-                node = replacement;
+                GenTree* replacement = m_compiler->fgSimpleLowerSmpOpCasts(BlockRange(), node->AsOp());
+                if (replacement != nullptr)
+                {
+                    use.ReplaceWith(replacement);
+                    node = replacement;
+                }
             }
         }
         break;
