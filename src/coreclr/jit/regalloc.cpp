@@ -439,7 +439,7 @@ void RegAllocImpl::checkForDNER(unsigned lclNum, LclVarDsc* varDsc)
         return;
     }
 
-    if (!varDsc->lvPromoted)
+    if (varTypeIsStruct(varDsc) && !varDsc->lvPromoted)
     {
         if (!varDsc->IsEnregisterableType())
         {
