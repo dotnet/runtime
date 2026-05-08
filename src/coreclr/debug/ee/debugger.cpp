@@ -8817,8 +8817,7 @@ void Debugger::ThreadCreated(Thread* pRuntimeThread)
     _ASSERTE(pRuntimeThread->GetThreadId() != 0);
 
 
-    // Create a thread starter and enable its WillEnterManaged code
-    // callback. This will cause the starter to trigger once the
+    // Create a thread starter. This will cause the starter to trigger once the
     // thread has hit managed code, which will cause
     // Debugger::ThreadStarted() to be called.  NOTE: the starter will
     // be deleted automatically when its done its work.

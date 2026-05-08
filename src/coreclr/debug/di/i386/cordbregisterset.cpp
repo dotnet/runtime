@@ -16,10 +16,8 @@ HRESULT CordbRegisterSet::GetRegistersAvailable(ULONG64 *pAvailable)
 
     (*pAvailable) = SETBITULONG64( REGISTER_INSTRUCTION_POINTER )
             |   SETBITULONG64( REGISTER_STACK_POINTER )
-            |   SETBITULONG64( REGISTER_FRAME_POINTER );
-
-    if (!m_quickUnwind || m_active)
-        (*pAvailable) |= SETBITULONG64( REGISTER_X86_EAX )
+            |   SETBITULONG64( REGISTER_FRAME_POINTER )
+            |   SETBITULONG64( REGISTER_X86_EAX )
             |   SETBITULONG64( REGISTER_X86_ECX )
             |   SETBITULONG64( REGISTER_X86_EDX )
             |   SETBITULONG64( REGISTER_X86_EBX )
@@ -84,17 +82,6 @@ HRESULT CordbRegisterSet::GetRegisters(ULONG64 mask, ULONG32 regCount,
     }
 
     // Make sure that the registers are really available
-    if ( mask & (       SETBITULONG64( REGISTER_X86_EAX )
-                    |   SETBITULONG64( REGISTER_X86_ECX )
-                    |   SETBITULONG64( REGISTER_X86_EDX )
-                    |   SETBITULONG64( REGISTER_X86_EBX )
-                    |   SETBITULONG64( REGISTER_X86_ESI )
-                    |   SETBITULONG64( REGISTER_X86_EDI ) ) )
-    {
-        if (!m_active && m_quickUnwind)
-            return E_INVALIDARG;
-    }
-
     for ( int i = REGISTER_INSTRUCTION_POINTER
         ; i<=REGISTER_X86_FPSTACK_7 && iRegister < regCount
         ; i++)

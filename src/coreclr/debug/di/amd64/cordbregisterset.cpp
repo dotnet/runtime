@@ -15,10 +15,8 @@ HRESULT CordbRegisterSet::GetRegistersAvailable(ULONG64* pAvailable)
     VALIDATE_POINTER_TO_OBJECT(pAvailable, ULONG64*);
 
     (*pAvailable) = SETBITULONG64( REGISTER_INSTRUCTION_POINTER )
-            |   SETBITULONG64( REGISTER_STACK_POINTER );
-
-    if (!m_quickUnwind || m_active)
-        (*pAvailable) |= SETBITULONG64( REGISTER_AMD64_RBP )
+            |   SETBITULONG64( REGISTER_STACK_POINTER )
+            |   SETBITULONG64( REGISTER_AMD64_RBP )
             |   SETBITULONG64( REGISTER_AMD64_RAX )
             |   SETBITULONG64( REGISTER_AMD64_RCX )
             |   SETBITULONG64( REGISTER_AMD64_RDX )
@@ -101,27 +99,6 @@ HRESULT CordbRegisterSet::GetRegisters(ULONG64 mask, ULONG32 regCount,
             }
             LOG( ( LF_CORDB, LL_INFO1000, "CRS::GR: Loaded float state\n" ) );
         }
-    }
-
-    // Make sure that the registers are really available
-    if ( mask & (       SETBITULONG64( REGISTER_AMD64_RBP )
-                    |   SETBITULONG64( REGISTER_AMD64_RAX )
-                    |   SETBITULONG64( REGISTER_AMD64_RCX )
-                    |   SETBITULONG64( REGISTER_AMD64_RDX )
-                    |   SETBITULONG64( REGISTER_AMD64_RBX )
-                    |   SETBITULONG64( REGISTER_AMD64_RSI )
-                    |   SETBITULONG64( REGISTER_AMD64_RDI )
-                    |   SETBITULONG64( REGISTER_AMD64_R8  )
-                    |   SETBITULONG64( REGISTER_AMD64_R9  )
-                    |   SETBITULONG64( REGISTER_AMD64_R10 )
-                    |   SETBITULONG64( REGISTER_AMD64_R11 )
-                    |   SETBITULONG64( REGISTER_AMD64_R12 )
-                    |   SETBITULONG64( REGISTER_AMD64_R13 )
-                    |   SETBITULONG64( REGISTER_AMD64_R14 )
-                    |   SETBITULONG64( REGISTER_AMD64_R15 ) ) )
-    {
-        if (!m_active && m_quickUnwind)
-            return E_INVALIDARG;
     }
 
     for ( int i = REGISTER_INSTRUCTION_POINTER

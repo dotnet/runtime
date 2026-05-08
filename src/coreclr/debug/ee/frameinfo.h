@@ -54,12 +54,6 @@ public:
     REGDISPLAY           registers;
     FramePointer         fp;
 
-    // This field is propagated to the right side to become CordbRegisterSet::m_quicklyUnwind.
-    // If it is true, then the registers reported in the REGDISPLAY are invalid.  It is only set to
-    // true in InitForEnterManagedChain().  In that case, we are passing a NULL REGDISPLAY anyway.
-    // This is such a misnomer.
-    bool                 quickUnwind;
-
     // Set to true if we are dealing with an internal explicit frame.  Currently this is only true
     // for prestub frames, security frames, funceval frames, and certain debugger-specific frames
     // (e.g. DebuggerClassInitMarkFrame).
@@ -112,7 +106,6 @@ public:
     void InitForFuncEval(CrawlFrame * pCF);
     void InitForThreadStart(Thread *thread, REGDISPLAY * pRDSrc);
     void InitForUMChain(FramePointer fpRoot, REGDISPLAY * pRDSrc);
-    void InitForEnterManagedChain(FramePointer fpRoot);
 
     // Does this FrameInfo represent a method frame? (aka a frameless frame)
     // This may be combined w/ both StubFrames and ChainMarkers.
