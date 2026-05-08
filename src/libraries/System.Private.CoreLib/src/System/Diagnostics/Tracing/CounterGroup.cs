@@ -151,7 +151,7 @@ namespace System.Diagnostics.Tracing
         private TimeSpan _nextPollingOffset;
 
         /// <summary>
-        /// Stack scratch sized for the largest counter set known to the BCL today <see cref="RuntimeEventSource"/>
+        /// Stack scratch sized for the largest counter set known to the BCL today (RuntimeEventSource).
         /// This is used to avoid heap allocations in the hot path of polling for counter values.
         /// Extra buffer is left, in case if more counters are added in the future
         /// </summary>
