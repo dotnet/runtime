@@ -4567,7 +4567,7 @@ namespace System.Numerics.Tests
 
             for (int index = 0; index < Vector<float>.Count; index++)
             {
-                AssertExtensions.Equal(expected, sequence.GetElement(index);
+                AssertExtensions.Equal(expected, sequence.GetElement(index));
                 expected *= multiplier;
             }
         }
