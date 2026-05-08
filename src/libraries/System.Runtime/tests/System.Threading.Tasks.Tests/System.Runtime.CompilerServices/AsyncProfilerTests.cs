@@ -32,6 +32,7 @@ namespace System.Threading.Tasks.Tests
         AsyncProfilerSyncClock = 14,
     }
 
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/127951", TestPlatforms.Android | TestPlatforms.tvOS)]
     public class AsyncProfilerTests
     {
         // The test scenarios drive async work via Task.Run(...).GetAwaiter().GetResult() (see
