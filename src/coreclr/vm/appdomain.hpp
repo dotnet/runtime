@@ -675,9 +675,6 @@ public:
     STRINGREF *IsStringInterned(STRINGREF *pString);
     STRINGREF *GetOrInternString(STRINGREF *pString);
 
-    OBJECTREF GetRawExposedObject() { LIMITED_METHOD_CONTRACT; return NULL; }
-    OBJECTHANDLE GetRawExposedObjectHandleForDebugger() { LIMITED_METHOD_DAC_CONTRACT; return (OBJECTHANDLE)NULL; }
-
 #ifndef DACCESS_COMPILE
     PTR_NativeImage GetNativeImage(LPCUTF8 compositeFileName);
     PTR_NativeImage SetNativeImage(LPCUTF8 compositeFileName, PTR_NativeImage pNativeImage);

@@ -197,6 +197,11 @@ check_symbol_exists(
     HAVE_VFORK)
 
 check_symbol_exists(
+    PR_SET_PDEATHSIG
+    "sys/prctl.h"
+    HAVE_PR_SET_PDEATHSIG)
+
+check_symbol_exists(
     pipe
     unistd.h
     HAVE_PIPE)

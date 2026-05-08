@@ -503,7 +503,7 @@ Copyright (c) .NET Foundation. All rights reserved.
 
   <Target Name="_GenerateBuildWasmBootJson" DependsOnTargets="$(GenerateBuildWasmBootJsonDependsOn)">
     <PropertyGroup>
-      <_WasmBuildBootJsonPath>$(IntermediateOutputPath)$(_WasmBootConfigFileName)</_WasmBuildBootJsonPath>
+      <_WasmBuildBootJsonPath>$([MSBuild]::NormalizePath($(IntermediateOutputPath), $(_WasmBootConfigFileName)))</_WasmBuildBootJsonPath>
       <_WasmBuildApplicationEnvironmentName>$(WasmApplicationEnvironmentName)</_WasmBuildApplicationEnvironmentName>
       <_WasmBuildApplicationEnvironmentName Condition="'$(_WasmBuildApplicationEnvironmentName)' == ''">Development</_WasmBuildApplicationEnvironmentName>
     </PropertyGroup>
@@ -872,7 +872,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       <_BlazorExtensionsCandidate Include="@(BlazorPublishExtension->'%(FullPath)')">
         <SourceId>$(PackageId)</SourceId>
         <SourceType>Computed</SourceType>
-        <ContentRoot>$(PublishDir)wwwroot</ContentRoot>
+        <ContentRoot>$([MSBuild]::NormalizeDirectory($(PublishDir), 'wwwroot'))</ContentRoot>
         <BasePath>$(StaticWebAssetBasePath)</BasePath>
         <RelativePath>%(BlazorPublishExtension.RelativePath)</RelativePath>
         <AssetKind>Publish</AssetKind>
@@ -915,7 +915,7 @@ Copyright (c) .NET Foundation. All rights reserved.
 
     <ItemGroup>
       <_WasmPublishBootConfigCandidate
-        Include="$(IntermediateOutputPath)$(_WasmPublishBootConfigFileName)"
+        Include="$([MSBuild]::NormalizePath($(IntermediateOutputPath), $(_WasmPublishBootConfigFileName)))"
         RelativePath="_framework/$(_WasmBootConfigFileName)" />
 
       <_WasmPublishBootConfigFingerprintPatterns Include="WasmBootConfigFiles" Pattern="*%(_WasmPublishBootConfigCandidate.Extension)" Expression="#[.{fingerprint}]!" Condition="'$(_WasmFingerprintBootConfig)' == 'true'" />
@@ -934,7 +934,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       AssetTraitValue="manifest"
       CopyToOutputDirectory="Never"
       CopyToPublishDirectory="PreserveNewest"
-      ContentRoot="$(PublishDir)wwwroot"
+      ContentRoot="$([MSBuild]::NormalizeDirectory($(PublishDir), 'wwwroot'))"
       BasePath="$(StaticWebAssetBasePath)"
     >
       <Output TaskParameter="Assets" ItemName="StaticWebAsset" />
@@ -994,7 +994,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       DebugLevel="$(WasmDebugLevel)"
       CacheBootResources="$(_BlazorCacheBootResources)"
       MergeWith="@(_WasmDotnetJsForPublish)"
-      OutputPath="$(IntermediateOutputPath)$(_WasmPublishBootConfigFileName)"
+      OutputPath="$([MSBuild]::NormalizePath($(IntermediateOutputPath), $(_WasmPublishBootConfigFileName)))"
       ConfigurationFiles="@(_WasmPublishConfigFile)"
       LazyLoadedAssemblies="@(BlazorWebAssemblyLazyLoad)"
       InvariantGlobalization="$(InvariantGlobalization)"
@@ -1022,7 +1022,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       />
 
     <ItemGroup>
-      <FileWrites Include="$(IntermediateOutputPath)$(_WasmPublishBootConfigFileName)" />
+      <FileWrites Include="$([MSBuild]::NormalizePath($(IntermediateOutputPath), $(_WasmPublishBootConfigFileName)))" />
     </ItemGroup>
 
   </Target>

@@ -3483,7 +3483,6 @@ namespace Internal.JitInterface
             pAsyncInfoOut.continuationFlagsFldHnd = ObjectToHandle(continuation.GetKnownField("Flags"u8));
             DefType asyncHelpers = _compilation.TypeSystemContext.SystemModule.GetKnownType("System.Runtime.CompilerServices"u8, "AsyncHelpers"u8);
             pAsyncInfoOut.captureExecutionContextMethHnd = ObjectToHandle(asyncHelpers.GetKnownMethod("CaptureExecutionContext"u8, null));
-            pAsyncInfoOut.restoreExecutionContextMethHnd = ObjectToHandle(asyncHelpers.GetKnownMethod("RestoreExecutionContext"u8, null));
             pAsyncInfoOut.captureContinuationContextMethHnd = ObjectToHandle(asyncHelpers.GetKnownMethod("CaptureContinuationContext"u8, null));
             pAsyncInfoOut.captureContextsMethHnd = ObjectToHandle(asyncHelpers.GetKnownMethod("CaptureContexts"u8, null));
             pAsyncInfoOut.restoreContextsMethHnd = ObjectToHandle(asyncHelpers.GetKnownMethod("RestoreContexts"u8, null));

@@ -300,26 +300,26 @@ PatchpointInfo* MethodDesc::GetMethodDescAltJitPatchpointInfo()
 #endif // FEATURE_CODE_VERSIONING
 
 #ifdef FEATURE_INTERPRETER
-// Set the call stub for the interpreter to JIT/AOT calls
-// Returns true if the current call set the stub, false if it was already set
-bool MethodDesc::SetCallStub(CallStubHeader *pHeader)
+// Cache the calli cookie on the MethodDesc
+// Returns true if the current call set the cookie, false if it was already set
+bool MethodDesc::SetCalliCookie(InterpreterCalliCookie cookie)
 {
     STANDARD_VM_CONTRACT;
 
     IfFailThrow(EnsureCodeDataExists(NULL));
 
     _ASSERTE(m_codeData != NULL);
-    return InterlockedCompareExchangeT(&m_codeData->CallStub, pHeader, NULL) == NULL;
+    return InterlockedCompareExchangeT((void**)&m_codeData->CalliCookie, (void*)cookie, (void*)NULL) == NULL;
 }
 
-CallStubHeader *MethodDesc::GetCallStub()
+InterpreterCalliCookie MethodDesc::GetCalliCookie()
 {
     LIMITED_METHOD_CONTRACT;
 
     PTR_MethodDescCodeData codeData = VolatileLoadWithoutBarrier(&m_codeData);
     if (codeData == NULL)
         return NULL;
-    return VolatileLoadWithoutBarrier(&codeData->CallStub);
+    return (InterpreterCalliCookie)VolatileLoadWithoutBarrier(&codeData->CalliCookie);
 }
 #endif // FEATURE_INTERPRETER
 

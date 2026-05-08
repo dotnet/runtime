@@ -57,6 +57,44 @@ namespace System.Security.Cryptography
             return accum == 0;
         }
 
+        /// <summary>
+        ///   Determines whether every byte in a byte sequence is equal to a specified value in an amount of time
+        ///   that depends on the length of the sequence, but not the values.
+        /// </summary>
+        /// <param name="source">The buffer to compare.</param>
+        /// <param name="value">The value to compare with each byte in <paramref name="source"/>.</param>
+        /// <returns>
+        ///   <see langword="true" /> if every byte in <paramref name="source"/> is equal to <paramref name="value"/>;
+        ///   otherwise, <see langword="false" />.
+        /// </returns>
+        /// <remarks>
+        ///   <para>
+        ///     This method compares a buffer's contents with <paramref name="value"/> in a manner which does not
+        ///     leak timing information, making it ideal for use within cryptographic routines.
+        ///   </para>
+        ///   <para>
+        ///     If <paramref name="source"/> is empty, this method returns <see langword="true" />.
+        ///   </para>
+        /// </remarks>
+        [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
+        public static bool FixedTimeEquals(ReadOnlySpan<byte> source, byte value)
+        {
+            // NoOptimization because we want this method to be exactly as non-short-circuiting
+            // as written.
+            //
+            // NoInlining because the NoOptimization would get lost if the method got inlined.
+
+            int length = source.Length;
+            int accum = 0;
+
+            for (int i = 0; i < length; i++)
+            {
+                accum |= source[i] - value;
+            }
+
+            return accum == 0;
+        }
+
         [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
         public static void ZeroMemory(Span<byte> buffer)
         {

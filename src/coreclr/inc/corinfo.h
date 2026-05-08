@@ -1803,18 +1803,21 @@ enum CorInfoContinuationFlags
     // If the encoded index is 0, it means no such member is present.
     // Otherwise the exact offset of the member is computed as
     //   OFFSETOF__CORINFO_Continuation__data + (index - 1) * PointerSize
-    //
-    CORINFO_CONTINUATION_EXCEPTION_INDEX_FIRST_BIT = 3,
-    CORINFO_CONTINUATION_EXCEPTION_INDEX_NUM_BITS = 2,
+
+    CORINFO_CONTINUATION_EXECUTION_CONTEXT_INDEX_FIRST_BIT = 3,
+    CORINFO_CONTINUATION_EXECUTION_CONTEXT_INDEX_NUM_BITS = 2,
 
     CORINFO_CONTINUATION_CONTEXT_INDEX_FIRST_BIT = 5,
     CORINFO_CONTINUATION_CONTEXT_INDEX_NUM_BITS = 2,
 
+    CORINFO_CONTINUATION_EXCEPTION_INDEX_FIRST_BIT = 7,
+    CORINFO_CONTINUATION_EXCEPTION_INDEX_NUM_BITS = 3,
+
     // For JIT, the continuation stores space for every possible type of
     // async callee's result. We need to represent the offset to each of
     // these, so we allocate the rest of the bits for this.
-    CORINFO_CONTINUATION_RESULT_INDEX_FIRST_BIT = 7,
-    CORINFO_CONTINUATION_RESULT_INDEX_NUM_BITS = 25,
+    CORINFO_CONTINUATION_RESULT_INDEX_FIRST_BIT = 10,
+    CORINFO_CONTINUATION_RESULT_INDEX_NUM_BITS = 22,
 };
 
 struct CORINFO_ASYNC_INFO
@@ -1831,8 +1834,6 @@ struct CORINFO_ASYNC_INFO
     CORINFO_FIELD_HANDLE continuationFlagsFldHnd;
     // Method handle for AsyncHelpers.CaptureExecutionContext, used during suspension
     CORINFO_METHOD_HANDLE captureExecutionContextMethHnd;
-    // Method handle for AsyncHelpers.RestoreExecutionContext, used during resumption
-    CORINFO_METHOD_HANDLE restoreExecutionContextMethHnd;
     // Method handle for AsyncHelpers.CaptureContinuationContext, used during suspension
     CORINFO_METHOD_HANDLE captureContinuationContextMethHnd;
     // Method handle for AsyncHelpers.CaptureContexts, used at the beginning of async methods

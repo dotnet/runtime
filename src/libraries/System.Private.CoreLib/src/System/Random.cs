@@ -15,6 +15,8 @@ namespace System
     /// </summary>
     public partial class Random
     {
+        private const int StackallocThreshold = 256;
+
         /// <summary>The underlying generator implementation.</summary>
         /// <remarks>
         /// This is separated out so that different generators can be used based on how this Random instance is constructed.
@@ -178,6 +180,298 @@ namespace System
         /// <summary>Fills the elements of a specified span of bytes with random numbers.</summary>
         /// <param name="buffer">The array to be filled with random numbers.</param>
         public virtual void NextBytes(Span<byte> buffer) => _impl.NextBytes(buffer);
+
+        /// <summary>Returns a non-negative random integer of type <typeparamref name="T"/>.</summary>
+        /// <typeparam name="T">The type of integer to generate.</typeparam>
+        /// <returns>
+        /// A value of type <typeparamref name="T"/> in the inclusive range [0, <c>T.MaxValue</c>].
+        /// </returns>
+        /// <remarks>
+        /// Unlike <see cref="Next()"/>, which returns an <see cref="int"/> that is less than <see cref="int.MaxValue"/>,
+        /// <c>NextInteger&lt;int&gt;()</c> returns an <see cref="int"/> in the inclusive range from zero through
+        /// <see cref="int.MaxValue"/> and may return <see cref="int.MaxValue"/>.
+        /// <typeparamref name="T"/> must use a two's complement representation for signed values.
+        /// </remarks>
+        public T NextInteger<T>() where T : IBinaryInteger<T>, IMinMaxValue<T>
+        {
+            if (T.MaxValue == T.Zero)
+            {
+                return T.Zero;
+            }
+
+            Debug.Assert(T.IsPositive(T.MaxValue));
+
+            int bitLength = T.MaxValue.GetShortestBitLength();
+            int byteCount = (bitLength + 7) >> 3;
+
+            // Compute mask for the top byte to avoid negative values for signed types
+            // and to reduce rejection rate for custom integer types.
+            int topBits = bitLength & 7;
+            byte topMask = topBits == 0 ? byte.MaxValue : (byte)((1 << topBits) - 1);
+
+            byte[]? rented = null;
+            Span<byte> bytes = byteCount <= StackallocThreshold
+                ? stackalloc byte[StackallocThreshold]
+                : rented = ArrayPool<byte>.Shared.Rent(byteCount);
+            bytes = bytes.Slice(0, byteCount);
+
+            try
+            {
+                while (true)
+                {
+                    NextBytes(bytes);
+                    bytes[^1] &= topMask;
+
+                    T value = T.ReadLittleEndian(bytes, isUnsigned: true);
+                    if (value <= T.MaxValue)
+                    {
+                        return value;
+                    }
+                }
+            }
+            finally
+            {
+                if (rented is not null)
+                {
+                    ArrayPool<byte>.Shared.Return(rented);
+                }
+            }
+        }
+
+        /// <summary>Returns a non-negative random integer that is less than the specified maximum.</summary>
+        /// <typeparam name="T">The type of integer to generate.</typeparam>
+        /// <param name="maxValue">The exclusive upper bound of the random number to be generated.
+        /// <paramref name="maxValue"/> must be greater than or equal to zero.</param>
+        /// <returns>
+        /// A value of type <typeparamref name="T"/> that is greater than or equal to zero,
+        /// and less than <paramref name="maxValue"/>; that is, the range of return values is ordinarily
+        /// [0, <paramref name="maxValue"/>). However, if <paramref name="maxValue"/> equals zero, zero is returned.
+        /// </returns>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="maxValue"/> is less than zero.</exception>
+        /// <remarks><typeparamref name="T"/> must use a two's complement representation for signed values.</remarks>
+        public T NextInteger<T>(T maxValue) where T : IBinaryInteger<T>
+        {
+            ArgumentOutOfRangeException.ThrowIfNegative(maxValue);
+
+            return NextBinaryIntegerInRange(maxValue);
+        }
+
+        /// <summary>Returns a random integer that is within a specified range.</summary>
+        /// <typeparam name="T">The type of integer to generate.</typeparam>
+        /// <param name="minValue">The inclusive lower bound of the random number returned.</param>
+        /// <param name="maxValue">The exclusive upper bound of the random number returned.
+        /// <paramref name="maxValue"/> must be greater than or equal to <paramref name="minValue"/>.</param>
+        /// <returns>
+        /// A value of type <typeparamref name="T"/> greater than or equal to <paramref name="minValue"/>
+        /// and less than <paramref name="maxValue"/>; that is, the range of return values is ordinarily
+        /// [<paramref name="minValue"/>, <paramref name="maxValue"/>). If <paramref name="minValue"/>
+        /// equals <paramref name="maxValue"/>, <paramref name="minValue"/> is returned.
+        /// </returns>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="minValue"/> is greater than <paramref name="maxValue"/>.</exception>
+        /// <remarks><typeparamref name="T"/> must use a two's complement representation for signed values.</remarks>
+        public T NextInteger<T>(T minValue, T maxValue) where T : IBinaryInteger<T>
+        {
+            if (minValue > maxValue)
+            {
+                ThrowMinMaxValueSwapped();
+            }
+
+            T range = maxValue - minValue;
+
+            // For signed types, subtraction may overflow when the range exceeds T.MaxValue.
+            // T.IsNegative(range) detects this. Fall back to full-width generation.
+            if (T.IsNegative(range))
+            {
+                return NextBinaryIntegerFullRange(minValue, maxValue);
+            }
+
+            return NextBinaryIntegerInRange(range) + minValue;
+        }
+
+        /// <summary>Generates a random value in [T.Zero, maxExclusive) where maxExclusive is non-negative.</summary>
+        private T NextBinaryIntegerInRange<T>(T maxExclusive) where T : IBinaryInteger<T>
+        {
+            Debug.Assert(!T.IsNegative(maxExclusive));
+
+            // Fast paths for common types using existing optimized implementations.
+            // The JIT eliminates the dead branches when T is a known value type.
+            if (typeof(T) == typeof(sbyte) ||
+                typeof(T) == typeof(byte) ||
+                typeof(T) == typeof(short) ||
+                typeof(T) == typeof(ushort) ||
+                typeof(T) == typeof(char) ||
+                typeof(T) == typeof(int) ||
+                (typeof(T) == typeof(nint) && nint.Size == 4))
+            {
+                return T.CreateTruncating(Next(int.CreateTruncating(maxExclusive)));
+            }
+
+            if (typeof(T) == typeof(uint) ||
+                typeof(T) == typeof(nint) ||
+                typeof(T) == typeof(long) ||
+                (typeof(T) == typeof(nuint) && nint.Size == 4))
+            {
+                return T.CreateTruncating(NextInt64(long.CreateTruncating(maxExclusive)));
+            }
+
+            // We can't always use a fast path for these types, but if the maxExclusive value
+            // fits within a long, we can just generate a long and cast. The round-trip check
+            // ensures we don't silently truncate values for types larger than ulong.
+            if (typeof(T) == typeof(ulong) ||
+                (typeof(T) == typeof(nuint) && nint.Size == 8) ||
+                typeof(T) == typeof(Int128) ||
+                typeof(T) == typeof(UInt128))
+            {
+                ulong maxExclusiveUlong = ulong.CreateTruncating(maxExclusive);
+                if (maxExclusiveUlong <= (ulong)long.MaxValue &&
+                    T.CreateTruncating(maxExclusiveUlong) == maxExclusive)
+                {
+                    return T.CreateTruncating(NextInt64((long)maxExclusiveUlong));
+                }
+            }
+
+            // Generic fallback for large ulong, nuint, Int128, UInt128, BigInteger, etc.
+            return NextBinaryIntegerRejectionSampling(maxExclusive);
+        }
+
+        /// <summary>Generic rejection sampling for arbitrary <see cref="IBinaryInteger{T}"/> types.</summary>
+        private T NextBinaryIntegerRejectionSampling<T>(T maxExclusive) where T : IBinaryInteger<T>
+        {
+            if (maxExclusive == T.Zero)
+            {
+                return T.Zero;
+            }
+
+            Debug.Assert(T.IsPositive(maxExclusive));
+
+            int bitLength = maxExclusive.GetShortestBitLength();
+            int byteCount = (bitLength + 7) >> 3;
+
+            // Compute mask for the top byte to reduce rejection rate.
+            int topBits = bitLength & 7;
+            byte topMask = topBits == 0 ? byte.MaxValue : (byte)((1 << topBits) - 1);
+
+            byte[]? rented = null;
+            Span<byte> bytes = byteCount <= StackallocThreshold
+                ? stackalloc byte[StackallocThreshold]
+                : rented = ArrayPool<byte>.Shared.Rent(byteCount);
+            bytes = bytes.Slice(0, byteCount);
+
+            try
+            {
+                while (true)
+                {
+                    NextBytes(bytes);
+                    bytes[^1] &= topMask;
+
+                    T value = T.ReadLittleEndian(bytes, isUnsigned: true);
+                    if (value < maxExclusive)
+                    {
+                        return value;
+                    }
+                }
+            }
+            finally
+            {
+                if (rented is not null)
+                {
+                    ArrayPool<byte>.Shared.Return(rented);
+                }
+            }
+        }
+
+        /// <summary>Handles the case where the range overflows for signed types by generating full-width random values.</summary>
+        private T NextBinaryIntegerFullRange<T>(T minValue, T maxValue) where T : IBinaryInteger<T>
+        {
+            Debug.Assert(minValue < maxValue);
+
+            // The range exceeds what T can represent as a positive value.
+            // Generate a random value across the full range of T and check bounds.
+            // Since the range > T.MaxValue, the acceptance rate is > 50%.
+            int byteCount = Math.Max(minValue.GetByteCount(), maxValue.GetByteCount());
+
+            byte[]? rented = null;
+            Span<byte> bytes = byteCount <= StackallocThreshold
+                ? stackalloc byte[StackallocThreshold]
+                : rented = ArrayPool<byte>.Shared.Rent(byteCount);
+            bytes = bytes.Slice(0, byteCount);
+
+            try
+            {
+                while (true)
+                {
+                    NextBytes(bytes);
+
+                    T value = T.ReadLittleEndian(bytes, isUnsigned: false);
+                    if (value >= minValue && value < maxValue)
+                    {
+                        return value;
+                    }
+                }
+            }
+            finally
+            {
+                if (rented is not null)
+                {
+                    ArrayPool<byte>.Shared.Return(rented);
+                }
+            }
+        }
+
+        /// <summary>Returns a random binary floating-point number of type <typeparamref name="T"/> that is greater than or equal to 0.0, and less than 1.0.</summary>
+        /// <typeparam name="T">The type of floating-point number to generate.</typeparam>
+        /// <returns>A binary floating-point number of type <typeparamref name="T"/> in the range [0.0, 1.0).</returns>
+        public T NextBinaryFloat<T>() where T : IBinaryFloatingPointIeee754<T>
+        {
+            // Fast paths for common types using existing optimized implementations.
+            if (typeof(T) == typeof(float))
+            {
+                return T.CreateTruncating(NextSingle());
+            }
+
+            if (typeof(T) == typeof(double))
+            {
+                return T.CreateTruncating(NextDouble());
+            }
+
+            if (typeof(T) == typeof(NFloat))
+            {
+                return nint.Size == 8
+                    ? T.CreateTruncating(NextDouble())
+                    : T.CreateTruncating(NextSingle());
+            }
+
+            // For Half, BFloat16, and other low-precision types, converting from NextSingle()
+            // can round up to 1.0. Generate the value directly using the type's significand
+            // bit length to guarantee the result is in [0.0, 1.0).
+            int significandBitLength = T.Zero.GetSignificandBitLength();
+
+            // For types with significand >= 63 bits, 1L << significandBitLength would overflow.
+            // Build the random significand using chunks of up to 62 random bits. Since T has
+            // significandBitLength bits of precision, all intermediate values are exact.
+            // Note: No built-in IEEE type reaches this path (double has the largest significand
+            // at 53 bits). This handles hypothetical custom IBinaryFloatingPointIeee754<T>
+            // implementations with wider significands (e.g. Quad/Float128 with 113 bits).
+            if (significandBitLength >= 63)
+            {
+                T value = T.Zero;
+                int bitsRemaining = significandBitLength;
+                while (bitsRemaining > 0)
+                {
+                    int chunk = Math.Min(bitsRemaining, 62);
+                    Debug.Assert(chunk >= 1 && chunk <= 62);
+                    long randomChunk = NextInt64(1L << chunk);
+                    value = T.ScaleB(value, chunk) + T.CreateTruncating(randomChunk);
+                    bitsRemaining -= chunk;
+                }
+
+                Debug.Assert(value >= T.Zero && value < T.ScaleB(T.One, significandBitLength));
+                return T.ScaleB(value, -significandBitLength);
+            }
+
+            long randomBits = NextInt64(1L << significandBitLength);
+            return T.ScaleB(T.CreateTruncating(randomBits), -significandBitLength);
+        }
 
         /// <summary>
         ///   Fills the elements of a specified span with items chosen at random from the provided set of choices.
