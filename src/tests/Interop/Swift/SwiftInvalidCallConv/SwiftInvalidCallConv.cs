@@ -10,6 +10,7 @@ using Xunit;
 using TestLibrary;
 
 [PlatformSpecific(TestPlatforms.AnyApple)]
+[Xunit.SkipOnCoreClr("Swift calling conventions are not supported under the interpreter", RuntimeTestModes.InterpreterActive)]
 public class InvalidCallingConvTests
 {
     // Dummy class with a dummy attribute
