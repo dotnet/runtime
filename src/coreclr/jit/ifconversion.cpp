@@ -833,7 +833,7 @@ GenTree* OptIfConversionDsc::TrySelectToCnsOpCond(GenTreeConditional* select)
     }
     else if (trueVal == falseVal)
     {
-        return trueInput;
+        return m_compiler->gtWrapWithSideEffects(trueInput, cond);
     }
 
 #ifdef TARGET_RISCV64
