@@ -185,6 +185,12 @@ namespace ILLink.Shared.TrimAnalysis
                     break;
 
                 case IntrinsicId.Type_get_Assembly:
+                    if (instanceValue.IsEmpty())
+                    {
+                        returnValue = MultiValueLattice.Top;
+                        break;
+                    }
+
                     foreach (var value in instanceValue.AsEnumerable())
                     {
                         string? assemblyName;
@@ -197,12 +203,6 @@ namespace ILLink.Shared.TrimAnalysis
                         {
                             AddReturnValue(annotatedMethodReturnValue);
                         }
-                    }
-                    if (instanceValue.IsEmpty())
-                    {
-                        // An unknown receiver has an unknown Assembly; downstream Assembly.GetType
-                        // should warn rather than silently widen to Top.
-                        returnValue = annotatedMethodReturnValue;
                     }
                     break;
 

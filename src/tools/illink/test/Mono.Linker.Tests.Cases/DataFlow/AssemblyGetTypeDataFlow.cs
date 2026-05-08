@@ -129,7 +129,9 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             typeof(InnerType[]).Assembly.GetType("Mono.Linker.Tests.Cases.DataFlow.AssemblyGetTypeDataFlow+InnerType");
         }
 
-        [ExpectedWarning("IL2026")]
+        // The Roslyn analyzer models typeof(delegate*<...>) as Top (no SystemTypeValue), so
+        // the Type.Assembly intrinsic short-circuits and no warning is emitted.
+        [ExpectedWarning("IL2026", Tool.Trimmer | Tool.NativeAot, "Roslyn analyzer doesn't model typeof for function pointers")]
         static unsafe void TestFunctionPointerReceiver()
         {
             typeof(delegate*<InnerType, void>).Assembly.GetType("Mono.Linker.Tests.Cases.DataFlow.AssemblyGetTypeDataFlow+InnerType");
