@@ -1,13 +1,15 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
+    <!-- Needed for GCStressIncompatible and NativeAotIncompatible -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <Optimize>True</Optimize>
     <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
+    <GCStressIncompatible>true</GCStressIncompatible>
 
     <!-- Not even printf is AOT compatible in F# -->
     <NativeAotIncompatible>true</NativeAotIncompatible>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Runtime_72845.fs" />
-    <ProjectReference Include="$(TestLibraryProjectPath)" />
   </ItemGroup>
 </Project>

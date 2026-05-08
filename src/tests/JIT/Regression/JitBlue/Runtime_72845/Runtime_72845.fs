@@ -3,15 +3,10 @@
 
 // OSR method with modifiable this
 
-module Main
-
-open Xunit
-open Microsoft.DotNet.XUnitExtensions
-
-[<Fact>]
-[<SkipOnCoreClr("This test is not compatible with GC stress.", RuntimeTestModes.AnyGCStress)>]
-let main () =
+[<EntryPoint>]
+let main _ =
     let l1 = [0 .. 100000]
     let l2 = [0 .. 100000]
     let eq = l1 = l2
-    Assert.True(eq)
+    printfn $"Lists equal: {eq}"
+    if eq then 100 else -1
