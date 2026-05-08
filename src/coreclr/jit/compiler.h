@@ -3220,7 +3220,7 @@ public:
     GenTreeColon* gtNewColonNode(var_types type, GenTree* thenNode, GenTree* elseNode);
     GenTreeQmark* gtNewQmarkNode(var_types type, GenTree* cond, GenTreeColon* colon);
 
-    GenTreeOpWithILOffset* gtNewLclHeapNode(GenTree* size, IL_OFFSET ilOffset = 0);
+    GenTreeOpWithILOffset* gtNewLclHeapNode(GenTree* size, IL_OFFSET ilOffset);
 
     bool pickProfiledValue(IL_OFFSET ilOffset, uint32_t* pLikelihood, ssize_t* pValue);
 

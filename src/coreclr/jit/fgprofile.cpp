@@ -1918,6 +1918,14 @@ static bool IsValueHistogramProbeCandidate(Compiler*  compiler,
 {
     if (node->OperIs(GT_LCLHEAP))
     {
+        // Mirror the gating in impProfileLclHeap: only zero-init, non-constant
+        // locallocs are value-profile candidates. Anything else would have its
+        // probe data ignored by the consumer and just waste a schema slot.
+        if (!compiler->info.compInitMem || node->AsOp()->gtOp1->OperIsConst())
+        {
+            return false;
+        }
+
         if (ilOffset != nullptr)
         {
             *ilOffset = node->AsOpWithILOffset()->GetILOffset();

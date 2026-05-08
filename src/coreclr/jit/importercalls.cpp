@@ -1836,12 +1836,16 @@ GenTree* Compiler::impProfileLclHeap(GenTree* lclHeap, IL_OFFSET ilOffset)
         // actually be unrolled by Lowering. Skip very small popular values, since the
         // cmp/jne guard plus contained-constant LCLHEAP codegen overhead (stack probe,
         // outgoing-arg-area dance) costs more than the variable-size path saves at this
-        // size. We don't need the upper bound because for constant-sized LCLHEAPs of large size we
-        // emit memzero call which is a lot faster than the loop we would get for variable sized LCLHEAP.
-        const ssize_t minValue = (ssize_t)DEFAULT_MAX_LOCALLOC_TO_LOCAL_SIZE;
-        if (profiledValue <= minValue)
+        // size. We don't need an upper bound because for large constant-sized LCLHEAPs
+        // we emit a memzero call which is a lot faster than the loop we would get for
+        // variable sized LCLHEAP.
+        //
+        // The cutoff is empirical (per benchmark sweep on x64/arm64); it is unrelated to
+        // DEFAULT_MAX_LOCALLOC_TO_LOCAL_SIZE despite the value coincidence today.
+        const ssize_t minProfitableSize = 32;
+        if (profiledValue <= minProfitableSize)
         {
-            JITDUMP("Profiled LCLHEAP size %zd is smaller than %zd - skipping\n", profiledValue, minValue);
+            JITDUMP("Profiled LCLHEAP size %zd is smaller than %zd - skipping\n", profiledValue, minProfitableSize);
             return lclHeap;
         }
         assert(FitsIn<int>(profiledValue));
@@ -7236,6 +7240,14 @@ void Compiler::addFatPointerCandidate(GenTreeCall* call)
 //
 bool Compiler::pickProfiledValue(IL_OFFSET ilOffset, uint32_t* pLikelihood, ssize_t* pValue)
 {
+    assert(pLikelihood != nullptr);
+    assert(pValue != nullptr);
+
+    // Default the outputs to safe values so callers that ignore the return value
+    // (or pass uninitialized locals) can't observe garbage.
+    *pLikelihood = 0;
+    *pValue      = 0;
+
 #if DEBUG
     // Request 8 likely values in debug to get more information in JitDump.
     const unsigned MaxLikelyValues = 8;

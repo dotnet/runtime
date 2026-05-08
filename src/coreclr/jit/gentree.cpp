@@ -8569,6 +8569,11 @@ ExceptionSetFlags GenTree::OperExceptions(Compiler* comp)
 
         case GT_LCLHEAP:
             // Localloc may always overflow the stack; model unconditionally.
+            //
+            // The JIT historically did not model StackOverflow on GT_LCLHEAP. We model
+            // it now because impProfileLclHeap places two GT_LCLHEAP nodes in QMARK
+            // arms; without GTF_EXCEPT, if-conversion (see ifconversion.cpp) collapses
+            // the QMARK into a SELECT/CMOV that executes both LCLHEAPs unconditionally.
             return ExceptionSetFlags::UnknownException;
 
         case GT_CKFINITE:
