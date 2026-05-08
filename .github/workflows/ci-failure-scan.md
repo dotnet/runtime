@@ -184,33 +184,76 @@ Same-run KBE + PR is not possible: gh-aw strict mode forbids `issues: write` on 
 
 The agent must accept this constraint and produce KBEs in run N, then companion PRs in run N+1. The 12-hour cadence makes this acceptable: the KBE alone unblocks PR CI immediately (the moment the safe-outputs job processes it, ~1 min after the agent finishes), and the muting PR follows within 12h.
 
-For each actionable failure, in this order:
+For each actionable failure, walk through all six checks below before deciding the action — multiple can fire at once, and any one is reason to stop.
 
-1. **Search for existing artifacts** before creating anything new:
-   - `search_issues` for an open KBE: `is:issue is:open label:"Known Build Error" in:body "<error-signature>"`. Try variations on the signature (full `[FAIL]` line, assertion text, exception type + test name).
-   - `search_pull_requests` for an open muting PR that already silences this test: `is:pr is:open in:title "<test-name>" "[ci-scan]"` and `is:pr is:open "<test-name>" ActiveIssue`.
-   - `search_pull_requests` for an open small-fix PR: `is:pr is:open in:title "<short-failure-description>" "[ci-scan]"`.
-   - If a KBE + muting PR already cover this failure, **skip** — record it in the coverage tally as `→ already-covered: KBE #<n> + PR #<n>` and move on. Do not duplicate.
-2. **No existing KBE → file one via safe-outputs `create_issue`**. The only labels permitted on KBE issues are `Known Build Error` and `blocking-clean-ci` (see "Outputs: title and labels" below). Title prefix: `[ci-scan] `. Body: the KBE format described in "Known Build Error issue" below. The safe-outputs handler will create the issue ~1 minute after the agent finishes; the issue number is not available to the agent during this run.
-3. **Existing KBE found AND failure still occurring AND no muting PR exists yet → open the muting PR via safe-outputs `create_pull_request`** with the existing KBE issue number hardcoded in the diff: `[ActiveIssue("https://github.com/dotnet/runtime/issues/<existing-N>", ...)]` for unit tests, `<GCStressIncompatible>true</GCStressIncompatible>` (with an inline `<!-- https://github.com/dotnet/runtime/issues/<existing-N> -->` comment) for stress-incompatible JIT csproj families. PR title prefix `[ci-scan] `; **the PR body MUST include a top-level "Linked KBE" line of the form `Linked KBE: #<existing-N>` so the link is unambiguous and machine-readable**, in addition to the prose "Linked KBE" section. This PR must change **only test annotations / csproj test-config flags** — no product code, no diagnosis, no logic. Aim for ≤ 5 lines of diff.
-4. **(Optional, alongside step 3) Open a small-fix PR via safe-outputs `create_pull_request`** if the failure satisfies the "small product fix opportunity" criteria above. Separate PR, separate branch, separate diff. PR body must (a) cite the failing test as evidence, (b) explain the root cause, (c) state explicitly why the fix is safe, (d) include `Linked KBE: #<existing-N>` as a top-level line, and (e) note "If this lands before #<muting-PR>, that PR can be closed". Do not bundle the fix into the muting PR — keep them separate so a maintainer can take one without the other.
+#### Step 1 — Look for an existing KBE.
 
-Caps: safe-outputs `create_issue` max 5/run, `create_pull_request` max 10/run. When a cap is hit, fall back to "skipped: cap reached" rather than silently dropping signatures — subsequent runs will pick them up.
+Search `is:issue is:open label:"Known Build Error" in:body "<error-signature>"`. Try variations: the full `[FAIL]` line, the assertion text, the exception class plus the test name. On a hit, record the issue number as `existing-kbe` and continue — finding a KBE doesn't end the walk, it changes the final action.
 
-After every run, you should be able to answer YES to **whichever of these applies to each failure**:
+#### Step 2 — Look for an area-team tracker without the KBE label.
 
-- **First-encounter failure (no existing KBE):** "Did I file the KBE?" Muting/fix PRs are deferred to the next run — they cannot reference an issue number that doesn't exist yet at agent runtime.
-- **Existing KBE, no muting PR yet:** "Did I open the muting PR (and, if criteria met, the small-fix PR)?"
-- **Existing KBE + existing muting PR:** "Did I confirm both, skip silently, and record `→ already-covered: KBE #<n> + PR #<n>` in the coverage tally?"
+Some teams track recurring failures in plain issues. Search `is:issue is:open in:title "<test-name>"` together with `in:body "<test-file-path>"`. On a hit, record it as `linked-tracker` and reuse its number via `[ActiveIssue("...issues/<n>")]` rather than filing a parallel KBE.
 
-If the answer is NO for any failure, you have not done the job.
+#### Step 3 — Look for an existing muting PR.
+
+Search `is:pr is:open in:title "<test-name>" "[ci-scan]"` and `is:pr is:open "<test-name>" ActiveIssue`. On a hit, record `→ already-covered: muting PR #<n>` and stop.
+
+#### Step 4 — Look for an in-flight fix PR by anyone.
+
+Search broadly — not only `[ci-scan]` PRs — by test name, file path, and assembly: `is:pr is:open "<test-name>"`, `is:pr is:open "<test-file-path>"`, `is:pr is:open "<assembly>" in:title`. For each candidate, fetch the PR body; if it claims to fix this failure (or links the same KBE), stop and record `→ already-covered: in-flight fix PR #<n>`.
+
+#### Step 5 — Verify every issue number you're about to write actually exists.
+
+For every `<n>` you plan to embed in source (`[ActiveIssue("...issues/<n>")]`, `Linked KBE: #<n>`, the inline `<!-- ...issues/<n> -->` comment), call `get_issue dotnet/runtime#<n>` and confirm it returns an open issue. If it doesn't, stop — a dead-link annotation in source requires a follow-up PR to remove.
+
+#### Step 6 — Confirm muting is welcome on this issue.
+
+Read the candidate KBE / tracker's labels and its most recent comment. If you see `do-not-mute`, `investigation-active`, or `keep-failing`, or the most recent area-owner comment objects to muting (e.g. "please don't disable these tests"), record `→ skipped: do-not-mute on issue #<n>` and stop.
+
+#### What action to take
+
+- **Steps 1 and 2 both empty** → file a new KBE via safe-outputs `create_issue` with the body template below, title prefix `[ci-scan] `, and only the labels `Known Build Error` and `blocking-clean-ci`. The issue number isn't visible during this run, so the muting PR is deferred to the next run.
+- **Step 1 or 2 found one, AND steps 3–6 are clean** → open the muting PR via safe-outputs `create_pull_request`. Diff ≤ 5 lines, only test annotations or csproj flags. The body must include `Linked KBE: #<n>` as a top-level line plus the four-question verification block below.
+- **Plus, if the failure satisfies the "small product fix opportunity" criteria above** → open a separate fix PR on its own branch. Body cites (a) the failing test as evidence, (b) the root cause, (c) why the fix is safe, (d) `Linked KBE: #<n>`, and (e) "If this lands before #<muting-PR>, that PR can be closed." Kept separate so a maintainer can take one without the other.
+
+#### Before you link a KBE, verify it actually matches
+
+Test-name overlap alone is not enough — common wrong-link patterns include reusing a KBE filed against a different architecture, or one about an exception class for a failure that's actually a work-item timeout. Answer all four before writing `Linked KBE: #<n>` or `[ActiveIssue("...issues/<n>")]`:
+
+1. Does the candidate KBE describe the **same test (or test family)** as the current `[FAIL]` line?
+2. Does its `ErrorMessage` / quoted exception text describe the **same failure signature** (exception class, assertion message)?
+3. Is the failing **OS** in the set the KBE says it impacts?
+4. Is the failing **architecture** in the set the KBE says it impacts?
+
+If any answer is no, file a fresh KBE this run and defer the muting PR. Embed the four answers in the PR body's "Reasoning" section; PRs missing this, or with an unaddressed mismatch, will be closed.
+
+#### Caps and end-of-run check
+
+Per-run caps: `create_issue` max 5, `create_pull_request` max 10. On cap, record `→ skipped: cap reached` — the next run picks them up.
+
+Before stopping, confirm each failure is handled:
+
+- **No existing KBE** → KBE filed?
+- **Existing KBE, no muting PR yet** → muting PR opened (and the optional fix PR if criteria are met)?
+- **Existing KBE plus existing muting PR or in-flight fix** → `→ already-covered` recorded?
+
+If the answer is no for any failure, the run is incomplete.
 
 ### Per-failure-class rules
 
 The two-pass flow above applies to all classes below. "KBE + muting PR" means: KBE in the run that first encounters the failure, muting PR in the next run that finds the KBE already exists.
 
 - **Recurring failure with a stable error signature** (≥ 2 occurrences on `main` in the scanned window) → KBE (run N) + muting PR (run N+1) + fix PR (optional, run N+1, only if criteria met).
-- **Per-test platform / configuration incompatibility** (e.g., test fails only under `jitstress=2`, `gcstress=0xC`, on a single mobile arch, on browser, on NativeAOT) → KBE (run N) + muting PR (run N+1). Allowed muting PR mechanisms:
+- **Per-test platform / configuration incompatibility** (e.g., test fails only under `jitstress=2`, `gcstress=0xC`, on a single mobile arch, on browser, on NativeAOT) → KBE (run N) + muting PR (run N+1). The muting PR's skip condition MUST be **as narrow as the observed failure scope** — only the OS / arch / config combinations that actually fail.
+
+  | Observed failure scope | ❌ Bad (too broad) | ✅ Good (matches scope) |
+  |---|---|---|
+  | Only `linux-arm` fails | `[SkipOnPlatform(TestPlatforms.AnyUnix, ...)]` or muting on all NativeAOT | `<CLRTestTargetUnsupported Condition="'$(TargetOS)' == 'linux' and '$(TargetArchitecture)' == 'arm'">true</CLRTestTargetUnsupported>` |
+  | Only NativeAOT on a single arch | `<NativeAotIncompatible>true</NativeAotIncompatible>` (all arches) | `<NativeAotIncompatible Condition="'$(TargetArchitecture)' == 'arm'">true</NativeAotIncompatible>` |
+  | Only one stress mode | `<GCStressIncompatible>true</GCStressIncompatible>` (all stress modes) | Add stress-mode predicate, e.g. gate via the existing `GCStressIncompatible` only for the failing variant |
+
+  In the PR's "Reasoning" section, list the exact set of failing legs (definition + queue + stress mode) that justifies the chosen condition, so a reviewer can verify scope matches evidence.
+- Allowed muting PR mechanisms:
   - `[SkipOnPlatform(TestPlatforms.<plat>, "<reason>")]` for platform-specific failures.
   - `[ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.<helper>))]` narrowed via existing helpers.
   - `[ActiveIssue("https://github.com/dotnet/runtime/issues/<N>", TestPlatforms.<plat>)]` referencing the KBE.
@@ -321,9 +364,9 @@ File one when **all** of the following hold:
 - No fix PR is currently open (verify via `search_pull_requests`).
 - The failure is **not** a build break or an infrastructure failure — only test failures or hangs are eligible for a KBE. Build breaks and infra failures (for example dead-letter, device-lost, or agent-disconnect issues) must use a regular tracking issue.
 
-Required structure (Build Analysis is strict — match the headings exactly, and use **exactly three backticks** for the JSON code fence; never four. The opening and closing fence must be the same length, otherwise the fence is broken and Build Analysis silently skips the issue):
+Required structure: match the headings exactly. The literal body MUST look exactly like the example below. The outer fence in this prompt uses `~~~` (tildes) only so the inner ` ``` ` fences stay literal; in the issue you emit, do **not** use tildes anywhere — emit only the inner content between (but not including) the `~~~` lines. Walk the "Verify the body before submitting" checks below before committing to the issue body.
 
-```
+~~~
 ## Build Information
 Build: <link to the dev.azure.com build that first hit this in window>
 Build error leg or test failing: <AzDO leg name>-<assembly or test name>
@@ -333,17 +376,38 @@ Pull request: <link to the PR if the build was a PR build, otherwise omit this l
 
 <!-- Use ErrorMessage for String.Contains matches. Use ErrorPattern for regex (single line / no backtracking). Set BuildRetry to `true` only for clear infra flakes. ExcludeConsoleLog skips helix log scanning. -->
 
-(open three backticks, then `json` on the same line)
+```json
 {
-  "ErrorMessage": "<the exact substring from the failure log; prefer the [FAIL] line>",
+  "ErrorMessage": "<the exact substring from the failure log; prefer the assertion / exception message text, NOT the bare test name>",
   "ErrorPattern": "",
   "BuildRetry": false,
   "ExcludeConsoleLog": false
 }
-(close three backticks)
 ```
+~~~
 
-The pseudo-instructions `(open three backticks, then ...)` and `(close three backticks)` above are **placeholders** in this prompt because nesting fenced code blocks in the prompt itself is fragile; in the actual issue body emit literal ```` ``` `` (three backticks) on each side of the JSON object. Verify the open and close fences both consist of exactly three backticks before submitting. If you are uncertain, count them.
+#### Verify the body before submitting
+
+Build Analysis is strict: a malformed JSON block or an over-broad signature means the issue is silently skipped or matches every passing run. Walk these eight checks; fix and re-check on any failure.
+
+1. **The body contains a fenced JSON block.** Without it Build Analysis has nothing to parse. Prose `**Error Message:**` / `**Stack Trace:**` sections don't count.
+2. **Exactly one fenced JSON block.** Multiple skeletons yield zero matches.
+3. **The opening fence is exactly three backticks followed by `json`**, lowercase, with nothing else on the line. Four backticks, missing lang tag, or trailing whitespace causes the parser to skip the issue.
+4. **The closing fence is exactly three backticks**, same length as the open.
+5. **`ErrorMessage` (or `ErrorPattern`) is non-empty.** Empty signatures match nothing.
+6. **The signature is not a bare identifier.** A fully-qualified test name, a stack-frame line, or a bare exception type all appear in `[PASS]` and `[SKIP]` lines for the same test, so the signature would match every passing run going forward.
+7. **Negative-match before submitting.** Would `String.Contains("<your-signature>")` accidentally match (a) `[PASS]` / `[SKIP]` lines for the same test, (b) other tests in the same assembly, or (c) build-time output (Crossgen2, ilasm, MSBuild)? If yes, narrow it.
+8. **Single-line, no escapes.** Build Analysis is `String.Contains`, case-sensitive, single-line — newlines, ANSI escapes (`\u001b[`), and time-prefixes (`[12:34:56.789]`) are not stripped. Use `ErrorPattern` with an anchored regex (no unbounded `.*`) when multi-line is genuinely needed.
+
+#### Signature examples — Bad → Good
+
+| ❌ Bad | Why bad | ✅ Good (use as `ErrorMessage`, or `ErrorPattern` if marked) |
+|---|---|---|
+| `"Some.Test.Class.TestMethodName"` | bare test name; matches `[PASS]` lines for the same test | `"Some.Test.Class.TestMethodName ... System.SocketException: Try again"` |
+| `"SomeTests.Prefix_"` (trailing `_`) | truncated prefix; trailing `_`/`*`/`.` is literal not glob | `ErrorPattern: "SomeTests\\.Prefix_[A-Za-z]+ .*Xunit\\.Sdk\\."` |
+| `"Some.Type.Method"` (bare type/method) | matches stack scans of unrelated tests | `ErrorPattern: "System\\.NullReferenceException.*\\n\\s+at Some\\.Type\\.Method"` |
+| `"BadImageFormatException"` | bare exception type; matches infra hiccups too | `"System.BadImageFormatException: Could not load file or assembly 'System.Private.CoreLib'"` |
+| `"Operation timed out"` | matches transient network failures everywhere | `"xharness exec android test ... Operation timed out after 3600s"` paired with `BuildRetry: false` |
 
 Choose `ErrorMessage` (substring) by default. Use `ErrorPattern` only when a regex is genuinely needed and confirm it has no catastrophic backtracking. Set `BuildRetry: true` **only** for confirmed infra/queue-side flakes (dead-letter, device-lost, agent disconnect) where retrying is safe.
 
@@ -357,6 +421,8 @@ The `ErrorMessage` / `ErrorPattern` MUST uniquely identify **this specific failu
 - A generic tool name + failure verb: `Crossgen2 failed`, `ilasm failed`, `dotnet build failed`, `xharness exited`.
 - A bare exception type with no message: `BadImageFormatException`, `NullReferenceException`, `Fatal error. Invalid Program`, `Assertion failed`.
 - A bare `[FAIL]` line with only the test class name and no exception/assertion text.
+- A bare fully-qualified test name (e.g. `"ErrorMessage": "Namespace.Class.TestName"`) without the assertion/exception text that follows it on the next line of the log. The test name alone matches every future regression of that test, including unrelated ones, and Build Analysis will mute legitimate new failures.
+- A truncated test-name prefix ending in an underscore, dot, or wildcard glyph (e.g. `"SomeClass.SomeMethod_"`, `"Foo.Bar."`, `"Connect_*"`). `ErrorMessage` is a literal `String.Contains` match, not a glob — a trailing `_` or `*` is treated as a literal character and either over-matches every test whose name contains the prefix or never matches at all. If you need to cover multiple related test methods, instead set `ErrorPattern` to a properly anchored regex (e.g. `"SomeClass\\.SomeMethod_[A-Za-z]+ "`), or pick the exception/assertion message that is common to all of them.
 - Common infra strings: `Connection reset`, `Operation timed out`, `Resource temporarily unavailable`, `No space left on device`.
 
 **Prefer** signatures built from the most specific stable token in the log. In order of preference:
@@ -393,16 +459,10 @@ These look like permission errors but are physical:
 
 ## Coverage discipline (avoid arbitrary selection)
 
-Failure selection must be **systematic, not opportunistic**. Process pipelines in the order listed in the "Pipelines to scan" table. For each pipeline:
+Process every failed signature in every pipeline — do not cherry-pick the obvious ones and skip the rest. Walk pipelines in the order listed in the "Pipelines to scan" table; finish all classifications for pipeline N before moving to pipeline N+1.
 
-1. List every failed signature in the latest scanned build (sorted by occurrence count in the window, descending).
-2. For each signature, decide and record one of: `→ filed-issue #aw_<id>`, `→ filed-PR #aw_<id>`, `→ existing-issue #<n>`, `→ existing-PR #<n>`, `→ skipped: <reason>`. A skipped signature MUST have a reason (e.g., "build canceled, not a test failure", "less than 2 occurrences and not blocking", "owned by area-Infrastructure rota and already triaged").
-3. Keep a per-pipeline tally on disk under `/tmp/gh-aw/agent/coverage/<pipeline>.txt`. At the end, print a summary table to the agent log: `pipeline | total-signatures | issues-filed | prs-filed | reused-existing | skipped-with-reason`.
+For each pipeline:
 
-Caps still apply (10 PRs / 5 issues / run); when the cap is hit, fall back to "skipped: cap reached" rather than dropping signatures silently. Subsequent runs will pick them up.
-
-Do not jump between pipelines mid-investigation. Finish all classifications for pipeline N before moving to pipeline N+1.
-
-## Submit
-
-Search existing issues and PRs (`search_issues`, `search_pull_requests`) before creating anything new — never duplicate. Cross-check against issues filed by the existing JIT failure-tracking bot (e.g. open issues authored by `JulieLeeMSFT` for JIT pipelines) and reference rather than re-file them. When using `search_pull_requests`, filter to `is:merged OR review:approved` so the integrity filter does not silently drop low-trust results. If an issue already tracks the failure, **prefer opening a PR that references it via `[ActiveIssue("https://github.com/dotnet/runtime/issues/<n>")]`** rather than filing another issue. If `search_issues` returns no matches, proceed to file the issue.
+1. List every failed signature in the latest scanned build, sorted by occurrence count in the window (descending).
+2. For each signature, run the six-step walk in "Two-pass KBE → PR flow" and record the outcome (`→ filed-issue #aw_<id>`, `→ filed-PR #aw_<id>`, `→ existing-issue #<n>`, `→ existing-PR #<n>`, or `→ skipped: <reason>`). A skipped signature MUST have a reason (e.g., "build canceled, not a test failure", "less than 2 occurrences and not blocking", "owned by area-Infrastructure rota and already triaged").
+3. Keep a per-pipeline tally on disk under `/tmp/gh-aw/agent/coverage/<pipeline>.txt`. At the end of the run, print a summary table to the agent log: `pipeline | total-signatures | issues-filed | prs-filed | reused-existing | skipped-with-reason`.
