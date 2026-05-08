@@ -10160,6 +10160,8 @@ HRESULT CordbEval::NewStringWithLength(LPCWSTR wszString, UINT iLength)
 
 
     // Length of the string? Don't account for null as COMString::NewString is length-based
+    if (iLength > UINT_MAX / sizeof(WCHAR))
+        return E_INVALIDARG;
     UINT cbString = (UINT)(iLength * sizeof(WCHAR));
 
     // Remember that we're doing a func eval for a new string.

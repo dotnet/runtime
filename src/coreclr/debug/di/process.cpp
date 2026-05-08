@@ -5173,21 +5173,30 @@ void CordbProcess::RawDispatchEvent(
             // Read category and content strings from target memory using
             // the address and character count provided in the event.
             ULONG cchCategory = pEvent->FirstLogMessage.cchCategory;
+            ULONG cchContent = pEvent->FirstLogMessage.cchContent;
+
+            const ULONG cchMax = 0x10000;
+            if (cchCategory > cchMax || cchContent > cchMax)
+            {
+                IfFailThrow(E_UNEXPECTED);
+            }
+
             NewArrayHolder<WCHAR> wszCategory(new WCHAR[cchCategory + 1]);
             ULONG32 cbRead;
+            ULONG32 cbExpected = cchCategory * sizeof(WCHAR);
             IfFailThrow(m_pDACDataTarget->ReadVirtual(
                 pEvent->FirstLogMessage.szCategory,
                 reinterpret_cast<BYTE *>((WCHAR *)wszCategory),
-                cchCategory * sizeof(WCHAR),
+                cbExpected,
                 &cbRead));
             wszCategory[cchCategory] = W('\0');
 
-            ULONG cchContent = pEvent->FirstLogMessage.cchContent;
             NewArrayHolder<WCHAR> wszContent(new WCHAR[cchContent + 1]);
+            cbExpected = cchContent * sizeof(WCHAR);
             IfFailThrow(m_pDACDataTarget->ReadVirtual(
                 pEvent->FirstLogMessage.szContent,
                 reinterpret_cast<BYTE *>((WCHAR *)wszContent),
-                cchContent * sizeof(WCHAR),
+                cbExpected,
                 &cbRead));
             wszContent[cchContent] = W('\0');
 
@@ -5479,7 +5488,7 @@ void CordbProcess::RawDispatchEvent(
             // We want to be absolutely sure we don't accidentally keep a stale pointer
             // around because it would point to arbitrary stack space in the CLR potentially
             // leading to stack corruption.
-            _ASSERTE( pThread->m_EnCRemapFunctionIP == NULL );
+            _ASSERTE( pThread->m_EnCRemapFunctionIP == (CORDB_ADDRESS)0 );
 
             // Stash the address of the remap IP buffer.  This indicates that calling
             // RemapFunction is valid and provides a communications channel between the RS
