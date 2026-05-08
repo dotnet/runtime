@@ -103,7 +103,7 @@
         PublishTestResults=$(_PublishTestResults);
         RunCrossGen2=$(_RunCrossGen2);
         CompositeBuildMode=$(_CompositeBuildMode);
-        CrossGen2OutputFormat=$(_Crossgen2OutputFormat);
+        CrossGen2OutputFormat=$(_CrossGen2OutputFormat);
         LongRunningGCTests=$(_LongRunningGCTests);
         GcSimulatorTests=$(_GcSimulatorTests);
         RunInUnloadableContext=$(_RunInUnloadableContext);
