@@ -2285,11 +2285,12 @@ MDInternalRW::GetSigOfMethodDef(
     _ASSERTE(TypeFromToken(methoddef) == mdtMethodDef);
 
     HRESULT hr;
+    *ppSig = NULL;
+    *pcbSigBlob = 0;
+
     LOCKREADIFFAILRET();
 
     MethodRec *pMethodRec;
-    *ppSig = NULL;
-    *pcbSigBlob = 0;
     IfFailRet(m_pStgdb->m_MiniMd.GetMethodRecord(RidFromToken(methoddef), &pMethodRec));
     IfFailRet(m_pStgdb->m_MiniMd.getSignatureOfMethod(pMethodRec, ppSig, pcbSigBlob));
     return S_OK;
@@ -2310,11 +2311,12 @@ MDInternalRW::GetSigOfFieldDef(
     _ASSERTE(TypeFromToken(fielddef) == mdtFieldDef);
 
     HRESULT hr;
+    *ppSig = NULL;
+    *pcbSigBlob = 0;
+
     LOCKREADIFFAILRET();
 
     FieldRec *pFieldRec;
-    *ppSig = NULL;
-    *pcbSigBlob = 0;
     IfFailRet(m_pStgdb->m_MiniMd.GetFieldRecord(RidFromToken(fielddef), &pFieldRec));
     IfFailRet(m_pStgdb->m_MiniMd.getSignatureOfField(pFieldRec, ppSig, pcbSigBlob));
     return S_OK;
@@ -2667,11 +2669,9 @@ MDInternalRW::GetNameAndSigOfMemberRef( // meberref's name
     LPCSTR          *pszMemberRefName)
 {
     HRESULT hr;
-    LOCKREADIFFAILRET();
 
     _ASSERTE(TypeFromToken(memberref) == mdtMemberRef);
 
-    MemberRefRec *pMemberRefRec;
     *pszMemberRefName = NULL;
     if (ppvSigBlob != NULL)
     {
@@ -2679,6 +2679,10 @@ MDInternalRW::GetNameAndSigOfMemberRef( // meberref's name
         *ppvSigBlob = NULL;
         *pcbSigBlob = 0;
     }
+
+    LOCKREADIFFAILRET();
+
+    MemberRefRec *pMemberRefRec;
     IfFailRet(m_pStgdb->m_MiniMd.GetMemberRefRecord(RidFromToken(memberref), &pMemberRefRec));
     if (ppvSigBlob != NULL)
     {
