@@ -3,7 +3,6 @@
     <CLRTestPriority>1</CLRTestPriority>
     <!-- Needed for NativeAotIncompatible, ProjectReference CopyToOutputDirectory, and Process.Start -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
-    <!-- Temporarily disabled due to https://github.com/dotnet/runtime/issues/80356 -->
     <!-- Test expects corerun -->
     <NativeAotIncompatible>true</NativeAotIncompatible>
   </PropertyGroup>

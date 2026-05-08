@@ -4,9 +4,6 @@
     <!-- Needed for CLRTestExecutionArguments -->
     <CLRTestExecutionArguments />
     <CLRTestPriority>1</CLRTestPriority>
-    <!-- This test is failing under GCStress variations, so disabling it under GCStress till the issue is investigated:
-         Issue: https://github.com/dotnet/runtime/issues/63860
-    -->
   </PropertyGroup>
   <PropertyGroup>
     <DebugType>PdbOnly</DebugType>

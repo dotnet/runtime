@@ -2,7 +2,6 @@
   <PropertyGroup>
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <!-- Needed for IsLongRunningGCTest -->
-    <!-- NOTE: this test simply takes too long to complete under GCStress. It is not fundamentally incompatible. -->
     <IsLongRunningGCTest>true</IsLongRunningGCTest>
     <CLRTestPriority>1</CLRTestPriority>
   </PropertyGroup>

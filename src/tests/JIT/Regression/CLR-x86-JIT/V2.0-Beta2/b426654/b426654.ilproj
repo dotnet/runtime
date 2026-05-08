@@ -1,8 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk.IL">
   <PropertyGroup>
-    <!-- This test is too slow under GCStress=3. Issue: https://github.com/dotnet/runtime/issues/50615 -->
-  </PropertyGroup>
-  <PropertyGroup>
     <DebugType>Full</DebugType>
   </PropertyGroup>
   <ItemGroup>

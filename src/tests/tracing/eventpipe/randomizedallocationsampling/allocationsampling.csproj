@@ -5,7 +5,6 @@
     <TargetFrameworkIdentifier>.NETCoreApp</TargetFrameworkIdentifier>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
-    <!-- Tracing tests routinely time out with jitstress and gcstress -->
 
     <!-- Not AllocationSampled with Mono runtime -->
     <DisableProjectBuild Condition="'$(RuntimeFlavor)' == 'mono'">true</DisableProjectBuild>

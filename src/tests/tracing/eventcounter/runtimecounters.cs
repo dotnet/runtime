@@ -101,7 +101,7 @@ namespace RuntimeEventCounterTests
         [ActiveIssue(" needs triage ", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoAnyAOT))]
         [ActiveIssue("System.Threading.Thread.UnsafeStart not supported", TestPlatforms.Browser)]
         [SkipOnCoreClr("This test is sensitive to JIT optimizations.", RuntimeTestModes.AnyJitOptimizationStress)]
-        [SkipOnCoreClr("This test is not compatible with GC stress.", RuntimeTestModes.AnyGCStress)]
+        [SkipOnCoreClr("Tracing tests routinely time out with JIT stress and GC stress.", RuntimeTestModes.AnyGCStress)]
         [Fact]
         public static int TestEntryPoint()
         {

@@ -5,7 +5,6 @@
     <TargetFrameworkIdentifier>.NETCoreApp</TargetFrameworkIdentifier>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
-    <!-- Tracing tests routinely time out with jitstress and gcstress -->
     <!-- ilasm round-trip testing doesn't work, as test expects unchanged assembly name.
          Issue: https://github.com/dotnet/runtime/issues/39935
     -->

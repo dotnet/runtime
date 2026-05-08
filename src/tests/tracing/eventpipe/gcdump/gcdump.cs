@@ -37,7 +37,7 @@ namespace Tracing.Tests.EventSourceError
         [ActiveIssue("System.Diagnostics.Process is not supported on wasm", TestPlatforms.Browser)]
         [ActiveIssue("Can't find file dotnet-diagnostic-{pid}-*-socket", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsRiscv64Process))]
         [SkipOnCoreClr("This test is sensitive to JIT optimizations.", RuntimeTestModes.AnyJitOptimizationStress)]
-        [SkipOnCoreClr("This test is not compatible with GC stress.", RuntimeTestModes.AnyGCStress)]
+        [SkipOnCoreClr("Tracing tests routinely time out with JIT stress and GC stress.", RuntimeTestModes.AnyGCStress)]
         [Fact]
         public static int TestEntryPoint()
         {

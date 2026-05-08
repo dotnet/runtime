@@ -14,7 +14,7 @@ using Xunit;
 public class InterpreterTester
 {
     [SkipOnCoreClr("This test is sensitive to JIT optimizations.", RuntimeTestModes.AnyJitOptimizationStress)]
-    [SkipOnCoreClr("This test is not compatible with GC stress.", RuntimeTestModes.AnyGCStress)]
+    [SkipOnCoreClr("Temporarily disabled due to https://github.com/dotnet/runtime/issues/112827.", RuntimeTestModes.AnyGCStress)]
     [Fact]
     public static void RunTests()
     {

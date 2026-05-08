@@ -4,7 +4,6 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <!-- It takes a long time to complete (on a non-AVX machine) -->
     <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
-    <!-- https://github.com/dotnet/runtime/issues/12392 -->
   </PropertyGroup>
   <PropertyGroup>
     <DebugType>Embedded</DebugType>

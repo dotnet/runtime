@@ -5,10 +5,6 @@
     <!-- Consider enable it for Mono whenever the implementation is ready -->
     <!-- https://github.com/dotnet/runtime/issues/73167 -->
     <CLRTestTargetUnsupported Condition="'$(RuntimeFlavor)' != 'coreclr'">true</CLRTestTargetUnsupported>
-    <!--
-        This test requires the test case to perform exactly 1 GC right at the spot, so it won't run
-        correctly under GCStress.
-     -->
     <CLRTestPriority>1</CLRTestPriority>
   </PropertyGroup>
   <PropertyGroup>

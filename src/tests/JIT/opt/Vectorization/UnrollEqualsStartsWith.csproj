@@ -3,7 +3,6 @@
     <Optimize>True</Optimize>
     <!-- Needed for TrimMode=partial -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
-    <!-- This test takes very long time under gcstress and causes timeouts -->
     <TrimMode>partial</TrimMode>
   </PropertyGroup>
   <ItemGroup>

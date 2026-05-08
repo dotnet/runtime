@@ -2,7 +2,6 @@
   <PropertyGroup>
     <DebugType>None</DebugType>
     <Optimize>True</Optimize>
-    <!-- This test takes very long time under gcstress and causes timeouts -->
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(MSBuildProjectName).cs" />

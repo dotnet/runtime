@@ -4,7 +4,6 @@
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <TargetFrameworkIdentifier>.NETCoreApp</TargetFrameworkIdentifier>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <!-- Tracing tests routinely time out with jitstress and gcstress -->
     <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
   </PropertyGroup>
   <ItemGroup>

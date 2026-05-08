@@ -1,8 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <!-- Timeout on Arm64 -->
-  </PropertyGroup>
-  <PropertyGroup>
     <Optimize>True</Optimize>
   </PropertyGroup>
   <ItemGroup>

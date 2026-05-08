@@ -1,7 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <!-- Tracing tests routinely time out with jitstress and gcstress -->
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="eventlistenerenabledisable.cs" />

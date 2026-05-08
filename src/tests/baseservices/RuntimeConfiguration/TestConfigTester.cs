@@ -15,7 +15,7 @@ using TestLibrary;
 public class TestConfigTester
 {
     [ActiveIssue("Test expects being run with corerun", typeof(Utilities), nameof(Utilities.IsNativeAot))]
-    [SkipOnCoreClr("This test is not compatible with GC stress.", RuntimeTestModes.AnyGCStress)]
+    [SkipOnCoreClr("This test provides no interesting scenarios for GC stress.", RuntimeTestModes.AnyGCStress)]
     [Fact]
     public static void RunTests()
     {

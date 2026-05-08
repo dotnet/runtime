@@ -9,7 +9,7 @@ using Xunit;
 
 public class UnrollEqualsStartsWith
 {
-    [SkipOnCoreClr("This test is not compatible with GC stress.", RuntimeTestModes.AnyGCStress)]
+    [SkipOnCoreClr("This test takes a very long time under GC stress and causes timeouts.", RuntimeTestModes.AnyGCStress)]
     [Fact]
     public static int TestEntryPoint()
     {

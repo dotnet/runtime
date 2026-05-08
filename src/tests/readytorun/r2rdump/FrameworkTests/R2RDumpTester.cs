@@ -38,7 +38,7 @@ namespace R2RDumpTests
         }
 
         [ActiveIssue("These tests are not supposed to be run with mono.", TestRuntimes.Mono)]
-        [SkipOnCoreClr("This test is not compatible with GC stress.", RuntimeTestModes.AnyGCStress)]
+        [SkipOnCoreClr("This test scans the entire System.Private.CoreLib and times out in GC stress runs; it functionally tests the R2R reader, not runtime stress.", RuntimeTestModes.AnyGCStress)]
         [SkipOnPlatform(TestPlatforms.Browser, "Process.Start is not supported on browser-wasm")]
         [Fact]
         [SkipOnMono("Ready-To-Run is a CoreCLR-only feature", TestPlatforms.Any)]
