@@ -4408,23 +4408,21 @@ GenTree::VisitResult GenTree::VisitOperandUses(TVisitor visitor)
         if (op->gtOp1 != nullptr)
         {
             RETURN_IF_ABORT(visitor(&op->gtOp1));
-
-            if (op->gtOp2 != nullptr)
-            {
-                return visitor(&op->gtOp2);
-            }
-            else
-            {
-                assert(NullOp2Legal());
-            }
         }
         else
         {
             assert(NullOp1Legal());
-            assert(NullOp2Legal());
+        }
 
-            // we should never have a null op1 and non-null op2
-            assert(op->gtOp2 == nullptr);
+        // We can have null op1 and non-null op2 for some nodes, such as GT_LEA
+
+        if (op->gtOp2 != nullptr)
+        {
+            return visitor(&op->gtOp2);
+        }
+        else
+        {
+            assert(NullOp2Legal());
         }
         return VisitResult::Continue;
     }
