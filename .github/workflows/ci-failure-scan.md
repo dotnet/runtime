@@ -57,7 +57,7 @@ jobs:
 # Consume the PAT number from the pre-activation step and select the corresponding secret
 engine:
   id: copilot
-  model: claude-sonnet-4.6
+  model: claude-opus-4.6
   env:
     # We cannot use line breaks in this expression as it leads to a syntax error in the compiled workflow
     # If none of the `COPILOT_PAT_#` secrets were selected, then the default COPILOT_GITHUB_TOKEN is used

@@ -1823,7 +1823,7 @@ TypeHandle DacDbiInterfaceImpl::TypeDataWalk::ReadLoadedTypeArg(TypeHandleReadTy
     switch (elementType)
     {
         case ELEMENT_TYPE_PTR:
-            _ASSERTE(pData->numTypeArgs == 1);
+            _ASSERTE(pData->numTypeArgs == (UINT)1);
             return PtrOrByRefTypeArg(pData, retrieveWhich);
             break;
 
