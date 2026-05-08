@@ -1404,13 +1404,16 @@ void RangeCheck::MergeEdgeAssertionsWorker(Compiler*                        comp
             ValueNum otherVN;
             if (op1VN == normalLclVN)
             {
+                // Assertion is "normalLclVN <cmpOper> otherVN" - keep cmpOper as-is.
                 otherVN = op2VN;
-                cmpOper = GenTree::SwapRelop(cmpOper);
             }
             else
             {
+                // Assertion is "otherVN <cmpOper> normalLclVN" - swap to get
+                // "normalLclVN <swappedCmpOper> otherVN".
                 assert(op2VN == normalLclVN);
                 otherVN = op1VN;
+                cmpOper = GenTree::SwapRelop(cmpOper);
             }
 
             Range otherRange = GetRangeFromAssertionsWorker(comp, otherVN, assertions, budget - 1, visited);
