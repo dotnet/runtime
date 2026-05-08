@@ -1836,9 +1836,10 @@ GenTree* Compiler::impProfileLclHeap(GenTree* lclHeap, IL_OFFSET ilOffset)
         // actually be unrolled by Lowering. Skip very small popular values, since the
         // cmp/jne guard plus contained-constant LCLHEAP codegen overhead (stack probe,
         // outgoing-arg-area dance) costs more than the variable-size path saves at this
-        // size. We don't need an upper bound because for large constant-sized LCLHEAPs
-        // we emit a memzero call which is a lot faster than the loop we would get for
-        // variable sized LCLHEAP.
+        // size. We don't need a separate profitability upper bound here: for large
+        // constant-sized LCLHEAPs we emit a memzero call which is a lot faster than the
+        // loop we would get for variable sized LCLHEAP. Note that the profiled value
+        // must still satisfy the representability constraint checked below.
         //
         // The cutoff is empirical (per benchmark sweep on x64/arm64); it is unrelated to
         // DEFAULT_MAX_LOCALLOC_TO_LOCAL_SIZE despite the value coincidence today.
