@@ -25,7 +25,7 @@ uint32_t minipal_getpagesize(void)
             abort();
         }
         page_size = (uint32_t)sc;
-        __atomic_store_n(&cached_page_size, page_size, __ATOMIC_RELAXED);
+        atomic_store_explicit(&cached_page_size, page_size, memory_order_relaxed);
     }
     return page_size;
 }
