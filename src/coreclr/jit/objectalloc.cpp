@@ -1224,9 +1224,13 @@ ObjectAllocator::ObjectAllocationType ObjectAllocator::AllocationKind(GenTree* t
             case CORINFO_HELP_NEWARR_1_DIRECT:
             case CORINFO_HELP_NEWARR_1_ALIGN8:
             {
-                if ((call->gtArgs.CountUserArgs() == 2) && call->gtArgs.GetUserArgByIndex(1)->GetNode()->IsCnsIntOrI())
+                if (call->gtArgs.CountUserArgs() == 2)
                 {
-                    allocType = OAT_NEWARR;
+                    GenTree* const lenArg = call->gtArgs.GetUserArgByIndex(1)->GetNode();
+                    if (lenArg->IsCnsIntOrI() || m_UseLocalloc)
+                    {
+                        allocType = OAT_NEWARR;
+                    }
                 }
                 break;
             }
