@@ -32,6 +32,29 @@ namespace System.Security.Cryptography
                 out ret);
         }
 
+        internal static void ReadEncryptedPkcs8<TRet, TState>(
+            string[] validOids,
+            ReadOnlySpan<byte> source,
+            ReadOnlySpan<char> password,
+            TState state,
+            KeyReader<TRet, TState> keyReader,
+            out int bytesRead,
+            out TRet ret)
+#if NET
+        where TState : allows ref struct
+#endif
+        {
+            ReadEncryptedPkcs8(
+                validOids,
+                source,
+                password,
+                ReadOnlySpan<byte>.Empty,
+                state,
+                keyReader,
+                out bytesRead,
+                out ret);
+        }
+
         internal static void ReadEncryptedPkcs8<TRet>(
             string[] validOids,
             ReadOnlySpan<byte> source,
@@ -50,6 +73,29 @@ namespace System.Security.Cryptography
                 out ret);
         }
 
+        internal static void ReadEncryptedPkcs8<TRet, TState>(
+            string[] validOids,
+            ReadOnlySpan<byte> source,
+            ReadOnlySpan<byte> passwordBytes,
+            TState state,
+            KeyReader<TRet, TState> keyReader,
+            out int bytesRead,
+            out TRet ret)
+#if NET
+        where TState : allows ref struct
+#endif
+        {
+            ReadEncryptedPkcs8(
+                validOids,
+                source,
+                ReadOnlySpan<char>.Empty,
+                passwordBytes,
+                state,
+                keyReader,
+                out bytesRead,
+                out ret);
+        }
+
         private static void ReadEncryptedPkcs8<TRet>(
             string[] validOids,
             ReadOnlySpan<byte> source,
@@ -58,6 +104,30 @@ namespace System.Security.Cryptography
             KeyReader<TRet> keyReader,
             out int bytesRead,
             out TRet ret)
+        {
+            ReadEncryptedPkcs8<TRet, KeyReader<TRet>>(
+                validOids,
+                source,
+                password,
+                passwordBytes,
+                keyReader,
+                static (key, kr, in algId, out ret) => kr(key, algId, out ret),
+                out bytesRead,
+                out ret);
+        }
+
+        private static void ReadEncryptedPkcs8<TRet, TState>(
+            string[] validOids,
+            ReadOnlySpan<byte> source,
+            ReadOnlySpan<char> password,
+            ReadOnlySpan<byte> passwordBytes,
+            TState state,
+            KeyReader<TRet, TState> keyReader,
+            out int bytesRead,
+            out TRet ret)
+#if NET
+        where TState : allows ref struct
+#endif
         {
             int read;
             ValueEncryptedPrivateKeyInfoAsn epki;
@@ -92,6 +162,7 @@ namespace System.Security.Cryptography
                 ReadPkcs8(
                     validOids,
                     decryptedMemory.Span,
+                    state,
                     keyReader,
                     out int innerRead,
                     out ret);
