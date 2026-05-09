@@ -1754,22 +1754,23 @@ GenTree* Compiler::impProfileValueGuardedTree(GenTree*           node,
     JITDUMP("Building profile-guarded tree for popular value = %zd (%u%%)\n", profiledValue, likelihood);
     DISPTREE(node);
 
-    // For calls with multiple operands, pre-spill the non-profiled args so their
-    // side effects keep firing in evaluation order; otherwise the QMARK guard
-    // would delay them until one of the arms is taken. (The profiled operand is
-    // spilled below.)
-    if (node->IsCall())
+    // Pre-spill any side-effecting sibling operands so their effects fire before
+    // the QMARK guard. This is generic across node kinds (calls, unary nodes,
+    // HWINTRINSICs, ...): GenTreeUseEdgeIterator walks all use-edges in evaluation
+    // order, including gtControlExpr and every CallArg slot for calls.
+    // (The profiled operand is spilled separately below.)
+    for (GenTree** useEdge : node->UseEdges())
     {
-        GenTreeCall* const call = node->AsCall();
-        for (unsigned i = 0; i < call->gtArgs.CountUserArgs(); i++)
+        if (useEdge == operandRef)
         {
-            GenTree** otherRef = &call->gtArgs.GetUserArgByIndex(i)->EarlyNodeRef();
-            if (otherRef == operandRef)
-            {
-                continue;
-            }
-            impCloneExpr(*otherRef, otherRef, CHECK_SPILL_ALL, nullptr DEBUGARG("spilling other call arg"));
+            continue;
         }
+        if (((*useEdge)->gtFlags & GTF_SIDE_EFFECT) == 0)
+        {
+            // No side effects -> no reordering hazard, no need for a temp.
+            continue;
+        }
+        impCloneExpr(*useEdge, useEdge, CHECK_SPILL_ALL, nullptr DEBUGARG("spilling sibling operand"));
     }
 
     // Spill the profiled operand so we can reference it both in the comparison
