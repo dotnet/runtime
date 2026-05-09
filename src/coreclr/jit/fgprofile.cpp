@@ -1921,27 +1921,40 @@ bool Compiler::IsValueHistogramProbeCandidate(GenTree* node, IL_OFFSET* ilOffset
 
     if (node->IsCall() && node->AsCall()->IsSpecialIntrinsic())
     {
+        GenTreeCall* const call = node->AsCall();
+
+        // gtHandleHistogramProfileCandidateInfo aliases gtInlineCandidateInfo /
+        // gtInlineCandidateInfoList / gtCallCookie / gtDirectCallAddress in a union
+        // (see GenTreeCall in gentree.h). If the call is an inline or GDV candidate,
+        // the union slot holds inline metadata, NOT a HandleHistogramProfileCandidateInfo,
+        // so a non-null pointer here would not be a real value-profile marker.
+        // Skip such calls to avoid reading inline metadata as histogram metadata.
+        if (call->IsInlineCandidate() || call->IsGuardedDevirtualizationCandidate())
+        {
+            return false;
+        }
+
         // Require gtHandleHistogramProfileCandidateInfo to be set: that's the
         // explicit "the importer marked this site for value profiling" signal.
         // Without this check, an inlined Memmove/SequenceEqual (which the importer
         // intentionally skips) would still match purely on NamedIntrinsic and the
         // visitor would later deref the null candidate info.
-        if (node->AsCall()->gtHandleHistogramProfileCandidateInfo == nullptr)
+        if (call->gtHandleHistogramProfileCandidateInfo == nullptr)
         {
             return false;
         }
 
-        const NamedIntrinsic ni = lookupNamedIntrinsic(node->AsCall()->gtCallMethHnd);
+        const NamedIntrinsic ni = lookupNamedIntrinsic(call->gtCallMethHnd);
         if ((ni == NI_System_SpanHelpers_Memmove) || (ni == NI_System_SpanHelpers_SequenceEqual))
         {
             if (ilOffset != nullptr)
             {
-                *ilOffset = node->AsCall()->gtHandleHistogramProfileCandidateInfo->ilOffset;
+                *ilOffset = call->gtHandleHistogramProfileCandidateInfo->ilOffset;
             }
             if (operandUseRef != nullptr)
             {
                 // Memmove(dst, src, len) and SequenceEqual(left, right, len) -- profile len.
-                *operandUseRef = &node->AsCall()->gtArgs.GetUserArgByIndex(2)->EarlyNodeRef();
+                *operandUseRef = &call->gtArgs.GetUserArgByIndex(2)->EarlyNodeRef();
             }
             return true;
         }

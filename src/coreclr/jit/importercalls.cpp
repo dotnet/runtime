@@ -1706,13 +1706,29 @@ GenTree* Compiler::impProfileValueGuardedTree(GenTree*           node,
     {
         if (node->IsCall())
         {
+            GenTreeCall* const call = node->AsCall();
+
+            // gtHandleHistogramProfileCandidateInfo shares a union slot with
+            // gtInlineCandidateInfo / gtInlineCandidateInfoList / gtCallCookie /
+            // gtDirectCallAddress / etc. (see GenTreeCall in gentree.h). If the call
+            // already has inline metadata in that slot, allocating a fresh
+            // HandleHistogramProfileCandidateInfo here would overwrite the inline
+            // metadata pointer. The inliner would then read garbage for fields it
+            // expects on InlineCandidateInfo (e.g. inlinersContext) and assert.
+            // Skip the marking in that case; we preserve the inline metadata, and
+            // if the call ultimately fails to inline a future re-jit can revisit it.
+            if (call->IsInlineCandidate() || call->IsGuardedDevirtualizationCandidate())
+            {
+                return node;
+            }
+
             // Calls carry the IL offset via gtHandleHistogramProfileCandidateInfo.
             // Other node kinds (e.g. GT_LCLHEAP) carry it on the node itself
             // (e.g. via GenTreeOpWithILOffset); the caller is responsible for that.
-            HandleHistogramProfileCandidateInfo* pInfo = new (this, CMK_Inlining) HandleHistogramProfileCandidateInfo;
-            pInfo->ilOffset                            = ilOffset;
-            pInfo->probeIndex                          = 0;
-            node->AsCall()->gtHandleHistogramProfileCandidateInfo = pInfo;
+            HandleHistogramProfileCandidateInfo* pInfo  = new (this, CMK_Inlining) HandleHistogramProfileCandidateInfo;
+            pInfo->ilOffset                             = ilOffset;
+            pInfo->probeIndex                           = 0;
+            call->gtHandleHistogramProfileCandidateInfo = pInfo;
         }
         compCurBB->SetFlags(BBF_HAS_VALUE_PROFILE);
         JITDUMP("\n ... marking [%06u] in " FMT_BB " for value profile instrumentation\n", dspTreeID(node),
