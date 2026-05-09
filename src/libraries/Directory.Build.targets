@@ -245,9 +245,17 @@
   </ItemGroup>
 
   <PropertyGroup>
-    <!-- TEMPORARY (DO NOT MERGE): flipped default to false to stress compInitMem=true
-         code paths in CI for PR #127970. Revert before merging. -->
-    <SkipLocalsInit Condition="'$(SkipLocalsInit)' == '' and '$(MSBuildProjectExtension)' == '.csproj' and '$(IsNETCoreAppSrc)' == 'true' and '$(TargetFrameworkIdentifier)' == '.NETCoreApp'">false</SkipLocalsInit>
+    <SkipLocalsInit Condition="'$(SkipLocalsInit)' == '' and '$(MSBuildProjectExtension)' == '.csproj' and '$(IsNETCoreAppSrc)' == 'true' and '$(TargetFrameworkIdentifier)' == '.NETCoreApp'">true</SkipLocalsInit>
+  </PropertyGroup>
+
+  <!-- TEMPORARY (DO NOT MERGE): force NETCoreApp libraries to actually init locals so
+       CI exercises compInitMem=true code paths end-to-end against PR #127970's GT_LCLHEAP
+       changes. Override only the [module: SkipLocalsInit] emission, but keep the
+       AllowUnsafeBlocks/SkipLocalsInit.cs side-effects of the original SkipLocalsInit=true
+       default below so the rest of the build infra (libraries that implicitly depend on
+       AllowUnsafeBlocks=true being set here) still works. Revert before merging. -->
+  <PropertyGroup Condition="'$(IsNETCoreAppSrc)' == 'true' and '$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
+    <SkipLocalsInitForCI>true</SkipLocalsInitForCI>
   </PropertyGroup>
 
   <!--Instructs compiler not to emit .locals init, using SkipLocalsInitAttribute.-->
@@ -258,7 +266,7 @@
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
       </PropertyGroup>
 
-      <ItemGroup>
+      <ItemGroup Condition="'$(SkipLocalsInitForCI)' != 'true'">
         <Compile Include="$(CommonPath)SkipLocalsInit.cs" Link="Common\SkipLocalsInit.cs" />
       </ItemGroup>
     </When>

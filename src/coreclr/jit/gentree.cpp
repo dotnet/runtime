@@ -6934,10 +6934,10 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                     // upper bound representing the runtime loop.
                     if (op1->IsCnsIntOrI() && info.compInitMem)
                     {
-                        const ssize_t size       = op1->AsIntCon()->IconValue();
+                        const ssize_t size        = op1->AsIntCon()->IconValue();
                         const ssize_t alignedSize = (size + (STACK_ALIGN - 1)) & ~(ssize_t)(STACK_ALIGN - 1);
-                        costEx = 8 + (int)(alignedSize / REGSIZE_BYTES); // > 7 to block if-conversion
-                        costSz = 4 + (int)(alignedSize / REGSIZE_BYTES);
+                        costEx                    = 8 + (int)(alignedSize / REGSIZE_BYTES); // > 7 to block if-conversion
+                        costSz                    = 4 + (int)(alignedSize / REGSIZE_BYTES);
                     }
                     else
                     {
