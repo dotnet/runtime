@@ -1376,6 +1376,17 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         return false;
     }
 
+    /// <summary>
+    /// Returns true if the method is shared by multiple generic instantiations (i.e. a "canonical"
+    /// shared generic method).
+    /// Matches native MethodDesc::IsSharedByGenericInstantiations().
+    /// </summary>
+    public bool IsSharedByGenericInstantiations(MethodDescHandle methodDescHandle)
+    {
+        MethodDesc methodDesc = _methodDescs[methodDescHandle.Address];
+        return IsSharedByGenericInstantiations(methodDesc);
+    }
+
     private bool IsSharedByGenericInstantiations(MethodDesc methodDesc)
     {
         // Check method-level sharing: InstantiatedMethodDesc with SharedMethodInstantiation

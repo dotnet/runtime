@@ -170,6 +170,11 @@ public enum CorDebugUserState
     USER_THREADPOOL = 0x100,
 }
 
+public enum IlNum : int
+{
+    TYPECTXT_ILNUM = -3,
+}
+
 // Name-surface projection of IDacDbiInterface in native method order for COM binding validation.
 // Parameter shapes are intentionally coarse placeholders and will be refined with method implementation work.
 [GeneratedComInterface]

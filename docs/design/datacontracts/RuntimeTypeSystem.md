@@ -203,6 +203,10 @@ partial interface IRuntimeTypeSystem : IContract
     // Corresponds to native MethodDesc::RequiresInstArg().
     public virtual bool RequiresInstArg(MethodDescHandle methodDesc);
 
+    // Return true if the method is shared across multiple generic instantiations (i.e. a canonical
+    // shared generic method).
+    public virtual bool IsSharedByGenericInstantiations(MethodDescHandle methodDesc);
+
     // Return true if the method uses the async calling convention.
     // Corresponds to native MethodDesc::IsAsyncMethod().
     public virtual bool IsAsyncMethod(MethodDescHandle methodDesc);
@@ -1671,6 +1675,11 @@ Determining if a method requires a hidden instantiation argument (generic contex
         }
         MethodTable mt = _methodTables[md.MethodTable];
         return mt.IsCanonMT && mt.Flags.HasInstantiation;
+    }
+
+    public bool IsSharedByGenericInstantiations(MethodDescHandle methodDescHandle)
+    {
+        return IsSharedByGenericInstantiations(_methodDescs[methodDescHandle.Address]);
     }
 ```
 

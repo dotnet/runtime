@@ -1013,7 +1013,37 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     }
 
     public int ResolveAssembly(ulong vmScope, uint tkAssemblyRef, ulong* pRetVal)
-        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.ResolveAssembly(vmScope, tkAssemblyRef, pRetVal) : HResults.E_NOTIMPL;
+    {
+        *pRetVal = 0;
+        int hr = HResults.S_OK;
+        try
+        {
+            Contracts.ILoader loader = _target.Contracts.Loader;
+            Contracts.ModuleHandle scopeModule = loader.GetModuleHandleFromAssemblyPtr(new TargetPointer(vmScope));
+            Contracts.ModuleLookupTables lookupTables = loader.GetLookupTables(scopeModule);
+            TargetPointer referencedModule = loader.GetModuleLookupMapElement(lookupTables.ManifestModuleReferences, tkAssemblyRef, out _);
+            if (referencedModule != TargetPointer.Null)
+            {
+                Contracts.ModuleHandle referencedModuleHandle = loader.GetModuleHandleFromModulePtr(referencedModule);
+                *pRetVal = loader.GetAssembly(referencedModuleHandle).Value;
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacy is not null)
+        {
+            ulong retValLocal;
+            int hrLocal = _legacy.ResolveAssembly(vmScope, tkAssemblyRef, &retValLocal);
+            Debug.ValidateHResult(hr, hrLocal);
+            if (hr == HResults.S_OK)
+                Debug.Assert(*pRetVal == retValLocal, $"cDAC: {*pRetVal}, DAC: {retValLocal}");
+        }
+#endif
+        return hr;
+    }
 
     public int GetNativeCodeSequencePointsAndVarInfo(ulong vmMethodDesc, ulong startAddress, Interop.BOOL fCodeAvailable, nint pNativeVarData, nint pSequencePoints)
         => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetNativeCodeSequencePointsAndVarInfo(vmMethodDesc, startAddress, fCodeAvailable, pNativeVarData, pSequencePoints) : HResults.E_NOTIMPL;
@@ -1206,7 +1236,56 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     }
 
     public int ResolveExactGenericArgsToken(uint dwExactGenericArgsTokenIndex, ulong rawToken, ulong* pRetVal)
-        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.ResolveExactGenericArgsToken(dwExactGenericArgsTokenIndex, rawToken, pRetVal) : HResults.E_NOTIMPL;
+    {
+        *pRetVal = 0;
+        int hr = HResults.S_OK;
+        try
+        {
+            if (dwExactGenericArgsTokenIndex == 0)
+            {
+                // In a rare case of VS4Mac debugging VS4Mac ARM64 optimized code we get a null
+                // generics argument token. We aren't sure why the token is null, it may be a bug
+                // or it may be by design in the runtime. In the interest of time we are working
+                // around the issue rather than investigating the root cause.
+                if (rawToken == 0)
+                {
+                    *pRetVal = rawToken;
+                }
+                else
+                {
+                    // The real generics type token is the MethodTable of the "this" object.
+                    // The incoming rawToken is a target address of the 'this' Object.
+                    *pRetVal = _target.Contracts.Object.GetMethodTableAddress(new TargetPointer(rawToken)).Value;
+                }
+            }
+            else if (dwExactGenericArgsTokenIndex == unchecked((uint)IlNum.TYPECTXT_ILNUM))
+            {
+                // rawToken is already the real generics type token. Nothing to do.
+                *pRetVal = rawToken;
+            }
+            else
+            {
+                // The index of the generics type token should not be anything else.
+                Debug.Fail($"Unexpected generics type token index: {dwExactGenericArgsTokenIndex}");
+                throw Marshal.GetExceptionForHR(CorDbgHResults.CORDBG_E_TARGET_INCONSISTENT)!;
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacy is not null)
+        {
+            ulong retValLocal;
+            int hrLocal = _legacy.ResolveExactGenericArgsToken(dwExactGenericArgsTokenIndex, rawToken, &retValLocal);
+            Debug.ValidateHResult(hr, hrLocal);
+            if (hr == HResults.S_OK)
+                Debug.Assert(*pRetVal == retValLocal, $"cDAC: {*pRetVal}, DAC: {retValLocal}");
+        }
+#endif
+        return hr;
+    }
 
     public int GetILCodeAndSig(ulong vmAssembly, uint functionToken, DacDbiTargetBuffer* pTargetBuffer, uint* pLocalSigToken)
         => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetILCodeAndSig(vmAssembly, functionToken, pTargetBuffer, pLocalSigToken) : HResults.E_NOTIMPL;
@@ -1379,7 +1458,49 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetTypeHandleParams(vmTypeHandle, pParams) : HResults.E_NOTIMPL;
 
     public int GetSimpleType(int simpleType, uint* pMetadataToken, ulong* pVmModule)
-        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetSimpleType(simpleType, pMetadataToken, pVmModule) : HResults.E_NOTIMPL;
+    {
+        Debug.Assert(pVmModule != null);
+        *pVmModule = 0;
+        int hr = HResults.S_OK;
+        try
+        {
+            Contracts.IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
+            Contracts.TypeHandle typeHandle = rts.GetPrimitiveType((CorElementType)simpleType);
+
+            if (typeHandle.IsNull)
+            {
+                throw Marshal.GetExceptionForHR(CorDbgHResults.CORDBG_E_CLASS_NOT_LOADED)!;
+            }
+
+            Debug.Assert(pMetadataToken != null);
+            *pMetadataToken = rts.GetTypeDefToken(typeHandle);
+
+            TargetPointer module = rts.GetModule(typeHandle);
+            if (module == TargetPointer.Null)
+                throw Marshal.GetExceptionForHR(CorDbgHResults.CORDBG_E_TARGET_INCONSISTENT)!;
+
+            *pVmModule = module.Value;
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacy is not null)
+        {
+            uint metadataTokenLocal;
+            ulong vmModuleLocal;
+            int hrLocal = _legacy.GetSimpleType(simpleType, &metadataTokenLocal, &vmModuleLocal);
+            Debug.ValidateHResult(hr, hrLocal);
+            if (hr == HResults.S_OK)
+            {
+                Debug.Assert(*pMetadataToken == metadataTokenLocal, $"cDAC: {*pMetadataToken}, DAC: {metadataTokenLocal}");
+                Debug.Assert(*pVmModule == vmModuleLocal, $"cDAC: {*pVmModule}, DAC: {vmModuleLocal}");
+            }
+        }
+#endif
+        return hr;
+    }
 
     public int IsExceptionObject(ulong vmObject, Interop.BOOL* pResult)
         => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.IsExceptionObject(vmObject, pResult) : HResults.E_NOTIMPL;
@@ -2201,6 +2322,46 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetAsyncLocals(vmMethod, codeAddr, state, pAsyncLocals) : HResults.E_NOTIMPL;
 
     public int GetGenericArgTokenIndex(ulong vmMethod, uint* pIndex)
-        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetGenericArgTokenIndex(vmMethod, pIndex) : HResults.E_NOTIMPL;
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            if (vmMethod == 0)
+                throw new ArgumentException("vmMethod must not be zero.", nameof(vmMethod));
+            if (pIndex is null)
+                throw new ArgumentException("pIndex must not be null.", nameof(pIndex));
+            Contracts.IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
+            Contracts.MethodDescHandle md = rts.GetMethodDescHandle(new TargetPointer(vmMethod));
+
+            if (!rts.IsSharedByGenericInstantiations(md))
+            {
+                // Not a shared generic method, so there is no generic context arg.
+                hr = HResults.S_FALSE;
+            }
+            else
+            {
+                // The method is shared by generic instantiations. If it requires an explicit
+                // hidden inst arg, the token is passed via the IL-level generics ctxt slot;
+                // otherwise the token is acquired from the MethodTable of the 'this' pointer
+                // (parameter index 0).
+                *pIndex = rts.RequiresInstArg(md) ? unchecked((uint)IlNum.TYPECTXT_ILNUM) : 0u;
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacy is not null)
+        {
+            uint indexLocal;
+            int hrLocal = _legacy.GetGenericArgTokenIndex(vmMethod, &indexLocal);
+            Debug.ValidateHResult(hr, hrLocal);
+            if (hr == HResults.S_OK)
+                Debug.Assert(*pIndex == indexLocal, $"cDAC: {*pIndex}, DAC: {indexLocal}");
+        }
+#endif
+        return hr;
+    }
 
 }
