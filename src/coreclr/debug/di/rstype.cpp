@@ -1163,8 +1163,10 @@ HRESULT CordbType::TypeDataToType(CordbAppDomain *pAppDomain, DebuggerIPCE_Basic
 
                     {
                         RSLockHolder lockHolder(pProcess->GetProcessLock());
+                        UINT64 id;
+                        memcpy(&id, &data->vmTypeHandle, sizeof(UINT64));
                         IfFailThrow(pProcess->GetDAC()->TypeHandleToExpandedTypeInfo(NoValueTypeBoxing,  // could be generics which are never boxed
-                                                                                    data->vmTypeHandle,
+                                                                                    id,
                                                                                     &typeInfo));
                     }
 

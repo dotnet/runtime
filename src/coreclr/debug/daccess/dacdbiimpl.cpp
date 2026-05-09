@@ -2414,10 +2414,7 @@ void DacDbiInterfaceImpl::GetClassTypeInfo(TypeHandle                      typeH
     {
         pTypeInfo->ClassTypeData.typeHandle.SetDacTargetPtr(typeHandle.AsTAddr());
     }
-    else // non-generic
-    {
-        pTypeInfo->ClassTypeData.typeHandle = VMPTR_TypeHandle::NullPtr();
-    }
+    // else: non-generic — typeHandle stays null
 
     pTypeInfo->ClassTypeData.metadataToken = typeHandle.GetCl();
 
@@ -2478,8 +2475,7 @@ void DacDbiInterfaceImpl::TypeHandleToBasicTypeInfo(TypeHandle                  
         case ELEMENT_TYPE_PTR:
         case ELEMENT_TYPE_BYREF:
             pTypeInfo->vmTypeHandle.SetDacTargetPtr(typeHandle.AsTAddr());
-            pTypeInfo->metadataToken = mdTokenNil;
-            pTypeInfo->vmAssembly = VMPTR_Assembly::NullPtr();
+            // metadataToken and vmAssembly stay zero (mdTokenNil / NullPtr)
             break;
 
         case ELEMENT_TYPE_CLASS:
@@ -2492,10 +2488,7 @@ void DacDbiInterfaceImpl::TypeHandleToBasicTypeInfo(TypeHandle                  
             {
                 pTypeInfo->vmTypeHandle.SetDacTargetPtr(typeHandle.AsTAddr());
             }
-            else
-            {
-                pTypeInfo->vmTypeHandle = VMPTR_TypeHandle::NullPtr();
-            }
+            // else: vmTypeHandle stays null
 
             pTypeInfo->metadataToken = typeHandle.GetCl();
             _ASSERTE(pModule);
@@ -2504,28 +2497,12 @@ void DacDbiInterfaceImpl::TypeHandleToBasicTypeInfo(TypeHandle                  
         }
 
         default:
-            pTypeInfo->vmTypeHandle = VMPTR_TypeHandle::NullPtr();
-            pTypeInfo->metadataToken = mdTokenNil;
-            pTypeInfo->vmAssembly = VMPTR_Assembly::NullPtr();
+            // All fields zero
             break;
     }
     return;
 } // DacDbiInterfaceImpl::TypeHandleToBasicTypeInfo
 
-
-HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetObjectExpandedTypeInfoFromID(AreValueTypesBoxed boxed, COR_TYPEID id, OUT DebuggerIPCE_ExpandedTypeData * pTypeInfo)
-{
-    DD_ENTER_MAY_THROW;
-
-    HRESULT hr = S_OK;
-    EX_TRY
-    {
-
-        TypeHandleToExpandedTypeInfoImpl(boxed, TypeHandle::FromPtr(TO_TADDR(id.token1)), pTypeInfo);
-    }
-    EX_CATCH_HRESULT(hr);
-    return hr;
-}
 
 HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetObjectExpandedTypeInfo(AreValueTypesBoxed boxed, CORDB_ADDRESS addr, OUT DebuggerIPCE_ExpandedTypeData * pTypeInfo)
 {
@@ -2534,6 +2511,7 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetObjectExpandedTypeInfo(AreValu
     HRESULT hr = S_OK;
     EX_TRY
     {
+        *pTypeInfo = {};
 
         PTR_Object obj(TO_TADDR(addr));
         TypeHandleToExpandedTypeInfoImpl(boxed, obj->GetGCSafeTypeHandle(), pTypeInfo);
@@ -2543,16 +2521,16 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetObjectExpandedTypeInfo(AreValu
 }
 
 // DacDbi API: use a type handle to get the information needed to create the corresponding RS CordbType instance
-HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::TypeHandleToExpandedTypeInfo(AreValueTypesBoxed boxed, VMPTR_TypeHandle vmTypeHandle, DebuggerIPCE_ExpandedTypeData * pTypeInfo)
+HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::TypeHandleToExpandedTypeInfo(AreValueTypesBoxed boxed, UINT64 vmTypeHandle, DebuggerIPCE_ExpandedTypeData * pTypeInfo)
 {
     DD_ENTER_MAY_THROW;
 
     HRESULT hr = S_OK;
     EX_TRY
     {
+        *pTypeInfo = {};
 
-
-        TypeHandle typeHandle = TypeHandle::FromPtr(vmTypeHandle.GetDacPtr());
+        TypeHandle typeHandle = TypeHandle::FromPtr((TADDR)vmTypeHandle);
         TypeHandleToExpandedTypeInfoImpl(boxed, typeHandle, pTypeInfo);
     }
     EX_CATCH_HRESULT(hr);
@@ -2776,20 +2754,16 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetMethodDescParams(VMPTR_MethodD
             EX_TRY_ALLOW_DATATARGET_MISSING_MEMORY_WITH_HANDLER
             {
                 // Fill in the struct using the TypeHandle of the current type parameter if we can.
-                VMPTR_TypeHandle vmTypeHandle = VMPTR_TypeHandle::NullPtr();
-                vmTypeHandle.SetDacTargetPtr(thCurrent.AsTAddr());
                 IfFailThrow(TypeHandleToExpandedTypeInfo(NoValueTypeBoxing,
-                                                         vmTypeHandle,
+                                                         (UINT64)thCurrent.AsTAddr(),
                                                          &((*pGenericTypeParams)[i])));
             }
             EX_CATCH_ALLOW_DATATARGET_MISSING_MEMORY_WITH_HANDLER
             {
                 // On failure for a particular type, default it back to System.__Canon.
-                VMPTR_TypeHandle vmTHCanon = VMPTR_TypeHandle::NullPtr();
                 TypeHandle thCanon = TypeHandle(g_pCanonMethodTableClass);
-                vmTHCanon.SetDacTargetPtr(thCanon.AsTAddr());
                 IfFailThrow(TypeHandleToExpandedTypeInfo(NoValueTypeBoxing,
-                                                         vmTHCanon,
+                                                         (UINT64)thCanon.AsTAddr(),
                                                          &((*pGenericTypeParams)[i])));
             }
             EX_END_CATCH_ALLOW_DATATARGET_MISSING_MEMORY_WITH_HANDLER
@@ -3214,11 +3188,8 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetTypeHandleParams(VMPTR_TypeHan
         // collect type information for each type parameter
         for (unsigned int i = 0; i < pParams->Count(); ++i)
         {
-            VMPTR_TypeHandle thInst = VMPTR_TypeHandle::NullPtr();
-            thInst.SetDacTargetPtr(typeHandle.GetInstantiation()[i].AsTAddr());
-
             IfFailThrow(TypeHandleToExpandedTypeInfo(NoValueTypeBoxing,
-                                                     thInst,
+                                                     (UINT64)typeHandle.GetInstantiation()[i].AsTAddr(),
                                                      &((*pParams)[i])));
         }
 
@@ -6092,15 +6063,11 @@ void DacDbiInterfaceImpl::InitObjectData(PTR_Object                objPtr,
                                          DebuggerIPCE_ObjectData * pObjectData)
 {
     _ASSERTE(pObjectData != NULL);
-    // @todo - this is still dangerous because the object may still be invalid.
-    VMPTR_TypeHandle vmTypeHandle = VMPTR_TypeHandle::NullPtr();
-    vmTypeHandle.SetDacTargetPtr(objPtr->GetGCSafeTypeHandle().AsTAddr());
-
     // Save basic object info.
     pObjectData->objSize = objPtr->GetSize();
     pObjectData->objOffsetToVars = dac_cast<TADDR>((objPtr)->GetData()) - dac_cast<TADDR>(objPtr);
 
-    IfFailThrow(TypeHandleToExpandedTypeInfo(AllBoxed, vmTypeHandle, &(pObjectData->objTypeData)));
+    IfFailThrow(TypeHandleToExpandedTypeInfo(AllBoxed, (UINT64)objPtr->GetGCSafeTypeHandle().AsTAddr(), &(pObjectData->objTypeData)));
 
     // If this is a string object, set the type to ELEMENT_TYPE_STRING.
     if (objPtr->GetGCSafeMethodTable() == g_pStringClass)

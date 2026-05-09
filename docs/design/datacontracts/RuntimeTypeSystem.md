@@ -51,6 +51,8 @@ partial interface IRuntimeTypeSystem : IContract
 
     // True if the MethodTable is the sentinel value associated with unallocated space in the managed heap
     public virtual bool IsFreeObjectMethodTable(TypeHandle typeHandle);
+    // True if the MethodTable is the System.Object MethodTable (g_pObjectClass)
+    public virtual bool IsObject(TypeHandle typeHandle);
     public virtual bool IsString(TypeHandle typeHandle);
     // True if the MethodTable represents a type that contains managed references
     public virtual bool ContainsGCPointers(TypeHandle typeHandle);
@@ -433,6 +435,7 @@ The contract depends on the following globals
 | --- | --- |
 | `ContinuationMethodTable` | A pointer to the address of the base `Continuation` `MethodTable`, or null if no continuations have been created
 | `FreeObjectMethodTablePointer` | A pointer to the address of a `MethodTable` used by the GC to indicate reclaimed memory
+| `ObjectMethodTable` | A pointer to the address of the `System.Object` `MethodTable` (`g_pObjectClass`)
 | `StaticsPointerMask` | For masking out a bit of DynamicStaticsInfo pointer fields
 | `ArrayBaseSize` | The base size of an array object; used to compute multidimensional array rank from `MethodTable::BaseSize`
 
@@ -505,6 +508,7 @@ Contracts used:
     private readonly Dictionary<TargetPointer, MethodTable_1> _methodTables;
 
     internal TargetPointer FreeObjectMethodTablePointer {get; }
+    internal TargetPointer ObjectMethodTablePointer {get; }
     internal TargetPointer ContinuationMethodTablePointer {get; }
 
     public TypeHandle GetTypeHandle(TargetPointer typeHandlePointer)
@@ -564,6 +568,8 @@ Contracts used:
     }
 
     public bool IsFreeObjectMethodTable(TypeHandle TypeHandle) => FreeObjectMethodTablePointer == TypeHandle.Address;
+
+    public bool IsObject(TypeHandle TypeHandle) => ObjectMethodTablePointer != TargetPointer.Null && ObjectMethodTablePointer == TypeHandle.Address;
 
     public bool IsString(TypeHandle TypeHandle) => !typeHandle.IsMethodTable() ? false : _methodTables[TypeHandle.Address].Flags.IsString;
 

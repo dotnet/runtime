@@ -35,6 +35,7 @@ public class MethodTableTests
         [
             (nameof(Constants.Globals.FreeObjectMethodTable), rtsBuilder.FreeObjectMethodTableGlobalAddress),
             (nameof(Constants.Globals.ContinuationMethodTable), rtsBuilder.ContinuationMethodTableGlobalAddress),
+            (nameof(Constants.Globals.ObjectMethodTable), rtsBuilder.ObjectMethodTableGlobalAddress),
             (nameof(Constants.Globals.MethodDescAlignment), rtsBuilder.MethodDescAlignment),
             (nameof(Constants.Globals.ArrayBaseSize), rtsBuilder.ArrayBaseSize),
         ];
@@ -76,6 +77,7 @@ public class MethodTableTests
         Contracts.TypeHandle handle = contract.GetTypeHandle(freeObjectMethodTableAddress);
         Assert.NotEqual(TargetPointer.Null, handle.Address);
         Assert.True(contract.IsFreeObjectMethodTable(handle));
+        Assert.False(contract.IsObject(handle));
     }
 
     [Theory]
@@ -91,6 +93,7 @@ public class MethodTableTests
         Contracts.TypeHandle systemObjectTypeHandle = contract.GetTypeHandle(systemObjectMethodTablePtr);
         Assert.Equal(systemObjectMethodTablePtr.Value, systemObjectTypeHandle.Address.Value);
         Assert.False(contract.IsFreeObjectMethodTable(systemObjectTypeHandle));
+        Assert.True(contract.IsObject(systemObjectTypeHandle));
     }
 
     [Theory]
