@@ -1433,7 +1433,7 @@ namespace System.Threading
             if (state is Task t)
             {
                 // We know RuntimeAsyncTask overrides this and calls
-                // DispatchContinuation without looking at the Thread.
+                // DispatchContinuations without looking at the Thread.
                 t.ExecuteFromThreadPool(null!);
             }
             else
