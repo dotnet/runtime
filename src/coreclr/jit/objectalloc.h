@@ -149,6 +149,7 @@ class ObjectAllocator final : public Phase
             , m_allocType(allocType)
             , m_onHeapReason(nullptr)
             , m_bashCall(false)
+            , m_definitelyStackPointing(true)
         {
         }
 
@@ -159,6 +160,12 @@ class ObjectAllocator final : public Phase
         ObjectAllocationType const m_allocType;
         const char*                m_onHeapReason;
         bool                       m_bashCall;
+        // True if a successful stack-allocation of this candidate yields a local that
+        // definitely points at stack memory. False when the morph leaves a runtime
+        // heap fallback in place (e.g. the localloc/heapalloc split for runtime-sized
+        // arrays); in that case the local is only possibly stack-pointing and must
+        // remain GC-reportable.
+        bool                       m_definitelyStackPointing;
     };
 
     typedef SmallHashTable<unsigned int, unsigned int, 8U> LocalToLocalMap;

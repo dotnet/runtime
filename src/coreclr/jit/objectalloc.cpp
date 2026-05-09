@@ -1319,8 +1319,11 @@ void ObjectAllocator::MorphAllocObjNode(AllocationCandidate& candidate)
         // We keep the set of possibly-stack-pointing pointers as a superset of the set of
         // definitely-stack-pointing pointers. All definitely-stack-pointing pointers are in both
         // sets.
-        MarkLclVarAsDefinitelyStackPointing(lclNum);
         MarkLclVarAsPossiblyStackPointing(lclNum);
+        if (candidate.m_definitelyStackPointing)
+        {
+            MarkLclVarAsDefinitelyStackPointing(lclNum);
+        }
 
         // If this was conditionally escaping enumerator, establish a connection between this local
         // and the enumeratorLocal we already allocated. This is needed because we do early rewriting
@@ -1562,6 +1565,9 @@ bool ObjectAllocator::MorphAllocObjNodeHelperArr(AllocationCandidate& candidate)
         JITDUMP("Allocating V%02u on the stack [via localloc]\n", candidate.m_lclNum);
         MorphNewArrNodeIntoLocAlloc(data->AsCall(), clsHnd, len, candidate.m_block, candidate.m_statement);
         m_compiler->Metrics.LocallocAllocatedArrays++;
+        // helperexpansion may take the heap fallback at runtime, so the local is only
+        // possibly (not definitely) stack-pointing and must remain GC-reportable.
+        candidate.m_definitelyStackPointing = false;
         return true;
     }
 
@@ -1588,6 +1594,9 @@ bool ObjectAllocator::MorphAllocObjNodeHelperArr(AllocationCandidate& candidate)
         JITDUMP("Allocating V%02u on the stack [via localloc, in loop]\n", candidate.m_lclNum);
         MorphNewArrNodeIntoLocAlloc(data->AsCall(), clsHnd, len, candidate.m_block, candidate.m_statement);
         m_compiler->Metrics.LocallocAllocatedArrays++;
+        // helperexpansion may take the heap fallback at runtime, so the local is only
+        // possibly (not definitely) stack-pointing and must remain GC-reportable.
+        candidate.m_definitelyStackPointing = false;
         return true;
     }
 
