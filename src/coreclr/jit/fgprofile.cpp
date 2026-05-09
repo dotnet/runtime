@@ -1913,7 +1913,7 @@ public:
 //
 static bool IsValueHistogramProbeCandidate(Compiler*  compiler,
                                            GenTree*   node,
-                                           IL_OFFSET* ilOffset      = nullptr,
+                                           IL_OFFSET* ilOffset,
                                            GenTree*** operandUseRef = nullptr)
 {
     if (node->OperIs(GT_LCLHEAP))
@@ -1921,15 +1921,12 @@ static bool IsValueHistogramProbeCandidate(Compiler*  compiler,
         // Mirror the gating in impProfileLclHeap: only zero-init, non-constant
         // locallocs are value-profile candidates. Anything else would have its
         // probe data ignored by the consumer and just waste a schema slot.
-        if (!compiler->info.compInitMem || node->AsOp()->gtOp1->OperIsConst())
+        if (!compiler->info.compInitMem || node->gtGetOp1()->OperIsConst())
         {
             return false;
         }
 
-        if (ilOffset != nullptr)
-        {
-            *ilOffset = node->AsOpWithILOffset()->GetILOffset();
-        }
+        *ilOffset = node->AsOpWithILOffset()->GetILOffset();
         if (operandUseRef != nullptr)
         {
             *operandUseRef = &node->AsOp()->gtOp1;
@@ -1942,11 +1939,9 @@ static bool IsValueHistogramProbeCandidate(Compiler*  compiler,
         const NamedIntrinsic ni = compiler->lookupNamedIntrinsic(node->AsCall()->gtCallMethHnd);
         if ((ni == NI_System_SpanHelpers_Memmove) || (ni == NI_System_SpanHelpers_SequenceEqual))
         {
-            if (ilOffset != nullptr)
-            {
-                assert(node->AsCall()->gtHandleHistogramProfileCandidateInfo != nullptr);
-                *ilOffset = node->AsCall()->gtHandleHistogramProfileCandidateInfo->ilOffset;
-            }
+            assert(node->AsCall()->gtHandleHistogramProfileCandidateInfo != nullptr);
+            *ilOffset = node->AsCall()->gtHandleHistogramProfileCandidateInfo->ilOffset;
+
             if (operandUseRef != nullptr)
             {
                 // Memmove(dst, src, len) and SequenceEqual(left, right, len) -- profile len.
@@ -2342,17 +2337,8 @@ public:
 
         *m_currentSchemaIndex += 2;
 
-        // We have either Memmove(dst, src, len)/SequenceEqual(...,len) or LCLHEAP(len) and we want to insert a
-        // call to CORINFO_HELP_VALUEPROFILE for the profiled operand:
-        //
-        //  \--*  COMMA     long
-        //     +--*  CALL help void   CORINFO_HELP_VALUEPROFILE
-        //     |  +--*  COMMA     long
-        //     |  |  +--*  STORE_LCL_VAR long  tmp
-        //     |  |  |  \--*  (node to poll)
-        //     |  |  \--*  LCL_VAR   long   tmp
-        //     |  \--*  CNS_INT   long   <hist>
-        //     \--*  LCL_VAR   long   tmp
+        // Inject CORINFO_HELP_VALUEPROFILE helper call to record the value in the histogram.
+        // The helper call is injected as a comma node that stores the value to a temp.
         //
         const unsigned lenTmpNum      = compiler->lvaGrabTemp(true DEBUGARG("length histogram profile tmp"));
         GenTree*       storeLenToTemp = compiler->gtNewTempStore(lenTmpNum, *operandUseRef);
@@ -2363,12 +2349,11 @@ public:
 
         if (!lengthNode->TypeIs(TYP_I_IMPL))
         {
-            // CORINFO_HELP_VALUEPROFILE always expects nint. Use an unsigned widening
-            // because the operands we profile here (Memmove/SequenceEqual length and
-            // LCLHEAP size) are non-negative; sign-extending values with the high bit
-            // set would produce huge negative ssize_t and skew the histogram.
+            // CORINFO_HELP_VALUEPROFILE always expects nint.
+            // Zero-extend for now due to LCLHEAP being actually uint32_t-typed, but in the future we may want to
+            // support with sign-extension as well.
             assert(genActualType(lengthNode) == TYP_INT);
-            lengthNode = compiler->gtNewCastNode(TYP_I_IMPL, lengthNode, /* isUnsigned */ true, TYP_I_IMPL);
+            lengthNode = compiler->gtNewCastNode(TYP_I_IMPL, lengthNode, /*fromUnsigned*/ true, TYP_I_IMPL);
         }
 
         GenTreeCall* helperCallNode = compiler->gtNewHelperCallNode(helper, TYP_VOID, lengthNode, histNode);
