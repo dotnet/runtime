@@ -1855,7 +1855,8 @@ void ObjectAllocator::MorphNewArrNodeIntoLocAlloc(
     // operand for the stack local as an argument
     //
     GenTree* const elemSizeNode = m_compiler->gtNewIconNode(elemSize, TYP_I_IMPL);
-    newArr->gtArgs.PushBack(m_compiler, NewCallArg::Primitive(elemSizeNode).WellKnown(WellKnownArg::StackArrayElemSize));
+    newArr->gtArgs.PushBack(m_compiler,
+                            NewCallArg::Primitive(elemSizeNode).WellKnown(WellKnownArg::StackArrayElemSize));
     newArr->gtCallMoreFlags |= GTF_CALL_M_STACK_ARRAY;
 
     // Retype the call result as a byref (we may decide to heap allocate at runtime).

@@ -165,7 +165,7 @@ class ObjectAllocator final : public Phase
         // heap fallback in place (e.g. the localloc/heapalloc split for runtime-sized
         // arrays); in that case the local is only possibly stack-pointing and must
         // remain GC-reportable.
-        bool                       m_definitelyStackPointing;
+        bool m_definitelyStackPointing;
     };
 
     typedef SmallHashTable<unsigned int, unsigned int, 8U> LocalToLocalMap;
@@ -268,8 +268,8 @@ private:
                                                unsigned int         blockSize,
                                                BasicBlock*          block,
                                                Statement*           stmt);
-    void MorphNewArrNodeIntoLocAlloc(
-        GenTreeCall* newArr, CORINFO_CLASS_HANDLE clsHnd, GenTree* length, BasicBlock* block, Statement* stmt);
+    void         MorphNewArrNodeIntoLocAlloc(
+                GenTreeCall* newArr, CORINFO_CLASS_HANDLE clsHnd, GenTree* length, BasicBlock* block, Statement* stmt);
     struct BuildConnGraphVisitorCallbackData;
     void AnalyzeParentStack(ArrayStack<GenTree*>* parentStack, unsigned int lclNum, BasicBlock* block);
     void UpdateAncestorTypes(

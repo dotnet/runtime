@@ -3006,8 +3006,8 @@ bool Compiler::fgExpandStackArrayAllocation(BasicBlock* block, Statement* stmt, 
             }
         }
 
-        GenTree* const lengthForCheck    = gtCloneExpr(lengthArg);
-        GenTree* const lengthLimit       = gtNewIconNode((ssize_t)maxSafeLength, TYP_INT);
+        GenTree* const lengthForCheck     = gtCloneExpr(lengthArg);
+        GenTree* const lengthLimit        = gtNewIconNode((ssize_t)maxSafeLength, TYP_INT);
         GenTree* const runtimeSizeCompare = gtNewOperNode(GT_GT, TYP_INT, lengthForCheck, lengthLimit);
         runtimeSizeCompare->gtFlags |= GTF_UNSIGNED;
         GenTree* const runtimeSizeCheck = gtNewOperNode(GT_JTRUE, TYP_VOID, runtimeSizeCompare);
