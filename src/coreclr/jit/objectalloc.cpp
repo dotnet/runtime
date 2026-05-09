@@ -1259,10 +1259,8 @@ bool ObjectAllocator::MorphAllocObjNodes()
 
     for (BasicBlock* const block : m_compiler->Blocks())
     {
-        const bool basicBlockHasNewObj       = block->HasFlag(BBF_HAS_NEWOBJ);
-        const bool basicBlockHasNewArr       = block->HasFlag(BBF_HAS_NEWARR);
-        const bool basicBlockHasBackwardJump = block->HasFlag(BBF_BACKWARD_JUMP);
-        const bool basicBlockInHandler       = block->hasHndIndex();
+        const bool basicBlockHasNewObj = block->HasFlag(BBF_HAS_NEWOBJ);
+        const bool basicBlockHasNewArr = block->HasFlag(BBF_HAS_NEWARR);
 
         if (!basicBlockHasNewObj && !basicBlockHasNewArr)
         {
