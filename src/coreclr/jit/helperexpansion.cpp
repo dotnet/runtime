@@ -2900,6 +2900,21 @@ bool Compiler::fgExpandStackArrayAllocation(BasicBlock* block, Statement* stmt, 
     bool const isLocAlloc = (elemSizeArg != nullptr);
     bool const isAlign8   = isLocAlloc && (helper == CORINFO_HELP_NEWARR_1_ALIGN8);
 
+    // The localloc/heapalloc dispatch path needs to store the heap-fallback
+    // call result into the same local that consumes the original call's
+    // result. If the result is unused (e.g. DCE removed the consumer),
+    // skip the expansion and let later phases drop the dead call.
+    //
+    if (isLocAlloc)
+    {
+        GenTree* const stmtRoot = stmt->GetRootNode();
+        if (!(stmtRoot->OperIs(GT_STORE_LCL_VAR) && (stmtRoot->AsLclVarCommon()->Data() == call)))
+        {
+            JITDUMP("Skipping localloc dispatch for [%06d]: call result is unused\n", dspTreeID(call));
+            return false;
+        }
+    }
+
     JITDUMP("Expanding new array helper for stack allocated array at [%06d] %sin " FMT_BB ":\n", dspTreeID(call),
             isLocAlloc ? " into localloc " : "", block->bbNum);
     DISPTREE(call);
