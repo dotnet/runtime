@@ -278,6 +278,15 @@ namespace Microsoft.NET.HostModel.Bundle
         /// </returns>
         public string GenerateBundle(BundleContents bundleContents)
         {
+#if NET
+            ArgumentNullException.ThrowIfNull(bundleContents);
+#else
+            if (bundleContents is null)
+            {
+                throw new ArgumentNullException(nameof(bundleContents));
+            }
+#endif
+
             _tracer.Log($"Bundler Version: {BundlerMajorVersion}.{BundlerMinorVersion}");
             _tracer.Log($"Bundle  Version: {BundleManifest.BundleVersion}");
             _tracer.Log($"Target Runtime: {_target}");
@@ -464,25 +473,27 @@ namespace Microsoft.NET.HostModel.Bundle
                 throw new ArgumentException("Invalid input specification: Found entry with empty source-path or bundle-relative-path.");
             }
 
-            FileSpec? hostSpec = fileSpecs.FirstOrDefault(x => IsHost(x.BundleRelativePath));
-            if (hostSpec is null)
+            FileSpec[] hostSpecs = fileSpecs.Where(x => IsHost(x.BundleRelativePath)).ToArray();
+            if (hostSpecs.Length != 1)
             {
-                throw new ArgumentException("Invalid input specification: Must specify the host binary");
+                throw new ArgumentException($"Invalid input specification: Must specify exactly one entry for the host binary '{_hostName}'");
             }
 
-            var included = GetFilteredFileSpecs(fileSpecs.Where(x => !IsHost(x.BundleRelativePath)));
+            FileSpec hostSpec = hostSpecs[0];
+            var (included, excluded) = GetFilteredFileSpecs(fileSpecs.Where(x => x != hostSpec));
             return new BundleContents(
                 hostSpec,
                 included,
-                fileSpecs.Where(x => x.Excluded).ToArray());
+                excluded);
         }
 
-        private (FileSpec Spec, FileType Type)[] GetFilteredFileSpecs(IEnumerable<FileSpec> fileSpecs)
+        private ((FileSpec Spec, FileType Type)[] Included, FileSpec[] Excluded) GetFilteredFileSpecs(IEnumerable<FileSpec> fileSpecs)
         {
             // Note: We're comparing file paths both on the OS we're running on as well as on the target OS for the app
             // We can't really make assumptions about the file systems (even on Linux there can be case insensitive file systems
             // and vice versa for Windows). So it's safer to do case sensitive comparison everywhere.
             var relativePathToSpec = new Dictionary<string, (FileSpec Spec, FileType Type)>(StringComparer.Ordinal);
+            var excluded = new List<FileSpec>();
             foreach (var fileSpec in fileSpecs)
             {
                 string relativePath = fileSpec.BundleRelativePath;
@@ -499,6 +510,7 @@ namespace Microsoft.NET.HostModel.Bundle
                 {
                     _tracer.Log($"Exclude [{type}]: {relativePath}");
                     fileSpec.Excluded = true;
+                    excluded.Add(fileSpec);
                     continue;
                 }
 
@@ -517,7 +529,8 @@ namespace Microsoft.NET.HostModel.Bundle
                     relativePathToSpec.Add(fileSpec.BundleRelativePath, (fileSpec, type));
                 }
             }
-            return relativePathToSpec.Values.ToArray();
+
+            return (relativePathToSpec.Values.ToArray(), excluded.ToArray());
         }
 
         /// <summary>

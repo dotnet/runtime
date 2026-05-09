@@ -409,12 +409,12 @@ namespace Microsoft.NET.HostModel.Bundle.Tests
 
             // Generate bundle directly from file specs
             Bundler directBundler = CreateBundlerInstance();
-            string directBundlePath = directBundler.GenerateBundle(fileSpecs);
+            directBundler.GenerateBundle(fileSpecs);
 
             // Generate bundle via ComputeBundleContents + GenerateBundle(BundleContents)
             Bundler computedBundler = CreateBundlerInstance();
             BundleContents contents = computedBundler.ComputeBundleContents(fileSpecs);
-            string computedBundlePath = computedBundler.GenerateBundle(contents);
+            computedBundler.GenerateBundle(contents);
 
             // Both paths should produce bundles with the same manifest entries
             var directEntries = directBundler.BundleManifest.Files.Select(f => (f.RelativePath, f.Size, f.CompressedSize, f.Type)).OrderBy(e => e.RelativePath);

@@ -27,7 +27,7 @@ namespace Microsoft.NET.HostModel.Bundle
 
         internal (FileSpec Spec, FileType Type)[] TypedIncludedFiles { get; }
 
-        internal BundleContents(FileSpec host, (FileSpec Spec, FileType Type)[] includedFiles, IReadOnlyList<FileSpec> excludedFiles)
+        internal BundleContents(FileSpec host, (FileSpec Spec, FileType Type)[] includedFiles, FileSpec[] excludedFiles)
         {
             Host = host;
             TypedIncludedFiles = includedFiles;
