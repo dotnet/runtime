@@ -136,31 +136,34 @@ namespace System.Linq
             // copy of itself so that lane 0 ends up holding the min/max of all original lanes.
             if (Vector128<T>.Count == 16)
             {
-                x = TMinMax.Compare(x, Vector128.Shuffle(x.AsByte(), Vector128.Create((byte)8, 9, 10, 11, 12, 13, 14, 15, 0, 1, 2, 3, 4, 5, 6, 7)).As<byte, T>());
-                x = TMinMax.Compare(x, Vector128.Shuffle(x.AsByte(), Vector128.Create((byte)4, 5, 6, 7, 0, 1, 2, 3, 8, 9, 10, 11, 12, 13, 14, 15)).As<byte, T>());
-                x = TMinMax.Compare(x, Vector128.Shuffle(x.AsByte(), Vector128.Create((byte)2, 3, 0, 1, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15)).As<byte, T>());
-                x = TMinMax.Compare(x, Vector128.Shuffle(x.AsByte(), Vector128.Create((byte)1, 0, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15)).As<byte, T>());
+                x = TMinMax.Compare(x, Vector128.Shuffle(x.AsByte(),
+                    Vector128.Create((byte)8, 9, 10, 11, 12, 13, 14, 15, 0, 1, 2, 3, 4, 5, 6, 7)).As<byte, T>());
+                x = TMinMax.Compare(x, Vector128.Shuffle(x.AsByte(),
+                    Vector128.Create((byte)4, 5, 6, 7, 0, 1, 2, 3, 8, 9, 10, 11, 12, 13, 14, 15)).As<byte, T>());
+                x = TMinMax.Compare(x, Vector128.Shuffle(x.AsByte(),
+                    Vector128.Create((byte)2, 3, 0, 1, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15)).As<byte, T>());
+                x = TMinMax.Compare(x, Vector128.Shuffle(x.AsByte(),
+                    Vector128.Create((byte)1, 0, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15)).As<byte, T>());
             }
             else if (Vector128<T>.Count == 8)
             {
-                x = TMinMax.Compare(x, Vector128.Shuffle(x.AsInt16(), Vector128.Create(4, 5, 6, 7, 0, 1, 2, 3)).As<short, T>());
-                x = TMinMax.Compare(x, Vector128.Shuffle(x.AsInt16(), Vector128.Create(2, 3, 0, 1, 4, 5, 6, 7)).As<short, T>());
-                x = TMinMax.Compare(x, Vector128.Shuffle(x.AsInt16(), Vector128.Create(1, 0, 2, 3, 4, 5, 6, 7)).As<short, T>());
+                x = TMinMax.Compare(x, Vector128.Shuffle(x.AsInt16(),
+                    Vector128.Create(4, 5, 6, 7, 0, 1, 2, 3)).As<short, T>());
+                x = TMinMax.Compare(x, Vector128.Shuffle(x.AsInt16(),
+                    Vector128.Create(2, 3, 0, 1, 4, 5, 6, 7)).As<short, T>());
+                x = TMinMax.Compare(x, Vector128.Shuffle(x.AsInt16(),
+                    Vector128.Create(1, 0, 2, 3, 4, 5, 6, 7)).As<short, T>());
             }
             else if (Vector128<T>.Count == 4)
             {
                 x = TMinMax.Compare(x, Vector128.Shuffle(x.AsInt32(), Vector128.Create(2, 3, 0, 1)).As<int, T>());
                 x = TMinMax.Compare(x, Vector128.Shuffle(x.AsInt32(), Vector128.Create(1, 0, 3, 2)).As<int, T>());
             }
-            else if (Vector128<T>.Count == 2)
-            {
-                x = TMinMax.Compare(x, Vector128.Shuffle(x.AsInt64(), Vector128.Create(1, 0)).As<long, T>());
-            }
             else
             {
-                Debug.Assert(Vector128<T>.Count == 1);
+                Debug.Assert(Vector128<T>.Count == 2);
+                x = TMinMax.Compare(x, Vector128.Shuffle(x.AsInt64(), Vector128.Create(1, 0)).As<long, T>());
             }
-
             return x.ToScalar();
         }
     }
