@@ -1921,12 +1921,21 @@ bool Compiler::IsValueHistogramProbeCandidate(GenTree* node, IL_OFFSET* ilOffset
 
     if (node->IsCall() && node->AsCall()->IsSpecialIntrinsic())
     {
+        // Require gtHandleHistogramProfileCandidateInfo to be set: that's the
+        // explicit "the importer marked this site for value profiling" signal.
+        // Without this check, an inlined Memmove/SequenceEqual (which the importer
+        // intentionally skips) would still match purely on NamedIntrinsic and the
+        // visitor would later deref the null candidate info.
+        if (node->AsCall()->gtHandleHistogramProfileCandidateInfo == nullptr)
+        {
+            return false;
+        }
+
         const NamedIntrinsic ni = lookupNamedIntrinsic(node->AsCall()->gtCallMethHnd);
         if ((ni == NI_System_SpanHelpers_Memmove) || (ni == NI_System_SpanHelpers_SequenceEqual))
         {
             if (ilOffset != nullptr)
             {
-                assert(node->AsCall()->gtHandleHistogramProfileCandidateInfo != nullptr);
                 *ilOffset = node->AsCall()->gtHandleHistogramProfileCandidateInfo->ilOffset;
             }
             if (operandUseRef != nullptr)
