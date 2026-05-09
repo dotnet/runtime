@@ -2976,13 +2976,41 @@ bool Compiler::fgExpandStackArrayAllocation(BasicBlock* block, Statement* stmt, 
         gtUpdateStmtSideEffects(totalSizeStmt);
         fgInsertStmtBefore(block, stmt, totalSizeStmt);
 
-        // Check the length against our runtime threshold. For now we just check against
-        // the fixed length limit (528 bytes).
+        // Check the length against a JIT-time-precomputed safe upper bound,
+        // using an unsigned compare so that negative lengths (which signed
+        // would treat as "small") are routed to the heap-fallback helper. The
+        // helper validates length and raises OverflowException for negatives
+        // or when (length * elemSize) overflows.
         //
-        GenTree* const totalSizeForCheck = gtNewLclVarNode(totalSizeTemp);
-        GenTree* const runtimeSizeLimit = gtNewIconNode((unsigned)JitConfig.JitObjectStackAllocationSize(), TYP_I_IMPL);
-        GenTree* const runtimeSizeCompare = gtNewOperNode(GT_GT, TYP_INT, totalSizeForCheck, runtimeSizeLimit);
-        GenTree* const runtimeSizeCheck   = gtNewOperNode(GT_JTRUE, TYP_VOID, runtimeSizeCompare);
+        // maxSafeLength is the largest length for which:
+        //   base + payload (+ optional align8 pad) <= stackLimit
+        // and for which no intermediate I_IMPL multiply/add can wrap.
+        //
+        size_t const stackLimit = (size_t)(unsigned)JitConfig.JitObjectStackAllocationSize();
+        size_t const baseBytes  = (size_t)OFFSETOF__CORINFO_Array__data;
+#ifndef TARGET_64BIT
+        size_t const align8Pad = isAlign8 ? 4 : 0;
+#else
+        size_t const align8Pad = 0;
+#endif
+        size_t maxSafeLength = 0;
+        if (stackLimit > baseBytes + align8Pad)
+        {
+            assert(elemSizeValue > 0);
+            maxSafeLength = (stackLimit - baseBytes - align8Pad) / elemSizeValue;
+            // The pointer-size round-up below can add up to (TPS - 1) bytes;
+            // trim one element to absorb that slack.
+            if (((elemSizeValue % TARGET_POINTER_SIZE) != 0) && (maxSafeLength > 0))
+            {
+                maxSafeLength--;
+            }
+        }
+
+        GenTree* const lengthForCheck    = gtCloneExpr(lengthArg);
+        GenTree* const lengthLimit       = gtNewIconNode((ssize_t)maxSafeLength, TYP_INT);
+        GenTree* const runtimeSizeCompare = gtNewOperNode(GT_GT, TYP_INT, lengthForCheck, lengthLimit);
+        runtimeSizeCompare->gtFlags |= GTF_UNSIGNED;
+        GenTree* const runtimeSizeCheck = gtNewOperNode(GT_JTRUE, TYP_VOID, runtimeSizeCompare);
 
         Statement* const runtimeSizeCheckStmt = fgNewStmtFromTree(runtimeSizeCheck);
         gtUpdateStmtSideEffects(runtimeSizeCheckStmt);
