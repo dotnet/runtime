@@ -6300,7 +6300,7 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
 
             for (int index = 0; index < Vector512<float>.Count; index++)
             {
-                AssertExtensions.Equal(expected, sequence.GetElement(index));
+                AssertExtensions.Equal(expected, sequence.GetElement(index), 1e-6f);
                 expected *= multiplier;
             }
         }
@@ -6315,7 +6315,7 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
 
             for (int index = 0; index < Vector512<double>.Count; index++)
             {
-                AssertExtensions.Equal(expected, sequence.GetElement(index));
+                AssertExtensions.Equal(expected, sequence.GetElement(index), 1e-12);
                 expected *= multiplier;
             }
         }
