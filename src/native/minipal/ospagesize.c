@@ -13,8 +13,8 @@
 
 uint32_t minipal_getpagesize(void)
 {
-    static uint32_t cached_page_size = 0;
-    uint32_t page_size = __atomic_load_n(&cached_page_size, __ATOMIC_RELAXED);
+    static atomic_uint cached_page_size = 0;
+    uint32_t page_size = atomic_load_explicit(&cached_page_size, memory_order_relaxed);
     if (page_size == 0)
     {
         long sc = sysconf(_SC_PAGESIZE);
