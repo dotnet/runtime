@@ -487,4 +487,42 @@ namespace System.Security.Cryptography
         protected override bool VerifyDataCore(ReadOnlySpan<byte> data, ReadOnlySpan<byte> context, ReadOnlySpan<byte> signature) =>
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_CryptographyCng);
     }
+
+    public sealed partial class X25519DiffieHellmanCng : X25519DiffieHellman
+    {
+        public partial X25519DiffieHellmanCng(CngKey key)
+        {
+            throw new PlatformNotSupportedException(SR.PlatformNotSupported_CryptographyCng);
+        }
+
+        public partial CngKey GetKey()
+        {
+            throw new PlatformNotSupportedException(SR.PlatformNotSupported_CryptographyCng);
+        }
+
+        protected override partial void DeriveRawSecretAgreementCore(X25519DiffieHellman otherParty, Span<byte> destination)
+        {
+            throw new PlatformNotSupportedException(SR.PlatformNotSupported_CryptographyCng);
+        }
+
+        protected override partial void ExportPrivateKeyCore(Span<byte> destination)
+        {
+            throw new PlatformNotSupportedException(SR.PlatformNotSupported_CryptographyCng);
+        }
+
+        protected override partial void ExportPublicKeyCore(Span<byte> destination)
+        {
+            throw new PlatformNotSupportedException(SR.PlatformNotSupported_CryptographyCng);
+        }
+
+        protected override partial bool TryExportPkcs8PrivateKeyCore(Span<byte> destination, out int bytesWritten)
+        {
+            throw new PlatformNotSupportedException(SR.PlatformNotSupported_CryptographyCng);
+        }
+
+        protected override partial void Dispose(bool disposing)
+        {
+            throw new PlatformNotSupportedException(SR.PlatformNotSupported_CryptographyCng);
+        }
+    }
 }
