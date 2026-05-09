@@ -2944,9 +2944,9 @@ bool Compiler::fgExpandStackArrayAllocation(BasicBlock* block, Statement* stmt, 
         if ((elemSizeValue % TARGET_POINTER_SIZE) != 0)
         {
             // Round size up to TARGET_POINTER_SIZE.
-            // size = (size + TPS) & ~(TPS-1)
+            // size = (size + TPS - 1) & ~(TPS - 1)
             //
-            GenTree* const roundSize  = gtNewIconNode(TARGET_POINTER_SIZE, TYP_I_IMPL);
+            GenTree* const roundSize  = gtNewIconNode(TARGET_POINTER_SIZE - 1, TYP_I_IMPL);
             GenTree* const biasedSize = gtNewOperNode(GT_ADD, TYP_I_IMPL, totalSize, roundSize);
             GenTree* const mask       = gtNewIconNode(TARGET_POINTER_SIZE - 1, TYP_I_IMPL);
             GenTree* const invMask    = gtNewOperNode(GT_NOT, TYP_I_IMPL, mask);
