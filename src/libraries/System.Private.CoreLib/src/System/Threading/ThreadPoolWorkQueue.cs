@@ -1663,7 +1663,7 @@ namespace System.Threading
 
             // Similarly, for runtime async, user code may call with the
             // runtime async callback directly.
-            if (ReferenceEquals(callBack, AsyncHelpers.s_dispatchRuntimeAsyncContinuationsCallback))
+            if (ReferenceEquals(callBack, s_dispatchRuntimeAsyncContinuationsCallback))
             {
                 if (state is not Task)
                 {
