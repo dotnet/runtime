@@ -1373,20 +1373,11 @@ DONE_CALL:
         else if (JitConfig.JitProfileValues() && call->IsCall() &&
                  call->AsCall()->IsSpecialIntrinsic(this, NI_System_SpanHelpers_Memmove))
         {
-            if (opts.IsOptimizedWithProfile())
-            {
-                call = impDuplicateWithProfiledArg(call->AsCall(), rawILOffset);
-            }
-            else if (opts.IsInstrumented())
-            {
-                // We might want to instrument it for optimized versions too, but we don't currently.
-                HandleHistogramProfileCandidateInfo* pInfo =
-                    new (this, CMK_Inlining) HandleHistogramProfileCandidateInfo;
-                pInfo->ilOffset                                       = rawILOffset;
-                pInfo->probeIndex                                     = 0;
-                call->AsCall()->gtHandleHistogramProfileCandidateInfo = pInfo;
-                compCurBB->SetFlags(BBF_HAS_VALUE_PROFILE);
-            }
+            call = impProfileValueGuardedTree(call, &call->AsCall()->gtArgs.GetUserArgByIndex(2)->EarlyNodeRef(),
+                                              rawILOffset,
+                                              /* minProfitable */ 1,
+                                              /* maxProfitable */ (ssize_t)getUnrollThreshold(ProfiledMemmove),
+                                              &Metrics.ValueProfiledMemmove DEBUGARG("Profiled Memmove Qmark"));
             impAppendTree(call, CHECK_SPILL_ALL, impCurStmtDI);
         }
         else
@@ -1529,27 +1520,13 @@ DONE_CALL:
                 if (JitConfig.JitProfileValues() && call->IsCall() &&
                     call->AsCall()->IsSpecialIntrinsic(this, NI_System_SpanHelpers_SequenceEqual))
                 {
-                    if (opts.IsOptimizedWithProfile())
-                    {
-                        call = impDuplicateWithProfiledArg(call->AsCall(), rawILOffset);
-                        if (call->OperIs(GT_QMARK))
-                        {
-                            // QMARK has to be a root node
-                            unsigned tmp = lvaGrabTemp(true DEBUGARG("Grabbing temp for Qmark"));
-                            impStoreToTemp(tmp, call, CHECK_SPILL_ALL);
-                            call = gtNewLclvNode(tmp, call->TypeGet());
-                        }
-                    }
-                    else if (opts.IsInstrumented())
-                    {
-                        // We might want to instrument it for optimized versions too, but we don't currently.
-                        HandleHistogramProfileCandidateInfo* pInfo =
-                            new (this, CMK_Inlining) HandleHistogramProfileCandidateInfo;
-                        pInfo->ilOffset                                       = rawILOffset;
-                        pInfo->probeIndex                                     = 0;
-                        call->AsCall()->gtHandleHistogramProfileCandidateInfo = pInfo;
-                        compCurBB->SetFlags(BBF_HAS_VALUE_PROFILE);
-                    }
+                    call =
+                        impProfileValueGuardedTree(call, &call->AsCall()->gtArgs.GetUserArgByIndex(2)->EarlyNodeRef(),
+                                                   rawILOffset,
+                                                   /* minProfitable */ 1,
+                                                   /* maxProfitable */ (ssize_t)getUnrollThreshold(ProfiledMemcmp),
+                                                   &Metrics.ValueProfiledSequenceEqual DEBUGARG(
+                                                       "Profiled SeqEqual Qmark"));
                 }
             }
 
@@ -1675,217 +1652,162 @@ GenTree* Compiler::impThrowIfNull(GenTreeCall* call)
 }
 
 //------------------------------------------------------------------------
-// impDuplicateWithProfiledArg: duplicates a call with a profiled argument, e.g.:
-//    Given `Buffer.Memmove(dst, src, len)` call,
-//    optimize it to:
+// impProfileValueGuardedTree: PGO value-profile entry point.
 //
-//    if (len == popularSize)
-//        Buffer.Memmove(dst, src, popularSize); // can be unrolled now
-//    else
-//        Buffer.Memmove(dst, src, len); // fallback
+//   In Instrumented Tier0 (or OSR / Tier1Instrumented): mark `node` as a
+//   value-probe candidate so the value-histogram instrumentor inserts a
+//   CORINFO_HELP_VALUEPROFILE* call around the operand at `*operandRef`.
 //
-//    if we can obtain the popular size from PGO data.
+//   In Tier1 with PGO: look up the popular value of the operand via
+//   pickProfiledValue and, if it's within [minProfitable, maxProfitable],
+//   replace `node` with a guard of the form:
+//
+//       (operand == popularValue) ? <node-with-operand=popularValue>
+//                                 : <gtCloneExpr(node)>
+//
+//   The fast arm is `node` itself with `*operandRef` overwritten by a
+//   constant; the slow arm is a clone of `node` (which references the
+//   spilled operand temp).
 //
 // Arguments:
-//    call     -- call to optimize with profiled argument
-//    ilOffset -- Raw IL offset of the call
+//   node           - the tree containing the operand to profile.
+//                    Either TYP_VOID (e.g. an unused-result call) or value-typed.
+//   operandRef     - GenTree** to the operand-use within `node`. Mutated in place
+//                    (replaced with the spilled-temp ref, then with the constant
+//                    on the fast arm).
+//   ilOffset       - IL offset of the originating opcode.
+//   minProfitable  - inclusive lower bound on profitable popular values
+//                    (caller-supplied, per shape).
+//   maxProfitable  - inclusive upper bound on profitable popular values.
+//   successMetric  - optional pointer to a JitMetrics counter; bumped on
+//                    successful specialization. May be nullptr.
+//   tmpName        - DEBUG-only name for the QMARK-result temp (only used when
+//                    `node` is value-typed).
 //
 // Return Value:
-//    Optimized tree (or the original call tree if we can't optimize it).
+//   The original `node` if no specialization fires (or if we only marked it
+//   for instrumentation). Otherwise, a fresh tree (a QMARK for TYP_VOID,
+//   or an LCL_VAR fed by a STORE_LCL_VAR(QMARK) statement otherwise).
 //
-GenTree* Compiler::impDuplicateWithProfiledArg(GenTreeCall* call, IL_OFFSET ilOffset)
+GenTree* Compiler::impProfileValueGuardedTree(GenTree*           node,
+                                              GenTree**          operandRef,
+                                              IL_OFFSET          ilOffset,
+                                              ssize_t            minProfitable,
+                                              ssize_t            maxProfitable,
+                                              int* successMetric DEBUGARG(const char* tmpName))
 {
-    assert(call->IsSpecialIntrinsic());
-    assert(opts.IsOptimizedWithProfile());
+    assert(node != nullptr);
+    assert(operandRef != nullptr);
+    assert(*operandRef != nullptr);
 
-    if (call->IsInlineCandidate())
+    // Instrumented Tier0 / OSR / Tier1Instrumented: mark this node as a value-profile
+    // candidate so the value-histogram instrumentor can later insert a probe.
+    if (opts.IsInstrumented() && !compIsForInlining())
     {
-        // We decided to inline the whole thing? We won't be able to clone it then.
-        return call;
+        if (node->IsCall())
+        {
+            // Calls carry the IL offset via gtHandleHistogramProfileCandidateInfo.
+            // Other node kinds (e.g. GT_LCLHEAP) carry it on the node itself
+            // (e.g. via GenTreeOpWithILOffset); the caller is responsible for that.
+            HandleHistogramProfileCandidateInfo* pInfo = new (this, CMK_Inlining) HandleHistogramProfileCandidateInfo;
+            pInfo->ilOffset                            = ilOffset;
+            pInfo->probeIndex                          = 0;
+            node->AsCall()->gtHandleHistogramProfileCandidateInfo = pInfo;
+        }
+        compCurBB->SetFlags(BBF_HAS_VALUE_PROFILE);
+        JITDUMP("\n ... marking [%06u] in " FMT_BB " for value profile instrumentation\n", dspTreeID(node),
+                compCurBB->bbNum);
+        return node;
+    }
+
+    // Tier1 + PGO: try to specialize.
+    if (!opts.IsOptimizedWithProfile())
+    {
+        return node;
+    }
+
+    // Don't specialize calls about to be inlined: cloning then is unsafe.
+    if (node->IsCall() && node->AsCall()->IsInlineCandidate())
+    {
+        return node;
+    }
+
+    if ((*operandRef)->OperIsConst())
+    {
+        return node;
     }
 
     ssize_t  profiledValue = 0;
     uint32_t likelihood    = 0;
-    // TODO: Tune the likelihood threshold, for now it's 50%
-    if (pickProfiledValue(ilOffset, &likelihood, &profiledValue) && (likelihood >= 50))
+    // TODO: Tune the likelihood threshold, for now it's 50%.
+    if (!pickProfiledValue(ilOffset, &likelihood, &profiledValue) || (likelihood < 50))
     {
-        unsigned argNum   = 0;
-        ssize_t  minValue = 0;
-        ssize_t  maxValue = 0;
-        if (call->IsSpecialIntrinsic(this, NI_System_SpanHelpers_Memmove))
-        {
-            // dst(0), src(1), len(2)
-            argNum = 2;
-
-            minValue = 1; // TODO: enable for 0 as well.
-            maxValue = (ssize_t)getUnrollThreshold(ProfiledMemmove);
-        }
-        else if (call->IsSpecialIntrinsic(this, NI_System_SpanHelpers_SequenceEqual))
-        {
-            // dst(0), src(1), len(2)
-            argNum = 2;
-
-            minValue = 1; // TODO: enable for 0 as well.
-            maxValue = (ssize_t)getUnrollThreshold(ProfiledMemcmp);
-        }
-        else
-        {
-            // only Memmove is expected at the moment.
-            // Possible future extensions: Memset, Memcpy
-            unreached();
-        }
-
-        if ((profiledValue >= minValue) && (profiledValue <= maxValue))
-        {
-            JITDUMP("Duplicating for popular value = %u\n", profiledValue)
-            DISPTREE(call)
-
-            if (call->gtArgs.GetUserArgByIndex(argNum)->GetNode()->OperIsConst())
-            {
-                JITDUMP("Profiled arg is already a constant - bail out.\n")
-                return call;
-            }
-
-            // Spill all the arguments to temp locals to preserve the execution order
-            GenTree** argRef   = nullptr;
-            GenTree*  argClone = nullptr;
-            for (unsigned i = 0; i < call->gtArgs.CountUserArgs(); i++)
-            {
-                GenTree** node   = &call->gtArgs.GetUserArgByIndex(i)->EarlyNodeRef();
-                GenTree*  cloned = impCloneExpr(*node, node, CHECK_SPILL_ALL, nullptr DEBUGARG("spilling arg"));
-
-                // Record the reference to the argument we're going to replace.
-                if (i == argNum)
-                {
-                    argRef   = node;
-                    argClone = cloned;
-                }
-            }
-
-            GenTree* fallbackCall      = gtCloneExpr(call);
-            GenTree* profiledValueNode = gtNewIconNode(profiledValue, argClone->TypeGet());
-            *argRef                    = profiledValueNode;
-
-            GenTreeColon* colon = new (this, GT_COLON) GenTreeColon(call->TypeGet(), call, fallbackCall);
-            GenTreeOp*    cond  = gtNewOperNode(GT_EQ, TYP_INT, argClone, gtCloneExpr(profiledValueNode));
-            GenTreeQmark* qmark = gtNewQmarkNode(call->TypeGet(), cond, colon);
-            qmark->SetThenNodeLikelihood(likelihood);
-
-            JITDUMP("\n\nResulting tree:\n")
-            DISPTREE(qmark)
-
-            if (call->IsSpecialIntrinsic(this, NI_System_SpanHelpers_Memmove))
-            {
-                Metrics.ValueProfiledMemmove++;
-            }
-            else
-            {
-                assert(call->IsSpecialIntrinsic(this, NI_System_SpanHelpers_SequenceEqual));
-                Metrics.ValueProfiledSequenceEqual++;
-            }
-
-            return qmark;
-        }
-    }
-    return call;
-}
-
-//------------------------------------------------------------------------
-// impProfileLclHeap: Apply PGO value-profiling to a non-constant GT_LCLHEAP.
-//
-// Arguments:
-//    lclHeap  - the GT_LCLHEAP node to profile/specialize
-//    ilOffset - IL offset of the LOCALLOC opcode
-//
-// Return Value:
-//    Either the original `lclHeap` node, or a fresh tree that produces the
-//    same value but is specialized via a profiled-size guard:
-//
-//        size == popularSize ? LCLHEAP(popularSize) : LCLHEAP(size)
-//
-// Notes:
-//    The constant-size LCLHEAP fast path is unrolled by Lowering (efficient
-//    zero-init via STORE_BLK), so specializing for a popular size avoids the
-//    slow per-stack-alignment zeroing loop in the non-constant LCLHEAP codegen.
-//
-//    We don't need that optimization if SkipInitLocals is set as even
-//    non-constant locallocs are cheap in that case; we only want to speed up
-//    zeroing.
-//
-GenTree* Compiler::impProfileLclHeap(GenTree* lclHeap, IL_OFFSET ilOffset)
-{
-    assert(lclHeap->OperIs(GT_LCLHEAP));
-
-    GenTree* size = lclHeap->AsOp()->gtOp1;
-    if (!info.compInitMem || size->IsIntegralConst())
-    {
-        return lclHeap;
+        return node;
     }
 
-    // Consuming the existing profile (optimizing).
-    if (opts.IsOptimizedWithProfile())
+    if (!FitsIn<int>(profiledValue) || (profiledValue < minProfitable) || (profiledValue > maxProfitable))
     {
-        ssize_t  profiledValue = 0;
-        uint32_t likelihood    = 0;
-        if (!pickProfiledValue(ilOffset, &likelihood, &profiledValue) || (likelihood < 50))
-        {
-            return lclHeap;
-        }
-
-        // The fast path is profitable only when the constant-size LCLHEAP zero-init can
-        // actually be unrolled by Lowering. Skip very small popular values, since the
-        // cmp/jne guard plus contained-constant LCLHEAP codegen overhead (stack probe,
-        // outgoing-arg-area dance) costs more than the variable-size path saves at this
-        // size. We don't need a separate profitability upper bound here: for large
-        // constant-sized LCLHEAPs we emit a memzero call which is a lot faster than the
-        // loop we would get for variable sized LCLHEAP. Note that the profiled value
-        // must still satisfy the representability constraint checked below.
-        //
-        // The cutoff is empirical (per benchmark sweep on x64/arm64); it is unrelated to
-        // DEFAULT_MAX_LOCALLOC_TO_LOCAL_SIZE despite the value coincidence today.
-        const ssize_t minProfitableSize = 32;
-        if (profiledValue <= minProfitableSize)
-        {
-            JITDUMP("Profiled LCLHEAP size %zd is smaller than %zd - skipping\n", profiledValue, minProfitableSize);
-            return lclHeap;
-        }
-
-        if (!FitsIn<int>(profiledValue))
-        {
-            JITDUMP("Profiled LCLHEAP size %zd does not fit in int - skipping\n", profiledValue);
-            return lclHeap;
-        }
-
-        GenTree* sizeNode = size;
-        GenTree* clonedSizeNode =
-            impCloneExpr(sizeNode, &sizeNode, CHECK_SPILL_ALL, nullptr DEBUGARG("spilling sizeNode"));
-        GenTree* profiledValueNode = gtNewIconNode(profiledValue, size->TypeGet());
-        GenTree* fallback          = gtNewLclHeapNode(clonedSizeNode, ilOffset);
-
-        // Fast path: a constant-size LCLHEAP that Lowering will unroll into STORE_BLK.
-        GenTree* fastpath = gtNewLclHeapNode(profiledValueNode, ilOffset);
-
-        GenTreeColon* colon = new (this, GT_COLON) GenTreeColon(TYP_I_IMPL, fastpath, fallback);
-        GenTreeOp*    cond  = gtNewOperNode(GT_EQ, TYP_INT, sizeNode, gtCloneExpr(profiledValueNode));
-        GenTreeQmark* qmark = gtNewQmarkNode(TYP_I_IMPL, cond, colon);
-        qmark->SetThenNodeLikelihood(likelihood);
-
-        // QMARK has to be a root node.
-        unsigned tmp = lvaGrabTemp(true DEBUGARG("Grabbing temp for Qmark"));
-        impStoreToTemp(tmp, qmark, CHECK_SPILL_ALL);
-        Metrics.ValueProfiledLclHeap++;
-        return gtNewLclvNode(tmp, qmark->TypeGet());
+        JITDUMP("Profiled value %zd outside [%zd, %zd] - skipping\n", profiledValue, minProfitable, maxProfitable);
+        return node;
     }
 
-    // Instrumenting LCLHEAP for value profile.
-    if (opts.IsInstrumented() && !compIsForInlining())
+    JITDUMP("Building profile-guarded tree for popular value = %zd (%u%%)\n", profiledValue, likelihood);
+    DISPTREE(node);
+
+    // For calls with multiple operands, pre-spill the non-profiled args so their
+    // side effects keep firing in evaluation order; otherwise the QMARK guard
+    // would delay them until one of the arms is taken. (The profiled operand is
+    // spilled below.)
+    if (node->IsCall())
     {
-        JITDUMP("\n ... marking [%06u] in " FMT_BB " for value profile instrumentation\n", dspTreeID(lclHeap),
-                compCurBB->bbNum);
-        compCurBB->SetFlags(BBF_HAS_VALUE_PROFILE);
+        GenTreeCall* const call = node->AsCall();
+        for (unsigned i = 0; i < call->gtArgs.CountUserArgs(); i++)
+        {
+            GenTree** otherRef = &call->gtArgs.GetUserArgByIndex(i)->EarlyNodeRef();
+            if (otherRef == operandRef)
+            {
+                continue;
+            }
+            impCloneExpr(*otherRef, otherRef, CHECK_SPILL_ALL, nullptr DEBUGARG("spilling other call arg"));
+        }
     }
 
-    return lclHeap;
+    // Spill the profiled operand so we can reference it both in the comparison
+    // and in the slow arm.
+    GenTree* const operandClone =
+        impCloneExpr(*operandRef, operandRef, CHECK_SPILL_ALL, nullptr DEBUGARG("spilling profiled operand"));
+    const var_types operandType = genActualType(operandClone->TypeGet());
+
+    // Slow tree: clone of `node` (which now references the spilled-temp at *operandRef).
+    GenTree* const slowTree = gtCloneExpr(node);
+
+    // Fast tree: `node` itself, with the profiled operand replaced by the constant.
+    *operandRef             = gtNewIconNode(profiledValue, operandType);
+    GenTree* const fastTree = node;
+
+    const var_types resultType = node->TypeGet();
+    GenTreeColon*   colon      = new (this, GT_COLON) GenTreeColon(resultType, fastTree, slowTree);
+    GenTreeOp*      cond       = gtNewOperNode(GT_EQ, TYP_INT, operandClone, gtNewIconNode(profiledValue, operandType));
+    GenTreeQmark*   qmark      = gtNewQmarkNode(resultType, cond, colon);
+    qmark->SetThenNodeLikelihood(likelihood);
+
+    JITDUMP("\nResulting tree:\n");
+    DISPTREE(qmark);
+
+    if (successMetric != nullptr)
+    {
+        (*successMetric)++;
+    }
+
+    if (resultType == TYP_VOID)
+    {
+        return qmark;
+    }
+
+    // QMARKs producing a value cannot stand on their own; spill into a temp.
+    const unsigned tmp = lvaGrabTemp(true DEBUGARG(tmpName));
+    impStoreToTemp(tmp, qmark, CHECK_SPILL_ALL);
+    return gtNewLclvNode(tmp, resultType);
 }
 
 #ifdef DEBUG

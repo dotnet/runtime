@@ -1894,39 +1894,24 @@ public:
 };
 
 //------------------------------------------------------------------------
-// IsValueHistogramProbeCandidate: Determine if a node is a value-histogram
-//   probe candidate, and report the IL offset and operand to profile.
+// Compiler::IsValueHistogramProbeCandidate: see compiler.h for description.
 //
-// Arguments:
-//    compiler      - the compiler instance
-//    node          - the node to inspect
-//    ilOffset      - [out, optional] IL offset associated with the candidate
-//    operandUseRef - [out, optional] pointer to the operand use (for instrumentation)
-//
-// Return Value:
-//    true if the node is a value-histogram probe candidate.
-//
-// Notes:
-//    Centralized so the visitor/schema-builder/instrument-inserter all agree on
-//    which trees are value-probe candidates and where their profiled operand
-//    lives. To extend value profiling to a new node kind, add a case here.
-//
-static bool IsValueHistogramProbeCandidate(Compiler*  compiler,
-                                           GenTree*   node,
-                                           IL_OFFSET* ilOffset,
-                                           GenTree*** operandUseRef = nullptr)
+bool Compiler::IsValueHistogramProbeCandidate(GenTree* node, IL_OFFSET* ilOffset, GenTree*** operandUseRef)
 {
     if (node->OperIs(GT_LCLHEAP))
     {
         // Mirror the gating in impProfileLclHeap: only zero-init, non-constant
         // locallocs are value-profile candidates. Anything else would have its
         // probe data ignored by the consumer and just waste a schema slot.
-        if (!compiler->info.compInitMem || node->gtGetOp1()->OperIsConst())
+        if (!info.compInitMem || node->gtGetOp1()->OperIsConst())
         {
             return false;
         }
 
-        *ilOffset = node->AsOpWithILOffset()->GetILOffset();
+        if (ilOffset != nullptr)
+        {
+            *ilOffset = node->AsOpWithILOffset()->GetILOffset();
+        }
         if (operandUseRef != nullptr)
         {
             *operandUseRef = &node->AsOp()->gtOp1;
@@ -1936,12 +1921,14 @@ static bool IsValueHistogramProbeCandidate(Compiler*  compiler,
 
     if (node->IsCall() && node->AsCall()->IsSpecialIntrinsic())
     {
-        const NamedIntrinsic ni = compiler->lookupNamedIntrinsic(node->AsCall()->gtCallMethHnd);
+        const NamedIntrinsic ni = lookupNamedIntrinsic(node->AsCall()->gtCallMethHnd);
         if ((ni == NI_System_SpanHelpers_Memmove) || (ni == NI_System_SpanHelpers_SequenceEqual))
         {
-            assert(node->AsCall()->gtHandleHistogramProfileCandidateInfo != nullptr);
-            *ilOffset = node->AsCall()->gtHandleHistogramProfileCandidateInfo->ilOffset;
-
+            if (ilOffset != nullptr)
+            {
+                assert(node->AsCall()->gtHandleHistogramProfileCandidateInfo != nullptr);
+                *ilOffset = node->AsCall()->gtHandleHistogramProfileCandidateInfo->ilOffset;
+            }
             if (operandUseRef != nullptr)
             {
                 // Memmove(dst, src, len) and SequenceEqual(left, right, len) -- profile len.
@@ -1979,7 +1966,7 @@ public:
     Compiler::fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
     {
         GenTree* const node = *use;
-        if (IsValueHistogramProbeCandidate(m_compiler, node))
+        if (m_compiler->IsValueHistogramProbeCandidate(node))
         {
             m_functor(m_compiler, node);
         }
@@ -2069,7 +2056,7 @@ public:
     void operator()(Compiler* compiler, GenTree* tree)
     {
         IL_OFFSET ilOffset    = 0;
-        bool      isCandidate = IsValueHistogramProbeCandidate(compiler, tree, &ilOffset);
+        bool      isCandidate = compiler->IsValueHistogramProbeCandidate(tree, &ilOffset);
         assert(isCandidate);
 
         ICorJitInfo::PgoInstrumentationSchema schemaElem = {};
@@ -2313,7 +2300,7 @@ public:
 
         IL_OFFSET candidateIlOffset = 0;
         GenTree** operandUseRef     = nullptr;
-        bool      isCandidate = IsValueHistogramProbeCandidate(compiler, node, &candidateIlOffset, &operandUseRef);
+        bool      isCandidate = compiler->IsValueHistogramProbeCandidate(node, &candidateIlOffset, &operandUseRef);
         assert(isCandidate);
 
         const ICorJitInfo::PgoInstrumentationSchema& countEntry = m_schema[*m_currentSchemaIndex];

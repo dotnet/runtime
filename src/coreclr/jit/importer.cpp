@@ -10136,9 +10136,16 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                         op1 = gtNewLclHeapNode(op2, opcodeOffs);
 
-                        // PGO value-profiling for non-constant zero-init stackalloc:
-                        // optimize / instrument based on the most likely size.
-                        op1 = impProfileLclHeap(op1, opcodeOffs);
+                        // PGO value-profiling: optimize / instrument based on the most likely size.
+                        // Only profitable for zero-init (compInitMem) and when the popular size is
+                        // bigger than the variable-size loop's break-even (~32 bytes per benchmark).
+                        if (info.compInitMem && JitConfig.JitProfileValues() && !op2->IsIntegralConst())
+                        {
+                            op1 = impProfileValueGuardedTree(op1, &op1->AsOp()->gtOp1, opcodeOffs,
+                                                             /* minProfitable */ 32, /* maxProfitable */ INT_MAX,
+                                                             &Metrics.ValueProfiledLclHeap DEBUGARG(
+                                                                 "Profiled LCLHEAP Qmark"));
+                        }
 
                         // Request stack security for this method.
                         setNeedsGSSecurityCookie();
