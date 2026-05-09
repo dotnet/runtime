@@ -6921,6 +6921,32 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                     costSz = 2 * 2;
                     break;
 
+                case GT_LCLHEAP:
+                {
+                    // GT_LCLHEAP is more expensive than a typical unary op (it adjusts
+                    // SP, may probe the stack, and -- under compInitMem -- zeros the
+                    // allocated range). Give it a high cost so phases like if-conversion
+                    // (which has a CostEx > 7 cutoff) won't speculatively evaluate it
+                    // unconditionally.
+                    //
+                    // For constant sizes the zero-init is unrolled by Lowering, so the
+                    // cost scales with the size; for non-constant sizes we use a fixed
+                    // upper bound representing the runtime loop.
+                    if (op1->IsCnsIntOrI() && info.compInitMem)
+                    {
+                        const ssize_t size       = op1->AsIntCon()->IconValue();
+                        const ssize_t alignedSize = (size + (STACK_ALIGN - 1)) & ~(ssize_t)(STACK_ALIGN - 1);
+                        costEx = 8 + (int)(alignedSize / REGSIZE_BYTES); // > 7 to block if-conversion
+                        costSz = 4 + (int)(alignedSize / REGSIZE_BYTES);
+                    }
+                    else
+                    {
+                        costEx = 36;
+                        costSz = 8;
+                    }
+                    break;
+                }
+
                 case GT_ARR_ADDR:
                     costEx = 0;
                     costSz = 0;
@@ -8778,7 +8804,6 @@ bool GenTree::OperSupportsOrderingSideEffect() const
         case GT_PATCHPOINT_FORCED:
         case GT_NONLOCAL_JMP:
         case GT_SWIFT_ERROR:
-        case GT_LCLHEAP:
             return true;
         default:
             return false;
@@ -9039,11 +9064,8 @@ GenTreeOpWithILOffset* Compiler::gtNewLclHeapNode(GenTree* size, IL_OFFSET ilOff
     assert(size != nullptr);
     GenTreeOpWithILOffset* node =
         new (this, GT_LCLHEAP) GenTreeOpWithILOffset(GT_LCLHEAP, TYP_I_IMPL, size, nullptr, ilOffset);
-    // GTF_ORDER_SIDEEFF prevents reordering / if-conversion across LCLHEAP without
-    // making OperMayThrow true (stack overflow on localloc is process-fatal, not a
-    // catchable C# exception, so we don't want the broader GTF_EXCEPT pessimizations).
-    // GTF_DONT_CSE keeps CSE from sharing locallocs.
-    node->gtFlags |= (GTF_ORDER_SIDEEFF | GTF_DONT_CSE);
+    // Don't allow CSE to share locallocs.
+    node->gtFlags |= GTF_DONT_CSE;
     return node;
 }
 
