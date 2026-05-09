@@ -1836,10 +1836,64 @@ namespace System.Runtime.Intrinsics
         /// <inheritdoc cref="Vector.Reverse{T}(Vector{T})" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector256<T> Reverse<T>(Vector256<T> vector) => Create(
-            Vector128.Reverse(vector.GetUpper()),
-            Vector128.Reverse(vector.GetLower())
-        );
+        public static Vector256<T> Reverse<T>(Vector256<T> vector)
+        {
+            if (typeof(T) == typeof(byte))
+            {
+                return Shuffle(vector.As<T, byte>(), CreateSequence((byte)(Vector256<byte>.Count - 1), byte.MaxValue)).As<byte, T>();
+            }
+            if (typeof(T) == typeof(double))
+            {
+                return Shuffle(vector.As<T, double>(), CreateSequence(Vector256<long>.Count - 1, -1L)).As<double, T>();
+            }
+            if (typeof(T) == typeof(short))
+            {
+                return Shuffle(vector.As<T, short>(), CreateSequence((short)(Vector256<short>.Count - 1), (short)-1)).As<short, T>();
+            }
+            if (typeof(T) == typeof(int))
+            {
+                return Shuffle(vector.As<T, int>(), CreateSequence(Vector256<int>.Count - 1, -1)).As<int, T>();
+            }
+            if (typeof(T) == typeof(long))
+            {
+                return Shuffle(vector.As<T, long>(), CreateSequence(Vector256<long>.Count - 1, -1L)).As<long, T>();
+            }
+            if (typeof(T) == typeof(nint))
+            {
+                return Unsafe.SizeOf<nint>() == sizeof(long)
+                    ? Shuffle(vector.As<T, long>(), CreateSequence(Vector256<long>.Count - 1, -1L)).As<long, T>()
+                    : Shuffle(vector.As<T, int>(), CreateSequence(Vector256<int>.Count - 1, -1)).As<int, T>();
+            }
+            if (typeof(T) == typeof(sbyte))
+            {
+                return Shuffle(vector.As<T, sbyte>(), CreateSequence((sbyte)(Vector256<sbyte>.Count - 1), (sbyte)-1)).As<sbyte, T>();
+            }
+            if (typeof(T) == typeof(float))
+            {
+                return Shuffle(vector.As<T, float>(), CreateSequence(Vector256<int>.Count - 1, -1)).As<float, T>();
+            }
+            if (typeof(T) == typeof(ushort))
+            {
+                return Shuffle(vector.As<T, ushort>(), CreateSequence((ushort)(Vector256<ushort>.Count - 1), ushort.MaxValue)).As<ushort, T>();
+            }
+            if (typeof(T) == typeof(uint))
+            {
+                return Shuffle(vector.As<T, uint>(), CreateSequence((uint)(Vector256<uint>.Count - 1), uint.MaxValue)).As<uint, T>();
+            }
+            if (typeof(T) == typeof(ulong))
+            {
+                return Shuffle(vector.As<T, ulong>(), CreateSequence((ulong)(Vector256<ulong>.Count - 1), ulong.MaxValue)).As<ulong, T>();
+            }
+            if (typeof(T) == typeof(nuint))
+            {
+                return Unsafe.SizeOf<nuint>() == sizeof(ulong)
+                    ? Shuffle(vector.As<T, ulong>(), CreateSequence((ulong)(Vector256<ulong>.Count - 1), ulong.MaxValue)).As<ulong, T>()
+                    : Shuffle(vector.As<T, uint>(), CreateSequence((uint)(Vector256<uint>.Count - 1), uint.MaxValue)).As<uint, T>();
+            }
+
+            ThrowHelper.ThrowForUnsupportedIntrinsicsVector256BaseType<T>();
+            return default;
+        }
 
         /// <inheritdoc cref="Vector128.DegreesToRadians(Vector128{double})" />
         [Intrinsic]
