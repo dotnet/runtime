@@ -8,6 +8,7 @@
 
 #include <unistd.h>
 #include <stdlib.h>
+#include <stdatomic.h>
 #include "ospagesize.h"
 
 uint32_t minipal_getpagesize(void)
