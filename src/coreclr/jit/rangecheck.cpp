@@ -695,6 +695,19 @@ Range RangeCheck::GetRangeFromAssertionsWorker(
 
     // Currently, we only handle int32 and smaller integer types.
     var_types vnType = comp->vnStore->TypeOfVN(num);
+
+    if (varTypeIsGC(vnType))
+    {
+        // On 32-bit targets TYP_BYREF/TYP_REF and TYP_INT are all 4 bytes, so the JIT can
+        // legally store a byref-valued expression (e.g. LCL_ADDR) into an int-typed local.
+        // The local itself is TYP_INT, but its VN is a TYP_BYREF function like PtrToLoc.
+        // The PhiDef visitor below recurses into reaching VNs, so a BYREF VN can show up
+        // here even though our public callers only pass us int-typed trees.
+        // We have no useful integer range to derive from a pointer, so just give up.
+        assert(TARGET_POINTER_SIZE == 4);
+        return result;
+    }
+
     assert(genActualType(vnType) == TYP_INT);
     result = GetRangeFromType(vnType);
 
