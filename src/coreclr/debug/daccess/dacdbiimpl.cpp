@@ -3354,17 +3354,19 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::IsDelegate(VMPTR_Object vmObject,
 // DacDbi API: GetDelegateType
 // Given a delegate pointer, compute the type of delegate according to the data held in it.
 //-----------------------------------------------------------------------------
-HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetDelegateType(VMPTR_Object delegateObject, DelegateType *delegateType)
+HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetDelegateType(CORDB_ADDRESS delegateObject, DelegateType *delegateType)
 {
     DD_ENTER_MAY_THROW;
 
-    _ASSERTE(!delegateObject.IsNull());
+    _ASSERTE(delegateObject != (CORDB_ADDRESS)NULL);
     _ASSERTE(delegateType != NULL);
 
 #ifdef _DEBUG
     // ensure we have a Delegate object
     BOOL fIsDelegate = FALSE;
-    IsDelegate(delegateObject, &fIsDelegate);
+    VMPTR_Object vmDelegate = VMPTR_Object::NullPtr();
+    vmDelegate.SetDacTargetPtr(CORDB_ADDRESS_TO_TADDR(delegateObject));
+    IsDelegate(vmDelegate, &fIsDelegate);
     _ASSERTE(fIsDelegate);
 #endif
 
@@ -3378,7 +3380,7 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetDelegateType(VMPTR_Object dele
     // - DELEGATE KINDS TABLE in comdelegate.cpp
 
     *delegateType = DelegateType::kUnknownDelegateType;
-    PTR_DelegateObject pDelObj = dac_cast<PTR_DelegateObject>(delegateObject.GetDacPtr());
+    PTR_DelegateObject pDelObj = dac_cast<PTR_DelegateObject>(CORDB_ADDRESS_TO_TADDR(delegateObject));
     INT_PTR invocationCount = pDelObj->GetInvocationCount();
 
     if (invocationCount == -1)
@@ -3439,7 +3441,7 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetDelegateType(VMPTR_Object dele
 
 HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetDelegateFunctionData(
     DelegateType delegateType,
-    VMPTR_Object delegateObject,
+    CORDB_ADDRESS delegateObject,
     OUT VMPTR_Assembly *ppFunctionAssembly,
     OUT mdMethodDef *pMethodDef)
 {
@@ -3448,12 +3450,14 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetDelegateFunctionData(
 #ifdef _DEBUG
     // ensure we have a Delegate object
     BOOL fIsDelegate = FALSE;
-    IsDelegate(delegateObject, &fIsDelegate);
+    VMPTR_Object vmDelegate = VMPTR_Object::NullPtr();
+    vmDelegate.SetDacTargetPtr(CORDB_ADDRESS_TO_TADDR(delegateObject));
+    IsDelegate(vmDelegate, &fIsDelegate);
     _ASSERTE(fIsDelegate);
 #endif
 
     HRESULT hr = S_OK;
-    PTR_DelegateObject pDelObj = dac_cast<PTR_DelegateObject>(delegateObject.GetDacPtr());
+    PTR_DelegateObject pDelObj = dac_cast<PTR_DelegateObject>(CORDB_ADDRESS_TO_TADDR(delegateObject));
     TADDR targetMethodPtr = (TADDR)NULL;
     VMPTR_MethodDesc pMD;
 
@@ -3481,8 +3485,8 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetDelegateFunctionData(
 
 HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetDelegateTargetObject(
     DelegateType delegateType,
-    VMPTR_Object delegateObject,
-    OUT VMPTR_Object *ppTargetObj,
+    CORDB_ADDRESS delegateObject,
+    OUT CORDB_ADDRESS *ppTargetObj,
     OUT VMPTR_AppDomain *ppTargetAppDomain)
 {
     DD_ENTER_MAY_THROW;
@@ -3490,24 +3494,26 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetDelegateTargetObject(
 #ifdef _DEBUG
     // ensure we have a Delegate object
     BOOL fIsDelegate = FALSE;
-    IsDelegate(delegateObject, &fIsDelegate);
+    VMPTR_Object vmDelegate = VMPTR_Object::NullPtr();
+    vmDelegate.SetDacTargetPtr(CORDB_ADDRESS_TO_TADDR(delegateObject));
+    IsDelegate(vmDelegate, &fIsDelegate);
     _ASSERTE(fIsDelegate);
 #endif
 
     HRESULT hr = S_OK;
-    PTR_DelegateObject pDelObj = dac_cast<PTR_DelegateObject>(delegateObject.GetDacPtr());
+    PTR_DelegateObject pDelObj = dac_cast<PTR_DelegateObject>(CORDB_ADDRESS_TO_TADDR(delegateObject));
 
     switch (delegateType)
     {
         case kClosedDelegate:
         {
             PTR_Object pRemoteTargetObj = OBJECTREFToObject(pDelObj->GetTarget());
-            ppTargetObj->SetDacTargetPtr(pRemoteTargetObj.GetAddr());
+            *ppTargetObj = (CORDB_ADDRESS)pRemoteTargetObj.GetAddr();
             break;
         }
 
         default:
-            ppTargetObj->SetDacTargetPtr((TADDR)NULL);
+            *ppTargetObj = (CORDB_ADDRESS)NULL;
             break;
     }
 
@@ -5974,23 +5980,6 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetHandleAddressFromVmHandle(VMPT
         CORDB_ADDRESS handle = vmHandle.GetDacPtr();
 
         *pRetVal = handle;
-    }
-    EX_CATCH_HRESULT(hr);
-    return hr;
-}
-
-// Create a TargetBuffer which describes the location of the object
-HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetObjectContents(VMPTR_Object obj, OUT TargetBuffer * pRetVal)
-{
-    DD_ENTER_MAY_THROW;
-
-    HRESULT hr = S_OK;
-    EX_TRY
-    {
-        PTR_Object objPtr = obj.GetDacPtr();
-
-        _ASSERTE(objPtr->GetSize() <= 0xffffffff);
-        *pRetVal = TargetBuffer(PTR_TO_TADDR(objPtr), (ULONG)objPtr->GetSize());
     }
     EX_CATCH_HRESULT(hr);
     return hr;

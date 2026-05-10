@@ -263,26 +263,9 @@ void CordbValue::CreateVCObjOrRefValue(CordbAppDomain *               pAppdomain
     }
 } // CordbValue::CreateValueByType
 
-// Create the proper ICDValue instance based on the given remote heap object
-// Arguments:
-//   pAppDomain - the app domain the remote object is in
-//   vmObj - the remote object to get an ICDValue for
-ICorDebugValue* CordbValue::CreateHeapValue(CordbAppDomain* pAppDomain, VMPTR_Object vmObj)
+CordbReferenceValue* CordbValue::CreateHeapReferenceValue(CordbAppDomain* pAppDomain, CORDB_ADDRESS objAddr)
 {
-    // Create a temporary reference and dereference it to construct the heap value we want.
-    RSSmartPtr<CordbReferenceValue> pRefValue(CordbValue::CreateHeapReferenceValue(pAppDomain, vmObj));
-    ICorDebugValue* pExtValue;
-    IfFailThrow(pRefValue->Dereference(&pExtValue));
-    return pExtValue;
-}
-
-CordbReferenceValue* CordbValue::CreateHeapReferenceValue(CordbAppDomain* pAppDomain, VMPTR_Object vmObj)
-{
-    IDacDbiInterface* pDac = pAppDomain->GetProcess()->GetDAC();
-
-    TargetBuffer objBuffer;
-    IfFailThrow(pDac->GetObjectContents(vmObj, &objBuffer));
-    VOID* pRemoteAddr = CORDB_ADDRESS_TO_PTR(objBuffer.pAddress);
+    VOID* pRemoteAddr = CORDB_ADDRESS_TO_PTR(objAddr);
     // This creates a local reference that has a remote address in it. Ie &pRemoteAddr is an address
     // in the host address space and pRemoteAddr is an address in the target.
     MemoryRange localReferenceDescription(&pRemoteAddr, sizeof(pRemoteAddr));
@@ -2650,16 +2633,14 @@ HRESULT IsSupportedDelegateHelper(IDacDbiInterface::DelegateType delType)
 HRESULT CordbObjectValue::GetTargetHelper(ICorDebugReferenceValue **ppTarget)
 {
     IDacDbiInterface::DelegateType delType;
-    VMPTR_Object pDelegateObj;
-    VMPTR_Object pDelegateTargetObj;
+    CORDB_ADDRESS pDelegateTargetObj;
     VMPTR_AppDomain pAppDomainOfTarget;
 
     CORDB_ADDRESS delegateAddr = m_valueHome.GetAddress();
 
     IDacDbiInterface *pDAC = GetProcess()->GetDAC();
-    IfFailThrow(pDAC->GetObject(delegateAddr, &pDelegateObj));
 
-    HRESULT hr = pDAC->GetDelegateType(pDelegateObj, &delType);
+    HRESULT hr = pDAC->GetDelegateType(delegateAddr, &delType);
     if (hr != S_OK)
         return hr;
 
@@ -2667,8 +2648,8 @@ HRESULT CordbObjectValue::GetTargetHelper(ICorDebugReferenceValue **ppTarget)
     if (hr != S_OK)
         return hr;
 
-    hr = pDAC->GetDelegateTargetObject(delType, pDelegateObj, &pDelegateTargetObj, &pAppDomainOfTarget);
-    if (hr != S_OK || pDelegateTargetObj.IsNull())
+    hr = pDAC->GetDelegateTargetObject(delType, delegateAddr, &pDelegateTargetObj, &pAppDomainOfTarget);
+    if (hr != S_OK || pDelegateTargetObj == (CORDB_ADDRESS)NULL)
     {
         *ppTarget = NULL;
         return hr;
@@ -2686,15 +2667,13 @@ HRESULT CordbObjectValue::GetTargetHelper(ICorDebugReferenceValue **ppTarget)
 HRESULT CordbObjectValue::GetFunctionHelper(ICorDebugFunction **ppFunction)
 {
     IDacDbiInterface::DelegateType delType;
-    VMPTR_Object pDelegateObj;
 
     *ppFunction = NULL;
     CORDB_ADDRESS delegateAddr = m_valueHome.GetAddress();
 
     IDacDbiInterface *pDAC = GetProcess()->GetDAC();
-    IfFailThrow(pDAC->GetObject(delegateAddr, &pDelegateObj));
 
-    HRESULT hr = pDAC->GetDelegateType(pDelegateObj, &delType);
+    HRESULT hr = pDAC->GetDelegateType(delegateAddr, &delType);
     if (hr != S_OK)
         return hr;
 
@@ -2708,7 +2687,7 @@ HRESULT CordbObjectValue::GetFunctionHelper(ICorDebugFunction **ppFunction)
 
         VMPTR_Assembly functionAssembly;
         mdMethodDef functionMethodDef = 0;
-        hr = pDAC->GetDelegateFunctionData(delType, pDelegateObj, &functionAssembly, &functionMethodDef);
+        hr = pDAC->GetDelegateFunctionData(delType, delegateAddr, &functionAssembly, &functionMethodDef);
         if (hr != S_OK)
             return hr;
 

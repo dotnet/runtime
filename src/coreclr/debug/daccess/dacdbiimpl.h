@@ -297,18 +297,18 @@ public:
 
     HRESULT STDMETHODCALLTYPE IsDelegate(VMPTR_Object vmObject, OUT BOOL * pResult);
 
-    HRESULT STDMETHODCALLTYPE GetDelegateType(VMPTR_Object delegateObject, DelegateType *delegateType);
+    HRESULT STDMETHODCALLTYPE GetDelegateType(CORDB_ADDRESS delegateObject, DelegateType *delegateType);
 
     HRESULT STDMETHODCALLTYPE GetDelegateFunctionData(
         DelegateType delegateType,
-        VMPTR_Object delegateObject,
+        CORDB_ADDRESS delegateObject,
         OUT VMPTR_Assembly *ppFunctionAssembly,
         OUT mdMethodDef *pMethodDef);
 
     HRESULT STDMETHODCALLTYPE GetDelegateTargetObject(
         DelegateType delegateType,
-        VMPTR_Object delegateObject,
-        OUT VMPTR_Object *ppTargetObj,
+        CORDB_ADDRESS delegateObject,
+        OUT CORDB_ADDRESS *ppTargetObj,
         OUT VMPTR_AppDomain *ppTargetAppDomain);
 
     HRESULT STDMETHODCALLTYPE GetLoaderHeapMemoryRanges(OUT DacDbiArrayList<COR_MEMORY_RANGE> * pRanges);
@@ -837,9 +837,6 @@ protected:
 
     // Get the target address from a VMPTR_OBJECTHANDLE, i.e., the handle address
     HRESULT STDMETHODCALLTYPE GetHandleAddressFromVmHandle(VMPTR_OBJECTHANDLE vmHandle, OUT CORDB_ADDRESS * pRetVal);
-
-    // Gets the target address of an VMPTR of an Object
-    HRESULT STDMETHODCALLTYPE GetObjectContents(VMPTR_Object obj, OUT TargetBuffer * pRetVal);
 
     // Create a VMPTR_OBJECTHANDLE from a CORDB_ADDRESS pointing to an object handle
     HRESULT STDMETHODCALLTYPE GetVmObjectHandle(CORDB_ADDRESS handleAddress, OUT VMPTR_OBJECTHANDLE * pRetVal);

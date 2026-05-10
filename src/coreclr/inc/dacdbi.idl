@@ -358,7 +358,6 @@ interface IDacDbiInterface : IUnknown
     HRESULT GetHandleAddressFromVmHandle([in] VMPTR_OBJECTHANDLE vmHandle, [out] CORDB_ADDRESS * pRetVal);
 
     // Object Contents and Monitor
-    HRESULT GetObjectContents([in] VMPTR_Object obj, [out] struct TargetBuffer * pRetVal);
     HRESULT GetThreadOwningMonitorLock([in] VMPTR_Object vmObject, [out] struct MonitorLockInfo * pRetVal);
     HRESULT EnumerateMonitorEventWaitList([in] VMPTR_Object vmObject, [in] FP_THREAD_ENUMERATION_CALLBACK fpCallback, [in] CALLBACK_DATA pUserData);
 
@@ -417,16 +416,16 @@ interface IDacDbiInterface : IUnknown
 
     // Delegate
     HRESULT IsDelegate([in] VMPTR_Object vmObject, [out] BOOL * pResult);
-    HRESULT GetDelegateType([in] VMPTR_Object delegateObject, [out] DelegateType * delegateType);
+    HRESULT GetDelegateType([in] CORDB_ADDRESS delegateObject, [out] DelegateType * delegateType);
     HRESULT GetDelegateFunctionData(
         [in] DelegateType delegateType,
-        [in] VMPTR_Object delegateObject,
+        [in] CORDB_ADDRESS delegateObject,
         [out] VMPTR_Assembly * ppFunctionAssembly,
         [out] mdMethodDef * pMethodDef);
     HRESULT GetDelegateTargetObject(
         [in] DelegateType delegateType,
-        [in] VMPTR_Object delegateObject,
-        [out] VMPTR_Object * ppTargetObj,
+        [in] CORDB_ADDRESS delegateObject,
+        [out] CORDB_ADDRESS * ppTargetObj,
         [out] VMPTR_AppDomain * ppTargetAppDomain);
 
     // Loader Heap
