@@ -1054,7 +1054,7 @@ void RangeCheck::MergeEdgeAssertions(Compiler*        comp,
     // budget for VN-to-VN assertion lookups.
     ValueNumStore::SmallValueNumSet visited;
     MergeEdgeAssertionsWorker(comp, normalLclVN, preferredBoundVN, assertions, pRange, canUseCheckedBounds,
-                              /* budget */ 4, &visited);
+                              /* budget */ 3, &visited);
 }
 
 //------------------------------------------------------------------------
