@@ -23,7 +23,7 @@ function(create_standalone_jit)
 
   if(TARGETDETAILS_OS STREQUAL "unix_osx" OR TARGETDETAILS_OS STREQUAL "unix_anyos")
     set(JIT_ARCH_LINK_LIBRARIES gcinfo_unix_${TARGETDETAILS_ARCH})
-  elseif(NOT ${TARGETDETAILS_ARCH} MATCHES "wasm")
+  else()
     set(JIT_ARCH_LINK_LIBRARIES gcinfo_${TARGETDETAILS_OS}_${TARGETDETAILS_ARCH})
   endif()
 
@@ -120,6 +120,8 @@ set( JIT_SOURCES
   fgstmt.cpp
   flowgraph.cpp
   forwardsub.cpp
+  gcdecode.cpp
+  gcencode.cpp
   gcinfo.cpp
   gentree.cpp
   gschecks.cpp
@@ -186,8 +188,6 @@ set ( JIT_NATIVE_TARGET_SOURCES
   lsra.cpp
   lsrabuild.cpp
   regMaskTPOps.cpp
-  gcdecode.cpp
-  gcencode.cpp
   unwind.cpp
 )
 

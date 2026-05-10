@@ -11,6 +11,7 @@
 #include <minipal/entrypoints.h>
 
 extern "C" {
+    uint32_t CompressionNative_CompressBound (uint32_t);
     uint32_t CompressionNative_Crc32 (uint32_t, void *, int32_t);
     int32_t CompressionNative_Deflate (void *, int32_t);
     int32_t CompressionNative_DeflateEnd (void *);
@@ -192,6 +193,7 @@ static const Entry s_libSystem_Globalization_Native [] = {
 };
 
 static const Entry s_libSystem_IO_Compression_Native [] = {
+    DllImportEntry(CompressionNative_CompressBound) // System.IO.Compression
     DllImportEntry(CompressionNative_Crc32) // System.IO.Compression
     DllImportEntry(CompressionNative_Deflate) // System.IO.Compression, System.Net.WebSockets
     DllImportEntry(CompressionNative_DeflateEnd) // System.IO.Compression, System.Net.WebSockets
@@ -320,7 +322,7 @@ typedef struct PInvokeTable {
 
 static PInvokeTable s_PInvokeTables[] = {
     {"libSystem.Globalization.Native", s_libSystem_Globalization_Native, 33},
-    {"libSystem.IO.Compression.Native", s_libSystem_IO_Compression_Native, 8},
+    {"libSystem.IO.Compression.Native", s_libSystem_IO_Compression_Native, 9},
     {"libSystem.Native", s_libSystem_Native, 94},
     {"libSystem.Native.Browser", s_libSystem_Native_Browser, 1},
     {"libSystem.Runtime.InteropServices.JavaScript.Native", s_libSystem_Runtime_InteropServices_JavaScript_Native, 6}

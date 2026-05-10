@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers.Binary;
@@ -554,7 +554,7 @@ namespace System.Resources
             }
         }
 
-        private object? _LoadObjectV1(int pos)
+        private unsafe object? _LoadObjectV1(int pos)
         {
             Debug.Assert(Monitor.IsEntered(this)); // uses _store
 

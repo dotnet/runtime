@@ -39,8 +39,9 @@ namespace System.Threading.Tasks.Tests
         // single-threaded WASM this throws PlatformNotSupportedException from
         // RuntimeFeature.ThrowIfMultithreadingIsNotSupported(), so gate the tests on both
         // runtime async support and threading support.
+        // Some tests rely on GetMethodFromNativeIP which is not supported on NativeAOT.
         public static bool IsRuntimeAsyncAndThreadingSupported =>
-            PlatformDetection.IsRuntimeAsyncSupported && PlatformDetection.IsMultithreadingSupported;
+            PlatformDetection.IsRuntimeAsyncSupported && PlatformDetection.IsMultithreadingSupported && PlatformDetection.IsNotNativeAot;
 
         private const string AsyncProfilerEventSourceName = "System.Runtime.CompilerServices.AsyncProfilerEventSource";
         private const int AsyncEventsId = 1;
