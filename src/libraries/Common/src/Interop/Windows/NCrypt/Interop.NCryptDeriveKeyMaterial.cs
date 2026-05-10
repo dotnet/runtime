@@ -25,6 +25,16 @@ internal static partial class Interop
             out int pcbResult,
             SecretAgreementFlags dwFlags);
 
+        [LibraryImport(Interop.Libraries.NCrypt, StringMarshalling = StringMarshalling.Utf16)]
+        private static partial ErrorCode NCryptDeriveKey(
+            SafeNCryptSecretHandle hSharedSecret,
+            string pwszKDF,
+            IntPtr pParameterList,
+            Span<byte> pbDerivedKey,
+            int cbDerivedKey,
+            out int pcbResult,
+            SecretAgreementFlags dwFlags);
+
         /// <summary>
         ///     Derive key material from a hash or HMAC KDF
         /// </summary>
@@ -256,6 +266,36 @@ internal static partial class Interop
             // Win32 returns the result as little endian. So we need to flip it to big endian.
             Array.Reverse(result);
             return result;
+        }
+
+        internal static bool TryDeriveKeyMaterialTruncate(
+            SafeNCryptSecretHandle secretAgreement,
+            SecretAgreementFlags flags,
+            Span<byte> destination,
+            out int bytesWritten)
+        {
+            ErrorCode error = NCryptDeriveKey(
+                secretAgreement,
+                BCryptNative.KeyDerivationFunction.Raw,
+                IntPtr.Zero,
+                destination,
+                destination.Length,
+                out int localWritten,
+                flags);
+
+            switch (error)
+            {
+                case ErrorCode.ERROR_SUCCESS:
+                    destination.Slice(0, localWritten).Reverse();
+                    bytesWritten = localWritten;
+                    return true;
+                case ErrorCode c when c.IsBufferTooSmall():
+                    destination.Clear();
+                    bytesWritten = 0;
+                    return false;
+                default:
+                    throw error.ToCryptographicException();
+            }
         }
     }
 }

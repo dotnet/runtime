@@ -1725,11 +1725,135 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     public int GetObjectFields(nint id, uint celt, COR_FIELD* layout, uint* pceltFetched)
         => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetObjectFields(id, celt, layout, pceltFetched) : HResults.E_NOTIMPL;
 
-    public int GetTypeLayout(nint id, COR_TYPE_LAYOUT* pLayout)
-        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetTypeLayout(id, pLayout) : HResults.E_NOTIMPL;
+    public int GetTypeLayout(ulong id, COR_TYPE_LAYOUT* pLayout)
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            if (pLayout is null)
+                throw new NullReferenceException(nameof(pLayout));
 
-    public int GetArrayLayout(nint id, nint pLayout)
-        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetArrayLayout(id, pLayout) : HResults.E_NOTIMPL;
+            if (id == 0)
+                throw Marshal.GetExceptionForHR(CorDbgHResults.CORDBG_E_CLASS_NOT_LOADED)!;
+
+            IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
+            TypeHandle typeHandle = rts.GetTypeHandle(new TargetPointer((ulong)id));
+
+            TargetPointer parentMT = rts.GetParentMethodTable(typeHandle);
+            pLayout->parentID.token1 = parentMT.Value;
+            pLayout->parentID.token2 = 0;
+            pLayout->objectSize = rts.GetBaseSize(typeHandle);
+            ushort numInstanceFields = rts.GetNumInstanceFields(typeHandle);
+            if (parentMT != TargetPointer.Null)
+            {
+                TypeHandle parentHandle = rts.GetTypeHandle(parentMT);
+                numInstanceFields -= rts.GetNumInstanceFields(parentHandle);
+            }
+            pLayout->numFields = numInstanceFields;
+            pLayout->boxOffset = rts.IsObjRef(typeHandle) ? 0u : (uint)_target.PointerSize;
+            pLayout->type = (int)(rts.IsString(typeHandle) ? CorElementType.String : rts.GetInternalCorElementType(typeHandle));
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+#if DEBUG
+        if (_legacy is not null)
+        {
+            COR_TYPE_LAYOUT resultLocal;
+            int hrLocal = _legacy.GetTypeLayout(id, &resultLocal);
+            Debug.ValidateHResult(hr, hrLocal);
+            if (hr == HResults.S_OK)
+            {
+                Debug.Assert(pLayout->parentID.token1 == resultLocal.parentID.token1, $"cDAC: {pLayout->parentID.token1:x}, DAC: {resultLocal.parentID.token1:x}");
+                Debug.Assert(pLayout->parentID.token2 == resultLocal.parentID.token2, $"cDAC: {pLayout->parentID.token2:x}, DAC: {resultLocal.parentID.token2:x}");
+                Debug.Assert(pLayout->objectSize == resultLocal.objectSize, $"cDAC: {pLayout->objectSize}, DAC: {resultLocal.objectSize}");
+                Debug.Assert(pLayout->numFields == resultLocal.numFields, $"cDAC: {pLayout->numFields}, DAC: {resultLocal.numFields}");
+                Debug.Assert(pLayout->boxOffset == resultLocal.boxOffset, $"cDAC: {pLayout->boxOffset}, DAC: {resultLocal.boxOffset}");
+                Debug.Assert(pLayout->type == resultLocal.type, $"cDAC: {pLayout->type}, DAC: {resultLocal.type}");
+            }
+        }
+#endif
+
+        return hr;
+    }
+
+    public int GetArrayLayout(ulong id, COR_ARRAY_LAYOUT* pLayout)
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            if (pLayout is null)
+                throw new NullReferenceException(nameof(pLayout));
+
+            if (id == 0)
+                throw Marshal.GetExceptionForHR(CorDbgHResults.CORDBG_E_CLASS_NOT_LOADED)!;
+            IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
+            TypeHandle arrayOrStringTypeHandle = rts.GetTypeHandle(new TargetPointer(id));
+            uint pointerSize = (uint)_target.PointerSize;
+
+            if (rts.IsString(arrayOrStringTypeHandle))
+            {
+                TypeHandle charTypeHandle = rts.GetPrimitiveType(CorElementType.Char);
+                pLayout->componentID.token1 = charTypeHandle.Address.Value;
+                pLayout->componentID.token2 = 0;
+                pLayout->componentType = CorElementType.Char;
+                pLayout->firstElementOffset = pointerSize + 4;
+                pLayout->elementSize = sizeof(char);
+                pLayout->countOffset = pointerSize;
+                pLayout->rankSize = 4;
+                pLayout->numRanks = 1;
+                pLayout->rankOffset = pointerSize;
+            }
+            else
+            {
+                if (!rts.IsArray(arrayOrStringTypeHandle, out uint rank))
+                    throw Marshal.GetExceptionForHR(HResults.E_INVALIDARG)!;
+
+                TypeHandle componentTypeHandle = rts.GetTypeParam(arrayOrStringTypeHandle);
+                CorElementType componentType = rts.IsString(componentTypeHandle) ? CorElementType.String : rts.GetInternalCorElementType(componentTypeHandle);
+                pLayout->componentID.token1 = componentTypeHandle.Address.Value;
+                pLayout->componentID.token2 = 0;
+                pLayout->componentType = componentType;
+                Target.TypeInfo objectHeaderTypeInfo = _target.GetTypeInfo(DataType.ObjectHeader);
+                uint objectHeaderSize = (uint)objectHeaderTypeInfo.Size!.Value;
+                pLayout->firstElementOffset = rts.GetBaseSize(arrayOrStringTypeHandle) - objectHeaderSize;
+                pLayout->elementSize = rts.GetComponentSize(arrayOrStringTypeHandle);
+                pLayout->countOffset = pointerSize;
+                pLayout->rankSize = 4;
+                pLayout->numRanks = rank;
+                pLayout->rankOffset = rank > 1 ? pointerSize * 2 : pointerSize;
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+#if DEBUG
+        if (_legacy is not null)
+        {
+            COR_ARRAY_LAYOUT resultLocal;
+            int hrLocal = _legacy.GetArrayLayout(id, &resultLocal);
+            Debug.ValidateHResult(hr, hrLocal);
+            if (hr == HResults.S_OK)
+            {
+                Debug.Assert(pLayout->componentID.token1 == resultLocal.componentID.token1, $"cDAC: {pLayout->componentID.token1:x}, DAC: {resultLocal.componentID.token1:x}");
+                Debug.Assert(pLayout->componentID.token2 == resultLocal.componentID.token2, $"cDAC: {pLayout->componentID.token2:x}, DAC: {resultLocal.componentID.token2:x}");
+                Debug.Assert(pLayout->componentType == resultLocal.componentType, $"cDAC: {pLayout->componentType}, DAC: {resultLocal.componentType}");
+                Debug.Assert(pLayout->firstElementOffset == resultLocal.firstElementOffset, $"cDAC: {pLayout->firstElementOffset}, DAC: {resultLocal.firstElementOffset}");
+                Debug.Assert(pLayout->elementSize == resultLocal.elementSize, $"cDAC: {pLayout->elementSize}, DAC: {resultLocal.elementSize}");
+                Debug.Assert(pLayout->countOffset == resultLocal.countOffset, $"cDAC: {pLayout->countOffset}, DAC: {resultLocal.countOffset}");
+                Debug.Assert(pLayout->rankSize == resultLocal.rankSize, $"cDAC: {pLayout->rankSize}, DAC: {resultLocal.rankSize}");
+                Debug.Assert(pLayout->numRanks == resultLocal.numRanks, $"cDAC: {pLayout->numRanks}, DAC: {resultLocal.numRanks}");
+                Debug.Assert(pLayout->rankOffset == resultLocal.rankOffset, $"cDAC: {pLayout->rankOffset}, DAC: {resultLocal.rankOffset}");
+            }
+        }
+#endif
+
+        return hr;
+    }
 
     public int GetGCHeapInformation(COR_HEAPINFO* pHeapInfo)
     {
