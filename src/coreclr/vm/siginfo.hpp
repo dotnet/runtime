@@ -20,6 +20,9 @@
 #include "eecontract.h"
 #include "typectxt.h"
 
+template<typename T> struct cdac_data;
+struct VASigCookie;
+
 //---------------------------------------------------------------------------------------
 // These macros define how arguments are mapped to the stack in the managed calling convention.
 // We assume to be walking a method's signature left-to-right, in the virtual calling convention.
@@ -353,6 +356,8 @@ public:
     DWORD           GetRawSigLen() const;
 
 private:
+    friend struct ::cdac_data<VASigCookie>;
+
     PCCOR_SIGNATURE m_pSig;
     DWORD           m_cbSig;
 };  // class Signature
