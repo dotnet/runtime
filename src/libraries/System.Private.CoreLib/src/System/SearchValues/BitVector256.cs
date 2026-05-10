@@ -48,7 +48,7 @@ namespace System.Buffers
             return (_values[(int)offset] & significantBit) != 0;
         }
 
-        public readonly char[] GetCharValues()
+        public unsafe readonly char[] GetCharValues()
         {
             Span<char> chars = stackalloc char[256];
             int size = 0;
@@ -63,7 +63,7 @@ namespace System.Buffers
             return chars.Slice(0, size).ToArray();
         }
 
-        public readonly byte[] GetByteValues()
+        public unsafe readonly byte[] GetByteValues()
         {
             Span<byte> bytes = stackalloc byte[256];
             int size = 0;

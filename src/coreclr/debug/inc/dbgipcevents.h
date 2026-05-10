@@ -377,10 +377,10 @@ class MSLAYOUT GeneralLsPointer
 {
 protected:
     friend ULONG_PTR LsPtrToCookie(GeneralLsPointer p);
-    void * m_ptr;
+    Portable<CORDB_ADDRESS> m_ptr;
 
 public:
-    bool IsNull() { return m_ptr == NULL; }
+    bool IsNull() { return m_ptr == (CORDB_ADDRESS)0; }
 };
 
 class MSLAYOUT GeneralRsPointer
@@ -394,7 +394,7 @@ public:
 
 // In some cases, we need to get a uuid from a pointer (ie, in a hash)
 inline ULONG_PTR LsPtrToCookie(GeneralLsPointer p) {
-    return (ULONG_PTR) p.m_ptr;
+    return (ULONG_PTR)(CORDB_ADDRESS)p.m_ptr;
 }
 #define VmPtrToCookie(vm) LsPtrToCookie((vm).ToLsPtr())
 
@@ -414,11 +414,11 @@ class MSLAYOUT LsPointer : public GeneralLsPointer
 public:
     void Set(void * p)
     {
-        m_ptr = p;
+        m_ptr = PTR_TO_CORDB_ADDRESS(p);
     }
     void * UnsafeGet()
     {
-        return m_ptr;
+        return CORDB_ADDRESS_TO_PTR((CORDB_ADDRESS)m_ptr);
     }
 
     static LsPointer<T> NullPtr()
@@ -433,8 +433,8 @@ public:
         return t;
     }
 
-    bool operator!= (void * p) { return m_ptr != p; }
-    bool operator== (void * p) { return m_ptr == p; }
+    bool operator!= (void * p) { return (CORDB_ADDRESS)m_ptr != PTR_TO_CORDB_ADDRESS(p); }
+    bool operator== (void * p) { return (CORDB_ADDRESS)m_ptr == PTR_TO_CORDB_ADDRESS(p); }
     bool operator==(LsPointer<T> p) { return p.m_ptr == this->m_ptr; }
 
     // We should never UnWrap() them in the RS, so we don't define that here.
@@ -525,8 +525,8 @@ public:
         return t;
     }
 
-    bool operator!= (void * p) { return m_ptr != p; }
-    bool operator== (void * p) { return m_ptr == p; }
+    bool operator!= (void * p) { return (CORDB_ADDRESS)m_ptr != PTR_TO_CORDB_ADDRESS(p); }
+    bool operator== (void * p) { return (CORDB_ADDRESS)m_ptr == PTR_TO_CORDB_ADDRESS(p); }
     bool operator==(LsPointer<T> p) { return p.m_ptr == this->m_ptr; }
 
     // @todo - we want to be able to swap out Set + Unwrap functions
@@ -534,13 +534,13 @@ public:
     {
         SUPPORTS_DAC;
         // We could validate the pointer here.
-        m_ptr = p;
+        m_ptr = PTR_TO_CORDB_ADDRESS(p);
     }
 
     T * UnWrap()
     {
         // If we wanted to validate the pointer, here's our chance.
-        return static_cast<T*>(m_ptr);
+        return reinterpret_cast<T*>(CORDB_ADDRESS_TO_PTR((CORDB_ADDRESS)m_ptr));
     }
 };
 
@@ -569,12 +569,6 @@ public:
     typedef RsPointer<__RS__##rs_type> ptr_name;
 
 #endif // !RIGHT_SIDE_COMPILE
-
-// We must be binary compatible w/ a pointer.
-static_assert(sizeof(LsPointer<void>) == sizeof(GeneralLsPointer));
-
-static_assert(sizeof(void*) == sizeof(GeneralLsPointer));
-
 
 
 //-----------------------------------------------------------------------------
@@ -649,7 +643,7 @@ class MSLAYOUT VMPTR_Base
     // - In DAC: must be marshalled to a host-pointer and then they can be used via DAC
     // - In RS: opaque handles.
 private:
-    TADDR m_addr;
+    Portable<CORDB_ADDRESS> m_addr;
 
 public:
     typedef VMPTR_Base<TTargetPtr,TDacPtr> VMPTR_This;
@@ -665,7 +659,7 @@ public:
     TDacPtr GetDacPtr() const
     {
         SUPPORTS_DAC;
-        return TDacPtr(m_addr);
+        return TDacPtr((TADDR)m_addr);
     }
 
 
@@ -675,13 +669,13 @@ public:
     void SetDacTargetPtr(TADDR addr)
     {
         SUPPORTS_DAC;
-        m_addr = addr;
+        m_addr = (CORDB_ADDRESS)addr;
     }
 
     void SetHostPtr(const TTargetPtr * pObject)
     {
         SUPPORTS_DAC;
-        m_addr = PTR_HOST_TO_TADDR(pObject);
+        m_addr = (CORDB_ADDRESS)PTR_HOST_TO_TADDR(pObject);
     }
 
 
@@ -695,7 +689,7 @@ public:
     // This is commonly used by the Left-side to create a VMPTR_ for a notification event.
     void SetRawPtr(TTargetPtr * ptr)
     {
-        m_addr = reinterpret_cast<TADDR>(ptr);
+        m_addr = PTR_TO_CORDB_ADDRESS(ptr);
     }
 
     // This will get the raw underlying target pointer.
@@ -703,7 +697,7 @@ public:
     // hijack or in-proc worker threads)
     TTargetPtr * GetRawPtr()
     {
-        return reinterpret_cast<TTargetPtr*>(m_addr);
+        return reinterpret_cast<TTargetPtr*>((TADDR)m_addr);
     }
 
     // Convenience for converting TTargetPtr --> VMPTR
@@ -729,21 +723,21 @@ public:
     // @dbgtodo  inspection: LSPTRs will go away entirely once we've moved completely over to DAC
     LsPointer<TTargetPtr> ToLsPtr()
     {
-        return LsPointer<TTargetPtr>::MakePtr( reinterpret_cast<TTargetPtr *>(m_addr));
+        return LsPointer<TTargetPtr>::MakePtr( reinterpret_cast<TTargetPtr *>((TADDR)m_addr));
     }
 #endif
 
     //
     // Operators to emulate Pointer semantics.
     //
-    bool IsNull() { SUPPORTS_DAC; return m_addr == (TADDR)0; }
+    bool IsNull() { SUPPORTS_DAC; return m_addr == (CORDB_ADDRESS)0; }
 
     static VMPTR_This NullPtr()
     {
         SUPPORTS_DAC;
 
         VMPTR_This dummy;
-        dummy.m_addr = (TADDR)NULL;
+        dummy.m_addr = (CORDB_ADDRESS)NULL;
         return dummy;
     }
 
@@ -1263,7 +1257,6 @@ inline bool IsEqualOrCloserToRoot(FramePointer fp1, FramePointer fp2)
     return !IsCloserToLeaf(fp1, fp2);
 }
 
-
 // struct DebuggerIPCE_FuncData:   DebuggerIPCE_FuncData holds data
 // to describe a given function, its
 // class, and a little bit about the code for the function. This is used
@@ -1462,8 +1455,8 @@ struct MSLAYOUT DebuggerIPCE_STRData
 
 struct MSLAYOUT DebuggerIPCE_BasicTypeData
 {
-    CorElementType  elementType;
-    mdTypeDef       metadataToken;
+    Portable<CorElementType> elementType;
+    Portable<mdTypeDef> metadataToken;
     VMPTR_Assembly  vmAssembly;
     VMPTR_TypeHandle vmTypeHandle;
 };
@@ -1489,7 +1482,7 @@ struct MSLAYOUT DebuggerIPCE_BasicTypeData
 //
 struct MSLAYOUT DebuggerIPCE_ExpandedTypeData
 {
-    CorElementType  elementType; // Note this is _never_ E_T_VAR, E_T_WITH or E_T_MVAR
+    Portable<CorElementType> elementType; // Note this is _never_ E_T_VAR, E_T_WITH or E_T_MVAR
     union MSLAYOUT
     {
         // used for E_T_CLASS and E_T_VALUECLASS, E_T_PTR, E_T_BYREF etc.
@@ -1497,15 +1490,15 @@ struct MSLAYOUT DebuggerIPCE_ExpandedTypeData
         // For constructed E_T_CLASS or E_T_VALUECLASS the tokens will be set and the typeHandle will be non-NULL
         // For E_T_PTR etc. the tokens will be NULL and the typeHandle will be non-NULL.
         struct MSLAYOUT
-         {
-            mdTypeDef       metadataToken;
-            VMPTR_Assembly  vmAssembly;
+        {
+            Portable<mdTypeDef> metadataToken;
+            VMPTR_Assembly vmAssembly;
             VMPTR_TypeHandle typeHandle; // if non-null then further fetches will be needed to get type arguments
         } ClassTypeData;
 
         // used for E_T_PTR, E_T_BYREF etc.
         struct MSLAYOUT
-         {
+        {
             DebuggerIPCE_BasicTypeData unaryTypeArg;  // used only when sending back to debugger
         } UnaryTypeData;
 
@@ -1513,13 +1506,13 @@ struct MSLAYOUT DebuggerIPCE_ExpandedTypeData
         // used for E_T_ARRAY etc.
         struct MSLAYOUT
         {
-          DebuggerIPCE_BasicTypeData arrayTypeArg; // used only when sending back to debugger
-            DWORD           arrayRank;
+            DebuggerIPCE_BasicTypeData arrayTypeArg; // used only when sending back to debugger
+            Portable<DWORD> arrayRank;
         } ArrayTypeData;
 
         // used for E_T_FNPTR
         struct MSLAYOUT
-         {
+        {
             VMPTR_TypeHandle typeHandle; // if non-null then further fetches needed to get type arguments
         } NaryTypeData;
 
@@ -1536,8 +1529,8 @@ struct MSLAYOUT DebuggerIPCE_ExpandedTypeData
 // flattened type argument data.
 struct MSLAYOUT DebuggerIPCE_TypeArgData
 {
-    DebuggerIPCE_ExpandedTypeData  data;
-    unsigned int                   numTypeArgs; // number of immediate children on the type tree
+    DebuggerIPCE_ExpandedTypeData data;
+    Portable<UINT> numTypeArgs; // number of immediate children on the type tree
 };
 
 
@@ -1605,24 +1598,22 @@ const CORDB_ADDRESS kNonLeafFrameRegAddr = (CORDB_ADDRESS)(-1);
 
 struct MSLAYOUT RemoteAddress
 {
-    RemoteAddressKind    kind;
-    void                *frame;
-
-    CorDebugRegister     reg1;
-    void                *reg1Addr;
-    SIZE_T               reg1Value;         // this is the actual value of the register
+    Portable<RemoteAddressKind> kind;
+    Portable<CorDebugRegister> reg1;
+    Portable<CORDB_ADDRESS> reg1Addr;
+    Portable<ULONG64> reg1Value;         // this is the actual value of the register
 
     union MSLAYOUT
     {
         struct MSLAYOUT
         {
-            CorDebugRegister  reg2;
-            void             *reg2Addr;
-            SIZE_T            reg2Value;    // this is the actual value of the register
+            Portable<CorDebugRegister> reg2;
+            Portable<CORDB_ADDRESS> reg2Addr;
+            Portable<ULONG64> reg2Value;    // this is the actual value of the register
         } u;
 
-        CORDB_ADDRESS    addr;
-        DWORD            floatIndex;
+        Portable<CORDB_ADDRESS> addr;
+        Portable<DWORD> floatIndex;
     };
 };
 
@@ -1652,14 +1643,14 @@ enum NameChangeType
 //
 struct MSLAYOUT DebuggerIPCE_FuncEvalArgData
 {
-    RemoteAddress     argHome;  // enregistered variable home
-    void             *argAddr;  // address if not enregistered
-    CorElementType    argElementType;
-    unsigned int      fullArgTypeNodeCount; // Pointer to LS (DebuggerIPCE_TypeArgData *) buffer holding full description of the argument type (if needed - only needed for struct types)
-    void             *fullArgType; // Pointer to LS (DebuggerIPCE_TypeArgData *) buffer holding full description of the argument type (if needed - only needed for struct types)
-    BYTE              argLiteralData[8]; // copy of generic value data
-    bool              argIsLiteral; // true if value is in argLiteralData
-    bool              argIsHandleValue; // true if argAddr is OBJECTHANDLE
+    RemoteAddress argHome;  // enregistered variable home
+    Portable<CORDB_ADDRESS> argAddr;  // address if not enregistered
+    Portable<CorElementType> argElementType;
+    Portable<UINT> fullArgTypeNodeCount; // Pointer to LS (DebuggerIPCE_TypeArgData *) buffer holding full description of the argument type (if needed - only needed for struct types)
+    Portable<CORDB_ADDRESS> fullArgType; // Pointer to LS (DebuggerIPCE_TypeArgData *) buffer holding full description of the argument type (if needed - only needed for struct types)
+    Portable<BYTE> argLiteralData[8]; // copy of generic value data
+    Portable<bool> argIsLiteral; // true if value is in argLiteralData
+    Portable<bool> argIsHandleValue; // true if argAddr is OBJECTHANDLE
 };
 
 
@@ -1669,21 +1660,19 @@ struct MSLAYOUT DebuggerIPCE_FuncEvalArgData
 //
 struct MSLAYOUT DebuggerIPCE_FuncEvalInfo
 {
-    VMPTR_Thread               vmThreadToken;
-    DebuggerIPCE_FuncEvalType  funcEvalType;
-    mdMethodDef                funcMetadataToken;
-    mdTypeDef                  funcClassMetadataToken;
-    VMPTR_Assembly             vmAssembly;
-    RSPTR_CORDBEVAL            funcEvalKey;
-    bool                       evalDuringException;
+    VMPTR_Thread vmThreadToken;
+    Portable<DebuggerIPCE_FuncEvalType> funcEvalType;
+    Portable<mdMethodDef> funcMetadataToken;
+    Portable<mdTypeDef> funcClassMetadataToken;
+    VMPTR_Assembly vmAssembly;
+    RSPTR_CORDBEVAL funcEvalKey;
+    Portable<bool> evalDuringException;
 
-    unsigned int               argCount;
-    unsigned int               genericArgsCount;
-    unsigned int               genericArgsNodeCount;
-
-    SIZE_T                     stringSize;
-
-    SIZE_T                     arrayRank;
+    Portable<UINT> argCount;
+    Portable<UINT> genericArgsCount;
+    Portable<UINT> genericArgsNodeCount;
+    Portable<UINT> stringSize;
+    Portable<UINT> arrayRank;
 };
 
 
@@ -1703,22 +1692,10 @@ enum HijackAction
 //
 struct MSLAYOUT DebuggerIPCFirstChanceData
 {
-    LSPTR_CONTEXT     pLeftSideContext;
-    HijackAction      action;
-    UINT              debugCounter;
+    LSPTR_CONTEXT pLeftSideContext;
+    Portable<HijackAction> action;
+    Portable<UINT> debugCounter;
 };
-
-//
-// DebuggerIPCSecondChanceData holds info communicated from the RS
-// to the LS when setting up a second chance exception hijack. This is
-// used when Win32 debugging only.
-//
-struct MSLAYOUT DebuggerIPCSecondChanceData
-{
-    DT_CONTEXT       threadContext;
-};
-
-
 
 //-----------------------------------------------------------------------------
 // This struct holds pointer from the LS and needs to copy to
@@ -1831,17 +1808,6 @@ struct MSLAYOUT Ls_Rs_StringBuffer : public Ls_Rs_BaseBuffer
 };
 
 
-// Data for an Managed Debug Assistant Probe (MDA).
-struct MSLAYOUT DebuggerMDANotification
-{
-    Ls_Rs_StringBuffer szName;
-    Ls_Rs_StringBuffer szDescription;
-    Ls_Rs_StringBuffer szXml;
-    DWORD        dwOSThreadId;
-    CorDebugMDAFlags flags;
-};
-
-
 // The only remaining problem is that register number mappings are different for each platform. It turns out
 // that the debugger only uses REGNUM_SP and REGNUM_AMBIENT_SP though, so we can just virtualize these two for
 // the target platform.
@@ -1905,25 +1871,18 @@ static_assert(DBG_TARGET_REGNUM_AMBIENT_SP == ICorDebugInfo::REGNUM_AMBIENT_SP);
 //
 struct MSLAYOUT DebuggerIPCEvent
 {
-    DebuggerIPCEvent*       next;
-    DebuggerIPCEventType    type;
-    DWORD             processId;
-    DWORD             threadId;
-    VMPTR_AppDomain   vmAppDomain;
-    VMPTR_Thread      vmThread;
+    Portable<DebuggerIPCEventType> type;
+    Portable<DWORD> processId;
+    Portable<DWORD> threadId;
+    VMPTR_AppDomain vmAppDomain;
+    VMPTR_Thread vmThread;
 
-    HRESULT           hr;
-    bool              replyRequired;
-    bool              asyncSend;
+    Portable<HRESULT> hr;
+    Portable<bool> replyRequired;
+    Portable<bool> asyncSend;
 
     union MSLAYOUT
     {
-        struct MSLAYOUT
-        {
-            // Pointer to a BOOL in the target.
-            CORDB_ADDRESS pfBeingDebugged;
-        } LeftSideStartupData;
-
         struct MSLAYOUT
         {
             // Module whose metadata is being updated
@@ -1965,37 +1924,35 @@ struct MSLAYOUT DebuggerIPCEvent
             VMPTR_Assembly vmAssembly;
         } UpdateModuleSymsData;
 
-        DebuggerMDANotification MDANotification;
-
         struct MSLAYOUT
         {
             LSPTR_BREAKPOINT breakpointToken;
-            mdMethodDef  funcMetadataToken;
+            Portable<mdMethodDef> funcMetadataToken;
             VMPTR_Assembly vmAssembly;
-            bool         isIL;
-            SIZE_T       offset;
-            SIZE_T       encVersion;
-            LSPTR_METHODDESC  nativeCodeMethodDescToken; // points to the MethodDesc if !isIL
-            CORDB_ADDRESS codeStartAddress;
+            Portable<bool> isIL;
+            Portable<UINT> offset;
+            Portable<UINT> encVersion;
+            LSPTR_METHODDESC nativeCodeMethodDescToken; // points to the MethodDesc if !isIL
+            Portable<CORDB_ADDRESS> codeStartAddress;
         } BreakpointData;
 
         struct MSLAYOUT
         {
-            mdMethodDef funcMetadataToken;
+            Portable<mdMethodDef> funcMetadataToken;
             VMPTR_Module pModule;
         } DisableOptData;
 
         struct MSLAYOUT
         {
-            BOOL enableEvents;
+            Portable<bool> enableEvents;
             VMPTR_Object vmObj;
         } ForceCatchHandlerFoundData;
 
         struct MSLAYOUT
         {
             VMPTR_Module vmModule;
-            mdTypeDef    classMetadataToken;
-            BOOL Enabled;
+            Portable<mdTypeDef> classMetadataToken;
+            Portable<bool> Enabled;
         } CustomNotificationData;
 
         struct MSLAYOUT
@@ -2005,96 +1962,77 @@ struct MSLAYOUT DebuggerIPCEvent
 
         struct MSLAYOUT
         {
-#ifdef FEATURE_DATABREAKPOINT
+            Portable<UINT> contextSize;
             CONTEXT context;
-#else
-            int dummy;
-#endif
         } DataBreakpointData;
 
         struct MSLAYOUT
         {
-            LSPTR_STEPPER        stepperToken;
-            VMPTR_Thread         vmThreadToken;
-            FramePointer         frameToken;
-            bool                 stepIn;
-            bool                 rangeIL;
-            bool                 IsJMCStop;
-            unsigned int         totalRangeCount;
-            CorDebugStepReason   reason;
-            CorDebugUnmappedStop rgfMappingStop;
-            CorDebugIntercept    rgfInterceptStop;
-            unsigned int         rangeCount;
+            LSPTR_STEPPER stepperToken;
+            VMPTR_Thread vmThreadToken;
+            FramePointer frameToken;
+            Portable<bool> stepIn;
+            Portable<bool> rangeIL;
+            Portable<bool> IsJMCStop;
+            Portable<UINT> totalRangeCount;
+            Portable<CorDebugStepReason> reason;
+            Portable<CorDebugUnmappedStop> rgfMappingStop;
+            Portable<CorDebugIntercept> rgfInterceptStop;
+            Portable<UINT> rangeCount;
             COR_DEBUG_STEP_RANGE range; //note that this is an array
         } StepData;
-
-        struct MSLAYOUT
-        {
-            // An unvalidated GC-handle
-            VMPTR_OBJECTHANDLE GCHandle;
-        } GetGCHandleInfo;
-
-        struct MSLAYOUT
-        {
-            // An unvalidated GC-handle for which we're returning the results
-            LSPTR_OBJECTHANDLE GCHandle;
-
-            // The following are initialized by the LS in response to our query:
-            VMPTR_AppDomain vmAppDomain; // AD that handle is in (only applicable if fValid).
-            bool            fValid; // Did the LS determine the GC handle to be valid?
-        } GetGCHandleInfoResult;
 
         // Allocate memory on the left-side
         struct MSLAYOUT
         {
-            ULONG      bufSize;             // number of bytes to allocate
+            Portable<ULONG> bufSize;             // number of bytes to allocate
         } GetBuffer;
 
         // Memory allocated on the left-side
         struct MSLAYOUT
         {
-            void        *pBuffer;           // LS pointer to the buffer allocated
-            HRESULT     hr;                 // success / failure
+            Portable<CORDB_ADDRESS> pBuffer;      // LS pointer to the buffer allocated
+            Portable<HRESULT> hr;                 // success / failure
         } GetBufferResult;
 
         // Free a buffer allocated on the left-side with GetBuffer
         struct MSLAYOUT
         {
-            void        *pBuffer;           // Pointer previously returned in GetBufferResult
+            Portable<CORDB_ADDRESS> pBuffer;      // Pointer previously returned in GetBufferResult
         } ReleaseBuffer;
 
         struct MSLAYOUT
         {
-            HRESULT     hr;
+            Portable<HRESULT> hr;
         } ReleaseBufferResult;
 
         // Apply an EnC edit
         struct MSLAYOUT
         {
-            VMPTR_Assembly vmAssembly;      // Module to edit
-            DWORD cbDeltaMetadata;              // size of blob pointed to by pDeltaMetadata
-            CORDB_ADDRESS pDeltaMetadata;       // pointer to delta metadata in debuggee
-                                                // it's the RS's responsibility to allocate and free
-                                                // this (and pDeltaIL) using GetBuffer / ReleaseBuffer
-            CORDB_ADDRESS pDeltaIL;             // pointer to delta IL in debugee
-            DWORD cbDeltaIL;                    // size of blob pointed to by pDeltaIL
+            VMPTR_Assembly vmAssembly;                    // Module to edit
+            Portable<DWORD> cbDeltaMetadata;              // size of blob pointed to by pDeltaMetadata
+            Portable<CORDB_ADDRESS> pDeltaMetadata;       // pointer to delta metadata in debuggee
+                                                          // it's the RS's responsibility to allocate and free
+                                                          // this (and pDeltaIL) using GetBuffer / ReleaseBuffer
+            Portable<CORDB_ADDRESS> pDeltaIL;             // pointer to delta IL in debugee
+            Portable<DWORD> cbDeltaIL;                    // size of blob pointed to by pDeltaIL
         } ApplyChanges;
 
         struct MSLAYOUT
         {
-            HRESULT hr;
+            Portable<HRESULT> hr;
         } ApplyChangesResult;
 
         struct MSLAYOUT
         {
-            mdTypeDef   classMetadataToken;
+            Portable<mdTypeDef> classMetadataToken;
             VMPTR_Assembly vmAssembly;
             LSPTR_ASSEMBLY classDebuggerAssemblyToken;
         } LoadClass;
 
         struct MSLAYOUT
         {
-            mdTypeDef   classMetadataToken;
+            Portable<mdTypeDef> classMetadataToken;
             VMPTR_Assembly vmAssembly;
             LSPTR_ASSEMBLY classDebuggerAssemblyToken;
         } UnloadClass;
@@ -2102,59 +2040,56 @@ struct MSLAYOUT DebuggerIPCEvent
         struct MSLAYOUT
         {
             VMPTR_Assembly vmAssembly;
-            bool  flag;
+            Portable<bool> flag;
         } SetClassLoad;
 
         struct MSLAYOUT
         {
             VMPTR_OBJECTHANDLE vmExceptionHandle;
-            bool        firstChance;
-            bool        continuable;
+            Portable<bool> firstChance;
+            Portable<bool> continuable;
         } Exception;
 
         struct MSLAYOUT
         {
-            VMPTR_Thread   vmThreadToken;
+            VMPTR_Thread vmThreadToken;
         } ClearException;
 
         struct MSLAYOUT
         {
-            void        *address;
+            Portable<CORDB_ADDRESS> address;
         } IsTransitionStub;
 
         struct MSLAYOUT
         {
-            bool        isStub;
+            Portable<bool> isStub;
         } IsTransitionStubResult;
 
         struct MSLAYOUT
         {
-            CORDB_ADDRESS    startAddress;
-            bool             fCanSetIPOnly;
-            VMPTR_Thread     vmThreadToken;
+            Portable<CORDB_ADDRESS> startAddress;
+            Portable<bool> fCanSetIPOnly;
+            VMPTR_Thread vmThreadToken;
             VMPTR_Assembly vmAssembly;
-            mdMethodDef      mdMethod;
+            Portable<mdMethodDef> mdMethod;
             VMPTR_MethodDesc vmMethodDesc;
-            SIZE_T           offset;
-            bool             fIsIL;
-            void *           firstExceptionHandler;
+            Portable<ULONG64> offset;
+            Portable<bool> fIsIL;
         } SetIP; // this is also used for CanSetIP
 
         struct MSLAYOUT
         {
-            int iLevel;
+            Portable<int> iLevel;
 
-            EmbeddedIPCString<MAX_LOG_SWITCH_NAME_LEN + 1> szCategory;
-            Ls_Rs_StringBuffer szContent;
+            Portable<CORDB_ADDRESS> szCategory;
+            Portable<ULONG> cchCategory;
+            Portable<CORDB_ADDRESS> szContent;
+            Portable<ULONG> cchContent;
         } FirstLogMessage;
 
         struct MSLAYOUT
         {
-            int iLevel;
-            int iReason;
-
-            EmbeddedIPCString<MAX_LOG_SWITCH_NAME_LEN + 1> szSwitchName;
-            EmbeddedIPCString<MAX_LOG_SWITCH_NAME_LEN + 1> szParentSwitchName;
+            Portable<int> iLevel;
         } LogSwitchSettingMessage;
 
         // information needed to send to the RS as part of a custom notification from the target
@@ -2164,29 +2099,29 @@ struct MSLAYOUT DebuggerIPCEvent
             VMPTR_Assembly vmAssembly;
 
             // metadata token for the type of the CustomNotification object's type
-            mdTypeDef    classToken;
+            Portable<mdTypeDef> classToken;
         } CustomNotification;
 
         struct MSLAYOUT
         {
             VMPTR_Thread vmThreadToken;
-            CorDebugThreadState debugState;
+            Portable<CorDebugThreadState> debugState;
         } SetAllDebugState;
 
         DebuggerIPCE_FuncEvalInfo FuncEval;
 
         struct MSLAYOUT
         {
-            CORDB_ADDRESS argDataArea;
+            Portable<CORDB_ADDRESS> argDataArea;
             LSPTR_DEBUGGEREVAL debuggerEvalKey;
         } FuncEvalSetupComplete;
 
         struct MSLAYOUT
         {
             RSPTR_CORDBEVAL funcEvalKey;
-            bool            successful;
-            bool            aborted;
-            void           *resultAddr;
+            Portable<bool> successful;
+            Portable<bool> aborted;
+            Portable<CORDB_ADDRESS> resultAddr;
 
             // AppDomain that the result is in.
             VMPTR_AppDomain vmAppDomain;
@@ -2212,42 +2147,35 @@ struct MSLAYOUT DebuggerIPCEvent
 
         struct MSLAYOUT
         {
-            void           *objectRefAddress;
+            Portable<CORDB_ADDRESS> objectRefAddress;
             VMPTR_OBJECTHANDLE vmObjectHandle;
-            void           *newReference;
+            Portable<CORDB_ADDRESS> newReference;
         } SetReference;
 
         struct MSLAYOUT
         {
-            NameChangeType  eventType;
+            Portable<NameChangeType> eventType;
             VMPTR_AppDomain vmAppDomain;
-            VMPTR_Thread    vmThread;
+            VMPTR_Thread vmThread;
         } NameChange;
-
-        struct MSLAYOUT
-        {
-            VMPTR_Assembly vmAssembly;
-            BOOL             fAllowJitOpts;
-            BOOL             fEnableEnC;
-        } JitDebugInfo;
 
         // EnC Remap opportunity
         struct MSLAYOUT
         {
             VMPTR_Assembly vmAssembly;
-            mdMethodDef funcMetadataToken ;        // methodDef of function with remap opportunity
-            SIZE_T          currentVersionNumber;  // version currently executing
-            SIZE_T          resumeVersionNumber;   // latest version
-            SIZE_T          currentILOffset;       // the IL offset of the current IP
-            SIZE_T          *resumeILOffset;       // pointer into left-side where an offset to resume
-                                                   // to should be written if remap is desired.
+            Portable<mdMethodDef> funcMetadataToken;      // methodDef of function with remap opportunity
+            Portable<ULONG64> currentVersionNumber;         // version currently executing
+            Portable<ULONG64> resumeVersionNumber;          // latest version
+            Portable<ULONG64> currentILOffset;              // the IL offset of the current IP
+            Portable<CORDB_ADDRESS> resumeILOffset;       // pointer into left-side where an offset to resume
+                                                          // to should be written if remap is desired.
         } EnCRemap;
 
         // EnC Remap has taken place
         struct MSLAYOUT
         {
             VMPTR_Assembly vmAssembly;
-            mdMethodDef funcMetadataToken;         // methodDef of function that was remapped
+            Portable<mdMethodDef> funcMetadataToken;         // methodDef of function that was remapped
         } EnCRemapComplete;
 
         // Notification that the LS is about to update a CLR data structure to account for a
@@ -2255,17 +2183,17 @@ struct MSLAYOUT DebuggerIPCEvent
         struct MSLAYOUT
         {
             VMPTR_Assembly vmAssembly;
-            mdToken         memberMetadataToken;   // Either a methodDef token indicating the function that
-                                                   // was updated/added, or a fieldDef token indicating the
-                                                   // field which was added.
-            mdTypeDef       classMetadataToken;    // TypeDef token of the class in which the update was made
-            SIZE_T          newVersionNumber;      // The new function/module version
+            Portable<mdToken> memberMetadataToken;   // Either a methodDef token indicating the function that
+                                                     // was updated/added, or a fieldDef token indicating the
+                                                     // field which was added.
+            Portable<mdTypeDef> classMetadataToken;  // TypeDef token of the class in which the update was made
+            Portable<ULONG64> newVersionNumber;        // The new function/module version
         } EnCUpdate;
 
         struct MSLAYOUT
         {
-            void      *oldData;
-            void      *newData;
+            Portable<CORDB_ADDRESS> oldData;
+            Portable<CORDB_ADDRESS> newData;
             DebuggerIPCE_BasicTypeData type;
         } SetValueClass;
 
@@ -2276,35 +2204,14 @@ struct MSLAYOUT DebuggerIPCEvent
         struct MSLAYOUT
         {
             VMPTR_Assembly vmAssembly;
-            mdMethodDef     funcMetadataToken;
-            DWORD           dwStatus;
+            Portable<mdMethodDef> funcMetadataToken;
+            Portable<DWORD> dwStatus;
         } SetJMCFunctionStatus;
 
         struct MSLAYOUT
         {
-            TASKID      taskid;
-        } GetThreadForTaskId;
-
-        struct MSLAYOUT
-        {
-            VMPTR_Thread vmThreadToken;
-        } GetThreadForTaskIdResult;
-
-        struct MSLAYOUT
-        {
-            CONNID     connectionId;
-        } ConnectionChange;
-
-        struct MSLAYOUT
-        {
-            CONNID     connectionId;
-            EmbeddedIPCString<MAX_LONGPATH> wzConnectionName;
-        } CreateConnection;
-
-        struct MSLAYOUT
-        {
-            void               *objectToken;
-            CorDebugHandleType handleType;
+            Portable<CORDB_ADDRESS> objectToken;
+            Portable<CorDebugHandleType> handleType;
         } CreateHandle;
 
         struct MSLAYOUT
@@ -2316,22 +2223,22 @@ struct MSLAYOUT DebuggerIPCEvent
         struct MSLAYOUT
         {
             VMPTR_OBJECTHANDLE vmObjectHandle;
-            CorDebugHandleType handleType;
+            Portable<CorDebugHandleType> handleType;
         } DisposeHandle;
 
         struct MSLAYOUT
         {
-            FramePointer                  framePointer;
-            SIZE_T                        nOffset;
-            CorDebugExceptionCallbackType eventType;
-            DWORD                         dwFlags;
-            VMPTR_OBJECTHANDLE            vmExceptionHandle;
+            FramePointer framePointer;
+            Portable<UINT> nOffset;
+            Portable<CorDebugExceptionCallbackType> eventType;
+            Portable<DWORD> dwFlags;
+            VMPTR_OBJECTHANDLE vmExceptionHandle;
         } ExceptionCallback2;
 
         struct MSLAYOUT
         {
-            CorDebugExceptionUnwindCallbackType eventType;
-            DWORD                               dwFlags;
+            Portable<CorDebugExceptionUnwindCallbackType> eventType;
+            Portable<DWORD> dwFlags;
         } ExceptionUnwind;
 
         struct MSLAYOUT
@@ -2343,8 +2250,8 @@ struct MSLAYOUT DebuggerIPCEvent
         struct MSLAYOUT
         {
             VMPTR_Module vmModule;
-            void * pMetadataStart;
-            ULONG nMetadataSize;
+            Portable<CORDB_ADDRESS> pMetadataStart;
+            Portable<ULONG> nMetadataSize;
         } MetadataUpdateRequest;
     };
 };
@@ -2359,8 +2266,5 @@ struct MSLAYOUT DebuggerIPCEvent
 // A DebuggerIPCEvent must fit in the send & receive buffers, which are CorDBIPC_BUFFER_SIZE bytes.
 static_assert(sizeof(DebuggerIPCEvent) <= CorDBIPC_BUFFER_SIZE);
 static_assert(CorDBIPC_TRANSPORT_BUFFER_SIZE <= CorDBIPC_BUFFER_SIZE);
-
-// 2*sizeof(WCHAR) for the two string terminating characters in the FirstLogMessage
-#define LOG_MSG_PADDING         4
 
 #endif /* _DbgIPCEvents_h_ */
