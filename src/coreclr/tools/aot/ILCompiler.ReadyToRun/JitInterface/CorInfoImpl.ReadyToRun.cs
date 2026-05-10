@@ -493,7 +493,7 @@ namespace Internal.JitInterface
 
         private void AddResumptionStubFixup(MethodWithGCInfo compiledStubNode)
         {
-            _methodCodeNode.Fixups.Add(_compilation.SymbolNodeFactory.ResumptionStubEntryPoint(compiledStubNode));
+            AddPrecodeFixup(_compilation.SymbolNodeFactory.ResumptionStubEntryPoint(compiledStubNode));
         }
 
         private CORINFO_METHOD_STRUCT_* getAsyncResumptionStub(ref void* entryPoint)

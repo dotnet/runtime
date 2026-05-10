@@ -736,15 +736,14 @@ void InvokeCalliStub(CalliStubParam* pParam)
     _ASSERTE(pParam->ftn != (PCODE)NULL);
     _ASSERTE(pParam->cookie != NULL);
 
-    PCODE actualFtn = (PCODE)PortableEntryPoint::GetActualCode(pParam->ftn);
-    ((void(*)(PCODE, int8_t*, int8_t*, PCODE))pParam->cookie)(actualFtn, pParam->pArgs, pParam->pRet, pParam->ftn);
+    (pParam->cookie)(pParam->ftn, pParam->pArgs, pParam->pRet);
 }
 
-void InvokeUnmanagedCalli(PCODE ftn, void *cookie, int8_t *pArgs, int8_t *pRet)
+void InvokeUnmanagedCalli(PCODE ftn, InterpreterCalliCookie cookie, int8_t *pArgs, int8_t *pRet)
 {
     _ASSERTE(ftn != (PCODE)NULL);
     _ASSERTE(cookie != NULL);
-    ((void(*)(PCODE, int8_t*, int8_t*))cookie)(ftn, pArgs, pRet);
+    (cookie)(ftn, pArgs, pRet);
 }
 
 void InvokeDelegateInvokeMethod(DelegateInvokeMethodParam* pParam)
@@ -902,13 +901,13 @@ namespace
     static StringToWasmSigThunkHash* thunkCache = nullptr;
     static StringToWasmSigThunkHash* portableEntrypointThunkCache = nullptr;
 
-    void* LookupThunk(const char* key)
+    InterpreterCalliCookie LookupThunk(const char* key)
     {
         StringToWasmSigThunkHash* table = thunkCache;
         _ASSERTE(table != nullptr && "Wasm thunk cache not initialized. Call InitializeWasmThunkCaches() at EEStartup.");
         void* thunk;
         bool success = table->Lookup(key, &thunk);
-        return success ? thunk : nullptr;
+        return success ? (InterpreterCalliCookie)thunk : nullptr;
     }
 
     void* LookupPortableEntryPointThunk(const char* key)
@@ -921,7 +920,7 @@ namespace
     }
 
     // This is a simple signature computation routine for signatures currently supported in the wasm environment.
-    void* ComputeCalliSigThunk(MetaSig& sig)
+    InterpreterCalliCookie ComputeCalliSigThunk(MetaSig& sig)
     {
         STANDARD_VM_CONTRACT;
         _ASSERTE(sizeof(int32_t) == sizeof(void*));
@@ -944,7 +943,7 @@ namespace
         if (!GetSignatureKey(sig, keyBuffer, keyBufferLen))
             return NULL;
 
-        void* thunk = LookupThunk(keyBuffer);
+        InterpreterCalliCookie thunk = LookupThunk(keyBuffer);
 #ifdef _DEBUG
         if (thunk == NULL)
             printf("WASM calli missing for key: %s\n", keyBuffer);
@@ -1118,11 +1117,11 @@ void InitializeWasmThunkCaches()
     }
 }
 
-void* GetCookieForCalliSig(MetaSig metaSig, MethodDesc *pContextMD)
+InterpreterCalliCookie GetCookieForCalliSig(MetaSig metaSig, MethodDesc *pContextMD)
 {
     STANDARD_VM_CONTRACT;
 
-    void* thunk = ComputeCalliSigThunk(metaSig);
+    InterpreterCalliCookie thunk = ComputeCalliSigThunk(metaSig);
     if (thunk == NULL)
     {
         PORTABILITY_ASSERT("GetCookieForCalliSig: unknown thunk signature");
@@ -1190,10 +1189,15 @@ void* GetUnmanagedCallersOnlyThunk(MethodDesc* pMD)
 
 void InvokeManagedMethod(ManagedMethodParam *pParam)
 {
-    MetaSig sig(pParam->pMD);
-    void* cookie = GetCookieForCalliSig(sig, pParam->pMD);
-
-    _ASSERTE(cookie != NULL);
+    InterpreterCalliCookie cookie = pParam->pMD->GetCalliCookie();
+    if (cookie == NULL)
+    {
+        MetaSig sig(pParam->pMD);
+        cookie = GetCookieForCalliSig(sig, pParam->pMD);
+        _ASSERTE(cookie != NULL);
+        pParam->pMD->SetCalliCookie(cookie);
+        cookie = pParam->pMD->GetCalliCookie();
+    }
 
     CalliStubParam param = { pParam->target == NULL ? pParam->pMD->GetMultiCallableAddrOfCode(CORINFO_ACCESS_ANY) : pParam->target, cookie, pParam->pArgs, pParam->pRet, pParam->pContinuationRet };
     InvokeCalliStub(&param);

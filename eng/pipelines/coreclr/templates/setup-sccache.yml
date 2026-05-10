@@ -1,0 +1,40 @@
+parameters:
+  archType: 'x64'
+  osGroup: 'linux'
+  buildConfig: ''
+  runtimeFlavor: ''
+  runtimeVariant: ''
+  helixQueues: ''
+  targetRid: ''
+  nameSuffix: ''
+  platform: ''
+  shouldContinueOnError: false
+  osSubgroup: ''
+
+  # sccache NuGet package version — keep in sync with runtime-prereqs.proj
+  sccacheVersion: '0.15.0'
+
+steps:
+  - ${{ if and(eq(parameters.osGroup, 'linux'), eq(parameters.osSubgroup, ''), eq(parameters.archType, 'x64')) }}:
+    # Set up the Azure Pipeline Cache for sccache's local cache directory.
+    # Use a rolling key so each build can update the cache; restoreKeys
+    # falls back to the most recent saved entry.
+    - task: Cache@2
+      displayName: Sccache cache
+      inputs:
+        key: sccache | ${{ parameters.osGroup }} | ${{ parameters.archType }} | ${{ parameters.nameSuffix }} | ${{ parameters.buildConfig }} | "$(Build.BuildId)"
+        path: $(Pipeline.Workspace)/.sccache
+        restoreKeys: |
+          sccache | ${{ parameters.osGroup }} | ${{ parameters.archType }} | ${{ parameters.nameSuffix }} | ${{ parameters.buildConfig }}
+
+    # Configure sccache environment and add binary to PATH.
+    # The sccache package is restored by runtime-prereqs.proj during the build.
+    - script: |
+        sccacheVersion="${{ parameters.sccacheVersion }}"
+        sccacheDir="$(Build.SourcesDirectory)/.packages/sccache/${sccacheVersion}/tools"
+        mkdir -p "$sccacheDir"
+        echo "##vso[task.prependpath]$sccacheDir"
+        echo "##vso[task.setvariable variable=SCCACHE_DIR]$(Pipeline.Workspace)/.sccache"
+        echo "##vso[task.setvariable variable=SCCACHE_IDLE_TIMEOUT]0"
+        echo "##vso[task.setvariable variable=USE_SCCACHE]true"
+      displayName: Configure sccache

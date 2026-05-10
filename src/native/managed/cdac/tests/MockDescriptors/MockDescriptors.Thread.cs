@@ -228,6 +228,12 @@ internal sealed class MockThread : TypedView
         set => WritePointerField(OSIdFieldName, value);
     }
 
+    public uint State
+    {
+        get => ReadUInt32Field(StateFieldName);
+        set => WriteUInt32Field(StateFieldName, value);
+    }
+
     public ulong RuntimeThreadLocals
     {
         get => ReadPointerField(RuntimeThreadLocalsFieldName);
@@ -277,6 +283,12 @@ internal sealed class MockThread : TypedView
     }
 
     public ulong FrameAddress => GetFieldAddress(FrameFieldName);
+
+    public ulong LastThrownObject
+    {
+        get => ReadPointerField(LastThrownObjectFieldName);
+        set => WritePointerField(LastThrownObjectFieldName, value);
+    }
 }
 
 internal sealed class MockThreadBuilder
