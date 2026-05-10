@@ -771,7 +771,7 @@ void GenTree::CopyReg(GenTree* from)
         return;
     }
 
-#if FEATURE_HW_INTRINSICS
+#ifdef FEATURE_HW_INTRINSICS
     if (OperIsHWIntrinsic())
     {
         this->AsHWIntrinsic()->CopyOtherRegs(from->AsHWIntrinsic());
@@ -887,7 +887,7 @@ int GenTree::GetRegisterDstCount(Compiler* compiler) const
     assert(!isContained());
 
 #if FEATURE_MULTIREG_RET
-    if (IsCall())
+    if (IsMultiRegCall())
     {
         return AsCall()->GetReturnTypeDesc()->GetReturnRegCount();
     }
