@@ -4772,29 +4772,19 @@ GenTree* Compiler::optAssertionProp_Cast(ASSERT_VALARG_TP assertions,
         // but we still need to be careful about:
         //   1. Representation-changing casts (genActualType differs) - cannot drop.
         //   2. NOL locals - the LCL_VAR holds a TYP_INT value with potentially undefined
-        //      upper bits (per the normalize-on-load contract). Dropping the cast would
-        //      expose those bits. We can still drop the cast if we retype the LCL_VAR
-        //      back to its small type so that codegen emits a narrow load that produces
-        //      properly extended bits.
+        //      upper bits (per the normalize-on-load contract). VN-based subrange proofs
+        //      do NOT imply that a JIT-controlled store normalized the register, so we
+        //      cannot safely drop the cast in this path. (Local-prop has stronger
+        //      semantics and handles NOL retyping below.)
         //   3. Casts to small types wrapping arbitrary (non-LCL_VAR) expressions act as
         //      codegen hints for narrow operations (e.g., byte OR vs 32-bit OR + movzx).
         //      Dropping them is semantically correct but pessimizes codegen, so we avoid it.
-        bool       canDropCast = (genActualType(cast) == genActualType(lcl));
-        LclVarDsc* nolVarDsc   = nullptr;
+        bool canDropCast = (genActualType(cast) == genActualType(lcl));
         if (canDropCast && lcl->OperIs(GT_LCL_VAR))
         {
-            LclVarDsc* varDsc = lvaGetDesc(lcl->AsLclVar());
-            if (varDsc->lvNormalizeOnLoad())
+            if (lvaGetDesc(lcl->AsLclVar())->lvNormalizeOnLoad())
             {
-                // We can only drop the cast if we can safely retype the LCL_VAR.
-                if ((varDsc->TypeGet() == cast->CastToType()) && lcl->TypeIs(TYP_INT))
-                {
-                    nolVarDsc = varDsc;
-                }
-                else
-                {
-                    canDropCast = false;
-                }
+                canDropCast = false;
             }
         }
         else if (canDropCast && varTypeIsSmall(cast->CastToType()))
@@ -4833,13 +4823,6 @@ GenTree* Compiler::optAssertionProp_Cast(ASSERT_VALARG_TP assertions,
                 {
                     if (canDropCast)
                     {
-                        if (nolVarDsc != nullptr)
-                        {
-                            // Retype the LCL_VAR back to its small type so that codegen uses a
-                            // narrow load with proper sign/zero-extension.
-                            op1->ChangeType(nolVarDsc->TypeGet());
-                        }
-
                         JITDUMP("Removing cast %06u as redundant based on VN assertions.\n", dspTreeID(cast));
                         return optAssertionProp_Update(cast->CastOp(), cast, stmt);
                     }
