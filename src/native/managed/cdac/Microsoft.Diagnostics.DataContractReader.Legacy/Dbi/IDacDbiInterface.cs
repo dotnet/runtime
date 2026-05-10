@@ -552,7 +552,7 @@ public unsafe partial interface IDacDbiInterface
     int EnableGCNotificationEvents(Interop.BOOL fEnable);
 
     [PreserveSig]
-    int IsDelegate(ulong vmObject, Interop.BOOL* pResult);
+    int IsDelegate(ulong objectAddress, Interop.BOOL* pResult);
 
     [PreserveSig]
     int GetDelegateType(ulong delegateObject, int* delegateType);

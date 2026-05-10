@@ -3327,7 +3327,7 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetMethodDescPtrFromIpEx(TADDR fu
     return S_OK;
 }
 
-HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::IsDelegate(VMPTR_Object vmObject, OUT BOOL * pResult)
+HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::IsDelegate(CORDB_ADDRESS objectAddress, OUT BOOL * pResult)
 {
     DD_ENTER_MAY_THROW;
 
@@ -3335,13 +3335,13 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::IsDelegate(VMPTR_Object vmObject,
     EX_TRY
     {
 
-        if (vmObject.IsNull())
+        if (objectAddress == (CORDB_ADDRESS)NULL)
         {
             *pResult = FALSE;
         }
         else
         {
-            Object *pObj = vmObject.GetDacPtr();
+            PTR_Object pObj = dac_cast<PTR_Object>(CORDB_ADDRESS_TO_TADDR(objectAddress));
             *pResult = pObj->GetGCSafeMethodTable()->IsDelegate();
         }
     }
@@ -3364,9 +3364,7 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetDelegateType(CORDB_ADDRESS del
 #ifdef _DEBUG
     // ensure we have a Delegate object
     BOOL fIsDelegate = FALSE;
-    VMPTR_Object vmDelegate = VMPTR_Object::NullPtr();
-    vmDelegate.SetDacTargetPtr(CORDB_ADDRESS_TO_TADDR(delegateObject));
-    IsDelegate(vmDelegate, &fIsDelegate);
+    IsDelegate(delegateObject, &fIsDelegate);
     _ASSERTE(fIsDelegate);
 #endif
 
@@ -3450,9 +3448,7 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetDelegateFunctionData(
 #ifdef _DEBUG
     // ensure we have a Delegate object
     BOOL fIsDelegate = FALSE;
-    VMPTR_Object vmDelegate = VMPTR_Object::NullPtr();
-    vmDelegate.SetDacTargetPtr(CORDB_ADDRESS_TO_TADDR(delegateObject));
-    IsDelegate(vmDelegate, &fIsDelegate);
+    IsDelegate(delegateObject, &fIsDelegate);
     _ASSERTE(fIsDelegate);
 #endif
 
@@ -3494,9 +3490,7 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetDelegateTargetObject(
 #ifdef _DEBUG
     // ensure we have a Delegate object
     BOOL fIsDelegate = FALSE;
-    VMPTR_Object vmDelegate = VMPTR_Object::NullPtr();
-    vmDelegate.SetDacTargetPtr(CORDB_ADDRESS_TO_TADDR(delegateObject));
-    IsDelegate(vmDelegate, &fIsDelegate);
+    IsDelegate(delegateObject, &fIsDelegate);
     _ASSERTE(fIsDelegate);
 #endif
 

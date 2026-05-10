@@ -2237,10 +2237,10 @@ public:
     // Returns true if the object is a type deriving from System.MulticastDelegate
     //
     // Arguments:
-    //    vmObject - pointer to runtime object to query for.
+    //    objectAddress - address of runtime object to query for.
     //    pResult - [out]
     //
-    virtual HRESULT STDMETHODCALLTYPE IsDelegate(VMPTR_Object vmObject, OUT BOOL * pResult) = 0;
+    virtual HRESULT STDMETHODCALLTYPE IsDelegate(CORDB_ADDRESS objectAddress, OUT BOOL * pResult) = 0;
 
     // Get the delegate type
     virtual HRESULT STDMETHODCALLTYPE GetDelegateType(CORDB_ADDRESS delegateObject, DelegateType *delegateType) = 0;

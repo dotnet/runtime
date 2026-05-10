@@ -2109,8 +2109,8 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         return hr;
     }
 
-    public int IsDelegate(ulong vmObject, Interop.BOOL* pResult)
-        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.IsDelegate(vmObject, pResult) : HResults.E_NOTIMPL;
+    public int IsDelegate(ulong objectAddress, Interop.BOOL* pResult)
+        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.IsDelegate(objectAddress, pResult) : HResults.E_NOTIMPL;
 
     public int GetDelegateType(ulong delegateObject, int* delegateType)
         => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetDelegateType(delegateObject, delegateType) : HResults.E_NOTIMPL;

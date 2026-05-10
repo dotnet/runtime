@@ -415,7 +415,7 @@ interface IDacDbiInterface : IUnknown
     HRESULT EnableGCNotificationEvents([in] BOOL fEnable);
 
     // Delegate
-    HRESULT IsDelegate([in] VMPTR_Object vmObject, [out] BOOL * pResult);
+    HRESULT IsDelegate([in] CORDB_ADDRESS objectAddress, [out] BOOL * pResult);
     HRESULT GetDelegateType([in] CORDB_ADDRESS delegateObject, [out] DelegateType * delegateType);
     HRESULT GetDelegateFunctionData(
         [in] DelegateType delegateType,

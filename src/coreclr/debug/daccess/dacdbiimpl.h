@@ -295,7 +295,7 @@ public:
     // Returns true if the argument is a runtime callable wrapper
     HRESULT STDMETHODCALLTYPE IsRcw(VMPTR_Object vmObject, OUT BOOL * pResult);
 
-    HRESULT STDMETHODCALLTYPE IsDelegate(VMPTR_Object vmObject, OUT BOOL * pResult);
+    HRESULT STDMETHODCALLTYPE IsDelegate(CORDB_ADDRESS objectAddress, OUT BOOL * pResult);
 
     HRESULT STDMETHODCALLTYPE GetDelegateType(CORDB_ADDRESS delegateObject, DelegateType *delegateType);
 

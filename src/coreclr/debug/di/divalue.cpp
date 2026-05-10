@@ -2605,10 +2605,8 @@ HRESULT CordbObjectValue::IsDelegate()
         {
             IDacDbiInterface *pDAC = GetProcess()->GetDAC();
 
-            VMPTR_Object vmObj;
-            IfFailThrow(pDAC->GetObject(objAddr, &vmObj));
             BOOL fIsDelegate;
-            IfFailThrow(pDAC->IsDelegate(vmObj, &fIsDelegate));
+            IfFailThrow(pDAC->IsDelegate(objAddr, &fIsDelegate));
 
             if (!fIsDelegate)
                 hr = S_FALSE;
