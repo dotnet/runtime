@@ -5,7 +5,7 @@ using Microsoft.Diagnostics.DataContractReader.Contracts;
 
 namespace Microsoft.Diagnostics.DataContractReader.RuntimeTypeSystemHelpers;
 
-internal static class ExtensionMethods
+public static class ExtensionMethods
 {
     public static bool IsTypeDesc(this TypeHandle type)
     {
