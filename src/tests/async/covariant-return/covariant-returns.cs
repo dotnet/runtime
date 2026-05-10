@@ -176,3 +176,122 @@ namespace AsyncMicro
         }
     }
 }
+
+namespace CovariantReturnWithoutRuntimeAsync
+{
+    public class Program
+    {
+        internal static int Result;
+
+        [Fact]
+        public static void TestCovariantReturnWithoutRuntimeAsync()
+        {
+            Result = 0;
+            CallInstance(new Derived()).GetAwaiter().GetResult();
+            Assert.Equal(42, Result);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static async Task CallInstance(Base b) => await b.InstanceMethod();
+
+        public class Base
+        {
+            public virtual async Task InstanceMethod()
+            {
+            }
+        }
+
+        public class Derived : Base
+        {
+            [RuntimeAsyncMethodGenerationAttribute(false)]
+            public override async Task<int> InstanceMethod()
+            {
+                await Task.Yield();
+                Result = 42;
+                return 42;
+            }
+        }
+    }
+}
+
+namespace GenericVirtualMethod
+{
+    public class Program
+    {
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static async Task CallInstance(Base b) => await b.InstanceMethod<object>();
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static async Task CallInstanceValueType(Base b) => await b.InstanceMethod<int>();
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/127197", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNotNativeAot))]
+        public static void TestGenericVirtualMethod()
+        {
+            CallInstance(new Derived()).GetAwaiter().GetResult();
+            CallInstanceValueType(new Derived()).GetAwaiter().GetResult();
+        }
+        public class Base
+        {
+            public virtual async Task InstanceMethod<T>()
+            {
+            }
+        }
+        public class Mid : Base
+        {
+            public override async Task<int> InstanceMethod<T>()
+            {
+                throw new Exception();
+            }
+        }
+        public class Derived : Mid
+        {
+            public override async Task<int> InstanceMethod<T>()
+            {
+                int result = typeof(T).FullName.Length;
+                await Task.Yield();
+                return result;
+            }
+        }
+    }
+}
+
+namespace AsyncInterfaceGenericMethod
+{
+    public class Program
+    {
+        interface IFoo
+        {
+            Task<int> AsyncInterfaceMethod<T>();
+        }
+
+        class Foo : IFoo
+        {
+            async Task<int> IFoo.AsyncInterfaceMethod<T>()
+            {
+                await Task.Yield();
+                return typeof(T).FullName.Length;
+            }
+        }
+
+        static async Task Run()
+        {
+            IFoo f = new Foo();
+            int x = await f.AsyncInterfaceMethod<object>();
+            Assert.Equal(typeof(object).FullName.Length, x);
+        }
+
+        static async Task RunValueType()
+        {
+            IFoo f = new Foo();
+            int x = await f.AsyncInterfaceMethod<int>();
+            Assert.Equal(typeof(int).FullName.Length, x);
+        }
+
+        [Fact]
+        public static void TestAsyncInterfaceGenericMethod()
+        {
+            Run().GetAwaiter().GetResult();
+            RunValueType().GetAwaiter().GetResult();
+        }
+    }
+}

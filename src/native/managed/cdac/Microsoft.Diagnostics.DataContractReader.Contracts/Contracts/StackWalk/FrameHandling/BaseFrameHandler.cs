@@ -59,8 +59,8 @@ internal abstract class BaseFrameHandler(Target target, IPlatformAgnosticContext
     {
         Data.DebuggerEval debuggerEval = _target.ProcessedData.GetOrAdd<Data.DebuggerEval>(funcEvalFrame.DebuggerEvalPtr);
 
-        // No context to update if we're doing a func eval from within exception processing.
-        if (debuggerEval.EvalDuringException)
+        // No context to update if the eval doesn't use a hijack (exception or interpreter path).
+        if (!debuggerEval.EvalUsesHijack)
         {
             return;
         }

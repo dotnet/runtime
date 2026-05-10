@@ -299,7 +299,7 @@ bool Compiler::gsFindVulnerableParams()
                         // A function pointer is treated like a write-through pointer since
                         // it controls what code gets executed, and so indirectly can cause
                         // a write to memory.
-                        gsMarkPointers(node->AsCall()->gtCallAddr);
+                        gsMarkPointers(node->AsCall()->gtControlExpr);
                     }
 
                     break;
@@ -627,8 +627,8 @@ void Compiler::gsCopyIntoShadow(unsigned lclNum, unsigned shadowLclNum)
 
             for (GenTree* node : LIR::AsRange(fgFirstBB))
             {
-                if (node->IsHelperCall(this, CORINFO_HELP_JIT_REVERSE_PINVOKE_ENTER) ||
-                    node->IsHelperCall(this, CORINFO_HELP_JIT_REVERSE_PINVOKE_ENTER_TRACK_TRANSITIONS))
+                if (node->IsHelperCall(CORINFO_HELP_JIT_REVERSE_PINVOKE_ENTER) ||
+                    node->IsHelperCall(CORINFO_HELP_JIT_REVERSE_PINVOKE_ENTER_TRACK_TRANSITIONS))
                 {
                     insertAfter = node;
                     break;

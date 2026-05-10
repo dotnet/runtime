@@ -11,11 +11,11 @@ internal sealed class ManagedObjectWrapperLayout : IData<ManagedObjectWrapperLay
     public ManagedObjectWrapperLayout(Target target, TargetPointer address)
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.ManagedObjectWrapperLayout);
-        RefCount = target.Read<long>(address + (ulong)type.Fields[nameof(RefCount)].Offset);
-        Flags = target.Read<int>(address + (ulong)type.Fields[nameof(Flags)].Offset);
-        UserDefinedCount = target.Read<int>(address + (ulong)type.Fields[nameof(UserDefinedCount)].Offset);
-        UserDefined = target.ReadPointer(address + (ulong)type.Fields[nameof(UserDefined)].Offset);
-        Dispatches = target.ReadPointer(address + (ulong)type.Fields[nameof(Dispatches)].Offset);
+        RefCount = target.ReadField<long>(address, type, nameof(RefCount));
+        Flags = target.ReadField<int>(address, type, nameof(Flags));
+        UserDefinedCount = target.ReadField<int>(address, type, nameof(UserDefinedCount));
+        UserDefined = target.ReadPointerField(address, type, nameof(UserDefined));
+        Dispatches = target.ReadPointerField(address, type, nameof(Dispatches));
     }
 
     public long RefCount { get; init; }

@@ -198,6 +198,12 @@ HRESULT GCHeap::Initialize()
 #else //!MULTIPLE_HEAPS
     GCConfig::SetServerGC(true);
     AffinitySet config_affinity_set;
+    if (!config_affinity_set.Initialize(GCToOSInterface::GetMaxProcessorCount()))
+    {
+        log_init_error_to_host ("Failed to initialize affinity set for GC heap affinity configuration");
+        return E_OUTOFMEMORY;
+    }
+
     GCConfigStringHolder cpu_index_ranges_holder(GCConfig::GetGCHeapAffinitizeRanges());
 
     uintptr_t config_affinity_mask = static_cast<uintptr_t>(GCConfig::GetGCHeapAffinitizeMask());
@@ -240,7 +246,7 @@ HRESULT GCHeap::Initialize()
 
     nhp = ((nhp_from_config == 0) ? g_num_active_processors : nhp_from_config);
 
-    nhp = min (nhp, (uint32_t)MAX_SUPPORTED_CPUS);
+    nhp = min (nhp, (uint32_t)MAX_SUPPORTED_HEAPS);
 
     gc_heap::gc_thread_no_affinitize_p = (gc_heap::heap_hard_limit ?
         !affinity_config_specified_p : (GCConfig::GetNoAffinitize() != 0));
@@ -269,7 +275,7 @@ HRESULT GCHeap::Initialize()
     {
         return CLR_E_GC_LARGE_PAGE_MISSING_HARD_LIMIT;
     }
-    GCConfig::SetGCLargePages(gc_heap::use_large_pages_p);
+    GCConfig::SetGCLargePages(gc_heap::use_large_pages_p ? (gc_heap::large_pages_emulation_mode_p ? 2 : 1) : 0);
 
 #ifdef USE_REGIONS
     gc_heap::regions_range = (size_t)GCConfig::GetGCRegionRange();
@@ -532,7 +538,11 @@ HRESULT GCHeap::Initialize()
         }
     }
 
-    heap_select::init_numa_node_to_heap_map (nhp);
+    if (!heap_select::init_numa_node_to_heap_map (nhp))
+    {
+        log_init_error_to_host ("Initialization of NUMA node to heap map failed");
+        return E_OUTOFMEMORY;
+    }
 
     // If we have more active processors than heaps we still want to initialize some of the
     // mapping for the rest of the active processors because user threads can still run on
@@ -1044,16 +1054,22 @@ void GCHeap::Promote(Object** ppObject, ScanContext* sc, uint32_t flags)
 
     uint8_t* o = (uint8_t*)*ppObject;
 
-    if (!gc_heap::is_in_find_object_range (o))
-    {
-        return;
-    }
-
 #ifdef DEBUG_DestroyedHandleValue
     // we can race with destroy handle during concurrent scan
     if (o == (uint8_t*)DEBUG_DestroyedHandleValue)
         return;
 #endif //DEBUG_DestroyedHandleValue
+
+    if (!gc_heap::is_in_find_object_range (o))
+    {
+#ifdef _DEBUG
+        if ((o != NULL) && !(flags & GC_CALL_INTERIOR))
+        {
+            ((CObjectHeader*)o)->Validate();
+        }
+#endif //_DEBUG
+        return;
+    }
 
     HEAP_FROM_THREAD;
 

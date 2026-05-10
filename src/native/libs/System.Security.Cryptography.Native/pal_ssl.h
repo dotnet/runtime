@@ -131,6 +131,10 @@ typedef void (*SslCtxRemoveSessionCallback)(SSL_CTX* ctx, SSL_SESSION* session);
 // the function pointer for keylog
 typedef void (*SslCtxSetKeylogCallback)(const SSL* ssl, const char *line);
 
+// the function pointer for remote certificate validation, matches the
+// signature expected by SSL_CTX_set_cert_verify_callback directly.
+typedef int (*SslCtxCertVerifyCallback)(X509_STORE_CTX* store, void* arg);
+
 /*
 Ensures that libssl is correctly initialized and ready to use.
 */
@@ -336,6 +340,12 @@ Returns the certificate presented by the peer.
 PALEXPORT X509* CryptoNative_SslGetPeerCertificate(SSL* ssl);
 
 /*
+Attaches the OCSP staple response from the SSL session to the given X509
+certificate via ex_data, if one is available and not already set.
+*/
+PALEXPORT void CryptoNative_SslUpdateOcspStaple(SSL* ssl, X509* cert);
+
+/*
 Shims the SSL_get_certificate method.
 
 Returns the certificate representing local peer.
@@ -362,8 +372,6 @@ Shims the SSL_use_PrivateKey method.
 Returns 1 upon success, otherwise 0.
 */
 PALEXPORT int32_t CryptoNative_SslUsePrivateKey(SSL* ssl, EVP_PKEY* pkey);
-
-
 
 /*
 Shims the SSL_CTX_use_certificate method.
@@ -406,7 +414,7 @@ PALEXPORT X509NameStack* CryptoNative_SslGetClientCAList(SSL* ssl);
 /*
 Shims the SSL_set_verify method.
 */
-PALEXPORT void CryptoNative_SslSetVerifyPeer(SSL* ssl);
+PALEXPORT void CryptoNative_SslSetVerifyPeer(SSL* ssl, int32_t failIfNoPeerCert);
 
 /*
 Shims SSL_set_ex_data to attach application context.
@@ -427,6 +435,11 @@ PALEXPORT int32_t  CryptoNative_SslCtxSetData(SSL_CTX* ctx, void* ptr);
 Shims SSL_CTX_get_ex_data to retrieve application context.
 */
 PALEXPORT void* CryptoNative_SslCtxGetData(SSL_CTX* ctx);
+
+/*
+Shims SSL_get_SSL_CTX to retrieve the SSL_CTX from the SSL.
+*/
+PALEXPORT SSL_CTX* CryptoNative_SslGetSslCtx(SSL* ssl);
 
 /*
 
@@ -557,3 +570,18 @@ PALEXPORT int32_t CryptoNative_OpenSslGetProtocolSupport(SslProtocols protocol);
 Staples an encoded OCSP response onto the TLS session
 */
 PALEXPORT void CryptoNative_SslStapleOcsp(SSL* ssl, uint8_t* buf, int32_t len);
+
+/*
+Sets the certificate verification callback for the SSL_CTX.
+*/
+PALEXPORT void CryptoNative_SslCtxSetCertVerifyCallback(SSL_CTX* ctx, SslCtxCertVerifyCallback callback);
+
+/*
+Retrieves the SSL object associated with an X509_STORE_CTX during verification.
+*/
+PALEXPORT SSL* CryptoNative_X509StoreCtxGetSslPtr(X509_STORE_CTX* storeCtx);
+
+/*
+Sets the error code on an X509_STORE_CTX.
+*/
+PALEXPORT void CryptoNative_X509StoreCtxSetError(X509_STORE_CTX* storeCtx, int32_t error);

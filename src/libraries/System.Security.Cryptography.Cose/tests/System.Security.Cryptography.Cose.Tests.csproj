@@ -5,6 +5,8 @@
     <IgnoreForCI Condition="'$(TargetOS)' == 'browser'">true</IgnoreForCI>
     <DefineConstants>$(DefineConstants);EXCLUDE_PEM_ENCODING_FROM_TEST_DATA</DefineConstants>
     <NoWarn>$(NoWarn);SYSLIB5006</NoWarn>
+    <!-- https://github.com/dotnet/runtime/issues/126862 -->
+    <EnableAotAnalyzer>false</EnableAotAnalyzer>
   </PropertyGroup>
 
   <ItemGroup>

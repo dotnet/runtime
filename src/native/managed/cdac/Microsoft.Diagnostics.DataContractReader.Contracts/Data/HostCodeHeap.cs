@@ -11,8 +11,8 @@ internal sealed class HostCodeHeap : IData<HostCodeHeap>
     public HostCodeHeap(Target target, TargetPointer address)
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.HostCodeHeap);
-        BaseAddress = target.ReadPointer(address + (ulong)type.Fields[nameof(BaseAddress)].Offset);
-        CurrentAddress = target.ReadPointer(address + (ulong)type.Fields[nameof(CurrentAddress)].Offset);
+        BaseAddress = target.ReadPointerField(address, type, nameof(BaseAddress));
+        CurrentAddress = target.ReadPointerField(address, type, nameof(CurrentAddress));
     }
 
     public TargetPointer BaseAddress { get; init; }

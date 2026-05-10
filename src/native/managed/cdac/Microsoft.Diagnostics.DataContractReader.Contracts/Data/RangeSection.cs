@@ -11,13 +11,13 @@ internal sealed class RangeSection : IData<RangeSection>
     public RangeSection(Target target, TargetPointer address)
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.RangeSection);
-        RangeBegin = target.ReadPointer(address + (ulong)type.Fields[nameof(RangeBegin)].Offset);
-        RangeEndOpen = target.ReadPointer(address + (ulong)type.Fields[nameof(RangeEndOpen)].Offset);
-        NextForDelete = target.ReadPointer(address + (ulong)type.Fields[nameof(NextForDelete)].Offset);
-        JitManager = target.ReadPointer(address + (ulong)type.Fields[nameof(JitManager)].Offset);
-        Flags = target.Read<int>(address + (ulong)type.Fields[nameof(Flags)].Offset);
-        HeapList = target.ReadPointer(address + (ulong)type.Fields[nameof(HeapList)].Offset);
-        R2RModule = target.ReadPointer(address + (ulong)type.Fields[nameof(R2RModule)].Offset);
+        RangeBegin = target.ReadPointerField(address, type, nameof(RangeBegin));
+        RangeEndOpen = target.ReadPointerField(address, type, nameof(RangeEndOpen));
+        NextForDelete = target.ReadPointerField(address, type, nameof(NextForDelete));
+        JitManager = target.ReadPointerField(address, type, nameof(JitManager));
+        Flags = target.ReadField<int>(address, type, nameof(Flags));
+        HeapList = target.ReadPointerField(address, type, nameof(HeapList));
+        R2RModule = target.ReadPointerField(address, type, nameof(R2RModule));
     }
 
     public TargetPointer RangeBegin { get; init; }

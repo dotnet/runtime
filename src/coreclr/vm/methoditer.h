@@ -9,7 +9,6 @@
 #include "instmethhash.h"
 #include "method.hpp"
 #include "appdomain.hpp"
-#include "domainassembly.h"
 #include "typehash.h"
 
 

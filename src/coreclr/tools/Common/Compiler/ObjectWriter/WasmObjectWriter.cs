@@ -359,8 +359,9 @@ namespace ILCompiler.ObjectWriter
             byte[] data = new byte[codeSize];
             body.Encode(data);
 
-            // The code writer should already be set up to write the function body size as a prefix, so just emit the function body here
-            Debug.Assert(codeWriter.HasLengthPrefix);
+            // We must emit the length prefix explicitly
+            Debug.Assert(!codeWriter.HasLengthPrefix);
+            codeWriter.WriteULEB128((ulong)codeSize);
             codeWriter.EmitData(data);
             _uniqueSymbols.Add(name.ToString(), _methodCount);
             _methodCount++;
@@ -481,20 +482,11 @@ namespace ILCompiler.ObjectWriter
 
         private protected override SectionWriter.Params WriterParams(ObjectNodeSection section)
         {
-            if (section == ObjectNodeSection.WasmCodeSection)
-            {
-                return new SectionWriter.Params
-                {
-                    LengthEncodeFormat = LengthEncodeFormat.ULEB128
-                };
-            }
-
             return new SectionWriter.Params
             {
                 LengthEncodeFormat = LengthEncodeFormat.None
             };
         }
-
 
         private protected override void CreateSection(ObjectNodeSection section, Utf8String comdatName, Utf8String symbolName, int sectionIndex, Stream sectionStream)
         {
@@ -946,10 +938,26 @@ namespace ILCompiler.ObjectWriter
                         case RelocType.WASM_MEMORY_ADDR_REL_SLEB:
                         {
                             // These relocs should be for cases of the form:
-                            //  global.get __image_base
+                            //  global.get $imageBase
                             //  i32.const <reloc>
                             //  i32.add
                             //  i32.load 0
+                            // So, the relocated address value should always represent an offset relative to image base. 
+                            // This offset should ALWAYS be equal to the actual offset from image base at runtime, due to Webcil's
+                            // flag mapping
+                            if (symbolWebcilSection is null)
+                            {
+                                throw new InvalidDataException();
+                            }
+
+                            Relocation.WriteValue(reloc.Type, pData, virtualSymbolImageOffset + addend);
+                            break;
+                        }
+                        case RelocType.WASM_MEMORY_ADDR_REL_LEB:
+                        {
+                            // These relocs should be for cases of the form:
+                            //  global.get $imageBase
+                            //  i32.load <reloc>
                             // So, the relocated address value should always represent an offset relative to image base. 
                             // This offset should ALWAYS be equal to the actual offset from image base at runtime, due to Webcil's
                             // flag mapping

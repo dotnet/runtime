@@ -11,7 +11,7 @@ internal sealed class TLSIndex : IData<TLSIndex>
     public TLSIndex(Target target, TargetPointer address)
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.TLSIndex);
-        TLSIndexRawIndex = target.Read<uint>(address + (ulong)type.Fields[nameof(TLSIndexRawIndex)].Offset);
+        TLSIndexRawIndex = target.ReadField<uint>(address, type, nameof(TLSIndexRawIndex));
         IndexOffset = (int)(TLSIndexRawIndex & 0xFFFFFF);
         IndexType = (int)(TLSIndexRawIndex >> 24);
         IsAllocated = (TLSIndexRawIndex != 0xFFFFFFFF);

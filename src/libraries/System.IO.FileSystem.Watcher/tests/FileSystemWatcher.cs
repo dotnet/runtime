@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.ComponentModel;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using Xunit;
@@ -17,7 +18,7 @@ namespace System.IO.Tests
             public bool DesignMode => designMode;
             public IComponent Component => null;
             public IContainer Container => null;
-            public string Name { get; set; }
+            public string Name { get; [RequiresUnreferencedCode("The Type of components in the container cannot be statically discovered to validate the name.")] set; }
             public object GetService(Type serviceType) => null;
         }
 

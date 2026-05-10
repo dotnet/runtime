@@ -286,7 +286,7 @@ namespace Internal.Runtime.TypeLoader
             if (!method.UnboxingStub && method.OwningType.IsValueType && !TypeLoaderEnvironment.IsStaticMethodSignature(method.NameAndSignature))
             {
                 // Make it an unboxing stub, note the first parameter which is true
-                nonTemplateMethod = (InstantiatedMethod)method.Context.ResolveGenericMethodInstantiation(true, method.AsyncVariant, (DefType)method.OwningType, method.NameAndSignature, method.Instantiation);
+                nonTemplateMethod = (InstantiatedMethod)method.Context.ResolveGenericMethodInstantiation(true, method.AsyncVariant, method.ReturnDroppingAsyncThunk, (DefType)method.OwningType, method.NameAndSignature, method.Instantiation);
             }
 
             uint nativeLayoutInfoToken;
@@ -803,6 +803,7 @@ namespace Internal.Runtime.TypeLoader
                     _genericMethodArgumentHandles = GetRuntimeTypeHandles(method.Instantiation),
                     _methodNameAndSignature = method.NameAndSignature,
                     _isAsyncVariant = method.AsyncVariant,
+                    _isReturnDroppingAsyncThunk = method.ReturnDroppingAsyncThunk,
                     _methodDictionary = method.RuntimeMethodDictionary
                 };
             }

@@ -1074,7 +1074,9 @@ void CodeGenInterface::VariableLiveKeeper::siStartVariableLiveRange(const LclVar
 
     // Only the variables that exists in the IL, "this", and special arguments are reported, as long as they were
     // allocated.
-    if (m_compiler->opts.compDbgInfo && (varNum < m_LiveDscCount) && (varDsc->lvIsInReg() || varDsc->lvOnFrame))
+    // TODO-SVE: Do we need to support this for scalable vectors?
+    if (m_compiler->opts.compDbgInfo && (varNum < m_LiveDscCount) && (varDsc->lvIsInReg() || varDsc->lvOnFrame) &&
+        varDsc->lvValueSize().IsExact())
     {
         // Build siVarLoc for this born "varDsc"
         CodeGenInterface::siVarLoc varLocation =

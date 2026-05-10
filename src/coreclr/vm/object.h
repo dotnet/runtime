@@ -76,7 +76,6 @@ void ErectWriteBarrierForMT(MethodTable **dst, MethodTable *ref);
 class MethodTable;
 class Thread;
 class Assembly;
-class DomainAssembly;
 class AssemblyNative;
 class WaitHandleNative;
 class ArgDestination;
@@ -2167,6 +2166,20 @@ class ContinuationObject : public Object
         uint32_t offset = OFFSETOF__CORINFO_Continuation__data + (index - 1) * TARGET_POINTER_SIZE;
         PTR_BYTE dataAddress = dac_cast<PTR_BYTE>(dac_cast<TADDR>(this) + offset);
         return dac_cast<PTR_OBJECTREF>(dataAddress);
+    }
+
+    PTR_OBJECTREF GetExecutionContextObjectStorageOrNull()
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        uint32_t mask = (1u << CORINFO_CONTINUATION_EXECUTION_CONTEXT_INDEX_NUM_BITS) - 1;
+        uint32_t index = ((uint32_t)Flags >> CORINFO_CONTINUATION_EXECUTION_CONTEXT_INDEX_FIRST_BIT) & mask;
+        if (index == 0)
+            return NULL;
+
+        uint32_t offset = OFFSETOF__CORINFO_Continuation__data + (index - 1) * TARGET_POINTER_SIZE;
+        PTR_BYTE address = dac_cast<PTR_BYTE>(dac_cast<TADDR>(this) + offset);
+        return dac_cast<PTR_OBJECTREF>(address);
     }
 
     PTR_OBJECTREF GetContinuationContextObjectStorageOrNull()

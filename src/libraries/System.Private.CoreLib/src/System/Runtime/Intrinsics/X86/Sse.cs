@@ -359,7 +359,6 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VMOVAPS xmm1,         m128</para>
         ///   <para>  VMOVAPS xmm1 {k1}{z}, m128</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe Vector128<float> LoadAlignedVector128(float* address) => LoadAlignedVector128(address);
 
         /// <summary>
@@ -367,7 +366,6 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>   MOVHPS xmm1,       m64</para>
         ///   <para>  VMOVHPS xmm1, xmm2, m64</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe Vector128<float> LoadHigh(Vector128<float> lower, float* address) => LoadHigh(lower, address);
 
         /// <summary>
@@ -375,7 +373,6 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>   MOVLPS xmm1,       m64</para>
         ///   <para>  VMOVLPS xmm1, xmm2, m64</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe Vector128<float> LoadLow(Vector128<float> upper, float* address) => LoadLow(upper, address);
 
         /// <summary>
@@ -384,7 +381,6 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VMOVSS xmm1,      m32</para>
         ///   <para>  VMOVSS xmm1 {k1}, m32</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe Vector128<float> LoadScalarVector128(float* address) => LoadScalarVector128(address);
 
         /// <summary>
@@ -393,7 +389,6 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VMOVUPS xmm1,         m128</para>
         ///   <para>  VMOVUPS xmm1 {k1}{z}, m128</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe Vector128<float> LoadVector128(float* address) => LoadVector128(address);
 
         /// <summary>
@@ -479,28 +474,24 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>void _mm_prefetch(char* p, int i)</para>
         ///   <para>  PREFETCHT0 m8</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe void Prefetch0(void* address) => Prefetch0(address);
 
         /// <summary>
         ///   <para>void _mm_prefetch(char* p, int i)</para>
         ///   <para>  PREFETCHT1 m8</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe void Prefetch1(void* address) => Prefetch1(address);
 
         /// <summary>
         ///   <para>void _mm_prefetch(char* p, int i)</para>
         ///   <para>  PREFETCHT2 m8</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe void Prefetch2(void* address) => Prefetch2(address);
 
         /// <summary>
         ///   <para>void _mm_prefetch(char* p, int i)</para>
         ///   <para>  PREFETCHNTA m8</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe void PrefetchNonTemporal(void* address) => PrefetchNonTemporal(address);
 
         /// <summary>
@@ -583,7 +574,6 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VMOVAPS m128,         xmm1</para>
         ///   <para>  VMOVAPS m128 {k1}{z}, xmm1</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe void Store(float* address, Vector128<float> source) => Store(address, source);
 
         /// <summary>
@@ -592,7 +582,6 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VMOVAPS m128,         xmm1</para>
         ///   <para>  VMOVAPS m128 {k1}{z}, xmm1</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe void StoreAligned(float* address, Vector128<float> source) => StoreAligned(address, source);
 
         /// <summary>
@@ -600,7 +589,6 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>   MOVNTPS m128, xmm1</para>
         ///   <para>  VMOVNTPS m128, xmm1</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe void StoreAlignedNonTemporal(float* address, Vector128<float> source) => StoreAlignedNonTemporal(address, source);
         /// <summary>
         ///   <para>void _mm_sfence(void)</para>
@@ -613,7 +601,6 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>   MOVHPS m64, xmm1</para>
         ///   <para>  VMOVHPS m64, xmm1</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe void StoreHigh(float* address, Vector128<float> source) => StoreHigh(address, source);
 
         /// <summary>
@@ -621,7 +608,6 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>   MOVLPS m64, xmm1</para>
         ///   <para>  VMOVLPS m64, xmm1</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe void StoreLow(float* address, Vector128<float> source) => StoreLow(address, source);
 
         /// <summary>
@@ -630,7 +616,6 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VMOVSS m32,      xmm1</para>
         ///   <para>  VMOVSS m32 {k1}, xmm1</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe void StoreScalar(float* address, Vector128<float> source) => StoreScalar(address, source);
 
         /// <summary>

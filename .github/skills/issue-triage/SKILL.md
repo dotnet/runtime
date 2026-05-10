@@ -145,7 +145,7 @@ languishing unnoticed.
 #### 2a: Check the `area-*` label
 
 1. Read the issue content carefully -- what namespace, type, or component does it concern?
-2. Cross-reference with [`docs/area-owners.md`](../../../docs/area-owners.md) which maps
+2. Cross-reference with [`docs/area-owners.md`](../../../docs/area-owners.md), which maps
    `area-*` labels to specific assemblies, namespaces, and teams.
 3. If the current `area-*` label doesn't match the issue's actual subject, flag it
    and suggest the correct label with a rationale.
@@ -442,39 +442,17 @@ includes status markers (`[ok]`, `[x]`, `[!]`, `[i]`), section-by-section
 guidance, conditional section rules, and formatting requirements for suggested
 responses.
 
-Key points:
-- Each section has multiple outcome variants -- pick the one that matches
-- Some sections are conditional (Reproduction only for bugs, Answer only for
-  questions) -- see the conditional sections table in the reference file
-- Suggested responses MUST be in fenced code blocks (not blockquotes) for
-  copy-paste safety
+Key points: each section has multiple outcome variants (pick the one that matches); some sections are conditional (Reproduction for bugs, Answer for questions -- see the conditional sections table); suggested responses MUST be in fenced code blocks (not blockquotes) for copy-paste safety.
 
 ## Anti-Patterns
 
-- **NEVER take autonomous action.** During triage (before the user picks an
-  outcome), do not post comments, change labels, close issues, or modify
-  anything in the repository. You only output a recommendation.
+- **NEVER take autonomous action.** During triage (before the user picks an outcome), do not post comments, change labels, close issues, or modify anything. You only output a recommendation. After the user picks an outcome and a finalized response has been produced, the user may **explicitly instruct** you to take actions -- post the comment, apply label changes, close the issue, etc. Comply with these explicit instructions; the constraint prevents *autonomous* actions before the human decision, not user-directed actions after it.
 
-  After the user picks an outcome (KEEP, CLOSE, or NEEDS INFO) and a finalized
-  response has been produced, the user may **explicitly instruct** you to take
-  actions -- post the comment, apply label changes, close the issue, etc. Comply
-  with these explicit instructions; the constraint above prevents *autonomous*
-  actions before the human decision, not user-directed actions after it.
+  When posting any content to GitHub under a user's credentials (not a dedicated bot account), you **MUST** include a concise, visible note (e.g. a `> [!NOTE]` alert) indicating the content was AI/Copilot-generated. Skip this if the user explicitly asks you to omit it.
 
-  When posting any content to GitHub (issue comments, label changes with explanations)
-  under a user's credentials -- i.e., the account is **not** a dedicated "copilot"
-  or "bot" account/app -- you **MUST** include a concise, visible note (e.g. a
-  `> [!NOTE]` alert) indicating the content was AI/Copilot-generated. Skip this if
-  the user explicitly asks you to omit it.
+- **NEVER** use `gh issue close`, `gh issue edit`, `gh issue comment`, or `gh pr review --approve`/`--request-changes` **unless the user explicitly asks you to** after picking an outcome.
 
-- **NEVER** use `gh issue close`, `gh issue edit`, `gh issue comment`, or
-  `gh pr review --approve`/`--request-changes` **unless the user explicitly
-  asks you to** after picking an outcome.
-
-- **Security concerns are out of scope.** This skill does not assess, discuss, or
-  make recommendations about potential security implications of issues. If you
-  believe an issue may have security implications, do not mention this in the
-  triage report. Security assessment is handled through separate processes.
+- **Security concerns are out of scope.** Do not assess, discuss, or make recommendations about potential security implications. Security assessment is handled through separate processes.
 
 - **Do not guess area labels.** Always cross-reference with `docs/area-owners.md`.
 
@@ -488,38 +466,22 @@ Key points:
 
 ## Tips
 
-1. **Check +1 reactions** on the issue -- high reaction counts indicate community demand.
-2. **Read the full comment thread**, not just the first post. Maintainers may have
-   already partially triaged the issue.
-3. **Look for `backlog-cleanup-candidate`** label -- this means the issue was flagged
-   for potential auto-closure. If the issue is still valid, recommend KEEP.
-4. **For API proposals**, see the
-   [API proposal triage](references/api-proposal-triage.md) guide for the full
-   evaluation framework. Optionally, suggest that the user invoke the
-   **api-proposal** Copilot skill to help refine a proposal with merit.
-5. **For bug reports**, check whether the issue mentions "regression" -- regressions are
-   higher priority and may warrant faster triage.
-6. **Use `[ActiveIssue]` search** in the codebase to see if the bug is already tracked
-   in test infrastructure.
-7. **The `Future` milestone** means "triaged but not committed to a specific release."
-   This is the most common outcome for valid KEEP issues.
-8. When writing the suggested response for CLOSE/duplicate, always link to the
-   canonical issue: "Closing as duplicate of #{number}."
-9. When writing the suggested response for wrong-repo issues, provide the correct
-   repo URL: "This issue would be better tracked in {repo}. Please file it there."
-10. **Triage rules of thumb** (from `docs/project/issue-guide.md`):
-    - Each issue should have exactly one `area-*` label
-    - Don't be afraid to say no -- just explain why and be polite
-    - Don't be afraid to be wrong -- just be flexible when new information appears
+1. **Check +1 reactions** -- high reaction counts indicate community demand.
+2. **Read the full comment thread**, not just the first post. Maintainers may have already partially triaged.
+3. **Look for `backlog-cleanup-candidate`** label -- if the issue is still valid, recommend KEEP.
+4. **For API proposals**, see [API proposal triage](references/api-proposal-triage.md). Optionally suggest the **api-proposal** Copilot skill.
+5. **For bug reports**, check for "regression" mentions -- regressions are higher priority.
+6. **Use `[ActiveIssue]` search** in the codebase to see if the bug is already tracked in test infrastructure.
+7. **The `Future` milestone** means "triaged but not committed to a specific release" -- the most common outcome for valid KEEP issues.
+8. For CLOSE/duplicate responses, always link to the canonical issue: "Closing as duplicate of #{number}."
+9. For wrong-repo issues, provide the correct repo URL: "This issue would be better tracked in {repo}."
+10. **Triage rules of thumb** (from `docs/project/issue-guide.md`): each issue should have exactly one `area-*` label; don't be afraid to say no (just be polite); don't be afraid to be wrong (just be flexible when new info appears).
 
 ## Related Skills
 
-After triage is complete, the following skills can help with next steps
-depending on the outcome:
+After triage, these skills can help with next steps:
 
-| Condition | Skill | When to suggest |
-|-----------|-------|-----------------|
-| API proposal recommended as KEEP | **api-proposal** | Offer to draft a formal API proposal with working prototype |
-| Bug report with root cause identified | **jit-regression-test** | If the bug is JIT-related, offer to create a regression test |
-| Performance regression confirmed | **performance-benchmark** | Offer to validate the regression with ad hoc benchmarks |
-| Fix PR linked to the issue | **code-review** | Offer to review the fix PR for correctness and consistency |
+- **api-proposal** -- if an API proposal is recommended as KEEP, offer to draft a formal proposal with working prototype.
+- **jit-regression-test** -- if a bug with root cause is JIT-related, offer to create a regression test.
+- **performance-benchmark** -- if a performance regression is confirmed, offer to validate with ad hoc benchmarks.
+- **code-review** -- if a fix PR is linked, offer to review for correctness and consistency.

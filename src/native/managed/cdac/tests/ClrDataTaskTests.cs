@@ -14,24 +14,23 @@ public unsafe class ClrDataTaskTests
     public void GetCurrentAppDomain(MockTarget.Architecture arch)
     {
         TargetTestHelpers helpers = new(arch);
-        MockMemorySpace.Builder builder = new(helpers);
 
         ulong globalPtrAddr = 0x1000;
         ulong expectedAppDomain = 0x2000;
 
+        var targetBuilder = new TestPlaceholderTarget.Builder(arch);
         byte[] ptrData = new byte[helpers.PointerSize];
         helpers.WritePointer(ptrData, expectedAppDomain);
-        builder.AddHeapFragment(new MockMemorySpace.HeapFragment
+        targetBuilder.MemoryBuilder.AddHeapFragment(new MockMemorySpace.HeapFragment
         {
             Address = globalPtrAddr,
             Data = ptrData,
             Name = "AppDomainGlobalPointer"
         });
 
-        var target = new TestPlaceholderTarget(
-            arch,
-            builder.GetMemoryContext().ReadFromTarget,
-            globals: [(Constants.Globals.AppDomain, globalPtrAddr)]);
+        var target = targetBuilder
+            .AddGlobals((Constants.Globals.AppDomain, globalPtrAddr))
+            .Build();
 
         TargetPointer taskAddress = new TargetPointer(0x5000);
         IXCLRDataTask task = new ClrDataTask(taskAddress, target, legacyImpl: null);

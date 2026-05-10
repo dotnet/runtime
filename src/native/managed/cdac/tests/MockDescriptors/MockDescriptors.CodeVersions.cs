@@ -240,12 +240,12 @@ internal sealed class MockCodeVersionsBuilder
 
     public MockMethodDescVersioningState AddMethodDescVersioningState()
         => MethodDescVersioningStateLayout.Create(
-            AllocateAndAdd((ulong)MethodDescVersioningStateLayout.Size, "MethodDescVersioningState"));
+            _codeVersionsAllocator.Allocate((ulong)MethodDescVersioningStateLayout.Size, "MethodDescVersioningState"));
 
     public MockNativeCodeVersionNode AddNativeCodeVersionNode()
     {
         MockNativeCodeVersionNode node = NativeCodeVersionNodeLayout.Create(
-            AllocateAndAdd((ulong)NativeCodeVersionNodeLayout.Size, "NativeCodeVersionNode"));
+            _codeVersionsAllocator.Allocate((ulong)NativeCodeVersionNodeLayout.Size, "NativeCodeVersionNode"));
         node.OptimizationTier = 0xFFFFFFFFu;
         return node;
     }
@@ -303,23 +303,16 @@ internal sealed class MockCodeVersionsBuilder
 
     public MockILCodeVersioningState AddILCodeVersioningState()
         => ILCodeVersioningStateLayout.Create(
-            AllocateAndAdd((ulong)ILCodeVersioningStateLayout.Size, "ILCodeVersioningState"));
+            _codeVersionsAllocator.Allocate((ulong)ILCodeVersioningStateLayout.Size, "ILCodeVersioningState"));
 
     public MockILCodeVersionNode AddILCodeVersionNode(ulong versionId, uint rejitFlags)
     {
         MockILCodeVersionNode node = ILCodeVersionNodeLayout.Create(
-            AllocateAndAdd((ulong)ILCodeVersionNodeLayout.Size, "ILCodeVersionNode"));
+            _codeVersionsAllocator.Allocate((ulong)ILCodeVersionNodeLayout.Size, "ILCodeVersionNode"));
         node.VersionId = versionId;
         node.RejitState = rejitFlags;
         node.Next = 0;
 
         return node;
-    }
-
-    private MockMemorySpace.HeapFragment AllocateAndAdd(ulong size, string name)
-    {
-        MockMemorySpace.HeapFragment fragment = _codeVersionsAllocator.Allocate(size, name);
-        Builder.AddHeapFragment(fragment);
-        return fragment;
     }
 }

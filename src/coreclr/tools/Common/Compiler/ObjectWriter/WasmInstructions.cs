@@ -295,12 +295,82 @@ namespace ILCompiler.ObjectWriter.WasmInstructions
         }
     }
 
-    class WasmMemoryArgInstruction : WasmExpr
+    readonly struct WasmEncodableULong : IWasmEncodable
+    {
+        private readonly ulong _value;
+        public WasmEncodableULong(ulong value)
+        {
+            _value = value;
+        }
+        public int EncodeSize()
+        {
+            return (int)DwarfHelper.SizeOfULEB128(_value);
+        }
+        public int Encode(Span<byte> buffer)
+        {
+            return DwarfHelper.WriteULEB128(buffer, _value);
+        }
+        public int EncodeRelocationCount() => 0;
+        public int EncodeRelocations(Span<Relocation> buffer) => 0;
+    }
+
+    readonly struct WasmEncodableSymbol : IWasmEncodable
+    {
+        private readonly ISymbolNode _symbol;
+        private readonly RelocType _relocType;
+
+        public WasmEncodableSymbol(ISymbolNode symbol, RelocType relocType)
+        {
+            _symbol = symbol;
+            _relocType = relocType;
+        }
+
+        public int EncodeSize()
+        {
+            return Relocation.GetSize(_relocType);
+        }
+
+        public int Encode(Span<byte> buffer)
+        {
+            // The actual value is not encoded into the buffer, instead a relocation is emitted for the symbol
+            int relocSize = Relocation.GetSize(_relocType);
+            Debug.Assert(buffer.Length >= relocSize);
+            switch (_relocType)
+            {
+                case RelocType.WASM_FUNCTION_INDEX_LEB:
+                case RelocType.WASM_MEMORY_ADDR_LEB:
+                case RelocType.WASM_MEMORY_ADDR_REL_LEB:
+                case RelocType.WASM_TYPE_INDEX_LEB:
+                case RelocType.WASM_GLOBAL_INDEX_LEB:
+                    DwarfHelper.WritePaddedULEB128(buffer.Slice(0, relocSize), 0);
+                    break;
+
+                case RelocType.WASM_TABLE_INDEX_SLEB:
+                case RelocType.WASM_MEMORY_ADDR_REL_SLEB:
+                    DwarfHelper.WritePaddedSLEB128(buffer.Slice(0, relocSize), 0);
+                    break;
+
+                default:
+                    throw new Exception($"Unknown WASM reloc type : {_relocType}");
+            }
+            return relocSize;
+        }
+
+        public int EncodeRelocationCount() => 1;
+
+        public int EncodeRelocations(Span<Relocation> buffer)
+        {
+            buffer[0] = new Relocation(_relocType, 0, _symbol);
+            return 1;
+        }
+    }
+
+    class WasmMemoryArgInstruction<TOffset> : WasmExpr where TOffset : IWasmEncodable
     {
         readonly uint _align;
-        readonly ulong _offset;
+        readonly TOffset _offset;
 
-        public WasmMemoryArgInstruction(WasmExprKind kind, uint align, ulong offset) : base(kind)
+        public WasmMemoryArgInstruction(WasmExprKind kind, uint align, TOffset offset) : base(kind)
         {
             switch (align)
             {
@@ -317,7 +387,7 @@ namespace ILCompiler.ObjectWriter.WasmInstructions
 
         public override int EncodeSize()
         {
-            uint valSize = DwarfHelper.SizeOfULEB128(_align) + DwarfHelper.SizeOfULEB128(_offset);
+            int valSize = (int)DwarfHelper.SizeOfULEB128(_align) + _offset.EncodeSize();
             return base.EncodeSize() + (int)valSize;
         }
 
@@ -325,8 +395,16 @@ namespace ILCompiler.ObjectWriter.WasmInstructions
         {
             int pos = base.Encode(buffer);
             pos += DwarfHelper.WriteULEB128(buffer.Slice(pos), _align);
-            pos += DwarfHelper.WriteULEB128(buffer.Slice(pos), _offset);
+            pos += _offset.Encode(buffer.Slice(pos));
             return pos;
+        }
+        public override int EncodeRelocationCount() => _offset.EncodeRelocationCount();
+        public override int EncodeRelocations(Span<Relocation> buffer)
+        {
+            int relocsEncoded = _offset.EncodeRelocations(buffer);
+            if (relocsEncoded > 0)
+                WasmExpr.OffsetRelocationsByOffset(buffer.Slice(0, relocsEncoded), base.EncodeSize() + (int)DwarfHelper.SizeOfULEB128(_align));
+            return relocsEncoded;
         }
     }
 
@@ -399,46 +477,27 @@ namespace ILCompiler.ObjectWriter.WasmInstructions
 
     sealed class WasmLEBConstantReloc : WasmExpr
     {
-        readonly ISymbolNode _symbol;
-        readonly RelocType _relocType;
+        readonly WasmEncodableSymbol _symbol;
 
         public WasmLEBConstantReloc(WasmExprKind kind, ISymbolNode symbol, RelocType relocType) : base(kind)
         {
-            _symbol = symbol;
-            _relocType = relocType;
+            _symbol = new WasmEncodableSymbol(symbol, relocType);
         }
-        public override int EncodeSize() => base.EncodeSize() + Relocation.GetSize(_relocType);
+        public override int EncodeSize() => base.EncodeSize() + _symbol.EncodeSize();
         public override int Encode(Span<byte> buffer)
         {
             int pos = base.Encode(buffer);
-            int relocSize = Relocation.GetSize(_relocType);
-            switch (_relocType)
-            {
-                case RelocType.WASM_FUNCTION_INDEX_LEB:
-                case RelocType.WASM_MEMORY_ADDR_LEB:
-                case RelocType.WASM_TYPE_INDEX_LEB:
-                case RelocType.WASM_GLOBAL_INDEX_LEB:
-                    DwarfHelper.WritePaddedULEB128(buffer.Slice(pos, relocSize), 0);
-                    break;
-
-                case RelocType.WASM_TABLE_INDEX_SLEB:
-                case RelocType.WASM_MEMORY_ADDR_REL_SLEB:
-                    DwarfHelper.WritePaddedSLEB128(buffer.Slice(pos, relocSize), 0);
-                    break;
-
-                default:
-                    throw new Exception($"Unknown WASM reloc type : {_relocType}");
-            }
-
-            pos += relocSize;
+            pos += _symbol.Encode(buffer.Slice(pos));
             return pos;
         }
 
-        public override int EncodeRelocationCount() => 1;
+        public override int EncodeRelocationCount() => _symbol.EncodeRelocationCount();
         public override int EncodeRelocations(Span<Relocation> buffer)
         {
-            buffer[0] = new Relocation(_relocType, base.EncodeSize(), _symbol);
-            return 1;
+            int relocsEncoded = _symbol.EncodeRelocations(buffer);
+            if (relocsEncoded > 0)
+                WasmExpr.OffsetRelocationsByOffset(buffer.Slice(0, relocsEncoded), base.EncodeSize());
+            return relocsEncoded;
         }
     }
 
@@ -694,32 +753,33 @@ namespace ILCompiler.ObjectWriter.WasmInstructions
         public static WasmExpr Add => new WasmBinaryExpr(WasmExprKind.I32Add);
         public static WasmExpr Sub => new WasmBinaryExpr(WasmExprKind.I32Sub);
         public static WasmExpr Ge_s => new WasmBinaryExpr(WasmExprKind.I32Ge_s);
-        public static WasmExpr Load(ulong offset) => new WasmMemoryArgInstruction(WasmExprKind.I32Load, 4, offset);
-        public static WasmExpr Store(ulong offset) => new WasmMemoryArgInstruction(WasmExprKind.I32Store, 4, offset);
+        public static WasmExpr Load(ulong offset) => new WasmMemoryArgInstruction<WasmEncodableULong>(WasmExprKind.I32Load, 4, new WasmEncodableULong(offset));
+        public static WasmExpr LoadWithRVAOffset(ISymbolNode symbolNode) => new WasmMemoryArgInstruction<WasmEncodableSymbol>(WasmExprKind.I32Load, 4, new WasmEncodableSymbol(symbolNode, RelocType.WASM_MEMORY_ADDR_REL_LEB));
+        public static WasmExpr Store(ulong offset) => new WasmMemoryArgInstruction<WasmEncodableULong>(WasmExprKind.I32Store, 4, new WasmEncodableULong(offset));
     }
 
     static class I64
     {
-        public static WasmExpr Load(ulong offset) => new WasmMemoryArgInstruction(WasmExprKind.I64Load, 8, offset);
-        public static WasmExpr Store(ulong offset) => new WasmMemoryArgInstruction(WasmExprKind.I64Store, 8, offset);
+        public static WasmExpr Load(ulong offset) => new WasmMemoryArgInstruction<WasmEncodableULong>(WasmExprKind.I64Load, 8, new WasmEncodableULong(offset));
+        public static WasmExpr Store(ulong offset) => new WasmMemoryArgInstruction<WasmEncodableULong>(WasmExprKind.I64Store, 8, new WasmEncodableULong(offset));
     }
 
     static class F32
     {
-        public static WasmExpr Load(ulong offset) => new WasmMemoryArgInstruction(WasmExprKind.F32Load, 4, offset);
-        public static WasmExpr Store(ulong offset) => new WasmMemoryArgInstruction(WasmExprKind.F32Store, 4, offset);
+        public static WasmExpr Load(ulong offset) => new WasmMemoryArgInstruction<WasmEncodableULong>(WasmExprKind.F32Load, 4, new WasmEncodableULong(offset));
+        public static WasmExpr Store(ulong offset) => new WasmMemoryArgInstruction<WasmEncodableULong>(WasmExprKind.F32Store, 4, new WasmEncodableULong(offset));
     }
 
     static class F64
     {
-        public static WasmExpr Load(ulong offset) => new WasmMemoryArgInstruction(WasmExprKind.F64Load, 8, offset);
-        public static WasmExpr Store(ulong offset) => new WasmMemoryArgInstruction(WasmExprKind.F64Store, 8, offset);
+        public static WasmExpr Load(ulong offset) => new WasmMemoryArgInstruction<WasmEncodableULong>(WasmExprKind.F64Load, 8, new WasmEncodableULong(offset));
+        public static WasmExpr Store(ulong offset) => new WasmMemoryArgInstruction<WasmEncodableULong>(WasmExprKind.F64Store, 8, new WasmEncodableULong(offset));
     }
 
     static class V128
     {
-        public static WasmExpr Load(ulong offset) => new WasmMemoryArgInstruction(WasmExprKind.V128Load, 16, offset);
-        public static WasmExpr Store(ulong offset) => new WasmMemoryArgInstruction(WasmExprKind.V128Store, 16, offset);
+        public static WasmExpr Load(ulong offset) => new WasmMemoryArgInstruction<WasmEncodableULong>(WasmExprKind.V128Load, 16, new WasmEncodableULong(offset));
+        public static WasmExpr Store(ulong offset) => new WasmMemoryArgInstruction<WasmEncodableULong>(WasmExprKind.V128Store, 16, new WasmEncodableULong(offset));
     }
 
     static class Memory

@@ -11,7 +11,7 @@ internal sealed class NativeObjectWrapperObject : IData<NativeObjectWrapperObjec
     public NativeObjectWrapperObject(Target target, TargetPointer address)
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.NativeObjectWrapperObject);
-        ExternalComObject = target.ReadPointer(address + (ulong)type.Fields[nameof(ExternalComObject)].Offset);
+        ExternalComObject = target.ReadPointerField(address, type, nameof(ExternalComObject));
     }
 
     public TargetPointer ExternalComObject { get; init; }

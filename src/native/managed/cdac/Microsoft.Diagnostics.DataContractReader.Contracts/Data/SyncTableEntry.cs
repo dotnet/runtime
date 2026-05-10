@@ -12,11 +12,11 @@ internal sealed class SyncTableEntry : IData<SyncTableEntry>
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.SyncTableEntry);
 
-        TargetPointer syncBlockPointer = target.ReadPointer(address + (ulong)type.Fields[nameof(SyncBlock)].Offset);
+        TargetPointer syncBlockPointer = target.ReadPointerField(address, type, nameof(SyncBlock));
         if (syncBlockPointer != TargetPointer.Null)
             SyncBlock = target.ProcessedData.GetOrAdd<SyncBlock>(syncBlockPointer);
 
-        TargetPointer objectPointer = target.ReadPointer(address + (ulong)type.Fields[nameof(Object)].Offset);
+        TargetPointer objectPointer = target.ReadPointerField(address, type, nameof(Object));
         if (objectPointer != TargetPointer.Null && (objectPointer & 1) == 0) // Defensive check: if the lowest bit is set, this is a free sync block entry and the pointer is not valid.
             Object = target.ProcessedData.GetOrAdd<Object>(objectPointer);
     }
