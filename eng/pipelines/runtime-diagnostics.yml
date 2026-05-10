@@ -17,6 +17,19 @@ parameters:
     - linux_arm
     - osx_arm64
     - osx_x64
+# osx_arm64 / osx_x64 are intentionally excluded from x-plat coverage.
+# Their dump payloads are large enough that downloading every platform's dumps
+# onto a single Helix host exceeds available disk space.
+- name: cdacXPlatDumpPlatforms
+  displayName: cDAC X-Plat Dump Platforms
+  type: object
+  default:
+    - windows_x64
+    - windows_x86
+    - linux_x64
+    - windows_arm64
+    - linux_arm64
+    - linux_arm
 - name: cdacDumpTestMode
   displayName: cDAC Dump Test Mode
   type: string
@@ -304,7 +317,7 @@ extends:
           parameters:
             jobTemplate: /eng/pipelines/common/global-build-job.yml
             buildConfig: release
-            platforms: ${{ parameters.cdacDumpPlatforms }}
+            platforms: ${{ parameters.cdacXPlatDumpPlatforms }}
             shouldContinueOnError: true
             jobParameters:
               nameSuffix: CdacXPlatDumpGen
@@ -351,7 +364,7 @@ extends:
           parameters:
             jobTemplate: /eng/pipelines/common/global-build-job.yml
             buildConfig: release
-            platforms: ${{ parameters.cdacDumpPlatforms }}
+            platforms: ${{ parameters.cdacXPlatDumpPlatforms }}
             shouldContinueOnError: true
             jobParameters:
               nameSuffix: CdacXPlatDumpTest
@@ -363,7 +376,7 @@ extends:
                   buildDebuggees: false
                   skipDebuggeeCopy: true
               # Download dump artifacts from all source platforms
-              - ${{ each platform in parameters.cdacDumpPlatforms }}:
+              - ${{ each platform in parameters.cdacXPlatDumpPlatforms }}:
                 - task: DownloadPipelineArtifact@2
                   inputs:
                     artifactName: CdacDumps_${{ platform }}
@@ -371,7 +384,7 @@ extends:
                   displayName: 'Download dumps from ${{ platform }}'
               # Extract dump tars into the Helix payload
               - pwsh: |
-                  $platforms = "${{ join(';', parameters.cdacDumpPlatforms) }}".Split(';')
+                  $platforms = "${{ join(';', parameters.cdacXPlatDumpPlatforms) }}".Split(';')
                   $payloadDumpsDir = "$(Build.SourcesDirectory)/artifacts/helixPayload/cdac/dumps"
                   foreach ($platform in $platforms) {
                       $downloadDir = "$(Build.SourcesDirectory)/artifacts/xplatDumps/$platform"
@@ -396,7 +409,7 @@ extends:
                     _Creator: dotnet-bot
                     SYSTEM_ACCESSTOKEN: $(System.AccessToken)
                     NUGET_PACKAGES: $(Build.SourcesDirectory)$(dir).packages
-                    SourcePlatforms: ${{ join(';', parameters.cdacDumpPlatforms) }}
+                    SourcePlatforms: ${{ join(';', parameters.cdacXPlatDumpPlatforms) }}
               - pwsh: |
                   if ("$(Agent.JobStatus)" -ne "Succeeded") {
                     Write-Error "One or more cDAC x-plat dump test failures were detected. Failing the job."

@@ -2990,7 +2990,7 @@ void Thread::UserInterrupt(ThreadInterruptMode mode)
     InterlockedOr(&m_UserInterrupt, mode);
 
     if (HasValidThreadHandle() &&
-        HasThreadState (TS_Interruptible))
+        HasThreadState (TS_WaitSleepJoin))
     {
         HANDLE handle = GetThreadHandle();
         if (handle != INVALID_HANDLE_VALUE)
@@ -4461,7 +4461,7 @@ void Thread::HandleThreadInterrupt ()
     }
     if ((m_UserInterrupt & TI_Interrupt) != 0)
     {
-        ResetThreadState ((ThreadState)(TS_Interrupted | TS_Interruptible));
+        ResetThreadState ((ThreadState)(TS_Interrupted | TS_WaitSleepJoin));
         InterlockedAnd (&m_UserInterrupt, ~TI_Interrupt);
 
         COMPlusThrow(kThreadInterruptedException);

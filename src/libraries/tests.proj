@@ -188,7 +188,6 @@
     <!-- test failures -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Formats.Nrbf\tests\System.Formats.Nrbf.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Linq.Expressions\tests\System.Linq.Expressions.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Reflection.DispatchProxy\tests\System.Reflection.DispatchProxy.Tests.csproj" />
     <!-- long running suites -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Linq\tests\System.Linq.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Memory\tests\System.Memory.Tests.csproj" />
