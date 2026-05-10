@@ -61,7 +61,7 @@ namespace System.Text.Json
             }
         }
 
-        private void WriteStringSegmentWithLeftover(scoped ReadOnlySpan<char> value, bool isFinalSegment)
+        private unsafe void WriteStringSegmentWithLeftover(scoped ReadOnlySpan<char> value, bool isFinalSegment)
         {
             Debug.Assert(HasPartialStringData);
             Debug.Assert(_enclosingContainer == EnclosingContainerType.Utf16StringSequence);
@@ -130,7 +130,7 @@ namespace System.Text.Json
             }
         }
 
-        private void WriteStringSegmentEscapeValue(ReadOnlySpan<char> value, int firstEscapeIndexVal, bool isFinalSegment)
+        private unsafe void WriteStringSegmentEscapeValue(ReadOnlySpan<char> value, int firstEscapeIndexVal, bool isFinalSegment)
         {
             Debug.Assert(int.MaxValue / JsonConstants.MaxExpansionFactorWhileEscaping >= value.Length);
             Debug.Assert(firstEscapeIndexVal >= 0 && firstEscapeIndexVal < value.Length);
@@ -229,7 +229,7 @@ namespace System.Text.Json
             }
         }
 
-        private void WriteStringSegmentWithLeftover(scoped ReadOnlySpan<byte> utf8Value, bool isFinalSegment)
+        private unsafe void WriteStringSegmentWithLeftover(scoped ReadOnlySpan<byte> utf8Value, bool isFinalSegment)
         {
             Debug.Assert(HasPartialStringData);
             Debug.Assert(_enclosingContainer == EnclosingContainerType.Utf8StringSequence);
@@ -299,7 +299,7 @@ namespace System.Text.Json
             }
         }
 
-        private void WriteStringSegmentEscapeValue(ReadOnlySpan<byte> utf8Value, int firstEscapeIndexVal, bool isFinalSegment)
+        private unsafe void WriteStringSegmentEscapeValue(ReadOnlySpan<byte> utf8Value, int firstEscapeIndexVal, bool isFinalSegment)
         {
             Debug.Assert(int.MaxValue / JsonConstants.MaxExpansionFactorWhileEscaping >= utf8Value.Length);
             Debug.Assert(firstEscapeIndexVal >= 0 && firstEscapeIndexVal < utf8Value.Length);
@@ -396,7 +396,7 @@ namespace System.Text.Json
             }
         }
 
-        private void WriteBase64StringSegmentWithLeftover(scoped ReadOnlySpan<byte> bytes, bool isFinalSegment)
+        private unsafe void WriteBase64StringSegmentWithLeftover(scoped ReadOnlySpan<byte> bytes, bool isFinalSegment)
         {
             Debug.Assert(HasPartialStringData);
             Debug.Assert(_enclosingContainer == EnclosingContainerType.Base64StringSequence);

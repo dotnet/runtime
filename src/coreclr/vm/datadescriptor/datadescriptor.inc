@@ -195,6 +195,9 @@ CDAC_TYPE_FIELD(InteropSyncBlockInfo, T_POINTER, CCW, cdac_data<InteropSyncBlock
 CDAC_TYPE_FIELD(InteropSyncBlockInfo, T_POINTER, RCW, cdac_data<InteropSyncBlockInfo>::RCW)
 CDAC_TYPE_FIELD(InteropSyncBlockInfo, T_POINTER, CCF, cdac_data<InteropSyncBlockInfo>::CCF)
 #endif // FEATURE_COMINTEROP
+#ifdef FEATURE_OBJCMARSHAL
+CDAC_TYPE_FIELD(InteropSyncBlockInfo, T_POINTER, TaggedMemory, cdac_data<InteropSyncBlockInfo>::TaggedMemory)
+#endif // FEATURE_OBJCMARSHAL
 CDAC_TYPE_END(InteropSyncBlockInfo)
 
 CDAC_TYPE_BEGIN(SyncBlock)
@@ -1565,6 +1568,9 @@ CDAC_GLOBAL_CONTRACT(ExecutionManager, c2)
 CDAC_GLOBAL_CONTRACT(GCInfo, c1)
 CDAC_GLOBAL_CONTRACT(Loader, c1)
 CDAC_GLOBAL_CONTRACT(Notifications, c1)
+#ifdef FEATURE_OBJCMARSHAL
+CDAC_GLOBAL_CONTRACT(ObjectiveCMarshal, c1)
+#endif // FEATURE_OBJCMARSHAL
 CDAC_GLOBAL_CONTRACT(Object, c1)
 CDAC_GLOBAL_CONTRACT(PlatformMetadata, c1)
 CDAC_GLOBAL_CONTRACT(PrecodeStubs, c3)

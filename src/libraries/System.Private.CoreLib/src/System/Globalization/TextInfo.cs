@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
@@ -495,7 +495,7 @@ namespace System.Globalization
         /// </summary>
         /// <param name="value">The rune to convert to lowercase.</param>
         /// <returns>The specified rune converted to lowercase.</returns>
-        public Rune ToLower(Rune value)
+        public unsafe Rune ToLower(Rune value)
         {
             // Convert rune to span
             ReadOnlySpan<char> valueChars = value.AsSpan(stackalloc char[Rune.MaxUtf16CharsPerRune]);
@@ -517,7 +517,7 @@ namespace System.Globalization
         /// </summary>
         /// <param name="value">The rune to convert to uppercase.</param>
         /// <returns>The specified rune converted to uppercase.</returns>
-        public Rune ToUpper(Rune value)
+        public unsafe Rune ToUpper(Rune value)
         {
             // Convert rune to span
             ReadOnlySpan<char> valueChars = value.AsSpan(stackalloc char[Rune.MaxUtf16CharsPerRune]);
@@ -713,7 +713,7 @@ namespace System.Globalization
             return inputIndex;
         }
 
-        private int AddTitlecaseLetter(ref StringBuilder result, ref string input, int inputIndex, int charLen)
+        private unsafe int AddTitlecaseLetter(ref StringBuilder result, ref string input, int inputIndex, int charLen)
         {
             Debug.Assert(charLen == 1 || charLen == 2, "[TextInfo.AddTitlecaseLetter] CharUnicodeInfo.InternalGetUnicodeCategory returned an unexpected charLen!");
 

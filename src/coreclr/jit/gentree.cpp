@@ -5000,7 +5000,7 @@ bool Compiler::gtIsLikelyRegVar(GenTree* tree)
 
     // If this is an EH-live var, return false if it is a def,
     // as it will have to go to memory.
-    if (varDsc->lvLiveInOutOfHndlr && ((tree->gtFlags & GTF_VAR_DEF) != 0))
+    if (varDsc->lvTracked && varDsc->lvLiveInOutOfHndlr && ((tree->gtFlags & GTF_VAR_DEF) != 0))
     {
         return false;
     }

@@ -351,32 +351,6 @@ PAL_UnregisterModule(
 PALIMPORT
 BOOL
 PALAPI
-PAL_OpenProcessMemory(
-    IN DWORD processId,
-    OUT DWORD* pHandle
-);
-
-PALIMPORT
-VOID
-PALAPI
-PAL_CloseProcessMemory(
-    IN DWORD handle
-);
-
-PALIMPORT
-BOOL
-PALAPI
-PAL_ReadProcessMemory(
-    IN DWORD handle,
-    IN ULONG64 address,
-    IN LPVOID buffer,
-    IN SIZE_T size,
-    OUT SIZE_T* numberOfBytesRead
-);
-
-PALIMPORT
-BOOL
-PALAPI
 PAL_ProbeMemory(
     PVOID pBuffer,
     DWORD cbBuffer,
@@ -714,40 +688,11 @@ GetCurrentThread();
 
 #define STARTF_USESTDHANDLES       0x00000100
 
-typedef struct _STARTUPINFOW {
-    DWORD cb;
-    LPWSTR lpReserved_PAL_Undefined;
-    LPWSTR lpDesktop_PAL_Undefined;
-    LPWSTR lpTitle_PAL_Undefined;
-    DWORD dwX_PAL_Undefined;
-    DWORD dwY_PAL_Undefined;
-    DWORD dwXSize_PAL_Undefined;
-    DWORD dwYSize_PAL_Undefined;
-    DWORD dwXCountChars_PAL_Undefined;
-    DWORD dwYCountChars_PAL_Undefined;
-    DWORD dwFillAttribute_PAL_Undefined;
-    DWORD dwFlags;
-    WORD wShowWindow_PAL_Undefined;
-    WORD cbReserved2_PAL_Undefined;
-    LPBYTE lpReserved2_PAL_Undefined;
-    HANDLE hStdInput;
-    HANDLE hStdOutput;
-    HANDLE hStdError;
-} STARTUPINFOW, *LPSTARTUPINFOW;
-
+typedef struct _STARTUPINFOW STARTUPINFOW, *LPSTARTUPINFOW;
 typedef STARTUPINFOW STARTUPINFO;
 typedef LPSTARTUPINFOW LPSTARTUPINFO;
 
-#define CREATE_NEW_CONSOLE          0x00000010
-
-#define NORMAL_PRIORITY_CLASS             0x00000020
-
-typedef struct _PROCESS_INFORMATION {
-    HANDLE hProcess;
-    HANDLE hThread;
-    DWORD dwProcessId;
-    DWORD dwThreadId_PAL_Undefined;
-} PROCESS_INFORMATION, *PPROCESS_INFORMATION, *LPPROCESS_INFORMATION;
+typedef struct _PROCESS_INFORMATION PROCESS_INFORMATION, *PPROCESS_INFORMATION, *LPPROCESS_INFORMATION;
 
 PALIMPORT
 PAL_NORETURN
@@ -762,13 +707,6 @@ PALAPI
 TerminateProcess(
          IN HANDLE hProcess,
          IN UINT uExitCode);
-
-PALIMPORT
-BOOL
-PALAPI
-GetExitCodeProcess(
-           IN HANDLE hProcess,
-           IN LPDWORD lpExitCode);
 
 #define MAXIMUM_WAIT_OBJECTS  64
 #define WAIT_OBJECT_0 0
@@ -791,15 +729,6 @@ WaitForSingleObjectEx(
             IN HANDLE hHandle,
             IN DWORD dwMilliseconds,
             IN BOOL bAlertable);
-
-PALIMPORT
-DWORD
-PALAPI
-WaitForMultipleObjects(
-               IN DWORD nCount,
-               IN CONST HANDLE *lpHandles,
-               IN BOOL bWaitAll,
-               IN DWORD dwMilliseconds);
 
 PALIMPORT
 DWORD
@@ -2752,30 +2681,6 @@ typedef struct _RUNTIME_FUNCTION {
 
 #define SEMAPHORE_MODIFY_STATE    (0x0002)
 #define SEMAPHORE_ALL_ACCESS      (STANDARD_RIGHTS_REQUIRED | SYNCHRONIZE | 0x3)
-
-#define PROCESS_TERMINATE         (0x0001)
-#define PROCESS_CREATE_THREAD     (0x0002)
-#define PROCESS_SET_SESSIONID     (0x0004)
-#define PROCESS_VM_OPERATION      (0x0008)
-#define PROCESS_VM_READ           (0x0010)
-#define PROCESS_VM_WRITE          (0x0020)
-#define PROCESS_DUP_HANDLE        (0x0040)
-#define PROCESS_CREATE_PROCESS    (0x0080)
-#define PROCESS_SET_QUOTA         (0x0100)
-#define PROCESS_SET_INFORMATION   (0x0200)
-#define PROCESS_QUERY_INFORMATION (0x0400)
-#define PROCESS_SUSPEND_RESUME    (0x0800)
-#define PROCESS_ALL_ACCESS        (STANDARD_RIGHTS_REQUIRED | SYNCHRONIZE | \
-                                   0xFFF)
-
-PALIMPORT
-HANDLE
-PALAPI
-OpenProcess(
-    IN DWORD dwDesiredAccess, /* PROCESS_DUP_HANDLE or PROCESS_ALL_ACCESS */
-    IN BOOL bInheritHandle,
-    IN DWORD dwProcessId
-    );
 
 PALIMPORT
 VOID

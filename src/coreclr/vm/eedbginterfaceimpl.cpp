@@ -1317,17 +1317,6 @@ void EEDbgInterfaceImpl::GetRuntimeOffsets(SIZE_T *pTLSIndex,
     *pEEIsManagedExceptionStateMask = Thread::TSNC_DebuggerIsManagedException;
 }
 
-void EEDbgInterfaceImpl::DebuggerModifyingLogSwitch (int iNewLevel,
-                                                     const WCHAR *pLogSwitchName)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-}
-
 
 HRESULT EEDbgInterfaceImpl::SetIPFromSrcToDst(Thread *pThread,
                                               SLOT addrStart,
@@ -1437,7 +1426,7 @@ CorDebugUserState EEDbgInterfaceImpl::GetPartialUserState(Thread *pThread)
         ret |= (unsigned)USER_STOPPED;
     }
 
-    if (ts & Thread::TS_Interruptible)
+    if (ts & Thread::TS_WaitSleepJoin)
     {
         ret |= (unsigned)USER_WAIT_SLEEP_JOIN;
     }
