@@ -482,7 +482,7 @@ namespace System.Net.WebSockets
         /// </summary>
         /// <returns>A key-value pair of the request header security key and expected response header value.</returns>
         [SuppressMessage("Microsoft.Security", "CA5350", Justification = "Required by RFC6455")]
-        private static KeyValuePair<string, string> CreateSecKeyAndSecWebSocketAccept()
+        private static unsafe KeyValuePair<string, string> CreateSecKeyAndSecWebSocketAccept()
         {
             // GUID appended by the server as part of the security key response.  Defined in the RFC.
             ReadOnlySpan<byte> wsServerGuidBytes = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"u8;

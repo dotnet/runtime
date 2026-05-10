@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
@@ -92,7 +92,7 @@ namespace System.Net
             SocketAddressPal.SetAddressFamily(_buffer, family);
         }
 
-        internal SocketAddress(IPAddress ipAddress)
+        internal unsafe SocketAddress(IPAddress ipAddress)
             : this(ipAddress.AddressFamily,
                 ((ipAddress.AddressFamily == AddressFamily.InterNetwork) ? IPv4AddressSize : IPv6AddressSize))
         {
@@ -150,7 +150,7 @@ namespace System.Net
             return hash.ToHashCode();
         }
 
-        public override string ToString()
+        public override unsafe string ToString()
         {
             // Get the address family string.  In almost all cases, this should be a cached string
             // from the enum and won't actually allocate.

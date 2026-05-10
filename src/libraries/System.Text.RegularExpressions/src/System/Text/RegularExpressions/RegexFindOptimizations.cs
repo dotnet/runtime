@@ -43,7 +43,7 @@ namespace System.Text.RegularExpressions
         /// <param name="root">The root of the pattern node tree.</param>
         /// <param name="options">Options used when creating the regex.</param>
         /// <param name="isLeadingPartial">true if <paramref name="root"/> may not represent the whole pattern, only a leading node in it.</param>
-        private RegexFindOptimizations(RegexNode root, RegexOptions options, bool isLeadingPartial)
+        private unsafe RegexFindOptimizations(RegexNode root, RegexOptions options, bool isLeadingPartial)
         {
             bool rightToLeft = (options & RegexOptions.RightToLeft) != 0;
             Debug.Assert(!isLeadingPartial || !rightToLeft, "RightToLeft unexpected when isLeadingPartial");
@@ -336,7 +336,7 @@ namespace System.Text.RegularExpressions
         public (RegexNode LoopNode, (char Char, string? String, StringComparison StringComparison, char[]? Chars) Literal)? LiteralAfterLoop { get; }
 
         /// <summary>Analyzes a list of fixed-distance sets to extract a case-sensitive string at a fixed distance.</summary>
-        private static (string String, int Distance)? FindFixedDistanceString(List<FixedDistanceSet> fixedDistanceSets)
+        private static unsafe (string String, int Distance)? FindFixedDistanceString(List<FixedDistanceSet> fixedDistanceSets)
         {
             (string String, int Distance)? best = null;
 

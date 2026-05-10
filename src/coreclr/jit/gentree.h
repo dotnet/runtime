@@ -469,6 +469,7 @@ enum GenTreeFlags : unsigned
 
     GTF_FLD_TLS                 = 0x80000000, // GT_FIELD_ADDR -- field address is a Windows x86 TLS reference
     GTF_FLD_DEREFERENCED        = 0x40000000, // GT_FIELD_ADDR -- used to preserve previous behavior
+    GTF_FLD_TGT_NONFAULTING     = 0x20000000, // GT_FIELD_ADDR -- consuming indir must perform the implicit null check.
 
     GTF_INX_RNGCHK              = 0x80000000, // GT_INDEX_ADDR -- this array address should be range-checked
     GTF_INX_ADDR_NONNULL        = 0x40000000, // GT_INDEX_ADDR -- this array address is not null
