@@ -1372,7 +1372,7 @@ HRESULT ShimProxyCallback::DataBreakpoint(ICorDebugProcess* pProcess, ICorDebugT
         // callbacks parameters. These are strong references
         RSExtSmartPtr<ICorDebugProcess> m_pProcess;
         RSExtSmartPtr<ICorDebugThread> m_pThread;
-        CONTEXT m_context;
+        NewArrayHolder<BYTE> m_context;
         ULONG32 m_contextSize;
 
     public:
@@ -1383,14 +1383,20 @@ HRESULT ShimProxyCallback::DataBreakpoint(ICorDebugProcess* pProcess, ICorDebugT
             this->m_pProcess.Assign(pProcess);
             this->m_pThread.Assign(pThread);
 
-            _ASSERTE(contextSize == sizeof(CONTEXT));
-            this->m_contextSize = min(contextSize, (ULONG32)sizeof(CONTEXT));
-            memcpy(&(this->m_context), pContext, this->m_contextSize);
+            this->m_contextSize = min(contextSize, (ULONG32)0x1000);
+            if (pContext != NULL && this->m_contextSize > 0)
+            {
+                m_context = new (nothrow) BYTE[this->m_contextSize];
+                if (m_context != NULL)
+                    memcpy(m_context, pContext, this->m_contextSize);
+            }
         }
 
         HRESULT Dispatch(DispatchArgs args)
         {
-            return args.GetCallback4()->DataBreakpoint(m_pProcess, m_pThread, reinterpret_cast<BYTE*>(&m_context), m_contextSize);
+            if (m_context == NULL)
+                return E_OUTOFMEMORY;
+            return args.GetCallback4()->DataBreakpoint(m_pProcess, m_pThread, m_context, m_contextSize);
         }
     }; // end class AfterGarbageCollectionEvent
 

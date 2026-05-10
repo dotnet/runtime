@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
@@ -648,7 +648,7 @@ namespace System.Security.Cryptography
         /// <exception cref="CryptographicException">
         ///   An error occurred while exporting the key.
         /// </exception>
-        protected virtual bool TryExportPkcs8PrivateKeyCore(Span<byte> destination, out int bytesWritten)
+        protected virtual unsafe bool TryExportPkcs8PrivateKeyCore(Span<byte> destination, out int bytesWritten)
         {
             // Private key size for SLH-DSA is at most 128 bytes so we can stack allocate it.
             int privateKeySizeInBytes = Algorithm.PrivateKeySizeInBytes;
@@ -1862,7 +1862,7 @@ namespace System.Security.Cryptography
         /// </param>
         protected abstract void ExportSlhDsaPrivateKeyCore(Span<byte> destination);
 
-        private AsnWriter ExportSubjectPublicKeyInfoCore()
+        private unsafe AsnWriter ExportSubjectPublicKeyInfoCore()
         {
             // Public key size for SLH-DSA is at most 64 bytes so we can stack allocate it.
             int publicKeySizeInBytes = Algorithm.PublicKeySizeInBytes;
