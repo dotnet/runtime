@@ -3954,6 +3954,23 @@ public:
         ClearOtherRegFlags();
     }
 
+    //----------------------------------------------------------------------------
+    // CopyOtherRegs: copy multi-reg state from the given node to this node
+    //
+    // Arguments:
+    //    from  -  Node from which to copy multi-reg state
+    //
+    // Return Value:
+    //    None
+    //
+    void CopyOtherRegs(GenTreeLclVar* from)
+    {
+        for (int i = 0; i < MAX_MULTIREG_COUNT - 1; i++)
+        {
+            gtOtherReg[i] = from->gtOtherReg[i];
+        }
+    }
+
     regNumber GetRegNumByIdx(int regIndex) const
     {
         assert(regIndex < MAX_MULTIREG_COUNT);
@@ -5945,6 +5962,20 @@ struct GenTreeMultiRegOp : public GenTreeOp
         return TypeIs(TYP_LONG) ? 2 : 1;
     }
 
+    //----------------------------------------------------------------------------
+    // CopyOtherRegs: copy multi-reg state from the given node to this node
+    //
+    // Arguments:
+    //    from  -  Node from which to copy multi-reg state
+    //
+    // Return Value:
+    //    None
+    //
+    void CopyOtherRegs(GenTreeMultiRegOp* from)
+    {
+        gtOtherReg = from->gtOtherReg;
+    }
+
     //---------------------------------------------------------------------------
     // GetRegNumByIdx: get i'th register allocated to this struct argument.
     //
@@ -6448,6 +6479,20 @@ public:
         return *gtEntryPoint;
     }
 #endif // FEATURE_READYTORUN
+
+    //----------------------------------------------------------------------------
+    // CopyOtherRegs: copy multi-reg state from the given node to this node
+    //
+    // Arguments:
+    //    from  -  Node from which to copy multi-reg state
+    //
+    // Return Value:
+    //    None
+    //
+    void CopyOtherRegs(GenTreeJitIntrinsic* from)
+    {
+        gtOtherReg = from->gtOtherReg;
+    }
 
     //-----------------------------------------------------------
     // GetRegNumByIdx: Get regNumber of i'th position.
