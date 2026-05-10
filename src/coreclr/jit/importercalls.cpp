@@ -7209,7 +7209,7 @@ bool Compiler::pickProfiledValue(IL_OFFSET ilOffset, uint32_t* pLikelihood, ssiz
     JITDUMP("%u likely values:\n", valuesCount);
     for (UINT32 i = 0; i < valuesCount; i++)
     {
-        JITDUMP("  %u) %zd - %u%%\n", i, likelyValues[i].value, likelyValues[i].likelihood)
+        JITDUMP("  %u) %zd - %u%%\n", i, likelyValues[i].value, likelyValues[i].likelihood);
     }
 
     // Re-use JitRandomGuardedDevirtualization for stress-testing.

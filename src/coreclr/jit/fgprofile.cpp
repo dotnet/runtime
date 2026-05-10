@@ -1900,9 +1900,11 @@ bool Compiler::IsValueHistogramProbeCandidate(GenTree* node, IL_OFFSET* ilOffset
 {
     if (node->OperIs(GT_LCLHEAP))
     {
-        // Mirror the gating in impProfileLclHeap: only zero-init, non-constant
-        // locallocs are value-profile candidates. Anything else would have its
-        // probe data ignored by the consumer and just waste a schema slot.
+        // Mirror the gating at the impProfileValueGuardedTree call site for
+        // CEE_LOCALLOC (see Compiler::impImportBlockCode): only zero-init,
+        // non-constant locallocs are value-profile candidates. Anything else
+        // would have its probe data ignored by the consumer and just waste a
+        // schema slot.
         if (!info.compInitMem || node->gtGetOp1()->OperIsConst())
         {
             return false;
@@ -2358,9 +2360,11 @@ public:
 
         if (!lengthNode->TypeIs(TYP_I_IMPL))
         {
-            // CORINFO_HELP_VALUEPROFILE always expects nint.
-            // Zero-extend for now due to LCLHEAP being actually uint32_t-typed, but in the future we may want to
-            // support with sign-extension as well.
+            // CORINFO_HELP_VALUEPROFILE always expects nint, but the operand here may be
+            // a 32-bit value (e.g. the int-typed size operand of GT_LCLHEAP, or a TYP_INT
+            // length on 64-bit). Zero-extend to nint so the recorded histogram values are
+            // unsigned and not skewed by sign extension; sign-extension can be added later
+            // for operands where it makes sense.
             assert(genActualType(lengthNode) == TYP_INT);
             lengthNode = compiler->gtNewCastNode(TYP_I_IMPL, lengthNode, /*fromUnsigned*/ true, TYP_I_IMPL);
         }

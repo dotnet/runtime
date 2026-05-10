@@ -6930,19 +6930,24 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                     // unconditionally.
                     //
                     // For constant sizes the zero-init is unrolled by Lowering, so the
-                    // cost scales with the size; for non-constant sizes we use a fixed
-                    // upper bound representing the runtime loop.
+                    // cost scales with the size; for non-constant sizes (or sizes that
+                    // would overflow our int cost) we use a fixed upper bound representing
+                    // the runtime loop.
+                    costEx = 36;
+                    costSz = 8;
                     if (op1->IsCnsIntOrI() && info.compInitMem)
                     {
-                        const ssize_t size        = op1->AsIntCon()->IconValue();
-                        const ssize_t alignedSize = (size + (STACK_ALIGN - 1)) & ~(ssize_t)(STACK_ALIGN - 1);
-                        costEx = 8 + (int)(alignedSize / REGSIZE_BYTES); // > 7 to block if-conversion
-                        costSz = 4 + (int)(alignedSize / REGSIZE_BYTES);
-                    }
-                    else
-                    {
-                        costEx = 36;
-                        costSz = 8;
+                        const ssize_t size = op1->AsIntCon()->IconValue();
+                        // Guard against pathological constant sizes: very large or
+                        // non-positive values would overflow the cost computation
+                        // and could underflow into a small/negative cost, defeating
+                        // the if-conversion block above.
+                        if ((size > 0) && (size <= INT_MAX))
+                        {
+                            const ssize_t alignedSize = (size + (STACK_ALIGN - 1)) & ~(ssize_t)(STACK_ALIGN - 1);
+                            costEx = 8 + (int)(alignedSize / REGSIZE_BYTES); // > 7 to block if-conversion
+                            costSz = 4 + (int)(alignedSize / REGSIZE_BYTES);
+                        }
                     }
                     break;
                 }
