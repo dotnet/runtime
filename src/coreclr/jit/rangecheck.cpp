@@ -695,14 +695,6 @@ Range RangeCheck::GetRangeFromAssertionsWorker(
 
     // Currently, we only handle int32 and smaller integer types.
     var_types vnType = comp->vnStore->TypeOfVN(num);
-
-    if (varTypeIsGC(vnType))
-    {
-        // Don't do anything for gc types on platforms where TYP_I_IMPL is TYP_INT
-        assert(TARGET_POINTER_SIZE == 4);
-        return result;
-    }
-
     assert(genActualType(vnType) == TYP_INT);
     result = GetRangeFromType(vnType);
 
