@@ -7940,8 +7940,6 @@ DONE_MORPHING_CHILDREN:
                 goto CM_OVF_OP;
             }
 
-            // TODO: Call fgOptimizeDistributiveArithemtic + fgOptimizeCommutativeArithmetic
-
             if (!fgGlobalMorph)
             {
                 break;
@@ -10400,7 +10398,6 @@ GenTree* Compiler::fgOptimizeHWIntrinsicAssociative(GenTreeHWIntrinsic* tree)
 #endif // FEATURE_HW_INTRINSICS
 
 //------------------------------------------------------------------------
-<<<<<<< HEAD
 // fgPushConstantsRight: Pushes constants to the right to help canonicalize the shape
 //
 // Arguments:

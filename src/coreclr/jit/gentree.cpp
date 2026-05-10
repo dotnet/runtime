@@ -18075,11 +18075,9 @@ GenTree* Compiler::gtFoldDistributiveArithmetic(GenTree* tree)
 
     if ((op1->OperGet() == op2->OperGet()) && isLeftDistributive(op1->OperGet(), tree->OperGet()))
     {
-        if (op1->gtGetOp1()->OperIs(GT_LCL_VAR) && op2->gtGetOp1()->OperIs(GT_LCL_VAR))
+        if (op1->gtGetOp1()->OperIsAnyLocal() && op2->gtGetOp1()->OperIsAnyLocal())
         {
-            bool sameLcl =
-                op1->gtGetOp1()->AsLclVarCommon()->GetLclNum() == op2->gtGetOp1()->AsLclVarCommon()->GetLclNum();
-            if (sameLcl)
+            if (GenTree::Compare(op1->gtGetOp1(), op2->gtGetOp1()))
             {
                 tree->AsOp()->gtOp1 = op1->gtGetOp1();
                 tree->AsOp()->gtOp2 =
