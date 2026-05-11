@@ -106,13 +106,13 @@ MethodDefinition methodDef = reader.GetMethodDefinition(methodHandle);
 
 Each step in this pattern serves a distinct purpose.
 
-`MetadataReader` is the cursor over the metadata tables of a single module/assembly. It holds a pointer to the underlying metadata blob. Every `EcmaModule` carries one `MetadataReader`, and the `Ecma*` type system classes expose it through a property.
+`MetadataReader` is the cursor over the metadata tables of a single module/assembly. It owns the underlying memory block containing the metadata blob and the parsed table structures. Every `EcmaModule` carries one `MetadataReader`, and the `Ecma*` type system classes expose it through a property.
 
-A handle (such as `MethodDefinitionHandle`, `TypeDefinitionHandle`, or `FieldDefinitionHandle`) is just a 4-byte value that identifies a specific row but carries no data on its own. To get information you must combine it with a `MetadataReader`. The `Ecma*` type system classes expose their handle through the `Handle` property.
+A handle (such as `MethodDefinitionHandle`, `TypeDefinitionHandle`, or `FieldDefinitionHandle`) is just a 4-byte value that identifies a specific row but carries no data on its own. To get information you must pass it to a `MetadataReader`. The `Ecma*` type system classes expose their handle through the `Handle` property.
 
-A definition struct (such as `MethodDefinition`, `TypeDefinition`, or `FieldDefinition`) is a decoded view of a single metadata table row. After passing the handle to the reader, the resulting struct provides access to the row's columns. Everything a definition struct returns (attributes, name, signature, etc.) is either a primitive, a flags enum, or another handle that must be decoded through the same reader.
+A definition struct (such as `MethodDefinition`, `TypeDefinition`, or `FieldDefinition`) is a decoded view of a single metadata table row. After passing the handle to the reader, the resulting struct provides access to the row's columns. Its metadata accessors (attributes, name, signature, etc.) return either a primitive, a flags enum, or another handle that must be decoded through the same reader — no allocations involved.
 
-This lazy, zero-allocation pattern is what allows the `Ecma*` types to remain thin wrappers that decode metadata on demand rather than caching it eagerly.
+This lazy, zero-allocation pattern is what allows the `Ecma*` types to remain thin wrappers that cache only frequently accessed data (such as the parsed method signature and name) while decoding everything else on demand through the reader.
 
 ## Pluggable algorithms
 

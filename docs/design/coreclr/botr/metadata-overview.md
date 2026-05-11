@@ -2,7 +2,7 @@
 
 ## What is Metadata?
 
-Metadata is binary information that describes a program's structure. When .NET code is compiled into a portable executable (PE) file, metadata is inserted into one section of the file, while the code is converted to Common Intermediate Language (CIL) and placed in another. Every type, method, field, and member reference in the program is described within metadata.
+Metadata is binary information that describes a program's structure. When .NET code is compiled into a portable executable (PE) file, metadata and CIL (Common Intermediate Language) code are both placed in the `.text` section of the file, at different offsets. Every type, method, field, and member reference in the program is described within metadata.
 
 In simple terms, metadata is the "table of contents" of a .NET assembly — it tells the runtime (and other tools like compilers, debuggers, and the AOT compiler) what types exist, what methods they have, what their signatures are, and how they relate to each other.
 
@@ -12,7 +12,7 @@ Before .NET, using a component written in one language from another language was
 
 Metadata solves this by making .NET assemblies **self-describing**. A compiled module contains everything needed to understand and interact with it, without external files. This enables:
 
-- **Runtime services:** The garbage collector, JIT compiler, debugger, and reflection all rely on metadata to understand the program's structure.
+- **Runtime services:** The JIT compiler, debugger, and reflection all consume metadata directly. Other components (such as the garbage collector) use runtime data structures that the runtime builds from metadata at type-load time.
 - **Tooling:** Tools like the IL Disassembler (`ildasm`), the AOT compiler (ILC), and Visual Studio IntelliSense all consume metadata to provide their functionality.
 
 ## Metadata Tables and Heaps
@@ -30,7 +30,7 @@ Metadata is essentially a set of **tables** and **heaps**:
   | `MemberRef` | References to methods/fields in other modules |
   | `AssemblyRef` | Referenced assemblies |
   | `InterfaceImpl` | Which interfaces a type implements |
-  | `CustomAttribute` | Custom attributes applied to any element |
+  | `CustomAttribute` | Custom attributes applied to other metadata elements |
 
   For example, the `MethodDef` table has the following structure:
 
@@ -82,8 +82,8 @@ When the compiler produces metadata for this code, it creates entries in several
 - **`TypeDef`** — one row for `Person`.
 - **`Field`** — two rows: one for `Name`, one for `Scores`.
 - **`MethodDef`** — two rows: one for `GetAverageScore`, and one for the implicit `.ctor` (constructor) that the compiler generates.
-- **`TypeRef`** — rows referencing external types used in the code: `System.Object` (the base class), `System.String`, `System.Int32`, `System.Single`, and `System.Array`.
-- **`MemberRef`** — a row referencing `System.Array.get_Length`, since the code calls `Scores.Length`.
+- **`TypeRef`** — a row referencing `System.Object` (needed because `Person` implicitly extends it).
+- **`MemberRef`** — a row referencing `System.Object::.ctor`, since the compiler-generated constructor calls the base class constructor.
 
 Each of these rows has an implicit metadata token. For instance, if `GetAverageScore` is the first method defined in the module, its token would be `0x06000001` (`0x06` for the `MethodDef` table, `000001` for the first row). CIL instructions within other methods that call `GetAverageScore` would reference it by this token.
 
