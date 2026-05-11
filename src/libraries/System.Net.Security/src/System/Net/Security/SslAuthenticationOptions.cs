@@ -11,7 +11,6 @@ namespace System.Net.Security
 {
     internal sealed class SslAuthenticationOptions : IDisposable
     {
-        private const string EnableOcspStaplingContextSwitchName = "System.Net.Security.EnableServerOcspStaplingFromOnlyCertificateOnLinux";
 
         internal const X509RevocationMode DefaultRevocationMode = X509RevocationMode.NoCheck;
 
@@ -146,8 +145,7 @@ namespace System.Net.Security
 
                 if (certificateWithKey != null && certificateWithKey.HasPrivateKey)
                 {
-                    bool ocspFetch = false;
-                    _ = AppContext.TryGetSwitch(EnableOcspStaplingContextSwitchName, out ocspFetch);
+                    bool ocspFetch = LocalAppContextSwitches.EnableOcspStapling;
                     // given cert is X509Certificate2 with key. We can use it directly.
                     SetCertificateContextFromCert(certificateWithKey, !ocspFetch);
                 }
@@ -223,6 +221,10 @@ namespace System.Net.Security
 
 #if TARGET_ANDROID
         internal SslStream.JavaProxy? SslStreamProxy { get; set; }
+#endif
+
+#if !TARGET_WINDOWS && !SYSNETSECURITY_NO_OPENSSL
+        internal SslStream? SslStream { get; set; }
 #endif
 
         public void Dispose()

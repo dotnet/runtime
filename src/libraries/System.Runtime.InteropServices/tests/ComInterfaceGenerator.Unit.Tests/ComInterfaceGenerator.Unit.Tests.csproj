@@ -7,11 +7,12 @@
     <Nullable>enable</Nullable>
     <TestRunRequiresLiveRefPack>true</TestRunRequiresLiveRefPack>
     <StringResourcesPath>../../gen/Common/Resources/Strings.resx</StringResourcesPath>
+    <!-- https://github.com/dotnet/runtime/issues/126862 -->
+    <EnableTrimAnalyzer>false</EnableTrimAnalyzer>
   </PropertyGroup>
 
   <ItemGroup>
     <Compile Include="$(CommonTestPath)SourceGenerators\LiveReferencePack.cs" Link="Common\SourceGenerators\LiveReferencePack.cs" />
-    <Compile Include="$(CommonTestPath)SourceGenerators\GlobalOptionsOnlyProvider.cs" Link="Common\SourceGenerators\GlobalOptionsOnlyProvider.cs" />
     <Compile Include="..\Common\TestUtils.cs" Link="Common\TestUtils.cs" />
     <Compile Include="..\Common\CustomCollectionMarshallingCodeSnippets.cs" Link="Common\CustomCollectionMarshallingCodeSnippets.cs" />
     <Compile Include="..\Common\CustomStructMarshallingCodeSnippets.cs" Link="Common\CustomStructMarshallingCodeSnippets.cs" />

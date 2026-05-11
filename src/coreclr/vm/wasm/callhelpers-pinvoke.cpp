@@ -11,6 +11,7 @@
 #include <minipal/entrypoints.h>
 
 extern "C" {
+    uint32_t CompressionNative_CompressBound (uint32_t);
     uint32_t CompressionNative_Crc32 (uint32_t, void *, int32_t);
     int32_t CompressionNative_Deflate (void *, int32_t);
     int32_t CompressionNative_DeflateEnd (void *);
@@ -80,6 +81,7 @@ extern "C" {
     int32_t SystemNative_FSync (void *);
     int32_t SystemNative_FTruncate (void *, int64_t);
     int32_t SystemNative_FUTimens (void *, void *);
+    int32_t SystemNative_FcntlGetIsNonBlocking (void *, void *);
     int32_t SystemNative_FcntlSetFD (void *, int32_t);
     int32_t SystemNative_FileSystemSupportsLocking (void *, int32_t, int32_t);
     void SystemNative_Free (void *);
@@ -128,10 +130,13 @@ extern "C" {
     int64_t SystemNative_PReadV (void *, void *, int32_t, int64_t);
     int32_t SystemNative_PWrite (void *, void *, int32_t, int64_t);
     int64_t SystemNative_PWriteV (void *, void *, int32_t, int64_t);
+    int32_t SystemNative_Pipe (void *, int32_t);
     int32_t SystemNative_PosixFAdvise (void *, int64_t, int64_t, int32_t);
     int32_t SystemNative_Read (void *, void *, int32_t);
     int32_t SystemNative_ReadDir (void *, void *);
+    int32_t SystemNative_ReadFromNonblocking (void *, void *, int32_t);
     int32_t SystemNative_ReadLink (void *, void *, int32_t);
+    int64_t SystemNative_ReadV (void *, void *, int32_t);
     void * SystemNative_Realloc (void *, void *);
     int32_t SystemNative_Rename (void *, void *);
     int32_t SystemNative_RmDir (void *);
@@ -147,6 +152,8 @@ extern "C" {
     int32_t SystemNative_UTimensat (void *, void *);
     int32_t SystemNative_Unlink (void *);
     int32_t SystemNative_Write (void *, void *, int32_t);
+    int32_t SystemNative_WriteToNonblocking (void *, void *, int32_t);
+    int64_t SystemNative_WriteV (void *, void *, int32_t);
 } // extern "C"
 
 static const Entry s_libSystem_Globalization_Native [] = {
@@ -186,6 +193,7 @@ static const Entry s_libSystem_Globalization_Native [] = {
 };
 
 static const Entry s_libSystem_IO_Compression_Native [] = {
+    DllImportEntry(CompressionNative_CompressBound) // System.IO.Compression
     DllImportEntry(CompressionNative_Crc32) // System.IO.Compression
     DllImportEntry(CompressionNative_Deflate) // System.IO.Compression, System.Net.WebSockets
     DllImportEntry(CompressionNative_DeflateEnd) // System.IO.Compression, System.Net.WebSockets
@@ -218,6 +226,7 @@ static const Entry s_libSystem_Native [] = {
     DllImportEntry(SystemNative_FSync) // System.Private.CoreLib
     DllImportEntry(SystemNative_FTruncate) // System.IO.MemoryMappedFiles, System.Private.CoreLib
     DllImportEntry(SystemNative_FUTimens) // System.Private.CoreLib
+    DllImportEntry(SystemNative_FcntlGetIsNonBlocking) // System.Private.CoreLib
     DllImportEntry(SystemNative_FcntlSetFD) // System.IO.MemoryMappedFiles
     DllImportEntry(SystemNative_FileSystemSupportsLocking) // System.Private.CoreLib
     DllImportEntry(SystemNative_Free) // System.Private.CoreLib
@@ -266,10 +275,13 @@ static const Entry s_libSystem_Native [] = {
     DllImportEntry(SystemNative_PReadV) // System.Private.CoreLib
     DllImportEntry(SystemNative_PWrite) // System.Private.CoreLib
     DllImportEntry(SystemNative_PWriteV) // System.Private.CoreLib
+    DllImportEntry(SystemNative_Pipe) // System.Private.CoreLib
     DllImportEntry(SystemNative_PosixFAdvise) // System.Private.CoreLib
     DllImportEntry(SystemNative_Read) // System.Private.CoreLib
     DllImportEntry(SystemNative_ReadDir) // System.Private.CoreLib
+    DllImportEntry(SystemNative_ReadFromNonblocking) // System.Private.CoreLib
     DllImportEntry(SystemNative_ReadLink) // System.Private.CoreLib
+    DllImportEntry(SystemNative_ReadV) // System.Private.CoreLib
     DllImportEntry(SystemNative_Realloc) // System.Private.CoreLib
     DllImportEntry(SystemNative_Rename) // System.Private.CoreLib
     DllImportEntry(SystemNative_RmDir) // System.Private.CoreLib
@@ -285,6 +297,8 @@ static const Entry s_libSystem_Native [] = {
     DllImportEntry(SystemNative_UTimensat) // System.Private.CoreLib
     DllImportEntry(SystemNative_Unlink) // System.IO.MemoryMappedFiles, System.Private.CoreLib
     DllImportEntry(SystemNative_Write) // System.Console, System.Private.CoreLib
+    DllImportEntry(SystemNative_WriteToNonblocking) // System.Private.CoreLib
+    DllImportEntry(SystemNative_WriteV) // System.Private.CoreLib
 };
 
 static const Entry s_libSystem_Native_Browser [] = {
@@ -308,8 +322,8 @@ typedef struct PInvokeTable {
 
 static PInvokeTable s_PInvokeTables[] = {
     {"libSystem.Globalization.Native", s_libSystem_Globalization_Native, 33},
-    {"libSystem.IO.Compression.Native", s_libSystem_IO_Compression_Native, 8},
-    {"libSystem.Native", s_libSystem_Native, 88},
+    {"libSystem.IO.Compression.Native", s_libSystem_IO_Compression_Native, 9},
+    {"libSystem.Native", s_libSystem_Native, 94},
     {"libSystem.Native.Browser", s_libSystem_Native_Browser, 1},
     {"libSystem.Runtime.InteropServices.JavaScript.Native", s_libSystem_Runtime_InteropServices_JavaScript_Native, 6}
 };

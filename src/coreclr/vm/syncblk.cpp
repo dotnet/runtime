@@ -524,8 +524,8 @@ void    SyncBlockCache::InsertCleanupSyncBlock(SyncBlock* psb)
     // we don't need to lock here
     //EnterCacheLock();
 
-    psb->m_Link.m_pNext = m_pCleanupBlockList;
-    m_pCleanupBlockList = &psb->m_Link;
+    psb->m_pNext = m_pCleanupBlockList;
+    m_pCleanupBlockList = psb;
 
     // we don't need a lock here
     //LeaveCacheLock();
@@ -542,7 +542,7 @@ SyncBlock* SyncBlockCache::GetNextCleanupSyncBlock()
     if (m_pCleanupBlockList)
     {
         // get the actual sync block pointer
-        psb = (SyncBlock *) (((BYTE *) m_pCleanupBlockList) - offsetof(SyncBlock, m_Link));
+        psb = m_pCleanupBlockList;
         m_pCleanupBlockList = m_pCleanupBlockList->m_pNext;
     }
     return psb;
@@ -567,7 +567,7 @@ SyncBlock *SyncBlockCache::GetNextFreeSyncBlock()
 #endif
 
     SyncBlock       *psb;
-    SLink           *plst = m_FreeBlockList;
+    SyncBlock       *plst = m_FreeBlockList;
 
     m_ActiveCount++;
 
@@ -579,7 +579,7 @@ SyncBlock *SyncBlockCache::GetNextFreeSyncBlock()
         m_FreeCount--;
 
         // get the actual sync block pointer
-        psb = (SyncBlock *) (((BYTE *) plst) - offsetof(SyncBlock, m_Link));
+        psb = plst;
 
         return psb;
     }
@@ -823,8 +823,8 @@ void    SyncBlockCache::DeleteSyncBlockMemory(SyncBlock *psb)
     m_ActiveCount--;
     m_FreeCount++;
 
-    psb->m_Link.m_pNext = m_FreeBlockList;
-    m_FreeBlockList = &psb->m_Link;
+    psb->m_pNext = m_FreeBlockList;
+    m_FreeBlockList = psb;
 
 }
 
@@ -847,8 +847,8 @@ void SyncBlockCache::GCDeleteSyncBlock(SyncBlock *psb)
     m_ActiveCount--;
     m_FreeCount++;
 
-    psb->m_Link.m_pNext = m_FreeBlockList;
-    m_FreeBlockList = &psb->m_Link;
+    psb->m_pNext = m_FreeBlockList;
+    m_FreeBlockList = psb;
 }
 
 void SyncBlockCache::GCWeakPtrScan(HANDLESCANPROC scanProc, uintptr_t lp1, uintptr_t lp2)
@@ -1735,12 +1735,12 @@ OBJECTHANDLE SyncBlock::GetOrCreateLock(OBJECTREF lockObj)
 
     // We'll likely need to put this lock object into the sync block.
     // Create the handle here.
-    OBJECTHANDLEHolder lockHandle = GetAppDomain()->CreateHandle(lockObj);
+    OBJECTHANDLEHolder lockHandle(GetAppDomain()->CreateHandle(lockObj));
 
-    if (TryUpgradeThinLockToFullLock(lockHandle.GetValue()))
+    if (TryUpgradeThinLockToFullLock(lockHandle))
     {
         // Our lock instance is the one in the sync block now.
-        return lockHandle.Extract();
+        return lockHandle.Detach();
     }
 
     return VolatileLoad(&m_Lock);
@@ -1782,16 +1782,15 @@ bool SyncBlock::TryUpgradeThinLockToFullLock(OBJECTHANDLE lockHandle)
         DWORD lockThreadId = thinLock & SBLK_MASK_LOCK_THREADID;
         DWORD recursionLevel = (thinLock & SBLK_MASK_LOCK_RECLEVEL) >> SBLK_RECLEVEL_SHIFT;
         _ASSERTE(lockThreadId != 0);
-        PREPARE_NONVIRTUAL_CALLSITE(METHOD__LOCK__INITIALIZE_FOR_MONITOR);
 
         // We have thin-lock info that needs to be transferred to the lock object.
         OBJECTREF lockObj = ObjectFromHandle(lockHandle);
+        GCPROTECT_BEGIN(lockObj);
 
-        DECLARE_ARGHOLDER_ARRAY(args, 3);
-        args[ARGNUM_0] = OBJECTREF_TO_ARGHOLDER(lockObj);
-        args[ARGNUM_1] = DWORD_TO_ARGHOLDER(lockThreadId);
-        args[ARGNUM_2] = DWORD_TO_ARGHOLDER(recursionLevel);
-        CALL_MANAGED_METHOD_NORET(args);
+        UnmanagedCallersOnlyCaller initializeForMonitor(METHOD__LOCK__INITIALIZE_FOR_MONITOR);
+        initializeForMonitor.InvokeThrowing(&lockObj, (int32_t)lockThreadId, (uint32_t)recursionLevel);
+
+        GCPROTECT_END();
     }
 
     VolatileStore(&m_Lock, lockHandle);

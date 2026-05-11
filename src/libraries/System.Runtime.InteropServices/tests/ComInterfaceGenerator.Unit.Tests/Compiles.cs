@@ -350,6 +350,7 @@ namespace ComInterfaceGenerator.Unit.Tests
             yield return new object[] { ID(), codeSnippets.ForwarderWithPreserveSigAndRefKind("in") };
             yield return new object[] { ID(), codeSnippets.ForwarderWithPreserveSigAndRefKind("out") };
             yield return new object[] { ID(), codeSnippets.ComInterfaceWithNativeMarshalling };
+            yield return new object[] { ID(), codeSnippets.DerivedComInterfaceTypeWithUnsafeBaseMethod };
         }
 
         public static IEnumerable<object[]> ManagedToUnmanagedComInterfaceSnippetsToCompile()
@@ -371,6 +372,29 @@ namespace ComInterfaceGenerator.Unit.Tests
         public async Task ValidateComInterfaceSnippets(string id, string source)
         {
             _ = id;
+
+            await VerifyComInterfaceGenerator.VerifySourceGeneratorAsync(source);
+        }
+
+        [Fact]
+        public async Task PartialMethodModifierOnComInterfaceMethodCompiles()
+        {
+            string source = """
+                using System.Runtime.InteropServices;
+                using System.Runtime.InteropServices.Marshalling;
+
+                [GeneratedComInterface]
+                [Guid("9D3FD745-3C90-4C10-B140-FAFB01E3541D")]
+                internal partial interface IComInterface
+                {
+                    void Method();
+                    public virtual partial void PartialMethod();
+                }
+                internal partial interface IComInterface
+                {
+                    public virtual partial void PartialMethod() { }
+                }
+                """;
 
             await VerifyComInterfaceGenerator.VerifySourceGeneratorAsync(source);
         }

@@ -17,6 +17,7 @@ namespace System
     {
         private readonly string? _fileName;  // The name of the corrupt PE file.
         private readonly string? _fusionLog;  // fusion log (when applicable)
+        private readonly string? _requestingAssemblyChain;
 
         public BadImageFormatException()
             : base(SR.Arg_BadImageFormatException)
@@ -56,6 +57,7 @@ namespace System
         {
             _fileName = info.GetString("BadImageFormat_FileName");
             _fusionLog = info.GetString("BadImageFormat_FusionLog");
+            _requestingAssemblyChain = (string?)info.GetValueNoThrow("BadImageFormat_RequestingAssemblyChain", typeof(string));
         }
 
         [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
@@ -65,6 +67,7 @@ namespace System
             base.GetObjectData(info, context);
             info.AddValue("BadImageFormat_FileName", _fileName, typeof(string));
             info.AddValue("BadImageFormat_FusionLog", _fusionLog, typeof(string));
+            info.AddValue("BadImageFormat_RequestingAssemblyChain", _requestingAssemblyChain, typeof(string));
         }
 
         public override string Message
@@ -96,6 +99,9 @@ namespace System
 
             if (!string.IsNullOrEmpty(_fileName))
                 s += Environment.NewLineConst + SR.Format(SR.IO_FileName_Name, _fileName);
+
+            if (!string.IsNullOrEmpty(_requestingAssemblyChain))
+                s += Environment.NewLineConst + SR.Format(SR.IO_FileLoad_RequestedBy, _requestingAssemblyChain.ReplaceLineEndings());
 
             if (InnerException != null)
                 s += InnerExceptionPrefix + InnerException.ToString();

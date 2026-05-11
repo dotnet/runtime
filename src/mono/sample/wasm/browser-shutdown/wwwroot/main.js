@@ -3,13 +3,12 @@
 
 import { dotnet, exit } from './_framework/dotnet.js'
 
-let exports = undefined,
-    setenv = undefined;
+let exports = undefined;
 
 window.addEventListener("load", onLoad);
 
 try {
-    const { setModuleImports, getAssemblyExports, setEnvironmentVariable, getConfig } = await dotnet
+    const { setModuleImports, getAssemblyExports, getConfig } = await dotnet
         .withModuleConfig()
         .withConfig({ appendElementOnExit: true, exitOnUnhandledError: true, logExitCode: true })
         .withModuleConfig({
@@ -29,7 +28,6 @@ try {
         },
     });
 
-    setenv = setEnvironmentVariable;
     const config = getConfig();
     exports = await getAssemblyExports(config.mainAssemblyName);
 }
@@ -57,14 +55,6 @@ function onLoad() {
     document.querySelector("#start-timer").addEventListener("click", () => {
         try {
             exports.Sample.Test.StartTimer();
-        } catch (exc) {
-            alert(exc);
-        }
-    });
-    document.querySelector("#trigger-native-assert").addEventListener("click", () => {
-        try {
-            setenv(null, null);
-            alert("No JS exception was thrown!");
         } catch (exc) {
             alert(exc);
         }

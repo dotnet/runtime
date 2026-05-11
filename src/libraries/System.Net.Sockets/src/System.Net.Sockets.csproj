@@ -78,6 +78,10 @@
              Link="Common\System\Net\TcpValidationHelpers.cs" />
     <Compile Include="$(CommonPath)System\Net\SocketAddressExtensions.cs"
              Link="Common\System\Net\SocketAddressExtensions.cs" />
+    <Compile Include="$(CommonPath)System\LocalAppContextSwitches.Common.cs"
+             Link="Common\System\LocalAppContextSwitches.Common.cs" />
+    <Compile Include="$(CommonPath)System\Net\LocalAppContextSwitches.Net.cs"
+             Link="Common\System\Net\LocalAppContextSwitches.Net.cs" />
     <Compile Include="$(CommonPath)System\Net\SocketProtocolSupportPal.cs"
              Link="Common\System\Net\SocketProtocolSupportPal.cs" />
     <Compile Include="$(CommonPath)System\Net\Sockets\SocketExceptionFactory.cs"

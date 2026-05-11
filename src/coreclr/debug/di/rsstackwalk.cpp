@@ -602,6 +602,11 @@ HRESULT CordbStackWalk::GetFrameWorker(ICorDebugFrame ** ppFrame)
         STRESS_LOG1(LF_CORDB, LL_INFO1000, "CSW::GFW - managed exception handling code frame (%p)", this);
         return S_FALSE;
     }
+    else if (ft == IDacDbiInterface::kRuntimeEntryPointFrame)
+    {
+        STRESS_LOG1(LF_CORDB, LL_INFO1000, "CSW::GFW - runtime entry point frame (%p)", this);
+        return S_FALSE;
+    }
     else if (ft == IDacDbiInterface::kExplicitFrame)
     {
         STRESS_LOG1(LF_CORDB, LL_INFO1000, "CSW::GFW - explicit frame (%p)", this);
@@ -637,11 +642,11 @@ HRESULT CordbStackWalk::GetFrameWorker(ICorDebugFrame ** ppFrame)
 
         // Lookup the appdomain that the thread was in when it was executing code for this frame. We pass this
         // to the frame when we create it so we can properly resolve locals in that frame later.
-        CordbAppDomain * pCurrentAppDomain = GetProcess()->LookupOrCreateAppDomain(frameData.vmCurrentAppDomainToken);
+        CordbAppDomain * pCurrentAppDomain = GetProcess()->GetAppDomain();
         _ASSERTE(pCurrentAppDomain != NULL);
 
         // Lookup the module
-        CordbModule* pModule = pCurrentAppDomain->LookupOrCreateModule(pFuncData->vmDomainAssembly);
+        CordbModule* pModule = pCurrentAppDomain->LookupOrCreateModule(pFuncData->vmAssembly);
         _ASSERTE(pModule != NULL);
 
         // Create or look up a CordbNativeCode.  There is one for each jitted instance of a method,
@@ -814,8 +819,7 @@ HRESULT CordbStackWalk::GetFrameWorker(ICorDebugFrame ** ppFrame)
 
         // Lookup the appdomain that the thread was in when it was executing code for this frame. We pass this
         // to the frame when we create it so we can properly resolve locals in that frame later.
-        CordbAppDomain * pCurrentAppDomain =
-            GetProcess()->LookupOrCreateAppDomain(frameData.vmCurrentAppDomainToken);
+        CordbAppDomain * pCurrentAppDomain = GetProcess()->GetAppDomain();
         _ASSERTE(pCurrentAppDomain != NULL);
 
         CordbRuntimeUnwindableFrame * pRuntimeFrame = new CordbRuntimeUnwindableFrame(m_pCordbThread,

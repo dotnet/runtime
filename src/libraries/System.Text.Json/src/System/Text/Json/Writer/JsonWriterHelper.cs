@@ -78,7 +78,7 @@ namespace System.Text.Json
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void ValidateDouble(double value)
         {
-            if (!JsonHelpers.IsFinite(value))
+            if (!double.IsFinite(value))
             {
                 ThrowHelper.ThrowArgumentException_ValueNotSupported();
             }
@@ -87,7 +87,7 @@ namespace System.Text.Json
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void ValidateSingle(float value)
         {
-            if (!JsonHelpers.IsFinite(value))
+            if (!float.IsFinite(value))
             {
                 ThrowHelper.ThrowArgumentException_ValueNotSupported();
             }
@@ -302,7 +302,7 @@ namespace System.Text.Json
 
         internal delegate T WriteCallback<T>(ReadOnlySpan<byte> serializedValue);
 
-        internal static T WriteString<T>(ReadOnlySpan<byte> utf8Value, WriteCallback<T> writeCallback)
+        internal static unsafe T WriteString<T>(ReadOnlySpan<byte> utf8Value, WriteCallback<T> writeCallback)
         {
             int firstByteToEscape = JsonWriterHelper.NeedsEscaping(utf8Value, JavaScriptEncoder.Default);
 

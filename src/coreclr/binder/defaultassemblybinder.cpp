@@ -13,7 +13,8 @@ using namespace BINDER_SPACE;
 
 HRESULT DefaultAssemblyBinder::BindAssemblyByNameWorker(BINDER_SPACE::AssemblyName *pAssemblyName,
                                                        BINDER_SPACE::Assembly **ppCoreCLRFoundAssembly,
-                                                       bool excludeAppPaths)
+                                                       bool excludeAppPaths,
+                                                       BINDER_SPACE::Assembly **ppExistingAssemblyOnFailure)
 {
     VALIDATE_ARG_RET(pAssemblyName != nullptr && ppCoreCLRFoundAssembly != nullptr);
     HRESULT hr = S_OK;
@@ -26,10 +27,16 @@ HRESULT DefaultAssemblyBinder::BindAssemblyByNameWorker(BINDER_SPACE::AssemblyNa
     hr = AssemblyBinderCommon::BindAssembly(this,
                                             pAssemblyName,
                                             excludeAppPaths,
-                                            ppCoreCLRFoundAssembly);
+                                            ppCoreCLRFoundAssembly,
+                                            ppExistingAssemblyOnFailure);
     if (!FAILED(hr))
     {
         (*ppCoreCLRFoundAssembly)->SetBinder(this);
+    }
+    else if (hr == FUSION_E_APP_DOMAIN_LOCKED)
+    {
+        // The default binder returns FUSION_E_REF_DEF_MISMATCH for incompatible version
+        hr = FUSION_E_REF_DEF_MISMATCH;
     }
 
     return hr;
@@ -73,9 +80,8 @@ HRESULT DefaultAssemblyBinder::BindUsingAssemblyName(BINDER_SPACE::AssemblyName 
             {
                 // Make sure the managed default ALC is initialized.
                 GCX_COOP();
-                PREPARE_NONVIRTUAL_CALLSITE(METHOD__ASSEMBLYLOADCONTEXT__INITIALIZE_DEFAULT_CONTEXT);
-                DECLARE_ARGHOLDER_ARRAY(args, 0);
-                CALL_MANAGED_METHOD_NORET(args)
+                UnmanagedCallersOnlyCaller initializeDefaultContext(METHOD__ASSEMBLYLOADCONTEXT__INITIALIZE_DEFAULT_CONTEXT);
+                initializeDefaultContext.InvokeThrowing();
 
                 pAssemblyLoadContext = GetAssemblyLoadContext();
                 _ASSERTE(pAssemblyLoadContext != (INT_PTR)NULL);
@@ -112,7 +118,8 @@ Exit:;
 #if !defined(DACCESS_COMPILE)
 HRESULT DefaultAssemblyBinder::BindUsingPEImage( /* in */ PEImage *pPEImage,
                                                  /* in */ bool excludeAppPaths,
-                                                 /* [retval][out] */ BINDER_SPACE::Assembly **ppAssembly)
+                                                 /* [retval][out] */ BINDER_SPACE::Assembly **ppAssembly,
+                                                 /* [out, optional] */ BINDER_SPACE::Assembly **ppExistingAssemblyOnConflict)
 {
     HRESULT hr = S_OK;
 
@@ -146,7 +153,8 @@ HRESULT DefaultAssemblyBinder::BindUsingPEImage( /* in */ PEImage *pPEImage,
             {
                 // The simple name of the assembly being requested to be bound was found in the TPA list.
                 // Now, perform the actual bind to see if the assembly was really in the TPA assembly list or not.
-                hr = BindAssemblyByNameWorker(pAssemblyName, &pCoreCLRFoundAssembly, true /* excludeAppPaths */);
+                ReleaseHolder<BINDER_SPACE::Assembly> pExistingAssembly;
+                hr = BindAssemblyByNameWorker(pAssemblyName, &pCoreCLRFoundAssembly, true /* excludeAppPaths */, &pExistingAssembly);
                 if (SUCCEEDED(hr))
                 {
                     if (pCoreCLRFoundAssembly->GetIsInTPA())
@@ -155,10 +163,20 @@ HRESULT DefaultAssemblyBinder::BindUsingPEImage( /* in */ PEImage *pPEImage,
                         goto Exit;
                     }
                 }
+                else if (hr == FUSION_E_REF_DEF_MISMATCH && pExistingAssembly != nullptr)
+                {
+                    // The assembly was found but the version is incompatible.
+                    // Return the existing assembly so the caller can provide an informative error message.
+                    if (ppExistingAssemblyOnConflict != nullptr)
+                    {
+                        *ppExistingAssemblyOnConflict = pExistingAssembly.Extract();
+                    }
+                    goto Exit;
+                }
             }
         }
 
-        hr = AssemblyBinderCommon::BindUsingPEImage(this, pAssemblyName, pPEImage, excludeAppPaths, &pCoreCLRFoundAssembly);
+        hr = AssemblyBinderCommon::BindUsingPEImage(this, pAssemblyName, pPEImage, excludeAppPaths, &pCoreCLRFoundAssembly, ppExistingAssemblyOnConflict);
         if (hr == S_OK)
         {
             _ASSERTE(pCoreCLRFoundAssembly != NULL);

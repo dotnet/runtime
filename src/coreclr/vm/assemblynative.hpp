@@ -24,17 +24,15 @@ public:
     static Assembly* LoadFromPEImage(AssemblyBinder* pBinder, PEImage *pImage, bool excludeAppPaths = false);
 
     // static FCALLs
-    static FCDECL0(FC_BOOL_RET, IsTracingEnabled);
+    FCDECL0(static FC_BOOL_RET, IsTracingEnabled);
 
     //
     // instance FCALLs
     //
 
-    static
-    FCDECL1(FC_BOOL_RET, GetIsDynamic, Assembly* pAssembly);
+    FCDECL1(static FC_BOOL_RET, GetIsDynamic, Assembly* pAssembly);
 
-    static
-    FCDECL1(FC_BOOL_RET, GetIsCollectible, Assembly* pAssembly);
+    FCDECL1(static FC_BOOL_RET, GetIsCollectible, Assembly* pAssembly);
 };
 
 extern "C" uint32_t QCALLTYPE AssemblyNative_GetAssemblyCount();
@@ -149,6 +147,7 @@ extern "C" void QCALLTYPE AssemblyName_InitializeAssemblySpec(NativeAssemblyName
 struct CallbackContext final
 {
     OBJECTREF _currAssembly;
+    OBJECTREF _groupType;
     OBJECTREF _externalTypeMap;
     OBJECTREF _proxyTypeMap;
     OBJECTREF _creationException;
@@ -168,6 +167,20 @@ extern "C" void QCALLTYPE TypeMapLazyDictionary_ProcessAttributes(
     QCall::TypeHandle pTypeGroup,
     BOOL (*newExternalTypeEntry)(CallbackContext* context, ProcessAttributesCallbackArg* arg),
     BOOL (*newProxyTypeEntry)(CallbackContext* context, ProcessAttributesCallbackArg* arg),
+    BOOL (*newPrecachedExternalTypeMap)(CallbackContext* context),
+    BOOL (*newPrecachedProxyTypeMap)(CallbackContext* context),
     CallbackContext* context);
+
+extern "C" TADDR QCALLTYPE TypeMapLazyDictionary_FindPrecachedExternalTypeMapEntry(
+    QCall::ModuleHandle pModule,
+    QCall::TypeHandle pGroupType,
+    LPCUTF8 key
+);
+
+extern "C" TADDR QCALLTYPE TypeMapLazyDictionary_FindPrecachedProxyTypeMapEntry(
+    QCall::ModuleHandle pModule,
+    QCall::TypeHandle pGroupType,
+    QCall::TypeHandle pType
+);
 
 #endif

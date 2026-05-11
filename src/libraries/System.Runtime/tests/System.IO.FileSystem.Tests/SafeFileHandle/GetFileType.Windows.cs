@@ -12,20 +12,29 @@ namespace System.IO.Tests
     [PlatformSpecific(TestPlatforms.Windows)]
     public class SafeFileHandle_GetFileType_Windows : FileSystemTest
     {
-        [Fact]
-        public unsafe void GetFileType_Directory()
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public unsafe void GetFileType_Directory(bool usePublicAPI)
         {
             string path = GetTestFilePath();
             Directory.CreateDirectory(path);
 
-            using SafeFileHandle handle = Interop.Kernel32.CreateFile(
-                path,
-                Interop.Kernel32.GenericOperations.GENERIC_READ,
-                FileShare.ReadWrite,
-                null,
-                FileMode.Open,
-                Interop.Kernel32.FileOperations.FILE_FLAG_BACKUP_SEMANTICS,
-                IntPtr.Zero);
+            using SafeFileHandle handle = usePublicAPI
+                ? File.OpenHandle(
+                    path,
+                    FileMode.Open,
+                    FileAccess.Read,
+                    FileShare.ReadWrite,
+                    (FileOptions)Interop.Kernel32.FileOperations.FILE_FLAG_BACKUP_SEMANTICS)
+                : Interop.Kernel32.CreateFile(
+                    path,
+                    Interop.Kernel32.GenericOperations.GENERIC_READ,
+                    FileShare.ReadWrite,
+                    null,
+                    FileMode.Open,
+                    Interop.Kernel32.FileOperations.FILE_FLAG_BACKUP_SEMANTICS,
+                    IntPtr.Zero);
 
             Assert.False(handle.IsInvalid);
             Assert.Equal(FileHandleType.Directory, handle.Type);

@@ -21,6 +21,7 @@ namespace b08046cs;
 using System;
 using System.Runtime.CompilerServices;
 using System.Threading;
+using TestLibrary;
 using Xunit;
 
 class ExternalClass
@@ -42,7 +43,7 @@ public class ExternalException : Exception
     public static int Ignored { get; set; }
 
     [OuterLoop]
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public static int TestEntryPoint()
     {
         ExitCode = 100;

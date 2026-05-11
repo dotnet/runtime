@@ -900,9 +900,8 @@ namespace System
             {
                 ReadOnlySpan<char> charSpan = Unsafe.BitCast<ReadOnlySpan<TChar>, ReadOnlySpan<char>>(str);
                 // Find the first whitespace character. If there is none, just return the input.
-                int i;
-                for (i = 0; i < charSpan.Length && !char.IsWhiteSpace(charSpan[i]); i++) ;
-                if (i == charSpan.Length)
+                int i = charSpan.IndexOfAnyWhiteSpace();
+                if (i < 0)
                 {
                     return str;
                 }

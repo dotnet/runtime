@@ -1163,6 +1163,15 @@ typedef IMAGE_BASE_RELOCATION UNALIGNED * PIMAGE_BASE_RELOCATION;
 #define IMAGE_REL_BASED_ARM_MOV32             5
 #define IMAGE_REL_BASED_THUMB_MOV32           7
 
+#ifdef FEATURE_WEBCIL
+//
+// Webcil-specific based relocation types.
+// The fixup adds a WASM table base offset to the value at the relocation address.
+//
+#define IMAGE_REL_BASED_WASM32_TABLE          12
+#define IMAGE_REL_BASED_WASM64_TABLE          13
+#endif // FEATURE_WEBCIL
+
 //
 // Archive format.
 //

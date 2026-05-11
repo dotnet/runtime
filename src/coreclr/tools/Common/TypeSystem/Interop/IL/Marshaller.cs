@@ -1114,9 +1114,30 @@ namespace Internal.TypeSystem.Interop
 
             codeStream.Emit(ILOpcode.mul_ovf);
 
-            codeStream.Emit(ILOpcode.call, emitter.NewToken(
-                InteropTypes.GetMarshal(Context).GetKnownMethod("AllocCoTaskMem"u8, null)));
-            StoreNativeValue(codeStream);
+            if (!In)
+            {
+                // For out only parameters, zero initialize the native buffer.
+                // The native callee may attempt to free the pointers in each slot
+                // before writing new values. Uninitialized garbage pointers would cause heap corruption.
+                var vAllocSize = emitter.NewLocal(Context.GetWellKnownType(WellKnownType.Int32));
+                codeStream.Emit(ILOpcode.dup);
+                codeStream.EmitStLoc(vAllocSize);
+
+                codeStream.Emit(ILOpcode.call, emitter.NewToken(
+                    InteropTypes.GetMarshal(Context).GetKnownMethod("AllocCoTaskMem"u8, null)));
+                codeStream.Emit(ILOpcode.dup);
+                StoreNativeValue(codeStream);
+                // Zero initialize: initblk(nativeBuffer, 0, allocSize)
+                codeStream.EmitLdc(0);
+                codeStream.EmitLdLoc(vAllocSize);
+                codeStream.Emit(ILOpcode.initblk);
+            }
+            else
+            {
+                codeStream.Emit(ILOpcode.call, emitter.NewToken(
+                    InteropTypes.GetMarshal(Context).GetKnownMethod("AllocCoTaskMem"u8, null)));
+                StoreNativeValue(codeStream);
+            }
 
             codeStream.EmitLabel(lNullArray);
         }

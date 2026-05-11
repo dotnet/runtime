@@ -640,6 +640,9 @@ void
 mono_runtime_posix_install_handlers (void);
 
 void
+mono_runtime_posix_restore_handler (int signo);
+
+void
 mono_gdb_render_native_backtraces (pid_t crashed_pid);
 
 void

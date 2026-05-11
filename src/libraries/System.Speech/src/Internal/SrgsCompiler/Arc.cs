@@ -40,25 +40,25 @@ namespace System.Speech.Internal.SrgsCompiler
 #endif
         }
 
-        internal Arc(Arc arc, State start, State end)
+        internal Arc(Arc arc, State? start, State? end)
             : this(arc)
         {
             _start = start;
             _end = end;
         }
 
-        internal Arc(Arc arc, State start, State end, int wordId)
+        internal Arc(Arc arc, State? start, State? end, int wordId)
             : this(arc, start, end)
         {
             _iWord = wordId;
         }
 
-        internal Arc(string sWord, Rule ruleRef, StringBlob words, float flWeight, int confidence, Rule specialRule, MatchMode matchMode, ref bool fNeedWeightTable)
+        internal Arc(string? sWord, Rule? ruleRef, StringBlob words, float flWeight, int confidence, Rule? specialRule, MatchMode matchMode, ref bool fNeedWeightTable)
             : this(sWord, ruleRef, words, flWeight, confidence, specialRule, s_serializeToken++, matchMode, ref fNeedWeightTable)
         {
         }
 
-        private Arc(string sWord, Rule ruleRef, StringBlob words, float flWeight, int confidence, Rule specialRule, uint iSerialize, MatchMode matchMode, ref bool fNeedWeightTable)
+        private Arc(string? sWord, Rule? ruleRef, StringBlob words, float flWeight, int confidence, Rule? specialRule, uint iSerialize, MatchMode matchMode, ref bool fNeedWeightTable)
             : this(0, flWeight, confidence, 0, matchMode, ref fNeedWeightTable)
         {
             _ruleRef = ruleRef;
@@ -100,17 +100,17 @@ namespace System.Speech.Internal.SrgsCompiler
 
         #region IComparable<Arc> Interface implementation
 
-        public int CompareTo(Arc obj1)
+        public int CompareTo(Arc? obj1)
         {
             return Compare(this, obj1);
         }
 
-        int IComparer<Arc>.Compare(Arc obj1, Arc obj2)
+        int IComparer<Arc>.Compare(Arc? obj1, Arc? obj2)
         {
             return Compare(obj1, obj2);
         }
 
-        private int Compare(Arc obj1, Arc obj2)
+        private int Compare(Arc? obj1, Arc? obj2)
         {
             if (obj1 == obj2)
                 return 0;
@@ -153,7 +153,7 @@ namespace System.Speech.Internal.SrgsCompiler
                         }
                         else
                         {
-                            diff = string.Compare(arc1._ruleRef.Name, arc2._ruleRef.Name, StringComparison.CurrentCulture);
+                            diff = string.Compare(arc1._ruleRef!.Name, arc2._ruleRef!.Name, StringComparison.CurrentCulture);
                         }
                     }
 
@@ -240,6 +240,7 @@ namespace System.Speech.Internal.SrgsCompiler
 
         internal void SetArcIndexForTag(int iArc, uint iArcOffset, bool tagsCannotSpanOverMultipleArcs)
         {
+            System.Diagnostics.Debug.Assert(_startTags != null, "Should not call this method if there are no tags associated");
             _startTags[iArc]._cfgTag.StartArcIndex = iArcOffset;
             _startTags[iArc]._cfgTag.ArcIndex = iArcOffset;
             if (tagsCannotSpanOverMultipleArcs)
@@ -393,7 +394,7 @@ namespace System.Speech.Internal.SrgsCompiler
             src._startTags = src._endTags = null;
         }
 
-        internal void CloneTags(Arc arc, List<Tag> _tags, Dictionary<Tag, Tag> endArcs, Backend be)
+        internal void CloneTags(Arc arc, List<Tag> _tags, Dictionary<Tag, Tag> endArcs, Backend? be)
         {
             if (arc._startTags != null)
             {
@@ -410,7 +411,7 @@ namespace System.Speech.Internal.SrgsCompiler
                     if (be != null)
                     {
                         int idTagName;
-                        newTag._cfgTag._nameOffset = be.Symbols.Add(tag._be.Symbols.FromOffset(tag._cfgTag._nameOffset), out idTagName);
+                        newTag._cfgTag._nameOffset = be.Symbols.Add(tag._be!.Symbols.FromOffset(tag._cfgTag._nameOffset), out idTagName);
 #pragma warning disable 0618 // VarEnum is obsolete
                         if (tag._cfgTag._valueOffset != 0 && tag._cfgTag.PropVariantType == System.Runtime.InteropServices.VarEnum.VT_EMPTY)
                         {
@@ -547,9 +548,9 @@ namespace System.Speech.Internal.SrgsCompiler
                 bool same = _startTags != null && _endTags != null && _endTags.Count == _startTags.Count;
 
                 // Compare each tag if not null
-                for (int i = 0; same && i < _endTags.Count; i++)
+                for (int i = 0; same && i < _endTags!.Count; i++)
                 {
-                    same &= _startTags[i] == _endTags[i];
+                    same &= _startTags![i] == _endTags[i];
                 }
 
                 sb.Append(" (");
@@ -610,7 +611,7 @@ namespace System.Speech.Internal.SrgsCompiler
             }
         }
 
-        internal State Start
+        internal State? Start
         {
             get
             {
@@ -627,7 +628,7 @@ namespace System.Speech.Internal.SrgsCompiler
             }
         }
 
-        internal State End
+        internal State? End
         {
             get
             {
@@ -653,7 +654,7 @@ namespace System.Speech.Internal.SrgsCompiler
             }
         }
 
-        internal Rule RuleRef
+        internal Rule? RuleRef
         {
             get
             {
@@ -718,8 +719,8 @@ namespace System.Speech.Internal.SrgsCompiler
         private string GetSemanticTag(Tag tag)
         {
             StringBuilder sb = new();
-            string value;
-            string tagName = GetSemanticValue(tag._cfgTag, _be.Symbols, out value);
+            string? value;
+            string? tagName = GetSemanticValue(tag._cfgTag, _be!.Symbols, out value);
             if (tagName != "SemanticKey")
             {
                 if (tagName != "=")
@@ -738,7 +739,7 @@ namespace System.Speech.Internal.SrgsCompiler
             return sb.ToString();
         }
 
-        private static string GetSemanticValue(CfgSemanticTag tag, StringBlob symbols, out string value)
+        private static string? GetSemanticValue(CfgSemanticTag tag, StringBlob symbols, out string? value)
         {
 #pragma warning disable 0618 // VarEnum is obsolete
             switch (tag.PropVariantType)
@@ -793,16 +794,16 @@ namespace System.Speech.Internal.SrgsCompiler
         #region Private Fields
 
         // Transition start state
-        private State _start;
+        private State? _start;
 
         // Transition end state (or NULL for final state)
-        private State _end;
+        private State? _end;
 
         // Either word index or pRule but not both
         private int _iWord;
 
         // Rule ref
-        private Rule _ruleRef;
+        private Rule? _ruleRef;
 
         // If != 0 then transition to dictation, text buffer, or wildcard
         private int _specialTransitionIndex;
@@ -819,15 +820,15 @@ namespace System.Speech.Internal.SrgsCompiler
         private uint _iSerialize;
 
         // If non-null then has semantic tag associated with this
-        private Collection<Tag> _startTags;
-        private Collection<Tag> _endTags;
+        private Collection<Tag>? _startTags;
+        private Collection<Tag>? _endTags;
 
         private static uint s_serializeToken = 1;
 
 #if DEBUG
         // This is where the TransitionId comes from in engine interfaces.
         private bool _fCheckingForExitPath;
-        private Backend _be;
+        private Backend? _be;
 #endif
 
         #endregion

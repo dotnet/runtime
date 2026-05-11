@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
@@ -10,7 +10,7 @@ using System.Runtime.InteropServices;
 namespace System.Text.Unicode
 {
     /// <summary>
-    /// Provides static methods that convert chunked data between UTF-8 and UTF-16 encodings.
+    /// Provides static methods that convert chunked data between UTF-8 and UTF-16 encodings, and methods that validate UTF-8 sequences.
     /// </summary>
     public static class Utf8
     {
@@ -679,7 +679,7 @@ namespace System.Text.Unicode
             /// <param name="value">The value to write. It must be an ISpanFormattable but isn't constrained because the caller doesn't have a constraint.</param>
             /// <param name="format">The format string.</param>
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            private bool AppendSpanFormattable<T>(T value, string? format)
+            private unsafe bool AppendSpanFormattable<T>(T value, string? format)
             {
                 Debug.Assert(value is ISpanFormattable);
 
@@ -726,7 +726,7 @@ namespace System.Text.Unicode
             /// <param name="value">The value to write. It must be an enum but isn't constrained because the caller doesn't have a constraint.</param>
             /// <param name="format">The format string.</param>
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            private bool AppendEnum<T>(T value, string? format)
+            private unsafe bool AppendEnum<T>(T value, string? format)
             {
                 Debug.Assert(typeof(T).IsEnum);
 
@@ -816,6 +816,14 @@ namespace System.Text.Unicode
                 return false;
             }
         }
+
+        /// <summary>
+        /// Finds the index of the first invalid UTF-8 subsequence.
+        /// </summary>
+        /// <param name="value">The <see cref="ReadOnlySpan{T}"/> containing the UTF-8 input text to examine.</param>
+        /// <returns>The index of the first invalid UTF-8 subsequence, or <c>-1</c> if the entire input is valid.</returns>
+        public static int IndexOfInvalidSubsequence(ReadOnlySpan<byte> value) =>
+            Utf8Utility.GetIndexOfFirstInvalidUtf8Sequence(value, out _);
 #endif
 
         /// <summary>

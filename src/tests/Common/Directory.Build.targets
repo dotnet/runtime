@@ -28,15 +28,12 @@
     <KnownFrameworkReference Remove="Microsoft.WindowsDesktop.App" />
   </ItemGroup>
 
-  <ItemDefinitionGroup>
-    <RunTimeArtifactsIncludeFolders>
-      <IncludeSubFolders>false</IncludeSubFolders>
-    </RunTimeArtifactsIncludeFolders>
-  </ItemDefinitionGroup>
+  <Import Project="$(MSBuildThisFileDirectory)CoreRootArtifacts.targets" />
 
   <Target Name="CopyDependencyToCoreRoot"
-    DependsOnTargets="ResolveAssemblyReferences;ResolveRuntimeFilesFromLocalBuild">
+    DependsOnTargets="_ComputeCoreRootArtifactSources;ResolveAssemblyReferences;ResolveRuntimeFilesFromLocalBuild">
 
+    <!-- NuGet-resolved items (libraries runtime files, targeting pack, xunit) -->
     <ItemGroup>
       <RunTimeDependencyCopyLocal Include="@(RuntimeCopyLocalItems)" />
       <RunTimeDependencyCopyLocal Include="@(NativeCopyLocalItems)" />
@@ -44,118 +41,9 @@
       <RunTimeDependencyCopyLocal Include="$(TargetingPackPath)/xunit.*" TargetDir="xunit/" />
     </ItemGroup>
 
+    <!-- CoreCLR artifacts from shared target -->
     <ItemGroup>
-      <RunTimeArtifactsExcludeFiles Include="PDB/createdump.pdb" />
-      <RunTimeArtifactsExcludeFiles Include="PDB/linuxonjit.pdb" />
-      <RunTimeArtifactsExcludeFiles Include="PDB/mcs.pdb" />
-      <RunTimeArtifactsExcludeFiles Include="PDB/mscordaccore.pdb" />
-      <RunTimeArtifactsExcludeFiles Include="PDB/mscordbi.pdb" />
-      <RunTimeArtifactsExcludeFiles Include="PDB/clrjit_*.pdb" />
-      <RunTimeArtifactsExcludeFiles Include="PDB/superpmi.pdb" />
-      <RunTimeArtifactsExcludeFiles Include="PDB/superpmi-shim-collector.pdb" />
-      <RunTimeArtifactsExcludeFiles Include="PDB/superpmi-shim-counter.pdb" />
-      <RunTimeArtifactsExcludeFiles Include="PDB/superpmi-shim-simple.pdb" />
-    </ItemGroup>
-
-    <!-- A sanitized DAC and DBI can't be loaded into a debugger process, so copy the non-sanitized versions instead -->
-    <ItemGroup Condition="'$(EnableNativeSanitizers)' != ''">
-      <SanitizedDiagnosticTools Include="$(CoreCLRArtifactsPath)/*mscordaccore*" />
-      <SanitizedDiagnosticTools Include="$(LibPrefix)mscordbi$(LibSuffix)" />
-      <SanitizedDiagnosticTools Include="$(LibPrefix)dbgshim$(LibSuffix)" />
-      <RunTimeArtifactsExcludeFiles Include="@(SanitizedDiagnosticTools->'%(FileName)%(Extension)')" />
-      <RunTimeArtifactsIncludeFolders Include="unsanitized/" TargetDir="/" />
-    </ItemGroup>
-
-    <ItemGroup Condition="'$(MinimalCoreRoot)' == 'true'">
-      <RunTimeArtifactsExcludeFiles Include="PDB/ilasm.pdb" />
-      <RunTimeArtifactsExcludeFiles Include="PDB/ildasm.pdb" />
-    </ItemGroup>
-
-    <ItemGroup>
-      <RunTimeArtifactsIncludeFolders Include="/" TargetDir="/" />
-
-      <!-- Experiment -->
-      <RunTimeArtifactsIncludeFolders Include="R2RDump/" TargetDir="R2RDump/" />
-
-      <!-- Used by the Crossgen comparison job -->
-      <RunTimeArtifactsIncludeFolders Include="IL/" TargetDir="IL/" />
-
-      <!-- Used for Crossgen2 R2R tests -->
-      <RunTimeArtifactsIncludeFolders Include="crossgen2-published/" TargetDir="crossgen2/">
-        <IncludeSubFolders>True</IncludeSubFolders>
-      </RunTimeArtifactsIncludeFolders>
-
-      <!-- Used for NativeAOT tests -->
-      <RunTimeArtifactsIncludeFolders Include="ilc-published/" TargetDir="ilc-published/">
-        <IncludeSubFolders>True</IncludeSubFolders>
-      </RunTimeArtifactsIncludeFolders>
-
-      <!-- Used for NativeAOT tests -->
-      <RunTimeArtifactsIncludeFolders Include="aotsdk/" TargetDir="aotsdk/">
-        <IncludeSubFolders>True</IncludeSubFolders>
-      </RunTimeArtifactsIncludeFolders>
-
-      <!-- Used for NativeAOT tests -->
-      <RunTimeArtifactsIncludeFolders Include="build/" TargetDir="build/">
-        <IncludeSubFolders>True</IncludeSubFolders>
-      </RunTimeArtifactsIncludeFolders>
-
-      <!-- Used for capturing symbolic stack traces using Watson -->
-      <RunTimeArtifactsIncludeFolders Include="PDB/" TargetDir="PDB/" />
-
-      <!-- Used by the coreroot_determinism test -->
-      <RunTimeArtifactsIncludeFolders Include="R2RTest/" TargetDir="R2RTest/">
-        <IncludeSubFolders>True</IncludeSubFolders>
-      </RunTimeArtifactsIncludeFolders>
-
-      <!-- Used by tests checking PDB validity -->
-      <RunTimeArtifactsIncludeFolders Include="PdbChecker/" TargetDir="PdbChecker/" />
-
-      <!-- Used by disasm output verification tests -->
-      <RunTimeArtifactsIncludeFolders Include="SuperFileCheck/" TargetDir="SuperFileCheck/">
-        <IncludeSubFolders>True</IncludeSubFolders>
-      </RunTimeArtifactsIncludeFolders>
-
-      <!-- Used to determine if a file is a managed assembly or a managed assembly built with DEBUG -->
-      <RunTimeArtifactsIncludeFolders Include="AssemblyChecker/" TargetDir="AssemblyChecker/">
-        <IncludeSubFolders>True</IncludeSubFolders>
-      </RunTimeArtifactsIncludeFolders>
-
-      <!-- XUnit runner harness assemblies that we don't want to mix in with the framework in Core_Root -->
-      <RunTimeArtifactsIncludeFolders Include="xunit/" TargetDir="xunit/" />
-
-      <!-- Managed ilasm for testing -->
-      <RunTimeArtifactsIncludeFolders Include="managed-ilasm/" TargetDir="managed-ilasm/">
-        <IncludeSubFolders>True</IncludeSubFolders>
-      </RunTimeArtifactsIncludeFolders>
-    </ItemGroup>
-
-    <ItemGroup>
-      <!-- Add binary dependencies to copy-local items -->
-      <RunTimeDependencyCopyLocal
-          Condition="'%(RuntimeArtifactsIncludeFolders.IncludeSubFolders)' != 'True'"
-          Include="$(CoreCLRArtifactsPath)%(RunTimeArtifactsIncludeFolders.Identity)*"
-          Exclude="@(RunTimeArtifactsExcludeFiles -> '$(CoreCLRArtifactsPath)%(Identity)')"
-          TargetDir="%(RunTimeArtifactsIncludeFolders.TargetDir)" />
-
-      <RunTimeDependencyCopyLocal
-          Condition="'%(RuntimeArtifactsIncludeFolders.IncludeSubFolders)' == 'True'"
-          Include="$(CoreCLRArtifactsPath)%(RunTimeArtifactsIncludeFolders.Identity)**\*"
-          Exclude="@(RunTimeArtifactsExcludeFiles -> '$(CoreCLRArtifactsPath)%(Identity)')"
-          TargetDir="%(RunTimeArtifactsIncludeFolders.TargetDir)" />
-    </ItemGroup>
-
-    <PropertyGroup>
-      <Crossgen2Dir Condition="('$(TargetArchitecture)' != 'x64' and '$(BuildArchitecture)' == 'x64') or '$(EnableNativeSanitizers)' != ''">$(CoreCLRArtifactsPath)x64/crossgen2</Crossgen2Dir>
-    </PropertyGroup>
-
-    <ItemGroup Condition="'$(Crossgen2Dir)' != ''">
-      <RunTimeDependencyCopyLocal
-          Include="
-            $(Crossgen2Dir)/$(LibPrefix)clrjit_*$(LibSuffix);
-            $(Crossgen2Dir)/$(LibPrefix)jitinterface_*$(LibSuffix);
-            $(Crossgen2Dir)/$(LibPrefix)Microsoft.DiaSymReader.Native.*$(LibSuffix)"
-          TargetDir="crossgen2/" />
+      <RunTimeDependencyCopyLocal Include="@(_CoreRootArtifactSource)" />
     </ItemGroup>
 
     <ItemGroup Condition="'$(TargetArchitecture)' == 'wasm'">

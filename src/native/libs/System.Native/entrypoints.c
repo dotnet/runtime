@@ -10,6 +10,7 @@
 #include "pal_dynamicload.h"
 #include "pal_environment.h"
 #include "pal_errno.h"
+#include "pal_getosinfo.h"
 #include "pal_interfaceaddresses.h"
 #include "pal_io.h"
 #include "pal_iossupportversion.h"
@@ -70,6 +71,7 @@ static const Entry s_sysNative[] =
     DllImportEntry(SystemNative_ReadDir)
     DllImportEntry(SystemNative_OpenDir)
     DllImportEntry(SystemNative_CloseDir)
+    DllImportEntry(SystemNative_IsAtomicNonInheritablePipeCreationSupported)
     DllImportEntry(SystemNative_Pipe)
     DllImportEntry(SystemNative_FcntlSetFD)
     DllImportEntry(SystemNative_FcntlGetFD)
@@ -278,12 +280,15 @@ static const Entry s_sysNative[] =
     DllImportEntry(SystemNative_PWrite)
     DllImportEntry(SystemNative_PReadV)
     DllImportEntry(SystemNative_PWriteV)
+    DllImportEntry(SystemNative_ReadV)
+    DllImportEntry(SystemNative_WriteV)
     DllImportEntry(SystemNative_CreateThread)
     DllImportEntry(SystemNative_EnablePosixSignalHandling)
     DllImportEntry(SystemNative_DisablePosixSignalHandling)
     DllImportEntry(SystemNative_HandleNonCanceledPosixSignal)
     DllImportEntry(SystemNative_SetPosixSignalHandler)
     DllImportEntry(SystemNative_GetPlatformSignalNumber)
+    DllImportEntry(SystemNative_GetPlatformSIGSTOP)
     DllImportEntry(SystemNative_GetGroups)
     DllImportEntry(SystemNative_GetEnv)
     DllImportEntry(SystemNative_GetEnviron)
@@ -301,6 +306,7 @@ static const Entry s_sysNative[] =
     DllImportEntry(SystemNative_LowLevelCrossProcessMutex_IsAbandoned)
     DllImportEntry(SystemNative_LowLevelCrossProcessMutex_SetAbandoned)
     DllImportEntry(SystemNative_Select)
+    DllImportEntry(SystemNative_GetNextAreaInfo)
 };
 
 EXTERN_C const void* SystemResolveDllImport(const char* name);

@@ -34,8 +34,7 @@ NativeImage* AssemblyBinder::LoadNativeImage(Module* componentModule, LPCUTF8 na
     AppDomain::LoadLockHolder lock(AppDomain::GetCurrentDomain());
     PTR_LoaderAllocator moduleLoaderAllocator = componentModule->GetLoaderAllocator();
 
-    bool isNewNativeImage;
-    NativeImage* nativeImage = NativeImage::Open(componentModule->GetPath(), nativeImageName, this, moduleLoaderAllocator, isPlatformNative, &isNewNativeImage);
+    NativeImage* nativeImage = NativeImage::Open(componentModule->GetPath(), nativeImageName, this, moduleLoaderAllocator, isPlatformNative);
 
     return nativeImage;
 }

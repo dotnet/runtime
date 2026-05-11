@@ -52,7 +52,7 @@ namespace System.Diagnostics
         }
 
         /// <summary>Gets execution path</summary>
-        private static string GetPathToOpenFile()
+        internal static string GetPathToOpenFile()
         {
             return "/usr/bin/open";
         }

@@ -33,7 +33,7 @@ namespace System.Runtime.CompilerServices
 
         private const int InitialCapacity = 8;  // Initial length of the table. Must be a power of two.
         private readonly object _lock;          // This lock protects all mutation of data in the table.  Readers do not take this lock.
-        private volatile Container _container;  // The actual storage for the table; swapped out as the table grows.
+        private volatile Container _container;  // The actual storage for the table; swapped out as the table grows. [cDAC] [ConditionalWeakTable] : Contract depends on the exact names of this field and its type.
         private int _activeEnumeratorRefCount;  // The number of outstanding enumerators on the table
 
         public ConditionalWeakTable()
@@ -538,6 +538,7 @@ namespace System.Runtime.CompilerServices
         //
         // When the dictionary grows the _entries table, it scours it for expired keys and does not
         // add those to the new container.
+        //  [cDAC] [ConditionalWeakTable] : Contract depends on the exact names of this type and the fields depHnd, HashCode, and Next.
         //--------------------------------------------------------------------------------------------
         [StructLayout(LayoutKind.Auto)]
         private struct Entry
@@ -556,8 +557,8 @@ namespace System.Runtime.CompilerServices
         private sealed class Container
         {
             private readonly ConditionalWeakTable<TKey, TValue> _parent;  // the ConditionalWeakTable with which this container is associated
-            private int[] _buckets;                // _buckets[hashcode & (_buckets.Length - 1)] contains index of the first entry in bucket (-1 if empty)
-            private Entry[] _entries;              // the table entries containing the stored dependency handles
+            private int[] _buckets;                // _buckets[hashcode & (_buckets.Length - 1)] contains index of the first entry in bucket (-1 if empty). [cDAC] [ConditionalWeakTable] : Contract depends on this exact name
+            private Entry[] _entries;              // the table entries containing the stored dependency handles. [cDAC] [ConditionalWeakTable] : Contract depends on this exact name
             private int _firstFreeEntry;           // _firstFreeEntry < _entries.Length => table has capacity,  entries grow from the bottom of the table.
             private bool _invalid;                 // flag detects if OOM or other background exception threw us out of the lock.
             private bool _finalized;               // set to true when initially finalized

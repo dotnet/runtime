@@ -12,7 +12,7 @@ internal sealed class ProbeExtensionResult : IData<ProbeExtensionResult>
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.ProbeExtensionResult);
 
-        Type = target.Read<int>(address + (ulong)type.Fields[nameof(Type)].Offset);
+        Type = target.ReadField<int>(address, type, nameof(Type));
     }
 
     public int Type { get; init; }

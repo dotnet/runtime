@@ -58,6 +58,19 @@ namespace System.Security.Cryptography.Asn1
 
             return span[1] == 0;
         }
+
+        internal ValueAlgorithmIdentifierAsn AsValueAlgorithmIdentifierAsn()
+        {
+            ValueAlgorithmIdentifierAsn val = default;
+            val.Algorithm = Algorithm;
+
+            if (Parameters is ReadOnlyMemory<byte> parameters)
+            {
+                val.Parameters = parameters.Span;
+            }
+
+            return val;
+        }
     }
 
     internal ref partial struct ValueAlgorithmIdentifierAsn

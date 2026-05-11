@@ -211,7 +211,10 @@ struct TransitionBlock
             TADDR m_ReturnAddress;
         };
     };
-    ArgumentRegisters       m_argumentRegisters;
+    union {
+        ArgumentRegisters       m_argumentRegisters;
+        TADDR m_StackPointer;
+    };
 #else
     PORTABILITY_ASSERT("TransitionBlock");
 #endif
