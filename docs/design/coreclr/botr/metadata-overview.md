@@ -2,7 +2,7 @@
 
 ## What is Metadata?
 
-Metadata is binary information that describes a program's structure. When .NET code is compiled into a portable executable (PE) file, metadata and CIL (Common Intermediate Language) code are both placed in the `.text` section of the file, at different offsets. Every type, method, field, and member reference in the program is described within metadata.
+Metadata is binary information that describes a program's structure. When .NET code is compiled into a portable executable (PE) file, metadata and CIL (Common Intermediate Language) code are stored in the file. Every type, method, field, and member reference in the program is described within metadata.
 
 In simple terms, metadata is the "table of contents" of a .NET assembly — it tells the runtime (and other tools like compilers, debuggers, and the AOT compiler) what types exist, what methods they have, what their signatures are, and how they relate to each other.
 

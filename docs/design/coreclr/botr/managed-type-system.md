@@ -35,7 +35,7 @@ While [metadata](metadata-overview.md) (such as the file formats described in th
 
 The type system provides access to most of the underlying metadata, but abstracts the way it was obtained. This allows types and members that are backed by metadata in other formats, or not backed at all, to be representable within the same type system context.
 
-A notable example of members with no backed metadata are the methods on array types. For instance, an array of integers has methods such as `Get(int)`, `Set(int, int)`, `Address(int)`, and a constructor — none of which appear in any assembly's metadata tables. Instead, these methods are synthesized by the type system.
+A notable example of members with no backing metadata are the methods on array types. For instance, an array of integers has methods such as `Get(int)`, `Set(int, int)`, `Address(int)`, and a constructor — none of which appear in any assembly's metadata tables. Instead, these methods are synthesized by the type system.
 
 ## Type system class hierarchy
 
@@ -81,7 +81,7 @@ Note for readers familiar with the .NET reflection type system: while the .NET r
 
 Signature variables represent variables that can be substituted by other types within the system. They differ from generic parameters (because e.g. they don't have constraints or variance). They are simply placeholders to be replaced by other types as part of a process called instantiation. Signature variables have an index that refers to a position within the instantiation context.
 
-Consider a class `Foo<T>` that has a method `Bar<U>(T x, U y)`. When IL references this method in a signature,`T` becomes `!0` (a SignatureTypeVariable meaning "the first type argument of the enclosing type") and `U` becomes `!!0` (a SignatureMethodVariable meaning "the first type argument of the method").
+Consider a class `Foo<T>` that has a method `Bar<U>(T x, U y)`. When IL references this method in a signature, `T` becomes `!0` (a SignatureTypeVariable meaning "the first type argument of the enclosing type") and `U` becomes `!!0` (a SignatureMethodVariable meaning "the first type argument of the method").
 
 ## Other type system classes
 
@@ -89,7 +89,7 @@ Each use of a type system starts with creating a type system context. A type sys
 
 The type system contexts all share the same base (`TypeSystemContext`), but each configures different pluggable algorithms, loads assemblies differently, and may support different synthetic types. For example, the NativeAOT compiler context and the ReadyToRun (crossgen2) compiler context use different field layout algorithms — NativeAOT has full control over type layouts since it produces the final binary, while ReadyToRun must match the layout decisions that the CoreCLR runtime will make at load time.
 
-Similar to `TypeDesc` hierarchy mentioned some sections above, `MethodDesc` follows the same extensible hierarchy pattern and represents all methods in the type system. Some of its subclasses include `EcmaMethod` (methods that read from ECMA-335 metadata), `ArrayMethod` (synthesized array methods), `InstantiatedMethod` (generic method instantiations like `Foo<int>`), and `ILStubMethod` (compiler-generated stubs for scenarios like p/invoke marshalling).
+Similar to `TypeDesc` hierarchy mentioned some sections above, `MethodDesc` follows the same extensible hierarchy pattern and represents all methods in the type system. Some of its subclasses include `EcmaMethod` (methods that read from ECMA-335 metadata), `ArrayMethod` (synthesized array methods), `InstantiatedMethod` (generic method instantiations like `Foo<int>`), and `ILStubMethod` (compiler-generated stubs for scenarios like P/Invoke marshalling).
 
 A `ModuleDesc` describes a single module which can optionally implement `IAssemblyDesc` interface if the module is an assembly. `ModuleDesc` is typically the owner of the type/method/field definitions within the module. It's the responsibility of the `ModuleDesc` to maintain the reference identity of those.
 
