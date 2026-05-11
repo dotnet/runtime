@@ -1,0 +1,195 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+#include "pal_proxy.h"
+
+#include <stdlib.h>
+#include <string.h>
+
+// Copy a Java String into a NUL-terminated UTF-8 heap buffer.
+// Returns NULL on allocation failure or on JNI exception / empty input.
+static char* CopyJStringToUtf8(JNIEnv* env, jstring s)
+{
+    if (s == NULL)
+        return NULL;
+
+    jsize charLen = (*env)->GetStringLength(env, s);
+    jsize byteLen = (*env)->GetStringUTFLength(env, s);
+    if (byteLen <= 0)
+        return NULL;
+
+    char* buf = (char*)malloc((size_t)byteLen + 1);
+    if (buf == NULL)
+        return NULL;
+
+    (*env)->GetStringUTFRegion(env, s, 0, charLen, buf);
+    if (TryClearJNIExceptions(env))
+    {
+        free(buf);
+        return NULL;
+    }
+
+    buf[byteLen] = '\0';
+    return buf;
+}
+
+PALEXPORT int32_t AndroidCryptoNative_GetProxyForUrl(const char* urlUtf8,
+                                                     int32_t*    outCount,
+                                                     AndroidProxyInfo** outProxies)
+{
+    abort_if_invalid_pointer_argument(outCount);
+    abort_if_invalid_pointer_argument(outProxies);
+
+    *outCount = 0;
+    *outProxies = NULL;
+
+    if (urlUtf8 == NULL)
+        return 0; // treat as "no proxy"
+
+    JNIEnv* env = GetJNIEnv();
+    int32_t ret = 0;
+    AndroidProxyInfo* result = NULL;
+    int32_t written = 0;
+
+    // All transient outer-scope local refs go here. RELEASE_LOCALS(loc, env)
+    // at the cleanup label releases them exactly once on every path.
+    INIT_LOCALS(loc, jurl, juri, jselector, jlist,
+                     jproxyTypeHttp, jproxyTypeSocks);
+
+    loc[jurl] = make_java_string(env, urlUtf8); // aborts on OOM
+
+    // URI.create(url) — IllegalArgumentException for malformed input.
+    loc[juri] = (*env)->CallStaticObjectMethod(env, g_URI, g_URI_create, loc[jurl]);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+
+    // ProxySelector.getDefault() — VM-wide singleton; may throw SecurityException.
+    loc[jselector] = (*env)->CallStaticObjectMethod(env, g_ProxySelector, g_ProxySelector_getDefault);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+    if (loc[jselector] == NULL)
+        goto cleanup;
+
+    // ProxySelector.select(uri)
+    loc[jlist] = (*env)->CallObjectMethod(env, loc[jselector], g_ProxySelector_select, loc[juri]);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+    if (loc[jlist] == NULL)
+        goto cleanup;
+
+    // Resolve the Proxy.Type enum constants for IsSameObject comparisons.
+    loc[jproxyTypeHttp]  = (*env)->GetStaticObjectField(env, g_ProxyType, g_ProxyType_HTTP);
+    loc[jproxyTypeSocks] = (*env)->GetStaticObjectField(env, g_ProxyType, g_ProxyType_SOCKS);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+
+    jint n = (*env)->CallIntMethod(env, loc[jlist], g_ListSize);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+    if (n <= 0)
+        goto cleanup;
+
+    result = (AndroidProxyInfo*)calloc((size_t)n, sizeof(AndroidProxyInfo));
+    if (result == NULL)
+    {
+        ret = -1;
+        goto cleanup;
+    }
+
+    for (jint i = 0; i < n; i++)
+    {
+        // Per-iteration locals — released at the end of each loop body.
+        INIT_LOCALS(iter, jproxy, jtype, jaddr, jhost);
+
+        iter[jproxy] = (*env)->CallObjectMethod(env, loc[jlist], g_ListGet, i);
+        if (CheckJNIExceptions(env) || iter[jproxy] == NULL)
+        {
+            RELEASE_LOCALS(iter, env);
+            continue;
+        }
+
+        iter[jtype] = (*env)->CallObjectMethod(env, iter[jproxy], g_ProxyType_method);
+        if (CheckJNIExceptions(env) || iter[jtype] == NULL)
+        {
+            RELEASE_LOCALS(iter, env);
+            continue;
+        }
+
+        int32_t type;
+        if ((*env)->IsSameObject(env, iter[jtype], loc[jproxyTypeHttp]))
+        {
+            type = ANDROID_PROXY_TYPE_HTTP;
+        }
+        else if ((*env)->IsSameObject(env, iter[jtype], loc[jproxyTypeSocks]))
+        {
+            type = ANDROID_PROXY_TYPE_SOCKS;
+        }
+        else
+        {
+            // DIRECT or unknown — no result entry.
+            RELEASE_LOCALS(iter, env);
+            continue;
+        }
+
+        iter[jaddr] = (*env)->CallObjectMethod(env, iter[jproxy], g_Proxy_address);
+        if (CheckJNIExceptions(env)
+            || iter[jaddr] == NULL
+            || !(*env)->IsInstanceOf(env, iter[jaddr], g_InetSocketAddress))
+        {
+            RELEASE_LOCALS(iter, env);
+            continue;
+        }
+
+        iter[jhost] = (*env)->CallObjectMethod(env, iter[jaddr], g_InetSocketAddress_getHostString);
+        if (CheckJNIExceptions(env) || iter[jhost] == NULL)
+        {
+            RELEASE_LOCALS(iter, env);
+            continue;
+        }
+
+        jint port = (*env)->CallIntMethod(env, iter[jaddr], g_InetSocketAddress_getPort);
+        if (CheckJNIExceptions(env))
+        {
+            RELEASE_LOCALS(iter, env);
+            continue;
+        }
+
+        char* host = CopyJStringToUtf8(env, (jstring)iter[jhost]);
+        if (host == NULL)
+        {
+            RELEASE_LOCALS(iter, env);
+            continue;
+        }
+
+        result[written].type = type;
+        result[written].host = host; // ownership transferred to result; lifetime ≥ jhost
+        result[written].port = (int32_t)port;
+        written++;
+
+        RELEASE_LOCALS(iter, env);
+    }
+
+cleanup:
+    RELEASE_LOCALS(loc, env);
+
+    if (ret == 0)
+    {
+        *outCount = written;
+        *outProxies = result;
+    }
+    else if (result != NULL)
+    {
+        // Error path: free anything we may have partially populated.
+        for (int32_t i = 0; i < written; i++)
+            free(result[i].host);
+        free(result);
+    }
+
+    return ret;
+}
+
+PALEXPORT void AndroidCryptoNative_FreeProxyResult(AndroidProxyInfo* proxies, int32_t count)
+{
+    if (proxies == NULL)
+        return;
+
+    for (int32_t i = 0; i < count; i++)
+        free(proxies[i].host);
+
+    free(proxies);
+}
