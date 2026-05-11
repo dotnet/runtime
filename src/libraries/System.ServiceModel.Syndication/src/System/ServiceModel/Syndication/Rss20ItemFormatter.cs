@@ -20,7 +20,7 @@ namespace System.ServiceModel.Syndication
         {
         }
 
-        public Rss20ItemFormatter(Type itemTypeToCreate) : base()
+        public Rss20ItemFormatter([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type itemTypeToCreate) : base()
         {
             ArgumentNullException.ThrowIfNull(itemTypeToCreate);
 
@@ -81,6 +81,7 @@ namespace System.ServiceModel.Syndication
 
         public override string Version => SyndicationVersions.Rss20;
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
         protected Type ItemType { get; }
 
         public override bool CanRead(XmlReader reader)

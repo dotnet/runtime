@@ -10,6 +10,9 @@ namespace Microsoft.Diagnostics.DataContractReader.Tests;
 
 public class DebuggerTests
 {
+    private const uint DebuggerControlFlagPendingAttach = 0x0100;
+    private const uint DebuggerControlFlagAttached = 0x0200;
+
     /// <summary>
     /// Provides all standard architectures paired with each bool value,
     /// for testing write APIs that take a bool.
@@ -51,6 +54,7 @@ public class DebuggerTests
         uint defines,
         uint mdStructuresVersion,
         int? attachStateFlags = null,
+        uint? debuggerControlFlags = null,
         byte? metadataUpdatesApplied = null,
         ulong? debuggerControlBlockAddress = null)
     {
@@ -98,6 +102,13 @@ public class DebuggerTests
             builder.AddGlobals((Constants.Globals.CLRJitAttachState, attachFrag.Address));
         }
 
+        if (debuggerControlFlags.HasValue)
+        {
+            MockMemorySpace.HeapFragment debuggerControlFlagsFrag = allocator.Allocate(sizeof(uint), "g_CORDebuggerControlFlags");
+            helpers.Write(debuggerControlFlagsFrag.Data.AsSpan(0, sizeof(uint)), debuggerControlFlags.Value);
+            builder.AddGlobals((Constants.Globals.CORDebuggerControlFlags, debuggerControlFlagsFrag.Address));
+        }
+
         if (metadataUpdatesApplied.HasValue)
         {
             MockMemorySpace.HeapFragment metadataFrag = allocator.Allocate(1, "MetadataUpdatesApplied");
@@ -126,6 +137,12 @@ public class DebuggerTests
         return builder.Build();
     }
 
+    private static uint GetDebuggerControlFlags(Target target)
+    {
+        TargetPointer addr = target.ReadGlobalPointer(Constants.Globals.CORDebuggerControlFlags);
+        return target.Read<uint>(addr.Value);
+    }
+
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
     public void TryGetDebuggerData_ReturnsTrue_WhenInitialized(MockTarget.Architecture arch)
@@ -134,18 +151,22 @@ public class DebuggerTests
         IDebugger debugger = target.Contracts.Debugger;
 
         Assert.True(debugger.TryGetDebuggerData(out DebuggerData data));
+        Assert.True(data.IsLeftSideInitialized);
         Assert.Equal(0xDEADBEEFu, data.DefinesBitField);
         Assert.Equal(42u, data.MDStructuresVersion);
     }
 
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
-    public void TryGetDebuggerData_ReturnsFalse_WhenNotInitialized(MockTarget.Architecture arch)
+    public void TryGetDebuggerData_ReturnsTrue_WhenNotInitialized(MockTarget.Architecture arch)
     {
-        Target target = BuildTarget(arch, leftSideInitialized: 0, defines: 0, mdStructuresVersion: 0);
+        Target target = BuildTarget(arch, leftSideInitialized: 0, defines: 0xCAFE, mdStructuresVersion: 7);
         IDebugger debugger = target.Contracts.Debugger;
 
-        Assert.False(debugger.TryGetDebuggerData(out _));
+        Assert.True(debugger.TryGetDebuggerData(out DebuggerData data));
+        Assert.False(data.IsLeftSideInitialized);
+        Assert.Equal(0xCAFEu, data.DefinesBitField);
+        Assert.Equal(7u, data.MDStructuresVersion);
     }
 
     [Theory]
@@ -176,6 +197,43 @@ public class DebuggerTests
         IDebugger debugger = target.Contracts.Debugger;
 
         Assert.Equal(0, debugger.GetAttachStateFlags());
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void MarkDebuggerAttachPending_SetsPendingAttachFlag(MockTarget.Architecture arch)
+    {
+        Target target = BuildTarget(arch, leftSideInitialized: 1, defines: 0, mdStructuresVersion: 0, attachStateFlags: 0, debuggerControlFlags: 0x42);
+        IDebugger debugger = target.Contracts.Debugger;
+
+        debugger.MarkDebuggerAttachPending();
+
+        Assert.Equal(0x42u | DebuggerControlFlagPendingAttach, GetDebuggerControlFlags(target));
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void MarkDebuggerAttached_SetsAttachedFlag_WhenTrue(MockTarget.Architecture arch)
+    {
+        Target target = BuildTarget(arch, leftSideInitialized: 1, defines: 0, mdStructuresVersion: 0, attachStateFlags: 0, debuggerControlFlags: DebuggerControlFlagPendingAttach);
+        IDebugger debugger = target.Contracts.Debugger;
+
+        debugger.MarkDebuggerAttached(true);
+
+        Assert.Equal(DebuggerControlFlagPendingAttach | DebuggerControlFlagAttached, GetDebuggerControlFlags(target));
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void MarkDebuggerAttached_ClearsAttachedAndPending_WhenFalse(MockTarget.Architecture arch)
+    {
+        const uint originalFlags = 0x0042u | DebuggerControlFlagPendingAttach | DebuggerControlFlagAttached;
+        Target target = BuildTarget(arch, leftSideInitialized: 1, defines: 0, mdStructuresVersion: 0, attachStateFlags: 0, debuggerControlFlags: originalFlags);
+        IDebugger debugger = target.Contracts.Debugger;
+
+        debugger.MarkDebuggerAttached(false);
+
+        Assert.Equal(0x42u, GetDebuggerControlFlags(target));
     }
 
     [Theory]

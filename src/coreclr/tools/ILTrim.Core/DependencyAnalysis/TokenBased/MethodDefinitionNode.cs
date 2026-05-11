@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Reflection.Metadata;
@@ -96,6 +97,49 @@ namespace ILCompiler.DependencyAnalysis
             {
                 EcmaMethod method = (EcmaMethod)_module.GetMethod(Handle);
                 dependencies.Add(factory.ConstructedType((EcmaType)method.OwningType), "Type with a kept constructor");
+            }
+
+            // TODO-SIZE: Property/event metadata is not strictly necessary for accessor method calls —
+            // it's only needed for reflection and debugger scenarios. We could skip keeping property/event
+            // rows when we know they won't be accessed via reflection, producing smaller output.
+            if ((methodDef.Attributes & MethodAttributes.SpecialName) != 0)
+            {
+                TypeDefinition declaringTypeDef = reader.GetTypeDefinition(declaringType);
+                foreach (PropertyDefinitionHandle propertyHandle in declaringTypeDef.GetProperties())
+                {
+                    PropertyAccessors propertyAccessors = reader.GetPropertyDefinition(propertyHandle).GetAccessors();
+                    if (propertyAccessors.Getter == Handle || propertyAccessors.Setter == Handle)
+                    {
+                        dependencies.Add(factory.PropertyDefinition(_module, propertyHandle), "Owning property of accessor method");
+                        break;
+                    }
+                }
+                foreach (EventDefinitionHandle eventHandle in declaringTypeDef.GetEvents())
+                {
+                    EventAccessors eventAccessors = reader.GetEventDefinition(eventHandle).GetAccessors();
+                    if (eventAccessors.Adder == Handle || eventAccessors.Remover == Handle || eventAccessors.Raiser == Handle)
+                    {
+                        dependencies.Add(factory.EventDefinition(_module, eventHandle), "Owning event of accessor method");
+                        break;
+                    }
+                }
+            }
+
+            var ecmaOwningType = (EcmaType)_module.GetObject(declaringType);
+            if (ecmaOwningType.IsDelegate)
+            {
+                ReadOnlySpan<byte> methodPairName = default;
+                if (reader.StringComparer.Equals(methodDef.Name, "BeginInvoke"))
+                    methodPairName = "EndInvoke"u8;
+                else if (reader.StringComparer.Equals(methodDef.Name, "EndInvoke"))
+                    methodPairName = "BeginInvoke"u8;
+
+                if (methodPairName.Length > 0)
+                {
+                    var pairMethod = ecmaOwningType.GetMethod(methodPairName, null) as EcmaMethod;
+                    if (pairMethod != null)
+                        dependencies.Add(factory.MethodDefinition(_module, pairMethod.Handle), "Delegate BeginInvoke/EndInvoke pair");
+                }
             }
 
             return dependencies;

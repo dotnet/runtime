@@ -231,6 +231,7 @@ namespace System.Net.NameResolution.Tests
         [InlineData("test.localhost")]
         [InlineData("FOO.LOCALHOST")]
         [InlineData("Test.LocalHost")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/126456", TestPlatforms.Android)]
         public async Task DnsGetHostAddresses_LocalhostSubdomain_ReturnsLoopback(string hostName)
         {
             // The subdomain goes to OS resolver first. If it fails (likely on most systems),

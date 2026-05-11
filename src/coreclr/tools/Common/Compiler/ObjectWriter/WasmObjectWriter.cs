@@ -359,8 +359,6 @@ namespace ILCompiler.ObjectWriter
             byte[] data = new byte[codeSize];
             body.Encode(data);
 
-            // The code writer should already be set up to write the function body size as a prefix, so just emit the function body here
-            Debug.Assert(codeWriter.HasLengthPrefix);
             codeWriter.EmitData(data);
             _uniqueSymbols.Add(name.ToString(), _methodCount);
             _methodCount++;
@@ -478,23 +476,6 @@ namespace ILCompiler.ObjectWriter
 
             return section;
         }
-
-        private protected override SectionWriter.Params WriterParams(ObjectNodeSection section)
-        {
-            if (section == ObjectNodeSection.WasmCodeSection)
-            {
-                return new SectionWriter.Params
-                {
-                    LengthEncodeFormat = LengthEncodeFormat.ULEB128
-                };
-            }
-
-            return new SectionWriter.Params
-            {
-                LengthEncodeFormat = LengthEncodeFormat.None
-            };
-        }
-
 
         private protected override void CreateSection(ObjectNodeSection section, Utf8String comdatName, Utf8String symbolName, int sectionIndex, Stream sectionStream)
         {

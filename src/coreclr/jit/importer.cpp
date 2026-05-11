@@ -6160,7 +6160,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                                 // We may already have decided to put a patchpoint in succBlock. If not, add one.
                                 //
-                                if (succBlock->HasFlag(BBF_PATCHPOINT))
+                                if (succBlock->HasFlag(BBF_OSR_PATCHPOINT))
                                 {
                                     // In some cases the target may not be stack-empty at entry.
                                     // If so, we will bypass patchpoints for this backedge.
@@ -6178,7 +6178,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                                                 block->bbNum, succBlock->bbNum);
 
                                         assert(!succBlock->hasHndIndex());
-                                        succBlock->SetFlags(BBF_PATCHPOINT);
+                                        succBlock->SetFlags(BBF_OSR_PATCHPOINT);
                                     }
                                 }
                             }
@@ -6187,7 +6187,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     else
                     {
                         assert(!block->hasHndIndex());
-                        block->SetFlags(BBF_PATCHPOINT);
+                        block->SetFlags(BBF_OSR_PATCHPOINT);
                     }
 
                     setMethodHasPatchpoint();
@@ -6214,7 +6214,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
         const bool tryRandomOSR = randomOSR > 0;
 
         if (compCanHavePatchpoints() && (tryOffsetOSR || tryRandomOSR) && (stackState.esStackDepth == 0) &&
-            !block->hasHndIndex() && !block->HasFlag(BBF_PATCHPOINT))
+            !block->hasHndIndex() && !block->HasFlag(BBF_OSR_PATCHPOINT))
         {
             // Block start can have a patchpoint. See if we should add one.
             //
@@ -6244,7 +6244,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
             if (addPatchpoint)
             {
-                block->SetFlags(BBF_PATCHPOINT);
+                block->SetFlags(BBF_OSR_PATCHPOINT);
                 setMethodHasPatchpoint();
             }
 
@@ -6271,7 +6271,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
     // that we need to do proper liveness analysis.
     //
     if (enablePartialCompilation && compCanHavePatchpoints() && !compTailPrefixSeen && !compIsAsync() &&
-        (stackState.esStackDepth == 0) && !block->HasFlag(BBF_PATCHPOINT) && !block->hasHndIndex())
+        (stackState.esStackDepth == 0) && !block->HasFlag(BBF_OSR_PATCHPOINT) && !block->hasHndIndex())
     {
         // Is this block a good place for partial compilation?
         //
@@ -6300,7 +6300,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
             JITDUMP("\nBlock " FMT_BB " (%s) will be a partial compilation patchpoint -- not importing\n", block->bbNum,
                     reason);
             block->SetFlags(BBF_PARTIAL_COMPILATION_PATCHPOINT);
-            setMethodHasPartialCompilationPatchpoint();
+            setMethodHasPatchpoint();
 
             // Block will no longer flow to any of its successors.
             //

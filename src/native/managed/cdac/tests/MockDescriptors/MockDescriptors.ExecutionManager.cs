@@ -331,6 +331,9 @@ internal sealed class MockReadyToRunInfo : TypedView
     private const string LoadedImageBaseFieldName = "LoadedImageBase";
     private const string CompositeFieldName = "Composite";
 
+    private const string ImportSectionsFieldName = "ImportSections";
+    private const string NumImportSectionsFieldName = "NumImportSections";
+
     public static Layout<MockReadyToRunInfo> CreateLayout(MockTarget.Architecture architecture, int hashMapStride)
         => new SequentialLayoutBuilder("ReadyToRunInfo", architecture)
             .AddPointerField(ReadyToRunHeaderFieldName)
@@ -342,6 +345,8 @@ internal sealed class MockReadyToRunInfo : TypedView
             .AddPointerField(DelayLoadMethodCallThunksFieldName)
             .AddPointerField(DebugInfoSectionFieldName)
             .AddPointerField(ExceptionInfoSectionFieldName)
+            .AddPointerField(ImportSectionsFieldName)
+            .AddUInt32Field(NumImportSectionsFieldName)
             .AddField(EntryPointToMethodDescMapFieldName, hashMapStride)
             .AddPointerField(LoadedImageBaseFieldName)
             .AddPointerField(CompositeFieldName)

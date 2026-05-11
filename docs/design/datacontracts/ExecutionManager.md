@@ -57,6 +57,9 @@ struct CodeBlockHandle
     bool IsFunclet(CodeBlockHandle codeInfoHandle);
     // Returns true if the code block is specifically a filter funclet
     bool IsFilterFunclet(CodeBlockHandle codeInfoHandle);
+
+    // Finds the ReadyToRun module that contains the given address.
+    TargetPointer FindReadyToRunModule(TargetPointer address);
 ```
 
 ```csharp
@@ -500,6 +503,24 @@ There are two distinct clause data types. JIT-compiled code uses `EEExceptionCla
 After obtaining the clause array bounds, the common iteration logic classifies each clause by its flags. The native `COR_ILEXCEPTION_CLAUSE` flags are bit flags: `Filter` (0x1), `Finally` (0x2), `Fault` (0x4). If none are set, the clause is `Typed`. For typed clauses, if the `CachedClass` flag (0x10000000) is set (JIT-only, used for dynamic methods), the union field contains a resolved `TypeHandle` pointer; the clause is a catch-all if this pointer equals the `ObjectMethodTable` global. Otherwise, the union field is a metadata `ClassToken`. To determine whether a typed clause is a catch-all handler, the `ClassToken` (which may be a `TypeDef` or `TypeRef`) is resolved to a `MethodTable` via the `Loader` contract's module lookup maps (`TypeDefToMethodTable` or `TypeRefToMethodTable`) and compared against the `ObjectMethodTable` global. For typed clauses without a cached type handle, the module address is resolved by walking `CodeBlockHandle` → `MethodDesc` → `MethodTable` → `TypeHandle` → `Module` via the `RuntimeTypeSystem` contract.
 
 `IsFilterFunclet` first checks `IsFunclet`. If the code block is a funclet, it retrieves the EH clauses for the method and checks whether any filter clause's handler offset matches the funclet's relative offset. If a match is found, the funclet is a filter funclet.
+
+### FindReadyToRunModule
+
+`FindReadyToRunModule` locates the ReadyToRun module whose PE image contains the given address. Unlike `GetCodeBlockHandle` (which only matches code regions), this API matches against the full PE image range - including data sections such as import tables. This is used in GCRefMap resolution as it requires finding the module that owns an import section indirection address, which is in the data section rather than the code section.
+
+```csharp
+TargetPointer IExecutionManager.FindReadyToRunModule(TargetPointer address)
+{
+    // Use the RangeSectionMap to find the RangeSection containing the address.
+    // ReadyToRun range sections cover the entire PE image (code + data),
+    // so this works for import section addresses used by GCRefMap lookup.
+    RangeSection range = RangeSection.Find(target, topRangeSectionMap, address);
+    if (range.Data is null)
+        return TargetPointer.Null;
+
+    return range.Data.R2RModule;
+}
+```
 
 ### EE JIT Manager and Code Heap Info
 

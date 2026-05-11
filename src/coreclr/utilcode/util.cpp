@@ -1085,36 +1085,6 @@ DWORD_PTR GetCurrentProcessCpuMask()
 }
 #endif // HOST_WINDOWS
 
-uint32_t GetOsPageSizeUncached()
-{
-    SYSTEM_INFO sysInfo;
-    ::GetSystemInfo(&sysInfo);
-    return sysInfo.dwAllocationGranularity ? sysInfo.dwAllocationGranularity : 0x1000;
-}
-
-namespace
-{
-    Volatile<uint32_t> g_pageSize = 0;
-}
-
-uint32_t GetOsPageSize()
-{
-#ifdef HOST_UNIX
-    size_t result = g_pageSize.LoadWithoutBarrier();
-
-    if(!result)
-    {
-        result = GetOsPageSizeUncached();
-
-        g_pageSize.StoreWithoutBarrier(result);
-    }
-
-    return result;
-#else
-    return 0x1000;
-#endif
-}
-
 //=============================================================================
 // AssemblyNamesList
 //=============================================================================
