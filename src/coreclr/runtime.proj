@@ -3,7 +3,7 @@
   <PropertyGroup>
     <_BuildNativeTargetOS>$(TargetOS)</_BuildNativeTargetOS>
     <_BuildNativeTargetOS Condition="'$(TargetsLinuxBionic)' == 'true'">linux-bionic</_BuildNativeTargetOS>
-    <HasCdacBuildTool Condition="'$(ClrFullNativeBuild)' == 'true' or '$(ClrRuntimeSubset)' == 'true' or '$(ClrDebugSubset)' == 'true' or '$(ClrCrossComponentsSubset)' == 'true'">true</HasCdacBuildTool>
+    <HasCdacBuildTool Condition="'$(ClrFullNativeBuild)' == 'true' or '$(ClrRuntimeSubset)' == 'true' or '$(ClrDebugSubset)' == 'true' or '$(ClrCrossComponentsSubset)' == 'true' or '$(ClrNativeAotSubset)' == 'true'">true</HasCdacBuildTool>
     <BuildRuntimeDependsOnTargets>GetPgoDataPackagePath</BuildRuntimeDependsOnTargets>
     <BuildRuntimeDependsOnTargets Condition="'$(TargetsBrowser)' == 'true'">AcquireEmscriptenSdk;$(BuildRuntimeDependsOnTargets);GenerateEmccExports</BuildRuntimeDependsOnTargets>
   </PropertyGroup>

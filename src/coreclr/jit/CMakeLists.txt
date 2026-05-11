@@ -23,7 +23,7 @@ function(create_standalone_jit)
 
   if(TARGETDETAILS_OS STREQUAL "unix_osx" OR TARGETDETAILS_OS STREQUAL "unix_anyos")
     set(JIT_ARCH_LINK_LIBRARIES gcinfo_unix_${TARGETDETAILS_ARCH})
-  elseif(NOT ${TARGETDETAILS_ARCH} MATCHES "wasm")
+  else()
     set(JIT_ARCH_LINK_LIBRARIES gcinfo_${TARGETDETAILS_OS}_${TARGETDETAILS_ARCH})
   endif()
 
@@ -121,6 +121,8 @@ set( JIT_SOURCES
   fgstmt.cpp
   flowgraph.cpp
   forwardsub.cpp
+  gcdecode.cpp
+  gcencode.cpp
   gcinfo.cpp
   gentree.cpp
   gschecks.cpp
@@ -187,8 +189,6 @@ set ( JIT_NATIVE_TARGET_SOURCES
   lsra.cpp
   lsrabuild.cpp
   regMaskTPOps.cpp
-  gcdecode.cpp
-  gcencode.cpp
   unwind.cpp
 )
 
@@ -405,10 +405,6 @@ set( JIT_HEADERS
   stacklevelsetter.h
   target.h
   targetcommon.h
-  targetx86.h
-  targetamd64.h
-  targetarm.h
-  targetarm64.h
   treelifeupdater.h
   typelist.h
   unwind.h
@@ -422,15 +418,24 @@ set( JIT_HEADERS
 )
 
 # Arch specific headers
+
 set( JIT_AMD64_HEADERS
   emitfmtsxarch.h
   emitxarch.h
   hwintrinsiclistxarch.h
-  hwintrinsic.h
   instrsxarch.h
+  registeramd64.h
+  targetamd64.h
 )
 
-set( JIT_I386_HEADERS ${JIT_AMD64_HEADERS} )
+set( JIT_I386_HEADERS
+  emitfmtsxarch.h
+  emitxarch.h
+  hwintrinsiclistxarch.h
+  instrsxarch.h
+  registerx86.h
+  targetx86.h
+)
 
 set( JIT_ARM64_HEADERS
     emitarm64.h
@@ -441,6 +446,7 @@ set( JIT_ARM64_HEADERS
     instrsarm64.h
     instrsarm64sve.h
     registerarm64.h
+    targetarm64.h
 )
 
 set( JIT_ARM_HEADERS
@@ -448,6 +454,7 @@ set( JIT_ARM_HEADERS
   emitfmtsarm.h
   instrsarm.h
   registerarm.h
+  targetarm.h
 )
 
 set ( JIT_ARMV6_HEADERS

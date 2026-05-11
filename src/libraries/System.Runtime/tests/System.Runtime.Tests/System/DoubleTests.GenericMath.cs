@@ -346,7 +346,7 @@ namespace System.Tests
 
         [Fact]
         [SkipOnMono("https://github.com/dotnet/runtime/issues/100368")]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/116823", typeof(PlatformDetection), nameof(PlatformDetection.IsCoreClrInterpreter))]
         public static void ConvertToIntegerTest()
         {
             // Signed Values

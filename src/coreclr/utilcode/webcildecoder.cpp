@@ -34,10 +34,12 @@ bool WebcilDecoder::DetectWebcilFormat(const void* data, COUNT_T size)
 WebcilDecoder::WebcilDecoder()
     : m_base(0),
       m_size(0),
-      m_hasContents(FALSE),
+      m_hasContents(false),
+      m_hasNoReadyToRunHeader(false),
       m_pHeader(NULL),
       m_sections(NULL),
-      m_pCorHeader(NULL)
+      m_pCorHeader(NULL),
+      m_pReadyToRunHeader(NULL)
 {
     LIMITED_METHOD_CONTRACT;
 }
@@ -73,18 +75,6 @@ void WebcilDecoder::Init(void *flatBase, COUNT_T size)
     {
         m_sections = (const WebcilSectionHeader *)(((uint8_t*)flatBase) + (m_pHeader->VersionMajor >= 1 ? sizeof(WebcilHeader_1) : sizeof(WebcilHeader)));
     }
-    m_pCorHeader = NULL;
-    m_relocated = FALSE;
-}
-
-void WebcilDecoder::Reset()
-{
-    LIMITED_METHOD_CONTRACT;
-    m_base = 0;
-    m_size = 0;
-    m_hasContents = FALSE;
-    m_pHeader = NULL;
-    m_sections = NULL;
     m_pCorHeader = NULL;
     m_relocated = FALSE;
 }
@@ -469,14 +459,6 @@ ULONG WebcilDecoder::GetEntryPointToken() const
 // ------------------------------------------------------------
 // R2R / native manifest metadata
 // ------------------------------------------------------------
-
-PTR_CVOID WebcilDecoder::GetNativeManifestMetadata(COUNT_T *pSize) const
-{
-    LIMITED_METHOD_CONTRACT;
-    if (pSize != NULL)
-        *pSize = 0;
-    return NULL;
-}
 
 // ------------------------------------------------------------
 // RVA operations
@@ -864,7 +846,7 @@ TADDR WebcilDecoder::GetDirectoryEntryData(int entry, COUNT_T *pSize) const
             return (TADDR)0;
         }
 
-        const WebcilSectionHeader *sections = (const WebcilSectionHeader *)(m_base + sizeof(WebcilHeader));
+        const WebcilSectionHeader *sections = m_sections;
         const WebcilSectionHeader *relocSection = &sections[sectionIndex];
 
         if (pSize != NULL)
@@ -914,6 +896,160 @@ CHECK WebcilDecoder::CheckILMethod(RVA rva)
 {
     WRAPPER_NO_CONTRACT;
     return CorDecoderHelpers::CheckILMethod(*this, rva);
+}
+
+BOOL WebcilDecoder::HasReadyToRunHeader() const
+{
+    CONTRACTL
+    {
+        INSTANCE_CHECK;
+        NOTHROW;
+        GC_NOTRIGGER;
+        CANNOT_TAKE_LOCK;
+        SUPPORTS_DAC;
+    }
+    CONTRACTL_END;
+
+    if (m_hasNoReadyToRunHeader)
+        return FALSE;
+
+    if (m_pReadyToRunHeader != NULL)
+        return TRUE;
+
+    return FindReadyToRunHeader() != NULL;
+}
+
+READYTORUN_HEADER * WebcilDecoder::GetReadyToRunHeader() const
+{
+    CONTRACT(READYTORUN_HEADER *)
+    {
+        INSTANCE_CHECK;
+        PRECONDITION(CheckWebcilHeaders());
+        PRECONDITION(HasCorHeader());
+        PRECONDITION(HasReadyToRunHeader());
+        NOTHROW;
+        GC_NOTRIGGER;
+        POSTCONDITION(CheckPointer(RETVAL));
+        SUPPORTS_DAC;
+        CANNOT_TAKE_LOCK;
+    }
+    CONTRACT_END;
+
+    if (m_pReadyToRunHeader != NULL)
+        RETURN m_pReadyToRunHeader;
+
+    RETURN FindReadyToRunHeader();
+}
+
+PTR_CVOID WebcilDecoder::GetNativeManifestMetadata(COUNT_T *pSize) const
+{
+    CONTRACT(PTR_CVOID)
+    {
+        INSTANCE_CHECK;
+        PRECONDITION(HasReadyToRunHeader());
+        POSTCONDITION(CheckPointer(RETVAL, NULL_OK)); // TBD - may not store metadata for IJW
+        NOTHROW;
+        GC_NOTRIGGER;
+    }
+    CONTRACT_END;
+
+    IMAGE_DATA_DIRECTORY *pDir = NULL;
+    {
+        READYTORUN_HEADER * pHeader = GetReadyToRunHeader();
+
+        PTR_READYTORUN_SECTION pSections = dac_cast<PTR_READYTORUN_SECTION>(dac_cast<TADDR>(pHeader) + sizeof(READYTORUN_HEADER));
+        for (DWORD i = 0; i < pHeader->CoreHeader.NumberOfSections; i++)
+        {
+            // Verify that section types are sorted
+            _ASSERTE(i == 0 || (pSections[i - 1].Type < pSections[i].Type));
+
+            READYTORUN_SECTION * pSection = pSections + i;
+            if (pSection->Type == ReadyToRunSectionType::ManifestMetadata)
+            {
+                // Set pDir to the address of the manifest metadata section
+                pDir = &pSection->Section;
+                break;
+            }
+        }
+
+        // Handle the no ManifestMetadata case, which will happen in a ReadyToRun file without large version bubble support.
+        if (pDir == NULL)
+        {
+            if (pSize != NULL)
+            {
+                *pSize = 0;
+            }
+
+            RETURN NULL;
+        }
+    }
+
+    if (pSize != NULL)
+        *pSize = VAL32(pDir->Size);
+
+    RETURN dac_cast<PTR_VOID>(GetDirectoryData(pDir));
+}
+
+READYTORUN_HEADER * WebcilDecoder::FindReadyToRunHeader() const
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        SUPPORTS_DAC;
+    }
+    CONTRACTL_END;
+
+    IMAGE_DATA_DIRECTORY *pDir = &GetCorHeader()->ManagedNativeHeader;
+
+    if (VAL32(pDir->Size) >= sizeof(READYTORUN_HEADER) && CheckDirectory(pDir))
+    {
+        PTR_READYTORUN_HEADER pHeader = PTR_READYTORUN_HEADER((TADDR)GetDirectoryData(pDir));
+        if (pHeader->Signature == READYTORUN_SIGNATURE)
+        {
+            m_pReadyToRunHeader = pHeader;
+            return pHeader;
+        }
+    }
+
+    m_hasNoReadyToRunHeader = true;
+    return NULL;
+}
+
+TADDR WebcilDecoder::GetDirectoryData(IMAGE_DATA_DIRECTORY *pDir) const
+{
+    CONTRACT(TADDR)
+    {
+        INSTANCE_CHECK;
+        PRECONDITION(CheckWebcilHeaders());
+        PRECONDITION(CheckDirectory(pDir, 0, NULL_OK));
+        NOTHROW;
+        GC_NOTRIGGER;
+        SUPPORTS_DAC;
+        POSTCONDITION(CheckPointer((void *)RETVAL, NULL_OK));
+        CANNOT_TAKE_LOCK;
+    }
+    CONTRACT_END;
+
+    RETURN GetRvaData(VAL32(pDir->VirtualAddress));
+}
+
+CHECK WebcilDecoder::CheckDirectory(IMAGE_DATA_DIRECTORY *pDir, int forbiddenFlags, IsNullOK ok) const
+{
+    CONTRACT_CHECK
+    {
+        INSTANCE_CHECK;
+        PRECONDITION(CheckWebcilHeaders());
+        PRECONDITION(CheckPointer(pDir));
+        NOTHROW;
+        GC_NOTRIGGER;
+        SUPPORTS_DAC;
+    }
+    CONTRACT_CHECK_END;
+
+    CHECK(CheckRva(VAL32(pDir->VirtualAddress), VAL32(pDir->Size), forbiddenFlags, ok));
+
+    CHECK_OK;
 }
 
 // ------------------------------------------------------------

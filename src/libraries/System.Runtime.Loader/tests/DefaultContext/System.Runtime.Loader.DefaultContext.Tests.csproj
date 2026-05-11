@@ -15,4 +15,10 @@
                       CopyToOutputDirectory="PreserveNewest"
                       TargetPath="System.Runtime.Loader.Noop.Assembly_test.dll" />
   </ItemGroup>
+
+  <Target Name="_PreserveNoopAssemblyFromTrimming" AfterTargets="ConfigureTrimming" Condition="'$(TargetsAppleMobile)' == 'true' and '$(EnableAggressiveTrimming)' == 'true'">
+    <ItemGroup>
+      <ResolvedFileToPublish TrimMode="copy" Condition="'%(FileName)%(Extension)' == 'System.Runtime.Loader.Noop.Assembly_test.dll'" />
+    </ItemGroup>
+  </Target>
 </Project>

@@ -895,6 +895,8 @@ bool Compiler::optRedundantDominatingBranch(BasicBlock* const block)
             break;
         }
 
+        currentBlock = skipSideEffectFreeBlocks(currentBlock);
+
         // Make sure this conditional dominator branches to the same
         // shared block as the original block.
         //

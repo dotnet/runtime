@@ -24,6 +24,8 @@ Revision History:
 #include <sched.h>
 #include <errno.h>
 #include <unistd.h>
+#include <minipal/utils.h>
+#include <minipal/ospagesize.h>
 #define __STDC_FORMAT_MACROS
 #include <inttypes.h>
 #include <sys/types.h>
@@ -233,7 +235,7 @@ GetSystemInfo(
     PERF_ENTRY(GetSystemInfo);
     ENTRY("GetSystemInfo (lpSystemInfo=%p)\n", lpSystemInfo);
 
-    pagesize = getpagesize();
+    pagesize = minipal_getpagesize();
 
     lpSystemInfo->wProcessorArchitecture_PAL_Undefined = 0;
     lpSystemInfo->wReserved_PAL_Undefined = 0;

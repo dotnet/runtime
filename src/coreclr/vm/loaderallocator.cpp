@@ -1086,11 +1086,11 @@ void LoaderAllocator::ActivateManagedTracking()
 
 // We don't actually allocate a low frequency heap for collectible types.
 // This is carefully tuned to sum up to 16 pages to reduce waste.
-#define COLLECTIBLE_LOW_FREQUENCY_HEAP_SIZE        (0 * GetOsPageSize())
-#define COLLECTIBLE_HIGH_FREQUENCY_HEAP_SIZE       (3 * GetOsPageSize())
-#define COLLECTIBLE_STUB_HEAP_SIZE                 GetOsPageSize()
-#define COLLECTIBLE_CODEHEAP_SIZE                  (10 * GetOsPageSize())
-#define COLLECTIBLE_VIRTUALSTUBDISPATCH_HEAP_SPACE (2 * GetOsPageSize())
+#define COLLECTIBLE_LOW_FREQUENCY_HEAP_SIZE        0
+#define COLLECTIBLE_HIGH_FREQUENCY_HEAP_SIZE       (3 * minipal_getpagesize())
+#define COLLECTIBLE_STUB_HEAP_SIZE                 minipal_getpagesize()
+#define COLLECTIBLE_CODEHEAP_SIZE                  (10 * minipal_getpagesize())
+#define COLLECTIBLE_VIRTUALSTUBDISPATCH_HEAP_SPACE (2 * minipal_getpagesize())
 
 void LoaderAllocator::Init(BYTE *pExecutableHeapMemory)
 {
@@ -1144,7 +1144,7 @@ void LoaderAllocator::Init(BYTE *pExecutableHeapMemory)
     // Take a page from the high-frequency heap for this.
     if (pExecutableHeapMemory != NULL)
     {
-        dwExecutableHeapReserveSize = GetOsPageSize();
+        dwExecutableHeapReserveSize = minipal_getpagesize();
 
         _ASSERTE(dwExecutableHeapReserveSize < dwHighFrequencyHeapReserveSize);
         dwHighFrequencyHeapReserveSize -= dwExecutableHeapReserveSize;

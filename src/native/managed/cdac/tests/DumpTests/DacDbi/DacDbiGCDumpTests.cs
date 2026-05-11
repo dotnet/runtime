@@ -14,6 +14,7 @@ namespace Microsoft.Diagnostics.DataContractReader.DumpTests;
 public class DacDbiGCDumpTests : DumpTestBase
 {
     protected override string DebuggeeName => "BasicThreads";
+    protected override string DumpType => "full";
 
     private DacDbiImpl CreateDacDbi() => new DacDbiImpl(Target, legacyObj: null);
 
