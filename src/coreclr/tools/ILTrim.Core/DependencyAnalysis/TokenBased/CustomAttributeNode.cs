@@ -284,10 +284,6 @@ namespace ILCompiler.DependencyAnalysis
             {
                 valueTypeCode = SerializationTypeCode.String;
             }
-            else if (IsSystemType(type))
-            {
-                valueTypeCode = SerializationTypeCode.Type;
-            }
             else if (type.IsObject)
             {
                 valueTypeCode = SerializationTypeCode.TaggedObject;
@@ -296,6 +292,10 @@ namespace ILCompiler.DependencyAnalysis
             {
                 valueTypeCode = SerializationTypeCode.SZArray;
                 GetFixedArgumentTypeCodes(((ArrayType)type).ElementType, out elementValueTypeCode, out _);
+            }
+            else
+            {
+                valueTypeCode = SerializationTypeCode.Type;
             }
         }
 
@@ -368,12 +368,9 @@ namespace ILCompiler.DependencyAnalysis
                 case SerializationTypeCode.SZArray:
                     int elementCount = valueReader.ReadInt32();
                     blobBuilder.WriteInt32(elementCount);
-                    if (elementCount > 0)
+                    for (int i = 0; i < elementCount; i++)
                     {
-                        for (int i = 0; i < elementCount; i++)
-                        {
-                            CopySerializedValue(ref valueReader, blobBuilder, originalBlob, formatter, elementValueTypeCode, default);
-                        }
+                        CopySerializedValue(ref valueReader, blobBuilder, originalBlob, formatter, elementValueTypeCode, default);
                     }
                     break;
                 case SerializationTypeCode.TaggedObject:
@@ -381,15 +378,6 @@ namespace ILCompiler.DependencyAnalysis
                     CopySerializedValue(ref valueReader, blobBuilder, originalBlob, formatter, boxedTypeCode, boxedElementTypeCode);
                     break;
             }
-        }
-
-        private static bool IsSystemType(TypeDesc type)
-        {
-            if (type is not MetadataType mdType)
-                return false;
-
-            return mdType.Name.SequenceEqual("Type"u8)
-                && mdType.Namespace.SequenceEqual("System"u8);
         }
 
         public override string ToString()
