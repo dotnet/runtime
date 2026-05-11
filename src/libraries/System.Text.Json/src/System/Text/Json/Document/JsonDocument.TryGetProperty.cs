@@ -3,11 +3,13 @@
 
 using System.Buffers;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 
 namespace System.Text.Json
 {
     public sealed partial class JsonDocument
     {
+        [SkipLocalsInit]
         internal unsafe bool TryGetNamedPropertyValue(int index, ReadOnlySpan<char> propertyName, out JsonElement value)
         {
             CheckNotDisposed();
@@ -132,6 +134,7 @@ namespace System.Text.Json
                 out value);
         }
 
+        [SkipLocalsInit]
         private unsafe bool TryGetNamedPropertyValue(
             int startIndex,
             int endIndex,

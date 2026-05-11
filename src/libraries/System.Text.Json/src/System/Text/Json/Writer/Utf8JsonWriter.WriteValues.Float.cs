@@ -5,6 +5,7 @@ using System.Buffers;
 using System.Buffers.Text;
 using System.Diagnostics;
 using System.Globalization;
+using System.Runtime.CompilerServices;
 
 namespace System.Text.Json
 {
@@ -142,6 +143,7 @@ namespace System.Text.Json
 #endif
         }
 
+        [SkipLocalsInit]
         internal unsafe void WriteNumberValueAsString(float value)
         {
             Span<byte> utf8Number = stackalloc byte[JsonConstants.MaximumFormatSingleLength];

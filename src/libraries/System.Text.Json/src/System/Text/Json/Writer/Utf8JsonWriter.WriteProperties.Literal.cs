@@ -256,6 +256,7 @@ namespace System.Text.Json
             }
         }
 
+        [SkipLocalsInit]
         private unsafe void WriteLiteralEscapeProperty(ReadOnlySpan<char> propertyName, ReadOnlySpan<byte> value, int firstEscapeIndexProp)
         {
             Debug.Assert(int.MaxValue / JsonConstants.MaxExpansionFactorWhileEscaping >= propertyName.Length);
@@ -279,6 +280,7 @@ namespace System.Text.Json
             }
         }
 
+        [SkipLocalsInit]
         private unsafe void WriteLiteralEscapeProperty(ReadOnlySpan<byte> utf8PropertyName, ReadOnlySpan<byte> value, int firstEscapeIndexProp)
         {
             Debug.Assert(int.MaxValue / JsonConstants.MaxExpansionFactorWhileEscaping >= utf8PropertyName.Length);
@@ -510,6 +512,7 @@ namespace System.Text.Json
             BytesPending += value.Length;
         }
 
+        [SkipLocalsInit]
         internal unsafe void WritePropertyName(bool value)
         {
             Span<byte> utf8PropertyName = stackalloc byte[JsonConstants.MaximumFormatBooleanLength];

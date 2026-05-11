@@ -233,6 +233,7 @@ namespace System.Text.Json.Serialization.Converters
             }
         }
 
+        [SkipLocalsInit]
         private unsafe bool TryParseEnumFromString(ref Utf8JsonReader reader, out T result)
         {
             Debug.Assert(reader.TokenType is JsonTokenType.String or JsonTokenType.PropertyName);
@@ -393,6 +394,7 @@ namespace System.Text.Json.Serialization.Converters
         /// <summary>
         /// Attempt to format the enum value as a comma-separated string of flag values, or returns false if not a valid flag combination.
         /// </summary>
+        [SkipLocalsInit]
         private unsafe string FormatEnumAsString(ulong key, T value, JsonNamingPolicy? dictionaryKeyPolicy)
         {
             Debug.Assert(IsDefinedValueOrCombinationOfValues(key), "must only be invoked against valid enum values.");

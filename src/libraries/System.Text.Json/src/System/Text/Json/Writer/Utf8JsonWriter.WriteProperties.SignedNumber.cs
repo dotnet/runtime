@@ -4,6 +4,7 @@
 using System.Buffers;
 using System.Buffers.Text;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 
 namespace System.Text.Json
 {
@@ -210,6 +211,7 @@ namespace System.Text.Json
             }
         }
 
+        [SkipLocalsInit]
         private unsafe void WriteNumberEscapeProperty(ReadOnlySpan<char> propertyName, long value, int firstEscapeIndexProp)
         {
             Debug.Assert(int.MaxValue / JsonConstants.MaxExpansionFactorWhileEscaping >= propertyName.Length);
@@ -233,6 +235,7 @@ namespace System.Text.Json
             }
         }
 
+        [SkipLocalsInit]
         private unsafe void WriteNumberEscapeProperty(ReadOnlySpan<byte> utf8PropertyName, long value, int firstEscapeIndexProp)
         {
             Debug.Assert(int.MaxValue / JsonConstants.MaxExpansionFactorWhileEscaping >= utf8PropertyName.Length);
@@ -439,6 +442,7 @@ namespace System.Text.Json
         internal void WritePropertyName(int value)
             => WritePropertyName((long)value);
 
+        [SkipLocalsInit]
         internal unsafe void WritePropertyName(long value)
         {
             Span<byte> utf8PropertyName = stackalloc byte[JsonConstants.MaximumFormatInt64Length];

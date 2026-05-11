@@ -1,9 +1,10 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 using System.Text.Json.Serialization.Converters;
 using System.Text.Json.Serialization.Metadata;
 
@@ -135,6 +136,7 @@ namespace System.Text.Json.Nodes
         ///   Gets the JSON path.
         /// </summary>
         /// <returns>The JSON Path value.</returns>
+        [SkipLocalsInit]
         public unsafe string GetPath()
         {
             if (Parent == null)

@@ -25,6 +25,7 @@ namespace System.Text.Json
             }
         }
 
+        [SkipLocalsInit]
         public static unsafe byte[] EscapeValue(
             ReadOnlySpan<byte> utf8Value,
             int firstEscapeIndexVal,
@@ -53,6 +54,7 @@ namespace System.Text.Json
             return escapedString;
         }
 
+        [SkipLocalsInit]
         private static unsafe byte[] GetEscapedPropertyNameSection(
             ReadOnlySpan<byte> utf8Value,
             int firstEscapeIndexVal,

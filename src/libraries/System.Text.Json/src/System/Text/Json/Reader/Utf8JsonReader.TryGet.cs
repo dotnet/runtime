@@ -140,6 +140,7 @@ namespace System.Text.Json
             return CopyValue(destination);
         }
 
+        [SkipLocalsInit]
         internal readonly unsafe int CopyValue(Span<char> destination)
         {
             Debug.Assert(_tokenType is JsonTokenType.String or JsonTokenType.PropertyName or JsonTokenType.Number);
@@ -192,6 +193,7 @@ namespace System.Text.Json
             return charsWritten;
         }
 
+        [SkipLocalsInit]
         private readonly unsafe bool TryCopyEscapedString(Span<byte> destination, out int bytesWritten)
         {
             Debug.Assert(_tokenType is JsonTokenType.String or JsonTokenType.PropertyName);
@@ -1241,6 +1243,7 @@ namespace System.Text.Json
             return TryGetDateTimeCore(out value);
         }
 
+        [SkipLocalsInit]
         internal unsafe bool TryGetDateTimeCore(out DateTime value)
         {
             scoped ReadOnlySpan<byte> span;
@@ -1286,6 +1289,7 @@ namespace System.Text.Json
             return TryGetDateTimeOffsetCore(out value);
         }
 
+        [SkipLocalsInit]
         internal unsafe bool TryGetDateTimeOffsetCore(out DateTimeOffset value)
         {
             scoped ReadOnlySpan<byte> span;
@@ -1332,6 +1336,7 @@ namespace System.Text.Json
             return TryGetGuidCore(out value);
         }
 
+        [SkipLocalsInit]
         internal unsafe bool TryGetGuidCore(out Guid value)
         {
             scoped ReadOnlySpan<byte> span;

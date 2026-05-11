@@ -521,6 +521,7 @@ namespace System.Text.Json
         ///     if required. The look up text is matched as is, without any modifications to it.
         ///   </para>
         /// </remarks>
+        [SkipLocalsInit]
         public readonly unsafe bool ValueTextEquals(ReadOnlySpan<char> text)
         {
             if (!IsTokenTypeString(TokenType))

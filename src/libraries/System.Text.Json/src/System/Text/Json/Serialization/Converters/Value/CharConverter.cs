@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Text.Json.Schema;
 
 namespace System.Text.Json.Serialization.Converters
@@ -10,6 +11,7 @@ namespace System.Text.Json.Serialization.Converters
     {
         private const int MaxEscapedCharacterLength = JsonConstants.MaxExpansionFactorWhileEscaping;
 
+        [SkipLocalsInit]
         public override unsafe char Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
             if (reader.TokenType is not (JsonTokenType.String or JsonTokenType.PropertyName))

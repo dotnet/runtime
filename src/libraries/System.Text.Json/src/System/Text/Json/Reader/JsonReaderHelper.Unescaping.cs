@@ -5,12 +5,14 @@ using System.Buffers;
 using System.Buffers.Text;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 using System.Text.Unicode;
 
 namespace System.Text.Json
 {
     internal static partial class JsonReaderHelper
     {
+        [SkipLocalsInit]
         public static unsafe bool TryGetUnescapedBase64Bytes(ReadOnlySpan<byte> utf8Source, [NotNullWhen(true)] out byte[]? bytes)
         {
             byte[]? unescapedArray = null;
@@ -39,6 +41,7 @@ namespace System.Text.Json
         public static readonly UTF8Encoding s_utf8Encoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
 
         // TODO: Similar to escaping, replace the unescaping logic with publicly shipping APIs from https://github.com/dotnet/runtime/issues/27919
+        [SkipLocalsInit]
         public static unsafe string GetUnescapedString(ReadOnlySpan<byte> utf8Source)
         {
             // The escaped name is always >= than the unescaped, so it is safe to use escaped name for the buffer length.
@@ -66,6 +69,7 @@ namespace System.Text.Json
             return utf8String;
         }
 
+        [SkipLocalsInit]
         public static unsafe byte[] GetUnescaped(ReadOnlySpan<byte> utf8Source)
         {
             // The escaped name is always >= than the unescaped, so it is safe to use escaped name for the buffer length.
@@ -91,6 +95,7 @@ namespace System.Text.Json
             return propertyName;
         }
 
+        [SkipLocalsInit]
         public static unsafe bool UnescapeAndCompare(ReadOnlySpan<byte> utf8Source, ReadOnlySpan<byte> other)
         {
             Debug.Assert(utf8Source.Length >= other.Length && utf8Source.Length / JsonConstants.MaxExpansionFactorWhileEscaping <= other.Length);
@@ -118,6 +123,7 @@ namespace System.Text.Json
             return result;
         }
 
+        [SkipLocalsInit]
         public static unsafe bool UnescapeAndCompare(ReadOnlySequence<byte> utf8Source, ReadOnlySpan<byte> other)
         {
             Debug.Assert(!utf8Source.IsSingleSegment);
@@ -159,6 +165,7 @@ namespace System.Text.Json
             return result;
         }
 
+        [SkipLocalsInit]
         public static unsafe bool UnescapeAndCompareBothInputs(ReadOnlySpan<byte> utf8Source1, ReadOnlySpan<byte> utf8Source2)
         {
             int index1 = utf8Source1.IndexOf(JsonConstants.BackSlash);
@@ -215,6 +222,7 @@ namespace System.Text.Json
             return true;
         }
 
+        [SkipLocalsInit]
         public static unsafe bool TryDecodeBase64(ReadOnlySpan<byte> utf8Unescaped, [NotNullWhen(true)] out byte[]? bytes)
         {
             byte[]? pooledArray = null;

@@ -4,6 +4,7 @@
 using System.Buffers;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
 
@@ -378,6 +379,7 @@ namespace System.Text.Json
             return ReadFromSpanAsObject(json, jsonTypeInfo);
         }
 
+        [SkipLocalsInit]
         private static unsafe TValue? ReadFromSpan<TValue>(ReadOnlySpan<char> json, JsonTypeInfo<TValue> jsonTypeInfo)
         {
             Debug.Assert(jsonTypeInfo.IsConfigured);
@@ -409,6 +411,7 @@ namespace System.Text.Json
             }
         }
 
+        [SkipLocalsInit]
         private static unsafe object? ReadFromSpanAsObject(ReadOnlySpan<char> json, JsonTypeInfo jsonTypeInfo)
         {
             Debug.Assert(jsonTypeInfo.IsConfigured);

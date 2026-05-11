@@ -4,6 +4,7 @@
 using System.Buffers;
 using System.Buffers.Text;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 
 namespace System.Text.Json
 {
@@ -61,6 +62,7 @@ namespace System.Text.Json
             }
         }
 
+        [SkipLocalsInit]
         private unsafe void WriteStringSegmentWithLeftover(scoped ReadOnlySpan<char> value, bool isFinalSegment)
         {
             Debug.Assert(HasPartialStringData);
@@ -130,6 +132,7 @@ namespace System.Text.Json
             }
         }
 
+        [SkipLocalsInit]
         private unsafe void WriteStringSegmentEscapeValue(ReadOnlySpan<char> value, int firstEscapeIndexVal, bool isFinalSegment)
         {
             Debug.Assert(int.MaxValue / JsonConstants.MaxExpansionFactorWhileEscaping >= value.Length);
@@ -229,6 +232,7 @@ namespace System.Text.Json
             }
         }
 
+        [SkipLocalsInit]
         private unsafe void WriteStringSegmentWithLeftover(scoped ReadOnlySpan<byte> utf8Value, bool isFinalSegment)
         {
             Debug.Assert(HasPartialStringData);
@@ -299,6 +303,7 @@ namespace System.Text.Json
             }
         }
 
+        [SkipLocalsInit]
         private unsafe void WriteStringSegmentEscapeValue(ReadOnlySpan<byte> utf8Value, int firstEscapeIndexVal, bool isFinalSegment)
         {
             Debug.Assert(int.MaxValue / JsonConstants.MaxExpansionFactorWhileEscaping >= utf8Value.Length);
@@ -396,6 +401,7 @@ namespace System.Text.Json
             }
         }
 
+        [SkipLocalsInit]
         private unsafe void WriteBase64StringSegmentWithLeftover(scoped ReadOnlySpan<byte> bytes, bool isFinalSegment)
         {
             Debug.Assert(HasPartialStringData);

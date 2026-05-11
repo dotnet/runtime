@@ -1,8 +1,9 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers.Text;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Text.Json.Nodes;
 using System.Text.Json.Schema;
 
@@ -30,6 +31,7 @@ namespace System.Text.Json.Serialization.Converters
             return ReadCore(ref reader);
         }
 
+        [SkipLocalsInit]
         private static unsafe TimeOnly ReadCore(ref Utf8JsonReader reader)
         {
             Debug.Assert(reader.TokenType is JsonTokenType.String or JsonTokenType.PropertyName);
@@ -76,6 +78,7 @@ namespace System.Text.Json.Serialization.Converters
             return TimeOnly.FromTimeSpan(timespan);
         }
 
+        [SkipLocalsInit]
         public override unsafe void Write(Utf8JsonWriter writer, TimeOnly value, JsonSerializerOptions options)
         {
             Span<byte> output = stackalloc byte[MaximumTimeOnlyFormatLength];
@@ -86,6 +89,7 @@ namespace System.Text.Json.Serialization.Converters
             writer.WriteStringValue(output.Slice(0, bytesWritten));
         }
 
+        [SkipLocalsInit]
         internal override unsafe void WriteAsPropertyNameCore(Utf8JsonWriter writer, TimeOnly value, JsonSerializerOptions options, bool isWritingExtensionDataProperty)
         {
             Span<byte> output = stackalloc byte[MaximumTimeOnlyFormatLength];

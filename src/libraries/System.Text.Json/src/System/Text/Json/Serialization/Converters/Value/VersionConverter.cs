@@ -1,8 +1,9 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Text.Json.Nodes;
 using System.Text.Json.Schema;
 
@@ -29,6 +30,7 @@ namespace System.Text.Json.Serialization.Converters
             return ReadCore(ref reader);
         }
 
+        [SkipLocalsInit]
         private static unsafe Version ReadCore(ref Utf8JsonReader reader)
         {
             Debug.Assert(reader.TokenType is JsonTokenType.PropertyName or JsonTokenType.String);
@@ -96,6 +98,7 @@ namespace System.Text.Json.Serialization.Converters
         }
 #endif
 
+        [SkipLocalsInit]
         public override unsafe void Write(Utf8JsonWriter writer, Version? value, JsonSerializerOptions options)
         {
             if (value is null)
@@ -119,6 +122,7 @@ namespace System.Text.Json.Serialization.Converters
             return ReadCore(ref reader);
         }
 
+        [SkipLocalsInit]
         internal override unsafe void WriteAsPropertyNameCore(Utf8JsonWriter writer, Version value, JsonSerializerOptions options, bool isWritingExtensionDataProperty)
         {
             ArgumentNullException.ThrowIfNull(value);

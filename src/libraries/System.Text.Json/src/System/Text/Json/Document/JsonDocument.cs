@@ -6,6 +6,7 @@ using System.Buffers.Text;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 using System.Threading;
 
 namespace System.Text.Json
@@ -302,6 +303,7 @@ namespace System.Text.Json
                 : JsonReaderHelper.TranscodeHelper(segment);
         }
 
+        [SkipLocalsInit]
         internal unsafe bool TextEquals(int index, ReadOnlySpan<char> otherText, bool isPropertyName)
         {
             CheckNotDisposed();

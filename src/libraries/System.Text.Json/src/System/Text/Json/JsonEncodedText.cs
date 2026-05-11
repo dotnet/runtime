@@ -4,6 +4,7 @@
 using System.Buffers;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 using System.Text.Encodings.Web;
 
 namespace System.Text.Json
@@ -73,6 +74,7 @@ namespace System.Text.Json
             return TranscodeAndEncode(value, encoder);
         }
 
+        [SkipLocalsInit]
         private static unsafe JsonEncodedText TranscodeAndEncode(ReadOnlySpan<char> value, JavaScriptEncoder? encoder)
         {
             JsonWriterHelper.ValidateValue(value);

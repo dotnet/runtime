@@ -3,6 +3,7 @@
 
 using System.Buffers.Text;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Text.Json.Nodes;
 using System.Text.Json.Schema;
 
@@ -30,6 +31,7 @@ namespace System.Text.Json.Serialization.Converters
             return ReadCore(ref reader);
         }
 
+        [SkipLocalsInit]
         private static unsafe TimeSpan ReadCore(ref Utf8JsonReader reader)
         {
             Debug.Assert(reader.TokenType is JsonTokenType.String or JsonTokenType.PropertyName);
@@ -74,6 +76,7 @@ namespace System.Text.Json.Serialization.Converters
             return tmpValue;
         }
 
+        [SkipLocalsInit]
         public override unsafe void Write(Utf8JsonWriter writer, TimeSpan value, JsonSerializerOptions options)
         {
             Span<byte> output = stackalloc byte[MaximumTimeSpanFormatLength];
@@ -84,6 +87,7 @@ namespace System.Text.Json.Serialization.Converters
             writer.WriteStringValue(output.Slice(0, bytesWritten));
         }
 
+        [SkipLocalsInit]
         internal override unsafe void WriteAsPropertyNameCore(Utf8JsonWriter writer, TimeSpan value, JsonSerializerOptions options, bool isWritingExtensionDataProperty)
         {
             Span<byte> output = stackalloc byte[MaximumTimeSpanFormatLength];

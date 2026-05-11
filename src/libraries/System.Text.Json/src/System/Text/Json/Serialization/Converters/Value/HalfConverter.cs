@@ -1,9 +1,10 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
 using System.Diagnostics;
 using System.Globalization;
+using System.Runtime.CompilerServices;
 using System.Text.Json.Nodes;
 using System.Text.Json.Schema;
 
@@ -45,6 +46,7 @@ namespace System.Text.Json.Serialization.Converters
             WriteCore(writer, value);
         }
 
+        [SkipLocalsInit]
         private static unsafe Half ReadCore(ref Utf8JsonReader reader)
         {
             Half result;
@@ -74,6 +76,7 @@ namespace System.Text.Json.Serialization.Converters
             return result;
         }
 
+        [SkipLocalsInit]
         private static unsafe void WriteCore(Utf8JsonWriter writer, Half value)
         {
             Span<byte> buffer = stackalloc byte[MaxFormatLength];
@@ -87,6 +90,7 @@ namespace System.Text.Json.Serialization.Converters
             return ReadCore(ref reader);
         }
 
+        [SkipLocalsInit]
         internal override unsafe void WriteAsPropertyNameCore(Utf8JsonWriter writer, Half value, JsonSerializerOptions options, bool isWritingExtensionDataProperty)
         {
             Span<byte> buffer = stackalloc byte[MaxFormatLength];
@@ -126,6 +130,7 @@ namespace System.Text.Json.Serialization.Converters
             return ReadCore(ref reader);
         }
 
+        [SkipLocalsInit]
         internal override unsafe void WriteNumberWithCustomHandling(Utf8JsonWriter writer, Half value, JsonNumberHandling handling)
         {
             if ((JsonNumberHandling.WriteAsString & handling) != 0)
@@ -152,6 +157,7 @@ namespace System.Text.Json.Serialization.Converters
         internal override JsonSchema? GetSchema(JsonNumberHandling numberHandling) =>
             GetSchemaForNumericType(JsonSchemaType.Number, numberHandling, isIeeeFloatingPoint: true);
 
+        [SkipLocalsInit]
         private static unsafe bool TryGetFloatingPointConstant(ref Utf8JsonReader reader, out Half value)
         {
             scoped Span<byte> buffer;

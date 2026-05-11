@@ -4,6 +4,7 @@
 using System.Buffers;
 using System.Buffers.Text;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 
 namespace System.Text.Json
 {
@@ -94,6 +95,7 @@ namespace System.Text.Json
             BytesPending += bytesWritten;
         }
 
+        [SkipLocalsInit]
         internal unsafe void WriteNumberValueAsString(decimal value)
         {
             Span<byte> utf8Number = stackalloc byte[JsonConstants.MaximumFormatDecimalLength];

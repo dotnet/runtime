@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 using System.Text.Json.Serialization.Converters;
 using System.Threading;
 
@@ -238,6 +239,7 @@ namespace System.Text.Json.Nodes
             List[index] = value;
         }
 
+        [SkipLocalsInit]
         internal override unsafe void GetPath(ref ValueStringBuilder path, JsonNode? child)
         {
             Parent?.GetPath(ref path, this);
