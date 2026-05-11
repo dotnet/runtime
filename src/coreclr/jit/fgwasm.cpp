@@ -2313,8 +2313,8 @@ void Compiler::fgWasmEhTransformTry(ArrayStack<BasicBlock*>* catchRetBlocks,
     BasicBlock* const rethrowBlock =
         fgNewBBinRegion(BBJ_THROW, biasedEnclosingTryIndex, biasedEnclosingHndIndex, switchBlock);
 
-    switchBlock->bbSetRunRarely();
-    rethrowBlock->bbSetRunRarely();
+    switchBlock->setBBProfileWeight(BB_ZERO_WEIGHT);
+    rethrowBlock->setBBProfileWeight(BB_ZERO_WEIGHT);
 
     // Split the header so we can branch to the switch on exception.
     //
