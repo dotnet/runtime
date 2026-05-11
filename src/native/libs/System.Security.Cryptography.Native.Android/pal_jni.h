@@ -624,6 +624,16 @@ jclass GetClassGRef(JNIEnv *env, const char* name) ARGS_NON_NULL(1);
 // Print and clear any JNI exceptions. Returns true if there was an exception, false otherwise.
 bool CheckJNIExceptions(JNIEnv* env) ARGS_NON_NULL_ALL;
 
+// Allocates a NUL-terminated UTF-16 buffer (via xmalloc) and copies the contents of the
+// supplied Java String into it. Returns NULL when source is NULL. Aborts on allocation
+// failure (matches xmalloc semantics). Caller frees with free().
+//
+// This is the standard PAL helper for returning a String to managed code as UTF-16 —
+// System.String is internally UTF-16, so Marshal.PtrToStringUni on the managed side is
+// a zero-conversion memcpy. Using GetStringUTFRegion would produce *modified* UTF-8
+// (which is not standard UTF-8) and force an extra Encoding.UTF8.GetString allocation.
+uint16_t* AllocateString(JNIEnv* env, jstring source) ARGS_NON_NULL(1);
+
 // Clear any JNI exceptions without printing them. Returns true if there was an exception, false otherwise.
 bool TryClearJNIExceptions(JNIEnv* env) ARGS_NON_NULL_ALL;
 

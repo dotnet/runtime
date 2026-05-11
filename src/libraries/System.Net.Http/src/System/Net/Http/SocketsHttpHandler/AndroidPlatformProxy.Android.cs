@@ -46,18 +46,26 @@ namespace System.Net.Http
 
             try
             {
-                // ProxySelector returns entries in preference order. We take the first one.
+                // ProxySelector returns entries in preference order. We take the first.
                 // SocketsHttpHandler does not currently have an opt-in fallback API for
                 // multiple proxies; if the chosen proxy is unreachable the user sees the
                 // connect error rather than an automatic retry.
                 for (int i = 0; i < count; i++)
                 {
                     Interop.AndroidCrypto.AndroidProxyInfo entry = proxies[i];
+
+                    // SOCKS is a transport-level proxy protocol (RFC 1928 for SOCKS5).
+                    // Unlike HTTP CONNECT, SOCKS tunnels arbitrary TCP at the socket
+                    // layer. SocketsHttpHandler accepts "socks5://" via
+                    // HttpUtilities.IsSupportedProxyScheme. Android's
+                    // java.net.Proxy.Type.SOCKS maps to SOCKS5 on modern Android.
                     string scheme = entry.Type == (int)Interop.AndroidCrypto.AndroidProxyType.Socks
                         ? "socks5"
                         : "http";
 
-                    string? host = Marshal.PtrToStringUTF8(entry.Host);
+                    // The native PAL allocates the host as NUL-terminated UTF-16
+                    // (Marshal.PtrToStringUni is a zero-conversion copy).
+                    string? host = Marshal.PtrToStringUni(entry.Host);
                     if (string.IsNullOrEmpty(host))
                     {
                         continue;
@@ -74,12 +82,12 @@ namespace System.Net.Http
             }
         }
 
-        public bool IsBypassed(Uri host)
-        {
-            ArgumentNullException.ThrowIfNull(host);
-            // Computing the real answer is as expensive as GetProxy; mirror MacProxy.
-            Uri? proxyUri = GetProxy(host);
-            return proxyUri is null || Equals(proxyUri, host);
-        }
+        // SocketsHttpHandler's pattern is: call IsBypassed first; if it returns false,
+        // call GetProxy. For us, computing IsBypassed *correctly* would require calling
+        // GetProxy first, which would mean two JNI round-trips per request.
+        // Instead, we always return false (same approach as HttpWindowsProxy:349–360) so
+        // that SHH always calls GetProxy exactly once and discovers "no proxy" via a
+        // null return.
+        public bool IsBypassed(Uri host) => false;
     }
 }

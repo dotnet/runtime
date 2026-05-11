@@ -15,9 +15,11 @@ typedef enum
 
 typedef struct
 {
-    int32_t type;  // AndroidProxyType
-    char*   host;  // NUL-terminated UTF-8, malloc'd; freed via AndroidCryptoNative_FreeProxyResult
-    int32_t port;
+    int32_t   type;  // AndroidProxyType
+    uint16_t* host;  // NUL-terminated UTF-16, allocated via xmalloc (so .NET internals
+                     // can read it directly with Marshal.PtrToStringUni / new string(char*));
+                     // freed via AndroidCryptoNative_FreeProxyResult.
+    int32_t   port;
 } AndroidProxyInfo;
 
 // Resolves the system proxy chain for the destination URL by querying

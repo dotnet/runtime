@@ -28,6 +28,21 @@ namespace System.Net.Http
             return new HttpNoProxy();
         }
 
+        // Feature switch: System.Net.Http.UseAndroidSystemProxy
+        //
+        // Defaults to true. Apps may opt out (set to "false" via
+        // <RuntimeHostConfigurationOption>) for the following reasons:
+        //
+        //   * Back-compat with apps that previously ran on SocketsHttpHandler
+        //     (i.e. UseNativeHttpHandler=false) and got env-var-only proxy
+        //     behavior. Suddenly honoring the system proxy could change the
+        //     destination of their HTTP requests; this switch is the escape
+        //     hatch.
+        //   * Trimming: when set to false at publish time, the linker can
+        //     trim the AndroidPlatformProxy class, the Interop P/Invoke
+        //     declarations, and (transitively) leave the native pal_proxy
+        //     code referenced only by other paths.
+        //   * Testing / debugging where pure env-var behavior is required.
         [FeatureSwitchDefinition("System.Net.Http.UseAndroidSystemProxy")]
         private static bool UseAndroidSystemProxy =>
             RuntimeSettingParser.QueryRuntimeSettingSwitch(

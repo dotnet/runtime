@@ -715,6 +715,21 @@ JNIEnv* GetJNIEnv(void)
     return env;
 }
 
+uint16_t* AllocateString(JNIEnv* env, jstring source)
+{
+    if (source == NULL)
+        return NULL;
+
+    // GetStringLength is in 16-bit Java code-units, which is exactly the format we copy
+    // out via GetStringRegion. The buffer holds (len + 1) uint16_t for the NUL terminator.
+    jsize len = (*env)->GetStringLength(env, source);
+    uint16_t* buffer = xmalloc(sizeof(uint16_t) * (size_t)(len + 1));
+    buffer[len] = '\0';
+
+    (*env)->GetStringRegion(env, source, 0, len, (jchar*)buffer);
+    return buffer;
+}
+
 jint AndroidCryptoNative_InitLibraryOnLoad (JavaVM *vm, void *reserved)
 {
     (void)reserved;
