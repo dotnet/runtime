@@ -11460,8 +11460,6 @@ GenTreeCall* Compiler::gtCloneExprCallHelper(GenTreeCall* tree)
 
     copy->gtInlineContext = tree->gtInlineContext;
 
-    copy->CopyOtherRegFlags(tree);
-
     // We keep track of the number of no return calls, so if we've cloned
     // one of these, update the tracking.
     //

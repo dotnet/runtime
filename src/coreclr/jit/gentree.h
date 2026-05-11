@@ -3971,6 +3971,7 @@ public:
         {
             gtOtherReg[i] = from->gtOtherReg[i];
         }
+        gtSpillFlags = from->gtSpillFlags;
     }
 
     regNumber GetRegNumByIdx(int regIndex) const
@@ -4018,21 +4019,6 @@ public:
     void ClearOtherRegFlags()
     {
         gtSpillFlags = 0;
-    }
-
-    //-------------------------------------------------------------------------
-    // CopyOtherRegFlags: copy GTF_* flags associated with gtOtherRegs from
-    // the given LclVar node.
-    //
-    // Arguments:
-    //    fromCall  -  GenTreeLclVar node from which to copy
-    //
-    // Return Value:
-    //    None
-    //
-    void CopyOtherRegFlags(GenTreeLclVar* from)
-    {
-        this->gtSpillFlags = from->gtSpillFlags;
     }
 
 #ifdef DEBUG
@@ -5347,8 +5333,9 @@ struct GenTreeCall final : public GenTree
 #if FEATURE_MULTIREG_RET
         for (unsigned i = 0; i < MAX_RET_REG_COUNT - 1; ++i)
         {
-            this->gtOtherRegs[i] = fromCall->gtOtherRegs[i];
+            gtOtherRegs[i] = fromCall->gtOtherRegs[i];
         }
+        gtSpillFlags = fromCall->gtSpillFlags;
 #endif
     }
 
@@ -5388,23 +5375,6 @@ struct GenTreeCall final : public GenTree
     {
 #if FEATURE_MULTIREG_RET
         gtSpillFlags = 0;
-#endif
-    }
-
-    //-------------------------------------------------------------------------
-    // CopyOtherRegFlags: copy GTF_* flags associated with gtOtherRegs from
-    // the given call node.
-    //
-    // Arguments:
-    //    fromCall  -  GenTreeCall node from which to copy
-    //
-    // Return Value:
-    //    None
-    //
-    void CopyOtherRegFlags(GenTreeCall* fromCall)
-    {
-#if FEATURE_MULTIREG_RET
-        this->gtSpillFlags = fromCall->gtSpillFlags;
 #endif
     }
 
@@ -5975,7 +5945,8 @@ struct GenTreeMultiRegOp : public GenTreeOp
     //
     void CopyOtherRegs(GenTreeMultiRegOp* from)
     {
-        gtOtherReg = from->gtOtherReg;
+        gtOtherReg   = from->gtOtherReg;
+        gtSpillFlags = from->gtSpillFlags;
     }
 
     //---------------------------------------------------------------------------
@@ -6493,7 +6464,8 @@ public:
     //
     void CopyOtherRegs(GenTreeJitIntrinsic* from)
     {
-        gtOtherReg = from->gtOtherReg;
+        gtOtherReg   = from->gtOtherReg;
+        gtSpillFlags = from->gtSpillFlags;
     }
 
     //-----------------------------------------------------------
