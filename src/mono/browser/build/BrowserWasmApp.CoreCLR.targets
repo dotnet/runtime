@@ -32,6 +32,14 @@
     <WasmBuildAppAfterThisTarget Condition="'$(WasmBuildAppAfterThisTarget)' == ''">Build</WasmBuildAppAfterThisTarget>
     <WasmTriggerPublishAppAfterThisTarget Condition="'$(WasmTriggerPublishAppAfterThisTarget)' == ''">Publish</WasmTriggerPublishAppAfterThisTarget>
 
+    <!-- During a publish-driven build, skip the build-phase relink. Otherwise WasmBuildApp produces
+         for-build/dotnet.native.wasm whose pinvoke-table is generated before the user assembly is
+         available to the scanner; ProcessPublishFilesForWasm / ComputeWasmPublishAssets then pick up
+         that stale for-build/ artifact via @(WasmNativeAsset) and stage it into the publish bundle,
+         while the (correct) for-publish/ relink produced by the nested WasmTriggerPublishApp runs too
+         late to be consumed. Mirrors the default in src/mono/wasm/build/WasmApp.Common.targets. -->
+    <WasmBuildOnlyAfterPublish Condition="'$(WasmBuildOnlyAfterPublish)' == '' and ('$(DeployOnBuild)' == 'true' or '$(_IsPublishing)' == 'true')">true</WasmBuildOnlyAfterPublish>
+
     <!-- The nested publish needs the full Publish chain (which includes Build) so that
          GenerateStaticWebAssetsManifest runs before _CleanupReferencedProjectItemGroups
          tries to read the manifest. The WebAssembly SDK sets this to ComputeFilesToPublish
@@ -102,18 +110,21 @@
           Condition="'$(IsBrowserWasmProject)' == 'true' and
                      '$(WasmBuildingForNestedPublish)' != 'true' and
                      '$(IsCrossTargetingBuild)' != 'true'">
+    <!-- Use a unique property, so the already run wasm targets can also run -->
     <MSBuild Projects="$(MSBuildProjectFile)"
              Targets="WasmNestedPublishApp"
-             Properties="WasmBuildingForNestedPublish=true;_WasmInNestedPublish_UniqueProperty_XYZ=true"
-             RebaseOutputs="true">
+             Properties="_WasmInNestedPublish_UniqueProperty_XYZ=true;;WasmBuildingForNestedPublish=true;DeployOnBuild=;_IsPublishing=;_WasmIsPublishing=$(_IsPublishing);ResolveAssemblyReferencesFindRelatedSatellites=true">
       <Output TaskParameter="TargetOutputs" ItemName="_WasmNestedPublishAppResultItems" />
     </MSBuild>
+
     <ItemGroup>
-      <!-- Remove build-phase native assets; the nested publish produces the definitive set -->
-      <WasmNativeAsset Remove="@(WasmNativeAsset)" />
       <WasmAssembliesFinal Remove="@(WasmAssembliesFinal)" />
-      <WasmAssembliesFinal Include="@(_WasmNestedPublishAppResultItems)" Condition="'%(Extension)' == '.dll'" />
-      <WasmNativeAsset Include="@(_WasmNestedPublishAppResultItems)" Condition="'%(Extension)' != '.dll'" />
+      <WasmAssembliesFinal Include="@(_WasmNestedPublishAppResultItems)" Condition="'%(_WasmNestedPublishAppResultItems.OriginalItemName)' == 'WasmAssembliesFinal'" />
+
+      <WasmNativeAsset Remove="@(WasmNativeAsset)" />
+      <WasmNativeAsset Include="@(_WasmNestedPublishAppResultItems)" Condition="'%(_WasmNestedPublishAppResultItems.OriginalItemName)' == 'WasmNativeAsset'" />
+
+      <FileWrites Include="@(_WasmNestedPublishAppResultItems)" Condition="'%(_WasmNestedPublishAppResultItems.OriginalItemName)' == 'FileWrites'" />
     </ItemGroup>
   </Target>
 
@@ -121,7 +132,25 @@
   <Target Name="WasmNestedPublishApp"
           Condition="'$(WasmBuildingForNestedPublish)' == 'true'"
           DependsOnTargets="ResolveRuntimePackAssets;$(_WasmNestedPublishAppPreTarget);$(WasmNestedPublishAppDependsOn);_CoreCLRSetWasmBuildNativeDefaults;_CoreCLRWasmBuildAppCore"
-          Returns="@(WasmAssembliesFinal);@(WasmNativeAsset)" />
+          Returns="@(WasmNativeAsset);@(WasmAssembliesFinal);@(FileWrites)">
+    <ItemGroup>
+      <WasmNativeAsset OriginalItemName="WasmNativeAsset" />
+      <WasmAssembliesFinal OriginalItemName="WasmAssembliesFinal" />
+      <FileWrites OriginalItemName="FileWrites" />
+    </ItemGroup>
+  </Target>
+
+  <!-- The WebAssembly SDK has _WasmNative which forces WasmTriggerPublishApp to run before
+       ProcessPublishFilesForWasm, but it is gated on $(UsingBrowserRuntimeWorkload) == 'true'.
+       In CoreCLR no-workload mode that property is false, so without this target the nested
+       publish (and its for-publish/dotnet.native.wasm relink) would only run after Publish
+       completes — too late for ComputeWasmPublishAssets to pick up @(WasmNativeAsset). -->
+  <Target Name="_CoreCLRWasmNative"
+          DependsOnTargets="WasmTriggerPublishApp"
+          BeforeTargets="ProcessPublishFilesForWasm"
+          Condition="'$(IsBrowserWasmProject)' == 'true' and
+                     '$(WasmBuildingForNestedPublish)' != 'true' and
+                     '$(UsingBrowserRuntimeWorkload)' != 'true'" />
 
   <!-- ======================== Core Orchestrator ======================== -->
 
