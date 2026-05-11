@@ -93,11 +93,11 @@ namespace System.Net.Security.Tests
             Assert.True(otherAllowed, "Cleartext should be allowed for other.example.com (base-config allows it)");
         }
 
-        [System.Runtime.InteropServices.DllImport("System.Security.Cryptography.Native.Android", EntryPoint = "AndroidCryptoNative_IsCleartextTrafficPermitted")]
+        [System.Runtime.InteropServices.DllImport("System.Security.Cryptography.Native.Android", EntryPoint = "AndroidCryptoNative_TestOnly_IsCleartextTrafficPermitted")]
         [return: System.Runtime.InteropServices.MarshalAs(System.Runtime.InteropServices.UnmanagedType.Bool)]
         private static extern bool IsCleartextTrafficPermitted([System.Runtime.InteropServices.MarshalAs(System.Runtime.InteropServices.UnmanagedType.LPUTF8Str)] string hostname);
 
-        [System.Runtime.InteropServices.DllImport("System.Security.Cryptography.Native.Android", EntryPoint = "AndroidCryptoNative_IsCertificateTrustedForHost")]
+        [System.Runtime.InteropServices.DllImport("System.Security.Cryptography.Native.Android", EntryPoint = "AndroidCryptoNative_TestOnly_IsCertificateTrustedForHost")]
         [return: System.Runtime.InteropServices.MarshalAs(System.Runtime.InteropServices.UnmanagedType.Bool)]
         private static extern bool IsCertificateTrustedForHost(byte[] certDer, int certDerLen, [System.Runtime.InteropServices.MarshalAs(System.Runtime.InteropServices.UnmanagedType.LPUTF8Str)] string hostname);
 

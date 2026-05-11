@@ -9,5 +9,5 @@ jobjectArray GetTrustManagers(JNIEnv* env, intptr_t sslStreamProxyHandle, const 
 JNIEXPORT jboolean JNICALL Java_net_dot_android_crypto_DotnetProxyTrustManager_verifyRemoteCertificate(
     JNIEnv *env, jobject thisHandle, jlong sslStreamProxyHandle, jboolean chainTrustedByPlatform);
 
-PALEXPORT int32_t AndroidCryptoNative_IsCleartextTrafficPermitted(const char* hostname);
-PALEXPORT int32_t AndroidCryptoNative_IsCertificateTrustedForHost(const uint8_t* certDer, int32_t certDerLen, const char* hostname);
+PALEXPORT int32_t AndroidCryptoNative_TestOnly_IsCleartextTrafficPermitted(const char* hostname);
+PALEXPORT int32_t AndroidCryptoNative_TestOnly_IsCertificateTrustedForHost(const uint8_t* certDer, int32_t certDerLen, const char* hostname);
