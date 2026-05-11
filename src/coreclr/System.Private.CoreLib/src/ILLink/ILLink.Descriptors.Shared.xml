@@ -9,6 +9,11 @@
     <!-- Accessed via native code. -->
     <type fullname="System.Runtime.InteropServices.CustomMarshalers.*" />
 
+    <!-- Required for generic constraints on array marshaler stub helpers. -->
+    <type fullname="System.StubHelpers.IArrayMarshaler`2" preserve="all" />
+    <type fullname="System.StubHelpers.IArrayElementMarshaler`2" preserve="all" />
+    <type fullname="System.StubHelpers.DateMarshaler" preserve="all" />
+
     <!-- GetActualImplementationForArrayGenericIListOrIReadOnlyListMethod depends on slots of these interfaces not changing -->
     <type fullname="System.Collections.Generic.IEnumerable`1" />
     <type fullname="System.Collections.Generic.ICollection`1" />
