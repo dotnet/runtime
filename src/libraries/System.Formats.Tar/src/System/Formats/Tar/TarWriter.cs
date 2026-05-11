@@ -314,7 +314,7 @@ namespace System.Formats.Tar
         }
 
         // Portion of the WriteEntry(entry) method that rents a buffer and writes to the archive.
-        private void WriteEntryInternal(TarEntry entry)
+        private unsafe void WriteEntryInternal(TarEntry entry)
         {
             Span<byte> buffer = stackalloc byte[TarHelpers.RecordSize];
             buffer.Clear();
@@ -379,7 +379,7 @@ namespace System.Formats.Tar
 
         // The spec indicates that the end of the archive is indicated
         // by two records consisting entirely of zero bytes.
-        private void WriteFinalRecords()
+        private unsafe void WriteFinalRecords()
         {
             Span<byte> emptyRecord = stackalloc byte[TarHelpers.RecordSize];
             emptyRecord.Clear();

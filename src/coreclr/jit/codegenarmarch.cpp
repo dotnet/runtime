@@ -4873,14 +4873,13 @@ void CodeGen::genPushCalleeSavedRegisters(regNumber initReg, bool* pInitRegZeroe
 }
 
 #if defined(TARGET_ARM64)
-/*****************************************************************************
- *
- * Generates code for creating the UnknownSizeFrame stack space.
- *
- * See Compiler::UnknownSizeFrame for implementation details. The space contains
- * stack allocations for Vector<T>.
- */
-
+//----------------------------------------------------------------------------
+//
+// genUnknownSizeFrame: Generates code for creating the UnknownSizeFrame stack space.
+//
+// See Compiler::UnknownSizeFrame for implementation details. The space contains
+// stack allocations for Vector<T>.
+//
 void CodeGen::genUnknownSizeFrame()
 {
     assert(m_compiler->compLocallocUsed && m_compiler->compUsesUnknownSizeFrame);

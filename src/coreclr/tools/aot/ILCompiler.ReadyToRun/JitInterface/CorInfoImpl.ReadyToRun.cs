@@ -29,6 +29,8 @@ using System.Text;
 using System.Runtime.CompilerServices;
 using ILCompiler.ReadyToRun.TypeSystem;
 
+using DependencyList = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.DependencyList;
+
 namespace Internal.JitInterface
 {
     class InfiniteCompileStress
@@ -491,6 +493,12 @@ namespace Internal.JitInterface
             _precodeFixups.Add(node);
         }
 
+        private void AddAdditionalDependency(ISymbolNode node, string reason)
+        {
+            _additionalDependencies ??= new DependencyList();
+            _additionalDependencies.Add(node, reason);
+        }
+
         private void AddResumptionStubFixup(MethodWithGCInfo compiledStubNode)
         {
             AddPrecodeFixup(_compilation.SymbolNodeFactory.ResumptionStubEntryPoint(compiledStubNode));
@@ -852,6 +860,17 @@ namespace Internal.JitInterface
                         }
                     }
                 }
+
+                // For managed methods on Wasm, add an interpreter-to-R2R thunk so the
+                // interpreter can call into this R2R-compiled function.
+                if (_compilation.NodeFactory.Target.IsWasm && !MethodBeingCompiled.IsUnmanagedCallersOnly)
+                {
+                    WasmSignature wasmSig = WasmLowering.GetSignature(MethodBeingCompiled);
+                    AddAdditionalDependency(
+                        _compilation.NodeFactory.WasmInterpreterToR2RThunk(wasmSig),
+                        "Interpreter-to-R2R thunk for compiled method");
+                }
+
                 var compilationResult = CompileMethodInternal(methodCodeNodeNeedingCode, methodIL);
                 codeGotPublished = true;
 
@@ -3515,5 +3534,69 @@ namespace Internal.JitInterface
             // Implemented for NativeAOT only for now.
         }
 #pragma warning restore CA1822 // Mark members as static
+
+#pragma warning disable CA1822 // Mark members as static
+        private void recordCallSite(uint instrOffset, CORINFO_SIG_INFO* callSig, CORINFO_METHOD_STRUCT_* methodHandle)
+#pragma warning restore CA1822 // Mark members as static
+        {
+            if ((callSig != null) && _compilation.NodeFactory.Target.IsWasm)
+            {
+                var sig = HandleToObject(callSig->methodSignature);
+
+                WasmLowering.LoweringFlags flags = 0;
+                if (callSig->hasTypeArg())
+                {
+                    flags |= WasmLowering.LoweringFlags.HasGenericContextArg;
+                }
+                if (callSig->isAsyncCall())
+                {
+                    flags |= WasmLowering.LoweringFlags.IsAsyncCall;
+                }
+                if (((int)callSig->getCallConv() & 0xF) != 0)
+                {
+                    flags |= WasmLowering.LoweringFlags.IsUnmanagedCallersOnly;
+                }
+
+                WasmSignature wasmSig = WasmLowering.GetSignature(sig, flags);
+
+                // Only create R2R-to-interpreter thunks for managed calls.
+                // Unmanaged calls don't go through the interpreter transition.
+                if (!flags.HasFlag(WasmLowering.LoweringFlags.IsUnmanagedCallersOnly))
+                {
+                    AddAdditionalDependency(_compilation.NodeFactory.WasmR2RToInterpreterThunk(wasmSig), "R2R-to-interpreter thunk for call site");
+                }
+            }
+        }
+
+        private void recordWasmManagedCallSig(CORINFO_SIG_INFO* callSig)
+        {
+            if ((callSig != null) && _compilation.NodeFactory.Target.IsWasm)
+            {
+                var sig = HandleToObject(callSig->methodSignature);
+
+                WasmLowering.LoweringFlags flags = 0;
+                if (callSig->hasTypeArg())
+                {
+                    flags |= WasmLowering.LoweringFlags.HasGenericContextArg;
+                }
+                if (callSig->isAsyncCall())
+                {
+                    flags |= WasmLowering.LoweringFlags.IsAsyncCall;
+                }
+                if (((int)callSig->getCallConv() & 0xF) != 0)
+                {
+                    flags |= WasmLowering.LoweringFlags.IsUnmanagedCallersOnly;
+                }
+
+                WasmSignature wasmSig = WasmLowering.GetSignature(sig, flags);
+
+                // Only create R2R-to-interpreter thunks for managed calls.
+                // Unmanaged calls don't go through the interpreter transition.
+                if (!flags.HasFlag(WasmLowering.LoweringFlags.IsUnmanagedCallersOnly))
+                {
+                    AddAdditionalDependency(_compilation.NodeFactory.WasmR2RToInterpreterThunk(wasmSig), "R2R-to-interpreter thunk for call site");
+                }
+            }
+        }
     }
 }
