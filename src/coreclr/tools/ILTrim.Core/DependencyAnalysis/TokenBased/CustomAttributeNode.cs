@@ -234,7 +234,7 @@ namespace ILCompiler.DependencyAnalysis
                 MethodSignature constructorSig = constructor.Signature;
                 for (int i = 0; i < constructorSig.Length; i++)
                 {
-                    CopyFixedArgument(ref valueReader, blobBuilder, originalBlob, constructorSig[i], _module, formatter);
+                    CopyFixedArgument(ref valueReader, blobBuilder, originalBlob, constructorSig[i], formatter);
                 }
 
                 ushort namedArgumentCount = valueReader.ReadUInt16();
@@ -245,9 +245,9 @@ namespace ILCompiler.DependencyAnalysis
                     CustomAttributeNamedArgumentKind kind = (CustomAttributeNamedArgumentKind)valueReader.ReadByte();
                     blobBuilder.WriteByte((byte)kind);
 
-                    CopyNamedArgumentType(ref valueReader, blobBuilder, originalBlob, _module, formatter, out SerializationTypeCode valueTypeCode, out SerializationTypeCode elementValueTypeCode);
-                    CopySerializedString(ref valueReader, blobBuilder, originalBlob, rewriteTypeName: false, _module, formatter);
-                    CopySerializedValue(ref valueReader, blobBuilder, originalBlob, _module, formatter, valueTypeCode, elementValueTypeCode);
+                    CopyNamedArgumentType(ref valueReader, blobBuilder, originalBlob, formatter, out SerializationTypeCode valueTypeCode, out SerializationTypeCode elementValueTypeCode);
+                    CopySerializedString(ref valueReader, blobBuilder, originalBlob, rewriteTypeName: false, formatter);
+                    CopySerializedValue(ref valueReader, blobBuilder, originalBlob, formatter, valueTypeCode, elementValueTypeCode);
                 }
             }
             catch (Exception ex) when (ex is TypeSystemException or BadImageFormatException)
@@ -264,7 +264,7 @@ namespace ILCompiler.DependencyAnalysis
             blobBuilder.WriteBytes(originalBlob, startOffset, byteCount);
         }
 
-        private static void CopySerializedString(ref BlobReader valueReader, BlobBuilder blobBuilder, byte[] originalBlob, bool rewriteTypeName, EcmaModule module, CustomAttributeTypeNameFormatter formatter)
+        private void CopySerializedString(ref BlobReader valueReader, BlobBuilder blobBuilder, byte[] originalBlob, bool rewriteTypeName, CustomAttributeTypeNameFormatter formatter)
         {
             int startOffset = valueReader.Offset;
             string? original = valueReader.ReadSerializedString();
@@ -272,7 +272,7 @@ namespace ILCompiler.DependencyAnalysis
 
             if (rewriteTypeName && original is not null)
             {
-                TypeDesc resolved = module.GetTypeByCustomAttributeTypeName(original);
+                TypeDesc resolved = _module.GetTypeByCustomAttributeTypeName(original);
                 if (resolved is not null)
                 {
                     string rewritten = formatter.FormatName(resolved, true);
@@ -287,10 +287,10 @@ namespace ILCompiler.DependencyAnalysis
             blobBuilder.WriteBytes(originalBlob, startOffset, endOffset - startOffset);
         }
 
-        private static void CopyFixedArgument(ref BlobReader valueReader, BlobBuilder blobBuilder, byte[] originalBlob, TypeDesc type, EcmaModule module, CustomAttributeTypeNameFormatter formatter)
+        private void CopyFixedArgument(ref BlobReader valueReader, BlobBuilder blobBuilder, byte[] originalBlob, TypeDesc type, CustomAttributeTypeNameFormatter formatter)
         {
             GetFixedArgumentTypeCodes(type, out SerializationTypeCode valueTypeCode, out SerializationTypeCode elementValueTypeCode);
-            CopySerializedValue(ref valueReader, blobBuilder, originalBlob, module, formatter, valueTypeCode, elementValueTypeCode);
+            CopySerializedValue(ref valueReader, blobBuilder, originalBlob, formatter, valueTypeCode, elementValueTypeCode);
         }
 
         private static void GetFixedArgumentTypeCodes(TypeDesc type, out SerializationTypeCode valueTypeCode, out SerializationTypeCode elementValueTypeCode)
@@ -323,26 +323,24 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         private static SerializationTypeCode GetPrimitiveSerializationTypeCode(TypeDesc type)
-        {
-            switch (type.Category)
+            => type.Category switch
             {
-                case TypeFlags.Boolean: return SerializationTypeCode.Boolean;
-                case TypeFlags.Char: return SerializationTypeCode.Char;
-                case TypeFlags.SByte: return SerializationTypeCode.SByte;
-                case TypeFlags.Byte: return SerializationTypeCode.Byte;
-                case TypeFlags.Int16: return SerializationTypeCode.Int16;
-                case TypeFlags.UInt16: return SerializationTypeCode.UInt16;
-                case TypeFlags.Int32: return SerializationTypeCode.Int32;
-                case TypeFlags.UInt32: return SerializationTypeCode.UInt32;
-                case TypeFlags.Int64: return SerializationTypeCode.Int64;
-                case TypeFlags.UInt64: return SerializationTypeCode.UInt64;
-                case TypeFlags.Single: return SerializationTypeCode.Single;
-                case TypeFlags.Double: return SerializationTypeCode.Double;
-                default: throw new BadImageFormatException();
-            }
-        }
+                TypeFlags.Boolean => SerializationTypeCode.Boolean,
+                TypeFlags.Char => SerializationTypeCode.Char,
+                TypeFlags.SByte => SerializationTypeCode.SByte,
+                TypeFlags.Byte => SerializationTypeCode.Byte,
+                TypeFlags.Int16 => SerializationTypeCode.Int16,
+                TypeFlags.UInt16 => SerializationTypeCode.UInt16,
+                TypeFlags.Int32 => SerializationTypeCode.Int32,
+                TypeFlags.UInt32 => SerializationTypeCode.UInt32,
+                TypeFlags.Int64 => SerializationTypeCode.Int64,
+                TypeFlags.UInt64 => SerializationTypeCode.UInt64,
+                TypeFlags.Single => SerializationTypeCode.Single,
+                TypeFlags.Double => SerializationTypeCode.Double,
+                _ => throw new BadImageFormatException(),
+            };
 
-        private static void CopyNamedArgumentType(ref BlobReader valueReader, BlobBuilder blobBuilder, byte[] originalBlob, EcmaModule module, CustomAttributeTypeNameFormatter formatter, out SerializationTypeCode valueTypeCode, out SerializationTypeCode elementValueTypeCode)
+        private void CopyNamedArgumentType(ref BlobReader valueReader, BlobBuilder blobBuilder, byte[] originalBlob, CustomAttributeTypeNameFormatter formatter, out SerializationTypeCode valueTypeCode, out SerializationTypeCode elementValueTypeCode)
         {
             elementValueTypeCode = default;
 
@@ -352,12 +350,12 @@ namespace ILCompiler.DependencyAnalysis
             switch (typeCode)
             {
                 case SerializationTypeCode.SZArray:
-                    CopyNamedArgumentType(ref valueReader, blobBuilder, originalBlob, module, formatter, out elementValueTypeCode, out _);
+                    CopyNamedArgumentType(ref valueReader, blobBuilder, originalBlob, formatter, out elementValueTypeCode, out _);
                     valueTypeCode = SerializationTypeCode.SZArray;
                     break;
                 case SerializationTypeCode.Enum:
                     string enumTypeName = valueReader.ReadSerializedString()!;
-                    TypeDesc enumType = module.GetTypeByCustomAttributeTypeName(enumTypeName)!;
+                    TypeDesc enumType = _module.GetTypeByCustomAttributeTypeName(enumTypeName)!;
                     string rewritten = formatter.FormatName(enumType, true);
                     blobBuilder.WriteSerializedString(rewritten);
                     valueTypeCode = GetPrimitiveSerializationTypeCode(enumType.UnderlyingType);
@@ -368,35 +366,27 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        private static void CopySerializedValue(ref BlobReader valueReader, BlobBuilder blobBuilder, byte[] originalBlob, EcmaModule module, CustomAttributeTypeNameFormatter formatter, SerializationTypeCode valueTypeCode, SerializationTypeCode elementValueTypeCode)
+        private void CopySerializedValue(ref BlobReader valueReader, BlobBuilder blobBuilder, byte[] originalBlob, CustomAttributeTypeNameFormatter formatter, SerializationTypeCode valueTypeCode, SerializationTypeCode elementValueTypeCode)
         {
             switch (valueTypeCode)
             {
-                case SerializationTypeCode.Boolean:
-                case SerializationTypeCode.Byte:
-                case SerializationTypeCode.SByte:
+                case SerializationTypeCode.Boolean or SerializationTypeCode.Byte or SerializationTypeCode.SByte:
                     CopyRawBytes(ref valueReader, blobBuilder, originalBlob, 1);
                     break;
-                case SerializationTypeCode.Char:
-                case SerializationTypeCode.Int16:
-                case SerializationTypeCode.UInt16:
+                case SerializationTypeCode.Char or SerializationTypeCode.Int16 or SerializationTypeCode.UInt16:
                     CopyRawBytes(ref valueReader, blobBuilder, originalBlob, 2);
                     break;
-                case SerializationTypeCode.Int32:
-                case SerializationTypeCode.UInt32:
-                case SerializationTypeCode.Single:
+                case SerializationTypeCode.Int32 or SerializationTypeCode.UInt32 or SerializationTypeCode.Single:
                     CopyRawBytes(ref valueReader, blobBuilder, originalBlob, 4);
                     break;
-                case SerializationTypeCode.Int64:
-                case SerializationTypeCode.UInt64:
-                case SerializationTypeCode.Double:
+                case SerializationTypeCode.Int64 or SerializationTypeCode.UInt64 or SerializationTypeCode.Double:
                     CopyRawBytes(ref valueReader, blobBuilder, originalBlob, 8);
                     break;
                 case SerializationTypeCode.String:
-                    CopySerializedString(ref valueReader, blobBuilder, originalBlob, rewriteTypeName: false, module, formatter);
+                    CopySerializedString(ref valueReader, blobBuilder, originalBlob, rewriteTypeName: false, formatter);
                     break;
                 case SerializationTypeCode.Type:
-                    CopySerializedString(ref valueReader, blobBuilder, originalBlob, rewriteTypeName: true, module, formatter);
+                    CopySerializedString(ref valueReader, blobBuilder, originalBlob, rewriteTypeName: true, formatter);
                     break;
                 case SerializationTypeCode.SZArray:
                     int elementCount = valueReader.ReadInt32();
@@ -405,13 +395,13 @@ namespace ILCompiler.DependencyAnalysis
                     {
                         for (int i = 0; i < elementCount; i++)
                         {
-                            CopySerializedValue(ref valueReader, blobBuilder, originalBlob, module, formatter, elementValueTypeCode, default);
+                            CopySerializedValue(ref valueReader, blobBuilder, originalBlob, formatter, elementValueTypeCode, default);
                         }
                     }
                     break;
                 case SerializationTypeCode.TaggedObject:
-                    CopyNamedArgumentType(ref valueReader, blobBuilder, originalBlob, module, formatter, out SerializationTypeCode boxedTypeCode, out SerializationTypeCode boxedElementTypeCode);
-                    CopySerializedValue(ref valueReader, blobBuilder, originalBlob, module, formatter, boxedTypeCode, boxedElementTypeCode);
+                    CopyNamedArgumentType(ref valueReader, blobBuilder, originalBlob, formatter, out SerializationTypeCode boxedTypeCode, out SerializationTypeCode boxedElementTypeCode);
+                    CopySerializedValue(ref valueReader, blobBuilder, originalBlob, formatter, boxedTypeCode, boxedElementTypeCode);
                     break;
             }
         }
