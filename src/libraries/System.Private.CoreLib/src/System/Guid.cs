@@ -305,13 +305,6 @@ namespace System
         /// </remarks>
         public static Guid CreateVersion7(DateTimeOffset timestamp)
         {
-            // NewGuid uses CoCreateGuid on Windows and Interop.GetCryptographicallySecureRandomBytes on Unix to get
-            // cryptographically-secure random bytes. We could use Interop.BCrypt.BCryptGenRandom to generate the random
-            // bytes on Windows, as is done in RandomNumberGenerator, but that's measurably slower than using CoCreateGuid.
-            // And while CoCreateGuid only generates 122 bits of randomness, the other 6 bits being for the version / variant
-            // fields, this method also needs those bits to be non-random, so we can just use NewGuid for efficiency.
-            Guid result = NewGuid();
-
             // 2^48 is roughly 8925.5 years, which from the Unix Epoch means we won't
             // overflow until around July of 10,895. So there isn't any need to handle
             // it given that DateTimeOffset.MaxValue is December 31, 9999. However, we
@@ -320,6 +313,13 @@ namespace System
 
             long unix_ts_ms = timestamp.ToUnixTimeMilliseconds();
             ArgumentOutOfRangeException.ThrowIfNegative(unix_ts_ms, nameof(timestamp));
+
+            // UUIDv7 only consumes 74 bits of randomness, which fit in the trailing 10 bytes
+            // of the GUID (12 bits of rand_a in bytes 6..7 next to the 4-bit version field,
+            // and 62 bits of rand_b in bytes 8..15 next to the 2-bit variant field). Bytes 0..5
+            // are overwritten with unix_ts_ms below, so the platform-specific helper only needs
+            // to ensure bytes 6..15 of the returned Guid contain crypto-secure random data.
+            Guid result = CreateVersion7Random();
 
             Unsafe.AsRef(in result._a) = (int)(unix_ts_ms >> 16);
             Unsafe.AsRef(in result._b) = (short)(unix_ts_ms);

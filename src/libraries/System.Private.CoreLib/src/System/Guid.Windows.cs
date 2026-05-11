@@ -19,6 +19,15 @@ namespace System
             return g;
         }
 
+        // Returns a Guid whose bytes 6..15 contain cryptographically-secure random data, as
+        // required by CreateVersion7. Bytes 0..5 are unspecified; the caller overwrites them
+        // with the unix_ts_ms timestamp.
+        //
+        // On Windows we keep using CoCreateGuid via NewGuid: it has been measured to be
+        // faster than BCryptGenRandom for this size class, and the 6 bytes that get
+        // overwritten by the timestamp don't make BCryptGenRandom competitive.
+        private static Guid CreateVersion7Random() => NewGuid();
+
         private static void ThrowForHr(int hr)
         {
             // We don't expect that this will ever throw an error, none are even documented, and so we don't want to pull
