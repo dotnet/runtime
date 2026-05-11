@@ -46,6 +46,9 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [JSImport("intentionallyMissingImportAsync", "JavaScriptTestHelper")]
         public static partial Task IntentionallyMissingImportAsync();
 
+        [JSImport("emptyModuleNameEcho", "")]
+        public static partial string EmptyModuleNameEcho(string message);
+
         [JSImport("catch1toString", "JavaScriptTestHelper")]
         public static partial string catch1toString(string message, string functionName);
 

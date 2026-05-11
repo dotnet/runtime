@@ -495,6 +495,11 @@ globalThis.rebound = {
 
 export async function setup() {
     dllExports = await App.runtime.getAssemblyExports("System.Runtime.InteropServices.JavaScript.Tests.dll");
+    App.runtime.setModuleImports("", { emptyModuleNameEcho });
+}
+
+function emptyModuleNameEcho(message) {
+    return message;
 }
 
 // console.log('JavaScriptTestHelper:' Object.keys(globalThis.JavaScriptTestHelper));
