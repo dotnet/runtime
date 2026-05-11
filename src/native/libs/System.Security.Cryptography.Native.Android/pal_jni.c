@@ -504,6 +504,35 @@ jmethodID g_DotnetX509KeyManagerCtor;
 jclass    g_PalPbkdf2;
 jmethodID g_PalPbkdf2Pbkdf2OneShot;
 
+// java/net/ProxySelector
+jclass    g_ProxySelector;
+jmethodID g_ProxySelector_getDefault;
+jmethodID g_ProxySelector_select;
+
+// java/net/Proxy
+jclass    g_Proxy;
+jmethodID g_ProxyType_method;
+jmethodID g_Proxy_address;
+
+// java/net/Proxy$Type
+jclass    g_ProxyType;
+jfieldID  g_ProxyType_HTTP;
+jfieldID  g_ProxyType_SOCKS;
+
+// java/net/InetSocketAddress
+jclass    g_InetSocketAddress;
+jmethodID g_InetSocketAddress_getHostString;
+jmethodID g_InetSocketAddress_getPort;
+
+// java/net/URI
+jclass    g_URI;
+jmethodID g_URI_create;
+
+// java/util/List
+jclass    g_List;
+jmethodID g_ListSize;
+jmethodID g_ListGet;
+
 jobject ToGRef(JNIEnv *env, jobject lref)
 {
     if (lref)
@@ -1110,6 +1139,29 @@ jint AndroidCryptoNative_InitLibraryOnLoad (JavaVM *vm, void *reserved)
 
     g_PalPbkdf2              = GetClassGRef(env, "net/dot/android/crypto/PalPbkdf2");
     g_PalPbkdf2Pbkdf2OneShot = GetMethod(env, true, g_PalPbkdf2, "pbkdf2OneShot", "(Ljava/lang/String;[BLjava/nio/ByteBuffer;ILjava/nio/ByteBuffer;)I");
+
+    g_ProxySelector            = GetClassGRef(env, "java/net/ProxySelector");
+    g_ProxySelector_getDefault = GetMethod(env, true,  g_ProxySelector, "getDefault", "()Ljava/net/ProxySelector;");
+    g_ProxySelector_select     = GetMethod(env, false, g_ProxySelector, "select",     "(Ljava/net/URI;)Ljava/util/List;");
+
+    g_Proxy             = GetClassGRef(env, "java/net/Proxy");
+    g_ProxyType_method  = GetMethod(env, false, g_Proxy, "type",    "()Ljava/net/Proxy$Type;");
+    g_Proxy_address     = GetMethod(env, false, g_Proxy, "address", "()Ljava/net/SocketAddress;");
+
+    g_ProxyType       = GetClassGRef(env, "java/net/Proxy$Type");
+    g_ProxyType_HTTP  = GetField(env, true, g_ProxyType, "HTTP",  "Ljava/net/Proxy$Type;");
+    g_ProxyType_SOCKS = GetField(env, true, g_ProxyType, "SOCKS", "Ljava/net/Proxy$Type;");
+
+    g_InetSocketAddress               = GetClassGRef(env, "java/net/InetSocketAddress");
+    g_InetSocketAddress_getHostString = GetMethod(env, false, g_InetSocketAddress, "getHostString", "()Ljava/lang/String;");
+    g_InetSocketAddress_getPort       = GetMethod(env, false, g_InetSocketAddress, "getPort",       "()I");
+
+    g_URI        = GetClassGRef(env, "java/net/URI");
+    g_URI_create = GetMethod(env, true, g_URI, "create", "(Ljava/lang/String;)Ljava/net/URI;");
+
+    g_List      = GetClassGRef(env, "java/util/List");
+    g_ListSize  = GetMethod(env, false, g_List, "size", "()I");
+    g_ListGet   = GetMethod(env, false, g_List, "get",  "(I)Ljava/lang/Object;");
 
     return JNI_VERSION_1_6;
 }

@@ -516,6 +516,35 @@ extern jmethodID g_DotnetX509KeyManagerCtor;
 extern jclass    g_PalPbkdf2;
 extern jmethodID g_PalPbkdf2Pbkdf2OneShot;
 
+// java/net/ProxySelector
+extern jclass    g_ProxySelector;
+extern jmethodID g_ProxySelector_getDefault;
+extern jmethodID g_ProxySelector_select;
+
+// java/net/Proxy
+extern jclass    g_Proxy;
+extern jmethodID g_ProxyType_method;  // Proxy.type() -> Proxy$Type
+extern jmethodID g_Proxy_address;     // Proxy.address() -> SocketAddress
+
+// java/net/Proxy$Type
+extern jclass    g_ProxyType;
+extern jfieldID  g_ProxyType_HTTP;
+extern jfieldID  g_ProxyType_SOCKS;
+
+// java/net/InetSocketAddress
+extern jclass    g_InetSocketAddress;
+extern jmethodID g_InetSocketAddress_getHostString;
+extern jmethodID g_InetSocketAddress_getPort;
+
+// java/net/URI
+extern jclass    g_URI;
+extern jmethodID g_URI_create;
+
+// java/util/List
+extern jclass    g_List;
+extern jmethodID g_ListSize;
+extern jmethodID g_ListGet;
+
 // Compatibility macros
 #if !defined (__mallocfunc)
 #if defined (__clang__) || defined (__GNUC__)
