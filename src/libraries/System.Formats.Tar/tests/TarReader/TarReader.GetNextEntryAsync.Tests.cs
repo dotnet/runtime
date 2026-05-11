@@ -12,6 +12,8 @@ namespace System.Formats.Tar.Tests
 {
     public class TarReader_GetNextEntryAsync_Tests : TarTestsBase
     {
+        private const int MaxMetadataBlockSize = 1024 * 1024;
+
         [Fact]
         public async Task GetNextEntryAsync_Cancel()
         {
@@ -526,7 +528,7 @@ namespace System.Formats.Tar.Tests
             await using MemoryStream archive = new MemoryStream();
             var extendedAttributes = new Dictionary<string, string>
             {
-                ["bigkey"] = new string('x', 1024 * 1024 + 1)
+                ["bigkey"] = new string('x', MaxMetadataBlockSize + 1)
             };
             await using (TarWriter writer = new TarWriter(archive, TarEntryFormat.Pax, leaveOpen: true))
             {
@@ -543,7 +545,7 @@ namespace System.Formats.Tar.Tests
         public async Task GnuLongPath_ExceedsMaxMetadataBlockSize_Throws_Async()
         {
             await using MemoryStream archive = new MemoryStream();
-            string longName = new string('a', 1024 * 1024 + 1);
+            string longName = new string('a', MaxMetadataBlockSize + 1);
             await using (TarWriter writer = new TarWriter(archive, TarEntryFormat.Gnu, leaveOpen: true))
             {
                 GnuTarEntry entry = new GnuTarEntry(TarEntryType.RegularFile, longName);
@@ -559,7 +561,7 @@ namespace System.Formats.Tar.Tests
         public async Task GnuLongLink_ExceedsMaxMetadataBlockSize_Throws_Async()
         {
             await using MemoryStream archive = new MemoryStream();
-            string longLink = new string('a', 1024 * 1024 + 1);
+            string longLink = new string('a', MaxMetadataBlockSize + 1);
             await using (TarWriter writer = new TarWriter(archive, TarEntryFormat.Gnu, leaveOpen: true))
             {
                 GnuTarEntry entry = new GnuTarEntry(TarEntryType.SymbolicLink, "test.txt");

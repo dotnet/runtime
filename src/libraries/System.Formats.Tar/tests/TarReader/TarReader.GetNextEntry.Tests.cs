@@ -10,6 +10,8 @@ namespace System.Formats.Tar.Tests
 {
     public class TarReader_GetNextEntry_Tests : TarTestsBase
     {
+        private const int MaxMetadataBlockSize = 1024 * 1024;
+
         [Fact]
         public void MalformedArchive_TooSmall()
         {
@@ -631,7 +633,7 @@ namespace System.Formats.Tar.Tests
             using MemoryStream archive = new MemoryStream();
             var extendedAttributes = new Dictionary<string, string>
             {
-                ["bigkey"] = new string('x', 1024 * 1024 + 1)
+                ["bigkey"] = new string('x', MaxMetadataBlockSize + 1)
             };
             using (TarWriter writer = new TarWriter(archive, TarEntryFormat.Pax, leaveOpen: true))
             {
@@ -648,7 +650,7 @@ namespace System.Formats.Tar.Tests
         public void GnuLongPath_ExceedsMaxMetadataBlockSize_Throws()
         {
             using MemoryStream archive = new MemoryStream();
-            string longName = new string('a', 1024 * 1024 + 1);
+            string longName = new string('a', MaxMetadataBlockSize + 1);
             using (TarWriter writer = new TarWriter(archive, TarEntryFormat.Gnu, leaveOpen: true))
             {
                 GnuTarEntry entry = new GnuTarEntry(TarEntryType.RegularFile, longName);
@@ -664,7 +666,7 @@ namespace System.Formats.Tar.Tests
         public void GnuLongLink_ExceedsMaxMetadataBlockSize_Throws()
         {
             using MemoryStream archive = new MemoryStream();
-            string longLink = new string('a', 1024 * 1024 + 1);
+            string longLink = new string('a', MaxMetadataBlockSize + 1);
             using (TarWriter writer = new TarWriter(archive, TarEntryFormat.Gnu, leaveOpen: true))
             {
                 GnuTarEntry entry = new GnuTarEntry(TarEntryType.SymbolicLink, "test.txt");
