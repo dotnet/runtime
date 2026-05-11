@@ -18,8 +18,6 @@
 // Setting DAC_HASHTABLE tells the DAC to use the hand rolled hashtable for
 // storing code:DAC_INSTANCE .  Otherwise, the DAC uses SHash.
 
-#define DAC_HASHTABLE
-
 extern CRITICAL_SECTION g_dacCritSec;
 
 // Convert between CLRDATA_ADDRESS and TADDR.
