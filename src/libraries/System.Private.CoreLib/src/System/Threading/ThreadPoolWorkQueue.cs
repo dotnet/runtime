@@ -1415,16 +1415,26 @@ namespace System.Threading
 
         internal static readonly ThreadPoolWorkQueue s_workQueue = new ThreadPoolWorkQueue();
 
-        /// <summary>Shim used to invoke async tasks or non-task IAsyncStateMachineBoxes.</summary>
-        internal static readonly Action<object?> s_invokeAsyncTask = static state =>
+        /// <summary>Shim used to invoke <see cref="IAsyncStateMachineBox.MoveNext"/> of the supplied <see cref="IAsyncStateMachineBox"/>.</summary>
+        internal static readonly Action<object?> s_invokeAsyncStateMachineBox = static state =>
+        {
+            if (state is IAsyncStateMachineBox box)
+            {
+                box.MoveNext();
+            }
+            else
+            {
+                ThrowHelper.ThrowUnexpectedStateForKnownCallback(state);
+            }
+        };
+
+        internal static readonly Action<object?> s_dispatchRuntimeAsyncContinuationsCallback = static state =>
         {
             if (state is Task t)
             {
-                t.ExecuteDirectly(null);
-            }
-            else if (state is IAsyncStateMachineBox box)
-            {
-                box.MoveNext();
+                // We know RuntimeAsyncTask overrides this and calls
+                // DispatchContinuations without looking at the Thread.
+                t.ExecuteFromThreadPool(null!);
             }
             else
             {
@@ -1633,17 +1643,31 @@ namespace System.Threading
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.callBack);
             }
 
-            // If the callback is the runtime-provided invocation of an async task (AsyncStateMachineBox, RuntimeAsyncTask)
-            // or non-task IAsyncStateMachineBox (PoolingAsyncValueTaskMethodBuilder.StateMachineBox), then we can queue
-            // its state directly to the ThreadPool instead of wrapping it in a QueueUserWorkItemCallback.
+            // If the callback is the runtime-provided invocation of an IAsyncStateMachineBox,
+            // then we can queue the Task state directly to the ThreadPool instead of
+            // wrapping it in a QueueUserWorkItemCallback.
             //
             // This occurs when user code queues its provided continuation to the ThreadPool;
-            // internally we call UnsafeQueueUserWorkItemInternal directly for these cases, whenever possible.
-            if (ReferenceEquals(callBack, s_invokeAsyncTask))
+            // internally we call UnsafeQueueUserWorkItemInternal directly for Tasks.
+            if (ReferenceEquals(callBack, s_invokeAsyncStateMachineBox))
             {
-                if (state is not Task && state is not IAsyncStateMachineBox)
+                if (state is not IAsyncStateMachineBox)
                 {
                     // The provided state must be the internal IAsyncStateMachineBox (Task) type
+                    ThrowHelper.ThrowUnexpectedStateForKnownCallback(state);
+                }
+
+                UnsafeQueueUserWorkItemInternal((object)state, preferLocal);
+                return true;
+            }
+
+            // Similarly, for runtime async, user code may call with the
+            // runtime async callback directly.
+            if (ReferenceEquals(callBack, s_dispatchRuntimeAsyncContinuationsCallback))
+            {
+                if (state is not Task)
+                {
+                    // The provided state must be the internal RuntimeAsyncTask (Task)
                     ThrowHelper.ThrowUnexpectedStateForKnownCallback(state);
                 }
 
