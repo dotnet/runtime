@@ -28,6 +28,7 @@ steps:
     # builds warm-start from rolling-build caches saved in the main scope.
     - task: Cache@2
       displayName: Sccache cache
+      continueOnError: true
       inputs:
         key: sccache | ${{ parameters.osGroup }} | ${{ parameters.archType }} | ${{ parameters.nameSuffix }} | "$(Build.BuildId)"
         path: $(Pipeline.Workspace)/.sccache
