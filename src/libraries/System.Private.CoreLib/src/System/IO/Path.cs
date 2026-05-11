@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
@@ -379,7 +379,7 @@ namespace System.IO
         /// </summary>
         /// <param name="paths">A span of parts of the path.</param>
         /// <returns>The combined paths.</returns>
-        public static string Combine(params ReadOnlySpan<string> paths)
+        public static unsafe string Combine(params ReadOnlySpan<string> paths)
         {
             int maxSize = 0;
             int firstComponent = 0;
@@ -537,7 +537,7 @@ namespace System.IO
         /// </summary>
         /// <param name="paths">A span of paths.</param>
         /// <returns>The concatenated path.</returns>
-        public static string Join(params ReadOnlySpan<string?> paths)
+        public static unsafe string Join(params ReadOnlySpan<string?> paths)
         {
             if (paths.IsEmpty)
             {
@@ -856,7 +856,7 @@ namespace System.IO
             return GetRelativePath(relativeTo, path, PathInternal.StringComparison);
         }
 
-        private static string GetRelativePath(string relativeTo, string path, StringComparison comparisonType)
+        private static unsafe string GetRelativePath(string relativeTo, string path, StringComparison comparisonType)
         {
             ArgumentNullException.ThrowIfNull(relativeTo);
             ArgumentNullException.ThrowIfNull(path);

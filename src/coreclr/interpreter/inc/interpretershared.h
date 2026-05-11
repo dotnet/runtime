@@ -213,6 +213,8 @@ struct InterpAsyncSuspendData
     COMPILER_SHARED_TYPE(CORINFO_CLASS_HANDLE, DPTR(MethodTable), asyncMethodReturnType);
     int32_t asyncMethodReturnTypePrimitiveSize; // 0 if not primitive, otherwise size in bytes
     int32_t continuationArgOffset;
+    int32_t returnValueContinuationDataSize; // Aligned size of the return value in continuation data (0 if void). Live locals start after this offset.
+    int32_t returnValueVarStackOffset; // Interpreter stack offset of the return value var (valid only when returnValueContinuationDataSize > 0)
 
     COMPILER_SHARED_TYPE(CORINFO_METHOD_HANDLE, DPTR(MethodDesc), captureSyncContextMethod);
     COMPILER_SHARED_TYPE(CORINFO_METHOD_HANDLE, DPTR(MethodDesc), restoreContextsOnSuspensionMethod);
