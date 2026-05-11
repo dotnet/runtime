@@ -204,167 +204,266 @@ namespace ILCompiler.DependencyAnalysis
 
         private void RewriteCustomAttributeBlob(CustomAttribute customAttribute, BlobBuilder blobBuilder)
         {
-            CustomAttributeValue<TypeDesc> decodedValue;
-            try
-            {
-                decodedValue = customAttribute.DecodeValue(new CustomAttributeTypeProvider(_module));
-            }
-            catch (Exception ex) when (ex is TypeSystemException or BadImageFormatException)
-            {
-                blobBuilder.WriteBytes(_module.MetadataReader.GetBlobBytes(customAttribute.Value));
-                return;
-            }
-
+            byte[] originalBlob = _module.MetadataReader.GetBlobBytes(customAttribute.Value);
             MethodDesc constructor = _module.TryGetMethod(customAttribute.Constructor);
             if (constructor is null)
             {
-                blobBuilder.WriteBytes(_module.MetadataReader.GetBlobBytes(customAttribute.Value));
+                blobBuilder.WriteBytes(originalBlob);
                 return;
             }
 
-            var formatter = new CustomAttributeTypeNameFormatter();
-            var encoder = new BlobEncoder(blobBuilder);
-            encoder.CustomAttributeSignature(out FixedArgumentsEncoder fixedArgs, out CustomAttributeNamedArgumentsEncoder namedArgs);
-
-            // Write fixed arguments
-            MethodSignature constructorSig = constructor.Signature;
-            for (int i = 0; i < decodedValue.FixedArguments.Length; i++)
+            try
             {
-                TypeDesc paramType = constructorSig[i];
-                WriteLiteralValue(fixedArgs.AddArgument(), paramType, decodedValue.FixedArguments[i].Type, decodedValue.FixedArguments[i].Value, formatter);
+                BlobReader valueReader = _module.MetadataReader.GetBlobReader(customAttribute.Value);
+                var formatter = new CustomAttributeTypeNameFormatter();
+                var typeProvider = new CustomAttributeTypeProvider(_module);
+
+                ushort prolog = valueReader.ReadUInt16();
+                if (prolog != 1)
+                    throw new BadImageFormatException();
+
+                blobBuilder.WriteUInt16(prolog);
+
+                MethodSignature constructorSig = constructor.Signature;
+                for (int i = 0; i < constructorSig.Length; i++)
+                {
+                    CopyFixedArgument(ref valueReader, blobBuilder, originalBlob, constructorSig[i], typeProvider, formatter);
+                }
+
+                ushort namedArgumentCount = valueReader.ReadUInt16();
+                blobBuilder.WriteUInt16(namedArgumentCount);
+
+                for (int i = 0; i < namedArgumentCount; i++)
+                {
+                    CustomAttributeNamedArgumentKind kind = (CustomAttributeNamedArgumentKind)valueReader.ReadByte();
+                    if (kind != CustomAttributeNamedArgumentKind.Field && kind != CustomAttributeNamedArgumentKind.Property)
+                        throw new BadImageFormatException();
+
+                    blobBuilder.WriteByte((byte)kind);
+
+                    CopyNamedArgumentType(ref valueReader, blobBuilder, originalBlob, typeProvider, formatter, out SerializationTypeCode valueTypeCode, out SerializationTypeCode elementValueTypeCode);
+                    CopySerializedString(ref valueReader, blobBuilder, originalBlob, rewriteTypeName: false, typeProvider, formatter);
+                    CopySerializedValue(ref valueReader, blobBuilder, originalBlob, typeProvider, formatter, valueTypeCode, elementValueTypeCode);
+                }
+
+                if (valueReader.RemainingBytes != 0)
+                    throw new BadImageFormatException();
             }
-
-            // Write named arguments
-            NamedArgumentsEncoder namedArgsEncoder = namedArgs.Count(decodedValue.NamedArguments.Length);
-            foreach (CustomAttributeNamedArgument<TypeDesc> namedArg in decodedValue.NamedArguments)
+            catch (Exception ex) when (ex is TypeSystemException or BadImageFormatException)
             {
-                namedArgsEncoder.AddArgument(
-                    namedArg.Kind == CustomAttributeNamedArgumentKind.Field,
-                    out NamedArgumentTypeEncoder type,
-                    out NameEncoder name,
-                    out LiteralEncoder literal);
-
-                EncodeNamedArgumentType(type, namedArg.Type, formatter);
-                name.Name(namedArg.Name);
-                WriteLiteralValue(literal, namedArg.Type, namedArg.Type, namedArg.Value, formatter);
+                blobBuilder.Clear();
+                blobBuilder.WriteBytes(originalBlob);
             }
         }
 
-        private static void EncodeNamedArgumentType(NamedArgumentTypeEncoder type, TypeDesc argType, CustomAttributeTypeNameFormatter formatter)
+        private static void CopyRawBytes(ref BlobReader reader, BlobBuilder blobBuilder, byte[] originalBlob, int byteCount)
         {
-            if (argType.IsObject)
+            int startOffset = reader.Offset;
+            reader.Offset = startOffset + byteCount;
+            blobBuilder.WriteBytes(originalBlob, startOffset, byteCount);
+        }
+
+        private static void CopySerializedString(ref BlobReader valueReader, BlobBuilder blobBuilder, byte[] originalBlob, bool rewriteTypeName, CustomAttributeTypeProvider typeProvider, CustomAttributeTypeNameFormatter formatter)
+        {
+            int startOffset = valueReader.Offset;
+            string? original = valueReader.ReadSerializedString();
+            int endOffset = valueReader.Offset;
+
+            if (rewriteTypeName && original is not null)
             {
-                type.Object();
+                TypeDesc resolved = typeProvider.GetTypeFromSerializedName(original);
+                if (resolved is not null)
+                {
+                    string rewritten = formatter.FormatName(resolved, true);
+                    if (rewritten != original)
+                    {
+                        blobBuilder.WriteSerializedString(rewritten);
+                        return;
+                    }
+                }
             }
-            else if (argType.IsSzArray)
+
+            blobBuilder.WriteBytes(originalBlob, startOffset, endOffset - startOffset);
+        }
+
+        private static void CopyFixedArgument(ref BlobReader valueReader, BlobBuilder blobBuilder, byte[] originalBlob, TypeDesc type, CustomAttributeTypeProvider typeProvider, CustomAttributeTypeNameFormatter formatter)
+        {
+            GetFixedArgumentTypeCodes(type, typeProvider, out SerializationTypeCode valueTypeCode, out SerializationTypeCode elementValueTypeCode);
+            CopySerializedValue(ref valueReader, blobBuilder, originalBlob, typeProvider, formatter, valueTypeCode, elementValueTypeCode);
+        }
+
+        private static void GetFixedArgumentTypeCodes(TypeDesc type, CustomAttributeTypeProvider typeProvider, out SerializationTypeCode valueTypeCode, out SerializationTypeCode elementValueTypeCode)
+        {
+            elementValueTypeCode = default;
+
+            if (type.UnderlyingType.IsPrimitive)
             {
-                TypeDesc elementType = ((ArrayType)argType).ElementType;
-                if (elementType.IsObject)
-                    type.SZArray().ObjectArray();
-                else
-                    EncodeElementType(type.SZArray().ElementType(), elementType, formatter);
+                valueTypeCode = GetPrimitiveSerializationTypeCode(type);
+            }
+            else if (type.IsString)
+            {
+                valueTypeCode = SerializationTypeCode.String;
+            }
+            else if (IsSystemType(type))
+            {
+                valueTypeCode = SerializationTypeCode.Type;
+            }
+            else if (type.IsObject)
+            {
+                valueTypeCode = SerializationTypeCode.TaggedObject;
+            }
+            else if (type.IsSzArray)
+            {
+                valueTypeCode = SerializationTypeCode.SZArray;
+                GetFixedArgumentTypeCodes(((ArrayType)type).ElementType, typeProvider, out elementValueTypeCode, out _);
+            }
+            else if (type.IsEnum)
+            {
+                valueTypeCode = (SerializationTypeCode)typeProvider.GetUnderlyingEnumType(type);
             }
             else
             {
-                EncodeElementType(type.ScalarType(), argType, formatter);
+                throw new BadImageFormatException();
             }
         }
 
-        private static void EncodeElementType(CustomAttributeElementTypeEncoder encoder, TypeDesc type, CustomAttributeTypeNameFormatter formatter)
+        private static SerializationTypeCode GetPrimitiveSerializationTypeCode(TypeDesc type)
         {
             switch (type.Category)
             {
-                case TypeFlags.Boolean: encoder.Boolean(); break;
-                case TypeFlags.Char: encoder.Char(); break;
-                case TypeFlags.SByte: encoder.SByte(); break;
-                case TypeFlags.Byte: encoder.Byte(); break;
-                case TypeFlags.Int16: encoder.Int16(); break;
-                case TypeFlags.UInt16: encoder.UInt16(); break;
-                case TypeFlags.Int32: encoder.Int32(); break;
-                case TypeFlags.UInt32: encoder.UInt32(); break;
-                case TypeFlags.Int64: encoder.Int64(); break;
-                case TypeFlags.UInt64: encoder.UInt64(); break;
-                case TypeFlags.Single: encoder.Single(); break;
-                case TypeFlags.Double: encoder.Double(); break;
-                default:
-                    if (type.IsEnum)
-                        encoder.Enum(formatter.FormatName(type, true));
-                    else if (IsSystemType(type))
-                        encoder.SystemType();
-                    else if (type.IsString)
-                        encoder.String();
-                    break;
+                case TypeFlags.Boolean: return SerializationTypeCode.Boolean;
+                case TypeFlags.Char: return SerializationTypeCode.Char;
+                case TypeFlags.SByte: return SerializationTypeCode.SByte;
+                case TypeFlags.Byte: return SerializationTypeCode.Byte;
+                case TypeFlags.Int16: return SerializationTypeCode.Int16;
+                case TypeFlags.UInt16: return SerializationTypeCode.UInt16;
+                case TypeFlags.Int32: return SerializationTypeCode.Int32;
+                case TypeFlags.UInt32: return SerializationTypeCode.UInt32;
+                case TypeFlags.Int64: return SerializationTypeCode.Int64;
+                case TypeFlags.UInt64: return SerializationTypeCode.UInt64;
+                case TypeFlags.Single: return SerializationTypeCode.Single;
+                case TypeFlags.Double: return SerializationTypeCode.Double;
+                default: throw new BadImageFormatException();
             }
         }
 
-        private void WriteLiteralValue(LiteralEncoder literal, TypeDesc declaredType, TypeDesc actualType, object value, CustomAttributeTypeNameFormatter formatter)
+        private static void CopyNamedArgumentType(ref BlobReader valueReader, BlobBuilder blobBuilder, byte[] originalBlob, CustomAttributeTypeProvider typeProvider, CustomAttributeTypeNameFormatter formatter, out SerializationTypeCode valueTypeCode, out SerializationTypeCode elementValueTypeCode, bool isElementType = false)
         {
-            if (declaredType is null)
+            elementValueTypeCode = default;
+
+            SerializationTypeCode typeCode = valueReader.ReadSerializationTypeCode();
+            blobBuilder.WriteByte((byte)typeCode);
+
+            if (typeCode == SerializationTypeCode.Boolean
+                || typeCode == SerializationTypeCode.Char
+                || typeCode == SerializationTypeCode.SByte
+                || typeCode == SerializationTypeCode.Byte
+                || typeCode == SerializationTypeCode.Int16
+                || typeCode == SerializationTypeCode.UInt16
+                || typeCode == SerializationTypeCode.Int32
+                || typeCode == SerializationTypeCode.UInt32
+                || typeCode == SerializationTypeCode.Int64
+                || typeCode == SerializationTypeCode.UInt64
+                || typeCode == SerializationTypeCode.Single
+                || typeCode == SerializationTypeCode.Double
+                || typeCode == SerializationTypeCode.String
+                || typeCode == SerializationTypeCode.Type
+                || typeCode == SerializationTypeCode.TaggedObject)
             {
-                // Nothing to write
+                valueTypeCode = typeCode;
             }
-            else if (declaredType.IsObject)
+            else if (typeCode == SerializationTypeCode.SZArray)
             {
-                if (value is null)
-                {
-                    literal.TaggedScalar(out CustomAttributeElementTypeEncoder type, out ScalarEncoder scalar);
-                    type.String();
-                    scalar.Constant(null);
-                }
-                else if (actualType is not null && actualType.IsSzArray)
-                {
-                    literal.TaggedVector(out CustomAttributeArrayTypeEncoder arrayType, out VectorEncoder vector);
-                    TypeDesc elementType = ((ArrayType)actualType).ElementType;
-                    if (elementType.IsObject)
-                        arrayType.ObjectArray();
-                    else
-                        EncodeElementType(arrayType.ElementType(), elementType, formatter);
-                    WriteVectorElements(vector, elementType, value, formatter);
-                }
-                else
-                {
-                    literal.TaggedScalar(out CustomAttributeElementTypeEncoder typeEncoder, out ScalarEncoder scalarEncoder);
-                    EncodeElementType(typeEncoder, actualType, formatter);
-                    WriteScalarValue(scalarEncoder, actualType, value, formatter);
-                }
+                if (isElementType)
+                    throw new BadImageFormatException();
+
+                CopyNamedArgumentType(ref valueReader, blobBuilder, originalBlob, typeProvider, formatter, out elementValueTypeCode, out _, isElementType: true);
+                valueTypeCode = SerializationTypeCode.SZArray;
             }
-            else if (declaredType.IsSzArray)
+            else if (typeCode == SerializationTypeCode.Enum)
             {
-                if (value is null)
-                {
-                    literal.Scalar().NullArray();
-                }
+                int startOffset = valueReader.Offset;
+                string? enumTypeName = valueReader.ReadSerializedString();
+                int endOffset = valueReader.Offset;
+                if (enumTypeName is null)
+                    throw new BadImageFormatException();
+
+                TypeDesc enumType = typeProvider.GetTypeFromSerializedName(enumTypeName);
+                if (enumType is null)
+                    throw new BadImageFormatException();
+
+                string rewritten = formatter.FormatName(enumType, true);
+                if (rewritten == enumTypeName)
+                    blobBuilder.WriteBytes(originalBlob, startOffset, endOffset - startOffset);
                 else
-                {
-                    TypeDesc elementType = ((ArrayType)declaredType).ElementType;
-                    WriteVectorElements(literal.Vector(), elementType, value, formatter);
-                }
+                    blobBuilder.WriteSerializedString(rewritten);
+
+                valueTypeCode = (SerializationTypeCode)typeProvider.GetUnderlyingEnumType(enumType);
             }
             else
             {
-                // Scalar value (primitive, enum, string, Type)
-                WriteScalarValue(literal.Scalar(), declaredType, value, formatter);
+                throw new BadImageFormatException();
             }
         }
 
-        private void WriteVectorElements(VectorEncoder vector, TypeDesc elementType, object value, CustomAttributeTypeNameFormatter formatter)
+        private static void CopySerializedValue(ref BlobReader valueReader, BlobBuilder blobBuilder, byte[] originalBlob, CustomAttributeTypeProvider typeProvider, CustomAttributeTypeNameFormatter formatter, SerializationTypeCode valueTypeCode, SerializationTypeCode elementValueTypeCode)
         {
-            if (value is ImmutableArray<CustomAttributeTypedArgument<TypeDesc>> arrayElements)
+            if (valueTypeCode == SerializationTypeCode.Boolean
+                || valueTypeCode == SerializationTypeCode.Byte
+                || valueTypeCode == SerializationTypeCode.SByte)
             {
-                LiteralsEncoder literals = vector.Count(arrayElements.Length);
-                foreach (CustomAttributeTypedArgument<TypeDesc> element in arrayElements)
+                CopyRawBytes(ref valueReader, blobBuilder, originalBlob, 1);
+            }
+            else if (valueTypeCode == SerializationTypeCode.Char
+                || valueTypeCode == SerializationTypeCode.Int16
+                || valueTypeCode == SerializationTypeCode.UInt16)
+            {
+                CopyRawBytes(ref valueReader, blobBuilder, originalBlob, 2);
+            }
+            else if (valueTypeCode == SerializationTypeCode.Int32
+                || valueTypeCode == SerializationTypeCode.UInt32
+                || valueTypeCode == SerializationTypeCode.Single)
+            {
+                CopyRawBytes(ref valueReader, blobBuilder, originalBlob, 4);
+            }
+            else if (valueTypeCode == SerializationTypeCode.Int64
+                || valueTypeCode == SerializationTypeCode.UInt64
+                || valueTypeCode == SerializationTypeCode.Double)
+            {
+                CopyRawBytes(ref valueReader, blobBuilder, originalBlob, 8);
+            }
+            else if (valueTypeCode == SerializationTypeCode.String)
+            {
+                CopySerializedString(ref valueReader, blobBuilder, originalBlob, rewriteTypeName: false, typeProvider, formatter);
+            }
+            else if (valueTypeCode == SerializationTypeCode.Type)
+            {
+                CopySerializedString(ref valueReader, blobBuilder, originalBlob, rewriteTypeName: true, typeProvider, formatter);
+            }
+            else if (valueTypeCode == SerializationTypeCode.SZArray)
+            {
+                int elementCount = valueReader.ReadInt32();
+                blobBuilder.WriteInt32(elementCount);
+                if (elementCount < -1)
+                    throw new BadImageFormatException();
+
+                if (elementCount > 0)
                 {
-                    WriteLiteralValue(literals.AddLiteral(), elementType, element.Type, element.Value, formatter);
+                    for (int i = 0; i < elementCount; i++)
+                    {
+                        CopySerializedValue(ref valueReader, blobBuilder, originalBlob, typeProvider, formatter, elementValueTypeCode, default);
+                    }
                 }
             }
-        }
-
-        private static void WriteScalarValue(ScalarEncoder scalar, TypeDesc type, object value, CustomAttributeTypeNameFormatter formatter)
-        {
-            if (IsSystemType(type))
-                scalar.SystemType(value is TypeDesc typeofType ? formatter.FormatName(typeofType, true) : null);
+            else if (valueTypeCode == SerializationTypeCode.TaggedObject)
+            {
+                CopyNamedArgumentType(ref valueReader, blobBuilder, originalBlob, typeProvider, formatter, out SerializationTypeCode boxedTypeCode, out SerializationTypeCode boxedElementTypeCode);
+                CopySerializedValue(ref valueReader, blobBuilder, originalBlob, typeProvider, formatter, boxedTypeCode, boxedElementTypeCode);
+            }
             else
-                scalar.Constant(value);
+            {
+                throw new BadImageFormatException();
+            }
         }
 
         private static bool IsSystemType(TypeDesc type)
