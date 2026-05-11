@@ -2921,6 +2921,7 @@ GenTree* Compiler::fgSimpleLowerSmpOpCasts(LIR::Range& range, GenTreeOp* op)
     // Repurpose cast1 as the outer cast: CAST_T(OP(x, y)).
     range.Remove(cast1);
     cast1->CastOp() = op;
+    cast1->AddAllEffectsFlags(op);
     range.InsertAfter(op, cast1);
 
 #ifdef DEBUG
