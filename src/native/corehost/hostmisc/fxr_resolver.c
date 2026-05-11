@@ -165,6 +165,12 @@ bool fxr_resolver_try_get_path(
         }
     }
 
+    // Check in priority order (if specified by search location options):
+    //   - App-relative .NET root location
+    //   - Environment variables: DOTNET_ROOT_<ARCH> and DOTNET_ROOT
+    //   - Global installs:
+    //      - self-registered install location
+    //      - default install location
     bool search_app_relative = (search & search_location_app_relative) != 0
         && app_relative_dotnet_root != NULL && app_relative_dotnet_root[0] != _X('\0');
     bool search_env = (search & search_location_environment_variable) != 0;
@@ -281,7 +287,12 @@ error:
 
     {
         pal_char_t host_path[APPHOST_PATH_MAX];
-        pal_get_own_executable_path(host_path, ARRAY_SIZE(host_path));
+        host_path[0] = _X('\0');  // Initialize in case get_own_executable_path fails
+        if (!pal_get_own_executable_path(host_path, ARRAY_SIZE(host_path)))
+        {
+            // If we can't get the host path, use a placeholder
+            pal_str_printf(host_path, ARRAY_SIZE(host_path), _X("<unknown>"));
+        }
 
         // Build searched locations message dynamically
         size_t msg_capacity = 2048;

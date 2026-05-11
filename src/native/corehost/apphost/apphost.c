@@ -167,9 +167,10 @@ static int exe_start(const int argc, const pal_char_t* argv[])
     if (host_path == NULL)
         return CurrentHostFindFailure;
 
+    host_path[0] = _X('\0');  // Initialize in case get_own_executable_path fails
     if (!pal_get_own_executable_path(host_path, APPHOST_PATH_MAX) || !pal_fullpath(host_path, APPHOST_PATH_MAX))
     {
-        trace_error(_X("Failed to resolve full path of the current executable [%s]"), host_path);
+        trace_error(_X("Failed to resolve full path of the current executable [%s]"), host_path[0] != _X('\0') ? host_path : _X("<unknown>"));
         free(host_path);
         return CurrentHostFindFailure;
     }

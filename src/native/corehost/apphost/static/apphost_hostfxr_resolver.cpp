@@ -67,12 +67,20 @@ extern "C" void hostfxr_resolver_init(hostfxr_resolver_t* resolver, const pal_ch
 
     size_t root_len = pal_strlen(app_root);
     resolver->dotnet_root = static_cast<pal_char_t*>(malloc((root_len + 1) * sizeof(pal_char_t)));
-    if (resolver->dotnet_root != nullptr)
-        memcpy(resolver->dotnet_root, app_root, (root_len + 1) * sizeof(pal_char_t));
+    if (resolver->dotnet_root == nullptr)
+    {
+        resolver->status_code = CoreHostLibMissingFailure;
+        return;
+    }
+    memcpy(resolver->dotnet_root, app_root, (root_len + 1) * sizeof(pal_char_t));
 
     resolver->fxr_path = static_cast<pal_char_t*>(malloc((root_len + 1) * sizeof(pal_char_t)));
-    if (resolver->fxr_path != nullptr)
-        memcpy(resolver->fxr_path, app_root, (root_len + 1) * sizeof(pal_char_t));
+    if (resolver->fxr_path == nullptr)
+    {
+        resolver->status_code = CoreHostLibMissingFailure;
+        return;
+    }
+    memcpy(resolver->fxr_path, app_root, (root_len + 1) * sizeof(pal_char_t));
 }
 
 extern "C" void hostfxr_resolver_cleanup(hostfxr_resolver_t* resolver)

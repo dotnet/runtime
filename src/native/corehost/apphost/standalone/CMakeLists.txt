@@ -4,12 +4,13 @@
 include_directories(..)
 
 set(SOURCES
-    ../apphost_main.c
+    ../apphost.c
+    ../bundle_marker.c
     ./apphost_hostfxr_resolver.c
 )
 
 set(HEADERS
-    ../../hostmisc/bundle_marker.h
+    ../bundle_marker.h
     ../../hostmisc/pal.h
     ../apphost_hostfxr_resolver.h
 )
