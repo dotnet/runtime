@@ -8703,7 +8703,7 @@ void CodeGen::genCodeForCCMP(GenTreeCCMP* ccmp)
         if (intConst->IconValue() == 0)
         {
             // ctest reg, reg is 1-byte shorter encoding than ccmp reg, 0.
-            assert((FIRST_CTEST_INSTRUCTION - FIRST_APX_INSTRUCTION) == 32);
+            static_assert((FIRST_CTEST_INSTRUCTION - FIRST_APX_INSTRUCTION) == 32);
             instruction ctestIns = (instruction)(ccmpIns + FIRST_CTEST_INSTRUCTION - FIRST_CCMP_INSTRUCTION);
             emit->emitIns_R_R(ctestIns, cmpSize, srcReg1, srcReg1, opts);
         }
@@ -9434,7 +9434,7 @@ void CodeGen::genAmd64EmitterUnitTestsCCMP()
     // Test all dfv
     for (int i = 0; i < 16; i++)
     {
-        theEmitter->emitIns_R_R(INS_ccmpe, EA_4BYTE, REG_RAX, REG_RCX, (insOpts)(i << INS_OPTS_EVEX_dfv_byte_offset));
+        theEmitter->emitIns_R_R(INS_ccmpe, EA_4BYTE, REG_RAX, REG_RCX, (insOpts)(i << INS_OPTS_EVEX_dfv_shift));
     }
 
     // ============
@@ -9456,7 +9456,7 @@ void CodeGen::genAmd64EmitterUnitTestsCCMP()
     // Test all dfv
     for (int i = 0; i < 16; i++)
     {
-        theEmitter->emitIns_R_S(INS_ccmpe, EA_4BYTE, REG_RAX, 0, 0, (insOpts)(i << INS_OPTS_EVEX_dfv_byte_offset));
+        theEmitter->emitIns_R_S(INS_ccmpe, EA_4BYTE, REG_RAX, 0, 0, (insOpts)(i << INS_OPTS_EVEX_dfv_shift));
     }
 
     // ============
@@ -9489,7 +9489,7 @@ void CodeGen::genAmd64EmitterUnitTestsCCMP()
  */
 void CodeGen::genAmd64EmitterUnitTestsCTEST()
 {
-    assert(FIRST_CTEST_INSTRUCTION - FIRST_CCMP_INSTRUCTION == 32);
+    static_assert(FIRST_CTEST_INSTRUCTION - FIRST_CCMP_INSTRUCTION == 32);
     emitter* theEmitter = GetEmitter();
     genDefineTempLabel(genCreateTempLabel());
     GenTreePhysReg physReg(REG_EDX);
@@ -9516,7 +9516,7 @@ void CodeGen::genAmd64EmitterUnitTestsCTEST()
     // Test all dfv
     for (int i = 0; i < 16; i++)
     {
-        theEmitter->emitIns_R_R(INS_cteste, EA_4BYTE, REG_RAX, REG_RCX, (insOpts)(i << INS_OPTS_EVEX_dfv_byte_offset));
+        theEmitter->emitIns_R_R(INS_cteste, EA_4BYTE, REG_RAX, REG_RCX, (insOpts)(i << INS_OPTS_EVEX_dfv_shift));
     }
 
     // ============

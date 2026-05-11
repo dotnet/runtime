@@ -781,6 +781,7 @@ static bool  IsApxConditionalInstruction(instruction ins);
 static bool  IsCCMP(instruction ins);
 static bool  IsCTEST(instruction ins);
 static bool  IsCFCMOV(instruction ins);
+static bool  ImmCanUseSByteEncoding(instruction ins, ssize_t val);
 static insCC GetCCFromIns(instruction ins);
 
 bool isAvx512Blendv(instruction ins)

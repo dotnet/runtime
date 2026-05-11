@@ -979,6 +979,29 @@ inline bool emitter::IsCFCMOV(instruction ins)
 }
 
 //------------------------------------------------------------------------
+// ImmCanUseSByteEncoding: Returns true if `val` fits in a sign-extended byte
+//     AND `ins` supports the imm8s (sign-extended-byte) immediate encoding.
+//
+// Arguments:
+//    ins - The instruction being encoded.
+//    val - The immediate value.
+//
+// Returns:
+//    True when the x86 imm8s short-immediate form is legal: the value can be
+//    sign-extended from one byte and the instruction does not unconditionally
+//    require a full-width immediate.  MOV, TEST, and CTEST never use imm8s
+//    regardless of the value.
+//
+// Notes:
+//    Callers must additionally suppress the result when the immediate carries
+//    a relocation (relocs cannot be placed in a single byte).
+//
+/* static */ bool emitter::ImmCanUseSByteEncoding(instruction ins, ssize_t val)
+{
+    return ((signed char)val == (target_ssize_t)val) && (ins != INS_mov) && (ins != INS_test) && !IsCTEST(ins);
+}
+
+//------------------------------------------------------------------------
 // GetCCFromIns: Get a condition code from a conditional instruction
 //
 // Arguments:
@@ -5104,7 +5127,7 @@ inline UNATIVE_OFFSET emitter::emitInsSizeRR(instrDesc* id, code_t code, int val
 {
     instruction    ins       = id->idIns();
     UNATIVE_OFFSET valSize   = EA_SIZE_IN_BYTES(id->idOpSize());
-    bool           valInByte = ((signed char)val == val) && (ins != INS_mov) && (ins != INS_test);
+    bool           valInByte = ImmCanUseSByteEncoding(ins, val);
 
 #ifdef TARGET_AMD64
     // mov reg, imm64 is the only opcode which takes a full 8 byte immediate
@@ -5318,7 +5341,7 @@ inline UNATIVE_OFFSET emitter::emitInsSizeSV(instrDesc* id, code_t code, int var
     assert(id->idIns() != INS_invalid);
     instruction    ins       = id->idIns();
     UNATIVE_OFFSET valSize   = EA_SIZE_IN_BYTES(id->idOpSize());
-    bool           valInByte = ((signed char)val == val) && (ins != INS_mov) && (ins != INS_test);
+    bool           valInByte = ImmCanUseSByteEncoding(ins, val);
 
 #ifdef TARGET_AMD64
     // mov reg, imm64 is the only opcode which takes a full 8 byte immediate
@@ -5637,7 +5660,7 @@ inline UNATIVE_OFFSET emitter::emitInsSizeAM(instrDesc* id, code_t code, int val
     assert(id->idIns() != INS_invalid);
     instruction    ins       = id->idIns();
     UNATIVE_OFFSET valSize   = EA_SIZE_IN_BYTES(id->idOpSize());
-    bool           valInByte = ((signed char)val == val) && (ins != INS_mov) && (ins != INS_test) && (!IsCTEST(ins));
+    bool           valInByte = ImmCanUseSByteEncoding(ins, val);
 
     // We should never generate BT mem,reg because it has poor performance. BT mem,imm might be useful
     // but it requires special handling of the immediate value (it is always encoded in a byte).
@@ -5701,7 +5724,7 @@ inline UNATIVE_OFFSET emitter::emitInsSizeCV(instrDesc* id, code_t code, int val
 {
     instruction    ins       = id->idIns();
     UNATIVE_OFFSET valSize   = EA_SIZE_IN_BYTES(id->idOpSize());
-    bool           valInByte = ((signed char)val == val) && (ins != INS_mov) && (ins != INS_test);
+    bool           valInByte = ImmCanUseSByteEncoding(ins, val);
 
 #ifdef TARGET_AMD64
     // mov reg, imm64 is the only opcode which takes a full 8 byte immediate
@@ -7101,8 +7124,7 @@ void emitter::emitIns_R_I(instruction         ins,
     UNATIVE_OFFSET sz;
     instrDesc*     id;
     insFormat      fmt = emitInsModeFormat(ins, IF_RRD_CNS);
-    bool           valInByte =
-        ((signed char)val == (target_ssize_t)val) && (ins != INS_mov) && (ins != INS_test) && !IsCTEST(ins);
+    bool           valInByte = ImmCanUseSByteEncoding(ins, val);
 
     // BT reg,imm might be useful but it requires special handling of the immediate value
     // (it is always encoded in a byte). Let's not complicate things until this is needed.
@@ -14523,7 +14545,7 @@ BYTE* emitter::emitOutputAM(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
         // Does the constant fit in a byte?
         // SSE/AVX do not need to modify opcode
 
-        if ((signed char)cval == cval && addc->cnsReloc == false && ins != INS_mov && ins != INS_test && !IsCTEST(ins))
+        if (ImmCanUseSByteEncoding(ins, cval) && !addc->cnsReloc)
         {
             if (id->idInsFmt() != IF_ARW_SHF && !IsSimdInstruction(ins))
             {
@@ -15508,7 +15530,7 @@ BYTE* emitter::emitOutputSV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
 
         // Does the constant fit in a byte?
         // SSE/AVX/AVX512 do not need to modify opcode
-        if ((signed char)cval == cval && addc->cnsReloc == false && ins != INS_mov && ins != INS_test)
+        if (ImmCanUseSByteEncoding(ins, cval) && !addc->cnsReloc)
         {
             if ((id->idInsFmt() != IF_SRW_SHF) && (id->idInsFmt() != IF_RRW_SRD_CNS) &&
                 (id->idInsFmt() != IF_RWR_RRD_SRD_CNS) && !IsSimdInstruction(ins))
@@ -16058,7 +16080,7 @@ BYTE* emitter::emitOutputCV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
     {
         ssize_t cval = addc->cnsVal;
         // Does the constant fit in a byte?
-        if ((signed char)cval == cval && addc->cnsReloc == false && ins != INS_mov && ins != INS_test)
+        if (ImmCanUseSByteEncoding(ins, cval) && !addc->cnsReloc)
         {
             // SSE/AVX do not need to modify opcode
             if (id->idInsFmt() != IF_MRW_SHF && !IsSimdInstruction(ins))
@@ -16875,7 +16897,7 @@ BYTE* emitter::emitOutputRR(BYTE* dst, instrDesc* id)
     }
     else if ((ins == INS_movsx) || (ins == INS_movzx) || (insIsCMOV(ins)))
     {
-        assert(hasCodeRM(ins) && !hasCodeMI(ins) && (!hasCodeMR(ins)));
+        assert(hasCodeRM(ins) && !hasCodeMI(ins) && !hasCodeMR(ins));
         code = insCodeRM(ins);
         code = AddX86PrefixIfNeeded(id, code, size);
         code = insEncodeRMreg(id, code) | (int)(size == EA_2BYTE);
@@ -17332,8 +17354,7 @@ BYTE* emitter::emitOutputRI(BYTE* dst, instrDesc* id)
     instruction ins  = id->idIns();
     regNumber   reg  = id->idReg1();
     ssize_t     val  = emitGetInsSC(id);
-    bool        valInByte =
-        ((signed char)val == (target_ssize_t)val) && (ins != INS_mov) && (ins != INS_test) && !IsCTEST(ins);
+    bool        valInByte = ImmCanUseSByteEncoding(ins, val);
 
     assert(!id->idHasReg2());
 
@@ -19036,7 +19057,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 code              = insEncodeMIreg(id, mReg, size, code);
                 rReg              = REG_NA;
                 ssize_t val       = emitGetInsSC(id);
-                bool    valInByte = ((signed char)val == (target_ssize_t)val) && (ins != INS_mov) && (ins != INS_test);
+                bool    valInByte = ImmCanUseSByteEncoding(ins, val);
 
                 switch (size)
                 {
