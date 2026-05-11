@@ -591,7 +591,9 @@ namespace ILCompiler.Reflection.ReadyToRun
 
         private static void SkipConstExpr(ReadOnlySpan<byte> data, ref int offset)
         {
-            // Skip a WASM constant expression (terminated by 0x0B = end)
+            // Skip a WASM constant expression (terminated by 0x0B = end).
+            // Handles standard const instructions and extended const expressions
+            // (i32/i64 add, sub, mul) per the WebAssembly spec.
             while (offset < data.Length)
             {
                 byte opcode = data[offset++];
@@ -601,11 +603,27 @@ namespace ILCompiler.Reflection.ReadyToRun
                 switch (opcode)
                 {
                     case 0x41: // i32.const
+                    case 0x42: // i64.const
                     case 0x23: // global.get
+                    case 0xD2: // ref.func
                         ReadLebU32(data, ref offset); // skip LEB128 operand
                         break;
-                    case 0x42: // i64.const
-                        ReadLebU32(data, ref offset); // skip LEB128 operand (simplified)
+                    case 0x43: // f32.const
+                        offset += 4;
+                        break;
+                    case 0x44: // f64.const
+                        offset += 8;
+                        break;
+                    case 0xD0: // ref.null
+                        offset++; // skip reftype byte
+                        break;
+                    // Extended const expressions - arithmetic ops with no operands
+                    case 0x6A: // i32.add
+                    case 0x6B: // i32.sub
+                    case 0x6C: // i32.mul
+                    case 0x7C: // i64.add
+                    case 0x7D: // i64.sub
+                    case 0x7E: // i64.mul
                         break;
                 }
             }
