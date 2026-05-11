@@ -14,6 +14,7 @@ using MethodBase = System.Reflection.MethodBase;
 
 namespace System
 {
+    [DataContract]
     public partial class Exception
     {
         public MethodBase? TargetSite
@@ -32,15 +33,20 @@ namespace System
 
         private static string? SerializationWatsonBuckets => null;
 
+        [DataContract]
         internal string? _message;
         private IDictionary? _data;
+        [DataContract]
         private Exception? _innerException;
         private string? _helpURL;
         private string? _source;         // Mainly used by VB.
+        [DataContract]
         private int _HResult;     // HResult
 
         // To maintain compatibility across runtimes, if this object was deserialized, it will store its stack trace as a string
+        [DataContract]
         private string? _stackTraceString;
+        [DataContract]
         private string? _remoteStackTraceString;
 
         internal IntPtr[] GetStackIPs()
@@ -53,7 +59,9 @@ namespace System
             return ips;
         }
 
+        [DataContract]
         private IntPtr[]? _corDbgStackTrace;
+        [DataContract]
         private int _idxFirstFreeStackTraceEntry;
 
         internal static IntPtr EdiSeparator => (IntPtr)1;  // Marks a boundary where an ExceptionDispatchInfo rethrew an exception.
