@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
@@ -96,7 +96,7 @@ namespace System.Security.Cryptography
             return data;
         }
 
-        private static TResult EncodePQDsaBlob<TResult>(
+        private static unsafe TResult EncodePQDsaBlob<TResult>(
             KeyBlobMagicNumber magic,
             ReadOnlySpan<char> parameterSet,
             ReadOnlySpan<byte> data,

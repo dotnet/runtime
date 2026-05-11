@@ -4,6 +4,7 @@
 using System;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
+using CorElementType = Microsoft.Diagnostics.DataContractReader.Contracts.CorElementType;
 
 namespace Microsoft.Diagnostics.DataContractReader.Legacy;
 
@@ -126,6 +127,19 @@ public struct COR_TYPE_LAYOUT
     public uint numFields;
     public uint boxOffset;
     public int type;
+}
+
+[StructLayout(LayoutKind.Sequential)]
+public struct COR_ARRAY_LAYOUT
+{
+    public COR_TYPEID componentID;
+    public CorElementType componentType;
+    public uint firstElementOffset;
+    public uint elementSize;
+    public uint countOffset;
+    public uint rankSize;
+    public uint numRanks;
+    public uint rankOffset;
 }
 
 [StructLayout(LayoutKind.Sequential)]
@@ -505,10 +519,10 @@ public unsafe partial interface IDacDbiInterface
     int GetObjectFields(nint id, uint celt, COR_FIELD* layout, uint* pceltFetched);
 
     [PreserveSig]
-    int GetTypeLayout(nint id, COR_TYPE_LAYOUT* pLayout);
+    int GetTypeLayout(ulong id, COR_TYPE_LAYOUT* pLayout);
 
     [PreserveSig]
-    int GetArrayLayout(nint id, nint pLayout);
+    int GetArrayLayout(ulong id, COR_ARRAY_LAYOUT* pLayout);
 
     [PreserveSig]
     int GetGCHeapInformation(COR_HEAPINFO* pHeapInfo);

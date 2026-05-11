@@ -19,13 +19,20 @@ steps:
     # Set up the Azure Pipeline Cache for sccache's local cache directory.
     # Use a rolling key so each build can update the cache; restoreKeys
     # falls back to the most recent saved entry.
+    #
+    # buildConfig is intentionally excluded from the key: it reflects
+    # the *managed* Configuration (Debug for PRs, Release for rolling
+    # builds), but sccache only caches native (C/C++) compilations whose
+    # flags are controlled by RuntimeConfiguration (-rc), which is
+    # constant per leg regardless of buildConfig.  Omitting it lets PR
+    # builds warm-start from rolling-build caches saved in the main scope.
     - task: Cache@2
       displayName: Sccache cache
       inputs:
-        key: sccache | ${{ parameters.osGroup }} | ${{ parameters.archType }} | ${{ parameters.nameSuffix }} | ${{ parameters.buildConfig }} | "$(Build.BuildId)"
+        key: sccache | ${{ parameters.osGroup }} | ${{ parameters.archType }} | ${{ parameters.nameSuffix }} | "$(Build.BuildId)"
         path: $(Pipeline.Workspace)/.sccache
         restoreKeys: |
-          sccache | ${{ parameters.osGroup }} | ${{ parameters.archType }} | ${{ parameters.nameSuffix }} | ${{ parameters.buildConfig }}
+          sccache | ${{ parameters.osGroup }} | ${{ parameters.archType }} | ${{ parameters.nameSuffix }}
 
     # Configure sccache environment and add binary to PATH.
     # The sccache package is restored by runtime-prereqs.proj during the build.
