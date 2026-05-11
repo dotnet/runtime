@@ -39,7 +39,7 @@ namespace System.Net.Http
             int count = 0;
             int rc = Interop.AndroidCrypto.GetProxyForUrl(url, out count, out proxies);
 
-            if (rc != 0 || count == 0 || proxies == null)
+            if (rc != 0 || proxies == null)
             {
                 return null;
             }

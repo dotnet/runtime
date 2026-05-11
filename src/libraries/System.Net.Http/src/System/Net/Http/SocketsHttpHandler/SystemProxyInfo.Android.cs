@@ -44,7 +44,7 @@ namespace System.Net.Http
         //     code referenced only by other paths.
         //   * Testing / debugging where pure env-var behavior is required.
         [FeatureSwitchDefinition("System.Net.Http.UseAndroidSystemProxy")]
-        private static bool UseAndroidSystemProxy =>
+        private static bool UseAndroidSystemProxy { get; } =
             RuntimeSettingParser.QueryRuntimeSettingSwitch(
                 "System.Net.Http.UseAndroidSystemProxy",
                 defaultValue: true);
