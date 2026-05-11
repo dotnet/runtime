@@ -118,7 +118,6 @@ typedef int COR_FIELD;
 typedef int COR_TYPE_LAYOUT;
 typedef int COR_ARRAY_LAYOUT;
 typedef int COR_HEAPINFO;
-typedef int COR_MEMORY_RANGE;
 
 // DacDbiArrayList type params
 typedef int TypeInfoList;

@@ -1633,11 +1633,6 @@ typedef CordbEnumerator<COR_SEGMENT,
                         ICorDebugHeapSegmentEnum, IID_ICorDebugHeapSegmentEnum,
                         IdentityConvert<COR_SEGMENT> > CordbHeapSegmentEnumerator;
 
-typedef CordbEnumerator<COR_MEMORY_RANGE,
-                        COR_MEMORY_RANGE,
-                        ICorDebugMemoryRangeEnum, IID_ICorDebugMemoryRangeEnum,
-                        IdentityConvert<COR_MEMORY_RANGE> > CordbMemoryRangeEnumerator;
-
 typedef CordbEnumerator<CorDebugExceptionObjectStackFrame,
                         CorDebugExceptionObjectStackFrame,
                         ICorDebugExceptionObjectCallStackEnum, IID_ICorDebugExceptionObjectCallStackEnum,
