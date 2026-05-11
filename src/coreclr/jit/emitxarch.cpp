@@ -998,7 +998,14 @@ inline bool emitter::IsCFCMOV(instruction ins)
 //
 /* static */ bool emitter::ImmCanUseSByteEncoding(instruction ins, ssize_t val)
 {
-    return ((signed char)val == (target_ssize_t)val) && (ins != INS_mov) && (ins != INS_test) && !IsCTEST(ins);
+    target_ssize_t targetVal = (target_ssize_t)val;
+
+    if (targetVal != val)
+    {
+        return false;
+    }
+
+    return ((signed char)targetVal == targetVal) && (ins != INS_mov) && (ins != INS_test) && !IsCTEST(ins);
 }
 
 //------------------------------------------------------------------------
