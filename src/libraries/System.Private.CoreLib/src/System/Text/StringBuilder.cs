@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
@@ -1080,7 +1080,7 @@ namespace System.Text
         /// </summary>
         /// <param name="value">The UTF-32-encoded code unit to append.</param>
         /// <returns>A reference to this instance after the append operation has completed.</returns>
-        public StringBuilder Append(Rune value)
+        public unsafe StringBuilder Append(Rune value)
         {
             // Convert value to span
             ReadOnlySpan<char> valueChars = value.AsSpan(stackalloc char[Rune.MaxUtf16CharsPerRune]);
@@ -1395,7 +1395,7 @@ namespace System.Text
         /// <param name="index">The position in this instance where insertion begins.</param>
         /// <param name="value">The value to insert.</param>
         /// <returns>A reference to this instance after the insert operation has completed.</returns>
-        public StringBuilder Insert(int index, Rune value)
+        public unsafe StringBuilder Insert(int index, Rune value)
         {
             // Convert value to span
             ReadOnlySpan<char> valueChars = value.AsSpan(stackalloc char[Rune.MaxUtf16CharsPerRune]);
@@ -1486,7 +1486,7 @@ namespace System.Text
             return this;
         }
 
-        private StringBuilder InsertSpanFormattable<T>(int index, T value) where T : ISpanFormattable
+        private unsafe StringBuilder InsertSpanFormattable<T>(int index, T value) where T : ISpanFormattable
         {
             Debug.Assert(typeof(T).Assembly.Equals(typeof(object).Assembly), "Implementation trusts the results of TryFormat because T is expected to be something known");
 
@@ -2150,7 +2150,7 @@ namespace System.Text
         /// If <paramref name="newValue"/> is empty, instances of <paramref name="oldValue"/>
         /// are removed from this builder.
         /// </remarks>
-        public StringBuilder Replace(ReadOnlySpan<char> oldValue, ReadOnlySpan<char> newValue, int startIndex, int count)
+        public unsafe StringBuilder Replace(ReadOnlySpan<char> oldValue, ReadOnlySpan<char> newValue, int startIndex, int count)
         {
             int currentLength = Length;
             if ((uint)startIndex > (uint)currentLength)
@@ -2343,7 +2343,7 @@ namespace System.Text
         /// A reference to this instance with <paramref name="oldRune"/> replaced by <paramref name="newRune"/> in the range
         /// from <paramref name="startIndex"/> to <paramref name="startIndex"/> + <paramref name="count"/> - 1.
         /// </returns>
-        public StringBuilder Replace(Rune oldRune, Rune newRune, int startIndex, int count)
+        public unsafe StringBuilder Replace(Rune oldRune, Rune newRune, int startIndex, int count)
         {
             // Convert oldRune to span
             ReadOnlySpan<char> oldChars = oldRune.AsSpan(stackalloc char[Rune.MaxUtf16CharsPerRune]);
@@ -3194,7 +3194,7 @@ namespace System.Text
             }
 
             /// <summary>Formats into temporary space and then appends the result into the StringBuilder.</summary>
-            private void AppendFormattedWithTempSpace<T>(T value, int alignment, string? format)
+            private unsafe void AppendFormattedWithTempSpace<T>(T value, int alignment, string? format)
             {
                 // It's expected that either there's not enough space in the current chunk to store this formatted value,
                 // or we have a non-0 alignment that could require padding inserted. So format into temporary space and

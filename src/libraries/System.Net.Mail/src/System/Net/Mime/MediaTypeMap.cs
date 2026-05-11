@@ -795,7 +795,7 @@ namespace System.Net.Mime
         /// The comparison is case-insensitive.
         /// </para>
         /// </remarks>
-        public static string? GetMediaType(ReadOnlySpan<char> pathOrExtension)
+        public static unsafe string? GetMediaType(ReadOnlySpan<char> pathOrExtension)
         {
             scoped ReadOnlySpan<char> extension = Path.GetExtension(pathOrExtension);
 

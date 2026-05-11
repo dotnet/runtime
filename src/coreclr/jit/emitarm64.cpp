@@ -2621,20 +2621,9 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
 {
     assert(width <= 64);
 
-    UINT64 result = ~value;
-
-    if (width < 64)
-    {
-        // Check that 'value' fits in 'width' bits. Don't consider "sign" bits above width.
-        UINT64 maxVal       = 1ULL << width;
-        UINT64 lowBitsMask  = maxVal - 1;
-        UINT64 signBitsMask = ~lowBitsMask | (1ULL << (width - 1)); // The high bits must be set, and the top bit
-                                                                    // (sign bit) must be set.
-        assert((value < maxVal) || ((value & signBitsMask) == signBitsMask));
-
-        // mask off any extra bits that we got from the complement operation
-        result &= lowBitsMask;
-    }
+    // Mask for zero'ing bits above width.
+    UINT64 mask   = UINT64_MAX >> (64 - width);
+    UINT64 result = ~value & mask;
 
     return result;
 }
@@ -8240,14 +8229,23 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int va
 
     assert(offs >= 0);
 
-    if (varx >= 0 && m_compiler->lvaIsUnknownSizeLocal(varx))
+    if ((varx >= 0 && m_compiler->lvaIsUnknownSizeLocal(varx)) ||
+        (varx < 0 && codeGen->regSet.tmpIsUnknownSizeTemp(varx)))
     {
         // SVE locals are TYP_SIMD or TYP_MASK, both should be placed on the UnknownSizeFrame.
         // The base address of these locals should be REG_UNKBASE (x19).
         assert(offs == 0);
         isSimple = false;
         reg2     = REG_UNKBASE;
-        imm      = m_compiler->unkSizeFrame.GetAddressingOffset(m_compiler->lvaGetDesc(varx));
+
+        if (varx >= 0)
+        {
+            imm = m_compiler->unkSizeFrame.GetAddressingOffset(m_compiler->lvaGetDesc(varx));
+        }
+        else
+        {
+            imm = m_compiler->unkSizeFrame.GetAddressingOffset(codeGen->regSet.tmpGetNum(varx));
+        }
 
         switch (ins)
         {
@@ -8553,7 +8551,8 @@ void emitter::emitIns_S_R(instruction ins, emitAttr attr, regNumber reg1, int va
     regNumber reg2          = REG_NA;
     ssize_t   imm           = 0;
 
-    if (varx >= 0 && m_compiler->lvaIsUnknownSizeLocal(varx))
+    if ((varx >= 0 && m_compiler->lvaIsUnknownSizeLocal(varx)) ||
+        (varx < 0 && codeGen->regSet.tmpIsUnknownSizeTemp(varx)))
     {
         // SVE locals are TYP_SIMD or TYP_MASK, both should be placed on the UnknownSizeFrame.
         // The base address of these locals should be REG_UNKBASE (x19).
@@ -8562,9 +8561,17 @@ void emitter::emitIns_S_R(instruction ins, emitAttr attr, regNumber reg1, int va
         assert(attr == EA_SCALABLE);
 
         reg2     = REG_UNKBASE;
-        imm      = m_compiler->unkSizeFrame.GetAddressingOffset(m_compiler->lvaGetDesc(varx));
         fmt      = isPredicateRegister(reg1) ? IF_SVE_JG_2A : IF_SVE_JH_2A;
         isSimple = false;
+
+        if (varx >= 0)
+        {
+            imm = m_compiler->unkSizeFrame.GetAddressingOffset(m_compiler->lvaGetDesc(varx));
+        }
+        else
+        {
+            imm = m_compiler->unkSizeFrame.GetAddressingOffset(codeGen->regSet.tmpGetNum(varx));
+        }
 
         // TODO-SVE: Handle generation of base address for large immediate scaled by VL/PL.
         assert(isValidSimm<9>(imm));

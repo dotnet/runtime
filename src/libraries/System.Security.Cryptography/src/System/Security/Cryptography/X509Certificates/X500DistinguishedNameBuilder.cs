@@ -204,7 +204,7 @@ namespace System.Security.Cryptography.X509Certificates
         /// will be normalized to upper case characters.
         /// </para>
         /// </remarks>
-        public void AddCountryOrRegion(string twoLetterCode)
+        public unsafe void AddCountryOrRegion(string twoLetterCode)
         {
             // ITU T-REC X.520 Annex A:
             // id-at-countryName
