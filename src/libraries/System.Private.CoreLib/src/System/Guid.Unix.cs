@@ -37,11 +37,6 @@ namespace System
         // Returns a Guid whose bytes 6..15 contain cryptographically-secure random data, as
         // required by CreateVersion7. Bytes 0..5 are intentionally left uninitialized; the
         // caller overwrites them with the unix_ts_ms timestamp.
-        //
-        // Asking for only 10 bytes (instead of all 16) hits the Apple CoreCrypto fast path
-        // for <=12 byte requests and reduces the amount of entropy pulled from the kernel
-        // on other Unix platforms. The version and variant fields are applied by the caller,
-        // so this helper does not set them (unlike NewGuid which produces a v4 Guid).
         private static unsafe Guid CreateVersion7Random()
         {
             Unsafe.SkipInit(out Guid g);
