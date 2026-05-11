@@ -263,8 +263,12 @@ public class WasmSdkBasedProjectProvider : ProjectProviderBase
         // --- Native assets: dotnet.native.* ---
         // For non-native builds, native files are materialized in fx/_framework/ from runtime pack.
         // For native builds (AOT/relink), they are rebuilt and placed in wasm/for-build/.
+        // CoreCLR WBT runs in NoWorkload mode but still performs per-app native relink via
+        // BrowserWasmApp.CoreCLR.targets (imported by data/Local.Directory.Build.targets), so
+        // treat CoreCLR as having native-rebuild capability regardless of isUsingWorkloads.
         string[] nativeFiles = ["dotnet.native.js", "dotnet.native.wasm"];
-        var expectedFileType = isUsingWorkloads
+        bool hasNativeRebuildCapability = isUsingWorkloads || EnvironmentVariables.RuntimeFlavor == "CoreCLR";
+        var expectedFileType = hasNativeRebuildCapability
             ? GetExpectedFileType(config, buildOptions.AOT, isPublish: false, isUsingWorkloads: isUsingWorkloads, isNativeBuild: isNativeBuild)
             : NativeFilesType.FromRuntimePack;
         bool isNativeRebuild = expectedFileType is NativeFilesType.Relinked or NativeFilesType.AOT;
