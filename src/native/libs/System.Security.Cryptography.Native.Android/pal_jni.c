@@ -1107,7 +1107,8 @@ jint AndroidCryptoNative_InitLibraryOnLoad (JavaVM *vm, void *reserved)
     JNINativeMethod trustManagerMethods[] = {
         { "verifyRemoteCertificate", "(JZ)Z", (void*)Java_net_dot_android_crypto_DotnetProxyTrustManager_verifyRemoteCertificate },
     };
-    (*env)->RegisterNatives(env, g_DotnetProxyTrustManager, trustManagerMethods, 1);
+    jint registerResult = (*env)->RegisterNatives(env, g_DotnetProxyTrustManager, trustManagerMethods, 1);
+    abort_unless(registerResult == JNI_OK, "RegisterNatives for DotnetProxyTrustManager.verifyRemoteCertificate failed (error: %d)", registerResult);
 
     g_DotnetX509KeyManager =     GetClassGRef(env, "net/dot/android/crypto/DotnetX509KeyManager");
     g_DotnetX509KeyManagerCtor = GetMethod(env, false, g_DotnetX509KeyManager, "<init>", "(Ljava/security/KeyStore$PrivateKeyEntry;)V");
