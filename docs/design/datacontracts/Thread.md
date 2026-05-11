@@ -54,10 +54,10 @@ record struct ThreadData (
 ```
 
 ``` csharp
-enum ThreadStateNoConcurrency
+enum DebuggerControlledThreadState
 {
-    Unknown                     = 0x00000000, // Threads are initialized this way
-    DebuggerUserSuspend         = 0x00000001, // Marked "suspended" by the debugger
+    None                        = 0x00000000, // Threads are initialized this way
+    UserSuspend                 = 0x00000001, // Marked "suspended" by the debugger
 }
 ```
 
@@ -65,8 +65,8 @@ enum ThreadStateNoConcurrency
 ThreadStoreData GetThreadStoreData();
 ThreadStoreCounts GetThreadCounts();
 ThreadData GetThreadData(TargetPointer threadPointer);
-void SetThreadState(TargetPointer thread, ThreadStateNoConcurrency stateNC);
-void ResetThreadState(TargetPointer thread, ThreadStateNoConcurrency stateNC);
+void SetDebuggerControlledThreadState(TargetPointer thread, DebuggerControlledThreadState state);
+void ResetDebuggerControlledThreadState(TargetPointer thread, DebuggerControlledThreadState state);
 void GetStackLimitData(TargetPointer threadPointer, out TargetPointer stackBase, out TargetPointer stackLimit, out TargetPointer frameAddress);
 TargetPointer IdToThread(uint id);
 TargetPointer GetThreadLocalStaticBase(TargetPointer threadPointer, TargetPointer tlsIndexPtr);
@@ -115,7 +115,7 @@ The contract additionally depends on these data descriptors
 | `Thread` | `Id` | Thread identifier |
 | `Thread` | `OSId` | Operating system thread identifier |
 | `Thread` | `State` | Thread state flags |
-| `Thread` | `StateNC` | Thread state flags (no concurrency) |
+| `Thread` | `DebuggerControlledThreadState` | Thread state flags controlled by the debugger |
 | `Thread` | `PreemptiveGCDisabled` | Flag indicating if preemptive GC is disabled |
 | `Thread` | `Frame` | Pointer to current frame |
 | `Thread` | `CachedStackBase` | Pointer to the base of the stack |
@@ -240,16 +240,16 @@ void IThread.GetStackLimitData(TargetPointer threadPointer, out TargetPointer st
     frameAddress = threadPointer + /* Thread::Frame offset */;
 }
 
-void SetThreadState(TargetPointer thread, ThreadStateNoConcurrency stateNC)
+void SetDebuggerControlledThreadState(TargetPointer thread, DebuggerControlledThreadState state)
 {
-    uint currentStateNC = target.Read<uint>(thread + /* Thread::StateNC offset */);
-    target.Write<uint>(thread + /* Thread::StateNC offset */, currentStateNC | (uint)stateNC);
+    uint current = target.Read<uint>(thread + /* Thread::DebuggerControlledThreadState offset */);
+    target.Write<uint>(thread + /* Thread::DebuggerControlledThreadState offset */, current | (uint)state);
 }
 
-void ResetThreadState(TargetPointer thread, ThreadStateNoConcurrency stateNC)
+void ResetDebuggerControlledThreadState(TargetPointer thread, DebuggerControlledThreadState state)
 {
-    uint currentStateNC = target.Read<uint>(thread + /* Thread::StateNC offset */);
-    target.Write<uint>(thread + /* Thread::StateNC offset */, currentStateNC & ~(uint)stateNC);
+    uint current = target.Read<uint>(thread + /* Thread::DebuggerControlledThreadState offset */);
+    target.Write<uint>(thread + /* Thread::DebuggerControlledThreadState offset */, current & ~(uint)state);
 }
 
 TargetPointer IThread.IdToThread(uint id)

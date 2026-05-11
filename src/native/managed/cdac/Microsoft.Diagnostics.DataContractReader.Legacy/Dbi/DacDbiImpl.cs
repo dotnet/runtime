@@ -721,11 +721,11 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
 
             if (debugState == (int)CorDebugThreadState.ThreadSuspend)
             {
-                _target.Contracts.Thread.SetThreadState(threadPtr, Contracts.ThreadStateNoConcurrency.DebuggerUserSuspend);
+                _target.Contracts.Thread.SetDebuggerControlledThreadState(threadPtr, Contracts.DebuggerControlledThreadState.UserSuspend);
             }
             else if (debugState == (int)CorDebugThreadState.ThreadRun)
             {
-                _target.Contracts.Thread.ResetThreadState(threadPtr, Contracts.ThreadStateNoConcurrency.DebuggerUserSuspend);
+                _target.Contracts.Thread.ResetDebuggerControlledThreadState(threadPtr, Contracts.DebuggerControlledThreadState.UserSuspend);
             }
             else
             {

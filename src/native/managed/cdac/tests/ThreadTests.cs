@@ -327,18 +327,18 @@ public unsafe class ThreadTests
         Assert.Equal(lastThrownHandle, data.LastThrownObjectHandle);
     }
 
-    public static IEnumerable<object[]> SetThreadStateData()
+    public static IEnumerable<object[]> SetDebuggerControlledThreadStateData()
     {
         foreach (var arch in new MockTarget.StdArch())
         {
-            yield return [arch[0], ThreadStateNoConcurrency.Unknown, ThreadStateNoConcurrency.DebuggerUserSuspend];
-            yield return [arch[0], ThreadStateNoConcurrency.DebuggerUserSuspend, ThreadStateNoConcurrency.DebuggerUserSuspend];
+            yield return [arch[0], DebuggerControlledThreadState.None, DebuggerControlledThreadState.UserSuspend];
+            yield return [arch[0], DebuggerControlledThreadState.UserSuspend, DebuggerControlledThreadState.UserSuspend];
         }
     }
 
     [Theory]
-    [MemberData(nameof(SetThreadStateData))]
-    public void SetThreadState(MockTarget.Architecture arch, ThreadStateNoConcurrency initialStateNC, ThreadStateNoConcurrency expectedStateNC)
+    [MemberData(nameof(SetDebuggerControlledThreadStateData))]
+    public void SetDebuggerControlledThreadState(MockTarget.Architecture arch, DebuggerControlledThreadState initialState, DebuggerControlledThreadState expectedState)
     {
         MockThread? thread = null;
         TestPlaceholderTarget target = CreateTarget(
@@ -346,28 +346,28 @@ public unsafe class ThreadTests
             threadBuilder =>
             {
                 thread = threadBuilder.AddThread(1, 1234);
-                thread.StateNC = (uint)initialStateNC;
+                thread.DebuggerControlledThreadState = (uint)initialState;
             });
         IThread contract = target.Contracts.Thread;
         TargetPointer threadPtr = new(thread!.Address);
 
-        contract.SetThreadState(threadPtr, ThreadStateNoConcurrency.DebuggerUserSuspend);
+        contract.SetDebuggerControlledThreadState(threadPtr, DebuggerControlledThreadState.UserSuspend);
 
-        Assert.Equal((uint)expectedStateNC, thread.StateNC);
+        Assert.Equal((uint)expectedState, thread.DebuggerControlledThreadState);
     }
 
-    public static IEnumerable<object[]> ResetThreadStateData()
+    public static IEnumerable<object[]> ResetDebuggerControlledThreadStateData()
     {
         foreach (var arch in new MockTarget.StdArch())
         {
-            yield return [arch[0], ThreadStateNoConcurrency.DebuggerUserSuspend, ThreadStateNoConcurrency.Unknown];
-            yield return [arch[0], ThreadStateNoConcurrency.Unknown, ThreadStateNoConcurrency.Unknown];
+            yield return [arch[0], DebuggerControlledThreadState.UserSuspend, DebuggerControlledThreadState.None];
+            yield return [arch[0], DebuggerControlledThreadState.None, DebuggerControlledThreadState.None];
         }
     }
 
     [Theory]
-    [MemberData(nameof(ResetThreadStateData))]
-    public void ResetThreadState(MockTarget.Architecture arch, ThreadStateNoConcurrency initialStateNC, ThreadStateNoConcurrency expectedStateNC)
+    [MemberData(nameof(ResetDebuggerControlledThreadStateData))]
+    public void ResetDebuggerControlledThreadState(MockTarget.Architecture arch, DebuggerControlledThreadState initialState, DebuggerControlledThreadState expectedState)
     {
         MockThread? thread = null;
         TestPlaceholderTarget target = CreateTarget(
@@ -375,13 +375,13 @@ public unsafe class ThreadTests
             threadBuilder =>
             {
                 thread = threadBuilder.AddThread(1, 1234);
-                thread.StateNC = (uint)initialStateNC;
+                thread.DebuggerControlledThreadState = (uint)initialState;
             });
         IThread contract = target.Contracts.Thread;
         TargetPointer threadPtr = new(thread!.Address);
 
-        contract.ResetThreadState(threadPtr, ThreadStateNoConcurrency.DebuggerUserSuspend);
+        contract.ResetDebuggerControlledThreadState(threadPtr, DebuggerControlledThreadState.UserSuspend);
 
-        Assert.Equal((uint)expectedStateNC, thread.StateNC);
+        Assert.Equal((uint)expectedState, thread.DebuggerControlledThreadState);
     }
 }

@@ -37,10 +37,10 @@ public enum ThreadState
 }
 
 [Flags]
-public enum ThreadStateNoConcurrency
+public enum DebuggerControlledThreadState
 {
-    Unknown                     = 0x00000000, // Threads are initialized this way
-    DebuggerUserSuspend         = 0x00000001, // Marked "suspended" by the debugger
+    None                        = 0x00000000, // Threads are initialized this way
+    UserSuspend                 = 0x00000001, // Marked "suspended" by the debugger
 }
 
 public record struct ThreadData(
@@ -64,8 +64,8 @@ public interface IThread : IContract
 {
     static string IContract.Name { get; } = nameof(Thread);
 
-    void SetThreadState(TargetPointer thread, ThreadStateNoConcurrency stateNC) => throw new NotImplementedException();
-    void ResetThreadState(TargetPointer thread, ThreadStateNoConcurrency stateNC) => throw new NotImplementedException();
+    void SetDebuggerControlledThreadState(TargetPointer thread, DebuggerControlledThreadState state) => throw new NotImplementedException();
+    void ResetDebuggerControlledThreadState(TargetPointer thread, DebuggerControlledThreadState state) => throw new NotImplementedException();
     ThreadStoreData GetThreadStoreData() => throw new NotImplementedException();
     ThreadStoreCounts GetThreadCounts() => throw new NotImplementedException();
     ThreadData GetThreadData(TargetPointer thread) => throw new NotImplementedException();

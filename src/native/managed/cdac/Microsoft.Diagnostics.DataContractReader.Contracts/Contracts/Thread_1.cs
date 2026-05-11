@@ -45,16 +45,16 @@ internal readonly struct Thread_1 : IThread
         _threadTypeInfo = target.GetTypeInfo(DataType.Thread);
     }
 
-    void IThread.SetThreadState(TargetPointer thread, ThreadStateNoConcurrency stateNC)
+    void IThread.SetDebuggerControlledThreadState(TargetPointer thread, DebuggerControlledThreadState state)
     {
-        uint currentStateNC = _target.ReadField<uint>(thread, _threadTypeInfo, nameof(Data.Thread.StateNC));
-        _target.WriteField(thread, _threadTypeInfo, nameof(Data.Thread.StateNC), currentStateNC | (uint)stateNC);
+        uint current = _target.ReadField<uint>(thread, _threadTypeInfo, nameof(Data.Thread.DebuggerControlledThreadState));
+        _target.WriteField(thread, _threadTypeInfo, nameof(Data.Thread.DebuggerControlledThreadState), current | (uint)state);
     }
 
-    void IThread.ResetThreadState(TargetPointer thread, ThreadStateNoConcurrency stateNC)
+    void IThread.ResetDebuggerControlledThreadState(TargetPointer thread, DebuggerControlledThreadState state)
     {
-        uint currentStateNC = _target.ReadField<uint>(thread, _threadTypeInfo, nameof(Data.Thread.StateNC));
-        _target.WriteField(thread, _threadTypeInfo, nameof(Data.Thread.StateNC), currentStateNC & ~(uint)stateNC);
+        uint current = _target.ReadField<uint>(thread, _threadTypeInfo, nameof(Data.Thread.DebuggerControlledThreadState));
+        _target.WriteField(thread, _threadTypeInfo, nameof(Data.Thread.DebuggerControlledThreadState), current & ~(uint)state);
     }
 
     ThreadStoreData IThread.GetThreadStoreData()
