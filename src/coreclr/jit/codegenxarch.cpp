@@ -8703,7 +8703,7 @@ void CodeGen::genCodeForCCMP(GenTreeCCMP* ccmp)
         if (intConst->IconValue() == 0)
         {
             // ctest reg, reg is 1-byte shorter encoding than ccmp reg, 0.
-            static_assert((FIRST_CTEST_INSTRUCTION - FIRST_APX_INSTRUCTION) == 32);
+            static_assert((FIRST_CTEST_INSTRUCTION - FIRST_CCMP_INSTRUCTION) == 32);
             instruction ctestIns = (instruction)(ccmpIns + FIRST_CTEST_INSTRUCTION - FIRST_CCMP_INSTRUCTION);
             emit->emitIns_R_R(ctestIns, cmpSize, srcReg1, srcReg1, opts);
         }

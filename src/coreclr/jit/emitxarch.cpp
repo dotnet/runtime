@@ -271,7 +271,7 @@ bool emitter::HasRex2Encoding(instruction ins)
 bool emitter::IsApxNddCompatibleInstruction(instruction ins)
 {
     insFlags flags = CodeGenInterface::instInfo[ins];
-    return (flags & INS_Flags_Has_NDD) != 0;
+    return (flags & INS_FLAGS_Has_NDD) != 0;
 }
 
 //------------------------------------------------------------------------
@@ -286,7 +286,7 @@ bool emitter::IsApxNddCompatibleInstruction(instruction ins)
 bool emitter::IsApxNfCompatibleInstruction(instruction ins)
 {
     insFlags flags = CodeGenInterface::instInfo[ins];
-    return (flags & INS_Flags_Has_NF) != 0;
+    return (flags & INS_FLAGS_Has_NF) != 0;
 }
 
 //------------------------------------------------------------------------
@@ -2115,7 +2115,7 @@ bool emitter::TakesApxExtendedEvexPrefix(const instrDesc* id) const
 #if defined(DEBUG)
     if (m_compiler->DoJitStressPromotedEvexEncoding())
     {
-        // EVEX prefixed CMOV has different semantic from non-EVEX CMOV, so we should not promote CMOV in stress mode.
+        // EVEX prefixed CMOV has different semantics from non-EVEX CMOV, so we should not promote CMOV in stress mode.
         return !insIsCMOV(ins);
     }
 #endif // DEBUG
@@ -9265,13 +9265,13 @@ void emitter::emitIns_I_AR(instruction ins, emitAttr attr, int val, regNumber re
     }
 
     assert(emitGetInsAmdAny(id) == disp); // make sure "disp" is stored properly
+    
+    SetEvexNfIfNeeded(id, instOptions);
+    SetEvexDFVIfNeeded(id, instOptions);
 
     sz = emitInsSizeAM(id, insCodeMI(ins), val);
 
     id->idCodeSize(sz);
-
-    SetEvexNfIfNeeded(id, instOptions);
-    SetEvexDFVIfNeeded(id, instOptions);
 
     dispIns(id);
     emitCurIGsize += sz;
