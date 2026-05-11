@@ -396,7 +396,10 @@ public:
 inline ULONG_PTR LsPtrToCookie(GeneralLsPointer p) {
     return (ULONG_PTR)(CORDB_ADDRESS)p.m_ptr;
 }
-#define VmPtrToCookie(vm) LsPtrToCookie((vm).ToLsPtr())
+template <typename T>
+inline ULONG_PTR VmPtrToCookie(T vm) { return LsPtrToCookie(vm.ToLsPtr()); }
+template <typename T>
+inline ULONG_PTR VmPtrToCookie(Portable<T> vm) { return LsPtrToCookie(static_cast<T>(vm).ToLsPtr()); }
 
 
 #ifdef RIGHT_SIDE_COMPILE
@@ -643,7 +646,7 @@ class MSLAYOUT VMPTR_Base
     // - In DAC: must be marshalled to a host-pointer and then they can be used via DAC
     // - In RS: opaque handles.
 private:
-    Portable<CORDB_ADDRESS> m_addr;
+    CORDB_ADDRESS m_addr;
 
 public:
     typedef VMPTR_Base<TTargetPtr,TDacPtr> VMPTR_This;
@@ -687,9 +690,11 @@ public:
     // This will set initialize from a Target pointer. Since this is happening in the
     // Left-side (Target), the pointer is local.
     // This is commonly used by the Left-side to create a VMPTR_ for a notification event.
-    void SetRawPtr(TTargetPtr * ptr)
+    static VMPTR_This MakePtr(TTargetPtr * ptr)
     {
-        m_addr = PTR_TO_CORDB_ADDRESS(ptr);
+        VMPTR_This t;
+        t.m_addr = PTR_TO_CORDB_ADDRESS(ptr);
+        return t;
     }
 
     // This will get the raw underlying target pointer.
@@ -699,15 +704,6 @@ public:
     {
         return reinterpret_cast<TTargetPtr*>((TADDR)m_addr);
     }
-
-    // Convenience for converting TTargetPtr --> VMPTR
-    static VMPTR_This MakePtr(TTargetPtr * ptr)
-    {
-        VMPTR_This t;
-        t.SetRawPtr(ptr);
-        return t;
-    }
-
 
 #else
     //
@@ -1191,7 +1187,7 @@ public:
     {
         LIMITED_METHOD_DAC_CONTRACT;
         FramePointer fp;
-        fp.m_sp = sp;
+        fp.m_sp = PTR_TO_CORDB_ADDRESS(sp);
         return fp;
     }
 
@@ -1215,7 +1211,7 @@ public:
     // CordbChain are really FramePointers.
     LPVOID GetSPValue() const
     {
-        return m_sp;
+        return CORDB_ADDRESS_TO_PTR(m_sp);
     }
 
 
@@ -1226,7 +1222,7 @@ private:
     FramePointer &operator=(BYTE* sp);
     FramePointer &operator=(const BYTE* sp);
 
-    LPVOID m_sp;
+    Portable<CORDB_ADDRESS> m_sp;
 };
 
 // For non-IA64 platforms, we use stack pointers as frame pointers.
@@ -1457,8 +1453,8 @@ struct MSLAYOUT DebuggerIPCE_BasicTypeData
 {
     Portable<CorElementType> elementType;
     Portable<mdTypeDef> metadataToken;
-    VMPTR_Assembly  vmAssembly;
-    VMPTR_TypeHandle vmTypeHandle;
+    Portable<VMPTR_Assembly> vmAssembly;
+    Portable<VMPTR_TypeHandle> vmTypeHandle;
 };
 
 // DebuggerIPCE_ExpandedTypeData contains more information showing further
@@ -1492,8 +1488,8 @@ struct MSLAYOUT DebuggerIPCE_ExpandedTypeData
         struct MSLAYOUT
         {
             Portable<mdTypeDef> metadataToken;
-            VMPTR_Assembly vmAssembly;
-            VMPTR_TypeHandle typeHandle; // if non-null then further fetches will be needed to get type arguments
+            Portable<VMPTR_Assembly> vmAssembly;
+            Portable<VMPTR_TypeHandle> typeHandle; // if non-null then further fetches will be needed to get type arguments
         } ClassTypeData;
 
         // used for E_T_PTR, E_T_BYREF etc.
@@ -1874,8 +1870,8 @@ struct MSLAYOUT DebuggerIPCEvent
     Portable<DebuggerIPCEventType> type;
     Portable<DWORD> processId;
     Portable<DWORD> threadId;
-    VMPTR_AppDomain vmAppDomain;
-    VMPTR_Thread vmThread;
+    Portable<VMPTR_AppDomain> vmAppDomain;
+    Portable<VMPTR_Thread> vmThread;
 
     Portable<HRESULT> hr;
     Portable<bool> replyRequired;
@@ -1887,32 +1883,32 @@ struct MSLAYOUT DebuggerIPCEvent
         {
             // Module whose metadata is being updated
             // This tells the RS that the metadata for that module has become invalid.
-            VMPTR_Assembly vmAssembly;
+            Portable<VMPTR_Assembly> vmAssembly;
 
         } MetadataUpdateData;
 
         struct MSLAYOUT
         {
             // Handle to CLR's internal appdomain object.
-            VMPTR_AppDomain vmAppDomain;
+            Portable<VMPTR_AppDomain> vmAppDomain;
         } AppDomainData;
 
         struct MSLAYOUT
         {
-            VMPTR_Assembly vmAssembly;
+            Portable<VMPTR_Assembly> vmAssembly;
         } AssemblyData;
 
         // Debug event that a module has been loaded
         struct MSLAYOUT
         {
             // Module that was just loaded.
-            VMPTR_Assembly vmAssembly;
+            Portable<VMPTR_Assembly> vmAssembly;
         }LoadModuleData;
 
 
         struct MSLAYOUT
         {
-            VMPTR_Assembly vmAssembly;
+            Portable<VMPTR_Assembly> vmAssembly;
             LSPTR_ASSEMBLY debuggerAssemblyToken;
         } UnloadModuleData;
 
@@ -1921,14 +1917,14 @@ struct MSLAYOUT DebuggerIPCEvent
         // Queury PDB from OOP
         struct MSLAYOUT
         {
-            VMPTR_Assembly vmAssembly;
+            Portable<VMPTR_Assembly> vmAssembly;
         } UpdateModuleSymsData;
 
         struct MSLAYOUT
         {
             LSPTR_BREAKPOINT breakpointToken;
             Portable<mdMethodDef> funcMetadataToken;
-            VMPTR_Assembly vmAssembly;
+            Portable<VMPTR_Assembly> vmAssembly;
             Portable<bool> isIL;
             Portable<UINT> offset;
             Portable<UINT> encVersion;
@@ -2026,33 +2022,33 @@ struct MSLAYOUT DebuggerIPCEvent
         struct MSLAYOUT
         {
             Portable<mdTypeDef> classMetadataToken;
-            VMPTR_Assembly vmAssembly;
+            Portable<VMPTR_Assembly> vmAssembly;
             LSPTR_ASSEMBLY classDebuggerAssemblyToken;
         } LoadClass;
 
         struct MSLAYOUT
         {
             Portable<mdTypeDef> classMetadataToken;
-            VMPTR_Assembly vmAssembly;
+            Portable<VMPTR_Assembly> vmAssembly;
             LSPTR_ASSEMBLY classDebuggerAssemblyToken;
         } UnloadClass;
 
         struct MSLAYOUT
         {
-            VMPTR_Assembly vmAssembly;
+            Portable<VMPTR_Assembly> vmAssembly;
             Portable<bool> flag;
         } SetClassLoad;
 
         struct MSLAYOUT
         {
-            VMPTR_OBJECTHANDLE vmExceptionHandle;
+            Portable<VMPTR_OBJECTHANDLE> vmExceptionHandle;
             Portable<bool> firstChance;
             Portable<bool> continuable;
         } Exception;
 
         struct MSLAYOUT
         {
-            VMPTR_Thread vmThreadToken;
+            Portable<VMPTR_Thread> vmThreadToken;
         } ClearException;
 
         struct MSLAYOUT
@@ -2069,10 +2065,10 @@ struct MSLAYOUT DebuggerIPCEvent
         {
             Portable<CORDB_ADDRESS> startAddress;
             Portable<bool> fCanSetIPOnly;
-            VMPTR_Thread vmThreadToken;
-            VMPTR_Assembly vmAssembly;
+            Portable<VMPTR_Thread> vmThreadToken;
+            Portable<VMPTR_Assembly> vmAssembly;
             Portable<mdMethodDef> mdMethod;
-            VMPTR_MethodDesc vmMethodDesc;
+            Portable<VMPTR_MethodDesc> vmMethodDesc;
             Portable<ULONG64> offset;
             Portable<bool> fIsIL;
         } SetIP; // this is also used for CanSetIP
@@ -2096,7 +2092,7 @@ struct MSLAYOUT DebuggerIPCEvent
         struct MSLAYOUT
         {
             // assembly for the domain in which the notification occurred
-            VMPTR_Assembly vmAssembly;
+            Portable<VMPTR_Assembly> vmAssembly;
 
             // metadata token for the type of the CustomNotification object's type
             Portable<mdTypeDef> classToken;
@@ -2104,7 +2100,7 @@ struct MSLAYOUT DebuggerIPCEvent
 
         struct MSLAYOUT
         {
-            VMPTR_Thread vmThreadToken;
+            Portable<VMPTR_Thread> vmThreadToken;
             Portable<CorDebugThreadState> debugState;
         } SetAllDebugState;
 
@@ -2124,9 +2120,9 @@ struct MSLAYOUT DebuggerIPCEvent
             Portable<CORDB_ADDRESS> resultAddr;
 
             // AppDomain that the result is in.
-            VMPTR_AppDomain vmAppDomain;
+            Portable<VMPTR_AppDomain> vmAppDomain;
 
-            VMPTR_OBJECTHANDLE vmObjectHandle;
+            Portable<VMPTR_OBJECTHANDLE> vmObjectHandle;
             DebuggerIPCE_ExpandedTypeData resultType;
         } FuncEvalComplete;
 
@@ -2148,21 +2144,21 @@ struct MSLAYOUT DebuggerIPCEvent
         struct MSLAYOUT
         {
             Portable<CORDB_ADDRESS> objectRefAddress;
-            VMPTR_OBJECTHANDLE vmObjectHandle;
+            Portable<VMPTR_OBJECTHANDLE> vmObjectHandle;
             Portable<CORDB_ADDRESS> newReference;
         } SetReference;
 
         struct MSLAYOUT
         {
             Portable<NameChangeType> eventType;
-            VMPTR_AppDomain vmAppDomain;
-            VMPTR_Thread vmThread;
+            Portable<VMPTR_AppDomain> vmAppDomain;
+            Portable<VMPTR_Thread> vmThread;
         } NameChange;
 
         // EnC Remap opportunity
         struct MSLAYOUT
         {
-            VMPTR_Assembly vmAssembly;
+            Portable<VMPTR_Assembly> vmAssembly;
             Portable<mdMethodDef> funcMetadataToken;      // methodDef of function with remap opportunity
             Portable<ULONG64> currentVersionNumber;         // version currently executing
             Portable<ULONG64> resumeVersionNumber;          // latest version
@@ -2174,7 +2170,7 @@ struct MSLAYOUT DebuggerIPCEvent
         // EnC Remap has taken place
         struct MSLAYOUT
         {
-            VMPTR_Assembly vmAssembly;
+            Portable<VMPTR_Assembly> vmAssembly;
             Portable<mdMethodDef> funcMetadataToken;         // methodDef of function that was remapped
         } EnCRemapComplete;
 
@@ -2182,7 +2178,7 @@ struct MSLAYOUT DebuggerIPCEvent
         // specific edit made by EnC (function add/update or field add).
         struct MSLAYOUT
         {
-            VMPTR_Assembly vmAssembly;
+            Portable<VMPTR_Assembly> vmAssembly;
             Portable<mdToken> memberMetadataToken;   // Either a methodDef token indicating the function that
                                                      // was updated/added, or a fieldDef token indicating the
                                                      // field which was added.
@@ -2203,7 +2199,7 @@ struct MSLAYOUT DebuggerIPCEvent
         // @todo - Perhaps we can bundle these up so we can set multiple funcs w/ 1 event?
         struct MSLAYOUT
         {
-            VMPTR_Assembly vmAssembly;
+            Portable<VMPTR_Assembly> vmAssembly;
             Portable<mdMethodDef> funcMetadataToken;
             Portable<DWORD> dwStatus;
         } SetJMCFunctionStatus;
@@ -2216,13 +2212,13 @@ struct MSLAYOUT DebuggerIPCEvent
 
         struct MSLAYOUT
         {
-            VMPTR_OBJECTHANDLE vmObjectHandle;
+            Portable<VMPTR_OBJECTHANDLE> vmObjectHandle;
         } CreateHandleResult;
 
         // used in DB_IPCE_DISPOSE_HANDLE event
         struct MSLAYOUT
         {
-            VMPTR_OBJECTHANDLE vmObjectHandle;
+            Portable<VMPTR_OBJECTHANDLE> vmObjectHandle;
             Portable<CorDebugHandleType> handleType;
         } DisposeHandle;
 
@@ -2232,7 +2228,7 @@ struct MSLAYOUT DebuggerIPCEvent
             Portable<UINT> nOffset;
             Portable<CorDebugExceptionCallbackType> eventType;
             Portable<DWORD> dwFlags;
-            VMPTR_OBJECTHANDLE vmExceptionHandle;
+            Portable<VMPTR_OBJECTHANDLE> vmExceptionHandle;
         } ExceptionCallback2;
 
         struct MSLAYOUT
@@ -2243,13 +2239,13 @@ struct MSLAYOUT DebuggerIPCEvent
 
         struct MSLAYOUT
         {
-            VMPTR_Thread vmThreadToken;
+            Portable<VMPTR_Thread> vmThreadToken;
             FramePointer frameToken;
         } InterceptException;
 
         struct MSLAYOUT
         {
-            VMPTR_Module vmModule;
+            Portable<VMPTR_Module> vmModule;
             Portable<CORDB_ADDRESS> pMetadataStart;
             Portable<ULONG> nMetadataSize;
         } MetadataUpdateRequest;

@@ -129,6 +129,43 @@ public:
 #endif // DBG_BYTE_SWAP_REQUIRED
     }
 
+    // Forwarders to T's methods. Each one goes through operator=/operator T().
+    // Each is templated (or has a Dummy default) so it isn't instantiated for T's that don't define
+    // the underlying method (e.g. Portable<CORDB_ADDRESS>). Intended to be used for Portable<VMPTR>.
+    template <typename TPtr>
+    void SetRawPtr(TPtr * ptr)
+    {
+        *this = T::MakePtr(ptr);
+    }
+
+    template <typename Dummy = T>
+    auto GetRawPtr() -> decltype(Dummy().GetRawPtr())
+    {
+        Dummy tmp = *this;
+        return tmp.GetRawPtr();
+    }
+
+    template <typename Dummy = T>
+    auto GetDacPtr() -> decltype(Dummy().GetDacPtr())
+    {
+        Dummy tmp = *this;
+        return tmp.GetDacPtr();
+    }
+
+    template <typename TAddr>
+    void SetDacTargetPtr(TAddr addr)
+    {
+        T tmp;
+        tmp.SetDacTargetPtr(addr);
+        *this = tmp;
+    }
+
+    bool IsNull()
+    {
+        T tmp = *this;
+        return tmp.IsNull();
+    }
+
 private:
 #ifdef DBG_BYTE_SWAP_REQUIRED
     // Big endian helper routine to swap the order of bytes of an arbitrary sized type

@@ -11437,7 +11437,7 @@ void Debugger::TypeHandleToBasicTypeInfo(AppDomain *pAppDomain, TypeHandle th, D
     case ELEMENT_TYPE_BYREF:
         res->vmTypeHandle = WrapTypeHandle(th);
         res->metadataToken = mdTokenNil;
-        res->vmAssembly.SetRawPtr(NULL);
+        res->vmAssembly = VMPTR_Assembly::NullPtr();
                 break;
 
     case ELEMENT_TYPE_CLASS:
@@ -11455,7 +11455,7 @@ void Debugger::TypeHandleToBasicTypeInfo(AppDomain *pAppDomain, TypeHandle th, D
     default:
         res->vmTypeHandle = VMPTR_TypeHandle::NullPtr();
         res->metadataToken = mdTokenNil;
-        res->vmAssembly.SetRawPtr(NULL);
+        res->vmAssembly = VMPTR_Assembly::NullPtr();
                 break;
     }
     return;
