@@ -289,7 +289,11 @@ namespace System.IO.Compression
             get => throw new NotSupportedException();
             set => throw new NotSupportedException();
         }
-        public override void Flush() => _base.Flush();
+        public override void Flush()
+        {
+            ObjectDisposedException.ThrowIf(_disposed, this);
+            _base.Flush();
+        }
 
         public override int Read(byte[] buffer, int offset, int count)
         {
@@ -299,6 +303,7 @@ namespace System.IO.Compression
 
         public override int Read(Span<byte> destination)
         {
+            ObjectDisposedException.ThrowIf(_disposed, this);
             if (_encrypting)
             {
                 throw new NotSupportedException(SR.ReadingNotSupported);
@@ -321,6 +326,7 @@ namespace System.IO.Compression
 
         public override void Write(ReadOnlySpan<byte> buffer)
         {
+            ObjectDisposedException.ThrowIf(_disposed, this);
             if (!_encrypting)
             {
                 throw new NotSupportedException(SR.WritingNotSupported);
@@ -404,6 +410,7 @@ namespace System.IO.Compression
 
         public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
         {
+            ObjectDisposedException.ThrowIf(_disposed, this);
             if (_encrypting)
             {
                 throw new NotSupportedException(SR.ReadingNotSupported);
@@ -427,6 +434,7 @@ namespace System.IO.Compression
 
         public override async ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
         {
+            ObjectDisposedException.ThrowIf(_disposed, this);
             if (!_encrypting)
             {
                 throw new NotSupportedException(SR.WritingNotSupported);
@@ -459,6 +467,7 @@ namespace System.IO.Compression
 
         public override Task FlushAsync(CancellationToken cancellationToken)
         {
+            ObjectDisposedException.ThrowIf(_disposed, this);
             return _base.FlushAsync(cancellationToken);
         }
 

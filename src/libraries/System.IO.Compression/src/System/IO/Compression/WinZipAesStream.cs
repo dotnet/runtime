@@ -110,8 +110,8 @@ namespace System.IO.Compression
                 baseStream.ReadExactly(verifier);
             }
 
-            // Verify the salt matches — use constant-time comparison because the salt is
-            // derived from secret key material and a timing side-channel could leak information.
+            // Verify the salt matches. In WinZip AES, the salt is stored in the archive
+            // header and is not secret; FixedTimeEquals is used here for consistency.
             if (!CryptographicOperations.FixedTimeEquals(fileSalt, keyMaterial.Salt))
             {
                 throw new InvalidDataException(SR.LocalFileHeaderCorrupt);
@@ -169,7 +169,8 @@ namespace System.IO.Compression
             _aes.SetKey(keyMaterial.EncryptionKey);
         }
 
-        private void FinalizeAndCompareHMAC(byte[] storedAuth) {
+        private void FinalizeAndCompareHMAC(byte[] storedAuth)
+        {
 
             Debug.Assert(_hmac is not null, "HMAC should have been initialized");
 
@@ -331,7 +332,7 @@ namespace System.IO.Compression
             {
                 // WriteAsync requires Memory<byte>, so we must copy to a heap buffer for the async path
                 byte[] authCodeArray = authCode.Slice(0, 10).ToArray();
-                await _baseStream.WriteAsync(authCodeArray.AsMemory(0, 10), cancellationToken).ConfigureAwait(false);
+                await _baseStream.WriteAsync(authCodeArray.AsMemory(), cancellationToken).ConfigureAwait(false);
             }
             else
             {
@@ -572,6 +573,7 @@ namespace System.IO.Compression
         {
             return WriteAsyncCore(buffer, cancellationToken);
         }
+
         private async Task FinalizeEncryptionAsync(bool isAsync, CancellationToken cancellationToken)
         {
             // Process any bytes remaining in the partial buffer
@@ -606,22 +608,7 @@ namespace System.IO.Compression
                 {
                     if (_encrypting && !_authCodeFinalized)
                     {
-                        // Ensure header is written even for empty files
-                        if (!_headerWritten)
-                        {
-                            WriteHeader();
-                        }
-
-                        // Encrypt remaining partial data
-                        FinalizeEncryptionAsync(false, CancellationToken.None).GetAwaiter().GetResult();
-
-                        // Write Auth Code
-                        WriteAuthCodeCoreAsync(false, CancellationToken.None).GetAwaiter().GetResult();
-
-                        if (_baseStream.CanWrite)
-                        {
-                            _baseStream.Flush();
-                        }
+                        FinishEncryptingAsync(isAsync: false, CancellationToken.None).GetAwaiter().GetResult();
                     }
                 }
                 finally
@@ -651,22 +638,7 @@ namespace System.IO.Compression
             {
                 if (_encrypting && !_authCodeFinalized)
                 {
-                    // Ensure header is written even for empty files
-                    if (!_headerWritten)
-                    {
-                        await WriteHeaderAsync(CancellationToken.None).ConfigureAwait(false);
-                    }
-
-                    // Encrypt remaining partial data
-                    await FinalizeEncryptionAsync(true, CancellationToken.None).ConfigureAwait(false);
-
-                    // Write Auth Code
-                    await WriteAuthCodeCoreAsync(true, CancellationToken.None).ConfigureAwait(false);
-
-                    if (_baseStream.CanWrite)
-                    {
-                        await _baseStream.FlushAsync().ConfigureAwait(false);
-                    }
+                    await FinishEncryptingAsync(isAsync: true, CancellationToken.None).ConfigureAwait(false);
                 }
             }
             finally
@@ -683,10 +655,41 @@ namespace System.IO.Compression
             _disposed = true;
             GC.SuppressFinalize(this);
         }
+
+        /// <summary>
+        /// Completes the encryption sequence: ensures the header is written (even for empty entries),
+        /// flushes any remaining partial block, appends the HMAC authentication code, and flushes the base stream.
+        /// </summary>
+        private async Task FinishEncryptingAsync(bool isAsync, CancellationToken cancellationToken)
+        {
+            Debug.Assert(_encrypting && !_authCodeFinalized);
+
+            // Ensure header is written even for empty files
+            if (!_headerWritten)
+            {
+                if (isAsync)
+                    await WriteHeaderAsync(cancellationToken).ConfigureAwait(false);
+                else
+                    WriteHeader();
+            }
+
+            // Encrypt remaining partial data
+            await FinalizeEncryptionAsync(isAsync, cancellationToken).ConfigureAwait(false);
+
+            // Write Auth Code
+            await WriteAuthCodeCoreAsync(isAsync, cancellationToken).ConfigureAwait(false);
+
+            if (isAsync)
+                await _baseStream.FlushAsync(cancellationToken).ConfigureAwait(false);
+            else
+                _baseStream.Flush();
+        }
+
         public override bool CanRead => !_encrypting && !_disposed;
         public override bool CanSeek => false;
         public override bool CanWrite => _encrypting && !_disposed;
         public override long Length => throw new NotSupportedException();
+
         public override long Position
         {
             get => throw new NotSupportedException();

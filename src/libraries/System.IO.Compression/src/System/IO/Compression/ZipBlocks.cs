@@ -711,6 +711,8 @@ namespace System.IO.Compression
     {
         public const ushort HeaderId = 0x9901;
         private const int DataSize = 7; // Vendor version (2) + Vendor ID (2) + AES strength (1) + Compression method (2)
+        private const byte VendorIdByte0 = (byte)'A';
+        private const byte VendorIdByte1 = (byte)'E';
         private ushort _vendorVersion = 2;
         private byte _aesStrength;
         private ushort _compressionMethod;
@@ -743,14 +745,9 @@ namespace System.IO.Compression
 
             foreach (ZipGenericExtraField field in extraFields)
             {
-                if (field.Tag == HeaderId && field.Size >= DataSize)
+                if (field.Tag == HeaderId && field.Size >= DataSize &&
+                    TryParseData(field.Data.AsSpan(0, field.Size), out aesExtraField))
                 {
-                    byte[] data = field.Data;
-                    aesExtraField = new WinZipAesExtraField(
-                        vendorVersion: BinaryPrimitives.ReadUInt16LittleEndian(data.AsSpan(0, 2)),
-                        aesStrength: data[4],
-                        compressionMethod: BinaryPrimitives.ReadUInt16LittleEndian(data.AsSpan(5, 2))
-                    );
                     return true;
                 }
             }
@@ -778,14 +775,9 @@ namespace System.IO.Compression
                 if (offset + 4 + fieldSize > extraFieldData.Length)
                     break; // Not enough data for this field
 
-                if (headerId == HeaderId && fieldSize >= DataSize)
+                if (headerId == HeaderId && fieldSize >= DataSize &&
+                    TryParseData(extraFieldData.Slice(offset + 4, fieldSize), out aesExtraField))
                 {
-                    ReadOnlySpan<byte> data = extraFieldData.Slice(offset + 4, fieldSize);
-                    aesExtraField = new WinZipAesExtraField(
-                        vendorVersion: BinaryPrimitives.ReadUInt16LittleEndian(data.Slice(0, 2)),
-                        aesStrength: data[4],
-                        compressionMethod: BinaryPrimitives.ReadUInt16LittleEndian(data.Slice(5, 2))
-                    );
                     return true;
                 }
 
@@ -793,6 +785,37 @@ namespace System.IO.Compression
             }
 
             return false;
+        }
+
+        /// <summary>
+        /// Parses and validates the data payload of a candidate WinZip AES extra field.
+        /// Validates the vendor ID ("AE"), vendor version (1 or 2), and AES strength (1–3).
+        /// </summary>
+        /// <param name="data">The raw field data bytes (must be at least <see cref="DataSize"/> bytes).</param>
+        /// <param name="aesExtraField">When this method returns true, contains the parsed AES extra field.</param>
+        /// <returns>true if the data represents a valid WinZip AES extra field; otherwise, false.</returns>
+        private static bool TryParseData(ReadOnlySpan<byte> data, out WinZipAesExtraField aesExtraField)
+        {
+            aesExtraField = default;
+
+            ushort vendorVersion = BinaryPrimitives.ReadUInt16LittleEndian(data.Slice(0, 2));
+            byte aesStrength = data[4];
+
+            // Validate vendor ID must be "AE", vendor version must be 1 or 2,
+            // and AES strength must be 1 (128-bit), 2 (192-bit), or 3 (256-bit).
+            if (data[2] != VendorIdByte0 || data[3] != VendorIdByte1 ||
+                vendorVersion is < 1 or > 2 ||
+                aesStrength is < 1 or > 3)
+            {
+                return false;
+            }
+
+            aesExtraField = new WinZipAesExtraField(
+                vendorVersion: vendorVersion,
+                aesStrength: aesStrength,
+                compressionMethod: BinaryPrimitives.ReadUInt16LittleEndian(data.Slice(5, 2))
+            );
+            return true;
         }
 
         public void WriteBlock(Stream stream)
