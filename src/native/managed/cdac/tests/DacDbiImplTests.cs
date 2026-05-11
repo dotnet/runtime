@@ -3,8 +3,10 @@
 
 using System;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
 using Microsoft.Diagnostics.DataContractReader.Legacy;
+using Moq;
 using Xunit;
 
 namespace Microsoft.Diagnostics.DataContractReader.Tests;
@@ -252,5 +254,147 @@ public unsafe class DacDbiImplTests
         Assert.Equal(CorDbgHResults.CORDBG_S_NOT_ALL_BITS_SET, hr);
         uint rawFlags = target.Read<uint>(moduleAddr + (ulong)flagsOffset);
         Assert.Equal(0u, rawFlags & IsEditAndContinue);
+    }
+
+    private static DacDbiImpl CreateDacDbiWithMockLoader(
+        MockTarget.Architecture arch,
+        Mock<ILoader> mockLoader)
+    {
+        var target = new TestPlaceholderTarget.Builder(arch)
+            .UseReader((_, _) => -1)
+            .AddMockContract(mockLoader)
+            .Build();
+        return new DacDbiImpl(target, legacyObj: null);
+    }
+
+    [UnmanagedCallersOnly]
+    private static unsafe void CollectAssemblyCallback(ulong value, nint pUserData)
+    {
+        GCHandle handle = GCHandle.FromIntPtr(pUserData);
+        ((List<ulong>)handle.Target!).Add(value);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void EnumerateAssembliesInAppDomain_ZeroAppDomain(MockTarget.Architecture arch)
+    {
+        var mockLoader = new Mock<ILoader>();
+        DacDbiImpl dacDbi = CreateDacDbiWithMockLoader(arch, mockLoader);
+
+        List<ulong> assemblies = new();
+        GCHandle gcHandle = GCHandle.Alloc(assemblies);
+        int hr = dacDbi.EnumerateAssembliesInAppDomain(0, &CollectAssemblyCallback, GCHandle.ToIntPtr(gcHandle));
+        gcHandle.Free();
+
+        Assert.Equal(System.HResults.S_OK, hr);
+        Assert.Empty(assemblies);
+        mockLoader.Verify(
+            l => l.GetModuleHandles(It.IsAny<TargetPointer>(), It.IsAny<AssemblyIterationFlags>()),
+            Times.Never);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void EnumerateAssembliesInAppDomain_NullCallback(MockTarget.Architecture arch)
+    {
+        var mockLoader = new Mock<ILoader>();
+        DacDbiImpl dacDbi = CreateDacDbiWithMockLoader(arch, mockLoader);
+
+        int hr = dacDbi.EnumerateAssembliesInAppDomain(0x1000, null, nint.Zero);
+
+        Assert.NotEqual(System.HResults.S_OK, hr);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void EnumerateAssembliesInAppDomain_SingleAssembly_CallsCallback(MockTarget.Architecture arch)
+    {
+        ulong appDomainAddr = 0x1000;
+        ulong assemblyAddr = 0x2000;
+        TargetPointer moduleAddr = new(0x3000);
+
+        var mockLoader = new Mock<ILoader>();
+        mockLoader
+            .Setup(l => l.GetModuleHandles(
+                new TargetPointer(appDomainAddr),
+                AssemblyIterationFlags.IncludeLoading | AssemblyIterationFlags.IncludeLoaded | AssemblyIterationFlags.IncludeExecution))
+            .Returns(new[] { new Contracts.ModuleHandle(moduleAddr) });
+        mockLoader
+            .Setup(l => l.GetAssembly(It.Is<Contracts.ModuleHandle>(h => h.Address == moduleAddr)))
+            .Returns(new TargetPointer(assemblyAddr));
+
+        DacDbiImpl dacDbi = CreateDacDbiWithMockLoader(arch, mockLoader);
+
+        List<ulong> assemblies = new();
+        GCHandle gcHandle = GCHandle.Alloc(assemblies);
+        int hr = dacDbi.EnumerateAssembliesInAppDomain(appDomainAddr, &CollectAssemblyCallback, GCHandle.ToIntPtr(gcHandle));
+        gcHandle.Free();
+
+        Assert.Equal(System.HResults.S_OK, hr);
+        Assert.Single(assemblies);
+        Assert.Equal(assemblyAddr, assemblies[0]);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void EnumerateAssembliesInAppDomain_MultipleAssemblies(MockTarget.Architecture arch)
+    {
+        ulong appDomainAddr = 0x1000;
+        ulong[] expectedAssemblies = [0x2000, 0x3000, 0x4000];
+        TargetPointer[] moduleAddrs = [new(0x5000), new(0x6000), new(0x7000)];
+
+        var mockLoader = new Mock<ILoader>();
+        mockLoader
+            .Setup(l => l.GetModuleHandles(
+                new TargetPointer(appDomainAddr),
+                AssemblyIterationFlags.IncludeLoading | AssemblyIterationFlags.IncludeLoaded | AssemblyIterationFlags.IncludeExecution))
+            .Returns(new[]
+            {
+                new Contracts.ModuleHandle(moduleAddrs[0]),
+                new Contracts.ModuleHandle(moduleAddrs[1]),
+                new Contracts.ModuleHandle(moduleAddrs[2]),
+            });
+
+        for (int i = 0; i < 3; i++)
+        {
+            int index = i;
+            mockLoader
+                .Setup(l => l.GetAssembly(It.Is<Contracts.ModuleHandle>(h => h.Address == moduleAddrs[index])))
+                .Returns(new TargetPointer(expectedAssemblies[index]));
+        }
+
+        DacDbiImpl dacDbi = CreateDacDbiWithMockLoader(arch, mockLoader);
+
+        List<ulong> assemblies = new();
+        GCHandle gcHandle = GCHandle.Alloc(assemblies);
+        int hr = dacDbi.EnumerateAssembliesInAppDomain(appDomainAddr, &CollectAssemblyCallback, GCHandle.ToIntPtr(gcHandle));
+        gcHandle.Free();
+
+        Assert.Equal(System.HResults.S_OK, hr);
+        Assert.Equal(expectedAssemblies, assemblies.ToArray());
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void EnumerateAssembliesInAppDomain_NoAssemblies(MockTarget.Architecture arch)
+    {
+        ulong appDomainAddr = 0x1000;
+
+        var mockLoader = new Mock<ILoader>();
+        mockLoader
+            .Setup(l => l.GetModuleHandles(
+                new TargetPointer(appDomainAddr),
+                AssemblyIterationFlags.IncludeLoading | AssemblyIterationFlags.IncludeLoaded | AssemblyIterationFlags.IncludeExecution))
+            .Returns(Array.Empty<Contracts.ModuleHandle>());
+
+        DacDbiImpl dacDbi = CreateDacDbiWithMockLoader(arch, mockLoader);
+
+        List<ulong> assemblies = new();
+        GCHandle gcHandle = GCHandle.Alloc(assemblies);
+        int hr = dacDbi.EnumerateAssembliesInAppDomain(appDomainAddr, &CollectAssemblyCallback, GCHandle.ToIntPtr(gcHandle));
+        gcHandle.Free();
+
+        Assert.Equal(System.HResults.S_OK, hr);
+        Assert.Empty(assemblies);
     }
 }

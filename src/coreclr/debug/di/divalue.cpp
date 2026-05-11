@@ -460,7 +460,7 @@ HRESULT CordbValue::InternalCreateHandle(CorDebugHandleType      handleType,
                           m_appdomain->GetADToken());
 
     CORDB_ADDRESS addr = GetValueHome() != NULL ? GetValueHome()->GetAddress() : (CORDB_ADDRESS)NULL;
-    event.CreateHandle.objectToken = CORDB_ADDRESS_TO_PTR(addr);
+    event.CreateHandle.objectToken = addr;
     event.CreateHandle.handleType = handleType;
 
     // Note: two-way event here...
@@ -2471,7 +2471,7 @@ HRESULT CordbObjectValue::EnumerateExceptionCallStack(ICorDebugExceptionObjectCa
             DacExceptionCallStackData& currentDacFrame = dacStackFrames[index];
             CorDebugExceptionObjectStackFrame& currentStackFrame = pStackFrames[index];
 
-            CordbAppDomain* pAppDomain = GetProcess()->LookupOrCreateAppDomain(currentDacFrame.vmAppDomain);
+            CordbAppDomain* pAppDomain = GetProcess()->GetAppDomain();
             CordbModule* pModule = pAppDomain->LookupOrCreateModule(currentDacFrame.vmAssembly);
 
             hr = pModule->QueryInterface(IID_ICorDebugModule, reinterpret_cast<void**>(&currentStackFrame.pModule));
@@ -2675,7 +2675,7 @@ HRESULT CordbObjectValue::GetTargetHelper(ICorDebugReferenceValue **ppTarget)
     }
 
     RSLockHolder lockHolder(GetProcess()->GetProcessLock());
-    RSSmartPtr<CordbAppDomain> pCordbAppDomForTarget(GetProcess()->LookupOrCreateAppDomain(pAppDomainOfTarget));
+    RSSmartPtr<CordbAppDomain> pCordbAppDomForTarget(GetProcess()->GetAppDomain());
     RSSmartPtr<CordbReferenceValue> targetObjRefVal(CordbValue::CreateHeapReferenceValue(pCordbAppDomForTarget, pDelegateTargetObj));
     *ppTarget = static_cast<ICorDebugReferenceValue*>(targetObjRefVal.GetValue());
     targetObjRefVal->ExternalAddRef();

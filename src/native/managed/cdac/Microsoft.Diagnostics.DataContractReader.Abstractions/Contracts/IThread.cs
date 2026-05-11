@@ -5,6 +5,13 @@ using System;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
+[Flags]
+public enum ThreadContextSource
+{
+    None = 0,
+    Debugger = 1,
+}
+
 public record struct ThreadStoreData(
     int ThreadCount,
     TargetPointer FirstThread,
@@ -26,6 +33,7 @@ public enum ThreadState
     Unstarted           = 0x00000400,   // Thread has never been started
     Stopped             = 0x00010000,   // Thread has started to shut down
     ThreadPoolWorker    = 0x01000000,   // Thread is a thread pool worker thread
+    WaitSleepJoin       = 0x02000000,   // Thread is in a Sleep(), Wait(), Join()
     Detached            = unchecked((int)0x80000000), // Thread was detached
 }
 
@@ -60,6 +68,7 @@ public interface IThread : IContract
     TargetPointer GetThreadLocalStaticBase(TargetPointer threadPointer, TargetPointer tlsIndexPtr) => throw new NotImplementedException();
     TargetPointer GetCurrentExceptionHandle(TargetPointer threadPointer) => throw new NotImplementedException();
     byte[] GetWatsonBuckets(TargetPointer threadPointer) => throw new NotImplementedException();
+    byte[] GetContext(TargetPointer threadPointer, ThreadContextSource contextSource, uint contextFlags) => throw new NotImplementedException();
 }
 
 public readonly struct Thread : IThread

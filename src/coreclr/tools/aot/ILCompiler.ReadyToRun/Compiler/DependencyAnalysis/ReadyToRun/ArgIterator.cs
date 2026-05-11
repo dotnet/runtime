@@ -1721,10 +1721,10 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     }
                 }
 
-                if (maxOffset == 0 && _transitionBlock.IsWasm32)
+                if (maxOffset == _transitionBlock.OffsetOfArgs && _transitionBlock.IsWasm32)
                 {
                     // Wasm puts all arguments on the stack, even the unnamed ones like the param registers, this pointer and async continuation. If we didn't see any named arguments, then we need to account for the unnamed ones here.
-                    maxOffset = _wasmOfsStack;
+                    maxOffset = _transitionBlock.OffsetOfArgs + _wasmOfsStack;
                 }
 
                 // Clear the iterator started flag

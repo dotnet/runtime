@@ -1071,6 +1071,14 @@ regMaskTP LinearScan::getKillSetForNode(GenTree* tree)
             break;
 #endif // FEATURE_HW_INTRINSICS
 
+        case GT_PATCHPOINT:
+            killMask = m_compiler->compHelperCallKillSet(CORINFO_HELP_PATCHPOINT);
+            break;
+
+        case GT_PATCHPOINT_FORCED:
+            killMask = m_compiler->compHelperCallKillSet(CORINFO_HELP_PATCHPOINT_FORCED);
+            break;
+
         default:
             // for all other 'tree->OperGet()' kinds, leave 'killMask' = RBM_NONE
             break;

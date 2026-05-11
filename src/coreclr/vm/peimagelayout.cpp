@@ -893,17 +893,29 @@ void* FlatImageLayout::LoadImageByCopyingParts(SIZE_T* m_imageParts) const
 #endif // FEATURE_ENABLE_NO_ADDRESS_SPACE_RANDOMIZATION
 
     DWORD allocationType = MEM_RESERVE | MEM_COMMIT;
+    DWORD initialProtection = PAGE_READWRITE;
 #if defined(HOST_UNIX) && defined(FEATURE_DYNAMIC_CODE_COMPILED)
     // Tell PAL to use the executable memory allocator to satisfy this request for virtual memory.
     // This is required on MacOS and otherwise will allow us to place native R2R code close to the
     // coreclr library and thus improve performance by avoiding jump stubs in managed code.
     allocationType |= MEM_RESERVE_EXECUTABLE;
 #endif
+#if defined(HOST_OSX) && defined(HOST_ARM64)
+    // On Apple Silicon, allocating the image region as plain PAGE_READWRITE and then promoting
+    // executable sections to PAGE_EXECUTE_READ via mprotect has been observed to
+    // intermittently leave pages non-executable at the kernel level. This manifests as sporadic
+    // AccessViolationException crashes.
+    //
+    // Avoid the unreliable transition - reserve the whole region as PAGE_NOACCESS first, then
+    // commit each section directly with its final protection.
+    allocationType &= ~MEM_COMMIT;
+    initialProtection = PAGE_NOACCESS;
+#endif
 
     COUNT_T allocSize = ALIGN_UP(this->GetVirtualSize(), g_SystemInfo.dwAllocationGranularity);
-    LPVOID base = ClrVirtualAlloc(preferredBase, allocSize, allocationType, PAGE_READWRITE);
+    LPVOID base = ClrVirtualAlloc(preferredBase, allocSize, allocationType, initialProtection);
     if (base == NULL && preferredBase != NULL)
-        base = ClrVirtualAlloc(NULL, allocSize, allocationType, PAGE_READWRITE);
+        base = ClrVirtualAlloc(NULL, allocSize, allocationType, initialProtection);
 
     if (base == NULL)
         ThrowLastError();
@@ -911,15 +923,62 @@ void* FlatImageLayout::LoadImageByCopyingParts(SIZE_T* m_imageParts) const
     // when loading by copying we have only one part to free.
     m_imageParts[0] = AllocatedPart(base);
 
+    IMAGE_SECTION_HEADER* sectionStart = IMAGE_FIRST_SECTION(FindNTHeaders());
+    IMAGE_SECTION_HEADER* sectionEnd = sectionStart + VAL16(FindNTHeaders()->FileHeader.NumberOfSections);
+
+#if defined(HOST_OSX) && defined(HOST_ARM64)
+    _ASSERTE((allocationType & MEM_COMMIT) == 0);
+    _ASSERTE(initialProtection != PAGE_READWRITE);
+
+    DWORD sizeOfHeaders = VAL32(FindNTHeaders()->OptionalHeader.SizeOfHeaders);
+
+    // Commit and copy headers, then apply read-only protection.
+    if (ClrVirtualAlloc(base, sizeOfHeaders, MEM_COMMIT, PAGE_READWRITE) == NULL)
+        ThrowLastError();
+
+    CopyMemory(base, (void*)GetBase(), sizeOfHeaders);
+
+    DWORD oldProtection; // PAL layer doesn't properly set the previous protection, so we don't try to validate it here.
+    if (!ClrVirtualProtect((void*)base, sizeOfHeaders, PAGE_READONLY, &oldProtection))
+        ThrowLastError();
+
+    // Commit and copy each section with its desired protection.
+    for (IMAGE_SECTION_HEADER* section = sectionStart; section < sectionEnd; section++)
+    {
+        DWORD virtualSize = VAL32(section->Misc.VirtualSize);
+        if (virtualSize == 0)
+            continue;
+
+        bool isExec = (section->Characteristics & IMAGE_SCN_MEM_EXECUTE) != 0;
+        BYTE* sectionBase = (BYTE*)base + VAL32(section->VirtualAddress);
+        DWORD copySize = min(VAL32(section->SizeOfRawData), virtualSize);
+
+        if (ClrVirtualAlloc(sectionBase, virtualSize, MEM_COMMIT, isExec ? PAGE_EXECUTE_READWRITE : PAGE_READWRITE) == NULL)
+            ThrowLastError();
+
+        if (isExec)
+            PAL_JitWriteProtect(true);
+
+        CopyMemory(sectionBase, (BYTE*)GetBase() + VAL32(section->PointerToRawData), copySize);
+
+        if (isExec)
+        {
+            PAL_JitWriteProtect(false);
+        }
+        else if ((section->Characteristics & IMAGE_SCN_MEM_WRITE) == 0)
+        {
+            DWORD oldProt;
+            if (!ClrVirtualProtect(sectionBase, virtualSize, PAGE_READONLY, &oldProt))
+                ThrowLastError();
+        }
+    }
+#else
     // We're going to copy everything first, and write protect what we need to later.
 
     // First, copy headers
     CopyMemory(base, (void*)GetBase(), VAL32(FindNTHeaders()->OptionalHeader.SizeOfHeaders));
 
     // Now, copy all sections to appropriate virtual address
-
-    IMAGE_SECTION_HEADER* sectionStart = IMAGE_FIRST_SECTION(FindNTHeaders());
-    IMAGE_SECTION_HEADER* sectionEnd = sectionStart + VAL16(FindNTHeaders()->FileHeader.NumberOfSections);
 
     IMAGE_SECTION_HEADER* section = sectionStart;
     while (section < sectionEnd)
@@ -944,13 +1003,9 @@ void* FlatImageLayout::LoadImageByCopyingParts(SIZE_T* m_imageParts) const
     // Finally, apply proper protection to copied sections
     for (section = sectionStart; section < sectionEnd; section++)
     {
-        DWORD executableProtection = PAGE_EXECUTE_READ;
-#if defined(HOST_OSX) && defined(HOST_ARM64)
-        executableProtection = PAGE_EXECUTE_READWRITE;
-#endif
         // Add appropriate page protection.
         DWORD newProtection = section->Characteristics & IMAGE_SCN_MEM_EXECUTE ?
-            executableProtection :
+            PAGE_EXECUTE_READ :
             section->Characteristics & IMAGE_SCN_MEM_WRITE ?
             PAGE_READWRITE :
             PAGE_READONLY;
@@ -962,6 +1017,7 @@ void* FlatImageLayout::LoadImageByCopyingParts(SIZE_T* m_imageParts) const
             ThrowLastError();
         }
     }
+#endif // defined(HOST_OSX) && defined(HOST_ARM64)
 
     return base;
 }
