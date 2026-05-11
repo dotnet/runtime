@@ -208,7 +208,7 @@ HRESULT StgIO::Open(                    // Return code.
         //<REVISIT_TODO>@future: This could chose to open the file in write through
         // mode, which would provide better Duribility (from ACID props),
         // but would be much slower.</REVISIT_TODO>
-        
+
         // Create the new file, overwriting only if caller allows it.
 #ifdef TARGET_WINDOWS
         if ((m_hFile = WszCreateFile(szName, GENERIC_READ | GENERIC_WRITE, 0, 0,
@@ -220,7 +220,7 @@ HRESULT StgIO::Open(                    // Return code.
 #else
         MAKE_UTF8PTR_FROMWIDE_NOTHROW(u8Name, szName);
         if ((m_fd = open(u8Name,
-            (fFlags & DBPROP_TMODEF_FAILIFTHERE) ? O_TRUNC : O_EXCL,
+            (fFlags & DBPROP_TMODEF_FAILIFTHERE) ? O_CREAT | O_TRUNC : O_CREAT | O_EXCL,
             O_RDWR)) == -1)
         {
             return HRESULTFromErr(errno);
