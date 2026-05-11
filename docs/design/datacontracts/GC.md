@@ -128,9 +128,7 @@ public readonly struct GCOomData
 
     // Enumerates every GC heap segment of every heap. Each yielded GCHeapSegmentInfo describes a
     // single segment with the inclusive start and exclusive end of its memory range, its generation
-    // tag, and the index of the heap that owns it (always 0 for workstation GC). In segments-GC mode
-    // the ephemeral segment is split into the Gen2/Gen1/Gen0 pieces the consumer expects, matching
-    // the behavior of the native DacDbi GetHeapSegments implementation.
+    // tag (or Ephemeral), and the index of the heap that owns it (always 0 for workstation GC).
     IEnumerable<GCHeapSegmentInfo> EnumerateHeapSegments(GCHeapData heapData);
 ```
 
@@ -164,8 +162,7 @@ public enum GCSegmentClassification
     NonGC,
     // Segments-GC only: marker used by IGC.EnumerateHeapSegments to denote the ephemeral
     // segment on the gen2 list. The caller is responsible for splitting it into the Gen1
-    // piece and an optional Gen2 prefix using the heap's GenerationTable AllocationStart
-    // values.
+    // piece and an optional Gen2 prefix.
     Ephemeral,
 }
 
@@ -1128,49 +1125,6 @@ IEnumerable<(HeapSegment Segment, TargetPointer Address)> WalkSegmentList(Target
         yield return (seg, current);
         current = seg.Next;
         if (iterationMax-- <= 0) throw /* cycle detected */;
-    }
-}
-```
-
-Caller-side interpretation (e.g. DBI shim driving `IDacDbiInterface::EnumerateHeapSegments`):
-
-```csharp
-// Workstation GC has a single implicit heap; server GC iterates GetGCHeaps().
-bool regions = gc.GetGCIdentifiers().Contains("regions");
-if (workstation)
-{
-    EmitHeap(gc, gc.GetHeapData(), heapIndex: 0, regions);
-}
-else
-{
-    uint heapIndex = 0;
-    foreach (TargetPointer heapAddress in gc.GetGCHeaps())
-        EmitHeap(gc, gc.GetHeapData(heapAddress), heapIndex++, regions);
-}
-
-void EmitHeap(IGC gc, GCHeapData heapData, uint heapIndex, bool regions)
-{
-    TargetPointer gen0Start = heapData.GenerationTable[0].AllocationStart;
-    TargetPointer gen1Start = heapData.GenerationTable[1].AllocationStart;
-    TargetPointer allocAllocated = heapData.AllocAllocated;
-
-    // In segments mode, Gen0 lives outside the segment list - synthesize it.
-    if (!regions)
-        Emit(gen0Start, allocAllocated, Gen0, heapIndex);
-
-    foreach (GCHeapSegmentInfo raw in gc.EnumerateHeapSegments(heapData))
-    {
-        if (raw.Generation != GCSegmentClassification.Ephemeral)
-        {
-            Emit(raw.Start, raw.End, raw.Generation, heapIndex);
-        }
-        else
-        {
-            // Segments mode only: split the ephemeral marker.
-            Emit(gen1Start, gen0Start, Gen1, heapIndex);
-            if (raw.Start != gen1Start)
-                Emit(raw.Start, gen1Start, Gen2, heapIndex); // optional Gen2 prefix
-        }
     }
 }
 ```
