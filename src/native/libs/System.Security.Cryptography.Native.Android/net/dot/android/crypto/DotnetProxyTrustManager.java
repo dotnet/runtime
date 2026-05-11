@@ -27,11 +27,13 @@ import javax.net.ssl.X509TrustManager;
 public final class DotnetProxyTrustManager implements X509TrustManager {
     private final long sslStreamProxyHandle;
     private final X509TrustManager platformTrustManager;
+    private final X509TrustManagerExtensions platformTrustManagerExtensions;
     private final String targetHost;
 
     public DotnetProxyTrustManager(long sslStreamProxyHandle, X509TrustManager platformTrustManager, String targetHost) {
         this.sslStreamProxyHandle = sslStreamProxyHandle;
         this.platformTrustManager = platformTrustManager;
+        this.platformTrustManagerExtensions = new X509TrustManagerExtensions(platformTrustManager);
         this.targetHost = targetHost;
     }
 
@@ -60,8 +62,7 @@ public final class DotnetProxyTrustManager implements X509TrustManager {
     private boolean isServerTrustedByPlatformTrustManager(X509Certificate[] chain, String authType) {
         try {
             if (targetHost != null) {
-                X509TrustManagerExtensions extensions = new X509TrustManagerExtensions(platformTrustManager);
-                extensions.checkServerTrusted(chain, authType, targetHost);
+                platformTrustManagerExtensions.checkServerTrusted(chain, authType, targetHost);
             } else {
                 platformTrustManager.checkServerTrusted(chain, authType);
             }

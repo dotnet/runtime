@@ -4,6 +4,12 @@
 
 static _Atomic RemoteCertificateValidationCallback verifyRemoteCertificate;
 
+// Cached JNI global ref to the default platform X509TrustManager (no custom KeyStore).
+// Initializing TrustManagerFactory.init(null) is potentially expensive (reads the system
+// keystore from disk); caching avoids paying that cost on every TLS handshake.
+// A custom KeyStore variant cannot be cached because it is keyed on the user's trustCerts.
+static _Atomic(jobject) g_cachedDefaultTrustManager = NULL;
+
 ARGS_NON_NULL_ALL void AndroidCryptoNative_RegisterRemoteCertificateValidationCallback(RemoteCertificateValidationCallback callback)
 {
     atomic_store(&verifyRemoteCertificate, callback);
@@ -11,11 +17,21 @@ ARGS_NON_NULL_ALL void AndroidCryptoNative_RegisterRemoteCertificateValidationCa
 
 // Gets the X509TrustManager from TrustManagerFactory, optionally initialized
 // with a custom KeyStore containing trusted certificates. When customTrustKeyStore
-// is NULL, the system default trust store is used. When non-NULL, only the
-// certificates in the custom KeyStore are trusted (Java's KeyStore.setCertificateEntry
-// treats every entry as a trust anchor).
+// is NULL, the system default trust store is used (and the result is cached).
+// When non-NULL, only the certificates in the custom KeyStore are trusted (Java's
+// KeyStore.setCertificateEntry treats every entry as a trust anchor).
 static jobject GetX509TrustManager(JNIEnv* env, jobject customTrustKeyStore)
 {
+    // Fast path: return a fresh local ref to the cached default trust manager.
+    if (customTrustKeyStore == NULL)
+    {
+        jobject cached = atomic_load(&g_cachedDefaultTrustManager);
+        if (cached != NULL)
+        {
+            return (*env)->NewLocalRef(env, cached);
+        }
+    }
+
     jobject result = NULL;
     INIT_LOCALS(loc, algorithm, tmf, trustManagers);
 
@@ -47,6 +63,18 @@ static jobject GetX509TrustManager(JNIEnv* env, jobject customTrustKeyStore)
         ReleaseLRef(env, tm);
         if (result != NULL)
             break;
+    }
+
+    // Populate the cache for the default (no custom KeyStore) case. If a racing thread
+    // beat us to it, drop our new global ref and keep using the cached one.
+    if (result != NULL && customTrustKeyStore == NULL)
+    {
+        jobject newGlobal = (*env)->NewGlobalRef(env, result);
+        jobject expected = NULL;
+        if (!atomic_compare_exchange_strong(&g_cachedDefaultTrustManager, &expected, newGlobal))
+        {
+            (*env)->DeleteGlobalRef(env, newGlobal);
+        }
     }
 
 cleanup:
@@ -145,7 +173,11 @@ cleanup:
     return trustManagers;
 }
 
-int32_t AndroidCryptoNative_IsCleartextTrafficPermitted(const char* hostname)
+// Test-only helper. NOT supported as a public API surface — these wrappers
+// exist solely so AndroidPlatformTrustTests can directly introspect Android's
+// platform trust behaviour (network_security_config.xml) without relying on
+// a live network. Do not call from product code.
+int32_t AndroidCryptoNative_TestOnly_IsCleartextTrafficPermitted(const char* hostname)
 {
     JNIEnv* env = GetJNIEnv();
     jstring hostnameStr = make_java_string(env, hostname);
@@ -158,7 +190,8 @@ int32_t AndroidCryptoNative_IsCleartextTrafficPermitted(const char* hostname)
     return (int32_t)result;
 }
 
-int32_t AndroidCryptoNative_IsCertificateTrustedForHost(const uint8_t* certDer, int32_t certDerLen, const char* hostname)
+// Test-only helper. See AndroidCryptoNative_TestOnly_IsCleartextTrafficPermitted.
+int32_t AndroidCryptoNative_TestOnly_IsCertificateTrustedForHost(const uint8_t* certDer, int32_t certDerLen, const char* hostname)
 {
     JNIEnv* env = GetJNIEnv();
     jbyteArray certArray = make_java_byte_array(env, certDerLen);
