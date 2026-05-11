@@ -449,6 +449,11 @@ public:
 
 #ifdef FEATURE_INTERPRETER
     bool    EnableInterpreter()            const { LIMITED_METHOD_CONTRACT; return enableInterpreter; }
+
+#ifdef _DEBUG
+    // True if this method should be compiled to interpreter IR by the JIT (DOTNET_InterpOptMethod, debug-only).
+    bool    IsInterpOptMethod(MethodDesc* pMD) const { WRAPPER_NO_CONTRACT; return IsInMethList(pInterpOptMethods, pMD); }
+#endif // _DEBUG
 #endif
     bool    EnableHWIntrinsic()            const { LIMITED_METHOD_CONTRACT; return enableHWIntrinsic; }
 
@@ -616,6 +621,9 @@ private: //----------------------------------------------------------------
 
 #ifdef FEATURE_INTERPRETER
     bool enableInterpreter;
+#ifdef _DEBUG
+    MethodNamesList* pInterpOptMethods;  // DOTNET_InterpOptMethod: methods the JIT compiles to interpreter IR (debug-only)
+#endif
 #endif
 
 #if defined(FEATURE_ON_STACK_REPLACEMENT)
