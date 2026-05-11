@@ -125,6 +125,13 @@ public readonly struct GCOomData
     IReadOnlyList<GCMemoryRegionData> GetGCBookkeepingMemoryRegions();
     // Gets GC free regions (free region lists and freeable segments)
     IReadOnlyList<GCMemoryRegionData> GetGCFreeRegions();
+
+    // Enumerates every GC heap segment of every heap. Each yielded GCHeapSegmentInfo describes a
+    // single segment with the inclusive start and exclusive end of its memory range, its generation
+    // tag, and the index of the heap that owns it (always 0 for workstation GC). In segments-GC mode
+    // the ephemeral segment is split into the Gen2/Gen1/Gen0 pieces the consumer expects, matching
+    // the behavior of the native DacDbi GetHeapSegments implementation.
+    IEnumerable<GCHeapSegmentInfo> EnumerateHeapSegments();
 ```
 
 ```csharp
@@ -145,6 +152,23 @@ public readonly struct GCMemoryRegionData
     public ulong ExtraData { get; init; }
     public int Heap { get; init; }
 }
+
+public enum GCSegmentGeneration
+{
+    Unknown,
+    Gen0,
+    Gen1,
+    Gen2,
+    LOH,
+    POH,
+    NonGC,
+}
+
+public readonly record struct GCHeapSegmentInfo(
+    TargetPointer Start,
+    TargetPointer End,
+    GCSegmentGeneration Generation,
+    uint Heap);
 ```
 
 ## Version 1
@@ -286,6 +310,7 @@ Constants used:
 | Name | Type | Purpose | Value |
 | --- | --- | --- | --- |
 | `WRK_HEAP_COUNT` | uint | The number of heaps in the `workstation` GC type | `1` |
+| `HEAP_SEGMENT_FLAGS_READONLY` | ulong | `HeapSegment.Flags` bit identifying a readonly (e.g. frozen, non-GC) segment. | `1` |
 
 ```csharp
 GCHeapType IGC.GetGCIdentifiers()
@@ -1025,5 +1050,98 @@ TargetNUInt IGC.GetHandleExtraInfo(TargetPointer handle)
     TargetPointer extraInfoAddr = segment + headerSize + offset * (uint)target.PointerSize;
 
     return target.ReadNUInt(extraInfoAddr);
+}
+```
+
+EnumerateHeapSegments
+```csharp
+IEnumerable<GCHeapSegmentInfo> IGC.EnumerateHeapSegments()
+{
+    // For workstation GC, enumerate the single implicit heap. For server GC, iterate the per-heap
+    // addresses returned by GetGCHeaps().
+    bool regions = GetGCIdentifiers().Contains("regions");
+    if (workstation)
+    {
+        foreach (var seg in EnumerateHeapSegmentsForHeap(GetHeapData(), heapIndex: 0, regions))
+            yield return seg;
+    }
+    else
+    {
+        uint heapIndex = 0;
+        foreach (TargetPointer heapAddress in GetGCHeaps())
+        {
+            foreach (var seg in EnumerateHeapSegmentsForHeap(GetHeapData(heapAddress), heapIndex, regions))
+                yield return seg;
+            heapIndex++;
+        }
+    }
+}
+
+IEnumerable<GCHeapSegmentInfo> EnumerateHeapSegmentsForHeap(GCHeapData heapData, uint heapIndex, bool regions)
+{
+    // The generation table is laid out as gen0, gen1, gen2, LOH, POH (plus optional extras).
+    // Only indices 0..4 are used here.
+    var gens = heapData.GenerationTable;
+    TargetPointer gen0StartSegment = gens[0].StartSegment;
+    TargetPointer gen1StartSegment = gens[1].StartSegment;
+    TargetPointer gen2StartSegment = gens[2].StartSegment;
+    TargetPointer lohStartSegment  = gens[3].StartSegment;
+    TargetPointer pohStartSegment  = gens[4].StartSegment;
+
+    TargetPointer ephemeralSegment = heapData.EphemeralHeapSegment;
+    TargetPointer allocAllocated   = heapData.AllocAllocated;
+
+    if (regions)
+    {
+        // In regions mode each generation has its own segment list. Readonly segments on the
+        // gen2 list represent non-GC (e.g. frozen) regions and are reported as NonGC.
+        // Iterate through gens 0, 1, and 2.
+    }
+    else
+    {
+        // In segments-GC mode only the gen2 segment list contains SOH segments. The ephemeral
+        // segment hosts Gen0/Gen1 (and possibly part of Gen2). Generation 0 is not present in
+        // the segment list itself; it is bracketed by [gen0.AllocationStart, alloc_allocated).
+        // Generation 1 is bracketed by [gen1.AllocationStart, gen0.AllocationStart). Any
+        // preceding portion of the ephemeral segment is Gen2.
+        TargetPointer gen0Start = gens[0].AllocationStart;
+        TargetPointer gen1Start = gens[1].AllocationStart;
+
+        yield return new GCHeapSegmentInfo(gen0Start, allocAllocated, GCSegmentGeneration.Gen0, heapIndex);
+
+        foreach (var (seg, segAddr) in WalkSegmentList(gen2StartSegment))
+        {
+            if (segAddr == ephemeralSegment)
+            {
+                yield return new GCHeapSegmentInfo(gen1Start, gen0Start, GCSegmentGeneration.Gen1, heapIndex);
+                if (seg.Mem != gen1Start)
+                    yield return new GCHeapSegmentInfo(seg.Mem, gen1Start, GCSegmentGeneration.Gen2, heapIndex);
+            }
+            else
+            {
+                GCSegmentGeneration type = (seg.Flags & HEAP_SEGMENT_FLAGS_READONLY) != 0
+                    ? GCSegmentGeneration.NonGC
+                    : GCSegmentGeneration.Gen2;
+                yield return new GCHeapSegmentInfo(seg.Mem, seg.Allocated, type, heapIndex);
+            }
+        }
+    }
+
+    // Large object heap and pinned object heap segments are reported as-is.
+}
+
+IEnumerable<(HeapSegment Segment, TargetPointer Address)> WalkSegmentList(TargetPointer startSegment)
+{
+    // Bounded traversal of the singly-linked HeapSegment list, guarding against cycles or
+    // corrupt links via a fixed iteration cap (MaxSegmentListIterations = 2048).
+    int iterationMax = MaxSegmentListIterations;
+    TargetPointer current = startSegment;
+    while (current != TargetPointer.Null)
+    {
+        HeapSegment seg = /* read HeapSegment at current */;
+        yield return (seg, current);
+        current = seg.Next;
+        if (iterationMax-- <= 0) throw /* cycle detected */;
+    }
 }
 ```

@@ -1644,8 +1644,85 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     public int WalkHeap(nuint handle, uint count, COR_HEAPOBJECT* objects, uint* fetched)
         => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.WalkHeap(handle, count, objects, fetched) : HResults.E_NOTIMPL;
 
-    public int GetHeapSegments(nint pSegments)
-        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetHeapSegments(pSegments) : HResults.E_NOTIMPL;
+#if DEBUG
+    [ThreadStatic]
+    private static List<(ulong Start, ulong End, int Generation, uint Heap)>? _debugEnumerateHeapSegments;
+
+    private static List<(ulong Start, ulong End, int Generation, uint Heap)> DebugEnumerateHeapSegments
+        => _debugEnumerateHeapSegments ??= new();
+
+    [UnmanagedCallersOnly]
+    private static void EnumerateHeapSegmentsDebugCallback(ulong start, ulong end, int generation, uint heap, nint _)
+    {
+        DebugEnumerateHeapSegments.Add((start, end, generation, heap));
+    }
+#endif
+
+    public int EnumerateHeapSegments(delegate* unmanaged<ulong, ulong, int, uint, nint, void> fpCallback, nint pUserData)
+    {
+        int hr = HResults.S_OK;
+#if DEBUG
+        List<(ulong Start, ulong End, int Generation, uint Heap)> cdacSegments = new();
+#endif
+        try
+        {
+            if (fpCallback is null)
+                throw new ArgumentNullException(nameof(fpCallback));
+
+            foreach (GCHeapSegmentInfo segment in _target.Contracts.GC.EnumerateHeapSegments())
+            {
+                int generationType = (int)ToCorDebugGenerationType(segment.Generation);
+                fpCallback(segment.Start.Value, segment.End.Value, generationType, segment.Heap, pUserData);
+#if DEBUG
+                cdacSegments.Add((segment.Start.Value, segment.End.Value, generationType, segment.Heap));
+#endif
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+#if DEBUG
+        if (_legacy is not null)
+        {
+            DebugEnumerateHeapSegments.Clear();
+            delegate* unmanaged<ulong, ulong, int, uint, nint, void> debugCallbackPtr = &EnumerateHeapSegmentsDebugCallback;
+            int hrLocal = _legacy.EnumerateHeapSegments(debugCallbackPtr, 0);
+            Debug.ValidateHResult(hr, hrLocal);
+
+            if (hr == HResults.S_OK && hrLocal == HResults.S_OK)
+            {
+                List<(ulong Start, ulong End, int Generation, uint Heap)> legacySegments = DebugEnumerateHeapSegments;
+                if (!cdacSegments.SequenceEqual(legacySegments))
+                {
+                    Debug.Assert(cdacSegments.Count == legacySegments.Count,
+                        $"cDAC: {cdacSegments.Count} segments, DAC: {legacySegments.Count} segments");
+
+                    int compareCount = Math.Min(cdacSegments.Count, legacySegments.Count);
+                    for (int i = 0; i < compareCount; i++)
+                    {
+                        Debug.Assert(cdacSegments[i] == legacySegments[i],
+                            $"Segment {i} mismatch - cDAC: (0x{cdacSegments[i].Start:x}, 0x{cdacSegments[i].End:x}, gen={cdacSegments[i].Generation}, heap={cdacSegments[i].Heap}), DAC: (0x{legacySegments[i].Start:x}, 0x{legacySegments[i].End:x}, gen={legacySegments[i].Generation}, heap={legacySegments[i].Heap})");
+                    }
+                }
+            }
+            DebugEnumerateHeapSegments.Clear();
+        }
+#endif
+        return hr;
+    }
+
+    private static CorDebugGenerationTypes ToCorDebugGenerationType(GCSegmentGeneration generation) => generation switch
+    {
+        GCSegmentGeneration.Gen0 => CorDebugGenerationTypes.CorDebug_Gen0,
+        GCSegmentGeneration.Gen1 => CorDebugGenerationTypes.CorDebug_Gen1,
+        GCSegmentGeneration.Gen2 => CorDebugGenerationTypes.CorDebug_Gen2,
+        GCSegmentGeneration.LOH => CorDebugGenerationTypes.CorDebug_LOH,
+        GCSegmentGeneration.POH => CorDebugGenerationTypes.CorDebug_POH,
+        GCSegmentGeneration.NonGC => CorDebugGenerationTypes.CorDebug_NonGC,
+        _ => throw new ArgumentOutOfRangeException(nameof(generation), generation, null),
+    };
 
     public int IsValidObject(ulong obj, Interop.BOOL* pResult)
         => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.IsValidObject(obj, pResult) : HResults.E_NOTIMPL;

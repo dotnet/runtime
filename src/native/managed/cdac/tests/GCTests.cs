@@ -116,6 +116,168 @@ public class GCTests
             Assert.Equal(fillPointers[i], (ulong)heapData.FillPointers[i]);
         }
     }
+
+    private sealed record CapturedSegment(ulong Start, ulong End, GCSegmentGeneration Generation, uint Heap);
+
+    private static MockGCBuilder.Generation[] MakeGenerations(ulong gen0Seg, ulong gen0Start, ulong gen1Seg, ulong gen1Start, ulong gen2Seg, ulong lohSeg, ulong pohSeg)
+        =>
+        [
+            new() { StartSegment = gen0Seg, AllocationStart = gen0Start, AllocContextPointer = 0, AllocContextLimit = 0 },
+            new() { StartSegment = gen1Seg, AllocationStart = gen1Start, AllocContextPointer = 0, AllocContextLimit = 0 },
+            new() { StartSegment = gen2Seg, AllocationStart = 0, AllocContextPointer = 0, AllocContextLimit = 0 },
+            new() { StartSegment = lohSeg, AllocationStart = 0, AllocContextPointer = 0, AllocContextLimit = 0 },
+            new() { StartSegment = pohSeg, AllocationStart = 0, AllocContextPointer = 0, AllocContextLimit = 0 },
+        ];
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void EnumerateHeapSegments_Wks_Regions(MockTarget.Architecture arch)
+    {
+        ulong allocAllocated = 0x4000_0500;
+        ulong frozenSeg = 0, gen2Seg = 0, gen1Seg = 0, gen0Seg = 0, lohSeg = 0, pohSeg = 0;
+
+        ulong[] fillPointers = [0x1001, 0x2002, 0x3003, 0x4004, 0x5005, 0x6006, 0x7007];
+
+        Target target = new TestPlaceholderTarget.Builder(arch)
+            .AddGCHeapWks(gc =>
+            {
+                gc.GCIdentifiers = "workstation,regions";
+                gc.AllocAllocated = allocAllocated;
+                gc.FillPointers = fillPointers;
+                gc.ConfigureMemory = b =>
+                {
+                    Layout<MockHeapSegment> segLayout = b.GetHeapSegmentLayout(includeHeapField: false);
+                    // gen2 list: gen2 seg -> frozen (readonly) seg
+                    frozenSeg = b.AddHeapSegment(segLayout, mem: 0x6000_0000, allocated: 0x6000_1000, next: 0, flags: 1, name: "FrozenSeg").Address;
+                    gen2Seg = b.AddHeapSegment(segLayout, mem: 0x2000_0000, allocated: 0x2000_1000, next: frozenSeg, name: "Gen2Seg").Address;
+                    gen1Seg = b.AddHeapSegment(segLayout, mem: 0x3000_0000, allocated: 0x3000_1000, next: 0, name: "Gen1Seg").Address;
+                    gen0Seg = b.AddHeapSegment(segLayout, mem: 0x4000_0000, allocated: 0x4000_FFFF, next: 0, name: "Gen0Seg").Address;
+                    lohSeg = b.AddHeapSegment(segLayout, mem: 0x5000_0000, allocated: 0x5000_1000, next: 0, name: "LohSeg").Address;
+                    pohSeg = b.AddHeapSegment(segLayout, mem: 0x5100_0000, allocated: 0x5100_1000, next: 0, name: "PohSeg").Address;
+                    // Ephemeral is the gen0 segment in regions mode -> end is overridden to alloc_allocated.
+                    b.WritePointerGlobal(b.EphemeralHeapSegmentGlobalAddress, gen0Seg);
+                };
+                gc.GenerationsFactory = b => MakeGenerations(gen0Seg, 0, gen1Seg, 0, gen2Seg, lohSeg, pohSeg);
+            })
+            .Build();
+        IGC gc = target.Contracts.GC;
+
+        List<CapturedSegment> captured = new();
+        foreach (GCHeapSegmentInfo seg in gc.EnumerateHeapSegments())
+            captured.Add(new CapturedSegment(seg.Start, seg.End, seg.Generation, seg.Heap));
+
+        Assert.Equal(6, captured.Count);
+        Assert.Equal(new CapturedSegment(0x2000_0000, 0x2000_1000, GCSegmentGeneration.Gen2, 0), captured[0]);
+        Assert.Equal(new CapturedSegment(0x6000_0000, 0x6000_1000, GCSegmentGeneration.NonGC, 0), captured[1]);
+        Assert.Equal(new CapturedSegment(0x3000_0000, 0x3000_1000, GCSegmentGeneration.Gen1, 0), captured[2]);
+        Assert.Equal(new CapturedSegment(0x4000_0000, allocAllocated, GCSegmentGeneration.Gen0, 0), captured[3]);
+        Assert.Equal(new CapturedSegment(0x5000_0000, 0x5000_1000, GCSegmentGeneration.LOH, 0), captured[4]);
+        Assert.Equal(new CapturedSegment(0x5100_0000, 0x5100_1000, GCSegmentGeneration.POH, 0), captured[5]);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void EnumerateHeapSegments_Wks_Segments(MockTarget.Architecture arch)
+    {
+        // In segments mode, gen2 list contains all SOH segments. The ephemeral segment is split into
+        // Gen2 prefix + Gen1 + Gen0 by AllocationStart of gen1 / gen0 and AllocAllocated.
+        ulong gen1Start = 0x2000_4000;
+        ulong gen0Start = 0x2000_6000;
+        ulong allocAllocated = 0x2000_7000;
+
+        ulong gen2OnlySeg = 0, ephSeg = 0, lohSeg = 0, pohSeg = 0;
+        ulong[] fillPointers = [0x1001, 0x2002, 0x3003, 0x4004, 0x5005, 0x6006, 0x7007];
+
+        Target target = new TestPlaceholderTarget.Builder(arch)
+            .AddGCHeapWks(gc =>
+            {
+                gc.GCIdentifiers = "workstation,segments";
+                gc.AllocAllocated = allocAllocated;
+                gc.FillPointers = fillPointers;
+                gc.ConfigureMemory = b =>
+                {
+                    Layout<MockHeapSegment> segLayout = b.GetHeapSegmentLayout(includeHeapField: false);
+                    // Allocated on the ephemeral seg is ignored - end is alloc_allocated.
+                    ephSeg = b.AddHeapSegment(segLayout, mem: 0x2000_0000, allocated: allocAllocated, next: 0, name: "EphSeg").Address;
+                    gen2OnlySeg = b.AddHeapSegment(segLayout, mem: 0x1000_0000, allocated: 0x1000_1000, next: ephSeg, name: "Gen2Only").Address;
+                    lohSeg = b.AddHeapSegment(segLayout, mem: 0x5000_0000, allocated: 0x5000_1000, next: 0, name: "LohSeg").Address;
+                    pohSeg = b.AddHeapSegment(segLayout, mem: 0x5100_0000, allocated: 0x5100_1000, next: 0, name: "PohSeg").Address;
+                    b.WritePointerGlobal(b.EphemeralHeapSegmentGlobalAddress, ephSeg);
+                };
+                // In segments mode, gen0/gen1 segments are not used; gen2 starts at the head of the SOH list.
+                gc.GenerationsFactory = b => new MockGCBuilder.Generation[]
+                {
+                    new() { StartSegment = 0, AllocationStart = gen0Start, AllocContextPointer = 0, AllocContextLimit = 0 },
+                    new() { StartSegment = 0, AllocationStart = gen1Start, AllocContextPointer = 0, AllocContextLimit = 0 },
+                    new() { StartSegment = gen2OnlySeg, AllocationStart = 0, AllocContextPointer = 0, AllocContextLimit = 0 },
+                    new() { StartSegment = lohSeg, AllocationStart = 0, AllocContextPointer = 0, AllocContextLimit = 0 },
+                    new() { StartSegment = pohSeg, AllocationStart = 0, AllocContextPointer = 0, AllocContextLimit = 0 },
+                };
+            })
+            .Build();
+        IGC gc = target.Contracts.GC;
+
+        List<CapturedSegment> captured = new();
+        foreach (GCHeapSegmentInfo seg in gc.EnumerateHeapSegments())
+            captured.Add(new CapturedSegment(seg.Start, seg.End, seg.Generation, seg.Heap));
+
+        // Expected emission order:
+        //   Gen0 first (synthetic, from gen0Start..allocAllocated)
+        //   walk gen2 list: gen2OnlySeg (full Gen2), then ephSeg (Gen1 piece + Gen2 prefix)
+        //   LOH list, POH list
+        Assert.Equal(6, captured.Count);
+        Assert.Equal(new CapturedSegment(gen0Start, allocAllocated, GCSegmentGeneration.Gen0, 0), captured[0]);
+        Assert.Equal(new CapturedSegment(0x1000_0000, 0x1000_1000, GCSegmentGeneration.Gen2, 0), captured[1]);
+        Assert.Equal(new CapturedSegment(gen1Start, gen0Start, GCSegmentGeneration.Gen1, 0), captured[2]);
+        Assert.Equal(new CapturedSegment(0x2000_0000, gen1Start, GCSegmentGeneration.Gen2, 0), captured[3]);
+        Assert.Equal(new CapturedSegment(0x5000_0000, 0x5000_1000, GCSegmentGeneration.LOH, 0), captured[4]);
+        Assert.Equal(new CapturedSegment(0x5100_0000, 0x5100_1000, GCSegmentGeneration.POH, 0), captured[5]);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void EnumerateHeapSegments_Svr_Regions(MockTarget.Architecture arch)
+    {
+        ulong allocAllocated = 0x4000_0500;
+        ulong gen2Seg = 0, gen1Seg = 0, gen0Seg = 0, lohSeg = 0, pohSeg = 0;
+        ulong[] fillPointers = [0x1001, 0x2002, 0x3003, 0x4004, 0x5005, 0x6006, 0x7007];
+
+        Target target = new TestPlaceholderTarget.Builder(arch)
+            .AddGCHeapSvr(gc =>
+            {
+                gc.GCIdentifiers = "server,regions";
+                gc.AllocAllocated = allocAllocated;
+                gc.FillPointers = fillPointers;
+                gc.ConfigureMemory = b =>
+                {
+                    Layout<MockHeapSegment> segLayout = b.GetHeapSegmentLayout(includeHeapField: false);
+                    gen2Seg = b.AddHeapSegment(segLayout, mem: 0x2000_0000, allocated: 0x2000_1000, next: 0, name: "SvrGen2Seg").Address;
+                    gen1Seg = b.AddHeapSegment(segLayout, mem: 0x3000_0000, allocated: 0x3000_1000, next: 0, name: "SvrGen1Seg").Address;
+                    gen0Seg = b.AddHeapSegment(segLayout, mem: 0x4000_0000, allocated: 0x4000_FFFF, next: 0, name: "SvrGen0Seg").Address;
+                    lohSeg = b.AddHeapSegment(segLayout, mem: 0x5000_0000, allocated: 0x5000_1000, next: 0, name: "SvrLohSeg").Address;
+                    pohSeg = b.AddHeapSegment(segLayout, mem: 0x5100_0000, allocated: 0x5100_1000, next: 0, name: "SvrPohSeg").Address;
+                };
+                gc.EphemeralHeapSegment = 0; // set after segments allocated; use post-config
+                gc.GenerationsFactory = b => MakeGenerations(gen0Seg, 0, gen1Seg, 0, gen2Seg, lohSeg, pohSeg);
+            }, out _)
+            .Build();
+
+        // EphemeralHeapSegment is on the SVR per-heap struct; set it explicitly via the heap pointer.
+        // For simplicity here we leave it null so the gen0 segment is NOT considered ephemeral and its
+        // Allocated is emitted as-is.
+        IGC gc = target.Contracts.GC;
+
+        List<CapturedSegment> captured = new();
+        foreach (GCHeapSegmentInfo seg in gc.EnumerateHeapSegments())
+            captured.Add(new CapturedSegment(seg.Start, seg.End, seg.Generation, seg.Heap));
+
+        Assert.Equal(5, captured.Count);
+        Assert.Equal(new CapturedSegment(0x2000_0000, 0x2000_1000, GCSegmentGeneration.Gen2, 0), captured[0]);
+        Assert.Equal(new CapturedSegment(0x3000_0000, 0x3000_1000, GCSegmentGeneration.Gen1, 0), captured[1]);
+        Assert.Equal(new CapturedSegment(0x4000_0000, 0x4000_FFFF, GCSegmentGeneration.Gen0, 0), captured[2]);
+        Assert.Equal(new CapturedSegment(0x5000_0000, 0x5000_1000, GCSegmentGeneration.LOH, 0), captured[3]);
+        Assert.Equal(new CapturedSegment(0x5100_0000, 0x5100_1000, GCSegmentGeneration.POH, 0), captured[4]);
+    }
 }
 
 /// <summary>
@@ -131,6 +293,11 @@ internal class GCHeapBuilder
 
     public MockGCBuilder.Generation[] Generations { get; set; } = new MockGCBuilder.Generation[DefaultGenerationCount];
     public ulong[] FillPointers { get; set; } = new ulong[DefaultGenerationCount + ExtraSegCount];
+    public string? GCIdentifiers { get; set; }
+    public ulong EphemeralHeapSegment { get; set; }
+    public ulong AllocAllocated { get; set; }
+    public Action<MockGCBuilder>? ConfigureMemory { get; set; }
+    public Func<MockGCBuilder, MockGCBuilder.Generation[]>? GenerationsFactory { get; set; }
 }
 
 internal static class GCHeapBuilderExtensions
@@ -165,6 +332,7 @@ internal static class GCHeapBuilderExtensions
             [DataType.Generation] = TargetTestHelpers.CreateTypeInfo(gcBuilder.GenerationLayout),
             [DataType.CFinalize] = TargetTestHelpers.CreateTypeInfo(gcBuilder.CFinalizeLayout),
             [DataType.OomHistory] = TargetTestHelpers.CreateTypeInfo(gcBuilder.OomHistoryLayout),
+            [DataType.HeapSegment] = TargetTestHelpers.CreateTypeInfo(gcBuilder.GetHeapSegmentLayout(includeHeapField: false)),
         };
 
     private static Dictionary<DataType, Target.TypeInfo> CreateServerContractTypes(MockGCBuilder gcBuilder, uint generationCount)
@@ -180,7 +348,9 @@ internal static class GCHeapBuilderExtensions
         MockMemorySpace.Builder memBuilder = targetBuilder.MemoryBuilder;
         MockGCBuilder gcBuilder = new(memBuilder);
 
-        MockGCBuilder.Generation[] generations = config.Generations;
+        config.ConfigureMemory?.Invoke(gcBuilder);
+
+        MockGCBuilder.Generation[] generations = config.GenerationsFactory?.Invoke(gcBuilder) ?? config.Generations;
         uint generationCount = (uint)generations.Length;
         ulong[] fillPointers = config.FillPointers;
         uint fillPointersLength = (uint)fillPointers.Length;
@@ -192,6 +362,10 @@ internal static class GCHeapBuilderExtensions
         gcBuilder.WritePointerGlobal(gcBuilder.FinalizeQueueGlobalAddress, cFinalize.Address);
         gcBuilder.WritePointerGlobal(gcBuilder.HighestAddressGlobalAddress, 0xFFFF_0000);
         gcBuilder.WriteUInt32Global(gcBuilder.MaxGenerationGlobalAddress, generationCount - 1);
+        if (config.EphemeralHeapSegment != 0)
+            gcBuilder.WritePointerGlobal(gcBuilder.EphemeralHeapSegmentGlobalAddress, config.EphemeralHeapSegment);
+        if (config.AllocAllocated != 0)
+            gcBuilder.WritePointerGlobal(gcBuilder.AllocAllocatedGlobalAddress, config.AllocAllocated);
 
         targetBuilder.AddTypes(types);
         targetBuilder.AddGlobals(
@@ -228,7 +402,7 @@ internal static class GCHeapBuilderExtensions
             (nameof(Constants.Globals.StructureInvalidCount), gcBuilder.StructureInvalidCountGlobalAddress),
             (nameof(Constants.Globals.MaxGeneration), gcBuilder.MaxGenerationGlobalAddress));
         targetBuilder.AddGlobalStrings(
-            (nameof(Constants.Globals.GCIdentifiers), "workstation,segments"));
+            (nameof(Constants.Globals.GCIdentifiers), config.GCIdentifiers ?? "workstation,segments"));
     }
 
     private static ulong BuildSvrHeap(TestPlaceholderTarget.Builder targetBuilder, GCHeapBuilder config)
@@ -236,7 +410,9 @@ internal static class GCHeapBuilderExtensions
         MockMemorySpace.Builder memBuilder = targetBuilder.MemoryBuilder;
         MockGCBuilder gcBuilder = new(memBuilder);
 
-        MockGCBuilder.Generation[] generations = config.Generations;
+        config.ConfigureMemory?.Invoke(gcBuilder);
+
+        MockGCBuilder.Generation[] generations = config.GenerationsFactory?.Invoke(gcBuilder) ?? config.Generations;
         uint generationCount = (uint)generations.Length;
         ulong[] fillPointers = config.FillPointers;
         uint fillPointersLength = (uint)fillPointers.Length;
@@ -244,6 +420,10 @@ internal static class GCHeapBuilderExtensions
         Dictionary<DataType, Target.TypeInfo> types = CreateServerContractTypes(gcBuilder, generationCount);
         MockCFinalize cFinalize = gcBuilder.AddCFinalize(fillPointers, "CFinalize_SVR");
         MockGCHeapSVR gcHeap = gcBuilder.AddGCHeapSVR(generations, cFinalize.Address);
+        if (config.EphemeralHeapSegment != 0)
+            gcHeap.EphemeralHeapSegment = config.EphemeralHeapSegment;
+        if (config.AllocAllocated != 0)
+            gcHeap.AllocAllocated = config.AllocAllocated;
         ulong heapTableAddress = gcBuilder.AddPointerGlobal(gcHeap.Address, "HeapTable");
         gcBuilder.WritePointerGlobal(gcBuilder.HeapsGlobalAddress, heapTableAddress);
         gcBuilder.WritePointerGlobal(gcBuilder.HighestAddressGlobalAddress, 0x7FFF_0000);
@@ -269,7 +449,7 @@ internal static class GCHeapBuilderExtensions
             (nameof(Constants.Globals.StructureInvalidCount), gcBuilder.StructureInvalidCountGlobalAddress),
             (nameof(Constants.Globals.MaxGeneration), gcBuilder.MaxGenerationGlobalAddress));
         targetBuilder.AddGlobalStrings(
-            (nameof(Constants.Globals.GCIdentifiers), "server,segments"));
+            (nameof(Constants.Globals.GCIdentifiers), config.GCIdentifiers ?? "server,segments"));
 
         return gcHeap.Address;
     }

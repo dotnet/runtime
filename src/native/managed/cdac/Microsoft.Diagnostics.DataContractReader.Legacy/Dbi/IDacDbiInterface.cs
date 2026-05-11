@@ -170,6 +170,16 @@ public enum CorDebugUserState
     USER_THREADPOOL = 0x100,
 }
 
+public enum CorDebugGenerationTypes
+{
+    CorDebug_Gen0 = 0,
+    CorDebug_Gen1 = 1,
+    CorDebug_Gen2 = 2,
+    CorDebug_LOH = 3,
+    CorDebug_POH = 4,
+    CorDebug_NonGC = 0x7FFFFFFF,
+}
+
 // Name-surface projection of IDacDbiInterface in native method order for COM binding validation.
 // Parameter shapes are intentionally coarse placeholders and will be refined with method implementation work.
 [GeneratedComInterface]
@@ -495,7 +505,7 @@ public unsafe partial interface IDacDbiInterface
     int WalkHeap(nuint handle, uint count, COR_HEAPOBJECT* objects, uint* fetched);
 
     [PreserveSig]
-    int GetHeapSegments(nint pSegments);
+    int EnumerateHeapSegments(delegate* unmanaged<ulong, ulong, int, uint, nint, void> fpCallback, nint pUserData);
 
     [PreserveSig]
     int IsValidObject(ulong obj, Interop.BOOL* pResult);
