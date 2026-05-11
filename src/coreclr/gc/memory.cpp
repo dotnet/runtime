@@ -368,7 +368,7 @@ size_t gc_heap::decommit_region (heap_segment* region, int bucket, int h_number)
         decommit_succeeded_p));
     if (require_clearing_memory_p)
     {
-        uint8_t* clear_end = never_decommit_p ? heap_segment_used (region) : heap_segment_committed (region);
+        uint8_t* clear_end = heap_segment_committed (region);
         size_t clear_size = clear_end - page_start;
         memclr (page_start, clear_size);
         heap_segment_used (region) = heap_segment_mem (region);
