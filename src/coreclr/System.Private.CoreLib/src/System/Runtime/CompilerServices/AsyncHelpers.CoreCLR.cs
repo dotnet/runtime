@@ -48,7 +48,10 @@ namespace System.Runtime.CompilerServices
     internal unsafe struct ResumeInfo
     {
         public delegate*<Continuation, ref byte, Continuation?> Resume;
-        // IP to use for diagnostics. Points into the jitted suspension code.
+        // IP to use for diagnostics. Can be null for hand-rolled continuations
+        // like ValueTaskContinuation.
+        // For normal JIT-created continuations this points into the jitted
+        // suspension code.
         // For debug codegen the IP resolves via an ASYNC native->IL mapping to
         // the IL AsyncHelpers.Await (or other async function) call which
         // caused the suspension.
@@ -340,146 +343,6 @@ namespace System.Runtime.CompilerServices
             return newContinuation;
         }
 #endif
-
-        private sealed unsafe class ValueTaskContinuation : Continuation
-        {
-            // Currently all continuations are expected to capture and restore
-            // ExecutionContext, even though we do not actually need it here.
-            public ExecutionContext? ExecutionContext;
-            private object? _source;
-            private short _token;
-            private delegate* managed<object, Action<object?>, object?, short, ValueTaskSourceOnCompletedFlags, void> _onCompleted;
-            private delegate* managed<object, short, ref byte, void> _getResult;
-
-            public ValueTaskContinuation()
-            {
-                ResumeInfo = (ResumeInfo*)Unsafe.AsPointer(ref ValueTaskContinuationResume.ResumeInfo);
-
-                EncodeFieldOffsetInFlags(
-                    ref Unsafe.As<ExecutionContext?, byte>(ref ExecutionContext),
-                    ContinuationFlags.ExecutionContextIndexFirstBit,
-                    ContinuationFlags.ExecutionContextIndexNumBits);
-            }
-
-            public void OnCompleted(Action<object?> continuation, object? state, ValueTaskSourceOnCompletedFlags flags)
-            {
-                Debug.Assert(_source != null);
-                _onCompleted(_source, continuation, state, _token, flags);
-            }
-
-            public void GetResult(ref byte returnValue)
-            {
-                Debug.Assert(_source != null);
-
-                // Avoid retaining source. The call below may throw.
-                object source = _source;
-                _source = null;
-
-                _getResult(source, _token, ref returnValue);
-            }
-
-            public void Initialize(object source, short token)
-            {
-                _source = source;
-                _token = token;
-                _onCompleted = &OnCompleted;
-                _getResult = &GetResult;
-            }
-
-            public void Initialize<T>(object source, short token)
-            {
-                _source = source;
-                _token = token;
-                _onCompleted = &OnCompleted<T>;
-                _getResult = &GetResult<T>;
-            }
-
-            private static void OnCompleted(object source, Action<object?> continuation, object? state, short token, ValueTaskSourceOnCompletedFlags flags)
-            {
-                if (source is Task t)
-                {
-                    Debug.Assert(state is ITaskCompletionAction);
-                    if (!t.TryAddCompletionAction(Unsafe.As<object, ITaskCompletionAction>(ref state)))
-                    {
-                        ThreadPool.UnsafeQueueUserWorkItemInternal(state, preferLocal: true);
-                    }
-                }
-                else
-                {
-                    Debug.Assert(source is IValueTaskSource);
-                    IValueTaskSource typedSource = Unsafe.As<object, IValueTaskSource>(ref source);
-                    typedSource.OnCompleted(continuation, state, token, flags);
-                }
-            }
-
-            private static void GetResult(object source, short token, ref byte result)
-            {
-                if (source is Task t)
-                {
-                    TaskAwaiter.ValidateEnd(t);
-                }
-                else
-                {
-                    Debug.Assert(source is IValueTaskSource);
-                    IValueTaskSource typedSource = Unsafe.As<object, IValueTaskSource>(ref source);
-                    typedSource.GetResult(token);
-                }
-            }
-
-            private static void OnCompleted<T>(object source, Action<object?> continuation, object? state, short token, ValueTaskSourceOnCompletedFlags flags)
-            {
-                if (source is Task t)
-                {
-                    Debug.Assert(state is ITaskCompletionAction);
-                    if (!t.TryAddCompletionAction(Unsafe.As<object, ITaskCompletionAction>(ref state)))
-                    {
-                        ThreadPool.UnsafeQueueUserWorkItemInternal(state, preferLocal: true);
-                    }
-                }
-                else
-                {
-                    Debug.Assert(source is IValueTaskSource<T>);
-                    IValueTaskSource<T> typedSource = Unsafe.As<object, IValueTaskSource<T>>(ref source);
-                    typedSource.OnCompleted(continuation, state, token, flags);
-                }
-            }
-
-            private static void GetResult<T>(object source, short token, ref byte result)
-            {
-                if (source is Task<T> t)
-                {
-                    TaskAwaiter.ValidateEnd(t);
-                    Unsafe.As<byte, T>(ref result) = t.ResultOnSuccess;
-                }
-                else
-                {
-                    Debug.Assert(source is IValueTaskSource<T>);
-                    IValueTaskSource<T> typedSource = Unsafe.As<object, IValueTaskSource<T>>(ref source);
-                    Unsafe.As<byte, T>(ref result) = typedSource.GetResult(token);
-                }
-            }
-
-            private static class ValueTaskContinuationResume
-            {
-                [FixedAddressValueType]
-                public static ResumeInfo ResumeInfo = new ResumeInfo
-                {
-                    DiagnosticIP = null,
-                    Resume = &ResumeValueTaskContinuation,
-                };
-
-                public static Continuation? ResumeValueTaskContinuation(Continuation cont, ref byte result)
-                {
-                    var vtsCont = (ValueTaskContinuation)cont;
-                    vtsCont.Next = null;
-                    vtsCont.ExecutionContext = null;
-                    t_runtimeAsyncAwaitState.CachedValueTaskContinuation = vtsCont;
-
-                    vtsCont.GetResult(ref result);
-                    return null;
-                }
-            }
-        }
 
         [BypassReadyToRun]
         [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.Async)]
