@@ -8,17 +8,13 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Tests.TestUtility
     internal class MockFileInfo : FileInfoBase
     {
         public MockFileInfo(
-            FileSystemOperationRecorder recorder,
             DirectoryInfoBase parentDirectory,
             string fullName,
             string name)
         {
-            Recorder = recorder;
             FullName = fullName;
             Name = name;
         }
-
-        public FileSystemOperationRecorder Recorder { get; }
 
         public override DirectoryInfoBase ParentDirectory { get; }
 

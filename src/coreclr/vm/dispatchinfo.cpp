@@ -700,7 +700,7 @@ void DispatchMemberInfo::SetUpMethodMarshalerInfo(MethodDesc *pMD, BOOL bReturnV
     {
         THROWS;
         GC_TRIGGERS;
-        MODE_ANY;
+        MODE_COOPERATIVE;
         PRECONDITION(CheckPointer(pMD));
         PRECONDITION(!pMD->IsAsyncMethod());
     }
@@ -842,10 +842,7 @@ void DispatchMemberInfo::SetUpDispParamMarshalerForMarshalInfo(int iParam, Marsh
 {
     CONTRACTL
     {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM());
+        STANDARD_VM_CHECK;
         PRECONDITION(CheckPointer(pInfo));
     }
     CONTRACTL_END;
@@ -1134,7 +1131,7 @@ void DispatchInfo::InvokeMemberWorker(DispatchMemberInfo*   pDispMemberInfo,
     Thread* pThread = GetThread();
     AppDomain* pAppDomain = AppDomain::GetCurrentDomain();
 
-    SafeArrayPtrHolder pSA = NULL;
+    SafeArrayPtrHolder pSA;
     VARIANT safeArrayVar;
     HRESULT hr;
 
@@ -1331,7 +1328,7 @@ void DispatchInfo::InvokeMemberWorker(DispatchMemberInfo*   pDispMemberInfo,
                 LONG lSafeArrayArg = 0;
                 bByRefArg = FALSE;
                 pSA = SafeArrayCreateVector(VT_VARIANT, 0, iSrcArg - NumNamedArgs + 1);
-                if (pSA.GetValue() == NULL)
+                if (pSA == NULL)
                     COMPlusThrowHR(E_OUTOFMEMORY);
                 V_VT(&safeArrayVar) = VT_VARIANT | VT_ARRAY;
                 V_ARRAY(&safeArrayVar) = pSA;
@@ -1636,7 +1633,7 @@ void DispatchInfo::InvokeMemberWorker(DispatchMemberInfo*   pDispMemberInfo,
             {
                 // VarArg scenario
                 // Here we only unmarshal the object whose corresponding VARIANT is VarArg
-                OleVariant::MarshalVariantArrayComToOle((BASEARRAYREF*)&pObjs->TmpObj, (void *)(aByrefArgOleVariant[i]), NULL, TRUE, FALSE, TRUE, TRUE, -1);
+                OleVariant::MarshalVarArgVariantArrayToOle((PTRARRAYREF*)&pObjs->TmpObj, (aByrefArgOleVariant[i]));
             }
             else
             {
@@ -2153,17 +2150,14 @@ void DispatchInfo::MarshalParamManagedToNativeRef(DispatchMemberInfo *pMemberInf
         VARTYPE ElementVt = V_VT(pRefVar) & ~(VT_BYREF | VT_ARRAY);
         MethodTable *pElementMT = (*(BASEARRAYREF *)pSrcObj)->GetArrayElementTypeHandle().GetMethodTable();
 
-        PCODE pStructMarshalStubAddress = NULL;
-        GCPROTECT_BEGIN(*pSrcObj);
-        if (ElementVt == VT_RECORD && pElementMT->IsBlittable())
+        // Convert the contents of the managed array into the original SAFEARRAY.
+        PCODE pConvertCode;
         {
             GCX_PREEMP();
-            pStructMarshalStubAddress = PInvoke::GetEntryPointForStructMarshalStub(pElementMT);
+            pConvertCode = GetInstantiatedSafeArrayMethod(METHOD__STUBHELPERS__CONVERT_ARRAY_CONTENTS_TO_UNMANAGED, ElementVt, pElementMT, TRUE)->GetMultiCallableAddrOfCode();
         }
-        GCPROTECT_END();
 
-        // Convert the contents of the managed array into the original SAFEARRAY.
-        OleVariant::MarshalSafeArrayForArrayRef((BASEARRAYREF *)pSrcObj, *V_ARRAYREF(pRefVar), ElementVt, pElementMT, pStructMarshalStubAddress);
+        OleVariant::MarshalSafeArrayForArrayRef((BASEARRAYREF *)pSrcObj, *V_ARRAYREF(pRefVar), ElementVt, pElementMT, pConvertCode);
     }
     else
 {

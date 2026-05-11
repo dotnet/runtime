@@ -26,7 +26,7 @@ public sealed unsafe partial class ClrDataAppDomain : IXCLRDataAppDomain
     }
 
     int IXCLRDataAppDomain.GetProcess(DacComNullableByRef<IXCLRDataProcess> process)
-        => _legacyImpl is not null ? _legacyImpl.GetProcess(process) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.GetProcess(process) : HResults.E_NOTIMPL;
 
     int IXCLRDataAppDomain.GetName(uint bufLen, uint* nameLen, char* name)
     {
@@ -157,9 +157,8 @@ public sealed unsafe partial class ClrDataAppDomain : IXCLRDataAppDomain
         int hr = HResults.S_FALSE;
         try
         {
-            StrategyBasedComWrappers cw = new();
-            object obj = cw.GetOrCreateObjectForComInstance((nint)appDomain, CreateObjectFlags.None);
-            if (obj is ClrDataAppDomain other)
+            if (System.Runtime.InteropServices.ComWrappers.TryGetObject((nint)appDomain, out object? obj)
+                && obj is ClrDataAppDomain other)
             {
                 hr = _appDomain == other._appDomain ? HResults.S_OK : HResults.S_FALSE;
             }
@@ -181,8 +180,8 @@ public sealed unsafe partial class ClrDataAppDomain : IXCLRDataAppDomain
     }
 
     int IXCLRDataAppDomain.GetManagedObject(DacComNullableByRef<IXCLRDataValue> value)
-        => _legacyImpl is not null ? _legacyImpl.GetManagedObject(value) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.GetManagedObject(value) : HResults.E_NOTIMPL;
 
     int IXCLRDataAppDomain.Request(uint reqCode, uint inBufferSize, byte* inBuffer, uint outBufferSize, byte* outBuffer)
-        => _legacyImpl is not null ? _legacyImpl.Request(reqCode, inBufferSize, inBuffer, outBufferSize, outBuffer) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.Request(reqCode, inBufferSize, inBuffer, outBufferSize, outBuffer) : HResults.E_NOTIMPL;
 }

@@ -28,11 +28,7 @@ namespace System.Collections.Frozen
             }
 
             long expectedArraySize = (long)spread * MaxPerLength;
-#if NET
             if (expectedArraySize > Array.MaxLength)
-#else
-            if (expectedArraySize > 0X7FFFFFC7)
-#endif
             {
                 // In the future we may lower the value, as it may be quite unlikely
                 // to have a LOT of strings of different sizes.

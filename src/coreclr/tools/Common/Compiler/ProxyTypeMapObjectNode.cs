@@ -13,8 +13,17 @@ using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis
 {
-    internal sealed class ProxyTypeMapObjectNode(TypeMapManager manager, INativeFormatTypeReferenceProvider externalReferences) : ObjectNode, ISymbolDefinitionNode
+    internal sealed class ProxyTypeMapObjectNode : ObjectNode, ISymbolDefinitionNode
     {
+        private readonly TypeMapManager _manager;
+        private readonly INativeFormatTypeReferenceProvider _externalReferences;
+
+        public ProxyTypeMapObjectNode(TypeMapManager manager, INativeFormatTypeReferenceProvider externalReferences)
+        {
+            _manager = manager;
+            _externalReferences = externalReferences;
+        }
+
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {
             // This node does not trigger generation of other nodes.
@@ -27,19 +36,31 @@ namespace ILCompiler.DependencyAnalysis
             Section hashTableSection = writer.NewSection();
             hashTableSection.Place(typeMapGroupHashTable);
 
-            foreach (IProxyTypeMapNode proxyTypeMap in manager.GetProxyTypeMaps())
+            foreach (IProxyTypeMapNode proxyTypeMap in _manager.GetProxyTypeMaps())
             {
                 TypeDesc typeMapGroup = proxyTypeMap.TypeMapGroup;
-                typeMapGroupHashTable.Append((uint)typeMapGroup.GetHashCode(), proxyTypeMap.CreateTypeMap(factory, writer, hashTableSection, externalReferences));
+                typeMapGroupHashTable.Append((uint)typeMapGroup.GetHashCode(), proxyTypeMap.CreateTypeMap(factory, writer, hashTableSection, _externalReferences));
             }
 
             byte[] hashTableBytes = writer.Save();
 
             return new ObjectData(hashTableBytes, Array.Empty<Relocation>(), 1, [this]);
         }
+
+        public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
+        {
+            ProxyTypeMapObjectNode otherNode = (ProxyTypeMapObjectNode)other;
+            if (_manager.AssociatedModule is null)
+                return 0;
+
+            return comparer.Compare(_manager.AssociatedModule, otherNode._manager.AssociatedModule);
+        }
+
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
             sb.Append(nameMangler.CompilationUnitPrefix).Append("__proxy_type_map__"u8);
+            if (_manager.AssociatedModule is not null)
+                sb.Append(_manager.AssociatedModule.Assembly.GetName().Name);
         }
 
         public int Offset => 0;

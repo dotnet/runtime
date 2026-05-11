@@ -11,8 +11,8 @@ internal sealed class DynamicILBlobEntry : IData<DynamicILBlobEntry>
     public DynamicILBlobEntry(Target target, TargetPointer address)
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.DynamicILBlobTable);
-        EntryMethodToken = target.Read<uint>(address + (ulong)type.Fields[nameof(EntryMethodToken)].Offset);
-        EntryIL = target.ReadPointer(address + (ulong)type.Fields[nameof(EntryIL)].Offset);
+        EntryMethodToken = target.ReadField<uint>(address, type, nameof(EntryMethodToken));
+        EntryIL = target.ReadPointerField(address, type, nameof(EntryIL));
     }
 
     public DynamicILBlobEntry(uint entryMethodToken, TargetPointer entryIL)

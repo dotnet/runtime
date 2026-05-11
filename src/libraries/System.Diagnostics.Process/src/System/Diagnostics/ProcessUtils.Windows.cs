@@ -54,13 +54,14 @@ namespace System.Diagnostics
         }
 
         /// <summary>Duplicates a handle as inheritable if it's valid and not inheritable.</summary>
-        internal static void DuplicateAsInheritableIfNeeded(SafeFileHandle sourceHandle, ref SafeFileHandle? duplicatedHandle)
+        internal static void DuplicateAsInheritableIfNeeded(SafeFileHandle sourceHandle, ref nint standardHandle, ref bool refAdded)
         {
             // The user can't specify invalid handle via ProcessStartInfo.Standard*Handle APIs.
             // However, Console.OpenStandard*Handle() can return INVALID_HANDLE_VALUE for a process
             // that was started with INVALID_HANDLE_VALUE as given standard handle.
             if (sourceHandle.IsInvalid)
             {
+                standardHandle = sourceHandle.DangerousGetHandle();
                 return;
             }
 
@@ -70,6 +71,9 @@ namespace System.Diagnostics
             if (Interop.Kernel32.GetHandleInformation(sourceHandle, out Interop.Kernel32.HandleFlags flags)
                 && (flags & Interop.Kernel32.HandleFlags.HANDLE_FLAG_INHERIT) != 0)
             {
+                // Add ref, so the raw handle won't be closed while we're working with it. The caller is responsible for releasing the ref.
+                sourceHandle.DangerousAddRef(ref refAdded);
+                standardHandle = sourceHandle.DangerousGetHandle();
                 return;
             }
 
@@ -77,7 +81,7 @@ namespace System.Diagnostics
             if (!Interop.Kernel32.DuplicateHandle(currentProcHandle,
                 sourceHandle,
                 currentProcHandle,
-                out duplicatedHandle,
+                out standardHandle,
                 0,
                 bInheritHandle: true,
                 Interop.Kernel32.HandleOptions.DUPLICATE_SAME_ACCESS))

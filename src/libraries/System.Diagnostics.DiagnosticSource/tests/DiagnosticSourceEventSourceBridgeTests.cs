@@ -58,7 +58,7 @@ namespace System.Diagnostics.Tests
                     Assert.Equal(++eventsCount, eventSourceListener.EventCount);
                     ValidateActivityEvents(eventSourceListener, "ActivityStart", sources[i].Name, activities[i].OperationName);
                     Assert.True(activities[i].IsAllDataRequested);
-                    Assert.Equal(ActivityTraceFlags.Recorded, activities[i].ActivityTraceFlags);
+                    Assert.Equal(ActivityTraceFlags.Recorded | ActivityTraceFlags.RandomTraceId, activities[i].ActivityTraceFlags);
                 }
 
                 for (int i = 0; i < 10; i++)
@@ -106,7 +106,7 @@ namespace System.Diagnostics.Tests
                     }
                     Assert.Equal(eventsCount, eventSourceListener.EventCount);
                     Assert.True(activities[i].IsAllDataRequested);
-                    Assert.Equal(ActivityTraceFlags.Recorded, activities[i].ActivityTraceFlags);
+                    Assert.Equal(ActivityTraceFlags.Recorded | ActivityTraceFlags.RandomTraceId, activities[i].ActivityTraceFlags);
                 }
 
                 for (int i = 0; i < 10; i++)
@@ -126,12 +126,12 @@ namespace System.Diagnostics.Tests
         }
 
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        [InlineData("Propagate", false, ActivityTraceFlags.None)]
-        [InlineData("PROPAGATE", false, ActivityTraceFlags.None)]
-        [InlineData("Record", true, ActivityTraceFlags.None)]
-        [InlineData("recorD", true, ActivityTraceFlags.None)]
-        [InlineData("", true, ActivityTraceFlags.Recorded)]
-        public void TestEnableAllActivitySourcesWithSpeciifcSamplingResult(string samplingResult, bool alldataRequested, ActivityTraceFlags activityTraceFlags)
+        [InlineData("Propagate", false, ActivityTraceFlags.RandomTraceId)]
+        [InlineData("PROPAGATE", false, ActivityTraceFlags.RandomTraceId)]
+        [InlineData("Record", true, ActivityTraceFlags.RandomTraceId)]
+        [InlineData("recorD", true, ActivityTraceFlags.RandomTraceId)]
+        [InlineData("", true, ActivityTraceFlags.Recorded | ActivityTraceFlags.RandomTraceId)]
+        public void TestEnableAllActivitySourcesWithSpecificSamplingResult(string samplingResult, bool alldataRequested, ActivityTraceFlags activityTraceFlags)
         {
             RemoteExecutor.Invoke((result, dataRequested, traceFlags) =>
             {
@@ -181,8 +181,8 @@ namespace System.Diagnostics.Tests
                 Assert.NotNull(a);
                 Assert.Equal(bool.Parse(allDataRequested), a.IsAllDataRequested);
 
-                // All Activities created with "new Activity(...)" will have ActivityTraceFlags is `None`;
-                Assert.Equal(samplingResult.Length == 0 ? ActivityTraceFlags.Recorded : ActivityTraceFlags.None, a.ActivityTraceFlags);
+                // Activities created via ActivitySource with the default random trace ID generator will have RandomTraceId set.
+                Assert.Equal(samplingResult.Length == 0 ? ActivityTraceFlags.Recorded | ActivityTraceFlags.RandomTraceId : ActivityTraceFlags.RandomTraceId, a.ActivityTraceFlags);
 
                 a.Dispose();
 

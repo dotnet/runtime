@@ -12,12 +12,12 @@ internal sealed class ThreadStore : IData<ThreadStore>
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.ThreadStore);
 
-        ThreadCount = target.Read<int>(address + (ulong)type.Fields[nameof(ThreadCount)].Offset);
-        FirstThreadLink = target.ReadPointer(address + (ulong)type.Fields[nameof(FirstThreadLink)].Offset);
-        UnstartedCount = target.Read<int>(address + (ulong)type.Fields[nameof(UnstartedCount)].Offset);
-        BackgroundCount = target.Read<int>(address + (ulong)type.Fields[nameof(BackgroundCount)].Offset);
-        PendingCount = target.Read<int>(address + (ulong)type.Fields[nameof(PendingCount)].Offset);
-        DeadCount = target.Read<int>(address + (ulong)type.Fields[nameof(DeadCount)].Offset);
+        ThreadCount = target.ReadField<int>(address, type, nameof(ThreadCount));
+        FirstThreadLink = target.ReadPointerField(address, type, nameof(FirstThreadLink));
+        UnstartedCount = target.ReadField<int>(address, type, nameof(UnstartedCount));
+        BackgroundCount = target.ReadField<int>(address, type, nameof(BackgroundCount));
+        PendingCount = target.ReadField<int>(address, type, nameof(PendingCount));
+        DeadCount = target.ReadField<int>(address, type, nameof(DeadCount));
     }
 
     public int ThreadCount { get; init; }

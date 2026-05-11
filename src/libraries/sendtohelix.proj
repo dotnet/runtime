@@ -246,7 +246,8 @@
 
     <ZipDirectory SourceDirectory="$(TestArchiveRoot)coreclr"
                   DestinationFile="$(TestArchiveRoot)coreclr.zip"
-                  Overwrite="true" />
+                  Overwrite="true"
+                  CompressionLevel="Fastest" />
   </Target>
 
   <Target Name="CompressRuntimeDirectory"
@@ -264,7 +265,8 @@
 
     <ZipDirectory SourceDirectory="$(NetCoreAppCurrentTestHostPath)"
                   DestinationFile="$(TestArchiveRuntimeFile)"
-                  Overwrite="true" />
+                  Overwrite="true"
+                  CompressionLevel="Fastest" />
   </Target>
 
   <!--

@@ -3,6 +3,7 @@
 
 using System.Runtime.InteropServices;
 using System.Threading;
+using Microsoft.Win32.SafeHandles;
 
 namespace System.Diagnostics
 {
@@ -60,5 +61,7 @@ namespace System.Diagnostics
         }
 
         private static bool AreChildrenUsingTerminal => s_childrenUsingTerminalCount > 0;
+
+        internal static bool IsTerminal(SafeFileHandle? standardHandle) => standardHandle is not null && Interop.Sys.IsATty(standardHandle);
     }
 }

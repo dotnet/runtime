@@ -237,4 +237,23 @@ internal unsafe class TargetTestHelpers
         return LayoutFieldsWorker(fieldLayout, fields, ref offset, ref maxAlign);
     }
 
+    internal static Target.TypeInfo CreateTypeInfo(Layout layout)
+    {
+        Dictionary<string, Target.FieldInfo> fields = new(layout.Fields.Length, StringComparer.Ordinal);
+        foreach (LayoutField field in layout.Fields)
+        {
+            fields[field.Name] = new Target.FieldInfo
+            {
+                Offset = field.Offset,
+                Type = DataType.Unknown,
+            };
+        }
+
+        return new Target.TypeInfo
+        {
+            Size = (uint)layout.Size,
+            Fields = fields,
+        };
+    }
+
 }

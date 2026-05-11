@@ -280,7 +280,10 @@ struct insGroup
     size_t                    igDataSize;         // size of instrDesc data pointed to by 'igData'
 #endif
 
-    UNATIVE_OFFSET igNum;     // for ordering (and display) purposes
+private:
+    unsigned igNum; // for ordering (and display) purposes
+
+public:
     UNATIVE_OFFSET igOffs;    // offset of this group within method
     unsigned int   igFuncIdx; // Which function/funclet does this belong to? (Index into Compiler::compFuncInfos array.)
     unsigned short igFlags;   // see IGF_xxx below
@@ -311,6 +314,7 @@ struct insGroup
 #ifdef TARGET_ARM64
 #define IGF_HAS_REMOVED_INSTR 0x1000 // this group has an instruction that was removed.
 #endif
+#define IGF_OUT_OF_ORDER_HEAD 0x2000 // first group (generated in-order) of a region generated out-of-order
 
 // Mask of IGF_* flags that should be propagated to new blocks when they are created.
 // This allows prologs and epilogs to be any number of IGs, but still be
@@ -320,6 +324,7 @@ struct insGroup
 #else // DEBUG
 #define IGF_PROPAGATE_MASK (IGF_EPILOG | IGF_FUNCLET_PROLOG)
 #endif // DEBUG
+#define IGF_OUT_OF_ORDER_MASK (IGF_EPILOG | IGF_FUNCLET_PROLOG | IGF_FUNCLET_EPILOG)
 
     // Try to do better packing based on how large regMaskSmall is (8, 16, or 64 bits).
 
@@ -390,6 +395,11 @@ struct insGroup
         return (igFlags & IGF_REMOVED_ALIGN) != 0;
     }
 
+    void     InitializeNum(unsigned num);
+    unsigned GetDisplayId() const;
+    bool     IsBefore(const insGroup* ig) const;
+    bool     IsBeforeOrEqual(const insGroup* ig) const;
+    bool     IsAfter(const insGroup* ig) const;
 }; // end of struct insGroup
 
 //  For AMD64 the maximum prolog/epilog size supported on the OS is 256 bytes
@@ -2026,11 +2036,19 @@ protected:
         }
     }; // End of  struct instrDesc
 
+    enum class PerfScoreMemoryAccessKind : unsigned
+    {
+        None      = 0,
+        Read      = 1,
+        Write     = 2,
+        ReadWrite = 3,
+    };
+
 #if defined(TARGET_XARCH)
     insFormat getMemoryOperation(instrDesc* id) const;
     insFormat ExtractMemoryFormat(insFormat insFmt) const;
 #elif defined(TARGET_ARM64)
-    void getMemoryOperation(instrDesc* id, unsigned* pMemAccessKind, bool* pIsLocalAccess);
+    void getMemoryOperation(instrDesc* id, PerfScoreMemoryAccessKind* pMemAccessKind, bool* pIsLocalAccess);
 #endif
 
 #if defined(DEBUG) || defined(LATE_DISASM)
@@ -2057,13 +2075,17 @@ protected:
 #define PERFSCORE_THROUGHPUT_8C   8.0f   // slower - 8 cycles
 #define PERFSCORE_THROUGHPUT_9C   9.0f   // slower - 9 cycles
 #define PERFSCORE_THROUGHPUT_10C  10.0f  // slower - 10 cycles
-#define PERFSCORE_THROUGHPUT_11C  10.0f  // slower - 10 cycles
+#define PERFSCORE_THROUGHPUT_11C  11.0f  // slower - 11 cycles
+#define PERFSCORE_THROUGHPUT_12C  12.0f  // slower - 12 cycles
 #define PERFSCORE_THROUGHPUT_13C  13.0f  // slower - 13 cycles
-#define PERFSCORE_THROUGHPUT_14C  14.0f  // slower - 13 cycles
-#define PERFSCORE_THROUGHPUT_16C  16.0f  // slower - 13 cycles
+#define PERFSCORE_THROUGHPUT_14C  14.0f  // slower - 14 cycles
+#define PERFSCORE_THROUGHPUT_16C  16.0f  // slower - 16 cycles
+#define PERFSCORE_THROUGHPUT_18C  18.0f  // slower - 18 cycles
 #define PERFSCORE_THROUGHPUT_19C  19.0f  // slower - 19 cycles
 #define PERFSCORE_THROUGHPUT_25C  25.0f  // slower - 25 cycles
+#define PERFSCORE_THROUGHPUT_32C  32.0f  // slower - 32 cycles
 #define PERFSCORE_THROUGHPUT_33C  33.0f  // slower - 33 cycles
+#define PERFSCORE_THROUGHPUT_36C  36.0f  // slower - 36 cycles
 #define PERFSCORE_THROUGHPUT_50C  50.0f  // slower - 50 cycles
 #define PERFSCORE_THROUGHPUT_52C  52.0f  // slower - 52 cycles
 #define PERFSCORE_THROUGHPUT_57C  57.0f  // slower - 57 cycles
@@ -2088,11 +2110,18 @@ protected:
 #define PERFSCORE_LATENCY_14C  14.0f
 #define PERFSCORE_LATENCY_15C  15.0f
 #define PERFSCORE_LATENCY_16C  16.0f
+#define PERFSCORE_LATENCY_17C  17.0f
 #define PERFSCORE_LATENCY_18C  18.0f
 #define PERFSCORE_LATENCY_20C  20.0f
 #define PERFSCORE_LATENCY_22C  22.0f
 #define PERFSCORE_LATENCY_23C  23.0f
 #define PERFSCORE_LATENCY_26C  26.0f
+#define PERFSCORE_LATENCY_28C  28.0f
+#define PERFSCORE_LATENCY_31C  31.0f
+#define PERFSCORE_LATENCY_32C  32.0f
+#define PERFSCORE_LATENCY_33C  33.0f
+#define PERFSCORE_LATENCY_41C  41.0f
+#define PERFSCORE_LATENCY_45C  45.0f
 #define PERFSCORE_LATENCY_62C  62.0f
 #define PERFSCORE_LATENCY_69C  69.0f
 #define PERFSCORE_LATENCY_105C 105.0f
@@ -2104,6 +2133,11 @@ protected:
 #define PERFSCORE_LATENCY_BRANCH_INDIRECT 2.0f // includes cost of a possible misprediction
 
 #if defined(TARGET_XARCH)
+
+// a read has 2x (0.5) throughput, while a write has 1C (1.0) throughput
+#define PERFSCORE_THROUGHPUT_RD PERFSCORE_THROUGHPUT_2X
+#define PERFSCORE_THROUGHPUT_WR PERFSCORE_THROUGHPUT_1C
+#define PERFSCORE_THROUGHPUT_RW PERFSCORE_THROUGHPUT_1C
 
 // a read,write or modify from stack location, possible def to use latency from L0 cache
 #define PERFSCORE_LATENCY_RD_STACK    PERFSCORE_LATENCY_2C
@@ -2196,18 +2230,11 @@ protected:
 #error Unknown TARGET
 #endif
 
-// Make this an enum:
-//
-#define PERFSCORE_MEMORY_NONE       0
-#define PERFSCORE_MEMORY_READ       1
-#define PERFSCORE_MEMORY_WRITE      2
-#define PERFSCORE_MEMORY_READ_WRITE 3
-
     struct insExecutionCharacteristics
     {
-        float    insThroughput;
-        float    insLatency;
-        unsigned insMemoryAccessKind;
+        float                     insThroughput       = 0;
+        float                     insLatency          = 0;
+        PerfScoreMemoryAccessKind insMemoryAccessKind = PerfScoreMemoryAccessKind::None;
     };
 
     float insEvaluateExecutionCost(instrDesc* id);
@@ -2885,28 +2912,28 @@ private:
     void          emitRemoveJumpToNextInst(); // try to remove unconditional jumps to the next instruction
 
 #if FEATURE_LOOP_ALIGN
-    instrDescAlign* emitCurIGAlignList;   // list of align instructions in current IG
-    unsigned        emitLastLoopStart;    // Start IG of last inner loop
-    unsigned        emitLastLoopEnd;      // End IG of last inner loop
-    unsigned        emitLastAlignedIgNum; // last IG that has align instruction
-    instrDescAlign* emitAlignList;        // list of all align instructions in method
-    instrDescAlign* emitAlignLast;        // last align instruction in method
+    instrDescAlign* emitCurIGAlignList; // list of align instructions in current IG
+    insGroup*       emitLastLoopStart;  // Start IG of last inner loop
+    insGroup*       emitLastLoopEnd;    // End IG of last inner loop
+    insGroup*       emitLastAlignedIG;  // last IG that has align instruction
+    instrDescAlign* emitAlignList;      // list of all align instructions in method
+    instrDescAlign* emitAlignLast;      // last align instruction in method
 
     // Points to the most recent added align instruction. If there are multiple align instructions like in arm64 or
     // non-adaptive alignment on xarch, this points to the first align instruction of the series of align instructions.
     instrDescAlign* emitAlignLastGroup;
 
     unsigned getLoopSize(insGroup*            igLoopHeader,
-                         unsigned maxLoopSize DEBUG_ARG(bool isAlignAdjusted) DEBUG_ARG(UNATIVE_OFFSET containingIGNum)
-                             DEBUG_ARG(UNATIVE_OFFSET loopHeadPredIGNum)); // Get the smallest loop size
+                         unsigned maxLoopSize DEBUGARG(bool isAlignAdjusted) DEBUGARG(insGroup* containingIG)
+                             DEBUGARG(insGroup* loopHeadPredIG)); // Get the smallest loop size
     void     emitLoopAlignment(DEBUG_ARG1(bool isPlacedBehindJmp));
     bool     emitEndsWithAlignInstr(); // Validate if newLabel is appropriate
     bool     emitSetLoopBackEdge(const BasicBlock* loopTopBlock);
     void     emitLoopAlignAdjustments(); // Predict if loop alignment is needed and make appropriate adjustments
     unsigned emitCalculatePaddingForLoopAlignment(insGroup*     ig,
-                                                  size_t offset DEBUG_ARG(bool isAlignAdjusted)
-                                                      DEBUG_ARG(UNATIVE_OFFSET containingIGNum)
-                                                          DEBUG_ARG(UNATIVE_OFFSET loopHeadPredIGNum));
+                                                  size_t offset DEBUGARG(bool isAlignAdjusted)
+                                                      DEBUGARG(insGroup* containingIG)
+                                                          DEBUGARG(insGroup* loopHeadPredIG));
 
     void            emitLoopAlign(unsigned paddingBytes, bool isFirstAlign DEBUG_ARG(bool isPlacedBehindJmp));
     void            emitLongLoopAlign(unsigned alignmentBoundary DEBUG_ARG(bool isPlacedBehindJmp));

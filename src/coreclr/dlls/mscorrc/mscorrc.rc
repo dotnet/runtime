@@ -397,6 +397,10 @@ BEGIN
     IDS_EE_CANNOTCAST                       "Unable to cast object of type '%1' to type '%2'."
 
     IDS_EE_CANNOTCASTSAME                   "[A]%1 cannot be cast to [B]%2. %3. %4."
+    IDS_EE_CANNOTCASTSAME_DETAIL_BYTE_ARRAY "Type %1 originates from '%2' in the context '%3' in a byte array"
+    IDS_EE_CANNOTCASTSAME_DETAIL_LOCATION   "Type %1 originates from '%2' in the context '%3' at location '%4'"
+    IDS_EE_CANNOTCASTSAME_GENARG_BYTE_ARRAY "Type %1 has a generic argument '%2' that originates from '%3' in the context '%4' in a byte array"
+    IDS_EE_CANNOTCASTSAME_GENARG_LOCATION   "Type %1 has a generic argument '%2' that originates from '%3' in the context '%4' at location '%5'"
     IDS_EE_INVALID_VT_FOR_CUSTOM_MARHALER   "Type of the VARIANT specified for a parameter with a custom marshaler is not supported by the custom marshaler."
     IDS_EE_BAD_COMEXTENDS_CLASS             "Types extending from COM objects should override all methods of an interface implemented by the base COM class."
     IDS_EE_MARSHAL_UNMAPPABLE_CHAR          "Cannot marshal: Encountered unmappable character."
@@ -676,6 +680,8 @@ STRINGTABLE DISCARDABLE
 BEGIN
     IDS_HOST_ASSEMBLY_RESOLVER_ASSEMBLY_ALREADY_LOADED_IN_CONTEXT "Assembly with same name is already loaded"
     IDS_HOST_ASSEMBLY_RESOLVER_DYNAMICALLY_EMITTED_ASSEMBLIES_UNSUPPORTED "Dynamically emitted assemblies are unsupported for AssemblyLoadContext resolution."
+    IDS_HOST_ASSEMBLY_RESOLVER_ASSEMBLY_ALREADY_LOADED_WITH_VERSION "A different copy of assembly '%1' is already loaded. Loaded assembly: '%2'"
+    IDS_HOST_ASSEMBLY_RESOLVER_ASSEMBLY_ALREADY_LOADED_WITH_VERSION_AND_PATH "A different copy of assembly '%1' is already loaded. Loaded assembly: '%2' from '%3'"
 END
 
 STRINGTABLE DISCARDABLE

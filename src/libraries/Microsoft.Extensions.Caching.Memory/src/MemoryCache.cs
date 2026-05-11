@@ -74,7 +74,7 @@ namespace Microsoft.Extensions.Caching.Memory
 
                 Meter meter = meterFactory?.Create(new MeterOptions("Microsoft.Extensions.Caching.Memory.MemoryCache")
                 {
-                    Tags = [new("cache.name", _options.Name)]
+                    Tags = [new("dotnet.cache.name", _options.Name)]
                 }) ?? SharedMeter.Instance;
                 InitializeMetrics(meter);
             }
@@ -883,9 +883,9 @@ namespace Microsoft.Extensions.Caching.Memory
             // Use a weak reference for `this` to avoid keeping it alive indefinitely
             // due to it being captured in the instrument's lambda and hence kept alive by the Meter.
             WeakReference<MemoryCache> weakThis = new(this);
-            KeyValuePair<string, object?> cacheNameTag = new("cache.name", _options.Name);
+            KeyValuePair<string, object?> cacheNameTag = new("dotnet.cache.name", _options.Name);
 
-            meter.CreateObservableCounter("cache.requests",
+            meter.CreateObservableCounter("dotnet.cache.requests",
                 () =>
                 {
                     if (!weakThis.TryGetTarget(out MemoryCache? cache) || cache._disposed)
@@ -898,14 +898,14 @@ namespace Microsoft.Extensions.Caching.Memory
                         ? []
                         : new Measurement<long>[]
                         {
-                            new(stats.TotalHits, cacheNameTag, new("cache.request.type", "hit")),
-                            new(stats.TotalMisses, cacheNameTag, new("cache.request.type", "miss")),
+                            new(stats.TotalHits, cacheNameTag, new("dotnet.cache.request.type", "hit")),
+                            new(stats.TotalMisses, cacheNameTag, new("dotnet.cache.request.type", "miss")),
                         };
                 },
-                unit: "{requests}",
+                unit: "{request}",
                 description: "Total cache requests.");
 
-            meter.CreateObservableCounter<long>("cache.evictions",
+            meter.CreateObservableCounter<long>("dotnet.cache.evictions",
                 () =>
                 {
                     if (!weakThis.TryGetTarget(out MemoryCache? cache) || cache._disposed)
@@ -918,10 +918,10 @@ namespace Microsoft.Extensions.Caching.Memory
                         ? []
                         : [new Measurement<long>(stats.TotalEvictions, cacheNameTag)];
                 },
-                unit: "{evictions}",
+                unit: "{eviction}",
                 description: "Total cache evictions.");
 
-            meter.CreateObservableUpDownCounter<long>("cache.entries",
+            meter.CreateObservableUpDownCounter<long>("dotnet.cache.entries",
                 () =>
                 {
                     if (!weakThis.TryGetTarget(out MemoryCache? cache) || cache._disposed)
@@ -934,10 +934,10 @@ namespace Microsoft.Extensions.Caching.Memory
                         ? []
                         : [new Measurement<long>(stats.CurrentEntryCount, cacheNameTag)];
                 },
-                unit: "{entries}",
+                unit: "{entry}",
                 description: "Current number of cache entries.");
 
-            meter.CreateObservableGauge<long>("cache.estimated_size",
+            meter.CreateObservableGauge<long>("dotnet.cache.estimated_size",
                 () =>
                 {
                     if (!weakThis.TryGetTarget(out MemoryCache? cache) || cache._disposed)

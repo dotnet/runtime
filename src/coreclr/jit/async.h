@@ -53,7 +53,7 @@ struct ContinuationLayoutBuilder
 {
 private:
     Compiler* m_compiler;
-    bool      m_needsOSRILOffset         = false;
+    bool      m_needsOSRAddress          = false;
     bool      m_needsException           = false;
     bool      m_needsContinuationContext = false;
     bool      m_needsKeepAlive           = false;
@@ -70,13 +70,13 @@ public:
     {
     }
 
-    void SetNeedsOSRILOffset()
+    void SetNeedsOSRAddress()
     {
-        m_needsOSRILOffset = true;
+        m_needsOSRAddress = true;
     }
-    bool NeedsOSRILOffset() const
+    bool NeedsOSRAddress() const
     {
-        return m_needsOSRILOffset;
+        return m_needsOSRAddress;
     }
     void SetNeedsException()
     {
@@ -128,7 +128,7 @@ public:
 struct ContinuationLayout
 {
     unsigned                      Size                      = 0;
-    unsigned                      OSRILOffset               = UINT_MAX;
+    unsigned                      OSRAddressOffset          = UINT_MAX;
     unsigned                      ExceptionOffset           = UINT_MAX;
     unsigned                      ContinuationContextOffset = UINT_MAX;
     unsigned                      KeepAliveOffset           = UINT_MAX;
@@ -331,6 +331,19 @@ enum class SaveSet
     MutatedLocals,
 };
 
+enum class SuspensionContextHelper
+{
+    None,
+    WithContinuationContext,
+    WithoutContinuationContext,
+};
+
+struct AggregatedAwaitInfo
+{
+    unsigned NumNormalAwaits = 0;
+    unsigned NumTailAwaits   = 0;
+};
+
 class AsyncTransformation
 {
     friend class AsyncAnalysis;
@@ -349,6 +362,18 @@ class AsyncTransformation
     BasicBlock*                m_lastResumptionBB        = nullptr;
     BasicBlock*                m_sharedReturnBB          = nullptr;
 
+    // Shared basic blocks used by suspensions that handle required context
+    // saves/restores and then suspend.
+    BasicBlock* m_sharedFinishContextHandlingWithContinuationContextBB    = nullptr;
+    BasicBlock* m_sharedFinishContextHandlingWithoutContinuationContextBB = nullptr;
+    // Variables that shared suspension finishing BBs take the exec/sync contexts in
+    unsigned m_sharedFinishContextHandlingExecContextVar = BAD_VAR_NUM;
+    unsigned m_sharedFinishContextHandlingSyncContextVar = BAD_VAR_NUM;
+
+    AggregatedAwaitInfo FindAwaits(ArrayStack<BasicBlock*>& blocksWithNormalAwaits,
+                                   ArrayStack<BasicBlock*>& blocksWithTailAwaits);
+
+    void        TransformTailAwaits(ArrayStack<BasicBlock*>& blocksWithTailAwaits);
     void        TransformTailAwait(BasicBlock* block, GenTreeCall* call, BasicBlock** remainder);
     BasicBlock* CreateTailAwaitSuspension(BasicBlock* block, GenTreeCall* call);
 
@@ -393,26 +418,38 @@ class AsyncTransformation
                                              GenTree*                  prevContinuation,
                                              const ContinuationLayout& layout);
 
-    void        FillInDataOnSuspension(GenTreeCall*                     call,
-                                       const ContinuationLayout&        layout,
-                                       const ContinuationLayoutBuilder& subLayout,
-                                       BasicBlock*                      suspendBB,
-                                       VARSET_VALARG_TP                 mutatedSinceResumption,
-                                       SaveSet                          saveSet);
-    SaveSet     GetLocalSaveSet(const LclVarDsc* dsc, VARSET_VALARG_TP mutatedSinceResumption);
-    void        RestoreContexts(BasicBlock* block, GenTreeCall* call, BasicBlock* insertionBB);
-    void        CreateCheckAndSuspendAfterCall(BasicBlock*               block,
-                                               GenTreeCall*              call,
-                                               const CallDefinitionInfo& callDefInfo,
-                                               BasicBlock*               suspendBB,
-                                               BasicBlock**              remainder);
-    BasicBlock* CreateResumptionBlock(BasicBlock* remainder, unsigned stateNum);
-    void        CreateResumption(BasicBlock*                      callBlock,
-                                 GenTreeCall*                     call,
-                                 BasicBlock*                      resumeBB,
-                                 const CallDefinitionInfo&        callDefInfo,
-                                 const ContinuationLayout&        layout,
-                                 const ContinuationLayoutBuilder& subLayout);
+    void                    FillInDataOnSuspension(GenTreeCall*                     call,
+                                                   const ContinuationLayout&        layout,
+                                                   const ContinuationLayoutBuilder& subLayout,
+                                                   BasicBlock*                      suspendBB,
+                                                   VARSET_VALARG_TP                 mutatedSinceResumption,
+                                                   SaveSet                          saveSet);
+    SaveSet                 GetLocalSaveSet(const LclVarDsc* dsc, VARSET_VALARG_TP mutatedSinceResumption);
+    SuspensionContextHelper GetSuspensionContextHelper(GenTreeCall* call);
+    void                    FinishContextHandlingAndSuspension(BasicBlock*                      callBlock,
+                                                               GenTreeCall*                     call,
+                                                               BasicBlock*                      suspendBB,
+                                                               const ContinuationLayout&        layout,
+                                                               const ContinuationLayoutBuilder& subLayout);
+    void                    FinishContextHandlingAndSuspensionWithHelper(BasicBlock*                      callBlock,
+                                                                         GenTreeCall*                     call,
+                                                                         BasicBlock*                      suspendBB,
+                                                                         const ContinuationLayout&        layout,
+                                                                         const ContinuationLayoutBuilder& subLayout,
+                                                                         SuspensionContextHelper          helper);
+    void                    RestoreContexts(BasicBlock* block, GenTreeCall* call, BasicBlock* insertionBB);
+    void                    CreateCheckAndSuspendAfterCall(BasicBlock*               block,
+                                                           GenTreeCall*              call,
+                                                           const CallDefinitionInfo& callDefInfo,
+                                                           BasicBlock*               suspendBB,
+                                                           BasicBlock**              remainder);
+    BasicBlock*             CreateResumptionBlock(BasicBlock* remainder, unsigned stateNum);
+    void                    CreateResumption(BasicBlock*                      callBlock,
+                                             GenTreeCall*                     call,
+                                             BasicBlock*                      resumeBB,
+                                             const CallDefinitionInfo&        callDefInfo,
+                                             const ContinuationLayout&        layout,
+                                             const ContinuationLayoutBuilder& subLayout);
 
     void        RestoreFromDataOnResumption(const ContinuationLayout&        layout,
                                             const ContinuationLayoutBuilder& subLayout,
@@ -439,11 +476,19 @@ class AsyncTransformation
     unsigned    GetNewContinuationVar();
     unsigned    GetResultBaseVar();
     unsigned    GetExceptionVar();
-    BasicBlock* GetSharedReturnBB();
-
-    bool ReuseContinuations();
-    void CreateResumptionsAndSuspensions();
-    void CreateResumptionSwitch();
+    void        CreateSharedReturnBB();
+    BasicBlock* CreateSharedFinishContextHandlingBB(SuspensionContextHelper   helper,
+                                                    const ContinuationLayout& layout,
+                                                    bool                      execContextMayVary,
+                                                    bool                      syncContextMayVary);
+    void        InsertFinishContextHandlingCall(BasicBlock*               block,
+                                                const ContinuationLayout& layout,
+                                                SuspensionContextHelper   helper,
+                                                GenTree*                  execContext,
+                                                GenTree*                  syncContext);
+    bool        ReuseContinuations();
+    void        CreateResumptionsAndSuspensions();
+    void        CreateResumptionSwitch();
 
 public:
     AsyncTransformation(Compiler* comp)
