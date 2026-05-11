@@ -361,6 +361,122 @@ namespace System.Net.Security.Tests
             Assert.Equal(SslPolicyErrors.None, reportedErrors.Value & SslPolicyErrors.RemoteCertificateChainErrors);
         }
 
+        [Fact]
+        public async Task SslStream_TargetHostIsIpLiteral_HandshakeUsesNonHostnameAwareValidation()
+        {
+            // When TargetHost is an IP literal, SafeDeleteSslContext deliberately skips passing
+            // it to the platform's DotnetProxyTrustManager (an SNIHostName cannot be an IP).
+            // The trust manager then falls back to the non-hostname-aware
+            // X509TrustManager.checkServerTrusted(chain, authType) path, which means
+            // network_security_config.xml's per-domain rules don't apply — the chain is
+            // evaluated only against the system trust store + the configured CustomRootTrust.
+            //
+            // Setup: dynamic PKI not in the XML config + CustomRootTrust providing the root +
+            // ExtraStore providing the intermediate. Targeting the loopback by IP literal must
+            // (a) not throw because of SNI/IP handling, and (b) succeed via the managed
+            // override path (ExtraStore populated → platform's verdict is bypassed).
+
+            (X509Certificate2 rootCert, X509Certificate2 intermediateCert, X509Certificate2 serverCert) = GenerateCertificateChain();
+
+            SslPolicyErrors? reportedErrors = null;
+
+            (SslStream client, SslStream server) = GetConnectedSslStreams();
+            using (client)
+            using (server)
+            using (rootCert)
+            using (intermediateCert)
+            using (serverCert)
+            {
+                var serverOptions = new SslServerAuthenticationOptions
+                {
+                    ServerCertificate = serverCert,
+                };
+
+                var clientOptions = new SslClientAuthenticationOptions
+                {
+                    TargetHost = "127.0.0.1",
+                    RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) =>
+                    {
+                        reportedErrors = sslPolicyErrors;
+                        return true;
+                    },
+                    CertificateChainPolicy = new X509ChainPolicy
+                    {
+                        RevocationMode = X509RevocationMode.NoCheck,
+                        TrustMode = X509ChainTrustMode.CustomRootTrust,
+                        CustomTrustStore = { rootCert },
+                        ExtraStore = { intermediateCert },
+                        VerificationFlags = X509VerificationFlags.IgnoreInvalidName,
+                    },
+                };
+
+                await Task.WhenAll(
+                    client.AuthenticateAsClientAsync(clientOptions),
+                    server.AuthenticateAsServerAsync(serverOptions)).WaitAsync(TimeSpan.FromSeconds(30));
+            }
+
+            Assert.NotNull(reportedErrors);
+            // No chain errors: the IP-literal path didn't crash on SNIHostName, and the managed
+            // override (ExtraStore present) bypassed any platform rejection.
+            Assert.Equal(SslPolicyErrors.None, reportedErrors.Value & SslPolicyErrors.RemoteCertificateChainErrors);
+        }
+
+        [Fact]
+        public async Task SslStream_TargetHostNotSet_NonHostnameAwarePathTrustsSystemCA()
+        {
+            // When the caller doesn't set TargetHost, SafeDeleteSslContext passes null to the
+            // native layer; DotnetProxyTrustManager then calls X509TrustManager.checkServerTrusted
+            // WITHOUT a hostname (no X509TrustManagerExtensions). This is the path callers hit
+            // when they don't know the hostname (e.g. pre-resolved TCP sockets).
+            //
+            // We use a dynamic PKI (not in any system trust store and not in network_security_config.xml)
+            // with CustomRootTrust + ExtraStore so the managed override bypasses the platform's verdict.
+            // Whatever the platform says, the callback must still see SslPolicyErrors.None because
+            // managedTrustOnly is true.
+
+            (X509Certificate2 rootCert, X509Certificate2 intermediateCert, X509Certificate2 serverCert) = GenerateCertificateChain();
+
+            SslPolicyErrors? reportedErrors = null;
+
+            (SslStream client, SslStream server) = GetConnectedSslStreams();
+            using (client)
+            using (server)
+            using (rootCert)
+            using (intermediateCert)
+            using (serverCert)
+            {
+                var serverOptions = new SslServerAuthenticationOptions
+                {
+                    ServerCertificate = serverCert,
+                };
+
+                var clientOptions = new SslClientAuthenticationOptions
+                {
+                    // TargetHost intentionally not set: tests the null-hostname code path.
+                    RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) =>
+                    {
+                        reportedErrors = sslPolicyErrors;
+                        return true;
+                    },
+                    CertificateChainPolicy = new X509ChainPolicy
+                    {
+                        RevocationMode = X509RevocationMode.NoCheck,
+                        TrustMode = X509ChainTrustMode.CustomRootTrust,
+                        CustomTrustStore = { rootCert },
+                        ExtraStore = { intermediateCert },
+                        VerificationFlags = X509VerificationFlags.IgnoreInvalidName,
+                    },
+                };
+
+                await Task.WhenAll(
+                    client.AuthenticateAsClientAsync(clientOptions),
+                    server.AuthenticateAsServerAsync(serverOptions)).WaitAsync(TimeSpan.FromSeconds(30));
+            }
+
+            Assert.NotNull(reportedErrors);
+            Assert.Equal(SslPolicyErrors.None, reportedErrors.Value & SslPolicyErrors.RemoteCertificateChainErrors);
+        }
+
         /// <summary>
         /// Generates a certificate chain: root CA → intermediate CA → leaf cert.
         /// The root is NOT the NDX Test Root CA from network_security_config.xml,
