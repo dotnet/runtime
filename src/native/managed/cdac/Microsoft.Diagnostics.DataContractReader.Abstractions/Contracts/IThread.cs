@@ -33,6 +33,7 @@ public enum ThreadState
     Unstarted           = 0x00000400,   // Thread has never been started
     Stopped             = 0x00010000,   // Thread has started to shut down
     ThreadPoolWorker    = 0x01000000,   // Thread is a thread pool worker thread
+    WaitSleepJoin       = 0x02000000,   // Thread is in a Sleep(), Wait(), Join()
     Detached            = unchecked((int)0x80000000), // Thread was detached
 }
 

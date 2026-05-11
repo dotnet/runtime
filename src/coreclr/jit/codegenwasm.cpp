@@ -13,6 +13,8 @@
 #include "gcinfoencoder.h"
 
 static const int LINEAR_MEMORY_INDEX = 0;
+// stackPointer is the 0th global in our generated Wasm modules
+static const int STACK_POINTER_GLOBAL = 0;
 
 #ifdef TARGET_64BIT
 static const instruction INS_I_load  = INS_i64_load;
@@ -103,6 +105,8 @@ void CodeGen::genMarkLabelsForCodegen()
 //
 void CodeGen::genBeginFnProlog()
 {
+    GetEmitter()->emitIns(INS_code_size);
+
     FuncInfoDsc* const func = m_compiler->funGetFunc(ROOT_FUNC_IDX);
     assert(func->funWasmLocalDecls != nullptr);
 
@@ -144,16 +148,20 @@ void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pIni
 
     m_compiler->unwindAllocStack(frameSize);
 
-    // TODO-WASM: reverse pinvoke frame allocation
-    //
+    unsigned initialSPLclIndex;
+    unsigned spLclIndex = WasmRegToIndex(spReg);
     if (!m_compiler->lvaGetDesc(m_compiler->lvaWasmSpArg)->lvIsParam)
     {
-        NYI_WASM("alloc local frame for reverse pinvoke");
+        initialSPLclIndex = spLclIndex;
+        GetEmitter()->emitIns_I(INS_global_get, EA_PTRSIZE, STACK_POINTER_GLOBAL);
+        GetEmitter()->emitIns_I(INS_local_set, EA_PTRSIZE, initialSPLclIndex);
+    }
+    else
+    {
+        initialSPLclIndex =
+            WasmRegToIndex(m_compiler->lvaGetParameterABIInfo(m_compiler->lvaWasmSpArg).Segment(0).GetRegister());
     }
 
-    unsigned initialSPLclIndex =
-        WasmRegToIndex(m_compiler->lvaGetParameterABIInfo(m_compiler->lvaWasmSpArg).Segment(0).GetRegister());
-    unsigned spLclIndex = WasmRegToIndex(spReg);
     assert(initialSPLclIndex == spLclIndex);
     if (frameSize != 0)
     {
@@ -350,6 +358,8 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
 {
     assert(m_compiler->bbIsFuncletBeg(block));
     JITDUMP("*************** In genFuncletProlog()\n");
+
+    GetEmitter()->emitIns(INS_code_size);
 
     // Local sig for the funclet
     //
@@ -2488,7 +2498,30 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
         params.sigInfo = call->callSig;
     }
 #endif // DEBUG
+
     GenTree* target = getCallTarget(call, &params.methHnd);
+
+    // Report managed call signatures to the R2R compiler for thunk generation.
+    if (!call->IsHelperCall() && !call->IsUnmanaged())
+    {
+        CORINFO_SIG_INFO  sigInfoLocal;
+        CORINFO_SIG_INFO* sigInfoCall = call->callSig;
+
+        if (sigInfoCall == nullptr)
+        {
+            if ((params.methHnd != NO_METHOD_HANDLE) &&
+                (Compiler::eeGetHelperNum(params.methHnd) == CORINFO_HELP_UNDEF))
+            {
+                m_compiler->eeGetMethodSig(params.methHnd, &sigInfoLocal);
+                sigInfoCall = &sigInfoLocal;
+            }
+        }
+
+        if (sigInfoCall != nullptr)
+        {
+            m_compiler->info.compCompHnd->recordWasmManagedCallSig(sigInfoCall);
+        }
+    }
 
     ArrayStack<CorInfoWasmType> typeStack(m_compiler->getAllocator(CMK_Codegen));
 

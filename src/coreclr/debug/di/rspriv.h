@@ -2226,20 +2226,6 @@ public:
     // Methods not exposed via a COM interface.
     //-----------------------------------------------------------
 
-    HRESULT CreateProcessCommon(ICorDebugRemoteTarget * pRemoteTarget,
-                                LPCWSTR lpApplicationName,
-                                _In_z_ LPWSTR lpCommandLine,
-                                LPSECURITY_ATTRIBUTES lpProcessAttributes,
-                                LPSECURITY_ATTRIBUTES lpThreadAttributes,
-                                BOOL bInheritHandles,
-                                DWORD dwCreationFlags,
-                                PVOID lpEnvironment,
-                                LPCWSTR lpCurrentDirectory,
-                                LPSTARTUPINFOW lpStartupInfo,
-                                LPPROCESS_INFORMATION lpProcessInformation,
-                                CorDebugCreateProcessFlags debuggingFlags,
-                                ICorDebugProcess **ppProcess);
-
     HRESULT DebugActiveProcessCommon(ICorDebugRemoteTarget * pRemoteTarget, DWORD id, BOOL win32Attach, ICorDebugProcess **ppProcess);
 
     void EnsureCanLaunchOrAttach(BOOL fWin32DebuggingEnabled);
@@ -2291,7 +2277,6 @@ public:
     HMODULE GetTargetCLR() { return m_targetCLR; }
 
 private:
-    bool IsCreateProcessSupported();
     bool IsInteropDebuggingSupported();
     void CheckCompatibility();
 
@@ -2758,9 +2743,6 @@ const int DEBUG_EVENTQUEUE_SIZE = 30;
 const int DEBUG_EVENTQUEUE_SIZE = 10;
 #endif
 
-void DeleteIPCEventHelper(DebuggerIPCEvent *pDel);
-
-
 // Private interface on CordbProcess that ShimProcess needs to emulate V2 functionality.
 // The fact that we need private hooks means that V3 is not sufficiently finished to allow building
 // a V2 debugger. This interface should shrink over time (and eventually go away) as the functionality gets exposed
@@ -2914,7 +2896,7 @@ public:
 #endif // OUT_OF_PROCESS_SETTHREADCONTEXT
 };
 
-class EMPTY_BASES_DECL CUnmanagedThreadSHashTraits : public DefaultSHashTraits<UnmanagedThreadTracker*>
+class EMPTY_BASES CUnmanagedThreadSHashTraits : public DefaultSHashTraits<UnmanagedThreadTracker*>
 {
     public:
         typedef DWORD key_t;
@@ -3240,9 +3222,6 @@ public:
     // Queue the RC event.
     void QueueRCEvent(DebuggerIPCEvent * pManagedEvent);
 
-    // This marshals a managed debug event from the
-    void MarshalManagedEvent(DebuggerIPCEvent * pManagedEvent);
-
     // This copies a managed debug event from the IPC block and to pManagedEvent.
     // The event still needs to be marshalled.
     void CopyRCEventFromIPCBlock(DebuggerIPCEvent * pManagedEvent);
@@ -3438,9 +3417,7 @@ public:
         memset( ipce, 0, sizeof(DebuggerIPCEvent) );
 
         _ASSERTE((!vmAppDomain.IsNull()) ||
-                 type == DB_IPCE_GET_GCHANDLE_INFO ||
                  type == DB_IPCE_ENABLE_LOG_MESSAGES ||
-                 type == DB_IPCE_MODIFY_LOGSWITCH ||
                  type == DB_IPCE_ASYNC_BREAK ||
                  type == DB_IPCE_CONTINUE ||
                  type == DB_IPCE_GET_BUFFER ||
@@ -3451,11 +3428,8 @@ public:
                  type == DB_IPCE_CONTROL_C_EVENT_RESULT ||
                  type == DB_IPCE_SET_REFERENCE ||
                  type == DB_IPCE_SET_ALL_DEBUG_STATE ||
-                 type == DB_IPCE_GET_THREAD_FOR_TASKID ||
                  type == DB_IPCE_DETACH_FROM_PROCESS ||
                  type == DB_IPCE_INTERCEPT_EXCEPTION ||
-                 type == DB_IPCE_GET_NGEN_COMPILER_FLAGS ||
-                 type == DB_IPCE_SET_NGEN_COMPILER_FLAGS ||
                  type == DB_IPCE_SET_VALUE_CLASS);
 
         ipce->type = type;
@@ -3465,7 +3439,6 @@ public:
         ipce->vmThread = VMPTR_Thread::NullPtr();
         ipce->replyRequired = twoWay;
         ipce->asyncSend = false;
-        ipce->next = NULL;
     }
 
     // Looks up a previously constructed CordbClass instance without creating. May return NULL if the
@@ -6270,7 +6243,7 @@ public:
     // we need to communicate the IP back to LS. So we stash the address of where
     // to store the IP here and stuff it in on RemapFunction.
     // If we're not at an outstanding RemapOpportunity, this will be NULL
-    REMOTE_PTR            m_EnCRemapFunctionIP;
+    CORDB_ADDRESS            m_EnCRemapFunctionIP;
 
 private:
     void ClearStackFrameCache();
@@ -9941,7 +9914,7 @@ public:
     bool                       m_complete;
     bool                       m_successful;
     bool                       m_aborted;
-    void                      *m_resultAddr;
+    CORDB_ADDRESS              m_resultAddr;
 
     // This is an OBJECTHANDLE on the LS if func-eval creates a strong handle.
     // This is a resource in the left-side and must be cleaned up in the left-side.
@@ -10007,19 +9980,6 @@ public:
     HRESULT Start();
     HRESULT Stop();
 
-    HRESULT SendCreateProcessEvent(MachineInfo machineInfo,
-                                   LPCWSTR programName,
-                                   _In_z_ LPWSTR  programArgs,
-                                   LPSECURITY_ATTRIBUTES lpProcessAttributes,
-                                   LPSECURITY_ATTRIBUTES lpThreadAttributes,
-                                   BOOL bInheritHandles,
-                                   DWORD dwCreationFlags,
-                                   PVOID lpEnvironment,
-                                   LPCWSTR lpCurrentDirectory,
-                                   LPSTARTUPINFOW lpStartupInfo,
-                                   LPPROCESS_INFORMATION lpProcessInformation,
-                                   CorDebugCreateProcessFlags corDebugFlags);
-
     HRESULT SendDebugActiveProcessEvent(MachineInfo machineInfo,
                                         const ProcessDescriptor *pProcessDescriptor,
                                         bool fWin32Attach,
@@ -10070,8 +10030,6 @@ private:
     void ThreadProc();
     static DWORD WINAPI ThreadProc(LPVOID parameter);
 
-    void CreateProcess();
-
 
     INativeEventPipeline * m_pNativePipeline;
 
@@ -10110,22 +10068,6 @@ private:
     HRESULT              m_actionResult;
     union
     {
-        struct
-        {
-            MachineInfo machineInfo;
-            LPCWSTR programName;
-            LPWSTR  programArgs;
-            LPSECURITY_ATTRIBUTES lpProcessAttributes;
-            LPSECURITY_ATTRIBUTES lpThreadAttributes;
-            BOOL bInheritHandles;
-            DWORD dwCreationFlags;
-            PVOID lpEnvironment;
-            LPCWSTR lpCurrentDirectory;
-            LPSTARTUPINFOW lpStartupInfo;
-            LPPROCESS_INFORMATION lpProcessInformation;
-            CorDebugCreateProcessFlags corDebugFlags;
-        } createData;
-
         struct
         {
             MachineInfo machineInfo;

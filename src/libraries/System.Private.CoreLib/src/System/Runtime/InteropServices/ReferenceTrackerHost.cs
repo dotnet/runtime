@@ -75,7 +75,6 @@ namespace System.Runtime.InteropServices
 
 #pragma warning disable IDE0060, CS3016
         [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
-        [RequiresUnsafe]
         internal static unsafe int IReferenceTrackerHost_GetTrackerTarget(IntPtr pThis, IntPtr punk, IntPtr* ppNewReference)
 #pragma warning restore IDE0060, CS3016
         {
@@ -135,7 +134,6 @@ namespace System.Runtime.InteropServices
 
 #pragma warning disable CS3016
         [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
-        [RequiresUnsafe]
         internal static unsafe int IReferenceTrackerHost_QueryInterface(IntPtr pThis, Guid* guid, IntPtr* ppObject)
 #pragma warning restore CS3016
         {

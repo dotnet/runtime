@@ -2310,6 +2310,12 @@ void CodeGen::genEmitMachineCode()
 
     m_compiler->unwindReserve();
 
+#if defined(TARGET_WASM)
+    // For Wasm we know know the exact size of each function and funclet.
+    //
+    GetEmitter()->emitUpdateFuncletLocations();
+#endif
+
     bool trackedStackPtrsContig; // are tracked stk-ptrs contiguous ?
 
 #ifdef TARGET_64BIT
@@ -3714,6 +3720,11 @@ void CodeGen::genCheckUseBlockInit()
             continue;
         }
 
+        if (m_compiler->lvaIsUnknownSizeLocal(varNum))
+        {
+            continue;
+        }
+
         if (m_compiler->fgVarIsNeverZeroInitializedInProlog(varNum))
         {
             varDsc->lvMustInit = 0;
@@ -4070,6 +4081,12 @@ void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, 
             }
 
             noway_assert(varDsc->lvOnFrame);
+
+            if (m_compiler->lvaIsUnknownSizeLocal(varNum))
+            {
+                // This local will belong on the UnknownSizeFrame, which will handle zeroing instead.
+                continue;
+            }
 
             // lvMustInit can only be set for GC types or TYP_STRUCT types
             // or when compInitMem is true
@@ -4809,6 +4826,11 @@ void CodeGen::genFinalizeFrame()
             regSet.rsSetRegsModified(maskPairRegs);
         }
     }
+
+    if (m_compiler->compUsesUnknownSizeFrame)
+    {
+        regSet.rsSetRegsModified(RBM_UNKBASE);
+    }
 #endif
 
 #ifdef DEBUG
@@ -5113,6 +5135,11 @@ void CodeGen::genFnProlog()
         if (!varDsc->lvIsInReg() && !varDsc->lvOnFrame)
         {
             noway_assert(varDsc->lvRefCnt() == 0);
+            continue;
+        }
+
+        if (m_compiler->lvaIsUnknownSizeLocal(varNum))
+        {
             continue;
         }
 
@@ -5540,6 +5567,13 @@ void CodeGen::genFnProlog()
     // This is the end of the OS-reported prolog for purposes of unwinding
     //
     //-------------------------------------------------------------------------
+
+#ifdef TARGET_ARM64
+    if (m_compiler->compUsesUnknownSizeFrame)
+    {
+        genUnknownSizeFrame();
+    }
+#endif
 
 #ifdef TARGET_ARM
     if (needToEstablishFP)
