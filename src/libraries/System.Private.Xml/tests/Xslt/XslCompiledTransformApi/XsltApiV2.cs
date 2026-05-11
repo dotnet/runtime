@@ -33,13 +33,7 @@ namespace System.Xml.XslCompiledTransformApiTests
         XmlDocument, DataDocument, XPathDocument, Unknown
     }
 
-    // Hosts the ConditionalClass predicate for XSLT API tests. Kept on a separate type with no
-    // static constructor so that evaluating the predicate does not trigger XsltApiTestCaseBase2's
-    // static constructor (which writes into the test data directory and fails on the read-only
-    // iOS/tvOS app bundle). xUnit's [ActiveIssue] does not propagate from a base test class to
-    // derived classes, but [ConditionalClass] does, which allows a single annotation on
-    // XsltApiTestCaseBase2 to skip every derived test class on Apple mobile + CoreCLR.
-    // See https://github.com/dotnet/runtime/issues/124344.
+    // Tracking issue: https://github.com/dotnet/runtime/issues/124344.
     internal static class XsltApiTestRequirements
     {
         public static bool IsSupported =>
