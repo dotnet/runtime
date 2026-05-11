@@ -123,6 +123,7 @@ public:
     PTR_MethodTable Lookup(TLSIndex index, bool *isGCStatic, bool *isCollectible) const
     {
         LIMITED_METHOD_CONTRACT;
+        // This method is called without the g_TLSCrst lock being held
         *isGCStatic = false;
         *isCollectible = false;
         if (index.GetIndexOffset() < VolatileLoad(&m_maxIndex))
@@ -142,6 +143,7 @@ public:
     PTR_MethodTable LookupTlsIndexKnownToBeAllocated(TLSIndex index) const
     {
         LIMITED_METHOD_CONTRACT;
+        // This method is called without the g_TLSCrst lock being held
         if (index.GetIndexOffset() < VolatileLoad(&m_maxIndex))
         {
             TADDR rawValue = VolatileLoadWithoutBarrier(&VolatileLoad(&pMap)[index.GetIndexOffset()]);
@@ -165,9 +167,14 @@ public:
 
     entry Lookup(TLSIndex index) const
     {
+        // This method is called with the g_TLSCrst lock held, so we don't actually
+        // need all of these volatile loads, but using VolatileLoad is more similar to the other
+        // paths, and the performance penalty is negligible, so we keep them.
+
         LIMITED_METHOD_CONTRACT;
         entry e(index);
-        if (index.GetIndexOffset() < VolatileLoad(&m_maxIndex))
+        int32_t maxIndex = VolatileLoad(&m_maxIndex); // This is the VolatileLoad that pairs with 
+        if (index.GetIndexOffset() < maxIndex)
         {
             TADDR rawValue = VolatileLoadWithoutBarrier(&VolatileLoad(&pMap)[index.GetIndexOffset()]);
             if (!IsClearedValue(rawValue))
@@ -184,7 +191,7 @@ public:
         }
         else
         {
-            e.TlsIndex = TLSIndex(m_indexType, m_maxIndex);
+            e.TlsIndex = TLSIndex(m_indexType, maxIndex);
         }
         return e;
     }
