@@ -247,9 +247,9 @@ namespace ILCompiler.DependencyAnalysis
             string? s = valueReader.ReadSerializedString();
             TypeDesc? resolved = null;
 
-            if (rewriteTypeName)
+            if (rewriteTypeName && s is not null)
             {
-                resolved = _module.GetTypeByCustomAttributeTypeName(s ?? throw new BadImageFormatException("Custom attribute blob contains null type name."));
+                resolved = _module.GetTypeByCustomAttributeTypeName(s));
                 s = formatter.FormatName(resolved, true);
             }
 
@@ -313,7 +313,7 @@ namespace ILCompiler.DependencyAnalysis
                     CopyNamedArgumentType(ref valueReader, blobBuilder, formatter, out elementValueTypeCode, out _);
                     break;
                 case SerializationTypeCode.Enum:
-                    TypeDesc enumType = CopySerializedString(ref valueReader, blobBuilder, rewriteTypeName: true, formatter) ?? throw new BadImageFormatException("Custom attribute blob contains null enum type name.");
+                    TypeDesc enumType = CopySerializedString(ref valueReader, blobBuilder, rewriteTypeName: true, formatter);
                     valueTypeCode = GetPrimitiveSerializationTypeCode(enumType.UnderlyingType);
                     break;
             }
