@@ -628,7 +628,7 @@ exit:
     return ret;
 }
 
-int32_t AndroidCryptoNative_SSLStreamSetTargetHost(SSLStream* sslStream, char* targetHost)
+int32_t AndroidCryptoNative_SSLStreamSetTargetHost(SSLStream* sslStream, const char* targetHost)
 {
     abort_if_invalid_pointer_argument (sslStream);
     abort_if_invalid_pointer_argument (targetHost);
