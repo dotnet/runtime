@@ -6427,6 +6427,96 @@ namespace System.Runtime.Intrinsics.Arm
         public static System.Numerics.Vector<ulong> CountMatchingElements(System.Numerics.Vector<ulong> mask, System.Numerics.Vector<ulong> left, System.Numerics.Vector<ulong> right) { throw null; }
         public static System.Numerics.Vector<byte> CountMatchingElementsIn128BitSegments(System.Numerics.Vector<sbyte> left, System.Numerics.Vector<sbyte> right) { throw null; }
         public static System.Numerics.Vector<byte> CountMatchingElementsIn128BitSegments(System.Numerics.Vector<byte> left, System.Numerics.Vector<byte> right) { throw null; }
+        public static System.Numerics.Vector<byte> CreateWhileGreaterThanMaskByte(int left, int right) { throw null; }
+        public static System.Numerics.Vector<byte> CreateWhileGreaterThanMaskByte(long left, long right) { throw null; }
+        public static System.Numerics.Vector<byte> CreateWhileGreaterThanMaskByte(uint left, uint right) { throw null; }
+        public static System.Numerics.Vector<byte> CreateWhileGreaterThanMaskByte(ulong left, ulong right) { throw null; }
+        public static System.Numerics.Vector<double> CreateWhileGreaterThanMaskDouble(int left, int right) { throw null; }
+        public static System.Numerics.Vector<double> CreateWhileGreaterThanMaskDouble(long left, long right) { throw null; }
+        public static System.Numerics.Vector<double> CreateWhileGreaterThanMaskDouble(uint left, uint right) { throw null; }
+        public static System.Numerics.Vector<double> CreateWhileGreaterThanMaskDouble(ulong left, ulong right) { throw null; }
+        public static System.Numerics.Vector<short> CreateWhileGreaterThanMaskInt16(int left, int right) { throw null; }
+        public static System.Numerics.Vector<short> CreateWhileGreaterThanMaskInt16(long left, long right) { throw null; }
+        public static System.Numerics.Vector<short> CreateWhileGreaterThanMaskInt16(uint left, uint right) { throw null; }
+        public static System.Numerics.Vector<short> CreateWhileGreaterThanMaskInt16(ulong left, ulong right) { throw null; }
+        public static System.Numerics.Vector<int> CreateWhileGreaterThanMaskInt32(int left, int right) { throw null; }
+        public static System.Numerics.Vector<int> CreateWhileGreaterThanMaskInt32(long left, long right) { throw null; }
+        public static System.Numerics.Vector<int> CreateWhileGreaterThanMaskInt32(uint left, uint right) { throw null; }
+        public static System.Numerics.Vector<int> CreateWhileGreaterThanMaskInt32(ulong left, ulong right) { throw null; }
+        public static System.Numerics.Vector<long> CreateWhileGreaterThanMaskInt64(int left, int right) { throw null; }
+        public static System.Numerics.Vector<long> CreateWhileGreaterThanMaskInt64(long left, long right) { throw null; }
+        public static System.Numerics.Vector<long> CreateWhileGreaterThanMaskInt64(uint left, uint right) { throw null; }
+        public static System.Numerics.Vector<long> CreateWhileGreaterThanMaskInt64(ulong left, ulong right) { throw null; }
+        public static System.Numerics.Vector<sbyte> CreateWhileGreaterThanMaskSByte(int left, int right) { throw null; }
+        public static System.Numerics.Vector<sbyte> CreateWhileGreaterThanMaskSByte(long left, long right) { throw null; }
+        public static System.Numerics.Vector<sbyte> CreateWhileGreaterThanMaskSByte(uint left, uint right) { throw null; }
+        public static System.Numerics.Vector<sbyte> CreateWhileGreaterThanMaskSByte(ulong left, ulong right) { throw null; }
+        public static System.Numerics.Vector<float> CreateWhileGreaterThanMaskSingle(int left, int right) { throw null; }
+        public static System.Numerics.Vector<float> CreateWhileGreaterThanMaskSingle(long left, long right) { throw null; }
+        public static System.Numerics.Vector<float> CreateWhileGreaterThanMaskSingle(uint left, uint right) { throw null; }
+        public static System.Numerics.Vector<float> CreateWhileGreaterThanMaskSingle(ulong left, ulong right) { throw null; }
+        public static System.Numerics.Vector<ushort> CreateWhileGreaterThanMaskUInt16(int left, int right) { throw null; }
+        public static System.Numerics.Vector<ushort> CreateWhileGreaterThanMaskUInt16(long left, long right) { throw null; }
+        public static System.Numerics.Vector<ushort> CreateWhileGreaterThanMaskUInt16(uint left, uint right) { throw null; }
+        public static System.Numerics.Vector<ushort> CreateWhileGreaterThanMaskUInt16(ulong left, ulong right) { throw null; }
+        public static System.Numerics.Vector<uint> CreateWhileGreaterThanMaskUInt32(int left, int right) { throw null; }
+        public static System.Numerics.Vector<uint> CreateWhileGreaterThanMaskUInt32(long left, long right) { throw null; }
+        public static System.Numerics.Vector<uint> CreateWhileGreaterThanMaskUInt32(uint left, uint right) { throw null; }
+        public static System.Numerics.Vector<uint> CreateWhileGreaterThanMaskUInt32(ulong left, ulong right) { throw null; }
+        public static System.Numerics.Vector<ulong> CreateWhileGreaterThanMaskUInt64(int left, int right) { throw null; }
+        public static System.Numerics.Vector<ulong> CreateWhileGreaterThanMaskUInt64(long left, long right) { throw null; }
+        public static System.Numerics.Vector<ulong> CreateWhileGreaterThanMaskUInt64(uint left, uint right) { throw null; }
+        public static System.Numerics.Vector<ulong> CreateWhileGreaterThanMaskUInt64(ulong left, ulong right) { throw null; }
+        public static System.Numerics.Vector<byte> CreateWhileGreaterThanOrEqualMaskByte(int left, int right) { throw null; }
+        public static System.Numerics.Vector<byte> CreateWhileGreaterThanOrEqualMaskByte(long left, long right) { throw null; }
+        public static System.Numerics.Vector<byte> CreateWhileGreaterThanOrEqualMaskByte(uint left, uint right) { throw null; }
+        public static System.Numerics.Vector<byte> CreateWhileGreaterThanOrEqualMaskByte(ulong left, ulong right) { throw null; }
+        public static System.Numerics.Vector<double> CreateWhileGreaterThanOrEqualMaskDouble(int left, int right) { throw null; }
+        public static System.Numerics.Vector<double> CreateWhileGreaterThanOrEqualMaskDouble(long left, long right) { throw null; }
+        public static System.Numerics.Vector<double> CreateWhileGreaterThanOrEqualMaskDouble(uint left, uint right) { throw null; }
+        public static System.Numerics.Vector<double> CreateWhileGreaterThanOrEqualMaskDouble(ulong left, ulong right) { throw null; }
+        public static System.Numerics.Vector<short> CreateWhileGreaterThanOrEqualMaskInt16(int left, int right) { throw null; }
+        public static System.Numerics.Vector<short> CreateWhileGreaterThanOrEqualMaskInt16(long left, long right) { throw null; }
+        public static System.Numerics.Vector<short> CreateWhileGreaterThanOrEqualMaskInt16(uint left, uint right) { throw null; }
+        public static System.Numerics.Vector<short> CreateWhileGreaterThanOrEqualMaskInt16(ulong left, ulong right) { throw null; }
+        public static System.Numerics.Vector<int> CreateWhileGreaterThanOrEqualMaskInt32(int left, int right) { throw null; }
+        public static System.Numerics.Vector<int> CreateWhileGreaterThanOrEqualMaskInt32(long left, long right) { throw null; }
+        public static System.Numerics.Vector<int> CreateWhileGreaterThanOrEqualMaskInt32(uint left, uint right) { throw null; }
+        public static System.Numerics.Vector<int> CreateWhileGreaterThanOrEqualMaskInt32(ulong left, ulong right) { throw null; }
+        public static System.Numerics.Vector<long> CreateWhileGreaterThanOrEqualMaskInt64(int left, int right) { throw null; }
+        public static System.Numerics.Vector<long> CreateWhileGreaterThanOrEqualMaskInt64(long left, long right) { throw null; }
+        public static System.Numerics.Vector<long> CreateWhileGreaterThanOrEqualMaskInt64(uint left, uint right) { throw null; }
+        public static System.Numerics.Vector<long> CreateWhileGreaterThanOrEqualMaskInt64(ulong left, ulong right) { throw null; }
+        public static System.Numerics.Vector<sbyte> CreateWhileGreaterThanOrEqualMaskSByte(int left, int right) { throw null; }
+        public static System.Numerics.Vector<sbyte> CreateWhileGreaterThanOrEqualMaskSByte(long left, long right) { throw null; }
+        public static System.Numerics.Vector<sbyte> CreateWhileGreaterThanOrEqualMaskSByte(uint left, uint right) { throw null; }
+        public static System.Numerics.Vector<sbyte> CreateWhileGreaterThanOrEqualMaskSByte(ulong left, ulong right) { throw null; }
+        public static System.Numerics.Vector<float> CreateWhileGreaterThanOrEqualMaskSingle(int left, int right) { throw null; }
+        public static System.Numerics.Vector<float> CreateWhileGreaterThanOrEqualMaskSingle(long left, long right) { throw null; }
+        public static System.Numerics.Vector<float> CreateWhileGreaterThanOrEqualMaskSingle(uint left, uint right) { throw null; }
+        public static System.Numerics.Vector<float> CreateWhileGreaterThanOrEqualMaskSingle(ulong left, ulong right) { throw null; }
+        public static System.Numerics.Vector<ushort> CreateWhileGreaterThanOrEqualMaskUInt16(int left, int right) { throw null; }
+        public static System.Numerics.Vector<ushort> CreateWhileGreaterThanOrEqualMaskUInt16(long left, long right) { throw null; }
+        public static System.Numerics.Vector<ushort> CreateWhileGreaterThanOrEqualMaskUInt16(uint left, uint right) { throw null; }
+        public static System.Numerics.Vector<ushort> CreateWhileGreaterThanOrEqualMaskUInt16(ulong left, ulong right) { throw null; }
+        public static System.Numerics.Vector<uint> CreateWhileGreaterThanOrEqualMaskUInt32(int left, int right) { throw null; }
+        public static System.Numerics.Vector<uint> CreateWhileGreaterThanOrEqualMaskUInt32(long left, long right) { throw null; }
+        public static System.Numerics.Vector<uint> CreateWhileGreaterThanOrEqualMaskUInt32(uint left, uint right) { throw null; }
+        public static System.Numerics.Vector<uint> CreateWhileGreaterThanOrEqualMaskUInt32(ulong left, ulong right) { throw null; }
+        public static System.Numerics.Vector<ulong> CreateWhileGreaterThanOrEqualMaskUInt64(int left, int right) { throw null; }
+        public static System.Numerics.Vector<ulong> CreateWhileGreaterThanOrEqualMaskUInt64(long left, long right) { throw null; }
+        public static System.Numerics.Vector<ulong> CreateWhileGreaterThanOrEqualMaskUInt64(uint left, uint right) { throw null; }
+        public static System.Numerics.Vector<ulong> CreateWhileGreaterThanOrEqualMaskUInt64(ulong left, ulong right) { throw null; }
+        public static unsafe System.Numerics.Vector<byte> CreateWhileReadAfterWriteMaskByte(byte* left, byte* right) { throw null; }
+        public static unsafe System.Numerics.Vector<double> CreateWhileReadAfterWriteMaskDouble(double* left, double* right) { throw null; }
+        public static unsafe System.Numerics.Vector<short> CreateWhileReadAfterWriteMaskInt16(short* left, short* right) { throw null; }
+        public static unsafe System.Numerics.Vector<int> CreateWhileReadAfterWriteMaskInt32(int* left, int* right) { throw null; }
+        public static unsafe System.Numerics.Vector<long> CreateWhileReadAfterWriteMaskInt64(long* left, long* right) { throw null; }
+        public static unsafe System.Numerics.Vector<sbyte> CreateWhileReadAfterWriteMaskSByte(sbyte* left, sbyte* right) { throw null; }
+        public static unsafe System.Numerics.Vector<float> CreateWhileReadAfterWriteMaskSingle(float* left, float* right) { throw null; }
+        public static unsafe System.Numerics.Vector<ushort> CreateWhileReadAfterWriteMaskUInt16(ushort* left, ushort* right) { throw null; }
+        public static unsafe System.Numerics.Vector<uint> CreateWhileReadAfterWriteMaskUInt32(uint* left, uint* right) { throw null; }
+        public static unsafe System.Numerics.Vector<ulong> CreateWhileReadAfterWriteMaskUInt64(ulong* left, ulong* right) { throw null; }
         public static System.Numerics.Vector<int> DotProductRotateComplex(System.Numerics.Vector<int> addend, System.Numerics.Vector<sbyte> left, System.Numerics.Vector<sbyte> right, [ConstantExpected(Min = 0, Max = (byte)(3))] byte rotation) { throw null; }
         public static System.Numerics.Vector<long> DotProductRotateComplex(System.Numerics.Vector<long> addend, System.Numerics.Vector<short> left, System.Numerics.Vector<short> right, [ConstantExpected(Min = 0, Max = (byte)(3))] byte rotation) { throw null; }
         public static System.Numerics.Vector<int> DotProductRotateComplexBySelectedIndex(System.Numerics.Vector<int> addend, System.Numerics.Vector<sbyte> left, System.Numerics.Vector<sbyte> right, [ConstantExpected(Min = 0, Max = (byte)(3))] byte rightIndex, [ConstantExpected(Min = 0, Max = (byte)(3))] byte rotation) { throw null; }
