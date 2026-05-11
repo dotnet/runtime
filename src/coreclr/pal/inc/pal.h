@@ -119,8 +119,6 @@ extern bool g_arm64_atomics_present;
 /******************* Compiler-specific glue *******************************/
 #define DECLSPEC_NORETURN   PAL_NORETURN
 
-#define EMPTY_BASES_DECL
-
 #if !defined(_MSC_VER) || defined(SOURCE_FORMATTING)
 #if __has_builtin(__builtin_assume)
 #define __assume(condition) do { bool assume_cond = (condition); __builtin_assume(assume_cond); } while (0)

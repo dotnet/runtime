@@ -393,8 +393,8 @@ interface IDacDbiInterface : IUnknown
     HRESULT GetTypeID([in] CORDB_ADDRESS obj, [out] COR_TYPEID * pType);
     HRESULT GetTypeIDForType([in] VMPTR_TypeHandle vmTypeHandle, [out] COR_TYPEID * pId);
     HRESULT GetObjectFields([in] COR_TYPEID id, [in] ULONG32 celt, [out] COR_FIELD * layout, [out] ULONG32 * pceltFetched);
-    HRESULT GetTypeLayout([in] COR_TYPEID id, [out] COR_TYPE_LAYOUT * pLayout);
-    HRESULT GetArrayLayout([in] COR_TYPEID id, [out] COR_ARRAY_LAYOUT * pLayout);
+    HRESULT GetTypeLayout([in] CORDB_ADDRESS id, [out] COR_TYPE_LAYOUT * pLayout);
+    HRESULT GetArrayLayout([in] CORDB_ADDRESS id, [out] COR_ARRAY_LAYOUT * pLayout);
     HRESULT GetGCHeapInformation([out] COR_HEAPINFO * pHeapInfo);
 
     // PE File
