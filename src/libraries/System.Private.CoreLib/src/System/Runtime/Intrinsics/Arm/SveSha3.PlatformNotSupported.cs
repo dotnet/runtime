@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Runtime.CompilerServices;
+using System.Numerics;
 
 namespace System.Runtime.Intrinsics.Arm
 {
@@ -43,6 +44,5 @@ namespace System.Runtime.Intrinsics.Arm
         ///   RAX1 Zresult.D, Zop1.D, Zop2.D
         /// </summary>
         public static Vector<ulong> BitwiseRotateLeftBy1AndXor(Vector<ulong> xor, Vector<ulong> rol1) { throw new PlatformNotSupportedException(); }
-
     }
 }
