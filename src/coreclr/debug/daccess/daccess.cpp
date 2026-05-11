@@ -3274,6 +3274,9 @@ ClrDataAccess::Flush(void)
     //
     m_mdImports.Flush();
 
+    // Free cached patch entries for thread unwinding
+    m_patchCache.Flush();
+
     // Free instance memory.
     m_instances.Flush();
 
