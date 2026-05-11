@@ -205,45 +205,36 @@ namespace ILCompiler.DependencyAnalysis
 
         private void RewriteCustomAttributeBlob(CustomAttribute customAttribute, BlobBuilder blobBuilder)
         {
-            byte[] originalBlob = _module.MetadataReader.GetBlobBytes(customAttribute.Value);
             if (_isCorrupted || _module.TryGetMethod(customAttribute.Constructor) is not MethodDesc constructor)
             {
-                blobBuilder.WriteBytes(originalBlob);
+                blobBuilder.WriteBytes(_module.MetadataReader.GetBlobBytes(customAttribute.Value));
                 return;
             }
 
-            try
+            BlobReader valueReader = _module.MetadataReader.GetBlobReader(customAttribute.Value);
+            var formatter = new CustomAttributeTypeNameFormatter();
+
+            // The dependency walk already decoded the blob successfully unless `_isCorrupted` is set.
+            blobBuilder.WriteUInt16(valueReader.ReadUInt16());
+
+            MethodSignature constructorSig = constructor.Signature;
+            for (int i = 0; i < constructorSig.Length; i++)
             {
-                BlobReader valueReader = _module.MetadataReader.GetBlobReader(customAttribute.Value);
-                var formatter = new CustomAttributeTypeNameFormatter();
-
-                // The dependency walk already decoded the blob successfully unless `_isCorrupted` is set.
-                blobBuilder.WriteUInt16(valueReader.ReadUInt16());
-
-                MethodSignature constructorSig = constructor.Signature;
-                for (int i = 0; i < constructorSig.Length; i++)
-                {
-                    GetFixedArgumentTypeCodes(constructorSig[i], out SerializationTypeCode valueTypeCode, out SerializationTypeCode elementValueTypeCode);
-                    CopySerializedValue(ref valueReader, blobBuilder, formatter, valueTypeCode, elementValueTypeCode);
-                }
-
-                ushort namedArgumentCount = valueReader.ReadUInt16();
-                blobBuilder.WriteUInt16(namedArgumentCount);
-
-                for (int i = 0; i < namedArgumentCount; i++)
-                {
-                    CustomAttributeNamedArgumentKind kind = (CustomAttributeNamedArgumentKind)valueReader.ReadByte();
-                    blobBuilder.WriteByte((byte)kind);
-
-                    CopyNamedArgumentType(ref valueReader, blobBuilder, formatter, out SerializationTypeCode valueTypeCode, out SerializationTypeCode elementValueTypeCode);
-                    CopySerializedString(ref valueReader, blobBuilder, rewriteTypeName: false, formatter);
-                    CopySerializedValue(ref valueReader, blobBuilder, formatter, valueTypeCode, elementValueTypeCode);
-                }
+                GetFixedArgumentTypeCodes(constructorSig[i], out SerializationTypeCode valueTypeCode, out SerializationTypeCode elementValueTypeCode);
+                CopySerializedValue(ref valueReader, blobBuilder, formatter, valueTypeCode, elementValueTypeCode);
             }
-            catch (Exception ex) when (ex is TypeSystemException or BadImageFormatException)
+
+            ushort namedArgumentCount = valueReader.ReadUInt16();
+            blobBuilder.WriteUInt16(namedArgumentCount);
+
+            for (int i = 0; i < namedArgumentCount; i++)
             {
-                blobBuilder.Clear();
-                blobBuilder.WriteBytes(originalBlob);
+                CustomAttributeNamedArgumentKind kind = (CustomAttributeNamedArgumentKind)valueReader.ReadByte();
+                blobBuilder.WriteByte((byte)kind);
+
+                CopyNamedArgumentType(ref valueReader, blobBuilder, formatter, out SerializationTypeCode valueTypeCode, out SerializationTypeCode elementValueTypeCode);
+                CopySerializedString(ref valueReader, blobBuilder, rewriteTypeName: false, formatter);
+                CopySerializedValue(ref valueReader, blobBuilder, formatter, valueTypeCode, elementValueTypeCode);
             }
         }
 
@@ -251,17 +242,19 @@ namespace ILCompiler.DependencyAnalysis
         private static void CopyRawBytes(ref BlobReader reader, BlobBuilder blobBuilder, int byteCount)
             => blobBuilder.WriteBytes(reader.ReadBytes(byteCount));
 
-        private void CopySerializedString(ref BlobReader valueReader, BlobBuilder blobBuilder, bool rewriteTypeName, CustomAttributeTypeNameFormatter formatter)
+        private TypeDesc? CopySerializedString(ref BlobReader valueReader, BlobBuilder blobBuilder, bool rewriteTypeName, CustomAttributeTypeNameFormatter formatter)
         {
             string? s = valueReader.ReadSerializedString();
+            TypeDesc? resolved = null;
 
-            if (rewriteTypeName && s is not null)
+            if (rewriteTypeName)
             {
-                TypeDesc resolved = _module.GetTypeByCustomAttributeTypeName(s);
+                resolved = _module.GetTypeByCustomAttributeTypeName(s ?? throw new BadImageFormatException("Custom attribute blob contains null type name."));
                 s = formatter.FormatName(resolved, true);
             }
 
             blobBuilder.WriteSerializedString(s);
+            return resolved;
         }
 
         private static void GetFixedArgumentTypeCodes(TypeDesc type, out SerializationTypeCode valueTypeCode, out SerializationTypeCode elementValueTypeCode)
@@ -320,10 +313,7 @@ namespace ILCompiler.DependencyAnalysis
                     CopyNamedArgumentType(ref valueReader, blobBuilder, formatter, out elementValueTypeCode, out _);
                     break;
                 case SerializationTypeCode.Enum:
-                    string enumTypeName = valueReader.ReadSerializedString()!;
-                    TypeDesc enumType = _module.GetTypeByCustomAttributeTypeName(enumTypeName)!;
-                    string rewritten = formatter.FormatName(enumType, true);
-                    blobBuilder.WriteSerializedString(rewritten);
+                    TypeDesc enumType = CopySerializedString(ref valueReader, blobBuilder, rewriteTypeName: true, formatter) ?? throw new BadImageFormatException("Custom attribute blob contains null enum type name.");
                     valueTypeCode = GetPrimitiveSerializationTypeCode(enumType.UnderlyingType);
                     break;
             }
