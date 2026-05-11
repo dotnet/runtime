@@ -27,9 +27,8 @@
       <EnabledProperties>IlcGenerateMstatFile;IlcGenerateDgmlFile</EnabledProperties>
     </TestConsoleAppSourceFiles>
 
-    <!-- Regression test for https://github.com/dotnet/runtime/issues/127952 -->
-    <!-- Marshal.StructureToPtr on a struct containing a ByValArray of DateTime values -->
-    <!-- is expected to fail on tvos-arm64 until the underlying issue is fixed. -->
+    <!-- Regression test for https://github.com/dotnet/runtime/issues/127952. -->
+    <!-- Marshal.StructureToPtr on a struct containing a ByValArray of DateTime values. -->
     <TestConsoleAppSourceFiles Include="MarshalStructureToPtrByValDateArray.cs" />
   </ItemGroup>
 
