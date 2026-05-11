@@ -85,13 +85,17 @@ namespace ILCompiler.ObjectWriter.WasmInstructions
 
         public int EncodeSize()
         {
-            return BodyContentSize();
+            int bodySize = BodyContentSize();
+            int sizePrefixLength = (int)DwarfHelper.SizeOfULEB128((ulong)bodySize);
+            return sizePrefixLength + bodySize;
         }
 
         public int Encode(Span<byte> buffer)
         {
-            _locals.CopyTo(buffer);
-            int pos = _locals.Length;
+            int contentSize = BodyContentSize();
+            int pos = DwarfHelper.WriteULEB128(buffer, (ulong)contentSize);
+            _locals.CopyTo(buffer.Slice(pos));
+            pos += _locals.Length;
             pos += _body.Encode(buffer.Slice(pos));
 
             return pos;
@@ -104,8 +108,10 @@ namespace ILCompiler.ObjectWriter.WasmInstructions
 
         public int EncodeRelocations(Span<Relocation> buffer)
         {
+            uint bodySize = (uint)BodyContentSize();
+            int bodySizePrefixLength = (int)DwarfHelper.SizeOfULEB128(bodySize);
             int relocsEncoded = _body.EncodeRelocations(buffer);
-            WasmExpr.OffsetRelocationsByOffset(buffer.Slice(0, relocsEncoded), _locals.Length);
+            WasmExpr.OffsetRelocationsByOffset(buffer.Slice(0, relocsEncoded), bodySizePrefixLength + _locals.Length);
             return relocsEncoded;
         }
     }

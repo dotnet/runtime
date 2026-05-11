@@ -10355,7 +10355,7 @@ void CEEInfo::getEEInfo(CORINFO_EE_INFO *pEEInfoOut)
     _ASSERTE(sizeof(ReversePInvokeFrame) <= pEEInfoOut->sizeOfReversePInvokeFrame);
 #endif
 
-    pEEInfoOut->osPageSize = GetOsPageSize();
+    pEEInfoOut->osPageSize = minipal_getpagesize();
     pEEInfoOut->maxUncheckedOffsetForNullObject = MAX_UNCHECKED_OFFSET_FOR_NULL_OBJECT;
     pEEInfoOut->targetAbi = CORINFO_CORECLR_ABI;
     pEEInfoOut->osType = getClrVmOs();

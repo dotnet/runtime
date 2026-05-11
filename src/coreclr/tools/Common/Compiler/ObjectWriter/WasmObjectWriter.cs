@@ -359,9 +359,6 @@ namespace ILCompiler.ObjectWriter
             byte[] data = new byte[codeSize];
             body.Encode(data);
 
-            // We must emit the length prefix explicitly
-            Debug.Assert(!codeWriter.HasLengthPrefix);
-            codeWriter.WriteULEB128((ulong)codeSize);
             codeWriter.EmitData(data);
             _uniqueSymbols.Add(name.ToString(), _methodCount);
             _methodCount++;
@@ -478,14 +475,6 @@ namespace ILCompiler.ObjectWriter
             }
 
             return section;
-        }
-
-        private protected override SectionWriter.Params WriterParams(ObjectNodeSection section)
-        {
-            return new SectionWriter.Params
-            {
-                LengthEncodeFormat = LengthEncodeFormat.None
-            };
         }
 
         private protected override void CreateSection(ObjectNodeSection section, Utf8String comdatName, Utf8String symbolName, int sectionIndex, Stream sectionStream)
