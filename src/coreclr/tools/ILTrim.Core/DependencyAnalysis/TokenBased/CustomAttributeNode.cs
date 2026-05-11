@@ -223,7 +223,7 @@ namespace ILCompiler.DependencyAnalysis
                 MethodSignature constructorSig = constructor.Signature;
                 for (int i = 0; i < constructorSig.Length; i++)
                 {
-                    CopyFixedArgument(ref valueReader, blobBuilder, originalBlob, constructorSig[i], formatter);
+                    CopyFixedArgument(ref valueReader, blobBuilder, constructorSig[i], formatter);
                 }
 
                 ushort namedArgumentCount = valueReader.ReadUInt16();
@@ -234,9 +234,9 @@ namespace ILCompiler.DependencyAnalysis
                     CustomAttributeNamedArgumentKind kind = (CustomAttributeNamedArgumentKind)valueReader.ReadByte();
                     blobBuilder.WriteByte((byte)kind);
 
-                    CopyNamedArgumentType(ref valueReader, blobBuilder, originalBlob, formatter, out SerializationTypeCode valueTypeCode, out SerializationTypeCode elementValueTypeCode);
+                    CopyNamedArgumentType(ref valueReader, blobBuilder, formatter, out SerializationTypeCode valueTypeCode, out SerializationTypeCode elementValueTypeCode);
                     CopySerializedString(ref valueReader, blobBuilder, rewriteTypeName: false, formatter);
-                    CopySerializedValue(ref valueReader, blobBuilder, originalBlob, formatter, valueTypeCode, elementValueTypeCode);
+                    CopySerializedValue(ref valueReader, blobBuilder, formatter, valueTypeCode, elementValueTypeCode);
                 }
             }
             catch (Exception ex) when (ex is TypeSystemException or BadImageFormatException)
@@ -246,12 +246,9 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        private static void CopyRawBytes(ref BlobReader reader, BlobBuilder blobBuilder, byte[] originalBlob, int byteCount)
-        {
-            int startOffset = reader.Offset;
-            reader.Offset = startOffset + byteCount;
-            blobBuilder.WriteBytes(originalBlob, startOffset, byteCount);
-        }
+        // We can avoid the intermediate array allocation after https://github.com/dotnet/runtime/issues/85280 (or with unsafe code now)
+        private static void CopyRawBytes(ref BlobReader reader, BlobBuilder blobBuilder, int byteCount)
+            => blobBuilder.WriteBytes(reader.ReadBytes(byteCount));
 
         private void CopySerializedString(ref BlobReader valueReader, BlobBuilder blobBuilder, bool rewriteTypeName, CustomAttributeTypeNameFormatter formatter)
         {
@@ -266,10 +263,10 @@ namespace ILCompiler.DependencyAnalysis
             blobBuilder.WriteSerializedString(s);
         }
 
-        private void CopyFixedArgument(ref BlobReader valueReader, BlobBuilder blobBuilder, byte[] originalBlob, TypeDesc type, CustomAttributeTypeNameFormatter formatter)
+        private void CopyFixedArgument(ref BlobReader valueReader, BlobBuilder blobBuilder, TypeDesc type, CustomAttributeTypeNameFormatter formatter)
         {
             GetFixedArgumentTypeCodes(type, out SerializationTypeCode valueTypeCode, out SerializationTypeCode elementValueTypeCode);
-            CopySerializedValue(ref valueReader, blobBuilder, originalBlob, formatter, valueTypeCode, elementValueTypeCode);
+            CopySerializedValue(ref valueReader, blobBuilder, formatter, valueTypeCode, elementValueTypeCode);
         }
 
         private static void GetFixedArgumentTypeCodes(TypeDesc type, out SerializationTypeCode valueTypeCode, out SerializationTypeCode elementValueTypeCode)
@@ -317,7 +314,7 @@ namespace ILCompiler.DependencyAnalysis
                 _ => throw new BadImageFormatException(),
             };
 
-        private void CopyNamedArgumentType(ref BlobReader valueReader, BlobBuilder blobBuilder, byte[] originalBlob, CustomAttributeTypeNameFormatter formatter, out SerializationTypeCode valueTypeCode, out SerializationTypeCode elementValueTypeCode)
+        private void CopyNamedArgumentType(ref BlobReader valueReader, BlobBuilder blobBuilder, CustomAttributeTypeNameFormatter formatter, out SerializationTypeCode valueTypeCode, out SerializationTypeCode elementValueTypeCode)
         {
             elementValueTypeCode = default;
 
@@ -327,7 +324,7 @@ namespace ILCompiler.DependencyAnalysis
             switch (typeCode)
             {
                 case SerializationTypeCode.SZArray:
-                    CopyNamedArgumentType(ref valueReader, blobBuilder, originalBlob, formatter, out elementValueTypeCode, out _);
+                    CopyNamedArgumentType(ref valueReader, blobBuilder, formatter, out elementValueTypeCode, out _);
                     valueTypeCode = SerializationTypeCode.SZArray;
                     break;
                 case SerializationTypeCode.Enum:
@@ -343,21 +340,21 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        private void CopySerializedValue(ref BlobReader valueReader, BlobBuilder blobBuilder, byte[] originalBlob, CustomAttributeTypeNameFormatter formatter, SerializationTypeCode valueTypeCode, SerializationTypeCode elementValueTypeCode)
+        private void CopySerializedValue(ref BlobReader valueReader, BlobBuilder blobBuilder, CustomAttributeTypeNameFormatter formatter, SerializationTypeCode valueTypeCode, SerializationTypeCode elementValueTypeCode)
         {
             switch (valueTypeCode)
             {
                 case SerializationTypeCode.Boolean or SerializationTypeCode.Byte or SerializationTypeCode.SByte:
-                    CopyRawBytes(ref valueReader, blobBuilder, originalBlob, 1);
+                    CopyRawBytes(ref valueReader, blobBuilder, 1);
                     break;
                 case SerializationTypeCode.Char or SerializationTypeCode.Int16 or SerializationTypeCode.UInt16:
-                    CopyRawBytes(ref valueReader, blobBuilder, originalBlob, 2);
+                    CopyRawBytes(ref valueReader, blobBuilder, 2);
                     break;
                 case SerializationTypeCode.Int32 or SerializationTypeCode.UInt32 or SerializationTypeCode.Single:
-                    CopyRawBytes(ref valueReader, blobBuilder, originalBlob, 4);
+                    CopyRawBytes(ref valueReader, blobBuilder, 4);
                     break;
                 case SerializationTypeCode.Int64 or SerializationTypeCode.UInt64 or SerializationTypeCode.Double:
-                    CopyRawBytes(ref valueReader, blobBuilder, originalBlob, 8);
+                    CopyRawBytes(ref valueReader, blobBuilder, 8);
                     break;
                 case SerializationTypeCode.String:
                     CopySerializedString(ref valueReader, blobBuilder, rewriteTypeName: false, formatter);
@@ -370,12 +367,12 @@ namespace ILCompiler.DependencyAnalysis
                     blobBuilder.WriteInt32(elementCount);
                     for (int i = 0; i < elementCount; i++)
                     {
-                        CopySerializedValue(ref valueReader, blobBuilder, originalBlob, formatter, elementValueTypeCode, default);
+                        CopySerializedValue(ref valueReader, blobBuilder, formatter, elementValueTypeCode, default);
                     }
                     break;
                 case SerializationTypeCode.TaggedObject:
-                    CopyNamedArgumentType(ref valueReader, blobBuilder, originalBlob, formatter, out SerializationTypeCode boxedTypeCode, out SerializationTypeCode boxedElementTypeCode);
-                    CopySerializedValue(ref valueReader, blobBuilder, originalBlob, formatter, boxedTypeCode, boxedElementTypeCode);
+                    CopyNamedArgumentType(ref valueReader, blobBuilder, formatter, out SerializationTypeCode boxedTypeCode, out SerializationTypeCode boxedElementTypeCode);
+                    CopySerializedValue(ref valueReader, blobBuilder, formatter, boxedTypeCode, boxedElementTypeCode);
                     break;
             }
         }
