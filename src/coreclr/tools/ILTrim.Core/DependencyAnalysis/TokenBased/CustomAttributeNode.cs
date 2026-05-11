@@ -20,6 +20,8 @@ namespace ILCompiler.DependencyAnalysis
     /// </summary>
     public sealed class CustomAttributeNode : TokenBasedNode
     {
+        // Set when dependency-time custom attribute decoding fails.
+        // Rewrite then preserves the original blob for this node.
         private bool _isCorrupted;
 
         public CustomAttributeNode(EcmaModule module, CustomAttributeHandle handle)
@@ -391,7 +393,7 @@ namespace ILCompiler.DependencyAnalysis
                 int endOffset = valueReader.Offset;
                 TypeDesc enumType = enumTypeName is not null ? typeProvider.GetTypeFromSerializedName(enumTypeName) : null;
 
-                if (enumTypeName is not null && enumType is not null)
+                if (enumType is not null)
                 {
                     string rewritten = formatter.FormatName(enumType, true);
                     if (rewritten == enumTypeName)
@@ -415,6 +417,9 @@ namespace ILCompiler.DependencyAnalysis
 
         private static void CopySerializedValue(ref BlobReader valueReader, BlobBuilder blobBuilder, byte[] originalBlob, CustomAttributeTypeProvider typeProvider, CustomAttributeTypeNameFormatter formatter, SerializationTypeCode valueTypeCode, SerializationTypeCode elementValueTypeCode)
         {
+            if (valueTypeCode == SerializationTypeCode.Invalid)
+                throw new BadImageFormatException();
+
             if (valueTypeCode == SerializationTypeCode.Boolean
                 || valueTypeCode == SerializationTypeCode.Byte
                 || valueTypeCode == SerializationTypeCode.SByte)
