@@ -17,8 +17,6 @@ internal static partial class Interop
 {
     internal static partial class AndroidCrypto
     {
-        private const int UNSUPPORTED_API_LEVEL = 2;
-
         internal enum PAL_SSLStreamStatus
         {
             OK = 0,
@@ -103,9 +101,7 @@ internal static partial class Interop
             string targetHost)
         {
             int ret = SSLStreamSetTargetHostImpl(sslHandle, targetHost);
-            if (ret == UNSUPPORTED_API_LEVEL)
-                throw new PlatformNotSupportedException(SR.net_android_ssl_api_level_unsupported);
-            else if (ret != SUCCESS)
+            if (ret != SUCCESS)
                 throw new SslException();
         }
 

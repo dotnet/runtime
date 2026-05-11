@@ -10,7 +10,6 @@
 
 #define FAIL 0
 #define SUCCESS 1
-#define UNSUPPORTED_API_LEVEL  2
 #define INSUFFICIENT_BUFFER -1
 
 extern JavaVM* gJvm;
