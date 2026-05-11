@@ -6909,11 +6909,11 @@ private:
     GenTree* fgOptimizeCast(GenTreeCast* cast);
     GenTree* fgOptimizeCastOnStore(GenTree* store);
     GenTree* fgOptimizeBitCast(GenTreeUnOp* bitCast);
-    GenTree* fgOptimizeCmp(GenTreeOp* cmp);
-    GenTree* fgOptimizeCmpWithCasts(GenTreeOp* cmp);
-    GenTree* fgOptimizeCmpEqNeWithConst(GenTreeOp* cmp);
-    GenTree* fgOptimizeCmpLtLeGeGtWithConst(GenTreeOp* cmp);
-    GenTree* fgOptimizeCmpFullRangeConst(GenTreeOp* cmp);
+    GenTree* fgOptimizeRelationalComparison(GenTreeOp* cmp);
+    GenTree* fgOptimizeRelationalComparisonWithCasts(GenTreeOp* cmp);
+    GenTree* fgOptimizeEqualityComparisonWithConst(GenTreeOp* cmp);
+    GenTree* fgOptimizeRelationalComparisonWithConst(GenTreeOp* cmp);
+    GenTree* fgOptimizeRelationalComparisonWithFullRangeConst(GenTreeOp* cmp);
 #if defined(FEATURE_HW_INTRINSICS)
     GenTree* fgMorphHWIntrinsic(GenTreeHWIntrinsic* tree);
     GenTree* fgMorphHWIntrinsicRequired(GenTreeHWIntrinsic* tree);
