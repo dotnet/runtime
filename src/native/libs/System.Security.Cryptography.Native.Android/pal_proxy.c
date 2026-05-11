@@ -4,34 +4,6 @@
 #include "pal_proxy.h"
 
 #include <stdlib.h>
-#include <string.h>
-
-// Copy a Java String into a NUL-terminated UTF-8 heap buffer.
-// Returns NULL on allocation failure or on JNI exception / empty input.
-static char* CopyJStringToUtf8(JNIEnv* env, jstring s)
-{
-    if (s == NULL)
-        return NULL;
-
-    jsize charLen = (*env)->GetStringLength(env, s);
-    jsize byteLen = (*env)->GetStringUTFLength(env, s);
-    if (byteLen <= 0)
-        return NULL;
-
-    char* buf = (char*)malloc((size_t)byteLen + 1);
-    if (buf == NULL)
-        return NULL;
-
-    (*env)->GetStringUTFRegion(env, s, 0, charLen, buf);
-    if (TryClearJNIExceptions(env))
-    {
-        free(buf);
-        return NULL;
-    }
-
-    buf[byteLen] = '\0';
-    return buf;
-}
 
 PALEXPORT int32_t AndroidCryptoNative_GetProxyForUrl(const char* urlUtf8,
                                                      int32_t*    outCount,
@@ -51,8 +23,8 @@ PALEXPORT int32_t AndroidCryptoNative_GetProxyForUrl(const char* urlUtf8,
     AndroidProxyInfo* result = NULL;
     int32_t written = 0;
 
-    // All transient outer-scope local refs go here. RELEASE_LOCALS(loc, env)
-    // at the cleanup label releases them exactly once on every path.
+    // All transient outer-scope local refs go here. RELEASE_LOCALS(loc, env) at the
+    // cleanup label releases them exactly once on every path.
     INIT_LOCALS(loc, jurl, juri, jselector, jlist,
                      jproxyTypeHttp, jproxyTypeSocks);
 
@@ -117,6 +89,11 @@ PALEXPORT int32_t AndroidCryptoNative_GetProxyForUrl(const char* urlUtf8,
         }
         else if ((*env)->IsSameObject(env, iter[jtype], loc[jproxyTypeSocks]))
         {
+            // SOCKS is a transport-level proxy protocol (RFC 1928 for SOCKS5). Unlike
+            // HTTP CONNECT, it tunnels arbitrary TCP at the socket layer rather than
+            // negotiating at the HTTP layer. Android's java.net.Proxy.Type.SOCKS maps
+            // to SOCKS5 in modern Java; SocketsHttpHandler accepts the "socks5://"
+            // scheme via HttpUtilities.IsSupportedProxyScheme.
             type = ANDROID_PROXY_TYPE_SOCKS;
         }
         else
@@ -149,15 +126,13 @@ PALEXPORT int32_t AndroidCryptoNative_GetProxyForUrl(const char* urlUtf8,
             continue;
         }
 
-        char* host = CopyJStringToUtf8(env, (jstring)iter[jhost]);
-        if (host == NULL)
-        {
-            RELEASE_LOCALS(iter, env);
-            continue;
-        }
+        // Copy the host as NUL-terminated UTF-16. Marshal.PtrToStringUni on the managed
+        // side is a zero-conversion copy because System.String is internally UTF-16.
+        // AllocateString aborts on allocation failure; we never see a NULL return here.
+        uint16_t* host = AllocateString(env, (jstring)iter[jhost]);
 
         result[written].type = type;
-        result[written].host = host; // ownership transferred to result; lifetime ≥ jhost
+        result[written].host = host; // ownership transferred to the result; lifetime ≥ jhost
         result[written].port = (int32_t)port;
         written++;
 

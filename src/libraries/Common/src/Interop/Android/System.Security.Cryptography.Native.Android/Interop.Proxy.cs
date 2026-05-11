@@ -18,7 +18,7 @@ internal static partial class Interop
         internal struct AndroidProxyInfo
         {
             public int Type;     // AndroidProxyType
-            public IntPtr Host;  // NUL-terminated UTF-8, malloc'd in native
+            public IntPtr Host;  // NUL-terminated UTF-16; read via Marshal.PtrToStringUni; freed by FreeProxyResult
             public int Port;
         }
 
