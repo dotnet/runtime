@@ -2919,7 +2919,6 @@ class CordbProcess :
     public ICorDebugProcess5,
     public ICorDebugProcess7,
     public ICorDebugProcess8,
-    public ICorDebugProcess11,
     public ICorDebugProcess12,
     public IDacDbiInterface::IAllocator,
     public IDacDbiInterface::IMetaDataLookup,
@@ -3132,11 +3131,6 @@ public:
     // ICorDebugProcess10 (To be removed in .NET 6, in a separate cleanup PR)
     //-----------------------------------------------------------
     COM_METHOD EnableGCNotificationEvents(BOOL fEnable);
-
-    //-----------------------------------------------------------
-    // ICorDebugProcess11
-    //-----------------------------------------------------------
-    COM_METHOD EnumerateLoaderHeapMemoryRegions(ICorDebugMemoryRangeEnum **ppRanges);
 
     //-----------------------------------------------------------
     // ICorDebugProcess12
