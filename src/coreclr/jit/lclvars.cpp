@@ -889,34 +889,7 @@ void Compiler::lvaInitVarDsc(LclVarDsc*              varDsc,
     // Set the lvType (before this point it is TYP_UNDEF).
     if ((varTypeIsStruct(type)))
     {
-        // Special case: Runtime handle internal types (RuntimeArgumentHandle, RuntimeMethodHandleInternal,
-        // RuntimeFieldHandleInternal) are pointer-sized value types that should be treated as
-        // native ints (TYP_I_IMPL) rather than structs for JIT purposes.
-        bool isRuntimeHandleInternalType = false;
-        if ((typeHnd != NO_CLASS_HANDLE) && (info.compCompHnd->getClassSize(typeHnd) == TARGET_POINTER_SIZE))
-        {
-            const char* namespaceName = nullptr;
-            const char* className     = info.compCompHnd->getClassNameFromMetadata(typeHnd, &namespaceName);
-            if ((className != nullptr) && (namespaceName != nullptr) && (strcmp(namespaceName, "System") == 0))
-            {
-                if ((strcmp(className, "RuntimeMethodHandleInternal") == 0) ||
-                    (strcmp(className, "RuntimeArgumentHandle") == 0) ||
-                    (strcmp(className, "RuntimeFieldHandleInternal") == 0))
-                {
-                    isRuntimeHandleInternalType = true;
-                }
-            }
-        }
-
-        if (isRuntimeHandleInternalType)
-        {
-            // Treat runtime handle internal types as native ints
-            varDsc->lvType = TYP_I_IMPL;
-        }
-        else
-        {
-            lvaSetStruct(varNum, typeHnd, typeHnd != NO_CLASS_HANDLE);
-        }
+        lvaSetStruct(varNum, typeHnd, typeHnd != NO_CLASS_HANDLE);
     }
     else
     {
