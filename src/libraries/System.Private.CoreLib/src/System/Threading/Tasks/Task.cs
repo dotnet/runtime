@@ -2424,7 +2424,7 @@ namespace System.Threading.Tasks
 
         /// <summary>
         /// This is used internally to execute the Task directly. ThreadPool uses this,
-        /// and it is also used to invoke async state machines and runtime async tasks directly.
+        /// and it is also used to invoke runtime async tasks directly.
         /// The base behavior is simply to use the entry point that's not protected from
         /// double-invoke; derived internal tasks can override to customize their behavior,
         /// which is usually done by promises that want to reuse the same object as a queued work item.

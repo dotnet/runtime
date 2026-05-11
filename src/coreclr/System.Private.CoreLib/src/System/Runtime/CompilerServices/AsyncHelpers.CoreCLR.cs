@@ -374,8 +374,6 @@ namespace System.Runtime.CompilerServices
                 m_stateFlags |= (int)InternalTaskOptions.HiddenState;
             }
 
-            // Note that ThreadPool.s_dispatchRuntimeAsyncContinuationsCallback
-            // calls this function and always passes null for the thread.
             internal override void ExecuteDirectly(Thread? threadPoolThread)
             {
                 DispatchContinuations();

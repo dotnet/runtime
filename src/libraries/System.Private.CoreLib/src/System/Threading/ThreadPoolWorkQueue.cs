@@ -1428,13 +1428,12 @@ namespace System.Threading
             }
         };
 
+        /// <summary>Shim used to invoke <see cref="Task.ExecuteDirectly"/> of a supplied <see cref="Task"/>.</summary>
         internal static readonly Action<object?> s_dispatchRuntimeAsyncContinuationsCallback = static state =>
         {
             if (state is Task t)
             {
-                // We know RuntimeAsyncTask overrides this and calls
-                // DispatchContinuations without looking at the Thread.
-                t.ExecuteFromThreadPool(null!);
+                t.ExecuteDirectly(null);
             }
             else
             {
