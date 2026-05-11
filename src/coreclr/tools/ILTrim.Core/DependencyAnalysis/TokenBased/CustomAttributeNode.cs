@@ -249,7 +249,7 @@ namespace ILCompiler.DependencyAnalysis
 
             if (rewriteTypeName && s is not null)
             {
-                resolved = _module.GetTypeByCustomAttributeTypeName(s));
+                resolved = _module.GetTypeByCustomAttributeTypeName(s);
                 s = formatter.FormatName(resolved, true);
             }
 
