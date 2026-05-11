@@ -1288,14 +1288,18 @@ namespace System.Threading.Tasks.Tests
             Assert.NotEmpty(resumeStacks);
 
             // For each task that has both Create and Resume callstacks, verify Create timestamp precedes Resume.
+            int matchedPairs = 0;
             foreach (var create in createStacks)
             {
                 var matchingResume = resumeStacks.FirstOrDefault(r => r.TaskId == create.TaskId);
                 if (matchingResume is null)
                     continue;
 
+                matchedPairs++;
                 Assert.True(create.Timestamp < matchingResume.Timestamp, $"For task {create.TaskId}: CreateAsyncCallstack (ts {create.Timestamp}) should precede ResumeAsyncCallstack (ts {matchingResume.Timestamp})");
             }
+
+            Assert.True(matchedPairs >= 1, $"Expected at least one matching Create/Resume callstack pair, but found {matchedPairs}");
         }
 
         [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(true)]
@@ -1321,18 +1325,22 @@ namespace System.Threading.Tasks.Tests
             Assert.NotEmpty(resumeStacks);
 
             // For each create callstack, find the first resume with the same task ID and verify frames match.
+            int matchedPairs = 0;
             foreach (var create in createStacks)
             {
                 var matchingResume = resumeStacks.FirstOrDefault(r => r.TaskId == create.TaskId);
                 if (matchingResume is null)
                     continue;
 
+                matchedPairs++;
                 Assert.Equal(create.Frames.Count, matchingResume.Frames.Count);
                 for (int i = 0; i < create.Frames.Count; i++)
                 {
                     Assert.Equal(create.Frames[i].NativeIP, matchingResume.Frames[i].NativeIP);
                 }
             }
+
+            Assert.True(matchedPairs >= 1, $"Expected at least one matching Create/Resume callstack pair, but found {matchedPairs}");
         }
 
         [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(true)]
@@ -1498,7 +1506,7 @@ namespace System.Threading.Tasks.Tests
             Assert.Contains(AsyncEventID.CompleteAsyncContext, eventIds);
 
             // Verify unwind frame count for this task
-            // UnhandledUnwindMarker -> DeepUnhandledOuter -> ChainedAsyncYield -> InnerAsyncYield, 4 frames deep after the initial resume.
+            // UnhandledUnwindMarker -> DeepUnhandledOuter -> DeepUnhandledMiddle -> DeepUnhandledInnerThrows, 4 frames deep after the initial resume.
             var unwindEvents = taskEvts.Where(e => e.EventId == AsyncEventID.UnwindAsyncException).ToList();
             Assert.NotEmpty(unwindEvents);
             Assert.All(unwindEvents, e => Assert.Equal(4u, e.UnwindFrameCount));
@@ -2166,6 +2174,8 @@ namespace System.Threading.Tasks.Tests
                     {
                         var current = bufferInfos[i];
                         var next = bufferInfos[i + 1];
+
+                        Assert.True((uint)current.UsedSize <= bufferCapacity, $"Buffer used size {current.UsedSize} exceeds capacity {bufferCapacity}.");
 
                         uint remaining = bufferCapacity - (uint)current.UsedSize;
                         bool currentNotFull = remaining > 0;
