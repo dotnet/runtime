@@ -59,9 +59,9 @@ namespace System.Diagnostics.Metrics
             // the IEnumerable<Measurement<T>> path used to require.
             object? callback = this switch
             {
-                ObservableCounter<T> c => c._callback,
-                ObservableGauge<T> g => g._callback,
-                ObservableUpDownCounter<T> u => u._callback,
+                ObservableCounter<T> c => c.Callback,
+                ObservableGauge<T> g => g.Callback,
+                ObservableUpDownCounter<T> u => u.Callback,
                 _ => null
             };
 
