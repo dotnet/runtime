@@ -788,7 +788,7 @@ namespace ILCompiler
                 // Use ILTokenReplacer to iterate over tokens, not actually replace them
                 ILTokenReplacer.Replace(bytes, tok =>
                 {
-                    switch(il.GetObject(tok))
+                    switch (il.GetObject(tok))
                     {
                         case TypeSystemEntity tse:
                             _tokenManager.EnsureDefTokensAreAvailable(tse, ((EcmaMethod)method.GetPrimaryMethodDesc().GetTypicalMethodDefinition()).Module, true);
@@ -1026,11 +1026,12 @@ namespace ILCompiler
             [
                 // For CorInfoImpl.getAsyncInfo
                 asyncHelpers.GetKnownMethod("CaptureExecutionContext"u8, null),
-                asyncHelpers.GetKnownMethod("RestoreExecutionContext"u8, null),
                 asyncHelpers.GetKnownMethod("CaptureContinuationContext"u8, null),
                 asyncHelpers.GetKnownMethod("CaptureContexts"u8, null),
                 asyncHelpers.GetKnownMethod("RestoreContexts"u8, null),
                 asyncHelpers.GetKnownMethod("RestoreContextsOnSuspension"u8, null),
+                asyncHelpers.GetKnownMethod("FinishSuspensionNoContinuationContext"u8, null),
+                asyncHelpers.GetKnownMethod("FinishSuspensionWithContinuationContext"u8, null),
 
                 // R2R Helpers
                 asyncHelpers.GetKnownMethod("AllocContinuation"u8, null),

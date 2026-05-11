@@ -879,7 +879,7 @@ namespace System.Threading.Tasks
         }
     }
 
-    internal unsafe sealed class ValueTaskSourceNotifier
+    internal sealed unsafe class ValueTaskSourceNotifier
     {
         // ValueTaskSourceNotifier is used only during suspension sequence, thus
         // a given thread will never need more than one instance.

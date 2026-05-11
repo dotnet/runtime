@@ -395,6 +395,7 @@ namespace System
     // array that is castable to "T[]" (i.e. for primitives and valuetypes, it will be exactly
     // "T[]" - for orefs, it may be a "U[]" where U derives from T.)
     //----------------------------------------------------------------------------------------
+    [Intrinsic]
     internal sealed class SZArrayHelper
     {
         // It is never legal to instantiate this class.

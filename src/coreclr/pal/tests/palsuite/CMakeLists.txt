@@ -140,8 +140,6 @@ add_executable_clr(paltests
   c_runtime/_wcsnicmp/test1/test1.cpp
   c_runtime/_wtoi/test1/test1.cpp
   #debug_api/DebugBreak/test1/test1.cpp
-  debug_api/OutputDebugStringA/test1/helper.cpp
-  debug_api/OutputDebugStringA/test1/test1.cpp
   debug_api/OutputDebugStringW/test1/test1.cpp
   #debug_api/WriteProcessMemory/test1/helper.cpp
   #debug_api/WriteProcessMemory/test1/test1.cpp
@@ -361,10 +359,6 @@ add_executable_clr(paltests
 #  pal_specific/PAL_RegisterLibraryW_UnregisterLibraryW/test2_neg/reg_unreg_libraryw_neg.cpp
   samples/test1/test.cpp
   samples/test2/test.cpp
-  threading/CreateProcessW/test1/childProcess.cpp
-  threading/CreateProcessW/test1/parentProcess.cpp
-  threading/CreateProcessW/test2/childprocess.cpp
-  threading/CreateProcessW/test2/parentprocess.cpp
   threading/CreateSemaphoreW_ReleaseSemaphore/test1/CreateSemaphore.cpp
   threading/CreateSemaphoreW_ReleaseSemaphore/test2/CreateSemaphore.cpp
   threading/CreateSemaphoreW_ReleaseSemaphore/test3/createsemaphore.cpp
@@ -383,22 +377,14 @@ add_executable_clr(paltests
   threading/ExitProcess/test2/test2.cpp
   threading/ExitProcess/test3/test3.cpp
   threading/ExitThread/test1/test1.cpp
-  threading/ExitThread/test2/childprocess.cpp
-  threading/ExitThread/test2/test2.cpp
   threading/GetCurrentProcess/test1/process.cpp
   threading/GetCurrentProcessId/test1/processId.cpp
   threading/GetCurrentThread/test1/thread.cpp
   threading/GetCurrentThread/test2/test2.cpp
   threading/GetCurrentThreadId/test1/threadId.cpp
-  threading/GetExitCodeProcess/test1/childProcess.cpp
-  threading/GetExitCodeProcess/test1/test1.cpp
   threading/OpenEventW/test1/test1.cpp
   threading/OpenEventW/test2/test2.cpp
-  threading/OpenEventW/test3/childprocess.cpp
-  threading/OpenEventW/test3/test3.cpp
   threading/OpenEventW/test5/test5.cpp
-  threading/OpenProcess/test1/childProcess.cpp
-  threading/OpenProcess/test1/test1.cpp
   threading/QueryThreadCycleTime/test1/test1.cpp
   threading/releasesemaphore/test1/test.cpp
   threading/ResetEvent/test1/test1.cpp
@@ -418,11 +404,7 @@ add_executable_clr(paltests
   threading/ThreadPriority/test1/ThreadPriority.cpp
   threading/WaitForMultipleObjects/test1/test1.cpp
   threading/WaitForMultipleObjectsEx/test1/test1.cpp
-  threading/WaitForMultipleObjectsEx/test5/helper.cpp
-  threading/WaitForMultipleObjectsEx/test5/test5.cpp
   threading/WaitForSingleObject/test1/test1.cpp
-  threading/WaitForSingleObject/WFSOProcessTest/ChildProcess.cpp
-  threading/WaitForSingleObject/WFSOProcessTest/WFSOProcessTest.cpp
   threading/WaitForSingleObject/WFSOSemaphoreTest/WFSOSemaphoreTest.cpp
   threading/WaitForSingleObject/WFSOThreadTest/WFSOThreadTest.cpp
   threading/YieldProcessor/test1/test1.cpp

@@ -156,7 +156,7 @@ public class CodeVersionsTests
         return new TestPlaceholderTarget.Builder(arch)
             .UseReader(builder.Builder.GetMemoryContext().ReadFromTarget)
             .AddTypes(CreateContractTypes(builder))
-            .AddContract<ICodeVersions>(version: 1)
+            .AddContract<ICodeVersions>(version: "c1")
             .AddMockContract(mockRuntimeTypeSystem)
             .AddMockContract(mockExecutionManager)
             .AddMockContract(mockLoader)

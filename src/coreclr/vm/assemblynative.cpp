@@ -145,19 +145,42 @@ Assembly* AssemblyNative::LoadFromPEImage(AssemblyBinder* pBinder, PEImage *pIma
 
     HRESULT hr = S_OK;
     PTR_AppDomain pCurDomain = GetAppDomain();
-    hr = pBinder->BindUsingPEImage(pImage, excludeAppPaths, &pAssembly);
+    ReleaseHolder<BINDER_SPACE::Assembly> pExistingAssembly;
+    hr = pBinder->BindUsingPEImage(pImage, excludeAppPaths, &pAssembly, &pExistingAssembly);
 
     if (hr != S_OK)
     {
         StackSString name;
         spec.GetDisplayName(0, name);
-        if (hr == COR_E_FILELOAD)
+        if (pExistingAssembly != nullptr)
         {
-            // Give a more specific message for the case when we found the assembly with the same name already loaded.
-            // Show the assembly name, since we know the error is about the assembly name.
+            // We have the existing assembly - extract its details for the error message.
+            StackSString simpleName;
+            spec.GetName(simpleName);
+
+            PathString loadedAssemblyName;
+            pExistingAssembly->GetAssemblyName()->GetDisplayName(loadedAssemblyName, BINDER_SPACE::AssemblyName::INCLUDE_VERSION | BINDER_SPACE::AssemblyName::INCLUDE_PUBLIC_KEY_TOKEN);
+            PathString loadedAssemblyPath{ pExistingAssembly->GetPEImage()->GetPath() };
+
+            StackSString errorString;
+            SString format;
+            if (!loadedAssemblyPath.IsEmpty())
+            {
+                format.LoadResource(IDS_HOST_ASSEMBLY_RESOLVER_ASSEMBLY_ALREADY_LOADED_WITH_VERSION_AND_PATH);
+                errorString.FormatMessage(FORMAT_MESSAGE_FROM_STRING, format.GetUnicode(), 0, 0, simpleName, loadedAssemblyName, loadedAssemblyPath);
+            }
+            else
+            {
+                format.LoadResource(IDS_HOST_ASSEMBLY_RESOLVER_ASSEMBLY_ALREADY_LOADED_WITH_VERSION);
+                errorString.FormatMessage(FORMAT_MESSAGE_FROM_STRING, format.GetUnicode(), 0, 0, simpleName, loadedAssemblyName);
+            }
+            COMPlusThrowHR(hr, IDS_EE_FILELOAD_ERROR_GENERIC, name.GetUnicode(), errorString.GetUnicode());
+        }
+        else if (hr == COR_E_FILELOAD)
+        {
             StackSString errorString;
             errorString.LoadResource(IDS_HOST_ASSEMBLY_RESOLVER_ASSEMBLY_ALREADY_LOADED_IN_CONTEXT);
-            COMPlusThrow(kFileLoadException, IDS_EE_FILELOAD_ERROR_GENERIC, name, errorString);
+            COMPlusThrowHR(hr, IDS_EE_FILELOAD_ERROR_GENERIC, name.GetUnicode(), errorString.GetUnicode());
         }
         else
         {

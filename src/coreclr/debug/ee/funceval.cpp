@@ -3822,7 +3822,7 @@ void * STDCALL FuncEvalHijackWorker(DebuggerEval *pDE)
 #endif
 #endif
 
-        if (!pDE->m_evalDuringException)
+        if (pDE->m_evalUsesHijack)
         {
             //
             // From this point forward we use FORBID regions to guard against GCs.
@@ -3842,7 +3842,7 @@ void * STDCALL FuncEvalHijackWorker(DebuggerEval *pDE)
 
         if (filterContext)
         {
-            _ASSERTE(pDE->m_evalDuringException);
+            _ASSERTE(!pDE->m_evalUsesHijack);
             g_pEEInterface->SetThreadFilterContext(pDE->m_thread, NULL);
         }
 
@@ -3901,7 +3901,7 @@ void * STDCALL FuncEvalHijackWorker(DebuggerEval *pDE)
     // Codepitching can hijack our frame's return address. That means that we'll need to update PC in our saved context
     // so that when its restored, its like we've returned to the codepitching hijack. At this point, the old value of
     // EIP is worthless anyway.
-    if (!pDE->m_evalDuringException)
+    if (pDE->m_evalUsesHijack)
     {
         SetIP(&pDE->m_context, (SIZE_T)FEFrame.GetReturnAddress());
     }
@@ -3913,7 +3913,7 @@ void * STDCALL FuncEvalHijackWorker(DebuggerEval *pDE)
 
     void *dest = NULL;
 
-    if (!pDE->m_evalDuringException)
+    if (pDE->m_evalUsesHijack)
     {
         // Signal to the helper thread that we're done with our func eval.  Start by creating a DebuggerFuncEvalComplete
         // object. Give it an address at which to create the patch, which is a chunk of memory specified by our

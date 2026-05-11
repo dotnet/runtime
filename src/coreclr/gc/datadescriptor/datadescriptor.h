@@ -67,9 +67,11 @@ struct cdac_data<GC_NAMESPACE::gc_heap>
 #endif // !USE_REGIONS
 
     /* For use in GCHeapAnalyzeData APIs */
+#ifdef HEAP_ANALYZE
     GC_HEAP_FIELD(InternalRootArray, internal_root_array)
     GC_HEAP_FIELD(InternalRootArrayIndex, internal_root_array_index)
     GC_HEAP_FIELD(HeapAnalyzeSuccess, heap_analyze_success)
+#endif // HEAP_ANALYZE
 
     /* For use in GCInterestingInfo APIs */
     GC_HEAP_FIELD(InterestingData, interesting_data_per_heap)

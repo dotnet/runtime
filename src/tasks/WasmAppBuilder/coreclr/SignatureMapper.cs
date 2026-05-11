@@ -85,7 +85,7 @@ internal static class SignatureMapper
         return c;
     }
 
-    public static string? MethodToSignature(MethodInfo method, LogAdapter log)
+    public static string? MethodToSignature(MethodInfo method, LogAdapter log, bool includeThis = false)
     {
         string? result = TypeToChar(method.ReturnType, log, out bool resultIsByRef)?.ToString();
         if (result == null)
@@ -96,6 +96,11 @@ internal static class SignatureMapper
         if (resultIsByRef)
         {
             result = "n";
+        }
+
+        if (includeThis && !method.IsStatic)
+        {
+            result += 'i';
         }
 
         foreach (var parameter in method.GetParameters())

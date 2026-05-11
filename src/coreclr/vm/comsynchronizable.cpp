@@ -630,7 +630,9 @@ FCIMPL1(void, ThreadNative::Finalize, ThreadBaseObject* pThisUNSAFE)
         }
 
         thread->SetThreadState(Thread::TS_Finalized);
+#ifdef FEATURE_MULTITHREADING
         Thread::SetCleanupNeededForFinalizedThread();
+#endif // FEATURE_MULTITHREADING
     }
 }
 FCIMPLEND

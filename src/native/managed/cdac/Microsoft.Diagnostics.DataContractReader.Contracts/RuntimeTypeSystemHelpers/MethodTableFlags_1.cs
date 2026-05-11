@@ -38,6 +38,7 @@ internal struct MethodTableFlags_1
         Category_Array = 0x00080000,
         Category_IfArrayThenSzArray = 0x00020000,
         Category_Array_Mask = 0x000C0000,
+        Category_ValueType_Mask = 0x000C0000,
         Category_ElementType_Mask = 0x000E0000,
         Category_ValueType = 0x00040000,
         Category_Nullable = 0x00050000,
@@ -94,6 +95,7 @@ internal struct MethodTableFlags_1
 
     public bool HasComponentSize => GetFlag(WFLAGS_HIGH.HasComponentSize) != 0;
     public bool IsInterface => GetFlag(WFLAGS_HIGH.Category_Mask) == WFLAGS_HIGH.Category_Interface;
+    public bool IsValueType => GetFlag(WFLAGS_HIGH.Category_ValueType_Mask) == WFLAGS_HIGH.Category_ValueType;
     public bool IsString => HasComponentSize && !IsArray && ComponentSizeBits == 2;
     public bool IsArray => GetFlag(WFLAGS_HIGH.Category_Array_Mask) == WFLAGS_HIGH.Category_Array;
     public bool IsStringOrArray => HasComponentSize;

@@ -15,6 +15,7 @@ namespace System
         /// Compute a Marvin OrdinalIgnoreCase hash and collapse it into a 32-bit hash.
         /// n.b. <paramref name="count"/> is specified as char count, not byte count.
         /// </summary>
+        [MethodImpl(MethodImplOptions.NoInlining)]
         public static int ComputeHash32OrdinalIgnoreCase(ref char data, int count, uint p0, uint p1)
         {
             uint ucount = (uint)count; // in chars

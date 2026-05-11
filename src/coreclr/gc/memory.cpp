@@ -161,7 +161,7 @@ void gc_heap::reduce_committed_bytes (void* address, size_t size, int bucket, in
     }
 }
 
-bool gc_heap::virtual_decommit (void* address, size_t size, int bucket, int h_number, void* end_of_data)
+bool gc_heap::virtual_decommit (void* address, size_t size, int bucket, int h_number)
 {
     /**
      * Here are all possible cases for the decommits:
@@ -171,15 +171,12 @@ bool gc_heap::virtual_decommit (void* address, size_t size, int bucket, int h_nu
      * Case 3: This is for free - the bucket will be recorded_committed_free_bucket, and the h_number will be -1
      */
 
-    bool decommit_succeeded_p = ((bucket != recorded_committed_bookkeeping_bucket) && use_large_pages_p) ? true : GCToOSInterface::VirtualDecommit (address, size);
+    // With large pages, VirtualDecommit on heap memory is a no-op. All such callers
+    // should either skip the decommit or handle stale data themselves (decommit_region
+    // does the latter by calling reduce_committed_bytes directly and clearing memory).
+    assert (!use_large_pages_p || bucket == recorded_committed_bookkeeping_bucket);
 
-    // Large pages: the decommit above is a no-op so memory retains stale data.
-    // Clear up to end_of_data if the caller provided it so that the heap never
-    // observes leftover object references after the region is reused.
-    if (use_large_pages_p && (end_of_data != nullptr) && (end_of_data > address))
-    {
-        memclr ((uint8_t*)address, (uint8_t*)end_of_data - (uint8_t*)address);
-    }
+    bool decommit_succeeded_p = GCToOSInterface::VirtualDecommit (address, size);
 
     reduce_committed_bytes (address, size, bucket, h_number, decommit_succeeded_p);
 
@@ -347,7 +344,18 @@ size_t gc_heap::decommit_region (heap_segment* region, int bucket, int h_number)
     uint8_t* page_start = align_lower_page (get_region_start (region));
     uint8_t* decommit_end = heap_segment_committed (region);
     size_t decommit_size = decommit_end - page_start;
-    bool decommit_succeeded_p = virtual_decommit (page_start, decommit_size, bucket, h_number);
+    bool decommit_succeeded_p;
+    if (use_large_pages_p)
+    {
+        // VirtualDecommit is a no-op for large pages so skip it and update
+        // committed bookkeeping directly. Memory clearing is handled below.
+        decommit_succeeded_p = true;
+        reduce_committed_bytes (page_start, decommit_size, bucket, h_number, true);
+    }
+    else
+    {
+        decommit_succeeded_p = virtual_decommit (page_start, decommit_size, bucket, h_number);
+    }
     bool require_clearing_memory_p = !decommit_succeeded_p || use_large_pages_p;
     dprintf (REGIONS_LOG, ("decommitted region %p(%p-%p) (%zu bytes) - success: %d",
         region,

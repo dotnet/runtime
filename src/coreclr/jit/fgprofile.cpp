@@ -3917,17 +3917,46 @@ void EfficientEdgeCountReconstructor::PropagateOSREntryEdges(BasicBlock* block, 
         assert(pseudoEdge != nullptr);
     }
 
-    assert(nEdges == nSucc);
-
-    if ((info->m_weight == BB_ZERO_WEIGHT) || (successorWeight == BB_ZERO_WEIGHT))
+    // We may not have the same number of model edges and flow edges.
+    //
+    // As in PropagateEdges, this can happen because some BBJ_LEAVE blocks may have
+    // been missed during our spanning tree walk since we don't know where all the
+    // finally blocks can return to just yet (specifically, in WalkSpanningTree, we
+    // may not add the target of a BBJ_LEAVE to the worklist). Worst case those
+    // missed blocks dominate other blocks so we can't limit the screening here to
+    // specific BBJ kinds.
+    //
+    // Handle those cases specifically, and also the zero-weight cases, by just
+    // assuming equally likely successors.
+    //
+    // (TODO: use synthesis here)
+    //
+    if ((nEdges != nSucc) || (info->m_weight == BB_ZERO_WEIGHT) || (successorWeight == BB_ZERO_WEIGHT))
     {
-        JITDUMP("\nPropagate: OSR entry block or successor weight is zero\n");
-        EntryWeightZero();
+        JITDUMP("\nPropagate: OSR entry block %s, setting outgoing likelihoods heuristically\n",
+                (nEdges != nSucc) ? "has inaccurate flow model" : "has zero weight");
+
+        weight_t const equalLikelihood = 1.0 / nSucc;
+
+        for (FlowEdge* const succEdge : block->SuccEdges())
+        {
+            BasicBlock* const succBlock = succEdge->getDestinationBlock();
+            JITDUMP("Setting likelihood of " FMT_BB " -> " FMT_BB " to " FMT_WT " (heur)\n", block->bbNum,
+                    succBlock->bbNum, equalLikelihood);
+            succEdge->setLikelihood(equalLikelihood);
+        }
+
+        if ((info->m_weight == BB_ZERO_WEIGHT) || (successorWeight == BB_ZERO_WEIGHT))
+        {
+            EntryWeightZero();
+        }
+
         return;
     }
 
     // Transfer model edge weight onto the FlowEdges as likelihoods.
     //
+    assert(nEdges == nSucc);
     JITDUMP("Normalizing OSR successor likelihoods with factor 1/" FMT_WT "\n", successorWeight);
 
     for (Edge* edge = info->m_outgoingEdges; edge != nullptr; edge = edge->m_nextOutgoingEdge)

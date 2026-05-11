@@ -87,7 +87,7 @@ namespace ILLink.Shared.TrimAnalysis
                                             }
                                             else
                                             {
-                                                _reflectionMarker.RuntimeDeterminedDependencies.Add(new MakeGenericTypeSite(typeInstantiated));
+                                                _reflectionMarker.RuntimeDeterminedDependencies.Add((_callingMethod, new MakeGenericTypeSite(typeInstantiated)));
                                             }
                                         }
                                     }
@@ -160,7 +160,7 @@ namespace ILLink.Shared.TrimAnalysis
                                             }
                                             else
                                             {
-                                                _reflectionMarker.RuntimeDeterminedDependencies.Add(new MakeGenericMethodSite(methodInstantiated));
+                                                _reflectionMarker.RuntimeDeterminedDependencies.Add((_callingMethod, new MakeGenericMethodSite(methodInstantiated)));
                                             }
                                         }
                                     }

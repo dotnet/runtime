@@ -2586,8 +2586,6 @@ extern "C" PCONTEXT __stdcall GetCurrentSavedRedirectContext()
 
 void Thread::RestoreContextSimulated(Thread* pThread, CONTEXT* pCtx, void* pFrame, DWORD dwLastError)
 {
-    pThread->HandleThreadAbort();        // Might throw an exception.
-
     // A counter to avoid a nasty case where an
     // up-stack filter throws another exception
     // causing our filter to be run again for
@@ -2672,16 +2670,6 @@ void __stdcall Thread::RedirectedHandledJITCase(RedirectReason reason)
     // We will restore the state as it was at the point of redirection
     // and continue normal execution.
 
-#ifdef TARGET_X86
-    if (!g_pfnRtlRestoreContext)
-    {
-        RestoreContextSimulated(pThread, pCtx, &frame, dwLastError);
-
-        // we never return to the caller.
-        UNREACHABLE();
-    }
-#endif // TARGET_X86
-
     UINT_PTR uAbortAddr;
     UINT_PTR uResumePC = (UINT_PTR)GetIP(pCtx);
     CopyOSContext(pThread->m_OSContext, pCtx);
@@ -2706,6 +2694,16 @@ void __stdcall Thread::RedirectedHandledJITCase(RedirectReason reason)
 
         SetIP(pCtx, uAbortAddr);
     }
+
+#ifdef TARGET_X86
+    if (!g_pfnRtlRestoreContext)
+    {
+        RestoreContextSimulated(pThread, pCtx, &frame, dwLastError);
+
+        // we never return to the caller.
+        UNREACHABLE();
+    }
+#endif // TARGET_X86
 
     // Unlink the frame in preparation for resuming in managed code
     frame.Pop();

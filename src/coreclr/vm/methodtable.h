@@ -1525,14 +1525,14 @@ public:
 
     // Is this something like List<T> or List<Stack<T>>?
     // List<Blah<T>> only exists for reflection and verification.
-    inline DWORD ContainsGenericVariables(BOOL methodVarsOnly = FALSE)
+    inline BOOL ContainsGenericVariables(BOOL methodVarsOnly = FALSE)
     {
         WRAPPER_NO_CONTRACT;
         SUPPORTS_DAC;
         if (methodVarsOnly)
             return ContainsGenericMethodVariables();
         else
-            return GetFlag(enum_flag_ContainsGenericVariables);
+            return !!GetFlag(enum_flag_ContainsGenericVariables);
     }
 
     BOOL IsByRefLike()

@@ -387,7 +387,7 @@ namespace System.Security.Cryptography.X509Certificates
                 throw new CryptographicException();
             }
 
-            uint urlHash = MemoryMarshal.Read<uint>(hash);
+            uint urlHash = BitConverter.ToUInt32(hash);
 
             // OpenSSL's hashed filename algorithm is the 8-character hex version of the 32-bit value
             // of X509_issuer_name_hash (or X509_subject_name_hash, depending on the context).

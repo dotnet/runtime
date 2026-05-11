@@ -934,5 +934,37 @@ namespace System.Reflection.Tests
                 Assert.Throws<InvalidOperationException>(() => type.GenericParameterPosition);
             }
         }
+
+        [Fact]
+        public static void GetNullableUnderlyingType_SignatureConstructedGenericType_Nullable_ReturnsTypeArgument()
+        {
+            Type sig = Type.MakeGenericSignatureType(typeof(Nullable<>), typeof(int));
+            Assert.True(sig.IsSignatureType);
+            Assert.Equal(typeof(int), sig.GetNullableUnderlyingType());
+        }
+
+        [Fact]
+        public static void GetNullableUnderlyingType_SignatureConstructedGenericType_NonNullable_ReturnsNull()
+        {
+            Type sig = Type.MakeGenericSignatureType(typeof(List<>), typeof(int));
+            Assert.True(sig.IsSignatureType);
+            Assert.Null(sig.GetNullableUnderlyingType());
+        }
+
+        [Fact]
+        public static void GetNullableUnderlyingType_SignatureModifiedType_Nullable_DelegatesToUnmodifiedType()
+        {
+            Type sig = Type.MakeModifiedSignatureType(typeof(int?), null, null);
+            Assert.True(sig.IsSignatureType);
+            Assert.Equal(typeof(int), sig.GetNullableUnderlyingType());
+        }
+
+        [Fact]
+        public static void GetNullableUnderlyingType_SignatureModifiedType_NonNullable_ReturnsNull()
+        {
+            Type sig = Type.MakeModifiedSignatureType(typeof(int), null, null);
+            Assert.True(sig.IsSignatureType);
+            Assert.Null(sig.GetNullableUnderlyingType());
+        }
     }
 }

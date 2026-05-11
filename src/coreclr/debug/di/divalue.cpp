@@ -2471,7 +2471,7 @@ HRESULT CordbObjectValue::EnumerateExceptionCallStack(ICorDebugExceptionObjectCa
             DacExceptionCallStackData& currentDacFrame = dacStackFrames[index];
             CorDebugExceptionObjectStackFrame& currentStackFrame = pStackFrames[index];
 
-            CordbAppDomain* pAppDomain = GetProcess()->LookupOrCreateAppDomain(currentDacFrame.vmAppDomain);
+            CordbAppDomain* pAppDomain = GetProcess()->GetAppDomain();
             CordbModule* pModule = pAppDomain->LookupOrCreateModule(currentDacFrame.vmAssembly);
 
             hr = pModule->QueryInterface(IID_ICorDebugModule, reinterpret_cast<void**>(&currentStackFrame.pModule));
@@ -2675,7 +2675,7 @@ HRESULT CordbObjectValue::GetTargetHelper(ICorDebugReferenceValue **ppTarget)
     }
 
     RSLockHolder lockHolder(GetProcess()->GetProcessLock());
-    RSSmartPtr<CordbAppDomain> pCordbAppDomForTarget(GetProcess()->LookupOrCreateAppDomain(pAppDomainOfTarget));
+    RSSmartPtr<CordbAppDomain> pCordbAppDomForTarget(GetProcess()->GetAppDomain());
     RSSmartPtr<CordbReferenceValue> targetObjRefVal(CordbValue::CreateHeapReferenceValue(pCordbAppDomForTarget, pDelegateTargetObj));
     *ppTarget = static_cast<ICorDebugReferenceValue*>(targetObjRefVal.GetValue());
     targetObjRefVal->ExternalAddRef();

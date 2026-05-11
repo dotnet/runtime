@@ -322,14 +322,16 @@ namespace Internal.TypeSystem
         {
             private bool _unboxingStub;
             private bool _asyncVariant;
+            private bool _returnDroppingAsyncThunk;
             private DefType _owningType;
             private MethodNameAndSignature _methodNameAndSignature;
             private int _hashCode;
 
-            public RuntimeMethodKey(bool unboxingStub, bool asyncVariant, DefType owningType, MethodNameAndSignature nameAndSignature)
+            public RuntimeMethodKey(bool unboxingStub, bool asyncVariant, bool returnDroppingAsyncThunk, DefType owningType, MethodNameAndSignature nameAndSignature)
             {
                 _unboxingStub = unboxingStub;
                 _asyncVariant = asyncVariant;
+                _returnDroppingAsyncThunk = returnDroppingAsyncThunk;
                 _owningType = owningType;
                 _methodNameAndSignature = nameAndSignature;
 
@@ -358,6 +360,9 @@ namespace Internal.TypeSystem
                         if (key._asyncVariant != runtimeMethod.AsyncVariant)
                             return false;
 
+                        if (key._returnDroppingAsyncThunk != runtimeMethod.ReturnDroppingAsyncThunk)
+                            return false;
+
                         if (!key._owningType.Equals(runtimeMethod.OwningType))
                             return false;
 
@@ -369,7 +374,7 @@ namespace Internal.TypeSystem
                     else
                     {
                         // Only RuntimeMethodDesc can be an unboxing stub or async variant
-                        if (key._unboxingStub || key._asyncVariant)
+                        if (key._unboxingStub || key._asyncVariant || key._returnDroppingAsyncThunk)
                             return false;
 
                         if (!key._owningType.Equals(value.OwningType))
@@ -397,6 +402,9 @@ namespace Internal.TypeSystem
                         if (((RuntimeMethodDesc)value1).AsyncVariant != ((RuntimeMethodDesc)value2).AsyncVariant)
                             return false;
 
+                        if (((RuntimeMethodDesc)value1).ReturnDroppingAsyncThunk != ((RuntimeMethodDesc)value2).ReturnDroppingAsyncThunk)
+                            return false;
+
                         if (!value1.OwningType.Equals(value2.OwningType))
                             return false;
 
@@ -421,7 +429,7 @@ namespace Internal.TypeSystem
                         // Instantiated Types always get their methods through GetMethodForInstantiatedType
                         if (key._owningType is InstantiatedType)
                         {
-                            MethodDesc typicalMethod = key._owningType.Context.ResolveRuntimeMethod(key._unboxingStub, key._asyncVariant, (DefType)key._owningType.GetTypeDefinition(), key._methodNameAndSignature);
+                            MethodDesc typicalMethod = key._owningType.Context.ResolveRuntimeMethod(key._unboxingStub, key._asyncVariant, key._returnDroppingAsyncThunk, (DefType)key._owningType.GetTypeDefinition(), key._methodNameAndSignature);
                             return typicalMethod.Context.GetMethodForInstantiatedType(typicalMethod, (InstantiatedType)key._owningType);
                         }
                     }
@@ -431,17 +439,17 @@ namespace Internal.TypeSystem
                         Debug.Assert(key._owningType.IsValueType);
                     }
 
-                    return new RuntimeMethodDesc(key._unboxingStub, key._asyncVariant, key._owningType, key._methodNameAndSignature, key._hashCode);
+                    return new RuntimeMethodDesc(key._unboxingStub, key._asyncVariant, key._returnDroppingAsyncThunk, key._owningType, key._methodNameAndSignature, key._hashCode);
                 }
             }
         }
 
         private RuntimeMethodKey.RuntimeMethodKeyHashtable _runtimeMethods;
 
-        internal MethodDesc ResolveRuntimeMethod(bool unboxingStub, bool asyncVariant, DefType owningType, MethodNameAndSignature nameAndSignature)
+        internal MethodDesc ResolveRuntimeMethod(bool unboxingStub, bool asyncVariant, bool returnDroppingAsyncThunk, DefType owningType, MethodNameAndSignature nameAndSignature)
         {
             _runtimeMethods ??= new RuntimeMethodKey.RuntimeMethodKeyHashtable();
-            return _runtimeMethods.GetOrCreateValue(new RuntimeMethodKey(unboxingStub, asyncVariant, owningType, nameAndSignature));
+            return _runtimeMethods.GetOrCreateValue(new RuntimeMethodKey(unboxingStub, asyncVariant, returnDroppingAsyncThunk, owningType, nameAndSignature));
         }
 
         private LowLevelDictionary<GenericTypeInstanceKey, DefType> _genericTypeInstances;
@@ -475,9 +483,9 @@ namespace Internal.TypeSystem
         /// <summary>
         /// Find a method based on owner type and nativelayout name, method instantiation, and signature.
         /// </summary>
-        public MethodDesc ResolveGenericMethodInstantiation(bool unboxingStub, bool asyncVariant, DefType owningType, MethodNameAndSignature nameAndSignature, Instantiation methodInstantiation)
+        public MethodDesc ResolveGenericMethodInstantiation(bool unboxingStub, bool asyncVariant, bool returnDroppingAsyncThunk, DefType owningType, MethodNameAndSignature nameAndSignature, Instantiation methodInstantiation)
         {
-            var uninstantiatedMethod = ResolveRuntimeMethod(unboxingStub, asyncVariant, owningType, nameAndSignature);
+            var uninstantiatedMethod = ResolveRuntimeMethod(unboxingStub, asyncVariant, returnDroppingAsyncThunk, owningType, nameAndSignature);
 
             MethodDesc returnedMethod;
             if (methodInstantiation.IsNull || (methodInstantiation.Length == 0))

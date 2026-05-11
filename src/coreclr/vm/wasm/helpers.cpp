@@ -6,6 +6,306 @@
 #include <interpexec.h>
 #include "callhelpers.hpp"
 #include "shash.h"
+#include "callingconvention.h"
+#include "cgensys.h"
+#include "readytorun.h"
+
+void ExecuteInterpretedMethodWithArgs_PortableEntryPoint(PCODE portableEntrypoint, TransitionBlock* block, size_t argsSize, int8_t* retBuff);
+
+// -------------------------------------------------
+// Logic that will eventually mostly be pregenerated for R2R to interpreter code
+// -------------------------------------------------
+namespace
+{
+    FCDECL0(void, CallInterpreter_RetVoid);
+    WASM_CALLABLE_FUNC_1(void, CallInterpreter_RetVoid, PCODE portableEntrypoint)
+    {
+        struct
+        {
+            TransitionBlock block;
+        } transitionBlock;
+        transitionBlock.block.m_ReturnAddress = 0;
+        transitionBlock.block.m_StackPointer = callersStackPointer;
+        void * result = NULL;
+        
+        ExecuteInterpretedMethodWithArgs_PortableEntryPoint(portableEntrypoint, &transitionBlock.block, 0, (int8_t*)&result);
+        return;
+    }
+    FCDECL1(void, CallInterpreter_I32_RetVoid, int32_t);
+    WASM_CALLABLE_FUNC_2(void, CallInterpreter_I32_RetVoid, int32_t arg0, PCODE portableEntrypoint)
+    {
+        struct
+        {
+            TransitionBlock block;
+            int64_t args[1];
+        } transitionBlock;
+        transitionBlock.block.m_ReturnAddress = 0;
+        transitionBlock.block.m_StackPointer = callersStackPointer;
+        transitionBlock.args[0] = (int64_t)arg0;
+        static_assert(offsetof(decltype(transitionBlock), args) == sizeof(TransitionBlock), "Args array must be at a TransitionBlock offset from the start of the block");
+
+        void * result = NULL;
+        ExecuteInterpretedMethodWithArgs_PortableEntryPoint(portableEntrypoint, &transitionBlock.block, sizeof(transitionBlock.args), (int8_t*)&result);
+        return;
+    }
+    FCDECL2(void, CallInterpreter_I32_I32_RetVoid, int32_t, int32_t);
+    WASM_CALLABLE_FUNC_3(void, CallInterpreter_I32_I32_RetVoid, int32_t arg0, int32_t arg1, PCODE portableEntrypoint)
+    {
+        struct
+        {
+            TransitionBlock block;
+            int64_t args[2];
+        } transitionBlock;
+        transitionBlock.block.m_ReturnAddress = 0;
+        transitionBlock.block.m_StackPointer = callersStackPointer;
+        transitionBlock.args[0] = (int64_t)arg0;
+        transitionBlock.args[1] = (int64_t)arg1;
+        static_assert(offsetof(decltype(transitionBlock), args) == sizeof(TransitionBlock), "Args array must be at a TransitionBlock offset from the start of the block");
+
+        void * result = NULL;
+        ExecuteInterpretedMethodWithArgs_PortableEntryPoint(portableEntrypoint, &transitionBlock.block, sizeof(transitionBlock.args), (int8_t*)&result);
+        return;
+    }
+    FCDECL3(void, CallInterpreter_I32_I32_I32_RetVoid, int32_t, int32_t, int32_t);
+    WASM_CALLABLE_FUNC_4(void, CallInterpreter_I32_I32_I32_RetVoid, int32_t arg0, int32_t arg1, int32_t arg2, PCODE portableEntrypoint)
+    {
+        struct
+        {
+            TransitionBlock block;
+            int64_t args[3];
+        } transitionBlock;
+        transitionBlock.block.m_ReturnAddress = 0;
+        transitionBlock.block.m_StackPointer = callersStackPointer;
+        transitionBlock.args[0] = (int64_t)arg0;
+        transitionBlock.args[1] = (int64_t)arg1;
+        transitionBlock.args[2] = (int64_t)arg2;
+        static_assert(offsetof(decltype(transitionBlock), args) == sizeof(TransitionBlock), "Args array must be at a TransitionBlock offset from the start of the block");
+
+
+        void * result = NULL;
+        ExecuteInterpretedMethodWithArgs_PortableEntryPoint(portableEntrypoint, &transitionBlock.block, sizeof(transitionBlock.args), (int8_t*)&result);
+        return;
+    }
+    FCDECL4(void, CallInterpreter_I32_I32_I32_I32_RetVoid, int32_t, int32_t, int32_t, int32_t);
+    WASM_CALLABLE_FUNC_5(void, CallInterpreter_I32_I32_I32_I32_RetVoid, int32_t arg0, int32_t arg1, int32_t arg2, int32_t arg3, PCODE portableEntrypoint)
+    {
+        struct
+        {
+            TransitionBlock block;
+            int64_t args[4];
+        } transitionBlock;
+        transitionBlock.block.m_ReturnAddress = 0;
+        transitionBlock.block.m_StackPointer = callersStackPointer;
+        transitionBlock.args[0] = (int64_t)arg0;
+        transitionBlock.args[1] = (int64_t)arg1;
+        transitionBlock.args[2] = (int64_t)arg2;
+        transitionBlock.args[3] = (int64_t)arg3;
+        static_assert(offsetof(decltype(transitionBlock), args) == sizeof(TransitionBlock), "Args array must be at a TransitionBlock offset from the start of the block");
+
+        void * result = NULL;
+        ExecuteInterpretedMethodWithArgs_PortableEntryPoint(portableEntrypoint, &transitionBlock.block, sizeof(transitionBlock.args), (int8_t*)&result);
+        return;
+    }
+    FCDECL0(int32_t, CallInterpreter_RetI32);
+    WASM_CALLABLE_FUNC_1(int32_t, CallInterpreter_RetI32, PCODE portableEntrypoint)
+    {
+        struct
+        {
+            TransitionBlock block;
+        } transitionBlock;
+        transitionBlock.block.m_ReturnAddress = 0;
+        transitionBlock.block.m_StackPointer = callersStackPointer;
+        void * result = NULL;
+        ExecuteInterpretedMethodWithArgs_PortableEntryPoint(portableEntrypoint, &transitionBlock.block, 0, (int8_t*)&result);
+        return (int32_t)result;
+    }
+    FCDECL1(int32_t, CallInterpreter_I32_RetI32, int32_t);
+    WASM_CALLABLE_FUNC_2(int32_t, CallInterpreter_I32_RetI32, int32_t arg0, PCODE portableEntrypoint)
+    {
+        struct
+        {
+            TransitionBlock block;
+            int64_t args[1];
+        } transitionBlock;
+        transitionBlock.block.m_ReturnAddress = 0;
+        transitionBlock.block.m_StackPointer = callersStackPointer;
+        transitionBlock.args[0] = (int64_t)arg0;
+        static_assert(offsetof(decltype(transitionBlock), args) == sizeof(TransitionBlock), "Args array must be at a TransitionBlock offset from the start of the block");
+
+        void * result = NULL;
+        ExecuteInterpretedMethodWithArgs_PortableEntryPoint(portableEntrypoint, &transitionBlock.block, sizeof(transitionBlock.args), (int8_t*)&result);
+        return (int32_t)result;
+    }
+    FCDECL2(int32_t, CallInterpreter_I32_I32_RetI32, int32_t, int32_t);
+    WASM_CALLABLE_FUNC_3(int32_t, CallInterpreter_I32_I32_RetI32, int32_t arg0, int32_t arg1, PCODE portableEntrypoint)
+    {
+        struct
+        {
+            TransitionBlock block;
+            int64_t args[2];
+        } transitionBlock;
+        transitionBlock.block.m_ReturnAddress = 0;
+        transitionBlock.block.m_StackPointer = callersStackPointer;
+        transitionBlock.args[0] = (int64_t)arg0;
+        transitionBlock.args[1] = (int64_t)arg1;
+        static_assert(offsetof(decltype(transitionBlock), args) == sizeof(TransitionBlock), "Args array must be at a TransitionBlock offset from the start of the block");
+
+        void * result = NULL;
+        ExecuteInterpretedMethodWithArgs_PortableEntryPoint(portableEntrypoint, &transitionBlock.block, sizeof(transitionBlock.args), (int8_t*)&result);
+        return (int32_t)result;
+    }
+    FCDECL3(int32_t, CallInterpreter_I32_I32_I32_RetI32, int32_t, int32_t, int32_t);
+    WASM_CALLABLE_FUNC_4(int32_t, CallInterpreter_I32_I32_I32_RetI32, int32_t arg0, int32_t arg1, int32_t arg2, PCODE portableEntrypoint)
+    {
+        struct
+        {
+            TransitionBlock block;
+            int64_t args[3];
+        } transitionBlock;
+        transitionBlock.block.m_ReturnAddress = 0;
+        transitionBlock.block.m_StackPointer = callersStackPointer;
+        transitionBlock.args[0] = (int64_t)arg0;
+        transitionBlock.args[1] = (int64_t)arg1;
+        transitionBlock.args[2] = (int64_t)arg2;
+        static_assert(offsetof(decltype(transitionBlock), args) == sizeof(TransitionBlock), "Args array must be at a TransitionBlock offset from the start of the block");
+
+        void * result = NULL;
+        ExecuteInterpretedMethodWithArgs_PortableEntryPoint(portableEntrypoint, &transitionBlock.block, sizeof(transitionBlock.args), (int8_t*)&result);
+        return (int32_t)result;
+    }
+    FCDECL4(int32_t, CallInterpreter_I32_I32_I32_I32_RetI32, int32_t, int32_t, int32_t, int32_t);
+    WASM_CALLABLE_FUNC_5(int32_t, CallInterpreter_I32_I32_I32_I32_RetI32, int32_t arg0, int32_t arg1, int32_t arg2, int32_t arg3, PCODE portableEntrypoint)
+    {
+        struct
+        {
+            TransitionBlock block;
+            int64_t args[4];
+        } transitionBlock;
+        transitionBlock.block.m_ReturnAddress = 0;
+        transitionBlock.block.m_StackPointer = callersStackPointer;
+        transitionBlock.args[0] = (int64_t)arg0;
+        transitionBlock.args[1] = (int64_t)arg1;
+        transitionBlock.args[2] = (int64_t)arg2;
+        transitionBlock.args[3] = (int64_t)arg3;
+        static_assert(offsetof(decltype(transitionBlock), args) == sizeof(TransitionBlock), "Args array must be at a TransitionBlock offset from the start of the block");
+
+        void * result = NULL;
+        ExecuteInterpretedMethodWithArgs_PortableEntryPoint(portableEntrypoint, &transitionBlock.block, sizeof(transitionBlock.args), (int8_t*)&result);
+        return (int32_t)result;
+    }
+    FCDECL5(int32_t, CallInterpreter_I32_I32_I32_I32_I32_RetI32, int32_t, int32_t, int32_t, int32_t, int32_t);
+    WASM_CALLABLE_FUNC_6(int32_t, CallInterpreter_I32_I32_I32_I32_I32_RetI32, int32_t arg0, int32_t arg1, int32_t arg2, int32_t arg3, int32_t arg4, PCODE portableEntrypoint)
+    {
+        struct
+        {
+            TransitionBlock block;
+            int64_t args[5];
+        } transitionBlock;
+        transitionBlock.block.m_ReturnAddress = 0;
+        transitionBlock.block.m_StackPointer = callersStackPointer;
+        transitionBlock.args[0] = (int64_t)arg0;
+        transitionBlock.args[1] = (int64_t)arg1;
+        transitionBlock.args[2] = (int64_t)arg2;
+        transitionBlock.args[3] = (int64_t)arg3;
+        transitionBlock.args[4] = (int64_t)arg4;
+        static_assert(offsetof(decltype(transitionBlock), args) == sizeof(TransitionBlock), "Args array must be at a TransitionBlock offset from the start of the block");
+
+        void * result = NULL;
+        ExecuteInterpretedMethodWithArgs_PortableEntryPoint(portableEntrypoint, &transitionBlock.block, sizeof(transitionBlock.args), (int8_t*)&result);
+        return (int32_t)result;
+    }
+    FCDECL6(int32_t, CallInterpreter_I32_I32_I32_I32_I32_I32_RetI32, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t);
+    WASM_CALLABLE_FUNC_7(int32_t, CallInterpreter_I32_I32_I32_I32_I32_I32_RetI32, int32_t arg0, int32_t arg1, int32_t arg2, int32_t arg3, int32_t arg4, int32_t arg5, PCODE portableEntrypoint)
+    {
+        struct
+        {
+            TransitionBlock block;
+            int64_t args[6];
+        } transitionBlock;
+        transitionBlock.block.m_ReturnAddress = 0;
+        transitionBlock.block.m_StackPointer = callersStackPointer;
+        transitionBlock.args[0] = (int64_t)arg0;
+        transitionBlock.args[1] = (int64_t)arg1;
+        transitionBlock.args[2] = (int64_t)arg2;
+        transitionBlock.args[3] = (int64_t)arg3;
+        transitionBlock.args[4] = (int64_t)arg4;
+        transitionBlock.args[5] = (int64_t)arg5;
+        static_assert(offsetof(decltype(transitionBlock), args) == sizeof(TransitionBlock), "Args array must be at a TransitionBlock offset from the start of the block");
+
+        void * result = NULL;
+        ExecuteInterpretedMethodWithArgs_PortableEntryPoint(portableEntrypoint, &transitionBlock.block, sizeof(transitionBlock.args), (int8_t*)&result);
+        return (int32_t)result;
+    }
+    FCDECL7(int32_t, CallInterpreter_I32_I32_I32_I32_I32_I32_I32_RetI32, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t);
+    WASM_CALLABLE_FUNC_8(int32_t, CallInterpreter_I32_I32_I32_I32_I32_I32_I32_RetI32, int32_t arg0, int32_t arg1, int32_t arg2, int32_t arg3, int32_t arg4, int32_t arg5, int32_t arg6, PCODE portableEntrypoint)
+    {
+        struct
+        {
+            TransitionBlock block;
+            int64_t args[7];
+        } transitionBlock;
+        transitionBlock.block.m_ReturnAddress = 0;
+        transitionBlock.block.m_StackPointer = callersStackPointer;
+        transitionBlock.args[0] = (int64_t)arg0;
+        transitionBlock.args[1] = (int64_t)arg1;
+        transitionBlock.args[2] = (int64_t)arg2;
+        transitionBlock.args[3] = (int64_t)arg3;
+        transitionBlock.args[4] = (int64_t)arg4;
+        transitionBlock.args[5] = (int64_t)arg5;
+        transitionBlock.args[6] = (int64_t)arg6;
+        static_assert(offsetof(decltype(transitionBlock), args) == sizeof(TransitionBlock), "Args array must be at a TransitionBlock offset from the start of the block");
+
+        void * result = NULL;
+        ExecuteInterpretedMethodWithArgs_PortableEntryPoint(portableEntrypoint, &transitionBlock.block, sizeof(transitionBlock.args), (int8_t*)&result);
+        return (int32_t)result;
+    }
+    FCDECL8(int32_t, CallInterpreter_I32_I32_I32_I32_I32_I32_I32_I32_RetI32, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t);
+    WASM_CALLABLE_FUNC_9(int32_t, CallInterpreter_I32_I32_I32_I32_I32_I32_I32_I32_RetI32, int32_t arg0, int32_t arg1, int32_t arg2, int32_t arg3, int32_t arg4, int32_t arg5, int32_t arg6, int32_t arg7, PCODE portableEntrypoint)
+    {
+        struct
+        {
+            TransitionBlock block;
+            int64_t args[8];
+        } transitionBlock;
+        transitionBlock.block.m_ReturnAddress = 0;
+        transitionBlock.block.m_StackPointer = callersStackPointer;
+        transitionBlock.args[0] = (int64_t)arg0;
+        transitionBlock.args[1] = (int64_t)arg1;
+        transitionBlock.args[2] = (int64_t)arg2;
+        transitionBlock.args[3] = (int64_t)arg3;
+        transitionBlock.args[4] = (int64_t)arg4;
+        transitionBlock.args[5] = (int64_t)arg5;
+        transitionBlock.args[6] = (int64_t)arg6;
+        transitionBlock.args[7] = (int64_t)arg7;
+        static_assert(offsetof(decltype(transitionBlock), args) == sizeof(TransitionBlock), "Args array must be at a TransitionBlock offset from the start of the block");
+
+        void * result = NULL;
+        ExecuteInterpretedMethodWithArgs_PortableEntryPoint(portableEntrypoint, &transitionBlock.block, sizeof(transitionBlock.args), (int8_t*)&result);
+        return (int32_t)result;
+    }
+}
+
+const StringToWasmSigThunk g_wasmPortableEntryPointThunks[] = {
+    { "vp", (void*)&CallInterpreter_RetVoid },
+    { "vip", (void*)&CallInterpreter_I32_RetVoid },
+    { "viip", (void*)&CallInterpreter_I32_I32_RetVoid },
+    { "viiip", (void*)&CallInterpreter_I32_I32_I32_RetVoid },
+    { "viiiip", (void*)&CallInterpreter_I32_I32_I32_I32_RetVoid },
+    { "ip", (void*)&CallInterpreter_RetI32 },
+    { "iip", (void*)&CallInterpreter_I32_RetI32 },
+    { "iiip", (void*)&CallInterpreter_I32_I32_RetI32 },
+    { "iiiip", (void*)&CallInterpreter_I32_I32_I32_RetI32 },
+    { "iiiiip", (void*)&CallInterpreter_I32_I32_I32_I32_RetI32 },
+    { "iiiiiip", (void*)&CallInterpreter_I32_I32_I32_I32_I32_RetI32 },
+    { "iiiiiiip", (void*)&CallInterpreter_I32_I32_I32_I32_I32_I32_RetI32 },
+    { "iiiiiiiip", (void*)&CallInterpreter_I32_I32_I32_I32_I32_I32_I32_RetI32 },
+    { "iiiiiiiiip", (void*)&CallInterpreter_I32_I32_I32_I32_I32_I32_I32_I32_RetI32 },
+};
+
+const size_t g_wasmPortableEntryPointThunksCount = sizeof(g_wasmPortableEntryPointThunks) / sizeof(g_wasmPortableEntryPointThunks[0]);
+// -------------------------------------------------
+// END Logic that will eventually mostly be pregenerated for R2R to interpreter code END
+// -------------------------------------------------
 
 extern "C" void STDCALL CallCountingStubCode()
 {
@@ -43,9 +343,26 @@ extern "C" void STDMETHODCALLTYPE JIT_ProfilerEnterLeaveTailcallStub(UINT_PTR Pr
     PORTABILITY_ASSERT("JIT_ProfilerEnterLeaveTailcallStub is not implemented on wasm");
 }
 
-extern "C" void STDCALL DelayLoad_MethodCall()
+extern "C" PCODE STDCALL DelayLoad_MethodCallImpl(TransitionBlock* pTransitionBlock, READYTORUN_IMPORT_THUNK_PORTABLE_ENTRYPOINT* pImportThunkEntry, uint8_t *moduleBase, int32_t rvaOfModuleFixup)
 {
-    PORTABILITY_ASSERT("DelayLoad_MethodCall is not implemented on wasm");
+    Module** ppModule = (Module**)(moduleBase + rvaOfModuleFixup);
+    return ExternalMethodFixupWorker(pTransitionBlock, (TADDR)(moduleBase + pImportThunkEntry->RelocOffset), -1, *ppModule);
+}
+
+extern "C" __attribute__((naked)) PCODE STDCALL DelayLoad_MethodCall(TransitionBlock* pTransitionBlock, READYTORUN_IMPORT_THUNK_PORTABLE_ENTRYPOINT* pImportThunkEntry, uint8_t *moduleBase, int32_t rvaOfModuleFixup)
+{
+    asm ("local.get 0\n" /* Capture pTransitionBlock onto the stack for calling DelayLoad_MethodCallImpl function. This also happens to be the callersFramePointer */
+         "local.get 0\n" /* Capture callersFramePointer onto the stack for setting the __stack_pointer */
+         "global.get __stack_pointer\n" /* Get current value of stack global */
+         "local.set 0\n"  /* Overwrite local 0 with the previous __stack_pointer value so it can be restored after the call */
+         "global.set __stack_pointer\n" /* Set stack global to the initial value of callersFramePointer, which is the current stack pointer for the interpreter call */
+         "local.get 1\n" /* Load pImportThunkEntry argument onto the stack for calling DelayLoad_MethodCallImpl function*/
+         "local.get 2\n" /* Load moduleBase argument onto the stack for calling DelayLoad_MethodCallImpl function*/
+         "local.get 3\n" /* Load rvaOfModuleFixup argument onto the stack for calling DelayLoad_MethodCallImpl function*/
+         "call %0\n" /* Call the actual implementation function */
+         "local.get 0\n" /* Reload the saved previous __stack_pointer value for restoration into the stack global */
+         "global.set __stack_pointer\n"
+         "return" :: "i" (DelayLoad_MethodCallImpl));
 }
 
 extern "C" void STDCALL DelayLoad_Helper()
@@ -198,11 +515,6 @@ extern "C" PCODE CID_VirtualOpenDelegateDispatch(TransitionBlock * pTransitionBl
     return 0;
 }
 
-extern "C" FCDECL2(VOID, JIT_WriteBarrier_Callable, Object **dst, Object *ref)
-{
-    PORTABILITY_ASSERT("JIT_WriteBarrier_Callable is not implemented on wasm");
-}
-
 EXTERN_C void JIT_WriteBarrier_End()
 {
     PORTABILITY_ASSERT("JIT_WriteBarrier_End is not implemented on wasm");
@@ -248,10 +560,12 @@ extern "C" void STDCALL JIT_StackProbe()
     PORTABILITY_ASSERT("JIT_StackProbe is not implemented on wasm");
 }
 
-EXTERN_C FCDECL0(void, JIT_PollGC)
+EXTERN_C FCDECL0(void, JIT_PollGC);
+FCIMPL0(void, JIT_PollGC)
 {
     PORTABILITY_ASSERT("JIT_PollGC is not implemented on wasm");
 }
+FCIMPLEND
 
 void InitJITHelpers1()
 {
@@ -422,9 +736,8 @@ void InvokeCalliStub(CalliStubParam* pParam)
     _ASSERTE(pParam->ftn != (PCODE)NULL);
     _ASSERTE(pParam->cookie != NULL);
 
-    // WASM-TODO: Reconcile calling conventions for managed calli.
     PCODE actualFtn = (PCODE)PortableEntryPoint::GetActualCode(pParam->ftn);
-    ((void(*)(PCODE, int8_t*, int8_t*))pParam->cookie)(actualFtn, pParam->pArgs, pParam->pRet);
+    ((void(*)(PCODE, int8_t*, int8_t*, PCODE))pParam->cookie)(actualFtn, pParam->pArgs, pParam->pRet, pParam->ftn);
 }
 
 void InvokeUnmanagedCalli(PCODE ftn, void *cookie, int8_t *pArgs, int8_t *pRet)
@@ -529,7 +842,13 @@ namespace
 
     bool GetSignatureKey(MetaSig& sig, char* keyBuffer, uint32_t maxSize)
     {
-        STANDARD_VM_CONTRACT;
+        CONTRACTL
+        {
+            NOTHROW;
+            MODE_ANY;
+            GC_NOTRIGGER;
+        }
+        CONTRACTL_END;
 
         uint32_t pos = 0;
 
@@ -555,6 +874,15 @@ namespace
             keyBuffer[pos++] = GetTypeCode(ConvertibleTo(argType, sig, false /* isReturn */));
         }
 
+        // Add the portable entrypoint parameter
+        if (sig.GetCallingConvention() == IMAGE_CEE_CS_CALLCONV_DEFAULT)
+        {
+            if (pos >= maxSize)
+                return false;
+
+            keyBuffer[pos++] = 'p';
+        }
+
         if (pos >= maxSize)
             return false;
 
@@ -572,27 +900,21 @@ namespace
 
     typedef MapSHash<const char*, void*, NoRemoveSHashTraits<StringThunkSHashTraits>> StringToWasmSigThunkHash;
     static StringToWasmSigThunkHash* thunkCache = nullptr;
+    static StringToWasmSigThunkHash* portableEntrypointThunkCache = nullptr;
 
     void* LookupThunk(const char* key)
     {
-        StringToWasmSigThunkHash* table = VolatileLoad(&thunkCache);
-        if (table == nullptr)
-        {
-            StringToWasmSigThunkHash* newTable = new StringToWasmSigThunkHash();
-            newTable->Reallocate(g_wasmThunksCount * StringToWasmSigThunkHash::s_density_factor_denominator / StringToWasmSigThunkHash::s_density_factor_numerator + 1);
-            for (size_t i = 0; i < g_wasmThunksCount; i++)
-            {
-                newTable->Add(g_wasmThunks[i].key, g_wasmThunks[i].value);
-            }
+        StringToWasmSigThunkHash* table = thunkCache;
+        _ASSERTE(table != nullptr && "Wasm thunk cache not initialized. Call InitializeWasmThunkCaches() at EEStartup.");
+        void* thunk;
+        bool success = table->Lookup(key, &thunk);
+        return success ? thunk : nullptr;
+    }
 
-            if (InterlockedCompareExchangeT(&thunkCache, newTable, nullptr) != nullptr)
-            {
-                // Another thread won the race, discard ours
-                delete newTable;
-            }
-            table = thunkCache;
-        }
-
+    void* LookupPortableEntryPointThunk(const char* key)
+    {
+        StringToWasmSigThunkHash* table = portableEntrypointThunkCache;
+        _ASSERTE(table != nullptr && "Wasm portable entrypoint thunk cache not initialized. Call InitializeWasmThunkCaches() at EEStartup.");
         void* thunk;
         bool success = table->Lookup(key, &thunk);
         return success ? thunk : nullptr;
@@ -604,7 +926,6 @@ namespace
         STANDARD_VM_CONTRACT;
         _ASSERTE(sizeof(int32_t) == sizeof(void*));
 
-        // Ensure an unmanaged calling convention.
         BYTE callConv = sig.GetCallingConvention();
         switch (callConv)
         {
@@ -618,7 +939,7 @@ namespace
                 return NULL;
         }
 
-        uint32_t keyBufferLen = sig.NumFixedArgs() + (sig.HasThis() ? 1 : 0) + 2;
+        uint32_t keyBufferLen = sig.NumFixedArgs() + (sig.HasThis() ? 1 : 0) + 2 + ((callConv == IMAGE_CEE_CS_CALLCONV_DEFAULT) ? 1 : 0);
         char* keyBuffer = (char*)alloca(keyBufferLen);
         if (!GetSignatureKey(sig, keyBuffer, keyBufferLen))
             return NULL;
@@ -627,6 +948,52 @@ namespace
 #ifdef _DEBUG
         if (thunk == NULL)
             printf("WASM calli missing for key: %s\n", keyBuffer);
+#endif
+        return thunk;
+    }
+
+    void* ComputePortableEntryPointToInterpreterThunk(MetaSig& sig)
+    {
+        CONTRACTL
+        {
+            NOTHROW;
+            MODE_ANY;
+            GC_NOTRIGGER;
+        }
+        CONTRACTL_END;
+
+        _ASSERTE(sizeof(int32_t) == sizeof(void*));
+
+        BYTE callConv = sig.GetCallingConvention();
+        switch (callConv)
+        {
+            // Only allowed for default calling convention since that's the only one currently supported for portable entry points, but we may want to support more in the future.
+            case IMAGE_CEE_CS_CALLCONV_DEFAULT:
+                break;
+            default:
+                return NULL;
+        }
+        uint32_t keyBufferLen = sig.NumFixedArgs() + (sig.HasThis() ? 1 : 0) + 2 + 1; // +1 for the 'p' suffix to indicate portable entry point
+        char* keyBuffer = (char*)alloca(keyBufferLen);
+        if (!GetSignatureKey(sig, keyBuffer, keyBufferLen))
+            return NULL;
+
+        void* thunk = LookupPortableEntryPointThunk(keyBuffer);
+#ifdef _DEBUG
+        if (thunk == NULL)
+        {
+            // WASM-TODO: The R2R compiler will be generating these for all necessary signatures, but the implementation
+            // will need to be clever here. Notably, R2R files can be dynamically loaded after the initial load, so we can't
+            // just drop a NULL here if the R2R to interpreter thunk isn't found. Instead, we'll need to keep a list of
+            // MethodDescs associated with a given signature and as we load R2R files, find the relevant thunks and update the
+            // PortableEntryPoint fields on them to be the right R2R to intepreter thunk. This list needs to be stored on the
+            // LoaderAllocator of the associated MethodDesc for proper lifetime management.
+
+            // For debugging purposes, engineers working on R2R for WASM may wish to enable this log to see which signatures
+            // are missing R2R to interpreter thunks. Once the R2R to interpreter thunk generation and dynamic updating is implemented,
+            // we'll want to put registration of missing thunks somewhere around here.
+            LOG((LF_STUBS, LL_INFO100000, "WASM R2R to interpreter call missing for key: %s\n", keyBuffer));
+        }
 #endif
         return thunk;
     }
@@ -727,6 +1094,30 @@ namespace
     }
 }
 
+// Called at EEStartup to initialize thunk tables
+void InitializeWasmThunkCaches()
+{
+    {
+        StringToWasmSigThunkHash* newTable = new StringToWasmSigThunkHash();
+        newTable->Reallocate(g_wasmThunksCount * StringToWasmSigThunkHash::s_density_factor_denominator / StringToWasmSigThunkHash::s_density_factor_numerator + 1);
+        for (size_t i = 0; i < g_wasmThunksCount; i++)
+        {
+            newTable->Add(g_wasmThunks[i].key, g_wasmThunks[i].value);
+        }
+        thunkCache = newTable;
+    }
+
+    {
+        StringToWasmSigThunkHash* newTable = new StringToWasmSigThunkHash();
+        newTable->Reallocate(g_wasmPortableEntryPointThunksCount * StringToWasmSigThunkHash::s_density_factor_denominator / StringToWasmSigThunkHash::s_density_factor_numerator + 1);
+        for (size_t i = 0; i < g_wasmPortableEntryPointThunksCount; i++)
+        {
+            newTable->Add(g_wasmPortableEntryPointThunks[i].key, g_wasmPortableEntryPointThunks[i].value);
+        }
+        portableEntrypointThunkCache = newTable;
+    }
+}
+
 void* GetCookieForCalliSig(MetaSig metaSig, MethodDesc *pContextMD)
 {
     STANDARD_VM_CONTRACT;
@@ -736,6 +1127,40 @@ void* GetCookieForCalliSig(MetaSig metaSig, MethodDesc *pContextMD)
     {
         PORTABILITY_ASSERT("GetCookieForCalliSig: unknown thunk signature");
     }
+
+    return thunk;
+}
+
+void* GetPortableEntryPointToInterpreterThunk(MethodDesc *pMD)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    if (pMD->ContainsGenericVariables())
+    {
+        return NULL;
+    }
+
+    if (pMD->HasStoredSig())
+    {
+        PTR_StoredSigMethodDesc pSMD = dac_cast<PTR_StoredSigMethodDesc>(pMD);
+        if (pSMD->HasStoredMethodSig() || pSMD->GetClassification()==mcDynamic)
+        {
+            DWORD sig;
+            if (pSMD->GetStoredMethodSig(&sig) == NULL)
+            {
+                return NULL;
+            }
+        }
+    }
+
+    MetaSig sig(pMD);
+    void* thunk = ComputePortableEntryPointToInterpreterThunk(sig);
 
     return thunk;
 }

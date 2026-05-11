@@ -986,6 +986,24 @@ public:
         return m_MaxForceInlineDepth;
     }
 
+    // Maximum number of over-budget [Intrinsic]-type inlines allowed per root method.
+    enum
+    {
+        MAX_OVER_BUDGET_INTRINSIC_INLINES = 50
+    };
+
+    // Number of over-budget inlines admitted because the callee was on an [Intrinsic] type.
+    unsigned GetOverBudgetIntrinsicInlineCount() const
+    {
+        return m_OverBudgetIntrinsicInlineCount;
+    }
+
+    // Note an over-budget inline that was admitted due to the callee's [Intrinsic] type.
+    void NoteOverBudgetIntrinsicInline()
+    {
+        m_OverBudgetIntrinsicInlineCount++;
+    }
+
     // Number of successful inlines into the root
     unsigned GetInlineCount() const
     {
@@ -1139,6 +1157,7 @@ private:
     unsigned          m_MaxInlineSize;
     unsigned          m_MaxInlineDepth;
     unsigned          m_MaxForceInlineDepth;
+    unsigned          m_OverBudgetIntrinsicInlineCount;
     int               m_InitialTimeBudget;
     int               m_InitialTimeEstimate;
     int               m_CurrentTimeBudget;

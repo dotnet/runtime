@@ -6,7 +6,8 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
 public interface IPlatformContext
 {
     uint Size { get; }
-    uint DefaultContextFlags { get; }
+    uint FullContextFlags { get; }
+    uint AllContextFlags { get; }
 
     int StackPointerRegister { get; }
 

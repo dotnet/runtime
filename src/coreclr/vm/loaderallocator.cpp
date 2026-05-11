@@ -1962,7 +1962,7 @@ void AssemblyLoaderAllocator::UnregisterHandleFromCleanup(OBJECTHANDLE objHandle
     // FindAndRemove must be protected by a lock. Just use the loader allocator lock
     CrstHolder ch(&m_crstLoaderAllocator);
 
-    for (HandleCleanupListItem* item = m_handleCleanupList.GetHead(); item != NULL; item = SList<HandleCleanupListItem>::GetNext(item))
+    for (HandleCleanupListItem* item = m_handleCleanupList.GetHead(); item != NULL; item = SListTail<HandleCleanupListItem>::GetNext(item))
     {
         if (item->m_handle == objHandle)
         {

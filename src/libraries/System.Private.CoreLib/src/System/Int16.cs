@@ -351,29 +351,20 @@ namespace System
                     }
                 }
 
-                ref byte sourceRef = ref MemoryMarshal.GetReference(source);
-
                 if (source.Length >= sizeof(short))
                 {
-                    sourceRef = ref Unsafe.Add(ref sourceRef, source.Length - sizeof(short));
-
                     // We have at least 2 bytes, so just read the ones we need directly
-                    result = Unsafe.ReadUnaligned<short>(ref sourceRef);
-
-                    if (BitConverter.IsLittleEndian)
-                    {
-                        result = BinaryPrimitives.ReverseEndianness(result);
-                    }
+                    result = BinaryPrimitives.ReadInt16BigEndian(source.Slice(source.Length - sizeof(short)));
                 }
                 else if (isUnsigned)
                 {
                     // We only have 1-byte so read it directly
-                    result = sourceRef;
+                    result = source[0];
                 }
                 else
                 {
                     // We only have 1-byte so read it directly with sign extension
-                    result = (sbyte)sourceRef;
+                    result = (sbyte)source[0];
                 }
             }
 

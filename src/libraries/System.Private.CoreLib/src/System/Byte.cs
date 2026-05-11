@@ -322,7 +322,7 @@ namespace System
                 }
 
                 // We only have 1-byte so read it directly
-                result = Unsafe.Add(ref MemoryMarshal.GetReference(source), source.Length - sizeof(byte));
+                result = source[source.Length - sizeof(byte)];
             }
 
             value = result;

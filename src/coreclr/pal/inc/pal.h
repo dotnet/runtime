@@ -731,23 +731,6 @@ typedef struct _PROCESS_INFORMATION {
 } PROCESS_INFORMATION, *PPROCESS_INFORMATION, *LPPROCESS_INFORMATION;
 
 PALIMPORT
-BOOL
-PALAPI
-CreateProcessW(
-           IN LPCWSTR lpApplicationName,
-           IN LPWSTR lpCommandLine,
-           IN LPSECURITY_ATTRIBUTES lpProcessAttributes,
-           IN LPSECURITY_ATTRIBUTES lpThreadAttributes,
-           IN BOOL bInheritHandles,
-           IN DWORD dwCreationFlags,
-           IN LPVOID lpEnvironment,
-           IN LPCWSTR lpCurrentDirectory,
-           IN LPSTARTUPINFOW lpStartupInfo,
-           OUT LPPROCESS_INFORMATION lpProcessInformation);
-
-#define CreateProcess CreateProcessW
-
-PALIMPORT
 PAL_NORETURN
 VOID
 PALAPI
@@ -2335,7 +2318,7 @@ typedef BOOL(*UnwindReadMemoryCallback)(PVOID address, PVOID buffer, SIZE_T size
 
 PALIMPORT BOOL PALAPI PAL_VirtualUnwind(CONTEXT *context);
 
-PALIMPORT BOOL PALAPI PAL_VirtualUnwindOutOfProc(CONTEXT *context, PULONG64 functionStart, SIZE_T baseAddress, UnwindReadMemoryCallback readMemoryCallback);
+PALIMPORT BOOL PALAPI PAL_VirtualUnwindOutOfProc(CONTEXT *context, PULONG64 functionStart, SIZE_T baseAddress, UnwindReadMemoryCallback readMemoryCallback, bool *isSignalFrame);
 
 PALIMPORT BOOL PALAPI PAL_GetUnwindInfoSize(SIZE_T baseAddress, ULONG64 ehFrameHdrAddr, UnwindReadMemoryCallback readMemoryCallback, PULONG64 ehFrameStart, PULONG64 ehFrameSize);
 

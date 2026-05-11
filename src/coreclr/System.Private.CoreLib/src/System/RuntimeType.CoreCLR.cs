@@ -3591,6 +3591,31 @@ namespace System
         #endregion
 
         #region Generics
+
+        public override unsafe Type? GetNullableUnderlyingType()
+        {
+            TypeHandle th = GetNativeTypeHandle();
+            if (!th.IsTypeDesc)
+            {
+                MethodTable* pMT = th.AsMethodTable();
+                if (pMT->IsNullable)
+                {
+                    // The open generic Nullable<> is also classified as Nullable, and a constructed
+                    // Nullable<T> instantiated over a generic variable holds a TypeDesc (not a
+                    // MethodTable*) in InstantiationArg0(). Fall back to managed reflection in
+                    // those cases.
+                    if (pMT->ContainsGenericVariables)
+                    {
+                        return GetGenericArguments()[0];
+                    }
+                    RuntimeType result = RuntimeTypeHandle.GetRuntimeTypeFromHandle((IntPtr)pMT->InstantiationArg0());
+                    GC.KeepAlive(this);
+                    return result;
+                }
+            }
+            return null;
+        }
+
         internal RuntimeType[] GetGenericArgumentsInternal()
         {
             return GetRootElementType().TypeHandle.GetInstantiationInternal();

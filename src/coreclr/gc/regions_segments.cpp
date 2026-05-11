@@ -1522,6 +1522,12 @@ size_t gc_heap::decommit_heap_segment_pages_worker (heap_segment* seg,
 //decommit all pages except one or 2
 void gc_heap::decommit_heap_segment (heap_segment* seg)
 {
+    // For large pages, VirtualDecommit is a no-op so skip the decommit entirely
+    // to avoid lowering committed/used bookkeeping while memory retains stale data.
+    if (use_large_pages_p)
+    {
+        return;
+    }
 #ifdef USE_REGIONS
     if (!dt_high_memory_load_p())
     {
@@ -1814,32 +1820,38 @@ void gc_heap::distribute_free_regions()
         while (decommit_step(DECOMMIT_TIME_STEP_MILLISECONDS))
         {
         }
+        // For large pages, VirtualDecommit on in-use regions is a no-op so the
+        // memory is never actually returned to the OS. Skip the tail decommit
+        // entirely to avoid misleading bookkeeping and unnecessary memclr overhead.
+        if (!use_large_pages_p)
+        {
 #ifdef MULTIPLE_HEAPS
-        for (int i = 0; i < n_heaps; i++)
-        {
-            gc_heap* hp = g_heaps[i];
-            int hn = i;
-#else //MULTIPLE_HEAPS
-        {
-            gc_heap* hp = pGenGCHeap;
-            int hn  = 0;
-#endif //MULTIPLE_HEAPS
-            for (int i = 0; i < total_generation_count; i++)
+            for (int i = 0; i < n_heaps; i++)
             {
-                generation* generation = hp->generation_of (i);
-                heap_segment* region = heap_segment_rw (generation_start_segment (generation));
-                while (region != nullptr)
+                gc_heap* hp = g_heaps[i];
+                int hn = i;
+#else //MULTIPLE_HEAPS
+            {
+                gc_heap* hp = pGenGCHeap;
+                int hn  = 0;
+#endif //MULTIPLE_HEAPS
+                for (int i = 0; i < total_generation_count; i++)
                 {
-                    uint8_t* aligned_allocated = align_on_page (heap_segment_allocated (region));
-                    size_t end_space = heap_segment_committed (region) - aligned_allocated;
-                    if (end_space > 0)
+                    generation* generation = hp->generation_of (i);
+                    heap_segment* region = heap_segment_rw (generation_start_segment (generation));
+                    while (region != nullptr)
                     {
-                        virtual_decommit (aligned_allocated, end_space, gen_to_oh (i), hn, heap_segment_used (region));
-                        heap_segment_committed (region) = aligned_allocated;
-                        heap_segment_used (region) = min (heap_segment_used (region), heap_segment_committed (region));
-                        assert (heap_segment_committed (region) > heap_segment_mem (region));
+                        uint8_t* aligned_allocated = align_on_page (heap_segment_allocated (region));
+                        size_t end_space = heap_segment_committed (region) - aligned_allocated;
+                        if (end_space > 0)
+                        {
+                            virtual_decommit (aligned_allocated, end_space, gen_to_oh (i), hn);
+                            heap_segment_committed (region) = aligned_allocated;
+                            heap_segment_used (region) = min (heap_segment_used (region), heap_segment_committed (region));
+                            assert (heap_segment_committed (region) > heap_segment_mem (region));
+                        }
+                        region = heap_segment_next_rw (region);
                     }
-                    region = heap_segment_next_rw (region);
                 }
             }
         }

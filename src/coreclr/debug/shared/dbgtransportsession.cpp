@@ -394,7 +394,6 @@ void MarshalDCBTransportToDCB(DebuggerIPCControlBlockTransport* pIn, DebuggerIPC
     pOut->m_verMajor =                        pIn->m_verMajor;
     pOut->m_verMinor =                        pIn->m_verMinor;
     pOut->m_checkedBuild =                    pIn->m_checkedBuild;
-    pOut->m_bHostingInFiber =                 pIn->m_bHostingInFiber;
     pOut->padding2 =                          pIn->padding2;
     pOut->padding3 =                          pIn->padding3;
 
@@ -448,7 +447,6 @@ void MarshalDCBToDCBTransport(DebuggerIPCControlBlock* pIn, DebuggerIPCControlBl
     pOut->m_verMajor =                        pIn->m_verMajor;
     pOut->m_verMinor =                        pIn->m_verMinor;
     pOut->m_checkedBuild =                    pIn->m_checkedBuild;
-    pOut->m_bHostingInFiber =                 pIn->m_bHostingInFiber;
     pOut->padding2 =                          pIn->padding2;
     pOut->padding3 =                          pIn->padding3;
 

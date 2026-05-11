@@ -86,8 +86,6 @@ internal sealed class MockSyncBlock : TypedView
         set => WritePointerField(LinkNextFieldName, value);
     }
 
-    public ulong CleanupLinkAddress
-        => GetFieldAddress(LinkNextFieldName);
 }
 
 internal sealed class MockSyncBlockBuilder
@@ -193,7 +191,7 @@ internal sealed class MockSyncBlockBuilder
 
         MockSyncBlock syncBlock = AddSyncBlock(rcw, ccw, ccf, hasInteropInfo, "SyncBlock (cleanup)");
         syncBlock.LinkNext = _cleanupListHeadAddress;
-        _cleanupListHeadAddress = syncBlock.CleanupLinkAddress;
+        _cleanupListHeadAddress = syncBlock.Address;
         _syncBlockCache.CleanupBlockList = _cleanupListHeadAddress;
         return syncBlock;
     }

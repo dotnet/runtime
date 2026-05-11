@@ -203,10 +203,7 @@ struct MSLAYOUT DebuggerIPCControlBlock
 
     // This next stuff fits in a  DWORD.
     bool                       m_checkedBuild;      // CLR build type for the Left Side.
-    // using the first padding byte to indicate if hosted in fiber mode.
-    // We actually just need one bit. So if needed, can turn this to a bit.
-    // BYTE padding1;
-    bool                       m_bHostingInFiber;
+    BYTE padding1;
     BYTE padding2;
     BYTE padding3;
 
@@ -303,10 +300,7 @@ struct MSLAYOUT DebuggerIPCControlBlockTransport
 
     // This next stuff fits in a  DWORD.
     bool                       m_checkedBuild;      // CLR build type for the Left Side.
-    // using the first padding byte to indicate if hosted in fiber mode.
-    // We actually just need one bit. So if needed, can turn this to a bit.
-    // BYTE padding1;
-    bool                       m_bHostingInFiber;
+    BYTE padding1;
     BYTE padding2;
     BYTE padding3;
 
@@ -1948,30 +1942,6 @@ struct MSLAYOUT DebuggerIPCEvent
         {
             VMPTR_Assembly vmAssembly;
         } AssemblyData;
-
-#ifdef TEST_DATA_CONSISTENCY
-        // information necessary for testing whether the LS holds a lock on data
-        // the RS needs to inspect. See code:DataTest::TestDataSafety and
-        // code:IDacDbiInterface::TestCrst for more information
-        struct MSLAYOUT
-        {
-            // the lock to be tested
-            VMPTR_Crst vmCrst;
-            // indicates whether the LS holds the lock
-            bool       fOkToTake;
-        } TestCrstData;
-
-        // information necessary for testing whether the LS holds a lock on data
-        // the RS needs to inspect. See code:DataTest::TestDataSafety and
-        // code:IDacDbiInterface::TestCrst for more information
-        struct MSLAYOUT
-        {
-            // the lock to be tested
-            VMPTR_SimpleRWLock vmRWLock;
-            // indicates whether the LS holds the lock
-            bool               fOkToTake;
-        } TestRWLockData;
-#endif // TEST_DATA_CONSISTENCY
 
         // Debug event that a module has been loaded
         struct MSLAYOUT

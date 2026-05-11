@@ -30,8 +30,8 @@ public:
 private:
     Compiler* m_compiler; // The Compiler instance.
 
-    BasicBlock* m_startBlock;           // First block in the If Conversion.
-    BasicBlock* m_finalBlock = nullptr; // Block where the flows merge. In a return case, this can be nullptr.
+    BasicBlock* m_startBlock;           // JTRUE block where flow diverges.
+    BasicBlock* m_finalBlock = nullptr; // Final block where flow merges again. Can be nullptr in return case.
 
     // The node, statement and block of an operation.
     struct IfConvertOperation
@@ -41,16 +41,16 @@ private:
         GenTree*    node  = nullptr;
     };
 
-    GenTree*           m_cond;          // The condition in the conversion
+    GenTree*           m_cond;          // The condition in the conversion.
     IfConvertOperation m_thenOperation; // The single operation in the Then case.
     IfConvertOperation m_elseOperation; // The single operation in the Else case.
 
-    genTreeOps m_mainOper         = GT_COUNT; // The main oper of the if conversion.
-    bool       m_doElseConversion = false;    // Does the If conversion have an else statement.
+    genTreeOps m_mainOper = GT_COUNT; // The main oper of the if conversion.
 
     bool IfConvertCheck();
     bool IfConvertCheckFlow();
     bool IfConvertCheckStmts(BasicBlock* block, IfConvertOperation* foundOperation);
+    bool IfConvertTryGetElseFromJtrueBlock(GenTreeLclVar* thenStore, IfConvertOperation* foundOperation);
 
     GenTree* TryTransformSelectOperOrLocal(GenTree* oper, GenTree* lcl);
     GenTree* TryTransformSelectOperOrZero(GenTree* oper, GenTree* lcl);
@@ -58,6 +58,13 @@ private:
 #ifdef DEBUG
     void IfConvertDump();
 #endif
+
+    bool HasElseBlock()
+    {
+        // Note: Even when this is false we can have an Else operation
+        // by treating a STORE inside JTRUE block as one
+        return m_startBlock->GetTrueTarget()->GetUniquePred(m_compiler) != nullptr;
+    }
 
 public:
     bool optIfConvert(int* pReachabilityBudget);
@@ -69,7 +76,7 @@ public:
 // Check whether the JTRUE block and its successors can be expressed as a SELECT.
 // In the process, get the data required to perform the transformation.
 // Notes:
-//   Sets m_finalBlock, m_doElseConversion, m_thenOperation, m_elseOperation and m_mainOper
+//   Sets m_finalBlock, m_thenOperation, m_elseOperation and m_mainOper
 //
 bool OptIfConversionDsc::IfConvertCheck()
 {
@@ -80,19 +87,30 @@ bool OptIfConversionDsc::IfConvertCheck()
 
     if (!IfConvertCheckStmts(m_startBlock->GetFalseTarget(), &m_thenOperation))
     {
+        m_thenOperation = {};
         return false;
     }
 
     m_mainOper = m_thenOperation.node->OperGet();
     assert(m_mainOper == GT_RETURN || m_mainOper == GT_STORE_LCL_VAR);
 
-    if (m_doElseConversion)
+    if (HasElseBlock())
     {
         if (!IfConvertCheckStmts(m_startBlock->GetTrueTarget(), &m_elseOperation))
         {
+            m_elseOperation = {};
             return false;
         }
+    }
+    else if (m_startBlock->StatementCount() > 1)
+    {
+        assert(m_mainOper == GT_STORE_LCL_VAR);
 
+        IfConvertTryGetElseFromJtrueBlock(m_thenOperation.node->AsLclVar(), &m_elseOperation);
+    }
+
+    if (m_elseOperation.block != nullptr)
+    {
         // Both operations are the same node type.
         assert(m_thenOperation.node->OperGet() == m_elseOperation.node->OperGet());
 
@@ -118,7 +136,7 @@ bool OptIfConversionDsc::IfConvertCheck()
 // Check if there is a valid flow from m_startBlock to a final block.
 //
 // Notes:
-//   Sets m_finalBlock and m_doElseConversion.
+//   Sets m_finalBlock.
 //
 bool OptIfConversionDsc::IfConvertCheckFlow()
 {
@@ -130,8 +148,7 @@ bool OptIfConversionDsc::IfConvertCheckFlow()
         return false;
     }
 
-    m_doElseConversion = trueBb->GetUniquePred(m_compiler) != nullptr;
-    m_finalBlock       = m_doElseConversion ? trueBb->GetUniqueSucc() : trueBb;
+    m_finalBlock = HasElseBlock() ? trueBb->GetUniqueSucc() : trueBb;
 
     // m_finalBlock is only allowed to be null if both return.
     // E.g: Then block exits by throwing an exception => we bail here.
@@ -154,7 +171,7 @@ bool OptIfConversionDsc::IfConvertCheckFlow()
 //   foundOperation - The found operation
 //
 // Returns:
-//   True if the statements are valid for an If conversion. In that case foundOperation is also set.
+//   True if the statements are valid for an If conversion. In which case foundOperation is set.
 //
 bool OptIfConversionDsc::IfConvertCheckStmts(BasicBlock* block, IfConvertOperation* foundOperation)
 {
@@ -220,6 +237,84 @@ bool OptIfConversionDsc::IfConvertCheckStmts(BasicBlock* block, IfConvertOperati
 }
 
 //-----------------------------------------------------------------------------
+// IfConvertTryGetElseFromJtrueBlock
+//
+// Look for a STORE to the same local that thenStore targets and
+// see if we can safely move it to after JTRUE and thenStore stmts.
+// If so it is effectively the Else operation. Assumes there is no Else block.
+//
+// Arguments:
+//   thenStore      - The existing store inside the Then block
+//   foundOperation - The found operation
+//
+// Returns:
+//   True if a corresponding Else operation was found. In which case foundOperation is set.
+//
+bool OptIfConversionDsc::IfConvertTryGetElseFromJtrueBlock(GenTreeLclVar* thenStore, IfConvertOperation* foundOperation)
+{
+    assert(!HasElseBlock());
+
+    unsigned targetLclNum = thenStore->GetLclNum();
+
+    if (m_compiler->lvaGetDesc(targetLclNum)->IsAddressExposed())
+    {
+        return false;
+    }
+
+    assert((thenStore->Data()->gtFlags & GTF_SIDE_EFFECT) == 0);
+    if (m_compiler->gtTreeHasLocalRead(thenStore->Data(), targetLclNum))
+    {
+        return false;
+    }
+
+    int        stmtSearchBudget = 8;
+    bool       hasEhSuccs       = m_startBlock->HasPotentialEHSuccs(m_compiler);
+    Statement* last             = m_startBlock->lastStmt();
+    Statement* stmt             = last;
+    do
+    {
+        if (stmtSearchBudget-- <= 0)
+        {
+            break;
+        }
+
+        GenTree* tree = stmt->GetRootNode();
+        if (tree->OperIs(GT_STORE_LCL_VAR))
+        {
+            GenTreeLclVar* prevStore = tree->AsLclVar();
+            if (prevStore->GetLclNum() == targetLclNum)
+            {
+                if (prevStore->Data()->IsInvariant())
+                {
+                    m_elseOperation.block = m_startBlock;
+                    m_elseOperation.stmt  = stmt;
+                    m_elseOperation.node  = tree;
+
+                    return true;
+                }
+
+                // We found a STORE but its def might evaluate to something else when moving
+                return false;
+            }
+        }
+
+        if (((tree->gtFlags & GTF_EXCEPT) != 0) && hasEhSuccs)
+        {
+            break;
+        }
+
+        if (m_compiler->gtTreeHasLocalRead(tree, targetLclNum) || m_compiler->gtTreeHasLocalStore(tree, targetLclNum))
+        {
+            break;
+        }
+
+        stmt = stmt->GetPrevStmt();
+    } while (stmt != last);
+
+    return false;
+}
+
+//-----------------------------------------------------------------------------
 // IfConvertDump
 //
 // Dump all the blocks in the If Conversion.
@@ -232,11 +327,13 @@ void OptIfConversionDsc::IfConvertDump()
     // Then & Else only exist before the transformation
     if (m_startBlock->KindIs(BBJ_COND))
     {
-        m_compiler->fgDumpBlock(m_thenOperation.block);
-        if (m_doElseConversion)
+        JITDUMP("\n------------------------------------");
+        m_compiler->fgDumpStmtTree(m_thenOperation.block, m_thenOperation.stmt);
+        if (m_elseOperation.block != nullptr)
         {
-            m_compiler->fgDumpBlock(m_elseOperation.block);
+            m_compiler->fgDumpStmtTree(m_elseOperation.block, m_elseOperation.stmt);
         }
+        JITDUMP("------------------------------------\n");
     }
 }
 #endif
@@ -398,12 +495,13 @@ bool OptIfConversionDsc::optIfConvert(int* pReachabilityBudget)
 #ifdef DEBUG
     if (m_compiler->verbose)
     {
-        JITDUMP("\nConditionally executing " FMT_BB, m_thenOperation.block->bbNum);
-        if (m_doElseConversion)
+        JITDUMP("JTRUE block is " FMT_BB ". ", m_startBlock->bbNum);
+        JITDUMP("Statement " FMT_STMT " (Then) ", m_thenOperation.stmt->GetID());
+        if (m_elseOperation.block != nullptr)
         {
-            JITDUMP(" and " FMT_BB, m_elseOperation.block->bbNum);
+            JITDUMP("and " FMT_STMT " (Else) ", m_elseOperation.stmt->GetID());
         }
-        JITDUMP(" inside " FMT_BB "\n", m_startBlock->bbNum);
+        JITDUMP("can be expressed as SELECT:\n");
         IfConvertDump();
     }
 #endif
@@ -419,7 +517,7 @@ bool OptIfConversionDsc::optIfConvert(int* pReachabilityBudget)
         {
             thenCost = m_thenOperation.node->AsLclVar()->Data()->GetCostEx() +
                        (m_compiler->gtIsLikelyRegVar(m_thenOperation.node) ? 0 : 2);
-            if (m_doElseConversion)
+            if (HasElseBlock())
             {
                 elseCost = m_elseOperation.node->AsLclVar()->Data()->GetCostEx() +
                            (m_compiler->gtIsLikelyRegVar(m_elseOperation.node) ? 0 : 2);
@@ -428,11 +526,9 @@ bool OptIfConversionDsc::optIfConvert(int* pReachabilityBudget)
         else
         {
             assert(m_mainOper == GT_RETURN);
+            assert(HasElseBlock());
             thenCost = m_thenOperation.node->AsOp()->GetReturnValue()->GetCostEx();
-            if (m_doElseConversion)
-            {
-                elseCost = m_elseOperation.node->AsOp()->GetReturnValue()->GetCostEx();
-            }
+            elseCost = m_elseOperation.node->AsOp()->GetReturnValue()->GetCostEx();
         }
 
         // Cost to allow for "x = cond ? a + b : c + d".
@@ -478,7 +574,7 @@ bool OptIfConversionDsc::optIfConvert(int* pReachabilityBudget)
     if (m_mainOper == GT_STORE_LCL_VAR)
     {
         selectFalseInput = m_thenOperation.node->AsLclVar()->Data();
-        selectTrueInput  = m_doElseConversion ? m_elseOperation.node->AsLclVar()->Data() : nullptr;
+        selectTrueInput  = (m_elseOperation.block != nullptr) ? m_elseOperation.node->AsLclVar()->Data() : nullptr;
 
         // Pick the type as the type of the local, which should always be compatible even for implicit coercions.
         selectType = genActualType(m_thenOperation.node);
@@ -486,7 +582,7 @@ bool OptIfConversionDsc::optIfConvert(int* pReachabilityBudget)
     else
     {
         assert(m_mainOper == GT_RETURN);
-        assert(m_doElseConversion);
+        assert(m_elseOperation.block != nullptr);
         assert(m_thenOperation.node->TypeGet() == m_elseOperation.node->TypeGet());
 
         selectTrueInput  = m_elseOperation.node->AsOp()->GetReturnValue();
@@ -504,7 +600,7 @@ bool OptIfConversionDsc::optIfConvert(int* pReachabilityBudget)
         if (selectTrueInput == nullptr)
         {
             // Duplicate the destination of the Then store.
-            assert(m_mainOper == GT_STORE_LCL_VAR && !m_doElseConversion);
+            assert(m_mainOper == GT_STORE_LCL_VAR && (m_elseOperation.block == nullptr));
             GenTreeLclVar* store = m_thenOperation.node->AsLclVar();
             selectTrueInput      = m_compiler->gtNewLclVarNode(store->GetLclNum(), store->TypeGet());
         }
@@ -525,7 +621,7 @@ bool OptIfConversionDsc::optIfConvert(int* pReachabilityBudget)
     m_compiler->gtSetEvalOrder(m_thenOperation.node);
     m_compiler->fgSetStmtSeq(m_thenOperation.stmt);
 
-    // Replace JTRUE with STORE(SELECT)/RETURN(SELECT) statement
+    // Replace JTRUE with STORE(SELECT)/RETURN(SELECT) statement.
     m_compiler->fgInsertStmtBefore(m_startBlock, m_startBlock->lastStmt(), m_thenOperation.stmt);
     m_compiler->fgRemoveStmt(m_startBlock, m_startBlock->lastStmt());
     m_thenOperation.block->SetFirstStmt(nullptr);
@@ -533,8 +629,9 @@ bool OptIfConversionDsc::optIfConvert(int* pReachabilityBudget)
     BasicBlock* falseBb = m_startBlock->GetFalseTarget();
     BasicBlock* trueBb  = m_startBlock->GetTrueTarget();
 
-    // JTRUE block now contains SELECT. Change it's kind and make it flow
+    // JTRUE block now contains SELECT. Change its kind and make it flow
     // directly into block where flows merge, which is null in case of GT_RETURN.
+    bool hasElseBlock = HasElseBlock();
     if (m_mainOper == GT_RETURN)
     {
         m_startBlock->SetKindAndTargetEdge(BBJ_RETURN);
@@ -542,21 +639,28 @@ bool OptIfConversionDsc::optIfConvert(int* pReachabilityBudget)
     else
     {
         FlowEdge* newEdge =
-            m_doElseConversion ? m_compiler->fgAddRefPred(m_finalBlock, m_startBlock) : m_startBlock->GetTrueEdge();
+            hasElseBlock ? m_compiler->fgAddRefPred(m_finalBlock, m_startBlock) : m_startBlock->GetTrueEdge();
         m_startBlock->SetKindAndTargetEdge(BBJ_ALWAYS, newEdge);
     }
     assert(m_startBlock->GetUniqueSucc() == m_finalBlock);
 
-    // Remove Then/Else block
-    auto removeBlock = [&](BasicBlock* start) {
-        start->bbWeight = BB_ZERO_WEIGHT;
-        m_compiler->fgRemoveAllRefPreds(start, m_startBlock);
-        m_compiler->fgRemoveBlock(start, true);
+    auto removeBlock = [&](BasicBlock* block) {
+        block->bbWeight = BB_ZERO_WEIGHT;
+        m_compiler->fgRemoveAllRefPreds(block, m_startBlock);
+        m_compiler->fgRemoveBlock(block, true);
     };
+
     removeBlock(falseBb);
-    if (m_doElseConversion)
+    if (m_elseOperation.block != nullptr)
     {
-        removeBlock(trueBb);
+        if (hasElseBlock)
+        {
+            removeBlock(trueBb);
+        }
+        else
+        {
+            m_compiler->fgRemoveStmt(m_startBlock, m_elseOperation.stmt);
+        }
     }
 
 #ifdef DEBUG
@@ -785,7 +889,7 @@ GenTree* OptIfConversionDsc::TryTransformSelectToOrdinaryOps(GenTree* trueInput,
     {
         if (trueInput == nullptr)
         {
-            assert(m_mainOper == GT_STORE_LCL_VAR && !m_doElseConversion);
+            assert(m_mainOper == GT_STORE_LCL_VAR && (m_elseOperation.block == nullptr));
             trueInput = m_thenOperation.node;
         }
 

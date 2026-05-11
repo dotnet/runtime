@@ -65,7 +65,6 @@ nativeStringResourceTable_mscorrc
 #CreateFileW
 #CreateEventW
 #CreateEventExW
-#CreateProcessW
 #CreateSemaphoreExW
 #CreateThread
 #CloseHandle

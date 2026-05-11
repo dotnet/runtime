@@ -160,37 +160,6 @@ void DbgTransportTarget::ReleaseTransport(DbgTransportSession *pTransport)
     pTransport->Shutdown();
 }
 
-HRESULT DbgTransportTarget::CreateProcess(LPCWSTR lpApplicationName,
-                          LPCWSTR lpCommandLine,
-                          LPSECURITY_ATTRIBUTES lpProcessAttributes,
-                          LPSECURITY_ATTRIBUTES lpThreadAttributes,
-                          BOOL bInheritHandles,
-                          DWORD dwCreationFlags,
-                          LPVOID lpEnvironment,
-                          LPCWSTR lpCurrentDirectory,
-                          LPSTARTUPINFOW lpStartupInfo,
-                          LPPROCESS_INFORMATION lpProcessInformation)
-{
-
-    BOOL result = WszCreateProcess(lpApplicationName,
-                                   lpCommandLine,
-                                   lpProcessAttributes,
-                                   lpThreadAttributes,
-                                   bInheritHandles,
-                                   dwCreationFlags,
-                                   lpEnvironment,
-                                   lpCurrentDirectory,
-                                   lpStartupInfo,
-                                   lpProcessInformation);
-
-    if (!result)
-    {
-        return HRESULT_FROM_GetLastError();
-    }
-
-    return S_OK;
-}
-
 // Kill the process identified by PID.
 void DbgTransportTarget::KillProcess(DWORD dwPID)
 {

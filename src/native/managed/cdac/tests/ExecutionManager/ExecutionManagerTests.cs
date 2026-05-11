@@ -52,7 +52,7 @@ public class ExecutionManagerTests
     }
 
     private static IExecutionManager CreateExecutionManagerContract(
-        int version,
+        string version,
         MockTarget.Architecture arch,
         Action<MockExecutionManagerBuilder>? configure = null,
         ulong allCodeHeaps = 0)
@@ -81,7 +81,7 @@ public class ExecutionManagerTests
 
     [Theory]
     [MemberData(nameof(StdArchAllVersions))]
-    public void GetCodeBlockHandle_Null(int version, MockTarget.Architecture arch)
+    public void GetCodeBlockHandle_Null(string version, MockTarget.Architecture arch)
     {
         IExecutionManager em = CreateExecutionManagerContract(version, arch);
         var eeInfo = em.GetCodeBlockHandle(TargetCodePointer.Null);
@@ -90,7 +90,7 @@ public class ExecutionManagerTests
 
     [Theory]
     [MemberData(nameof(StdArchAllVersions))]
-    public void GetCodeBlockHandle_NoRangeSections(int version, MockTarget.Architecture arch)
+    public void GetCodeBlockHandle_NoRangeSections(string version, MockTarget.Architecture arch)
     {
         IExecutionManager em = CreateExecutionManagerContract(version, arch);
         var eeInfo = em.GetCodeBlockHandle(new TargetCodePointer(0x0a0a_0000));
@@ -99,7 +99,7 @@ public class ExecutionManagerTests
 
     [Theory]
     [MemberData(nameof(StdArchAllVersions))]
-    public void GetMethodDesc_OneRangeOneMethod(int version, MockTarget.Architecture arch)
+    public void GetMethodDesc_OneRangeOneMethod(string version, MockTarget.Architecture arch)
     {
         const ulong codeRangeStart = 0x0a0a_0000u; // arbitrary
         const uint codeRangeSize = 0xc000u; // arbitrary
@@ -147,7 +147,7 @@ public class ExecutionManagerTests
 
     [Theory]
     [MemberData(nameof(StdArchAllVersions))]
-    public void GetCodeBlockHandle_OneRangeZeroMethod(int version, MockTarget.Architecture arch)
+    public void GetCodeBlockHandle_OneRangeZeroMethod(string version, MockTarget.Architecture arch)
     {
         const ulong codeRangeStart = 0x0a0a_0000u; // arbitrary
         const uint codeRangeSize = 0xc000u; // arbitrary
@@ -181,7 +181,7 @@ public class ExecutionManagerTests
 
     [Theory]
     [MemberData(nameof(StdArchAllVersions))]
-    public void GetUnwindInfoBaseAddress_OneRangeOneMethod(int version, MockTarget.Architecture arch)
+    public void GetUnwindInfoBaseAddress_OneRangeOneMethod(string version, MockTarget.Architecture arch)
     {
         const ulong codeRangeStart = 0x0a0a_0000u; // arbitrary
         const uint codeRangeSize = 0xc000u; // arbitrary
@@ -215,7 +215,7 @@ public class ExecutionManagerTests
 
     [Theory]
     [MemberData(nameof(StdArchAllVersions))]
-    public void GetCodeBlockHandle_R2R_NoRuntimeFunctionMatch(int version, MockTarget.Architecture arch)
+    public void GetCodeBlockHandle_R2R_NoRuntimeFunctionMatch(string version, MockTarget.Architecture arch)
     {
         const ulong codeRangeStart = 0x0a0a_0000u; // arbitrary
         const uint codeRangeSize = 0xc000u; // arbitrary
@@ -246,7 +246,7 @@ public class ExecutionManagerTests
 
     [Theory]
     [MemberData(nameof(StdArchAllVersions))]
-    public void GetMethodDesc_R2R_OneRuntimeFunction(int version, MockTarget.Architecture arch)
+    public void GetMethodDesc_R2R_OneRuntimeFunction(string version, MockTarget.Architecture arch)
     {
         const ulong codeRangeStart = 0x0a0a_0000u; // arbitrary
         const uint codeRangeSize = 0xc000u; // arbitrary
@@ -290,7 +290,7 @@ public class ExecutionManagerTests
 
     [Theory]
     [MemberData(nameof(StdArchAllVersions))]
-    public void GetMethodDesc_R2R_MultipleRuntimeFunctions(int version, MockTarget.Architecture arch)
+    public void GetMethodDesc_R2R_MultipleRuntimeFunctions(string version, MockTarget.Architecture arch)
     {
         const ulong codeRangeStart = 0x0a0a_0000u; // arbitrary
         const uint codeRangeSize = 0xc000u; // arbitrary
@@ -352,7 +352,7 @@ public class ExecutionManagerTests
 
     [Theory]
     [MemberData(nameof(StdArchAllVersions))]
-    public void GetMethodDesc_R2R_HotColdBlock(int version, MockTarget.Architecture arch)
+    public void GetMethodDesc_R2R_HotColdBlock(string version, MockTarget.Architecture arch)
     {
         const ulong codeRangeStart = 0x0a0a_0000u; // arbitrary
         const uint codeRangeSize = 0xc000u; // arbitrary
@@ -401,7 +401,7 @@ public class ExecutionManagerTests
 
     [Theory]
     [MemberData(nameof(StdArchAllVersions))]
-    public void GetUnwindInfoBaseAddress_R2R_ManyRuntimeFunction(int version, MockTarget.Architecture arch)
+    public void GetUnwindInfoBaseAddress_R2R_ManyRuntimeFunction(string version, MockTarget.Architecture arch)
     {
         const ulong codeRangeStart = 0x0a0a_0000u; // arbitrary
         const uint codeRangeSize = 0xc000u; // arbitrary
@@ -433,7 +433,7 @@ public class ExecutionManagerTests
 
     [Theory]
     [MemberData(nameof(StdArchAllVersions))]
-    public void GetMethodDesc_CollectibleFragmentNext(int version, MockTarget.Architecture arch)
+    public void GetMethodDesc_CollectibleFragmentNext(string version, MockTarget.Architecture arch)
     {
         // Regression test: RangeSectionFragment.Next uses bit 0 as a collectible flag (see
         // RangeSectionFragmentPointer in codeman.h). If the cDAC fails to strip this bit before
@@ -474,7 +474,7 @@ public class ExecutionManagerTests
 
     [Theory]
     [MemberData(nameof(StdArchAllVersions))]
-    public void GetEEJitManagerInfo_ReturnsManagerAddress(int version, MockTarget.Architecture arch)
+    public void GetEEJitManagerInfo_ReturnsManagerAddress(string version, MockTarget.Architecture arch)
     {
         ulong expectedManagerAddress = 0;
         IExecutionManager em = CreateExecutionManagerContract(
@@ -489,7 +489,7 @@ public class ExecutionManagerTests
 
     [Theory]
     [MemberData(nameof(StdArchAllVersions))]
-    public void GetEEJitManagerInfo_WithCodeHeaps(int version, MockTarget.Architecture arch)
+    public void GetEEJitManagerInfo_WithCodeHeaps(string version, MockTarget.Architecture arch)
     {
         const ulong expectedHeapList = 0x0099_aa00;
         ulong expectedManagerAddress = 0;
@@ -506,7 +506,7 @@ public class ExecutionManagerTests
 
     [Theory]
     [MemberData(nameof(StdArchAllVersions))]
-    public void GetCodeHeapInfo_LoaderCodeHeap(int version, MockTarget.Architecture arch)
+    public void GetCodeHeapInfo_LoaderCodeHeap(string version, MockTarget.Architecture arch)
     {
         MockExecutionManagerBuilder emBuilder = new(version, arch, MockExecutionManagerBuilder.DefaultAllocationRange);
         MockLoaderCodeHeap heap = emBuilder.AddLoaderCodeHeap();
@@ -520,7 +520,7 @@ public class ExecutionManagerTests
 
     [Theory]
     [MemberData(nameof(StdArchAllVersions))]
-    public void GetCodeHeapInfo_HostCodeHeap(int version, MockTarget.Architecture arch)
+    public void GetCodeHeapInfo_HostCodeHeap(string version, MockTarget.Architecture arch)
     {
         MockExecutionManagerBuilder emBuilder = new(version, arch, MockExecutionManagerBuilder.DefaultAllocationRange);
         TargetPointer baseAddr    = new(0x0001_0000);
@@ -536,7 +536,7 @@ public class ExecutionManagerTests
 
     [Theory]
     [MemberData(nameof(StdArchAllVersions))]
-    public void GetCodeHeapInfo_LoaderCodeHeap_ReturnsLoaderHeapAddress(int version, MockTarget.Architecture arch)
+    public void GetCodeHeapInfo_LoaderCodeHeap_ReturnsLoaderHeapAddress(string version, MockTarget.Architecture arch)
     {
         MockExecutionManagerBuilder emBuilder = new(version, arch, MockExecutionManagerBuilder.DefaultAllocationRange);
         MockLoaderCodeHeap heap = emBuilder.AddLoaderCodeHeap();
@@ -552,7 +552,7 @@ public class ExecutionManagerTests
 
     [Theory]
     [MemberData(nameof(StdArchAllVersions))]
-    public void GetCodeHeapInfo_HostCodeHeap_ReturnsAddresses(int version, MockTarget.Architecture arch)
+    public void GetCodeHeapInfo_HostCodeHeap_ReturnsAddresses(string version, MockTarget.Architecture arch)
     {
         MockExecutionManagerBuilder emBuilder = new(version, arch, MockExecutionManagerBuilder.DefaultAllocationRange);
         TargetPointer expectedBase    = new(0x0002_0000);
@@ -569,7 +569,7 @@ public class ExecutionManagerTests
 
     [Theory]
     [MemberData(nameof(StdArchAllVersions))]
-    public void GetCodeHeapList_SingleNode(int version, MockTarget.Architecture arch)
+    public void GetCodeHeapList_SingleNode(string version, MockTarget.Architecture arch)
     {
         MockExecutionManagerBuilder emBuilder = new(version, arch, MockExecutionManagerBuilder.DefaultAllocationRange);
 
@@ -599,7 +599,7 @@ public class ExecutionManagerTests
 
     [Theory]
     [MemberData(nameof(StdArchAllVersions))]
-    public void GetCodeHeapList_LinkedList_TwoNodes(int version, MockTarget.Architecture arch)
+    public void GetCodeHeapList_LinkedList_TwoNodes(string version, MockTarget.Architecture arch)
     {
         MockExecutionManagerBuilder emBuilder = new(version, arch, MockExecutionManagerBuilder.DefaultAllocationRange);
 
@@ -663,7 +663,7 @@ public class ExecutionManagerTests
             MockTarget.Architecture arch = (MockTarget.Architecture)arr[0];
             for (int version = 1; version <= highestVersion; version++)
             {
-                yield return new object[] { version, arch };
+                yield return new object[] { $"c{version}", arch };
             }
         }
     }

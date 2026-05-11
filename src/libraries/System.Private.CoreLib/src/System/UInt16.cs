@@ -318,24 +318,15 @@ namespace System
                     return false;
                 }
 
-                ref byte sourceRef = ref MemoryMarshal.GetReference(source);
-
                 if (source.Length >= sizeof(ushort))
                 {
-                    sourceRef = ref Unsafe.Add(ref sourceRef, source.Length - sizeof(ushort));
-
                     // We have at least 2 bytes, so just read the ones we need directly
-                    result = Unsafe.ReadUnaligned<ushort>(ref sourceRef);
-
-                    if (BitConverter.IsLittleEndian)
-                    {
-                        result = BinaryPrimitives.ReverseEndianness(result);
-                    }
+                    result = BinaryPrimitives.ReadUInt16BigEndian(source.Slice(source.Length - sizeof(ushort)));
                 }
                 else
                 {
                     // We only have 1-byte so read it directly
-                    result = sourceRef;
+                    result = source[0];
                 }
             }
 

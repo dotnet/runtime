@@ -324,8 +324,8 @@ namespace System.Net.WebSockets
                 return ValueTask.FromException(exc);
             }
 
-            bool endOfMessage = messageFlags.HasFlag(WebSocketMessageFlags.EndOfMessage);
-            bool disableCompression = messageFlags.HasFlag(WebSocketMessageFlags.DisableCompression);
+            bool endOfMessage = (messageFlags & WebSocketMessageFlags.EndOfMessage) != 0;
+            bool disableCompression = (messageFlags & WebSocketMessageFlags.DisableCompression) != 0;
             MessageOpcode opcode;
 
             if (_lastSendWasFragment)
@@ -510,15 +510,16 @@ namespace System.Net.WebSockets
                 if (writeTask.IsCompleted)
                 {
                     writeTask.GetAwaiter().GetResult();
-                    ValueTask flushTask = new ValueTask(_stream.FlushAsync());
+                    Task flushTask = _stream.FlushAsync();
                     if (flushTask.IsCompleted)
                     {
-                        return flushTask;
+                        flushTask.GetAwaiter().GetResult();
+                        return ValueTask.CompletedTask;
                     }
                     else
                     {
                         releaseSendBufferAndSemaphore = false;
-                        return WaitForWriteTaskAsync(flushTask, shouldFlush: false);
+                        return WaitForWriteTaskAsync(new ValueTask(flushTask), shouldFlush: false);
                     }
                 }
 
@@ -1589,22 +1590,18 @@ namespace System.Net.WebSockets
                 }
                 _receiveBufferOffset = 0;
 
-                // While we don't have enough data, read more.
-                if (_receiveBufferCount < minimumRequiredBytes)
+                int bytesToRead = minimumRequiredBytes - _receiveBufferCount;
+                int numRead = await _stream.ReadAtLeastAsync(
+                    _receiveBuffer.Slice(_receiveBufferCount), bytesToRead, throwOnEndOfStream: false, cancellationToken).ConfigureAwait(false);
+                _receiveBufferCount += numRead;
+
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Trace(this, $"bytesRead={numRead}");
+
+                if (numRead < bytesToRead)
                 {
-                    int bytesToRead = minimumRequiredBytes - _receiveBufferCount;
-                    int numRead = await _stream.ReadAtLeastAsync(
-                        _receiveBuffer.Slice(_receiveBufferCount), bytesToRead, throwOnEndOfStream: false, cancellationToken).ConfigureAwait(false);
-                    _receiveBufferCount += numRead;
-
-                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Trace(this, $"bytesRead={numRead}");
-
-                    if (numRead < bytesToRead)
-                    {
-                        ThrowEOFUnexpected();
-                    }
-                    _keepAlivePingState?.OnDataReceived();
+                    ThrowEOFUnexpected();
                 }
+                _keepAlivePingState?.OnDataReceived();
             }
         }
 

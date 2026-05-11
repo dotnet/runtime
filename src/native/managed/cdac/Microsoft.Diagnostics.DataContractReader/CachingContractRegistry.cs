@@ -15,10 +15,10 @@ namespace Microsoft.Diagnostics.DataContractReader;
 /// </summary>
 internal sealed class CachingContractRegistry : ContractRegistry
 {
-    public delegate bool TryGetContractVersionDelegate(string contractName, out int version);
+    public delegate bool TryGetContractVersionDelegate(string contractName, [NotNullWhen(true)] out string? version);
 
     private readonly Dictionary<Type, IContract> _contracts = [];
-    private readonly Dictionary<(Type, int), Func<Target, IContract>> _creators = [];
+    private readonly Dictionary<(Type, string), Func<Target, IContract>> _creators = [];
     private readonly Target _target;
     private readonly TryGetContractVersionDelegate _tryGetContractVersion;
 
@@ -33,7 +33,7 @@ internal sealed class CachingContractRegistry : ContractRegistry
         }
     }
 
-    public override void Register<TContract>(int version, Func<Target, TContract> creator)
+    public override void Register<TContract>(string version, Func<Target, TContract> creator)
     {
         _creators[(typeof(TContract), version)] = t => creator(t);
     }
@@ -48,9 +48,9 @@ internal sealed class CachingContractRegistry : ContractRegistry
             return true;
         }
 
-        if (!_tryGetContractVersion(TContract.Name, out int version))
+        if (!_tryGetContractVersion(TContract.Name, out string? version))
         {
-             failureReason = $"Target does not support contract '{typeof(TContract).Name}'.";
+            failureReason = $"Target does not support contract '{typeof(TContract).Name}'.";
             return false;
         }
 

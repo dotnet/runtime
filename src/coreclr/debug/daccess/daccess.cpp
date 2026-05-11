@@ -5425,7 +5425,7 @@ ClrDataAccess::RawGetMethodName(
     MethodDesc* methodDesc = NULL;
 
     {
-        EECodeInfo codeInfo(GetInterpreterCodeFromInterpreterPrecodeIfPresent(TO_TADDR(address)));
+        EECodeInfo codeInfo(GetInterpreterCodeFromEntryPointIfPresent(TO_TADDR(address)));
         if (codeInfo.IsValid())
         {
             if (displacement)
@@ -5605,11 +5605,11 @@ ClrDataAccess::GetMethodVarInfo(MethodDesc* methodDesc,
         {
             return E_INVALIDARG;
         }
-        nativeCodeStartAddr = PCODEToPINSTR(GetInterpreterCodeFromInterpreterPrecodeIfPresent(requestedNativeCodeVersion.GetNativeCode()));
+        nativeCodeStartAddr = PCODEToPINSTR(GetInterpreterCodeFromEntryPointIfPresent(requestedNativeCodeVersion.GetNativeCode()));
     }
     else
     {
-        nativeCodeStartAddr = PCODEToPINSTR(GetInterpreterCodeFromInterpreterPrecodeIfPresent(methodDesc->GetNativeCode()));
+        nativeCodeStartAddr = PCODEToPINSTR(GetInterpreterCodeFromEntryPointIfPresent(methodDesc->GetNativeCode()));
     }
 
     DebugInfoRequest request;
@@ -5664,11 +5664,11 @@ ClrDataAccess::GetMethodNativeMap(MethodDesc* methodDesc,
         {
             return E_INVALIDARG;
         }
-        nativeCodeStartAddr = PCODEToPINSTR(GetInterpreterCodeFromInterpreterPrecodeIfPresent(requestedNativeCodeVersion.GetNativeCode()));
+        nativeCodeStartAddr = PCODEToPINSTR(GetInterpreterCodeFromEntryPointIfPresent(requestedNativeCodeVersion.GetNativeCode()));
     }
     else
     {
-        nativeCodeStartAddr = PCODEToPINSTR(GetInterpreterCodeFromInterpreterPrecodeIfPresent(methodDesc->GetNativeCode()));
+        nativeCodeStartAddr = PCODEToPINSTR(GetInterpreterCodeFromEntryPointIfPresent(methodDesc->GetNativeCode()));
     }
 
     DebugInfoRequest request;
@@ -6019,7 +6019,7 @@ ClrDataAccess::GetHostJitNotificationTable()
     if (m_jitNotificationTable == NULL)
     {
         m_jitNotificationTable =
-            JITNotifications::InitializeNotificationTable(1000);
+            JITNotifications::InitializeNotificationTable(JIT_NOTIFICATION_TABLE_SIZE);
     }
 
     return m_jitNotificationTable;

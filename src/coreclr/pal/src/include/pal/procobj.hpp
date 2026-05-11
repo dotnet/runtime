@@ -75,20 +75,6 @@ namespace CorUnix
     };
 
     PAL_ERROR
-    InternalCreateProcess(
-        CPalThread *pThread,
-        LPCWSTR lpApplicationName,
-        LPWSTR lpCommandLine,
-        LPSECURITY_ATTRIBUTES lpProcessAttributes,
-        LPSECURITY_ATTRIBUTES lpThreadAttributes,
-        DWORD dwCreationFlags,
-        LPVOID lpEnvironment,
-        LPCWSTR lpCurrentDirectory,
-        LPSTARTUPINFOW lpStartupInfo,
-        LPPROCESS_INFORMATION lpProcessInformation
-        );
-
-    PAL_ERROR
     InitializeProcessCommandLine(
         LPWSTR lpwstrCmdLine,
         LPWSTR lpwstrFullPath

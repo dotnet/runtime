@@ -789,8 +789,7 @@ void DECLSPEC_NORETURN EEPolicy::HandleFatalStackOverflow(EXCEPTION_POINTERS *pE
             OBJECTHANDLE ohSO = CLRException::GetPreallocatedStackOverflowExceptionHandle();
             if (ohSO != NULL)
             {
-                pThread->SafeSetThrowables(ObjectFromHandle(ohSO)
-                                           DEBUG_ARG(ThreadExceptionState::STEC_CurrentTrackerEqualNullOkHackForFatalStackOverflow),
+                pThread->SafeSetThrowables(ObjectFromHandle(ohSO),
                                            TRUE);
             }
             else

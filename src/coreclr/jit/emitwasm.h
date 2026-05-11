@@ -66,3 +66,5 @@ size_t emitOutputOpcode(BYTE* dst, instruction ins);
 size_t emitOutputPaddedReloc(uint8_t* destination);
 size_t emitOutputConstant(uint8_t* destination, const instrDesc* id, bool isSigned, CorInfoReloc relocType);
 size_t emitOutputValtypeSig(uint8_t* destination, WasmValueType valtype);
+
+void emitUpdateFuncletLocations();

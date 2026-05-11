@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Numerics;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
@@ -53,7 +54,7 @@ namespace System.StubHelpers
 
     internal static class CSTRMarshaler
     {
-        internal static unsafe IntPtr ConvertToNative(int flags, string strManaged, IntPtr pNativeBuffer)
+        internal static unsafe IntPtr ConvertToNative(int flags, string? strManaged, IntPtr pNativeBuffer)
         {
             if (null == strManaged)
             {
@@ -265,7 +266,7 @@ namespace System.StubHelpers
             s_trailByteTable!.Add(strManaged, new TrailByte(trailByte));
         }
 
-        internal static unsafe IntPtr ConvertToNative(string strManaged, IntPtr pNativeBuffer)
+        internal static unsafe IntPtr ConvertToNative(string? strManaged, IntPtr pNativeBuffer)
         {
             if (null == strManaged)
             {
@@ -591,7 +592,7 @@ namespace System.StubHelpers
         }
     }
 
-    internal static class DateMarshaler
+    internal sealed class DateMarshaler : IArrayElementMarshaler<DateTime, DateMarshaler>
     {
         internal static double ConvertToNative(DateTime managedDate)
         {
@@ -602,6 +603,22 @@ namespace System.StubHelpers
         {
             return DateTime.DoubleDateToTicks(nativeDate);
         }
+
+        static unsafe void IArrayElementMarshaler<DateTime, DateMarshaler>.ConvertToUnmanaged(ref DateTime managed, byte* unmanaged)
+        {
+            Unsafe.WriteUnaligned(unmanaged, ConvertToNative(managed));
+        }
+
+        static unsafe void IArrayElementMarshaler<DateTime, DateMarshaler>.ConvertToManaged(ref DateTime managed, byte* unmanaged)
+        {
+            managed = new DateTime(ConvertToManaged(Unsafe.ReadUnaligned<double>(unmanaged)));
+        }
+
+        static unsafe void IArrayElementMarshaler<DateTime, DateMarshaler>.Free(byte* unmanaged)
+        {
+        }
+
+        static unsafe nuint IArrayElementMarshaler<DateTime, DateMarshaler>.UnmanagedSize => (nuint)sizeof(double);
     }  // class DateMarshaler
 
 #if FEATURE_COMINTEROP
@@ -654,169 +671,13 @@ namespace System.StubHelpers
     }  // class InterfaceMarshaler
 #endif // FEATURE_COMINTEROP
 
-    internal static partial class MngdNativeArrayMarshaler
-    {
-        // Needs to match exactly with MngdNativeArrayMarshaler in ilmarshalers.h
-        internal struct MarshalerState
-        {
-            internal IntPtr m_pElementMT;
-            internal TypeHandle m_Array;
-            internal int m_NativeDataValid;
-            internal int m_BestFitMap;
-            internal int m_ThrowOnUnmappableChar;
-            internal short m_vt;
-        }
-
-        internal static unsafe void CreateMarshaler(IntPtr pMarshalState, IntPtr pMT, int dwFlags, bool nativeDataValid)
-        {
-            MarshalerState* pState = (MarshalerState*)pMarshalState;
-            pState->m_pElementMT = pMT;
-            pState->m_Array = default;
-            pState->m_NativeDataValid = nativeDataValid ? 1 : 0;
-            pState->m_BestFitMap = (byte)(dwFlags >> 16);
-            pState->m_ThrowOnUnmappableChar = (byte)(dwFlags >> 24);
-            pState->m_vt = (short)dwFlags;
-        }
-
-        internal static void ConvertSpaceToNative(IntPtr pMarshalState, in object pManagedHome, IntPtr pNativeHome)
-        {
-            object managedHome = pManagedHome;
-            ConvertSpaceToNative(pMarshalState, ObjectHandleOnStack.Create(ref managedHome), pNativeHome);
-        }
-
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MngdNativeArrayMarshaler_ConvertSpaceToNative")]
-        private static partial void ConvertSpaceToNative(IntPtr pMarshalState, ObjectHandleOnStack pManagedHome, IntPtr pNativeHome);
-
-        internal static void ConvertContentsToNative(IntPtr pMarshalState, in object pManagedHome, IntPtr pNativeHome)
-        {
-            object managedHome = pManagedHome;
-            ConvertContentsToNative(pMarshalState, ObjectHandleOnStack.Create(ref managedHome), pNativeHome);
-        }
-
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MngdNativeArrayMarshaler_ConvertContentsToNative")]
-        private static partial void ConvertContentsToNative(IntPtr pMarshalState, ObjectHandleOnStack pManagedHome, IntPtr pNativeHome);
-
-        internal static void ConvertSpaceToManaged(IntPtr pMarshalState, ref object? pManagedHome, IntPtr pNativeHome,
-                                                          int cElements)
-        {
-            object? managedHome = null;
-            ConvertSpaceToManaged(pMarshalState, ObjectHandleOnStack.Create(ref managedHome), pNativeHome, cElements);
-            pManagedHome = managedHome;
-        }
-
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MngdNativeArrayMarshaler_ConvertSpaceToManaged")]
-        private static partial void ConvertSpaceToManaged(IntPtr pMarshalState, ObjectHandleOnStack pManagedHome, IntPtr pNativeHome,
-                                                         int cElements);
-
-        internal static void ConvertContentsToManaged(IntPtr pMarshalState, in object pManagedHome, IntPtr pNativeHome)
-        {
-            object managedHome = pManagedHome;
-            ConvertContentsToManaged(pMarshalState, ObjectHandleOnStack.Create(ref managedHome), pNativeHome);
-        }
-
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MngdNativeArrayMarshaler_ConvertContentsToManaged")]
-        private static partial void ConvertContentsToManaged(IntPtr pMarshalState, ObjectHandleOnStack pManagedHome, IntPtr pNativeHome);
-
-        internal static unsafe void ClearNative(IntPtr pMarshalState, IntPtr pNativeHome, int cElements)
-        {
-            IntPtr nativeHome = *(IntPtr*)pNativeHome;
-
-            if (nativeHome != IntPtr.Zero)
-            {
-                ClearNativeContents(pMarshalState, pNativeHome, cElements);
-                Marshal.FreeCoTaskMem(nativeHome);
-            }
-        }
-
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MngdNativeArrayMarshaler_ClearNativeContents")]
-        internal static partial void ClearNativeContents(IntPtr pMarshalState, IntPtr pNativeHome, int cElements);
-    }  // class MngdNativeArrayMarshaler
-
-    internal static partial class MngdFixedArrayMarshaler
-    {
-        // Needs to match exactly with MngdFixedArrayMarshaler in ilmarshalers.h
-        private struct MarshalerState
-        {
-#pragma warning disable CA1823, IDE0044 // not used by managed code
-            internal IntPtr m_pElementMT;
-            internal IntPtr m_Array;
-            internal int m_BestFitMap;
-            internal int m_ThrowOnUnmappableChar;
-            internal ushort m_vt;
-            internal uint m_cElements;
-#pragma warning restore CA1823, IDE0044
-        }
-
-        internal static unsafe void CreateMarshaler(IntPtr pMarshalState, IntPtr pMT, int dwFlags, int cElements)
-        {
-            MarshalerState* pState = (MarshalerState*)pMarshalState;
-            pState->m_pElementMT = pMT;
-            pState->m_Array = default;
-            pState->m_BestFitMap = (byte)(dwFlags >> 16);
-            pState->m_ThrowOnUnmappableChar = (byte)(dwFlags >> 24);
-            pState->m_vt = (ushort)dwFlags;
-            pState->m_cElements = (uint)cElements;
-        }
-
-        internal static unsafe void ConvertSpaceToNative(IntPtr pMarshalState, in object pManagedHome, IntPtr pNativeHome)
-        {
-            // We don't actually need to allocate native space here as the space is inline in the native layout.
-            // However, we need to validate that we can fit the contents of the managed array in the native space.
-            Array arr = (Array)pManagedHome;
-            MarshalerState* pState = (MarshalerState*)pMarshalState;
-
-            if (arr is not null && (uint)arr.Length < pState->m_cElements)
-            {
-                throw new ArgumentException(SR.Argument_WrongSizeArrayInNativeStruct);
-            }
-        }
-
-        internal static void ConvertContentsToNative(IntPtr pMarshalState, in object pManagedHome, IntPtr pNativeHome)
-        {
-            object managedHome = pManagedHome;
-            ConvertContentsToNative(pMarshalState, ObjectHandleOnStack.Create(ref managedHome), pNativeHome);
-        }
-
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MngdFixedArrayMarshaler_ConvertContentsToNative")]
-        private static partial void ConvertContentsToNative(IntPtr pMarshalState, ObjectHandleOnStack pManagedHome, IntPtr pNativeHome);
-
-        internal static void ConvertSpaceToManaged(IntPtr pMarshalState, ref object pManagedHome, IntPtr pNativeHome)
-        {
-            object managedHome = pManagedHome;
-            ConvertSpaceToManaged(pMarshalState, ObjectHandleOnStack.Create(ref managedHome), pNativeHome);
-            pManagedHome = managedHome;
-        }
-
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MngdFixedArrayMarshaler_ConvertSpaceToManaged")]
-        private static partial void ConvertSpaceToManaged(IntPtr pMarshalState, ObjectHandleOnStack pManagedHome, IntPtr pNativeHome);
-
-        internal static void ConvertContentsToManaged(IntPtr pMarshalState, in object pManagedHome, IntPtr pNativeHome)
-        {
-            object managedHome = pManagedHome;
-            ConvertContentsToManaged(pMarshalState, ObjectHandleOnStack.Create(ref managedHome), pNativeHome);
-        }
-
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MngdFixedArrayMarshaler_ConvertContentsToManaged")]
-        private static partial void ConvertContentsToManaged(IntPtr pMarshalState, ObjectHandleOnStack pManagedHome, IntPtr pNativeHome);
-
-#pragma warning disable IDE0060 // Remove unused parameter. These APIs need to match a the shape of a "managed" marshaler.
-        internal static void ClearNativeContents(IntPtr pMarshalState, in object pManagedHome, IntPtr pNativeHome)
-        {
-            ClearNativeContents(pMarshalState, pNativeHome);
-        }
-#pragma warning restore IDE0060
-
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MngdFixedArrayMarshaler_ClearNativeContents")]
-        private static partial void ClearNativeContents(IntPtr pMarshalState, IntPtr pNativeHome);
-    }  // class MngdFixedArrayMarshaler
-
 #if FEATURE_COMINTEROP
     internal static partial class MngdSafeArrayMarshaler
     {
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MngdSafeArrayMarshaler_CreateMarshaler")]
         [SuppressGCTransition]
-        internal static partial void CreateMarshaler(IntPtr pMarshalState, IntPtr pMT, int iRank, int dwFlags);
+        internal static partial void CreateMarshaler(IntPtr pMarshalState, IntPtr pMT, int iRank, int dwFlags, IntPtr pConvertToNative, IntPtr pConvertToManaged);
 
         internal static void ConvertSpaceToNative(IntPtr pMarshalState, in object pManagedHome, IntPtr pNativeHome)
         {
@@ -1021,29 +882,250 @@ namespace System.StubHelpers
 
     internal struct AsAnyMarshaler
     {
-        private const ushort VTHACK_ANSICHAR = 253;
-        private const ushort VTHACK_WINBOOL = 254;
+        private AsAnyMarshalerImplementation? _impl;
 
-        private enum BackPropAction
+        private abstract class AsAnyMarshalerImplementation
         {
-            None,
-            Array,
-            Layout,
-            StringBuilderAnsi,
-            StringBuilderUnicode
+            public abstract IntPtr ConvertToNative(object managed, int dwFlags);
+            public abstract void ConvertToManaged(object managed, IntPtr native);
+            public abstract void ClearNative(IntPtr native);
         }
 
-        // Pointer to MngdNativeArrayMarshaler, ownership not assumed.
-        private readonly IntPtr pvArrayMarshaler;
+        private sealed class ArrayImplementation<T, TMarshaler> : AsAnyMarshalerImplementation
+            where TMarshaler : IArrayMarshaler<T, TMarshaler>
+        {
+            private readonly bool _isOut;
 
-        // Type of action to perform after the CLR-to-unmanaged call.
-        private BackPropAction backPropAction;
+            public ArrayImplementation(bool isOut) { _isOut = isOut; }
 
-        // The managed layout type for BackPropAction.Layout.
-        private Type? layoutType;
+            public override unsafe IntPtr ConvertToNative(object managed, int dwFlags)
+            {
+                Array array = (Array)managed;
+                byte* pNative = TMarshaler.AllocateSpaceForUnmanaged(array);
+                try
+                {
+                    if (IsIn(dwFlags))
+                        TMarshaler.ConvertContentsToUnmanaged(array, pNative, array.Length);
+                }
+                catch
+                {
+                    Marshal.FreeCoTaskMem((IntPtr)pNative);
+                    throw;
+                }
 
-        // Cleanup list to be destroyed when clearing the native view (for layouts with SafeHandles).
-        private CleanupWorkListElement? cleanupWorkList;
+                return (IntPtr)pNative;
+            }
+
+            public override unsafe void ConvertToManaged(object managed, IntPtr native)
+            {
+                if (!_isOut) return;
+                Array array = (Array)managed;
+                TMarshaler.ConvertContentsToManaged(array, (byte*)native, array.Length);
+            }
+
+            public override void ClearNative(IntPtr native)
+            {
+                if (native != IntPtr.Zero)
+                    Marshal.FreeCoTaskMem(native);
+            }
+        }
+
+        private sealed class StringImplementation : AsAnyMarshalerImplementation
+        {
+            public override unsafe IntPtr ConvertToNative(object managed, int dwFlags)
+            {
+                string str = (string)managed;
+
+                // IsIn, IsOut are ignored for strings - they're always in-only
+                if (IsAnsi(dwFlags))
+                {
+                    return CSTRMarshaler.ConvertToNative(
+                        dwFlags & 0xFFFF, // (throw on unmappable char << 8 | best fit)
+                        str,
+                        IntPtr.Zero);     // unmanaged buffer will be allocated
+                }
+
+                int allocSize = (str.Length + 1) * 2;
+                IntPtr pNative = Marshal.AllocCoTaskMem(allocSize);
+                Buffer.Memmove(ref *(char*)pNative, ref str.GetRawStringData(), (nuint)str.Length + 1);
+
+                return pNative;
+            }
+
+            public override void ConvertToManaged(object managed, IntPtr native) { }
+
+            public override void ClearNative(IntPtr native)
+            {
+                if (native != IntPtr.Zero)
+                    Marshal.FreeCoTaskMem(native);
+            }
+        }
+
+        private sealed class LayoutImplementation : AsAnyMarshalerImplementation
+        {
+            private readonly Type _layoutType;
+            private readonly bool _isOut;
+            internal CleanupWorkListElement? _cleanupWorkList;
+
+            public LayoutImplementation(Type layoutType, bool isOut)
+            {
+                _layoutType = layoutType;
+                _isOut = isOut;
+            }
+
+            public override unsafe IntPtr ConvertToNative(object managed, int dwFlags)
+            {
+                // Note that the following call will not throw exception if the type
+                // of managed is not marshalable. That's intentional because we
+                // want to maintain the original behavior where this was indicated
+                // by TypeLoadException during the actual field marshaling.
+                int allocSize = Marshal.SizeOfHelper((RuntimeType)_layoutType, false);
+                IntPtr pNative = Marshal.AllocCoTaskMem(allocSize);
+
+                if (IsIn(dwFlags))
+                {
+                    StubHelpers.LayoutTypeConvertToUnmanaged(managed, (byte*)pNative, ref _cleanupWorkList);
+                }
+
+                return pNative;
+            }
+
+            public override unsafe void ConvertToManaged(object managed, IntPtr native)
+            {
+                if (_isOut)
+                    StubHelpers.LayoutTypeConvertToManaged(managed, (byte*)native);
+            }
+
+            public override void ClearNative(IntPtr native)
+            {
+                if (native != IntPtr.Zero)
+                {
+                    Marshal.DestroyStructure(native, _layoutType);
+                    Marshal.FreeCoTaskMem(native);
+                }
+                StubHelpers.DestroyCleanupList(ref _cleanupWorkList);
+            }
+        }
+
+        private sealed class StringBuilderAnsiImplementation : AsAnyMarshalerImplementation
+        {
+            private readonly bool _isOut;
+
+            public StringBuilderAnsiImplementation(bool isOut) { _isOut = isOut; }
+
+            public override unsafe IntPtr ConvertToNative(object managed, int dwFlags)
+            {
+                StringBuilder sb = (StringBuilder)managed;
+
+                // P/Invoke can be used to call Win32 apis that don't strictly follow CLR in/out semantics and thus may
+                // leave garbage in the buffer in circumstances that we can't detect. To prevent us from crashing when
+                // converting the contents back to managed, put a hidden NULL terminator past the end of the official buffer.
+
+                // Unmanaged layout:
+                // +====================================+
+                // | Extra hidden NULL                  |
+                // +====================================+ \
+                // |                                    | |
+                // | [Converted] NULL-terminated string | |- buffer that the target may change
+                // |                                    | |
+                // +====================================+ / <-- native home
+
+                // Cache StringBuilder capacity and length to ensure we don't allocate a certain amount of
+                // native memory and then walk beyond its end if the StringBuilder concurrently grows erroneously.
+                int capacity = sb.Capacity;
+                int length = sb.Length;
+                if (length > capacity)
+                    ThrowHelper.ThrowInvalidOperationException();
+
+                // Note that StringBuilder.Capacity is the number of characters NOT including any terminators.
+                StubHelpers.CheckStringLength(capacity);
+
+                int allocSize = checked((capacity * Marshal.SystemMaxDBCSCharSize) + 4);
+                IntPtr pNative = Marshal.AllocCoTaskMem(allocSize);
+
+                byte* ptr = (byte*)pNative;
+                *(ptr + allocSize - 3) = 0;
+                *(ptr + allocSize - 2) = 0;
+                *(ptr + allocSize - 1) = 0;
+
+                if (IsIn(dwFlags))
+                {
+                    int len = Marshal.StringToAnsiString(sb.ToString(),
+                        ptr, allocSize,
+                        IsBestFit(dwFlags),
+                        IsThrowOn(dwFlags));
+                    Debug.Assert(len < allocSize, "Expected a length less than the allocated size");
+                }
+
+                return pNative;
+            }
+
+            public override unsafe void ConvertToManaged(object managed, IntPtr native)
+            {
+                if (!_isOut) return;
+                int length = native == IntPtr.Zero ? 0 : string.strlen((byte*)native);
+                ((StringBuilder)managed).ReplaceBufferAnsiInternal((sbyte*)native, length);
+            }
+
+            public override void ClearNative(IntPtr native)
+            {
+                if (native != IntPtr.Zero)
+                    Marshal.FreeCoTaskMem(native);
+            }
+        }
+
+        private sealed class StringBuilderUnicodeImplementation : AsAnyMarshalerImplementation
+        {
+            private readonly bool _isOut;
+
+            public StringBuilderUnicodeImplementation(bool isOut) { _isOut = isOut; }
+
+            public override unsafe IntPtr ConvertToNative(object managed, int dwFlags)
+            {
+                StringBuilder sb = (StringBuilder)managed;
+
+                // See StringBuilderAnsiImplementation.ConvertToNative for buffer layout explanation.
+
+                // Cache StringBuilder capacity and length to ensure we don't allocate a certain amount of
+                // native memory and then walk beyond its end if the StringBuilder concurrently grows erroneously.
+                int capacity = sb.Capacity;
+                int length = sb.Length;
+                if (length > capacity)
+                    ThrowHelper.ThrowInvalidOperationException();
+
+                // Note that StringBuilder.Capacity is the number of characters NOT including any terminators.
+                int allocSize = checked((capacity * 2) + 4);
+                IntPtr pNative = Marshal.AllocCoTaskMem(allocSize);
+
+                byte* ptr = (byte*)pNative;
+                *(ptr + allocSize - 1) = 0;
+                *(ptr + allocSize - 2) = 0;
+
+                if (IsIn(dwFlags))
+                {
+                    sb.InternalCopy(pNative, length);
+
+                    int byteLen = length * 2;
+                    *(ptr + byteLen + 0) = 0;
+                    *(ptr + byteLen + 1) = 0;
+                }
+
+                return pNative;
+            }
+
+            public override unsafe void ConvertToManaged(object managed, IntPtr native)
+            {
+                if (!_isOut) return;
+                int length = native == IntPtr.Zero ? 0 : string.wcslen((char*)native);
+                ((StringBuilder)managed).ReplaceBufferInternal((char*)native, length);
+            }
+
+            public override void ClearNative(IntPtr native)
+            {
+                if (native != IntPtr.Zero)
+                    Marshal.FreeCoTaskMem(native);
+            }
+        }
 
         [Flags]
         internal enum AsAnyFlags
@@ -1061,336 +1143,175 @@ namespace System.StubHelpers
         private static bool IsThrowOn(int dwFlags) => (dwFlags & (int)AsAnyFlags.IsThrowOn) != 0;
         private static bool IsBestFit(int dwFlags) => (dwFlags & (int)AsAnyFlags.IsBestFit) != 0;
 
-        internal AsAnyMarshaler(IntPtr pvArrayMarshaler)
+        private static AsAnyMarshalerImplementation CreateAnsiCharArrayImplementation(bool isOut, int dwFlags)
         {
-            // we need this in case the value being marshaled turns out to be array
-            Debug.Assert(pvArrayMarshaler != IntPtr.Zero, "pvArrayMarshaler must not be null");
-
-            this.pvArrayMarshaler = pvArrayMarshaler;
-            backPropAction = BackPropAction.None;
-            layoutType = null;
-            cleanupWorkList = null;
+            return (IsBestFit(dwFlags), IsThrowOn(dwFlags)) switch
+            {
+                (true, true) => new ArrayImplementation<char, AnsiCharArrayMarshaler<IMarshalerOption.EnabledOption, IMarshalerOption.EnabledOption>>(isOut),
+                (true, false) => new ArrayImplementation<char, AnsiCharArrayMarshaler<IMarshalerOption.EnabledOption, IMarshalerOption.DisabledOption>>(isOut),
+                (false, true) => new ArrayImplementation<char, AnsiCharArrayMarshaler<IMarshalerOption.DisabledOption, IMarshalerOption.EnabledOption>>(isOut),
+                (false, false) => new ArrayImplementation<char, AnsiCharArrayMarshaler<IMarshalerOption.DisabledOption, IMarshalerOption.DisabledOption>>(isOut),
+            };
         }
 
-        #region ConvertToNative helpers
-
-        private unsafe IntPtr ConvertArrayToNative(object pManagedHome, int dwFlags)
+        internal AsAnyMarshaler(object? pManagedHome, int dwFlags)
         {
-            Type elementType = pManagedHome.GetType().GetElementType()!;
-            VarEnum vt;
+            _impl = null;
 
-            switch (Type.GetTypeCode(elementType))
-            {
-                case TypeCode.SByte: vt = VarEnum.VT_I1; break;
-                case TypeCode.Byte: vt = VarEnum.VT_UI1; break;
-                case TypeCode.Int16: vt = VarEnum.VT_I2; break;
-                case TypeCode.UInt16: vt = VarEnum.VT_UI2; break;
-                case TypeCode.Int32: vt = VarEnum.VT_I4; break;
-                case TypeCode.UInt32: vt = VarEnum.VT_UI4; break;
-                case TypeCode.Int64: vt = VarEnum.VT_I8; break;
-                case TypeCode.UInt64: vt = VarEnum.VT_UI8; break;
-                case TypeCode.Single: vt = VarEnum.VT_R4; break;
-                case TypeCode.Double: vt = VarEnum.VT_R8; break;
-                case TypeCode.Char: vt = (IsAnsi(dwFlags) ? (VarEnum)VTHACK_ANSICHAR : VarEnum.VT_UI2); break;
-                case TypeCode.Boolean: vt = (VarEnum)VTHACK_WINBOOL; break;
-
-                case TypeCode.Object:
-                    {
-                        if (elementType == typeof(IntPtr))
-                        {
-                            vt = (IntPtr.Size == 4 ? VarEnum.VT_I4 : VarEnum.VT_I8);
-                        }
-                        else if (elementType == typeof(UIntPtr))
-                        {
-                            vt = (IntPtr.Size == 4 ? VarEnum.VT_UI4 : VarEnum.VT_UI8);
-                        }
-                        else goto default;
-                        break;
-                    }
-
-                default:
-                    throw new ArgumentException(SR.Arg_PInvokeBadObject);
-            }
-
-            // marshal the object as C-style array (UnmanagedType.LPArray)
-            int dwArrayMarshalerFlags = (int)vt;
-            if (IsBestFit(dwFlags)) dwArrayMarshalerFlags |= (1 << 16);
-            if (IsThrowOn(dwFlags)) dwArrayMarshalerFlags |= (1 << 24);
-
-            MngdNativeArrayMarshaler.CreateMarshaler(
-                pvArrayMarshaler,
-                IntPtr.Zero,      // not needed as we marshal primitive VTs only
-                dwArrayMarshalerFlags,
-                nativeDataValid: false);
-
-            IntPtr pNativeHome;
-            IntPtr pNativeHomeAddr = new IntPtr(&pNativeHome);
-
-            MngdNativeArrayMarshaler.ConvertSpaceToNative(
-                pvArrayMarshaler,
-                in pManagedHome,
-                pNativeHomeAddr);
-
-            if (IsIn(dwFlags))
-            {
-                MngdNativeArrayMarshaler.ConvertContentsToNative(
-                    pvArrayMarshaler,
-                    in pManagedHome,
-                    pNativeHomeAddr);
-            }
-            if (IsOut(dwFlags))
-            {
-                backPropAction = BackPropAction.Array;
-            }
-
-            return pNativeHome;
-        }
-
-        private static IntPtr ConvertStringToNative(string pManagedHome, int dwFlags)
-        {
-            IntPtr pNativeHome;
-
-            // IsIn, IsOut are ignored for strings - they're always in-only
-            if (IsAnsi(dwFlags))
-            {
-                // marshal the object as Ansi string (UnmanagedType.LPStr)
-                pNativeHome = CSTRMarshaler.ConvertToNative(
-                    dwFlags & 0xFFFF, // (throw on unmappable char << 8 | best fit)
-                    pManagedHome,     //
-                    IntPtr.Zero);     // unmanaged buffer will be allocated
-            }
-            else
-            {
-                // marshal the object as Unicode string (UnmanagedType.LPWStr)
-                int allocSize = (pManagedHome.Length + 1) * 2;
-                pNativeHome = Marshal.AllocCoTaskMem(allocSize);
-                unsafe
-                {
-                    Buffer.Memmove(ref *(char*)pNativeHome, ref pManagedHome.GetRawStringData(), (nuint)pManagedHome.Length + 1);
-                }
-            }
-
-            return pNativeHome;
-        }
-
-        private unsafe IntPtr ConvertStringBuilderToNative(StringBuilder pManagedHome, int dwFlags)
-        {
-            IntPtr pNativeHome;
-
-            // P/Invoke can be used to call Win32 apis that don't strictly follow CLR in/out semantics and thus may
-            // leave garbage in the buffer in circumstances that we can't detect. To prevent us from crashing when
-            // converting the contents back to managed, put a hidden NULL terminator past the end of the official buffer.
-
-            // Unmanaged layout:
-            // +====================================+
-            // | Extra hidden NULL                  |
-            // +====================================+ \
-            // |                                    | |
-            // | [Converted] NULL-terminated string | |- buffer that the target may change
-            // |                                    | |
-            // +====================================+ / <-- native home
-
-            // Cache StringBuilder capacity and length to ensure we don't allocate a certain amount of
-            // native memory and then walk beyond its end if the StringBuilder concurrently grows erroneously.
-            int pManagedHomeCapacity = pManagedHome.Capacity;
-            int pManagedHomeLength = pManagedHome.Length;
-            if (pManagedHomeLength > pManagedHomeCapacity)
-            {
-                ThrowHelper.ThrowInvalidOperationException();
-            }
-
-            // Note that StringBuilder.Capacity is the number of characters NOT including any terminators.
-
-            if (IsAnsi(dwFlags))
-            {
-                StubHelpers.CheckStringLength(pManagedHomeCapacity);
-
-                // marshal the object as Ansi string (UnmanagedType.LPStr)
-                int allocSize = checked((pManagedHomeCapacity * Marshal.SystemMaxDBCSCharSize) + 4);
-                pNativeHome = Marshal.AllocCoTaskMem(allocSize);
-
-                byte* ptr = (byte*)pNativeHome;
-                *(ptr + allocSize - 3) = 0;
-                *(ptr + allocSize - 2) = 0;
-                *(ptr + allocSize - 1) = 0;
-
-                if (IsIn(dwFlags))
-                {
-                    int length = Marshal.StringToAnsiString(pManagedHome.ToString(),
-                        ptr, allocSize,
-                        IsBestFit(dwFlags),
-                        IsThrowOn(dwFlags));
-                    Debug.Assert(length < allocSize, "Expected a length less than the allocated size");
-                }
-                if (IsOut(dwFlags))
-                {
-                    backPropAction = BackPropAction.StringBuilderAnsi;
-                }
-            }
-            else
-            {
-                // marshal the object as Unicode string (UnmanagedType.LPWStr)
-                int allocSize = checked((pManagedHomeCapacity * 2) + 4);
-                pNativeHome = Marshal.AllocCoTaskMem(allocSize);
-
-                byte* ptr = (byte*)pNativeHome;
-                *(ptr + allocSize - 1) = 0;
-                *(ptr + allocSize - 2) = 0;
-
-                if (IsIn(dwFlags))
-                {
-                    pManagedHome.InternalCopy(pNativeHome, pManagedHomeLength);
-
-                    // null-terminate the native string
-                    int length = pManagedHomeLength * 2;
-                    *(ptr + length + 0) = 0;
-                    *(ptr + length + 1) = 0;
-                }
-                if (IsOut(dwFlags))
-                {
-                    backPropAction = BackPropAction.StringBuilderUnicode;
-                }
-            }
-
-            return pNativeHome;
-        }
-
-        private unsafe IntPtr ConvertLayoutToNative(object pManagedHome, int dwFlags)
-        {
-            // Note that the following call will not throw exception if the type
-            // of pManagedHome is not marshalable. That's intentional because we
-            // want to maintain the original behavior where this was indicated
-            // by TypeLoadException during the actual field marshaling.
-            int allocSize = Marshal.SizeOfHelper((RuntimeType)pManagedHome.GetType(), false);
-            IntPtr pNativeHome = Marshal.AllocCoTaskMem(allocSize);
-
-            // marshal the object as class with layout (UnmanagedType.LPStruct)
-            if (IsIn(dwFlags))
-            {
-                StubHelpers.LayoutTypeConvertToUnmanaged(pManagedHome, (byte*)pNativeHome, ref cleanupWorkList);
-            }
-            if (IsOut(dwFlags))
-            {
-                backPropAction = BackPropAction.Layout;
-            }
-            layoutType = pManagedHome.GetType();
-
-            return pNativeHome;
-        }
-
-        #endregion
-
-        internal IntPtr ConvertToNative(object pManagedHome, int dwFlags)
-        {
-            if (pManagedHome == null)
-                return IntPtr.Zero;
+            if (pManagedHome is null)
+                return;
 
             if (pManagedHome is ArrayWithOffset)
                 throw new ArgumentException(SR.Arg_MarshalAsAnyRestriction);
 
-            IntPtr pNativeHome;
-
             if (pManagedHome.GetType().IsArray)
             {
-                // array (LPArray)
-                pNativeHome = ConvertArrayToNative(pManagedHome, dwFlags);
+                Type elementType = pManagedHome.GetType().GetElementType()!;
+                bool isOut = IsOut(dwFlags);
+                _impl = Type.GetTypeCode(elementType) switch
+                {
+                    TypeCode.SByte => new ArrayImplementation<sbyte, BlittableArrayMarshaler<sbyte>>(isOut),
+                    TypeCode.Byte => new ArrayImplementation<byte, BlittableArrayMarshaler<byte>>(isOut),
+                    TypeCode.Int16 => new ArrayImplementation<short, BlittableArrayMarshaler<short>>(isOut),
+                    TypeCode.UInt16 => new ArrayImplementation<ushort, BlittableArrayMarshaler<ushort>>(isOut),
+                    TypeCode.Int32 => new ArrayImplementation<int, BlittableArrayMarshaler<int>>(isOut),
+                    TypeCode.UInt32 => new ArrayImplementation<uint, BlittableArrayMarshaler<uint>>(isOut),
+                    TypeCode.Int64 => new ArrayImplementation<long, BlittableArrayMarshaler<long>>(isOut),
+                    TypeCode.UInt64 => new ArrayImplementation<ulong, BlittableArrayMarshaler<ulong>>(isOut),
+                    TypeCode.Single => new ArrayImplementation<float, BlittableArrayMarshaler<float>>(isOut),
+                    TypeCode.Double => new ArrayImplementation<double, BlittableArrayMarshaler<double>>(isOut),
+                    TypeCode.Object when elementType == typeof(nint) => new ArrayImplementation<nint, BlittableArrayMarshaler<nint>>(isOut),
+                    TypeCode.Object when elementType == typeof(nuint) => new ArrayImplementation<nuint, BlittableArrayMarshaler<nuint>>(isOut),
+                    TypeCode.Char when !IsAnsi(dwFlags) => new ArrayImplementation<char, BlittableArrayMarshaler<char>>(isOut),
+                    TypeCode.Char when IsAnsi(dwFlags) => CreateAnsiCharArrayImplementation(isOut, dwFlags),
+                    TypeCode.Boolean => new ArrayImplementation<bool, BoolMarshaler<int>>(isOut),
+                    _ => throw new ArgumentException(SR.Arg_PInvokeBadObject)
+                };
+            }
+            else if (pManagedHome is string)
+            {
+                _impl = new StringImplementation();
+            }
+            else if (pManagedHome is StringBuilder)
+            {
+                bool isOut = IsOut(dwFlags);
+                _impl = IsAnsi(dwFlags)
+                    ? new StringBuilderAnsiImplementation(isOut)
+                    : new StringBuilderUnicodeImplementation(isOut);
+            }
+            else if (pManagedHome.GetType().IsLayoutSequential || pManagedHome.GetType().IsExplicitLayout)
+            {
+                _impl = new LayoutImplementation(pManagedHome.GetType(), IsOut(dwFlags));
             }
             else
             {
-                if (pManagedHome is string strValue)
-                {
-                    // string (LPStr or LPWStr)
-                    pNativeHome = ConvertStringToNative(strValue, dwFlags);
-                }
-                else if (pManagedHome is StringBuilder sbValue)
-                {
-                    // StringBuilder (LPStr or LPWStr)
-                    pNativeHome = ConvertStringBuilderToNative(sbValue, dwFlags);
-                }
-                else if (pManagedHome.GetType().IsLayoutSequential || pManagedHome.GetType().IsExplicitLayout)
-                {
-                    // layout (LPStruct)
-                    pNativeHome = ConvertLayoutToNative(pManagedHome, dwFlags);
-                }
-                else
-                {
-                    // this type is not supported for AsAny marshaling
-                    throw new ArgumentException(SR.Arg_PInvokeBadObject);
-                }
+                throw new ArgumentException(SR.Arg_PInvokeBadObject);
             }
-
-            return pNativeHome;
         }
 
-        internal unsafe void ConvertToManaged(object pManagedHome, IntPtr pNativeHome)
+        internal IntPtr ConvertToNative(object pManagedHome, int dwFlags)
         {
-            switch (backPropAction)
-            {
-                case BackPropAction.Array:
-                    {
-                        MngdNativeArrayMarshaler.ConvertContentsToManaged(
-                            pvArrayMarshaler,
-                            in pManagedHome,
-                            new IntPtr(&pNativeHome));
-                        break;
-                    }
+            return _impl?.ConvertToNative(pManagedHome, dwFlags) ?? IntPtr.Zero;
+        }
 
-                case BackPropAction.Layout:
-                    {
-                        StubHelpers.LayoutTypeConvertToManaged(pManagedHome, (byte*)pNativeHome);
-                        break;
-                    }
-
-                case BackPropAction.StringBuilderAnsi:
-                    {
-                        int length;
-                        if (pNativeHome == IntPtr.Zero)
-                        {
-                            length = 0;
-                        }
-                        else
-                        {
-                            length = string.strlen((byte*)pNativeHome);
-                        }
-
-                        ((StringBuilder)pManagedHome).ReplaceBufferAnsiInternal((sbyte*)pNativeHome, length);
-                        break;
-                    }
-
-                case BackPropAction.StringBuilderUnicode:
-                    {
-                        int length;
-                        if (pNativeHome == IntPtr.Zero)
-                        {
-                            length = 0;
-                        }
-                        else
-                        {
-                            length = string.wcslen((char*)pNativeHome);
-                        }
-
-                        ((StringBuilder)pManagedHome).ReplaceBufferInternal((char*)pNativeHome, length);
-                        break;
-                    }
-
-                    // nothing to do for BackPropAction.None
-            }
+        internal void ConvertToManaged(object pManagedHome, IntPtr pNativeHome)
+        {
+            _impl?.ConvertToManaged(pManagedHome, pNativeHome);
         }
 
         internal void ClearNative(IntPtr pNativeHome)
         {
-            if (pNativeHome != IntPtr.Zero)
+            if (_impl is not null)
             {
-                if (layoutType != null)
-                {
-                    // this must happen regardless of BackPropAction
-                    Marshal.DestroyStructure(pNativeHome, layoutType);
-                }
+                _impl.ClearNative(pNativeHome);
+            }
+            else if (pNativeHome != IntPtr.Zero)
+            {
                 Marshal.FreeCoTaskMem(pNativeHome);
             }
-            StubHelpers.DestroyCleanupList(ref cleanupWorkList);
         }
     }  // struct AsAnyMarshaler
+
+    internal interface IArrayMarshaler<T, TSelf>
+        where TSelf : IArrayMarshaler<T, TSelf>
+    {
+        static abstract unsafe void ConvertContentsToUnmanaged(Array managedArray, byte* unmanaged, int length);
+        static abstract unsafe void ConvertContentsToManaged(Array managedArray, byte* unmanaged, int length);
+        static abstract unsafe void FreeContents(byte* unmanaged, int length);
+        static abstract unsafe byte* AllocateSpaceForUnmanaged(Array? managedArray);
+        static abstract unsafe Array? AllocateSpaceForManaged(byte* unmanaged, int length);
+    }
+
+    internal interface IArrayElementMarshaler<T, TSelf> : IArrayMarshaler<T, TSelf>
+        where TSelf : IArrayElementMarshaler<T, TSelf>, IArrayMarshaler<T, TSelf>
+    {
+        static unsafe void IArrayMarshaler<T, TSelf>.ConvertContentsToManaged(Array managedArray, byte* unmanaged, int length)
+        {
+            Span<T> elements = new(ref Unsafe.As<byte, T>(ref MemoryMarshal.GetArrayDataReference(managedArray)), managedArray.Length);
+            for (int i = 0; i < length; i++)
+            {
+                TSelf.ConvertToManaged(ref elements[i], unmanaged);
+                unmanaged += TSelf.UnmanagedSize;
+            }
+        }
+
+        static unsafe void IArrayMarshaler<T, TSelf>.ConvertContentsToUnmanaged(Array managedArray, byte* unmanaged, int length)
+        {
+            Span<T> elements = new(ref Unsafe.As<byte, T>(ref MemoryMarshal.GetArrayDataReference(managedArray)), managedArray.Length);
+            for (int i = 0; i < length; i++)
+            {
+                TSelf.ConvertToUnmanaged(ref elements[i], unmanaged);
+                unmanaged += TSelf.UnmanagedSize;
+            }
+        }
+
+        static unsafe void IArrayMarshaler<T, TSelf>.FreeContents(byte* unmanaged, int length)
+        {
+            for (int i = 0; i < length; i++)
+            {
+                TSelf.Free(unmanaged);
+                unmanaged += TSelf.UnmanagedSize;
+            }
+        }
+
+        static unsafe byte* IArrayMarshaler<T, TSelf>.AllocateSpaceForUnmanaged(Array? managedArray)
+        {
+            if (managedArray is null)
+            {
+                return null;
+            }
+            else
+            {
+                const nuint MaxSizeForInterop = 0x7ffffff0u;
+                nuint elementCount = (nuint)(uint)managedArray.Length;
+                nuint elementSize = TSelf.UnmanagedSize;
+                if (elementCount != 0 && elementSize > MaxSizeForInterop / elementCount)
+                    throw new ArgumentException(SR.Argument_StructArrayTooLarge);
+                nuint nativeBytes = elementCount * elementSize;
+                byte* pNative = (byte*)Marshal.AllocCoTaskMem((int)nativeBytes);
+                NativeMemory.Clear(pNative, nativeBytes);
+                return pNative;
+            }
+        }
+
+        static unsafe Array? IArrayMarshaler<T, TSelf>.AllocateSpaceForManaged(byte* unmanaged, int length)
+        {
+            if (unmanaged is null)
+            {
+                return null;
+            }
+            else
+            {
+                return new T[length];
+            }
+        }
+
+        static abstract unsafe void ConvertToUnmanaged(ref T managed, byte* unmanaged);
+        static abstract unsafe void ConvertToManaged(ref T managed, byte* unmanaged);
+        static abstract unsafe void Free(byte* unmanaged);
+
+        static abstract nuint UnmanagedSize { get; }
+    }
 
     // Constants for direction argument of struct marshalling stub.
     internal static class MarshalOperation
@@ -1400,17 +1321,87 @@ namespace System.StubHelpers
         internal const int Free = 2;
     }
 
-    internal static unsafe class StructureMarshaler<T>  where T : notnull
+    internal sealed class BlittableArrayMarshaler<T> : IArrayMarshaler<T, BlittableArrayMarshaler<T>>
+        where T : unmanaged
     {
-        // Blittable types have a no-op FreeCore (the [Intrinsic] C# body is used) and need no NativeMemory.Clear.
-        // Non-blittable types have a JIT-generated FreeCore stub and require NativeMemory.Clear after cleanup.
-        private static readonly bool s_isBlittable = InitIsBlittable();
-
-        private static bool InitIsBlittable()
+        static unsafe void IArrayMarshaler<T, BlittableArrayMarshaler<T>>.ConvertContentsToUnmanaged(Array managedArray, byte* unmanaged, int length)
         {
-            RuntimeType type = (RuntimeType)typeof(T);
-            Marshal.HasLayout(new QCallTypeHandle(ref type), out bool isBlittable, out _);
-            return isBlittable;
+            SpanHelpers.Memmove(ref *unmanaged, ref MemoryMarshal.GetArrayDataReference(managedArray), (nuint)length * (nuint)sizeof(T));
+        }
+
+        static unsafe void IArrayMarshaler<T, BlittableArrayMarshaler<T>>.ConvertContentsToManaged(Array managedArray, byte* unmanaged, int length)
+        {
+            SpanHelpers.Memmove(ref MemoryMarshal.GetArrayDataReference(managedArray), ref *unmanaged, (nuint)length * (nuint)sizeof(T));
+        }
+
+        static unsafe void IArrayMarshaler<T, BlittableArrayMarshaler<T>>.FreeContents(byte* unmanaged, int length)
+        {
+        }
+
+        static unsafe byte* IArrayMarshaler<T, BlittableArrayMarshaler<T>>.AllocateSpaceForUnmanaged(Array? managedArray)
+        {
+            if (managedArray is null)
+                return null;
+
+            const nuint MaxSizeForInterop = 0x7ffffff0u;
+            nuint elementCount = (nuint)(uint)managedArray.Length;
+            nuint elementSize = (nuint)sizeof(T);
+            if (elementCount != 0 && elementSize > MaxSizeForInterop / elementCount)
+                throw new ArgumentException(SR.Argument_StructArrayTooLarge);
+            nuint nativeBytes = elementCount * elementSize;
+            byte* pNative = (byte*)Marshal.AllocCoTaskMem((int)nativeBytes);
+            NativeMemory.Clear(pNative, nativeBytes);
+
+            return pNative;
+        }
+
+        static unsafe Array? IArrayMarshaler<T, BlittableArrayMarshaler<T>>.AllocateSpaceForManaged(byte* unmanaged, int length)
+        {
+            if (unmanaged is null)
+                return null;
+
+            return new T[length];
+        }
+    }
+
+    internal sealed unsafe class StructureMarshaler<T> : IArrayElementMarshaler<T, StructureMarshaler<T>> where T : notnull
+    {
+        static unsafe void IArrayElementMarshaler<T, StructureMarshaler<T>>.ConvertToManaged(ref T managed, byte* unmanaged)
+        {
+            ConvertToManaged(ref managed, unmanaged, ref Unsafe.NullRef<CleanupWorkListElement?>());
+        }
+
+        static unsafe void IArrayElementMarshaler<T, StructureMarshaler<T>>.ConvertToUnmanaged(ref T managed, byte* unmanaged)
+        {
+            ConvertToUnmanaged(ref managed, unmanaged, ref Unsafe.NullRef<CleanupWorkListElement?>());
+        }
+
+        static unsafe void IArrayElementMarshaler<T, StructureMarshaler<T>>.Free(byte* unmanaged)
+        {
+            Free(ref Unsafe.NullRef<T>(), unmanaged, ref Unsafe.NullRef<CleanupWorkListElement?>());
+        }
+
+        static nuint IArrayElementMarshaler<T, StructureMarshaler<T>>.UnmanagedSize => (nuint)UnmanagedSize;
+
+        private static class SizeHolder
+        {
+            public static readonly int UnmanagedSize = typeof(T).IsEnum ? Marshal.SizeOf(Enum.GetUnderlyingType(typeof(T))) : Marshal.SizeOf<T>();
+        }
+
+        private static int UnmanagedSize
+        {
+            get
+            {
+                try
+                {
+                    return SizeHolder.UnmanagedSize;
+                }
+                catch (TypeInitializationException ex)
+                {
+                    ExceptionDispatchInfo.Capture(ex.InnerException ?? ex).Throw();
+                    return 0;
+                }
+            }
         }
 
         [Conditional("DEBUG")]
@@ -1419,7 +1410,7 @@ namespace System.StubHelpers
             Debug.Assert(typeof(T).IsValueType, "StructureMarshaler can only be used for value types");
             RuntimeType type = (RuntimeType)typeof(T);
             bool hasLayout = Marshal.HasLayout(new QCallTypeHandle(ref type), out bool isBlittable, out int _);
-            Debug.Assert(hasLayout, "Non-layout structs should not be marshalable");
+            Debug.Assert(hasLayout, "Non-layout classes should not use the layout class marshaler.");
             Debug.Assert(isBlittable, "Non-blittable structs should have a custom IL body generated with the marshaling logic.");
         }
 
@@ -1431,18 +1422,18 @@ namespace System.StubHelpers
             SpanHelpers.Memmove(ref *unmanaged, ref Unsafe.As<T, byte>(ref managed), (nuint)sizeof(T));
         }
 
-        public static void ConvertToUnmanaged(ref T managed, byte* unmanaged, int nativeSize, ref CleanupWorkListElement? cleanupWorkList)
+        public static void ConvertToUnmanaged(ref T managed, byte* unmanaged, ref CleanupWorkListElement? cleanupWorkList)
         {
             try
             {
-                NativeMemory.Clear(unmanaged, (nuint)nativeSize);
+                NativeMemory.Clear(unmanaged, (nuint)UnmanagedSize);
                 ConvertToUnmanagedCore(ref managed, unmanaged, ref cleanupWorkList);
             }
             catch (Exception)
             {
                 // If Free throws an exception (which it shouldn't as it can leak)
                 // let that exception supercede the exception from ConvertToUnmanagedCore.
-                Free(ref managed, unmanaged, nativeSize, ref cleanupWorkList);
+                Free(ref managed, unmanaged, ref cleanupWorkList);
                 throw;
             }
         }
@@ -1466,20 +1457,17 @@ namespace System.StubHelpers
             _ = ref cleanupWorkList;
         }
 
-        public static void Free(ref T managed, byte* unmanaged, int nativeSize, ref CleanupWorkListElement? cleanupWorkList)
+        public static void Free(ref T managed, byte* unmanaged, ref CleanupWorkListElement? cleanupWorkList)
         {
-            // For blittable types, FreeCore is a no-op and there are no native sub-structures to free.
-            // Calling NativeMemory.Clear on a potentially invalid pointer (e.g., in DestroyStructure tests)
-            // would cause a fault, so we skip cleanup entirely for blittable types.
-            if (unmanaged != null && !s_isBlittable)
+            if (unmanaged != null)
             {
                 FreeCore(ref managed, unmanaged, ref cleanupWorkList);
-                NativeMemory.Clear(unmanaged, (nuint)nativeSize);
+                NativeMemory.Clear(unmanaged, (nuint)UnmanagedSize);
             }
         }
     }
 
-    internal static unsafe class LayoutClassMarshaler<T> where T : notnull
+    internal sealed unsafe class LayoutClassMarshaler<T> : IArrayElementMarshaler<T, LayoutClassMarshaler<T>> where T : notnull
     {
         // We use a nested Methods class with properties that unwrap the TypeInitializationException
         // to ensure that users see a TypeLoadException if the type has a recursive native layout.
@@ -1490,7 +1478,7 @@ namespace System.StubHelpers
             private static readonly delegate*<ref byte, byte*, ref CleanupWorkListElement?, void> _convertToManaged;
             private static readonly delegate*<ref byte, byte*, ref CleanupWorkListElement?, void> _free;
 
-            private static readonly nuint s_nativeSizeForBlittableTypes;
+            private static readonly nuint s_unmanagedSize;
 
 #pragma warning disable CA1810 // Static constructor is required to initialize with the out parameters
             static Methods()
@@ -1498,16 +1486,15 @@ namespace System.StubHelpers
                 RuntimeTypeHandle th = typeof(T).TypeHandle;
                 bool hasLayout = Marshal.HasLayout(new QCallTypeHandle(ref th), out bool isBlittable, out int nativeSize);
                 Debug.Assert(hasLayout, "Non-layout classes should not use the layout class marshaler.");
+                s_unmanagedSize = (nuint)nativeSize;
                 if (isBlittable)
                 {
-                    s_nativeSizeForBlittableTypes = (nuint)nativeSize;
                     _convertToUnmanaged = &BlittableConvertToUnmanaged;
                     _convertToManaged = &BlittableConvertToManaged;
                     _free = &BlittableFree;
                 }
                 else
                 {
-                    s_nativeSizeForBlittableTypes = 0;
                     StubHelpers.CreateLayoutClassMarshalStubs(new QCallTypeHandle(ref th), out _convertToUnmanaged, out _convertToManaged, out _free);
                 }
             }
@@ -1515,12 +1502,12 @@ namespace System.StubHelpers
 
             private static void BlittableConvertToUnmanaged(ref byte managed, byte* unmanaged, ref CleanupWorkListElement? cleanupWorkList)
             {
-                SpanHelpers.Memmove(ref *unmanaged, ref managed, s_nativeSizeForBlittableTypes);
+                SpanHelpers.Memmove(ref *unmanaged, ref managed, s_unmanagedSize);
             }
 
             private static void BlittableConvertToManaged(ref byte managed, byte* unmanaged, ref CleanupWorkListElement? cleanupWorkList)
             {
-                SpanHelpers.Memmove(ref managed, ref *unmanaged, s_nativeSizeForBlittableTypes);
+                SpanHelpers.Memmove(ref managed, ref *unmanaged, s_unmanagedSize);
             }
 
             private static void BlittableFree(ref byte managed, byte* unmanaged, ref CleanupWorkListElement? cleanupWorkList)
@@ -1534,8 +1521,7 @@ namespace System.StubHelpers
 
             internal static delegate*<ref byte, byte*, ref CleanupWorkListElement?, void> Free => _free;
 
-            // s_nativeSizeForBlittableTypes is non-zero for blittable types and zero for non-blittable types.
-            internal static bool IsBlittable => s_nativeSizeForBlittableTypes != 0;
+            internal static nuint UnmanagedSize => s_unmanagedSize;
         }
 
         private static void ConvertToUnmanagedCore(T managed, byte* unmanaged, ref CleanupWorkListElement? cleanupWorkList)
@@ -1556,18 +1542,18 @@ namespace System.StubHelpers
             }
         }
 
-        public static void ConvertToUnmanaged(T managed, byte* unmanaged, int nativeSize, ref CleanupWorkListElement? cleanupWorkList)
+        public static void ConvertToUnmanaged(T managed, byte* unmanaged, ref CleanupWorkListElement? cleanupWorkList)
         {
             try
             {
-                NativeMemory.Clear(unmanaged, (nuint)nativeSize);
+                NativeMemory.Clear(unmanaged, UnmanagedSize);
                 ConvertToUnmanagedCore(managed, unmanaged, ref cleanupWorkList);
             }
             catch (Exception)
             {
                 // If Free throws an exception (which it shouldn't as it can leak)
                 // let that exception supercede the exception from ConvertToUnmanagedCore.
-                Free(managed, unmanaged, nativeSize, ref cleanupWorkList);
+                Free(managed, unmanaged, ref cleanupWorkList);
                 throw;
             }
         }
@@ -1614,48 +1600,63 @@ namespace System.StubHelpers
                 }
             }
         }
-
-        private static bool GetIsBlittable()
+        public static void Free(T? managed, byte* unmanaged, ref CleanupWorkListElement? cleanupWorkList)
         {
-            try
-            {
-                return CallIsBlittable();
-            }
-            catch (TypeInitializationException ex)
-            {
-                ExceptionDispatchInfo.Capture(ex.InnerException ?? ex).Throw();
-                return false; // unreachable
-            }
-
-            [MethodImpl(MethodImplOptions.NoInlining)]
-            static bool CallIsBlittable() => Methods.IsBlittable;
-        }
-
-        public static void Free(T? managed, byte* unmanaged, int nativeSize, ref CleanupWorkListElement? cleanupWorkList)
-        {
-            // For blittable types, FreeCore is a no-op and there are no native sub-structures to free.
-            // Calling NativeMemory.Clear on a potentially invalid pointer (e.g., in DestroyStructure tests)
-            // would cause a fault, so we skip cleanup entirely for blittable types.
-            if (unmanaged != null && !GetIsBlittable())
+            if (unmanaged != null)
             {
                 FreeCore(managed, unmanaged, ref cleanupWorkList);
-                NativeMemory.Clear(unmanaged, (nuint)nativeSize);
+                NativeMemory.Clear(unmanaged, UnmanagedSize);
             }
         }
+
+        private static nuint UnmanagedSize
+        {
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            get
+            {
+                try
+                {
+                    return Methods.UnmanagedSize;
+                }
+                catch (TypeInitializationException ex)
+                {
+                    ExceptionDispatchInfo.Capture(ex.InnerException ?? ex).Throw();
+                    // Unreachable
+                    return 0;
+                }
+            }
+        }
+
+        static unsafe void IArrayElementMarshaler<T, LayoutClassMarshaler<T>>.ConvertToManaged(ref T managed, byte* unmanaged)
+        {
+            ConvertToManaged(managed, unmanaged, ref Unsafe.NullRef<CleanupWorkListElement?>());
+        }
+
+        static unsafe void IArrayElementMarshaler<T, LayoutClassMarshaler<T>>.ConvertToUnmanaged(ref T managed, byte* unmanaged)
+        {
+            ConvertToUnmanaged(managed, unmanaged, ref Unsafe.NullRef<CleanupWorkListElement?>());
+        }
+
+        static unsafe void IArrayElementMarshaler<T, LayoutClassMarshaler<T>>.Free(byte* unmanaged)
+        {
+            Free(default, unmanaged, ref Unsafe.NullRef<CleanupWorkListElement?>());
+        }
+
+        static nuint IArrayElementMarshaler<T, LayoutClassMarshaler<T>>.UnmanagedSize => UnmanagedSize;
     }
 
     // Marshaller for layout classes and boxed structs.
     internal static unsafe class BoxedLayoutTypeMarshaler<T> where T : notnull
     {
-        public static void ConvertToUnmanaged(object managed, byte* unmanaged, int nativeSize, ref CleanupWorkListElement? cleanupWorkList)
+        public static void ConvertToUnmanaged(object managed, byte* unmanaged, ref CleanupWorkListElement? cleanupWorkList)
         {
             if (typeof(T).IsValueType)
             {
-                StructureMarshaler<T>.ConvertToUnmanaged(ref Unsafe.As<byte, T>(ref managed.GetRawData()), unmanaged, nativeSize, ref cleanupWorkList);
+                StructureMarshaler<T>.ConvertToUnmanaged(ref Unsafe.As<byte, T>(ref managed.GetRawData()), unmanaged, ref cleanupWorkList);
             }
             else
             {
-                LayoutClassMarshaler<T>.ConvertToUnmanaged(Unsafe.As<object, T>(ref managed), unmanaged, nativeSize, ref cleanupWorkList);
+                LayoutClassMarshaler<T>.ConvertToUnmanaged(Unsafe.As<object, T>(ref managed), unmanaged, ref cleanupWorkList);
             }
         }
 
@@ -1671,7 +1672,7 @@ namespace System.StubHelpers
             }
         }
 
-        public static void Free(object? managed, byte* unmanaged, int nativeSize, ref CleanupWorkListElement? cleanupWorkList)
+        public static void Free(object? managed, byte* unmanaged, ref CleanupWorkListElement? cleanupWorkList)
         {
             if (typeof(T).IsValueType)
             {
@@ -1682,12 +1683,437 @@ namespace System.StubHelpers
                     managedRef = ref managed.GetRawData();
                 }
 
-                StructureMarshaler<T>.Free(ref Unsafe.As<byte, T>(ref managedRef), unmanaged, nativeSize, ref cleanupWorkList);
+                StructureMarshaler<T>.Free(ref Unsafe.As<byte, T>(ref managedRef), unmanaged, ref cleanupWorkList);
             }
             else
             {
-                LayoutClassMarshaler<T>.Free(Unsafe.As<object?, T?>(ref managed), unmanaged, nativeSize, ref cleanupWorkList);
+                LayoutClassMarshaler<T>.Free(Unsafe.As<object?, T?>(ref managed), unmanaged, ref cleanupWorkList);
             }
+        }
+    }
+
+    internal sealed class VariantBoolMarshaler : IArrayElementMarshaler<bool, VariantBoolMarshaler>
+    {
+        private const ushort VARIANT_TRUE = unchecked((ushort)-1);
+        private const ushort VARIANT_FALSE = 0;
+        public static unsafe void ConvertToUnmanaged(ref bool managed, byte* unmanaged)
+        {
+            *(ushort*)unmanaged = managed ? VARIANT_TRUE : VARIANT_FALSE;
+        }
+
+        public static unsafe void ConvertToManaged(ref bool managed, byte* unmanaged)
+        {
+            managed = (*(ushort*)unmanaged) != VARIANT_FALSE;
+        }
+
+        public static unsafe void Free(byte* unmanaged)
+        {
+            _ = unmanaged;
+            // Nothing to free for VARIANT_BOOL.
+        }
+
+        static nuint IArrayElementMarshaler<bool, VariantBoolMarshaler>.UnmanagedSize => (nuint)sizeof(short);
+    }
+
+    internal sealed class BoolMarshaler<TUnmanaged> : IArrayElementMarshaler<bool, BoolMarshaler<TUnmanaged>> where TUnmanaged : unmanaged, INumberBase<TUnmanaged>
+    {
+        public static unsafe void ConvertToUnmanaged(ref bool managed, byte* unmanaged)
+        {
+            TUnmanaged value = managed ? TUnmanaged.One : TUnmanaged.Zero;
+            Unsafe.WriteUnaligned(unmanaged, value);
+        }
+
+        public static unsafe void ConvertToManaged(ref bool managed, byte* unmanaged)
+        {
+            TUnmanaged value = Unsafe.ReadUnaligned<TUnmanaged>(unmanaged);
+            managed = !value.Equals(TUnmanaged.Zero);
+        }
+
+        public static unsafe void Free(byte* unmanaged)
+        {
+            _ = unmanaged;
+            // Nothing to free for boolean values.
+        }
+
+        static unsafe nuint IArrayElementMarshaler<bool, BoolMarshaler<TUnmanaged>>.UnmanagedSize => (nuint)sizeof(TUnmanaged);
+    }
+
+    internal sealed class LPWSTRMarshaler : IArrayElementMarshaler<string?, LPWSTRMarshaler>
+    {
+        public static unsafe void ConvertToUnmanaged(ref string? managed, byte* unmanaged)
+        {
+            IntPtr native = IntPtr.Zero;
+
+            if (managed is not null)
+            {
+                int allocSize = (managed.Length + 1) * sizeof(char);
+                native = Marshal.AllocCoTaskMem(allocSize);
+                string.InternalCopy(managed, native, allocSize);
+            }
+
+            *(IntPtr*)unmanaged = native;
+        }
+
+        public static unsafe void ConvertToManaged(ref string? managed, byte* unmanaged)
+        {
+            IntPtr native = *(IntPtr*)unmanaged;
+            if (native == IntPtr.Zero)
+            {
+                managed = null;
+            }
+            else
+            {
+                StubHelpers.CheckStringLength((uint)string.wcslen((char*)native));
+                managed = new string((char*)native);
+            }
+        }
+
+        public static unsafe void Free(byte* unmanaged)
+        {
+            IntPtr pNativeHome = *(IntPtr*)unmanaged;
+            if (pNativeHome != IntPtr.Zero)
+            {
+                Marshal.FreeCoTaskMem(pNativeHome);
+            }
+        }
+
+        static unsafe nuint IArrayElementMarshaler<string?, LPWSTRMarshaler>.UnmanagedSize => (nuint)sizeof(IntPtr);
+    }
+
+    internal sealed class AnsiCharArrayMarshaler<TBestFit, TThrowOnUnmappable> : IArrayMarshaler<char, AnsiCharArrayMarshaler<TBestFit, TThrowOnUnmappable>>
+        where TBestFit : IMarshalerOption
+        where TThrowOnUnmappable : IMarshalerOption
+    {
+        public static unsafe void ConvertContentsToUnmanaged(Array managedArray, byte* unmanaged, int length)
+        {
+            fixed (byte* pCharBytes = &MemoryMarshal.GetArrayDataReference(managedArray))
+            {
+                char* pChars = (char*)pCharBytes;
+#if TARGET_WINDOWS
+                uint flags = TBestFit.Enabled ? 0 : Interop.Kernel32.WC_NO_BEST_FIT_CHARS;
+                Interop.BOOL defaultCharUsed = Interop.BOOL.FALSE;
+                int result = Interop.Kernel32.WideCharToMultiByte(
+                    Interop.Kernel32.CP_ACP,
+                    flags,
+                    pChars,
+                    length,
+                    unmanaged,
+                    length,
+                    null,
+                    TThrowOnUnmappable.Enabled ? &defaultCharUsed : null);
+
+                if (result == 0 && length > 0)
+                {
+                    throw new ArgumentException(SR.Interop_Marshal_Unmappable_Char);
+                }
+
+                if (defaultCharUsed != Interop.BOOL.FALSE)
+                {
+                    throw new ArgumentException(SR.Interop_Marshal_Unmappable_Char);
+                }
+#else
+                Encoding.UTF8.GetBytes(pChars, length, unmanaged, length);
+#endif
+            }
+
+        }
+
+        public static unsafe void ConvertContentsToManaged(Array managedArray, byte* unmanaged, int length)
+        {
+            fixed (byte* pCharBytes = &MemoryMarshal.GetArrayDataReference(managedArray))
+            {
+                char* pChars = (char*)pCharBytes;
+#if TARGET_WINDOWS
+                int result = Interop.Kernel32.MultiByteToWideChar(
+                    Interop.Kernel32.CP_ACP,
+                    Interop.Kernel32.MB_PRECOMPOSED,
+                    unmanaged,
+                    length,
+                    pChars,
+                    length);
+
+                if (result == 0 && length > 0)
+                {
+                    Marshal.ThrowExceptionForHR(Marshal.GetHRForLastWin32Error());
+                }
+#else
+                Encoding.UTF8.GetChars(unmanaged, length, pChars, length);
+#endif
+            }
+        }
+
+        public static unsafe void FreeContents(byte* unmanaged, int length)
+        {
+        }
+
+        public static unsafe byte* AllocateSpaceForUnmanaged(Array? managedArray)
+        {
+            if (managedArray is null)
+            {
+                return null;
+            }
+
+            // Native layout for ANSI char arrays uses 1 byte per element.
+            int allocSize = managedArray.Length;
+            byte* pNative = (byte*)Marshal.AllocCoTaskMem(allocSize);
+            NativeMemory.Clear(pNative, (nuint)allocSize);
+            return pNative;
+        }
+
+        public static unsafe Array? AllocateSpaceForManaged(byte* unmanaged, int length)
+        {
+            if (unmanaged is null)
+            {
+                return null;
+            }
+
+            return new char[length];
+        }
+    }
+
+    internal sealed class LPSTRArrayElementMarshaler<TBestFit, TThrowOnUnmappable> : IArrayElementMarshaler<string?, LPSTRArrayElementMarshaler<TBestFit, TThrowOnUnmappable>>
+        where TBestFit : IMarshalerOption
+        where TThrowOnUnmappable : IMarshalerOption
+    {
+        public static unsafe void ConvertToUnmanaged(ref string? managed, byte* unmanaged)
+        {
+            int flags = (TBestFit.Enabled ? 0xFF : 0) | (TThrowOnUnmappable.Enabled ? 0xFF00 : 0);
+            *(IntPtr*)unmanaged = CSTRMarshaler.ConvertToNative(flags, managed, IntPtr.Zero);
+        }
+
+        public static unsafe void ConvertToManaged(ref string? managed, byte* unmanaged)
+        {
+            managed = CSTRMarshaler.ConvertToManaged(*(IntPtr*)unmanaged);
+        }
+
+        public static unsafe void Free(byte* unmanaged)
+        {
+            IntPtr ptr = *(IntPtr*)unmanaged;
+            if (ptr != IntPtr.Zero)
+            {
+                Marshal.FreeCoTaskMem(ptr);
+            }
+        }
+
+        static unsafe nuint IArrayElementMarshaler<string?, LPSTRArrayElementMarshaler<TBestFit, TThrowOnUnmappable>>.UnmanagedSize => (nuint)sizeof(IntPtr);
+    }
+
+    internal sealed class BSTRArrayElementMarshaler : IArrayElementMarshaler<string?, BSTRArrayElementMarshaler>
+    {
+        public static unsafe void ConvertToUnmanaged(ref string? managed, byte* unmanaged)
+        {
+            *(IntPtr*)unmanaged = BSTRMarshaler.ConvertToNative(managed, IntPtr.Zero);
+        }
+
+        public static unsafe void ConvertToManaged(ref string? managed, byte* unmanaged)
+        {
+            managed = BSTRMarshaler.ConvertToManaged(*(IntPtr*)unmanaged);
+        }
+
+        public static unsafe void Free(byte* unmanaged)
+        {
+            IntPtr bstr = *(IntPtr*)unmanaged;
+            if (bstr != IntPtr.Zero)
+            {
+                BSTRMarshaler.ClearNative(bstr);
+            }
+        }
+
+        static unsafe nuint IArrayElementMarshaler<string?, BSTRArrayElementMarshaler>.UnmanagedSize => (nuint)sizeof(IntPtr);
+    }
+
+#if FEATURE_COMINTEROP
+    internal sealed class CurrencyArrayElementMarshaler : IArrayElementMarshaler<decimal, CurrencyArrayElementMarshaler>
+    {
+        public static unsafe void ConvertToUnmanaged(ref decimal managed, byte* unmanaged)
+        {
+            *(Currency*)unmanaged = new Currency(managed);
+        }
+
+        public static unsafe void ConvertToManaged(ref decimal managed, byte* unmanaged)
+        {
+            managed = new decimal(*(Currency*)unmanaged);
+        }
+
+        public static unsafe void Free(byte* unmanaged)
+        {
+        }
+
+        static unsafe nuint IArrayElementMarshaler<decimal, CurrencyArrayElementMarshaler>.UnmanagedSize => (nuint)sizeof(Currency);
+    }
+
+    [SupportedOSPlatform("windows")]
+    internal sealed class InterfaceArrayElementMarshaler<TIsDispatch> : IArrayElementMarshaler<object?, InterfaceArrayElementMarshaler<TIsDispatch>>
+        where TIsDispatch : IMarshalerOption
+    {
+        public static unsafe void ConvertToUnmanaged(ref object? managed, byte* unmanaged)
+        {
+            if (managed is null)
+            {
+                *(IntPtr*)unmanaged = IntPtr.Zero;
+            }
+            else if (TIsDispatch.Enabled)
+            {
+                *(IntPtr*)unmanaged = Marshal.GetIDispatchForObject(managed);
+            }
+            else
+            {
+                *(IntPtr*)unmanaged = Marshal.GetIUnknownForObject(managed);
+            }
+        }
+
+        public static unsafe void ConvertToManaged(ref object? managed, byte* unmanaged)
+        {
+            IntPtr pUnk = *(IntPtr*)unmanaged;
+            if (pUnk == IntPtr.Zero)
+            {
+                managed = null;
+            }
+            else
+            {
+                managed = Marshal.GetObjectForIUnknown(pUnk);
+            }
+        }
+
+        public static unsafe void Free(byte* unmanaged)
+        {
+            IntPtr pUnk = *(IntPtr*)unmanaged;
+            if (pUnk != IntPtr.Zero)
+            {
+                Marshal.Release(pUnk);
+            }
+        }
+
+        static unsafe nuint IArrayElementMarshaler<object?, InterfaceArrayElementMarshaler<TIsDispatch>>.UnmanagedSize => (nuint)sizeof(IntPtr);
+    }
+
+    [SupportedOSPlatform("windows")]
+    internal sealed class TypedInterfaceArrayElementMarshaler<T> : IArrayElementMarshaler<T?, TypedInterfaceArrayElementMarshaler<T>>
+        where T : class
+    {
+        public static unsafe void ConvertToUnmanaged(ref T? managed, byte* unmanaged)
+        {
+            if (managed is null)
+            {
+                *(IntPtr*)unmanaged = IntPtr.Zero;
+            }
+            else
+            {
+                *(IntPtr*)unmanaged = Marshal.GetComInterfaceForObject(managed, typeof(T));
+            }
+        }
+
+        public static unsafe void ConvertToManaged(ref T? managed, byte* unmanaged)
+        {
+            IntPtr pUnk = *(IntPtr*)unmanaged;
+            if (pUnk == IntPtr.Zero)
+            {
+                managed = null;
+            }
+            else
+            {
+                managed = (T)Marshal.GetObjectForIUnknown(pUnk);
+            }
+        }
+
+        public static unsafe void Free(byte* unmanaged)
+        {
+            IntPtr pUnk = *(IntPtr*)unmanaged;
+            if (pUnk != IntPtr.Zero)
+            {
+                Marshal.Release(pUnk);
+            }
+        }
+
+        static unsafe nuint IArrayElementMarshaler<T?, TypedInterfaceArrayElementMarshaler<T>>.UnmanagedSize => (nuint)sizeof(IntPtr);
+    }
+
+    [SupportedOSPlatform("windows")]
+    internal sealed class HeterogeneousInterfaceArrayElementMarshaler : IArrayElementMarshaler<object?, HeterogeneousInterfaceArrayElementMarshaler>
+    {
+        public static unsafe void ConvertToUnmanaged(ref object? managed, byte* unmanaged)
+        {
+            if (managed is null)
+            {
+                *(IntPtr*)unmanaged = IntPtr.Zero;
+            }
+            else
+            {
+                // Resolve the default COM interface for each element based on its runtime type.
+                // This matches the heterogeneous path in MarshalInterfaceArrayComToOleHelper
+                // where GetDefaultInterfaceMTForClass is called per-element.
+                *(IntPtr*)unmanaged = Marshal.GetComInterfaceForObject(managed, managed.GetType());
+            }
+        }
+
+        public static unsafe void ConvertToManaged(ref object? managed, byte* unmanaged)
+        {
+            IntPtr pUnk = *(IntPtr*)unmanaged;
+            if (pUnk == IntPtr.Zero)
+            {
+                managed = null;
+            }
+            else
+            {
+                managed = Marshal.GetObjectForIUnknown(pUnk);
+            }
+        }
+
+        public static unsafe void Free(byte* unmanaged)
+        {
+            IntPtr pUnk = *(IntPtr*)unmanaged;
+            if (pUnk != IntPtr.Zero)
+            {
+                Marshal.Release(pUnk);
+            }
+        }
+
+        static unsafe nuint IArrayElementMarshaler<object?, HeterogeneousInterfaceArrayElementMarshaler>.UnmanagedSize => (nuint)sizeof(IntPtr);
+    }
+
+    internal sealed class VariantArrayElementMarshaler<TNativeDataValid> : IArrayElementMarshaler<object?, VariantArrayElementMarshaler<TNativeDataValid>>
+        where TNativeDataValid : IMarshalerOption
+    {
+        public static unsafe void ConvertToUnmanaged(ref object? managed, byte* unmanaged)
+        {
+            if (!TNativeDataValid.Enabled)
+            {
+                // Native buffer is uninitialized — zero it so ConvertToNative
+                // doesn't see garbage VT_BYREF bits.
+                *(ComVariant*)unmanaged = default;
+            }
+            // When TNativeDataValid is enabled, the existing VARIANT may have
+            // VT_BYREF set. ConvertToNative checks vt & VT_BYREF and calls
+            // MarshalOleRefVariantForObject to write through the byref pointer.
+            ObjectMarshaler.ConvertToNative(managed!, (IntPtr)unmanaged);
+        }
+
+        public static unsafe void ConvertToManaged(ref object? managed, byte* unmanaged)
+        {
+            managed = ObjectMarshaler.ConvertToManaged((IntPtr)unmanaged);
+        }
+
+        public static unsafe void Free(byte* unmanaged)
+        {
+            ObjectMarshaler.ClearNative((IntPtr)unmanaged);
+        }
+
+        static unsafe nuint IArrayElementMarshaler<object?, VariantArrayElementMarshaler<TNativeDataValid>>.UnmanagedSize => (nuint)sizeof(ComVariant);
+    }
+#endif // FEATURE_COMINTEROP
+
+    internal interface IMarshalerOption
+    {
+        static abstract bool Enabled { get; }
+
+        public sealed class EnabledOption : IMarshalerOption
+        {
+            public static bool Enabled => true;
+        }
+
+        public sealed class DisabledOption : IMarshalerOption
+        {
+            public static bool Enabled => false;
         }
     }
 
@@ -2032,56 +2458,35 @@ namespace System.StubHelpers
             }
         }
 
-        private static readonly MemberInfo StructureMarshalerConvertToUnmanaged = typeof(StructureMarshaler<>).GetMethod(nameof(StructureMarshaler<>.ConvertToUnmanaged))!;
-        private static readonly MemberInfo StructureMarshalerConvertToManaged = typeof(StructureMarshaler<>).GetMethod(nameof(StructureMarshaler<>.ConvertToManaged))!;
-        private static readonly MemberInfo StructureMarshalerFree = typeof(StructureMarshaler<>).GetMethod(nameof(StructureMarshaler<>.Free))!;
-
-        private sealed unsafe class StructureMarshalInfo
+        public static unsafe void ConvertArrayContentsToUnmanaged<T, TMarshaler>(Array managed, byte* pNative, int numElements)
+            where TMarshaler : IArrayMarshaler<T, TMarshaler>
         {
-            public delegate*<ref byte, byte*, int, ref CleanupWorkListElement?, void> ConvertToUnmanaged;
-            public delegate*<ref byte, byte*, ref CleanupWorkListElement?, void> ConvertToManaged;
-            public delegate*<ref byte, byte*, int, ref CleanupWorkListElement?, void> Free;
-
-            public int ManagedSize;
+            // Assert that the array is actually an array of compatible type.
+            Debug.Assert(managed is not null);
+            Debug.Assert(managed.GetType().GetElementType()!.MakeArrayType().IsAssignableTo(typeof(T[])), $"Managed array type {managed.GetType()} is not compatible with expected element type {typeof(T)}");
+            TMarshaler.ConvertContentsToUnmanaged(managed, pNative, numElements);
         }
 
-        private static readonly ConditionalWeakTable<Type, StructureMarshalInfo> s_structureMarshalInfoCache = [];
-
-        private static unsafe StructureMarshalInfo GetStructureMarshalMethods(Type structureType)
+        public static unsafe void ConvertArrayContentsToManaged<T, TMarshaler>(Array managed, byte* pNative, int numElements)
+            where TMarshaler : IArrayMarshaler<T, TMarshaler>
         {
-            return s_structureMarshalInfoCache.GetOrAdd(structureType, static structureType =>
-            {
-                Type structureMarshalerType = typeof(StructureMarshaler<>).MakeGenericType(structureType);
-                var convertToUnmanagedMethodInfo = (MethodInfo)structureMarshalerType.GetMemberWithSameMetadataDefinitionAs(StructureMarshalerConvertToUnmanaged)!;
-                var convertToManagedMethodInfo = (MethodInfo)structureMarshalerType.GetMemberWithSameMetadataDefinitionAs(StructureMarshalerConvertToManaged)!;
-                var freeMethodInfo = (MethodInfo)structureMarshalerType.GetMemberWithSameMetadataDefinitionAs(StructureMarshalerFree)!;
-
-                return new StructureMarshalInfo
-                {
-                    ConvertToUnmanaged = (delegate*<ref byte, byte*, int, ref CleanupWorkListElement?, void>)convertToUnmanagedMethodInfo.MethodHandle.GetFunctionPointer(),
-                    ConvertToManaged = (delegate*<ref byte, byte*, ref CleanupWorkListElement?, void>)convertToManagedMethodInfo.MethodHandle.GetFunctionPointer(),
-                    Free = (delegate*<ref byte, byte*, int, ref CleanupWorkListElement?, void>)freeMethodInfo.MethodHandle.GetFunctionPointer(),
-                    ManagedSize = RuntimeHelpers.SizeOf(structureType.TypeHandle)
-                };
-            });
+            // Assert that the array is actually an array of compatible type.
+            Debug.Assert(managed is not null);
+            Debug.Assert(managed.GetType().GetElementType()!.MakeArrayType().IsAssignableTo(typeof(T[])), $"Managed array type {managed.GetType()} is not compatible with expected element type {typeof(T)}");
+            TMarshaler.ConvertContentsToManaged(managed, pNative, numElements);
         }
 
         [UnmanagedCallersOnly]
-        internal static unsafe void NonBlittableStructureArrayConvertToUnmanaged(Array* managedArray, byte* pNative, MethodTable* pInterfaceMT, int nativeSize, Exception* pException)
+        internal static unsafe void InvokeArrayContentsConverter(
+            Array* pManagedArray,
+            byte* pNative,
+            int numElements,
+            delegate*<Array, byte*, int, void> pConvertMethod,
+            Exception* pException)
         {
             try
             {
-                StructureMarshalInfo marshalInfo = GetStructureMarshalMethods(RuntimeTypeHandle.GetRuntimeTypeFromHandle((IntPtr)pInterfaceMT));
-
-                nint length = (nint)managedArray->Length * (nint)marshalInfo.ManagedSize;
-
-                for (ref byte managedElement = ref MemoryMarshal.GetArrayDataReference(*managedArray), end = ref Unsafe.AddByteOffset(ref managedElement, length);
-                    Unsafe.IsAddressLessThan(ref managedElement, ref end);
-                    managedElement = ref Unsafe.AddByteOffset(ref managedElement, marshalInfo.ManagedSize))
-                {
-                    marshalInfo.ConvertToUnmanaged(ref managedElement, pNative, nativeSize, ref Unsafe.NullRef<CleanupWorkListElement?>());
-                    pNative += nativeSize;
-                }
+                pConvertMethod(*pManagedArray, pNative, numElements);
             }
             catch (Exception ex)
             {
@@ -2089,46 +2494,36 @@ namespace System.StubHelpers
             }
         }
 
-        [UnmanagedCallersOnly]
-        internal static unsafe void NonBlittableStructureArrayConvertToManaged(Array* managedArray, byte* pNative, MethodTable* pInterfaceMT, int nativeSize, Exception* pException)
+        internal static unsafe void FreeArrayContents<T, TMarshaler>(byte* pNative, int length) where TMarshaler : IArrayMarshaler<T, TMarshaler>
         {
-            try
-            {
-                StructureMarshalInfo marshalInfo = GetStructureMarshalMethods(RuntimeTypeHandle.GetRuntimeTypeFromHandle((IntPtr)pInterfaceMT));
+            TMarshaler.FreeContents(pNative, length);
+        }
 
-                nint length = (nint)managedArray->Length * (nint)marshalInfo.ManagedSize;
+        public static unsafe byte* ConvertArraySpaceToNative<T, TMarshaler>(Array? managed)
+            where TMarshaler : IArrayMarshaler<T, TMarshaler>
+        {
+            return TMarshaler.AllocateSpaceForUnmanaged(managed);
+        }
 
-                for (ref byte managedElement = ref MemoryMarshal.GetArrayDataReference(*managedArray), end = ref Unsafe.AddByteOffset(ref managedElement, length);
-                    Unsafe.IsAddressLessThan(ref managedElement, ref end);
-                    managedElement = ref Unsafe.AddByteOffset(ref managedElement, marshalInfo.ManagedSize))
-                {
-                    marshalInfo.ConvertToManaged(ref managedElement, pNative, ref Unsafe.NullRef<CleanupWorkListElement?>());
-                    pNative += nativeSize;
-                }
-            }
-            catch (Exception ex)
+        internal static unsafe Array? ConvertArraySpaceToManaged<T, TMarshaler>(byte* pNativeHome, int cElements)
+            where TMarshaler : IArrayMarshaler<T, TMarshaler>
+        {
+            return TMarshaler.AllocateSpaceForManaged(pNativeHome, cElements);
+        }
+
+        internal static unsafe void ClearArrayNative<T, TMarshaler>(byte* pNativeHome, int cElements)
+            where TMarshaler : IArrayMarshaler<T, TMarshaler>
+        {
+            if (pNativeHome != null)
             {
-                *pException = ex;
+                FreeArrayContents<T, TMarshaler>(pNativeHome, cElements);
+                Marshal.FreeCoTaskMem((IntPtr)pNativeHome);
             }
         }
 
-        [UnmanagedCallersOnly]
-        internal static unsafe void NonBlittableStructureArrayFree(byte* pArray, nuint numElements, MethodTable* pInterfaceMT, int nativeSize, Exception* pException)
+        internal static void ThrowWrongSizeArrayInNativeStruct()
         {
-            try
-            {
-                StructureMarshalInfo marshalInfo = GetStructureMarshalMethods(RuntimeTypeHandle.GetRuntimeTypeFromHandle((IntPtr)pInterfaceMT));
-
-                for (nuint i = 0; i < numElements; i++)
-                {
-                    marshalInfo.Free(ref Unsafe.NullRef<byte>(), pArray, nativeSize, ref Unsafe.NullRef<CleanupWorkListElement?>());
-                    pArray += nativeSize;
-                }
-            }
-            catch (Exception ex)
-            {
-                *pException = ex;
-            }
+            throw new ArgumentException(SR.Argument_WrongSizeArrayInNativeStruct);
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint="StubHelpers_MarshalToManagedVaList")]

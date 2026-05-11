@@ -452,16 +452,18 @@ private:
 
     struct FailedTypeInitCleanupListItem
     {
-        SLink m_Link;
+        // Next pointer for SList linkage.
+        DPTR(FailedTypeInitCleanupListItem) m_pNext;
         ListLockEntry *m_pListLockEntry;
         explicit FailedTypeInitCleanupListItem(ListLockEntry *pListLockEntry)
                 :
+            m_pNext(PTR_NULL),
             m_pListLockEntry(pListLockEntry)
         {
         }
     };
 
-    SList<FailedTypeInitCleanupListItem> m_failedTypeInitCleanupList;
+    SListTail<FailedTypeInitCleanupListItem> m_failedTypeInitCleanupList;
 
     SegmentedHandleIndexStack m_freeHandleIndexesStack;
 #ifdef FEATURE_COMINTEROP
@@ -1013,16 +1015,18 @@ public:
 private:
     struct HandleCleanupListItem
     {
-        SLink m_Link;
+        // Next pointer for SList linkage.
+        DPTR(HandleCleanupListItem) m_pNext;
         OBJECTHANDLE m_handle;
         explicit HandleCleanupListItem(OBJECTHANDLE handle)
                 :
+            m_pNext(PTR_NULL),
             m_handle(handle)
         {
         }
     };
 
-    SList<HandleCleanupListItem> m_handleCleanupList;
+    SListTail<HandleCleanupListItem> m_handleCleanupList;
 #if !defined(DACCESS_COMPILE)
     CustomAssemblyBinder* m_binderToRelease;
 #endif

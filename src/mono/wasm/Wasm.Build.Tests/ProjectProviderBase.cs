@@ -338,7 +338,7 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
         return dict;
     }
 
-    public IDictionary<string, (string fullPath, bool unchanged)> GetFilesTable(string projectName, bool isAOT, BuildPaths paths, bool unchanged)
+    public IDictionary<string, (string fullPath, bool unchanged)> GetFilesTable(string projectName, bool isAOT, BuildPaths paths, bool unchanged, string? bootConfigDir = null)
     {
         List<string> files = new()
         {
@@ -379,7 +379,7 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
 
         if (IsFingerprintingEnabled)
         {
-            string bootJsonPath = GetBootConfigPath(paths.BinFrameworkDir, "dotnet.js");
+            string bootJsonPath = GetBootConfigPath(bootConfigDir ?? paths.BinFrameworkDir, "dotnet.js");
             BootJsonData bootJson = GetBootJson(bootJsonPath);
             AssetsData assets = (AssetsData)bootJson.resources;
             var keysToUpdate = new List<string>();

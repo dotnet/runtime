@@ -5,6 +5,8 @@
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-linux;$(NetCoreAppCurrent)-osx</TargetFrameworks>
     <EnablePreviewFeatures>true</EnablePreviewFeatures>
     <StringResourcesPath>../../src/Resources/Strings.resx</StringResourcesPath>
+    <!-- https://github.com/dotnet/runtime/issues/126862 -->
+    <EnableTrimAnalyzer>false</EnableTrimAnalyzer>
   </PropertyGroup>
   <ItemGroup>
     <RdXmlFile Include="default.rd.xml" />

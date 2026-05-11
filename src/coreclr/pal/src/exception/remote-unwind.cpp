@@ -2202,9 +2202,9 @@ find_proc_info(unw_addr_space_t as, unw_word_t ip, unw_proc_info_t *pip, int nee
         }
     }
 
-#if HAVE_GET_PROC_INFO_IN_RANGE || !defined(HOST_UNIX)
+#if HAVE_GET_PROC_INFO_IN_RANGE || defined(__APPLE__) || !defined(HOST_UNIX)
     return unw_get_proc_info_in_range(start_ip, end_ip, ehFrameHdrAddr, ehFrameHdrLen, exidxFrameHdrAddr, exidxFrameHdrLen, as, ip, pip, need_unwind_info, arg);
-#else // HAVE_GET_PROC_INFO_IN_RANGE || !defined(HOST_UNIX)
+#else // HAVE_GET_PROC_INFO_IN_RANGE || defined(__APPLE__) || !defined(HOST_UNIX)
 
     // This branch is executed when using llvm-libunwind (macOS and similar platforms)
     // or HP-libunwind version 1.6 and earlier.
@@ -2328,16 +2328,22 @@ Parameters:
     functionStart - the pointer to return the starting address of the function or nullptr
     baseAddress - base address of the module to find the unwind info
     readMemoryCallback - reads memory from the target
+    isSignalFrame - output parameter: set to true if the unwound-to frame is a signal trampoline
 --*/
 BOOL
 PALAPI
-PAL_VirtualUnwindOutOfProc(CONTEXT *context, PULONG64 functionStart, SIZE_T baseAddress, UnwindReadMemoryCallback readMemoryCallback)
+PAL_VirtualUnwindOutOfProc(CONTEXT *context, PULONG64 functionStart, SIZE_T baseAddress, UnwindReadMemoryCallback readMemoryCallback, bool *isSignalFrame)
 {
     unw_addr_space_t addrSpace = 0;
     unw_cursor_t cursor;
     libunwindInfo info;
     BOOL result = FALSE;
     int st;
+
+    if (isSignalFrame)
+    {
+        *isSignalFrame = false;
+    }
 
     info.BaseAddress = baseAddress;
     info.Context = context;
@@ -2408,6 +2414,14 @@ PAL_VirtualUnwindOutOfProc(CONTEXT *context, PULONG64 functionStart, SIZE_T base
     {
         result = FALSE;
         goto exit;
+    }
+
+    // Check if the frame we landed on is a signal trampoline. When a signal handler uses
+    // SA_ONSTACK, stepping from a signal frame crosses from the alternate signal stack to the
+    // original thread stack, which can cause the SP to decrease.
+    if (isSignalFrame && unw_is_signal_frame(&cursor) > 0)
+    {
+        *isSignalFrame = true;
     }
 
     UnwindContextToContext(&cursor, context);
@@ -2572,7 +2586,7 @@ PAL_GetUnwindInfoSize(SIZE_T baseAddress, ULONG64 ehFrameHdrAddr, UnwindReadMemo
 
 BOOL
 PALAPI
-PAL_VirtualUnwindOutOfProc(CONTEXT *context, PULONG64 functionStart, SIZE_T baseAddress, UnwindReadMemoryCallback readMemoryCallback)
+PAL_VirtualUnwindOutOfProc(CONTEXT *context, PULONG64 functionStart, SIZE_T baseAddress, UnwindReadMemoryCallback readMemoryCallback, bool *isSignalFrame)
 {
     return FALSE;
 }
