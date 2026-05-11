@@ -47,6 +47,11 @@
     <Compile Include="$(CommonPath)System\Net\MultiArrayBuffer.cs" Link="ProductionCode\Common\System\Net\MultiArrayBuffer.cs" />
     <Compile Include="$(CommonPath)System\Net\StreamBuffer.cs" Link="ProductionCode\Common\System\Net\StreamBuffer.cs" />
     <Compile Include="ZLibCompressionOptionsUnitTests.cs" />
+    <Compile Include="$(CommonTestPath)System\IO\Compression\EncoderDecoderTestBase.cs" Link="Common\System\IO\Compression\EncoderDecoderTestBase.cs" />
+    <Compile Include="ZLibEncoderDecoderTestBase.cs" />
+    <Compile Include="DeflateEncoderDecoderTests.cs" />
+    <Compile Include="ZLibEncoderDecoderTests.cs" />
+    <Compile Include="GZipEncoderDecoderTests.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'unix' or '$(TargetPlatformIdentifier)' == 'browser'">
     <Compile Include="ZipArchive\zip_CreateTests.Unix.cs" />
@@ -66,6 +71,5 @@
     <Compile Include="Zstandard\ZstandardDictionaryTests.cs" />
     <Compile Include="Zstandard\ZstandardTestUtils.cs" />
     <Compile Include="Zstandard\ZstandardEncoderDecoderTests.cs" />
-    <Compile Include="$(CommonTestPath)System\IO\Compression\EncoderDecoderTestBase.cs" Link="Common\System\IO\Compression\EncoderDecoderTestBase.cs" />
   </ItemGroup>
 </Project>

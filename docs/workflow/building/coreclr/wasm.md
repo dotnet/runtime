@@ -40,6 +40,10 @@ This command will:
 
 ### Browser Testing (Recommended)
 
+To enable the browser workflow, edit `src/coreclr/hosts/corerun/CMakeLists.txt` and set the `CORERUN_IN_BROWSER` variable to 1.
+
+You will also need to ensure the `WASM_PRELOAD_DIR` (see `src/coreclr/hosts/corerun/CMakeLists.txt`) is populated during a build of `corerun` so the virtual file system is created. This will require the copying of the libraries (see Console Testing details below) and `HelloWorld.dll` into `./artifacts/bin/coreclr/browser.wasm.Debug/IL` and then the corerun project will then need to be rebuilt.
+
 If you don't have `dotnet-serve` installed, you can install it as a global .NET tool with:
 
 ```bash
@@ -56,9 +60,7 @@ dotnet-serve --directory "artifacts/bin/coreclr/browser.wasm.Debug"
 dotnet-serve --directory "artifacts\bin\coreclr\browser.wasm.Debug"
 ```
 
-This will start a local HTTP server and you can open the provided URL in your browser.
-
-You will also need to ensure the `WASM_PRELOAD_DIR` (see `src/coreclr/hosts/corerun/CMakeLists.txt`) is populated during a build of `corerun` so the virtual file system is created. This will require the copying of the libraries (see Console Testing details below) and `HelloWorld.dll` into `./artifacts/bin/coreclr/browser.wasm.Debug/IL` and then the corerun project will then need to be rebuilt.
+This will start a local HTTP server and you can open the provided URL in your browser. The entry point is the corerun.html file. If you don't see corerun.html, you didn't set the `CORERUN_IN_BROWSER` variable when building the `clr` subset.
 
 ### Console Testing
 

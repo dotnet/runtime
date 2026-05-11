@@ -16,7 +16,7 @@ internal class HijackArgsAMD64 : IData<HijackArgsAMD64>
         // On Windows, Rsp is present
         if (type.Fields.ContainsKey(nameof(Rsp)))
         {
-            Rsp = target.ReadPointer(address + (ulong)type.Fields[nameof(Rsp)].Offset);
+            Rsp = target.ReadPointerField(address, type, nameof(Rsp));
         }
     }
 

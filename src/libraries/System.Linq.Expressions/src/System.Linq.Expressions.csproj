@@ -2,6 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DefineConstants> $(DefineConstants);FEATURE_FAST_CREATE</DefineConstants>
     <NoWarn>$(NoWarn);CA1859</NoWarn>
     <!--

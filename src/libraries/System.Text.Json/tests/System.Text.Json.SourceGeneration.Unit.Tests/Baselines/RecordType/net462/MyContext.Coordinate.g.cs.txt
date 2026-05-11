@@ -56,7 +56,7 @@ namespace TestApp
                 DeclaringType = typeof(global::TestApp.Coordinate),
                 Converter = null,
                 Getter = static obj => ((global::TestApp.Coordinate)obj).Latitude,
-                Setter = static (obj, value) => throw new global::System.InvalidOperationException("Setting init-only properties is not supported in source generation mode."),
+                Setter = static (obj, value) => __set_Coordinate_Latitude((global::TestApp.Coordinate)obj, value!),
                 IgnoreCondition = null,
                 HasJsonInclude = false,
                 IsExtensionData = false,
@@ -76,7 +76,7 @@ namespace TestApp
                 DeclaringType = typeof(global::TestApp.Coordinate),
                 Converter = null,
                 Getter = static obj => ((global::TestApp.Coordinate)obj).Longitude,
-                Setter = static (obj, value) => throw new global::System.InvalidOperationException("Setting init-only properties is not supported in source generation mode."),
+                Setter = static (obj, value) => __set_Coordinate_Longitude((global::TestApp.Coordinate)obj, value!),
                 IgnoreCondition = null,
                 HasJsonInclude = false,
                 IsExtensionData = false,
@@ -131,5 +131,10 @@ namespace TestApp
                 IsNullable = false,
             },
         };
+
+        private static global::System.Action<global::TestApp.Coordinate, double>? s_set_Coordinate_Latitude;
+        private static void __set_Coordinate_Latitude(global::TestApp.Coordinate obj, double value) => (s_set_Coordinate_Latitude ??= (global::System.Action<global::TestApp.Coordinate, double>)global::System.Delegate.CreateDelegate(typeof(global::System.Action<global::TestApp.Coordinate, double>), typeof(global::TestApp.Coordinate).GetProperty("Latitude", InstanceMemberBindingFlags, null, typeof(double), global::System.Array.Empty<global::System.Type>(), null)!.GetSetMethod(true)!))(obj, value);
+        private static global::System.Action<global::TestApp.Coordinate, double>? s_set_Coordinate_Longitude;
+        private static void __set_Coordinate_Longitude(global::TestApp.Coordinate obj, double value) => (s_set_Coordinate_Longitude ??= (global::System.Action<global::TestApp.Coordinate, double>)global::System.Delegate.CreateDelegate(typeof(global::System.Action<global::TestApp.Coordinate, double>), typeof(global::TestApp.Coordinate).GetProperty("Longitude", InstanceMemberBindingFlags, null, typeof(double), global::System.Array.Empty<global::System.Type>(), null)!.GetSetMethod(true)!))(obj, value);
     }
 }

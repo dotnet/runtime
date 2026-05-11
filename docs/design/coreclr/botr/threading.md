@@ -18,7 +18,7 @@ The public Thread interface available to managed code intentionally hides the de
 
 The CLR provides equivalent abstractions for managed threads, implemented by the CLR itself. For example, it does not expose the operating system's thread-local storage (TLS) mechanism, but instead provides managed "thread-static" variables. Similarly, it does not expose the native thread's "thread ID," but instead provides a "managed thread ID" which is generated independently of the OS. However, for diagnostic purposes, some details of the underlying native thread may be obtained via types in the System.Diagnostics namespace.
 
-Managed threads require additional functionality typically not needed by native threads. First, managed threads hold GC references on their stacks, so the CLR must be able to enumerate (and possibly modify) these references every time a GC occurs. To do this, the CLR must "suspend" each managed thread (stop it at a point where all of its GC references can be found).  Second, when an AppDomain is unloaded, the CLR must ensure that no thread is executing code in that AppDomain. This requires the ability to force a thread to unwind out of that AppDomain. The CLR does this by injecting a ThreadAbortException into such threads.
+Managed threads require additional functionality typically not needed by native threads. First, managed threads hold GC references on their stacks, so the CLR must be able to enumerate (and possibly modify) these references every time a GC occurs. To do this, the CLR must "suspend" each managed thread (stop it at a point where all of its GC references can be found).  Second, when the AppDomain is unloaded, the CLR must ensure that no thread is executing code in the AppDomain. This requires the ability to force a thread to unwind out of the AppDomain. The CLR does this by injecting a ThreadAbortException into such threads.
 
 Data Structures
 ===============
@@ -106,19 +106,6 @@ Hijacking for GC suspension is done by Thread::SysSuspendForGC. This method atte
 5. Now the thread is suspended in managed code. Depending on whether that code is fully- or partially-interruptible, one of the following is performed:
   * If fully interruptible, it is safe to perform a GC at any point, since the thread is, by definition, at a safe point. It is reasonable to leave the thread suspended at this point (because it's safe) but various historical OS bugs prevent this from working, because the CONTEXT retrieved earlier may be corrupt. Instead, the thread's instruction pointer is overwritten, redirecting it to a stub that will capture a more complete CONTEXT, leave cooperative mode, wait for the GC to complete, reenter cooperative mode, and restore the thread to its previous state.
   * If partially-interruptible, the thread is, by definition, not at a safe point. However, the caller will be at a safe point (method transition). Using that knowledge, the CLR "hijacks" the top-most stack frame's return address (physically overwrite that location on the stack) with a stub similar to the one used for fully-interruptible code. When the method returns, it will no longer return to its actual caller, but rather to the stub (the method may also perform a GC poll, inserted by the JIT, before that point, which will cause it to leave cooperative mode and undo the hijack).
-
-ThreadAbort / AppDomain-Unload
-==============================
-
-In order to unload an AppDomain, the CLR must ensure that no thread is running in that AppDomain. To accomplish this, all managed threads are enumerated, and "abort" any threads which have stack frames belonging to the AppDomain being unloaded. A ThreadAbortException is "injected" into the running thread, which  causes the thread to unwind (executing backout code along the way) until it is no longer executing in the AppDomain, at which point the ThreadAbortException is translated into an AppDomainUnloaded exception.
-
-ThreadAbortException is a special type of exception. It can be caught by user code, but the CLR ensures that the exception will be rethrown after the user's exception handler is executed. Thus ThreadAbortException is sometimes referred to as "uncatchable," though this is not strictly true.
-
-A ThreadAbortException is typically 'thrown' by simply setting a bit on the managed thread marking it as "aborting." This bit is checked by various parts of the CLR (most notably, every return from a p/invoke) and often times setting this bit is all that is needed to get the thread aborted in a timely manner.
-
-However, if the thread is, for example, executing a long-running managed loop, it may never check this bit. To get such a thread to abort faster, the thread is "hijacked" and forced to raise a ThreadAbortException. This hijacking is done in the same way as GC suspension, except that the stubs that the thread is redirected to will cause a ThreadAbortException to be raised, rather than waiting for a GC to complete.
-
-This hijacking means that a ThreadAbortException can be raised at essentially any arbitrary point in managed code. This makes it extremely difficult for managed code to deal successfully with a ThreadAbortException. It is therefore unwise to use this mechanism for any purpose other than AppDomain-Unload, which ensures that any state corrupted by the ThreadAbort will be cleaned up along with the AppDomain.
 
 Synchronization: Managed
 ========================

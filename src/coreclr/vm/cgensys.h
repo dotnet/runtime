@@ -33,9 +33,6 @@ void CallJitEHFinally(CrawlFrame* pCf, BYTE* startPC, EE_ILEXCEPTION_CLAUSE *EHC
 #endif // TARGET_X86
 
 #ifdef FEATURE_COMINTEROP
-extern "C" UINT32 STDCALL CLRToCOMWorker(TransitionBlock * pTransitionBlock, CLRToCOMCallMethodDesc * pMD);
-extern "C" void GenericCLRToCOMCallStub(void);
-
 extern "C" void GenericComCallStub(void);
 #endif // FEATURE_COMINTEROP
 
@@ -63,7 +60,13 @@ extern "C" void STDCALL VirtualMethodFixupStub(void);
 extern "C" void STDCALL VirtualMethodFixupPatchLabel(void);
 
 #ifdef FEATURE_READYTORUN
+#ifdef TARGET_WASM
+// Wasm requires the signatures to be identical since the implementation is actually in C++
+struct READYTORUN_IMPORT_THUNK_PORTABLE_ENTRYPOINT;
+extern "C" PCODE STDCALL DelayLoad_MethodCall(TransitionBlock* pTransitionBlock, READYTORUN_IMPORT_THUNK_PORTABLE_ENTRYPOINT* pImportThunkEntry, uint8_t *moduleBase, int32_t rvaOfModuleFixup);
+#else
 extern "C" void STDCALL DelayLoad_MethodCall();
+#endif
 
 extern "C" void STDCALL DelayLoad_Helper();
 extern "C" void STDCALL DelayLoad_Helper_Obj();

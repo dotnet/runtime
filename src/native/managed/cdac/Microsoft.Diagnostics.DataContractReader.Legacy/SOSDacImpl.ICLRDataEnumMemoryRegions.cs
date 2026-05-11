@@ -12,5 +12,5 @@ namespace Microsoft.Diagnostics.DataContractReader.Legacy;
 public sealed unsafe partial class SOSDacImpl : ICLRDataEnumMemoryRegions
 {
     int ICLRDataEnumMemoryRegions.EnumMemoryRegions(void* callback, uint miniDumpFlags, int clrFlags)
-        => _legacyEnumMemory is not null ? _legacyEnumMemory.EnumMemoryRegions(callback, miniDumpFlags, clrFlags) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacyEnumMemory is not null ? _legacyEnumMemory.EnumMemoryRegions(callback, miniDumpFlags, clrFlags) : HResults.E_NOTIMPL;
 }

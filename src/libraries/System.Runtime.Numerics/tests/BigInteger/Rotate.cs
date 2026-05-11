@@ -292,7 +292,7 @@ namespace System.Numerics.Tests
             int gap = random.Next(0, 128);
             int byteLength = 4 + gap * 4 + 1;
             byte[] array = new byte[byteLength];
-            array[^5] = 0x80;
+            array[^(4 + 1)] = 0x80;
             array[^1] = 0xFF;
             return array;
         }
@@ -308,133 +308,120 @@ namespace System.Numerics.Tests
         public override string opstring => "bRotateLeft";
 
 
-        public static TheoryData<BigInteger, int, BigInteger> NegativeNumber_TestData = new TheoryData<BigInteger, int, BigInteger>
+        public static TheoryData<BigInteger, int, BigInteger> NegativeNumber_TestData()
         {
+            int bpl = 32; // bits per word
+            BigInteger neg2 = -(BigInteger.One << (3 * bpl - 1));       // -2^(3*bpl-1)
+            BigInteger neg1 = neg2 + 1;                                  // -(2^(3*bpl-1) - 1)
+            BigInteger neg3 = neg2 + 2;                                  // -(2^(3*bpl-1) - 2)
 
+            var data = new TheoryData<BigInteger, int, BigInteger>
             {
-                new BigInteger(unchecked((long)0xFFFF_FFFF_0000_0000)),
-                1,
-                new BigInteger(unchecked((long)0xFFFF_FFFE_0000_0001))
-            },
-            {
-                new BigInteger(unchecked((long)0xFFFF_FFFF_0000_0000)),
-                2,
-                new BigInteger(unchecked((long)0xFFFF_FFFC_0000_0003))
-            },
-            {
-                new BigInteger(unchecked((long)0xFFFF_FFFF_0000_0001)),
-                1,
-                new BigInteger(unchecked((long)0xFFFF_FFFE_0000_0003))
-            },
-            {
-                new BigInteger(unchecked((long)0xFFFF_FFFF_0000_0001)),
-                2,
-                new BigInteger(unchecked((long)0xFFFF_FFFC_0000_0007))
-            },
-            {
-                new BigInteger(unchecked((long)0xFFFF_FFFF_0000_0002)),
-                1,
-                new BigInteger(unchecked((long)0xFFFF_FFFE_0000_0005))
-            },
-            {
-                new BigInteger(unchecked((long)0xFFFF_FFFF_0000_0002)),
-                2,
-                new BigInteger(unchecked((long)0xFFFF_FFFC_0000_000B))
-            },
 
-            {
-                new BigInteger(unchecked((long)0x8000_0000_0000_0000)),
-                1,
-                new BigInteger(0x1)
-            },
-            {
-                new BigInteger(unchecked((long)0x8000_0000_0000_0000)),
-                2,
-                new BigInteger(0x2)
-            },
-            {
-                new BigInteger(unchecked((long)0x8000_0000_0000_0001)),
-                1,
-                new BigInteger(0x3)
-            },
-            {
-                new BigInteger(unchecked((long)0x8000_0000_0000_0001)),
-                2,
-                new BigInteger(0x6)
-            },
-            {
-                new BigInteger(unchecked((long)0x8000_0000_0000_0002)),
-                1,
-                new BigInteger(0x5)
-            },
-            {
-                new BigInteger(unchecked((long)0x8000_0000_0000_0002)),
-                2,
-                new BigInteger(0xA)
-            },
+                {
+                    new BigInteger(unchecked((long)0xFFFF_FFFF_0000_0000)),
+                    1,
+                    new BigInteger(unchecked((long)0xFFFF_FFFE_0000_0001))
+                },
+                {
+                    new BigInteger(unchecked((long)0xFFFF_FFFF_0000_0000)),
+                    2,
+                    new BigInteger(unchecked((long)0xFFFF_FFFC_0000_0003))
+                },
+                {
+                    new BigInteger(unchecked((long)0xFFFF_FFFF_0000_0001)),
+                    1,
+                    new BigInteger(unchecked((long)0xFFFF_FFFE_0000_0003))
+                },
+                {
+                    new BigInteger(unchecked((long)0xFFFF_FFFF_0000_0001)),
+                    2,
+                    new BigInteger(unchecked((long)0xFFFF_FFFC_0000_0007))
+                },
+                {
+                    new BigInteger(unchecked((long)0xFFFF_FFFF_0000_0002)),
+                    1,
+                    new BigInteger(unchecked((long)0xFFFF_FFFE_0000_0005))
+                },
+                {
+                    new BigInteger(unchecked((long)0xFFFF_FFFF_0000_0002)),
+                    2,
+                    new BigInteger(unchecked((long)0xFFFF_FFFC_0000_000B))
+                },
 
-            {
-                BigInteger.Parse("8000_0000_0000_0000_0000_0000".Replace("_", ""), NumberStyles.HexNumber),
-                1,
-                new BigInteger(0x1)
-            },
-            {
-                BigInteger.Parse("8000_0000_0000_0000_0000_0000".Replace("_", ""), NumberStyles.HexNumber),
-                2,
-                new BigInteger(0x2)
-            },
-            {
-                BigInteger.Parse("8000_0000_0000_0000_0000_0001".Replace("_", ""), NumberStyles.HexNumber),
-                1,
-                new BigInteger(0x3)
-            },
-            {
-                BigInteger.Parse("8000_0000_0000_0000_0000_0001".Replace("_", ""), NumberStyles.HexNumber),
-                2,
-                new BigInteger(0x6)
-            },
-            {
-                BigInteger.Parse("8000_0000_0000_0000_0000_0002".Replace("_", ""), NumberStyles.HexNumber),
-                1,
-                new BigInteger(0x5)
-            },
-            {
-                BigInteger.Parse("8000_0000_0000_0000_0000_0002".Replace("_", ""), NumberStyles.HexNumber),
-                2,
-                new BigInteger(0xA)
-            },
+                {
+                    new BigInteger(unchecked((long)0x8000_0000_0000_0000)),
+                    1,
+                    new BigInteger(0x1)
+                },
+                {
+                    new BigInteger(unchecked((long)0x8000_0000_0000_0000)),
+                    2,
+                    new BigInteger(0x2)
+                },
+                {
+                    new BigInteger(unchecked((long)0x8000_0000_0000_0001)),
+                    1,
+                    new BigInteger(0x3)
+                },
+                {
+                    new BigInteger(unchecked((long)0x8000_0000_0000_0001)),
+                    2,
+                    new BigInteger(0x6)
+                },
+                {
+                    new BigInteger(unchecked((long)0x8000_0000_0000_0002)),
+                    1,
+                    new BigInteger(0x5)
+                },
+                {
+                    new BigInteger(unchecked((long)0x8000_0000_0000_0002)),
+                    2,
+                    new BigInteger(0xA)
+                },
 
-            {
-                BigInteger.Parse("________F_0000_0000_0000_0000_0000_0000".Replace("_", ""), NumberStyles.HexNumber),
-                1,
-                BigInteger.Parse("________E_0000_0000_0000_0000_0000_0001".Replace("_", ""), NumberStyles.HexNumber)
-            },
-            {
-                BigInteger.Parse("________F_0000_0000_0000_0000_0000_0000".Replace("_", ""), NumberStyles.HexNumber),
-                2,
-                BigInteger.Parse("________C_0000_0000_0000_0000_0000_0003".Replace("_", ""), NumberStyles.HexNumber)
-            },
-            {
-                BigInteger.Parse("________F_0000_0000_0000_0000_0000_0001".Replace("_", ""), NumberStyles.HexNumber),
-                1,
-                BigInteger.Parse("________E_0000_0000_0000_0000_0000_0003".Replace("_", ""), NumberStyles.HexNumber)
-            },
-            {
-                BigInteger.Parse("________F_0000_0000_0000_0000_0000_0001".Replace("_", ""), NumberStyles.HexNumber),
-                2,
-                BigInteger.Parse("________C_0000_0000_0000_0000_0000_0007".Replace("_", ""), NumberStyles.HexNumber)
-            },
-            {
-                BigInteger.Parse("________F_0000_0000_0000_0000_0000_0002".Replace("_", ""), NumberStyles.HexNumber),
-                1,
-                BigInteger.Parse("________E_0000_0000_0000_0000_0000_0005".Replace("_", ""), NumberStyles.HexNumber)
-            },
-            {
-                BigInteger.Parse("________F_0000_0000_0000_0000_0000_0002".Replace("_", ""), NumberStyles.HexNumber),
-                2,
-                BigInteger.Parse("________C_0000_0000_0000_0000_0000_000B".Replace("_", ""), NumberStyles.HexNumber)
-            },
-        };
+                {
+                    BigInteger.Parse("________F_0000_0000_0000_0000_0000_0000".Replace("_", ""), NumberStyles.HexNumber),
+                    1,
+                    BigInteger.Parse("________E_0000_0000_0000_0000_0000_0001".Replace("_", ""), NumberStyles.HexNumber)
+                },
+                {
+                    BigInteger.Parse("________F_0000_0000_0000_0000_0000_0000".Replace("_", ""), NumberStyles.HexNumber),
+                    2,
+                    BigInteger.Parse("________C_0000_0000_0000_0000_0000_0003".Replace("_", ""), NumberStyles.HexNumber)
+                },
+                {
+                    BigInteger.Parse("________F_0000_0000_0000_0000_0000_0001".Replace("_", ""), NumberStyles.HexNumber),
+                    1,
+                    BigInteger.Parse("________E_0000_0000_0000_0000_0000_0003".Replace("_", ""), NumberStyles.HexNumber)
+                },
+                {
+                    BigInteger.Parse("________F_0000_0000_0000_0000_0000_0001".Replace("_", ""), NumberStyles.HexNumber),
+                    2,
+                    BigInteger.Parse("________C_0000_0000_0000_0000_0000_0007".Replace("_", ""), NumberStyles.HexNumber)
+                },
+                {
+                    BigInteger.Parse("________F_0000_0000_0000_0000_0000_0002".Replace("_", ""), NumberStyles.HexNumber),
+                    1,
+                    BigInteger.Parse("________E_0000_0000_0000_0000_0000_0005".Replace("_", ""), NumberStyles.HexNumber)
+                },
+                {
+                    BigInteger.Parse("________F_0000_0000_0000_0000_0000_0002".Replace("_", ""), NumberStyles.HexNumber),
+                    2,
+                    BigInteger.Parse("________C_0000_0000_0000_0000_0000_000B".Replace("_", ""), NumberStyles.HexNumber)
+                },
+            };
+
+            // Values occupying exactly 3 limbs with MSB set (ring = 3*bpl bits)
+            data.Add(neg2, 1, new BigInteger(1));
+            data.Add(neg2, 2, new BigInteger(2));
+            data.Add(neg1, 1, new BigInteger(3));
+            data.Add(neg1, 2, new BigInteger(6));
+            data.Add(neg3, 1, new BigInteger(5));
+            data.Add(neg3, 2, new BigInteger(10));
+
+            return data;
+        }
 
         [Theory]
         [MemberData(nameof(NegativeNumber_TestData))]
@@ -446,21 +433,22 @@ namespace System.Numerics.Tests
         [Fact]
         public void PowerOfTwo()
         {
-            for (int i = 0; i < 32; i++)
+            int bpl = 32; // bits per word
+            for (int i = 0; i < bpl; i++)
             {
                 foreach (int k in new int[] { 1, 2, 3, 10 })
                 {
-                    BigInteger plus = BigInteger.One << (32 * k + i);
-                    BigInteger minus = BigInteger.MinusOne << (32 * k + i);
+                    BigInteger plus = BigInteger.One << (bpl * k + i);
+                    BigInteger minus = BigInteger.MinusOne << (bpl * k + i);
 
-                    Assert.Equal(BigInteger.One << (i == 31 ? 0 : (32 * k + i + 1)), BigInteger.RotateLeft(plus, 1));
-                    Assert.Equal(BigInteger.One << i, BigInteger.RotateLeft(plus, 32));
-                    Assert.Equal(BigInteger.One << (32 * (k - 1) + i), BigInteger.RotateLeft(plus, 32 * k));
+                    Assert.Equal(BigInteger.One << (i == bpl - 1 ? 0 : (bpl * k + i + 1)), BigInteger.RotateLeft(plus, 1));
+                    Assert.Equal(BigInteger.One << i, BigInteger.RotateLeft(plus, bpl));
+                    Assert.Equal(BigInteger.One << (bpl * (k - 1) + i), BigInteger.RotateLeft(plus, bpl * k));
 
-                    Assert.Equal(i == 31 ? BigInteger.One : (new BigInteger(-1 << (i + 1)) << 32 * k) + 1,
+                    Assert.Equal(i == bpl - 1 ? BigInteger.One : (new BigInteger((int)(-1) << (i + 1)) << bpl * k) + 1,
                         BigInteger.RotateLeft(minus, 1));
-                    Assert.Equal(new BigInteger(uint.MaxValue << i), BigInteger.RotateLeft(minus, 32));
-                    Assert.Equal(new BigInteger(uint.MaxValue << i) << (32 * (k - 1)), BigInteger.RotateLeft(minus, 32 * k));
+                    Assert.Equal((BigInteger.One << bpl) - (BigInteger.One << i), BigInteger.RotateLeft(minus, bpl));
+                    Assert.Equal(((BigInteger.One << bpl) - (BigInteger.One << i)) << (bpl * (k - 1)), BigInteger.RotateLeft(minus, bpl * k));
                 }
             }
         }
@@ -470,133 +458,120 @@ namespace System.Numerics.Tests
     {
         public override string opstring => "bRotateRight";
 
-        public static TheoryData<BigInteger, int, BigInteger> NegativeNumber_TestData = new TheoryData<BigInteger, int, BigInteger>
+        public static TheoryData<BigInteger, int, BigInteger> NegativeNumber_TestData()
         {
+            int bpl = 32; // bits per word
+            BigInteger neg2 = -(BigInteger.One << (3 * bpl - 1));       // -2^(3*bpl-1)
+            BigInteger neg1 = neg2 + 1;                                  // -(2^(3*bpl-1) - 1)
+            BigInteger neg3 = neg2 + 2;                                  // -(2^(3*bpl-1) - 2)
 
+            var data = new TheoryData<BigInteger, int, BigInteger>
             {
-                new BigInteger(unchecked((long)0xFFFF_FFFF_0000_0000)),
-                1,
-                new BigInteger(unchecked((long)0x7FFF_FFFF_8000_0000))
-            },
-            {
-                new BigInteger(unchecked((long)0xFFFF_FFFF_0000_0000)),
-                2,
-                new BigInteger(unchecked((long)0x3FFF_FFFF_C000_0000))
-            },
-            {
-                new BigInteger(unchecked((long)0xFFFF_FFFF_0000_0001)),
-                1,
-                new BigInteger(unchecked((int)0x8000_0000))
-            },
-            {
-                new BigInteger(unchecked((long)0xFFFF_FFFF_0000_0001)),
-                2,
-                new BigInteger(unchecked((long)0x7FFF_FFFF_C000_0000))
-            },
-            {
-                new BigInteger(unchecked((long)0xFFFF_FFFF_0000_0002)),
-                1,
-                new BigInteger(unchecked((long)0x7FFF_FFFF_8000_0001))
-            },
-            {
-                new BigInteger(unchecked((long)0xFFFF_FFFF_0000_0002)),
-                2,
-                new BigInteger(unchecked((long)0xBFFF_FFFF_C000_0000))
-            },
 
-            {
-                new BigInteger(unchecked((long)0x8000_0000_0000_0000)),
-                1,
-                new BigInteger(unchecked((long)0x4000_0000_0000_0000))
-            },
-            {
-                new BigInteger(unchecked((long)0x8000_0000_0000_0000)),
-                2,
-                new BigInteger(unchecked((long)0x2000_0000_0000_0000))
-            },
-            {
-                new BigInteger(unchecked((long)0x8000_0000_0000_0001)),
-                1,
-                new BigInteger(unchecked((long)0xC000_0000_0000_0000))
-            },
-            {
-                new BigInteger(unchecked((long)0x8000_0000_0000_0001)),
-                2,
-                new BigInteger(unchecked((long)0x6000_0000_0000_0000))
-            },
-            {
-                new BigInteger(unchecked((long)0x8000_0000_0000_0002)),
-                1,
-                new BigInteger(unchecked((long)0x4000_0000_0000_0001))
-            },
-            {
-                new BigInteger(unchecked((long)0x8000_0000_0000_0002)),
-                2,
-                new BigInteger(unchecked((long)0xA000_0000_0000_0000))
-            },
+                {
+                    new BigInteger(unchecked((long)0xFFFF_FFFF_0000_0000)),
+                    1,
+                    new BigInteger(unchecked((long)0x7FFF_FFFF_8000_0000))
+                },
+                {
+                    new BigInteger(unchecked((long)0xFFFF_FFFF_0000_0000)),
+                    2,
+                    new BigInteger(unchecked((long)0x3FFF_FFFF_C000_0000))
+                },
+                {
+                    new BigInteger(unchecked((long)0xFFFF_FFFF_0000_0001)),
+                    1,
+                    new BigInteger(unchecked((int)0x8000_0000))
+                },
+                {
+                    new BigInteger(unchecked((long)0xFFFF_FFFF_0000_0001)),
+                    2,
+                    new BigInteger(unchecked((long)0x7FFF_FFFF_C000_0000))
+                },
+                {
+                    new BigInteger(unchecked((long)0xFFFF_FFFF_0000_0002)),
+                    1,
+                    new BigInteger(unchecked((long)0x7FFF_FFFF_8000_0001))
+                },
+                {
+                    new BigInteger(unchecked((long)0xFFFF_FFFF_0000_0002)),
+                    2,
+                    new BigInteger(unchecked((long)0xBFFF_FFFF_C000_0000))
+                },
 
-            {
-                BigInteger.Parse("8000_0000_0000_0000_0000_0000".Replace("_", ""), NumberStyles.HexNumber),
-                1,
-                BigInteger.Parse("4000_0000_0000_0000_0000_0000".Replace("_", ""), NumberStyles.HexNumber)
-            },
-            {
-                BigInteger.Parse("8000_0000_0000_0000_0000_0000".Replace("_", ""), NumberStyles.HexNumber),
-                2,
-                BigInteger.Parse("2000_0000_0000_0000_0000_0000".Replace("_", ""), NumberStyles.HexNumber)
-            },
-            {
-                BigInteger.Parse("8000_0000_0000_0000_0000_0001".Replace("_", ""), NumberStyles.HexNumber),
-                1,
-                BigInteger.Parse("C000_0000_0000_0000_0000_0000".Replace("_", ""), NumberStyles.HexNumber)
-            },
-            {
-                BigInteger.Parse("8000_0000_0000_0000_0000_0001".Replace("_", ""), NumberStyles.HexNumber),
-                2,
-                BigInteger.Parse("6000_0000_0000_0000_0000_0000".Replace("_", ""), NumberStyles.HexNumber)
-            },
-            {
-                BigInteger.Parse("8000_0000_0000_0000_0000_0002".Replace("_", ""), NumberStyles.HexNumber),
-                1,
-                BigInteger.Parse("4000_0000_0000_0000_0000_0001".Replace("_", ""), NumberStyles.HexNumber)
-            },
-            {
-                BigInteger.Parse("8000_0000_0000_0000_0000_0002".Replace("_", ""), NumberStyles.HexNumber),
-                2,
-                BigInteger.Parse("A000_0000_0000_0000_0000_0000".Replace("_", ""), NumberStyles.HexNumber)
-            },
+                {
+                    new BigInteger(unchecked((long)0x8000_0000_0000_0000)),
+                    1,
+                    new BigInteger(unchecked((long)0x4000_0000_0000_0000))
+                },
+                {
+                    new BigInteger(unchecked((long)0x8000_0000_0000_0000)),
+                    2,
+                    new BigInteger(unchecked((long)0x2000_0000_0000_0000))
+                },
+                {
+                    new BigInteger(unchecked((long)0x8000_0000_0000_0001)),
+                    1,
+                    new BigInteger(unchecked((long)0xC000_0000_0000_0000))
+                },
+                {
+                    new BigInteger(unchecked((long)0x8000_0000_0000_0001)),
+                    2,
+                    new BigInteger(unchecked((long)0x6000_0000_0000_0000))
+                },
+                {
+                    new BigInteger(unchecked((long)0x8000_0000_0000_0002)),
+                    1,
+                    new BigInteger(unchecked((long)0x4000_0000_0000_0001))
+                },
+                {
+                    new BigInteger(unchecked((long)0x8000_0000_0000_0002)),
+                    2,
+                    new BigInteger(unchecked((long)0xA000_0000_0000_0000))
+                },
 
-            {
-                BigInteger.Parse("________F_0000_0000_0000_0000_0000_0000".Replace("_", ""), NumberStyles.HexNumber),
-                1,
-                BigInteger.Parse("7FFF_FFFF_8000_0000_0000_0000_0000_0000".Replace("_", ""), NumberStyles.HexNumber)
-            },
-            {
-                BigInteger.Parse("________F_0000_0000_0000_0000_0000_0000".Replace("_", ""), NumberStyles.HexNumber),
-                2,
-                BigInteger.Parse("3FFF_FFFF_C000_0000_0000_0000_0000_0000".Replace("_", ""), NumberStyles.HexNumber)
-            },
-            {
-                BigInteger.Parse("________F_0000_0000_0000_0000_0000_0001".Replace("_", ""), NumberStyles.HexNumber),
-                1,
-                BigInteger.Parse("__________8000_0000_0000_0000_0000_0000".Replace("_", ""), NumberStyles.HexNumber)
-            },
-            {
-                BigInteger.Parse("________F_0000_0000_0000_0000_0000_0001".Replace("_", ""), NumberStyles.HexNumber),
-                2,
-                BigInteger.Parse("7FFF_FFFF_C000_0000_0000_0000_0000_0000".Replace("_", ""), NumberStyles.HexNumber)
-            },
-            {
-                BigInteger.Parse("________F_0000_0000_0000_0000_0000_0002".Replace("_", ""), NumberStyles.HexNumber),
-                1,
-                BigInteger.Parse("7FFF_FFFF_8000_0000_0000_0000_0000_0001".Replace("_", ""), NumberStyles.HexNumber)
-            },
-            {
-                BigInteger.Parse("________F_0000_0000_0000_0000_0000_0002".Replace("_", ""), NumberStyles.HexNumber),
-                2,
-                BigInteger.Parse("BFFF_FFFF_C000_0000_0000_0000_0000_0000".Replace("_", ""), NumberStyles.HexNumber)
-            },
-        };
+                {
+                    BigInteger.Parse("________F_0000_0000_0000_0000_0000_0000".Replace("_", ""), NumberStyles.HexNumber),
+                    1,
+                    BigInteger.Parse("7FFF_FFFF_8000_0000_0000_0000_0000_0000".Replace("_", ""), NumberStyles.HexNumber)
+                },
+                {
+                    BigInteger.Parse("________F_0000_0000_0000_0000_0000_0000".Replace("_", ""), NumberStyles.HexNumber),
+                    2,
+                    BigInteger.Parse("3FFF_FFFF_C000_0000_0000_0000_0000_0000".Replace("_", ""), NumberStyles.HexNumber)
+                },
+                {
+                    BigInteger.Parse("________F_0000_0000_0000_0000_0000_0001".Replace("_", ""), NumberStyles.HexNumber),
+                    1,
+                    BigInteger.Parse("__________8000_0000_0000_0000_0000_0000".Replace("_", ""), NumberStyles.HexNumber)
+                },
+                {
+                    BigInteger.Parse("________F_0000_0000_0000_0000_0000_0001".Replace("_", ""), NumberStyles.HexNumber),
+                    2,
+                    BigInteger.Parse("7FFF_FFFF_C000_0000_0000_0000_0000_0000".Replace("_", ""), NumberStyles.HexNumber)
+                },
+                {
+                    BigInteger.Parse("________F_0000_0000_0000_0000_0000_0002".Replace("_", ""), NumberStyles.HexNumber),
+                    1,
+                    BigInteger.Parse("7FFF_FFFF_8000_0000_0000_0000_0000_0001".Replace("_", ""), NumberStyles.HexNumber)
+                },
+                {
+                    BigInteger.Parse("________F_0000_0000_0000_0000_0000_0002".Replace("_", ""), NumberStyles.HexNumber),
+                    2,
+                    BigInteger.Parse("BFFF_FFFF_C000_0000_0000_0000_0000_0000".Replace("_", ""), NumberStyles.HexNumber)
+                },
+            };
+
+            // Values occupying exactly 3 limbs with MSB set (ring = 3*bpl bits)
+            data.Add(neg2, 1, BigInteger.One << (3 * bpl - 2));
+            data.Add(neg2, 2, BigInteger.One << (3 * bpl - 3));
+            data.Add(neg1, 1, -(BigInteger.One << (3 * bpl - 2)));
+            data.Add(neg1, 2, (BigInteger)3 << (3 * bpl - 3));
+            data.Add(neg3, 1, (BigInteger.One << (3 * bpl - 2)) + 1);
+            data.Add(neg3, 2, -((BigInteger)3 << (3 * bpl - 3)));
+
+            return data;
+        }
 
         [Theory]
         [MemberData(nameof(NegativeNumber_TestData))]
@@ -608,20 +583,21 @@ namespace System.Numerics.Tests
         [Fact]
         public void PowerOfTwo()
         {
-            for (int i = 0; i < 32; i++)
+            int bpl = 32; // bits per word
+            for (int i = 0; i < bpl; i++)
             {
                 foreach (int k in new int[] { 1, 2, 3, 10 })
                 {
-                    BigInteger plus = BigInteger.One << (32 * k + i);
-                    BigInteger minus = BigInteger.MinusOne << (32 * k + i);
+                    BigInteger plus = BigInteger.One << (bpl * k + i);
+                    BigInteger minus = BigInteger.MinusOne << (bpl * k + i);
 
-                    Assert.Equal(BigInteger.One << (32 * k + i - 1), BigInteger.RotateRight(plus, 1));
-                    Assert.Equal(BigInteger.One << (32 * (k - 1) + i), BigInteger.RotateRight(plus, 32));
-                    Assert.Equal(BigInteger.One << i, BigInteger.RotateRight(plus, 32 * k));
+                    Assert.Equal(BigInteger.One << (bpl * k + i - 1), BigInteger.RotateRight(plus, 1));
+                    Assert.Equal(BigInteger.One << (bpl * (k - 1) + i), BigInteger.RotateRight(plus, bpl));
+                    Assert.Equal(BigInteger.One << i, BigInteger.RotateRight(plus, bpl * k));
 
-                    Assert.Equal(new BigInteger(uint.MaxValue << i) << (32 * k - 1), BigInteger.RotateRight(minus, 1));
-                    Assert.Equal(new BigInteger(uint.MaxValue << i) << (32 * (k - 1)), BigInteger.RotateRight(minus, 32));
-                    Assert.Equal(new BigInteger(uint.MaxValue << i), BigInteger.RotateRight(minus, 32 * k));
+                    Assert.Equal(((BigInteger.One << bpl) - (BigInteger.One << i)) << (bpl * k - 1), BigInteger.RotateRight(minus, 1));
+                    Assert.Equal(((BigInteger.One << bpl) - (BigInteger.One << i)) << (bpl * (k - 1)), BigInteger.RotateRight(minus, bpl));
+                    Assert.Equal((BigInteger.One << bpl) - (BigInteger.One << i), BigInteger.RotateRight(minus, bpl * k));
                 }
             }
         }

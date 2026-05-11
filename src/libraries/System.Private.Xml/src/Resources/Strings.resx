@@ -265,16 +265,16 @@
     <value>'{0}', hexadecimal value {1}, is an invalid character.</value>
   </data>
   <data name="Xml_InvalidBinHexValue" xml:space="preserve">
-    <value>'{0}' is not a valid BinHex text sequence.</value>
+    <value>'{0}' is not a valid BinHex character.</value>
   </data>
   <data name="Xml_InvalidBinHexValueOddCount" xml:space="preserve">
-    <value>'{0}' is not a valid BinHex text sequence. The sequence must contain an even number of characters.</value>
+    <value>BinHex text is not valid. The sequence must contain an even number of characters.</value>
   </data>
   <data name="Xml_InvalidTextDecl" xml:space="preserve">
     <value>Invalid text declaration.</value>
   </data>
   <data name="Xml_InvalidBase64Value" xml:space="preserve">
-    <value>'{0}' is not a valid Base64 text sequence.</value>
+    <value>'{0}' is not a valid Base64 character.</value>
   </data>
   <data name="Xml_UndeclaredEntity" xml:space="preserve">
     <value>Reference to undeclared entity '{0}'.</value>

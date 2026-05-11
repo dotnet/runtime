@@ -203,7 +203,8 @@ namespace System.Threading.RateLimiting.Tests
 
         public override bool IsAutoReplenishing => false;
 
-        public override TimeSpan ReplenishmentPeriod => throw new NotImplementedException();
+        public Func<TimeSpan> ReplenishmentPeriodImpl { get; set; } = () => TimeSpan.Zero;
+        public override TimeSpan ReplenishmentPeriod => ReplenishmentPeriodImpl();
 
         public Func<bool> TryReplenishImpl { get; set; } = () => true;
         public override bool TryReplenish() => TryReplenishImpl();

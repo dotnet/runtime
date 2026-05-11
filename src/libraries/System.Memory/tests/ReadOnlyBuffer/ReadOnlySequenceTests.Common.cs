@@ -635,5 +635,39 @@ namespace System.Memory.Tests
 
         #endregion
 
+        #region Slice_ValidatesPositionNotFromDifferentSequence
+
+        [Fact]
+        public void Slice_Int_SequencePosition_ValidatesEndPositionFromDifferentSequence()
+        {
+            // Create sequence: [1 byte] -> [empty]
+            var segment1 = new BufferSegment<T>(new T[1]);
+            BufferSegment<T> segment2 = segment1.Append(new T[0]);
+
+            var originalSequence = new ReadOnlySequence<T>(segment1, 0, segment2, 0);
+            ReadOnlySequence<T> slicedSequence = originalSequence.Slice(1); // Empty sequence at segment2
+
+            // Trying to use originalSequence.Start (which is at segment1) as end position
+            // on slicedSequence (which only contains segment2) should throw
+            Assert.Throws<ArgumentOutOfRangeException>(() => slicedSequence.Slice(0, originalSequence.Start));
+        }
+
+        [Fact]
+        public void Slice_SequencePosition_Long_ValidatesStartPositionFromDifferentSequence()
+        {
+            // Create sequence: [1 byte] -> [empty]
+            var segment1 = new BufferSegment<T>(new T[1]);
+            BufferSegment<T> segment2 = segment1.Append(new T[0]);
+
+            var originalSequence = new ReadOnlySequence<T>(segment1, 0, segment2, 0);
+            ReadOnlySequence<T> slicedSequence = originalSequence.Slice(1); // Empty sequence at segment2
+
+            // Trying to use originalSequence.Start (which is at segment1) as start position
+            // on slicedSequence (which only contains segment2) should throw
+            Assert.Throws<ArgumentOutOfRangeException>(() => slicedSequence.Slice(originalSequence.Start, 0));
+        }
+
+        #endregion
+
     }
 }

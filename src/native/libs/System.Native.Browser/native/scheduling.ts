@@ -80,3 +80,29 @@ export function SystemJS_ScheduleFinalization(): void {
         }
     }
 }
+
+export function SystemJS_ScheduleDiagnosticServer(): void {
+    if (_ems_.ABORT || _ems_.DOTNET.isAborting) {
+        // runtime is shutting down
+        return;
+    }
+    if (_ems_.DOTNET.lastScheduledDiagnosticServerId) {
+        globalThis.clearTimeout(_ems_.DOTNET.lastScheduledDiagnosticServerId);
+        _ems_.runtimeKeepalivePop();
+        _ems_.DOTNET.lastScheduledDiagnosticServerId = undefined;
+    }
+    _ems_.DOTNET.lastScheduledDiagnosticServerId = _ems_.safeSetTimeout(SystemJS_ScheduleDiagnosticServerTick, 0);
+
+    function SystemJS_ScheduleDiagnosticServerTick(): void {
+        try {
+            _ems_.DOTNET.lastScheduledDiagnosticServerId = undefined;
+            _ems_._SystemJS_ExecuteDiagnosticServerCallback();
+        } catch (error: any) {
+            // do not propagate ExitStatus exception
+            if (!error || typeof error.status !== "number") {
+                _ems_.dotnetApi.exit(1, error);
+                throw error;
+            }
+        }
+    }
+}

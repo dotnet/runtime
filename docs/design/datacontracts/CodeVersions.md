@@ -51,7 +51,11 @@ public virtual TargetPointer GetIL(ILCodeVersionHandle ilCodeVersionHandle);
 
 // Determines whether an IL code version has default IL
 public virtual bool HasDefaultIL(ILCodeVersionHandle ilCodeVersionHandle);
+
+// Gets the optimization tier for a native code version
+public virtual OptimizationTier GetOptimizationTier(NativeCodeVersionHandle codeVersionHandle);
 ```
+
 ### Extension Methods
 ```csharp
 // Return a handle to the active version of the native code for a given method descriptor
@@ -73,6 +77,7 @@ Data descriptors used:
 | NativeCodeVersionNode | Flags | `NativeCodeVersionNodeFlags` flags, see below |
 | NativeCodeVersionNode | VersionId | Version ID corresponding to the parent IL code version |
 | NativeCodeVersionNode | GCCoverageInfo | GCStress debug info, if supported |
+| NativeCodeVersionNode | OptimizationTier | The optimization tier of this native code version |
 | ILCodeVersioningState | FirstVersionNode | pointer to the first `ILCodeVersionNode` |
 | ILCodeVersioningState | ActiveVersionKind | an `ILCodeVersionKind` value indicating which fields of the active version are value |
 | ILCodeVersioningState | ActiveVersionNode | if the active version is explicit, the NativeCodeVersionNode for the active version |

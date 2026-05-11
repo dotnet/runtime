@@ -96,8 +96,8 @@ public readonly struct GCOomData
     // Returns pointers to all GC heaps
     IEnumerable<TargetPointer> GetGCHeaps();
 
-    // The following APIs have both a workstation and serer variant.
-    // The workstation variant implitly operates on the global heap.
+    // The following APIs have both a workstation and server variant.
+    // The workstation variant implicitly operates on the global heap.
     // The server variants allow passing in a heap pointer.
 
     // Gets data about a GC heap
@@ -118,6 +118,33 @@ public readonly struct GCOomData
     TargetNUInt GetHandleExtraInfo(TargetPointer handle);
     // Gets the global allocation context pointer and limit
     void GetGlobalAllocationContext(out TargetPointer allocPtr, out TargetPointer allocLimit);
+
+    // Gets handle table memory regions (segments)
+    IReadOnlyList<GCMemoryRegionData> GetHandleTableMemoryRegions();
+    // Gets GC bookkeeping memory regions (card table info linked list)
+    IReadOnlyList<GCMemoryRegionData> GetGCBookkeepingMemoryRegions();
+    // Gets GC free regions (free region lists and freeable segments)
+    IReadOnlyList<GCMemoryRegionData> GetGCFreeRegions();
+```
+
+```csharp
+public enum FreeRegionKind
+{
+    FreeUnknownRegion = 0,
+    FreeGlobalHugeRegion = 1,
+    FreeGlobalRegion = 2,
+    FreeRegion = 3,
+    FreeSohSegment = 4,
+    FreeUohSegment = 5,
+}
+
+public readonly struct GCMemoryRegionData
+{
+    public TargetPointer Start { get; init; }
+    public ulong Size { get; init; }
+    public ulong ExtraData { get; init; }
+    public int Heap { get; init; }
+}
 ```
 
 ## Version 1
@@ -125,17 +152,17 @@ public readonly struct GCOomData
 Data descriptors used:
 | Data Descriptor Name | Field | Source | Meaning |
 | --- | --- | --- | --- |
-| `GCHeap` | MarkArray | GC | Pointer to the heap's MarkArray (in sever builds) |
-| `GCHeap` | NextSweepObj | GC | Pointer to the heap's NextSweepObj (in sever builds) |
-| `GCHeap` | BackgroundMinSavedAddr | GC | Heap's background saved lowest address (in sever builds) |
-| `GCHeap` | BackgroundMaxSavedAddr | GC | Heap's background saved highest address (in sever builds) |
+| `GCHeap` | MarkArray | GC | Pointer to the heap's MarkArray (only in server builds with background GC) |
+| `GCHeap` | NextSweepObj | GC | Pointer to the heap's NextSweepObj (only in server builds with background GC) |
+| `GCHeap` | BackgroundMinSavedAddr | GC | Heap's background saved lowest address (only in server builds with background GC) |
+| `GCHeap` | BackgroundMaxSavedAddr | GC | Heap's background saved highest address (only in server builds with background GC) |
 | `GCHeap` | AllocAllocated | GC | Heap's highest address allocated by Alloc (in sever builds) |
 | `GCHeap` | EphemeralHeapSegment | GC | Pointer to the heap's ephemeral heap segment (in sever builds) |
 | `GCHeap` | CardTable | GC | Pointer to the heap's bookkeeping GC data structure (in sever builds) |
 | `GCHeap` | FinalizeQueue | GC | Pointer to the heap's CFinalize data structure (in sever builds) |
 | `GCHeap` | GenerationTable | GC | Pointer to the start of an array containing `"TotalGenerationCount"` `Generation` structures (in sever builds) |
-| `GCHeap` | SavedSweepEphemeralSeg | GC | Pointer to the heap's saved sweep ephemeral segment (only in server builds with segment) |
-| `GCHeap` | SavedSweepEphemeralStart | GC | Start of the heap's sweep ephemeral segment (only in server builds with segment) |
+| `GCHeap` | SavedSweepEphemeralSeg | GC | Pointer to the heap's saved sweep ephemeral segment (only in server builds with segment and background GC) |
+| `GCHeap` | SavedSweepEphemeralStart | GC | Start of the heap's sweep ephemeral segment (only in server builds with segment and background GC) |
 | `GCHeap` | OomData | GC | OOM related data in a struct (in sever builds) |
 | `GCHeap` | InternalRootArray | GC | Data array stored per heap (in sever builds) |
 | `GCHeap` | InternalRootArrayIndex | GC | Index into InternalRootArray (in sever builds) |
@@ -177,6 +204,13 @@ Data descriptors used:
 | `TableSegment` | RgAllocation | GC | Circular block-list links per block |
 | `TableSegment` | RgValue | GC | Start of handle value storage |
 | `TableSegment` | RgUserData | GC | Auxiliary per-block metadata (e.g. secondary handle blocks) |
+| `CardTableInfo` | Recount | GC | Reference count for the card table |
+| `CardTableInfo` | Size | GC | Total size of the bookkeeping allocation |
+| `CardTableInfo` | NextCardTable | GC | Pointer to the next card table in the linked list |
+| `RegionFreeList` | HeadFreeRegion | GC | Head of the free region segment list |
+| `GCHeap` | FreeableSohSegment | GC | Head of the freeable SOH segment linked list (server builds, background GC) |
+| `GCHeap` | FreeableUohSegment | GC | Head of the freeable UOH segment linked list (server builds, background GC) |
+| `GCHeap` | FreeRegions | GC | Start of the per-heap free region list array (server builds, region GC) |
 | `GCAllocContext` | AllocBytes | VM | Number of bytes allocated on SOH by this context |
 | `GCAllocContext` | AllocBytesLoh | VM | Number of bytes allocated not on SOH by this context |
 | `EEAllocContext` | GCAllocationContext | VM | The `GCAllocContext` struct within an `EEAllocContext` |
@@ -195,17 +229,17 @@ Global variables used:
 | `CompactReasonsLength` | uint | GC | The number of elements in the `CompactReasons` array |
 | `ExpandMechanismsLength` | uint | GC | The number of elements in the `ExpandMechanisms` array |
 | `InterestingMechanismBitsLength` | uint | GC | The number of elements in the `InterestingMechanismBits` array |
-| `GCHeapMarkArray` | TargetPointer | GC | Pointer to the static heap's MarkArray (in workstation builds) |
-| `GCHeapNextSweepObj` | TargetPointer | GC | Pointer to the static heap's NextSweepObj (in workstation builds) |
-| `GCHeapBackgroundMinSavedAddr` | TargetPointer | GC | Background saved lowest address (in workstation builds) |
-| `GCHeapBackgroundMaxSavedAddr` | TargetPointer | GC | Background saved highest address (in workstation builds) |
+| `GCHeapMarkArray` | TargetPointer | GC | Pointer to the static heap's MarkArray (in workstation builds with background GC) |
+| `GCHeapNextSweepObj` | TargetPointer | GC | Pointer to the static heap's NextSweepObj (in workstation builds with background GC) |
+| `GCHeapBackgroundMinSavedAddr` | TargetPointer | GC | Background saved lowest address (in workstation builds with background GC) |
+| `GCHeapBackgroundMaxSavedAddr` | TargetPointer | GC | Background saved highest address (in workstation builds with background GC) |
 | `GCHeapAllocAllocated` | TargetPointer | GC | Highest address allocated by Alloc (in workstation builds) |
 | `GCHeapEphemeralHeapSegment` | TargetPointer | GC | Pointer to an ephemeral heap segment (in workstation builds) |
 | `GCHeapCardTable` | TargetPointer | GC | Pointer to the static heap's bookkeeping GC data structure (in workstation builds) |
 | `GCHeapFinalizeQueue` | TargetPointer | GC | Pointer to the static heap's CFinalize data structure (in workstation builds) |
 | `GCHeapGenerationTable` | TargetPointer | GC | Pointer to the start of an array containing `"TotalGenerationCount"` `Generation` structures (in workstation builds) |
-| `GCHeapSavedSweepEphemeralSeg` | TargetPointer | GC | Pointer to the static heap's saved sweep ephemeral segment (in workstation builds with segment) |
-| `GCHeapSavedSweepEphemeralStart` | TargetPointer | GC | Start of the static heap's sweep ephemeral segment (in workstation builds with segment) |
+| `GCHeapSavedSweepEphemeralSeg` | TargetPointer | GC | Pointer to the static heap's saved sweep ephemeral segment (in workstation builds with segment and background GC) |
+| `GCHeapSavedSweepEphemeralStart` | TargetPointer | GC | Start of the static heap's sweep ephemeral segment (in workstation builds with segment and background GC) |
 | `GCHeapOomData` | TargetPointer | GC | OOM related data in a struct (in workstation builds) |
 | `GCHeapInternalRootArray` | TargetPointer | GC | Data array stored per heap (in workstation builds) |
 | `GCHeapInternalRootArrayIndex` | TargetPointer | GC | Index into InternalRootArray (in workstation builds) |
@@ -232,6 +266,15 @@ Global variables used:
 | `FeatureJavaMarshal` | byte | VM | Non-zero when Java marshal support is enabled |
 | `GlobalAllocContext` | TargetPointer | VM | Pointer to the global `EEAllocContext` |
 | `TotalCpuCount` | uint | GC | Number of available processors |
+| `HandleSegmentSize` | uint | GC | Size of each handle table segment allocation |
+| `CardTableInfoSize` | uint | GC | Size of the `dac_card_table_info` structure |
+| `CountFreeRegionKinds` | uint | GC | Number of free region kinds (basic, large, huge) |
+| `GlobalFreeHugeRegions` | TargetPointer | GC | Pointer to the global free huge region list |
+| `GlobalRegionsToDecommit` | TargetPointer | GC | Pointer to the global regions-to-decommit array |
+| `BookkeepingStart` | TargetPointer | GC | Pointer to the bookkeeping start address |
+| `GCHeapFreeableSohSegment` | TargetPointer | GC | Pointer to the freeable SOH segment head (workstation builds) |
+| `GCHeapFreeableUohSegment` | TargetPointer | GC | Pointer to the freeable UOH segment head (workstation builds) |
+| `GCHeapFreeRegions` | TargetPointer | GC | Pointer to the free regions array (workstation builds) |
 
 Contracts used:
 | Contract Name |
@@ -411,11 +454,39 @@ GCHeapData IGC.GetHeapData()
 
     GCHeapData data;
 
-    // Read fields directly from globals
-    data.MarkArray = target.ReadPointer(target.ReadGlobalPointer("GCHeapMarkArray"));
-    data.NextSweepObj = target.ReadPointer(target.ReadGlobalPointer("GCHeapNextSweepObj"));
-    data.BackgroundMinSavedAddr = target.ReadPointer(target.ReadGlobalPointer("GCHeapBackgroundMinSavedAddr"));
-    data.BackgroundMaxSavedAddr = target.ReadPointer(target.ReadGlobalPointer("GCHeapBackgroundMaxSavedAddr"));
+    // Read background GC globals - these are absent when background GC is disabled (e.g., on WebAssembly).
+    if (target.TryReadGlobalPointer("GCHeapMarkArray", out TargetPointer? markArrayPtr))
+    {
+        data.MarkArray = target.ReadPointer(markArrayPtr.Value);
+    }
+    else
+    {
+        data.MarkArray = 0;
+    }
+    if (target.TryReadGlobalPointer("GCHeapNextSweepObj", out TargetPointer? nextSweepObjPtr))
+    {
+        data.NextSweepObj = target.ReadPointer(nextSweepObjPtr.Value);
+    }
+    else
+    {
+        data.NextSweepObj = 0;
+    }
+    if (target.TryReadGlobalPointer("GCHeapBackgroundMinSavedAddr", out TargetPointer? bgMinPtr))
+    {
+        data.BackgroundMinSavedAddr = target.ReadPointer(bgMinPtr.Value);
+    }
+    else
+    {
+        data.BackgroundMinSavedAddr = 0;
+    }
+    if (target.TryReadGlobalPointer("GCHeapBackgroundMaxSavedAddr", out TargetPointer? bgMaxPtr))
+    {
+        data.BackgroundMaxSavedAddr = target.ReadPointer(bgMaxPtr.Value);
+    }
+    else
+    {
+        data.BackgroundMaxSavedAddr = 0;
+    }
     data.AllocAllocated = target.ReadPointer(target.ReadGlobalPointer("GCHeapAllocAllocated"));
     data.EphemeralHeapSegment = target.ReadPointer(target.ReadGlobalPointer("GCHeapEphemeralHeapSegment"));
     data.CardTable = target.ReadPointer(target.ReadGlobalPointer("GCHeapCardTable"));
@@ -478,11 +549,41 @@ GCHeapData IGC.GetHeapData(TargetPointer heapAddress)
 
     GCHeapData data;
 
-    // Read fields directly from heap
-    data.MarkArray = target.ReadPointer(heapAddress + /* GCHeap::MarkArray offset */);
-    data.NextSweepObj = target.ReadPointer(heapAddress + /* GCHeap::NextSweepObj offset */);
-    data.BackgroundMinSavedAddr = target.ReadPointer(heapAddress + /* GCHeap::BackgroundMinSavedAddr offset */);
-    data.BackgroundMaxSavedAddr = target.ReadPointer(heapAddress + /* GCHeap::BackgroundMaxSavedAddr offset */);
+    // Read background GC heap fields - these fields are absent when background GC is disabled (e.g., on WebAssembly).
+    // Check whether the field exists in the type layout before reading; default to 0 if not present.
+    Target.TypeInfo gcHeapType = target.GetTypeInfo(DataType.GCHeap);
+    if (gcHeapType.Fields.ContainsKey("MarkArray"))
+    {
+        data.MarkArray = target.ReadPointer(heapAddress + /* GCHeap::MarkArray offset */);
+    }
+    else
+    {
+        data.MarkArray = 0;
+    }
+    if (gcHeapType.Fields.ContainsKey("NextSweepObj"))
+    {
+        data.NextSweepObj = target.ReadPointer(heapAddress + /* GCHeap::NextSweepObj offset */);
+    }
+    else
+    {
+        data.NextSweepObj = 0;
+    }
+    if (gcHeapType.Fields.ContainsKey("BackgroundMinSavedAddr"))
+    {
+        data.BackgroundMinSavedAddr = target.ReadPointer(heapAddress + /* GCHeap::BackgroundMinSavedAddr offset */);
+    }
+    else
+    {
+        data.BackgroundMinSavedAddr = 0;
+    }
+    if (gcHeapType.Fields.ContainsKey("BackgroundMaxSavedAddr"))
+    {
+        data.BackgroundMaxSavedAddr = target.ReadPointer(heapAddress + /* GCHeap::BackgroundMaxSavedAddr offset */);
+    }
+    else
+    {
+        data.BackgroundMaxSavedAddr = 0;
+    }
     data.AllocAllocated = target.ReadPointer(heapAddress + /* GCHeap::AllocAllocated offset */);
     data.EphemeralHeapSegment = target.ReadPointer(heapAddress + /* GCHeap::EphemeralHeapSegment offset */);
     data.CardTable = target.ReadPointer(heapAddress + /* GCHeap::CardTable offset */);
@@ -741,6 +842,159 @@ void IGC.GetGlobalAllocationContext(out TargetPointer allocPtr, out TargetPointe
     TargetPointer globalAllocContextAddress = target.ReadGlobalPointer("GlobalAllocContext");
     allocPtr = target.ReadPointer(globalAllocContextAddress + /* EEAllocContext::GCAllocationContext offset */ + /* GCAllocContext::Pointer offset */);
     allocLimit = target.ReadPointer(globalAllocContextAddress + /* EEAllocContext::GCAllocationContext offset */ + /* GCAllocContext::Limit offset */);
+}
+```
+
+GetHandleTableMemoryRegions
+```csharp
+IReadOnlyList<GCMemoryRegionData> IGC.GetHandleTableMemoryRegions()
+{
+    List<GCMemoryRegionData> regions = new();
+    uint handleSegmentSize = /* global value "HandleSegmentSize" */;
+    uint tableCount = isServerGC
+        ? /* global value "TotalCpuCount" */
+        : 1;
+
+    // Safety caps matching native DAC
+    const int MaxHandleTableRegions = 8192;
+    const int MaxBookkeepingRegions = 32;
+    const int MaxSegmentListIterations = 2048;
+
+    int maxRegions = MaxHandleTableRegions;
+    TargetPointer handleTableMap = target.ReadGlobalPointer("HandleTableMap");
+    while (handleTableMap != TargetPointer.Null && maxRegions >= 0)
+    {
+        TargetPointer bucketsPtr = target.ReadPointer(handleTableMap + /* HandleTableMap::BucketsPtr offset */);
+        foreach (/* read global variable "InitialHandleTableArraySize" bucketPtrs starting at bucketsPtr */)
+        {
+            if (bucketPtr == TargetPointer.Null) continue;
+            TargetPointer table = target.ReadPointer(bucketPtr + /* HandleTableBucket::Table offset */);
+            for (uint j = 0; j < tableCount; j++)
+            {
+                TargetPointer htPtr = target.ReadPointer(table + j * target.PointerSize);
+                if (htPtr == TargetPointer.Null) continue;
+                TargetPointer segList = target.ReadPointer(htPtr + /* HandleTable::SegmentList offset */);
+                if (segList == TargetPointer.Null) continue;
+                TargetPointer seg = segList;
+                TargetPointer first = seg;
+                do
+                {
+                    regions.Add(new GCMemoryRegionData { Start = seg, Size = handleSegmentSize, Heap = (int)j });
+                    seg = target.ReadPointer(seg + /* TableSegment::NextSegment offset */);
+                } while (seg != TargetPointer.Null && seg != first);
+            }
+        }
+        handleTableMap = target.ReadPointer(handleTableMap + /* HandleTableMap::Next offset */);
+        maxRegions--;
+    }
+    return regions;
+}
+```
+
+GetGCBookkeepingMemoryRegions
+```csharp
+IReadOnlyList<GCMemoryRegionData> IGC.GetGCBookkeepingMemoryRegions()
+{
+    List<GCMemoryRegionData> regions = new();
+    TargetPointer bkGlobal = target.ReadGlobalPointer("BookkeepingStart");
+    if (bkGlobal == TargetPointer.Null) throw E_FAIL;
+    TargetPointer bookkeepingStart = target.ReadPointer(bkGlobal);
+    if (bookkeepingStart == TargetPointer.Null) throw E_FAIL;
+
+    uint cardTableInfoSize = /* global value "CardTableInfoSize" */;
+    uint recount = target.ReadNUInt(bookkeepingStart + /* CardTableInfo::Recount offset */);
+    ulong size = target.ReadNUInt(bookkeepingStart + /* CardTableInfo::Size offset */);
+    if (recount != 0 && size != 0)
+        regions.Add(new GCMemoryRegionData { Start = bookkeepingStart, Size = size });
+
+    TargetPointer next = target.ReadPointer(bookkeepingStart + /* CardTableInfo::NextCardTable offset */);
+    TargetPointer firstNext = next;
+    int maxRegions = MaxBookkeepingRegions;
+    // Compare next > cardTableInfoSize to guard against underflow when subtracting
+    // cardTableInfoSize. Matches native DAC: `while (next > card_table_info_size)`.
+    while (next != TargetPointer.Null && next > cardTableInfoSize && maxRegions > 0)
+    {
+        TargetPointer ctAddr = next - cardTableInfoSize;
+        recount = target.ReadNUInt(ctAddr + /* CardTableInfo::Recount offset */);
+        size = target.ReadNUInt(ctAddr + /* CardTableInfo::Size offset */);
+        if (recount != 0 && size != 0)
+            regions.Add(new GCMemoryRegionData { Start = ctAddr, Size = size });
+        next = target.ReadPointer(ctAddr + /* CardTableInfo::NextCardTable offset */);
+        if (next == firstNext) break;
+        maxRegions--;
+    }
+    return regions;
+}
+```
+
+GetGCFreeRegions
+```csharp
+IReadOnlyList<GCMemoryRegionData> IGC.GetGCFreeRegions()
+{
+    List<GCMemoryRegionData> regions = new();
+    uint countFreeRegionKinds = min(/* global value "CountFreeRegionKinds" */, 16);
+    uint regionFreeListSize = /* size of RegionFreeList data descriptor */;
+
+    // Global free huge regions
+    if (target.TryReadGlobalPointer("GlobalFreeHugeRegions", out TargetPointer? globalHuge))
+        AddFreeList(globalHuge, FreeGlobalHugeRegion, regions);
+
+    // Global regions to decommit
+    if (target.TryReadGlobalPointer("GlobalRegionsToDecommit", out TargetPointer? globalDecommit))
+        for (int i = 0; i < countFreeRegionKinds; i++)
+            AddFreeList(globalDecommit + i * regionFreeListSize, FreeGlobalRegion, regions);
+
+    if (isServerGC)
+    {
+        // For each server heap: enumerate per-heap free regions + freeable segments
+        for each heap in server heaps:
+            TargetPointer freeRegionsBase = heapAddress + /* GCHeap::FreeRegions offset */;
+            if (freeRegionsBase != TargetPointer.Null)
+                for (int j = 0; j < countFreeRegionKinds; j++)
+                    AddFreeList(freeRegionsBase + j * regionFreeListSize, FreeRegion, regions, heapIndex);
+            TargetPointer sohSeg = target.ReadPointer(heapAddress + /* GCHeap::FreeableSohSegment offset */);
+            AddSegmentList(sohSeg, FreeSohSegment, regions, heapIndex);
+            TargetPointer uohSeg = target.ReadPointer(heapAddress + /* GCHeap::FreeableUohSegment offset */);
+            AddSegmentList(uohSeg, FreeUohSegment, regions, heapIndex);
+    }
+    else
+    {
+        // Workstation: use globals for free regions and freeable segments
+        if (target.TryReadGlobalPointer("GCHeapFreeRegions", out TargetPointer? freeRegions))
+            for (int i = 0; i < countFreeRegionKinds; i++)
+                AddFreeList(freeRegions + i * regionFreeListSize, FreeRegion, regions);
+        if (target.TryReadGlobalPointer("GCHeapFreeableSohSegment", out TargetPointer? soh))
+            AddSegmentList(target.ReadPointer(soh), FreeSohSegment, regions);
+        if (target.TryReadGlobalPointer("GCHeapFreeableUohSegment", out TargetPointer? uoh))
+            AddSegmentList(target.ReadPointer(uoh), FreeUohSegment, regions);
+    }
+    return regions;
+}
+
+void AddFreeList(TargetPointer freeListAddr, FreeRegionKind kind, List<GCMemoryRegionData> regions, int heap = 0)
+{
+    TargetPointer headFreeRegion = target.ReadPointer(freeListAddr + /* RegionFreeList::HeadFreeRegion offset */);
+    if (headFreeRegion != TargetPointer.Null)
+        AddSegmentList(headFreeRegion, kind, regions, heap);
+}
+
+void AddSegmentList(TargetPointer start, FreeRegionKind kind, List<GCMemoryRegionData> regions, int heap = 0)
+{
+    int iterationMax = MaxSegmentListIterations;
+    TargetPointer curr = start;
+    while (curr != TargetPointer.Null)
+    {
+        TargetPointer mem = target.ReadPointer(curr + /* HeapSegment::Mem offset */);
+        if (mem != TargetPointer.Null)
+        {
+            TargetPointer committed = target.ReadPointer(curr + /* HeapSegment::Committed offset */);
+            ulong size = (mem < committed) ? committed - mem : 0;
+            regions.Add(new GCMemoryRegionData { Start = mem, Size = size, ExtraData = kind, Heap = heap });
+        }
+        curr = target.ReadPointer(curr + /* HeapSegment::Next offset */);
+        if (curr == start) break;
+        if (iterationMax-- <= 0) break;
+    }
 }
 ```
 

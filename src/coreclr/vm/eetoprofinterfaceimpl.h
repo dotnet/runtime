@@ -15,6 +15,8 @@
 #ifndef __EETOPROFINTERFACEIMPL_H__
 #define __EETOPROFINTERFACEIMPL_H__
 
+#if defined(PROFILING_SUPPORTED) || defined(PROFILING_SUPPORTED_DATA)
+
 #include <stddef.h>
 #include "profilepriv.h"
 #include "eeprofinterfaces.h"
@@ -693,5 +695,7 @@ private:
     // Remember the fact we've timed out when waiting for concurrent GC. Will report the error later
     BOOL m_bHasTimedOutWaitingForConcurrentGC;
 };
+
+#endif // PROFILING_SUPPORTED || PROFILING_SUPPORTED_DATA
 
 #endif // __EETOPROFINTERFACEIMPL_H__

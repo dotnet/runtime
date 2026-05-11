@@ -241,40 +241,26 @@ namespace LibraryImportGenerator.UnitTests
         [OuterLoop("Uses the network for downlevel ref packs")]
         public async Task StringMarshallingForwardingNotSupported_ReportsDiagnostic()
         {
+            // The downlevel injected StringMarshalling enum only has Utf16 = 2.
+            // Use a numeric cast to exercise a non-Utf16 value that should trigger CannotForwardToDllImport.
             string source = """
-
                 using System.Runtime.InteropServices;
                 partial class Test
                 {
-                    [LibraryImport("DoesNotExist", StringMarshalling = StringMarshalling.Utf8)]
+                    [LibraryImport("DoesNotExist", StringMarshalling = (StringMarshalling)1)]
                     public static partial void {|#0:Method1|}(string s);
-
-                    [LibraryImport("DoesNotExist", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(Native))]
-                    public static partial void {|#1:Method2|}(string s);
-
-                    struct Native
-                    {
-                        public Native(string s) { }
-                        public string ToManaged() => default;
-                    }
                 }
-                """ + CodeSnippets.LibraryImportAttributeDeclaration;
-            DiagnosticResult[] expectedDiags =
-            [
-                VerifyCS.Diagnostic(GeneratorDiagnostics.CannotForwardToDllImport)
-                    .WithLocation(0)
-                    .WithArguments($"{nameof(TypeNames.LibraryImportAttribute)}{Type.Delimiter}{nameof(StringMarshalling)}={nameof(StringMarshalling)}{Type.Delimiter}{nameof(StringMarshalling.Utf8)}"),
-                VerifyCS.Diagnostic(GeneratorDiagnostics.CannotForwardToDllImport)
-                    .WithLocation(1)
-                    .WithArguments($"{nameof(TypeNames.LibraryImportAttribute)}{Type.Delimiter}{nameof(StringMarshalling)}={nameof(StringMarshalling)}{Type.Delimiter}{nameof(StringMarshalling.Custom)}")
-            ];
+                """;
 
             var test = new Microsoft.Interop.UnitTests.Verifiers.CSharpSourceGeneratorVerifier<DownlevelLibraryImportGenerator, Microsoft.Interop.Analyzers.DownlevelLibraryImportDiagnosticsAnalyzer>.Test(TestTargetFramework.Standard2_0)
             {
                 TestCode = source,
                 TestBehaviors = TestBehaviors.SkipGeneratedSourcesCheck
             };
-            test.ExpectedDiagnostics.AddRange(expectedDiags);
+            test.ExpectedDiagnostics.Add(
+                VerifyCS.Diagnostic(GeneratorDiagnostics.CannotForwardToDllImport)
+                    .WithLocation(0)
+                    .WithArguments($"{nameof(TypeNames.LibraryImportAttribute)}{Type.Delimiter}{nameof(StringMarshalling)}={nameof(StringMarshalling)}{Type.Delimiter}{nameof(StringMarshalling.Utf8)}"));
             await test.RunAsync();
         }
 
@@ -425,6 +411,60 @@ namespace LibraryImportGenerator.UnitTests
                 VerifyCS.Diagnostic(GeneratorDiagnostics.InvalidAttributedMethodContainingTypeMissingModifiers)
                     .WithLocation(0)
                     .WithArguments("Method", "Test"));
+        }
+
+        [Theory]
+        [InlineData("StringMarshalling = StringMarshalling.Utf16")]
+        [InlineData("StringMarshalling = StringMarshalling.Utf8")]
+        [InlineData("")]
+        public async Task StringBuilderNotSupported_ReportsDiagnostic(string stringMarshallingArg)
+        {
+            string marshallingPart = string.IsNullOrEmpty(stringMarshallingArg)
+                ? ""
+                : $", {stringMarshallingArg}";
+
+            // StringBuilder as a simple parameter
+            string source = $$"""
+
+                using System.Runtime.InteropServices;
+                using System.Text;
+                partial class Test
+                {
+                    [LibraryImport("DoesNotExist"{{marshallingPart}})]
+                    public static partial void Method(StringBuilder {|#0:sb|});
+                }
+                """;
+
+            await VerifyCS.VerifyAnalyzerAsync(source,
+                VerifyCS.Diagnostic(GeneratorDiagnostics.ParameterTypeNotSupported)
+                    .WithLocation(0)
+                    .WithArguments("System.Text.StringBuilder", "sb"));
+        }
+
+        [Theory]
+        [InlineData("StringMarshalling = StringMarshalling.Utf16")]
+        [InlineData("StringMarshalling = StringMarshalling.Utf8")]
+        public async Task StringBuilderNotSupported_WithStringParam_ReportsDiagnostic(string stringMarshallingArg)
+        {
+            // StringBuilder with [Out] alongside a string parameter
+            string source = $$"""
+
+                using System.Runtime.InteropServices;
+                using System.Text;
+                partial class Test
+                {
+                    [LibraryImport("DoesNotExist", {{stringMarshallingArg}})]
+                    internal static partial int Method(
+                        string volumeMountPoint,
+                        [Out] StringBuilder {|#0:volumeName|},
+                        int bufferLength);
+                }
+                """;
+
+            await VerifyCS.VerifyAnalyzerAsync(source,
+                VerifyCS.Diagnostic(GeneratorDiagnostics.ParameterTypeNotSupported)
+                    .WithLocation(0)
+                    .WithArguments("System.Text.StringBuilder", "volumeName"));
         }
 
         private static void VerifyDiagnostics(DiagnosticResult[] expectedDiagnostics, Diagnostic[] actualDiagnostics)

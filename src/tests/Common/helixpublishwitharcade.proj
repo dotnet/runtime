@@ -547,7 +547,8 @@
     <ZipDirectory
       Condition="'@(MergedPayloads)' != ''"
       SourceDirectory="@(MergedPayloads->Metadata('PayloadDirectory'))"
-      DestinationFile="$(MergedPayloadsRootDirectory)\%(MergedPayloads.PayloadGroup).zip" />
+      DestinationFile="$(MergedPayloadsRootDirectory)\%(MergedPayloads.PayloadGroup).zip"
+      CompressionLevel="Fastest" />
   </Target>
 
 

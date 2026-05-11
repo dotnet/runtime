@@ -1505,6 +1505,16 @@ void EEJitManager::SetCpuInfo()
         CPUCompileFlags.Set(InstructionSet_Sha256);
     }
 
+    if (((cpuFeatures & ARM64IntrinsicConstants_Sha3) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableArm64Sha3))
+    {
+        CPUCompileFlags.Set(InstructionSet_Sha3);
+    }
+
+    if (((cpuFeatures & ARM64IntrinsicConstants_Sm4) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableArm64Sm4))
+    {
+        CPUCompileFlags.Set(InstructionSet_Sm4);
+    }
+
     if (((cpuFeatures & ARM64IntrinsicConstants_Sve) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableArm64Sve)
 #ifdef FEATURE_INTERPRETER
         // SVE intrinsics support for the FFR register adds a new concept of per method saved logical FFR state
@@ -1535,6 +1545,21 @@ void EEJitManager::SetCpuInfo()
             if (((cpuFeatures & ARM64IntrinsicConstants_Sve2) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableArm64Sve2))
             {
                 CPUCompileFlags.Set(InstructionSet_Sve2);
+            }
+
+            if (((cpuFeatures & ARM64IntrinsicConstants_SveAes) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableArm64SveAes))
+            {
+                CPUCompileFlags.Set(InstructionSet_SveAes);
+            }
+
+            if (((cpuFeatures & ARM64IntrinsicConstants_SveSha3) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableArm64SveSha3))
+            {
+                CPUCompileFlags.Set(InstructionSet_SveSha3);
+            }
+
+            if (((cpuFeatures & ARM64IntrinsicConstants_SveSm4) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableArm64SveSm4))
+            {
+                CPUCompileFlags.Set(InstructionSet_SveSm4);
             }
         }
     }
@@ -2268,6 +2293,7 @@ LoaderCodeHeap::LoaderCodeHeap(bool fMakeExecutable)
     m_cbMinNextPad(0)
 {
     WRAPPER_NO_CONTRACT;
+    m_heapType = CodeHeapType::LoaderCodeHeap;
 }
 
 void ThrowOutOfMemoryWithinRange()
@@ -6480,7 +6506,7 @@ unsigned ReadyToRunJitManager::InitializeEHEnumeration(const METHODTOKEN& Method
 
     ReadyToRunInfo * pReadyToRunInfo = JitTokenToReadyToRunInfo(MethodToken);
 
-    IMAGE_DATA_DIRECTORY * pExceptionInfoDir = pReadyToRunInfo->FindSection(ReadyToRunSectionType::ExceptionInfo);
+    IMAGE_DATA_DIRECTORY * pExceptionInfoDir = pReadyToRunInfo->GetExceptionInfoSection();
     if (pExceptionInfoDir == NULL)
         return 0;
 

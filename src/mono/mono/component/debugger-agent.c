@@ -83,6 +83,7 @@
 #include <mono/utils/mono-threads.h>
 #include <mono/utils/mono-proclib.h>
 #include <mono/utils/w32api.h>
+#include <mono/utils/mono-mmap.h>
 #include <mono/utils/mono-logger-internals.h>
 #include <mono/utils/mono-proclib.h>
 
@@ -7612,6 +7613,26 @@ vm_commands (int command, int id, guint8 *p, guint8 *end, Buffer *buf)
 				break;
 			}
 		}
+		break;
+	}
+	case CMD_VM_GET_SYSTEM_INFORMATION: {
+		int processor_architecture = CYCORDEBUG_PROCESSOR_ARCHITECTURE_UNKNOWN;
+		int page_size = mono_pagesize ();
+
+#if defined(TARGET_AMD64)
+		processor_architecture = CYCORDEBUG_PROCESSOR_ARCHITECTURE_AMD64;
+#elif defined(TARGET_X86)
+		processor_architecture = CYCORDEBUG_PROCESSOR_ARCHITECTURE_INTEL;
+#elif defined(TARGET_ARM64)
+		processor_architecture = CYCORDEBUG_PROCESSOR_ARCHITECTURE_ARM64;
+#elif defined(TARGET_ARM)
+		processor_architecture = CYCORDEBUG_PROCESSOR_ARCHITECTURE_ARM;
+#elif defined(TARGET_WASM)
+		processor_architecture = CYCORDEBUG_PROCESSOR_ARCHITECTURE_AMD64;
+#endif
+
+		buffer_add_int (buf, processor_architecture);
+		buffer_add_int (buf, page_size);
 		break;
 	}
 	case MDBGPROT_CMD_GET_ASSEMBLY_BYTES: { //only used by wasm

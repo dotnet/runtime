@@ -23,7 +23,7 @@ public class Runtime_118377
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static Vector<ulong> M4()
     {
-        var vr3 = Sve.CreateWhileLessThanMask64Bit(0, 0);
+        var vr3 = Sve.CreateWhileLessThanMaskUInt64(0, 0);
         var vr5 = Vector.Create<ulong>(s_4);
         var vr1 = Sve.CreateBreakPropagateMask(vr3, vr5);
         var vr7 = Vector.Create<ulong>(0);

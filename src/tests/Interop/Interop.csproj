@@ -12,6 +12,7 @@
     <SupportProject Include="$(TestLibraryProjectPath)" />
     <SupportProject Include="PInvoke/Miscellaneous/CopyCtor/CopyCtorUtil.ilproj" />
     <SupportProject Include="PInvoke/Miscellaneous/MultipleAssembliesWithSamePInvoke/ManagedDll*/*.csproj" />
+    <SupportProject Include="PInvoke/Varargs/CrossAssembly/VarArgsPInvokeLib/*.csproj" />
     <MergedWrapperProjectReference Include="*/**/*.??proj" Exclude="@(SupportProject)" />
     <ProjectReference Include="@(SupportProject)" />
   </ItemGroup>
@@ -42,7 +43,7 @@
     <Compile Include="PInvoke/SafeHandles/**/*.cs" />
     <Compile Include="PInvoke/SetLastError/**/*.cs" />
     <Compile Include="PInvoke/SizeParamIndex/**/*.cs" />
-    <Compile Include="PInvoke/Varargs/**/*.cs" />
+    <Compile Include="PInvoke/Varargs/**/*.cs" Exclude="PInvoke/Varargs/CrossAssembly/VarArgsPInvokeLib/*.cs" />
     <Compile Include="PInvoke/Vector2_3_4/**/*.cs" />
 
     <!-- Reference the CMake projects for the directly-compiled-in tests -->

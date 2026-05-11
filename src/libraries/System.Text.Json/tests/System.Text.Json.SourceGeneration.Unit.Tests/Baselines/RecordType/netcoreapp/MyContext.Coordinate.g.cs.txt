@@ -56,7 +56,7 @@ namespace TestApp
                 DeclaringType = typeof(global::TestApp.Coordinate),
                 Converter = null,
                 Getter = static obj => ((global::TestApp.Coordinate)obj).Latitude,
-                Setter = static (obj, value) => throw new global::System.InvalidOperationException("Setting init-only properties is not supported in source generation mode."),
+                Setter = static (obj, value) => __set_Coordinate_Latitude((global::TestApp.Coordinate)obj, value!),
                 IgnoreCondition = null,
                 HasJsonInclude = false,
                 IsExtensionData = false,
@@ -76,7 +76,7 @@ namespace TestApp
                 DeclaringType = typeof(global::TestApp.Coordinate),
                 Converter = null,
                 Getter = static obj => ((global::TestApp.Coordinate)obj).Longitude,
-                Setter = static (obj, value) => throw new global::System.InvalidOperationException("Setting init-only properties is not supported in source generation mode."),
+                Setter = static (obj, value) => __set_Coordinate_Longitude((global::TestApp.Coordinate)obj, value!),
                 IgnoreCondition = null,
                 HasJsonInclude = false,
                 IsExtensionData = false,
@@ -131,5 +131,10 @@ namespace TestApp
                 IsNullable = false,
             },
         };
+
+        [global::System.Runtime.CompilerServices.UnsafeAccessorAttribute(global::System.Runtime.CompilerServices.UnsafeAccessorKind.Method, Name = "set_Latitude")]
+        private static extern void __set_Coordinate_Latitude(global::TestApp.Coordinate obj, double value);
+        [global::System.Runtime.CompilerServices.UnsafeAccessorAttribute(global::System.Runtime.CompilerServices.UnsafeAccessorKind.Method, Name = "set_Longitude")]
+        private static extern void __set_Coordinate_Longitude(global::TestApp.Coordinate obj, double value);
     }
 }

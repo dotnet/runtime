@@ -34,8 +34,13 @@ namespace Microsoft.Extensions.DependencyInjection
         private const int FixedArgumentThreshold = 4;
 #endif
 
-        private static readonly MethodInfo GetServiceInfo =
-            new Func<IServiceProvider, Type, Type, bool, object?, object?>(GetService).Method;
+        // Nested class to defer the expensive Delegate.Method reflection call
+        // until the MethodInfo is actually needed.
+        private static class MethodInfoHolder
+        {
+            internal static readonly MethodInfo s_getServiceInfo =
+                new Func<IServiceProvider, Type, Type, bool, object?, object?>(GetService).Method;
+        }
 
         /// <summary>
         /// Instantiates a type with constructor arguments provided directly and/or from an <see cref="IServiceProvider"/>.
@@ -416,7 +421,7 @@ namespace Microsoft.Extensions.DependencyInjection
                         Expression.Constant(constructor.DeclaringType, typeof(Type)),
                         Expression.Constant(hasDefaultValue),
                         Expression.Constant(keyAttribute?.Key, typeof(object)) };
-                    constructorArguments[i] = Expression.Call(GetServiceInfo, parameterTypeExpression);
+                    constructorArguments[i] = Expression.Call(MethodInfoHolder.s_getServiceInfo, parameterTypeExpression);
                 }
 
                 // Support optional constructor arguments by passing in the default value

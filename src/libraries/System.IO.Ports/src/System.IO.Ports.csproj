@@ -117,8 +117,7 @@ System.IO.Ports.SerialPort</PackageDescription>
              Link="Common\System\IO\Win32Marshal.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FormatMessage.cs"
              Link="Common\Interop\Windows\Interop.FormatMessage.cs" />
-    <Compile Include="System\IO\Ports\SerialPort.Win32.cs" />
-    <Compile Include="System\IO\Ports\SerialStream.Win32.cs" />
+    <Compile Include="System\IO\Ports\SerialPort.Windows.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.CreateFile.cs"
              Link="Common\Interop\Windows\Kernel32\Interop.CreateFile.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FileOperations.cs"

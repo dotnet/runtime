@@ -11,7 +11,7 @@ internal sealed class FixupPrecodeData : IData<FixupPrecodeData>
     public FixupPrecodeData(Target target, TargetPointer address)
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.FixupPrecodeData);
-        MethodDesc = target.ReadPointer(address + (ulong)type.Fields[nameof(MethodDesc)].Offset);
+        MethodDesc = target.ReadPointerField(address, type, nameof(MethodDesc));
     }
 
     public TargetPointer MethodDesc { get; init; }

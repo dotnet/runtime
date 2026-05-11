@@ -30,6 +30,12 @@
     <TrimmerSingleWarn>false</TrimmerSingleWarn>
     <StackTraceLineNumberSupport>true</StackTraceLineNumberSupport>
 
+    <!-- Use the SDK's ILCompilerTargetsPath hook to import ILC targets in the correct order
+         (before ILLink), matching how the shipping SDK imports them. -->
+    <PublishAot>true</PublishAot>
+    <_IlcReferencedAsPackage>false</_IlcReferencedAsPackage>
+    <ILCompilerTargetsPath>$(CoreCLRBuildIntegrationDir)Microsoft.DotNet.ILCompiler.SingleEntry.targets</ILCompilerTargetsPath>
+
     <!-- Forced by ILLink targets -->
     <SelfContained>true</SelfContained>
   </PropertyGroup>
@@ -41,8 +47,6 @@
   <PropertyGroup Condition="'$(TestReadyToRun)' == 'true'">
     <DefineConstants>$(DefineConstants);TEST_READY_TO_RUN_COMPILED</DefineConstants>
   </PropertyGroup>
-
-  <Import Project="$(CoreCLRBuildIntegrationDir)Microsoft.DotNet.ILCompiler.SingleEntry.targets" Condition="'$(TestNativeAot)' == 'true'" />
 
   <ItemGroup Condition="'$(TestNativeAot)' == 'true'">
     <RdXmlFile Include="$(MSBuildThisFileDirectory)default.rd.xml" />

@@ -13,6 +13,11 @@ public static class Constants
         public const string ThreadStore = nameof(ThreadStore);
         public const string FinalizerThread = nameof(FinalizerThread);
         public const string GCThread = nameof(GCThread);
+        public const string Debugger = nameof(Debugger);
+        public const string CLRJitAttachState = nameof(CLRJitAttachState);
+        public const string CORDebuggerControlFlags = nameof(CORDebuggerControlFlags);
+        public const string MetadataUpdatesApplied = nameof(MetadataUpdatesApplied);
+        public const string EEConfig = nameof(EEConfig);
 
         public const string FeatureCOMInterop = nameof(FeatureCOMInterop);
         public const string FeatureComWrappers = nameof(FeatureComWrappers);
@@ -42,6 +47,8 @@ public static class Constants
         public const string DispatchThisPtrMask = nameof(DispatchThisPtrMask);
         public const string ComWrappersVtablePtrs = nameof(ComWrappersVtablePtrs);
         public const string GcNotificationFlags = nameof(GcNotificationFlags);
+        public const string JITNotificationTable = nameof(JITNotificationTable);
+        public const string JITNotificationTableSize = nameof(JITNotificationTableSize);
         public const string GlobalAllocContext = nameof(GlobalAllocContext);
 
         public const string StressLogEnabled = nameof(StressLogEnabled);
@@ -154,6 +161,17 @@ public static class Constants
         public const string HandlesPerBlock = nameof(HandlesPerBlock);
         public const string BlockInvalid = nameof(BlockInvalid);
         public const string TotalCpuCount = nameof(TotalCpuCount);
+        public const string CardTableInfoSize = nameof(CardTableInfoSize);
+        public const string CountFreeRegionKinds = nameof(CountFreeRegionKinds);
+        public const string GlobalFreeHugeRegions = nameof(GlobalFreeHugeRegions);
+        public const string GlobalRegionsToDecommit = nameof(GlobalRegionsToDecommit);
+        public const string BookkeepingStart = nameof(BookkeepingStart);
+        public const string GCHeapFreeableSohSegment = nameof(GCHeapFreeableSohSegment);
+        public const string GCHeapFreeableUohSegment = nameof(GCHeapFreeableUohSegment);
+        public const string GCHeapFreeRegions = nameof(GCHeapFreeRegions);
+        public const string AuxiliarySymbols = nameof(AuxiliarySymbols);
+        public const string AuxiliarySymbolCount = nameof(AuxiliarySymbolCount);
+
     }
     public static class FieldNames
     {

@@ -39,6 +39,12 @@ namespace System.Formats.Tar
         internal const string PaxEaDevMajor = "devmajor";
         internal const string PaxEaDevMinor = "devminor";
 
+        // Names of GNU sparse extended attributes (used with GNU sparse format 1.0 encoded via PAX)
+        private const string PaxEaGnuSparseName = "GNU.sparse.name";
+        private const string PaxEaGnuSparseRealSize = "GNU.sparse.realsize";
+        private const string PaxEaGnuSparseMajor = "GNU.sparse.major";
+        private const string PaxEaGnuSparseMinor = "GNU.sparse.minor";
+
         internal Stream? _dataStream;
         internal long _dataOffset;
 
@@ -77,6 +83,21 @@ namespace System.Formats.Tar
         private Dictionary<string, string>? _ea;
         internal Dictionary<string, string> ExtendedAttributes => _ea ??= new Dictionary<string, string>();
 
+        // When a GNU sparse 1.0 PAX entry is read, the real (expanded) file size is stored here.
+        // This is separate from _size which holds the archive data size and is used for data stream reading.
+        internal long _gnuSparseRealSize;
+
+        // Set to true when GNU.sparse.major=1 is present in the PAX extended attributes,
+        // indicating this is a GNU sparse format 1.0 entry whose data section contains an
+        // embedded sparse map followed by the packed data segments.
+        internal bool _isGnuSparse10;
+
+        // When _isGnuSparse10 is true, this wraps _dataStream and presents the expanded virtual
+        // file content. _dataStream remains the raw (condensed) stream so that TarWriter can
+        // round-trip the original sparse data and AdvanceDataStreamIfNeeded works without
+        // special-casing.
+        internal GnuSparseStream? _gnuSparseDataStream;
+
         // GNU attributes
 
         internal DateTimeOffset _aTime;
@@ -106,6 +127,9 @@ namespace System.Formats.Tar
             _checksum = other._checksum;
             _linkName = other._linkName;
             _dataStream = other._dataStream;
+            _gnuSparseRealSize = other._gnuSparseRealSize;
+            _isGnuSparse10 = other._isGnuSparse10;
+            _gnuSparseDataStream = other._gnuSparseDataStream;
         }
 
         internal void AddExtendedAttributes(IEnumerable<KeyValuePair<string, string>> existing)

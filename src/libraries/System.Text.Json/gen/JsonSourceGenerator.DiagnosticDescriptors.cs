@@ -100,14 +100,6 @@ namespace System.Text.Json.SourceGeneration
                 defaultSeverity: DiagnosticSeverity.Error,
                 isEnabledByDefault: true);
 
-            public static DiagnosticDescriptor JsonConstructorInaccessible { get; } = DiagnosticDescriptorHelper.Create(
-                id: "SYSLIB1222",
-                title: new LocalizableResourceString(nameof(SR.JsonConstructorInaccessibleTitle), SR.ResourceManager, typeof(FxResources.System.Text.Json.SourceGeneration.SR)),
-                messageFormat: new LocalizableResourceString(nameof(SR.JsonConstructorInaccessibleMessageFormat), SR.ResourceManager, typeof(FxResources.System.Text.Json.SourceGeneration.SR)),
-                category: JsonConstants.SystemTextJsonSourceGenerationName,
-                defaultSeverity: DiagnosticSeverity.Warning,
-                isEnabledByDefault: true);
-
             public static DiagnosticDescriptor DerivedJsonConverterAttributesNotSupported { get; } = DiagnosticDescriptorHelper.Create(
                 id: "SYSLIB1223",
                 title: new LocalizableResourceString(nameof(SR.DerivedJsonConverterAttributesNotSupportedTitle), SR.ResourceManager, typeof(FxResources.System.Text.Json.SourceGeneration.SR)),

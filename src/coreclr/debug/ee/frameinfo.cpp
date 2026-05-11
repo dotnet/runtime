@@ -107,8 +107,6 @@ struct DebuggerFrameData
         this->info.fIsFunclet = false;
         this->info.fIsFilter  = false;
 
-        this->info.fIgnoreThisFrameIfSuppressingUMChainFromCLRToCOMMethodFrameGeneric = false;
-
 #if defined(_DEBUG)
         this->previousFP = LEAF_MOST_FRAME;
 #endif // _DEBUG
@@ -801,45 +799,10 @@ void FrameInfo::InitForM2UInternalFrame(CrawlFrame * pCF)
 void FrameInfo::InitForU2MInternalFrame(CrawlFrame * pCF)
 {
     _ASSERTE(pCF != NULL);
-    MethodDesc * pMDHint = NULL;
 
-#ifdef FEATURE_COMINTEROP
-    Frame * pFrame = pCF->GetFrame();
-    _ASSERTE(pFrame != NULL);
-
-
-    // For regular U2M PInvoke cases, we don't care about MD b/c it's just going to
-    // be the next frame.
-    // If we're a COM2CLR call, perhaps we can get the MD for the interface.
-    if (pFrame->GetFrameIdentifier() == FrameIdentifier::ComMethodFrame)
-    {
-        ComMethodFrame* pCOMFrame = dac_cast<PTR_ComMethodFrame> (pFrame);
-        ComCallMethodDesc* pCMD = reinterpret_cast<ComCallMethodDesc *> (pCOMFrame->ComMethodFrame::GetDatum());
-        pMDHint = pCMD->GetInterfaceMethodDesc();
-
-        // Some COM-interop cases don't have an intermediate interface method desc, so
-        // pMDHint may be null.
-    }
-#endif
-
-    InitFromStubHelper(pCF, pMDHint, STUBFRAME_U2M);
+    InitFromStubHelper(pCF, NULL, STUBFRAME_U2M);
     InitForScratchFrameInfo();
 }
-
-//-----------------------------------------------------------------------------
-// Init for an AD transition
-//-----------------------------------------------------------------------------
-void FrameInfo::InitForADTransition(CrawlFrame * pCF)
-{
-    Frame * pFrame;
-    pFrame = pCF->GetFrame();
-    _ASSERTE(pFrame->GetTransitionType() == Frame::TT_AppDomain);
-    MethodDesc * pMDWrapper = NULL;
-
-    InitFromStubHelper(pCF, pMDWrapper, STUBFRAME_APPDOMAIN_TRANSITION);
-    InitForScratchFrameInfo();
-}
-
 
 //-----------------------------------------------------------------------------
 // Init frame for a dynamic method.
@@ -992,7 +955,7 @@ StackWalkAction TrackUMChain(CrawlFrame *pCF, DebuggerFrameData *d)
         // Sometimes we may not want to show an UM chain b/c we know it's just
         // code inside of mscorwks. (Eg: Funcevals & AD transitions both fall into this category).
         // These are perfectly valid UM chains and we could give them if we wanted to.
-        if ((t == Frame::TT_AppDomain) || (ft == Frame::TYPE_FUNC_EVAL))
+        if (ft == Frame::TYPE_FUNC_EVAL)
         {
             d->CancelUMChain();
             return SWA_CONTINUE;
@@ -1184,22 +1147,6 @@ StackWalkAction TrackUMChain(CrawlFrame *pCF, DebuggerFrameData *d)
         }
 
         f.InitForUMChain(fpRoot, d->GetUMChainStartRD());
-
-#ifdef FEATURE_COMINTEROP
-        if ((frame != NULL) &&
-            (frame->GetFrameIdentifier() == FrameIdentifier::CLRToCOMMethodFrame))
-        {
-            // This condition is part of the fix for 650903. (See
-            // code:ControllerStackInfo::WalkStack and code:DebuggerStepper::TrapStepOut
-            // for the other parts.) Here, we know that the frame we're looking it may be
-            // a CLRToCOMMethodFrameGeneric (this info is not otherwise plubmed down into
-            // the walker; even though the walker does get to see "f.frame", that may not
-            // be "frame"). Given this, if the walker chooses to ignore these frames
-            // (while doing a Step Out during managed-only debugging), then it can ignore
-            // this frame.
-            f.fIgnoreThisFrameIfSuppressingUMChainFromCLRToCOMMethodFrameGeneric = true;
-        }
-#endif // FEATURE_COMINTEROP
 
         if (d->InvokeCallback(&f) == SWA_ABORT)
         {
@@ -1766,14 +1713,6 @@ StackWalkAction DebuggerWalkStackProc(CrawlFrame *pCF, void *data)
             f.InitForU2MInternalFrame(pCF);
             fUse = true;
         }
-        else if (t == Frame::TT_AppDomain)
-        {
-            // Internal frame for an Appdomain transition.
-            // We used to ignore frames for ADs which we hadn't sent a Create event for yet.  In V3 we send AppDomain
-            // create events immediately (before any assemblies are loaded), so this should no longer be an issue.
-            f.InitForADTransition(pCF);
-            fUse = true;
-        }
 
         // Frame's setup. Now invoke the callback.
         if (fUse)
@@ -1880,7 +1819,7 @@ bool ShouldSendUMLeafChain(Thread * pThread)
     // - at a managed-only stop, preemptive threads are still live. Thus a thread
     // may not have this state set, run a little, try to enter the GC, and then get
     // this state set. Thus we'll lose the UM chain right out from under our noses.
-    Thread::ThreadState ts = pThread->GetSnapshotState();
+    Thread::ThreadState ts = pThread->GetState();
     if ((ts & Thread::TS_SyncSuspended) != 0)
     {
         // If we've been stopped inside the runtime (eg, at a gc-toggle) but

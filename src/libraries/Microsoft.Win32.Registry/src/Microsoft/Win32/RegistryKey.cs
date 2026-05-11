@@ -755,7 +755,7 @@ namespace Microsoft.Win32
 
         /// <summary>Retrieves an array of strings containing all the subkey names.</summary>
         /// <returns>All subkey names.</returns>
-        public string[] GetSubKeyNames()
+        public unsafe string[] GetSubKeyNames()
         {
             int subkeys = SubKeyCount;
 
@@ -1087,8 +1087,8 @@ namespace Microsoft.Win32
                         case Interop.Advapi32.RegistryValues.REG_QWORD:
                             return dataLength switch
                             {
-                                4 => MemoryMarshal.Read<int>(span),
-                                8 => MemoryMarshal.Read<long>(span),
+                                4 => BitConverter.ToInt32(span),
+                                8 => BitConverter.ToInt64(span),
                                 _ => span.Slice(0, dataLength).ToArray(), // This shouldn't happen, but the previous implementation included it defensively.
                             };
 

@@ -2,11 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 using System;
 using System.Runtime.CompilerServices;
+using TestLibrary;
 using Xunit;
 namespace structinreg
 {
     public class Program
     {
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123946", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
         [Fact]
         [OuterLoop]
         public static int TestEntryPoint()
