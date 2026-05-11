@@ -299,6 +299,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\Contracts\ContractException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\Contracts\ContractFailedEventArgs.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\Contracts\Contracts.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\DataContractAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\Debug.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\DebuggableAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\Debugger.cs" />

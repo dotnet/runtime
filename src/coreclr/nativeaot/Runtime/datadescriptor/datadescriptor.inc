@@ -39,6 +39,36 @@ CDAC_TYPE_FIELD(ThreadStore, T_POINTER, FirstThreadLink, cdac_data<ThreadStore>:
 CDAC_TYPE_END(ThreadStore)
 
 // ========================
+// Loader (RuntimeInstance / TypeManager / module entries)
+// ========================
+
+CDAC_TYPE_BEGIN(RuntimeInstance)
+CDAC_TYPE_INDETERMINATE(RuntimeInstance)
+CDAC_TYPE_FIELD(RuntimeInstance, T_POINTER, OsModuleList, cdac_data<RuntimeInstance>::OsModuleList)
+CDAC_TYPE_FIELD(RuntimeInstance, T_POINTER, TypeManagerList, cdac_data<RuntimeInstance>::TypeManagerList)
+CDAC_TYPE_FIELD(RuntimeInstance, T_POINTER, ManagedCodeStartRange, cdac_data<RuntimeInstance>::ManagedCodeStartRange)
+CDAC_TYPE_FIELD(RuntimeInstance, T_UINT32, ManagedCodeRangeSize, cdac_data<RuntimeInstance>::ManagedCodeRangeSize)
+CDAC_TYPE_END(RuntimeInstance)
+
+CDAC_TYPE_BEGIN(TypeManagerEntry)
+CDAC_TYPE_INDETERMINATE(TypeManagerEntry)
+CDAC_TYPE_FIELD(TypeManagerEntry, T_POINTER, Next, offsetof(RuntimeInstance::TypeManagerEntry, m_pNext))
+CDAC_TYPE_FIELD(TypeManagerEntry, T_POINTER, TypeManager, offsetof(RuntimeInstance::TypeManagerEntry, m_pTypeManager))
+CDAC_TYPE_END(TypeManagerEntry)
+
+CDAC_TYPE_BEGIN(OsModuleEntry)
+CDAC_TYPE_INDETERMINATE(OsModuleEntry)
+CDAC_TYPE_FIELD(OsModuleEntry, T_POINTER, Next, offsetof(RuntimeInstance::OsModuleEntry, m_pNext))
+CDAC_TYPE_FIELD(OsModuleEntry, T_POINTER, OsModule, offsetof(RuntimeInstance::OsModuleEntry, m_osModule))
+CDAC_TYPE_END(OsModuleEntry)
+
+CDAC_TYPE_BEGIN(TypeManager)
+CDAC_TYPE_INDETERMINATE(TypeManager)
+CDAC_TYPE_FIELD(TypeManager, T_POINTER, OsModule, cdac_data<TypeManager>::OsModule)
+CDAC_TYPE_FIELD(TypeManager, T_POINTER, Header, cdac_data<TypeManager>::Header)
+CDAC_TYPE_END(TypeManager)
+
+// ========================
 // Allocation Context
 // ========================
 
@@ -94,6 +124,7 @@ CDAC_TYPE_FIELD(StressLog, T_INT32, TotalChunks, offsetof(StressLog, totalChunk)
 CDAC_TYPE_FIELD(StressLog, T_POINTER, Logs, offsetof(StressLog, logs))
 CDAC_TYPE_FIELD(StressLog, T_UINT64, TickFrequency, offsetof(StressLog, tickFrequency))
 CDAC_TYPE_FIELD(StressLog, T_UINT64, StartTimestamp, offsetof(StressLog, startTimeStamp))
+CDAC_TYPE_FIELD(StressLog, T_NUINT, ModuleOffset, offsetof(StressLog, moduleOffset))
 CDAC_TYPE_END(StressLog)
 
 CDAC_TYPE_BEGIN(ThreadStressLog)
@@ -136,6 +167,8 @@ CDAC_GLOBALS_BEGIN()
 
 CDAC_GLOBAL_POINTER(ThreadStore, &ThreadStore::s_pThreadStore)
 
+CDAC_GLOBAL_POINTER(RuntimeInstance, &g_pTheRuntimeInstance)
+
 CDAC_GLOBAL_POINTER(FreeObjectMethodTable, &g_pFreeObjectEEType)
 
 CDAC_GLOBAL_POINTER(GCLowestAddress, &g_lowest_address)
@@ -162,9 +195,12 @@ CDAC_GLOBAL(StressLogMaxMessageSize, T_UINT64, (uint64_t)StressMsg::maxMsgSize)
 
 // Contracts: declare which contracts this runtime supports
 CDAC_GLOBAL_CONTRACT(Thread, n1)
-CDAC_GLOBAL_CONTRACT(Exception, c1)
+CDAC_GLOBAL_CONTRACT(Exception, n1)
 CDAC_GLOBAL_CONTRACT(RuntimeTypeSystem, n1)
 CDAC_GLOBAL_CONTRACT(StressLog, c2)
+CDAC_GLOBAL_CONTRACT(Loader, n1)
+CDAC_GLOBAL_CONTRACT(ExecutionManager, n1)
+CDAC_GLOBAL_CONTRACT(Object, n1)
 
 // Managed type sub-descriptor: ILC emits a ContractDescriptor with managed type layouts
 // that the cDAC reader merges as a sub-descriptor. This provides field offsets for managed
