@@ -164,6 +164,7 @@ PTR_MethodTable LookupMethodTableAndFlagForThreadStatic(TLSIndex index, bool *pI
     }
     CONTRACTL_END;
 
+    // This method is called without the g_TLSCrst lock being held
     PTR_MethodTable retVal;
     if (index.GetTLSIndexType() == TLSIndexType::NonCollectible)
     {
@@ -230,8 +231,8 @@ void TLSIndexToMethodTableMap::Set(TLSIndex index, PTR_MethodTable pMT, bool isG
             memcpy(newMap, pMap, m_maxIndex * sizeof(TADDR));
             // Don't delete the old map in case some other thread is reading from it, this won't waste significant amounts of memory, since this map cannot grow indefinitely
         }
-        VolatileStore(&pMap, newMap); // Use a volatile store, so that the memcpy is guaranteed to be visible before the new pMap is visible on other threads.
-        VolatileStore(&m_maxIndex, newSize); // Use a volatile store so that any thread that reads the size will also have a consistent view of a map at least as big as newSize
+        VolatileStore(&pMap, newMap); // Use a volatile store, so that the memcpy is guaranteed to be visible before the new pMap is visible on other threads.  This is paired with VolatileLoad in the Lookup functions although it probably could be a VolatileLoadWithoutBarrier and take advantage of data dependency.
+        VolatileStore(&m_maxIndex, newSize); // Use a volatile store so that any thread that reads the size will also have a consistent view of a map at least as big as newSize. This is paired with VolatileLoad in the Lookup functions.
     }
 
     TADDR rawValue = dac_cast<TADDR>(pMT);
