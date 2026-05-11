@@ -81,6 +81,10 @@ if [ ! -z ${RunCrossGen2+x} ]%3B then
       __r2rDumpExitCode=0
       __CrossGen2OutputFormat="${CrossGen2OutputFormat:-$(CrossGen2OutputFormat)}"
 
+      if [ "${__CrossGen2OutputFormat}" == "macho" ]; then
+          export PLATFORM_NATIVE_R2R=1
+      fi
+
       RunCrossgen2OnFiles() {
         date +%H:%M:%S
         __OutputFile=$1

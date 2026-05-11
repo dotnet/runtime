@@ -649,6 +649,7 @@
     <HelixPreCommand Include="export RunCrossGen2=1" Condition=" '$(RunCrossGen2)' == 'true' " />
     <HelixPreCommand Include="export CompositeBuildMode=1" Condition=" '$(CompositeBuildMode)' == 'true' " />
     <HelixPreCommand Include="export CrossGen2OutputFormat=$(CrossGen2OutputFormat)" Condition=" '$(CrossGen2OutputFormat)' != '' " />
+    <HelixPreCommand Include="export PLATFORM_NATIVE_R2R=1" Condition=" '$(CrossGen2OutputFormat)' == 'macho' " />
     <HelixPreCommand Include="export RunningLongGCTests=1" Condition=" '$(LongRunningGCTests)' == 'true' " />
     <HelixPreCommand Include="export RunningGCSimulatorTests=1" Condition=" '$(GcSimulatorTests)' == 'true' " />
     <HelixPreCommand Include="export RunInUnloadableContext=1" Condition=" '$(RunInUnloadableContext)' == 'true' " />
