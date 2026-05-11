@@ -2942,8 +2942,15 @@ bool Compiler::fgExpandStackArrayAllocation(BasicBlock*  block,
         }
     }
 
-    GenTree* const lengthArg         = call->gtArgs.GetArgByIndex(lengthArgIndex)->GetNode();
-    GenTree*       stackLocalAddress = nullptr;
+    GenTree* lengthArg         = call->gtArgs.GetArgByIndex(lengthArgIndex)->GetNode();
+    GenTree* stackLocalAddress = nullptr;
+
+    // Temps holding the once-evaluated length and method-table args for the
+    // localloc path. Used by both the dispatch path and the header init,
+    // so declared at function scope.
+    //
+    unsigned lengthTemp = BAD_VAR_NUM;
+    unsigned typeTemp   = BAD_VAR_NUM;
 
     // If we have a localloc, compute (at runtime) overall size, and check length
     // against a threshold. If over, heap allocate.
@@ -2955,10 +2962,45 @@ bool Compiler::fgExpandStackArrayAllocation(BasicBlock*  block,
         GenTree* const elemSize = elemSizeArg->GetNode();
         assert(elemSize->IsCnsIntOrI());
 
+        // Spill the length and method-table args to fresh temps so all
+        // downstream consumers (size compute, runtime check, header
+        // init, heap-fallback call) reference a temp use instead of
+        // cloning the original (possibly side-effecting / non-clonable)
+        // expressions. Replace the call's arg slots with a temp use so
+        // the original expressions live in exactly one place.
+        //
+        {
+            GenTree*&      lengthArgRef = call->gtArgs.GetArgByIndex(lengthArgIndex)->NodeRef();
+            GenTree* const origLength   = lengthArgRef;
+            lengthTemp                  = lvaGrabTemp(true DEBUGARG("stack array length"));
+            lvaTable[lengthTemp].lvType = genActualType(origLength);
+
+            GenTree* const   lengthSpill     = gtNewStoreLclVarNode(lengthTemp, origLength);
+            Statement* const lengthSpillStmt = fgNewStmtFromTree(lengthSpill);
+            gtUpdateStmtSideEffects(lengthSpillStmt);
+            fgInsertStmtBefore(block, stmt, lengthSpillStmt);
+
+            lengthArgRef = gtNewLclVarNode(lengthTemp);
+            lengthArg    = lengthArgRef;
+        }
+        {
+            GenTree*&      typeArgRef = call->gtArgs.GetArgByIndex(typeArgIndex)->NodeRef();
+            GenTree* const origType   = typeArgRef;
+            typeTemp                  = lvaGrabTemp(true DEBUGARG("stack array method table"));
+            lvaTable[typeTemp].lvType = genActualType(origType);
+
+            GenTree* const   typeSpill     = gtNewStoreLclVarNode(typeTemp, origType);
+            Statement* const typeSpillStmt = fgNewStmtFromTree(typeSpill);
+            gtUpdateStmtSideEffects(typeSpillStmt);
+            fgInsertStmtBefore(block, stmt, typeSpillStmt);
+
+            typeArgRef = gtNewLclVarNode(typeTemp);
+        }
+
         unsigned const locallocTemp   = lvaGrabTemp(true DEBUGARG("localloc stack address"));
         lvaTable[locallocTemp].lvType = TYP_I_IMPL;
 
-        GenTree* const arrayLength = gtCloneExpr(lengthArg);
+        GenTree* const arrayLength = gtNewLclVarNode(lengthTemp);
         GenTree* const baseSize    = gtNewIconNode(OFFSETOF__CORINFO_Array__data, TYP_I_IMPL);
         GenTree* const payloadSize = gtNewOperNode(GT_MUL, TYP_I_IMPL, elemSize, arrayLength);
         GenTree*       totalSize   = gtNewOperNode(GT_ADD, TYP_I_IMPL, baseSize, payloadSize);
@@ -3030,7 +3072,7 @@ bool Compiler::fgExpandStackArrayAllocation(BasicBlock*  block,
             }
         }
 
-        GenTree* const  lengthForCheck = gtCloneExpr(lengthArg);
+        GenTree* const  lengthForCheck = gtNewLclVarNode(lengthTemp);
         var_types const lengthType     = genActualType(lengthForCheck);
         GenTree* const  lengthLimit    = gtNewIconNode((ssize_t)maxSafeLength, lengthType);
         GenTree* const  lengthCompare  = gtNewOperNode(GT_GT, TYP_INT, lengthForCheck, lengthLimit);
@@ -3112,8 +3154,8 @@ bool Compiler::fgExpandStackArrayAllocation(BasicBlock*  block,
         //
         GenTreeCall* newCall = gtNewCallNode(CT_HELPER, call->gtCallMethHnd, call->TypeGet());
 
-        newCall->gtArgs.PushBack(this, NewCallArg::Primitive(call->gtArgs.GetArgByIndex(typeArgIndex)->GetNode()));
-        newCall->gtArgs.PushBack(this, NewCallArg::Primitive(call->gtArgs.GetArgByIndex(lengthArgIndex)->GetNode()));
+        newCall->gtArgs.PushBack(this, NewCallArg::Primitive(gtNewLclVarNode(typeTemp)));
+        newCall->gtArgs.PushBack(this, NewCallArg::Primitive(gtNewLclVarNode(lengthTemp)));
         newCall->gtFlags = call->gtFlags;
 #if defined(FEATURE_READYTORUN)
         newCall->setEntryPoint(call->gtEntryPoint);
@@ -3201,7 +3243,7 @@ bool Compiler::fgExpandStackArrayAllocation(BasicBlock*  block,
     // Initialize the array method table pointer.
     //
     GenTree* const   mt        = call->gtArgs.GetArgByIndex(typeArgIndex)->GetNode();
-    GenTree* const   mtToStore = isLocAlloc ? gtCloneExpr(mt) : mt;
+    GenTree* const   mtToStore = isLocAlloc ? gtNewLclVarNode(typeTemp) : mt;
     GenTree* const   mtStore   = gtNewStoreValueNode(TYP_I_IMPL, stackLocalAddress, mtToStore);
     Statement* const mtStmt    = fgNewStmtFromTree(mtStore);
 
@@ -3209,7 +3251,7 @@ bool Compiler::fgExpandStackArrayAllocation(BasicBlock*  block,
 
     // Initialize the array length.
     //
-    GenTree* const   arrayLengthToStore = isLocAlloc ? gtCloneExpr(lengthArg) : lengthArg;
+    GenTree* const   arrayLengthToStore = isLocAlloc ? gtNewLclVarNode(lengthTemp) : lengthArg;
     GenTree* const   lengthArgInt       = fgOptimizeCast(gtNewCastNode(TYP_INT, arrayLengthToStore, false, TYP_INT));
     GenTree* const   lengthAddress      = gtNewOperNode(GT_ADD, TYP_I_IMPL, gtCloneExpr(stackLocalAddress),
                                                         gtNewIconNode(OFFSETOF__CORINFO_Array__length, TYP_I_IMPL));

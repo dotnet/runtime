@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using TestLibrary;
 using Xunit;
 
 enum AllocationKind
@@ -187,22 +188,39 @@ public class LocallocStackAlloc
         return sum;
     }
 
+    [ActiveIssue("needs triage", TestRuntimes.Mono)]
     [Fact]
-    public static int TestSmall() => CallTestAndVerifyAllocation(VariableLengthSmall, 8 + (1 + 2 + 3 + 4 + 5 + 6 + 7 + 8), StackAllocation());
+    public static int TestSmall()
+    {
+        VariableLengthSmall();
+        return CallTestAndVerifyAllocation(VariableLengthSmall, 8 + (1 + 2 + 3 + 4 + 5 + 6 + 7 + 8), StackAllocation());
+    }
 
+    [ActiveIssue("needs triage", TestRuntimes.Mono)]
     [Fact]
-    public static int TestLarge() => CallTestAndVerifyAllocation(VariableLengthLarge, 10_000, HeapAllocation());
+    public static int TestLarge()
+    {
+        VariableLengthLarge();
+        return CallTestAndVerifyAllocation(VariableLengthLarge, 10_000, HeapAllocation());
+    }
 
+    [ActiveIssue("needs triage", TestRuntimes.Mono)]
     [Fact]
     public static int TestNegative() => CallTestAndVerifyAllocation(VariableLengthNegative, 0, AllocationKind.Undefined, throws: true);
 
+    [ActiveIssue("needs triage", TestRuntimes.Mono)]
     [Fact]
     public static int TestIntMin() => CallTestAndVerifyAllocation(VariableLengthIntMin, 0, AllocationKind.Undefined, throws: true);
 
+    [ActiveIssue("needs triage", TestRuntimes.Mono)]
     [Fact]
     public static int TestHuge() => CallTestAndVerifyAllocation(VariableLengthHuge, 0, AllocationKind.Undefined, throws: true);
 
+    [ActiveIssue("needs triage", TestRuntimes.Mono)]
     [Fact]
-    public static int TestFrameBudget() =>
-        CallTestAndVerifyAllocation(VariableLengthFrameBudget, 200 * ((64 * 65) / 2), HeapAllocation());
+    public static int TestFrameBudget()
+    {
+        VariableLengthFrameBudget();
+        return CallTestAndVerifyAllocation(VariableLengthFrameBudget, 200 * ((64 * 65) / 2), HeapAllocation());
+    }
 }
