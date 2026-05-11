@@ -240,11 +240,11 @@ private:
     int IsBackingStore()
     { return (m_rgPageMap != 0); }
     int IsMemoryMapped()
-#ifdef TARGET_WINDOWS
+#ifdef HOST_WINDOWS
     { return ((m_hMapping != NULL) || (m_hModule != NULL)); }
-#else
+#else // 
     { return m_mmap; }
-#endif // TARGET_WINDOWS
+#endif // HOST_WINDOWS
 
     void CtorInit();
     HRESULT WriteToDisk(const void *pbBuff, ULONG cbWrite, ULONG *pcbWritten);
@@ -262,14 +262,14 @@ private:
 
     // Handles.
     IStream *   m_pIStream;             // For save to stream instead of file.
-#ifdef TARGET_WINDOWS
+#ifdef HOST_WINDOWS
     HANDLE      m_hFile;                // The actual file with contents.
     HANDLE      m_hMapping;             // Mapping handle.
     HMODULE     m_hModule;              // If we load with LoadLibrary, this is the module (otherwise NULL).
-#else
+#else // HOST_WINDOWS
     int         m_fd;
     bool        m_mmap;
-#endif // TARGET_WINDOWS
+#endif // HOST_WINDOWS
     void *      m_pBaseData;            // Base address for memory mapped file.
     void *      m_pData;                // For memory mapped file read.
     ULONG       m_cbData;               // Size of in memory data.
