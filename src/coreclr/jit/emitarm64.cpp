@@ -8312,7 +8312,6 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int va
             case INS_sve_ldr:
             {
                 assert(isPredicateRegister(reg1) || isVectorRegister(reg1));
-                assert(FPbased);
 
                 isSimple = false;
                 size     = EA_SCALABLE;
@@ -8321,7 +8320,7 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int va
 
                 useRegForImm      = true;
                 regNumber rsvdReg = codeGen->rsGetRsvdReg();
-                codeGen->instGen_Set_Reg_To_Base_Plus_Imm(EA_PTRSIZE, rsvdReg, REG_FP, imm);
+                codeGen->instGen_Set_Reg_To_Base_Plus_Imm(EA_PTRSIZE, rsvdReg, reg2, imm);
 
                 reg2 = rsvdReg;
                 imm  = 0;
@@ -8590,7 +8589,6 @@ void emitter::emitIns_S_R(instruction ins, emitAttr attr, regNumber reg1, int va
             case INS_sve_str:
             {
                 assert(isVectorRegister(reg1) || isPredicateRegister(reg1));
-                assert(FPbased);
                 isSimple = false;
                 size     = EA_SCALABLE;
                 attr     = size;
@@ -8598,7 +8596,7 @@ void emitter::emitIns_S_R(instruction ins, emitAttr attr, regNumber reg1, int va
 
                 useRegForImm      = true;
                 regNumber rsvdReg = codeGen->rsGetRsvdReg();
-                codeGen->instGen_Set_Reg_To_Base_Plus_Imm(EA_PTRSIZE, rsvdReg, REG_FP, imm);
+                codeGen->instGen_Set_Reg_To_Base_Plus_Imm(EA_PTRSIZE, rsvdReg, reg2, imm);
                 reg2 = rsvdReg;
                 imm  = 0;
             }
