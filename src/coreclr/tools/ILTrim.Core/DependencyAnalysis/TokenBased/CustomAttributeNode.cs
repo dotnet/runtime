@@ -227,6 +227,7 @@ namespace ILCompiler.DependencyAnalysis
                 var formatter = new CustomAttributeTypeNameFormatter();
                 var typeProvider = new CustomAttributeTypeProvider(_module);
 
+                // The dependency walk already decoded the blob successfully unless `_isCorrupted` is set.
                 blobBuilder.WriteUInt16(valueReader.ReadUInt16());
 
                 MethodSignature constructorSig = constructor.Signature;
@@ -386,17 +387,25 @@ namespace ILCompiler.DependencyAnalysis
             else if (typeCode == SerializationTypeCode.Enum)
             {
                 int startOffset = valueReader.Offset;
-                string enumTypeName = valueReader.ReadSerializedString()!;
+                string? enumTypeName = valueReader.ReadSerializedString();
                 int endOffset = valueReader.Offset;
-                TypeDesc enumType = typeProvider.GetTypeFromSerializedName(enumTypeName)!;
+                TypeDesc enumType = enumTypeName is not null ? typeProvider.GetTypeFromSerializedName(enumTypeName) : null;
 
-                string rewritten = formatter.FormatName(enumType, true);
-                if (rewritten == enumTypeName)
-                    blobBuilder.WriteBytes(originalBlob, startOffset, endOffset - startOffset);
+                if (enumTypeName is not null && enumType is not null)
+                {
+                    string rewritten = formatter.FormatName(enumType, true);
+                    if (rewritten == enumTypeName)
+                        blobBuilder.WriteBytes(originalBlob, startOffset, endOffset - startOffset);
+                    else
+                        blobBuilder.WriteSerializedString(rewritten);
+
+                    valueTypeCode = (SerializationTypeCode)typeProvider.GetUnderlyingEnumType(enumType);
+                }
                 else
-                    blobBuilder.WriteSerializedString(rewritten);
-
-                valueTypeCode = (SerializationTypeCode)typeProvider.GetUnderlyingEnumType(enumType);
+                {
+                    blobBuilder.WriteBytes(originalBlob, startOffset, endOffset - startOffset);
+                    valueTypeCode = SerializationTypeCode.Invalid;
+                }
             }
             else
             {
