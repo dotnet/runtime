@@ -81,8 +81,7 @@ namespace ILCompiler.DependencyAnalysis
             }
             catch (Exception ex) when (ex is TypeSystemException or BadImageFormatException)
             {
-                // Attribute ctor doesn't resolve, typeof() refers to something that can't be loaded,
-                // attribute refers to a non-existing field, malformed blob, etc.
+                // Metadata decode failed.
                 _isCorrupted = true;
                 return dependencies;
             }
@@ -112,9 +111,6 @@ namespace ILCompiler.DependencyAnalysis
 
         private static void GetDependenciesFromCustomAttributeArgument(DependencyList dependencies, NodeFactory factory, TypeDesc type, object value)
         {
-            if (type is null)
-                return;
-
             // Report the type itself (e.g. enum types that need to be kept for boxing)
             if (factory.ReflectedType(type) is DependencyNode typeNode)
                 dependencies.Add(typeNode, "Custom attribute blob");
@@ -210,14 +206,7 @@ namespace ILCompiler.DependencyAnalysis
         private void RewriteCustomAttributeBlob(CustomAttribute customAttribute, BlobBuilder blobBuilder)
         {
             byte[] originalBlob = _module.MetadataReader.GetBlobBytes(customAttribute.Value);
-            if (_isCorrupted)
-            {
-                blobBuilder.WriteBytes(originalBlob);
-                return;
-            }
-
-            MethodDesc constructor = _module.TryGetMethod(customAttribute.Constructor);
-            if (constructor is null)
+            if (_isCorrupted || _module.TryGetMethod(customAttribute.Constructor) is not MethodDesc constructor)
             {
                 blobBuilder.WriteBytes(originalBlob);
                 return;
@@ -246,7 +235,7 @@ namespace ILCompiler.DependencyAnalysis
                     blobBuilder.WriteByte((byte)kind);
 
                     CopyNamedArgumentType(ref valueReader, blobBuilder, originalBlob, formatter, out SerializationTypeCode valueTypeCode, out SerializationTypeCode elementValueTypeCode);
-                    CopySerializedString(ref valueReader, blobBuilder, originalBlob, rewriteTypeName: false, formatter);
+                    CopySerializedString(ref valueReader, blobBuilder, rewriteTypeName: false, formatter);
                     CopySerializedValue(ref valueReader, blobBuilder, originalBlob, formatter, valueTypeCode, elementValueTypeCode);
                 }
             }
@@ -264,27 +253,17 @@ namespace ILCompiler.DependencyAnalysis
             blobBuilder.WriteBytes(originalBlob, startOffset, byteCount);
         }
 
-        private void CopySerializedString(ref BlobReader valueReader, BlobBuilder blobBuilder, byte[] originalBlob, bool rewriteTypeName, CustomAttributeTypeNameFormatter formatter)
+        private void CopySerializedString(ref BlobReader valueReader, BlobBuilder blobBuilder, bool rewriteTypeName, CustomAttributeTypeNameFormatter formatter)
         {
-            int startOffset = valueReader.Offset;
-            string? original = valueReader.ReadSerializedString();
-            int endOffset = valueReader.Offset;
+            string? s = valueReader.ReadSerializedString();
 
-            if (rewriteTypeName && original is not null)
+            if (rewriteTypeName && s is not null)
             {
-                TypeDesc resolved = _module.GetTypeByCustomAttributeTypeName(original);
-                if (resolved is not null)
-                {
-                    string rewritten = formatter.FormatName(resolved, true);
-                    if (rewritten != original)
-                    {
-                        blobBuilder.WriteSerializedString(rewritten);
-                        return;
-                    }
-                }
+                TypeDesc resolved = _module.GetTypeByCustomAttributeTypeName(s);
+                s = formatter.FormatName(resolved, true);
             }
 
-            blobBuilder.WriteBytes(originalBlob, startOffset, endOffset - startOffset);
+            blobBuilder.WriteSerializedString(s);
         }
 
         private void CopyFixedArgument(ref BlobReader valueReader, BlobBuilder blobBuilder, byte[] originalBlob, TypeDesc type, CustomAttributeTypeNameFormatter formatter)
@@ -297,11 +276,9 @@ namespace ILCompiler.DependencyAnalysis
         {
             elementValueTypeCode = default;
             valueTypeCode = default;
-            TypeDesc underlyingType = type.UnderlyingType;
-
-            if (underlyingType.IsPrimitive)
+            if (type.IsPrimitive || type.IsEnum)
             {
-                valueTypeCode = GetPrimitiveSerializationTypeCode(underlyingType);
+                valueTypeCode = GetPrimitiveSerializationTypeCode(type.UnderlyingType);
             }
             else if (type.IsString)
             {
@@ -383,10 +360,10 @@ namespace ILCompiler.DependencyAnalysis
                     CopyRawBytes(ref valueReader, blobBuilder, originalBlob, 8);
                     break;
                 case SerializationTypeCode.String:
-                    CopySerializedString(ref valueReader, blobBuilder, originalBlob, rewriteTypeName: false, formatter);
+                    CopySerializedString(ref valueReader, blobBuilder, rewriteTypeName: false, formatter);
                     break;
                 case SerializationTypeCode.Type:
-                    CopySerializedString(ref valueReader, blobBuilder, originalBlob, rewriteTypeName: true, formatter);
+                    CopySerializedString(ref valueReader, blobBuilder, rewriteTypeName: true, formatter);
                     break;
                 case SerializationTypeCode.SZArray:
                     int elementCount = valueReader.ReadInt32();
