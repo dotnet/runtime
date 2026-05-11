@@ -19,7 +19,7 @@ namespace System.Security.Cryptography
             _hasPrivate = hasPrivate;
         }
 
-        protected override void DeriveRawSecretAgreementCore(X25519DiffieHellman otherParty, Span<byte> destination)
+        protected override unsafe void DeriveRawSecretAgreementCore(X25519DiffieHellman otherParty, Span<byte> destination)
         {
             ThrowIfPrivateNeeded();
 

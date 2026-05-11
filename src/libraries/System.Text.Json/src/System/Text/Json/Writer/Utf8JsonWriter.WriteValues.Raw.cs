@@ -190,7 +190,7 @@ namespace System.Text.Json
             SetFlagToAddListSeparatorBeforeNextItem();
         }
 
-        private void TranscodeAndWriteRawValue(ReadOnlySpan<char> json, bool skipInputValidation)
+        private unsafe void TranscodeAndWriteRawValue(ReadOnlySpan<char> json, bool skipInputValidation)
         {
             if (json.Length > JsonConstants.MaxUtf16RawValueLength)
             {
