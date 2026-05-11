@@ -1218,7 +1218,7 @@ namespace Microsoft.Win32.SafeHandles
                 }
                 else if (_syncBuffer != null)
                 {
-                    // Zero byte read is performed to know when data is available.
+                    // Zero length read is performed to know when data is available.
                     if (_syncBufferLength == 0 && _owner.SupportsNonBlocking)
                     {
                         ReadResult = 0;
@@ -1232,7 +1232,7 @@ namespace Microsoft.Win32.SafeHandles
                 }
                 else
                 {
-                    // Zero byte read is performed to know when data is available.
+                    // Zero length read is performed to know when data is available.
                     if (_buffer.Length == 0 && _owner.SupportsNonBlocking)
                     {
                         ReadResult = 0;
@@ -1643,8 +1643,11 @@ namespace Microsoft.Win32.SafeHandles
         {
             if (length == 0 && SupportsNonBlocking)
             {
-                // Zero byte read is performed to know if read is pending.
+                // A zero length read is performed to wait for data to be available without allocating a buffer in advance.
+                // On Unix, zero length typically complete immediately rather than waiting for data.
+                // We use poll to know if the fd is ready. When it is, we return success for the read so that the user can perform a read with a non-zero length buffer.
                 Interop.Error err = Interop.Sys.Poll(this, Interop.PollEvents.POLLIN, IsBlocking ? -1 : 0, out Interop.PollEvents events);
+
                 if (err != Interop.Error.SUCCESS)
                 {
                     readResult = -1;
@@ -1652,12 +1655,10 @@ namespace Microsoft.Win32.SafeHandles
                     strategy?.OnIncompleteOperation(length, 0);
                     return true;
                 }
-                if (events == Interop.PollEvents.POLLNONE)
-                {
-                    readResult = 0;
-                    errorInfo = default;
-                    return false;
-                }
+
+                readResult = 0;
+                errorInfo = default;
+                return events != Interop.PollEvents.POLLNONE;
             }
 
             readResult = useOffset
