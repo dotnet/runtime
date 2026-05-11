@@ -7132,7 +7132,7 @@ void emitter::emitIns_R_I(instruction         ins,
 
     UNATIVE_OFFSET sz;
     instrDesc*     id;
-    insFormat      fmt = emitInsModeFormat(ins, IF_RRD_CNS);
+    insFormat      fmt       = emitInsModeFormat(ins, IF_RRD_CNS);
     bool           valInByte = ImmCanUseSByteEncoding(ins, val);
 
     // BT reg,imm might be useful but it requires special handling of the immediate value
@@ -9343,7 +9343,7 @@ void emitter::emitIns_I_AR(instruction ins, emitAttr attr, int val, regNumber re
     }
 
     assert(emitGetInsAmdAny(id) == disp); // make sure "disp" is stored properly
-    
+
     SetEvexNfIfNeeded(id, instOptions);
     SetEvexDFVIfNeeded(id, instOptions);
 
@@ -17345,10 +17345,10 @@ BYTE* emitter::emitOutputRRR(BYTE* dst, instrDesc* id)
 BYTE* emitter::emitOutputRI(BYTE* dst, instrDesc* id)
 {
     code_t      code;
-    emitAttr    size = id->idOpSize();
-    instruction ins  = id->idIns();
-    regNumber   reg  = id->idReg1();
-    ssize_t     val  = emitGetInsSC(id);
+    emitAttr    size      = id->idOpSize();
+    instruction ins       = id->idIns();
+    regNumber   reg       = id->idReg1();
+    ssize_t     val       = emitGetInsSC(id);
     bool        valInByte = ImmCanUseSByteEncoding(ins, val);
 
     assert(!id->idHasReg2());
