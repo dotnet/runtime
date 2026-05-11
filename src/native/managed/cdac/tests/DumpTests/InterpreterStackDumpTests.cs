@@ -22,7 +22,7 @@ namespace Microsoft.Diagnostics.DataContractReader.DumpTests;
 public class InterpreterStackDumpTests : DumpTestBase
 {
     protected override string DebuggeeName => "InterpreterStack";
-    protected override string DumpType => "heap";
+    protected override string DumpType => "full";
 
     private void SkipIfInterpreterNotAvailable()
     {

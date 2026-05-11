@@ -21,7 +21,7 @@ public class ISOSDacInterfaceTests : DumpTestBase
     [MemberData(nameof(TestConfigurations))]
     public unsafe void GetCodeHeaderData_InterpreterMethod_ReturnsTypeInterpreter(TestConfiguration config)
     {
-        InitializeDumpTest(config, "InterpreterStack", "heap");
+        InitializeDumpTest(config, "InterpreterStack", "full");
 
         try
         {
