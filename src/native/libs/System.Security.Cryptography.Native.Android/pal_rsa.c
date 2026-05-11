@@ -371,6 +371,7 @@ PALEXPORT int32_t AndroidCryptoNative_RsaGenerateKeyEx(RSA* rsa, int32_t bits)
 }
 
 PALEXPORT int32_t AndroidCryptoNative_GetRsaParameters(RSA* rsa,
+    int32_t includePrivateParameters,
     jobject* n, jobject* e, jobject* d, jobject* p, jobject* dmp1, jobject* q, jobject* dmq1, jobject* iqmp)
 {
     if (!rsa || !n || !e || !d || !p || !dmp1 || !q || !dmq1 || !iqmp)
@@ -398,12 +399,26 @@ PALEXPORT int32_t AndroidCryptoNative_GetRsaParameters(RSA* rsa,
         return FAIL;
     }
 
+    *n = NULL;
+    *e = NULL;
+    *d = NULL;
+    *p = NULL;
+    *q = NULL;
+    *dmp1 = NULL;
+    *dmq1 = NULL;
+    *iqmp = NULL;
+
     JNIEnv* env = GetJNIEnv();
     jobject privateKey = rsa->privateKey;
     jobject publicKey = rsa->publicKey;
 
-    if (privateKey)
+    if (includePrivateParameters)
     {
+        if (!privateKey || !(*env)->IsInstanceOf(env, privateKey, g_RSAPrivateCrtKeyClass))
+        {
+            return FAIL;
+        }
+
         *e = ToGRef(env, (*env)->CallObjectMethod(env, privateKey, g_RSAPrivateCrtKeyPubExpField));
         *n = ToGRef(env, (*env)->CallObjectMethod(env, privateKey, g_RSAPrivateCrtKeyModulusField));
         *d = ToGRef(env, (*env)->CallObjectMethod(env, privateKey, g_RSAPrivateCrtKeyPrivExpField));
@@ -417,12 +432,11 @@ PALEXPORT int32_t AndroidCryptoNative_GetRsaParameters(RSA* rsa,
     {
         *e = ToGRef(env, (*env)->CallObjectMethod(env, publicKey, g_RSAPublicKeyGetPubExpMethod));
         *n = ToGRef(env, (*env)->CallObjectMethod(env, publicKey, g_RSAKeyGetModulus));
-        *d = NULL;
-        *p = NULL;
-        *q = NULL;
-        *dmp1 = NULL;
-        *dmq1 = NULL;
-        *iqmp = NULL;
+    }
+    else if (privateKey && (*env)->IsInstanceOf(env, privateKey, g_RSAPrivateCrtKeyClass))
+    {
+        *e = ToGRef(env, (*env)->CallObjectMethod(env, privateKey, g_RSAPrivateCrtKeyPubExpField));
+        *n = ToGRef(env, (*env)->CallObjectMethod(env, privateKey, g_RSAPrivateCrtKeyModulusField));
     }
     else
     {
