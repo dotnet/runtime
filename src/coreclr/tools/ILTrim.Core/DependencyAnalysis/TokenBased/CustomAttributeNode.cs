@@ -20,6 +20,8 @@ namespace ILCompiler.DependencyAnalysis
     /// </summary>
     public sealed class CustomAttributeNode : TokenBasedNode
     {
+        private bool _isCorrupted;
+
         public CustomAttributeNode(EcmaModule module, CustomAttributeHandle handle)
             : base(module, handle)
         {
@@ -79,6 +81,7 @@ namespace ILCompiler.DependencyAnalysis
             {
                 // Attribute ctor doesn't resolve, typeof() refers to something that can't be loaded,
                 // attribute refers to a non-existing field, malformed blob, etc.
+                _isCorrupted = true;
                 return dependencies;
             }
 
@@ -205,6 +208,12 @@ namespace ILCompiler.DependencyAnalysis
         private void RewriteCustomAttributeBlob(CustomAttribute customAttribute, BlobBuilder blobBuilder)
         {
             byte[] originalBlob = _module.MetadataReader.GetBlobBytes(customAttribute.Value);
+            if (_isCorrupted)
+            {
+                blobBuilder.WriteBytes(originalBlob);
+                return;
+            }
+
             MethodDesc constructor = _module.TryGetMethod(customAttribute.Constructor);
             if (constructor is null)
             {
@@ -218,11 +227,7 @@ namespace ILCompiler.DependencyAnalysis
                 var formatter = new CustomAttributeTypeNameFormatter();
                 var typeProvider = new CustomAttributeTypeProvider(_module);
 
-                ushort prolog = valueReader.ReadUInt16();
-                if (prolog != 1)
-                    throw new BadImageFormatException();
-
-                blobBuilder.WriteUInt16(prolog);
+                blobBuilder.WriteUInt16(valueReader.ReadUInt16());
 
                 MethodSignature constructorSig = constructor.Signature;
                 for (int i = 0; i < constructorSig.Length; i++)
@@ -236,18 +241,12 @@ namespace ILCompiler.DependencyAnalysis
                 for (int i = 0; i < namedArgumentCount; i++)
                 {
                     CustomAttributeNamedArgumentKind kind = (CustomAttributeNamedArgumentKind)valueReader.ReadByte();
-                    if (kind != CustomAttributeNamedArgumentKind.Field && kind != CustomAttributeNamedArgumentKind.Property)
-                        throw new BadImageFormatException();
-
                     blobBuilder.WriteByte((byte)kind);
 
                     CopyNamedArgumentType(ref valueReader, blobBuilder, originalBlob, typeProvider, formatter, out SerializationTypeCode valueTypeCode, out SerializationTypeCode elementValueTypeCode);
                     CopySerializedString(ref valueReader, blobBuilder, originalBlob, rewriteTypeName: false, typeProvider, formatter);
                     CopySerializedValue(ref valueReader, blobBuilder, originalBlob, typeProvider, formatter, valueTypeCode, elementValueTypeCode);
                 }
-
-                if (valueReader.RemainingBytes != 0)
-                    throw new BadImageFormatException();
             }
             catch (Exception ex) when (ex is TypeSystemException or BadImageFormatException)
             {
@@ -323,7 +322,7 @@ namespace ILCompiler.DependencyAnalysis
             }
             else
             {
-                throw new BadImageFormatException();
+                valueTypeCode = SerializationTypeCode.Invalid;
             }
         }
 
@@ -343,7 +342,7 @@ namespace ILCompiler.DependencyAnalysis
                 case TypeFlags.UInt64: return SerializationTypeCode.UInt64;
                 case TypeFlags.Single: return SerializationTypeCode.Single;
                 case TypeFlags.Double: return SerializationTypeCode.Double;
-                default: throw new BadImageFormatException();
+                default: return SerializationTypeCode.Invalid;
             }
         }
 
@@ -374,23 +373,22 @@ namespace ILCompiler.DependencyAnalysis
             }
             else if (typeCode == SerializationTypeCode.SZArray)
             {
-                if (isElementType)
-                    throw new BadImageFormatException();
-
-                CopyNamedArgumentType(ref valueReader, blobBuilder, originalBlob, typeProvider, formatter, out elementValueTypeCode, out _, isElementType: true);
-                valueTypeCode = SerializationTypeCode.SZArray;
+                if (!isElementType)
+                {
+                    CopyNamedArgumentType(ref valueReader, blobBuilder, originalBlob, typeProvider, formatter, out elementValueTypeCode, out _, isElementType: true);
+                    valueTypeCode = SerializationTypeCode.SZArray;
+                }
+                else
+                {
+                    valueTypeCode = SerializationTypeCode.Invalid;
+                }
             }
             else if (typeCode == SerializationTypeCode.Enum)
             {
                 int startOffset = valueReader.Offset;
-                string? enumTypeName = valueReader.ReadSerializedString();
+                string enumTypeName = valueReader.ReadSerializedString()!;
                 int endOffset = valueReader.Offset;
-                if (enumTypeName is null)
-                    throw new BadImageFormatException();
-
-                TypeDesc enumType = typeProvider.GetTypeFromSerializedName(enumTypeName);
-                if (enumType is null)
-                    throw new BadImageFormatException();
+                TypeDesc enumType = typeProvider.GetTypeFromSerializedName(enumTypeName)!;
 
                 string rewritten = formatter.FormatName(enumType, true);
                 if (rewritten == enumTypeName)
@@ -402,7 +400,7 @@ namespace ILCompiler.DependencyAnalysis
             }
             else
             {
-                throw new BadImageFormatException();
+                valueTypeCode = SerializationTypeCode.Invalid;
             }
         }
 
@@ -444,9 +442,6 @@ namespace ILCompiler.DependencyAnalysis
             {
                 int elementCount = valueReader.ReadInt32();
                 blobBuilder.WriteInt32(elementCount);
-                if (elementCount < -1)
-                    throw new BadImageFormatException();
-
                 if (elementCount > 0)
                 {
                     for (int i = 0; i < elementCount; i++)
@@ -459,10 +454,6 @@ namespace ILCompiler.DependencyAnalysis
             {
                 CopyNamedArgumentType(ref valueReader, blobBuilder, originalBlob, typeProvider, formatter, out SerializationTypeCode boxedTypeCode, out SerializationTypeCode boxedElementTypeCode);
                 CopySerializedValue(ref valueReader, blobBuilder, originalBlob, typeProvider, formatter, boxedTypeCode, boxedElementTypeCode);
-            }
-            else
-            {
-                throw new BadImageFormatException();
             }
         }
 
