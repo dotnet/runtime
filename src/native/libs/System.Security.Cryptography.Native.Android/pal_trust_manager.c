@@ -173,41 +173,6 @@ cleanup:
     return trustManagers;
 }
 
-// Test-only helper. NOT supported as a public API surface — these wrappers
-// exist solely so AndroidPlatformTrustTests can directly introspect Android's
-// platform trust behaviour (network_security_config.xml) without relying on
-// a live network. Do not call from product code.
-int32_t AndroidCryptoNative_TestOnly_IsCleartextTrafficPermitted(const char* hostname)
-{
-    JNIEnv* env = GetJNIEnv();
-    jstring hostnameStr = make_java_string(env, hostname);
-    jboolean result = (*env)->CallStaticBooleanMethod(
-        env,
-        g_DotnetProxyTrustManager,
-        g_DotnetProxyTrustManagerIsCleartextTrafficPermitted,
-        hostnameStr);
-    ReleaseLRef(env, hostnameStr);
-    return (int32_t)result;
-}
-
-// Test-only helper. See AndroidCryptoNative_TestOnly_IsCleartextTrafficPermitted.
-int32_t AndroidCryptoNative_TestOnly_IsCertificateTrustedForHost(const uint8_t* certDer, int32_t certDerLen, const char* hostname)
-{
-    JNIEnv* env = GetJNIEnv();
-    jbyteArray certArray = make_java_byte_array(env, certDerLen);
-    (*env)->SetByteArrayRegion(env, certArray, 0, certDerLen, (const jbyte*)certDer);
-    jstring hostnameStr = make_java_string(env, hostname);
-    jboolean result = (*env)->CallStaticBooleanMethod(
-        env,
-        g_DotnetProxyTrustManager,
-        g_DotnetProxyTrustManagerIsCertificateTrustedForHost,
-        certArray,
-        hostnameStr);
-    ReleaseLRef(env, certArray);
-    ReleaseLRef(env, hostnameStr);
-    return (int32_t)result;
-}
-
 // JNI entry point called from DotnetProxyTrustManager.verifyRemoteCertificate().
 // Forwards the platform's trust verdict to the managed SslStream validation callback.
 // The managed side combines this with its own X509Chain.Build result — the callback
