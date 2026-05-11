@@ -51,7 +51,7 @@ public class ISOSDacInterfaceTests : DumpTestBase
         Assert.NotEqual(TargetCodePointer.Null, interpreterCodeAddr);
 
         DacpCodeHeaderData codeHeaderData;
-        int hr = sosDac.GetCodeHeaderData(new ClrDataAddress(interpreterCodeAddr.Value), &codeHeaderData);
+        int hr = sosDac.GetCodeHeaderData(interpreterCodeAddr.ToClrDataAddress(Target), &codeHeaderData);
         AssertHResult(System.HResults.S_OK, hr);
 
         Assert.Equal(JitTypes.TYPE_INTERPRETER, codeHeaderData.JITType);
