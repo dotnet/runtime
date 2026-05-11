@@ -116,7 +116,7 @@ public readonly struct GCMemoryRegionData
     public int Heap { get; init; }
 }
 
-public enum GCSegmentGeneration
+public enum GCSegmentClassification
 {
     Unknown,
     Gen0,
@@ -125,13 +125,13 @@ public enum GCSegmentGeneration
     LOH,
     POH,
     NonGC,
+    Ephemeral,
 }
 
 public readonly record struct GCHeapSegmentInfo(
     TargetPointer Start,
     TargetPointer End,
-    GCSegmentGeneration Generation,
-    uint Heap);
+    GCSegmentClassification Generation);
 
 public interface IGC : IContract
 {
@@ -169,12 +169,9 @@ public interface IGC : IContract
     IReadOnlyList<GCMemoryRegionData> GetGCBookkeepingMemoryRegions() => throw new NotImplementedException();
     IReadOnlyList<GCMemoryRegionData> GetGCFreeRegions() => throw new NotImplementedException();
 
-    // Enumerates the GC heap segments produced by the configured GC (workstation or server, segments
-    // or regions). One GCHeapSegmentInfo is yielded per segment with the segment range [Start, End),
-    // its CorDebug generation tag, and the heap index. In segments-GC mode, the ephemeral segment is
-    // split into the Gen2/Gen1/Gen0 pieces the consumer expects, mirroring the native DacDbi
-    // GetHeapSegments behavior.
-    IEnumerable<GCHeapSegmentInfo> EnumerateHeapSegments() => throw new NotImplementedException();
+    // Enumerates the raw GC heap segments for a single heap as recorded by the GC's per-generation
+    // segment lists.
+    IEnumerable<GCHeapSegmentInfo> EnumerateHeapSegments(GCHeapData heapData) => throw new NotImplementedException();
 }
 
 public readonly struct GC : IGC

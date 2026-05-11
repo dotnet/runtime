@@ -117,7 +117,7 @@ public class GCTests
         }
     }
 
-    private sealed record CapturedSegment(ulong Start, ulong End, GCSegmentGeneration Generation, uint Heap);
+    private sealed record CapturedSegment(ulong Start, ulong End, GCSegmentClassification Generation);
 
     private static MockGCBuilder.Generation[] MakeGenerations(ulong gen0Seg, ulong gen0Start, ulong gen1Seg, ulong gen1Start, ulong gen2Seg, ulong lohSeg, ulong pohSeg)
         =>
@@ -163,24 +163,26 @@ public class GCTests
         IGC gc = target.Contracts.GC;
 
         List<CapturedSegment> captured = new();
-        foreach (GCHeapSegmentInfo seg in gc.EnumerateHeapSegments())
-            captured.Add(new CapturedSegment(seg.Start, seg.End, seg.Generation, seg.Heap));
+        foreach (GCHeapSegmentInfo seg in gc.EnumerateHeapSegments(gc.GetHeapData()))
+            captured.Add(new CapturedSegment(seg.Start, seg.End, seg.Generation));
 
+        // Raw per-heap walk: gen2 list (gen2Seg, frozenSeg), gen1 list (gen1Seg),
+        // gen0 list (gen0Seg ephemeral - end overridden to allocAllocated), LOH, POH.
         Assert.Equal(6, captured.Count);
-        Assert.Equal(new CapturedSegment(0x2000_0000, 0x2000_1000, GCSegmentGeneration.Gen2, 0), captured[0]);
-        Assert.Equal(new CapturedSegment(0x6000_0000, 0x6000_1000, GCSegmentGeneration.NonGC, 0), captured[1]);
-        Assert.Equal(new CapturedSegment(0x3000_0000, 0x3000_1000, GCSegmentGeneration.Gen1, 0), captured[2]);
-        Assert.Equal(new CapturedSegment(0x4000_0000, allocAllocated, GCSegmentGeneration.Gen0, 0), captured[3]);
-        Assert.Equal(new CapturedSegment(0x5000_0000, 0x5000_1000, GCSegmentGeneration.LOH, 0), captured[4]);
-        Assert.Equal(new CapturedSegment(0x5100_0000, 0x5100_1000, GCSegmentGeneration.POH, 0), captured[5]);
+        Assert.Equal(new CapturedSegment(0x2000_0000, 0x2000_1000, GCSegmentClassification.Gen2), captured[0]);
+        Assert.Equal(new CapturedSegment(0x6000_0000, 0x6000_1000, GCSegmentClassification.NonGC), captured[1]);
+        Assert.Equal(new CapturedSegment(0x3000_0000, 0x3000_1000, GCSegmentClassification.Gen1), captured[2]);
+        Assert.Equal(new CapturedSegment(0x4000_0000, allocAllocated, GCSegmentClassification.Gen0), captured[3]);
+        Assert.Equal(new CapturedSegment(0x5000_0000, 0x5000_1000, GCSegmentClassification.LOH), captured[4]);
+        Assert.Equal(new CapturedSegment(0x5100_0000, 0x5100_1000, GCSegmentClassification.POH), captured[5]);
     }
 
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
     public void EnumerateHeapSegments_Wks_Segments(MockTarget.Architecture arch)
     {
-        // In segments mode, gen2 list contains all SOH segments. The ephemeral segment is split into
-        // Gen2 prefix + Gen1 + Gen0 by AllocationStart of gen1 / gen0 and AllocAllocated.
+        // In segments mode, the gen2 list contains all SOH segments. The ephemeral segment is
+        // surfaced as a single Ephemeral-tagged entry; the caller is responsible for splitting it.
         ulong gen1Start = 0x2000_4000;
         ulong gen0Start = 0x2000_6000;
         ulong allocAllocated = 0x2000_7000;
@@ -218,20 +220,17 @@ public class GCTests
         IGC gc = target.Contracts.GC;
 
         List<CapturedSegment> captured = new();
-        foreach (GCHeapSegmentInfo seg in gc.EnumerateHeapSegments())
-            captured.Add(new CapturedSegment(seg.Start, seg.End, seg.Generation, seg.Heap));
+        foreach (GCHeapSegmentInfo seg in gc.EnumerateHeapSegments(gc.GetHeapData()))
+            captured.Add(new CapturedSegment(seg.Start, seg.End, seg.Generation));
 
-        // Expected emission order:
-        //   Gen0 first (synthetic, from gen0Start..allocAllocated)
-        //   walk gen2 list: gen2OnlySeg (full Gen2), then ephSeg (Gen1 piece + Gen2 prefix)
-        //   LOH list, POH list
-        Assert.Equal(6, captured.Count);
-        Assert.Equal(new CapturedSegment(gen0Start, allocAllocated, GCSegmentGeneration.Gen0, 0), captured[0]);
-        Assert.Equal(new CapturedSegment(0x1000_0000, 0x1000_1000, GCSegmentGeneration.Gen2, 0), captured[1]);
-        Assert.Equal(new CapturedSegment(gen1Start, gen0Start, GCSegmentGeneration.Gen1, 0), captured[2]);
-        Assert.Equal(new CapturedSegment(0x2000_0000, gen1Start, GCSegmentGeneration.Gen2, 0), captured[3]);
-        Assert.Equal(new CapturedSegment(0x5000_0000, 0x5000_1000, GCSegmentGeneration.LOH, 0), captured[4]);
-        Assert.Equal(new CapturedSegment(0x5100_0000, 0x5100_1000, GCSegmentGeneration.POH, 0), captured[5]);
+        // Raw per-heap walk in segments mode: gen2 list (gen2OnlySeg as Gen2, ephSeg
+        // tagged Ephemeral as the marker), then LOH, POH. No synthetic Gen0 and no
+        // Gen1/Gen2 split - those are the caller's responsibility.
+        Assert.Equal(4, captured.Count);
+        Assert.Equal(new CapturedSegment(0x1000_0000, 0x1000_1000, GCSegmentClassification.Gen2), captured[0]);
+        Assert.Equal(new CapturedSegment(0x2000_0000, allocAllocated, GCSegmentClassification.Ephemeral), captured[1]);
+        Assert.Equal(new CapturedSegment(0x5000_0000, 0x5000_1000, GCSegmentClassification.LOH), captured[2]);
+        Assert.Equal(new CapturedSegment(0x5100_0000, 0x5100_1000, GCSegmentClassification.POH), captured[3]);
     }
 
     [Theory]
@@ -268,15 +267,19 @@ public class GCTests
         IGC gc = target.Contracts.GC;
 
         List<CapturedSegment> captured = new();
-        foreach (GCHeapSegmentInfo seg in gc.EnumerateHeapSegments())
-            captured.Add(new CapturedSegment(seg.Start, seg.End, seg.Generation, seg.Heap));
+        foreach (TargetPointer heapAddr in gc.GetGCHeaps())
+        {
+            foreach (GCHeapSegmentInfo seg in gc.EnumerateHeapSegments(gc.GetHeapData(heapAddr)))
+                captured.Add(new CapturedSegment(seg.Start, seg.End, seg.Generation));
+        }
 
+        // Raw regions-mode walk: gen2, gen1, gen0 (non-ephemeral so end=allocated), LOH, POH.
         Assert.Equal(5, captured.Count);
-        Assert.Equal(new CapturedSegment(0x2000_0000, 0x2000_1000, GCSegmentGeneration.Gen2, 0), captured[0]);
-        Assert.Equal(new CapturedSegment(0x3000_0000, 0x3000_1000, GCSegmentGeneration.Gen1, 0), captured[1]);
-        Assert.Equal(new CapturedSegment(0x4000_0000, 0x4000_FFFF, GCSegmentGeneration.Gen0, 0), captured[2]);
-        Assert.Equal(new CapturedSegment(0x5000_0000, 0x5000_1000, GCSegmentGeneration.LOH, 0), captured[3]);
-        Assert.Equal(new CapturedSegment(0x5100_0000, 0x5100_1000, GCSegmentGeneration.POH, 0), captured[4]);
+        Assert.Equal(new CapturedSegment(0x2000_0000, 0x2000_1000, GCSegmentClassification.Gen2), captured[0]);
+        Assert.Equal(new CapturedSegment(0x3000_0000, 0x3000_1000, GCSegmentClassification.Gen1), captured[1]);
+        Assert.Equal(new CapturedSegment(0x4000_0000, 0x4000_FFFF, GCSegmentClassification.Gen0), captured[2]);
+        Assert.Equal(new CapturedSegment(0x5000_0000, 0x5000_1000, GCSegmentClassification.LOH), captured[3]);
+        Assert.Equal(new CapturedSegment(0x5100_0000, 0x5100_1000, GCSegmentClassification.POH), captured[4]);
     }
 }
 

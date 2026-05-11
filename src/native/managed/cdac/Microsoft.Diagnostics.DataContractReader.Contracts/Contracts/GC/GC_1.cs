@@ -363,120 +363,66 @@ internal readonly struct GC_1 : IGC
         return handles;
     }
 
-    IEnumerable<GCHeapSegmentInfo> IGC.EnumerateHeapSegments()
-    {
-        GCType gcType = GetGCType();
-        if (gcType == GCType.Unknown)
-            throw new InvalidOperationException("Unknown GC type");
-
-        bool regions = ((IGC)this).GetGCIdentifiers().Contains(GCIdentifiers.Regions);
-
-        if (gcType == GCType.Workstation)
-        {
-            foreach (GCHeapSegmentInfo seg in EnumerateHeapSegmentsForHeap(((IGC)this).GetHeapData(), heapIndex: 0, regions))
-                yield return seg;
-        }
-        else
-        {
-            uint heapIndex = 0;
-            foreach (TargetPointer heapAddress in ((IGC)this).GetGCHeaps())
-            {
-                foreach (GCHeapSegmentInfo seg in EnumerateHeapSegmentsForHeap(((IGC)this).GetHeapData(heapAddress), heapIndex, regions))
-                    yield return seg;
-                heapIndex++;
-            }
-        }
-    }
-
-    private IEnumerable<GCHeapSegmentInfo> EnumerateHeapSegmentsForHeap(GCHeapData heapData, uint heapIndex, bool regions)
+    IEnumerable<GCHeapSegmentInfo> IGC.EnumerateHeapSegments(GCHeapData heapData)
     {
         // The generation table is laid out as gen0, gen1, gen2, LOH, POH (plus optional extras).
         IReadOnlyList<GCGenerationData> gens = heapData.GenerationTable;
         if (gens.Count < 5)
             throw new InvalidOperationException($"Expected at least 5 generations in the generation table, got {gens.Count}.");
 
-        TargetPointer gen0StartSegment = gens[0].StartSegment;
-        TargetPointer gen1StartSegment = gens[1].StartSegment;
-        TargetPointer gen2StartSegment = gens[2].StartSegment;
-        TargetPointer lohStartSegment = gens[3].StartSegment;
-        TargetPointer pohStartSegment = gens[4].StartSegment;
+        bool regions = ((IGC)this).GetGCIdentifiers().Contains(GCIdentifiers.Regions);
 
         TargetPointer ephemeralSegment = heapData.EphemeralHeapSegment;
         TargetPointer allocAllocated = heapData.AllocAllocated;
 
         if (regions)
         {
-            // In regions mode, segments are split across the gen2/gen1/gen0 segment lists, with the
-            // segment's generation determined by which list contains it. Readonly segments on the
-            // gen2 list represent non-GC (e.g. frozen) regions.
-            foreach ((Data.HeapSegment seg, TargetPointer _) in WalkSegmentList(gen2StartSegment))
+            // In regions mode each generation has its own segment list. Readonly entries on the
+            // gen2 list represent non-GC (e.g. frozen) regions and are reported as NonGC.
+            foreach ((Data.HeapSegment seg, TargetPointer _) in WalkSegmentList(gens[2].StartSegment))
             {
-                GCSegmentGeneration type = (seg.Flags.Value & _heapSegmentFlagsReadonly) != 0
-                    ? GCSegmentGeneration.NonGC
-                    : GCSegmentGeneration.Gen2;
-                yield return new GCHeapSegmentInfo(seg.Mem, seg.Allocated, type, heapIndex);
+                GCSegmentClassification type = (seg.Flags.Value & _heapSegmentFlagsReadonly) != 0
+                    ? GCSegmentClassification.NonGC
+                    : GCSegmentClassification.Gen2;
+                yield return new GCHeapSegmentInfo(seg.Mem, seg.Allocated, type);
             }
-            foreach ((Data.HeapSegment seg, TargetPointer _) in WalkSegmentList(gen1StartSegment))
+            foreach ((Data.HeapSegment seg, TargetPointer _) in WalkSegmentList(gens[1].StartSegment))
             {
-                yield return new GCHeapSegmentInfo(seg.Mem, seg.Allocated, GCSegmentGeneration.Gen1, heapIndex);
+                yield return new GCHeapSegmentInfo(seg.Mem, seg.Allocated, GCSegmentClassification.Gen1);
             }
-            foreach ((Data.HeapSegment seg, TargetPointer segAddr) in WalkSegmentList(gen0StartSegment))
+            foreach ((Data.HeapSegment seg, TargetPointer segAddr) in WalkSegmentList(gens[0].StartSegment))
             {
                 // For the gen0 segment that matches the ephemeral_heap_segment, end is alloc_allocated.
                 TargetPointer end = segAddr == ephemeralSegment ? allocAllocated : seg.Allocated;
-                yield return new GCHeapSegmentInfo(seg.Mem, end, GCSegmentGeneration.Gen0, heapIndex);
+                yield return new GCHeapSegmentInfo(seg.Mem, end, GCSegmentClassification.Gen0);
             }
         }
         else
         {
-            // In segments-GC mode, only the gen2 segment list contains SOH segments. The
-            // ephemeral segment hosts Gen0/Gen1 (and possibly part of Gen2). Generation 0 is
-            // not represented in the segment list itself; it is bracketed by [gen0.AllocationStart,
-            // alloc_allocated). Generation 1 is bracketed by [gen1.AllocationStart, gen0.AllocationStart).
-            // Any preceding portion of the ephemeral segment is Gen2.
-            TargetPointer gen0Start = gens[0].AllocationStart;
-            TargetPointer gen0End = allocAllocated;
-            TargetPointer gen1Start = gens[1].AllocationStart;
-
-            // Generation 0 (not in the segment list)
-            yield return new GCHeapSegmentInfo(gen0Start, gen0End, GCSegmentGeneration.Gen0, heapIndex);
-
-            foreach ((Data.HeapSegment seg, TargetPointer segAddr) in WalkSegmentList(gen2StartSegment))
+            // In segments mode the gen2 list contains every SOH segment.
+            foreach ((Data.HeapSegment seg, TargetPointer segAddr) in WalkSegmentList(gens[2].StartSegment))
             {
+                GCSegmentClassification type;
                 if (segAddr == ephemeralSegment)
-                {
-                    // Gen1 piece
-                    Debug.Assert((ulong)seg.Mem <= (ulong)gen1Start, $"ephemeral seg.mem ({seg.Mem:x}) > gen1.AllocationStart ({gen1Start:x})");
-                    Debug.Assert((ulong)allocAllocated > (ulong)gen1Start, $"alloc_allocated ({allocAllocated:x}) <= gen1.AllocationStart ({gen1Start:x})");
-
-                    yield return new GCHeapSegmentInfo(gen1Start, gen0Start, GCSegmentGeneration.Gen1, heapIndex);
-
-                    // Optional Gen2 prefix on the ephemeral segment.
-                    if (seg.Mem != gen1Start)
-                    {
-                        yield return new GCHeapSegmentInfo(seg.Mem, gen1Start, GCSegmentGeneration.Gen2, heapIndex);
-                    }
-                }
+                    type = GCSegmentClassification.Ephemeral;
+                else if ((seg.Flags.Value & _heapSegmentFlagsReadonly) != 0)
+                    type = GCSegmentClassification.NonGC;
                 else
-                {
-                    GCSegmentGeneration type = (seg.Flags.Value & _heapSegmentFlagsReadonly) != 0
-                        ? GCSegmentGeneration.NonGC
-                        : GCSegmentGeneration.Gen2;
-                    yield return new GCHeapSegmentInfo(seg.Mem, seg.Allocated, type, heapIndex);
-                }
+                    type = GCSegmentClassification.Gen2;
+                yield return new GCHeapSegmentInfo(seg.Mem, seg.Allocated, type);
             }
         }
 
         // Large object heap segments.
-        foreach ((Data.HeapSegment seg, TargetPointer _) in WalkSegmentList(lohStartSegment))
+        foreach ((Data.HeapSegment seg, TargetPointer _) in WalkSegmentList(gens[3].StartSegment))
         {
-            yield return new GCHeapSegmentInfo(seg.Mem, seg.Allocated, GCSegmentGeneration.LOH, heapIndex);
+            yield return new GCHeapSegmentInfo(seg.Mem, seg.Allocated, GCSegmentClassification.LOH);
         }
 
         // Pinned object heap segments.
-        foreach ((Data.HeapSegment seg, TargetPointer _) in WalkSegmentList(pohStartSegment))
+        foreach ((Data.HeapSegment seg, TargetPointer _) in WalkSegmentList(gens[4].StartSegment))
         {
-            yield return new GCHeapSegmentInfo(seg.Mem, seg.Allocated, GCSegmentGeneration.POH, heapIndex);
+            yield return new GCHeapSegmentInfo(seg.Mem, seg.Allocated, GCSegmentClassification.POH);
         }
     }
 
