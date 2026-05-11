@@ -2165,18 +2165,9 @@ HRESULT CordbProcess::EnumerateHeap(ICorDebugHeapEnum **ppObjects)
 
     EX_TRY
     {
-        BOOL gcValid;
-        IfFailThrow(m_pDacPrimitives->AreGCStructuresValid(&gcValid));
-        if (gcValid)
-        {
-            CordbHeapEnum *pHeapEnum = new CordbHeapEnum(this);
-            GetContinueNeuterList()->Add(this, pHeapEnum);
-            hr = pHeapEnum->QueryInterface(__uuidof(ICorDebugHeapEnum), (void**)ppObjects);
-        }
-        else
-        {
-            hr = CORDBG_E_GC_STRUCTURES_INVALID;
-        }
+        CordbHeapEnum *pHeapEnum = new CordbHeapEnum(this);
+        GetContinueNeuterList()->Add(this, pHeapEnum);
+        hr = pHeapEnum->QueryInterface(__uuidof(ICorDebugHeapEnum), (void**)ppObjects);
     }
     EX_CATCH_HRESULT(hr);
 

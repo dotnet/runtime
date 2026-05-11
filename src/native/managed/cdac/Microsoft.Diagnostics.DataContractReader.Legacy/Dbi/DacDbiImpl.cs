@@ -1540,23 +1540,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         return hr;
     }
 
-    public int IsWinRTModule(ulong vmModule, Interop.BOOL* isWinRT)
-    {
-        *isWinRT = Interop.BOOL.FALSE;
-        int hr = HResults.S_OK;
-#if DEBUG
-        if (_legacy is not null)
-        {
-            Interop.BOOL isWinRTLocal;
-            int hrLocal = _legacy.IsWinRTModule(vmModule, &isWinRTLocal);
-            Debug.ValidateHResult(hr, hrLocal);
-            if (hr == HResults.S_OK)
-                Debug.Assert(*isWinRT == isWinRTLocal, $"cDAC: {*isWinRT}, DAC: {isWinRTLocal}");
-        }
-#endif
-        return hr;
-    }
-
     public int GetHandleAddressFromVmHandle(ulong vmHandle, ulong* pRetVal)
     {
         *pRetVal = vmHandle;
@@ -1615,25 +1598,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
 
     public int IsThreadSuspendedOrHijacked(ulong vmThread, Interop.BOOL* pResult)
         => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.IsThreadSuspendedOrHijacked(vmThread, pResult) : HResults.E_NOTIMPL;
-
-    public int AreGCStructuresValid(Interop.BOOL* pResult)
-    {
-        // Native DacDbiInterfaceImpl::AreGCStructuresValid always returns TRUE.
-        // DacDbi callers assume the runtime is suspended, so GC structures are always valid.
-        *pResult = Interop.BOOL.TRUE;
-        int hr = HResults.S_OK;
-#if DEBUG
-        if (_legacy is not null)
-        {
-            Interop.BOOL resultLocal;
-            int hrLocal = _legacy.AreGCStructuresValid(&resultLocal);
-            Debug.ValidateHResult(hr, hrLocal);
-            if (hr == HResults.S_OK)
-                Debug.Assert(*pResult == resultLocal, $"cDAC: {*pResult}, DAC: {resultLocal}");
-        }
-#endif
-        return hr;
-    }
 
     public int CreateHeapWalk(nuint* pHandle)
         => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.CreateHeapWalk(pHandle) : HResults.E_NOTIMPL;
