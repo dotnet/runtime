@@ -540,11 +540,6 @@ extern jmethodID g_InetSocketAddress_getPort;
 extern jclass    g_URI;
 extern jmethodID g_URI_create;
 
-// java/util/List
-extern jclass    g_List;
-extern jmethodID g_ListSize;
-extern jmethodID g_ListGet;
-
 // Compatibility macros
 #if !defined (__mallocfunc)
 #if defined (__clang__) || defined (__GNUC__)

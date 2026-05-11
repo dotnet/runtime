@@ -528,11 +528,6 @@ jmethodID g_InetSocketAddress_getPort;
 jclass    g_URI;
 jmethodID g_URI_create;
 
-// java/util/List
-jclass    g_List;
-jmethodID g_ListSize;
-jmethodID g_ListGet;
-
 jobject ToGRef(JNIEnv *env, jobject lref)
 {
     if (lref)
@@ -1173,10 +1168,6 @@ jint AndroidCryptoNative_InitLibraryOnLoad (JavaVM *vm, void *reserved)
 
     g_URI        = GetClassGRef(env, "java/net/URI");
     g_URI_create = GetMethod(env, true, g_URI, "create", "(Ljava/lang/String;)Ljava/net/URI;");
-
-    g_List      = GetClassGRef(env, "java/util/List");
-    g_ListSize  = GetMethod(env, false, g_List, "size", "()I");
-    g_ListGet   = GetMethod(env, false, g_List, "get",  "(I)Ljava/lang/Object;");
 
     return JNI_VERSION_1_6;
 }

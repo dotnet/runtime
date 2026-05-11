@@ -51,7 +51,7 @@ PALEXPORT int32_t AndroidCryptoNative_GetProxyForUrl(const char* urlUtf8,
     loc[jproxyTypeSocks] = (*env)->GetStaticObjectField(env, g_ProxyType, g_ProxyType_SOCKS);
     ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
-    jint n = (*env)->CallIntMethod(env, loc[jlist], g_ListSize);
+    jint n = (*env)->CallIntMethod(env, loc[jlist], g_CollectionSize);
     ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
     if (n <= 0)
         goto cleanup;
@@ -142,14 +142,16 @@ PALEXPORT int32_t AndroidCryptoNative_GetProxyForUrl(const char* urlUtf8,
 cleanup:
     RELEASE_LOCALS(loc, env);
 
-    if (ret == 0)
+    if (ret == 0 && written > 0)
     {
         *outCount = written;
         *outProxies = result;
     }
     else if (result != NULL)
     {
-        // Error path: free anything we may have partially populated.
+        // Either an error path or no proxy entries survived filtering (DIRECT-only,
+        // unknown types, etc). Free anything we may have partially populated so that
+        // callers can rely on outProxies == NULL whenever outCount == 0.
         for (int32_t i = 0; i < written; i++)
             free(result[i].host);
         free(result);
