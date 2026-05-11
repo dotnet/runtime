@@ -156,16 +156,14 @@ namespace ILCompiler.ReadyToRun
             if (type is EcmaType ecmaType)
             {
                 AddTokenToMutableModule(ecmaType);
-                return;
             }
-            if (type is ParameterizedType parameterizedType)
+            else if (type.IsParameterizedType)
             {
+                var parameterizedType = (ParameterizedType)type;
                 EnsureTypeDefTokensAreAvailableInVersionBubble(parameterizedType.ParameterType);
                 AddTokenToMutableModule(parameterizedType);
-                return;
             }
-
-            if (type.HasInstantiation)
+            else if (type.HasInstantiation)
             {
                 EnsureTypeDefTokensAreAvailableInVersionBubble(type.GetTypeDefinition());
 
@@ -173,10 +171,6 @@ namespace ILCompiler.ReadyToRun
                 {
                     EnsureTypeDefTokensAreAvailableInVersionBubble(instParam);
                 }
-            }
-            else if (type.IsParameterizedType)
-            {
-                EnsureTypeDefTokensAreAvailableInVersionBubble(type.GetParameterType());
             }
         }
     }
