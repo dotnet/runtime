@@ -515,7 +515,7 @@ After obtaining the clause array bounds, the common iteration logic classifies e
 
 `IsFilterFunclet` first checks `IsFunclet`. If the code block is a funclet, it retrieves the EH clauses for the method and checks whether any filter clause's handler offset matches the funclet's relative offset. If a match is found, the funclet is a filter funclet.
 
-`GetCodeKind` classifies a code address by finding its owning range section and determining the code kind. It distinguishes between jitted code, stub code blocks (jump stubs, precode stubs, VSD stubs, etc.), and ReadyToRun code. Returns `Unknown` if the address cannot be classified.
+`GetCodeKind` classifies a code address by finding its owning range section and determining the code kind. It distinguishes between jitted code, stub code blocks (jump stubs, precode stubs, VSD stubs, etc.), and ReadyToRun code. Returns `Unknown` if the address cannot be classified. We depend on the values of the StubCodeBlockKind enum defined in codeman.h; for non-R2R code, we compare either the RangeList type or the code header against the values of this enum.
 ### FindReadyToRunModule
 
 `FindReadyToRunModule` locates the ReadyToRun module whose PE image contains the given address. Unlike `GetCodeBlockHandle` (which only matches code regions), this API matches against the full PE image range - including data sections such as import tables. This is used in GCRefMap resolution as it requires finding the module that owns an import section indirection address, which is in the data section rather than the code section.
