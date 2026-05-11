@@ -93,6 +93,7 @@ class EECodeInfo;
 #define ROUND_UP_TO_PAGE(x)     (((size_t) (x) + (GetOsPageSize()-1)) & ~((size_t)GetOsPageSize()-1))
 
 
+// [cDAC] [ExecutionManager]: Contract depends on the values in this enum.
 enum StubCodeBlockKind : int
 {
     STUB_CODE_BLOCK_UNKNOWN = 0,

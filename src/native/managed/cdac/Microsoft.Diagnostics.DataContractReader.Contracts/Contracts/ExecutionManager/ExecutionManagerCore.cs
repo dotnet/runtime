@@ -79,6 +79,7 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
         CachedClass = 0x10000000,
     }
 
+    // Mirrors StubCodeBlockKind in codeman.h
     private enum StubKind : int
     {
         Unknown = 0,

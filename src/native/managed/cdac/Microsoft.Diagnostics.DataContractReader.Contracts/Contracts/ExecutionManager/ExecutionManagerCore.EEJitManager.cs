@@ -114,9 +114,9 @@ internal partial class ExecutionManagerCore<T> : IExecutionManager
             return realCodeHeader.DebugInfo;
         }
 
-        public override CodeKind GetCodeKind(RangeSection rangeSection, TargetCodePointer jittedCodeAddress)
+        public override CodeKind GetCodeKind(RangeSection rangeSection, TargetCodePointer codeAddress)
         {
-            TargetPointer startAddr = FindMethodCode(rangeSection, jittedCodeAddress); // validate that the code address is within the method's code range
+            TargetPointer startAddr = FindMethodCode(rangeSection, codeAddress); // validate that the code address is within the method's code range
             if (startAddr == TargetPointer.Null)
                 return CodeKind.Unknown;
             return GetCodeHeaderStubKind(rangeSection, startAddr);
@@ -145,7 +145,7 @@ internal partial class ExecutionManagerCore<T> : IExecutionManager
             gcInfo = realCodeHeader.GCInfo;
         }
 
-        private TargetPointer FindMethodCode(RangeSection rangeSection, TargetCodePointer jittedCodeAddress)
+        private TargetPointer FindMethodCode(RangeSection rangeSection, TargetCodePointer codeAddress)
         {
             // EEJitManager::FindMethodCode
             Debug.Assert(rangeSection.Data != null);
@@ -155,35 +155,27 @@ internal partial class ExecutionManagerCore<T> : IExecutionManager
 
             TargetPointer heapListAddress = rangeSection.Data.HeapList;
             Data.CodeHeapListNode heapListNode = Target.ProcessedData.GetOrAdd<Data.CodeHeapListNode>(heapListAddress);
-            return _nibbleMap.FindMethodCode(heapListNode, jittedCodeAddress);
+            return _nibbleMap.FindMethodCode(heapListNode, codeAddress);
         }
 
-        private bool GetCodeHeaderAddress(RangeSection rangeSection, TargetPointer codeStart, out TargetPointer codeHeaderAddress)
+        private TargetPointer GetCodeHeaderAddress(RangeSection rangeSection, TargetPointer codeStart)
         {
-            codeHeaderAddress = TargetPointer.Null;
             // EEJitManager::JitCodeToMethodInfo
             Debug.Assert(!rangeSection.IsRangeList);
 
             if (rangeSection.Data == null)
                 throw new ArgumentException(nameof(rangeSection));
 
-            if (codeStart == TargetPointer.Null)
-                return false;
-
             // See EEJitManager::GetCodeHeaderFromStartAddress in vm/codeman.h
             int codeHeaderOffset = Target.PointerSize;
             TargetPointer codeHeaderIndirect = new TargetPointer(codeStart - (ulong)codeHeaderOffset);
-            codeHeaderAddress = Target.ReadPointer(codeHeaderIndirect);
-            return true;
+            return Target.ReadPointer(codeHeaderIndirect);
         }
 
         private bool GetRealCodeHeader(RangeSection rangeSection, TargetPointer codeStart, [NotNullWhen(true)] out Data.RealCodeHeader? realCodeHeader)
         {
             realCodeHeader = null;
-            if (!GetCodeHeaderAddress(rangeSection, codeStart, out TargetPointer codeHeaderAddress))
-            {
-                return false;
-            }
+            TargetPointer codeHeaderAddress = GetCodeHeaderAddress(rangeSection, codeStart);
             if (RangeSection.IsStubCodeBlock(Target, codeHeaderAddress))
             {
                 return false;
@@ -194,12 +186,10 @@ internal partial class ExecutionManagerCore<T> : IExecutionManager
 
         private CodeKind GetCodeHeaderStubKind(RangeSection rangeSection, TargetPointer codeStart)
         {
-            if (GetCodeHeaderAddress(rangeSection, codeStart, out TargetPointer codeHeaderAddress))
+            TargetPointer codeHeaderAddress = GetCodeHeaderAddress(rangeSection, codeStart);
+            if (RangeSection.IsStubCodeBlock(Target, codeHeaderAddress))
             {
-                if (RangeSection.IsStubCodeBlock(Target, codeHeaderAddress))
-                {
-                    return GetStubKind((StubKind)codeHeaderAddress.Value);
-                }
+                return GetStubKind((StubKind)codeHeaderAddress.Value);
             }
             return CodeKind.Jitted;
         }
@@ -214,6 +204,8 @@ internal partial class ExecutionManagerCore<T> : IExecutionManager
 
             Data.RealCodeHeader? realCodeHeader;
             TargetPointer codeStart = FindMethodCode(rangeSection, new TargetCodePointer(codeInfoHandle.Address));
+            if (codeStart == TargetPointer.Null)
+                return;
             if (!GetRealCodeHeader(rangeSection, codeStart, out realCodeHeader) || realCodeHeader == null)
                 return;
 
