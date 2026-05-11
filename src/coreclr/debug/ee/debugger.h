@@ -776,8 +776,6 @@ public:
 #endif
 
         _ASSERTE(m_pDCB != NULL);
-        // In case this turns into a continuation event
-        GetRCThreadSendBuffer()->next = NULL;
         LOG((LF_CORDB,LL_EVERYTHING, "GIPCESBuffer: got event %p\n", GetRCThreadSendBuffer()));
 
         return GetRCThreadSendBuffer();
@@ -2133,15 +2131,6 @@ public:
 
     HRESULT GetAndSendInterceptCommand(DebuggerIPCEvent *event);
 
-    //HRESULT GetAndSendJITFunctionData(DebuggerRCThread* rcThread,
-    //                               mdMethodDef methodToken,
-    //                               void* functionModuleToken);
-    HRESULT GetFuncData(mdMethodDef funcMetadataToken,
-                        DebuggerModule* pDebuggerModule,
-                        SIZE_T nVersion,
-                        DebuggerIPCE_FuncData *data);
-
-
     // The following four functions convert between type handles and the data that is
     // shipped for types to and from the right-side.
     //
@@ -2199,12 +2188,6 @@ public:
         DebuggerIPCE_TypeArgData *ReadOne() { LIMITED_METHOD_CONTRACT; if (m_remaining) { m_remaining--; return m_curdata++; } else return NULL; }
 
     };
-
-
-
-    HRESULT GetMethodDescData(MethodDesc *pFD,
-                              DebuggerJitInfo *pJITInfo,
-                              DebuggerIPCE_JITFuncData *data);
 
     void GetAndSendTransitionStubInfo(CORDB_ADDRESS_TYPE *stubAddress);
 
@@ -2484,11 +2467,6 @@ public:
                          SString * pSwitchName,
                          SString * pMessage);
 
-    void SendLogSwitchSetting (int iLevel,
-                               int iReason,
-                               _In_z_ LPCWSTR pLogSwitchName,
-                               _In_z_ LPCWSTR pParentSwitchName);
-
     bool IsLoggingEnabled (void)
     {
         LIMITED_METHOD_CONTRACT;
@@ -2557,11 +2535,6 @@ public:
                                  BYTE                      **rgpVCs);
 
     BOOL IsThreadContextInvalid(Thread *pThread, T_CONTEXT *pCtx);
-
-    // notification for SQL fiber debugging support
-    void CreateConnection(CONNID dwConnectionId, _In_z_ WCHAR *wzName);
-    void DestroyConnection(CONNID dwConnectionId);
-    void ChangeConnection(CONNID dwConnectionId);
 
     //
     // This function is used to identify the helper thread.
@@ -3525,10 +3498,10 @@ public:
         DebuggerIPCE_FuncEvalArgData *argData = GetArgData();
         for (unsigned int i = 0; i < m_argCount; i++)
         {
-            if (argData[i].fullArgType != NULL)
+            if (argData[i].fullArgType != (CORDB_ADDRESS)0)
             {
                 _ASSERTE(g_pDebugger != NULL);
-                g_pDebugger->ReleaseRemoteBuffer((BYTE*)argData[i].fullArgType, true);
+                g_pDebugger->ReleaseRemoteBuffer((BYTE*)CORDB_ADDRESS_TO_PTR(argData[i].fullArgType), true);
             }
         }
 

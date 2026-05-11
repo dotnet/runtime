@@ -2045,8 +2045,8 @@ bool GenTreeCall::IsPure(Compiler* compiler) const
 }
 
 //------------------------------------------------------------------------------
-// getArrayLengthFromAllocation: Return the array length for an array allocation
-//                               helper call.
+// getArrayLengthFromAllocation: Return the length for an allocation whose length
+//                               is represented by GT_ARR_LENGTH.
 //
 // Arguments:
 //    tree - The array allocation helper call.
@@ -2085,6 +2085,13 @@ GenTree* Compiler::getArrayLengthFromAllocation(GenTree* tree)
             }
 
             assert((arrayLength == nullptr) || ((optMethodFlags & OMF_HAS_NEWARRAY) != 0));
+        }
+        else if (call->IsSpecialIntrinsic(this, NI_System_String_FastAllocateString))
+        {
+            // String characters start at a different offset than array data, but string length itself is a
+            // GT_ARR_LENGTH.
+            assert(call->gtArgs.CountUserArgs() == 2);
+            arrayLength = call->gtArgs.GetUserArgByIndex(1)->GetNode();
         }
     }
 
@@ -4993,7 +5000,7 @@ bool Compiler::gtIsLikelyRegVar(GenTree* tree)
 
     // If this is an EH-live var, return false if it is a def,
     // as it will have to go to memory.
-    if (varDsc->lvLiveInOutOfHndlr && ((tree->gtFlags & GTF_VAR_DEF) != 0))
+    if (varDsc->lvTracked && varDsc->lvLiveInOutOfHndlr && ((tree->gtFlags & GTF_VAR_DEF) != 0))
     {
         return false;
     }
@@ -19605,6 +19612,15 @@ bool GenTreeIntConCommon::ImmedValCanBeFolded(Compiler* comp, genTreeOps op)
     // There are cases where we do want to allow folding of handle comparisons
     // (e.g., typeof(T) == typeof(int)).
     return !ImmedValNeedsReloc(comp) || (op == GT_EQ) || (op == GT_NE);
+}
+
+UINT64 GenTreeIntConCommon::UnsignedIntegralValue() const
+{
+    uint64_t mask = (UINT64_MAX >> (64 - (genTypeSize(this) * BITS_PER_BYTE)));
+
+    int64_t  signExtended = IntegralValue();
+    uint64_t zeroExtended = signExtended & mask;
+    return zeroExtended;
 }
 
 #if defined(TARGET_AMD64) || defined(TARGET_RISCV64)

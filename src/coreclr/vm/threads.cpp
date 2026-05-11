@@ -1290,11 +1290,9 @@ Thread::Thread()
     m_fHasDeadThreadBeenConsideredForGCTrigger = false;
     m_TraceCallCount = 0;
     m_ThrewControlForThread = 0;
-    m_ThreadTasks = (ThreadTasks)0;
 
-    // The state and the tasks must be 32-bit aligned for atomicity to be guaranteed.
+    // The state must be 32-bit aligned for atomicity to be guaranteed.
     _ASSERTE((((size_t) &m_State) & 3) == 0);
-    _ASSERTE((((size_t) &m_ThreadTasks) & 3) == 0);
 
     // On all callbacks, call the trap code, which we now have
     // wired to cause a GC.  Thus we will do a GC on all Transition Frame Transitions (and more).
@@ -2992,7 +2990,7 @@ void Thread::UserInterrupt(ThreadInterruptMode mode)
     InterlockedOr(&m_UserInterrupt, mode);
 
     if (HasValidThreadHandle() &&
-        HasThreadState (TS_Interruptible))
+        HasThreadState (TS_WaitSleepJoin))
     {
         HANDLE handle = GetThreadHandle();
         if (handle != INVALID_HANDLE_VALUE)
@@ -4463,7 +4461,7 @@ void Thread::HandleThreadInterrupt ()
     }
     if ((m_UserInterrupt & TI_Interrupt) != 0)
     {
-        ResetThreadState ((ThreadState)(TS_Interrupted | TS_Interruptible));
+        ResetThreadState ((ThreadState)(TS_Interrupted | TS_WaitSleepJoin));
         InterlockedAnd (&m_UserInterrupt, ~TI_Interrupt);
 
         COMPlusThrow(kThreadInterruptedException);

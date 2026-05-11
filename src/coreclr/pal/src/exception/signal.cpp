@@ -448,9 +448,11 @@ static void invoke_previous_action(struct sigaction* action, int code, siginfo_t
     {
         if (signalRestarts)
         {
-            // Shutdown and create the core dump before we restore the signal to the default handler.
+            // Shutdown, log the managed callstack (if a host callback is registered),
+            // and create the core dump before we restore the signal to the default handler.
             PROCNotifyProcessShutdown(IsRunningOnAlternateStack(context));
 
+            PROCLogManagedCallstackForSignal(code);
             PROCCreateCrashDumpIfEnabled(code, siginfo, context, true);
 
             // Restore the original and restart h/w exception.
