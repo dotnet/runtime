@@ -937,7 +937,7 @@ static bool TryGetSpForPacSigning(PTR_VOID pUnwindDataBlob,
     }
 
     SSIZE_T currentSpOffset = 0;
-    SSIZE_T lrSlotOffset = SSIZE_T_MIN;
+    SSIZE_T lrSlotOffset = -1;
     SSIZE_T pacSpOffset = 0;
     bool hasPacSignLR = false;
     constexpr SSIZE_T PtrSize = 8;
@@ -1063,7 +1063,7 @@ static bool TryGetSpForPacSigning(PTR_VOID pUnwindDataBlob,
         return true;
     }
 
-    if (lrSlotOffset == SSIZE_T_MIN)
+    if (lrSlotOffset == -1)
     {
         return false;
     }
