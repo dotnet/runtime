@@ -9,9 +9,9 @@ internal sealed class FieldDesc : IData<FieldDesc>
     public FieldDesc(Target target, TargetPointer address)
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.FieldDesc);
-        DWord1 = target.Read<uint>(address + (ulong)type.Fields[nameof(DWord1)].Offset);
-        DWord2 = target.Read<uint>(address + (ulong)type.Fields[nameof(DWord2)].Offset);
-        MTOfEnclosingClass = target.ReadPointer(address + (ulong)type.Fields[nameof(MTOfEnclosingClass)].Offset);
+        DWord1 = target.ReadField<uint>(address, type, nameof(DWord1));
+        DWord2 = target.ReadField<uint>(address, type, nameof(DWord2));
+        MTOfEnclosingClass = target.ReadPointerField(address, type, nameof(MTOfEnclosingClass));
     }
 
     public uint DWord1 { get; init; }

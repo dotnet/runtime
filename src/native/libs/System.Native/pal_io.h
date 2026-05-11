@@ -34,6 +34,7 @@ typedef struct
     int64_t RDev;      // ID of the device if it is a special file
     int64_t Ino;       // inode number of the file
     uint32_t UserFlags; // user defined flags
+    uint32_t HardLinkCount; // Number of hard links to the file
 } FileStatus;
 
 typedef struct
@@ -446,6 +447,13 @@ PALEXPORT int32_t SystemNative_CloseDir(DIR* dir);
  */
 PALEXPORT int32_t SystemNative_Pipe(int32_t pipefd[2], // [out] pipefds[0] gets read end, pipefd[1] gets write end.
                         int32_t flags);    // 0 for defaults. Use PAL_O_CLOEXEC, PAL_O_NONBLOCK_READ, and PAL_O_NONBLOCK_WRITE for additional behavior.
+
+/**
+ * Determines if the current platform supports atomically creating pipes with non-inheritable file descriptors (pipe2).
+ *
+ * Returns 1 if supported, 0 if not supported.
+ */
+PALEXPORT int32_t SystemNative_IsAtomicNonInheritablePipeCreationSupported(void);
 
 // NOTE: Rather than a general fcntl shim, we opt to export separate functions
 // for each command. This allows use to have strongly typed arguments and saves
@@ -875,13 +883,27 @@ PALEXPORT int32_t SystemNative_PWrite(intptr_t fd, void* buffer, int32_t bufferS
 /**
  * Reads the number of bytes specified into the provided buffers from the specified, opened file descriptor at specified offset.
  *
- * Returns the number of bytes read on success; otherwise, -1 is returned an errno is set.
+ * Returns the number of bytes read on success; otherwise, -1 is returned and errno is set.
  */
 PALEXPORT int64_t SystemNative_PReadV(intptr_t fd, IOVector* vectors, int32_t vectorCount, int64_t fileOffset);
 
 /**
  * Writes the number of bytes specified in the buffers into the specified, opened file descriptor at specified offset.
  *
- * Returns the number of bytes written on success; otherwise, -1 is returned an errno is set.
+ * Returns the number of bytes written on success; otherwise, -1 is returned and errno is set.
  */
 PALEXPORT int64_t SystemNative_PWriteV(intptr_t fd, IOVector* vectors, int32_t vectorCount, int64_t fileOffset);
+
+/**
+ * Reads the number of bytes specified into the provided buffers from the specified, opened file descriptor.
+ *
+ * Returns the number of bytes read on success; otherwise, -1 is returned and errno is set.
+ */
+PALEXPORT int64_t SystemNative_ReadV(intptr_t fd, IOVector* vectors, int32_t vectorCount);
+
+/**
+ * Writes the number of bytes specified in the buffers into the specified, opened file descriptor
+ *
+ * Returns the number of bytes written on success; otherwise, -1 is returned and errno is set.
+ */
+PALEXPORT int64_t SystemNative_WriteV(intptr_t fd, IOVector* vectors, int32_t vectorCount);

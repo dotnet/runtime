@@ -665,7 +665,6 @@ namespace System.Security.Cryptography
         /// <exception cref="CryptographicException">
         ///   An error occurred while exporting the key.
         /// </exception>
-        [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
         public byte[] ExportSubjectPublicKeyInfo()
         {
             ThrowIfDisposed();
@@ -695,7 +694,6 @@ namespace System.Security.Cryptography
         /// <exception cref="CryptographicException">
         ///   An error occurred while exporting the key.
         /// </exception>
-        [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
         public bool TryExportSubjectPublicKeyInfo(Span<byte> destination, out int bytesWritten)
         {
             ThrowIfDisposed();
@@ -718,7 +716,6 @@ namespace System.Security.Cryptography
         /// <exception cref="CryptographicException">
         ///   An error occurred while exporting the key.
         /// </exception>
-        [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
         public string ExportSubjectPublicKeyInfoPem()
         {
             ThrowIfDisposed();
@@ -745,7 +742,6 @@ namespace System.Security.Cryptography
         ///   <para>-or-</para>
         ///   <para>An error occurred while exporting the key.</para>
         /// </exception>
-        [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
         public byte[] ExportPkcs8PrivateKey()
         {
             ThrowIfDisposed();
@@ -774,7 +770,6 @@ namespace System.Security.Cryptography
         /// <exception cref="CryptographicException">
         ///   An error occurred while exporting the key.
         /// </exception>
-        [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
         public bool TryExportPkcs8PrivateKey(Span<byte> destination, out int bytesWritten)
         {
             ThrowIfDisposed();
@@ -818,7 +813,6 @@ namespace System.Security.Cryptography
         /// <exception cref="CryptographicException">
         ///   An error occurred while exporting the key.
         /// </exception>
-        [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
         protected abstract bool TryExportPkcs8PrivateKeyCore(Span<byte> destination, out int bytesWritten);
 
         /// <summary>
@@ -834,7 +828,6 @@ namespace System.Security.Cryptography
         /// <exception cref="CryptographicException">
         ///   An error occurred while exporting the key.
         /// </exception>
-        [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
         public string ExportPkcs8PrivateKeyPem()
         {
             ThrowIfDisposed();
@@ -869,7 +862,6 @@ namespace System.Security.Cryptography
         ///   <para>-or-</para>
         ///   <para>An error occurred while exporting the key.</para>
         /// </exception>
-        [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
         public byte[] ExportEncryptedPkcs8PrivateKey(ReadOnlySpan<char> password, PbeParameters pbeParameters)
         {
             ArgumentNullException.ThrowIfNull(pbeParameters);
@@ -917,7 +909,6 @@ namespace System.Security.Cryptography
         ///   <para>-or-</para>
         ///   <para>An error occurred while exporting the key.</para>
         /// </exception>
-        [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
         public byte[] ExportEncryptedPkcs8PrivateKey(ReadOnlySpan<byte> passwordBytes, PbeParameters pbeParameters)
         {
             ArgumentNullException.ThrowIfNull(pbeParameters);
@@ -940,7 +931,6 @@ namespace System.Security.Cryptography
         /// <exception cref="ArgumentNullException">
         ///   <paramref name="password"/> or <paramref name="pbeParameters"/> is <see langword="null"/>.
         /// </exception>
-        [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
         public byte[] ExportEncryptedPkcs8PrivateKey(string password, PbeParameters pbeParameters)
         {
             ArgumentNullException.ThrowIfNull(password);
@@ -984,7 +974,6 @@ namespace System.Security.Cryptography
         ///   <para>-or-</para>
         ///   <para>An error occurred while exporting the key.</para>
         /// </exception>
-        [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
         public bool TryExportEncryptedPkcs8PrivateKey(
             ReadOnlySpan<char> password,
             PbeParameters pbeParameters,
@@ -1045,7 +1034,6 @@ namespace System.Security.Cryptography
         ///   <para>-or-</para>
         ///   <para>An error occurred while exporting the key.</para>
         /// </exception>
-        [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
         public bool TryExportEncryptedPkcs8PrivateKey(
             ReadOnlySpan<byte> passwordBytes,
             PbeParameters pbeParameters,
@@ -1072,7 +1060,6 @@ namespace System.Security.Cryptography
         /// <exception cref="ArgumentNullException">
         ///   <paramref name="password"/> or <paramref name="pbeParameters"/> is <see langword="null"/>.
         /// </exception>
-        [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
         public bool TryExportEncryptedPkcs8PrivateKey(
             string password,
             PbeParameters pbeParameters,
@@ -1112,7 +1099,6 @@ namespace System.Security.Cryptography
         ///   <para>-or-</para>
         ///   <para>An error occurred while exporting the key.</para>
         /// </exception>
-        [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
         public string ExportEncryptedPkcs8PrivateKeyPem(
             ReadOnlySpan<char> password,
             PbeParameters pbeParameters)
@@ -1157,7 +1143,6 @@ namespace System.Security.Cryptography
         ///   <para>-or-</para>
         ///   <para>An error occurred while exporting the key.</para>
         /// </exception>
-        [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
         public string ExportEncryptedPkcs8PrivateKeyPem(
             ReadOnlySpan<byte> passwordBytes,
             PbeParameters pbeParameters)
@@ -1176,7 +1161,6 @@ namespace System.Security.Cryptography
         /// <exception cref="ArgumentNullException">
         ///   <paramref name="password"/> or <paramref name="pbeParameters"/> is <see langword="null"/>.
         /// </exception>
-        [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
         public string ExportEncryptedPkcs8PrivateKeyPem(
             string password,
             PbeParameters pbeParameters)
@@ -1370,32 +1354,25 @@ namespace System.Security.Cryptography
         ///   The platform does not support ML-DSA. Callers can use the <see cref="IsSupported" /> property
         ///   to determine if the platform supports ML-DSA.
         /// </exception>
-        [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
         public static MLDsa ImportSubjectPublicKeyInfo(ReadOnlySpan<byte> source)
         {
             Helpers.ThrowIfAsnInvalidLength(source);
             ThrowIfNotSupported();
 
-            unsafe
+            KeyFormatHelper.ReadSubjectPublicKeyInfo(KnownOids, source, SubjectPublicKeyReader, out int read, out MLDsa mldsa);
+            Debug.Assert(read == source.Length);
+            return mldsa;
+
+            static void SubjectPublicKeyReader(ReadOnlySpan<byte> key, in ValueAlgorithmIdentifierAsn identifier, out MLDsa mldsa)
             {
-                fixed (byte* pointer = source)
+                MLDsaAlgorithm algorithm = GetAlgorithmIdentifier(in identifier);
+
+                if (key.Length != algorithm.PublicKeySizeInBytes)
                 {
-                    using (PointerMemoryManager<byte> manager = new(pointer, source.Length))
-                    {
-                        ValueAsnReader reader = new ValueAsnReader(source, AsnEncodingRules.DER);
-                        SubjectPublicKeyInfoAsn.Decode(ref reader, manager.Memory, out SubjectPublicKeyInfoAsn spki);
-
-                        MLDsaAlgorithm algorithm = GetAlgorithmIdentifier(ref spki.Algorithm);
-                        ReadOnlySpan<byte> publicKey = spki.SubjectPublicKey.Span;
-
-                        if (publicKey.Length != algorithm.PublicKeySizeInBytes)
-                        {
-                            throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
-                        }
-
-                        return MLDsaImplementation.ImportPublicKey(algorithm, spki.SubjectPublicKey.Span);
-                    }
+                    throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
                 }
+
+                mldsa = MLDsaImplementation.ImportPublicKey(algorithm, key);
             }
         }
 
@@ -1403,7 +1380,6 @@ namespace System.Security.Cryptography
         /// <exception cref="ArgumentNullException">
         ///   <paramref name="source" /> is <see langword="null" />.
         /// </exception>
-        [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
         public static MLDsa ImportSubjectPublicKeyInfo(byte[] source)
         {
             ArgumentNullException.ThrowIfNull(source);
@@ -1441,7 +1417,6 @@ namespace System.Security.Cryptography
         ///   The platform does not support ML-DSA. Callers can use the <see cref="IsSupported" /> property
         ///   to determine if the platform supports ML-DSA.
         /// </exception>
-        [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
         public static MLDsa ImportPkcs8PrivateKey(ReadOnlySpan<byte> source)
         {
             Helpers.ThrowIfAsnInvalidLength(source);
@@ -1456,7 +1431,6 @@ namespace System.Security.Cryptography
         /// <exception cref="ArgumentNullException">
         ///   <paramref name="source" /> is <see langword="null" />.
         /// </exception>
-        [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
         public static MLDsa ImportPkcs8PrivateKey(byte[] source)
         {
             ArgumentNullException.ThrowIfNull(source);
@@ -1506,7 +1480,6 @@ namespace System.Security.Cryptography
         ///   The platform does not support ML-DSA. Callers can use the <see cref="IsSupported" /> property
         ///   to determine if the platform supports ML-DSA.
         /// </exception>
-        [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
         public static MLDsa ImportEncryptedPkcs8PrivateKey(ReadOnlySpan<byte> passwordBytes, ReadOnlySpan<byte> source)
         {
             Helpers.ThrowIfAsnInvalidLength(source);
@@ -1556,7 +1529,6 @@ namespace System.Security.Cryptography
         ///   The platform does not support ML-DSA. Callers can use the <see cref="IsSupported" /> property
         ///   to determine if the platform supports ML-DSA.
         /// </exception>
-        [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
         public static MLDsa ImportEncryptedPkcs8PrivateKey(ReadOnlySpan<char> password, ReadOnlySpan<byte> source)
         {
             Helpers.ThrowIfAsnInvalidLength(source);
@@ -1573,7 +1545,6 @@ namespace System.Security.Cryptography
         /// <exception cref="ArgumentNullException">
         ///   <paramref name="password" /> or <paramref name="source" /> is <see langword="null" />.
         /// </exception>
-        [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
         public static MLDsa ImportEncryptedPkcs8PrivateKey(string password, byte[] source)
         {
             ArgumentNullException.ThrowIfNull(password);
@@ -1618,7 +1589,6 @@ namespace System.Security.Cryptography
         ///     </list>
         ///   </para>
         /// </remarks>
-        [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
         public static MLDsa ImportFromPem(ReadOnlySpan<char> source)
         {
             ThrowIfNotSupported();
@@ -1636,7 +1606,6 @@ namespace System.Security.Cryptography
         /// <exception cref="ArgumentNullException">
         ///   <paramref name="source" /> is <see langword="null" />.
         /// </exception>
-        [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
         public static MLDsa ImportFromPem(string source)
         {
             ArgumentNullException.ThrowIfNull(source);
@@ -1704,7 +1673,6 @@ namespace System.Security.Cryptography
         ///   </para>
         ///   <para>This method supports the <c>ENCRYPTED PRIVATE KEY</c> PEM label.</para>
         /// </remarks>
-        [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
         public static MLDsa ImportFromEncryptedPem(ReadOnlySpan<char> source, ReadOnlySpan<char> password)
         {
             ThrowIfNotSupported();
@@ -1769,7 +1737,6 @@ namespace System.Security.Cryptography
         ///   </para>
         ///   <para>This method supports the <c>ENCRYPTED PRIVATE KEY</c> PEM label.</para>
         /// </remarks>
-        [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
         public static MLDsa ImportFromEncryptedPem(ReadOnlySpan<char> source, ReadOnlySpan<byte> passwordBytes)
         {
             ThrowIfNotSupported();
@@ -1784,7 +1751,6 @@ namespace System.Security.Cryptography
         /// <exception cref="ArgumentNullException">
         ///   <paramref name="source" /> or <paramref name="password" /> is <see langword="null" />.
         /// </exception>
-        [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
         public static MLDsa ImportFromEncryptedPem(string source, string password)
         {
             ArgumentNullException.ThrowIfNull(source);
@@ -1798,7 +1764,6 @@ namespace System.Security.Cryptography
         /// <exception cref="ArgumentNullException">
         ///   <paramref name="source" /> or <paramref name="passwordBytes" /> is <see langword="null" />.
         /// </exception>
-        [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
         public static MLDsa ImportFromEncryptedPem(string source, byte[] passwordBytes)
         {
             ArgumentNullException.ThrowIfNull(source);
@@ -2208,42 +2173,42 @@ namespace System.Security.Cryptography
         }
 
         private static void MLDsaKeyReader(
-            ReadOnlyMemory<byte> privateKeyContents,
-            in AlgorithmIdentifierAsn algorithmIdentifier,
+            ReadOnlySpan<byte> privateKeyContents,
+            in ValueAlgorithmIdentifierAsn algorithmIdentifier,
             out MLDsa dsa)
         {
             MLDsaAlgorithm algorithm = GetAlgorithmIdentifier(in algorithmIdentifier);
-            MLDsaPrivateKeyAsn dsaKey = MLDsaPrivateKeyAsn.Decode(privateKeyContents, AsnEncodingRules.BER);
+            ValueMLDsaPrivateKeyAsn.Decode(privateKeyContents, AsnEncodingRules.BER, out ValueMLDsaPrivateKeyAsn dsaKey);
 
-            if (dsaKey.Seed is ReadOnlyMemory<byte> seed)
+            if (dsaKey.HasSeed)
             {
-                if (seed.Length != algorithm.PrivateSeedSizeInBytes)
+                if (dsaKey.Seed.Length != algorithm.PrivateSeedSizeInBytes)
                 {
                     throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
                 }
 
-                dsa = MLDsaImplementation.ImportMLDsaPrivateSeed(algorithm, seed.Span);
+                dsa = MLDsaImplementation.ImportMLDsaPrivateSeed(algorithm, dsaKey.Seed);
             }
-            else if (dsaKey.ExpandedKey is ReadOnlyMemory<byte> expandedKey)
+            else if (dsaKey.HasExpandedKey)
             {
-                if (expandedKey.Length != algorithm.PrivateKeySizeInBytes)
+                if (dsaKey.ExpandedKey.Length != algorithm.PrivateKeySizeInBytes)
                 {
                     throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
                 }
 
-                dsa = MLDsaImplementation.ImportPrivateKey(algorithm, expandedKey.Span);
+                dsa = MLDsaImplementation.ImportPrivateKey(algorithm, dsaKey.ExpandedKey);
             }
-            else if (dsaKey.Both is MLDsaPrivateKeyBothAsn both)
+            else if (dsaKey.HasBoth)
             {
                 int privateKeySize = algorithm.PrivateKeySizeInBytes;
 
-                if (both.Seed.Length != algorithm.PrivateSeedSizeInBytes ||
-                    both.ExpandedKey.Length != privateKeySize)
+                if (dsaKey.Both.Seed.Length != algorithm.PrivateSeedSizeInBytes ||
+                    dsaKey.Both.ExpandedKey.Length != privateKeySize)
                 {
                     throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
                 }
 
-                MLDsa key = MLDsaImplementation.ImportMLDsaPrivateSeed(algorithm, both.Seed.Span);
+                MLDsa key = MLDsaImplementation.ImportMLDsaPrivateSeed(algorithm, dsaKey.Both.Seed);
                 byte[] rent = CryptoPool.Rent(privateKeySize);
                 Span<byte> buffer = rent.AsSpan(0, privateKeySize);
 
@@ -2251,7 +2216,7 @@ namespace System.Security.Cryptography
                 {
                     key.ExportMLDsaPrivateKey(buffer);
 
-                    if (CryptographicOperations.FixedTimeEquals(buffer, both.ExpandedKey.Span))
+                    if (CryptographicOperations.FixedTimeEquals(buffer, dsaKey.Both.ExpandedKey))
                     {
                         dsa = key;
                     }
@@ -2276,17 +2241,15 @@ namespace System.Security.Cryptography
             }
         }
 
-        private static MLDsaAlgorithm GetAlgorithmIdentifier(ref readonly AlgorithmIdentifierAsn identifier)
+        private static MLDsaAlgorithm GetAlgorithmIdentifier(ref readonly ValueAlgorithmIdentifierAsn identifier)
         {
             MLDsaAlgorithm algorithm = MLDsaAlgorithm.GetMLDsaAlgorithmFromOid(identifier.Algorithm) ??
                 throw new CryptographicException(
                     SR.Format(SR.Cryptography_UnknownAlgorithmIdentifier, identifier.Algorithm));
 
-            if (identifier.Parameters.HasValue)
+            if (identifier.HasParameters)
             {
-                AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
-                identifier.Encode(writer);
-                throw Helpers.CreateAlgorithmUnknownException(writer);
+                throw Helpers.CreateAlgorithmUnknownException(in identifier);
             }
 
             return algorithm;

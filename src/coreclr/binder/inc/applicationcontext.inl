@@ -24,11 +24,6 @@ void ApplicationContext::IncrementVersion()
     InterlockedIncrement(&m_cVersion);
 }
 
-SString &ApplicationContext::GetApplicationName()
-{
-    return m_applicationName;
-}
-
 ExecutionContext *ApplicationContext::GetExecutionContext()
 {
     return m_pExecutionContext;

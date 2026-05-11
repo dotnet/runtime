@@ -78,8 +78,11 @@ namespace Microsoft.Extensions.Hosting.Tests
             using var host = builder.Build();
             await host.StartAsync();
 
-            // Wait for the background service to fail
-            await Task.Delay(TimeSpan.FromMilliseconds(200));
+            // Wait for the host to react to the background service failure
+            var lifetime = host.Services.GetRequiredService<IHostApplicationLifetime>();
+            var stoppingTcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
+            lifetime.ApplicationStopping.Register(() => stoppingTcs.TrySetResult(null));
+            Assert.Equal(stoppingTcs.Task, await Task.WhenAny(stoppingTcs.Task, Task.Delay(TimeSpan.FromSeconds(10))));
 
             await Assert.ThrowsAsync<InvalidOperationException>(async () =>
             {
@@ -107,8 +110,11 @@ namespace Microsoft.Extensions.Hosting.Tests
             using var host = builder.Build();
             await host.StartAsync();
 
-            // Wait for the background service to fail
-            await Task.Delay(TimeSpan.FromMilliseconds(200));
+            // Wait for the host to react to the background service failure
+            var lifetime = host.Services.GetRequiredService<IHostApplicationLifetime>();
+            var stoppingTcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
+            lifetime.ApplicationStopping.Register(() => stoppingTcs.TrySetResult(null));
+            Assert.Equal(stoppingTcs.Task, await Task.WhenAny(stoppingTcs.Task, Task.Delay(TimeSpan.FromSeconds(10))));
 
             await Assert.ThrowsAsync<InvalidOperationException>(async () =>
             {
@@ -135,7 +141,8 @@ namespace Microsoft.Extensions.Hosting.Tests
                     {
                         options.BackgroundServiceExceptionBehavior = BackgroundServiceExceptionBehavior.StopHost;
                     });
-                    services.AddHostedService<AsynchronousFailureService>();
+                    services.AddSingleton(new ServiceBarrier(count: 3));
+                    services.AddHostedService<FirstAsynchronousFailureService>();
                     services.AddHostedService<SecondAsynchronousFailureService>();
                     services.AddHostedService<ThirdAsynchronousFailureService>();
                 });
@@ -167,6 +174,38 @@ namespace Microsoft.Extensions.Hosting.Tests
                     });
                     services.AddHostedService<AsynchronousFailureService>();
                     services.AddHostedService<StopFailureService>();
+                });
+
+            var aggregateException = await Assert.ThrowsAsync<AggregateException>(async () =>
+            {
+                await builder.Build().RunAsync();
+            });
+
+            Assert.Equal(2, aggregateException.InnerExceptions.Count);
+
+            Assert.All(aggregateException.InnerExceptions, ex =>
+                Assert.IsType<InvalidOperationException>(ex));
+        }
+
+        /// <summary>
+        /// Regression test for a race where the fire-and-forget TryExecuteBackgroundServiceAsync
+        /// has not yet recorded its exception by the time Host.StopAsync reads the exception list.
+        /// DelayedMonitorFaultService overrides ExecuteTask so that the monitoring task sees a
+        /// separately-controlled task that faults 200ms after StopAsync returns,
+        /// reproducing the window in which the exception would be lost without the fix.
+        /// </summary>
+        [Fact]
+        public async Task BackgroundService_DelayedMonitoringException_ThrowsAggregateException()
+        {
+            var builder = new HostBuilder()
+                .ConfigureServices(services =>
+                {
+                    services.Configure<HostOptions>(options =>
+                    {
+                        options.BackgroundServiceExceptionBehavior = BackgroundServiceExceptionBehavior.StopHost;
+                    });
+                    services.AddHostedService<SynchronousFailureService>();
+                    services.AddHostedService<DelayedMonitorFaultService>();
                 });
 
             var aggregateException = await Assert.ThrowsAsync<AggregateException>(async () =>
@@ -222,7 +261,9 @@ namespace Microsoft.Extensions.Hosting.Tests
             using var host = builder.Build();
             await host.StartAsync();
 
-            // Wait a bit for the background service to fail
+            // Wait a bit for the background service to fail.
+            // This shouldn't cause flakiness: bad order of operations could cause the test to succeed when it should fail, but it shouldn't cause the test to fail when it should succeed.
+            // Note that waiting for a signal from the service here wouldn't be enough; we also need to wait for the host to process the exception.
             await Task.Delay(TimeSpan.FromMilliseconds(200));
 
             await host.StopAsync();
@@ -263,27 +304,66 @@ namespace Microsoft.Extensions.Hosting.Tests
             {
                 // Await before throwing to make the exception asynchronous
                 // Ignore the cancellation token to ensure this service throws even if the host is trying to shut down
-                await Task.Delay(TimeSpan.FromMilliseconds(100));
+                await Task.Yield();
+
                 throw new InvalidOperationException("Asynchronous failure");
             }
         }
 
-        private class SecondAsynchronousFailureService : BackgroundService
+        private class ServiceBarrier(int count)
+        {
+            private int _remaining = count;
+            private readonly TaskCompletionSource<bool> _tcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+            public async Task SignalAndWaitAsync()
+            {
+                if (Interlocked.Decrement(ref _remaining) == 0)
+                {
+                    _tcs.SetResult(true);
+                }
+
+                await _tcs.Task.WaitAsync(TimeSpan.FromSeconds(10));
+            }
+        }
+
+        private class FirstAsynchronousFailureService(ServiceBarrier barrier) : BackgroundService
         {
             protected override async Task ExecuteAsync(CancellationToken stoppingToken)
             {
-                // Ignore the cancellation token to ensure this service throws even if the host is trying to shut down
-                await Task.Delay(TimeSpan.FromMilliseconds(150));
+                // Wait until all services have started before throwing
+                await barrier.SignalAndWaitAsync();
+
+                // Await before throwing to make sure the exception is asynchronous
+                await Task.Yield();
+
+                throw new InvalidOperationException("Asynchronous failure");
+            }
+        }
+
+        private class SecondAsynchronousFailureService(ServiceBarrier barrier) : BackgroundService
+        {
+            protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+            {
+                // Wait until all services have started before throwing
+                await barrier.SignalAndWaitAsync();
+
+                // Await before throwing to make sure the exception is asynchronous
+                await Task.Yield();
+
                 throw new InvalidOperationException("Second asynchronous failure");
             }
         }
 
-        private class ThirdAsynchronousFailureService : BackgroundService
+        private class ThirdAsynchronousFailureService(ServiceBarrier barrier) : BackgroundService
         {
             protected override async Task ExecuteAsync(CancellationToken stoppingToken)
             {
-                // Ignore the cancellation token to ensure this service throws even if the host is trying to shut down
-                await Task.Delay(TimeSpan.FromMilliseconds(200));
+                // Wait until all services have started before throwing
+                await barrier.SignalAndWaitAsync();
+
+                // Await before throwing to make sure the exception is asynchronous
+                await Task.Yield();
+
                 throw new InvalidOperationException("Third asynchronous failure");
             }
         }
@@ -292,6 +372,43 @@ namespace Microsoft.Extensions.Hosting.Tests
         {
             public Task StartAsync(CancellationToken cancellationToken) => Task.CompletedTask;
             public Task StopAsync(CancellationToken cancellationToken) => throw new InvalidOperationException("Stop failure");
+        }
+
+        /// <summary>
+        /// A BackgroundService that overrides <see cref="ExecuteTask"/> to return a separately
+        /// controlled task. The internal _executeTask (used by BackgroundService.StopAsync) completes
+        /// normally on cancellation, but the overridden ExecuteTask (monitored by
+        /// TryExecuteBackgroundServiceAsync) faults 200ms after StopAsync, usually
+        /// reproducing the race window.
+        /// </summary>
+        private class DelayedMonitorFaultService : BackgroundService
+        {
+            private readonly TaskCompletionSource<object?> _monitorTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+            public override Task? ExecuteTask => _monitorTcs.Task;
+
+            protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+            {
+                try
+                {
+                    await Task.Delay(Timeout.Infinite, stoppingToken);
+                }
+                catch (OperationCanceledException)
+                {
+                }
+            }
+
+            public override async Task StopAsync(CancellationToken cancellationToken)
+            {
+                await base.StopAsync(cancellationToken);
+                _ = Task.Run(async () =>
+                {
+                    // This is testing that ExecuteTask delays stopping of the host, so it can't be triggered by a deterministic signal.
+                    // It shouldn't cause any flakiness: incorrect ordering could cause the test to succeed when it should fail, but it shouldn't cause the test to fail when it should succeed.
+                    await Task.Delay(200);
+                    _monitorTcs.TrySetException(new InvalidOperationException("Delayed monitor failure"));
+                });
+            }
         }
 
         private class SuccessfulService : BackgroundService

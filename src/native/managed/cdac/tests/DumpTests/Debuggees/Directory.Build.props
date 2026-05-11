@@ -13,5 +13,13 @@
     <!-- Default dump type for dump generation. Override per-debuggee csproj as needed.
          Supported values: "Heap", "Full", or "Heap;Full" for both. -->
     <DumpTypes Condition="'$(DumpTypes)' == ''">Heap</DumpTypes>
+    <!-- Default R2R mode for dump generation. Override per-debuggee csproj as needed.
+         Supported values: "R2R", "Jit", or "R2R;Jit" for both.
+         R2R runs the debuggee normally (with ReadyToRun precompiled code).
+         Jit runs with DOTNET_ReadyToRun=0 to force JIT compilation.
+         Binaries are always compiled with R2R; this controls runtime behavior only. -->
+    <R2RModes Condition="'$(R2RModes)' == ''">R2R</R2RModes>
+    <!-- Set to true in a debuggee csproj to exclude it from non-Windows platforms. -->
+    <WindowsOnly Condition="'$(WindowsOnly)' == ''">false</WindowsOnly>
   </PropertyGroup>
 </Project>

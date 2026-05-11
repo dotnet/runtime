@@ -94,4 +94,88 @@ namespace System.Security.Cryptography.Asn1
             sequenceReader.ThrowIfNotEmpty();
         }
     }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal ref partial struct ValueRc2CbcParameters
+    {
+        internal int Rc2Version;
+        internal ReadOnlySpan<byte> Iv;
+
+        internal readonly void Encode(AsnWriter writer)
+        {
+            Encode(writer, Asn1Tag.Sequence);
+        }
+
+        internal readonly void Encode(AsnWriter writer, Asn1Tag tag)
+        {
+            writer.PushSequence(tag);
+
+            writer.WriteInteger(Rc2Version);
+            writer.WriteOctetString(Iv);
+            writer.PopSequence(tag);
+        }
+
+        internal static void Decode(ReadOnlySpan<byte> encoded, AsnEncodingRules ruleSet, out ValueRc2CbcParameters decoded)
+        {
+            Decode(Asn1Tag.Sequence, encoded, ruleSet, out decoded);
+        }
+
+        internal static void Decode(Asn1Tag expectedTag, ReadOnlySpan<byte> encoded, AsnEncodingRules ruleSet, out ValueRc2CbcParameters decoded)
+        {
+            try
+            {
+                ValueAsnReader reader = new ValueAsnReader(encoded, ruleSet);
+
+                DecodeCore(ref reader, expectedTag, out decoded);
+                reader.ThrowIfNotEmpty();
+            }
+            catch (AsnContentException e)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
+            }
+        }
+
+        internal static void Decode(scoped ref ValueAsnReader reader, out ValueRc2CbcParameters decoded)
+        {
+            Decode(ref reader, Asn1Tag.Sequence, out decoded);
+        }
+
+        internal static void Decode(scoped ref ValueAsnReader reader, Asn1Tag expectedTag, out ValueRc2CbcParameters decoded)
+        {
+            try
+            {
+                DecodeCore(ref reader, expectedTag, out decoded);
+            }
+            catch (AsnContentException e)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
+            }
+        }
+
+        private static void DecodeCore(scoped ref ValueAsnReader reader, Asn1Tag expectedTag, out ValueRc2CbcParameters decoded)
+        {
+            decoded = default;
+            ValueAsnReader sequenceReader = reader.ReadSequence(expectedTag);
+            ReadOnlySpan<byte> tmpSpan;
+
+
+            if (!sequenceReader.TryReadInt32(out decoded.Rc2Version))
+            {
+                sequenceReader.ThrowIfNotEmpty();
+            }
+
+
+            if (sequenceReader.TryReadPrimitiveOctetString(out tmpSpan))
+            {
+                decoded.Iv = tmpSpan;
+            }
+            else
+            {
+                decoded.Iv = sequenceReader.ReadOctetString();
+            }
+
+
+            sequenceReader.ThrowIfNotEmpty();
+        }
+    }
 }

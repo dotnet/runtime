@@ -350,8 +350,38 @@ elseif(CLR_CMAKE_HOST_APPLE)
     endif()
   endif()
 elseif(CLR_CMAKE_HOST_HAIKU)
+  # Haiku uses the GNU toolchain, which supports WHOLE_ARCHIVE, but only CMake 3.31.0+ recognizes this.
+  if(CMAKE_VERSION VERSION_LESS 3.31)
+    if(NOT DEFINED _CMAKE_LINKER_PUSHPOP_STATE_SUPPORTED)
+      execute_process(COMMAND "${CMAKE_LINKER}" --help
+                      OUTPUT_VARIABLE __linker_help
+                      ERROR_VARIABLE __linker_help)
+      if(__linker_help MATCHES "--push-state" AND __linker_help MATCHES "--pop-state")
+        set(_CMAKE_LINKER_PUSHPOP_STATE_SUPPORTED TRUE CACHE INTERNAL "linker supports push/pop state")
+      else()
+        set(_CMAKE_LINKER_PUSHPOP_STATE_SUPPORTED FALSE CACHE INTERNAL "linker supports push/pop state")
+      endif()
+      unset(__linker_help)
+    endif()
+    if(_CMAKE_LINKER_PUSHPOP_STATE_SUPPORTED)
+      set(CMAKE_LINK_LIBRARY_USING_WHOLE_ARCHIVE "LINKER:--push-state,--whole-archive"
+                                                 "<LINK_ITEM>"
+                                                 "LINKER:--pop-state")
+    else()
+      set(CMAKE_LINK_LIBRARY_USING_WHOLE_ARCHIVE "LINKER:--whole-archive"
+                                                 "<LINK_ITEM>"
+                                                 "LINKER:--no-whole-archive")
+    endif()
+    set(CMAKE_LINK_LIBRARY_USING_WHOLE_ARCHIVE_SUPPORTED TRUE)
+    set(CMAKE_LINK_LIBRARY_WHOLE_ARCHIVE_ATTRIBUTES LIBRARY_TYPE=STATIC DEDUPLICATION=YES OVERRIDE=DEFAULT)
+  endif()
+  # Haiku uses the GNU toolchain, which supports RESCAN, but only CMake 4.4.0+ recognizes this.
+  if(CMAKE_VERSION VERSION_LESS 4.4)
+    set(CMAKE_LINK_GROUP_USING_RESCAN "LINKER:--start-group" "LINKER:--end-group")
+    set(CMAKE_LINK_GROUP_USING_RESCAN_SUPPORTED TRUE)
+  endif()
   add_compile_options($<$<COMPILE_LANGUAGE:ASM>:-Wa,--noexecstack>)
-  add_linker_flag("-Wl,--no-undefined")
+  add_linker_flag("-Wl,--build-id=sha1")
 endif()
 
 #------------------------------------

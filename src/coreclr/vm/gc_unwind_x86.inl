@@ -3082,10 +3082,14 @@ bool EnumGcRefsX86(PREGDISPLAY     pContext,
     }
 #endif
 
-    /* Are we in the prolog or epilog of the method? */
+    /* Are we in the prolog or epilog of the method, or is this a
+     * non-interruptible method that will not resume execution at this offset?
+     * In either case, GC slots may not be initialized at the current offset
+     * and we can simply skip all reporting. */
 
     if (info.prologOffs != hdrInfo::NOT_IN_PROLOG ||
-        info.epilogOffs != hdrInfo::NOT_IN_EPILOG)
+        info.epilogOffs != hdrInfo::NOT_IN_EPILOG ||
+        ((flags & ExecutionAborted) && !info.interruptible))
     {
 
 #if !DUMP_PTR_REFS

@@ -107,5 +107,5 @@ internal struct PrecodeStubs_1_Impl : IPrecodeStubsContractCommonApi<Data.StubPr
 
 internal sealed class PrecodeStubs_1 : PrecodeStubsCommon<PrecodeStubs_1_Impl, Data.StubPrecodeData_1>
 {
-    public PrecodeStubs_1(Target target, Data.PrecodeMachineDescriptor precodeMachineDescriptor, CodePointerFlags codePointerFlags) : base(target, precodeMachineDescriptor, codePointerFlags) { }
+    public PrecodeStubs_1(Target target) : base(target) { }
 }

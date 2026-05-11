@@ -13,6 +13,7 @@ import {
     getArgJsHandle, getArgLength, getArgType, getArgU16, getArgU8,
     getMarshalerToJsByType, getSignatureArg1Type, getSignatureArg2Type, getSignatureArg3Type, getSignatureResType,
     setArgType, setJsHandle,
+    isReceiverShouldFree,
 } from "./marshal";
 import { marshalExceptionToCs } from "./marshal-to-cs";
 import { lookupJsOwnedObject, getJsHandleFromJSObject, getJSObjectFromJSHandle, registerWithJsvHandle, releaseCSOwnedObject, setupManagedProxy, teardownManagedProxy, proxyDebugSymbol } from "./gc-handles";
@@ -525,7 +526,7 @@ export function resolveOrRejectPromise(args: JSMarshalerArguments): void {
     }
     args = fixupPointer(args, 0);
     const exc = getArg(args, 0);
-    // TODO-WASM const receiver_should_free = WasmEnableThreads && is_receiver_should_free(args);
+    const receiverShouldFree = isReceiverShouldFree(args);
     try {
         assertRuntimeRunning();
 
@@ -540,18 +541,19 @@ export function resolveOrRejectPromise(args: JSMarshalerArguments): void {
         dotnetAssert.fastCheck(holder, () => `Cannot find Promise for JSHandle ${jsHandle}`);
 
         holder.resolveOrReject(type, jsHandle, argValue);
-        /* TODO-WASM if (receiver_should_free) {
+        if (receiverShouldFree) {
             // this works together with AllocHGlobal in JSFunctionBinding.ResolveOrRejectPromise
-            free(args as any);
-        } else {*/
-        setArgType(res, MarshalerType.Void);
-        setArgType(exc, MarshalerType.None);
-        //}
+            Module._free(args as any);
+        } else {
+            setArgType(res, MarshalerType.Void);
+            setArgType(exc, MarshalerType.None);
+        }
 
     } catch (ex: any) {
-        /* TODO-WASM if (receiver_should_free) {
-            mono_assert(false, () => `Failed to resolve or reject promise ${ex}`);
-        }*/
+        if (receiverShouldFree) {
+            Module._free(args as any);
+            dotnetAssert.fastCheck(false, () => `Failed to resolve or reject promise. ${ex}`);
+        }
         marshalExceptionToCs(exc, ex);
     }
 }

@@ -1,28 +1,27 @@
 <Project>
   <!-- Settings for tools that publish as AOT -->
 
-  <PropertyGroup Condition="'$(AotOrSingleFile)' == 'true' and '$(UseNativeAotForComponents)' == 'true'">
-    <PublishAot>true</PublishAot>
+  <PropertyGroup Condition="'$(UseNativeAotForComponents)' == 'true'">
+    <PublishAot Condition="'$(AotOrSingleFile)' == 'true'" >true</PublishAot>
+    <!--
+      _IsApplePlatform is defined in the NativeAOT NuGet package targets which are imported after
+      Directory.Build.targets, so it is not available here. Use PortableOS to detect Apple platforms.
+    -->
+    <_IsApplePlatformToolAot Condition="'$(PortableOS)' == 'osx' or '$(PortableOS)' == 'ios' or '$(PortableOS)' == 'iossimulator' or '$(PortableOS)' == 'tvos' or '$(PortableOS)' == 'tvossimulator' or '$(PortableOS)' == 'maccatalyst'">true</_IsApplePlatformToolAot>
     <!-- Use .dwarf files instead of .dsym files since our symbol exporting may not safely handle folders. -->
-    <NativeSymbolExt Condition="'$(_IsApplePlatform)' == 'true'">.dwarf</NativeSymbolExt>
-    <DsymUtilOptions Condition="'$(_IsApplePlatform)' == 'true'">--flat</DsymUtilOptions>
+    <NativeSymbolExt Condition="'$(_IsApplePlatformToolAot)' == 'true'">.dwarf</NativeSymbolExt>
+    <DsymUtilOptions Condition="'$(_IsApplePlatformToolAot)' == 'true'">--flat >/dev/null 2>&amp;1</DsymUtilOptions>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(AotOrSingleFile)' == 'true' and '$(UseNativeAotForComponents)' != 'true'">
     <PublishSingleFile>true</PublishSingleFile>
   </PropertyGroup>
 
-  <PropertyGroup>
-    <_TrueTargetRid>$(RuntimeIdentifier)</_TrueTargetRid>
-    <!--
-      NativeAOT's targets don't handle cross-targeting to a non-portable RID.
-      Change the RID when importing the NativeAOT targets to the corresponding portable RID.
-    -->
-    <RuntimeIdentifier>$(PortableTargetRid)</RuntimeIdentifier>
-  </PropertyGroup>
-  <Import Project="$(CoreCLRBuildIntegrationDir)Microsoft.DotNet.ILCompiler.SingleEntry.targets" Condition="'$(PublishAot)' == 'true' and '$(UseBootstrapLayout)' == 'true'" />
-  <PropertyGroup>
-    <RuntimeIdentifier>$(_TrueTargetRid)</RuntimeIdentifier>
+  <!-- Use the SDK's ILCompilerTargetsPath hook to import ILC targets in the correct order,
+       matching how the shipping SDK imports them. -->
+  <PropertyGroup Condition="'$(PublishAot)' == 'true' and '$(UseBootstrapLayout)' == 'true'">
+    <_IlcReferencedAsPackage>false</_IlcReferencedAsPackage>
+    <ILCompilerTargetsPath>$(CoreCLRBuildIntegrationDir)Microsoft.DotNet.ILCompiler.SingleEntry.targets</ILCompilerTargetsPath>
   </PropertyGroup>
 
 

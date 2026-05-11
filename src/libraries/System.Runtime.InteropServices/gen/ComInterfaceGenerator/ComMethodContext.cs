@@ -6,10 +6,6 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using System.Threading;
-using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
-using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 
 namespace Microsoft.Interop
 {
@@ -111,57 +107,6 @@ namespace Microsoft.Interop
             }
             var (methodStub, diagnostics) = VirtualMethodPointerStubGenerator.GenerateNativeToManagedStub(sourceAvailableContext, ComInterfaceGeneratorHelpers.GetGeneratorResolver);
             return new GeneratedStubCodeContext(sourceAvailableContext.OriginalDefiningType, sourceAvailableContext.ContainingSyntaxContext, new(methodStub), new(diagnostics));
-        }
-
-        private MethodDeclarationSyntax? _unreachableExceptionStub;
-
-        public MethodDeclarationSyntax UnreachableExceptionStub => _unreachableExceptionStub ??= CreateUnreachableExceptionStub();
-
-        private MethodDeclarationSyntax CreateUnreachableExceptionStub()
-        {
-            // DeclarationCopiedFromBaseDeclaration(<Arguments>) => throw new UnreachableException();
-            return MethodInfo.Syntax
-                .WithReturnType(GenerationContext.SignatureContext.StubReturnType)
-                .WithModifiers(TokenList())
-                .WithAttributeLists(List<AttributeListSyntax>())
-                .WithExplicitInterfaceSpecifier(ExplicitInterfaceSpecifier(
-                    ParseName(OriginalDeclaringInterface.Info.Type.FullTypeName)))
-                .WithParameterList(ParameterList(SeparatedList(GenerationContext.SignatureContext.StubParameters)))
-                .WithExpressionBody(ArrowExpressionClause(
-                    ThrowExpression(
-                        ObjectCreationExpression(
-                            TypeSyntaxes.UnreachableException)
-                            .WithArgumentList(ArgumentList()))));
-        }
-
-        private MethodDeclarationSyntax? _shadow;
-
-        public MethodDeclarationSyntax Shadow => _shadow ??= GenerateShadow();
-
-        private MethodDeclarationSyntax GenerateShadow()
-        {
-            // DeclarationCopiedFromBaseDeclaration(<Arguments>)
-            //    => ((<baseInterfaceType>)this).<MethodName>(<Arguments>);
-            return MethodDeclaration(GenerationContext.SignatureContext.StubReturnType, MethodInfo.MethodName)
-                .WithModifiers(TokenList(Token(SyntaxKind.NewKeyword)))
-                .WithAttributeLists(List(GenerationContext.SignatureContext.AdditionalAttributes.Concat(MethodInfo.Attributes.Select(a => a.GenerateAttributeList()))))
-                .WithParameterList(ParameterList(SeparatedList(GenerationContext.SignatureContext.StubParameters)))
-                .WithExpressionBody(
-                    ArrowExpressionClause(
-                        InvocationExpression(
-                            MemberAccessExpression(
-                                SyntaxKind.SimpleMemberAccessExpression,
-                                ParenthesizedExpression(
-                                    CastExpression(OriginalDeclaringInterface.Info.Type.Syntax, IdentifierName("this"))),
-                                IdentifierName(MethodInfo.MethodName)),
-                            ArgumentList(
-                                SeparatedList(GenerationContext.SignatureContext.ManagedParameters.Select(GenerateArgument))))))
-                .WithSemicolonToken(Token(SyntaxKind.SemicolonToken));
-
-            static ArgumentSyntax GenerateArgument(TypePositionInfo info)
-                => info.IsByRef
-                ? Argument(IdentifierName(info.InstanceIdentifier)).WithRefKindKeyword(MarshallerHelpers.GetManagedArgumentRefKindKeyword(info))
-                : Argument(IdentifierName(info.InstanceIdentifier));
         }
 
         /// <summary>

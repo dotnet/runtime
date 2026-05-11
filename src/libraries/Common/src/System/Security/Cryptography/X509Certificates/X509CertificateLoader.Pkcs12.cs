@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
@@ -577,15 +577,17 @@ namespace System.Security.Cryptography.X509Certificates
                     case Oids.Pkcs12PbeWithShaAnd2Key3Des:
                     case Oids.Pkcs12PbeWithShaAnd128BitRC2:
                     case Oids.Pkcs12PbeWithShaAnd40BitRC2:
-                        PBEParameter pbeParameter = PBEParameter.Decode(
-                            algorithmIdentifier.Parameters.Value,
-                            AsnEncodingRules.BER);
+                        ValuePBEParameter.Decode(
+                            algorithmIdentifier.Parameters.Value.Span,
+                            AsnEncodingRules.BER,
+                            out ValuePBEParameter pbeParameter);
 
                         return pbeParameter.IterationCount;
                     case Oids.PasswordBasedEncryptionScheme2:
-                        PBES2Params pbes2Params = PBES2Params.Decode(
-                            algorithmIdentifier.Parameters.Value,
-                            AsnEncodingRules.BER);
+                        ValuePBES2Params.Decode(
+                            algorithmIdentifier.Parameters.Value.Span,
+                            AsnEncodingRules.BER,
+                            out ValuePBES2Params pbes2Params);
 
                         if (pbes2Params.KeyDerivationFunc.Algorithm != Oids.Pbkdf2)
                         {
@@ -595,14 +597,15 @@ namespace System.Security.Cryptography.X509Certificates
                                     pbes2Params.EncryptionScheme.Algorithm));
                         }
 
-                        if (!pbes2Params.KeyDerivationFunc.Parameters.HasValue)
+                        if (!pbes2Params.KeyDerivationFunc.HasParameters)
                         {
                             throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
                         }
 
-                        Pbkdf2Params pbkdf2Params = Pbkdf2Params.Decode(
-                            pbes2Params.KeyDerivationFunc.Parameters.Value,
-                            AsnEncodingRules.BER);
+                        ValuePbkdf2Params.Decode(
+                            pbes2Params.KeyDerivationFunc.Parameters,
+                            AsnEncodingRules.BER,
+                            out ValuePbkdf2Params pbkdf2Params);
 
                         return pbkdf2Params.IterationCount;
                     default:
@@ -1109,7 +1112,7 @@ namespace System.Security.Cryptography.X509Certificates
                             {
                                 decrypted = KeyFormatHelper.DecryptPkcs8(
                                     password,
-                                    bag.BagValue,
+                                    bag.BagValue.Span,
                                     out contentRead);
 
                                 try
@@ -1137,7 +1140,7 @@ namespace System.Security.Cryptography.X509Certificates
                             {
                                 decrypted = KeyFormatHelper.DecryptPkcs8(
                                     password,
-                                    bag.BagValue,
+                                    bag.BagValue.Span,
                                     out contentRead);
 
                                 try
@@ -1189,11 +1192,7 @@ namespace System.Security.Cryptography.X509Certificates
                 }
             }
 
-            internal
-#if !NET
-                unsafe
-#endif
-                ArraySegment<byte> ToPfx(ReadOnlySpan<char> password)
+            internal unsafe ArraySegment<byte> ToPfx(ReadOnlySpan<char> password)
             {
                 Debug.Assert(_certBags is not null);
                 Debug.Assert(_keyBags is not null);

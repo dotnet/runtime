@@ -534,7 +534,7 @@ namespace System
 
         public static decimal Parse(ReadOnlySpan<char> s, NumberStyles style = NumberStyles.Number, IFormatProvider? provider = null)
         {
-            NumberFormatInfo.ValidateParseStyleFloatingPoint(style);
+            NumberFormatInfo.ValidateParseStyleDecimal(style);
             return Number.ParseDecimal(s, style, NumberFormatInfo.GetInstance(provider));
         }
 
@@ -550,7 +550,7 @@ namespace System
 
         public static bool TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out decimal result)
         {
-            NumberFormatInfo.ValidateParseStyleFloatingPoint(style);
+            NumberFormatInfo.ValidateParseStyleDecimal(style);
 
             if (s == null)
             {
@@ -562,7 +562,7 @@ namespace System
 
         public static bool TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out decimal result)
         {
-            NumberFormatInfo.ValidateParseStyleFloatingPoint(style);
+            NumberFormatInfo.ValidateParseStyleDecimal(style);
             return Number.TryParseDecimal(s, style, NumberFormatInfo.GetInstance(provider), out result) == Number.ParsingStatus.OK;
         }
 
@@ -1834,14 +1834,14 @@ namespace System
         /// <inheritdoc cref="INumberBase{TSelf}.Parse(ReadOnlySpan{byte}, NumberStyles, IFormatProvider?)" />
         public static decimal Parse(ReadOnlySpan<byte> utf8Text, NumberStyles style = NumberStyles.Number, IFormatProvider? provider = null)
         {
-            NumberFormatInfo.ValidateParseStyleInteger(style);
+            NumberFormatInfo.ValidateParseStyleDecimal(style);
             return Number.ParseDecimal(utf8Text, style, NumberFormatInfo.GetInstance(provider));
         }
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryParse(ReadOnlySpan{byte}, NumberStyles, IFormatProvider?, out TSelf)" />
         public static bool TryParse(ReadOnlySpan<byte> utf8Text, NumberStyles style, IFormatProvider? provider, out decimal result)
         {
-            NumberFormatInfo.ValidateParseStyleInteger(style);
+            NumberFormatInfo.ValidateParseStyleDecimal(style);
             return Number.TryParseDecimal(utf8Text, style, NumberFormatInfo.GetInstance(provider), out result) == Number.ParsingStatus.OK;
         }
 

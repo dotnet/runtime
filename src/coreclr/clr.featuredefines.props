@@ -18,12 +18,13 @@
         <FeaturePortableEntryPoints>true</FeaturePortableEntryPoints>
         <FeaturePortableHelpers>true</FeaturePortableHelpers>
         <FeatureInterpreter>true</FeatureInterpreter>
-        
+
         <!-- single thread -->
         <FeaturePortableTimer Condition="'$(WasmEnableThreads)' != 'true'">false</FeaturePortableTimer>
         <FeaturePortableThreadPool Condition="'$(WasmEnableThreads)' != 'true'">false</FeaturePortableThreadPool>
         <!-- until we implement ST event pipe for CoreCLR -->
         <FeaturePerfTracing>false</FeaturePerfTracing>
+        <ProfilingSupportedBuild>false</ProfilingSupportedBuild>
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(TargetsUnix)' == 'true'">
@@ -47,7 +48,7 @@
         <FeatureInterpreter>true</FeatureInterpreter>
     </PropertyGroup>
 
-    <PropertyGroup Condition="('$(Platform)' == 'x64' OR '$(Platform)' == 'arm64' OR '$(Platform)' == 'arm' OR '$(Platform)' == 'riscv64') AND ('$(Configuration)' == 'debug' OR '$(Configuration)' == 'checked') AND '$(TargetsAndroid)' != 'true'">
+    <PropertyGroup Condition="('$(Platform)' == 'x64' OR '$(Platform)' == 'arm64' OR '$(Platform)' == 'arm' OR '$(Platform)' == 'riscv64' OR '$(Platform)' == 'loongarch64') AND ('$(Configuration)' == 'debug' OR '$(Configuration)' == 'checked') AND '$(TargetsAndroid)' != 'true'">
         <FeatureInterpreter>true</FeatureInterpreter>
     </PropertyGroup>
 

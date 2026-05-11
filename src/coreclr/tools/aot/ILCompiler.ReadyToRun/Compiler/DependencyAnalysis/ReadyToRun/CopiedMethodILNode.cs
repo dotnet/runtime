@@ -13,6 +13,10 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
     public class CopiedMethodILNode : ObjectNode, ISymbolDefinitionNode
     {
+        // Throws NullReferenceException if the stripped body is encountered.
+        // Tiny header (0x0A: 2 bytes code size) + ldnull (0x14) + throw (0x7A).
+        private static readonly byte[] s_minimalILBody = [0x0A, 0x14, 0x7A];
+
         EcmaMethod _method;
 
         public CopiedMethodILNode(EcmaMethod method)
@@ -51,11 +55,21 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     definedSymbols: new ISymbolDefinitionNode[] { this });
             }
 
+            if (factory.OptimizationFlags.StripILBodies
+                && factory.OptimizationFlags.CompiledMethodDefs.Contains(_method)
+                && !_method.HasInstantiation
+                && !_method.OwningType.HasInstantiation)
+            {
+                return new ObjectData(s_minimalILBody, Array.Empty<Relocation>(), 4, new ISymbolDefinitionNode[] { this });
+            }
+
             var rva = _method.MetadataReader.GetMethodDefinition(_method.Handle).RelativeVirtualAddress;
-            var reader = _method.Module.PEReader.GetSectionData(rva).GetReader();
+            var peReader = _method.Module.PEReader;
+            var reader = peReader.GetSectionData(rva).GetReader();
             int size = MethodBodyBlock.Create(reader).Size;
-            
-            return new ObjectData(reader.ReadBytes(size), Array.Empty<Relocation>(), 4, new ISymbolDefinitionNode[] { this });
+            byte[] bodyBytes = peReader.GetSectionData(rva).GetReader().ReadBytes(size);
+
+            return new ObjectData(bodyBytes, Array.Empty<Relocation>(), 4, new ISymbolDefinitionNode[] { this });
         }
 
         public override int ClassCode => 541651465;

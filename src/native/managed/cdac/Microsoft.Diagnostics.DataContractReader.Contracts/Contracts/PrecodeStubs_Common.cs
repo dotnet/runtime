@@ -131,11 +131,13 @@ internal class PrecodeStubsCommon<TPrecodeStubsImplementation, TStubPrecodeData>
         }
         throw new InvalidOperationException($"Invalid precode type 0x{instrPointer:x16}");
     }
-    public PrecodeStubsCommon(Target target, Data.PrecodeMachineDescriptor precodeMachineDescriptor, CodePointerFlags codePointerFlags)
+    public PrecodeStubsCommon(Target target)
     {
         _target = target;
-        MachineDescriptor = precodeMachineDescriptor;
-        _codePointerFlags = codePointerFlags;
+        IPlatformMetadata pm = target.Contracts.PlatformMetadata;
+        TargetPointer descAddr = pm.GetPrecodeMachineDescriptor();
+        MachineDescriptor = target.ProcessedData.GetOrAdd<Data.PrecodeMachineDescriptor>(descAddr);
+        _codePointerFlags = pm.GetCodePointerFlags();
     }
 
     TargetPointer IPrecodeStubs.GetMethodDescFromStubAddress(TargetCodePointer entryPoint)

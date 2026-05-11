@@ -125,12 +125,17 @@ public class Bench
 
 Post a comment on the PR to trigger EgorBot with your benchmark. The general format is:
 
+> 📝 **AI-generated content disclosure:** When posting benchmark comments to GitHub under a user's credentials — i.e., the account is **not** a dedicated "copilot" or "bot" account/app — you **MUST** include a concise, visible note (e.g. a `> [!NOTE]` alert) indicating the content was AI/Copilot-generated. Skip this if the user explicitly asks you to omit it.
+
 @EgorBot [targets] [options] [BenchmarkDotNet args]
 
 ```cs
 // Your benchmark code here
 ```
-> **Note:** The @EgorBot command must not be inside the code block. Only the benchmark code should be inside the code block.
+> **Note:** When using @EgorBot, follow these formatting rules:
+> - The @EgorBot command must not be inside the code block.
+> - Only the benchmark code should be inside the code block.
+> - Do not place any additional text between the @EgorBot command line and the code block, as EgorBot will treat it as additional command arguments.
 
 ### Target Flags
 

@@ -9,6 +9,7 @@ using Xunit.Abstractions;
 namespace System.Net.Quic.Tests
 {
     [Collection(nameof(QuicTestCollection))]
+    [ConditionalClass(typeof(QuicTestBase))]
     public class MsQuicPlatformDetectionTests : QuicTestBase
     {
         public MsQuicPlatformDetectionTests(ITestOutputHelper output) : base(output) { }

@@ -2546,6 +2546,9 @@ void CodeGen::genX86BaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
             // emit the DIV/IDIV instruction
             emit->emitInsBinary(ins, attr, node, op3);
 
+            assert(node->GetRegNumByIdx(0) == REG_EAX);
+            assert(node->GetRegNumByIdx(1) == REG_EDX);
+
             break;
         }
 

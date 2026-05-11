@@ -1041,6 +1041,13 @@ int32_t CryptoNative_BioSeek(BIO* bio, int32_t ofs)
     return BIO_seek(bio, ofs);
 }
 
+#ifdef FEATURE_DISTRO_AGNOSTIC_SSL
+static void local_sk_X509_freefunc_thunk(OPENSSL_sk_freefunc freefunc_arg, void* ptr)
+{
+    freefunc_arg(ptr);
+}
+#endif
+
 /*
 Function:
 NewX509Stack
@@ -1054,7 +1061,19 @@ A STACK_OF(X509*) with no comparator.
 STACK_OF(X509) * CryptoNative_NewX509Stack(void)
 {
     ERR_clear_error();
+
+#ifdef FEATURE_DISTRO_AGNOSTIC_SSL
+    OPENSSL_STACK* sk = OPENSSL_sk_new_null();
+
+    if (API_EXISTS(OPENSSL_sk_set_thunks))
+    {
+        OPENSSL_sk_set_thunks(sk, local_sk_X509_freefunc_thunk);
+    }
+
+    return (STACK_OF(X509)*)sk;
+#else
     return sk_X509_new_null();
+#endif
 }
 
 /*
@@ -1348,7 +1367,10 @@ static void HandleShutdown(void)
 
 static int32_t EnsureOpenSsl11Initialized(void)
 {
-    OPENSSL_init_ssl(
+    // OPENSSL_init_ssl returns 1 on success, 0 on failure.
+    // When OPENSSL_INIT_LOAD_CONFIG is specified with a broken configuration,
+    // this call can fail or leave OpenSSL in a partially initialized state.
+    if (!OPENSSL_init_ssl(
             OPENSSL_INIT_ADD_ALL_CIPHERS |
             OPENSSL_INIT_ADD_ALL_DIGESTS |
             OPENSSL_INIT_LOAD_CONFIG |
@@ -1356,7 +1378,22 @@ static int32_t EnsureOpenSsl11Initialized(void)
             OPENSSL_INIT_NO_ATEXIT |
             OPENSSL_INIT_LOAD_CRYPTO_STRINGS |
             OPENSSL_INIT_LOAD_SSL_STRINGS,
-        NULL);
+        NULL))
+    {
+        // Try again without loading the config. This allows the application
+        // to continue even if the openssl.cnf is malformed (e.g., missing
+        // provider sections, referencing non-existent modules).
+        if (!OPENSSL_init_ssl(
+                OPENSSL_INIT_ADD_ALL_CIPHERS |
+                OPENSSL_INIT_ADD_ALL_DIGESTS |
+                OPENSSL_INIT_NO_ATEXIT |
+                OPENSSL_INIT_LOAD_CRYPTO_STRINGS |
+                OPENSSL_INIT_LOAD_SSL_STRINGS,
+            NULL))
+        {
+            return 1;
+        }
+    }
 
     // As a fallback for when the NO_ATEXIT isn't respected, register a later
     // atexit handler, so we will indicate that we're in the shutdown state

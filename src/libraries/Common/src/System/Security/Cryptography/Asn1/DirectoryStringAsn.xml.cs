@@ -8,17 +8,10 @@ using System.Runtime.InteropServices;
 
 namespace System.Security.Cryptography.Asn1
 {
-    [StructLayout(LayoutKind.Sequential)]
-    internal partial struct DirectoryStringAsn
-    {
-        internal string? TeletexString;
-        internal string? PrintableString;
-        internal ReadOnlyMemory<byte>? UniversalString;
-        internal string? Utf8String;
-        internal string? BmpString;
-
 #if DEBUG
-        static DirectoryStringAsn()
+    file static class ValidateDirectoryStringAsn
+    {
+        static ValidateDirectoryStringAsn()
         {
             var usedTags = new System.Collections.Generic.Dictionary<Asn1Tag, string>();
             Action<Asn1Tag, string> ensureUniqueTag = (tag, fieldName) =>
@@ -36,6 +29,28 @@ namespace System.Security.Cryptography.Asn1
             ensureUniqueTag(new Asn1Tag((UniversalTagNumber)28), "UniversalString");
             ensureUniqueTag(new Asn1Tag(UniversalTagNumber.UTF8String), "Utf8String");
             ensureUniqueTag(new Asn1Tag(UniversalTagNumber.BMPString), "BmpString");
+        }
+
+        [System.Runtime.CompilerServices.MethodImpl(
+            System.Runtime.CompilerServices.MethodImplOptions.NoInlining |
+            System.Runtime.CompilerServices.MethodImplOptions.NoOptimization)]
+        internal static void Validate() { }
+    }
+#endif
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal partial struct DirectoryStringAsn
+    {
+        internal string? TeletexString;
+        internal string? PrintableString;
+        internal ReadOnlyMemory<byte>? UniversalString;
+        internal string? Utf8String;
+        internal string? BmpString;
+
+#if DEBUG
+        static DirectoryStringAsn()
+        {
+            ValidateDirectoryStringAsn.Validate();
         }
 #endif
 

@@ -215,9 +215,6 @@ static_assert(sizeof(CLR_BOOL) == 1);
 #define CLR_BOOL_MAX    BOOL_MAX
 #define CLR_BOOL_MIN    BOOL_MIN
 
-#define CLR_NAN_32 0xFFC00000
-#define CLR_NAN_64 0xFFF8000000000000LL
-
 // ================================================================================
 // Simple utility functions
 // ================================================================================

@@ -14,19 +14,19 @@ internal sealed class StressLog : IData<StressLog>
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.StressLog);
 
-        LoggedFacilities = target.Read<uint>(address + (ulong)type.Fields[nameof(LoggedFacilities)].Offset);
-        Level = target.Read<uint>(address + (ulong)type.Fields[nameof(Level)].Offset);
-        MaxSizePerThread = target.Read<uint>(address + (ulong)type.Fields[nameof(MaxSizePerThread)].Offset);
-        MaxSizeTotal = target.Read<uint>(address + (ulong)type.Fields[nameof(MaxSizeTotal)].Offset);
-        TotalChunks = target.Read<int>(address + (ulong)type.Fields[nameof(TotalChunks)].Offset);
-        TickFrequency = target.Read<ulong>(address + (ulong)type.Fields[nameof(TickFrequency)].Offset);
-        StartTimestamp = target.Read<ulong>(address + (ulong)type.Fields[nameof(StartTimestamp)].Offset);
-        ModuleOffset = target.ReadNUInt(address + (ulong)type.Fields[nameof(ModuleOffset)].Offset);
+        LoggedFacilities = target.ReadField<uint>(address, type, nameof(LoggedFacilities));
+        Level = target.ReadField<uint>(address, type, nameof(Level));
+        MaxSizePerThread = target.ReadField<uint>(address, type, nameof(MaxSizePerThread));
+        MaxSizeTotal = target.ReadField<uint>(address, type, nameof(MaxSizeTotal));
+        TotalChunks = target.ReadField<int>(address, type, nameof(TotalChunks));
+        TickFrequency = target.ReadField<ulong>(address, type, nameof(TickFrequency));
+        StartTimestamp = target.ReadField<ulong>(address, type, nameof(StartTimestamp));
+        ModuleOffset = target.ReadNUIntField(address, type, nameof(ModuleOffset));
 
         if (type.Fields.ContainsKey(nameof(Modules)))
-            Modules = target.ReadPointer(address + (ulong)type.Fields[nameof(Modules)].Offset);
+            Modules = target.ReadPointerField(address, type, nameof(Modules));
 
-        Logs = target.ReadPointer(address + (ulong)type.Fields[nameof(Logs)].Offset);
+        Logs = target.ReadPointerField(address, type, nameof(Logs));
     }
 
     public uint LoggedFacilities { get; init; }

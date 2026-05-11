@@ -9,7 +9,7 @@ using ILVerify;
 using Mono.Cecil;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Extensions;
-using NUnit.Framework;
+using Xunit;
 
 namespace Mono.Linker.Tests.TestCasesRunner.ILVerification;
 

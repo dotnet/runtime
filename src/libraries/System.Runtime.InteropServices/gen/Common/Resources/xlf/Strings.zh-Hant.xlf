@@ -507,11 +507,6 @@
         <target state="translated">只有在陣列參數上才支援 '[In]' 和 '[Out]' 屬性。請考慮使用 'ref' 關鍵字，讓參數成為可變動。</target>
         <note />
       </trans-unit>
-      <trans-unit id="InOutAttributes">
-        <source>[In] and [Out] attributes</source>
-        <target state="translated">[In] 與 [Out] 屬性</target>
-        <note />
-      </trans-unit>
       <trans-unit id="InVariantShouldBeRef">
         <source>Objects marshalled from VARIANTs as 'in' parameters in unmanaged-to-managed calls will not propagate back the updated result, even if the VARIANT is a VT_BYREF variant. Use a 'ref' parameter instead of an 'in' parameter to propagate the updated value back to the caller.</source>
         <target state="translated">在未受控對受控呼叫中，從 VARIANT 封送處理為 'in' 參數的物件將不會傳播回更新的結果，即使 VARIANT 是 VT_BYREF 變數亦然。使用 'ref' 參數而非 'in' 參數，以將更新的值傳播回呼叫者。</target>

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Tracing;
 using System.Runtime.CompilerServices;
 
@@ -875,6 +876,21 @@ namespace System.Threading
 
             Debug.Assert(!new State(this).UseTrivialWaits);
         }
+
+#if CORECLR
+        [System.Runtime.InteropServices.UnmanagedCallersOnly]
+        private static unsafe void InitializeForMonitor(Lock* pLock, int managedThreadId, uint recursionCount, Exception* pException)
+        {
+            try
+            {
+                pLock->InitializeForMonitor(managedThreadId, recursionCount);
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
+        }
+#endif
 
         private static short DetermineMaxSpinCount()
         {

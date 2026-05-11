@@ -99,7 +99,7 @@ IUnknown *ComClassFactory::CreateInstanceFromClassFactory(IClassFactory *pClassF
     HRESULT hr = S_OK;
     SafeComHolder<IClassFactory2> pClassFact2 = NULL;
     SafeComHolder<IUnknown> pUnk = NULL;
-    BSTRHolder bstrKey = NULL;
+    BSTRHolder bstrKey;
 
     // If the class doesn't support licensing or if it is missing a managed
     // type to use for querying a license, just use IClassFactory.
@@ -121,36 +121,25 @@ IUnknown *ComClassFactory::CreateInstanceFromClassFactory(IClassFactory *pClassF
     }
     else
     {
-        _ASSERTE(m_pClassMT != NULL);
-
         // Get the type to query for licensing.
-        TypeHandle rth = TypeHandle(m_pClassMT);
+        _ASSERTE(m_pClassMT != NULL);
 
         struct
         {
             OBJECTREF pProxy;
-            OBJECTREF pType;
         } gc;
-        gc.pProxy = NULL; // LicenseInteropProxy
-        gc.pType = NULL;
-
+        gc.pProxy = NULL;
         GCPROTECT_BEGIN(gc);
 
-        // Create an instance of the object
-        UnmanagedCallersOnlyCaller createObj(METHOD__LICENSE_INTEROP_PROXY__CREATE);
-        createObj.InvokeThrowing(&gc.pProxy);
-        gc.pType = rth.GetManagedClassObject();
+        // Create instance and query the current licensing context
+        UnmanagedCallersOnlyCaller getCurrentContextInfoAndProxy(METHOD__LICENSE_INTEROP_PROXY__GETCURRENTCONTEXTINFO_AND_PROXY);
 
-        // Query the current licensing context
-        UnmanagedCallersOnlyCaller getCurrentContextInfo(METHOD__LICENSE_INTEROP_PROXY__GETCURRENTCONTEXTINFO);
         CLR_BOOL fDesignTime = FALSE;
-        INT_PTR bstrKeyRaw = NULL;
-        getCurrentContextInfo.InvokeThrowing(&gc.pProxy, &gc.pType, &fDesignTime, &bstrKeyRaw);
-        bstrKey = (BSTR)bstrKeyRaw;
+        getCurrentContextInfoAndProxy.InvokeThrowing(m_pClassMT, &fDesignTime, &bstrKey, &gc.pProxy);
 
         if (fDesignTime)
         {
-            // If designtime, we're supposed to obtain the runtime license key
+            // If design-time, we're supposed to obtain the runtime license key
             // from the component and save it away in the license context.
             // (the design tool can then grab it and embedded it into the
             //  app it is creating)
@@ -159,9 +148,7 @@ IUnknown *ComClassFactory::CreateInstanceFromClassFactory(IClassFactory *pClassF
                 // It's illegal for our helper to return a non-null bstrKey
                 // when the context is design-time. But we'll try to do the
                 // right thing anyway.
-                _ASSERTE(!"We're not supposed to get here, but we'll try to cope anyway.");
-                SysFreeString(bstrKey);
-                bstrKey = NULL;
+                bstrKey.Free();
             }
 
             {
@@ -178,8 +165,7 @@ IUnknown *ComClassFactory::CreateInstanceFromClassFactory(IClassFactory *pClassF
             if (SUCCEEDED(hr))
             {
                 UnmanagedCallersOnlyCaller saveKeyInCurrentContext(METHOD__LICENSE_INTEROP_PROXY__SAVEKEYINCURRENTCONTEXT);
-                BSTR bstrKeyValue = (BSTR)bstrKey;
-                saveKeyInCurrentContext.InvokeThrowing(&gc.pProxy, reinterpret_cast<INT_PTR>(bstrKeyValue));
+                saveKeyInCurrentContext.InvokeThrowing(&gc.pProxy, (BSTR)bstrKey);
             }
         }
 
@@ -204,7 +190,6 @@ IUnknown *ComClassFactory::CreateInstanceFromClassFactory(IClassFactory *pClassF
                 else
                 {
                     // It is runtime and we have a license key.
-                    _ASSERTE(bstrKey != NULL);
                     hr = pClassFact2->CreateInstanceLic(punkOuter, NULL, IID_IUnknown, bstrKey, (void**)&pUnk);
                     if (FAILED(hr) && punkOuter)
                     {
@@ -276,9 +261,6 @@ OBJECTREF ComClassFactory::CreateAggregatedInstance(MethodTable* pMTClass, BOOL 
 
     HRESULT hr = S_OK;
     NewRCWHolder pNewRCW;
-    BOOL bUseDelegate = FALSE;
-
-    MethodTable *pCallbackMT = NULL;
 
     OBJECTREF oref = NULL;
     COMOBJECTREF cref = NULL;
@@ -289,68 +271,14 @@ OBJECTREF ComClassFactory::CreateAggregatedInstance(MethodTable* pMTClass, BOOL 
         //get wrapper for the object, this could enable GC
         CCWHolder pComWrap =  ComCallWrapper::InlineGetWrapper((OBJECTREF *)&cref);
 
-        // Make sure the ClassInitializer has run, since the user might have
-        // wanted to set up a COM object creation callback.
-        pMTClass->CheckRunClassInitThrowing();
-
-        // If the user is going to use a delegate to allocate the COM object
-        // (rather than CoCreateInstance), we need to know now, before we enable
-        // preemptive GC mode (since we touch object references in the
-        // determination).
-        // We don't just check the current class to see if it has a cllabck
-        // registered, we check up the class chain to see if any of our parents
-        // did.
-
-        pCallbackMT = pMTClass;
-        while ((pCallbackMT != NULL) &&
-               (pCallbackMT->GetObjCreateDelegate() == NULL) &&
-               !pCallbackMT->IsComImport())
-        {
-            pCallbackMT = pCallbackMT->GetParentMethodTable();
-        }
-
-        if (pCallbackMT && !pCallbackMT->IsComImport())
-            bUseDelegate = TRUE;
-
         DebuggerExitFrame __def;
 
         // get the IUnknown interface for the managed object
         pOuter = ComCallWrapper::GetComIPFromCCW(pComWrap, IID_IUnknown, NULL);
         _ASSERTE(pOuter != NULL);
 
-        // If the user has set a delegate to allocate the COM object, use it.
-        // Otherwise we just CoCreateInstance it.
-        if (bUseDelegate)
-        {
-            ARG_SLOT args[2];
-
-            OBJECTREF orDelegate = pCallbackMT->GetObjCreateDelegate();
-            MethodDesc *pMeth = COMDelegate::GetMethodDesc(orDelegate);
-
-            GCPROTECT_BEGIN(orDelegate)
-            {
-                _ASSERTE(pMeth);
-                MethodDescCallSite  delegateMethod(pMeth, &orDelegate);
-
-                // Get the OR on which we are going to invoke the method and set it
-                //  as the first parameter in arg above.
-                args[0] = (ARG_SLOT)OBJECTREFToObject(COMDelegate::GetTargetObject(orDelegate));
-
-                // Pass the IUnknown of the aggregator as the second argument.
-                args[1] = (ARG_SLOT)(IUnknown*)pOuter;
-
-                // Call the method...
-                pUnk = (IUnknown *)delegateMethod.Call_RetArgSlot(args);
-                if (!pUnk)
-                    COMPlusThrowHR(E_FAIL);
-            }
-            GCPROTECT_END();
-        }
-        else
-        {
-            _ASSERTE(m_pClassMT);
-            pUnk = CreateInstanceInternal(pOuter, &fDidContainment);
-        }
+        _ASSERTE(m_pClassMT);
+        pUnk = CreateInstanceInternal(pOuter, &fDidContainment);
 
         __def.Pop();
 
@@ -2113,6 +2041,8 @@ BOOL RCW::AllowEagerSTACleanup()
     return m_Flags.m_fAllowEagerSTACleanup;
 }
 
+using CtxEntryHolder = ReleaseHolder<CtxEntry>;
+
 HRESULT RCW::EnterContext(PFNCTXCALLBACK pCallbackFunc, LPVOID pData)
 {
     CONTRACTL
@@ -2125,7 +2055,7 @@ HRESULT RCW::EnterContext(PFNCTXCALLBACK pCallbackFunc, LPVOID pData)
     }
     CONTRACTL_END;
 
-    CtxEntryHolder pCtxEntry = GetWrapperCtxEntry();
+    CtxEntryHolder pCtxEntry(GetWrapperCtxEntry());
     return pCtxEntry->EnterContext(pCallbackFunc, pData);
 }
 
@@ -2514,14 +2444,10 @@ void ComObject::ReleaseAllData(OBJECTREF oref)
     }
     CONTRACTL_END;
 
-    GCPROTECT_BEGIN(oref)
+    GCPROTECT_BEGIN(oref);
     {
-        PREPARE_NONVIRTUAL_CALLSITE(METHOD__COM_OBJECT__RELEASE_ALL_DATA);
-
-        DECLARE_ARGHOLDER_ARRAY(ReleaseAllDataArgs, 1);
-        ReleaseAllDataArgs[ARGNUM_0] = OBJECTREF_TO_ARGHOLDER(oref);
-
-        CALL_MANAGED_METHOD_NORET(ReleaseAllDataArgs);
+        UnmanagedCallersOnlyCaller releaseAllData(METHOD__COM_OBJECT__RELEASE_ALL_DATA);
+        releaseAllData.InvokeThrowing(&oref);
     }
     GCPROTECT_END();
 }

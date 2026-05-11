@@ -193,7 +193,7 @@ BOOL PEDecoder::HasNTHeaders() const
         RETURN FALSE;
 
     // Go ahead and cache NT header since we already found it.
-    const_cast<PEDecoder *>(this)->m_pNTHeaders = dac_cast<PTR_IMAGE_NT_HEADERS>(pNT);
+    m_pNTHeaders = dac_cast<PTR_IMAGE_NT_HEADERS>(pNT);
 
     RETURN TRUE;
 }
@@ -340,7 +340,7 @@ CHECK PEDecoder::CheckNTHeaders() const
 
     // @todo: verify directory entries
 
-    const_cast<PEDecoder *>(this)->m_flags |= FLAG_NT_CHECKED;
+    m_flags |= FLAG_NT_CHECKED;
 
     CHECK_OK;
 }
@@ -1164,7 +1164,7 @@ CHECK PEDecoder::CheckCorHeader() const
         }
     }  //end if(pcMD != NULL)
 
-    const_cast<PEDecoder *>(this)->m_flags |= FLAG_COR_CHECKED;
+    m_flags |= FLAG_COR_CHECKED;
 
     CHECK_OK;
 }
@@ -1244,7 +1244,7 @@ CHECK PEDecoder::CheckILOnly() const
     if (HasReadyToRunHeader())
     {
         // Pretend R2R images are IL-only
-        const_cast<PEDecoder *>(this)->m_flags |= FLAG_IL_ONLY_CHECKED;
+        m_flags |= FLAG_IL_ONLY_CHECKED;
         CHECK_OK;
     }
 
@@ -1327,7 +1327,7 @@ CHECK PEDecoder::CheckILOnly() const
     }
 
 
-    const_cast<PEDecoder *>(this)->m_flags |= FLAG_IL_ONLY_CHECKED;
+    m_flags |= FLAG_IL_ONLY_CHECKED;
 
     CHECK_OK;
 }
@@ -1981,12 +1981,12 @@ READYTORUN_HEADER * PEDecoder::FindReadyToRunHeader() const
         PTR_READYTORUN_HEADER pHeader = PTR_READYTORUN_HEADER((TADDR)GetDirectoryData(pDir));
         if (pHeader->Signature == READYTORUN_SIGNATURE)
         {
-            const_cast<PEDecoder*>(this)->m_pReadyToRunHeader = pHeader;
+            m_pReadyToRunHeader = pHeader;
             return pHeader;
         }
     }
 
-    const_cast<PEDecoder *>(this)->m_flags |= FLAG_HAS_NO_READYTORUN_HEADER;
+    m_flags |= FLAG_HAS_NO_READYTORUN_HEADER;
     return NULL;
 }
 

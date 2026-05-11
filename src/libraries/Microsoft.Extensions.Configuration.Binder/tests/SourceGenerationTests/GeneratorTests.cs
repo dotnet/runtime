@@ -9,24 +9,25 @@ using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using ILLink.RoslynAnalyzer;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Configuration.Binder.SourceGeneration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
+using SourceGenerators.Tests;
 using Xunit;
 
 namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
 {
     [ActiveIssue("https://github.com/dotnet/runtime/issues/52062", TestPlatforms.Browser)]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/105311", typeof(ConfigurationBindingGeneratorTests), nameof(IsBigEndian))]
     public partial class ConfigurationBindingGeneratorTests : ConfigurationBinderTestsBase
     {
-        // The source hash applied to the [Interceptable] attribute treats chars as bytes which fails baseline comparisons on big-endian.
-        public static bool IsBigEndian => !BitConverter.IsLittleEndian;
-
         [Theory]
         [InlineData(LanguageVersion.CSharp11)]
         [InlineData(LanguageVersion.CSharp10)]
@@ -538,6 +539,246 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
             var effective = CompilationWithAnalyzers.GetEffectiveDiagnostics(result.Diagnostics, result.OutputCompilation);
             Diagnostic diagnostic = Assert.Single(effective, d => d.Id == "SYSLIB1103");
             Assert.False(diagnostic.IsSuppressed);
+        }
+
+        /// <summary>
+        /// Verifies that the suppressor suppresses IL2026/IL3050 when a ConfigurationBinder call
+        /// is passed directly as a method argument (e.g. Some.Method(config.Get&lt;T&gt;())).
+        /// Regression test for https://github.com/dotnet/runtime/issues/94544.
+        /// </summary>
+        [Fact]
+        public async Task Suppressor_SuppressesWarnings_WhenBindingCallIsMethodArgument()
+        {
+            string source = """
+                using Microsoft.Extensions.Configuration;
+
+                public class Program
+                {
+                    public static void Main()
+                    {
+                        IConfigurationSection c = new ConfigurationBuilder().Build().GetSection("Options");
+                        Some.Method(c.Get<MyOptions>());
+                    }
+                }
+
+                internal static class Some
+                {
+                    public static void Method(MyOptions? options) { }
+                }
+
+                public class MyOptions
+                {
+                    public int MaxRetries { get; set; }
+                }
+                """;
+
+            ConfigBindingGenRunResult result = await RunGeneratorAndUpdateCompilation(source);
+            Assert.NotNull(result.GeneratedSource);
+
+            await VerifySuppressedCallsMatchInterceptedCalls(result);
+        }
+
+        /// <summary>
+        /// Verifies that the suppressor also works for the straightforward assignment case,
+        /// ensuring no regression in existing behavior.
+        /// </summary>
+        [Fact]
+        public async Task Suppressor_SuppressesWarnings_ForSimpleBindingCall()
+        {
+            string source = """
+                using Microsoft.Extensions.Configuration;
+
+                public class Program
+                {
+                    public static void Main()
+                    {
+                        IConfigurationSection c = new ConfigurationBuilder().Build().GetSection("Options");
+                        var options = c.Get<MyOptions>();
+                    }
+                }
+
+                public class MyOptions
+                {
+                    public int MaxRetries { get; set; }
+                }
+                """;
+
+            ConfigBindingGenRunResult result = await RunGeneratorAndUpdateCompilation(source);
+            Assert.NotNull(result.GeneratedSource);
+
+            await VerifySuppressedCallsMatchInterceptedCalls(result);
+        }
+
+        [Fact]
+        public async Task Suppressor_SuppressesWarnings_WithLineDirective()
+        {
+            string source = """
+                using Microsoft.Extensions.Configuration;
+
+                public class Program
+                {
+                    public static void Main()
+                    {
+                        IConfigurationSection c = new ConfigurationBuilder().Build().GetSection("Options");
+                #line 100 "Remapped.cs"
+                        var options = c.Get<MyOptions>();
+                #line default
+                    }
+                }
+
+                public class MyOptions
+                {
+                    public int MaxRetries { get; set; }
+                }
+                """;
+
+            ConfigBindingGenRunResult result = await RunGeneratorAndUpdateCompilation(source);
+            Assert.NotNull(result.GeneratedSource);
+
+            await VerifySuppressedCallsMatchInterceptedCalls(result);
+        }
+
+        /// <summary>
+        /// Verifies that the set of IL2026/IL3050 diagnostics suppressed by the suppressor
+        /// matches exactly the set of calls intercepted by the source generator.
+        /// Catches both under-suppression (https://github.com/dotnet/runtime/issues/94544)
+        /// and over-suppression (https://github.com/dotnet/runtime/issues/96643).
+        /// </summary>
+        private static async Task VerifySuppressedCallsMatchInterceptedCalls(ConfigBindingGenRunResult result)
+        {
+            Assert.NotNull(result.GenerationSpec);
+
+            // Collect all intercepted (line, column) locations from the generator spec.
+            // The interceptor targets MemberAccessExpression.Name (e.g. "Get" in "c.Get<T>()").
+            HashSet<(int Line, int Column)> interceptedLocations = GetInterceptedLocations(result.GenerationSpec);
+            Assert.NotEmpty(interceptedLocations);
+
+            // Run the ILLink analyzer + suppressor on the output compilation (which includes generated InterceptsLocation attributes).
+            ImmutableArray<Diagnostic> diagnostics = await GetDiagnosticsWithSuppressor(result.OutputCompilation);
+
+            // The ILLink analyzer must have produced at least one IL2026 or IL3050 that was suppressed.
+            // Without this, the assertions below would pass vacuously if the analyzer didn't fire.
+            Assert.Contains(diagnostics, d => (d.Id is "IL2026" or "IL3050") && d.IsSuppressed);
+
+            // Every suppressed IL2026/IL3050 diagnostic should be at an intercepted location.
+            foreach (Diagnostic d in diagnostics.Where(d => (d.Id is "IL2026" or "IL3050") && d.IsSuppressed))
+            {
+                (int line, int column) = GetMethodNameLocation(d);
+                Assert.True(interceptedLocations.Contains((line, column)),
+                    $"Suppressed {d.Id} at ({line},{column}) but no interceptor was generated for that call site.");
+            }
+
+            // Every intercepted location should have its IL2026/IL3050 diagnostics suppressed.
+            foreach (Diagnostic d in diagnostics.Where(d => (d.Id is "IL2026" or "IL3050") && !d.IsSuppressed))
+            {
+                (int line, int column) = GetMethodNameLocation(d);
+                Assert.False(interceptedLocations.Contains((line, column)),
+                    $"Unsuppressed {d.Id} at ({line},{column}) but an interceptor was generated for that call site.");
+            }
+        }
+
+        /// <summary>
+        /// Resolves a diagnostic's location to the method name position that the interceptor targets.
+        /// The ILLink analyzer reports on the MemberAccessExpression (e.g. "c.Get&lt;T&gt;"),
+        /// but the interceptor targets just the Name part (e.g. "Get"). This method walks from
+        /// the diagnostic location to the InvocationExpression's MemberAccessExpression.Name
+        /// to get the matching (line, column).
+        /// </summary>
+        private static (int Line, int Column) GetMethodNameLocation(Diagnostic diagnostic)
+        {
+            Location location = diagnostic.AdditionalLocations.Count > 0
+                ? diagnostic.AdditionalLocations[0]
+                : diagnostic.Location;
+            SyntaxTree sourceTree = location.SourceTree!;
+            SyntaxNode node = sourceTree.GetRoot().FindNode(location.SourceSpan, getInnermostNodeForTie: true);
+
+            InvocationExpressionSyntax invocation = (node as InvocationExpressionSyntax
+                ?? node.Parent as InvocationExpressionSyntax)!;
+
+            var memberAccess = (MemberAccessExpressionSyntax)invocation.Expression;
+            FileLinePositionSpan nameSpan = sourceTree.GetLineSpan(memberAccess.Name.Span);
+
+            return (nameSpan.StartLinePosition.Line + 1, nameSpan.StartLinePosition.Character + 1);
+        }
+
+        private static HashSet<(int Line, int Column)> GetInterceptedLocations(SourceGenerationSpec spec)
+        {
+            var locations = new HashSet<(int, int)>();
+            InterceptorInfo info = spec.InterceptorInfo;
+
+            AddLocations(info.ConfigBinder);
+            AddLocations(info.OptionsBuilderExt);
+            AddLocations(info.ServiceCollectionExt);
+            AddTypedLocations(info.ConfigBinder_Bind_instance);
+            AddTypedLocations(info.ConfigBinder_Bind_instance_BinderOptions);
+            AddTypedLocations(info.ConfigBinder_Bind_key_instance);
+
+            return locations;
+
+            void AddLocations(IEnumerable<InvocationLocationInfo>? locationInfos)
+            {
+                if (locationInfos is null)
+                    return;
+
+                foreach (InvocationLocationInfo loc in locationInfos)
+                {
+                    locations.Add(GetLocation(loc));
+                }
+            }
+
+            void AddTypedLocations(IEnumerable<TypedInterceptorInvocationInfo>? typedInfos)
+            {
+                if (typedInfos is null)
+                    return;
+
+                foreach (TypedInterceptorInvocationInfo typed in typedInfos)
+                {
+                    AddLocations(typed.Locations);
+                }
+            }
+        }
+
+        private static (int Line, int Column) GetLocation(InvocationLocationInfo loc)
+        {
+            if (loc.LineNumber != 0)
+            {
+                return (loc.LineNumber, loc.CharacterNumber);
+            }
+
+            // v1 interceptor: parse from display location, e.g. "path(line,col)"
+            string display = loc.InterceptableLocationGetDisplayLocation();
+            Match match = Regex.Match(display, @"\((\d+),(\d+)\)$");
+            Assert.True(match.Success, $"Could not parse display location: {display}");
+
+            return (int.Parse(match.Groups[1].Value, CultureInfo.InvariantCulture),
+                    int.Parse(match.Groups[2].Value, CultureInfo.InvariantCulture));
+        }
+
+        private static async Task<ImmutableArray<Diagnostic>> GetDiagnosticsWithSuppressor(Compilation compilation)
+        {
+            var analyzers = ImmutableArray.Create<DiagnosticAnalyzer>(
+                new DynamicallyAccessedMembersAnalyzer(),
+                new ConfigurationBindingGenerator.Suppressor());
+
+            var trimAotAnalyzerOptions = new DictionaryAnalyzerConfigOptions(
+                ImmutableDictionary.CreateRange<string, string>(
+                    StringComparer.OrdinalIgnoreCase,
+                    [
+                        new("build_property.EnableTrimAnalyzer", "true"),
+                        new("build_property.EnableAotAnalyzer", "true"),
+                    ]));
+            var analyzerOptions = new AnalyzerOptions(
+                ImmutableArray<AdditionalText>.Empty,
+                new GlobalOptionsOnlyProvider(trimAotAnalyzerOptions));
+            var options = new CompilationWithAnalyzersOptions(
+                analyzerOptions,
+                onAnalyzerException: null,
+                concurrentAnalysis: true,
+                logAnalyzerExecutionTime: false,
+                reportSuppressedDiagnostics: true);
+
+            return await new CompilationWithAnalyzers(compilation, analyzers, options)
+                .GetAllDiagnosticsAsync();
         }
     }
 }

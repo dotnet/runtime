@@ -507,11 +507,6 @@
         <target state="translated">'[In]' ve '[Out]' öznitelikleri yalnızca dizi parametrelerinde desteklenir. Parametreyi değiştirilebilir yapmak için 'ref' anahtar sözcüğünü kullanmayı düşünün.</target>
         <note />
       </trans-unit>
-      <trans-unit id="InOutAttributes">
-        <source>[In] and [Out] attributes</source>
-        <target state="translated">[In] ve [Out] öznitelikleri</target>
-        <note />
-      </trans-unit>
       <trans-unit id="InVariantShouldBeRef">
         <source>Objects marshalled from VARIANTs as 'in' parameters in unmanaged-to-managed calls will not propagate back the updated result, even if the VARIANT is a VT_BYREF variant. Use a 'ref' parameter instead of an 'in' parameter to propagate the updated value back to the caller.</source>
         <target state="translated">Yönetilmeyenden yönetilene yapılan çağrılarda 'in' parametresi olarak kullanılan VARIANT'lardan hazırlanma işlemiyle elde edilen nesneler, VARIANT çeşidi VT_BYREF olsa bile güncelleştirilmiş sonucu geri yaymaz. Güncelleştirilmiş değeri çağırana geri yayma için 'in' parametresi yerine bir 'ref' parametresi kullanın.</target>

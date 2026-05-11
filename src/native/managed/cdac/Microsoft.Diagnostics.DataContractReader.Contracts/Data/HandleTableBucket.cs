@@ -12,7 +12,7 @@ internal sealed class HandleTableBucket : IData<HandleTableBucket>
     public HandleTableBucket(Target target, TargetPointer address)
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.HandleTableBucket);
-        Table = target.ReadPointer(address + (ulong)type.Fields[nameof(Table)].Offset);
+        Table = target.ReadPointerField(address, type, nameof(Table));
     }
 
     public TargetPointer Table { get; init; }

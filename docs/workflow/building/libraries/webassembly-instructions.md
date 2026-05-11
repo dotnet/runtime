@@ -119,42 +119,22 @@ L: GC_MAJOR: (user request) time 3.00ms, stw 3.00ms los size: 0K in use: 0K
 
 ## Updating Emscripten version in Docker image
 
-First update emscripten version in the [webassembly Dockerfile](https://github.com/dotnet/dotnet-buildtools-prereqs-docker/blob/master/src/ubuntu/18.04/webassembly/Dockerfile#L19).
+First update the Emscripten version in the current WebAssembly image definition in
+[dotnet-buildtools-prereqs-docker](https://github.com/dotnet/dotnet-buildtools-prereqs-docker/tree/main/src/azurelinux).
+The active WebAssembly images are tracked in the
+[Azure Linux manifest](https://github.com/dotnet/dotnet-buildtools-prereqs-docker/blob/main/src/azurelinux/manifest.json).
 
-```
-ENV EMSCRIPTEN_VERSION=1.39.16
-```
+Submit a PR with the Dockerfile change and wait for the image publishing flow to complete.
+Once the image is published, find the new tag in the corresponding
+[image-info file](https://github.com/dotnet/versions/blob/main/build-info/docker/image-info.dotnet-dotnet-buildtools-prereqs-docker-main.json)
+in `dotnet/versions`.
 
-Submit a PR request with the updated version, wait for all checks to pass and for the request to be merged. A [master.json file](https://github.com/dotnet/versions/blob/master/build-info/docker/image-info.dotnet-dotnet-buildtools-prereqs-docker-master.json#L1126) will be updated with the a new docker image.
+Then update the WebAssembly image references in this repo:
 
-```
-{
-  "platforms": [
-    {
-      "dockerfile": "src/ubuntu/18.04/webassembly/Dockerfile",
-      "simpleTags": [
-        "ubuntu-18.04-webassembly-20210707133424-12f133e"
-      ],
-      "digest": "sha256:1f2d920a70bd8d55bbb329e87c3bd732ef930d64ff288dab4af0aa700c25cfaf",
-      "osType": "Linux",
-      "osVersion": "Ubuntu 18.04",
-      "architecture": "amd64",
-      "created": "2020-05-29T22:16:52.5716294Z",
-      "commitUrl": "https://github.com/dotnet/dotnet-buildtools-prereqs-docker/blob/6a6da637580ec557fd3708f86291f3ead2422697/src/ubuntu/18.04/webassembly/Dockerfile"
-    }
-  ]
-},
-```
+- [eng/pipelines/helix-platforms.yml](https://github.com/dotnet/runtime/blob/main/eng/pipelines/helix-platforms.yml)
+- [eng/pipelines/libraries/helix-queues-setup.yml](https://github.com/dotnet/runtime/blob/main/eng/pipelines/libraries/helix-queues-setup.yml)
 
-Copy the docker image tag and replace it in [platform-matrix.yml](https://github.com/dotnet/runtime/blob/main/eng/pipelines/common/platform-matrix.yml#L172)
-
-```
-container:
-    image: ubuntu-18.04-webassembly-20210707133424-12f133e
-    registry: mcr
-```
-
-Open a PR request with the new image.
+Open a PR with the updated image references.
 
 # Test libraries
 

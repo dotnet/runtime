@@ -34,12 +34,30 @@ namespace ILCompiler
                 return isAsyncVariant ? _context.GetTargetOfAsyncVariantMethod(method) : method;
             }
 
+            private MethodDesc WrapAsAsyncVariant(MethodDesc originalMethod, MethodDesc resolvedMethod)
+            {
+                Debug.Assert(originalMethod.Signature.ReturnsTaskOrValueTask());
+                Debug.Assert(resolvedMethod.Signature.ReturnsTaskOrValueTask());
+
+                MethodDesc asyncVariant = _context.GetAsyncVariantMethod(resolvedMethod);
+
+                // Check if the slot is void-returning but the resolved
+                // async variant is T-returning (base has Task, derived has Task<T>).
+                if (!originalMethod.Signature.ReturnType.HasInstantiation
+                    && !asyncVariant.Signature.ReturnType.IsVoid)
+                {
+                    asyncVariant = _context.GetReturnDroppingAsyncVariantMethod(asyncVariant);
+                }
+
+                return asyncVariant;
+            }
+
             public override MethodDesc FindVirtualFunctionTargetMethodOnObjectType(MethodDesc targetMethod, TypeDesc objectType)
             {
                 targetMethod = DecomposeAsyncVariant(targetMethod, out bool isAsyncSlot);
                 MethodDesc result = base.FindVirtualFunctionTargetMethodOnObjectType(targetMethod, objectType);
                 if (result != null && isAsyncSlot)
-                    result = _context.GetAsyncVariantMethod(result);
+                    result = WrapAsAsyncVariant(targetMethod, result);
 
                 return result;
             }
@@ -49,7 +67,7 @@ namespace ILCompiler
                 interfaceMethod = DecomposeAsyncVariant(interfaceMethod, out bool isAsyncSlot);
                 DefaultInterfaceMethodResolution result = base.ResolveInterfaceMethodToDefaultImplementationOnType(interfaceMethod, currentType, out impl);
                 if (impl != null && isAsyncSlot)
-                    impl = _context.GetAsyncVariantMethod(impl);
+                    impl = WrapAsAsyncVariant(interfaceMethod, impl);
 
                 return result;
             }
@@ -59,7 +77,7 @@ namespace ILCompiler
                 interfaceMethod = DecomposeAsyncVariant(interfaceMethod, out bool isAsyncSlot);
                 MethodDesc result = base.ResolveInterfaceMethodToStaticVirtualMethodOnType(interfaceMethod, currentType);
                 if (result != null && isAsyncSlot)
-                    result = _context.GetAsyncVariantMethod(result);
+                    result = WrapAsAsyncVariant(interfaceMethod, result);
 
                 return result;
             }
@@ -68,7 +86,7 @@ namespace ILCompiler
                 interfaceMethod = DecomposeAsyncVariant(interfaceMethod, out bool isAsyncSlot);
                 MethodDesc result = base.ResolveInterfaceMethodToVirtualMethodOnType(interfaceMethod, currentType);
                 if (result != null && isAsyncSlot)
-                    result = _context.GetAsyncVariantMethod(result);
+                    result = WrapAsAsyncVariant(interfaceMethod, result);
 
                 return result;
             }
@@ -77,7 +95,7 @@ namespace ILCompiler
                 interfaceMethod = DecomposeAsyncVariant(interfaceMethod, out bool isAsyncSlot);
                 DefaultInterfaceMethodResolution result = base.ResolveVariantInterfaceMethodToDefaultImplementationOnType(interfaceMethod, currentType, out impl);
                 if (impl != null && isAsyncSlot)
-                    impl = _context.GetAsyncVariantMethod(impl);
+                    impl = WrapAsAsyncVariant(interfaceMethod, impl);
 
                 return result;
             }
@@ -86,7 +104,7 @@ namespace ILCompiler
                 interfaceMethod = DecomposeAsyncVariant(interfaceMethod, out bool isAsyncSlot);
                 MethodDesc result = base.ResolveVariantInterfaceMethodToStaticVirtualMethodOnType(interfaceMethod, currentType);
                 if (result != null && isAsyncSlot)
-                    result = _context.GetAsyncVariantMethod(result);
+                    result = WrapAsAsyncVariant(interfaceMethod, result);
 
                 return result;
             }
@@ -95,7 +113,7 @@ namespace ILCompiler
                 interfaceMethod = DecomposeAsyncVariant(interfaceMethod, out bool isAsyncSlot);
                 MethodDesc result = base.ResolveVariantInterfaceMethodToVirtualMethodOnType(interfaceMethod, currentType);
                 if (result != null && isAsyncSlot)
-                    result = _context.GetAsyncVariantMethod(result);
+                    result = WrapAsAsyncVariant(interfaceMethod, result);
 
                 return result;
             }
@@ -199,6 +217,77 @@ namespace ILCompiler
             protected override AsyncMethodVariant CreateValueFromKey(EcmaMethod key) => new AsyncMethodVariant(key);
         }
         private AsyncVariantHashtable _asyncVariantHashtable = new AsyncVariantHashtable();
+
+        public MethodDesc GetReturnDroppingAsyncVariantMethod(MethodDesc asyncVariantMethod)
+        {
+            Debug.Assert(asyncVariantMethod.IsAsyncVariant());
+            Debug.Assert(!asyncVariantMethod.Signature.ReturnType.IsVoid);
+
+            MethodDesc typicalMethodDefinition = asyncVariantMethod.GetTypicalMethodDefinition();
+            MethodDesc result = _returnDroppingHashtable.GetOrCreateValue((AsyncMethodVariant)typicalMethodDefinition);
+
+            if (typicalMethodDefinition != asyncVariantMethod)
+            {
+                TypeDesc owningType = asyncVariantMethod.OwningType;
+                if (owningType != typicalMethodDefinition.OwningType)
+                    result = GetMethodForInstantiatedType(result, (InstantiatedType)owningType);
+
+                if (asyncVariantMethod.HasInstantiation && !asyncVariantMethod.IsMethodDefinition)
+                    result = GetInstantiatedMethod(result, asyncVariantMethod.Instantiation);
+            }
+
+            return result;
+        }
+
+        private sealed class ReturnDroppingHashtable : LockFreeReaderHashtable<AsyncMethodVariant, ReturnDroppingAsyncThunk>
+        {
+            protected override int GetKeyHashCode(AsyncMethodVariant key) => key.GetHashCode();
+            protected override int GetValueHashCode(ReturnDroppingAsyncThunk value) => value.AsyncVariantTarget.GetHashCode();
+            protected override bool CompareKeyToValue(AsyncMethodVariant key, ReturnDroppingAsyncThunk value) => key == value.AsyncVariantTarget;
+            protected override bool CompareValueToValue(ReturnDroppingAsyncThunk value1, ReturnDroppingAsyncThunk value2)
+                => value1.AsyncVariantTarget == value2.AsyncVariantTarget;
+            protected override ReturnDroppingAsyncThunk CreateValueFromKey(AsyncMethodVariant key) => new ReturnDroppingAsyncThunk(key);
+        }
+        private ReturnDroppingHashtable _returnDroppingHashtable = new ReturnDroppingHashtable();
+
+        public AsyncResumptionStub GetAsyncResumptionStub(MethodDesc targetMethod, TypeDesc owningType)
+        {
+            return _asyncResumptionStubHashtable.GetOrCreateValue(new AsyncResumptionStubKey(targetMethod, owningType));
+        }
+
+        private readonly struct AsyncResumptionStubKey : System.IEquatable<AsyncResumptionStubKey>
+        {
+            public readonly MethodDesc TargetMethod;
+            public readonly TypeDesc OwningType;
+
+            public AsyncResumptionStubKey(MethodDesc targetMethod, TypeDesc owningType)
+            {
+                TargetMethod = targetMethod;
+                OwningType = owningType;
+            }
+
+            public bool Equals(AsyncResumptionStubKey other)
+                => TargetMethod == other.TargetMethod;
+
+            public override bool Equals(object obj)
+                => obj is AsyncResumptionStubKey other && Equals(other);
+
+            public override int GetHashCode()
+                => TargetMethod.GetHashCode();
+        }
+
+        private sealed class AsyncResumptionStubHashtable : LockFreeReaderHashtable<AsyncResumptionStubKey, AsyncResumptionStub>
+        {
+            protected override int GetKeyHashCode(AsyncResumptionStubKey key) => key.GetHashCode();
+            protected override int GetValueHashCode(AsyncResumptionStub value) => value.TargetMethod.GetHashCode();
+            protected override bool CompareKeyToValue(AsyncResumptionStubKey key, AsyncResumptionStub value)
+                => key.TargetMethod == value.TargetMethod;
+            protected override bool CompareValueToValue(AsyncResumptionStub value1, AsyncResumptionStub value2)
+                => value1.TargetMethod == value2.TargetMethod;
+            protected override AsyncResumptionStub CreateValueFromKey(AsyncResumptionStubKey key)
+                => new AsyncResumptionStub(key.TargetMethod, key.OwningType);
+        }
+        private AsyncResumptionStubHashtable _asyncResumptionStubHashtable = new AsyncResumptionStubHashtable();
 
         public MetadataType GetContinuationType(GCPointerMap pointerMap)
         {

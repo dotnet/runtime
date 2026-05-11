@@ -110,38 +110,52 @@ int GetVersionResilientTypeHashCode(TypeHandle type)
 {
     STANDARD_VM_CONTRACT;
 
-    if (type.IsArray())
-    {
-        return ComputeArrayTypeHashCode(GetVersionResilientTypeHashCode(type.GetArrayElementTypeHandle()), type.GetRank());
-    }
-    else
     if (!type.IsTypeDesc())
     {
         MethodTable *pMT = type.AsMethodTable();
 
-        _ASSERTE(!pMT->IsArray());
-        _ASSERTE(!IsNilToken(pMT->GetCl()));
+        _ASSERTE(pMT->IsArray() || !IsNilToken(pMT->GetCl()));
 
-        LPCUTF8 szNamespace;
-        LPCUTF8 szName;
-        IfFailThrow(pMT->GetMDImport()->GetNameOfTypeDef(pMT->GetCl(), &szName, &szNamespace));
-        int hashcode = ComputeNameHashCode(szNamespace, szName);
-
-        MethodTable *pMTEnclosing = pMT->LoadEnclosingMethodTable(CLASS_LOAD_APPROXPARENTS);
-        if (pMTEnclosing != NULL)
+        int cachedHashCode = VolatileLoadWithoutBarrier(&pMT->GetAuxiliaryData()->m_cachedVersionResilientHashCode);
+        if (cachedHashCode != 0)
         {
-            hashcode = ComputeNestedTypeHashCode(GetVersionResilientTypeHashCode(TypeHandle(pMTEnclosing)), hashcode);
+            return cachedHashCode;
         }
 
-        if (!pMT->IsGenericTypeDefinition() && pMT->HasInstantiation())
+        int hashcode;
+        if (pMT->IsArray())
         {
-            return ComputeGenericInstanceHashCode(hashcode,
-                pMT->GetInstantiation().GetNumArgs(), pMT->GetInstantiation(), GetVersionResilientTypeHashCode);
+            hashcode = ComputeArrayTypeHashCode(GetVersionResilientTypeHashCode(type.GetArrayElementTypeHandle()), type.GetRank());
         }
         else
         {
-            return hashcode;
+            LPCUTF8 szNamespace;
+            LPCUTF8 szName;
+            IfFailThrow(pMT->GetMDImport()->GetNameOfTypeDef(pMT->GetCl(), &szName, &szNamespace));
+            hashcode = ComputeNameHashCode(szNamespace, szName);
+
+            MethodTable *pMTEnclosing = pMT->LoadEnclosingMethodTable(CLASS_LOAD_APPROXPARENTS);
+            if (pMTEnclosing != NULL)
+            {
+                hashcode = ComputeNestedTypeHashCode(GetVersionResilientTypeHashCode(TypeHandle(pMTEnclosing)), hashcode);
+            }
+
+            if (!pMT->IsGenericTypeDefinition() && pMT->HasInstantiation())
+            {
+                hashcode = ComputeGenericInstanceHashCode(hashcode,
+                    pMT->GetInstantiation().GetNumArgs(), pMT->GetInstantiation(), GetVersionResilientTypeHashCode);
+            }
         }
+
+        // 0 is used as the sentinel "not yet cached" value, so only cache if non-zero.
+        // Types with a hash code of exactly 0 are extremely rare in practice; they will simply
+        // have their hash code recomputed on every call, which is still correct behavior.
+        if (hashcode != 0)
+        {
+            VolatileStore(&pMT->GetAuxiliaryDataForWrite()->m_cachedVersionResilientHashCode, hashcode);
+        }
+
+        return hashcode;
     }
     else
     if (type.IsPointer())

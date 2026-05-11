@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Reflection.Internal;
 using System.Runtime.InteropServices;
+using System.Text;
 
 namespace System.Reflection.Metadata.Ecma335
 {
@@ -249,18 +250,16 @@ namespace System.Reflection.Metadata.Ecma335
         /// </summary>
         /// <param name="value">Constant value.</param>
         /// <returns>Handle to the added or existing blob.</returns>
-        public BlobHandle GetOrAddConstantBlob(object? value)
+        public unsafe BlobHandle GetOrAddConstantBlob(object? value)
         {
             if (value is string str)
             {
                 return GetOrAddBlobUTF16(str);
             }
 
-            var builder = PooledBlobBuilder.GetInstance();
-            builder.WriteConstant(value);
-            var result = GetOrAddBlob(builder);
-            builder.Free();
-            return result;
+            Span<byte> buffer = stackalloc byte[BlobWriterImpl.MaxScalarConstantSize];
+            int length = BlobWriterImpl.WriteScalarConstant(buffer, value);
+            return GetOrAddBlob(buffer.Slice(0, length));
         }
 
         /// <summary>
@@ -555,10 +554,10 @@ namespace System.Reflection.Metadata.Ecma335
                 int position = stringHeapStartOffset + heapBuilder.Count;
 
                 // It is important to use ordinal comparison otherwise we'll use the current culture!
-                if (prev.EndsWith(entry.Key, StringComparison.Ordinal) && !BlobUtilities.IsLowSurrogateChar(entry.Key[0]))
+                if (prev.EndsWith(entry.Key, StringComparison.Ordinal) && !char.IsLowSurrogate(entry.Key[0]))
                 {
                     // Map over the tail of prev string. Watch for null-terminator of prev string.
-                    stringVirtualIndexToHeapOffsetMap[entry.Value.GetWriterVirtualIndex()] = position - (BlobUtilities.GetUTF8ByteCount(entry.Key) + 1);
+                    stringVirtualIndexToHeapOffsetMap[entry.Value.GetWriterVirtualIndex()] = position - (Encoding.UTF8.GetByteCount(entry.Key) + 1);
                 }
                 else
                 {

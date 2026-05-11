@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
@@ -19,7 +19,7 @@ namespace System.Net
         #region HtmlEncode / HtmlDecode methods
 
         [return: NotNullIfNotNull(nameof(value))]
-        public static string? HtmlEncode(string? value)
+        public static unsafe string? HtmlEncode(string? value)
         {
             ReadOnlySpan<char> valueSpan = value.AsSpan();
 
@@ -45,7 +45,7 @@ namespace System.Net
             return sb.ToString();
         }
 
-        public static void HtmlEncode(string? value, TextWriter output)
+        public static unsafe void HtmlEncode(string? value, TextWriter output)
         {
             ArgumentNullException.ThrowIfNull(output);
 
@@ -152,7 +152,7 @@ namespace System.Net
         }
 
         [return: NotNullIfNotNull(nameof(value))]
-        public static string? HtmlDecode(string? value)
+        public static unsafe string? HtmlDecode(string? value)
         {
             ReadOnlySpan<char> valueSpan = value.AsSpan();
 
@@ -174,7 +174,7 @@ namespace System.Net
             return sb.ToString();
         }
 
-        public static void HtmlDecode(string? value, TextWriter output)
+        public static unsafe void HtmlDecode(string? value, TextWriter output)
         {
             ArgumentNullException.ThrowIfNull(output);
 

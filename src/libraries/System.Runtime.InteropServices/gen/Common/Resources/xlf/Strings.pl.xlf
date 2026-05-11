@@ -507,11 +507,6 @@
         <target state="translated">Atrybuty „[In]” i „[Out]” są obsługiwane tylko w przypadku parametrów tablicy. Rozważ użycie słowa kluczowego „ref”, aby umożliwić modyfikowanie parametru.</target>
         <note />
       </trans-unit>
-      <trans-unit id="InOutAttributes">
-        <source>[In] and [Out] attributes</source>
-        <target state="translated">Atrybuty [In] i [Out]</target>
-        <note />
-      </trans-unit>
       <trans-unit id="InVariantShouldBeRef">
         <source>Objects marshalled from VARIANTs as 'in' parameters in unmanaged-to-managed calls will not propagate back the updated result, even if the VARIANT is a VT_BYREF variant. Use a 'ref' parameter instead of an 'in' parameter to propagate the updated value back to the caller.</source>
         <target state="translated">Obiekty przekazywane z obiektów VARIANT jako parametry „w” w wywołaniach niezarządzanych do zarządzanych nie będą propagować z powrotem zaktualizowanego wyniku, nawet jeśli parametr VARIANT jest wariantem VT_BYREF. Użyj parametru „ref” zamiast parametru „w”, aby propagować zaktualizowaną wartość z powrotem do obiektu wywołującego.</target>

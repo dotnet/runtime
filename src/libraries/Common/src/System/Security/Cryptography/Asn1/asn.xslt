@@ -67,16 +67,17 @@ namespace <xsl:value-of select="@namespace" />
 {<xsl:if test="*[@defaultDerInit]">
     file static class Shared<xsl:value-of select="@name" />
     {<xsl:apply-templates mode="DefaultFieldDef" />
-<xsl:if test="not(@emitType) or @emitType='struct' or @emitType='both'">#if DEBUG
+#if DEBUG
         static Shared<xsl:value-of select="@name" />()
         {
-            <xsl:value-of select="@name" /> decoded = default;<xsl:if test="asn:AsnType[@defaultDerInit] | *[@defaultDerInit]/asn:AsnType">
+<xsl:choose><xsl:when test="not(@emitType) or @emitType='struct' or @emitType='both'">            <xsl:value-of select="@name" /> decoded = default;<xsl:if test="asn:AsnType[@defaultDerInit] | *[@defaultDerInit]/asn:AsnType">
             ReadOnlyMemory&lt;byte&gt; rebind = default;</xsl:if>
             ValueAsnReader reader;<xsl:if test="asn:SequenceOf[@defaultDerInit] | asn:SetOf[@defaultDerInit]">
-            ValueAsnReader collectionReader;</xsl:if><xsl:apply-templates mode="DefaultFieldVerify" />
+            ValueAsnReader collectionReader;</xsl:if><xsl:apply-templates mode="DefaultFieldVerify" /></xsl:when><xsl:otherwise>            Value<xsl:value-of select="@name" /> decoded = default;
+            ValueAsnReader reader;<xsl:apply-templates mode="ValueDefaultFieldVerify" /></xsl:otherwise></xsl:choose>
         }
 #endif
-</xsl:if>    }
+    }
 </xsl:if><xsl:if test="not(@emitType) or @emitType='struct' or @emitType='both'">
     [StructLayout(LayoutKind.Sequential)]
     internal partial struct <xsl:value-of select="@name" />
@@ -152,6 +153,18 @@ namespace <xsl:value-of select="@namespace" />
     internal ref partial struct Value<xsl:value-of select="@name" />
     {<xsl:apply-templates mode="ValueFieldDef" />
 
+        internal readonly void Encode(AsnWriter writer)
+        {
+            Encode(writer, Asn1Tag.Sequence);
+        }
+
+        internal readonly void Encode(AsnWriter writer, Asn1Tag tag)
+        {
+            writer.PushSequence(tag);
+<xsl:apply-templates mode="ValueEncode" />
+            writer.PopSequence(tag);
+        }
+
         internal static void Decode(ReadOnlySpan&lt;byte&gt; encoded, AsnEncodingRules ruleSet, out Value<xsl:value-of select="@name" /> decoded)
         {
             Decode(Asn1Tag.Sequence, encoded, ruleSet, out decoded);
@@ -214,13 +227,11 @@ using System.Formats.Asn1;
 using System.Runtime.InteropServices;
 
 namespace <xsl:value-of select="@namespace" />
-{<xsl:if test="not(@emitType) or @emitType='struct' or @emitType='both'">
-    [StructLayout(LayoutKind.Sequential)]
-    internal partial struct <xsl:value-of select="@name" />
-    {<xsl:apply-templates mode="Validate" /><xsl:apply-templates mode="ValidateChoice" /><xsl:apply-templates mode="FieldDef" />
-
+{
 #if DEBUG
-        static <xsl:value-of select="@name" />()
+    file static class Validate<xsl:value-of select="@name" />
+    {
+        static Validate<xsl:value-of select="@name" />()
         {
             var usedTags = new System.Collections.Generic.Dictionary&lt;Asn1Tag, string&gt;();
             Action&lt;Asn1Tag, string&gt; ensureUniqueTag = (tag, fieldName) =&gt;
@@ -233,6 +244,23 @@ namespace <xsl:value-of select="@namespace" />
                 usedTags.Add(tag, fieldName);
             };
 <xsl:apply-templates mode="EnsureUniqueTag" />
+        }
+
+        [System.Runtime.CompilerServices.MethodImpl(
+            System.Runtime.CompilerServices.MethodImplOptions.NoInlining |
+            System.Runtime.CompilerServices.MethodImplOptions.NoOptimization)]
+        internal static void Validate() { }
+    }
+#endif
+<xsl:if test="not(@emitType) or @emitType='struct' or @emitType='both'">
+    [StructLayout(LayoutKind.Sequential)]
+    internal partial struct <xsl:value-of select="@name" />
+    {<xsl:apply-templates mode="Validate" /><xsl:apply-templates mode="ValidateChoice" /><xsl:apply-templates mode="FieldDef" />
+
+#if DEBUG
+        static <xsl:value-of select="@name" />()
+        {
+            Validate<xsl:value-of select="@name" />.Validate();
         }
 #endif
 
@@ -294,6 +322,23 @@ namespace <xsl:value-of select="@namespace" />
     [StructLayout(LayoutKind.Sequential)]
     internal ref partial struct Value<xsl:value-of select="@name" />
     {<xsl:apply-templates mode="ValueFieldDef" />
+
+#if DEBUG
+        static Value<xsl:value-of select="@name" />()
+        {
+            Validate<xsl:value-of select="@name" />.Validate();
+        }
+#endif
+
+        internal readonly void Encode(AsnWriter writer)
+        {
+            bool wroteValue = false;
+<xsl:apply-templates mode="ValueEncodeChoice" />
+            if (!wroteValue)
+            {
+                throw new CryptographicException();
+            }
+        }
 
         internal static void Decode(ReadOnlySpan&lt;byte&gt; encoded, AsnEncodingRules ruleSet, out Value<xsl:value-of select="@name" /> decoded)
         {
@@ -362,6 +407,13 @@ namespace <xsl:value-of select="@namespace" />
 
             reader = new ValueAsnReader(<xsl:call-template name="DefaultValueFieldUsage"/>, AsnEncodingRules.DER);<xsl:apply-templates select="." mode="DecodeSimpleValue"><xsl:with-param name="readerName" select="'reader'"/></xsl:apply-templates>
             reader.ThrowIfNotEmpty();</xsl:template>
+
+  <xsl:template match="*[@defaultDerInit]" mode="ValueDefaultFieldVerify">
+
+            reader = new ValueAsnReader(<xsl:call-template name="DefaultValueFieldUsage"/>, AsnEncodingRules.DER);<xsl:apply-templates select="." mode="ValueDecodeSimpleValue"><xsl:with-param name="readerName" select="'reader'"/></xsl:apply-templates>
+            reader.ThrowIfNotEmpty();</xsl:template>
+
+  <xsl:template match="*" mode="ValueDefaultFieldVerify" />
 
   <xsl:template match="*" mode="EnsureUniqueTag" xml:space="default">
     <xsl:choose>
@@ -1071,37 +1123,59 @@ namespace <xsl:value-of select="@namespace" />
   </xsl:template>
 
   <!-- ValueFieldDef: types that map to ReadOnlySpan (need companion bool if optional/choice) -->
-  <xsl:template match="asn:AnyValue" mode="ValueFieldDef">
-        internal ReadOnlySpan&lt;byte&gt; <xsl:value-of select="@name"/>;<xsl:if test="@optional | parent::asn:Choice">
-        internal bool Has<xsl:value-of select="@name"/>;</xsl:if></xsl:template>
+  <xsl:template match="asn:AnyValue" mode="ValueFieldDef" xml:space="default">
+    <xsl:call-template name="ValueFieldOrProperty"><xsl:with-param name="fieldType">ReadOnlySpan&lt;byte&gt;</xsl:with-param></xsl:call-template>
+  </xsl:template>
 
-  <xsl:template match="asn:Integer[@backingType = 'ReadOnlyMemory']" mode="ValueFieldDef">
-        internal ReadOnlySpan&lt;byte&gt; <xsl:value-of select="@name"/>;<xsl:if test="@optional | parent::asn:Choice">
-        internal bool Has<xsl:value-of select="@name"/>;</xsl:if></xsl:template>
+  <xsl:template match="asn:Integer[@backingType = 'ReadOnlyMemory']" mode="ValueFieldDef" xml:space="default">
+    <xsl:call-template name="ValueFieldOrProperty"><xsl:with-param name="fieldType">ReadOnlySpan&lt;byte&gt;</xsl:with-param></xsl:call-template>
+  </xsl:template>
 
-  <xsl:template match="asn:BitString" mode="ValueFieldDef">
-        internal ReadOnlySpan&lt;byte&gt; <xsl:value-of select="@name"/>;<xsl:if test="@optional | parent::asn:Choice">
-        internal bool Has<xsl:value-of select="@name"/>;</xsl:if></xsl:template>
+  <xsl:template match="asn:BitString" mode="ValueFieldDef" xml:space="default">
+    <xsl:call-template name="ValueFieldOrProperty"><xsl:with-param name="fieldType">ReadOnlySpan&lt;byte&gt;</xsl:with-param></xsl:call-template>
+  </xsl:template>
 
-  <xsl:template match="asn:OctetString" mode="ValueFieldDef">
-        internal ReadOnlySpan&lt;byte&gt; <xsl:value-of select="@name"/>;<xsl:if test="@optional | parent::asn:Choice">
-        internal bool Has<xsl:value-of select="@name"/>;</xsl:if></xsl:template>
+  <xsl:template match="asn:OctetString" mode="ValueFieldDef" xml:space="default">
+    <xsl:call-template name="ValueFieldOrProperty"><xsl:with-param name="fieldType">ReadOnlySpan&lt;byte&gt;</xsl:with-param></xsl:call-template>
+  </xsl:template>
 
-  <xsl:template match="asn:SequenceOf | asn:SetOf" mode="ValueFieldDef">
-        internal ReadOnlySpan&lt;byte&gt; <xsl:value-of select="@name"/>;<xsl:if test="@optional | parent::asn:Choice">
-        internal bool Has<xsl:value-of select="@name"/>;</xsl:if></xsl:template>
+  <xsl:template match="asn:SequenceOf | asn:SetOf" mode="ValueFieldDef" xml:space="default">
+    <xsl:call-template name="ValueFieldOrProperty"><xsl:with-param name="fieldType">ReadOnlySpan&lt;byte&gt;</xsl:with-param></xsl:call-template>
+  </xsl:template>
 
   <!-- ValueFieldDef: AsnType - uses valueTypeName if present, otherwise typeName -->
-  <xsl:template match="asn:AsnType[@valueTypeName]" mode="ValueFieldDef">
-        internal <xsl:value-of select="@valueTypeName"/> <xsl:value-of select="@name"/>;<xsl:if test="@optional | parent::asn:Choice">
-        internal bool Has<xsl:value-of select="@name"/>;</xsl:if></xsl:template>
+  <xsl:template match="asn:AsnType[@valueTypeName]" mode="ValueFieldDef" xml:space="default">
+    <xsl:call-template name="ValueFieldOrProperty"><xsl:with-param name="fieldType"><xsl:value-of select="@valueTypeName"/></xsl:with-param></xsl:call-template>
+  </xsl:template>
 
   <xsl:template match="asn:AsnType[not(@valueTypeName) and @rebind='false']" mode="ValueFieldDef">
         internal <xsl:value-of select="@typeName"/><xsl:if test="@optional | parent::asn:Choice">?</xsl:if> <xsl:value-of select="@name" />;</xsl:template>
 
-  <xsl:template match="asn:AsnType[not(@valueTypeName) and not(@rebind='false')]" mode="ValueFieldDef">
-        internal ReadOnlySpan&lt;byte&gt; <xsl:value-of select="@name"/>;<xsl:if test="@optional | parent::asn:Choice">
-        internal bool Has<xsl:value-of select="@name"/>;</xsl:if></xsl:template>
+  <xsl:template match="asn:AsnType[not(@valueTypeName) and not(@rebind='false')]" mode="ValueFieldDef" xml:space="default">
+    <xsl:call-template name="ValueFieldOrProperty"><xsl:with-param name="fieldType">ReadOnlySpan&lt;byte&gt;</xsl:with-param></xsl:call-template>
+  </xsl:template>
+
+  <!-- Helper: emits a field if not optional, or a property + companion bool if optional/choice -->
+  <xsl:template name="ValueFieldOrProperty" xml:space="default">
+    <xsl:param name="fieldType" />
+    <xsl:choose>
+      <xsl:when test="@optional | parent::asn:Choice" xml:space="preserve">
+
+        internal <xsl:value-of select="$fieldType" /><xsl:text> </xsl:text><xsl:value-of select="@name"/>
+        {
+            get;
+            set
+            {
+                Has<xsl:value-of select="@name"/> = true;
+                field = value;
+            }
+        }
+
+        internal bool Has<xsl:value-of select="@name"/> { get; private set; }</xsl:when>
+      <xsl:otherwise xml:space="preserve">
+        internal <xsl:value-of select="$fieldType" /><xsl:text> </xsl:text><xsl:value-of select="@name"/>;</xsl:otherwise>
+    </xsl:choose>
+  </xsl:template>
 
   <!-- ValueFieldDef: types unchanged from regular (delegate to FieldDef) -->
   <xsl:template match="asn:Boolean" mode="ValueFieldDef"><xsl:apply-templates select="." mode="FieldDef"/></xsl:template>
@@ -1400,5 +1474,279 @@ namespace <xsl:value-of select="@namespace" />
 
   <!-- No-op for all other element types -->
   <xsl:template match="*" mode="ValueCollectionEnumerable" />
+
+  <!-- ==== Value* ref struct: encode orchestration ==== -->
+
+  <xsl:template match="*" mode="ValueEncode" xml:space="default">
+    <xsl:param name="indent" />
+    <xsl:choose>
+      <xsl:when test="@defaultDerInit and not(@explicitTag)" xml:space="preserve">
+
+            // DEFAULT value handler for <xsl:value-of select="@name" />.
+            {<xsl:apply-templates select="." mode="AsnWriterDefaultDer">
+                      <xsl:with-param name="writerName" select="'tmp'" />
+                      <xsl:with-param name="indent" select="concat('    ', $indent)" />
+                    </xsl:apply-templates><xsl:apply-templates select="." mode="ValueEncodeValue">
+                      <xsl:with-param name="writerName" select="'tmp'" />
+                      <xsl:with-param name="indent" select="concat('    ', $indent)" />
+                    </xsl:apply-templates>
+
+                if (!tmp.EncodedValueEquals(<xsl:call-template name="DefaultValueFieldUsage"/>))
+                {
+                    tmp.CopyTo(writer);
+                }
+            }
+</xsl:when>
+      <xsl:when test="@optional">
+        <xsl:apply-templates select="." mode="ValueEncodeOptional" />
+      </xsl:when>
+      <xsl:otherwise>
+        <xsl:apply-templates select="." mode="ValueEncodeValue" />
+      </xsl:otherwise>
+    </xsl:choose>
+  </xsl:template>
+
+  <!-- Value* OPTIONAL encoding -->
+  <xsl:template match="*" mode="ValueEncodeOptional" xml:space="default">
+    <xsl:variable name="hasCompanionBool" select="
+        self::asn:AnyValue or
+        self::asn:BitString or
+        self::asn:OctetString or
+        (self::asn:Integer and @backingType='ReadOnlyMemory') or
+        self::asn:SequenceOf or
+        self::asn:SetOf or
+        (self::asn:AsnType and @valueTypeName) or
+        (self::asn:AsnType and not(@valueTypeName) and not(@rebind='false'))" />
+    <xsl:choose>
+      <xsl:when test="$hasCompanionBool" xml:space="preserve">
+
+            if (Has<xsl:value-of select="@name"/>)
+            {<xsl:apply-templates select="." mode="ValueEncodeValue"><xsl:with-param name="indent" select="'    '"/></xsl:apply-templates>
+            }
+</xsl:when>
+      <xsl:when test="self::asn:ObjectIdentifier or self::asn:UTF8String or self::asn:PrintableString or self::asn:T61String or self::asn:IA5String or self::asn:VisibleString or self::asn:BMPString" xml:space="preserve">
+
+            if (<xsl:value-of select="@name"/> != null)
+            {<xsl:apply-templates select="." mode="ValueEncodeValue"><xsl:with-param name="indent" select="'    '"/></xsl:apply-templates>
+            }
+</xsl:when>
+      <xsl:otherwise xml:space="preserve">
+
+            if (<xsl:value-of select="@name"/>.HasValue)
+            {<xsl:apply-templates select="." mode="ValueEncodeValue"><xsl:with-param name="indent" select="'    '"/></xsl:apply-templates>
+            }
+</xsl:otherwise>
+    </xsl:choose>
+  </xsl:template>
+
+  <!-- Value* EncodeValue: handles explicit/implicit tag wrapping -->
+  <xsl:template match="*" mode="ValueEncodeValue" xml:space="default">
+    <xsl:param name="writerName" select="'writer'" />
+    <xsl:param name="indent" />
+    <xsl:choose>
+      <xsl:when test="@defaultDerInit and @explicitTag" xml:space="preserve">
+
+            // DEFAULT value handler for <xsl:value-of select="@name" />.
+            {<xsl:apply-templates select="." mode="AsnWriterDefaultDer">
+                      <xsl:with-param name="writerName" select="'tmp'" />
+                      <xsl:with-param name="indent" select="concat('    ', $indent)" />
+                </xsl:apply-templates><xsl:apply-templates select="." mode="ValueEncodeSimpleValue">
+                  <xsl:with-param name="writerName" select="'tmp'" />
+                  <xsl:with-param name="indent" select="concat('    ', $indent)" />
+                </xsl:apply-templates>
+
+                if (!tmp.EncodedValueEquals(<xsl:call-template name="DefaultValueFieldUsage"/>))
+                {
+                    writer.PushSequence(<xsl:call-template name="ContextTag" />);
+                    tmp.CopyTo(writer);
+                    writer.PopSequence(<xsl:call-template name="ContextTag" />);
+                }
+            }
+</xsl:when>
+      <xsl:when test="@explicitTag" xml:space="preserve">
+            <xsl:value-of select="$indent"/>writer.PushSequence(<xsl:call-template name="ContextTag" />);<xsl:apply-templates select="." mode="ValueEncodeSimpleValue"><xsl:with-param name="writerName" select="$writerName"/><xsl:with-param name="indent" select="$indent"/></xsl:apply-templates>
+            <xsl:value-of select="$indent"/>writer.PopSequence(<xsl:call-template name="ContextTag" />);</xsl:when>
+      <xsl:otherwise>
+        <xsl:apply-templates select="." mode="ValueEncodeSimpleValue"><xsl:with-param name="writerName" select="$writerName"/><xsl:with-param name="indent" select="$indent" /></xsl:apply-templates>
+      </xsl:otherwise>
+    </xsl:choose>
+  </xsl:template>
+
+  <!-- ==== Value* ref struct: encode simple values ==== -->
+
+  <!-- Default: delegate to EncodeSimpleValue for types where the logic is identical -->
+  <xsl:template match="node()[name()]" mode="ValueEncodeSimpleValue" xml:space="default" priority="-9">
+    <xsl:param name="writerName" select="'writer'" />
+    <xsl:param name="indent" />
+    <xsl:param name="name" select="@name"/>
+    <xsl:apply-templates select="." mode="EncodeSimpleValue">
+      <xsl:with-param name="writerName" select="$writerName"/>
+      <xsl:with-param name="indent" select="$indent"/>
+      <xsl:with-param name="name" select="$name"/>
+    </xsl:apply-templates>
+  </xsl:template>
+
+  <!-- Value* AnyValue encode: no .Span/.Value needed -->
+  <xsl:template match="asn:AnyValue" mode="ValueEncodeSimpleValue" xml:space="default">
+    <xsl:param name="writerName"/>
+    <xsl:param name="indent" />
+    <xsl:param name="name" select="@name"/>
+    <xsl:if test="@implicitTag | @universalTagNumber" xml:space="preserve">
+
+            <xsl:value-of select="$indent"/>// Validator for tag constraint for <xsl:value-of select="@name"/>
+            <xsl:value-of select="$indent"/>{
+            <xsl:value-of select="$indent"/>    if (!Asn1Tag.TryDecode(<xsl:value-of select="$name"/>, out Asn1Tag validateTag, out _) ||
+            <xsl:value-of select="$indent"/>        !validateTag.HasSameClassAndValue(<xsl:call-template name="DefaultOrContextTag" />))
+            <xsl:value-of select="$indent"/>    {
+            <xsl:value-of select="$indent"/>        throw new CryptographicException();
+            <xsl:value-of select="$indent"/>    }
+            <xsl:value-of select="$indent"/>}
+</xsl:if>
+    <xsl:if test="1" xml:space="preserve">
+
+            <xsl:value-of select="$indent"/>try
+            <xsl:value-of select="$indent"/>{
+            <xsl:value-of select="$indent"/>    <xsl:value-of select="$writerName"/>.WriteEncodedValue(<xsl:value-of select="$name"/>);
+            <xsl:value-of select="$indent"/>}
+            <xsl:value-of select="$indent"/>catch (ArgumentException e)
+            <xsl:value-of select="$indent"/>{
+            <xsl:value-of select="$indent"/>    throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
+            <xsl:value-of select="$indent"/>}</xsl:if>
+  </xsl:template>
+
+  <!-- Value* OctetString encode: direct span, no .Span -->
+  <xsl:template match="asn:OctetString" mode="ValueEncodeSimpleValue" xml:space="default">
+    <xsl:param name="writerName"/>
+    <xsl:param name="indent" />
+    <xsl:param name="name" select="@name"/>
+    <xsl:if test="1" xml:space="preserve">
+            <xsl:value-of select="$indent"/><xsl:value-of select="$writerName"/>.WriteOctetString(<xsl:value-of select="$name"/><xsl:call-template name="MaybeImplicitCallS"/>);</xsl:if>
+  </xsl:template>
+
+  <!-- Value* BitString encode: direct span, no .Span -->
+  <xsl:template match="asn:BitString" mode="ValueEncodeSimpleValue" xml:space="default">
+    <xsl:param name="writerName"/>
+    <xsl:param name="indent" />
+    <xsl:param name="name" select="@name"/>
+    <xsl:if test="1" xml:space="preserve">
+            <xsl:value-of select="$indent"/><xsl:value-of select="$writerName"/>.WriteBitString(<xsl:value-of select="$name"/>, 0<xsl:call-template name="MaybeImplicitCallS"/>);</xsl:if>
+  </xsl:template>
+
+  <!-- Value* Integer[ReadOnlyMemory] encode: direct span, no .Span -->
+  <xsl:template match="asn:Integer[@backingType = 'ReadOnlyMemory']" mode="ValueEncodeSimpleValue" xml:space="default">
+    <xsl:param name="writerName"/>
+    <xsl:param name="indent" />
+    <xsl:param name="name" select="@name"/>
+    <xsl:if test="1" xml:space="preserve">
+            <xsl:value-of select="$indent"/><xsl:value-of select="$writerName"/>.WriteInteger(<xsl:value-of select="$name"/><xsl:call-template name="MaybeImplicitCallS"/>);</xsl:if>
+  </xsl:template>
+
+  <!-- Value* AsnType[@valueTypeName] encode: call Encode on the value type -->
+  <xsl:template match="asn:AsnType[@valueTypeName]" mode="ValueEncodeSimpleValue" xml:space="default">
+    <xsl:param name="writerName"/>
+    <xsl:param name="indent" />
+    <xsl:param name="name" select="@name"/>
+    <xsl:if test="1" xml:space="preserve">
+            <xsl:value-of select="$indent"/><xsl:value-of select="$name"/>.Encode(<xsl:value-of select="$writerName"/><xsl:call-template name="MaybeImplicitCallS"/>);</xsl:if>
+  </xsl:template>
+
+  <!-- Value* AsnType[not valueTypeName, not rebind=false] encode: raw span WriteEncodedValue -->
+  <xsl:template match="asn:AsnType[not(@valueTypeName) and not(@rebind='false')]" mode="ValueEncodeSimpleValue" xml:space="default">
+    <xsl:param name="writerName"/>
+    <xsl:param name="indent" />
+    <xsl:param name="name" select="@name"/>
+    <xsl:if test="1" xml:space="preserve">
+
+            <xsl:value-of select="$indent"/>try
+            <xsl:value-of select="$indent"/>{
+            <xsl:value-of select="$indent"/>    <xsl:value-of select="$writerName"/>.WriteEncodedValue(<xsl:value-of select="$name"/>);
+            <xsl:value-of select="$indent"/>}
+            <xsl:value-of select="$indent"/>catch (ArgumentException e)
+            <xsl:value-of select="$indent"/>{
+            <xsl:value-of select="$indent"/>    throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
+            <xsl:value-of select="$indent"/>}</xsl:if>
+  </xsl:template>
+
+  <!-- Value* SequenceOf/SetOf encode: raw bytes pass-through -->
+  <xsl:template match="asn:SequenceOf | asn:SetOf" mode="ValueEncodeSimpleValue" xml:space="default">
+    <xsl:param name="writerName"/>
+    <xsl:param name="indent" />
+    <xsl:param name="name" select="@name"/>
+    <xsl:if test="1" xml:space="preserve">
+
+            <xsl:value-of select="$indent"/>try
+            <xsl:value-of select="$indent"/>{
+            <xsl:value-of select="$indent"/>    <xsl:value-of select="$writerName"/>.WriteEncodedValue(<xsl:value-of select="$name"/>);
+            <xsl:value-of select="$indent"/>}
+            <xsl:value-of select="$indent"/>catch (ArgumentException e)
+            <xsl:value-of select="$indent"/>{
+            <xsl:value-of select="$indent"/>    throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
+            <xsl:value-of select="$indent"/>}</xsl:if>
+  </xsl:template>
+
+  <!-- ==== Value* ref struct: encode for Choice types ==== -->
+
+  <!-- Value* CHOICE: companion bool types -->
+  <xsl:template match="asn:AnyValue | asn:BitString | asn:OctetString | asn:SequenceOf | asn:SetOf" mode="ValueEncodeChoice">
+            if (Has<xsl:value-of select="@name"/>)
+            {
+                if (wroteValue)
+                    throw new CryptographicException();
+<xsl:apply-templates select="." mode="ValueEncodeValue"><xsl:with-param name="indent" select="'    '"/></xsl:apply-templates>
+                wroteValue = true;
+            }
+</xsl:template>
+
+  <xsl:template match="asn:Integer[@backingType='ReadOnlyMemory']" mode="ValueEncodeChoice">
+            if (Has<xsl:value-of select="@name"/>)
+            {
+                if (wroteValue)
+                    throw new CryptographicException();
+<xsl:apply-templates select="." mode="ValueEncodeValue"><xsl:with-param name="indent" select="'    '"/></xsl:apply-templates>
+                wroteValue = true;
+            }
+</xsl:template>
+
+  <xsl:template match="asn:AsnType[@valueTypeName]" mode="ValueEncodeChoice">
+            if (Has<xsl:value-of select="@name"/>)
+            {
+                if (wroteValue)
+                    throw new CryptographicException();
+<xsl:apply-templates select="." mode="ValueEncodeValue"><xsl:with-param name="indent" select="'    '"/></xsl:apply-templates>
+                wroteValue = true;
+            }
+</xsl:template>
+
+  <xsl:template match="asn:AsnType[not(@valueTypeName) and not(@rebind='false')]" mode="ValueEncodeChoice">
+            if (Has<xsl:value-of select="@name"/>)
+            {
+                if (wroteValue)
+                    throw new CryptographicException();
+<xsl:apply-templates select="." mode="ValueEncodeValue"><xsl:with-param name="indent" select="'    '"/></xsl:apply-templates>
+                wroteValue = true;
+            }
+</xsl:template>
+
+  <!-- Value* CHOICE: nullable struct types -->
+  <xsl:template match="asn:AsnType[@rebind='false'] | asn:Boolean | asn:Integer[not(@backingType='ReadOnlyMemory')] | asn:NamedBitList | asn:Enumerated | asn:UtcTime | asn:GeneralizedTime" mode="ValueEncodeChoice">
+            if (<xsl:value-of select="@name"/>.HasValue)
+            {
+                if (wroteValue)
+                    throw new CryptographicException();
+<xsl:apply-templates select="." mode="ValueEncodeValue"><xsl:with-param name="indent" select="'    '"/></xsl:apply-templates>
+                wroteValue = true;
+            }
+</xsl:template>
+
+  <!-- Value* CHOICE: reference types -->
+  <xsl:template match="asn:ObjectIdentifier | asn:UTF8String | asn:PrintableString | asn:T61String | asn:IA5String | asn:VisibleString | asn:BMPString" mode="ValueEncodeChoice">
+            if (<xsl:value-of select="@name"/> != null)
+            {
+                if (wroteValue)
+                    throw new CryptographicException();
+<xsl:apply-templates select="." mode="ValueEncodeValue"><xsl:with-param name="indent" select="'    '"/></xsl:apply-templates>
+                wroteValue = true;
+            }
+</xsl:template>
 
 </xsl:stylesheet>

@@ -4,6 +4,8 @@
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent);$(NetFrameworkCurrent)</TargetFrameworks>
     <NoWarn>$(NoWarn);SYSLIB0057</NoWarn>
     <NoWarn>$(NoWarn);SYSLIB5006</NoWarn>
+    <!-- https://github.com/dotnet/runtime/issues/126862 -->
+    <EnableAotAnalyzer>false</EnableAotAnalyzer>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\MLDsa\MLDsaTestsData.cs"

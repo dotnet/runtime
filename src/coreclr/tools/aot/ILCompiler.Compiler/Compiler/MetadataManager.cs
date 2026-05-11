@@ -424,10 +424,6 @@ namespace ILCompiler
                     return false;
             }
 
-            // TODO: Reflection invoking static virtual methods
-            if (method.IsVirtual && method.Signature.IsStatic)
-                return false;
-
             // Everything else can go in the mapping table.
             return true;
         }

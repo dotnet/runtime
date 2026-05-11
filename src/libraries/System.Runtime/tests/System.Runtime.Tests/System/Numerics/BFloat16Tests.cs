@@ -766,6 +766,23 @@ namespace System.Numerics.Tests
             yield return new object[] { "NaN", NumberStyles.Any, invariantFormat, float.NaN };
             yield return new object[] { "Infinity", NumberStyles.Any, invariantFormat, float.PositiveInfinity };
             yield return new object[] { "-Infinity", NumberStyles.Any, invariantFormat, float.NegativeInfinity };
+
+            // Hex float
+            yield return new object[] { "0x1p0", NumberStyles.HexFloat, invariantFormat, 1.0f };
+            yield return new object[] { "0x1.8p0", NumberStyles.HexFloat, invariantFormat, 1.5f };
+            yield return new object[] { "0x1p1", NumberStyles.HexFloat, invariantFormat, 2.0f };
+            yield return new object[] { "0x1p-1", NumberStyles.HexFloat, invariantFormat, 0.5f };
+            yield return new object[] { "-0x1p0", NumberStyles.HexFloat, invariantFormat, -1.0f };
+            yield return new object[] { "0x0p0", NumberStyles.HexFloat, invariantFormat, 0.0f };
+            yield return new object[] { "0xAp0", NumberStyles.HexFloat, invariantFormat, 10.0f };
+            yield return new object[] { "0x1.4p3", NumberStyles.HexFloat, invariantFormat, 10.0f };
+            yield return new object[] { "0xFFp0", NumberStyles.HexFloat, invariantFormat, 255.0f };
+            yield return new object[] { " 0x1p0 ", NumberStyles.HexFloat, invariantFormat, 1.0f };
+            yield return new object[] { "0x.1p4", NumberStyles.HexFloat, invariantFormat, 1.0f };
+            yield return new object[] { "0x1.p4", NumberStyles.HexFloat, invariantFormat, 16.0f };
+            // Overflow to infinity
+            yield return new object[] { "0x1p128", NumberStyles.HexFloat, invariantFormat, float.PositiveInfinity };
+            yield return new object[] { "-0x1p128", NumberStyles.HexFloat, invariantFormat, float.NegativeInfinity };
         }
 
         [Theory]
@@ -830,6 +847,34 @@ namespace System.Numerics.Tests
 
             yield return new object[] { "ab", NumberStyles.None, null, typeof(FormatException) }; // Negative hex value
             yield return new object[] { "  123  ", NumberStyles.None, null, typeof(FormatException) }; // Trailing and leading whitespace
+
+            // Invalid hex float inputs
+            yield return new object[] { "", NumberStyles.HexFloat, null, typeof(FormatException) }; // Empty
+            yield return new object[] { " ", NumberStyles.HexFloat, null, typeof(FormatException) }; // Whitespace only
+            yield return new object[] { "0x", NumberStyles.HexFloat, null, typeof(FormatException) }; // Prefix only
+            yield return new object[] { "0x.p0", NumberStyles.HexFloat, null, typeof(FormatException) }; // No significand digits
+            yield return new object[] { "0x1.0e5", NumberStyles.HexFloat, null, typeof(FormatException) }; // 'e' exponent instead of 'p'
+            yield return new object[] { "0x1.0p", NumberStyles.HexFloat, null, typeof(FormatException) }; // Exponent marker without digits
+            yield return new object[] { "0x1.8", NumberStyles.HexFloat, null, typeof(FormatException) }; // Fractional part without exponent
+            yield return new object[] { "0x.8", NumberStyles.HexFloat, null, typeof(FormatException) }; // Fractional-only without exponent
+            yield return new object[] { "0xFF", NumberStyles.HexFloat, null, typeof(FormatException) }; // Integer without exponent
+            yield return new object[] { "0xGp0", NumberStyles.HexFloat, null, typeof(FormatException) }; // Invalid hex char
+            yield return new object[] { "0x1.Gp0", NumberStyles.HexFloat, null, typeof(FormatException) }; // Invalid hex char in fraction
+            yield return new object[] { "0x1.0p0garbage", NumberStyles.HexFloat, null, typeof(FormatException) }; // Trailing garbage
+            yield return new object[] { "+-0x1.0p0", NumberStyles.HexFloat, null, typeof(FormatException) }; // Double sign
+            yield return new object[] { "0x1.0p+-1", NumberStyles.HexFloat, null, typeof(FormatException) }; // Double exponent sign
+            yield return new object[] { "NaN", NumberStyles.HexFloat, null, typeof(FormatException) }; // NaN not valid for HexFloat
+            yield return new object[] { "Infinity", NumberStyles.HexFloat, null, typeof(FormatException) }; // Infinity not valid for HexFloat
+            yield return new object[] { "0xX1.0p0", NumberStyles.HexFloat, null, typeof(FormatException) }; // double X
+            yield return new object[] { "x1.0p0", NumberStyles.HexFloat, null, typeof(FormatException) }; // missing 0 before x
+            yield return new object[] { "0", NumberStyles.HexFloat, null, typeof(FormatException) }; // missing 0x prefix
+            yield return new object[] { "1p0", NumberStyles.HexFloat, null, typeof(FormatException) }; // missing 0x prefix
+            yield return new object[] { "0x1.0p 0", NumberStyles.HexFloat, null, typeof(FormatException) }; // internal whitespace in exponent
+            yield return new object[] { "0x1pa", NumberStyles.HexFloat, null, typeof(FormatException) }; // non-digit in exponent
+            yield return new object[] { "xyz", NumberStyles.HexFloat, null, typeof(FormatException) }; // no hex digits
+            yield return new object[] { "0x1.0.p0", NumberStyles.HexFloat, null, typeof(FormatException) }; // double decimal point
+            yield return new object[] { "0x 1p0", NumberStyles.HexFloat, null, typeof(FormatException) }; // embedded whitespace after prefix
+            yield return new object[] { "0x1.8p0", NumberStyles.AllowHexSpecifier | NumberStyles.AllowExponent, null, typeof(FormatException) }; // decimal point not allowed without AllowDecimalPoint
         }
 
         [Theory]
@@ -1077,6 +1122,84 @@ namespace System.Numerics.Tests
             }
             Assert.Equal(expected.Replace('e', 'E'), f.ToString(format.ToUpperInvariant(), provider));
             Assert.Equal(expected.Replace('E', 'e'), f.ToString(format.ToLowerInvariant(), provider));
+        }
+
+        [Theory]
+        [InlineData(1.0f, "x", "0x1p+0")]
+        [InlineData(1.5f, "x", "0x1.8p+0")]
+        [InlineData(2.0f, "x", "0x1p+1")]
+        [InlineData(0.5f, "x", "0x1p-1")]
+        [InlineData(-1.0f, "x", "-0x1p+0")]
+        [InlineData(0.0f, "x", "0x0p+0")]
+        [InlineData(-0.0f, "x", "-0x0p+0")]
+        [InlineData(10.0f, "x", "0x1.4p+3")]
+        [InlineData(0.25f, "x", "0x1p-2")]
+        // Special values
+        [InlineData(float.NaN, "x", "NaN")]
+        [InlineData(float.PositiveInfinity, "x", "Infinity")]
+        [InlineData(float.NegativeInfinity, "x", "-Infinity")]
+        // Uppercase
+        [InlineData(3.25f, "X", "0X1.AP+1")]
+        // Precision
+        [InlineData(1.0f, "x0", "0x1p+0")]
+        [InlineData(1.5f, "x2", "0x1.80p+0")]
+        [InlineData(0.0f, "x0", "0x0p+0")]
+        [InlineData(0.0f, "x3", "0x0.000p+0")]
+        [InlineData(-0.0f, "x0", "-0x0p+0")]
+        public static void ToStringHexFloat(float f, string format, string expected)
+        {
+            BFloat16 b = (BFloat16)f;
+            Assert.Equal(expected, b.ToString(format, NumberFormatInfo.InvariantInfo));
+            NumberFormatTestHelper.TryFormatNumberTest(b, format, NumberFormatInfo.InvariantInfo, expected, formatCasingMatchesOutput: false);
+
+            if (!BFloat16.IsNaN(b) && !BFloat16.IsInfinity(b) && format.Length == 1)
+            {
+                BFloat16 parsed = BFloat16.Parse(expected, NumberStyles.HexFloat, NumberFormatInfo.InvariantInfo);
+                Assert.Equal(b, parsed);
+            }
+        }
+
+        [Theory]
+        [InlineData("-0x0p0")]
+        [InlineData("-0x0.0p0")]
+        public static void ParseHexFloat_NegativeZero(string input)
+        {
+            BFloat16 result = BFloat16.Parse(input, NumberStyles.HexFloat, NumberFormatInfo.InvariantInfo);
+            Assert.True(BFloat16.IsNegative(result) && result == (BFloat16)0.0f);
+
+            result = BFloat16.Parse(input.AsSpan(), NumberStyles.HexFloat, NumberFormatInfo.InvariantInfo);
+            Assert.True(BFloat16.IsNegative(result) && result == (BFloat16)0.0f);
+
+            result = BFloat16.Parse(Encoding.UTF8.GetBytes(input), NumberStyles.HexFloat, NumberFormatInfo.InvariantInfo);
+            Assert.True(BFloat16.IsNegative(result) && result == (BFloat16)0.0f);
+
+            Assert.True(BFloat16.TryParse(input, NumberStyles.HexFloat, NumberFormatInfo.InvariantInfo, out result));
+            Assert.True(BFloat16.IsNegative(result) && result == (BFloat16)0.0f);
+        }
+
+        [Fact]
+        public static void HexFloat_CustomNumberFormat()
+        {
+            var commaSep = new NumberFormatInfo { NumberDecimalSeparator = "," };
+            Assert.Equal((BFloat16)1.5f, BFloat16.Parse("0x1,8p0", NumberStyles.HexFloat, commaSep));
+            Assert.False(BFloat16.TryParse("0x1.8p0", NumberStyles.HexFloat, commaSep, out _));
+            Assert.Equal("0x1,8p+0", ((BFloat16)1.5f).ToString("x", commaSep));
+            NumberFormatTestHelper.TryFormatNumberTest((BFloat16)1.5f, "x", commaSep, "0x1,8p+0", formatCasingMatchesOutput: false);
+
+            var tildeMinus = new NumberFormatInfo { NegativeSign = "~" };
+            Assert.Equal("~0x1p+0", ((BFloat16)(-1.0f)).ToString("x", tildeMinus));
+            NumberFormatTestHelper.TryFormatNumberTest((BFloat16)(-1.0f), "x", tildeMinus, "~0x1p+0", formatCasingMatchesOutput: false);
+        }
+
+        [Theory]
+        [InlineData(NumberStyles.HexFloat | NumberStyles.AllowThousands)]
+        [InlineData(NumberStyles.HexFloat | NumberStyles.AllowCurrencySymbol)]
+        [InlineData(NumberStyles.AllowHexSpecifier)]
+        [InlineData(NumberStyles.AllowBinarySpecifier)]
+        public static void HexFloat_StyleValidation(NumberStyles style)
+        {
+            Assert.Throws<ArgumentException>(() => BFloat16.Parse("0x1p0", style));
+            Assert.Throws<ArgumentException>(() => BFloat16.TryParse("0x1p0", style, NumberFormatInfo.InvariantInfo, out _));
         }
 
         [Fact]
@@ -1344,7 +1467,7 @@ namespace System.Numerics.Tests
             yield return new object[] { (BFloat16)(2.297f), (BFloat16)(8.938f), CrossPlatformMachineEpsilon * (BFloat16)10 };  // value:  (ln(10))
             yield return new object[] { (BFloat16)(2.719f), (BFloat16)(14.19f), CrossPlatformMachineEpsilon * (BFloat16)100 }; // value:  (e)
             yield return new object[] { (BFloat16)(3.141f), (BFloat16)(22.12f), CrossPlatformMachineEpsilon * (BFloat16)100 }; // value:  (pi)
-            yield return new object[] { BFloat16.PositiveInfinity, BFloat16.PositiveInfinity, 0.0 };
+            yield return new object[] { BFloat16.PositiveInfinity, BFloat16.PositiveInfinity, (BFloat16)0.0f };
         }
 
         [Theory]
@@ -1388,7 +1511,7 @@ namespace System.Numerics.Tests
             yield return new object[] { (BFloat16)(2.297f), (BFloat16)(4.906f), CrossPlatformMachineEpsilon * (BFloat16)10 };   // value:  (ln(10))
             yield return new object[] { (BFloat16)(2.719f), (BFloat16)(6.594f), CrossPlatformMachineEpsilon * (BFloat16)10 };   // value:  (e)
             yield return new object[] { (BFloat16)(3.141f), (BFloat16)(8.812f), CrossPlatformMachineEpsilon * (BFloat16)10 };   // value:  (pi)
-            yield return new object[] { BFloat16.PositiveInfinity, BFloat16.PositiveInfinity, 0.0f };
+            yield return new object[] { BFloat16.PositiveInfinity, BFloat16.PositiveInfinity, (BFloat16)0.0f };
         }
 
         [Theory]
@@ -1550,8 +1673,8 @@ namespace System.Numerics.Tests
             yield return new object[] { (BFloat16)(-0.5078f), (BFloat16)(-0.707f), CrossPlatformMachineEpsilon };             // expected: -(1 / sqrt(2))
             yield return new object[] { (BFloat16)(-0.5f), (BFloat16)(-0.6914f), CrossPlatformMachineEpsilon };             // expected: -(ln(2))
             yield return new object[] { (BFloat16)(-0.4707f), (BFloat16)(-0.6367f), CrossPlatformMachineEpsilon };             // expected: -(2 / pi)
-            yield return new object[] { (BFloat16)(-0f), (BFloat16)(0f), 0.0f };
-            yield return new object[] { (BFloat16)(0f), (BFloat16)(0f), 0.0f };
+            yield return new object[] { (BFloat16)(-0f), (BFloat16)(0f), (BFloat16)0.0f };
+            yield return new object[] { (BFloat16)(0f), (BFloat16)(0f), (BFloat16)0.0f };
             yield return new object[] { (BFloat16)(0.375f), (BFloat16)(0.3184f), CrossPlatformMachineEpsilon };             // expected:  (1 / pi)
             yield return new object[] { (BFloat16)(0.543f), (BFloat16)(0.4336f), CrossPlatformMachineEpsilon };             // expected:  (log10(e))
             yield return new object[] { (BFloat16)(0.8906f), (BFloat16)(0.6367f), CrossPlatformMachineEpsilon };             // expected:  (2 / pi)
@@ -1714,7 +1837,7 @@ namespace System.Numerics.Tests
             yield return new object[] { BFloat16.PositiveInfinity, BFloat16.Zero, BFloat16.PositiveInfinity, BFloat16.Zero };
             yield return new object[] { BFloat16.PositiveInfinity, BFloat16.One, BFloat16.PositiveInfinity, BFloat16.Zero };
             yield return new object[] { BFloat16.PositiveInfinity, BFloat16.E, BFloat16.PositiveInfinity, BFloat16.Zero };
-            yield return new object[] { BFloat16.PositiveInfinity, 10.0f, BFloat16.PositiveInfinity, BFloat16.Zero };
+            yield return new object[] { BFloat16.PositiveInfinity, (BFloat16)10.0f, BFloat16.PositiveInfinity, BFloat16.Zero };
             yield return new object[] { BFloat16.PositiveInfinity, BFloat16.PositiveInfinity, BFloat16.PositiveInfinity, BFloat16.Zero };
         }
 

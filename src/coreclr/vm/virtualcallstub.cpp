@@ -2135,8 +2135,6 @@ PCODE VirtualCallStubManager::ResolveWorker(StubCallSite* pCallSite,
             // that missed, since we want to keep the resolve cache empty of unused entries.
             // If later the dispatch stub fails (because of another type at the call site),
             // we'll insert the new value into the cache for the next time.
-            // Note that if we decide to skip creating a DispatchStub beacuise we are calling
-            // from a shared to unshared domain the we also will insert into the cache.
 
             if (insertKind == DispatchCache::IK_NONE)
             {

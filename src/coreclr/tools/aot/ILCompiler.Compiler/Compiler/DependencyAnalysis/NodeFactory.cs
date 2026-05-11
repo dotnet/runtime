@@ -11,6 +11,7 @@ using ILCompiler.DependencyAnalysis.Wasm;
 using ILCompiler.DependencyAnalysisFramework;
 
 using Internal.IL;
+using Internal.NativeFormat;
 using Internal.Runtime;
 using Internal.Text;
 using Internal.TypeSystem;
@@ -132,6 +133,8 @@ namespace ILCompiler.DependencyAnalysis
         {
             get;
         }
+
+        protected virtual bool CanFold(MethodDesc method) => false;
 
         public TypeMapManager TypeMapManager
         {
@@ -570,6 +573,16 @@ namespace ILCompiler.DependencyAnalysis
             _fieldsWithMetadata = new NodeCache<FieldDesc, FieldMetadataNode>(field =>
             {
                 return new FieldMetadataNode(field);
+            });
+
+            _propertiesWithMetadata = new NodeCache<PropertyPseudoDesc, PropertyMetadataNode>(property =>
+            {
+                return new PropertyMetadataNode(property);
+            });
+
+            _eventsWithMetadata = new NodeCache<EventPseudoDesc, EventMetadataNode>(@event =>
+            {
+                return new EventMetadataNode(@event);
             });
 
             _modulesWithMetadata = new NodeCache<ModuleDesc, ModuleMetadataNode>(module =>
@@ -1137,7 +1150,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public IMethodNode FatAddressTakenFunctionPointer(MethodDesc method, bool isUnboxingStub = false)
         {
-            if (!ObjectInterner.CanFold(method))
+            if (!CanFold(method))
                 return FatFunctionPointer(method, isUnboxingStub);
 
             return _fatAddressTakenFunctionPointers.GetOrAdd(new MethodKey(method, isUnboxingStub));
@@ -1203,7 +1216,7 @@ namespace ILCompiler.DependencyAnalysis
         private NodeCache<MethodDesc, AddressTakenMethodNode> _addressTakenMethods;
         public IMethodNode AddressTakenMethodEntrypoint(MethodDesc method, bool unboxingStub = false)
         {
-            if (unboxingStub || !ObjectInterner.CanFold(method))
+            if (unboxingStub || !CanFold(method))
                 return MethodEntrypoint(method, unboxingStub);
 
             return _addressTakenMethods.GetOrAdd(method);
@@ -1459,6 +1472,26 @@ namespace ILCompiler.DependencyAnalysis
             return _fieldsWithMetadata.GetOrAdd(field);
         }
 
+        private NodeCache<PropertyPseudoDesc, PropertyMetadataNode> _propertiesWithMetadata;
+
+        internal PropertyMetadataNode PropertyMetadata(PropertyPseudoDesc property)
+        {
+            // These are only meaningful for UsageBasedMetadataManager. We should not have them
+            // in the dependency graph otherwise.
+            Debug.Assert(MetadataManager is UsageBasedMetadataManager);
+            return _propertiesWithMetadata.GetOrAdd(property);
+        }
+
+        private NodeCache<EventPseudoDesc, EventMetadataNode> _eventsWithMetadata;
+
+        internal EventMetadataNode EventMetadata(EventPseudoDesc @event)
+        {
+            // These are only meaningful for UsageBasedMetadataManager. We should not have them
+            // in the dependency graph otherwise.
+            Debug.Assert(MetadataManager is UsageBasedMetadataManager);
+            return _eventsWithMetadata.GetOrAdd(@event);
+        }
+
         private NodeCache<ModuleDesc, ModuleMetadataNode> _modulesWithMetadata;
 
         internal ModuleMetadataNode ModuleMetadata(ModuleDesc module)
@@ -1658,11 +1691,19 @@ namespace ILCompiler.DependencyAnalysis
 
             var commonFixupsTableNode = new ExternalReferencesTableNode("CommonFixupsTable", this);
             InteropStubManager.AddToReadyToRunHeader(ReadyToRunHeader, this, commonFixupsTableNode);
-            TypeMapManager.AddToReadyToRunHeader(ReadyToRunHeader, this, commonFixupsTableNode);
+            TypeMapManager.AddToReadyToRunHeader(ReadyToRunHeader, this, new ExternalReferencesTableIndex(commonFixupsTableNode, this));
             MetadataManager.AddToReadyToRunHeader(ReadyToRunHeader, this, commonFixupsTableNode);
             MetadataManager.AttachToDependencyGraph(graph);
             TypeMapManager.AttachToDependencyGraph(graph);
             ReadyToRunHeader.Add(MetadataManager.BlobIdToReadyToRunSection(ReflectionMapBlob.CommonFixupsTable), commonFixupsTableNode);
+        }
+
+        private sealed class ExternalReferencesTableIndex(ExternalReferencesTableNode table, NodeFactory factory) : INativeFormatTypeReferenceProvider
+        {
+            public Vertex EncodeReferenceToMethod(NativeWriter writer, MethodDesc method)
+                => writer.GetUnsignedConstant(table.GetIndex(factory.MethodEntrypoint(method)));
+            public Vertex EncodeReferenceToType(NativeWriter writer, TypeDesc type)
+                => writer.GetUnsignedConstant(table.GetIndex(factory.NecessaryTypeSymbol(type)));
         }
 
         protected struct MethodKey : IEquatable<MethodKey>

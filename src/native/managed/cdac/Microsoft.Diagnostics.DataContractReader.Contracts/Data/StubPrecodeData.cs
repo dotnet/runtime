@@ -11,8 +11,8 @@ internal sealed class StubPrecodeData_1 : IData<StubPrecodeData_1>
     public StubPrecodeData_1(Target target, TargetPointer address)
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.StubPrecodeData);
-        MethodDesc = target.ReadPointer(address + (ulong)type.Fields[nameof(MethodDesc)].Offset);
-        Type = target.Read<byte>(address + (ulong)type.Fields[nameof(Type)].Offset);
+        MethodDesc = target.ReadPointerField(address, type, nameof(MethodDesc));
+        Type = target.ReadField<byte>(address, type, nameof(Type));
     }
 
     public TargetPointer MethodDesc { get; init; }
@@ -27,8 +27,8 @@ internal sealed class StubPrecodeData_2 : IData<StubPrecodeData_2>
     public StubPrecodeData_2(Target target, TargetPointer address)
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.StubPrecodeData);
-        SecretParam = target.ReadPointer(address + (ulong)type.Fields[nameof(SecretParam)].Offset);
-        Type = target.Read<byte>(address + (ulong)type.Fields[nameof(Type)].Offset);
+        SecretParam = target.ReadPointerField(address, type, nameof(SecretParam));
+        Type = target.ReadField<byte>(address, type, nameof(Type));
     }
 
     public TargetPointer SecretParam { get; init; }

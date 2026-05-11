@@ -1,0 +1,34 @@
+# Renovate Dependency Update Pipeline
+# This pipeline runs Renovate to automatically create PRs for dependency updates.
+
+trigger: none
+
+schedules:
+- cron: '0 8 * * 1'  # Runs every Monday at 8:00 AM UTC
+  displayName: Weekly Renovate Run
+  branches:
+    include:
+    - main
+  always: true
+
+parameters:
+- name: dryRun
+  displayName: Dry Run (preview without creating PRs)
+  type: boolean
+  default: false
+- name: forceRecreatePR
+  displayName: Force Recreate PR (recreate even if closed)
+  type: boolean
+  default: false
+
+variables:
+- name: gitHubRepo
+  value: 'dotnet/runtime'
+
+extends:
+  template: /eng/common/core-templates/stages/renovate.yml@self
+  parameters:
+    dryRun: ${{ parameters.dryRun }}
+    forceRecreatePR: ${{ parameters.forceRecreatePR }}
+    gitHubRepo: ${{ variables.gitHubRepo }}
+    renovateConfigPath: eng/renovate.json

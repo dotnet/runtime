@@ -4,5 +4,6 @@
          ILStub at execution time. SYSLIB1054 warns about preferring LibraryImport. -->
     <NoWarn>$(NoWarn);SYSLIB1054</NoWarn>
     <DumpTypes>Full</DumpTypes>
+    <WindowsOnly>true</WindowsOnly>
   </PropertyGroup>
 </Project>
