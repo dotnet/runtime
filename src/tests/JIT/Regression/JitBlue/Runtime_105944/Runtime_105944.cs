@@ -10,8 +10,10 @@ using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
+using TestLibrary;
 using Xunit;
 
+[ActiveIssue("https://github.com/dotnet/runtime/issues/127955", typeof(CoreClrConfigurationDetection), nameof(CoreClrConfigurationDetection.IsAnyJitStress))]
 public unsafe class Runtime_105944
 {
     [ConditionalFact(typeof(Sve), nameof(Sve.IsSupported))]

@@ -1,9 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <!-- https://github.com/dotnet/runtime/issues/127955 -->
-    <JitOptimizationSensitive>true</JitOptimizationSensitive>
-  </PropertyGroup>
-  <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup>

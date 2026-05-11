@@ -1,8 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <Optimize>True</Optimize>
-    <!-- https://github.com/dotnet/runtime/issues/127955 -->
-    <JitOptimizationSensitive>true</JitOptimizationSensitive>
     <NoWarn>$(NoWarn);SYSLIB5003</NoWarn>
   </PropertyGroup>
   <ItemGroup>
