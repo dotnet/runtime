@@ -89,16 +89,15 @@ namespace ILCompiler.DependencyAnalysis
 
             // Resolve the constructor once for all named arguments
             MethodDesc constructor = _module.TryGetMethod(customAttribute.Constructor);
+            if (constructor is null)
+                return dependencies;
 
             foreach (CustomAttributeNamedArgument<TypeDesc> namedArg in decodedValue.NamedArguments)
             {
-                if (constructor is not null)
-                {
-                    if (namedArg.Kind == CustomAttributeNamedArgumentKind.Property)
-                        GetDependenciesFromPropertySetter(dependencies, factory, constructor.OwningType, namedArg.Name);
-                    else if (namedArg.Kind == CustomAttributeNamedArgumentKind.Field)
-                        GetDependenciesFromField(dependencies, factory, constructor.OwningType, namedArg.Name);
-                }
+                if (namedArg.Kind == CustomAttributeNamedArgumentKind.Property)
+                    GetDependenciesFromPropertySetter(dependencies, factory, constructor.OwningType, namedArg.Name);
+                else if (namedArg.Kind == CustomAttributeNamedArgumentKind.Field)
+                    GetDependenciesFromField(dependencies, factory, constructor.OwningType, namedArg.Name);
 
                 GetDependenciesFromCustomAttributeArgument(dependencies, factory, namedArg.Type, namedArg.Value);
             }
@@ -140,7 +139,7 @@ namespace ILCompiler.DependencyAnalysis
 
         private static void GetDependenciesFromPropertySetter(DependencyList dependencies, NodeFactory factory, TypeDesc attributeType, string propertyName)
         {
-            if (attributeType is not EcmaType ecmaType)
+            if (attributeType.GetTypeDefinition() is not EcmaType ecmaType)
                 return;
 
             MetadataReader reader = ecmaType.MetadataReader;
