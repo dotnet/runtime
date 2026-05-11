@@ -4326,8 +4326,8 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
 #ifdef TARGET_RISCV64
         if (bitOp->IsIntegralConstUnsignedPow2())
         {
-            INT64 bit  = bitOp->AsIntConCommon()->IntegralValue();
-            int   log2 = BitOperations::Log2((UINT64)bit);
+            UINT64 bit  = bitOp->AsIntConCommon()->UnsignedIntegralValue();
+            int    log2 = BitOperations::Log2(bit);
             bitOp->AsIntConCommon()->SetIntegralValue(log2);
             return true;
         }

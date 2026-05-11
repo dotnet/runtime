@@ -10,7 +10,6 @@ namespace System.Xml.XslCompiledTransformApiTests
 {
     //[TestCase(Name = "TemporaryFiles", Desc = "This testcase tests the Temporary Files property on XslCompiledTransform")]
     [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/124344", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile), nameof(PlatformDetection.IsCoreCLR))]
     public class TempFiles : XsltApiTestCaseBase2
     {
         private XslCompiledTransform _xsl = null;
