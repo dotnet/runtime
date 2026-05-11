@@ -418,7 +418,7 @@ namespace ILCompiler.DependencyAnalysis
         private static void CopySerializedValue(ref BlobReader valueReader, BlobBuilder blobBuilder, byte[] originalBlob, CustomAttributeTypeProvider typeProvider, CustomAttributeTypeNameFormatter formatter, SerializationTypeCode valueTypeCode, SerializationTypeCode elementValueTypeCode)
         {
             if (valueTypeCode == SerializationTypeCode.Invalid)
-                throw new BadImageFormatException();
+                throw new BadImageFormatException("Invalid custom attribute serialization type code.");
 
             if (valueTypeCode == SerializationTypeCode.Boolean
                 || valueTypeCode == SerializationTypeCode.Byte
