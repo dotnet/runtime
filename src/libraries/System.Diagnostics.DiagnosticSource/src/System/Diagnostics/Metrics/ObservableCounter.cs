@@ -15,7 +15,7 @@ namespace System.Diagnostics.Metrics
     /// </remarks>
     public sealed class ObservableCounter<T> : ObservableInstrument<T> where T : struct
     {
-        private readonly object _callback;
+        internal readonly object _callback;
 
         internal ObservableCounter(Meter meter, string name, Func<T> observeValue, string? unit, string? description) : this(meter, name, observeValue, unit, description, tags: null)
         {
@@ -50,6 +50,10 @@ namespace System.Diagnostics.Metrics
         /// <summary>
         /// Observe() fetches the current measurements being tracked by this observable counter.
         /// </summary>
-        protected override IEnumerable<Measurement<T>> Observe() => Observe(_callback);
+        protected override IEnumerable<Measurement<T>> Observe()
+        {
+            Debug.Assert(_callback is Func<IEnumerable<Measurement<T>>>, "Single-value callbacks are dispatched in the base.");
+            return ((Func<IEnumerable<Measurement<T>>>)_callback)();
+        }
     }
 }

@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.Runtime.CompilerServices;
 
 namespace System.Diagnostics.Metrics
 {
@@ -55,6 +54,32 @@ namespace System.Diagnostics.Metrics
         {
             object? state = GetSubscriptionState(listener);
 
+            // Fast path for the built-in observable instruments: dispatch their single-value callbacks
+            // directly to the listener, avoiding the per-observation Measurement<T>[1] allocation that
+            // the IEnumerable<Measurement<T>> path used to require.
+            object? callback = this switch
+            {
+                ObservableCounter<T> c => c._callback,
+                ObservableGauge<T> g => g._callback,
+                ObservableUpDownCounter<T> u => u._callback,
+                _ => null
+            };
+
+            if (callback is Func<T> valueOnlyFunc)
+            {
+                listener.NotifyMeasurement(this, valueOnlyFunc(), Instrument.EmptyTags, state);
+                return;
+            }
+
+            if (callback is Func<Measurement<T>> measurementOnlyFunc)
+            {
+                Measurement<T> measurement = measurementOnlyFunc();
+                listener.NotifyMeasurement(this, measurement.Value, measurement.Tags, state);
+                return;
+            }
+
+            // Fallback path: user-defined ObservableInstrument<T> subclasses, and the built-ins'
+            // Func<IEnumerable<Measurement<T>>> callback shape (which the user owns end-to-end).
             IEnumerable<Measurement<T>> measurements = Observe();
             if (measurements is null)
             {
@@ -66,29 +91,5 @@ namespace System.Diagnostics.Metrics
                 listener.NotifyMeasurement(this, measurement.Value, measurement.Tags, state);
             }
         }
-
-        // Will be called from the concrete classes which extends ObservabilityInstrument<T> when calling Observe() method.
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static IEnumerable<Measurement<T>> Observe(object callback)
-        {
-            if (callback is Func<T> valueOnlyFunc)
-            {
-                return new Measurement<T>[1] { new Measurement<T>(valueOnlyFunc()) };
-            }
-
-            if (callback is Func<Measurement<T>> measurementOnlyFunc)
-            {
-                return new Measurement<T>[1] { measurementOnlyFunc() };
-            }
-
-            if (callback is Func<IEnumerable<Measurement<T>>> listOfMeasurementsFunc)
-            {
-                return listOfMeasurementsFunc();
-            }
-
-            Debug.Fail("Execution shouldn't reach this point");
-            return null;
-        }
-
     }
 }
