@@ -223,7 +223,8 @@ namespace ILCompiler.DependencyAnalysis
                 MethodSignature constructorSig = constructor.Signature;
                 for (int i = 0; i < constructorSig.Length; i++)
                 {
-                    CopyFixedArgument(ref valueReader, blobBuilder, constructorSig[i], formatter);
+                    GetFixedArgumentTypeCodes(constructorSig[i], out SerializationTypeCode valueTypeCode, out SerializationTypeCode elementValueTypeCode);
+                    CopySerializedValue(ref valueReader, blobBuilder, formatter, valueTypeCode, elementValueTypeCode);
                 }
 
                 ushort namedArgumentCount = valueReader.ReadUInt16();
@@ -263,16 +264,9 @@ namespace ILCompiler.DependencyAnalysis
             blobBuilder.WriteSerializedString(s);
         }
 
-        private void CopyFixedArgument(ref BlobReader valueReader, BlobBuilder blobBuilder, TypeDesc type, CustomAttributeTypeNameFormatter formatter)
-        {
-            GetFixedArgumentTypeCodes(type, out SerializationTypeCode valueTypeCode, out SerializationTypeCode elementValueTypeCode);
-            CopySerializedValue(ref valueReader, blobBuilder, formatter, valueTypeCode, elementValueTypeCode);
-        }
-
         private static void GetFixedArgumentTypeCodes(TypeDesc type, out SerializationTypeCode valueTypeCode, out SerializationTypeCode elementValueTypeCode)
         {
             elementValueTypeCode = default;
-            valueTypeCode = default;
             if (type.IsPrimitive || type.IsEnum)
             {
                 valueTypeCode = GetPrimitiveSerializationTypeCode(type.UnderlyingType);
@@ -316,16 +310,14 @@ namespace ILCompiler.DependencyAnalysis
 
         private void CopyNamedArgumentType(ref BlobReader valueReader, BlobBuilder blobBuilder, CustomAttributeTypeNameFormatter formatter, out SerializationTypeCode valueTypeCode, out SerializationTypeCode elementValueTypeCode)
         {
+            valueTypeCode = valueReader.ReadSerializationTypeCode();
             elementValueTypeCode = default;
+            blobBuilder.WriteByte((byte)valueTypeCode);
 
-            SerializationTypeCode typeCode = valueReader.ReadSerializationTypeCode();
-            blobBuilder.WriteByte((byte)typeCode);
-
-            switch (typeCode)
+            switch (valueTypeCode)
             {
                 case SerializationTypeCode.SZArray:
                     CopyNamedArgumentType(ref valueReader, blobBuilder, formatter, out elementValueTypeCode, out _);
-                    valueTypeCode = SerializationTypeCode.SZArray;
                     break;
                 case SerializationTypeCode.Enum:
                     string enumTypeName = valueReader.ReadSerializedString()!;
@@ -333,9 +325,6 @@ namespace ILCompiler.DependencyAnalysis
                     string rewritten = formatter.FormatName(enumType, true);
                     blobBuilder.WriteSerializedString(rewritten);
                     valueTypeCode = GetPrimitiveSerializationTypeCode(enumType.UnderlyingType);
-                    break;
-                default:
-                    valueTypeCode = typeCode;
                     break;
             }
         }
