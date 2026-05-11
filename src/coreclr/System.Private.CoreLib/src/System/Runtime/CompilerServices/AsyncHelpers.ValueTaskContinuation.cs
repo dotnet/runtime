@@ -2,9 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
-using System.Reflection;
-using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Sources;
@@ -20,8 +17,8 @@ namespace System.Runtime.CompilerServices
             public ExecutionContext? ExecutionContext;
             private object? _source;
             private short _token;
-            private delegate* managed<object, Action<object?>, object?, short, ValueTaskSourceOnCompletedFlags, void> _onCompleted;
-            private delegate* managed<object, short, ref byte, void> _getResult;
+            private delegate*<object, Action<object?>, object?, short, ValueTaskSourceOnCompletedFlags, void> _onCompleted;
+            private delegate*<object, short, ref byte, void> _getResult;
 
             public ValueTaskContinuation()
             {
