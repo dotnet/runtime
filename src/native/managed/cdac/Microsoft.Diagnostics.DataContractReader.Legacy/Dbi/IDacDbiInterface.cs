@@ -567,9 +567,6 @@ public unsafe partial interface IDacDbiInterface
     int GetDelegateTargetObject(int delegateType, ulong delegateObject, ulong* ppTargetObj, ulong* ppTargetAppDomain);
 
     [PreserveSig]
-    int GetLoaderHeapMemoryRanges(nint pRanges);
-
-    [PreserveSig]
     int IsModuleMapped(ulong pModule, Interop.BOOL* isModuleMapped);
 
     [PreserveSig]

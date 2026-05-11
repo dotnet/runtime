@@ -429,9 +429,6 @@ interface IDacDbiInterface : IUnknown
         [out] VMPTR_Object * ppTargetObj,
         [out] VMPTR_AppDomain * ppTargetAppDomain);
 
-    // Loader Heap
-    HRESULT GetLoaderHeapMemoryRanges([out] DacDbiArrayList_COR_MEMORY_RANGE * pRanges);
-
     // Module Mapping
     HRESULT IsModuleMapped([in] VMPTR_Module pModule, [out] BOOL * isModuleMapped);
     HRESULT MetadataUpdatesApplied([out] BOOL * pResult);
