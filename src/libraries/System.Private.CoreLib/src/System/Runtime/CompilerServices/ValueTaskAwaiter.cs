@@ -94,7 +94,7 @@ namespace System.Runtime.CompilerServices
             }
             else if (obj != null)
             {
-                Unsafe.As<IValueTaskSource>(obj).OnCompleted(ThreadPool.s_invokeAsyncStateMachineBox, box, _value._token, ValueTaskSourceOnCompletedFlags.UseSchedulingContext);
+                Unsafe.As<IValueTaskSource>(obj).OnCompleted(ThreadPool.s_invokeAsyncTask, box, _value._token, ValueTaskSourceOnCompletedFlags.UseSchedulingContext);
             }
             else
             {
@@ -176,7 +176,7 @@ namespace System.Runtime.CompilerServices
             }
             else if (obj != null)
             {
-                Unsafe.As<IValueTaskSource<TResult>>(obj).OnCompleted(ThreadPool.s_invokeAsyncStateMachineBox, box, _value._token, ValueTaskSourceOnCompletedFlags.UseSchedulingContext);
+                Unsafe.As<IValueTaskSource<TResult>>(obj).OnCompleted(ThreadPool.s_invokeAsyncTask, box, _value._token, ValueTaskSourceOnCompletedFlags.UseSchedulingContext);
             }
             else
             {

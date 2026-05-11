@@ -376,7 +376,7 @@ namespace System.Runtime.CompilerServices
 
             // Note that ThreadPool.s_dispatchRuntimeAsyncContinuationsCallback
             // calls this function and always passes null for the thread.
-            internal override void ExecuteFromThreadPool(Thread threadPoolThread)
+            internal override void ExecuteDirectly(Thread? threadPoolThread)
             {
                 DispatchContinuations();
             }
@@ -493,7 +493,7 @@ namespace System.Runtime.CompilerServices
 
                         // Clear continuation flags, so that continuation runs transparently
                         nextUserContinuation.Flags &= ~continueFlags;
-                        valueTaskSourceNotifier.OnCompleted(ThreadPool.s_dispatchRuntimeAsyncContinuationsCallback, this, configFlags);
+                        valueTaskSourceNotifier.OnCompleted(ThreadPool.s_invokeAsyncTask, this, configFlags);
                     }
                     else
                     {
