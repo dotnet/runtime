@@ -6498,7 +6498,10 @@ public:
     bool fgExpandStaticInitForCall(BasicBlock** pBlock, Statement* stmt, GenTreeCall* call);
 
     PhaseStatus fgExpandStackArrayAllocations();
-    bool fgExpandStackArrayAllocation(BasicBlock* pBlock, Statement* stmt, GenTreeCall* call);
+    bool fgExpandStackArrayAllocation(BasicBlock*  pBlock,
+                                      Statement*   stmt,
+                                      GenTreeCall* call,
+                                      unsigned&    frameRunningTotalLclNum);
 
     PhaseStatus fgVNBasedIntrinsicExpansion();
     bool fgVNBasedIntrinsicExpansionForCall(BasicBlock** pBlock, Statement* stmt, GenTreeCall* call);

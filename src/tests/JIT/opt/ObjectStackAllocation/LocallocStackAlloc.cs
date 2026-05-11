@@ -163,6 +163,30 @@ public class LocallocStackAlloc
         return array.Length;
     }
 
+    // Repeatedly allocate a small variable-length array within a single
+    // method invocation. The per-frame budget caps total localloc bytes, so
+    // after enough iterations the remaining allocations must fall back to
+    // the heap rather than growing the frame without bound.
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static int VariableLengthFrameBudget()
+    {
+        int sum = 0;
+        for (int iter = 0; iter < 200; iter++)
+        {
+            int n = OpaqueLength(64);
+            int[] array = new int[n];
+            for (int i = 0; i < array.Length; i++)
+            {
+                array[i] = i + 1;
+            }
+            for (int i = 0; i < array.Length; i++)
+            {
+                sum += array[i];
+            }
+        }
+        return sum;
+    }
+
     [Fact]
     public static int TestSmall() => CallTestAndVerifyAllocation(VariableLengthSmall, 8 + (1 + 2 + 3 + 4 + 5 + 6 + 7 + 8), StackAllocation());
 
@@ -177,4 +201,8 @@ public class LocallocStackAlloc
 
     [Fact]
     public static int TestHuge() => CallTestAndVerifyAllocation(VariableLengthHuge, 0, AllocationKind.Undefined, throws: true);
+
+    [Fact]
+    public static int TestFrameBudget() =>
+        CallTestAndVerifyAllocation(VariableLengthFrameBudget, 200 * ((64 * 65) / 2), HeapAllocation());
 }

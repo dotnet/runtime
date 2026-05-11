@@ -2801,6 +2801,12 @@ PhaseStatus Compiler::fgExpandStackArrayAllocations()
     //
     bool modified = false;
 
+    // Lazily-allocated TYP_I_IMPL local that accumulates the per-invocation
+    // total bytes of conditional (localloc) stack allocations. Initialized
+    // on first use by fgExpandStackArrayAllocation.
+    //
+    unsigned frameRunningTotalLclNum = BAD_VAR_NUM;
+
     for (BasicBlock* const block : Blocks())
     {
         for (Statement* const stmt : block->Statements())
@@ -2817,7 +2823,7 @@ PhaseStatus Compiler::fgExpandStackArrayAllocations()
                     continue;
                 }
 
-                if (fgExpandStackArrayAllocation(block, stmt, tree->AsCall()))
+                if (fgExpandStackArrayAllocation(block, stmt, tree->AsCall(), frameRunningTotalLclNum))
                 {
                     // If we expand, we split the statement's tree
                     // so will be done with this statment.
@@ -2854,7 +2860,10 @@ PhaseStatus Compiler::fgExpandStackArrayAllocations()
 //    For known sized arrays, we assume upstream analysis has limited size to
 //    something reasonable, and the allocation is into fixed local storage.
 //
-bool Compiler::fgExpandStackArrayAllocation(BasicBlock* block, Statement* stmt, GenTreeCall* call)
+bool Compiler::fgExpandStackArrayAllocation(BasicBlock*  block,
+                                            Statement*   stmt,
+                                            GenTreeCall* call,
+                                            unsigned&    frameRunningTotalLclNum)
 {
     if (!call->IsHelperCall())
     {
@@ -3021,12 +3030,48 @@ bool Compiler::fgExpandStackArrayAllocation(BasicBlock* block, Statement* stmt, 
             }
         }
 
-        GenTree* const  lengthForCheck     = gtCloneExpr(lengthArg);
-        var_types const lengthType         = genActualType(lengthForCheck);
-        GenTree* const  lengthLimit        = gtNewIconNode((ssize_t)maxSafeLength, lengthType);
-        GenTree* const  runtimeSizeCompare = gtNewOperNode(GT_GT, TYP_INT, lengthForCheck, lengthLimit);
-        runtimeSizeCompare->gtFlags |= GTF_UNSIGNED;
-        GenTree* const runtimeSizeCheck = gtNewOperNode(GT_JTRUE, TYP_VOID, runtimeSizeCompare);
+        GenTree* const  lengthForCheck = gtCloneExpr(lengthArg);
+        var_types const lengthType     = genActualType(lengthForCheck);
+        GenTree* const  lengthLimit    = gtNewIconNode((ssize_t)maxSafeLength, lengthType);
+        GenTree* const  lengthCompare  = gtNewOperNode(GT_GT, TYP_INT, lengthForCheck, lengthLimit);
+        lengthCompare->gtFlags |= GTF_UNSIGNED;
+
+        // Lazily allocate the per-frame running-total local, and insert an
+        // explicit zero-init store at the top of fgFirstBB. Independent of
+        // compInitMem and prolog zero-init policy.
+        //
+        if (frameRunningTotalLclNum == BAD_VAR_NUM)
+        {
+            frameRunningTotalLclNum                  = lvaGrabTemp(false DEBUGARG("stack alloc frame running total"));
+            lvaTable[frameRunningTotalLclNum].lvType = TYP_I_IMPL;
+
+            GenTree* const   zeroInit     = gtNewStoreLclVarNode(frameRunningTotalLclNum, gtNewIconNode(0, TYP_I_IMPL));
+            Statement* const zeroInitStmt = fgNewStmtFromTree(zeroInit);
+            fgInsertStmtAtBeg(fgFirstBB, zeroInitStmt);
+
+            JITDUMP("Created stack alloc frame running total V%02u, zero-init at " FMT_BB "\n", frameRunningTotalLclNum,
+                    fgFirstBB->bbNum);
+        }
+
+        // Build the second check: running + totalSize > frameLimit (unsigned).
+        // Note: when the length check fails the totalSize value computed in
+        // the temp is irrelevant; OR'ing the two compares preserves correct
+        // dispatch (the length check forces heap regardless of the second).
+        //
+        size_t const   frameLimit      = (size_t)(unsigned)JitConfig.JitObjectStackAllocationFrameSize();
+        GenTree* const runningForCheck = gtNewLclVarNode(frameRunningTotalLclNum);
+        GenTree* const totalSizeForSum = gtNewLclVarNode(totalSizeTemp);
+        GenTree* const newRunningTotal = gtNewOperNode(GT_ADD, TYP_I_IMPL, runningForCheck, totalSizeForSum);
+        GenTree* const frameLimitNode  = gtNewIconNode((ssize_t)frameLimit, TYP_I_IMPL);
+        GenTree* const frameCompare    = gtNewOperNode(GT_GT, TYP_INT, newRunningTotal, frameLimitNode);
+        frameCompare->gtFlags |= GTF_UNSIGNED;
+
+        // Combine the two compares. JTRUE requires a relop child, so wrap
+        // the OR with NE 0.
+        //
+        GenTree* const combinedOr       = gtNewOperNode(GT_OR, TYP_INT, lengthCompare, frameCompare);
+        GenTree* const combinedCond     = gtNewOperNode(GT_NE, TYP_INT, combinedOr, gtNewIconNode(0, TYP_INT));
+        GenTree* const runtimeSizeCheck = gtNewOperNode(GT_JTRUE, TYP_VOID, combinedCond);
 
         Statement* const runtimeSizeCheckStmt = fgNewStmtFromTree(runtimeSizeCheck);
         gtUpdateStmtSideEffects(runtimeSizeCheckStmt);
@@ -3102,6 +3147,17 @@ bool Compiler::fgExpandStackArrayAllocation(BasicBlock* block, Statement* stmt, 
 
         gtUpdateStmtSideEffects(locallocStmt);
         fgInsertStmtBefore(locallocBlock, stmt, locallocStmt);
+
+        // Update the per-frame running total. Only the localloc path
+        // consumes frame space, so do it here and not on the heap path.
+        //
+        GenTree* const   runningOld   = gtNewLclVarNode(frameRunningTotalLclNum);
+        GenTree* const   totalSizeAdd = gtNewLclVarNode(totalSizeTemp);
+        GenTree* const   runningSum   = gtNewOperNode(GT_ADD, TYP_I_IMPL, runningOld, totalSizeAdd);
+        GenTree* const   runningStore = gtNewStoreLclVarNode(frameRunningTotalLclNum, runningSum);
+        Statement* const runningStmt  = fgNewStmtFromTree(runningStore);
+        gtUpdateStmtSideEffects(runningStmt);
+        fgInsertStmtBefore(locallocBlock, locallocStmt, runningStmt);
 
         // Array address is the result of the localloc
         //
