@@ -3593,8 +3593,7 @@ void Compiler::fgMarkAddrModeForFieldAddr(GenTreeIndir* indir)
         {
             target_ssize_t accessOffset = total.Value();
             bool const     elidable     = (accessOffset >= 0) && !fgIsBigOffset((size_t)accessOffset);
-            bool const     baseNonNull =
-                optLocalAssertionProp && optAssertionIsNonNull(objRef, apLocal);
+            bool const     baseNonNull  = optLocalAssertionProp && optAssertionIsNonNull(objRef, apLocal);
 
             if (!elidable || (storeWithSideEffectfulValue && !baseNonNull))
             {

@@ -704,11 +704,8 @@ bool SideEffectSet::IsLirInvariantInRange(Compiler*    comp,
 // Remarks:
 //    This presumes we are operating on nodes that are in LIR form
 //
-bool SideEffectSet::IsLirInvariantInRange(Compiler*    comp,
-                                          GenTree*     node,
-                                          GenTree*     endExclusive,
-                                          GenTree*     ignoreNode,
-                                          GenTreeFlags ignoreFlagsOnNode)
+bool SideEffectSet::IsLirInvariantInRange(
+    Compiler* comp, GenTree* node, GenTree* endExclusive, GenTree* ignoreNode, GenTreeFlags ignoreFlagsOnNode)
 {
     assert((node != nullptr) && (endExclusive != nullptr));
 
