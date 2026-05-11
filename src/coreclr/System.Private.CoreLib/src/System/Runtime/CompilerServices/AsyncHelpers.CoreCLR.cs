@@ -344,6 +344,16 @@ namespace System.Runtime.CompilerServices
         }
 #endif
 
+        /// <summary>
+        /// Used by internal thunks that implement awaiting on ValueTask.
+        /// A ValueTask may wrap:
+        /// - Completed result   (we never await this)
+        /// - Task
+        /// - ValueTaskSource
+        /// Therefore, when we are awaiting a ValueTask completion we are really
+        /// awaiting a completion of an underlying Task or ValueTaskSource.
+        /// </summary>
+        /// <param name="valueTask">ValueTask whose completion we are awaiting.</param>
         [BypassReadyToRun]
         [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.Async)]
         private static unsafe void TransparentAwaitValueTask(ValueTask valueTask)
@@ -401,15 +411,9 @@ namespace System.Runtime.CompilerServices
         }
 
         /// <summary>
-        /// Used by internal thunks that implement awaiting on Task or a ValueTask.
-        /// A ValueTask may wrap:
-        /// - Completed result   (we never await this)
-        /// - Task
-        /// - ValueTaskSource
-        /// Therefore, when we are awaiting a ValueTask completion we are really
-        /// awaiting a completion of an underlying Task or ValueTaskSource.
+        /// Used by internal thunks that implement awaiting on Task.
         /// </summary>
-        /// <param name="t"> Task whose completion we are awaiting.</param>
+        /// <param name="t">Task whose completion we are awaiting.</param>
         [BypassReadyToRun]
         [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.Async)]
         private static unsafe void TransparentAwait(Task t)
