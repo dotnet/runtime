@@ -196,6 +196,12 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 wasmLocalIndex++;
             }
 
+            if (hasRetBuffArg)
+            {
+                // FIXME: What do I do here?
+                wasmLocalIndex++;
+            }
+
             for (int i = 0; i < methodSignature.Length; i++)
             {
                 TypeDesc paramType = methodSignature[i];
@@ -306,7 +312,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             // Pass return buffer argument if needed
             if (hasRetBuffArg)
             {
-                expressions.Add(Local.Get(hasThis ? 1 : 0));
+                expressions.Add(Local.Get(wasmLocalIndex));
                 wasmLocalIndex++;
             }
 
