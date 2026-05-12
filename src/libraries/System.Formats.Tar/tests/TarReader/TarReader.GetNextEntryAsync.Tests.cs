@@ -523,13 +523,13 @@ namespace System.Formats.Tar.Tests
         }
 
         [Theory]
-        [InlineData("PaxExtendedAttributes")]
-        [InlineData("GnuLongPath")]
-        [InlineData("GnuLongLink")]
-        public async Task MetadataBlock_AtMaxSize_Succeeds_Async(string metadataType)
+        [InlineData("PaxExtendedAttributes", MaxMetadataBlockSize - 100)]
+        [InlineData("GnuLongPath", MaxMetadataBlockSize)]
+        [InlineData("GnuLongLink", MaxMetadataBlockSize)]
+        public async Task MetadataBlock_AtMaxSize_Succeeds_Async(string metadataType, int size)
         {
             await using MemoryStream archive = new MemoryStream();
-            await WriteMetadataEntryAsync(archive, metadataType, MaxMetadataBlockSize);
+            await WriteMetadataEntryAsync(archive, metadataType, size);
 
             archive.Seek(0, SeekOrigin.Begin);
             await using TarReader reader = new TarReader(archive);
@@ -537,13 +537,13 @@ namespace System.Formats.Tar.Tests
         }
 
         [Theory]
-        [InlineData("PaxExtendedAttributes")]
-        [InlineData("GnuLongPath")]
-        [InlineData("GnuLongLink")]
-        public async Task MetadataBlock_ExceedsMaxSize_Throws_Async(string metadataType)
+        [InlineData("PaxExtendedAttributes", MaxMetadataBlockSize)]
+        [InlineData("GnuLongPath", MaxMetadataBlockSize + 1)]
+        [InlineData("GnuLongLink", MaxMetadataBlockSize + 1)]
+        public async Task MetadataBlock_ExceedsMaxSize_Throws_Async(string metadataType, int size)
         {
             await using MemoryStream archive = new MemoryStream();
-            await WriteMetadataEntryAsync(archive, metadataType, MaxMetadataBlockSize + 1);
+            await WriteMetadataEntryAsync(archive, metadataType, size);
 
             archive.Seek(0, SeekOrigin.Begin);
             await using TarReader reader = new TarReader(archive);
@@ -555,10 +555,9 @@ namespace System.Formats.Tar.Tests
             switch (metadataType)
             {
                 case "PaxExtendedAttributes":
-                    // PAX metadata block includes framing overhead, so we adjust the value size accordingly.
                     var extendedAttributes = new Dictionary<string, string>
                     {
-                        ["bigkey"] = new string('x', size - 1024)
+                        ["bigkey"] = new string('x', size)
                     };
                     await using (TarWriter paxWriter = new TarWriter(archive, TarEntryFormat.Pax, leaveOpen: true))
                     {
@@ -569,7 +568,7 @@ namespace System.Formats.Tar.Tests
                 case "GnuLongPath":
                     await using (TarWriter gnuPathWriter = new TarWriter(archive, TarEntryFormat.Gnu, leaveOpen: true))
                     {
-                        await gnuPathWriter.WriteEntryAsync(new GnuTarEntry(TarEntryType.RegularFile, new string('a', size)));
+                        await gnuPathWriter.WriteEntryAsync(new GnuTarEntry(TarEntryType.RegularFile, new string('a', size - 1)));
                     }
                     break;
 
@@ -577,7 +576,7 @@ namespace System.Formats.Tar.Tests
                     await using (TarWriter gnuLinkWriter = new TarWriter(archive, TarEntryFormat.Gnu, leaveOpen: true))
                     {
                         GnuTarEntry entry = new GnuTarEntry(TarEntryType.SymbolicLink, "test.txt");
-                        entry.LinkName = new string('a', size);
+                        entry.LinkName = new string('a', size - 1);
                         await gnuLinkWriter.WriteEntryAsync(entry);
                     }
                     break;

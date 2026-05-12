@@ -628,13 +628,13 @@ namespace System.Formats.Tar.Tests
         }
 
         [Theory]
-        [InlineData("PaxExtendedAttributes")]
-        [InlineData("GnuLongPath")]
-        [InlineData("GnuLongLink")]
-        public void MetadataBlock_AtMaxSize_Succeeds(string metadataType)
+        [InlineData("PaxExtendedAttributes", MaxMetadataBlockSize - 100)]
+        [InlineData("GnuLongPath", MaxMetadataBlockSize)]
+        [InlineData("GnuLongLink", MaxMetadataBlockSize)]
+        public void MetadataBlock_AtMaxSize_Succeeds(string metadataType, int size)
         {
             using MemoryStream archive = new MemoryStream();
-            WriteMetadataEntry(archive, metadataType, MaxMetadataBlockSize);
+            WriteMetadataEntry(archive, metadataType, size);
 
             archive.Seek(0, SeekOrigin.Begin);
             using TarReader reader = new TarReader(archive);
@@ -642,28 +642,31 @@ namespace System.Formats.Tar.Tests
         }
 
         [Theory]
-        [InlineData("PaxExtendedAttributes")]
-        [InlineData("GnuLongPath")]
-        [InlineData("GnuLongLink")]
-        public void MetadataBlock_ExceedsMaxSize_Throws(string metadataType)
+        [InlineData("PaxExtendedAttributes", MaxMetadataBlockSize)]
+        [InlineData("GnuLongPath", MaxMetadataBlockSize + 1)]
+        [InlineData("GnuLongLink", MaxMetadataBlockSize + 1)]
+        public void MetadataBlock_ExceedsMaxSize_Throws(string metadataType, int size)
         {
             using MemoryStream archive = new MemoryStream();
-            WriteMetadataEntry(archive, metadataType, MaxMetadataBlockSize + 1);
+            WriteMetadataEntry(archive, metadataType, size);
 
             archive.Seek(0, SeekOrigin.Begin);
             using TarReader reader = new TarReader(archive);
             Assert.Throws<InvalidOperationException>(() => reader.GetNextEntry());
         }
 
+        // Writes a TAR entry with metadata of the specified size.
+        // For GNU types, size is the on-disk block size (string length = size - 1 for null terminator).
+        // For PAX, size is the extended attribute value length; the total block will be
+        // slightly larger due to framing overhead (length prefixes, key names, default attributes).
         private static void WriteMetadataEntry(MemoryStream archive, string metadataType, int size)
         {
             switch (metadataType)
             {
                 case "PaxExtendedAttributes":
-                    // PAX metadata block includes framing overhead, so we adjust the value size accordingly.
                     var extendedAttributes = new Dictionary<string, string>
                     {
-                        ["bigkey"] = new string('x', size - 1024)
+                        ["bigkey"] = new string('x', size)
                     };
                     using (TarWriter paxWriter = new TarWriter(archive, TarEntryFormat.Pax, leaveOpen: true))
                     {
@@ -674,7 +677,7 @@ namespace System.Formats.Tar.Tests
                 case "GnuLongPath":
                     using (TarWriter gnuPathWriter = new TarWriter(archive, TarEntryFormat.Gnu, leaveOpen: true))
                     {
-                        gnuPathWriter.WriteEntry(new GnuTarEntry(TarEntryType.RegularFile, new string('a', size)));
+                        gnuPathWriter.WriteEntry(new GnuTarEntry(TarEntryType.RegularFile, new string('a', size - 1)));
                     }
                     break;
 
@@ -682,7 +685,7 @@ namespace System.Formats.Tar.Tests
                     using (TarWriter gnuLinkWriter = new TarWriter(archive, TarEntryFormat.Gnu, leaveOpen: true))
                     {
                         GnuTarEntry entry = new GnuTarEntry(TarEntryType.SymbolicLink, "test.txt");
-                        entry.LinkName = new string('a', size);
+                        entry.LinkName = new string('a', size - 1);
                         gnuLinkWriter.WriteEntry(entry);
                     }
                     break;
