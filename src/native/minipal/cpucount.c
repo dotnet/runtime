@@ -9,16 +9,39 @@
 int minipal_get_cpu_max_possible_count(void)
 {
 #if defined(__linux__)
-    int hi;
     FILE* f = fopen("/sys/devices/system/cpu/possible", "r");
     if (f != NULL)
     {
-        if (fscanf(f, "%*d-%d", &hi) == 1)
+        int maxCpu = -1;
+        for (;;)
         {
-            fclose(f);
-            return hi + 1;
+            int lo, hi;
+            int matched = fscanf(f, "%d-%d", &lo, &hi);
+            if (matched == 1)
+            {
+                hi = lo;
+            }
+            else if (matched != 2)
+            {
+                break;
+            }
+
+            if (maxCpu < hi)
+            {
+                maxCpu = hi;
+            }
+
+            int ch = fgetc(f);
+            if (ch == EOF || ch != ',')
+            {
+                break;
+            }
         }
         fclose(f);
+        if (maxCpu != -1)
+        {
+            return maxCpu + 1;
+        }
     }
 #endif
 
