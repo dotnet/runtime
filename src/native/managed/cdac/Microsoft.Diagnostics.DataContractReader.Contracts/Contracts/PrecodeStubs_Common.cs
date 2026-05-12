@@ -204,7 +204,7 @@ internal class PrecodeStubsCommon<TPrecodeStubsImplementation, TStubPrecodeData>
 
             return new TargetCodePointer(precodeData.ByteCodeAddr);
         }
-        catch (System.Exception ex) when (ex is VirtualReadException or NotImplementedException)
+        catch (VirtualReadException)
         {
             return entryPoint;
         }
