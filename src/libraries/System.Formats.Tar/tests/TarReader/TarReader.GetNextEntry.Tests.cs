@@ -631,7 +631,7 @@ namespace System.Formats.Tar.Tests
         [InlineData("PaxExtendedAttributes", MaxMetadataBlockSize - 100)]
         [InlineData("GnuLongPath", MaxMetadataBlockSize)]
         [InlineData("GnuLongLink", MaxMetadataBlockSize)]
-        public void MetadataBlock_AtMaxSize_Succeeds(string metadataType, int size)
+        public void MetadataBlock_UnderMaxSize_Succeeds(string metadataType, int size)
         {
             using MemoryStream archive = new MemoryStream();
             WriteMetadataEntry(archive, metadataType, size);

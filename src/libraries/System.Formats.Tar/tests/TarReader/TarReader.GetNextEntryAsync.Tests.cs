@@ -526,7 +526,7 @@ namespace System.Formats.Tar.Tests
         [InlineData("PaxExtendedAttributes", MaxMetadataBlockSize - 100)]
         [InlineData("GnuLongPath", MaxMetadataBlockSize)]
         [InlineData("GnuLongLink", MaxMetadataBlockSize)]
-        public async Task MetadataBlock_AtMaxSize_Succeeds_Async(string metadataType, int size)
+        public async Task MetadataBlock_UnderMaxSize_Succeeds_Async(string metadataType, int size)
         {
             await using MemoryStream archive = new MemoryStream();
             await WriteMetadataEntryAsync(archive, metadataType, size);
