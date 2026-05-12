@@ -680,8 +680,9 @@ struct RangeOps
             return Limit(Limit::keUnknown);
         }
 
-        // Allow shift counts in [1..30]. Shift count 31 would produce 1 << 31 == INT_MIN
-        // (or UB pre-C++20), which the subsequent Multiply cannot use safely.
+        // Allow shift counts in [1..30]. Shift count 31 can produce implementation-defined
+        // codegen or UB for `1 << 31`, and the resulting INT_MIN cannot be used safely by
+        // the subsequent Multiply.
         int r1loConstant = r1lo.GetConstant();
         int r1hiConstant = r1hi.GetConstant();
         if ((r1loConstant <= 0) || (r1loConstant > 30) || (r1hiConstant <= 0) || (r1hiConstant > 30))
