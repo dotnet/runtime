@@ -11725,6 +11725,17 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 emitRecordRelocation(odst, id->idAddr()->iiaAddr,
                                      id->idIsTlsGD() ? CorInfoReloc::ARM64_LIN_TLSDESC_ADR_PAGE21
                                                      : CorInfoReloc::ARM64_PAGEBASE_REL21);
+
+                if (id->idIsTlsGD())
+                {
+                    // This is the beginning of the TLS access linker
+                    // relaxation sequence for linux arm64. The linker may
+                    // replace these with other instructions that may trash x0.
+                    // We thus need to eagerly update GC for x0, in case the
+                    // linker's instructions trashes it earlier than we would
+                    // emit a mutating instruction that trashes it.
+                    emitGCregDeadUpd(REG_R0, dst);
+                }
             }
             else
             {
