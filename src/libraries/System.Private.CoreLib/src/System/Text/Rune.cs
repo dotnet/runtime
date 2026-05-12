@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
@@ -222,7 +222,7 @@ namespace System.Text
         public int Value => (int)_value;
 
 #if SYSTEM_PRIVATE_CORELIB
-        private static Rune ChangeCaseCultureAware(Rune rune, TextInfo textInfo, bool toUpper)
+        private static unsafe Rune ChangeCaseCultureAware(Rune rune, TextInfo textInfo, bool toUpper)
         {
             Debug.Assert(!GlobalizationMode.Invariant, "This should've been checked by the caller.");
             Debug.Assert(textInfo != null, "This should've been checked by the caller.");
@@ -257,7 +257,7 @@ namespace System.Text
             }
         }
 #else
-        private static Rune ChangeCaseCultureAware(Rune rune, CultureInfo culture, bool toUpper)
+        private static unsafe Rune ChangeCaseCultureAware(Rune rune, CultureInfo culture, bool toUpper)
         {
             Debug.Assert(culture != null, "This should've been checked by the caller.");
 
@@ -793,7 +793,7 @@ namespace System.Text
         /// <param name="other">The rune to compare with the current instance.</param>
         /// <param name="comparisonType">One of the enumeration values that specifies the rules to use in the comparison.</param>
         /// <returns><see langword="true"/> if the current instance and <paramref name="other"/> are equal; otherwise, <see langword="false"/>.</returns>
-        public bool Equals(Rune other, StringComparison comparisonType)
+        public unsafe bool Equals(Rune other, StringComparison comparisonType)
         {
             if (comparisonType is StringComparison.Ordinal)
             {
@@ -936,7 +936,7 @@ namespace System.Text
         /// <summary>
         /// Returns a <see cref="string"/> representation of this <see cref="Rune"/> instance.
         /// </summary>
-        public override string ToString()
+        public override unsafe string ToString()
         {
 #if SYSTEM_PRIVATE_CORELIB
             if (IsBmp)
