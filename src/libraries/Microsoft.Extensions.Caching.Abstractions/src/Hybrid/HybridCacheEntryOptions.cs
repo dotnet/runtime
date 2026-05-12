@@ -33,6 +33,20 @@ public sealed class HybridCacheEntryOptions
     /// </summary>
     public HybridCacheEntryFlags? Flags { get; init; }
 
+    /// <summary>
+    /// Gets the size to assign to entries in the local (in-process) cache.
+    /// </summary>
+    /// <remarks>
+    /// The units are determined by the underlying local cache implementation. When the local cache
+    /// is a <c>MemoryCache</c> configured with a size limit, this value corresponds to
+    /// <see cref="Microsoft.Extensions.Caching.Memory.ICacheEntry.Size"/>.
+    /// <para>
+    /// When <see langword="null"/>, the implementation may compute a default size (for example, from
+    /// the serialized payload length).
+    /// </para>
+    /// </remarks>
+    public long? LocalCacheSize { get; init; }
+
     // memoize when possible
     private DistributedCacheEntryOptions? _dc;
     internal DistributedCacheEntryOptions? ToDistributedCacheEntryOptions()

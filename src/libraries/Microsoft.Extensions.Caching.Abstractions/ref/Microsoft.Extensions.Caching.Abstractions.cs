@@ -180,9 +180,12 @@ namespace Microsoft.Extensions.Caching.Hybrid
         public System.TimeSpan? Expiration { get; init; }
         public System.TimeSpan? LocalCacheExpiration { get; init; }
         public HybridCacheEntryFlags? Flags { get; init; }
+        public long? LocalCacheSize { get; init; }
     }
-    public sealed class HybridCacheFactoryContext
+    public sealed class HybridCacheEntryContext
     {
+        public HybridCacheEntryContext(HybridCacheEntryOptions currentOptions) { }
+        public HybridCacheEntryOptions CurrentOptions { get { throw null; } }
         public System.TimeSpan? Expiration { get; set; }
         public System.TimeSpan? LocalCacheExpiration { get; set; }
         public HybridCacheEntryFlags? Flags { get; set; }
@@ -211,12 +214,12 @@ namespace Microsoft.Extensions.Caching.Hybrid
             => throw null;
 
         public virtual System.Threading.Tasks.ValueTask<T> GetOrCreateAsync<TState, T>(string key, TState state,
-            System.Func<TState, HybridCacheFactoryContext, System.Threading.CancellationToken, System.Threading.Tasks.ValueTask<T>> factory,
+            System.Func<TState, HybridCacheEntryContext, System.Threading.CancellationToken, System.Threading.Tasks.ValueTask<T>> factory,
             HybridCacheEntryOptions? options = null, System.Collections.Generic.IEnumerable<string>? tags = null, System.Threading.CancellationToken cancellationToken = default)
             => throw null;
 
         public System.Threading.Tasks.ValueTask<T> GetOrCreateAsync<T>(string key,
-            System.Func<HybridCacheFactoryContext, System.Threading.CancellationToken, System.Threading.Tasks.ValueTask<T>> factory,
+            System.Func<HybridCacheEntryContext, System.Threading.CancellationToken, System.Threading.Tasks.ValueTask<T>> factory,
             HybridCacheEntryOptions? options = null, System.Collections.Generic.IEnumerable<string>? tags = null, System.Threading.CancellationToken cancellationToken = default)
             => throw null;
 
