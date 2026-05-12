@@ -37,7 +37,7 @@ namespace System.Xml.XslCompiledTransformApiTests
     {
         public static bool IsSupported =>
             PlatformDetection.IsReflectionEmitSupported &&
-            // [ActiveIssue("https://github.com/dotnet/runtime/issues/124344"]
+            // [ActiveIssue("https://github.com/dotnet/runtime/issues/124344")]
             !(PlatformDetection.IsAppleMobile && PlatformDetection.IsCoreCLR);
     }
 
