@@ -441,7 +441,7 @@ The contract depends on the following globals
 | Global name | Meaning |
 | --- | --- |
 | `ContinuationMethodTable` | A pointer to the address of the base `Continuation` `MethodTable`, or null if no continuations have been created
-| `FreeObjectMethodTablePointer` | A pointer to the address of a `MethodTable` used by the GC to indicate reclaimed memory
+| `FreeObjectMethodTable` | A pointer to the address of a `MethodTable` used by the GC to indicate reclaimed memory
 | `ObjectMethodTable` | A pointer to the address of the `System.Object` `MethodTable` (`g_pObjectClass`)
 | `StaticsPointerMask` | For masking out a bit of DynamicStaticsInfo pointer fields
 | `ArrayBaseSize` | The base size of an array object; used to compute multidimensional array rank from `MethodTable::BaseSize`
