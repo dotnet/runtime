@@ -427,10 +427,6 @@ CrashReportConfigure()
 
     CLRConfigNoCache dmpNameCfg = CLRConfigNoCache::Get("DbgMiniDumpName", /*noprefix*/ false, &getenv);
     const char* dumpName = dmpNameCfg.IsSet() ? dmpNameCfg.AsString() : nullptr;
-    if (dumpName == nullptr || dumpName[0] == '\0')
-    {
-        return;
-    }
 
     InProcCrashReporterSettings settings = {};
     settings.reportPath = dumpName;

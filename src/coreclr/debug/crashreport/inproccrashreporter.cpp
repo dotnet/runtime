@@ -6,6 +6,7 @@
 // Streams a createdump-shaped JSON skeleton to a crashreport.json file.
 
 #include "inproccrashreporter.h"
+#include "signalsafeconsolewriter.h"
 #include "signalsafejsonwriter.h"
 #include "signalsafeformat.h"
 
@@ -23,6 +24,42 @@
 #include <mach/mach.h>
 #include <sys/sysctl.h>
 #endif
+
+extern "C" const char* PROCGetSignalNameAscii(int signal);
+
+static const char CRASHREPORT_PROTOCOL_VERSION[] = "1.0.0";
+
+#if defined(__x86_64__)
+static const char CRASHREPORT_ARCHITECTURE_NAME[] = "amd64";
+#elif defined(__aarch64__)
+static const char CRASHREPORT_ARCHITECTURE_NAME[] = "arm64";
+#elif defined(__arm__)
+static const char CRASHREPORT_ARCHITECTURE_NAME[] = "arm";
+#endif
+
+// Prescribed compact crash report log format. One logical line == one
+// __android_log_write entry under tag "DOTNET_CRASH" on Android, one
+// '\n'-terminated stderr write elsewhere.
+//
+//   *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** ***   (EmitConsoleHeader)
+//   .NET Crash Report v<protocol>
+//   Build: <sccsid>                                                    (omitted if empty)
+//   ABI: amd64|arm64|arm
+//   Cmdline: <process name>                                            (omitted if empty)
+//   pid: <pid>
+//   signal <N> (<NAME>)
+//                                                                      (blank between sections)
+//   --- thread 0xTID [(crashed)] ---                                   (per thread; OnThread)
+//     managed exception: <Type> (0x<HRESULT>)                          (only if EE provided one)
+//     #NN [M] Class.Method + 0xILOFFSET (token=0xTOKEN)                (managed frame; WriteFrameToConsole)
+//     #NN [M] 0xIP (module + 0xOFFSET)                                 (native frame; WriteFrameToConsole)
+//     (no managed frames) | ... +N more frames                         (FinishCurrentThreadCompactBlock)
+//                                                                      (blank between threads)
+//   modules:                                                           (EmitConsoleModulesAndFooter)
+//     [N] <name> {<MVID>}                                              (one per ModuleTable entry)
+//   *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** ***   (closing separator)
+
+static SignalSafeConsoleWriter s_consoleWriter;
 
 // Include the .NET version string instead of linking because it is "static".
 #if __has_include("_version.c")
@@ -208,6 +245,12 @@ public:
         const char* buffer,
         size_t len);
 
+    // SignalSafeJsonWriter callback that drops everything: used when the
+    // crash report is running in compact-log-only mode (no DbgMiniDumpName)
+    // so the JSON formatter still keeps its bookkeeping consistent without
+    // emitting bytes anywhere.
+    static bool DiscardOutputCallback(const char* buffer, size_t len, void* ctx);
+
     static bool BuildReportPath(
         char* buffer,
         size_t bufferSize,
@@ -238,46 +281,39 @@ InProcCrashReporter::CreateReport(
     char reportPath[CRASHREPORT_PATH_BUFFER_SIZE];
     reportPath[0] = '\0';
 
-    if (m_reportPath[0] == '\0' || !CrashReportHelpers::BuildReportPath(reportPath, sizeof(reportPath), m_reportPath, m_processName, m_hostName))
-    {
-        return;
-    }
+    // The JSON file sink is only enabled when DbgMiniDumpName supplied a
+    // template AND the template expanded to a valid path. Otherwise the
+    // crash report runs in compact-log-only mode: the JSON emitter still
+    // executes (so it can keep its bookkeeping consistent) but writes go
+    // to a no-op DiscardOutputCallback instead of an open fd.
+    bool jsonEnabled = m_reportPath[0] != '\0' &&
+        CrashReportHelpers::BuildReportPath(reportPath, sizeof(reportPath), m_reportPath, m_processName, m_hostName);
 
-    int fd = open(reportPath, O_WRONLY | O_CREAT | O_TRUNC, 0600);
-    if (fd == -1)
+    int fd = -1;
+    if (jsonEnabled)
     {
-        return;
+        fd = open(reportPath, O_WRONLY | O_CREAT | O_TRUNC, 0600);
+        if (fd == -1)
+        {
+            jsonEnabled = false;
+        }
     }
 
     (void)siginfo;
 
+    EmitConsoleHeader(signal);
+
     CrashReportOutputContext outputContext(fd);
-
-    m_jsonWriter.Init(&CrashReportOutputContext::ChunkCallback, &outputContext);
-
-    m_jsonWriter.OpenObject();
-    m_jsonWriter.OpenObject("payload");
-    m_jsonWriter.WriteString("protocol_version", "1.0.0");
-
-    m_jsonWriter.OpenObject("configuration");
-#if defined(__x86_64__)
-    m_jsonWriter.WriteString("architecture", "amd64");
-#elif defined(__aarch64__)
-    m_jsonWriter.WriteString("architecture", "arm64");
-#elif defined(__arm__)
-    m_jsonWriter.WriteString("architecture", "arm");
-#endif
-    char version[sizeof(sccsid)];
-    CrashReportHelpers::GetVersionString(version, sizeof(version));
-    m_jsonWriter.WriteString("version", version);
-    m_jsonWriter.CloseObject(); // configuration
-
-    if (m_processName[0] != '\0')
+    if (jsonEnabled)
     {
-        m_jsonWriter.WriteString("process_name", m_processName);
+        m_jsonWriter.Init(&CrashReportOutputContext::ChunkCallback, &outputContext);
+    }
+    else
+    {
+        m_jsonWriter.Init(&CrashReportHelpers::DiscardOutputCallback, nullptr);
     }
 
-    m_jsonWriter.WriteDecimalAsString("pid", static_cast<uint64_t>(GetCurrentProcessId()));
+    EmitJsonHeader();
 
     m_jsonWriter.OpenArray("threads");
     if (m_enumerateThreadsCallback != nullptr)
@@ -298,26 +334,11 @@ InProcCrashReporter::CreateReport(
     }
     m_jsonWriter.CloseArray(); // threads
 
-    m_jsonWriter.CloseObject(); // payload
+    EmitJsonFooter(signal);
 
-    m_jsonWriter.OpenObject("parameters");
-    m_jsonWriter.WriteSignedDecimalAsString("signal", static_cast<int64_t>(signal));
-#ifdef __APPLE__
-    if (m_osVersion[0] != '\0')
-    {
-        m_jsonWriter.WriteString("OSVersion", m_osVersion);
-    }
-    if (m_systemModel[0] != '\0')
-    {
-        m_jsonWriter.WriteString("SystemModel", m_systemModel);
-    }
-    m_jsonWriter.WriteString("SystemManufacturer", "apple");
-#endif
-    m_jsonWriter.CloseObject(); // parameters
+    EmitConsoleFooter();
 
-    m_jsonWriter.CloseObject(); // root
-
-    if (fd != -1)
+    if (jsonEnabled)
     {
         bool writeSucceeded = m_jsonWriter.Finish() &&
             !outputContext.WriteFailed() &&
@@ -327,6 +348,10 @@ InProcCrashReporter::CreateReport(
         {
             unlink(reportPath);
         }
+    }
+    else
+    {
+        (void)m_jsonWriter.Finish();
     }
 }
 
@@ -442,6 +467,15 @@ CrashReportHelpers::WriteToFile(
         return false;
     }
 
+    return true;
+}
+
+bool
+CrashReportHelpers::DiscardOutputCallback(
+    const char* /*buffer*/,
+    size_t /*len*/,
+    void* /*ctx*/)
+{
     return true;
 }
 
@@ -1099,4 +1133,91 @@ InProcCrashReporter::EmitSynthesizedCrashThread(
     }
     m_jsonWriter.CloseArray(); // stack_frames
     m_jsonWriter.CloseObject(); // thread
+}
+
+// --- InProcCrashReporter: console header and footer ------------------------
+
+void
+InProcCrashReporter::EmitConsoleHeader(int signal)
+{
+    s_consoleWriter.WriteSeparator();
+    s_consoleWriter.AppendStr(".NET Crash Report v");
+    s_consoleWriter.AppendStr(CRASHREPORT_PROTOCOL_VERSION);
+    s_consoleWriter.EndLine();
+
+    char version[sizeof(sccsid)];
+    CrashReportHelpers::GetVersionString(version, sizeof(version));
+    if (version[0] != '\0')
+    {
+        s_consoleWriter.WriteKeyValueStr("Build", version);
+    }
+
+    s_consoleWriter.WriteKeyValueStr("ABI", CRASHREPORT_ARCHITECTURE_NAME);
+
+    if (m_processName[0] != '\0')
+    {
+        s_consoleWriter.WriteKeyValueStr("Cmdline", m_processName);
+    }
+
+    s_consoleWriter.WriteKeyValueDecimal("pid", static_cast<uint64_t>(GetCurrentProcessId()));
+
+    s_consoleWriter.AppendStr("signal ");
+    s_consoleWriter.AppendSignedDecimal(signal);
+    s_consoleWriter.AppendStr(" (");
+    s_consoleWriter.AppendStr(PROCGetSignalNameAscii(signal));
+    s_consoleWriter.AppendChar(')');
+    s_consoleWriter.EndLine();
+}
+
+void
+InProcCrashReporter::EmitConsoleFooter()
+{
+    s_consoleWriter.WriteSeparator();
+}
+
+// --- InProcCrashReporter: JSON header and footer ---------------------------
+
+void
+InProcCrashReporter::EmitJsonHeader()
+{
+    m_jsonWriter.OpenObject();
+    m_jsonWriter.OpenObject("payload");
+    m_jsonWriter.WriteString("protocol_version", CRASHREPORT_PROTOCOL_VERSION);
+
+    m_jsonWriter.OpenObject("configuration");
+    m_jsonWriter.WriteString("architecture", CRASHREPORT_ARCHITECTURE_NAME);
+    char version[sizeof(sccsid)];
+    CrashReportHelpers::GetVersionString(version, sizeof(version));
+    m_jsonWriter.WriteString("version", version);
+    m_jsonWriter.CloseObject(); // configuration
+
+    if (m_processName[0] != '\0')
+    {
+        m_jsonWriter.WriteString("process_name", m_processName);
+    }
+
+    m_jsonWriter.WriteDecimalAsString("pid", static_cast<uint64_t>(GetCurrentProcessId()));
+}
+
+void
+InProcCrashReporter::EmitJsonFooter(int signal)
+{
+    m_jsonWriter.CloseObject(); // payload
+
+    m_jsonWriter.OpenObject("parameters");
+    m_jsonWriter.WriteSignedDecimalAsString("signal", static_cast<int64_t>(signal));
+#ifdef __APPLE__
+    if (m_osVersion[0] != '\0')
+    {
+        m_jsonWriter.WriteString("OSVersion", m_osVersion);
+    }
+    if (m_systemModel[0] != '\0')
+    {
+        m_jsonWriter.WriteString("SystemModel", m_systemModel);
+    }
+    m_jsonWriter.WriteString("SystemManufacturer", "apple");
+#endif
+    m_jsonWriter.CloseObject(); // parameters
+
+    m_jsonWriter.CloseObject(); // root
 }

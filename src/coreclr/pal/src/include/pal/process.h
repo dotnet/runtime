@@ -172,6 +172,18 @@ Parameters:
 --*/
 VOID PROCLogManagedCallstackForSignal(int signal);
 
+/*++
+Function:
+  PROCGetSignalNameAscii
+
+  Returns the ASCII name for the given POSIX signal (e.g. "SIGABRT"), or
+  "Unknown signal" if not recognized. Async-signal-safe.
+
+Parameters:
+  signal - POSIX signal number
+--*/
+const char* PROCGetSignalNameAscii(int signal);
+
 #ifdef __cplusplus
 }
 #endif // __cplusplus
