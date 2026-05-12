@@ -354,7 +354,6 @@ struct VASigCookie
 template<>
 struct cdac_data<VASigCookie>
 {
-    static constexpr size_t SizeOfArgs = offsetof(VASigCookie, sizeOfArgs);
     static constexpr size_t SignaturePointer = offsetof(VASigCookie, signature) + offsetof(Signature, m_pSig);
     static constexpr size_t SignatureLength = offsetof(VASigCookie, signature) + offsetof(Signature, m_cbSig);
 };

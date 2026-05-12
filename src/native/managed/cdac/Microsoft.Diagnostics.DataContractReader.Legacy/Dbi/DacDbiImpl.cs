@@ -1188,7 +1188,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         if (_legacy is not null)
         {
             ulong argBaseLocal;
-            DacDbiTargetBuffer retValLocal;
+            DacDbiTargetBuffer retValLocal = default;
             int hrLocal = _legacy.GetVarArgSig(VASigCookieAddr, &argBaseLocal, &retValLocal);
             Debug.ValidateHResult(hr, hrLocal);
             if (hr == HResults.S_OK)

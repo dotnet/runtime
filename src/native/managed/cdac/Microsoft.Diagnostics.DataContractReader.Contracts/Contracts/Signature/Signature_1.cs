@@ -54,9 +54,8 @@ internal sealed class Signature_1 : ISignature
 
     TargetPointer ISignature.GetVarArgArgsBase(TargetPointer vaSigCookieAddr)
     {
-        ReadVASigCookiePointer(vaSigCookieAddr);
-        Data.VASigCookie cookie = GetCookie(vaSigCookieAddr);
-
+        if (vaSigCookieAddr == TargetPointer.Null)
+            throw new ArgumentException("VASigCookie address must be non-null.", nameof(vaSigCookieAddr));
         // Compute the address of the first argument. On x86 the args are pushed below the cookie
         // pointer (stack grows down on the args walk), so the first argument lies at
         //   vaSigCookieAddr + sizeOfArgs.
@@ -65,6 +64,7 @@ internal sealed class Signature_1 : ISignature
         //   vaSigCookieAddr + sizeof(VASigCookie*).
         if (_target.Contracts.RuntimeInfo.GetTargetArchitecture() == RuntimeInfoArchitecture.X86)
         {
+            Data.VASigCookie cookie = GetCookie(vaSigCookieAddr);
             return new TargetPointer(vaSigCookieAddr.Value + cookie.SizeOfArgs);
         }
 
@@ -73,7 +73,8 @@ internal sealed class Signature_1 : ISignature
 
     void ISignature.GetVarArgSignature(TargetPointer vaSigCookieAddr, out TargetPointer signatureAddress, out uint signatureLength)
     {
-        ReadVASigCookiePointer(vaSigCookieAddr);
+        if (vaSigCookieAddr == TargetPointer.Null)
+            throw new ArgumentException("VASigCookie address must be non-null.", nameof(vaSigCookieAddr));
         Data.VASigCookie cookie = GetCookie(vaSigCookieAddr);
 
         signatureAddress = cookie.SignaturePointer;
@@ -81,14 +82,6 @@ internal sealed class Signature_1 : ISignature
         Debug.Assert(signatureAddress != TargetPointer.Null || signatureLength == 0,
             "VASigCookie has a non-zero signature length but a null signature pointer.");
     }
-
-    private static void ReadVASigCookiePointer(TargetPointer vaSigCookieAddr)
-    {
-        // The argument is the address of a VASigCookie* slot on the stack.
-        if (vaSigCookieAddr == TargetPointer.Null)
-            throw new ArgumentException("VASigCookie address must be non-null.", nameof(vaSigCookieAddr));
-    }
-
     private Data.VASigCookie GetCookie(TargetPointer vaSigCookieAddr)
     {
         TargetPointer vaSigCookie = _target.ReadPointer(vaSigCookieAddr);

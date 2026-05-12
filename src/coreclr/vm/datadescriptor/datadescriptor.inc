@@ -418,7 +418,7 @@ CDAC_TYPE_END(ArrayListBlock)
 
 CDAC_TYPE_BEGIN(VASigCookie)
 CDAC_TYPE_INDETERMINATE(VASigCookie)
-CDAC_TYPE_FIELD(VASigCookie, T_UINT32, SizeOfArgs, cdac_data<VASigCookie>::SizeOfArgs)
+CDAC_TYPE_FIELD(VASigCookie, T_UINT32, SizeOfArgs, offsetof(VASigCookie, sizeOfArgs))
 CDAC_TYPE_FIELD(VASigCookie, T_POINTER, SignaturePointer, cdac_data<VASigCookie>::SignaturePointer)
 CDAC_TYPE_FIELD(VASigCookie, T_UINT32, SignatureLength, cdac_data<VASigCookie>::SignatureLength)
 CDAC_TYPE_END(VASigCookie)
