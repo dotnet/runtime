@@ -15,9 +15,9 @@ namespace System.Runtime.CompilerServices
             // Currently all continuations are expected to capture and restore
             // ExecutionContext, even though we do not actually need it here.
             public ExecutionContext? ExecutionContext;
-            private object? _source;
-            private short _token;
-            private delegate*<object, Action<object?>, object?, short, ValueTaskSourceOnCompletedFlags, void> _onCompleted;
+            internal object? Source;
+            internal short Token;
+            internal delegate*<object, Action<object?>, object?, short, ValueTaskSourceOnCompletedFlags, void> OnCompletedValueTaskSource;
             private delegate*<object, short, ref byte, void> _getResult;
 
             public ValueTaskContinuation()
@@ -30,55 +30,38 @@ namespace System.Runtime.CompilerServices
                     ContinuationFlags.ExecutionContextIndexNumBits);
             }
 
-            public void OnCompleted(Action<object?> continuation, object? state, ValueTaskSourceOnCompletedFlags flags)
-            {
-                Debug.Assert(_source != null);
-                _onCompleted(_source, continuation, state, _token, flags);
-            }
-
             public void GetResult(ref byte returnValue)
             {
-                Debug.Assert(_source != null);
+                Debug.Assert(Source != null);
 
                 // Avoid retaining source. The call below may throw.
-                object source = _source;
-                _source = null;
+                object source = Source;
+                Source = null;
 
-                _getResult(source, _token, ref returnValue);
+                _getResult(source, Token, ref returnValue);
             }
 
             public void Initialize(object source, short token)
             {
-                _source = source;
-                _token = token;
-                _onCompleted = &OnCompleted;
+                Source = source;
+                Token = token;
+                OnCompletedValueTaskSource = &OnCompleted;
                 _getResult = &GetResult;
             }
 
             public void Initialize<T>(object source, short token)
             {
-                _source = source;
-                _token = token;
-                _onCompleted = &OnCompleted<T>;
+                Source = source;
+                Token = token;
+                OnCompletedValueTaskSource = &OnCompleted<T>;
                 _getResult = &GetResult<T>;
             }
 
             private static void OnCompleted(object source, Action<object?> continuation, object? state, short token, ValueTaskSourceOnCompletedFlags flags)
             {
-                if (source is Task t)
-                {
-                    Debug.Assert(state is ITaskCompletionAction);
-                    if (!t.TryAddCompletionAction(Unsafe.As<object, ITaskCompletionAction>(ref state)))
-                    {
-                        ThreadPool.UnsafeQueueUserWorkItemInternal(state, preferLocal: true);
-                    }
-                }
-                else
-                {
-                    Debug.Assert(source is IValueTaskSource);
-                    IValueTaskSource typedSource = Unsafe.As<object, IValueTaskSource>(ref source);
-                    typedSource.OnCompleted(continuation, state, token, flags);
-                }
+                Debug.Assert(source is IValueTaskSource);
+                IValueTaskSource typedSource = Unsafe.As<object, IValueTaskSource>(ref source);
+                typedSource.OnCompleted(continuation, state, token, flags);
             }
 
             private static void GetResult(object source, short token, ref byte result)
@@ -97,20 +80,9 @@ namespace System.Runtime.CompilerServices
 
             private static void OnCompleted<T>(object source, Action<object?> continuation, object? state, short token, ValueTaskSourceOnCompletedFlags flags)
             {
-                if (source is Task t)
-                {
-                    Debug.Assert(state is ITaskCompletionAction);
-                    if (!t.TryAddCompletionAction(Unsafe.As<object, ITaskCompletionAction>(ref state)))
-                    {
-                        ThreadPool.UnsafeQueueUserWorkItemInternal(state, preferLocal: true);
-                    }
-                }
-                else
-                {
-                    Debug.Assert(source is IValueTaskSource<T>);
-                    IValueTaskSource<T> typedSource = Unsafe.As<object, IValueTaskSource<T>>(ref source);
-                    typedSource.OnCompleted(continuation, state, token, flags);
-                }
+                Debug.Assert(source is IValueTaskSource<T>);
+                IValueTaskSource<T> typedSource = Unsafe.As<object, IValueTaskSource<T>>(ref source);
+                typedSource.OnCompleted(continuation, state, token, flags);
             }
 
             private static void GetResult<T>(object source, short token, ref byte result)
@@ -137,7 +109,7 @@ namespace System.Runtime.CompilerServices
                     Resume = &ResumeValueTaskContinuation,
                 };
 
-                public static Continuation? ResumeValueTaskContinuation(Continuation cont, ref byte result)
+                private static Continuation? ResumeValueTaskContinuation(Continuation cont, ref byte result)
                 {
                     var vtsCont = (ValueTaskContinuation)cont;
                     vtsCont.Next = null;

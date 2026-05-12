@@ -526,40 +526,58 @@ namespace System.Runtime.CompilerServices
                     else if (stackState->ValueTaskContinuation is { } valueTaskSourceCont)
                     {
                         Debug.Assert(headContinuation == valueTaskSourceCont);
-                        // The awaiter must inform the ValueTaskSource on whether the continuation
-                        // wants to run on a context, although the source may decide to ignore the suggestion.
-                        // Since the behavior of the source takes precedence, we clear the context flags of
-                        // the awaiting continuation (so it will run transparently on what the source decides)
-                        // and then tell the source if the awaiting frame prefers to continue on a context.
-                        // The reason why we do it here and not when the notifier is created is because
-                        // the continuation chain builds from the innermost frame out and at the time when the
-                        // notifier is created we do not know yet if the caller wants to continue on a context.
-                        ValueTaskSourceOnCompletedFlags configFlags = ValueTaskSourceOnCompletedFlags.None;
-
-                        // Skip to a nontransparent/user continuation. Such continuaton must exist.
-                        // Since we see a VTS notifier, something was directly or indirectly
-                        // awaiting an async thunk for a ValueTask-returning method.
-                        // That can only happen in nontransparent/user code.
-                        Continuation nextUserContinuation = headContinuation.Next!;
-                        while ((nextUserContinuation.Flags & continueFlags) == 0 && nextUserContinuation.Next != null)
+                        object? source = valueTaskSourceCont.Source;
+                        Debug.Assert(source != null);
+                        if (source is Task t)
                         {
-                            nextUserContinuation = nextUserContinuation.Next;
+                            if (!t.TryAddCompletionAction(this))
+                            {
+                                ThreadPool.UnsafeQueueUserWorkItemInternal(this, preferLocal: true);
+                            }
                         }
-
-                        ContinuationFlags continuationFlags = nextUserContinuation.Flags;
-                        const ContinuationFlags continueOnContextFlags =
-                            ContinuationFlags.ContinueOnCapturedSynchronizationContext |
-                            ContinuationFlags.ContinueOnCapturedTaskScheduler;
-
-                        if ((continuationFlags & continueOnContextFlags) != 0)
+                        else
                         {
-                            // if await has captured some context, inform the source
-                            configFlags |= ValueTaskSourceOnCompletedFlags.UseSchedulingContext;
-                        }
+                            // The awaiter must inform the ValueTaskSource on whether the continuation
+                            // wants to run on a context, although the source may decide to ignore the suggestion.
+                            // Since the behavior of the source takes precedence, we clear the context flags of
+                            // the awaiting continuation (so it will run transparently on what the source decides)
+                            // and then tell the source if the awaiting frame prefers to continue on a context.
+                            // The reason why we do it here and not when the notifier is created is because
+                            // the continuation chain builds from the innermost frame out and at the time when the
+                            // notifier is created we do not know yet if the caller wants to continue on a context.
 
-                        // Clear continuation flags, so that continuation runs transparently
-                        nextUserContinuation.Flags &= ~continueFlags;
-                        valueTaskSourceCont.OnCompleted(ThreadPool.s_dispatchRuntimeAsyncContinuationsCallback, this, configFlags);
+                            // Skip to a nontransparent/user continuation. Such continuaton must exist.
+                            // Since we see a VTS notifier, something was directly or indirectly
+                            // awaiting an async thunk for a ValueTask-returning method.
+                            // That can only happen in nontransparent/user code.
+                            Continuation nextUserContinuation = valueTaskSourceCont.Next!;
+                            while ((nextUserContinuation.Flags & continueFlags) == 0 && nextUserContinuation.Next != null)
+                            {
+                                nextUserContinuation = nextUserContinuation.Next;
+                            }
+
+                            ContinuationFlags continuationFlags = nextUserContinuation.Flags;
+                            const ContinuationFlags continueOnContextFlags =
+                                ContinuationFlags.ContinueOnCapturedSynchronizationContext |
+                                ContinuationFlags.ContinueOnCapturedTaskScheduler;
+
+                            ValueTaskSourceOnCompletedFlags configFlags = ValueTaskSourceOnCompletedFlags.None;
+                            if ((continuationFlags & continueOnContextFlags) != 0)
+                            {
+                                // if await has captured some context, inform the source
+                                configFlags = ValueTaskSourceOnCompletedFlags.UseSchedulingContext;
+                            }
+
+                            // Clear continuation flags, so that continuation runs transparently
+                            nextUserContinuation.Flags &= ~continueFlags;
+
+                            valueTaskSourceCont.OnCompletedValueTaskSource(
+                                source,
+                                ThreadPool.s_dispatchRuntimeAsyncContinuationsCallback,
+                                this,
+                                valueTaskSourceCont.Token,
+                                configFlags);
+                        }
                     }
                     else
                     {
