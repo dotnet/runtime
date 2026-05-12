@@ -174,7 +174,7 @@ PTR_MethodTable LookupMethodTableAndFlagForThreadStatic(TLSIndex index, bool *pI
     {
         *pIsGCStatic = false;
         *pIsCollectible = false;
-        retVal = g_pMethodTablesForDirectThreadLocalData[IndexOffsetToDirectThreadLocalIndex(index.GetIndexOffset())];
+        retVal = VolatileLoadWithoutBarrier(&g_pMethodTablesForDirectThreadLocalData[IndexOffsetToDirectThreadLocalIndex(index.GetIndexOffset())]);
     }
     else
     {
