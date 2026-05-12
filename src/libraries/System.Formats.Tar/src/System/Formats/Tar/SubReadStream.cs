@@ -29,7 +29,7 @@ namespace System.Formats.Tar
             }
             _startInSuperStream = startPosition;
             _positionInSuperStream = startPosition;
-            _endInSuperStream = startPosition + maxLength;
+            _endInSuperStream = checked(startPosition + maxLength);
             _superStream = superStream;
             _isDisposed = false;
             _hasReachedEnd = false;

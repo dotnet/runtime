@@ -264,7 +264,7 @@ namespace System.IO.Compression
         {
             _startInSuperStream = startPosition;
             _positionInSuperStream = startPosition;
-            _endInSuperStream = startPosition + maxLength;
+            _endInSuperStream = checked(startPosition + maxLength);
             _superStream = superStream;
             _canRead = true;
             _isDisposed = false;
