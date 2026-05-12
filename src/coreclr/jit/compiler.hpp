@@ -4410,96 +4410,56 @@ GenTree::VisitResult GenTree::VisitOperands(TVisitor visitor)
 template <typename TVisitor>
 GenTree::VisitResult GenTree::VisitOperandUses(TVisitor visitor)
 {
+    if (OperIsLeaf())
+    {
+        return VisitResult::Continue;
+    }
+
+    if (OperIsBinary())
+    {
+        GenTreeOp* op = AsOp();
+
+        if (op->gtOp1 != nullptr)
+        {
+            RETURN_IF_ABORT(visitor(&op->gtOp1));
+        }
+        else
+        {
+            assert(NullOp1Legal());
+        }
+
+        // We can have null op1 and non-null op2 for some nodes, such as GT_LEA
+
+        if (op->gtOp2 != nullptr)
+        {
+            return visitor(&op->gtOp2);
+        }
+        else
+        {
+            assert(NullOp2Legal());
+        }
+        return VisitResult::Continue;
+    }
+
+    if (OperIsUnary())
+    {
+        GenTreeUnOp* unOp = AsUnOp();
+
+        if (unOp->gtOp1 != nullptr)
+        {
+            return visitor(&unOp->gtOp1);
+        }
+        else
+        {
+            assert(NullOp1Legal());
+        }
+        return VisitResult::Continue;
+    }
+
+    assert(OperIsSpecial());
+
     switch (OperGet())
     {
-        // Leaf nodes
-        case GT_LCL_VAR:
-        case GT_LCL_FLD:
-        case GT_LCL_ADDR:
-        case GT_CATCH_ARG:
-        case GT_ASYNC_CONTINUATION:
-        case GT_ASYNC_RESUME_INFO:
-        case GT_LABEL:
-        case GT_FTN_ADDR:
-        case GT_FTN_ENTRY:
-        case GT_RET_EXPR:
-        case GT_CNS_INT:
-        case GT_CNS_LNG:
-        case GT_CNS_DBL:
-        case GT_CNS_STR:
-#if defined(FEATURE_SIMD)
-        case GT_CNS_VEC:
-#endif // FEATURE_SIMD
-#if defined(FEATURE_MASKED_HW_INTRINSICS)
-        case GT_CNS_MSK:
-#endif // FEATURE_MASKED_HW_INTRINSICS
-        case GT_MEMORYBARRIER:
-        case GT_JMP:
-        case GT_JCC:
-        case GT_SETCC:
-        case GT_NO_OP:
-        case GT_START_NONGC:
-        case GT_START_PREEMPTGC:
-        case GT_PROF_HOOK:
-        case GT_PHI_ARG:
-        case GT_JMPTABLE:
-        case GT_PHYSREG:
-        case GT_IL_OFFSET:
-        case GT_RECORD_ASYNC_RESUME:
-        case GT_NOP:
-        case GT_SWIFT_ERROR:
-        case GT_GCPOLL:
-        case GT_WASM_THROW_REF:
-        case GT_WASM_JEXCEPT:
-            return VisitResult::Continue;
-
-            // Unary operators with an optional operand
-        case GT_FIELD_ADDR:
-        case GT_RETURN:
-        case GT_RETFILT:
-            if (this->AsUnOp()->gtOp1 == nullptr)
-            {
-                return VisitResult::Continue;
-            }
-            FALLTHROUGH;
-
-            // Standard unary operators
-        case GT_STORE_LCL_VAR:
-        case GT_STORE_LCL_FLD:
-        case GT_NOT:
-        case GT_NEG:
-        case GT_BSWAP:
-        case GT_BSWAP16:
-        case GT_COPY:
-        case GT_RELOAD:
-        case GT_ARR_LENGTH:
-        case GT_MDARR_LENGTH:
-        case GT_MDARR_LOWER_BOUND:
-        case GT_CAST:
-        case GT_BITCAST:
-        case GT_CKFINITE:
-        case GT_LCLHEAP:
-        case GT_IND:
-        case GT_BLK:
-        case GT_BOX:
-        case GT_ALLOCOBJ:
-        case GT_INIT_VAL:
-        case GT_RUNTIMELOOKUP:
-        case GT_ARR_ADDR:
-        case GT_JTRUE:
-        case GT_SWITCH:
-        case GT_NULLCHECK:
-        case GT_PUTARG_REG:
-        case GT_PUTARG_STK:
-        case GT_RETURNTRAP:
-        case GT_KEEPALIVE:
-        case GT_INC_SATURATE:
-        case GT_RETURN_SUSPEND:
-        case GT_PATCHPOINT_FORCED:
-        case GT_NONLOCAL_JMP:
-            return visitor(&this->AsUnOp()->gtOp1);
-
-            // Variadic nodes
 #if defined(FEATURE_HW_INTRINSICS)
         case GT_HWINTRINSIC:
             for (GenTree** use : this->AsMultiOp()->UseEdges())
@@ -4507,9 +4467,8 @@ GenTree::VisitResult GenTree::VisitOperandUses(TVisitor visitor)
                 RETURN_IF_ABORT(visitor(use));
             }
             return VisitResult::Continue;
-#endif // defined(FEATURE_HW_INTRINSICS)
+#endif
 
-            // Special nodes
         case GT_PHI:
             for (GenTreePhi::Use& use : AsPhi()->Uses())
             {
@@ -4571,19 +4530,11 @@ GenTree::VisitResult GenTree::VisitOperandUses(TVisitor visitor)
             return visitor(&cond->gtOp2);
         }
 
-        // Binary nodes
         default:
-            assert(this->OperIsBinary());
-            if (AsOp()->gtOp1 != nullptr)
-            {
-                RETURN_IF_ABORT(visitor(&AsOp()->gtOp1));
-            }
-
-            if (AsOp()->gtOp2 != nullptr)
-            {
-                return visitor(&AsOp()->gtOp2);
-            }
+        {
+            assert(!"unhandled special node");
             return VisitResult::Continue;
+        }
     }
 }
 
