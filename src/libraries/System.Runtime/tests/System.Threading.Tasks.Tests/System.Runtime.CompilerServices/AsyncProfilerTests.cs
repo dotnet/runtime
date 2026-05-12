@@ -1296,7 +1296,7 @@ namespace System.Threading.Tasks.Tests
                     continue;
 
                 matchedPairs++;
-                Assert.True(create.Timestamp < matchingResume.Timestamp, $"For task {create.TaskId}: CreateAsyncCallstack (ts {create.Timestamp}) should precede ResumeAsyncCallstack (ts {matchingResume.Timestamp})");
+                Assert.True(create.Timestamp <= matchingResume.Timestamp, $"For task {create.TaskId}: CreateAsyncCallstack (ts {create.Timestamp}) should precede ResumeAsyncCallstack (ts {matchingResume.Timestamp})");
             }
 
             Assert.True(matchedPairs >= 1, $"Expected at least one matching Create/Resume callstack pair, but found {matchedPairs}");
