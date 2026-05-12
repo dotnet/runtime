@@ -280,11 +280,11 @@ fi
       <CLRTestBashPreCommands Condition="'$(CLRTestKind)' == 'BuildAndRun' and '$(TargetArchitecture)' == 'wasm'"><![CDATA[
 $(CLRTestBashPreCommands)
 $(BashDefaultRunWithNodeJS)
-if [ -z "${RunWithNodeJS:-}" ] ; then
-    if [ ! -z ${RunCrossGen2+x} ]%3B then
-      TakeLock
-    fi
+if [ ! -z ${RunCrossGen2+x} ]%3B then
+  TakeLock
+fi
 
+if [ -z "${RunWithNodeJS:-}" ] ; then
     # Build wasm app containing the test dll
     __Command=""
     if [ ! -z ${__TestDotNetCmd+x} ] %3B then
@@ -297,10 +297,10 @@ if [ -z "${RunWithNodeJS:-}" ] ; then
     export DOTNET_CLI_DO_NOT_USE_MSBUILD_SERVER=1
 
     $__Command msbuild $CORE_ROOT/wasm-test-runner/WasmTestRunner.proj /p:NetCoreAppCurrent=$(NetCoreAppCurrent) /p:TestAssemblyFileName=$(MsBuildProjectName).dll /p:TestBinDir=`pwd` $(CLRTestMSBuildArgs) || exit $?
+fi
 
-    if [ ! -z ${RunCrossGen2+x} ]%3B then
-      ReleaseLock
-    fi
+if [ ! -z ${RunCrossGen2+x} ]%3B then
+  ReleaseLock
 fi
    ]]>
       </CLRTestBashPreCommands>
