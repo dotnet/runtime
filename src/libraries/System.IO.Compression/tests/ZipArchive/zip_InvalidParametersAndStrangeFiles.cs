@@ -321,18 +321,11 @@ namespace System.IO.Compression.Tests
             await DisposeZipArchive(async, archive);
         }
 
-        // Regression test for a fuzzer-discovered Deflate64 input that would cause
-        // OutputWindow.WriteLengthDistance to assert on Debug builds (and silently
-        // overwrite unflushed output data on Release builds) because the
-        // InflaterManaged.DecodeBlock loop guard was 2 bytes too small for the
-        // maximum Deflate64 length code (3 + 65535 = 65538).
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
         public static async Task Deflate64_MaximumMatchLength_DoesNotOverflowOutputWindow(bool async)
         {
-            // Crash input from src/libraries/Fuzzing/DotnetFuzzing/deployment/Deflate64Fuzzer/
-            // crash-9677337c6f209fada192d4ae2311da29b584879b
             byte[] crashInput = Convert.FromBase64String(
                 "UgD///9ubm5ubm5u//9ubm5ubm5ubm5ubm5ubm5ubm5ubltubm7////////////////////////////////" +
                 "/////////////////////AAE6AFsA////bm5ubm5ubm5ubm5ubm5ubm5ubm5u////////////////DwAAAQ" +
@@ -352,11 +345,6 @@ namespace System.IO.Compression.Tests
 
             using MemoryStream destination = new MemoryStream();
 
-            // With the bug, InflaterManaged.DecodeBlock would consume input beyond the
-            // OutputWindow's accounting boundary for a maximum-length Deflate64 match
-            // (65538 bytes), tripping a Debug.Assert and (in Release) silently corrupting
-            // window state via modular arithmetic. With the fix, the loop terminates at
-            // the correct boundary and the inflater rejects the corrupted input cleanly.
             if (async)
             {
                 await Assert.ThrowsAsync<InvalidDataException>(() => deflate64Stream.CopyToAsync(destination));
