@@ -438,7 +438,6 @@ namespace System.Runtime.CompilerServices
 
                 Debug.Assert((headContinuation.Flags & continueFlags) == 0);
 
-                Interlocked.MemoryBarrier();
                 SetContinuationState(headContinuation);
 
                 try
