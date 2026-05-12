@@ -46,6 +46,7 @@
 #include "sigbuilder.h"
 #include "openum.h"
 #include "fieldmarshaler.h"
+#include "pregeneratedstringthunks.h"
 #ifdef HAVE_GCCOVER
 #include "gccover.h"
 #endif // HAVE_GCCOVER
@@ -61,6 +62,10 @@
 
 #include "tailcallhelp.h"
 #include "patchpointinfo.h"
+
+#if defined(FEATURE_INTERPRETER) && defined(FEATURE_PORTABLE_ENTRYPOINTS)
+void ExecuteInterpretedMethodWithArgs_PortableEntryPoint(PCODE portableEntrypoint, TransitionBlock* block, size_t argsSize, int8_t* retBuff);
+#endif
 
 // The Stack Overflow probe takes place in the COOPERATIVE_TRANSITION_BEGIN() macro
 //
@@ -10355,7 +10360,7 @@ void CEEInfo::getEEInfo(CORINFO_EE_INFO *pEEInfoOut)
     _ASSERTE(sizeof(ReversePInvokeFrame) <= pEEInfoOut->sizeOfReversePInvokeFrame);
 #endif
 
-    pEEInfoOut->osPageSize = GetOsPageSize();
+    pEEInfoOut->osPageSize = minipal_getpagesize();
     pEEInfoOut->maxUncheckedOffsetForNullObject = MAX_UNCHECKED_OFFSET_FOR_NULL_OBJECT;
     pEEInfoOut->targetAbi = CORINFO_CORECLR_ABI;
     pEEInfoOut->osType = getClrVmOs();
@@ -11129,7 +11134,7 @@ PCODE CEECodeGenInfo::getHelperFtnStatic(CorInfoHelpFunc ftnNum)
             {
                 // CoreLib calls newobj helpers via calli. Give these helpers a MethodDesc
                 // so the interpreter can find the method signature for the call cookie.
-                portableEntryPoint->Init((void*)pfnHelper, CoreLibBinder::GetMethod(METHOD__RUNTIME_HELPERS__NEWOBJ_HELPER_DUMMY));
+                portableEntryPoint->Init_WithNativeCode((void*)pfnHelper, CoreLibBinder::GetMethod(METHOD__RUNTIME_HELPERS__NEWOBJ_HELPER_DUMMY));
             }
             else
             {
@@ -11143,6 +11148,9 @@ PCODE CEECodeGenInfo::getHelperFtnStatic(CorInfoHelpFunc ftnNum)
         }
         else
         {
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+            MethodDesc::EnsurePortableEntryPointIsCallableFromR2R(pfnHelper);
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
             VolatileStore(&hlpFuncEntryPoints[ftnNum], pfnHelper);
         }
     }
@@ -11500,6 +11508,9 @@ LPVOID CInterpreterJitInfo::GetCookieForInterpreterCalliSig(CORINFO_SIG_INFO* sz
 
     // When compiling a calli inside an IL stub for a P/Invoke, pass the target
     // P/Invoke MethodDesc so ComputeCallStub can detect the Swift calling convention.
+    // Do not cache the cookie on pContextMD: MethodDesc::CalliCookie is for
+    // calling the target via managed calling convention. The stub we are about
+    // to generate calls the target via unmanaged calling convention.
     MethodDesc* pContextMD = nullptr;
     if (m_pMethodBeingCompiled != nullptr && m_pMethodBeingCompiled->IsILStub())
     {
@@ -11507,32 +11518,22 @@ LPVOID CInterpreterJitInfo::GetCookieForInterpreterCalliSig(CORINFO_SIG_INFO* sz
         if (pTargetMD != nullptr)
         {
             pContextMD = pTargetMD;
-            result = pTargetMD->GetCalliCookie();
         }
     }
 
-    if (result == NULL)
-    {
-        Instantiation classInst = Instantiation((TypeHandle*) szMetaSig->sigInst.classInst, szMetaSig->sigInst.classInstCount);
-        Instantiation methodInst = Instantiation((TypeHandle*) szMetaSig->sigInst.methInst, szMetaSig->sigInst.methInstCount);
-        SigTypeContext typeContext = SigTypeContext(classInst, methodInst);
-        Module* mod = GetModule(szMetaSig->scope);
+    Instantiation classInst = Instantiation((TypeHandle*) szMetaSig->sigInst.classInst, szMetaSig->sigInst.classInstCount);
+    Instantiation methodInst = Instantiation((TypeHandle*) szMetaSig->sigInst.methInst, szMetaSig->sigInst.methInstCount);
+    SigTypeContext typeContext = SigTypeContext(classInst, methodInst);
+    Module* mod = GetModule(szMetaSig->scope);
 
-        MetaSig sig(szMetaSig->pSig, szMetaSig->cbSig, mod, &typeContext);
+    MetaSig sig(szMetaSig->pSig, szMetaSig->cbSig, mod, &typeContext);
 
-        if (szMetaSig->isAsyncCall())
-            sig.SetIsAsyncCall();
+    if (szMetaSig->isAsyncCall())
+        sig.SetIsAsyncCall();
 
-        _ASSERTE(szMetaSig->isAsyncCall() == sig.IsAsyncCall());
+    _ASSERTE(szMetaSig->isAsyncCall() == sig.IsAsyncCall());
 
-        result = GetCookieForCalliSig(sig, pContextMD);
-
-        if (pContextMD != nullptr)
-        {
-            pContextMD->SetCalliCookie(result);
-            result = pContextMD->GetCalliCookie();
-        }
-    }
+    result = GetCookieForCalliSig(sig, pContextMD);
 
     EE_TO_JIT_TRANSITION();
     return (void*)result;
@@ -14305,6 +14306,15 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
                     result = (size_t)GetEEFuncEntryPoint(DelayLoad_Helper_ObjObj);
                     break;
 
+                case READYTORUN_HELPER_R2RToInterpreter:
+#if defined(FEATURE_INTERPRETER) && defined(FEATURE_PORTABLE_ENTRYPOINTS)
+                    result = (size_t)GetEEFuncEntryPoint(ExecuteInterpretedMethodWithArgs_PortableEntryPoint);
+                    break;
+#else
+                    STRESS_LOG1(LF_ZAP, LL_WARNING, "READYTORUN_HELPER_R2RToInterpreter unsupported for this target: %d\n", helperNum);
+                    return FALSE;
+#endif
+
                 default:
                     STRESS_LOG1(LF_ZAP, LL_WARNING, "Unknown READYTORUN_HELPER %d\n", helperNum);
                     _ASSERTE(!"Unknown READYTORUN_HELPER");
@@ -14497,24 +14507,36 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
             MethodDesc *pImplMethodRuntime;
             if (pDeclMethod->IsInterface())
             {
-                if (!thImpl.CanCastTo(pDeclMethod->GetMethodTable()))
+                if (pDeclMethod->IsStatic())
                 {
-                    MethodTable *pInterfaceTypeCanonical = pDeclMethod->GetMethodTable()->GetCanonicalMethodTable();
-
-                    // Its possible for the decl method to need to be found on the only canonically compatible interface on the owning type
-                    MethodTable::InterfaceMapIterator it = thImpl.GetMethodTable()->IterateInterfaceMap();
-                    while (it.Next())
+                    pImplMethodRuntime = thImpl.GetMethodTable()->ResolveVirtualStaticMethod(
+                        pDeclMethod->GetMethodTable(),
+                        pDeclMethod,
+                        ResolveVirtualStaticMethodFlags::AllowNullResult |
+                        ResolveVirtualStaticMethodFlags::AllowVariantMatches |
+                        ResolveVirtualStaticMethodFlags::InstantiateResultOverFinalMethodDesc);
+                }
+                else
+                {
+                    if (!thImpl.CanCastTo(pDeclMethod->GetMethodTable()))
                     {
-                        MethodTable *pItfInMap = it.GetInterface(thImpl.GetMethodTable());
-                        if (pInterfaceTypeCanonical == pItfInMap->GetCanonicalMethodTable())
+                        MethodTable *pInterfaceTypeCanonical = pDeclMethod->GetMethodTable()->GetCanonicalMethodTable();
+
+                        // Its possible for the decl method to need to be found on the only canonically compatible interface on the owning type
+                        MethodTable::InterfaceMapIterator it = thImpl.GetMethodTable()->IterateInterfaceMap();
+                        while (it.Next())
                         {
-                            pDeclMethod = MethodDesc::FindOrCreateAssociatedMethodDesc(pDeclMethod, pItfInMap, FALSE, pDeclMethod->GetMethodInstantiation(), FALSE, TRUE);
-                            break;
+                            MethodTable *pItfInMap = it.GetInterface(thImpl.GetMethodTable());
+                            if (pInterfaceTypeCanonical == pItfInMap->GetCanonicalMethodTable())
+                            {
+                                pDeclMethod = MethodDesc::FindOrCreateAssociatedMethodDesc(pDeclMethod, pItfInMap, FALSE, pDeclMethod->GetMethodInstantiation(), FALSE, TRUE);
+                                break;
+                            }
                         }
                     }
+                    DispatchSlot slot = thImpl.GetMethodTable()->FindDispatchSlotForInterfaceMD(pDeclMethod, /*throwOnConflict*/ FALSE);
+                    pImplMethodRuntime = slot.GetMethodDesc();
                 }
-                DispatchSlot slot = thImpl.GetMethodTable()->FindDispatchSlotForInterfaceMD(pDeclMethod, /*throwOnConflict*/ FALSE);
-                pImplMethodRuntime = slot.GetMethodDesc();
             }
             else
             {
@@ -14752,6 +14774,15 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
             }
             break;
         }
+
+    case READYTORUN_FIXUP_InjectStringThunks:
+        {
+            ReadyToRunInfo * pR2RInfo = currentModule->GetReadyToRunInfo();
+            ProcessInjectStringThunksFixup(pR2RInfo, pBlob);
+            result = 1;
+        }
+        break;
+
     default:
         STRESS_LOG1(LF_ZAP, LL_WARNING, "Unknown ReadyToRunFixupKind %d\n", kind);
         _ASSERTE(!"Unknown ReadyToRunFixupKind");
@@ -15231,6 +15262,14 @@ void CEEInfo::recordCallSite(
 {
     LIMITED_METHOD_CONTRACT;
     UNREACHABLE();      // only called on derived class.
+}
+
+void CEEInfo::recordWasmManagedCallSig(
+        CORINFO_SIG_INFO *    callSig       /* IN */
+        )
+{
+    LIMITED_METHOD_CONTRACT;
+    // No-op for the VM. Only meaningful for ReadyToRun Wasm compilation.
 }
 
 void CEEInfo::recordRelocation(

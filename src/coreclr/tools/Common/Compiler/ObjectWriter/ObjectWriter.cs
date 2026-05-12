@@ -84,20 +84,6 @@ namespace ILCompiler.ObjectWriter
         private protected SectionWriter GetOrCreateSection(ObjectNodeSection section)
             => GetOrCreateSection(section, default, default);
 
-        private readonly SectionWriter.Params _defaultParams = new SectionWriter.Params
-        {
-            LengthEncodeFormat = LengthEncodeFormat.None
-        };
-
-        /// <summary>
-        /// Some architectures may require section-specific params for the writer. For example, on Wasm,
-        /// certain sections require length prefixes before each object entry which the section writer does support,
-        /// but this has to be indicated by a particular implementation.
-        /// </summary>
-        /// <param name="section"></param>
-        /// <returns></returns>
-        private protected virtual SectionWriter.Params WriterParams(ObjectNodeSection section) => _defaultParams;
-
         /// <summary>
         /// Get or creates an object file section.
         /// </summary>
@@ -139,8 +125,7 @@ namespace ILCompiler.ObjectWriter
             return new SectionWriter(
                 this,
                 sectionIndex,
-                sectionData,
-                WriterParams(section));
+                sectionData);
         }
 
         private protected bool ShouldShareSymbol(ObjectNode node)
@@ -482,13 +467,9 @@ namespace ILCompiler.ObjectWriter
 
                 if (nodeContents.Relocs is not null)
                 {
-                    // For platforms such as Wasm where we must prepend the length before writing blocks,
-                    // we need to adjust the offset of the relocation by the length prefix
-                    uint additionalOffset = sectionWriter.HasLengthPrefix ? sectionWriter.LengthPrefixSize(nodeContents.Data.Length) : 0;
-
                     blocksToRelocate.Add(new BlockToRelocate(
                         sectionWriter.SectionIndex,
-                        sectionWriter.Position + additionalOffset,
+                        sectionWriter.Position,
                         nodeContents.Data,
                         nodeContents.Relocs));
 

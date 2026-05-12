@@ -115,6 +115,7 @@ public interface IRuntimeTypeSystem : IContract
     // True if the MethodTable is the sentinel value associated with unallocated space in the managed heap
     bool IsFreeObjectMethodTable(TypeHandle typeHandle) => throw new NotImplementedException();
     bool IsString(TypeHandle typeHandle) => throw new NotImplementedException();
+    bool IsObjRef(TypeHandle typeHandle) => throw new NotImplementedException();
     // True if the MethodTable represents a type that contains managed references
     bool ContainsGCPointers(TypeHandle typeHandle) => throw new NotImplementedException();
     // True if the type requires 8-byte alignment on platforms that don't 8-byte align by default (FEATURE_64BIT_ALIGNMENT)
@@ -163,6 +164,11 @@ public interface IRuntimeTypeSystem : IContract
     // HasTypeParam will return true for cases where this is the interop view
     CorElementType GetSignatureCorElementType(TypeHandle typeHandle) => throw new NotImplementedException();
     bool IsValueType(TypeHandle typeHandle) => throw new NotImplementedException();
+
+    // Internal element type of the type. Unlike GetSignatureCorElementType, this returns the underlying primitive
+    // type for enums (e.g. I4 for an enum with int underlying type) and for PrimitiveValueType categories.
+    // For arrays, reference types, and TypeDescs, behaves identically to GetSignatureCorElementType.
+    CorElementType GetInternalCorElementType(TypeHandle typeHandle) => throw new NotImplementedException();
 
     // return true if the TypeHandle represents an enum type.
     bool IsEnum(TypeHandle typeHandle) => throw new NotImplementedException();
