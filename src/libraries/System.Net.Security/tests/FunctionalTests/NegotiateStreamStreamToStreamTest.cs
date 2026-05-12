@@ -266,16 +266,14 @@ namespace System.Net.Security.Tests
                 var server = new NegotiateStream(stream2);
                 try
                 {
-                    await TestConfiguration.WhenAllOrAnyFailedWithTimeout(new[]
-                    {
+                    await TestConfiguration.WhenAllOrAnyFailedWithTimeout(
                         AuthenticateAsClientAsync(client, CredentialCache.DefaultNetworkCredentials, string.Empty),
-                        AuthenticateAsServerAsync(server),
-                    });
+                        AuthenticateAsServerAsync(server));
 
                     // Inject only a frame header that promises a body, then close the inner stream so the
                     // client's body read fails mid-frame. With the bug, NegotiateStream pre-populates
                     // _readBufferCount with the announced body size, and a subsequent Read returns up to
-                    // that many bytes of stale (uninitialized / zeroed) buffer contents.
+                    // that many bytes of stale (zero-filled / never populated) buffer contents.
                     const int FakeFrameSize = 100;
                     byte[] fakeHeader = new byte[4];
                     System.Buffers.Binary.BinaryPrimitives.WriteInt32LittleEndian(fakeHeader, FakeFrameSize);
