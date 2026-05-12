@@ -105,6 +105,11 @@ namespace System.Security.Cryptography
             }
         }
 
+        protected override partial void DeriveRawSecretAgreementCore(ReadOnlySpan<byte> otherPartyPublicKey, Span<byte> destination)
+        {
+            throw new NotImplementedException();
+        }
+
         protected override partial void ExportPublicKeyCore(Span<byte> destination)
         {
             Debug.Assert(destination.Length == PublicKeySizeInBytes);

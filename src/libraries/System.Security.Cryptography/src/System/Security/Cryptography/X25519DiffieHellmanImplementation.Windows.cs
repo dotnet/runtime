@@ -91,6 +91,11 @@ namespace System.Security.Cryptography
             }
         }
 
+        protected override void DeriveRawSecretAgreementCore(ReadOnlySpan<byte> otherPartyPublicKey, Span<byte> destination)
+        {
+            throw new NotImplementedException();
+        }
+
         protected override void ExportPrivateKeyCore(Span<byte> destination)
         {
             ExportKey(true, destination);

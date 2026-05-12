@@ -25,6 +25,11 @@ namespace System.Security.Cryptography
             throw new PlatformNotSupportedException();
         }
 
+        protected override void DeriveRawSecretAgreementCore(ReadOnlySpan<byte> otherPartyPublicKey, Span<byte> destination)
+        {
+            throw new NotImplementedException();
+        }
+
         protected override void ExportPrivateKeyCore(Span<byte> destination)
         {
             Debug.Fail("Caller should have checked platform availability.");
