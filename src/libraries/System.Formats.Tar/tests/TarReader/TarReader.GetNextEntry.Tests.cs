@@ -627,56 +627,66 @@ namespace System.Formats.Tar.Tests
             Assert.Null(reader2.GetNextEntry());
         }
 
-        [Fact]
-        public void PaxExtendedAttributes_ExceedsMaxMetadataBlockSize_Throws()
+        [Theory]
+        [InlineData("PaxExtendedAttributes")]
+        [InlineData("GnuLongPath")]
+        [InlineData("GnuLongLink")]
+        public void MetadataBlock_AtMaxSize_Succeeds(string metadataType)
         {
             using MemoryStream archive = new MemoryStream();
-            var extendedAttributes = new Dictionary<string, string>
-            {
-                ["bigkey"] = new string('x', MaxMetadataBlockSize + 1)
-            };
-            using (TarWriter writer = new TarWriter(archive, TarEntryFormat.Pax, leaveOpen: true))
-            {
-                PaxTarEntry entry = new PaxTarEntry(TarEntryType.RegularFile, "test.txt", extendedAttributes);
-                writer.WriteEntry(entry);
-            }
+            WriteMetadataEntry(archive, metadataType, MaxMetadataBlockSize);
+
+            archive.Seek(0, SeekOrigin.Begin);
+            using TarReader reader = new TarReader(archive);
+            Assert.NotNull(reader.GetNextEntry());
+        }
+
+        [Theory]
+        [InlineData("PaxExtendedAttributes")]
+        [InlineData("GnuLongPath")]
+        [InlineData("GnuLongLink")]
+        public void MetadataBlock_ExceedsMaxSize_Throws(string metadataType)
+        {
+            using MemoryStream archive = new MemoryStream();
+            WriteMetadataEntry(archive, metadataType, MaxMetadataBlockSize + 1);
 
             archive.Seek(0, SeekOrigin.Begin);
             using TarReader reader = new TarReader(archive);
             Assert.Throws<InvalidOperationException>(() => reader.GetNextEntry());
         }
 
-        [Fact]
-        public void GnuLongPath_ExceedsMaxMetadataBlockSize_Throws()
+        private static void WriteMetadataEntry(MemoryStream archive, string metadataType, int size)
         {
-            using MemoryStream archive = new MemoryStream();
-            string longName = new string('a', MaxMetadataBlockSize + 1);
-            using (TarWriter writer = new TarWriter(archive, TarEntryFormat.Gnu, leaveOpen: true))
+            switch (metadataType)
             {
-                GnuTarEntry entry = new GnuTarEntry(TarEntryType.RegularFile, longName);
-                writer.WriteEntry(entry);
+                case "PaxExtendedAttributes":
+                    // PAX metadata block includes framing overhead, so we adjust the value size accordingly.
+                    var extendedAttributes = new Dictionary<string, string>
+                    {
+                        ["bigkey"] = new string('x', size - 1024)
+                    };
+                    using (TarWriter paxWriter = new TarWriter(archive, TarEntryFormat.Pax, leaveOpen: true))
+                    {
+                        paxWriter.WriteEntry(new PaxTarEntry(TarEntryType.RegularFile, "test.txt", extendedAttributes));
+                    }
+                    break;
+
+                case "GnuLongPath":
+                    using (TarWriter gnuPathWriter = new TarWriter(archive, TarEntryFormat.Gnu, leaveOpen: true))
+                    {
+                        gnuPathWriter.WriteEntry(new GnuTarEntry(TarEntryType.RegularFile, new string('a', size)));
+                    }
+                    break;
+
+                case "GnuLongLink":
+                    using (TarWriter gnuLinkWriter = new TarWriter(archive, TarEntryFormat.Gnu, leaveOpen: true))
+                    {
+                        GnuTarEntry entry = new GnuTarEntry(TarEntryType.SymbolicLink, "test.txt");
+                        entry.LinkName = new string('a', size);
+                        gnuLinkWriter.WriteEntry(entry);
+                    }
+                    break;
             }
-
-            archive.Seek(0, SeekOrigin.Begin);
-            using TarReader reader = new TarReader(archive);
-            Assert.Throws<InvalidOperationException>(() => reader.GetNextEntry());
-        }
-
-        [Fact]
-        public void GnuLongLink_ExceedsMaxMetadataBlockSize_Throws()
-        {
-            using MemoryStream archive = new MemoryStream();
-            string longLink = new string('a', MaxMetadataBlockSize + 1);
-            using (TarWriter writer = new TarWriter(archive, TarEntryFormat.Gnu, leaveOpen: true))
-            {
-                GnuTarEntry entry = new GnuTarEntry(TarEntryType.SymbolicLink, "test.txt");
-                entry.LinkName = longLink;
-                writer.WriteEntry(entry);
-            }
-
-            archive.Seek(0, SeekOrigin.Begin);
-            using TarReader reader = new TarReader(archive);
-            Assert.Throws<InvalidOperationException>(() => reader.GetNextEntry());
         }
     }
 }

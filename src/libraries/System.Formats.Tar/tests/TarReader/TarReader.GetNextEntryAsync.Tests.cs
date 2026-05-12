@@ -522,56 +522,66 @@ namespace System.Formats.Tar.Tests
             Assert.Null(await reader2.GetNextEntryAsync());
         }
 
-        [Fact]
-        public async Task PaxExtendedAttributes_ExceedsMaxMetadataBlockSize_Throws_Async()
+        [Theory]
+        [InlineData("PaxExtendedAttributes")]
+        [InlineData("GnuLongPath")]
+        [InlineData("GnuLongLink")]
+        public async Task MetadataBlock_AtMaxSize_Succeeds_Async(string metadataType)
         {
             await using MemoryStream archive = new MemoryStream();
-            var extendedAttributes = new Dictionary<string, string>
-            {
-                ["bigkey"] = new string('x', MaxMetadataBlockSize + 1)
-            };
-            await using (TarWriter writer = new TarWriter(archive, TarEntryFormat.Pax, leaveOpen: true))
-            {
-                PaxTarEntry entry = new PaxTarEntry(TarEntryType.RegularFile, "test.txt", extendedAttributes);
-                await writer.WriteEntryAsync(entry);
-            }
+            await WriteMetadataEntryAsync(archive, metadataType, MaxMetadataBlockSize);
+
+            archive.Seek(0, SeekOrigin.Begin);
+            await using TarReader reader = new TarReader(archive);
+            Assert.NotNull(await reader.GetNextEntryAsync());
+        }
+
+        [Theory]
+        [InlineData("PaxExtendedAttributes")]
+        [InlineData("GnuLongPath")]
+        [InlineData("GnuLongLink")]
+        public async Task MetadataBlock_ExceedsMaxSize_Throws_Async(string metadataType)
+        {
+            await using MemoryStream archive = new MemoryStream();
+            await WriteMetadataEntryAsync(archive, metadataType, MaxMetadataBlockSize + 1);
 
             archive.Seek(0, SeekOrigin.Begin);
             await using TarReader reader = new TarReader(archive);
             await Assert.ThrowsAsync<InvalidOperationException>(async () => await reader.GetNextEntryAsync());
         }
 
-        [Fact]
-        public async Task GnuLongPath_ExceedsMaxMetadataBlockSize_Throws_Async()
+        private static async Task WriteMetadataEntryAsync(MemoryStream archive, string metadataType, int size)
         {
-            await using MemoryStream archive = new MemoryStream();
-            string longName = new string('a', MaxMetadataBlockSize + 1);
-            await using (TarWriter writer = new TarWriter(archive, TarEntryFormat.Gnu, leaveOpen: true))
+            switch (metadataType)
             {
-                GnuTarEntry entry = new GnuTarEntry(TarEntryType.RegularFile, longName);
-                await writer.WriteEntryAsync(entry);
+                case "PaxExtendedAttributes":
+                    // PAX metadata block includes framing overhead, so we adjust the value size accordingly.
+                    var extendedAttributes = new Dictionary<string, string>
+                    {
+                        ["bigkey"] = new string('x', size - 1024)
+                    };
+                    await using (TarWriter paxWriter = new TarWriter(archive, TarEntryFormat.Pax, leaveOpen: true))
+                    {
+                        await paxWriter.WriteEntryAsync(new PaxTarEntry(TarEntryType.RegularFile, "test.txt", extendedAttributes));
+                    }
+                    break;
+
+                case "GnuLongPath":
+                    await using (TarWriter gnuPathWriter = new TarWriter(archive, TarEntryFormat.Gnu, leaveOpen: true))
+                    {
+                        await gnuPathWriter.WriteEntryAsync(new GnuTarEntry(TarEntryType.RegularFile, new string('a', size)));
+                    }
+                    break;
+
+                case "GnuLongLink":
+                    await using (TarWriter gnuLinkWriter = new TarWriter(archive, TarEntryFormat.Gnu, leaveOpen: true))
+                    {
+                        GnuTarEntry entry = new GnuTarEntry(TarEntryType.SymbolicLink, "test.txt");
+                        entry.LinkName = new string('a', size);
+                        await gnuLinkWriter.WriteEntryAsync(entry);
+                    }
+                    break;
             }
-
-            archive.Seek(0, SeekOrigin.Begin);
-            await using TarReader reader = new TarReader(archive);
-            await Assert.ThrowsAsync<InvalidOperationException>(async () => await reader.GetNextEntryAsync());
-        }
-
-        [Fact]
-        public async Task GnuLongLink_ExceedsMaxMetadataBlockSize_Throws_Async()
-        {
-            await using MemoryStream archive = new MemoryStream();
-            string longLink = new string('a', MaxMetadataBlockSize + 1);
-            await using (TarWriter writer = new TarWriter(archive, TarEntryFormat.Gnu, leaveOpen: true))
-            {
-                GnuTarEntry entry = new GnuTarEntry(TarEntryType.SymbolicLink, "test.txt");
-                entry.LinkName = longLink;
-                await writer.WriteEntryAsync(entry);
-            }
-
-            archive.Seek(0, SeekOrigin.Begin);
-            await using TarReader reader = new TarReader(archive);
-            await Assert.ThrowsAsync<InvalidOperationException>(async () => await reader.GetNextEntryAsync());
         }
     }
 }
