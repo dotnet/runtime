@@ -54,11 +54,7 @@ namespace System.Security.Cryptography
             {
                 Span<byte> publicKey = stackalloc byte[PublicKeySizeInBytes];
                 otherParty.ExportPublicKey(publicKey);
-
-                using (SafeEvpPKeyHandle peerKeyHandle = Interop.Crypto.X25519ImportPublicKey(publicKey))
-                {
-                    written = Interop.Crypto.EvpPKeyDeriveSecretAgreement(_key, peerKeyHandle, destination);
-                }
+                written = Interop.Crypto.X25519DeriveSecretAgreementWithPublicKey(_key, publicKey, destination);
             }
 
             if (written != SecretAgreementSizeInBytes)
@@ -70,7 +66,17 @@ namespace System.Security.Cryptography
 
         protected override void DeriveRawSecretAgreementCore(ReadOnlySpan<byte> otherPartyPublicKey, Span<byte> destination)
         {
-            throw new NotImplementedException();
+            Debug.Assert(otherPartyPublicKey.Length == PublicKeySizeInBytes);
+            Debug.Assert(destination.Length == SecretAgreementSizeInBytes);
+            ThrowIfPrivateNeeded();
+
+            int written = Interop.Crypto.X25519DeriveSecretAgreementWithPublicKey(_key, otherPartyPublicKey, destination);
+
+            if (written != SecretAgreementSizeInBytes)
+            {
+                Debug.Fail($"{nameof(Interop.Crypto.X25519DeriveSecretAgreementWithPublicKey)} wrote an unexpected number of bytes: {written}.");
+                throw new CryptographicException();
+            }
         }
 
         protected override void ExportPrivateKeyCore(Span<byte> destination)

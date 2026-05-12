@@ -19,7 +19,7 @@ namespace System.Security.Cryptography
             _hasPrivate = hasPrivate;
         }
 
-        protected override unsafe void DeriveRawSecretAgreementCore(X25519DiffieHellman otherParty, Span<byte> destination)
+        protected override void DeriveRawSecretAgreementCore(X25519DiffieHellman otherParty, Span<byte> destination)
         {
             Debug.Assert(destination.Length == SecretAgreementSizeInBytes);
             ThrowIfPrivateNeeded();
@@ -32,12 +32,11 @@ namespace System.Security.Cryptography
             }
             else
             {
-                Span<byte> publicKey = stackalloc byte[PublicKeySizeInBytes];
-                otherParty.ExportPublicKey(publicKey);
-
-                using (SafeEvpPKeyHandle peerKeyHandle = Interop.Crypto.X25519ImportPublicKey(publicKey))
+                unsafe
                 {
-                    written = Interop.Crypto.EvpPKeyDeriveSecretAgreement(_key, peerKeyHandle, destination);
+                    Span<byte> publicKey = stackalloc byte[PublicKeySizeInBytes];
+                    otherParty.ExportPublicKey(publicKey);
+                    written = Interop.Crypto.X25519DeriveSecretAgreementWithPublicKey(_key, publicKey, destination);
                 }
             }
 
@@ -50,7 +49,17 @@ namespace System.Security.Cryptography
 
         protected override void DeriveRawSecretAgreementCore(ReadOnlySpan<byte> otherPartyPublicKey, Span<byte> destination)
         {
-            throw new NotImplementedException();
+            Debug.Assert(otherPartyPublicKey.Length == PublicKeySizeInBytes);
+            Debug.Assert(destination.Length == SecretAgreementSizeInBytes);
+            ThrowIfPrivateNeeded();
+
+            int written = Interop.Crypto.X25519DeriveSecretAgreementWithPublicKey(_key, otherPartyPublicKey, destination);
+
+            if (written != SecretAgreementSizeInBytes)
+            {
+                Debug.Fail($"{nameof(Interop.Crypto.X25519DeriveSecretAgreementWithPublicKey)} wrote an unexpected number of bytes: {written}.");
+                throw new CryptographicException();
+            }
         }
 
         protected override void ExportPrivateKeyCore(Span<byte> destination)
