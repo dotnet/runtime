@@ -1054,10 +1054,6 @@ typedef Wrapper<HANDLE, DoNothing<HANDLE>, VoidCloseHandle, (UINT_PTR) -1> Handl
 // Misc holders
 //-----------------------------------------------------------------------------
 
-// A holder for HMODULE.
-FORCEINLINE void HolderFreeLibrary(HMODULE h) { FreeLibrary(h); }
-typedef Wrapper<HMODULE, DoNothing<HMODULE>, HolderFreeLibrary, 0> HModuleHolder;
-
 template<typename T>
 class LifetimeHolder final
 {
@@ -1166,6 +1162,21 @@ struct LocalAllocTraits final
 
 template<typename T>
 using LocalAllocHolder = LifetimeHolder<LocalAllocTraits<T>>;
+
+// A holder for HMODULE.
+struct HModuleTraits final
+{
+    using Type = HMODULE;
+    static constexpr Type Default() { return NULL; }
+    static void Free(Type h)
+    {
+        STATIC_CONTRACT_WRAPPER;
+        if (h != NULL)
+            ::FreeLibrary(h);
+    }
+};
+
+using HModuleHolder = LifetimeHolder<HModuleTraits>;
 
 //
 // We need the following methods to have volatile arguments, so that they can accept
