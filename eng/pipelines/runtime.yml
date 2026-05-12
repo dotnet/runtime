@@ -516,7 +516,7 @@ extends:
           jobTemplate: /eng/pipelines/common/global-build-job.yml
           helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
           helixQueueGroup: libraries
-          buildConfig: checked
+          buildConfig: Release
           platforms:
           - linux_x64
           - linux_musl_arm
@@ -524,13 +524,12 @@ extends:
           - windows_x64
           jobParameters:
             nameSuffix: CoreCLR_ReleaseLibraries
-            buildArgs: -s clr+libs+libs.tests -rc $(_BuildConfig) -c Release /p:ArchiveTests=true
+            buildArgs: -s clr+libs+libs.tests -rc Checked -c $(_BuildConfig) /p:ArchiveTests=true
             timeoutInMinutes: 240
             postBuildSteps:
               - template: /eng/pipelines/libraries/helix.yml
                 parameters:
                   creator: dotnet-bot
-                  buildConfig: Release
                   testRunNamePrefixSuffix: coreclr_Checked
             condition: >-
               or(
