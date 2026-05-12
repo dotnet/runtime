@@ -158,7 +158,7 @@ public enum AreValueTypesBoxed : int
     NoValueTypeBoxing = 0,
     OnlyPrimitivesUnboxed = 1,
     AllBoxed = 2
-};
+}
 // Matches native DebuggerIPCE_BasicTypeData layout (24 bytes).
 // All fields are stored in little-endian format (Portable<T> in native).
 [StructLayout(LayoutKind.Explicit, Size = 24)]
