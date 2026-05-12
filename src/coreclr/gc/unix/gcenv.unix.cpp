@@ -26,6 +26,7 @@
 #include <minipal/memorybarrierprocesswide.h>
 #include <minipal/thread.h>
 #include <minipal/time.h>
+#include <minipal/cpucount.h>
 
 #if HAVE_SWAPCTL
 #include <sys/swap.h>
@@ -146,7 +147,7 @@ bool GCToOSInterface::Initialize()
         return false;
     }
 
-    int configuredCpuCount = sysconf(_SC_NPROCESSORS_CONF);
+    int configuredCpuCount = minipal_get_cpu_max_possible_count();
     if (configuredCpuCount == -1)
     {
         return false;
