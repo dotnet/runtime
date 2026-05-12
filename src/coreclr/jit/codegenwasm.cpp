@@ -2498,7 +2498,30 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
         params.sigInfo = call->callSig;
     }
 #endif // DEBUG
+
     GenTree* target = getCallTarget(call, &params.methHnd);
+
+    // Report managed call signatures to the R2R compiler for thunk generation.
+    if (!call->IsHelperCall() && !call->IsUnmanaged())
+    {
+        CORINFO_SIG_INFO  sigInfoLocal;
+        CORINFO_SIG_INFO* sigInfoCall = call->callSig;
+
+        if (sigInfoCall == nullptr)
+        {
+            if ((params.methHnd != NO_METHOD_HANDLE) &&
+                (Compiler::eeGetHelperNum(params.methHnd) == CORINFO_HELP_UNDEF))
+            {
+                m_compiler->eeGetMethodSig(params.methHnd, &sigInfoLocal);
+                sigInfoCall = &sigInfoLocal;
+            }
+        }
+
+        if (sigInfoCall != nullptr)
+        {
+            m_compiler->info.compCompHnd->recordWasmManagedCallSig(sigInfoCall);
+        }
+    }
 
     ArrayStack<CorInfoWasmType> typeStack(m_compiler->getAllocator(CMK_Codegen));
 
