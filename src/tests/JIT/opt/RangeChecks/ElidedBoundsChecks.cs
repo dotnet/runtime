@@ -95,6 +95,18 @@ public class ElidedBoundsChecks
         return false;
     }
 
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static ReadOnlySpan<char> SliceOffsetPlusOne(ReadOnlySpan<char> span, int offset)
+    {
+        // X64-NOT: ThrowArgumentOutOfRangeException
+        // ARM64-NOT: ThrowArgumentOutOfRangeException
+        if ((uint)offset < (uint)span.Length)
+        {
+            return span.Slice(offset + 1);
+        }
+        return span;
+    }
+
     [Fact]
     public static int TestEntryPoint()
     {
@@ -137,6 +149,12 @@ public class ElidedBoundsChecks
 
         chars = ReadOnlySpan<char>.Empty;
         if (TryStripFirstChar(ref chars, 'h') != false)
+            return 0;
+
+        if (SliceOffsetPlusOne("hello".AsSpan(), 1).Length != 3)
+            return 0;
+
+        if (SliceOffsetPlusOne("hello".AsSpan(), 100).Length != 5)
             return 0;
 
         return 100;
