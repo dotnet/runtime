@@ -2896,8 +2896,14 @@ GenTree* Compiler::fgSimpleLowerSmpOpCasts(LIR::Range& range, GenTreeOp* op)
 
     var_types castToType = cast1->CastToType();
 
-    // Both casts must target the same small integer type.
-    if (!varTypeIsSmall(castToType) || castToType != cast2->CastToType())
+#if TARGET_64BIT
+    bool castToSmallInt = varTypeIsSmall(castToType) || varTypeIsInt(castToType);
+#else
+    bool castToSmallInt = varTypeIsSmall(castToType);
+#endif // TARGET_64BIT
+
+    // Both casts must target the same smaller integer type.
+    if (!castToSmallInt || castToType != cast2->CastToType())
         return nullptr;
 
     var_types opType = op->TypeGet();
