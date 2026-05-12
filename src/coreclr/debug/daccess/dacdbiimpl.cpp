@@ -4745,7 +4745,8 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::SetDebugState(VMPTR_Thread vmThre
 
         // update the field on the target copy
         TADDR taThreadState = PTR_HOST_MEMBER_TADDR(Thread, pThread, m_DebuggerControlledThreadState);
-        SafeWriteStructOrThrow<Thread::DebuggerControlledThreadState>(taThreadState, &(pThread->m_DebuggerControlledThreadState));
+        Thread::DebuggerControlledThreadState localState = pThread->m_DebuggerControlledThreadState.Load();
+        SafeWriteStructOrThrow<Thread::DebuggerControlledThreadState>(taThreadState, &localState);
     }
     EX_CATCH_HRESULT(hr);
     return hr;
