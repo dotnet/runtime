@@ -81,7 +81,7 @@ Note for readers familiar with the .NET reflection type system: while the .NET r
 
 Signature variables represent variables that can be substituted by other types within the system. They differ from generic parameters (because e.g. they don't have constraints or variance). They are simply placeholders to be replaced by other types as part of a process called instantiation. Signature variables have an index that refers to a position within the instantiation context.
 
-Consider a class `Foo<T>` that has a method `Bar<U>(T x, U y)`. When IL references this method in a signature, `T` becomes `!0` (a SignatureTypeVariable meaning "the first type argument of the enclosing type") and `U` becomes `!!0` (a SignatureMethodVariable meaning "the first type argument of the method").
+Consider a class `Foo<T>` that has a method `Bar<U>(T x, U y)`. When IL references this method in a signature, `T` becomes `!0` (a SignatureTypeVariable meaning "the first type argument of the declaring type") and `U` becomes `!!0` (a SignatureMethodVariable meaning "the first type argument of the declaring method").
 
 ## Other type system classes
 
