@@ -942,8 +942,7 @@ int32_t* InterpCompiler::EmitCodeIns(int32_t *ip, InterpInst *ins, TArray<Reloc*
 
         // SUSPEND occupies 3 int32_t slots; the matching RESUME starts immediately after.
         size_t resumeOffset = sizeof(InterpByteCodeStart) + ((size_t)(startIp - m_pMethodCode) + 3) * sizeof(int32_t);
-        assert(pSuspendData->suspensionPointIndex == m_suspensionPointIPOffsets.GetSize());
-        m_suspensionPointIPOffsets.Add((int32_t)resumeOffset);
+        m_suspensionPointIPOffsets.Set(pSuspendData->suspensionPointIndex, (int32_t)resumeOffset);
     }
 
     if (opcode == INTOP_SWITCH)
@@ -1186,6 +1185,11 @@ void InterpCompiler::EmitCode()
     // This will eventually be freed by the VM, using freeArray.
     // If we fail before handing them to the VM, there is logic in the InterpCompiler destructor to free it.
     m_pILToNativeMap = (ICorDebugInfo::OffsetMapping*)m_compHnd->allocateArray(m_ILCodeSize * sizeof(ICorDebugInfo::OffsetMapping));
+
+    // Pre-size the suspension-point IP-offset table so EmitCodeIns can write entries by index
+    // instead of relying on emission order (BB emission can reorder in EH waves).
+    if (m_asyncSuspendDataItems.GetSize() > 0)
+        m_suspensionPointIPOffsets.GrowBy(m_asyncSuspendDataItems.GetSize());
 
     // For each BB, compute the number of EH clauses that overlap with it.
     for (unsigned int i = 0; i < getEHcount(m_methodInfo); i++)
@@ -2086,6 +2090,7 @@ InterpMethod* InterpCompiler::FinalizeMethodData(void* baseAddressRW, void* base
         {
             uint32_t tableSize = (uint32_t)numSuspensionPoints * (uint32_t)sizeof(int32_t);
             assert(currentIntervalMapOffset + tableSize <= intervalMapsSectionEnd);
+            assert(m_suspensionPointIPOffsets.GetSize() == numSuspensionPoints);
 
             int32_t* tableRW = (int32_t*)(rwBase + currentIntervalMapOffset);
             int32_t* tableRX = (int32_t*)(rxBase + currentIntervalMapOffset);
