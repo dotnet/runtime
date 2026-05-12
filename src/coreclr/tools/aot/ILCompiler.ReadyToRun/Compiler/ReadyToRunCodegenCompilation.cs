@@ -19,7 +19,6 @@ using Internal.TypeSystem;
 using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysis.ReadyToRun;
 using ILCompiler.DependencyAnalysisFramework;
-using ILCompiler.ReadyToRun;
 using ILCompiler.Reflection.ReadyToRun;
 using Internal.TypeSystem.Ecma;
 using ILCompiler.ReadyToRun.TypeSystem;
@@ -316,8 +315,6 @@ namespace ILCompiler
         private ConcurrentDictionary<TypeDesc, bool> _computedFixedLayoutTypes = new ConcurrentDictionary<TypeDesc, bool>();
         private Func<TypeDesc, bool> _computedFixedLayoutTypesUncached;
 
-        private readonly ExternalReferenceTokenManager _tokenManager;
-
         internal ReadyToRunCodegenCompilation(
             DependencyAnalyzerBase<NodeFactory> dependencyGraph,
             NodeFactory nodeFactory,
@@ -390,7 +387,6 @@ namespace ILCompiler
             _profileData = profileData;
 
             _fileLayoutOptimizer = new FileLayoutOptimizer(logger, methodLayoutAlgorithm, fileLayoutAlgorithm, profileData, _nodeFactory);
-            _tokenManager = new ExternalReferenceTokenManager(_nodeFactory.ManifestMetadataTable._mutableModule, _nodeFactory.Resolver);
         }
 
         private readonly static string s_folderUpPrefix = ".." + Path.DirectorySeparatorChar;
@@ -733,12 +729,11 @@ namespace ILCompiler
                             }
                         }
 
-                        bool shouldBeCompiled = !CorInfoImpl.ShouldCodeNotBeCompiledIntoFinalImage(InstructionSetSupport, method);
-                        if (method.IsAsyncCall() && shouldBeCompiled)
+                        if (method.IsAsyncCall()
+                            && !CorInfoImpl.ShouldCodeNotBeCompiledIntoFinalImage(InstructionSetSupport, method))
+                        {
                             AddNecessaryAsyncReferences(method);
-
-                        if (method.IsCompilerGeneratedILBodyForAsync() && shouldBeCompiled)
-                            EnsureAsyncThunkTokensAreAvailable(method);
+                        }
 
                         if (!_nodeFactory.CompilationModuleGroup.VersionsWithMethodBody(method))
                             EnsureInstantiationReferencesArePresentForExternalMethod(method);
@@ -775,45 +770,6 @@ namespace ILCompiler
             if (generatedColdCode)
             {
                 _nodeFactory.GenerateHotColdMap(_dependencyGraph);
-            }
-
-            void EnsureAsyncThunkTokensAreAvailable(MethodDesc method)
-            {
-                if (!method.IsCompilerGeneratedILBodyForAsync())
-                    return;
-                MethodIL il = _methodILCache.ILProvider.GetMethodIL(method);
-                if (il is null)
-                    return;
-                var bytes = il.GetILBytes();
-                // Use ILTokenReplacer to iterate over tokens, not actually replace them
-                ILTokenReplacer.Replace(bytes, tok =>
-                {
-                    switch (il.GetObject(tok))
-                    {
-                        case TypeSystemEntity tse:
-                            _tokenManager.EnsureDefTokensAreAvailable(tse, ((EcmaMethod)method.GetPrimaryMethodDesc().GetTypicalMethodDefinition()).Module, true);
-                            break;
-                        default:
-                            // We don't need to worry about string handles
-                            break;
-                    }
-                    return tok;
-                });
-                // ILTokenReplacer doesn't handle exception regions or local variable types, so handle those separately
-                var exceptionRegions = (ILExceptionRegion[])il.GetExceptionRegions();
-                for (int i = 0; i < exceptionRegions.Length; i++)
-                {
-                    var region = exceptionRegions[i];
-                    if (region.Kind == ILExceptionRegionKind.Catch)
-                    {
-                        TypeSystemEntity catchType = (TypeSystemEntity)il.GetObject(region.ClassToken);
-                        _tokenManager.EnsureDefTokensAreAvailable(catchType, ((EcmaMethod)method.GetPrimaryMethodDesc().GetTypicalMethodDefinition()).Module, true);
-                    }
-                }
-                foreach (var local in il.GetLocals())
-                {
-                    _tokenManager.EnsureDefTokensAreAvailable(local.Type, ((EcmaMethod)method.GetPrimaryMethodDesc().GetTypicalMethodDefinition()).Module, true);
-                }
             }
 
             void ProcessMutableMethodBodiesList()
@@ -998,11 +954,51 @@ namespace ILCompiler
         {
             // Validate that the typedef tokens for all of the instantiation parameters of the method
             // have tokens.
-            var moduleForNewReferences = ((EcmaMethod)method.GetPrimaryMethodDesc().GetTypicalMethodDefinition()).Module;
             foreach (var type in method.Instantiation)
-                _tokenManager.EnsureDefTokensAreAvailable(type, moduleForNewReferences, false);
+                EnsureTypeDefTokensAreReady(type);
             foreach (var type in method.OwningType.Instantiation)
-                _tokenManager.EnsureDefTokensAreAvailable(type, moduleForNewReferences, false);
+                EnsureTypeDefTokensAreReady(type);
+
+            void EnsureTypeDefTokensAreReady(TypeDesc type)
+            {
+                // Type represented by simple element type
+                if (type.IsPrimitive || type.IsVoid || type.IsObject || type.IsString || type.IsTypedReference)
+                    return;
+
+                if (type is EcmaType ecmaType)
+                {
+                    if (!_nodeFactory.Resolver.GetModuleTokenForType(ecmaType, allowDynamicallyCreatedReference: false, throwIfNotFound: false).IsNull)
+                        return;
+                    try
+                    {
+                        Debug.Assert(_nodeFactory.CompilationModuleGroup.CrossModuleInlineableModule(ecmaType.Module));
+                        _nodeFactory.ManifestMetadataTable._mutableModule.ModuleThatIsCurrentlyTheSourceOfNewReferences
+                            = ecmaType.Module;
+                        if (!_nodeFactory.ManifestMetadataTable._mutableModule.TryGetEntityHandle(ecmaType).HasValue)
+                            throw new InternalCompilerErrorException($"Unable to create token to {ecmaType}");
+                    }
+                    finally
+                    {
+                        _nodeFactory.ManifestMetadataTable._mutableModule.ModuleThatIsCurrentlyTheSourceOfNewReferences
+                            = null;
+                    }
+                    return;
+                }
+
+                if (type.HasInstantiation)
+                {
+                    EnsureTypeDefTokensAreReady(type.GetTypeDefinition());
+
+                    foreach (TypeDesc instParam in type.Instantiation)
+                    {
+                        EnsureTypeDefTokensAreReady(instParam);
+                    }
+                }
+                else if (type.IsParameterizedType)
+                {
+                    EnsureTypeDefTokensAreReady(type.GetParameterType());
+                }
+            }
         }
 
         private void AddNecessaryAsyncReferences(MethodDesc method)
@@ -1038,9 +1034,32 @@ namespace ILCompiler
                 asyncHelpers.GetKnownMethod("AllocContinuationClass"u8, null),
                 asyncHelpers.GetKnownMethod("AllocContinuationMethod"u8, null),
             ];
-            var moduleForNewReferences = ((EcmaMethod)method.GetPrimaryMethodDesc().GetTypicalMethodDefinition()).Module;
-            _tokenManager.EnsureDefTokensAreAvailable([..requiredMethods, ..requiredTypes, ..requiredFields], moduleForNewReferences, true);
-            _hasAddedAsyncReferences = true;
+            _nodeFactory.ManifestMetadataTable._mutableModule.ModuleThatIsCurrentlyTheSourceOfNewReferences = ((EcmaMethod)method.GetPrimaryMethodDesc().GetTypicalMethodDefinition()).Module;
+            try
+            {
+                // Unconditionally add references to the MutableModule. These members are internal / private and
+                // shouldn't be referenced already, and this lets us avoid doing this more than once
+                foreach (var td in requiredTypes)
+                {
+                    if (!_nodeFactory.ManifestMetadataTable._mutableModule.TryGetEntityHandle(td).HasValue)
+                        throw new InternalCompilerErrorException($"Unable to create token to {td}");
+                }
+                foreach (var fd in requiredFields)
+                {
+                    if (!_nodeFactory.ManifestMetadataTable._mutableModule.TryGetEntityHandle(fd).HasValue)
+                        throw new InternalCompilerErrorException($"Unable to create token to {fd}");
+                }
+                foreach (var md in requiredMethods)
+                {
+                    if (!_nodeFactory.ManifestMetadataTable._mutableModule.TryGetEntityHandle(md).HasValue)
+                        throw new InternalCompilerErrorException($"Unable to create token to {md}");
+                }
+                _hasAddedAsyncReferences = true;
+            }
+            finally
+            {
+                _nodeFactory.ManifestMetadataTable._mutableModule.ModuleThatIsCurrentlyTheSourceOfNewReferences = null;
+            }
         }
 
         public ISymbolNode GetFieldRvaData(FieldDesc field)

@@ -171,11 +171,5 @@ namespace ILCompiler
             Debug.Assert(method.IsAsyncVariant());
             return ((CompilerTypeSystemContext)method.Context).GetTargetOfAsyncVariantMethod(method);
         }
-
-        public static MethodDesc GetTargetOfReturnDroppingAsyncThunk(this MethodDesc method)
-        {
-            Debug.Assert(method.IsReturnDroppingAsyncThunk());
-            return ((CompilerTypeSystemContext)method.Context).GetTargetOfReturnDroppingThunk(method);
-        }
     }
 }

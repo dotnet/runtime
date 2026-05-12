@@ -1872,7 +1872,6 @@ namespace Internal.JitInterface
             else
             {
                 recordToken = (_compilation.CompilationModuleGroup.VersionsWithType(owningType) || _compilation.CompilationModuleGroup.CrossModuleInlineableType(owningType)) && owningType is EcmaType;
-                recordToken &= methodIL.GetMethodILScopeDefinition() is IMethodTokensAreUseableInCompilation || methodIL.GetMethodILScopeDefinition() is IEcmaMethodIL;
             }
 #endif
 
@@ -1885,8 +1884,7 @@ namespace Internal.JitInterface
 #if READYTORUN
                 if (recordToken)
                 {
-                    ModuleToken methodModuleToken = HandleToModuleToken(ref pResolvedToken, out bool strippedInstantiation);
-                    Debug.Assert(!strippedInstantiation);
+                    ModuleToken methodModuleToken = HandleToModuleToken(ref pResolvedToken);
                     var resolver = _compilation.NodeFactory.Resolver;
                     resolver.AddModuleTokenForMethod(method, methodModuleToken);
                     ValidateSafetyOfUsingTypeEquivalenceInSignature(method.Signature);
@@ -1953,8 +1951,7 @@ namespace Internal.JitInterface
 #if READYTORUN
                 if (recordToken)
                 {
-                    _compilation.NodeFactory.Resolver.AddModuleTokenForType(type, HandleToModuleToken(ref pResolvedToken, out bool strippedInstantiation));
-                    Debug.Assert(!strippedInstantiation);
+                    _compilation.NodeFactory.Resolver.AddModuleTokenForType(type, HandleToModuleToken(ref pResolvedToken));
                 }
 #endif
 

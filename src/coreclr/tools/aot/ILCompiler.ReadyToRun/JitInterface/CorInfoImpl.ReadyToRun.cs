@@ -57,13 +57,11 @@ namespace Internal.JitInterface
         public readonly FieldDesc Field;
         public readonly ModuleToken Token;
         public readonly bool OwningTypeNotDerivedFromToken;
-        private readonly bool _forceOwningTypeNotDerivedFromToken;
 
-        public FieldWithToken(FieldDesc field, ModuleToken token, bool forceOwningTypeNotDerivedFromToken = false)
+        public FieldWithToken(FieldDesc field, ModuleToken token)
         {
             Field = field;
             Token = token;
-            _forceOwningTypeNotDerivedFromToken = forceOwningTypeNotDerivedFromToken;
             if (token.TokenType == CorTokenType.mdtMemberRef)
             {
                 var memberRef = token.MetadataReader.GetMemberReference((MemberReferenceHandle)token.Handle);
@@ -78,10 +76,6 @@ namespace Internal.JitInterface
                 default:
                     break;
                 }
-            }
-            if (_forceOwningTypeNotDerivedFromToken)
-            {
-                OwningTypeNotDerivedFromToken = true;
             }
         }
 
@@ -101,9 +95,7 @@ namespace Internal.JitInterface
             if (fieldWithToken == null)
                 return false;
 
-            return Field == fieldWithToken.Field
-                && Token.Equals(fieldWithToken.Token)
-                && _forceOwningTypeNotDerivedFromToken == fieldWithToken._forceOwningTypeNotDerivedFromToken;
+            return Field == fieldWithToken.Field && Token.Equals(fieldWithToken.Token);
         }
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
@@ -131,10 +123,8 @@ namespace Internal.JitInterface
             result = comparer.Compare(Field, other.Field);
             if (result != 0)
                 return result;
-            result = Token.CompareTo(other.Token);
-            if (result != 0)
-                return result;
-            return _forceOwningTypeNotDerivedFromToken.CompareTo(other._forceOwningTypeNotDerivedFromToken);
+
+            return Token.CompareTo(other.Token);
         }
     }
 
@@ -145,30 +135,19 @@ namespace Internal.JitInterface
         public readonly TypeDesc ConstrainedType;
         public readonly bool Unboxing;
         public readonly bool OwningTypeNotDerivedFromToken;
-        private readonly bool _forceOwningTypeNotDerivedFromToken;
         public readonly TypeDesc OwningType;
 
-        public MethodWithToken(MethodDesc method, ModuleToken token, TypeDesc constrainedType, bool unboxing, TypeSystemEntity genericContextObject, TypeDesc devirtualizedMethodOwner = null, bool forceOwningTypeFromMethodDesc = false)
+        public MethodWithToken(MethodDesc method, ModuleToken token, TypeDesc constrainedType, bool unboxing, TypeSystemEntity context, TypeDesc devirtualizedMethodOwner = null)
         {
             Debug.Assert(!method.IsUnboxingThunk());
-            Debug.Assert(genericContextObject is null or MethodDesc or TypeDesc);
             Method = method;
             Token = token;
             ConstrainedType = constrainedType;
             Unboxing = unboxing;
-            _forceOwningTypeNotDerivedFromToken = forceOwningTypeFromMethodDesc;
-            if (!_forceOwningTypeNotDerivedFromToken)
-            {
-                OwningType = GetMethodTokenOwningType(this, constrainedType, genericContextObject, devirtualizedMethodOwner, out OwningTypeNotDerivedFromToken);
-            }
-            else
-            {
-                OwningType = method.OwningType;
-                OwningTypeNotDerivedFromToken = true;
-            }
+            OwningType = GetMethodTokenOwningType(this, constrainedType, context, devirtualizedMethodOwner, out OwningTypeNotDerivedFromToken);
         }
 
-        private static TypeDesc GetMethodTokenOwningType(MethodWithToken methodToken, TypeDesc constrainedType, TypeSystemEntity genericContextObject, TypeDesc devirtualizedMethodOwner, out bool owningTypeNotDerivedFromToken)
+        private static TypeDesc GetMethodTokenOwningType(MethodWithToken methodToken, TypeDesc constrainedType, TypeSystemEntity context, TypeDesc devirtualizedMethodOwner, out bool owningTypeNotDerivedFromToken)
         {
             ModuleToken moduleToken = methodToken.Token;
             owningTypeNotDerivedFromToken = false;
@@ -183,7 +162,7 @@ namespace Internal.JitInterface
             if (moduleToken.TokenType == CorTokenType.mdtMethodDef)
             {
                 var methodDefinition = moduleToken.MetadataReader.GetMethodDefinition((MethodDefinitionHandle)moduleToken.Handle);
-                return HandleContext(moduleToken.Module, methodDefinition.GetDeclaringType(), methodToken.Method.OwningType, constrainedType, genericContextObject, devirtualizedMethodOwner, ref owningTypeNotDerivedFromToken);
+                return HandleContext(moduleToken.Module, methodDefinition.GetDeclaringType(), methodToken.Method.OwningType, constrainedType, context, devirtualizedMethodOwner, ref owningTypeNotDerivedFromToken);
             }
 
             // At this point moduleToken must point at a MemberRef.
@@ -196,19 +175,19 @@ namespace Internal.JitInterface
                 case HandleKind.TypeSpecification:
                     {
                         Debug.Assert(devirtualizedMethodOwner == null); // Devirtualization is expected to always use a methoddef token
-                        return HandleContext(moduleToken.Module, memberRef.Parent, methodToken.Method.OwningType, constrainedType, genericContextObject, null, ref owningTypeNotDerivedFromToken);
+                        return HandleContext(moduleToken.Module, memberRef.Parent, methodToken.Method.OwningType, constrainedType, context, null, ref owningTypeNotDerivedFromToken);
                     }
 
                 default:
                     return methodToken.Method.OwningType;
             }
 
-            static TypeDesc HandleContext(IEcmaModule module, EntityHandle handle, TypeDesc methodTargetOwner, TypeDesc constrainedType, TypeSystemEntity genericContextObject, TypeDesc devirtualizedMethodOwner, ref bool owningTypeNotDerivedFromToken)
+            TypeDesc HandleContext(IEcmaModule module, EntityHandle handle, TypeDesc methodTargetOwner, TypeDesc constrainedType, TypeSystemEntity context, TypeDesc devirtualizedMethodOwner, ref bool owningTypeNotDerivedFromToken)
             {
                 var tokenOnlyOwningType = module.GetType(handle);
                 TypeDesc actualOwningType;
 
-                if (genericContextObject == null)
+                if (context == null)
                 {
                     actualOwningType = methodTargetOwner;
                 }
@@ -217,14 +196,14 @@ namespace Internal.JitInterface
                     Instantiation typeInstantiation;
                     Instantiation methodInstantiation = new Instantiation();
 
-                    if (genericContextObject is MethodDesc methodContext)
+                    if (context is MethodDesc methodContext)
                     {
                         typeInstantiation = methodContext.OwningType.Instantiation;
                         methodInstantiation = methodContext.Instantiation;
                     }
                     else
                     {
-                        TypeDesc typeContext = (TypeDesc)genericContextObject;
+                        TypeDesc typeContext = (TypeDesc)context;
                         typeInstantiation = typeContext.Instantiation;
                     }
 
@@ -344,12 +323,14 @@ namespace Internal.JitInterface
             if (methodWithToken == null)
                 return false;
 
-            bool equals = Method == methodWithToken.Method
-                && Token.Equals(methodWithToken.Token)
-                && OwningType == methodWithToken.OwningType
-                && ConstrainedType == methodWithToken.ConstrainedType
-                && Unboxing == methodWithToken.Unboxing
-                && _forceOwningTypeNotDerivedFromToken == methodWithToken._forceOwningTypeNotDerivedFromToken;
+            bool equals = Method == methodWithToken.Method && Token.Equals(methodWithToken.Token)
+                && OwningType == methodWithToken.OwningType && ConstrainedType == methodWithToken.ConstrainedType
+                && Unboxing == methodWithToken.Unboxing;
+            if (equals)
+            {
+                Debug.Assert(OwningTypeNotDerivedFromToken == methodWithToken.OwningTypeNotDerivedFromToken);
+                Debug.Assert(OwningType == methodWithToken.OwningType);
+            }
 
             return equals;
         }
@@ -425,9 +406,17 @@ namespace Internal.JitInterface
             if (result != 0)
                 return result;
 
-            result = _forceOwningTypeNotDerivedFromToken.CompareTo(other._forceOwningTypeNotDerivedFromToken);
-            if (result != 0)
-                return result;
+            // The OwningType/OwningTypeNotDerivedFromToken should be equivalent if the above conditions are equal.
+            Debug.Assert(OwningTypeNotDerivedFromToken == other.OwningTypeNotDerivedFromToken);
+            Debug.Assert(OwningTypeNotDerivedFromToken || (OwningType == other.OwningType));
+
+            if (OwningTypeNotDerivedFromToken != other.OwningTypeNotDerivedFromToken)
+            {
+                if (OwningTypeNotDerivedFromToken)
+                    return 1;
+                else
+                    return -1;
+            }
 
             return comparer.Compare(OwningType, other.OwningType);
         }
@@ -583,7 +572,15 @@ namespace Internal.JitInterface
                 // Special methods on delegate types
                 return true;
             }
-
+            // Async resumption stubs use faux IL with synthetic tokens. When CoreLib is in the
+            // version bubble the stubs are not wrapped with ManifestModuleWrappedMethodIL, so
+            // token resolution for InstantiatedType / ParameterizedType falls through to a path
+            // that cannot handle them. Skip compilation and let the runtime JIT these stubs.
+            // https://github.com/dotnet/runtime/issues/125337
+            if (methodNeedingCode.IsCompilerGeneratedILBodyForAsync() && compilation != null && compilation.NodeFactory.CompilationModuleGroup.IsCompositeBuildMode)
+            {
+                return true;
+            }
             if (ShouldCodeNotBeCompiledIntoFinalImage(instructionSetSupport, methodNeedingCode))
             {
                 return true;
@@ -993,11 +990,10 @@ namespace Internal.JitInterface
 
             MethodWithToken targetMethod = new MethodWithToken(
                 targetMethodDesc,
-                HandleToModuleToken(ref pTargetMethod, out bool strippedInstantiation),
+                HandleToModuleToken(ref pTargetMethod),
                 constrainedType: constrainedType,
                 unboxing: false,
-                genericContextObject: typeOrMethodContext,
-                forceOwningTypeFromMethodDesc: strippedInstantiation);
+                context: typeOrMethodContext);
 
             // runtime lookup is not needed, callerHandle is unused
             pLookup.lookupKind.needsRuntimeLookup = false;
@@ -1405,13 +1401,13 @@ namespace Internal.JitInterface
 
         private FieldWithToken ComputeFieldWithToken(FieldDesc field, ref CORINFO_RESOLVED_TOKEN pResolvedToken)
         {
-            ModuleToken token = HandleToModuleToken(ref pResolvedToken, out bool strippedInstantiation);
-            return new FieldWithToken(field, token, strippedInstantiation);
+            ModuleToken token = HandleToModuleToken(ref pResolvedToken);
+            return new FieldWithToken(field, token);
         }
 
         private MethodWithToken ComputeMethodWithToken(MethodDesc method, ref CORINFO_RESOLVED_TOKEN pResolvedToken, TypeDesc constrainedType, bool unboxing)
         {
-            ModuleToken token = _HandleToModuleToken(ref pResolvedToken, method, out TypeSystemEntity context, ref constrainedType, out bool strippedInstantiation);
+            ModuleToken token = HandleToModuleToken(ref pResolvedToken, method, out TypeSystemEntity context, ref constrainedType);
 
             TypeDesc devirtualizedMethodOwner = null;
             if (pResolvedToken.tokenType == CorInfoTokenKind.CORINFO_TOKENKIND_DevirtualizedMethod)
@@ -1419,46 +1415,42 @@ namespace Internal.JitInterface
                 devirtualizedMethodOwner = HandleToObject(pResolvedToken.hClass);
             }
 
-            // For crossgen-generated IL stubs, we may only have access to the method token for the typical method definition.
-            // This means that the owning type of the method may not be encoded in the method token.
-            // bool methodTokenMightNotEncodeOwningType = MethodBeingCompiled.IsCompilerGeneratedILBodyForAsync();
-            return new MethodWithToken(method, token, constrainedType: constrainedType, unboxing: unboxing, genericContextObject: context, devirtualizedMethodOwner: devirtualizedMethodOwner, forceOwningTypeFromMethodDesc: strippedInstantiation);
-
-            ModuleToken _HandleToModuleToken(ref CORINFO_RESOLVED_TOKEN pResolvedToken, MethodDesc methodDesc, out TypeSystemEntity context, ref TypeDesc constrainedType, out bool strippedInstantiation)
-            {
-                if (methodDesc != null && (_compilation.NodeFactory.CompilationModuleGroup.VersionsWithMethodBody(methodDesc)
-                    || (pResolvedToken.tokenType == CorInfoTokenKind.CORINFO_TOKENKIND_DevirtualizedMethod)
-                    || methodDesc.IsPInvoke))
-                {
-                    if ((CorTokenType)(unchecked((uint)pResolvedToken.token) & 0xFF000000u) == CorTokenType.mdtMethodDef &&
-                        methodDesc?.GetTypicalMethodDefinition() is EcmaMethod ecmaMethod)
-                    {
-                        mdToken token = (mdToken)MetadataTokens.GetToken(ecmaMethod.Handle);
-
-                        // This is used for de-virtualization of non-generic virtual methods, and should be treated
-                        // as a the methodDesc parameter defining the exact OwningType, not doing resolution through the token.
-                        context = null;
-                        constrainedType = null;
-                        strippedInstantiation = false;
-
-                        return new ModuleToken(ecmaMethod.Module, token);
-                    }
-                }
-
-                if (pResolvedToken.tokenType == CorInfoTokenKind.CORINFO_TOKENKIND_ResolvedStaticVirtualMethod)
-                {
-                    context = null;
-                }
-                else
-                {
-                    context = entityFromContext(pResolvedToken.tokenContext);
-                }
-
-                return HandleToModuleToken(ref pResolvedToken, out strippedInstantiation);
-            }
+            return new MethodWithToken(method, token, constrainedType: constrainedType, unboxing: unboxing, context: context, devirtualizedMethodOwner: devirtualizedMethodOwner);
         }
 
-        private ModuleToken HandleToModuleToken(ref CORINFO_RESOLVED_TOKEN pResolvedToken, out bool strippedInstantiation)
+        private ModuleToken HandleToModuleToken(ref CORINFO_RESOLVED_TOKEN pResolvedToken, MethodDesc methodDesc, out TypeSystemEntity context, ref TypeDesc constrainedType)
+        {
+            if (methodDesc != null && (_compilation.NodeFactory.CompilationModuleGroup.VersionsWithMethodBody(methodDesc)
+                || (pResolvedToken.tokenType == CorInfoTokenKind.CORINFO_TOKENKIND_DevirtualizedMethod)
+                || methodDesc.IsPInvoke))
+            {
+                if ((CorTokenType)(unchecked((uint)pResolvedToken.token) & 0xFF000000u) == CorTokenType.mdtMethodDef &&
+                    methodDesc?.GetTypicalMethodDefinition() is EcmaMethod ecmaMethod)
+                {
+                    mdToken token = (mdToken)MetadataTokens.GetToken(ecmaMethod.Handle);
+
+                    // This is used for de-virtualization of non-generic virtual methods, and should be treated
+                    // as a the methodDesc parameter defining the exact OwningType, not doing resolution through the token.
+                    context = null;
+                    constrainedType = null;
+
+                    return new ModuleToken(ecmaMethod.Module, token);
+                }
+            }
+
+            if (pResolvedToken.tokenType == CorInfoTokenKind.CORINFO_TOKENKIND_ResolvedStaticVirtualMethod)
+            {
+                context = null;
+            }
+            else
+            {
+                context = entityFromContext(pResolvedToken.tokenContext);
+            }
+
+            return HandleToModuleToken(ref pResolvedToken);
+        }
+
+        private ModuleToken HandleToModuleToken(ref CORINFO_RESOLVED_TOKEN pResolvedToken)
         {
             mdToken token = pResolvedToken.token;
             var methodIL = HandleToObject(pResolvedToken.tokenScope);
@@ -1485,11 +1477,7 @@ namespace Internal.JitInterface
                     // It's okay to strip the instantiation away because we don't need a MethodSpec
                     // token - SignatureBuilder will generate the generic method signature
                     // using instantiation parameters from the MethodDesc entity.
-                    // However, we need to make note of this to indicate that the OwningType of the
-                    // method should be inferred from the MethodDesc entity rather than the token.
-                    var primaryMethod = resultMethod.GetPrimaryMethodDesc();
-                    resultMethod = primaryMethod.GetTypicalMethodDefinition();
-                    strippedInstantiation = resultMethod != primaryMethod;
+                    resultMethod = resultMethod.GetPrimaryMethodDesc().GetTypicalMethodDefinition();
 
                     if (!_compilation.NodeFactory.CompilationModuleGroup.VersionsWithType(resultMethod.OwningType))
                     {
@@ -1506,27 +1494,19 @@ namespace Internal.JitInterface
                     // instantiated MemberRef token - SignatureBuilder will generate the generic
                     // field signature using instantiation parameters from the FieldDesc entity.
                     resultField = resultField.GetTypicalFieldDefinition();
-                    strippedInstantiation = resultField != resultDef;
 
-                    if (!(_compilation.NodeFactory.CompilationModuleGroup.VersionsWithType(resultField.OwningType) || resultField.OwningType.IsNonVersionable()))
-                    {
-                        ModuleToken result = _compilation.NodeFactory.Resolver.GetModuleTokenForField(resultField, allowDynamicallyCreatedReference: true, throwIfNotFound: true);
-                        return result;
-                    }
                     Debug.Assert(resultField is EcmaField);
+                    Debug.Assert(_compilation.NodeFactory.CompilationModuleGroup.VersionsWithType(resultField.OwningType) || resultField.OwningType.IsNonVersionable());
                     token = (mdToken)MetadataTokens.GetToken(((EcmaField)resultField).Handle);
                     module = ((EcmaField)resultField).Module;
                 }
                 else
                 {
-                    // We don't strip the instantiation for instantiated types in GetModuleTokenForType
-                    strippedInstantiation = false;
                     return GetModuleTokenForType((TypeSystemEntity)resultDef);
                 }
             }
             else
             {
-                strippedInstantiation = false;
                 module = ((IEcmaMethodIL)methodILDef).Module;
             }
 
@@ -1563,16 +1543,8 @@ namespace Internal.JitInterface
         {
             MethodILScope methodIL = HandleToObject(module);
 
-            Debug.Assert(methodIL.GetMethodILScopeDefinition() is IEcmaMethodIL
-                // We may be calling this from emptyStringLiteral for a method inlined into a thunk
-                || metaTok == (mdToken)CorTokenType.mdtString);
-            if (metaTok == (mdToken)CorTokenType.mdtString)
-            {
-                ISymbolNode str = _compilation.SymbolNodeFactory.StringLiteral(
-                    new ModuleToken(_compilation.NodeFactory.ManifestMetadataTable._mutableModule, metaTok));
-                ppValue = (void*)ObjectToHandle(str);
-                return InfoAccessType.IAT_PPVALUE;
-            }
+            // If this is not a MethodIL backed by a physical method body, we need to remap the token.
+            Debug.Assert(methodIL.GetMethodILScopeDefinition() is IEcmaMethodIL);
 
             IEcmaModule metadataModule = ((IEcmaMethodIL)methodIL.GetMethodILScopeDefinition()).Module;
             ISymbolNode stringObject = _compilation.SymbolNodeFactory.StringLiteral(
@@ -2803,16 +2775,12 @@ namespace Internal.JitInterface
             {
                 var methodIL = HandleToObject(pResolvedToken.tokenScope);
                 MethodDesc sharedMethod = methodIL.OwningMethod.GetSharedRuntimeFormMethodTarget();
-                // We shouldn't be needing shared generics in resumption stubs - generics info should all be stored in the continuation
-                Debug.Assert(MethodBeingCompiled is not AsyncResumptionStub);
                 _compilation.NodeFactory.DetectGenericCycles(MethodBeingCompiled, sharedMethod);
-                helperArg = new MethodWithToken(methodDesc, HandleToModuleToken(ref pResolvedToken, out bool strippedInstantiation), constrainedType, unboxing: false, genericContextObject: sharedMethod, forceOwningTypeFromMethodDesc: strippedInstantiation);
+                helperArg = new MethodWithToken(methodDesc, HandleToModuleToken(ref pResolvedToken), constrainedType, unboxing: false, context: sharedMethod);
             }
             else if (helperArg is FieldDesc fieldDesc)
             {
-                ModuleToken fieldToken = HandleToModuleToken(ref pResolvedToken, out bool strippedInstantiation);
-                Debug.Assert(!strippedInstantiation);
-                helperArg = new FieldWithToken(fieldDesc, fieldToken, forceOwningTypeNotDerivedFromToken: strippedInstantiation);
+                helperArg = new FieldWithToken(fieldDesc, HandleToModuleToken(ref pResolvedToken));
             }
 
             var methodContext = new GenericContext(callerHandle);
@@ -3235,7 +3203,7 @@ namespace Internal.JitInterface
             Debug.Assert(_compilation.CompilationModuleGroup.VersionsWithMethodBody(methodDesc));
             EcmaMethod ecmaMethod = (EcmaMethod)methodDesc;
             ModuleToken moduleToken = new ModuleToken(ecmaMethod.Module, ecmaMethod.Handle);
-            MethodWithToken methodWithToken = new MethodWithToken(ecmaMethod, moduleToken, constrainedType: null, unboxing: false, genericContextObject: null);
+            MethodWithToken methodWithToken = new MethodWithToken(ecmaMethod, moduleToken, constrainedType: null, unboxing: false, context: null);
 
             if ((ecmaMethod.GetPInvokeMethodCallingConventions() & UnmanagedCallingConventions.IsSuppressGcTransition) != 0)
             {
