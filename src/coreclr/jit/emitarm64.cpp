@@ -8243,7 +8243,7 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int va
         int  base = m_compiler->lvaFrameAddress(varx, &FPbased);
         int  disp = base + offs;
         imm       = disp;
-        reg2      = encodingSPtoZR(FPbased ? REG_FPBASE : REG_SPBASE);
+        reg2      = FPbased ? REG_FPBASE : REG_SPBASE;
 
         // TODO-ARM64-CQ: use unscaled loads?
         /* Figure out the encoding format of the instruction */
@@ -8312,7 +8312,6 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int va
             case INS_sve_ldr:
             {
                 assert(isPredicateRegister(reg1) || isVectorRegister(reg1));
-                assert(FPbased);
 
                 isSimple = false;
                 size     = EA_SCALABLE;
@@ -8321,7 +8320,7 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int va
 
                 useRegForImm      = true;
                 regNumber rsvdReg = codeGen->rsGetRsvdReg();
-                codeGen->instGen_Set_Reg_To_Base_Plus_Imm(EA_PTRSIZE, rsvdReg, REG_FP, imm);
+                codeGen->instGen_Set_Reg_To_Base_Plus_Imm(EA_PTRSIZE, rsvdReg, reg2, imm);
 
                 reg2 = rsvdReg;
                 imm  = 0;
@@ -8394,7 +8393,7 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int va
     id->idInsOpt(opt);
 
     id->idReg1(reg1);
-    id->idReg2(reg2);
+    id->idReg2(encodingSPtoZR(reg2));
     id->idReg3(reg3);
     id->idAddr()->iiaLclVar.initLclVarAddr(varx, offs);
     id->idSetIsLclVar();
@@ -8555,7 +8554,7 @@ void emitter::emitIns_S_R(instruction ins, emitAttr attr, regNumber reg1, int va
         imm = disp;
 
         // TODO-ARM64-CQ: with compLocallocUsed, should we use REG_SAVED_LOCALLOC_SP instead?
-        reg2 = encodingSPtoZR(FPbased ? REG_FPBASE : REG_SPBASE);
+        reg2 = FPbased ? REG_FPBASE : REG_SPBASE;
 
         // TODO-ARM64-CQ: use unscaled loads?
         /* Figure out the encoding format of the instruction */
@@ -8590,7 +8589,6 @@ void emitter::emitIns_S_R(instruction ins, emitAttr attr, regNumber reg1, int va
             case INS_sve_str:
             {
                 assert(isVectorRegister(reg1) || isPredicateRegister(reg1));
-                assert(FPbased);
                 isSimple = false;
                 size     = EA_SCALABLE;
                 attr     = size;
@@ -8598,7 +8596,7 @@ void emitter::emitIns_S_R(instruction ins, emitAttr attr, regNumber reg1, int va
 
                 useRegForImm      = true;
                 regNumber rsvdReg = codeGen->rsGetRsvdReg();
-                codeGen->instGen_Set_Reg_To_Base_Plus_Imm(EA_PTRSIZE, rsvdReg, REG_FP, imm);
+                codeGen->instGen_Set_Reg_To_Base_Plus_Imm(EA_PTRSIZE, rsvdReg, reg2, imm);
                 reg2 = rsvdReg;
                 imm  = 0;
             }
@@ -8678,7 +8676,7 @@ void emitter::emitIns_S_R(instruction ins, emitAttr attr, regNumber reg1, int va
     id->idInsOpt(INS_OPTS_NONE);
 
     id->idReg1(reg1);
-    id->idReg2(reg2);
+    id->idReg2(encodingSPtoZR(reg2));
     id->idAddr()->iiaLclVar.initLclVarAddr(varx, offs);
     id->idSetIsLclVar();
 
