@@ -183,6 +183,8 @@ namespace Mono.Linker.Tests.TestCasesRunner
                 os = TargetOS.OSX;
             else if (RuntimeInformation.IsOSPlatform(OSPlatform.FreeBSD))
                 os = TargetOS.FreeBSD;
+            else if (RuntimeInformation.IsOSPlatform(OSPlatform.Create("HAIKU")))
+                os = TargetOS.Haiku;
             else
                 throw new NotImplementedException();
 

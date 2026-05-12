@@ -67,23 +67,16 @@ namespace System.CommandLine
                     return TargetOS.OSX;
                 else if (RuntimeInformation.IsOSPlatform(OSPlatform.FreeBSD))
                     return TargetOS.FreeBSD;
+                else if (RuntimeInformation.IsOSPlatform(OSPlatform.Create("HAIKU")))
+                    return TargetOS.Haiku;
 
                 throw new NotImplementedException();
             }
 
             return token.ToLowerInvariant() switch
             {
-                "linux" => TargetOS.Linux,
-                "win" or "windows" => TargetOS.Windows,
-                "osx" => TargetOS.OSX,
-                "freebsd" => TargetOS.FreeBSD,
-                "maccatalyst" => TargetOS.MacCatalyst,
-                "iossimulator" => TargetOS.iOSSimulator,
-                "ios" => TargetOS.iOS,
-                "tvossimulator" => TargetOS.tvOSSimulator,
-                "tvos" => TargetOS.tvOS,
-                "browser" => TargetOS.Browser,
-                "wasi" => TargetOS.Wasi,
+                "win" => TargetOS.Windows,
+                _ when Enum.TryParse(token, ignoreCase: true, out TargetOS os) => os,
                 _ => throw new CommandLineException($"Target OS '{token}' is not supported")
             };
         }
