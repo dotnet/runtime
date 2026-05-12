@@ -4194,7 +4194,7 @@ public:
     bool lvaVarDoNotEnregister(unsigned varNum);
 
     void lvSetMinOptsDoNotEnreg();
-    void lvSetEHVarsDoNotEnreg();
+    void lvSetVarsDoNotEnreg();
 
     bool lvaEnregEHVars;
     bool lvaEnregMultiRegVars;

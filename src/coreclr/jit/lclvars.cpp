@@ -1339,11 +1339,11 @@ void Compiler::lvSetMinOptsDoNotEnreg()
 }
 
 //------------------------------------------------------------------------
-// lvSetEHVarsDoNotEnreg:
-//   Set locals that we expect to not be enregisterable due to EH as DNER, to
-//   allow specific optimizations for these by lowering.
+// lvSetVarsDoNotEnreg:
+//   Set locals that we expect to not be enregisterable as DNER, to allow
+//   specific optimizations for these by lowering.
 //
-void Compiler::lvSetEHVarsDoNotEnreg()
+void Compiler::lvSetVarsDoNotEnreg()
 {
     for (unsigned lclNum = 0; lclNum < lvaCount; lclNum++)
     {
@@ -1356,6 +1356,10 @@ void Compiler::lvSetEHVarsDoNotEnreg()
         if (dsc->lvTracked && dsc->IsLiveInOutOfHandler() && !IsEHVarARegCandidate(dsc))
         {
             lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::LiveInOutOfHandler));
+        }
+        else if (varTypeIsStruct(dsc) && !dsc->lvPromoted && !dsc->IsEnregisterableType())
+        {
+            lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::NotRegSizeStruct));
         }
     }
 }

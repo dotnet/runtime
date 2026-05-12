@@ -8930,9 +8930,9 @@ PhaseStatus Lowering::DoPhase()
     }
     else
     {
-        // By this point tracked locals live into EH clauses are _very_ likely to not be enregistered.
-        // DNER this for the same reason above, so that we can contain these locals.
-        m_compiler->lvSetEHVarsDoNotEnreg();
+        // For many locals we know at this point that we won't enregister them,
+        // so DNER these for the same reasons as above.
+        m_compiler->lvSetVarsDoNotEnreg();
     }
 
     if (m_compiler->opts.OptimizationEnabled() && !m_compiler->opts.IsOSR())
