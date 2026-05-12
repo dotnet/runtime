@@ -141,6 +141,9 @@ namespace System.Reflection.Tests
 
             ConstructorInfo[] genericTypeConstructors = GetConstructors(typeof(GenericClassWithConstructor<int>));
             Assert.All(genericTypeConstructors, constructorInfo => Assert.Empty(constructorInfo.GetGenericArguments()));
+
+            ConstructorInfo[] openGenericTypeConstructors = GetConstructors(typeof(GenericClassWithConstructor<>));
+            Assert.All(openGenericTypeConstructors, constructorInfo => Assert.Empty(constructorInfo.GetGenericArguments()));
         }
 
         // Use this class only from the Invoke_StaticConstructorMultipleTimes method
