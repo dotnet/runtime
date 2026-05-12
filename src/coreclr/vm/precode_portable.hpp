@@ -51,7 +51,8 @@ public: // static
 public:
     void Init(MethodDesc* pMD);
     void Init(void* nativeEntryPoint);
-    void Init(void* nativeEntryPoint, MethodDesc* pMD);
+    void Init_WithInterpreterThunk(void* nativeEntryPoint, MethodDesc* pMD);
+    void Init_WithNativeCode(void* nativeEntryPoint, MethodDesc* pMD);
 
     // Check if the entry point represents a method with the UnmanagedCallersOnly attribute.
     // If it does, update the entry point to point to the UnmanagedCallersOnly thunk if not
@@ -70,6 +71,13 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         _ASSERTE(IsValid());
+        return _pActualCode != nullptr;
+    }
+
+    // This api can be used on a PortableEntryPoint which has not yet been initted
+    bool HasNativeCodeUnchecked() const
+    {
+        LIMITED_METHOD_CONTRACT;
         return _pActualCode != nullptr;
     }
 
@@ -101,17 +109,21 @@ private:
         InterlockedAnd(reinterpret_cast<LONG volatile*>(&_flags), static_cast<LONG>(~flags));
     }
 public:
-    void SetPrefersInterpreterEntryPoint()
-    {
-        LIMITED_METHOD_CONTRACT;
-        _ASSERTE(IsValid());
-        SetFlagsInterlocked(kPrefersInterpreterEntryPoint);
-    }
     void ClearPrefersInterpreterEntryPoint()
     {
         LIMITED_METHOD_CONTRACT;
         _ASSERTE(IsValid());
         ClearFlagsInterlocked(kPrefersInterpreterEntryPoint);
+    }
+
+    // Atomically install an interpreter thunk if _pActualCode is still NULL.
+    // Returns true if the thunk was installed, false if _pActualCode was already set.
+    bool TrySetInterpreterThunk(void* thunk)
+    {
+        LIMITED_METHOD_CONTRACT;
+        _ASSERTE(IsValid());
+        _ASSERTE(thunk != nullptr);
+        return InterlockedCompareExchangeT(&_pActualCode, thunk, (void*)nullptr) == nullptr;
     }
 
     friend struct ::cdac_data<PortableEntryPoint>;

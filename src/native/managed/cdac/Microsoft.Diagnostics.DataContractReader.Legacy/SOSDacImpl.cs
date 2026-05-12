@@ -1071,7 +1071,7 @@ public sealed unsafe partial class SOSDacImpl
 
             IRuntimeTypeSystem rtsContract = _target.Contracts.RuntimeTypeSystem;
             IEcmaMetadata ecmaMetadataContract = _target.Contracts.EcmaMetadata;
-            ISignatureDecoder signatureDecoder = _target.Contracts.SignatureDecoder;
+            ISignature signatureContract = _target.Contracts.Signature;
 
             TargetPointer fieldDescTargetPtr = fieldDesc.ToTargetPointer(_target);
             CorElementType fieldDescType = rtsContract.GetFieldDescType(fieldDescTargetPtr);
@@ -1090,7 +1090,7 @@ public sealed unsafe partial class SOSDacImpl
             try
             {
                 // try to completely decode the signature
-                TypeHandle foundTypeHandle = signatureDecoder.DecodeFieldSignature(fieldDef.Signature, moduleHandle, ctx);
+                TypeHandle foundTypeHandle = signatureContract.DecodeFieldSignature(fieldDef.Signature, moduleHandle, ctx);
 
                 // get the MT of the type
                 // This is an implementation detail of the DAC that we replicate here to get method tables for non-MT types

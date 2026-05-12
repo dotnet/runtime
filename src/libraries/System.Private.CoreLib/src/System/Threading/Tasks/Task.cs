@@ -2423,12 +2423,13 @@ namespace System.Threading.Tasks
         }
 
         /// <summary>
-        /// ThreadPool's entry point into the Task.  The base behavior is simply to
-        /// use the entry point that's not protected from double-invoke; derived internal tasks
-        /// can override to customize their behavior, which is usually done by promises
-        /// that want to reuse the same object as a queued work item.
+        /// This is used internally to execute the Task directly. ThreadPool uses this,
+        /// and it is also used to invoke runtime async tasks directly.
+        /// The base behavior is simply to use the entry point that's not protected from
+        /// double-invoke; derived internal tasks can override to customize their behavior,
+        /// which is usually done by promises that want to reuse the same object as a queued work item.
         /// </summary>
-        internal virtual void ExecuteFromThreadPool(Thread threadPoolThread) => ExecuteEntryUnsafe(threadPoolThread);
+        internal virtual void ExecuteDirectly(Thread? threadPoolThread) => ExecuteEntryUnsafe(threadPoolThread);
 
         internal void ExecuteEntryUnsafe(Thread? threadPoolThread) // used instead of ExecuteEntry() when we don't have to worry about double-execution prevent
         {

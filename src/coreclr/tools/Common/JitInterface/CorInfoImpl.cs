@@ -4123,12 +4123,6 @@ namespace Internal.JitInterface
             // CompileMethod is going to fail with this CorJitResult anyway.
         }
 
-#pragma warning disable CA1822 // Mark members as static
-        private void recordCallSite(uint instrOffset, CORINFO_SIG_INFO* callSig, CORINFO_METHOD_STRUCT_* methodHandle)
-#pragma warning restore CA1822 // Mark members as static
-        {
-        }
-
         private ArrayBuilder<Relocation> _codeRelocs;
         private ArrayBuilder<Relocation> _roDataRelocs;
         private ArrayBuilder<Relocation> _rwDataRelocs;
