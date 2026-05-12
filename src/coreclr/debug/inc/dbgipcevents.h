@@ -1506,7 +1506,7 @@ struct MSLAYOUT DebuggerIPCE_ExpandedTypeData
         // used for E_T_FNPTR
         struct MSLAYOUT
         {
-            VMPTR_TypeHandle typeHandle; // if non-null then further fetches needed to get type arguments
+            Portable<VMPTR_TypeHandle> typeHandle; // if non-null then further fetches needed to get type arguments
         } NaryTypeData;
 
     };
