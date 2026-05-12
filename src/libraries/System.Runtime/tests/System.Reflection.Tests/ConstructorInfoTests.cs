@@ -133,6 +133,16 @@ namespace System.Reflection.Tests
             Assert.True(constructors[0].IsPublic);
         }
 
+        [Fact]
+        public void GetGenericArguments_ReturnsEmptyArray()
+        {
+            ConstructorInfo[] constructors = GetConstructors(typeof(ClassWith3Constructors));
+            Assert.All(constructors, constructorInfo => Assert.Empty(constructorInfo.GetGenericArguments()));
+
+            ConstructorInfo[] genericTypeConstructors = GetConstructors(typeof(GenericClassWithConstructor<int>));
+            Assert.All(genericTypeConstructors, constructorInfo => Assert.Empty(constructorInfo.GetGenericArguments()));
+        }
+
         // Use this class only from the Invoke_StaticConstructorMultipleTimes method
         public static class ClassWithStaticConstructorThatIsCalledMultipleTimesViaReflection
         {
@@ -157,6 +167,12 @@ namespace System.Reflection.Tests
     public class ConstructorInfoDerived : ConstructorInfoAbstractBase
     {
         public ConstructorInfoDerived() { }
+    }
+
+    public class GenericClassWithConstructor<T>
+    {
+        public GenericClassWithConstructor() { }
+        public GenericClassWithConstructor(T value) { }
     }
 
     public class ClassWith3Constructors
