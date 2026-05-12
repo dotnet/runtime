@@ -770,5 +770,68 @@ struct MSLAYOUT DacThreadAllocInfo
     ULONG64 m_allocBytesUOH;
 };
 
+//
+// Debugger_STRData holds data for each stack frame or chain.
+//
+#if defined(_MSC_VER)
+#pragma warning( push )
+#pragma warning( disable:4324 ) // the compiler pads a structure to comply with alignment requirements
+#endif                          // ARM context structures have a 16-byte alignment requirement
+struct MSLAYOUT Debugger_STRData
+{
+    FramePointer            fp;
+    // @dbgtodo  stackwalker/shim- Ideally we should be able to get rid of the DebuggerREGDISPLAY and just use the CONTEXT.
+    CORDB_ADDRESS           ctx;    // points to a dbi-allocated DT_CONTEXT
+    CORDB_ADDRESS           rd;     // points to a dbi-allocated DebuggerREGDISPLAY
+    VMPTR_AppDomain         vmCurrentAppDomainToken;
+
+
+    enum EType
+    {
+        cMethodFrame = 0,
+        cStubFrame,
+        cRuntimeNativeFrame
+    } eType;
+
+    union MSLAYOUT
+    {
+        // Data for a Method
+        struct MSLAYOUT
+        {
+            struct DebuggerIPCE_FuncData funcData;
+            struct DebuggerIPCE_JITFuncData jitFuncData;
+            SIZE_T                       ILOffset;
+            CorDebugMappingResult        mapping;
+
+            bool        fVarArgs;
+
+            // Indicates whether the managed method has any metadata.
+            // Some dynamic methods such as IL stubs and LCG methods don't have any metadata.
+            // This is used only by the V3 stackwalker, not the V2 one, because we only
+            // expose dynamic methods as real stack frames in V3.
+            bool        fNoMetadata;
+
+            TADDR       taAmbientESP;
+
+            GENERICS_TYPE_TOKEN exactGenericArgsToken;
+            DWORD               dwExactGenericArgsTokenIndex;
+
+        } v;
+
+        // Data for an Stub Frame.
+        struct MSLAYOUT
+        {
+            mdMethodDef funcMetadataToken;
+            VMPTR_Assembly vmAssembly;
+            VMPTR_MethodDesc vmMethodDesc;
+            CorDebugInternalFrameType frameType;
+        } stubFrame;
+
+    };
+};
+#if defined(_MSC_VER)
+#pragma warning( pop )
+#endif
+
 #include "dacdbistructures.inl"
 #endif // DACDBISTRUCTURES_H_

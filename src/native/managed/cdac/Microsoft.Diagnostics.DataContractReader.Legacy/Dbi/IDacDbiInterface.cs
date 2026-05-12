@@ -151,7 +151,110 @@ public struct COR_FIELD
     public int fieldType;
 }
 
+// Mirrors the cMethodFrame branch of the union inside Debugger_STRData.
+[StructLayout(LayoutKind.Sequential)]
+public struct DebuggerIPCE_FuncData
+{
+    public uint funcMetadataToken;       // mdMethodDef
+    public ulong vmAssembly;             // VMPTR_Assembly
+    public uint classMetadataToken;      // mdTypeDef
+    public ulong ilStartAddress;         // void*
+    public ulong ilSize;                 // SIZE_T
+    public ulong currentEnCVersion;      // SIZE_T
+    public uint localVarSigToken;        // mdSignature
+}
+
+// Mirrors the cMethodFrame branch of the union inside Debugger_STRData.
+[StructLayout(LayoutKind.Sequential)]
+public struct DebuggerIPCE_JITFuncData
+{
+    public ulong nativeStartAddressPtr;            // TADDR
+    public ulong nativeHotSize;                    // SIZE_T
+    public ulong nativeStartAddressColdPtr;        // TADDR
+    public ulong nativeColdSize;                   // SIZE_T
+    public ulong nativeOffset;                     // SIZE_T
+    public ulong vmNativeCodeMethodDescToken;      // VMPTR_MethodDesc
+    public Interop.BOOL fIsFilterFrame;
+    public ulong parentNativeOffset;               // SIZE_T
+    public ulong fpParentOrSelf;                   // FramePointer
+    public Interop.BOOL isInstantiatedGeneric;
+    public ulong enCVersion;                       // SIZE_T
+    public Interop.BOOL justAfterILThrow;
+}
+
+// Data for a method frame (the v variant of the Debugger_STRData union).
+[StructLayout(LayoutKind.Sequential)]
+public struct DebuggerIPCE_STRData_MethodFrame
+{
+    public DebuggerIPCE_FuncData funcData;
+    public DebuggerIPCE_JITFuncData jitFuncData;
+    public ulong ILOffset;                         // SIZE_T
+    public int mapping;                            // CorDebugMappingResult
+    public byte fVarArgs;                          // bool
+    public byte fNoMetadata;                       // bool
+    public ulong taAmbientESP;                     // TADDR
+    public ulong exactGenericArgsToken;            // GENERICS_TYPE_TOKEN
+    public uint dwExactGenericArgsTokenIndex;
+}
+
+// Data for a stub frame (the stubFrame variant of the Debugger_STRData union).
+[StructLayout(LayoutKind.Sequential)]
+public struct DebuggerIPCE_STRData_StubFrame
+{
+    public uint funcMetadataToken;                 // mdMethodDef
+    public ulong vmAssembly;                       // VMPTR_Assembly
+    public ulong vmMethodDesc;                     // VMPTR_MethodDesc
+    public int frameType;                          // CorDebugInternalFrameType
+}
+
+// Holds data for each stack frame or chain. This data is passed from the RC to
+// the DI during a stack walk. Mirrors the native Debugger_STRData struct
+// defined in src/coreclr/debug/inc/dbgipcevents.h.
+//
+// `ctx` and `rd` are CORDB_ADDRESS values that point into dbi-allocated memory.
+// The DAC writes the populated context/regdisplay through these pointers rather
+// than storing them inline. Code paths that do not produce a context/regdisplay
+// (e.g. EnumerateInternalFrames for cStubFrame entries) leave them as 0.
+[StructLayout(LayoutKind.Explicit)]
+public struct Debugger_STRData
+{
+    public enum EType
+    {
+        cMethodFrame = 0,
+        cStubFrame = 1,
+        cRuntimeNativeFrame = 2,
+    }
+
+    [FieldOffset(0)] public ulong fp;                           // FramePointer
+    [FieldOffset(8)] public ulong ctx;                          // CORDB_ADDRESS (DT_CONTEXT*)
+    [FieldOffset(16)] public ulong rd;                          // CORDB_ADDRESS (DebuggerREGDISPLAY*)
+    [FieldOffset(24)] public ulong vmCurrentAppDomainToken;     // VMPTR_AppDomain
+    [FieldOffset(32)] public EType eType;
+    [FieldOffset(40)] public DebuggerIPCE_STRData_MethodFrame v;
+    [FieldOffset(40)] public DebuggerIPCE_STRData_StubFrame stubFrame;
+}
+
 #pragma warning restore CS0649
+
+// Mirrors CorDebugInternalFrameType from src/coreclr/inc/cordebug.idl.
+// These are the wire values written into DebuggerIPCE_STRData_StubFrame.frameType,
+// and they intentionally do NOT match Contracts.InternalFrameType ordering -
+// the latter is an abstraction over runtime frame classification, while these are
+// the COM-visible debugger values consumed by ICorDebugInternalFrame::GetFrameType.
+public enum CorDebugInternalFrameType
+{
+    STUBFRAME_NONE = 0x00000000,
+    STUBFRAME_M2U = 0x00000001,
+    STUBFRAME_U2M = 0x00000002,
+    STUBFRAME_APPDOMAIN_TRANSITION = 0x00000003,
+    STUBFRAME_LIGHTWEIGHT_FUNCTION = 0x00000004,
+    STUBFRAME_FUNC_EVAL = 0x00000005,
+    STUBFRAME_INTERNALCALL = 0x00000006,
+    STUBFRAME_CLASS_INIT = 0x00000007,
+    STUBFRAME_EXCEPTION = 0x00000008,
+    STUBFRAME_SECURITY = 0x00000009,
+    STUBFRAME_JIT_COMPILATION = 0x0000000a,
+}
 
 public enum DynamicMethodType
 {
@@ -333,7 +436,7 @@ public unsafe partial interface IDacDbiInterface
     int GetCountOfInternalFrames(ulong vmThread, uint* pRetVal);
 
     [PreserveSig]
-    int EnumerateInternalFrames(ulong vmThread, nint fpCallback, nint pUserData);
+    int EnumerateInternalFrames(ulong vmThread, delegate* unmanaged<Debugger_STRData*, void*, void> fpCallback, nint pUserData);
 
     [PreserveSig]
     int GetStackParameterSize(ulong controlPC, uint* pRetVal);

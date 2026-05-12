@@ -1043,10 +1043,172 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetStackWalkCurrentFrameInfo(pSFIHandle, pFrameData, pRetVal) : HResults.E_NOTIMPL;
 
     public int GetCountOfInternalFrames(ulong vmThread, uint* pRetVal)
-        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetCountOfInternalFrames(vmThread, pRetVal) : HResults.E_NOTIMPL;
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            if (pRetVal == null)
+                throw new ArgumentNullException(nameof(pRetVal));
 
-    public int EnumerateInternalFrames(ulong vmThread, nint fpCallback, nint pUserData)
-        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.EnumerateInternalFrames(vmThread, fpCallback, pUserData) : HResults.E_NOTIMPL;
+            uint count = 0;
+            IStackWalk stackwalk = _target.Contracts.StackWalk;
+            foreach (Contracts.StackFrameData frame in stackwalk.GetFrames(new TargetPointer(vmThread)))
+            {
+                if (frame.InternalFrameType != Contracts.InternalFrameType.STUBFRAME_NONE
+                    && stackwalk.GetFrameName(frame.FrameIdentifier) != "InterpreterFrame"
+                    && !stackwalk.IsExceptionHandlingHelperInlinedCallFrame(frame.FrameAddress))
+                    count++;
+            }
+            *pRetVal = count;
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacy is not null)
+        {
+            uint dacCount;
+            int hrLocal = _legacy.GetCountOfInternalFrames(vmThread, &dacCount);
+            Debug.ValidateHResult(hr, hrLocal);
+            if (hr == HResults.S_OK)
+                Debug.Assert(*pRetVal == dacCount, $"Internal frame count mismatch - cDAC: {*pRetVal}, DAC: {dacCount}");
+        }
+#endif
+        return hr;
+    }
+
+    public int EnumerateInternalFrames(ulong vmThread, delegate* unmanaged<Debugger_STRData*, void*, void> fpCallback, nint pUserData)
+    {
+        int hr = HResults.S_OK;
+#if DEBUG
+        List<Debugger_STRData>? cdacFrames = _legacy is not null ? new() : null;
+#endif
+        try
+        {
+            TargetPointer threadPtr = new TargetPointer(vmThread);
+            TargetPointer currentAppDomain = _target.ReadPointer(_target.ReadGlobalPointer(Constants.Globals.AppDomain));
+            IStackWalk stackwalk = _target.Contracts.StackWalk;
+
+            foreach (Contracts.StackFrameData frame in stackwalk.GetFrames(threadPtr))
+            {
+                if (frame.InternalFrameType == Contracts.InternalFrameType.STUBFRAME_NONE
+                     || stackwalk.GetFrameName(frame.FrameIdentifier) == "InterpreterFrame"
+                     || stackwalk.IsExceptionHandlingHelperInlinedCallFrame(frame.FrameAddress))
+                    continue;
+
+                TargetPointer vmAssembly;
+                uint funcMetadataToken;
+                TargetPointer vmMethodDesc;
+                if (frame.InternalFrameType == Contracts.InternalFrameType.STUBFRAME_FUNC_EVAL)
+                {
+                    Contracts.DebuggerEvalData evalData = stackwalk.GetDebuggerEvalData(frame.FrameAddress);
+                    funcMetadataToken = evalData.MethodToken;
+                    vmAssembly = evalData.AssemblyPtr;
+                    vmMethodDesc = TargetPointer.Null;
+                }
+                else
+                {
+                    TargetPointer methodDescPtr = stackwalk.GetMethodDescPtr(frame.FrameAddress);
+                    ResolveStubFrameAssemblyAndToken(methodDescPtr, out vmAssembly, out funcMetadataToken);
+                    vmMethodDesc = methodDescPtr;
+                }
+
+                // ctx and rd are intentionally left as 0 (consumer does not read for cStubFrame).
+                Debugger_STRData data = default;
+                data.fp = frame.FrameAddress.Value;
+                data.vmCurrentAppDomainToken = currentAppDomain.Value;
+                data.eType = Debugger_STRData.EType.cStubFrame;
+                data.stubFrame.funcMetadataToken = funcMetadataToken;
+                data.stubFrame.vmAssembly = vmAssembly.Value;
+                data.stubFrame.vmMethodDesc = vmMethodDesc.Value;
+                data.stubFrame.frameType = (int)ToCorDebugInternalFrameType(frame.InternalFrameType);
+#if DEBUG
+                cdacFrames?.Add(data);
+#endif
+                fpCallback(&data, (void*)pUserData);
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacy is not null)
+        {
+            List<Debugger_STRData> dacFrames = new();
+            GCHandle dacHandle = GCHandle.Alloc(dacFrames);
+            int hrLocal = _legacy.EnumerateInternalFrames(vmThread, (delegate* unmanaged<Debugger_STRData*, void*, void>)&CollectStubFrameCallback, GCHandle.ToIntPtr(dacHandle));
+            dacHandle.Free();
+            Debug.ValidateHResult(hr, hrLocal);
+            if (hr == HResults.S_OK)
+            {
+                Debug.Assert(cdacFrames!.Count == dacFrames.Count, $"Internal frame count mismatch - cDAC: {cdacFrames!.Count}, DAC: {dacFrames.Count}");
+                int n = Math.Min(cdacFrames!.Count, dacFrames.Count);
+                for (int i = 0; i < n; i++)
+                {
+                    Debugger_STRData c = cdacFrames![i];
+                    Debugger_STRData d = dacFrames[i];
+                    Debug.Assert(c.fp == d.fp, $"Frame[{i}] fp mismatch - cDAC: 0x{c.fp:x}, DAC: 0x{d.fp:x}");
+                    Debug.Assert(c.vmCurrentAppDomainToken == d.vmCurrentAppDomainToken, $"Frame[{i}] vmCurrentAppDomainToken mismatch - cDAC: 0x{c.vmCurrentAppDomainToken:x}, DAC: 0x{d.vmCurrentAppDomainToken:x}");
+                    Debug.Assert(c.eType == d.eType, $"Frame[{i}] eType mismatch - cDAC: {c.eType}, DAC: {d.eType}");
+                    Debug.Assert(c.stubFrame.funcMetadataToken == d.stubFrame.funcMetadataToken, $"Frame[{i}] funcMetadataToken mismatch - cDAC: 0x{c.stubFrame.funcMetadataToken:x}, DAC: 0x{d.stubFrame.funcMetadataToken:x}");
+                    Debug.Assert(c.stubFrame.vmAssembly == d.stubFrame.vmAssembly, $"Frame[{i}] vmAssembly mismatch - cDAC: 0x{c.stubFrame.vmAssembly:x}, DAC: 0x{d.stubFrame.vmAssembly:x}");
+                    Debug.Assert(c.stubFrame.vmMethodDesc == d.stubFrame.vmMethodDesc, $"Frame[{i}] vmMethodDesc mismatch - cDAC: 0x{c.stubFrame.vmMethodDesc:x}, DAC: 0x{d.stubFrame.vmMethodDesc:x}");
+                    Debug.Assert(c.stubFrame.frameType == d.stubFrame.frameType, $"Frame[{i}] frameType mismatch - cDAC: {c.stubFrame.frameType}, DAC: {d.stubFrame.frameType}");
+                }
+            }
+        }
+#endif
+        return hr;
+    }
+
+#if DEBUG
+    [UnmanagedCallersOnly]
+    private static void CollectStubFrameCallback(Debugger_STRData* data, void* pUserData)
+    {
+        GCHandle handle = GCHandle.FromIntPtr((nint)pUserData);
+        ((List<Debugger_STRData>)handle.Target!).Add(*data);
+    }
+#endif
+
+    private void ResolveStubFrameAssemblyAndToken(TargetPointer methodDescPtr, out TargetPointer vmAssembly, out uint funcMetadataToken)
+    {
+        vmAssembly = TargetPointer.Null;
+        funcMetadataToken = 0; // mdTokenNil
+        if (methodDescPtr == TargetPointer.Null)
+            return;
+
+        IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
+        MethodDescHandle mdHandle = rts.GetMethodDescHandle(methodDescPtr);
+        funcMetadataToken = rts.GetMethodToken(mdHandle);
+
+        TargetPointer mtPtr = rts.GetMethodTable(mdHandle);
+        if (mtPtr == TargetPointer.Null)
+            return;
+        TypeHandle typeHandle = rts.GetTypeHandle(mtPtr);
+        TargetPointer modulePtr = rts.GetModule(typeHandle);
+        if (modulePtr == TargetPointer.Null)
+            return;
+
+        ILoader loader = _target.Contracts.Loader;
+        Contracts.ModuleHandle moduleHandle = loader.GetModuleHandleFromModulePtr(modulePtr);
+        vmAssembly = loader.GetAssembly(moduleHandle);
+    }
+
+    private static CorDebugInternalFrameType ToCorDebugInternalFrameType(Contracts.InternalFrameType frameType)
+        => frameType switch
+        {
+            Contracts.InternalFrameType.STUBFRAME_NONE => CorDebugInternalFrameType.STUBFRAME_NONE,
+            Contracts.InternalFrameType.STUBFRAME_M2U => CorDebugInternalFrameType.STUBFRAME_M2U,
+            Contracts.InternalFrameType.STUBFRAME_U2M => CorDebugInternalFrameType.STUBFRAME_U2M,
+            Contracts.InternalFrameType.STUBFRAME_FUNC_EVAL => CorDebugInternalFrameType.STUBFRAME_FUNC_EVAL,
+            Contracts.InternalFrameType.STUBFRAME_INTERNALCALL => CorDebugInternalFrameType.STUBFRAME_INTERNALCALL,
+            Contracts.InternalFrameType.STUBFRAME_CLASS_INIT => CorDebugInternalFrameType.STUBFRAME_CLASS_INIT,
+            Contracts.InternalFrameType.STUBFRAME_EXCEPTION => CorDebugInternalFrameType.STUBFRAME_EXCEPTION,
+            Contracts.InternalFrameType.STUBFRAME_JIT_COMPILATION => CorDebugInternalFrameType.STUBFRAME_JIT_COMPILATION,
+            _ => CorDebugInternalFrameType.STUBFRAME_NONE,
+        };
 
     public int GetStackParameterSize(ulong controlPC, uint* pRetVal)
         => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetStackParameterSize(controlPC, pRetVal) : HResults.E_NOTIMPL;

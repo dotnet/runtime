@@ -236,6 +236,20 @@ public:
         INTERCEPTION_COUNT
     };
 
+    // Classification of an explicit Frame for the purpose of synthesizing
+    // CorDebugInternalFrameType values for the debugger.
+    enum StubFrameType
+    {
+        STUB_FRAME_NONE,
+        STUB_FRAME_M2U,
+        STUB_FRAME_U2M,
+        STUB_FRAME_FUNC_EVAL,
+        STUB_FRAME_INTERNAL_CALL,
+        STUB_FRAME_CLASS_INIT,
+        STUB_FRAME_EXCEPTION,
+        STUB_FRAME_JIT_COMPILATION,
+    };
+
     void GcScanRoots(promote_func *fn, ScanContext* sc);
     unsigned GetFrameAttribs();
 #ifndef DACCESS_COMPILE
@@ -252,6 +266,7 @@ public:
     int GetFrameType();
     ETransitionType GetTransitionType();
     Interception GetInterception();
+    StubFrameType GetStubFrameType();
     void GetUnmanagedCallSite(TADDR* ip, TADDR* returnIP, TADDR* returnSP);
     BOOL TraceFrame(Thread *thread, BOOL fromPatch, TraceDestination *trace, REGDISPLAY *regs);
 #ifdef DACCESS_COMPILE
@@ -426,6 +441,12 @@ public:
     {
         LIMITED_METHOD_DAC_CONTRACT;
         return INTERCEPTION_NONE;
+    }
+
+    StubFrameType GetStubFrameType_Impl()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return STUB_FRAME_NONE;
     }
 
     // Return information about an unmanaged call the frame
@@ -955,6 +976,12 @@ public:
         return INTERCEPTION_EXCEPTION;
     }
 
+    StubFrameType GetStubFrameType_Impl()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return STUB_FRAME_EXCEPTION;
+    }
+
     unsigned GetFrameAttribs_Impl()
     {
         LIMITED_METHOD_DAC_CONTRACT;
@@ -1029,6 +1056,12 @@ public:
     {
         LIMITED_METHOD_DAC_CONTRACT;
         return INTERCEPTION_EXCEPTION;
+    }
+
+    StubFrameType GetStubFrameType_Impl()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return STUB_FRAME_EXCEPTION;
     }
 
     ETransitionType GetTransitionType_Impl()
@@ -1110,6 +1143,12 @@ public:
     {
         LIMITED_METHOD_DAC_CONTRACT;
         return TYPE_FUNC_EVAL;
+    }
+
+    StubFrameType GetStubFrameType_Impl()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return STUB_FRAME_FUNC_EVAL;
     }
 
     unsigned GetFrameAttribs_Impl();
@@ -1203,6 +1242,12 @@ public:
     {
         LIMITED_METHOD_DAC_CONTRACT;
         return TYPE_CALL;
+    }
+
+    StubFrameType GetStubFrameType_Impl()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return STUB_FRAME_M2U;
     }
 
     friend struct cdac_data<FramedMethodFrame>;
@@ -1383,6 +1428,12 @@ public:
     }
 
     Interception GetInterception_Impl();
+
+    StubFrameType GetStubFrameType_Impl()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return STUB_FRAME_JIT_COMPILATION;
+    }
 };
 
 //------------------------------------------------------------------------
@@ -1463,6 +1514,14 @@ public:
     }
 
     Interception GetInterception_Impl();
+
+    // The debugger special-cases StubDispatchFrame and reports STUBFRAME_NONE
+    // even though the base FramedMethodFrame transition is M2U.
+    StubFrameType GetStubFrameType_Impl()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return STUB_FRAME_NONE;
+    }
 
     BOOL SuppressParamTypeArg_Impl()
     {
@@ -1591,6 +1650,12 @@ public:
     {
         LIMITED_METHOD_DAC_CONTRACT;
         return TT_InternalCall;
+    }
+
+    StubFrameType GetStubFrameType_Impl()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return STUB_FRAME_INTERNAL_CALL;
     }
 
     friend struct ::cdac_data<DynamicHelperFrame>;
@@ -1778,6 +1843,12 @@ public:
         LIMITED_METHOD_DAC_CONTRACT;
         return INTERCEPTION_CLASS_INIT;
     }
+
+    StubFrameType GetStubFrameType_Impl()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return STUB_FRAME_CLASS_INIT;
+    }
 };
 
 //------------------------------------------------------------------------
@@ -1803,6 +1874,12 @@ public:
     {
         LIMITED_METHOD_DAC_CONTRACT;
         return TYPE_EXIT;
+    }
+
+    StubFrameType GetStubFrameType_Impl()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return STUB_FRAME_M2U;
     }
 
     // Return information about an unmanaged call the frame
@@ -1865,6 +1942,12 @@ public:
     {
         LIMITED_METHOD_DAC_CONTRACT;
         return TT_U2M;
+    }
+
+    StubFrameType GetStubFrameType_Impl()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return STUB_FRAME_U2M;
     }
 
     bool CatchesAllExceptions()
@@ -2047,6 +2130,15 @@ public:
     {
         LIMITED_METHOD_DAC_CONTRACT;
         return TYPE_EXIT;
+    }
+
+    // Reports STUB_FRAME_M2U whenever the frame is asked. The debugger-facing
+    // classification additionally gates this on InlinedCallFrame::FrameHasActiveCall;
+    // callers that need the gated value must perform that check themselves.
+    StubFrameType GetStubFrameType_Impl()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return FrameHasActiveCall(this) ? STUB_FRAME_M2U : STUB_FRAME_NONE;
     }
 
     BOOL IsTransitionToNativeFrame_Impl()

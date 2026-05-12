@@ -724,7 +724,7 @@ public:
                          const DT_CONTEXT * pContext);
 
     // Retrieve information about the current frame from the stackwalker.
-    HRESULT STDMETHODCALLTYPE GetStackWalkCurrentFrameInfo(StackWalkHandle pSFIHandle, OPTIONAL DebuggerIPCE_STRData * pFrameData, OUT FrameType * pRetVal);
+    HRESULT STDMETHODCALLTYPE GetStackWalkCurrentFrameInfo(StackWalkHandle pSFIHandle, OPTIONAL Debugger_STRData * pFrameData, OUT FrameType * pRetVal);
 
     // Return the number of internal frames on the specified thread.
     HRESULT STDMETHODCALLTYPE GetCountOfInternalFrames(VMPTR_Thread vmThread, OUT ULONG32 * pRetVal);
@@ -853,7 +853,7 @@ private:
     // Fill in the structure with information about the current frame at which the stackwalker is stopped
     void InitFrameData(StackFrameIterator *   pIter,
                        FrameType              ft,
-                       DebuggerIPCE_STRData * pFrameData);
+                       Debugger_STRData * pFrameData);
 
     // Helper method to fill in the address and the size of the hot and cold regions.
     void InitNativeCodeAddrAndSize(TADDR                      taStartAddr,
@@ -900,8 +900,7 @@ private:
                            SIZE_T *         pLatestEnCVersion,
                            SIZE_T *         pJittedInstanceEnCVersion = NULL);
 
-    // @dbgtodo - This method should be removed once CordbFunctionBreakpoint and SetIP are moved OOP and
-    // no longer use nativeCodeJITInfoToken.
+    // @dbgtodo - This method should be removed once CordbFunctionBreakpoint and SetIP are moved OOP.
     void SetDJIPointer(Module *                   pModule,
                        MethodDesc *               pMD,
                        mdMethodDef                mdMethod,

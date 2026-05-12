@@ -295,6 +295,88 @@ internal sealed class FrameIterator
         }
     }
 
+    /// <summary>
+    /// Returns the InternalFrameType (CorDebugInternalFrameType) of the current Frame.
+    /// Mirrors the native DacDbiInterfaceImpl::GetInternalFrameType logic, which combines
+    /// the Frame's transition type, frame type, and interception kind into a single value.
+    /// Returns InternalFrameType.STUBFRAME_NONE for frames the debugger does not surface.
+    /// </summary>
+    public InternalFrameType GetCurrentInternalFrameType() => GetInternalFrameType(target, currentFramePointer);
+
+    /// <summary>
+    /// Returns true if the current Frame is an InlinedCallFrame that was set up by
+    /// the new exception handling helpers (i.e. its Datum field is tagged with the
+    /// ExceptionHandlingHelper marker). The native iteration over internal frames skips
+    /// these frames.
+    /// </summary>
+    public bool IsExceptionHandlingHelperInlinedCallFrame()
+        => IsExceptionHandlingHelperInlinedCallFrame(target, currentFramePointer);
+
+    internal static InternalFrameType GetInternalFrameType(Target target, TargetPointer framePtr)
+    {
+        Data.Frame frame = target.ProcessedData.GetOrAdd<Data.Frame>(framePtr);
+        FrameType frameType = GetFrameType(target, frame.Identifier);
+
+        // Mirrors Frame::GetStubFrameType_Impl per subclass in src/coreclr/vm/frames.h.
+        switch (frameType)
+        {
+            case FrameType.FaultingExceptionFrame:
+            case FrameType.SoftwareExceptionFrame:
+                return InternalFrameType.STUBFRAME_EXCEPTION;
+
+            case FrameType.DebuggerClassInitMarkFrame:
+                return InternalFrameType.STUBFRAME_CLASS_INIT;
+
+            case FrameType.PrestubMethodFrame:
+                return InternalFrameType.STUBFRAME_JIT_COMPILATION;
+
+            case FrameType.FuncEvalFrame:
+                return InternalFrameType.STUBFRAME_FUNC_EVAL;
+
+            case FrameType.DebuggerU2MCatchHandlerFrame:
+                return InternalFrameType.STUBFRAME_U2M;
+
+            case FrameType.DynamicHelperFrame:
+                return InternalFrameType.STUBFRAME_INTERNALCALL;
+
+            case FrameType.DebuggerExitFrame:
+            case FrameType.FramedMethodFrame:
+            case FrameType.PInvokeCalliFrame:
+            case FrameType.CallCountingHelperFrame:
+            case FrameType.ExternalMethodFrame:
+            case FrameType.InterpreterFrame:
+                return InternalFrameType.STUBFRAME_M2U;
+
+            // InlinedCallFrame inherits STUBFRAME_M2U from its _Impl, but the
+            // debugger gates the value on FrameHasActiveCall.
+            case FrameType.InlinedCallFrame:
+                Data.InlinedCallFrame icf = target.ProcessedData.GetOrAdd<Data.InlinedCallFrame>(frame.Address);
+                return InlinedCallFrameHasActiveCall(icf)
+                    ? InternalFrameType.STUBFRAME_M2U
+                    : InternalFrameType.STUBFRAME_NONE;
+
+            default:
+                return InternalFrameType.STUBFRAME_NONE;
+        }
+    }
+
+    internal static bool IsExceptionHandlingHelperInlinedCallFrame(Target target, TargetPointer framePtr)
+    {
+        Data.Frame frame = target.ProcessedData.GetOrAdd<Data.Frame>(framePtr);
+        FrameType frameType = GetFrameType(target, frame.Identifier);
+        if (frameType != FrameType.InlinedCallFrame)
+            return false;
+
+        // Mirrors the EH-helper filter in DacDbiInterfaceImpl::EnumerateInternalFrames
+        // (dacdbiimplstackwalk.cpp): native checks the marker bit on m_Datum regardless
+        // of whether the frame has an active call.
+        // InlinedCallFrameMarker in src/coreclr/vm/exceptionhandling.h:
+        //   ExceptionHandlingHelper = 2 on 64-bit, 1 on 32-bit. Mask == ExceptionHandlingHelper.
+        Data.InlinedCallFrame icf = target.ProcessedData.GetOrAdd<Data.InlinedCallFrame>(frame.Address);
+        ulong mask = (ulong)(target.PointerSize == 8 ? 2 : 1);
+        return (icf.Datum.Value & mask) == mask;
+    }
+
     private static bool InlinedCallFrameHasFunction(Data.InlinedCallFrame frame, Target target)
     {
         if (target.PointerSize == sizeof(ulong))

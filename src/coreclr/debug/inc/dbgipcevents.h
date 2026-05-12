@@ -1306,9 +1306,6 @@ struct MSLAYOUT DebuggerIPCE_FuncData
 // SIZE_T nativeOffset: Offset from the beginning of the function,
 //          in bytes.  This may be non-zero even when nativeStartAddressPtr
 //          is NULL
-// void * nativeCodeJITInfoToken: An opaque value to hand back to the left
-//          side when fetching the JITInfo for the native code, i.e. the
-//          IL->native maps for the variables.  This may be NULL if no JITInfo is available.
 // void * nativeCodeMethodDescToken: An opaque value to hand back to the left
 //          side when fetching the code.  In addition this token can act as the
 //          unique identity for the native code in the case where there are
@@ -1321,8 +1318,6 @@ struct MSLAYOUT DebuggerIPCE_FuncData
 //          This is being used to figure out a real offset of the exception origin.
 //          By subtracting STACKWALK_CONTROLPC_ADJUST_OFFSET from nativeOffset you can get
 //          an address somewhere inside [call IL_Throw] instruction.
-// void *ilToNativeMapAddr etc.: If nativeCodeJITInfoToken is not NULL then these
-//          specify the table giving the mapping of IPs.
 struct MSLAYOUT DebuggerIPCE_JITFuncData
 {
     TADDR       nativeStartAddressPtr;
@@ -1334,7 +1329,6 @@ struct MSLAYOUT DebuggerIPCE_JITFuncData
 
 
     SIZE_T      nativeOffset;
-    LSPTR_DJI   nativeCodeJITInfoToken;
     VMPTR_MethodDesc vmNativeCodeMethodDescToken;
 
     BOOL         fIsFilterFrame;
@@ -1350,70 +1344,6 @@ struct MSLAYOUT DebuggerIPCE_JITFuncData
 
     BOOL         justAfterILThrow;
 };
-
-//
-// DebuggerIPCE_STRData holds data for each stack frame or chain. This data is passed
-// from the RC to the DI during a stack walk.
-//
-#if defined(_MSC_VER)
-#pragma warning( push )
-#pragma warning( disable:4324 ) // the compiler pads a structure to comply with alignment requirements
-#endif                          // ARM context structures have a 16-byte alignment requirement
-struct MSLAYOUT DebuggerIPCE_STRData
-{
-    FramePointer            fp;
-    // @dbgtodo  stackwalker/shim- Ideally we should be able to get rid of the DebuggerREGDISPLAY and just use the CONTEXT.
-    DT_CONTEXT              ctx;
-    DebuggerREGDISPLAY      rd;
-    VMPTR_AppDomain         vmCurrentAppDomainToken;
-
-
-    enum EType
-    {
-        cMethodFrame = 0,
-        cStubFrame,
-        cRuntimeNativeFrame
-    } eType;
-
-    union MSLAYOUT
-    {
-        // Data for a Method
-        struct MSLAYOUT
-        {
-            struct DebuggerIPCE_FuncData funcData;
-            struct DebuggerIPCE_JITFuncData jitFuncData;
-            SIZE_T                       ILOffset;
-            CorDebugMappingResult        mapping;
-
-            bool        fVarArgs;
-
-            // Indicates whether the managed method has any metadata.
-            // Some dynamic methods such as IL stubs and LCG methods don't have any metadata.
-            // This is used only by the V3 stackwalker, not the V2 one, because we only
-            // expose dynamic methods as real stack frames in V3.
-            bool        fNoMetadata;
-
-            TADDR       taAmbientESP;
-
-            GENERICS_TYPE_TOKEN exactGenericArgsToken;
-            DWORD               dwExactGenericArgsTokenIndex;
-
-        } v;
-
-        // Data for an Stub Frame.
-        struct MSLAYOUT
-        {
-            mdMethodDef funcMetadataToken;
-            VMPTR_Assembly vmAssembly;
-            VMPTR_MethodDesc vmMethodDesc;
-            CorDebugInternalFrameType frameType;
-        } stubFrame;
-
-    };
-};
-#if defined(_MSC_VER)
-#pragma warning( pop )
-#endif
 
 //
 // DebuggerIPCE_BasicTypeData and DebuggerIPCE_ExpandedTypeData

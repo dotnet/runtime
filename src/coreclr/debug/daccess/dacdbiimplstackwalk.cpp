@@ -382,7 +382,7 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::CheckContext(VMPTR_Thread       v
 }
 
 // Retrieve information about the current frame from the stackwalker.
-HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetStackWalkCurrentFrameInfo(StackWalkHandle pSFIHandle, OPTIONAL DebuggerIPCE_STRData * pFrameData, OUT FrameType * pRetVal)
+HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetStackWalkCurrentFrameInfo(StackWalkHandle pSFIHandle, OPTIONAL Debugger_STRData * pFrameData, OUT FrameType * pRetVal)
 {
     DD_ENTER_MAY_THROW;
 
@@ -561,13 +561,13 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::EnumerateInternalFrames(VMPTR_Thr
     EX_TRY
     {
 
-        DebuggerIPCE_STRData frameData;
+        Debugger_STRData frameData;
 
         Thread *    pThread    = vmThread.GetDacPtr();
         Frame *     pFrame     = pThread->GetFrame();
         AppDomain * pAppDomain = AppDomain::GetCurrentDomain();
 
-        frameData.eType = DebuggerIPCE_STRData::cStubFrame;
+        frameData.eType = Debugger_STRData::cStubFrame;
 
         while (pFrame != FRAME_TOP)
         {
@@ -778,12 +778,12 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::ConvertContextToDebuggerRegDispla
 
 void DacDbiInterfaceImpl::InitFrameData(StackFrameIterator *   pIter,
                                         FrameType              ft,
-                                        DebuggerIPCE_STRData * pFrameData)
+                                        Debugger_STRData * pFrameData)
 {
     CrawlFrame * pCF = &(pIter->m_crawl);
 
     //
-    // do common initialization of DebuggerIPCE_STRData for both managed stack frames and explicit frames
+    // do common initialization of Debugger_STRData for both managed stack frames and explicit frames
     //
 
     pFrameData->fp = GetFramePointerWorker(pIter);
@@ -792,9 +792,10 @@ void DacDbiInterfaceImpl::InitFrameData(StackFrameIterator *   pIter,
 
     if (ft == kNativeRuntimeUnwindableStackFrame)
     {
-        pFrameData->eType = DebuggerIPCE_STRData::cRuntimeNativeFrame;
+        pFrameData->eType = Debugger_STRData::cRuntimeNativeFrame;
 
-        GetStackWalkCurrentContext(pIter, &(pFrameData->ctx));
+        _ASSERTE(pFrameData->ctx != (CORDB_ADDRESS)0);
+        GetStackWalkCurrentContext(pIter, reinterpret_cast<DT_CONTEXT *>(CORDB_ADDRESS_TO_PTR(pFrameData->ctx)));
     }
     else if (ft == kManagedStackFrame)
     {
@@ -819,17 +820,19 @@ void DacDbiInterfaceImpl::InitFrameData(StackFrameIterator *   pIter,
         _ASSERTE(pModule != NULL);
 
         //
-        // initialize the rest of the DebuggerIPCE_STRData
+        // initialize the rest of the Debugger_STRData
         //
 
-        pFrameData->eType = DebuggerIPCE_STRData::cMethodFrame;
+        pFrameData->eType = Debugger_STRData::cMethodFrame;
 
-        SetDebuggerREGDISPLAYFromREGDISPLAY(&(pFrameData->rd), pCF->GetRegisterSet());
+        _ASSERTE(pFrameData->rd != (CORDB_ADDRESS)0);
+        SetDebuggerREGDISPLAYFromREGDISPLAY(reinterpret_cast<DebuggerREGDISPLAY *>(CORDB_ADDRESS_TO_PTR(pFrameData->rd)), pCF->GetRegisterSet());
 
-        GetStackWalkCurrentContext(pIter, &(pFrameData->ctx));
+        _ASSERTE(pFrameData->ctx != (CORDB_ADDRESS)0);
+        GetStackWalkCurrentContext(pIter, reinterpret_cast<DT_CONTEXT *>(CORDB_ADDRESS_TO_PTR(pFrameData->ctx)));
 
         //
-        // initialize the fields in DebuggerIPCE_STRData::v
+        // initialize the fields in Debugger_STRData::v
         //
 
         // These fields will be filled in later.  We don't have the sequence point mapping information here.
@@ -940,7 +943,6 @@ void DacDbiInterfaceImpl::InitFrameData(StackFrameIterator *   pIter,
                                      && !pCF->IsIPadjusted()
                                      && pJITFuncData->nativeOffset != 0;
 
-        pJITFuncData->nativeCodeJITInfoToken.Set(NULL);
         pJITFuncData->vmNativeCodeMethodDescToken.SetHostPtr(pMD);
 
         InitParentFrameInfo(pCF, pJITFuncData);
@@ -1140,91 +1142,39 @@ void DacDbiInterfaceImpl::AdjustRegDisplayForStackParameter(REGDISPLAY *        
 // Return Value:
 //    Return the CorDebugInternalFrameType of the explicit frame
 //
-// Notes:
-//    I wish this function were simpler, but it's not.  The logic in this function is adopted
-//    from the logic in the old in-proc debugger stackwalker.
-//
 
 CorDebugInternalFrameType DacDbiInterfaceImpl::GetInternalFrameType(Frame * pFrame)
 {
-    CorDebugInternalFrameType resultType = STUBFRAME_NONE;
-
-    Frame::ETransitionType tt = pFrame->GetTransitionType();
-    Frame::Interception it = pFrame->GetInterception();
-    int ft = pFrame->GetFrameType();
-
-    switch (tt)
+    Frame::StubFrameType stubType = pFrame->GetStubFrameType();
+    switch (stubType)
     {
-        case Frame::TT_NONE:
-            if (it == Frame::INTERCEPTION_CLASS_INIT)
-            {
-                resultType = STUBFRAME_CLASS_INIT;
-            }
-            else if (it == Frame::INTERCEPTION_EXCEPTION)
-            {
-                resultType = STUBFRAME_EXCEPTION;
-            }
-            else if (it == Frame::INTERCEPTION_SECURITY)
-            {
-                resultType = STUBFRAME_SECURITY;
-            }
-            else if (it == Frame::INTERCEPTION_PRESTUB)
-            {
-                resultType = STUBFRAME_JIT_COMPILATION;
-            }
-            else
-            {
-                if (ft == Frame::TYPE_FUNC_EVAL)
-                {
-                    resultType = STUBFRAME_FUNC_EVAL;
-                }
-                else if (ft == Frame::TYPE_EXIT)
-                {
-                    if ((pFrame->GetFrameIdentifier() != FrameIdentifier::InlinedCallFrame) ||
-                        InlinedCallFrame::FrameHasActiveCall(pFrame))
-                    {
-                        resultType = STUBFRAME_M2U;
-                    }
-                }
-            }
-            break;
-
-        case Frame::TT_M2U:
-            // Refer to the comment in DebuggerWalkStackProc() for StubDispatchFrame.
-            if (pFrame->GetFrameIdentifier() != FrameIdentifier::StubDispatchFrame)
-            {
-                if (it == Frame::INTERCEPTION_SECURITY)
-                {
-                    resultType = STUBFRAME_SECURITY;
-                }
-                else
-                {
-                    resultType = STUBFRAME_M2U;
-                }
-            }
-            break;
-
-        case Frame::TT_U2M:
-            resultType = STUBFRAME_U2M;
-            break;
-
-        case Frame::TT_InternalCall:
-            if (it == Frame::INTERCEPTION_EXCEPTION)
-            {
-                resultType = STUBFRAME_EXCEPTION;
-            }
-            else
-            {
-                resultType = STUBFRAME_INTERNALCALL;
-            }
-            break;
-
-        default:
-            UNREACHABLE();
-            break;
+    case Frame::StubFrameType::STUB_FRAME_NONE:
+        return STUBFRAME_NONE;
+        break;
+    case Frame::StubFrameType::STUB_FRAME_M2U:
+        return STUBFRAME_M2U;
+        break;
+    case Frame::StubFrameType::STUB_FRAME_U2M:
+        return STUBFRAME_U2M;
+        break;
+    case Frame::StubFrameType::STUB_FRAME_FUNC_EVAL:
+        return STUBFRAME_FUNC_EVAL;
+        break;
+    case Frame::StubFrameType::STUB_FRAME_INTERNAL_CALL:
+        return STUBFRAME_INTERNALCALL;
+        break;
+    case Frame::StubFrameType::STUB_FRAME_CLASS_INIT:
+        return STUBFRAME_CLASS_INIT;
+        break;
+    case Frame::StubFrameType::STUB_FRAME_EXCEPTION:
+        return STUBFRAME_EXCEPTION;
+        break;
+    case Frame::StubFrameType::STUB_FRAME_JIT_COMPILATION:
+        return STUBFRAME_JIT_COMPILATION;
+        break;
+    default:
+        return STUBFRAME_NONE;
     }
-
-    return resultType;
 }
 
 //---------------------------------------------------------------------------------------

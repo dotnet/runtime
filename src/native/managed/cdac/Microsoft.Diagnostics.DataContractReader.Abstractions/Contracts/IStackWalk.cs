@@ -21,6 +21,35 @@ public class StackReferenceData
     public TargetPointer StackPointer { get; init; }
 }
 
+public enum InternalFrameType
+{
+    STUBFRAME_NONE,
+    STUBFRAME_M2U,
+    STUBFRAME_U2M,
+    STUBFRAME_FUNC_EVAL,
+    STUBFRAME_INTERNALCALL,
+    STUBFRAME_CLASS_INIT,
+    STUBFRAME_EXCEPTION,
+    STUBFRAME_JIT_COMPILATION,
+}
+
+public record struct StackFrameData(
+    TargetPointer FrameAddress,
+    TargetPointer FrameIdentifier,
+    InternalFrameType InternalFrameType);
+
+// Subset of DebuggerEval state exposed to callers (matches the values the
+// debugger needs to populate cStubFrame entries for STUBFRAME_FUNC_EVAL).
+//   MethodToken  - metadata token of the method being evaluated, or
+//                  mdMethodDefNil (0x06000000) for func eval types that
+//                  do not target a specific method (e.g. NewObjectNoCtor,
+//                  NewString, NewArray).
+//   AssemblyPtr  - Assembly* the eval is rooted in (the class's module's
+//                  runtime assembly).
+public record struct DebuggerEvalData(
+    uint MethodToken,
+    TargetPointer AssemblyPtr);
+
 public interface IStackWalk : IContract
 {
     static string IContract.Name => nameof(StackWalk);
@@ -33,6 +62,9 @@ public interface IStackWalk : IContract
     TargetPointer GetMethodDescPtr(TargetPointer framePtr) => throw new NotImplementedException();
     TargetPointer GetMethodDescPtr(IStackDataFrameHandle stackDataFrameHandle) => throw new NotImplementedException();
     TargetPointer GetInstructionPointer(IStackDataFrameHandle stackDataFrameHandle) => throw new NotImplementedException();
+    IEnumerable<StackFrameData> GetFrames(TargetPointer threadPointer) => throw new NotImplementedException();
+    bool IsExceptionHandlingHelperInlinedCallFrame(TargetPointer frameAddress) => throw new NotImplementedException();
+    DebuggerEvalData GetDebuggerEvalData(TargetPointer funcEvalFrameAddress) => throw new NotImplementedException();
 }
 
 public struct StackWalk : IStackWalk

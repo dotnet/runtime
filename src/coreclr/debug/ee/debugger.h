@@ -3435,6 +3435,10 @@ public:
     mdMethodDef                        m_methodToken;
     mdTypeDef                          m_classToken;
     PTR_DebuggerModule                 m_debuggerModule;     // Only valid if AD is still around
+    // Cached Assembly* for the func eval. Pulled from the originating IPC
+    // event's vmAssembly so that diagnostic consumers (e.g. cDAC) can resolve
+    // the eval's assembly without having to walk through DebuggerModule.
+    PTR_Assembly                       m_pAssembly;
     RSPTR_CORDBEVAL                    m_funcEvalKey;
     bool                               m_successful;        // Did the eval complete successfully
     Debugger::AreValueTypesBoxed       m_retValueBoxing;        // Is the return value boxed?

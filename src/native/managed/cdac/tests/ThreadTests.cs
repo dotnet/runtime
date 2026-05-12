@@ -18,7 +18,7 @@ public unsafe class ThreadTests
         MockThreadBuilder threadBuilder = new(targetBuilder.MemoryBuilder);
         configure(threadBuilder);
 
-        TestPlaceholderTarget target = targetBuilder
+        return targetBuilder
             .AddTypes(CreateContractTypes(threadBuilder))
             .AddGlobals(
                 (nameof(Constants.Globals.ThreadStore), threadBuilder.ThreadStoreGlobalAddress),
@@ -26,8 +26,6 @@ public unsafe class ThreadTests
                 (nameof(Constants.Globals.GCThread), threadBuilder.GCThreadGlobalAddress))
             .AddContract<IThread>(version: "c1")
             .Build();
-
-        return target;
     }
 
     private static Dictionary<DataType, Target.TypeInfo> CreateContractTypes(MockThreadBuilder threadBuilder)
