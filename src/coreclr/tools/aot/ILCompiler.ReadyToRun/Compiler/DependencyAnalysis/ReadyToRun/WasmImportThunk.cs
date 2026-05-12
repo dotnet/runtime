@@ -306,7 +306,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             // Pass return buffer argument if needed
             if (hasRetBuffArg)
             {
-                expressions.Add(Local.Get(1));
+                expressions.Add(Local.Get(hasThis ? 1 : 0));
                 wasmLocalIndex++;
             }
 
