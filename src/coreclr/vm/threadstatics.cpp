@@ -246,7 +246,12 @@ void TLSIndexToMethodTableMap::Set(TLSIndex index, PTR_MethodTable pMT, bool isG
         m_collectibleEntries++;
     }
     _ASSERTE(pMap[index.GetIndexOffset()] == 0 || IsClearedValue(pMap[index.GetIndexOffset()]));
-    VolatileStore(&pMap[index.GetIndexOffset()], rawValue);
+    // This VolatileStore does not have a clear consumer-producer relationship. Notably, the MethodTable is always considered to have been
+    // fully published by the time its pointer is stored in the map, so there is no need for a memory barrier to ensure visibility of the MethodTable's contents.
+    // However, we have had issues with race safety in this codebase, and we fixed them by adding several VolatileStore which we believe are actually critical
+    // but this is a scenario which AI indicated should also have a VolatileStore. We've chosen to add the VolatileStore as a defensive measure, as this is very
+    // rarely run code.
+    VolatileStore(&pMap[index.GetIndexOffset()], rawValue); 
 }
 
 void TLSIndexToMethodTableMap::Clear(TLSIndex index, uint8_t whenCleared)
