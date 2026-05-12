@@ -34,7 +34,7 @@ namespace System.Security.Cryptography
                 {
                     Span<byte> publicKeyBuffer = stackalloc byte[PublicKeySizeInBytes];
                     otherParty.ExportPublicKey(publicKeyBuffer);
-                    DeriveRawSecretAgreementWithPublicKey(publicKeyBuffer, destination);
+                    Interop.AppleCrypto.X25519DeriveRawSecretAgreementWithBytes(_key, publicKeyBuffer, destination);
                 }
             }
         }
@@ -44,7 +44,7 @@ namespace System.Security.Cryptography
             Debug.Assert(otherPartyPublicKey.Length == PublicKeySizeInBytes);
             Debug.Assert(destination.Length == SecretAgreementSizeInBytes);
             ThrowIfPrivateNeeded();
-            DeriveRawSecretAgreementWithPublicKey(otherPartyPublicKey, destination);
+            Interop.AppleCrypto.X25519DeriveRawSecretAgreementWithBytes(_key, otherPartyPublicKey, destination);
         }
 
         protected override void ExportPrivateKeyCore(Span<byte> destination)
@@ -101,9 +101,5 @@ namespace System.Security.Cryptography
                 throw new CryptographicException(SR.Cryptography_CSP_NoPrivateKey);
         }
 
-        private void DeriveRawSecretAgreementWithPublicKey(ReadOnlySpan<byte> otherPartyPublicKey, Span<byte> destination)
-        {
-            Interop.AppleCrypto.X25519DeriveRawSecretAgreementWithBytes(_key, otherPartyPublicKey, destination);
-        }
     }
 }
