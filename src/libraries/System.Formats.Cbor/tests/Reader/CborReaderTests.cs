@@ -11,6 +11,17 @@ namespace System.Formats.Cbor.Tests
 {
     public partial class CborReaderTests
     {
+        private const string MaxDepthMessageSentinel = "maximum allowed depth";
+
+        [Fact]
+        public static void SimpleConstructor_HasCorrectDefaults()
+        {
+            var reader = new CborReader(Array.Empty<byte>());
+            Assert.Equal(CborConformanceMode.Strict, reader.ConformanceMode);
+            Assert.False(reader.AllowMultipleRootLevelValues);
+            Assert.Equal(64, reader.MaxDepth);
+        }
+
         [Theory]
         [InlineData((CborConformanceMode)(-1))]
         public static void InvalidConformanceMode_ShouldThrowArgumentOutOfRangeException(CborConformanceMode mode)
@@ -87,6 +98,417 @@ namespace System.Formats.Cbor.Tests
 
             reader.Reset(Array.Empty<byte>());
             Assert.True(reader.AllowMultipleRootLevelValues);
+        }
+
+        [Fact]
+        public static void CborReaderOptions_DefaultValues()
+        {
+            var options = new CborReaderOptions();
+            Assert.Equal(CborConformanceMode.Strict, options.ConformanceMode);
+            Assert.False(options.AllowMultipleRootLevelValues);
+            Assert.Equal(-1, options.MaxDepth);
+        }
+
+        [Fact]
+        public static void CborReader_NullOptions_DefaultValues()
+        {
+            var reader = new CborReader(Array.Empty<byte>(), (CborReaderOptions)null!);
+            Assert.Equal(CborConformanceMode.Strict, reader.ConformanceMode);
+            Assert.False(reader.AllowMultipleRootLevelValues);
+            Assert.Equal(64, reader.MaxDepth);
+        }
+
+        [Fact]
+        public static void CborReaderOptions_SetConformanceMode()
+        {
+            var options = new CborReaderOptions { ConformanceMode = CborConformanceMode.Canonical };
+            Assert.Equal(CborConformanceMode.Canonical, options.ConformanceMode);
+        }
+
+        [Fact]
+        public static void CborReaderOptions_InvalidConformanceMode_Throws()
+        {
+            var options = new CborReaderOptions();
+            Assert.Throws<ArgumentOutOfRangeException>(() => options.ConformanceMode = (CborConformanceMode)(-1));
+        }
+
+        [Fact]
+        public static void CborReaderOptions_SetAllowMultipleRootLevelValues()
+        {
+            var options = new CborReaderOptions { AllowMultipleRootLevelValues = true };
+            Assert.True(options.AllowMultipleRootLevelValues);
+        }
+
+        [Theory]
+        [InlineData(-1)]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(42)]
+        [InlineData(100)]
+        public static void CborReaderOptions_SetMaxDepth(int maxDepth)
+        {
+            var options = new CborReaderOptions { MaxDepth = maxDepth };
+            Assert.Equal(maxDepth, options.MaxDepth);
+        }
+
+        [Theory]
+        [InlineData(-2)]
+        [InlineData(int.MinValue)]
+        public static void CborReaderOptions_SetMaxDepth_TooNegative_Throws(int maxDepth)
+        {
+            var options = new CborReaderOptions();
+            Assert.Throws<ArgumentOutOfRangeException>(() => options.MaxDepth = maxDepth);
+        }
+
+        [Fact]
+        public static void Constructor_WithOptions_DefaultOptions()
+        {
+            var reader = new CborReader(Array.Empty<byte>(), new CborReaderOptions());
+            Assert.Equal(CborConformanceMode.Strict, reader.ConformanceMode);
+            Assert.False(reader.AllowMultipleRootLevelValues);
+            Assert.Equal(64, reader.MaxDepth);
+        }
+
+        [Fact]
+        public static void Constructor_WithOptions_CustomValues()
+        {
+            var options = new CborReaderOptions
+            {
+                ConformanceMode = CborConformanceMode.Canonical,
+                AllowMultipleRootLevelValues = true,
+                MaxDepth = 42,
+            };
+
+            var reader = new CborReader(Array.Empty<byte>(), options);
+            Assert.Equal(CborConformanceMode.Canonical, reader.ConformanceMode);
+            Assert.True(reader.AllowMultipleRootLevelValues);
+            Assert.Equal(42, reader.MaxDepth);
+        }
+
+        [Fact]
+        public static void MaxDepth_DefaultValue()
+        {
+            var reader = new CborReader(Array.Empty<byte>());
+            Assert.Equal(64, reader.MaxDepth);
+        }
+
+        [Fact]
+        public static void MaxDepth_ZeroYieldsZero()
+        {
+            var reader = new CborReader(Array.Empty<byte>(), new CborReaderOptions { MaxDepth = 0 });
+            Assert.Equal(0, reader.MaxDepth);
+        }
+
+        [Fact]
+        public static void MaxDepth_NegativeOneYieldsDefaultValue()
+        {
+            var reader = new CborReader(Array.Empty<byte>(), new CborReaderOptions { MaxDepth = -1 });
+            Assert.Equal(64, reader.MaxDepth);
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(10)]
+        [InlineData(100)]
+        [InlineData(1000)]
+        public static void MaxDepth_CustomValue_ShouldReturnSetValue(int maxDepth)
+        {
+            var reader = new CborReader(Array.Empty<byte>(), new CborReaderOptions { MaxDepth = maxDepth });
+            Assert.Equal(maxDepth, reader.MaxDepth);
+        }
+        
+        [Fact]
+        public static void Reset_DoesNotAffect_MaxDepth()
+        {
+            var reader = new CborReader(Array.Empty<byte>(), new CborReaderOptions { MaxDepth = 42 });
+            Assert.Equal(42, reader.MaxDepth);
+
+            reader.Reset(Array.Empty<byte>());
+            Assert.Equal(42, reader.MaxDepth);
+        }
+
+        [Theory]
+        [InlineData(1, false)]
+        [InlineData(2, false)]
+        [InlineData(10, false)]
+        [InlineData(1, true)]
+        [InlineData(2, true)]
+        [InlineData(10, true)]
+        public static void MaxDepth_GuardsNestedArrays(int maxDepth, bool useIndefiniteLength)
+        {
+            int depth = maxDepth + 1;
+            IEnumerable<byte> head = Enumerable.Repeat(useIndefiniteLength ? (byte)0x9F : (byte)0x81, depth);
+            IEnumerable<byte> tail = Enumerable.Repeat((byte)0xFF, useIndefiniteLength ? depth : 0);
+            byte[] encoding = head.Append<byte>(0x01).Concat(tail).ToArray();
+
+            var reader = new CborReader(encoding, new CborReaderOptions { MaxDepth = maxDepth });
+            var longerReader = new CborReader(encoding, new CborReaderOptions { MaxDepth = maxDepth + 1 });
+
+            for (int i = 0; i < maxDepth; i++)
+            {
+                reader.ReadStartArray();
+                longerReader.ReadStartArray();
+            }
+
+            int remaining = reader.BytesRemaining;
+            AssertExtensions.ThrowsContains<CborContentException>(() => reader.ReadStartArray(), MaxDepthMessageSentinel);
+            Assert.Equal(remaining, reader.BytesRemaining);
+
+            // The higher depth limit should succeed
+            longerReader.ReadStartArray();
+            longerReader.ReadInt32();
+        }
+
+        [Theory]
+        [InlineData(1, false)]
+        [InlineData(2, false)]
+        [InlineData(10, false)]
+        [InlineData(1, true)]
+        [InlineData(2, true)]
+        [InlineData(10, true)]
+        public static void MaxDepth_GuardsNestedMaps(int maxDepth, bool useIndefiniteLength)
+        {
+            int depth = maxDepth + 1;
+            // definite: A1 00 A1 00 ... 01
+            // indefinite: BF 00 BF 00 ... 01 FF FF ...
+            IEnumerable<byte> head = Enumerable.Repeat(useIndefiniteLength ? (byte)0xBF : (byte)0xA1, depth).SelectMany(x => new byte[] { x, 0x00 });
+            IEnumerable<byte> tail = Enumerable.Repeat((byte)0xFF, useIndefiniteLength ? depth : 0);
+            byte[] encoding = head.Append<byte>(0x01).Concat(tail).ToArray();
+
+            var reader = new CborReader(encoding, new CborReaderOptions { ConformanceMode = CborConformanceMode.Lax, MaxDepth = maxDepth });
+            var longerReader = new CborReader(encoding, new CborReaderOptions { ConformanceMode = CborConformanceMode.Lax, MaxDepth = maxDepth + 1 });
+
+            for (int i = 0; i < maxDepth; i++)
+            {
+                reader.ReadStartMap();
+                reader.ReadInt32(); // key
+
+                longerReader.ReadStartMap();
+                longerReader.ReadInt32(); // key
+            }
+
+            int remaining = reader.BytesRemaining;
+            AssertExtensions.ThrowsContains<CborContentException>(() => reader.ReadStartMap(), MaxDepthMessageSentinel);
+            Assert.Equal(remaining, reader.BytesRemaining);
+
+            // The higher depth limit should succeed
+            longerReader.ReadStartMap();
+            longerReader.ReadInt32();
+
+            Assert.Equal(1, longerReader.ReadInt32());
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public static void MaxDepth_GuardsSkipValue(bool useIndefiniteLength)
+        {
+            // 3 nested arrays
+            byte[] encoding = useIndefiniteLength ?
+                new byte[] { 0x9F, 0x9F, 0x9F, 0x01, 0xFF, 0xFF, 0xFF } :
+                new byte[] { 0x81, 0x81, 0x81, 0x01 };
+
+            var reader = new CborReader(encoding, new CborReaderOptions { MaxDepth = 2 });
+            var longerReader = new CborReader(encoding, new CborReaderOptions { MaxDepth = 3 });
+
+            AssertExtensions.ThrowsContains<CborContentException>(() => reader.SkipValue(), MaxDepthMessageSentinel);
+            Assert.Equal(encoding.Length, reader.BytesRemaining);
+
+            // The higher depth limit should succeed
+            longerReader.SkipValue();
+            Assert.Equal(CborReaderState.Finished, longerReader.PeekState());
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public static void MaxDepth_GuardsReadEncodedValue(bool useIndefiniteLength)
+        {
+            // 3 nested arrays
+            byte[] encoding = useIndefiniteLength ?
+                new byte[] { 0x9F, 0x9F, 0x9F, 0x01, 0xFF, 0xFF, 0xFF } :
+                new byte[] { 0x81, 0x81, 0x81, 0x01 };
+
+            var reader = new CborReader(encoding, new CborReaderOptions { MaxDepth = 2 });
+            var longerReader = new CborReader(encoding, new CborReaderOptions { MaxDepth = 3 });
+
+            AssertExtensions.ThrowsContains<CborContentException>(() => reader.ReadEncodedValue(), MaxDepthMessageSentinel);
+            Assert.Equal(encoding.Length, reader.BytesRemaining);
+
+            // The higher depth limit should succeed
+            ReadOnlyMemory<byte> encodedValue = longerReader.ReadEncodedValue();
+            Assert.Equal(CborReaderState.Finished, longerReader.PeekState());
+            Assert.True(encodedValue.Span.Overlaps(encoding, out int offset));
+            Assert.Equal(0, offset);
+            Assert.Equal(encoding.Length, encodedValue.Length);
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public static void MaxDepth_GuardsMixedArrayAndMapNesting(bool useIndefiniteLength)
+        {
+            // array(1) -> map(1) { 0: array(1) -> 1 }, maxDepth=2
+            byte[] encoding = useIndefiniteLength ?
+                new byte[] { 0x9F, 0xBF, 0x00, 0x9F, 0x01, 0xFF, 0xFF, 0xFF } :
+                new byte[] { 0x81, 0xA1, 0x00, 0x81, 0x01 };
+
+            var reader = new CborReader(encoding, new CborReaderOptions { ConformanceMode = CborConformanceMode.Lax, MaxDepth = 2 });
+            var longerReader = new CborReader(encoding, new CborReaderOptions { ConformanceMode = CborConformanceMode.Lax, MaxDepth = 3 });
+
+            reader.ReadStartArray();
+            reader.ReadStartMap();
+            reader.ReadInt32();
+
+            longerReader.ReadStartArray();
+            longerReader.ReadStartMap();
+            longerReader.ReadInt32();
+
+            // Attempting to read another nested array should fail
+            int remaining = reader.BytesRemaining;
+            AssertExtensions.ThrowsContains<CborContentException>(() => reader.ReadStartArray(), MaxDepthMessageSentinel);
+            Assert.Equal(remaining, reader.BytesRemaining);
+
+            // But the higher limit should succeed.
+            longerReader.ReadStartArray();
+            Assert.Equal(1, longerReader.ReadInt32());
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public static void MaxDepth_GuardsIndefiniteByteString_FromArray(bool useIndefiniteLength)
+        {
+            // array(1) containing indefinite byte string (5F FF)
+            byte[] encoding = useIndefiniteLength ?
+                new byte[] { 0x9F, 0x5F, 0xFF, 0xFF } :
+                new byte[] { 0x81, 0x5F, 0xFF };
+
+            var reader = new CborReader(encoding, new CborReaderOptions { MaxDepth = 1 });
+            var longerReader = new CborReader(encoding, new CborReaderOptions { MaxDepth = 2 });
+
+            reader.ReadStartArray();
+            longerReader.ReadStartArray();
+
+            int remaining = reader.BytesRemaining;
+            AssertExtensions.ThrowsContains<CborContentException>(() => reader.ReadStartIndefiniteLengthByteString(), MaxDepthMessageSentinel);
+            Assert.Equal(remaining, reader.BytesRemaining);
+
+            longerReader.ReadStartIndefiniteLengthByteString();
+            Assert.Equal(CborReaderState.EndIndefiniteLengthByteString, longerReader.PeekState());
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public static void MaxDepth_GuardsIndefiniteByteString_FromMap(bool useIndefiniteLength)
+        {
+            // map(1) { 0: indefinite byte string (5F FF) }
+            byte[] encoding = useIndefiniteLength ?
+                new byte[] { 0xBF, 0x00, 0x5F, 0xFF, 0xFF } :
+                new byte[] { 0xA1, 0x00, 0x5F, 0xFF };
+
+            var reader = new CborReader(encoding, new CborReaderOptions { ConformanceMode = CborConformanceMode.Lax, MaxDepth = 1 });
+            var longerReader = new CborReader(encoding, new CborReaderOptions { ConformanceMode = CborConformanceMode.Lax, MaxDepth = 2 });
+
+            reader.ReadStartMap();
+            reader.ReadInt32();
+
+            longerReader.ReadStartMap();
+            longerReader.ReadInt32();
+
+            int remaining = reader.BytesRemaining;
+            AssertExtensions.ThrowsContains<CborContentException>(() => reader.ReadStartIndefiniteLengthByteString(), MaxDepthMessageSentinel);
+            Assert.Equal(remaining, reader.BytesRemaining);
+
+            longerReader.ReadStartIndefiniteLengthByteString();
+            Assert.Equal(CborReaderState.EndIndefiniteLengthByteString, longerReader.PeekState());
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public static void MaxDepth_GuardsIndefiniteTextString_FromArray(bool useIndefiniteLength)
+        {
+            // array(1) containing indefinite text string (7F FF)
+            byte[] encoding = useIndefiniteLength ?
+                new byte[] { 0x9F, 0x7F, 0xFF, 0xFF } :
+                new byte[] { 0x81, 0x7F, 0xFF };
+
+            var reader = new CborReader(encoding, new CborReaderOptions { MaxDepth = 1 });
+            var longerReader = new CborReader(encoding, new CborReaderOptions { MaxDepth = 2 });
+
+            reader.ReadStartArray();
+            longerReader.ReadStartArray();
+
+            int remaining = reader.BytesRemaining;
+            AssertExtensions.ThrowsContains<CborContentException>(() => reader.ReadStartIndefiniteLengthTextString(), MaxDepthMessageSentinel);
+            Assert.Equal(remaining, reader.BytesRemaining);
+
+            longerReader.ReadStartIndefiniteLengthTextString();
+            Assert.Equal(CborReaderState.EndIndefiniteLengthTextString, longerReader.PeekState());
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public static void MaxDepth_GuardsIndefiniteTextString_FromMap(bool useIndefiniteLength)
+        {
+            // map(1) { 0: indefinite text string (7F FF) }
+            byte[] encoding = useIndefiniteLength ?
+                new byte[] { 0xBF, 0x00, 0x7F, 0xFF, 0xFF } :
+                new byte[] { 0xA1, 0x00, 0x7F, 0xFF };
+
+            var reader = new CborReader(encoding, new CborReaderOptions { ConformanceMode = CborConformanceMode.Lax, MaxDepth = 1 });
+            var longerReader = new CborReader(encoding, new CborReaderOptions { ConformanceMode = CborConformanceMode.Lax, MaxDepth = 2 });
+
+            reader.ReadStartMap();
+            reader.ReadInt32();
+
+            longerReader.ReadStartMap();
+            longerReader.ReadInt32();
+
+            int remaining = reader.BytesRemaining;
+            AssertExtensions.ThrowsContains<CborContentException>(() => reader.ReadStartIndefiniteLengthTextString(), MaxDepthMessageSentinel);
+            Assert.Equal(remaining, reader.BytesRemaining);
+
+            longerReader.ReadStartIndefiniteLengthTextString();
+            Assert.Equal(CborReaderState.EndIndefiniteLengthTextString, longerReader.PeekState());
+        }
+
+        [Fact]
+        public static void MaxDepth_Zero_AllowsPrimitiveValues()
+        {
+            byte[] encoding = [0x18, 0x2a]; // integer 42
+            var reader = new CborReader(encoding, new CborReaderOptions { MaxDepth = 0 });
+
+            Assert.Equal(0, reader.MaxDepth);
+            int value = reader.ReadInt32();
+            Assert.Equal(42, value);
+            Assert.Equal(0, reader.BytesRemaining);
+        }
+
+        [Fact]
+        public static void MaxDepth_Zero_BlocksArray()
+        {
+            byte[] encoding = [0x81, 0x01]; // array of length 1 containing integer 1
+            var reader = new CborReader(encoding, new CborReaderOptions { MaxDepth = 0 });
+
+            int remaining = reader.BytesRemaining;
+            AssertExtensions.ThrowsContains<CborContentException>(() => reader.ReadStartArray(), MaxDepthMessageSentinel);
+            Assert.Equal(remaining, reader.BytesRemaining);
+        }
+
+        [Fact]
+        public static void MaxDepth_Zero_BlocksMap()
+        {
+            byte[] encoding = [0xA1, 0x01, 0x02]; // map of length 1: {1: 2}
+            var reader = new CborReader(encoding, new CborReaderOptions { MaxDepth = 0 });
+
+            int remaining = reader.BytesRemaining;
+            AssertExtensions.ThrowsContains<CborContentException>(() => reader.ReadStartMap(), MaxDepthMessageSentinel);
+            Assert.Equal(remaining, reader.BytesRemaining);
         }
 
         [Theory]
