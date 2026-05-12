@@ -90,10 +90,6 @@ if(NOT CLR_CMAKE_TARGET_BROWSER)
         include_directories(${CLR_SRC_NATIVE_DIR}/external/)
     endif()
 
-    if(NOT CLR_CMAKE_TARGET_WIN32)
-        add_subdirectory(${CLR_SRC_NATIVE_DIR}/containers containers)
-    endif()
-
     add_subdirectory(${CLR_SRC_NATIVE_DIR}/minipal minipal)
     add_subdirectory(hostcommon)
     add_subdirectory(hostmisc)
