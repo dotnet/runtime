@@ -5169,14 +5169,12 @@ void CodeGen::genCodeForIndir(GenTreeIndir* tree)
 
     genConsumeAddress(tree->Addr());
 
-    bool emitBarrier = (tree->gtFlags & GTF_IND_VOLATILE) != 0;
+    if ((tree->gtFlags & GTF_IND_VOLATILE) != 0)
+    {
+        instGen_MemoryBarrier(BARRIER_FULL);
+    }
 
     GetEmitter()->emitInsLoadStoreOp(ins, emitActualTypeSize(type), targetReg, tree);
-
-    if (emitBarrier)
-    {
-        instGen_MemoryBarrier(BARRIER_LOAD_ONLY);
-    }
 
     genProduceReg(tree);
 }

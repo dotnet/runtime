@@ -2497,9 +2497,6 @@ void AsyncTransformation::CreateResumption(BasicBlock*                      call
 
     LIR::AsRange(resumeBB).InsertAtEnd(LIR::SeqTree(m_compiler, ilOffsetNode));
 
-    GenTree* barrier = m_compiler->gtNewMemoryBarrier(BARRIER_LOAD_ONLY);
-    LIR::AsRange(resumeBB).InsertAtEnd(barrier);
-
     if (layout.Size > 0)
     {
         RestoreFromDataOnResumption(layout, subLayout, resumeBB);
@@ -2967,9 +2964,8 @@ void AsyncTransformation::CreateSharedReturnBB()
     }
 
     GenTree* continuation = m_compiler->gtNewLclvNode(GetNewContinuationVar(), TYP_REF);
-    GenTree* barrier      = m_compiler->gtNewMemoryBarrier(BARRIER_STORE_ONLY);
     GenTree* ret          = m_compiler->gtNewOperNode(GT_RETURN_SUSPEND, TYP_VOID, continuation);
-    LIR::AsRange(m_sharedReturnBB).InsertAtEnd(barrier, continuation, ret);
+    LIR::AsRange(m_sharedReturnBB).InsertAtEnd(continuation, ret);
 
     JITDUMP("Created shared return BB " FMT_BB "\n", m_sharedReturnBB->bbNum);
 
