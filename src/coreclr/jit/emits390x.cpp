@@ -3840,13 +3840,20 @@ void emitter::emitIns_R_R(instruction     ins,
     /* Figure out the encoding format of the instruction */
     switch (ins)
     {
-	case INS_cr:
-    	case INS_cgr:
-    	case INS_clr:
-    	case INS_clgr:
-	case INS_cebr:
-	case INS_cdbr:
+        case INS_cr:
+        case INS_cgr:
+        case INS_clr:
+        case INS_clgr:
+        case INS_cebr:
+        case INS_cdbr:
             fmt = IF_DR_2E;
+            break;
+
+        case INS_dr:
+        case INS_dsgr:
+        case INS_dlr:
+        case INS_dlgr:
+            assert((reg1 & 1) == 0 && "R1 must be even");
             break;
 #if 0
         case INS_dup:
@@ -10499,6 +10506,32 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             imm = emitGetInsSC(id);
             op = emitInsCode(ins, fmt);
             S390_RIL_a(dst, op, id->idReg1(), imm);
+            break;
+
+        case INS_dr:
+            op = emitInsCode(ins, fmt);
+            S390_RR(dst, op, id->idReg1(), id->idReg2());
+            break;
+
+        case INS_dsgr:
+            op = emitInsCode(ins, fmt);
+            S390_RRE(dst, op, id->idReg1(), id->idReg2());
+            break;
+
+        case INS_dlr:
+            op = emitInsCode(ins, fmt);
+            S390_RRE(dst, op, id->idReg1(), id->idReg2());
+            break;
+
+        case INS_dlgr:
+            op = emitInsCode(ins, fmt);
+            S390_RRE(dst, op, id->idReg1(), id->idReg2());
+            break;
+
+        case INS_srda:
+            imm = emitGetInsSC(id);
+            op  = emitInsCode(ins, fmt);
+            S390_RS_a(dst, op, id->idReg1(), 0, 0, imm);
             break;
 
         default:

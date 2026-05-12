@@ -1189,7 +1189,8 @@ protected:
                 case INS_br:
                 case INS_nop:
                 case INS_cr:
-		case INS_clr:
+                case INS_clr:
+                case INS_dr:
                     size = 2;
                     break;
                 case INS_lgfi:

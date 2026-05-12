@@ -2858,7 +2858,7 @@ void Lowering::ContainCheckMul(GenTreeOp* node)
 //
 void Lowering::ContainCheckDivOrMod(GenTreeOp* node)
 {
-    assert(node->OperIs(GT_DIV, GT_UDIV, GT_MOD));
+    assert(node->OperIs(GT_DIV, GT_UDIV, GT_MOD, GT_UMOD));
     // S390X doesnot have a div with immediate 
 }
 

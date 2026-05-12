@@ -79,6 +79,11 @@ static bool strictArmAsm;
 	dst += emitOutputLong (dst, ((opc >> 4) << 24 | (r1) << 20 | (opc & 0x0f) << 16 | (r2 & 0xffff)));		\
 }										\
 
+#define S390_RS_a(dst, opc, r1, r3, b2, d2)                    \
+{                                       \
+    dst += emitOutputLong(dst, ((opc << 24) | ((r1) << 20) |((r3) << 16) | ((b2) << 12) | ((d2) & 0xfff)));    \
+}
+
 /************************************************************************/
 /*         Routines that compute the size of / encode instructions      */
 /************************************************************************/

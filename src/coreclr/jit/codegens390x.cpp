@@ -349,7 +349,62 @@ void CodeGen::genCodeForLclVar(GenTreeLclVar* tree)
         emit->emitIns_R_S(ins, attr, tree->GetRegNum(), varNum, 0);
         genProduceReg(tree);
     }
-}              
+}
+
+//------------------------------------------------------------------------
+// genCodeForDivMod: Produce code for a GT_DIV/GT_UDIV/GT_MOD/GT_UMOD node.
+//
+// Arguments:
+//    tree - the node
+//
+void CodeGen::genCodeForDivMod(GenTreeOp* tree)
+{
+    assert(tree->OperIs(GT_DIV, GT_UDIV, GT_MOD, GT_UMOD));
+
+    emitter*  emit       = GetEmitter();
+    emitAttr  attr       = emitActualTypeSize(tree);
+    regNumber targetReg  = tree->GetRegNum();
+    GenTree*  src1       = tree->gtGetOp1();
+    GenTree*  src2       = tree->gtGetOp2();
+    regNumber divisorReg = src2->GetRegNum();
+
+    // Fixed even/odd pair
+    regNumber dividendEven = REG_R0;
+    regNumber dividendOdd  = REG_R1;
+
+    noway_assert(targetReg != REG_NA);
+
+    genConsumeOperands(tree);
+
+    instruction ins = genGetInsForOper(tree);
+
+    if (ins == INS_dr)
+    {
+        // 32-bit signed: load into odd, SRDA from even to sign-extend
+        emit->emitIns_R_R(INS_lgr,  attr,     dividendOdd,  src1->GetRegNum());
+        emit->emitIns_R_I(INS_srda, EA_8BYTE, dividendEven, 32);
+    }
+    else if (ins == INS_dsgr)
+    {
+        emit->emitIns_R_R(INS_lgr, EA_8BYTE, dividendOdd, src1->GetRegNum());
+    }
+    else
+    {
+        emit->emitIns_R_I(INS_lgfi, EA_8BYTE, dividendEven, 0);
+        emit->emitIns_R_R(INS_lgr,  attr,     dividendOdd,  src1->GetRegNum());
+    }
+
+    emit->emitIns_R_R(ins, attr, dividendEven, divisorReg);
+
+    regNumber resultReg    = tree->OperIs(GT_DIV, GT_UDIV) ? dividendOdd : dividendEven;
+
+    if (targetReg != resultReg)
+    {
+        emit->emitIns_R_R(INS_lgr, EA_8BYTE, targetReg, resultReg);
+    }
+
+    genProduceReg(tree);
+}
 //------------------------------------------------------------------------
 // genCodeForTreeNode Generate code for a single node in the tree.
 //
@@ -447,12 +502,12 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
                 break;
             }
             FALLTHROUGH;
-//        case GT_MOD:
-//        case GT_UMOD:
-//        case GT_UDIV:
-//            genCodeForDivMod(treeNode->AsOp());
-//            break;
-//
+        case GT_MOD:
+        case GT_UMOD:
+        case GT_UDIV:
+            genCodeForDivMod(treeNode->AsOp());
+            break;
+
         case GT_OR:
         case GT_XOR:
         case GT_AND:
@@ -4848,55 +4903,33 @@ instruction CodeGen::genGetInsForOper(GenTree* treeNode)
                 ins = INS_srk;
             }
             break;
-/*
-        case GT_MOD:
-            if ((attr == EA_8BYTE) || (attr == EA_BYREF))
-            {
-                ins = INS_mod_d;
-            }
-            else
-            {
-                assert(attr == EA_4BYTE);
-                ins = INS_mod_w;
-            }
-            break;
 
+        case GT_MOD:
         case GT_DIV:
             if ((attr == EA_8BYTE) || (attr == EA_BYREF))
             {
-                ins = INS_div_d;
+                ins = INS_dsgr;
             }
             else
             {
                 assert(attr == EA_4BYTE);
-                ins = INS_div_w;
+                ins = INS_dr;
             }
             break;
 
         case GT_UMOD:
-            if ((attr == EA_8BYTE) || (attr == EA_BYREF))
-            {
-                ins = INS_mod_du;
-            }
-            else
-            {
-                assert(attr == EA_4BYTE);
-                ins = INS_mod_wu;
-            }
-            break;
-
         case GT_UDIV:
             if ((attr == EA_8BYTE) || (attr == EA_BYREF))
             {
-                ins = INS_div_du;
+                ins = INS_dlgr;
             }
             else
             {
                 assert(attr == EA_4BYTE);
-                ins = INS_div_wu;
+                ins = INS_dlr;
             }
             break;
-*/
+
 
         case GT_MUL:
             isImm = isImmed(treeNode);

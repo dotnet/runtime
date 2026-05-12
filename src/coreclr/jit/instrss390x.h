@@ -63,6 +63,10 @@ INST(ldebr,     "ldebr",        0,      0xb304)
 INST(ledbr,     "ledbr",        0,      0xb344)
 INST(cebr,      "cebr",         0,      0xb309)
 INST(cdbr,      "cdbr",         0,      0xb319)
+INST(dr,        "dr",           0,      0x1d)
+INST(dsgr,      "dsgr",         0,      0xb90d)
+INST(dlr,       "dlr",          0,      0xb997)
+INST(dlgr,      "dlgr",         0,      0xb987)
 
 ////R_I
 INST(llgc,		"llgc",			0,		0xe390)
@@ -89,6 +93,7 @@ INST(st,		"st",			0,		0x50)
 INST(stg,		"stg",			0,		0xe324)
 INST(std,		"std",			0,		0x60)
 INST(lay,		"lay",			0,		0xe371)
+INST(srda,      "srda",         0,      0x8e)
 
 //// R_R_R
 INST(ark,		"ark",			0,		0xb9f8)

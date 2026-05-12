@@ -1670,9 +1670,11 @@ int LinearScan::BuildNode(GenTree* tree)
 
         case GT_MOD:
         case GT_UMOD:
-            NYI_IF(varTypeIsFloating(tree->TypeGet()), "FP Remainder in ARM64");
-            assert(!"Shouldn't see an integer typed GT_MOD node in ARM64");
-            srcCount = 0;
+            NYI_IF(varTypeIsFloating(tree->TypeGet()), "FP Remainder in s390");
+            srcCount = BuildBinaryUses(tree->AsOp());
+            buildInternalRegisterUses();
+            assert(dstCount == 1);
+            BuildDef(tree);
             break;
 
         case GT_MUL:
