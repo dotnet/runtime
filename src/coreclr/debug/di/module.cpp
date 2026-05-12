@@ -1071,20 +1071,16 @@ void CordbModule::CopyRemoteMetaData(
 
     // Allocate space for the local copy of the metadata
     // No need to zero out the memory since we'll fill it all here.
-    LPVOID pRawBuffer = CoTaskMemAlloc(buffer.cbSize);
-    if (pRawBuffer == NULL)
+    CoTaskMemHolder<BYTE> pBuffer{ (BYTE*)CoTaskMemAlloc(buffer.cbSize) };
+    if (pBuffer == NULL)
     {
         ThrowOutOfMemory();
     }
 
-    *pLocalBuffer = pRawBuffer;
-
-
-
     // Copy the metadata from the left side
-    GetProcess()->SafeReadBuffer(buffer, (BYTE *)pRawBuffer);
+    GetProcess()->SafeReadBuffer(buffer, pBuffer);
 
-    return;
+    *pLocalBuffer = pBuffer.Detach();
 }
 
 HRESULT CordbModule::QueryInterface(REFIID id, void **pInterface)
