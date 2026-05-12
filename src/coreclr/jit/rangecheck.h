@@ -394,10 +394,10 @@ struct RangeOps
         // Even when the unsigned overflow check above passes, the signed multiplications
         // below can still overflow (which is undefined behavior on signed int). Re-check
         // with signed semantics to keep the int min/max computation well-defined.
-        if (unsignedMul && (CheckedOps::MulOverflows(r1lo, r2lo, /* unsignedMul */ false) ||
-                            CheckedOps::MulOverflows(r1lo, r2hi, /* unsignedMul */ false) ||
-                            CheckedOps::MulOverflows(r1hi, r2lo, /* unsignedMul */ false) ||
-                            CheckedOps::MulOverflows(r1hi, r2hi, /* unsignedMul */ false)))
+        if (unsignedMul && (CheckedOps::MulOverflows(r1lo, r2lo, CheckedOps::Signed) ||
+                            CheckedOps::MulOverflows(r1lo, r2hi, CheckedOps::Signed) ||
+                            CheckedOps::MulOverflows(r1hi, r2lo, CheckedOps::Signed) ||
+                            CheckedOps::MulOverflows(r1hi, r2hi, CheckedOps::Signed)))
         {
             return Limit(Limit::keUnknown);
         }
