@@ -902,6 +902,71 @@ Range RangeCheck::GetRangeFromAssertionsWorker(
                             }
                         }
                     }
+
+                    // Generic fold: "<cmp>(ADD(base, 1), other)" is implied by an asserted
+                    // "base <relop> other" (with matching signedness). For an asserted strict
+                    // less-than the implication "ADD(base, 1) <= other" is sound:
+                    //   * Signed:   base < other  =>  base <= INT32_MAX - 1  =>  base + 1 <= other
+                    //               (no signed overflow).
+                    //   * Unsigned: (uint)base < (uint)other  =>  (uint)base <= UINT32_MAX - 1
+                    //               =>  (uint)(base + 1) <= (uint)other (no unsigned wrap).
+                    // This catches patterns like "(uint)(offset + 1) <= (uint)length" given
+                    // "(uint)offset < (uint)length", which is the typical "Slice(offset + 1)" check.
+                    //
+                    // Only "<=" / ">" can be concluded once normalized to "ADD(base, 1) <relop> other";
+                    // "<", ">=", "==", "!=" remain undetermined. To keep the assertion-table scan
+                    // proportional to cases that can benefit, require op1 to be ADD(base, 1) where
+                    // base has assertions registered.
+                    ValueNum addBase;
+                    int      addCns;
+                    if (!result.IsSingleValueConstant() && ((cmpOper == GT_LE) || (cmpOper == GT_GT)) &&
+                        comp->vnStore->IsVNBinFuncWithConst(funcApp.m_args[0], VNF_ADD, &addBase, &addCns) &&
+                        (addCns == 1) && (addBase != funcApp.m_args[1]) &&
+                        comp->optAssertionHasAssertionsForVN(addBase))
+                    {
+                        ValueNum        otherVN = funcApp.m_args[1];
+                        BitVecOps::Iter iter(comp->apTraits, assertions);
+                        unsigned        assertionBit = 0;
+                        while (iter.NextElem(&assertionBit))
+                        {
+                            const Compiler::AssertionDsc& a =
+                                comp->optGetAssertion(GetAssertionIndex(assertionBit));
+
+                            // We only consume O2K_VN-style relop assertions; checked-bound assertions
+                            // already have dedicated handling elsewhere.
+                            if (!a.IsRelop() || !a.GetOp2().KindIs(Compiler::O2K_VN))
+                            {
+                                continue;
+                            }
+
+                            ValueNum   aOp1 = a.GetOp1().GetVN();
+                            ValueNum   aOp2 = a.GetOp2().GetVN();
+                            bool       aIsUnsigned;
+                            genTreeOps aCmp = Compiler::AssertionDsc::ToCompareOper(a.GetKind(), &aIsUnsigned);
+
+                            // Normalize so that the assertion reads "addBase <aCmp> otherVN".
+                            if ((aOp1 == otherVN) && (aOp2 == addBase))
+                            {
+                                aCmp = GenTree::SwapRelop(aCmp);
+                            }
+                            else if ((aOp1 != addBase) || (aOp2 != otherVN))
+                            {
+                                continue;
+                            }
+
+                            // Signedness must match: e.g. signed "addBase < other" doesn't imply
+                            // "(uint)addBase != UINT32_MAX" (negative addBase has bit 31 set), so
+                            // the no-overflow argument doesn't carry across signedness.
+                            // Also require a strict less-than: only "<" gives "addBase + 1 <= other".
+                            if ((aIsUnsigned != isUnsigned) || (aCmp != GT_LT))
+                            {
+                                continue;
+                            }
+
+                            result = Range(Limit(Limit::keConstant, (cmpOper == GT_LE) ? 1 : 0));
+                            break;
+                        }
+                    }
                 }
                 break;
             }
@@ -1411,10 +1476,6 @@ void RangeCheck::MergeEdgeAssertionsWorker(Compiler*                        comp
             ValueNum op2VN = curAssertion.GetOp2().GetVN();
 
             cmpOper = Compiler::AssertionDsc::ToCompareOper(curAssertion.GetKind(), &isUnsigned);
-            if (isUnsigned)
-            {
-                continue;
-            }
 
             ValueNum otherVN;
             if (op1VN == normalLclVN)
@@ -1431,6 +1492,17 @@ void RangeCheck::MergeEdgeAssertionsWorker(Compiler*                        comp
                 cmpOper = GenTree::SwapRelop(cmpOper);
             }
 
+            // For unsigned compares, we can only derive a useful constant range when the
+            // direction is "<" or "<=". The asserted "X u< Y" implies X is in [0, Y_upper - 1]
+            // only when otherVN is known to be non-negative; otherwise (uint)Y could be huge
+            // and we cannot bound X within the signed-int domain. Skip unsigned ">/>=" since
+            // they would produce non-contiguous ranges (existing behavior at the tightening
+            // step below also assumes lLimit = 0 for unsigned LT/LE).
+            if (isUnsigned && (cmpOper != GT_LT) && (cmpOper != GT_LE))
+            {
+                continue;
+            }
+
             if (budget <= 0)
             {
                 continue;
@@ -1440,6 +1512,12 @@ void RangeCheck::MergeEdgeAssertionsWorker(Compiler*                        comp
             Range otherRange = GetRangeFromAssertionsWorker(comp, otherVN, assertions, budget, visited);
             if (!otherRange.IsConstantRange())
             {
+                continue;
+            }
+
+            if (isUnsigned && (otherRange.LowerLimit().GetConstant() < 0))
+            {
+                // For unsigned LT/LE we need otherVN's range to be non-negative.
                 continue;
             }
 

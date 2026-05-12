@@ -1651,9 +1651,12 @@ void Compiler::optCreateComplementaryAssertion(AssertionIndex assertionIndex)
         optMapComplementary(optAddAssertion(reversed), assertionIndex);
     }
     else if (candidateAssertion.KindIs(OAK_LT_UN, OAK_LE_UN) &&
-             candidateAssertion.GetOp2().KindIs(O2K_CHECKED_BOUND_ADD_CNS))
+             candidateAssertion.GetOp2().KindIs(O2K_CHECKED_BOUND_ADD_CNS, O2K_VN))
     {
-        // Assertions such as "X > checkedBndVN" aren't very useful.
+        // Assertions such as "X u> checkedBndVN" or "X u> Y" aren't very useful: unsigned ">" /
+        // ">=" complementaries don't tighten ranges (they describe non-contiguous regions in the
+        // signed-int domain that Range can't represent) and rarely match a direct relop fold
+        // either. Skip the complementary to keep assertion-table pressure down.
         return;
     }
     else if (AssertionDsc::IsReversible(candidateAssertion.GetKind()))
@@ -1825,15 +1828,16 @@ AssertionInfo Compiler::optCreateJTrueBoundsAssertion(GenTree* tree)
     }
 
     // "X relop Y" where neither side is a constant nor a checked bound.
-    // For now, we only create such assertions for signed comparisons of int32 (and smaller, after promotion).
+    // We create such assertions for both signed and unsigned comparisons of int32 (and smaller, after promotion).
     // This widens what global assertion prop can reason about: e.g. "b > a" combined with "a > 10"
-    // can be used to deduce "b > 10".
+    // can be used to deduce "b > 10". The unsigned variant enables folding patterns like
+    // "(uint)(i + 1) <= (uint)len" given "(uint)i < (uint)len".
     //
     // To keep table pressure under control, we only create the assertion if at least one of the
     // operands already has assertions registered. Otherwise the new assertion has no other facts
     // it can chain with and is unlikely to enable any deduction, while still consuming a slot
     // (and potentially crowding out useful ones).
-    if (!isUnsignedRelop && (op1VN != op2VN) && !vnStore->IsVNConstant(op1VN) && !vnStore->IsVNConstant(op2VN) &&
+    if ((op1VN != op2VN) && !vnStore->IsVNConstant(op1VN) && !vnStore->IsVNConstant(op2VN) &&
         (optAssertionHasAssertionsForVN(op1VN) || optAssertionHasAssertionsForVN(op2VN)))
     {
         AssertionDsc   dsc = AssertionDsc::CreateRelopVN(this, relopFunc, op1VN, op2VN);
