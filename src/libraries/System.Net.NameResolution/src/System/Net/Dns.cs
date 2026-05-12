@@ -465,11 +465,6 @@ namespace System.Net
 
         private static bool HasNoLoopbackAddress(IPAddress[] addresses)
         {
-            if (addresses.Length == 0)
-            {
-                return false;
-            }
-
             foreach (IPAddress address in addresses)
             {
                 if (IPAddress.IsLoopback(address))
@@ -540,8 +535,7 @@ namespace System.Net
                         throw CreateException(errorCode, nativeErrorCode);
                     }
                 }
-                else if (IsLocalhostSubdomain(hostName) &&
-                         (addresses.Length == 0 || HasNoLoopbackAddress(addresses)))
+                else if (IsLocalhostSubdomain(hostName) && HasNoLoopbackAddress(addresses))
                 {
                     // RFC 6761 Section 6.3: fall back to plain "localhost" when a localhost subdomain returns no loopback addresses.
                     if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(hostName, "RFC 6761: Localhost subdomain returned no loopback addresses, falling back to 'localhost'");
@@ -809,7 +803,7 @@ namespace System.Net
 
                     // RFC 6761 Section 6.3: fall back to plain "localhost" when a localhost subdomain returns no loopback addresses.
                     if (isLocalhostSubdomain && result is IPAddress[] addresses &&
-                        (addresses.Length == 0 || HasNoLoopbackAddress(addresses)))
+                        HasNoLoopbackAddress(addresses))
                     {
                         if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(hostName, "RFC 6761: Localhost subdomain returned no loopback addresses, falling back to 'localhost'");
                         NameResolutionTelemetry.Log.AfterResolution(hostName, activity, answer: result, exception: null);
@@ -820,7 +814,7 @@ namespace System.Net
                     }
 
                     if (isLocalhostSubdomain && result is IPHostEntry entry &&
-                        (entry.AddressList.Length == 0 || HasNoLoopbackAddress(entry.AddressList)))
+                        HasNoLoopbackAddress(entry.AddressList))
                     {
                         if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(hostName, "RFC 6761: Localhost subdomain returned no loopback addresses, falling back to 'localhost'");
                         NameResolutionTelemetry.Log.AfterResolution(hostName, activity, answer: result, exception: null);
