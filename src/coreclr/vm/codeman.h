@@ -93,6 +93,7 @@ class EECodeInfo;
 #define ROUND_UP_TO_PAGE(x)     (((size_t) (x) + (minipal_getpagesize()-1)) & ~((size_t)minipal_getpagesize()-1))
 
 
+// [cDAC] [ExecutionManager]: Contract depends on the values in this enum.
 enum StubCodeBlockKind : int
 {
     STUB_CODE_BLOCK_UNKNOWN = 0,
@@ -112,10 +113,6 @@ enum StubCodeBlockKind : int
 #endif // FEATURE_TIERED_COMPILATION
     // Last valid value. Note that the definition is duplicated in debug\daccess\fntableaccess.cpp
     STUB_CODE_BLOCK_LAST = 0xF,
-    // Placeholders returned by code:GetStubCodeBlockKind
-    STUB_CODE_BLOCK_NOCODE = 0x10,
-    STUB_CODE_BLOCK_MANAGED = 0x11,
-    STUB_CODE_BLOCK_STUBLINK = 0x12,
     // Placeholder used by ReadyToRun images
     STUB_CODE_BLOCK_METHOD_CALL_THUNK = 0x13,
 };
@@ -126,10 +123,6 @@ inline const char *GetStubCodeBlockKindString(StubCodeBlockKind kind)
     {
     case STUB_CODE_BLOCK_JUMPSTUB:
         return "JumpStub";
-    case STUB_CODE_BLOCK_STUBLINK:
-        return "StubLinkStub";
-    case STUB_CODE_BLOCK_MANAGED:
-        return "Managed";
     case STUB_CODE_BLOCK_METHOD_CALL_THUNK:
         return "MethodCallThunk";
 #ifdef FEATURE_TIERED_COMPILATION
@@ -793,6 +786,7 @@ template<> struct cdac_data<RangeSection>
     static constexpr size_t Flags = offsetof(RangeSection, _flags);
     static constexpr size_t HeapList = offsetof(RangeSection, _pHeapList);
     static constexpr size_t R2RModule = offsetof(RangeSection, _pR2RModule);
+    static constexpr size_t RangeList = offsetof(RangeSection, _pRangeList);
 };
 
 enum class RangeSectionLockState
