@@ -87,8 +87,12 @@ if(NOT CLR_CMAKE_TARGET_BROWSER)
     )
 
     if(CLR_CMAKE_TARGET_WIN32)
+        # On Windows, include the PAL implementation files directly to avoid
+        # duplicate symbols from linking the full hostmisc library
         list(APPEND HOSTMISC_C_SOURCES
-            ${CMAKE_CURRENT_LIST_DIR}/pal.windows.c_impl.cpp)
+            ${CMAKE_CURRENT_LIST_DIR}/pal.windows.cpp
+            ${CMAKE_CURRENT_LIST_DIR}/pal.windows.c_impl.cpp
+            ${CMAKE_CURRENT_LIST_DIR}/longfile.windows.cpp)
     else()
         list(APPEND HOSTMISC_C_SOURCES
             ${CMAKE_CURRENT_LIST_DIR}/pal.unix.c
@@ -97,8 +101,4 @@ if(NOT CLR_CMAKE_TARGET_BROWSER)
 
     add_library(hostmisc_c OBJECT ${HOSTMISC_C_SOURCES})
     target_link_libraries(hostmisc_c PUBLIC hostmisc_interface minipal)
-
-    if(CLR_CMAKE_TARGET_WIN32)
-        target_link_libraries(hostmisc_c PUBLIC hostmisc)
-    endif()
 endif()

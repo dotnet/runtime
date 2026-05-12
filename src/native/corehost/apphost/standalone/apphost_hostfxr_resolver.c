@@ -128,11 +128,15 @@ void hostfxr_resolver_init(hostfxr_resolver_t* resolver, const pal_char_t* app_r
         size_t rel_len = pal_strlen(app_relative_dotnet);
         size_t total = root_len + 1 + rel_len + 1;
         app_relative_dotnet_path = (pal_char_t*)malloc(total * sizeof(pal_char_t));
-        if (app_relative_dotnet_path != NULL)
+        if (app_relative_dotnet_path == NULL)
         {
-            pal_str_printf(app_relative_dotnet_path, total, _X("%s"), app_root);
-            utils_append_path(app_relative_dotnet_path, total, app_relative_dotnet);
+            // Allocation failed - treat as hard error to preserve search semantics
+            resolver->status_code = CoreHostLibMissingFailure;
+            free((void*)app_root);
+            return;
         }
+        pal_str_printf(app_relative_dotnet_path, total, _X("%s"), app_root);
+        utils_append_path(app_relative_dotnet_path, total, app_relative_dotnet);
     }
 
     pal_char_t* dotnet_root = NULL;
