@@ -170,18 +170,7 @@ namespace System.Numerics
         {
             [Intrinsic]
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => (typeof(T) == typeof(byte)) ||
-                   (typeof(T) == typeof(double)) ||
-                   (typeof(T) == typeof(short)) ||
-                   (typeof(T) == typeof(int)) ||
-                   (typeof(T) == typeof(long)) ||
-                   (typeof(T) == typeof(nint)) ||
-                   (typeof(T) == typeof(nuint)) ||
-                   (typeof(T) == typeof(sbyte)) ||
-                   (typeof(T) == typeof(float)) ||
-                   (typeof(T) == typeof(ushort)) ||
-                   (typeof(T) == typeof(uint)) ||
-                   (typeof(T) == typeof(ulong));
+            get => Scalar<T>.IsSupported;
         }
 
         /// <summary>Gets a new <see cref="Vector{T}" /> with all elements initialized to one.</summary>
@@ -367,6 +356,13 @@ namespace System.Numerics
         /// <exception cref="NotSupportedException">The type of <paramref name="value" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         public static explicit operator Vector<byte>(Vector<T> value) => value.As<T, byte>();
+
+        /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see langword="Vector&lt;Char&gt;" />.</summary>
+        /// <param name="value">The vector to reinterpret.</param>
+        /// <returns><paramref name="value" /> reinterpreted as a new <see langword="Vector&lt;Char&gt;" />.</returns>
+        /// <exception cref="NotSupportedException">The type of <paramref name="value" /> (<typeparamref name="T" />) is not supported.</exception>
+        [Intrinsic]
+        public static explicit operator Vector<char>(Vector<T> value) => value.As<T, char>();
 
         /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see langword="Vector&lt;Double&gt;" />.</summary>
         /// <param name="value">The vector to reinterpret.</param>

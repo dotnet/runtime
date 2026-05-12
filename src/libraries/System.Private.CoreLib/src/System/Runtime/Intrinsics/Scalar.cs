@@ -13,6 +13,30 @@ namespace System.Runtime.Intrinsics
 {
     internal static class Scalar<T>
     {
+        public static bool IsFloatingPoint => (typeof(T) == typeof(double))
+                                           || (typeof(T) == typeof(float));
+
+        public static bool IsSupported => (typeof(T) == typeof(byte))
+                                       || (typeof(T) == typeof(char))
+                                       || (typeof(T) == typeof(double))
+                                       || (typeof(T) == typeof(short))
+                                       || (typeof(T) == typeof(int))
+                                       || (typeof(T) == typeof(long))
+                                       || (typeof(T) == typeof(nint))
+                                       || (typeof(T) == typeof(sbyte))
+                                       || (typeof(T) == typeof(float))
+                                       || (typeof(T) == typeof(ushort))
+                                       || (typeof(T) == typeof(uint))
+                                       || (typeof(T) == typeof(ulong))
+                                       || (typeof(T) == typeof(nuint));
+
+        public static bool IsUnsigned => (typeof(T) == typeof(byte))
+                                      || (typeof(T) == typeof(char))
+                                      || (typeof(T) == typeof(ushort))
+                                      || (typeof(T) == typeof(uint))
+                                      || (typeof(T) == typeof(ulong))
+                                      || (typeof(T) == typeof(nuint));
+
         public static T AllBitsSet
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -21,6 +45,10 @@ namespace System.Runtime.Intrinsics
                 if (typeof(T) == typeof(byte))
                 {
                     return (T)(object)byte.MaxValue;
+                }
+                else if (typeof(T) == typeof(char))
+                {
+                    return (T)(object)char.MaxValue;
                 }
                 else if (typeof(T) == typeof(double))
                 {
@@ -83,6 +111,10 @@ namespace System.Runtime.Intrinsics
                 {
                     return (T)(object)(byte)1;
                 }
+                else if (typeof(T) == typeof(char))
+                {
+                    return (T)(object)(char)1;
+                }
                 else if (typeof(T) == typeof(double))
                 {
                     return (T)(object)(double)1;
@@ -138,7 +170,7 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static T Abs(T value)
         {
-            // byte, ushort, uint, and ulong should have already been handled
+            // byte, char, ushort, uint, and ulong should have already been handled
             // avoid Math.Abs for integers since it throws for MinValue
             if (typeof(T) == typeof(double))
             {
@@ -206,6 +238,10 @@ namespace System.Runtime.Intrinsics
             if (typeof(T) == typeof(byte))
             {
                 return (T)(object)(byte)((byte)(object)left + (byte)(object)right);
+            }
+            else if (typeof(T) == typeof(char))
+            {
+                return (T)(object)(char)((char)(object)left + (char)(object)right);
             }
             else if (typeof(T) == typeof(double))
             {
@@ -304,6 +340,20 @@ namespace System.Runtime.Intrinsics
                 if (result < actualLeft)
                 {
                     result = byte.MaxValue;
+                }
+
+                return (T)(object)result;
+            }
+            else if (typeof(T) == typeof(char))
+            {
+                char actualLeft = (char)(object)left;
+                char actualRight = (char)(object)right;
+
+                char result = (char)(actualLeft + actualRight);
+
+                if (result < actualLeft)
+                {
+                    result = char.MaxValue;
                 }
 
                 return (T)(object)result;
@@ -474,6 +524,10 @@ namespace System.Runtime.Intrinsics
             {
                 return (T)(object)(byte)value;
             }
+            else if (typeof(T) == typeof(char))
+            {
+                return (T)(object)(char)value;
+            }
             else if (typeof(T) == typeof(double))
             {
                 return (T)(object)(double)value;
@@ -528,7 +582,7 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static T CopySign(T value, T sign)
         {
-            // byte, ushort, uint, and ulong should have already been handled
+            // byte, char, nuint, ushort, uint, and ulong should have already been handled
             // avoid Math.Abs for integers since it throws for MinValue
             if (typeof(T) == typeof(double))
             {
@@ -571,6 +625,10 @@ namespace System.Runtime.Intrinsics
             if (typeof(T) == typeof(byte))
             {
                 return (T)(object)(byte)((byte)(object)left / (byte)(object)right);
+            }
+            else if (typeof(T) == typeof(char))
+            {
+                return (T)(object)(char)((char)(object)left / (char)(object)right);
             }
             else if (typeof(T) == typeof(double))
             {
@@ -630,6 +688,10 @@ namespace System.Runtime.Intrinsics
             {
                 return (byte)(object)left == (byte)(object)right;
             }
+            else if (typeof(T) == typeof(char))
+            {
+                return (char)(object)left == (char)(object)right;
+            }
             else if (typeof(T) == typeof(double))
             {
                 return (double)(object)left == (double)(object)right;
@@ -688,6 +750,11 @@ namespace System.Runtime.Intrinsics
             {
                 uint bits = (byte)(object)value;
                 return bits >> 7;
+            }
+            else if (typeof(T) == typeof(char))
+            {
+                uint bits = (char)(object)value;
+                return bits >> 15;
             }
             else if (typeof(T) == typeof(double))
             {
@@ -786,6 +853,10 @@ namespace System.Runtime.Intrinsics
             {
                 return (byte)(object)left > (byte)(object)right;
             }
+            else if (typeof(T) == typeof(char))
+            {
+                return (char)(object)left > (char)(object)right;
+            }
             else if (typeof(T) == typeof(double))
             {
                 return (double)(object)left > (double)(object)right;
@@ -843,6 +914,10 @@ namespace System.Runtime.Intrinsics
             if (typeof(T) == typeof(byte))
             {
                 return (byte)(object)left >= (byte)(object)right;
+            }
+            else if (typeof(T) == typeof(char))
+            {
+                return (char)(object)left >= (char)(object)right;
             }
             else if (typeof(T) == typeof(double))
             {
@@ -902,6 +977,10 @@ namespace System.Runtime.Intrinsics
             {
                 return (byte)(object)left < (byte)(object)right;
             }
+            else if (typeof(T) == typeof(char))
+            {
+                return (char)(object)left < (char)(object)right;
+            }
             else if (typeof(T) == typeof(double))
             {
                 return (double)(object)left < (double)(object)right;
@@ -959,6 +1038,10 @@ namespace System.Runtime.Intrinsics
             if (typeof(T) == typeof(byte))
             {
                 return (byte)(object)left <= (byte)(object)right;
+            }
+            else if (typeof(T) == typeof(char))
+            {
+                return (char)(object)left <= (char)(object)right;
             }
             else if (typeof(T) == typeof(double))
             {
@@ -1018,6 +1101,10 @@ namespace System.Runtime.Intrinsics
             {
                 return (T)(object)byte.Max((byte)(object)left, (byte)(object)right);
             }
+            else if (typeof(T) == typeof(char))
+            {
+                return (T)(object)(char)ushort.Max((char)(object)left, (char)(object)right);
+            }
             else if (typeof(T) == typeof(double))
             {
                 return (T)(object)double.Max((double)(object)left, (double)(object)right);
@@ -1072,6 +1159,7 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static T MaxMagnitude(T left, T right)
         {
+            // byte, char, nuint, ushort, uint, and ulong should have already been handled
             if (typeof(T) == typeof(double))
             {
                 return (T)(object)double.MaxMagnitude((double)(object)left, (double)(object)right);
@@ -1091,10 +1179,6 @@ namespace System.Runtime.Intrinsics
             else if (typeof(T) == typeof(nint))
             {
                 return (T)(object)nint.MaxMagnitude((nint)(object)left, (nint)(object)right);
-            }
-            else if (typeof(T) == typeof(nuint))
-            {
-                return (T)(object)nuint.Max((nuint)(object)left, (nuint)(object)right);
             }
             else if (typeof(T) == typeof(sbyte))
             {
@@ -1151,6 +1235,10 @@ namespace System.Runtime.Intrinsics
             {
                 return (T)(object)byte.Min((byte)(object)left, (byte)(object)right);
             }
+            else if (typeof(T) == typeof(ushort))
+            {
+                return (T)(object)(char)ushort.Min((char)(object)left, (char)(object)right);
+            }
             else if (typeof(T) == typeof(double))
             {
                 return (T)(object)double.Min((double)(object)left, (double)(object)right);
@@ -1205,6 +1293,7 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static T MinMagnitude(T left, T right)
         {
+            // byte, char, nuint, ushort, uint, and ulong should have already been handled
             if (typeof(T) == typeof(double))
             {
                 return (T)(object)double.MinMagnitude((double)(object)left, (double)(object)right);
@@ -1224,10 +1313,6 @@ namespace System.Runtime.Intrinsics
             else if (typeof(T) == typeof(nint))
             {
                 return (T)(object)nint.MinMagnitude((nint)(object)left, (nint)(object)right);
-            }
-            else if (typeof(T) == typeof(nuint))
-            {
-                return (T)(object)nuint.Min((nuint)(object)left, (nuint)(object)right);
             }
             else if (typeof(T) == typeof(sbyte))
             {
@@ -1284,6 +1369,10 @@ namespace System.Runtime.Intrinsics
             {
                 return (T)(object)(byte)((byte)(object)left * (byte)(object)right);
             }
+            else if (typeof(T) == typeof(char))
+            {
+                return (T)(object)(char)((char)(object)left * (char)(object)right);
+            }
             else if (typeof(T) == typeof(double))
             {
                 return (T)(object)(double)((double)(object)left * (double)(object)right);
@@ -1338,58 +1427,17 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static T MultiplyAddEstimate(T left, T right, T addend)
         {
-            if (typeof(T) == typeof(byte))
-            {
-                return (T)(object)(byte)((((byte)(object)left * (byte)(object)right)) + (byte)(object)addend);
-            }
-            else if (typeof(T) == typeof(double))
+            if (typeof(T) == typeof(double))
             {
                 return (T)(object)double.MultiplyAddEstimate((double)(object)left, (double)(object)right, (double)(object)addend);
-            }
-            else if (typeof(T) == typeof(short))
-            {
-                return (T)(object)(short)((((short)(object)left * (short)(object)right)) + (short)(object)addend);
-            }
-            else if (typeof(T) == typeof(int))
-            {
-                return (T)(object)(int)((((int)(object)left * (int)(object)right)) + (int)(object)addend);
-            }
-            else if (typeof(T) == typeof(long))
-            {
-                return (T)(object)(long)((((long)(object)left * (long)(object)right)) + (long)(object)addend);
-            }
-            else if (typeof(T) == typeof(nint))
-            {
-                return (T)(object)(nint)((((nint)(object)left * (nint)(object)right)) + (nint)(object)addend);
-            }
-            else if (typeof(T) == typeof(nuint))
-            {
-                return (T)(object)(nuint)((((nuint)(object)left * (nuint)(object)right)) + (nuint)(object)addend);
-            }
-            else if (typeof(T) == typeof(sbyte))
-            {
-                return (T)(object)(sbyte)((((sbyte)(object)left * (sbyte)(object)right)) + (sbyte)(object)addend);
             }
             else if (typeof(T) == typeof(float))
             {
                 return (T)(object)float.MultiplyAddEstimate((float)(object)left, (float)(object)right, (float)(object)addend);
             }
-            else if (typeof(T) == typeof(ushort))
-            {
-                return (T)(object)(ushort)((((ushort)(object)left * (ushort)(object)right)) + (ushort)(object)addend);
-            }
-            else if (typeof(T) == typeof(uint))
-            {
-                return (T)(object)(uint)((((uint)(object)left * (uint)(object)right)) + (uint)(object)addend);
-            }
-            else if (typeof(T) == typeof(ulong))
-            {
-                return (T)(object)(ulong)((((ulong)(object)left * (ulong)(object)right)) + (ulong)(object)addend);
-            }
             else
             {
-                ThrowHelper.ThrowNotSupportedException(ExceptionResource.Arg_TypeNotSupported);
-                return default!;
+                return Add(Multiply(left, right), addend);
             }
         }
 
@@ -1398,6 +1446,10 @@ namespace System.Runtime.Intrinsics
             if (typeof(T) == typeof(byte))
             {
                 return ((byte)(object)left).Equals((byte)(object)right);
+            }
+            else if (typeof(T) == typeof(char))
+            {
+                return ((char)(object)left).Equals((char)(object)right);
             }
             else if (typeof(T) == typeof(double))
             {
@@ -1475,6 +1527,10 @@ namespace System.Runtime.Intrinsics
             {
                 return (T)(object)(byte)((byte)(object)value << (shiftCount & 7));
             }
+            else if (typeof(T) == typeof(char))
+            {
+                return (T)(object)(char)((char)(object)value << (shiftCount & 15));
+            }
             else if (typeof(T) == typeof(double))
             {
                 long bits = BitConverter.DoubleToInt64Bits((double)(object)value);
@@ -1536,6 +1592,10 @@ namespace System.Runtime.Intrinsics
             if (typeof(T) == typeof(byte))
             {
                 return (T)(object)(byte)((byte)(object)value >> (shiftCount & 7));
+            }
+            else if (typeof(T) == typeof(char))
+            {
+                return (T)(object)(char)((char)(object)value >> (shiftCount & 15));
             }
             else if (typeof(T) == typeof(double))
             {
@@ -1599,6 +1659,10 @@ namespace System.Runtime.Intrinsics
             {
                 return (T)(object)(byte)((byte)(object)value >>> (shiftCount & 7));
             }
+            else if (typeof(T) == typeof(char))
+            {
+                return (T)(object)(char)((char)(object)value >>> (shiftCount & 15));
+            }
             else if (typeof(T) == typeof(double))
             {
                 long bits = BitConverter.DoubleToInt64Bits((double)(object)value);
@@ -1661,6 +1725,10 @@ namespace System.Runtime.Intrinsics
             {
                 return (T)(object)(byte)MathF.Sqrt((byte)(object)value);
             }
+            else if (typeof(T) == typeof(char))
+            {
+                return (T)(object)(char)MathF.Sqrt((char)(object)value);
+            }
             else if (typeof(T) == typeof(double))
             {
                 return (T)(object)(double)Math.Sqrt((double)(object)value);
@@ -1718,6 +1786,10 @@ namespace System.Runtime.Intrinsics
             if (typeof(T) == typeof(byte))
             {
                 return (T)(object)(byte)((byte)(object)left - (byte)(object)right);
+            }
+            else if (typeof(T) == typeof(char))
+            {
+                return (T)(object)(char)((char)(object)left - (char)(object)right);
             }
             else if (typeof(T) == typeof(double))
             {
@@ -1815,6 +1887,20 @@ namespace System.Runtime.Intrinsics
                 if (result > actualLeft)
                 {
                     result = byte.MinValue;
+                }
+
+                return (T)(object)result;
+            }
+            else if (typeof(T) == typeof(char))
+            {
+                char actualLeft = (char)(object)left;
+                char actualRight = (char)(object)right;
+
+                char result = (char)(actualLeft - actualRight);
+
+                if (result > actualLeft)
+                {
+                    result = char.MinValue;
                 }
 
                 return (T)(object)result;
