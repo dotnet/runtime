@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Text;
 using Test.Cryptography;
 using Xunit;
@@ -17,6 +18,7 @@ namespace System.Security.Cryptography.Tests
         public abstract X25519DiffieHellman GenerateKey();
         public abstract X25519DiffieHellman ImportPrivateKey(ReadOnlySpan<byte> source);
         public abstract X25519DiffieHellman ImportPublicKey(ReadOnlySpan<byte> source);
+        public virtual bool CanRoundTripKeys => true;
 
         // SymCrypt, thus SCOSSL, is stricter about keys it is willing to import. These keys fall in to
         // two buckets.
@@ -219,7 +221,7 @@ namespace System.Security.Cryptography.Tests
             AssertExportPkcs8PrivateKey(xdh, pkcs8 =>
             {
                 using X25519DiffieHellman imported = X25519DiffieHellman.ImportPkcs8PrivateKey(pkcs8);
-                AssertExtensions.SequenceEqual(
+                AssertPrivateKey(
                     X25519DiffieHellmanTestData.AlicePrivateKey,
                     imported.ExportPrivateKey());
             });
@@ -247,7 +249,7 @@ namespace System.Security.Cryptography.Tests
                         X25519DiffieHellmanTestData.EncryptedPrivateKeyPassword,
                         pkcs8);
 
-                    AssertExtensions.SequenceEqual(
+                    AssertPrivateKey(
                         X25519DiffieHellmanTestData.AlicePrivateKey,
                         imported.ExportPrivateKey());
                 });
@@ -321,23 +323,22 @@ namespace System.Security.Cryptography.Tests
         public void PrivateKey_Roundtrip_UnclampedScalar()
         {
             byte[] privateKey = X25519DiffieHellmanTestData.BobPrivateKey;
-            using X25519DiffieHellman xdh = ImportPrivateKey(privateKey);
 
-            AssertExtensions.SequenceEqual(privateKey, xdh.ExportPrivateKey());
+            using X25519DiffieHellman xdh = ImportPrivateKey(privateKey);
+            AssertPrivateKey(privateKey, xdh.ExportPrivateKey());
+
             AssertExtensions.SequenceEqual(X25519DiffieHellmanTestData.BobPublicKey, xdh.ExportPublicKey());
 
             byte[] pkcs8 = xdh.ExportPkcs8PrivateKey();
             using X25519DiffieHellman reimported = X25519DiffieHellman.ImportPkcs8PrivateKey(pkcs8);
-            AssertExtensions.SequenceEqual(privateKey, reimported.ExportPrivateKey());
+            AssertPrivateKey(privateKey, reimported.ExportPrivateKey());
         }
 
         [Fact]
         public void PrivateKey_Roundtrip_ClampedScalar()
         {
             byte[] privateKey = (byte[])X25519DiffieHellmanTestData.AlicePrivateKey.Clone();
-            privateKey[0] &= 0b11111000;
-            privateKey[^1] &= 0b01111111;
-            privateKey[^1] |= 0b01000000;
+            ClampPrivateKey(privateKey);
 
             using X25519DiffieHellman xdh = ImportPrivateKey(privateKey);
             AssertExtensions.SequenceEqual(privateKey, xdh.ExportPrivateKey());
@@ -480,6 +481,28 @@ namespace System.Security.Cryptography.Tests
             }
 
             return buffer.AsSpan(0, written).ToArray();
+        }
+
+        private static void ClampPrivateKey(Span<byte> privateKey)
+        {
+            Debug.Assert(privateKey.Length == X25519DiffieHellman.PrivateKeySizeInBytes);
+            privateKey[0] &= 0b11111000;
+            privateKey[^1] &= 0b01111111;
+            privateKey[^1] |= 0b01000000;
+        }
+
+        private void AssertPrivateKey(ReadOnlySpan<byte> expectedPrivateKey, ReadOnlySpan<byte> actualPrivateKey)
+        {
+            if (CanRoundTripKeys)
+            {
+                AssertExtensions.SequenceEqual(expectedPrivateKey, actualPrivateKey);
+            }
+            else
+            {
+                byte[] clampedKey = expectedPrivateKey.ToArray();
+                ClampPrivateKey(clampedKey);
+                AssertExtensions.SequenceEqual(clampedKey, actualPrivateKey);
+            }
         }
 
         /// <summary>
