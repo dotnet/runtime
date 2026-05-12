@@ -18,9 +18,6 @@ set(HEADERS
 add_compile_definitions(FEATURE_APPHOST)
 
 if(CLR_CMAKE_TARGET_WIN32)
-    # fxr_resolver.c uses dn-containers (dn_vector_t), build it here alongside the containers library
-    add_subdirectory(${CLR_SRC_NATIVE_DIR}/containers containers)
-
     list(APPEND SOURCES
         ../../hostmisc/fxr_resolver.c
         ../apphost.windows.cpp)
@@ -44,7 +41,7 @@ target_include_directories(apphost PRIVATE
 target_link_libraries(apphost PRIVATE hostmisc_c)
 
 if(CLR_CMAKE_TARGET_WIN32)
-    target_link_libraries(apphost PRIVATE dn-containers shell32)
+    target_link_libraries(apphost PRIVATE shell32)
 
     # Disable manifest generation into the file .exe on Windows
     target_link_options(apphost PRIVATE "/MANIFEST:NO")
@@ -54,7 +51,7 @@ if(CLR_CMAKE_TARGET_WIN32)
         target_link_options(apphost PRIVATE "/CETCOMPAT")
     endif()
 else()
-    target_link_libraries(apphost PRIVATE dn-containers m)
+    target_link_libraries(apphost PRIVATE m)
     disable_pax_mprotect(apphost)
 endif()
 

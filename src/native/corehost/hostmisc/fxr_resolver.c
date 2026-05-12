@@ -6,42 +6,33 @@
 #include "utils.h"
 #include "fx_ver.h"
 
-#include <dn-vector.h>
-
 #include <string.h>
 #include <assert.h>
 
-// Context for collecting directory entries
+// Context for finding the maximum version directory
 typedef struct {
-    dn_vector_t* entries; // vector of pal_char_t* (heap-allocated strings)
-    const pal_char_t* base_path;
-} readdir_context_t;
+    c_fx_ver_t max_ver;
+} find_max_version_context_t;
 
-static bool collect_directory_entry(const pal_char_t* entry_name, void* ctx)
+static bool find_max_version_callback(const pal_char_t* entry_name, void* ctx)
 {
-    readdir_context_t* context = (readdir_context_t*)ctx;
+    find_max_version_context_t* context = (find_max_version_context_t*)ctx;
 
-    // Build full path: base_path/entry_name
-    size_t base_len = pal_strlen(context->base_path);
-    size_t name_len = pal_strlen(entry_name);
-    size_t total = base_len + 1 + name_len + 1;
+    trace_info(_X("Considering fxr version=[%s]..."), entry_name);
 
-    pal_char_t* full_path = (pal_char_t*)malloc(total * sizeof(pal_char_t));
-    if (full_path == NULL)
-        return true; // continue iteration even on alloc failure
-
-    memcpy(full_path, context->base_path, base_len * sizeof(pal_char_t));
-    if (base_len > 0 && context->base_path[base_len - 1] != DIR_SEPARATOR)
+    c_fx_ver_t fx_ver;
+    if (c_fx_ver_parse(entry_name, &fx_ver, false))
     {
-        full_path[base_len] = DIR_SEPARATOR;
-        memcpy(full_path + base_len + 1, entry_name, (name_len + 1) * sizeof(pal_char_t));
+        if (c_fx_ver_is_empty(&context->max_ver) || c_fx_ver_compare(&fx_ver, &context->max_ver) > 0)
+        {
+            c_fx_ver_cleanup(&context->max_ver);
+            context->max_ver = fx_ver;
+        }
+        else
+        {
+            c_fx_ver_cleanup(&fx_ver);
+        }
     }
-    else
-    {
-        memcpy(full_path + base_len, entry_name, (name_len + 1) * sizeof(pal_char_t));
-    }
-
-    dn_vector_push_back(context->entries, full_path);
 
     return true; // continue iteration
 }
@@ -50,63 +41,20 @@ static bool get_latest_fxr(const pal_char_t* fxr_root, pal_char_t** out_fxr_path
 {
     trace_info(_X("Reading fx resolver directory=[%s]"), fxr_root);
 
-    // Use dn_vector to collect directory entries
-    dn_vector_t* dir_entries = dn_vector_alloc(sizeof(pal_char_t*));
-    if (dir_entries == NULL)
-        return false;
+    find_max_version_context_t ctx;
+    c_fx_ver_init(&ctx.max_ver);
 
-    readdir_context_t ctx;
-    ctx.entries = dir_entries;
-    ctx.base_path = fxr_root;
+    pal_readdir_onlydirectories(fxr_root, find_max_version_callback, &ctx);
 
-    pal_readdir_onlydirectories(fxr_root, collect_directory_entry, &ctx);
-
-    c_fx_ver_t max_ver;
-    c_fx_ver_init(&max_ver);
-
-    uint32_t count = dn_vector_size(dir_entries);
-    for (uint32_t i = 0; i < count; i++)
-    {
-        pal_char_t* dir_path = *(pal_char_t**)dn_vector_at(dir_entries, sizeof(pal_char_t*), i);
-
-        trace_info(_X("Considering fxr version=[%s]..."), dir_path);
-
-        // Get just the filename (version part)
-        pal_char_t ver_name[256];
-        utils_get_filename(dir_path, ver_name, ARRAY_SIZE(ver_name));
-
-        c_fx_ver_t fx_ver;
-        if (c_fx_ver_parse(ver_name, &fx_ver, false))
-        {
-            if (c_fx_ver_is_empty(&max_ver) || c_fx_ver_compare(&fx_ver, &max_ver) > 0)
-            {
-                c_fx_ver_cleanup(&max_ver);
-                max_ver = fx_ver;
-            }
-            else
-            {
-                c_fx_ver_cleanup(&fx_ver);
-            }
-        }
-    }
-
-    // Free all collected strings
-    for (uint32_t i = 0; i < count; i++)
-    {
-        pal_char_t* str = *(pal_char_t**)dn_vector_at(dir_entries, sizeof(pal_char_t*), i);
-        free(str);
-    }
-    dn_vector_free(dir_entries);
-
-    if (c_fx_ver_is_empty(&max_ver))
+    if (c_fx_ver_is_empty(&ctx.max_ver))
     {
         trace_error(_X("Error: [%s] does not contain any version-numbered child folders"), fxr_root);
         return false;
     }
 
     pal_char_t max_ver_str[128];
-    c_fx_ver_as_str(&max_ver, max_ver_str, ARRAY_SIZE(max_ver_str));
-    c_fx_ver_cleanup(&max_ver);
+    c_fx_ver_as_str(&ctx.max_ver, max_ver_str, ARRAY_SIZE(max_ver_str));
+    c_fx_ver_cleanup(&ctx.max_ver);
 
     size_t root_len = pal_strlen(fxr_root);
     size_t ver_len = pal_strlen(max_ver_str);

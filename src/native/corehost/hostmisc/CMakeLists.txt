@@ -78,7 +78,7 @@ add_library(hostmisc::public ALIAS hostmisc_public)
 
 # hostmisc_c is the C-only subset of hostmisc consumed by C entrypoints
 # (apphost.c etc.). The browser host does not use it and the build
-# does not pull in dn-containers / minipal for browser, so skip it there.
+# does not pull in minipal for browser, so skip it there.
 if(NOT CLR_CMAKE_TARGET_BROWSER)
     set(HOSTMISC_C_SOURCES
         ${CMAKE_CURRENT_LIST_DIR}/trace.c
@@ -100,7 +100,5 @@ if(NOT CLR_CMAKE_TARGET_BROWSER)
 
     if(CLR_CMAKE_TARGET_WIN32)
         target_link_libraries(hostmisc_c PUBLIC hostmisc)
-    else()
-        target_link_libraries(hostmisc_c PUBLIC dn-containers)
     endif()
 endif()
