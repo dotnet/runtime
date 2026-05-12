@@ -297,12 +297,22 @@ namespace ILCompiler.DependencyAnalysis
 
             _wasmImportThunks = new NodeCache<WasmImportThunkKey, ISymbolDefinitionNode>(key =>
             {
-                return new WasmImportThunk(this, key.TypeNode, key.Helper, key.ContainingImportSection, key.UseVirtualCall, key.UseJumpableStub);
+                return new WasmImportThunk(this, key.Signature, key.Helper, key.ContainingImportSection, key.UseVirtualCall, key.UseJumpableStub);
             });
 
             _wasmImportThunkPortableEntrypoints = new NodeCache<WasmImportThunkPortableEntrypointKey, ISymbolDefinitionNode>(key =>
             {
                 return new WasmImportThunkPortableEntrypoint(this, key.Import);
+            });
+
+            _wasmR2RToInterpreterThunks = new NodeCache<WasmSignature, WasmR2RToInterpreterThunkNode>(key =>
+            {
+                return new WasmR2RToInterpreterThunkNode(this, key);
+            });
+
+            _wasmInterpreterToR2RThunks = new NodeCache<WasmSignature, WasmInterpreterToR2RThunkNode>(key =>
+            {
+                return new WasmInterpreterToR2RThunkNode(this, key);
             });
 
             _importMethods = new NodeCache<TypeAndMethod, IMethodNode>(CreateMethodEntrypoint);
@@ -440,6 +450,31 @@ namespace ILCompiler.DependencyAnalysis
         public ImportSectionNode PrecodeImports;
 
         public ImportSectionNode ILBodyPrecodeImports;
+
+        private readonly ConcurrentBag<StringDiscoverableAssemblyStubNode> _stringDiscoverableStubs = new ConcurrentBag<StringDiscoverableAssemblyStubNode>();
+
+        /// <summary>
+        /// The eager import for the InjectStringThunks fixup. Created lazily when the first
+        /// StringDiscoverableAssemblyStubNode is registered. Each such stub depends on this import.
+        /// </summary>
+        public Import InjectStringThunksImport;
+
+        /// <summary>
+        /// Register a StringDiscoverableAssemblyStubNode for inclusion in the InjectStringThunks fixup.
+        /// Called by StringDiscoverableAssemblyStubNode.OnMarked.
+        /// </summary>
+        public void RegisterStringDiscoverableStub(StringDiscoverableAssemblyStubNode stub)
+        {
+            _stringDiscoverableStubs.Add(stub);
+        }
+
+        /// <summary>
+        /// Get all registered string-discoverable stubs. Should only be called after marking is complete.
+        /// </summary>
+        public List<StringDiscoverableAssemblyStubNode> GetStringDiscoverableStubs()
+        {
+            return new List<StringDiscoverableAssemblyStubNode>(_stringDiscoverableStubs);
+        }
 
         private NodeCache<ReadyToRunHelper, Import> _constructedHelpers;
 
@@ -730,15 +765,15 @@ namespace ILCompiler.DependencyAnalysis
         }
         private struct WasmImportThunkKey : IEquatable<WasmImportThunkKey>
         {
-            public readonly WasmTypeNode TypeNode;
+            public readonly WasmSignature Signature;
             public readonly ReadyToRunHelper Helper;
             public readonly ImportSectionNode ContainingImportSection;
             public readonly bool UseVirtualCall;
             public readonly bool UseJumpableStub;
 
-            public WasmImportThunkKey(WasmTypeNode typeNode, ReadyToRunHelper helper, ImportSectionNode containingImportSection, bool useVirtualCall, bool useJumpableStub)
+            public WasmImportThunkKey(WasmSignature signature, ReadyToRunHelper helper, ImportSectionNode containingImportSection, bool useVirtualCall, bool useJumpableStub)
             {
-                TypeNode = typeNode;
+                Signature = signature;
                 Helper = helper;
                 ContainingImportSection = containingImportSection;
                 UseVirtualCall = useVirtualCall;
@@ -747,7 +782,7 @@ namespace ILCompiler.DependencyAnalysis
 
             public bool Equals(WasmImportThunkKey other)
             {
-                return TypeNode == other.TypeNode &&
+                return Signature.Equals(other.Signature) &&
                     Helper == other.Helper &&
                     ContainingImportSection == other.ContainingImportSection &&
                     UseVirtualCall == other.UseVirtualCall &&
@@ -762,7 +797,7 @@ namespace ILCompiler.DependencyAnalysis
             public override int GetHashCode()
             {
                 return HashCode.Combine(Helper.GetHashCode(),
-                    TypeNode.GetHashCode(),
+                    Signature.GetHashCode(),
                     ContainingImportSection.GetHashCode(),
                     UseVirtualCall.GetHashCode(),
                     UseJumpableStub.GetHashCode());
@@ -771,9 +806,9 @@ namespace ILCompiler.DependencyAnalysis
 
         private NodeCache<WasmImportThunkKey, ISymbolDefinitionNode> _wasmImportThunks;
 
-        public ISymbolDefinitionNode WasmImportThunk(WasmTypeNode typeNode, ReadyToRunHelper helper, ImportSectionNode containingImportSection, bool useVirtualCall, bool useJumpableStub)
+        public ISymbolDefinitionNode WasmImportThunk(WasmSignature signature, ReadyToRunHelper helper, ImportSectionNode containingImportSection, bool useVirtualCall, bool useJumpableStub)
         {
-            WasmImportThunkKey thunkKey = new WasmImportThunkKey(typeNode, helper, containingImportSection, useVirtualCall, useJumpableStub);
+            WasmImportThunkKey thunkKey = new WasmImportThunkKey(signature, helper, containingImportSection, useVirtualCall, useJumpableStub);
             return _wasmImportThunks.GetOrAdd(thunkKey);
         }
 
@@ -808,6 +843,18 @@ namespace ILCompiler.DependencyAnalysis
         {
             WasmImportThunkPortableEntrypointKey thunkKey = new WasmImportThunkPortableEntrypointKey(import);
             return _wasmImportThunkPortableEntrypoints.GetOrAdd(thunkKey);
+        }
+
+        private NodeCache<WasmSignature, WasmR2RToInterpreterThunkNode> _wasmR2RToInterpreterThunks;
+        public WasmR2RToInterpreterThunkNode WasmR2RToInterpreterThunk(WasmSignature wasmSignature)
+        {
+            return _wasmR2RToInterpreterThunks.GetOrAdd(wasmSignature);
+        }
+
+        private NodeCache<WasmSignature, WasmInterpreterToR2RThunkNode> _wasmInterpreterToR2RThunks;
+        public WasmInterpreterToR2RThunkNode WasmInterpreterToR2RThunk(WasmSignature wasmSignature)
+        {
+            return _wasmInterpreterToR2RThunks.GetOrAdd(wasmSignature);
         }
 
         public void AttachToDependencyGraph(DependencyAnalyzerBase<NodeFactory> graph, ILProvider ilProvider)
@@ -942,6 +989,10 @@ namespace ILCompiler.DependencyAnalysis
             ModuleImport = new Import(EagerImports, new ReadyToRunHelperSignature(
                 ReadyToRunHelper.Module));
             graph.AddRoot(ModuleImport, "Module import is required by the R2R format spec");
+
+            // Create the InjectStringThunks import but don't root it. It gets pulled in
+            // as a dependency of any StringDiscoverableAssemblyStubNode that gets marked.
+            InjectStringThunksImport = new Import(EagerImports, new InjectStringThunksSignature());
 
             if ((Target.Architecture != TargetArchitecture.X86) && (Target.Architecture != TargetArchitecture.Wasm32))
             {
@@ -1215,11 +1266,16 @@ namespace ILCompiler.DependencyAnalysis
             return _wasmTypeNodes.GetOrAdd(funcType);
         }
 
+        public WasmTypeNode WasmTypeNode(WasmSignature signature)
+        {
+            return _wasmTypeNodes.GetOrAdd(signature.FuncType);
+        }
+
         // TODO-Wasm: Do not use WasmFuncType directly as the key for better
         // memory efficiency on lookup
         public WasmTypeNode WasmTypeNode(MethodDesc method)
         {
-            WasmFuncType funcType = WasmLowering.GetSignature(method);
+            WasmFuncType funcType = WasmLowering.GetSignature(method).FuncType;
             return _wasmTypeNodes.GetOrAdd(funcType);
         }
     }

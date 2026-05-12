@@ -27,6 +27,7 @@ internal readonly struct Thread_1 : IThread
         Unstarted = 0x400,
         Stopped = 0x10000,
         ThreadPoolWorker = 0x1000000,
+        WaitSleepJoin = 0x2000000,
         Detached = unchecked((int)0x80000000)
     }
 
@@ -74,6 +75,8 @@ internal readonly struct Thread_1 : IThread
             result |= Contracts.ThreadState.Unstarted;
         if (state.HasFlag(ThreadState_1.Stopped))
             result |= Contracts.ThreadState.Stopped;
+        if (state.HasFlag(ThreadState_1.WaitSleepJoin))
+            result |= Contracts.ThreadState.WaitSleepJoin;
         if (state.HasFlag(ThreadState_1.ThreadPoolWorker))
             result |= Contracts.ThreadState.ThreadPoolWorker;
         if (state.HasFlag(ThreadState_1.Detached))

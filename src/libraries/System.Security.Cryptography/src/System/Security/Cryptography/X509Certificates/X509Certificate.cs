@@ -460,7 +460,7 @@ namespace System.Security.Cryptography.X509Certificates
             return GetCertHashString(hashAlgorithm, PalRawDataMemory.Span);
         }
 
-        internal static string GetCertHashString(HashAlgorithmName hashAlgorithm, ReadOnlySpan<byte> rawData)
+        internal static unsafe string GetCertHashString(HashAlgorithmName hashAlgorithm, ReadOnlySpan<byte> rawData)
         {
             Span<byte> buffer = stackalloc byte[64]; // Largest supported hash size is 512 bits
 
