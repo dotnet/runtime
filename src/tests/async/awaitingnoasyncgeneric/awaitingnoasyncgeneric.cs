@@ -8,7 +8,6 @@ using Xunit;
 public class AwaitingNoAsyncGeneric
 {
     [Fact]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/127179", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNativeAot))]
     public static void TestEntryPoint()
     {
         Assert.Equal("hello", new Caller<string>().RunAsync("hello").GetAwaiter().GetResult());
@@ -28,7 +27,7 @@ public class Caller<T>
 public static class Helper
 {
     // No await so the compiler does not emit MethodImplAttributes.Async.
-    // This is the condition that triggers the scanner/JIT mismatch.
+    // This is the condition that can trigger a scanner/JIT mismatch.
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static ValueTask<T> GetValueAsync<T>(T value)
     {

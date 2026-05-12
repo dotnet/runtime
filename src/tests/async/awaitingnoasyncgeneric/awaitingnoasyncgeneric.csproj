@@ -1,9 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk.IL">
   <PropertyGroup>
-    <!-- The ILC scanner must run for this test to exercise the bug.
-         The scanner is only enabled with -O (optimization). -->
-    <Optimize>true</Optimize>
-    <RequiresProcessIsolation>True</RequiresProcessIsolation>
+      <!-- https://github.com/dotnet/runtime/issues/127179 -->
+      <NativeAotIncompatible>true</NativeAotIncompatible>
+      <!-- Needed due to NativeAotIncompatbile -->
+      <RequiresProcessIsolation>true</RequiresProcessIsolation>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(MSBuildProjectName).cs" />
