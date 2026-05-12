@@ -1932,18 +1932,18 @@ struct MSLAYOUT DebuggerIPCEvent
         struct MSLAYOUT
         {
             Portable<mdMethodDef> funcMetadataToken;
-            VMPTR_Module pModule;
+            Portable<VMPTR_Module> pModule;
         } DisableOptData;
 
         struct MSLAYOUT
         {
             Portable<bool> enableEvents;
-            VMPTR_Object vmObj;
+            Portable<VMPTR_Object> vmObj;
         } ForceCatchHandlerFoundData;
 
         struct MSLAYOUT
         {
-            VMPTR_Module vmModule;
+            Portable<VMPTR_Module> vmModule;
             Portable<mdTypeDef> classMetadataToken;
             Portable<bool> Enabled;
         } CustomNotificationData;
@@ -1962,7 +1962,7 @@ struct MSLAYOUT DebuggerIPCEvent
         struct MSLAYOUT
         {
             LSPTR_STEPPER stepperToken;
-            VMPTR_Thread vmThreadToken;
+            Portable<VMPTR_Thread> vmThreadToken;
             FramePointer frameToken;
             Portable<bool> stepIn;
             Portable<bool> rangeIL;
@@ -2002,7 +2002,7 @@ struct MSLAYOUT DebuggerIPCEvent
         // Apply an EnC edit
         struct MSLAYOUT
         {
-            VMPTR_Assembly vmAssembly;                    // Module to edit
+            Portable<VMPTR_Assembly> vmAssembly;          // Module to edit
             Portable<DWORD> cbDeltaMetadata;              // size of blob pointed to by pDeltaMetadata
             Portable<CORDB_ADDRESS> pDeltaMetadata;       // pointer to delta metadata in debuggee
                                                           // it's the RS's responsibility to allocate and free
