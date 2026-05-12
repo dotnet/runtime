@@ -4036,11 +4036,10 @@ CLR_BOOL SfiNextWorker(StackFrameIterator* pThis, uint* uExCollideClauseIdx, CLR
             }
 
             // Advance past the native marker frame to the explicit frame (e.g. FuncEvalFrame),
-            // but only when there is one. When pFrame is FRAME_TOP (e.g. foreign-thread reverse
-            // PInvoke with no further managed frames), there is no explicit frame to advance to.
-            if (pFrame != FRAME_TOP)
+            // but only when there is one. For example, with foreign-thread and reverse
+            // PInvoke with no further managed frames, there is no explicit frame to advance to.
+            if (pThis->GetFrameState() == StackFrameIterator::SFITER_NATIVE_MARKER_FRAME)
             {
-                _ASSERTE(pThis->GetFrameState() == StackFrameIterator::SFITER_NATIVE_MARKER_FRAME);
                 pThis->Next();
                 _ASSERTE(pThis->GetFrameState() == StackFrameIterator::SFITER_FRAME_FUNCTION);
             }
