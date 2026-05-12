@@ -1697,7 +1697,7 @@ namespace System.IO.Compression
             return zip64ExtraField != null;
         }
 
-        private void WriteLocalFileHeaderAndDataIfNeeded(bool forceWrite)
+        private unsafe void WriteLocalFileHeaderAndDataIfNeeded(bool forceWrite)
         {
             // Check if the entry's stored data was actually modified (StoredData flag is set).
             // If _storedUncompressedData is loaded but StoredData is not set, it means the entry

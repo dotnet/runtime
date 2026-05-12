@@ -818,7 +818,7 @@ namespace System.IO.Compression
             return true;
         }
 
-        public void WriteBlock(Stream stream)
+        public unsafe void WriteBlock(Stream stream)
         {
             Span<byte> buffer = stackalloc byte[TotalSize];
             WriteBlockCore(buffer);

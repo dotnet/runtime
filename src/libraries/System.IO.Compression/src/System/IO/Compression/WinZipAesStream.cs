@@ -169,7 +169,7 @@ namespace System.IO.Compression
             _aes.SetKey(keyMaterial.EncryptionKey);
         }
 
-        private void FinalizeAndCompareHMAC(byte[] storedAuth)
+        private unsafe void FinalizeAndCompareHMAC(byte[] storedAuth)
         {
 
             Debug.Assert(_hmac is not null, "HMAC should have been initialized");
@@ -320,8 +320,7 @@ namespace System.IO.Compression
                 return;
             }
 
-            // Finalize HMAC computation using stackalloc to avoid heap allocation
-            Span<byte> authCode = stackalloc byte[20]; // SHA1 hash size
+            byte[] authCode = new byte[20]; // SHA1 hash size
             if (!_hmac.TryGetHashAndReset(authCode, out int bytesWritten) || bytesWritten < 10)
             {
                 throw new CryptographicException();
@@ -331,12 +330,11 @@ namespace System.IO.Compression
             if (isAsync)
             {
                 // WriteAsync requires Memory<byte>, so we must copy to a heap buffer for the async path
-                byte[] authCodeArray = authCode.Slice(0, 10).ToArray();
-                await _baseStream.WriteAsync(authCodeArray.AsMemory(), cancellationToken).ConfigureAwait(false);
+                await _baseStream.WriteAsync(authCode.AsMemory(0, 10), cancellationToken).ConfigureAwait(false);
             }
             else
             {
-                _baseStream.Write(authCode.Slice(0, 10));
+                _baseStream.Write(authCode.AsSpan(0, 10));
             }
 
             _authCodeFinalized = true;

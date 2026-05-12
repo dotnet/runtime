@@ -70,7 +70,7 @@ namespace System.IO.Compression
         /// <summary>
         /// Derives key material from a password and optional salt using PBKDF2-SHA1.
         /// </summary>
-        internal static WinZipAesKeyMaterial Create(ReadOnlySpan<char> password, byte[]? salt, int keySizeBits)
+        internal static unsafe WinZipAesKeyMaterial Create(ReadOnlySpan<char> password, byte[]? salt, int keySizeBits)
         {
             int saltSize = GetSaltSize(keySizeBits);
             int keySizeBytes = keySizeBits / 8;
