@@ -1611,13 +1611,13 @@ INST1(autibz,      "autibz",       0,      IF_PC_0A,  0xD50323DF)
 INST1(autiaz,      "autiaz",       0,      IF_PC_0A,  0xD503239F)
                                    //  autiaz                       PC_0A  1101010100000011 0010001110011111   D503 239F
 
-INST1(pacia1716,   "pacia1716 ",   0,      IF_PC_0A,  0xD503211F)
+INST1(pacia1716,   "pacia1716",    0,      IF_PC_0A,  0xD503211F)
                                    //  pacia1716                    PC_0A  1101010100000011 0010000100011111   D503 211F
 
 INST1(paciasp,     "paciasp",      0,      IF_PC_0A,  0xD503233F)
                                    //  paciasp                      PC_0A  1101010100000011 0010001100111111   D503 233F
 
-INST1(pacib1716,   "pacib1716 ",   0,      IF_PC_0A,  0xD503215F)
+INST1(pacib1716,   "pacib1716",    0,      IF_PC_0A,  0xD503215F)
                                    //  pacib1716                    PC_0A  1101010100000011 0010000101011111   D503 215F
 
 INST1(pacibsp,     "pacibsp",      0,      IF_PC_0A,  0xD503237F)
