@@ -391,6 +391,17 @@ struct RangeOps
             return Limit(Limit::keUnknown);
         }
 
+        // Even when the unsigned overflow check above passes, the signed multiplications
+        // below can still overflow (which is undefined behavior on signed int). Re-check
+        // with signed semantics to keep the int min/max computation well-defined.
+        if (unsignedMul && (CheckedOps::MulOverflows(r1lo, r2lo, /* unsignedMul */ false) ||
+                            CheckedOps::MulOverflows(r1lo, r2hi, /* unsignedMul */ false) ||
+                            CheckedOps::MulOverflows(r1hi, r2lo, /* unsignedMul */ false) ||
+                            CheckedOps::MulOverflows(r1hi, r2hi, /* unsignedMul */ false)))
+        {
+            return Limit(Limit::keUnknown);
+        }
+
         int lo = min(min(r1lo * r2lo, r1lo * r2hi), min(r1hi * r2lo, r1hi * r2hi));
         int hi = max(max(r1lo * r2lo, r1lo * r2hi), max(r1hi * r2lo, r1hi * r2hi));
         assert(hi >= lo);
@@ -431,21 +442,67 @@ struct RangeOps
         return Multiply(r1, convertedOp2Range);
     }
 
+    // Compute a safe upper bound for the bitwise OR / XOR of two non-negative
+    // ranges with upper bounds 'b' and 'd': the smallest 2^k - 1 mask that is
+    // >= max(b, d). Bits in the result can be at most as high as the top bit
+    // of max(b, d).
+    //
+    // NOTE: max(b, d) must be non-negative (i.e., fit in a 31-bit signed int).
+    //
+    static int BitwiseUpperBoundForNonNegative(int b, int d)
+    {
+        unsigned m = static_cast<unsigned>(max(b, d));
+        m |= m >> 1;
+        m |= m >> 2;
+        m |= m >> 4;
+        m |= m >> 8;
+        m |= m >> 16;
+        // m is now of the form 2^k - 1 with m >= max(b, d). Since max(b, d) <= INT32_MAX,
+        // the result m <= INT32_MAX, so the cast back to signed is safe.
+        return static_cast<int>(m);
+    }
+
     static Range Or(const Range& r1, const Range& r2)
     {
-        // For OR we require both operands to be constant to produce a constant result.
-        // No useful information can be derived if only one operand is constant.
+        int  r1ConstVal;
+        int  r2ConstVal;
+        bool r1IsConstVal = r1.IsSingleValueConstant(&r1ConstVal);
+        bool r2IsConstVal = r2.IsSingleValueConstant(&r2ConstVal);
+
+        // Both single constants - compute the exact result.
+        if (r1IsConstVal && r2IsConstVal)
+        {
+            return Range(Limit(Limit::keConstant, r1ConstVal | r2ConstVal));
+        }
+
+        if (!r1.IsConstantRange() || !r2.IsConstantRange())
+        {
+            return Range(Limit(Limit::keUnknown));
+        }
+
+        int a = r1.LowerLimit().GetConstant();
+        int b = r1.UpperLimit().GetConstant();
+        int c = r2.LowerLimit().GetConstant();
+        int d = r2.UpperLimit().GetConstant();
+
+        // Signed cases get hairy.
+        if ((a < 0) || (c < 0))
+        {
+            return Range(Limit(Limit::keUnknown));
+        }
+
+        // For non-negative ranges:
+        //   Lower bound: x | y >= max(x, y), so result >= max(a, c).
+        //   Upper bound: x | y can have at most as many bits set as the highest bit of
+        //                max(b, d). Conservatively round up to the next "all ones" mask.
         //
-        // Example: [0..3] | [1..255] = [1..255]
-        //          [X..Y] | [1..255] = [unknown..unknown]
+        // NOTE: a naive `b | d` is unsound here. For example, [3..4] | [4..4] would
+        //       give upper = 4|4 = 4, but 3|4 = 7 is also reachable.
         //
-        return ApplyRangeOp(r1, r2, [](const Limit& a, const Limit& b) {
-            if (a.IsConstant() && b.IsConstant() && (a.GetConstant() >= 0) && (b.GetConstant() >= 0))
-            {
-                return Limit(Limit::keConstant, a.GetConstant() | b.GetConstant());
-            }
-            return Limit(Limit::keUnknown);
-        });
+        // Example: [3..5] | [4..7] = [max(3,4) .. mask(max(5,7))] = [4..7]
+        //
+        return Range(Limit(Limit::keConstant, max(a, c)),
+                     Limit(Limit::keConstant, BitwiseUpperBoundForNonNegative(b, d)));
     }
 
     static Range And(const Range& r1, const Range& r2)
@@ -623,10 +680,11 @@ struct RangeOps
             return Limit(Limit::keUnknown);
         }
 
-        // Keep it simple for now, check if 0 <= C < 31
+        // Allow shift counts in [1..30]. Shift count 31 would produce 1 << 31 == INT_MIN
+        // (or UB pre-C++20), which the subsequent Multiply cannot use safely.
         int r1loConstant = r1lo.GetConstant();
         int r1hiConstant = r1hi.GetConstant();
-        if (r1loConstant <= 0 || r1loConstant > 31 || r1hiConstant <= 0 || r1hiConstant > 31)
+        if ((r1loConstant <= 0) || (r1loConstant > 30) || (r1hiConstant <= 0) || (r1hiConstant > 30))
         {
             return Limit(Limit::keUnknown);
         }
