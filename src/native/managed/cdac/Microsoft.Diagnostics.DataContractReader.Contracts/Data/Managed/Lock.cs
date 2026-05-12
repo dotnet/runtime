@@ -20,11 +20,11 @@ internal sealed class Lock : IData<Lock>
         TargetPointer dataAddress = address + target.GetTypeInfo(DataType.Object).Size!.Value;
 
         State = target.ReadField<uint>(dataAddress, typeInfo, "_state");
-        OwningThreadId = target.ReadField<uint>(dataAddress, typeInfo, "_owningThreadId");
+        OwningThreadId = target.ReadField<int>(dataAddress, typeInfo, "_owningThreadId");
         RecursionCount = target.ReadField<uint>(dataAddress, typeInfo, "_recursionCount");
     }
 
     public uint State { get; init; }
-    public uint OwningThreadId { get; init; }
+    public int OwningThreadId { get; init; }
     public uint RecursionCount { get; init; }
 }

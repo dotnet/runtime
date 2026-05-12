@@ -51,7 +51,7 @@ internal readonly struct SyncBlock_1 : ISyncBlock
             bool monitorHeld = (lockData.State & 1) != 0;
             if (monitorHeld)
             {
-                owningThreadId = lockData.OwningThreadId;
+                owningThreadId = (uint)lockData.OwningThreadId;
                 recursion = lockData.RecursionCount;
             }
             return monitorHeld;
