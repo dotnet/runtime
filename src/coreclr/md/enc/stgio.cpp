@@ -220,8 +220,8 @@ HRESULT StgIO::Open(                    // Return code.
 #else // HOST_WINDOWS
         MAKE_UTF8PTR_FROMWIDE_NOTHROW(u8Name, szName);
         if ((m_fd = open(u8Name,
-            (fFlags & DBPROP_TMODEF_FAILIFTHERE) ? O_CREAT | O_EXCL : O_CREAT | O_TRUNC,
-            O_RDWR)) == -1)
+            O_RDWR | O_CREAT | ((fFlags & DBPROP_TMODEF_FAILIFTHERE) ? O_EXCL : O_TRUNC),
+            S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH)) == -1)
         {
             return HRESULTFromErr(errno);
         }
