@@ -43,7 +43,7 @@ steps:
         chmod +x "$sccacheDir/sccache"
         echo "##vso[task.prependpath]$sccacheDir"
         echo "##vso[task.setvariable variable=SCCACHE_DIR]$(Pipeline.Workspace)/.sccache"
-        echo "##vso[task.setvariable variable=SCCACHE_CACHE_SIZE]3584M"
+        echo "##vso[task.setvariable variable=SCCACHE_CACHE_SIZE]5120M"
         echo "##vso[task.setvariable variable=SCCACHE_IDLE_TIMEOUT]0"
         echo "##vso[task.setvariable variable=USE_SCCACHE]true"
       displayName: Download and configure sccache
