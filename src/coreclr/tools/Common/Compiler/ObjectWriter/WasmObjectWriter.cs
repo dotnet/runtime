@@ -128,7 +128,7 @@ namespace ILCompiler.ObjectWriter
         {
             SectionWriter writer = GetOrCreateSection(WasmObjectNodeSection.FunctionSection);
 
-            WasmFuncType signature = WasmLowering.GetSignature(managedSignature, flags);
+            WasmFuncType signature = WasmLowering.GetSignature(managedSignature, flags).FuncType;
             Utf8String key = signature.GetMangledName(_nodeFactory.NameMangler);
             if (!_uniqueSignatures.TryGetValue(key, out int signatureIndex))
             {
@@ -961,12 +961,14 @@ namespace ILCompiler.ObjectWriter
                         case RelocType.WASM_TABLE_INDEX_I32:
                         case RelocType.WASM_TABLE_INDEX_I64:
                         case RelocType.WASM_TABLE_INDEX_SLEB:
+                        case RelocType.WASM_TABLE_INDEX_REL_I32:
                         {
                             string symbolName = reloc.SymbolName.ToString();
                             int index = _uniqueSymbols[symbolName];
                             // Here, we are effectively writing a table offset relative to the table_base.
-                            // These will need to be fixed up by the runtime after load by adding __image_function_pointer_base
-                            // TODO-WASM: We need to emit these for fixup with an addend at runtime
+                            // These will need to be fixed up by the runtime after load by adding tableBase
+                            // except for WASM_TABLE_INDEX_REL_I32 and WASM_TABLE_INDEX_SLEB which are relative
+                            // to the start of the table.
                             Relocation.WriteValue(reloc.Type, pData, index);
                             break;
                         }

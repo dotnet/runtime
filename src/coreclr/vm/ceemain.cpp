@@ -175,6 +175,7 @@
 
 #include "stringarraylist.h"
 #include "stubhelpers.h"
+#include "pregeneratedstringthunks.h"
 #ifdef TARGET_WASM
 #include "wasm/helpers.hpp"
 #endif
@@ -679,6 +680,12 @@ void EEStartupHelper()
 
         OnStackReplacementManager::StaticInitialize();
         MethodTable::InitMethodDataCache();
+
+        InitializePregeneratedStringThunkHash();
+
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+        InitializePendingThunkResolutionLock();
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
 
 #ifdef TARGET_WASM
         InitializeWasmThunkCaches();

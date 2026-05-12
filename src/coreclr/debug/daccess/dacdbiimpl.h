@@ -110,7 +110,6 @@ public:
     HRESULT STDMETHODCALLTYPE IsThreadSuspendedOrHijacked(VMPTR_Thread vmThread, OUT BOOL * pResult);
 
 
-    HRESULT STDMETHODCALLTYPE AreGCStructuresValid(OUT BOOL * pResult);
     HRESULT STDMETHODCALLTYPE CreateHeapWalk(HeapWalkHandle *pHandle);
     HRESULT STDMETHODCALLTYPE DeleteHeapWalk(HeapWalkHandle handle);
 
@@ -846,9 +845,6 @@ protected:
 
     // Validate that the VMPTR_OBJECTHANDLE refers to a legitimate managed object
     HRESULT STDMETHODCALLTYPE IsVmObjectHandleValid(VMPTR_OBJECTHANDLE vmHandle, OUT BOOL * pResult);
-
-    // if the specified module is a WinRT module then isWinRT will equal TRUE
-    HRESULT STDMETHODCALLTYPE IsWinRTModule(VMPTR_Module vmModule, BOOL * pIsWinRT);
 
 private:
     // Check whether the specified thread is at a GC-safe place, i.e. in an interruptible region.

@@ -9782,7 +9782,7 @@ GenTreeCall* Compiler::gtNewCallNode(gtCallTypes           callType,
         node->gtFlags |= GTF_CALL_POP_ARGS;
 #endif // UNIX_X86_ABI
     node->gtCallType = callType;
-    INDEBUG(node->callSig = nullptr;)
+    INDEBUG_OR_WASM(node->callSig = nullptr;)
     node->tailCallInfo    = nullptr;
     node->gtRetClsHnd     = nullptr;
     node->gtCallMoreFlags = GTF_CALL_M_EMPTY;
@@ -11376,7 +11376,7 @@ GenTreeCall* Compiler::gtCloneExprCallHelper(GenTreeCall* tree)
     // we only really need one physical copy of it. Therefore a shallow pointer copy will suffice.
     // (Note that this still holds even if the tree we are cloning was created by an inlinee compiler,
     // because the inlinee still uses the inliner's memory allocator anyway.)
-    INDEBUG(copy->callSig = tree->callSig;)
+    INDEBUG_OR_WASM(copy->callSig = tree->callSig;)
 
     if (tree->IsUnmanaged())
     {

@@ -141,6 +141,8 @@ namespace ILCompiler.ObjectWriter.WasmInstructions
         RefNull = 0xD0,
         // Variable length instructions — not directly cast to a byte, instead the prefix byte is set in the upper 8 bits of the enum, and the lower 24 bits are the extended variable length opcode
         MemoryInit = unchecked((int)0xFC000008),
+        MemoryCopy = unchecked((int)0xFC00000A),
+        MemoryFill = unchecked((int)0xFC00000B),
         TableInit = unchecked((int)0xFC00000C),
         TableGrow = unchecked((int)0xFC00000F),
         V128Load = unchecked((int)0xFD00000A),
@@ -189,7 +191,7 @@ namespace ILCompiler.ObjectWriter.WasmInstructions
 
         public static bool IsMemoryExpr(this WasmExprKind kind)
         {
-            return kind == WasmExprKind.MemoryInit;
+            return kind == WasmExprKind.MemoryInit || kind == WasmExprKind.MemoryCopy || kind == WasmExprKind.MemoryFill;
         }
         public static bool IsVariableLengthInstruction(this WasmExprKind kind)
         {
@@ -575,8 +577,68 @@ namespace ILCompiler.ObjectWriter.WasmInstructions
         // base class defaults are sufficient as the base class encodes just the opcode
     }
 
+    // Represents a memory.copy expression.
+    // Binary encoding: 0xFC prefix + u32(10) sub-opcode + u32(dstMemoryIndex) + u32(srcMemoryIndex)
+    // Stack operands: (dst: i32, src: i32, len: i32) -> ()
+    class WasmMemoryCopyExpr : WasmExpr
+    {
+        public readonly int DstMemoryIndex;
+        public readonly int SrcMemoryIndex;
+
+        public WasmMemoryCopyExpr(int dstMemoryIndex = 0, int srcMemoryIndex = 0) : base(WasmExprKind.MemoryCopy)
+        {
+            Debug.Assert(dstMemoryIndex >= 0);
+            Debug.Assert(srcMemoryIndex >= 0);
+            DstMemoryIndex = dstMemoryIndex;
+            SrcMemoryIndex = srcMemoryIndex;
+        }
+
+        public override int Encode(Span<byte> buffer)
+        {
+            int pos = base.Encode(buffer);
+            pos += DwarfHelper.WriteULEB128(buffer.Slice(pos), (uint)DstMemoryIndex);
+            pos += DwarfHelper.WriteULEB128(buffer.Slice(pos), (uint)SrcMemoryIndex);
+
+            return pos;
+        }
+
+        public override int EncodeSize()
+        {
+            return base.EncodeSize()
+                + (int)DwarfHelper.SizeOfULEB128((uint)DstMemoryIndex)
+                + (int)DwarfHelper.SizeOfULEB128((uint)SrcMemoryIndex);
+        }
+    }
+
+    // Represents a memory.fill expression.
+    // Binary encoding: 0xFC prefix + u32(11) sub-opcode + u32(memoryIndex)
+    // Stack operands: (dst: i32, val: i32, len: i32) -> ()
+    class WasmMemoryFillExpr : WasmExpr
+    {
+        public readonly int MemoryIndex;
+
+        public WasmMemoryFillExpr(int memoryIndex = 0) : base(WasmExprKind.MemoryFill)
+        {
+            Debug.Assert(memoryIndex >= 0);
+            MemoryIndex = memoryIndex;
+        }
+
+        public override int Encode(Span<byte> buffer)
+        {
+            int pos = base.Encode(buffer);
+            pos += DwarfHelper.WriteULEB128(buffer.Slice(pos), (uint)MemoryIndex);
+
+            return pos;
+        }
+
+        public override int EncodeSize()
+        {
+            return base.EncodeSize()
+                + (int)DwarfHelper.SizeOfULEB128((uint)MemoryIndex);
+        }
+    }
+
     // Represents a memory.init expression.
-    // Binary encoding: 0xFC prefix + u32(8) sub-opcode + u32(dataSegmentIndex) + u32(memoryIndex)
     class WasmMemoryInitExpr : WasmExpr
     {
         public readonly int DataSegmentIndex;
@@ -766,6 +828,10 @@ namespace ILCompiler.ObjectWriter.WasmInstructions
 
     static class I64
     {
+        public static WasmExpr Const(long value)
+        {
+            return new WasmConstExpr(WasmExprKind.I64Const, value);
+        }
         public static WasmExpr Load(ulong offset) => new WasmMemoryArgInstruction<WasmEncodableULong>(WasmExprKind.I64Load, 8, new WasmEncodableULong(offset));
         public static WasmExpr Store(ulong offset) => new WasmMemoryArgInstruction<WasmEncodableULong>(WasmExprKind.I64Store, 8, new WasmEncodableULong(offset));
     }
@@ -790,6 +856,16 @@ namespace ILCompiler.ObjectWriter.WasmInstructions
 
     static class Memory
     {
+        public static WasmExpr Copy(int dstMemoryIndex = 0, int srcMemoryIndex = 0)
+        {
+            return new WasmMemoryCopyExpr(dstMemoryIndex, srcMemoryIndex);
+        }
+
+        public static WasmExpr Fill(int memoryIndex = 0)
+        {
+            return new WasmMemoryFillExpr(memoryIndex);
+        }
+
         public static WasmExpr Init(int dataSegmentIndex, int memoryIndex = 0)
         {
             return new WasmMemoryInitExpr(dataSegmentIndex, memoryIndex);

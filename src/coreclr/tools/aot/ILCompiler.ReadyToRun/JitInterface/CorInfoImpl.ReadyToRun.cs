@@ -29,6 +29,8 @@ using System.Text;
 using System.Runtime.CompilerServices;
 using ILCompiler.ReadyToRun.TypeSystem;
 
+using DependencyList = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.DependencyList;
+
 namespace Internal.JitInterface
 {
     class InfiniteCompileStress
@@ -491,6 +493,12 @@ namespace Internal.JitInterface
             _precodeFixups.Add(node);
         }
 
+        private void AddAdditionalDependency(ISymbolNode node, string reason)
+        {
+            _additionalDependencies ??= new DependencyList();
+            _additionalDependencies.Add(node, reason);
+        }
+
         private void AddResumptionStubFixup(MethodWithGCInfo compiledStubNode)
         {
             AddPrecodeFixup(_compilation.SymbolNodeFactory.ResumptionStubEntryPoint(compiledStubNode));
@@ -852,6 +860,17 @@ namespace Internal.JitInterface
                         }
                     }
                 }
+
+                // For managed methods on Wasm, add an interpreter-to-R2R thunk so the
+                // interpreter can call into this R2R-compiled function.
+                if (_compilation.NodeFactory.Target.IsWasm && !MethodBeingCompiled.IsUnmanagedCallersOnly)
+                {
+                    WasmSignature wasmSig = WasmLowering.GetSignature(MethodBeingCompiled);
+                    AddAdditionalDependency(
+                        _compilation.NodeFactory.WasmInterpreterToR2RThunk(wasmSig),
+                        "Interpreter-to-R2R thunk for compiled method");
+                }
+
                 var compilationResult = CompileMethodInternal(methodCodeNodeNeedingCode, methodIL);
                 codeGotPublished = true;
 
@@ -2006,19 +2025,31 @@ namespace Internal.JitInterface
                     originalMethod = methodOnUnderlyingType;
                 }
 
-                MethodDesc directMethod;
-                if (isStaticVirtual)
+                var dimResolution = DefaultInterfaceMethodResolution.None;
+                MethodDesc directMethod = constrainedType.TryResolveConstraintMethodApprox(exactType, originalMethod, out forceUseRuntimeLookup, ref dimResolution);
+                if (isStaticVirtual && directMethod != null)
                 {
-                    directMethod = constrainedType.ResolveVariantInterfaceMethodToStaticVirtualMethodOnType(originalMethod);
-                    if (directMethod != null && !_compilation.NodeFactory.CompilationModuleGroup.VersionsWithMethodBody(directMethod))
+                    if (!_compilation.NodeFactory.CompilationModuleGroup.VersionsWithMethodBody(directMethod))
                     {
                         directMethod = null;
                     }
+                    else if (dimResolution == DefaultInterfaceMethodResolution.DefaultImplementation)
+                    {
+                        // For static virtual calls resolved through a default interface method,
+                        // emit a Check_VirtualFunctionOverride fixup so that the R2R code is
+                        // rejected at runtime if the resolution changes (e.g. a DIM override
+                        // is added in an assembly outside the version bubble).
+                        MethodWithToken declMethodWithToken = new MethodWithToken(originalMethod, HandleToModuleToken(ref pResolvedToken), null, false, null);
+
+                        ModuleToken moduleToken = _compilation.NodeFactory.Resolver.GetModuleTokenForMethod(directMethod, false, false);
+                        Debug.Assert(!moduleToken.IsNull);
+                        MethodWithToken implMethodWithToken = new MethodWithToken(directMethod, moduleToken, null, false, null);
+
+                        AddPrecodeFixup(_compilation.SymbolNodeFactory.CheckVirtualFunctionOverride(
+                            declMethodWithToken, constrainedType, implMethodWithToken, true));
+                    }
                 }
-                else
-                {
-                    directMethod = constrainedType.TryResolveConstraintMethodApprox(exactType, originalMethod, out forceUseRuntimeLookup);
-                }
+
                 if (directMethod != null)
                 {
                     // Either
@@ -2035,11 +2066,14 @@ namespace Internal.JitInterface
                     useInstantiatingStub = directMethod.OwningType.IsValueType;
 
                     methodAfterConstraintResolution = directMethod;
-                    Debug.Assert(!methodAfterConstraintResolution.OwningType.IsInterface);
+                    // When resolved to a default interface method, the owning type is the interface
+                    Debug.Assert(!methodAfterConstraintResolution.OwningType.IsInterface || (isStaticVirtual && methodAfterConstraintResolution.Signature.IsStatic));
                     resolvedConstraint = true;
                     pResult->thisTransform = CORINFO_THIS_TRANSFORM.CORINFO_NO_THIS_TRANSFORM;
 
-                    exactType = constrainedType;
+                    exactType = (isStaticVirtual && dimResolution == DefaultInterfaceMethodResolution.DefaultImplementation)
+                        ? directMethod.OwningType
+                        : constrainedType;
                     if (isStaticVirtual)
                     {
                         pResolvedToken.tokenType = CorInfoTokenKind.CORINFO_TOKENKIND_ResolvedStaticVirtualMethod;
@@ -3515,5 +3549,69 @@ namespace Internal.JitInterface
             // Implemented for NativeAOT only for now.
         }
 #pragma warning restore CA1822 // Mark members as static
+
+#pragma warning disable CA1822 // Mark members as static
+        private void recordCallSite(uint instrOffset, CORINFO_SIG_INFO* callSig, CORINFO_METHOD_STRUCT_* methodHandle)
+#pragma warning restore CA1822 // Mark members as static
+        {
+            if ((callSig != null) && _compilation.NodeFactory.Target.IsWasm)
+            {
+                var sig = HandleToObject(callSig->methodSignature);
+
+                WasmLowering.LoweringFlags flags = 0;
+                if (callSig->hasTypeArg())
+                {
+                    flags |= WasmLowering.LoweringFlags.HasGenericContextArg;
+                }
+                if (callSig->isAsyncCall())
+                {
+                    flags |= WasmLowering.LoweringFlags.IsAsyncCall;
+                }
+                if (((int)callSig->getCallConv() & 0xF) != 0)
+                {
+                    flags |= WasmLowering.LoweringFlags.IsUnmanagedCallersOnly;
+                }
+
+                WasmSignature wasmSig = WasmLowering.GetSignature(sig, flags);
+
+                // Only create R2R-to-interpreter thunks for managed calls.
+                // Unmanaged calls don't go through the interpreter transition.
+                if (!flags.HasFlag(WasmLowering.LoweringFlags.IsUnmanagedCallersOnly))
+                {
+                    AddAdditionalDependency(_compilation.NodeFactory.WasmR2RToInterpreterThunk(wasmSig), "R2R-to-interpreter thunk for call site");
+                }
+            }
+        }
+
+        private void recordWasmManagedCallSig(CORINFO_SIG_INFO* callSig)
+        {
+            if ((callSig != null) && _compilation.NodeFactory.Target.IsWasm)
+            {
+                var sig = HandleToObject(callSig->methodSignature);
+
+                WasmLowering.LoweringFlags flags = 0;
+                if (callSig->hasTypeArg())
+                {
+                    flags |= WasmLowering.LoweringFlags.HasGenericContextArg;
+                }
+                if (callSig->isAsyncCall())
+                {
+                    flags |= WasmLowering.LoweringFlags.IsAsyncCall;
+                }
+                if (((int)callSig->getCallConv() & 0xF) != 0)
+                {
+                    flags |= WasmLowering.LoweringFlags.IsUnmanagedCallersOnly;
+                }
+
+                WasmSignature wasmSig = WasmLowering.GetSignature(sig, flags);
+
+                // Only create R2R-to-interpreter thunks for managed calls.
+                // Unmanaged calls don't go through the interpreter transition.
+                if (!flags.HasFlag(WasmLowering.LoweringFlags.IsUnmanagedCallersOnly))
+                {
+                    AddAdditionalDependency(_compilation.NodeFactory.WasmR2RToInterpreterThunk(wasmSig), "R2R-to-interpreter thunk for call site");
+                }
+            }
+        }
     }
 }
