@@ -683,7 +683,6 @@ HRESULT CordbStackWalk::GetFrameWorker(ICorDebugFrame ** ppFrame)
                                                               pJITFuncData->nativeOffset,
                                                               &(frameData.rd),
                                                               frameData.v.taAmbientESP,
-                                                              !!frameData.quicklyUnwound,
                                                               pCurrentAppDomain,
                                                               &miscFrame,
                                                               &(frameData.ctx));
