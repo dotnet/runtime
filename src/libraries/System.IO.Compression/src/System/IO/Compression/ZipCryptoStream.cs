@@ -118,7 +118,7 @@ namespace System.IO.Compression
 
         // Creates the persisted key material from a password.
         // Returns a struct of 3 integers to keep the key off the heap.
-        internal static ZipCryptoKeys CreateKey(ReadOnlySpan<char> password)
+        internal static unsafe ZipCryptoKeys CreateKey(ReadOnlySpan<char> password)
         {
             // Initialize keys with standard ZipCrypto initial values
             uint key0 = 305419896;
@@ -185,7 +185,7 @@ namespace System.IO.Compression
             }
         }
 
-        private void WriteHeader()
+        private unsafe void WriteHeader()
         {
             if (!_encrypting || _headerWritten)
                 return;
