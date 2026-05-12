@@ -176,6 +176,7 @@ public enum DataType
     InternalComInterfaceDispatch,
     AuxiliarySymbolInfo,
     VASigCookie,
+    CodeRangeMapRangeList,
 
     /* GC Data Types */
 

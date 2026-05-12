@@ -694,7 +694,22 @@ Range RangeCheck::GetRangeFromAssertionsWorker(
     }
 
     // Currently, we only handle int32 and smaller integer types.
-    assert(genTypeSize(comp->vnStore->TypeOfVN(num)) <= 4);
+    var_types vnType = comp->vnStore->TypeOfVN(num);
+
+    if (varTypeIsGC(vnType))
+    {
+        // On 32-bit targets TYP_BYREF/TYP_REF and TYP_INT are all 4 bytes, so the JIT can
+        // legally store a byref-valued expression (e.g. LCL_ADDR) into an int-typed local.
+        // The local itself is TYP_INT, but its VN is a TYP_BYREF function like PtrToLoc.
+        // The PhiDef visitor below recurses into reaching VNs, so a BYREF VN can show up
+        // here even though our public callers only pass us int-typed trees.
+        // We have no useful integer range to derive from a pointer, so just give up.
+        assert(TARGET_POINTER_SIZE == 4);
+        return result;
+    }
+
+    assert(genActualType(vnType) == TYP_INT);
+    result = GetRangeFromType(vnType);
 
     //
     // First, let's see if we can tighten the range based on VN information.
@@ -726,7 +741,7 @@ Range RangeCheck::GetRangeFromAssertionsWorker(
 
                     // Now see if we can do better by looking at the cast source.
                     // if its range is within the castTo range, we can use that (and the cast is basically a no-op).
-                    if (comp->vnStore->TypeOfVN(funcApp.m_args[0]) == TYP_INT)
+                    if (genActualType(comp->vnStore->TypeOfVN(funcApp.m_args[0])) == TYP_INT)
                     {
                         Range castOpRange =
                             GetRangeFromAssertionsWorker(comp, funcApp.m_args[0], assertions, --budget, visited);
@@ -1784,6 +1799,8 @@ Range RangeCheck::GetRangeFromType(var_types type)
             return Range(Limit(Limit::keConstant, 0), Limit(Limit::keConstant, UINT16_MAX));
         case TYP_SHORT:
             return Range(Limit(Limit::keConstant, INT16_MIN), Limit(Limit::keConstant, INT16_MAX));
+        case TYP_INT:
+            return Range(Limit(Limit::keConstant, INT32_MIN), Limit(Limit::keConstant, INT32_MAX));
         default:
             return Range(Limit(Limit::keUnknown));
     }

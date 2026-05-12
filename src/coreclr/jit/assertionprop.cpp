@@ -4800,9 +4800,41 @@ GenTree* Compiler::optAssertionProp_Cast(ASSERT_VALARG_TP assertions,
         }
     }
 
-    bool removeCast = false;
     if (!optLocalAssertionProp)
     {
+        // Decide whether removing this cast (vs only clearing GTF_OVERFLOW) is safe.
+        // The cast is a value-no-op when the operand is provably in the cast's input range,
+        // but we still need to be careful about:
+        //   1. Representation-changing casts (genActualType differs) - cannot drop.
+        //   2. NOL locals - the LCL_VAR holds a TYP_INT value with potentially undefined
+        //      upper bits (per the normalize-on-load contract). VN-based subrange proofs
+        //      do NOT imply that a JIT-controlled store normalized the register, so we
+        //      cannot safely drop the cast in this path. (Local-prop has stronger
+        //      semantics and handles NOL retyping below.)
+        //   3. Casts to small types wrapping arbitrary (non-LCL_VAR) expressions act as
+        //      codegen hints for narrow operations (e.g., byte OR vs 32-bit OR + movzx).
+        //      Dropping them is semantically correct but pessimizes codegen, so we avoid it.
+        bool canDropCast = (genActualType(cast) == genActualType(lcl));
+        if (canDropCast && lcl->OperIs(GT_LCL_VAR))
+        {
+            if (lvaGetDesc(lcl->AsLclVar())->lvNormalizeOnLoad())
+            {
+                canDropCast = false;
+            }
+        }
+        else if (canDropCast && varTypeIsSmall(cast->CastToType()))
+        {
+            // Preserve small-type casts wrapping non-LCL_VAR expressions; they help codegen
+            // pick narrow operations.
+            canDropCast = false;
+        }
+
+        if (!canDropCast && !cast->gtOverflow())
+        {
+            // Nothing we can do for this cast.
+            return nullptr;
+        }
+
         // Get the non-overflowing input range for a cast. ForCastInput takes care of special cases like
         // small types and IsUnsigned flag for checked casts.
         IntegralRange castRng = IntegralRange::ForCastInput(cast);
@@ -4822,33 +4854,26 @@ GenTree* Compiler::optAssertionProp_Cast(ASSERT_VALARG_TP assertions,
                 int castToLo   = castToTypeRange.LowerLimit().GetConstant();
                 int castToHi   = castToTypeRange.UpperLimit().GetConstant();
 
-                if (castOpRng.IsConstantRange() && (castFromLo >= castToLo) && (castFromHi <= castToHi))
+                if ((castFromLo >= castToLo) && (castFromHi <= castToHi))
                 {
-                    removeCast = true;
-                    if (!lcl->OperIs(GT_LCL_VAR))
+                    if (canDropCast)
                     {
-                        // We cannot remove the cast, but can we just remove the GTF_OVERFLOW flag?
-                        if (!cast->gtOverflow())
-                        {
-                            return nullptr;
-                        }
-
-                        // Just clear the overflow flag then.
-                        JITDUMP("Clearing overflow flag for cast %06u based on assertions.\n", dspTreeID(cast));
-                        cast->ClearOverflow();
-                        return optAssertionProp_Update(cast, cast, stmt);
+                        JITDUMP("Removing cast %06u as redundant based on VN assertions.\n", dspTreeID(cast));
+                        return optAssertionProp_Update(cast->CastOp(), cast, stmt);
                     }
+
+                    assert(cast->gtOverflow());
+                    JITDUMP("Clearing overflow flag for cast %06u based on VN assertions.\n", dspTreeID(cast));
+                    cast->ClearOverflow();
+                    return optAssertionProp_Update(cast, cast, stmt);
                 }
             }
         }
-    }
-    else
-    {
-        removeCast = lcl->OperIs(GT_LCL_VAR) &&
-                     optAssertionIsSubrange(lcl, IntegralRange::ForCastInput(cast), assertions) != NO_ASSERTION_INDEX;
+        return nullptr;
     }
 
-    if (removeCast)
+    if (lcl->OperIs(GT_LCL_VAR) &&
+        optAssertionIsSubrange(lcl, IntegralRange::ForCastInput(cast), assertions) != NO_ASSERTION_INDEX)
     {
         LclVarDsc* varDsc = lvaGetDesc(lcl->AsLclVarCommon());
 
