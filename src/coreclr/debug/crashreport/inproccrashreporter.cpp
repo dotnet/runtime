@@ -7,6 +7,7 @@
 
 #include "inproccrashreporter.h"
 #include "signalsafejsonwriter.h"
+#include "signalsafeformat.h"
 
 #include "pal.h"
 
@@ -526,7 +527,7 @@ CrashReportHelpers::ExpandDumpTemplate(
 
             case 'p':
             case 'd':
-                if (SignalSafeJsonWriter::FormatUnsignedDecimal(numberBuf, sizeof(numberBuf), pid) == 0)
+                if (SignalSafeFormat::FormatUnsignedDecimal(numberBuf, sizeof(numberBuf), pid) == 0)
                 {
                     return 0;
                 }
@@ -542,7 +543,7 @@ CrashReportHelpers::ExpandDumpTemplate(
                 break;
 
             case 't':
-                if (SignalSafeJsonWriter::FormatUnsignedDecimal(
+                if (SignalSafeFormat::FormatUnsignedDecimal(
                         numberBuf, sizeof(numberBuf), static_cast<uint64_t>(time(nullptr))) == 0)
                 {
                     return 0;
