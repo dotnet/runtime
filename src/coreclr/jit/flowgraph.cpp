@@ -2851,14 +2851,15 @@ bool Compiler::fgSimpleLowerCastOfSmpOp(LIR::Range& range, GenTreeCast* cast)
 }
 
 //------------------------------------------------------------------------
-// fgSimpleLowerSmpOpCasts: Optimization to reduce two CAST nodes to one for bitwise operations.
-// When range assertions remove an outer cast from CAST(OP(CAST(x), CAST(y))), we're left with
-// OP(CAST(x), CAST(y)) which has two casts. For bitwise ops (AND, OR, XOR), we can transform
-// this to CAST(OP(x, y)) since these operations are bit-independent: the lower bits of the result
-// depend only on the lower bits of the inputs, and sign/zero extension commutes with bitwise ops.
+// fgSimpleLowerSmpOpCasts: Optimization to reduce two CAST nodes to one for bitwise operations
+// on small integer types.
+//
+// For OP(CAST_SMALL(x), CAST_SMALL(y)) where OP is one of (AND, OR, XOR), we can transform
+// the operation to CAST_SMALL(OP(x, y)) since the lower bits of the result
+// depend only on the lower bits of the inputs, and sign/zero extension commutes with these bitwise ops.
 //
 // Example:
-//      AND(CAST(x), CAST(y)) transforms to CAST(AND(x, y))
+//      AND(CAST_SMALL(x), CAST_SMALL(y)) transforms to CAST_SMALL(AND(x, y))
 //
 // Arguments:
 //      range - The LIR range containing the node.

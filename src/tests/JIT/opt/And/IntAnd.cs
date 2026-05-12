@@ -55,9 +55,10 @@ namespace CodeGenTests
             // but will leave the inner casts. Thus, we expect to see movzx instructions for both casts, and a test instruction
             // operating on reg32s. 
 
-            // X64: movzx {{[a-z]+[x|i|p|d]}}, {{[a-z]+[l|b]}}
-            // X64: movzx {{[a-z]+[x|i|p|d]}}, {{[a-z]+[l|b]}}
-            // X64: test {{[a-z]+[x|i|p|d]}}, {{[a-z]+[x|i|p|d]}}
+            // X64-NOT: movzx
+
+            // We expect 'and reg8, reg8'.
+            // X64: and {{[a-z]+[l|b]}}, {{[a-z]+[l|b]}}
 
             if ((byte)((byte)x & (byte)y) == 0)
             {
