@@ -52,10 +52,7 @@ namespace System.Diagnostics.Metrics
         /// <summary>
         /// Observe() fetches the current measurements being tracked by this observable counter.
         /// </summary>
-        protected override IEnumerable<Measurement<T>> Observe()
-        {
-            Debug.Assert(_callback is Func<IEnumerable<Measurement<T>>>, "Single-value callbacks are dispatched in the base.");
-            return ((Func<IEnumerable<Measurement<T>>>)_callback)();
-        }
+        protected override IEnumerable<Measurement<T>> Observe() =>
+            ((Func<IEnumerable<Measurement<T>>>)_callback)();
     }
 }
