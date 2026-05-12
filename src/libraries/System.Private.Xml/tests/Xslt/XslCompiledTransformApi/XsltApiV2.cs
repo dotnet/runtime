@@ -33,11 +33,11 @@ namespace System.Xml.XslCompiledTransformApiTests
         XmlDocument, DataDocument, XPathDocument, Unknown
     }
 
-    // Tracking issue: https://github.com/dotnet/runtime/issues/124344.
     internal static class XsltApiTestRequirements
     {
         public static bool IsSupported =>
             PlatformDetection.IsReflectionEmitSupported &&
+            // [ActiveIssue("https://github.com/dotnet/runtime/issues/124344"]
             !(PlatformDetection.IsAppleMobile && PlatformDetection.IsCoreCLR);
     }
 
