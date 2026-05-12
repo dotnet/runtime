@@ -18,7 +18,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #include "codegen.h"
 
 #if defined(TARGET_WASM)
-class WasmInterval;
+#include "fgwasm.h"
 #endif
 
 //------------------------------------------------------------------------
@@ -2728,6 +2728,12 @@ void CodeGen::genEmitterUnitTests()
 
     // Jump over the generated tests as they are not intended to be run.
     BasicBlock* skipLabel = genCreateTempLabel();
+#ifdef TARGET_WASM
+    skipLabel->bbPreorderNum = m_compiler->compCurBB->bbPreorderNum + 1; 
+    genDefineTempLabel(skipLabel);
+    WasmInterval* skipInterval = WasmInterval::NewBlock(m_compiler, skipLabel, skipLabel);
+    this->wasmControlFlowStack->Push(skipInterval);
+#endif
     inst_JMP(EJ_jmp, skipLabel);
 
     // Add NOPs at the start and end for easier script parsing.
@@ -2778,7 +2784,9 @@ void CodeGen::genEmitterUnitTests()
     }
 #endif
 
+#ifndef TARGET_WASM
     genDefineTempLabel(skipLabel);
+#endif
     instGen(INS_nop);
     instGen(INS_nop);
     instGen(INS_nop);
