@@ -1009,7 +1009,7 @@ inline bool emitter::IsCFCMOV(instruction ins)
 }
 
 //------------------------------------------------------------------------
-// GetCCFromIns: Get a condition code from a conditional instruction
+// GetCCFromCCMPOrCTEST: Get a condition code from a conditional instruction
 //
 // Arguments:
 //    ins - The instruction to check.
@@ -1020,7 +1020,7 @@ inline bool emitter::IsCFCMOV(instruction ins)
 //    other x86 status bit instructions and instead have a CC coded into
 //    the EVEX prefix.
 //
-inline insCC emitter::GetCCFromIns(instruction ins)
+inline insCC emitter::GetCCFromCCMPOrCTEST(instruction ins)
 {
     assert(IsCTEST(ins) || IsCCMP(ins));
     switch (ins)
@@ -2248,13 +2248,18 @@ emitter::code_t emitter::AddEvexPrefix(const instrDesc* id, code_t code, emitAtt
         if (IsCCMP(ins) || IsCTEST(ins))
         {
             // CCMP and CTEST have 2 special fields in the EVEX prefix:
-            // 1. Source condition code (SCC): EVEX.[3:0] — the instruction executes only when this condition is
+            // 1. Source condition code (SCC): EVEX.P3[3:0] — the instruction executes only when this condition is
             // satisfied.
-            // 2. Default flags value (DFV): EVEX.[15:12] — the value written to EFLAGS when the SCC condition is not
+            // 2. Default flags value (DFV): EVEX.P2[6:3] — the value written to EFLAGS when the SCC condition is not
             // met.
+            //
+            // In the code_t packing (see DEFAULT_BYTE_EVEX_PREFIX), the EVEX prefix occupies bits [63:32],
+            // with P3 at bits [39:32] and P2 at bits [47:40]:
+            //   SCC (EVEX.P3[3:0]) -> code_t bits [35:32] -> shift left by 32
+            //   DFV (EVEX.P2[6:3]) -> code_t bits [46:43] -> shift left by 43
             code &= 0xFFFF87F0FFFFFFFF;
-            code |= ((size_t)GetCCFromIns(ins)) << 32;  // SCC goes to EVEX.[3:0]
-            code |= ((size_t)id->idGetEvexDFV()) << 43; // DFV goes to EVEX.[15:12]
+            code |= ((size_t)GetCCFromCCMPOrCTEST(ins)) << 32;  // SCC: EVEX.P3[3:0] = code_t[35:32]
+            code |= ((size_t)id->idGetEvexDFV()) << 43;         // DFV: EVEX.P2[6:3] = code_t[46:43]
         }
 #endif
 
@@ -9348,7 +9353,6 @@ void emitter::emitIns_I_AR(instruction ins, emitAttr attr, int val, regNumber re
     SetEvexDFVIfNeeded(id, instOptions);
 
     sz = emitInsSizeAM(id, insCodeMI(ins), val);
-
     id->idCodeSize(sz);
 
     dispIns(id);
