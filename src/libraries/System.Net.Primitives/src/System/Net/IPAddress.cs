@@ -457,7 +457,7 @@ namespace System.Net
         ///     or standard IPv6 representation.
         ///   </para>
         /// </devdoc>
-        public override string ToString()
+        public override unsafe string ToString()
         {
             string? toString = _toString;
             if (toString is null)
@@ -497,7 +497,7 @@ namespace System.Net
             // format and provider are explicitly ignored
             TryFormatCore(utf8Destination, out bytesWritten);
 
-        private bool TryFormatCore<TChar>(Span<TChar> destination, out int charsWritten) where TChar : unmanaged, IBinaryInteger<TChar>
+        private unsafe bool TryFormatCore<TChar>(Span<TChar> destination, out int charsWritten) where TChar : unmanaged, IBinaryInteger<TChar>
         {
             if (IsIPv4)
             {

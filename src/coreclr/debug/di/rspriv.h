@@ -2896,7 +2896,7 @@ public:
 #endif // OUT_OF_PROCESS_SETTHREADCONTEXT
 };
 
-class EMPTY_BASES_DECL CUnmanagedThreadSHashTraits : public DefaultSHashTraits<UnmanagedThreadTracker*>
+class EMPTY_BASES CUnmanagedThreadSHashTraits : public DefaultSHashTraits<UnmanagedThreadTracker*>
 {
     public:
         typedef DWORD key_t;
