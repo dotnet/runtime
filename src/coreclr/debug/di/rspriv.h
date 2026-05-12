@@ -4298,7 +4298,7 @@ private:
     BOOL IsFileMetaDataValid();
 
     // Helper to copy metadata buffer from the Target to the host.
-    void CopyRemoteMetaData(TargetBuffer buffer, CoTaskMemHolder<VOID> * pLocalBuffer);
+    void CopyRemoteMetaData(TargetBuffer buffer, VOID** pLocalBuffer);
 
 
     CordbAssembly * ResolveAssemblyInternal(mdToken tkAssemblyRef);
@@ -6752,11 +6752,11 @@ typedef std::function<HRESULT(DWORD index, ICorDebugValue** ppValue)> ValueGette
 class CordbValueEnum : public CordbBase, public ICorDebugValueEnum
 {
 public:
-    CordbValueEnum(CordbProcess* pProcess, 
-                   UINT maxCount, 
+    CordbValueEnum(CordbProcess* pProcess,
+                   UINT maxCount,
                    ValueGetter valueGetter,
                    NeuterList* pNeuterList);
-    
+
     virtual ~CordbValueEnum();
     virtual void Neuter();
 

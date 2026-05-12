@@ -883,24 +883,6 @@ template<typename _TYPE>
 using StubHolder = SpecializedWrapper<_TYPE, StubRelease<_TYPE>>;
 
 //-----------------------------------------------------------------------------
-// CoTaskMemHolder : CoTaskMemAlloc allocated memory holder
-//
-//  {
-//      CoTaskMemHolder<Foo> foo = (Foo*) CoTaskMemAlloc(sizeof(Foo));
-//  } // delete foo on out of scope
-//-----------------------------------------------------------------------------
-
-template <typename TYPE>
-FORCEINLINE void DeleteCoTaskMem(TYPE *value)
-{
-    if (value)
-        CoTaskMemFree(value);
-}
-
-template<typename _TYPE>
-using CoTaskMemHolder = SpecializedWrapper<_TYPE, DeleteCoTaskMem<_TYPE>>;
-
-//-----------------------------------------------------------------------------
 // NewHolder : New'ed memory holder
 //
 //  {
@@ -1168,6 +1150,29 @@ struct ResetPointerTraits final
 
 template<typename T>
 using ResetPointerHolder = LifetimeHolder<ResetPointerTraits<T>>;
+
+//-----------------------------------------------------------------------------
+// CoTaskMemHolder : holder for memory allocated by ::CoTaskMemAlloc.
+//
+//  {
+//      CoTaskMemHolder<Foo> foo{ (Foo*)::CoTaskMemAlloc(sizeof(Foo)) };
+//  } // ::CoTaskMemFree(foo) on out of scope
+//-----------------------------------------------------------------------------
+template<typename T>
+struct CoTaskMemTraits final
+{
+    using Type = T*;
+    static constexpr Type Default() { return NULL; }
+    static void Free(Type value)
+    {
+        STATIC_CONTRACT_WRAPPER;
+        if (value != NULL)
+            ::CoTaskMemFree(value);
+    }
+};
+
+template<typename T>
+using CoTaskMemHolder = LifetimeHolder<CoTaskMemTraits<T>>;
 
 //
 // We need the following methods to have volatile arguments, so that they can accept
