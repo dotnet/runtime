@@ -1077,10 +1077,12 @@ namespace System.Net.Http
 
             private void ReturnAllPooledBuffers()
             {
-                if (_pooledBuffers is byte[]?[] buffers)
+                // Use Interlocked exchanges so that concurrent Dispose() calls cannot
+                // double-return the same buffer to the pool. Stream.Dispose isn't required
+                // to be thread-safe, but a buffer returned twice corrupts the shared pool
+                // process-wide, so we make this method idempotent under racing callers.
+                if (Interlocked.Exchange(ref _pooledBuffers, null) is byte[]?[] buffers)
                 {
-                    _pooledBuffers = null;
-
                     foreach (byte[]? buffer in buffers)
                     {
                         if (buffer is null)
@@ -1092,15 +1094,15 @@ namespace System.Net.Http
                     }
                 }
 
-                Debug.Assert(_lastBuffer is not null);
+                // Capture the last buffer reference before claiming the pooled flag.
+                // Whichever caller wins the bool exchange owns the captured reference;
+                // losers skip the Return and just clear the field.
                 byte[] lastBuffer = _lastBuffer;
-                _lastBuffer = null!;
-
-                if (_lastBufferIsPooled)
+                if (Interlocked.Exchange(ref _lastBufferIsPooled, false))
                 {
-                    _lastBufferIsPooled = false;
                     ArrayPool<byte>.Shared.Return(lastBuffer);
                 }
+                _lastBuffer = null!;
             }
 
             public override void Write(byte[] buffer, int offset, int count)
