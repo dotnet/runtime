@@ -1004,7 +1004,7 @@ inline bool emitter::IsCFCMOV(instruction ins)
     {
         return false;
     }
-
+    // MOV, TEST, and CTEST do not have SByte encoding form.
     return ((signed char)targetVal == targetVal) && (ins != INS_mov) && (ins != INS_test) && !IsCTEST(ins);
 }
 
