@@ -754,7 +754,7 @@ class EEFileLoadException : public EEException
 #if defined(_DEBUG)
   // Redefine GET_EXCEPTION to validate CLRLastThrownObjectException as much as possible.
   #undef GET_EXCEPTION
-  #define GET_EXCEPTION() (__pException == NULL ? __defaultException.Validate() : __pException)
+  #define GET_EXCEPTION() (__pException == NULL ? __defaultException.Validate() : static_cast<Exception*>(__pException))
 #endif // _DEBUG
 
 LONG CLRNoCatchHandler(EXCEPTION_POINTERS* pExceptionInfo, PVOID pv);
