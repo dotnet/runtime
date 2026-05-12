@@ -2288,8 +2288,6 @@ private:
     UINT_PTR    m_CacheStackSufficientExecutionLimit;
     UINT_PTR    m_CacheStackStackAllocNonRiskyExecutionLimit;
 
-#define HARD_GUARD_REGION_SIZE GetOsPageSize()
-
 private:
     //
     static HRESULT CLRSetThreadStackGuarantee(SetThreadStackGuaranteeScope fScope = STSGuarantee_OnlyIfEnabled);
@@ -2302,8 +2300,8 @@ private:
 
     // Every stack has a single reserved page at its limit that we call the 'hard guard page'. This page is never
     // committed, and access to it after a stack overflow will terminate the thread.
-#define HARD_GUARD_REGION_SIZE GetOsPageSize()
-#define SIZEOF_DEFAULT_STACK_GUARANTEE 1 * GetOsPageSize()
+#define HARD_GUARD_REGION_SIZE (minipal_getpagesize())
+#define SIZEOF_DEFAULT_STACK_GUARANTEE (minipal_getpagesize())
 
 public:
     // This will return the last stack address that one could write to before a stack overflow.

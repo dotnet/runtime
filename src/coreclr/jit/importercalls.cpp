@@ -1102,10 +1102,14 @@ DEVIRT:
 
 DONE:
 
-#ifdef DEBUG
+#if defined(DEBUG) || defined(TARGET_WASM)
     // In debug we want to be able to register callsites with the EE.
     assert(call->AsCall()->callSig == nullptr);
-    call->AsCall()->callSig  = new (this, CMK_DebugOnly) CORINFO_SIG_INFO;
+#ifdef TARGET_WASM
+    call->AsCall()->callSig = new (this, CMK_ASTNode) CORINFO_SIG_INFO;
+#else
+    call->AsCall()->callSig = new (this, CMK_DebugOnly) CORINFO_SIG_INFO;
+#endif
     *call->AsCall()->callSig = *sig;
 #endif
 

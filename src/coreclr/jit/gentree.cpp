@@ -9825,7 +9825,7 @@ GenTreeCall* Compiler::gtNewCallNode(gtCallTypes           callType,
         node->gtFlags |= GTF_CALL_POP_ARGS;
 #endif // UNIX_X86_ABI
     node->gtCallType = callType;
-    INDEBUG(node->callSig = nullptr;)
+    INDEBUG_OR_WASM(node->callSig = nullptr;)
     node->tailCallInfo    = nullptr;
     node->gtRetClsHnd     = nullptr;
     node->gtCallMoreFlags = GTF_CALL_M_EMPTY;
@@ -11424,7 +11424,7 @@ GenTreeCall* Compiler::gtCloneExprCallHelper(GenTreeCall* tree)
     // we only really need one physical copy of it. Therefore a shallow pointer copy will suffice.
     // (Note that this still holds even if the tree we are cloning was created by an inlinee compiler,
     // because the inlinee still uses the inliner's memory allocator anyway.)
-    INDEBUG(copy->callSig = tree->callSig;)
+    INDEBUG_OR_WASM(copy->callSig = tree->callSig;)
 
     if (tree->IsUnmanaged())
     {
@@ -19660,6 +19660,15 @@ bool GenTreeIntConCommon::ImmedValCanBeFolded(Compiler* comp, genTreeOps op)
     // There are cases where we do want to allow folding of handle comparisons
     // (e.g., typeof(T) == typeof(int)).
     return !ImmedValNeedsReloc(comp) || (op == GT_EQ) || (op == GT_NE);
+}
+
+UINT64 GenTreeIntConCommon::UnsignedIntegralValue() const
+{
+    uint64_t mask = (UINT64_MAX >> (64 - (genTypeSize(this) * BITS_PER_BYTE)));
+
+    int64_t  signExtended = IntegralValue();
+    uint64_t zeroExtended = signExtended & mask;
+    return zeroExtended;
 }
 
 #if defined(TARGET_AMD64) || defined(TARGET_RISCV64)
