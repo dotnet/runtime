@@ -45,7 +45,6 @@ namespace System.Xml.XslCompiledTransformApiTests
     // Base class for test cases
     //
     ////////////////////////////////////////////////////////////////
-    [ConditionalClass(typeof(XsltApiTestRequirements), nameof(XsltApiTestRequirements.IsSupported))]
     public class XsltApiTestCaseBase2
     {
         // Generic data for all derived test cases
