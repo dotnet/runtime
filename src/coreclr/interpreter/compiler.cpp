@@ -6019,12 +6019,24 @@ void InterpCompiler::EmitSuspend(const CORINFO_CALL_INFO &callInfo, Continuation
 
         INTERP_DUMP("Allocate var %d at data offset %d (size %d) (offsetFromStartOfReturnValue = %d)\n", var, currentOffset, size, currentOffset - returnValueDataStartOffset);
 
-        if (var >= 0 && var < m_numILVars && var != returnValueVar)
+        if (var >= 0 && var != returnValueVar)
         {
-            ICorDebugInfo::AsyncContinuationVarInfo varInf;
-            varInf.VarNumber = (uint32_t)var;
-            varInf.Offset = (uint32_t)(currentOffset + OFFSETOF__CORINFO_Continuation__data);
-            m_asyncDebugContinuationVars.Add(varInf);
+            uint32_t debugVarNum = UINT32_MAX;
+            if (var < m_numILVars)
+            {
+                debugVarNum = (uint32_t)var;
+            }
+            else if (var == m_paramArgIndex && m_methodInfo->args.hasTypeArg())
+            {
+                debugVarNum = (uint32_t)ICorDebugInfo::TYPECTXT_ILNUM;
+            }
+            if (debugVarNum != UINT32_MAX)
+            {
+                ICorDebugInfo::AsyncContinuationVarInfo varInf;
+                varInf.VarNumber = debugVarNum;
+                varInf.Offset = (uint32_t)(currentOffset + OFFSETOF__CORINFO_Continuation__data);
+                m_asyncDebugContinuationVars.Add(varInf);
+            }
         }
 
         if (interpType == InterpTypeO)
