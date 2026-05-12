@@ -46,7 +46,7 @@ namespace BINDER_SPACE
 
         pFailureCacheEntry->GetAssemblyNameOrPath().Set(assemblyNameorPath);
         pFailureCacheEntry->SetBindingResult(hrBindingResult);
-        if (diagnosticInfo != nullptr && *diagnosticInfo != W('\0'))
+        if (diagnosticInfo != nullptr)
         {
             pFailureCacheEntry->SetDiagnosticInfo(diagnosticInfo);
         }
