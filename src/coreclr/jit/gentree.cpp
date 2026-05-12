@@ -10034,35 +10034,18 @@ void Compiler::gtInitializeStoreNode(GenTree* store, GenTree* value)
     assert(store->Data() == value);
 
 #if defined(FEATURE_SIMD)
-#ifndef TARGET_X86
-    if (varTypeIsSIMD(store))
+    if (varTypeIsSIMDOrMask(store))
     {
         // TODO-ASG: delete this zero-diff quirk.
         if (!value->IsCall() || !value->AsCall()->ShouldHaveRetBufArg())
         {
-            // We want to track SIMD stores as being intrinsics since they are
-            // functionally SIMD `mov` instructions and are more efficient when
+            // We want to track SIMD/Mask stores as being intrinsics since they
+            // are functionally `mov` instructions and are more efficient when
             // we don't promote, particularly when it occurs due to inlining.
             SetOpLclRelatedToSIMDIntrinsic(store);
             SetOpLclRelatedToSIMDIntrinsic(value);
         }
     }
-#else // TARGET_X86
-    // TODO-Cleanup: merge into the all-arch.
-    if (varTypeIsSIMD(value) || varTypeIsMask(value))
-    {
-        bool isRelatedToSimdIntrinsic = value->OperIs(GT_HWINTRINSIC, GT_CNS_VEC);
-
-#if defined(FEATURE_MASKED_HW_INTRINSICS)
-        isRelatedToSimdIntrinsic |= value->OperIs(GT_CNS_MSK);
-#endif // FEATURE_MASKED_HW_INTRINSICS
-
-        if (isRelatedToSimdIntrinsic)
-        {
-            SetOpLclRelatedToSIMDIntrinsic(store);
-        }
-    }
-#endif // TARGET_X86
 #endif // FEATURE_SIMD
 }
 

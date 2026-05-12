@@ -354,7 +354,6 @@ interface IDacDbiInterface : IUnknown
     // VM Object Handle
     HRESULT GetVmObjectHandle([in] CORDB_ADDRESS handleAddress, [out] VMPTR_OBJECTHANDLE * pRetVal);
     HRESULT IsVmObjectHandleValid([in] VMPTR_OBJECTHANDLE vmHandle, [out] BOOL * pResult);
-    HRESULT IsWinRTModule([in] VMPTR_Module vmModule, [out] BOOL * pIsWinRT);
     HRESULT GetHandleAddressFromVmHandle([in] VMPTR_OBJECTHANDLE vmHandle, [out] CORDB_ADDRESS * pRetVal);
 
     // Object Contents and Monitor
@@ -377,7 +376,6 @@ interface IDacDbiInterface : IUnknown
     HRESULT IsThreadSuspendedOrHijacked([in] VMPTR_Thread vmThread, [out] BOOL * pResult);
 
     // GC
-    HRESULT AreGCStructuresValid([out] BOOL * pResult);
     HRESULT CreateHeapWalk([out] HeapWalkHandle * pHandle);
     HRESULT DeleteHeapWalk([in] HeapWalkHandle handle);
     HRESULT WalkHeap([in] HeapWalkHandle handle, [in] ULONG count, [out] COR_HEAPOBJECT * objects, [out] ULONG * pFetched);

@@ -14507,24 +14507,36 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
             MethodDesc *pImplMethodRuntime;
             if (pDeclMethod->IsInterface())
             {
-                if (!thImpl.CanCastTo(pDeclMethod->GetMethodTable()))
+                if (pDeclMethod->IsStatic())
                 {
-                    MethodTable *pInterfaceTypeCanonical = pDeclMethod->GetMethodTable()->GetCanonicalMethodTable();
-
-                    // Its possible for the decl method to need to be found on the only canonically compatible interface on the owning type
-                    MethodTable::InterfaceMapIterator it = thImpl.GetMethodTable()->IterateInterfaceMap();
-                    while (it.Next())
+                    pImplMethodRuntime = thImpl.GetMethodTable()->ResolveVirtualStaticMethod(
+                        pDeclMethod->GetMethodTable(),
+                        pDeclMethod,
+                        ResolveVirtualStaticMethodFlags::AllowNullResult |
+                        ResolveVirtualStaticMethodFlags::AllowVariantMatches |
+                        ResolveVirtualStaticMethodFlags::InstantiateResultOverFinalMethodDesc);
+                }
+                else
+                {
+                    if (!thImpl.CanCastTo(pDeclMethod->GetMethodTable()))
                     {
-                        MethodTable *pItfInMap = it.GetInterface(thImpl.GetMethodTable());
-                        if (pInterfaceTypeCanonical == pItfInMap->GetCanonicalMethodTable())
+                        MethodTable *pInterfaceTypeCanonical = pDeclMethod->GetMethodTable()->GetCanonicalMethodTable();
+
+                        // Its possible for the decl method to need to be found on the only canonically compatible interface on the owning type
+                        MethodTable::InterfaceMapIterator it = thImpl.GetMethodTable()->IterateInterfaceMap();
+                        while (it.Next())
                         {
-                            pDeclMethod = MethodDesc::FindOrCreateAssociatedMethodDesc(pDeclMethod, pItfInMap, FALSE, pDeclMethod->GetMethodInstantiation(), FALSE, TRUE);
-                            break;
+                            MethodTable *pItfInMap = it.GetInterface(thImpl.GetMethodTable());
+                            if (pInterfaceTypeCanonical == pItfInMap->GetCanonicalMethodTable())
+                            {
+                                pDeclMethod = MethodDesc::FindOrCreateAssociatedMethodDesc(pDeclMethod, pItfInMap, FALSE, pDeclMethod->GetMethodInstantiation(), FALSE, TRUE);
+                                break;
+                            }
                         }
                     }
+                    DispatchSlot slot = thImpl.GetMethodTable()->FindDispatchSlotForInterfaceMD(pDeclMethod, /*throwOnConflict*/ FALSE);
+                    pImplMethodRuntime = slot.GetMethodDesc();
                 }
-                DispatchSlot slot = thImpl.GetMethodTable()->FindDispatchSlotForInterfaceMD(pDeclMethod, /*throwOnConflict*/ FALSE);
-                pImplMethodRuntime = slot.GetMethodDesc();
             }
             else
             {

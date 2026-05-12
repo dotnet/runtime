@@ -391,17 +391,8 @@ void Compiler::impAppendStmt(Statement* stmt, unsigned chkLevel, bool checkConsu
 
             if (call->TypeIs(TYP_VOID) && call->AsCall()->ShouldHaveRetBufArg())
             {
-                GenTree* retBuf;
-                if (call->AsCall()->ShouldHaveRetBufArg())
-                {
-                    assert(call->AsCall()->gtArgs.HasRetBuffer());
-                    retBuf = call->AsCall()->gtArgs.GetRetBufferArg()->GetNode();
-                }
-                else
-                {
-                    assert(!call->AsCall()->gtArgs.HasThisPointer());
-                    retBuf = call->AsCall()->gtArgs.GetArgByIndex(0)->GetNode();
-                }
+                assert(call->AsCall()->gtArgs.HasRetBuffer());
+                GenTree* retBuf = call->AsCall()->gtArgs.GetRetBufferArg()->GetNode();
 
                 assert(retBuf->TypeIs(TYP_I_IMPL, TYP_BYREF));
 
@@ -798,12 +789,6 @@ GenTree* Compiler::impStoreStruct(GenTree*         store,
         if (srcCall->ShouldHaveRetBufArg())
         {
             // Case of call returning a struct via hidden retbuf arg.
-            // Some calls have an "out buffer" that is not actually a ret buff
-            // in the ABI sense. We take the path here for those but it should
-            // not be marked as the ret buff arg since it always follow the
-            // normal ABI for parameters.
-            WellKnownArg wellKnownArgType =
-                srcCall->ShouldHaveRetBufArg() ? WellKnownArg::RetBuffer : WellKnownArg::None;
 
             GenTreeFlags indirFlags = GTF_EMPTY;
             GenTree*     destAddr   = impGetNodeAddr(store, CHECK_SPILL_ALL, GTF_IND_MUST_PRESERVE_FLAGS, &indirFlags);
@@ -823,7 +808,7 @@ GenTree* Compiler::impStoreStruct(GenTree*         store,
                 return impStoreStruct(store, curLevel, pAfterStmt, di, block);
             }
 
-            NewCallArg newArg = NewCallArg::Primitive(destAddr).WellKnown(wellKnownArgType);
+            NewCallArg newArg = NewCallArg::Primitive(destAddr).WellKnown(WellKnownArg::RetBuffer);
 
             if (destAddr->OperIs(GT_LCL_ADDR))
             {

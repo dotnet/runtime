@@ -1871,17 +1871,6 @@ public:
     //
     virtual HRESULT STDMETHODCALLTYPE IsVmObjectHandleValid(VMPTR_OBJECTHANDLE vmHandle, OUT BOOL * pResult) = 0;
 
-    // indicates if the specified module is a WinRT module
-    //
-    // Arguments:
-    //     vmModule: the module to check
-    //     pIsWinRT: [out] indicating state of module
-    //
-    // Return value:
-    //    S_OK on success; otherwise, an appropriate failure HRESULT.
-    //
-    virtual HRESULT STDMETHODCALLTYPE IsWinRTModule(VMPTR_Module vmModule, BOOL * pIsWinRT) = 0;
-
     // Determines the app domain id for the object referred to by a given VMPTR_OBJECTHANDLE
     //
     // Get the target address from a VMPTR_OBJECTHANDLE, i.e., the handle address
@@ -1954,11 +1943,6 @@ public:
 
     typedef void* * HeapWalkHandle;
 
-    // Returns true if it is safe to walk the heap.  If this function returns false,
-    // you could still create a heap walk and attempt to walk it, but there's no
-    // telling how much of the heap will be available.
-    virtual HRESULT STDMETHODCALLTYPE AreGCStructuresValid(OUT BOOL * pResult) = 0;
-
     // Creates a HeapWalkHandle which can be used to walk the managed heap with the
     // WalkHeap function.  Note if this function completes successfully you will need
     // to delete the handle by passing it into DeleteHeapWalk.
@@ -1976,9 +1960,7 @@ public:
     virtual HRESULT STDMETHODCALLTYPE DeleteHeapWalk(HeapWalkHandle handle) = 0;
 
     // Walks the heap using the given heap walk handle, enumerating objects
-    // on the managed heap.  Note that walking the heap requires that the GC
-    // data structures be in a valid state, which you can find by calling
-    // AreGCStructuresValid.
+    // on the managed heap.
     //
     // Arguments:
     //   handle   - a HeapWalkHandle obtained from CreateHeapWalk
