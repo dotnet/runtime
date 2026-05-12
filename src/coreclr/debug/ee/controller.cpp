@@ -5547,6 +5547,36 @@ bool DebuggerStepper::ShouldContinueStep( ControllerStackInfo *info,
                                           SIZE_T nativeOffset)
 {
     LOG((LF_CORDB,LL_INFO10000, "DeSt::ShContSt: nativeOffset:0x%p \n", nativeOffset));
+
+#ifdef FEATURE_INTERPRETER
+    // INTOP_CALL_FINALLY and INTOP_LEAVE_CATCH are interpreter EH dispatch opcodes with no source line.
+    // The stepper's instruction walker can land on them while walking control flow; tell the stepper
+    // to keep walking past instead of stopping there.
+    PCODE currentPC = GetControlPC(&(info->m_activeFrame.registers));
+    EECodeInfo codeInfo(currentPC);
+    if (codeInfo.IsInterpretedCode())
+    {
+        InterpreterWalker walker;
+        walker.Init((const int32_t*)currentPC, NULL);
+        int32_t op = walker.GetOpcode();
+        bool isInterpEH = (op == INTOP_CALL_FINALLY) || (op == INTOP_LEAVE_CATCH);
+        if (!isInterpEH && op == INTOP_DEBUG_SEQ_POINT && walker.GetSkipIP() != NULL)
+        {
+            // The user IL leave instruction lowers to a sequence point followed by the EH dispatch.
+            // Look one opcode ahead so we skip the leave's seq-point too.
+            InterpreterWalker nextWalker;
+            nextWalker.Init(walker.GetSkipIP(), NULL);
+            int32_t nextOp = nextWalker.GetOpcode();
+            isInterpEH = (nextOp == INTOP_CALL_FINALLY) || (nextOp == INTOP_LEAVE_CATCH);
+        }
+        if (isInterpEH)
+        {
+            LOG((LF_CORDB, LL_INFO10000, "DeSt::ShContSt: at interpreter EH opcode at %p, continuing step\n", currentPC));
+            return true;
+        }
+    }
+#endif // FEATURE_INTERPRETER
+
     if (m_rgfMappingStop != STOP_ALL && (m_reason != STEP_EXIT) )
     {
 
