@@ -439,6 +439,8 @@ namespace System.Runtime.CompilerServices
 
             public static bool CaptureRuntimeAsyncCallstack(byte[] buffer, ref int index, ref CaptureRuntimeAsyncCallstackState state)
             {
+                SkipToContinuationWithDiagnostics(ref state);
+
                 if (index > buffer.Length || state.Continuation == null)
                 {
                     return false;
@@ -450,6 +452,8 @@ namespace System.Runtime.CompilerServices
                     return false;
                 }
 
+                Span<byte> callstackSpan = buffer.AsSpan(index);
+
                 ulong currentNativeIP = 0;
                 ulong previousNativeIP = state.LastNativeIP;
 
@@ -458,7 +462,6 @@ namespace System.Runtime.CompilerServices
                     currentNativeIP = (ulong)state.Continuation.ResumeInfo->DiagnosticIP;
                 }
 
-                Span<byte> callstackSpan = buffer.AsSpan(index);
                 int callstackSpanIndex = 0;
 
                 // First frame (Count == 0) is written as absolute; subsequent frames
@@ -491,12 +494,21 @@ namespace System.Runtime.CompilerServices
 
                     state.Count++;
                     state.Continuation = state.Continuation.Next;
+                    SkipToContinuationWithDiagnostics(ref state);
                 }
 
                 state.LastNativeIP = currentNativeIP;
                 index += callstackSpanIndex;
 
                 return state.Continuation == null || state.Count == byte.MaxValue;
+            }
+
+            private static unsafe void SkipToContinuationWithDiagnostics(ref CaptureRuntimeAsyncCallstackState state)
+            {
+                while (state.Continuation != null && state.Continuation.ResumeInfo->DiagnosticIP == null)
+                {
+                    state.Continuation = state.Continuation.Next;
+                }
             }
 
             public static void EmitEvent(AsyncThreadContext context, long currentTimestamp, ulong id, Continuation? asyncCallstack)
