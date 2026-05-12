@@ -49,12 +49,6 @@ namespace CodeGenTests
         [MethodImpl(MethodImplOptions.NoInlining)]
         static bool Test_UInt32_UInt32_CastByte_CastByte_And(uint x, uint y)
         {
-            // We expect 'test reg32, reg32' here. Previously, we expected
-            // 'and reg8, reg8' due to the outer (byte) cast optimizing the inner casts away.
-            // Recent changes to codegen allow removing the outer (byte) cast here,
-            // but will leave the inner casts. Thus, we expect to see movzx instructions for both casts, and a test instruction
-            // operating on reg32s. 
-
             // X64-NOT: movzx
 
             // We expect 'and reg8, reg8'.
