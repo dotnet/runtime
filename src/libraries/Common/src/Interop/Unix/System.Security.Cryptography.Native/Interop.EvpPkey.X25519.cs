@@ -147,7 +147,7 @@ internal static partial class Interop
 
             int written = CryptoNative_X25519DeriveSecretAgreementWithPublicKey(
                 key,
-                key.ExtraHandle,
+                GetExtraHandle(key),
                 peerKey,
                 peerKey.Length,
                 destination,
