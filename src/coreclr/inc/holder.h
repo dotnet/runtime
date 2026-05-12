@@ -1000,46 +1000,6 @@ protected:
 
 
 //-----------------------------------------------------------------------------
-// ResetPointerHolder : pointer which needs to be set to NULL
-//  {
-//      ResetPointerHolder<Foo> holder = &pFoo;
-//  } // "*pFoo=NULL" on out of scope
-//-----------------------------------------------------------------------------
-#ifdef __GNUC__
-// With -fvisibility-inlines-hidden, the Invoke methods below
-// get hidden, which causes warnings when visible classes expose them.
-#define VISIBLE __attribute__ ((visibility("default")))
-#else
-#define VISIBLE
-#endif // __GNUC__
-
-namespace detail
-{
-    template <typename T>
-    struct ZeroMem
-    {
-        static VISIBLE void Invoke(T * pVal)
-        {
-            ZeroMemory(pVal, sizeof(T));
-        }
-    };
-
-    template <typename T>
-    struct ZeroMem<T*>
-    {
-        static VISIBLE void Invoke(T ** pVal)
-        {
-            *pVal = NULL;
-        }
-    };
-
-}
-#undef VISIBLE
-
-template<typename _TYPE>
-using ResetPointerHolder = SpecializedWrapper<_TYPE, detail::ZeroMem<_TYPE>::Invoke>;
-
-//-----------------------------------------------------------------------------
 // Wrap win32 functions using HANDLE
 //-----------------------------------------------------------------------------
 
@@ -1177,6 +1137,37 @@ struct HModuleTraits final
 };
 
 using HModuleHolder = LifetimeHolder<HModuleTraits>;
+
+//-----------------------------------------------------------------------------
+// ResetPointerHolder : pointer which needs to be set to NULL (or zeroed) on
+// scope exit. The holder stores the address of the slot to clear; on Free it
+// nulls the pointer (for pointer T) or zeroes the storage (for non-pointer T).
+//
+//  {
+//      ResetPointerHolder<Foo*> holder{ &pFoo };
+//  } // "pFoo = NULL" on out of scope
+//-----------------------------------------------------------------------------
+template<typename T>
+struct ResetPointerTraits final
+{
+    using Type = T*;
+    static constexpr Type Default() { return NULL; }
+    static void Free(Type p)
+    {
+        STATIC_CONTRACT_WRAPPER;
+        if (p == NULL)
+            return;
+
+        // If T is a pointer type, we set the pointer to NULL. If T is a non-pointer type, we zero the memory.
+        if constexpr (std::is_pointer<T>::value)
+            *p = NULL;
+        else
+            ZeroMemory(p, sizeof(T));
+    }
+};
+
+template<typename T>
+using ResetPointerHolder = LifetimeHolder<ResetPointerTraits<T>>;
 
 //
 // We need the following methods to have volatile arguments, so that they can accept
