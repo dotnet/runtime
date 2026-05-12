@@ -173,7 +173,7 @@ public:
 
         LIMITED_METHOD_CONTRACT;
         entry e(index);
-        int32_t maxIndex = VolatileLoad(&m_maxIndex); // This is the VolatileLoad that pairs with 
+        int32_t maxIndex = VolatileLoad(&m_maxIndex); // This VolatileLoad pairs with a VolatileStore in TLSIndexToMethodTableMap::Set to ensure that if we read a maxIndex that is large enough to contain our index
         if (index.GetIndexOffset() < maxIndex)
         {
             TADDR rawValue = VolatileLoadWithoutBarrier(&VolatileLoad(&pMap)[index.GetIndexOffset()]);
