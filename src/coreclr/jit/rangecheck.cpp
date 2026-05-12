@@ -929,8 +929,7 @@ Range RangeCheck::GetRangeFromAssertionsWorker(
                         unsigned        assertionBit = 0;
                         while (iter.NextElem(&assertionBit))
                         {
-                            const Compiler::AssertionDsc& a =
-                                comp->optGetAssertion(GetAssertionIndex(assertionBit));
+                            const Compiler::AssertionDsc& a = comp->optGetAssertion(GetAssertionIndex(assertionBit));
 
                             // We only consume O2K_VN-style relop assertions; checked-bound assertions
                             // already have dedicated handling elsewhere.
