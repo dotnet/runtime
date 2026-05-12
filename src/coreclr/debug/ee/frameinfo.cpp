@@ -92,6 +92,7 @@ struct DebuggerFrameData
         // In everett, we disable SIS (For backwards compat).
         this->fProvideInternalFrames = (fIgnoreNonmethodFrames != 0);
 
+        this->fNeedToSendEnterManagedChain = false;
         this->fTrackingUMChain = false;
         this->fHitExitFrame = false;
 
@@ -134,6 +135,9 @@ struct DebuggerFrameData
     bool                    fHitExitFrame;
 
 private:
+    // The scope of this field is each section of managed method frames on the stack.
+    bool                    fNeedToSendEnterManagedChain;
+
     // Flag set when we first stack-walk to decide if we want to ignore certain frames.
     // Stepping doesn't ignore these frames; end user stacktraces do.
     BOOL                    ignoreNonmethodFrames;
@@ -211,8 +215,49 @@ public:
     // Invoke a callback. This may do extra logic to preserve the interface between
     // the LS stackwalker and the LS:
     // - don't invoke if we're not at the target yet
+    // - send EnterManagedChains if we need it.
     StackWalkAction InvokeCallback(FrameInfo * pInfo)
     {
+        // Track if we've sent any managed code yet.
+        // If we haven't, then don't send the enter-managed chain. This catches cases
+        // when we have leaf-most unmanaged chain.
+        if ((pInfo->frame == NULL) && (pInfo->md != NULL))
+        {
+            this->fNeedToSendEnterManagedChain = true;
+        }
+
+
+        // Do tracking to decide if we need to send a Enter-Managed chain.
+        if (pInfo->HasChainMarker())
+        {
+            if (pInfo->managed)
+            {
+                // If we're dispatching a managed-chain, then we don't need to send another one.
+                fNeedToSendEnterManagedChain = false;
+            }
+            else
+            {
+                // If we're dispatching an UM chain, then send the Managed one.
+                // Note that the only unmanaged chains are ThreadStart chains and UM chains.
+                if (fNeedToSendEnterManagedChain)
+                {
+                    fNeedToSendEnterManagedChain = false;
+
+                    FrameInfo f;
+
+                    // Assume entry chain's FP is one pointer-width after the upcoming UM chain.
+                    FramePointer fpRoot = FramePointer::MakeFramePointer(
+                        (BYTE*) GetRegdisplaySP(&pInfo->registers) - sizeof(DWORD*));
+
+                    f.InitForEnterManagedChain(fpRoot);
+                    if (RawInvokeCallback(&f) == SWA_ABORT)
+                    {
+                        return SWA_ABORT;
+                    }
+                }
+            }
+        }
+
         return RawInvokeCallback(pInfo);
     }
 
@@ -230,6 +275,9 @@ public:
         this->fHitExitFrame = false;
 
         LOG((LF_CORDB, LL_EVERYTHING, "UM Chain starting at Frame=0x%p\n", this->fpUMChainEnd.GetSPValue()));
+
+        // This UM chain may get cancelled later, so don't even worry about toggling the fNeedToSendEnterManagedChain bit here.
+        // Invoke() will track whether to send an Enter-Managed chain or not.
     }
 
     // For various heuristics, we may not want to send an UM chain.
@@ -815,6 +863,42 @@ void FrameInfo::InitForThreadStart(Thread * pThread, REGDISPLAY * pRDSrc)
 #endif
 }
 
+
+//---------------------------------------------------------------------------------------
+//
+// Initialize a FrameInfo for sending a CHAIN_ENTER_MANAGED.
+// A Enter-Managed chain is always sent immediately before an UM chain, meaning that the Enter-Managed chain
+// is closer to the leaf than the UM chain.
+//
+// Arguments:
+//    fpRoot    - This is the frame pointer for the Enter-Managed chain.  It is currently arbitrarily set
+//                to be one stack slot higher (closer to the leaf) than the frame pointer of the beginning
+//                of the upcoming UM chain.
+//
+
+void FrameInfo::InitForEnterManagedChain(FramePointer fpRoot)
+{
+    // Nobody should use a EnterManagedChain's Frame*, but there's no
+    // good value to enforce that.
+    this->frame = (Frame *) FRAME_TOP;
+    this->md    = NULL;
+    memset((void *)&this->registers, 0, sizeof(this->registers));
+    this->fp = fpRoot;
+
+    this->internal    = false;
+    this->managed     = true;
+    this->relOffset   = 0;
+    this->pIJM        = NULL;
+    this->MethodToken = METHODTOKEN(NULL, 0);
+
+    this->currentAppDomain = NULL;
+    this->exactGenericArgsToken = NULL;
+
+    InitForScratchFrameInfo();
+
+    this->chainReason    = CHAIN_ENTER_MANAGED;
+    this->eStubFrameType = STUBFRAME_NONE;
+}
 
 //-----------------------------------------------------------------------------
 // Do tracking for UM chains.
@@ -1472,7 +1556,7 @@ StackWalkAction DebuggerWalkStackProc(CrawlFrame *pCF, void *data)
         // CHAIN_INTERCEPTION      - not used
         // CHAIN_PROCESS_START     - not used
         // CHAIN_THREAD_START      - thread start
-        // CHAIN_ENTER_MANAGED     - not used
+        // CHAIN_ENTER_MANAGED     - managed chain
         // CHAIN_ENTER_UNMANAGED   - unmanaged chain
         // CHAIN_DEBUGGER_EVAL     - not used
         // CHAIN_CONTEXT_SWITCH    - not used
@@ -1865,7 +1949,8 @@ bool PrepareLeafUMChain(DebuggerFrameData * pData, CONTEXT * pCtxTemp)
 
 
     // Start tracking an UM chain. We won't actually send the UM chain until
-    // we hit managed code.
+    // we hit managed code. Since this is the leaf, we don't need to send an
+    // Enter-Managed chain either.
     pData->BeginTrackingUMChain(fpRoot, pRDSrc);
 
     return true;
@@ -1987,6 +2072,7 @@ StackWalkAction DebuggerWalkStack(Thread *thread,
 
         // All Thread starts in unmanaged code (at something like kernel32!BaseThreadStart),
         // so all ThreadStart chains must be unmanaged.
+        // InvokeCallback will fabricate the EnterManaged chain if we haven't already sent one.
         data.info.InitForThreadStart(thread, pRegDisplay);
         result = data.InvokeCallback(&data.info);
 

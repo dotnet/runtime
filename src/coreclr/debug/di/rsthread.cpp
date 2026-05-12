@@ -304,11 +304,18 @@ BOOL CordbThread::IsThreadExceptionManaged()
 // Arguments:
 //    * pContext - the CONTEXT to be converted; this must be the leaf CONTEXT of a chain
 //    * fLeaf    - whether the chain is the leaf chain or not
+//    * reason   - the chain reason; this is needed for legacy reasons (see below)
 //    * ppRegSet - out parameter; return the newly created ICDRegisterSet
+//
+// Notes:
+//    * Note that the fQuickUnwind argument of the ctor of CordbRegisterSet is only true
+//        for an enter-managed chain.  We need to keep the same behaviour here.  That's why we need the
+//        chain reason.
 //
 
 void CordbThread::CreateCordbRegisterSet(DT_CONTEXT *            pContext,
                                          BOOL                    fLeaf,
+                                         CorDebugChainReason     reason,
                                          ICorDebugRegisterSet ** ppRegSet)
 {
     CONTRACTL
@@ -332,6 +339,7 @@ void CordbThread::CreateCordbRegisterSet(DT_CONTEXT *            pContext,
     RSInitHolder<CordbRegisterSet> pRS(new CordbRegisterSet(pDRD,
                                                             this,
                                                             (fLeaf == TRUE),
+                                                            (reason == CHAIN_ENTER_MANAGED),
                                                             true));
     pDRD.SuppressRelease();
 
@@ -1163,6 +1171,7 @@ HRESULT CordbThread::GetRegisterSet(ICorDebugRegisterSet ** ppRegisters)
                 RSInitHolder<CordbRegisterSet> pRS(new CordbRegisterSet(pDRD,
                                                                         this,
                                                                         true,   // active
+                                                                        false,  // !fQuickUnwind
                                                                         true)); // own DRD memory
                 pDRD.SuppressRelease();
 
@@ -5842,7 +5851,8 @@ HRESULT CordbNativeFrame::GetRegisterSet(ICorDebugRegisterSet **ppRegisters)
         // allocate a new CordbRegisterSet object
         RSInitHolder<CordbRegisterSet> pRegisterSet(new CordbRegisterSet(&m_rd,
                                                                          m_pThread,
-                                                                         IsLeafFrame()));
+                                                                         IsLeafFrame(),
+                                                                         false));
 
         pRegisterSet.TransferOwnershipExternal(ppRegisters);
     }

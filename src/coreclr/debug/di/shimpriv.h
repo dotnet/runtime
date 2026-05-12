@@ -677,14 +677,14 @@ private:
     // by the CONTEXT on the leaf boundary and a FramePointer on the root boundary.  Also, notice that we
     // are keeping two CONTEXTs.  This is because some chain types may cancel a previous unmanaged chain.
     // For example, a CHAIN_FUNC_EVAL chain cancels any CHAIN_ENTER_UNMANAGED chain immediately preceding
-    // it.  In this case, the leaf boundary of the CHAIN_FUNC_EVAL chain is marked by the CONTEXT saved
-    // when the first managed frame was encountered.
+    // it.  In this case, the leaf boundary of the CHAIN_FUNC_EVAL chain is marked by the CONTEXT of the
+    // previous CHAIN_ENTER_MANAGED, not the previous CHAIN_ENTER_UNMANAGED.
     //
 
     struct ChainInfo
     {
     public:
-        ChainInfo() : m_rootFP(LEAF_MOST_FRAME), m_reason(CHAIN_NONE), m_fLeafManagedContextIsValid(FALSE), m_fLeafNativeContextIsValid(FALSE) {}
+        ChainInfo() : m_rootFP(LEAF_MOST_FRAME), m_reason(CHAIN_NONE), m_fNeedEnterManagedChain(FALSE), m_fLeafNativeContextIsValid(FALSE) {}
 
         void CancelUMChain() { m_reason = CHAIN_NONE; }
         BOOL IsTrackingUMChain() { return (m_reason == CHAIN_ENTER_UNMANAGED); }
@@ -693,7 +693,7 @@ private:
         DT_CONTEXT          m_leafManagedContext;
         FramePointer        m_rootFP;
         CorDebugChainReason m_reason;
-        bool                m_fLeafManagedContextIsValid;
+        bool                m_fNeedEnterManagedChain;
         bool                m_fLeafNativeContextIsValid;
     };
 

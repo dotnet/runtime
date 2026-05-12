@@ -569,6 +569,12 @@ StackWalkAction ControllerStackInfo::WalkStack(FrameInfo *pInfo, void *data)
 
     if (i->m_targetFrameFound )
     {
+        // Ignore Enter-managed chains.
+        if (pInfo->chainReason == CHAIN_ENTER_MANAGED)
+        {
+            return SWA_CONTINUE;
+        }
+
         if (i->m_activeFound )
         {
             if (pInfo->chainReason == CHAIN_CLASS_INIT)

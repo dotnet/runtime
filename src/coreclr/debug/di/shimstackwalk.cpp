@@ -219,7 +219,7 @@ void ShimStackWalk::Populate()
     //     1)  Determine whether we should process the next internal frame or the next stack frame.
     //     2)  If we are skipping frames, the only thing we need to do is to check whether we have reached
     //         the parent frame.
-    //     3)  Process CHAIN_ENTER_UNMANAGED chains
+    //     3)  Process CHAIN_ENTER_MANAGED/CHAIN_ENTER_UNMANAGED chains
     //     4)  Append the frame to the cache.
     //     5)  Handle other types of chains.
     //     6)  Advance to the next frame.
@@ -304,7 +304,7 @@ void ShimStackWalk::Populate()
                 // Don't add any frame just yet.  We need to deal with any unmanaged chain
                 // we are tracking first.
 
-                // track the current enter-unmanaged chain
+                // track the current enter-unmanaged chain and/or enter-managed chain
                 TrackUMChain(&chainInfo, &swInfo);
 
                 if (swInfo.m_fProcessingInternalFrame)
@@ -352,12 +352,12 @@ void ShimStackWalk::Populate()
                 }
                 else
                 {
-                    if (!chainInfo.m_fLeafManagedContextIsValid)
+                    if (!chainInfo.m_fNeedEnterManagedChain)
                     {
-                        // Save the CONTEXT of the leaf-most managed frame for use when
-                        // appending managed chains later.
+                        // If we have hit any managed stack frame, then we may need to send
+                        // an enter-managed chain later.  Save the CONTEXT now.
                         SaveChainContext(pSW, &chainInfo, &(chainInfo.m_leafManagedContext));
-                        chainInfo.m_fLeafManagedContextIsValid = true;
+                        chainInfo.m_fNeedEnterManagedChain = true;
                     }
 
                     // We are processing a stack frame.
@@ -1084,7 +1084,8 @@ void ShimStackWalk::AppendChainWorker(StackWalkInfo *     pStackWalkInfo,
 // ShimStackWalk::AppendChain
 //
 // Description:
-//    Append the chain to the array.
+//    Append the chain to the array.  This function is also smart enough to send an enter-managed chain
+//    if necessary.  In other words, this function may append two chains at the same time.
 //
 // Arguments:
 //    * pChainInfo     - information on the chain to be added
@@ -1095,7 +1096,8 @@ void ShimStackWalk::AppendChain(ChainInfo * pChainInfo, StackWalkInfo * pStackWa
 {
     // Check if the chain to be added is managed or not.
     BOOL fManagedChain = FALSE;
-    if ((pChainInfo->m_reason == CHAIN_CLASS_INIT) ||
+    if ((pChainInfo->m_reason == CHAIN_ENTER_MANAGED) ||
+        (pChainInfo->m_reason == CHAIN_CLASS_INIT) ||
         (pChainInfo->m_reason == CHAIN_SECURITY) ||
         (pChainInfo->m_reason == CHAIN_FUNC_EVAL))
     {
@@ -1103,13 +1105,36 @@ void ShimStackWalk::AppendChain(ChainInfo * pChainInfo, StackWalkInfo * pStackWa
     }
 
     DT_CONTEXT * pChainContext = NULL;
-    pChainInfo->m_fLeafManagedContextIsValid = false;
     if (fManagedChain)
     {
+        // The chain to be added is managed itself.  So we don't need to send an enter-managed chain.
+        pChainInfo->m_fNeedEnterManagedChain = false;
         pChainContext = &(pChainInfo->m_leafManagedContext);
     }
     else
     {
+        // The chain to be added is unmanaged.  Check if we need to send an enter-managed chain.
+        if (pChainInfo->m_fNeedEnterManagedChain)
+        {
+            // We need to send an extra enter-managed chain.
+            _ASSERTE(pChainInfo->m_fLeafNativeContextIsValid);
+            BYTE * sp = reinterpret_cast<BYTE *>(CORDbgGetSP(&(pChainInfo->m_leafNativeContext)));
+#if !defined(TARGET_ARM) &&  !defined(TARGET_ARM64)
+            // Dev11 324806: on ARM we use the caller's SP for a frame's ending delimiter so we cannot
+            // subtract 4 bytes from the chain's ending delimiter else the frame might never be in range.
+            // TODO: revisit overlapping ranges on ARM, it would be nice to make it consistent with the other architectures.
+            sp -= sizeof(LPVOID);
+#endif
+            FramePointer fp = FramePointer::MakeFramePointer(sp);
+
+            AppendChainWorker(pStackWalkInfo,
+                              &(pChainInfo->m_leafManagedContext),
+                              fp,
+                              CHAIN_ENTER_MANAGED,
+                              TRUE);
+
+            pChainInfo->m_fNeedEnterManagedChain = false;
+        }
         _ASSERTE(pChainInfo->m_fLeafNativeContextIsValid);
         pChainContext = &(pChainInfo->m_leafNativeContext);
     }
@@ -1807,6 +1832,7 @@ HRESULT ShimChain::GetRegisterSet(ICorDebugRegisterSet ** ppRegisters)
         // ShimRegisterSet, but that's too much work for now.
         pThread->CreateCordbRegisterSet(&m_context,
                                         (m_chainIndex == 0),
+                                        m_chainReason,
                                         ppRegisters);
     }
     EX_CATCH_HRESULT(hr);

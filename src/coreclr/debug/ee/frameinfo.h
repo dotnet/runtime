@@ -106,6 +106,7 @@ public:
     void InitForFuncEval(CrawlFrame * pCF);
     void InitForThreadStart(Thread *thread, REGDISPLAY * pRDSrc);
     void InitForUMChain(FramePointer fpRoot, REGDISPLAY * pRDSrc);
+    void InitForEnterManagedChain(FramePointer fpRoot);
 
     // Does this FrameInfo represent a method frame? (aka a frameless frame)
     // This may be combined w/ both StubFrames and ChainMarkers.

@@ -21,6 +21,7 @@ CordbRegisterSet::CordbRegisterSet(
     DebuggerREGDISPLAY * pRegDisplay,
     CordbThread *        pThread,
     bool fActive,
+    bool fQuickUnwind,
     bool fTakeOwnershipOfDRD /*= false*/)
   : CordbBase(pThread->GetProcess(), 0, enumCordbRegisterSet)
 {
@@ -29,6 +30,7 @@ CordbRegisterSet::CordbRegisterSet(
     m_rd          = pRegDisplay;
     m_thread      = pThread;
     m_active      = fActive;
+    m_quickUnwind = fQuickUnwind;
 
     m_fTakeOwnershipOfDRD = fTakeOwnershipOfDRD;
 

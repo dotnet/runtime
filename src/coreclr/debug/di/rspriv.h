@@ -6160,6 +6160,7 @@ public:
     // This is a private hook for the shim to create a CordbRegisterSet for a ShimChain.
    void CreateCordbRegisterSet(DT_CONTEXT *            pContext,
                                BOOL                    fActive,
+                               CorDebugChainReason     reason,
                                ICorDebugRegisterSet ** ppRegSet);
 
     // This is a private hook for the shim to convert an ICDFrame into an ICDInternalFrame for a dynamic
@@ -7046,6 +7047,7 @@ public:
     CordbRegisterSet(DebuggerREGDISPLAY * pRegDisplay,
                      CordbThread *        pThread,
                      bool fActive,
+                     bool fQuickUnwind,
                      bool fTakeOwnershipOfDRD = false);
 
 
@@ -7155,6 +7157,7 @@ protected:
     DebuggerREGDISPLAY  *m_rd;
     CordbThread         *m_thread;
     bool                m_active; // true if we're the leafmost register set.
+    bool                m_quickUnwind;
 
     // true if the CordbRegisterSet owns the DebuggerREGDISPLAY pointer and needs to free the memory
     bool                m_fTakeOwnershipOfDRD;
