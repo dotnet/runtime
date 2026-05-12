@@ -20,7 +20,7 @@
 // If you update this, ensure you run `git grep MINIMUM_READYTORUN_MAJOR_VERSION`
 // and handle pending work.
 #define READYTORUN_MAJOR_VERSION 18
-#define READYTORUN_MINOR_VERSION 0x0005
+#define READYTORUN_MINOR_VERSION 0x0007
 
 #define MINIMUM_READYTORUN_MAJOR_VERSION 18
 
@@ -56,6 +56,8 @@
 // R2R Version 18.3 adds the ExternalTypeMaps, ProxyTypeMaps, TypeMapAssemblyTargets sections
 // R2R Version 18.4 adds ThrowArgument, ThrowArgumentOutOfRange, ThrowPlatformNotSupported, and ThrowNotImplemented helpers
 // R2R Version 18.5 adds READYTORUN_FLAG_STRIPPED_IL_BODIES, READYTORUN_FLAG_STRIPPED_INLINING_INFO, and READYTORUN_FLAG_STRIPPED_DEBUG_INFO flags
+// R2R Version 18.6 adds READYTORUN_FIXUP_InjectStringThunks for mapping strings to pregenerated code thunks
+// R2R Version 18.7 adds READYTORUN_HELPER_R2RToInterpreter
 
 struct READYTORUN_CORE_HEADER
 {
@@ -310,6 +312,8 @@ enum ReadyToRunFixupKind
     READYTORUN_FIXUP_Continuation_Layout        = 0x37, /* Layout of an async method continuation type */
     READYTORUN_FIXUP_ResumptionStubEntryPoint   = 0x38, /* Entry point of an async method resumption stub */
 
+    READYTORUN_FIXUP_InjectStringThunks         = 0x39, /* Inject pregenerated string-to-code thunk mappings into the global lookup table */
+
     READYTORUN_FIXUP_ModuleOverride             = 0x80, /* followed by sig-encoded UInt with assemblyref index into either the assemblyref table of the MSIL metadata of the master context module for the signature or */
                                                         /* into the extra assemblyref table in the manifest metadata R2R header table (used in cases inlining brings in references to assemblies not seen in the MSIL). */
 };
@@ -490,6 +494,7 @@ enum ReadyToRunHelper
 
     READYTORUN_HELPER_InitClass                 = 0x116,
     READYTORUN_HELPER_InitInstClass             = 0x117,
+    READYTORUN_HELPER_R2RToInterpreter          = 0x118,
 };
 
 #include "readytoruninstructionset.h"

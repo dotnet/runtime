@@ -99,7 +99,7 @@ HRESULT ClrDataAccess::EnumMemCollectImages()
                     ulSize = assembly->GetLoadedLayout()->GetSize();
                 }
 
-                // memory are mapped in GetOsPageSize() size.
+                // memory are mapped in minipal_getpagesize() size.
                 // Some memory are mapped in but some are not. You cannot
                 // write all in one block. So iterating through page size
                 //
@@ -112,7 +112,7 @@ HRESULT ClrDataAccess::EnumMemCollectImages()
                     // MethodHeader MethodDesc::GetILHeader. Without this RVA,
                     // all locals are broken. In case, you are asked about this question again.
                     //
-                    ulSizeBlock = ulSize > GetOsPageSize() ? GetOsPageSize() : ulSize;
+                    ulSizeBlock = ulSize > minipal_getpagesize() ? minipal_getpagesize() : ulSize;
                     ReportMem(pStartAddr, ulSizeBlock, false);
                     pStartAddr += ulSizeBlock;
                     ulSize -= ulSizeBlock;

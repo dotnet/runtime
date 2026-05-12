@@ -308,6 +308,7 @@ namespace System.Net.NameResolution.Tests
         }
 
         // RFC 6761: Localhost subdomains with trailing dot should work (e.g., "foo.localhost.")
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/127965", TestPlatforms.Android)]
         [Theory]
         [InlineData("foo.localhost.")]
         [InlineData("bar.test.localhost.")]
