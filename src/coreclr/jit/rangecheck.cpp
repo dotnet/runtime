@@ -938,7 +938,12 @@ Range RangeCheck::GetRangeFromAssertionsWorker(
         result = phiRange;
     }
 
-    MergeEdgeAssertions(comp, num, ValueNumStore::NoVN, assertions, &result, false);
+    // MergeEdgeAssertionsWorker may recursively call back to GetRangeFromAssertionsWorker for other VN-to-VN assertion
+    // lookups.
+    int edgeAssertionsBudget = min(3, budget);
+    MergeEdgeAssertionsWorker(comp, num, ValueNumStore::NoVN, assertions, &result, /* canUseCheckedBounds */ false,
+                              edgeAssertionsBudget, visited);
+
     assert(result.IsConstantRange());
     return result;
 }
@@ -1044,6 +1049,37 @@ void RangeCheck::MergeEdgeAssertions(Compiler*        comp,
                                      ASSERT_VALARG_TP assertions,
                                      Range*           pRange,
                                      bool             canUseCheckedBounds)
+{
+    // Public entry point: no shared visited set; create a fresh one and use a small recursion
+    // budget for VN-to-VN assertion lookups.
+    ValueNumStore::SmallValueNumSet visited;
+    MergeEdgeAssertionsWorker(comp, normalLclVN, preferredBoundVN, assertions, pRange, canUseCheckedBounds,
+                              /* budget */ 3, &visited);
+}
+
+//------------------------------------------------------------------------
+// MergeEdgeAssertionsWorker: Worker for MergeEdgeAssertions that takes a visited set and recursion
+//    budget for VN-to-VN assertion lookups.
+//
+// Arguments:
+//    comp                - the compiler instance
+//    normalLclVN         - the value number to look for assertions for
+//    preferredBoundVN    - when this VN is set, it will be given preference over constant limits
+//    assertions          - the assertions to use
+//    pRange              - the range to tighten with assertions
+//    canUseCheckedBounds - true if we can use checked bounds assertions (cache)
+//    budget               - the remaining budget for recursive VN-to-VN assertion lookups
+//    visited              - the set of value numbers already visited in the current search path to prevent infinite
+//    recursion
+//
+void RangeCheck::MergeEdgeAssertionsWorker(Compiler*                        comp,
+                                           ValueNum                         normalLclVN,
+                                           ValueNum                         preferredBoundVN,
+                                           ASSERT_VALARG_TP                 assertions,
+                                           Range*                           pRange,
+                                           bool                             canUseCheckedBounds,
+                                           int                              budget,
+                                           ValueNumStore::SmallValueNumSet* visited)
 {
     Range assertedRange = Range(Limit(Limit::keUnknown));
     if (BitVecOps::IsEmpty(comp->apTraits, assertions))
@@ -1342,6 +1378,76 @@ void RangeCheck::MergeEdgeAssertions(Compiler*        comp,
             {
                 continue;
             }
+        }
+        // Current assertion is of the form "X <relop> Y" where both X and Y are arbitrary VNs
+        // We try to derive a bound on normalLclVN by recursively computing the range of the other operand.
+        //
+        // Example:
+        //
+        // if (a > 10 && a < 100)
+        // {
+        //    if (normalLclVN > a) // a is an unknown VN with [11..99] range derived from assertions.
+        //    {
+        //
+        else if (curAssertion.IsRelop() && curAssertion.GetOp2().KindIs(Compiler::O2K_VN) &&
+                 (curAssertion.GetOp1().GetVN() == normalLclVN || curAssertion.GetOp2().GetVN() == normalLclVN))
+        {
+            ValueNum op1VN = curAssertion.GetOp1().GetVN();
+            ValueNum op2VN = curAssertion.GetOp2().GetVN();
+
+            cmpOper = Compiler::AssertionDsc::ToCompareOper(curAssertion.GetKind(), &isUnsigned);
+            if (isUnsigned)
+            {
+                continue;
+            }
+
+            ValueNum otherVN;
+            if (op1VN == normalLclVN)
+            {
+                // Assertion is "normalLclVN <cmpOper> otherVN" - keep cmpOper as-is.
+                otherVN = op2VN;
+            }
+            else
+            {
+                // Assertion is "otherVN <cmpOper> normalLclVN" - swap to get
+                // "normalLclVN <swappedCmpOper> otherVN".
+                assert(op2VN == normalLclVN);
+                otherVN = op1VN;
+                cmpOper = GenTree::SwapRelop(cmpOper);
+            }
+
+            if (budget <= 0)
+            {
+                continue;
+            }
+
+            budget--;
+            Range otherRange = GetRangeFromAssertionsWorker(comp, otherVN, assertions, budget, visited);
+            if (!otherRange.IsConstantRange())
+            {
+                continue;
+            }
+
+            // Derive a constant limit for normalLclVN from the constant range of otherVN.
+            // We use the most useful bound for each direction of the comparison.
+            int derivedLimit;
+            switch (cmpOper)
+            {
+                case GT_LT:
+                case GT_LE:
+                    // normalLclVN < otherVN (or <=)  =>  normalLclVN <(=) otherVN.UpperLimit
+                    derivedLimit = otherRange.UpperLimit().GetConstant();
+                    break;
+                case GT_GT:
+                case GT_GE:
+                    // normalLclVN > otherVN (or >=)  =>  normalLclVN >(=) otherVN.LowerLimit
+                    derivedLimit = otherRange.LowerLimit().GetConstant();
+                    break;
+
+                default:
+                    continue;
+            }
+            limit = Limit(Limit::keConstant, derivedLimit);
         }
         // Current assertion is not supported, ignore it
         else

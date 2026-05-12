@@ -408,7 +408,7 @@ namespace System
                 }
 
                 // We only have 1-byte so read it directly
-                result = (sbyte)MemoryMarshal.GetReference(source);
+                result = (sbyte)source[0];
             }
 
             value = result;

@@ -2504,5 +2504,17 @@ namespace Internal.JitInterface
         {
             return true;
         }
+
+#pragma warning disable CA1822 // Mark members as static
+        private void recordCallSite(uint instrOffset, CORINFO_SIG_INFO* callSig, CORINFO_METHOD_STRUCT_* methodHandle)
+#pragma warning restore CA1822 // Mark members as static
+        {
+        }
+
+#pragma warning disable CA1822 // Mark members as static
+        private void recordWasmManagedCallSig(CORINFO_SIG_INFO* callSig)
+#pragma warning restore CA1822 // Mark members as static
+        {
+        }
     }
 }
