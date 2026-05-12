@@ -55,6 +55,7 @@ record struct ThreadData (
 ```
 
 ``` csharp
+[Flags]
 enum DebuggerControlledThreadState
 {
     None                        = 0x00000000, // Threads are initialized this way

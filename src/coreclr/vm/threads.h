@@ -689,19 +689,19 @@ public:
     void SetDebuggerControlledThreadState(DebuggerControlledThreadState dcts)
     {
         LIMITED_METHOD_CONTRACT;
-        m_DebuggerControlledThreadState = (DebuggerControlledThreadState)((DWORD)m_DebuggerControlledThreadState | dcts);
+        m_DebuggerControlledThreadState = (DebuggerControlledThreadState)((DWORD)m_DebuggerControlledThreadState.Load() | dcts);
     }
 
     void ResetDebuggerControlledThreadState(DebuggerControlledThreadState dcts)
     {
         LIMITED_METHOD_CONTRACT;
-        m_DebuggerControlledThreadState = (DebuggerControlledThreadState)((DWORD)m_DebuggerControlledThreadState & ~dcts);
+        m_DebuggerControlledThreadState = (DebuggerControlledThreadState)((DWORD)m_DebuggerControlledThreadState.Load() & ~dcts);
     }
 
     BOOL HasDebuggerControlledThreadState(DebuggerControlledThreadState dcts)
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return ((DWORD)m_DebuggerControlledThreadState & dcts);
+        return ((DWORD)m_DebuggerControlledThreadState.Load() & dcts);
     }
 
     void MarkEtwStackWalkInProgress()
@@ -934,7 +934,7 @@ public:
     ThreadStateNoConcurrency m_StateNC;
 
     // Flags for thread states controlled by the debugger.
-    DebuggerControlledThreadState m_DebuggerControlledThreadState;
+    Volatile<DebuggerControlledThreadState> m_DebuggerControlledThreadState;
 
 private:
 #ifdef _DEBUG
