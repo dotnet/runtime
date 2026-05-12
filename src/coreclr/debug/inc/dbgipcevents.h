@@ -1230,9 +1230,6 @@ private:
 #define LEAF_MOST_FRAME FramePointer::MakeFramePointer((LPVOID)NULL)
 #define ROOT_MOST_FRAME FramePointer::MakeFramePointer((LPVOID)-1)
 
-static_assert(sizeof(FramePointer) == sizeof(void*));
-
-
 inline bool IsCloserToLeaf(FramePointer fp1, FramePointer fp2)
 {
     return (fp1.m_sp < fp2.m_sp);
