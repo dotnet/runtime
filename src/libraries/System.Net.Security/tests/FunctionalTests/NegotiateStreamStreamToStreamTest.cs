@@ -283,8 +283,8 @@ namespace System.Net.Security.Tests
                 }
                 finally
                 {
-                    // Dispose the server NegotiateStream first so it can flush before its inner stream is closed,
-                    // then close the inner stream to force EOF on the client side mid-frame.
+                    // Dispose the server NegotiateStream to close its inner stream and force EOF on the
+                    // client side mid-frame.
                     server.Dispose();
                 }
 
