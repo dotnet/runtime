@@ -128,6 +128,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             int[] offsets = new int[methodSignature.Length];
             bool[] isIndirectStructArg = new bool[methodSignature.Length];
+            bool hasRetBuffArg = _wasmSignature.SignatureString[0] == 'S';
 
             int argIndex = 0;
             int argOffset;
@@ -299,6 +300,13 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             {
                 expressions.Add(Local.Get(0));
                 expressions.Add(I32.Load((ulong)transitionBlock.ThisOffset));
+                wasmLocalIndex++;
+            }
+
+            // Pass return buffer argument if needed
+            if (hasRetBuffArg)
+            {
+                expressions.Add(Local.Get(1));
                 wasmLocalIndex++;
             }
 
