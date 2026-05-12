@@ -202,17 +202,17 @@ FORCEINLINE  void PinnedHeapHandleBlockHolder__StaticFree(PinnedHeapHandleBlockH
 // set) and being able to specify specific versions.
 //
 
-#define LOW_FREQUENCY_HEAP_RESERVE_SIZE        (3 * GetOsPageSize())
-#define LOW_FREQUENCY_HEAP_COMMIT_SIZE         (1 * GetOsPageSize())
+#define LOW_FREQUENCY_HEAP_RESERVE_SIZE        (3 * minipal_getpagesize())
+#define LOW_FREQUENCY_HEAP_COMMIT_SIZE         (1 * minipal_getpagesize())
 
-#define HIGH_FREQUENCY_HEAP_RESERVE_SIZE       (8 * GetOsPageSize())
-#define HIGH_FREQUENCY_HEAP_COMMIT_SIZE        (1 * GetOsPageSize())
+#define HIGH_FREQUENCY_HEAP_RESERVE_SIZE       (8 * minipal_getpagesize())
+#define HIGH_FREQUENCY_HEAP_COMMIT_SIZE        (1 * minipal_getpagesize())
 
-#define STUB_HEAP_RESERVE_SIZE                 (3 * GetOsPageSize())
-#define STUB_HEAP_COMMIT_SIZE                  (1 * GetOsPageSize())
+#define STUB_HEAP_RESERVE_SIZE                 (3 * minipal_getpagesize())
+#define STUB_HEAP_COMMIT_SIZE                  (1 * minipal_getpagesize())
 
-#define STATIC_FIELD_HEAP_RESERVE_SIZE         (2 * GetOsPageSize())
-#define STATIC_FIELD_HEAP_COMMIT_SIZE          (1 * GetOsPageSize())
+#define STATIC_FIELD_HEAP_RESERVE_SIZE         (2 * minipal_getpagesize())
+#define STATIC_FIELD_HEAP_COMMIT_SIZE          (1 * minipal_getpagesize())
 
 // --------------------------------------------------------------------------------
 // PE File List lock - for creating list locks on PE files

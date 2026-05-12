@@ -22,7 +22,7 @@ public class PrecodeStubsTests
         public required int OffsetOfPrecodeType { get; init; }
         public required int ShiftOfPrecodeType { get; init; }
         // #if defined(TARGET_ARM64) && defined(TARGET_UNIX)
-        //    return max(16*1024u, GetOsPageSize());
+        //    return max(16*1024u, minipal_getpagesize());
         // #elif defined(TARGET_ARM)
         //    return 4096; // ARM is special as the 32bit instruction set does not easily permit a 16KB offset
         // #else
