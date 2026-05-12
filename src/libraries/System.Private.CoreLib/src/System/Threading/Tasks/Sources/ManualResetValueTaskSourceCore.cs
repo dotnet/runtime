@@ -34,8 +34,10 @@ namespace System.Threading.Tasks.Sources
         private TResult? _result;
         /// <summary>The current version of this value, used to help prevent misuse.</summary>
         private short _version;
-        /// <summary>Whether the current operation has completed.</summary>
-        private bool _completed;
+        /// <summary>Typical latency between rearming the source and completing it.</summary>
+        private long _avgLatencyTicks;
+        /// <summary>Ticks at time of rearming the source.</summary>
+        private long _startTicks;
         /// <summary>Whether to force continuations to run asynchronously.</summary>
         private bool _runContinuationsAsynchronously;
 
@@ -57,7 +59,7 @@ namespace System.Threading.Tasks.Sources
             _capturedContext = null;
             _error = null;
             _result = default;
-            _completed = false;
+            _startTicks = Stopwatch.GetTimestamp();
         }
 
         /// <summary>Completes with a successful result.</summary>
@@ -79,16 +81,61 @@ namespace System.Threading.Tasks.Sources
         /// <summary>Gets the operation version.</summary>
         public short Version => _version;
 
+        private bool IsCompleted()
+        {
+            if (CheckIsCompleted())
+            {
+                return true;
+            }
+
+            // Note: long reads can be torn on 32bit,
+            // but since this is a statistical approximation it does not matter.
+            long avgLatency = _avgLatencyTicks;
+            if (avgLatency == 0 || avgLatency > (Stopwatch.Frequency * 2 / 1000000))
+            {
+                return false;
+            }
+
+            // torn read is not a concern here because _startTicks is set as a part of
+            // rearming the source, before possible publishing to other threads.
+            long startTicks = _startTicks;
+            long spinUntil = startTicks + avgLatency * 2;
+            do
+            {
+                if (CheckIsCompleted())
+                {
+                    return true;
+                }
+
+                Thread.SpinWait(1);
+            }
+            while (Stopwatch.GetTimestamp() < spinUntil);
+
+            return false;
+        }
+
+        private bool CheckIsCompleted()
+        {
+            return Volatile.Read(ref _continuation) == (object)ManualResetValueTaskSourceCoreShared.s_sentinel;
+        }
+
         /// <summary>Gets the status of the operation.</summary>
         /// <param name="token">Opaque value that was provided to the <see cref="ValueTask"/>'s constructor.</param>
         public ValueTaskSourceStatus GetStatus(short token)
         {
             ValidateToken(token);
+
+            if (!IsCompleted())
+            {
+                return ValueTaskSourceStatus.Pending;
+            }
+
             return
-                Volatile.Read(ref _continuation) is null || !_completed ? ValueTaskSourceStatus.Pending :
-                _error is null ? ValueTaskSourceStatus.Succeeded :
-                _error.SourceException is OperationCanceledException ? ValueTaskSourceStatus.Canceled :
-                ValueTaskSourceStatus.Faulted;
+                _error is null ?
+                    ValueTaskSourceStatus.Succeeded :
+                    _error.SourceException is OperationCanceledException ?
+                        ValueTaskSourceStatus.Canceled :
+                        ValueTaskSourceStatus.Faulted;
         }
 
         /// <summary>Gets the result of the operation.</summary>
@@ -96,7 +143,7 @@ namespace System.Threading.Tasks.Sources
         [StackTraceHidden]
         public TResult GetResult(short token)
         {
-            if (token != _version || !_completed || _error is not null)
+            if (token != _version || !CheckIsCompleted() || _error is not null)
             {
                 ThrowForFailedGetResult();
             }
@@ -172,9 +219,9 @@ namespace System.Threading.Tasks.Sources
             }
 
             // Operation already completed, so we need to queue the supplied callback.
-            // At this point the storedContinuation should be the sentinal; if it's not, the instance was misused.
+            // At this point the storedContinuation should be the sentinel; if it's not, the instance was misused.
             Debug.Assert(storedContinuation is not null, $"{nameof(storedContinuation)} is null");
-            if (!ReferenceEquals(storedContinuation, ManualResetValueTaskSourceCoreShared.s_sentinel))
+            if (storedContinuation != (object)ManualResetValueTaskSourceCoreShared.s_sentinel)
             {
                 ThrowHelper.ThrowInvalidOperationException();
             }
@@ -209,11 +256,19 @@ namespace System.Threading.Tasks.Sources
         /// <summary>Signals that the operation has completed.  Invoked after the result or error has been set.</summary>
         private void SignalCompletion()
         {
-            if (_completed)
+            if (CheckIsCompleted())
             {
                 ThrowHelper.ThrowInvalidOperationException();
             }
-            _completed = true;
+
+            // torn read is not a concern here because _startTicks is set as a part of
+            // rearming the source, before possible publishing to other threads.
+            long startTicks = _startTicks;
+            if (startTicks != 0)
+            {
+                long latencyTicks = Stopwatch.GetTimestamp() - startTicks;
+                _avgLatencyTicks = (_avgLatencyTicks + latencyTicks) / 2;
+            }
 
             Action<object?>? continuation =
                 Volatile.Read(ref _continuation) ??
@@ -225,6 +280,7 @@ namespace System.Threading.Tasks.Sources
                 _continuationState = null;
                 object? context = _capturedContext;
                 _capturedContext = null;
+                _continuation = ManualResetValueTaskSourceCoreShared.s_sentinel;
 
                 if (context is null)
                 {
