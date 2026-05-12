@@ -37,7 +37,7 @@ namespace System.Security.Cryptography
             return CngHelpers.Duplicate(_key.HandleNoDuplicate, _key.IsEphemeral);
         }
 
-        protected override partial void DeriveRawSecretAgreementCore(X25519DiffieHellman otherParty, Span<byte> destination)
+        protected override unsafe partial void DeriveRawSecretAgreementCore(X25519DiffieHellman otherParty, Span<byte> destination)
         {
             // We intentionally don't special case otherParty being an instance of X25519DiffieHellmanCng and always
             // export the public key into the current instance's provider.

@@ -2,46 +2,68 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
+using System.Reflection.Metadata;
+using Microsoft.Diagnostics.DataContractReader.SignatureHelpers;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
-internal readonly struct Signature_1 : ISignature
+// NOTE: some elements of SignatureTypeProvider remain unimplemented or minimally implemented
+// as they are not needed for the current usage of ISignature.
+// GetModifiedType and GetPinnedType ignore pinning and custom modifiers.
+// GetTypeFromReference does not look up the type in another module.
+// GetTypeFromSpecification is unimplemented.
+// These can be completed as needed.
+internal sealed class Signature_1 : ISignature
 {
     private readonly Target _target;
+    private readonly Dictionary<ModuleHandle, SignatureTypeProvider<TypeHandle>> _thProviders = [];
 
     internal Signature_1(Target target)
     {
         _target = target;
     }
 
-    private TargetPointer ReadVASigCookiePointer(TargetPointer vaSigCookieAddr)
+    public void Flush()
     {
-        // The argument is the address of a VASigCookie* slot on the stack, so dereference once
-        // to obtain the pointer to the actual VASigCookie instance.
-        if (vaSigCookieAddr == TargetPointer.Null)
-            throw new ArgumentException("VASigCookie address must be non-null.", nameof(vaSigCookieAddr));
+        _thProviders.Clear();
+    }
 
-        TargetPointer vaSigCookie = _target.ReadPointer(vaSigCookieAddr);
-        if (vaSigCookie == TargetPointer.Null)
-            throw new InvalidOperationException("VASigCookie pointer is null.");
+    private SignatureTypeProvider<TypeHandle> GetTypeHandleProvider(ModuleHandle moduleHandle)
+    {
+        if (_thProviders.TryGetValue(moduleHandle, out SignatureTypeProvider<TypeHandle>? thProvider))
+        {
+            return thProvider;
+        }
 
-        return vaSigCookie;
+        SignatureTypeProvider<TypeHandle> newProvider = new(_target, moduleHandle);
+        _thProviders[moduleHandle] = newProvider;
+        return newProvider;
+    }
+
+    TypeHandle ISignature.DecodeFieldSignature(BlobHandle blobHandle, ModuleHandle moduleHandle, TypeHandle ctx)
+    {
+        SignatureTypeProvider<TypeHandle> provider = GetTypeHandleProvider(moduleHandle);
+        MetadataReader mdReader = _target.Contracts.EcmaMetadata.GetMetadata(moduleHandle)!;
+
+        BlobReader blobReader = mdReader.GetBlobReader(blobHandle);
+        RuntimeSignatureDecoder<TypeHandle, TypeHandle> decoder = new(provider, _target, mdReader, ctx);
+        return decoder.DecodeFieldSignature(ref blobReader);
     }
 
     TargetPointer ISignature.GetVarArgArgsBase(TargetPointer vaSigCookieAddr)
     {
-        TargetPointer vaSigCookie = ReadVASigCookiePointer(vaSigCookieAddr);
-        Data.VASigCookie cookie = _target.ProcessedData.GetOrAdd<Data.VASigCookie>(vaSigCookie);
+        ReadVASigCookiePointer(vaSigCookieAddr);
+        Data.VASigCookie cookie = GetCookie(vaSigCookieAddr);
 
         // Compute the address of the first argument. On x86 the args are pushed below the cookie
         // pointer (stack grows down on the args walk), so the first argument lies at
         //   vaSigCookieAddr + sizeOfArgs.
         // On all other platforms the first argument follows the cookie pointer in memory
-        // (stack grows up on the args walk), so its address is
+        // (stack grows up on the args walk), so its address is at
         //   vaSigCookieAddr + sizeof(VASigCookie*).
-        RuntimeInfoArchitecture arch = _target.Contracts.RuntimeInfo.GetTargetArchitecture();
-        if (arch == RuntimeInfoArchitecture.X86)
+        if (_target.Contracts.RuntimeInfo.GetTargetArchitecture() == RuntimeInfoArchitecture.X86)
         {
             return new TargetPointer(vaSigCookieAddr.Value + cookie.SizeOfArgs);
         }
@@ -51,12 +73,28 @@ internal readonly struct Signature_1 : ISignature
 
     void ISignature.GetVarArgSignature(TargetPointer vaSigCookieAddr, out TargetPointer signatureAddress, out uint signatureLength)
     {
-        TargetPointer vaSigCookie = ReadVASigCookiePointer(vaSigCookieAddr);
-        Data.VASigCookie cookie = _target.ProcessedData.GetOrAdd<Data.VASigCookie>(vaSigCookie);
+        ReadVASigCookiePointer(vaSigCookieAddr);
+        Data.VASigCookie cookie = GetCookie(vaSigCookieAddr);
 
         signatureAddress = cookie.SignaturePointer;
         signatureLength = cookie.SignatureLength;
         Debug.Assert(signatureAddress != TargetPointer.Null || signatureLength == 0,
             "VASigCookie has a non-zero signature length but a null signature pointer.");
+    }
+
+    private static void ReadVASigCookiePointer(TargetPointer vaSigCookieAddr)
+    {
+        // The argument is the address of a VASigCookie* slot on the stack.
+        if (vaSigCookieAddr == TargetPointer.Null)
+            throw new ArgumentException("VASigCookie address must be non-null.", nameof(vaSigCookieAddr));
+    }
+
+    private Data.VASigCookie GetCookie(TargetPointer vaSigCookieAddr)
+    {
+        TargetPointer vaSigCookie = _target.ReadPointer(vaSigCookieAddr);
+        if (vaSigCookie == TargetPointer.Null)
+            throw new InvalidOperationException("VASigCookie pointer is null.");
+
+        return _target.ProcessedData.GetOrAdd<Data.VASigCookie>(vaSigCookie);
     }
 }
