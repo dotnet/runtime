@@ -31,7 +31,7 @@ The type system in its purest form (i.e. without any partial class extensions) t
 
 ## Relationship with metadata
 
-While [metadata](metadata-overview.md) (such as the file formats described in the ECMA-335 specification) has a close relationship with the type system, there is a clear distinction between these two: the metadata describes physical shape of the type (e.g. what is the base class of the type; or what fields does it have), but the type system builds higher level concepts on top of the shape (e.g. how many bytes are required to store an instance of the type at runtime; what interfaces does the type implement, including the inherited ones).
+While [metadata](https://learn.microsoft.com/dotnet/standard/metadata-and-self-describing-components) (such as the file formats described in the ECMA-335 specification) has a close relationship with the type system, there is a clear distinction between these two: the metadata describes physical shape of the type (e.g. what is the base class of the type; or what fields does it have), but the type system builds higher level concepts on top of the shape (e.g. how many bytes are required to store an instance of the type at runtime; what interfaces does the type implement, including the inherited ones).
 
 The type system provides access to most of the underlying metadata, but abstracts the way it was obtained. This allows types and members that are backed by metadata in other formats, or not backed at all, to be representable within the same type system context.
 
@@ -92,27 +92,6 @@ The type system contexts all share the same base (`TypeSystemContext`), but each
 Similar to `TypeDesc` hierarchy mentioned some sections above, `MethodDesc` follows the same extensible hierarchy pattern and represents all methods in the type system. Some of its subclasses include `EcmaMethod` (methods that read from ECMA-335 metadata), `ArrayMethod` (synthesized array methods), `InstantiatedMethod` (generic method instantiations like `Foo<int>`), and `ILStubMethod` (compiler-generated stubs for scenarios like P/Invoke marshalling).
 
 A `ModuleDesc` describes a single module which can optionally implement `IAssemblyDesc` interface if the module is an assembly. `ModuleDesc` is typically the owner of the type/method/field definitions within the module. It's the responsibility of the `ModuleDesc` to maintain the reference identity of those.
-
-## Accessing ECMA-335 metadata
-
-While the type system classes backed by ECMA-335 metadata (`EcmaMethod`, `EcmaType`, `EcmaField`) expose commonly needed information through their properties, compiler code frequently needs to access metadata that the type system doesn't project — custom attributes, parameter details, generic constraints, and so on. To achieve that, there is the following pattern:
-
-```csharp
-// Example for an EcmaMethod method. This pattern is used for other Ecma types as well.
-MetadataReader reader = method.MetadataReader;
-MethodDefinitionHandle methodHandle = method.Handle;
-MethodDefinition methodDef = reader.GetMethodDefinition(methodHandle);
-```
-
-Each step in this pattern serves a distinct purpose.
-
-`MetadataReader` is the cursor over the metadata tables of a single module/assembly. It owns the underlying memory block containing the metadata blob and the parsed table structures. Every `EcmaModule` carries one `MetadataReader`, and the `Ecma*` type system classes expose it through a property.
-
-A handle (such as `MethodDefinitionHandle`, `TypeDefinitionHandle`, or `FieldDefinitionHandle`) is just a 4-byte value that identifies a specific row but carries no data on its own. To get information you must pass it to a `MetadataReader`. The `Ecma*` type system classes expose their handle through the `Handle` property.
-
-A definition struct (such as `MethodDefinition`, `TypeDefinition`, or `FieldDefinition`) is a decoded view of a single metadata table row. After passing the handle to the reader, the resulting struct provides access to the row's columns. Its metadata accessors (attributes, name, signature, etc.) return either a primitive, a flags enum, or another handle that must be decoded through the same reader — no allocations involved.
-
-This lazy, zero-allocation pattern is what allows the `Ecma*` types to remain thin wrappers that cache only frequently accessed data (such as the parsed method signature and name) while decoding everything else on demand through the reader.
 
 ## Pluggable algorithms
 
