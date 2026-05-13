@@ -60,10 +60,6 @@ safe-outputs:
     max: 5
     labels: [agentic-workflows]
     allowed-labels: ["Known Build Error", "blocking-clean-ci"]
-  update-project:
-    project: "https://github.com/orgs/dotnet/projects/111"
-    max: 10
-    github-token: ${{ secrets.COPILOT_GITHUB_TOKEN }}
 
 timeout-minutes: 90
 
@@ -85,7 +81,7 @@ The agent runs read-only. All writes go through `safe-outputs`.
 ## Hard rules — non-negotiable
 
 1. **All writes via `safe-outputs`.** No `issues: write`, no `contents: write`. Don't try to use `gh` to write.
-2. **Caps per run: 5 `create_issue`, 10 `create_pull_request`, 10 `update_project`.** On cap, record `-> skipped: cap reached` and move on.
+2. **Caps per run: 5 `create_issue`, 10 `create_pull_request`.** On cap, record `-> skipped: cap reached` and move on.
 3. **Labels: only `Known Build Error` and `blocking-clean-ci` on KBEs.** Every other label (`area-*`, `os-*`, `arch-*`, `disabled-test`, ...) is dropped by `allowed-labels`. Area triage is delegated to `dotnet/issue-labeler` (`.github/workflows/labeler-predict-issues.yml`); never propose area labels yourself.
 4. **One area path per issue.** Title each KBE around a single failure shape (assertion text or test family), not a list of pipelines. If a root cause spans multiple area paths, file one KBE per area and cross-link with `Related: dotnet/runtime#<n>`.
 5. **No `Mute` / `Muting` in titles.** Use `Skip`, `Disable`, `Suppress`, or `Exclude`.
@@ -104,10 +100,11 @@ For every actionable failure, converge on these artifacts:
 | Artifact | Filed in | Same run? |
 |---|---|---|
 | Known Build Error issue | First run that sees the failure | Yes |
-| KBE -> Known Build Errors project linkage | Same run that filed the KBE | Yes (via `temporary_id`) |
 | Muting PR | First run that finds the KBE already exists | No — intentional next-run cadence |
 | Fix PR (optional) | Same run as the muting PR, when the fix fits the small-fix bounds | Same run as muting PR |
 | Tracking issue (build break / infra / no stable signature) | First run that sees the failure | Yes |
+
+The `.NET Core Engineering Services: Known Build Errors` org project (`https://github.com/orgs/dotnet/projects/111`) has an auto-add rule that pulls in any `dotnet/runtime` issue labeled `Known Build Error`. Build Analysis reads from the project, so the only thing the agent has to do for project linkage is apply that label on the KBE. Never try to mutate the project from this workflow.
 
 ## Step-by-step
 
@@ -247,15 +244,13 @@ Exactly one of these branches fires per signature.
 
 **Branch A — No existing KBE; test failure; signature is stable (>= 2 occurrences in window).**
 
-Emit one `create_issue` with `temporary_id: "aw_kbe<N>"` (fresh `<N>` per KBE) plus one matching `update_project`. Same-run, same agent output batch. See *Same-run KBE + project linkage payload* in Templates.
+Emit one `create_issue` using the KBE template. Apply the `Known Build Error` label so the org project auto-add rule picks it up; do NOT try to mutate the project from this workflow.
 
 If Step 4.3 found a tracker, cross-link as `Tracking: dotnet/runtime#<tracker>` in the KBE body. Muting PR is deferred to the next run.
 
 **Branch B — Existing KBE; no muting PR; muting is welcome (Step 4.7 clean).**
 
 Emit one `create_pull_request` using the Muting PR template. Diff <= 5 lines; only test annotations or csproj flags. Body MUST include `Linked KBE: #<n>` as a top-level line plus the Step 4.8 four-question block.
-
-If the existing KBE is not yet on the project board (check via project queries first), also emit one `update_project` referencing the real issue number.
 
 **Branch C — Branch B applies AND the failure satisfies the small-fix bounds.**
 
@@ -285,14 +280,14 @@ Per signature, append one outcome line to `/tmp/gh-aw/agent/coverage/<pipeline>.
 <signature-id>  <outcome>  <reason>
 ```
 
-`<outcome>` is one of: `filed-issue #aw_<id>`, `filed-PR #aw_<id>`, `existing-issue #<n>`, `existing-PR #<n>`, `linked-to-project #<n>`, `skipped: <reason>`.
+`<outcome>` is one of: `filed-issue #aw_<id>`, `filed-PR #aw_<id>`, `existing-issue #<n>`, `existing-PR #<n>`, `skipped: <reason>`.
 
 A skipped signature MUST have a reason (e.g., `build canceled`, `< 2 occurrences and not blocking`, `do-not-mute on issue #<n>`, `cap reached`).
 
 At end of run, print this table to the agent log:
 
 ```
-| pipeline | total-signatures | issues-filed | prs-filed | reused-existing | linked-to-project | skipped-with-reason |
+| pipeline | total-signatures | issues-filed | prs-filed | reused-existing | skipped-with-reason |
 ```
 
 ## Templates
@@ -365,45 +360,6 @@ Pull request: <link, omit if not a PR build>
 }
 ```
 ````
-
-### Template: Same-run KBE + project linkage payload
-
-Emit both items in the same agent output batch. The safe-outputs processor creates the issue first, captures the real issue number into the temporary-ID map, then resolves the placeholder before the project handler runs.
-
-```json
-[
-  {
-    "type": "create_issue",
-    "temporary_id": "aw_kbe<N>",
-    "title": "[ci-scan] Test failure: <fully.qualified.TestName>",
-    "body": "<full KBE body from Template A or B>",
-    "labels": ["Known Build Error", "blocking-clean-ci"]
-  },
-  {
-    "type": "update_project",
-    "project": "https://github.com/orgs/dotnet/projects/111",
-    "content_type": "issue",
-    "content_number": "aw_kbe<N>",
-    "target_repo": "dotnet/runtime"
-  }
-]
-```
-
-Use a distinct `aw_kbe<N>` token per KBE per run (`aw_kbe1`, `aw_kbe2`, ...); duplicates are rejected.
-
-For an EXISTING KBE that isn't yet on the project, replace the `temporary_id` reference with the real issue number:
-
-```json
-{
-  "type": "update_project",
-  "project": "https://github.com/orgs/dotnet/projects/111",
-  "content_type": "issue",
-  "content_number": <n>,
-  "target_repo": "dotnet/runtime"
-}
-```
-
-Check project membership before emitting — skip if already attached (saves a slot in `update_project.max: 10`).
 
 ### Template: KBE body verification (9 checks, mandatory)
 
