@@ -432,23 +432,6 @@ namespace Internal.IL
                 return;
             }
 
-            string reason = null;
-            switch (opcode)
-            {
-                case ILOpcode.newobj:
-                    reason = "newobj"; break;
-                case ILOpcode.call:
-                    reason = "call"; break;
-                case ILOpcode.callvirt:
-                    reason = "callvirt"; break;
-                case ILOpcode.ldftn:
-                    reason = "ldftn"; break;
-                case ILOpcode.ldvirtftn:
-                    reason = "ldvirtftn"; break;
-                default:
-                    Debug.Assert(false); break;
-            }
-
             MethodDesc asyncVariantMethod = null;
             MethodDesc asyncVariantRuntimeDeterminedMethod = null;
             // Are we scanning a call within a state machine?
@@ -496,15 +479,32 @@ namespace Internal.IL
                 }
             }
 
-            ImportCall(opcode, reason, method, runtimeDeterminedMethod);
+            ImportCall(opcode, method, runtimeDeterminedMethod);
             if (asyncVariantMethod != null)
             {
-                ImportCall(opcode, reason, asyncVariantMethod, asyncVariantRuntimeDeterminedMethod);
+                ImportCall(opcode, asyncVariantMethod, asyncVariantRuntimeDeterminedMethod);
             }
         }
 
-        private void ImportCall(ILOpcode opcode, string reason, MethodDesc method, MethodDesc runtimeDeterminedMethod)
+        private void ImportCall(ILOpcode opcode, MethodDesc method, MethodDesc runtimeDeterminedMethod)
         {
+            string reason = null;
+            switch (opcode)
+            {
+                case ILOpcode.newobj:
+                    reason = "newobj"; break;
+                case ILOpcode.call:
+                    reason = "call"; break;
+                case ILOpcode.callvirt:
+                    reason = "callvirt"; break;
+                case ILOpcode.ldftn:
+                    reason = "ldftn"; break;
+                case ILOpcode.ldvirtftn:
+                    reason = "ldvirtftn"; break;
+                default:
+                    Debug.Assert(false); break;
+            }
+
             if (opcode == ILOpcode.newobj)
             {
                 TypeDesc owningType = runtimeDeterminedMethod.OwningType;
