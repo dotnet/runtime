@@ -54,7 +54,9 @@ INST(lha,	  "lha",	  0,	  D_FORM,	0xA8000000)
 INST(lwz,	  "lwz",	  0,	  D_FORM,	0x80000000)
 INST(lwa,	  "lwa",	  0,	  DS_FORM,	0xE8000000)
 INST(ld,	  "ld",		  0,	  DS_FORM,	0xE8000000)
+INST(lfs,       "lfs",          0,      D_FORM,       0xC0000000)
 INST(lfd,       "lfd",          0,      D_FORM,       0xC8000000)
+INST(stfs,      "stfs",         0,      D_FORM,       0xD0000000)
 INST(stfd,      "stfd",         0,      D_FORM,       0xD8000000)
 INST(stb,	  "stb",	  0,	  D_FORM,	0x98000000)
 INST(sth,	  "sth",	  0,	  D_FORM,	0xB0000000)
@@ -78,6 +80,7 @@ INST(fmuls,       "fmuls",        0,      A_FORM,       0xEC000032)  // Floating
 INST(fmul,        "fmul",         0,      A_FORM,       0xFC000032)  // Floating Multiply Double
 INST(fdivs,       "fdivs",        0,      A_FORM,       0xEC000024)  // Floating Divide Single
 INST(fdiv,        "fdiv",         0,      A_FORM,       0xFC000024)  // Floating Divide Double
+INST(fmr,         "fmr",          0,      X_FORM,       0xFC000090)  // Floating Move Register
 
 // Integer arithmetic instructions
 INST(add,         "add",          0,      XO_FORM,      0x7C000214)  // Add

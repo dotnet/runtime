@@ -65,6 +65,10 @@ IF_DEF(LS_2C, IS_NONE, SCNS)   // ld  rD, disp(rA)
 IF_DEF(LS_2D, IS_NONE, SCNS)   // std rS, disp(rA)
 IF_DEF(LS_2E, IS_NONE, SCNS)   // lwa rD, disp(rA)
 IF_DEF(LS_2F, IS_NONE, SCNS)   // stdu rS, disp(rA)
+IF_DEF(LS_2G, IS_NONE, SCNS)   // lfs fD, disp(rA)
+IF_DEF(LS_2H, IS_NONE, SCNS)   // lfd fD, disp(rA)
+IF_DEF(LS_2I, IS_NONE, SCNS)   // stfs fS, disp(rA)
+IF_DEF(LS_2J, IS_NONE, SCNS)   // stfd fS, disp(rA)
 
 // Special formats
 IF_DEF(SR_1A, IS_NONE, NONE)   // mflr rD

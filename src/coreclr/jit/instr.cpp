@@ -1967,6 +1967,18 @@ instruction CodeGenInterface::ins_Load(var_types srcType, bool aligned /*=false*
         assert(srcType == TYP_FLOAT);
         return INS_flw;
     }
+#elif defined(TARGET_POWERPC64)
+    assert(!varTypeIsSIMD(srcType));
+
+    if (srcType == TYP_DOUBLE)
+    {
+        return INS_lfd;
+    }
+    else
+    {
+        assert(srcType == TYP_FLOAT);
+        return INS_lfs;
+    }
 #else
     NYI("ins_Load");
 #endif
@@ -2044,6 +2056,11 @@ instruction CodeGen::ins_Copy(var_types dstType)
         assert(dstType == TYP_FLOAT);
         return INS_fsgnj_s;
     }
+#elif defined(TARGET_POWERPC64)
+    assert(!varTypeIsSIMD(dstType));
+    // PowerPC uses fmr (Floating Move Register) for both float and double
+    // The instruction works on the full 64-bit FP register
+    return INS_fmr;
 #else
     NYI("ins_Copy");
 #endif
@@ -2295,6 +2312,18 @@ instruction CodeGenInterface::ins_Store(var_types dstType, bool aligned /*=false
     {
         assert(dstType == TYP_FLOAT);
         return INS_fsw;
+    }
+#elif defined(TARGET_POWERPC64)
+    assert(!varTypeIsSIMD(dstType));
+
+    if (dstType == TYP_DOUBLE)
+    {
+        return INS_stfd;
+    }
+    else
+    {
+        assert(dstType == TYP_FLOAT);
+        return INS_stfs;
     }
 #else
     NYI("ins_Store");

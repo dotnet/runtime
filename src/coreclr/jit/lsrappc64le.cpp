@@ -419,6 +419,15 @@ int LinearScan::BuildNode(GenTree* tree)
 
     switch (tree->OperGet())
     {
+        case GT_CNS_DBL:
+        {
+            // For PPC64LE, we need an internal integer register to transfer
+            // the floating-point constant from GPR to FPR via stack
+            buildInternalIntRegisterDefForNode(tree);
+            buildInternalRegisterUses();
+        }
+            FALLTHROUGH;
+
         case GT_CNS_INT:
         {
             srcCount = 0;
@@ -428,7 +437,7 @@ int LinearScan::BuildNode(GenTree* tree)
         }
         break;
 
-	case GT_IND:
+ case GT_IND:
 	{
             assert(dstCount == (tree->OperIs(GT_NULLCHECK) ? 0 : 1));
             srcCount = BuildIndir(tree->AsIndir());

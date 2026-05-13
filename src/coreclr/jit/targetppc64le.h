@@ -231,9 +231,9 @@
   #define REG_INTRET_1             REG_R4
   #define RBM_INTRET_1             RBM_R4
 
-  #define REG_FLOATRET             REG_F0
-  #define RBM_FLOATRET             RBM_F0
-  #define RBM_DOUBLERET            RBM_F0
+  #define REG_FLOATRET             REG_F1
+  #define RBM_FLOATRET             RBM_F1
+  #define RBM_DOUBLERET            RBM_F1
 
   // The registers trashed by the CORINFO_HELP_STOP_FOR_GC helper
   #define RBM_STOP_FOR_GC_TRASH    RBM_CALLEE_TRASH

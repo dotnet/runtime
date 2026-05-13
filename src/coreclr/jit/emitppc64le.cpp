@@ -96,10 +96,10 @@ const emitJumpKind emitReverseJumpKinds[] = {
 
 size_t emitter::emitSizeOfInsDsc(instrDesc* id) const
 {
+    // First check if the small descriptor flag is set
     if (emitIsSmallInsDsc(id))
         return SMALL_IDSC_SIZE;
 
-    // For PPC64LE, we don't use instruction formats yet, so we check the descriptor type directly
     // Check if this is a jump instruction
     if (id->idIns() == INS_b || id->idIns() == INS_beq || id->idIns() == INS_bne ||
         id->idIns() == INS_blt || id->idIns() == INS_bge || id->idIns() == INS_bgt || id->idIns() == INS_ble)
@@ -146,6 +146,8 @@ size_t emitter::emitSizeOfInsDsc(instrDesc* id) const
         }
         else
         {
+            // For regular descriptors without large constants or displacements,
+            // return the standard instrDesc size
             return sizeof(instrDesc);
         }
     }
@@ -261,6 +263,18 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int va
             assert((imm & 0x3) == 0);
             break;
 
+        case INS_lfs:
+            // Load floating-point single - D-form instruction
+            assert(isFloatReg(reg1));
+            assert(size == EA_4BYTE);
+            break;
+
+        case INS_lfd:
+            // Load floating-point double - D-form instruction
+            assert(isFloatReg(reg1));
+            assert(size == EA_8BYTE);
+            break;
+
         default:
             NYI("emitIns_R_S");
             return;
@@ -280,7 +294,17 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int va
     }
 
     // Create instruction descriptor with immediate offset.
-    instrDesc* id = emitNewInstrCns(attr, imm);
+    // Use small descriptor for small constants, otherwise use emitNewInstrCns for large constants
+    instrDesc* id;
+    if (instrDesc::fitsInSmallCns(imm))
+    {
+        id = emitNewInstrSmall(attr);
+        id->idSmallCns(imm);
+    }
+    else
+    {
+        id = emitNewInstrCns(attr, imm);
+    }
 
     id->idIns(ins);
     id->idInsOpt(INS_OPTS_NONE);
@@ -346,8 +370,20 @@ void emitter::emitIns_S_R(instruction ins, emitAttr attr, regNumber reg1, int va
             assert((imm & 0x3) == 0);
             break;
 
+        case INS_stfs:
+            // Store floating-point single - D-form instruction
+            assert(isFloatReg(reg1));
+            assert(size == EA_4BYTE);
+            break;
+
+        case INS_stfd:
+            // Store floating-point double - D-form instruction
+            assert(isFloatReg(reg1));
+            assert(size == EA_8BYTE);
+            break;
+
         default:
-            NYI("emitIns_S_R"); // Floating-point stores not yet implemented
+            NYI("emitIns_S_R");
             return;
     }
 
@@ -386,7 +422,7 @@ void emitter::emitIns_S_R(instruction ins, emitAttr attr, regNumber reg1, int va
 
 bool emitter::IsRedundantMov(instruction ins, emitAttr size, regNumber dst, regNumber src, bool canSkip)
 {
-    assert((ins == INS_mov)); //|| (ins == INS_sve_mov));
+    assert((ins == INS_mov) || (ins == INS_fmr));
 
     if (canSkip && (dst == src))
     {
@@ -394,7 +430,7 @@ bool emitter::IsRedundantMov(instruction ins, emitAttr size, regNumber dst, regN
         return true;
     }
     // For PowerPC, a move is redundant if source and destination are the same
-    // PowerPC uses 'mr' (move register) instruction which is actually 'or rA, rS, rS'
+    // PowerPC uses 'mr' (move register) for integer and 'fmr' for floating-point
     return (dst == src);
 }
 
@@ -409,6 +445,7 @@ bool emitter::IsMovInstruction(instruction ins)
     switch (ins)
     {
         case INS_mov:
+        case INS_fmr:
 	    {
 	        return true;
         }
@@ -452,6 +489,20 @@ void emitter::emitIns_Mov(
             }
 
             // PowerPC uses 'mr' (move register) which is actually 'or rA, rS, rS'
+            // Just call emitIns_R_R to emit the move
+            emitIns_R_R(ins, attr, dstReg, srcReg, opt);
+     break;
+
+ case INS_fmr:
+     assert(insOptsNone(opt));
+
+     if (IsRedundantMov(ins, size, dstReg, srcReg, canSkip))
+            {
+                // These instructions have no side effect and can be skipped
+                return;
+            }
+
+            // PowerPC uses 'fmr' (floating move register)
             // Just call emitIns_R_R to emit the move
             emitIns_R_R(ins, attr, dstReg, srcReg, opt);
      break;
@@ -719,7 +770,17 @@ void emitter::emitIns_R_I(instruction ins,
                           insScalableOpts sopt /* = INS_SCALABLE_OPTS_NONE */
                               DEBUGARG(size_t targetHandle /* = 0 */) DEBUGARG(GenTreeFlags gtFlags /* = GTF_EMPTY */))
 {
-    instrDesc* id = emitNewInstrCns(attr, imm);
+    // Use small descriptor for small constants, otherwise use emitNewInstrCns for large constants
+    instrDesc* id;
+    if (instrDesc::fitsInSmallCns(imm))
+    {
+        id = emitNewInstrSmall(attr);
+        id->idSmallCns(imm);
+    }
+    else
+    {
+        id = emitNewInstrCns(attr, imm);
+    }
 
     id->idIns(ins);
     id->idReg1(reg);
@@ -780,16 +841,23 @@ void emitter::emitIns_R_R(instruction     ins,
             fmt = IF_RR_1A;  // Will set proper format later
             break;
             
-	case INS_cmpd:
+        case INS_fmr:
+            // Floating-point move register - fmr fD, fB
+            assert(isFloatReg(reg1));
+            assert(isFloatReg(reg2));
+            fmt = IF_RR_1A;  // Will set proper format later
+            break;
+            
+ case INS_cmpd:
     	case INS_cmpw:
             // Comparison instructions - these are X-form instructions
             // cmpd rA, rB compares two registers
             fmt = IF_RR_2B;  // Will set proper format later
             break;
             
-	default:
-	    fmt = IF_RR_2A;
-	    break;
+ default:
+     fmt = IF_RR_2A;
+     break;
     }
 
     // Create instruction descriptor AFTER the switch (like ARM64 does)
@@ -822,12 +890,22 @@ void emitter::emitIns_R_R_I(instruction ins,
     // Debug: Print when we see negative offsets with r31
     if (reg2 == REG_R31 && imm < 0 && (ins == INS_stw || ins == INS_lwz))
     {
-        printf("DEBUG: %s with negative offset %d from r31\n", 
+        printf("DEBUG: %s with negative offset %d from r31\n",
                ins == INS_stw ? "stw" : "lwz", (int)imm);
     }
-    // Validate registers
-    assert(isGeneralRegister(reg1));
-    assert(isGeneralRegister(reg2));
+    
+    // Validate registers based on instruction type
+    // Floating-point load/store instructions use FP registers for reg1
+    if (ins == INS_lfs || ins == INS_lfd || ins == INS_stfs || ins == INS_stfd)
+    {
+        assert(isFloatReg(reg1));  // FP register for data
+        assert(isGeneralRegister(reg2));  // GPR for address
+    }
+    else
+    {
+        assert(isGeneralRegister(reg1));
+        assert(isGeneralRegister(reg2));
+    }
 
     // Validate immediate range based on instruction type
     // D-form instructions use 16-bit signed immediate
@@ -845,7 +923,17 @@ void emitter::emitIns_R_R_I(instruction ins,
     }
 
     // Create instruction descriptor with immediate value
-    instrDesc* id = emitNewInstrCns(attr, imm);
+    // Use small descriptor for small constants, otherwise use emitNewInstrCns for large constants
+    instrDesc* id;
+    if (instrDesc::fitsInSmallCns(imm))
+    {
+        id = emitNewInstrSmall(attr);
+        id->idSmallCns(imm);
+    }
+    else
+    {
+        id = emitNewInstrCns(attr, imm);
+    }
 
     id->idIns(ins);
     id->idReg1(reg1);
@@ -871,6 +959,18 @@ void emitter::emitIns_R_R_I(instruction ins,
             break;
         case INS_stdu:
             fmt = IF_LS_2F;  // stdu rS, disp(rA)
+            break;
+        case INS_lfs:
+            fmt = IF_LS_2G;  // lfs fD, disp(rA)
+            break;
+        case INS_lfd:
+            fmt = IF_LS_2H;  // lfd fD, disp(rA)
+            break;
+        case INS_stfs:
+            fmt = IF_LS_2I;  // stfs fS, disp(rA)
+            break;
+        case INS_stfd:
+            fmt = IF_LS_2J;  // stfd fS, disp(rA)
             break;
         case INS_addi:
             fmt = IF_RI_1C;  // addi rD, rA, imm16
@@ -1087,6 +1187,7 @@ bool emitter::emitInsIsLoadOrStore(instruction ins)
         case INS_lwz:   // Load Word and Zero
         case INS_lwa:   // Load Word Algebraic
         case INS_ld:    // Load Doubleword
+        case INS_lfs:   // Load Floating-Point Single
         case INS_lfd:   // Load Floating-Point Double
 
         // Store instructions
@@ -1095,6 +1196,7 @@ bool emitter::emitInsIsLoadOrStore(instruction ins)
         case INS_stw:   // Store Word
         case INS_std:   // Store Doubleword
         case INS_stdu:  // Store Doubleword with Update
+        case INS_stfs:  // Store Floating-Point Single
         case INS_stfd:  // Store Floating-Point Double
             return true;
 
@@ -1168,6 +1270,11 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
        case INS_mov:
            // mr rA, rS - Move Register
            ppc_mr(dstRW, id->idReg1(), id->idReg2());
+           break;
+
+       case INS_fmr:
+           // fmr fD, fB - Floating Move Register
+           ppc_fmr(dstRW, id->idReg1() - REG_F0, id->idReg2() - REG_F0);
            break;
 
        case INS_movi:
@@ -1305,14 +1412,24 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
            ppc_ld (dstRW, id->idReg1(), emitGetInsSC(id), id->idReg2());
            break;
 
+       case INS_lfs:
+           // lfs fD, d(rA) - Load Floating-Point Single
+           ppc_lfs (dstRW, id->idReg1() - REG_F0, emitGetInsSC(id), id->idReg2());
+           break;
+
        case INS_lfd:
            // lfd fD, d(rA) - Load Floating-Point Double
-           ppc_lfd (dstRW, id->idReg1(), emitGetInsSC(id), id->idReg2());
+           ppc_lfd (dstRW, id->idReg1() - REG_F0, emitGetInsSC(id), id->idReg2());
+           break;
+
+       case INS_stfs:
+           // stfs fS, d(rA) - Store Floating-Point Single
+           ppc_stfs (dstRW, id->idReg1() - REG_F0, emitGetInsSC(id), id->idReg2());
            break;
 
        case INS_stfd:
            // stfd fS, d(rA) - Store Floating-Point Double
-           ppc_stfd (dstRW, id->idReg1(), emitGetInsSC(id), id->idReg2());
+           ppc_stfd (dstRW, id->idReg1() - REG_F0, emitGetInsSC(id), id->idReg2());
            break;
 
        case INS_stb:
@@ -1404,42 +1521,42 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
        // Floating-point arithmetic instructions
        case INS_fadds:
            // fadds fD, fA, fB - Floating Add Single
-           ppc_fadds (dstRW, id->idReg1(), id->idReg2(), id->idReg3());
+           ppc_fadds (dstRW, id->idReg1() - REG_F0, id->idReg2() - REG_F0, id->idReg3() - REG_F0);
            break;
 
        case INS_fadd:
            // fadd fD, fA, fB - Floating Add Double
-           ppc_fadd (dstRW, id->idReg1(), id->idReg2(), id->idReg3());
+           ppc_fadd (dstRW, id->idReg1() - REG_F0, id->idReg2() - REG_F0, id->idReg3() - REG_F0);
            break;
 
        case INS_fsubs:
            // fsubs fD, fA, fB - Floating Subtract Single
-           ppc_fsubs (dstRW, id->idReg1(), id->idReg2(), id->idReg3());
+           ppc_fsubs (dstRW, id->idReg1() - REG_F0, id->idReg2() - REG_F0, id->idReg3() - REG_F0);
            break;
 
        case INS_fsub:
            // fsub fD, fA, fB - Floating Subtract Double
-           ppc_fsub (dstRW, id->idReg1(), id->idReg2(), id->idReg3());
+           ppc_fsub (dstRW, id->idReg1() - REG_F0, id->idReg2() - REG_F0, id->idReg3() - REG_F0);
            break;
 
        case INS_fmuls:
            // fmuls fD, fA, fC - Floating Multiply Single
-           ppc_fmuls (dstRW, id->idReg1(), id->idReg2(), id->idReg3());
+           ppc_fmuls (dstRW, id->idReg1() - REG_F0, id->idReg2() - REG_F0, id->idReg3() - REG_F0);
            break;
 
        case INS_fmul:
            // fmul fD, fA, fC - Floating Multiply Double
-           ppc_fmul (dstRW, id->idReg1(), id->idReg2(), id->idReg3());
+           ppc_fmul (dstRW, id->idReg1() - REG_F0, id->idReg2() - REG_F0, id->idReg3() - REG_F0);
            break;
 
        case INS_fdivs:
            // fdivs fD, fA, fB - Floating Divide Single
-           ppc_fdivs (dstRW, id->idReg1(), id->idReg2(), id->idReg3());
+           ppc_fdivs (dstRW, id->idReg1() - REG_F0, id->idReg2() - REG_F0, id->idReg3() - REG_F0);
            break;
 
        case INS_fdiv:
            // fdiv fD, fA, fB - Floating Divide Double
-           ppc_fdiv (dstRW, id->idReg1(), id->idReg2(), id->idReg3());
+           ppc_fdiv (dstRW, id->idReg1() - REG_F0, id->idReg2() - REG_F0, id->idReg3() - REG_F0);
            break;
 
        // Integer arithmetic instructions

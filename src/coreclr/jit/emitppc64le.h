@@ -62,6 +62,7 @@
 #define ppc_lwz(c,D,d,A)   ppc_emit32 (c, (32 << 26) | ((D) << 21) | ((A) << 16) | (uint16_t)(d))
 #define ppc_lwa(c,D,ds,A)  ppc_emit32 (c, (58 << 26) | ((D) << 21) | ((A) << 16) | ((ds) & 0xfffc) | 2)
 #define ppc_ld(c,D,ds,A)   ppc_emit32 (c, (58 << 26) | ((D) << 21) | ((A) << 16) | ((uint32_t)(ds) & 0xfffc) | 0)
+#define ppc_lfs(c,D,d,A)   ppc_emit32 (c, (48 << 26) | ((D) << 21) | ((A) << 16) | (uint16_t)(d))
 #define ppc_lfd(c,D,d,A)   ppc_emit32 (c, (50 << 26) | ((D) << 21) | ((A) << 16) | (uint16_t)(d))
 
 // Store instructions
@@ -70,6 +71,7 @@
 #define ppc_stw(c,S,d,A)   ppc_emit32 (c, (36 << 26) | ((S) << 21) | ((A) << 16) | (uint16_t)(d))
 #define ppc_std(c,S,ds,A)  ppc_emit32 (c, (62 << 26) | ((S) << 21) | ((A) << 16) | ((uint32_t)(ds) & 0xfffc) | 0)
 #define ppc_stdu(c,S,ds,A) ppc_emit32 (c, (62 << 26) | ((S) << 21) | ((A) << 16) | ((uint32_t)(ds) & 0xfffc) | 1)
+#define ppc_stfs(c,S,d,a)  ppc_emit32 (c, (52 << 26) | ((S) << 21) | ((a) << 16) | (uint16_t)(d))
 #define ppc_stfd(c,S,d,a)  ppc_emit32 (c, (54 << 26) | ((S) << 21) | ((a) << 16) | (uint16_t)(d))
 
 // Floating-point arithmetic instructions (A-form)
@@ -82,6 +84,10 @@
 #define ppc_fmul(c,D,A,C)  ppc_emit32 (c, (63 << 26) | ((D) << 21) | ((A) << 16) | ((C) << 6) | (25 << 1) | 0)
 #define ppc_fdivs(c,D,A,B) ppc_emit32 (c, (59 << 26) | ((D) << 21) | ((A) << 16) | ((B) << 11) | (18 << 1) | 0)
 #define ppc_fdiv(c,D,A,B)  ppc_emit32 (c, (63 << 26) | ((D) << 21) | ((A) << 16) | ((B) << 11) | (18 << 1) | 0)
+
+// Floating-point move instruction (X-form)
+// Format: opcode(6) | fD(5) | 0(5) | fB(5) | XO(10) | Rc(1)
+#define ppc_fmr(c,D,B)     ppc_emit32 (c, (63 << 26) | ((D) << 21) | (0 << 16) | ((B) << 11) | (72 << 1) | 0)
 
 // Integer arithmetic instructions (XO-form)
 // Format: opcode(6) | rD(5) | rA(5) | rB(5) | OE(1) | XO(9) | Rc(1)

@@ -120,6 +120,58 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
         }
         break;
 
+        case GT_CNS_DBL:
+        {
+            emitter* emit       = GetEmitter();
+            emitAttr size       = emitActualTypeSize(tree);
+            double   constValue = tree->AsDblCon()->DconValue();
+
+            // For PPC64LE, we load floating-point constants via GPR and stack
+            // Get the bit representation of the double/float value
+            int64_t constValueBits;
+            emitAttr gprSize;
+            instruction storeIns;
+            instruction loadIns;
+            
+            if (size == EA_4BYTE)
+            {
+                // Float constant
+                float fltVal = (float)constValue;
+                constValueBits = *(int32_t*)&fltVal;
+                gprSize = EA_4BYTE;
+                storeIns = INS_stw;
+                loadIns = INS_lfs;
+            }
+            else
+            {
+                // Double constant
+                constValueBits = *(int64_t*)&constValue;
+                gprSize = EA_8BYTE;
+                storeIns = INS_std;
+                loadIns = INS_lfd;
+            }
+            
+            // Get a temp integer register to hold the constant bits
+            regNumber tempReg = internalRegisters.GetSingle(tree);
+            
+            // Load the constant bit pattern into the temp GPR
+            instGen_Set_Reg_To_Imm(gprSize, tempReg, constValueBits);
+            
+            // For PPC64LE, we need to transfer the value via stack
+            // Use the top of the local frame (genTotalFrameSize() - 16) for temporary storage
+            // This ensures we don't overwrite the linkage area or parameter save area
+            int offset = genTotalFrameSize() - 16;
+            
+            // Store the GPR value to the temporary stack location
+            emit->emitIns_R_R_I(storeIns, gprSize, tempReg, REG_SPBASE, offset);
+            
+            // Load the floating-point value from the temporary stack location
+            emit->emitIns_R_R_I(loadIns, size, targetReg, REG_SPBASE, offset);
+            
+            regSet.verifyRegUsed(targetReg);
+        }
+        break;
+
 	default:
 	    abort();
     }
@@ -226,8 +278,9 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 	    break;
 
 	case GT_CNS_INT:
+	case GT_CNS_DBL:
 	    genSetRegToConst(targetReg, targetType, treeNode);
-            genProduceReg(treeNode);
+	           genProduceReg(treeNode);
 	    break;
 
 	case GT_IND:
