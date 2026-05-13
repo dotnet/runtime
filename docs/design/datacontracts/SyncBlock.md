@@ -97,12 +97,12 @@ bool TryGetLockInfo(TargetPointer syncBlock, out uint owningThreadId, out uint r
     {
         // Resolve the layout of System.Threading.Lock via ManagedTypeSource.
         Target.TypeInfo lockType = target.Contracts.ManagedTypeSource.GetTypeInfo("System.Threading.Lock");
-        uint state = target.Read<uint>(lockObject + (uint)lockType.Fields["_state"].Offset);
+        uint state = target.Read<uint>(lockObject + /* Object data offset */ + (uint)lockType.Fields["_state"].Offset);
         bool monitorHeld = (state & 1) != 0;
         if (monitorHeld)
         {
-            owningThreadId = target.Read<uint>(lockObject + (uint)lockType.Fields["_owningThreadId"].Offset);
-            recursion = target.Read<uint>(lockObject + (uint)lockType.Fields["_recursionCount"].Offset);
+            owningThreadId = target.Read<uint>(lockObject + /* Object data offset */ + (uint)lockType.Fields["_owningThreadId"].Offset);
+            recursion = target.Read<uint>(lockObject + /* Object data offset */ + (uint)lockType.Fields["_recursionCount"].Offset);
         }
 
         return monitorHeld;
