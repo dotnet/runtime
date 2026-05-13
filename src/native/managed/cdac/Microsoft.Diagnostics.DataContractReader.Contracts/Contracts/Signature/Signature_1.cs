@@ -54,8 +54,6 @@ internal sealed class Signature_1 : ISignature
 
     TargetPointer ISignature.GetVarArgArgsBase(TargetPointer vaSigCookieAddr)
     {
-        if (vaSigCookieAddr == TargetPointer.Null)
-            throw new ArgumentException("VASigCookie address must be non-null.", nameof(vaSigCookieAddr));
         // Compute the address of the first argument. On x86 the args are pushed below the cookie
         // pointer (stack grows down on the args walk), so the first argument lies at
         //   vaSigCookieAddr + sizeOfArgs.
@@ -73,8 +71,6 @@ internal sealed class Signature_1 : ISignature
 
     void ISignature.GetVarArgSignature(TargetPointer vaSigCookieAddr, out TargetPointer signatureAddress, out uint signatureLength)
     {
-        if (vaSigCookieAddr == TargetPointer.Null)
-            throw new ArgumentException("VASigCookie address must be non-null.", nameof(vaSigCookieAddr));
         Data.VASigCookie cookie = GetCookie(vaSigCookieAddr);
 
         signatureAddress = cookie.SignaturePointer;
@@ -85,9 +81,6 @@ internal sealed class Signature_1 : ISignature
     private Data.VASigCookie GetCookie(TargetPointer vaSigCookieAddr)
     {
         TargetPointer vaSigCookie = _target.ReadPointer(vaSigCookieAddr);
-        if (vaSigCookie == TargetPointer.Null)
-            throw new InvalidOperationException("VASigCookie pointer is null.");
-
         return _target.ProcessedData.GetOrAdd<Data.VASigCookie>(vaSigCookie);
     }
 }

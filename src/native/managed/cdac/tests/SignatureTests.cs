@@ -140,7 +140,7 @@ public class SignatureTests
             out ulong vaSigCookieAddr, out _, nullCookie: true);
         ISignature signature = target.Contracts.Signature;
 
-        Assert.Throws<InvalidOperationException>(() => signature.GetVarArgSignature(new TargetPointer(vaSigCookieAddr), out _, out _));
+        Assert.Throws<VirtualReadException>(() => signature.GetVarArgSignature(new TargetPointer(vaSigCookieAddr), out _, out _));
     }
 
     [Theory]
@@ -151,7 +151,7 @@ public class SignatureTests
             out ulong vaSigCookieAddr, out _, nullCookie: true);
         ISignature signature = target.Contracts.Signature;
 
-        Assert.Throws<InvalidOperationException>(() => signature.GetVarArgArgsBase(new TargetPointer(vaSigCookieAddr)));
+        Assert.Throws<VirtualReadException>(() => signature.GetVarArgArgsBase(new TargetPointer(vaSigCookieAddr)));
     }
 
     [Theory]
