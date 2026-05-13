@@ -197,3 +197,9 @@ public enum DataType
     CardTableInfo,
     RegionFreeList,
 }
+
+public static class DataTypeTargetExtensions
+{
+    public static Target.TypeInfo GetTypeInfo(this Target target, DataType type)
+        => target.GetTypeInfo(type.ToString());
+}
