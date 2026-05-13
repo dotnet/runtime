@@ -460,7 +460,7 @@ HRESULT CordbValue::InternalCreateHandle(CorDebugHandleType      handleType,
                           m_appdomain->GetADToken());
 
     CORDB_ADDRESS addr = GetValueHome() != NULL ? GetValueHome()->GetAddress() : (CORDB_ADDRESS)NULL;
-    event.CreateHandle.objectToken = CORDB_ADDRESS_TO_PTR(addr);
+    event.CreateHandle.objectToken = addr;
     event.CreateHandle.handleType = handleType;
 
     // Note: two-way event here...

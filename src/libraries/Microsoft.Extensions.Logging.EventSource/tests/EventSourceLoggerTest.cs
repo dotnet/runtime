@@ -925,7 +925,9 @@ namespace Microsoft.Extensions.Logging.Test
                         }
                         else
                         {
+#pragma warning disable IL2026 // https://github.com/dotnet/runtime/issues/126862
                             string serializedComplexValue = JsonConvert.SerializeObject(eventWrittenArgs.Payload[i]);
+#pragma warning restore IL2026
                             writer.WriteRawValue(serializedComplexValue);
                         }
                     }
