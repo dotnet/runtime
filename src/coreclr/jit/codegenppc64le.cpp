@@ -327,6 +327,10 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 	    genReturn(treeNode);
 	    break;
 
+	case GT_PUTARG_REG:
+	    genPutArgReg(treeNode->AsOp());
+	    break;
+
         case GT_ADD:
         case GT_SUB:
         case GT_MUL:
@@ -585,8 +589,20 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
 //
 void CodeGen::genPutArgReg(GenTreeOp* tree)
 {
-    //_ASSERTE("!NYI");
-    abort();
+    assert(tree->OperIs(GT_PUTARG_REG));
+
+    var_types targetType = tree->TypeGet();
+    regNumber targetReg  = tree->GetRegNum();
+
+    assert(targetType != TYP_STRUCT);
+
+    GenTree* op1 = tree->gtOp1;
+    genConsumeReg(op1);
+
+    // If child node is not already in the register we need, move it
+    inst_Mov(targetType, targetReg, op1->GetRegNum(), /* canSkip */ true);
+
+    genProduceReg(tree);
 }
 
 //---------------------------------------------------------------------
