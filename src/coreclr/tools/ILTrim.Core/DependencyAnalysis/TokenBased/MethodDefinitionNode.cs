@@ -174,9 +174,9 @@ namespace ILCompiler.DependencyAnalysis
 
             EcmaType ecmaType = (EcmaType)_module.GetObject(methodDef.GetDeclaringType());
             MethodBodyNode bodyNode = writeContext.Factory.MethodBody(_module, Handle);
-            int bodyOffset = bodyNode.Marked ||
-                !writeContext.Factory.Settings.Optimizations.IsEnabled(CodeOptimizations.UnreachableBodies, _module.Assembly.GetName().Name) ||
-                !IsWorthConvertingToThrow(methodDef)
+            int bodyOffset = bodyNode.Marked
+                || !writeContext.Factory.Settings.Optimizations.IsEnabled(CodeOptimizations.UnreachableBodies, _module.Assembly.GetName().Name)
+                || !IsWorthConvertingToThrow(methodDef)
                 ? bodyNode.Write(writeContext)
                 : writeContext.WriteUnreachableMethodBody(Handle, _module);
 
@@ -208,6 +208,7 @@ namespace ILCompiler.DependencyAnalysis
 
         private bool IsWorthConvertingToThrow(MethodDefinition methodDef)
         {
+            const int EmptyBodyLength = 0;
             const int RetOnlyBodyLength = 1;
             const int NopRetBodyLength = 2;
 
@@ -215,16 +216,19 @@ namespace ILCompiler.DependencyAnalysis
             if (rva == 0)
                 return false;
 
-            byte[] bodyBytes = _module.PEReader.GetMethodBody(rva).GetILBytes();
-
-            bool isEmptyMethodBody = bodyBytes.Length switch
+            BlobReader ilReader = _module.PEReader.GetMethodBody(rva).GetILReader();
+            switch (ilReader.Length)
             {
-                RetOnlyBodyLength => bodyBytes[0] == (byte)ILOpcode.ret,
-                NopRetBodyLength => bodyBytes[0] == (byte)ILOpcode.nop && bodyBytes[1] == (byte)ILOpcode.ret,
-                _ => false,
-            };
-
-            return !isEmptyMethodBody;
+                case EmptyBodyLength:
+                    return false;
+                case RetOnlyBodyLength:
+                    return ilReader.ReadByte() != (byte)ILOpcode.ret;
+                case NopRetBodyLength:
+                    bool isNopRetBody = ilReader.ReadByte() == (byte)ILOpcode.nop && ilReader.ReadByte() == (byte)ILOpcode.ret;
+                    return !isNopRetBody;
+                default:
+                    return true;
+            }
         }
 
         public override string ToString()
