@@ -3377,7 +3377,7 @@ namespace System.Runtime.Intrinsics
             {
                 int selectedIndex = int.CreateSaturating(indices.GetElementUnsafe(index));
 
-                if (selectedIndex < Vector512<T>.Count)
+                if ((uint)selectedIndex < (uint)Vector512<T>.Count)
                 {
                     T selectedValue = vector.GetElementUnsafe(selectedIndex);
                     result.SetElementUnsafe(index, selectedValue);
@@ -3599,7 +3599,7 @@ namespace System.Runtime.Intrinsics
         [CLSCompliant(false)]
         public static Vector512<uint> ShuffleNative(Vector512<uint> vector, Vector512<uint> indices) => ShuffleNativeFallback(vector, indices);
 
-        // <summary>Creates a new vector by selecting values from an input vector using a set of indices.</summary>
+        /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.</summary>
         /// <param name="vector">The input vector from which values are selected.</param>
         /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
         /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>

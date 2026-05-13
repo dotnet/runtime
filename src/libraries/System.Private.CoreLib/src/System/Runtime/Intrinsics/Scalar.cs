@@ -1235,7 +1235,7 @@ namespace System.Runtime.Intrinsics
             {
                 return (T)(object)byte.Min((byte)(object)left, (byte)(object)right);
             }
-            else if (typeof(T) == typeof(ushort))
+            else if (typeof(T) == typeof(char))
             {
                 return (T)(object)(char)ushort.Min((char)(object)left, (char)(object)right);
             }

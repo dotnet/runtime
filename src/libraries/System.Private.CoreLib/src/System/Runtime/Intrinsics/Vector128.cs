@@ -3305,7 +3305,7 @@ namespace System.Runtime.Intrinsics
             {
                 int selectedIndex = int.CreateSaturating(indices.GetElementUnsafe(index));
 
-                if (selectedIndex < Vector128<T>.Count)
+                if ((uint)selectedIndex < (uint)Vector128<T>.Count)
                 {
                     T selectedValue = vector.GetElementUnsafe(selectedIndex);
                     result.SetElementUnsafe(index, selectedValue);
