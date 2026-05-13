@@ -49,21 +49,19 @@ namespace System.Diagnostics.Metrics
         /// </summary>
         public override bool IsObservable => true;
 
+        // Returns the underlying user callback for built-in observable instruments, or null for user-defined subclasses.
+        // Subclasses provide their measurements via the abstract Observe() method instead.
+        internal virtual object? Callback => null;
+
         // Will be called from MeterListener.RecordObservableInstruments for each observable instrument.
         internal override void Observe(MeterListener listener)
         {
             object? state = GetSubscriptionState(listener);
 
-            // Fast path for the built-in observable instruments: dispatch their single-value callbacks
+            // Fast path for the built-in observable instruments: dispatch their callbacks
             // directly to the listener, avoiding the per-observation Measurement<T>[1] allocation that
             // the IEnumerable<Measurement<T>> path used to require.
-            object? callback = this switch
-            {
-                ObservableCounter<T> c => c.Callback,
-                ObservableGauge<T> g => g.Callback,
-                ObservableUpDownCounter<T> u => u.Callback,
-                _ => null
-            };
+            object? callback = Callback;
 
             if (callback is Func<T> valueOnlyFunc)
             {

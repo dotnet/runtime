@@ -17,7 +17,7 @@ namespace System.Diagnostics.Metrics
     {
         private readonly object _callback;
 
-        internal object Callback => _callback;
+        internal override object? Callback => _callback;
 
         internal ObservableCounter(Meter meter, string name, Func<T> observeValue, string? unit, string? description) : this(meter, name, observeValue, unit, description, tags: null)
         {
@@ -54,8 +54,8 @@ namespace System.Diagnostics.Metrics
         /// </summary>
         protected override IEnumerable<Measurement<T>> Observe()
         {
-            Debug.Fail("Execution shouldn't reach this point");
-            return null!;
+            Debug.Assert(false);
+            throw new InvalidOperationException("The program executed an instruction that was thought to be unreachable.");
         }
     }
 }
