@@ -174,13 +174,6 @@ if [[ "$__TargetArch" != "$__HostArch" ]]; then
 fi
 
 if [[ "$USE_SCCACHE" == "true" ]]; then
-    # NuGet strips execute permissions; restore them using the known package path.
-    # Try the CI-local packages dir first, then fall back to the global NuGet cache.
-    for sccacheBin in "$__RepoRootDir/.packages/sccache"/*/tools/sccache "$HOME/.nuget/packages/sccache"/*/tools/sccache; do
-        if [[ -f "$sccacheBin" ]]; then
-            chmod +x "$sccacheBin"
-        fi
-    done
     __CMakeArgs="-DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache $__CMakeArgs"
 fi
 

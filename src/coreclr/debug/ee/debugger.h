@@ -491,7 +491,7 @@ typedef DPTR(struct DebuggerPendingFuncEval) PTR_DebuggerPendingFuncEval;
  * SHash to hold weak object handles of exceptions with ForceCatchHandlerFound equal to true
  * ------------------------------------------------------------------------ */
 #ifndef DACCESS_COMPILE
-class EMPTY_BASES_DECL ForceCatchHandlerFoundSHashTraits : public DefaultSHashTraits<OBJECTHANDLE>
+class EMPTY_BASES ForceCatchHandlerFoundSHashTraits : public DefaultSHashTraits<OBJECTHANDLE>
 {
     public:
         typedef OBJECTHANDLE element_t;
@@ -582,7 +582,7 @@ public:
     }
 };
 
-class EMPTY_BASES_DECL CustomNotificationSHashTraits : public DefaultSHashTraits<TypeInModule>
+class EMPTY_BASES CustomNotificationSHashTraits : public DefaultSHashTraits<TypeInModule>
 {
     public:
         typedef TypeInModule element_t;
@@ -3767,7 +3767,7 @@ HANDLE OpenWin32EventOrThrow(
         ThreadStoreLockHolderWithSuspendReason tsld(ThreadSuspend::SUSPEND_FOR_DEBUGGER); \
         g_pDebugger->LockForEventSending(__pDbgLockHolder);                               \
         /* Check if the thread has been suspended by the debugger via SetDebugState(). */ \
-        if (thread != NULL && thread->HasThreadStateNC(Thread::TSNC_DebuggerUserSuspend)) \
+        if (thread != NULL && thread->HasDebuggerControlledThreadState(Thread::DCTS_UserSuspend)) \
         {                                                                                 \
             /* Just leave the lock and retry (see comment above for explanation */        \
         }                                                                                 \
