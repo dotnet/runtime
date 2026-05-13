@@ -1231,6 +1231,7 @@ Thread::Thread()
     m_ExternalRefCount = 1;
     m_State = TS_Unstarted;
     m_StateNC = TSNC_Unknown;
+    m_DebuggerControlledThreadState = DCTS_None;
 
     // It can't be a LongWeakHandle because we zero stuff out of the exposed
     // object as it is finalized.  At that point, calls to GetCurrentThread()
