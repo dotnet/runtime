@@ -27,8 +27,6 @@ struct CodeBlockHandle
     TargetCodePointer GetFuncletStartAddress(CodeBlockHandle codeInfoHandle);
     // Get the method region info (hot and cold code size, and cold code start address)
     void GetMethodRegionInfo(CodeBlockHandle codeInfoHandle, out uint hotSize, out TargetPointer coldStart, out uint coldSize);
-    // Get the JIT type
-    JitType GetJITType(CodeBlockHandle codeInfoHandle);
     // Attempt to get the method desc of an entrypoint
     TargetPointer NonVirtualEntry2MethodDesc(TargetCodePointer entrypoint);
 
@@ -58,6 +56,9 @@ struct CodeBlockHandle
     // Returns true if the code block is specifically a filter funclet
     bool IsFilterFunclet(CodeBlockHandle codeInfoHandle);
 
+    // Classify a code address as a known code kind (jitted, ReadyToRun, stub, etc.).
+    // Returns Unknown if the address is not recognized.
+    CodeKind GetCodeKind(TargetCodePointer codeAddress);
     // Finds the ReadyToRun module that contains the given address.
     TargetPointer FindReadyToRunModule(TargetPointer address);
 ```
@@ -122,6 +123,23 @@ public struct ExceptionClauseInfo
     public TargetNUInt? TypeHandle;
     public TargetPointer? ModuleAddr;
 }
+
+public enum CodeKind : uint
+{
+    Unknown = 0,
+    JumpStub = 1,
+    DynamicHelper = 2,
+    StubPrecode = 3,
+    FixupPrecode = 4,
+    VSD_DispatchStub = 5,
+    VSD_ResolveStub = 6,
+    VSD_LookupStub = 7,
+    VSD_VTableStub = 8,
+    CallCountingStub = 9,
+    MethodCallThunk = 10,
+    Jitted = 11,
+    ReadyToRun = 12
+}
 ```
 
 ## Version 1
@@ -146,6 +164,8 @@ Data descriptors used:
 | `RangeSection` | `Flags` | Flags for the range section |
 | `RangeSection` | `HeapList` | Pointer to the heap list |
 | `RangeSection` | `R2RModule` | ReadyToRun module |
+| `RangeSection` | `RangeList` | Pointer to the `CodeRangeMapRangeList` associated with this range section |
+| `CodeRangeMapRangeList` | `RangeListType` | Integer identifying the stub code block kind for this range list |
 | `CodeHeapListNode` | `Next` | Next node |
 | `CodeHeapListNode` | `StartAddress` | Start address of the used portion of the code heap |
 | `CodeHeapListNode` | `EndAddress` | End address of the used portion of the code heap |
@@ -387,15 +407,6 @@ public override void GetMethodRegionInfo(RangeSection rangeSection, TargetCodePo
 
 ```
 
-`GetJITType` returns the JIT type by finding the JIT manager for the data range containing the relevant code block. We return `Jit` for the `EEJitManager`, `R2R` for the `R2RJitManager`, and `Unknown` for any other value.
-```csharp
-public enum JitType : uint
-{
-    Unknown = 0,
-    Jit = 1,
-    R2R = 2
-};
-```
 `NonVirtualEntry2MethodDesc` attempts to find a method desc from an entrypoint. If portable entrypoints are enabled, we attempt to read the entrypoint data structure to find the method table. We also attempt to find the method desc from a precode stub. Finally, we attempt to find the method desc using `GetMethodInfo` as described above.
 ```csharp
 TargetPointer IExecutionManager.NonVirtualEntry2MethodDesc(TargetCodePointer entrypoint)
@@ -504,6 +515,7 @@ After obtaining the clause array bounds, the common iteration logic classifies e
 
 `IsFilterFunclet` first checks `IsFunclet`. If the code block is a funclet, it retrieves the EH clauses for the method and checks whether any filter clause's handler offset matches the funclet's relative offset. If a match is found, the funclet is a filter funclet.
 
+`GetCodeKind` classifies a code address by finding its owning range section and determining the code kind. It distinguishes between jitted code, stub code blocks (jump stubs, precode stubs, VSD stubs, etc.), and ReadyToRun code. Returns `Unknown` if the address cannot be classified. We depend on the values of the StubCodeBlockKind enum defined in codeman.h; for non-R2R code, we compare either the RangeList type or the code header against the values of this enum.
 ### FindReadyToRunModule
 
 `FindReadyToRunModule` locates the ReadyToRun module whose PE image contains the given address. Unlike `GetCodeBlockHandle` (which only matches code regions), this API matches against the full PE image range - including data sections such as import tables. This is used in GCRefMap resolution as it requires finding the module that owns an import section indirection address, which is in the data section rather than the code section.

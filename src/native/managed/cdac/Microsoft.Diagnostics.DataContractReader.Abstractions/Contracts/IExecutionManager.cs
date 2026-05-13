@@ -42,6 +42,23 @@ public struct JitManagerInfo
     public TargetPointer HeapListAddress;
 }
 
+public enum CodeKind : uint
+{
+    Unknown = 0,
+    JumpStub = 1,
+    DynamicHelper = 2,
+    StubPrecode = 3,
+    FixupPrecode = 4,
+    VSD_DispatchStub = 5,
+    VSD_ResolveStub = 6,
+    VSD_LookupStub = 7,
+    VSD_VTableStub = 8,
+    CallCountingStub = 9,
+    MethodCallThunk = 10,
+    Jitted = 11,
+    ReadyToRun = 12
+}
+
 public interface ICodeHeapInfo
 {
 }
@@ -74,13 +91,6 @@ public sealed class HostCodeHeapInfo : ICodeHeapInfo
 
 public sealed class UnknownCodeHeapInfo : ICodeHeapInfo {}
 
-public enum JitType : uint
-{
-    Unknown = 0,
-    Jit = 1,
-    R2R = 2
-}
-
 public interface IExecutionManager : IContract
 {
     static string IContract.Name { get; } = nameof(ExecutionManager);
@@ -89,7 +99,6 @@ public interface IExecutionManager : IContract
     TargetCodePointer GetStartAddress(CodeBlockHandle codeInfoHandle) => throw new NotImplementedException();
     TargetCodePointer GetFuncletStartAddress(CodeBlockHandle codeInfoHandle) => throw new NotImplementedException();
     void GetMethodRegionInfo(CodeBlockHandle codeInfoHandle, out uint hotSize, out TargetPointer coldStart, out uint coldSize) => throw new NotImplementedException();
-    JitType GetJITType(CodeBlockHandle codeInfoHandle) => throw new NotImplementedException();
     TargetPointer NonVirtualEntry2MethodDesc(TargetCodePointer entrypoint) => throw new NotImplementedException();
     bool IsFunclet(CodeBlockHandle codeInfoHandle) => throw new NotImplementedException();
     bool IsFilterFunclet(CodeBlockHandle codeInfoHandle) => throw new NotImplementedException();
@@ -101,6 +110,9 @@ public interface IExecutionManager : IContract
     List<ExceptionClauseInfo> GetExceptionClauses(CodeBlockHandle codeInfoHandle) => throw new NotImplementedException();
     JitManagerInfo GetEEJitManagerInfo() => throw new NotImplementedException();
     IEnumerable<ICodeHeapInfo> GetCodeHeapInfos() => throw new NotImplementedException();
+    // Classify a code address as a known stub kind (precode, jump stub, VSD stub, etc.)
+    // or as managed code. Returns Unknown if the address is not recognized.
+    CodeKind GetCodeKind(TargetCodePointer codeAddress) => throw new NotImplementedException();
     TargetPointer FindReadyToRunModule(TargetPointer address) => throw new NotImplementedException();
 }
 

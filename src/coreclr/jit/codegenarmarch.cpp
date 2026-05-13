@@ -3353,6 +3353,14 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
             // mrs
             emitter->emitIns_R(INS_mrs_tpid0, attr, REG_R1);
 
+            // We remove x0 here since the linker relaxation
+            // sequence will rewrite the instructions we are emitting here with
+            // instructions that may clobber these registers.
+            // (This is more important for the emitter, but we match it here
+            // for symmetry and to avoid confusion about the state of the
+            // registers.)
+            gcInfo.gcMarkRegSetNpt(RBM_R0);
+
             // adrp
             // ldr
             // add
