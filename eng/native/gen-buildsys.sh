@@ -81,7 +81,11 @@ if [[ "$CROSSCOMPILE" == "1" ]]; then
     fi
 fi
 
-if [[ "$host_arch" == "arm" || "$host_arch" == "armel" ]]; then
+if [[ "$host_arch" == "armel" ]]; then
+    cmake_extra_defines="$cmake_extra_defines -DARM_SOFTFP=1"
+fi
+
+if [[ "$target_os" == "android" && "$host_arch" == "arm" ]]; then
     cmake_extra_defines="$cmake_extra_defines -DARM_SOFTFP=1"
 fi
 
