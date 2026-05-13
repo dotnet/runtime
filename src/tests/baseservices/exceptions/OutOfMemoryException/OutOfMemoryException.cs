@@ -1,8 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-// This test verifies that an out-of-memory condition in a NativeAOT process
-// produces a diagnostic message on stderr before the process terminates.
+// This test verifies that an out-of-memory condition produces a diagnostic
+// message on stderr before the process terminates.
 //
 // The test spawns itself as a subprocess with a small GC heap limit set via
 // DOTNET_GCHeapHardLimit so that the subprocess reliably runs out of memory.

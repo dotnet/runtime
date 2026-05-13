@@ -8,6 +8,6 @@
     <ReferenceXUnitWrapperGenerator>false</ReferenceXUnitWrapperGenerator>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="OomHandling.cs" />
+    <Compile Include="OutOfMemoryException.cs" />
   </ItemGroup>
 </Project>
