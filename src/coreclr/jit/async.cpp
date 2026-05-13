@@ -3133,10 +3133,10 @@ BasicBlock* AsyncTransformation::CreateSharedFinishContextHandlingBB(SuspensionC
         {
             m_sharedFinishContextHandlingResumedVar =
                 m_compiler->lvaGrabTemp(false DEBUGARG("'resumed' for shared finish context handling"));
-            m_compiler->lvaGetDesc(m_sharedFinishContextHandlingResumedVar)->lvType = TYP_REF;
+            m_compiler->lvaGetDesc(m_sharedFinishContextHandlingResumedVar)->lvType = TYP_UBYTE;
         }
 
-        resumed = m_compiler->gtNewLclVarNode(m_sharedFinishContextHandlingResumedVar, TYP_INT);
+        resumed = m_compiler->gtNewLclVarNode(m_sharedFinishContextHandlingResumedVar, TYP_UBYTE);
     }
     else
     {
