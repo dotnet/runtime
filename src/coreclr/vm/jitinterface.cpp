@@ -4102,6 +4102,9 @@ CorInfoType CEEInfo::getTypeForPrimitiveNumericClass(
     CorElementType ty = th.GetSignatureCorElementType();
     switch (ty)
     {
+    case ELEMENT_TYPE_CHAR:
+        result = CORINFO_TYPE_CHAR;
+        break;
     case ELEMENT_TYPE_I1:
         result = CORINFO_TYPE_BYTE;
         break;
