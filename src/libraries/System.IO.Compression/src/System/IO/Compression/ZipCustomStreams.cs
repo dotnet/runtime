@@ -23,8 +23,16 @@ namespace System.IO.Compression
         private readonly ZipArchiveEntry? _zipArchiveEntry;
         private bool _isDisposed;
 
-        internal WrappedStream(Stream baseStream, bool closeBaseStream)
-            : this(baseStream, closeBaseStream, entry: null, onClosed: null, notifyEntryOnWrite: false) { }
+        // When non-null, overrides the base stream's CanSeek result.
+        // Used by forward-read mode to prevent leaking ReadAheadStream's
+        // synthetic CanSeek=true through to user-visible entry streams.
+        private readonly bool? _canSeekOverride;
+
+        internal WrappedStream(Stream baseStream, bool closeBaseStream, bool? canSeekOverride = null)
+            : this(baseStream, closeBaseStream, entry: null, onClosed: null, notifyEntryOnWrite: false)
+        {
+            _canSeekOverride = canSeekOverride;
+        }
 
         private WrappedStream(Stream baseStream, bool closeBaseStream, ZipArchiveEntry? entry, Action<ZipArchiveEntry?>? onClosed, bool notifyEntryOnWrite)
         {
@@ -66,7 +74,7 @@ namespace System.IO.Compression
 
         public override bool CanRead => !_isDisposed && _baseStream.CanRead;
 
-        public override bool CanSeek => !_isDisposed && _baseStream.CanSeek;
+        public override bool CanSeek => !_isDisposed && (_canSeekOverride ?? _baseStream.CanSeek);
 
         public override bool CanWrite => !_isDisposed && _baseStream.CanWrite;
 

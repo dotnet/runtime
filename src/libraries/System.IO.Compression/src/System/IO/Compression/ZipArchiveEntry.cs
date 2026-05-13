@@ -956,9 +956,14 @@ namespace System.IO.Compression
 
             _forwardReadStreamOpened = true;
 
+            // On non-seekable archives the archive stream is wrapped in ReadAheadStream, which
+            // reports CanSeek=true so DeflateStream can push back unconsumed bytes. That synthetic
+            // seekability must not leak through to the user-visible entry stream.
+            bool? canSeekOverride = _archive.ArchiveStream is ReadAheadStream ? false : null;
+
             // Wrap so user disposal does not close our internal data stream.
             // DrainPreviousEntry will drain and dispose _forwardReadDataStream itself.
-            return new WrappedStream(_forwardReadDataStream, closeBaseStream: false);
+            return new WrappedStream(_forwardReadDataStream, closeBaseStream: false, canSeekOverride);
         }
 
         private WrappedStream OpenInWriteMode()
