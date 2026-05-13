@@ -6517,6 +6517,16 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe System.Numerics.Vector<ushort> CreateWhileReadAfterWriteMaskUInt16(ushort* left, ushort* right) { throw null; }
         public static unsafe System.Numerics.Vector<uint> CreateWhileReadAfterWriteMaskUInt32(uint* left, uint* right) { throw null; }
         public static unsafe System.Numerics.Vector<ulong> CreateWhileReadAfterWriteMaskUInt64(ulong* left, ulong* right) { throw null; }
+        public static unsafe System.Numerics.Vector<byte> CreateWhileWriteAfterReadMaskByte(byte* left, byte* right) { throw null; }
+        public static unsafe System.Numerics.Vector<double> CreateWhileWriteAfterReadMaskDouble(double* left, double* right) { throw null; }
+        public static unsafe System.Numerics.Vector<short> CreateWhileWriteAfterReadMaskInt16(short* left, short* right) { throw null; }
+        public static unsafe System.Numerics.Vector<int> CreateWhileWriteAfterReadMaskInt32(int* left, int* right) { throw null; }
+        public static unsafe System.Numerics.Vector<long> CreateWhileWriteAfterReadMaskInt64(long* left, long* right) { throw null; }
+        public static unsafe System.Numerics.Vector<sbyte> CreateWhileWriteAfterReadMaskSByte(sbyte* left, sbyte* right) { throw null; }
+        public static unsafe System.Numerics.Vector<float> CreateWhileWriteAfterReadMaskSingle(float* left, float* right) { throw null; }
+        public static unsafe System.Numerics.Vector<ushort> CreateWhileWriteAfterReadMaskUInt16(ushort* left, ushort* right) { throw null; }
+        public static unsafe System.Numerics.Vector<uint> CreateWhileWriteAfterReadMaskUInt32(uint* left, uint* right) { throw null; }
+        public static unsafe System.Numerics.Vector<ulong> CreateWhileWriteAfterReadMaskUInt64(ulong* left, ulong* right) { throw null; }
         public static System.Numerics.Vector<int> DotProductRotateComplex(System.Numerics.Vector<int> addend, System.Numerics.Vector<sbyte> left, System.Numerics.Vector<sbyte> right, [ConstantExpected(Min = 0, Max = (byte)(3))] byte rotation) { throw null; }
         public static System.Numerics.Vector<long> DotProductRotateComplex(System.Numerics.Vector<long> addend, System.Numerics.Vector<short> left, System.Numerics.Vector<short> right, [ConstantExpected(Min = 0, Max = (byte)(3))] byte rotation) { throw null; }
         public static System.Numerics.Vector<int> DotProductRotateComplexBySelectedIndex(System.Numerics.Vector<int> addend, System.Numerics.Vector<sbyte> left, System.Numerics.Vector<sbyte> right, [ConstantExpected(Min = 0, Max = (byte)(3))] byte rightIndex, [ConstantExpected(Min = 0, Max = (byte)(3))] byte rotation) { throw null; }

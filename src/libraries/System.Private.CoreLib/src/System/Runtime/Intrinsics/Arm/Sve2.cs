@@ -1835,6 +1835,69 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<ulong> CreateWhileReadAfterWriteMaskUInt64(ulong* left, ulong* right) => CreateWhileReadAfterWriteMaskUInt64(left, right);
 
 
+        // While free of write-after-read conflicts
+
+        /// <summary>
+        ///   <para>svbool_t svwhilewr[_u8](const uint8_t *op1, const uint8_t *op2)</para>
+        ///   <para>  WHILEWR Presult.B, Xop1, Xop2</para>
+        /// </summary>
+        public static unsafe Vector<byte> CreateWhileWriteAfterReadMaskByte(byte* left, byte* right) => CreateWhileWriteAfterReadMaskByte(left, right);
+
+        /// <summary>
+        ///   <para>svbool_t svwhilewr[_f64](const float64_t *op1, const float64_t *op2)</para>
+        ///   <para>  WHILEWR Presult.D, Xop1, Xop2</para>
+        /// </summary>
+        public static unsafe Vector<double> CreateWhileWriteAfterReadMaskDouble(double* left, double* right) => CreateWhileWriteAfterReadMaskDouble(left, right);
+
+        /// <summary>
+        ///   <para>svbool_t svwhilewr[_s16](const int16_t *op1, const int16_t *op2)</para>
+        ///   <para>  WHILEWR Presult.H, Xop1, Xop2</para>
+        /// </summary>
+        public static unsafe Vector<short> CreateWhileWriteAfterReadMaskInt16(short* left, short* right) => CreateWhileWriteAfterReadMaskInt16(left, right);
+
+        /// <summary>
+        ///   <para>svbool_t svwhilewr[_s32](const int32_t *op1, const int32_t *op2)</para>
+        ///   <para>  WHILEWR Presult.S, Xop1, Xop2</para>
+        /// </summary>
+        public static unsafe Vector<int> CreateWhileWriteAfterReadMaskInt32(int* left, int* right) => CreateWhileWriteAfterReadMaskInt32(left, right);
+
+        /// <summary>
+        ///   <para>svbool_t svwhilewr[_s64](const int64_t *op1, const int64_t *op2)</para>
+        ///   <para>  WHILEWR Presult.D, Xop1, Xop2</para>
+        /// </summary>
+        public static unsafe Vector<long> CreateWhileWriteAfterReadMaskInt64(long* left, long* right) => CreateWhileWriteAfterReadMaskInt64(left, right);
+
+        /// <summary>
+        ///   <para>svbool_t svwhilewr[_s8](const int8_t *op1, const int8_t *op2)</para>
+        ///   <para>  WHILEWR Presult.B, Xop1, Xop2</para>
+        /// </summary>
+        public static unsafe Vector<sbyte> CreateWhileWriteAfterReadMaskSByte(sbyte* left, sbyte* right) => CreateWhileWriteAfterReadMaskSByte(left, right);
+
+        /// <summary>
+        ///   <para>svbool_t svwhilewr[_f32](const float32_t *op1, const float32_t *op2)</para>
+        ///   <para>  WHILEWR Presult.S, Xop1, Xop2</para>
+        /// </summary>
+        public static unsafe Vector<float> CreateWhileWriteAfterReadMaskSingle(float* left, float* right) => CreateWhileWriteAfterReadMaskSingle(left, right);
+
+        /// <summary>
+        ///   <para>svbool_t svwhilewr[_u16](const uint16_t *op1, const uint16_t *op2)</para>
+        ///   <para>  WHILEWR Presult.H, Xop1, Xop2</para>
+        /// </summary>
+        public static unsafe Vector<ushort> CreateWhileWriteAfterReadMaskUInt16(ushort* left, ushort* right) => CreateWhileWriteAfterReadMaskUInt16(left, right);
+
+        /// <summary>
+        ///   <para>svbool_t svwhilewr[_u32](const uint32_t *op1, const uint32_t *op2)</para>
+        ///   <para>  WHILEWR Presult.S, Xop1, Xop2</para>
+        /// </summary>
+        public static unsafe Vector<uint> CreateWhileWriteAfterReadMaskUInt32(uint* left, uint* right) => CreateWhileWriteAfterReadMaskUInt32(left, right);
+
+        /// <summary>
+        ///   <para>svbool_t svwhilewr[_u64](const uint64_t *op1, const uint64_t *op2)</para>
+        ///   <para>  WHILEWR Presult.D, Xop1, Xop2</para>
+        /// </summary>
+        public static unsafe Vector<ulong> CreateWhileWriteAfterReadMaskUInt64(ulong* left, ulong* right) => CreateWhileWriteAfterReadMaskUInt64(left, right);
+
+
         // Complex dot product
 
         /// <summary>
