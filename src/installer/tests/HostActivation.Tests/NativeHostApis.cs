@@ -302,6 +302,59 @@ namespace HostActivation.Tests
         }
 
         [Fact]
+        public void Hostfxr_resolve_sdk2_IgnoreGlobalJson()
+        {
+            // With global.json requesting a specific SDK, but ignore_global_json flag set,
+            // pick latest SDK as if no global.json exists
+
+            var f = sharedTestState.SdkAndFrameworkFixture;
+            using (TestArtifact workingDir = TestArtifact.Create(nameof(Hostfxr_resolve_sdk2_IgnoreGlobalJson)))
+            {
+                string requestedVersion = "1.2.300";
+                GlobalJson.CreateWithVersion(workingDir.Location, requestedVersion);
+                string expectedData = string.Join(';', new[]
+                {
+                    ("resolved_sdk_dir", Path.Combine(f.LocalSdkDir, f.LocalSdks[^1])),
+                    ("global_json_state", "not_found"),
+                });
+
+                string api = ApiNames.hostfxr_resolve_sdk2;
+                HostTestContext.BuiltDotNet.Exec(sharedTestState.HostApiInvokerApp.AppDll, api, f.ExeDir, workingDir.Location, "ignore_global_json")
+                    .EnableTracingAndCaptureOutputs()
+                    .Execute()
+                    .Should().Pass()
+                    .And.ReturnStatusCode(api, Constants.ErrorCode.Success)
+                    .And.HaveStdOutContaining($"{api} data:[{expectedData}]");
+            }
+        }
+
+        [Fact]
+        public void Hostfxr_resolve_sdk2_IgnoreGlobalJson_DisallowPrerelease()
+        {
+            // ignore_global_json combined with disallow_prerelease should pick latest non-preview
+
+            var f = sharedTestState.SdkAndFrameworkFixture;
+            using (TestArtifact workingDir = TestArtifact.Create(nameof(Hostfxr_resolve_sdk2_IgnoreGlobalJson_DisallowPrerelease)))
+            {
+                string requestedVersion = "5.6.700-preview";
+                GlobalJson.CreateWithVersion(workingDir.Location, requestedVersion);
+                string expectedData = string.Join(';', new[]
+                {
+                    ("resolved_sdk_dir", Path.Combine(f.LocalSdkDir, "1.2.300")),
+                    ("global_json_state", "not_found"),
+                });
+
+                string api = ApiNames.hostfxr_resolve_sdk2;
+                HostTestContext.BuiltDotNet.Exec(sharedTestState.HostApiInvokerApp.AppDll, api, f.ExeDir, workingDir.Location, "disallow_prerelease, ignore_global_json")
+                    .EnableTracingAndCaptureOutputs()
+                    .Execute()
+                    .Should().Pass()
+                    .And.ReturnStatusCode(api, Constants.ErrorCode.Success)
+                    .And.HaveStdOutContaining($"{api} data:[{expectedData}]");
+            }
+        }
+
+        [Fact]
         public void Hostfxr_corehost_set_error_writer_test()
         {
             HostTestContext.BuiltDotNet.Exec(sharedTestState.HostApiInvokerApp.AppDll, "Test_hostfxr_set_error_writer")

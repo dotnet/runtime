@@ -72,6 +72,8 @@ public:
         const pal::string_t& cwd,
         bool allow_prerelease = true);
 
+    static sdk_resolver from_default_settings(bool allow_prerelease = true);
+
 private:
     explicit sdk_resolver(bool allow_prerelease = true);
     static sdk_roll_forward_policy to_policy(const pal::string_t& name);

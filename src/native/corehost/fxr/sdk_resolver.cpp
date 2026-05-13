@@ -214,6 +214,13 @@ void sdk_resolver::print_resolution_error(const pal::string_t& dotnet_root, cons
         DOTNET_SDK_NOT_FOUND_URL);
 }
 
+sdk_resolver sdk_resolver::from_default_settings(bool allow_prerelease)
+{
+    sdk_resolver resolver{ allow_prerelease };
+    resolver.global_json.state = global_file_info::state::not_found;
+    return resolver;
+}
+
 sdk_resolver sdk_resolver::from_nearest_global_file(bool allow_prerelease)
 {
     pal::string_t cwd;

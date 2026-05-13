@@ -16,6 +16,7 @@ namespace HostApiInvokerApp
             internal enum hostfxr_resolve_sdk2_flags_t : int
             {
                 disallow_prerelease = 0x1,
+                ignore_global_json = 0x2,
             }
 
             internal enum hostfxr_resolve_sdk2_result_key_t : int

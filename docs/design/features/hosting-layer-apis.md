@@ -61,6 +61,7 @@ If the application is successfully executed, this value will return the exit cod
 enum hostfxr_resolve_sdk2_flags_t
 {
     disallow_prerelease = 0x1,
+    ignore_global_json = 0x2,
 };
 
 enum hostfxr_resolve_sdk2_result_key_t
@@ -85,6 +86,7 @@ Determine the directory location of the SDK, accounting for global.json and mult
 * `working_dir` - directory where the search for `global.json` will start and proceed upwards
 * `flags` - flags that influence resolution
   * `disallow_prerelease` - do not allow resolution to return a pre-release SDK version unless a pre-release version was specified via `global.json`
+  * `ignore_global_json` - do not search for or use `global.json` for resolution. Resolution behaves as if no `global.json` was found. When set, `result` will not be invoked with `global_json_path` or `requested_version` keys, and `global_json_state` will be reported as `not_found`.
 * `result` - callback invoked to return resolved values. The callback may be invoked more than once. Strings passed to the callback are valid only for the duration of the call.
 
 If resolution succeeds, `result` will be invoked with `resolved_sdk_dir` key and the value will hold the path to the resolved SDK directory. If resolution does not succeed, `result` will be invoked with `resolved_sdk_dir` key and the value will be `nullptr`.

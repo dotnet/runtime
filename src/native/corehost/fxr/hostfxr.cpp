@@ -166,6 +166,7 @@ SHARED_API int32_t HOSTFXR_CALLTYPE hostfxr_resolve_sdk(
 enum hostfxr_resolve_sdk2_flags_t : int32_t
 {
     disallow_prerelease = 0x1,
+    ignore_global_json = 0x2,
 };
 
 enum class hostfxr_resolve_sdk2_result_key_t : int32_t
@@ -218,6 +219,9 @@ namespace
 //         disallow_prerelease (0x1)
 //           do not allow resolution to return a prerelease SDK version
 //           unless  prerelease version was specified via global.json.
+//         ignore_global_json (0x2)
+//           do not search for or use global.json for resolution.
+//           Resolution behaves as if no global.json was found.
 //
 //   result
 //      Callback invoked to return values. It can be invoked more
@@ -278,9 +282,11 @@ SHARED_API int32_t HOSTFXR_CALLTYPE hostfxr_resolve_sdk2(
         working_dir = _X("");
     }
 
-    auto resolver = sdk_resolver::from_nearest_global_file(
-        working_dir,
-        (flags & hostfxr_resolve_sdk2_flags_t::disallow_prerelease) == 0);
+    bool allow_prerelease = (flags & hostfxr_resolve_sdk2_flags_t::disallow_prerelease) == 0;
+
+    auto resolver = (flags & hostfxr_resolve_sdk2_flags_t::ignore_global_json) != 0
+        ? sdk_resolver::from_default_settings(allow_prerelease)
+        : sdk_resolver::from_nearest_global_file(working_dir, allow_prerelease);
 
     auto resolved_sdk_dir = resolver.resolve(exe_dir);
     if (!resolved_sdk_dir.empty())
