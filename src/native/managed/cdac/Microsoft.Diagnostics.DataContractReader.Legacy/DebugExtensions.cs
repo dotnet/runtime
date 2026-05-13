@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.CompilerServices;
@@ -33,6 +34,16 @@ internal enum HResultValidationMode
 
 internal static class DebugExtensions
 {
+#if DEBUG
+    [ThreadStatic]
+    private static Exception? t_lastException;
+
+    static DebugExtensions()
+    {
+        AppDomain.CurrentDomain.FirstChanceException += static (_, e) => t_lastException = e.Exception;
+    }
+#endif
+
     extension(Debug)
     {
         [Conditional("DEBUG")]
@@ -50,7 +61,23 @@ internal static class DebugExtensions
                 HResultValidationMode.AllowCdacSuccess => cdacHr == dacHr || (cdacHr < 0 && dacHr < 0) || (cdacHr >= 0 && dacHr < 0),
                 _ => cdacHr == dacHr,
             };
-            Debug.Assert(match, $"HResult mismatch - cDAC: 0x{unchecked((uint)cdacHr):X8}, DAC: 0x{unchecked((uint)dacHr):X8} ({Path.GetFileName(filePath)}:{lineNumber})");
+
+            if (!match)
+            {
+                string message = $"HResult mismatch - cDAC: 0x{unchecked((uint)cdacHr):X8}, DAC: 0x{unchecked((uint)dacHr):X8} ({Path.GetFileName(filePath)}:{lineNumber})";
+#if DEBUG
+                Exception? ex = t_lastException;
+                if (ex is not null && cdacHr < 0 && ex.HResult == cdacHr)
+                {
+                    message += $"{Environment.NewLine}cDAC exception:{Environment.NewLine}{ex}";
+                }
+#endif
+                Debug.Assert(false, message);
+            }
+
+#if DEBUG
+            t_lastException = null;
+#endif
         }
     }
 }
