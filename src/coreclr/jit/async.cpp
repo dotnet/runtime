@@ -3668,7 +3668,9 @@ void AsyncTransformation::CreateResumptionSwitch(GenTreeLclVarCommon* commonAsyn
 
     if (commonAsyncResumedDef != nullptr)
     {
-        // If we have a common async resumption def, then we do a manual head merge to move it into the switch block
+        // If we have a common async resumption def (common), then we do a
+        // manual head merge to move it into the switch block to avoid storing
+        // it in every resumption.
         StoreResumedDef(commonAsyncResumedDef, resumingEdge->getDestinationBlock());
     }
 
