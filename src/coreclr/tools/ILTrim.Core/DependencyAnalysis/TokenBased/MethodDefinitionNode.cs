@@ -224,8 +224,8 @@ namespace ILCompiler.DependencyAnalysis
                 case RetOnlyBodyLength:
                     return ilReader.ReadByte() != (byte)ILOpcode.ret;
                 case NopRetBodyLength:
-                    bool isNopRetBody = ilReader.ReadByte() == (byte)ILOpcode.nop && ilReader.ReadByte() == (byte)ILOpcode.ret;
-                    return !isNopRetBody;
+                    bool hasNopRetPattern = ilReader.ReadByte() == (byte)ILOpcode.nop && ilReader.ReadByte() == (byte)ILOpcode.ret;
+                    return !hasNopRetPattern;
                 default:
                     return true;
             }
