@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <!-- Needed for CLRTestExecutionArguments -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <CLRTestExecutionArguments />
     <CLRTestPriority>1</CLRTestPriority>
   </PropertyGroup>
