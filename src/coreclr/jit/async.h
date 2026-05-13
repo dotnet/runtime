@@ -366,7 +366,8 @@ class AsyncTransformation
     // saves/restores and then suspend.
     BasicBlock* m_sharedFinishContextHandlingWithContinuationContextBB    = nullptr;
     BasicBlock* m_sharedFinishContextHandlingWithoutContinuationContextBB = nullptr;
-    // Variables that shared suspension finishing BBs take the exec/sync contexts in
+    // Variables that shared suspension finishing BBs take the resumed/exec/sync contexts in
+    unsigned m_sharedFinishContextHandlingResumedVar     = BAD_VAR_NUM;
     unsigned m_sharedFinishContextHandlingExecContextVar = BAD_VAR_NUM;
     unsigned m_sharedFinishContextHandlingSyncContextVar = BAD_VAR_NUM;
 
@@ -454,6 +455,8 @@ class AsyncTransformation
     void        RestoreFromDataOnResumption(const ContinuationLayout&        layout,
                                             const ContinuationLayoutBuilder& subLayout,
                                             BasicBlock*                      resumeBB);
+    void        StoreResumedDef(BasicBlock* callBlock, GenTreeCall* call, BasicBlock* resumeBB);
+    void        StoreResumedDef(GenTreeLclVarCommon* resumedDef, BasicBlock* block);
     BasicBlock* RethrowExceptionOnResumption(BasicBlock* block, const ContinuationLayout& layout, BasicBlock* resumeBB);
     void        CopyReturnValueOnResumption(GenTreeCall*              call,
                                             const CallDefinitionInfo& callDefInfo,
@@ -479,16 +482,20 @@ class AsyncTransformation
     void        CreateSharedReturnBB();
     BasicBlock* CreateSharedFinishContextHandlingBB(SuspensionContextHelper   helper,
                                                     const ContinuationLayout& layout,
+                                                    GenTree*                  invariantResumed,
                                                     bool                      execContextMayVary,
                                                     bool                      syncContextMayVary);
     void        InsertFinishContextHandlingCall(BasicBlock*               block,
                                                 const ContinuationLayout& layout,
                                                 SuspensionContextHelper   helper,
+                                                GenTree*                  resumed,
                                                 GenTree*                  execContext,
                                                 GenTree*                  syncContext);
     bool        ReuseContinuations();
-    void        CreateResumptionsAndSuspensions();
-    void        CreateResumptionSwitch();
+
+    GenTreeLclVarCommon* FindAndRemoveCommonAsyncResumedDef();
+    void                 CreateResumptionsAndSuspensions();
+    void                 CreateResumptionSwitch(GenTreeLclVarCommon* commonAsyncResumedDef);
 
 public:
     AsyncTransformation(Compiler* comp)

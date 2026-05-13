@@ -113,6 +113,15 @@ public:
     //
     void SequenceCall(GenTreeCall* call)
     {
+        if (call->IsAsync())
+        {
+            GenTreeLclVarCommon* asyncResumedDef = m_compiler->gtCallGetDefinedAsyncResumedLclAddr(call);
+            if (asyncResumedDef != nullptr)
+            {
+                MoveNodeToEnd(asyncResumedDef);
+            }
+        }
+
         if (call->IsOptimizingRetBufAsLocal())
         {
             // Correct the point at which the definition of the retbuf local appears.
@@ -1503,31 +1512,47 @@ private:
         GenTreeFlags defFlag    = GTF_EMPTY;
         GenTreeCall* callUser   = (user != nullptr) && user->IsCall() ? user->AsCall() : nullptr;
         bool         escapeAddr = true;
-        if (m_compiler->opts.compJitOptimizeStructHiddenBuffer && (callUser != nullptr) &&
-            m_compiler->IsValidLclAddr(lclNum, val.Offset()))
+        if ((callUser != nullptr) && m_compiler->IsValidLclAddr(lclNum, val.Offset()))
         {
-            // We will only attempt this optimization for locals that do not
-            // later turn into indirections.
-            bool isSuitableLocal =
-                varTypeIsStruct(varDsc) && !m_compiler->lvaIsImplicitByRefLocal(lclNum) &&
-                (!varDsc->lvIsStructField || !m_compiler->lvaIsImplicitByRefLocal(varDsc->lvParentLcl));
-#ifdef TARGET_X86
-            if (m_compiler->lvaIsArgAccessedViaVarArgsCookie(lclNum))
+            unsigned defSize = UINT_MAX;
+            if (callUser->gtArgs.HasRetBuffer() && (val.Node() == callUser->gtArgs.GetRetBufferArg()->GetNode()))
             {
-                isSuitableLocal = false;
-            }
+                // We will only attempt this optimization for locals that do not
+                // later turn into indirections.
+                bool isSuitableLocal =
+                    m_compiler->opts.compJitOptimizeStructHiddenBuffer && varTypeIsStruct(varDsc) &&
+                    !m_compiler->lvaIsImplicitByRefLocal(lclNum) &&
+                    (!varDsc->lvIsStructField || !m_compiler->lvaIsImplicitByRefLocal(varDsc->lvParentLcl));
+#ifdef TARGET_X86
+                if (m_compiler->lvaIsArgAccessedViaVarArgsCookie(lclNum))
+                {
+                    isSuitableLocal = false;
+                }
 #endif // TARGET_X86
 
-            if (isSuitableLocal && callUser->gtArgs.HasRetBuffer() &&
-                (val.Node() == callUser->gtArgs.GetRetBufferArg()->GetNode()))
+                if (isSuitableLocal)
+                {
+                    m_compiler->lvaSetHiddenBufferStructArg(lclNum);
+                    callUser->gtCallMoreFlags |= GTF_CALL_M_RETBUFFARG_LCLOPT;
+                    defSize = m_compiler->typGetObjLayout(callUser->gtRetClsHnd)->GetSize();
+                }
+            }
+            else if (callUser->IsAsync())
             {
-                m_compiler->lvaSetHiddenBufferStructArg(lclNum);
-                escapeAddr = false;
-                callUser->gtCallMoreFlags |= GTF_CALL_M_RETBUFFARG_LCLOPT;
-                defFlag = GTF_VAR_DEF;
+                CallArg* asyncResumedDef = callUser->gtArgs.FindWellKnownArg(WellKnownArg::AsyncResumedDef);
+                if ((asyncResumedDef != nullptr) && (val.Node() == asyncResumedDef->GetNode()))
+                {
+                    defSize = 1;
+                }
+            }
 
-                if ((val.Offset() != 0) ||
-                    (varDsc->lvExactSize() != m_compiler->typGetObjLayout(callUser->gtRetClsHnd)->GetSize()))
+            if (defSize != UINT_MAX)
+            {
+                INDEBUG(varDsc->SetDefinedViaAddress(true));
+                escapeAddr = false;
+                defFlag    = GTF_VAR_DEF;
+
+                if ((val.Offset() != 0) || (varDsc->lvExactSize() != defSize))
                 {
                     defFlag |= GTF_VAR_USEASG;
                 }

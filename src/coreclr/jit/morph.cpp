@@ -633,6 +633,10 @@ const char* getWellKnownArgName(WellKnownArg arg)
             return "AsyncExecutionContext";
         case WellKnownArg::AsyncSynchronizationContext:
             return "AsyncSynchronizationContext";
+        case WellKnownArg::AsyncResumedUse:
+            return "AsyncResumedUse";
+        case WellKnownArg::AsyncResumedDef:
+            return "AsyncResumedDef";
         case WellKnownArg::WasmShadowStackPointer:
             return "WasmShadowStackPointer";
         case WellKnownArg::WasmPortableEntryPoint:

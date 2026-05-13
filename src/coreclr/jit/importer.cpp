@@ -13474,6 +13474,8 @@ void Compiler::impInlineInitVars(InlineInfo* pInlineInfo)
             case WellKnownArg::AsyncContinuation:
             case WellKnownArg::AsyncExecutionContext:
             case WellKnownArg::AsyncSynchronizationContext:
+            case WellKnownArg::AsyncResumedUse:
+            case WellKnownArg::AsyncResumedDef:
                 // These do not appear in the table of inline arg info; do not include them
                 continue;
             case WellKnownArg::InstParam:

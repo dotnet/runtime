@@ -4568,15 +4568,25 @@ GenTree::VisitResult GenTree::VisitLocalDefs(Compiler* comp, TVisitor visitor)
     }
     if (OperIs(GT_CALL))
     {
-        GenTreeCall*         call    = AsCall();
-        GenTreeLclVarCommon* lclAddr = comp->gtCallGetDefinedRetBufLclAddr(call);
-        if (lclAddr != nullptr)
+        GenTreeCall* call = AsCall();
+
+        GenTreeLclVarCommon* asyncResumedLclAddr = comp->gtCallGetDefinedAsyncResumedLclAddr(call);
+        if (asyncResumedLclAddr != nullptr)
+        {
+            bool isEntire = comp->lvaLclExactSize(asyncResumedLclAddr->GetLclNum()) == 1;
+
+            RETURN_IF_ABORT(
+                visitor(LocalDef(asyncResumedLclAddr, isEntire, asyncResumedLclAddr->GetLclOffs(), ValueSize(1))));
+        }
+
+        GenTreeLclVarCommon* retBufLclAddr = comp->gtCallGetDefinedRetBufLclAddr(call);
+        if (retBufLclAddr != nullptr)
         {
             unsigned storeSize = comp->typGetObjLayout(AsCall()->gtRetClsHnd)->GetSize();
 
-            bool isEntire = storeSize == comp->lvaLclExactSize(lclAddr->GetLclNum());
+            bool isEntire = storeSize == comp->lvaLclExactSize(retBufLclAddr->GetLclNum());
 
-            return visitor(LocalDef(lclAddr, isEntire, lclAddr->GetLclOffs(), ValueSize(storeSize)));
+            return visitor(LocalDef(retBufLclAddr, isEntire, retBufLclAddr->GetLclOffs(), ValueSize(storeSize)));
         }
     }
 
@@ -4611,11 +4621,18 @@ GenTree::VisitResult GenTree::VisitLocalDefNodes(Compiler* comp, TVisitor visito
     }
     if (OperIs(GT_CALL))
     {
-        GenTreeCall*         call    = AsCall();
-        GenTreeLclVarCommon* lclAddr = comp->gtCallGetDefinedRetBufLclAddr(call);
-        if (lclAddr != nullptr)
+        GenTreeCall* call = AsCall();
+
+        GenTreeLclVarCommon* asyncResumedLclAddr = comp->gtCallGetDefinedAsyncResumedLclAddr(call);
+        if (asyncResumedLclAddr != nullptr)
         {
-            return visitor(lclAddr);
+            RETURN_IF_ABORT(visitor(asyncResumedLclAddr));
+        }
+
+        GenTreeLclVarCommon* retBufLclAddr = comp->gtCallGetDefinedRetBufLclAddr(call);
+        if (retBufLclAddr != nullptr)
+        {
+            return visitor(retBufLclAddr);
         }
     }
 

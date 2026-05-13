@@ -3815,7 +3815,8 @@ void Compiler::fgDebugCheckLinkedLocals()
             if (ShouldLink(node))
             {
                 if ((user != nullptr) && user->IsCall() &&
-                    (node == m_compiler->gtCallGetDefinedRetBufLclAddr(user->AsCall())))
+                    ((node == m_compiler->gtCallGetDefinedRetBufLclAddr(user->AsCall())) ||
+                     (node == m_compiler->gtCallGetDefinedAsyncResumedLclAddr(user->AsCall()))))
                 {
                 }
                 else
@@ -3826,7 +3827,14 @@ void Compiler::fgDebugCheckLinkedLocals()
 
             if (node->IsCall())
             {
-                GenTree* defined = m_compiler->gtCallGetDefinedRetBufLclAddr(node->AsCall());
+                GenTree* defined = m_compiler->gtCallGetDefinedAsyncResumedLclAddr(node->AsCall());
+                if (defined != nullptr)
+                {
+                    assert(ShouldLink(defined));
+                    m_locals.Push(defined);
+                }
+
+                defined = m_compiler->gtCallGetDefinedRetBufLclAddr(node->AsCall());
                 if (defined != nullptr)
                 {
                     assert(ShouldLink(defined));
