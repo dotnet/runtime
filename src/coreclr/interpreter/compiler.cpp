@@ -2698,6 +2698,10 @@ void InterpCompiler::CreateBasicBlocks(CORINFO_METHOD_INFO* methodInfo)
                 // The instruction AFTER a ret is always a different basic block if it exists.
                 GetBB((int32_t)(ip - codeStart));
             }
+            else if (opcode == CEE_LOCALLOC)
+            {
+                m_hasLocalloc = true;
+            }
             break;
         case InlineString:
         case InlineType:
@@ -2710,10 +2714,14 @@ void InterpCompiler::CreateBasicBlocks(CORINFO_METHOD_INFO* methodInfo)
             ip += 5;
             break;
         case InlineVar:
+            if (opcode == CEE_LDLOCA || opcode == CEE_LDARGA)
+                m_hasAddressExposedLocals = true;
             ip += 3;
             break;
         case ShortInlineVar:
         case ShortInlineI:
+            if (opcode == CEE_LDLOCA_S || opcode == CEE_LDARGA_S)
+                m_hasAddressExposedLocals = true;
             ip += 2;
             break;
         case ShortInlineBrTarget:
@@ -4413,6 +4421,30 @@ bool InterpCompiler::DisallowTailCall(CORINFO_SIG_INFO* callerSig, CORINFO_SIG_I
     return false;
 }
 
+// Check whether any argument would be invalidated by UpdateFrameForTailCall's memcpy.
+// Reject byref-like structs (e.g. Span) that may hold interior pointers into the caller's
+// frame, as well as pointer and refany args.
+// The method-level m_hasAddressExposedLocals check (set during IL pre-scan in CreateBasicBlocks)
+// catches the common case of byrefs from ldloca/ldarga. This function handles types that are
+// inherently unsafe regardless of provenance.
+bool InterpCompiler::CallHasByrefIntoLocalFrame(CORINFO_SIG_INFO* calleeSig)
+{
+    // Signature-based checks for types that always carry pointers.
+    CORINFO_ARG_LIST_HANDLE args = calleeSig->args;
+    for (unsigned i = 0; i < calleeSig->numArgs; i++)
+    {
+        CORINFO_CLASS_HANDLE classHandle;
+        CorInfoType ciType = strip(m_compHnd->getArgType(calleeSig, args, &classHandle));
+        if (ciType == CORINFO_TYPE_PTR || ciType == CORINFO_TYPE_REFANY)
+            return true;
+        if (ciType == CORINFO_TYPE_VALUECLASS && classHandle != NULL
+            && (m_compHnd->getClassAttribs(classHandle) & CORINFO_FLG_BYREF_LIKE))
+            return true;
+        args = m_compHnd->getArgNext(args);
+    }
+    return false;
+}
+
 void InterpCompiler::EmitCalli(bool isTailCall, void* calliCookie, int callIFunctionPointerVar, CORINFO_SIG_INFO* callSiteSig)
 {
     AddIns(isTailCall ? INTOP_CALLI_TAIL : INTOP_CALLI);
@@ -5047,12 +5079,26 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
 #endif
     }
 
+    // Implicit tail call: convert call+ret into a tail call when safe.
+    // Additional validation (DisallowTailCall, canTailCall) is shared with explicit tail calls below.
+    bool isExplicitTailCall = tailcall; // true only for tail. prefix or jmp
+    if (!tailcall && !newObj && !isJmp
+        && !isCalli && !isVirtual
+        && *m_ip == CEE_RET
+        && !(callInfo.methodFlags & CORINFO_FLG_PINVOKE)
+        && !m_hasAddressExposedLocals
+        && !m_hasLocalloc
+        && !CallHasByrefIntoLocalFrame(&callInfo.sig))
+    {
+        tailcall = true;
+    }
+
     if (tailcall && (
         DisallowTailCall(&m_methodInfo->args, &callInfo.sig) // Disallow tail-calls for code gen reasons
         || !m_compHnd->canTailCall(m_methodHnd, // Disallow tail calls due to rules specified by the VM
                                    isCalli ? (CORINFO_METHOD_HANDLE)NULL : callInfo.hMethod, // The method we are attempting to call logically
                                    isCalli ? (CORINFO_METHOD_HANDLE)NULL : (callInfo.kind == CORINFO_CALL ? callInfo.hMethod : (CORINFO_METHOD_HANDLE)NULL),
-                                   true) // The method we are calling exactly. We only know this if it's a non-virtual call
+                                   isExplicitTailCall) // false for implicit: VM applies stricter checks (entry point, NoInlining, StackCrawlMark)
         || (!isJmp && *m_ip != CEE_RET) // Disallow tailcalls that are not immediately before a ret
         ))
     {
@@ -6813,6 +6859,8 @@ void InterpCompiler::EmitLdLocA(int32_t var)
     {
         m_shadowCopyOfThisPointerActuallyNeeded = true;
     }
+
+    m_hasAddressExposedLocals = true;
 
     if (m_pCBB->clauseType == BBClauseFilter)
     {
