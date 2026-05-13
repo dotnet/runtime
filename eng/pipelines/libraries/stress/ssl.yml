@@ -8,6 +8,7 @@ schedules:
     include:
     - main
     - release/*.0
+    - release/*.0-staging
 
 variables:
   - template: ../variables.yml
