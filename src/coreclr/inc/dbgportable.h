@@ -91,6 +91,17 @@ public:
 #endif // DBG_BYTE_SWAP_REQUIRED
     }
 
+    // Volatile-qualified accessor for fields accessed through volatile pointers
+    operator T () const volatile
+    {
+        T data = m_data;
+#ifdef DBG_BYTE_SWAP_REQUIRED
+        return ByteSwap(data);
+#else // DBG_BYTE_SWAP_REQUIRED
+        return data;
+#endif // DBG_BYTE_SWAP_REQUIRED
+    }
+
     bool operator == (T other) const
     {
 #ifdef DBG_BYTE_SWAP_REQUIRED

@@ -102,8 +102,8 @@ extends:
         env:
           ROOTFS_DIR: /crossrootfs/loongarch64
 
-      debian-13-gcc15-amd64:
-        image: mcr.microsoft.com/dotnet-buildtools/prereqs:debian-13-gcc15-amd64@sha256:0e9efcf38050fcaea19d07812bd24bfc106a1562bb0a4e2b2d5183dcfe014be2
+      debian-13-gcc16-amd64:
+        image: mcr.microsoft.com/dotnet-buildtools/prereqs:debian-13-gcc16-amd64@sha256:5f7c60833cbb3305ee0177162133480f07bd2d4072b91f08ba880f406b96619b
 
       linux_x64_llvmaot:
         image: mcr.microsoft.com/dotnet-buildtools/prereqs:centos-stream-10-amd64@sha256:09e5e6a37b8e5d2f6d887e38aacf248f92f43013620e347ce66f717a09d6764d

@@ -117,7 +117,7 @@ void PortableEntryPoint::Init(MethodDesc* pMD)
     _pActualCode = NULL;
     _pMD = pMD;
     _pInterpreterData = NULL;
-    _flags = kNone;
+    _flags = kPrefersInterpreterEntryPoint;
     INDEBUG(_canary = CANARY_VALUE);
 }
 
@@ -132,7 +132,18 @@ void PortableEntryPoint::Init(void* nativeEntryPoint)
     INDEBUG(_canary = CANARY_VALUE);
 }
 
-void PortableEntryPoint::Init(void* nativeEntryPoint, MethodDesc* pMD)
+void PortableEntryPoint::Init_WithInterpreterThunk(void* nativeEntryPoint, MethodDesc* pMD)
+{
+    LIMITED_METHOD_CONTRACT;
+    _ASSERTE(pMD != NULL);
+    _pActualCode = nativeEntryPoint;
+    _pMD = pMD;
+    _pInterpreterData = NULL;
+    _flags = kPrefersInterpreterEntryPoint;
+    INDEBUG(_canary = CANARY_VALUE);
+}
+
+void PortableEntryPoint::Init_WithNativeCode(void* nativeEntryPoint, MethodDesc* pMD)
 {
     LIMITED_METHOD_CONTRACT;
     _ASSERTE(pMD != NULL);

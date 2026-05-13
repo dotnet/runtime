@@ -4,6 +4,7 @@
 using System;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
+using CorElementType = Microsoft.Diagnostics.DataContractReader.Contracts.CorElementType;
 
 namespace Microsoft.Diagnostics.DataContractReader.Legacy;
 
@@ -129,6 +130,19 @@ public struct COR_TYPE_LAYOUT
 }
 
 [StructLayout(LayoutKind.Sequential)]
+public struct COR_ARRAY_LAYOUT
+{
+    public COR_TYPEID componentID;
+    public CorElementType componentType;
+    public uint firstElementOffset;
+    public uint elementSize;
+    public uint countOffset;
+    public uint rankSize;
+    public uint numRanks;
+    public uint rankOffset;
+}
+
+[StructLayout(LayoutKind.Sequential)]
 public struct COR_FIELD
 {
     public uint token;
@@ -144,6 +158,12 @@ public enum DynamicMethodType
     kNone = 0,
     kDiagnosticHidden = 1,
     kLCGMethod = 2,
+}
+
+public enum CorDebugThreadState
+{
+    ThreadRun = 0,
+    ThreadSuspend = 1,
 }
 
 [Flags]
@@ -445,9 +465,6 @@ public unsafe partial interface IDacDbiInterface
     int IsVmObjectHandleValid(ulong vmHandle, Interop.BOOL* pResult);
 
     [PreserveSig]
-    int IsWinRTModule(ulong vmModule, Interop.BOOL* isWinRT);
-
-    [PreserveSig]
     int GetHandleAddressFromVmHandle(ulong vmHandle, ulong* pRetVal);
 
     [PreserveSig]
@@ -467,9 +484,6 @@ public unsafe partial interface IDacDbiInterface
 
     [PreserveSig]
     int IsThreadSuspendedOrHijacked(ulong vmThread, Interop.BOOL* pResult);
-
-    [PreserveSig]
-    int AreGCStructuresValid(Interop.BOOL* pResult);
 
     [PreserveSig]
     int CreateHeapWalk(nuint* pHandle);
@@ -505,10 +519,10 @@ public unsafe partial interface IDacDbiInterface
     int GetObjectFields(nint id, uint celt, COR_FIELD* layout, uint* pceltFetched);
 
     [PreserveSig]
-    int GetTypeLayout(nint id, COR_TYPE_LAYOUT* pLayout);
+    int GetTypeLayout(ulong id, COR_TYPE_LAYOUT* pLayout);
 
     [PreserveSig]
-    int GetArrayLayout(nint id, nint pLayout);
+    int GetArrayLayout(ulong id, COR_ARRAY_LAYOUT* pLayout);
 
     [PreserveSig]
     int GetGCHeapInformation(COR_HEAPINFO* pHeapInfo);
@@ -551,9 +565,6 @@ public unsafe partial interface IDacDbiInterface
 
     [PreserveSig]
     int GetDelegateTargetObject(int delegateType, ulong delegateObject, ulong* ppTargetObj, ulong* ppTargetAppDomain);
-
-    [PreserveSig]
-    int GetLoaderHeapMemoryRanges(nint pRanges);
 
     [PreserveSig]
     int IsModuleMapped(ulong pModule, Interop.BOOL* isModuleMapped);

@@ -10,7 +10,7 @@ namespace System.Text.Json.Serialization.Converters
     {
         private const int MaxEscapedCharacterLength = JsonConstants.MaxExpansionFactorWhileEscaping;
 
-        public override char Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+        public override unsafe char Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
             if (reader.TokenType is not (JsonTokenType.String or JsonTokenType.PropertyName))
             {
