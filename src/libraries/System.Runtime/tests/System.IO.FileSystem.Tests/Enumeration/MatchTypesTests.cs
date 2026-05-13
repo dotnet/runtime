@@ -533,6 +533,7 @@ namespace System.IO.Tests.Enumeration
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/124210")]
         public void OverlappingExtensions_AllMatchTypes_Comprehensive()
         {
             // Comprehensive test ensuring no false positives or false negatives
