@@ -716,6 +716,10 @@ public:
         // to count this lock in m_cTotalDbgApiLocks, which is asserted to be 0 on entry
         // to public APIs.  Example of such a lock: LL_SHIM_PROCESS_DISPOSE_LOCK
         cLockNonDbgApi  = 0x00000004,
+
+        // Skip the leak assert in the destructor. Use for static-lifetime locks
+        // whose owning shutdown path is not guaranteed to run.
+        cLockAllowLeak  = 0x00000008,
     };
 
     // To prevent deadlocks, we order all locks.
