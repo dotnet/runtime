@@ -139,14 +139,14 @@ public:
     }
 
     template <typename Dummy = T>
-    auto GetRawPtr() -> decltype(Dummy().GetRawPtr())
+    auto GetRawPtr() const -> decltype(Dummy().GetRawPtr())
     {
         Dummy tmp = *this;
         return tmp.GetRawPtr();
     }
 
     template <typename Dummy = T>
-    auto GetDacPtr() -> decltype(Dummy().GetDacPtr())
+    auto GetDacPtr() const -> decltype(Dummy().GetDacPtr())
     {
         Dummy tmp = *this;
         return tmp.GetDacPtr();
@@ -160,9 +160,10 @@ public:
         *this = tmp;
     }
 
-    bool IsNull()
+    template <typename Dummy = T>
+    auto IsNull() const -> decltype(Dummy().IsNull())
     {
-        T tmp = *this;
+        Dummy tmp = *this;
         return tmp.IsNull();
     }
 
