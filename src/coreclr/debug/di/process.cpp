@@ -665,7 +665,7 @@ CordbProcess::CreateDacDbiInterface()
     // same directory as DBI
     if (m_hDacModule == NULL)
     {
-        m_hDacModule.Assign(ShimProcess::GetDacModule(m_cordb->GetDacModulePath()));
+        m_hDacModule = ShimProcess::GetDacModule(m_cordb->GetDacModulePath());
     }
 
     //
@@ -1541,7 +1541,7 @@ void CordbProcess::FreeDac()
     if (m_hDacModule != NULL)
     {
         LOG((LF_CORDB, LL_INFO1000, "Unloading DAC\n"));
-        m_hDacModule.Clear();
+        m_hDacModule.Free();
     }
 }
 
@@ -2165,18 +2165,9 @@ HRESULT CordbProcess::EnumerateHeap(ICorDebugHeapEnum **ppObjects)
 
     EX_TRY
     {
-        BOOL gcValid;
-        IfFailThrow(m_pDacPrimitives->AreGCStructuresValid(&gcValid));
-        if (gcValid)
-        {
-            CordbHeapEnum *pHeapEnum = new CordbHeapEnum(this);
-            GetContinueNeuterList()->Add(this, pHeapEnum);
-            hr = pHeapEnum->QueryInterface(__uuidof(ICorDebugHeapEnum), (void**)ppObjects);
-        }
-        else
-        {
-            hr = CORDBG_E_GC_STRUCTURES_INVALID;
-        }
+        CordbHeapEnum *pHeapEnum = new CordbHeapEnum(this);
+        GetContinueNeuterList()->Add(this, pHeapEnum);
+        hr = pHeapEnum->QueryInterface(__uuidof(ICorDebugHeapEnum), (void**)ppObjects);
     }
     EX_CATCH_HRESULT(hr);
 

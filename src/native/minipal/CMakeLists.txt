@@ -24,6 +24,10 @@ if(NOT WIN32 AND NOT CLR_CMAKE_TARGET_ARCH_WASM AND NOT HOST_WASM)
     list(APPEND SOURCES ospagesize.c)
 endif()
 
+if(CLR_CMAKE_HOST_UNIX)
+    list(APPEND SOURCES cpucount.c)
+endif()
+
 # Provide an object library for scenarios where we ship static libraries
 include_directories(${CLR_SRC_NATIVE_DIR} ${CMAKE_CURRENT_BINARY_DIR})
 

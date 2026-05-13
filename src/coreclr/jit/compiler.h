@@ -8200,7 +8200,8 @@ public:
                                    // nor it implies that it's never negative.
         O2K_ZEROOBJ,
         O2K_SUBRANGE,
-        O2K_CONST_VEC
+        O2K_CONST_VEC,
+        O2K_VN, // op2 is an arbitrary value number (used for VN <relop> VN assertions in global prop).
     };
 
     struct AssertionDsc
@@ -8346,7 +8347,7 @@ public:
             ValueNum GetVN() const
             {
                 assert(!m_compiler->optLocalAssertionProp);
-                assert(KindIs(O2K_CONST_INT, O2K_CONST_DOUBLE, O2K_ZEROOBJ, O2K_CONST_VEC));
+                assert(KindIs(O2K_CONST_INT, O2K_CONST_DOUBLE, O2K_ZEROOBJ, O2K_CONST_VEC, O2K_VN));
                 assert(m_vn != ValueNumStore::NoVN);
                 return m_vn;
             }
@@ -8697,6 +8698,9 @@ public:
                 case O2K_SUBRANGE:
                     return GetOp2().GetIntegralRange().Equals(that.GetOp2().GetIntegralRange());
 
+                case O2K_VN:
+                    return GetOp2().GetVN() == that.GetOp2().GetVN();
+
                 default:
                     assert(!"Unexpected value for GetOp2().m_kind in AssertionDsc.");
                     break;
@@ -8954,6 +8958,24 @@ public:
             dsc.m_op2.m_kind           = O2K_CONST_INT;
             dsc.m_op2.m_vn             = cnsVN;
             dsc.m_op2.m_icon.m_iconVal = cns;
+            return dsc;
+        }
+
+        // Create "op1VN <relop> op2VN" assertion where both operands are arbitrary value numbers
+        // (used by global assertion prop for VN-to-VN signed comparisons of int32 and smaller).
+        static AssertionDsc CreateRelopVN(const Compiler* comp, VNFunc relop, ValueNum op1VN, ValueNum op2VN)
+        {
+            assert(!comp->optLocalAssertionProp);
+            assert(op1VN != ValueNumStore::NoVN);
+            assert(op2VN != ValueNumStore::NoVN);
+            assert(op1VN != op2VN);
+
+            AssertionDsc dsc    = CreateEmptyAssertion(comp);
+            dsc.m_assertionKind = FromVNFunc(relop);
+            dsc.m_op1.m_kind    = O1K_VN;
+            dsc.m_op1.m_vn      = op1VN;
+            dsc.m_op2.m_kind    = O2K_VN;
+            dsc.m_op2.m_vn      = op2VN;
             return dsc;
         }
     };

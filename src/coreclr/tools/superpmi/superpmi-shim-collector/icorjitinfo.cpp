@@ -2012,6 +2012,13 @@ void interceptor_ICJI::recordCallSite(uint32_t              instrOffset, /* IN *
     mc->cr->recRecordCallSite(instrOffset, callSig, methodHandle);
 }
 
+void interceptor_ICJI::recordWasmManagedCallSig(CORINFO_SIG_INFO* callSig /* IN */)
+{
+    mc->cr->AddCall("recordWasmManagedCallSig");
+    original_ICorJitInfo->recordWasmManagedCallSig(callSig);
+    // No-op in the VM, nothing to record for replay.
+}
+
 // A relocation is recorded if we are pre-jitting.
 // A jump thunk may be inserted if we are jitting
 void interceptor_ICJI::recordRelocation(void*    location,   /* IN  */

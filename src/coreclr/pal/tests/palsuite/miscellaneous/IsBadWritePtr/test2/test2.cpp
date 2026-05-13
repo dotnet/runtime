@@ -15,6 +15,7 @@
 **=========================================================*/
 
 #include <palsuite.h>
+#include <minipal/ospagesize.h>
 
 PALTEST(miscellaneous_IsBadWritePtr_test2_paltest_isbadwriteptr_test2, "miscellaneous/IsBadWritePtr/test2/paltest_isbadwriteptr_test2")
 {
@@ -31,7 +32,7 @@ PALTEST(miscellaneous_IsBadWritePtr_test2_paltest_isbadwriteptr_test2, "miscella
     */
     
     PageOne = VirtualAlloc(NULL, 
-			   GetOsPageSize()*4,
+			   minipal_getpagesize()*4,
 			   MEM_RESERVE, 
 			   PAGE_NOACCESS);
 
@@ -43,7 +44,7 @@ PALTEST(miscellaneous_IsBadWritePtr_test2_paltest_isbadwriteptr_test2, "miscella
     /* Set the first Page to PAGE_NOACCESS */
     
     PageOne = VirtualAlloc(PageOne,
-			   GetOsPageSize(),
+			   minipal_getpagesize(),
 			   MEM_COMMIT,
 			   PAGE_NOACCESS);
 
@@ -57,8 +58,8 @@ PALTEST(miscellaneous_IsBadWritePtr_test2_paltest_isbadwriteptr_test2, "miscella
 
     /* Set the second Page to PAGE_READWRITE */
 
-    PageTwo = VirtualAlloc(((BYTE*)PageOne)+GetOsPageSize(),
-			   GetOsPageSize(),
+    PageTwo = VirtualAlloc(((BYTE*)PageOne)+minipal_getpagesize(),
+			   minipal_getpagesize(),
 			   MEM_COMMIT,
 			   PAGE_READWRITE);
     if(PageTwo == NULL)
@@ -71,8 +72,8 @@ PALTEST(miscellaneous_IsBadWritePtr_test2_paltest_isbadwriteptr_test2, "miscella
     
     /* Set the third Page to PAGE_NOACCESS */
 
-    PageThree = VirtualAlloc(((BYTE*)PageTwo) + (2 * GetOsPageSize()),
-			     GetOsPageSize(),
+    PageThree = VirtualAlloc(((BYTE*)PageTwo) + (2 * minipal_getpagesize()),
+			     minipal_getpagesize(),
 			     MEM_COMMIT,
 			     PAGE_NOACCESS);
       
@@ -87,7 +88,7 @@ PALTEST(miscellaneous_IsBadWritePtr_test2_paltest_isbadwriteptr_test2, "miscella
     
 /* Check that calling IsBadWritePtr on the first page returns non-zero */
     
-    if(IsBadWritePtr(PageThree,GetOsPageSize()) == 0)
+    if(IsBadWritePtr(PageThree,minipal_getpagesize()) == 0)
     {
 	VirtualFree(PageOne,0,MEM_RELEASE);
 
@@ -98,7 +99,7 @@ PALTEST(miscellaneous_IsBadWritePtr_test2_paltest_isbadwriteptr_test2, "miscella
 
     /* Check that calling IsBadWritePtr on the middle page returns 0 */
 
-    if(IsBadWritePtr(PageTwo,GetOsPageSize()) != 0)
+    if(IsBadWritePtr(PageTwo,minipal_getpagesize()) != 0)
     {
 	VirtualFree(PageOne,0,MEM_RELEASE);
 
@@ -108,7 +109,7 @@ PALTEST(miscellaneous_IsBadWritePtr_test2_paltest_isbadwriteptr_test2, "miscella
 
     /* Check that calling IsBadWritePtr on the third page returns non-zero */
     
-    if(IsBadWritePtr(PageThree,GetOsPageSize()) == 0)
+    if(IsBadWritePtr(PageThree,minipal_getpagesize()) == 0)
     {
 	VirtualFree(PageOne,0,MEM_RELEASE);
 
