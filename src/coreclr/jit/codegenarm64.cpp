@@ -5699,6 +5699,8 @@ void CodeGen::genOSRHandleTier0CalleeSavedRegistersAndFrame()
         // Tier0 signed LR with the Tier0 caller SP before allocating its frame.
         // Recreate that SP from the current Tier0 body SP so we can authenticate
         // LR before the OSR prolog later re-signs it with the OSR SP.
+        // TODO-PAC: Avoid authenticating and re-signing so the signing SP will point to the start of the frame. It may
+        // require adding a phantom pac_sign_lr unwind code.
         genInstrWithConstant(INS_add, EA_PTRSIZE, REG_IP0, REG_SPBASE, patchpointInfo->TotalFrameSize(), REG_IP0,
                              /* inUnwindRegion */ false);
         GetEmitter()->emitIns_Mov(INS_mov, EA_PTRSIZE, REG_IP1, REG_LR, /* canSkip */ false);
