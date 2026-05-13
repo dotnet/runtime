@@ -35,12 +35,49 @@ internal enum HResultValidationMode
 internal static class DebugExtensions
 {
 #if DEBUG
+    private const int LastExceptionRingSize = 4;
+
     [ThreadStatic]
-    private static Exception? t_lastException;
+    private static Exception?[]? _debugLastExceptions;
+
+    [ThreadStatic]
+    private static int _debugLastExceptionsNextIndex;
 
     static DebugExtensions()
     {
-        AppDomain.CurrentDomain.FirstChanceException += static (_, e) => t_lastException = e.Exception;
+        AppDomain.CurrentDomain.FirstChanceException += static (_, e) =>
+        {
+            Exception?[] ring = _debugLastExceptions ??= new Exception?[LastExceptionRingSize];
+            ring[_debugLastExceptionsNextIndex] = e.Exception;
+            _debugLastExceptionsNextIndex = (_debugLastExceptionsNextIndex + 1) % LastExceptionRingSize;
+        };
+    }
+
+    private static Exception? FindMatchingException(int hr)
+    {
+        Exception?[]? ring = _debugLastExceptions;
+        if (ring is null)
+            return null;
+
+        // Walk from newest to oldest.
+        int next = _debugLastExceptionsNextIndex;
+        for (int i = 0; i < LastExceptionRingSize; i++)
+        {
+            int idx = (next - 1 - i + LastExceptionRingSize) % LastExceptionRingSize;
+            Exception? ex = ring[idx];
+            if (ex is not null && ex.HResult == hr)
+                return ex;
+        }
+
+        return null;
+    }
+
+    private static void ClearLastExceptions()
+    {
+        Exception?[]? ring = _debugLastExceptions;
+        if (ring is not null)
+            Array.Clear(ring);
+        _debugLastExceptionsNextIndex = 0;
     }
 #endif
 
@@ -66,17 +103,20 @@ internal static class DebugExtensions
             {
                 string message = $"HResult mismatch - cDAC: 0x{unchecked((uint)cdacHr):X8}, DAC: 0x{unchecked((uint)dacHr):X8} ({Path.GetFileName(filePath)}:{lineNumber})";
 #if DEBUG
-                Exception? ex = t_lastException;
-                if (ex is not null && cdacHr < 0 && ex.HResult == cdacHr)
+                if (cdacHr < 0)
                 {
-                    message += $"{Environment.NewLine}cDAC exception:{Environment.NewLine}{ex}";
+                    Exception? ex = FindMatchingException(cdacHr);
+                    if (ex is not null)
+                    {
+                        message += $"{Environment.NewLine}cDAC exception:{Environment.NewLine}{ex}";
+                    }
                 }
 #endif
                 Debug.Assert(false, message);
             }
 
 #if DEBUG
-            t_lastException = null;
+            ClearLastExceptions();
 #endif
         }
     }
