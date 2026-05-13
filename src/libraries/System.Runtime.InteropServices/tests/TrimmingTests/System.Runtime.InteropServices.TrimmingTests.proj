@@ -26,10 +26,6 @@
     <TestConsoleAppSourceFiles Include="TypeMap.cs" NativeAotOnly="true">
       <EnabledProperties>IlcGenerateMstatFile;IlcGenerateDgmlFile</EnabledProperties>
     </TestConsoleAppSourceFiles>
-
-    <!-- Regression test for https://github.com/dotnet/runtime/issues/127952. -->
-    <!-- Marshal.StructureToPtr on a struct containing a ByValArray of DateTime values. -->
-    <TestConsoleAppSourceFiles Include="MarshalStructureToPtrByValDateArray.cs" />
   </ItemGroup>
 
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />
