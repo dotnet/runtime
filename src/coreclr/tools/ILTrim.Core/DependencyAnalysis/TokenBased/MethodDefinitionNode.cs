@@ -208,16 +208,22 @@ namespace ILCompiler.DependencyAnalysis
 
         private bool IsWorthConvertingToThrow(MethodDefinition methodDef)
         {
+            const int RetOnlyBodyLength = 1;
+            const int NopRetBodyLength = 2;
+
             int rva = methodDef.RelativeVirtualAddress;
             if (rva == 0)
+            {
+                // Methods without IL don't match the empty method body pattern.
                 return true;
+            }
 
             byte[] bodyBytes = _module.PEReader.GetMethodBody(rva).GetILBytes();
 
             return bodyBytes.Length switch
             {
-                1 => bodyBytes[0] != (byte)ILOpcode.ret,
-                2 => bodyBytes[0] != (byte)ILOpcode.nop || bodyBytes[1] != (byte)ILOpcode.ret,
+                RetOnlyBodyLength => bodyBytes[0] != (byte)ILOpcode.ret,
+                NopRetBodyLength => bodyBytes[0] != (byte)ILOpcode.nop || bodyBytes[1] != (byte)ILOpcode.ret,
                 _ => true,
             };
         }
