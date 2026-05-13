@@ -78,7 +78,13 @@ namespace System.Diagnostics.Metrics
 
             if (callback is Func<IEnumerable<Measurement<T>>> enumerableFunc)
             {
-                foreach (Measurement<T> measurement in enumerableFunc())
+                IEnumerable<Measurement<T>> result = enumerableFunc();
+                if (result is null)
+                {
+                    return;
+                }
+
+                foreach (Measurement<T> measurement in result)
                 {
                     listener.NotifyMeasurement(this, measurement.Value, measurement.Tags, state);
                 }
