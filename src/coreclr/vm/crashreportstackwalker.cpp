@@ -23,6 +23,16 @@ struct WalkContext
     void* userCtx;
 };
 
+struct CrashReportStackWalkerScratch
+{
+    char crashExceptionType[CRASHREPORT_STRING_BUFFER_SIZE];
+    char className[CRASHREPORT_STRING_BUFFER_SIZE];
+    char moduleGuid[MINIPAL_GUID_BUFFER_LEN];
+};
+
+static CrashReportStackWalkerScratch s_crashReportScratch;
+static WalkContext s_walkContext;
+
 static void BuildTypeName(LPUTF8 buffer, size_t bufferSize, LPCUTF8 namespaceName, LPCUTF8 className);
 
 static
@@ -68,8 +78,8 @@ FrameCallbackAdapter(
         }
     }
 
-    char classNameBuf[CRASHREPORT_STRING_BUFFER_SIZE];
-    BuildTypeName(classNameBuf, sizeof(classNameBuf), namespaceName, className);
+    s_crashReportScratch.className[0] = '\0';
+    BuildTypeName(s_crashReportScratch.className, sizeof(s_crashReportScratch.className), namespaceName, className);
 
     LPCUTF8 moduleName = nullptr;
     Module* pModule = pMD->GetModule();
@@ -124,8 +134,7 @@ FrameCallbackAdapter(
 
     uint32_t moduleTimestamp = 0;
     uint32_t moduleSize = 0;
-    char moduleGuid[MINIPAL_GUID_BUFFER_LEN];
-    moduleGuid[0] = '\0';
+    s_crashReportScratch.moduleGuid[0] = '\0';
 
     if (pModule != nullptr)
     {
@@ -142,13 +151,13 @@ FrameCallbackAdapter(
             GUID mvid;
             if (SUCCEEDED(pImport->GetScopeProps(nullptr, &mvid)))
             {
-                minipal_guid_as_string(mvid, moduleGuid, MINIPAL_GUID_BUFFER_LEN);
+                minipal_guid_as_string(mvid, s_crashReportScratch.moduleGuid, sizeof(s_crashReportScratch.moduleGuid));
             }
         }
     }
 
-    className = classNameBuf[0] == '\0' ? nullptr : classNameBuf;
-    ctx->callback(static_cast<uint64_t>(ip), static_cast<uint64_t>(stackPointer), methodName, className, moduleName, nativeOffset, static_cast<uint32_t>(token), ilOffset, moduleTimestamp, moduleSize, moduleGuid, ctx->userCtx);
+    className = s_crashReportScratch.className[0] == '\0' ? nullptr : s_crashReportScratch.className;
+    ctx->callback(static_cast<uint64_t>(ip), static_cast<uint64_t>(stackPointer), methodName, className, moduleName, nativeOffset, static_cast<uint32_t>(token), ilOffset, moduleTimestamp, moduleSize, s_crashReportScratch.moduleGuid, ctx->userCtx);
     return SWA_CONTINUE;
 }
 
@@ -164,8 +173,9 @@ CrashReportWalkThread(
         return;
     }
 
-    WalkContext walkContext = { frameCallback, ctx };
-    pThread->StackWalkFrames(FrameCallbackAdapter, &walkContext,
+    s_walkContext.callback = frameCallback;
+    s_walkContext.userCtx = ctx;
+    pThread->StackWalkFrames(FrameCallbackAdapter, &s_walkContext,
         QUICKUNWIND | FUNCTIONSONLY | ALLOW_ASYNC_STACK_WALK);
 }
 
@@ -359,8 +369,7 @@ CrashReportEnumerateThreads(
     // so the throwable inspection runs in the thread's natural EE-live context,
     // outside the suspended window which exists for safe-point operations on
     // other threads.
-    char crashExceptionType[CRASHREPORT_STRING_BUFFER_SIZE];
-    crashExceptionType[0] = '\0';
+    s_crashReportScratch.crashExceptionType[0] = '\0';
     uint32_t crashHresult = 0;
     bool crashHasException = false;
     bool isCrashingThread = pCrashThread != nullptr
@@ -368,7 +377,10 @@ CrashReportEnumerateThreads(
     if (isCrashingThread)
     {
         crashHasException = CrashReportGetExceptionForThread(
-            pCrashThread, crashExceptionType, sizeof(crashExceptionType), &crashHresult);
+            pCrashThread,
+            s_crashReportScratch.crashExceptionType,
+            sizeof(s_crashReportScratch.crashExceptionType),
+            &crashHresult);
     }
 
     bool runtimeSuspended = CrashReportSuspendThreads(pCrashThread);
@@ -378,7 +390,7 @@ CrashReportEnumerateThreads(
     if (isCrashingThread)
     {
         uint64_t crashOsId = static_cast<uint64_t>(pCrashThread->GetOSThreadId());
-        threadCallback(crashOsId, true, crashHasException ? crashExceptionType : "", crashHresult, ctx);
+        threadCallback(crashOsId, true, crashHasException ? s_crashReportScratch.crashExceptionType : "", crashHresult, ctx);
 
         CrashReportWalkThread(pCrashThread, frameCallback, ctx);
     }

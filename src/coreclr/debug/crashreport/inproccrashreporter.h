@@ -108,7 +108,12 @@ private:
     InProcCrashReportWalkStackCallback m_walkStackCallback = nullptr;
     InProcCrashReportEnumerateThreadsCallback m_enumerateThreadsCallback = nullptr;
     char m_reportPath[CRASHREPORT_PATH_BUFFER_SIZE] = {};
+    char m_reportFilePathScratch[CRASHREPORT_PATH_BUFFER_SIZE] = {};
+    char m_expandedReportPathScratch[CRASHREPORT_PATH_BUFFER_SIZE] = {};
+    char m_numberScratch[CRASHREPORT_NUMBER_BUFFER_SIZE] = {};
+    char m_methodNameScratch[CRASHREPORT_STRING_BUFFER_SIZE] = {};
     char m_processName[CRASHREPORT_STRING_BUFFER_SIZE] = {};
+    char m_processNameScratch[CRASHREPORT_STRING_BUFFER_SIZE] = {};
     char m_hostName[CRASHREPORT_STRING_BUFFER_SIZE] = {};
 #ifdef __APPLE__
     char m_osVersion[CRASHREPORT_STRING_BUFFER_SIZE] = {};

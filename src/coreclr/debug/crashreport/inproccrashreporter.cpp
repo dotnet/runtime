@@ -95,6 +95,9 @@ static StackOverflowTraceSnapshot s_stackOverflowTrace;
 static char sccsid[] = "@(#)Version N/A";
 #endif
 
+static char s_versionScratch[sizeof(sccsid)];
+static char s_jsonFrameCallbackMethodNameScratch[CRASHREPORT_STRING_BUFFER_SIZE];
+
 static void CopyStringToBuffer(char* buffer, size_t bufferSize, const char* value)
 {
     if (buffer == nullptr || bufferSize == 0)
@@ -208,22 +211,19 @@ static ModuleTable s_moduleTable;
 class ThreadEnumerationContext
 {
 public:
+    ThreadEnumerationContext()
+    {
+        Init(nullptr, nullptr, 0, 0, nullptr);
+    }
+
     ThreadEnumerationContext(
         SignalSafeJsonWriter* writer,
         SignalSafeConsoleWriter* consoleWriter,
         uint64_t crashingTid,
         uint32_t frameLimitPerThread,
         void* signalContext)
-        : m_writer(writer),
-          m_consoleWriter(consoleWriter),
-          m_signalContext(signalContext),
-          m_threadCount(0),
-          m_crashingTid(crashingTid),
-          m_currentThreadFrameCount(0),
-          m_currentThreadDroppedCount(0),
-          m_frameLimitPerThread(frameLimitPerThread),
-          m_sawCrashThread(false)
     {
+        Init(writer, consoleWriter, crashingTid, frameLimitPerThread, signalContext);
     }
 
     ThreadEnumerationContext(const ThreadEnumerationContext&) = delete;
@@ -233,6 +233,25 @@ public:
     bool SawCrashThread() const { return m_sawCrashThread; }
     SignalSafeJsonWriter* Writer() const { return m_writer; }
     SignalSafeConsoleWriter* ConsoleWriter() const { return m_consoleWriter; }
+
+    void Init(
+        SignalSafeJsonWriter* writer,
+        SignalSafeConsoleWriter* consoleWriter,
+        uint64_t crashingTid,
+        uint32_t frameLimitPerThread,
+        void* signalContext)
+    {
+        m_writer = writer;
+        m_consoleWriter = consoleWriter;
+        m_signalContext = signalContext;
+        m_threadCount = 0;
+        m_crashingTid = crashingTid;
+        m_currentThreadFrameCount = 0;
+        m_currentThreadDroppedCount = 0;
+        m_frameLimitPerThread = frameLimitPerThread;
+        m_sawCrashThread = false;
+        m_methodNameScratch[0] = '\0';
+    }
 
     void EnumerateThreads(InProcCrashReportEnumerateThreadsCallback callback);
 
@@ -288,15 +307,23 @@ private:
     uint32_t m_currentThreadDroppedCount;
     uint32_t m_frameLimitPerThread;
     bool m_sawCrashThread;
+    char m_methodNameScratch[CRASHREPORT_STRING_BUFFER_SIZE];
 };
+
+static ThreadEnumerationContext s_threadContext;
 
 class CrashReportOutputContext
 {
 public:
-    explicit CrashReportOutputContext(int fd)
-        : m_fd(fd),
+    CrashReportOutputContext()
+        : m_fd(-1),
           m_writeFailed(false)
     {
+    }
+
+    explicit CrashReportOutputContext(int fd)
+    {
+        Init(fd);
     }
 
     CrashReportOutputContext(const CrashReportOutputContext&) = delete;
@@ -304,6 +331,12 @@ public:
 
     int Fd() const { return m_fd; }
     bool WriteFailed() const { return m_writeFailed; }
+
+    void Init(int fd)
+    {
+        m_fd = fd;
+        m_writeFailed = false;
+    }
 
     static bool ChunkCallback(const char* buffer, size_t len, void* ctx);
 
@@ -313,6 +346,8 @@ private:
     int m_fd;
     bool m_writeFailed;
 };
+
+static CrashReportOutputContext s_outputContext;
 
 class CrashReportHelpers
 {
@@ -324,6 +359,8 @@ public:
         uint32_t* currentThreadFrameCount;
         uint32_t* currentThreadDroppedCount;
         uint32_t frameLimitPerThread;
+        char* methodNameBuffer;
+        size_t methodNameBufferSize;
     };
 
     static void GetVersionString(
@@ -383,6 +420,8 @@ public:
 
     static void WriteFrameToJson(
         SignalSafeJsonWriter* writer,
+        char* methodNameBuffer,
+        size_t methodNameBufferSize,
         uint64_t ip,
         uint64_t stackPointer,
         const char* methodName,
@@ -397,6 +436,8 @@ public:
 
     static void WriteFrameToConsole(
         SignalSafeConsoleWriter* consoleWriter,
+        char* methodNameBuffer,
+        size_t methodNameBufferSize,
         uint32_t frameIndex,
         int moduleIndex,
         uint64_t ip,
@@ -455,6 +496,10 @@ public:
     static bool BuildReportPath(
         char* buffer,
         size_t bufferSize,
+        char* expandedBuffer,
+        size_t expandedBufferSize,
+        char* numberBuffer,
+        size_t numberBufferSize,
         const char* dumpPath,
         const char* processName,
         const char* hostName);
@@ -462,6 +507,8 @@ public:
     static size_t ExpandDumpTemplate(
         char* buffer,
         size_t bufferSize,
+        char* numberBuffer,
+        size_t numberBufferSize,
         const char* pattern,
         const char* processName,
         const char* hostName);
@@ -479,8 +526,7 @@ InProcCrashReporter::CreateReport(
         return;
     }
 
-    char reportPath[CRASHREPORT_PATH_BUFFER_SIZE];
-    reportPath[0] = '\0';
+    m_reportFilePathScratch[0] = '\0';
 
     // The JSON file sink is only enabled when DbgMiniDumpName supplied a
     // template AND the template expanded to a valid path. Otherwise the
@@ -488,12 +534,21 @@ InProcCrashReporter::CreateReport(
     // executes (so it can keep its bookkeeping consistent) but writes go
     // to a no-op DiscardOutputCallback instead of an open fd.
     bool jsonEnabled = m_reportPath[0] != '\0' &&
-        CrashReportHelpers::BuildReportPath(reportPath, sizeof(reportPath), m_reportPath, m_processName, m_hostName);
+        CrashReportHelpers::BuildReportPath(
+            m_reportFilePathScratch,
+            sizeof(m_reportFilePathScratch),
+            m_expandedReportPathScratch,
+            sizeof(m_expandedReportPathScratch),
+            m_numberScratch,
+            sizeof(m_numberScratch),
+            m_reportPath,
+            m_processName,
+            m_hostName);
 
     int fd = -1;
     if (jsonEnabled)
     {
-        fd = open(reportPath, O_WRONLY | O_CREAT | O_TRUNC, 0600);
+        fd = open(m_reportFilePathScratch, O_WRONLY | O_CREAT | O_TRUNC, 0600);
         if (fd == -1)
         {
             jsonEnabled = false;
@@ -507,10 +562,10 @@ InProcCrashReporter::CreateReport(
 
     EmitConsoleHeader(signal);
 
-    CrashReportOutputContext outputContext(fd);
+    s_outputContext.Init(fd);
     if (jsonEnabled)
     {
-        m_jsonWriter.Init(&CrashReportOutputContext::ChunkCallback, &outputContext);
+        m_jsonWriter.Init(&CrashReportOutputContext::ChunkCallback, &s_outputContext);
     }
     else
     {
@@ -527,11 +582,11 @@ InProcCrashReporter::CreateReport(
     else if (m_enumerateThreadsCallback != nullptr)
     {
         uint64_t crashingTid = static_cast<uint64_t>(minipal_get_current_thread_id());
-        ThreadEnumerationContext threadContext(&m_jsonWriter, &s_consoleWriter, crashingTid, m_frameLimitPerThread, context);
+        s_threadContext.Init(&m_jsonWriter, &s_consoleWriter, crashingTid, m_frameLimitPerThread, context);
 
-        threadContext.EnumerateThreads(m_enumerateThreadsCallback);
+        s_threadContext.EnumerateThreads(m_enumerateThreadsCallback);
 
-        if (threadContext.ThreadCount() == 0 || !threadContext.SawCrashThread())
+        if (s_threadContext.ThreadCount() == 0 || !s_threadContext.SawCrashThread())
         {
             EmitSynthesizedCrashThread(context, /*walkStack*/ false);
         }
@@ -549,12 +604,12 @@ InProcCrashReporter::CreateReport(
     if (jsonEnabled)
     {
         bool writeSucceeded = m_jsonWriter.Finish() &&
-            !outputContext.WriteFailed() &&
+            !s_outputContext.WriteFailed() &&
             CrashReportHelpers::WriteToFile(fd, "\n", 1);
 
         if (close(fd) != 0 || !writeSucceeded)
         {
-            unlink(reportPath);
+            unlink(m_reportFilePathScratch);
         }
     }
     else
@@ -589,13 +644,12 @@ InProcCrashReporter::Initialize(
     int cmdlineFd = open("/proc/self/cmdline", O_RDONLY | O_CLOEXEC);
     if (cmdlineFd >= 0)
     {
-        char buf[CRASHREPORT_STRING_BUFFER_SIZE];
-        ssize_t n = read(cmdlineFd, buf, sizeof(buf) - 1);
+        ssize_t n = read(cmdlineFd, m_processNameScratch, sizeof(m_processNameScratch) - 1);
         close(cmdlineFd);
         if (n > 0)
         {
-            buf[n] = '\0';
-            CrashReportHelpers::CopyString(m_processName, sizeof(m_processName), CrashReportHelpers::GetFilename(buf));
+            m_processNameScratch[n] = '\0';
+            CrashReportHelpers::CopyString(m_processName, sizeof(m_processName), CrashReportHelpers::GetFilename(m_processNameScratch));
         }
     }
 #endif
@@ -775,11 +829,15 @@ size_t
 CrashReportHelpers::ExpandDumpTemplate(
     char* buffer,
     size_t bufferSize,
+    char* numberBuffer,
+    size_t numberBufferSize,
     const char* pattern,
     const char* processName,
     const char* hostName)
 {
-    if (buffer == nullptr || bufferSize == 0 || pattern == nullptr)
+    if (buffer == nullptr || bufferSize == 0 ||
+        numberBuffer == nullptr || numberBufferSize == 0 ||
+        pattern == nullptr)
     {
         return 0;
     }
@@ -799,7 +857,7 @@ CrashReportHelpers::ExpandDumpTemplate(
         char specifier = *pattern;
 
         const char* substitution = nullptr;
-        char numberBuf[CRASHREPORT_NUMBER_BUFFER_SIZE];
+        numberBuffer[0] = '\0';
 
         switch (specifier)
         {
@@ -813,11 +871,11 @@ CrashReportHelpers::ExpandDumpTemplate(
 
             case 'p':
             case 'd':
-                if (SignalSafeFormat::FormatUnsignedDecimal(numberBuf, sizeof(numberBuf), pid) == 0)
+                if (SignalSafeFormat::FormatUnsignedDecimal(numberBuffer, numberBufferSize, pid) == 0)
                 {
                     return 0;
                 }
-                substitution = numberBuf;
+                substitution = numberBuffer;
                 break;
 
             case 'e':
@@ -830,11 +888,11 @@ CrashReportHelpers::ExpandDumpTemplate(
 
             case 't':
                 if (SignalSafeFormat::FormatUnsignedDecimal(
-                        numberBuf, sizeof(numberBuf), static_cast<uint64_t>(time(nullptr))) == 0)
+                        numberBuffer, numberBufferSize, static_cast<uint64_t>(time(nullptr))) == 0)
                 {
                     return 0;
                 }
-                substitution = numberBuf;
+                substitution = numberBuffer;
                 break;
 
             default:
@@ -881,24 +939,37 @@ bool
 CrashReportHelpers::BuildReportPath(
     char* buffer,
     size_t bufferSize,
+    char* expandedBuffer,
+    size_t expandedBufferSize,
+    char* numberBuffer,
+    size_t numberBufferSize,
     const char* dumpPath,
     const char* processName,
     const char* hostName)
 {
-    if (buffer == nullptr || bufferSize == 0 || dumpPath == nullptr || dumpPath[0] == '\0')
+    if (buffer == nullptr || bufferSize == 0 ||
+        expandedBuffer == nullptr || expandedBufferSize == 0 ||
+        numberBuffer == nullptr || numberBufferSize == 0 ||
+        dumpPath == nullptr || dumpPath[0] == '\0')
     {
         return false;
     }
 
-    char expanded[CRASHREPORT_PATH_BUFFER_SIZE];
-    size_t expandedLen = ExpandDumpTemplate(expanded, sizeof(expanded), dumpPath, processName, hostName);
+    size_t expandedLen = ExpandDumpTemplate(
+        expandedBuffer,
+        expandedBufferSize,
+        numberBuffer,
+        numberBufferSize,
+        dumpPath,
+        processName,
+        hostName);
     if (expandedLen == 0)
     {
         return false;
     }
 
     size_t pos = 0;
-    if (!AppendString(buffer, bufferSize, &pos, expanded))
+    if (!AppendString(buffer, bufferSize, &pos, expandedBuffer))
     {
         return false;
     }
@@ -1180,13 +1251,18 @@ CrashReportHelpers::JsonFrameCallback(
         return;
     }
 
-    WriteFrameToJson(writer, ip, stackPointer, methodName, className, moduleName,
+    WriteFrameToJson(writer,
+        s_jsonFrameCallbackMethodNameScratch,
+        sizeof(s_jsonFrameCallbackMethodNameScratch),
+        ip, stackPointer, methodName, className, moduleName,
         nativeOffset, token, ilOffset, moduleTimestamp, moduleSize, moduleGuid);
 }
 
 void
 CrashReportHelpers::WriteFrameToJson(
     SignalSafeJsonWriter* writer,
+    char* methodNameBuffer,
+    size_t methodNameBufferSize,
     uint64_t ip,
     uint64_t stackPointer,
     const char* methodName,
@@ -1211,9 +1287,13 @@ CrashReportHelpers::WriteFrameToJson(
 
     if (methodName != nullptr)
     {
-        char fullName[CRASHREPORT_STRING_BUFFER_SIZE];
-        BuildMethodName(fullName, sizeof(fullName), className, methodName);
-        writer->WriteString("method_name", fullName);
+        const char* fullMethodName = methodName;
+        if (methodNameBuffer != nullptr && methodNameBufferSize != 0)
+        {
+            BuildMethodName(methodNameBuffer, methodNameBufferSize, className, methodName);
+            fullMethodName = methodNameBuffer;
+        }
+        writer->WriteString("method_name", fullMethodName);
         writer->WriteString("is_managed", "true");
         writer->WriteHexAsString("token", token);
         writer->WriteHexAsString("il_offset", ilOffset);
@@ -1249,6 +1329,8 @@ CrashReportHelpers::WriteFrameToJson(
 void
 CrashReportHelpers::WriteFrameToConsole(
     SignalSafeConsoleWriter* consoleWriter,
+    char* methodNameBuffer,
+    size_t methodNameBufferSize,
     uint32_t frameIndex,
     int moduleIndex,
     uint64_t ip,
@@ -1287,9 +1369,13 @@ CrashReportHelpers::WriteFrameToConsole(
 
     if (methodName != nullptr)
     {
-        char fullName[CRASHREPORT_STRING_BUFFER_SIZE];
-        BuildMethodName(fullName, sizeof(fullName), className, methodName);
-        consoleWriter->AppendStr(fullName);
+        const char* fullMethodName = methodName;
+        if (methodNameBuffer != nullptr && methodNameBufferSize != 0)
+        {
+            BuildMethodName(methodNameBuffer, methodNameBufferSize, className, methodName);
+            fullMethodName = methodNameBuffer;
+        }
+        consoleWriter->AppendStr(fullMethodName);
         consoleWriter->AppendStr(" + 0x");
         consoleWriter->AppendHex(static_cast<uint64_t>(ilOffset));
         consoleWriter->AppendStr(" (token=0x");
@@ -1431,14 +1517,20 @@ CrashReportHelpers::FrameSinkCallback(
 
     // Always feed the JSON sink: the file output is the authoritative,
     // post-mortem data store and the cap is a compact-log triage knob.
-    WriteFrameToJson(sinks->writer, ip, stackPointer, methodName, className, moduleName,
+    WriteFrameToJson(sinks->writer,
+        sinks->methodNameBuffer,
+        sinks->methodNameBufferSize,
+        ip, stackPointer, methodName, className, moduleName,
         nativeOffset, token, ilOffset, moduleTimestamp, moduleSize, moduleGuid);
 
     bool consoleCapped = sinks->frameLimitPerThread != 0 &&
         frameIndex >= sinks->frameLimitPerThread;
     if (!consoleCapped)
     {
-        WriteFrameToConsole(sinks->consoleWriter, frameIndex, moduleIndex, ip, methodName, className, moduleName,
+        WriteFrameToConsole(sinks->consoleWriter,
+            sinks->methodNameBuffer,
+            sinks->methodNameBufferSize,
+            frameIndex, moduleIndex, ip, methodName, className, moduleName,
             nativeOffset, token, ilOffset);
     }
     else if (sinks->currentThreadDroppedCount != nullptr)
@@ -1473,6 +1565,8 @@ ThreadEnumerationContext::OnFrame(
         &m_currentThreadFrameCount,
         &m_currentThreadDroppedCount,
         m_frameLimitPerThread,
+        m_methodNameScratch,
+        sizeof(m_methodNameScratch),
     };
     CrashReportHelpers::FrameSinkCallback(ip, stackPointer, methodName, className, moduleName,
         nativeOffset, token, ilOffset, moduleTimestamp, moduleSize, moduleGuid, &sinks);
@@ -1647,6 +1741,8 @@ InProcCrashReporter::EmitSynthesizedCrashThread(
             &synthesizedFrameCount,
             &synthesizedDroppedCount,
             m_frameLimitPerThread,
+            m_methodNameScratch,
+            sizeof(m_methodNameScratch),
         };
         m_walkStackCallback(&CrashReportHelpers::FrameSinkCallback, &sinks);
     }
@@ -1804,11 +1900,10 @@ InProcCrashReporter::EmitConsoleHeader(int signal)
     s_consoleWriter.AppendStr(CRASHREPORT_PROTOCOL_VERSION);
     s_consoleWriter.EndLine();
 
-    char version[sizeof(sccsid)];
-    CrashReportHelpers::GetVersionString(version, sizeof(version));
-    if (version[0] != '\0')
+    CrashReportHelpers::GetVersionString(s_versionScratch, sizeof(s_versionScratch));
+    if (s_versionScratch[0] != '\0')
     {
-        s_consoleWriter.WriteKeyValueStr("Build", version);
+        s_consoleWriter.WriteKeyValueStr("Build", s_versionScratch);
     }
 
     s_consoleWriter.WriteKeyValueStr("ABI", CRASHREPORT_ARCHITECTURE_NAME);
@@ -1861,9 +1956,8 @@ InProcCrashReporter::EmitJsonHeader()
 
     m_jsonWriter.OpenObject("configuration");
     m_jsonWriter.WriteString("architecture", CRASHREPORT_ARCHITECTURE_NAME);
-    char version[sizeof(sccsid)];
-    CrashReportHelpers::GetVersionString(version, sizeof(version));
-    m_jsonWriter.WriteString("version", version);
+    CrashReportHelpers::GetVersionString(s_versionScratch, sizeof(s_versionScratch));
+    m_jsonWriter.WriteString("version", s_versionScratch);
     m_jsonWriter.CloseObject(); // configuration
 
     if (m_processName[0] != '\0')
