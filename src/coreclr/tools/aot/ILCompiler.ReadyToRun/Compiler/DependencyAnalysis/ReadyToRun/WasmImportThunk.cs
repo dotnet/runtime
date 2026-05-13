@@ -198,7 +198,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             if (hasRetBuffArg)
             {
-                // FIXME: What do I do here?
                 wasmLocalIndex++;
             }
 
