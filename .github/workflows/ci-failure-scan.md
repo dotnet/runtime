@@ -104,7 +104,7 @@ For every actionable failure, converge on these artifacts:
 | Fix PR (optional) | Same run as the muting PR, when the fix fits the small-fix bounds | Same run as muting PR |
 | Tracking issue (build break / infra / no stable signature) | First run that sees the failure | Yes |
 
-The `.NET Core Engineering Services: Known Build Errors` org project (`https://github.com/orgs/dotnet/projects/111`) has an auto-add rule that pulls in any `dotnet/runtime` issue labeled `Known Build Error`. Build Analysis reads from the project, so the only thing the agent has to do for project linkage is apply that label on the KBE. Never try to mutate the project from this workflow.
+The `.NET Core Engineering Services: Known Build Errors` org project (`https://github.com/orgs/dotnet/projects/111`) is populated by `net-helix[bot]` automation that watches `dotnet/runtime` for the `Known Build Error` label and adds matching issues to the project within seconds. Build Analysis reads from the project. The only thing this workflow has to do for project linkage is apply the `Known Build Error` label on the KBE; do NOT try to mutate the project from this workflow.
 
 ## Step-by-step
 
@@ -240,7 +240,7 @@ Optional fifth check when the candidate KBE is older than ~14 days: confirm Buil
 
 ### Step 5 — Decide and emit
 
-Exactly one of these branches fires per signature.
+Exactly one of Branch A / B / D / E / F fires per signature. Branch C is an additive refinement of Branch B (Branch B's outputs are still emitted, plus an additional small-fix PR).
 
 **Branch A — No existing KBE; test failure; signature is stable (>= 2 occurrences in window).**
 
@@ -252,11 +252,11 @@ If Step 4.3 found a tracker, cross-link as `Tracking: dotnet/runtime#<tracker>` 
 
 Emit one `create_pull_request` using the Muting PR template. Diff <= 5 lines; only test annotations or csproj flags. Body MUST include `Linked KBE: #<n>` as a top-level line plus the Step 4.8 four-question block.
 
-**Branch C — Branch B applies AND the failure satisfies the small-fix bounds.**
+**Branch C — Refinement of Branch B when the failure satisfies the small-fix bounds.**
 
 Small-fix bounds: <= 20 lines, single file, non-API, non-JIT-codegen, non-GC, non-threading, non-security; the failing test verifies the fix.
 
-Emit Branch B's outputs PLUS a separate `create_pull_request` for the fix on its own branch. Body cites (a) failing test as evidence, (b) root cause, (c) why fix is safe, (d) `Linked KBE: #<n>`, (e) "If this lands before #<muting-PR>, that PR can be closed."
+In addition to the Branch B muting PR, emit a separate `create_pull_request` for the fix on its own branch. Body cites (a) failing test as evidence, (b) root cause, (c) why fix is safe, (d) `Linked KBE: #<n>`, (e) "If this lands before #<muting-PR>, that PR can be closed."
 
 **Branch D — Build break.**
 
@@ -296,7 +296,9 @@ Emit each template verbatim except for `<placeholder>` slots. Match headings exa
 
 ### Template: KBE issue body — literal substring match (default)
 
-Title: `[ci-scan] Test failure: <fully.qualified.TestName>` (test failures) or `[ci-scan] Known Build Error: <short description>` (non-test). Labels: `Known Build Error`, `blocking-clean-ci`.
+Title: `[ci-scan] Test failure: <fully.qualified.TestName>` (test failures) or `[ci-scan] Hang: <fully.qualified.TestName>` (hangs/timeouts). Labels: `Known Build Error`, `blocking-clean-ci`.
+
+KBEs are reserved for test failures and hangs only (per Hard rule #7). Build breaks and infra failures get tracking issues (Branch D / E) without the `Known Build Error` label.
 
 ````markdown
 ## Build Information
