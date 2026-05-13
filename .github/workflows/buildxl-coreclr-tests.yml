@@ -1,0 +1,70 @@
+name: BuildXL CoreCLR tests
+
+permissions:
+  contents: read
+
+on:
+  pull_request:
+    branches: [ main, bxl ]
+    paths:
+      - '.github/workflows/buildxl-coreclr-tests.yml'
+      - 'bxl.sh'
+      - 'config.dsc'
+      - 'defs/**'
+      - 'src/tests/coreclr_test/**'
+      - 'src/tests/baseservices/TieredCompilation/**'
+  push:
+    branches: [ main, bxl ]
+    paths:
+      - '.github/workflows/buildxl-coreclr-tests.yml'
+      - 'bxl.sh'
+      - 'config.dsc'
+      - 'defs/**'
+      - 'src/tests/coreclr_test/**'
+      - 'src/tests/baseservices/TieredCompilation/**'
+  workflow_dispatch:
+
+jobs:
+  buildxl-coreclr-tests:
+    runs-on: ubuntu-latest
+
+    env:
+      BXL_TOOL_VERSION: '0.2.0-ci.5.b2e4b6e'
+      BXL_CACHE_DIR: ${{ runner.temp }}/bxl-cache
+
+    steps:
+      - name: Checkout runtime
+        uses: actions/checkout@v6
+
+      - name: Install .NET SDK
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: '11.0.100-preview.3.26207.106'
+
+      - name: Install BuildXL bootstrap tool
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          dotnet tool install --tool-path "$RUNNER_TEMP/bxl-tools" agtest.bxl.tool \
+            --version "$BXL_TOOL_VERSION" \
+            --add-source https://api.nuget.org/v3/index.json
+
+          echo "$RUNNER_TEMP/bxl-tools" >> "$GITHUB_PATH"
+
+      - name: Run BuildXL CoreCLR tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          chmod +x ./bxl.sh
+          ./bxl.sh
+
+      - name: Upload BuildXL logs
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: buildxl-coreclr-logs
+          path: |
+            ${{ github.workspace }}/Out/Logs/**
+            ${{ github.workspace }}/Out/Objects/**/*_run/*.log
+          if-no-files-found: ignore
