@@ -714,8 +714,9 @@
 
     <ProjectReference Include="$(MSBuildThisFileDirectory)*\tests\**\*.Tests.csproj"
                       Exclude="@(ProjectExclusions)"
-                      Condition="'$(TestAssemblies)' == 'true'"
+                      Condition="'$(TestAssemblies)' == 'true' and !('$(TargetsAppleMobile)' == 'true' and '$(UseNativeAOTRuntime)' == 'true')"
                       BuildInParallel="$(BuildTestInParallel)" />
+
     <ProjectReference Include="$(MSBuildThisFileDirectory)testPackages\testPackages.proj"
                       Condition="'$(TestPackages)' == 'true'" />
 
@@ -739,6 +740,18 @@
                                     (('$(ContinuousIntegrationBuild)' == 'true' and '$(TestWasmBuildTests)' == 'true') or
                                      ('$(ContinuousIntegrationBuild)' != 'true' and '$(TestAssemblies)' == 'true'))"
                       BuildInParallel="false" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(RunSmokeTestsOnly)' != 'true' and '$(TestAssemblies)' == 'true' and '$(TargetsAppleMobile)' == 'true' and '$(UseNativeAOTRuntime)' == 'true'">
+    <ProjectReference Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Runtime.Tests\System.Runtime.Tests.csproj" />
+    <ProjectReference Include="$(MSBuildThisFileDirectory)System.Collections\tests\System.Collections.Tests.csproj" />
+    <ProjectReference Include="$(MSBuildThisFileDirectory)System.Linq\tests\System.Linq.Tests.csproj" />
+    <ProjectReference Include="$(MSBuildThisFileDirectory)System.Threading\tests\System.Threading.Tests.csproj" />
+    <ProjectReference Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Threading.Tasks.Tests\System.Threading.Tasks.Tests.csproj" />
+    <ProjectReference Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.IO.FileSystem.Tests\System.IO.FileSystem.Tests.csproj" />
+    <ProjectReference Include="$(MSBuildThisFileDirectory)System.Text.RegularExpressions\tests\FunctionalTests\System.Text.RegularExpressions.Tests.csproj" />
+    <ProjectReference Include="$(MSBuildThisFileDirectory)System.Text.Json\tests\System.Text.Json.Tests\System.Text.Json.Tests.csproj" />
+    <ProjectReference Include="$(MSBuildThisFileDirectory)System.Net.Http\tests\FunctionalTests\System.Net.Http.Functional.Tests.csproj" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(ArchiveTests)' == 'true' and '$(TargetOS)' == 'ios' and '$(RunAOTCompilation)' == 'true'">
