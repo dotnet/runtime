@@ -243,7 +243,7 @@ private:
 #ifdef HOST_WINDOWS
     { return ((m_hMapping != NULL) || (m_hModule != NULL)); }
 #else // 
-    { return m_mmap; }
+    { return m_isMmap; }
 #endif // HOST_WINDOWS
 
     void CtorInit();
@@ -268,7 +268,7 @@ private:
     HMODULE     m_hModule;              // If we load with LoadLibrary, this is the module (otherwise NULL).
 #else // HOST_WINDOWS
     int         m_fd;
-    bool        m_mmap;
+    bool        m_isMmap;
 #endif // HOST_WINDOWS
     void *      m_pBaseData;            // Base address for memory mapped file.
     void *      m_pData;                // For memory mapped file read.

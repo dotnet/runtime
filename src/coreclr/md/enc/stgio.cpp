@@ -103,7 +103,7 @@ void StgIO::CtorInit()
     m_hMapping = 0;
 #else
     m_fd = -1;
-    m_mmap = false;
+    m_isMmap = false;
 #endif // HOST_WINDOWS
     m_pBaseData = 0;
     m_pData = 0;
@@ -952,14 +952,14 @@ HRESULT StgIO::MapFileToMem(            // Return code.
                 goto ErrExit;
             }
 #else // HOST_WINDOWS
-            _ASSERTE(!m_mmap);
+            _ASSERTE(!m_isMmap);
             if ((m_pBaseData = m_pData = mmap(nullptr, m_cbData, PROT_READ, 0, m_fd, 0)) == MAP_FAILED)
             {
                 hr = HRESULTFromErr(errno);
                 m_pBaseData = m_pData = NULL;
                 goto ErrExit;
             }
-            m_mmap = true;
+            m_isMmap = true;
 #endif // HOST_WINDOWS
         }
         // In write mode, we need the hybrid combination of being able to back up
@@ -1048,7 +1048,7 @@ HRESULT StgIO::ReleaseMappingObject()   // Return code.
         m_hMapping = 0;
     }
 #else // HOST_WINDOWS
-    _ASSERTE(m_mmap);
+    _ASSERTE(m_isMmap);
 
     if (m_pData)
     {
@@ -1056,7 +1056,7 @@ HRESULT StgIO::ReleaseMappingObject()   // Return code.
         m_pData = nullptr;
     }
 
-    m_mmap = false;
+    m_isMmap = false;
 #endif // HOST_WINDOWS
     return S_OK;
 }
@@ -1401,10 +1401,10 @@ void StgIO::FreePageMap()
         m_hMapping = 0;
     }
 #else // HOST_WINDOWS
-    else if (m_mmap && m_pBaseData)
+    else if (m_isMmap && m_pBaseData)
     {
         VERIFY(munmap(m_pBaseData, m_cbData) == 0);
-        m_mmap = false;
+        m_isMmap = false;
     }
 #endif // HOST_WINDOWS
     // For our own system, free memory.
