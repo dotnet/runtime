@@ -91,6 +91,7 @@ namespace System.Runtime.InteropServices.Tests
 
         [Fact]
         [ActiveIssue("https://github.com/mono/mono/issues/15103", TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/128078", TestPlatforms.tvOS)]
         public void StructureToPtr_ByValDateArray_Success()
         {
             var structure = new StructWithDateArray()
