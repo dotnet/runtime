@@ -160,6 +160,12 @@ public enum DynamicMethodType
     kLCGMethod = 2,
 }
 
+public enum CorDebugThreadState
+{
+    ThreadRun = 0,
+    ThreadSuspend = 1,
+}
+
 [Flags]
 public enum CorDebugUserState
 {
@@ -459,9 +465,6 @@ public unsafe partial interface IDacDbiInterface
     int IsVmObjectHandleValid(ulong vmHandle, Interop.BOOL* pResult);
 
     [PreserveSig]
-    int IsWinRTModule(ulong vmModule, Interop.BOOL* isWinRT);
-
-    [PreserveSig]
     int GetHandleAddressFromVmHandle(ulong vmHandle, ulong* pRetVal);
 
     [PreserveSig]
@@ -481,9 +484,6 @@ public unsafe partial interface IDacDbiInterface
 
     [PreserveSig]
     int IsThreadSuspendedOrHijacked(ulong vmThread, Interop.BOOL* pResult);
-
-    [PreserveSig]
-    int AreGCStructuresValid(Interop.BOOL* pResult);
 
     [PreserveSig]
     int CreateHeapWalk(nuint* pHandle);

@@ -5789,8 +5789,8 @@ void InterpCompiler::EmitSuspend(const CORINFO_CALL_INFO &callInfo, Continuation
     int32_t returnValueVar = -1;
     if (stackDepth > 0 && callInfo.sig.retType != CORINFO_TYPE_VOID)
     {
+        // The return value var is written explicitly during resume, it is not included in the set of liveVars
         returnValueVar = m_pStackPointer[-1].var;
-        liveVars.Add(returnValueVar);
     }
 
     // Step 1: Collect live IL vars
@@ -6018,6 +6018,21 @@ void InterpCompiler::EmitSuspend(const CORINFO_CALL_INFO &callInfo, Continuation
     suspendData->resumeInfo.DiagnosticIP = (size_t)NULL;
     suspendData->methodStartIP = 0; // This is filled in by logic later in emission once we know the final address of the method
     suspendData->continuationArgOffset = m_pVars[m_continuationArgIndex].offset;
+
+    if (returnValueVar != -1)
+    {
+        int32_t alignDummy;
+        int32_t size = GetInterpTypeStackSize(m_pVars[returnValueVar].clsHnd, m_pVars[returnValueVar].interpType, &alignDummy);
+        suspendData->returnValueContinuationDataSize = ALIGN_UP_TO(size, INTERP_STACK_SLOT_SIZE);
+    }
+    else
+    {
+        suspendData->returnValueContinuationDataSize = 0;
+    }
+
+    // Patched up in UpdateLocalIntervalMaps to hold the actual offset of the var
+    suspendData->returnValueVarStackOffset = returnValueVar;
+
     suspendData->asyncMethodReturnType = NULL;
     switch (m_methodInfo->args.retType)
     {
@@ -6325,6 +6340,17 @@ void InterpCompiler::UpdateLocalIntervalMaps()
     for (int32_t i = 0; i < m_varIntervalMaps.GetSize(); i++)
     {
         ConvertToIntervalMapData_ForOffsets(m_varIntervalMaps.Get(i));
+    }
+
+    // Fix up return value var stack offsets for async suspend data
+    for (int32_t i = 0; i < m_asyncSuspendDataItems.GetSize(); i++)
+    {
+        InterpAsyncSuspendData* suspendData = m_asyncSuspendDataItems.Get(i);
+        int32_t varIndex = suspendData->returnValueVarStackOffset;
+        if (varIndex != -1)
+        {
+            suspendData->returnValueVarStackOffset = m_pVars[varIndex].offset;
+        }
     }
 }
 

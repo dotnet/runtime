@@ -2896,7 +2896,7 @@ public:
 #endif // OUT_OF_PROCESS_SETTHREADCONTEXT
 };
 
-class EMPTY_BASES_DECL CUnmanagedThreadSHashTraits : public DefaultSHashTraits<UnmanagedThreadTracker*>
+class EMPTY_BASES CUnmanagedThreadSHashTraits : public DefaultSHashTraits<UnmanagedThreadTracker*>
 {
     public:
         typedef DWORD key_t;
@@ -4298,7 +4298,7 @@ private:
     BOOL IsFileMetaDataValid();
 
     // Helper to copy metadata buffer from the Target to the host.
-    void CopyRemoteMetaData(TargetBuffer buffer, CoTaskMemHolder<VOID> * pLocalBuffer);
+    void CopyRemoteMetaData(TargetBuffer buffer, VOID** pLocalBuffer);
 
 
     CordbAssembly * ResolveAssemblyInternal(mdToken tkAssemblyRef);
@@ -6752,11 +6752,11 @@ typedef std::function<HRESULT(DWORD index, ICorDebugValue** ppValue)> ValueGette
 class CordbValueEnum : public CordbBase, public ICorDebugValueEnum
 {
 public:
-    CordbValueEnum(CordbProcess* pProcess, 
-                   UINT maxCount, 
+    CordbValueEnum(CordbProcess* pProcess,
+                   UINT maxCount,
                    ValueGetter valueGetter,
                    NeuterList* pNeuterList);
-    
+
     virtual ~CordbValueEnum();
     virtual void Neuter();
 
@@ -6829,7 +6829,6 @@ public:
                      SIZE_T               ip,
                      DebuggerREGDISPLAY * pDRD,
                      TADDR                addrAmbientESP,
-                     bool                 fQuicklyUnwound,
                      CordbAppDomain *     pCurrentAppDomain,
                      CordbMiscFrame *     pMisc = NULL,
                      DT_CONTEXT *         pContext = NULL);
@@ -7008,9 +7007,6 @@ public:
 public:
     // the register set
     DebuggerREGDISPLAY m_rd;
-
-    // This field is only true for Enter-Managed chain.  It means that the register set is invalid.
-    bool               m_quicklyUnwound;
 
     // each CordbNativeFrame corresponds to exactly one CordbJITILFrame and one CordbNativeCode
     RSSmartPtr<CordbJITILFrame> m_JITILFrame;
