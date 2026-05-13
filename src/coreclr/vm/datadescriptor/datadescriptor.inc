@@ -195,6 +195,9 @@ CDAC_TYPE_FIELD(InteropSyncBlockInfo, T_POINTER, CCW, cdac_data<InteropSyncBlock
 CDAC_TYPE_FIELD(InteropSyncBlockInfo, T_POINTER, RCW, cdac_data<InteropSyncBlockInfo>::RCW)
 CDAC_TYPE_FIELD(InteropSyncBlockInfo, T_POINTER, CCF, cdac_data<InteropSyncBlockInfo>::CCF)
 #endif // FEATURE_COMINTEROP
+#ifdef FEATURE_OBJCMARSHAL
+CDAC_TYPE_FIELD(InteropSyncBlockInfo, T_POINTER, TaggedMemory, cdac_data<InteropSyncBlockInfo>::TaggedMemory)
+#endif // FEATURE_OBJCMARSHAL
 CDAC_TYPE_END(InteropSyncBlockInfo)
 
 CDAC_TYPE_BEGIN(SyncBlock)
@@ -825,7 +828,13 @@ CDAC_TYPE_FIELD(RangeSection, T_POINTER, JitManager, cdac_data<RangeSection>::Ji
 CDAC_TYPE_FIELD(RangeSection, T_INT32, Flags, cdac_data<RangeSection>::Flags)
 CDAC_TYPE_FIELD(RangeSection, T_POINTER, HeapList, cdac_data<RangeSection>::HeapList)
 CDAC_TYPE_FIELD(RangeSection, T_POINTER, R2RModule, cdac_data<RangeSection>::R2RModule)
+CDAC_TYPE_FIELD(RangeSection, T_POINTER, RangeList, cdac_data<RangeSection>::RangeList)
 CDAC_TYPE_END(RangeSection)
+
+CDAC_TYPE_BEGIN(CodeRangeMapRangeList)
+CDAC_TYPE_INDETERMINATE(CodeRangeMapRangeList)
+CDAC_TYPE_FIELD(CodeRangeMapRangeList, T_INT32, RangeListType, cdac_data<CodeRangeMapRangeList>::RangeListType)
+CDAC_TYPE_END(CodeRangeMapRangeList)
 
 CDAC_TYPE_BEGIN(EEJitManager)
 CDAC_TYPE_INDETERMINATE(EEJitManager)
@@ -1565,6 +1574,9 @@ CDAC_GLOBAL_CONTRACT(ExecutionManager, c2)
 CDAC_GLOBAL_CONTRACT(GCInfo, c1)
 CDAC_GLOBAL_CONTRACT(Loader, c1)
 CDAC_GLOBAL_CONTRACT(Notifications, c1)
+#ifdef FEATURE_OBJCMARSHAL
+CDAC_GLOBAL_CONTRACT(ObjectiveCMarshal, c1)
+#endif // FEATURE_OBJCMARSHAL
 CDAC_GLOBAL_CONTRACT(Object, c1)
 CDAC_GLOBAL_CONTRACT(PlatformMetadata, c1)
 CDAC_GLOBAL_CONTRACT(PrecodeStubs, c3)
@@ -1574,7 +1586,7 @@ CDAC_GLOBAL_CONTRACT(ReJIT, c1)
 CDAC_GLOBAL_CONTRACT(RuntimeInfo, c1)
 CDAC_GLOBAL_CONTRACT(RuntimeTypeSystem, c1)
 CDAC_GLOBAL_CONTRACT(SHash, c1)
-CDAC_GLOBAL_CONTRACT(SignatureDecoder, c1)
+CDAC_GLOBAL_CONTRACT(Signature, c1)
 CDAC_GLOBAL_CONTRACT(StackWalk, c1)
 CDAC_GLOBAL_CONTRACT(StressLog, c2)
 CDAC_GLOBAL_CONTRACT(SyncBlock, c1)

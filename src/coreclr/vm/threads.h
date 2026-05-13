@@ -511,7 +511,7 @@ public:
         TS_DebugSuspendPending    = 0x00000008,    // Is the debugger suspending threads?
         TS_GCOnTransitions        = 0x00000010,    // Force a GC on stub transitions (GCStress only)
 
-        // unused                 = 0x00000020,
+        TS_SyncBlockCleanup       = 0x00000020,    // The synch block needs to be cleaned up.
 
         TS_ExecutingOnAltStack    = 0x00000040,    // Runtime is executing on an alternate stack located anywhere in the memory
 
@@ -549,7 +549,7 @@ public:
         // unused                 = 0x00800000,
         TS_TPWorkerThread         = 0x01000000,    // is this a threadpool worker thread? [cDAC] [Thread]: Contract depends on this value.
 
-        TS_Interruptible          = 0x02000000,    // sitting in a Sleep(), Wait(), Join()
+        TS_WaitSleepJoin          = 0x02000000,    // sitting in a Sleep(), Wait(), Join(). [cDAC] [Thread]: Contract depends on this value.
         TS_Interrupted            = 0x04000000,    // was awakened by an interrupt APC. !!! This can be moved to TSNC
 
         // unused
@@ -570,17 +570,8 @@ public:
         TS_CatchAtSafePoint = (TS_AbortRequested | TS_DebugSuspendPending | TS_GCOnTransitions),
     };
 
-    // Thread flags that aren't really states in themselves but rather things the thread
-    // has to do.
-    enum ThreadTasks
-    {
-        TT_CleanupSyncBlock       = 0x00000001, // The synch block needs to be cleaned up.
-    };
-
     // Thread flags that have no concurrency issues (i.e., they are only manipulated by the owning thread). Use these
     // state flags when you have a new thread state that doesn't belong in the ThreadState enum above.
-    //
-    // <TODO>@TODO: its possible that the ThreadTasks from above and these flags should be merged.</TODO>
     enum ThreadStateNoConcurrency
     {
         TSNC_Unknown                    = 0x00000000, // threads are initialized this way
@@ -623,9 +614,7 @@ public:
                                                       //
                                                       // Once we are completely independent of the OS UEF, we could remove this.
         TSNC_SkipManagedPersonalityRoutine = 0x02000000, // Ignore the ProcessCLRException calls when propagating exception to external native code
-        TSNC_DebuggerSleepWaitJoin      = 0x04000000, // Indicates to the debugger that this thread is in a sleep wait or join state
-                                                      // This almost mirrors the TS_Interruptible state however that flag can change
-                                                      // during GC-preemptive mode whereas this one cannot.
+        // unused                       = 0x04000000,
         // unused                       = 0x08000000,
         TSNC_TSLTakenForStartup         = 0x10000000, // The ThreadStoreLock (TSL) is held by another mechanism during
                                                       // thread startup so can be skipped.
@@ -710,19 +699,19 @@ public:
     DWORD RequireSyncBlockCleanup()
     {
         LIMITED_METHOD_CONTRACT;
-        return (m_ThreadTasks & TT_CleanupSyncBlock);
+        return (m_State & TS_SyncBlockCleanup);
     }
 
     void SetSyncBlockCleanup()
     {
         LIMITED_METHOD_CONTRACT;
-        InterlockedOr((LONG*)&m_ThreadTasks, TT_CleanupSyncBlock);
+        InterlockedOr((LONG*)&m_State, TS_SyncBlockCleanup);
     }
 
     void ResetSyncBlockCleanup()
     {
         LIMITED_METHOD_CONTRACT;
-        InterlockedAnd((LONG*)&m_ThreadTasks, ~TT_CleanupSyncBlock);
+        InterlockedAnd((LONG*)&m_State, ~TS_SyncBlockCleanup);
     }
 
 #ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
@@ -914,9 +903,6 @@ public:
     inline void SetTHAllocContextObj(TypeHandle th) {LIMITED_METHOD_CONTRACT; m_thAllocContextObj = th; }
 
     inline TypeHandle GetTHAllocContextObj() {LIMITED_METHOD_CONTRACT; return m_thAllocContextObj; }
-
-    // Flags used to indicate tasks the thread has to do.
-    ThreadTasks          m_ThreadTasks;
 
     // Flags for thread states that have no concurrency issues.
     ThreadStateNoConcurrency m_StateNC;
@@ -2302,8 +2288,6 @@ private:
     UINT_PTR    m_CacheStackSufficientExecutionLimit;
     UINT_PTR    m_CacheStackStackAllocNonRiskyExecutionLimit;
 
-#define HARD_GUARD_REGION_SIZE GetOsPageSize()
-
 private:
     //
     static HRESULT CLRSetThreadStackGuarantee(SetThreadStackGuaranteeScope fScope = STSGuarantee_OnlyIfEnabled);
@@ -2316,8 +2300,8 @@ private:
 
     // Every stack has a single reserved page at its limit that we call the 'hard guard page'. This page is never
     // committed, and access to it after a stack overflow will terminate the thread.
-#define HARD_GUARD_REGION_SIZE GetOsPageSize()
-#define SIZEOF_DEFAULT_STACK_GUARANTEE 1 * GetOsPageSize()
+#define HARD_GUARD_REGION_SIZE (minipal_getpagesize())
+#define SIZEOF_DEFAULT_STACK_GUARANTEE (minipal_getpagesize())
 
 public:
     // This will return the last stack address that one could write to before a stack overflow.

@@ -4,6 +4,9 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 include_directories(BEFORE ${CMAKE_CURRENT_SOURCE_DIR})
 include_directories(${ARCH_SOURCES_DIR})
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../interop/inc)
+if(FEATURE_INPROC_CRASHREPORT)
+    include_directories(${CLR_DIR}/debug/crashreport)
+endif(FEATURE_INPROC_CRASHREPORT)
 include_directories(${CLR_SRC_NATIVE_DIR})
 include_directories(${RUNTIME_DIR})
 
@@ -263,6 +266,14 @@ if(FEATURE_READYTORUN)
         readytoruninfo.h
     )
 endif(FEATURE_READYTORUN)
+
+list(APPEND VM_SOURCES_DAC_AND_WKS_COMMON
+    pregeneratedstringthunks.cpp
+)
+list(APPEND VM_HEADERS_DAC_AND_WKS_COMMON
+    pregeneratedstringthunks.h
+    stringthunkhash.h
+)
 
 set(VM_SOURCES_DAC
     ${VM_SOURCES_DAC_AND_WKS_COMMON}
@@ -551,6 +562,12 @@ if(FEATURE_OBJCMARSHAL)
         interoplibinterface_objc.cpp
     )
 endif(FEATURE_OBJCMARSHAL)
+
+if(FEATURE_INPROC_CRASHREPORT AND NOT CLR_CROSS_COMPONENTS_BUILD)
+    list(APPEND VM_SOURCES_WKS
+        crashreportstackwalker.cpp
+    )
+endif(FEATURE_INPROC_CRASHREPORT AND NOT CLR_CROSS_COMPONENTS_BUILD)
 
 list(APPEND VM_SOURCES_WKS
     interoplibinterface_java.cpp

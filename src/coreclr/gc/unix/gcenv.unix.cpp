@@ -26,6 +26,7 @@
 #include <minipal/memorybarrierprocesswide.h>
 #include <minipal/thread.h>
 #include <minipal/time.h>
+#include <minipal/cpucount.h>
 
 #if HAVE_SWAPCTL
 #include <sys/swap.h>
@@ -108,11 +109,6 @@ typedef cpuset_t cpu_set_t;
 #define SYSCONF_GET_NUMPROCS _SC_NPROCESSORS_ONLN
 #endif
 
-#ifdef __EMSCRIPTEN__
-#include <emscripten/heap.h>
-#endif // __EMSCRIPTEN__
-
-
 // The cached total number of CPUs that can be used in the OS.
 uint32_t g_totalCpuCount = 0;
 
@@ -151,7 +147,7 @@ bool GCToOSInterface::Initialize()
         return false;
     }
 
-    int configuredCpuCount = sysconf(_SC_NPROCESSORS_CONF);
+    int configuredCpuCount = minipal_get_cpu_max_possible_count();
     if (configuredCpuCount == -1)
     {
         return false;
@@ -347,7 +343,7 @@ void GCToOSInterface::Sleep(uint32_t sleepMSec)
     requested.tv_nsec = (sleepMSec - requested.tv_sec * tccSecondsToMilliSeconds) * tccMilliSecondsToNanoSeconds;
 
     timespec remaining;
-    while (nanosleep(&requested, &remaining) == EINTR)
+    while (nanosleep(&requested, &remaining) == -1 && errno == EINTR)
     {
         requested = remaining;
     }
@@ -405,7 +401,7 @@ static void* VirtualReserveInner(size_t size, size_t alignment, uint32_t flags, 
         }
 
         pRetVal = pAlignedRetVal;
-#if defined(MADV_DONTDUMP) && !defined(TARGET_WASM)
+#if defined(MADV_DONTDUMP)
         // Do not include reserved uncommitted memory in coredump.
         if (!committing)
         {
@@ -453,13 +449,9 @@ bool GCToOSInterface::VirtualRelease(void* address, size_t size)
 //  true if it has succeeded, false if it has failed
 static bool VirtualCommitInner(void* address, size_t size, uint16_t node, bool newMemory)
 {
-#ifndef TARGET_WASM
     bool success = mprotect(address, size, PROT_WRITE | PROT_READ) == 0;
-#else
-    bool success = true;
-#endif // !TARGET_WASM
 
-#if defined(MADV_DONTDUMP) && !defined(TARGET_WASM)
+#if defined(MADV_DONTDUMP)
     if (success && !newMemory)
     {
         // Include committed memory in coredump. New memory is included by default.
@@ -544,13 +536,13 @@ bool GCToOSInterface::VirtualDecommit(void* address, size_t size)
 #endif
     bool bRetVal = mmap(address, size, PROT_NONE, mmapFlags, -1, 0) != MAP_FAILED;
 
-#if defined(MADV_DONTDUMP) && !defined(TARGET_WASM)
+#if defined(MADV_DONTDUMP)
     if (bRetVal)
     {
         // Do not include freed memory in coredump.
         madvise(address, size, MADV_DONTDUMP);
     }
-#endif // defined(MADV_DONTDUMP) && !defined(TARGET_WASM)
+#endif // defined(MADV_DONTDUMP)
 
     return  bRetVal;
 }
@@ -565,9 +557,6 @@ bool GCToOSInterface::VirtualDecommit(void* address, size_t size)
 //  true if it has succeeded, false if it has failed
 bool GCToOSInterface::VirtualReset(void * address, size_t size, bool unlock)
 {
-#ifdef TARGET_WASM
-    return true;
-#else // !TARGET_WASM
     int st = EINVAL;
 
 #ifdef MADV_DONTDUMP
@@ -586,7 +575,6 @@ bool GCToOSInterface::VirtualReset(void * address, size_t size, bool unlock)
 #endif // MADV_FREE
 
     return (st == 0);
-#endif // !TARGET_WASM
 }
 
 // Check if the OS supports write watching
@@ -836,7 +824,7 @@ static uint64_t GetMemorySizeMultiplier(char units)
     return 1;
 }
 
-#if !defined(__APPLE__) && !defined(__HAIKU__) && !defined(__EMSCRIPTEN__)
+#if !defined(__APPLE__) && !defined(__HAIKU__)
 // Try to read the MemAvailable entry from /proc/meminfo.
 // Return true if the /proc/meminfo existed, the entry was present and we were able to parse it.
 static bool ReadMemAvailable(uint64_t* memAvailable)
@@ -1097,15 +1085,13 @@ uint64_t GetAvailablePhysicalMemory()
     sz = sizeof(free_count);
     sysctlbyname("vm.stats.vm.v_free_count", &free_count, &sz, NULL, 0);
 
-    available = (inactive_count + laundry_count + free_count) * sysconf(_SC_PAGESIZE);
+    available = (inactive_count + laundry_count + free_count) * minipal_getpagesize();
 #elif defined(__HAIKU__)
     system_info info;
     if (get_system_info(&info) == B_OK)
     {
         available = info.free_memory;
     }
-#elif defined(__EMSCRIPTEN__)
-    available = emscripten_get_heap_max() - emscripten_get_heap_size();
 #else // Linux
     static volatile bool tryReadMemInfo = true;
 
@@ -1155,7 +1141,7 @@ uint64_t GetAvailablePageFile()
     rc = sysctlnametomib("vm.swap_info", mib, &length);
     if (rc == 0)
     {
-        int pagesize = getpagesize();
+        uint32_t pagesize = minipal_getpagesize();
         // Aggregate the information for all swap files on the system
         for (mib[2] = 0; ; mib[2]++)
         {
@@ -1176,7 +1162,7 @@ uint64_t GetAvailablePageFile()
     struct anoninfo ai;
     if (swapctl(SC_AINFO, &ai) != -1)
     {
-        int pagesize = getpagesize();
+        uint32_t pagesize = minipal_getpagesize();
         available = ai.ani_free * pagesize;
     }
 #elif HAVE_SYSINFO

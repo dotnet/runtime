@@ -97,7 +97,6 @@ struct DebuggerFrameData
         this->fHitExitFrame = false;
 
         this->info.eStubFrameType = STUBFRAME_NONE;
-        this->info.quickUnwind = false;
 
         this->info.frame     = NULL;
         this->needParentInfo = false;
@@ -653,7 +652,6 @@ void FrameInfo::InitForUMChain(FramePointer fpRoot, REGDISPLAY * pRDSrc)
     CopyREGDISPLAY(&(this->registers), pRDSrc);
     this->fp = fpRoot;
 
-    this->quickUnwind = false;
     this->internal = false;
     this->managed = false;
 
@@ -750,7 +748,6 @@ void FrameInfo::InitFromStubHelper(
         this->fp = GetSP(pRDSrc);
     }
 
-    this->quickUnwind = false;
     this->internal    = false;
     this->managed     = true;
     this->relOffset   = 0;
@@ -846,7 +843,6 @@ void FrameInfo::InitForThreadStart(Thread * pThread, REGDISPLAY * pRDSrc)
     this->md = NULL;
     CopyREGDISPLAY(&(this->registers), pRDSrc);
     this->fp    = FramePointer::MakeFramePointer(pThread->GetCachedStackBase());
-    this->quickUnwind = false;
     this->internal = false;
     this->managed     = false;
     this->relOffset   = 0;
@@ -889,7 +885,6 @@ void FrameInfo::InitForEnterManagedChain(FramePointer fpRoot)
     memset((void *)&this->registers, 0, sizeof(this->registers));
     this->fp = fpRoot;
 
-    this->quickUnwind = true;
     this->internal    = false;
     this->managed     = true;
     this->relOffset   = 0;
