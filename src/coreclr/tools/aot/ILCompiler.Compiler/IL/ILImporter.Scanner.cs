@@ -449,6 +449,8 @@ namespace Internal.IL
                     Debug.Assert(false); break;
             }
 
+            MethodDesc asyncVariantMethod = null;
+            MethodDesc asyncVariantRuntimeDeterminedMethod = null;
             // Are we scanning a call within a state machine?
             if (opcode is ILOpcode.call or ILOpcode.callvirt
                 && _canonMethod.IsAsyncCall())
@@ -475,8 +477,10 @@ namespace Internal.IL
                     _dependencies.Add(_factory.MethodEntrypoint(asyncHelpers.GetKnownMethod("FinishSuspensionWithContinuationContext"u8, null)), asyncReason);
                 }
 
-                // If this is the task await pattern, we're actually going to call the variant
-                // so switch our focus to the variant.
+                // If this is the task await pattern, the JIT will first resolve the call to the
+                // async variant, then may switch back to the original if the async variant is just
+                // a thunk (for non-runtime-async methods). Report both variants as dependencies such
+                // that the JIT can pick either one.
 
                 // in rare cases a method that returns Task is not actually TaskReturning (i.e. returns T).
                 // we cannot resolve to an Async variant in such case.
@@ -487,8 +491,8 @@ namespace Internal.IL
 
                 if (allowAsyncVariant && MatchTaskAwaitPattern())
                 {
-                    runtimeDeterminedMethod = _factory.TypeSystemContext.GetAsyncVariantMethod(runtimeDeterminedMethod);
-                    method = _factory.TypeSystemContext.GetAsyncVariantMethod(method);
+                    asyncVariantMethod = _factory.TypeSystemContext.GetAsyncVariantMethod(method);
+                    asyncVariantRuntimeDeterminedMethod = _factory.TypeSystemContext.GetAsyncVariantMethod(runtimeDeterminedMethod);
                 }
             }
 
@@ -812,6 +816,16 @@ namespace Internal.IL
                         }
 
                         _dependencies.Add(_factory.CanonicalEntrypoint(targetMethod), reason);
+
+                        if (asyncVariantMethod != null && _canonMethod.IsSharedByGenericInstantiations)
+                        {
+                            MethodDesc avTargetMethod = asyncVariantMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);
+                            if (avTargetMethod.RequiresInstMethodDescArg())
+                                _dependencies.Add(GetGenericLookupHelper(ReadyToRunHelperId.MethodDictionary, asyncVariantRuntimeDeterminedMethod), reason);
+                            else if (avTargetMethod.RequiresInstMethodTableArg())
+                                _dependencies.Add(GetGenericLookupHelper(ReadyToRunHelperId.TypeHandle, asyncVariantRuntimeDeterminedMethod.OwningType), reason);
+                            _dependencies.Add(_factory.CanonicalEntrypoint(avTargetMethod), reason);
+                        }
                     }
                     else
                     {
@@ -853,6 +867,16 @@ namespace Internal.IL
                     }
 
                     _dependencies.Add(GetMethodEntrypoint(targetMethod), reason);
+
+                    if (asyncVariantMethod != null)
+                    {
+                        MethodDesc avTargetMethod = asyncVariantMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);
+                        if (avTargetMethod.RequiresInstMethodDescArg())
+                            _dependencies.Add(_compilation.NodeFactory.MethodGenericDictionary(asyncVariantMethod), reason);
+                        else if (avTargetMethod.RequiresInstMethodTableArg())
+                            _dependencies.Add(_compilation.NodeFactory.ConstructedTypeSymbol(asyncVariantMethod.OwningType), reason);
+                        _dependencies.Add(GetMethodEntrypoint(avTargetMethod), reason);
+                    }
                 }
             }
             else if (staticResolution is DefaultInterfaceMethodResolution.Diamond or DefaultInterfaceMethodResolution.Reabstraction)
