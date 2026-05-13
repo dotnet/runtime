@@ -403,19 +403,17 @@ namespace System.Numerics
         where T : System.Numerics.IFloatingPointIeee754<T>, System.Numerics.IMinMaxValue<T>
     {
         private readonly int _dummyPrimitive;
-        public static readonly System.Numerics.Complex<T> ImaginaryOne;
-        public static readonly System.Numerics.Complex<T> Infinity;
-        public static readonly System.Numerics.Complex<T> NaN;
-        public static readonly System.Numerics.Complex<T> One;
-        public static readonly System.Numerics.Complex<T> Zero;
+        public static System.Numerics.Complex<T> ImaginaryOne { get { throw null; } }
+        public static System.Numerics.Complex<T> Infinity { get { throw null; } }
+        public static System.Numerics.Complex<T> NaN { get { throw null; } }
+        public static System.Numerics.Complex<T> One { get { throw null; } }
+        public static System.Numerics.Complex<T> Zero { get { throw null; } }
         public Complex(T real, T imaginary) { throw null; }
         public T Imaginary { get { throw null; } }
         public T Real { get { throw null; } }
         static System.Numerics.Complex<T> System.Numerics.IAdditiveIdentity<System.Numerics.Complex<T>,System.Numerics.Complex<T>>.AdditiveIdentity { get { throw null; } }
         static System.Numerics.Complex<T> System.Numerics.IMultiplicativeIdentity<System.Numerics.Complex<T>,System.Numerics.Complex<T>>.MultiplicativeIdentity { get { throw null; } }
-        static System.Numerics.Complex<T> System.Numerics.INumberBase<System.Numerics.Complex<T>>.One { get { throw null; } }
         static int System.Numerics.INumberBase<System.Numerics.Complex<T>>.Radix { get { throw null; } }
-        static System.Numerics.Complex<T> System.Numerics.INumberBase<System.Numerics.Complex<T>>.Zero { get { throw null; } }
         static System.Numerics.Complex<T> System.Numerics.ISignedNumber<System.Numerics.Complex<T>>.NegativeOne { get { throw null; } }
         public static T Abs(System.Numerics.Complex<T> value) { throw null; }
         public static System.Numerics.Complex<T> Acos(System.Numerics.Complex<T> value) { throw null; }
