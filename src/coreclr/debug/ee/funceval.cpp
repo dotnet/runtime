@@ -1122,10 +1122,10 @@ static OBJECTREF ReadAndBoxArgValue(DebuggerEval *pDE,
     {
         if (pFEAD->argIsHandleValue)
         {
-            OBJECTHANDLE oh = (OBJECTHANDLE)(pFEAD->argAddr);
+            OBJECTHANDLE oh = (OBJECTHANDLE)CORDB_ADDRESS_TO_PTR(pFEAD->argAddr);
             return ObjectFromHandle(oh);
         }
-        else if (pFEAD->argAddr != NULL)
+        else if (pFEAD->argAddr != (CORDB_ADDRESS)0)
         {
             return *(OBJECTREF *)pArgAddr;
         }
@@ -1151,7 +1151,7 @@ static OBJECTREF ReadAndBoxArgValue(DebuggerEval *pDE,
         INT64 bigVal = 0;
         SIZE_T regVal = 0;
 
-        if (pFEAD->argAddr != NULL)
+        if (pFEAD->argAddr != (CORDB_ADDRESS)0)
         {
             pData = pArgAddr;
         }
@@ -1168,13 +1168,13 @@ static OBJECTREF ReadAndBoxArgValue(DebuggerEval *pDE,
         {
             pMT = pFEArgInfo->sigTypeHandle.GetMethodTable();
         }
-        else if (pFEAD->fullArgType != NULL)
+        else if (pFEAD->fullArgType != (CORDB_ADDRESS)0)
         {
             // For 'this' arg (pFEArgInfo == NULL), resolve the concrete value
             // type from the debugger-provided type data.  This is needed because
             // pFallbackMT (from m_md->GetMethodTable()) may be a base type like
             // System.Object for inherited methods (e.g. ToString on a struct).
-            Debugger::TypeDataWalk walk((DebuggerIPCE_TypeArgData *)pFEAD->fullArgType, pFEAD->fullArgTypeNodeCount);
+            Debugger::TypeDataWalk walk((DebuggerIPCE_TypeArgData *)CORDB_ADDRESS_TO_PTR(pFEAD->fullArgType), pFEAD->fullArgTypeNodeCount);
             TypeHandle th = walk.ReadTypeHandle();
             if (!th.IsNull())
                 pMT = th.GetMethodTable();
@@ -1205,7 +1205,7 @@ static OBJECTREF ReadAndBoxArgValue(DebuggerEval *pDE,
     {
         INT64 rawValue = 0;
 
-        if (pFEAD->argAddr != NULL)
+        if (pFEAD->argAddr != (CORDB_ADDRESS)0)
         {
             unsigned size = g_pEEInterface->GetSizeForCorElementType(pFEAD->argElementType);
             memcpy(&rawValue, pArgAddr, min(size, (unsigned)sizeof(rawValue)));
@@ -1276,8 +1276,8 @@ static void DoNormalFuncEval(DebuggerEval *pDE)
     memset(pArgAddrs, 0, cbAllocSize);
     for (unsigned i = 0; i < pDE->m_argCount; i++)
     {
-        if (argData[i].argAddr != NULL)
-            pArgAddrs[i] = (void *)(argData[i].argAddr);
+        if (argData[i].argAddr != (CORDB_ADDRESS)0)
+            pArgAddrs[i] = CORDB_ADDRESS_TO_PTR(argData[i].argAddr);
     }
     GCPROTECT_BEGININTERIOR_ARRAY(*pArgAddrs, pDE->m_argCount);
 
@@ -1499,7 +1499,7 @@ static void DoNormalFuncEval(DebuggerEval *pDE)
         void *pThisData = ucoGc.thisArg->GetData();
         unsigned thisSize = pThisMT->GetNumInstanceFieldBytes();
 
-        if (pThisArgData->argAddr != NULL && pArgAddrs[0] != NULL)
+        if (pThisArgData->argAddr != (CORDB_ADDRESS)0 && pArgAddrs[0] != NULL)
         {
             CopyValueClass(pArgAddrs[0], pThisData, pThisMT);
         }
@@ -1562,7 +1562,7 @@ static void DoNormalFuncEval(DebuggerEval *pDE)
                     memcpy(pFEAD->argLiteralData, pData, min(size, (unsigned)sizeof(pFEAD->argLiteralData)));
                 }
             }
-            else if (pFEAD->argAddr != NULL)
+            else if (pFEAD->argAddr != (CORDB_ADDRESS)0)
             {
                 void *pOrigAddr = pArgAddrs[currArgIndex];
                 if (pOrigAddr != NULL)
