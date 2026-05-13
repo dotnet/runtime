@@ -2733,6 +2733,7 @@ void CodeGen::genEmitterUnitTests()
     genDefineTempLabel(skipLabel);
     WasmInterval* skipInterval = WasmInterval::NewBlock(m_compiler, skipLabel, skipLabel);
     this->wasmControlFlowStack->Push(skipInterval);
+    instGen(INS_block);
 #endif
     inst_JMP(EJ_jmp, skipLabel);
 
@@ -2781,12 +2782,11 @@ void CodeGen::genEmitterUnitTests()
     if (unitTestSectionAll || (strstr(unitTestSection, "simd") != nullptr))
     {
         genWasmEmitterUnitTestsSimd();
+        instGen(INS_end);
     }
 #endif
 
-#ifndef TARGET_WASM
     genDefineTempLabel(skipLabel);
-#endif
     instGen(INS_nop);
     instGen(INS_nop);
     instGen(INS_nop);

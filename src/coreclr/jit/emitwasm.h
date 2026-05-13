@@ -32,10 +32,9 @@ void emitIns_R_R(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2)
 void emitIns_S_R(instruction ins, emitAttr attr, regNumber ireg, int varx, int offs);
 
 // Packed SIMD instruction emit functions
-void emitIns_V128Const(instruction ins, const uint8_t* bytes);
+void emitIns_V128Imm(instruction ins, const uint8_t* bytes);
 void emitIns_Lane(instruction ins, emitAttr attr, uint8_t laneIdx);
 void emitIns_MemargLane(instruction ins, emitAttr attr, cnsval_ssize_t offset, uint8_t laneIdx);
-void emitIns_Shuffle(instruction ins, const uint8_t* laneIndices);
 
 void emitAddressConstant(void* address);
 
@@ -51,6 +50,10 @@ static unsigned int  emitGetLclVarDeclCount(const instrDesc* id);
 instrDesc*           emitNewInstrValTypeImm(emitAttr attr, WasmValueType type, unsigned int localCount);
 static WasmValueType emitGetValTypeImmType(const instrDesc* id);
 static unsigned int  emitGetValTypeImmImm(const instrDesc* id);
+
+const uint8_t* emitGetV128ImmValue(const instrDesc* id);
+const uint8_t  emitGetLaneImmValue(const instrDesc* id);
+
 
 /************************************************************************/
 /*  Private members that deal with target-dependent instr. descriptors  */

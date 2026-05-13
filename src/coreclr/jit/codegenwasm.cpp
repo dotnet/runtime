@@ -3402,26 +3402,24 @@ void CodeGen::genWasmEmitterUnitTestsSimd()
     // --- IF_V128_CONST: v128.const with 16 raw bytes ---
     const uint8_t v128Bytes[16] = {0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
                                    0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F};
-    emit->emitIns_V128Const(INS_v128_const, v128Bytes);
+    emit->emitIns_V128Imm(INS_v128_const, v128Bytes);
 
     // All-zeros and all-ones constants
     const uint8_t v128Zeros[16] = {0};
-    emit->emitIns_V128Const(INS_v128_const, v128Zeros);
+    emit->emitIns_V128Imm(INS_v128_const, v128Zeros);
 
     const uint8_t v128Ones[16] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
                                   0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
-    emit->emitIns_V128Const(INS_v128_const, v128Ones);
+    emit->emitIns_V128Imm(INS_v128_const, v128Ones);
 
     // --- IF_LANE: extract/replace lane instructions ---
     // i8x16 lanes (0..15)
     emit->emitIns_Lane(INS_i8x16_extract_lane_s, EA_1BYTE, 0);
     emit->emitIns_Lane(INS_i8x16_extract_lane_u, EA_1BYTE, 15);
-    emit->emitIns_Lane(INS_i8x16_replace_lane, EA_1BYTE, 7);
 
     // i16x8 lanes (0..7)
     emit->emitIns_Lane(INS_i16x8_extract_lane_s, EA_2BYTE, 0);
     emit->emitIns_Lane(INS_i16x8_extract_lane_u, EA_2BYTE, 7);
-    emit->emitIns_Lane(INS_i16x8_replace_lane, EA_2BYTE, 3);
 
     // i32x4 lanes (0..3)
     emit->emitIns_Lane(INS_i32x4_extract_lane, EA_4BYTE, 0);
@@ -3432,8 +3430,8 @@ void CodeGen::genWasmEmitterUnitTestsSimd()
     emit->emitIns_Lane(INS_i64x2_replace_lane, EA_8BYTE, 1);
 
     // f32x4 lanes (0..3)
-    emit->emitIns_Lane(INS_f32x4_extract_lane, EA_4BYTE, 2);
-    emit->emitIns_Lane(INS_f32x4_replace_lane, EA_4BYTE, 1);
+    emit->emitIns_Lane(INS_f32x4_extract_lane, EA_4BYTE, 3);
+    emit->emitIns_Lane(INS_f32x4_replace_lane, EA_4BYTE, 0);
 
     // f64x2 lanes (0..1)
     emit->emitIns_Lane(INS_f64x2_extract_lane, EA_8BYTE, 0);
@@ -3452,15 +3450,15 @@ void CodeGen::genWasmEmitterUnitTestsSimd()
     // --- IF_SHUFFLE: i8x16.shuffle with 16 lane-index bytes ---
     // Identity shuffle
     const uint8_t identityShuffle[16] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
-    emit->emitIns_Shuffle(INS_i8x16_shuffle, identityShuffle);
+    emit->emitIns_V128Imm(INS_i8x16_shuffle, identityShuffle);
 
     // Reverse bytes
     const uint8_t reverseShuffle[16] = {15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0};
-    emit->emitIns_Shuffle(INS_i8x16_shuffle, reverseShuffle);
+    emit->emitIns_V128Imm(INS_i8x16_shuffle, reverseShuffle);
 
     // Cross-operand shuffle (indices 16..31 refer to the second operand)
     const uint8_t crossShuffle[16] = {0, 17, 2, 19, 4, 21, 6, 23, 8, 25, 10, 27, 12, 29, 14, 31};
-    emit->emitIns_Shuffle(INS_i8x16_shuffle, crossShuffle);
+    emit->emitIns_V128Imm(INS_i8x16_shuffle, crossShuffle);
 
     // --- IF_OPCODE: plain opcode SIMD instructions (representative sample) ---
     // Splat operations

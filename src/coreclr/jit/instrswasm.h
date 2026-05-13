@@ -258,8 +258,8 @@ INST2(v128_load64_splat,   "v128.load64_splat",   0, IF_MEMARG,      0xFD, 10)
 INST2(v128_store,           "v128.store",           0, IF_MEMARG,      0xFD, 11)
 
 // v128.const and i8x16.shuffle (special formats)
-INST2(v128_const,           "v128.const",           0, IF_V128_CONST,  0xFD, 12)
-INST2(i8x16_shuffle,       "i8x16.shuffle",       0, IF_SHUFFLE,     0xFD, 13)
+INST2(v128_const,           "v128.const",           0, IF_V128,  0xFD, 12)
+INST2(i8x16_shuffle,       "i8x16.shuffle",       0, IF_V128,     0xFD, 13)
 
 // i8x16.swizzle (plain opcode)
 INST2(i8x16_swizzle,       "i8x16.swizzle",       0, IF_OPCODE,      0xFD, 14)

@@ -366,6 +366,18 @@ unsigned int emitter::emitGetValTypeImmImm(const instrDesc* id)
     return static_cast<const instrDescValTypeImm*>(id)->imm;
 }
 
+const uint8_t* emitter::emitGetV128ImmValue(const instrDesc* id)
+{
+    assert(id->idIsV128Imm());
+    return static_cast<const instrDescV128Imm*>(id)->v128Bytes;
+} 
+
+const uint8_t emitter::emitGetLaneImmValue(const instrDesc* id)
+{
+    assert(id->idIsMemargLaneImm());
+    return static_cast<const instrDescMemargLane*>(id)->lane;
+}
+
 //------------------------------------------------------------------------
 // Packed SIMD instruction emit functions
 //------------------------------------------------------------------------
@@ -377,12 +389,12 @@ unsigned int emitter::emitGetValTypeImmImm(const instrDesc* id)
 //   ins   - instruction (INS_v128_const)
 //   bytes - pointer to 16 bytes of constant data
 //
-void emitter::emitIns_V128Const(instruction ins, const uint8_t* bytes)
+void emitter::emitIns_V128Imm(instruction ins, const uint8_t* bytes)
 {
     assert(bytes != nullptr);
-    instrDescV128Const* id = static_cast<instrDescV128Const*>(emitAllocAnyInstr(sizeof(instrDescV128Const), EA_16BYTE));
+    instrDescV128Imm* id = static_cast<instrDescV128Imm*>(emitAllocAnyInstr(sizeof(instrDescV128Imm), EA_16BYTE));
     id->idIns(ins);
-    id->idInsFmt(IF_V128_CONST);
+    id->idInsFmt(IF_V128);
     id->idV128Const(bytes);
 
     dispIns(id);
@@ -399,10 +411,10 @@ void emitter::emitIns_V128Const(instruction ins, const uint8_t* bytes)
 //
 void emitter::emitIns_Lane(instruction ins, emitAttr attr, uint8_t laneIdx)
 {
-    instrDescLane* id = static_cast<instrDescLane*>(emitAllocAnyInstr(sizeof(instrDescLane), attr));
+    instrDesc* id = emitNewInstr(attr);
     id->idIns(ins);
     id->idInsFmt(IF_LANE);
-    id->idLaneIdx(laneIdx);
+    id->idSmallCns(laneIdx);
 
     dispIns(id);
     appendToCurIG(id);
@@ -425,25 +437,6 @@ void emitter::emitIns_MemargLane(instruction ins, emitAttr attr, cnsval_ssize_t 
     id->idInsFmt(IF_MEMARG_LANE);
     id->idcCnsVal = offset;
     id->idLaneIdx(laneIdx);
-
-    dispIns(id);
-    appendToCurIG(id);
-}
-
-//------------------------------------------------------------------------
-// emitIns_Shuffle: Emit an i8x16.shuffle instruction with 16 lane-index bytes.
-//
-// Arguments:
-//   ins         - instruction (INS_i8x16_shuffle)
-//   laneIndices - pointer to 16 lane index bytes
-//
-void emitter::emitIns_Shuffle(instruction ins, const uint8_t* laneIndices)
-{
-    assert(laneIndices != nullptr);
-    instrDescShuffle* id = static_cast<instrDescShuffle*>(emitAllocAnyInstr(sizeof(instrDescShuffle), EA_16BYTE));
-    id->idIns(ins);
-    id->idInsFmt(IF_SHUFFLE);
-    id->idShuffleLanes(laneIndices);
 
     dispIns(id);
     appendToCurIG(id);
@@ -517,17 +510,14 @@ size_t emitter::emitSizeOfInsDsc(instrDesc* id) const
         return sizeof(instrDescValTypeImm);
     }
 
+    // SIMD cases
     switch (id->idInsFmt())
     {
-        case IF_V128_CONST:
-            return sizeof(instrDescV128Const);
-        case IF_SHUFFLE:
-            return sizeof(instrDescShuffle);
-        case IF_LANE:
-            return sizeof(instrDescLane);
+        case IF_V128:
+            return sizeof(instrDescV128Imm);
         case IF_MEMARG_LANE:
             return sizeof(instrDescMemargLane);
-        default:
+        default: // IF_LANE can fit in a standard instrDesc
             break;
     }
 
@@ -661,7 +651,7 @@ unsigned emitter::instrDesc::idCodeSize() const
             size += SizeOfULEB128(emitGetInsSC(this)); // control flow stack offset
             break;
         }
-        case IF_V128_CONST:
+        case IF_V128:
             size += 16; // 16 raw bytes for the v128 constant
             break;
         case IF_LANE:
@@ -675,9 +665,6 @@ unsigned emitter::instrDesc::idCodeSize() const
             size += 1; // 1 byte lane index
             break;
         }
-        case IF_SHUFFLE:
-            size += 16; // 16 lane-index bytes
-            break;
         default:
             unreached();
     }
@@ -981,18 +968,19 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             dst += emitOutputULEB128Padded(dst, (int64_t)size);
             break;
         }
-        case IF_V128_CONST:
+        case IF_V128:
         {
             dst += emitOutputOpcode(dst, ins);
-            const instrDescV128Const* idConst = static_cast<const instrDescV128Const*>(id);
+            const instrDescV128Imm* idConst = static_cast<const instrDescV128Imm*>(id);
             dst += emitRawBytes(dst, idConst->idV128Const(), 16);
             break;
         }
         case IF_LANE:
         {
             dst += emitOutputOpcode(dst, ins);
-            const instrDescLane* idLane = static_cast<const instrDescLane*>(id);
-            dst += emitOutputByte(dst, idLane->idLaneIdx());
+            cnsval_size_t laneIdx = emitGetInsSC(id);
+            assert(FitsIn<uint8_t>(laneIdx));
+            dst += emitOutputByte(dst, static_cast<uint8_t>(laneIdx));
             break;
         }
         case IF_MEMARG_LANE:
@@ -1006,13 +994,6 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             dst += emitOutputULEB128(dst, align);
             dst += emitOutputULEB128(dst, offset);
             dst += emitOutputByte(dst, idMemLane->idLaneIdx());
-            break;
-        }
-        case IF_SHUFFLE:
-        {
-            dst += emitOutputOpcode(dst, ins);
-            const instrDescShuffle* idShuf = static_cast<const instrDescShuffle*>(id);
-            dst += emitRawBytes(dst, idShuf->idShuffleLanes(), 16);
             break;
         }
         default:
@@ -1264,7 +1245,9 @@ void emitter::emitDispIns(
 
         case IF_CODE_SIZE:
         {
+#if FALSE
             FuncInfoDsc* const func = m_compiler->funGetFunc(emitCurIG->igFuncIdx);
+            assert(func != nullptr);
 
             emitLocation* const startLoc = func->startLoc;
             emitLocation* const endLoc   = func->endLoc;
@@ -1276,9 +1259,42 @@ void emitter::emitDispIns(
                 printf(" %u", codeSize);
             }
             else
+#endif
             {
                 printf(" <not yet determined>");
             }
+        }
+        break;
+
+        case IF_V128:
+        {
+            const uint8_t* imm = emitGetV128ImmValue(id);
+            printf(" 0x");
+            for (int i = 15; i >= 0; i--)
+            {
+                printf("%02x", imm[i]);
+            }
+        }
+        break;
+
+        case IF_LANE:
+        {
+            cnsval_size_t lane = emitGetInsSC(id);
+            assert(FitsIn<uint8_t>(lane));
+
+            printf(" %u", lane);
+        }
+        break;
+
+        case IF_MEMARG_LANE:
+        {
+            unsigned       log2align = emitGetAlignHintLog2(id);
+            cnsval_ssize_t offset    = emitGetInsSC(id);
+            printf(" %u %llu", log2align, (uint64_t)offset);
+            dispLclVarInfoIfAny();
+
+            uint8_t lane = emitGetLaneImmValue(id);
+            printf(" %u", lane);
         }
         break;
 

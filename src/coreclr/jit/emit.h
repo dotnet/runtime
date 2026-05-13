@@ -1328,6 +1328,17 @@ protected:
         {
             return _idInsFmt == IF_TRY_TABLE;
         }
+
+        bool idIsV128Imm() const
+        {
+            return _idInsFmt == IF_V128;
+        }
+
+        bool idIsMemargLaneImm() const
+        {
+            return _idInsFmt == IF_MEMARG_LANE;
+        }
+
 #endif
 
 #ifdef TARGET_ARM64
@@ -2422,9 +2433,9 @@ protected:
         }
     };
 
-    struct instrDescV128Const : instrDesc
+    struct instrDescV128Imm : instrDesc
     {
-        instrDescV128Const() = delete;
+        instrDescV128Imm() = delete;
 
         uint8_t v128Bytes[16];
 
@@ -2437,41 +2448,6 @@ protected:
         const uint8_t* idV128Const() const
         {
             return v128Bytes;
-        }
-    };
-
-    struct instrDescShuffle : instrDesc
-    {
-        instrDescShuffle() = delete;
-
-        uint8_t shuffleLanes[16];
-
-        void idShuffleLanes(const uint8_t* lanes)
-        {
-            assert(lanes != nullptr);
-            memcpy(shuffleLanes, lanes, 16);
-        }
-
-        const uint8_t* idShuffleLanes() const
-        {
-            return shuffleLanes;
-        }
-    };
-
-    struct instrDescLane : instrDesc
-    {
-        instrDescLane() = delete;
-
-        uint8_t lane;
-
-        void idLaneIdx(uint8_t idx)
-        {
-            lane = idx;
-        }
-
-        uint8_t idLaneIdx() const
-        {
-            return lane;
         }
     };
 
