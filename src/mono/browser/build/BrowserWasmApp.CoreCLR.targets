@@ -140,6 +140,22 @@
     </ItemGroup>
   </Target>
 
+  <!-- The WebAssembly SDK has _WasmNativeForBuild which forces WasmBuildApp to run before
+       _ResolveWasmOutputs (so the relinked dotnet.native.wasm is staged into the build's
+       static web assets), but it is gated on $(UsingBrowserRuntimeWorkload) == 'true'. In
+       CoreCLR no-workload mode that property is false, so without this target the build-
+       phase relink would only run after Build completes via WasmBuildApp's AfterTargets="Build"
+       — too late for GenerateStaticWebAssetsManifest to pick up @(WasmNativeAsset), and the
+       served binary would be the original (runtime pack) dotnet.native.wasm. -->
+  <Target Name="_CoreCLRWasmNativeForBuild"
+          DependsOnTargets="WasmBuildApp"
+          BeforeTargets="_ResolveWasmOutputs"
+          Condition="'$(IsBrowserWasmProject)' == 'true' and
+                     '$(WasmBuildingForNestedPublish)' != 'true' and
+                     '$(WasmBuildOnlyAfterPublish)' != 'true' and
+                     '$(IsCrossTargetingBuild)' != 'true' and
+                     '$(UsingBrowserRuntimeWorkload)' != 'true'" />
+
   <!-- The WebAssembly SDK has _WasmNative which forces WasmTriggerPublishApp to run before
        ProcessPublishFilesForWasm, but it is gated on $(UsingBrowserRuntimeWorkload) == 'true'.
        In CoreCLR no-workload mode that property is false, so without this target the nested

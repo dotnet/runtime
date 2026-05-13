@@ -338,7 +338,10 @@ namespace Wasm.Build.Tests
             string pinvokeTable = File.ReadAllText(Path.Combine(objDir, pinvokeTableFileName));
             // Verify that the invoke is in the pinvoke table. Under various circumstances we will silently skip it,
             //  for example if the module isn't found
-            Assert.Contains("\"accept_double_struct_and_return_float_struct\", accept_double_struct_and_return_float_struct", pinvokeTable);
+            string pinvokeTableEntry = IsCoreClrRuntime
+                ? "DllImportEntry(accept_double_struct_and_return_float_struct)"
+                : "\"accept_double_struct_and_return_float_struct\", accept_double_struct_and_return_float_struct";
+            Assert.Contains(pinvokeTableEntry, pinvokeTable);
             // Verify the signature of the C function prototype. Wasm ABI specifies that the structs should both decompose into scalars.
             Assert.Contains("float accept_double_struct_and_return_float_struct (double);", pinvokeTable);
             Assert.Contains("int64_t accept_and_return_i64_struct (int64_t);", pinvokeTable);
