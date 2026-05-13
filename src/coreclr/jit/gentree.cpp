@@ -737,57 +737,6 @@ ClassLayout* GenTree::GetLayout(Compiler* compiler) const
     return compiler->typGetObjLayout(structHnd);
 }
 
-//-----------------------------------------------------------
-// CopyReg: Copy the _gtRegNum/gtRegTag fields.
-//
-// Arguments:
-//     from   -  GenTree node from which to copy
-//
-void GenTree::CopyReg(GenTree* from)
-{
-    _gtRegNum = from->_gtRegNum;
-    INDEBUG(gtRegTag = from->gtRegTag;)
-
-#if FEATURE_MULTIREG_RET
-    if (IsCall())
-    {
-        assert(from->IsCall());
-        this->AsCall()->CopyOtherRegs(from->AsCall());
-        return;
-    }
-
-#if !defined(TARGET_64BIT)
-    if (OperIsMultiRegOp())
-    {
-        this->AsMultiRegOp()->CopyOtherRegs(from->AsMultiRegOp());
-        return;
-    }
-#endif
-#endif // FEATURE_MULTIREG_RET
-
-    if (IsCopyOrReload())
-    {
-        this->AsCopyOrReload()->CopyOtherRegs(from->AsCopyOrReload());
-        return;
-    }
-
-#ifdef FEATURE_HW_INTRINSICS
-    if (OperIsHWIntrinsic())
-    {
-        this->AsHWIntrinsic()->CopyOtherRegs(from->AsHWIntrinsic());
-        return;
-    }
-#endif
-
-    if (IsMultiRegLclVar())
-    {
-        this->AsLclVar()->CopyOtherRegs(from->AsLclVar());
-        return;
-    }
-
-    assert(!IsMultiRegNode());
-}
-
 //------------------------------------------------------------------
 // gtHasReg: Whether node been assigned a register by LSRA
 //
@@ -11311,7 +11260,10 @@ DONE:
     /* Make sure to copy back fields that may have been initialized */
 
     copy->CopyRawCosts(tree);
-    copy->CopyReg(tree);
+
+    assert(tree->GetRegNum() == REG_NA);
+    assert(tree->GetRegTag() == GenTree::GT_REGTAG_NONE);
+
     return copy;
 }
 
@@ -11501,7 +11453,8 @@ GenTreeCall* Compiler::gtCloneCandidateCall(GenTreeCall* call)
     result->gtDebugFlags |= (call->gtDebugFlags & ~GTF_DEBUG_NODE_MASK);
 #endif
 
-    result->CopyReg(call);
+    assert(call->GetRegNum() == REG_NA);
+    assert(call->GetRegTag() == GenTree::GT_REGTAG_NONE);
 
     return result;
 }

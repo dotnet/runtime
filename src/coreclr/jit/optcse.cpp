@@ -5234,8 +5234,8 @@ void CSE_HeuristicCommon::PerformCSE(CSE_Candidate* successfulCandidate)
 //
 void CSE_HeuristicCommon::ReplaceCSENode(Statement* stmt, GenTree* exp, GenTree* newNode)
 {
-    newNode->CopyReg(exp); // The cse inheirits any reg num property from the original exp node
-    exp->ClearRegNum();    // The exp node (for a CSE def) no longer has a register requirement
+    assert(exp->GetRegNum() == REG_NA);
+    assert(exp->GetRegTag() == GenTree::GT_REGTAG_NONE);
 
     // Walk the statement 'stmt' and find the pointer
     // in the tree is pointing to 'exp'

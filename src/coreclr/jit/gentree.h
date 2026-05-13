@@ -1097,8 +1097,6 @@ public:
         INDEBUG(gtRegTag = GT_REGTAG_NONE;)
     }
 
-    // Copy the _gtRegNum/gtRegTag fields
-    void CopyReg(GenTree* from);
     bool gtHasReg(Compiler* comp) const;
 
     int GetRegisterDstCount(Compiler* compiler) const;
@@ -3956,24 +3954,6 @@ public:
         ClearOtherRegFlags();
     }
 
-    //----------------------------------------------------------------------------
-    // CopyOtherRegs: copy multi-reg state from the given node to this node
-    //
-    // Arguments:
-    //    from  -  Node from which to copy multi-reg state
-    //
-    // Return Value:
-    //    None
-    //
-    void CopyOtherRegs(GenTreeLclVar* from)
-    {
-        for (int i = 0; i < MAX_MULTIREG_COUNT - 1; i++)
-        {
-            gtOtherReg[i] = from->gtOtherReg[i];
-        }
-        gtSpillFlags = from->gtSpillFlags;
-    }
-
     regNumber GetRegNumByIdx(int regIndex) const
     {
         assert(regIndex < MAX_MULTIREG_COUNT);
@@ -5934,21 +5914,6 @@ struct GenTreeMultiRegOp : public GenTreeOp
         return TypeIs(TYP_LONG) ? 2 : 1;
     }
 
-    //----------------------------------------------------------------------------
-    // CopyOtherRegs: copy multi-reg state from the given node to this node
-    //
-    // Arguments:
-    //    from  -  Node from which to copy multi-reg state
-    //
-    // Return Value:
-    //    None
-    //
-    void CopyOtherRegs(GenTreeMultiRegOp* from)
-    {
-        gtOtherReg   = from->gtOtherReg;
-        gtSpillFlags = from->gtSpillFlags;
-    }
-
     //---------------------------------------------------------------------------
     // GetRegNumByIdx: get i'th register allocated to this struct argument.
     //
@@ -6452,21 +6417,6 @@ public:
         return *gtEntryPoint;
     }
 #endif // FEATURE_READYTORUN
-
-    //----------------------------------------------------------------------------
-    // CopyOtherRegs: copy multi-reg state from the given node to this node
-    //
-    // Arguments:
-    //    from  -  Node from which to copy multi-reg state
-    //
-    // Return Value:
-    //    None
-    //
-    void CopyOtherRegs(GenTreeJitIntrinsic* from)
-    {
-        gtOtherReg   = from->gtOtherReg;
-        gtSpillFlags = from->gtSpillFlags;
-    }
 
     //-----------------------------------------------------------
     // GetRegNumByIdx: Get regNumber of i'th position.
@@ -8986,30 +8936,6 @@ struct GenTreeCopyOrReload : public GenTreeUnOp
             gtOtherRegs[idx - 1] = (regNumberSmall)reg;
             assert(gtOtherRegs[idx - 1] == reg);
         }
-    }
-
-    //----------------------------------------------------------------------------
-    // CopyOtherRegs: copy multi-reg state from the given copy/reload node to this
-    // node.
-    //
-    // Arguments:
-    //    from  -  GenTree node from which to copy multi-reg state
-    //
-    // Return Value:
-    //    None
-    //
-    // TODO-ARM: Implement this routine for Arm64 and Arm32
-    // TODO-X86: Implement this routine for x86
-    void CopyOtherRegs(GenTreeCopyOrReload* from)
-    {
-        assert(OperGet() == from->OperGet());
-
-#ifdef UNIX_AMD64_ABI
-        for (unsigned i = 0; i < MAX_MULTIREG_COUNT - 1; ++i)
-        {
-            gtOtherRegs[i] = from->gtOtherRegs[i];
-        }
-#endif
     }
 
     unsigned GetRegCount() const
