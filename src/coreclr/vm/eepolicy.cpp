@@ -16,6 +16,10 @@
 
 #include "typestring.h"
 
+#ifdef FEATURE_INPROC_CRASHREPORT
+#include "inproccrashreporter.h"
+#endif
+
 #ifndef TARGET_UNIX
 #include "dwreport.h"
 #endif // !TARGET_UNIX
@@ -210,6 +214,20 @@ class CallStackLogger
         PrintToStdErrW(str.GetUnicode());
     }
 
+#ifdef FEATURE_INPROC_CRASHREPORT
+    void CaptureFrameForCrashReport(int index, uint32_t repeatCount, uint32_t repeatSequenceLength)
+    {
+        WRAPPER_NO_CONTRACT;
+
+        SString str;
+
+        MethodDesc* pMD = m_frames[index];
+        TypeString::AppendMethodInternal(str, pMD, TypeString::FormatNamespace|TypeString::FormatFullInst|TypeString::FormatSignature);
+
+        InProcCrashReportAddStackOverflowTraceFrame(str.GetUTF8(), repeatCount, repeatSequenceLength);
+    }
+#endif // FEATURE_INPROC_CRASHREPORT
+
 public:
 
     CallStackLogger(PEXCEPTION_POINTERS pExceptionInfo)
@@ -228,7 +246,7 @@ public:
         return logger->LogCallstackForLogCallbackWorker(pCF);
     }
 
-    void PrintStackTrace(const WCHAR* pWordAt)
+    void PrintStackTrace(const WCHAR* pWordAt, uint64_t crashingTid)
     {
         WRAPPER_NO_CONTRACT;
 
@@ -302,8 +320,15 @@ public:
             largestCommonLength = 0;
         }
 
+#ifdef FEATURE_INPROC_CRASHREPORT
+        InProcCrashReportBeginStackOverflowTrace(crashingTid, static_cast<uint32_t>(m_frames.Count()));
+#endif // FEATURE_INPROC_CRASHREPORT
+
         for (int i = 0; i < largestCommonStartOffset; i++)
         {
+#ifdef FEATURE_INPROC_CRASHREPORT
+            CaptureFrameForCrashReport(i, 0, 0);
+#endif // FEATURE_INPROC_CRASHREPORT
             PrintFrame(i, pWordAt);
         }
 
@@ -317,6 +342,11 @@ public:
             PrintToStdErrA("--------------------------------\n");
             for (int i = largestCommonStartOffset; i < largestCommonStartOffset + largestCommonLength; i++)
             {
+#ifdef FEATURE_INPROC_CRASHREPORT
+                CaptureFrameForCrashReport(i,
+                    static_cast<uint32_t>(largestCommonRepeat),
+                    static_cast<uint32_t>(largestCommonLength));
+#endif // FEATURE_INPROC_CRASHREPORT
                 PrintFrame(i, pWordAt);
             }
             PrintToStdErrA("--------------------------------\n");
@@ -324,8 +354,15 @@ public:
 
         for (int i = largestCommonLength * largestCommonRepeat + largestCommonStartOffset; i < m_frames.Count(); i++)
         {
+#ifdef FEATURE_INPROC_CRASHREPORT
+            CaptureFrameForCrashReport(i, 0, 0);
+#endif // FEATURE_INPROC_CRASHREPORT
             PrintFrame(i, pWordAt);
         }
+
+#ifdef FEATURE_INPROC_CRASHREPORT
+        InProcCrashReportCompleteStackOverflowTrace(0);
+#endif // FEATURE_INPROC_CRASHREPORT
     }
 };
 
@@ -365,7 +402,7 @@ inline void LogCallstackForLogWorker(Thread* pThread, PEXCEPTION_POINTERS pExcep
 
     pThread->StackWalkFrames(&CallStackLogger::LogCallstackForLogCallback, &logger, QUICKUNWIND | FUNCTIONSONLY | ALLOW_ASYNC_STACK_WALK);
 
-    logger.PrintStackTrace(WordAt.GetUnicode());
+    logger.PrintStackTrace(WordAt.GetUnicode(), static_cast<uint64_t>(pThread->GetOSThreadId()));
 #ifdef _DEBUG
     if (g_LogStackOverflowExit)
         PrintToStdErrA("@Exiting stack trace printing thread.\n");
@@ -819,6 +856,9 @@ void DECLSPEC_NORETURN EEPolicy::HandleFatalStackOverflow(EXCEPTION_POINTERS *pE
 #ifdef _DEBUG
     if (g_LogStackOverflowExit)
         PrintToStdErrA("@Terminating the process.\n");
+#endif
+#ifdef FEATURE_INPROC_CRASHREPORT
+    InProcCrashReportSetCrashKind(InProcCrashReportCrashKind::StackOverflow);
 #endif
     CrashDumpAndTerminateProcess(COR_E_STACKOVERFLOW);
     UNREACHABLE();

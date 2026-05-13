@@ -24,6 +24,12 @@ static constexpr size_t CRASHREPORT_PATH_BUFFER_SIZE = 1024;
 static constexpr size_t CRASHREPORT_STRING_BUFFER_SIZE = 256;
 static constexpr size_t CRASHREPORT_NUMBER_BUFFER_SIZE = 32;
 
+enum class InProcCrashReportCrashKind : uint32_t
+{
+    Unknown = 0,
+    StackOverflow = 1,
+};
+
 using InProcCrashReportIsManagedThreadCallback = bool (*)();
 
 using InProcCrashReportFrameCallback = void (*)(
@@ -89,6 +95,8 @@ private:
         void* context,
         bool walkStack);
 
+    void EmitStackOverflowCrashThread();
+
     void EmitConsoleHeader(int signal);
     void EmitConsoleModulesAndFooter();
 
@@ -115,3 +123,17 @@ private:
 // PAL_SetInProcCrashReportCallback. PAL has no direct dependency on the
 // reporter; the only coupling is through this registered callback.
 void InProcCrashReportInitialize(const InProcCrashReporterSettings& settings);
+
+// Records crash kind hints from VM fatal paths that later terminate through PAL
+// as a generic signal (for example stack overflow -> SIGABRT).
+void InProcCrashReportSetCrashKind(InProcCrashReportCrashKind crashKind);
+
+// Captures the compressed stack-overflow trace built by the runtime SO helper
+// thread so the later in-proc crash reporter can include the same managed stack
+// without trying to walk from the exhausted crashing stack.
+void InProcCrashReportBeginStackOverflowTrace(uint64_t crashingTid, uint32_t totalFrameCount);
+void InProcCrashReportAddStackOverflowTraceFrame(
+    const char* methodName,
+    uint32_t repeatCount,
+    uint32_t repeatSequenceLength);
+void InProcCrashReportCompleteStackOverflowTrace(uint32_t truncatedFrameCount);

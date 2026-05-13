@@ -29,6 +29,10 @@
 extern "C" const char* PROCGetSignalNameAscii(int signal);
 
 static const char CRASHREPORT_PROTOCOL_VERSION[] = "1.0.0";
+static constexpr uint32_t CRASHREPORT_COR_E_STACKOVERFLOW = 0x800703E9;
+static const char CRASHREPORT_STACK_OVERFLOW_EXCEPTION_TYPE[] = "System.StackOverflowException";
+static const char CRASHREPORT_STACK_OVERFLOW_TRACE_UNAVAILABLE_REASON[] = "stack_overflow_trace_unavailable";
+static constexpr uint32_t CRASHREPORT_STACK_OVERFLOW_MAX_TRACE_FRAMES = 128;
 
 #if defined(__x86_64__)
 static const char CRASHREPORT_ARCHITECTURE_NAME[] = "amd64";
@@ -63,6 +67,26 @@ static const char CRASHREPORT_ARCHITECTURE_NAME[] = "arm";
 //   *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** ***   (closing separator)
 
 static SignalSafeConsoleWriter s_consoleWriter;
+static volatile LONG s_crashKind = static_cast<LONG>(InProcCrashReportCrashKind::Unknown);
+
+struct StackOverflowTraceFrame
+{
+    char methodName[CRASHREPORT_STRING_BUFFER_SIZE];
+    uint32_t repeatCount;
+    uint32_t repeatSequenceLength;
+};
+
+struct StackOverflowTraceSnapshot
+{
+    uint64_t crashingTid;
+    uint32_t totalFrameCount;
+    uint32_t frameCount;
+    uint32_t truncatedFrameCount;
+    StackOverflowTraceFrame frames[CRASHREPORT_STACK_OVERFLOW_MAX_TRACE_FRAMES];
+    volatile LONG available;
+};
+
+static StackOverflowTraceSnapshot s_stackOverflowTrace;
 
 // Include the .NET version string instead of linking because it is "static".
 #if __has_include("_version.c")
@@ -70,6 +94,28 @@ static SignalSafeConsoleWriter s_consoleWriter;
 #else
 static char sccsid[] = "@(#)Version N/A";
 #endif
+
+static void CopyStringToBuffer(char* buffer, size_t bufferSize, const char* value)
+{
+    if (buffer == nullptr || bufferSize == 0)
+    {
+        return;
+    }
+
+    if (value == nullptr)
+    {
+        buffer[0] = '\0';
+        return;
+    }
+
+    size_t toCopy = strnlen(value, bufferSize - 1);
+    if (toCopy != 0)
+    {
+        memcpy(buffer, value, toCopy);
+    }
+
+    buffer[toCopy] = '\0';
+}
 
 #ifdef __APPLE__
 // Query a sysctl by name into a caller-supplied buffer. Called from Initialize, NOT from the
@@ -361,6 +407,16 @@ public:
         uint32_t token,
         uint32_t ilOffset);
 
+    static void WriteStackOverflowFrameToJson(
+        SignalSafeJsonWriter* writer,
+        const StackOverflowTraceFrame& frame,
+        bool includeRepeatMetadata);
+
+    static void WriteStackOverflowFrameToConsole(
+        SignalSafeConsoleWriter* consoleWriter,
+        uint32_t frameIndex,
+        const StackOverflowTraceFrame& frame);
+
     static void WriteThreadBlockHeaderToConsole(
         SignalSafeConsoleWriter* consoleWriter,
         uint64_t osThreadId,
@@ -446,6 +502,9 @@ InProcCrashReporter::CreateReport(
 
     (void)siginfo;
 
+    InProcCrashReportCrashKind crashKind = static_cast<InProcCrashReportCrashKind>(
+        InterlockedExchange(&s_crashKind, static_cast<LONG>(InProcCrashReportCrashKind::Unknown)));
+
     EmitConsoleHeader(signal);
 
     CrashReportOutputContext outputContext(fd);
@@ -461,7 +520,11 @@ InProcCrashReporter::CreateReport(
     EmitJsonHeader();
 
     m_jsonWriter.OpenArray("threads");
-    if (m_enumerateThreadsCallback != nullptr)
+    if (crashKind == InProcCrashReportCrashKind::StackOverflow)
+    {
+        EmitStackOverflowCrashThread();
+    }
+    else if (m_enumerateThreadsCallback != nullptr)
     {
         uint64_t crashingTid = static_cast<uint64_t>(minipal_get_current_thread_id());
         ThreadEnumerationContext threadContext(&m_jsonWriter, &s_consoleWriter, crashingTid, m_frameLimitPerThread, context);
@@ -582,6 +645,49 @@ InProcCrashReportInitialize(const InProcCrashReporterSettings& settings)
     // singleton is fully populated (mirrors the publication ordering used by
     // PAL_SetLogManagedCallstackForSignalCallback).
     PAL_SetInProcCrashReportCallback(&InProcCrashReportSignalDispatcher);
+}
+
+void
+InProcCrashReportSetCrashKind(InProcCrashReportCrashKind crashKind)
+{
+    InterlockedExchange(&s_crashKind, static_cast<LONG>(crashKind));
+}
+
+void
+InProcCrashReportBeginStackOverflowTrace(
+    uint64_t crashingTid,
+    uint32_t totalFrameCount)
+{
+    InterlockedExchange(&s_stackOverflowTrace.available, 0);
+    s_stackOverflowTrace.crashingTid = crashingTid;
+    s_stackOverflowTrace.totalFrameCount = totalFrameCount;
+    s_stackOverflowTrace.frameCount = 0;
+    s_stackOverflowTrace.truncatedFrameCount = 0;
+}
+
+void
+InProcCrashReportAddStackOverflowTraceFrame(
+    const char* methodName,
+    uint32_t repeatCount,
+    uint32_t repeatSequenceLength)
+{
+    if (s_stackOverflowTrace.frameCount >= CRASHREPORT_STACK_OVERFLOW_MAX_TRACE_FRAMES)
+    {
+        ++s_stackOverflowTrace.truncatedFrameCount;
+        return;
+    }
+
+    StackOverflowTraceFrame& frame = s_stackOverflowTrace.frames[s_stackOverflowTrace.frameCount++];
+    CopyStringToBuffer(frame.methodName, sizeof(frame.methodName), methodName);
+    frame.repeatCount = repeatCount;
+    frame.repeatSequenceLength = repeatSequenceLength;
+}
+
+void
+InProcCrashReportCompleteStackOverflowTrace(uint32_t truncatedFrameCount)
+{
+    s_stackOverflowTrace.truncatedFrameCount += truncatedFrameCount;
+    InterlockedExchange(&s_stackOverflowTrace.available, 1);
 }
 
 bool
@@ -1050,24 +1156,7 @@ CrashReportHelpers::CopyString(
     size_t bufferSize,
     const char* value)
 {
-    if (buffer == nullptr || bufferSize == 0)
-    {
-        return;
-    }
-
-    if (value == nullptr)
-    {
-        buffer[0] = '\0';
-        return;
-    }
-
-    size_t toCopy = strnlen(value, bufferSize - 1);
-    if (toCopy != 0)
-    {
-        memcpy(buffer, value, toCopy);
-    }
-
-    buffer[toCopy] = '\0';
+    CopyStringToBuffer(buffer, bufferSize, value);
 }
 
 void
@@ -1220,6 +1309,50 @@ CrashReportHelpers::WriteFrameToConsole(
             consoleWriter->AppendChar(')');
         }
     }
+    consoleWriter->EndLine();
+}
+
+void
+CrashReportHelpers::WriteStackOverflowFrameToJson(
+    SignalSafeJsonWriter* writer,
+    const StackOverflowTraceFrame& frame,
+    bool includeRepeatMetadata)
+{
+    if (writer == nullptr)
+    {
+        return;
+    }
+
+    writer->OpenObject();
+    writer->WriteString("method_name", frame.methodName);
+    writer->WriteString("is_managed", "true");
+    if (includeRepeatMetadata)
+    {
+        writer->WriteDecimalAsString("stack_overflow_repeat_count", frame.repeatCount);
+        writer->WriteDecimalAsString("stack_overflow_repeat_sequence_length", frame.repeatSequenceLength);
+    }
+    writer->CloseObject(); // frame
+}
+
+void
+CrashReportHelpers::WriteStackOverflowFrameToConsole(
+    SignalSafeConsoleWriter* consoleWriter,
+    uint32_t frameIndex,
+    const StackOverflowTraceFrame& frame)
+{
+    if (consoleWriter == nullptr)
+    {
+        return;
+    }
+
+    consoleWriter->AppendStr("  #");
+    if (frameIndex < 10)
+    {
+        consoleWriter->AppendChar('0');
+    }
+    consoleWriter->AppendDecimal(static_cast<uint64_t>(frameIndex));
+    consoleWriter->AppendChar(' ');
+    consoleWriter->AppendStr(frame.methodName);
     consoleWriter->EndLine();
 }
 
@@ -1522,6 +1655,143 @@ InProcCrashReporter::EmitSynthesizedCrashThread(
 
     m_jsonWriter.CloseArray(); // stack_frames
     m_jsonWriter.CloseObject(); // thread
+}
+
+void
+InProcCrashReporter::EmitStackOverflowCrashThread()
+{
+    bool stackOverflowTraceAvailable = s_stackOverflowTrace.available != 0;
+    uint64_t crashingTid = stackOverflowTraceAvailable && s_stackOverflowTrace.crashingTid != 0
+        ? s_stackOverflowTrace.crashingTid
+        : static_cast<uint64_t>(minipal_get_current_thread_id());
+
+    m_jsonWriter.OpenObject();
+    m_jsonWriter.WriteString("is_managed", "true");
+    m_jsonWriter.WriteString("crashed", "true");
+    m_jsonWriter.WriteHexAsString("native_thread_id", crashingTid);
+    m_jsonWriter.WriteString("managed_exception_type", CRASHREPORT_STACK_OVERFLOW_EXCEPTION_TYPE);
+    m_jsonWriter.WriteHexAsString("managed_exception_hresult", CRASHREPORT_COR_E_STACKOVERFLOW);
+    if (stackOverflowTraceAvailable)
+    {
+        m_jsonWriter.WriteDecimalAsString("stack_overflow_total_frames", s_stackOverflowTrace.totalFrameCount);
+        if (s_stackOverflowTrace.truncatedFrameCount != 0)
+        {
+            m_jsonWriter.WriteDecimalAsString("stack_overflow_trace_truncated_frames", s_stackOverflowTrace.truncatedFrameCount);
+        }
+    }
+    else
+    {
+        m_jsonWriter.WriteString("stack_frames_unavailable_reason", CRASHREPORT_STACK_OVERFLOW_TRACE_UNAVAILABLE_REASON);
+    }
+
+    m_jsonWriter.OpenArray("stack_frames");
+    if (stackOverflowTraceAvailable)
+    {
+        for (uint32_t i = 0; i < s_stackOverflowTrace.frameCount;)
+        {
+            StackOverflowTraceFrame& frame = s_stackOverflowTrace.frames[i];
+            uint32_t repeatSequenceLength = frame.repeatSequenceLength;
+            bool isRepeatSequence = frame.repeatCount > 1 && repeatSequenceLength != 0;
+            CrashReportHelpers::WriteStackOverflowFrameToJson(
+                &m_jsonWriter, frame, isRepeatSequence);
+            ++i;
+
+            if (!isRepeatSequence)
+            {
+                continue;
+            }
+
+            uint32_t sequenceEnd = i + repeatSequenceLength - 1;
+            if (sequenceEnd > s_stackOverflowTrace.frameCount)
+            {
+                sequenceEnd = s_stackOverflowTrace.frameCount;
+            }
+
+            for (; i < sequenceEnd; ++i)
+            {
+                CrashReportHelpers::WriteStackOverflowFrameToJson(
+                    &m_jsonWriter, s_stackOverflowTrace.frames[i], false);
+            }
+        }
+    }
+    m_jsonWriter.CloseArray(); // stack_frames
+    m_jsonWriter.CloseObject(); // thread
+
+    CrashReportHelpers::WriteThreadBlockHeaderToConsole(&s_consoleWriter, crashingTid, /*isCrashThread*/ true);
+    s_consoleWriter.AppendStr("  managed exception: ");
+    s_consoleWriter.AppendStr(CRASHREPORT_STACK_OVERFLOW_EXCEPTION_TYPE);
+    s_consoleWriter.AppendStr(" (0x");
+    s_consoleWriter.AppendHex(static_cast<uint64_t>(CRASHREPORT_COR_E_STACKOVERFLOW));
+    s_consoleWriter.AppendChar(')');
+    s_consoleWriter.EndLine();
+
+    if (!stackOverflowTraceAvailable)
+    {
+        s_consoleWriter.WriteLine("  stack overflow trace unavailable");
+        CrashReportHelpers::WriteThreadBlockCloserToConsole(&s_consoleWriter, 0, 0);
+        return;
+    }
+
+    s_consoleWriter.AppendStr("  stack overflow frames: ");
+    s_consoleWriter.AppendDecimal(static_cast<uint64_t>(s_stackOverflowTrace.totalFrameCount));
+    s_consoleWriter.EndLine();
+
+    uint32_t consoleFrameCount = 0;
+    uint32_t consoleDroppedCount = s_stackOverflowTrace.truncatedFrameCount;
+    for (uint32_t i = 0; i < s_stackOverflowTrace.frameCount;)
+    {
+        StackOverflowTraceFrame& frame = s_stackOverflowTrace.frames[i];
+        uint32_t repeatSequenceLength = frame.repeatSequenceLength;
+        if (frame.repeatCount > 1 && repeatSequenceLength != 0)
+        {
+            uint32_t sequenceEnd = i + repeatSequenceLength;
+            if (sequenceEnd > s_stackOverflowTrace.frameCount)
+            {
+                sequenceEnd = s_stackOverflowTrace.frameCount;
+            }
+
+            if (m_frameLimitPerThread != 0 && consoleFrameCount >= m_frameLimitPerThread)
+            {
+                consoleDroppedCount += sequenceEnd - i;
+                i = sequenceEnd;
+                continue;
+            }
+
+            s_consoleWriter.AppendStr("  repeated ");
+            s_consoleWriter.AppendDecimal(static_cast<uint64_t>(frame.repeatCount));
+            s_consoleWriter.AppendStr(" times:");
+            s_consoleWriter.EndLine();
+
+            for (; i < sequenceEnd; ++i)
+            {
+                if (m_frameLimitPerThread != 0 && consoleFrameCount >= m_frameLimitPerThread)
+                {
+                    ++consoleDroppedCount;
+                    continue;
+                }
+
+                CrashReportHelpers::WriteStackOverflowFrameToConsole(
+                    &s_consoleWriter, consoleFrameCount, s_stackOverflowTrace.frames[i]);
+                ++consoleFrameCount;
+            }
+
+            continue;
+        }
+
+        if (m_frameLimitPerThread != 0 && consoleFrameCount >= m_frameLimitPerThread)
+        {
+            ++consoleDroppedCount;
+        }
+        else
+        {
+            CrashReportHelpers::WriteStackOverflowFrameToConsole(&s_consoleWriter, consoleFrameCount, frame);
+            ++consoleFrameCount;
+        }
+        ++i;
+    }
+
+    CrashReportHelpers::WriteThreadBlockCloserToConsole(&s_consoleWriter,
+        consoleFrameCount, consoleDroppedCount);
 }
 
 // --- InProcCrashReporter: console header and footer ------------------------
