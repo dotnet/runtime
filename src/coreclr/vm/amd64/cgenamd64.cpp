@@ -20,9 +20,6 @@
 #include "virtualcallstub.h"
 #include "jitinterface.h"
 
-#ifdef FEATURE_COMINTEROP
-#endif // FEATURE_COMINTEROP
-
 #ifdef FEATURE_PERFMAP
 #include "perfmap.h"
 #endif

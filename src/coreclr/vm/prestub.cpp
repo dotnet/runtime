@@ -29,9 +29,6 @@
 #include "interpexec.h"
 #endif
 
-#ifdef FEATURE_COMINTEROP
-#endif
-
 #ifdef FEATURE_PERFMAP
 #include "perfmap.h"
 #endif

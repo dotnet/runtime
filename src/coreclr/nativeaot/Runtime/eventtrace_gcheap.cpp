@@ -10,7 +10,6 @@
 #include "gcenv.h"
 #include "gcheaputilities.h"
 
-
 #include "slist.h"
 #include "StackFrameIterator.h"
 #include "thread.h"

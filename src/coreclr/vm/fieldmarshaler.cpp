@@ -18,7 +18,6 @@
 #include "dllimport.h"
 #include "comdelegate.h"
 #include "eeconfig.h"
-
 #include <cor.h>
 #include <corpriv.h>
 #include <corerror.h>

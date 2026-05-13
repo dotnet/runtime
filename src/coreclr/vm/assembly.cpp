@@ -22,7 +22,6 @@
 #include "reflectclasswriter.h"
 #include "comdynamic.h"
 
-
 #include "eeconfig.h"
 
 #include "assemblynative.hpp"
