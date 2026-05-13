@@ -151,6 +151,10 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [BuildAndRun()]
+        // CoreCLR-Wasm does not yet link the user-generated reverse pinvoke table, so
+        // user UnmanagedCallersOnly methods cannot be resolved at runtime.
+        // TODO: enable on CoreCLR once user reverse-thunks are linked into dotnet.native.wasm.
+        [TestCategory("mono")]
         public async Task UnmanagedCallersOnly_Namespaced(Configuration config, bool aot)
         {
             ProjectInfo info = CopyTestAsset(config, aot, TestAsset.WasmBasicTestApp, "cb_namespace");
@@ -385,6 +389,10 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [BuildAndRun(aot: false)]
+        // CoreCLR-Wasm does not yet link the user-generated reverse pinvoke table, so
+        // user UnmanagedCallersOnly methods cannot be resolved at runtime.
+        // TODO: enable on CoreCLR once user reverse-thunks are linked into dotnet.native.wasm.
+        [TestCategory("mono")]
         public async Task UCOWithSpecialCharacters(Configuration config, bool aot)
         {
             var extraProperties = "<AllowUnsafeBlocks>true</AllowUnsafeBlocks>";
