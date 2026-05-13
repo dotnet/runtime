@@ -228,7 +228,14 @@ namespace System.Net
 
             try
             {
-                return Interop.AndroidCrypto.SSLStreamCreate(sslStreamProxy, targetHost, trustCerts, keyManagers);
+                SafeSslHandle sslHandle = Interop.AndroidCrypto.SSLStreamCreate(sslStreamProxy, targetHost, trustCerts, keyManagers);
+                if (sslHandle.IsInvalid)
+                {
+                    sslHandle.Dispose();
+                    throw new Interop.AndroidCrypto.SslException();
+                }
+
+                return sslHandle;
             }
             finally
             {
