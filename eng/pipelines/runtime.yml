@@ -1110,7 +1110,8 @@ extends:
           buildConfig: Release
           runtimeFlavor: coreclr
           platforms:
-          - android_arm
+          # Disabled until https://github.com/dotnet/runtime/issues/125440 is resolved.
+          # - android_arm
           - android_x64
           - android_arm64
           variables:
