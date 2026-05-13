@@ -998,10 +998,12 @@ Range RangeCheck::GetRangeFromAssertionsWorker(
                     }
 
                     // Generic fold: see TryFoldRelopOfAddByOneFromAssertions.
-                    if (!result.IsSingleValueConstant())
-                    {
+                    Range foldedRange = Range(Limit(Limit::keUndef));
+                    if (!result.IsSingleValueConstant() &&
                         TryFoldRelopOfAddByOneFromAssertions(comp, funcApp.m_args[0], funcApp.m_args[1], cmpOper,
-                                                             isUnsigned, assertions, &result);
+                                                             isUnsigned, assertions, &foldedRange))
+                    {
+                        result = foldedRange;
                     }
                 }
                 break;

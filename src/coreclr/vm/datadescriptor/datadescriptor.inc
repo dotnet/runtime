@@ -828,7 +828,13 @@ CDAC_TYPE_FIELD(RangeSection, T_POINTER, JitManager, cdac_data<RangeSection>::Ji
 CDAC_TYPE_FIELD(RangeSection, T_INT32, Flags, cdac_data<RangeSection>::Flags)
 CDAC_TYPE_FIELD(RangeSection, T_POINTER, HeapList, cdac_data<RangeSection>::HeapList)
 CDAC_TYPE_FIELD(RangeSection, T_POINTER, R2RModule, cdac_data<RangeSection>::R2RModule)
+CDAC_TYPE_FIELD(RangeSection, T_POINTER, RangeList, cdac_data<RangeSection>::RangeList)
 CDAC_TYPE_END(RangeSection)
+
+CDAC_TYPE_BEGIN(CodeRangeMapRangeList)
+CDAC_TYPE_INDETERMINATE(CodeRangeMapRangeList)
+CDAC_TYPE_FIELD(CodeRangeMapRangeList, T_INT32, RangeListType, cdac_data<CodeRangeMapRangeList>::RangeListType)
+CDAC_TYPE_END(CodeRangeMapRangeList)
 
 CDAC_TYPE_BEGIN(EEJitManager)
 CDAC_TYPE_INDETERMINATE(EEJitManager)
