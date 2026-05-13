@@ -310,8 +310,6 @@ public:
         OUT VMPTR_Object *ppTargetObj,
         OUT VMPTR_AppDomain *ppTargetAppDomain);
 
-    HRESULT STDMETHODCALLTYPE GetLoaderHeapMemoryRanges(OUT DacDbiArrayList<COR_MEMORY_RANGE> * pRanges);
-
     HRESULT STDMETHODCALLTYPE IsModuleMapped(VMPTR_Module pModule, OUT BOOL *isModuleMapped);
 
     HRESULT STDMETHODCALLTYPE MetadataUpdatesApplied(OUT BOOL * pResult);
@@ -322,14 +320,6 @@ public:
     HRESULT STDMETHODCALLTYPE GetRcwCachedInterfacePointers(VMPTR_Object vmObject, BOOL bIInspectableOnly, OUT DacDbiArrayList<CORDB_ADDRESS> * pDacItfPtrs);
 
 private:
-    // Helper to enumerate all possible memory ranges help by a loader allocator.
-    void EnumerateMemRangesForLoaderAllocator(
-        PTR_LoaderAllocator pLoaderAllocator,
-        CQuickArrayList<COR_MEMORY_RANGE> *rangeAcummulator);
-
-    void EnumerateMemRangesForJitCodeHeaps(
-        CQuickArrayList<COR_MEMORY_RANGE> *rangeAcummulator);
-
     // Given a pointer to a managed function, obtain the method desc for it.
     // Equivalent to GetMethodDescPtrFromIp, except if the method isn't jitted
     // it will look for it in code stubs.
@@ -653,7 +643,7 @@ public:
     // Get the alocated bytes for this thread.
     HRESULT STDMETHODCALLTYPE GetThreadAllocInfo(VMPTR_Thread vmThread, DacThreadAllocInfo* threadAllocInfo);
 
-    // Set and reset the TSNC_DebuggerUserSuspend bit on the state of the specified thread
+    // Set and reset the DCTS_UserSuspend bit on the DebuggerControlledThreadState of the specified thread
     // according to the CorDebugThreadState.
     HRESULT STDMETHODCALLTYPE SetDebugState(VMPTR_Thread vmThread, CorDebugThreadState debugState);
 
