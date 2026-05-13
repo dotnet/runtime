@@ -980,6 +980,84 @@ namespace System.Text.Json
         }
 
         [DoesNotReturn]
+        public static void ThrowJsonException_UnionDoesNotAcceptNull(Type unionType)
+        {
+            ThrowJsonException(SR.Format(SR.UnionDoesNotAcceptNull, unionType));
+        }
+
+        [DoesNotReturn]
+        public static void ThrowJsonException_UnionRuntimeTypeNotMatchedToCase(Type unionType, Type runtimeType)
+        {
+            ThrowJsonException(SR.Format(SR.UnionRuntimeTypeNotMatchedToCase, runtimeType, unionType));
+        }
+
+        [DoesNotReturn]
+        public static void ThrowJsonException_UnionCannotCreateValue(Type unionType)
+        {
+            ThrowJsonException(SR.Format(SR.UnionCannotCreateValue, unionType));
+        }
+
+        [DoesNotReturn]
+        public static void ThrowJsonException_UnionCannotReadValue(Type unionType)
+        {
+            ThrowJsonException(SR.Format(SR.UnionCannotReadValue, unionType));
+        }
+
+        [DoesNotReturn]
+        public static void ThrowJsonException_UnionTypeClassifierReturnedNull(Type unionType, JsonTokenType tokenType)
+        {
+            ThrowJsonException(SR.Format(SR.UnionTypeClassifierReturnedNull, unionType, tokenType));
+        }
+
+        [DoesNotReturn]
+        public static void ThrowJsonException_UnionAmbiguousJsonValueType(Type unionType, JsonValueType valueType)
+        {
+            ThrowJsonException(SR.Format(SR.UnionAmbiguousJsonValueType, valueType, unionType));
+        }
+
+        [DoesNotReturn]
+        public static void ThrowJsonException_UnionCaseWithCustomConverterRequiresClassifier(Type unionType)
+        {
+            ThrowJsonException(SR.Format(SR.UnionCaseWithCustomConverterRequiresClassifier, unionType));
+        }
+
+        [DoesNotReturn]
+        public static void ThrowJsonException_UnionJsonTokenTypeNotSupported(Type unionType, JsonTokenType tokenType)
+        {
+            ThrowJsonException(SR.Format(SR.UnionJsonTokenTypeNotSupported, tokenType, unionType));
+        }
+
+        [DoesNotReturn]
+        public static void ThrowInvalidOperationException_UnionCasesNotPopulated(Type unionType)
+        {
+            throw new InvalidOperationException(SR.Format(SR.UnionCasesNotPopulated, unionType));
+        }
+
+        [DoesNotReturn]
+        public static void ThrowInvalidOperationException_UnionCannotCreateValue(Type unionType)
+        {
+            throw new InvalidOperationException(SR.Format(SR.UnionCannotCreateValue, unionType));
+        }
+
+        [DoesNotReturn]
+        public static void ThrowInvalidOperationException_UnionCannotReadValue(Type unionType)
+        {
+            throw new InvalidOperationException(SR.Format(SR.UnionCannotReadValue, unionType));
+        }
+
+        [DoesNotReturn]
+        public static void ThrowInvalidOperationException_TypeClassifierMustDeriveFromJsonTypeClassifierFactory(Type classifierType, Type type)
+        {
+            throw new InvalidOperationException(SR.Format(SR.TypeClassifierMustDeriveFromJsonTypeClassifierFactory, classifierType, type));
+        }
+
+        [DoesNotReturn]
+        public static void ThrowInvalidOperationException_TypeClassifierNotSupported(Type classifierType, Type type)
+        {
+            throw new InvalidOperationException(SR.Format(SR.TypeClassifierNotSupported, classifierType, type));
+        }
+
+        [DoesNotReturn]
         public static void ThrowInvalidOperationException_UnsupportedEnumIdentifier(Type enumType, string? enumName)
         {
             throw new InvalidOperationException(SR.Format(SR.UnsupportedEnumIdentifier, enumType.Name, enumName));

@@ -63,10 +63,20 @@ namespace System.Text.Json.Serialization.Metadata
                 key: (nameof(CreateParameterizedConstructor), typeof(T), constructor),
                 valueFactory: key => _sourceAccessor.CreateParameterizedConstructor<T, TArg0, TArg1, TArg2, TArg3>((ConstructorInfo)key.member!));
 
+        public override Func<object?, T> CreateSingleParameterConstructor<T>(ConstructorInfo constructor) =>
+            _cache.GetOrAdd(
+                key: (nameof(CreateSingleParameterConstructor), typeof(T), constructor),
+                valueFactory: key => _sourceAccessor.CreateSingleParameterConstructor<T>((ConstructorInfo)key.member!));
+
         public override Func<object, TProperty> CreatePropertyGetter<TProperty>(PropertyInfo propertyInfo) =>
             _cache.GetOrAdd(
                 key: (nameof(CreatePropertyGetter), typeof(TProperty), propertyInfo),
                 valueFactory: key => _sourceAccessor.CreatePropertyGetter<TProperty>((PropertyInfo)key.member!));
+
+        public override Func<TDeclaringType, TProperty> CreatePropertyGetter<TDeclaringType, TProperty>(PropertyInfo propertyInfo) =>
+            _cache.GetOrAdd(
+                key: ("CreatePropertyGetter`2", typeof((TDeclaringType, TProperty)), propertyInfo),
+                valueFactory: key => _sourceAccessor.CreatePropertyGetter<TDeclaringType, TProperty>((PropertyInfo)key.member!));
 
         public override Action<object, TProperty> CreatePropertySetter<TProperty>(PropertyInfo propertyInfo) =>
             _cache.GetOrAdd(

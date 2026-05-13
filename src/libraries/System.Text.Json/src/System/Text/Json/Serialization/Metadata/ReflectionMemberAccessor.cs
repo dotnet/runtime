@@ -112,6 +112,27 @@ namespace System.Text.Json.Serialization.Metadata
             };
         }
 
+        public override Func<object?, T> CreateSingleParameterConstructor<T>(ConstructorInfo constructor)
+        {
+            Type type = typeof(T);
+
+            Debug.Assert(!type.IsAbstract);
+            Debug.Assert(constructor.DeclaringType == type && constructor.IsPublic && !constructor.IsStatic);
+            Debug.Assert(constructor.GetParameters().Length == 1);
+
+            return value =>
+            {
+                try
+                {
+                    return (T)constructor.Invoke(new object?[] { value });
+                }
+                catch (TargetInvocationException e)
+                {
+                    throw e.InnerException ?? e;
+                }
+            };
+        }
+
         public override Action<TCollection, object?> CreateAddMethodDelegate<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] TCollection>()
         {
             Type collectionType = typeof(TCollection);
@@ -145,6 +166,16 @@ namespace System.Text.Json.Serialization.Metadata
             MethodInfo getMethodInfo = propertyInfo.GetMethod!;
 
             return delegate (object obj)
+            {
+                return (TProperty)getMethodInfo.Invoke(obj, null)!;
+            };
+        }
+
+        public override Func<TDeclaringType, TProperty> CreatePropertyGetter<TDeclaringType, TProperty>(PropertyInfo propertyInfo)
+        {
+            MethodInfo getMethodInfo = propertyInfo.GetMethod!;
+
+            return delegate (TDeclaringType obj)
             {
                 return (TProperty)getMethodInfo.Invoke(obj, null)!;
             };

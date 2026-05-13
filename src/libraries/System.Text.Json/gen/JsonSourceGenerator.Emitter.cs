@@ -1,8 +1,9 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.Linq;
 using System.Reflection;
 using System.Text.Json.Serialization;
@@ -64,19 +65,24 @@ namespace System.Text.Json.SourceGeneration
             private const string JsonConverterTypeRef = "global::System.Text.Json.Serialization.JsonConverter";
             private const string JsonConverterFactoryTypeRef = "global::System.Text.Json.Serialization.JsonConverterFactory";
             private const string JsonCollectionInfoValuesTypeRef = "global::System.Text.Json.Serialization.Metadata.JsonCollectionInfoValues";
+            private const string JsonDerivedTypeTypeRef = "global::System.Text.Json.Serialization.Metadata.JsonDerivedType";
             private const string JsonIgnoreConditionTypeRef = "global::System.Text.Json.Serialization.JsonIgnoreCondition";
             private const string JsonSerializerDefaultsTypeRef = "global::System.Text.Json.JsonSerializerDefaults";
             private const string JsonNumberHandlingTypeRef = "global::System.Text.Json.Serialization.JsonNumberHandling";
             private const string JsonObjectCreationHandlingTypeRef = "global::System.Text.Json.Serialization.JsonObjectCreationHandling";
             private const string JsonUnmappedMemberHandlingTypeRef = "global::System.Text.Json.Serialization.JsonUnmappedMemberHandling";
+            private const string JsonUnknownDerivedTypeHandlingTypeRef = "global::System.Text.Json.Serialization.JsonUnknownDerivedTypeHandling";
             private const string JsonUnknownTypeHandlingTypeRef = "global::System.Text.Json.Serialization.JsonUnknownTypeHandling";
             private const string JsonMetadataServicesTypeRef = "global::System.Text.Json.Serialization.Metadata.JsonMetadataServices";
             private const string JsonObjectInfoValuesTypeRef = "global::System.Text.Json.Serialization.Metadata.JsonObjectInfoValues";
             private const string JsonParameterInfoValuesTypeRef = "global::System.Text.Json.Serialization.Metadata.JsonParameterInfoValues";
+            private const string JsonPolymorphismOptionsTypeRef = "global::System.Text.Json.Serialization.Metadata.JsonPolymorphismOptions";
             private const string JsonPropertyInfoTypeRef = "global::System.Text.Json.Serialization.Metadata.JsonPropertyInfo";
             private const string JsonPropertyInfoValuesTypeRef = "global::System.Text.Json.Serialization.Metadata.JsonPropertyInfoValues";
             private const string JsonTypeInfoTypeRef = "global::System.Text.Json.Serialization.Metadata.JsonTypeInfo";
             private const string JsonTypeInfoResolverTypeRef = "global::System.Text.Json.Serialization.Metadata.IJsonTypeInfoResolver";
+            private const string JsonUnionCaseInfoTypeRef = "global::System.Text.Json.Serialization.Metadata.JsonUnionCaseInfo";
+            private const string JsonUnionInfoValuesTypeRef = "global::System.Text.Json.Serialization.Metadata.JsonUnionInfoValues";
             private const string ReferenceHandlerTypeRef = "global::System.Text.Json.Serialization.ReferenceHandler";
             private const string EmptyTypeArray = "global::System.Array.Empty<global::System.Type>()";
 
@@ -226,6 +232,9 @@ namespace System.Text.Json.SourceGeneration
                     case ClassType.Object:
                         return GenerateForObject(contextSpec, typeGenerationSpec);
 
+                    case ClassType.Union:
+                        return GenerateForUnion(contextSpec, typeGenerationSpec);
+
                     case ClassType.UnsupportedType:
                         return GenerateForUnsupportedType(contextSpec, typeGenerationSpec);
 
@@ -352,6 +361,11 @@ namespace System.Text.Json.SourceGeneration
                 string typeFQN = typeGenerationSpec.TypeRef.FullyQualifiedName;
                 string createCollectionInfoMethodName = GetCollectionInfoMethodName(collectionType);
                 string createCollectionMethodExpr;
+                PolymorphismOptionsSpec? polymorphismOptions = typeGenerationSpec.PolymorphismOptions;
+                string polymorphismOptionsExpr = FormatPolymorphismOptions(polymorphismOptions);
+                string typeClassifierFactoryExpr = polymorphismOptions is not null
+                    ? FormatTypeClassifierFactory(polymorphismOptions.TypeClassifierFactoryType)
+                    : "null";
 
                 switch (collectionType)
                 {
@@ -395,7 +409,9 @@ namespace System.Text.Json.SourceGeneration
                     var {{InfoVarName}} = new {{JsonCollectionInfoValuesTypeRef}}<{{typeFQN}}>
                     {
                         {{ObjectCreatorPropName}} = {{FormatDefaultConstructorExpr(typeGenerationSpec)}},
-                        {{SerializeHandlerPropName}} = {{serializeMethodName ?? "null"}}
+                        {{SerializeHandlerPropName}} = {{serializeMethodName ?? "null"}},
+                        PolymorphismOptions = {{polymorphismOptionsExpr}},
+                        TypeClassifierFactory = {{typeClassifierFactoryExpr}},
                     };
 
                     {{JsonTypeInfoLocalVariableName}} = {{JsonMetadataServicesTypeRef}}.{{createCollectionMethodExpr}};
@@ -549,6 +565,11 @@ namespace System.Text.Json.SourceGeneration
 
                 const string ObjectInfoVarName = "objectInfo";
                 string genericArg = typeMetadata.TypeRef.FullyQualifiedName;
+                PolymorphismOptionsSpec? polymorphismOptions = typeMetadata.PolymorphismOptions;
+                string polymorphismOptionsExpr = FormatPolymorphismOptions(polymorphismOptions);
+                string typeClassifierFactoryExpr = polymorphismOptions is not null
+                    ? FormatTypeClassifierFactory(polymorphismOptions.TypeClassifierFactoryType)
+                    : "null";
 
                 GenerateTypeInfoFactoryHeader(writer, typeMetadata);
 
@@ -561,6 +582,8 @@ namespace System.Text.Json.SourceGeneration
                         ConstructorParameterMetadataInitializer = {{ctorParamMetadataInitMethodName ?? "null"}},
                         ConstructorAttributeProviderFactory = {{constructorInfoFactoryFunc ?? "null"}},
                         {{SerializeHandlerPropName}} = {{serializeMethodName ?? "null"}},
+                        PolymorphismOptions = {{polymorphismOptionsExpr}},
+                        TypeClassifierFactory = {{typeClassifierFactoryExpr}},
                     };
 
                     {{JsonTypeInfoLocalVariableName}} = {{JsonMetadataServicesTypeRef}}.CreateObjectInfo<{{typeMetadata.TypeRef.FullyQualifiedName}}>({{OptionsLocalVariableName}}, {{ObjectInfoVarName}});
@@ -607,6 +630,123 @@ namespace System.Text.Json.SourceGeneration
 
                 // Generate constructor accessor for inaccessible [JsonConstructor] constructors.
                 GenerateConstructorAccessor(writer, typeMetadata);
+
+                writer.Indentation--;
+                writer.WriteLine('}');
+
+                return CompleteSourceFileAndReturnText(writer);
+            }
+
+            private static SourceText GenerateForUnion(ContextGenerationSpec contextSpec, TypeGenerationSpec typeMetadata)
+            {
+                SourceWriter writer = CreateSourceWriterWithContextHeader(contextSpec);
+
+                GenerateTypeInfoFactoryHeader(writer, typeMetadata);
+
+                const string UnionInfoVarName = "unionInfo";
+                string genericArg = typeMetadata.TypeRef.FullyQualifiedName;
+                ImmutableEquatableArray<UnionCaseSpec> unionCases = typeMetadata.UnionCaseSpecs;
+                UnionCaseSpec? nullCase = unionCases.FirstOrDefault(c => c.IsNullable);
+
+                string unionCasesExpr = unionCases.Count == 0
+                    ? $"global::System.Array.Empty<{JsonUnionCaseInfoTypeRef}>()"
+                    : $$"""new {{JsonUnionCaseInfoTypeRef}}[] { {{string.Join(", ", unionCases.Select(c => $"new {JsonUnionCaseInfoTypeRef}(typeof({c.CaseType.FullyQualifiedName})) {{ IsNullable = {(c.IsNullable ? "true" : "false")} }}"))}} }""";
+
+                string typeClassifierFactoryExpr = typeMetadata.UnionClassifierFactoryType is { } classifierFactoryType
+                    ? $"new {classifierFactoryType.FullyQualifiedName}()"
+                    : "null";
+
+                writer.WriteLine($"var {UnionInfoVarName} = new {JsonUnionInfoValuesTypeRef}<{genericArg}>");
+                writer.WriteLine('{');
+                writer.Indentation++;
+
+                writer.WriteLine($"UnionCases = {unionCasesExpr},");
+
+                if (unionCases.Count == 0)
+                {
+                    writer.WriteLine("UnionConstructor = null,");
+                    writer.WriteLine("UnionDeconstructor = null,");
+                }
+                else
+                {
+                    writer.WriteLine($"UnionConstructor = static ({TypeTypeRef} _, object? value) => value switch");
+                    writer.WriteLine('{');
+                    writer.Indentation++;
+
+                    for (int i = 0; i < unionCases.Count; i++)
+                    {
+                        string caseTypeFQN = unionCases[i].CaseType.FullyQualifiedName;
+                        writer.WriteLine($"{caseTypeFQN} caseValue{i} => new {genericArg}(caseValue{i}),");
+                    }
+
+                    if (nullCase is not null)
+                    {
+                        writer.WriteLine($"null => new {genericArg}(({nullCase.CaseType.FullyQualifiedName}?)null),");
+                    }
+
+                    writer.WriteLine($"_ => throw new {JsonExceptionTypeRef}(),");
+                    writer.Indentation--;
+                    writer.WriteLine("},");
+
+                    bool needsSingleCaseExhaustivenessPragma = unionCases.Count == 1;
+                    if (needsSingleCaseExhaustivenessPragma)
+                    {
+                        writer.WriteLine("#pragma warning disable CS8509 // https://github.com/dotnet/roslyn/issues/83666");
+                    }
+
+                    writer.WriteLine($"UnionDeconstructor = static ({genericArg} value) =>");
+                    writer.WriteLine('{');
+                    writer.Indentation++;
+
+                    if (!typeMetadata.TypeRef.IsValueType)
+                    {
+                        writer.WriteLine("""
+                            if ((object?)value is null)
+                            {
+                                return ((global::System.Type?)null, (object?)null);
+                            }
+                            """);
+                        writer.WriteLine();
+                    }
+
+                    writer.WriteLine("return value switch");
+                    writer.WriteLine('{');
+                    writer.Indentation++;
+
+                    if (nullCase is not null)
+                    {
+                        writer.WriteLine($"null => (typeof({nullCase.CaseType.FullyQualifiedName}), (object?)null),");
+                    }
+
+                    // Cases are pre-sorted most-derived-first, so the first matching arm always
+                    // corresponds to the nearest declared case.
+                    for (int i = 0; i < unionCases.Count; i++)
+                    {
+                        string caseTypeFQN = unionCases[i].CaseType.FullyQualifiedName;
+                        writer.WriteLine($"{caseTypeFQN} caseValue{i} => (typeof({caseTypeFQN}), (object?)caseValue{i}),");
+                    }
+
+                    writer.Indentation--;
+                    writer.WriteLine("};");
+                    writer.Indentation--;
+                    writer.WriteLine("},");
+
+                    if (needsSingleCaseExhaustivenessPragma)
+                    {
+                        writer.WriteLine("#pragma warning restore CS8509");
+                    }
+                }
+
+                writer.WriteLine("TypeClassifier = null,");
+                writer.WriteLine($"TypeClassifierFactory = {typeClassifierFactoryExpr},");
+                writer.Indentation--;
+                writer.WriteLine("};");
+                writer.WriteLine();
+
+                writer.WriteLine($"{JsonTypeInfoLocalVariableName} = {JsonMetadataServicesTypeRef}.CreateUnionInfo<{genericArg}>({OptionsLocalVariableName}, {UnionInfoVarName});");
+                writer.WriteLine($"{JsonTypeInfoLocalVariableName}.{NumberHandlingPropName} = {FormatNumberHandling(typeMetadata.NumberHandling)};");
+
+                GenerateTypeInfoFactoryFooter(writer);
 
                 writer.Indentation--;
                 writer.WriteLine('}');
@@ -1816,6 +1956,21 @@ namespace System.Text.Json.SourceGeneration
                     writer.WriteLine("},");
                 }
 
+                if (optionsSpec.TypeClassifiers is { Count: > 0 } TypeClassifiers)
+                {
+                    writer.WriteLine("TypeClassifiers =");
+                    writer.WriteLine('{');
+                    writer.Indentation++;
+
+                    foreach (TypeRef classifier in TypeClassifiers)
+                    {
+                        writer.WriteLine($"new {classifier.FullyQualifiedName}(),");
+                    }
+
+                    writer.Indentation--;
+                    writer.WriteLine("},");
+                }
+
                 if (optionsSpec.DefaultBufferSize is int defaultBufferSize)
                     writer.WriteLine($"DefaultBufferSize = {defaultBufferSize},");
 
@@ -2053,6 +2208,59 @@ namespace System.Text.Json.SourceGeneration
 
             private static string FormatUnmappedMemberHandling(JsonUnmappedMemberHandling unmappedMemberHandling)
                 => SourceGeneratorHelpers.FormatEnumLiteral(JsonUnmappedMemberHandlingTypeRef, unmappedMemberHandling);
+
+            private static string FormatTypeClassifierFactory(TypeRef? classifierFactoryType)
+                => classifierFactoryType is not null ? $"new {classifierFactoryType.FullyQualifiedName}()" : "null";
+
+            private static string FormatPolymorphismOptions(PolymorphismOptionsSpec? options)
+            {
+                if (options is null)
+                {
+                    // Current source-generated metadata uses an empty options instance to
+                    // signal that polymorphism attributes were evaluated at compile time and
+                    // found to be absent. The runtime treats null as legacy metadata and runs
+                    // the reflection-based compatibility fallback.
+                    return $"new {JsonPolymorphismOptionsTypeRef}()";
+                }
+
+                var source = new StringBuilder();
+                source.AppendLine($"new {JsonPolymorphismOptionsTypeRef}");
+                source.AppendLine("{");
+                source.AppendLine($"    IgnoreUnrecognizedTypeDiscriminators = {FormatBoolLiteral(options.IgnoreUnrecognizedTypeDiscriminators)},");
+                source.AppendLine($"    TypeDiscriminatorPropertyName = {FormatStringLiteral(options.TypeDiscriminatorPropertyName)},");
+                source.AppendLine($"    UnknownDerivedTypeHandling = {SourceGeneratorHelpers.FormatEnumLiteral(JsonUnknownDerivedTypeHandlingTypeRef, options.UnknownDerivedTypeHandling)},");
+
+                if (options.DerivedTypes.Count > 0)
+                {
+                    source.AppendLine("    DerivedTypes =");
+                    source.AppendLine("    {");
+
+                    foreach (DerivedTypeSpec derivedType in options.DerivedTypes)
+                    {
+                        source.Append("        ");
+                        source.Append(FormatDerivedType(derivedType));
+                        source.AppendLine(",");
+                    }
+
+                    source.AppendLine("    },");
+                }
+
+                source.Append('}');
+                return source.ToString();
+            }
+
+            private static string FormatDerivedType(DerivedTypeSpec derivedType)
+            {
+                string derivedTypeExpr = $"typeof({derivedType.DerivedType.FullyQualifiedName})";
+
+                return derivedType.TypeDiscriminator switch
+                {
+                    null => $"new {JsonDerivedTypeTypeRef}({derivedTypeExpr})",
+                    int intDiscriminator => $"new {JsonDerivedTypeTypeRef}({derivedTypeExpr}, {intDiscriminator.ToString(CultureInfo.InvariantCulture)})",
+                    string stringDiscriminator => $"new {JsonDerivedTypeTypeRef}({derivedTypeExpr}, {FormatStringLiteral(stringDiscriminator)})",
+                    _ => throw new InvalidOperationException(),
+                };
+            }
 
             private static string FormatCommentHandling(JsonCommentHandling commentHandling)
                 => SourceGeneratorHelpers.FormatEnumLiteral(JsonCommentHandlingTypeRef, commentHandling);

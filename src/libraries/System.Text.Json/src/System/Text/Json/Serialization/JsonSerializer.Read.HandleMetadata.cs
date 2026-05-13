@@ -27,6 +27,35 @@ namespace System.Text.Json
             Debug.Assert(state.Current.ObjectState == StackFrameObjectState.StartToken);
             Debug.Assert(state.Current.CanContainMetadata);
 
+            // Custom classifier branch: runs BEFORE normal metadata scanning.
+            // When a TypeClassifier is configured, it replaces discriminator-based type resolution.
+            PolymorphicTypeResolver? polymorphicResolver = jsonTypeInfo.PolymorphicTypeResolver;
+            if (polymorphicResolver is not null && jsonTypeInfo.TypeClassifier is { } typeClassifier)
+            {
+                // Ensure the entire object is buffered (for streaming scenarios).
+                if (!reader.IsFinalBlock)
+                {
+                    Utf8JsonReader bufferCheck = reader;
+                    if (!bufferCheck.TrySkipPartial())
+                    {
+                        return false;
+                    }
+                }
+
+                // Classify using a struct copy; the original reader stays at the object start.
+                Utf8JsonReader classifierCopy = reader;
+                Type? resolvedType = typeClassifier(ref classifierCopy);
+
+                if (resolvedType is null)
+                {
+                    ThrowHelper.ThrowJsonException(SR.PolymorphicTypeClassifierReturnedNull);
+                }
+
+                state.PolymorphicResolvedType = resolvedType;
+                // Set the Type metadata flag so ResolvePolymorphicConverter runs.
+                state.Current.MetadataPropertyNames |= MetadataPropertyName.Type;
+            }
+
             Utf8JsonReader checkpoint;
             bool allowOutOfOrderMetadata = jsonTypeInfo.Options.AllowOutOfOrderMetadataProperties;
             bool isReadingAheadOfNonMetadataProperties = false;

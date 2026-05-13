@@ -17,7 +17,6 @@ namespace System.Text.Json.Serialization
             Debug.Assert(CanHaveMetadata);
             Debug.Assert((state.Current.MetadataPropertyNames & MetadataPropertyName.Type) != 0);
             Debug.Assert(state.Current.PolymorphicSerializationState != PolymorphicSerializationState.PolymorphicReEntryStarted);
-            Debug.Assert(jsonTypeInfo.PolymorphicTypeResolver?.UsesTypeDiscriminators == true);
 
             JsonConverter? polymorphicConverter = null;
 
@@ -25,10 +24,25 @@ namespace System.Text.Json.Serialization
             {
                 case PolymorphicSerializationState.None:
                     Debug.Assert(!state.IsContinuation);
-                    Debug.Assert(state.PolymorphicTypeDiscriminator != null);
 
-                    PolymorphicTypeResolver resolver = jsonTypeInfo.PolymorphicTypeResolver;
-                    if (resolver.TryGetDerivedJsonTypeInfo(state.PolymorphicTypeDiscriminator, out JsonTypeInfo? resolvedType))
+                    PolymorphicTypeResolver resolver = jsonTypeInfo.PolymorphicTypeResolver!;
+                    JsonTypeInfo? resolvedType;
+
+                    if (state.PolymorphicResolvedType is Type classifiedType)
+                    {
+                        // Type resolved by custom TypeClassifier — resolve directly.
+                        resolver.TryResolveDerivedJsonTypeInfo(classifiedType, out resolvedType);
+                        state.PolymorphicResolvedType = null;
+                    }
+                    else
+                    {
+                        // Standard discriminator-based resolution.
+                        Debug.Assert(state.PolymorphicTypeDiscriminator != null);
+                        Debug.Assert(resolver.UsesTypeDiscriminators);
+                        resolver.TryGetDerivedJsonTypeInfo(state.PolymorphicTypeDiscriminator, out resolvedType);
+                    }
+
+                    if (resolvedType is not null)
                     {
                         Debug.Assert(Type!.IsAssignableFrom(resolvedType.Type));
 
