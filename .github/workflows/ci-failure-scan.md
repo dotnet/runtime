@@ -111,14 +111,13 @@ For every actionable failure, converge on these artifacts:
 
 ## Step-by-step
 
-Walk the steps in order. Do not skip. Stop at Step 7.
+Walk the steps in order. Do not skip. Stop at Step 6.
 
 ### Step 1 — Orient
 
 Read once at start:
 
-- The skill matching the pipeline you are about to scan (routing table in Step 5.1). Skills live under `.github/skills/`.
-- `/tmp/gh-aw/agent/coverage/_breaker.txt` — if present and dated within the last 12h, the previous run tripped the outage breaker. Re-evaluate in Step 4.
+- The skill matching the pipeline you are about to scan (routing table in Step 4.1). Skills live under `.github/skills/`.
 
 ### Step 2 — Walk pipelines
 
@@ -169,13 +168,13 @@ For each row in the pipeline table below, in order:
 
 Decide the class of every failed timeline record before passing it to Step 4. The timeline graph is `Stage -> Phase -> Job -> Task`; walk it via `parentId`. Drill into one representative console log per signature to confirm the shape.
 
-1. **Build break.** Failed task is `Build product` / `Build native components` / `Configure CMake` / any pre-test compile step, AND `Send to Helix` is `skipped`. -> Step 6 Branch D (tracking issue). Do NOT file a KBE.
+1. **Build break.** Failed task is `Build product` / `Build native components` / `Configure CMake` / any pre-test compile step, AND `Send to Helix` is `skipped`. -> Step 5 Branch D (tracking issue). Do NOT file a KBE.
 2. **Phase/Stage-only failure with no failed Job underneath.** Compile breaks aggregated at phase level (e.g. `windows-arm64 checked` on JIT stress pipelines). Open the Phase log + the latest log of any non-succeeded child Task -> classify as build break.
-3. **Helix work-item failure.** `Send to Helix` succeeded but Job still failed. Extract Helix job IDs from the `Send to Helix` log (`Sent Helix Job: <GUID>`), query Helix work items, fetch the failing console log, locate the `[FAIL]` line -> Step 5 (test failure).
-4. **Dead-lettered Helix work item.** Console URI contains `helix-workitem-deadletter` -> Step 6 Branch E (grouped infra issue).
-5. **Infra-shaped Job failure with no Helix work items.** `Initialize job` failed / agent disconnect / `Pool is offline` -> Step 6 Branch E.
+3. **Helix work-item failure.** `Send to Helix` succeeded but Job still failed. Extract Helix job IDs from the `Send to Helix` log (`Sent Helix Job: <GUID>`), query Helix work items, fetch the failing console log, locate the `[FAIL]` line -> Step 4 (test failure).
+4. **Dead-lettered Helix work item.** Console URI contains `helix-workitem-deadletter` -> Step 5 Branch E (grouped infra issue).
+5. **Infra-shaped Job failure with no Helix work items.** `Initialize job` failed / agent disconnect / `Pool is offline` -> Step 5 Branch E.
 
-For each Step 5 candidate, compute the signature tuple `(definition_id, work_item_or_phase, queue, stress_mode, [FAIL]-or-compile-error signature)`. Look back ~10 prior completed builds in the same definition for first-seen-in-window timestamp and occurrence count.
+For each Step 4 candidate, compute the signature tuple `(definition_id, work_item_or_phase, queue, stress_mode, [FAIL]-or-compile-error signature)`. Look back ~10 prior completed builds in the same definition for first-seen-in-window timestamp and occurrence count.
 
 #### Data sources
 
@@ -185,34 +184,11 @@ For each Step 5 candidate, compute the signature tuple `(definition_id, work_ite
 - **Helix REST.** `https://helix.dot.net/api/jobs/{jobId}/workitems?api-version=2019-06-17`. Each item has `Name`, `State`, `ExitCode`, `ConsoleOutputUri`. Failed: `ExitCode != 0` or `State == "Failed"`.
 - **Build Analysis attachment (best-effort).** `https://dev.azure.com/dnceng-public/public/_apis/build/builds/{id}/attachments/Build_Analysis_KnownIssues_v1?api-version=7.1`. Use to dedupe. 404 = none attached; do not fail.
 
-### Step 4 — Outage circuit breaker
+### Step 4 — Per-signature walk
 
-After Step 3 has produced the full signature set, BEFORE emitting any safe-output, compute:
+For each `(definition_id, phase, queue, stress_mode, signature)` produced by Step 3:
 
-- `total-actionable-failures` = distinct `(definition_id, phase, queue, stress_mode, signature)` tuples this run.
-- `pipelines-mostly-red` = count of pipelines whose latest scanned build has >= 50% of legs failing.
-- `top-signature-share` = max(occurrence_count) / total-actionable-failures.
-
-Trip the breaker if ANY of:
-
-- `total-actionable-failures > 30`
-- `pipelines-mostly-red >= 4`
-- `top-signature-share >= 0.5`
-
-On trip:
-
-1. Do NOT emit per-failure KBEs, muting PRs, or fix PRs.
-2. Emit exactly ONE `create_issue` using the Outage summary template (see Templates).
-3. Persist `/tmp/gh-aw/agent/coverage/_breaker.txt` with the three totals + which threshold(s) breached.
-4. Skip Steps 5–6; jump to Step 7.
-
-If clean -> continue to Step 5.
-
-### Step 5 — Per-signature walk
-
-For each `(definition_id, phase, queue, stress_mode, signature)` surviving Step 4:
-
-#### Step 5.1 — Load the matching skill
+#### Step 4.1 — Load the matching skill
 
 | Pipeline category | Skill |
 |---|---|
@@ -222,27 +198,27 @@ For each `(definition_id, phase, queue, stress_mode, signature)` surviving Step 
 | NativeAOT outer loop | Check `eng/testing/tests.*aot*.targets` and the test `.csproj` for AOT-specific conditions before suggesting a fix. |
 | Generic | `ci-pipeline-monitor/SKILL.md` |
 
-#### Step 5.2 — Search for an existing KBE
+#### Step 4.2 — Search for an existing KBE
 
 `is:issue is:open label:"Known Build Error" in:body "<error-signature>"`. Try variations: full `[FAIL]` line; assertion text; exception class + test name. On hit, record `existing-kbe #<n>` and continue (the walk does not end — a KBE hit changes the final action, not the inspection).
 
-#### Step 5.3 — Search for an area-team tracker (no KBE label)
+#### Step 4.3 — Search for an area-team tracker (no KBE label)
 
 `is:issue is:open in:title "<test-name>"` AND `in:body "<test-file-path>"`. On hit, record `linked-tracker #<n>`. A plain tracker is NOT a KBE substitute (Build Analysis only matches `Known Build Error`-labeled issues with a valid JSON body). File a fresh KBE and cross-link the tracker as `Tracking: dotnet/runtime#<tracker>` inside the KBE body and the muting PR body.
 
-#### Step 5.4 — Search for an existing muting PR
+#### Step 4.4 — Search for an existing muting PR
 
 `is:pr is:open in:title "<test-name>" "[ci-scan]"` and `is:pr is:open "<test-name>" ActiveIssue`. On hit, record `existing-PR #<n>` (muting) and stop the walk for this signature.
 
-#### Step 5.5 — Search for an in-flight fix PR by anyone
+#### Step 4.5 — Search for an in-flight fix PR by anyone
 
 Broad search (NOT only `[ci-scan]` PRs): `is:pr is:open "<test-name>"`, `is:pr is:open "<test-file-path>"`, `is:pr is:open "<assembly>" in:title`. Fetch each candidate body; if it claims to fix this failure or links the same KBE, record `existing-PR #<n>` (in-flight fix) and stop.
 
-#### Step 5.6 — Verify every embedded issue number exists
+#### Step 4.6 — Verify every embedded issue number exists
 
 For every `<n>` you plan to write into source (`[ActiveIssue("...issues/<n>")]`, `Linked KBE: #<n>`, inline `<!-- ...issues/<n> -->`) call `issue_read` with `get` and `{owner: "dotnet", repo: "runtime", issue_number: <n>}`. Confirm it returns an open issue. If it does not -> stop. A dead-link annotation in source requires a follow-up PR to remove.
 
-#### Step 5.7 — Confirm muting is welcome on the candidate issue
+#### Step 4.7 — Confirm muting is welcome on the candidate issue
 
 Read the candidate KBE / tracker body + its most recent area-owner comment. Skip muting (record `-> skipped: do-not-mute on issue #<n>`) if ANY of:
 
@@ -252,7 +228,7 @@ Read the candidate KBE / tracker body + its most recent area-owner comment. Skip
 
 When in doubt -> skip muting and let the next run revisit.
 
-#### Step 5.8 — Verify the candidate KBE actually matches (4-question check)
+#### Step 4.8 — Verify the candidate KBE actually matches (4-question check)
 
 Before writing `Linked KBE: #<n>` or `[ActiveIssue("...issues/<n>")]`, answer:
 
@@ -265,7 +241,7 @@ If any answer is no -> file a fresh KBE this run instead. Embed the four answers
 
 Optional fifth check when the candidate KBE is older than ~14 days: confirm Build Analysis is still matching it. `gh api graphql` over `userContentEdits` gives the edit timeline; a stale never-edited body hints the signature went bad.
 
-### Step 6 — Decide and emit
+### Step 5 — Decide and emit
 
 Exactly one of these branches fires per signature.
 
@@ -273,11 +249,11 @@ Exactly one of these branches fires per signature.
 
 Emit one `create_issue` with `temporary_id: "aw_kbe<N>"` (fresh `<N>` per KBE) plus one matching `update_project`. Same-run, same agent output batch. See *Same-run KBE + project linkage payload* in Templates.
 
-If Step 5.3 found a tracker, cross-link as `Tracking: dotnet/runtime#<tracker>` in the KBE body. Muting PR is deferred to the next run.
+If Step 4.3 found a tracker, cross-link as `Tracking: dotnet/runtime#<tracker>` in the KBE body. Muting PR is deferred to the next run.
 
-**Branch B — Existing KBE; no muting PR; muting is welcome (Step 5.7 clean).**
+**Branch B — Existing KBE; no muting PR; muting is welcome (Step 4.7 clean).**
 
-Emit one `create_pull_request` using the Muting PR template. Diff <= 5 lines; only test annotations or csproj flags. Body MUST include `Linked KBE: #<n>` as a top-level line plus the Step 5.8 four-question block.
+Emit one `create_pull_request` using the Muting PR template. Diff <= 5 lines; only test annotations or csproj flags. Body MUST include `Linked KBE: #<n>` as a top-level line plus the Step 4.8 four-question block.
 
 If the existing KBE is not yet on the project board (check via project queries first), also emit one `update_project` referencing the real issue number.
 
@@ -299,9 +275,9 @@ Group all infra failures in this run into ONE tracking issue. Before emitting, `
 
 Emit one `create_issue` using the Tracking issue template (or the JIT pipeline template for JIT/GC/PGO/stress pipelines). Call out the signature problem in `Recommended action`.
 
-After emitting, record the outcome per signature (Step 7).
+After emitting, record the outcome per signature (Step 6).
 
-### Step 7 — Per-pipeline tally + end-of-run summary
+### Step 6 — Per-pipeline tally + end-of-run summary
 
 Per signature, append one outcome line to `/tmp/gh-aw/agent/coverage/<pipeline>.txt`:
 
@@ -311,15 +287,13 @@ Per signature, append one outcome line to `/tmp/gh-aw/agent/coverage/<pipeline>.
 
 `<outcome>` is one of: `filed-issue #aw_<id>`, `filed-PR #aw_<id>`, `existing-issue #<n>`, `existing-PR #<n>`, `linked-to-project #<n>`, `skipped: <reason>`.
 
-A skipped signature MUST have a reason (e.g., `build canceled`, `< 2 occurrences and not blocking`, `do-not-mute on issue #<n>`, `cap reached`, `breaker-tripped`).
+A skipped signature MUST have a reason (e.g., `build canceled`, `< 2 occurrences and not blocking`, `do-not-mute on issue #<n>`, `cap reached`).
 
 At end of run, print this table to the agent log:
 
 ```
 | pipeline | total-signatures | issues-filed | prs-filed | reused-existing | linked-to-project | skipped-with-reason |
 ```
-
-If the breaker tripped in Step 4, the table contains one row: `_breaker | <total-actionable-failures> | 1 | 0 | 0 | 0 | <breached-thresholds>`.
 
 ## Templates
 
@@ -521,7 +495,7 @@ Branch handling: branch from `origin/main`. Stage only files you intend to chang
 Linked KBE: #<n>
 <if applicable: Tracking: dotnet/runtime#<tracker-n>>
 
-Match verification (from Step 5.8):
+Match verification (from Step 4.8):
 1. Same test/family: <yes + evidence>
 2. Same failure signature: <yes + evidence>
 3. Same OS: <yes + evidence>
@@ -629,41 +603,6 @@ Used for tracking issues against JIT/GC/PGO/stress pipelines (definitions 109–
 
 Do NOT propose any `area-*` label yourself. Area triage (`area-CodeGen-coreclr` / `area-GC-coreclr` / `area-PGO-coreclr` / `area-Tools-ILVerification`) is added later by a human reviewer.
 
-### Template: Outage summary issue body
-
-Emitted only when Step 4 trips the breaker. Title: `[ci-scan] Outage suspected: <short shape description>`. NO `Known Build Error` label.
-
-````markdown
-## Reasoning
-The CI scanner's outage circuit breaker tripped this run. Per-failure KBEs/PRs were NOT emitted; this issue is the single consolidated record so the failure set is not lost.
-
-Trip totals:
-- total-actionable-failures: <n>
-- pipelines-mostly-red: <n>
-- top-signature-share: <fraction>
-
-Breached threshold(s): <list which of the three trip conditions fired>
-
-## Impact on platforms
-- <top affected pipelines + leg counts>
-
-## Errors log
-```
-<top signatures by occurrence, with one representative log excerpt per signature>
-```
-
-## First build it occurred
-- Earliest build in the scanned window with any of these signatures: <link>
-- Window size: <n> builds
-
-## Recommended action
-- Human review needed before per-failure processing resumes.
-- The next scheduled run re-evaluates from a fresh build sample. If the totals fall below the thresholds, per-failure KBEs/PRs resume automatically.
-- A human can short-circuit by filing the root-cause KBE manually; once Build Analysis matches the dominant signature, per-leg counts fall and subsequent runs converge.
-- Affected pipelines: <list>
-- Top signatures: <list>
-````
-
 ### Template: Sanitization
 
 When pasting log excerpts into issue/PR bodies, strip:
@@ -700,4 +639,4 @@ These look like permission errors but are physical.
 - Don't comment on existing KBEs (Build Analysis tracks occurrence counts in the issue body).
 - Don't emit `noop`. Either a PR or an issue must come out of every actionable failure.
 - One signature = one outcome line in `/tmp/gh-aw/agent/coverage/<pipeline>.txt`.
-- The final agent log MUST include the Step 7 summary table.
+- The final agent log MUST include the Step 6 summary table.
