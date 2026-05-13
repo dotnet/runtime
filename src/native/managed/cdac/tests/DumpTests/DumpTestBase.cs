@@ -105,7 +105,7 @@ public abstract class DumpTestBase : IDisposable
             throw new SkipTestException($"No {config.R2RMode} dump for {debuggeeName}: {dumpPath}");
         }
 
-        _host = ClrMdDumpHost.Open(dumpPath);
+        _host = ClrMdDumpHost.Open(dumpPath, GetSymbolPaths(debuggeeName, versionDir));
         ulong contractDescriptor = _host.FindContractDescriptorAddress();
 
         bool created = ContractDescriptorTarget.TryCreate(
@@ -113,6 +113,7 @@ public abstract class DumpTestBase : IDisposable
             _host.ReadFromTarget,
             writeToTarget: static (_, _) => -1,
             _host.GetThreadContext,
+            allocVirtual: static (ulong _, out ulong _) => throw new NotImplementedException("Dump tests do not provide AllocVirtual"),
             [Contracts.CoreCLRContracts.Register],
             out _target);
 
@@ -148,18 +149,6 @@ public abstract class DumpTestBase : IDisposable
 
         if (_dumpInfo is not null)
         {
-            // Cross-bitness dump reading is not yet supported when a 32-bit host
-            // tries to read a 64-bit dump (see microsoft/clrmd#1423).
-            // The reverse (64-bit host reading 32-bit dump) works fine.
-            bool isDump64Bit = _dumpInfo.Arch is "x64" or "arm64" or "riscv64" or "loongarch64";
-            bool isHost64Bit = IntPtr.Size == 8;
-            if (isDump64Bit && !isHost64Bit)
-            {
-                throw new SkipTestException(
-                    $"32-bit host cannot read 64-bit dumps: dump is {_dumpInfo.Arch}. " +
-                    $"See microsoft/clrmd#1423.");
-            }
-
             foreach (SkipOnOSAttribute attr in method.GetCustomAttributes<SkipOnOSAttribute>())
             {
                 if (attr.IncludeOnly is not null)
@@ -243,6 +232,30 @@ public abstract class DumpTestBase : IDisposable
         }
 
         return false;
+    }
+
+    /// <summary>
+    /// Collects local symbol paths for ClrMD to resolve modules in the dump.
+    /// Checks <c>symbols/</c> directories in the helix payload (Helix and xplat dumps)
+    /// </summary>
+    private static List<string> GetSymbolPaths(string debuggeeName, string versionDir)
+    {
+        List<string> paths = [];
+
+        // Symbols directory in the dump tree (populated by Helix commands before tarring)
+        string symbolsDir = Path.Combine(versionDir, "symbols");
+        if (Directory.Exists(symbolsDir))
+        {
+            string runtimeSymbols = Path.Combine(symbolsDir, "runtime");
+            if (Directory.Exists(runtimeSymbols))
+                paths.Add(runtimeSymbols);
+
+            string debuggeeSymbols = Path.Combine(symbolsDir, "debuggees", debuggeeName);
+            if (Directory.Exists(debuggeeSymbols))
+                paths.Add(debuggeeSymbols);
+        }
+
+        return paths;
     }
 
     private static string? FindRepoRoot()

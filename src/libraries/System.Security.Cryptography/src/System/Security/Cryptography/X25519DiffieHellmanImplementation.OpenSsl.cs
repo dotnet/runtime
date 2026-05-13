@@ -11,6 +11,7 @@ namespace System.Security.Cryptography
         private readonly bool _hasPrivate;
 
         internal static new bool IsSupported { get; } = Interop.Crypto.X25519Available();
+        internal SafeEvpPKeyHandle Key => _key;
 
         private X25519DiffieHellmanImplementation(SafeEvpPKeyHandle key, bool hasPrivate)
         {
@@ -18,7 +19,7 @@ namespace System.Security.Cryptography
             _hasPrivate = hasPrivate;
         }
 
-        protected override void DeriveRawSecretAgreementCore(X25519DiffieHellman otherParty, Span<byte> destination)
+        protected override unsafe void DeriveRawSecretAgreementCore(X25519DiffieHellman otherParty, Span<byte> destination)
         {
             Debug.Assert(destination.Length == SecretAgreementSizeInBytes);
             ThrowIfPrivateNeeded();

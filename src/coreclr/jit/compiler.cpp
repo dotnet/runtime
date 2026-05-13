@@ -2687,7 +2687,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         }
 #endif // LATE_DISASM
 
-        if (JitConfig.JitDasmWithAddress() != 0)
+        if (JitConfig.JitDisasmWithAddress() != 0)
         {
             opts.disAddr = true;
         }
@@ -5653,6 +5653,12 @@ void Compiler::generatePatchpointInfo()
         // If there are shadowed params, the patchpoint info should refer to the shadow copy.
         //
         unsigned varNum = lclNum;
+
+        // Variable-sized locals reside in a different part of the stack frame.
+        if (lvaIsUnknownSizeLocal(varNum))
+        {
+            continue;
+        }
 
         if (gsShadowVarInfo != nullptr)
         {
@@ -10738,6 +10744,10 @@ void Compiler::EnregisterStats::RecordLocal(const LclVarDsc* varDsc)
                 m_simdUserForcesDep++;
                 break;
 
+            case DoNotEnregisterReason::WasmGCVisibility:
+                m_wasmGcVisibility++;
+                break;
+
             default:
                 unreached();
                 break;
@@ -10866,6 +10876,7 @@ void Compiler::EnregisterStats::Dump(FILE* fout) const
     PRINT_STATS(m_swizzleArg, notEnreg);
     PRINT_STATS(m_blockOpRet, notEnreg);
     PRINT_STATS(m_returnSpCheck, notEnreg);
+    PRINT_STATS(m_wasmGcVisibility, notEnreg);
     PRINT_STATS(m_callSpCheck, notEnreg);
     PRINT_STATS(m_simdUserForcesDep, notEnreg);
 

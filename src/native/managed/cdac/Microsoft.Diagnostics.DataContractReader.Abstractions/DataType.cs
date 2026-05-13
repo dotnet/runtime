@@ -22,6 +22,7 @@ public enum DataType
     /* VM Data Types */
 
     ObjectHandle,
+    JITNotification,
     CodePointer,
     Thread,
     ThreadStore,
@@ -77,6 +78,7 @@ public enum DataType
     StressMsg,
     StressMsgHeader,
     Object,
+    ContinuationObject,
     NativeObjectWrapperObject,
     ManagedObjectWrapperHolderObject,
     ManagedObjectWrapperLayout,
@@ -160,6 +162,9 @@ public enum DataType
     HijackFrame,
     TailCallFrame,
     StubDispatchFrame,
+    ExternalMethodFrame,
+    DynamicHelperFrame,
+
     ComCallWrapper,
     SimpleComCallWrapper,
     ComMethodTable,
@@ -170,6 +175,7 @@ public enum DataType
     ComInterfaceEntry,
     InternalComInterfaceDispatch,
     AuxiliarySymbolInfo,
+    CodeRangeMapRangeList,
 
     /* GC Data Types */
 

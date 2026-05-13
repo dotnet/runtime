@@ -15,7 +15,6 @@ struct DbiVersion;
 struct TypeRefData;
 struct TargetBuffer;
 struct ModuleInfo;
-struct AssemblyInfo;
 struct DacThreadAllocInfo;
 struct NativeVarData;
 struct SequencePoints;
@@ -203,7 +202,6 @@ interface IDacDbiInterface : IUnknown
 
     // App Domains
     HRESULT GetAppDomainId([in] VMPTR_AppDomain vmAppDomain, [out] ULONG * pRetVal);
-    HRESULT GetAppDomainObject([in] VMPTR_AppDomain vmAppDomain, [out] VMPTR_OBJECTHANDLE * pRetVal);
     HRESULT GetAppDomainFullName([in] VMPTR_AppDomain vmAppDomain, [in] IDacDbiStringHolder pStrName);
     HRESULT GetModuleSimpleName([in] VMPTR_Module vmModule, [in] IDacDbiStringHolder pStrFilename);
     HRESULT GetAssemblyPath([in] VMPTR_Assembly vmAssembly, [in] IDacDbiStringHolder pStrFilename, [out] BOOL * pResult);
@@ -214,7 +212,6 @@ interface IDacDbiInterface : IUnknown
     HRESULT GetMetadata([in] VMPTR_Module vmModule, [out] struct TargetBuffer * pTargetBuffer);
     HRESULT GetSymbolsBuffer([in] VMPTR_Module vmModule, [out] struct TargetBuffer * pTargetBuffer, [out] SymbolFormat * pSymbolFormat);
     HRESULT GetModuleData([in] VMPTR_Module vmModule, [out] struct ModuleInfo * pData);
-    HRESULT GetAssemblyInfo([in] VMPTR_Assembly vmAssembly, [out] struct AssemblyInfo * pData);
     HRESULT GetModuleForAssembly([in] VMPTR_Assembly vmAssembly, [out] VMPTR_Module * pModule);
 
     // Address
@@ -357,7 +354,6 @@ interface IDacDbiInterface : IUnknown
     // VM Object Handle
     HRESULT GetVmObjectHandle([in] CORDB_ADDRESS handleAddress, [out] VMPTR_OBJECTHANDLE * pRetVal);
     HRESULT IsVmObjectHandleValid([in] VMPTR_OBJECTHANDLE vmHandle, [out] BOOL * pResult);
-    HRESULT IsWinRTModule([in] VMPTR_Module vmModule, [out] BOOL * pIsWinRT);
     HRESULT GetHandleAddressFromVmHandle([in] VMPTR_OBJECTHANDLE vmHandle, [out] CORDB_ADDRESS * pRetVal);
 
     // Object Contents and Monitor
@@ -380,7 +376,6 @@ interface IDacDbiInterface : IUnknown
     HRESULT IsThreadSuspendedOrHijacked([in] VMPTR_Thread vmThread, [out] BOOL * pResult);
 
     // GC
-    HRESULT AreGCStructuresValid([out] BOOL * pResult);
     HRESULT CreateHeapWalk([out] HeapWalkHandle * pHandle);
     HRESULT DeleteHeapWalk([in] HeapWalkHandle handle);
     HRESULT WalkHeap([in] HeapWalkHandle handle, [in] ULONG count, [out] COR_HEAPOBJECT * objects, [out] ULONG * pFetched);
@@ -396,8 +391,8 @@ interface IDacDbiInterface : IUnknown
     HRESULT GetTypeID([in] CORDB_ADDRESS obj, [out] COR_TYPEID * pType);
     HRESULT GetTypeIDForType([in] VMPTR_TypeHandle vmTypeHandle, [out] COR_TYPEID * pId);
     HRESULT GetObjectFields([in] COR_TYPEID id, [in] ULONG32 celt, [out] COR_FIELD * layout, [out] ULONG32 * pceltFetched);
-    HRESULT GetTypeLayout([in] COR_TYPEID id, [out] COR_TYPE_LAYOUT * pLayout);
-    HRESULT GetArrayLayout([in] COR_TYPEID id, [out] COR_ARRAY_LAYOUT * pLayout);
+    HRESULT GetTypeLayout([in] CORDB_ADDRESS id, [out] COR_TYPE_LAYOUT * pLayout);
+    HRESULT GetArrayLayout([in] CORDB_ADDRESS id, [out] COR_ARRAY_LAYOUT * pLayout);
     HRESULT GetGCHeapInformation([out] COR_HEAPINFO * pHeapInfo);
 
     // PE File

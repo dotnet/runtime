@@ -278,6 +278,25 @@ namespace System.Runtime.Loader.Tests
             Assert.IsType<InvalidOperationException>(error.InnerException);
         }
 
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsCoreCLR))]
+        public static void MissingTransitiveDependency_ShowsRequestingAssemblyChain()
+        {
+            // MissingDependency.Root depends on MissingDependency.Mid which depends on MissingDependency.Leaf.
+            // MissingDependency.Leaf.dll is not deployed (via PrivateAssets=all in Mid's project reference).
+            // When Root calls Mid's method that uses Leaf types, the runtime throws FileNotFoundException
+            // for the missing Leaf assembly. The exception message should include the full requesting
+            // assembly chain (Mid and Root) so users can diagnose dependency loading issues.
+            FileNotFoundException ex = Assert.Throws<FileNotFoundException>(
+                () => MissingDependency.Root.RootClass.UseMiddle());
+
+            Assert.NotNull(ex.FileName);
+            Assert.Contains("MissingDependency.Leaf", ex.FileName);
+            string exString = ex.ToString();
+            Assert.Contains("MissingDependency.Mid", exString);
+            Assert.Contains(" --> ", exString);
+            Assert.Contains("MissingDependency.Root", exString);
+        }
+
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsAssemblyLoadingSupported), nameof(PlatformDetection.IsCoreCLR), nameof(PlatformDetection.HasAssemblyFiles))]
         public static void InvalidCastException_DifferentALC_ShowsAssemblyInfo()
         {

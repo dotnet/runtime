@@ -208,15 +208,15 @@ struct InterpAsyncSuspendData
     InterpIntervalMapEntry* zeroedLocalsIntervals; // This will be used for the locals we need to keep live.
     InterpIntervalMapEntry* liveLocalsIntervals; // Following the end of this struct is the array of InterpIntervalMapEntry for live locals
     CorInfoContinuationFlags flags;
-    int32_t offsetIntoContinuationTypeForExecutionContext;
     int32_t keepAliveOffset; // Only needed if we have a generic context to keep alive
     InterpByteCodeStart* methodStartIP;
     COMPILER_SHARED_TYPE(CORINFO_CLASS_HANDLE, DPTR(MethodTable), asyncMethodReturnType);
     int32_t asyncMethodReturnTypePrimitiveSize; // 0 if not primitive, otherwise size in bytes
     int32_t continuationArgOffset;
+    int32_t returnValueContinuationDataSize; // Aligned size of the return value in continuation data (0 if void). Live locals start after this offset.
+    int32_t returnValueVarStackOffset; // Interpreter stack offset of the return value var (valid only when returnValueContinuationDataSize > 0)
 
     COMPILER_SHARED_TYPE(CORINFO_METHOD_HANDLE, DPTR(MethodDesc), captureSyncContextMethod);
-    COMPILER_SHARED_TYPE(CORINFO_METHOD_HANDLE, DPTR(MethodDesc), restoreExecutionContextMethod);
     COMPILER_SHARED_TYPE(CORINFO_METHOD_HANDLE, DPTR(MethodDesc), restoreContextsOnSuspensionMethod);
 };
 

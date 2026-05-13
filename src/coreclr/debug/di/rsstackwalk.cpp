@@ -642,7 +642,7 @@ HRESULT CordbStackWalk::GetFrameWorker(ICorDebugFrame ** ppFrame)
 
         // Lookup the appdomain that the thread was in when it was executing code for this frame. We pass this
         // to the frame when we create it so we can properly resolve locals in that frame later.
-        CordbAppDomain * pCurrentAppDomain = GetProcess()->LookupOrCreateAppDomain(frameData.vmCurrentAppDomainToken);
+        CordbAppDomain * pCurrentAppDomain = GetProcess()->GetAppDomain();
         _ASSERTE(pCurrentAppDomain != NULL);
 
         // Lookup the module
@@ -683,7 +683,6 @@ HRESULT CordbStackWalk::GetFrameWorker(ICorDebugFrame ** ppFrame)
                                                               pJITFuncData->nativeOffset,
                                                               &(frameData.rd),
                                                               frameData.v.taAmbientESP,
-                                                              !!frameData.quicklyUnwound,
                                                               pCurrentAppDomain,
                                                               &miscFrame,
                                                               &(frameData.ctx));
@@ -819,8 +818,7 @@ HRESULT CordbStackWalk::GetFrameWorker(ICorDebugFrame ** ppFrame)
 
         // Lookup the appdomain that the thread was in when it was executing code for this frame. We pass this
         // to the frame when we create it so we can properly resolve locals in that frame later.
-        CordbAppDomain * pCurrentAppDomain =
-            GetProcess()->LookupOrCreateAppDomain(frameData.vmCurrentAppDomainToken);
+        CordbAppDomain * pCurrentAppDomain = GetProcess()->GetAppDomain();
         _ASSERTE(pCurrentAppDomain != NULL);
 
         CordbRuntimeUnwindableFrame * pRuntimeFrame = new CordbRuntimeUnwindableFrame(m_pCordbThread,
