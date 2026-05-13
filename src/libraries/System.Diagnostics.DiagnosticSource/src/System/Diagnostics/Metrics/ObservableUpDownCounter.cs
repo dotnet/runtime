@@ -55,7 +55,7 @@ namespace System.Diagnostics.Metrics
         protected override IEnumerable<Measurement<T>> Observe()
         {
             Debug.Assert(false);
-            throw new InvalidOperationException("The program executed an instruction that was thought to be unreachable.");
+            throw new InvalidOperationException(SR.Arg_UnreachableException);
         }
     }
 }
