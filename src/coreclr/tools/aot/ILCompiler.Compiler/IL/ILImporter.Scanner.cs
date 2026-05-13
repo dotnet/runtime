@@ -413,194 +413,8 @@ namespace Internal.IL
                 && IsAsyncHelpersAwait((MethodDesc)_methodIL.GetObject(reader.ReadILToken()));
         }
 
-        private void ImportCall(ILOpcode opcode, int token)
+        private void ImportCall(ILOpcode opcode, string reason, MethodDesc method, MethodDesc runtimeDeterminedMethod)
         {
-            // We get both the canonical and runtime determined form - JitInterface mostly operates
-            // on the canonical form.
-            var runtimeDeterminedMethod = (MethodDesc)_methodIL.GetObject(token);
-            var method = (MethodDesc)_canonMethodIL.GetObject(token);
-
-            _compilation.TypeSystemContext.EnsureLoadableMethod(method);
-            if ((method.Signature.Flags & MethodSignatureFlags.UnmanagedCallingConventionMask) == MethodSignatureFlags.CallingConventionVarargs)
-                ThrowHelper.ThrowBadImageFormatException();
-
-            _compilation.NodeFactory.MetadataManager.GetDependenciesDueToAccess(ref _dependencies, _compilation.NodeFactory, _canonMethodIL, method);
-
-            if (method.IsRawPInvoke())
-            {
-                // Raw P/invokes don't have any dependencies.
-                return;
-            }
-
-            string reason = null;
-            switch (opcode)
-            {
-                case ILOpcode.newobj:
-                    reason = "newobj"; break;
-                case ILOpcode.call:
-                    reason = "call"; break;
-                case ILOpcode.callvirt:
-                    reason = "callvirt"; break;
-                case ILOpcode.ldftn:
-                    reason = "ldftn"; break;
-                case ILOpcode.ldvirtftn:
-                    reason = "ldvirtftn"; break;
-                default:
-                    Debug.Assert(false); break;
-            }
-
-            MethodDesc asyncVariantMethod = null;
-            MethodDesc asyncVariantRuntimeDeterminedMethod = null;
-            // Are we scanning a call within a state machine?
-            if (opcode is ILOpcode.call or ILOpcode.callvirt
-                && _canonMethod.IsAsyncCall())
-            {
-                // Add dependencies on infra to do suspend/resume. We only need to do this once per method scanned.
-                if (!_asyncDependenciesReported && method.IsAsync)
-                {
-                    _asyncDependenciesReported = true;
-
-                    const string asyncReason = "Async state machine";
-
-                    AsyncResumptionStub resumptionStub = _compilation.TypeSystemContext.GetAsyncResumptionStub(_canonMethod, _compilation.TypeSystemContext.GeneratedAssembly.GetGlobalModuleType());
-                    _dependencies.Add(_compilation.NodeFactory.MethodEntrypoint(resumptionStub), asyncReason);
-
-                    _dependencies.Add(_factory.ConstructedTypeSymbol(_compilation.TypeSystemContext.ContinuationType), asyncReason);
-
-                    DefType asyncHelpers = _compilation.TypeSystemContext.SystemModule.GetKnownType("System.Runtime.CompilerServices"u8, "AsyncHelpers"u8);
-
-                    _dependencies.Add(_compilation.GetHelperEntrypoint(ReadyToRunHelper.AllocContinuation), asyncReason);
-                    _dependencies.Add(_factory.MethodEntrypoint(asyncHelpers.GetKnownMethod("CaptureExecutionContext"u8, null)), asyncReason);
-                    _dependencies.Add(_factory.MethodEntrypoint(asyncHelpers.GetKnownMethod("CaptureContinuationContext"u8, null)), asyncReason);
-                    _dependencies.Add(_factory.MethodEntrypoint(asyncHelpers.GetKnownMethod("RestoreContextsOnSuspension"u8, null)), asyncReason);
-                    _dependencies.Add(_factory.MethodEntrypoint(asyncHelpers.GetKnownMethod("FinishSuspensionNoContinuationContext"u8, null)), asyncReason);
-                    _dependencies.Add(_factory.MethodEntrypoint(asyncHelpers.GetKnownMethod("FinishSuspensionWithContinuationContext"u8, null)), asyncReason);
-                }
-
-                // If this is the task await pattern, the JIT will first resolve the call to the
-                // async variant, then may switch back to the original if the async variant is just
-                // a thunk (for non-runtime-async methods). Report both variants as dependencies such
-                // that the JIT can pick either one.
-
-                // in rare cases a method that returns Task is not actually TaskReturning (i.e. returns T).
-                // we cannot resolve to an Async variant in such case.
-                bool allowAsyncVariant = method.GetTypicalMethodDefinition().Signature.ReturnsTaskOrValueTask();
-
-                // Don't get async variant of Delegate.Invoke method; the pointed to method is not an async variant either.
-                allowAsyncVariant = allowAsyncVariant && !method.OwningType.IsDelegate;
-
-                if (allowAsyncVariant && MatchTaskAwaitPattern())
-                {
-                    asyncVariantMethod = _factory.TypeSystemContext.GetAsyncVariantMethod(method);
-                    asyncVariantRuntimeDeterminedMethod = _factory.TypeSystemContext.GetAsyncVariantMethod(runtimeDeterminedMethod);
-                }
-            }
-
-            if (opcode == ILOpcode.newobj)
-            {
-                TypeDesc owningType = runtimeDeterminedMethod.OwningType;
-                if (owningType.IsString)
-                {
-                    // String .ctor handled specially below
-                }
-                else if (owningType.IsGCPointer)
-                {
-                    if (owningType.IsRuntimeDeterminedSubtype)
-                    {
-                        _dependencies.Add(GetGenericLookupHelper(ReadyToRunHelperId.TypeHandle, owningType), reason);
-                    }
-                    else
-                    {
-                        _dependencies.Add(_factory.ConstructedTypeSymbol(owningType), reason);
-                    }
-
-                    if (owningType.IsArray)
-                    {
-                        // RyuJIT is going to call the "MdArray" creation helper even if this is an SzArray,
-                        // hence the IsArray check above. Note that the MdArray helper can handle SzArrays.
-                        if (((ArrayType)owningType).Rank == 1)
-                            _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.NewMultiDimArrRare), reason);
-                        else
-                            _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.NewMultiDimArr), reason);
-                        return;
-                    }
-                    else
-                    {
-                        _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.NewObject), reason);
-                    }
-                }
-            }
-
-            if (method.OwningType.IsDelegate && method.Name.SequenceEqual("Invoke"u8) &&
-                opcode != ILOpcode.ldftn && opcode != ILOpcode.ldvirtftn)
-            {
-                // This call is expanded as an intrinsic; it's not an actual function call.
-                // Before codegen realizes this is an intrinsic, it might still ask questions about
-                // the vtable of this virtual method, so let's make sure it's marked in the scanner's
-                // dependency graph.
-                _dependencies.Add(_factory.VTable(method.OwningType), reason);
-                return;
-            }
-
-            if (method.IsIntrinsic)
-            {
-                if (IsActivatorDefaultConstructorOf(method))
-                {
-                    if (runtimeDeterminedMethod.IsRuntimeDeterminedExactMethod)
-                    {
-                        _dependencies.Add(GetGenericLookupHelper(ReadyToRunHelperId.DefaultConstructor, runtimeDeterminedMethod.Instantiation[0]), reason);
-                    }
-                    else
-                    {
-                        TypeDesc type = method.Instantiation[0];
-                        MethodDesc ctor = Compilation.GetConstructorForCreateInstanceIntrinsic(type);
-                        _dependencies.Add(type.IsValueType ? _factory.ExactCallableAddress(ctor) : _factory.CanonicalEntrypoint(ctor), reason);
-                    }
-
-                    return;
-                }
-
-                if (IsActivatorAllocatorOf(method))
-                {
-                    if (runtimeDeterminedMethod.IsRuntimeDeterminedExactMethod)
-                    {
-                        _dependencies.Add(GetGenericLookupHelper(ReadyToRunHelperId.ObjectAllocator, runtimeDeterminedMethod.Instantiation[0]), reason);
-                    }
-                    else
-                    {
-                        _dependencies.Add(_compilation.ComputeConstantLookup(ReadyToRunHelperId.ObjectAllocator, method.Instantiation[0]), reason);
-                    }
-
-                    return;
-                }
-
-                if (IsEETypePtrOf(method))
-                {
-                    if (runtimeDeterminedMethod.IsRuntimeDeterminedExactMethod)
-                    {
-                        _dependencies.Add(GetGenericLookupHelper(ReadyToRunHelperId.TypeHandle, runtimeDeterminedMethod.Instantiation[0]), reason);
-                    }
-                    else
-                    {
-                        _dependencies.Add(_factory.ConstructedTypeSymbol(method.Instantiation[0]), reason);
-                    }
-                    return;
-                }
-
-                if (opcode != ILOpcode.ldftn)
-                {
-                    if (IsRuntimeHelpersIsReferenceOrContainsReferences(method))
-                    {
-                        return;
-                    }
-
-                    if (IsMemoryMarshalGetArrayDataReference(method))
-                    {
-                        return;
-                    }
-                }
-            }
-
             TypeDesc exactType = method.OwningType;
 
             bool resolvedConstraint = false;
@@ -816,16 +630,6 @@ namespace Internal.IL
                         }
 
                         _dependencies.Add(_factory.CanonicalEntrypoint(targetMethod), reason);
-
-                        if (asyncVariantMethod != null && _canonMethod.IsSharedByGenericInstantiations)
-                        {
-                            MethodDesc avTargetMethod = asyncVariantMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);
-                            if (avTargetMethod.RequiresInstMethodDescArg())
-                                _dependencies.Add(GetGenericLookupHelper(ReadyToRunHelperId.MethodDictionary, asyncVariantRuntimeDeterminedMethod), reason);
-                            else if (avTargetMethod.RequiresInstMethodTableArg())
-                                _dependencies.Add(GetGenericLookupHelper(ReadyToRunHelperId.TypeHandle, asyncVariantRuntimeDeterminedMethod.OwningType), reason);
-                            _dependencies.Add(_factory.CanonicalEntrypoint(avTargetMethod), reason);
-                        }
                     }
                     else
                     {
@@ -867,16 +671,6 @@ namespace Internal.IL
                     }
 
                     _dependencies.Add(GetMethodEntrypoint(targetMethod), reason);
-
-                    if (asyncVariantMethod != null)
-                    {
-                        MethodDesc avTargetMethod = asyncVariantMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);
-                        if (avTargetMethod.RequiresInstMethodDescArg())
-                            _dependencies.Add(_compilation.NodeFactory.MethodGenericDictionary(asyncVariantMethod), reason);
-                        else if (avTargetMethod.RequiresInstMethodTableArg())
-                            _dependencies.Add(_compilation.NodeFactory.ConstructedTypeSymbol(asyncVariantMethod.OwningType), reason);
-                        _dependencies.Add(GetMethodEntrypoint(avTargetMethod), reason);
-                    }
                 }
             }
             else if (staticResolution is DefaultInterfaceMethodResolution.Diamond or DefaultInterfaceMethodResolution.Reabstraction)
@@ -966,6 +760,201 @@ namespace Internal.IL
                     else
                         _dependencies.Add(_factory.ReadyToRunHelper(ReadyToRunHelperId.DelegateCtor, info), reason);
                 }
+            }
+        }
+
+        private void ImportCall(ILOpcode opcode, int token)
+        {
+            // We get both the canonical and runtime determined form - JitInterface mostly operates
+            // on the canonical form.
+            var runtimeDeterminedMethod = (MethodDesc)_methodIL.GetObject(token);
+            var method = (MethodDesc)_canonMethodIL.GetObject(token);
+
+            _compilation.TypeSystemContext.EnsureLoadableMethod(method);
+            if ((method.Signature.Flags & MethodSignatureFlags.UnmanagedCallingConventionMask) == MethodSignatureFlags.CallingConventionVarargs)
+                ThrowHelper.ThrowBadImageFormatException();
+
+            _compilation.NodeFactory.MetadataManager.GetDependenciesDueToAccess(ref _dependencies, _compilation.NodeFactory, _canonMethodIL, method);
+
+            if (method.IsRawPInvoke())
+            {
+                // Raw P/invokes don't have any dependencies.
+                return;
+            }
+
+            string reason = null;
+            switch (opcode)
+            {
+                case ILOpcode.newobj:
+                    reason = "newobj"; break;
+                case ILOpcode.call:
+                    reason = "call"; break;
+                case ILOpcode.callvirt:
+                    reason = "callvirt"; break;
+                case ILOpcode.ldftn:
+                    reason = "ldftn"; break;
+                case ILOpcode.ldvirtftn:
+                    reason = "ldvirtftn"; break;
+                default:
+                    Debug.Assert(false); break;
+            }
+
+            MethodDesc asyncVariantMethod = null;
+            MethodDesc asyncVariantRuntimeDeterminedMethod = null;
+            // Are we scanning a call within a state machine?
+            if (opcode is ILOpcode.call or ILOpcode.callvirt
+                && _canonMethod.IsAsyncCall())
+            {
+                // Add dependencies on infra to do suspend/resume. We only need to do this once per method scanned.
+                if (!_asyncDependenciesReported && method.IsAsync)
+                {
+                    _asyncDependenciesReported = true;
+
+                    const string asyncReason = "Async state machine";
+
+                    AsyncResumptionStub resumptionStub = _compilation.TypeSystemContext.GetAsyncResumptionStub(_canonMethod, _compilation.TypeSystemContext.GeneratedAssembly.GetGlobalModuleType());
+                    _dependencies.Add(_compilation.NodeFactory.MethodEntrypoint(resumptionStub), asyncReason);
+
+                    _dependencies.Add(_factory.ConstructedTypeSymbol(_compilation.TypeSystemContext.ContinuationType), asyncReason);
+
+                    DefType asyncHelpers = _compilation.TypeSystemContext.SystemModule.GetKnownType("System.Runtime.CompilerServices"u8, "AsyncHelpers"u8);
+
+                    _dependencies.Add(_compilation.GetHelperEntrypoint(ReadyToRunHelper.AllocContinuation), asyncReason);
+                    _dependencies.Add(_factory.MethodEntrypoint(asyncHelpers.GetKnownMethod("CaptureExecutionContext"u8, null)), asyncReason);
+                    _dependencies.Add(_factory.MethodEntrypoint(asyncHelpers.GetKnownMethod("CaptureContinuationContext"u8, null)), asyncReason);
+                    _dependencies.Add(_factory.MethodEntrypoint(asyncHelpers.GetKnownMethod("RestoreContextsOnSuspension"u8, null)), asyncReason);
+                    _dependencies.Add(_factory.MethodEntrypoint(asyncHelpers.GetKnownMethod("FinishSuspensionNoContinuationContext"u8, null)), asyncReason);
+                    _dependencies.Add(_factory.MethodEntrypoint(asyncHelpers.GetKnownMethod("FinishSuspensionWithContinuationContext"u8, null)), asyncReason);
+                }
+
+                // If this is the task await pattern, the JIT will first resolve the call to the
+                // async variant, then may switch back to the original if the async variant is just
+                // a thunk (for non-runtime-async methods). Report both variants as dependencies such
+                // that the JIT can pick either one.
+
+                // in rare cases a method that returns Task is not actually TaskReturning (i.e. returns T).
+                // we cannot resolve to an Async variant in such case.
+                bool allowAsyncVariant = method.GetTypicalMethodDefinition().Signature.ReturnsTaskOrValueTask();
+
+                // Don't get async variant of Delegate.Invoke method; the pointed to method is not an async variant either.
+                allowAsyncVariant = allowAsyncVariant && !method.OwningType.IsDelegate;
+
+                if (allowAsyncVariant && MatchTaskAwaitPattern())
+                {
+                    asyncVariantMethod = _factory.TypeSystemContext.GetAsyncVariantMethod(method);
+                    asyncVariantRuntimeDeterminedMethod = _factory.TypeSystemContext.GetAsyncVariantMethod(runtimeDeterminedMethod);
+                }
+            }
+
+            if (opcode == ILOpcode.newobj)
+            {
+                TypeDesc owningType = runtimeDeterminedMethod.OwningType;
+                if (owningType.IsString)
+                {
+                    // String .ctor handled specially below
+                }
+                else if (owningType.IsGCPointer)
+                {
+                    if (owningType.IsRuntimeDeterminedSubtype)
+                    {
+                        _dependencies.Add(GetGenericLookupHelper(ReadyToRunHelperId.TypeHandle, owningType), reason);
+                    }
+                    else
+                    {
+                        _dependencies.Add(_factory.ConstructedTypeSymbol(owningType), reason);
+                    }
+
+                    if (owningType.IsArray)
+                    {
+                        // RyuJIT is going to call the "MdArray" creation helper even if this is an SzArray,
+                        // hence the IsArray check above. Note that the MdArray helper can handle SzArrays.
+                        if (((ArrayType)owningType).Rank == 1)
+                            _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.NewMultiDimArrRare), reason);
+                        else
+                            _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.NewMultiDimArr), reason);
+                        return;
+                    }
+                    else
+                    {
+                        _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.NewObject), reason);
+                    }
+                }
+            }
+
+            if (method.OwningType.IsDelegate && method.Name.SequenceEqual("Invoke"u8) &&
+                opcode != ILOpcode.ldftn && opcode != ILOpcode.ldvirtftn)
+            {
+                // This call is expanded as an intrinsic; it's not an actual function call.
+                // Before codegen realizes this is an intrinsic, it might still ask questions about
+                // the vtable of this virtual method, so let's make sure it's marked in the scanner's
+                // dependency graph.
+                _dependencies.Add(_factory.VTable(method.OwningType), reason);
+                return;
+            }
+
+            if (method.IsIntrinsic)
+            {
+                if (IsActivatorDefaultConstructorOf(method))
+                {
+                    if (runtimeDeterminedMethod.IsRuntimeDeterminedExactMethod)
+                    {
+                        _dependencies.Add(GetGenericLookupHelper(ReadyToRunHelperId.DefaultConstructor, runtimeDeterminedMethod.Instantiation[0]), reason);
+                    }
+                    else
+                    {
+                        TypeDesc type = method.Instantiation[0];
+                        MethodDesc ctor = Compilation.GetConstructorForCreateInstanceIntrinsic(type);
+                        _dependencies.Add(type.IsValueType ? _factory.ExactCallableAddress(ctor) : _factory.CanonicalEntrypoint(ctor), reason);
+                    }
+
+                    return;
+                }
+
+                if (IsActivatorAllocatorOf(method))
+                {
+                    if (runtimeDeterminedMethod.IsRuntimeDeterminedExactMethod)
+                    {
+                        _dependencies.Add(GetGenericLookupHelper(ReadyToRunHelperId.ObjectAllocator, runtimeDeterminedMethod.Instantiation[0]), reason);
+                    }
+                    else
+                    {
+                        _dependencies.Add(_compilation.ComputeConstantLookup(ReadyToRunHelperId.ObjectAllocator, method.Instantiation[0]), reason);
+                    }
+
+                    return;
+                }
+
+                if (IsEETypePtrOf(method))
+                {
+                    if (runtimeDeterminedMethod.IsRuntimeDeterminedExactMethod)
+                    {
+                        _dependencies.Add(GetGenericLookupHelper(ReadyToRunHelperId.TypeHandle, runtimeDeterminedMethod.Instantiation[0]), reason);
+                    }
+                    else
+                    {
+                        _dependencies.Add(_factory.ConstructedTypeSymbol(method.Instantiation[0]), reason);
+                    }
+                    return;
+                }
+
+                if (opcode != ILOpcode.ldftn)
+                {
+                    if (IsRuntimeHelpersIsReferenceOrContainsReferences(method))
+                    {
+                        return;
+                    }
+
+                    if (IsMemoryMarshalGetArrayDataReference(method))
+                    {
+                        return;
+                    }
+                }
+            }
+
+            ImportCall(opcode, reason, method, runtimeDeterminedMethod);
+            if (asyncVariantMethod != null)
+            {
+                ImportCall(opcode, reason, asyncVariantMethod, asyncVariantRuntimeDeterminedMethod);
             }
         }
 
