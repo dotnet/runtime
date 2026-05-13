@@ -213,19 +213,18 @@ namespace ILCompiler.DependencyAnalysis
 
             int rva = methodDef.RelativeVirtualAddress;
             if (rva == 0)
-            {
-                // Methods without IL don't match the empty method body pattern.
-                return true;
-            }
+                return false;
 
             byte[] bodyBytes = _module.PEReader.GetMethodBody(rva).GetILBytes();
 
-            return bodyBytes.Length switch
+            bool isEmptyMethodBody = bodyBytes.Length switch
             {
-                RetOnlyBodyLength => bodyBytes[0] != (byte)ILOpcode.ret,
-                NopRetBodyLength => bodyBytes[0] != (byte)ILOpcode.nop || bodyBytes[1] != (byte)ILOpcode.ret,
-                _ => true,
+                RetOnlyBodyLength => bodyBytes[0] == (byte)ILOpcode.ret,
+                NopRetBodyLength => bodyBytes[0] == (byte)ILOpcode.nop && bodyBytes[1] == (byte)ILOpcode.ret,
+                _ => false,
             };
+
+            return !isEmptyMethodBody;
         }
 
         public override string ToString()
