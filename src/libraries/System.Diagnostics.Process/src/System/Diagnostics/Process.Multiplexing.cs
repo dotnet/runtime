@@ -562,8 +562,7 @@ namespace System.Diagnostics
 
                 // Ensure both tasks complete before disposing the CancellationTokenSource.
                 // The tasks handle all exceptions internally, so they always run to completion.
-                await outputTask.ConfigureAwait(false);
-                await errorTask.ConfigureAwait(false);
+                await Task.WhenAll(outputTask, errorTask).ConfigureAwait(false);
 
                 linkedCts.Dispose();
             }
