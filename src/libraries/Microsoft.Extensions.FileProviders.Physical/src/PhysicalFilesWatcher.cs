@@ -387,8 +387,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
                     {
                         if (requiresSubdirectories(entry.Key))
                         {
-                            int newCount = Interlocked.Decrement(ref _subdirectoryRequiringTokenCount);
-                            Debug.Assert(newCount >= 0, "Subdirectory-requiring token counter went negative.");
+                            Interlocked.Decrement(ref _subdirectoryRequiringTokenCount);
                         }
 
                         CancelToken(matchInfo);
@@ -453,8 +452,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
             {
                 if (FilePathRequiresSubdirectories(path))
                 {
-                    int newCount = Interlocked.Decrement(ref _subdirectoryRequiringTokenCount);
-                    Debug.Assert(newCount >= 0, "Subdirectory-requiring token counter went negative.");
+                    Interlocked.Decrement(ref _subdirectoryRequiringTokenCount);
                 }
 
                 CancelToken(matchInfo);
@@ -469,8 +467,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
                 {
                     if (WildcardRequiresSubdirectories(wildCardEntry.Key))
                     {
-                        int newCount = Interlocked.Decrement(ref _subdirectoryRequiringTokenCount);
-                        Debug.Assert(newCount >= 0, "Subdirectory-requiring token counter went negative.");
+                        Interlocked.Decrement(ref _subdirectoryRequiringTokenCount);
                     }
 
                     CancelToken(matchInfo);
