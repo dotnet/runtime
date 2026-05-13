@@ -44,7 +44,7 @@ internal partial class ExecutionManagerCore<T> : IExecutionManager
             Data.RuntimeFunction function = _runtimeFunctions.GetRuntimeFunction(r2rInfo.RuntimeFunctions, index);
 
             TargetPointer addr = CodePointerUtils.AddressFromCodePointer(jittedCodeAddress, Target);
-            TargetCodePointer startAddress = imageBase + function.BeginAddress;
+            TargetPointer startAddress = imageBase + function.BeginAddress;
             TargetNUInt relativeOffset = new TargetNUInt(addr - startAddress);
 
             // Take hot/cold splitting into account for the relative offset
@@ -62,7 +62,7 @@ internal partial class ExecutionManagerCore<T> : IExecutionManager
                 }
             }
 
-            info = new CodeBlock(startAddress.Value, methodDesc, relativeOffset, rangeSection.Data!.JitManager);
+            info = new CodeBlock(startAddress, methodDesc, relativeOffset, rangeSection.Data!.JitManager);
             return true;
         }
 
@@ -336,7 +336,7 @@ internal partial class ExecutionManagerCore<T> : IExecutionManager
         private void GetMethodRVAAndRangeStart(CodeBlockHandle cbh, out TargetPointer methodStart, out TargetPointer rangeStart)
         {
             IExecutionManager executionManager = Target.Contracts.ExecutionManager;
-            methodStart = CodePointerUtils.AddressFromCodePointer(executionManager.GetStartAddress(cbh), Target);
+            methodStart = executionManager.GetStartAddress(cbh);
             rangeStart = executionManager.GetUnwindInfoBaseAddress(cbh);
         }
 

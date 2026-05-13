@@ -46,8 +46,8 @@ internal sealed class DebugInfo_2(Target target) : IDebugInfo
             throw new InvalidOperationException($"No CodeBlockHandle found for native code {pCode}.");
         TargetPointer debugInfo = _eman.GetDebugInfo(cbh, out bool _);
 
-        TargetCodePointer nativeCodeStart = _eman.GetStartAddress(cbh);
-        codeOffset = (uint)(CodePointerUtils.AddressFromCodePointer(pCode, _target) - CodePointerUtils.AddressFromCodePointer(nativeCodeStart, _target));
+        TargetPointer nativeCodeStart = _eman.GetStartAddress(cbh);
+        codeOffset = (uint)(CodePointerUtils.AddressFromCodePointer(pCode, _target) - nativeCodeStart);
 
         if (debugInfo == TargetPointer.Null)
             return [];
