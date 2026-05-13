@@ -235,6 +235,7 @@ function libCoreRunFactory() {
             } catch (e) {
                 const errorMessage = e instanceof Error ? e.message : String(e);
                 console.error("Failed to construct WebAssembly instance for Webcil image:", {wasmPath, errorMessage});
+                return false;
             } finally {
                 stackRestore(sp);
             }
