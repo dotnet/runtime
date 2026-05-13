@@ -75,6 +75,46 @@ namespace System.Net.Security.Tests
         }
 
         [Fact]
+        public async Task SslStream_PlatformTrustedCertificateRejectedByManagedChain_ReportsChainErrors()
+        {
+            // The platform trusts the NDX root through network_security_config.xml, but
+            // managed validation does not use that Android app configuration. This verifies
+            // that platform acceptance cannot mask managed chain failures.
+
+            SslPolicyErrors? reportedErrors = null;
+
+            (SslStream client, SslStream server) = GetConnectedSslStreams();
+            using (client)
+            using (server)
+            using (X509Certificate2 serverCertificate = Configuration.Certificates.GetServerCertificate())
+            {
+                var serverOptions = new SslServerAuthenticationOptions
+                {
+                    ServerCertificate = serverCertificate,
+                };
+
+                var clientOptions = new SslClientAuthenticationOptions
+                {
+                    TargetHost = "testservereku.contoso.com",
+                    RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) =>
+                    {
+                        reportedErrors = sslPolicyErrors;
+                        return true;
+                    },
+                };
+
+                await Task.WhenAll(
+                    client.AuthenticateAsClientAsync(clientOptions),
+                    server.AuthenticateAsServerAsync(serverOptions)).WaitAsync(TimeSpan.FromSeconds(30));
+            }
+
+            Assert.NotNull(reportedErrors);
+            Assert.True(
+                (reportedErrors.Value & SslPolicyErrors.RemoteCertificateChainErrors) != 0,
+                $"Expected managed chain errors but got: {reportedErrors.Value}");
+        }
+
+        [Fact]
         public async Task SslStream_CertificateNotSignedByTrustedCA_ReportsChainErrors()
         {
             // The server uses a self-signed certificate that is NOT signed by the NDX Test Root CA.
@@ -362,6 +402,97 @@ namespace System.Net.Security.Tests
         }
 
         [Fact]
+        public async Task SslStream_CustomRootTrustDirectlySignedLeaf_PlatformAndManagedTrust()
+        {
+            // The custom root is passed to Android's TrustManagerFactory and to managed
+            // CustomRootTrust. The leaf is signed directly by the root, so no ExtraStore
+            // override is needed and both validators should accept the chain.
+
+            (X509Certificate2 rootCert, X509Certificate2 serverCert) = GenerateDirectCertificateChain();
+
+            SslPolicyErrors? reportedErrors = null;
+
+            (SslStream client, SslStream server) = GetConnectedSslStreams();
+            using (client)
+            using (server)
+            using (rootCert)
+            using (serverCert)
+            {
+                var serverOptions = new SslServerAuthenticationOptions
+                {
+                    ServerCertificate = serverCert,
+                };
+
+                var clientOptions = new SslClientAuthenticationOptions
+                {
+                    TargetHost = "testservereku.contoso.com",
+                    RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) =>
+                    {
+                        reportedErrors = sslPolicyErrors;
+                        return true;
+                    },
+                    CertificateChainPolicy = new X509ChainPolicy
+                    {
+                        RevocationMode = X509RevocationMode.NoCheck,
+                        TrustMode = X509ChainTrustMode.CustomRootTrust,
+                        CustomTrustStore = { rootCert },
+                    },
+                };
+
+                await Task.WhenAll(
+                    client.AuthenticateAsClientAsync(clientOptions),
+                    server.AuthenticateAsServerAsync(serverOptions)).WaitAsync(TimeSpan.FromSeconds(30));
+            }
+
+            Assert.NotNull(reportedErrors);
+            Assert.Equal(SslPolicyErrors.None, reportedErrors.Value & SslPolicyErrors.RemoteCertificateChainErrors);
+        }
+
+        [Fact]
+        public async Task SslStream_SslCertificateTrustList_PlatformAndManagedTrust()
+        {
+            // Exercise the legacy SslCertificateTrust path. Because CertificateChainPolicy
+            // is not set, SafeDeleteSslContext gets trust anchors from ClientCertificateContext.Trust
+            // and passes them to Android's TrustManagerFactory.
+
+            using X509Certificate2 trustedServerCertificate = Configuration.Certificates.GetSelfSignedServerCertificate();
+            using X509Certificate2 clientCertificate = Configuration.Certificates.GetClientCertificate();
+            SslCertificateTrust trust = SslCertificateTrust.CreateForX509Collection(new X509Certificate2Collection(trustedServerCertificate));
+            SslStreamCertificateContext clientCertificateContext = SslStreamCertificateContext.Create(clientCertificate, additionalCertificates: null, offline: true, trust);
+
+            SslPolicyErrors? reportedErrors = null;
+
+            (SslStream client, SslStream server) = GetConnectedSslStreams();
+            using (client)
+            using (server)
+            using (X509Certificate2 serverCertificate = Configuration.Certificates.GetSelfSignedServerCertificate())
+            {
+                var serverOptions = new SslServerAuthenticationOptions
+                {
+                    ServerCertificate = serverCertificate,
+                };
+
+                var clientOptions = new SslClientAuthenticationOptions
+                {
+                    TargetHost = "testselfsignedservereku.contoso.com",
+                    ClientCertificateContext = clientCertificateContext,
+                    RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) =>
+                    {
+                        reportedErrors = sslPolicyErrors;
+                        return true;
+                    },
+                };
+
+                await Task.WhenAll(
+                    client.AuthenticateAsClientAsync(clientOptions),
+                    server.AuthenticateAsServerAsync(serverOptions)).WaitAsync(TimeSpan.FromSeconds(30));
+            }
+
+            Assert.NotNull(reportedErrors);
+            Assert.Equal(SslPolicyErrors.None, reportedErrors.Value & SslPolicyErrors.RemoteCertificateChainErrors);
+        }
+
+        [Fact]
         public async Task SslStream_TargetHostIsIpLiteral_HandshakeUsesNonHostnameAwareValidation()
         {
             // When TargetHost is an IP literal, SafeDeleteSslContext deliberately skips passing
@@ -478,6 +609,39 @@ namespace System.Net.Security.Tests
         }
 
         /// <summary>
+        /// Generates a certificate chain: root CA → leaf cert.
+        /// The root is NOT the NDX Test Root CA from network_security_config.xml,
+        /// so it is trusted only when passed through custom trust options.
+        /// </summary>
+        private static (X509Certificate2 root, X509Certificate2 leaf) GenerateDirectCertificateChain()
+        {
+            DateTimeOffset notBefore = DateTimeOffset.UtcNow.AddDays(-1);
+            DateTimeOffset notAfter = DateTimeOffset.UtcNow.AddYears(1);
+            byte[] serialNumber = new byte[8];
+
+            using RSA rootKey = RSA.Create(2048);
+            var rootRequest = new CertificateRequest("CN=Direct Test Root CA", rootKey, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
+            rootRequest.CertificateExtensions.Add(new X509BasicConstraintsExtension(certificateAuthority: true, hasPathLengthConstraint: false, pathLengthConstraint: 0, critical: true));
+            var rootSkid = new X509SubjectKeyIdentifierExtension(rootRequest.PublicKey, critical: false);
+            rootRequest.CertificateExtensions.Add(rootSkid);
+            using X509Certificate2 rootCert = rootRequest.CreateSelfSigned(notBefore, notAfter);
+
+            using RSA leafKey = RSA.Create(2048);
+            var leafRequest = new CertificateRequest("CN=testservereku.contoso.com", leafKey, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
+            leafRequest.CertificateExtensions.Add(new X509BasicConstraintsExtension(certificateAuthority: false, hasPathLengthConstraint: false, pathLengthConstraint: 0, critical: true));
+            leafRequest.CertificateExtensions.Add(new X509EnhancedKeyUsageExtension(new OidCollection { new Oid("1.3.6.1.5.5.7.3.1") }, critical: false));
+            leafRequest.CertificateExtensions.Add(X509AuthorityKeyIdentifierExtension.CreateFromSubjectKeyIdentifier(rootSkid));
+            var sanBuilder = new SubjectAlternativeNameBuilder();
+            sanBuilder.AddDnsName("testservereku.contoso.com");
+            leafRequest.CertificateExtensions.Add(sanBuilder.Build());
+            RandomNumberGenerator.Fill(serialNumber);
+            using X509Certificate2 leafCertWithoutKey = leafRequest.Create(rootCert, notBefore, notAfter, serialNumber);
+            X509Certificate2 leafCert = leafCertWithoutKey.CopyWithPrivateKey(leafKey);
+
+            return (X509CertificateLoader.LoadCertificate(rootCert.Export(X509ContentType.Cert)), leafCert);
+        }
+
+        /// <summary>
         /// Generates a certificate chain: root CA → intermediate CA → leaf cert.
         /// The root is NOT the NDX Test Root CA from network_security_config.xml,
         /// so the platform will not trust this chain.
@@ -493,7 +657,7 @@ namespace System.Net.Security.Tests
             rootRequest.CertificateExtensions.Add(new X509BasicConstraintsExtension(certificateAuthority: true, hasPathLengthConstraint: false, pathLengthConstraint: 0, critical: true));
             var rootSkid = new X509SubjectKeyIdentifierExtension(rootRequest.PublicKey, critical: false);
             rootRequest.CertificateExtensions.Add(rootSkid);
-            X509Certificate2 rootCert = rootRequest.CreateSelfSigned(notBefore, notAfter);
+            using X509Certificate2 rootCert = rootRequest.CreateSelfSigned(notBefore, notAfter);
 
             using RSA intermediateKey = RSA.Create(2048);
             var intermediateRequest = new CertificateRequest("CN=Test Intermediate CA", intermediateKey, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
@@ -502,8 +666,8 @@ namespace System.Net.Security.Tests
             intermediateRequest.CertificateExtensions.Add(intermediateSkid);
             intermediateRequest.CertificateExtensions.Add(X509AuthorityKeyIdentifierExtension.CreateFromSubjectKeyIdentifier(rootSkid));
             RandomNumberGenerator.Fill(serialNumber);
-            X509Certificate2 intermediateCert = intermediateRequest.Create(rootCert, notBefore, notAfter, serialNumber);
-            intermediateCert = intermediateCert.CopyWithPrivateKey(intermediateKey);
+            using X509Certificate2 intermediateCertWithoutKey = intermediateRequest.Create(rootCert, notBefore, notAfter, serialNumber);
+            using X509Certificate2 intermediateCert = intermediateCertWithoutKey.CopyWithPrivateKey(intermediateKey);
 
             using RSA leafKey = RSA.Create(2048);
             var leafRequest = new CertificateRequest("CN=testservereku.contoso.com", leafKey, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
@@ -514,8 +678,8 @@ namespace System.Net.Security.Tests
             sanBuilder.AddDnsName("testservereku.contoso.com");
             leafRequest.CertificateExtensions.Add(sanBuilder.Build());
             RandomNumberGenerator.Fill(serialNumber);
-            X509Certificate2 leafCert = leafRequest.Create(intermediateCert, notBefore, notAfter, serialNumber);
-            leafCert = leafCert.CopyWithPrivateKey(leafKey);
+            using X509Certificate2 leafCertWithoutKey = leafRequest.Create(intermediateCert, notBefore, notAfter, serialNumber);
+            X509Certificate2 leafCert = leafCertWithoutKey.CopyWithPrivateKey(leafKey);
 
             return (X509CertificateLoader.LoadCertificate(rootCert.Export(X509ContentType.Cert)), X509CertificateLoader.LoadCertificate(intermediateCert.Export(X509ContentType.Cert)), leafCert);
         }

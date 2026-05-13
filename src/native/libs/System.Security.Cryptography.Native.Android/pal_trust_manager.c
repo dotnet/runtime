@@ -173,11 +173,11 @@ cleanup:
     return trustManagers;
 }
 
-// JNI entry point called from DotnetProxyTrustManager.verifyRemoteCertificate().
+// JNI callback registered for DotnetProxyTrustManager.verifyRemoteCertificate().
 // Forwards the platform's trust verdict to the managed SslStream validation callback.
 // The managed side combines this with its own X509Chain.Build result — the callback
 // always receives the union of both assessments (more strict, never less).
-ARGS_NON_NULL_ALL jboolean Java_net_dot_android_crypto_DotnetProxyTrustManager_verifyRemoteCertificate(
+ARGS_NON_NULL_ALL jboolean DotnetProxyTrustManager_VerifyRemoteCertificate(
     JNIEnv* env, jobject thisHandle, jlong sslStreamProxyHandle, jboolean chainTrustedByPlatform)
 {
     RemoteCertificateValidationCallback verify = atomic_load(&verifyRemoteCertificate);

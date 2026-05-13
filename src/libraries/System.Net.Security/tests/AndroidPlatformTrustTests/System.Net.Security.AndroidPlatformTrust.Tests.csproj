@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <!-- This test project is Android-only and uses network_security_config.xml -->
+    <!-- Keep this as a standalone Android-only project: System.Net.Security.Tests.csproj
+         is excluded from Android CI, and these tests need their own network_security_config.xml. -->
     <TargetFrameworks>$(NetCoreAppCurrent)-android</TargetFrameworks>
   </PropertyGroup>
 

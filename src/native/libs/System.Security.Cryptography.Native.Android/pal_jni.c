@@ -1096,12 +1096,11 @@ jint AndroidCryptoNative_InitLibraryOnLoad (JavaVM *vm, void *reserved)
     g_DotnetProxyTrustManager =     GetClassGRef(env, "net/dot/android/crypto/DotnetProxyTrustManager");
     g_DotnetProxyTrustManagerCtor = GetMethod(env, false, g_DotnetProxyTrustManager, "<init>", "(JLjavax/net/ssl/X509TrustManager;Ljava/lang/String;)V");
 
-    // Register native methods explicitly so the JVM can find them when the
-    // native crypto library is statically linked into the final binary
-    // (NativeAOT). Without this, the JVM relies on symbol lookup via the
-    // JNI naming convention which fails when the linker strips the symbol.
+    // Register native methods explicitly so the JVM does not rely on JNI naming
+    // convention symbol lookup. This is required for NativeAOT static linking,
+    // but works for all runtimes and avoids depending on exported symbol names.
     JNINativeMethod trustManagerMethods[] = {
-        { "verifyRemoteCertificate", "(JZ)Z", (void*)Java_net_dot_android_crypto_DotnetProxyTrustManager_verifyRemoteCertificate },
+        { "verifyRemoteCertificate", "(JZ)Z", (void*)DotnetProxyTrustManager_VerifyRemoteCertificate },
     };
     jint registerResult = (*env)->RegisterNatives(env, g_DotnetProxyTrustManager, trustManagerMethods, 1);
     abort_unless(registerResult == JNI_OK, "RegisterNatives for DotnetProxyTrustManager.verifyRemoteCertificate failed (error: %d)", registerResult);
