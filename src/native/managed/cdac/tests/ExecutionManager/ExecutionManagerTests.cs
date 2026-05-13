@@ -29,6 +29,8 @@ public class ExecutionManagerTests
             [DataType.ReadyToRunInfo] = TargetTestHelpers.CreateTypeInfo(emBuilder.ReadyToRunInfoLayout),
             [DataType.EEJitManager] = TargetTestHelpers.CreateTypeInfo(emBuilder.EEJitManagerLayout),
             [DataType.Module] = TargetTestHelpers.CreateTypeInfo(emBuilder.ModuleLayout),
+            [DataType.CodeRangeMapRangeList] = TargetTestHelpers.CreateTypeInfo(emBuilder.CodeRangeMapRangeListLayout),
+            [DataType.ImageDataDirectory] = TargetTestHelpers.CreateTypeInfo(emBuilder.ImageDataDirectoryLayout),
             [DataType.HashMap] = TargetTestHelpers.CreateTypeInfo(MockHashMap.CreateLayout(helpers.Arch)),
             [DataType.Bucket] = TargetTestHelpers.CreateTypeInfo(MockHashMapBucket.CreateLayout(helpers.Arch)),
         };
@@ -52,7 +54,7 @@ public class ExecutionManagerTests
     }
 
     private static IExecutionManager CreateExecutionManagerContract(
-        int version,
+        string version,
         MockTarget.Architecture arch,
         Action<MockExecutionManagerBuilder>? configure = null,
         ulong allCodeHeaps = 0)
@@ -81,7 +83,7 @@ public class ExecutionManagerTests
 
     [Theory]
     [MemberData(nameof(StdArchAllVersions))]
-    public void GetCodeBlockHandle_Null(int version, MockTarget.Architecture arch)
+    public void GetCodeBlockHandle_Null(string version, MockTarget.Architecture arch)
     {
         IExecutionManager em = CreateExecutionManagerContract(version, arch);
         var eeInfo = em.GetCodeBlockHandle(TargetCodePointer.Null);
@@ -90,7 +92,7 @@ public class ExecutionManagerTests
 
     [Theory]
     [MemberData(nameof(StdArchAllVersions))]
-    public void GetCodeBlockHandle_NoRangeSections(int version, MockTarget.Architecture arch)
+    public void GetCodeBlockHandle_NoRangeSections(string version, MockTarget.Architecture arch)
     {
         IExecutionManager em = CreateExecutionManagerContract(version, arch);
         var eeInfo = em.GetCodeBlockHandle(new TargetCodePointer(0x0a0a_0000));
@@ -99,7 +101,7 @@ public class ExecutionManagerTests
 
     [Theory]
     [MemberData(nameof(StdArchAllVersions))]
-    public void GetMethodDesc_OneRangeOneMethod(int version, MockTarget.Architecture arch)
+    public void GetMethodDesc_OneRangeOneMethod(string version, MockTarget.Architecture arch)
     {
         const ulong codeRangeStart = 0x0a0a_0000u; // arbitrary
         const uint codeRangeSize = 0xc000u; // arbitrary
@@ -147,7 +149,7 @@ public class ExecutionManagerTests
 
     [Theory]
     [MemberData(nameof(StdArchAllVersions))]
-    public void GetCodeBlockHandle_OneRangeZeroMethod(int version, MockTarget.Architecture arch)
+    public void GetCodeBlockHandle_OneRangeZeroMethod(string version, MockTarget.Architecture arch)
     {
         const ulong codeRangeStart = 0x0a0a_0000u; // arbitrary
         const uint codeRangeSize = 0xc000u; // arbitrary
@@ -181,7 +183,7 @@ public class ExecutionManagerTests
 
     [Theory]
     [MemberData(nameof(StdArchAllVersions))]
-    public void GetUnwindInfoBaseAddress_OneRangeOneMethod(int version, MockTarget.Architecture arch)
+    public void GetUnwindInfoBaseAddress_OneRangeOneMethod(string version, MockTarget.Architecture arch)
     {
         const ulong codeRangeStart = 0x0a0a_0000u; // arbitrary
         const uint codeRangeSize = 0xc000u; // arbitrary
@@ -215,7 +217,7 @@ public class ExecutionManagerTests
 
     [Theory]
     [MemberData(nameof(StdArchAllVersions))]
-    public void GetCodeBlockHandle_R2R_NoRuntimeFunctionMatch(int version, MockTarget.Architecture arch)
+    public void GetCodeBlockHandle_R2R_NoRuntimeFunctionMatch(string version, MockTarget.Architecture arch)
     {
         const ulong codeRangeStart = 0x0a0a_0000u; // arbitrary
         const uint codeRangeSize = 0xc000u; // arbitrary
@@ -246,7 +248,7 @@ public class ExecutionManagerTests
 
     [Theory]
     [MemberData(nameof(StdArchAllVersions))]
-    public void GetMethodDesc_R2R_OneRuntimeFunction(int version, MockTarget.Architecture arch)
+    public void GetMethodDesc_R2R_OneRuntimeFunction(string version, MockTarget.Architecture arch)
     {
         const ulong codeRangeStart = 0x0a0a_0000u; // arbitrary
         const uint codeRangeSize = 0xc000u; // arbitrary
@@ -290,7 +292,7 @@ public class ExecutionManagerTests
 
     [Theory]
     [MemberData(nameof(StdArchAllVersions))]
-    public void GetMethodDesc_R2R_MultipleRuntimeFunctions(int version, MockTarget.Architecture arch)
+    public void GetMethodDesc_R2R_MultipleRuntimeFunctions(string version, MockTarget.Architecture arch)
     {
         const ulong codeRangeStart = 0x0a0a_0000u; // arbitrary
         const uint codeRangeSize = 0xc000u; // arbitrary
@@ -352,7 +354,7 @@ public class ExecutionManagerTests
 
     [Theory]
     [MemberData(nameof(StdArchAllVersions))]
-    public void GetMethodDesc_R2R_HotColdBlock(int version, MockTarget.Architecture arch)
+    public void GetMethodDesc_R2R_HotColdBlock(string version, MockTarget.Architecture arch)
     {
         const ulong codeRangeStart = 0x0a0a_0000u; // arbitrary
         const uint codeRangeSize = 0xc000u; // arbitrary
@@ -401,7 +403,7 @@ public class ExecutionManagerTests
 
     [Theory]
     [MemberData(nameof(StdArchAllVersions))]
-    public void GetUnwindInfoBaseAddress_R2R_ManyRuntimeFunction(int version, MockTarget.Architecture arch)
+    public void GetUnwindInfoBaseAddress_R2R_ManyRuntimeFunction(string version, MockTarget.Architecture arch)
     {
         const ulong codeRangeStart = 0x0a0a_0000u; // arbitrary
         const uint codeRangeSize = 0xc000u; // arbitrary
@@ -433,7 +435,7 @@ public class ExecutionManagerTests
 
     [Theory]
     [MemberData(nameof(StdArchAllVersions))]
-    public void GetMethodDesc_CollectibleFragmentNext(int version, MockTarget.Architecture arch)
+    public void GetMethodDesc_CollectibleFragmentNext(string version, MockTarget.Architecture arch)
     {
         // Regression test: RangeSectionFragment.Next uses bit 0 as a collectible flag (see
         // RangeSectionFragmentPointer in codeman.h). If the cDAC fails to strip this bit before
@@ -474,7 +476,7 @@ public class ExecutionManagerTests
 
     [Theory]
     [MemberData(nameof(StdArchAllVersions))]
-    public void GetEEJitManagerInfo_ReturnsManagerAddress(int version, MockTarget.Architecture arch)
+    public void GetEEJitManagerInfo_ReturnsManagerAddress(string version, MockTarget.Architecture arch)
     {
         ulong expectedManagerAddress = 0;
         IExecutionManager em = CreateExecutionManagerContract(
@@ -489,7 +491,7 @@ public class ExecutionManagerTests
 
     [Theory]
     [MemberData(nameof(StdArchAllVersions))]
-    public void GetEEJitManagerInfo_WithCodeHeaps(int version, MockTarget.Architecture arch)
+    public void GetEEJitManagerInfo_WithCodeHeaps(string version, MockTarget.Architecture arch)
     {
         const ulong expectedHeapList = 0x0099_aa00;
         ulong expectedManagerAddress = 0;
@@ -506,7 +508,7 @@ public class ExecutionManagerTests
 
     [Theory]
     [MemberData(nameof(StdArchAllVersions))]
-    public void GetCodeHeapInfo_LoaderCodeHeap(int version, MockTarget.Architecture arch)
+    public void GetCodeHeapInfo_LoaderCodeHeap(string version, MockTarget.Architecture arch)
     {
         MockExecutionManagerBuilder emBuilder = new(version, arch, MockExecutionManagerBuilder.DefaultAllocationRange);
         MockLoaderCodeHeap heap = emBuilder.AddLoaderCodeHeap();
@@ -520,7 +522,7 @@ public class ExecutionManagerTests
 
     [Theory]
     [MemberData(nameof(StdArchAllVersions))]
-    public void GetCodeHeapInfo_HostCodeHeap(int version, MockTarget.Architecture arch)
+    public void GetCodeHeapInfo_HostCodeHeap(string version, MockTarget.Architecture arch)
     {
         MockExecutionManagerBuilder emBuilder = new(version, arch, MockExecutionManagerBuilder.DefaultAllocationRange);
         TargetPointer baseAddr    = new(0x0001_0000);
@@ -536,7 +538,7 @@ public class ExecutionManagerTests
 
     [Theory]
     [MemberData(nameof(StdArchAllVersions))]
-    public void GetCodeHeapInfo_LoaderCodeHeap_ReturnsLoaderHeapAddress(int version, MockTarget.Architecture arch)
+    public void GetCodeHeapInfo_LoaderCodeHeap_ReturnsLoaderHeapAddress(string version, MockTarget.Architecture arch)
     {
         MockExecutionManagerBuilder emBuilder = new(version, arch, MockExecutionManagerBuilder.DefaultAllocationRange);
         MockLoaderCodeHeap heap = emBuilder.AddLoaderCodeHeap();
@@ -552,7 +554,7 @@ public class ExecutionManagerTests
 
     [Theory]
     [MemberData(nameof(StdArchAllVersions))]
-    public void GetCodeHeapInfo_HostCodeHeap_ReturnsAddresses(int version, MockTarget.Architecture arch)
+    public void GetCodeHeapInfo_HostCodeHeap_ReturnsAddresses(string version, MockTarget.Architecture arch)
     {
         MockExecutionManagerBuilder emBuilder = new(version, arch, MockExecutionManagerBuilder.DefaultAllocationRange);
         TargetPointer expectedBase    = new(0x0002_0000);
@@ -569,7 +571,7 @@ public class ExecutionManagerTests
 
     [Theory]
     [MemberData(nameof(StdArchAllVersions))]
-    public void GetCodeHeapList_SingleNode(int version, MockTarget.Architecture arch)
+    public void GetCodeHeapList_SingleNode(string version, MockTarget.Architecture arch)
     {
         MockExecutionManagerBuilder emBuilder = new(version, arch, MockExecutionManagerBuilder.DefaultAllocationRange);
 
@@ -599,7 +601,7 @@ public class ExecutionManagerTests
 
     [Theory]
     [MemberData(nameof(StdArchAllVersions))]
-    public void GetCodeHeapList_LinkedList_TwoNodes(int version, MockTarget.Architecture arch)
+    public void GetCodeHeapList_LinkedList_TwoNodes(string version, MockTarget.Architecture arch)
     {
         MockExecutionManagerBuilder emBuilder = new(version, arch, MockExecutionManagerBuilder.DefaultAllocationRange);
 
@@ -655,6 +657,160 @@ public class ExecutionManagerTests
         Assert.Equal(currentAddr, hostInfo.CurrentAddress);
     }
 
+    [Theory]
+    [MemberData(nameof(StdArchAllVersions))]
+    public void GetStubKind_NoRangeSection(string version, MockTarget.Architecture arch)
+    {
+        IExecutionManager em = CreateExecutionManagerContract(version, arch);
+
+        Assert.Equal(CodeKind.Unknown, em.GetCodeKind(new TargetCodePointer(0x00aa_9000)));
+    }
+
+    [Theory]
+    [MemberData(nameof(StdArchAllVersions))]
+    public void GetStubKind_RangeListStubs(string version, MockTarget.Architecture arch)
+    {
+        const ulong codeRangeStart = 0x0a0a_0000u;
+        const uint codeRangeSize = 0x4000u;
+        const ulong jitManagerAddress = 0x000b_ff00;
+        const int stubCodeBlockKindPrecode = 4; // STUB_CODE_BLOCK_STUBPRECODE
+
+        IExecutionManager em = CreateExecutionManagerContract(
+            version,
+            arch,
+            emBuilder =>
+            {
+                var jittedCode = emBuilder.AllocateJittedCodeRange(codeRangeStart, codeRangeSize);
+                MockRangeSection rangeSection = emBuilder.AddRangeListRangeSection(jittedCode, jitManagerAddress, stubCodeBlockKindPrecode);
+                _ = emBuilder.AddRangeSectionFragment(jittedCode, rangeSection.Address);
+            });
+
+        CodeKind kind = em.GetCodeKind(new TargetCodePointer(codeRangeStart + 0x100));
+        Assert.Equal(CodeKind.StubPrecode, kind);
+    }
+
+    [Theory]
+    [MemberData(nameof(StdArchAllVersions))]
+    public void GetStubKind_CodeHeapStubs(string version, MockTarget.Architecture arch)
+    {
+        const ulong codeRangeStart = 0x0a0a_0000u;
+        const uint codeRangeSize = 0xc000u;
+        const uint stubSize = 0x20;
+        const ulong jitManagerAddress = 0x000b_ff00;
+        const int stubCodeBlockKindJumpStub = 1; // STUB_CODE_BLOCK_JUMPSTUB
+        ulong stubCodeAddress = 0;
+
+        IExecutionManager em = CreateExecutionManagerContract(
+            version,
+            arch,
+            emBuilder =>
+            {
+                var jittedCode = emBuilder.AllocateJittedCodeRange(codeRangeStart, codeRangeSize);
+                stubCodeAddress = emBuilder.AddStubCodeBlock(jittedCode, stubSize, stubCodeBlockKindJumpStub).CodeAddress;
+
+                NibbleMapTestBuilderBase nibBuilder = emBuilder.CreateNibbleMap(codeRangeStart, codeRangeSize);
+                nibBuilder.AllocateCodeChunk(new TargetCodePointer(stubCodeAddress), stubSize);
+
+                MockCodeHeapListNode codeHeapListNode = emBuilder.AddCodeHeapListNode(0, codeRangeStart, codeRangeStart + codeRangeSize, codeRangeStart, nibBuilder.NibbleMapFragment.Address);
+                MockRangeSection rangeSection = emBuilder.AddRangeSection(jittedCode, jitManagerAddress, codeHeapListNode.Address);
+                _ = emBuilder.AddRangeSectionFragment(jittedCode, rangeSection.Address);
+            });
+
+        CodeKind kind = em.GetCodeKind(new TargetCodePointer(stubCodeAddress));
+        Assert.Equal(CodeKind.JumpStub, kind);
+    }
+
+    [Theory]
+    [MemberData(nameof(StdArchAllVersions))]
+    public void GetStubKind_ManagedCode(string version, MockTarget.Architecture arch)
+    {
+        const ulong codeRangeStart = 0x0a0a_0000u;
+        const uint codeRangeSize = 0xc000u;
+        const uint methodSize = 0x450;
+        const ulong jitManagerAddress = 0x000b_ff00;
+        const ulong expectedMethodDescAddress = 0x0101_aaa0;
+        ulong methodStart = 0;
+
+        IExecutionManager em = CreateExecutionManagerContract(
+            version,
+            arch,
+            emBuilder =>
+            {
+                var jittedCode = emBuilder.AllocateJittedCodeRange(codeRangeStart, codeRangeSize);
+                methodStart = emBuilder.AddJittedMethod(jittedCode, methodSize, expectedMethodDescAddress).CodeAddress;
+
+                NibbleMapTestBuilderBase nibBuilder = emBuilder.CreateNibbleMap(codeRangeStart, codeRangeSize);
+                nibBuilder.AllocateCodeChunk(new TargetCodePointer(methodStart), methodSize);
+
+                MockCodeHeapListNode codeHeapListNode = emBuilder.AddCodeHeapListNode(0, codeRangeStart, codeRangeStart + codeRangeSize, codeRangeStart, nibBuilder.NibbleMapFragment.Address);
+                MockRangeSection rangeSection = emBuilder.AddRangeSection(jittedCode, jitManagerAddress, codeHeapListNode.Address);
+                _ = emBuilder.AddRangeSectionFragment(jittedCode, rangeSection.Address);
+            });
+
+        CodeKind kind = em.GetCodeKind(new TargetCodePointer(methodStart));
+        Assert.Equal(CodeKind.Jitted, kind);
+    }
+
+    [Theory]
+    [MemberData(nameof(StdArchAllVersions))]
+    public void GetStubKind_R2R_MethodCallThunk(string version, MockTarget.Architecture arch)
+    {
+        const ulong codeRangeStart = 0x0a0a_0000u;
+        const uint codeRangeSize = 0xc000u;
+        const ulong jitManagerAddress = 0x000b_ff00;
+        const uint thunkRva = 0x2000;
+        const uint thunkSize = 0x100;
+
+        IExecutionManager em = CreateExecutionManagerContract(
+            version,
+            arch,
+            emBuilder =>
+            {
+                var jittedCode = emBuilder.AllocateJittedCodeRange(codeRangeStart, codeRangeSize);
+                MockReadyToRunInfo r2rInfo = emBuilder.AddReadyToRunInfo([], []);
+                emBuilder.SetDelayLoadMethodCallThunks(r2rInfo, thunkRva, thunkSize);
+                MockHashMapBuilder hashMapBuilder = new(emBuilder.Builder);
+                hashMapBuilder.PopulatePtrMap(r2rInfo.EntryPointToMethodDescMapAddress, []);
+
+                MockLoaderModule r2rModule = emBuilder.AddReadyToRunModule(r2rInfo.Address);
+                MockRangeSection rangeSection = emBuilder.AddReadyToRunRangeSection(jittedCode, jitManagerAddress, r2rModule.Address);
+                _ = emBuilder.AddRangeSectionFragment(jittedCode, rangeSection.Address);
+            });
+
+        CodeKind kind = em.GetCodeKind(new TargetCodePointer(codeRangeStart + thunkRva + 0x10));
+        Assert.Equal(CodeKind.MethodCallThunk, kind);
+    }
+
+    [Theory]
+    [MemberData(nameof(StdArchAllVersions))]
+    public void GetStubKind_R2R_OutsideThunkRange(string version, MockTarget.Architecture arch)
+    {
+        const ulong codeRangeStart = 0x0a0a_0000u;
+        const uint codeRangeSize = 0xc000u;
+        const ulong jitManagerAddress = 0x000b_ff00;
+        const uint thunkRva = 0x2000;
+        const uint thunkSize = 0x100;
+
+        IExecutionManager em = CreateExecutionManagerContract(
+            version,
+            arch,
+            emBuilder =>
+            {
+                var jittedCode = emBuilder.AllocateJittedCodeRange(codeRangeStart, codeRangeSize);
+                MockReadyToRunInfo r2rInfo = emBuilder.AddReadyToRunInfo([], []);
+                emBuilder.SetDelayLoadMethodCallThunks(r2rInfo, thunkRva, thunkSize);
+                MockHashMapBuilder hashMapBuilder = new(emBuilder.Builder);
+                hashMapBuilder.PopulatePtrMap(r2rInfo.EntryPointToMethodDescMapAddress, []);
+
+                MockLoaderModule r2rModule = emBuilder.AddReadyToRunModule(r2rInfo.Address);
+                MockRangeSection rangeSection = emBuilder.AddReadyToRunRangeSection(jittedCode, jitManagerAddress, r2rModule.Address);
+                _ = emBuilder.AddRangeSectionFragment(jittedCode, rangeSection.Address);
+            });
+
+        CodeKind kind = em.GetCodeKind(new TargetCodePointer(codeRangeStart + thunkRva + thunkSize + 0x10));
+        Assert.Equal(CodeKind.ReadyToRun, kind);
+    }
+
     public static IEnumerable<object[]> StdArchAllVersions()
     {
         const int highestVersion = 2;
@@ -663,7 +819,7 @@ public class ExecutionManagerTests
             MockTarget.Architecture arch = (MockTarget.Architecture)arr[0];
             for (int version = 1; version <= highestVersion; version++)
             {
-                yield return new object[] { version, arch };
+                yield return new object[] { $"c{version}", arch };
             }
         }
     }

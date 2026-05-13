@@ -41,5 +41,46 @@ namespace System.IO.Compression
             Assert.Equal(5, options.CompressionLevel);
             Assert.Equal(ZLibCompressionStrategy.HuffmanOnly, options.CompressionStrategy);
         }
+
+        [Fact]
+        public void WindowLog_DefaultValue()
+        {
+            ZLibCompressionOptions options = new();
+
+            Assert.Equal(-1, options.WindowLog);
+        }
+
+        [Theory]
+        [InlineData(8)]
+        [InlineData(10)]
+        [InlineData(15)]
+        [InlineData(-1)]
+        public void WindowLog_SetToValidRange_Succeeds(int windowLog)
+        {
+            ZLibCompressionOptions options = new();
+            options.WindowLog = windowLog;
+            Assert.Equal(windowLog, options.WindowLog);
+        }
+
+        [Theory]
+        [InlineData(-2)]
+        [InlineData(0)]
+        [InlineData(7)]
+        [InlineData(16)]
+        [InlineData(int.MinValue)]
+        [InlineData(int.MaxValue)]
+        public void WindowLog_SetOutOfRange_ThrowsArgumentOutOfRangeException(int windowLog)
+        {
+            ZLibCompressionOptions options = new();
+            Assert.Throws<ArgumentOutOfRangeException>("value", () => options.WindowLog = windowLog);
+        }
+
+        [Fact]
+        public void StaticWindowLogProperties_ReturnExpectedValues()
+        {
+            Assert.Equal(15, ZLibCompressionOptions.DefaultWindowLog);
+            Assert.Equal(8, ZLibCompressionOptions.MinWindowLog);
+            Assert.Equal(15, ZLibCompressionOptions.MaxWindowLog);
+        }
     }
 }

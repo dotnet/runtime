@@ -4,8 +4,8 @@ using System;
 
 namespace Microsoft.Diagnostics.DataContractReader.RuntimeTypeSystemHelpers;
 
-// Non-vtable slot, native code slot, and MethodImpl slots are stored after the MethodDesc itself, packed tightly
-// in the order: [non-vtable; method impl; native code].
+// Optional slots are stored after the MethodDesc itself, packed tightly
+// in the order: [non-vtable; method impl; native code; async method data].
 internal static class MethodDescOptionalSlots
 {
     internal static bool HasNonVtableSlot(ushort flags)
@@ -16,6 +16,9 @@ internal static class MethodDescOptionalSlots
 
     internal static bool HasNativeCodeSlot(ushort flags)
         => (flags & (ushort)MethodDescFlags_1.MethodDescFlags.HasNativeCodeSlot) != 0;
+
+    internal static bool HasAsyncMethodData(ushort flags)
+        => (flags & (ushort)MethodDescFlags_1.MethodDescFlags.HasAsyncMethodData) != 0;
 
     internal static TargetPointer GetAddressOfNonVtableSlot(TargetPointer methodDesc, MethodClassification classification, ushort flags, Target target)
     {
@@ -28,6 +31,13 @@ internal static class MethodDescOptionalSlots
     {
         uint offset = StartOffset(classification, target);
         offset += NativeCodeSlotOffset(flags, target);
+        return methodDesc + offset;
+    }
+
+    internal static TargetPointer GetAddressOfAsyncMethodData(TargetPointer methodDesc, MethodClassification classification, ushort flags, Target target)
+    {
+        uint offset = StartOffset(classification, target);
+        offset += AsyncMethodDataOffset(flags, target);
         return methodDesc + offset;
     }
 
@@ -86,6 +96,24 @@ internal static class MethodDescOptionalSlots
 
         if (HasMethodImpl(flags))
             offset += target.GetTypeInfo(DataType.MethodImpl).Size!.Value;
+
+        return offset;
+    }
+
+    private static uint AsyncMethodDataOffset(ushort flags, Target target)
+    {
+        if (!HasAsyncMethodData(flags))
+            throw new InvalidOperationException("no async method data");
+
+        uint offset = 0;
+        if (HasNonVtableSlot(flags))
+            offset += target.GetTypeInfo(DataType.NonVtableSlot).Size!.Value;
+
+        if (HasMethodImpl(flags))
+            offset += target.GetTypeInfo(DataType.MethodImpl).Size!.Value;
+
+        if (HasNativeCodeSlot(flags))
+            offset += target.GetTypeInfo(DataType.NativeCodeSlot).Size!.Value;
 
         return offset;
     }

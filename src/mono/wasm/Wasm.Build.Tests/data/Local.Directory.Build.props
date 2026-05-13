@@ -1,1 +1,20 @@
-<Project />
+<Project>
+  <!--
+    CoreCLR WBT: properties needed by BrowserWasmApp.CoreCLR.targets must be set in .props
+    (before it is imported in .targets) so its import chain resolves:
+
+      RepositoryEngineeringDir        -> eng/ (locally) or payload build/eng/ (Helix)
+      WasmAppBuilderTasksAssemblyPath -> UsingTask for EmccCompile / ManagedToNativeGenerator
+      RuntimeFlavor                   -> drives conditional logic in native.wasm.targets
+
+    These are supplied via BuildEnvironment.EnvVars when the test harness invokes dotnet.
+  -->
+  <PropertyGroup Condition="'$(RuntimeFlavor)' == '' and '$(RUNTIME_FLAVOR_FOR_TESTS)' != ''">
+    <RuntimeFlavor>$(RUNTIME_FLAVOR_FOR_TESTS)</RuntimeFlavor>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(RuntimeFlavor)' == 'CoreCLR'">
+    <RepositoryEngineeringDir Condition="'$(RepositoryEngineeringDir)' == '' and '$(REPOSITORY_ENGINEERING_DIR)' != ''">$([MSBuild]::EnsureTrailingSlash($([System.IO.Path]::GetFullPath('$(REPOSITORY_ENGINEERING_DIR)'))))</RepositoryEngineeringDir>
+    <WasmAppBuilderTasksAssemblyPath Condition="'$(WasmAppBuilderTasksAssemblyPath)' == '' and '$(WASM_APP_BUILDER_TASKS_ASSEMBLY_PATH)' != ''">$([System.IO.Path]::GetFullPath('$(WASM_APP_BUILDER_TASKS_ASSEMBLY_PATH)'))</WasmAppBuilderTasksAssemblyPath>
+  </PropertyGroup>
+</Project>

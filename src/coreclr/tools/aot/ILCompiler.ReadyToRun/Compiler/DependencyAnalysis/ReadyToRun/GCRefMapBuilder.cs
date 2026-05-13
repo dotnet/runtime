@@ -66,16 +66,14 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             _transitionBlock = TransitionBlock.FromTarget(target);
         }
 
-        public void GetCallRefMap(MethodDesc method, bool isUnboxingStub)
+        internal static (ArgIterator, TransitionBlock) BuildArgIterator(MethodSignature signature, TypeSystemContext context, bool methodRequiresInstArg = false, bool isUnboxingStub = false, bool methodIsArrayAddressMethod = false, bool methodIsStringConstructor = false, bool methodIsAsyncCall = false)
         {
-            TransitionBlock transitionBlock = TransitionBlock.FromTarget(method.Context.Target);
-
-            MethodSignature signature = method.Signature;
+            TransitionBlock transitionBlock = TransitionBlock.FromTarget(context.Target);
 
             bool hasThis = (signature.Flags & MethodSignatureFlags.Static) == 0;
 
             // This pointer is omitted for string constructors
-            bool fCtorOfVariableSizedObject = hasThis && method.OwningType.IsString && method.IsConstructor;
+            bool fCtorOfVariableSizedObject = hasThis && methodIsStringConstructor;
             if (fCtorOfVariableSizedObject)
                 hasThis = false;
 
@@ -87,16 +85,16 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 parameterTypes[parameterIndex] = new TypeHandle(signature[parameterIndex]);
             }
             CallingConventions callingConventions = (hasThis ? CallingConventions.ManagedInstance : CallingConventions.ManagedStatic);
-            bool hasParamType = method.RequiresInstArg() && !isUnboxingStub;
+            bool hasParamType = methodRequiresInstArg && !isUnboxingStub;
 
             // On X86 the Array address method doesn't use IL stubs, and instead has a custom calling convention
-            if ((method.Context.Target.Architecture == TargetArchitecture.X86) &&
-                method.IsArrayAddressMethod())
+            if ((context.Target.Architecture == TargetArchitecture.X86) &&
+                methodIsArrayAddressMethod)
             {
                 hasParamType = true;
             }
 
-            bool hasAsyncContinuation = method.IsAsyncCall();
+            bool hasAsyncContinuation = methodIsAsyncCall;
             // We shouldn't be compiling unboxing stubs for async methods yet.
             Debug.Assert(hasAsyncContinuation ? !isUnboxingStub : true);
 
@@ -107,7 +105,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             ArgIteratorData argIteratorData = new ArgIteratorData(hasThis, isVarArg, parameterTypes, returnType);
 
             ArgIterator argit = new ArgIterator(
-                method.Context,
+                context,
                 argIteratorData,
                 callingConventions,
                 hasParamType,
@@ -116,6 +114,18 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 forcedByRefParams,
                 skipFirstArg,
                 extraObjectFirstArg);
+
+            return (argit, transitionBlock);
+        }
+
+        public void GetCallRefMap(MethodDesc method, bool isUnboxingStub)
+        {
+            (ArgIterator argit, TransitionBlock transitionBlock) = BuildArgIterator(method.Signature, method.Context, 
+                methodRequiresInstArg: method.RequiresInstArg(),
+                isUnboxingStub: isUnboxingStub,
+                methodIsArrayAddressMethod: method.IsArrayAddressMethod(),
+                methodIsStringConstructor: method.OwningType.IsString && method.IsConstructor,
+                methodIsAsyncCall: method.IsAsyncCall());
 
             int nStackBytes = argit.SizeOfFrameArgumentArray();
 

@@ -66,7 +66,7 @@ public:
     COR_ILMETHOD_DECODER* AllocGeneratedIL(size_t cbCode, DWORD cbLocalSig, UINT maxStack);
     COR_ILMETHOD_SECT_EH* AllocEHSect(size_t nClauses);
 
-    COR_ILMETHOD_DECODER* FinalizeILStub(ILStubLinker* sl);
+    COR_ILMETHOD_DECODER* FinalizeILStub(ILStubLinker* sl, CORJIT_FLAGS corJitFlags = CORJIT_FLAGS(CORJIT_FLAGS::CORJIT_FLAG_IL_STUB));
 #endif // !DACCESS_COMPILE
 
     static void StubGenFailed(ILStubResolver* pResolver);

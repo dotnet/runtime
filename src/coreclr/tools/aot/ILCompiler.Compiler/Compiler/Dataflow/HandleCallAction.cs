@@ -87,7 +87,7 @@ namespace ILLink.Shared.TrimAnalysis
                                             }
                                             else
                                             {
-                                                _reflectionMarker.RuntimeDeterminedDependencies.Add(new MakeGenericTypeSite(typeInstantiated));
+                                                _reflectionMarker.RuntimeDeterminedDependencies.Add((_callingMethod, new MakeGenericTypeSite(typeInstantiated)));
                                             }
                                         }
                                     }
@@ -160,7 +160,7 @@ namespace ILLink.Shared.TrimAnalysis
                                             }
                                             else
                                             {
-                                                _reflectionMarker.RuntimeDeterminedDependencies.Add(new MakeGenericMethodSite(methodInstantiated));
+                                                _reflectionMarker.RuntimeDeterminedDependencies.Add((_callingMethod, new MakeGenericMethodSite(methodInstantiated)));
                                             }
                                         }
                                     }
@@ -236,9 +236,11 @@ namespace ILLink.Shared.TrimAnalysis
                 //
                 case IntrinsicId.Array_CreateInstance:
                     {
+#if !ILTRIM
                         // We could try to analyze if the type is known, but for now making sure this works for canonical arrays is enough.
                         TypeDesc canonArrayType = _reflectionMarker.Factory.TypeSystemContext.CanonType.MakeArrayType();
                         _reflectionMarker.MarkType(_diagnosticContext.Origin, canonArrayType, "Array.CreateInstance was called");
+#endif
                     }
                     break;
 
@@ -283,6 +285,7 @@ namespace ILLink.Shared.TrimAnalysis
                 case IntrinsicId.Marshal_PtrToStructure:
                 case IntrinsicId.Marshal_DestroyStructure:
                 case IntrinsicId.Marshal_OffsetOf:
+#if !ILTRIM
                     {
                         int paramIndex = intrinsicId == IntrinsicId.Marshal_SizeOf
                             || intrinsicId == IntrinsicId.Marshal_OffsetOf
@@ -310,6 +313,7 @@ namespace ILLink.Shared.TrimAnalysis
                                 ReflectionMethodBodyScanner.CheckAndReportRequires(_diagnosticContext, calledMethod.Method, DiagnosticUtilities.RequiresDynamicCodeAttribute);
                         }
                     }
+#endif
                     break;
 
                 //
@@ -318,6 +322,7 @@ namespace ILLink.Shared.TrimAnalysis
                 // static GetDelegateForFunctionPointer(IntPtr, Type)
                 //
                 case IntrinsicId.Marshal_GetDelegateForFunctionPointer:
+#if !ILTRIM
                     {
                         // We need the data to do delegate marshalling.
                         foreach (var value in argumentValues[1].AsEnumerable())
@@ -335,6 +340,7 @@ namespace ILLink.Shared.TrimAnalysis
                                 ReflectionMethodBodyScanner.CheckAndReportRequires(_diagnosticContext, calledMethod.Method, DiagnosticUtilities.RequiresDynamicCodeAttribute);
                         }
                     }
+#endif
                     break;
 
                 //
@@ -348,6 +354,7 @@ namespace ILLink.Shared.TrimAnalysis
                 //
                 case IntrinsicId.RuntimeReflectionExtensions_GetMethodInfo:
                 case IntrinsicId.Delegate_get_Method:
+#if !ILTRIM
                     {
                         // Find the parameter: first is an instance method, second is an extension method.
                         MultiValue param = intrinsicId == IntrinsicId.RuntimeReflectionExtensions_GetMethodInfo
@@ -375,6 +382,7 @@ namespace ILLink.Shared.TrimAnalysis
                             }
                         }
                     }
+#endif
                     break;
 
                 //
@@ -501,6 +509,8 @@ namespace ILLink.Shared.TrimAnalysis
 
                 case IntrinsicId.TypeMapping_GetOrCreateExternalTypeMapping:
                 {
+                    // TODO-ILTRIM: type maps
+#if !ILTRIM
                     if (calledMethod.Method.Instantiation[0].ContainsSignatureVariables(treatGenericParameterLikeSignatureVariable: true))
                     {
                         // We only support GetOrCreateExternalTypeMapping for a fully specified type.
@@ -512,10 +522,13 @@ namespace ILLink.Shared.TrimAnalysis
                         TypeDesc typeMapGroup = calledMethod.Method.Instantiation[0];
                         _reflectionMarker.Dependencies.Add(_reflectionMarker.Factory.ExternalTypeMapRequest(typeMapGroup), "TypeMapping.GetOrCreateExternalTypeMapping called on type");
                     }
+#endif
                     break;
                 }
                 case IntrinsicId.TypeMapping_GetOrCreateProxyTypeMapping:
                 {
+                    // TODO-ILTRIM: type maps
+#if !ILTRIM
                     if (calledMethod.Method.Instantiation[0].ContainsSignatureVariables(treatGenericParameterLikeSignatureVariable: true))
                     {
                         // We only support GetOrCreateProxyTypeMapping for a fully specified type.
@@ -527,6 +540,7 @@ namespace ILLink.Shared.TrimAnalysis
                         TypeDesc typeMapGroup = calledMethod.Method.Instantiation[0];
                         _reflectionMarker.Dependencies.Add(_reflectionMarker.Factory.ProxyTypeMapRequest(typeMapGroup), "TypeMapping.GetOrCreateProxyTypeMapping called on type");
                     }
+#endif
                     break;
                 }
                 default:
@@ -691,7 +705,7 @@ namespace ILLink.Shared.TrimAnalysis
                 return false;
             }
 
-            if (!_reflectionMarker.TryResolveTypeNameAndMark(resolvedAssembly, typeName, _diagnosticContext, "Reflection", out TypeDesc? foundType))
+            if (!_reflectionMarker.TryResolveTypeNameAndMark(resolvedAssembly, typeName, _diagnosticContext, "Reflection", fallbackToCoreLib: true, out TypeDesc? foundType))
             {
                 // It's not wrong to have a reference to non-existing type - the code may well expect to get an exception in this case
                 // Note that we did find the assembly, so it's not a ILLink config problem, it's either intentional, or wrong versions of assemblies
@@ -705,8 +719,40 @@ namespace ILLink.Shared.TrimAnalysis
             return true;
         }
 
+        private partial string? GetAssemblyName(TypeProxy type)
+            // Only named types are supported. Reject array/pointer/byref (ParameterizedType),
+            // function pointer, signature variables, and System.Array itself. Rejecting System.Array
+            // covers the case where Cecil's IL scanner lowers typeof(SomeType[]) to System.Array,
+            // which would otherwise produce wrong analysis (System.Array.Assembly is CoreLib at
+            // runtime, but typeof(SomeType[]).Assembly is SomeType's assembly).
+            => type.Type is MetadataType metadataType && !metadataType.IsWellKnownType(Internal.TypeSystem.WellKnownType.Array)
+                ? metadataType.Module.Assembly.GetName().Name
+                : null;
+
+        private partial bool TryResolveTypeNameInAssemblyAndMark(string assemblyName, string typeName, out TypeProxy resolvedType)
+        {
+            if (!System.Reflection.Metadata.AssemblyNameInfo.TryParse(assemblyName, out var an)
+                || _callingMethod.Context.ResolveAssembly(an) is not ModuleDesc resolvedAssembly)
+            {
+                resolvedType = default;
+                return false;
+            }
+
+            if (!_reflectionMarker.TryResolveTypeNameAndMark(resolvedAssembly, typeName, _diagnosticContext, "Reflection", fallbackToCoreLib: false, out TypeDesc? foundType))
+            {
+                resolvedType = default;
+                return false;
+            }
+
+            resolvedType = new TypeProxy(foundType);
+            return true;
+        }
+
         private partial void MarkStaticConstructor(TypeProxy type)
             => _reflectionMarker.MarkStaticConstructor(_diagnosticContext.Origin, type.Type, _reason);
+
+        private partial void ReportRequiresUnreferencedCode(MethodProxy calledMethod)
+            => ReflectionMethodBodyScanner.CheckAndReportRequires(_diagnosticContext, calledMethod.Method, DiagnosticUtilities.RequiresUnreferencedCodeAttribute);
 
         private partial void MarkEventsOnTypeHierarchy(TypeProxy type, string name, BindingFlags? bindingFlags)
             => _reflectionMarker.MarkEventsOnTypeHierarchy(_diagnosticContext.Origin, type.Type, e => e.Name == name, _reason, bindingFlags);

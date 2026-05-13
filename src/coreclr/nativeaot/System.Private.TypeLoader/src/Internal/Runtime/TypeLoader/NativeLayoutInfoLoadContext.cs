@@ -190,17 +190,18 @@ namespace Internal.Runtime.TypeLoader
 
             bool unboxingStub = (flags & MethodFlags.IsUnboxingStub) != 0;
             bool asyncVariant = (flags & MethodFlags.IsAsyncVariant) != 0;
+            bool returnDroppingAsyncThunk = (flags & MethodFlags.IsReturnDroppingAsyncThunk) != 0;
 
             MethodDesc retVal;
             if ((flags & MethodFlags.HasInstantiation) != 0)
             {
                 TypeDesc[] typeArguments = GetTypeSequence(ref parser);
                 Debug.Assert(typeArguments.Length > 0);
-                retVal = this._typeSystemContext.ResolveGenericMethodInstantiation(unboxingStub, asyncVariant, containingType, nameAndSignature, new Instantiation(typeArguments));
+                retVal = this._typeSystemContext.ResolveGenericMethodInstantiation(unboxingStub, asyncVariant, returnDroppingAsyncThunk, containingType, nameAndSignature, new Instantiation(typeArguments));
             }
             else
             {
-                retVal = this._typeSystemContext.ResolveRuntimeMethod(unboxingStub, asyncVariant, containingType, nameAndSignature);
+                retVal = this._typeSystemContext.ResolveRuntimeMethod(unboxingStub, asyncVariant, returnDroppingAsyncThunk, containingType, nameAndSignature);
             }
 
             if ((flags & MethodFlags.HasFunctionPointer) != 0)

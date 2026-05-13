@@ -119,10 +119,11 @@ internal unsafe static partial class MockMemorySpace
             return true;
         }
 
-        // Get an allocator for a range of addresses to simplify creating heap fragments
+        // Get an allocator for a range of addresses to simplify creating heap fragments.
+        // Fragments allocated from the returned allocator are registered with this builder automatically.
         public BumpAllocator CreateAllocator(ulong start, ulong end, int minAlign = 16)
         {
-            BumpAllocator allocator = new BumpAllocator(start, end) { MinAlign = minAlign };
+            BumpAllocator allocator = new BumpAllocator(this, start, end) { MinAlign = minAlign };
             foreach (var a in _allocators)
             {
                 if (allocator.Overlaps(a))

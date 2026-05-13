@@ -68,6 +68,7 @@ struct GlobalContractSpec
 #define MAKE_FIELDTYPELEN_NAME(tyname,membername) CONCAT4(cdac_string_pool_membertypename__, tyname, __, membername)
 #define MAKE_GLOBALLEN_NAME(globalname) CONCAT(cdac_string_pool_globalname__, globalname)
 #define MAKE_GLOBALCONTRACTLEN_NAME(globalname) CONCAT(cdac_string_pool_globalcontractname__, globalname)
+#define MAKE_GLOBALCONTRACTVALUELEN_NAME(globalname) CONCAT(cdac_string_pool_globalcontractvalue__, globalname)
 #define MAKE_GLOBALTYPELEN_NAME(globalname) CONCAT(cdac_string_pool_globaltypename__, globalname)
 #define MAKE_GLOBALVALUELEN_NAME(globalname) CONCAT(cdac_string_pool_globalvalue__, globalname)
 
@@ -108,7 +109,8 @@ struct CDacStringPoolSizes
     DECL_LEN(MAKE_GLOBALVALUELEN_NAME(name), sizeof(STRINGIFY(stringval)))
 #define CDAC_GLOBAL_POINTER(name,value) DECL_LEN(MAKE_GLOBALLEN_NAME(name), sizeof(#name))
 #define CDAC_GLOBAL_SUB_DESCRIPTOR(name,value) DECL_LEN(MAKE_GLOBALLEN_NAME(name), sizeof(#name))
-#define CDAC_GLOBAL_CONTRACT(name,value) DECL_LEN(MAKE_GLOBALCONTRACTLEN_NAME(name), sizeof(#name))
+#define CDAC_GLOBAL_CONTRACT(name,value) DECL_LEN(MAKE_GLOBALCONTRACTLEN_NAME(name), sizeof(#name)) \
+    DECL_LEN(MAKE_GLOBALCONTRACTVALUELEN_NAME(name), sizeof(#value))
 #define CDAC_GLOBAL(name,tyname,value) DECL_LEN(MAKE_GLOBALLEN_NAME(name), sizeof(#name)) \
     DECL_LEN(MAKE_GLOBALTYPELEN_NAME(name), sizeof(CDAC_STRINGIFY_TYPE(tyname)))
 #include "wrappeddatadescriptor.inc"
@@ -122,6 +124,7 @@ struct CDacStringPoolSizes
 #define GET_GLOBAL_NAME(globalname) offsetof(struct CDacStringPoolSizes, MAKE_GLOBALLEN_NAME(globalname))
 #define GET_GLOBALTYPE_NAME(globalname) offsetof(struct CDacStringPoolSizes, MAKE_GLOBALTYPELEN_NAME(globalname))
 #define GET_GLOBALCONTRACT_NAME(globalname) offsetof(struct CDacStringPoolSizes, MAKE_GLOBALCONTRACTLEN_NAME(globalname))
+#define GET_GLOBALCONTRACT_VALUE(globalname) offsetof(struct CDacStringPoolSizes, MAKE_GLOBALCONTRACTVALUELEN_NAME(globalname))
 #define GET_GLOBALSTRING_VALUE(globalname) offsetof(struct CDacStringPoolSizes, MAKE_GLOBALVALUELEN_NAME(globalname))
 
 // count the types
@@ -384,7 +387,7 @@ struct MagicAndBlob BlobDataDescriptor = {
         },
 
         /* .GlobalContractValues = */ {
-#define CDAC_GLOBAL_CONTRACT(name,value) { /* .Name = */ GET_GLOBALCONTRACT_NAME(name), /* .Version = */ value },
+#define CDAC_GLOBAL_CONTRACT(name,value) { /* .Name = */ GET_GLOBALCONTRACT_NAME(name), /* .Version = */ GET_GLOBALCONTRACT_VALUE(name) },
 #include "wrappeddatadescriptor.inc"
         },
 
@@ -395,7 +398,7 @@ struct MagicAndBlob BlobDataDescriptor = {
 #define CDAC_GLOBAL_STRING(name,value) #name "\0" STRINGIFY(value) "\0"
 #define CDAC_GLOBAL_POINTER(name,value) #name "\0"
 #define CDAC_GLOBAL_SUB_DESCRIPTOR(name,value) #name "\0"
-#define CDAC_GLOBAL_CONTRACT(name,value) #name "\0"
+#define CDAC_GLOBAL_CONTRACT(name,value) #name "\0" #value "\0"
 #define CDAC_GLOBAL(name,tyname,value) #name "\0" CDAC_STRINGIFY_TYPE(tyname) "\0"
 #include "wrappeddatadescriptor.inc"
                   ),

@@ -202,6 +202,22 @@ int LinearScan::BuildNode(GenTree* tree)
             srcCount = BuildOperandUses(tree->gtGetOp1());
             break;
 
+        case GT_PATCHPOINT:
+            // Patchpoint takes two args: counter addr and IL offset
+            // Calls helper and jumps to returned address - no value produced
+            srcCount = BuildOperandUses(tree->gtGetOp1(), RBM_ARG_0.GetIntRegSet());
+            BuildOperandUses(tree->gtGetOp2(), RBM_ARG_1.GetIntRegSet());
+            srcCount++;
+            BuildKills(tree, m_compiler->compHelperCallKillSet(CORINFO_HELP_PATCHPOINT));
+            break;
+
+        case GT_PATCHPOINT_FORCED:
+            // Forced patchpoint takes one arg: IL offset
+            // Calls helper and jumps to returned address - no value produced
+            srcCount = BuildOperandUses(tree->gtGetOp1(), RBM_ARG_0.GetIntRegSet());
+            BuildKills(tree, m_compiler->compHelperCallKillSet(CORINFO_HELP_PATCHPOINT_FORCED));
+            break;
+
         case GT_JMP:
             srcCount = 0;
             assert(dstCount == 0);
@@ -878,18 +894,9 @@ int LinearScan::BuildCall(GenTreeCall* call)
         }
     }
 
+    // set reg requirements on call target represented as control sequence.
     GenTree*         ctrlExpr           = call->gtControlExpr;
     SingleTypeRegSet ctrlExprCandidates = RBM_NONE;
-    if (call->gtCallType == CT_INDIRECT)
-    {
-        // either gtControlExpr != null or gtCallAddr != null.
-        // Both cannot be non-null at the same time.
-        assert(ctrlExpr == nullptr);
-        assert(call->gtCallAddr != nullptr);
-        ctrlExpr = call->gtCallAddr;
-    }
-
-    // set reg requirements on call target represented as control sequence.
     if (ctrlExpr != nullptr)
     {
         // we should never see a gtControlExpr whose type is void.

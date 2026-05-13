@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
 
 namespace Microsoft.Diagnostics.DataContractReader;
@@ -14,10 +15,10 @@ namespace Microsoft.Diagnostics.DataContractReader;
 /// </summary>
 internal sealed class CachingContractRegistry : ContractRegistry
 {
-    public delegate bool TryGetContractVersionDelegate(string contractName, out int version);
+    public delegate bool TryGetContractVersionDelegate(string contractName, [NotNullWhen(true)] out string? version);
 
     private readonly Dictionary<Type, IContract> _contracts = [];
-    private readonly Dictionary<(Type, int), Func<Target, IContract>> _creators = [];
+    private readonly Dictionary<(Type, string), Func<Target, IContract>> _creators = [];
     private readonly Target _target;
     private readonly TryGetContractVersionDelegate _tryGetContractVersion;
 
@@ -32,27 +33,41 @@ internal sealed class CachingContractRegistry : ContractRegistry
         }
     }
 
-    public override void Register<TContract>(int version, Func<Target, TContract> creator)
+    public override void Register<TContract>(string version, Func<Target, TContract> creator)
     {
         _creators[(typeof(TContract), version)] = t => creator(t);
     }
 
-    public override TContract GetContract<TContract>()
+    public override bool TryGetContract<TContract>([NotNullWhen(true)] out TContract contract, out string? failureReason)
     {
+        contract = default!;
+        failureReason = null;
         if (_contracts.TryGetValue(typeof(TContract), out IContract? cached))
-            return (TContract)cached;
+        {
+            contract = (TContract)cached;
+            return true;
+        }
 
-        if (!_tryGetContractVersion(TContract.Name, out int version))
-            throw new NotImplementedException($"Contract '{TContract.Name}' is not present in the contract descriptor.");
+        if (!_tryGetContractVersion(TContract.Name, out string? version))
+        {
+            failureReason = $"Target does not support contract '{typeof(TContract).Name}'.";
+            return false;
+        }
 
         if (!_creators.TryGetValue((typeof(TContract), version), out Func<Target, IContract>? creator))
-            throw new NotImplementedException($"No implementation registered for contract '{TContract.Name}' version {version}.");
+        {
+            failureReason = $"Target supports contract '{typeof(TContract).Name}' version {version}, but no implementation is registered for that version.";
+            return false;
+        }
 
-        TContract contract = (TContract)creator(_target);
+        contract = (TContract)creator(_target);
         if (_contracts.TryAdd(typeof(TContract), contract))
-            return contract;
+        {
+            return true;
+        }
 
-        return (TContract)_contracts[typeof(TContract)];
+        contract = (TContract)_contracts[typeof(TContract)];
+        return true;
     }
 
     public override void Flush()

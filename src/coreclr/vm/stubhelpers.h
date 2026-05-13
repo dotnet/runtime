@@ -26,16 +26,16 @@ public:
     //-------------------------------------------------------
 
 #ifdef FEATURE_COMINTEROP
-    static FCDECL1(MethodTable*,    GetComInterfaceFromMethodDesc, MethodDesc* pMD);
-    static FCDECL3(IUnknown*,       GetCOMIPFromRCW,    Object* pSrcUNSAFE, MethodDesc* pMD, void **ppTarget);
+    FCDECL1(static MethodTable*,    GetComInterfaceFromMethodDesc, MethodDesc* pMD);
+    FCDECL3(static IUnknown*,       GetCOMIPFromRCW,    Object* pSrcUNSAFE, MethodDesc* pMD, void **ppTarget);
 #endif // FEATURE_COMINTEROP
 
-    static FCDECL0(void,            SetLastError            );
-    static FCDECL0(void,            ClearLastError          );
-    static FCDECL1(void*,           GetDelegateTarget,      DelegateObject *pThisUNSAFE);
+    FCDECL0(static void,            SetLastError            );
+    FCDECL0(static void,            ClearLastError          );
+    FCDECL1(static void*,           GetDelegateTarget,      DelegateObject *pThisUNSAFE);
 
-    static FCDECL2(void,            LogPinnedArgument, MethodDesc *localDesc, Object *nativeArg);
-    static FCDECL1(DWORD,           CalcVaListSize, VARARGS *varargs);
+    FCDECL2(static void,            LogPinnedArgument, MethodDesc *localDesc, Object *nativeArg);
+    FCDECL1(static DWORD,           CalcVaListSize, VARARGS *varargs);
 };
 
 extern "C" void QCALLTYPE StubHelpers_CreateCustomMarshaler(MethodDesc* pMD, mdToken paramToken, TypeHandle hndManagedType, QCall::ObjectHandleOnStack retObject);

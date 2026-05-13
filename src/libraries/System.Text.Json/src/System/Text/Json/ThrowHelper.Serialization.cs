@@ -370,7 +370,7 @@ namespace System.Text.Json
             throw new JsonException(SR.Format(SR.DuplicatePropertiesNotAllowed_NameSpan, Truncate(name)));
         }
 
-        private static string Truncate(ReadOnlySpan<char> str)
+        private static unsafe string Truncate(ReadOnlySpan<char> str)
         {
             const int MaxLength = 15;
 
@@ -540,7 +540,9 @@ namespace System.Text.Json
             if (string.IsNullOrEmpty(message))
             {
                 // Use a default message.
-                Type propertyType = state.Current.JsonPropertyInfo?.PropertyType ?? state.Current.JsonTypeInfo.Type;
+                Type propertyType = state.Current.JsonPropertyInfo?.PropertyType ??
+                    state.Current.CtorArgumentState?.JsonParameterInfo?.ParameterType ??
+                    state.Current.JsonTypeInfo.Type;
                 message = SR.Format(SR.DeserializeUnableToConvertValue, propertyType);
                 ex.AppendPathInformation = true;
             }

@@ -1041,7 +1041,7 @@ namespace System.Security.Cryptography.X509Certificates
         ///   The certificate already has an associated private key.
         /// </exception>
         [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
-        public X509Certificate2 CopyWithPrivateKey(SlhDsa privateKey)
+        public unsafe X509Certificate2 CopyWithPrivateKey(SlhDsa privateKey)
         {
             ArgumentNullException.ThrowIfNull(privateKey);
 

@@ -1,0 +1,211 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+using System;
+using System.Collections.Generic;
+using System.Reflection;
+using System.Reflection.Metadata;
+using System.Reflection.Metadata.Ecma335;
+
+using Internal.TypeSystem;
+using Internal.TypeSystem.Ecma;
+
+namespace ILCompiler.DependencyAnalysis
+{
+    /// <summary>
+    /// Represents a row in the MethodDef table.
+    /// </summary>
+    public sealed class MethodDefinitionNode : TokenBasedNode
+    {
+        public MethodDefinitionNode(EcmaModule module, MethodDefinitionHandle handle)
+            : base(module, handle)
+        {
+        }
+
+        private MethodDefinitionHandle Handle => (MethodDefinitionHandle)_handle;
+
+        public bool IsInstanceMethodOnReferenceType
+        {
+            get
+            {
+                MethodDefinition methodDef = _module.MetadataReader.GetMethodDefinition(Handle);
+                TypeDefinitionHandle declaringType = methodDef.GetDeclaringType();
+                EcmaType ecmaType = (EcmaType)_module.GetObject(declaringType);
+                return !ecmaType.IsValueType && !methodDef.Attributes.HasFlag(MethodAttributes.Static);
+
+            }
+        }
+
+        public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
+        {
+            MetadataReader reader = _module.MetadataReader;
+            MethodDefinition methodDef = reader.GetMethodDefinition(Handle);
+            TypeDefinitionHandle declaringType = methodDef.GetDeclaringType();
+
+            DependencyList dependencies = new DependencyList();
+
+            EcmaSignatureAnalyzer.AnalyzeMethodSignature(
+                _module,
+                reader.GetBlobReader(methodDef.Signature),
+                factory,
+                dependencies);
+
+            dependencies.Add(factory.TypeDefinition(_module, declaringType), "Method owning type");
+
+            if (!IsInstanceMethodOnReferenceType)
+            {
+                // Static methods and methods on value types are not subject to the unused method body optimization.
+                dependencies.Add(factory.MethodBody(_module, Handle), "Method body");
+            }
+
+            CustomAttributeNode.AddDependenciesDueToCustomAttributes(ref dependencies, factory, _module, methodDef.GetCustomAttributes());
+
+            foreach (ParameterHandle parameter in methodDef.GetParameters())
+            {
+                dependencies.Add(factory.Parameter(_module, parameter), "Parameter of method");
+            }
+
+            foreach (GenericParameterHandle parameter in methodDef.GetGenericParameters())
+            {
+                dependencies.Add(factory.GenericParameter(_module, parameter), "Generic Parameter of method");
+            }
+
+            if ((methodDef.Attributes & MethodAttributes.PinvokeImpl) != 0)
+            {
+                MethodImport import = methodDef.GetImport();
+                dependencies.Add(factory.ModuleReference(_module, import.Module), "DllImport");
+
+                EcmaMethod method = (EcmaMethod)_module.GetMethod(Handle);
+                if (method.Signature.ReturnType.GetTypeDefinition() is EcmaType ecmaReturnType)
+                    AddInteropAllocatedType(factory, dependencies, ecmaReturnType);
+                foreach (var parameter in method.Signature)
+                {
+                    if (parameter.IsByRef && ((ByRefType)parameter).ParameterType.GetTypeDefinition() is EcmaType ecmaByRefParam)
+                        AddInteropAllocatedType(factory, dependencies, ecmaByRefParam);
+                }
+
+                static void AddInteropAllocatedType(NodeFactory factory, DependencyList dependencies, EcmaType type)
+                {
+                    dependencies.Add(factory.ConstructedType(type), "Interop-allocated instance");
+                    if (type.GetParameterlessConstructor() is EcmaMethod ctorMethod && factory.IsModuleTrimmed(ctorMethod.Module))
+                        dependencies.Add(factory.MethodDefinition(ctorMethod.Module, ctorMethod.Handle), "Interop-called ctor");
+                }
+            }
+
+            if ((methodDef.Attributes & (MethodAttributes.SpecialName | MethodAttributes.RTSpecialName)) == (MethodAttributes.SpecialName | MethodAttributes.RTSpecialName) &&
+                reader.StringComparer.Equals(methodDef.Name, ".ctor"))
+            {
+                EcmaMethod method = (EcmaMethod)_module.GetMethod(Handle);
+                dependencies.Add(factory.ConstructedType((EcmaType)method.OwningType), "Type with a kept constructor");
+            }
+
+            // TODO-SIZE: Property/event metadata is not strictly necessary for accessor method calls —
+            // it's only needed for reflection and debugger scenarios. We could skip keeping property/event
+            // rows when we know they won't be accessed via reflection, producing smaller output.
+            if ((methodDef.Attributes & MethodAttributes.SpecialName) != 0)
+            {
+                TypeDefinition declaringTypeDef = reader.GetTypeDefinition(declaringType);
+                foreach (PropertyDefinitionHandle propertyHandle in declaringTypeDef.GetProperties())
+                {
+                    PropertyAccessors propertyAccessors = reader.GetPropertyDefinition(propertyHandle).GetAccessors();
+                    if (propertyAccessors.Getter == Handle || propertyAccessors.Setter == Handle)
+                    {
+                        dependencies.Add(factory.PropertyDefinition(_module, propertyHandle), "Owning property of accessor method");
+                        break;
+                    }
+                }
+                foreach (EventDefinitionHandle eventHandle in declaringTypeDef.GetEvents())
+                {
+                    EventAccessors eventAccessors = reader.GetEventDefinition(eventHandle).GetAccessors();
+                    if (eventAccessors.Adder == Handle || eventAccessors.Remover == Handle || eventAccessors.Raiser == Handle)
+                    {
+                        dependencies.Add(factory.EventDefinition(_module, eventHandle), "Owning event of accessor method");
+                        break;
+                    }
+                }
+            }
+
+            var ecmaOwningType = (EcmaType)_module.GetObject(declaringType);
+            if (ecmaOwningType.IsDelegate)
+            {
+                ReadOnlySpan<byte> methodPairName = default;
+                if (reader.StringComparer.Equals(methodDef.Name, "BeginInvoke"))
+                    methodPairName = "EndInvoke"u8;
+                else if (reader.StringComparer.Equals(methodDef.Name, "EndInvoke"))
+                    methodPairName = "BeginInvoke"u8;
+
+                if (methodPairName.Length > 0)
+                {
+                    var pairMethod = ecmaOwningType.GetMethod(methodPairName, null) as EcmaMethod;
+                    if (pairMethod != null)
+                        dependencies.Add(factory.MethodDefinition(_module, pairMethod.Handle), "Delegate BeginInvoke/EndInvoke pair");
+                }
+            }
+
+            return dependencies;
+        }
+
+        // Instance methods on reference types conditionally depend on their bodies.
+        public override bool HasConditionalStaticDependencies => IsInstanceMethodOnReferenceType;
+
+        public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory factory)
+        {
+            MethodDefinition methodDef = _module.MetadataReader.GetMethodDefinition(Handle);
+            TypeDefinitionHandle declaringType = methodDef.GetDeclaringType();
+            var ecmaType = (EcmaType)_module.GetObject(declaringType);
+
+            // Conditionally depend on the method body if the declaring type was constructed.
+            yield return new(
+                factory.MethodBody(_module, Handle),
+                factory.ConstructedType(ecmaType),
+                "Method body on constructed type");
+        }
+
+        protected override EntityHandle WriteInternal(ModuleWritingContext writeContext)
+        {
+            MetadataReader reader = _module.MetadataReader;
+
+            MethodDefinition methodDef = reader.GetMethodDefinition(Handle);
+
+            var builder = writeContext.MetadataBuilder;
+
+            EcmaType ecmaType = (EcmaType)_module.GetObject(methodDef.GetDeclaringType());
+            MethodBodyNode bodyNode = writeContext.Factory.MethodBody(_module, Handle);
+            int bodyOffset = bodyNode.Marked
+                ? bodyNode.Write(writeContext)
+                : writeContext.WriteUnreachableMethodBody(Handle, _module);
+
+            BlobBuilder signatureBlob = writeContext.GetSharedBlobBuilder();
+            EcmaSignatureRewriter.RewriteMethodSignature(
+                reader.GetBlobReader(methodDef.Signature),
+                writeContext.TokenMap,
+                signatureBlob);
+
+            MethodDefinitionHandle outputHandle = builder.AddMethodDefinition(
+                methodDef.Attributes,
+                methodDef.ImplAttributes,
+                builder.GetOrAddString(reader.GetString(methodDef.Name)),
+                builder.GetOrAddBlob(signatureBlob),
+                bodyOffset,
+                writeContext.TokenMap.MapMethodParamList(Handle));
+
+            if ((methodDef.Attributes & MethodAttributes.PinvokeImpl) != 0)
+            {
+                MethodImport import = methodDef.GetImport();
+                builder.AddMethodImport(outputHandle,
+                    import.Attributes,
+                    builder.GetOrAddString(reader.GetString(import.Name)),
+                    (ModuleReferenceHandle)writeContext.TokenMap.MapToken(import.Module));
+            }
+
+            return outputHandle;
+        }
+
+        public override string ToString()
+        {
+            // TODO: would be nice to have a common formatter we can call into that also includes owning type
+            MetadataReader reader = _module.MetadataReader;
+            return reader.GetString(reader.GetMethodDefinition(Handle).Name);
+        }
+    }
+}
