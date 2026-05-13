@@ -26,8 +26,11 @@ void GetVarArgSignature(TargetPointer vaSigCookieAddr, out TargetPointer signatu
 ```
 
 `vaSigCookieAddr` is the target address of the `VASigCookie*` slot pushed onto the stack by the
-vararg call site (i.e. it is a pointer to a pointer to the cookie). `GetVarArgArgsBase` and
-`GetVarArgSignature` throw if the address is null or the cookie pointer it references is null.
+vararg call site (i.e. it is a pointer to a pointer to the cookie). `GetVarArgSignature` reads
+the cookie and so fails (via the underlying memory read) if `vaSigCookieAddr` is null or the
+cookie pointer it references is null. `GetVarArgArgsBase` only reads the cookie on x86 (where
+its `sizeOfArgs` field is needed to locate the args base); on every other platform it just
+returns `vaSigCookieAddr + sizeof(VASigCookie*)` without dereferencing anything.
 
 ## Version 1
 
@@ -90,14 +93,18 @@ TypeHandle ISignature.DecodeFieldSignature(BlobHandle blobHandle, ModuleHandle m
 ```csharp
 TargetPointer ISignature.GetVarArgArgsBase(TargetPointer vaSigCookieAddr)
 {
-    TargetPointer vaSigCookie = _target.ReadPointer(vaSigCookieAddr);
-    VASigCookie cookie = _target.ProcessedData.GetOrAdd<VASigCookie>(vaSigCookie);
-
-    // On x86 the args are pushed below the cookie pointer (stack grows down on the args walk);
-    // on every other platform the first argument follows the cookie pointer in memory
-    // (stack grows up on the args walk).
+    // On x86 the args are pushed below the cookie pointer (stack grows down on the args walk),
+    // so the first argument lies at vaSigCookieAddr + cookie.SizeOfArgs. We must dereference
+    // the cookie slot to read sizeOfArgs.
+    // On every other platform the first argument follows the cookie pointer in memory
+    // (stack grows up on the args walk), so its address is vaSigCookieAddr + sizeof(VASigCookie*)
+    // and the cookie itself does not need to be read.
     if (RuntimeInfo.GetTargetArchitecture() == X86)
+    {
+        TargetPointer vaSigCookie = _target.ReadPointer(vaSigCookieAddr);
+        VASigCookie cookie = _target.ProcessedData.GetOrAdd<VASigCookie>(vaSigCookie);
         return vaSigCookieAddr + cookie.SizeOfArgs;
+    }
     return vaSigCookieAddr + sizeof(TargetPointer);
 }
 

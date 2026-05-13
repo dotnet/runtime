@@ -118,18 +118,22 @@ public class SignatureTests
             out _, out _);
         ISignature signature = target.Contracts.Signature;
 
-        Assert.Throws<ArgumentException>(() => signature.GetVarArgSignature(TargetPointer.Null, out _, out _));
+        // Reading the cookie pointer from address 0 fails the underlying memory read.
+        Assert.Throws<VirtualReadException>(() => signature.GetVarArgSignature(TargetPointer.Null, out _, out _));
     }
 
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
-    public void GetVarArgArgsBase_NullCookieAddr_Throws(MockTarget.Architecture arch)
+    public void GetVarArgArgsBase_X86_NullCookieAddr_Throws(MockTarget.Architecture arch)
     {
-        Target target = BuildTarget(arch, "x64", sizeOfArgs: 0, signaturePointer: 0, signatureLength: 0,
+        // On x86, GetVarArgArgsBase must dereference the cookie slot to read sizeOfArgs, so a
+        // null address fails the underlying memory read. On non-x86 the implementation only
+        // performs arithmetic and never reads from the target, so no exception is thrown there.
+        Target target = BuildTarget(arch, "x86", sizeOfArgs: 0, signaturePointer: 0, signatureLength: 0,
             out _, out _);
         ISignature signature = target.Contracts.Signature;
 
-        Assert.Throws<ArgumentException>(() => signature.GetVarArgArgsBase(TargetPointer.Null));
+        Assert.Throws<VirtualReadException>(() => signature.GetVarArgArgsBase(TargetPointer.Null));
     }
 
     [Theory]
@@ -145,9 +149,12 @@ public class SignatureTests
 
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
-    public void GetVarArgArgsBase_NullCookiePointer_Throws(MockTarget.Architecture arch)
+    public void GetVarArgArgsBase_X86_NullCookiePointer_Throws(MockTarget.Architecture arch)
     {
-        Target target = BuildTarget(arch, "x64", sizeOfArgs: 0, signaturePointer: 0, signatureLength: 0,
+        // On x86, GetVarArgArgsBase reads the cookie pointer and then loads the cookie's
+        // sizeOfArgs field; a null cookie pointer causes that field read to fail. On non-x86
+        // the implementation never dereferences the cookie, so the case does not apply.
+        Target target = BuildTarget(arch, "x86", sizeOfArgs: 0, signaturePointer: 0, signatureLength: 0,
             out ulong vaSigCookieAddr, out _, nullCookie: true);
         ISignature signature = target.Contracts.Signature;
 
