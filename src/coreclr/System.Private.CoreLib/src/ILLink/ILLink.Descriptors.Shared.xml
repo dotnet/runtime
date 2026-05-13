@@ -9,10 +9,17 @@
     <!-- Accessed via native code. -->
     <type fullname="System.Runtime.InteropServices.CustomMarshalers.*" />
 
-    <!-- Required for generic constraints and interface implementations on array marshaler stub helpers. -->
-    <type fullname="System.StubHelpers.IArrayMarshaler`2" preserve="all" />
-    <type fullname="System.StubHelpers.IArrayElementMarshaler`2" preserve="all" />
-    <type fullname="System.StubHelpers.DateMarshaler" preserve="all" />
+    <!-- Works around https://github.com/dotnet/runtime/issues/128120 -->
+    <type fullname="System.StubHelpers.DateMarshaler" />
+    <type fullname="System.StubHelpers.StructureMarshaler`1" />
+    <type fullname="System.StubHelpers.BlittableArrayMarshaler`1" />
+    <type fullname="System.StubHelpers.AnsiCharArrayMarshaler`2" />
+    <type fullname="System.StubHelpers.LayoutClassMarshaler`1" />
+    <type fullname="System.StubHelpers.VariantBoolMarshaler`1" />
+    <type fullname="System.StubHelpers.BoolMarshaler`1" />
+    <type fullname="System.StubHelpers.LPWSTRMarshaler" />
+    <type fullname="System.StubHelpers.LPSTRArrayElementMarshaler`2" />
+    <type fullname="System.StubHelpers.BSTRArrayElementMarshaler" />
 
     <!-- GetActualImplementationForArrayGenericIListOrIReadOnlyListMethod depends on slots of these interfaces not changing -->
     <type fullname="System.Collections.Generic.IEnumerable`1" />
