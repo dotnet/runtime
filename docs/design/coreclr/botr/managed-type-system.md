@@ -35,7 +35,7 @@ While [metadata](https://learn.microsoft.com/dotnet/standard/metadata-and-self-d
 
 The type system provides access to most of the underlying metadata, but abstracts the way it was obtained. This allows types and members that are backed by metadata in other formats, or not backed at all, to be representable within the same type system context.
 
-A notable example of members with no backing metadata are the methods on array types. For instance, an array of integers has methods such as `Get(int)`, `Set(int, int)`, `Address(int)`, and a constructor — none of which appear in any assembly's metadata tables. Instead, these methods are synthesized by the type system.
+A notable example of members with no backing metadata are the methods on array types. For instance, an array of integers has methods such as `Get(int)`, `Set(int, int)`, `Address(int)`, and a constructor - none of which appear in any assembly's metadata tables. Instead, these methods are synthesized by the type system.
 
 ## Type system class hierarchy
 
