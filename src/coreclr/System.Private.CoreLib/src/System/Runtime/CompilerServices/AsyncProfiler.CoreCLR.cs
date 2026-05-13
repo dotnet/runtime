@@ -439,8 +439,6 @@ namespace System.Runtime.CompilerServices
 
             public static bool CaptureRuntimeAsyncCallstack(byte[] buffer, ref int index, ref CaptureRuntimeAsyncCallstackState state)
             {
-                SkipToContinuationWithDiagnostics(ref state);
-
                 if (index > buffer.Length || state.Continuation == null)
                 {
                     return false;
@@ -494,21 +492,12 @@ namespace System.Runtime.CompilerServices
 
                     state.Count++;
                     state.Continuation = state.Continuation.Next;
-                    SkipToContinuationWithDiagnostics(ref state);
                 }
 
                 state.LastNativeIP = currentNativeIP;
                 index += callstackSpanIndex;
 
                 return state.Continuation == null || state.Count == byte.MaxValue;
-            }
-
-            private static unsafe void SkipToContinuationWithDiagnostics(ref CaptureRuntimeAsyncCallstackState state)
-            {
-                while (state.Continuation != null && state.Continuation.ResumeInfo->DiagnosticIP == null)
-                {
-                    state.Continuation = state.Continuation.Next;
-                }
             }
 
             public static void EmitEvent(AsyncThreadContext context, long currentTimestamp, ulong id, Continuation? asyncCallstack)
