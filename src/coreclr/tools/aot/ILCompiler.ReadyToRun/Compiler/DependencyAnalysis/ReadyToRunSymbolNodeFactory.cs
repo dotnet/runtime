@@ -500,11 +500,12 @@ namespace ILCompiler.DependencyAnalysis
 
         private NodeCache<VirtualResolutionFixupSignature, Import> _virtualFunctionOverrideCache;
 
-        public Import CheckVirtualFunctionOverride(MethodWithToken declMethod, TypeDesc implType, MethodWithToken implMethod)
+        public Import CheckVirtualFunctionOverride(MethodWithToken declMethod, TypeDesc implType, MethodWithToken implMethod, bool checkOnly = false)
         {
-            return _virtualFunctionOverrideCache.GetOrAdd(_codegenNodeFactory.VirtualResolutionFixupSignature(
-                _verifyTypeAndFieldLayout ? ReadyToRunFixupKind.Verify_VirtualFunctionOverride : ReadyToRunFixupKind.Check_VirtualFunctionOverride,
-                declMethod, implType, implMethod));
+            ReadyToRunFixupKind fixupKind = (checkOnly || !_verifyTypeAndFieldLayout) ?
+                ReadyToRunFixupKind.Check_VirtualFunctionOverride :
+                ReadyToRunFixupKind.Verify_VirtualFunctionOverride;
+            return _virtualFunctionOverrideCache.GetOrAdd(_codegenNodeFactory.VirtualResolutionFixupSignature(fixupKind, declMethod, implType, implMethod));
         }
 
         private NodeCache<ILBodyFixupSignature, Import> _ilBodyFixupsCache;

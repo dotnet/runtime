@@ -43,15 +43,16 @@ internal sealed class InterpToNativeGenerator
 
     private static string SignatureToArguments(string signature)
     {
-        if (signature.Length <= 1)
+        var tokens = SignatureMapper.ParseSignatureTokens(signature);
+        if (tokens.Count <= 1)
             return "void";
 
-        return string.Join(", ", signature.Skip(1).Select(static c => SignatureMapper.CharToNativeType(c)));
+        return string.Join(", ", tokens.Skip(1).Select(static t => SignatureMapper.TokenToNativeType(t)));
     }
 
-    private static string CallFuncName(IEnumerable<char> args, string result, bool isPortableEntryPointCall)
+    private static string CallFuncName(IEnumerable<string> args, string result, bool isPortableEntryPointCall)
     {
-        var paramTypes = args.Any() ? args.Join("_", (p, i) => SignatureMapper.CharToNameType(p)).ToString() : "Void";
+        var paramTypes = args.Any() ? string.Join("_", args.Select(static t => SignatureMapper.TokenToNameType(t))) : "Void";
 
         return $"CallFunc_{paramTypes}_Ret{result}{(isPortableEntryPointCall ? "_PE" : "")}";
     }
@@ -93,17 +94,19 @@ internal sealed class InterpToNativeGenerator
             string signature = signatureValue;
             try
             {
-                var result = Result(signature);
-                bool isPortableEntryPointCall = IsPortableEntryPointCall(signature);
+                var tokens = SignatureMapper.ParseSignatureTokens(signature);
+                string returnToken = tokens[0];
+                var result = Result(returnToken);
+                bool isPortableEntryPointCall = IsPortableEntryPointCall(tokens);
                 if (isPortableEntryPointCall)
                 {
                     // Portable entrypoints have an extra hidden parameter for the portable entrypoint context, so we need to adjust the signature and result accordingly for the call function generation
-                    signature = signature.Substring(0, signature.Length - 1);
+                    tokens.RemoveAt(tokens.Count - 1);
                 }
-                var args = Args(signature);
-                var portabilityAssert = signature[0] == 'n' ? "PORTABILITY_ASSERT(\"Indirect struct return is not yet implemented.\");\n        " : "";
+                var args = Args(tokens);
+                var portabilityAssert = returnToken[0] == 'S' ? "PORTABILITY_ASSERT(\"Indirect struct return is not yet implemented.\");\n        " : "";
 
-                var portableEntryPointComma = signature.Length > 1 ? ", " : "";
+                var portableEntryPointComma = args.Count > 0 ? ", " : "";
                 var portableEntrypointDeclaration = isPortableEntryPointCall ? portableEntryPointComma + "PCODE" : "";
                 var portableEntrypointParam = isPortableEntryPointCall ? portableEntryPointComma + "pPortableEntryPoint" : "";
                 var portableEntrypointStackDeclaration = isPortableEntryPointCall ? "int*, " : "";
@@ -112,10 +115,10 @@ internal sealed class InterpToNativeGenerator
                 w.Write(
                     $$"""
 
-                        {{(isPortableEntryPointCall ? "NOINLINE " : "")}}static void {{CallFuncName(args, SignatureMapper.CharToNameType(signature[0]), isPortableEntryPointCall)}}(PCODE {{(isPortableEntryPointCall ? "pPortableEntryPoint" : "pcode")}}, int8_t* pArgs, int8_t* pRet)
+                        {{(isPortableEntryPointCall ? "NOINLINE " : "")}}static void {{CallFuncName(args, SignatureMapper.TokenToNameType(returnToken), isPortableEntryPointCall)}}(PCODE {{(isPortableEntryPointCall ? "pPortableEntryPoint" : "pcode")}}, int8_t* pArgs, int8_t* pRet)
                         {{{(isPortableEntryPointCall ? "\n        alignas(16) int framePointer = TERMINATE_R2R_STACK_WALK;" : "")}}
-                            {{result.nativeType}} (*fptr)({{portableEntrypointStackDeclaration}}{{args.Join(", ", (p, i) => SignatureMapper.CharToNativeType(p))}}{{portableEntrypointDeclaration}}) = {{portableEntrypointPointerRD}}({{result.nativeType}} ({{portableEntrypointPointerRD}}*)({{portableEntrypointStackDeclaration}}{{args.Join(", ", (p, i) => SignatureMapper.CharToNativeType(p))}}{{portableEntrypointDeclaration}})){{(isPortableEntryPointCall ? "(pPortableEntryPoint)" : "pcode")}};
-                            {{portabilityAssert}}{{(result.isVoid ? "" : "*" + "((" + result.nativeType + "*)pRet) = ")}}(*fptr)({{portableEntrypointStackParam}}{{args.Join(", ", (p, i) => $"{SignatureMapper.CharToArgType(p)}({i})")}}{{portableEntrypointParam}});
+                            {{result.nativeType}} (*fptr)({{portableEntrypointStackDeclaration}}{{string.Join(", ", args.Select(static t => SignatureMapper.TokenToNativeType(t)))}}{{portableEntrypointDeclaration}}) = {{portableEntrypointPointerRD}}({{result.nativeType}} ({{portableEntrypointPointerRD}}*)({{portableEntrypointStackDeclaration}}{{string.Join(", ", args.Select(static t => SignatureMapper.TokenToNativeType(t)))}}{{portableEntrypointDeclaration}})){{(isPortableEntryPointCall ? "(pPortableEntryPoint)" : "pcode")}};
+                            {{portabilityAssert}}{{(result.isVoid ? "" : "*" + "((" + result.nativeType + "*)pRet) = ")}}(*fptr)({{portableEntrypointStackParam}}{{string.Join(", ", ArgsWithSlotOffsets(args))}}{{portableEntrypointParam}});
                         }
 
                     """);
@@ -134,10 +137,11 @@ internal sealed class InterpToNativeGenerator
             {{signatures.Join($",{w.NewLine}", signature =>
             {
                 string initialSignature = signature;
-                bool isPortableEntryPointCall = IsPortableEntryPointCall(signature);
+                var tokens = SignatureMapper.ParseSignatureTokens(signature);
+                bool isPortableEntryPointCall = IsPortableEntryPointCall(tokens);
                 if (isPortableEntryPointCall)
-                    signature = signature.Substring(0, signature.Length - 1);
-                return $"    {{ \"{initialSignature}\", (void*)&{CallFuncName(Args(signature), SignatureMapper.CharToNameType(signature[0]), isPortableEntryPointCall)} }}";
+                    tokens.RemoveAt(tokens.Count - 1);
+                return $"    {{ \"M{initialSignature}\", (void*)&{CallFuncName(Args(tokens), SignatureMapper.TokenToNameType(tokens[0]), isPortableEntryPointCall)} }}";
             }
             )}}
             };
@@ -146,22 +150,30 @@ internal sealed class InterpToNativeGenerator
 
             """);
 
-        static IEnumerable<char> Args(string signature)
+        static List<string> Args(List<string> tokens)
         {
-            for (int i = 1; i < signature.Length; ++i)
-                yield return signature[i];
+            return tokens.Count > 1 ? tokens.GetRange(1, tokens.Count - 1) : new List<string>();
         }
 
-        static (bool isVoid, string nativeType) Result(string signature)
-            => new(SignatureMapper.IsVoidSignature(signature), SignatureMapper.CharToNativeType(signature[0]));
-
-        static bool IsPortableEntryPointCall(string signature)
+        static List<string> ArgsWithSlotOffsets(List<string> args)
         {
-#if NETFRAMEWORK
-            return signature.EndsWith("p");
-#else
-            return signature.EndsWith('p');
-#endif
+            var result = new List<string>();
+            int slot = 0;
+            foreach (var token in args)
+            {
+                result.Add($"{SignatureMapper.TokenToArgType(token)}({slot})");
+                slot += SignatureMapper.TokenToSlotCount(token);
+            }
+
+            return result;
+        }
+
+        static (bool isVoid, string nativeType) Result(string returnToken)
+            => new(returnToken == "v", SignatureMapper.TokenToNativeType(returnToken));
+
+        static bool IsPortableEntryPointCall(List<string> tokens)
+        {
+            return tokens.Count > 0 && tokens[tokens.Count - 1] == "p";
         }
     }
 }

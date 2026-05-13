@@ -374,7 +374,7 @@ namespace System.Runtime.CompilerServices
                 m_stateFlags |= (int)InternalTaskOptions.HiddenState;
             }
 
-            internal override void ExecuteFromThreadPool(Thread threadPoolThread)
+            internal override void ExecuteDirectly(Thread? threadPoolThread)
             {
                 DispatchContinuations();
             }
@@ -491,7 +491,7 @@ namespace System.Runtime.CompilerServices
 
                         // Clear continuation flags, so that continuation runs transparently
                         nextUserContinuation.Flags &= ~continueFlags;
-                        valueTaskSourceNotifier.OnCompleted(s_runContinuationAction, this, configFlags);
+                        valueTaskSourceNotifier.OnCompleted(ThreadPool.s_dispatchRuntimeAsyncContinuationsCallback, this, configFlags);
                     }
                     else
                     {
@@ -509,13 +509,13 @@ namespace System.Runtime.CompilerServices
                 return false;
             }
 
-            internal void InstrumentedHandleSuspended(AsyncInstrumentation.Flags flags, ref RuntimeAsyncAwaitState state, Continuation? newContinuation = null)
+            internal void InstrumentedHandleSuspended(AsyncInstrumentation.Flags flags, ref RuntimeAsyncAwaitState state)
             {
                 if (AsyncInstrumentation.IsEnabled.AsyncDebugger(flags))
                 {
                     Continuation? nextContinuation = state.SentinelContinuation!.Next;
 
-                    AsyncDebugger.HandleSuspended(nextContinuation, newContinuation);
+                    AsyncDebugger.HandleSuspended(nextContinuation);
 
                     if (!HandleSuspended(ref state))
                     {
@@ -691,7 +691,7 @@ namespace System.Runtime.CompilerServices
                             newContinuation.Next = nextContinuation;
 
                             RuntimeAsyncInstrumentationHelpers.AwaitSuspendedRuntimeAsyncContext(ref asyncDispatcherInfo, flags, curContinuation, newContinuation, awaitState.SentinelContinuation!.Next);
-                            InstrumentedHandleSuspended(flags, ref awaitState, newContinuation);
+                            InstrumentedHandleSuspended(flags, ref awaitState);
 
                             awaitState.Pop();
                             refDispatcherInfo = asyncDispatcherInfo.Next;
@@ -749,7 +749,7 @@ namespace System.Runtime.CompilerServices
 
                     if (QueueContinuationFollowUpActionIfNecessary(asyncDispatcherInfo.NextContinuation))
                     {
-                        RuntimeAsyncInstrumentationHelpers.QueueSuspendedRuntimeAsyncContext(ref asyncDispatcherInfo, flags, curContinuation, asyncDispatcherInfo.NextContinuation);
+                        RuntimeAsyncInstrumentationHelpers.QueueSuspendedRuntimeAsyncContext(ref asyncDispatcherInfo, flags, asyncDispatcherInfo.NextContinuation);
 
                         awaitState.Pop();
                         refDispatcherInfo = asyncDispatcherInfo.Next;
@@ -847,12 +847,6 @@ namespace System.Runtime.CompilerServices
             }
 
             private static readonly SendOrPostCallback s_postCallback = static state =>
-            {
-                Debug.Assert(state is RuntimeAsyncTask<T>);
-                ((RuntimeAsyncTask<T>)state).DispatchContinuations();
-            };
-
-            private static readonly Action<object?> s_runContinuationAction = static state =>
             {
                 Debug.Assert(state is RuntimeAsyncTask<T>);
                 ((RuntimeAsyncTask<T>)state).DispatchContinuations();
@@ -1206,7 +1200,7 @@ namespace System.Runtime.CompilerServices
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static void QueueSuspendedRuntimeAsyncContext(ref AsyncDispatcherInfo info, AsyncInstrumentation.Flags flags, Continuation curContinuation, Continuation nextContinuation)
+            public static void QueueSuspendedRuntimeAsyncContext(ref AsyncDispatcherInfo info, AsyncInstrumentation.Flags flags, Continuation nextContinuation)
             {
                 if (AsyncInstrumentation.IsEnabled.SuspendAsyncContext(flags))
                 {
@@ -1217,7 +1211,7 @@ namespace System.Runtime.CompilerServices
 
                     if (AsyncInstrumentation.IsEnabled.AsyncDebugger(flags))
                     {
-                        AsyncDebugger.SuspendAsyncContext(ref info, curContinuation);
+                        AsyncDebugger.SuspendAsyncContext();
                     }
                 }
             }
@@ -1365,19 +1359,14 @@ namespace System.Runtime.CompilerServices
                 TplEventSource.Log.TraceSynchronousWorkBegin(task.Id, CausalitySynchronousWork.Execution);
             }
 
-            public static void SuspendAsyncContext(ref AsyncDispatcherInfo info, Continuation curContinuation)
-            {
-                if (info.NextContinuation != null)
-                {
-                    Task.TryAddRuntimeAsyncContinuationChainTimestamps(info.NextContinuation, curContinuation);
-                }
-
-                TplEventSource.Log.TraceSynchronousWorkEnd(CausalitySynchronousWork.Execution);
-            }
-
             public static void SuspendAsyncContext(Continuation curContinuation, Continuation newContinuation)
             {
                 Task.ReplaceOrAddRuntimeAsyncContinuationTimestamp(curContinuation, newContinuation);
+                TplEventSource.Log.TraceSynchronousWorkEnd(CausalitySynchronousWork.Execution);
+            }
+
+            public static void SuspendAsyncContext()
+            {
                 TplEventSource.Log.TraceSynchronousWorkEnd(CausalitySynchronousWork.Execution);
             }
 
@@ -1419,18 +1408,11 @@ namespace System.Runtime.CompilerServices
                 Task.RemoveRuntimeAsyncContinuationTimestamp(curContinuation);
             }
 
-            public static void HandleSuspended(Continuation? nextContinuation, Continuation? newContinuation)
+            public static void HandleSuspended(Continuation? nextContinuation)
             {
                 if (nextContinuation != null)
                 {
-                    if (newContinuation != null)
-                    {
-                        Task.TryAddRuntimeAsyncContinuationChainTimestamps(nextContinuation, newContinuation);
-                    }
-                    else
-                    {
-                        Task.TryAddRuntimeAsyncContinuationChainTimestamps(nextContinuation);
-                    }
+                    Task.TryAddRuntimeAsyncContinuationChainTimestamps(nextContinuation);
                 }
             }
 

@@ -4326,8 +4326,8 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
 #ifdef TARGET_RISCV64
         if (bitOp->IsIntegralConstUnsignedPow2())
         {
-            INT64 bit  = bitOp->AsIntConCommon()->IntegralValue();
-            int   log2 = BitOperations::Log2((UINT64)bit);
+            UINT64 bit  = bitOp->AsIntConCommon()->UnsignedIntegralValue();
+            int    log2 = BitOperations::Log2(bit);
             bitOp->AsIntConCommon()->SetIntegralValue(log2);
             return true;
         }
@@ -4861,34 +4861,6 @@ GenTree* Lowering::LowerSelect(GenTreeConditional* select)
     GenTree* cond     = select->gtCond;
     GenTree* trueVal  = select->gtOp1;
     GenTree* falseVal = select->gtOp2;
-
-    // Replace SELECT cond 1/0 0/1 with (perhaps reversed) cond
-    if (cond->OperIsCompare() && ((trueVal->IsIntegralConst(0) && falseVal->IsIntegralConst(1)) ||
-                                  (trueVal->IsIntegralConst(1) && falseVal->IsIntegralConst(0))))
-    {
-        assert(select->TypeIs(TYP_INT, TYP_LONG));
-
-        LIR::Use use;
-        if (BlockRange().TryGetUse(select, &use))
-        {
-            if (trueVal->IsIntegralConst(0))
-            {
-                GenTree* reversed = m_compiler->gtReverseCond(cond);
-                assert(reversed == cond);
-            }
-
-            // Codegen supports also TYP_LONG typed compares so we can just
-            // retype the compare instead of inserting a cast.
-            cond->gtType = select->TypeGet();
-
-            BlockRange().Remove(trueVal);
-            BlockRange().Remove(falseVal);
-            BlockRange().Remove(select);
-            use.ReplaceWith(cond);
-
-            return cond->gtNext;
-        }
-    }
 
     JITDUMP("Lowering select:\n");
     DISPTREERANGE(BlockRange(), select);

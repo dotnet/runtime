@@ -302,7 +302,7 @@ namespace System.Text.Json
                 : JsonReaderHelper.TranscodeHelper(segment);
         }
 
-        internal bool TextEquals(int index, ReadOnlySpan<char> otherText, bool isPropertyName)
+        internal unsafe bool TextEquals(int index, ReadOnlySpan<char> otherText, bool isPropertyName)
         {
             CheckNotDisposed();
 

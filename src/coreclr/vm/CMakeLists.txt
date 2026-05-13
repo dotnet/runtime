@@ -267,6 +267,14 @@ if(FEATURE_READYTORUN)
     )
 endif(FEATURE_READYTORUN)
 
+list(APPEND VM_SOURCES_DAC_AND_WKS_COMMON
+    pregeneratedstringthunks.cpp
+)
+list(APPEND VM_HEADERS_DAC_AND_WKS_COMMON
+    pregeneratedstringthunks.h
+    stringthunkhash.h
+)
+
 set(VM_SOURCES_DAC
     ${VM_SOURCES_DAC_AND_WKS_COMMON}
     conditionalweaktable.cpp # The usage of conditionalweaktable is only in the DAC, but we put the headers in the VM to enable validation.

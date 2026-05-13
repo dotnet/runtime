@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
@@ -109,7 +109,7 @@ namespace Internal.Win32
             return null;
         }
 
-        public string[] GetSubKeyNames()
+        public unsafe string[] GetSubKeyNames()
         {
             var names = new List<string>();
             Span<char> name = stackalloc char[MaxKeyLength + 1];
