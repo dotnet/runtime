@@ -21,11 +21,6 @@ extends:
         env:
           ROOTFS_DIR: /crossrootfs/arm
 
-      linux_armv6:
-        image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-20.04-cross-armv6-raspbian-10
-        env:
-          ROOTFS_DIR: /crossrootfs/armv6
-
       linux_arm64:
         image: mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-net8.0-cross-arm64
         env:
