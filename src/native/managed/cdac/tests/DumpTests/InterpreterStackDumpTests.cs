@@ -52,7 +52,7 @@ public class InterpreterStackDumpTests : DumpTestBase
 
         CodeBlockHandle? codeBlock = executionManager.GetCodeBlockHandle(resolvedCode);
         Assert.NotNull(codeBlock);
-        Assert.Equal(JitType.Interpreter, executionManager.GetJITType(codeBlock.Value));
+        Assert.Equal(CodeKind.Interpreter, executionManager.GetCodeKind(resolvedCode));
     }
 
     private void AssertJitted(ResolvedFrame f)
@@ -67,7 +67,7 @@ public class InterpreterStackDumpTests : DumpTestBase
         Assert.NotEqual(TargetCodePointer.Null, nativeCode);
         CodeBlockHandle? codeBlock = executionManager.GetCodeBlockHandle(nativeCode);
         Assert.NotNull(codeBlock);
-        Assert.Equal(JitType.Jit, executionManager.GetJITType(codeBlock.Value));
+        Assert.Equal(CodeKind.Jitted, executionManager.GetCodeKind(nativeCode));
     }
 
     [ConditionalTheory]
