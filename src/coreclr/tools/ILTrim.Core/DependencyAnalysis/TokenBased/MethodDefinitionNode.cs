@@ -7,6 +7,7 @@ using System.Reflection;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 
+using Internal.IL;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 
@@ -173,7 +174,9 @@ namespace ILCompiler.DependencyAnalysis
 
             EcmaType ecmaType = (EcmaType)_module.GetObject(methodDef.GetDeclaringType());
             MethodBodyNode bodyNode = writeContext.Factory.MethodBody(_module, Handle);
-            int bodyOffset = bodyNode.Marked || !writeContext.Factory.Settings.Optimizations.IsEnabled(CodeOptimizations.UnreachableBodies, _module.Assembly.GetName().Name)
+            int bodyOffset = bodyNode.Marked ||
+                !writeContext.Factory.Settings.Optimizations.IsEnabled(CodeOptimizations.UnreachableBodies, _module.Assembly.GetName().Name) ||
+                !IsWorthConvertingToThrow(methodDef)
                 ? bodyNode.Write(writeContext)
                 : writeContext.WriteUnreachableMethodBody(Handle, _module);
 
@@ -201,6 +204,22 @@ namespace ILCompiler.DependencyAnalysis
             }
 
             return outputHandle;
+        }
+
+        private bool IsWorthConvertingToThrow(MethodDefinition methodDef)
+        {
+            int rva = methodDef.RelativeVirtualAddress;
+            if (rva == 0)
+                return true;
+
+            byte[] bodyBytes = _module.PEReader.GetMethodBody(rva).GetILBytes();
+
+            return bodyBytes.Length switch
+            {
+                1 => bodyBytes[0] != (byte)ILOpcode.ret,
+                2 => bodyBytes[0] != (byte)ILOpcode.nop || bodyBytes[1] != (byte)ILOpcode.ret,
+                _ => true,
+            };
         }
 
         public override string ToString()
