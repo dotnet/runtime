@@ -1823,7 +1823,7 @@ TypeHandle DacDbiInterfaceImpl::TypeDataWalk::ReadLoadedTypeArg(TypeHandleReadTy
     switch (elementType)
     {
         case ELEMENT_TYPE_PTR:
-            _ASSERTE(pData->numTypeArgs == 1);
+            _ASSERTE(pData->numTypeArgs == (UINT)1);
             return PtrOrByRefTypeArg(pData, retrieveWhich);
             break;
 
@@ -4717,7 +4717,7 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetThreadAllocInfo(VMPTR_Thread v
     return hr;
 }
 
-// Set and reset the TSNC_DebuggerUserSuspend bit on the state of the specified thread
+// Set and reset the DCTS_UserSuspend bit on the DebuggerControlledThreadState of the specified thread
 // according to the CorDebugThreadState.
 HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::SetDebugState(VMPTR_Thread vmThread, CorDebugThreadState debugState)
 {
@@ -4732,11 +4732,11 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::SetDebugState(VMPTR_Thread vmThre
         // update the field on the host copy
         if (debugState == THREAD_SUSPEND)
         {
-            pThread->SetThreadStateNC(Thread::TSNC_DebuggerUserSuspend);
+            pThread->SetDebuggerControlledThreadState(Thread::DCTS_UserSuspend);
         }
         else if (debugState == THREAD_RUN)
         {
-            pThread->ResetThreadStateNC(Thread::TSNC_DebuggerUserSuspend);
+            pThread->ResetDebuggerControlledThreadState(Thread::DCTS_UserSuspend);
         }
         else
         {
@@ -4744,8 +4744,9 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::SetDebugState(VMPTR_Thread vmThre
         }
 
         // update the field on the target copy
-        TADDR taThreadState = PTR_HOST_MEMBER_TADDR(Thread, pThread, m_StateNC);
-        SafeWriteStructOrThrow<Thread::ThreadStateNoConcurrency>(taThreadState, &(pThread->m_StateNC));
+        TADDR taThreadState = PTR_HOST_MEMBER_TADDR(Thread, pThread, m_DebuggerControlledThreadState);
+        Thread::DebuggerControlledThreadState localState = pThread->m_DebuggerControlledThreadState.Load();
+        SafeWriteStructOrThrow<Thread::DebuggerControlledThreadState>(taThreadState, &localState);
     }
     EX_CATCH_HRESULT(hr);
     return hr;
@@ -5691,13 +5692,7 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetPartialUserState(VMPTR_Thread 
             result |= USER_STOPPED;
         }
 
-        // Don't report Thread::TS_AbortRequested
-
-        // The interruptible flag is unreliable (see issue 699245)
-        // The Debugger_SleepWaitJoin is always accurate when it is present, but it is still
-        // just a band-aid fix to cover some of the race conditions interruptible has.
-
-        if (ts & Thread::TS_Interruptible || pThread->HasThreadStateNC(Thread::TSNC_DebuggerSleepWaitJoin))
+        if (ts & Thread::TS_WaitSleepJoin)
         {
             result |= USER_WAIT_SLEEP_JOIN;
         }
@@ -5951,20 +5946,6 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::IsVmObjectHandleValid(VMPTR_OBJEC
         *pResult = ret;
     }
     EX_CATCH_HRESULT(hr);
-    return hr;
-}
-
-// determines if the specified module is a WinRT module
-HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::IsWinRTModule(VMPTR_Module vmModule, BOOL * pIsWinRT)
-{
-    if (pIsWinRT == NULL)
-        return E_POINTER;
-
-    DD_ENTER_MAY_THROW;
-
-    HRESULT hr = S_OK;
-    *pIsWinRT = FALSE;
-
     return hr;
 }
 
@@ -6425,17 +6406,6 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::EnumerateMonitorEventWaitList(VMP
     return hr;
 }
 
-
-HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::AreGCStructuresValid(OUT BOOL * pResult)
-{
-    HRESULT hr = S_OK;
-    EX_TRY
-    {
-        *pResult = TRUE;
-    }
-    EX_CATCH_HRESULT(hr);
-    return hr;
-}
 
 HeapData::HeapData()
     : YoungestGenPtr(0), YoungestGenLimit(0), Gen0Start(0), Gen0End(0), SegmentCount(0), Segments(0)
@@ -7353,17 +7323,17 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetObjectFields(COR_TYPEID id, UL
 }
 
 
-HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetTypeLayout(COR_TYPEID id, COR_TYPE_LAYOUT *pLayout)
+HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetTypeLayout(CORDB_ADDRESS id, COR_TYPE_LAYOUT *pLayout)
 {
     if (pLayout == NULL)
         return E_POINTER;
 
-    if (id.token1 == 0)
+    if (id == 0)
         return CORDBG_E_CLASS_NOT_LOADED;
 
     DD_ENTER_MAY_THROW;
 
-    PTR_MethodTable mt = PTR_MethodTable(TO_TADDR(id.token1));
+    PTR_MethodTable mt = PTR_MethodTable(TO_TADDR(id));
     PTR_MethodTable parentMT = mt->GetParentMethodTable();
 
     COR_TYPEID parent = {parentMT.GetAddr(), 0};
@@ -7383,17 +7353,17 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetTypeLayout(COR_TYPEID id, COR_
     return S_OK;
 }
 
-HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetArrayLayout(COR_TYPEID id, COR_ARRAY_LAYOUT *pLayout)
+HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetArrayLayout(CORDB_ADDRESS id, COR_ARRAY_LAYOUT *pLayout)
 {
     if (pLayout == NULL)
         return E_POINTER;
 
-    if (id.token1 == 0)
+    if (id == 0)
         return CORDBG_E_CLASS_NOT_LOADED;
 
     DD_ENTER_MAY_THROW;
 
-    PTR_MethodTable mt = PTR_MethodTable(TO_TADDR(id.token1));
+    PTR_MethodTable mt = PTR_MethodTable(TO_TADDR(id));
 
     if (!mt->IsStringOrArray())
         return E_INVALIDARG;

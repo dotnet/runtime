@@ -190,7 +190,7 @@ static void ValidateFuncEvalReturnType(DebuggerIPCE_FuncEvalType evalType, Metho
 //
 // Given a register, return the value.
 //
-static SIZE_T GetRegisterValue(DebuggerEval *pDE, CorDebugRegister reg, void *regAddr, SIZE_T regValue)
+static SIZE_T GetRegisterValue(DebuggerEval *pDE, CorDebugRegister reg, CORDB_ADDRESS regAddr, ULONG64 regValue)
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -199,9 +199,9 @@ static SIZE_T GetRegisterValue(DebuggerEval *pDE, CorDebugRegister reg, void *re
     // Check whether the register address is the marker value for a register in a non-leaf frame.
     // This is related to the funceval breaking change.
     //
-    if (regAddr == CORDB_ADDRESS_TO_PTR(kNonLeafFrameRegAddr))
+    if (regAddr == kNonLeafFrameRegAddr)
     {
-        ret = regValue;
+        ret = (SIZE_T)regValue;
     }
     else
     {
@@ -402,7 +402,7 @@ static SIZE_T GetRegisterValue(DebuggerEval *pDE, CorDebugRegister reg, void *re
 //
 // Given a register, set its value.
 //
-static void SetRegisterValue(DebuggerEval *pDE, CorDebugRegister reg, void *regAddr, SIZE_T newValue)
+static void SetRegisterValue(DebuggerEval *pDE, CorDebugRegister reg, CORDB_ADDRESS regAddr, SIZE_T newValue)
 {
     CONTRACTL
     {
@@ -412,7 +412,7 @@ static void SetRegisterValue(DebuggerEval *pDE, CorDebugRegister reg, void *regA
 
     // Check whether the register address is the marker value for a register in a non-leaf frame.
     // If so, then we can't update the register.  Throw an exception to communicate this error.
-    if (regAddr == CORDB_ADDRESS_TO_PTR(kNonLeafFrameRegAddr))
+    if (regAddr == kNonLeafFrameRegAddr)
     {
         COMPlusThrowHR(CORDBG_E_FUNC_EVAL_CANNOT_UPDATE_REGISTER_IN_NONLEAF_FRAME);
         return;
@@ -723,7 +723,7 @@ static void SetFuncEvalByRefArgValue(DebuggerEval *pDE,
                 // If this was a literal arg, then copy the updated primitive back into the literal.
                 memcpy(pFEAD->argLiteralData, &source, sizeof(pFEAD->argLiteralData));
             }
-            else if (pFEAD->argAddr != NULL)
+            else if (pFEAD->argAddr != (CORDB_ADDRESS)0)
             {
                 *((INT64 *)byRefMaybeInteriorPtrArg) = source;
                 return;
@@ -805,7 +805,7 @@ static void SetFuncEvalByRefArgValue(DebuggerEval *pDE,
                     memcpy(pFEAD->argLiteralData, &source, sizeof(source));
                 }
             }
-            else if (pFEAD->argAddr == NULL)
+            else if (pFEAD->argAddr == (CORDB_ADDRESS)0)
             {
                 // If the 32bit value is enregistered, copy it back to the proper regs.
 
