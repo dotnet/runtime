@@ -3548,3 +3548,4 @@ NESTED_ENTRY IL_Rethrow, _TEXT, NoHandler
     // Should never return
     brk     #0
 NESTED_END IL_Rethrow, _TEXT
+
