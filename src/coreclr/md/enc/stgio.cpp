@@ -953,7 +953,7 @@ HRESULT StgIO::MapFileToMem(            // Return code.
             }
 #else // HOST_WINDOWS
             _ASSERTE(!m_isMmap);
-            if ((m_pBaseData = m_pData = mmap(nullptr, m_cbData, PROT_READ, 0, m_fd, 0)) == MAP_FAILED)
+            if ((m_pBaseData = m_pData = mmap(nullptr, m_cbData, PROT_READ, MAP_SHARED, m_fd, 0)) == MAP_FAILED)
             {
                 hr = HRESULTFromErr(errno);
                 m_pBaseData = m_pData = NULL;
