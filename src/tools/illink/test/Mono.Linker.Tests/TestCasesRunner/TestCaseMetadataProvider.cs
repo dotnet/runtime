@@ -99,6 +99,11 @@ namespace Mono.Linker.Tests.TestCasesRunner
                 tclo.AdditionalArguments.Add(new KeyValuePair<string, string[]>("-a", new[] { assemblyName, "all" }));
             }
 
+#if ILTRIM
+            if (_testCase.DisplayName == "LinkXml.UnusedMethodPreservedByLinkXmlIsKept")
+                tclo.AdditionalArguments.Add(new KeyValuePair<string, string[]>("--disable-opt", new[] { "unreachablebodies", "test" }));
+#endif
+
             return tclo;
         }
 

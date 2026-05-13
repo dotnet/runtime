@@ -10,6 +10,8 @@ using System.Reflection.Metadata.Ecma335;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 
+using Mono.Linker;
+
 namespace ILCompiler.DependencyAnalysis
 {
     /// <summary>
@@ -171,7 +173,7 @@ namespace ILCompiler.DependencyAnalysis
 
             EcmaType ecmaType = (EcmaType)_module.GetObject(methodDef.GetDeclaringType());
             MethodBodyNode bodyNode = writeContext.Factory.MethodBody(_module, Handle);
-            int bodyOffset = bodyNode.Marked
+            int bodyOffset = bodyNode.Marked || !writeContext.Factory.Settings.Optimizations.IsEnabled(CodeOptimizations.UnreachableBodies, _module.Assembly.GetName().Name)
                 ? bodyNode.Write(writeContext)
                 : writeContext.WriteUnreachableMethodBody(Handle, _module);
 
