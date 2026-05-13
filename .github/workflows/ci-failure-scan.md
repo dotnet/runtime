@@ -86,7 +86,7 @@ The agent runs read-only. All writes go through `safe-outputs`.
 4. **One area path per issue.** Title each KBE around a single failure shape (assertion text or test family), not a list of pipelines. If a root cause spans multiple area paths, file one KBE per area and cross-link with `Related: dotnet/runtime#<n>`.
 5. **No `Mute` / `Muting` in titles.** Use `Skip`, `Disable`, `Suppress`, or `Exclude`.
 6. **Every issue and PR title starts with `[ci-scan] `.**
-7. **KBEs only for test failures and hangs.** Never for build breaks (Build Analysis cannot match them) or infra failures (no stable signature). Those get tracking issues.
+7. **Every actionable failure becomes a `Known Build Error` issue.** Test failures, hangs, AND build breaks all converge on the same KBE template; Build Analysis matches both via the JSON body. Skip emission entirely for: pre-existing issue/PR matches (Step 4.2-4.5), unstable signatures (< 2 occurrences in window with no current-run severity), or true infra noise (agent disconnect, pool offline) where no stable signature can be extracted.
 8. **One signature = one outcome.** No duplicate KBEs. No comments on existing KBEs — Build Analysis already counts occurrences in the issue body.
 9. **No same-run muting PR.** The KBE issue number is not visible at emit time (no `issues: write`), and the gap between runs is intentional — it forces a human-review window before muting.
 10. **All intermediate state under `/tmp/gh-aw/agent/`.** Each bash invocation is a fresh subshell; persist anything you want to keep.
@@ -102,7 +102,6 @@ For every actionable failure, converge on these artifacts:
 | Known Build Error issue | First run that sees the failure | Yes |
 | Muting PR | First run that finds the KBE already exists | No — intentional next-run cadence |
 | Fix PR (optional) | Same run as the muting PR, when the fix fits the small-fix bounds | Same run as muting PR |
-| Tracking issue (build break / infra / no stable signature) | First run that sees the failure | Yes |
 
 The `.NET Core Engineering Services: Known Build Errors` org project (`https://github.com/orgs/dotnet/projects/111`) is populated by `net-helix[bot]` automation that watches `dotnet/runtime` for the `Known Build Error` label and adds matching issues to the project within seconds. Build Analysis reads from the project. The only thing this workflow has to do for project linkage is apply the `Known Build Error` label on the KBE; do NOT try to mutate the project from this workflow.
 
@@ -161,17 +160,17 @@ For each row in the pipeline table below, in order:
 | runtime-interpreter | 316 | ADO name differs from display name |
 | runtime-libraries-interpreter | 330 | ADO name differs from display name |
 
-### Step 3 — Classify each failure
+### Step 3 — Classify each failure (log-extraction only)
 
-Decide the class of every failed timeline record before passing it to Step 4. The timeline graph is `Stage -> Phase -> Job -> Task`; walk it via `parentId`. Drill into one representative console log per signature to confirm the shape.
+Classification here drives WHERE the agent reads the signature text from. It does NOT drive WHERE the issue gets filed — every actionable signature flows through Step 4 + Step 5 Branch A. The timeline graph is `Stage -> Phase -> Job -> Task`; walk it via `parentId`. Drill into one representative console log per signature to confirm the shape.
 
-1. **Build break.** Failed task is `Build product` / `Build native components` / `Configure CMake` / any pre-test compile step, AND `Send to Helix` is `skipped`. -> Step 5 Branch D (tracking issue). Do NOT file a KBE.
-2. **Phase/Stage-only failure with no failed Job underneath.** Compile breaks aggregated at phase level (e.g. `windows-arm64 checked` on JIT stress pipelines). Open the Phase log + the latest log of any non-succeeded child Task -> classify as build break.
-3. **Helix work-item failure.** `Send to Helix` succeeded but Job still failed. Extract Helix job IDs from the `Send to Helix` log (`Sent Helix Job: <GUID>`), query Helix work items, fetch the failing console log, locate the `[FAIL]` line -> Step 4 (test failure).
-4. **Dead-lettered Helix work item.** Console URI contains `helix-workitem-deadletter` -> Step 5 Branch E (grouped infra issue).
-5. **Infra-shaped Job failure with no Helix work items.** `Initialize job` failed / agent disconnect / `Pool is offline` -> Step 5 Branch E.
+1. **Build break.** Failed task is `Build product` / `Build native components` / `Configure CMake` / any pre-test compile step, AND `Send to Helix` is `skipped`. Read the signature from the failing compile task log (CSxxxx / linker error / cmake error line).
+2. **Phase/Stage-only failure with no failed Job underneath.** Compile breaks aggregated at phase level (e.g. `windows-arm64 checked` on JIT stress pipelines). Open the Phase log + the latest log of any non-succeeded child Task and treat as build break.
+3. **Helix work-item failure.** `Send to Helix` succeeded but Job still failed. Extract Helix job IDs from the `Send to Helix` log (`Sent Helix Job: <GUID>`), query Helix work items, fetch the failing console log, locate the `[FAIL]` line.
+4. **Dead-lettered Helix work item.** Console URI contains `helix-workitem-deadletter`. Extract `[FAIL]` line if present; if not, treat as infra noise (no stable signature) and skip emission entirely — record `skipped: infra noise — no stable signature` in the tally.
+5. **Infra-shaped Job failure with no Helix work items.** `Initialize job` failed / agent disconnect / `Pool is offline`. Skip emission entirely — record `skipped: infra noise — no stable signature` in the tally.
 
-For each Step 4 candidate, compute the signature tuple `(definition_id, work_item_or_phase, queue, stress_mode, [FAIL]-or-compile-error signature)`. Look back ~10 prior completed builds in the same definition for first-seen-in-window timestamp and occurrence count.
+For each (1)/(2)/(3) signature, compute the tuple `(definition_id, work_item_or_phase, queue, stress_mode, [FAIL]-or-compile-error signature)`. Look back ~10 prior completed builds in the same definition for first-seen-in-window timestamp and occurrence count.
 
 #### Data sources
 
@@ -240,11 +239,11 @@ Optional fifth check when the candidate KBE is older than ~14 days: confirm Buil
 
 ### Step 5 — Decide and emit
 
-Exactly one of Branch A / B / D / E / F fires per signature. Branch C is an additive refinement of Branch B (Branch B's outputs are still emitted, plus an additional small-fix PR).
+Exactly one of Branch A / B fires per signature. Branch C is an additive refinement of Branch B (Branch B's outputs are still emitted, plus an additional small-fix PR). Signatures that do not match any branch get `skipped: <reason>` in the tally and emit nothing.
 
-**Branch A — No existing KBE; test failure; signature is stable (>= 2 occurrences in window).**
+**Branch A — No existing KBE; signature is stable.**
 
-Emit one `create_issue` using the KBE template. Apply the `Known Build Error` label so the org project auto-add rule picks it up; do NOT try to mutate the project from this workflow.
+Stable means >= 2 occurrences in the ~10-build window, OR a build break that fails all legs of the current build (block-everyone severity that warrants filing on first sight). Emit one `create_issue` using the KBE template. Apply both `Known Build Error` and `blocking-clean-ci` labels so the org project auto-add rule picks it up; do NOT try to mutate the project from this workflow.
 
 If Step 4.3 found a tracker, cross-link as `Tracking: dotnet/runtime#<tracker>` in the KBE body. Muting PR is deferred to the next run.
 
@@ -252,23 +251,13 @@ If Step 4.3 found a tracker, cross-link as `Tracking: dotnet/runtime#<tracker>` 
 
 Emit one `create_pull_request` using the Muting PR template. Diff <= 5 lines; only test annotations or csproj flags. Body MUST include `Linked KBE: #<n>` as a top-level line plus the Step 4.8 four-question block.
 
+Build-break KBEs are not "muted" — there is no test annotation that can skip a compile error. Skip Branch B for build-break signatures (record `skipped: build break — no muting path` in the tally) and rely on Branch C (small-fix PR) when the fix is mechanical, or on the area owner otherwise.
+
 **Branch C — Refinement of Branch B when the failure satisfies the small-fix bounds.**
 
-Small-fix bounds: <= 20 lines, single file, non-API, non-JIT-codegen, non-GC, non-threading, non-security; the failing test verifies the fix.
+Small-fix bounds: <= 20 lines, single file, non-API, non-JIT-codegen, non-GC, non-threading, non-security; the failing test (or compile error) verifies the fix.
 
-In addition to the Branch B muting PR, emit a separate `create_pull_request` for the fix on its own branch. Body cites (a) failing test as evidence, (b) root cause, (c) why fix is safe, (d) `Linked KBE: #<n>`, (e) "If this lands before #<muting-PR>, that PR can be closed."
-
-**Branch D — Build break.**
-
-Emit one `create_issue` using the Tracking issue template. NO `Known Build Error` label. Reference the failing source file and compile error. If the fix is mechanical and fits the small-fix bounds (obvious typo, missing `#if`, wrong cast, missing `using`), also emit one `create_pull_request` for the fix.
-
-**Branch E — Infra failure cluster.**
-
-Group all infra failures in this run into ONE tracking issue. Before emitting, `search_issues` for an open issue whose title or body matches the same failure signature; on hit, skip silently (no duplicate, no comment).
-
-**Branch F — Anything else (no stable signature, multi-assembly cluster, product regression, native crash, JIT/GC product bug).**
-
-Emit one `create_issue` using the Tracking issue template (or the JIT pipeline template for JIT/GC/PGO/stress pipelines). Call out the signature problem in `Recommended action`.
+In addition to the Branch B muting PR (test failures) or directly against the existing KBE (build breaks), emit a separate `create_pull_request` for the fix on its own branch. Build-break fixes are limited to obvious mechanical changes (typo, missing `#if`, wrong cast, missing `using`). Body cites (a) failing test or compile error as evidence, (b) root cause, (c) why fix is safe, (d) `Linked KBE: #<n>`, (e) "If this lands before #<muting-PR>, that PR can be closed." (omit (e) for build-break fixes).
 
 After emitting, record the outcome per signature (Step 6).
 
@@ -282,7 +271,7 @@ Per signature, append one outcome line to `/tmp/gh-aw/agent/coverage/<pipeline>.
 
 `<outcome>` is one of: `filed-issue #aw_<id>`, `filed-PR #aw_<id>`, `existing-issue #<n>`, `existing-PR #<n>`, `skipped: <reason>`.
 
-A skipped signature MUST have a reason (e.g., `build canceled`, `< 2 occurrences and not blocking`, `do-not-mute on issue #<n>`, `cap reached`).
+A skipped signature MUST have a reason (e.g., `build canceled`, `< 2 occurrences and not blocking`, `do-not-mute on issue #<n>`, `cap reached`, `infra noise — no stable signature`, `build break — no muting path`).
 
 At end of run, print this table to the agent log:
 
@@ -296,9 +285,12 @@ Emit each template verbatim except for `<placeholder>` slots. Match headings exa
 
 ### Template: KBE issue body — literal substring match (default)
 
-Title: `[ci-scan] Test failure: <fully.qualified.TestName>` (test failures) or `[ci-scan] Hang: <fully.qualified.TestName>` (hangs/timeouts). Labels: `Known Build Error`, `blocking-clean-ci`.
+Title (pick the form matching the signature):
+- `[ci-scan] Test failure: <fully.qualified.TestName>` for test failures
+- `[ci-scan] Hang: <fully.qualified.TestName>` for hangs / timeouts
+- `[ci-scan] Build break: <short error description>` for compile / link / cmake breaks (the body's `## Error Message` JSON still carries the canonical signature for Build Analysis)
 
-KBEs are reserved for test failures and hangs only (per Hard rule #7). Build breaks and infra failures get tracking issues (Branch D / E) without the `Known Build Error` label.
+Labels: `Known Build Error`, `blocking-clean-ci`.
 
 ````markdown
 ## Build Information
@@ -428,7 +420,7 @@ Prefer signatures built from, in order:
 3. Unique native stack frame or symbol, e.g. `coreclr!Compiler::fgMorphCall + 0x`.
 4. Specific JIT method-being-compiled marker + the specific stress mode.
 
-If you cannot produce a signature meeting this bar -> file a tracking issue instead and call out the signature problem in `Recommended action`. Do NOT file a KBE with a weak signature.
+If you cannot produce a signature meeting this bar -> skip emission entirely (record `skipped: weak signature` in the tally). Do NOT file a KBE with a weak signature — it will mismatch in Build Analysis and become noise.
 
 ### Template: KBE signature — Bad vs Good
 
@@ -494,72 +486,6 @@ Scope rule (mandatory): condition must be AS NARROW AS the observed failure scop
 | Only one stress mode | `<GCStressIncompatible>true</GCStressIncompatible>` (all stress modes) | Add stress-mode predicate via the failing variant |
 
 In the PR `Reasoning` section, list the exact set of failing legs (definition + queue + stress mode) that justifies the chosen condition.
-
-### Template: Tracking issue body — generic
-
-Used for build breaks (Branch D), infra clusters (Branch E), and non-KBE-eligible failures (Branch F). Title per branch (e.g. `[ci-scan] Build break: <pipeline>`, `[ci-scan] Infra: <shape>`).
-
-````markdown
-## Reasoning
-<short summary of failure shape; why this isn't a PR-related regression>
-
-## Impact on platforms
-- <(pipeline + platform/arch + Helix queue + stress mode + exit code) per occurrence>
-
-## Errors log
-```
-<sanitized excerpt>
-```
-
-## First build it occurred
-- Build: <link>
-- Finished: <UTC timestamp>
-- Commit: <sha>
-- Occurrences in window: <n>
-
-## Recommended action
-<concrete next step: which area owner, which file likely needs the fix, or what investigation would localize the root cause; checkbox-ready task list, not "FYI">
-````
-
-No labels. The labeler bot adds `area-*` automatically.
-
-### Template: Tracking issue body — JIT pipeline
-
-Used for tracking issues against JIT/GC/PGO/stress pipelines (definitions 109–160, 230, 235, 108, 137, 144–145, 150, 153). Matches the in-repo JIT convention.
-
-````markdown
-**Summary:**
-  <one-line description of the failure shape>
-
-**Failed in (<N>):**
-- [<pipeline name> <build number>](<build url>)
-- [<pipeline name> <build number>](<build url>)
-- ...
-
-**Console Log:** [Console Log](<one representative helix console log url>)
-
-**Failed tests:**
-```
-<pipeline-name-1>
-- <leg name e.g. net11.0-windows-Release-x64-jitstress2_jitstressregs8-Windows.10.Amd64.Open>
-  - <test assembly or test name>
-<pipeline-name-2>
-- <leg name>
-  - <test assembly>
-```
-
-**Error Message:**
-```
-<canonical error line>
-```
-
-**Stack Trace:**
-```
-<relevant stack trace; trim noise but keep the failing frame>
-```
-````
-
-Do NOT propose any `area-*` label yourself. Area triage (`area-CodeGen-coreclr` / `area-GC-coreclr` / `area-PGO-coreclr` / `area-Tools-ILVerification`) is added later by a human reviewer.
 
 ### Template: Sanitization
 
