@@ -208,6 +208,7 @@ namespace ILCompiler.DependencyAnalysis
 
         private bool IsWorthConvertingToThrow(MethodDefinition methodDef)
         {
+            // Some bodies are cheaper size-wise to preserve as-is than to convert to a throw.
             const int EmptyBodyLength = 0; // No IL body.
             const int RetOnlyBodyLength = 1; // ret
             const int NopRetBodyLength = 2; // nop; ret
@@ -217,17 +218,17 @@ namespace ILCompiler.DependencyAnalysis
                 return false;
 
             BlobReader ilReader = _module.PEReader.GetMethodBody(rva).GetILReader();
-            switch (ilReader.Length)
-            {
-                case EmptyBodyLength:
-                    return false;
-                case RetOnlyBodyLength:
-                    return ilReader.ReadByte() != (byte)ILOpcode.ret;
-                case NopRetBodyLength:
-                    return ilReader.ReadByte() != (byte)ILOpcode.nop || ilReader.ReadByte() != (byte)ILOpcode.ret;
-                default:
-                    return true;
-            }
+            int ilLength = ilReader.Length;
+            if (ilLength == EmptyBodyLength)
+                return false;
+
+            if (ilLength == RetOnlyBodyLength)
+                return ilReader.ReadByte() != (byte)ILOpcode.ret;
+
+            if (ilLength == NopRetBodyLength)
+                return ilReader.ReadByte() != (byte)ILOpcode.nop || ilReader.ReadByte() != (byte)ILOpcode.ret;
+
+            return true;
         }
 
         public override string ToString()
