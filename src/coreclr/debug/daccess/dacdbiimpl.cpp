@@ -4717,7 +4717,7 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetThreadAllocInfo(VMPTR_Thread v
     return hr;
 }
 
-// Set and reset the TSNC_DebuggerUserSuspend bit on the state of the specified thread
+// Set and reset the DCTS_UserSuspend bit on the DebuggerControlledThreadState of the specified thread
 // according to the CorDebugThreadState.
 HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::SetDebugState(VMPTR_Thread vmThread, CorDebugThreadState debugState)
 {
@@ -4732,11 +4732,11 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::SetDebugState(VMPTR_Thread vmThre
         // update the field on the host copy
         if (debugState == THREAD_SUSPEND)
         {
-            pThread->SetThreadStateNC(Thread::TSNC_DebuggerUserSuspend);
+            pThread->SetDebuggerControlledThreadState(Thread::DCTS_UserSuspend);
         }
         else if (debugState == THREAD_RUN)
         {
-            pThread->ResetThreadStateNC(Thread::TSNC_DebuggerUserSuspend);
+            pThread->ResetDebuggerControlledThreadState(Thread::DCTS_UserSuspend);
         }
         else
         {
@@ -4744,8 +4744,9 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::SetDebugState(VMPTR_Thread vmThre
         }
 
         // update the field on the target copy
-        TADDR taThreadState = PTR_HOST_MEMBER_TADDR(Thread, pThread, m_StateNC);
-        SafeWriteStructOrThrow<Thread::ThreadStateNoConcurrency>(taThreadState, &(pThread->m_StateNC));
+        TADDR taThreadState = PTR_HOST_MEMBER_TADDR(Thread, pThread, m_DebuggerControlledThreadState);
+        Thread::DebuggerControlledThreadState localState = pThread->m_DebuggerControlledThreadState.Load();
+        SafeWriteStructOrThrow<Thread::DebuggerControlledThreadState>(taThreadState, &localState);
     }
     EX_CATCH_HRESULT(hr);
     return hr;
@@ -5948,20 +5949,6 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::IsVmObjectHandleValid(VMPTR_OBJEC
     return hr;
 }
 
-// determines if the specified module is a WinRT module
-HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::IsWinRTModule(VMPTR_Module vmModule, BOOL * pIsWinRT)
-{
-    if (pIsWinRT == NULL)
-        return E_POINTER;
-
-    DD_ENTER_MAY_THROW;
-
-    HRESULT hr = S_OK;
-    *pIsWinRT = FALSE;
-
-    return hr;
-}
-
 // Get the target address from a VMPTR_OBJECTHANDLE, i.e., the handle address
 HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetHandleAddressFromVmHandle(VMPTR_OBJECTHANDLE vmHandle, OUT CORDB_ADDRESS * pRetVal)
 {
@@ -6419,17 +6406,6 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::EnumerateMonitorEventWaitList(VMP
     return hr;
 }
 
-
-HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::AreGCStructuresValid(OUT BOOL * pResult)
-{
-    HRESULT hr = S_OK;
-    EX_TRY
-    {
-        *pResult = TRUE;
-    }
-    EX_CATCH_HRESULT(hr);
-    return hr;
-}
 
 HeapData::HeapData()
     : YoungestGenPtr(0), YoungestGenLimit(0), Gen0Start(0), Gen0End(0), SegmentCount(0), Segments(0)

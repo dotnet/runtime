@@ -5483,13 +5483,11 @@ CordbNativeFrame::CordbNativeFrame(CordbThread *        pThread,
                                    SIZE_T               ip,
                                    DebuggerREGDISPLAY * pDRD,
                                    TADDR                taAmbientESP,
-                                   bool                 fQuicklyUnwound,
                                    CordbAppDomain *     pCurrentAppDomain,
                                    CordbMiscFrame *     pMisc /*= NULL*/,
                                    DT_CONTEXT *         pContext /*= NULL*/)
   : CordbFrame(pThread, fp, ip, pCurrentAppDomain),
     m_rd(*pDRD),
-    m_quicklyUnwound(fQuicklyUnwound),
     m_JITILFrame(NULL),
     m_nativeCode(pNativeCode), // implicit InternalAddRef
     m_taAmbientESP(taAmbientESP)
@@ -5854,7 +5852,7 @@ HRESULT CordbNativeFrame::GetRegisterSet(ICorDebugRegisterSet **ppRegisters)
         RSInitHolder<CordbRegisterSet> pRegisterSet(new CordbRegisterSet(&m_rd,
                                                                          m_pThread,
                                                                          IsLeafFrame(),
-                                                                         m_quicklyUnwound));
+                                                                         false));
 
         pRegisterSet.TransferOwnershipExternal(ppRegisters);
     }

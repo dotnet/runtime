@@ -523,7 +523,14 @@ namespace System
         /// <returns><see langword="true"/> if <paramref name="value"/> matches the end of this instance; otherwise, <see langword="false"/>.</returns>
         public bool EndsWith(Rune value)
         {
-            return EndsWith(value, StringComparison.Ordinal);
+            if (value.IsBmp)
+            {
+                return EndsWith((char)value.Value);
+            }
+
+            UnicodeUtility.GetUtf16SurrogatesFromSupplementaryPlaneScalar((uint)value.Value, out char highSurrogate, out char lowSurrogate);
+
+            return Length > 1 && this[^2] == highSurrogate && this[^1] == lowSurrogate;
         }
 
         /// <summary>
@@ -1134,7 +1141,14 @@ namespace System
         /// <returns><see langword="true"/> if value matches the beginning of this string; otherwise, <see langword="false"/>.</returns>
         public bool StartsWith(Rune value)
         {
-            return StartsWith(value, StringComparison.Ordinal);
+            if (value.IsBmp)
+            {
+                return StartsWith((char)value.Value);
+            }
+
+            UnicodeUtility.GetUtf16SurrogatesFromSupplementaryPlaneScalar((uint)value.Value, out char highSurrogate, out char lowSurrogate);
+
+            return Length > 1 && _firstChar == highSurrogate && this[1] == lowSurrogate;
         }
 
         /// <summary>

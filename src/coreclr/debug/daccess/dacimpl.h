@@ -1721,9 +1721,6 @@ DWORD DacGetNumHeaps();
  *   the event that we find heap corruption on a segment, or if the background
  *   GC is modifying a segment, the remainder of that segment will be skipped
  *   by design.
- * - The GC heap must be in a walkable state before you attempt to use this
- *   class on it.  The IDacDbiInterface::AreGCStructuresValid function will
- *   tell you whether it is safe to walk the heap or not.
  */
 class DacHeapWalker
 {

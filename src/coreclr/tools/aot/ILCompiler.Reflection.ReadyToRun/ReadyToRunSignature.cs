@@ -1372,6 +1372,27 @@ namespace ILCompiler.Reflection.ReadyToRun
                     builder.Append($" (RESUMPTION_STUB RVA[0x{stubRVA:X}])");
                     break;
 
+                case ReadyToRunFixupKind.InjectStringThunks:
+                    builder.Append(" (INJECT_STRING_THUNKS");
+                    while (true)
+                    {
+                        int strStart = Offset;
+                        while (_image[Offset] != 0)
+                            SkipBytes(1);
+                        int strLen = Offset - strStart;
+                        SkipBytes(1); // skip null terminator
+
+                        if (strLen == 0)
+                            break;
+
+                        string lookupString = System.Text.Encoding.UTF8.GetString(_image, strStart, strLen);
+                        uint thunkRVA = BitConverter.ToUInt32(_image, Offset);
+                        SkipBytes(4);
+                        builder.Append($" \"{lookupString}\"->RVA[0x{thunkRVA:X}]");
+                    }
+                    builder.Append(')');
+                    break;
+
                 case ReadyToRunFixupKind.Check_VirtualFunctionOverride:
                 case ReadyToRunFixupKind.Verify_VirtualFunctionOverride:
                     ReadyToRunVirtualFunctionOverrideFlags flags = (ReadyToRunVirtualFunctionOverrideFlags)ReadUInt();
@@ -2064,6 +2085,9 @@ namespace ILCompiler.Reflection.ReadyToRun
                     break;
                 case ReadyToRunHelper.InitInstClass:
                     builder.Append("INIT_INST_CLASS");
+                    break;
+                case ReadyToRunHelper.R2RToInterpreter:
+                    builder.Append("R2R_TO_INTERPRETER");
                     break;
 
                 default:
