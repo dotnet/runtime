@@ -249,11 +249,8 @@ namespace ILCompiler.DependencyAnalysis
 
             if (rewriteTypeName && s is not null)
             {
-                resolved = _module.GetTypeByCustomAttributeTypeName(s, throwIfNotFound: false);
-                if (resolved is not null)
-                {
-                    s = formatter.FormatName(resolved, true);
-                }
+                resolved = _module.GetTypeByCustomAttributeTypeName(s);
+                s = formatter.FormatName(resolved, true);
             }
 
             blobBuilder.WriteSerializedString(s);
