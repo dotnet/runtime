@@ -32,42 +32,44 @@ namespace System.IO.Compression.Tests
             using WrappedStream nonSeekable = new(archiveStream, canRead: true, canWrite: false, canSeek: false, null);
             using ZipArchive archive = new(nonSeekable, ZipArchiveMode.ForwardRead);
 
-            // Consume first entry fully
             ZipArchiveEntry? first = await GetNextEntry(archive, async);
             Assert.NotNull(first);
             using (Stream ds = first.Open())
             {
-                byte[] data = await ReadStreamFully(ds, async);
-                Assert.Equal(expected[0], data);
+                Assert.Equal(expected[0], await ReadStreamFully(ds, async));
             }
 
-            // Skip second entry (don't open/read)
+            // Skip second entry without opening
             ZipArchiveEntry? second = await GetNextEntry(archive, async);
             Assert.NotNull(second);
             Assert.Equal("medium.bin", second.FullName);
 
-            // Consume third entry fully
             ZipArchiveEntry? third = await GetNextEntry(archive, async);
             Assert.NotNull(third);
             using (Stream ds = third.Open())
             {
-                byte[] data = await ReadStreamFully(ds, async);
-                Assert.Equal(expected[2], data);
+                Assert.Equal(expected[2], await ReadStreamFully(ds, async));
             }
 
-            // End of archive
             Assert.Null(await GetNextEntry(archive, async));
         }
 
         [Theory]
-        [MemberData(nameof(Get_Booleans_Data))]
-        public async Task SeekableStream_StoredEntries_ReadsCorrectly(bool async)
+        [InlineData(true, true)]
+        [InlineData(true, false)]
+        [InlineData(false, true)]
+        [InlineData(false, false)]
+        public async Task StoredEntries_SeekableAndNonSeekable_ReadCorrectly(bool async, bool readSeekable)
         {
+            // Always created on seekable stream → known sizes, no data descriptors
             byte[] zipBytes = CreateZipWithEntries(CompressionLevel.NoCompression, seekable: true);
             byte[][] expected = [s_smallContent, s_mediumContent, s_largeContent];
 
             using MemoryStream archiveStream = new(zipBytes);
-            using ZipArchive archive = new(archiveStream, ZipArchiveMode.ForwardRead);
+            Stream readStream = readSeekable
+                ? archiveStream
+                : new WrappedStream(archiveStream, canRead: true, canWrite: false, canSeek: false, null);
+            using ZipArchive archive = new(readStream, ZipArchiveMode.ForwardRead);
 
             for (int i = 0; i < expected.Length; i++)
             {
@@ -78,6 +80,8 @@ namespace System.IO.Compression.Tests
                 using Stream ds = entry.Open();
                 Assert.Equal(expected[i], await ReadStreamFully(ds, async));
             }
+
+            Assert.Null(await GetNextEntry(archive, async));
         }
 
         [Theory]
@@ -92,14 +96,12 @@ namespace System.IO.Compression.Tests
             ZipArchiveEntry? first = await GetNextEntry(archive, async);
             Assert.NotNull(first);
 
-            // Only read a few bytes, don't finish
             using (Stream ds = first.Open())
             {
                 byte[] partial = new byte[3];
                 await ReadStream(ds, partial, async);
             }
 
-            // Next entry should still be readable
             ZipArchiveEntry? second = await GetNextEntry(archive, async);
             Assert.NotNull(second);
             Assert.Equal("medium.bin", second.FullName);
@@ -107,6 +109,8 @@ namespace System.IO.Compression.Tests
             using Stream ds2 = second.Open();
             Assert.Equal(s_mediumContent, await ReadStreamFully(ds2, async));
         }
+
+        // ── Edge cases ──────────────────────────────────────────────────────
 
         [Theory]
         [MemberData(nameof(Get_Booleans_Data))]
@@ -147,7 +151,7 @@ namespace System.IO.Compression.Tests
             Assert.Null(await GetNextEntry(archive, async));
         }
 
-        // ── Unsupported feature guards ──────────────────────────────────────
+        // ── Unsupported operation guards ────────────────────────────────────
 
         [Fact]
         public void UnsupportedOperations_Throw()
@@ -209,6 +213,8 @@ namespace System.IO.Compression.Tests
             Assert.Throws<NotSupportedException>(() => entry.Open());
         }
 
+        // ── Metadata / property access ──────────────────────────────────────
+
         [Theory]
         [MemberData(nameof(Get_Booleans_Data))]
         public async Task DataDescriptorEntry_SizeAndCrcProperties_AlwaysThrow(bool async)
@@ -221,21 +227,22 @@ namespace System.IO.Compression.Tests
             ZipArchiveEntry? entry = await GetNextEntry(archive, async);
             Assert.NotNull(entry);
 
-            // Non-size properties work
             Assert.Equal("small.txt", entry.FullName);
             _ = entry.LastWriteTime;
             Assert.Equal(ZipCompressionMethod.Deflate, entry.CompressionMethod);
 
-            // Size/CRC properties throw — permanently, even after reading
             Assert.Throws<InvalidOperationException>(() => entry.Crc32);
             Assert.Throws<InvalidOperationException>(() => entry.CompressedLength);
             Assert.Throws<InvalidOperationException>(() => entry.Length);
 
             using (Stream ds = entry.Open())
+            {
                 await ReadStreamFully(ds, async);
+            }
 
-            await GetNextEntry(archive, async); // drains data descriptor
+            await GetNextEntry(archive, async);
 
+            // Still throws after reading and advancing
             Assert.Throws<InvalidOperationException>(() => entry.Crc32);
             Assert.Throws<InvalidOperationException>(() => entry.CompressedLength);
             Assert.Throws<InvalidOperationException>(() => entry.Length);
@@ -258,7 +265,7 @@ namespace System.IO.Compression.Tests
             Assert.Equal(s_smallContent.Length, entry.Length);
         }
 
-        // ── Dispose / lifecycle ─────────────────────────────────────────────
+        // ── Lifecycle / dispose ─────────────────────────────────────────────
 
         [Theory]
         [MemberData(nameof(Get_Booleans_Data))]
@@ -296,19 +303,62 @@ namespace System.IO.Compression.Tests
             using MemoryStream archiveStream = new(zipBytes);
             ZipArchive archive = new(archiveStream, ZipArchiveMode.ForwardRead, leaveOpen: true);
 
-            // Read last entry, then dispose — Dispose must drain data descriptor
             ZipArchiveEntry? entry;
             do { entry = await GetNextEntry(archive, async); }
             while (entry is not null && entry.FullName != "large.bin");
 
             Assert.NotNull(entry);
             using (Stream ds = entry.Open())
+            {
                 await ReadStreamFully(ds, async);
+            }
 
             if (async)
                 await archive.DisposeAsync();
             else
                 archive.Dispose();
+        }
+
+        // ── Error handling ──────────────────────────────────────────────────
+
+        [Theory]
+        [MemberData(nameof(Get_Booleans_Data))]
+        public async Task KnownSizeEntry_CrcMismatch_ThrowsOnRead(bool async)
+        {
+            byte[] zipBytes = CreateZipWithEntries(CompressionLevel.NoCompression, seekable: true);
+
+            // Corrupt the CRC-32 field in the first entry's local file header (offset 14)
+            zipBytes[14] ^= 0xFF;
+
+            using MemoryStream archiveStream = new(zipBytes);
+            using ZipArchive archive = new(archiveStream, ZipArchiveMode.ForwardRead);
+
+            ZipArchiveEntry? entry = await GetNextEntry(archive, async);
+            Assert.NotNull(entry);
+
+            using Stream ds = entry.Open();
+            await Assert.ThrowsAsync<InvalidDataException>(async () => await ReadStreamFully(ds, async));
+        }
+
+        [Theory]
+        [MemberData(nameof(Get_Booleans_Data))]
+        public async Task TruncatedDeflateEntry_ThrowsOnRead(bool async)
+        {
+            byte[] zipBytes = CreateZipWithEntries(CompressionLevel.Optimal, seekable: true);
+
+            int filenameLength = zipBytes[26] | (zipBytes[27] << 8);
+            int extraFieldLength = zipBytes[28] | (zipBytes[29] << 8);
+            int dataStart = 30 + filenameLength + extraFieldLength;
+            byte[] truncated = zipBytes[..(dataStart + 2)];
+
+            using MemoryStream archiveStream = new(truncated);
+            using ZipArchive archive = new(archiveStream, ZipArchiveMode.ForwardRead);
+
+            ZipArchiveEntry? entry = await GetNextEntry(archive, async);
+            Assert.NotNull(entry);
+
+            using Stream ds = entry.Open();
+            await Assert.ThrowsAsync<InvalidDataException>(async () => await ReadStreamFully(ds, async));
         }
 
         // ── Helpers ─────────────────────────────────────────────────────────
@@ -318,6 +368,16 @@ namespace System.IO.Compression.Tests
 
         private static async ValueTask<int> ReadStream(Stream stream, byte[] buffer, bool async) =>
             async ? await stream.ReadAsync(buffer) : stream.Read(buffer);
+
+        private static async Task<byte[]> ReadStreamFully(Stream stream, bool async)
+        {
+            using MemoryStream result = new();
+            if (async)
+                await stream.CopyToAsync(result);
+            else
+                stream.CopyTo(result);
+            return result.ToArray();
+        }
 
         private static byte[] CreateZipWithEntries(CompressionLevel compressionLevel, bool seekable)
         {
@@ -342,16 +402,6 @@ namespace System.IO.Compression.Tests
                 using Stream stream = entry.Open();
                 stream.Write(contents);
             }
-        }
-
-        private static async Task<byte[]> ReadStreamFully(Stream stream, bool async)
-        {
-            using MemoryStream result = new();
-            if (async)
-                await stream.CopyToAsync(result);
-            else
-                stream.CopyTo(result);
-            return result.ToArray();
         }
     }
 }
