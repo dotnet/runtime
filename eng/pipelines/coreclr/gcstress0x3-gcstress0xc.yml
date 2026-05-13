@@ -29,6 +29,8 @@ extends:
           # Adding it here will enable it also
           - osx_arm64
           jobParameters:
+            # Windows-arm64 checked cross-build needs more than the default 60m AzDO job timeout.
+            timeoutInMinutes: 360
             buildArgs: -s clr+libs -c $(_BuildConfig) -lc Release
             postBuildSteps:
               - template: /eng/pipelines/coreclr/templates/build-native-test-assets-step.yml
