@@ -368,6 +368,7 @@
     <!-- P/Invoke modules: user native libraries + system native libraries -->
     <ItemGroup>
       <_WasmPInvokeModules Include="%(_WasmNativeFileForLinking.FileName)" Condition="'%(_WasmNativeFileForLinking.ScanForPInvokes)' != 'false'" />
+      <_WasmPInvokeModules Include="%(_WasmSourceFileToCompile.FileName)" Condition="'%(_WasmSourceFileToCompile.ScanForPInvokes)' != 'false'" />
       <_WasmPInvokeModules Include="libSystem.Native" />
       <_WasmPInvokeModules Include="libSystem.IO.Compression.Native" />
       <_WasmPInvokeModules Include="libSystem.Globalization.Native" />
