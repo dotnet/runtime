@@ -3335,32 +3335,22 @@ GenTreeLclVarCommon* AsyncTransformation::FindAndRemoveCommonAsyncResumedDef()
         return nullptr;
     }
 
-    bool                 hasCommonDef     = true;
-    GenTreeLclVarCommon* commonDef        = nullptr;
-    unsigned             numWithCommonDef = 0;
+    GenTreeLclVarCommon* commonDef = nullptr;
 
     for (const AsyncState& state : m_states)
     {
         GenTreeLclVarCommon* def = m_compiler->gtCallGetDefinedAsyncResumedLclAddr(state.Call);
         if (def == nullptr)
         {
-            continue;
+            return nullptr;
         }
 
-        if ((commonDef == nullptr) || GenTree::Compare(def, commonDef))
+        if ((commonDef != nullptr) && !GenTree::Compare(def, commonDef))
         {
-            commonDef = def;
-            numWithCommonDef++;
+            return nullptr;
         }
-        else
-        {
-            hasCommonDef = false;
-        }
-    }
 
-    if (!hasCommonDef || (numWithCommonDef <= 1))
-    {
-        return nullptr;
+        commonDef = def;
     }
 
     JITDUMP("  Found common async resumed def node:\n");
@@ -3369,11 +3359,8 @@ GenTreeLclVarCommon* AsyncTransformation::FindAndRemoveCommonAsyncResumedDef()
     for (const AsyncState& state : m_states)
     {
         CallArg* arg = state.Call->gtArgs.FindWellKnownArg(WellKnownArg::AsyncResumedDef);
-        if (arg != nullptr)
-        {
-            LIR::AsRange(state.CallBlock).Remove(arg->GetNode());
-            state.Call->gtArgs.RemoveUnsafe(arg);
-        }
+        LIR::AsRange(state.CallBlock).Remove(arg->GetNode());
+        state.Call->gtArgs.RemoveUnsafe(arg);
     }
 
     return commonDef;
