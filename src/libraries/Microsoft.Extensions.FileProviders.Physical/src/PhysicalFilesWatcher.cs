@@ -39,7 +39,8 @@ namespace Microsoft.Extensions.FileProviders.Physical
         // inside _root (which is below the FSW's watched path) are observed.
         private readonly bool _fileWatcherIsAboveRoot;
         // Number of currently registered tokens whose pattern requires watching subdirectories.
-        // Maintained as tokens are added and removed so we don't iterate the lookups.
+        // Maintained as tokens are added and removed so we don't iterate the lookups when
+        // re-evaluating IncludeSubdirectories.
         private int _subdirectoryRequiringTokenCount;
 
         // A single non-recursive watcher used when _root does not exist.
@@ -127,9 +128,6 @@ namespace Microsoft.Extensions.FileProviders.Physical
                 }
 
                 _fileWatcher = fileSystemWatcher;
-                // IncludeSubdirectories is set in TryEnableFileSystemWatcher based on whether
-                // any registered token's pattern actually requires watching subdirectories.
-                _fileWatcher.IncludeSubdirectories = false;
                 _fileWatcher.Created += OnChanged;
                 _fileWatcher.Changed += OnChanged;
                 _fileWatcher.Renamed += OnRenamed;
@@ -389,7 +387,8 @@ namespace Microsoft.Extensions.FileProviders.Physical
                     {
                         if (requiresSubdirectories(entry.Key))
                         {
-                            Interlocked.Decrement(ref _subdirectoryRequiringTokenCount);
+                            int newCount = Interlocked.Decrement(ref _subdirectoryRequiringTokenCount);
+                            Debug.Assert(newCount >= 0, "Subdirectory-requiring token counter went negative.");
                         }
 
                         CancelToken(matchInfo);
@@ -454,7 +453,8 @@ namespace Microsoft.Extensions.FileProviders.Physical
             {
                 if (FilePathRequiresSubdirectories(path))
                 {
-                    Interlocked.Decrement(ref _subdirectoryRequiringTokenCount);
+                    int newCount = Interlocked.Decrement(ref _subdirectoryRequiringTokenCount);
+                    Debug.Assert(newCount >= 0, "Subdirectory-requiring token counter went negative.");
                 }
 
                 CancelToken(matchInfo);
@@ -469,7 +469,8 @@ namespace Microsoft.Extensions.FileProviders.Physical
                 {
                     if (WildcardRequiresSubdirectories(wildCardEntry.Key))
                     {
-                        Interlocked.Decrement(ref _subdirectoryRequiringTokenCount);
+                        int newCount = Interlocked.Decrement(ref _subdirectoryRequiringTokenCount);
+                        Debug.Assert(newCount >= 0, "Subdirectory-requiring token counter went negative.");
                     }
 
                     CancelToken(matchInfo);
@@ -534,6 +535,14 @@ namespace Microsoft.Extensions.FileProviders.Physical
                     {
                         // Perf: Turn off the file monitoring if no files or directories to monitor.
                         _fileWatcher.EnableRaisingEvents = false;
+                    }
+                    else if (_fileWatcher.IncludeSubdirectories &&
+                        !_fileWatcherIsAboveRoot &&
+                        Volatile.Read(ref _subdirectoryRequiringTokenCount) == 0)
+                    {
+                        // Perf: Some tokens were removed and none of the remaining ones require
+                        // subdirectory watching, so we can stop recursing.
+                        _fileWatcher.IncludeSubdirectories = false;
                     }
                 }
             }

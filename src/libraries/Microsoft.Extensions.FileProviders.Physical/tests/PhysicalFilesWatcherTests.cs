@@ -119,14 +119,13 @@ namespace Microsoft.Extensions.FileProviders.Physical.Tests
             using var fileSystemWatcher = new MockFileSystemWatcher(root.Path);
             using var physicalFilesWatcher = new PhysicalFilesWatcher(root.Path, fileSystemWatcher, pollForChanges: false);
 
+            physicalFilesWatcher.CreateFileChangeToken("appsettings.json");
             physicalFilesWatcher.CreateFileChangeToken("sub/file.json");
             Assert.True(fileSystemWatcher.IncludeSubdirectories);
 
             // Fire an event matching the subdirectory token to remove it from the lookup.
+            // The remaining root-only token does not require subdirectory watching, IncludeSubdirectories should be downgraded.
             fileSystemWatcher.CallOnChanged(new FileSystemEventArgs(WatcherChangeTypes.Changed, root.Path, "sub/file.json"));
-
-            // Adding a new root-only token re-evaluates IncludeSubdirectories.
-            physicalFilesWatcher.CreateFileChangeToken("appsettings.json");
             Assert.False(fileSystemWatcher.IncludeSubdirectories);
         }
 
@@ -145,10 +144,6 @@ namespace Microsoft.Extensions.FileProviders.Physical.Tests
             // Remove only the root-level token; the subdirectory token must keep subdirectories enabled.
             fileSystemWatcher.CallOnChanged(new FileSystemEventArgs(WatcherChangeTypes.Changed, root.Path, "appsettings.json"));
             Assert.True(fileSystemWatcher.IncludeSubdirectories);
-
-            // Trigger re-evaluation by adding another root-only token.
-            physicalFilesWatcher.CreateFileChangeToken("other.json");
-            Assert.True(fileSystemWatcher.IncludeSubdirectories);
         }
 
         [Fact]
@@ -165,9 +160,6 @@ namespace Microsoft.Extensions.FileProviders.Physical.Tests
 
             // Remove the root-level token; the recursive wildcard token must keep subdirectories enabled.
             fileSystemWatcher.CallOnChanged(new FileSystemEventArgs(WatcherChangeTypes.Changed, root.Path, "appsettings.json"));
-            Assert.True(fileSystemWatcher.IncludeSubdirectories);
-
-            physicalFilesWatcher.CreateFileChangeToken("other.json");
             Assert.True(fileSystemWatcher.IncludeSubdirectories);
         }
 
@@ -186,6 +178,29 @@ namespace Microsoft.Extensions.FileProviders.Physical.Tests
             // the FSW watches an ancestor of _root.
             physicalFilesWatcher.CreateFileChangeToken("appsettings.json");
             Assert.True(fsw.IncludeSubdirectories);
+        }
+
+        [Fact]
+        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/iOS/tvOS")]
+        public async Task IncludeSubdirectories_StarPatternIsNotRecursive_DoesNotMatchSubdirectoryFile()
+        {
+            using var root = new TempDirectory(GetTestFilePath());
+            using var fileSystemWatcher = new MockFileSystemWatcher(root.Path);
+            using var physicalFilesWatcher = new PhysicalFilesWatcher(root.Path, fileSystemWatcher, pollForChanges: false);
+
+            IChangeToken token = physicalFilesWatcher.CreateFileChangeToken("*.json");
+            Assert.False(fileSystemWatcher.IncludeSubdirectories);
+
+            Task changed = WhenChanged(token);
+
+            // A '*' pattern should not match files in subdirectories.
+            fileSystemWatcher.CallOnChanged(new FileSystemEventArgs(WatcherChangeTypes.Changed, root.Path, "sub/foo.json"));
+            await Task.Delay(WaitTimeForTokenToFire);
+            Assert.False(changed.IsCompleted, "Token must not fire for an event in a subdirectory.");
+
+            // Sanity check: a root-level event does fire the token.
+            fileSystemWatcher.CallOnChanged(new FileSystemEventArgs(WatcherChangeTypes.Changed, root.Path, "foo.json"));
+            await changed;
         }
 
         [Fact]
