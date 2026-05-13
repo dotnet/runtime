@@ -4,6 +4,7 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.LinkXml
 {
+    [SetupLinkerArgument("--disable-opt", "unreachablebodies", "test")]
     [SetupLinkerDescriptorFile("UnusedMethodPreservedByLinkXmlIsKept.xml")]
     class UnusedMethodPreservedByLinkXmlIsKept
     {
