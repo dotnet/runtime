@@ -325,8 +325,8 @@ bool CdacStress::Initialize()
     // Get the address of the contract descriptor in our own process
     uint64_t descriptorAddr = reinterpret_cast<uint64_t>(&DotNetRuntimeContractDescriptor);
 
-    // Initialize the cDAC reader with in-process callbacks
-    if (init(descriptorAddr, &ReadFromTargetCallback, &WriteToTargetCallback, &ReadThreadContextCallback, nullptr, &s_cdacHandle) != 0)
+    // Initialize the cDAC reader with in-process callbacks (no alloc_virtual for in-process stress)
+    if (init(descriptorAddr, &ReadFromTargetCallback, &WriteToTargetCallback, &ReadThreadContextCallback, nullptr, nullptr, &s_cdacHandle) != 0)
     {
         LOG((LF_GCROOTS, LL_WARNING, "CDAC GC Stress: cdac_reader_init failed\n"));
         ::FreeLibrary(s_cdacModule);

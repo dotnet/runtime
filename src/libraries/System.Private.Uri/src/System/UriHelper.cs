@@ -246,7 +246,7 @@ namespace System
             }
         }
 
-        private static void EscapeStringToBuilder(
+        private static unsafe void EscapeStringToBuilder(
             scoped ReadOnlySpan<char> stringToEscape, ref ValueStringBuilder vsb,
             SearchValues<char> noEscape, bool checkExistingEscaped)
         {

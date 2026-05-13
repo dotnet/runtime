@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Configuration;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -26,6 +27,9 @@ public class WasmTemplateTestsBase : BuildTestBase
     protected readonly PublishOptions _defaultPublishOptions;
     protected readonly BuildOptions _defaultBuildOptions;
     protected const string DefaultRuntimeAssetsRelativePath = "./_framework/";
+
+    private static bool s_wasmTemplatesInstalled;
+    private static readonly object s_wasmTemplatesLock = new();
 
     public WasmTemplateTestsBase(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext, ProjectProviderBase? provider = null)
         : base(provider ?? new WasmSdkBasedProjectProvider(output, DefaultTargetFramework), output, buildContext)
@@ -82,6 +86,8 @@ public class WasmTemplateTestsBase : BuildTestBase
 
             extraArgs += $" -f {defaultTarget}";
         }
+
+        EnsureWasmTemplatesInstalled();
 
         using DotNetCommand cmd = new DotNetCommand(s_buildEnv, _testOutput, useDefaultArgs: false);
         CommandResult result = cmd.WithWorkingDirectory(_projectDir)
@@ -171,6 +177,96 @@ public class WasmTemplateTestsBase : BuildTestBase
                 </ItemGroup>
             </Target>
         """;
+    }
+
+    /// <summary>
+    /// Installs the WASM browser/console templates from the built nugets path
+    /// using <c>dotnet new install</c> if needed. This is a no-op when
+    /// the workload is already installed (templates come with the workload).
+    /// </summary>
+    private static void EnsureWasmTemplatesInstalled()
+    {
+        if (s_buildEnv.IsWorkload)
+            return;
+
+        if (s_wasmTemplatesInstalled)
+            return;
+
+        lock (s_wasmTemplatesLock)
+        {
+            if (s_wasmTemplatesInstalled)
+                return;
+
+            string? templateNupkg = Directory.GetFiles(s_buildEnv.BuiltNuGetsPath, "Microsoft.NET.Runtime.WebAssembly.Templates.*.nupkg")
+                .Where(f => !f.EndsWith(".symbols.nupkg", StringComparison.OrdinalIgnoreCase))
+                .FirstOrDefault();
+
+            if (templateNupkg is null)
+                throw new InvalidOperationException(
+                    $"Could not find WebAssembly template nupkg in '{s_buildEnv.BuiltNuGetsPath}'");
+
+            Console.WriteLine($"[templates] Installing WASM templates from {templateNupkg} using {s_buildEnv.DotNet}");
+
+            var psi = new ProcessStartInfo
+            {
+                FileName = s_buildEnv.DotNet,
+                Arguments = $"new install \"{templateNupkg}\" --force",
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false
+            };
+            // Isolate the template cache so the install doesn't touch the default user profile
+            // and can't collide across Helix jobs/agents (or fail if the profile is not writable).
+            string dotnetCliHome = s_buildEnv.EnvVars.TryGetValue("NUGET_PACKAGES", out string? nugetPackagesPath) && !string.IsNullOrWhiteSpace(nugetPackagesPath)
+                ? Path.Combine(Path.GetDirectoryName(nugetPackagesPath)!, ".dotnet-cli-home")
+                : Path.Combine(Path.GetDirectoryName(templateNupkg)!, ".dotnet-cli-home");
+            Directory.CreateDirectory(dotnetCliHome);
+
+            // Use the same isolated environment as the rest of the test suite
+            // (DOTNET_ROOT/DOTNET_INSTALL_DIR/PATH/NUGET_PACKAGES overrides), so
+            // `dotnet new install` picks up the harness's SDK and NuGet config.
+            foreach (var kvp in s_buildEnv.EnvVars)
+                psi.Environment[kvp.Key] = kvp.Value;
+            psi.Environment["DOTNET_SKIP_FIRST_TIME_EXPERIENCE"] = "1";
+            psi.Environment["DOTNET_CLI_HOME"] = dotnetCliHome;
+
+            using var process = Process.Start(psi)
+                ?? throw new InvalidOperationException("Failed to start 'dotnet new install' process");
+
+            var stdoutTask = process.StandardOutput.ReadToEndAsync();
+            var stderrTask = process.StandardError.ReadToEndAsync();
+
+            const int processTimeoutMilliseconds = 120_000;
+            if (!process.WaitForExit(processTimeoutMilliseconds))
+            {
+                try
+                {
+                    if (!process.HasExited)
+                        process.Kill(entireProcessTree: true);
+                }
+                catch (InvalidOperationException)
+                {
+                }
+
+                process.WaitForExit();
+
+                string timedOutStdout = stdoutTask.GetAwaiter().GetResult();
+                string timedOutStderr = stderrTask.GetAwaiter().GetResult();
+
+                throw new InvalidOperationException(
+                    $"'dotnet new install' timed out after {processTimeoutMilliseconds} ms.\nStdout: {timedOutStdout}\nStderr: {timedOutStderr}");
+            }
+
+            string stdout = stdoutTask.GetAwaiter().GetResult();
+            string stderr = stderrTask.GetAwaiter().GetResult();
+
+            if (process.ExitCode != 0)
+                throw new InvalidOperationException(
+                    $"'dotnet new install' failed with exit code {process.ExitCode}.\nStdout: {stdout}\nStderr: {stderr}");
+
+            Console.WriteLine($"[templates] WASM template install completed successfully");
+            s_wasmTemplatesInstalled = true;
+        }
     }
 
     public virtual (string projectDir, string buildOutput) PublishProject(

@@ -176,7 +176,7 @@ namespace System.Text.Json
             return false;
         }
 
-        public static bool TryGetEscapedDateTime(ReadOnlySpan<byte> source, out DateTime value)
+        public static unsafe bool TryGetEscapedDateTime(ReadOnlySpan<byte> source, out DateTime value)
         {
             Debug.Assert(source.Length <= JsonConstants.MaximumEscapedDateTimeOffsetParseLength);
             Span<byte> sourceUnescaped = stackalloc byte[JsonConstants.MaximumEscapedDateTimeOffsetParseLength];
@@ -224,7 +224,7 @@ namespace System.Text.Json
             return false;
         }
 
-        public static bool TryGetEscapedDateTimeOffset(ReadOnlySpan<byte> source, out DateTimeOffset value)
+        public static unsafe bool TryGetEscapedDateTimeOffset(ReadOnlySpan<byte> source, out DateTimeOffset value)
         {
             Debug.Assert(source.Length <= JsonConstants.MaximumEscapedDateTimeOffsetParseLength);
             Span<byte> sourceUnescaped = stackalloc byte[JsonConstants.MaximumEscapedDateTimeOffsetParseLength];
@@ -273,7 +273,7 @@ namespace System.Text.Json
             return false;
         }
 
-        public static bool TryGetEscapedGuid(ReadOnlySpan<byte> source, out Guid value)
+        public static unsafe bool TryGetEscapedGuid(ReadOnlySpan<byte> source, out Guid value)
         {
             Debug.Assert(source.Length <= JsonConstants.MaximumEscapedGuidLength);
 

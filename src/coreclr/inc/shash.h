@@ -160,7 +160,7 @@ class DefaultSHashTraits
 // Hash table class definition
 
 template <typename TRAITS>
-class EMPTY_BASES_DECL SHash : public TRAITS
+class EMPTY_BASES SHash : public TRAITS
                              , private noncopyable
 {
     friend class VerifyLayoutsMD;  // verifies class layout doesn't accidentally change
@@ -350,7 +350,7 @@ class EMPTY_BASES_DECL SHash : public TRAITS
 
   public:
 
-    class EMPTY_BASES_DECL Index
+    class EMPTY_BASES Index
         : public CheckedIteratorBase< SHash<TRAITS> >
     {
         friend class SHash;
@@ -448,7 +448,7 @@ class EMPTY_BASES_DECL SHash : public TRAITS
         }
     };
 
-    class EMPTY_BASES_DECL Iterator : public Index, public Enumerator<const element_t, Iterator>
+    class EMPTY_BASES Iterator : public Index, public Enumerator<const element_t, Iterator>
     {
         friend class SHash;
 
@@ -465,7 +465,7 @@ class EMPTY_BASES_DECL SHash : public TRAITS
     // is artificially bumped to m_tableSize when the end of iteration is reached.
     // This allows a canonical End iterator to be used.
 
-    class EMPTY_BASES_DECL KeyIndex : public Index
+    class EMPTY_BASES KeyIndex : public Index
     {
         friend class SHash;
         friend class KeyIterator;
@@ -555,7 +555,7 @@ class EMPTY_BASES_DECL SHash : public TRAITS
         }
     };
 
-    class EMPTY_BASES_DECL KeyIterator : public KeyIndex, public Enumerator<const element_t, KeyIterator>
+    class EMPTY_BASES KeyIterator : public KeyIndex, public Enumerator<const element_t, KeyIterator>
     {
         friend class SHash;
 
@@ -599,7 +599,7 @@ class EMPTY_BASES_DECL SHash : public TRAITS
 
 // disables support for DAC marshaling. Useful for defining right-side only SHashes
 template <typename PARENT>
-class EMPTY_BASES_DECL NonDacAwareSHashTraits : public PARENT
+class EMPTY_BASES NonDacAwareSHashTraits : public PARENT
 {
 public:
     typedef typename PARENT::element_t element_t;
@@ -609,7 +609,7 @@ public:
 // disables support for removing elements - produces slightly faster implementation
 
 template <typename PARENT>
-class EMPTY_BASES_DECL NoRemoveSHashTraits : public PARENT
+class EMPTY_BASES NoRemoveSHashTraits : public PARENT
 {
 public:
     // explicitly declare local typedefs for these traits types, otherwise
@@ -626,7 +626,7 @@ public:
 // It relies on methods GetKey and Hash defined on ELEMENT
 
 template <typename ELEMENT, typename KEY>
-class EMPTY_BASES_DECL PtrSHashTraits : public DefaultSHashTraits<ELEMENT *>
+class EMPTY_BASES PtrSHashTraits : public DefaultSHashTraits<ELEMENT *>
 {
   public:
 
@@ -656,7 +656,7 @@ class EMPTY_BASES_DECL PtrSHashTraits : public DefaultSHashTraits<ELEMENT *>
 };
 
 template <typename ELEMENT, typename KEY>
-class EMPTY_BASES_DECL PtrSHash : public SHash< PtrSHashTraits<ELEMENT, KEY> >
+class EMPTY_BASES PtrSHash : public SHash< PtrSHashTraits<ELEMENT, KEY> >
 {
 };
 
@@ -675,7 +675,7 @@ public:
 // a class that automatically deletes data referenced by the pointers (so effectively it takes ownership of the data)
 // since I was too lazy to implement Remove() APIs properly, removing entries is disallowed
 template <typename ELEMENT, typename KEY>
-class EMPTY_BASES_DECL PtrSHashWithCleanup : public SHash< NoRemoveSHashTraits< PtrSHashWithCleanupTraits<ELEMENT, KEY> > >
+class EMPTY_BASES PtrSHashWithCleanup : public SHash< NoRemoveSHashTraits< PtrSHashWithCleanupTraits<ELEMENT, KEY> > >
 {
 };
 
@@ -778,7 +778,7 @@ public:
 // pointer hash tables.
 
 template <typename ElementT, typename CharT, typename ComparerT = CaseSensitiveStringCompareHash<CharT> >
-class EMPTY_BASES_DECL StringSHashTraits : public PtrSHashTraits<ElementT, CharT const *>
+class EMPTY_BASES StringSHashTraits : public PtrSHashTraits<ElementT, CharT const *>
 {
 public:
     // explicitly declare local typedefs for these traits types, otherwise
@@ -822,7 +822,7 @@ struct StringHashElement
 };
 
 template <typename COMINTERFACE, typename CharT, typename ComparerT = CaseSensitiveStringCompareHash<CharT> >
-class EMPTY_BASES_DECL StringHashWithCleanupTraits : public StringSHashTraits<StringHashElement<COMINTERFACE, CharT>, CharT, ComparerT>
+class EMPTY_BASES StringHashWithCleanupTraits : public StringSHashTraits<StringHashElement<COMINTERFACE, CharT>, CharT, ComparerT>
 {
 public:
     void OnDestructPerEntryCleanupAction(StringHashElement<COMINTERFACE, CharT> * e)
@@ -841,22 +841,22 @@ public:
 };
 
 template <typename COMINTERFACE, typename CharT, typename ComparerT = CaseSensitiveStringCompareHash<CharT> >
-class EMPTY_BASES_DECL StringSHashWithCleanup : public SHash< StringHashWithCleanupTraits<COMINTERFACE, CharT, ComparerT> >
+class EMPTY_BASES StringSHashWithCleanup : public SHash< StringHashWithCleanupTraits<COMINTERFACE, CharT, ComparerT> >
 {
 };
 
 template <typename ELEMENT>
-class EMPTY_BASES_DECL StringSHash : public SHash< StringSHashTraits<ELEMENT, CHAR> >
+class EMPTY_BASES StringSHash : public SHash< StringSHashTraits<ELEMENT, CHAR> >
 {
 };
 
 template <typename ELEMENT>
-class EMPTY_BASES_DECL WStringSHash : public SHash< StringSHashTraits<ELEMENT, WCHAR> >
+class EMPTY_BASES WStringSHash : public SHash< StringSHashTraits<ELEMENT, WCHAR> >
 {
 };
 
 template <typename ELEMENT>
-class EMPTY_BASES_DECL SStringSHashTraits : public PtrSHashTraits<ELEMENT, SString>
+class EMPTY_BASES SStringSHashTraits : public PtrSHashTraits<ELEMENT, SString>
 {
   public:
     typedef PtrSHashTraits<ELEMENT, SString> PARENT;
@@ -879,12 +879,12 @@ class EMPTY_BASES_DECL SStringSHashTraits : public PtrSHashTraits<ELEMENT, SStri
 };
 
 template <typename ELEMENT>
-class EMPTY_BASES_DECL SStringSHash : public SHash< SStringSHashTraits<ELEMENT> >
+class EMPTY_BASES SStringSHash : public SHash< SStringSHashTraits<ELEMENT> >
 {
 };
 
 template <typename ELEMENT>
-class EMPTY_BASES_DECL SetSHashTraits : public DefaultSHashTraits<ELEMENT>
+class EMPTY_BASES SetSHashTraits : public DefaultSHashTraits<ELEMENT>
 {
 public:
     // explicitly declare local typedefs for these traits types, otherwise
@@ -912,7 +912,7 @@ public:
 };
 
 template <typename ELEMENT, typename TRAITS = NoRemoveSHashTraits< SetSHashTraits <ELEMENT> > >
-class EMPTY_BASES_DECL SetSHash : public SHash< TRAITS >
+class EMPTY_BASES SetSHash : public SHash< TRAITS >
 {
     typedef SHash<TRAITS> PARENT;
 
@@ -924,7 +924,7 @@ public:
 };
 
 template <typename ELEMENT>
-class EMPTY_BASES_DECL PtrSetSHashTraits : public SetSHashTraits<ELEMENT>
+class EMPTY_BASES PtrSetSHashTraits : public SetSHashTraits<ELEMENT>
 {
   public:
 
@@ -943,7 +943,7 @@ class EMPTY_BASES_DECL PtrSetSHashTraits : public SetSHashTraits<ELEMENT>
 };
 
 template <typename PARENT_TRAITS>
-class EMPTY_BASES_DECL DeleteElementsOnDestructSHashTraits : public PARENT_TRAITS
+class EMPTY_BASES DeleteElementsOnDestructSHashTraits : public PARENT_TRAITS
 {
 public:
     static inline void OnDestructPerEntryCleanupAction(typename PARENT_TRAITS::element_t e)
@@ -984,7 +984,7 @@ public:
 };
 
 template <typename KEY, typename VALUE>
-class EMPTY_BASES_DECL MapSHashTraits : public DefaultSHashTraits< KeyValuePair<KEY,VALUE> >
+class EMPTY_BASES MapSHashTraits : public DefaultSHashTraits< KeyValuePair<KEY,VALUE> >
 {
 public:
     // explicitly declare local typedefs for these traits types, otherwise
@@ -1017,7 +1017,7 @@ public:
 };
 
 template <typename KEY, typename VALUE, typename TRAITS = NoRemoveSHashTraits< MapSHashTraits <KEY, VALUE> > >
-class EMPTY_BASES_DECL MapSHash : public SHash< TRAITS >
+class EMPTY_BASES MapSHash : public SHash< TRAITS >
 {
     typedef SHash< TRAITS > PARENT;
 
@@ -1039,7 +1039,7 @@ public:
 };
 
 template <typename KEY, typename VALUE>
-class EMPTY_BASES_DECL MapSHashWithRemove : public SHash< MapSHashTraits <KEY, VALUE> >
+class EMPTY_BASES MapSHashWithRemove : public SHash< MapSHashTraits <KEY, VALUE> >
 {
     typedef SHash< MapSHashTraits <KEY, VALUE> > PARENT;
 

@@ -286,18 +286,6 @@ void BaseAssemblySpec::InitializeWithAssemblyIdentity(BINDER_SPACE::AssemblyIden
     {
         m_dwFlags |= afRetargetable;
     }
-
-    // Content type
-    if (identity->Have(BINDER_SPACE::AssemblyIdentity::IDENTITY_FLAG_CONTENT_TYPE))
-    {
-        DWORD dwContentType = identity->m_kContentType;
-
-        _ASSERTE((dwContentType == AssemblyContentType_Default) || (dwContentType == AssemblyContentType_WindowsRuntime));
-        if (dwContentType == AssemblyContentType_WindowsRuntime)
-        {
-            m_dwFlags |= afContentType_WindowsRuntime;
-        }
-    }
 }
 
 namespace
@@ -406,12 +394,6 @@ VOID BaseAssemblySpec::GetDisplayName(DWORD flags, SString &result) const
         assemblyIdentity.SetHave(BINDER_SPACE::AssemblyIdentity::IDENTITY_FLAG_RETARGETABLE);
     }
 
-    if ((flags & ASM_DISPLAYF_CONTENT_TYPE) && (m_dwFlags & afContentType_Mask) == afContentType_WindowsRuntime)
-    {
-        assemblyIdentity.SetHave(BINDER_SPACE::AssemblyIdentity::IDENTITY_FLAG_CONTENT_TYPE);
-        assemblyIdentity.m_kContentType = AssemblyContentType_WindowsRuntime;
-    }
-
     IfFailThrow(BINDER_SPACE::TextualIdentityParser::ToString(&assemblyIdentity,
                                                              assemblyIdentity.m_dwIdentityFlags,
                                                              result));
@@ -459,11 +441,5 @@ void BaseAssemblySpec::PopulateAssemblyNameData(AssemblyNameData &data) const
     if ((m_dwFlags & afRetargetable) != 0)
     {
         data.IdentityFlags |= BINDER_SPACE::AssemblyIdentity::IDENTITY_FLAG_RETARGETABLE;
-    }
-
-    if ((m_dwFlags & afContentType_Mask) == afContentType_WindowsRuntime)
-    {
-        data.ContentType = AssemblyContentType_WindowsRuntime;
-        data.IdentityFlags |= BINDER_SPACE::AssemblyIdentity::IDENTITY_FLAG_CONTENT_TYPE;
     }
 }

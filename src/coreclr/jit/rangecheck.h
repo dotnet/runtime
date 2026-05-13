@@ -776,6 +776,13 @@ private:
     typedef JitHashTable<GenTree*, JitPtrKeyFuncs<GenTree>, Range*>      RangeMap;
     typedef JitHashTable<GenTree*, JitPtrKeyFuncs<GenTree>, BasicBlock*> SearchPath;
 
+    // Cheaper version of TryGetRange that is based only on incoming assertions.
+    static Range GetRangeFromAssertionsWorker(Compiler*                        comp,
+                                              ValueNum                         num,
+                                              ASSERT_VALARG_TP                 assertions,
+                                              int                              budget,
+                                              ValueNumStore::SmallValueNumSet* visited);
+
     int GetArrLength(ValueNum vn);
 
     // Check whether the computed range is within 0 and upper bounds. This function
@@ -819,6 +826,18 @@ private:
                                     ASSERT_VALARG_TP assertions,
                                     Range*           pRange,
                                     bool             canUseCheckedBounds = true);
+
+    // Internal worker used by GetRangeFromAssertionsWorker: same as the public overload
+    // but threads a recursion budget and visited set so that VN-to-VN assertions can be
+    // resolved by recursing into GetRangeFromAssertionsWorker without unbounded work.
+    static void MergeEdgeAssertionsWorker(Compiler*                        comp,
+                                          ValueNum                         num,
+                                          ValueNum                         preferredBoundVN,
+                                          ASSERT_VALARG_TP                 assertions,
+                                          Range*                           pRange,
+                                          bool                             canUseCheckedBounds,
+                                          int                              budget,
+                                          ValueNumStore::SmallValueNumSet* visited);
 
     // The maximum possible value of the given "limit". If such a value could not be determined
     // return "false". For example: CORINFO_Array_MaxLength for array length.

@@ -10,13 +10,11 @@ namespace Microsoft.Diagnostics.DataContractReader.DumpTests;
 
 /// <summary>
 /// Dump-based integration tests for DacDbiImpl loader, assembly, and module methods.
-/// Uses the MultiModule debuggee (full dump), which loads assemblies from multiple ALCs.
+/// Uses the StackRefs debuggee (full dump).
 /// </summary>
 public class DacDbiLoaderDumpTests : DumpTestBase
 {
-    protected override string DebuggeeName => "MultiModule";
-    protected override string DumpType => "full";
-
+    protected override string DebuggeeName => "StackRefs";
     private DacDbiImpl CreateDacDbi() => new DacDbiImpl(Target, legacyObj: null);
 
     private IEnumerable<ModuleHandle> GetAllModules()
@@ -42,6 +40,43 @@ public class DacDbiLoaderDumpTests : DumpTestBase
         int hr = dbi.GetAppDomainFullName(appDomain, holder.Ptr);
         Assert.Equal(System.HResults.S_OK, hr);
         Assert.False(string.IsNullOrEmpty(holder.Value), "AppDomain name should not be empty");
+    }
+
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
+    public unsafe void GetModuleForAssembly_ReturnsExpectedModule(TestConfiguration config)
+    {
+        InitializeDumpTest(config);
+        DacDbiImpl dbi = CreateDacDbi();
+        ILoader loader = Target.Contracts.Loader;
+
+        bool testedAtLeastOne = false;
+        foreach (ModuleHandle module in GetAllModules())
+        {
+            TargetPointer assemblyPtr = loader.GetAssembly(module);
+            TargetPointer expectedModulePtr = loader.GetModule(module);
+
+            ulong resultModule;
+            int hr = dbi.GetModuleForAssembly(assemblyPtr.Value, &resultModule);
+            Assert.Equal(System.HResults.S_OK, hr);
+            Assert.NotEqual(0UL, resultModule);
+            Assert.Equal(expectedModulePtr.Value, resultModule);
+            testedAtLeastOne = true;
+        }
+        Assert.True(testedAtLeastOne, "Expected at least one module in the dump");
+    }
+
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
+    public unsafe void GetModuleForAssembly_InvalidAssembly(TestConfiguration config)
+    {
+        InitializeDumpTest(config);
+        DacDbiImpl dbi = CreateDacDbi();
+
+        ulong resultModule = ulong.MaxValue;
+        int hr = dbi.GetModuleForAssembly(0, &resultModule);
+        Assert.NotEqual(System.HResults.S_OK, hr);
+        Assert.Equal(0UL, resultModule);
     }
 
     [ConditionalTheory]
@@ -96,6 +131,30 @@ public class DacDbiLoaderDumpTests : DumpTestBase
                 Assert.NotEqual(0UL, data.pPEBaseAddress);
                 Assert.NotEqual(0u, data.nPESize);
             }
+
+            testedAtLeastOne = true;
+        }
+        Assert.True(testedAtLeastOne, "Expected at least one module in the dump");
+    }
+
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
+    public void GetModuleSimpleName_ReturnsNonEmpty(TestConfiguration config)
+    {
+        InitializeDumpTest(config);
+        DacDbiImpl dbi = CreateDacDbi();
+        ILoader loader = Target.Contracts.Loader;
+
+        bool testedAtLeastOne = false;
+        foreach (ModuleHandle module in GetAllModules())
+        {
+            TargetPointer moduleAddr = loader.GetModule(module);
+
+            using var holder = new NativeStringHolder();
+            int hr = dbi.GetModuleSimpleName(moduleAddr.Value, holder.Ptr);
+            Assert.Equal(System.HResults.S_OK, hr);
+            Assert.False(string.IsNullOrEmpty(holder.Value), "Module simple name should not be empty");
+            Assert.Equal(loader.GetSimpleName(module), holder.Value);
 
             testedAtLeastOne = true;
         }

@@ -19,7 +19,6 @@ namespace Microsoft.Diagnostics.DataContractReader.DumpTests;
 public unsafe class IXCLRDataMethodDefinitionDumpTests : DumpTestBase
 {
     protected override string DebuggeeName => "StackWalk";
-    protected override string DumpType => "full";
 
     // ========== GetName ==========
 
