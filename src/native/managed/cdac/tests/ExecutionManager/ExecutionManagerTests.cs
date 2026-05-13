@@ -873,6 +873,8 @@ public class ExecutionManagerTests
     {
         const ulong precodeRangeStart = 0x0b0b_0000u;
         const uint precodeRangeSize = 0x1000u;
+        const ulong jitManagerAddress = 0x000b_ff00;
+        const int stubCodeBlockKindPrecode = 4; // STUB_CODE_BLOCK_STUBPRECODE
 
         IExecutionManager em = CreateExecutionManagerContract(
             version,
@@ -880,7 +882,7 @@ public class ExecutionManagerTests
             emBuilder =>
             {
                 var precodeRange = emBuilder.AllocateJittedCodeRange(precodeRangeStart, precodeRangeSize);
-                MockRangeSection precodeRangeSection = emBuilder.AddRangeListSection(precodeRange);
+                MockRangeSection precodeRangeSection = emBuilder.AddRangeListRangeSection(precodeRange, jitManagerAddress, stubCodeBlockKindPrecode);
                 _ = emBuilder.AddRangeSectionFragment(precodeRange, precodeRangeSection.Address);
             });
 

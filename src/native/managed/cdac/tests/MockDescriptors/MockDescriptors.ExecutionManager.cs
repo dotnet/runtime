@@ -753,15 +753,6 @@ internal sealed class MockExecutionManagerBuilder
         return stub;
     }
 
-    public MockRangeSection AddRangeListSection(JittedCodeRange jittedCodeRange)
-    {
-        MockRangeSection rangeSection = AllocateAndCreate(RangeSectionLayout, "RangeListSection", _rangeSectionMapAllocator);
-        rangeSection.RangeBegin = jittedCodeRange.RangeStart;
-        rangeSection.RangeEndOpen = jittedCodeRange.RangeEnd;
-        rangeSection.Flags = RangeListRangeSectionFlag;
-        return rangeSection;
-    }
-
     public MockRangeSectionFragment AddRangeSectionFragment(JittedCodeRange jittedCodeRange, ulong rangeSectionAddress)
         => AddRangeSectionFragment(jittedCodeRange, rangeSectionAddress, insertIntoMap: true);
 

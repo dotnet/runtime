@@ -416,7 +416,7 @@ public override void GetMethodRegionInfo(RangeSection rangeSection, TargetCodePo
 
 ```
 
-`NonVirtualEntry2MethodDesc`attempts to find a method desc from an entrypoint. If portable entrypoints are enabled, we attempt to read the entrypoint data structure to find the method table. We also attempt to find the method desc from a precode stub. Finally, we attempt to find the method desc using `GetMethodInfo` as described above.
+`NonVirtualEntry2MethodDesc` attempts to find a method desc from an entrypoint. If portable entrypoints are enabled, we attempt to read the entrypoint data structure to find the method table. We also attempt to find the method desc from a precode stub. Finally, we attempt to find the method desc using `GetMethodInfo` as described above.
 ```csharp
 TargetPointer IExecutionManager.NonVirtualEntry2MethodDesc(TargetCodePointer entrypoint)
 {
