@@ -2000,6 +2000,15 @@ ClrDataAccess::EnumMemoryRegions(IN ICLRDataEnumMemoryRegionsCallback* callback,
             {
                 DacLogMessage("EnumMemoryRegions(CLRDATA_ENUM_MEM_HEAP2)\n");
             }
+            else if (g_EnableFastHeapDumps != 0)
+            {
+                // When the target process had DOTNET_EnableFastHeapDumps set,
+                // use HEAP2 which dumps loader heap pages in bulk instead of
+                // relying only on per-structure heap enumeration. This is
+                // significantly faster for large heap dump scenarios.
+                flags = CLRDATA_ENUM_MEM_HEAP2;
+                DacLogMessage("EnumMemoryRegions(CLRDATA_ENUM_MEM_HEAP promoted to HEAP2 via DOTNET_EnableFastHeapDumps)\n");
+            }
             else
             {
                 flags = CLRDATA_ENUM_MEM_HEAP;

@@ -432,6 +432,7 @@ GPTR_DECL(StressLog, g_pStressLog);
 //
 GPTR_DECL(DebugInterface,     g_pDebugInterface);
 GVAL_DECL(DWORD,              g_CORDebuggerControlFlags);
+GVAL_DECL(DWORD,              g_EnableFastHeapDumps);
 #ifdef DEBUGGING_SUPPORTED
 GPTR_DECL(EEDbgInterfaceImpl, g_pEEDbgInterfaceImpl);
 #endif // DEBUGGING_SUPPORTED
