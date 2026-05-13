@@ -271,15 +271,15 @@ namespace
 
 void* ObjCMarshalNative::GetPropagatingExceptionCallback(
     _In_ EECodeInfo* codeInfo,
-    _In_ OBJECTHANDLE throwable,
+    _In_ OBJECTREF throwableRef,
     _Outptr_ void** context)
 {
     CONTRACT(void*)
     {
         THROWS;
-        MODE_PREEMPTIVE;
+        MODE_COOPERATIVE;
         PRECONDITION(codeInfo != NULL);
-        PRECONDITION(throwable != NULL);
+        PRECONDITION(throwableRef != NULL);
         PRECONDITION(context != NULL);
     }
     CONTRACT_END;
@@ -301,11 +301,8 @@ void* ObjCMarshalNative::GetPropagatingExceptionCallback(
     }
 
     {
-        GCX_COOP();
-        OBJECTREF throwableRef = NULL;
         GCPROTECT_BEGIN(throwableRef);
 
-        throwableRef = ObjectFromHandle(throwable);
         callback = CallInvokeUnhandledExceptionPropagation(
             &throwableRef,
             method,

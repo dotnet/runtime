@@ -1,8 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
+using CorElementType = Microsoft.Diagnostics.DataContractReader.Contracts.CorElementType;
 
 namespace Microsoft.Diagnostics.DataContractReader.Legacy;
 
@@ -128,6 +130,19 @@ public struct COR_TYPE_LAYOUT
 }
 
 [StructLayout(LayoutKind.Sequential)]
+public struct COR_ARRAY_LAYOUT
+{
+    public COR_TYPEID componentID;
+    public CorElementType componentType;
+    public uint firstElementOffset;
+    public uint elementSize;
+    public uint countOffset;
+    public uint rankSize;
+    public uint numRanks;
+    public uint rankOffset;
+}
+
+[StructLayout(LayoutKind.Sequential)]
 public struct COR_FIELD
 {
     public uint token;
@@ -143,6 +158,22 @@ public enum DynamicMethodType
     kNone = 0,
     kDiagnosticHidden = 1,
     kLCGMethod = 2,
+}
+
+public enum CorDebugThreadState
+{
+    ThreadRun = 0,
+    ThreadSuspend = 1,
+}
+
+[Flags]
+public enum CorDebugUserState
+{
+    USER_BACKGROUND = 0x04,
+    USER_UNSTARTED = 0x08,
+    USER_STOPPED = 0x10,
+    USER_WAIT_SLEEP_JOIN = 0x20,
+    USER_THREADPOOL = 0x100,
 }
 
 // Name-surface projection of IDacDbiInterface in native method order for COM binding validation.
@@ -165,9 +196,6 @@ public unsafe partial interface IDacDbiInterface
 
     [PreserveSig]
     int GetAppDomainId(ulong vmAppDomain, uint* pRetVal);
-
-    [PreserveSig]
-    int GetAppDomainObject(ulong vmAppDomain, ulong* pRetVal);
 
     [PreserveSig]
     int GetAppDomainFullName(ulong vmAppDomain, nint pStrName);
@@ -251,7 +279,7 @@ public unsafe partial interface IDacDbiInterface
     int GetUserState(ulong vmThread, int* pRetVal);
 
     [PreserveSig]
-    int GetPartialUserState(ulong vmThread, int* pRetVal);
+    int GetPartialUserState(ulong vmThread, CorDebugUserState* pRetVal);
 
     [PreserveSig]
     int GetConnectionID(ulong vmThread, uint* pRetVal);
@@ -437,9 +465,6 @@ public unsafe partial interface IDacDbiInterface
     int IsVmObjectHandleValid(ulong vmHandle, Interop.BOOL* pResult);
 
     [PreserveSig]
-    int IsWinRTModule(ulong vmModule, Interop.BOOL* isWinRT);
-
-    [PreserveSig]
     int GetHandleAddressFromVmHandle(ulong vmHandle, ulong* pRetVal);
 
     [PreserveSig]
@@ -459,9 +484,6 @@ public unsafe partial interface IDacDbiInterface
 
     [PreserveSig]
     int IsThreadSuspendedOrHijacked(ulong vmThread, Interop.BOOL* pResult);
-
-    [PreserveSig]
-    int AreGCStructuresValid(Interop.BOOL* pResult);
 
     [PreserveSig]
     int CreateHeapWalk(nuint* pHandle);
@@ -497,10 +519,10 @@ public unsafe partial interface IDacDbiInterface
     int GetObjectFields(nint id, uint celt, COR_FIELD* layout, uint* pceltFetched);
 
     [PreserveSig]
-    int GetTypeLayout(nint id, COR_TYPE_LAYOUT* pLayout);
+    int GetTypeLayout(ulong id, COR_TYPE_LAYOUT* pLayout);
 
     [PreserveSig]
-    int GetArrayLayout(nint id, nint pLayout);
+    int GetArrayLayout(ulong id, COR_ARRAY_LAYOUT* pLayout);
 
     [PreserveSig]
     int GetGCHeapInformation(COR_HEAPINFO* pHeapInfo);
