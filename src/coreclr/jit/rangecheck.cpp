@@ -668,6 +668,100 @@ Range RangeCheck::GetRangeFromAssertions(Compiler* comp, ValueNum num, ASSERT_VA
 }
 
 //------------------------------------------------------------------------
+// TryFoldRelopOfAddByOneFromAssertions: Try to fold "<cmp>(ADD(base, 1), other)"
+//    using an asserted "base < other".
+//
+// The proof: an asserted "base < other" implies "base <= other - 1", and since "other" is
+// a 32-bit value, "base + 1" cannot overflow past "other" in either signedness:
+//   * Signed:   base < other  =>  base <= INT32_MAX - 1  =>  base + 1 <= other
+//               (no signed overflow).
+//   * Unsigned: (uint)base < (uint)other  =>  (uint)base <= UINT32_MAX - 1
+//               =>  (uint)(base + 1) <= (uint)other (no unsigned wrap).
+// This catches patterns like "(uint)(offset + 1) <= (uint)length" given
+// "(uint)offset < (uint)length", which is the typical "Slice(offset + 1)" check.
+//
+// Only "<=" / ">" can be concluded once normalized to "ADD(base, 1) <relop> other";
+// "<", ">=", "==", "!=" remain undetermined and are reported as not-folded.
+//
+// Arguments:
+//    comp        - the compiler instance
+//    op1VN, op2VN - the operands of the relop being evaluated; op1VN is expected to be
+//                  ADD(base, 1) and op2VN the "other" side
+//    cmpOper     - the (signed-form) compare operator
+//    isUnsigned  - true if the relop is unsigned
+//    assertions  - the live assertions
+//    pResult     - on success, set to [1..1] for GT_LE or [0..0] for GT_GT
+//
+// Return Value:
+//    true if a fold succeeded; false otherwise (caller should leave the range as-is).
+//
+bool RangeCheck::TryFoldRelopOfAddByOneFromAssertions(Compiler*        comp,
+                                                      ValueNum         op1VN,
+                                                      ValueNum         op2VN,
+                                                      genTreeOps       cmpOper,
+                                                      bool             isUnsigned,
+                                                      ASSERT_VALARG_TP assertions,
+                                                      Range*           pResult)
+{
+    if ((cmpOper != GT_LE) && (cmpOper != GT_GT))
+    {
+        return false;
+    }
+
+    // Require op1 to be ADD(base, 1) where base has assertions registered. This keeps the
+    // assertion-table scan proportional to cases that can actually benefit.
+    ValueNum base;
+    int      addCns;
+    if (!comp->vnStore->IsVNBinFuncWithConst(op1VN, VNF_ADD, &base, &addCns) || (addCns != 1) ||
+        (base == op2VN) || !comp->optAssertionHasAssertionsForVN(base))
+    {
+        return false;
+    }
+
+    BitVecOps::Iter iter(comp->apTraits, assertions);
+    unsigned        assertionBit = 0;
+    while (iter.NextElem(&assertionBit))
+    {
+        const Compiler::AssertionDsc& a = comp->optGetAssertion(GetAssertionIndex(assertionBit));
+
+        // We only consume O2K_VN-style relop assertions; checked-bound assertions
+        // already have dedicated handling elsewhere.
+        if (!a.IsRelop() || !a.GetOp2().KindIs(Compiler::O2K_VN))
+        {
+            continue;
+        }
+
+        ValueNum   aOp1 = a.GetOp1().GetVN();
+        ValueNum   aOp2 = a.GetOp2().GetVN();
+        bool       aIsUnsigned;
+        genTreeOps aCmp = Compiler::AssertionDsc::ToCompareOper(a.GetKind(), &aIsUnsigned);
+
+        // Normalize so that the assertion reads "base <aCmp> op2VN".
+        if ((aOp1 == op2VN) && (aOp2 == base))
+        {
+            aCmp = GenTree::SwapRelop(aCmp);
+        }
+        else if ((aOp1 != base) || (aOp2 != op2VN))
+        {
+            continue;
+        }
+
+        // Signedness must match: e.g. signed "base < other" doesn't imply
+        // "(uint)base != UINT32_MAX" (negative base has bit 31 set), so the
+        // no-overflow argument doesn't carry across signedness.
+        // Also require a strict less-than: only "<" gives "base + 1 <= other".
+        if ((aIsUnsigned != isUnsigned) || (aCmp != GT_LT))
+        {
+            continue;
+        }
+
+        *pResult = Range(Limit(Limit::keConstant, (cmpOper == GT_LE) ? 1 : 0));
+        return true;
+    }
+    return false;
+}
+
+//------------------------------------------------------------------------
 // GetRangeFromAssertionsWorker: Cheaper version of TryGetRange that is based purely on assertions
 //    and does not require a full range analysis based on SSA.
 //
@@ -903,68 +997,11 @@ Range RangeCheck::GetRangeFromAssertionsWorker(
                         }
                     }
 
-                    // Generic fold: "<cmp>(ADD(base, 1), other)" is implied by an asserted
-                    // "base <relop> other" (with matching signedness). For an asserted strict
-                    // less-than the implication "ADD(base, 1) <= other" is sound:
-                    //   * Signed:   base < other  =>  base <= INT32_MAX - 1  =>  base + 1 <= other
-                    //               (no signed overflow).
-                    //   * Unsigned: (uint)base < (uint)other  =>  (uint)base <= UINT32_MAX - 1
-                    //               =>  (uint)(base + 1) <= (uint)other (no unsigned wrap).
-                    // This catches patterns like "(uint)(offset + 1) <= (uint)length" given
-                    // "(uint)offset < (uint)length", which is the typical "Slice(offset + 1)" check.
-                    //
-                    // Only "<=" / ">" can be concluded once normalized to "ADD(base, 1) <relop> other";
-                    // "<", ">=", "==", "!=" remain undetermined. To keep the assertion-table scan
-                    // proportional to cases that can benefit, require op1 to be ADD(base, 1) where
-                    // base has assertions registered.
-                    ValueNum addBase;
-                    int      addCns;
-                    if (!result.IsSingleValueConstant() && ((cmpOper == GT_LE) || (cmpOper == GT_GT)) &&
-                        comp->vnStore->IsVNBinFuncWithConst(funcApp.m_args[0], VNF_ADD, &addBase, &addCns) &&
-                        (addCns == 1) && (addBase != funcApp.m_args[1]) &&
-                        comp->optAssertionHasAssertionsForVN(addBase))
+                    // Generic fold: see TryFoldRelopOfAddByOneFromAssertions.
+                    if (!result.IsSingleValueConstant())
                     {
-                        ValueNum        otherVN = funcApp.m_args[1];
-                        BitVecOps::Iter iter(comp->apTraits, assertions);
-                        unsigned        assertionBit = 0;
-                        while (iter.NextElem(&assertionBit))
-                        {
-                            const Compiler::AssertionDsc& a = comp->optGetAssertion(GetAssertionIndex(assertionBit));
-
-                            // We only consume O2K_VN-style relop assertions; checked-bound assertions
-                            // already have dedicated handling elsewhere.
-                            if (!a.IsRelop() || !a.GetOp2().KindIs(Compiler::O2K_VN))
-                            {
-                                continue;
-                            }
-
-                            ValueNum   aOp1 = a.GetOp1().GetVN();
-                            ValueNum   aOp2 = a.GetOp2().GetVN();
-                            bool       aIsUnsigned;
-                            genTreeOps aCmp = Compiler::AssertionDsc::ToCompareOper(a.GetKind(), &aIsUnsigned);
-
-                            // Normalize so that the assertion reads "addBase <aCmp> otherVN".
-                            if ((aOp1 == otherVN) && (aOp2 == addBase))
-                            {
-                                aCmp = GenTree::SwapRelop(aCmp);
-                            }
-                            else if ((aOp1 != addBase) || (aOp2 != otherVN))
-                            {
-                                continue;
-                            }
-
-                            // Signedness must match: e.g. signed "addBase < other" doesn't imply
-                            // "(uint)addBase != UINT32_MAX" (negative addBase has bit 31 set), so
-                            // the no-overflow argument doesn't carry across signedness.
-                            // Also require a strict less-than: only "<" gives "addBase + 1 <= other".
-                            if ((aIsUnsigned != isUnsigned) || (aCmp != GT_LT))
-                            {
-                                continue;
-                            }
-
-                            result = Range(Limit(Limit::keConstant, (cmpOper == GT_LE) ? 1 : 0));
-                            break;
-                        }
+                        TryFoldRelopOfAddByOneFromAssertions(comp, funcApp.m_args[0], funcApp.m_args[1], cmpOper,
+                                                             isUnsigned, assertions, &result);
                     }
                 }
                 break;

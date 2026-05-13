@@ -783,6 +783,16 @@ private:
                                               int                              budget,
                                               ValueNumStore::SmallValueNumSet* visited);
 
+    // Try to fold "<cmp>(ADD(base, 1), other)" using an asserted "base < other".
+    // Returns true if a fold succeeded and writes [0..0] / [1..1] into '*pResult'.
+    static bool TryFoldRelopOfAddByOneFromAssertions(Compiler*        comp,
+                                                     ValueNum         op1VN,
+                                                     ValueNum         op2VN,
+                                                     genTreeOps       cmpOper,
+                                                     bool             isUnsigned,
+                                                     ASSERT_VALARG_TP assertions,
+                                                     Range*           pResult);
+
     int GetArrLength(ValueNum vn);
 
     // Check whether the computed range is within 0 and upper bounds. This function
