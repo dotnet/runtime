@@ -104,8 +104,6 @@
                      '$(IsCrossTargetingBuild)' != 'true'"
           DependsOnTargets="_CoreCLRSetWasmBuildNativeDefaults;_CoreCLRWasmBuildAppCore" />
 
-  <Target Name="_WasmNativeForBuild" DependsOnTargets="_GatherWasmFilesToBuild;WasmBuildApp" />
-
   <!-- Publish entry point: triggers nested publish for browser-wasm projects -->
   <Target Name="WasmTriggerPublishApp"
           AfterTargets="$(WasmTriggerPublishAppAfterThisTarget)"
@@ -160,6 +158,7 @@
     <_CoreCLRWasmBuildAppCoreDependsOn>
       _CoreCLRWasmInitialize;
       _CoreCLRSetupEmscripten;
+      _GatherWasmFilesToBuild;
       _CoreCLRPrepareForNativeBuild;
       _CoreCLRGenerateManagedToNative;
       _CoreCLRWriteCompileRsp;
