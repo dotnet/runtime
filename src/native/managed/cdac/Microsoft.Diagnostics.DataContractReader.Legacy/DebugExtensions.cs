@@ -108,7 +108,7 @@ internal static class DebugExtensions
                     Exception? ex = FindMatchingException(cdacHr);
                     if (ex is not null)
                     {
-                        message += $"{Environment.NewLine}cDAC exception:{Environment.NewLine}{ex}";
+                        message += $"{Environment.NewLine}---- cDAC exception ----{Environment.NewLine}{ex}{Environment.NewLine}---- end cDAC exception ----";
                     }
                 }
 #endif
