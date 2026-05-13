@@ -309,7 +309,8 @@ internal sealed class ManagedTypeSource_1 : IManagedTypeSource
         CorElementType.U4 => "uint32",
         CorElementType.I8 => "int64",
         CorElementType.U8 => "uint64",
-        CorElementType.I or CorElementType.U => "nuint",
+        CorElementType.I => "nint",
+        CorElementType.U => "nuint",
         CorElementType.String
             or CorElementType.Ptr
             or CorElementType.Byref
