@@ -754,7 +754,7 @@ class EEFileLoadException : public EEException
 #if defined(_DEBUG)
   // Redefine GET_EXCEPTION to validate CLRLastThrownObjectException as much as possible.
   #undef GET_EXCEPTION
-  #define GET_EXCEPTION() (__pException == NULL ? __defaultException.Validate() : __pException.GetValue())
+  #define GET_EXCEPTION() (__pException == NULL ? __defaultException.Validate() : static_cast<Exception*>(__pException))
 #endif // _DEBUG
 
 LONG CLRNoCatchHandler(EXCEPTION_POINTERS* pExceptionInfo, PVOID pv);
@@ -811,8 +811,8 @@ LONG CLRNoCatchHandler(EXCEPTION_POINTERS* pExceptionInfo, PVOID pv);
             /* a findstr /n will allow you to locate it in a pinch */                   \
             STRESS_LOG1(LF_EH, LL_INFO100,                                              \
                 "EX_RETHROW " INDEBUG(__FILE__) " line %d\n", __LINE__);                \
-            __pException.SuppressRelease();                                             \
-            if ((!__state.DidCatchCxx()) && (GetThreadNULLOk() != NULL))                      \
+            __pException.Detach();                                                      \
+            if ((!__state.DidCatchCxx()) && (GetThreadNULLOk() != NULL))                \
             {                                                                           \
                 if (GetThread()->PreemptiveGCDisabled())                                \
                 {                                                                       \

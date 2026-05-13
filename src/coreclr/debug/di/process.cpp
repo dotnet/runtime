@@ -665,7 +665,7 @@ CordbProcess::CreateDacDbiInterface()
     // same directory as DBI
     if (m_hDacModule == NULL)
     {
-        m_hDacModule.Assign(ShimProcess::GetDacModule(m_cordb->GetDacModulePath()));
+        m_hDacModule = ShimProcess::GetDacModule(m_cordb->GetDacModulePath());
     }
 
     //
@@ -1541,7 +1541,7 @@ void CordbProcess::FreeDac()
     if (m_hDacModule != NULL)
     {
         LOG((LF_CORDB, LL_INFO1000, "Unloading DAC\n"));
-        m_hDacModule.Clear();
+        m_hDacModule.Free();
     }
 }
 
