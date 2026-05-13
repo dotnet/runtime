@@ -474,7 +474,8 @@ namespace System.Runtime.CompilerServices
                     callstackSpanIndex += Serializer.WriteCompressedInt64(callstackSpan.Slice(callstackSpanIndex, Serializer.MaxCompressedInt64Size), (long)(currentNativeIP - previousNativeIP));
                 }
 
-                callstackSpanIndex += Serializer.WriteCompressedInt32(callstackSpan.Slice(callstackSpanIndex, Serializer.MaxCompressedInt32Size), state.Continuation.State);
+                // Handrolled continuations (like ValueTaskContinuation) are indicated with a null DiagnosticIP. For these we always write 0 as the state since the state number is not meaningful.
+                callstackSpanIndex += Serializer.WriteCompressedInt32(callstackSpan.Slice(callstackSpanIndex, Serializer.MaxCompressedInt32Size), currentNativeIP == 0 ? 0 : state.Continuation.State);
                 state.Count++;
 
                 state.Continuation = state.Continuation.Next;
@@ -488,7 +489,7 @@ namespace System.Runtime.CompilerServices
                     }
 
                     callstackSpanIndex += Serializer.WriteCompressedInt64(callstackSpan.Slice(callstackSpanIndex, Serializer.MaxCompressedInt64Size), (long)(currentNativeIP - previousNativeIP));
-                    callstackSpanIndex += Serializer.WriteCompressedInt32(callstackSpan.Slice(callstackSpanIndex, Serializer.MaxCompressedInt32Size), state.Continuation.State);
+                    callstackSpanIndex += Serializer.WriteCompressedInt32(callstackSpan.Slice(callstackSpanIndex, Serializer.MaxCompressedInt32Size), currentNativeIP == 0 ? 0 : state.Continuation.State);
 
                     state.Count++;
                     state.Continuation = state.Continuation.Next;
