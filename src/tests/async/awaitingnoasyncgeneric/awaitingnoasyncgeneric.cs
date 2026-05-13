@@ -26,8 +26,9 @@ public class Caller<T>
 
 public static class Helper
 {
-    // No await so the compiler does not emit MethodImplAttributes.Async.
-    // This is the condition that can trigger a scanner/JIT mismatch.
+    // Non-async method returning ValueTask<T>, so the compiler does not emit
+    // MethodImplAttributes.Async. This is the condition that can trigger a
+    // scanner/JIT mismatch.
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static ValueTask<T> GetValueAsync<T>(T value)
     {
