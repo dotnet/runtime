@@ -208,9 +208,9 @@ namespace ILCompiler.DependencyAnalysis
 
         private bool IsWorthConvertingToThrow(MethodDefinition methodDef)
         {
-            const int EmptyBodyLength = 0;
-            const int RetOnlyBodyLength = 1;
-            const int NopRetBodyLength = 2;
+            const int EmptyBodyLength = 0; // No IL body.
+            const int RetOnlyBodyLength = 1; // ret
+            const int NopRetBodyLength = 2; // nop; ret
 
             int rva = methodDef.RelativeVirtualAddress;
             if (rva == 0)
@@ -224,8 +224,7 @@ namespace ILCompiler.DependencyAnalysis
                 case RetOnlyBodyLength:
                     return ilReader.ReadByte() != (byte)ILOpcode.ret;
                 case NopRetBodyLength:
-                    bool hasNopRetPattern = ilReader.ReadByte() == (byte)ILOpcode.nop && ilReader.ReadByte() == (byte)ILOpcode.ret;
-                    return !hasNopRetPattern;
+                    return ilReader.ReadByte() != (byte)ILOpcode.nop || ilReader.ReadByte() != (byte)ILOpcode.ret;
                 default:
                     return true;
             }
