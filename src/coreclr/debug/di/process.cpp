@@ -5580,7 +5580,7 @@ void CordbProcess::RawDispatchEvent(
         {
             STRESS_LOG4(LF_CORDB, LL_INFO100,
                 "RCET::DRCE: Exception2 0x%p 0x%X 0x%X 0x%X\n",
-                 pEvent->ExceptionCallback2.framePointer.GetSPValue(),
+                 CORDB_ADDRESS_TO_PTR(pEvent->ExceptionCallback2.framePointer),
                  pEvent->ExceptionCallback2.nOffset,
                  pEvent->ExceptionCallback2.eventType,
                  pEvent->ExceptionCallback2.dwFlags
@@ -5602,7 +5602,7 @@ void CordbProcess::RawDispatchEvent(
             //
             RSSmartPtr<CordbFrame> pFrame;
 
-            FramePointer fp = pEvent->ExceptionCallback2.framePointer;
+            FramePointer fp = FramePointer::MakeFramePointer(CORDB_ADDRESS_TO_PTR(pEvent->ExceptionCallback2.framePointer));
             if (fp != LEAF_MOST_FRAME)
             {
                 // The interface forces us to pass a FramePointer via an ICorDebugFrame.

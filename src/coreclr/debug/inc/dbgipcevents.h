@@ -1187,7 +1187,7 @@ public:
     {
         LIMITED_METHOD_DAC_CONTRACT;
         FramePointer fp;
-        fp.m_sp = PTR_TO_CORDB_ADDRESS(sp);
+        fp.m_sp = sp;
         return fp;
     }
 
@@ -1222,13 +1222,16 @@ private:
     FramePointer &operator=(BYTE* sp);
     FramePointer &operator=(const BYTE* sp);
 
-    Portable<CORDB_ADDRESS> m_sp;
+    LPVOID m_sp;
 };
 
 // For non-IA64 platforms, we use stack pointers as frame pointers.
 // (Stack grows towards smaller address.)
 #define LEAF_MOST_FRAME FramePointer::MakeFramePointer((LPVOID)NULL)
 #define ROOT_MOST_FRAME FramePointer::MakeFramePointer((LPVOID)-1)
+
+static_assert(sizeof(FramePointer) == sizeof(void*));
+
 
 inline bool IsCloserToLeaf(FramePointer fp1, FramePointer fp2)
 {
@@ -1963,7 +1966,7 @@ struct MSLAYOUT DebuggerIPCEvent
         {
             LSPTR_STEPPER stepperToken;
             Portable<VMPTR_Thread> vmThreadToken;
-            FramePointer frameToken;
+            Portable<CORDB_ADDRESS> frameToken;
             Portable<bool> stepIn;
             Portable<bool> rangeIL;
             Portable<bool> IsJMCStop;
@@ -2221,7 +2224,7 @@ struct MSLAYOUT DebuggerIPCEvent
 
         struct MSLAYOUT
         {
-            FramePointer framePointer;
+            Portable<CORDB_ADDRESS> framePointer;
             Portable<UINT> nOffset;
             Portable<CorDebugExceptionCallbackType> eventType;
             Portable<DWORD> dwFlags;
@@ -2237,7 +2240,7 @@ struct MSLAYOUT DebuggerIPCEvent
         struct MSLAYOUT
         {
             Portable<VMPTR_Thread> vmThreadToken;
-            FramePointer frameToken;
+            Portable<CORDB_ADDRESS> frameToken;
         } InterceptException;
 
         struct MSLAYOUT
