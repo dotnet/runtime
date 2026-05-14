@@ -4948,7 +4948,7 @@ unsigned* Compiler::lvaComputeOptimalFrameLayoutOrder(int stkOffs, const UINT* a
         // Each ref beyond disp8 costs 3 extra bytes (disp32 vs disp8 encoding).
         // If even moving ALL those refs into disp8 range wouldn't save much, skip.
         unsigned maxSavings = refsInDisp32 * 3;
-        if (maxSavings <= 12)
+        if (maxSavings <= (unsigned)JitConfig.JitFrameLayoutMaxSavingsThreshold())
         {
             JITDUMP("Frame layout optimization: skipping — max possible savings is %u bytes "
                     "(refsInDisp32=%u)\n",
