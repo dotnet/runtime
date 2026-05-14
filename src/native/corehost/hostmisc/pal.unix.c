@@ -1,0 +1,65 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+// C implementations of the pal_* APIs needed by trace.c on non-Windows.
+
+#include "pal.h"
+
+#include <stdlib.h>
+#include <string.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+
+#include <minipal/getexepath.h>
+
+bool pal_get_own_executable_path(pal_char_t* recv, size_t recv_len)
+{
+    if (recv_len == 0)
+        return false;
+
+    char* path = minipal_getexepath();
+    if (path == NULL)
+        return false;
+
+    size_t len = strlen(path);
+    if (len >= recv_len)
+    {
+        free(path);
+        return false;
+    }
+
+    memcpy(recv, path, len + 1);
+    free(path);
+    return true;
+}
+
+bool pal_directory_exists(const pal_char_t* path)
+{
+    struct stat sb;
+    if (stat(path, &sb) != 0)
+        return false;
+
+    return S_ISDIR(sb.st_mode);
+}
+
+bool pal_getenv(const pal_char_t* name, pal_char_t* recv, size_t recv_len)
+{
+    if (recv_len > 0)
+        recv[0] = '\0';
+
+    const char* result = getenv(name);
+    if (result == NULL || result[0] == '\0')
+        return false;
+
+    size_t len = strlen(result);
+    if (len >= recv_len)
+        return false;
+
+    memcpy(recv, result, len + 1);
+    return true;
+}
+
+int pal_xtoi(const pal_char_t* input)
+{
+    return atoi(input);
+}
