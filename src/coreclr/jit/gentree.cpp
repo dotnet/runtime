@@ -15059,10 +15059,11 @@ GenTree* Compiler::gtFoldExprBinary(GenTreeOp* tree)
     GenTree* op1 = tree->gtGetOp1();
     GenTree* op2 = tree->gtGetOp2();
 
-    if ((op1 == nullptr) || (op2 == nullptr) || !tree->OperIsAtomicOp())
+    if ((op1 == nullptr) || (op2 == nullptr) || tree->OperIsAtomicOp())
     {
         // Filter out non-foldable trees
-        // The atomic operations are exempted here because they are never computable statically; one of their arguments is an address.
+        // The atomic operations are exempted here because they are never computable statically; one of their arguments
+        // is an address.
         return tree;
     }
 
@@ -15075,7 +15076,7 @@ GenTree* Compiler::gtFoldExprBinary(GenTreeOp* tree)
         }
         else if (opts.OptimizationEnabled())
         {
-            // Too heavy for tier0
+            // Too heavy for tier0, so only do when opts are enabled
             return gtFoldExprSpecial(tree);
         }
     }
@@ -15083,7 +15084,7 @@ GenTree* Compiler::gtFoldExprBinary(GenTreeOp* tree)
     {
         if (opts.OptimizationEnabled())
         {
-            // Too heavy for tier0
+            // Too heavy for tier0, so only do when opts are enabled
             return gtFoldExprSpecial(tree);
         }
     }
