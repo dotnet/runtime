@@ -8951,7 +8951,7 @@ void Debugger::DetachThread(Thread *pRuntimeThread)
         // above while another thread was sending an event and while we
         // were blocked the debugger suspended us and so we wouldn't be
         // resumed after the suspension about to happen below.
-        pRuntimeThread->ResetThreadStateNC(Thread::TSNC_DebuggerUserSuspend);
+        pRuntimeThread->ResetDebuggerControlledThreadState(Thread::DCTS_UserSuspend);
     }
     else
     {

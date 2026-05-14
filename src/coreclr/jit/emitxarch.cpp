@@ -18451,6 +18451,13 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             {
                 dst = emitOutputData16(dst);
                 sz  = emitSizeOfInsDsc_NONE(id);
+
+                // This may mark the beginning of a TLS access linker
+                // relaxation sequence. The linker can replace these general
+                // sequences by other instructions that trash rax. We need to
+                // eagerly invalidate GC info in rax before the linker's
+                // instructions would trash it.
+                emitGCregDeadUpd(REG_RAX, dst);
                 break;
             }
 

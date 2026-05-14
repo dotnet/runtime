@@ -84,6 +84,13 @@ This contract depends on the following descriptors:
 | `HijackArgs` (amd64) | `CalleeSavedRegisters` | CalleeSavedRegisters data structure |
 | `HijackArgs` (amd64 Windows) | `Rsp` | Saved stack pointer |
 | `HijackArgs` (arm/arm64/x86) | For each register `r` saved in HijackArgs, `r` | Register names associated with stored register values |
+| `InterpreterFrame` | `TopInterpMethodContextFrame` | Pointer to the InterpreterFrame's top `InterpMethodContextFrame` |
+| `InterpreterFrame` | `IsFaulting` | Boolean indicating whether the topmost interpreted frame has thrown an exception. When set, the context for the top interpreted frame must include `CONTEXT_EXCEPTION_ACTIVE` so exception unwinders treat the IP as a faulting instruction rather than a return-from-call |
+| `InterpMethodContextFrame` | `StartIp` | Pointer to the `InterpByteCodeStart` for resolving the MethodDesc |
+| `InterpMethodContextFrame` | `ParentPtr` | Pointer to the parent `InterpMethodContextFrame` in the call chain (null for outermost frame) |
+| `InterpMethodContextFrame` | `Ip` | The actual instruction pointer within the method (null if frame is inactive/reusable) |
+| `InterpMethodContextFrame` | `NextPtr` | Pointer to the next `InterpMethodContextFrame` toward the top of the stack |
+| `InterpMethodContextFrame` | `Stack` | Pointer to the stack base for this interpreted method, used as the frame pointer when interpreter GC info uses a stack-base register |
 | `ArgumentRegisters` (arm) | For each register `r` saved in ArgumentRegisters, `r` | Register names associated with stored register values |
 | `CalleeSavedRegisters` | For each callee saved register `r`, `r` | Register names associated with stored register values |
 | `TailCallFrame` (x86 Windows) | `CalleeSavedRegisters` | CalleeSavedRegisters data structure |
@@ -132,6 +139,33 @@ In reality, the actual algorithm is a little more complex fow two reasons. It re
     2. If `frameStack` is not empty, check for skipped Frames. Peek `frameStack` to find a Frame `frame`. Compare the address of `frame` (allocated on the stack) with the caller of the current context's stack pointer (found by unwinding current context one iteration).
     If the address of the `frame` is less than the caller's stack pointer, **return the current context**, pop the top Frame from `frameStack`, and **go to step 3**.
     3. Unwind `currContext` using the Windows style unwinder. **Return the current context**.
+
+#### Interpreter Frame Expansion
+
+When the stack walker encounters an `InterpreterFrame`, it expands it into multiple logical frames by walking the `InterpMethodContextFrame` chain. The runtime maintains a linked list of `InterpMethodContextFrame` nodes representing each interpreted method currently on the call stack within a single `InterpreterFrame`.
+
+The `TopInterpMethodContextFrame` field is an approximate hint that may point to a stale frame during dump or native debugging. The actual top frame must be resolved using the `Ip` and `NextPtr`/`ParentPtr` fields, replicating `InterpreterFrame::GetTopInterpMethodContextFrame()`:
+
+- If the hinted frame's `Ip` is non-null (active): seek upward via `NextPtr` while the next frame's `Ip` is also non-null.
+- If the hinted frame's `Ip` is null (inactive/reusable): seek downward via `ParentPtr` until finding a frame with non-null `Ip`.
+
+Only frames with non-null `Ip` (active frames) are yielded during the walk. Each node's `ParentPtr` points to its caller.
+
+For each active `InterpMethodContextFrame` in the chain, the stack walker yields a separate frame. The `MethodDesc` for each frame is resolved by following:
+`InterpMethodContextFrame.StartIp` -> `InterpByteCodeStart.Method` -> `InterpMethod.MethodDesc`
+
+```
+InterpreterFrame
+  └-> TopInterpMethodContextFrame (hint, may be stale)
+        └-> ResolveTop() -> InterpMethodContextFrame (method C, Ip != null)
+                              └-> ParentPtr -> InterpMethodContextFrame (method B, Ip != null)
+                                                 └-> ParentPtr -> InterpMethodContextFrame (method A, Ip != null)
+                                                                    └-> ParentPtr -> null
+```
+
+This produces three frames in order: C, B, A (innermost to outermost).
+
+When the stack walk starts with an explicit context in interpreted code (e.g., from a debugger breakpoint), the interpreted frames are already yielded from the initial context as frameless frames. When the walker subsequently encounters the corresponding `InterpreterFrame`, it skips expanding it to prevent the same frames from being walked twice.
 
 
 #### Simple Example
