@@ -132,7 +132,8 @@ namespace Microsoft.Win32.SafeHandles
 
             if (!waitState.WaitForExit(milliseconds))
             {
-                waitState._canceled = SignalCore(PosixSignal.SIGKILL);
+                waitState._canceled = true;
+                SignalCore(PosixSignal.SIGKILL);
                 waitState.WaitForExit(Timeout.Infinite);
             }
 
@@ -325,7 +326,9 @@ namespace Microsoft.Win32.SafeHandles
                     resolvedFilename, argv, env, cwd,
                     setCredentials, userId, groupId, groups,
                     out childPid, stdinHandle, stdoutHandle, stderrHandle,
-                    startInfo.StartDetached, inheritedHandles);
+#pragma warning disable CA1416 // KillOnParentExit getter works on all platforms; the native shim is a no-op where unsupported
+                    startInfo.StartDetached, startInfo.KillOnParentExit, inheritedHandles);
+#pragma warning restore CA1416
 
                 if (errno == 0)
                 {

@@ -750,6 +750,17 @@ void Lowering::ContainCheckDivOrMod(GenTreeOp* node)
 }
 
 //------------------------------------------------------------------------
+// ContainCheckNonLocalJmp:
+//   No-op for LA64.
+//
+// Arguments:
+//    node - The GT_NONLOCAL_JMP node.
+//
+void Lowering::ContainCheckNonLocalJmp(GenTreeUnOp* node)
+{
+}
+
+//------------------------------------------------------------------------
 // ContainCheckShiftRotate: Determine whether a mul op's operands should be contained.
 //
 // Arguments:

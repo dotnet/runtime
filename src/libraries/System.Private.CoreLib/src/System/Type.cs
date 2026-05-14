@@ -602,6 +602,18 @@ namespace System
         public virtual bool IsInstanceOfType([NotNullWhen(true)] object? o) => o != null && IsAssignableFrom(o.GetType());
         public virtual bool IsEquivalentTo([NotNullWhen(true)] Type? other) => this == other;
 
+        /// <summary>
+        /// Returns the underlying type argument of a <see cref="Nullable{T}"/> type.
+        /// </summary>
+        /// <returns>
+        /// The type argument of the <see cref="Nullable{T}"/> type if the current type represents
+        /// the <see cref="Nullable{T}"/> generic type definition or a constructed <see cref="Nullable{T}"/>;
+        /// otherwise, <see langword="null"/>. When the current type is the generic type definition
+        /// (for example, <c>typeof(Nullable&lt;&gt;)</c>), the returned type is the generic type
+        /// parameter <c>T</c>.
+        /// </returns>
+        public virtual Type? GetNullableUnderlyingType() => throw new NotSupportedException(SR.NotSupported_SubclassOverride);
+
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2085:UnrecognizedReflectionPattern",
             Justification = "The single instance field on enum types is never trimmed")]
         [Intrinsic]

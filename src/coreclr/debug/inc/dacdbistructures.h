@@ -160,22 +160,10 @@ struct MSLAYOUT TargetBuffer
     ULONG         cbSize;
 };
 
-//===================================================================================
 // Module properties, retrieved by DAC.
-// Describes a VMPTR_Assembly representing a module.
-//===================================================================================
-struct MSLAYOUT AssemblyInfo
-{
-    // The appdomain that the Assembly is associated with.
-    VMPTR_AppDomain vmAppDomain;
-
-    // The assembly this module belongs to. All modules live in an assembly.
-    VMPTR_Assembly vmAssembly;
-};
-
 struct MSLAYOUT ModuleInfo
 {
-    // The non-domain specific assembly which this module resides in.
+    // The assembly which this module resides in.
     VMPTR_Assembly vmAssembly;
 
     // The PE Base address and size of the module. These may be 0 if there is no image

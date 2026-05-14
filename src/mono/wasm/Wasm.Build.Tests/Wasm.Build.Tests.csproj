@@ -114,6 +114,11 @@
       <_SdkPathForLocalTesting Condition="'$(TestUsingWorkloads)' != 'true'">$([System.IO.Path]::GetDirectoryName($(SdkWithNoWorkloadForTestingPath)))</_SdkPathForLocalTesting>
 
       <_SdkPathForLocalTesting>$([System.IO.Path]::GetFilename($(_SdkPathForLocalTesting)))</_SdkPathForLocalTesting>
+
+      <!-- CoreCLR WBT local runs need EMSDK_PATH for BrowserWasmApp.CoreCLR.targets.
+           Fall back to the in-repo provisioned emsdk (same default as WasmApp.InTree.props). -->
+      <_LocalEmsdkPathForTests Condition="'$(RuntimeFlavor)' == 'CoreCLR' and '$(EMSDK_PATH)' != ''">$(EMSDK_PATH)</_LocalEmsdkPathForTests>
+      <_LocalEmsdkPathForTests Condition="'$(RuntimeFlavor)' == 'CoreCLR' and '$(_LocalEmsdkPathForTests)' == ''">$([MSBuild]::NormalizeDirectory('$(BrowserProjectRoot)', 'emsdk'))</_LocalEmsdkPathForTests>
     </PropertyGroup>
     <ItemGroup Condition="'$(ContinuousIntegrationBuild)' != 'true'">
       <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export TEST_USING_WORKLOADS=$(TestUsingWorkloads)" />
@@ -145,6 +150,19 @@
 
       <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export BUILT_NUGETS_PATH=$(LibrariesShippingPackagesDir)/" />
       <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set BUILT_NUGETS_PATH=$(LibrariesShippingPackagesDir)" />
+
+      <!-- CoreCLR WBT: local (non-Helix) runs point env vars at repo/artifact paths so Local.Directory.Build.{props,targets} can import BrowserWasmApp.CoreCLR.targets. -->
+      <RunScriptCommands Condition="'$(OS)' != 'Windows_NT' and '$(RuntimeFlavor)' == 'CoreCLR'" Include="export REPOSITORY_ENGINEERING_DIR=$(RepositoryEngineeringDir)" />
+      <RunScriptCommands Condition="'$(OS)' == 'Windows_NT' and '$(RuntimeFlavor)' == 'CoreCLR'" Include="set REPOSITORY_ENGINEERING_DIR=$(RepositoryEngineeringDir)" />
+
+      <RunScriptCommands Condition="'$(OS)' != 'Windows_NT' and '$(RuntimeFlavor)' == 'CoreCLR'" Include="export BROWSER_BUILD_TARGETS_DIR=$(BrowserProjectRoot)build/" />
+      <RunScriptCommands Condition="'$(OS)' == 'Windows_NT' and '$(RuntimeFlavor)' == 'CoreCLR'" Include="set BROWSER_BUILD_TARGETS_DIR=$(BrowserProjectRoot)build\" />
+
+      <RunScriptCommands Condition="'$(OS)' != 'Windows_NT' and '$(RuntimeFlavor)' == 'CoreCLR'" Include="export WASM_APP_BUILDER_TASKS_ASSEMBLY_PATH=$(WasmAppBuilderDir)WasmAppBuilder.dll" />
+      <RunScriptCommands Condition="'$(OS)' == 'Windows_NT' and '$(RuntimeFlavor)' == 'CoreCLR'" Include="set WASM_APP_BUILDER_TASKS_ASSEMBLY_PATH=$(WasmAppBuilderDir)WasmAppBuilder.dll" />
+
+      <RunScriptCommands Condition="'$(OS)' != 'Windows_NT' and '$(RuntimeFlavor)' == 'CoreCLR' and '$(_LocalEmsdkPathForTests)' != ''" Include="export EMSDK_PATH=$(_LocalEmsdkPathForTests)" />
+      <RunScriptCommands Condition="'$(OS)' == 'Windows_NT' and '$(RuntimeFlavor)' == 'CoreCLR' and '$(_LocalEmsdkPathForTests)' != ''" Include="set EMSDK_PATH=$(_LocalEmsdkPathForTests)" />
     </ItemGroup>
 
     <PropertyGroup>

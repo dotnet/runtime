@@ -692,6 +692,13 @@ int LinearScan::BuildNode(GenTree* tree)
             srcCount = BuildSimple(tree);
             break;
 
+        case GT_PATCHPOINT:
+        case GT_PATCHPOINT_FORCED:
+            // NYI on ARM32
+            srcCount = 0;
+            NYI_ARM("GT_PATCHPOINT");
+            break;
+
         case GT_JTRUE:
             BuildOperandUses(tree->gtGetOp1(), RBM_NONE);
             srcCount = 1;

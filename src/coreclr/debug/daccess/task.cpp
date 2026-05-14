@@ -4562,7 +4562,7 @@ ClrDataExceptionState::GetPrevious(
                                       m_thread,
                                       CLRDATA_EXCEPTION_DEFAULT,
                                       m_prevExInfo,
-                                      m_prevExInfo->m_hThrowable,
+                                      m_prevExInfo->GetThrowableAsPseudoHandle(),
                                       m_prevExInfo->m_pPrevNestedInfo);
             status = *exState ? S_OK : E_OUTOFMEMORY;
         }
@@ -4926,7 +4926,7 @@ ClrDataExceptionState::NewFromThread(ClrDataAccess* dac,
                               thread,
                               CLRDATA_EXCEPTION_DEFAULT,
                               exState,
-                              exState->m_hThrowable,
+                              exState->GetThrowableAsPseudoHandle(),
                               exState->m_pPrevNestedInfo);
     if (!exIf)
     {

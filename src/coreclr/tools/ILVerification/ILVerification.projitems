@@ -36,9 +36,6 @@
     <Compile Include="$(ToolsCommonPath)TypeSystem\Common\CastingHelper.cs">
       <Link>TypeSystem\Common\CastingHelper.cs</Link>
     </Compile>
-    <Compile Include="$(ToolsCommonPath)TypeSystem\Common\CastingHelper.NonCanon.cs">
-      <Link>TypeSystem\Common\CastingHelper.NonCanon.cs</Link>
-    </Compile>
     <Compile Include="$(ToolsCommonPath)TypeSystem\Common\FunctionPointerType.cs">
       <Link>TypeSystem\Common\FunctionPointerType.cs</Link>
     </Compile>
@@ -374,9 +371,6 @@
     </Compile>
     <Compile Include="$(ToolsCommonPath)TypeSystem\Common\TypeSystemConstraintsHelpers.cs">
       <Link>TypeSystem\Common\TypeSystemConstraintsHelpers.cs</Link>
-    </Compile>
-    <Compile Include="$(ToolsCommonPath)TypeSystem\Common\TypeSystemConstraintsHelpers.NonCanon.cs">
-        <Link>TypeSystem\Common\TypeSystemConstraintsHelpers.NonCanon.cs</Link>
     </Compile>
   </ItemGroup>
 </Project>

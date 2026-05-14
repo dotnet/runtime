@@ -152,17 +152,17 @@ public readonly struct GCMemoryRegionData
 Data descriptors used:
 | Data Descriptor Name | Field | Source | Meaning |
 | --- | --- | --- | --- |
-| `GCHeap` | MarkArray | GC | Pointer to the heap's MarkArray (in sever builds) |
-| `GCHeap` | NextSweepObj | GC | Pointer to the heap's NextSweepObj (in sever builds) |
-| `GCHeap` | BackgroundMinSavedAddr | GC | Heap's background saved lowest address (in sever builds) |
-| `GCHeap` | BackgroundMaxSavedAddr | GC | Heap's background saved highest address (in sever builds) |
+| `GCHeap` | MarkArray | GC | Pointer to the heap's MarkArray (only in server builds with background GC) |
+| `GCHeap` | NextSweepObj | GC | Pointer to the heap's NextSweepObj (only in server builds with background GC) |
+| `GCHeap` | BackgroundMinSavedAddr | GC | Heap's background saved lowest address (only in server builds with background GC) |
+| `GCHeap` | BackgroundMaxSavedAddr | GC | Heap's background saved highest address (only in server builds with background GC) |
 | `GCHeap` | AllocAllocated | GC | Heap's highest address allocated by Alloc (in sever builds) |
 | `GCHeap` | EphemeralHeapSegment | GC | Pointer to the heap's ephemeral heap segment (in sever builds) |
 | `GCHeap` | CardTable | GC | Pointer to the heap's bookkeeping GC data structure (in sever builds) |
 | `GCHeap` | FinalizeQueue | GC | Pointer to the heap's CFinalize data structure (in sever builds) |
 | `GCHeap` | GenerationTable | GC | Pointer to the start of an array containing `"TotalGenerationCount"` `Generation` structures (in sever builds) |
-| `GCHeap` | SavedSweepEphemeralSeg | GC | Pointer to the heap's saved sweep ephemeral segment (only in server builds with segment) |
-| `GCHeap` | SavedSweepEphemeralStart | GC | Start of the heap's sweep ephemeral segment (only in server builds with segment) |
+| `GCHeap` | SavedSweepEphemeralSeg | GC | Pointer to the heap's saved sweep ephemeral segment (only in server builds with segment and background GC) |
+| `GCHeap` | SavedSweepEphemeralStart | GC | Start of the heap's sweep ephemeral segment (only in server builds with segment and background GC) |
 | `GCHeap` | OomData | GC | OOM related data in a struct (in sever builds) |
 | `GCHeap` | InternalRootArray | GC | Data array stored per heap (in sever builds) |
 | `GCHeap` | InternalRootArrayIndex | GC | Index into InternalRootArray (in sever builds) |
@@ -229,17 +229,17 @@ Global variables used:
 | `CompactReasonsLength` | uint | GC | The number of elements in the `CompactReasons` array |
 | `ExpandMechanismsLength` | uint | GC | The number of elements in the `ExpandMechanisms` array |
 | `InterestingMechanismBitsLength` | uint | GC | The number of elements in the `InterestingMechanismBits` array |
-| `GCHeapMarkArray` | TargetPointer | GC | Pointer to the static heap's MarkArray (in workstation builds) |
-| `GCHeapNextSweepObj` | TargetPointer | GC | Pointer to the static heap's NextSweepObj (in workstation builds) |
-| `GCHeapBackgroundMinSavedAddr` | TargetPointer | GC | Background saved lowest address (in workstation builds) |
-| `GCHeapBackgroundMaxSavedAddr` | TargetPointer | GC | Background saved highest address (in workstation builds) |
+| `GCHeapMarkArray` | TargetPointer | GC | Pointer to the static heap's MarkArray (in workstation builds with background GC) |
+| `GCHeapNextSweepObj` | TargetPointer | GC | Pointer to the static heap's NextSweepObj (in workstation builds with background GC) |
+| `GCHeapBackgroundMinSavedAddr` | TargetPointer | GC | Background saved lowest address (in workstation builds with background GC) |
+| `GCHeapBackgroundMaxSavedAddr` | TargetPointer | GC | Background saved highest address (in workstation builds with background GC) |
 | `GCHeapAllocAllocated` | TargetPointer | GC | Highest address allocated by Alloc (in workstation builds) |
 | `GCHeapEphemeralHeapSegment` | TargetPointer | GC | Pointer to an ephemeral heap segment (in workstation builds) |
 | `GCHeapCardTable` | TargetPointer | GC | Pointer to the static heap's bookkeeping GC data structure (in workstation builds) |
 | `GCHeapFinalizeQueue` | TargetPointer | GC | Pointer to the static heap's CFinalize data structure (in workstation builds) |
 | `GCHeapGenerationTable` | TargetPointer | GC | Pointer to the start of an array containing `"TotalGenerationCount"` `Generation` structures (in workstation builds) |
-| `GCHeapSavedSweepEphemeralSeg` | TargetPointer | GC | Pointer to the static heap's saved sweep ephemeral segment (in workstation builds with segment) |
-| `GCHeapSavedSweepEphemeralStart` | TargetPointer | GC | Start of the static heap's sweep ephemeral segment (in workstation builds with segment) |
+| `GCHeapSavedSweepEphemeralSeg` | TargetPointer | GC | Pointer to the static heap's saved sweep ephemeral segment (in workstation builds with segment and background GC) |
+| `GCHeapSavedSweepEphemeralStart` | TargetPointer | GC | Start of the static heap's sweep ephemeral segment (in workstation builds with segment and background GC) |
 | `GCHeapOomData` | TargetPointer | GC | OOM related data in a struct (in workstation builds) |
 | `GCHeapInternalRootArray` | TargetPointer | GC | Data array stored per heap (in workstation builds) |
 | `GCHeapInternalRootArrayIndex` | TargetPointer | GC | Index into InternalRootArray (in workstation builds) |
@@ -454,11 +454,39 @@ GCHeapData IGC.GetHeapData()
 
     GCHeapData data;
 
-    // Read fields directly from globals
-    data.MarkArray = target.ReadPointer(target.ReadGlobalPointer("GCHeapMarkArray"));
-    data.NextSweepObj = target.ReadPointer(target.ReadGlobalPointer("GCHeapNextSweepObj"));
-    data.BackgroundMinSavedAddr = target.ReadPointer(target.ReadGlobalPointer("GCHeapBackgroundMinSavedAddr"));
-    data.BackgroundMaxSavedAddr = target.ReadPointer(target.ReadGlobalPointer("GCHeapBackgroundMaxSavedAddr"));
+    // Read background GC globals - these are absent when background GC is disabled (e.g., on WebAssembly).
+    if (target.TryReadGlobalPointer("GCHeapMarkArray", out TargetPointer? markArrayPtr))
+    {
+        data.MarkArray = target.ReadPointer(markArrayPtr.Value);
+    }
+    else
+    {
+        data.MarkArray = 0;
+    }
+    if (target.TryReadGlobalPointer("GCHeapNextSweepObj", out TargetPointer? nextSweepObjPtr))
+    {
+        data.NextSweepObj = target.ReadPointer(nextSweepObjPtr.Value);
+    }
+    else
+    {
+        data.NextSweepObj = 0;
+    }
+    if (target.TryReadGlobalPointer("GCHeapBackgroundMinSavedAddr", out TargetPointer? bgMinPtr))
+    {
+        data.BackgroundMinSavedAddr = target.ReadPointer(bgMinPtr.Value);
+    }
+    else
+    {
+        data.BackgroundMinSavedAddr = 0;
+    }
+    if (target.TryReadGlobalPointer("GCHeapBackgroundMaxSavedAddr", out TargetPointer? bgMaxPtr))
+    {
+        data.BackgroundMaxSavedAddr = target.ReadPointer(bgMaxPtr.Value);
+    }
+    else
+    {
+        data.BackgroundMaxSavedAddr = 0;
+    }
     data.AllocAllocated = target.ReadPointer(target.ReadGlobalPointer("GCHeapAllocAllocated"));
     data.EphemeralHeapSegment = target.ReadPointer(target.ReadGlobalPointer("GCHeapEphemeralHeapSegment"));
     data.CardTable = target.ReadPointer(target.ReadGlobalPointer("GCHeapCardTable"));
@@ -521,11 +549,41 @@ GCHeapData IGC.GetHeapData(TargetPointer heapAddress)
 
     GCHeapData data;
 
-    // Read fields directly from heap
-    data.MarkArray = target.ReadPointer(heapAddress + /* GCHeap::MarkArray offset */);
-    data.NextSweepObj = target.ReadPointer(heapAddress + /* GCHeap::NextSweepObj offset */);
-    data.BackgroundMinSavedAddr = target.ReadPointer(heapAddress + /* GCHeap::BackgroundMinSavedAddr offset */);
-    data.BackgroundMaxSavedAddr = target.ReadPointer(heapAddress + /* GCHeap::BackgroundMaxSavedAddr offset */);
+    // Read background GC heap fields - these fields are absent when background GC is disabled (e.g., on WebAssembly).
+    // Check whether the field exists in the type layout before reading; default to 0 if not present.
+    Target.TypeInfo gcHeapType = target.GetTypeInfo(DataType.GCHeap);
+    if (gcHeapType.Fields.ContainsKey("MarkArray"))
+    {
+        data.MarkArray = target.ReadPointer(heapAddress + /* GCHeap::MarkArray offset */);
+    }
+    else
+    {
+        data.MarkArray = 0;
+    }
+    if (gcHeapType.Fields.ContainsKey("NextSweepObj"))
+    {
+        data.NextSweepObj = target.ReadPointer(heapAddress + /* GCHeap::NextSweepObj offset */);
+    }
+    else
+    {
+        data.NextSweepObj = 0;
+    }
+    if (gcHeapType.Fields.ContainsKey("BackgroundMinSavedAddr"))
+    {
+        data.BackgroundMinSavedAddr = target.ReadPointer(heapAddress + /* GCHeap::BackgroundMinSavedAddr offset */);
+    }
+    else
+    {
+        data.BackgroundMinSavedAddr = 0;
+    }
+    if (gcHeapType.Fields.ContainsKey("BackgroundMaxSavedAddr"))
+    {
+        data.BackgroundMaxSavedAddr = target.ReadPointer(heapAddress + /* GCHeap::BackgroundMaxSavedAddr offset */);
+    }
+    else
+    {
+        data.BackgroundMaxSavedAddr = 0;
+    }
     data.AllocAllocated = target.ReadPointer(heapAddress + /* GCHeap::AllocAllocated offset */);
     data.EphemeralHeapSegment = target.ReadPointer(heapAddress + /* GCHeap::EphemeralHeapSegment offset */);
     data.CardTable = target.ReadPointer(heapAddress + /* GCHeap::CardTable offset */);

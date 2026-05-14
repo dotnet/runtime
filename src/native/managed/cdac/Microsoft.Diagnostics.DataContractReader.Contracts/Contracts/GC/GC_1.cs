@@ -170,10 +170,10 @@ internal readonly struct GC_1 : IGC
 
         return new GCHeapData()
         {
-            MarkArray = heap.MarkArray,
-            NextSweepObject = heap.NextSweepObj,
-            BackGroundSavedMinAddress = heap.BackgroundMinSavedAddr,
-            BackGroundSavedMaxAddress = heap.BackgroundMaxSavedAddr,
+            MarkArray = heap.MarkArray ?? TargetPointer.Null,
+            NextSweepObject = heap.NextSweepObj ?? TargetPointer.Null,
+            BackGroundSavedMinAddress = heap.BackgroundMinSavedAddr ?? TargetPointer.Null,
+            BackGroundSavedMaxAddress = heap.BackgroundMaxSavedAddr ?? TargetPointer.Null,
             AllocAllocated = heap.AllocAllocated,
             EphemeralHeapSegment = heap.EphemeralHeapSegment,
             CardTable = heap.CardTable,

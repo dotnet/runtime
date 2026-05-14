@@ -4176,9 +4176,9 @@ void DebuggerController::DispatchMethodEnter(void * pIP, FramePointer fp)
     {
         if (p->m_fEnableMethodEnter)
         {
+            ++count;
             if ((p->GetThread() == NULL) || (p->GetThread() == pThread))
             {
-                ++count;
                 p->TriggerMethodEnter(pThread, dji, (const BYTE *) pIP, fp);
             }
         }
@@ -9709,7 +9709,8 @@ bool DebuggerContinuableExceptionBreakpoint::SendEvent(Thread *thread, bool fIpC
             {
                 LOG((LF_CORDB, LL_INFO10000, "D::DDBP: HIT DATA BREAKPOINT INSIDE WRITE BARRIER...\n"));
                 DebuggerDataBreakpoint *pDataBreakpoint = new (interopsafe) DebuggerDataBreakpoint(thread);
-                pDataBreakpoint->AddAndActivateNativePatchForAddress((CORDB_ADDRESS_TYPE*)GetIP(&contextToAdjust), FramePointer::MakeFramePointer(GetFP(&contextToAdjust)), true, DPT_DEFAULT_TRACE_TYPE);
+                // Use LEAF_MOST_FRAME to bypass the frame pointer check in MatchPatch.
+                pDataBreakpoint->AddAndActivateNativePatchForAddress((CORDB_ADDRESS_TYPE*)GetIP(&contextToAdjust), LEAF_MOST_FRAME, true, DPT_DEFAULT_TRACE_TYPE);
             }
             else
             {
