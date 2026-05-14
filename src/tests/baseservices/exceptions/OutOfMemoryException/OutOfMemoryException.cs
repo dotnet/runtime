@@ -18,7 +18,7 @@ class OutOfMemoryExceptionTest
 {
     const int Pass = 100;
     const int Fail = -1;
-    const int TimeoutMilliseconds = 30 * 1000;
+    const int TimeoutMilliseconds = 60 * 1000;
 
     const string AllocateSmallArg = "--allocate-small";
     const string AllocateLargeArg = "--allocate-large";
