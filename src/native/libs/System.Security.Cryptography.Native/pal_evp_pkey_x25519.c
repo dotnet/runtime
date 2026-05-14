@@ -121,12 +121,12 @@ EVP_PKEY* CryptoNative_X25519ImportPublicKey(const uint8_t* source, int32_t sour
         Int32ToSizeT(sourceLength));
 }
 
-int32_t CryptoNative_X25519DeriveSecretAgreementWithPublicKey(EVP_PKEY* pkey,
-                                                              void* extraHandle,
-                                                              const uint8_t* peerKey,
-                                                              int32_t peerKeyLength,
-                                                              uint8_t* secret,
-                                                              uint32_t secretLength)
+int32_t CryptoNative_X25519DeriveSecretAgreementWithBytes(EVP_PKEY* pkey,
+                                                          void* extraHandle,
+                                                          const uint8_t* peerKey,
+                                                          int32_t peerKeyLength,
+                                                          uint8_t* secret,
+                                                          uint32_t secretLength)
 {
     if (pkey == NULL || peerKey == NULL || peerKeyLength <= 0 || secret == NULL || secretLength == 0)
     {

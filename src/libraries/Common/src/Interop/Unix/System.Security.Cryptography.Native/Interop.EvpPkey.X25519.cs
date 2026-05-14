@@ -30,8 +30,8 @@ internal static partial class Interop
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_X25519GenerateKey")]
         private static partial SafeEvpPKeyHandle CryptoNative_X25519GenerateKey();
 
-        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_X25519DeriveSecretAgreementWithPublicKey")]
-        private static partial int CryptoNative_X25519DeriveSecretAgreementWithPublicKey(
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_X25519DeriveSecretAgreementWithBytes")]
+        private static partial int CryptoNative_X25519DeriveSecretAgreementWithBytes(
             SafeEvpPKeyHandle key,
             IntPtr extraHandle,
             ReadOnlySpan<byte> peerKey,
@@ -136,7 +136,7 @@ internal static partial class Interop
             return key;
         }
 
-        internal static int X25519DeriveSecretAgreementWithPublicKey(
+        internal static int X25519DeriveSecretAgreementWithBytes(
             SafeEvpPKeyHandle key,
             ReadOnlySpan<byte> peerKey,
             Span<byte> destination)
@@ -145,7 +145,7 @@ internal static partial class Interop
             Debug.Assert(peerKey.Length == X25519DiffieHellman.PublicKeySizeInBytes);
             Debug.Assert(destination.Length == X25519DiffieHellman.SecretAgreementSizeInBytes);
 
-            int written = CryptoNative_X25519DeriveSecretAgreementWithPublicKey(
+            int written = CryptoNative_X25519DeriveSecretAgreementWithBytes(
                 key,
                 GetExtraHandle(key),
                 peerKey,

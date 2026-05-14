@@ -47,13 +47,8 @@ namespace System.Security.Cryptography
                 unsafe
                 {
                     Span<byte> publicKeyBytes = stackalloc byte[PublicKeySizeInBytes];
-
                     otherParty.ExportPublicKey(publicKeyBytes);
-
-                    using (SafeBCryptKeyHandle otherPartyKey = ImportPublicKey(publicKeyBytes, out _))
-                    {
-                        DeriveRawSecretAgreementWithKey(otherPartyKey, destination);
-                    }
+                    DeriveRawSecretAgreementWithKey(publicKeyBytes, destination);
                 }
             }
         }
@@ -63,7 +58,11 @@ namespace System.Security.Cryptography
             Debug.Assert(otherPartyPublicKey.Length == PublicKeySizeInBytes);
             Debug.Assert(destination.Length == SecretAgreementSizeInBytes);
             ThrowIfPrivateNeeded();
+            DeriveRawSecretAgreementWithKey(otherPartyPublicKey, destination);
+        }
 
+        private void DeriveRawSecretAgreementWithKey(ReadOnlySpan<byte> otherPartyPublicKey, Span<byte> destination)
+        {
             using (SafeBCryptKeyHandle otherPartyKey = ImportPublicKey(otherPartyPublicKey, out _))
             {
                 DeriveRawSecretAgreementWithKey(otherPartyKey, destination);

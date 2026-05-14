@@ -113,6 +113,22 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
+        public void DeriveRawSecretAgreement_BytesWithInstance_Symmetric()
+        {
+            using X25519DiffieHellman key1 = GenerateKey();
+            using X25519DiffieHellman key2 = GenerateKey();
+
+            byte[] secret1 = key1.DeriveRawSecretAgreement(key2.ExportPublicKey());
+            byte[] secret2 = key1.DeriveRawSecretAgreement(key2);
+            byte[] secret3 = key2.DeriveRawSecretAgreement(key1.ExportPublicKey());
+            byte[] secret4 = key2.DeriveRawSecretAgreement(key1);
+
+            AssertExtensions.SequenceEqual(secret1, secret2);
+            AssertExtensions.SequenceEqual(secret2, secret3);
+            AssertExtensions.SequenceEqual(secret3, secret4);
+        }
+
+        [Fact]
         public void DeriveRawSecretAgreement_ExactBuffers()
         {
             using X25519DiffieHellman key1 = GenerateKey();
@@ -283,6 +299,9 @@ namespace System.Security.Cryptography.Tests
             using X25519DiffieHellman key = ImportPrivateKey(privateKey);
 
             Assert.ThrowsAny<CryptographicException>(() => key.DeriveRawSecretAgreement(peerPublicKey));
+
+            // Show that the object is still functional after derive throws.
+            AssertExtensions.SequenceEqual(privateKey, key.ExportPrivateKey());
         }
 
         [ConditionalFact(nameof(IsNotStrictKeyValidatingPlatform))]
@@ -297,6 +316,9 @@ namespace System.Security.Cryptography.Tests
 
             Assert.ThrowsAny<CryptographicException>(
                 () => key.DeriveRawSecretAgreement(peerPublicKey, new byte[X25519DiffieHellman.SecretAgreementSizeInBytes]));
+
+            // Show that the object is still functional after derive throws.
+            AssertExtensions.SequenceEqual(privateKey, key.ExportPrivateKey());
         }
 
         [Theory]

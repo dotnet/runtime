@@ -45,12 +45,12 @@ Derives an X25519 secret agreement with a raw peer public key.
 
 Returns the number of bytes written on success, 0 on failure.
 */
-PALEXPORT int32_t CryptoNative_X25519DeriveSecretAgreementWithPublicKey(EVP_PKEY* pkey,
-                                                                        void* extraHandle,
-                                                                        const uint8_t* peerKey,
-                                                                        int32_t peerKeyLength,
-                                                                        uint8_t* secret,
-                                                                        uint32_t secretLength);
+PALEXPORT int32_t CryptoNative_X25519DeriveSecretAgreementWithBytes(EVP_PKEY* pkey,
+                                                                    void* extraHandle,
+                                                                    const uint8_t* peerKey,
+                                                                    int32_t peerKeyLength,
+                                                                    uint8_t* secret,
+                                                                    uint32_t secretLength);
 
 /*
 Generates a new X25519 key pair and returns it as an EVP_PKEY.

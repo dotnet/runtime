@@ -54,7 +54,7 @@ namespace System.Security.Cryptography
             {
                 Span<byte> publicKey = stackalloc byte[PublicKeySizeInBytes];
                 otherParty.ExportPublicKey(publicKey);
-                written = Interop.Crypto.X25519DeriveSecretAgreementWithPublicKey(_key, publicKey, destination);
+                written = Interop.Crypto.X25519DeriveSecretAgreementWithBytes(_key, publicKey, destination);
             }
 
             if (written != SecretAgreementSizeInBytes)
@@ -70,11 +70,11 @@ namespace System.Security.Cryptography
             Debug.Assert(destination.Length == SecretAgreementSizeInBytes);
             ThrowIfPrivateNeeded();
 
-            int written = Interop.Crypto.X25519DeriveSecretAgreementWithPublicKey(_key, otherPartyPublicKey, destination);
+            int written = Interop.Crypto.X25519DeriveSecretAgreementWithBytes(_key, otherPartyPublicKey, destination);
 
             if (written != SecretAgreementSizeInBytes)
             {
-                Debug.Fail($"{nameof(Interop.Crypto.X25519DeriveSecretAgreementWithPublicKey)} wrote an unexpected number of bytes: {written}.");
+                Debug.Fail($"{nameof(Interop.Crypto.X25519DeriveSecretAgreementWithBytes)} wrote an unexpected number of bytes: {written}.");
                 throw new CryptographicException();
             }
         }

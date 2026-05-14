@@ -100,6 +100,5 @@ namespace System.Security.Cryptography
             if (!_hasPrivate)
                 throw new CryptographicException(SR.Cryptography_CSP_NoPrivateKey);
         }
-
     }
 }
