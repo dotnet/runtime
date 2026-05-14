@@ -1783,8 +1783,8 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
                 TargetPointer fieldDescList = rts.GetFieldDescList(typeHandle);
                 uint fieldDescSize = _target.GetTypeInfo(DataType.FieldDesc).Size!.Value;
 
-                Contracts.IEcmaMetadata ecmaMetadataContract = _target.Contracts.EcmaMetadata;
-                Contracts.ISignatureDecoder signatureDecoder = _target.Contracts.SignatureDecoder;
+                IEcmaMetadata ecmaMetadataContract = _target.Contracts.EcmaMetadata;
+                ISignature signature = _target.Contracts.Signature;
 
                 for (uint i = 0; i < cFields; ++i)
                 {
@@ -1812,7 +1812,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
                     // a null TypeHandle.
                     try
                     {
-                        TypeHandle fieldTypeHandle = signatureDecoder.DecodeFieldSignature(fieldDef.Signature, enclosingModuleHandle, enclosingTypeHandle);
+                        TypeHandle fieldTypeHandle = signature.DecodeFieldSignature(fieldDef.Signature, enclosingModuleHandle, enclosingTypeHandle);
                         if (fieldTypeHandle.IsNull)
                         {
                             corField->id = default;
